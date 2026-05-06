@@ -1,0 +1,45 @@
+name: MisakaNet Feedback
+description: 节点上报 skill 使用反馈到 Hub
+title: "feedback: [skill name]"
+labels: [feedback, unprocessed]
+body:
+  - type: input
+    id: node_id
+    attributes:
+      label: Node ID
+      description: 节点标识符
+      placeholder: node1
+    validations:
+      required: true
+  - type: input
+    id: skill
+    attributes:
+      label: Skill
+      description: 使用的 skill 名称
+      placeholder: rag-retrieval
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options:
+        - success
+        - partial
+        - failure
+    validations:
+      required: true
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Scenario
+      description: 使用场景描述
+      placeholder: FANUC R-2000iC 检索混淆修复 ...
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Extra (JSON)
+      description: 附加数据，如 tags、related_skills、session_ref
+      placeholder: '{"tags": ["fanuc"], "related_skills": ["systematic-debugging"]}'

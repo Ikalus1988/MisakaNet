@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+
+# Runtime data (should not be committed)
+# skill_index.json 已移出 .gitignore — 多节点共享语义索引
+storage/arbitration.db
+storage/subscriptions.db
+storage/vector_store/
+storage/knowledge_graph/
+
+# MisakaNet local cache
+misakanet/.feedback/
+misakanet/scripts/.inject_hash.json
+
+# Historical lesson staging (Phase 1)
+staging/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Configuration (contains secrets)
+config.yaml
+
+# Token storage
+tokens.json
