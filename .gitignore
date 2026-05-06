@@ -16,6 +16,9 @@ storage/knowledge_graph/
 misakanet/.feedback/
 misakanet/scripts/.inject_hash.json
 
+# Generated avatars (committed by CI only)
+avatars/
+
 # Historical lesson staging (Phase 1)
 staging/
 
