@@ -1,205 +1,135 @@
 #!/usr/bin/env python3
 """
-misakanet-avatar.py — 御坂网络像素头像生成器
+misakanet-avatar.py — 御坂网络像素头像生成器 v3
 
-根据序号生成御坂妹风格像素头像。
-每个头像共享同一张脸，领巾颜色和序号不同。
+基于御坂美琴面部图像，像素化后叠加领巾色和序号。
+每个头像共享同张脸，领巾色和序号不同。
 
 用法:
-  python3 misakanet-avatar.py 10032            # 生成 Misaka10032.png
-  python3 misakanet-avatar.py 10032 --output ~/avatar.png
-  python3 misakanet-avatar.py 10000 10005      # 批量生成 10000-10005
+  python3 misakanet-avatar.py 10032
+  python3 misakanet-avatar.py 10000 10005 --output ~/avatars
 """
 
-import hashlib
-import sys
-import os
+import sys, os
 from pathlib import Path
+from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 
-try:
-    from PIL import Image
-except ImportError:
-    print("请安装 Pillow: pip install Pillow")
-    sys.exit(1)
+# ── 路径 ───────────────────────────────
+BASE_DIR = Path(__file__).parent
+BASE_FACE = BASE_DIR / "misaka-face.jpg"
+PIXEL_ART_SCRIPT = BASE_DIR.parent / "creative" / "pixel-art" / "scripts" / "pixel_art.py"
+if not PIXEL_ART_SCRIPT.exists():
+    PIXEL_ART_SCRIPT = Path(os.environ.get("PIXEL_ART_SCRIPT", ""))
+    if not PIXEL_ART_SCRIPT.exists():
+        PIXEL_ART_SCRIPT = None
 
-
-# ── 调色板 ──────────────────────────────────
-# 御坂妹妹的统一配色 + 可替换的领巾色
-PALETTE = {
-    "skin":       (255, 219, 189),   # 肤色
-    "skin_shade": (242, 198, 168),   # 肤色阴影
-    "hair_dark":  (101, 67, 33),     # 深棕发
-    "hair_light": (150, 110, 70),    # 浅棕发
-    "eye":        (80, 60, 55),      # 眼睛
-    "eye_highlight": (200, 180, 160),# 眼睛高光
-    "white":      (248, 248, 248),   # 眼白
-    "mouth":      (200, 130, 120),   # 嘴
-    "collar":     (60, 60, 70),      # 衣领
-    "collar_light": (90, 90, 100),   # 衣领浅
-    "number_bg":  (220, 220, 225),   # 号码牌背景
-    "number_fg":  (40, 40, 50),      # 号码牌文字
-    "bg":         (240, 240, 245),   # 背景
-}
-
-# 12种领巾色（御坂妹妹的特征色）
+# ── 领巾色（12 色，御坂妹妹特征） ──────
 SCARF_COLORS = [
-    (70, 130, 200),   # 0: 蓝（原版）
-    (200, 80, 80),    # 1: 红
-    (80, 180, 100),   # 2: 绿
-    (200, 170, 50),   # 3: 黄
-    (170, 100, 200),  # 4: 紫
-    (230, 140, 60),   # 5: 橙
-    (200, 100, 160),  # 6: 粉
-    (60, 180, 190),   # 7: 青
-    (150, 200, 150),  # 8: 薄荷
-    (100, 150, 200),  # 9: 灰蓝
-    (190, 160, 140),  # 10: 米
-    (80, 80, 80),     # 11: 灰
+    (70,  130, 210),  # 0: 蓝（原版）
+    (210, 80,  80),   # 1: 红
+    (85,  185, 105),  # 2: 绿
+    (215, 180, 45),   # 3: 黄
+    (175, 100, 210),  # 4: 紫
+    (235, 145, 55),   # 5: 橙
+    (215, 100, 165),  # 6: 粉
+    (60,  185, 195),  # 7: 青
+    (155, 205, 155),  # 8: 薄荷
+    (100, 150, 205),  # 9: 灰蓝
+    (195, 160, 140),  # 10: 米
+    (80,  80,  90),   # 11: 灰
 ]
 
-
-# ── 像素模板 (32x32) ──────────────────────
-# 每个字符代表一个颜色键
-# . = bg, S = skin, s = skin_shade
-# H = hair_dark, h = hair_light
-# E = eye, e = eye_highlight, W = white
-# M = mouth, C = collar, c = collar_light
-# N = number_bg, F = number_fg
-# R = scarf (会被替换为领巾色)
-
-TEMPLATE = [
-    "................................",
-    "................................",
-    "..........HHHHHHH..............",
-    "........HHHHHHHHHH............",
-    ".......HHHHHHHHHHHH...........",
-    "......HHHHHHHHHHHHHH..........",
-    ".....HHHHHHHHHHHHHHHH.........",
-    "....HHHHHHHHHHHHHHHHHH........",
-    ".....sssssHHHHHHHHsssss.......",
-    "....ssssssssssssssssssss......",
-    "....ssRRRRRRRsssRRRRRRsss.....",
-    "....sRRRRRRRRRssRRRRRRRRs.....",
-    "....sRRRRRRRRRssRRRRRRRRs.....",
-    "....sRRRRRssWWsssssssRRRs.....",
-    "....sRRRRsWEEWeWWEEWssRRs.....",
-    "....ssRRRsWeeEeWeEeeWssss.....",
-    ".....ssssWWEEeeEeeEEWWsss.....",
-    "......ssssWEEEEEEEEWssss......",
-    ".......sssWeeeeeeeWsss........",
-    "........ssssMMMMMsssss........",
-    "........sss.......ssss........",
-    "........sss.......ssss........",
-    ".......sss.........ssss.......",
-    "......sss...........ssss......",
-    ".....ccc.............ccc......",
-    "....cNNN.............NNNc.....",
-    "....cNNN.............NNNc.....",
-    "....cccc.............cccc.....",
-    ".....ccc.............ccc......",
-    "......ccc...........ccc.......",
-    ".......ccc.........ccc........",
-    "................................",
-]
-
-# 颜色映射
-CHAR_MAP = {
-    ".": "bg",
-    "S": "skin",
-    "s": "skin_shade",
-    "H": "hair_dark",
-    "h": "hair_light",
-    "E": "eye",
-    "e": "eye_highlight",
-    "W": "white",
-    "M": "mouth",
-    "C": "collar",
-    "c": "collar_light",
-    "N": "number_bg",
-    "F": "number_fg",
-    "R": None,  # 领巾色，运行时替换
-}
+NUM_BG = (240, 240, 245)
+NUM_BORDER = (180, 180, 185)
+NUM_FG = (40, 40, 50)
 
 
-def get_scarf_color(number: int) -> tuple[int, int, int]:
-    """根据序号决定领巾色"""
-    idx = number % len(SCARF_COLORS)
-    return SCARF_COLORS[idx]
+def scarf_color(num):
+    return SCARF_COLORS[num % len(SCARF_COLORS)]
 
 
-def draw_avatar(number: int, scale: int = 4) -> Image.Image:
-    """绘制 32x32 像素头像，按 scale 放大"""
-    size = 32
-    img = Image.new("RGB", (size, size))
-    pixels = img.load()
+def tint_image(img, color, intensity=0.15):
+    """给图像叠加颜色滤镜"""
+    overlay = Image.new("RGB", img.size, color)
+    return Image.blend(img, overlay, intensity)
 
-    scarf_color = get_scarf_color(number)
-    palette = {**PALETTE, "scarf": scarf_color}
 
-    for y, row in enumerate(TEMPLATE):
-        for x, ch in enumerate(row):
-            key = CHAR_MAP.get(ch)
-            if key is None and ch == "R":
-                key = "scarf"
-            if key is None:
-                color = palette["bg"]
-            else:
-                color = palette.get(key, palette["bg"])
-            pixels[x, y] = color
+def pixelate(img, block=6):
+    """像素化图像"""
+    w, h = img.size
+    small = img.resize((max(1, w // block), max(1, h // block)), Image.LANCZOS)
+    return small.resize((w, h), Image.NEAREST)
 
-    # 放大
-    if scale > 1:
-        img = img.resize((size * scale, size * scale), Image.NEAREST)
 
-    # 叠加序号文字
-    from PIL import ImageDraw, ImageFont
+def generate_avatar(number, size=128, block=6):
+    """生成完整头像"""
+    # 1. 加载面部
+    if not BASE_FACE.exists():
+        raise FileNotFoundError(f"面部图像不存在: {BASE_FACE}")
+    
+    img = Image.open(BASE_FACE).convert("RGB")
+    
+    # 2. 调整到合适尺寸（200x200 → 大小统一的输入）
+    img = img.resize((200, 200), Image.LANCZOS)
+    
+    # 3. 像素化
+    img = pixelate(img, block=block)
+    
+    # 4. 叠加领巾色
+    tint_color = scarf_color(number)
+    img = tint_image(img, tint_color, intensity=0.12)
+    
+    # 5. 调整到目标尺寸
+    img = img.resize((size, size), Image.NEAREST)
+    
+    # 6. 叠加序号
     draw = ImageDraw.Draw(img)
-
-    number_text = f"#{number}"
-    font_size = max(8, scale * 3)
-
-    try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
-    except (OSError, IOError):
-        try:
-            font = ImageFont.truetype("/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc", font_size)
-        except (OSError, IOError):
-            font = ImageFont.load_default()
-
-    # 文字位置：底部居中
-    bbox = draw.textbbox((0, 0), number_text, font=font)
-    tw = bbox[2] - bbox[0]
-    th = bbox[3] - bbox[1]
-    tx = (img.width - tw) // 2
-    ty = img.height - th - 4 * scale
-
-    # 文字阴影
-    draw.text((tx + 1, ty + 1), number_text, fill=(0, 0, 0, 180), font=font)
-    # 文字主体
-    draw.text((tx, ty), number_text, fill=(255, 255, 255), font=font)
-
+    
+    text = f"#{number}"
+    
+    # 找字体
+    font = None
+    for fp in [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    ]:
+        if os.path.exists(fp):
+            font = ImageFont.truetype(fp, size=max(10, size // 10))
+            break
+    if font is None:
+        font = ImageFont.load_default()
+    
+    bbox = draw.textbbox((0, 0), text, font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    
+    # 号码牌
+    px, py = (size - tw - 12) // 2, size - th - 8
+    draw.rounded_rectangle(
+        [px-2, py-1, px+tw+2, py+th+1],
+        radius=2, fill=NUM_BG, outline=NUM_BORDER
+    )
+    
+    # 文字阴影 + 本体
+    draw.text((px+1, py+1), text, fill=(0, 0, 0), font=font)
+    draw.text((px, py), text, fill=NUM_FG, font=font)
+    
     return img
 
 
-def save_avatar(number: int, output_dir: str | Path) -> Path:
-    """生成并保存头像"""
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    img = draw_avatar(number, scale=4)
-    path = output_dir / f"Misaka{number:05d}.png"
+def save_avatar(number, output_dir="avatars"):
+    path = Path(output_dir) / f"Misaka{number:05d}.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    
+    img = generate_avatar(number, size=128)
     img.save(path)
     return path
 
 
 def main():
     if len(sys.argv) < 2:
-        print(__doc__)
+        print("用法: python3 misakanet-avatar.py 10032 [--output dir]")
         sys.exit(1)
-
-    output_dir = os.environ.get("AVATAR_DIR", "avatars")
     
-    # 解析参数
     args = sys.argv[1:]
     output_dir = "avatars"
     
@@ -210,24 +140,23 @@ def main():
             i += 2
         else:
             i += 1
-
+    
     numbers = []
     for arg in args:
         if arg == "--output":
             break
         if "-" in arg:
-            start, end = arg.split("-")
-            numbers.extend(range(int(start), int(end) + 1))
+            a, b = arg.split("-")
+            numbers.extend(range(int(a), int(b) + 1))
         else:
             try:
                 numbers.append(int(arg))
             except ValueError:
                 continue
-
+    
     for n in numbers:
-        path = save_avatar(n, output_dir)
-        print(f"  Misaka{n:05d} → {path}")
-
+        p = save_avatar(n, output_dir)
+        print(f"  Misaka{n:05d} → {p}")
     print(f"\n已生成 {len(numbers)} 个头像")
 
 
