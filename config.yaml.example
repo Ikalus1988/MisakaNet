@@ -41,10 +41,3 @@ master:
   # Master 模式共享密钥，从环境变量读取
   shared_secret: "your-secret-here"
 
-a2a:
-  server:
-    enabled: true
-    host: "0.0.0.0"
-    port: 8081
-  discovery:
-    auto_register: true

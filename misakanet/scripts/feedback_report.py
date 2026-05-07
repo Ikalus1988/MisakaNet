@@ -72,9 +72,9 @@ def _get_token():
         at_pos = after_protocol.rfind("@")
         if at_pos > 0:
             _TOKEN_CACHE = after_protocol[:at_pos].split(":", 1)[-1]
-        return _TOKEN_CACHE
+            return _TOKEN_CACHE
         _TOKEN_CACHE = None
-        print(f"[error] 无法从 git credentials 解析 token (格式: https://user:token@github.com)", file=sys.stderr)
+        print(f"[error] 无法从 git credentials 解析 token", file=sys.stderr)
         return None
     except Exception as e:
         _TOKEN_CACHE = None

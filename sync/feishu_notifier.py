@@ -3,7 +3,6 @@ Feishu Notifier - 飞书通知模块
 当仲裁案例创建时，通过飞书机器人通知用户
 """
 import requests
-import json
 from typing import Optional
 
 

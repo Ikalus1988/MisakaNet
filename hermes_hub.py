@@ -235,7 +235,7 @@ class HermesHub:
                 "graph_edges": idx_stats.get("graph_edges", 0)
             },
             "sync_scheduler": self.sync_scheduler.get_status(),
-            "agents_registered": len(self.a2a_server.agents),
+            "agents_registered": 0,  # A2A 已废弃，Agent 注册走 GitHub Issues
             "master_tokens_active": len(self.token_manager._tokens),
             "arbitration": self.arbitration_queue.stats(),
             "subscriptions": self.subscription_manager.stats()

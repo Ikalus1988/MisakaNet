@@ -135,7 +135,7 @@ class KnowledgeGraph:
         skills = []
         for skill_id in self.graph.nodes:
             if self.graph.nodes[skill_id].get("type") == self.NODE_SKILL:
-                if self.graph.nodes[skill_id].get("source_agent") == agent_id:
+                if self.graph.nodes[skill_id].get("source") == agent_id:
                     skills.append(skill_id)
         return skills
 
