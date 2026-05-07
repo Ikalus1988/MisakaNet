@@ -4,8 +4,8 @@ MisakaNet Hub Poller (Hub 侧)
 ====================================================
 从 GitHub Issues 消费节点上报的反馈，直接更新 Hub 的 Knowledge Graph。
 
-部署: agent-medici/misakanet/scripts/hub_poller.py
-运行: cd /path/to/agent-medici && python misakanet/scripts/hub_poller.py
+部署: MisakaNet/misakanet/scripts/hub_poller.py
+运行: cd /path/to/MisakaNet && python misakanet/scripts/hub_poller.py
 
 依赖:
   pip install requests pyyaml
@@ -18,7 +18,7 @@ import sys
 import yaml
 from datetime import datetime, timezone
 
-# 项目根目录 (agent-medici/)
+# 项目根目录 (MisakaNet/)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 

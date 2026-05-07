@@ -1,24 +1,15 @@
 {
-  "node_id": "hermes_wsl",
-  "swarm": "ikalus",
-  "description": "Hermes Agent on hp WSL — RAG/知识库/自动化",
-  "registered_at": "2026-04-29T19:00:00Z",
-  "owner": "Eric Jia (ikalus1988)",
-  "platform": "WSL2 (hp)",
+  "node_id": "node_example",
+  "swarm": "your-swarm-name",
+  "description": "在此描述你的节点用途",
+  "registered_at": "2026-01-01T00:00:00Z",
+  "owner": "你的名字/昵称",
+  "platform": "Linux / macOS / Windows",
   "domains": [
-    "rag-retrieval",
-    "patent-writing",
-    "devops",
-    "code-review",
-    "software-development",
-    "data-science"
+    "domain1",
+    "domain2"
   ],
   "preferences": {
-    "arbitration_domain_authority": {
-      "rag-retrieval": "hermes_wsl",
-      "patent-writing": "hermes_wsl",
-      "software-development": "hermes_wsl",
-      "devops": "any"
-    }
+    "arbitration_domain_authority": {}
   }
 }
