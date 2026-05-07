@@ -15,7 +15,7 @@ class MasterAPI:
 
     def __init__(self, hub):
         self.hub = hub
-        self.audit_logger = hub.get_audit_logger() if hasattr(hub, 'get_audit_logger') else None
+        self.audit_logger = getattr(hub, 'audit_logger', None)
 
     def _a2a_available(self) -> bool:
         """检查 A2A server 是否可用（当前为死代码，始终返回 False）"""

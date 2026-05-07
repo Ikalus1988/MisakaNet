@@ -97,7 +97,8 @@ def main():
     if mode in ("all", "lessons"):
         hits = search_lessons(query, titles_only)
         if broad_only:
-            hits = [h for h in hits if 'scope:broad' in parse_frontmatter(LESSONS / h[3]).get('tags', [])]
+            # scope:broad 是 YAML frontmatter 中的 tags 字段 (如 tags: [scope:broad, wsl])
+            hits = [h for h in hits if 'scope:broad' in open(LESSONS / h[3], encoding='utf-8', errors='replace').read()]
         if hits:
             found_any = True
             print(f"\n📋 lessons/ ({len(hits)} 条匹配)")

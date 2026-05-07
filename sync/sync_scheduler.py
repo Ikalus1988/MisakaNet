@@ -52,7 +52,9 @@ class SyncScheduler:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                print(f"Sync error: {e}")
+                print(f"[SyncScheduler] 同步异常: {e}")
+                import traceback
+                traceback.print_exc()
 
     async def _trigger_sync(self):
         """Trigger a sync cycle"""

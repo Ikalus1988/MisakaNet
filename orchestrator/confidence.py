@@ -93,12 +93,11 @@ class ConfidenceModel:
 
     def calc_cross_factor(self, source_count: int) -> float:
         """计算交叉验证系数"""
-        if source_count <= 0:
-            return 0.8
-        elif source_count == 1:
+        if source_count == 1:
             return 0.8
         elif source_count == 2:
             return 0.95
+        # source_count >= 2
         else:
             return 1.0
 

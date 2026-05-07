@@ -14,7 +14,7 @@ class VectorStore:
         self.client = chromadb.PersistentClient(
             persist_directory=persist_dir,
             anonymized_telemetry=False
-        ))
+        )
         self.collection_name = collection_name
         self._ensure_collection()
 
