@@ -40,6 +40,7 @@ class TokenManager:
         # Use keyring in production for secure storage
         with open(token_path, 'w') as f:
             json.dump(self._tokens, f, default=str)
+        os.chmod(token_path, 0o600)
 
     def _cleanup_expired(self):
         """Remove expired tokens"""

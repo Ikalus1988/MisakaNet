@@ -58,18 +58,26 @@ def _mark_reported(skill, session_ref):
     _save_state(state)
 
 
+_TOKEN_CACHE = None
+
 def _get_token():
-    """从 git credentials 提取 GitHub token"""
+    """从 git credentials 提取 GitHub token（带缓存）"""
+    global _TOKEN_CACHE
+    if _TOKEN_CACHE:
+        return _TOKEN_CACHE
     try:
-        import re
         creds = open(GIT_CREDS_PATH).read().strip()
         # format: https://user:token@github.com 或 https://token@github.com
-        m = re.match(r"https?://(?:[^:]+:)?([^@]+)@", creds)
-        if m:
-            return m.group(1)
-        print(f"[error] 无法从 git credentials 解析 token", file=sys.stderr)
+        after_protocol = creds.split("://", 1)[1] if "://" in creds else creds
+        at_pos = after_protocol.rfind("@")
+        if at_pos > 0:
+            _TOKEN_CACHE = after_protocol[:at_pos].split(":", 1)[-1]
+        return _TOKEN_CACHE
+        _TOKEN_CACHE = None
+        print(f"[error] 无法从 git credentials 解析 token (格式: https://user:token@github.com)", file=sys.stderr)
         return None
     except Exception as e:
+        _TOKEN_CACHE = None
         print(f"[error] 无法读取 token ({GIT_CREDS_PATH}): {e}", file=sys.stderr)
         return None
 

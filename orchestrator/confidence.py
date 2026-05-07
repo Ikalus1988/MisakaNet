@@ -24,11 +24,33 @@ class ConfidenceModel:
     # 时效性衰减参数
     LAMBDA = 0.001  # 每天衰减
 
-    def __init__(self, authority_db: dict = None):
+    AUTHORITY_DB_PATH = os.path.expanduser("~/.misakanet/authority_db.json")
+
+    def __init__(self, authority_db: dict = None, db_path: str = None):
         """
         authority_db: {node_id: authority_score} 节点权威度字典
+        db_path: 持久化路径，默认 ~/.misakanet/authority_db.json
         """
+        if db_path:
+            self.AUTHORITY_DB_PATH = db_path
         self.authority_db = authority_db or {}
+        self._load_from_disk() if not authority_db else None
+
+    def _load_from_disk(self):
+        """从磁盘加载权威度数据"""
+        import json
+        try:
+            with open(self.AUTHORITY_DB_PATH, 'r') as f:
+                self.authority_db = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.authority_db = {}
+
+    def _save_to_disk(self):
+        """持久化权威度数据到磁盘"""
+        import json, os
+        os.makedirs(os.path.dirname(self.AUTHORITY_DB_PATH), exist_ok=True)
+        with open(self.AUTHORITY_DB_PATH, 'w') as f:
+            json.dump(self.authority_db, f, indent=2)
 
     def get_authority(self, node_id: str) -> float:
         """获取节点权威度"""
@@ -39,6 +61,7 @@ class ConfidenceModel:
         authority = max(self.AUTHORITY_RANGE[0],
                       min(self.AUTHORITY_RANGE[1], authority))
         self.authority_db[node_id] = authority
+        self._save_to_disk()
 
     def update_after_arbitration(self, winner_id: str, loser_ids: list):
         """仲裁后更新权威度"""

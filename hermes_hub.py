@@ -56,13 +56,10 @@ class HermesHub:
 
         # Initialize sync
         sync_config = self.config["sync"]
-        self.a2a_server = A2AServer(
-            host=self.config["a2a"]["server"]["host"],
-            port=self.config["a2a"]["server"]["port"]
-        )
-        # 注入订阅管理器
-        self.a2a_server.set_subscription_manager(self.subscription_manager)
-        self.a2a_server.set_hub_controller(self)
+        # A2AServer — DEAD CODE（架构改为 GitHub Issues 异步通信）
+        # 初始化代码保留以供未来参考，当前不启动：
+        # self.a2a_server = A2AServer(...)
+        pass
 
         self.sync_scheduler = SyncScheduler(
             interval_minutes=sync_config["interval_minutes"]

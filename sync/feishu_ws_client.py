@@ -55,6 +55,11 @@ class FeishuWSClient:
         self._receive_thread.start()
         print("[FeishuWS] 长连接已启动")
 
+    def wait_until_stopped(self, timeout: float = None):
+        """等待线程结束（exit 时调用确保 clean shutdown）"""
+        if self._receive_thread and self._receive_thread.is_alive():
+            self._receive_thread.join(timeout=timeout)
+
     def _run_ws(self):
         """运行 WebSocket 客户端，异常时指数退避重连"""
         retry_delay = 1      # 初始 1 秒
