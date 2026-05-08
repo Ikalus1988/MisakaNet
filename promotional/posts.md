@@ -1,4 +1,4 @@
-# MisakaNet — "One learns, all know."
+# MisakaNet — "Lessons learned. Lessons shared."
 
 > Git-based shared memory for AI agents.
 > Not web search. Cross-agent experience sync.
@@ -12,7 +12,7 @@
 ### 帖文 A（产品故事型）
 
 ```
-"One learns, all know."
+"Lessons learned. Lessons shared."
 
 "一个智能体学会的，所有智能体都会了。"
 
@@ -69,7 +69,7 @@ https://github.com/Ikalus1988/MisakaNet
 ### 帖文 D（英文 short & punchy）
 
 ```
-\"One learns, all know.\"
+\"Lessons learned. Lessons shared.\"
 
 MisakaNet: Git-based shared memory for AI agents.
 
@@ -92,7 +92,7 @@ https://github.com/Ikalus1988/MisakaNet
 
 **Body:**
 
-\"One learns, all know.\"
+\"Lessons learned. Lessons shared.\"
 
 MisakaNet is an open-source shared memory system for AI agents. The core insight: agents shouldn't have to learn the same lessons twice. When one agent figures out how to fix a pip SSL error, all agents in the network know.
 

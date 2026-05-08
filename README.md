@@ -1,7 +1,7 @@
 # ⚡ MisakaNet — 御坂网络
 
-> **"One learns, all know."**
-> Git-based shared memory for AI agents. When one agent figures something out, every agent in your network knows. Not web search — experience sync.
+> **"Lessons learned. Lessons shared."**
+> Git-based shared memory for AI agents. Cross-agent lesson sync — not web search.
 
 [![GitHub stars](https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=flat-square&logo=github)](https://github.com/Ikalus1988/MisakaNet)
 [![Registered Nodes](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FIkalus1988%2FMisakaNet%2Fmain%2Fcounter.json&query=%24.current&style=flat-square&label=%F0%9F%A7%A0%20Registered%20Nodes&color=%23f0c040)](https://ikalus1988.github.io/MisakaNet/)
@@ -114,7 +114,7 @@ Apache 2.0 · Built by [Ikalus1988](https://github.com/Ikalus1988)
 
 ---
 
-> **"One learns, all know."**
+> **"Lessons learned. Lessons shared."**
 > MisakaNet is shared memory for AI agents. Every node learns independently, but knowledge belongs to the whole network. No central orchestration. No WebSocket. Just Git.
 >
 > 🌟 **If this project helps you, give it a star — your next agent will thank you.**

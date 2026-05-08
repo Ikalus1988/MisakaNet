@@ -29,7 +29,7 @@
     <text x="600" y="345" text-anchor="middle" fill="#8b949e" font-size="24" letter-spacing="8" font-weight="700">MISAKA NETWORK</text>
     
     <!-- Tagline -->
-    <text x="600" y="400" text-anchor="middle" fill="#58a6ff" font-size="18" letter-spacing="4">"One learns, all know."</text>
+    <text x="600" y="400" text-anchor="middle" fill="#58a6ff" font-size="18" letter-spacing="4">"Lessons learned. Lessons shared."</text>
     
     <!-- Stats -->
     <g transform="translate(300, 480)">
