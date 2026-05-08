@@ -594,7 +594,7 @@ async function registerNode() {
     const issue = await r.json();
     result.style.display = "block";
     result.className = "";
-    result.innerHTML = \`✅ 注册成功！\n节点正在分配编号和头像…\n<a href="\${issue.html_url}" target="_blank" style="color:#58a6ff;">查看进度</a>\`;
+    result.innerHTML = '<div>✅ 注册成功！<br>节点正在分配编号和头像…<br><a href="' + issue.html_url + '" target="_blank" style="color:#58a6ff;">查看进度</a></div>';
     result.style.background = "#23863620";
     result.style.border = "1px solid #238636";
     result.style.color = "#7ee787";
