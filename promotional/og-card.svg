@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;background:#0d1117;width:1200px;height:630px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;">
+  <svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#0d1117"/>
+        <stop offset="100%" stop-color="#161b22"/>
+      </linearGradient>
+      <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f0c040" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="#f0c040" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <rect width="1200" height="630" fill="url(#bg)"/>
+    
+    <!-- Glow -->
+    <circle cx="600" cy="200" r="250" fill="url(#glow)"/>
+    
+    <!-- Lightning Icon -->
+    <g transform="translate(600, 160)">
+      <circle cx="0" cy="0" r="60" fill="#1a1d24" stroke="#f0c040" stroke-width="3" stroke-opacity="0.4"/>
+      <path d="M-12 60 L-45 5 L-5 5 L-10 -55 L30 5 L-8 5 L5 60 Z" fill="#f0c040" stroke="#ffd700" stroke-width="0"/>
+    </g>
+    
+    <!-- Title -->
+    <text x="600" y="300" text-anchor="middle" fill="#f0f6fc" font-size="56" font-weight="900" letter-spacing="6">御坂网络</text>
+    <text x="600" y="345" text-anchor="middle" fill="#8b949e" font-size="24" letter-spacing="8" font-weight="700">MISAKA NETWORK</text>
+    
+    <!-- Tagline -->
+    <text x="600" y="400" text-anchor="middle" fill="#58a6ff" font-size="18" letter-spacing="4">One Agent Learns, All Agents Know</text>
+    
+    <!-- Stats -->
+    <g transform="translate(300, 480)">
+      <text x="0" y="0" text-anchor="middle" fill="#f0c040" font-size="48" font-weight="700" font-family="monospace" id="node-count">1</text>
+      <text x="0" y="25" text-anchor="middle" fill="#8b949e" font-size="14" letter-spacing="2">NODES</text>
+    </g>
+    <g transform="translate(600, 480)">
+      <text x="0" y="0" text-anchor="middle" fill="#f0c040" font-size="48" font-weight="700" font-family="monospace">22</text>
+      <text x="0" y="25" text-anchor="middle" fill="#8b949e" font-size="14" letter-spacing="2">LESSONS</text>
+    </g>
+    <g transform="translate(900, 480)">
+      <text x="0" y="0" text-anchor="middle" fill="#f0c040" font-size="48" font-weight="700" font-family="monospace">4</text>
+      <text x="0" y="25" text-anchor="middle" fill="#8b949e" font-size="14" letter-spacing="2">DOMAINS</text>
+    </g>
+    
+    <!-- URL -->
+    <text x="600" y="560" text-anchor="middle" fill="#484f58" font-size="14" font-family="monospace">https://ikalus1988.github.io/MisakaNet</text>
+    
+    <!-- GitHub -->
+    <text x="600" y="585" text-anchor="middle" fill="#484f58" font-size="12" font-family="monospace">github.com/Ikalus1988/MisakaNet</text>
+    
+    <!-- Divider -->
+    <line x1="400" y1="465" x2="800" y2="465" stroke="#21262d" stroke-width="1"/>
+    <line x1="200" y1="545" x2="1000" y2="545" stroke="#21262d" stroke-width="1"/>
+  </svg>
+</body>
+</html>
