@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>御坂网络 — 节点统计</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
   
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
   body {
     background: #0b0e14;
     color: #f0f6fc;
-    font-family: 'Noto Sans SC', 'SF Pro Display', -apple-system, sans-serif;
+    font-family: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
     min-height: 100vh;
     /* Subtle grid background for programmer feel */
     background-image: 
@@ -44,6 +44,22 @@
     color: #484f58;
     letter-spacing: 2px;
   }
+  
+  .lang-toggle {
+    position: absolute;
+    top: 8px;
+    right: 16px;
+    background: none;
+    border: 1px solid #30363d;
+    color: #8b949e;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 2px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .lang-toggle:hover { border-color: #58a6ff; color: #58a6ff; }
   
   .logo { font-size: 48px; margin-bottom: 8px; }
   
@@ -303,6 +319,7 @@
 
 <div class="container" id="app">
   <div class="header" id="header">
+    <button class="lang-toggle" id="lang-btn" onclick="toggleLang()">EN</button>
     <div style="display:flex; justify-content:center; align-items:center; gap:4px; margin-bottom:8px;">
       <svg width="76" height="76" viewBox="0 0 76 76" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 0 12px rgba(240,192,64,0.5));">
         <circle cx="38" cy="38" r="36" fill="#1a1d24" stroke="#f0c040" stroke-width="2" stroke-opacity="0.3"/>
@@ -320,65 +337,65 @@
   <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-number" id="total-nodes">—</div>
-      <div class="stat-label">已注册节点</div>
+      <div class="stat-label" data-i18n="statNodes">已注册节点</div>
       <div class="stat-sub" id="total-suffix"></div>
     </div>
     <div class="stat-card">
       <div class="stat-number" id="latest-number">—</div>
-      <div class="stat-label">最新节点编号</div>
+      <div class="stat-label" data-i18n="statLatest">最新节点编号</div>
       <div class="stat-sub" id="latest-time"></div>
     </div>
     <div class="stat-card">
       <div class="stat-number" id="knowledge-count">—</div>
-      <div class="stat-label">网络知识数</div>
-      <div class="stat-sub">lessons</div>
+      <div class="stat-label" data-i18n="statLessons">网络知识数</div>
+      <div class="stat-sub" data-i18n="lessons">lessons</div>
     </div>
   </div>
   
   <!-- Contributors Leaderboard -->
-  <div class="section-title" id="contrib-title" style="display:none;">🏆 贡献排行 <span id="contrib-count"></span></div>
+  <div class="section-title" id="contrib-title" style="display:none;"><span data-i18n="contribSection">🏆 贡献排行</span> <span id="contrib-count"></span></div>
   <div class="recent-list" id="contrib-list" style="display:none;">
-    <div class="loading-item">加载中...</div>
+    <div class="loading-item" data-i18n="loading">加载中...</div>
   </div>
   <div style="height:28px"></div>
   
   <!-- Active Nodes -->
-  <div class="section-title" id="active-title" style="display:none;">🌐 当前活跃节点 <span id="active-count"></span></div>
+  <div class="section-title" id="active-title" style="display:none;"><span data-i18n="activeSection">🌐 当前活跃节点</span> <span id="active-count"></span></div>
   <div class="recent-list" id="active-list" style="display:none;">
-    <div class="loading-item">加载中...</div>
+    <div class="loading-item" data-i18n="loading">加载中...</div>
   </div>
   <div style="height:28px"></div>
   
   <!-- All Avatars -->
-  <div class="section-title">🎨 节点头像墙 <span id="gallery-count"></span></div>
+  <div class="section-title" id="gallery-title"><span data-i18n="gallerySection">🎨 节点头像墙</span> <span id="gallery-count"></span></div>
   <div class="avatar-gallery" id="avatar-gallery">
     <div class="loading-item">加载中...</div>
   </div>
   
   <div class="footer">
     <a href="https://github.com/Ikalus1988/MisakaNet" target="_blank">Ikalus1988/MisakaNet</a>
-    · Apache 2.0 · 数据来自 GitHub API
+    <span data-i18n="footer">· Apache 2.0 · 数据来自 GitHub API</span>
   </div>
   
   <!-- Share & Register -->
   <div style="text-align:center;padding:20px 0 40px;border-top:1px solid #21262d;margin-top:20px;">
-    <div style="font-size:13px;color:#8b949e;margin-bottom:12px;">🌐 没有 GitHub？直接注册</div>
+    <div style="font-size:13px;color:#8b949e;margin-bottom:12px;" data-i18n="registerTitle">🌐 没有 GitHub？直接注册</div>
     
     <div id="register-form" style="display:inline-block;text-align:left;background:#161b22;border:1px solid #30363d;border-radius:12px;padding:24px 28px;min-width:300px;">
-      <div style="font-size:14px;font-weight:700;color:#f0f6fc;margin-bottom:4px;">节点名称（可选）</div>
-      <div style="font-size:11px;color:#8b949e;margin-bottom:8px;">留空则使用默认名称</div>
-      <input type="text" id="node-name" placeholder="例如：太阳" 
+      <div style="font-size:14px;font-weight:700;color:#f0f6fc;margin-bottom:4px;" data-i18n="nodeNameLabel">节点名称（可选）</div>
+      <div style="font-size:11px;color:#8b949e;margin-bottom:8px;" data-i18n="nodeNameHint">留空则使用默认名称</div>
+      <input type="text" id="node-name" data-i18n-placeholder="nodeNamePlaceholder" placeholder="例如：太阳" 
              style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#f0f6fc;font-size:14px;box-sizing:border-box;outline:none;">
       
       <label style="display:flex;align-items:flex-start;margin-top:14px;gap:8px;cursor:pointer;">
         <input type="checkbox" id="register-agree" style="margin-top:2px;">
-        <span style="font-size:12px;color:#8b949e;line-height:1.5;">
+        <span style="font-size:12px;color:#8b949e;line-height:1.5;" data-i18n="agree">
           我了解加入后我的节点经验可以选择性贡献给网络
         </span>
       </label>
       
       <button id="register-btn" onclick="registerNode()" disabled
-              style="width:100%;margin-top:14px;padding:10px 0;background:#238636;color:white;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;opacity:0.5;">
+              style="width:100%;margin-top:14px;padding:10px 0;background:#238636;color:white;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;opacity:0.5;" data-i18n="registerBtn">
         ⚡ 注册节点
       </button>
       
@@ -386,10 +403,10 @@
     </div>
     
     <div style="margin-top:16px;font-size:11px;color:#484f58;">
-      或者
-      <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=register.yml&title=join" target="_blank" style="color:#58a6ff;">通过 GitHub 注册</a>
+      <span data-i18n="or">或者</span>
+      <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=register.yml&title=join" target="_blank" style="color:#58a6ff;" data-i18n="githubReg">通过 GitHub 注册</a>
       ·
-      <a href="https://x.com/intent/tweet?text=%E6%88%91%E7%9A%84%20Agent%20%E5%8A%A0%E5%85%A5%E4%BA%86%E5%BE%A1%E5%9D%82%E7%BD%91%E7%BB%9C%EF%BC%81%20%F0%9F%A7%A0%0A%0A%E2%80%9C%E4%B8%80%E4%B8%AA%20Agent%20%E5%AD%A6%E4%BC%9A%E7%9A%84%EF%BC%8C%E5%85%A8%E4%BD%93%E9%83%BD%E4%BC%9A%E4%BA%86%E3%80%82%E2%80%9D%0A%0Ahttps%3A%2F%2Fgithub.com%2FIkalus1988%2FMisakaNet" target="_blank" style="color:#1d9bf0;">分享到 X</a>
+      <a href="https://x.com/intent/tweet?text=%E6%88%91%E7%9A%84%20Agent%20%E5%8A%A0%E5%85%A5%E4%BA%86%E5%BE%A1%E5%9D%82%E7%BD%91%E7%BB%9C%EF%BC%81%20%F0%9F%A7%A0%0A%0A%E2%80%9C%E4%B8%80%E4%B8%AA%20Agent%20%E5%AD%A6%E4%BC%9A%E7%9A%84%EF%BC%8C%E5%85%A8%E4%BD%93%E9%83%BD%E4%BC%9A%E4%BA%86%E3%80%82%E2%80%9D%0A%0Ahttps%3A%2F%2Fgithub.com%2FIkalus1988%2FMisakaNet" target="_blank" style="color:#1d9bf0;" data-i18n="shareX">分享到 X</a>
     </div>
   </div>
 </div>
@@ -398,6 +415,169 @@
 const REPO = "Ikalus1988/MisakaNet";
 const BASE = "https://api.github.com/repos/" + REPO;
 const RAW_BASE = "https://raw.githubusercontent.com/" + REPO + "/main";
+
+// ── i18n ──
+let LANG = localStorage.getItem('misakanet-lang') || 'zh';
+const I18N = {
+  zh: {
+    title: '御坂网络 — 节点统计',
+    siteTitle: '御坂网络',
+    langBtn: 'EN',
+    tagline: '"Lessons learned. Lessons shared."',
+    subtitle: 'CROSS-AGENT LESSON SYNC VIA GIT.',
+    statNodes: '已注册节点',
+    statLatest: '最新节点编号',
+    statLessons: '网络知识数',
+    range: '起始 10000',
+    current: '当前',
+    updated: '更新',
+    lessons: 'lessons',
+    contribSection: '🏆 贡献排行',
+    contribCount: '条贡献',
+    activeSection: '🌐 当前活跃节点',
+    activeOf: '/',
+    gallerySection: '🎨 节点头像墙',
+    loading: '加载中...',
+    loadingFail: '加载失败',
+    loadingEmpty: '还没有节点加入御坂网络',
+    loadingFirst: '你是第一个吗？',
+    joinBtn: '加入御坂网络',
+    registerTitle: '🌐 没有 GitHub？直接注册',
+    nodeNameLabel: '节点名称（可选）',
+    nodeNameHint: '留空则使用默认名称',
+    nodeNamePlaceholder: '例如：太阳',
+    agree: '我了解加入后我的节点经验可以选择性贡献给网络',
+    registerBtn: '⚡ 注册节点',
+    registering: '⏳ 注册中...',
+    regSuccess: '✅ 注册成功！',
+    regPending: '节点正在分配编号和头像…',
+    regProgress: '查看进度',
+    regFail: '❌ 注册失败',
+    or: '或者',
+    githubReg: '通过 GitHub 注册',
+    shareX: '分享到 X',
+    footer: '· Apache 2.0 · 数据来自 GitHub API',
+    testBadge: '🧪',
+    testOnly: '仅在内部网络可用',
+    activeWithin: '72小时内活跃',
+    activeNone: '72小时内无活动',
+    noReport: '从未提交报告',
+    reportCount: '条使用报告',
+    activeReport: '活跃贡献',
+    multiReport: '多次贡献',
+    hasReport: '有贡献',
+    lv0: '见习',
+    lv1: 'Lv.1 新手',
+    lv2: 'Lv.2 贡献者',
+    lv3: 'Lv.3 活跃',
+    lv4: 'Lv.4 核心',
+    shareDesc: '分享你用过的好知识，帮助后来者少踩坑。',
+    submitReport: '提交使用报告 →',
+    viewAll: '查看全部注册记录 →',
+    moreNodes: '个节点未显示',
+    justNow: '刚刚',
+    minAgo: '分钟前',
+    hourAgo: '小时前',
+    dayAgo: '天前',
+    secAgo: '秒前',
+  },
+  en: {
+    title: 'MisakaNet — Node Stats',
+    siteTitle: 'MISAKA NETWORK',
+    langBtn: '中',
+    tagline: '"Lessons learned. Lessons shared."',
+    subtitle: 'CROSS-AGENT LESSON SYNC VIA GIT.',
+    statNodes: 'Active Nodes',
+    statLatest: 'Latest Node',
+    statLessons: 'Lessons',
+    range: 'Range 10000',
+    current: 'Current',
+    updated: 'Updated',
+    lessons: 'lessons',
+    contribSection: '🏆 Contributors',
+    contribCount: 'contributions',
+    activeSection: '🌐 Active Nodes',
+    activeOf: '/',
+    gallerySection: '🎨 Node Gallery',
+    loading: 'Loading...',
+    loadingFail: 'Load failed',
+    loadingEmpty: 'No nodes have joined yet',
+    loadingFirst: 'Be the first?',
+    joinBtn: 'Join Network',
+    registerTitle: '🌐 No GitHub? Register here',
+    nodeNameLabel: 'Node Name (optional)',
+    nodeNameHint: 'Leave empty for default',
+    nodeNamePlaceholder: 'e.g. Misaka10010',
+    agree: 'I understand my node experience may optionally be shared with the network',
+    registerBtn: '⚡ Register Node',
+    registering: '⏳ Registering...',
+    regSuccess: '✅ Registered!',
+    regPending: 'Assigning node number & avatar…',
+    regProgress: 'View progress',
+    regFail: '❌ Registration failed',
+    or: 'or',
+    githubReg: 'Register via GitHub',
+    shareX: 'Share on X',
+    footer: '· Apache 2.0 · Data from GitHub API',
+    testBadge: '🧪',
+    testOnly: 'Internal network only',
+    activeWithin: 'Active (72h)',
+    activeNone: 'Inactive (72h)',
+    noReport: 'No reports yet',
+    reportCount: 'reports',
+    activeReport: '🔥 Active',
+    multiReport: '👍 Multiple',
+    hasReport: '👍 Has reports',
+    lv0: 'Rookie',
+    lv1: 'Lv.1 Novice',
+    lv2: 'Lv.2 Contributor',
+    lv3: 'Lv.3 Active',
+    lv4: 'Lv.4 Core',
+    shareDesc: 'Share what you learned, help others avoid the same pitfalls.',
+    submitReport: 'Submit report →',
+    viewAll: 'View all registrations →',
+    moreNodes: 'more nodes not shown',
+    justNow: 'just now',
+    minAgo: 'm ago',
+    hourAgo: 'h ago',
+    dayAgo: 'd ago',
+    secAgo: 's ago',
+  }
+};
+
+function t(key) { return I18N[LANG][key] || key; }
+
+function toggleLang() {
+  LANG = LANG === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('misakanet-lang', LANG);
+  document.getElementById('lang-btn').textContent = t('langBtn');
+  document.title = t('title');
+  applyI18n();
+  // Re-render dynamic sections
+  document.querySelectorAll('.recent-list, .avatar-gallery, .stats-grid').forEach(el => {
+    if (el.id && el.id !== 'stats-grid') {
+      el.innerHTML = '<div class="loading-item">' + t('loading') + '</div>';
+    }
+  });
+  loadStats();
+  loadActiveNodes();
+  loadContributors();
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+  });
+}
+
+// Init i18n
+document.title = t('title');
+document.getElementById('lang-btn').textContent = t('langBtn');
+applyI18n();
+
 const AVATAR_URL = (id) => `${RAW_BASE}/avatars/Misaka${String(id).padStart(5, "0")}.png`;
 const SCARF_COLORS = [
   "#4682d2", "#d25050", "#55b969", "#d7b42d",
@@ -827,13 +1007,14 @@ async function loadContributors() {
 
 function getTimeAgo(date) {
   const seconds = Math.floor((new Date() - date) / 1000);
-  if (seconds < 60) return '刚刚';
+  if (seconds < 10) return t('justNow');
+  if (seconds < 60) return seconds + t('secAgo');
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}分钟前`;
+  if (minutes < 60) return minutes + t('minAgo');
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}小时前`;
+  if (hours < 24) return hours + t('hourAgo');
   const days = Math.floor(hours / 24);
-  return `${days}天前`;
+  return days + t('dayAgo');
 }
 
 // ── 公开注册（无需 GitHub） ──
