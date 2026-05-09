@@ -314,5 +314,21 @@
     "summary": "WSL2 运行几天后吃掉 8GB+ 内存，Windows 变卡。`free -h` 显示已用内存极高。",
     "url": "lessons/wsl2-memory-leak-fix.md",
     "updated": ""
+  },
+  {
+    "id": "github-401-credential-lookup",
+    "title": "GitHub API 401 后本地凭证查找顺序",
+    "domain": "devops",
+    "tags": [
+      "github",
+      "api",
+      "credential",
+      "401",
+      "auth",
+      "pat"
+    ],
+    "summary": "GitHub API 返回 401 时，本地已有凭证可能被忽略。强制查找顺序：git-credentials → netrc → gh → env → git config。",
+    "url": "lessons/github-401-credential-lookup.md",
+    "updated": ""
   }
 ]
