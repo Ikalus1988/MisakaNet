@@ -1293,6 +1293,7 @@ async function loadContributors() {
     if (sorted.length === 0) return;
 
     const badges = ["🥇", "🥈", "🥉"];
+    const maxScore = Math.max(...sorted.map(([_, data]) => data.count * 2 + data.lessons.length), 1);
 
     title.style.display = "";
     title.innerHTML = `🏆 ${t('contribSection')} <span>${sorted.length}</span>`;
@@ -1316,27 +1317,18 @@ async function loadContributors() {
       else if (lvl === 5) { level = t('lv5'); levelClass = 'contrib-badge-platinum'; }
       else                { level = t('lv6'); levelClass = 'contrib-badge-platinum'; }
 
-      // XP bar: how much done within current level
+      // XP bar: proportional to absolute score value
       let xpBar = '';
-      if (lvl < 6) {
-        const curThreshold = LV_THRESHOLDS[lvl];
-        const nextThreshold = LV_THRESHOLDS[lvl + 1];
-        const earned = score - curThreshold;
-        const range = nextThreshold - curThreshold;
-        const progress = earned / range;
-        const pct = Math.min(100, Math.round(progress * 100));
-        const fillColor = levelClass === 'contrib-badge-bronze' ? '#e39400'
-          : levelClass === 'contrib-badge-silver' ? '#a3adbc'
-          : levelClass === 'contrib-badge-gold' ? '#f0c640'
-          : levelClass === 'contrib-badge-platinum' ? '#58a6ff'
-          : '#636d7b';
-        xpBar = `<div class="contrib-xp">
-          <div class="contrib-xp-track"><div class="contrib-xp-fill" style="width:${pct}%;background:${fillColor}"></div></div>
-          <div class="contrib-xp-text">${pct}%</div>
-        </div>`;
-      } else {
-        xpBar = `<div class="contrib-xp"><div class="contrib-xp-text" style="color:#f0c640;">★ MAX</div></div>`;
-      }
+      const pct = Math.min(100, Math.round(score / maxScore * 100));
+      const fillColor = levelClass === 'contrib-badge-bronze' ? '#e39400'
+        : levelClass === 'contrib-badge-silver' ? '#a3adbc'
+        : levelClass === 'contrib-badge-gold' ? '#f0c640'
+        : levelClass === 'contrib-badge-platinum' ? '#58a6ff'
+        : '#636d7b';
+      xpBar = `<div class="contrib-xp">
+        <div class="contrib-xp-track"><div class="contrib-xp-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+        <div class="contrib-xp-text">${pct}%</div>
+      </div>`;
 
       const lessonItems = data.lessons.slice(0, 3).map(l => {
         if (l.exists) {
