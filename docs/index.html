@@ -10,101 +10,127 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
   body {
-    background: #0d1117;
-    color: #e6edf3;
-    font-family: 'Noto Sans SC', sans-serif;
+    background: #0b0e14;
+    color: #f0f6fc;
+    font-family: 'Noto Sans SC', 'SF Pro Display', -apple-system, sans-serif;
     min-height: 100vh;
+    /* Subtle grid background for programmer feel */
+    background-image: 
+      linear-gradient(rgba(48, 54, 61, 0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(48, 54, 61, 0.15) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
   
   .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
   
-  /* Header */
+  /* Header — terminal style */
   .header {
     text-align: center;
     margin-bottom: 48px;
+    padding: 32px 20px;
+    background: linear-gradient(180deg, #161b22 0%, transparent 100%);
+    border: 1px solid #21262d;
+    border-radius: 12px;
+    position: relative;
   }
   
-  .logo {
-    font-size: 48px;
-    margin-bottom: 8px;
+  .header::before {
+    content: '> SYSTEM v1.0';
+    position: absolute;
+    top: 8px;
+    left: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #484f58;
+    letter-spacing: 2px;
   }
+  
+  .logo { font-size: 48px; margin-bottom: 8px; }
   
   .title {
     font-size: 32px;
     font-weight: 900;
-    letter-spacing: 4px;
+    letter-spacing: 6px;
     margin-bottom: 4px;
+    text-shadow: 0 0 40px rgba(240, 198, 64, 0.1);
   }
   
   .subtitle {
-    font-size: 14px;
+    font-size: 13px;
     color: #58a6ff;
     letter-spacing: 6px;
     text-transform: uppercase;
     font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
   }
   
   /* Stats Cards */
   .stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
+    gap: 12px;
     margin-bottom: 40px;
   }
   
   .stat-card {
-    background: linear-gradient(145deg, #161b22, #0d1117);
+    background: #161b22;
     border: 1px solid #21262d;
-    border-radius: 16px;
-    padding: 28px 20px;
+    border-radius: 10px;
+    padding: 24px 16px;
     text-align: center;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
   
-  .stat-card:hover { border-color: #30363d; }
+  .stat-card:hover { 
+    border-color: #30363d; 
+    box-shadow: 0 0 20px rgba(56, 58, 89, 0.2);
+  }
   
   .stat-number {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 42px;
+    font-size: 40px;
     font-weight: 700;
     color: #f0f6fc;
     line-height: 1;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
   
   .stat-number.loading { color: #484f58; }
   
   .stat-label {
-    font-size: 13px;
-    color: #8b949e;
+    font-size: 12px;
+    color: #9ea7b3;
     font-weight: 400;
+    letter-spacing: 1px;
   }
   
   .stat-sub {
-    font-size: 11px;
-    color: #484f58;
+    font-size: 10px;
+    color: #636d7b;
     margin-top: 6px;
     font-family: 'JetBrains Mono', monospace;
   }
   
   /* Section */
   .section-title {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     color: #f0f6fc;
     display: flex;
     align-items: center;
     gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px;
   }
   
-  .section-title span { color: #58a6ff; font-weight: 400; }
+  .section-title span { color: #58a6ff; font-weight: 400; font-size: 13px; }
   
   /* Recent list */
   .recent-list {
     background: #161b22;
     border: 1px solid #21262d;
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
     margin-bottom: 40px;
   }
@@ -112,9 +138,9 @@
   .recent-item {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 14px 20px;
-    border-bottom: 1px solid #21262d;
+    gap: 14px;
+    padding: 12px 18px;
+    border-bottom: 1px solid #1c2128;
     transition: background 0.15s;
   }
   
@@ -122,9 +148,9 @@
   .recent-item:hover { background: #1c2128; }
   
   .recent-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
     image-rendering: pixelated;
     border: 1px solid #30363d;
     flex-shrink: 0;
@@ -132,44 +158,66 @@
   
   .recent-name {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     color: #f0f6fc;
     flex: 1;
   }
   
   .recent-date {
-    font-size: 12px;
-    color: #484f58;
+    font-size: 11px;
+    color: #636d7b;
     font-family: 'JetBrains Mono', monospace;
   }
   
   .recent-order {
-    font-size: 11px;
+    font-size: 10px;
     color: #58a6ff;
     font-weight: 700;
     background: rgba(88,166,255,0.1);
     padding: 2px 10px;
     border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
   }
   
+  /* Contribution score badges */
+  .contrib-level {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 1px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    margin-left: 4px;
+  }
+  .level-none  { background: #21262d; color: #636d7b; border: 1px solid #30363d; }
+  .level-bronze { background: rgba(227,148,0,0.15); color: #e39400; border: 1px solid #e3940040; }
+  .level-silver { background: rgba(163,173,188,0.15); color: #a3adbc; border: 1px solid #a3adbc40; }
+  .level-gold   { background: rgba(240,198,64,0.15); color: #f0c640; border: 1px solid #f0c64040; }
+  .level-platinum { background: rgba(88,166,255,0.15); color: #58a6ff; border: 1px solid #58a6ff40; }
+  
+  /* Loading / Error */
   .loading-item {
     padding: 30px;
     text-align: center;
-    color: #484f58;
+    color: #636d7b;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
   }
   
   .error-item {
     padding: 30px;
     text-align: center;
     color: #f85149;
+    font-family: 'JetBrains Mono', monospace;
   }
   
   /* Avatar Gallery */
   .avatar-gallery {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+    gap: 10px;
     margin-bottom: 40px;
   }
   
@@ -177,71 +225,77 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 10px 6px 8px;
+    gap: 4px;
+    padding: 8px 4px 6px;
     background: #161b22;
-    border: 2px solid #21262d;
-    border-radius: 12px;
+    border: 1px solid #21262d;
+    border-radius: 8px;
     transition: border-color 0.2s, transform 0.15s;
   }
   
   .gallery-item:hover {
     border-color: #58a6ff;
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   }
   
   .gallery-avatar {
-    width: 56px;
-    height: 56px;
-    border-radius: 10px;
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
     image-rendering: pixelated;
   }
   
   .gallery-id {
-    font-size: 10px;
-    color: #8b949e;
+    font-size: 9px;
+    color: #9ea7b3;
     font-family: 'JetBrains Mono', monospace;
     text-align: center;
     word-break: break-all;
     font-weight: 500;
   }
   
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 30px;
+  }
+  .empty-state .big-icon { font-size: 36px; margin-bottom: 8px; }
+  .empty-state .desc { font-size: 13px; color: #636d7b; line-height: 1.6; }
+  .cta-btn {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 8px 24px;
+    background: #238636;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    transition: background 0.2s;
+  }
+  .cta-btn:hover { background: #2ea043; }
+  
   /* Footer */
   .footer {
     text-align: center;
-    padding: 24px 0;
+    padding: 20px 0;
     font-size: 12px;
-    color: #30363d;
-    border-top: 1px solid #21262d;
+    color: #484f58;
+    font-family: 'JetBrains Mono', monospace;
   }
   
   .footer a { color: #58a6ff; text-decoration: none; }
   .footer a:hover { text-decoration: underline; }
   
-  /* Empty state */
-  .empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: #484f58;
-  }
-  
-  .empty-state .big-icon { font-size: 48px; margin-bottom: 16px; }
-  .empty-state .desc { font-size: 14px; line-height: 1.6; }
-  .empty-state .cta-btn {
-    display: inline-block;
-    margin-top: 20px;
-    padding: 10px 24px;
-    background: #238636;
-    color: white;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 14px;
-  }
-  
+  /* Responsive */
   @media (max-width: 600px) {
-    .stats-grid { grid-template-columns: 1fr; }
-    .recent-item { flex-wrap: wrap; }
+    .stats-grid { grid-template-columns: 1fr; gap: 10px; }
+    .container { padding: 20px 12px; }
+    .title { font-size: 24px; }
+    .stat-number { font-size: 32px; }
+    .avatar-gallery { grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 8px; }
   }
 </style>
 </head>
@@ -713,6 +767,15 @@ async function loadContributors() {
       const total = data.count + data.prs.length;
       const totalLabel = total >= 5 ? "🔥 活跃贡献" : total >= 2 ? "👍 多次贡献" : "👍 有贡献";
       
+      // Calculate contribution score
+      const score = data.count * 2 + data.lessons.length + data.prs.length * 5;
+      let level, levelClass;
+      if (score === 0)      { level = '见习'; levelClass = 'level-none'; }
+      else if (score < 5)   { level = 'Lv.1 新手'; levelClass = 'level-bronze'; }
+      else if (score < 10)  { level = 'Lv.2 贡献者'; levelClass = 'level-silver'; }
+      else if (score < 20)  { level = 'Lv.3 活跃'; levelClass = 'level-gold'; }
+      else                  { level = 'Lv.4 核心'; levelClass = 'level-platinum'; }
+      
       // Build lesson list
       const lessonItems = data.lessons.map(l => {
         const shortName = l.name.substring(0, 50);
@@ -736,7 +799,8 @@ async function loadContributors() {
           <div style="font-size:20px;flex-shrink:0;">${rank}</div>
           <div class="recent-order" style="background:#f0c04020;color:#f0c040;">${total}</div>
           <div style="flex:1;min-width:0;">
-            <div style="font-weight:700;font-size:14px;color:#f0f6fc;">${node}</div>
+            <div style="font-weight:700;font-size:14px;color:#f0f6fc;">${node}
+              <span class="contrib-level ${levelClass}">${level}</span></div>
             <div style="font-size:12px;color:#8b949e;">${totalLabel}</div>
             ${details}
           </div>
