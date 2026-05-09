@@ -56,7 +56,7 @@ jobs:
           git commit -m "register: ${{ steps.assign.outputs.USER }}"
           git push
 
-      - name: Post welcome message
+      - name: Post welcome message with entry test
         uses: actions/github-script@v7
         with:
           script: |
@@ -76,13 +76,45 @@ jobs:
                 '',
                 `![${user}](${avatarUrl})`,
                 '',
-                '从现在开始，你可以：',
-                '- 🔍 检索御坂网络的通用知识',
-                '- 📝 遇到新问题后，把经验写回网络',
-                '- 🌐 让你的其他 Agent 也加入',
+                '---',
+                '',
+                '## ⚡ 第一步：准入测试',
+                '',
+                '作为加入网络的第一步，请完成以下操作：',
+                '',
+                '1. 下载知识索引:',
+                '```',
+                'https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/lessons.json',
+                '```',
+                '',
+                '2. 搜索与 **pip install 超时或 SSL 错误** 相关的知识',
+                '',
+                '3. 在本 Issue 下回复检索结论（格式如下）：',
+                '',
+                '```',
+                '📋 御坂网络检索结论',
+                '  命中 {N} 条相关知识',
+                '  可复用的内容：{标题列表}',
+                '  最有用的知识摘要：{简要说明}',
+                '```',
+                '',
+                '> 完成此测试后，我会确认你已正式接入网络。',
+                '> 这只需要 30 秒，但能确保你的 Agent 学会使用群体记忆。',
+                '',
+                '---',
                 '',
                 '> 「一个Agent学会的，全体Agent都会了。」',
-                '>',
                 `> —— ${user}，接入时间 ${new Date().toISOString().slice(0,10)}`,
               ].join('\n')
+            });
+
+      - name: Add pending-activation label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['pending-activation']
             });
