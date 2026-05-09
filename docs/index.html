@@ -288,10 +288,10 @@
   </div>
   <div style="height:28px"></div>
   
-  <!-- Network Pulse -->
-  <div class="section-title" id="pulse-title" style="display:none;">🌐 网络脉搏 <span id="pulse-count"></span></div>
-  <div class="recent-list" id="pulse-list" style="display:none;">
-    <div class="loading-item" id="pulse-loading">加载中...</div>
+  <!-- Active Nodes -->
+  <div class="section-title" id="active-title" style="display:none;">🌐 当前活跃节点 <span id="active-count"></span></div>
+  <div class="recent-list" id="active-list" style="display:none;">
+    <div class="loading-item">加载中...</div>
   </div>
   <div style="height:28px"></div>
   
@@ -397,82 +397,133 @@ async function loadStats() {
   }
 }
 
-// ── 网络脉搏：知识使用报告 ──
-async function loadUsagePulse() {
-  const list = document.getElementById("pulse-list");
-  const title = document.getElementById("pulse-title");
+// ── 当前活跃节点 ──
+async function loadActiveNodes() {
+  const title = document.getElementById("active-title");
+  const list = document.getElementById("active-list");
   
   try {
-    const [registrations, usageReports] = await Promise.all([
-      fetchJSON(`${BASE}/issues?labels=registration&state=all&sort=created&direction=desc&per_page=5`),
-      fetchJSON(`${BASE}/issues?labels=usage&state=all&sort=created&direction=desc&per_page=15`)
-    ]);
+    // 1. Get all registration issues to know which nodes exist
+    const regs = await fetchJSON(`${BASE}/issues?labels=registration&state=all&sort=created&direction=desc&per_page=50`);
+    const regIssues = regs.filter(i => !i.pull_request);
+    if (regIssues.length === 0) return;
     
-    const regCount = registrations.filter(i => !i.pull_request).length;
-    const usageCount = usageReports.filter(i => !i.pull_request).length;
+    // 2. Get recent usage reports (72 hours)
+    const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+    const usageIssues = await fetchJSON(`${BASE}/issues?labels=usage&state=all&sort=created&direction=desc&per_page=50`);
+    const recentUsage = usageIssues.filter(i => !i.pull_request && i.created_at >= seventyTwoHoursAgo);
     
-    if (regCount === 0 && usageCount === 0) {
-      return; // No data yet, hide section
+    // 3. Get the latest counter to know current range
+    const counter = await fetchJSON(`${RAW_BASE}/counter.json`);
+    const current = counter.current;
+    
+    // 4. Build node activity map from usage reports
+    const activeNodes = new Set();
+    const nodeLastSeen = {};
+    const nodeUsageCount = {};
+    
+    usageIssues.forEach(i => {
+      if (i.pull_request) return;
+      const nodeName = (i.title || '').replace('usage:', '').trim() || i.user.login;
+      activeNodes.add(nodeName);
+      if (!nodeLastSeen[nodeName] || i.created_at > nodeLastSeen[nodeName]) {
+        nodeLastSeen[nodeName] = i.created_at;
+      }
+      nodeUsageCount[nodeName] = (nodeUsageCount[nodeName] || 0) + 1;
+    });
+    
+    // 5. Build node info: for each registration issue, extract node number
+    const nodeMap = []; // {number, user, created_at, active, usage_count}
+    const seen = new Set();
+    
+    // Process in order (newest first)
+    const sortedIssues = [...regIssues].sort((a, b) => b.created_at.localeCompare(a.created_at));
+    
+    for (const issue of sortedIssues) {
+      // Get node number from Actions welcome comment
+      let nodeNum = null;
+      const c_req = await fetch(issue.comments_url).catch(() => null);
+      if (c_req) {
+        const comments = await c_req.json().catch(() => []);
+        for (const c of comments) {
+          const m = c.body?.match(/Misaka(\d+)/);
+          if (m) { nodeNum = parseInt(m[1]); break; }
+        }
+      }
+      if (!nodeNum) continue;
+      if (seen.has(nodeNum)) continue;
+      seen.add(nodeNum);
+      
+      const nodeName = `Misaka${nodeNum}`;
+      const isTest = TEST_SET.has(nodeNum);
+      const wasActive = activeNodes.has(nodeName) || activeNodes.has(issue.user.login);
+      const lastActive = nodeLastSeen[nodeName] || nodeLastSeen[issue.user.login] || null;
+      const usageCount = nodeUsageCount[nodeName] || nodeUsageCount[issue.user.login] || 0;
+      const isRecentlyActive = lastActive && lastActive >= seventyTwoHoursAgo;
+      
+      nodeMap.push({
+        number: nodeNum,
+        user: issue.user.login,
+        created_at: issue.created_at,
+        isTest: isTest,
+        isActive: !!isRecentlyActive,
+        lastActive: lastActive,
+        usageCount: usageCount
+      });
     }
     
+    // Sort: active first (by last activity), then inactive (by registration date)
+    nodeMap.sort((a, b) => {
+      if (a.isActive && !b.isActive) return -1;
+      if (!a.isActive && b.isActive) return 1;
+      if (a.isActive && b.isActive) {
+        return (b.lastActive || '').localeCompare(a.lastActive || '');
+      }
+      return (b.created_at || '').localeCompare(a.created_at || '');
+    });
+    
+    const activeCount = nodeMap.filter(n => n.isActive && !n.isTest).length;
+    const totalCount = nodeMap.filter(n => !n.isTest).length;
+    
     title.style.display = "";
-    title.innerHTML = `🌐 网络脉搏 <span>(${regCount} 节点 | ${usageCount} 条使用报告)</span>`;
-    
-    // Combine and sort by date
-    const pulses = [];
-    
-    registrations.forEach(i => {
-      if (i.pull_request) return;
-      pulses.push({
-        type: "join",
-        date: new Date(i.created_at),
-        title: `🧠 新节点加入`,
-        detail: i.title.replace("join", "").trim() || "新成员",
-        number: i.number
-      });
-    });
-    
-    usageReports.forEach(i => {
-      if (i.pull_request) return;
-      const body = i.body || "";
-      pulses.push({
-        type: "usage",
-        date: new Date(i.created_at),
-        title: `📖 使用了网络知识`,
-        detail: extractUsedLessons(body),
-        number: i.number
-      });
-    });
-    
-    pulses.sort((a, b) => b.date - a.date);
-    const recent = pulses.slice(0, 12);
-    
-    if (recent.length === 0) return;
+    title.innerHTML = `🌐 当前活跃节点 <span>${activeCount}/${totalCount}</span>`;
     
     list.style.display = "";
-    list.innerHTML = recent.map(p => {
-      const timeAgo = getTimeAgo(p.date);
-      const icon = p.type === "join" ? "🧠" : "📖";
-      const badge = p.type === "join" ? "新节点" : "使用报告";
-      const badgeColor = p.type === "join" ? "#238636" : "#58a6ff";
+    list.innerHTML = nodeMap.map(n => {
+      if (n.isTest) return ''; // skip test nodes
+      
+      const statusIcon = n.isActive ? '🟢' : '⚪';
+      const statusText = n.isActive ? '72小时内活跃' : '72小时内无活动';
+      const timeAgo = n.lastActive ? getTimeAgo(new Date(n.lastActive)) : '从未提交报告';
+      
+      // Try to get a friendly name
+      let friendlyName = '';
+      if (n.user === 'smwyylc1') friendlyName = 'smwyylc1';
+      else if (n.user === 'Ikalus1988') friendlyName = n.number === 10004 ? '太阳' : '';
+      
+      const nameDisplay = friendlyName ? `${n.number} ${friendlyName}` : `${n.number}`;
+      
+      const usageLabel = n.usageCount > 0 ? `· ${n.usageCount} 条使用报告` : '';
+      
       return `
         <div class="recent-item">
-          <div style="font-size:20px;flex-shrink:0;">${icon}</div>
-          <div class="recent-order" style="background:${badgeColor}20;color:${badgeColor};">${badge}</div>
+          <div style="font-size:16px;flex-shrink:0;">${statusIcon}</div>
           <div style="flex:1;">
-            <div style="font-weight:700;font-size:14px;color:#f0f6fc;">${p.title}</div>
-            <div style="font-size:12px;color:#8b949e;margin-top:2px;line-height:1.4;">${p.detail}</div>
+            <div style="font-weight:700;font-size:14px;color:#f0f6fc;">
+              Misaka${nameDisplay}
+            </div>
+            <div style="font-size:12px;color:#8b949e;margin-top:2px;">
+              ${statusText} · ${timeAgo} ${usageLabel}
+            </div>
           </div>
-          <div class="recent-date">${timeAgo}</div>
         </div>
       `;
-    }).join("");
+    }).filter(Boolean).join("");
     
   } catch (err) {
-    console.log("Pulse not available:", err.message);
+    console.log("Active nodes not available:", err.message);
   }
 }
-
 function extractUsedLessons(body) {
   const lines = body.split('\n').filter(l => l.trim().startsWith('- '));
   if (lines.length === 0) return "提交了知识使用反馈";
@@ -790,9 +841,9 @@ async function registerNode() {
 }
 
 loadStats();
-loadUsagePulse();
+loadActiveNodes();
 loadContributors();
-setInterval(loadUsagePulse, PULSE_INTERVAL);
+setInterval(loadActiveNodes, PULSE_INTERVAL);
 </script>
 </body>
 </html>
