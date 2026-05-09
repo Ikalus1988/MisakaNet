@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Misaka Network — Distributed AI Swarm Memory</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Ma+Shan+Zheng&family=Inter:wght@300;400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -93,13 +93,18 @@
     text-shadow: 0 0 30px rgba(96, 165, 250, 0.4);
   }
 
+  /* Chinese calligraphy style for 御坂网络 */
   .logo-cn {
-    font-size: 26px;
-    font-weight: 500;
+    font-family: 'Ma Shan Zheng', 'Noto Sans SC', cursive;
+    font-size: 36px;
     color: #f59e0b;
-    letter-spacing: 8px;
+    letter-spacing: 12px;
     margin-bottom: 8px;
-    text-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+    text-shadow:
+      0 0 20px rgba(245, 158, 11, 0.4),
+      2px 2px 0 rgba(245, 158, 11, 0.2);
+    /* Brush stroke texture effect */
+    -webkit-text-stroke: 0.5px rgba(200, 120, 0, 0.3);
   }
 
   .logo-tagline {
@@ -144,7 +149,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin-bottom: 48px;
+    margin-bottom: 40px;
   }
 
   .stat-card {
@@ -222,7 +227,7 @@
     font-size: 12px;
   }
 
-  /* ── Timeline / List ── */
+  /* ── Timeline ── */
   .timeline {
     position: relative;
     background: #111827;
@@ -296,6 +301,20 @@
     flex: 1;
   }
 
+  /* Agent type badge */
+  .agent-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .agent-badge.hermes { background: rgba(88,166,255,0.15); color: #58a6ff; border: 1px solid #58a6ff40; }
+  .agent-badge.cc { background: rgba(163,173,188,0.15); color: #a3adbc; border: 1px solid #a3adbc40; }
+  .agent-badge.codex { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid #f59e0b40; }
+  .agent-badge.unknown { background: rgba(100,100,100,0.15); color: #64748b; border: 1px solid #47556940; }
+
   .timeline-date {
     font-size: 12px;
     color: #64748b;
@@ -325,10 +344,7 @@
   .active-item:last-child { border-bottom: none; }
   .active-item:hover { background: rgba(96, 165, 250, 0.04); }
 
-  .active-status {
-    font-size: 16px;
-    flex-shrink: 0;
-  }
+  .active-status { font-size: 16px; flex-shrink: 0; }
 
   .active-info { flex: 1; }
 
@@ -413,76 +429,6 @@
   .contrib-lessons a { color: #60a5fa; text-decoration: none; }
   .contrib-lessons a:hover { text-decoration: underline; }
 
-  /* ── Avatar Gallery ── */
-  .avatar-gallery {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 12px;
-    margin-bottom: 48px;
-  }
-
-  .gallery-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 6px;
-    background: #111827;
-    border: 1px solid #1e293b;
-    border-radius: 10px;
-    transition: all 0.2s;
-    cursor: default;
-    position: relative;
-  }
-
-  .gallery-item:hover {
-    border-color: #60a5fa;
-    box-shadow: 0 0 16px rgba(96, 165, 250, 0.15);
-    transform: translateY(-2px);
-  }
-
-  .gallery-item:hover .gallery-tooltip {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-4px);
-  }
-
-  .gallery-avatar {
-    width: 44px;
-    height: 44px;
-    border-radius: 8px;
-    image-rendering: pixelated;
-    transition: transform 0.2s;
-  }
-
-  .gallery-item:hover .gallery-avatar { transform: scale(1.05); }
-
-  .gallery-id {
-    font-size: 9px;
-    color: #64748b;
-    font-family: 'JetBrains Mono', monospace;
-    text-align: center;
-    word-break: break-all;
-  }
-
-  .gallery-tooltip {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%) translateY(0);
-    background: #1e293b;
-    border: 1px solid #334155;
-    color: #f1f5f9;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-family: 'JetBrains Mono', monospace;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.15s;
-    z-index: 10;
-  }
-
   /* ── Register Form ── */
   .register-section {
     text-align: center;
@@ -504,7 +450,7 @@
     border: 1px solid #1e293b;
     border-radius: 14px;
     padding: 24px 28px;
-    min-width: 320px;
+    min-width: 360px;
   }
 
   .register-label {
@@ -536,6 +482,31 @@
 
   .register-input:focus { border-color: #60a5fa; }
   .register-input::placeholder { color: #475569; }
+
+  /* Agent type selector */
+  .agent-selector {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .agent-option {
+    flex: 1;
+    text-align: center;
+    padding: 8px 12px;
+    background: #0a0e14;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .agent-option:hover { border-color: #60a5fa; color: #f1f5f9; }
+  .agent-option.selected { border-color: #60a5fa; background: rgba(96, 165, 250, 0.1); color: #60a5fa; }
 
   .register-checkbox-label {
     display: flex;
@@ -629,31 +600,6 @@
   .footer a { color: #60a5fa; text-decoration: none; }
   .footer a:hover { text-decoration: underline; }
 
-  /* Empty state */
-  .empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: #475569;
-    grid-column: 1 / -1;
-  }
-
-  .empty-state .big-icon { font-size: 48px; margin-bottom: 16px; }
-  .empty-state .desc { font-size: 14px; line-height: 1.6; }
-  .cta-btn {
-    display: inline-block;
-    margin-top: 20px;
-    padding: 10px 24px;
-    background: #238636;
-    color: white;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 14px;
-    font-family: 'JetBrains Mono', monospace;
-    transition: background 0.2s;
-  }
-  .cta-btn:hover { background: #2ea043; }
-
   /* Loading / Error */
   .loading-item {
     padding: 30px;
@@ -674,14 +620,14 @@
   /* ── Responsive ── */
   @media (max-width: 700px) {
     .logo-title { font-size: 26px; letter-spacing: 2px; }
-    .logo-cn { font-size: 18px; letter-spacing: 4px; }
-    .avatar-gallery { grid-template-columns: repeat(3, 1fr); }
+    .logo-cn { font-size: 26px; letter-spacing: 6px; }
     .timeline::before { left: 20px; }
     .timeline-item { padding-left: 44px; }
     .timeline-dot { left: 14px; width: 12px; height: 12px; }
     .stat-card { padding: 16px 20px; }
     .stat-number { font-size: 24px; }
     .register-form { min-width: auto; width: 100%; }
+    .agent-selector { flex-wrap: wrap; }
   }
 </style>
 </head>
@@ -758,6 +704,12 @@
     </div>
   </div>
 
+  <!-- Contributors (moved up) -->
+  <div class="section-title" id="contrib-title" style="display:none;">🏆 <span data-i18n="contribSection">贡献排行</span> <span id="contrib-count"></span></div>
+  <div class="contrib-list" id="contrib-list" style="display:none;">
+    <div class="loading-item" data-i18n="loading">加载中...</div>
+  </div>
+
   <!-- Recent Registrations Timeline -->
   <div class="section-title">📋 <span data-i18n="recentSection">最新注册</span> <span id="recent-count"></span></div>
   <div class="timeline" id="recent-list">
@@ -770,27 +722,24 @@
     <div class="loading-item" data-i18n="loading">加载中...</div>
   </div>
 
-  <!-- Contributors -->
-  <div class="section-title" id="contrib-title" style="display:none;">🏆 <span data-i18n="contribSection">贡献排行</span> <span id="contrib-count"></span></div>
-  <div class="contrib-list" id="contrib-list" style="display:none;">
-    <div class="loading-item" data-i18n="loading">加载中...</div>
-  </div>
-
-  <!-- All Avatars -->
-  <div class="section-title">🎨 <span data-i18n="gallerySection">节点头像墙</span> <span id="gallery-count"></span></div>
-  <div class="avatar-gallery" id="avatar-gallery">
-    <div class="loading-item" data-i18n="loading">加载中...</div>
-  </div>
-
   <!-- Register Form -->
   <div class="register-section">
     <div class="register-title" data-i18n="registerTitle">🌐 没有 GitHub？直接注册</div>
     <div class="register-form">
-      <div class="register-label" data-i18n="nodeNameLabel">节点名称（可选）</div>
-      <div class="register-hint" data-i18n="nodeNameHint">留空则使用默认名称</div>
-      <input type="text" id="node-name" class="register-input"
-             data-i18n-placeholder="nodeNamePlaceholder"
-             placeholder="例如：太阳">
+      <div class="register-label" data-i18n="agentTypeLabel">Agent 类型</div>
+      <div class="agent-selector">
+        <div class="agent-option selected" data-agent="hermes" onclick="selectAgent(this)">🤖 Hermes</div>
+        <div class="agent-option" data-agent="cc" onclick="selectAgent(this)">⚡ cc</div>
+        <div class="agent-option" data-agent="codex" onclick="selectAgent(this)">💻 Codex</div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="register-label" data-i18n="nodeNameLabel">节点名称（可选）</div>
+        <div class="register-hint" data-i18n="nodeNameHint">留空则使用默认名称</div>
+        <input type="text" id="node-name" class="register-input"
+               data-i18n-placeholder="nodeNamePlaceholder"
+               placeholder="例如：太阳">
+      </div>
 
       <label class="register-checkbox-label">
         <input type="checkbox" id="register-agree">
@@ -836,6 +785,18 @@ const SCARF_COLORS = [
 ];
 const SCARF_COLOR = (num) => SCARF_COLORS[num % 12];
 
+// Known test node users - these have duplicate registrations
+const TEST_USERS = new Set(['smwyylc1', 'Ikalus1988-test']);
+
+// Agent type selection
+let selectedAgent = 'hermes';
+
+function selectAgent(el) {
+  document.querySelectorAll('.agent-option').forEach(opt => opt.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedAgent = el.dataset.agent;
+}
+
 // ── i18n ──
 let LANG = localStorage.getItem('misakanet-lang') || 'zh';
 const I18N = {
@@ -849,9 +810,9 @@ const I18N = {
     recentSection: '最新注册',
     activeSection: '当前活跃节点',
     contribSection: '贡献排行',
-    gallerySection: '节点头像墙',
     loading: '加载中...',
     registerTitle: '🌐 没有 GitHub？直接注册',
+    agentTypeLabel: 'Agent 类型',
     nodeNameLabel: '节点名称（可选）',
     nodeNameHint: '留空则使用默认名称',
     nodeNamePlaceholder: '例如：太阳',
@@ -876,6 +837,10 @@ const I18N = {
     hourAgo: '小时前',
     dayAgo: '天前',
     secAgo: '秒前',
+    agentHermes: 'Hermes',
+    agentCC: 'cc',
+    agentCodex: 'Codex',
+    agentUnknown: '未知',
   },
   en: {
     siteTitle: 'MISAKA NETWORK',
@@ -887,9 +852,9 @@ const I18N = {
     recentSection: 'Recent',
     activeSection: 'Active Nodes',
     contribSection: 'Contributors',
-    gallerySection: 'Node Gallery',
     loading: 'Loading...',
     registerTitle: '🌐 No GitHub? Register here',
+    agentTypeLabel: 'Agent Type',
     nodeNameLabel: 'Node Name (optional)',
     nodeNameHint: 'Leave empty for default',
     nodeNamePlaceholder: 'e.g. Sun',
@@ -914,10 +879,32 @@ const I18N = {
     hourAgo: 'h ago',
     dayAgo: 'd ago',
     secAgo: 's ago',
+    agentHermes: 'Hermes',
+    agentCC: 'cc',
+    agentCodex: 'Codex',
+    agentUnknown: 'Unknown',
   }
 };
 
 function t(key) { return I18N[LANG][key] || key; }
+
+function getAgentBadgeClass(agentType) {
+  switch(agentType) {
+    case 'hermes': return 'hermes';
+    case 'cc': return 'cc';
+    case 'codex': return 'codex';
+    default: return 'unknown';
+  }
+}
+
+function getAgentLabel(agentType) {
+  switch(agentType) {
+    case 'hermes': return t('agentHermes');
+    case 'cc': return t('agentCC');
+    case 'codex': return t('agentCodex');
+    default: return t('agentUnknown');
+  }
+}
 
 function applyI18n() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -933,7 +920,6 @@ function toggleLang() {
   localStorage.setItem('misakanet-lang', LANG);
   document.getElementById('lang-btn').textContent = LANG === 'zh' ? 'EN' : '中';
   applyI18n();
-  // Reload dynamic data
   document.getElementById('recent-list').innerHTML = '<div class="loading-item">' + t('loading') + '</div>';
   document.getElementById('active-list').style.display = 'none';
   document.getElementById('active-title').style.display = 'none';
@@ -973,7 +959,8 @@ async function loadStats() {
     }
 
     loadRecentRegistrations();
-    loadAvatarGallery(current);
+    loadContributors();
+    loadActiveNodes();
 
   } catch (err) {
     document.getElementById("total-nodes").textContent = "?";
@@ -989,24 +976,48 @@ async function loadRecentRegistrations() {
 
   try {
     const issues = await fetchJSON(
-      `${BASE}/issues?labels=registration&state=all&sort=created&direction=desc&per_page=15`
+      `${BASE}/issues?labels=registration&state=all&sort=created&direction=desc&per_page=20`
     );
 
     const displayIssues = issues.filter(i => !i.pull_request);
 
     if (displayIssues.length === 0) {
-      list.innerHTML = '<div class="loading-item" data-i18n="loading">暂无注册记录</div>';
+      list.innerHTML = '<div class="loading-item">暂无注册记录</div>';
       return;
     }
 
-    document.getElementById("recent-count").textContent = `(${displayIssues.length})`;
+    // Deduplicate by user - only keep the latest registration per user
+    const seenUsers = new Set();
+    const uniqueIssues = [];
+    for (const issue of displayIssues) {
+      // Skip test users
+      if (TEST_USERS.has(issue.user.login)) continue;
+      if (!seenUsers.has(issue.user.login)) {
+        seenUsers.add(issue.user.login);
+        uniqueIssues.push(issue);
+      }
+    }
 
-    list.innerHTML = displayIssues.map((issue, idx) => {
-      const nth = displayIssues.length - idx;
+    document.getElementById("recent-count").textContent = `(${uniqueIssues.length})`;
+
+    list.innerHTML = uniqueIssues.map((issue, idx) => {
+      const nth = uniqueIssues.length - idx;
       const number = 10000 + nth;
       const date = new Date(issue.created_at).toISOString().slice(0, 10);
       const avatarSrc = AVATAR_URL(number);
       const scarfColor = SCARF_COLOR(nth);
+
+      // Try to detect agent type from issue body or title
+      let agentType = 'hermes';
+      const body = (issue.body || '').toLowerCase();
+      const title = (issue.title || '').toLowerCase();
+      if (body.includes('[cc]') || title.includes('[cc]') || body.includes('cc-haha')) {
+        agentType = 'cc';
+      } else if (body.includes('codex') || title.includes('codex')) {
+        agentType = 'codex';
+      }
+
+      const agentBadge = `<span class="agent-badge ${getAgentBadgeClass(agentType)}">${getAgentLabel(agentType)}</span>`;
 
       return `
         <div class="timeline-item">
@@ -1014,9 +1025,10 @@ async function loadRecentRegistrations() {
           <img class="timeline-avatar" src="${avatarSrc}"
                alt="Misaka${number}" loading="lazy"
                style="border-color:${scarfColor};box-shadow:0 0 0 1px ${scarfColor}40;"
-               onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%23161b22%22 width=%2240%22 height=%2240%22/><text fill=%22%23484f58%22 font-size=%2210%22 x=%225%22 y=%2226%22>?</text></svg>'">
+               onerror="this.style.display='none'">
           <div class="timeline-order">#${nth}</div>
           <div class="timeline-name">Misaka${String(number).padStart(5, "0")}</div>
+          ${agentBadge}
           <div class="timeline-date">${date}</div>
         </div>
       `;
@@ -1040,9 +1052,6 @@ async function loadActiveNodes() {
     const usageIssues = await fetchJSON(`${BASE}/issues?labels=usage&state=all&sort=created&direction=desc&per_page=50`);
     const recentUsage = usageIssues.filter(i => !i.pull_request && i.created_at >= seventyTwoHoursAgo);
 
-    const counter = await fetchJSON(`${RAW_BASE}/counter.json`);
-    const current = counter.current;
-
     const activeNodes = new Set();
     const nodeLastSeen = {};
     const nodeUsageCount = {};
@@ -1058,11 +1067,14 @@ async function loadActiveNodes() {
     });
 
     const nodeMap = [];
-    const seen = new Set();
+    const seenUsers = new Set();
 
     const sortedIssues = [...regIssues].sort((a, b) => b.created_at.localeCompare(a.created_at));
 
     for (const issue of sortedIssues) {
+      // Skip test users to avoid duplicates
+      if (TEST_USERS.has(issue.user.login)) continue;
+
       let nodeNum = null;
       const c_req = await fetch(issue.comments_url).catch(() => null);
       if (c_req) {
@@ -1073,8 +1085,9 @@ async function loadActiveNodes() {
         }
       }
       if (!nodeNum) continue;
-      if (seen.has(nodeNum)) continue;
-      seen.add(nodeNum);
+      // Skip if we've already seen this user
+      if (seenUsers.has(issue.user.login)) continue;
+      seenUsers.add(issue.user.login);
 
       const nodeName = `Misaka${nodeNum}`;
       const wasActive = activeNodes.has(nodeName) || activeNodes.has(issue.user.login);
@@ -1148,8 +1161,11 @@ async function loadContributors() {
       const title_text = i.title || '';
       const nodeName = title_text.replace('usage:', '').trim() || i.user.login;
 
+      // Skip test users
+      if (TEST_USERS.has(i.user.login)) return;
+
       if (!contribMap[nodeName]) {
-        contribMap[nodeName] = { count: 0, lessons: [] };
+        contribMap[nodeName] = { count: 0, lessons: [], user: i.user.login };
       }
       contribMap[nodeName].count++;
 
@@ -1195,6 +1211,7 @@ async function loadContributors() {
       }).join('');
 
       const details = lessonItems ? `<div class="contrib-lessons">${lessonItems}</div>` : '';
+      const reportLabel = LANG === 'en' ? 'reports' : '条使用报告';
 
       return `
         <div class="contrib-item">
@@ -1202,7 +1219,7 @@ async function loadContributors() {
           <div class="contrib-badge ${levelClass}">${level}</div>
           <div class="contrib-info">
             <div class="contrib-name">${node}</div>
-            <div class="contrib-detail">${total} ${t('hourAgo').includes('m') ? 'reports' : '条使用报告'}</div>
+            <div class="contrib-detail">${total} ${reportLabel}</div>
             ${details}
           </div>
         </div>
@@ -1247,7 +1264,8 @@ async function registerNode() {
   result.style.display = "none";
 
   const nameLine = name ? `\n注册名称: **${name}**` : "";
-  const body = `## 🧠 通过公开通道加入御坂网络${nameLine}\n\n已确认条款。`;
+  const agentLine = `\nAgent 类型: **${selectedAgent.toUpperCase()}**`;
+  const body = `## 🧠 通过公开通道加入御坂网络${nameLine}${agentLine}\n\n已确认条款。`;
 
   try {
     const r = await fetch("https://api.github.com/repos/Ikalus1988/MisakaNet/issues", {
@@ -1287,8 +1305,6 @@ async function registerNode() {
 
 // Init
 loadStats();
-loadActiveNodes();
-loadContributors();
 </script>
 </body>
 </html>
