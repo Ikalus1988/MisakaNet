@@ -359,6 +359,21 @@ async function loadStats() {
     const current = counter.current;
     const totalNodes = current - 10000;
     
+    // 1b. Count activated nodes (have activation label)
+    let activated = totalNodes; // default fallback
+    try {
+      const allRegs = await fetchJSON(`${BASE}/issues?labels=registration&state=all&sort=created&direction=desc&per_page=100`);
+      const realIssues = allRegs.filter(i => !i.pull_request);
+      
+      // Count activated: closed issues that had the activation process, 
+      // OR estimate based on dedup logic
+      // Simple approach: count unique GitHub users + form submissions without duplicates
+      const uniqueUsers = new Set(realIssues.map(i => i.user.login));
+      activated = Math.min(uniqueUsers.size + 1, totalNodes); // +1 for smwyylc1 who's unique
+    } catch(e) {
+      console.log('Activated count fallback:', e.message);
+    }
+    
     document.getElementById("total-nodes").textContent = totalNodes;
     document.getElementById("total-nodes").classList.remove("loading");
     document.getElementById("total-suffix").textContent = `起始 10000 - 当前 ${current}`;
@@ -514,10 +529,13 @@ async function loadAvatarGallery(current) {
     return;
   }
   
-  document.getElementById("gallery-count").textContent = `(${Math.min(total, 200)})`;
+  // Show max 50 avatars in grid, rest "and N more"
+  const MAX_VISIBLE = 50;
+  const showCount = Math.min(total, MAX_VISIBLE);
   
-  // Show max 200 avatars
-  const start = Math.max(10001, current - 199);
+  document.getElementById("gallery-count").textContent = `(${showCount})`;
+  
+  const start = Math.max(10001, current - showCount + 1);
   const html = [];
   
   for (let i = start; i <= current; i++) {
@@ -533,6 +551,16 @@ async function loadAvatarGallery(current) {
   }
   
   gallery.innerHTML = html.join("");
+  
+  // Show count of remaining if any
+  if (total > MAX_VISIBLE) {
+    const remaining = total - MAX_VISIBLE;
+    gallery.innerHTML += `<div class="empty-state" style="grid-column:1/-1;">
+      <div class="desc">还有 ${remaining} 个节点未显示<br>
+      <a href="https://github.com/Ikalus1988/MisakaNet/issues?q=label%3Aregistration" 
+         target="_blank" style="color:#58a6ff;">查看全部注册记录 →</a></div>
+    </div>`;
+  }
 }
 
 function getTimeAgo(date) {
