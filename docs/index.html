@@ -1316,14 +1316,15 @@ async function loadContributors() {
       else if (lvl === 5) { level = t('lv5'); levelClass = 'contrib-badge-platinum'; }
       else                { level = t('lv6'); levelClass = 'contrib-badge-platinum'; }
 
-      // XP bar to next level
+      // XP bar: how much done within current level
       let xpBar = '';
       if (lvl < 6) {
         const curThreshold = LV_THRESHOLDS[lvl];
         const nextThreshold = LV_THRESHOLDS[lvl + 1];
-        const progress = (score - curThreshold) / (nextThreshold - curThreshold);
+        const earned = score - curThreshold;
+        const range = nextThreshold - curThreshold;
+        const progress = earned / range;
         const pct = Math.min(100, Math.round(progress * 100));
-        const xpNeeded = nextThreshold - score;
         const fillColor = levelClass === 'contrib-badge-bronze' ? '#e39400'
           : levelClass === 'contrib-badge-silver' ? '#a3adbc'
           : levelClass === 'contrib-badge-gold' ? '#f0c640'
@@ -1331,7 +1332,7 @@ async function loadContributors() {
           : '#636d7b';
         xpBar = `<div class="contrib-xp">
           <div class="contrib-xp-track"><div class="contrib-xp-fill" style="width:${pct}%;background:${fillColor}"></div></div>
-          <div class="contrib-xp-text">${xpNeeded} XP</div>
+          <div class="contrib-xp-text">${earned}/${range}</div>
         </div>`;
       } else {
         xpBar = `<div class="contrib-xp"><div class="contrib-xp-text" style="color:#f0c640;">★ MAX</div></div>`;
