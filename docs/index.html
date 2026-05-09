@@ -1332,7 +1332,7 @@ async function loadContributors() {
           : '#636d7b';
         xpBar = `<div class="contrib-xp">
           <div class="contrib-xp-track"><div class="contrib-xp-fill" style="width:${pct}%;background:${fillColor}"></div></div>
-          <div class="contrib-xp-text">${earned}/${range}</div>
+          <div class="contrib-xp-text">${pct}%</div>
         </div>`;
       } else {
         xpBar = `<div class="contrib-xp"><div class="contrib-xp-text" style="color:#f0c640;">★ MAX</div></div>`;
