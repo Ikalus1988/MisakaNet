@@ -345,6 +345,7 @@ const SCARF_COLORS = [
 ];
 const SCARF_COLOR = (num) => SCARF_COLORS[num % 12];
 const PULSE_INTERVAL = 30 * 60 * 1000; // 每30分钟刷新脉搏
+let TEST_SET = new Set(); // 已知测试节点，由 loadStats 初始化
 
 async function fetchJSON(url) {
   const r = await fetch(url);
@@ -354,27 +355,19 @@ async function fetchJSON(url) {
 
 async function loadStats() {
   try {
+    // 0. Known test nodes
+    try {
+      const testData = await fetchJSON(`${RAW_BASE}/test-nodes.json`);
+      TEST_SET = new Set(testData.tests || []);
+    } catch(e) { /* no test list */ }
+    
     // 1. Counter
     const counter = await fetchJSON(`${RAW_BASE}/counter.json`);
     const current = counter.current;
     const totalNodes = current - 10000;
+    const activeNodes = totalNodes - TEST_SET.size;
     
-    // 1b. Count activated nodes (have activation label)
-    let activated = totalNodes; // default fallback
-    try {
-      const allRegs = await fetchJSON(`${BASE}/issues?labels=registration&state=all&sort=created&direction=desc&per_page=100`);
-      const realIssues = allRegs.filter(i => !i.pull_request);
-      
-      // Count activated: closed issues that had the activation process, 
-      // OR estimate based on dedup logic
-      // Simple approach: count unique GitHub users + form submissions without duplicates
-      const uniqueUsers = new Set(realIssues.map(i => i.user.login));
-      activated = Math.min(uniqueUsers.size + 1, totalNodes); // +1 for smwyylc1 who's unique
-    } catch(e) {
-      console.log('Activated count fallback:', e.message);
-    }
-    
-    document.getElementById("total-nodes").textContent = totalNodes;
+    document.getElementById("total-nodes").textContent = activeNodes;
     document.getElementById("total-nodes").classList.remove("loading");
     document.getElementById("total-suffix").textContent = `起始 10000 - 当前 ${current}`;
     document.getElementById("latest-number").textContent = current;
@@ -493,6 +486,8 @@ async function loadRecentRegistrations() {
     list.innerHTML = displayIssues.map((issue, idx) => {
       const nth = displayIssues.length - idx;
       const number = 10000 + nth;
+      const isTest = TEST_SET.has(number);
+      if (isTest) return ''; // skip test nodes in pulse
       const date = new Date(issue.created_at).toISOString().slice(0, 10);
       const avatarSrc = AVATAR_URL(number);
       const scarfColor = SCARF_COLOR(nth);
@@ -540,12 +535,13 @@ async function loadAvatarGallery(current) {
   
   for (let i = start; i <= current; i++) {
     const sc = SCARF_COLOR(i);
+    const isTest = TEST_SET.has(i);
     html.push(`
-      <div class="gallery-item" style="border-color:${sc};">
+      <div class="gallery-item" style="border-color:${sc}; ${isTest ? 'opacity:0.5;' : ''}">
         <img class="gallery-avatar" src="${AVATAR_URL(i)}" 
              alt="Misaka${i}" loading="lazy"
              onerror="this.style.display='none'">
-        <div class="gallery-id" style="color:${sc};">Misaka${i}</div>
+        <div class="gallery-id" style="color:${sc};">Misaka${i}${isTest ? ' 🧪' : ''}</div>
       </div>
     `);
   }
