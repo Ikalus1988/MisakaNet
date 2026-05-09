@@ -862,6 +862,8 @@ const I18N = {
     registerBtn: '⚡ 注册节点',
     registering: '⏳ 注册中...',
     regSuccess: '✅ 注册成功！节点正在分配编号和头像…',
+    regWait: '⏳ 等待约30秒，页面将自动刷新展示你的节点',
+    viewIssue: '查看欢迎消息（内含准入测试）',
     regFail: '❌ 注册失败',
     or: '或者',
     githubReg: '通过 GitHub 注册',
@@ -911,6 +913,8 @@ const I18N = {
     registerBtn: '⚡ Register Node',
     registering: '⏳ Registering...',
     regSuccess: '✅ Registered! Node number & avatar being assigned...',
+    regWait: '⏳ Wait ~30s, page will auto-refresh to show your node',
+    viewIssue: 'View welcome message (includes entry test)',
     regFail: '❌ Registration failed',
     or: 'or',
     githubReg: 'Register via GitHub',
@@ -1439,9 +1443,9 @@ async function registerNode() {
     const issue = await r.json();
     result.style.display = "block";
     result.className = "register-result success";
-    result.innerHTML = `${t('regSuccess')}<br><a href="${issue.html_url}" target="_blank" style="color:#60a5fa;">View progress</a>`;
+    result.innerHTML = `${t('regSuccess')}<br><br><small style="color:#636d7b;">${t('regWait')}</small><br><br><a href="${issue.html_url}" target="_blank" style="color:#60a5fa;font-size:13px;">📋 ${t('viewIssue')}</a>`;
 
-    setTimeout(() => location.reload(), 5000);
+    setTimeout(() => { window.location.href = '?t=' + Date.now(); }, 6000);
 
   } catch (err) {
     result.style.display = "block";
