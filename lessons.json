@@ -1188,5 +1188,107 @@
     "summary": "任务看板 HTML/CSS/JS 可复用模式 — toggle开关、竖列、inline编辑、CSS技巧",
     "url": "lessons/skill-task-board-html-patterns.md",
     "updated": ""
+  },
+  {
+    "id": "api-rate-limit-handling-best-practices",
+    "title": "API Rate Limit Handling Best Practices",
+    "domain": "devops",
+    "tags": [
+      "api",
+      "rate-limit",
+      "429",
+      "retry"
+    ],
+    "summary": "Best practices for handling GitHub API rate limiting in agent automation workflows.",
+    "url": "lessons/api-rate-limit-handling-best-practices.md",
+    "updated": "2026-05-10"
+  },
+  {
+    "id": "feishu-markdown-table-not-rendered",
+    "title": "飞书 Markdown 表格不渲染的修复方案",
+    "domain": "feishu",
+    "tags": [
+      "feishu",
+      "markdown",
+      "table",
+      "render",
+      "post"
+    ],
+    "summary": "飞书 post 富文本消息中的 Markdown 表格显示为空白或原始分隔线。修复：用 <br> 替换 | 分隔符。",
+    "url": "lessons/feishu-markdown-table-not-rendered.md",
+    "updated": "2026-05-10"
+  },
+  {
+    "id": "openclaw-prefer-cli-and-policy-over-direct-edit",
+    "title": "OpenClaw优先CLI和官方策略",
+    "domain": "agentops",
+    "tags": [
+      "openclaw",
+      "cli",
+      "policy",
+      "config"
+    ],
+    "summary": "直接修改配置文件（临时 hack）容易变成默认模型，导致官方路径退化。优先用官方 CLI 操作配置。",
+    "url": "lessons/openclaw-prefer-cli-and-policy-over-direct-edit.md",
+    "updated": "2026-05-10"
+  },
+  {
+    "id": "python-venv-tiktoken-module-not-found",
+    "title": "Python venv tiktoken Module Not Found",
+    "domain": "python",
+    "tags": [
+      "python",
+      "venv",
+      "tiktoken",
+      "module",
+      "not-found"
+    ],
+    "summary": "在 Python venv 中运行依赖 tiktoken 的脚本时报 ModuleNotFoundError，即使已 pip install。",
+    "url": "lessons/python-venv-tiktoken-module-not-found.md",
+    "updated": "2026-05-10"
+  },
+  {
+    "id": "shared-json-needs-atomic-write",
+    "title": "共享 JSON 状态需要原子写入",
+    "domain": "devops",
+    "tags": [
+      "json",
+      "atomic",
+      "race-condition",
+      "runtime",
+      "shared-state"
+    ],
+    "summary": "多进程/多线程共享 JSON 状态文件时，非原子写入导致数据损坏（截断、空文件、半写状态）。",
+    "url": "lessons/shared-json-needs-atomic-write.md",
+    "updated": "2026-05-10"
+  },
+  {
+    "id": "wechat-pubacct-fetch-separate-search-from-retrieval",
+    "title": "微信公众号抓取：搜索与抓取分离",
+    "domain": "wechat",
+    "tags": [
+      "wechat",
+      "fetch",
+      "search",
+      "crawl"
+    ],
+    "summary": "微信公众号文章抓取时，搜索和内容抓取耦合导致失败率上升。分离为独立管道可提升稳定性。",
+    "url": "lessons/wechat-pubacct-fetch-separate-search-from-retrieval.md",
+    "updated": "2026-05-10"
+  },
+  {
+    "id": "chrome-relay-browser-automation",
+    "title": "Chrome Relay 浏览器自动化 — CDP over WebSocket 控制无头浏览器",
+    "domain": "development",
+    "tags": [
+      "chrome",
+      "browser",
+      "automation",
+      "cdp",
+      "websocket"
+    ],
+    "summary": "通过 Chrome Relay (OpenClaw) 的 WebSocket 接口控制已运行的浏览器，比 Puppeteer/Playwright 更轻量。",
+    "url": "lessons/chrome-relay-browser-automation.md",
+    "updated": "2026-05-10"
   }
 ]
