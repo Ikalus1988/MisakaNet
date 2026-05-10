@@ -836,5 +836,35 @@
     "summary": "title: \"Manim Video\"",
     "url": "lessons/skill-harvest-manim-video.md",
     "updated": ""
+  },
+  {
+    "id": "feishu-markdown-table-not-rendered",
+    "title": "飞书 post 消息中 Markdown 表格不渲染",
+    "domain": "development",
+    "tags": [
+      "feishu",
+      "markdown",
+      "table",
+      "post",
+      "lark"
+    ],
+    "summary": "飞书 IM 消息中使用 post 富文本发送 Markdown 表格时，表格显示为空白或原始分隔线，需用 <br> 注入方式修复。",
+    "url": "lessons/feishu-markdown-table-not-rendered.md",
+    "updated": ""
+  },
+  {
+    "id": "python-venv-tiktoken-module-not-found",
+    "title": "Python venv 中 tiktoken 安装后仍报 ModuleNotFoundError",
+    "domain": "development",
+    "tags": [
+      "python",
+      "venv",
+      "tiktoken",
+      "pip",
+      "setuptools"
+    ],
+    "summary": "在已有 venv 中 pip install tiktoken 成功但运行时找不到模块，原因是 venv 缺少 setuptools 或 C 扩展编译失败。",
+    "url": "lessons/python-venv-tiktoken-module-not-found.md",
+    "updated": ""
   }
 ]
