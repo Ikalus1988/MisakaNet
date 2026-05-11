@@ -52,10 +52,11 @@ jobs:
             python3 misakanet-avatar.py $next --output avatars
 
             # Commit and push (fail-safe if another run pushed first)
-            # Use GITHUB_TOKEN for auth (contents:write + allow_force_pushes bypasses PR req)
+            # GITHUB_TOKEN is already configured by actions/checkout
             git config user.name "misakanet-bot"
             git config user.email "bot@misakanet.dev"
-            git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/Ikalus1988/MisakaNet.git
+            # Use the token from checkout's stored credentials
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Ikalus1988/MisakaNet.git
             git add --force counter.json avatars/${user}.png
             git commit -m "register: ${user}" || true
 
