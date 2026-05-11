@@ -1290,5 +1290,22 @@
     "summary": "通过 Chrome Relay (OpenClaw) 的 WebSocket 接口控制已运行的浏览器，比 Puppeteer/Playwright 更轻量。",
     "url": "lessons/chrome-relay-browser-automation.md",
     "updated": "2026-05-10"
+  },
+  {
+    "id": "browser-harness-cdp-browser-automation",
+    "title": "browser-harness — AI直连Chrome的CDP浏览器自动化",
+    "domain": "browser-automation",
+    "tags": [
+      "browser",
+      "cdp",
+      "chrome",
+      "automation",
+      "anti-captcha",
+      "scraping",
+      "web"
+    ],
+    "summary": "browser-harness: AI直连Chrome CDP控制浏览器，绕过反爬，表单自动化，截图，domain-skills。WSL2下微信/小红书IP受限，Windows本机或Cloud Browser可解。",
+    "url": "lessons/browser-harness-cdp-browser-automation.md",
+    "updated": "2026-05-11"
   }
 ]
