@@ -55,7 +55,7 @@ jobs:
             git add --force counter.json avatars/${user}.png
             git commit -m "register: ${user}" || true
 
-            if git pull --rebase && git push; then
+            if git pull --rebase && git push --force; then
               echo "NEXT=$next" >> $GITHUB_OUTPUT
               echo "USER=$user" >> $GITHUB_OUTPUT
               echo "Assigned $user (attempt $ATTEMPT)"
@@ -65,12 +65,19 @@ jobs:
               sleep 2
             fi
           done
+          # All retries exhausted — fail the step
+          echo "FATAL: Could not assign node number after $MAX_ATTEMPTS attempts"
+          exit 1
 
       - name: Post welcome message with entry test
         uses: actions/github-script@v7
         with:
           script: |
-            const num = ${{ steps.assign.outputs.NEXT }};
+            const num = parseInt('${{ steps.assign.outputs.NEXT }}');
+            if (!num || isNaN(num)) {
+              core.setFailed('No node number assigned — previous step failed');
+              return;
+            }
             const user = '${{ steps.assign.outputs.USER }}';
             const avatarUrl = `https://raw.githubusercontent.com/${context.repo.owner}/${context.repo.repo}/main/avatars/${user}.png`;
 
