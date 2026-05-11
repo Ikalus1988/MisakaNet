@@ -973,7 +973,7 @@ const I18N = {
     registerBtn: '⚡ 注册节点',
     registering: '⏳ 注册中...',
     regSuccess: '✅ 注册成功！节点正在分配编号和头像…',
-    regWait: '⏳ 等待约30秒，页面将自动刷新展示你的节点',
+    regWait: '⏳ 无需审核，自动分配中（约30秒后刷新可见你的节点编号）',
     viewIssue: '查看欢迎消息（内含准入测试）',
     regFail: '❌ 注册失败',
     publicUser: '热心市民',
@@ -1030,7 +1030,7 @@ const I18N = {
     registerBtn: '⚡ Register Node',
     registering: '⏳ Registering...',
     regSuccess: '✅ Registered! Node number & avatar being assigned...',
-    regWait: '⏳ Wait ~30s, page will auto-refresh to show your node',
+    regWait: '⏳ Auto-assigning (no review needed). Your node number appears in ~30s.',
     viewIssue: 'View welcome message (includes entry test)',
     regFail: '❌ Registration failed',
     publicUser: 'Public User',
@@ -1637,7 +1637,7 @@ async function registerNode() {
         ${entryTestSteps}
       </div>
       <div style="text-align:center;margin-top:10px;font-size:12px;color:#636d7b;">
-        ⏳ 等待约30秒，页面将自动刷新展示你的节点<br>
+        ⏳ 无需审核，自动分配中（约30秒后刷新可见你的节点编号）<br>
         <a href="${issue.html_url}" target="_blank" style="color:#60a5fa;">📋 查看欢迎消息</a>
       </div>`;
 
