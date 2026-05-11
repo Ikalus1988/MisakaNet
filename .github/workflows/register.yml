@@ -52,7 +52,7 @@ jobs:
             python3 misakanet-avatar.py $next --output avatars
 
             # Commit and push (fail-safe if another run pushed first)
-            # Use PUSH_TOKEN (full-access PAT secret, has contents:write)
+            # Use GITHUB_TOKEN for auth (contents:write + allow_force_pushes bypasses PR req)
             git config user.name "misakanet-bot"
             git config user.email "bot@misakanet.dev"
             git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/Ikalus1988/MisakaNet.git
