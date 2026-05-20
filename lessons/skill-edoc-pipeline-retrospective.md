@@ -1,3 +1,12 @@
+---
+title: edoc-pipeline-retrospective
+domain: rag
+source: skill-harvest
+status: draft
+confidence: 0.6
+created: 2026-05-20
+---
+
 # edoc-pipeline-retrospective
 
 使用 edoc-pipeline-retrospective 的实践经验和踩坑记录。

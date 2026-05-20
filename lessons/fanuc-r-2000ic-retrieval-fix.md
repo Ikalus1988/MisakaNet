@@ -1,16 +1,13 @@
 ---
 created: 2026-04-30 08:50 UTC
-domain: rag-retrieval
+domain: rag
 source: hermes_wsl
 status: published
-tags:
-- fanuc
-- r-2000ic
-- keyword-boost
-- rag
+tags: 
 title: FANUC R-2000iC 检索混淆修复 — 关键词强制召回
 updated: 2026-04-30 08:50 UTC
 ---
+
 
 ## 问题
 

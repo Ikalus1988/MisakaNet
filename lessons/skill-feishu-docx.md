@@ -1,3 +1,12 @@
+---
+title: feishu-docx
+domain: feishu
+source: skill-harvest
+status: draft
+confidence: 0.6
+created: 2026-05-20
+---
+
 # feishu-docx
 
 通过 REST API（requests/curl）创建飞书云文档、写入内容块（docx API）、发送消息卡片、访问 Wiki 节点。涵盖 Bot 创建 docx、Bot 写入 Wiki 文档（跨租户权限限制）、纯文本考卷出卷等实战场景。

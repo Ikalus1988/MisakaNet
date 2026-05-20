@@ -2,10 +2,11 @@
 title: lessons.md 修正（4 处） 项目 旧结论 修正后 heading block（type=4
 domain: rag
 source: bootstrap
-status: active
+status: published
 confidence: 0.7
 created: 2026-04-01
 ---
+
 
 ## 背景
 [assistant] 还有一处需要修正：image block 的描述不准确——它返回了有效的 block_id（blocks_created=1），只是 token 被清空导致图片不显示。

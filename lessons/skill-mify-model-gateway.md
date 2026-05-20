@@ -1,3 +1,12 @@
+---
+title: mify-model-gateway
+domain: claude
+source: skill-harvest
+status: draft
+confidence: 0.6
+created: 2026-05-20
+---
+
 # mify-model-gateway
 
 公司大模型网关 — Mioffice (api.llm.mioffice.cn) 网关操作指南，包括查询可用模型、切换模型、配置 DeepSeek/小米等提供商。

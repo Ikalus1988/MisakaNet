@@ -1,3 +1,12 @@
+---
+title: feishu-interactive-card
+domain: feishu
+source: skill-harvest
+status: draft
+confidence: 0.6
+created: 2026-05-20
+---
+
 # feishu-interactive-card
 
 飞书互动卡片发送与回调处理 — 调试 230099/200621 错误，正确构建卡片 JSON，处理按钮点击回调。

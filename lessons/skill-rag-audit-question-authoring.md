@@ -1,3 +1,12 @@
+---
+title: rag-audit-question-authoring
+domain: rag
+source: skill-harvest
+status: draft
+confidence: 0.6
+created: 2026-05-20
+---
+
 # rag-audit-question-authoring
 
 为 RAG 知识库巡检出题的规范和质量标准。当需要生成、审核、补充巡检测试题时使用。

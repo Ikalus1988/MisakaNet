@@ -1,21 +1,21 @@
 ---
 title: WSL 终端编辑配置危险 — TTy粘贴吞下划线
-domain: system
+domain: devops
 source: bootstrap
 bootstrapped: true
 author: node2
 machine: hermes-wsl
-original_date: '2026-04-24'
-tags:
-- node:hermes_wsl
-- project:wsl
-- severity:high
-- bootstrap
-status: active
+original_date: 2026-04-24
+tags: 
+- node: hermes_wsl
+- project: wsl
+- severity: high
+status: published
 quality: published
-created: '2026-04-01'
+created: 2026-04-01
 confidence: 0.7
 ---
+
 
 
 

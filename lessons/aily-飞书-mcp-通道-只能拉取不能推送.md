@@ -1,12 +1,13 @@
 ---
 title: aily 飞书 MCP 通道：只能拉取不能推送
-domain: ailysw
+domain: feishu
 subdomain: mcp-capability
 source: bootstrap
 status: draft
 confidence: 0.7
 created: 2026-05-03
 ---
+
 
 ## aily 飞书 MCP 通道：只能拉取不能推送
 

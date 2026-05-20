@@ -1,18 +1,13 @@
 ---
 created: 2026-05-01 08:00 UTC
-domain: dependency-install
+domain: devops
 source: hermes_wsl
 status: published
-tags:
-- pip
-- install
-- network
-- SSL
-- timeout
-- dependency-conflict
+tags: 
 title: pip install 网络超时 / SSL / 依赖冲突修复
 updated: 2026-05-01 08:00 UTC
 ---
+
 
 ## 问题
 

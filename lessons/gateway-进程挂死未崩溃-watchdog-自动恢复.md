@@ -2,10 +2,11 @@
 title: Gateway 进程挂死未崩溃 — watchdog 自动恢复
 domain: devops
 source: bootstrap
-status: active
+status: published
 confidence: 0.7
 created: 2026-04-01
 ---
+
 
 ## 背景
 

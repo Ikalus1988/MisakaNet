@@ -1,3 +1,12 @@
+---
+title: task-board-html-patterns
+domain: feishu
+source: skill-harvest
+status: draft
+confidence: 0.6
+created: 2026-05-20
+---
+
 # task-board-html-patterns
 
 任务看板 HTML/CSS/JS 可复用模式 — toggle开关、竖列、inline编辑、CSS技巧

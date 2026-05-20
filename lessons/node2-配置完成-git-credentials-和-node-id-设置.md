@@ -1,15 +1,13 @@
 ---
 created: 2026-05-01 03:19:35 UTC
-domain: hermes-setup
+domain: devops
 source: hermes_wsl2
 status: published
-tags:
-- hermes
-- node2
-- git-credentials
+tags: 
 title: Node2 配置完成 — git credentials 和 NODE_ID 设置
 updated: 2026-05-01 03:19:35 UTC
 ---
+
 
 踩坑：queue_lesson.py 依赖 ~/.git-credentials，但 WSL 默认没有这个文件。
 修复：从 ~/.git-credentials 读取格式为 https://user:TOKEN@github.com 的凭证。

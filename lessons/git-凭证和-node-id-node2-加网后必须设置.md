@@ -2,10 +2,11 @@
 title: Git 凭证和 Node ID — Node2 加网后必须设置
 domain: devops
 source: bootstrap
-status: active
+status: published
 confidence: 0.7
 created: 2026-04-01
 ---
+
 
 ## 背景
 

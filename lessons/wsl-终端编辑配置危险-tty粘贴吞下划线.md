@@ -1,11 +1,12 @@
 ---
 title: WSL 终端编辑配置危险 — TTy粘贴吞下划线
-domain: system
+domain: devops
 source: bootstrap
-status: active
+status: published
 confidence: 0.7
 created: 2026-04-01
 ---
+
 
 ## 背景
 

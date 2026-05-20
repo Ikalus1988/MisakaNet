@@ -1,3 +1,12 @@
+---
+title: edoc-rag
+domain: rag
+source: skill-harvest
+status: draft
+confidence: 0.6
+created: 2026-05-20
+---
+
 # edoc-rag
 
 FANUC 机器人知识库 RAG 检索 — 向量库 34,100 chunks，BGE-m3 1024维，L2 距离，支持飞书 Bot 自动调用

@@ -2,10 +2,11 @@
 title: RAG 检索中文乱码 — pymupdf4llm 默认编码问题
 domain: rag
 source: bootstrap
-status: active
+status: published
 confidence: 0.7
 created: 2026-04-01
 ---
+
 
 ## 背景
 

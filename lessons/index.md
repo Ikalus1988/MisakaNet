@@ -1,6 +1,6 @@
 # MisakaNet Shared Lessons
 
-> 最后更新: 2026-05-19 15:40:11 UTC | 来源: hermes_wsl2
+> 最后更新: 2026-05-20 07:04:14 UTC | 来源: lessons_cleanup.py
 
 每条 lesson 包含踩坑记录、修复方法和验证方式，跨节点自动同步。
 
@@ -8,67 +8,107 @@
 
 | Lesson | Domain | Tags | Source |
 |--------|--------|------|--------|
-- [BGE embedding 模型需要降级 fallback 避免启动崩溃](lessons/bge-embedding-模型需要降级-fallback-避免启动崩溃) | rag | "project:agent-medici", "severity:high", "node:hermes_wsl" | draft
-- [Chroma 建库无 Checkpoint — 进程一死全部丢失](lessons/chroma-建库无-checkpoint-进程一死全部丢失) | rag |  | active
-- [ChromaDB 不能放在 NTFS 文件系统](lessons/chromadb-不能放在-ntfs-文件系统) | rag | "project:self-grow-wiki", "severity:critical", "platform:wsl", "node:hermes_wsl" | draft
-- [Config was last written by a newer OpenClaw (2026.](lessons/config-was-last-written-by-a-newer-openclaw-2026) | feishu |  | active
-- [DeepSeek TUI Agent 模式下 write_file 写入不落地 + worktree git 链接路径断裂](deepseek-tui-agent-模式下-write-file-写入不落地-worktree-git-链接路径断裂.md) | devops | deepseek-tui, agent-mode, write-file, worktree, wsl, git, lesson-written | hermes_wsl2
-- [FANUC KL: 1086 是代码行号而非错误码](lessons/fanuc-kl-1086-是代码行号而非错误码) | fanuc |  | draft
-- [FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure](lessons/fanuc-kl-bytes-ahead-是-karel-内置-procedure) | fanuc |  | draft
-- [FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异](lessons/fanuc-kl-err-abort-vs-err-pause-行为差异) | fanuc |  | draft
-- [FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明](lessons/fanuc-kl-mm-module-h-kl-禁止-routine-声明) | fanuc |  | draft
-- [Feishu WebSocket 404 Error - HTTP Webhook Required](feishu-websocket-404-error-http-webhook-required.md) | feishu-integration |  | hermes_wsl2
-- [Feishu Wiki批量下载：文件类型处理策略](feishu-wiki-batch-download-file-type-handling.md) | devops | feishu, wiki, batch-download, file-type, pdf, docx, safari | hermes_wsl2
-- [Feishu 凭证轮换后 Gateway 必须重启](lessons/feishu-凭证轮换后-gateway-必须重启) | feishu |  | active
-- [Gateway 进程挂死未崩溃 — watchdog 自动恢复](lessons/gateway-进程挂死未崩溃-watchdog-自动恢复) | devops |  | active
-- [Git 凭证和 Node ID — Node2 加网后必须设置](lessons/git-凭证和-node-id-node2-加网后必须设置) | devops |  | active
-- [Hermes Agent 手动更新步骤（update 超时）](lessons/hermes-agent-手动更新步骤-update-超时) | devops | "project:agent-medici", "severity:medium", "node:hermes_wsl" | draft
-- [Hub FeishuWSClient.start() 从未调用 — WebSocket 接收死代码](lessons/hub-feishuwsclient-start-从未调用-websocket-接收死代码) | feishu |  | active
-- [Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里](lessons/hub-hermes-凭证体系-gateway-vs-hub-各自读哪里) | devops |  | active
-- [InternalGateway API 网关不兼容 Anthropic 原生格式](lessons/InternalGateway-api-网关不兼容-anthropic-原生格式) | devops | "project:rag", "severity:medium", "node:hermes_wsl" | draft
-- [OpenClaw 重装教训 — 删除前先停服务清残留](lessons/openclaw-重装教训-删除前先停服务清残留) | devops |  | active
-- [POC 记录已写入飞书文档末尾（21个块，含 Q2/Q5 验证结果、修正说明和待办清单）。 有一个小](lessons/poc-记录已写入飞书文档末尾-21个块-含-q2-q5-验证结果-修正说明和待办清单-有一个小) | feishu |  | active
-- [RAG 三通道 LLM 容灾方案](lessons/rag-三通道-llm-容灾方案) | rag | "project:self-grow-wiki", "node:hermes_wsl", "scope:broad" | draft
-- [RAG 分块参数：800 字符 + 100 重叠 + 每文件最多 100 分块](lessons/rag-分块参数-800-字符-100-重叠-每文件最多-100-分块) | rag | "project:self-grow-wiki", "severity:medium", "node:hermes_wsl" | draft
-- [RAG 报警代码检索需要关键词强制召回](lessons/rag-报警代码检索需要关键词强制召回) | rag | "project:self-grow-wiki", "severity:high", "node:hermes_wsl" | draft
-- [RAG 检索中文乱码 — pymupdf4llm 默认编码问题](lessons/rag-检索中文乱码-pymupdf4llm-默认编码问题) | rag |  | active
-- [WSL pip install GBK 编码导致 hub_poller 崩溃](lessons/wsl-pip-install-gbk-编码导致-hub-poller-崩溃) | devops | "project:agent-medici", "severity:critical", "platform:wsl", "node:hermes_wsl" | draft
-- [WSL 终端编辑配置危险 — TTy粘贴吞下划线](lessons/wsl-终端编辑配置危险-tty粘贴吞下划线) | system |  | active
-- [WSL 需要代理配置才能访问 HuggingFace 和外部网络](lessons/wsl-需要代理配置才能访问-huggingface-和外部网络) | devops | "project:self-grow-wiki", "severity:high", "platform:wsl", "node:hermes_wsl" | draft
-- [[cc-haha] 权限 错误 — permission:Permission denied](cc-haha-权限-错误-permission-permission-denied.md) | permission | cc-haha, hook-auto, permission, permission:Permission denied | cc_haha
-- [[cc-haha] 模型输出异常 错误 — Exit code 1 Traceback (most recent call last):   File "<stri...(截断)](cc-haha-模型输出异常-错误-exit-code-1-traceback-most-recent-call-las.md) | model_output | cc-haha, hook-auto, model_output,  | cc_haha
-- [[cc-haha] 网络连接 错误 — Exit code 1 Name: websocket-client Version: 1.9.0 Summary: W...(截断)](cc-haha-网络连接-错误-exit-code-1-name-websocket-client-version-1-.md) | network | cc-haha, hook-auto, network,  | cc_haha
-- [[cc-haha] 网络连接 错误 — Exit code 1 Traceback (most recent call last):   File "<stdi...(截断)](cc-haha-网络连接-错误-exit-code-1-traceback-most-recent-call-last-.md) | network | cc-haha, hook-auto, network,  | cc_haha
-- [[cc-haha] 网络连接 错误 — Exit code 128 From https://github.com/Ikalus1988/MisakaNet  ...(截断)](cc-haha-网络连接-错误-exit-code-128-from-https-github-com-ikalus19.md) | network | cc-haha, hook-auto, network,  | cc_haha
-- [[cc-haha] 网络连接 错误 — network:Timeout](cc-haha-网络连接-错误-network-timeout.md) | network | cc-haha, hook-auto, network, network:Timeout | cc_haha
-- [[草稿] cc-haha network 错误: Exit code 1](草稿-cc-haha-network-错误-exit-code-1.md) | devops | cc-haha, hook-auto, network | hermes_wsl2
-- [aily 飞书 MCP 通道：只能拉取不能推送](lessons/aily-飞书-mcp-通道-只能拉取不能推送) | ailysw |  | draft
-- [bootstrap 关于 table aware re chunking 我的判断 部分同意魔术师的根因分析 但不](lessons/bootstrap-关于-table-aware-re-chunking-我的判断-部分同意魔术师的根因分析-但不) | rag |  | draft
-- [bootstrap 方案一 ChromaDB Server 飞书多维表事件通知 定位 最轻量 倒吊人 Gbr](lessons/bootstrap-方案一-chromadb-server-飞书多维表事件通知-定位-最轻量-倒吊人-gbr) | feishu |  | draft
-- [bootstrap 评审意见 优点 分层清晰 四层防御体系思路正确 问题分析到位 严重程度分级合理](lessons/bootstrap-评审意见-优点-分层清晰-四层防御体系思路正确-问题分析到位-严重程度分级合理) | devops |  | draft
-- [bootstrap 这也是倒吊人的操作 二 当前未解决的 3 个问题 问题 1 hermes run 命令仍然找不到](lessons/bootstrap-这也是倒吊人的操作-二-当前未解决的-3-个问题-问题-1-hermes-run-命令仍然找不到) | devops |  | draft
-- [bootstrap 这里面包含答案吗 PLAIN_TEXT usr bin env python3](lessons/bootstrap-这里面包含答案吗-plain-text-usr-bin-env-python3) | rag |  | draft
-- [cc-connect 飞书机器人完整配置指南](cc-connect-飞书机器人完整配置指南.md) | feishu |  | bootstrap
-- [lessons.md 修正（4 处） 项目 旧结论 修正后 heading block（type=4](lessons/lessons-md-修正-4-处-项目-旧结论-修正后-heading-block-type-4) | rag |  | active
-- [wcferry 微信版本锁定 — 3.9.12.51 才能用](lessons/wcferry-微信版本锁定-3-9-12-51-才能用) | devops | "project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow" | draft
-- [wxauto 必须在 Windows Python 下安装，不能走 WSL pip](lessons/wxauto-必须在-windows-python-下安装-不能走-wsl-pip) | devops | "project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow" | draft
-- [企业微信机器人：长连接模式不需要 ngrok](lessons/企业微信机器人-长连接模式不需要-ngrok) | devops | "project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow" | draft
-- [再补充一下，RAG助手这两天的一个工作内容，主要就是一个通过让RAG知识库来读取我已有的一些工业机器](lessons/再补充一下-rag助手这两天的一个工作内容-主要就是一个通过让rag知识库来读取我已有的一些工业机器) | rag |  | active
-- [另外，RAG助手， Wiki项目又有新进展。 这个项目经过了从一开始的OPUS 4.6，写了初版之后](lessons/另外-rag助手-wiki项目又有新进展-这个项目经过了从一开始的opus-4-6-写了初版之后) | rag |  | active
-- [复盘下你的飞书技能如何提高，并给出方案](lessons/复盘下你的飞书技能如何提高-并给出方案) | feishu |  | active
-- [好，控制并发，那就开始布置本开源方案，作为 wsl 的第三个 agent](lessons/好-控制并发-那就开始布置本开源方案-作为-wsl-的第三个-agent) | feishu |  | active
-- [容灾方案输出为飞书云文档](lessons/容灾方案输出为飞书云文档) | feishu |  | active
-- [帮我记一下我今天的日记啊，阈值的日记啊，今天完成了什么工作，然后跟你说完，你整理一下，然后发出来。](lessons/帮我记一下我今天的日记啊-阈值的日记啊-今天完成了什么工作-然后跟你说完-你整理一下-然后发出来) | rag |  | active
-- [我已将部分工作直接发给Hermes cli助手，你注意检查，不要重复施工](lessons/我已将部分工作直接发给hermes-cli助手-你注意检查-不要重复施工) | feishu |  | active
-- [按照方案进行测试https://tarot-club.feishu.cn/docx/TkcHd3Lq](lessons/按照方案进行测试https-tarot-club-feishu-cn-docx-tkchd3lq) | feishu |  | active
-- [知识库 4σ 质量审计流水线](lessons/知识库-4-质量审计流水线) | rag | "project:self-grow-wiki", "severity:medium", "node:hermes_wsl" | draft
-- [考生1回复：考试执行受阻，未完成作答： 执行第一步安装依赖时遇到环境问题：当前运行环境中pip命令不](lessons/考生1回复-考试执行受阻-未完成作答-执行第一步安装依赖时遇到环境问题-当前运行环境中pip命令不) | rag |  | active
-- [这是倒吊人在本周修改wsl的记录，有没有关联：一、本周修改的 WSL 内容 文件 操作 目的 ~/.](lessons/这是倒吊人在本周修改wsl的记录-有没有关联-一-本周修改的-wsl-内容-文件-操作-目的) | feishu |  | active
-- [这里面也有答案？ ```PLAIN_TEXT # Edoc V10.0 POC 召回测试 ## 环境](lessons/这里面也有答案-plain-text-edoc-v10-0-poc-召回测试-环境) | rag |  | active
-- [问题： Hermes 的 mmx CLI（WSL 内）需要自己的 ~/.mmx/config.jso](lessons/问题-hermes-的-mmx-cli-wsl-内-需要自己的-mmx-config-jso) | feishu |  | active
-- [防火墙端口开放不等于内网穿透](lessons/防火墙端口开放不等于内网穿透) | devops | "project:rag", "platform:wsl", "node:hermes_wsl", "scope:broad" | draft
-- [飞书 Block API 假成功特征](lessons/飞书-block-api-假成功特征) | feishu |  | draft
-- [飞书 Block Type 正确值与已知限制](lessons/飞书-block-type-正确值与已知限制) | feishu |  | draft
-- [飞书 Block 批量写入上限](lessons/飞书-block-批量写入上限) | feishu |  | draft
-- [飞书 webhook URL 必须用环境变量或 gitignored 的 config.yaml](lessons/飞书-webhook-url-必须用环境变量或-gitignored-的-config-yaml) | devops | "project:agent-medici", "severity:critical", "node:hermes_wsl" | draft
-- [OpenClaw Gateway 动态模块缺失 — 飞书消息分发失败](lessons/openclaw-gateway-动态模块缺失-导致飞书消息分发失败) | feishu | "node:misaka10004", "severity:critical", "project:misakanet" | active
+- [FFmpeg 音频转码：必须用 libopus 而非 -format ogg](ffmpeg音频转码-必须用libopus而非format-ogg.md) | audio |  | hanged-man
+- [dogfood](skill-dogfood.md) | claude |  | skill-harvest
+- [mify-model-gateway](skill-mify-model-gateway.md) | claude |  | skill-harvest
+- [模型输出截断 / JSON 解析失败处理](model-output-fix.md) | claude |  | hermes_wsl
+- [Gateway 进程挂死未崩溃 — watchdog 自动恢复](gateway-进程挂死未崩溃-watchdog-自动恢复.md) | devops |  | bootstrap
+- [Git 凭证和 Node ID — Node2 加网后必须设置](git-凭证和-node-id-node2-加网后必须设置.md) | devops |  | bootstrap
+- [Hermes Agent 手动更新步骤（update 超时）](hermes-agent-手动更新步骤-update-超时.md) | devops | "project:agent-medici", "severity:medium", "node:hermes_wsl" | bootstrap
+- [Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里](hub-hermes-凭证体系-gateway-vs-hub-各自读哪里.md) | devops |  | bootstrap
+- [InternalGateway API 网关不兼容 Anthropic 原生格式](api-网关不兼容-anthropic-原生格式.md) | devops | "project:rag", "severity:medium", "node:hermes_wsl" | bootstrap
+- [Node2 配置完成 — git credentials 和 NODE_ID 设置](node2-配置完成-git-credentials-和-node-id-设置.md) | devops |  | hermes_wsl2
+- [OpenClaw 重装教训 — 删除前先停服务清残留](openclaw-重装教训-删除前先停服务清残留.md) | devops |  | bootstrap
+- [Permission Denied / WSL NTFS 跨文件系统权限修复](permission-denied-fix.md) | devops |  | hermes_wsl
+- [WSL pip install GBK 编码导致 hub_poller 崩溃](wsl-pip-install-gbk-编码导致-hub-poller-崩溃.md) | devops | "project:agent-medici", "severity:critical", "platform:wsl", "node:hermes_wsl" | bootstrap
+- [WSL 终端编辑配置危险 — TTy粘贴吞下划线](wsl-terminal-underscore-corruption.md) | devops |  | bootstrap
+- [WSL 终端编辑配置危险 — TTy粘贴吞下划线](wsl-终端编辑配置危险-tty粘贴吞下划线.md) | devops |  | bootstrap
+- [WSL 需要代理配置才能访问 HuggingFace 和外部网络](wsl-需要代理配置才能访问-huggingface-和外部网络.md) | devops | "project:self-grow-wiki", "severity:high", "platform:wsl", "node:hermes_wsl" | bootstrap
+- [browser-harness — AI 直连 Chrome 的 CDP 浏览器自动化](browser-harness-cdp-browser-automation.md) | devops |  | skill-harvest
+- [ccswitch-hermes-switch 踩坑记录](ccswitch-hermes-switch.md) | devops |  | bootstrap
+- [hermes-cli-pty-mode](skill-hermes-cli-pty-mode.md) | devops |  | skill-harvest
+- [internal-gateway.local 不兼容 Anthropic 格式 — 需 OpenAI 代理转换](anthropic-proxy-internal-gateway.md) | devops |  | hermes_wsl
+- [pip install 网络超时 / SSL / 依赖冲突修复](pip-install-failure-fix.md) | devops |  | hermes_wsl
+- [wcferry 微信版本锁定 — 3.9.12.51 才能用](wcferry-微信版本锁定-3-9-12-51-才能用.md) | devops | "project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow" | bootstrap
+- [wxauto 必须在 Windows Python 下安装，不能走 WSL pip](wxauto-必须在-windows-python-下安装-不能走-wsl-pip.md) | devops | "project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow" | bootstrap
+- [企业微信机器人：长连接模式不需要 ngrok](企业微信机器人-长连接模式不需要-ngrok.md) | devops | "project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow" | bootstrap
+- [磁盘空间不足 / chroma_db_v4 缓存清理](disk-space-cleanup.md) | devops |  | hermes_wsl
+- [防火墙端口开放不等于内网穿透](防火墙端口开放不等于内网穿透.md) | devops | "project:rag", "platform:wsl", "node:hermes_wsl", "scope:broad" | bootstrap
+- [飞书 webhook URL 必须用环境变量或 gitignored 的 config.yaml](飞书-webhook-url-必须用环境变量或-gitignored-的-config-yaml.md) | devops | "project:agent-medici", "severity:critical", "node:hermes_wsl" | bootstrap
+- [FANUC KL: 1086 是代码行号而非错误码](fanuc-kl-1086-是代码行号而非错误码.md) | fanuc |  | bootstrap
+- [FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure](fanuc-kl-bytes-ahead-是-karel-内置-procedure.md) | fanuc |  | bootstrap
+- [FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异](fanuc-kl-err-abort-vs-err-pause-行为差异.md) | fanuc |  | bootstrap
+- [FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明](fanuc-kl-mm-module-h-kl-禁止-routine-声明.md) | fanuc |  | bootstrap
+- [Feishu 凭证轮换后 Gateway 必须重启](feishu-凭证轮换后-gateway-必须重启.md) | feishu |  | bootstrap
+- [Feishu 文件上传：file_type 必须用 opus](feishu文件上传-file-type-必须用opus.md) | feishu |  | hanged-man
+- [Feishu 文档 URL：必须用 API 返回值，不要拼接](feishu文档url-必须用api返回值不要拼接.md) | feishu |  | hanged-man
+- [Hub FeishuWSClient.start() 从未调用 — WebSocket 接收死代码](hub-feishuwsclient-start-从未调用-websocket-接收死代码.md) | feishu |  | bootstrap
+- [OpenClaw Gateway 动态模块缺失 — 飞书消息分发失败](openclaw-gateway-动态模块缺失-导致飞书消息分发失败.md) | feishu | node:misaka10004", "platform:wsl", "severity:critical", "project:misakanet | bootstrap
+- [aily 飞书 MCP 通道：只能拉取不能推送](aily-飞书-mcp-通道-只能拉取不能推送.md) | feishu |  | bootstrap
+- [cc-connect 飞书显示优化：禁用工具调用和上下文提示](cc-connect-feishu-display-optimization.md) | feishu |  | bootstrap
+- [cc-connect 飞书机器人完整配置指南](cc-connect-feishu-setup-complete.md) | feishu |  | bootstrap
+- [feishu-docx](skill-feishu-docx.md) | feishu |  | skill-harvest
+- [feishu-interactive-card](skill-feishu-interactive-card.md) | feishu |  | skill-harvest
+- [openclaw-multi-instance-config](skill-openclaw-multi-instance-config.md) | feishu |  | skill-harvest
+- [task-board-html-patterns](skill-task-board-html-patterns.md) | feishu |  | skill-harvest
+- [飞书 Block API 假成功特征](飞书-block-api-假成功特征.md) | feishu |  | bootstrap
+- [飞书 Block Type 正确值与已知限制](飞书-block-type-正确值与已知限制.md) | feishu |  | bootstrap
+- [飞书 Block 批量写入上限](飞书-block-批量写入上限.md) | feishu |  | bootstrap
+- [AI Agent 项目宣发引流指南](ai-agent-project-outreach-guide.md) | marketing | "outreach", "github", "awesome-list", "pr", "promotion", "agent", "marketing" | Misaka10004
+- [ST2 MCP：end_turn 返回 409 Conflict 但游戏正常推进](st2-mcp-end-turn返回409但游戏正常推进.md) | mcp |  | hanged-man
+- [ST2 MCP：从 GAME_OVER 重开必须走特定流程](st2-mcp从game-over重开必须走特定流程.md) | mcp |  | hanged-man
+- [ST2 danielstarman MCP：选 Rare Relic 会卡死](st2-danielstarman-mcp-选rare-relic会卡死.md) | mcp |  | hanged-man
+- [BGE embedding 模型需要降级 fallback 避免启动崩溃](bge-embedding-模型需要降级-fallback-避免启动崩溃.md) | rag | "project:agent-medici", "severity:high", "node:hermes_wsl" | bootstrap
+- [Chroma 建库无 Checkpoint — 进程一死全部丢失](chroma-rebuild-no-checkpoint.md) | rag |  | bootstrap
+- [Chroma 建库无 Checkpoint — 进程一死全部丢失](chroma-建库无-checkpoint-进程一死全部丢失.md) | rag |  | bootstrap
+- [ChromaDB 不能放在 NTFS 文件系统](chromadb-不能放在-ntfs-文件系统.md) | rag | "project:self-grow-wiki", "severity:critical", "platform:wsl", "node:hermes_wsl" | bootstrap
+- [FANUC R-2000iC 检索混淆修复 — 关键词强制召回](fanuc-r-2000ic-retrieval-fix.md) | rag |  | hermes_wsl
+- [RAG 三通道 LLM 容灾方案](rag-三通道-llm-容灾方案.md) | rag | "project:self-grow-wiki", "node:hermes_wsl", "scope:broad" | bootstrap
+- [RAG 分块参数：800 字符 + 100 重叠 + 每文件最多 100 分块](rag-分块参数-800-字符-100-重叠-每文件最多-100-分块.md) | rag | "project:self-grow-wiki", "severity:medium", "node:hermes_wsl" | bootstrap
+- [RAG 建库策略：不可一次性加载全部数据到显存/内存](rag建库策略-不可一次性加载全部数据.md) | rag |  | hanged-man
+- [RAG 报警代码检索需要关键词强制召回](rag-报警代码检索需要关键词强制召回.md) | rag | "project:self-grow-wiki", "severity:high", "node:hermes_wsl" | bootstrap
+- [RAG 检索中文乱码 — pymupdf4llm 默认编码问题](rag-检索中文乱码-pymupdf4llm-默认编码问题.md) | rag |  | bootstrap
+- [edoc-pipeline-retrospective](skill-edoc-pipeline-retrospective.md) | rag |  | skill-harvest
+- [edoc-rag](skill-edoc-rag.md) | rag |  | skill-harvest
+- [lessons.md 修正（4 处） 项目 旧结论 修正后 heading block（type=4](lessons-md-修正-4-处-项目-旧结论-修正后-heading-block-type-4.md) | rag |  | bootstrap
+- [rag-audit-question-authoring](skill-rag-audit-question-authoring.md) | rag |  | skill-harvest
+- [知识库 4σ 质量审计流水线](知识库-4-质量审计流水线.md) | rag | "project:self-grow-wiki", "severity:medium", "node:hermes_wsl" | bootstrap
+- [GPT-SoVITS 训练：2-name2text 格式必须用 ARPABET 音素而非中文原文](gpt-sovits训练-2-name2text格式必须用arpabet音素.md) | tts |  | hanged-man
+- [GPT-SoVITS：HuBERT 必须 16kHz 且 get_model() 返回单体](gpt-sovits-hubert-必须16khz且get-model返回单体.md) | tts |  | hanged-man
+- [GPT-SoVITS：ref_free bug——prompt_text 为空时参数被覆盖](gpt-sovits-ref-free-bug-prompt-text为空时参数被覆盖.md) | tts |  | hanged-man
+- [TTS 中文编码：PowerShell 传参必须用 .txt 文件中转](tts中文编码-powerhsell传参必须用txt文件.md) | tts |  | hanged-man
+- [api-rate-limit-handling](api-rate-limit-handling.md) | uncategorized |  | 
+- [api-rate-limit-handling-best-practices](api-rate-limit-handling-best-practices.md) | uncategorized |  | 
+- [cc-connect-飞书机器人完整配置指南](cc-connect-飞书机器人完整配置指南.md) | uncategorized |  | 
+- [chrome-relay-browser-automation](chrome-relay-browser-automation.md) | uncategorized |  | 
+- [cron-job-not-running](cron-job-not-running.md) | uncategorized |  | 
+- [curl-request-troubleshoot](curl-request-troubleshoot.md) | uncategorized |  | 
+- [deepseek-tui-agent-模式下-write-file-写入不落地-worktree-git-链接路径断裂](deepseek-tui-agent-模式下-write-file-写入不落地-worktree-git-链接路径断裂.md) | uncategorized |  | 
+- [deepseek-tui-write-file-sandbox-worktree-git-path](deepseek-tui-write-file-sandbox-worktree-git-path.md) | uncategorized |  | 
+- [feishu-markdown-table-not-rendered](feishu-markdown-table-not-rendered.md) | uncategorized |  | 
+- [feishu-mcp-server-deepseek-tui-setup](feishu-mcp-server-deepseek-tui-setup.md) | uncategorized |  | 
+- [feishu-wiki批量下载-文件类型处理策略](feishu-wiki批量下载-文件类型处理策略.md) | uncategorized |  | 
+- [git-credentials-automation](git-credentials-automation.md) | uncategorized |  | 
+- [git-merge-conflict-resolution](git-merge-conflict-resolution.md) | uncategorized |  | 
+- [git-tls-handshake-failure](git-tls-handshake-failure.md) | uncategorized |  | 
+- [github-401-credential-lookup](github-401-credential-lookup.md) | uncategorized |  | 
+- [json-parse-failure-handling](json-parse-failure-handling.md) | uncategorized |  | 
+- [openai-compatible-api-call](openai-compatible-api-call.md) | uncategorized |  | 
+- [openclaw-prefer-cli-and-policy-over-direct-edit](openclaw-prefer-cli-and-policy-over-direct-edit.md) | uncategorized |  | 
+- [phase-0-output-gate](phase-0-output-gate.md) | uncategorized |  | 
+- [pip-install-timeout-ssl](pip-install-timeout-ssl.md) | uncategorized |  | 
+- [python-gbk-encoding-error](python-gbk-encoding-error.md) | uncategorized |  | 
+- [python-pycache-stale](python-pycache-stale.md) | uncategorized |  | 
+- [python-sandbox-path-isolation](python-sandbox-path-isolation.md) | uncategorized |  | 
+- [python-venv-tiktoken-module-not-found](python-venv-tiktoken-module-not-found.md) | uncategorized |  | 
+- [python-venv-troubleshoot](python-venv-troubleshoot.md) | uncategorized |  | 
+- [regex-greedy-matching](regex-greedy-matching.md) | uncategorized |  | 
+- [shared-json-needs-atomic-write](shared-json-needs-atomic-write.md) | uncategorized |  | 
+- [shell-script-debugging](shell-script-debugging.md) | uncategorized |  | 
+- [tmux-session-management](tmux-session-management.md) | uncategorized |  | 
+- [vertical-kb-question-bank-strategy](vertical-kb-question-bank-strategy.md) | uncategorized |  | 
+- [wechat-pubacct-fetch-separate-search-from-retrieval](wechat-pubacct-fetch-separate-search-from-retrieval.md) | uncategorized |  | 
+- [wsl-permission-ntfs-fix](wsl-permission-ntfs-fix.md) | uncategorized |  | 
+- [wsl-proxy-setup](wsl-proxy-setup.md) | uncategorized |  | 
+- [wsl-terminal-underscore-missing](wsl-terminal-underscore-missing.md) | uncategorized |  | 
+- [wsl2-memory-leak-fix](wsl2-memory-leak-fix.md) | uncategorized |  | 

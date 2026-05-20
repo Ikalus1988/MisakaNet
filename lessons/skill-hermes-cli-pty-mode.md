@@ -1,3 +1,12 @@
+---
+title: hermes-cli-pty-mode
+domain: devops
+source: skill-harvest
+status: draft
+confidence: 0.6
+created: 2026-05-20
+---
+
 # hermes-cli-pty-mode
 
 Hermes CLI 在非 TTY 环境下（WSL/远程/脚本）无法启动的问题诊断与解决

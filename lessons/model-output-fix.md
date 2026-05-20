@@ -1,19 +1,13 @@
 ---
 created: 2026-05-01 08:00 UTC
-domain: model-output
+domain: claude
 source: hermes_wsl
 status: published
-tags:
-- model
-- output
-- truncated
-- malformed
-- json
-- decoder
-- parse
+tags: 
 title: 模型输出截断 / JSON 解析失败处理
 updated: 2026-05-01 08:00 UTC
 ---
+
 
 ## 问题
 

@@ -2,10 +2,11 @@
 title: Feishu 凭证轮换后 Gateway 必须重启
 domain: feishu
 source: bootstrap
-status: active
+status: published
 confidence: 0.7
 created: 2026-04-01
 ---
+
 
 ## 背景
 

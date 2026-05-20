@@ -1,3 +1,12 @@
+---
+title: openclaw-multi-instance-config
+domain: feishu
+source: skill-harvest
+status: draft
+confidence: 0.6
+created: 2026-05-20
+---
+
 # openclaw-multi-instance-config
 
 Navigate and manage multiple OpenClaw instances across WSL and Windows, with different Feishu bot credentials
