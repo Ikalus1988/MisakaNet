@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "misakanet-2026",
+  "name": "misakanet",
   "compatibility_date": "2026-05-23",
   "observability": {
     "enabled": true
