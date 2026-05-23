@@ -147,12 +147,79 @@ python3 misakanet/scripts/queue_lesson.py \
 | Domain | Description | Examples |
 |--------|-------------|----------|
 | `rag` | Retrieval-Augmented Generation | ChromaDB, embeddings, chunking |
-| `devops` | Development operations | WSL, Docker, Git, SSH |
+| `devops` | Development operations | WSL, Git, SSH, environment |
+| `docker` | Docker containerization | Dockerfile, docker-compose, image, buildx |
 | `feishu` | Feishu/Lark integration | Webhooks, Block API, cards |
 | `fanuc` | FANUC robot programming | Karel, error codes, SRVO |
 | `network` | Network & connectivity | Proxy, TLS, DNS, timeouts |
 | `claude` | Claude Code & AI tools | Sessions, artifacts, skills |
 | `hub` | Hub orchestration | Poller, graph, sync |
+
+### Usage Examples for Each Domain
+
+<details>
+<summary>rag — ChromaDB crash on NTFS</summary>
+
+**Problem:** ChromaDB SQLite backend fails on NTFS-mounted WSL paths.
+**Fix:** Move DB to ext4 filesystem: `mv ~/.chromadb /mnt/ext4/`.
+**Verify:** `python3 -c "import chromadb; c=chromadb.Client(); print(c.heartbeat())"`.
+</details>
+
+<details>
+<summary>devops — WSL terminal underscore corruption</summary>
+
+**Problem:** WSL terminal paste operation swallows underscores under high load.
+**Fix:** Use tmux or pipe stdin using temporary script files instead of direct raw terminal pasting.
+**Verify:** Run test command containing underscores and check output: `echo "test_underscore_command"`.
+</details>
+
+<details>
+<summary>docker — Docker build fails on M1 Mac</summary>
+
+**Problem:** Building docker image on Apple Silicon fails due to unsupported platform architecture.
+**Fix:** Specify target platform parameter: `docker build --platform linux/amd64 -t my-app .`.
+**Verify:** `docker run --rm my-app uname -m` (should display `x86_64`).
+</details>
+
+<details>
+<summary>feishu — Webhook credential rotation restart</summary>
+
+**Problem:** Feishu bot ceases message dispatching after rotating API credentials/keys.
+**Fix:** Restart the local Feishu MCP Gateway service to load new credentials from cache.
+**Verify:** Send test message through gateway client and confirm `200 OK` status response.
+</details>
+
+<details>
+<summary>fanuc — KL-1086 interpreter line number confusion</summary>
+
+**Problem:** Robot compiler logs "KL: 1086" error, interpreted incorrectly as a system failure code.
+**Fix:** Match failure with the corresponding `.kl` script filename and inspect source line 1086 directly.
+**Verify:** Recompile `.kl` script file with syntax highlighting compiler flags enabled.
+</details>
+
+<details>
+<summary>network — Proxy connection timeout on API requests</summary>
+
+**Problem:** External API requests fail with SSL connection handshakes timing out.
+**Fix:** Export proxy env variables: `export HTTP_PROXY="http://127.0.0.1:7890" HTTPS_PROXY="http://127.0.0.1:7890"`.
+**Verify:** Run `curl -I https://api.github.com` and check for `200 OK` status.
+</details>
+
+<details>
+<summary>claude — JSON truncation on output limit</summary>
+
+**Problem:** Claude output parsing fails when outputting large JSON payload because it gets cut off.
+**Fix:** Chunk the output payload, or request output in a compact YAML format instead of JSON.
+**Verify:** Run the JSON validator wrapper and confirm it successfully parses without exceptions.
+</details>
+
+<details>
+<summary>hub — Synchronization poller delay</summary>
+
+**Problem:** Lesson poller delays node sync tasks when checking multiple remotes sequentially.
+**Fix:** Parallelize repository check tasks using an async thread pool inside the orchestrator.
+**Verify:** Run the hub daemon and verify synchronization log timestamps occur concurrently.
+</details>
 
 ## Contributing
 

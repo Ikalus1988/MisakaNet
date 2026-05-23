@@ -329,7 +329,7 @@ def main():
     _show_timing(time.time() - t0, total_docs)
     if found_any:
         print(f"  💡 查看完整内容: cat lessons/<filename>.md")
-        print(f"  💡 贡献新知识: python3 misakanet/scripts/queue_lesson.py -t "标题" -d domain "内容..."")
+        print(f"  💡 贡献新知识: python3 misakanet/scripts/queue_lesson.py -t '标题' -d domain '内容...'")
         print()
 
 
