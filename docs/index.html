@@ -1584,8 +1584,7 @@ function getTimeAgo(date) {
 }
 
 // ── Registration ──
-// 注册请求由 Cloudflare Worker 代理转发，token 仅存在服务端环境变量中
-// 注册代理 — 由 Cloudflare Worker 转发，token 不经过前端
+// Registration proxied via Cloudflare Worker. Token is server-side only.
 const WORKER_URL = "https://misakanet-register-proxy.eric-jia1920.workers.dev";
 
 // Client-side rate limit: max 1 registration per 30s
