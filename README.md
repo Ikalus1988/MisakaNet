@@ -1,7 +1,7 @@
 # MisakaNet
 
 <p align="center">
-  <img src="promotional/banner.svg" width="800" alt="MisakaNet"/>
+  <img src="promotional/banner-kv.svg" width="800" alt="MisakaNet"/>
 </p>
 
 <p align="center">
