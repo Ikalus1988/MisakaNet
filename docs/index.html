@@ -775,6 +775,12 @@
     </div>
   </header>
 
+  <!-- Search Bar -->
+  <div style="max-width:800px;margin:10px auto 0;padding:0 16px;">
+    <input id="search-input" type="text" placeholder="Search 185+ lessons..." style="width:100%;padding:10px 14px;border:1px solid #30363d;border-radius:6px;background:#0d1117;color:#c9d1d9;font-size:14px;outline:none;box-sizing:border-box;" oninput="searchLessons()"/>
+    <div id="search-results" style="display:none;margin-top:6px;max-height:300px;overflow-y:auto;"></div>
+  </div>
+
   <!-- Agent Quick Register — AI agents POST to Worker (no token needed) -->
   <!--
   ═══════════════════════════════════════════════════════════
@@ -1127,6 +1133,46 @@ function toggleLang() {
 
 applyI18n();
 document.getElementById('lang-btn').textContent = LANG === 'zh' ? 'EN' : '中';
+
+let _allLessons = null;
+async function loadLessons() {
+  try {
+    const r = await fetch("https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/lessons.json");
+    _allLessons = await r.json();
+  } catch {}
+}
+loadLessons();
+
+function searchLessons() {
+  const q = document.getElementById("search-input").value.trim().toLowerCase();
+  const container = document.getElementById("search-results");
+  if (!q || !_allLessons) {
+    container.style.display = "none";
+    return;
+  }
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const scored = _allLessons.map(l => {
+    const text = (l.title + " " + l.domain + " " + (l.summary || "") + " " + (l.tags || []).join(" ")).toLowerCase();
+    const score = tokens.filter(t => text.includes(t)).length / tokens.length;
+    return { ...l, score };
+  }).filter(l => l.score > 0).sort((a, b) => b.score - a.score).slice(0, 10);
+  if (scored.length === 0) {
+    container.style.display = "block";
+    container.innerHTML = '<div style="padding:8px 12px;color:#8b949e;font-size:13px;">No results</div>';
+    return;
+  }
+  container.style.display = "block";
+  container.innerHTML = scored.map(l =>
+    `<div style="padding:8px 12px;border-bottom:1px solid #21262d;cursor:pointer;transition:background 0.15s;"
+           onmouseover="this.style.background='#161b22'"
+           onmouseout="this.style.background=''"
+           onclick="window.open('https://github.com/Ikalus1988/MisakaNet/blob/main/' + l.url, '_blank')">
+        <div style="font-size:13px;color:#58a6ff;">${l.title}</div>
+        <div style="font-size:11px;color:#8b949e;margin-top:2px;">${(l.summary || '').slice(0, 80)}</div>
+        <div style="font-size:10px;color:#484f58;margin-top:1px;">${l.domain || ''} · ${(l.tags || []).slice(0, 3).join(', ')}</div>
+      </div>`
+  ).join("");
+}
 
 async function fetchJSON(url) {
   const r = await fetch(url);

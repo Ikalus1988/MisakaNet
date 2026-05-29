@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&amp;family=Inter:wght@400;500;600;700;800&amp;display=swap');
+      .brand { font-family: 'Orbitron', 'Arial Black', sans-serif; }
+      .ui { font-family: 'Inter', 'Segoe UI', sans-serif; }
+      .mono { font-family: 'IBM Plex Mono', 'Courier New', monospace; }
+    </style>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#030612"/>
+      <stop offset="42%" stop-color="#0a1430"/>
+      <stop offset="100%" stop-color="#1a0d35"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="28%" cy="42%" r="60%">
+      <stop offset="0%" stop-color="#b8fbff" stop-opacity="0.24"/>
+      <stop offset="28%" stop-color="#54e8ff" stop-opacity="0.22"/>
+      <stop offset="54%" stop-color="#7952ff" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="42%" stop-color="#90f6ff"/>
+      <stop offset="100%" stop-color="#a27dff"/>
+    </linearGradient>
+    <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#76f1ff"/>
+      <stop offset="100%" stop-color="#855eff"/>
+    </linearGradient>
+    <linearGradient id="hairGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#efe8ff"/>
+      <stop offset="100%" stop-color="#cdbfff"/>
+    </linearGradient>
+    <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe7d6"/>
+      <stop offset="100%" stop-color="#f7cdb9"/>
+    </linearGradient>
+    <pattern id="grid" width="34" height="34" patternUnits="userSpaceOnUse">
+      <path d="M 34 0 L 0 0 0 34" fill="none" stroke="#7ea2ff" stroke-opacity="0.11" stroke-width="1"/>
+    </pattern>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="strongGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="10" result="blur1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="900" height="480" fill="url(#bg)"/>
+  <rect width="900" height="480" fill="url(#grid)"/>
+  <rect width="900" height="480" fill="url(#glow)"/>
+
+  <g opacity="0.7">
+    <path d="M-30 440 L274 126" stroke="#7b62ff" stroke-opacity="0.14" stroke-width="40"/>
+    <path d="M-20 430 L308 90" stroke="#5befff" stroke-opacity="0.1" stroke-width="18"/>
+    <path d="M72 480 L362 168" stroke="#ffffff" stroke-opacity="0.05" stroke-width="8"/>
+  </g>
+
+  <g opacity="0.92" filter="url(#softGlow)">
+    <path d="M92 314 C166 164, 254 112, 362 100 S578 140, 750 82" fill="none" stroke="#63ecff" stroke-width="3.2" stroke-dasharray="8 14" stroke-linecap="round">
+      <animate attributeName="stroke-dashoffset" from="0" to="-220" dur="8s" repeatCount="indefinite"/>
+    </path>
+    <path d="M44 360 C148 238, 240 222, 334 226 S542 258, 842 202" fill="none" stroke="#8b69ff" stroke-width="2.4" stroke-dasharray="4 12" stroke-linecap="round">
+      <animate attributeName="stroke-dashoffset" from="0" to="180" dur="6.5s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
+  <g>
+    <ellipse cx="210" cy="248" rx="170" ry="182" fill="url(#glow)"/>
+    <ellipse cx="214" cy="228" rx="170" ry="132" fill="none" stroke="url(#ringGrad)" stroke-width="3.6" stroke-opacity="0.32" stroke-dasharray="11 13" filter="url(#strongGlow)">
+      <animate attributeName="stroke-dashoffset" from="0" to="120" dur="9s" repeatCount="indefinite"/>
+    </ellipse>
+    <ellipse cx="214" cy="228" rx="118" ry="92" fill="none" stroke="#ecfeff" stroke-opacity="0.22" stroke-width="1.8" stroke-dasharray="7 10">
+      <animate attributeName="stroke-dashoffset" from="0" to="-90" dur="6.2s" repeatCount="indefinite"/>
+    </ellipse>
+    <circle cx="376" cy="138" r="8" fill="#f5ffff" filter="url(#strongGlow)">
+      <animate attributeName="opacity" values="0.45;1;0.45" dur="1.7s" repeatCount="indefinite"/>
+    </circle>
+    <line x1="330" y1="164" x2="376" y2="138" stroke="#ecfeff" stroke-opacity="0.42"/>
+    <text x="72" y="88" class="mono" font-size="10" fill="#7ff1ff">MISAKA NETWORK CLONE NODE</text>
+
+    <g transform="translate(74 96)">
+      <ellipse cx="132" cy="142" rx="104" ry="122" fill="#091425" fill-opacity="0.45"/>
+      <path d="M72 106 C76 62, 106 35, 150 34 C191 33, 220 59, 224 102 C227 129, 223 144, 210 160 C194 180, 172 192, 146 194 C117 196, 90 188, 71 168 C56 152, 48 132, 49 108 C50 92, 57 81, 72 106Z" fill="url(#hairGrad)"/>
+      <path d="M58 134 C63 102, 87 79, 121 73 C157 67, 192 76, 212 99 C228 116, 234 141, 229 171 C223 202, 206 223, 178 237 C149 251, 116 252, 90 240 C64 228, 46 209, 39 182 C34 164, 36 148, 58 134Z" fill="url(#skinGrad)"/>
+      <path d="M56 121 C68 87, 98 66, 137 63 C176 60, 204 69, 221 92 C206 87, 188 85, 170 89 C146 94, 128 102, 108 107 C89 111, 73 112, 56 121Z" fill="url(#hairGrad)"/>
+      <path d="M52 137 C47 116, 49 98, 58 82 C59 103, 68 123, 82 141 C71 147, 61 148, 52 137Z" fill="url(#hairGrad)"/>
+      <path d="M223 113 C231 126, 235 142, 234 162 C232 185, 224 204, 211 220 C212 202, 211 185, 208 168 C205 148, 209 128, 223 113Z" fill="url(#hairGrad)"/>
+      <rect x="182" y="87" width="28" height="5" rx="2.5" fill="#f3f7ff" transform="rotate(-18 182 87)"/>
+      <rect x="186" y="95" width="24" height="5" rx="2.5" fill="#dfe8ff" transform="rotate(-18 186 95)"/>
+      <ellipse cx="113" cy="145" rx="8" ry="6" fill="#5a667e"/>
+      <ellipse cx="166" cy="145" rx="8" ry="6" fill="#5a667e"/>
+      <circle cx="111" cy="143" r="1.8" fill="#ffffff" opacity="0.82"/>
+      <circle cx="164" cy="143" r="1.8" fill="#ffffff" opacity="0.82"/>
+      <path d="M104 175 C122 180, 145 180, 174 174" fill="none" stroke="#cb8897" stroke-width="3.2" stroke-linecap="round"/>
+      <circle cx="92" cy="167" r="9" fill="#f6b7c4" fill-opacity="0.2"/>
+      <circle cx="188" cy="167" r="9" fill="#f6b7c4" fill-opacity="0.2"/>
+      <path d="M46 212 C84 202, 116 200, 145 202 C178 204, 207 213, 236 232 L236 258 L46 258 Z" fill="#d9dde8"/>
+      <path d="M116 205 L147 205 L155 258 L108 258 Z" fill="#f2f5fb"/>
+      <rect x="116" y="204" width="31" height="18" rx="6" fill="#e8edf7"/>
+      <circle cx="141" cy="88" r="82" fill="none" stroke="#dffcff" stroke-opacity="0.08" stroke-width="1.2"/>
+    </g>
+
+    <text x="72" y="418" class="ui" font-size="30" font-weight="800" fill="#f2fbff">Misaka #10001</text>
+    <text x="72" y="442" class="mono" font-size="11" fill="#9eb9d8">shared skills · network-synced memory · local-first shell</text>
+  </g>
+
+  <g>
+    <text x="386" y="92" class="mono" font-size="10" fill="#79f0ff" opacity="0.85">MISAKA NETWORK / KEY VISUAL TYPE-A</text>
+    <text x="376" y="174" class="brand" font-size="84" font-weight="900" fill="url(#titleGrad)" letter-spacing="5" filter="url(#strongGlow)">MisakaNet</text>
+    <text x="378" y="216" class="ui" font-size="32" font-weight="800" fill="#f8feff">Safe. Useful. Zero-Dep.</text>
+    <text x="378" y="258" class="ui" font-size="18" fill="#c3d4ef">Synchronized clone node.</text>
+  </g>
+
+  <g filter="url(#softGlow)">
+    <rect x="378" y="332" width="320" height="72" rx="36" fill="#0d1730" fill-opacity="0.66" stroke="#7cecff" stroke-opacity="0.22"/>
+    <circle cx="414" cy="368" r="8" fill="#74ecff">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="1.6s" repeatCount="indefinite"/>
+    </circle>
+    <text x="438" y="361" class="mono" font-size="10" fill="#7decff">status // clone sync stable</text>
+    <text x="438" y="384" class="ui" font-size="14" fill="#edfaff" font-weight="700">Safe · Useful · Zero-Dep</text>
+  </g>
+
+  <g opacity="0.72">
+    <text x="494" y="438" class="mono" font-size="10" fill="#6e88a7">node:#10001 | role: terminal | mode: local-first | shared-skills</text>
+  </g>
+</svg>

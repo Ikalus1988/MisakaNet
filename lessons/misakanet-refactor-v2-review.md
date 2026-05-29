@@ -41,6 +41,10 @@ python3 scripts/score_lessons.py
 vhs scripts/demo.tape
 ```
 
+## 已完成（搜索结果质量评分）
+
+分数条（██████░░ 78%）、关键词高亮（ANSI 黄色）、内容预览——在 v2 重构第三轮已全部实现。当前 search_knowledge.py 的输出包含这三项。
+
 ## 效果
 
 - hub/misaka_hub.py：363→172 行
