@@ -58,7 +58,8 @@ class ArbitrationQueue:
         conn.commit()
         conn.close()
 
-    def create_case(self, skill_id: str, skill_name: str, versions: list) -> ArbitrationCase:
+    def create_case(self, skill_id: str, skill_name: str, versions: list,
+                    notify_fn=None) -> ArbitrationCase:
         """
         创建仲裁案例
         当检测到同一 skill_id 有多个冲突版本时调用
@@ -91,6 +92,12 @@ class ArbitrationQueue:
         conn.close()
 
         print(f"[Arbitration] 案例创建: {case_id} - {skill_name} ({len(versions)} 个版本)")
+        # 通知所有通道（通过可选 notify_fn）
+        if notify_fn:
+            try:
+                notify_fn(case_id, skill_name, versions)
+            except Exception:
+                pass
         return case
 
     def get_pending_cases(self) -> list[ArbitrationCase]:

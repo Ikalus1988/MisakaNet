@@ -1,6 +1,6 @@
 # Contributing to MisakaNet
 
-感谢你对 MisakaNet 的关注！无论你是提交代码、贡献知识、还是反馈问题，都欢迎。
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for the full guide.
 
 ---
 

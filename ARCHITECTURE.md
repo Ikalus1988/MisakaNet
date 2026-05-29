@@ -84,7 +84,7 @@
 
 ---
 
-### 3. Hub 仲裁层 (hermes_hub.py)
+### 3. Hub 仲裁层 (misaka_hub.py)
 
 **职责**: 主控中心，协调图谱、同步和 Master 模式。
 
@@ -220,7 +220,7 @@ Node: queue_feedback.py
 ### 添加新通知通道
 
 1. 在 `sync/` 中创建通知模块，实现 `notify(title, body)` 接口
-2. 在 `hermes_hub.py` 中注册回调
+2. 在 `misaka_hub.py` 中注册回调
 3. 在 `config.yaml` 中添加通道配置
 
 ### 添加新检索策略
@@ -258,7 +258,7 @@ Agent-Medici/
 ├── docs/
 │   ├── agents/                # 代理操作指南
 │   └── human/                 # 人类可读的详细文档
-├── hermes_hub.py              # Hub 主入口
+├── misaka_hub.py              # Hub 主入口
 ├── config.yaml                # Hub 配置
 ├── search_knowledge.py        # BM25 知识检索 CLI
 ├── lessons/                   # 踩坑知识库（按 domain 分类）

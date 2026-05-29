@@ -68,6 +68,7 @@
 - [RAG 分块参数：800 字符 + 100 重叠 + 每文件最多 100 分块](rag-分块参数-800-字符-100-重叠-每文件最多-100-分块.md) | rag | "project:self-grow-wiki", "severity:medium", "node:hermes_wsl" | bootstrap
 - [RAG 建库策略：不可一次性加载全部数据到显存/内存](rag建库策略-不可一次性加载全部数据.md) | rag |  | hanged-man
 - [RAG 报警代码检索需要关键词强制召回](rag-报警代码检索需要关键词强制召回.md) | rag | "project:self-grow-wiki", "severity:high", "node:hermes_wsl" | bootstrap
+- [RAG Cross-Encoder Reranker CPU 瓶颈与 LLM 确定性调优](rag-cross-encoder-reranker-cpu-瓶颈-与-llm-确定性调优.md) | rag | "project:self-grow-wiki", "node:hermes_wsl", "scope:broad", "severity:high" | bootstrap
 - [RAG 检索中文乱码 — pymupdf4llm 默认编码问题](rag-检索中文乱码-pymupdf4llm-默认编码问题.md) | rag |  | bootstrap
 - [edoc-pipeline-retrospective](skill-edoc-pipeline-retrospective.md) | rag |  | skill-harvest
 - [edoc-rag](skill-edoc-rag.md) | rag |  | skill-harvest

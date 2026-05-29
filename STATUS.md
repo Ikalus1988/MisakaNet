@@ -1,43 +1,72 @@
 # 项目状态
 
-## 当前状态
+> 自动更新于 2026-05-29 16:23 UTC | 由 scripts/update_status.py 生成
 
-**MisakaNet 通信层已上线。Hub 仲裁层 standby，等真实数据流入后激活。**
+## 概览
 
-## 活跃功能
+| 指标 | 数值 |
+|------|------|
+| 📚 Lessons | 185 篇 |
+| 📖 References | 6 篇 |
+| 🏛️ 领域覆盖 | 18 个 |
+| ✅ Git 提交 | 23 次 |
+| 📈 近 30 天活跃度 | 23 次提交 |
 
-| 功能 | 机制 | 状态 |
-|------|------|------|
-| **Feedback 上报** | Node → GitHub Issues → Hub → Knowledge Graph | ✅ 11 条闭环 |
-| **Lessons 共享** | queue_lesson.py → git push → inotify 热加载 | ✅ 9 条实心 |
-| **Hook 拦截** | cc-haha Bash 失败 → 6 类关键词 → grep lessons | ✅ 8/8 测试通过 |
-| **Feishu 通知** | hook_stats → 飞书卡片 | ✅ 每日/每触发 |
-| **Standby poller** | Node 1 备推 Feishu（主 Hub 离线时接管） | ✅ 每 5 分钟 |
-| **Draft 草稿** | 未命中 lesson 时自动生成 → 48h 提醒 → promote/reject | ✅ 审后发 |
+## 领域分布
+
+| 领域 | 数量 |
+|------|------|
+| uncategorized        | ████████████████████ +34 54 |
+| devops               | ████████████████████ +25 45 |
+| rag                  | ████████████████████ +7 27 |
+| feishu               | ████████████████████ +5 25 |
+| development          | ██████████░░░░░░░░░░ 10 |
+| general              | ████░░░░░░░░░░░░░░░░ 4 |
+| fanuc                | ████░░░░░░░░░░░░░░░░ 4 |
+| network              | ███░░░░░░░░░░░░░░░░░ 3 |
 
 ## 节点就绪
 
-| 节点 | 类型 | 读 lessons | 写 lessons | 拦截 hook |
-|------|------|-----------|-----------|----------|
-| Node 1 | Hermes (WSL) | ✅ inotify | ✅ queue_lesson | ⏳ skill 规则 |
-| Node 2 | Hermes (另一台) | ✅ inotify | ✅ queue_lesson | ⏳ skill 规则 |
-| Node 3 | cc-haha | ✅ CLAUDE.md + hook | ❌ | ✅ 6 类 |
-| Node 4 | OpenClaw | 待确认格式 | ❌ | ❌ |
+| 节点 | 类型 | 状态 |
+|------|------|------|
+| Hermes (WSL) | Hub + Node | ✅ |
+| cc-haha | Node | ✅ |
+| OpenClaw | Node | ⏳ 待确认 |
 
-## 当前焦点
+## 活跃功能
 
-- 优化 AGENTS.md 和 CLAUDE.md 文件
-- 设置 intuitive-flow 工作流
-- 创建 docs/agents/ 目录结构
+| 功能 | 状态 |
+|------|------|
+| BM25 语义搜索 | ✅ 零依赖 |
+| 搜索建议 `--suggest` | ✅ ≥2字符弹出 |
+| 内容预览 + 高亮 + 分数条 | ✅ 彩色终端输出 |
+| Lessons 共享 (git push) | ✅ |
+| GitHub API 一键贡献 | ✅ scripts/contribute.py |
+| 交互式安装向导 | ✅ scripts/setup.py |
+| 贡献模板 | ✅ scripts/new_lesson.py |
+| 质量评分 | ✅ scripts/score_lessons.py |
+| 通知通道 (Discord/Slack/Email) | ✅ hub/sync/notifier.py |
+| Hub 仲裁 | ✅ |
+| Obsidian 集成 | ✅ |
 
-## 下一步
+## 快速开始
 
-1. 验证工作流是否正确设置
-2. 测试检索和贡献流程
-3. 配置节点规则注入
+```bash
+# 搜索
+python3 search_knowledge.py "关键词"
 
-## 支持的命令
+# 搜索建议
+python3 search_knowledge.py "pip" --suggest
 
-- `python3 search_knowledge.py "关键词"` - 检索知识
-- `python3 misakanet/scripts/queue_lesson.py` - 贡献新知识
-- `cd ~/Agent-Medici && git pull --ff-only` - 同步知识库
+# 贡献新 lesson
+python3 scripts/new_lesson.py
+
+# 通过 API 一键贡献 (需 GITHUB_TOKEN)
+python3 scripts/contribute.py path/to/lesson.md
+
+# 环境检查
+python3 scripts/setup.py --check
+
+# 质量评分
+python3 scripts/score_lessons.py
+```

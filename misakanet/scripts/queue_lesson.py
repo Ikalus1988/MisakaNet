@@ -29,7 +29,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-REPO = "Ikalus1988/Agent-Medici"
+# 自动更新 lessons.json（make sure scripts/ 在 sys.path 里）
+_SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"
+if _SCRIPTS_DIR.exists() and str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
+REPO = "Ikalus1988/MisakaNet"
 NODE_ID = os.environ.get("MISAKANET_NODE_ID", "hermes_wsl2")
 LESSONS_DIR = Path(os.environ.get("LESSONS_DIR",
                   Path(__file__).parent / ".." / ".." / "lessons"))
@@ -160,6 +165,13 @@ def write_lesson(title, domain, tags, content, source=NODE_ID, status="published
                           cwd=str(repo_root))
 
     if push.returncode == 0:
+        # 更新 lessons.json 索引
+        try:
+            from update_lessons_json import main as rebuild_index
+            rebuild_index()
+            print(f"   📋 lessons.json 已更新")
+        except Exception:
+            pass
         print(f"✅ {mode} lesson: {filename}")
         print(f"   title: {title}")
         print(f"   domain: {domain}")

@@ -36,22 +36,22 @@
 ```
 # Demo: Zero-dep search across 185 lessons
 
-$ python3 search_knowledge.py "pip install 超时" --top=1
+$ python3 search_knowledge.py "pip install timeout" --top=1
 
-📋 lessons/  (101 条匹配，展示前 1)
+📋 lessons/  (101 matches, showing top 1)
 --------------------------------------------------
-  [devops]         pip install 网络超时 / SSL / 依赖冲突修复
+  [devops]         pip install network timeout / SSL fix
                    ████████░░ 78%
                    📄 lessons/pip-install-timeout-ssl.md
-                   用 `pip install --default-timeout=100` 解决超时问题
-  ⏱ 检索 191 篇文档耗时 2.3s
-  💡 贡献新知识: python3 scripts/new_lesson.py
+                   Run \`pip install --default-timeout=100\` to resolve
+  ⏱ Searched 191 docs in 2.3s
+  💡 Contribute: python3 scripts/new_lesson.py
 
-$ python3 scripts/new_lesson.py   # 交互式贡献向导
-= MisakaNet — 贡献新 Lesson =
-问题/踩坑标题: WSL 下 pip 证书验证失败
+$ python3 scripts/new_lesson.py   # interactive lesson wizard
+=== MisakaNet — New Lesson ===
+Problem: WSL pip SSL certificate verification failed
 ...
-✅ lesson 已创建
+✅ lesson created
 ```
 
 > 重新生成: `vhs scripts/demo.tape`

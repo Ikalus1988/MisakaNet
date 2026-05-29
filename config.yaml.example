@@ -1,0 +1,48 @@
+# MisakaNet Hub 配置示例
+# 复制本文件为 config.yaml 并填入实际值
+# config.yaml 已在 .gitignore 中，不会提交到 Git
+
+# ── Hub 基本信息 ──
+hub:
+  name: "misaka-hub"              # Hub 实例名称（唯一标识）
+  protocol_version: "1.0.0"       # 协议版本
+
+# ── 同步配置（核心功能） ──
+sync:
+  interval_minutes: 30            # 同步轮询间隔（分钟）
+  # 推荐: 生产环境 30，开发环境 5
+
+# ── 存储 ──
+storage:
+  graph:
+    persist_path: "hub/storage/knowledge_graph/graph.gpickle"
+  vector:
+    persist_path: "hub/storage/vector_store/"
+    model: "BAAI/bge-base-zh-v1.5"
+  arbitration:
+    db_path: "hub/storage/arbitration.db"
+
+# ── 通知通道（可选，不配置则不启用） ──
+notifier:
+  # Discord（可选）
+  discord:
+    webhook_url: ""               # Discord Webhook URL
+    # 获取: Discord 服务器 → 频道设置 → 集成 → Webhook
+
+  # Slack（可选）
+  slack:
+    webhook_url: ""               # Slack Webhook URL
+    # 获取: Slack API → Incoming Webhooks → 创建
+
+  # 邮件（可选，通过环境变量配置，config.yaml 不存储密码）
+  # EMAIL_SMTP_HOST=smtp.gmail.com
+  # EMAIL_SMTP_PORT=587
+  # EMAIL_SENDER=misakanet@example.com
+  # EMAIL_PASSWORD=your-app-password
+  # EMAIL_RECIPIENT=admin@example.com
+
+# ── Master 节点配置（可选） ──
+master:
+  keyring_service: "misakanet-master"
+  token_ttl_hours: 24
+  audit_log_days: 90
