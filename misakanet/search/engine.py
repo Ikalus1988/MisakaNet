@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 
 REPO = Path(__file__).resolve().parent.parent.parent
 LESSONS = REPO / "lessons"
+LESSONS_CORE = LESSONS / "core"
+LESSONS_CONTRIB = LESSONS / "contrib"
 REFERENCES = REPO / "reference"
 INDEX = LESSONS / "index.md"
 
@@ -105,58 +107,66 @@ def _parse_yaml_frontmatter(text: str) -> dict:
 
 
 def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc]:
-    """L2缓存加载 — 只重新解析有变动的文件。"""
+    """L2缓存加载 — 只重新解析有变动的文件。
+    如果 is_lesson=True，同时扫描 core/ 和 contrib/ 子目录。"""
     docs = []
     conn = _l2()
     known = {row[0]: (row[1], row[2]) for row in conn.execute(
         "SELECT path, mtime, size FROM file_cache").fetchall()}
     changed = 0
-    for f in sorted(directory.glob("**/*.md")):
-        if f.name == "index.md" or f.name.startswith('.'):
+    # For lessons, scan both core/ and contrib/; for references, scan single directory
+    search_dirs = [directory]
+    if is_lesson:
+        search_dirs = [LESSONS_CORE, LESSONS_CONTRIB]
+    for dir_path in search_dirs:
+        if not dir_path.exists():
             continue
-        try:
-            st = f.stat()
-        except OSError:
-            continue
-        rel = str(f.relative_to(REPO))
-        cached = known.get(rel)
-        if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
-            row = conn.execute(
-                "SELECT title,domain,status,reference,scope,source,tags FROM file_cache WHERE path=?",
-                (rel,)).fetchone()
-            if row:
-                tags = json.loads(row[6]) if row[6] else []
-                doc = CachedDoc(filename=f.name, filepath=f, content="", mtime=st.st_mtime,
-                                is_lesson=is_lesson, title=row[0] or f.stem, domain=row[1] or "",
-                                status=row[2] or "", reference=row[3] or "",
-                                scope=row[4] or "", source=row[5] or "", tags=tags)
-                doc.content = f.read_text(encoding="utf-8", errors="replace")
-                docs.append(doc)
+        for f in sorted(dir_path.glob("**/*.md")):
+            if f.name == "index.md" or f.name.startswith('.'):
                 continue
-        try:
-            content = f.read_text(encoding="utf-8", errors="replace")
-        except (OSError, UnicodeDecodeError):
-            continue
-        if not content.strip():
-            continue
-        doc = CachedDoc(filename=f.name, filepath=f, content=content,
-                        mtime=st.st_mtime, is_lesson=is_lesson)
-        meta = _parse_json_frontmatter(content) or _parse_yaml_frontmatter(content)
-        doc.title = meta.get("title", f.stem)
-        doc.domain = meta.get("domain", "")
-        if isinstance(doc.domain, list):
-            doc.domain = doc.domain[0] if doc.domain else ""
-        doc.status = meta.get("status", "")
-        doc.reference = meta.get("reference", "")
-        doc.scope = meta.get("scope", "")
-        doc.source = meta.get("source", "")
-        raw_tags = meta.get("tags", "")
-        doc.tags = raw_tags if isinstance(raw_tags, list) else []
-        docs.append(doc)
-        conn.execute("INSERT OR REPLACE INTO file_cache (path,mtime,size,title,domain,status,reference,scope,source,tags) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                     (rel, st.st_mtime, st.st_size, doc.title, doc.domain, doc.status,
-                      doc.reference, doc.scope, doc.source, json.dumps(doc.tags, ensure_ascii=False)))
-        changed += 1
+            try:
+                st = f.stat()
+            except OSError:
+                continue
+            rel = str(f.relative_to(REPO))
+            cached = known.get(rel)
+            if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
+                row = conn.execute(
+                    "SELECT title,domain,status,reference,scope,source,tags FROM file_cache WHERE path=?",
+                    (rel,)).fetchone()
+                if row:
+                    tags = json.loads(row[6]) if row[6] else []
+                    doc = CachedDoc(filename=f.name, filepath=f, content="", mtime=st.st_mtime,
+                                    is_lesson=is_lesson, title=row[0] or f.stem, domain=row[1] or "",
+                                    status=row[2] or "", reference=row[3] or "",
+                                    scope=row[4] or "", source=row[5] or "", tags=tags)
+                    doc.content = f.read_text(encoding="utf-8", errors="replace")
+                    docs.append(doc)
+                    continue
+            try:
+                content = f.read_text(encoding="utf-8", errors="replace")
+            except (OSError, UnicodeDecodeError):
+                continue
+            if not content.strip():
+                continue
+            doc = CachedDoc(filename=f.name, filepath=f, content=content,
+                            mtime=st.st_mtime, is_lesson=is_lesson)
+            meta = _parse_json_frontmatter(content) or _parse_yaml_frontmatter(content)
+            doc.title = meta.get("title", f.stem)
+            doc.domain = meta.get("domain", "")
+            if isinstance(doc.domain, list):
+                doc.domain = doc.domain[0] if doc.domain else ""
+            doc.status = meta.get("status", "")
+            doc.reference = meta.get("reference", "")
+            doc.scope = meta.get("scope", "")
+            doc.source = meta.get("source", "")
+            raw_tags = meta.get("tags", "")
+            doc.tags = raw_tags if isinstance(raw_tags, list) else []
+            docs.append(doc)
+            conn.execute("INSERT OR REPLACE INTO file_cache (path,mtime,size,title,domain,status,reference,scope,source,tags) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                         (rel, st.st_mtime, st.st_size, doc.title, doc.domain, doc.status,
+                          doc.reference, doc.scope, doc.source, json.dumps(doc.tags, ensure_ascii=False)))
+            changed += 1
     conn.commit()
     if changed:
         print(f"  📦 L2缓存: {changed} 篇变动")

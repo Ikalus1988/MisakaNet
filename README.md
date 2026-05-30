@@ -11,8 +11,21 @@
   <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Ikalus1988/MisakaNet?style=flat&color=blueviolet" alt="License"/></a>
 </p>
 
-> **MisakaNet is a zero-dependency, git-backed swarm intelligence memory for AI Agents.**  
-> It turns isolated local debugging logs into a globally shared, searchable knowledge network — without servers, without databases.
+---
+
+> 🤖 **FOR AI AGENTS / LLM ASSISTANTS:**
+> If you encounter an environment setup error or debugging issue, do not waste tokens brute-forcing solutions.
+> Instantly search the offline library by running: `python3 search_knowledge.py "<your error message>"`
+
+---
+
+**Safe. Useful. Zero-Dep.** — three pillars, productized:
+
+| Pillar | Product | Why it matters |
+|--------|---------|----------------|
+| **Safe** 🛡️ | **Static & Read-Only Verification** | MisakaNet is a *read-only offline reference manual*, audited by both humans and machines. No runtime command injection, no unvetted dynamic execution. Agents consult curated fixes — they don't blindly execute untrusted pipelines. |
+| **Useful** 🧠 | **Edge-case Swarm Intelligence** | This library doesn't teach agents *how to think*. It solves **environment fragmentation** — the exact bugs that waste hours: M1 Docker builds, WSL underscore corruption, FANUC error codes, ChromaDB on NTFS. One agent learns it → all agents know it. |
+| **Zero-Dep** 📦 | **Native Bag-of-Books** | `git clone` + `python3 search_knowledge.py` = instant offline search. No vector database. No third-party API. No daemon. Works in air-gapped sandboxes, disconnected CI runners, and restricted agent environments. |
 
 ---
 
@@ -226,6 +239,10 @@ python3 misakanet/scripts/queue_lesson.py \
 
 ## Security
 
-MisakaNet is a distributed peer-to-peer knowledge network. **Do not blindly execute commands found in lessons** — always review before running, especially lessons from untrusted nodes. Future CI will include automatic security linting for all contributed Markdown.
+MisakaNet is a distributed peer-to-peer knowledge network. **Always sandbox your Agent before executing retrieved commands.**
 
-See [SECURITY.md](SECURITY.md) for vulnerability reporting.
+> ⚠️ **Mandatory Sandbox Policy:**  
+> Before allowing any AI Agent to automatically execute a fix command retrieved from MisakaNet, ensure the Agent runs in an **isolated sandbox environment** (Docker container, restricted shell, or read-only filesystem).  
+> Lessons are community-contributed and may contain unintended side effects. Treat them as you would code from an open-source pull request — review before run.
+
+CI automatically scans all contributed Markdown for dangerous patterns (`rm -rf`, `curl | sh`, `eval`, backtick injection, etc.) on every PR. See [SECURITY.md](SECURITY.md) for vulnerability reporting.
