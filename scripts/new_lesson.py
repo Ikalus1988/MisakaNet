@@ -11,6 +11,7 @@ import json
 import os
 import sys
 import re
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -20,14 +21,28 @@ LESSONS_DIR = REPO / "lessons"
 DOMAINS = sorted([
     "rag", "feishu", "development", "devops", "general",
     "python", "wsl", "git", "docker", "network",
-    "security", "frontend", "testing", "ci-cd",
+    "security", "frontend", "testing", "ci-cd", "scripts",
 ])
+
+WINDOWS_RESERVED_NAMES = {
+    "con", "prn", "aux", "nul",
+    *(f"com{i}" for i in range(1, 10)),
+    *(f"lpt{i}" for i in range(1, 10)),
+}
 
 
 def _slugify(title: str) -> str:
-    slug = title.lower().strip()
-    slug = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", slug)
-    return slug.strip("-")[:60]
+    normalized = unicodedata.normalize("NFKC", title).casefold().strip()
+    slug = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", normalized)
+    slug = re.sub(r"-+", "-", slug).strip("-._ ")
+    slug = slug[:60].rstrip("-._ ")
+
+    if not slug:
+        slug = "lesson"
+    if slug in WINDOWS_RESERVED_NAMES:
+        slug = f"{slug}-lesson"
+
+    return slug
 
 
 def _input_or_default(prompt: str, default: str = "") -> str:
