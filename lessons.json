@@ -1,0 +1,2107 @@
+[
+  {
+    "id": "context-compaction-earlier-turns-in-this-convers",
+    "title": "CONTEXT COMPACTION] Earlier turns in this convers",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/context-compaction-earlier-turns-in-this-convers.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "context-compaction-reference-only-earlier-turn",
+    "title": "CONTEXT COMPACTION — REFERENCE ONLY] Earlier turn",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/context-compaction-reference-only-earlier-turn.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "bot回复-reasoning-现在pip和pip3都找不到-说明当前环境没有配置python的可",
+    "title": "bot回复 reasoning 现在pip和pip3都找不到 说明当前环境没有配置python的可",
+    "domain": "general",
+    "tags": [],
+    "summary": "---",
+    "url": "lessons/_archive/conversation-dumps/bot回复-reasoning-现在pip和pip3都找不到-说明当前环境没有配置python的可.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "config-was-last-written-by-a-newer-openclaw-2026",
+    "title": "Config was last written by a newer OpenClaw (2026.",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/config-was-last-written-by-a-newer-openclaw-2026.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "poc-记录已写入飞书文档末尾-21个块-含-q2-q5-验证结果-修正说明和待办清单-有一个小",
+    "title": "POC 记录已写入飞书文档末尾（21个块，含 Q2/Q5 验证结果、修正说明和待办清单）。 有一个小",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/poc-记录已写入飞书文档末尾-21个块-含-q2-q5-验证结果-修正说明和待办清单-有一个小.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "the-user-sent-a-text-document-fanuc知识库方案-v5-md",
+    "title": "the user sent a text document fanuc知识库方案 v5 md",
+    "domain": "general",
+    "tags": [],
+    "summary": "---",
+    "url": "lessons/_archive/conversation-dumps/the-user-sent-a-text-document-fanuc知识库方案-v5-md.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "the-user-sent-a-text-document-rag知识库完整说明文档-md",
+    "title": "the user sent a text document rag知识库完整说明文档 md",
+    "domain": "general",
+    "tags": [],
+    "summary": "---",
+    "url": "lessons/_archive/conversation-dumps/the-user-sent-a-text-document-rag知识库完整说明文档-md.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "再补充一下-rag助手这两天的一个工作内容-主要就是一个通过让rag知识库来读取我已有的一些工业机器",
+    "title": "再补充一下，RAG助手这两天的一个工作内容，主要就是一个通过让RAG知识库来读取我已有的一些工业机器",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant]",
+    "url": "lessons/_archive/conversation-dumps/再补充一下-rag助手这两天的一个工作内容-主要就是一个通过让rag知识库来读取我已有的一些工业机器.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "另外-rag助手-wiki项目又有新进展-这个项目经过了从一开始的opus-4-6-写了初版之后",
+    "title": "另外，RAG助手， Wiki项目又有新进展。 这个项目经过了从一开始的OPUS 4.6，写了初版之后",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant]",
+    "url": "lessons/_archive/conversation-dumps/另外-rag助手-wiki项目又有新进展-这个项目经过了从一开始的opus-4-6-写了初版之后.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "复盘下你的飞书技能如何提高-并给出方案",
+    "title": "复盘下你的飞书技能如何提高，并给出方案",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "复盘下你的飞书技能如何提高，并给出方案",
+    "url": "lessons/_archive/conversation-dumps/复盘下你的飞书技能如何提高-并给出方案.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "好-控制并发-那就开始布置本开源方案-作为-wsl-的第三个-agent",
+    "title": "好，控制并发，那就开始布置本开源方案，作为 wsl 的第三个 agent",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/好-控制并发-那就开始布置本开源方案-作为-wsl-的第三个-agent.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "容灾方案输出为飞书云文档",
+    "title": "容灾方案输出为飞书云文档",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/容灾方案输出为飞书云文档.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "帮我记一下我今天的日记啊-阈值的日记啊-今天完成了什么工作-然后跟你说完-你整理一下-然后发出来",
+    "title": "帮我记一下我今天的日记啊，阈值的日记啊，今天完成了什么工作，然后跟你说完，你整理一下，然后发出来。",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/帮我记一下我今天的日记啊-阈值的日记啊-今天完成了什么工作-然后跟你说完-你整理一下-然后发出来.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "我已将部分工作直接发给hermes-cli助手-你注意检查-不要重复施工",
+    "title": "我已将部分工作直接发给Hermes cli助手，你注意检查，不要重复施工",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/我已将部分工作直接发给hermes-cli助手-你注意检查-不要重复施工.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "按照方案进行测试https-tarot-club-feishu-cn-docx-tkchd3lq",
+    "title": "按照方案进行测试https://tarot-club.feishu.cn/docx/TkcHd3Lq",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/按照方案进行测试https-tarot-club-feishu-cn-docx-tkchd3lq.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "考生1回复-考试执行受阻-未完成作答-执行第一步安装依赖时遇到环境问题-当前运行环境中pip命令不",
+    "title": "考生1回复：考试执行受阻，未完成作答： 执行第一步安装依赖时遇到环境问题：当前运行环境中pip命令不",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/考生1回复-考试执行受阻-未完成作答-执行第一步安装依赖时遇到环境问题-当前运行环境中pip命令不.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "草稿-cc-haha-network-错误-exit-code-1",
+    "title": "[草稿] cc-haha network 错误: Exit code 1",
+    "domain": "devops",
+    "tags": [
+      "cc-haha",
+      "hook-auto",
+      "network"
+    ],
+    "summary": "",
+    "url": "lessons/_archive/conversation-dumps/草稿-cc-haha-network-错误-exit-code-1.md",
+    "updated": "2026-05-04 09:05:47 UTC"
+  },
+  {
+    "id": "这是倒吊人在本周修改wsl的记录-有没有关联-一-本周修改的-wsl-内容-文件-操作-目的",
+    "title": "这是倒吊人在本周修改wsl的记录，有没有关联：一、本周修改的 WSL 内容 文件 操作 目的 ~/.",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/这是倒吊人在本周修改wsl的记录-有没有关联-一-本周修改的-wsl-内容-文件-操作-目的.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "这里面也有答案-plain-text-edoc-v10-0-poc-召回测试-环境",
+    "title": "这里面也有答案？ ```PLAIN_TEXT # Edoc V10.0 POC 召回测试 ## 环境",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/这里面也有答案-plain-text-edoc-v10-0-poc-召回测试-环境.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "问题-hermes-的-mmx-cli-wsl-内-需要自己的-mmx-config-jso",
+    "title": "问题： Hermes 的 mmx CLI（WSL 内）需要自己的 ~/.mmx/config.jso",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/问题-hermes-的-mmx-cli-wsl-内-需要自己的-mmx-config-jso.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "cc-haha-acceptEdits-permission-mode",
+    "title": "cc-haha 配置 acceptEdits 权限模式减少确认提示",
+    "domain": "agent-medici",
+    "tags": [
+      "project:agent-medici",
+      "severity:low",
+      "node:cc_haha"
+    ],
+    "summary": "cc-haha (Claude Code fork) 默认每次文件编辑和 bash 命令都需要用户确认，导致长任务或自动化场景下频繁中断。",
+    "url": "lessons/_archive/hook-raw/cc-haha-acceptEdits-permission-mode.md",
+    "updated": "2026-05-12"
+  },
+  {
+    "id": "cc-haha-error-hook",
+    "title": "cc-haha PostToolUseFailure 钩子 — Bash 失败时提示 lessons",
+    "domain": "devops",
+    "tags": [],
+    "summary": "cc-haha 的 Bash 工具执行失败时，模型不知道去翻共享 lessons，",
+    "url": "lessons/_archive/hook-raw/cc-haha-error-hook.md",
+    "updated": "2026-04-30 09:30 UTC"
+  },
+  {
+    "id": "cc-haha-权限-错误-permission-permission-denied",
+    "title": "[cc-haha] 权限 错误 — permission:Permission denied",
+    "domain": "permission",
+    "tags": [
+      "cc-haha",
+      "hook-auto",
+      "permission",
+      "permission:Permission denied"
+    ],
+    "summary": "自动捕获于 cc-haha hook（时间: 2026-05-10 16:16 UTC）。",
+    "url": "lessons/_archive/hook-raw/cc-haha-权限-错误-permission-permission-denied.md",
+    "updated": "2026-05-10 16:16:25 UTC"
+  },
+  {
+    "id": "cc-haha-模型输出异常-错误-exit-code-1-traceback-most-recent-call-las",
+    "title": "[cc-haha] 模型输出异常 错误 — Exit code 1 Traceback (most recent call last):   File \"<stri...(截断)",
+    "domain": "model_output",
+    "tags": [
+      "cc-haha",
+      "hook-auto",
+      "model_output",
+      ""
+    ],
+    "summary": "自动捕获于 cc-haha hook（时间: 2026-05-10 15:05 UTC）。",
+    "url": "lessons/_archive/hook-raw/cc-haha-模型输出异常-错误-exit-code-1-traceback-most-recent-call-las.md",
+    "updated": "2026-05-10 15:05:00 UTC"
+  },
+  {
+    "id": "cc-haha-网络连接-错误-exit-code-1-name-websocket-client-version-1-",
+    "title": "[cc-haha] 网络连接 错误 — Exit code 1 Name: websocket-client Version: 1.9.0 Summary: W...(截断)",
+    "domain": "network",
+    "tags": [
+      "cc-haha",
+      "hook-auto",
+      "network",
+      ""
+    ],
+    "summary": "自动捕获于 cc-haha hook（时间: 2026-05-10 15:17 UTC）。",
+    "url": "lessons/_archive/hook-raw/cc-haha-网络连接-错误-exit-code-1-name-websocket-client-version-1-.md",
+    "updated": "2026-05-10 15:17:56 UTC"
+  },
+  {
+    "id": "cc-haha-网络连接-错误-exit-code-128-from-https-github-com-ikalus19",
+    "title": "[cc-haha] 网络连接 错误 — Exit code 128 From https://github.com/Ikalus1988/MisakaNet  ...(截断)",
+    "domain": "network",
+    "tags": [
+      "cc-haha",
+      "hook-auto",
+      "network",
+      ""
+    ],
+    "summary": "自动捕获于 cc-haha hook（时间: 2026-05-10 16:33 UTC）。",
+    "url": "lessons/_archive/hook-raw/cc-haha-网络连接-错误-exit-code-128-from-https-github-com-ikalus19.md",
+    "updated": "2026-05-10 16:33:44 UTC"
+  },
+  {
+    "id": "cc-haha-网络连接-错误-network-timeout",
+    "title": "[cc-haha] 网络连接 错误 — network:Timeout",
+    "domain": "network",
+    "tags": [
+      "cc-haha",
+      "hook-auto",
+      "network",
+      "network:Timeout"
+    ],
+    "summary": "自动捕获于 cc-haha hook（时间: 2026-05-10 15:18 UTC）。",
+    "url": "lessons/_archive/hook-raw/cc-haha-网络连接-错误-network-timeout.md",
+    "updated": "2026-05-10 15:18:12 UTC"
+  },
+  {
+    "id": "cc-haha的命令行已正常-现在输出下你的rag知识库md文档-截止今天的最新版本-需要保留背景方",
+    "title": "cc-haha的命令行已正常，现在输出下你的rag知识库md文档，截止今天的最新版本，需要保留背景方",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant]",
+    "url": "lessons/_archive/hook-raw/cc-haha的命令行已正常-现在输出下你的rag知识库md文档-截止今天的最新版本-需要保留背景方.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "skill-harvest-airtable",
+    "title": "Airtable",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `airtable` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-airtable.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-arxiv",
+    "title": "Arxiv",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `arxiv` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-arxiv.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-ascii-art",
+    "title": "Ascii Art",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `ascii-art` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-ascii-art.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-baoyu-comic",
+    "title": "Baoyu Comic",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `baoyu-comic` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-baoyu-comic.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-baoyu-infographic",
+    "title": "Baoyu Infographic",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `baoyu-infographic` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-baoyu-infographic.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-ccswitch",
+    "title": "Ccswitch",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `ccswitch` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-ccswitch.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-claude-code-proxy-troubleshoot",
+    "title": "Claude Code Proxy Troubleshoot",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `claude-code-proxy-troubleshoot` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-claude-code-proxy-troubleshoot.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-claude-design",
+    "title": "Claude Design",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `claude-design` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-claude-design.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-comfyui",
+    "title": "Comfyui",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `comfyui` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-comfyui.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-debugging-python-bytecode-cache",
+    "title": "Debugging Python Bytecode Cache",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `debugging-python-bytecode-cache` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-debugging-python-bytecode-cache.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-edoc-pipeline-retrospective",
+    "title": "Edoc Pipeline Retrospective",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `edoc-pipeline-retrospective` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-edoc-pipeline-retrospective.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-edoc-rag",
+    "title": "Edoc Rag",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `edoc-rag` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-edoc-rag.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-excalidraw",
+    "title": "Excalidraw",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `excalidraw` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-excalidraw.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-google-workspace",
+    "title": "Google Workspace",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `google-workspace` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-google-workspace.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-gradio-feedback-panel",
+    "title": "Gradio Feedback Panel",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `gradio-feedback-panel` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-gradio-feedback-panel.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-heartmula",
+    "title": "Heartmula",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `heartmula` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-heartmula.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-himalaya",
+    "title": "Himalaya",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `himalaya` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-himalaya.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-humanizer",
+    "title": "Humanizer",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `humanizer` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-humanizer.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-jupyter-live-kernel",
+    "title": "Jupyter Live Kernel",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `jupyter-live-kernel` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-jupyter-live-kernel.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-knowledge-base-quality-audit",
+    "title": "Knowledge Base Quality Audit",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `knowledge-base-quality-audit` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-knowledge-base-quality-audit.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-linear",
+    "title": "Linear",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `linear` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-linear.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-llama-cpp",
+    "title": "Llama Cpp",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `llama-cpp` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-llama-cpp.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-manim-video",
+    "title": "Manim Video",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `manim-video` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-manim-video.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-minecraft-modpack-server",
+    "title": "Minecraft Modpack Server",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `minecraft-modpack-server` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-minecraft-modpack-server.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-native-claude-code-bootstrap-fix",
+    "title": "Native Claude Code Bootstrap Fix",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `native-claude-code-bootstrap-fix` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-native-claude-code-bootstrap-fix.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-native-claude-code-wsl-bare-fix",
+    "title": "Native Claude Code Wsl Bare Fix",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `native-claude-code-wsl-bare-fix` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-native-claude-code-wsl-bare-fix.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-native-claude-code-wsl-proxy-fix",
+    "title": "Native Claude Code Wsl Proxy Fix",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `native-claude-code-wsl-proxy-fix` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-native-claude-code-wsl-proxy-fix.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-native-claude-code-wsl",
+    "title": "Native Claude Code Wsl",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `native-claude-code-wsl` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-native-claude-code-wsl.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-node-inspect-debugger",
+    "title": "Node Inspect Debugger",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `node-inspect-debugger` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-node-inspect-debugger.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-ocr-and-documents",
+    "title": "Ocr And Documents",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `ocr-and-documents` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-ocr-and-documents.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-outlines",
+    "title": "Outlines",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `outlines` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-outlines.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-p5js",
+    "title": "P5Js",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `p5js` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-p5js.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-pixel-art",
+    "title": "Pixel Art",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `pixel-art` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-pixel-art.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-powerpoint",
+    "title": "Powerpoint",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `powerpoint` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-powerpoint.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-python-debugpy",
+    "title": "Python Debugpy",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `python-debugpy` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-python-debugpy.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-requesting-code-review",
+    "title": "Requesting Code Review",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `requesting-code-review` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-requesting-code-review.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-self-grow-wiki-code-review",
+    "title": "Self Grow Wiki Code Review",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `self-grow-wiki-code-review` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-self-grow-wiki-code-review.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-self-review",
+    "title": "Self Review",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `self-review` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-self-review.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-songsee",
+    "title": "Songsee",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `songsee` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-songsee.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-systematic-debugging",
+    "title": "Systematic Debugging",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `systematic-debugging` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-systematic-debugging.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-test-driven-development",
+    "title": "Test Driven Development",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `test-driven-development` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-test-driven-development.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-vllm",
+    "title": "Vllm",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `vllm` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-vllm.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "skill-harvest-xurl",
+    "title": "Xurl",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "（此 lesson 从 skill `xurl` 自动提取，待补全）",
+    "url": "lessons/_archive/skill-harvest/skill-harvest-xurl.md",
+    "updated": "2026-05-09"
+  },
+  {
+    "id": "system-note-your-previous-turn-was-interrupted-b",
+    "title": "system note your previous turn was interrupted b",
+    "domain": "general",
+    "tags": [],
+    "summary": "---",
+    "url": "lessons/_archive/system-note-your-previous-turn-was-interrupted-b.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "README",
+    "title": "README",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "Community-contributed knowledge. These lessons are **not yet curated** — they are shared by network nodes as-is. Always ...",
+    "url": "lessons/contrib/README.md",
+    "updated": ""
+  },
+  {
+    "id": "ai-agent-project-outreach-guide",
+    "title": "AI Agent 项目宣发引流指南",
+    "domain": "marketing",
+    "tags": [
+      "outreach",
+      "github",
+      "awesome-list",
+      "pr",
+      "promotion",
+      "agent",
+      "marketing"
+    ],
+    "summary": "为 AI Agent 项目（御坂网络）做了一次系统性宣发引流，沉淀了完整的实操流程和平台调研数据。",
+    "url": "lessons/contrib/ai-agent-project-outreach-guide.md",
+    "updated": "2026-05-11"
+  },
+  {
+    "id": "aily-飞书-mcp-通道-只能拉取不能推送",
+    "title": "aily 飞书 MCP 通道：只能拉取不能推送",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "虫群架构设计时，误以为 aily 飞书侧支持 MCP Server 暴露给 Hub 调用。",
+    "url": "lessons/contrib/aily-飞书-mcp-通道-只能拉取不能推送.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "anthropic-proxy-internal-gateway",
+    "title": "internal-gateway.local 不兼容 Anthropic 格式 — 需 OpenAI 代理转换",
+    "domain": "devops",
+    "tags": [],
+    "summary": "internal-gateway.local API 端点 (`https://api.internal-gateway.local/v1`) 只接受 OpenAI 格式 (`/v1/chat/compositions`)，不支持 Anth...",
+    "url": "lessons/contrib/anthropic-proxy-internal-gateway.md",
+    "updated": "2026-04-30 09:00 UTC"
+  },
+  {
+    "id": "api-rate-limit-handling-best-practices",
+    "title": "API限流处理最佳实践",
+    "domain": "devops",
+    "tags": [
+      "api",
+      "rate-limit",
+      "backoff",
+      "batch"
+    ],
+    "summary": "大批量API任务没有提前测试限流，任务中途被截断，无法续命。",
+    "url": "lessons/contrib/api-rate-limit-handling-best-practices.md",
+    "updated": ""
+  },
+  {
+    "id": "api-rate-limit-handling",
+    "title": "API 请求限流 (Rate Limit) 处理方案",
+    "domain": "devops",
+    "tags": [
+      "api",
+      "rate-limit",
+      "retry",
+      "429"
+    ],
+    "summary": "调用第三方 API 时返回 HTTP 429（Too Many Requests）或 403（被限流）。自动化脚本因未处理限流而中断。",
+    "url": "lessons/contrib/api-rate-limit-handling.md",
+    "updated": ""
+  },
+  {
+    "id": "api-网关不兼容-anthropic-原生格式",
+    "title": "InternalGateway API 网关不兼容 Anthropic 原生格式",
+    "domain": "devops",
+    "tags": [
+      "project:rag",
+      "severity:medium",
+      "node:hermes_wsl"
+    ],
+    "summary": "Hermes Agent 配置 Anthropic provider 使用 internal-gateway.local API 时失败，",
+    "url": "lessons/contrib/api-网关不兼容-anthropic-原生格式.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "audit-sampling-stratified-sampling-for-kb-inspection",
+    "title": "巡检题库分层抽样策略",
+    "domain": "rag",
+    "tags": [
+      "rag",
+      "audit",
+      "sampling",
+      "quality",
+      "test-bank"
+    ],
+    "summary": "RAG 知识库质量巡检需要每天抽取少量题目进行自动测试。如果随机抽样，容易连续抽到同一类型的问题（如连续三天都是报警代码题），漏掉其他分类的质量退化。",
+    "url": "lessons/contrib/audit-sampling-stratified-sampling-for-kb-inspection.md",
+    "updated": "2026-05-21"
+  },
+  {
+    "id": "bge-embedding-模型需要降级-fallback-避免启动崩溃",
+    "title": "BGE embedding 模型需要降级 fallback 避免启动崩溃",
+    "domain": "rag",
+    "tags": [
+      "project:agent-medici",
+      "severity:high",
+      "node:hermes_wsl"
+    ],
+    "summary": "HermesHub 启动时如果 BGE-m3 模型未下载到本地路径，SkillIndexer 直接崩溃。",
+    "url": "lessons/contrib/bge-embedding-模型需要降级-fallback-避免启动崩溃.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "browser-harness-cdp-browser-automation",
+    "title": "browser-harness — AI 直连 Chrome 的 CDP 浏览器自动化",
+    "domain": "devops",
+    "tags": [],
+    "summary": "browser-harness 是 browser-use 团队的开源项目，定位是「给 AI 用的浏览器控制层」。与 Playwright/Puppeteer 不同，它把 Chrome DevTools Protocol (CDP) 直接交...",
+    "url": "lessons/contrib/browser-harness-cdp-browser-automation.md",
+    "updated": "2026-05-20"
+  },
+  {
+    "id": "cc-connect-feishu-display-optimization",
+    "title": "cc-connect 飞书显示优化：禁用工具调用和上下文提示",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "cc-connect 默认会在飞书聊天中显示工具调用信息（如 \"🔧 工具 #5: Bash\"）和上下文占用提示（如 \"[ctx: ~0%]\"），影响用户体验。",
+    "url": "lessons/contrib/cc-connect-feishu-display-optimization.md",
+    "updated": "2026-05-19"
+  },
+  {
+    "id": "cc-connect-feishu-setup-complete",
+    "title": "cc-connect 飞书机器人完整配置指南",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "cc-connect 是一个连接 AI 编码代理（如 Claude Code）与消息平台（如飞书）的桥接工具。本文档记录完整的配置过程和常见问题解决方案。",
+    "url": "lessons/contrib/cc-connect-feishu-setup-complete.md",
+    "updated": "2026-05-19"
+  },
+  {
+    "id": "cc-connect-飞书机器人完整配置指南",
+    "title": "cc-connect 飞书机器人完整配置指南",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "cc-connect 是一个连接 AI 编码代理（如 Claude Code）与消息平台（如飞书）的桥接工具。本文档记录完整的配置过程和常见问题解决方案。",
+    "url": "lessons/contrib/cc-connect-飞书机器人完整配置指南.md",
+    "updated": "2026-05-19 08:59:26 UTC"
+  },
+  {
+    "id": "ccswitch-hermes-switch",
+    "title": "ccswitch-hermes-switch 踩坑记录",
+    "domain": "devops",
+    "tags": [],
+    "summary": "> Domain: devops | Tags: ccswitch, hermes-switch, model, switching, proxy, deepseek, InternalGateway | Source: hermes_ws...",
+    "url": "lessons/contrib/ccswitch-hermes-switch.md",
+    "updated": "2026-05-02"
+  },
+  {
+    "id": "chroma-rebuild-no-checkpoint",
+    "title": "Chroma 建库无 Checkpoint — 进程一死全部丢失",
+    "domain": "rag",
+    "tags": [],
+    "summary": "Agent 内跑 BGE-large-zh 建库（约30分钟），Gateway 重启后整个数据库为空，0条向量入库。",
+    "url": "lessons/contrib/chroma-rebuild-no-checkpoint.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "chroma-建库无-checkpoint-进程一死全部丢失",
+    "title": "Chroma 建库无 Checkpoint — 进程一死全部丢失",
+    "domain": "rag",
+    "tags": [],
+    "summary": "Agent 内跑 BGE-large-zh 建库（约30分钟），Gateway 重启后整个数据库为空，0条向量入库。",
+    "url": "lessons/contrib/chroma-建库无-checkpoint-进程一死全部丢失.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "chromadb-不能放在-ntfs-文件系统",
+    "title": "ChromaDB 不能放在 NTFS 文件系统",
+    "domain": "rag",
+    "tags": [
+      "project:self-grow-wiki",
+      "severity:critical",
+      "platform:wsl",
+      "node:hermes_wsl"
+    ],
+    "summary": "ChromaDB 在 WSL 的 /mnt/d/ （NTFS 挂载点）上运行时出现 SQLite  compaction 错误，向量库损坏。",
+    "url": "lessons/contrib/chromadb-不能放在-ntfs-文件系统.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "chrome-relay-browser-automation",
+    "title": "Chrome Relay 浏览器自动化 — CDP over WebSocket 控制无头浏览器",
+    "domain": "development",
+    "tags": [
+      "chrome",
+      "browser",
+      "automation",
+      "cdp",
+      "websocket",
+      "openclaw"
+    ],
+    "summary": "在 WSL2 或 Linux 环境下运行 AI Agent 时，经常需要自动化浏览器操作（填表、发帖、截图等）。Chrome Relay（OpenClaw 内置功能）提供了通过 WebSocket 控制已运行浏览器的方案，比 Puppete...",
+    "url": "lessons/contrib/chrome-relay-browser-automation.md",
+    "updated": ""
+  },
+  {
+    "id": "cron-job-not-running",
+    "title": "Cron 作业不执行 / 不生效排障",
+    "domain": "devops",
+    "tags": [
+      "cron",
+      "scheduler",
+      "not-running",
+      "debug"
+    ],
+    "summary": "`crontab -e` 设置好后，作业从未执行。输出没有、日志没有、进程没有。",
+    "url": "lessons/contrib/cron-job-not-running.md",
+    "updated": ""
+  },
+  {
+    "id": "curl-request-troubleshoot",
+    "title": "curl / wget 请求失败通用排查",
+    "domain": "devops",
+    "tags": [
+      "network",
+      "curl",
+      "wget",
+      "debug",
+      "troubleshoot"
+    ],
+    "summary": "`curl https://example.com` 返回空、报错或超时。不知道是 DNS、代理、证书还是目标服务的问题。",
+    "url": "lessons/contrib/curl-request-troubleshoot.md",
+    "updated": ""
+  },
+  {
+    "id": "deepseek-tui-agent-模式下-write-file-写入不落地-worktree-git-链接路径断裂",
+    "title": "DeepSeek TUI Agent 模式下 write_file 写入不落地 + worktree git 链接路径断裂",
+    "domain": "devops",
+    "tags": [
+      "deepseek-tui",
+      "agent-mode",
+      "write-file",
+      "worktree",
+      "wsl",
+      "git",
+      "lesson-written"
+    ],
+    "summary": "在 Agent-Medici 项目的 search_knowledge.py v2 升级过程中，使用 DeepSeek TUI Agent 模式进行代码修改。操作环境为 WSL (Windows Subsystem for Linux)，仓...",
+    "url": "lessons/contrib/deepseek-tui-agent-模式下-write-file-写入不落地-worktree-git-链接路径断裂.md",
+    "updated": "2026-05-13 01:01:52 UTC"
+  },
+  {
+    "id": "deepseek-tui-write-file-sandbox-worktree-git-path",
+    "title": "DeepSeek TUI Agent 模式下 write_file 写入不落地 + worktree git 链接路径断裂",
+    "domain": "devops",
+    "tags": [
+      "deepseek-tui",
+      "agent-mode",
+      "write-file",
+      "worktree",
+      "wsl",
+      "git",
+      "lesson-written"
+    ],
+    "summary": "在 Agent-Medici 项目的 search_knowledge.py v2 升级过程中，使用 DeepSeek TUI Agent 模式进行代码修改。操作环境为 WSL (Windows Subsystem for Linux)，仓...",
+    "url": "lessons/contrib/deepseek-tui-write-file-sandbox-worktree-git-path.md",
+    "updated": "2026-05-13 01:01:46 UTC"
+  },
+  {
+    "id": "disk-space-cleanup",
+    "title": "磁盘空间不足 / chroma_db_v4 缓存清理",
+    "domain": "devops",
+    "tags": [],
+    "summary": "写入文件或构建向量库时报 `No space left on device` / `ENOSPC`，hermes-hub 进程崩溃。",
+    "url": "lessons/contrib/disk-space-cleanup.md",
+    "updated": "2026-05-01 08:00 UTC"
+  },
+  {
+    "id": "fanuc-kl-1086-是代码行号而非错误码",
+    "title": "FANUC KL: 1086 是代码行号而非错误码",
+    "domain": "fanuc",
+    "tags": [],
+    "summary": "分析 FANUC 1086 报错时，误将 1086 当作某种错误码，一路追错方向。",
+    "url": "lessons/contrib/fanuc-kl-1086-是代码行号而非错误码.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "fanuc-kl-bytes-ahead-是-karel-内置-procedure",
+    "title": "FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure",
+    "domain": "fanuc",
+    "tags": [],
+    "summary": "KL 编译报错时，误认为 BYTES_AHEAD 是禁用标识符或非法调用，将其从 MM_RCV_NTFY.kl 中删除。",
+    "url": "lessons/contrib/fanuc-kl-bytes-ahead-是-karel-内置-procedure.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "fanuc-kl-err-abort-vs-err-pause-行为差异",
+    "title": "FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异",
+    "domain": "fanuc",
+    "tags": [],
+    "summary": "IPC 通信错误时未区分 ERR_ABORT 和 ERR_PAUSE，导致程序号丢失。",
+    "url": "lessons/contrib/fanuc-kl-err-abort-vs-err-pause-行为差异.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "fanuc-kl-mm-module-h-kl-禁止-routine-声明",
+    "title": "FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明",
+    "domain": "fanuc",
+    "tags": [],
+    "summary": "mm_module_h.kl（头文件）末尾有 `ROUTINE Check_Status(params) FROM MM_MODULE`（带参数版），导致 MM_MODULE.kl 中同名 routine 报\"already defined...",
+    "url": "lessons/contrib/fanuc-kl-mm-module-h-kl-禁止-routine-声明.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "fanuc-r-2000ic-retrieval-fix",
+    "title": "FANUC R-2000iC 检索混淆修复 — 关键词强制召回",
+    "domain": "rag",
+    "tags": [],
+    "summary": "访问者问\"fanuc r-2000ic 系列所有机器人的最大速度\"，RAG 返回了 KUKA Series 2000 的数据。",
+    "url": "lessons/contrib/fanuc-r-2000ic-retrieval-fix.md",
+    "updated": "2026-04-30 08:50 UTC"
+  },
+  {
+    "id": "feishu-markdown-table-not-rendered",
+    "title": "飞书 post 消息中 Markdown 表格不渲染",
+    "domain": "development",
+    "tags": [
+      "feishu",
+      "markdown",
+      "table",
+      "post",
+      "lark"
+    ],
+    "summary": "在飞书 IM 消息中使用 `post` 类型的富文本消息发送 Markdown 表格，表格显示为空白或原始分隔线（`|------|`），而不是渲染后的表格。",
+    "url": "lessons/contrib/feishu-markdown-table-not-rendered.md",
+    "updated": ""
+  },
+  {
+    "id": "feishu-mcp-server-deepseek-tui-setup",
+    "title": "DeepSeek TUI 飞书 MCP Server 搭建与权限边界",
+    "domain": "feishu",
+    "tags": [
+      "feishu",
+      "mcp",
+      "deepseek",
+      "docx-api",
+      "permissions"
+    ],
+    "summary": "需要在 DeepSeek TUI 中在线操作飞书云文档（docx），通过 MCP 协议暴露飞书 API。",
+    "url": "lessons/contrib/feishu-mcp-server-deepseek-tui-setup.md",
+    "updated": "2026-05-19"
+  },
+  {
+    "id": "feishu-websocket-404-error-http-webhook-required",
+    "title": "Feishu WebSocket 404 Error - HTTP Webhook Required",
+    "domain": "feishu-integration",
+    "tags": [],
+    "summary": "问题: 飞书 WebSocket 接收消息 API 返回 404 错误。测试端点: wss://open.feishu.cn/open-apis/bot/v3/ws, /bot/v2/ws, /im/v1/ws, /im/v2/ws, /w...",
+    "url": "lessons/contrib/feishu-websocket-404-error-http-webhook-required.md",
+    "updated": "2026-05-19 01:19:29 UTC"
+  },
+  {
+    "id": "feishu-wiki批量下载-文件类型处理策略",
+    "title": "Feishu Wiki批量下载：文件类型处理策略",
+    "domain": "devops",
+    "tags": [
+      "feishu, wiki, batch-download, file-type, pdf, docx, safari"
+    ],
+    "summary": "从企业知识库批量下载文件时，不同文件类型需要不同的提取策略。直接API调用无法处理所有类型。",
+    "url": "lessons/contrib/feishu-wiki批量下载-文件类型处理策略.md",
+    "updated": "2026-05-19 15:40:11 UTC"
+  },
+  {
+    "id": "feishu-凭证轮换后-gateway-必须重启",
+    "title": "Feishu 凭证轮换后 Gateway 必须重启",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "飞书应用凭证（app_secret）轮换后，Gateway 仍用旧 secret 连接，导致 401 auth 失败。",
+    "url": "lessons/contrib/feishu-凭证轮换后-gateway-必须重启.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "feishu文件上传-file-type-必须用opus",
+    "title": "Feishu 文件上传：file_type 必须用 opus",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "Feishu `im/v1/files` 上传接口调用失败，返回 `234001 Invalid request param`。",
+    "url": "lessons/contrib/feishu文件上传-file-type-必须用opus.md",
+    "updated": "2026-03-29"
+  },
+  {
+    "id": "feishu文档url-必须用api返回值不要拼接",
+    "title": "Feishu 文档 URL：必须用 API 返回值，不要拼接",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "创建 Feishu 云文档后，猜测 URL 格式为 `https://feishu.cn/document/...`，用户连续3次无法打开文档。",
+    "url": "lessons/contrib/feishu文档url-必须用api返回值不要拼接.md",
+    "updated": "2026-03-29"
+  },
+  {
+    "id": "ffmpeg音频转码-必须用libopus而非format-ogg",
+    "title": "FFmpeg 音频转码：必须用 libopus 而非 -format ogg",
+    "domain": "audio",
+    "tags": [],
+    "summary": "FFmpeg 输出 OGG 文件为 0 字节。",
+    "url": "lessons/contrib/ffmpeg音频转码-必须用libopus而非format-ogg.md",
+    "updated": "2026-03-29"
+  },
+  {
+    "id": "gateway-进程挂死未崩溃-watchdog-自动恢复",
+    "title": "Gateway 进程挂死未崩溃 — watchdog 自动恢复",
+    "domain": "devops",
+    "tags": [],
+    "summary": "Hermes Agent 频繁崩溃，用户反映\"卡死\"。实际调查发现是 **WSL PTY 断连**导致 CLI 崩溃，而非 Gateway 本身问题。",
+    "url": "lessons/contrib/gateway-进程挂死未崩溃-watchdog-自动恢复.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "git-credentials-automation",
+    "title": "Git 凭证配置 — 自动化 push 免密码",
+    "domain": "devops",
+    "tags": [
+      "git",
+      "credentials",
+      "auth",
+      "github"
+    ],
+    "summary": "脚本自动执行 `git push` 时弹出用户名密码输入框，导致自动化流程卡住。",
+    "url": "lessons/contrib/git-credentials-automation.md",
+    "updated": ""
+  },
+  {
+    "id": "git-merge-conflict-resolution",
+    "title": "Git 合并冲突处理 — 手动解决最佳实践",
+    "domain": "development",
+    "tags": [
+      "git",
+      "merge",
+      "conflict",
+      "rebase"
+    ],
+    "summary": "`git pull` 或 `git merge` 时报 `CONFLICT`，文件里出现 `<<<<<<<` 标记。不知如何选择。",
+    "url": "lessons/contrib/git-merge-conflict-resolution.md",
+    "updated": ""
+  },
+  {
+    "id": "git-tls-handshake-failure",
+    "title": "GitHub TLS 握手失败 — gnutls_handshake() 错误",
+    "domain": "devops",
+    "tags": [
+      "git",
+      "github",
+      "TLS",
+      "SSL",
+      "network"
+    ],
+    "summary": "`git pull` 或 `git push` 时报：",
+    "url": "lessons/contrib/git-tls-handshake-failure.md",
+    "updated": ""
+  },
+  {
+    "id": "git-凭证和-node-id-node2-加网后必须设置",
+    "title": "Git 凭证和 Node ID — Node2 加网后必须设置",
+    "domain": "devops",
+    "tags": [],
+    "summary": "Node2（魔术师）加入虫群前需要配置 Git 身份和节点标识。",
+    "url": "lessons/contrib/git-凭证和-node-id-node2-加网后必须设置.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "github-401-credential-lookup",
+    "title": "GitHub API 401 后本地凭证查找顺序",
+    "domain": "devops",
+    "tags": [
+      "github",
+      "api",
+      "credential",
+      "401",
+      "auth",
+      "pat"
+    ],
+    "summary": "调用 GitHub API 时收到 `{\"message\": \"Bad credentials\"}` 或 HTTP 401/403，第一反应是 token 无效要去问用户要新的。但本地往往已经有可用凭证，跳过检查会让用户白跑一趟。",
+    "url": "lessons/contrib/github-401-credential-lookup.md",
+    "updated": ""
+  },
+  {
+    "id": "gpt-sovits-hubert-必须16khz且get-model返回单体",
+    "title": "GPT-SoVITS：HuBERT 必须 16kHz 且 get_model() 返回单体",
+    "domain": "tts",
+    "tags": [],
+    "summary": "HuBERT SSL 特征提取失败，音频克隆效果异常。",
+    "url": "lessons/contrib/gpt-sovits-hubert-必须16khz且get-model返回单体.md",
+    "updated": "2026-04-05"
+  },
+  {
+    "id": "gpt-sovits-ref-free-bug-prompt-text为空时参数被覆盖",
+    "title": "GPT-SoVITS：ref_free bug——prompt_text 为空时参数被覆盖",
+    "domain": "tts",
+    "tags": [],
+    "summary": "提供了女声样本，生成出来却是男声或通用音色。",
+    "url": "lessons/contrib/gpt-sovits-ref-free-bug-prompt-text为空时参数被覆盖.md",
+    "updated": "2026-04-06"
+  },
+  {
+    "id": "gpt-sovits训练-2-name2text格式必须用arpabet音素",
+    "title": "GPT-SoVITS 训练：2-name2text 格式必须用 ARPABET 音素而非中文原文",
+    "domain": "tts",
+    "tags": [],
+    "summary": "训练时数据加载器逐字查 phoneme 词典，全部 KeyError。",
+    "url": "lessons/contrib/gpt-sovits训练-2-name2text格式必须用arpabet音素.md",
+    "updated": "2026-04-06"
+  },
+  {
+    "id": "hermes-agent-手动更新步骤-update-超时",
+    "title": "Hermes Agent 手动更新步骤（update 超时）",
+    "domain": "devops",
+    "tags": [
+      "project:agent-medici",
+      "severity:medium",
+      "node:hermes_wsl"
+    ],
+    "summary": "hermes update 因为 git 分叉（diverged branches）或 uv 超时而失败。",
+    "url": "lessons/contrib/hermes-agent-手动更新步骤-update-超时.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "hub-feishuwsclient-start-从未调用-websocket-接收死代码",
+    "title": "Hub FeishuWSClient.start() 从未调用 — WebSocket 接收死代码",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "Hub 配置了 `im.message.receive_v1` 和 `p2p_card_action.trigger` 回调，但从未收到飞书消息。",
+    "url": "lessons/contrib/hub-feishuwsclient-start-从未调用-websocket-接收死代码.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "hub-hermes-凭证体系-gateway-vs-hub-各自读哪里",
+    "title": "Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里",
+    "domain": "devops",
+    "tags": [],
+    "summary": "Hub 有两套配置体系，Gateway 和 Hub 读取不同的凭证位置，容易混淆。",
+    "url": "lessons/contrib/hub-hermes-凭证体系-gateway-vs-hub-各自读哪里.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "js-dead-code-chain-break",
+    "title": "JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效",
+    "domain": "frontend",
+    "tags": [
+      "js",
+      "runtime",
+      "typeerror",
+      "execution-model",
+      "defensive"
+    ],
+    "summary": "JavaScript 是单线程事件驱动模型。同步执行线程中任何一个未捕获的异常（TypeError、ReferenceError 等）都会导致**整个执行线程中断**，该线程后续所有代码不再执行。常见场景：",
+    "url": "lessons/contrib/js-dead-code-chain-break.md",
+    "updated": ""
+  },
+  {
+    "id": "json-parse-failure-handling",
+    "title": "JSON 解析失败处理 — 截断 / 格式错误",
+    "domain": "devops",
+    "tags": [
+      "json",
+      "parse",
+      "truncated",
+      "llm",
+      "output"
+    ],
+    "summary": "从 LLM 输出或 API 返回中解析 JSON 时报 `json.decoder.JSONDecodeError`。常见于模型输出被截断、前后有多余字符。",
+    "url": "lessons/contrib/json-parse-failure-handling.md",
+    "updated": ""
+  },
+  {
+    "id": "knowledge-graph-ux-patterns-from-high-star-projects",
+    "title": "知识图谱 UX 增强: 从高星项目提炼的 7 个交互模式",
+    "domain": "development",
+    "tags": [
+      "knowledge-graph",
+      "d3js",
+      "ux",
+      "graph-visualization",
+      "force-directed"
+    ],
+    "summary": "知识图谱可视化项目存在典型问题: 节点过多导致信息过载、关系缺乏上下文、无法聚焦局部视图。",
+    "url": "lessons/contrib/knowledge-graph-ux-patterns-from-high-star-projects.md",
+    "updated": ""
+  },
+  {
+    "id": "lessons-md-修正-4-处-项目-旧结论-修正后-heading-block-type-4",
+    "title": "lessons.md 修正（4 处） 项目 旧结论 修正后 heading block（type=4",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant] 还有一处需要修正：image block 的描述不准确——它返回了有效的 block_id（blocks_created=1），只是 token 被清空导致图片不显示。",
+    "url": "lessons/contrib/lessons-md-修正-4-处-项目-旧结论-修正后-heading-block-type-4.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "misakanet-refactor-v2-review",
+    "title": "MisakaNet 重构复盘 — 从中心协调到 Agent 图书馆",
+    "domain": "development",
+    "tags": [
+      "refactor",
+      "architecture",
+      "v2",
+      "misakanet"
+    ],
+    "summary": "---{\"title\": \"MisakaNet 重构复盘 — 从中心协调到 Agent 图书馆\", \"domain\": \"development\", \"tags\": [\"refactor\", \"architecture\", \"v2\", \"m...",
+    "url": "lessons/contrib/misakanet-refactor-v2-review.md",
+    "updated": "2026-05-30 02:00:00 UTC"
+  },
+  {
+    "id": "model-output-fix",
+    "title": "模型输出截断 / JSON 解析失败处理",
+    "domain": "claude",
+    "tags": [],
+    "summary": "模型返回的内容不完整（truncated），或者 JSON 解析失败（`json.decoder.JSONDecodeError`），导致后续处理流程中断。",
+    "url": "lessons/contrib/model-output-fix.md",
+    "updated": "2026-05-01 08:00 UTC"
+  },
+  {
+    "id": "node2-配置完成-git-credentials-和-node-id-设置",
+    "title": "Node2 配置完成 — git credentials 和 NODE_ID 设置",
+    "domain": "devops",
+    "tags": [],
+    "summary": "踩坑：queue_lesson.py 依赖 ~/.git-credentials，但 WSL 默认没有这个文件。",
+    "url": "lessons/contrib/node2-配置完成-git-credentials-和-node-id-设置.md",
+    "updated": "2026-05-01 03:19:35 UTC"
+  },
+  {
+    "id": "openai-compatible-api-call",
+    "title": "OpenAI 兼容 API 的通用调用格式",
+    "domain": "development",
+    "tags": [
+      "api",
+      "openai",
+      "llm",
+      "inference",
+      "chat"
+    ],
+    "summary": "部署了 LLM 服务（vLLM/Ollama/本地推理）后，不知道怎么用 API 调用。各框架接口不一。",
+    "url": "lessons/contrib/openai-compatible-api-call.md",
+    "updated": ""
+  },
+  {
+    "id": "openclaw-gateway-动态模块缺失-导致飞书消息分发失败",
+    "title": "OpenClaw Gateway 动态模块缺失 — 飞书消息分发失败",
+    "domain": "feishu",
+    "tags": [
+      "node:misaka10004\", \"platform:wsl\", \"severity:critical\", \"project:misakanet"
+    ],
+    "summary": "飞书单聊和群聊均无回应。飞书长连接正常（WebSocket 显示 ON · OK），消息能收到，但 Bot 不回复。",
+    "url": "lessons/contrib/openclaw-gateway-动态模块缺失-导致飞书消息分发失败.md",
+    "updated": "2026-05-18"
+  },
+  {
+    "id": "openclaw-prefer-cli-and-policy-over-direct-edit",
+    "title": "OpenClaw优先CLI和官方策略",
+    "domain": "agentops",
+    "tags": [
+      "openclaw",
+      "cli",
+      "policy",
+      "config"
+    ],
+    "summary": "直接修改配置文件（临时hack）容易变成默认模型，导致官方路径退化。",
+    "url": "lessons/contrib/openclaw-prefer-cli-and-policy-over-direct-edit.md",
+    "updated": ""
+  },
+  {
+    "id": "openclaw-重装教训-删除前先停服务清残留",
+    "title": "OpenClaw 重装教训 — 删除前先停服务清残留",
+    "domain": "devops",
+    "tags": [],
+    "summary": "愚者飞书机器人无反应，尝试重装 OpenClaw。",
+    "url": "lessons/contrib/openclaw-重装教训-删除前先停服务清残留.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "oss-refactor-lessons",
+    "title": "开源项目重构复盘 — 从功能堆砌到减法优先",
+    "domain": "development",
+    "tags": [
+      "refactor",
+      "architecture",
+      "lessons",
+      "open-source"
+    ],
+    "summary": "---{\"title\": \"开源项目重构复盘 — 从功能堆砌到减法优先\", \"domain\": \"development\", \"tags\": [\"refactor\", \"architecture\", \"lessons\", \"open-sou...",
+    "url": "lessons/contrib/oss-refactor-lessons.md",
+    "updated": "2026-05-30 04:00:00 UTC"
+  },
+  {
+    "id": "permission-denied-fix",
+    "title": "Permission Denied / WSL NTFS 跨文件系统权限修复",
+    "domain": "devops",
+    "tags": [],
+    "summary": "操作 ~/.hermes/ 下的文件时报 `Permission denied` 或 `EACCES`，或者 WSL 访问 /mnt/c 时报 `crossmnt` 错误。",
+    "url": "lessons/contrib/permission-denied-fix.md",
+    "updated": "2026-05-01 08:00 UTC"
+  },
+  {
+    "id": "phase-0-output-gate",
+    "title": "Phase 0 Output Gate — Agent 的硬性知识检索规则",
+    "domain": "methodology",
+    "tags": [
+      "output-gate",
+      "knowledge-reuse",
+      "methodology",
+      "core"
+    ],
+    "summary": "Agent 在 context 中看到了知识但不一定会用。即使指令写了\"不可跳过\"，Agent 的惯性行为是直接执行任务、跳过检索。",
+    "url": "lessons/contrib/phase-0-output-gate.md",
+    "updated": ""
+  },
+  {
+    "id": "pip-install-failure-fix",
+    "title": "pip install 网络超时 / SSL / 依赖冲突修复",
+    "domain": "devops",
+    "tags": [],
+    "summary": "pip install 或 conda install 失败，常见场景：",
+    "url": "lessons/contrib/pip-install-failure-fix.md",
+    "updated": "2026-05-01 08:00 UTC"
+  },
+  {
+    "id": "pip-install-timeout-ssl",
+    "title": "pip install 网络超时 / SSL 错误修复",
+    "domain": "devops",
+    "tags": [
+      "pip",
+      "network",
+      "SSL",
+      "timeout",
+      "proxy"
+    ],
+    "summary": "`pip install` 失败，报 `timeout`、`SSL: CERTIFICATE_VERIFY_FAILED`、或 `Connection broken` 错误。",
+    "url": "lessons/contrib/pip-install-timeout-ssl.md",
+    "updated": ""
+  },
+  {
+    "id": "promo-use-real-examples-not-hypotheticals",
+    "title": "引流文案用真实案例不要编造",
+    "domain": "marketing",
+    "tags": [
+      "outreach",
+      "content-strategy",
+      "awesome-list",
+      "reddit",
+      "hacker-news"
+    ],
+    "summary": "写推广帖时用了虚构的 pip install 梗，用户反馈\"换一个\"——因为假例子没有说服力，读者能感觉到是编的。",
+    "url": "lessons/contrib/promo-use-real-examples-not-hypotheticals.md",
+    "updated": "2026-05-21"
+  },
+  {
+    "id": "python-gbk-encoding-error",
+    "title": "Python GBK 编码错误 — Windows/WSL 跨平台",
+    "domain": "devops",
+    "tags": [
+      "python",
+      "encoding",
+      "gbk",
+      "windows",
+      "wsl"
+    ],
+    "summary": "在 WSL 中运行 Python 脚本，读取或写入文件时报：",
+    "url": "lessons/contrib/python-gbk-encoding-error.md",
+    "updated": ""
+  },
+  {
+    "id": "python-pycache-stale",
+    "title": "Python 代码修改不生效 — stale .pyc 缓存",
+    "domain": "devops",
+    "tags": [
+      "python",
+      "pyc",
+      "cache",
+      "debug"
+    ],
+    "summary": "改了 Python 文件后运行，行为还是旧的。函数返回值、错误信息、path 等都没有改变。",
+    "url": "lessons/contrib/python-pycache-stale.md",
+    "updated": ""
+  },
+  {
+    "id": "python-sandbox-path-isolation",
+    "title": "Python 沙箱/受限环境 — PATH 和 sys.path 隔离",
+    "domain": "development",
+    "tags": [
+      "python",
+      "sandbox",
+      "path",
+      "import",
+      "venv"
+    ],
+    "summary": "在沙箱或受限环境中执行 Python 代码时，`import` 报 `ModuleNotFoundError`，或 import 的是宿主环境的包而非沙箱环境的。",
+    "url": "lessons/contrib/python-sandbox-path-isolation.md",
+    "updated": ""
+  },
+  {
+    "id": "python-venv-tiktoken-module-not-found",
+    "title": "Python venv 中 tiktoken 安装后仍报 ModuleNotFoundError",
+    "domain": "development",
+    "tags": [
+      "python",
+      "venv",
+      "tiktoken",
+      "pip",
+      "setuptools"
+    ],
+    "summary": "在已有 venv 中 `pip install tiktoken`，安装成功但运行时报 `ModuleNotFoundError: cannot import name '_namespace'` 或其他模块找不到的错误。",
+    "url": "lessons/contrib/python-venv-tiktoken-module-not-found.md",
+    "updated": ""
+  },
+  {
+    "id": "python-venv-troubleshoot",
+    "title": "Python venv 激活失败或路径不匹配",
+    "domain": "devops",
+    "tags": [
+      "python",
+      "venv",
+      "virtualenv",
+      "path"
+    ],
+    "summary": "`source venv/bin/activate` 后 `which python` 还是系统 Python，或 `deactivate` 报错。",
+    "url": "lessons/contrib/python-venv-troubleshoot.md",
+    "updated": ""
+  },
+  {
+    "id": "rag-brand-contamination-detection-and-fix",
+    "title": "RAG 知识库品牌污染检测与治理",
+    "domain": "rag",
+    "tags": [
+      "rag",
+      "chromadb",
+      "brand-contamination",
+      "data-quality",
+      "metadata"
+    ],
+    "summary": "一个面向特定品牌的垂直 RAG 知识库（200K+ 向量），在每日巡检中发现部分查询答案混入了竞品品牌技术内容。例如：",
+    "url": "lessons/contrib/rag-brand-contamination-detection-and-fix.md",
+    "updated": "2026-05-29"
+  },
+  {
+    "id": "rag-brand-filter-three-pitfalls",
+    "title": "RAG 品牌过滤三坑：条件触发、文件正则、BM25 缓存",
+    "domain": "rag",
+    "tags": [
+      "rag",
+      "brand-filter",
+      "architecture",
+      "chromadb",
+      "bm25",
+      "pitfall"
+    ],
+    "summary": "一个 FANUC 机器人 RAG 知识库在做质量巡检时发现品牌过滤策略存在三层设计缺陷，导致竞品文档持续混入检索结果。",
+    "url": "lessons/contrib/rag-brand-filter-three-pitfalls.md",
+    "updated": "2026-05-29"
+  },
+  {
+    "id": "rag-cross-encoder-reranker-cpu-瓶颈-与-llm-确定性调优",
+    "title": "RAG Cross-Encoder Reranker CPU 瓶颈与 LLM 确定性调优",
+    "domain": "rag",
+    "tags": [
+      "project:self-grow-wiki",
+      "node:hermes_wsl",
+      "scope:broad",
+      "severity:high"
+    ],
+    "summary": "RAG 知识库回答速度太慢（冷启动 113s，热查询 44s），且相同问题在不同场景下得到不同回答。",
+    "url": "lessons/contrib/rag-cross-encoder-reranker-cpu-瓶颈-与-llm-确定性调优.md",
+    "updated": "2026-05-28"
+  },
+  {
+    "id": "rag-kb-quality-flywheel-self-loop",
+    "title": "RAG 知识库质量飞轮：自闭环建设",
+    "domain": "rag",
+    "tags": [
+      "rag",
+      "flywheel",
+      "quality",
+      "audit",
+      "feedback",
+      "self-learning"
+    ],
+    "summary": "某个垂直领域 RAG 知识库（190+ PDF，200K+ 向量）已上线运行，支持自然语言问答和每日自动巡检。但巡检发现的问题只能手动处理，整个闭环缺乏自动化：",
+    "url": "lessons/contrib/rag-kb-quality-flywheel-self-loop.md",
+    "updated": "2026-05-21"
+  },
+  {
+    "id": "rag-三通道-llm-容灾方案",
+    "title": "RAG 三通道 LLM 容灾方案",
+    "domain": "rag",
+    "tags": [
+      "project:self-grow-wiki",
+      "node:hermes_wsl",
+      "scope:broad"
+    ],
+    "summary": "RAG 知识库对外服务（Gradio Web UI / 微信机器人）时，单路 LLM API 可能因网络、配额、服务端故障而不可用，导致整个服务不可用。",
+    "url": "lessons/contrib/rag-三通道-llm-容灾方案.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "rag-分块参数-800-字符-100-重叠-每文件最多-100-分块",
+    "title": "RAG 分块参数：800 字符 + 100 重叠 + 每文件最多 100 分块",
+    "domain": "rag",
+    "tags": [
+      "project:self-grow-wiki",
+      "severity:medium",
+      "node:hermes_wsl"
+    ],
+    "summary": "FANUC PDF 文档导入 RAG 后，检索质量不稳定，长文档召回率低。",
+    "url": "lessons/contrib/rag-分块参数-800-字符-100-重叠-每文件最多-100-分块.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "rag-报警代码检索需要关键词强制召回",
+    "title": "RAG 报警代码检索需要关键词强制召回",
+    "domain": "rag",
+    "tags": [
+      "project:self-grow-wiki",
+      "severity:high",
+      "node:hermes_wsl"
+    ],
+    "summary": "查询 \"SRVO-023 机器人报警\" 时 RAG 返回了不相关结果，没有返回正确的 FANUC 报警文档。",
+    "url": "lessons/contrib/rag-报警代码检索需要关键词强制召回.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "rag-检索中文乱码-pymupdf4llm-默认编码问题",
+    "title": "RAG 检索中文乱码 — pymupdf4llm 默认编码问题",
+    "domain": "rag",
+    "tags": [],
+    "summary": "构建 FANUC 知识库 RAG 时，检索中文报警码出现乱码。",
+    "url": "lessons/contrib/rag-检索中文乱码-pymupdf4llm-默认编码问题.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "rag建库策略-不可一次性加载全部数据",
+    "title": "RAG 建库策略：不可一次性加载全部数据到显存/内存",
+    "domain": "rag",
+    "tags": [],
+    "summary": "建库（chunks_v3, 34,100 docs）时一次性把所有数据加载到显存/WSL 内存，导致 LM Studio context overflow，后续引发 Summarization 超时 ×4 → LLM timeout → 驱...",
+    "url": "lessons/contrib/rag建库策略-不可一次性加载全部数据.md",
+    "updated": "2026-04-13"
+  },
+  {
+    "id": "regex-greedy-matching",
+    "title": "正则表达式 debugging — 贪婪匹配造成的意外结果",
+    "domain": "development",
+    "tags": [
+      "regex",
+      "debug",
+      "greedy",
+      "pattern"
+    ],
+    "summary": "正则匹配返回了预期之外的大量文本。`<div>.*</div>` 匹配到了文档末尾而不是最近的闭合标签。",
+    "url": "lessons/contrib/regex-greedy-matching.md",
+    "updated": ""
+  },
+  {
+    "id": "shared-json-needs-atomic-write",
+    "title": "共享JSON状态需要原子写入",
+    "domain": "devops",
+    "tags": [
+      "json",
+      "atomic",
+      "race-condition",
+      "runtime"
+    ],
+    "summary": "多个自动化job同时写共享的运行时状态文件（如 latest.json），plain overwrite 会暴露半写状态导致并发读者解析失败。",
+    "url": "lessons/contrib/shared-json-needs-atomic-write.md",
+    "updated": ""
+  },
+  {
+    "id": "shell-script-debugging",
+    "title": "Shell 脚本调试 — set -x 与常见陷阱",
+    "domain": "development",
+    "tags": [
+      "shell",
+      "bash",
+      "debug",
+      "script"
+    ],
+    "summary": "Shell 脚本报错但不显示问题行，或变量展开后不是预期值。",
+    "url": "lessons/contrib/shell-script-debugging.md",
+    "updated": ""
+  },
+  {
+    "id": "skill-dogfood",
+    "title": "dogfood",
+    "domain": "claude",
+    "tags": [],
+    "summary": "Exploratory QA of web apps: find bugs, evidence, reports.",
+    "url": "lessons/contrib/skill-dogfood.md",
+    "updated": "2026-05-20"
+  },
+  {
+    "id": "skill-edoc-pipeline-retrospective",
+    "title": "edoc-pipeline-retrospective",
+    "domain": "rag",
+    "tags": [],
+    "summary": "使用 edoc-pipeline-retrospective 的实践经验和踩坑记录。",
+    "url": "lessons/contrib/skill-edoc-pipeline-retrospective.md",
+    "updated": "2026-05-20"
+  },
+  {
+    "id": "skill-edoc-rag",
+    "title": "edoc-rag",
+    "domain": "rag",
+    "tags": [],
+    "summary": "FANUC 机器人知识库 RAG 检索 — 向量库 34,100 chunks，BGE-m3 1024维，L2 距离，支持飞书 Bot 自动调用",
+    "url": "lessons/contrib/skill-edoc-rag.md",
+    "updated": "2026-05-20"
+  },
+  {
+    "id": "skill-feishu-docx",
+    "title": "feishu-docx",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "通过 REST API（requests/curl）创建飞书云文档、写入内容块（docx API）、发送消息卡片、访问 Wiki 节点。涵盖 Bot 创建 docx、Bot 写入 Wiki 文档（跨租户权限限制）、纯文本考卷出卷等实战场景。",
+    "url": "lessons/contrib/skill-feishu-docx.md",
+    "updated": "2026-05-20"
+  },
+  {
+    "id": "skill-feishu-interactive-card",
+    "title": "feishu-interactive-card",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "飞书互动卡片发送与回调处理 — 调试 230099/200621 错误，正确构建卡片 JSON，处理按钮点击回调。",
+    "url": "lessons/contrib/skill-feishu-interactive-card.md",
+    "updated": "2026-05-20"
+  },
+  {
+    "id": "skill-hermes-cli-pty-mode",
+    "title": "hermes-cli-pty-mode",
+    "domain": "devops",
+    "tags": [],
+    "summary": "Hermes CLI 在非 TTY 环境下（WSL/远程/脚本）无法启动的问题诊断与解决",
+    "url": "lessons/contrib/skill-hermes-cli-pty-mode.md",
+    "updated": "2026-05-20"
+  },
+  {
+    "id": "skill-mify-model-gateway",
+    "title": "mify-model-gateway",
+    "domain": "claude",
+    "tags": [],
+    "summary": "公司大模型网关 — Mioffice (api.llm.mioffice.cn) 网关操作指南，包括查询可用模型、切换模型、配置 DeepSeek/小米等提供商。",
+    "url": "lessons/contrib/skill-mify-model-gateway.md",
+    "updated": "2026-05-20"
+  },
+  {
+    "id": "skill-openclaw-multi-instance-config",
+    "title": "openclaw-multi-instance-config",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "Navigate and manage multiple OpenClaw instances across WSL and Windows, with different Feishu bot credentials",
+    "url": "lessons/contrib/skill-openclaw-multi-instance-config.md",
+    "updated": "2026-05-20"
+  },
+  {
+    "id": "skill-rag-audit-question-authoring",
+    "title": "rag-audit-question-authoring",
+    "domain": "rag",
+    "tags": [],
+    "summary": "为 RAG 知识库巡检出题的规范和质量标准。当需要生成、审核、补充巡检测试题时使用。",
+    "url": "lessons/contrib/skill-rag-audit-question-authoring.md",
+    "updated": "2026-05-20"
+  },
+  {
+    "id": "skill-task-board-html-patterns",
+    "title": "task-board-html-patterns",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "任务看板 HTML/CSS/JS 可复用模式 — toggle开关、竖列、inline编辑、CSS技巧",
+    "url": "lessons/contrib/skill-task-board-html-patterns.md",
+    "updated": "2026-05-20"
+  },
+  {
+    "id": "st2-danielstarman-mcp-选rare-relic会卡死",
+    "title": "ST2 danielstarman MCP：选 Rare Relic 会卡死",
+    "domain": "mcp",
+    "tags": [],
+    "summary": "选择 Neow Rare Relic 选项后，游戏进入 `overlay` 状态，`screen: UNKNOWN`，`available_actions: []`，自动化卡死。",
+    "url": "lessons/contrib/st2-danielstarman-mcp-选rare-relic会卡死.md",
+    "updated": "2026-03-27"
+  },
+  {
+    "id": "st2-mcp-end-turn返回409但游戏正常推进",
+    "title": "ST2 MCP：end_turn 返回 409 Conflict 但游戏正常推进",
+    "domain": "mcp",
+    "tags": [],
+    "summary": "`end_turn` API 调用返回 HTTP 409 Conflict，以为操作失败。",
+    "url": "lessons/contrib/st2-mcp-end-turn返回409但游戏正常推进.md",
+    "updated": "2026-03-27"
+  },
+  {
+    "id": "st2-mcp从game-over重开必须走特定流程",
+    "title": "ST2 MCP：从 GAME_OVER 重开必须走特定流程",
+    "domain": "mcp",
+    "tags": [],
+    "summary": "```",
+    "url": "lessons/contrib/st2-mcp从game-over重开必须走特定流程.md",
+    "updated": "2026-03-27"
+  },
+  {
+    "id": "static-page-github-api-403-rate-limit",
+    "title": "静态页面调用外部 API 的容错设计原则",
+    "domain": "frontend",
+    "tags": [
+      "api",
+      "rate-limit",
+      "static-site",
+      "error-handling",
+      "fault-tolerance"
+    ],
+    "summary": "纯静态页面（无后端代理，HTML + JS 直接部署在 CDN/GitHub Pages 上）需要通过浏览器端 JavaScript 直接调用第三方 API。这种架构面临几个固有风险：",
+    "url": "lessons/contrib/static-page-github-api-403-rate-limit.md",
+    "updated": ""
+  },
+  {
+    "id": "static-page-width-consistency",
+    "title": "静态页面多组件宽度一致性——各自定义 max-width 导致视觉割裂",
+    "domain": "frontend",
+    "tags": [
+      "css",
+      "layout",
+      "ux",
+      "responsive"
+    ],
+    "summary": "页面各个功能区块宽度不一致：搜索栏 `max-width: 800px`，内容卡片 `max-width: 600px`，表单 `display: inline-block; min-width: 360px`，而其他区块又是全宽。页面看起...",
+    "url": "lessons/contrib/static-page-width-consistency.md",
+    "updated": ""
+  },
+  {
+    "id": "tmux-session-management",
+    "title": "tmux 终端复用 — 断开不丢失会话",
+    "domain": "development",
+    "tags": [
+      "tmux",
+      "terminal",
+      "session",
+      "background"
+    ],
+    "summary": "SSH 断开或终端关闭后，正在运行的任务（训练、迁移、部署）中断。重新连接后无法恢复。",
+    "url": "lessons/contrib/tmux-session-management.md",
+    "updated": ""
+  },
+  {
+    "id": "tts中文编码-powerhsell传参必须用txt文件",
+    "title": "TTS 中文编码：PowerShell 传参必须用 .txt 文件中转",
+    "domain": "tts",
+    "tags": [],
+    "summary": "中文文本通过 PowerShell 脚本内联传给 mmx CLI，TTS 返回空音频（\"嗯嗯\"声）。",
+    "url": "lessons/contrib/tts中文编码-powerhsell传参必须用txt文件.md",
+    "updated": "2026-04-18"
+  },
+  {
+    "id": "vertical-kb-question-bank-strategy",
+    "title": "垂直知识库题库管理策略——以FANUC机器人KB为例",
+    "domain": "rag-knowledge-base",
+    "tags": [
+      "rag",
+      "question-bank",
+      "knowledge-base",
+      "feishu-doc",
+      "review"
+    ],
+    "summary": "在飞书云文档中维护一个 FANUC 机器人垂直知识库的题库，经历了从第一批到第三批的迭代，发现了一些关键管理策略。",
+    "url": "lessons/contrib/vertical-kb-question-bank-strategy.md",
+    "updated": "2026-05-19"
+  },
+  {
+    "id": "wcferry-微信版本锁定-3-9-12-51-才能用",
+    "title": "wcferry 微信版本锁定 — 3.9.12.51 才能用",
+    "domain": "devops",
+    "tags": [
+      "project:rag",
+      "platform:windows",
+      "node:hermes_wsl",
+      "scope:narrow"
+    ],
+    "summary": "wxauto 不够稳定时，考虑切换到 wcferry (WeChatFerry) 方案。但安装后无法 hook 微信进程。",
+    "url": "lessons/contrib/wcferry-微信版本锁定-3-9-12-51-才能用.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "wechat-pubacct-fetch-separate-search-from-retrieval",
+    "title": "微信公众号抓取失败处理（搜索与抓取分离）",
+    "domain": "wechat",
+    "tags": [
+      "wechat",
+      "fetch",
+      "search",
+      "crawl"
+    ],
+    "summary": "微信公众号文章抓取时，把\"找文章URL\"和\"抓取正文\"混在一起，失败模式不清晰，难以诊断。",
+    "url": "lessons/contrib/wechat-pubacct-fetch-separate-search-from-retrieval.md",
+    "updated": ""
+  },
+  {
+    "id": "wsl-permission-ntfs-fix",
+    "title": "Permission Denied / WSL NTFS 跨文件系统权限修复",
+    "domain": "devops",
+    "tags": [
+      "permission",
+      "wsl",
+      "ntfs",
+      "eacces",
+      "filesystem"
+    ],
+    "summary": "操作 `/mnt/c/` 下的文件时报 `Permission denied` 或 `EACCES`；或 `git` 在 `/mnt/c/` 下报错。",
+    "url": "lessons/contrib/wsl-permission-ntfs-fix.md",
+    "updated": ""
+  },
+  {
+    "id": "wsl-pip-install-gbk-编码导致-hub-poller-崩溃",
+    "title": "WSL pip install GBK 编码导致 hub_poller 崩溃",
+    "domain": "devops",
+    "tags": [
+      "project:agent-medici",
+      "severity:critical",
+      "platform:wsl",
+      "node:hermes_wsl"
+    ],
+    "summary": "Windows Hub 的 hub_poller.py 读取 config.yaml 时崩溃，错误信息为 UnicodeDecodeError。",
+    "url": "lessons/contrib/wsl-pip-install-gbk-编码导致-hub-poller-崩溃.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "wsl-proxy-setup",
+    "title": "WSL 代理配置 — 通过 Windows 梯子访问外网",
+    "domain": "devops",
+    "tags": [
+      "wsl",
+      "proxy",
+      "network",
+      "windows"
+    ],
+    "summary": "WSL 内 `curl google.com` 失败，但 Windows 能正常访问外网。WSL 默认不走 Windows 的代理。",
+    "url": "lessons/contrib/wsl-proxy-setup.md",
+    "updated": ""
+  },
+  {
+    "id": "wsl-terminal-underscore-corruption",
+    "title": "WSL 终端编辑配置危险 — TTy粘贴吞下划线",
+    "domain": "devops",
+    "tags": [],
+    "summary": "需要修改 WSL 中的配置文件（如 `.env`、`config.yaml`），通过 Windows Terminal 粘贴时出现神秘失败。",
+    "url": "lessons/contrib/wsl-terminal-underscore-corruption.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "wsl-terminal-underscore-missing",
+    "title": "WSL Windows 终端复制粘贴吞下划线问题",
+    "domain": "devops",
+    "tags": [
+      "wsl",
+      "terminal",
+      "windows",
+      "encoding"
+    ],
+    "summary": "从 Windows 复制文本粘贴到 WSL 终端时，下划线 `_` 字符消失。配置文件、命令中的下划线名全部错误。",
+    "url": "lessons/contrib/wsl-terminal-underscore-missing.md",
+    "updated": ""
+  },
+  {
+    "id": "wsl-终端编辑配置危险-tty粘贴吞下划线",
+    "title": "WSL 终端编辑配置危险 — TTy粘贴吞下划线",
+    "domain": "devops",
+    "tags": [],
+    "summary": "需要修改 WSL 中的配置文件（如 `.env`、`config.yaml`），通过 Windows Terminal 粘贴时出现神秘失败。",
+    "url": "lessons/contrib/wsl-终端编辑配置危险-tty粘贴吞下划线.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "wsl-需要代理配置才能访问-huggingface-和外部网络",
+    "title": "WSL 需要代理配置才能访问 HuggingFace 和外部网络",
+    "domain": "devops",
+    "tags": [
+      "project:self-grow-wiki",
+      "severity:high",
+      "platform:wsl",
+      "node:hermes_wsl"
+    ],
+    "summary": "WSL 内 Python 脚本无法下载 HuggingFace 模型（sentence-transformers/BGE），",
+    "url": "lessons/contrib/wsl-需要代理配置才能访问-huggingface-和外部网络.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "wsl2-memory-leak-fix",
+    "title": "WSL2 内存泄漏 / 内存占用过高",
+    "domain": "devops",
+    "tags": [
+      "wsl",
+      "memory",
+      "leak",
+      "performance"
+    ],
+    "summary": "WSL2 运行几天后吃掉 8GB+ 内存，Windows 变卡。`free -h` 显示已用内存极高。",
+    "url": "lessons/contrib/wsl2-memory-leak-fix.md",
+    "updated": ""
+  },
+  {
+    "id": "wxauto-im-feedback-collection-jsonl-queue",
+    "title": "IM 机器人反馈收集与 JSONL 队列审核模式",
+    "domain": "rag",
+    "tags": [
+      "rag",
+      "feedback",
+      "queue",
+      "jsonl",
+      "wechat",
+      "wxauto",
+      "workflow"
+    ],
+    "summary": "RAG 知识库的 IM 机器人（wxauto 微信）只提供单向问答能力，用户不满意时无反馈渠道。知识库质量改进完全依赖离线人工审计，无法捕捉真实使用场景中的问题。",
+    "url": "lessons/contrib/wxauto-im-feedback-collection-jsonl-queue.md",
+    "updated": "2026-05-21"
+  },
+  {
+    "id": "wxauto-必须在-windows-python-下安装-不能走-wsl-pip",
+    "title": "wxauto 必须在 Windows Python 下安装，不能走 WSL pip",
+    "domain": "devops",
+    "tags": [
+      "project:rag",
+      "platform:windows",
+      "node:hermes_wsl",
+      "scope:narrow"
+    ],
+    "summary": "在 WSL2 中 `pip install wxauto` 报错 `No matching distribution found`。wxauto 是 Windows-only 库。",
+    "url": "lessons/contrib/wxauto-必须在-windows-python-下安装-不能走-wsl-pip.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "企业微信机器人-长连接模式不需要-ngrok",
+    "title": "企业微信机器人：长连接模式不需要 ngrok",
+    "domain": "devops",
+    "tags": [
+      "project:rag",
+      "platform:windows",
+      "node:hermes_wsl",
+      "scope:narrow"
+    ],
+    "summary": "配置企业微信机器人回调时，传统方案需要 ngrok/frp 做内网穿透，增加复杂度、暴露端口、需要 HTTPS 证书。",
+    "url": "lessons/contrib/企业微信机器人-长连接模式不需要-ngrok.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "知识库-4-质量审计流水线",
+    "title": "知识库 4σ 质量审计流水线",
+    "domain": "rag",
+    "tags": [
+      "project:self-grow-wiki",
+      "severity:medium",
+      "node:hermes_wsl"
+    ],
+    "summary": "RAG 知识库在持续导入文档后出现数据污染、版本混乱、来源不一致等问题，",
+    "url": "lessons/contrib/知识库-4-质量审计流水线.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "防火墙端口开放不等于内网穿透",
+    "title": "防火墙端口开放不等于内网穿透",
+    "domain": "devops",
+    "tags": [
+      "project:rag",
+      "platform:wsl",
+      "node:hermes_wsl",
+      "scope:broad"
+    ],
+    "summary": "为 wcferry 开放 Windows 防火墙端口 10086 时，误以为这是\"内网穿透\"操作，担心安全性。",
+    "url": "lessons/contrib/防火墙端口开放不等于内网穿透.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "飞书-block-api-假成功特征",
+    "title": "飞书 Block API 假成功特征",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "调用飞书 block API 时，限流场景下返回 `code=0` 但 `blocks_created=0`，看似成功实际失败。",
+    "url": "lessons/contrib/飞书-block-api-假成功特征.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "飞书-block-type-正确值与已知限制",
+    "title": "飞书 Block Type 正确值与已知限制",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "飞书 block API 的 type 字段使用数字 ID，错误值导致静默失败或 400。",
+    "url": "lessons/contrib/飞书-block-type-正确值与已知限制.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "飞书-block-批量写入上限",
+    "title": "飞书 Block 批量写入上限",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "批量创建 block 时，每次超过约 20 个触发限流或静默截断。",
+    "url": "lessons/contrib/飞书-block-批量写入上限.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "飞书-webhook-url-必须用环境变量或-gitignored-的-config-yaml",
+    "title": "飞书 webhook URL 必须用环境变量或 gitignored 的 config.yaml",
+    "domain": "devops",
+    "tags": [
+      "project:agent-medici",
+      "severity:critical",
+      "node:hermes_wsl"
+    ],
+    "summary": "Feishu webhook URL、app_id、app_secret 被误提交到 git 仓库，",
+    "url": "lessons/contrib/飞书-webhook-url-必须用环境变量或-gitignored-的-config-yaml.md",
+    "updated": "2026-05-03"
+  },
+  {
+    "id": "README",
+    "title": "README",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "Lessons in this directory have passed **curated review** — CI-linted, security-scanned, and verified by trusted nodes. A...",
+    "url": "lessons/core/README.md",
+    "updated": ""
+  }
+]
