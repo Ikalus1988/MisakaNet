@@ -235,7 +235,7 @@
     background: var(--bg-card);
     border: 1px solid var(--border-glow);
     border-radius: 16px;
-    padding: 24px 32px;
+    padding: 28px 36px;
     transition: all 0.3s;
     cursor: default;
     backdrop-filter: blur(12px);
@@ -993,7 +993,7 @@
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(0, 229, 255, 0.08);
     border-radius: 20px;
-    padding: 32px 28px;
+    padding: 36px 32px;
     margin-top: 24px;
     box-shadow: 0 0 80px rgba(0, 0, 0, 0.4), inset 0 0 60px rgba(0, 229, 255, 0.02);
     position: relative;
@@ -1022,13 +1022,13 @@
     border-radius: 0 0 4px 0;
   }
 
-  /* ── Breathing animation for error items ── */
+  /* ── Status notification — cyan system ── */
   .error-item {
-    animation: breatheRed 3s ease-in-out infinite;
+    animation: breatheCyan 3s ease-in-out infinite;
   }
-  @keyframes breatheRed {
-    0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.05); }
-    50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.15); }
+  @keyframes breatheCyan {
+    0%, 100% { box-shadow: 0 0 8px rgba(0, 229, 255, 0.05); }
+    50% { box-shadow: 0 0 20px rgba(0, 229, 255, 0.12); }
   }
 
   /* ── Toast notification ── */
@@ -1080,12 +1080,12 @@
   .error-item {
     padding: 30px;
     text-align: center;
-    color: var(--red);
+    color: var(--cyan);
     font-size: 13px;
     font-family: 'JetBrains Mono', monospace;
-    border: 1px solid rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(0, 229, 255, 0.12);
     border-radius: 8px;
-    background: rgba(239, 68, 68, 0.04);
+    background: rgba(0, 229, 255, 0.03);
   }
 
   /* Skeleton loading */
@@ -1888,9 +1888,9 @@ async function loadRecentRegistrations() {
 
   } catch (err) {
     if (err.message.includes("403")) {
-      list.innerHTML = '<div class="error-item">⚠ 与主服务器通讯中断 [RETRY...] 缓存数据可能不是最新的</div>';
+      list.innerHTML = '<div class="error-item">◈ 网络同步状态：缓存模式 · 刷新或稍后重试</div>';
     } else {
-      list.innerHTML = `<div class="error-item">⚠ 连接异常: ${err.message}</div>`;
+      list.innerHTML = `<div class="error-item">◈ 连接异常: ${err.message}</div>`;
     }
   }
 }
