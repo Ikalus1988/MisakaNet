@@ -25,9 +25,32 @@ DOMAINS = sorted([
 
 
 def _slugify(title: str) -> str:
+    """Sanitize a title into a safe, cross-platform filename stem."""
+    # Windows reserved names (case-insensitive)
+    _RESERVED = {
+        "con", "prn", "aux", "nul",
+        "com1", "com2", "com3", "com4", "com5",
+        "com6", "com7", "com8", "com9",
+        "lpt1", "lpt2", "lpt3", "lpt4", "lpt5",
+        "lpt6", "lpt7", "lpt8", "lpt9",
+    }
+    # Characters invalid in Windows filenames
+    _INVALID_CHARS = r'<>:"/\\|?*'
+
     slug = title.lower().strip()
-    slug = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", slug)
-    return slug.strip("-")[:60]
+    # Replace every invalid or non-safe character with a hyphen
+    slug = re.sub(r"[^a-z0-9\u4e00-\u9fff-]+", "-", slug)
+    # Collapse multiple hyphens
+    slug = re.sub(r"-+", "-", slug)
+    # Strip leading/trailing hyphens (and any remaining unsafe edge chars)
+    slug = slug.strip("-")
+    # Guard against empty slugs
+    if not slug:
+        slug = "untitled"
+    # Prevent Windows reserved names by appending a safe suffix
+    if slug in _RESERVED:
+        slug = f"{slug}_lesson"
+    return slug[:60]
 
 
 def _input_or_default(prompt: str, default: str = "") -> str:
