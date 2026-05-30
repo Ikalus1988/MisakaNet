@@ -1,8 +1,0 @@
-blank_issues_enabled: true
-contact_links:
-  - name: Discussion
-    url: https://github.com/Ikalus1988/MisakaNet/discussions
-    about: For general questions and discussions
-  - name: Live Dashboard
-    url: https://ikalus1988.github.io/MisakaNet/
-    about: Register your node and view the network status
