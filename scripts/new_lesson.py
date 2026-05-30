@@ -11,6 +11,7 @@ import json
 import os
 import sys
 import re
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -20,14 +21,35 @@ LESSONS_DIR = REPO / "lessons"
 DOMAINS = sorted([
     "rag", "feishu", "development", "devops", "general",
     "python", "wsl", "git", "docker", "network",
-    "security", "frontend", "testing", "ci-cd",
+    "security", "frontend", "testing", "ci-cd", "scripts",
 ])
+
+WINDOWS_RESERVED_FILENAMES = {
+    "con", "prn", "aux", "nul",
+    *(f"com{i}" for i in range(1, 10)),
+    *(f"lpt{i}" for i in range(1, 10)),
+}
 
 
 def _slugify(title: str) -> str:
-    slug = title.lower().strip()
-    slug = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", slug)
-    return slug.strip("-")[:60]
+    """Return a cross-platform safe filename stem for a lesson title.
+
+    Keep ASCII alphanumerics and CJK characters for readable lesson names,
+    but collapse path separators, emoji, punctuation, control characters, and
+    other filesystem-hostile input to hyphens. Always return a non-empty stem
+    and avoid Windows device names such as ``CON`` and ``LPT1``.
+    """
+    normalized = unicodedata.normalize("NFKC", str(title)).casefold().strip()
+    slug = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", normalized)
+    slug = re.sub(r"-+", "-", slug).strip("-")
+
+    if not slug:
+        slug = "lesson"
+    if slug in WINDOWS_RESERVED_FILENAMES:
+        slug = f"lesson-{slug}"
+
+    slug = slug[:60].rstrip("-")
+    return slug or "lesson"
 
 
 def _input_or_default(prompt: str, default: str = "") -> str:
