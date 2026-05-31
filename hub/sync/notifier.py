@@ -11,8 +11,9 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from typing import Optional
-from urllib.request import Request, urlopen
-from urllib.error import URLError
+from urllib.request import Request
+
+from misakanet.core.fetch import FetchError, fetch_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +56,9 @@ class _WebhookNotifier(Notifier):
             data = json.dumps(payload).encode("utf-8")
             req = Request(self.webhook_url, data=data,
                           headers={"Content-Type": "application/json"})
-            with urlopen(req, timeout=timeout) as resp:
-                return resp.status == 200 or resp.status == 204
-        except URLError as e:
+            fetch_bytes(req, timeout=timeout)
+            return True
+        except FetchError as e:
             logger.error(f"{self.__class__.__name__} 发送失败: {e}")
             return False
 

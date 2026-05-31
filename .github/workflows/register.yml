@@ -54,7 +54,7 @@ jobs:
           "
 
             # Generate avatar
-            python3 misakanet-avatar.py $next --output avatars
+            python3 scripts/misaka-avatar.py $next --output avatars
 
             # Commit and push (fail-safe if another run pushed first)
             git config user.name "misakanet-bot"

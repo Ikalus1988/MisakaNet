@@ -19,8 +19,13 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from misakanet.core.fetch import FetchError, fetch_json  # noqa: E402
+
 REPO = "Ikalus1988/MisakaNet"
-LESSONS_DIR = Path(__file__).resolve().parent.parent / "lessons"
+LESSONS_DIR = PROJECT_ROOT / "lessons"
 
 API_BASE = "https://api.github.com"
 HEADERS = {
@@ -67,8 +72,13 @@ def _api(path: str, data: dict = None, method: str = "POST") -> dict | None:
     body = json.dumps(data).encode() if data else None
     try:
         req = urllib.request.Request(url, data=body, headers=headers, method=method)
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            return json.loads(resp.read().decode())
+        return fetch_json(req, timeout=30)
+    except FetchError as e:
+        print(f"  Network request failed cleanly: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"  API response was not valid JSON: {e}")
+        return None
     except urllib.error.HTTPError as e:
         print(f"  ❌ API 错误 ({e.code}): {e.read().decode()[:200]}")
         return None

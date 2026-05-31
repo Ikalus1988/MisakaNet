@@ -18,6 +18,11 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from misakanet.core.fetch import FetchError, fetch_json  # noqa: E402
+
 REPO = "Ikalus1988/MisakaNet"
 NODE_ID = os.environ.get("MISAKANET_NODE_ID", "hermes_wsl2")
 GIT_CREDS_PATH = os.path.expanduser("~/.git-credentials")
@@ -144,24 +149,28 @@ def create_feedback_issue(skill, result, scenario, tags=None, related_skills=Non
         method="POST",
     )
     try:
-        with _ur.urlopen(req, timeout=20) as resp:
-            resp_data = json.loads(resp.read().decode('utf-8'))
-            if "number" in resp_data:
-                url = resp_data["html_url"]
-                print(f"  ✅ Issue #{resp_data['number']}: {url}")
-                _write_local_cache(skill, result, scenario, extra, url)
-                _mark_reported(skill, session_ref)
-                return url
-            else:
-                print(f"  ❌ 未知响应", file=sys.stderr)
-                return None
+        resp_data = fetch_json(req, timeout=20)
+        if "number" in resp_data:
+            url = resp_data["html_url"]
+            print(f"  Issue #{resp_data['number']}: {url}")
+            _write_local_cache(skill, result, scenario, extra, url)
+            _mark_reported(skill, session_ref)
+            return url
+        print("  [error] feedback issue response did not include a number", file=sys.stderr)
+        return None
+    except FetchError as e:
+        print(f"  Network request failed cleanly: {e}", file=sys.stderr)
+        return None
+    except json.JSONDecodeError as e:
+        print(f"  API response was not valid JSON: {e}", file=sys.stderr)
+        return None
     except Exception as e:
-        print(f"  ❌ {e}", file=sys.stderr)
+        print(f"  feedback issue request failed: {e}", file=sys.stderr)
         return None
 
 
 def _write_local_cache(skill, result, scenario, extra, issue_url):
-    """写入本地 .feedback/ 目录作为备份"""
+    """Write a local .feedback/ backup record."""
     script_dir = Path(__file__).parent
     feedback_dir = script_dir / ".." / ".feedback" / NODE_ID
     feedback_dir.mkdir(parents=True, exist_ok=True)
@@ -188,12 +197,12 @@ PENDING_DIR = Path(__file__).parent / ".." / ".feedback" / "pending"
 
 
 def _create_inventory_issue(node_id, skills, removed):
-    """创建清单变更 Issue"""
+    """Create an inventory change issue."""
     token = _get_token()
     if not token:
         return None
 
-    title = f"inventory: {node_id} — {len(skills)} skills"
+    title = f"inventory: {node_id} - {len(skills)} skills"
 
     body = json.dumps({
         "type": "inventory",
@@ -208,7 +217,7 @@ def _create_inventory_issue(node_id, skills, removed):
     import urllib.request as _ur2
     req = _ur2.Request(
         f"https://api.github.com/repos/{REPO}/issues",
-        data=payload.encode('utf-8'),
+        data=payload.encode("utf-8"),
         headers={
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github.v3+json",
@@ -218,16 +227,20 @@ def _create_inventory_issue(node_id, skills, removed):
         method="POST",
     )
     try:
-        with _ur2.urlopen(req, timeout=20) as resp:
-            resp_data = json.loads(resp.read().decode('utf-8'))
-            if "number" in resp_data:
-                print(f"  inventory Issue #{resp_data['number']}: {resp_data['html_url']}")
-                return resp_data["html_url"]
-    except Exception as e:
-        print(f"  ❌ 创建 inventory Issue 失败: {e}", file=sys.stderr)
+        resp_data = fetch_json(req, timeout=20)
+        if "number" in resp_data:
+            print(f"  inventory Issue #{resp_data['number']}: {resp_data['html_url']}")
+            return resp_data["html_url"]
+        print("  [error] inventory issue response did not include a number", file=sys.stderr)
         return None
-    else:
-        print(f"  [error] inventory Issue 创建失败: {resp.get('message', '')}")
+    except FetchError as e:
+        print(f"  Network request failed cleanly: {e}", file=sys.stderr)
+        return None
+    except json.JSONDecodeError as e:
+        print(f"  API response was not valid JSON: {e}", file=sys.stderr)
+        return None
+    except Exception as e:
+        print(f"  inventory issue request failed: {e}", file=sys.stderr)
         return None
 
 

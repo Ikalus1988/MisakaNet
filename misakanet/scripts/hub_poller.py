@@ -22,6 +22,8 @@ from datetime import datetime, timezone
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
+from misakanet.core.fetch import FetchError, request_json  # noqa: E402
+
 REPO = "Ikalus1988/MisakaNet"
 TOKEN = os.environ.get("MISAKANET_TOKEN") or os.environ.get("GITHUB_TOKEN")
 API_BASE = "https://api.github.com"
@@ -49,9 +51,7 @@ def _get_graph():
 
 
 def gh_api(method, path, data=None):
-    """调用 GitHub REST API"""
-    import requests
-
+    """Call GitHub REST API with retry and clean network failures."""
     headers = {
         "Authorization": f"token {TOKEN}",
         "Accept": "application/vnd.github.v3+json",
@@ -60,21 +60,14 @@ def gh_api(method, path, data=None):
 
     url = f"{API_BASE}/{path.lstrip('/')}"
 
-    if method == "GET":
-        resp = requests.get(url, headers=headers, timeout=15)
-    elif method == "POST":
-        resp = requests.post(url, headers=headers, json=data, timeout=15)
-    elif method == "PATCH":
-        resp = requests.patch(url, headers=headers, json=data, timeout=15)
-    else:
+    if method not in {"GET", "POST", "PATCH"}:
         raise ValueError(f"unsupported method: {method}")
 
-    if resp.status_code >= 400:
-        print(f"  [warn] API error {resp.status_code}: {resp.text[:200]}", file=sys.stderr)
+    try:
+        return request_json(method, url, headers=headers, json_body=data, timeout=15)
+    except FetchError as e:
+        print(f"  [warn] {e}", file=sys.stderr)
         return None
-    if resp.status_code == 204:
-        return {"status": "ok"}
-    return resp.json()
 
 
 def fetch_unprocessed_feedback():
