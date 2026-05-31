@@ -25,9 +25,35 @@ DOMAINS = sorted([
 
 
 def _slugify(title: str) -> str:
-    slug = title.lower().strip()
+    import unicodedata
+    # 1. Normalize unicode (NFKD) to decompose accents/diacritics
+    normalized = unicodedata.normalize('NFKD', title)
+    # 2. Lowercase and replace slashes and backslashes with hyphens explicitly
+    slug = normalized.lower().strip()
+    slug = slug.replace('/', '-').replace('\\', '-')
+    # 3. Replace non-alphanumeric (except Chinese characters \u4e00-\u9fff) with hyphens
     slug = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", slug)
-    return slug.strip("-")[:60]
+    # 4. Collapse consecutive hyphens and strip leading/trailing
+    slug = re.sub(r"-+", "-", slug).strip("-")
+    
+    # 5. Cap length at 60 characters, being careful not to end with a trailing hyphen
+    slug = slug[:60].strip("-")
+    
+    # 6. Fallback if the slug is empty (e.g. purely emojis or special characters)
+    if not slug:
+        now = datetime.now(timezone.utc)
+        slug = f"lesson-{now.strftime('%Y%m%d-%H%M%S')}"
+        
+    # 7. Protect against Windows reserved filenames (CON, PRN, AUX, NUL, COM1-COM9, LPT1-LPT9)
+    reserved_names = {"con", "prn", "aux", "nul"}
+    for i in range(1, 10):
+        reserved_names.add(f"com{i}")
+        reserved_names.add(f"lpt{i}")
+        
+    if slug.lower() in reserved_names:
+        slug = f"safe-{slug}"
+        
+    return slug
 
 
 def _input_or_default(prompt: str, default: str = "") -> str:
