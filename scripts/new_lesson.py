@@ -13,6 +13,7 @@ import sys
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+import hashlib
 
 REPO = Path(__file__).resolve().parent.parent
 LESSONS_DIR = REPO / "lessons"
@@ -22,12 +23,21 @@ DOMAINS = sorted([
     "python", "wsl", "git", "docker", "network",
     "security", "frontend", "testing", "ci-cd",
 ])
+WINDOWS_RESERVED_NAMES = {
+    "con", "prn", "aux", "nul",
+    "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
+    "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
+}
 
 
 def _slugify(title: str) -> str:
     slug = title.lower().strip()
     slug = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", slug)
-    return slug.strip("-")[:60]
+    slug = slug.strip("-")[:60].strip("-")
+    if not slug or slug in WINDOWS_RESERVED_NAMES:
+        digest = hashlib.sha1(title.encode("utf-8", errors="ignore")).hexdigest()[:8]
+        return f"lesson-{digest}"
+    return slug
 
 
 def _input_or_default(prompt: str, default: str = "") -> str:
