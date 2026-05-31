@@ -48,9 +48,10 @@ def _get_graph():
     return kg
 
 
-def gh_api(method, path, data=None):
-    """调用 GitHub REST API"""
+def gh_api(method, path, data=None, max_retries=3):
+    """调用 GitHub REST API with Graceful Degradation & Auto-Retry"""
     import requests
+    import time
 
     headers = {
         "Authorization": f"token {TOKEN}",
@@ -60,21 +61,33 @@ def gh_api(method, path, data=None):
 
     url = f"{API_BASE}/{path.lstrip('/')}"
 
-    if method == "GET":
-        resp = requests.get(url, headers=headers, timeout=15)
-    elif method == "POST":
-        resp = requests.post(url, headers=headers, json=data, timeout=15)
-    elif method == "PATCH":
-        resp = requests.patch(url, headers=headers, json=data, timeout=15)
-    else:
-        raise ValueError(f"unsupported method: {method}")
+    for attempt in range(max_retries):
+        try:
+            if method == "GET":
+                resp = requests.get(url, headers=headers, timeout=15)
+            elif method == "POST":
+                resp = requests.post(url, headers=headers, json=data, timeout=15)
+            elif method == "PATCH":
+                resp = requests.patch(url, headers=headers, json=data, timeout=15)
+            else:
+                raise ValueError(f"unsupported method: {method}")
 
-    if resp.status_code >= 400:
-        print(f"  [warn] API error {resp.status_code}: {resp.text[:200]}", file=sys.stderr)
-        return None
-    if resp.status_code == 204:
-        return {"status": "ok"}
-    return resp.json()
+            # Raise for specific server or transient errors to trigger retry
+            if resp.status_code in [404, 500, 502, 503, 504]:
+                resp.raise_for_status()
+                
+            if resp.status_code == 204:
+                return {"status": "ok"}
+            return resp.json()
+            
+        except (requests.exceptions.Timeout, requests.exceptions.HTTPError, requests.exceptions.ConnectionError) as e:
+            if attempt < max_retries - 1:
+                backoff_time = 2 ** attempt
+                print(f"  [warn] API Error: {e}. Retrying in {backoff_time}s... ({attempt + 1}/{max_retries})")
+                time.sleep(backoff_time)
+            else:
+                print(f"  [error] API request failed after {max_retries} attempts: {e}")
+                return None
 
 
 def fetch_unprocessed_feedback():
