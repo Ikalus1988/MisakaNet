@@ -5,7 +5,7 @@ import time
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock
 
 from misakanet.tools.langchain_tool import MisakaNetSearchTool
 
@@ -59,6 +59,26 @@ class TestMisakaNetSearchTool(unittest.TestCase):
         self.assertEqual(ranked[0][1], doc_b)
         self.assertEqual({doc.filename for _, doc in ranked}, {"a.md", "b.md", "c.md"})
 
+    def test_rrf_uses_rank_and_filename_tiebreakers(self):
+        tool = MisakaNetSearchTool(cache_path=Path(tempfile.gettempdir()) / "unused-misakanet.db")
+        doc_a = SimpleNamespace(filename="a.md", filepath=Path("a.md"))
+        doc_b = SimpleNamespace(filename="b.md", filepath=Path("b.md"))
+        doc_c = SimpleNamespace(filename="c.md", filepath=Path("c.md"))
+
+        rankings = {
+            "query one": [(0.9, doc_b), (0.8, doc_a), (0.7, doc_c)],
+            "query two": [(0.6, doc_c), (0.5, doc_a), (0.4, doc_b)],
+        }
+
+        def ranker(subquery, docs):
+            return rankings[subquery]
+
+        tool._expand_query = Mock(return_value=["query one", "query two"])
+
+        ranked = tool._rank_with_rrf("query", [doc_a, doc_b, doc_c], ranker)
+
+        self.assertEqual([doc.filename for _, doc in ranked], ["b.md", "c.md", "a.md"])
+
     def test_expand_query_returns_three_distinct_queries(self):
         tool = MisakaNetSearchTool(cache_path=Path(tempfile.gettempdir()) / "unused-misakanet.db")
 
@@ -68,19 +88,30 @@ class TestMisakaNetSearchTool(unittest.TestCase):
         self.assertEqual(len(set(expanded)), 3)
         self.assertEqual(expanded[0], "async cache async cache")
 
-    def test_arun_uses_thread_offload(self):
+    def test_arun_runs_blocking_work_concurrently(self):
         tool = MisakaNetSearchTool(cache_path=Path(tempfile.gettempdir()) / "unused-misakanet.db")
 
         async def run():
-            with patch(
-                "misakanet.tools.langchain_tool.asyncio.to_thread",
-                new=AsyncMock(return_value="async result"),
-            ) as to_thread:
-                result = await tool._arun("async query")
-                to_thread.assert_awaited_once_with(tool._run, "async query")
-                return result
+            def slow_run(query):
+                time.sleep(0.2)
+                return f"async result: {query}"
 
-        self.assertEqual(asyncio.run(run()), "async result")
+            tool._run = slow_run
+            started = time.perf_counter()
+            results = await asyncio.gather(
+                tool._arun("first query"),
+                tool._arun("second query"),
+            )
+            elapsed = time.perf_counter() - started
+            return results, elapsed
+
+        results, elapsed = asyncio.run(run())
+
+        self.assertEqual(
+            results,
+            ["async result: first query", "async result: second query"],
+        )
+        self.assertLess(elapsed, 0.35)
 
 
 if __name__ == "__main__":

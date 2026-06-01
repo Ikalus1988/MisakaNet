@@ -128,16 +128,29 @@ class MisakaNetSearchTool(BaseTool):
         for subquery in self._expand_query(query):
             for rank, (score, doc) in enumerate(ranker(subquery, docs), start=1):
                 doc_key = str(getattr(doc, "filepath", getattr(doc, "filename", id(doc))))
-                item = fused.setdefault(doc_key, {"score": 0.0, "doc": doc, "best_score": score})
+                filename = str(getattr(doc, "filename", doc_key))
+                item = fused.setdefault(
+                    doc_key,
+                    {
+                        "score": 0.0,
+                        "doc": doc,
+                        "best_rank": rank,
+                        "filename": filename,
+                    },
+                )
                 item["score"] = float(item["score"]) + 1.0 / (60 + rank)
-                item["best_score"] = max(float(item["best_score"]), float(score))
+                item["best_rank"] = min(int(item["best_rank"]), rank)
+                item["filename"] = min(str(item["filename"]), filename)
 
-        ranked = [
-            (float(item["score"]) + 0.001 * float(item["best_score"]), item["doc"])
-            for item in fused.values()
-        ]
-        ranked.sort(key=lambda item: item[0], reverse=True)
-        return ranked
+        ranked = sorted(
+            fused.values(),
+            key=lambda item: (
+                -float(item["score"]),
+                int(item["best_rank"]),
+                str(item["filename"]),
+            ),
+        )
+        return [(float(item["score"]), item["doc"]) for item in ranked]
 
     def _cache_key(self, query: str) -> str:
         return hashlib.sha256(query.strip().encode("utf-8")).hexdigest()
