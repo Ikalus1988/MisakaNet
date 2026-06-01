@@ -2004,7 +2004,7 @@ async function loadRecentRegistrations() {
       const result = allResults.find(r => r.issue.number === issue.number);
       const number = result
         ? result.nodeNum
-        : (10000 + nth);
+        : (CURRENT_COUNTER - idx);
       const date = new Date(issue.created_at).toISOString().slice(0, 10);
       const avatarSrc = AVATAR_URL(number);
       const scarfColor = SCARF_COLOR(nth);
