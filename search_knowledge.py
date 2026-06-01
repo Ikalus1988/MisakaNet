@@ -15,6 +15,7 @@ def main():
     top_k = 10
     use_semantic = False
     suggest = False
+    show_score = False
     for arg in sys.argv[2:]:
         if arg == "--ref":
             mode = "ref"
@@ -26,6 +27,8 @@ def main():
             broad_only = True
         elif arg == "--suggest":
             suggest = True
+        elif arg == "--score":
+            show_score = True
         elif arg.startswith("--top="):
             try:
                 top_k = int(arg.split("=")[1])
@@ -42,6 +45,29 @@ def main():
                 pass
     t0 = time.time()
     found_any = False
+
+    # --score 模式：显示课程质量评分
+    if show_score:
+        from misakanet.tools.lesson_scorer import score_lessons
+        scored = score_lessons()
+        if not scored:
+            print("  (no lessons found)")
+            return
+        print(f"\n  {'Lesson':<55} {'Score':>7} {'Searches':>9}")
+        print(f"  {'─' * 55} {'─' * 7} {'─' * 9}")
+        shown = 0
+        for item in scored[:top_k]:
+            if item["searches"] == 0 and shown > 5:
+                # Skip zero-match lessons after showing a few
+                continue
+            bar = "█" * int(item["score"] * 10)
+            print(f"  {item['lesson']:<55} {item['score']:>7.4f} {item['searches']:>9}  {bar}")
+            shown += 1
+        total = len(scored)
+        matched = sum(1 for s in scored if s["searches"] > 0)
+        print(f"\n  {total} lessons total, {matched} matched by telemetry queries")
+        _show_timing(time.time() - t0, total)
+        return
 
     # --suggest 模式：≥2字符时列出匹配标题
     if suggest and len(query) >= 2:
