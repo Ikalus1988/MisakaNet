@@ -5,10 +5,13 @@ on:
     types: [opened, synchronize]
     paths:
       - '**.py'
+      - '**.js'
+      - '**.json'
       - 'core/**'
       - 'scripts/**'
       - 'tests/**'
       - 'misakanet/**'
+      - 'docs/**'
 
 jobs:
   audit:
@@ -65,7 +68,7 @@ jobs:
 
       - name: 🛡️ Frontend Shield Regression
         run: |
-          cd docs && npm ci && npm test
+          npm ci && npm test
         continue-on-error: true
 
       - name: 💬 Post Audit Report to PR
