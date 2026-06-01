@@ -57,19 +57,18 @@ class MisakaNetSearchTool(BaseTool):
         object.__setattr__(self, "cache_ttl_seconds", cache_ttl_seconds)
 
     def _run(self, query: str) -> str:
+        self._audit_sliding_window()
         self._check_blacklist()
         started = time.perf_counter()
         cache_hit = 0
         cached = self._get_cached_result(query)
         if cached is not None:
             self._record_telemetry(query, started, cache_hit=1)
-            self._audit_sliding_window()
             return cached
 
         result = self._execute_search(query)
         self._set_cached_result(query, result)
         self._record_telemetry(query, started, cache_hit=cache_hit)
-        self._audit_sliding_window()
         return result
 
     def _execute_search(self, query: str) -> str:
