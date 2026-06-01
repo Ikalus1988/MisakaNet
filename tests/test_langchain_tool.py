@@ -164,5 +164,62 @@ class TestMisakaNetSearchTool(unittest.TestCase):
         self.assertLess(elapsed, 0.35)
 
 
+    def test_anti_abuse_rate_limit_trigger(self):
+        """10 rapid queries within 1 second should trigger PermissionError."""
+        with tempfile.TemporaryDirectory() as tmp:
+            cache_path = Path(tmp) / "search.db"
+            telemetry_path = Path(tmp) / "telemetry.db"
+            tool = MisakaNetSearchTool(cache_path=cache_path, telemetry_path=telemetry_path)
+            tool._execute_search = Mock(return_value="result")
+
+            # Insert 9 rapid telemetry rows (within 1 second)
+            now = time.time()
+            with tool._telemetry_connection() as conn:
+                for i in range(9):
+                    conn.execute(
+                        """
+                        INSERT INTO search_telemetry (query, timestamp, latency_ms, cache_hit)
+                        VALUES (?, ?, ?, ?)
+                        """,
+                        (f"rapid-{i}", now + i * 0.05, 10.0, 0),
+                    )
+
+            # 10th call records telemetry + triggers audit → blacklist entry created
+            tool._run("rapid-9")
+
+            # 11th call should raise PermissionError (blacklisted from audit)
+            with self.assertRaises(PermissionError) as ctx:
+                tool._run("trigger-block")
+            self.assertIn("Anti-Abuse Shield", str(ctx.exception))
+
+    def test_anti_abuse_low_quality_trigger(self):
+        """10 continuous cache misses should trigger PermissionError."""
+        with tempfile.TemporaryDirectory() as tmp:
+            cache_path = Path(tmp) / "search.db"
+            telemetry_path = Path(tmp) / "telemetry.db"
+            tool = MisakaNetSearchTool(cache_path=cache_path, telemetry_path=telemetry_path)
+            tool._execute_search = Mock(return_value="result")
+
+            # Insert 9 cache-miss telemetry rows spread over 30 seconds
+            now = time.time()
+            with tool._telemetry_connection() as conn:
+                for i in range(9):
+                    conn.execute(
+                        """
+                        INSERT INTO search_telemetry (query, timestamp, latency_ms, cache_hit)
+                        VALUES (?, ?, ?, ?)
+                        """,
+                        (f"miss-{i}", now + i * 3, 100.0, 0),
+                    )
+
+            # 10th call records telemetry (cache miss) + triggers audit → blacklist entry
+            tool._run("miss-9")
+
+            # 11th call should raise PermissionError (blacklisted from audit)
+            with self.assertRaises(PermissionError) as ctx:
+                tool._run("trigger-low-quality")
+            self.assertIn("Anti-Abuse Shield", str(ctx.exception))
+
+
 if __name__ == "__main__":
     unittest.main()

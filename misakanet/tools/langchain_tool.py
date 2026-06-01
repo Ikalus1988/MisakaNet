@@ -57,16 +57,19 @@ class MisakaNetSearchTool(BaseTool):
         object.__setattr__(self, "cache_ttl_seconds", cache_ttl_seconds)
 
     def _run(self, query: str) -> str:
+        self._check_blacklist()
         started = time.perf_counter()
         cache_hit = 0
         cached = self._get_cached_result(query)
         if cached is not None:
             self._record_telemetry(query, started, cache_hit=1)
+            self._audit_sliding_window()
             return cached
 
         result = self._execute_search(query)
         self._set_cached_result(query, result)
         self._record_telemetry(query, started, cache_hit=cache_hit)
+        self._audit_sliding_window()
         return result
 
     def _execute_search(self, query: str) -> str:
@@ -232,7 +235,68 @@ class MisakaNetSearchTool(BaseTool):
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS local_blacklist (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                blocked_until REAL,
+                reason TEXT,
+                hit_count INTEGER DEFAULT 1
+            )
+            """
+        )
         return conn
+
+    def _check_blacklist(self) -> None:
+        """Pre-flight check: raise PermissionError if currently blacklisted."""
+        now = time.time()
+        with self._telemetry_connection() as conn:
+            row = conn.execute(
+                "SELECT blocked_until, reason FROM local_blacklist WHERE blocked_until > ? LIMIT 1",
+                (now,),
+            ).fetchone()
+            if row is not None:
+                raise PermissionError(
+                    "MisakaNet Anti-Abuse Shield: Node access suspended due to anomalous behaviors."
+                )
+
+    def _audit_sliding_window(self) -> None:
+        """Run sliding window audit over last 10 telemetry rows."""
+        with self._telemetry_connection() as conn:
+            count = conn.execute(
+                "SELECT COUNT(*) FROM search_telemetry"
+            ).fetchone()[0]
+            if count < 10:
+                return
+
+            rows = conn.execute(
+                "SELECT timestamp, cache_hit FROM search_telemetry ORDER BY timestamp DESC LIMIT 10"
+            ).fetchall()
+
+            timestamps = [r[0] for r in rows]
+            cache_hits = [r[1] for r in rows]
+            window_span = max(timestamps) - min(timestamps)
+            cache_hit_rate = sum(cache_hits) / len(cache_hits)
+
+            now = time.time()
+            # Condition Alpha: Rate limit — 10 queries in < 2 seconds
+            if window_span < 2.0:
+                conn.execute(
+                    """
+                    INSERT INTO local_blacklist (blocked_until, reason, hit_count)
+                    VALUES (?, 'rate_limit', 1)
+                    """,
+                    (now + 600,),
+                )
+            # Condition Beta: Low quality — cache hit rate below 10%
+            elif cache_hit_rate < 0.10:
+                conn.execute(
+                    """
+                    INSERT INTO local_blacklist (blocked_until, reason, hit_count)
+                    VALUES (?, 'low_quality', 1)
+                    """,
+                    (now + 300,),
+                )
 
     def _record_telemetry(self, query: str, started: float, cache_hit: int) -> None:
         latency_ms = (time.perf_counter() - started) * 1000
