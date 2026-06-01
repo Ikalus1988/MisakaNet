@@ -22,11 +22,15 @@ class TestMisakaNetSearchTool(unittest.TestCase):
             self.assertEqual(tool._run("cache me"), "fresh result")
             self.assertEqual(tool._execute_search.call_count, 1)
 
-            with sqlite3.connect(cache_path) as conn:
+            conn = sqlite3.connect(cache_path)
+            try:
                 conn.execute(
                     "UPDATE langchain_search_cache SET created_at = ?",
                     (time.time() - tool.cache_ttl_seconds - 1,),
                 )
+                conn.commit()
+            finally:
+                conn.close()
 
             tool._execute_search.return_value = "expired result"
             self.assertEqual(tool._run("cache me"), "expired result")
@@ -162,6 +166,34 @@ class TestMisakaNetSearchTool(unittest.TestCase):
             ["async result: first query", "async result: second query"],
         )
         self.assertLess(elapsed, 0.35)
+
+    def test_repeated_query_signature_short_circuits_search(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cache_path = Path(tmp) / "search.db"
+            telemetry_path = Path(tmp) / "telemetry.db"
+            tool = MisakaNetSearchTool(cache_path=cache_path, telemetry_path=telemetry_path)
+            tool._execute_search = Mock(return_value="should not run")
+
+            signature = tool._query_signature("  Duplicate Query  ", 0)
+            now = time.time()
+            with tool._telemetry_connection() as conn:
+                for i in range(5):
+                    conn.execute(
+                        """
+                        INSERT INTO search_telemetry
+                            (query, timestamp, latency_ms, cache_hit, query_signature)
+                        VALUES (?, ?, ?, ?, ?)
+                        """,
+                        ("duplicate query", now - i, 0.0, 0, signature),
+                    )
+
+            result = tool._run("duplicate query")
+
+            self.assertEqual(result, "[Rate Limited] Repeated query pattern detected.")
+            tool._execute_search.assert_not_called()
+            with tool._telemetry_connection() as conn:
+                count = conn.execute("SELECT COUNT(*) FROM search_telemetry").fetchone()[0]
+            self.assertEqual(count, 5)
 
 
     def test_anti_abuse_rate_limit_trigger(self):
