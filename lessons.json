@@ -1773,6 +1773,22 @@
     "updated": "2026-05-20"
   },
   {
+    "id": "slugify-path-traversal-deep-coverage",
+    "title": "Slugify: deep coverage of path traversal, null bytes, and reserved names",
+    "domain": "scripts",
+    "tags": [
+      "slugify",
+      "path-traversal",
+      "windows-reserved",
+      "null-byte",
+      "test-coverage",
+      "hardening"
+    ],
+    "summary": "The original 5-test `test_slugify.py` (merged in commit `6912f87` for issue #95) covered the basics: standard titles, sl...",
+    "url": "lessons/contrib/slugify-path-traversal-deep-coverage.md",
+    "updated": ""
+  },
+  {
     "id": "slugify-windows-path-sanitation",
     "title": "Slugify filename sanitation crash on Windows and WSL",
     "domain": "scripts",
