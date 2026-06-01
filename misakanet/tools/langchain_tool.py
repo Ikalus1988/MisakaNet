@@ -6,6 +6,7 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
+from misakanet.tools.telemetry_pipeline import TelemetryPipeline
 # Try to import langchain BaseTool, fallback to a standalone class if not available
 try:
     from langchain_core.tools import BaseTool
@@ -33,6 +34,7 @@ class MisakaNetSearchTool(BaseTool):
         cache_path: str | Path | None = None,
         telemetry_path: str | Path | None = None,
         cache_ttl_seconds: int = 300,
+        pipeline: TelemetryPipeline | None = None,
         **kwargs,
     ):
         if HAS_LANGCHAIN:
@@ -56,6 +58,7 @@ class MisakaNetSearchTool(BaseTool):
             else repo_root / ".cache" / "langchain_telemetry.db",
         )
         object.__setattr__(self, "cache_ttl_seconds", cache_ttl_seconds)
+        object.__setattr__(self, "pipeline", pipeline)
 
     def _run(self, query: str) -> str:
         self._audit_sliding_window()
@@ -357,6 +360,34 @@ class MisakaNetSearchTool(BaseTool):
         latency_ms = (time.perf_counter() - started) * 1000
         if query_signature is None:
             query_signature = self._query_signature(query, latency_ms)
+
+        pipeline = getattr(self, "pipeline", None)
+        if pipeline is not None and not pipeline._closed:
+            # Use async pipeline — schedule emit from sync context
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.ensure_future(
+                        pipeline.emit(query, latency_ms, bool(cache_hit), query_signature)
+                    )
+                else:
+                    loop.run_until_complete(
+                        pipeline.emit(query, latency_ms, bool(cache_hit), query_signature)
+                    )
+            except RuntimeError:
+                # No event loop — fall back to sync write
+                self._sync_record_telemetry(query, latency_ms, cache_hit, query_signature)
+        else:
+            self._sync_record_telemetry(query, latency_ms, cache_hit, query_signature)
+
+    def _sync_record_telemetry(
+        self,
+        query: str,
+        latency_ms: float,
+        cache_hit: int,
+        query_signature: str | None = None,
+    ) -> None:
+        """Fallback synchronous telemetry write when no pipeline is available."""
         with self._telemetry_connection() as conn:
             conn.execute(
                 """
@@ -364,10 +395,25 @@ class MisakaNetSearchTool(BaseTool):
                     (query, timestamp, latency_ms, cache_hit, query_signature)
                 VALUES (?, ?, ?, ?, ?)
                 """,
-                (query, time.time(), latency_ms, cache_hit, query_signature),
+                (query, time.time(), latency_ms, cache_hit, query_signature or ""),
             )
 
     def get_telemetry_summary(self) -> dict:
+        pipeline = getattr(self, "pipeline", None)
+        if pipeline is not None and not pipeline._closed:
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as pool:
+                        future = pool.submit(asyncio.run, pipeline.get_summary())
+                        return future.result(timeout=5)
+                else:
+                    return loop.run_until_complete(pipeline.get_summary())
+            except RuntimeError:
+                pass
+
+        # Fallback to direct DB query
         with self._telemetry_connection() as conn:
             total_searches = int(
                 conn.execute("SELECT COUNT(*) FROM search_telemetry").fetchone()[0]
