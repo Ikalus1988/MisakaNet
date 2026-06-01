@@ -55,8 +55,10 @@ def _get_token() -> str | None:
 
 
 def _api(path: str, data: dict = None, method: str = "POST") -> dict | None:
-    """调用 GitHub API。"""
+    """调用 GitHub API，支持指数退避的自动重试（最多 3 次重试）。"""
     import urllib.request
+    import urllib.error
+    import time
     token = _get_token()
     if not token:
         print("  ❌ 未找到 GitHub Token")
@@ -65,16 +67,33 @@ def _api(path: str, data: dict = None, method: str = "POST") -> dict | None:
     url = f"{API_BASE}/repos/{REPO}/{path}"
     headers = {**HEADERS, "Authorization": f"token {token}"}
     body = json.dumps(data).encode() if data else None
-    try:
-        req = urllib.request.Request(url, data=body, headers=headers, method=method)
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            return json.loads(resp.read().decode())
-    except urllib.error.HTTPError as e:
-        print(f"  ❌ API 错误 ({e.code}): {e.read().decode()[:200]}")
-        return None
-    except Exception as e:
-        print(f"  ❌ 请求失败: {e}")
-        return None
+    
+    max_retries = 3
+    base_backoff = 1.0
+    
+    for attempt in range(max_retries + 1):
+        try:
+            req = urllib.request.Request(url, data=body, headers=headers, method=method)
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return json.loads(resp.read().decode())
+        except urllib.error.HTTPError as e:
+            # 只有 5xx 状态码或 429 (Too Many Requests) 应该被重试
+            if e.code >= 500 or e.code == 429:
+                if attempt < max_retries:
+                    sleep_time = base_backoff * (2 ** attempt)
+                    print(f"  ⚠️ API 临时错误 ({e.code})，正在进行第 {attempt + 1} 次重试，将在 {sleep_time} 秒后重试...")
+                    time.sleep(sleep_time)
+                    continue
+            print(f"  ❌ API 错误 ({e.code}): {e.read().decode()[:200]}")
+            return None
+        except Exception as e:
+            if attempt < max_retries:
+                sleep_time = base_backoff * (2 ** attempt)
+                print(f"  ⚠️ 网络请求异常 ({e})，正在进行第 {attempt + 1} 次重试，将在 {sleep_time} 秒后重试...")
+                time.sleep(sleep_time)
+                continue
+            print(f"  ❌ 请求失败 (已达最大重试次数): {e}")
+            return None
 
 
 def _slugify(title: str) -> str:
