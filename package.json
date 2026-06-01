@@ -1,0 +1,30 @@
+{
+  "name": "misakanet",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "<p align=\"center\">   <img src=\"promotional/og-card.png\" width=\"720\" alt=\"MisakaNet\"/> </p>",
+  "main": "vitest.config.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ikalus1988/MisakaNet.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ikalus1988/MisakaNet/issues"
+  },
+  "homepage": "https://github.com/Ikalus1988/MisakaNet#readme",
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "vitest": "^4.1.8"
+  }
+}

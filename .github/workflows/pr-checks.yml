@@ -63,6 +63,11 @@ jobs:
           echo "rate=$coverage" >> $GITHUB_OUTPUT
           echo "Coverage: ${coverage}%"
 
+      - name: 🛡️ Frontend Shield Regression
+        run: |
+          cd docs && npm ci && npm test
+        continue-on-error: true
+
       - name: 💬 Post Audit Report to PR
         uses: actions/github-script@v7
         with:
