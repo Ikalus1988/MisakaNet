@@ -60,15 +60,21 @@ class MisakaNetSearchTool(BaseTool):
         self._audit_sliding_window()
         self._check_blacklist()
         started = time.perf_counter()
+        query_signature = self._query_signature(
+            query,
+            (time.perf_counter() - started) * 1000,
+        )
+        if self._is_repeated_query_signature(query_signature):
+            return "[Rate Limited] Repeated query pattern detected."
         cache_hit = 0
         cached = self._get_cached_result(query)
         if cached is not None:
-            self._record_telemetry(query, started, cache_hit=1)
+            self._record_telemetry(query, started, cache_hit=1, query_signature=query_signature)
             return cached
 
         result = self._execute_search(query)
         self._set_cached_result(query, result)
-        self._record_telemetry(query, started, cache_hit=cache_hit)
+        self._record_telemetry(query, started, cache_hit=cache_hit, query_signature=query_signature)
         return result
 
     def _execute_search(self, query: str) -> str:
@@ -174,6 +180,12 @@ class MisakaNetSearchTool(BaseTool):
     def _cache_key(self, query: str) -> str:
         return hashlib.sha256(query.strip().encode("utf-8")).hexdigest()
 
+    def _query_signature(self, query: str, latency_ms: float) -> str:
+        normalized_query = query.strip().lower()
+        latency_bucket = round(latency_ms / 100) * 100
+        payload = f"{normalized_query}\0{latency_bucket}"
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
     def _cache_connection(self):
         assert self.cache_path is not None
         self.cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -230,10 +242,17 @@ class MisakaNetSearchTool(BaseTool):
                 query TEXT,
                 timestamp REAL,
                 latency_ms REAL,
-                cache_hit INTEGER
+                cache_hit INTEGER,
+                query_signature TEXT
             )
             """
         )
+        columns = {
+            str(row[1])
+            for row in conn.execute("PRAGMA table_info(search_telemetry)").fetchall()
+        }
+        if "query_signature" not in columns:
+            conn.execute("ALTER TABLE search_telemetry ADD COLUMN query_signature TEXT")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS local_blacklist (
@@ -245,6 +264,21 @@ class MisakaNetSearchTool(BaseTool):
             """
         )
         return conn
+
+    def _is_repeated_query_signature(self, query_signature: str) -> bool:
+        cutoff = time.time() - 60
+        with self._telemetry_connection() as conn:
+            count = int(
+                conn.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM search_telemetry
+                    WHERE query_signature = ? AND timestamp >= ?
+                    """,
+                    (query_signature, cutoff),
+                ).fetchone()[0]
+            )
+        return count >= 5
 
     def _check_blacklist(self) -> None:
         """Pre-flight check: raise PermissionError if currently blacklisted."""
@@ -297,16 +331,24 @@ class MisakaNetSearchTool(BaseTool):
                     (now + 300,),
                 )
 
-    def _record_telemetry(self, query: str, started: float, cache_hit: int) -> None:
+    def _record_telemetry(
+        self,
+        query: str,
+        started: float,
+        cache_hit: int,
+        query_signature: str | None = None,
+    ) -> None:
         latency_ms = (time.perf_counter() - started) * 1000
+        if query_signature is None:
+            query_signature = self._query_signature(query, latency_ms)
         with self._telemetry_connection() as conn:
             conn.execute(
                 """
                 INSERT INTO search_telemetry
-                    (query, timestamp, latency_ms, cache_hit)
-                VALUES (?, ?, ?, ?)
+                    (query, timestamp, latency_ms, cache_hit, query_signature)
+                VALUES (?, ?, ?, ?, ?)
                 """,
-                (query, time.time(), latency_ms, cache_hit),
+                (query, time.time(), latency_ms, cache_hit, query_signature),
             )
 
     def get_telemetry_summary(self) -> dict:

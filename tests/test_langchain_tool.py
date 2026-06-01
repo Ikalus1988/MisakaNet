@@ -81,6 +81,34 @@ class TestMisakaNetSearchTool(unittest.TestCase):
             self.assertAlmostEqual(summary["avg_latency_ms"], 62.5)
             self.assertAlmostEqual(summary["saved_time_ms"], 190.0)
 
+    def test_repeated_query_signature_short_circuits_without_recording(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cache_path = Path(tmp) / "search.db"
+            telemetry_path = Path(tmp) / "telemetry.db"
+            tool = MisakaNetSearchTool(cache_path=cache_path, telemetry_path=telemetry_path)
+            tool._execute_search = Mock(return_value="should not run")
+            now = time.time()
+            signature = tool._query_signature(" repeated query ", 0.0)
+
+            with tool._telemetry_connection() as conn:
+                for i in range(5):
+                    conn.execute(
+                        """
+                        INSERT INTO search_telemetry
+                            (query, timestamp, latency_ms, cache_hit, query_signature)
+                        VALUES (?, ?, ?, ?, ?)
+                        """,
+                        ("Repeated Query", now - i, 10.0, 0, signature),
+                    )
+
+            result = tool._run("REPEATED QUERY")
+
+            self.assertEqual(result, "[Rate Limited] Repeated query pattern detected.")
+            tool._execute_search.assert_not_called()
+            with tool._telemetry_connection() as conn:
+                count = conn.execute("SELECT COUNT(*) FROM search_telemetry").fetchone()[0]
+            self.assertEqual(count, 5)
+
     def test_rrf_merges_multi_query_rankings(self):
         tool = MisakaNetSearchTool(cache_path=Path(tempfile.gettempdir()) / "unused-misakanet.db")
         doc_a = SimpleNamespace(filename="a.md", filepath=Path("a.md"))
