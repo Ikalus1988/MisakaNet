@@ -161,7 +161,7 @@ export default {
       const counter = JSON.parse(atob(counterFile.content));
       counter.current += 1;
       nodeNum = counter.current;
-      counter.updated = new Date().toISOString().replace("Z", "Z");
+      counter.updated = new Date().toISOString();
 
       await fetch(`${GITHUB_API}/repos/${REPO}/contents/counter.json`, {
         method: "PUT",
