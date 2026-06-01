@@ -1,6 +1,6 @@
 // MisakaNet Register Proxy — Cloudflare Worker
 // 部署方式: 见 workers/README.md
-// 环境变量: REGISTER_TOKEN (GitHub PAT, 仅存服务端)
+// 环境变量: REGISTER_TOKEN (GitHub PAT, 需 contents+issues write)
 
 const REPO = "Ikalus1988/MisakaNet";
 const GITHUB_API = "https://api.github.com";
@@ -8,13 +8,25 @@ const GITHUB_API = "https://api.github.com";
 // IP 限流: 每个 IP 每 30 秒最多 1 次
 const RATE_LIMIT_WINDOW = 30_000;
 const rateMap = new Map();
+// 定期清理过期限流记录，防止内存泄露
+setInterval(() => {
+  const cutoff = Date.now() - RATE_LIMIT_WINDOW;
+  for (const [ip, time] of rateMap) {
+    if (time < cutoff) rateMap.delete(ip);
+  }
+}, 300_000);
 
-// 给所有响应添加 CORS 头，防止浏览器拦截
+// 输入校验
+const MAX_AGENT_TYPE = 30;
+const MAX_NODE_NAME = 50;
+const MAX_INVITE_CODE = 30;
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
+
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -22,14 +34,19 @@ function jsonResponse(body, status = 200) {
   });
 }
 
+function sanitizeIdentifier(val, maxLen) {
+  if (!val) return "";
+  if (val.length > maxLen) val = val.slice(0, maxLen);
+  // 只允许字母、数字、下划线、连字符、中文
+  return val.replace(/[^\w\u4e00-\u9fa5\-]/g, "");
+}
+
 export default {
   async fetch(request, env) {
-    // CORS 预检
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: CORS_HEADERS });
     }
 
-    // GET → 显示友好的信息页面
     if (request.method === "GET") {
       return new Response(`<!DOCTYPE html>
 <html lang="zh-CN">
@@ -60,7 +77,6 @@ export default {
       });
     }
 
-    // 非 GET/POST → 405
     if (request.method !== "POST") {
       return jsonResponse({ error: "Method not allowed" }, 405);
     }
@@ -71,42 +87,44 @@ export default {
     const last = rateMap.get(ip) || 0;
     if (now - last < RATE_LIMIT_WINDOW) {
       const remaining = Math.ceil((RATE_LIMIT_WINDOW - (now - last)) / 1000);
-      return new Response(
-        JSON.stringify({ error: `Rate limited. Try again in ${remaining}s.` }),
-        { status: 429, headers: { "content-type": "application/json" } }
-      );
+      return jsonResponse({ error: `Rate limited. Try again in ${remaining}s.` }, 429);
     }
     rateMap.set(ip, now);
 
     // 解析请求体
     let body;
     try {
+      if (request.headers.get("content-length") > 10000) {
+        return jsonResponse({ error: "Request too large" }, 413);
+      }
       body = await request.json();
     } catch {
       return jsonResponse({ error: "Invalid JSON" }, 400);
     }
 
-    // 校验必填字段
+    // 校验必填字段 + 输入清洗
     if (!body.agent_type) {
       return jsonResponse({ error: "Missing agent_type" }, 400);
     }
+    const agentType = sanitizeIdentifier(body.agent_type, MAX_AGENT_TYPE);
+    if (!agentType) {
+      return jsonResponse({ error: "Invalid agent_type" }, 400);
+    }
+    const nodeName = sanitizeIdentifier(body.node_name, MAX_NODE_NAME);
+    const inviteCode = sanitizeIdentifier(body.invite_code, MAX_INVITE_CODE);
 
     // 构造 Issue body
-    const nameLine = body.node_name
-      ? `\n注册名称: **${body.node_name}**`
-      : "";
-    const agentLine = `\nAgent 类型: **${body.agent_type.toUpperCase()}**`;
-    const inviteLine = body.invite_code
-      ? `\n邀请人: **@${body.invite_code}**`
-      : "";
+    const nameLine = nodeName ? `\n注册名称: **${nodeName}**` : "";
+    const agentLine = `\nAgent 类型: **${agentType.toUpperCase()}**`;
+    const inviteLine = inviteCode ? `\n邀请人: **${inviteCode}**` : "";
     const issueBody = `## 🧠 通过公开通道加入御坂网络${nameLine}${agentLine}${inviteLine}\n\n已确认条款。`;
 
-    // 调用 GitHub API — token 只出现在这里
-    const token = env.REGISTER_TOKEN; // 从 Cloudflare 环境变量读取
+    const token = env.REGISTER_TOKEN;
     if (!token) {
       return jsonResponse({ error: "Server misconfigured" }, 500);
     }
 
+    // ── 1. 创建 Issue ──
     const resp = await fetch(`${GITHUB_API}/repos/${REPO}/issues`, {
       method: "POST",
       headers: {
@@ -123,15 +141,66 @@ export default {
     });
 
     const data = await resp.json();
-
     if (!resp.ok) {
       return jsonResponse({ error: data.message || "GitHub API error" }, resp.status);
     }
+    const issueNumber = data.number;
+
+    // ── 2. 更新计数器 ──
+    let nodeNum = null;
+    try {
+      const getResp = await fetch(
+        `${GITHUB_API}/repos/${REPO}/contents/counter.json`,
+        { headers: { Authorization: `Bearer ${token}`, "User-Agent": "MisakaNet-Worker" } }
+      );
+      const counterFile = await getResp.json();
+      const counter = JSON.parse(atob(counterFile.content));
+      counter.current += 1;
+      nodeNum = counter.current;
+      counter.updated = new Date().toISOString().replace("Z", "Z");
+
+      await fetch(`${GITHUB_API}/repos/${REPO}/contents/counter.json`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "User-Agent": "MisakaNet-Worker",
+        },
+        body: JSON.stringify({
+          message: `chore: increment counter after node registration #${issueNumber}`,
+          content: btoa(JSON.stringify(counter, null, 2) + "\n"),
+          sha: counterFile.sha,
+        }),
+      });
+    } catch (err) {
+      console.error("counter update failed:", err.message);
+    }
+
+    // ── 3. 发欢迎评论（含节点编号供前端 JS 解析） ──
+    if (nodeNum) {
+      try {
+        const nodeNameDisplay = `Misaka${String(nodeNum).padStart(5, "0")}`;
+        await fetch(`${GITHUB_API}/repos/${REPO}/issues/${issueNumber}/comments`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "User-Agent": "MisakaNet-Worker",
+          },
+          body: JSON.stringify({
+            body: `🎉 欢迎加入御坂网络！\n\n你的节点编号是 **${nodeNameDisplay}**\n\n请在 Agent 中完成准入测试。\n\n---\n_🤖 This is an automated message from MisakaNet._`,
+          }),
+        });
+      } catch (err) {
+        console.error("welcome comment failed:", err.message);
+      }
+    }
 
     return jsonResponse({
-        success: true,
-        issue_url: data.html_url,
-        issue_number: data.number,
-      });
+      success: true,
+      issue_url: data.html_url,
+      issue_number: issueNumber,
+      node_number: nodeNum,
+    });
   },
 };
