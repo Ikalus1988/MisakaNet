@@ -1,0 +1,216 @@
+/*
+ * Responsive Design - Mobile First Approach
+ * Breakpoints:
+ * - Mobile: <= 480px (default/base styles)
+ * - Tablet: 481px - 768px
+ * - Desktop: > 768px (original dual-column layout)
+ */
+
+/* ============================================
+   BASE STYLES (Mobile First - <= 480px)
+   These styles apply to all viewports and are
+   overridden by media queries for larger screens.
+   ============================================ */
+
+/* Ensure no horizontal scroll on any device */
+html, body {
+    overflow-x: hidden;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Apply border-box to all elements for consistent sizing */
+*, *::before, *::after {
+    box-sizing: inherit;
+}
+
+/* Container - single column by default */
+.container {
+    display: flex;
+    flex-direction: column;  /* Stack vertically on mobile */
+    width: 100%;
+    max-width: 100%;
+    padding: 0 15px;         /* Add some padding for breathing room */
+    margin: 0 auto;
+}
+
+/* Main content area - full width on mobile */
+.main-content {
+    width: 100%;
+    padding: 15px 0;
+}
+
+/* Sidebar - full width on mobile, below main content */
+.sidebar {
+    width: 100%;
+    padding: 15px 0;
+}
+
+/* Typography - ensure readable font sizes on mobile */
+body {
+    font-size: 16px;         /* Base font size for readability */
+    line-height: 1.5;        /* Good line height for mobile reading */
+}
+
+h1 { font-size: 1.75rem; }  /* ~28px */
+h2 { font-size: 1.5rem; }   /* ~24px */
+h3 { font-size: 1.25rem; }  /* ~20px */
+p { font-size: 1rem; }      /* ~16px */
+
+/* Images - responsive by default */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* ============================================
+   TABLET STYLES (481px - 768px)
+   Two-column layout with adjusted widths
+   ============================================ */
+
+@media screen and (min-width: 481px) and (max-width: 768px) {
+    /* Switch to two-column layout */
+    .container {
+        flex-direction: row;           /* Side by side on tablet */
+        flex-wrap: wrap;               /* Allow wrapping if needed */
+        max-width: 750px;              /* Constrain width for readability */
+        padding: 0 20px;
+    }
+
+    /* Main content takes 2/3 of the width */
+    .main-content {
+        width: 66.666%;                /* 2/3 width */
+        padding: 20px 15px 20px 0;
+        flex: 0 0 66.666%;             /* Prevent flex shrinking/growing */
+    }
+
+    /* Sidebar takes 1/3 of the width */
+    .sidebar {
+        width: 33.333%;                /* 1/3 width */
+        padding: 20px 0 20px 15px;
+        flex: 0 0 33.333%;             /* Prevent flex shrinking/growing */
+    }
+
+    /* Adjust font sizes for tablet readability */
+    body {
+        font-size: 17px;               /* Slightly larger for tablet */
+    }
+
+    h1 { font-size: 2rem; }           /* ~32px */
+    h2 { font-size: 1.75rem; }        /* ~28px */
+    h3 { font-size: 1.5rem; }         /* ~24px */
+
+    /* Ensure no horizontal scroll on tablet */
+    .container,
+    .main-content,
+    .sidebar {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+}
+
+/* ============================================
+   DESKTOP STYLES (> 768px)
+   Original dual-column layout preserved
+   ============================================ */
+
+@media screen and (min-width: 769px) {
+    /* Restore original dual-column layout */
+    .container {
+        display: flex;
+        flex-direction: row;           /* Side by side on desktop */
+        max-width: 1200px;             /* Standard desktop width */
+        margin: 0 auto;
+        padding: 0 30px;
+    }
+
+    /* Main content - original width (typically 70-75%) */
+    .main-content {
+        width: 70%;                    /* Original desktop width */
+        padding: 30px 20px 30px 0;
+        flex: 0 0 70%;
+    }
+
+    /* Sidebar - original width (typically 25-30%) */
+    .sidebar {
+        width: 30%;                    /* Original desktop width */
+        padding: 30px 0 30px 20px;
+        flex: 0 0 30%;
+    }
+
+    /* Original desktop font sizes */
+    body {
+        font-size: 18px;               /* Standard desktop font size */
+    }
+
+    h1 { font-size: 2.5rem; }         /* ~40px */
+    h2 { font-size: 2rem; }           /* ~32px */
+    h3 { font-size: 1.75rem; }        /* ~28px */
+}
+
+/* ============================================
+   UTILITY CLASSES & EDGE CASE HANDLING
+   ============================================ */
+
+/* Clear floats if any elements use float layout */
+.clearfix::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Ensure tables are responsive */
+table {
+    width: 100%;
+    overflow-x: auto;
+    display: block;
+}
+
+/* Handle very small screens (< 320px) gracefully */
+@media screen and (max-width: 320px) {
+    .container {
+        padding: 0 10px;
+    }
+    
+    body {
+        font-size: 14px;               /* Smaller font for very small screens */
+    }
+    
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.25rem; }
+    h3 { font-size: 1.1rem; }
+}
+
+/* Handle landscape orientation on mobile */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+    .container {
+        flex-direction: row;           /* Use columns in landscape */
+    }
+    
+    .main-content {
+        width: 65%;
+        flex: 0 0 65%;
+    }
+    
+    .sidebar {
+        width: 35%;
+        flex: 0 0 35%;
+    }
+}
+
+/* Print styles - ensure readability when printing */
+@media print {
+    .container {
+        display: block;
+        max-width: 100%;
+    }
+    
+    .main-content,
+    .sidebar {
+        width: 100%;
+        padding: 10px 0;
+    }
+}
