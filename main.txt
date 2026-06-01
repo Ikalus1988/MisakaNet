@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="title">我的网站</title>
+</head>
+<body>
+    <header>
+        <h1 data-i18n="welcome">欢迎来到我的网站</h1>
+        <nav>
+            <ul>
+                <li><a href="#" data-i18n="nav.home">首页</a></li>
+                <li><a href="#" data-i18n="nav.about">关于我们</a></li>
+                <li><a href="#" data-i18n="nav.services">服务</a></li>
+                <li><a href="#" data-i18n="nav.contact">联系我们</a></li>
+            </ul>
+        </nav>
+        <div class="language-switcher">
+            <button onclick="switchLanguage('zh')">中文</button>
+            <button onclick="switchLanguage('en')">English</button>
+        </div>
+    </header>
+
+    <main>
+        <section id="about">
+            <h2 data-i18n="about.title">关于我们</h2>
+            <p data-i18n="about.description">我们是一家专注于技术创新的公司，致力于为客户提供最优质的解决方案。</p>
+        </section>
+
+        <section id="services">
+            <h2 data-i18n="services.title">我们的服务</h2>
+            <ul>
+                <li data-i18n="services.item1">Web 开发</li>
+                <li data-i18n="services.item2">移动应用开发</li>
+                <li data-i18n="services.item3">云计算服务</li>
+                <li data-i18n="services.item4">人工智能解决方案</li>
+            </ul>
+        </section>
+
+        <section id="contact">
+            <h2 data-i18n="contact.title">联系我们</h2>
+            <p data-i18n="contact.email">邮箱：contact@example.com</p>
+            <p data-i18n="contact.phone">电话：+86 123-4567-8900</p>
+        </section>
+    </main>
+
+    <footer>
+        <p data-i18n="footer.copyright">© 2024 我的公司。保留所有权利。</p>
+    </footer>
+
+    <script src="i18n.js"></script>
+</body>
+</html>
