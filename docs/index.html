@@ -1855,7 +1855,7 @@ function animateCounter(el, target, duration = 800) {
 
 // ── API cache (localStorage, survives refresh) ──
 const CACHE_PREFIX = 'misakanet-cache-';
-const CACHE_TTL = 5 * 60 * 1000; // 5 min
+const CACHE_TTL = 30 * 1000; // 30 秒 — 之前 5 分钟，改短让数据更新更及时
 
 function getCache(key) {
   try {
@@ -1876,12 +1876,15 @@ function setCache(key, data) {
 async function fetchWithCache(url, cacheKey) {
   const cached = getCache(cacheKey);
   if (cached) return cached;
+  // 加时间戳绕过 CDN 缓存
+  const separator = url.includes('?') ? '&' : '?';
+  const bustUrl = `${url}${separator}_t=${Date.now()}`;
   try {
-    const data = await fetchWithTimeout(url);
+    const data = await fetchWithTimeout(bustUrl);
     setCache(cacheKey, data);
     return data;
   } catch (e) {
-    const stale = getCache(cacheKey); // try stale cache on error
+    const stale = getCache(cacheKey);
     if (stale) return stale;
     throw e;
   }
@@ -2536,6 +2539,17 @@ document.getElementById('register-btn').addEventListener('click', registerNode);
   loadContributors();
 })();
 setInterval(loadActiveNodes, 30 * 60 * 1000);
+
+// 用户切回 tab 时立即刷新数据
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // 清除 localStorage 缓存强制刷新
+    localStorage.removeItem(CACHE_PREFIX + 'counter');
+    localStorage.removeItem(CACHE_PREFIX + 'lessons');
+    loadStats();
+    loadActiveNodes();
+  }
+});
 </script>
 </body>
 </html>
