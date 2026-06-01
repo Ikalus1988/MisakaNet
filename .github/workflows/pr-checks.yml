@@ -1,0 +1,82 @@
+name: 🚨 Misaka Network Agent Auditor
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - '**.py'
+      - 'core/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'misakanet/**'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: 📦 Install Dependencies
+        run: |
+          pip install -r requirements.txt 2>/dev/null || true
+          pip install pytest pytest-cov
+
+      - name: 🧪 Run Test Suite
+        id: pytest
+        run: |
+          pytest --cov=scripts --cov=misakanet --cov-report=term --cov-fail-under=70 tests/ > pytest_report.txt 2>&1
+          cat pytest_report.txt
+        continue-on-error: true
+
+      - name: 📊 Parse Coverage
+        id: coverage
+        run: |
+          coverage=$(grep -oP 'TOTAL\s+\d+\s+\d+\s+\K\d+(?=%)' pytest_report.txt || echo "0")
+          echo "rate=$coverage" >> $GITHUB_OUTPUT
+          echo "Coverage: ${coverage}%"
+
+      - name: 💬 Post Audit Report to PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('pytest_report.txt', 'utf8');
+            const success = '${{ steps.pytest.outcome }}' === 'success';
+            const coverage = '${{ steps.coverage.outputs.rate }}';
+            const threshold = 70;
+
+            const header = success
+              ? `✅ **PASS**: All tests passed (${coverage}% coverage)`
+              : `❌ **FAIL**: Test suite has failures`;
+
+            const coverageNote = parseInt(coverage) < threshold
+              ? `\n⚠️ Coverage ${coverage}% is below ${threshold}% threshold.`
+              : '';
+
+            const body = `### 🤖 Misaka Audit Bot Report
+
+            ${header}${coverageNote}
+
+            \`\`\`text
+            ${report.slice(0, 3000)}
+            \`\`\`
+
+            *Triggered by: ${context.payload.pull_request.head.sha.slice(0, 7)}*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
+
+            if (!success || parseInt(coverage) < threshold) {
+              core.setFailed('PR audit failed: tests or coverage below threshold.');
+            }
