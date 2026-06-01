@@ -17,6 +17,7 @@ except ImportError:
         BaseTool = object
         HAS_LANGCHAIN = False
 
+
 class MisakaNetSearchTool(BaseTool):
     name: str = "misakanet_search"
     description: str = (
@@ -24,10 +25,12 @@ class MisakaNetSearchTool(BaseTool):
     )
     cache_ttl_seconds: int = 300
     cache_path: Path | None = None
+    telemetry_path: Path | None = None
 
     def __init__(
         self,
         cache_path: str | Path | None = None,
+        telemetry_path: str | Path | None = None,
         cache_ttl_seconds: int = 300,
         **kwargs,
     ):
@@ -44,15 +47,26 @@ class MisakaNetSearchTool(BaseTool):
             if cache_path is not None
             else repo_root / ".cache" / "langchain_tool_cache.db",
         )
+        object.__setattr__(
+            self,
+            "telemetry_path",
+            Path(telemetry_path)
+            if telemetry_path is not None
+            else repo_root / ".cache" / "langchain_telemetry.db",
+        )
         object.__setattr__(self, "cache_ttl_seconds", cache_ttl_seconds)
 
     def _run(self, query: str) -> str:
+        started = time.perf_counter()
+        cache_hit = 0
         cached = self._get_cached_result(query)
         if cached is not None:
+            self._record_telemetry(query, started, cache_hit=1)
             return cached
 
         result = self._execute_search(query)
         self._set_cached_result(query, result)
+        self._record_telemetry(query, started, cache_hit=cache_hit)
         return result
 
     def _execute_search(self, query: str) -> str:
@@ -84,6 +98,9 @@ class MisakaNetSearchTool(BaseTool):
         return "\n" + "\n----------------------------------------\n".join(results)
 
     def run(self, query: str) -> str:
+        return self._run(query)
+
+    def search(self, query: str) -> str:
         return self._run(query)
 
     async def _arun(self, query: str) -> str:
@@ -199,3 +216,72 @@ class MisakaNetSearchTool(BaseTool):
                 """,
                 (self._cache_key(query), query, time.time(), result),
             )
+
+    def _telemetry_connection(self):
+        assert self.telemetry_path is not None
+        self.telemetry_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(self.telemetry_path), timeout=5)
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS search_telemetry (
+                query TEXT,
+                timestamp REAL,
+                latency_ms REAL,
+                cache_hit INTEGER
+            )
+            """
+        )
+        return conn
+
+    def _record_telemetry(self, query: str, started: float, cache_hit: int) -> None:
+        latency_ms = (time.perf_counter() - started) * 1000
+        with self._telemetry_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO search_telemetry
+                    (query, timestamp, latency_ms, cache_hit)
+                VALUES (?, ?, ?, ?)
+                """,
+                (query, time.time(), latency_ms, cache_hit),
+            )
+
+    def get_telemetry_summary(self) -> dict:
+        with self._telemetry_connection() as conn:
+            total_searches = int(
+                conn.execute("SELECT COUNT(*) FROM search_telemetry").fetchone()[0]
+            )
+            if total_searches == 0:
+                return {
+                    "total_searches": 0,
+                    "cache_hit_rate": 0.0,
+                    "avg_latency_ms": 0.0,
+                    "saved_time_ms": 0,
+                }
+
+            hit_count = int(
+                conn.execute(
+                    "SELECT COUNT(*) FROM search_telemetry WHERE cache_hit = 1"
+                ).fetchone()[0]
+            )
+            avg_latency_ms = float(
+                conn.execute("SELECT AVG(latency_ms) FROM search_telemetry").fetchone()[0]
+                or 0.0
+            )
+            avg_hit_latency = conn.execute(
+                "SELECT AVG(latency_ms) FROM search_telemetry WHERE cache_hit = 1"
+            ).fetchone()[0]
+            avg_miss_latency = conn.execute(
+                "SELECT AVG(latency_ms) FROM search_telemetry WHERE cache_hit = 0"
+            ).fetchone()[0]
+
+        saved_time_ms = 0
+        if hit_count and avg_hit_latency is not None and avg_miss_latency is not None:
+            saved_time_ms = (float(avg_miss_latency) - float(avg_hit_latency)) * hit_count
+
+        return {
+            "total_searches": total_searches,
+            "cache_hit_rate": hit_count / total_searches,
+            "avg_latency_ms": avg_latency_ms,
+            "saved_time_ms": saved_time_ms,
+        }

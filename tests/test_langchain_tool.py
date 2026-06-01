@@ -14,7 +14,8 @@ class TestMisakaNetSearchTool(unittest.TestCase):
     def test_cache_hit_and_expired_miss(self):
         with tempfile.TemporaryDirectory() as tmp:
             cache_path = Path(tmp) / "search.db"
-            tool = MisakaNetSearchTool(cache_path=cache_path)
+            telemetry_path = Path(tmp) / "telemetry.db"
+            tool = MisakaNetSearchTool(cache_path=cache_path, telemetry_path=telemetry_path)
             tool._execute_search = Mock(return_value="fresh result")
 
             self.assertEqual(tool._run("cache me"), "fresh result")
@@ -30,6 +31,55 @@ class TestMisakaNetSearchTool(unittest.TestCase):
             tool._execute_search.return_value = "expired result"
             self.assertEqual(tool._run("cache me"), "expired result")
             self.assertEqual(tool._execute_search.call_count, 2)
+
+    def test_telemetry_summary_reports_cache_hit_rate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cache_path = Path(tmp) / "search.db"
+            telemetry_path = Path(tmp) / "telemetry.db"
+            tool = MisakaNetSearchTool(cache_path=cache_path, telemetry_path=telemetry_path)
+            tool._execute_search = Mock(side_effect=lambda query: f"fresh result: {query}")
+
+            self.assertEqual(tool._run("cache me"), "fresh result: cache me")
+            self.assertEqual(tool._run("cache me"), "fresh result: cache me")
+            self.assertEqual(tool._run("cache other"), "fresh result: cache other")
+
+            summary = tool.get_telemetry_summary()
+
+            self.assertEqual(summary["total_searches"], 3)
+            self.assertAlmostEqual(summary["cache_hit_rate"], 1 / 3)
+            self.assertGreater(summary["avg_latency_ms"], 0)
+
+    def test_telemetry_summary_calculates_saved_time(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            telemetry_path = Path(tmp) / "telemetry.db"
+            tool = MisakaNetSearchTool(
+                cache_path=Path(tmp) / "search.db",
+                telemetry_path=telemetry_path,
+            )
+
+            self.assertEqual(tool.get_telemetry_summary()["saved_time_ms"], 0)
+
+            with tool._telemetry_connection() as conn:
+                conn.executemany(
+                    """
+                    INSERT INTO search_telemetry
+                        (query, timestamp, latency_ms, cache_hit)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    [
+                        ("hit one", 1.0, 10.0, 1),
+                        ("hit two", 2.0, 20.0, 1),
+                        ("miss one", 3.0, 100.0, 0),
+                        ("miss two", 4.0, 120.0, 0),
+                    ],
+                )
+
+            summary = tool.get_telemetry_summary()
+
+            self.assertEqual(summary["total_searches"], 4)
+            self.assertAlmostEqual(summary["cache_hit_rate"], 0.5)
+            self.assertAlmostEqual(summary["avg_latency_ms"], 62.5)
+            self.assertAlmostEqual(summary["saved_time_ms"], 190.0)
 
     def test_rrf_merges_multi_query_rankings(self):
         tool = MisakaNetSearchTool(cache_path=Path(tempfile.gettempdir()) / "unused-misakanet.db")
