@@ -309,6 +309,7 @@ class MisakaNetSearchTool(BaseTool):
                     "MisakaNet Anti-Abuse Shield: Node access suspended due to anomalous behaviors."
                 )
 
+    # TODO: This logic is deprecated. See Issue #138 for TelemetryPipeline migration competition.
     def _audit_sliding_window(self) -> None:
         """Run sliding window audit over last 10 telemetry rows."""
         with self._telemetry_connection() as conn:

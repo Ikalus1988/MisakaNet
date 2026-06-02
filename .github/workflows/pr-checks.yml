@@ -22,19 +22,44 @@ jobs:
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🛑 DCO Pre-flight Gate
+        id: dco
+        run: |
+          bad=0
+          for commit in $(git log --format='%H' origin/${{ github.base_ref }}..HEAD 2>/dev/null || git log --format='%H' HEAD~${{ github.event.pull_request.commits }}..HEAD); do
+            msg=$(git log --format='%B' -1 "$commit")
+            if ! echo "$msg" | grep -qi 'Signed-off-by:'; then
+              echo "❌ Commit $commit is missing Signed-off-by:"
+              echo "   $(git log --format='%s' -1 "$commit")"
+              bad=$((bad + 1))
+            fi
+          done
+          if [ "$bad" -gt 0 ]; then
+            echo "dco_passed=false" >> $GITHUB_OUTPUT
+            echo "⚠️ DCO FAILED — $bad commits missing Signed-off-by. Skipping expensive checks."
+          else
+            echo "dco_passed=true" >> $GITHUB_OUTPUT
+            echo "✅ DCO PASSED"
+          fi
 
       - name: 🐍 Setup Python
+        if: steps.dco.outputs.dco_passed == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
           cache: 'pip'
 
       - name: 📦 Install Dependencies
+        if: steps.dco.outputs.dco_passed == 'true'
         run: |
           pip install -r requirements.txt 2>/dev/null || true
           pip install pytest pytest-cov
 
       - name: 🔍 Check PR Size
+        if: steps.dco.outputs.dco_passed == 'true'
         id: prsize
         run: |
           CHANGED=${{ github.event.pull_request.changed_files }}
@@ -53,6 +78,7 @@ jobs:
           echo "notes=${NOTES}" >> $GITHUB_OUTPUT
 
       - name: 🧪 Run Test Suite
+        if: steps.dco.outputs.dco_passed == 'true'
         id: pytest
         run: |
           pytest --cov=scripts --cov=misakanet --cov-report=term --cov-fail-under=70 tests/ > pytest_report.txt 2>&1
@@ -60,6 +86,7 @@ jobs:
         continue-on-error: true
 
       - name: 📊 Parse Coverage
+        if: steps.dco.outputs.dco_passed == 'true'
         id: coverage
         run: |
           coverage=$(grep -oP 'TOTAL\s+\d+\s+\d+\s+\K\d+(?=%)' pytest_report.txt || echo "0")
@@ -67,6 +94,7 @@ jobs:
           echo "Coverage: ${coverage}%"
 
       - name: 🛡️ Frontend Shield Regression
+        if: steps.dco.outputs.dco_passed == 'true'
         run: |
           npm ci && npm test
         continue-on-error: true
@@ -75,7 +103,29 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const dcoPassed = '${{ steps.dco.outputs.dco_passed }}' === 'true';
             const fs = require('fs');
+
+            if (!dcoPassed) {
+              const body = `### 🤖 Misaka Audit Bot Report
+
+              ❌ **DCO PRE-FLIGHT FAILED** — One or more commits are missing \`Signed-off-by:\`.
+
+              Expensive checks (tests, coverage, frontend QA) were skipped to conserve CI budget.
+              Please amend your commit with \`--signoff\` and push again.
+
+              *Triggered by: ${context.payload.pull_request.head.sha.slice(0, 7)}*`;
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body
+              });
+              core.setFailed('DCO pre-flight failed: commits missing Signed-off-by.');
+              return;
+            }
+
             const report = fs.readFileSync('pytest_report.txt', 'utf8');
             const success = '${{ steps.pytest.outcome }}' === 'success';
             const coverage = '${{ steps.coverage.outputs.rate }}';
