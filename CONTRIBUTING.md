@@ -25,6 +25,16 @@ Open an Issue with the `bug` label. Include:
 
 The dashboard is a single HTML file at `docs/index.html`. PRs welcome!
 
+### 🏛️ Frontend Architecture Guardrails
+
+The dashboard is a **Zero-Dependency** vanilla JS application with a sophisticated network resilience layer. To prevent accidental regressions, all frontend PRs **must** respect the following hard constraints:
+
+1. **No npm install.** Do not add npm packages. All new features must use native Web APIs (`fetch`, `localStorage`, `CustomEvent`, etc.). If you think you need a dependency, you need to re-think the approach.
+2. **Network must go through the unified gateway.** Never call `fetch()` directly for data rendering. Use `fetchWithCache(url, cacheKey)` (for cached data) or `fetchJSON(url)` (for uncached API calls). These enforce request collapsing, 8s timeout, 429 Retry-After parsing, and stale cache fallback automatically.
+3. **Data mutations must respect the Schema.** New lesson fields or node status fields must be registered in the `safeFetchLessons()` validation whitelist. Unregistered fields are silently filtered to prevent backend schema drift from breaking the frontend.
+
+Violating any of these guardrails is grounds for immediate PR closure.
+
 ## Spreading the Word
 
 - Star the repo on GitHub
@@ -86,6 +96,30 @@ By signing off, you certify that:
 ### CI enforcement
 
 A `dco-check.yml` workflow runs on every PR. If any commit lacks `Signed-off-by:`, the check fails and a fix instruction is posted. PRs with DCO failures will not be merged.
+
+## 🔍 Frontend Local Debugging
+
+The dashboard includes a built-in debug logging system. To activate:
+
+```js
+localStorage.setItem('misaka_debug', 'true');
+```
+
+Then open the browser console. You'll see structured log output with `[MisakaNet]` prefix:
+
+| Level | Color | Prefix | What it tracks |
+|:------|:------|--------|----------------|
+| 🟢 Cache | `console.log` | `[MisakaNet] fetched ...` | Successful network fetch |
+| 🔵 Collapse | `console.log` | `[MisakaNet] collapsed request: ...` | Request merging hit — in-flight Promise reused |
+| 🟡 Rate Limit | `console.log` | `[MisakaNet] 429 rate limited ...` | Server returned 429 with Retry-After parsed |
+| 🔴 Fallback | `console.log` | `[MisakaNet] fetchWithCache fallback to stale: ...` | Network failed, serving stale cache |
+
+To disable:
+```js
+localStorage.removeItem('misaka_debug');
+```
+
+Include any `[MisakaNet]` log output when filing bug reports — it helps pinpoint the issue immediately.
 
 ## Governance & Review Ladder
 

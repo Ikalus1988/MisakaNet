@@ -1694,6 +1694,9 @@ const BASE = "https://api.github.com/repos/" + REPO;
 const RAW_BASE = "https://raw.githubusercontent.com/" + REPO + "/main";
 const DATA_BASE = "https://raw.githubusercontent.com/" + REPO + "/data";
 
+// Debug: set localStorage.misaka_debug=true, then open console
+const DEBUG = (() => { try { return localStorage.getItem('misaka_debug') === 'true'; } catch { return false; } })();
+
 const AVATAR_URL = (id) => `${RAW_BASE}/avatars/Misaka${String(id).padStart(5, "0")}.png`;
 const SCARF_COLORS = [
   "#4682d2", "#d25050", "#55b969", "#d7b42d",
@@ -1983,13 +1986,22 @@ function searchLessons() {
   }).join("");
 }
 
+// ── Request collapsing: reuse in-flight promise for same URL ──
+const _pendingPromises = new Map();
+
 async function fetchWithTimeout(url, timeoutMs = 8000) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const r = await fetch(url, { signal: ctrl.signal });
     clearTimeout(timer);
+    if (r.status === 429) {
+      const retryAfter = r.headers.get('Retry-After');
+      if (DEBUG) console.log(`[MisakaNet] 429 rate limited on ${url}, retry after ${retryAfter || '?'}s`);
+      throw new Error(`HTTP 429${retryAfter ? ` (retry after ${retryAfter}s)` : ''}`);
+    }
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (DEBUG) console.log(`[MisakaNet] fetched ${url} (${r.status})`);
     return r.json();
   } catch(e) {
     clearTimeout(timer);
@@ -1997,7 +2009,15 @@ async function fetchWithTimeout(url, timeoutMs = 8000) {
   }
 }
 
-const fetchJSON = (url) => fetchWithTimeout(url);
+const fetchJSON = (url) => {
+  if (_pendingPromises.has(url)) {
+    if (DEBUG) console.log(`[MisakaNet] collapsed request: ${url}`);
+    return _pendingPromises.get(url);
+  }
+  const p = fetchWithTimeout(url).finally(() => _pendingPromises.delete(url));
+  _pendingPromises.set(url, p);
+  return p;
+};
 
 // ── Counter animation ──
 function animateCounter(el, target, duration = 800) {
@@ -2037,21 +2057,54 @@ function setCache(key, data) {
   } catch {}
 }
 
+// ── Multi-tab sync: re-fetch on storage change from other tab ──
+// Track last data hash per key to break A↔B write loops
+const _cacheDataHashes = new Map();
+function _cacheHash(str) { let h=0; for(let i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0} return h; }
+window.addEventListener('storage', (e) => {
+  if (e.key && e.key.startsWith(CACHE_PREFIX)) {
+    try {
+      const oldH = _cacheHash(e.oldValue || '');
+      const newH = _cacheHash(e.newValue || '');
+      // Only react if data content actually changed (ignore timestamp-only diffs)
+      if (oldH === newH) return;
+      const { ts } = JSON.parse(e.newValue || '{}');
+      if (ts && Date.now() - ts <= CACHE_TTL && document.visibilityState === 'visible') {
+        if (typeof loadStats === 'function') loadStats();
+        if (typeof loadActiveNodes === 'function') loadActiveNodes();
+      }
+    } catch {}
+  }
+});
+
 async function fetchWithCache(url, cacheKey) {
   const cached = getCache(cacheKey);
   if (cached) return cached;
+  // Request collapsing: reuse in-flight promise for same cacheKey
+  if (_pendingPromises.has(cacheKey)) return _pendingPromises.get(cacheKey);
   // 加时间戳绕过 CDN 缓存
   const separator = url.includes('?') ? '&' : '?';
   const bustUrl = `${url}${separator}_t=${Date.now()}`;
-  try {
-    const data = await fetchWithTimeout(bustUrl);
-    setCache(cacheKey, data);
-    return data;
-  } catch (e) {
-    const stale = getCache(cacheKey);
-    if (stale) return stale;
-    throw e;
-  }
+  const p = (async () => {
+    try {
+      const data = await fetchWithTimeout(bustUrl);
+      setCache(cacheKey, data);
+      return data;
+    } catch (e) {
+      // Clean up promise key immediately so next caller retries fresh
+      _pendingPromises.delete(cacheKey);
+      // Fall back to stale cache (even if expired) — prevents cascade failure
+      const stale = getCache(cacheKey);
+      if (stale) {
+        if (typeof DEBUG !== 'undefined' && DEBUG) console.log(`[MisakaNet] fetchWithCache fallback to stale: ${cacheKey}`);
+        return stale;
+      }
+      throw e;
+    }
+  })();
+  _pendingPromises.set(cacheKey, p);
+  p.finally(() => _pendingPromises.delete(cacheKey));
+  return p;
 }
 
 function showCacheLabels() {
@@ -2653,8 +2706,13 @@ async function registerNode() {
       })
     });
 
+    if (r.status === 429) {
+      const retryAfter = r.headers.get('Retry-After');
+      const wait = retryAfter ? parseInt(retryAfter) || 30 : 30;
+      throw new Error(t('rateLimitWait').replace('{s}', wait));
+    }
     if (!r.ok) {
-      const err = await r.json();
+      const err = await r.json().catch(() => ({}));
       throw new Error(err.message || "HTTP " + r.status);
     }
 
@@ -2747,12 +2805,9 @@ document.getElementById('register-btn').addEventListener('click', registerNode);
 })();
 setInterval(loadActiveNodes, 30 * 60 * 1000);
 
-// 用户切回 tab 时立即刷新数据
+// 用户切回 tab 时静默刷新（利用缓存 TTL，不清缓存）
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
-    // 清除 localStorage 缓存强制刷新
-    localStorage.removeItem(CACHE_PREFIX + 'counter');
-    localStorage.removeItem(CACHE_PREFIX + 'lessons');
     loadStats();
     loadActiveNodes();
   }
