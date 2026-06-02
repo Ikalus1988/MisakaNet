@@ -6,6 +6,8 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
+from misakanet.tools.telemetry_pipeline import TelemetryPipeline
+
 # Try to import langchain BaseTool, fallback to a standalone class if not available
 try:
     from langchain_core.tools import BaseTool
@@ -27,11 +29,13 @@ class MisakaNetSearchTool(BaseTool):
     cache_ttl_seconds: int = 300
     cache_path: Path | None = None
     telemetry_path: Path | None = None
+    pipeline: TelemetryPipeline | None = None
 
     def __init__(
         self,
         cache_path: str | Path | None = None,
         telemetry_path: str | Path | None = None,
+        pipeline: TelemetryPipeline | None = None,
         cache_ttl_seconds: int = 300,
         **kwargs,
     ):
@@ -56,9 +60,10 @@ class MisakaNetSearchTool(BaseTool):
             else repo_root / ".cache" / "langchain_telemetry.db",
         )
         object.__setattr__(self, "cache_ttl_seconds", cache_ttl_seconds)
+        object.__setattr__(self, "pipeline", pipeline)
 
     def _run(self, query: str) -> str:
-        self._audit_sliding_window()
+        # Audit moved to TelemetryPipeline consumer (Issue #138)
         self._check_blacklist()
         started = time.perf_counter()
         query_signature = self._query_signature(
@@ -309,7 +314,8 @@ class MisakaNetSearchTool(BaseTool):
                     "MisakaNet Anti-Abuse Shield: Node access suspended due to anomalous behaviors."
                 )
 
-    # TODO: This logic is deprecated. See Issue #138 for TelemetryPipeline migration competition.
+    # NOTE: This method is preserved for backward compatibility.
+    # The sliding window audit now runs inside TelemetryPipeline (Issue #138).
     def _audit_sliding_window(self) -> None:
         """Run sliding window audit over last 10 telemetry rows."""
         with self._telemetry_connection() as conn:
