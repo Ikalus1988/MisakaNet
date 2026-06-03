@@ -55,6 +55,7 @@ jobs:
         run: |
           pip install -r requirements.txt 2>/dev/null || true
           pip install pytest pytest-cov
+          pip install 'setuptools>=68.0'
           pip install -e .
 
       - name: 🔍 Check PR Size
