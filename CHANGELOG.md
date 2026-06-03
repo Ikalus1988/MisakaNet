@@ -7,7 +7,7 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
-## v2.0.0 — 2026-06-03
+## v2.4 — 2026-06-03
 
 ### 🚀 Highlights
 - **Zero-Bounty Workflow** validated: PRs from zeroknowledge0x, iccccccccccccc, sureshchouksey8 merged — $0 paid
