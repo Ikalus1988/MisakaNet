@@ -1,4 +1,4 @@
-name: 🚨 Misaka Network Agent Auditor
+name: Misaka Network Agent Auditor
 
 on:
   pull_request:
