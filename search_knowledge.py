@@ -5,7 +5,19 @@ import time
 from misakanet.search.engine import *
 from misakanet.tools.lesson_scorer import DEFAULT_TELEMETRY, format_lesson_scores, score_lessons
 
+
+def _ensure_utf8_stdout():
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure is None:
+        return
+    try:
+        reconfigure(encoding="utf-8", errors="replace")
+    except (OSError, ValueError):
+        pass
+
+
 def main():
+    _ensure_utf8_stdout()
     args = sys.argv[1:]
     if "--score" in args:
         top_k = None
