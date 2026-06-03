@@ -12,7 +12,8 @@ concurrency:
 jobs:
   register:
     # 只处理标题以 "join" 开头的 Issue
-    if: contains(github.event.issue.title, 'join') || contains(github.event.issue.title, 'Join')
+    # 支持中英文标题：join / Join / 加入 / 注册 / registration
+    if: contains(github.event.issue.title, 'join') || contains(github.event.issue.title, 'Join') || contains(github.event.issue.title, '加入') || contains(github.event.issue.title, '注册') || contains(github.event.issue.title, 'Registration')
     runs-on: ubuntu-latest
     permissions:
       issues: write
