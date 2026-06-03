@@ -1,0 +1,96 @@
+name: Manual PR Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to audit'
+        required: true
+        type: string
+
+jobs:
+  audit:
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout PR
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.inputs.pr_number }}/head
+          fetch-depth: 0
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: 📦 Install Dependencies
+        run: |
+          pip install -r requirements.txt 2>/dev/null || true
+          pip install pytest pytest-cov
+          pip install -e .
+
+      - name: 🧪 Run Test Suite
+        id: pytest
+        run: |
+          pytest --cov=scripts --cov=misakanet --cov-report=term --cov-fail-under=70 tests/ > pytest_report.txt 2>&1
+          cat pytest_report.txt
+        continue-on-error: true
+
+      - name: 📊 Parse Coverage
+        id: coverage
+        run: |
+          coverage=$(grep -oP 'TOTAL\s+\d+\s+\d+\s+\K\d+(?=%)' pytest_report.txt || echo "0")
+          echo "rate=$coverage" >> $GITHUB_OUTPUT
+          echo "Coverage: ${coverage}%"
+
+      - name: 💬 Post Report to PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const prNumber = parseInt('${{ github.event.inputs.pr_number }}');
+
+            let reportBody = '';
+            let failed = false;
+
+            try {
+              const report = fs.readFileSync('pytest_report.txt', 'utf8');
+              const success = '${{ steps.pytest.outcome }}' === 'success';
+              const coverage = '${{ steps.coverage.outputs.rate }}';
+              const threshold = 70;
+
+              const header = success
+                ? '✅ **PASS**: All tests passed (' + coverage + '% coverage)'
+                : '❌ **FAIL**: Test suite has failures';
+
+              const coverageNote = parseInt(coverage) < threshold
+                ? '\n⚠️ Coverage ' + coverage + '% is below ' + threshold + '% threshold.'
+                : '';
+
+              reportBody = header + coverageNote + '\n\n```text\n' + report.slice(0, 3000) + '\n```';
+              failed = !success || parseInt(coverage) < threshold;
+            } catch {
+              reportBody = '*Test suite did not produce a report.*';
+            }
+
+            const body = '### 🤖 Manual Audit Report\n\n' + reportBody + '\n\n*Triggered manually*';
+
+            try {
+              await github.rest.issues.createComment({
+                issue_number: prNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body
+              });
+            } catch (err) {
+              console.log('Failed to post comment:', err.message);
+            }
+
+            if (failed) {
+              core.setFailed('Audit failed: tests or coverage below threshold.');
+            }
