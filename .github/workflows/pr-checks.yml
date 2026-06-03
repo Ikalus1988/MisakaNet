@@ -46,21 +46,18 @@ jobs:
           fi
 
       - name: 🐍 Setup Python
-        if: steps.dco.outputs.dco_passed == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
           cache: 'pip'
 
       - name: 📦 Install Dependencies
-        if: steps.dco.outputs.dco_passed == 'true'
         run: |
           pip install -r requirements.txt 2>/dev/null || true
           pip install pytest pytest-cov
           pip install -e .
 
       - name: 🔍 Check PR Size
-        if: steps.dco.outputs.dco_passed == 'true'
         id: prsize
         run: |
           CHANGED=${{ github.event.pull_request.changed_files }}
@@ -79,7 +76,6 @@ jobs:
           echo "notes=${NOTES}" >> $GITHUB_OUTPUT
 
       - name: 🧪 Run Test Suite
-        if: steps.dco.outputs.dco_passed == 'true'
         id: pytest
         run: |
           pytest --cov=scripts --cov=misakanet --cov-report=term --cov-fail-under=70 tests/ > pytest_report.txt 2>&1
@@ -87,7 +83,6 @@ jobs:
         continue-on-error: true
 
       - name: 📊 Parse Coverage
-        if: steps.dco.outputs.dco_passed == 'true'
         id: coverage
         run: |
           coverage=$(grep -oP 'TOTAL\s+\d+\s+\d+\s+\K\d+(?=%)' pytest_report.txt || echo "0")
@@ -95,7 +90,6 @@ jobs:
           echo "Coverage: ${coverage}%"
 
       - name: 🛡️ Frontend Shield Regression
-        if: steps.dco.outputs.dco_passed == 'true'
         run: |
           npm ci && npm test
         continue-on-error: true
@@ -107,63 +101,68 @@ jobs:
             const dcoPassed = '${{ steps.dco.outputs.dco_passed }}' === 'true';
             const fs = require('fs');
 
-            if (!dcoPassed) {
-              const body = `### 🤖 Misaka Audit Bot Report
+            let dcoLine = dcoPassed
+              ? '✅ **DCO PASSED** — All commits include `Signed-off-by:`.'
+              : '❌ **DCO FAILED** — One or more commits missing `Signed-off-by:`.';
 
-              ❌ **DCO PRE-FLIGHT FAILED** — One or more commits are missing \`Signed-off-by:\`.
+            // Tests always run now (decoupled from DCO gate).
+            // Build report regardless of DCO status.
+            let reportBody = '';
+            let suiteFailed = false;
 
-              Expensive checks (tests, coverage, frontend QA) were skipped to conserve CI budget.
-              Please amend your commit with \`--signoff\` and push again.
+            try {
+              const report = fs.readFileSync('pytest_report.txt', 'utf8');
+              const success = '${{ steps.pytest.outcome }}' === 'success';
+              const coverage = '${{ steps.coverage.outputs.rate }}';
+              const threshold = 70;
 
-              *Triggered by: ${context.payload.pull_request.head.sha.slice(0, 7)}*`;
+              const sizeSuspicious = '${{ steps.prsize.outputs.suspicious }}' === 'true';
+              const sizeNotes = '${{ steps.prsize.outputs.notes }}';
 
-              github.rest.issues.createComment({
+              const header = success
+                ? `✅ **PASS**: All tests passed (${coverage}% coverage)`
+                : `❌ **FAIL**: Test suite has failures`;
+
+              const coverageNote = parseInt(coverage) < threshold
+                ? `\n⚠️ Coverage ${coverage}% is below ${threshold}% threshold.`
+                : '';
+
+              const sizeWarning = sizeSuspicious
+                ? `\n🕵️ **SUSPICIOUS**: ${sizeNotes}`
+                : '';
+
+              reportBody = `${header}${coverageNote}${sizeWarning}
+
+\`\`\`text
+${report.slice(0, 3000)}
+\`\`\``;
+
+              suiteFailed = !success || parseInt(coverage) < threshold;
+            } catch {
+              reportBody = '*Test suite did not produce a report.*';
+            }
+
+            const body = `### 🤖 Misaka Audit Bot Report
+
+${dcoLine}
+
+---
+
+${reportBody}
+
+*Triggered by: ${context.payload.pull_request.head.sha.slice(0, 7)}*`;
+
+            try {
+              await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body
               });
-              core.setFailed('DCO pre-flight failed: commits missing Signed-off-by.');
-              return;
+            } catch (err) {
+              console.log('Failed to post comment (403 from fork PR — non-critical):', err.message);
             }
 
-            const report = fs.readFileSync('pytest_report.txt', 'utf8');
-            const success = '${{ steps.pytest.outcome }}' === 'success';
-            const coverage = '${{ steps.coverage.outputs.rate }}';
-            const threshold = 70;
-
-            const sizeSuspicious = '${{ steps.prsize.outputs.suspicious }}' === 'true';
-            const sizeNotes = '${{ steps.prsize.outputs.notes }}';
-
-            const header = success
-              ? `✅ **PASS**: All tests passed (${coverage}% coverage)`
-              : `❌ **FAIL**: Test suite has failures`;
-
-            const coverageNote = parseInt(coverage) < threshold
-              ? `\n⚠️ Coverage ${coverage}% is below ${threshold}% threshold.`
-              : '';
-
-            const sizeWarning = sizeSuspicious
-              ? `\n🕵️ **SUSPICIOUS**: ${sizeNotes}`
-              : '';
-
-            const body = `### 🤖 Misaka Audit Bot Report
-
-            ${header}${coverageNote}${sizeWarning}
-
-            \`\`\`text
-            ${report.slice(0, 3000)}
-            \`\`\`
-
-            *Triggered by: ${context.payload.pull_request.head.sha.slice(0, 7)}*`;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body
-            });
-
-            if (!success || parseInt(coverage) < threshold) {
-              core.setFailed('PR audit failed: tests or coverage below threshold.');
+            if (!dcoPassed || suiteFailed) {
+              core.setFailed('Audit failed: DCO or test suite has issues.');
             }
