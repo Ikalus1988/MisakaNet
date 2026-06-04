@@ -61,7 +61,7 @@ class MisakaNetSearchTool(BaseTool):
         object.__setattr__(self, "pipeline", pipeline)
 
     def _run(self, query: str) -> str:
-        self._audit_sliding_window()
+        # Sliding window audit now runs async in TelemetryPipeline consumer (Issue #138)
         self._check_blacklist()
         started = time.perf_counter()
         query_signature = self._query_signature(
