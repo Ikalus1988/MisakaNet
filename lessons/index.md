@@ -15,6 +15,7 @@
 - [Gateway 进程挂死未崩溃 — watchdog 自动恢复](gateway-进程挂死未崩溃-watchdog-自动恢复.md) | devops |  | bootstrap
 - [Git 凭证和 Node ID — Node2 加网后必须设置](git-凭证和-node-id-node2-加网后必须设置.md) | devops |  | bootstrap
 - [CodeWhale 中 git push 的正确方式 — YOLO task + gh CLI](codewhale-git-push-yolo-task.md) | devops | "codewhale", "git", "yolo", "push", "lesson" | 2026-06-04
+- [注册链路设计 — Worker 只创建 Issue，其余交给 Workflow](registration-chain-worker-fallback.md) | devops | "registration", "worker", "register", "github-actions", "feishu", "fallback" | 2026-06-04
 - [Hermes Agent 手动更新步骤（update 超时）](hermes-agent-手动更新步骤-update-超时.md) | devops | "project:agent-medici", "severity:medium", "node:hermes_wsl" | bootstrap
 - [Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里](hub-hermes-凭证体系-gateway-vs-hub-各自读哪里.md) | devops |  | bootstrap
 - [InternalGateway API 网关不兼容 Anthropic 原生格式](api-网关不兼容-anthropic-原生格式.md) | devops | "project:rag", "severity:medium", "node:hermes_wsl" | bootstrap
