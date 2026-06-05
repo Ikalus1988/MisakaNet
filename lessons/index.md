@@ -1,6 +1,6 @@
 # MisakaNet Shared Lessons
 
-> 最后更新: 2026-06-05 00:48:54 UTC | 来源: hermes_wsl2
+> 最后更新: 2026-06-05 00:49:07 UTC | 来源: hermes_wsl2
 
 每条 lesson 包含踩坑记录、修复方法和验证方式，跨节点自动同步。
 
@@ -31,6 +31,7 @@
 - [Gateway 进程挂死未崩溃 — watchdog 自动恢复](gateway-进程挂死未崩溃-watchdog-自动恢复.md) | devops |  | bootstrap
 - [Git 凭证和 Node ID — Node2 加网后必须设置](git-凭证和-node-id-node2-加网后必须设置.md) | devops |  | bootstrap
 - [Hermes Agent 手动更新步骤（update 超时）](hermes-agent-手动更新步骤-update-超时.md) | devops | "project:agent-medici", "severity:medium", "node:hermes_wsl" | bootstrap
+- [Hermes State Database Lock Issues - Cleanup Protocol](hermes-state-database-lock-issues-cleanup-protocol.md) | agent-network | node:ZKA, project:Hermes-Agent, severity:high | hermes_wsl2
 - [Hub FeishuWSClient.start() 从未调用 — WebSocket 接收死代码](hub-feishuwsclient-start-从未调用-websocket-接收死代码.md) | feishu |  | bootstrap
 - [Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里](hub-hermes-凭证体系-gateway-vs-hub-各自读哪里.md) | devops |  | bootstrap
 - [InternalGateway API 网关不兼容 Anthropic 原生格式](api-网关不兼容-anthropic-原生格式.md) | devops | "project:rag", "severity:medium", "node:hermes_wsl" | bootstrap
