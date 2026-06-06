@@ -1,0 +1,34 @@
+
+name: CI Self-Heal
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt 2>/dev/null || true
+          pip install pytest pytest-cov
+
+      - name: Run tests with retry
+        uses: ./.github/actions/retry/
+        with:
+          script_path: "retry.py"
+          max_attempts: 3
+          backoff_rate: 2

@@ -1,0 +1,21 @@
+
+name: 'Retry Action'
+description: 'A composite action to retry steps with exponential backoff.'
+inputs:
+  max_attempts:
+    description: 'Maximum number of retry attempts.'
+    required: true
+    default: '3'
+  backoff_rate:
+    description: 'Backoff rate for exponential backoff.'
+    required: true
+    default: '2'
+  script_path:
+    description: 'Path to the Python script to execute.'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Execute script with retry
+      shell: python3
+      run: ${{ github.action_path }}/${{ inputs.script_path }} ${{ inputs.max_attempts }} ${{ inputs.backoff_rate }}
