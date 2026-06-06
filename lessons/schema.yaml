@@ -1,0 +1,50 @@
+# Lesson Metadata Schema Definition
+# Used by linter/validator to enforce consistent frontmatter
+
+# Supported language codes
+supported_langs:
+  - zh-CN
+  - en
+  - ja
+  - ko
+
+# Required fields in lesson frontmatter
+required_fields:
+  - title
+
+# Optional fields
+optional_fields:
+  - lang          # Language code (supported_langs)
+  - title_en      # English title (for cross-language discovery)
+  - title_zh-CN   # Chinese title
+  - title_ja      # Japanese title
+  - title_ko      # Korean title
+  - domain
+  - subdomain
+  - tags          # Must be non-empty list, UTF-8 valid
+  - source
+  - status        # draft | published | active
+  - scope         # broad | narrow
+  - confidence    # Float 0.0 - 1.0
+  - created       # Date string
+
+# Validation rules
+rules:
+  lang:
+    type: string
+    values: "$supported_langs"
+    nullable: true  # absent = language-agnostic
+  tags:
+    type: list
+    min_items: 0
+    utf8_valid: true
+  title:
+    type: string
+    min_length: 1
+  confidence:
+    type: float
+    min: 0.0
+    max: 1.0
+  status:
+    type: string
+    values: ["draft", "published", "active"]

@@ -46,6 +46,7 @@ def main():
     titles_only = False
     broad_only = False
     top_k = 10
+    lang_filter = ""
     use_semantic = False
     suggest = False
     for arg in sys.argv[2:]:
@@ -64,6 +65,8 @@ def main():
                 top_k = int(arg.split("=")[1])
             except ValueError:
                 pass
+        elif arg.startswith("--lang="):
+            lang_filter = arg.split("=", 1)[1]
         elif arg == "--semantic":
             use_semantic = True
     search_args = sys.argv[2:]
@@ -105,16 +108,16 @@ def main():
         except ImportError:
             print("  ⚠️ --semantic 需要 sentence-transformers，降级为 BM25")
     if lessons_docs:
-        ranked = _rank_docs(query, lessons_docs, titles_only, broad_only)
+        ranked = _rank_docs(query, lessons_docs, titles_only, broad_only, lang_filter)
         found = _format_output(ranked, titles_only, top_k,
                                mode_label=f"lessons/  (全部 {len(lessons_docs)} 篇)",
-                               query=query)
+                               query=query, lang_filter=lang_filter)
         found_any = found_any or found
     if ref_docs:
-        ranked = _rank_docs(query, ref_docs, titles_only, broad_only=False)
+        ranked = _rank_docs(query, ref_docs, titles_only, broad_only=False, lang_filter=lang_filter)
         found = _format_output(ranked, titles_only, top_k,
                                mode_label=f"reference/  (全部 {len(ref_docs)} 篇)",
-                               query=query)
+                               query=query, lang_filter=lang_filter)
         found_any = found_any or found
     total_docs = len(lessons_docs) + len(ref_docs)
     if not found_any:
