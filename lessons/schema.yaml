@@ -1,0 +1,8 @@
+lang:
+  type: string
+  description: Language of the lesson
+  enum:
+    - zh-CN
+    - en
+    - ja
+    - ko
