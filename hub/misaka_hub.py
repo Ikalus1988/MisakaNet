@@ -33,6 +33,10 @@ from hub.sync.notifier import DiscordNotifier, SlackNotifier, EmailNotifier
 from hub.master.token_manager import TokenManager, AuditLogger
 from hub.master.master_api import MasterAPI
 
+# Federation
+from hub.federation.registry import FederationRegistry, PeerNode
+from hub.federation.sync_protocol import SyncProtocol
+
 
 class MisakaHub:
     """
@@ -96,6 +100,28 @@ class MisakaHub:
 
         self.sync_scheduler.add_callback(self._on_sync_cycle)
 
+        # Federation sync (cross-repo lesson sync)
+        self.federation_registry = None
+        self.federation_sync = None
+        federation_config_path = Path(config_path).parent / "federation" / "config.yaml"
+        if federation_config_path.exists():
+            fed_config = yaml.safe_load(federation_config_path.read_text()) or {}
+            registry_path = Path(config_path).parent / "federation" / "registry.json"
+            self.federation_registry = FederationRegistry(str(registry_path))
+            if fed_config.get("local_node_id"):
+                self.federation_registry.local_node_id = fed_config["local_node_id"]
+            for peer_data in fed_config.get("peers", []):
+                self.federation_registry.add_peer(PeerNode.from_dict(peer_data))
+            lessons_dir = Path(config_path).parent.parent / "lessons"
+            staging_dir = Path(config_path).parent / "federation" / "staging"
+            self.federation_sync = SyncProtocol(
+                registry=self.federation_registry,
+                lessons_dir=lessons_dir,
+                staging_dir=staging_dir,
+                sync_interval_minutes=fed_config.get("sync_interval_minutes", 15),
+            )
+            print(f"  🌐 Federation: {self.federation_registry.peer_count()} peers configured")
+
     def _load_config(self, config_path: str) -> dict:
         with open(config_path, 'r') as f:
             raw = f.read()
@@ -109,6 +135,18 @@ class MisakaHub:
     async def _on_sync_cycle(self, sync_version: int):
         print(f"[Hub] Sync cycle {sync_version} triggered")
         self._rebuild_skill_index()
+
+        # Run federation sync if configured
+        if self.federation_sync:
+            for peer in self.federation_registry.active_peers():
+                if self.federation_sync.needs_sync(peer):
+                    try:
+                        result = self.federation_sync.sync_peer(peer)
+                        synced = result.get("added", 0) + result.get("updated", 0)
+                        if synced:
+                            print(f"  🌐 Federation: synced {synced} lessons from {peer.node_id}")
+                    except Exception as e:
+                        print(f"  ⚠️ Federation sync failed ({peer.node_id}): {e}")
 
         skill_count = len(self.knowledge_graph.get_all_skills())
         self._notify_all("notify_sync_ready", agent_id="hub", skill_count=skill_count)
@@ -204,13 +242,17 @@ class MisakaHub:
     def status(self) -> dict:
         skill_count = len(self.knowledge_graph.get_all_skills())
         pending = len(self.arbitration_queue.get_pending_cases())
-        return {
+        status_data = {
             "hub_name": self.config.get("hub", {}).get("name", "misaka-hub"),
             "version": self.config.get("hub", {}).get("protocol_version", "1.0"),
             "skills": skill_count,
             "pending_conflicts": pending,
             "notifiers": [n.__class__.__name__ for n in self.notifiers],
         }
+        if self.federation_registry:
+            status_data["federation_peers"] = self.federation_registry.peer_count()
+            status_data["federation_local_node"] = self.federation_registry.local_node_id
+        return status_data
 
 
 async def main():
