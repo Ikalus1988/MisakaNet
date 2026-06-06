@@ -1,0 +1,45 @@
+
+name: CI Self-Heal
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: | 
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt # Assuming requirements.txt exists
+
+      - name: Run tests with retry
+        uses: ./.github/actions/retry/
+        with:
+          script_path: "retry.py"
+          max_attempts: 3
+          backoff_rate: 2
+        env:
+          # Pass any necessary environment variables here
+          # Example: CI=true
+          IS_CI: "true"
+          
+      - name: Notify on failure
+        if: failure() && needs.build.result == 'failure'
+        run: |
+          echo "CI build failed after multiple retries. Commenting on the issue."
+          # In a real scenario, you would use gh cli to comment on the issue
+          # Example: gh issue comment <issue-number> --body "CI build failed after retries."
+          # For now, we'll just echo the message.
+          echo "Failed to notify on issue. Manual notification needed."
