@@ -28,7 +28,7 @@ WSL2 通过 Windows 梯子代理访问外网：
 ```bash
 # 扫描 Windows 主机上的代理端口
 for port in 7890 10808 1080 8118 8123 8080; do
-    timeout 1 bash -c "echo >/dev/tcp/172.19.128.1/$port" 2>/dev/null && echo "OPEN: $port"
+    timeout 1 bash -c "echo >/dev/tcp/{WSL_HOST_IP}/$port" 2>/dev/null && echo "OPEN: $port"
 done
 # 常见代理端口：
 # Clash/Clash Verge: 7890
@@ -36,7 +36,7 @@ done
 # Shadowsocks: 1080
 
 # 验证代理可用
-curl -x http://172.19.128.1:7890 -I https://google.com
+curl -x http://{WSL_HOST_IP}:7890 -I https://google.com
 ```
 
 ### 各平台发帖限制
