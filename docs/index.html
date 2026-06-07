@@ -1697,7 +1697,7 @@ const DATA_BASE = "https://raw.githubusercontent.com/" + REPO + "/data";
 // Worker API 基础 URL — 如果已部署 Worker，设为 Worker 的 URL (如 "https://misakanet.xxx.workers.dev")
 // 设置后，counter / lessons 数据通过 Worker 代理获取（GitHub Token + KV 缓存），避免 direct raw.githubusercontent.com 限速
 // 留空则使用 DATA_BASE (raw.githubusercontent.com) 回退
-const WORKER_BASE = "https://misakanet.org";
+const WORKER_BASE = ""; // Data via raw.githubusercontent.com, Worker only for registration
 
 /** 返回数据源基础 URL：优先 Worker API，否则回退到 raw.githubusercontent.com */
 function getDataBase() {
