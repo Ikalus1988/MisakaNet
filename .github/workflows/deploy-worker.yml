@@ -1,0 +1,26 @@
+name: Deploy Cloudflare Worker
+
+on:
+  push:
+    paths:
+      - "workers/register-proxy-sw.js"
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy Worker via Cloudflare API
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          curl -s -X PUT \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "Content-Type: application/javascript" \
+            --data-binary "@workers/register-proxy-sw.js" \
+            "https://api.cloudflare.com/client/v4/accounts/6b92325b505f2b76aec49e9fe4195d31/workers/scripts/misakanet-register-proxy"
