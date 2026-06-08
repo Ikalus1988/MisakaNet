@@ -1,0 +1,3 @@
+# Generalized node configuration
+node_name: node_01_hermes_edge
+node_type: hermes_edge
