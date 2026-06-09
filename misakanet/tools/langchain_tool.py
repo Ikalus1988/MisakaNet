@@ -398,6 +398,7 @@ class MisakaNetSearchTool(BaseTool):
                 """,
                 (query, time.time(), latency_ms, cache_hit, query_signature or ""),
             )
+        self._audit_sliding_window()
 
     def get_telemetry_summary(self) -> dict:
         pipeline = getattr(self, "pipeline", None)

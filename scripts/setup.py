@@ -149,7 +149,7 @@ def setup_wizard():
 
     # 生成 config.yaml
     config_path = REPO / "config.yaml"
-    example_path = REPO / "config.yaml.example"
+    example_path = REPO / "misakanet" / "config.yaml.example"
     if not config_path.exists() and example_path.exists():
         print("\n⚙️ Hub 配置")
         ans = input("  创建 config.yaml（从示例复制）? (Y/n): ").strip().lower()

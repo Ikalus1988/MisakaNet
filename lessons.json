@@ -808,7 +808,7 @@
     "domain": "feishu",
     "tags": [],
     "summary": "cc-connect 默认会在飞书聊天中显示工具调用信息（如 \"🔧 工具 #5: Bash\"）和上下文占用提示（如 \"[ctx: ~0%]\"），影响用户体验。",
-    "url": "lessons/contrib/cc-connect-feishu-display-optimization.md",
+    "url": "lessons/genesis/cc-connect-feishu-display-optimization.md",
     "updated": "2026-05-19"
   },
   {
@@ -817,7 +817,7 @@
     "domain": "feishu",
     "tags": [],
     "summary": "cc-connect 是一个连接 AI 编码代理（如 Claude Code）与消息平台（如飞书）的桥接工具。本文档记录完整的配置过程和常见问题解决方案。",
-    "url": "lessons/contrib/cc-connect-feishu-setup-complete.md",
+    "url": "lessons/genesis/cc-connect-feishu-setup-complete.md",
     "updated": "2026-05-19"
   },
   {
@@ -826,7 +826,7 @@
     "domain": "feishu",
     "tags": [],
     "summary": "cc-connect 是一个连接 AI 编码代理（如 Claude Code）与消息平台（如飞书）的桥接工具。本文档记录完整的配置过程和常见问题解决方案。",
-    "url": "lessons/contrib/cc-connect-飞书机器人完整配置指南.md",
+    "url": "lessons/genesis/cc-connect-飞书机器人完整配置指南.md",
     "updated": "2026-05-19 08:59:26 UTC"
   },
   {

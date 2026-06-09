@@ -57,9 +57,9 @@
 - [api-rate-limit-handling-best-practices](api-rate-limit-handling-best-practices.md) | uncategorized |  | 
 - [api-rate-limit-handling](api-rate-limit-handling.md) | uncategorized |  | 
 - [browser-harness — AI 直连 Chrome 的 CDP 浏览器自动化](browser-harness-cdp-browser-automation.md) | devops |  | skill-harvest
-- [cc-connect 飞书显示优化：禁用工具调用和上下文提示](cc-connect-feishu-display-optimization.md) | feishu |  | bootstrap
-- [cc-connect 飞书机器人完整配置指南](cc-connect-feishu-setup-complete.md) | feishu |  | bootstrap
-- [cc-connect-飞书机器人完整配置指南](cc-connect-飞书机器人完整配置指南.md) | uncategorized |  | 
+- [cc-connect 飞书显示优化：禁用工具调用和上下文提示](genesis/cc-connect-feishu-display-optimization.md) | feishu |  | bootstrap
+- [cc-connect 飞书机器人完整配置指南](genesis/cc-connect-feishu-setup-complete.md) | feishu |  | bootstrap
+- [cc-connect-飞书机器人完整配置指南](genesis/cc-connect-飞书机器人完整配置指南.md) | uncategorized |  | 
 - [ccswitch-hermes-switch 踩坑记录](ccswitch-hermes-switch.md) | devops |  | bootstrap
 - [chrome-relay-browser-automation](chrome-relay-browser-automation.md) | uncategorized |  | 
 - [cron-job-not-running](cron-job-not-running.md) | uncategorized |  | 

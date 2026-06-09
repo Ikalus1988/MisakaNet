@@ -35,7 +35,8 @@ def _connect(telemetry_path: str | Path) -> sqlite3.Connection:
 
 def read_dashboard_data(telemetry_path: str | Path = DEFAULT_TELEMETRY_PATH) -> dict[str, Any]:
     """Read summary metrics and recent rows from the telemetry database."""
-    with _connect(telemetry_path) as conn:
+    conn = _connect(telemetry_path)
+    try:
         total_searches = int(
             conn.execute("SELECT COUNT(*) FROM search_telemetry").fetchone()[0]
         )
@@ -62,6 +63,8 @@ def read_dashboard_data(telemetry_path: str | Path = DEFAULT_TELEMETRY_PATH) -> 
             LIMIT 20
             """
         ).fetchall()
+    finally:
+        conn.close()
 
     saved_time_ms = 0.0
     if hit_count and avg_hit_latency is not None and avg_miss_latency is not None:

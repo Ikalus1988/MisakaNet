@@ -5,6 +5,9 @@ __pycache__/
 .venv/
 venv/
 
+# Node dependencies
+node_modules/
+
 # Runtime data (should not be committed)
 # skill_index.json 已移出 .gitignore — 多节点共享语义索引
 storage/arbitration.db
@@ -14,6 +17,19 @@ storage/knowledge_graph/
 
 # MisakaNet local cache
 misakanet/.feedback/
+
+# Local runtime and telemetry dumps
+.cache/
+.hook_stats/
+.feedback/*
+!.feedback/.gitkeep
+.responses/*
+!.responses/.gitkeep
+.nodes/*/runtime/
+.nodes/*/telemetry/
+.nodes/*/logs/
+.nodes/*/*.log
+.nodes/*/*.jsonl
 
 # Historical lesson staging (Phase 1)
 staging/
@@ -33,8 +49,6 @@ config.yaml
 
 # Token storage
 tokens.json
-.git-rewrite/
-.worktrees/
 .git-rewrite/
 .worktrees/
 

@@ -3,6 +3,7 @@ import tempfile
 import threading
 import time
 import unittest
+from contextlib import closing
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 from urllib.request import urlopen
@@ -14,7 +15,7 @@ class TestTelemetryDashboard(unittest.TestCase):
     def test_dashboard_serves_telemetry_html(self):
         with tempfile.TemporaryDirectory() as tmp:
             telemetry_path = Path(tmp) / "telemetry.db"
-            with sqlite3.connect(telemetry_path) as conn:
+            with closing(sqlite3.connect(telemetry_path)) as conn:
                 conn.execute(
                     """
                     CREATE TABLE search_telemetry (
@@ -37,6 +38,7 @@ class TestTelemetryDashboard(unittest.TestCase):
                         ("<script>unsafe</script>", time.time(), 30.0, 1),
                     ],
                 )
+                conn.commit()
 
             server = create_server(port=0, telemetry_path=telemetry_path)
             self.assertIsInstance(server, ThreadingHTTPServer)
