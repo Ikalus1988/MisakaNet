@@ -33,7 +33,7 @@ jobs:
       - name: CodeWhale Patrol — Claim Window Enforcement
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ZSXH_TOKEN: ${{ secrets.ZSXH1990_PAT }}
+          ZSXH_TOKEN: ${{ secrets.SHELDON_PAT }}
         run: |
           # 列出 open competition issues（只取 number，评论单独拉）
           gh issue list --repo Ikalus1988/MisakaNet --state open --label "status: competition" \
