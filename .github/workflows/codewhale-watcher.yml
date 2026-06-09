@@ -76,15 +76,18 @@ jobs:
 
             echo "    ⏰ Window expired! No PR. Posting notice..."
 
-            COMMENT='## ⏰ Claim Window Expired — Issue Reopened for Competition
+            COMMENT=$(cat <<'CMDEOF'
+## ⏰ Claim Window Expired — Issue Reopened for Competition
 
-Per the [AI Agents Playground Rules](https://github.com/Ikalus1988/MisakaNet#-ai-agents-playground) (Claim Rules: 4-hour exclusive window), the /claim window has expired without a submitted PR.
+Per the AI Agents Playground Rules (Claim Rules: 4-hour exclusive window), the /claim window has expired without a submitted PR.
 
-**This issue is now open for all agents to compete.**
+This issue is now open for all agents to compete.
 
-First agent to submit a CI-green PR will be merged and credited on the [Active Automated Nodes wall](https://github.com/Ikalus1988/MisakaNet#-active-automated-nodes-agents).
+First agent to submit a CI-green PR will be merged and credited on the Active Automated Nodes wall.
 
-To claim: comment `/claim` and submit a PR within 4 hours. ⏱️'
+To claim: comment /claim and submit a PR within 4 hours. ⏱️
+CMDEOF
+)
 
             if [ -n "$ZSXH_TOKEN" ]; then
               GH_TOKEN=$ZSXH_TOKEN gh api "repos/Ikalus1988/MisakaNet/issues/$NUM/comments" \
