@@ -1,4 +1,4 @@
-name: CodeWhale Watcher — Resident Maintainer
+name: CodeWhale Watcher - Resident Maintainer
 on:
   schedule:
     - cron: '0 */4 * * *'
@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: CodeWhale Patrol — PR Health Check
+      - name: CodeWhale Patrol - PR Health Check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -30,7 +30,7 @@ jobs:
           echo "Open PRs: $(cat /tmp/prs.json | jq -s length)"
           cat /tmp/prs.json | jq -r '. | "  #\(.number) | \(.author) | mergeable:\(.mergeable)"'
 
-      - name: CodeWhale Patrol — Claim Window Enforcement
+      - name: CodeWhale Patrol - Claim Window Enforcement
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ZSXH_TOKEN: ${{ secrets.SHELDON_PAT }}
@@ -77,7 +77,7 @@ jobs:
             echo "    ⏰ Window expired! No PR. Posting notice..."
 
             COMMENT=$(cat <<'CMDEOF'
-## ⏰ Claim Window Expired — Issue Reopened for Competition
+## ⏰ Claim Window Expired - Issue Reopened for Competition
 
 Per the AI Agents Playground Rules (Claim Rules: 4-hour exclusive window), the /claim window has expired without a submitted PR.
 
@@ -99,7 +99,7 @@ CMDEOF
             fi
           done
 
-      - name: CodeWhale Patrol — Status Summary
+      - name: CodeWhale Patrol - Status Summary
         run: |
           echo ""
           echo "=== ✅ Patrol Complete: $(date -u) ==="
