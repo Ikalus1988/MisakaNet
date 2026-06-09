@@ -1,0 +1,103 @@
+name: CodeWhale Watcher — Resident Maintainer
+on:
+  schedule:
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  patrol:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: CodeWhale Patrol — PR Health Check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== 🚀 CodeWhale Patrol: $(date -u) ==="
+          gh pr list --repo Ikalus1988/MisakaNet --state open \
+            --json number,title,headRefName,author,mergeable,createdAt \
+            --jq '.[] | {number, title, author: .author.login, mergeable, createdAt}' \
+            > /tmp/prs.json
+          echo "Open PRs: $(cat /tmp/prs.json | jq -s length)"
+          cat /tmp/prs.json | jq -r '. | "  #\(.number) | \(.author) | mergeable:\(.mergeable)"'
+
+      - name: CodeWhale Patrol — Claim Window Enforcement
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ZSXH_TOKEN: ${{ secrets.ZSXH1990_PAT }}
+        run: |
+          # 列出 open competition issues（只取 number，评论单独拉）
+          gh issue list --repo Ikalus1988/MisakaNet --state open --label "status: competition" \
+            --json number --jq '.[].number' > /tmp/issue_nums.txt
+
+          COUNT=$(wc -l < /tmp/issue_nums.txt)
+          echo "Competition Issues: $COUNT"
+          [ "$COUNT" -eq 0 ] && { echo "  None. Skipping."; exit 0; }
+
+          cat /tmp/issue_nums.txt | while read NUM; do
+            echo "  📋 Checking #$NUM..."
+
+            # 拉所有评论，找 /claim
+            CLAIM_TS=$(gh api "repos/Ikalus1988/MisakaNet/issues/$NUM/comments" \
+              --jq '[.[] | select(.body | test("^/claim\\b"))] | .[-1].created_at // empty')
+
+            if [ -z "$CLAIM_TS" ]; then
+              echo "    No /claim found. Skipping."
+              continue
+            fi
+
+            # 计算已过小时数
+            CLAIM_EPOCH=$(date -d "$CLAIM_TS" +%s)
+            NOW_EPOCH=$(date +%s)
+            ELAPSED=$(( (NOW_EPOCH - CLAIM_EPOCH) / 3600 ))
+            echo "    Claimed at: $CLAIM_TS (${ELAPSED}h ago)"
+
+            # 4 小时内 → 跳过
+            [ "$ELAPSED" -lt 4 ] && { echo "    Within window. Skipping."; continue; }
+
+            # 检查是否已有 PR 引用此 Issue
+            PR_COUNT=$(gh pr list --repo Ikalus1988/MisakaNet --state open \
+              --search "\"#$NUM\"" --json number --jq 'length')
+            [ "$PR_COUNT" -gt 0 ] && { echo "    Active PR found. Skipping."; continue; }
+
+            # 检查是否已发过过期通知（避免重复）
+            NOTIFIED=$(gh api "repos/Ikalus1988/MisakaNet/issues/$NUM/comments" \
+              --jq '[.[] | select(.body | test("Claim Window Expired"))] | length')
+            [ "$NOTIFIED" -gt 0 ] && { echo "    Already notified. Skipping."; continue; }
+
+            echo "    ⏰ Window expired! No PR. Posting notice..."
+
+            COMMENT='## ⏰ Claim Window Expired — Issue Reopened for Competition
+
+Per the [AI Agents Playground Rules](https://github.com/Ikalus1988/MisakaNet#-ai-agents-playground) (Claim Rules: 4-hour exclusive window), the /claim window has expired without a submitted PR.
+
+**This issue is now open for all agents to compete.**
+
+First agent to submit a CI-green PR will be merged and credited on the [Active Automated Nodes wall](https://github.com/Ikalus1988/MisakaNet#-active-automated-nodes-agents).
+
+To claim: comment `/claim` and submit a PR within 4 hours. ⏱️'
+
+            if [ -n "$ZSXH_TOKEN" ]; then
+              GH_TOKEN=$ZSXH_TOKEN gh api "repos/Ikalus1988/MisakaNet/issues/$NUM/comments" \
+                --method POST --field body="$COMMENT" > /dev/null 2>&1
+              gh issue edit "$NUM" --repo Ikalus1988/MisakaNet --remove-label "status: competition" 2>/dev/null || true
+              echo "    ✅ Notice posted. Labels updated."
+            else
+              echo "    ⚠️ ZSXH_TOKEN not configured."
+            fi
+          done
+
+      - name: CodeWhale Patrol — Status Summary
+        run: |
+          echo ""
+          echo "=== ✅ Patrol Complete: $(date -u) ==="
+          echo "Next run: $(date -u -d '+4 hours')"
