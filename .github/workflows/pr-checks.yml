@@ -40,9 +40,11 @@ jobs:
           if [ "$bad" -gt 0 ]; then
             echo "dco_passed=false" >> "$GITHUB_OUTPUT"
             echo "Warn DCO FAILED - $bad commits missing Signed-off-by."
+            printf '## DCO Pre-flight Gate\n\n**Result:** FAIL - commits missing Signed-off-by.\n\n' >> "$GITHUB_STEP_SUMMARY"
           else
             echo "dco_passed=true" >> "$GITHUB_OUTPUT"
             echo "OK DCO PASSED"
+            printf '## DCO Pre-flight Gate\n\n**Result:** PASS - All commits include Signed-off-by.\n\n' >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Setup Python
@@ -74,6 +76,7 @@ jobs:
           fi
           echo "suspicious=${SUSPICIOUS}" >> "$GITHUB_OUTPUT"
           echo "notes=${NOTES}" >> "$GITHUB_OUTPUT"
+          printf '## PR Size Check\n\n| Metric | Value |\n|--------|-------|\n| Files Changed | %s |\n| Lines Added | %s |\n| Suspicious | %s |\n\n' "${CHANGED}" "${ADDITIONS}" "${SUSPICIOUS}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Test Suite
         id: pytest
@@ -88,6 +91,13 @@ jobs:
           coverage=$(grep -oP 'TOTAL\s+\d+\s+\d+\s+\K\d+(?=%)' pytest_report.txt || echo "0")
           echo "rate=$coverage" >> "$GITHUB_OUTPUT"
           echo "Coverage: ${coverage}%"
+          OUTCOME="${{ steps.pytest.outcome }}"
+          if [ "$OUTCOME" = "success" ]; then
+            RESULT="PASS"
+          else
+            RESULT="FAIL"
+          fi
+          printf '## Test Suite\n\n| Metric | Value |\n|--------|-------|\n| Outcome | %s |\n| Coverage | %s%% |\n\n' "${RESULT}" "${coverage}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Post Audit Report
         if: always()
