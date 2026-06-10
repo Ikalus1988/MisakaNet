@@ -123,6 +123,16 @@ class FederationSync:
         save_manifest(manifest, self.manifest_path)
         return manifest
 
+    def _find_local_lesson_by_hash(self, peer_hash: str) -> Path | None:
+        """Find a local lesson file by its SHA256 hash."""
+        if not self.lessons_dir.exists():
+            return None
+        for md_file in self.lessons_dir.glob("*.md"):
+            content = md_file.read_text(encoding="utf-8")
+            if compute_sha256(content) == peer_hash:
+                return md_file
+        return None
+
     def sync_from_peer(
         self,
         peer_manifest: LessonManifest,
@@ -141,22 +151,17 @@ class FederationSync:
         local_manifest = load_manifest(self.manifest_path)
 
         for lesson_id, peer_hash in peer_manifest.lessons.items():
-            # Check if lesson needs sync — check both manifest AND local file
-            local_lesson_path = self.lessons_dir / f"{lesson_id}.md"
-            
-            # First check manifest (if available)
+            # Check if lesson needs sync — check manifest first
             if local_manifest and lesson_id in local_manifest.lessons:
                 if local_manifest.lessons[lesson_id] == peer_hash:
                     result.lessons_skipped += 1
                     continue
-            
-            # Also check if local file exists and has same hash
-            if local_lesson_path.exists():
-                local_content = local_lesson_path.read_text(encoding="utf-8")
-                local_hash = compute_sha256(local_content)
-                if local_hash == peer_hash:
-                    result.lessons_skipped += 1
-                    continue
+
+            # Also check if any local file has the same hash (content dedup)
+            local_match = self._find_local_lesson_by_hash(peer_hash)
+            if local_match is not None:
+                result.lessons_skipped += 1
+                continue
 
             # Find the lesson file in peer directory
             peer_lesson_path = self._find_lesson_file(peer_lessons_dir, lesson_id)
@@ -175,8 +180,13 @@ class FederationSync:
             stage_path = self.staging_dir / f"{lesson_id}.md"
             stage_path.write_text(content, encoding="utf-8")
 
-            # Check for conflicts
-            if local_lesson_path.exists():
+            # Check for conflicts — find local file by lesson_id or by content
+            local_lesson_path = self._find_lesson_file(self.lessons_dir, lesson_id)
+            if local_lesson_path is None:
+                # Try to find by hash (file renamed)
+                local_lesson_path = self._find_local_lesson_by_hash(actual_hash)
+
+            if local_lesson_path is not None and local_lesson_path.exists():
                 local_content = local_lesson_path.read_text(encoding="utf-8")
                 local_hash = compute_sha256(local_content)
 
@@ -190,30 +200,25 @@ class FederationSync:
                         peer_updated = peer_frontmatter.get("last_updated", "")
 
                         if peer_updated > local_updated:
-                            # Peer wins
                             self._atomic_move(stage_path, local_lesson_path)
                             result.lessons_updated += 1
                         elif peer_updated < local_updated:
-                            # Local wins
                             result.lessons_skipped += 1
                         else:
-                            # Same timestamp, higher node_id wins
                             if peer_manifest.node_id > self.node_id:
                                 self._atomic_move(stage_path, local_lesson_path)
                                 result.lessons_updated += 1
                             else:
-                                # Keep both with conflict suffix
                                 conflict_path = self.lessons_dir / f"{lesson_id}_conflict_{peer_manifest.node_id}.md"
                                 self._atomic_move(stage_path, conflict_path)
                                 result.lessons_conflicted += 1
                     else:
-                        # Keep both
                         conflict_path = self.lessons_dir / f"{lesson_id}_conflict_{peer_manifest.node_id}.md"
                         self._atomic_move(stage_path, conflict_path)
                         result.lessons_conflicted += 1
             else:
                 # New lesson
-                self._atomic_move(stage_path, local_lesson_path)
+                self._atomic_move(stage_path, local_lesson_path or (self.lessons_dir / f"{lesson_id}.md"))
                 result.lessons_added += 1
 
         # Clean up staging
@@ -234,12 +239,10 @@ class FederationSync:
 
     def _find_lesson_file(self, directory: Path, lesson_id: str) -> Path | None:
         """Find a lesson file by ID."""
-        # Try direct filename
         direct = directory / f"{lesson_id}.md"
         if direct.exists():
             return direct
 
-        # Search by frontmatter ID
         for md_file in directory.glob("*.md"):
             content = md_file.read_text(encoding="utf-8")
             frontmatter = parse_lesson_frontmatter(content)
@@ -251,5 +254,4 @@ class FederationSync:
     def _atomic_move(self, src: Path, dst: Path) -> None:
         """Atomically move a file from src to dst."""
         dst.parent.mkdir(parents=True, exist_ok=True)
-        # Use os.replace for atomic move on same filesystem
         os.replace(str(src), str(dst))
