@@ -141,9 +141,20 @@ class FederationSync:
         local_manifest = load_manifest(self.manifest_path)
 
         for lesson_id, peer_hash in peer_manifest.lessons.items():
-            # Check if lesson needs sync
+            # Check if lesson needs sync — check both manifest AND local file
+            local_lesson_path = self.lessons_dir / f"{lesson_id}.md"
+            
+            # First check manifest (if available)
             if local_manifest and lesson_id in local_manifest.lessons:
                 if local_manifest.lessons[lesson_id] == peer_hash:
+                    result.lessons_skipped += 1
+                    continue
+            
+            # Also check if local file exists and has same hash
+            if local_lesson_path.exists():
+                local_content = local_lesson_path.read_text(encoding="utf-8")
+                local_hash = compute_sha256(local_content)
+                if local_hash == peer_hash:
                     result.lessons_skipped += 1
                     continue
 
@@ -165,7 +176,6 @@ class FederationSync:
             stage_path.write_text(content, encoding="utf-8")
 
             # Check for conflicts
-            local_lesson_path = self.lessons_dir / f"{lesson_id}.md"
             if local_lesson_path.exists():
                 local_content = local_lesson_path.read_text(encoding="utf-8")
                 local_hash = compute_sha256(local_content)
