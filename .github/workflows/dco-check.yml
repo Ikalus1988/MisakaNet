@@ -37,12 +37,13 @@ jobs:
         run: |
           PR_NUM="${{ github.event.inputs.pr_number }}"
           echo "Fetching PR #$PR_NUM head ref..."
-          HEAD_SHA=$(gh api repos/${{ github.repository }}/pulls/$PR_NUM --jq '.head.sha')
           HEAD_REF=$(gh api repos/${{ github.repository }}/pulls/$PR_NUM --jq '.head.ref')
+          # 使用 GitHub 提供的 refs/pull/{num}/head 来拉取 fork PR 的 commit
+          git fetch origin "pull/$PR_NUM/head:refs/remotes/origin/pr-$PR_NUM-head"
+          git checkout "pr-$PR_NUM-head"
+          HEAD_SHA=$(git rev-parse HEAD)
           echo "HEAD_SHA=$HEAD_SHA" >> "$GITHUB_ENV"
           echo "HEAD_REF=$HEAD_REF" >> "$GITHUB_ENV"
-          git fetch origin "$HEAD_SHA"
-          git checkout "$HEAD_SHA"
 
       - name: Fetch base branch for comparison
         run: |
