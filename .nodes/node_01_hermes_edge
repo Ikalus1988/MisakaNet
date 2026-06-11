@@ -1,0 +1,4 @@
+# Generalized node configuration
+node_name: hermes_edge
+node_type: edge
+environment: generic

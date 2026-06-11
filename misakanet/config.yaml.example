@@ -1,0 +1,5 @@
+# Example configuration for MisakaNet
+nodes:
+  - name: node_01_hermes_edge
+    type: edge
+    environment: generic
