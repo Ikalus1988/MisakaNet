@@ -1,0 +1,22 @@
+[
+  {
+    "id": "1",
+    "content": "Python is a great programming language."
+  },
+  {
+    "id": "2",
+    "content": "Solidity is used for smart contracts."
+  },
+  {
+    "id": "3",
+    "content": "JavaScript powers the web."
+  },
+  {
+    "id": "4",
+    "content": "Edge cases are important for robust software."
+  },
+  {
+    "id": "5",
+    "content": "Unit tests ensure code quality."
+  }
+]
