@@ -2185,5 +2185,39 @@
     ],
     "url": "lessons/contributor-engagement-retention.md",
     "updated": "2026-06-10"
+  },
+  {
+    "id": "github-dns-443-block-hosts-workaround",
+    "title": "GitHub DNS 污染/443端口不通 — hosts 备用 IP + api.github.com SNI 陷阱",
+    "domain": "devops",
+    "tags": [
+      "git",
+      "github",
+      "TLS",
+      "network",
+      "DNS",
+      "hosts",
+      "connectivity",
+      "api"
+    ],
+    "summary": "hosts 里把 api.github.com 也指向 github.com 的同 IP 会导致 API 301；http.curloptResolve 绕过方案",
+    "url": "lessons/contrib/github-dns-443-block-hosts-workaround.md",
+    "updated": "2026-06-13"
+  },
+  {
+    "id": "git-credential-helper-gh-path-mismatch",
+    "title": "gh credential helper 路径错误导致 git push 静默失败",
+    "domain": "devops",
+    "tags": [
+      "git",
+      "github",
+      "credential",
+      "gh",
+      "auth",
+      "push"
+    ],
+    "summary": "gh 在 /usr/bin/gh 但 credential helper 指向不存在的路径；git config --unset-all 修复",
+    "url": "lessons/contrib/git-credential-helper-gh-path-mismatch.md",
+    "updated": "2026-06-13"
   }
 ]
