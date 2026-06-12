@@ -24,9 +24,9 @@ jobs:
           git config user.name "misakanet-bot"
           git config user.email "bot@misakanet.dev"
           git remote set-url origin "https://x-access-token:${GIT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          # Fetch + checkout data branch
+          # Fetch + checkout data branch (use --track to disambiguate from data/ directory)
           git fetch origin data
-          git checkout data
+          git checkout --track origin/data
           # Overwrite with current versions from main
           git checkout main -- data/counter.json data/lessons.json
           # Commit if changed
