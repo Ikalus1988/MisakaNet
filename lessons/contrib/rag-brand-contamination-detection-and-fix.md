@@ -1,6 +1,7 @@
 ---
-{"title": "RAG 知识库品牌污染检测与治理", "domain": "rag", "tags": ["rag", "chromadb", "brand-contamination", "data-quality", "metadata"], "confidence": 0.9, "created": "2026-05-29"}
+{"title": "RAG 知识库品牌污染检测与治理", "domain": "rag", "source": "unknown", "status": "draft", "tags": ["rag", "chromadb", "brand-contamination", "data-quality", "metadata"], "created": "2026-05-29", "updated": "2026-05-29", "confidence": 0.9}
 ---
+
 
 ## 背景
 

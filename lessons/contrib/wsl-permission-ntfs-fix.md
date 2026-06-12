@@ -1,6 +1,7 @@
 ---
-{"title": "Permission Denied / WSL NTFS 跨文件系统权限修复", "domain": "devops", "tags": ["permission", "wsl", "ntfs", "eacces", "filesystem"]}
+{"title": "Permission Denied / WSL NTFS 跨文件系统权限修复", "domain": "devops", "source": "unknown", "status": "draft", "tags": ["permission", "wsl", "ntfs", "eacces", "filesystem"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

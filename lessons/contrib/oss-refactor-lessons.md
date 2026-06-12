@@ -1,4 +1,7 @@
----{"title": "开源项目重构复盘 — 从功能堆砌到减法优先", "domain": "development", "tags": ["refactor", "architecture", "lessons", "open-source"], "status": "published", "source": "deepseek", "created": "2026-05-30 04:00:00 UTC", "updated": "2026-05-30 04:00:00 UTC"}---
+---
+{"title": "开源项目重构复盘 — 从功能堆砌到减法优先", "domain": "development", "source": "deepseek", "status": "published", "tags": ["refactor", "architecture", "lessons", "open-source"], "created": "2026-05-30 04:00:00 UTC", "updated": "2026-05-30 04:00:00 UTC"}
+---
+
 
 ## 背景
 

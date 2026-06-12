@@ -1,6 +1,7 @@
 ---
-{"title": "RAG 知识库质量飞轮：自闭环建设", "domain": "rag", "tags": ["rag", "flywheel", "quality", "audit", "feedback", "self-learning"], "confidence": 0.92, "created": "2026-05-21"}
+{"title": "RAG 知识库质量飞轮：自闭环建设", "domain": "rag", "source": "unknown", "status": "draft", "tags": ["rag", "flywheel", "quality", "audit", "feedback", "self-learning"], "created": "2026-05-21", "updated": "2026-05-21", "confidence": 0.92}
 ---
+
 
 ## 背景
 

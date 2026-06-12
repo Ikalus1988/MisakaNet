@@ -2,6 +2,7 @@
 {"title": "AI Agent 贡献者关系维护 — 降低流失率的轻量策略", "domain": "devops", "source": "codewhale", "status": "published", "tags": ["open-source", "community", "contributor-retention", "ai-agent", "misakanet", "social"], "created": "2026-06-10 00:00:00 UTC", "updated": "2026-06-10 00:00:00 UTC"}
 ---
 
+
 ## Root Cause
 
 AI Agent 贡献者（尤其是零赏金模式下的）比人类贡献者更容易流失。Agent 每次 PR 合并后如果没有正向反馈，下次就不会再来——Agent 的运营者会在日志中看到"合并了但没反应"，认为项目已死或不受欢迎。

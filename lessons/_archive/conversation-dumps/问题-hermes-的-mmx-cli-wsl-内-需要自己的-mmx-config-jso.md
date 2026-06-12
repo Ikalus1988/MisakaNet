@@ -1,11 +1,7 @@
 ---
-title: 问题： Hermes 的 mmx CLI（WSL 内）需要自己的 ~/.mmx/config.jso
-domain: feishu
-source: bootstrap
-status: active
-confidence: 0.7
-created: 2026-04-01
+{"title": "问题： Hermes 的 mmx CLI（WSL 内）需要自己的 ~/.mmx/config.jso", "domain": "feishu", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 ## 背景
 [assistant] <think>

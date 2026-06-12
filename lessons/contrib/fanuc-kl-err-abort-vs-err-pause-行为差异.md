@@ -1,12 +1,7 @@
 ---
-title: FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异
-domain: fanuc
-subdomain: error-handling
-source: bootstrap
-status: draft
-confidence: 0.7
-created: 2026-05-03
+{"title": "FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异", "domain": "fanuc", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-05-03", "updated": "2026-05-03", "subdomain": "error-handling", "confidence": 0.7}
 ---
+
 
 ## FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异
 

@@ -1,12 +1,7 @@
 ---
-title: cc-connect 飞书显示优化：禁用工具调用和上下文提示
-domain: feishu
-subdomain: cc-connect
-source: bootstrap
-status: published
-confidence: 0.9
-created: 2026-05-19
+{"title": "cc-connect 飞书显示优化：禁用工具调用和上下文提示", "domain": "feishu", "source": "bootstrap", "status": "published", "tags": [], "created": "2026-05-19", "updated": "2026-05-19", "subdomain": "cc-connect", "confidence": 0.9}
 ---
+
 
 ## cc-connect 飞书显示优化：禁用工具调用和上下文提示
 

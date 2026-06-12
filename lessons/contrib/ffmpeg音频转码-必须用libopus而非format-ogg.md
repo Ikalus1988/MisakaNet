@@ -1,17 +1,7 @@
 ---
-  title: FFmpeg 音频转码：必须用 libopus 而非 -format ogg
-  domain: audio
-  tags:
-    - ffmpeg
-    - audio
-    - 转码
-    - ogg
-  source: hanged-man
-  status: published
-  created: 2026-03-29
-  confidence: 0.9
-  scope: broad
+{"title": "FFmpeg 音频转码：必须用 libopus 而非 -format ogg", "domain": "audio", "source": "hanged-man", "status": "published", "tags": [], "created": "2026-03-29", "updated": "2026-03-29", "confidence": 0.9, "scope": "broad"}
 ---
+
 
 ## 问题
 

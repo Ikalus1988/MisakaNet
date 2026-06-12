@@ -1,6 +1,7 @@
 ---
-{"title": "Git 凭证配置 — 自动化 push 免密码", "domain": "devops", "tags": ["git", "credentials", "auth", "github"]}
+{"title": "Git 凭证配置 — 自动化 push 免密码", "domain": "devops", "source": "unknown", "status": "draft", "tags": ["git", "credentials", "auth", "github"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

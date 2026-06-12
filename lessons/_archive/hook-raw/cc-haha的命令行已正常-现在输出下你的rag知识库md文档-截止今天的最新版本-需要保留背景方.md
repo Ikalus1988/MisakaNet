@@ -1,13 +1,7 @@
 ---
-title: cc-haha的命令行已正常，现在输出下你的rag知识库md文档，截止今天的最新版本，需要保留背景方
-domain: rag
-source: bootstrap
-status: active
-confidence: 0.7
-created: 2026-04-01
-tags:
-- bootstrap
+{"title": "cc-haha的命令行已正常，现在输出下你的rag知识库md文档，截止今天的最新版本，需要保留背景方", "domain": "rag", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 
 

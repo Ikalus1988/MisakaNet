@@ -1,13 +1,7 @@
 ---
-title: CONTEXT COMPACTION — REFERENCE ONLY] Earlier turn
-domain: feishu
-source: bootstrap
-status: active
-confidence: 0.7
-created: 2026-04-01
-tags:
-- bootstrap
+{"title": "CONTEXT COMPACTION — REFERENCE ONLY] Earlier turn", "domain": "feishu", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 
 

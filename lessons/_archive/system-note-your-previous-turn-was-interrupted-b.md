@@ -1,13 +1,7 @@
 ---
-confidence: 0.5
-created: '2026-04-01'
-domain: general
-source: bootstrap
-status: draft
-tags:
-- bootstrap
-title: system note your previous turn was interrupted b
+{"title": "system note your previous turn was interrupted b", "domain": "general", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.5}
 ---
+
 
 ---
 tags:

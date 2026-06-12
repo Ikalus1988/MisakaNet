@@ -1,11 +1,7 @@
 ---
-title: 我已将部分工作直接发给Hermes cli助手，你注意检查，不要重复施工
-domain: feishu
-source: bootstrap
-status: active
-confidence: 0.7
-created: 2026-04-01
+{"title": "我已将部分工作直接发给Hermes cli助手，你注意检查，不要重复施工", "domain": "feishu", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 ## 背景
 [assistant] <think>

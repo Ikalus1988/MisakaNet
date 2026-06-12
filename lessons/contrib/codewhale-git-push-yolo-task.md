@@ -1,6 +1,7 @@
 ---
-{"title": "CodeWhale 中 git push 的正确方式 — YOLO task + gh CLI", "domain": "devops", "tags": ["codewhale", "git", "yolo", "push", "lesson"]}
+{"title": "CodeWhale 中 git push 的正确方式 — YOLO task + gh CLI", "domain": "devops", "source": "unknown", "status": "draft", "tags": ["codewhale", "git", "yolo", "push", "lesson"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

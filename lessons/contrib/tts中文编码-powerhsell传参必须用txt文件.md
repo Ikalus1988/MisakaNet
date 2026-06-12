@@ -1,17 +1,7 @@
 ---
-  title: TTS 中文编码：PowerShell 传参必须用 .txt 文件中转
-  domain: tts
-  tags:
-    - minimax
-    - tts
-    - powershell
-    - encoding
-  source: hanged-man
-  status: published
-  created: 2026-04-18
-  confidence: 0.9
-  scope: broad
+{"title": "TTS 中文编码：PowerShell 传参必须用 .txt 文件中转", "domain": "tts", "source": "hanged-man", "status": "published", "tags": [], "created": "2026-04-18", "updated": "2026-04-18", "confidence": 0.9, "scope": "broad"}
 ---
+
 
 ## 问题
 

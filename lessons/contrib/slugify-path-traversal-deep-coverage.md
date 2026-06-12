@@ -1,6 +1,7 @@
 ---
-{"title": "Slugify: deep coverage of path traversal, null bytes, and reserved names", "domain": "scripts", "tags": ["slugify", "path-traversal", "windows-reserved", "null-byte", "test-coverage", "hardening"]}
+{"title": "Slugify: deep coverage of path traversal, null bytes, and reserved names", "domain": "scripts", "source": "unknown", "status": "draft", "tags": ["slugify", "path-traversal", "windows-reserved", "null-byte", "test-coverage", "hardening"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 问题
 

@@ -1,6 +1,7 @@
 ---
-{"title": "WSL Windows 终端复制粘贴吞下划线问题", "domain": "devops", "tags": ["wsl", "terminal", "windows", "encoding"]}
+{"title": "WSL Windows 终端复制粘贴吞下划线问题", "domain": "devops", "source": "unknown", "status": "draft", "tags": ["wsl", "terminal", "windows", "encoding"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

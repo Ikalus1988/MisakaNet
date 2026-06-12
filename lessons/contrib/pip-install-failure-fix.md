@@ -1,12 +1,7 @@
 ---
-created: 2026-05-01 08:00 UTC
-domain: devops
-source: hermes_wsl
-status: published
-tags: 
-title: pip install 网络超时 / SSL / 依赖冲突修复
-updated: 2026-05-01 08:00 UTC
+{"title": "pip install 网络超时 / SSL / 依赖冲突修复", "domain": "devops", "source": "hermes_wsl", "status": "published", "tags": [], "created": "2026-05-01 08:00 UTC", "updated": "2026-05-01 08:00 UTC"}
 ---
+
 
 
 ## 问题

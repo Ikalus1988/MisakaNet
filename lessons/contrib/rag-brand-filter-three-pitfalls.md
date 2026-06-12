@@ -1,6 +1,7 @@
 ---
-{"title": "RAG 品牌过滤三坑：条件触发、文件正则、BM25 缓存", "domain": "rag", "tags": ["rag", "brand-filter", "architecture", "chromadb", "bm25", "pitfall"], "confidence": 0.88, "created": "2026-05-29"}
+{"title": "RAG 品牌过滤三坑：条件触发、文件正则、BM25 缓存", "domain": "rag", "source": "unknown", "status": "draft", "tags": ["rag", "brand-filter", "architecture", "chromadb", "bm25", "pitfall"], "created": "2026-05-29", "updated": "2026-05-29", "confidence": 0.88}
 ---
+
 
 ## 背景
 

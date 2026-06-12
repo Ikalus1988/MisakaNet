@@ -1,6 +1,7 @@
 ---
-{"title": "巡检题库分层抽样策略", "domain": "rag", "tags": ["rag", "audit", "sampling", "quality", "test-bank"], "confidence": 0.88, "created": "2026-05-21"}
+{"title": "巡检题库分层抽样策略", "domain": "rag", "source": "unknown", "status": "draft", "tags": ["rag", "audit", "sampling", "quality", "test-bank"], "created": "2026-05-21", "updated": "2026-05-21", "confidence": 0.88}
 ---
+
 
 ## 背景
 

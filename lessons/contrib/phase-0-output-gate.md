@@ -1,6 +1,7 @@
 ---
-{"title": "Phase 0 Output Gate — Agent 的硬性知识检索规则", "domain": "methodology", "tags": ["output-gate", "knowledge-reuse", "methodology", "core"]}
+{"title": "Phase 0 Output Gate — Agent 的硬性知识检索规则", "domain": "methodology", "source": "unknown", "status": "draft", "tags": ["output-gate", "knowledge-reuse", "methodology", "core"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

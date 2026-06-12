@@ -1,13 +1,7 @@
 ---
-title: wxauto 必须在 Windows Python 下安装，不能走 WSL pip
-domain: devops
-subdomain: wechat
-source: bootstrap
-status: draft
-tags: ["project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow"]
-confidence: 0.85
-created: 2026-05-03
+{"title": "wxauto 必须在 Windows Python 下安装，不能走 WSL pip", "domain": "devops", "source": "bootstrap", "status": "draft", "tags": ["project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow"], "created": "2026-05-03", "updated": "2026-05-03", "subdomain": "wechat", "confidence": 0.85}
 ---
+
 
 ## 问题
 

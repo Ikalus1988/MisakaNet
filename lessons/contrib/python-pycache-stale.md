@@ -1,6 +1,7 @@
 ---
-{"title": "Python 代码修改不生效 — stale .pyc 缓存", "domain": "devops", "tags": ["python", "pyc", "cache", "debug"]}
+{"title": "Python 代码修改不生效 — stale .pyc 缓存", "domain": "devops", "source": "unknown", "status": "draft", "tags": ["python", "pyc", "cache", "debug"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

@@ -1,20 +1,7 @@
 ---
-title: Chroma 建库无 Checkpoint — 进程一死全部丢失
-domain: rag
-source: bootstrap
-bootstrapped: true
-author: node2
-machine: hermes-wsl
-original_date: 2026-04-12
-tags: 
-- node: hermes_wsl
-- project: edoc
-- severity: high
-status: published
-quality: published
-created: 2026-04-01
-confidence: 0.7
+{"title": "Chroma 建库无 Checkpoint — 进程一死全部丢失", "domain": "rag", "source": "bootstrap", "status": "published", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7, "machine": "hermes-wsl", "bootstrapped": "true", "author": "node2", "original_date": "2026-04-12", "quality": "published", "- node": "hermes_wsl", "- project": "edoc", "- severity": "high"}
 ---
+
 
 
 

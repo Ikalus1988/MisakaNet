@@ -2,6 +2,7 @@
 {"title": "GitHub Actions Script Injection — 通过 env 变量替代内联插值", "domain": "security", "source": "codewhale", "status": "published", "tags": ["github-actions", "security", "code-injection", "codeql", "ci"], "created": "2026-06-10 00:00:00 UTC", "updated": "2026-06-10 00:00:00 UTC"}
 ---
 
+
 ## Root Cause
 
 当 GitHub Actions 的 `run:` 脚本中直接使用 `${{ github.event.issue.body }}` 或 `${{ github.event.pull_request.title }}` 等用户可控变量时，攻击者可以通过构造包含 shell 元字符（如 `` ` ``, `$(...)`, `;`）的 issue/PR 内容来注入任意命令。

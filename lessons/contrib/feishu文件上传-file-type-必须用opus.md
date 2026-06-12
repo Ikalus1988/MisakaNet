@@ -1,19 +1,7 @@
 ---
-  title: Feishu 文件上传：file_type 必须用 opus
-  domain: feishu
-  tags:
-    - feishu
-    - api
-    - file-upload
-  source: hanged-man
-  status: published
-  created: 2026-03-29
-  confidence: 0.95
-  scope: broad
-  alternative_of: None
-  related:
-
+{"title": "Feishu 文件上传：file_type 必须用 opus", "domain": "feishu", "source": "hanged-man", "status": "published", "tags": [], "created": "2026-03-29", "updated": "2026-03-29", "confidence": 0.95, "scope": "broad", "alternative_of": "None", "related": ""}
 ---
+
 
 ## 问题
 

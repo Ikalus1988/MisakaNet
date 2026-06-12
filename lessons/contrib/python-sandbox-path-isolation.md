@@ -1,6 +1,7 @@
 ---
-{"title": "Python 沙箱/受限环境 — PATH 和 sys.path 隔离", "domain": "development", "tags": ["python", "sandbox", "path", "import", "venv"]}
+{"title": "Python 沙箱/受限环境 — PATH 和 sys.path 隔离", "domain": "development", "source": "unknown", "status": "draft", "tags": ["python", "sandbox", "path", "import", "venv"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

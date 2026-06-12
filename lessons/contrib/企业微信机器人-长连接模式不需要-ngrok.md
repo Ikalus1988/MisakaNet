@@ -1,13 +1,7 @@
 ---
-title: 企业微信机器人：长连接模式不需要 ngrok
-domain: devops
-subdomain: wecom
-source: bootstrap
-status: draft
-tags: ["project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow"]
-confidence: 0.85
-created: 2026-05-03
+{"title": "企业微信机器人：长连接模式不需要 ngrok", "domain": "devops", "source": "bootstrap", "status": "draft", "tags": ["project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow"], "created": "2026-05-03", "updated": "2026-05-03", "subdomain": "wecom", "confidence": 0.85}
 ---
+
 
 ## 问题
 

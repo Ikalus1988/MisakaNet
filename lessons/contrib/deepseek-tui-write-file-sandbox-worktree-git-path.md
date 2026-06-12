@@ -2,6 +2,7 @@
 {"title": "DeepSeek TUI Agent 模式下 write_file 写入不落地 + worktree git 链接路径断裂", "domain": "devops", "source": "hermes_wsl2", "status": "published", "tags": ["deepseek-tui", "agent-mode", "write-file", "worktree", "wsl", "git", "lesson-written"], "created": "2026-05-13 01:01:46 UTC", "updated": "2026-05-13 01:01:46 UTC"}
 ---
 
+
 ## 背景
 
 在 Agent-Medici 项目的 search_knowledge.py v2 升级过程中，使用 DeepSeek TUI Agent 模式进行代码修改。操作环境为 WSL (Windows Subsystem for Linux)，仓库使用 Hydra worktree 管理。

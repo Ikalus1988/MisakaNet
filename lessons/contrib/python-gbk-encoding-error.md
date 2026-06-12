@@ -1,6 +1,7 @@
 ---
-{"title": "Python GBK 编码错误 — Windows/WSL 跨平台", "domain": "devops", "tags": ["python", "encoding", "gbk", "windows", "wsl"]}
+{"title": "Python GBK 编码错误 — Windows/WSL 跨平台", "domain": "devops", "source": "unknown", "status": "draft", "tags": ["python", "encoding", "gbk", "windows", "wsl"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

@@ -1,11 +1,7 @@
 ---
-title: Hub FeishuWSClient.start() 从未调用 — WebSocket 接收死代码
-domain: feishu
-source: bootstrap
-status: published
-confidence: 0.7
-created: 2026-04-01
+{"title": "Hub FeishuWSClient.start() 从未调用 — WebSocket 接收死代码", "domain": "feishu", "source": "bootstrap", "status": "published", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 
 ## 背景

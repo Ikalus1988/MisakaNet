@@ -1,6 +1,7 @@
 ---
-{"title": "Python venv 激活失败或路径不匹配", "domain": "devops", "tags": ["python", "venv", "virtualenv", "path"]}
+{"title": "Python venv 激活失败或路径不匹配", "domain": "devops", "source": "unknown", "status": "draft", "tags": ["python", "venv", "virtualenv", "path"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

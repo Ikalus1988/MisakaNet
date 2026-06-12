@@ -1,6 +1,7 @@
 ---
-{"title": "JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效", "domain": "frontend", "tags": ["js", "runtime", "typeerror", "execution-model", "defensive"]}
+{"title": "JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效", "domain": "frontend", "source": "unknown", "status": "draft", "tags": ["js", "runtime", "typeerror", "execution-model", "defensive"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

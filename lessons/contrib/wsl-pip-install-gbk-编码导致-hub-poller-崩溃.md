@@ -1,13 +1,7 @@
 ---
-title: WSL pip install GBK 编码导致 hub_poller 崩溃
-domain: devops
-subdomain: wsl
-source: bootstrap
-status: draft
-tags: ["project:agent-medici", "severity:critical", "platform:wsl", "node:hermes_wsl"]
-confidence: 0.8
-created: 2026-05-03
+{"title": "WSL pip install GBK 编码导致 hub_poller 崩溃", "domain": "devops", "source": "bootstrap", "status": "draft", "tags": ["project:agent-medici", "severity:critical", "platform:wsl", "node:hermes_wsl"], "created": "2026-05-03", "updated": "2026-05-03", "subdomain": "wsl", "confidence": 0.8}
 ---
+
 
 ## 问题
 

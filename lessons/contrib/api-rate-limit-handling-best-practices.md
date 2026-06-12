@@ -1,6 +1,7 @@
 ---
-{"title": "API限流处理最佳实践", "domain": "devops", "tags": ["api", "rate-limit", "backoff", "batch"]}
+{"title": "API限流处理最佳实践", "domain": "devops", "source": "unknown", "status": "draft", "tags": ["api", "rate-limit", "backoff", "batch"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 大批量API任务没有提前测试限流，任务中途被截断，无法续命。

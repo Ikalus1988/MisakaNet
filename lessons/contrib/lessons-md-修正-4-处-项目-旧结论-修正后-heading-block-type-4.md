@@ -1,11 +1,7 @@
 ---
-title: lessons.md 修正（4 处） 项目 旧结论 修正后 heading block（type=4
-domain: rag
-source: bootstrap
-status: published
-confidence: 0.7
-created: 2026-04-01
+{"title": "lessons.md 修正（4 处） 项目 旧结论 修正后 heading block（type=4", "domain": "rag", "source": "bootstrap", "status": "published", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 
 ## 背景

@@ -1,6 +1,7 @@
 ---
-{"title": "tmux 终端复用 — 断开不丢失会话", "domain": "development", "tags": ["tmux", "terminal", "session", "background"]}
+{"title": "tmux 终端复用 — 断开不丢失会话", "domain": "development", "source": "unknown", "status": "draft", "tags": ["tmux", "terminal", "session", "background"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

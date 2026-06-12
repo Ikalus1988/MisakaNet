@@ -1,6 +1,7 @@
 ---
-{"title": "微信公众号抓取失败处理（搜索与抓取分离）", "domain": "wechat", "tags": ["wechat", "fetch", "search", "crawl"]}
+{"title": "微信公众号抓取失败处理（搜索与抓取分离）", "domain": "wechat", "source": "unknown", "status": "draft", "tags": ["wechat", "fetch", "search", "crawl"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 微信公众号文章抓取时，把"找文章URL"和"抓取正文"混在一起，失败模式不清晰，难以诊断。

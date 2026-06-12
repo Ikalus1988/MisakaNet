@@ -1,11 +1,7 @@
 ---
-title: 另外，RAG助手， Wiki项目又有新进展。 这个项目经过了从一开始的OPUS 4.6，写了初版之后
-domain: rag
-source: bootstrap
-status: active
-confidence: 0.7
-created: 2026-04-01
+{"title": "另外，RAG助手， Wiki项目又有新进展。 这个项目经过了从一开始的OPUS 4.6，写了初版之后", "domain": "rag", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 ## 背景
 [assistant] 

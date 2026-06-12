@@ -1,11 +1,7 @@
 ---
-title: 这是倒吊人在本周修改wsl的记录，有没有关联：一、本周修改的 WSL 内容 文件 操作 目的 ~/.
-domain: feishu
-source: bootstrap
-status: active
-confidence: 0.7
-created: 2026-04-01
+{"title": "这是倒吊人在本周修改wsl的记录，有没有关联：一、本周修改的 WSL 内容 文件 操作 目的 ~/.", "domain": "feishu", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 ## 背景
 [assistant] <think>

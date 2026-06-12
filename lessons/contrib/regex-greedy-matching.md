@@ -1,6 +1,7 @@
 ---
-{"title": "正则表达式 debugging — 贪婪匹配造成的意外结果", "domain": "development", "tags": ["regex", "debug", "greedy", "pattern"]}
+{"title": "正则表达式 debugging — 贪婪匹配造成的意外结果", "domain": "development", "source": "unknown", "status": "draft", "tags": ["regex", "debug", "greedy", "pattern"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

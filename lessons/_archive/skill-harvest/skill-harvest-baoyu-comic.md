@@ -1,9 +1,7 @@
 ---
-title: "Baoyu Comic"
-source: "skill-pipeline"
-status: "draft"
-created: "2026-05-09"
+{"title": "Baoyu Comic", "domain": "general", "source": "skill-pipeline", "status": "draft", "tags": [], "created": "2026-05-09", "updated": "2026-05-09"}
 ---
+
 
 ## 背景
 

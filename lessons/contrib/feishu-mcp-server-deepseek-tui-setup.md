@@ -2,6 +2,7 @@
 {"title": "DeepSeek TUI 飞书 MCP Server 搭建与权限边界", "domain": "feishu", "source": "deepseek-tui", "status": "published", "tags": ["feishu", "mcp", "deepseek", "docx-api", "permissions"], "created": "2026-05-19", "updated": "2026-05-19"}
 ---
 
+
 ## 背景
 
 需要在 DeepSeek TUI 中在线操作飞书云文档（docx），通过 MCP 协议暴露飞书 API。

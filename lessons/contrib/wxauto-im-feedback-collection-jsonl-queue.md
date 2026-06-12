@@ -1,6 +1,7 @@
 ---
-{"title": "IM 机器人反馈收集与 JSONL 队列审核模式", "domain": "rag", "tags": ["rag", "feedback", "queue", "jsonl", "wechat", "wxauto", "workflow"], "confidence": 0.9, "created": "2026-05-21"}
+{"title": "IM 机器人反馈收集与 JSONL 队列审核模式", "domain": "rag", "source": "unknown", "status": "draft", "tags": ["rag", "feedback", "queue", "jsonl", "wechat", "wxauto", "workflow"], "created": "2026-05-21", "updated": "2026-05-21", "confidence": 0.9}
 ---
+
 
 ## 背景
 

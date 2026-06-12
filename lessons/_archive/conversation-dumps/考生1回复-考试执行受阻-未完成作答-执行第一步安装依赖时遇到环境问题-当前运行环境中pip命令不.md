@@ -1,11 +1,7 @@
 ---
-title: 考生1回复：考试执行受阻，未完成作答： 执行第一步安装依赖时遇到环境问题：当前运行环境中pip命令不
-domain: rag
-source: bootstrap
-status: active
-confidence: 0.7
-created: 2026-04-01
+{"title": "考生1回复：考试执行受阻，未完成作答： 执行第一步安装依赖时遇到环境问题：当前运行环境中pip命令不", "domain": "rag", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 ## 背景
 [assistant] <think>

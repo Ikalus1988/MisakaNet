@@ -1,11 +1,7 @@
 ---
-title: Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里
-domain: devops
-source: bootstrap
-status: published
-confidence: 0.7
-created: 2026-04-01
+{"title": "Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里", "domain": "devops", "source": "bootstrap", "status": "published", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 
 ## 背景

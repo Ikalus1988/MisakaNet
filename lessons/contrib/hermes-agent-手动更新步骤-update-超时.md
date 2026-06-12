@@ -1,13 +1,7 @@
 ---
-title: Hermes Agent 手动更新步骤（update 超时）
-domain: devops
-subdomain: hermes
-source: bootstrap
-status: draft
-tags: ["project:agent-medici", "severity:medium", "node:hermes_wsl"]
-confidence: 0.8
-created: 2026-05-03
+{"title": "Hermes Agent 手动更新步骤（update 超时）", "domain": "devops", "source": "bootstrap", "status": "draft", "tags": ["project:agent-medici", "severity:medium", "node:hermes_wsl"], "created": "2026-05-03", "updated": "2026-05-03", "subdomain": "hermes", "confidence": 0.8}
 ---
+
 
 ## 问题
 

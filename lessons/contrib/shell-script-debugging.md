@@ -1,6 +1,7 @@
 ---
-{"title": "Shell 脚本调试 — set -x 与常见陷阱", "domain": "development", "tags": ["shell", "bash", "debug", "script"]}
+{"title": "Shell 脚本调试 — set -x 与常见陷阱", "domain": "development", "source": "unknown", "status": "draft", "tags": ["shell", "bash", "debug", "script"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

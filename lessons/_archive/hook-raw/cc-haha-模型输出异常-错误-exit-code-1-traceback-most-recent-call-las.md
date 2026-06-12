@@ -2,6 +2,7 @@
 {"title": "[cc-haha] 模型输出异常 错误 — Exit code 1 Traceback (most recent call last):   File \"<stri...(截断)", "domain": "model_output", "source": "cc_haha", "status": "published", "tags": ["cc-haha", "hook-auto", "model_output", ""], "created": "2026-05-10 15:05:00 UTC", "updated": "2026-05-10 15:05:00 UTC"}
 ---
 
+
 ## 问题
 
 自动捕获于 cc-haha hook（时间: 2026-05-10 15:05 UTC）。

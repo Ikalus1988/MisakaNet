@@ -1,11 +1,7 @@
 ---
-title: edoc-rag
-domain: rag
-source: skill-harvest
-status: draft
-confidence: 0.6
-created: 2026-05-20
+{"title": "edoc-rag", "domain": "rag", "source": "skill-harvest", "status": "draft", "tags": [], "created": "2026-05-20", "updated": "2026-05-20", "confidence": 0.6}
 ---
+
 
 # edoc-rag
 

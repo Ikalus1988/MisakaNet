@@ -1,13 +1,7 @@
 ---
-confidence: 0.5
-created: '2026-04-01'
-domain: general
-source: bootstrap
-status: draft
-tags:
-- bootstrap
-title: bot回复 reasoning 现在pip和pip3都找不到 说明当前环境没有配置python的可
+{"title": "bot回复 reasoning 现在pip和pip3都找不到 说明当前环境没有配置python的可", "domain": "general", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.5}
 ---
+
 
 ---
 tags:

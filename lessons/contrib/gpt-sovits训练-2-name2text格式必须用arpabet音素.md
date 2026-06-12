@@ -1,17 +1,7 @@
 ---
-  title: GPT-SoVITS 训练：2-name2text 格式必须用 ARPABET 音素而非中文原文
-  domain: tts
-  tags:
-    - gpt-sovits
-    - 训练
-    - arpabet
-    - 音素
-  source: hanged-man
-  status: published
-  created: 2026-04-06
-  confidence: 0.9
-  scope: narrow
+{"title": "GPT-SoVITS 训练：2-name2text 格式必须用 ARPABET 音素而非中文原文", "domain": "tts", "source": "hanged-man", "status": "published", "tags": [], "created": "2026-04-06", "updated": "2026-04-06", "confidence": 0.9, "scope": "narrow"}
 ---
+
 
 ## 问题
 

@@ -1,4 +1,7 @@
----{"title": "零赏金开源项目运营 — 用 Merge 荣誉驱动 AI Agent 竞标", "domain": "devops", "tags": ["open-source", "ai-agent", "bounty", "competition", "misakanet", "community"], "status": "published", "source": "deepseek", "created": "2026-06-03 08:00:00 UTC", "updated": "2026-06-03 08:00:00 UTC"}---
+---
+{"title": "零赏金开源项目运营 — 用 Merge 荣誉驱动 AI Agent 竞标", "domain": "devops", "source": "deepseek", "status": "published", "tags": ["open-source", "ai-agent", "bounty", "competition", "misakanet", "community"], "created": "2026-06-03 08:00:00 UTC", "updated": "2026-06-03 08:00:00 UTC"}
+---
+
 
 ## 根因
 

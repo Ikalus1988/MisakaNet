@@ -1,6 +1,7 @@
 ---
-{"title": "Feishu Wiki批量下载：文件类型处理策略", "domain": "devops", "tags": "feishu, wiki, batch-download, file-type, pdf, docx, safari", "status": "published", "source": "hermes_wsl2", "updated": "2026-05-19 15:40:11 UTC"}
+{"title": "Feishu Wiki批量下载：文件类型处理策略", "domain": "devops", "source": "hermes_wsl2", "status": "published", "tags": ["feishu", "wiki", "batch-download", "file-type", "pdf", "docx", "safari"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-05-19 15:40:11 UTC"}
 ---
+
 
 # Feishu Wiki批量下载：文件类型处理策略
 

@@ -1,11 +1,7 @@
 ---
-title: rag-audit-question-authoring
-domain: rag
-source: skill-harvest
-status: draft
-confidence: 0.6
-created: 2026-05-20
+{"title": "rag-audit-question-authoring", "domain": "rag", "source": "skill-harvest", "status": "draft", "tags": [], "created": "2026-05-20", "updated": "2026-05-20", "confidence": 0.6}
 ---
+
 
 # rag-audit-question-authoring
 

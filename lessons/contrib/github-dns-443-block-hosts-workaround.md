@@ -1,6 +1,7 @@
 ---
-{"title": "GitHub DNS 污染/443端口不通 — hosts 备用 IP 方案", "domain": "devops", "tags": ["git", "github", "TLS", "network", "DNS", "hosts", "connectivity"]}
+{"title": "GitHub DNS 污染/443端口不通 — hosts 备用 IP 方案", "domain": "devops", "source": "unknown", "status": "draft", "tags": ["git", "github", "TLS", "network", "DNS", "hosts", "connectivity"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

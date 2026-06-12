@@ -1,6 +1,7 @@
 ---
-{"title": "Cron 作业不执行 / 不生效排障", "domain": "devops", "tags": ["cron", "scheduler", "not-running", "debug"]}
+{"title": "Cron 作业不执行 / 不生效排障", "domain": "devops", "source": "unknown", "status": "draft", "tags": ["cron", "scheduler", "not-running", "debug"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

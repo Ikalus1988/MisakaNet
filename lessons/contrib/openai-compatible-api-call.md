@@ -1,6 +1,7 @@
 ---
-{"title": "OpenAI 兼容 API 的通用调用格式", "domain": "development", "tags": ["api", "openai", "llm", "inference", "chat"]}
+{"title": "OpenAI 兼容 API 的通用调用格式", "domain": "development", "source": "unknown", "status": "draft", "tags": ["api", "openai", "llm", "inference", "chat"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

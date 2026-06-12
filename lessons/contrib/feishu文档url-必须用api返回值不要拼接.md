@@ -1,17 +1,7 @@
 ---
-  title: Feishu 文档 URL：必须用 API 返回值，不要拼接
-  domain: feishu
-  tags:
-    - feishu
-    - docx
-    - api
-    - url
-  source: hanged-man
-  status: published
-  created: 2026-03-29
-  confidence: 0.95
-  scope: broad
+{"title": "Feishu 文档 URL：必须用 API 返回值，不要拼接", "domain": "feishu", "source": "hanged-man", "status": "published", "tags": [], "created": "2026-03-29", "updated": "2026-03-29", "confidence": 0.95, "scope": "broad"}
 ---
+
 
 ## 问题
 

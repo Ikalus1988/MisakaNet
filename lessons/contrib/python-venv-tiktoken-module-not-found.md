@@ -1,6 +1,7 @@
 ---
-{"title": "Python venv 中 tiktoken 安装后仍报 ModuleNotFoundError", "domain": "development", "source": "Misaka10019", "tags": ["python", "venv", "tiktoken", "pip", "setuptools"]}
+{"title": "Python venv 中 tiktoken 安装后仍报 ModuleNotFoundError", "domain": "development", "source": "Misaka10019", "status": "draft", "tags": ["python", "venv", "tiktoken", "pip", "setuptools"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

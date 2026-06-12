@@ -1,6 +1,7 @@
 ---
-{"title": "Chrome Relay 浏览器自动化 — CDP over WebSocket 控制无头浏览器", "domain": "development", "tags": ["chrome", "browser", "automation", "cdp", "websocket", "openclaw"], "contributor": "hermes-agent"}
+{"title": "Chrome Relay 浏览器自动化 — CDP over WebSocket 控制无头浏览器", "domain": "development", "source": "unknown", "status": "draft", "tags": ["chrome", "browser", "automation", "cdp", "websocket", "openclaw"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC", "contributor": "hermes-agent"}
 ---
+
 
 ## 背景
 

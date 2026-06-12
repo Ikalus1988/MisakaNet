@@ -1,6 +1,7 @@
 ---
-{"title": "OpenClaw优先CLI和官方策略", "domain": "agentops", "tags": ["openclaw", "cli", "policy", "config"]}
+{"title": "OpenClaw优先CLI和官方策略", "domain": "agentops", "source": "unknown", "status": "draft", "tags": ["openclaw", "cli", "policy", "config"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 直接修改配置文件（临时hack）容易变成默认模型，导致官方路径退化。

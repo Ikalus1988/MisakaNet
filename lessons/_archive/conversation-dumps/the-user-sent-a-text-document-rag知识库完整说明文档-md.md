@@ -1,13 +1,7 @@
 ---
-confidence: 0.5
-created: '2026-04-01'
-domain: general
-source: bootstrap
-status: draft
-tags:
-- bootstrap
-title: the user sent a text document rag知识库完整说明文档 md
+{"title": "the user sent a text document rag知识库完整说明文档 md", "domain": "general", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.5}
 ---
+
 
 ---
 tags:

@@ -1,12 +1,7 @@
 ---
-title: 飞书 Block Type 正确值与已知限制
-domain: feishu
-subdomain: block-api
-source: bootstrap
-status: draft
-confidence: 0.7
-created: 2026-05-03
+{"title": "飞书 Block Type 正确值与已知限制", "domain": "feishu", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-05-03", "updated": "2026-05-03", "subdomain": "block-api", "confidence": 0.7}
 ---
+
 
 ## 飞书 Block Type 正确值与已知限制
 

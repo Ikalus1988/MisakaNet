@@ -1,11 +1,7 @@
 ---
-title: 按照方案进行测试https://tarot-club.feishu.cn/docx/TkcHd3Lq
-domain: feishu
-source: bootstrap
-status: active
-confidence: 0.7
-created: 2026-04-01
+{"title": "按照方案进行测试https://tarot-club.feishu.cn/docx/TkcHd3Lq", "domain": "feishu", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 ## 背景
 [assistant] <think>

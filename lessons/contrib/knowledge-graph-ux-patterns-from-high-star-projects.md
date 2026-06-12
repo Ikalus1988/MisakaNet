@@ -1,6 +1,7 @@
 ---
-{"title": "知识图谱 UX 增强: 从高星项目提炼的 7 个交互模式", "domain": "development", "tags": ["knowledge-graph", "d3js", "ux", "graph-visualization", "force-directed"]}
+{"title": "知识图谱 UX 增强: 从高星项目提炼的 7 个交互模式", "domain": "development", "source": "unknown", "status": "draft", "tags": ["knowledge-graph", "d3js", "ux", "graph-visualization", "force-directed"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

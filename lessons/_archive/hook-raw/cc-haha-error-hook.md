@@ -1,17 +1,7 @@
 ---
-created: 2026-04-30 09:30 UTC
-domain: devops
-machine: hermes-pc
-source: hermes_wsl2
-status: published
-tags:
-- cc-haha
-- hook
-- lessons
-- error-interception
-title: cc-haha PostToolUseFailure 钩子 — Bash 失败时提示 lessons
-updated: 2026-04-30 09:30 UTC
+{"title": "cc-haha PostToolUseFailure 钩子 — Bash 失败时提示 lessons", "domain": "devops", "source": "hermes_wsl2", "status": "published", "tags": [], "created": "2026-04-30 09:30 UTC", "updated": "2026-04-30 09:30 UTC", "machine": "hermes-pc"}
 ---
+
 
 ## 问题
 

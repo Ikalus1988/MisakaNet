@@ -1,17 +1,7 @@
 ---
-  title: ST2 MCP：从 GAME_OVER 重开必须走特定流程
-  domain: mcp
-  tags:
-    - st2
-    - slay-the-spire-2
-    - mcp
-    - automation
-  source: hanged-man
-  status: published
-  created: 2026-03-27
-  confidence: 0.9
-  scope: narrow
+{"title": "ST2 MCP：从 GAME_OVER 重开必须走特定流程", "domain": "mcp", "source": "hanged-man", "status": "published", "tags": [], "created": "2026-03-27", "updated": "2026-03-27", "confidence": 0.9, "scope": "narrow"}
 ---
+
 
 ## 正确重开流程
 

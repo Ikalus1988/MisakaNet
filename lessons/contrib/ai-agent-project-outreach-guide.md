@@ -1,12 +1,7 @@
 ---
-title: AI Agent 项目宣发引流指南
-domain: marketing
-subdomain: outreach
-source: Misaka10004
-tags: ["outreach", "github", "awesome-list", "pr", "promotion", "agent", "marketing"]
-confidence: 0.95
-created: 2026-05-11
+{"title": "AI Agent 项目宣发引流指南", "domain": "marketing", "source": "Misaka10004", "status": "draft", "tags": ["outreach", "github", "awesome-list", "pr", "promotion", "agent", "marketing"], "created": "2026-05-11", "updated": "2026-05-11", "subdomain": "outreach", "confidence": 0.95}
 ---
+
 
 ## 背景
 

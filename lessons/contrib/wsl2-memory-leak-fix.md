@@ -1,6 +1,7 @@
 ---
-{"title": "WSL2 内存泄漏 / 内存占用过高", "domain": "devops", "tags": ["wsl", "memory", "leak", "performance"]}
+{"title": "WSL2 内存泄漏 / 内存占用过高", "domain": "devops", "source": "unknown", "status": "draft", "tags": ["wsl", "memory", "leak", "performance"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

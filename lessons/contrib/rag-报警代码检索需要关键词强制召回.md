@@ -1,13 +1,7 @@
 ---
-title: RAG 报警代码检索需要关键词强制召回
-domain: rag
-subdomain: fanuc
-source: bootstrap
-status: draft
-tags: ["project:self-grow-wiki", "severity:high", "node:hermes_wsl"]
-confidence: 0.8
-created: 2026-05-03
+{"title": "RAG 报警代码检索需要关键词强制召回", "domain": "rag", "source": "bootstrap", "status": "draft", "tags": ["project:self-grow-wiki", "severity:high", "node:hermes_wsl"], "created": "2026-05-03", "updated": "2026-05-03", "subdomain": "fanuc", "confidence": 0.8}
 ---
+
 
 ## 问题
 

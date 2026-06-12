@@ -1,18 +1,7 @@
 ---
-  title: RAG 建库策略：不可一次性加载全部数据到显存/内存
-  domain: rag
-  tags:
-    - rag
-    - embedding
-    - chroma
-    - 建库
-    - 显存
-  source: hanged-man
-  status: published
-  created: 2026-04-13
-  confidence: 0.85
-  scope: broad
+{"title": "RAG 建库策略：不可一次性加载全部数据到显存/内存", "domain": "rag", "source": "hanged-man", "status": "published", "tags": [], "created": "2026-04-13", "updated": "2026-04-13", "confidence": 0.85, "scope": "broad"}
 ---
+
 
 ## 问题
 

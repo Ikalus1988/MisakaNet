@@ -1,11 +1,7 @@
 ---
-title: Config was last written by a newer OpenClaw (2026.
-domain: feishu
-source: bootstrap
-status: active
-confidence: 0.7
-created: 2026-04-01
+{"title": "Config was last written by a newer OpenClaw (2026.", "domain": "feishu", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 ## 背景
 [assistant] <think>

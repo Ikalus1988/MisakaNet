@@ -1,13 +1,7 @@
 ---
-title: cc-haha 配置 acceptEdits 权限模式减少确认提示
-domain: agent-medici
-subdomain: cc-haha
-source: bootstrap
-status: draft
-tags: ["project:agent-medici", "severity:low", "node:cc_haha"]
-confidence: 0.95
-created: 2026-05-12
+{"title": "cc-haha 配置 acceptEdits 权限模式减少确认提示", "domain": "agent-medici", "source": "bootstrap", "status": "draft", "tags": ["project:agent-medici", "severity:low", "node:cc_haha"], "created": "2026-05-12", "updated": "2026-05-12", "subdomain": "cc-haha", "confidence": 0.95}
 ---
+
 
 ## 问题
 

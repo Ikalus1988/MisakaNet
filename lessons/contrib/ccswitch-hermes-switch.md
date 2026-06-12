@@ -1,14 +1,7 @@
 ---
-confidence: 0.7
-created: '2026-05-02'
-domain: devops
-source: bootstrap
-status: draft
-tags:
-- node:cc_haha
-- bootstrap
-title: ccswitch-hermes-switch 踩坑记录
+{"title": "ccswitch-hermes-switch 踩坑记录", "domain": "devops", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-05-02", "updated": "2026-05-02", "confidence": 0.7, "- node": "cc_haha"}
 ---
+
 
 # ccswitch & hermes-switch — 双模型切换方案
 

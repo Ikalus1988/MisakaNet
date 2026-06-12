@@ -1,6 +1,7 @@
 ---
-{"title": "GitHub API 401 后本地凭证查找顺序", "domain": "devops", "tags": ["github", "api", "credential", "401", "auth", "pat"]}
+{"title": "GitHub API 401 后本地凭证查找顺序", "domain": "devops", "source": "unknown", "status": "draft", "tags": ["github", "api", "credential", "401", "auth", "pat"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

@@ -1,9 +1,7 @@
 ---
-title: "Pixel Art"
-source: "skill-pipeline"
-status: "draft"
-created: "2026-05-09"
+{"title": "Pixel Art", "domain": "general", "source": "skill-pipeline", "status": "draft", "tags": [], "created": "2026-05-09", "updated": "2026-05-09"}
 ---
+
 
 ## 背景
 

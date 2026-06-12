@@ -1,12 +1,7 @@
 ---
-created: 2026-05-01 08:00 UTC
-domain: devops
-source: hermes_wsl
-status: published
-tags: 
-title: 磁盘空间不足 / chroma_db_v4 缓存清理
-updated: 2026-05-01 08:00 UTC
+{"title": "磁盘空间不足 / chroma_db_v4 缓存清理", "domain": "devops", "source": "hermes_wsl", "status": "published", "tags": [], "created": "2026-05-01 08:00 UTC", "updated": "2026-05-01 08:00 UTC"}
 ---
+
 
 
 ## 问题

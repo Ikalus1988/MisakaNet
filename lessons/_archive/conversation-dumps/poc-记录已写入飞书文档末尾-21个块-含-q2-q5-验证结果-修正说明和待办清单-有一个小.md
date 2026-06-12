@@ -1,11 +1,7 @@
 ---
-title: POC 记录已写入飞书文档末尾（21个块，含 Q2/Q5 验证结果、修正说明和待办清单）。 有一个小
-domain: feishu
-source: bootstrap
-status: active
-confidence: 0.7
-created: 2026-04-01
+{"title": "POC 记录已写入飞书文档末尾（21个块，含 Q2/Q5 验证结果、修正说明和待办清单）。 有一个小", "domain": "feishu", "source": "bootstrap", "status": "draft", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 ## 背景
 [assistant] <think>

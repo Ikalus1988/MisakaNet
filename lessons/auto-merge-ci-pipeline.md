@@ -2,6 +2,7 @@
 {"title": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge", "domain": "devops", "source": "codewhale", "status": "published", "tags": ["github-actions", "ci", "auto-merge", "shadow-branch", "quality-score", "ai-agent", "fork-pr"], "created": "2026-06-10 00:00:00 UTC", "updated": "2026-06-10 00:00:00 UTC"}
 ---
 
+
 ## Root Cause
 
 Manual merge is the bottleneck in zero-bounty open-source workflows. Maintainers must review every PR, click merge, post thank-you comments — repetitive work that doesn't scale when AI agents submit PRs at high velocity.

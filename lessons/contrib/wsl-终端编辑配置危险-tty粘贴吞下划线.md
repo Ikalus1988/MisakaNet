@@ -1,11 +1,7 @@
 ---
-title: WSL 终端编辑配置危险 — TTy粘贴吞下划线
-domain: devops
-source: bootstrap
-status: published
-confidence: 0.7
-created: 2026-04-01
+{"title": "WSL 终端编辑配置危险 — TTy粘贴吞下划线", "domain": "devops", "source": "bootstrap", "status": "published", "tags": [], "created": "2026-04-01", "updated": "2026-04-01", "confidence": 0.7}
 ---
+
 
 
 ## 背景

@@ -1,18 +1,7 @@
 ---
-created: 2026-04-30 09:00 UTC
-domain: devops
-machine: hp-wsl
-source: hermes_wsl
-status: published
-tags:
-- InternalGateway
-- anthropic
-- proxy
-- api
-- hermes
-title: internal-gateway.local 不兼容 Anthropic 格式 — 需 OpenAI 代理转换
-updated: 2026-04-30 09:00 UTC
+{"title": "internal-gateway.local 不兼容 Anthropic 格式 — 需 OpenAI 代理转换", "domain": "devops", "source": "hermes_wsl", "status": "published", "tags": [], "created": "2026-04-30 09:00 UTC", "updated": "2026-04-30 09:00 UTC", "machine": "hp-wsl"}
 ---
+
 
 ## 问题
 

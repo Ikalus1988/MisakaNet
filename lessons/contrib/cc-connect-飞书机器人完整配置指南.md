@@ -1,6 +1,7 @@
 ---
-{"title": "cc-connect 飞书机器人完整配置指南", "domain": "feishu", "subdomain": "cc-connect", "source": "bootstrap", "status": "published", "confidence": "0.95", "created": "2026-05-19", "updated": "2026-05-19 08:59:26 UTC"}
+{"title": "cc-connect 飞书机器人完整配置指南", "domain": "feishu", "source": "bootstrap", "status": "published", "tags": [], "created": "2026-05-19", "updated": "2026-05-19 08:59:26 UTC", "subdomain": "cc-connect", "confidence": 0.95}
 ---
+
 
 ## cc-connect 飞书机器人完整配置指南
 

@@ -1,17 +1,7 @@
 ---
-  title: ST2 danielstarman MCP：选 Rare Relic 会卡死
-  domain: mcp
-  tags:
-    - st2
-    - slay-the-spire-2
-    - mcp
-    - automation
-  source: hanged-man
-  status: published
-  created: 2026-03-27
-  confidence: 0.95
-  scope: narrow
+{"title": "ST2 danielstarman MCP：选 Rare Relic 会卡死", "domain": "mcp", "source": "hanged-man", "status": "published", "tags": [], "created": "2026-03-27", "updated": "2026-03-27", "confidence": 0.95, "scope": "narrow"}
 ---
+
 
 ## 问题
 

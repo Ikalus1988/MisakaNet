@@ -1,17 +1,7 @@
 ---
-  title: GPT-SoVITS：HuBERT 必须 16kHz 且 get_model() 返回单体
-  domain: tts
-  tags:
-    - gpt-sovits
-    - hubert
-    - tts
-    - 音频处理
-  source: hanged-man
-  status: published
-  created: 2026-04-05
-  confidence: 0.9
-  scope: narrow
+{"title": "GPT-SoVITS：HuBERT 必须 16kHz 且 get_model() 返回单体", "domain": "tts", "source": "hanged-man", "status": "published", "tags": [], "created": "2026-04-05", "updated": "2026-04-05", "confidence": 0.9, "scope": "narrow"}
 ---
+
 
 ## 问题
 

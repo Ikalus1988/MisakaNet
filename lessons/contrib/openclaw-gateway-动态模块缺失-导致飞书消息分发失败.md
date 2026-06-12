@@ -1,13 +1,7 @@
 ---
-title: OpenClaw Gateway 动态模块缺失 — 飞书消息分发失败
-domain: feishu
-subdomain: openclaw-debug
-source: bootstrap
-status: published
-confidence: 1.0
-created: 2026-05-18
-tags: "node:misaka10004", "platform:wsl", "severity:critical", "project:misakanet"
+{"title": "OpenClaw Gateway 动态模块缺失 — 飞书消息分发失败", "domain": "feishu", "source": "bootstrap", "status": "published", "tags": ["node:misaka10004", "platform:wsl", "severity:critical", "project:misakanet"], "created": "2026-05-18", "updated": "2026-05-18", "subdomain": "openclaw-debug", "confidence": 1.0}
 ---
+
 
 
 ## 问题

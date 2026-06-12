@@ -1,6 +1,7 @@
 ---
-{"title": "静态页面调用外部 API 的容错设计原则", "domain": "frontend", "tags": ["api", "rate-limit", "static-site", "error-handling", "fault-tolerance"]}
+{"title": "静态页面调用外部 API 的容错设计原则", "domain": "frontend", "source": "unknown", "status": "draft", "tags": ["api", "rate-limit", "static-site", "error-handling", "fault-tolerance"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 

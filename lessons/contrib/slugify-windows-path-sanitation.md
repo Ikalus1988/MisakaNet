@@ -1,6 +1,7 @@
 ---
-{"title": "Slugify filename sanitation crash on Windows and WSL", "domain": "scripts", "tags": ["slugify", "windows", "wsl", "sanitation", "path-errors"]}
+{"title": "Slugify filename sanitation crash on Windows and WSL", "domain": "scripts", "source": "unknown", "status": "draft", "tags": ["slugify", "windows", "wsl", "sanitation", "path-errors"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 问题
 

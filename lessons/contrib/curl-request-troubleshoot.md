@@ -1,6 +1,7 @@
 ---
-{"title": "curl / wget 请求失败通用排查", "domain": "devops", "tags": ["network", "curl", "wget", "debug", "troubleshoot"]}
+{"title": "curl / wget 请求失败通用排查", "domain": "devops", "source": "unknown", "status": "draft", "tags": ["network", "curl", "wget", "debug", "troubleshoot"], "created": "2026-06-12 18:46:23 UTC", "updated": "2026-06-12 18:46:23 UTC"}
 ---
+
 
 ## 背景
 
