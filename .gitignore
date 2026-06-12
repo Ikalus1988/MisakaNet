@@ -30,3 +30,4 @@ audit_reports/
 *.rar
 *.zip
 *.exe
+scripts/_*.py
