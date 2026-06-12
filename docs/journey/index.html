@@ -205,6 +205,23 @@
   .log .line.ok { color: #3fb950; }
   .log .line.err { color: #f85149; }
   .log .line.warn { color: #d29922; }
+  .log .line.audit { color: #79c0ff; }
+  .log .line.scan { color: #d2a8ff; }
+  .log .line.merge { color: #ffa657; }
+
+  .ring-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+  }
+  .ring-1 { background: rgba(88,166,255,0.15); color: #58a6ff; border: 1px solid rgba(88,166,255,0.3); }
+  .ring-2 { background: rgba(210,168,255,0.15); color: #d2a8ff; border: 1px solid rgba(210,168,255,0.3); }
+  .ring-3 { background: rgba(63,185,80,0.15); color: #3fb950; border: 1px solid rgba(63,185,80,0.3); }
 
   .badge {
     display: inline-block;
@@ -277,10 +294,19 @@ function renderProgress() {
   `).join('');
 }
 
-function addLog(msg, type = 'info') {
+function addLog(msg, type = 'auto') {
   const area = document.getElementById('logArea');
   area.classList.remove('hidden');
   const div = document.createElement('div');
+  if (type === 'auto') {
+    if (/Audit|审计|Score|coverage/i.test(msg)) type = 'audit';
+    else if (/Scan|扫描|discover|发现/i.test(msg)) type = 'scan';
+    else if (/Merge|合并|merged/i.test(msg)) type = 'merge';
+    else if (/✅|pass|Success|成功|ok/i.test(msg)) type = 'ok';
+    else if (/❌|fail|Error|error|missing|blocked/i.test(msg)) type = 'err';
+    else if (/⚠️|warn|WARN/i.test(msg)) type = 'warn';
+    else type = 'info';
+  }
   div.className = `line ${type}`;
   div.textContent = msg;
   area.appendChild(div);
@@ -316,9 +342,9 @@ function renderStep(idx) {
 }
 
 function renderDiscover(card) {
-  addLog('Agent scan: scanning Ikalus1988/MisakaNet for open issues...', 'info');
-  setTimeout(() => addLog('Agent scan: found issue #191 — "good first issue: Add Chinese translation of README.md"', 'ok'), 300);
-  setTimeout(() => addLog('Agent scan: labels: good-first-issue, documentation | AC: 4 items | Est. effort: 30min', 'info'), 600);
+  addLog('Agent scan: scanning Ikalus1988/MisakaNet for open issues...');
+  setTimeout(() => addLog('Agent scan: found issue #191 — "good first issue: Add Chinese translation of README.md"'), 300);
+  setTimeout(() => addLog('Agent scan: labels: good-first-issue, documentation | AC: 4 items | Est. effort: 30min'), 600);
   card.innerHTML = `
     <div class="card-header">
       <div class="icon icon-gh">🔍</div>
@@ -337,6 +363,7 @@ function renderDiscover(card) {
               <span class="badge badge-green">good first issue</span>
               <span class="badge badge-blue">documentation</span>
               <span class="badge badge-yellow">effort: 30min</span>
+              <span class="ring-badge ring-3">🌱 Ring-3</span>
             </div>
           </div>
         </div>
@@ -351,8 +378,8 @@ function renderDiscover(card) {
 }
 
 function renderClaim(card) {
-  addLog('User: commenting /claim on issue #191...', 'info');
-  setTimeout(() => addLog('GitHub: 4-hour exclusive window locked for baobao/mkcash', 'ok'), 400);
+  addLog('User: commenting /claim on issue #191...');
+  setTimeout(() => addLog('GitHub: 4-hour exclusive window locked for baobao/mkcash'), 400);
   card.innerHTML = `
     <div class="card-header">
       <div class="icon icon-user">👤</div>
@@ -371,8 +398,8 @@ function renderClaim(card) {
 }
 
 function renderWelcome(card) {
-  addLog('Bot: detecting first-time comment on good-first-issue...', 'info');
-  setTimeout(() => addLog('github-actions[bot]: posting welcome message...', 'ok'), 500);
+  addLog('Bot: detecting first-time comment on good-first-issue...');
+  setTimeout(() => addLog('github-actions[bot]: posting welcome message...'), 500);
   card.innerHTML = `
     <div class="card-header">
       <div class="icon icon-bot">🤖</div>
@@ -480,11 +507,11 @@ function renderDCO(card) {
 }
 
 function renderAudit(card) {
-  addLog('Misaka Network Agent Auditor: running full CI suite...', 'info');
-  setTimeout(() => addLog('Quality Score: 85/100 — PASS', 'ok'), 500);
-  setTimeout(() => addLog('PR Size: 2 files, 124 additions — OK', 'ok'), 800);
-  setTimeout(() => addLog('Test Suite: pytest — ✅ PASS, coverage 82%', 'ok'), 1100);
-  setTimeout(() => addLog('Shadow Branch: isolated eval — ✅ clean', 'ok'), 1400);
+  addLog('Misaka Network Agent Auditor: running full CI suite...');
+  setTimeout(() => addLog('Quality Score: 85/100 — PASS'), 500);
+  setTimeout(() => addLog('PR Size: 2 files, 124 additions — OK'), 800);
+  setTimeout(() => addLog('Test Suite: pytest — ✅ PASS, coverage 82%'), 1100);
+  setTimeout(() => addLog('Shadow Branch: isolated eval — ✅ clean'), 1400);
   card.innerHTML = `
     <div class="card-header">
       <div class="icon icon-ci">🧪</div>
@@ -525,9 +552,9 @@ function renderAudit(card) {
 }
 
 function renderMerge(card) {
-  addLog('Human maintainer: reviewing PR #196...', 'info');
-  setTimeout(() => addLog('Human maintainer: all AC checked, tests passing — merging...', 'ok'), 500);
-  setTimeout(() => addLog('Human maintainer: posting thank-you comment with ⭐ prompt', 'ok'), 800);
+  addLog('Human maintainer: reviewing PR #196...');
+  setTimeout(() => addLog('Human maintainer: all AC checked, tests passing — merging...'), 500);
+  setTimeout(() => addLog('Human maintainer: posting thank-you comment with ⭐ prompt'), 800);
   card.innerHTML = `
     <div class="card-header">
       <div class="icon icon-gh">✅</div>
