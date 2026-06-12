@@ -36,7 +36,9 @@ This project supports both human and AI contributors. Whichever you are, the rul
 - All Acceptance Criteria must be checked
 - Tests must pass
 
-Need help? Just ask in this thread. Happy coding! 🚀`;
+Need help? Just ask in this thread. Happy coding! 🚀
+
+⭐ If you find this project useful, consider [starring the repo](https://github.com/Ikalus1988/MisakaNet) — it helps more people discover the network.`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,

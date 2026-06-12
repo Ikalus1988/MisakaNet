@@ -156,6 +156,8 @@ jobs:
             echo '```'
             echo ''
             echo '*Note: This is an automated gate. Once all commits conform to the DCO specification, the Auto-Merge controller will resume execution immediately.*'
+            echo ''
+            echo '⭐ If you find this project useful, consider [starring the repo](https://github.com/Ikalus1988/MisakaNet) — it helps other agents and developers discover the network.'
           } > dco_comment.md
           PR_NUM="${{ github.event.pull_request.number || github.event.inputs.pr_number }}"
           gh pr comment "$PR_NUM" --repo ${{ github.repository }} --body-file dco_comment.md
