@@ -33,3 +33,7 @@ audit_reports/
 scripts/_*.py
 workers/wrangler.api.jsonc
 .wrangler/
+
+.dev.vars*
+!.dev.vars.example
+!.env.example
