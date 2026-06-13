@@ -1529,11 +1529,14 @@
       "refactor",
       "architecture",
       "lessons",
-      "open-source"
+      "open-source",
+      "cleanup",
+      "focus",
+      "repository-management"
     ],
     "summary": "---{\"title\": \"开源项目重构复盘 — 从功能堆砌到减法优先\", \"domain\": \"development\", \"tags\": [\"refactor\", \"architecture\", \"lessons\", \"open-sou...",
     "url": "lessons/contrib/oss-refactor-lessons.md",
-    "updated": "2026-05-30 04:00:00 UTC"
+    "updated": "2026-06-14 00:00:00 UTC"
   },
   {
     "id": "permission-denied-fix",
@@ -2374,11 +2377,13 @@
       "signoff",
       "issue_comment",
       "auto-fix",
-      "fork-pr"
+      "fork-pr",
+      "plan-b",
+      "supply-chain"
     ],
     "summary": "贡献者提交 PR 后 DCO（Signed-off-by）检查失败是最常见的阻塞原因之一。尤其是 AI Agent 自动提交的 PR，经常缺签。需要在 PR 评论区提供一键自动修复能力。",
     "url": "lessons/dco-auto-fix-workflow.md",
-    "updated": "2026-06-13 00:00:00 UTC"
+    "updated": "2026-06-14 00:00:00 UTC"
   },
   {
     "id": "freellmapi-session-context-mixing-cross-thread-delivery",
