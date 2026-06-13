@@ -2200,7 +2200,7 @@ async function loadRecentRegistrations() {
 
   try {
     const issues = await fetchJSON(
-      `${GITHUB_PROXY}/issues?labels=registration&state=all&sort=created&direction=desc&per_page=20`
+      `${GITHUB_PROXY}/issues?labels=registration&state=all&sort=created&direction=desc&per_page=100`
     );
 
     const displayIssues = issues.filter(i => !i.pull_request);
@@ -2304,12 +2304,12 @@ async function loadActiveNodes() {
   const list = document.getElementById("active-list");
 
   try {
-    const regs = await fetchJSON(`${GITHUB_PROXY}/issues?labels=registration&state=all&sort=created&direction=desc&per_page=50`);
+    const regs = await fetchJSON(`${GITHUB_PROXY}/issues?labels=registration&state=all&sort=created&direction=desc&per_page=100`);
     const regIssues = regs.filter(i => !i.pull_request);
     if (regIssues.length === 0) return;
 
     const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
-    const usageIssues = await fetchJSON(`${GITHUB_PROXY}/issues?labels=usage&state=all&sort=created&direction=desc&per_page=50`);
+    const usageIssues = await fetchJSON(`${GITHUB_PROXY}/issues?labels=usage&state=all&sort=created&direction=desc&per_page=100`);
     const recentUsage = usageIssues.filter(i => !i.pull_request && i.created_at >= seventyTwoHoursAgo);
 
     const activeNodes = new Set();
@@ -2412,12 +2412,12 @@ async function loadContributors() {
   const list = document.getElementById("contrib-list");
 
   try {
-    const issues = await fetchJSON(`${GITHUB_PROXY}/issues?labels=usage&state=all&sort=created&direction=desc&per_page=50`);
+    const issues = await fetchJSON(`${GITHUB_PROXY}/issues?labels=usage&state=all&sort=created&direction=desc&per_page=100`);
     const usageIssues = issues.filter(i => !i.pull_request);
 
     // Also fetch merged PRs to count lesson contributions from external users
     try {
-      const prs = await fetchJSON(`${GITHUB_PROXY}/pulls?state=closed&sort=updated&direction=desc&per_page=20`);
+      const prs = await fetchJSON(`${GITHUB_PROXY}/pulls?state=closed&sort=updated&direction=desc&per_page=100`);
       // All closed PRs count as contributions (merged via API or force-push merged)
       const closedPRs = prs.filter(p => p.closed_at && !p.draft);
       // Build a lookup to avoid adding duplicate contributors
