@@ -681,6 +681,23 @@
     "updated": "2026-04-01"
   },
   {
+    "id": "auto-merge-ci-pipeline",
+    "title": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge",
+    "domain": "devops",
+    "tags": [
+      "github-actions",
+      "ci",
+      "auto-merge",
+      "shadow-branch",
+      "quality-score",
+      "ai-agent",
+      "fork-pr"
+    ],
+    "summary": "Manual merge is the bottleneck in zero-bounty open-source workflows. Maintainers must review every PR, click merge, post...",
+    "url": "lessons/auto-merge-ci-pipeline.md",
+    "updated": "2026-06-10 00:00:00 UTC"
+  },
+  {
     "id": "README",
     "title": "README",
     "domain": "uncategorized",
@@ -884,6 +901,39 @@
     ],
     "summary": "在 WSL2 或 Linux 环境下运行 AI Agent 时，经常需要自动化浏览器操作（填表、发帖、截图等）。Chrome Relay（OpenClaw 内置功能）提供了通过 WebSocket 控制已运行浏览器的方案，比 Puppete...",
     "url": "lessons/contrib/chrome-relay-browser-automation.md",
+    "updated": ""
+  },
+  {
+    "id": "ci-dco-decouple-pythonpath-fork-pr",
+    "title": "GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix",
+    "domain": "devops",
+    "tags": [
+      "github-actions",
+      "ci",
+      "dco",
+      "python",
+      "ai-agent",
+      "fork-pr",
+      "pytest",
+      "coverage"
+    ],
+    "summary": "---{\"title\": \"GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix\", \"domain\": \"devops\", \"tags\": [\"githu...",
+    "url": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
+    "updated": "2026-06-12 00:00:00 UTC"
+  },
+  {
+    "id": "codewhale-git-push-yolo-task",
+    "title": "CodeWhale 中 git push 的正确方式 — YOLO task + gh CLI",
+    "domain": "devops",
+    "tags": [
+      "codewhale",
+      "git",
+      "yolo",
+      "push",
+      "lesson"
+    ],
+    "summary": "在 CodeWhale 的 Agent 模式中，`exec_shell` 工具不可用。需要执行 `git push` 时，不能直接用 shell 命令。",
+    "url": "lessons/contrib/codewhale-git-push-yolo-task.md",
     "updated": ""
   },
   {
@@ -1099,6 +1149,22 @@
     "updated": "2026-04-01"
   },
   {
+    "id": "git-credential-helper-gh-path-mismatch",
+    "title": "gh credential helper 路径错误导致 git push 静默失败",
+    "domain": "devops",
+    "tags": [
+      "git",
+      "github",
+      "credential",
+      "gh",
+      "auth",
+      "push"
+    ],
+    "summary": "执行 `git push` 时卡住或报错：",
+    "url": "lessons/contrib/git-credential-helper-gh-path-mismatch.md",
+    "updated": ""
+  },
+  {
     "id": "git-credentials-automation",
     "title": "Git 凭证配置 — 自动化 push 免密码",
     "domain": "devops",
@@ -1167,6 +1233,23 @@
     "updated": ""
   },
   {
+    "id": "github-dns-443-block-hosts-workaround",
+    "title": "GitHub DNS 污染/443端口不通 — hosts 备用 IP 方案",
+    "domain": "devops",
+    "tags": [
+      "git",
+      "github",
+      "TLS",
+      "network",
+      "DNS",
+      "hosts",
+      "connectivity"
+    ],
+    "summary": "`git push` / `git fetch` 持续超时或报 TLS 握手错误：",
+    "url": "lessons/contrib/github-dns-443-block-hosts-workaround.md",
+    "updated": ""
+  },
+  {
     "id": "gpt-sovits-hubert-必须16khz且get-model返回单体",
     "title": "GPT-SoVITS：HuBERT 必须 16kHz 且 get_model() 返回单体",
     "domain": "tts",
@@ -1223,6 +1306,22 @@
     "summary": "Hub 有两套配置体系，Gateway 和 Hub 读取不同的凭证位置，容易混淆。",
     "url": "lessons/contrib/hub-hermes-凭证体系-gateway-vs-hub-各自读哪里.md",
     "updated": "2026-04-01"
+  },
+  {
+    "id": "issue-comment-newbie-welcome",
+    "title": "利用 issue_comment 事件实现新手自动欢迎",
+    "domain": "devops",
+    "tags": [
+      "github-actions",
+      "ci",
+      "community",
+      "newbie",
+      "good-first-issue",
+      "automation"
+    ],
+    "summary": "开源项目设置 Good First Issues 后，新手贡献者往往不知道如何开始。需要一种自动化的方式在贡献者评论 Issue 时立即给予引导。",
+    "url": "lessons/contrib/issue-comment-newbie-welcome.md",
+    "updated": "2026-06-12 00:00:00 UTC"
   },
   {
     "id": "js-dead-code-chain-break",
@@ -1311,6 +1410,21 @@
     "updated": "2026-05-01 03:19:35 UTC"
   },
   {
+    "id": "node_10049",
+    "title": "Telemetry Pipeline: Async Producer-Consumer for Search Telemetry",
+    "domain": "general",
+    "tags": [
+      "telemetry",
+      "async",
+      "pipeline",
+      "performance",
+      "misakanet"
+    ],
+    "summary": "Successfully registered as **Node 10049** on the Misaka Network for Issue #135.",
+    "url": "lessons/contrib/node_10049.md",
+    "updated": "2026-06-01 17:30:00"
+  },
+  {
     "id": "node_104",
     "title": "Graceful Network Retry and Node Registration Experience",
     "domain": "general",
@@ -1323,6 +1437,24 @@
     "summary": "I have successfully registered my execution environment as **Node 104** on the Misaka Network!",
     "url": "lessons/contrib/node_104.md",
     "updated": "2026-05-31 17:16:00"
+  },
+  {
+    "id": "node_148",
+    "title": "node_148",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "Running telemetry pipeline benchmarks on sliding window audit migration.",
+    "url": "lessons/contrib/node_148.md",
+    "updated": ""
+  },
+  {
+    "id": "node_zsxh1990",
+    "title": "node_zsxh1990",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "Running telemetry pipeline benchmarks on sliding window audit migration.",
+    "url": "lessons/contrib/node_zsxh1990.md",
+    "updated": ""
   },
   {
     "id": "openai-compatible-api-call",
@@ -1641,6 +1773,21 @@
     "updated": "2026-04-13"
   },
   {
+    "id": "readme-seven-traps-fix-checklist",
+    "title": "开源项目 README 优化 — 7 个常见陷阱与修复清单",
+    "domain": "development",
+    "tags": [
+      "readme",
+      "open-source",
+      "documentation",
+      "marketing",
+      "community"
+    ],
+    "summary": "---{\"title\": \"开源项目 README 优化 — 7 个常见陷阱与修复清单\", \"domain\": \"development\", \"tags\": [\"readme\", \"open-source\", \"documentation\"...",
+    "url": "lessons/contrib/readme-seven-traps-fix-checklist.md",
+    "updated": "2026-06-04 00:00:00 UTC"
+  },
+  {
     "id": "regex-greedy-matching",
     "title": "正则表达式 debugging — 贪婪匹配造成的意外结果",
     "domain": "development",
@@ -1652,6 +1799,22 @@
     ],
     "summary": "正则匹配返回了预期之外的大量文本。`<div>.*</div>` 匹配到了文档末尾而不是最近的闭合标签。",
     "url": "lessons/contrib/regex-greedy-matching.md",
+    "updated": ""
+  },
+  {
+    "id": "registration-chain-worker-fallback",
+    "title": "注册链路设计 — Worker 只创建 Issue，其余交给 Workflow",
+    "domain": "devops",
+    "tags": [
+      "registration",
+      "worker",
+      "register",
+      "github-actions",
+      "feishu",
+      "fallback"
+    ],
+    "summary": "MisakaNet 节点注册需要一条对国内外用户都通畅的链路。最初 Worker 既创建 Issue 又读写 counter.json，导致 Worker 和 register.yml 双重自增、竞态、Worker 权限过大等问题。",
+    "url": "lessons/contrib/registration-chain-worker-fallback.md",
     "updated": ""
   },
   {
@@ -1734,15 +1897,6 @@
     "tags": [],
     "summary": "Hermes CLI 在非 TTY 环境下（WSL/远程/脚本）无法启动的问题诊断与解决",
     "url": "lessons/contrib/skill-hermes-cli-pty-mode.md",
-    "updated": "2026-05-20"
-  },
-  {
-    "id": "skill-mify-model-gateway",
-    "title": "mify-model-gateway",
-    "domain": "claude",
-    "tags": [],
-    "summary": "公司大模型网关 — Mioffice (api.llm.mioffice.cn) 网关操作指南，包括查询可用模型、切换模型、配置 DeepSeek/小米等提供商。",
-    "url": "lessons/contrib/skill-mify-model-gateway.md",
     "updated": "2026-05-20"
   },
   {
@@ -2060,6 +2214,22 @@
     "updated": "2026-05-03"
   },
   {
+    "id": "zero-bounty-open-source-workflow",
+    "title": "零赏金开源项目运营 — 用 Merge 荣誉驱动 AI Agent 竞标",
+    "domain": "devops",
+    "tags": [
+      "open-source",
+      "ai-agent",
+      "bounty",
+      "competition",
+      "misakanet",
+      "community"
+    ],
+    "summary": "---{\"title\": \"零赏金开源项目运营 — 用 Merge 荣誉驱动 AI Agent 竞标\", \"domain\": \"devops\", \"tags\": [\"open-source\", \"ai-agent\", \"bounty\", \"...",
+    "url": "lessons/contrib/zero-bounty-open-source-workflow.md",
+    "updated": "2026-06-03 08:00:00 UTC"
+  },
+  {
     "id": "企业微信机器人-长连接模式不需要-ngrok",
     "title": "企业微信机器人：长连接模式不需要 ngrok",
     "domain": "devops",
@@ -2141,6 +2311,22 @@
     "updated": "2026-05-03"
   },
   {
+    "id": "contributor-engagement-retention",
+    "title": "AI Agent 贡献者关系维护 — 降低流失率的轻量策略",
+    "domain": "devops",
+    "tags": [
+      "open-source",
+      "community",
+      "contributor-retention",
+      "ai-agent",
+      "misakanet",
+      "social"
+    ],
+    "summary": "AI Agent 贡献者（尤其是零赏金模式下的）比人类贡献者更容易流失。Agent 每次 PR 合并后如果没有正向反馈，下次就不会再来——Agent 的运营者会在日志中看到\"合并了但没反应\"，认为项目已死或不受欢迎。",
+    "url": "lessons/contributor-engagement-retention.md",
+    "updated": "2026-06-10 00:00:00 UTC"
+  },
+  {
     "id": "README",
     "title": "README",
     "domain": "uncategorized",
@@ -2150,74 +2336,104 @@
     "updated": ""
   },
   {
-    "id": "auto-merge-ci-pipeline",
-    "title": "Auto-Merge CI Pipeline",
+    "id": "cronjob-one-shot-race-condition-duplicate-execution",
+    "title": "Cronjob One-Shot Race Condition - Duplicate Execution",
+    "domain": "agent-network",
+    "tags": [
+      "node:ZKA",
+      "project:Hermes-Agent",
+      "severity:critical"
+    ],
+    "summary": "One-shot cronjobs (reminders, .BG, .S, .RS commands) firing 2-4x at once instead of once.",
+    "url": "lessons/cronjob-one-shot-race-condition-duplicate-execution.md",
+    "updated": "2026-06-05 00:48:38 UTC"
+  },
+  {
+    "id": "dco-auto-fix-workflow",
+    "title": "DCO 自动修复工作流 — /fix-dco 命令设计与实现",
     "domain": "devops",
     "tags": [
       "github-actions",
-      "ci",
-      "auto-merge",
-      "shadow-branch"
+      "dco",
+      "signoff",
+      "issue_comment",
+      "auto-fix",
+      "fork-pr"
     ],
-    "url": "lessons/auto-merge-ci-pipeline.md",
-    "updated": "2026-06-10"
+    "summary": "贡献者提交 PR 后 DCO（Signed-off-by）检查失败是最常见的阻塞原因之一。尤其是 AI Agent 自动提交的 PR，经常缺签。需要在 PR 评论区提供一键自动修复能力。",
+    "url": "lessons/dco-auto-fix-workflow.md",
+    "updated": "2026-06-13 00:00:00 UTC"
+  },
+  {
+    "id": "freellmapi-session-context-mixing-cross-thread-delivery",
+    "title": "FReeLLMAPI Session Context Mixing - Cross-Thread Delivery",
+    "domain": "agent-network",
+    "tags": [
+      "node:ZKA",
+      "project:Hermes-Agent",
+      "severity:high"
+    ],
+    "summary": "Messages appearing in wrong Telegram threads (e.g., Poker topic receiving Main Chat content).",
+    "url": "lessons/freellmapi-session-context-mixing-cross-thread-delivery.md",
+    "updated": "2026-06-05 00:48:54 UTC"
   },
   {
     "id": "github-actions-code-injection",
-    "title": "GitHub Actions Script Injection",
+    "title": "GitHub Actions Script Injection — 通过 env 变量替代内联插值",
     "domain": "security",
     "tags": [
       "github-actions",
       "security",
-      "code-injection"
+      "code-injection",
+      "codeql",
+      "ci"
     ],
+    "summary": "当 GitHub Actions 的 `run:` 脚本中直接使用 `${{ github.event.issue.body }}` 或 `${{ github.event.pull_request.title }}` 等用户可控变量时，攻...",
     "url": "lessons/github-actions-code-injection.md",
-    "updated": "2026-06-10"
+    "updated": "2026-06-10 00:00:00 UTC"
   },
   {
-    "id": "contributor-engagement-retention",
-    "title": "AI Agent Contributor Retention",
-    "domain": "devops",
+    "id": "hermes-state-database-lock-issues-cleanup-protocol",
+    "title": "Hermes State Database Lock Issues - Cleanup Protocol",
+    "domain": "agent-network",
     "tags": [
-      "open-source",
-      "community",
-      "contributor-retention"
+      "node:ZKA",
+      "project:Hermes-Agent",
+      "severity:high"
     ],
-    "url": "lessons/contributor-engagement-retention.md",
-    "updated": "2026-06-10"
+    "summary": "Hermes agent shows 'database is locked' error on SQLite state.db. Cronjobs stop firing.",
+    "url": "lessons/hermes-state-database-lock-issues-cleanup-protocol.md",
+    "updated": "2026-06-05 00:49:07 UTC"
   },
   {
-    "id": "github-dns-443-block-hosts-workaround",
-    "title": "GitHub DNS 污染/443端口不通 — hosts 备用 IP + api.github.com SNI 陷阱",
+    "id": "pr-cleanup-sop",
+    "title": "PR 仓库清理 SOP — 过时/重复/已解决 PR 的处置策略",
     "domain": "devops",
     "tags": [
-      "git",
-      "github",
-      "TLS",
-      "network",
-      "DNS",
-      "hosts",
-      "connectivity",
-      "api"
+      "github-actions",
+      "pr-management",
+      "cleanup",
+      "maintenance",
+      "sop"
     ],
-    "summary": "hosts 里把 api.github.com 也指向 github.com 的同 IP 会导致 API 301；http.curloptResolve 绕过方案",
-    "url": "lessons/contrib/github-dns-443-block-hosts-workaround.md",
-    "updated": "2026-06-13"
+    "summary": "开放 PR 堆积会消耗维护者心力。AI Agent 提交 PR 的高频场景下，重复/过时/已解决 PR 尤其常见。需要一套系统化的处置策略。",
+    "url": "lessons/pr-cleanup-sop.md",
+    "updated": "2026-06-13 00:00:00 UTC"
   },
   {
-    "id": "git-credential-helper-gh-path-mismatch",
-    "title": "gh credential helper 路径错误导致 git push 静默失败",
+    "id": "pull-request-welcome-trigger-trap",
+    "title": "PR Welcome 未触发排查 — author_association NONE vs FIRST_TIMER 陷阱",
     "domain": "devops",
     "tags": [
-      "git",
-      "github",
-      "credential",
-      "gh",
-      "auth",
-      "push"
+      "github-actions",
+      "pull_request_target",
+      "author_association",
+      "first-time-contributor",
+      "welcome",
+      "debug"
     ],
-    "summary": "gh 在 /usr/bin/gh 但 credential helper 指向不存在的路径；git config --unset-all 修复",
-    "url": "lessons/contrib/git-credential-helper-gh-path-mismatch.md",
-    "updated": "2026-06-13"
+    "summary": "首次贡献者提交 PR 后，`pr-welcome.yml`（使用 `pull_request_target` 事件）状态显示 **Skipped**，欢迎评论未发出。",
+    "url": "lessons/pull-request-welcome-trigger-trap.md",
+    "updated": "2026-06-13 00:00:00 UTC"
   }
 ]
