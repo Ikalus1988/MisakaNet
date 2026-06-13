@@ -9,23 +9,23 @@
 
 | Area | Item | Priority | Depends On |
 |------|------|----------|------------|
-| **Quality scoring** | Add `quality_score` to lesson schema + auto-calculate in CI | P0 | — |
-| **Governance** | Define trust tiers in machine-readable config (misaka-protocol.json) | P0 | — |
-| **Contributor wall** | Fix time-decay formula — cap per-PR weight, remove contributor disappearance | P0 | PR merge + deploy |
-| **Trust system** | Formalize GitHub-verified vs mail-verified vs web-verified tiers | P1 | Registration channels stable |
-| **Log Harvester CLI** | `misaka harvest` — stdin/bash-history → auto-generate SKP lesson | P1 | CLI interface defined |
-| **Ecosystem config** | Harvest tool interface declared in misaka-protocol.json | P1 | — |
-| **Asset isolation** | Move docs/frontend assets to sidecar repository or `/web` | P1 | — |
+| **Quality scoring** | Add `quality_score` to lesson schema + auto-calculate in CI | P0 | [#210](https://github.com/Ikalus1988/MisakaNet/issues/210) |
+| **Governance** | Define trust tiers in machine-readable config (misaka-protocol.json) | P0 | [#211](https://github.com/Ikalus1988/MisakaNet/issues/211) |
+| **Contributor wall** | Fix time-decay formula — cap per-PR weight, remove contributor disappearance | P0 | [#212](https://github.com/Ikalus1988/MisakaNet/issues/212) |
+| **Trust system** | Formalize GitHub-verified vs mail-verified vs web-verified tiers | P1 | [#213](https://github.com/Ikalus1988/MisakaNet/issues/213) |
+| **Log Harvester CLI** | `misaka harvest` — stdin/bash-history → auto-generate SKP lesson | P1 | [#214](https://github.com/Ikalus1988/MisakaNet/issues/214) |
+| **Ecosystem config** | Harvest tool interface declared in misaka-protocol.json | P1 | [#215](https://github.com/Ikalus1988/MisakaNet/issues/215) |
+| **Asset isolation** | Move docs/frontend assets to sidecar repository or `/web` | P1 | [#216](https://github.com/Ikalus1988/MisakaNet/issues/216) |
 
 ## Medium-term (3–9 months) — Next
 
 | Area | Item | Priority | Depends On |
 |------|------|----------|------------|
-| **Reputation system** | Reuse signal: count "👍 useful" clicks + cross-lesson references | P0 | Schema stable >100 lessons |
-| **Reaction collection** | Frontend "👍 helpful" button → `data/reactions.json` (anonymous, git-backed) | P1 | Frontend deploy pipeline |
+| **Reputation system** | Reuse signal: count "👍 useful" clicks + cross-lesson references | P0 | [#217](https://github.com/Ikalus1988/MisakaNet/issues/217) |
+| **Reaction collection** | Frontend "👍 helpful" button → `data/reactions.json` (anonymous, git-backed) | P1 | [#218](https://github.com/Ikalus1988/MisakaNet/issues/218) |
 | **Cross-reference auto-detect** | CI scans lessons for `[[lesson-id]]` links, builds reference graph | P2 | Schema stable |
-| **Rank change notifications** | GitHub Issue auto-published when leaderboard #1 changes | P1 | Leaderboard watch deployed |
-| **Personal rank alerts** | Notify individual contributors when they move up/down | P2 | Contact endpoint in registration |
+| **Rank change notifications** | GitHub Issue auto-published when leaderboard #1 changes | P1 | [#219](https://github.com/Ikalus1988/MisakaNet/issues/219) |
+| **Personal rank alerts** | Notify individual contributors when they move up/down | P1 | [#220](https://github.com/Ikalus1988/MisakaNet/issues/220) |
 | **PR scoring** | Score PRs by complexity (files + lines + test coverage) | P2 | Quality gate stable |
 | **Seat belt mechanism** | Auto-cap contribution weight for very high-frequency contributors (sigmoid cap) | P2 | Leaderboard data >50 contributors |
 
