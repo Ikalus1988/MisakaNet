@@ -1,0 +1,39 @@
+name: Leaderboard Watch
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compute and compare leaderboard
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 scripts/leaderboard_watch.py 2>&1
+
+      - name: Commit updated leaderboard snapshot
+        run: |
+          if [ -f data/leaderboard.json ]; then
+            git config user.name "misakanet-bot"
+            git config user.email "bot@misakanet.org"
+            git add data/leaderboard.json
+            git diff --cached --quiet || git commit -s -m "chore: update leaderboard snapshot [skip ci]"
+            git push
+          fi
