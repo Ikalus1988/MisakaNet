@@ -51,10 +51,11 @@ jobs:
 
       - name: Extract node ID (for email-register) or assign new
         id: assign
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
         run: |
-          TITLE="${{ github.event.issue.title }}"
           # Check if this is an email-register issue (already assigned by Worker)
-          EMAIL_NODE=$(echo "$TITLE" | grep -oP 'Misaka\d{5}' || true)
+          EMAIL_NODE=$(echo "$ISSUE_TITLE" | grep -oP 'Misaka\d{5}' || true)
           if [ -n "$EMAIL_NODE" ]; then
             echo "NODE_ALREADY_ASSIGNED=true" >> "$GITHUB_OUTPUT"
             echo "USER=$EMAIL_NODE" >> "$GITHUB_OUTPUT"
