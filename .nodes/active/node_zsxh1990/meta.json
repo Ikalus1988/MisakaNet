@@ -1,0 +1,16 @@
+{
+  "node_id": "node_zsxh1990",
+  "swarm": "misakanet",
+  "description": "Focus: Agent autonomy, memory topologies, telemetry pipeline. Contributions: PR #147.",
+  "registered_at": "2026-06-13T03:13:22Z",
+  "owner": "zsxh1990",
+  "platform": "Linux",
+  "domains": [
+    "agent-autonomy",
+    "memory-topologies",
+    "telemetry-pipeline"
+  ],
+  "preferences": {
+    "arbitration_domain_authority": {}
+  }
+}
