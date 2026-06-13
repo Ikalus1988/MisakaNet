@@ -112,15 +112,19 @@ jobs:
 
       - name: Post welcome message with entry test
         uses: actions/github-script@v7
+        env:
+          NODE_ALREADY_ASSIGNED: ${{ steps.assign.outputs.NODE_ALREADY_ASSIGNED }}
+          NEXT: ${{ steps.assign.outputs.NEXT }}
+          USER: ${{ steps.assign.outputs.USER }}
         with:
           script: |
-            const alreadyAssigned = '${{ steps.assign.outputs.NODE_ALREADY_ASSIGNED }}' === 'true';
-            const num = parseInt('${{ steps.assign.outputs.NEXT }}');
+            const alreadyAssigned = process.env.NODE_ALREADY_ASSIGNED === 'true';
+            const num = parseInt(process.env.NEXT);
             if (!num || isNaN(num)) {
               core.setFailed('No node number assigned — previous step failed');
               return;
             }
-            const user = '${{ steps.assign.outputs.USER }}';
+            const user = process.env.USER;
             const avatarUrl = `https://raw.githubusercontent.com/${context.repo.owner}/${context.repo.repo}/main/avatars/${user}.png`;
 
             await github.rest.issues.createComment({
