@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CLI 薄包装层 — 核心实现在 misakanet/search/engine.py"""
+"""CLI thin wrapper — core implementation in misakanet/search/engine.py"""
 import sys
 import time
 from misakanet.search.engine import *
@@ -76,7 +76,7 @@ def main():
     t0 = time.time()
     found_any = False
 
-    # --suggest 模式：≥2字符时列出匹配标题
+    # --suggest mode: list matching titles when query >= 2 chars
     if suggest and len(query) >= 2:
         q = query.lower()
         lessons_docs = _load_docs(LESSONS, is_lesson=True) if mode in ("all", "lessons") else []
@@ -87,12 +87,12 @@ def main():
             if q in d.title.lower() or q in d.domain.lower():
                 matches.append(d)
         if matches:
-            print("  建议:")
+            print("  Suggestions:")
             for d in matches[:top_k]:
                 tag = f"[{d.domain}]" if d.domain else ""
                 print(f"    {tag:<18} {d.title}")
         else:
-            print(f"  (无匹配)")
+            print(f"  (No matches)")
         _show_timing(time.time() - t0, len(all_docs))
         return
 
@@ -101,25 +101,25 @@ def main():
     if use_semantic:
         try:
             from storage.vector_store import generate_embedding
-            print("  🔬 语义检索已启用")
+            print("  🔬 Semantic search enabled")
         except ImportError:
-            print("  ⚠️ --semantic 需要 sentence-transformers，降级为 BM25")
+            print("  ⚠️ --semantic requires sentence-transformers, falling back to BM25")
     if lessons_docs:
         ranked = _rank_docs(query, lessons_docs, titles_only, broad_only)
         found = _format_output(ranked, titles_only, top_k,
-                               mode_label=f"lessons/  (全部 {len(lessons_docs)} 篇)",
+                               mode_label=f"lessons/  (All {len(lessons_docs)} items)",
                                query=query)
         found_any = found_any or found
     if ref_docs:
         ranked = _rank_docs(query, ref_docs, titles_only, broad_only=False)
         found = _format_output(ranked, titles_only, top_k,
-                               mode_label=f"reference/  (全部 {len(ref_docs)} 篇)",
+                               mode_label=f"reference/  (All {len(ref_docs)} items)",
                                query=query)
         found_any = found_any or found
     total_docs = len(lessons_docs) + len(ref_docs)
     if not found_any:
-        print(f"\\n  ❌ 未找到 '{query}' 相关内容")
-        print(f"  如果这是一个新踩坑，请入库:")
+        print(f"\\n  ❌ Not found '{query}' related content")
+        print(f"  If this is a new issue, please add it:")
         print(f"    python3 scripts/queue_lesson.py -t \"{query}\" ...")
         print()
     _show_timing(time.time() - t0, total_docs)
@@ -127,8 +127,8 @@ def main():
         from misakanet.profile import increment_search
         increment_search()
     if found_any:
-        print(f"  💡 查看完整内容: cat lessons/<filename>.md")
-        print(f"  💡 贡献新知识: python3 scripts/queue_lesson.py -t '标题' -d domain '内容...'")
+        print(f"  💡 View full content: cat lessons/<filename>.md")
+        print(f"  💡 Contribute new knowledge: python3 scripts/queue_lesson.py -t 'title' -d domain 'content...'")
         print()
 
 
