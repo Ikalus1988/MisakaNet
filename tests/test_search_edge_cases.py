@@ -139,6 +139,88 @@ def test_compute_bm25_scores_single_doc():
     assert scores[0] > 0
 
 
+# ── Additional edge case tests (Issue #169) ──
+
+def test_tokenize_consecutive_spaces():
+    """Consecutive spaces should be collapsed into single delimiter."""
+    tokens = _tokenize("pip    install    package")
+    assert tokens == ["pip", "install", "package"]
+
+
+def test_tokenize_tabs_and_newlines():
+    """Tabs and newlines should act as delimiters."""
+    tokens = _tokenize("pip\tinstall\npackage")
+    assert tokens == ["pip", "install", "package"]
+
+
+def test_tokenize_emoji_only():
+    """Emoji-only query should not crash."""
+    tokens = _tokenize("🚀🎉💡")
+    assert isinstance(tokens, list)
+
+
+def test_tokenize_emoji_with_text():
+    """Emojis mixed with text should not crash."""
+    tokens = _tokenize("pip install 🚀")
+    assert "pip" in tokens
+    assert "install" in tokens
+
+
+def test_tokenize_exclamation_marks():
+    """Multiple exclamation marks should be handled."""
+    tokens = _tokenize("hello!!! world")
+    assert "hello" in tokens
+    assert "world" in tokens
+
+
+def test_tokenize_mixed_punctuation():
+    """Mixed punctuation should be stripped."""
+    tokens = _tokenize("pip... install!!! package???")
+    assert "pip" in tokens
+    assert "install" in tokens
+    assert "package" in tokens
+
+
+def test_tokenize_real_world_messy_query():
+    """Real-world messy query from Issue #169."""
+    tokens = _tokenize("pip    install !!! 🚀")
+    assert "pip" in tokens
+    assert "install" in tokens
+
+
+def test_tokenize_html_tags():
+    """HTML tags should be stripped or handled."""
+    tokens = _tokenize("<b>bold</b> text")
+    assert "bold" in tokens or "b" in tokens
+    assert "text" in tokens
+
+
+def test_tokenize_markdown_syntax():
+    """Markdown syntax should be handled."""
+    tokens = _tokenize("**bold** _italic_ `code`")
+    assert "bold" in tokens
+    assert "italic" in tokens
+    assert "code" in tokens
+
+
+def test_compute_bm25_scores_consecutive_spaces():
+    """BM25 should work with consecutive spaces in query."""
+    docs = [
+        CachedDoc(filename="test.md", filepath=Path("test.md"), content="pip install package", title="Test"),
+    ]
+    scores = _compute_bm25_scores("pip    install", docs)
+    assert scores[0] > 0
+
+
+def test_compute_bm25_scores_emoji_query():
+    """BM25 should not crash on emoji queries."""
+    docs = [
+        CachedDoc(filename="test.md", filepath=Path("test.md"), content="test content", title="Test"),
+    ]
+    scores = _compute_bm25_scores("🚀 test", docs)
+    assert len(scores) == 1
+
+
 if __name__ == "__main__":
     import pytest
     pytest.main([__file__, "-v"])
