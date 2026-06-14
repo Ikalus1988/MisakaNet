@@ -140,23 +140,56 @@ def main():
             print("  ⚠️ --semantic requires sentence-transformers and hub.storage.vector_store")
             print("  ⚠️ Falling back to BM25")
             use_semantic = False
+    MIN_SCORE_THRESHOLD = 0.1  # Minimum score to consider as "found"
+    
     if lessons_docs:
         ranked = _rank_docs(query, lessons_docs, titles_only, broad_only)
-        found = _format_output(ranked, titles_only, top_k,
+        # Only show results above threshold
+        filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
+        found = _format_output(filtered, titles_only, top_k,
                                mode_label=f"lessons/  (All {len(lessons_docs)} items)",
                                query=query)
         found_any = found_any or found
     if ref_docs:
         ranked = _rank_docs(query, ref_docs, titles_only, broad_only=False)
-        found = _format_output(ranked, titles_only, top_k,
+        # Only show results above threshold
+        filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
+        found = _format_output(filtered, titles_only, top_k,
                                mode_label=f"reference/  (All {len(ref_docs)} items)",
                                query=query)
         found_any = found_any or found
     total_docs = len(lessons_docs) + len(ref_docs)
     if not found_any:
-        print(f"\\n  ❌ Not found '{query}' related content")
-        print(f"  If this is a new issue, please add it:")
-        print(f"    python3 scripts/queue_lesson.py -t \"{query}\" ...")
+        # Feature #229: Smart fallback when no results
+        print(f"\\n  ❌ No exact match for '{query}'")
+        print()
+        
+        # Collect all domains for suggestions
+        all_domains = set()
+        for d in lessons_docs + ref_docs:
+            if d.domain:
+                all_domains.add(d.domain.lower())
+        
+        # 1. Domain suggestions
+        q = query.lower()
+        domain_matches = [d for d in all_domains if d in q or q in d]
+        if domain_matches:
+            print(f"  💡 Try domain filter:")
+            for dm in domain_matches[:3]:
+                print(f"     --domain {dm}")
+        
+        # 2. Broad mode hint
+        print(f"  💡 Try broader search: --broad or --ref")
+        
+        # 3. Quick contribution link
+        print(f"  💡 Add new knowledge:")
+        print(f"     python3 scripts/queue_lesson.py -t \"{query}\" ...")
+        
+        # 4. Show top domains as examples
+        if all_domains:
+            top_domains = sorted(all_domains)[:8]
+            print(f"  💡 Available domains: {', '.join(top_domains)}")
+        
         print()
     _show_timing(time.time() - t0, total_docs)
     if found_any and not suggest:

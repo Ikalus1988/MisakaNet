@@ -285,6 +285,32 @@ def _score_bar(score: float, width: int = 10) -> str:
     return "█" * filled + "░" * (width - filled) + f" {pct:.0%}"
 
 
+
+
+def _get_match_reason(query: str, doc: CachedDoc, score: float) -> str:
+    """Feature #231: Show why this result was matched."""
+    q = query.lower()
+    t = doc.title.lower()
+    reasons = []
+    
+    # Check title match
+    if q in t or any(word in t for word in q.split()):
+        reasons.append("title")
+    
+    # Check domain match
+    if doc.domain and doc.domain.lower() in q:
+        reasons.append("domain")
+    
+    # Check content match (BM25 score > 0.3 indicates content match)
+    if score > 0.3 and "title" not in reasons:
+        reasons.append("content")
+    
+    # Check if broad match
+    if doc.scope == "broad":
+        reasons.append("broad")
+    
+    return ", ".join(reasons) if reasons else ""
+
 def _format_output(scored: list[tuple[float, CachedDoc]],
                    titles_only: bool = False,
                    top_k: int = 10,
@@ -294,23 +320,36 @@ def _format_output(scored: list[tuple[float, CachedDoc]],
         return False
     n = len(scored)
     shown = min(top_k, n)
-    print(f"\\n📋 {mode_label} ({n} 条匹配，展示前 {shown})")
-    print("-" * 50)
+    print(f"\\n📋 {mode_label} ({n} matches, showing top {shown})")
+    print("-" * 60)
     for score, doc in scored[:top_k]:
+        # Feature #227: Credibility badges
+        core_tag = "[core]" if _is_core(doc) else "[contrib]"
+        verified_tag = "[verified]" if _is_verified(doc) else ""
         domain_tag = f"[{doc.domain}]" if doc.domain else ""
         status_tag = f"({doc.status})" if doc.status else ""
         ref_tag = f"→ {doc.reference}" if doc.reference else ""
-        print(f"  {domain_tag:<20} {doc.title} {status_tag}")
-        print(f"  {'':>20} {_score_bar(score):>15}")
+        
+        # Feature #231: Match reason
+        match_reason = _get_match_reason(query, doc, score)
+        
+        # Build badge line
+        badges = f"{core_tag} {verified_tag} {domain_tag}".strip()
+        time_str = _relative_time(doc.mtime)
+        
+        print(f"  {badges:<25} {doc.title} {status_tag}")
+        print(f"  {'':>25} {_score_bar(score):>15}  {time_str}")
+        if match_reason:
+            print(f"  {'':>25} (matched: {match_reason})")
         if titles_only:
             continue
         rel_dir = "lessons" if doc.is_lesson else "reference"
-        print(f"  {'':>20} 📄 {rel_dir}/{doc.filename}")
+        print(f"  {'':>25} 📄 {rel_dir}/{doc.filename}")
         preview = _get_preview(doc.content, max_chars=120)
         if preview:
-            print(f"  {'':>20} {_highlight(preview, query)}")
+            print(f"  {'':>25} {_highlight(preview, query)}")
         if ref_tag:
-            print(f"  {'':>20} 参考: {ref_tag}")
+            print(f"  {'':>25} ref: {ref_tag}")
         print()
     return True
 
@@ -349,4 +388,36 @@ __all__ = [
     "CachedDoc", "LESSONS", "REFERENCES",
     "_load_docs", "_rank_docs", "_format_output", "_show_timing",
     "_tokenize", "_compute_bm25_scores", "_normalize",
+    "_is_verified", "_is_core", "_relative_time", "_get_match_reason",
 ]
+
+
+def _is_verified(doc: CachedDoc) -> bool:
+    """Check if lesson has Verify/Verification section."""
+    if not doc.content:
+        return False
+    return bool(re.search(r'##\s*(Verify|Verification)', doc.content, re.IGNORECASE))
+
+
+def _is_core(doc: CachedDoc) -> bool:
+    """Check if lesson is in core/ directory."""
+    return 'lessons/core/' in str(doc.filepath)
+
+
+def _relative_time(mtime: float) -> str:
+    """Show relative update time."""
+    if not mtime:
+        return ''
+    import datetime
+    now = datetime.datetime.now().timestamp()
+    diff = now - mtime
+    if diff < 60:
+        return 'just now'
+    elif diff < 3600:
+        return f'{int(diff/60)}m ago'
+    elif diff < 86400:
+        return f'{int(diff/3600)}h ago'
+    elif diff < 2592000:
+        return f'{int(diff/86400)}d ago'
+    else:
+        return f'{int(diff/2592000)}mo ago'
