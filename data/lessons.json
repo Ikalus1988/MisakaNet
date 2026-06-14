@@ -31,12 +31,169 @@
     "updated": "2026-04-01"
   },
   {
+    "id": "bot-pip-not-found",
+    "title": "bot回复 reasoning 现在pip和pip3都找不到 说明当前环境没有配置python的可",
+    "domain": "general",
+    "tags": [],
+    "summary": "---",
+    "url": "lessons/_archive/conversation-dumps/bot-pip-not-found.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "concurrency-control-setup",
+    "title": "好，控制并发，那就开始布置本开源方案，作为 wsl 的第三个 agent",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/concurrency-control-setup.md",
+    "updated": "2026-04-01"
+  },
+  {
     "id": "config-was-last-written-by-a-newer-openclaw-2026",
     "title": "Config was last written by a newer OpenClaw (2026.",
     "domain": "feishu",
     "tags": [],
     "summary": "[assistant] <think>",
     "url": "lessons/_archive/conversation-dumps/config-was-last-written-by-a-newer-openclaw-2026.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "daily-work-log",
+    "title": "帮我记一下我今天的日记啊，阈值的日记啊，今天完成了什么工作，然后跟你说完，你整理一下，然后发出来。",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/daily-work-log.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "disaster-recovery-feishu",
+    "title": "容灾方案输出为飞书云文档",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/disaster-recovery-feishu.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "draft-cc-haha-network",
+    "title": "[草稿] cc-haha network 错误: Exit code 1",
+    "domain": "devops",
+    "tags": [
+      "cc-haha",
+      "hook-auto",
+      "network"
+    ],
+    "summary": "",
+    "url": "lessons/_archive/conversation-dumps/draft-cc-haha-network.md",
+    "updated": "2026-05-04 09:05:47 UTC"
+  },
+  {
+    "id": "exam-setup-issue",
+    "title": "考生1回复：考试执行受阻，未完成作答： 执行第一步安装依赖时遇到环境问题：当前运行环境中pip命令不",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/exam-setup-issue.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "fanuc-kb-proposal",
+    "title": "the user sent a text document fanuc知识库方案 v5 md",
+    "domain": "general",
+    "tags": [],
+    "summary": "---",
+    "url": "lessons/_archive/conversation-dumps/fanuc-kb-proposal.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "feishu-doc-test",
+    "title": "按照方案进行测试https://tarot-club.feishu.cn/docx/TkcHd3Lq",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/feishu-doc-test.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "feishu-skill-review",
+    "title": "复盘下你的飞书技能如何提高，并给出方案",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "复盘下你的飞书技能如何提高，并给出方案",
+    "url": "lessons/_archive/conversation-dumps/feishu-skill-review.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "hermes-cli-work-sync",
+    "title": "我已将部分工作直接发给Hermes cli助手，你注意检查，不要重复施工",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/hermes-cli-work-sync.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "hermes-mmx-config-issue",
+    "title": "问题： Hermes 的 mmx CLI（WSL 内）需要自己的 ~/.mmx/config.jso",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/hermes-mmx-config-issue.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "poc-feishu-doc-records",
+    "title": "POC 记录已写入飞书文档末尾（21个块，含 Q2/Q5 验证结果、修正说明和待办清单）。 有一个小",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/poc-feishu-doc-records.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "poc-recall-test-answers",
+    "title": "这里面也有答案？ ```PLAIN_TEXT # Edoc V10.0 POC 召回测试 ## 环境",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/poc-recall-test-answers.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "rag-assistant-work-summary",
+    "title": "再补充一下，RAG助手这两天的一个工作内容，主要就是一个通过让RAG知识库来读取我已有的一些工业机器",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant]",
+    "url": "lessons/_archive/conversation-dumps/rag-assistant-work-summary.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "rag-kb-complete-docs",
+    "title": "the user sent a text document rag知识库完整说明文档 md",
+    "domain": "general",
+    "tags": [],
+    "summary": "---",
+    "url": "lessons/_archive/conversation-dumps/rag-kb-complete-docs.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "rag-wiki-progress",
+    "title": "另外，RAG助手， Wiki项目又有新进展。 这个项目经过了从一开始的OPUS 4.6，写了初版之后",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant]",
+    "url": "lessons/_archive/conversation-dumps/rag-wiki-progress.md",
+    "updated": "2026-04-01"
+  },
+  {
+    "id": "wsl-modifications-review",
+    "title": "这是倒吊人在本周修改wsl的记录，有没有关联：一、本周修改的 WSL 内容 文件 操作 目的 ~/.",
+    "domain": "feishu",
+    "tags": [],
+    "summary": "[assistant] <think>",
+    "url": "lessons/_archive/conversation-dumps/wsl-modifications-review.md",
     "updated": "2026-04-01"
   },
   {
@@ -60,6 +217,85 @@
     "summary": "cc-haha 的 Bash 工具执行失败时，模型不知道去翻共享 lessons，",
     "url": "lessons/_archive/hook-raw/cc-haha-error-hook.md",
     "updated": "2026-04-30 09:30 UTC"
+  },
+  {
+    "id": "cc-haha-model-output-error",
+    "title": "[cc-haha] 模型输出异常 错误 — Exit code 1 Traceback (most recent call last):   File \"<stri...(截断)",
+    "domain": "model_output",
+    "tags": [
+      "cc-haha",
+      "hook-auto",
+      "model_output",
+      ""
+    ],
+    "summary": "自动捕获于 cc-haha hook（时间: 2026-05-10 15:05 UTC）。",
+    "url": "lessons/_archive/hook-raw/cc-haha-model-output-error.md",
+    "updated": "2026-05-10 15:05:00 UTC"
+  },
+  {
+    "id": "cc-haha-network-git-error",
+    "title": "[cc-haha] 网络连接 错误 — Exit code 128 From https://github.com/Ikalus1988/MisakaNet  ...(截断)",
+    "domain": "network",
+    "tags": [
+      "cc-haha",
+      "hook-auto",
+      "network",
+      ""
+    ],
+    "summary": "自动捕获于 cc-haha hook（时间: 2026-05-10 16:33 UTC）。",
+    "url": "lessons/_archive/hook-raw/cc-haha-network-git-error.md",
+    "updated": "2026-05-10 16:33:44 UTC"
+  },
+  {
+    "id": "cc-haha-network-timeout",
+    "title": "[cc-haha] 网络连接 错误 — network:Timeout",
+    "domain": "network",
+    "tags": [
+      "cc-haha",
+      "hook-auto",
+      "network",
+      "network:Timeout"
+    ],
+    "summary": "自动捕获于 cc-haha hook（时间: 2026-05-10 15:18 UTC）。",
+    "url": "lessons/_archive/hook-raw/cc-haha-network-timeout.md",
+    "updated": "2026-05-10 15:18:12 UTC"
+  },
+  {
+    "id": "cc-haha-network-ws-error",
+    "title": "[cc-haha] 网络连接 错误 — Exit code 1 Name: websocket-client Version: 1.9.0 Summary: W...(截断)",
+    "domain": "network",
+    "tags": [
+      "cc-haha",
+      "hook-auto",
+      "network",
+      ""
+    ],
+    "summary": "自动捕获于 cc-haha hook（时间: 2026-05-10 15:17 UTC）。",
+    "url": "lessons/_archive/hook-raw/cc-haha-network-ws-error.md",
+    "updated": "2026-05-10 15:17:56 UTC"
+  },
+  {
+    "id": "cc-haha-permission-denied",
+    "title": "[cc-haha] 权限 错误 — permission:Permission denied",
+    "domain": "permission",
+    "tags": [
+      "cc-haha",
+      "hook-auto",
+      "permission",
+      "permission:Permission denied"
+    ],
+    "summary": "自动捕获于 cc-haha hook（时间: 2026-05-10 16:16 UTC）。",
+    "url": "lessons/_archive/hook-raw/cc-haha-permission-denied.md",
+    "updated": "2026-05-10 16:16:25 UTC"
+  },
+  {
+    "id": "cc-haha-rag-docs-request",
+    "title": "cc-haha的命令行已正常，现在输出下你的rag知识库md文档，截止今天的最新版本，需要保留背景方",
+    "domain": "rag",
+    "tags": [],
+    "summary": "[assistant]",
+    "url": "lessons/_archive/hook-raw/cc-haha-rag-docs-request.md",
+    "updated": "2026-04-01"
   },
   {
     "id": "skill-harvest-airtable",
