@@ -1,0 +1,31 @@
+{
+  "run_id": "20260614_075619",
+  "agent": "minimax",
+  "model": "abab6.5s-chat",
+  "timestamp": "2026-06-14T07:56:19.723979Z",
+  "total_tasks": 2,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 2,
+  "total_api_time": 0.6,
+  "results": [
+    {
+      "task_id": "lesson-github-dns-443-block-hosts-workaround",
+      "title": "GitHub DNS 污染/443端口不通 — hosts 备用 IP 方案",
+      "domain": "devops",
+      "agent_reply_chars": 46,
+      "elapsed_seconds": 0.3,
+      "verify_status": "SKIP",
+      "verify_detail": "No test_cmd"
+    },
+    {
+      "task_id": "lesson-wcferry-微信版本锁定-3-9-12-51-才能用",
+      "title": "Wcferry 微信版本锁定 3 9 12 51 才能用",
+      "domain": "general",
+      "agent_reply_chars": 46,
+      "elapsed_seconds": 0.3,
+      "verify_status": "SKIP",
+      "verify_detail": "No test_cmd"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "run_id": "20260614_075707",
+  "agent": "minimax",
+  "model": "abab6.5s-chat",
+  "timestamp": "2026-06-14T07:57:07.088799Z",
+  "total_tasks": 3,
+  "passed": 3,
+  "failed": 0,
+  "skipped": 0,
+  "total_api_time": 0.8,
+  "results": [
+    {
+      "task_id": "lesson-auto-merge-ci-pipeline",
+      "title": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge",
+      "domain": "devops",
+      "agent_reply_chars": 46,
+      "elapsed_seconds": 0.3,
+      "verify_status": "PASS",
+      "verify_detail": "  OK: task valid"
+    },
+    {
+      "task_id": "lesson-slugify-path-traversal-deep-coverage",
+      "title": "Slugify: deep coverage of path traversal, null bytes, and reserved names",
+      "domain": "scripts",
+      "agent_reply_chars": 46,
+      "elapsed_seconds": 0.2,
+      "verify_status": "PASS",
+      "verify_detail": "  OK: task valid"
+    },
+    {
+      "task_id": "lesson-dco-auto-fix-workflow",
+      "title": "DCO 自动修复工作流 — /fix-dco 命令设计与实现",
+      "domain": "devops",
+      "agent_reply_chars": 46,
+      "elapsed_seconds": 0.3,
+      "verify_status": "PASS",
+      "verify_detail": "  OK: task valid"
+    }
+  ]
+}
