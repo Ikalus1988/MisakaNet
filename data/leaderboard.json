@@ -1,66 +1,70 @@
 [
   {
+    "login": "misakanet-bot",
+    "score": 87.06
+  },
+  {
+    "login": "ikalus1988",
+    "score": 80.84
+  },
+  {
+    "login": "claude",
+    "score": 46.68
+  },
+  {
+    "login": "sheldonisspark-lab",
+    "score": 18.91
+  },
+  {
     "login": "zsxh1990",
-    "score": 10.2
+    "score": 8.13
   },
   {
     "login": "zeroknowledge0x",
-    "score": 5.43
+    "score": 7.37
   },
   {
-    "login": "2lll5",
-    "score": 3.84
+    "login": "actions-user",
+    "score": 4.24
   },
   {
     "login": "votienduong2208",
-    "score": 1.93
+    "score": 3.0
   },
   {
     "login": "doview1",
-    "score": 1.0
-  },
-  {
-    "login": "andrianbalanesq",
-    "score": 0.98
+    "score": 1.55
   },
   {
     "login": "suresh chouksey",
-    "score": 0.98
+    "score": 1.52
   },
   {
     "login": "iccccccccccccc",
-    "score": 0.98
+    "score": 1.52
   },
   {
     "login": "sagarmaurya64-ai",
-    "score": 0.95
+    "score": 1.5
   },
   {
-    "login": "cyprerask",
-    "score": 0.93
-  },
-  {
-    "login": "rohitmulani63-ops",
-    "score": 0.81
-  },
-  {
-    "login": "skyjames777",
-    "score": 0.81
+    "login": "cloudflare-workers-and-pages[bot]",
+    "score": 1.23
   },
   {
     "login": "pian0",
-    "score": 0.59
+    "score": 0.93
   },
   {
     "login": "qi574",
-    "score": 0.49
+    "score": 0.76
   },
   {
     "login": "cuongwf1711",
-    "score": 0.49
+    "score": 0.76
   },
   {
     "login": "lqkhanh295",
-    "score": 0.4
+    "score": 0.62
   }
 ]
