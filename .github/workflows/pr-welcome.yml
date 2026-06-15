@@ -6,7 +6,7 @@ permissions:
   pull-requests: write
 jobs:
   welcome:
-    if: contains(fromJSON('["FIRST_TIMER", "FIRST_TIME_CONTRIBUTOR"]'),
+    if: contains(fromJSON('["FIRST_TIMER", "FIRST_TIME_CONTRIBUTOR", "NONE"]'),
         github.event.pull_request.author_association)
     runs-on: ubuntu-latest
     steps:
