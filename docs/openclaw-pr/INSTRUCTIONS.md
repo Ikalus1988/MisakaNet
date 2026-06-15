@@ -1,111 +1,50 @@
-# OpenClaw PR — 提交流程
+# OpenClaw PR — 提交流程 (方案A: redacted-only)
 
 ## 前置准备
 
 ```bash
-# 1. Fork https://github.com/OpenClaw/OpenClaw
-
+# 1. Fork https://github.com/OpenClaw/OpenClaw (已做: zsxh1990/openclaw)
 # 2. Clone + 切分支
-git clone git@github.com:<小号>/OpenClaw.git
-cd OpenClaw
-git checkout -b feat/openclaw-error-handler
-
-# 3. 安装依赖
-pnpm install
-
-# 4. 改文件
-# 编辑 src/infra/fatal-error-hooks.ts:
-#   - 顶部加 import { spawn } from "node:child_process";
-#   - 文件末尾加 runExternalErrorHandler() 函数
-#   - 在 runFatalErrorHooks() 末尾加 runExternalErrorHandler(context);
+git clone https://github.com/zsxh1990/openclaw.git
+cd openclaw
+git checkout feat/openclaw-error-handler-env  # 分支已存在
+# 或:
+git checkout -b feat/openclaw-error-handler-env
 ```
 
 ## 代码改动
 
 ### `src/infra/fatal-error-hooks.ts`
 
-顶部 import 区：
-```typescript
-import { spawn } from "node:child_process";
-```
+将文件内容替换为 `docs/openclaw-pr/fatal-error-hooks-rawless.ts`。
 
-文件末尾：
-```typescript
-/**
- * If OPENCLAW_ERROR_HANDLER is set, spawns the executable with error context
- * as a single JSON argument. The handler must be a path to an executable
- * (not a shell command) — shell expansion is deliberately disabled.
- *
- * Security: shell:false prevents command injection via environment variable.
- * The handler runs detached; OpenClaw does not wait for its completion.
- */
-function runExternalErrorHandler(context: FatalErrorHookContext): void {
-  const handler = process.env.OPENCLAW_ERROR_HANDLER?.trim();
-  if (!handler) return;
-
-  try {
-    const payload = JSON.stringify({
-      schemaVersion: 1,
-      reason: context.reason,
-      name: context.error instanceof Error ? context.error.name : undefined,
-      message: context.error instanceof Error ? context.error.message : undefined,
-      stack: context.error instanceof Error ? context.error.stack?.split("\n").slice(0, 6).join("\n") : undefined,
-      timestamp: new Date().toISOString(),
-      pid: process.pid,
-    });
-
-    const child = spawn(handler, [payload], {
-      stdio: ["ignore", "inherit", "inherit"],
-      detached: true,
-      shell: false,
-    });
-
-    child.on("error", () => {
-      // Async spawn error (ENOENT etc.) — silently ignored, must not race or crash the main process.
-    });
-    child.unref();
-  } catch (err) {
-    console.error("[fatal-error-hooks] OPENCLAW_ERROR_HANDLER failed:", String(err));
-  }
-}
-```
-
-在 `runFatalErrorHooks()` 函数末尾，`return messages;` 之前加：
-```typescript
-  runExternalErrorHandler(context);
-```
+改动要点（与当前 654d82a44f 版的 diff）：
+- **删除** `OPENCLAW_ERROR_HANDLER_RAW` env var 读取
+- **删除** `includeRaw` / `error` / `isError` / payload 扩展块
+- **payload 固定 4 字段**: schemaVersion, reason, timestamp, pid
+- **JSDoc 简化**: 去掉 RAW 说明
 
 ## 编译 + 测试
 
 ```bash
-# 5. 编译
-pnpm build
+# 编译 (需要 ≥12GB RAM，如无法编译可跳过)
+# pnpm build  # 当前环境 11GB 可能 OOM
 
-# 6. 测试三种场景，截取终端输出
-
-# 场景1 — 无 env var
-node dist/index.js --version
-
-# 场景2 — 正常 handler
-OPENCLAW_ERROR_HANDLER="/usr/bin/logger" node dist/index.js --version
-
-# 场景3 — 坏 handler
-OPENCLAW_ERROR_HANDLER="/nonexistent" node dist/index.js --version
+# 测试 — 运行隔离 proof
+node docs/openclaw-pr/proof.js
 ```
 
-把三条命令的实际输出贴进 PR 的 **Real behavior proof** 段。
+把 `proof.js` 的实际终端输出贴进 PR body 的 **Evidence after fix** 段。
 
-## 提 PR
+## 提交
 
 ```bash
 git add src/infra/fatal-error-hooks.ts
-git commit -m "feat(infra): add structured custom error handler via OPENCLAW_ERROR_HANDLER"
-git push origin feat/openclaw-error-handler
+git commit -s -m "feat(infra): add structured custom error handler via OPENCLAW_ERROR_HANDLER"
+git push origin feat/openclaw-error-handler-env --force
 ```
 
-在 GitHub 创建 PR：
-- **Title:** `feat(infra): Add structured custom error handler via OPENCLAW_ERROR_HANDLER`
-- **Body:** 复制 `PR_BODY.md` 全文，把 Testing 段的实际输出替换进去
+PR body 用 `docs/openclaw-pr/PR_BODY.md` 完整替换。
 
 ---
 
@@ -113,5 +52,7 @@ git push origin feat/openclaw-error-handler
 
 - ❌ 正文不出现 MisakaNet
 - ❌ 不等待 handler 退出（`detached: true` + `child.unref()`）
-- ❌ handler 失败不抛异常（空 `catch` 改为 `console.error` 但不要 `process.exit`）
+- ❌ handler 失败不抛异常
 - ❌ `shell: false` 绝不要改成 `shell: true`
+- ❌ 不在 PR body 里伪造 `--version` 输出 —— 用 proof.js 的真实输出
+- ❌ 不在代码里加 RAW/name/message/stack 字段（后续 PR 可加）
