@@ -25,6 +25,12 @@
       "uniqueItems": true,
       "description": "Search tags for BM25 retrieval"
     },
+    "language": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+      "default": "zh",
+      "description": "ISO 639-1 language code (e.g. zh, en, ja). Default: zh"
+    },
     "status": {
       "type": "string",
       "enum": ["published", "draft", "archived"],

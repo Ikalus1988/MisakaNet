@@ -46,7 +46,7 @@ def _l2():
             CREATE TABLE IF NOT EXISTS file_cache (
                 path TEXT PRIMARY KEY, mtime REAL, size INT,
                 title TEXT, domain TEXT, status TEXT,
-                reference TEXT, scope TEXT, source TEXT, tags TEXT
+                reference TEXT, scope TEXT, source TEXT, tags TEXT, language TEXT
             )""")
         _L2_CONN.commit()
     return _L2_CONN
@@ -64,6 +64,7 @@ class CachedDoc:
     scope: str = ""
     source: str = ""
     tags: list = field(default_factory=list)
+    language: str = ""
     mtime: float = 0.0
     is_lesson: bool = True
 
@@ -134,14 +135,15 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
             cached = known.get(rel)
             if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
                 row = conn.execute(
-                    "SELECT title,domain,status,reference,scope,source,tags FROM file_cache WHERE path=?",
+                    "SELECT title,domain,status,reference,scope,source,tags,language FROM file_cache WHERE path=?",
                     (rel,)).fetchone()
                 if row:
                     tags = json.loads(row[6]) if row[6] else []
                     doc = CachedDoc(filename=f.name, filepath=f, content="", mtime=st.st_mtime,
                                     is_lesson=is_lesson, title=row[0] or f.stem, domain=row[1] or "",
                                     status=row[2] or "", reference=row[3] or "",
-                                    scope=row[4] or "", source=row[5] or "", tags=tags)
+                                    scope=row[4] or "", source=row[5] or "", tags=tags,
+                                    language=row[7] or "")
                     doc.content = f.read_text(encoding="utf-8", errors="replace")
                     docs.append(doc)
                     continue
@@ -162,12 +164,13 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
             doc.reference = meta.get("reference", "")
             doc.scope = meta.get("scope", "")
             doc.source = meta.get("source", "")
+            doc.language = meta.get("language", "")
             raw_tags = meta.get("tags", "")
             doc.tags = raw_tags if isinstance(raw_tags, list) else []
             docs.append(doc)
-            conn.execute("INSERT OR REPLACE INTO file_cache (path,mtime,size,title,domain,status,reference,scope,source,tags) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            conn.execute("INSERT OR REPLACE INTO file_cache (path,mtime,size,title,domain,status,reference,scope,source,tags,language) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                          (rel, st.st_mtime, st.st_size, doc.title, doc.domain, doc.status,
-                          doc.reference, doc.scope, doc.source, json.dumps(doc.tags, ensure_ascii=False)))
+                          doc.reference, doc.scope, doc.source, json.dumps(doc.tags, ensure_ascii=False), doc.language))
             changed += 1
     conn.commit()
     if changed:

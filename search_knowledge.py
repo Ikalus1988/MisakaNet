@@ -7,6 +7,7 @@ Ecosystem links:
 import sys
 import time
 import re
+from typing import Optional
 
 # ── 生态核心声明 ──
 from misakanet_core import BM25 as _  # noqa: F401  (ecosystem assertion)
@@ -188,6 +189,7 @@ def main():
     top_k = 10
     use_semantic = False
     suggest = False
+    lang: Optional[str] = None
     for arg in sys.argv[2:]:
         if arg == "--ref":
             mode = "ref"
@@ -204,6 +206,10 @@ def main():
                 top_k = int(arg.split("=")[1])
             except ValueError:
                 pass
+        elif arg.startswith("--lang="):
+            lang = arg.split("=", 1)[1]
+        elif arg == "--lang" and i + 1 < len(search_args):
+            lang = search_args[i + 1]
         elif arg == "--semantic":
             use_semantic = True
     search_args = sys.argv[2:]
@@ -238,6 +244,13 @@ def main():
 
     lessons_docs = _load_docs(LESSONS, is_lesson=True) if mode in ("all", "lessons") else []
     ref_docs = _load_docs(REFERENCES, is_lesson=False) if mode in ("all", "ref") else []
+
+    # Language filter
+    if lang:
+        lessons_docs = [d for d in lessons_docs if d.language == lang]
+        ref_docs = [d for d in ref_docs if d.language == lang]
+        print(f"  🌐 Filtering by language: {lang}")
+
     if use_semantic:
         try:
             from hub.storage.vector_store import generate_embedding
