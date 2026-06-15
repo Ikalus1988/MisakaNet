@@ -6,6 +6,7 @@ Ecosystem links:
 """
 import sys
 import time
+from typing import Optional
 
 # ── 生态核心声明 ──
 from misakanet_core import BM25 as _  # noqa: F401  (ecosystem assertion)
@@ -75,6 +76,7 @@ def main():
     top_k = 10
     use_semantic = False
     suggest = False
+    lang: Optional[str] = None
     for arg in sys.argv[2:]:
         if arg == "--ref":
             mode = "ref"
@@ -91,6 +93,11 @@ def main():
                 top_k = int(arg.split("=")[1])
             except ValueError:
                 pass
+        elif arg.startswith("--lang="):
+            lang = arg.split("=", 1)[1]
+        elif arg == "--lang":
+            # handled below with value
+            pass
         elif arg == "--semantic":
             use_semantic = True
     search_args = sys.argv[2:]
@@ -100,6 +107,8 @@ def main():
                 top_k = int(search_args[i + 1])
             except ValueError:
                 pass
+        elif arg == "--lang" and i + 1 < len(search_args):
+            lang = search_args[i + 1]
     t0 = time.time()
     found_any = False
 
@@ -141,11 +150,10 @@ def main():
             print("  ⚠️ Falling back to BM25")
             use_semantic = False
     if lessons_docs:
-        ranked = _rank_docs(query, lessons_docs, titles_only, broad_only)
+        ranked = _rank_docs(query, lessons_docs, titles_only, broad_only, lang)
         found = _format_output(ranked, titles_only, top_k,
                                mode_label=f"lessons/  (All {len(lessons_docs)} items)",
                                query=query)
-        found_any = found_any or found
     if ref_docs:
         ranked = _rank_docs(query, ref_docs, titles_only, broad_only=False)
         found = _format_output(ranked, titles_only, top_k,

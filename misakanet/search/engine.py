@@ -46,8 +46,14 @@ def _l2():
             CREATE TABLE IF NOT EXISTS file_cache (
                 path TEXT PRIMARY KEY, mtime REAL, size INT,
                 title TEXT, domain TEXT, status TEXT,
-                reference TEXT, scope TEXT, source TEXT, tags TEXT
+                reference TEXT, scope TEXT, source TEXT, tags TEXT,
+                language TEXT DEFAULT 'zh'
             )""")
+        # Migration: add language column if upgrading from older schema
+        try:
+            _L2_CONN.execute("ALTER TABLE file_cache ADD COLUMN language TEXT DEFAULT 'zh'")
+        except sqlite3.OperationalError:
+            pass
         _L2_CONN.commit()
     return _L2_CONN
 
@@ -63,6 +69,7 @@ class CachedDoc:
     reference: str = ""
     scope: str = ""
     source: str = ""
+    language: str = "zh"
     tags: list = field(default_factory=list)
     mtime: float = 0.0
     is_lesson: bool = True
@@ -134,14 +141,15 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
             cached = known.get(rel)
             if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
                 row = conn.execute(
-                    "SELECT title,domain,status,reference,scope,source,tags FROM file_cache WHERE path=?",
+                    "SELECT title,domain,status,reference,scope,source,tags,language FROM file_cache WHERE path=?",
                     (rel,)).fetchone()
                 if row:
                     tags = json.loads(row[6]) if row[6] else []
+                    lang = row[7] if len(row) > 7 and row[7] else "zh"
                     doc = CachedDoc(filename=f.name, filepath=f, content="", mtime=st.st_mtime,
                                     is_lesson=is_lesson, title=row[0] or f.stem, domain=row[1] or "",
                                     status=row[2] or "", reference=row[3] or "",
-                                    scope=row[4] or "", source=row[5] or "", tags=tags)
+                                    scope=row[4] or "", source=row[5] or "", language=lang, tags=tags)
                     doc.content = f.read_text(encoding="utf-8", errors="replace")
                     docs.append(doc)
                     continue
@@ -162,12 +170,13 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
             doc.reference = meta.get("reference", "")
             doc.scope = meta.get("scope", "")
             doc.source = meta.get("source", "")
+            doc.language = meta.get("language", "zh")
             raw_tags = meta.get("tags", "")
             doc.tags = raw_tags if isinstance(raw_tags, list) else []
             docs.append(doc)
-            conn.execute("INSERT OR REPLACE INTO file_cache (path,mtime,size,title,domain,status,reference,scope,source,tags) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            conn.execute("INSERT OR REPLACE INTO file_cache (path,mtime,size,title,domain,status,reference,scope,source,tags,language) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                          (rel, st.st_mtime, st.st_size, doc.title, doc.domain, doc.status,
-                          doc.reference, doc.scope, doc.source, json.dumps(doc.tags, ensure_ascii=False)))
+                          doc.reference, doc.scope, doc.source, json.dumps(doc.tags, ensure_ascii=False), doc.language))
             changed += 1
     conn.commit()
     if changed:
@@ -182,15 +191,16 @@ def _doc_cache_id(doc: CachedDoc) -> str:
 
 def _search_cached(query: str, docs: list[CachedDoc],
                    titles_only: bool = False,
-                   broad_only: bool = False) -> list[tuple[float, CachedDoc]]:
+                   broad_only: bool = False,
+                   lang: Optional[str] = None) -> list[tuple[float, CachedDoc]]:
     """L1缓存 — 相同 query 直接返回上次结果。"""
-    key = f"{query}_{titles_only}_{broad_only}"
+    key = f"{query}_{titles_only}_{broad_only}_{lang}"
     if key in _L1_CACHE:
         doc_map = {_doc_cache_id(d): d for d in docs}
         result = [(s, doc_map[fid]) for s, fid in _L1_CACHE[key] if fid in doc_map]
         if len(result) == len(_L1_CACHE[key]):
             return result
-    result = _rank_docs_impl(query, docs, titles_only, broad_only)
+    result = _rank_docs_impl(query, docs, titles_only, broad_only, lang)
     _L1_CACHE[key] = [(s, _doc_cache_id(d)) for s, d in result[:20]]
     if len(_L1_CACHE) > _L1_MAX:
         del _L1_CACHE[next(iter(_L1_CACHE))]
@@ -251,9 +261,12 @@ def _normalize(values: list[float]) -> list[float]:
 
 def _rank_docs_impl(query: str, docs: list[CachedDoc],
                     titles_only: bool = False,
-                    broad_only: bool = False) -> list[tuple[float, CachedDoc]]:
+                    broad_only: bool = False,
+                    lang: Optional[str] = None) -> list[tuple[float, CachedDoc]]:
     if not docs:
         return []
+    if lang:
+        docs = [d for d in docs if d.language == lang]
     if broad_only:
         docs = [d for d in docs if d.scope == "broad"]
     if not titles_only:
@@ -298,9 +311,11 @@ def _format_output(scored: list[tuple[float, CachedDoc]],
     print("-" * 50)
     for score, doc in scored[:top_k]:
         domain_tag = f"[{doc.domain}]" if doc.domain else ""
+        lang_tag = f"[{doc.language}]" if doc.language else ""
         status_tag = f"({doc.status})" if doc.status else ""
         ref_tag = f"→ {doc.reference}" if doc.reference else ""
-        print(f"  {domain_tag:<20} {doc.title} {status_tag}")
+        header = f"{domain_tag} {lang_tag}".strip()
+        print(f"  {header:<20} {doc.title} {status_tag}")
         print(f"  {'':>20} {_score_bar(score):>15}")
         if titles_only:
             continue

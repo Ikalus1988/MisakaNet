@@ -30,6 +30,12 @@
       "enum": ["published", "draft", "archived"],
       "description": "Publication status"
     },
+    "language": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+      "default": "zh",
+      "description": "ISO 639-1 language code (e.g. zh, en, ja, zh-CN). Default: zh"
+    },
     "source": {
       "type": "string",
       "description": "Origin of this lesson"
