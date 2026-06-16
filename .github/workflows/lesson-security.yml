@@ -31,8 +31,8 @@ jobs:
             'wget.+pipe.+sh'
             'curl.+bash'
             'bash.+dev/tcp'
-            'eval\s'
-            'exec\s'
+            '\beval\b'
+            '\bexec\b'
             # '`[^`]*`'  — removed: too noisy, flags all inline code
           )
 

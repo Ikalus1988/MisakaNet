@@ -35,5 +35,6 @@ jobs:
             git config user.email "bot@misakanet.org"
             git add data/leaderboard.json
             git diff --cached --quiet || git commit -s -m "chore: update leaderboard snapshot [skip ci]"
+            git pull --rebase origin main || true
             git push
           fi
