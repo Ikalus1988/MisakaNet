@@ -1863,6 +1863,26 @@
     "updated": ""
   },
   {
+    "id": "swarm-pr-battle-playbook",
+    "title": "Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams",
+    "domain": "development",
+    "tags": [
+      "pr",
+      "ai-review",
+      "github-actions",
+      "fatal-error",
+      "spawn",
+      "shell-injection",
+      "esm",
+      "ci",
+      "playbook",
+      "sop"
+    ],
+    "summary": "---{\"title\": \"Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams\", \"domain\": \"develop...",
+    "url": "lessons/contrib/swarm-pr-battle-playbook.md",
+    "updated": "2026-06-17"
+  },
+  {
     "id": "tmux-session-management",
     "title": "tmux 终端复用 — 断开不丢失会话",
     "domain": "development",
