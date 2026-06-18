@@ -257,7 +257,9 @@ def main():
     use_semantic = False
     suggest = False
     lang: Optional[str] = None
-    for arg in sys.argv[2:]:
+    domain: Optional[str] = None
+    search_args = sys.argv[2:]
+    for i, arg in enumerate(search_args):
         if arg == "--ref":
             mode = "ref"
         elif arg == "--lessons":
@@ -273,19 +275,21 @@ def main():
                 top_k = int(arg.split("=")[1])
             except ValueError:
                 pass
+        elif arg == "--top" and i + 1 < len(search_args):
+            try:
+                top_k = int(search_args[i + 1])
+            except ValueError:
+                pass
         elif arg.startswith("--lang="):
             lang = arg.split("=", 1)[1]
         elif arg == "--lang" and i + 1 < len(search_args):
             lang = search_args[i + 1]
         elif arg == "--semantic":
             use_semantic = True
-    search_args = sys.argv[2:]
-    for i, arg in enumerate(search_args):
-        if arg == "--top" and i + 1 < len(search_args):
-            try:
-                top_k = int(search_args[i + 1])
-            except ValueError:
-                pass
+        elif arg.startswith("--domain="):
+            domain = arg.split("=", 1)[1].lower()
+        elif arg == "--domain" and i + 1 < len(search_args):
+            domain = search_args[i + 1].lower()
     t0 = time.time()
     found_any = False
 
@@ -317,6 +321,12 @@ def main():
         lessons_docs = [d for d in lessons_docs if d.language == lang]
         ref_docs = [d for d in ref_docs if d.language == lang]
         print(f"  🌐 Filtering by language: {lang}")
+
+    # Domain filter (fix #229)
+    if domain:
+        lessons_docs = [d for d in lessons_docs if d.domain and d.domain.lower() == domain]
+        ref_docs = [d for d in ref_docs if d.domain and d.domain.lower() == domain]
+        print(f"  🏷️  Filtering by domain: {domain}")
 
     if use_semantic:
         try:
