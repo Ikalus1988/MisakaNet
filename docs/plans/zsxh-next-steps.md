@@ -75,16 +75,35 @@ catch(e) { process.exit(1) }  ← 散布在各命令 action 中
 
 ---
 
-## Phase 4: E2B — 侦察 🔍
+## Phase 4: E2B — 下一个目标 🎯
 
-**仓库**: `e2b-dev/desktop` 或 `e2b-dev/cli`
-
-### 侦察清单
+**仓库**: `e2b-dev/E2B`
+**入口**: `packages/cli/src/index.ts` → `main()`
 
 ```
-1. 找 package.json → bin 字段 → CLI 入口
-2. 找 process.on('uncaughtException') / try...catch 顶层收口
-3. 评估是否适合 _ERROR_HANDLER 模式
+async function main() { await prog.parseAsync() }  // 无 try/catch
+main()  // 裸跑，unhandled rejection 不收口
+```
+
+**方案**: 包 `main()` + 监听 `unhandledRejection`，注入 `E2B_ERROR_HANDLER`。
+
+| 维度 | 值 |
+|------|-----|
+| 反 AI 政策 | ✅ 无 |
+| 语言 | TypeScript（commander）|
+| 收口点 | 1 处 — 包 `main()` |
+| 目标改动 | ~15 行 |
+| 难度 | ⭐ 极低（比 Vite 还简单）|
+
+### 动作清单
+
+```
+1. fork e2b-dev/E2B
+2. 包 main() + 加 unhandledRejection handler
+3. build + 真 fatal path proof
+4. PR body（OpenClaw v6 改 E2B 版）
+5. commit + signoff + push
+6. 等 review
 ```
 
 ---
