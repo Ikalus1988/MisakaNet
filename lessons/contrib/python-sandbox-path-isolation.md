@@ -16,7 +16,7 @@ Python `sys.path` 继承自父进程，沙箱未正确隔离 `PYTHONPATH`、`PAT
 import sys
 import os
 
-# 1. 查看当前搜索路径
+# Python 沙箱/受限环境 — PATH 和 sys.path 隔离
 print("Python:", sys.executable)
 print("sys.path:", sys.path)
 

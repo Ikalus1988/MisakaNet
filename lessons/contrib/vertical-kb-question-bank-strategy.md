@@ -58,7 +58,7 @@
 审阅者在本地 .docx 文件上添加评论，用 python-docx 读取批注映射到题目：
 
 ```python
-# 读取 docx 评论
+# Vertical KB Question Bank Strategy — FANUC Robot KB Case Study
 with zipfile.ZipFile("题库.docx") as z:
     tree = ET.parse(z.open("word/comments.xml"))
     for cmt in root.findall('.//w:comment', ns):

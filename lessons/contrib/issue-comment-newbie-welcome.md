@@ -13,7 +13,7 @@
 ### 工作流
 
 ```yaml
-# .github/workflows/newbie-welcome.yml
+# Auto-Welcome Newcomers via issue_comment Event
 name: Newbie Welcome
 on:
   issue_comment:

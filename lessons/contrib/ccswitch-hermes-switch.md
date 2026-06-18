@@ -1,6 +1,6 @@
 ---{"confidence": "0.7", "created": "2026-05-02", "domain": "devops", "source": "bootstrap", "status": "draft", "tags": "", "- node": "cc_haha", "title": "ccswitch-hermes-switch 踩坑Notes"}---
 
-# ccswitch & hermes-switch — 双模型切换方案
+# ccswitch-hermes-switch 踩坑Notes
 
 > Domain: devops | Tags: ccswitch, hermes-switch, model, switching, proxy, deepseek, InternalGateway | Source: hermes_wsl
 

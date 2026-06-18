@@ -18,7 +18,7 @@ pip install 或 conda install 失败，常见场景：
 
 **网络超时 / SSL：**
 ```bash
-# 方案 1：换国内镜像
+# pip install Network Timeout / SSL / 依赖ConflictFix
 pip install -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com <package>
 
 # 方案 2：忽略 SSL 验证（临时）

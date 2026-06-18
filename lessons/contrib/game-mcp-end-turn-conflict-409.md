@@ -17,7 +17,7 @@ The 409 Conflict is a race condition between the game state update and the MCP r
 Ignore the 409 response and verify the game state:
 
 ```
-# After receiving 409
+# Game MCP: End Turn Returns 409 Conflict
 # Check current game state
 <get_state>
 ```

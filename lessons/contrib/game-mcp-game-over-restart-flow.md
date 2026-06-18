@@ -36,7 +36,7 @@ The game's MCP interface does not automatically reset the session state on GAME 
 ### Verification
 ```
 <get_state>
-# Should show initial game state, not GAME OVER
+# Game MCP: GAME OVER Restart Flow
 ```
 
 ### Notes

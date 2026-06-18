@@ -32,7 +32,7 @@ def api_call_with_retry(url, headers, max_retries=5):
     
     raise Exception(f"超过最大重试次数: {url}")
 
-# GitHub API 特殊：检查剩余配额
+# API 请求限流 (Rate Limit) Handling方案
 resp = requests.get("https://api.github.com/rate_limit")
 data = resp.json()
 print(f"剩余: {data['rate']['remaining']}/{data['rate']['limit']}")

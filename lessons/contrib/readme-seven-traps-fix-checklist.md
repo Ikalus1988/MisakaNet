@@ -15,7 +15,7 @@
 **修复**：将"What is MisakaNet?"置顶，紧接标题和 badges。一句话说清项目本质。Demo 和 CLI 放在后面。
 
 ```markdown
-# MisakaNet
+# 开源项目 README Optimization — 7 个常见Pitfalls与Fix Checklist
 
 ## What is MisakaNet?
 

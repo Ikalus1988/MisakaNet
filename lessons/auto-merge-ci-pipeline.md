@@ -23,7 +23,7 @@ PR opened → Shadow Branch mirror → DCO check (standalone)
 Reject low-effort agent submissions before running expensive tests:
 
 ```yaml
-# pr-checks.yml snippet — Agent Quality Score
+# Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge
 - name: Agent Quality Score
   run: |
     DIFF=$(gh api repos/owner/repo/pulls/$PR/files --paginate --jq '[.[].patch // ""] | join("\n")')

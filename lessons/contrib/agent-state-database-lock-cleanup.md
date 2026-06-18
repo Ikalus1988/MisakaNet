@@ -29,7 +29,7 @@ SQLite locking mechanism does not handle forced termination well. When the agent
 #### Step 1: Identify lock files
 ```bash
 ls -la ~/.<agent>/
-# Look for: state.db, state.db-journal, state.db-wal, state.db-shm
+# Agent State Database Lock Issues — Cleanup Protocol
 ```
 
 #### Step 2: Remove lock artifacts

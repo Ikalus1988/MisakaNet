@@ -24,7 +24,7 @@
 **现象：** 品牌过滤使用正则匹配文件名，而不是元数据字段。
 
 ```python
-# 坑：文件名正则——脆弱、遗漏、漏检
+# RAG 品牌Filter三坑：条件触发、文件正则、BM25 Cache
 _fanuc_pat = re.compile(r'(?i)fanuc|B-\d{5}|R-30i[AB]|M-\d{3}|A-\d{5}')
 filtered = [c for c in chunks if _fanuc_pat.search(c["filename"])]
 ```

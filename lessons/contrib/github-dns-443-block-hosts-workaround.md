@@ -70,7 +70,7 @@ done
 **正确写法：**
 
 ```bash
-# ✅ 只写 github.com
+# GitHub DNS 污染/443端口不通 — hosts 备用 IP 方案
 echo "<可达IP> github.com" | sudo tee -a /etc/hosts
 
 # ❌ 不要这样写——api.github.com 有自己的 IP

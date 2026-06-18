@@ -15,7 +15,7 @@
 ## 修复
 
 ```bash
-# 1. 确认当前 shell
+# Python venv 激活失败或路径不匹配
 echo $SHELL
 
 # 2. 正确的激活方式

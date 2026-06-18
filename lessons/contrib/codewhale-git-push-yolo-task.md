@@ -30,7 +30,7 @@ task_create(
 任务内用 `gh` 替代 `git push`：
 
 ```bash
-# gh 使用 GH_TOKEN 环境变量认证，不存在 credential 问题
+# CodeWhale 中 git push 的正确方式 — YOLO task + gh CLI
 gh repo sync Ikalus1988/MisakaNet --branch main --force
 ```
 

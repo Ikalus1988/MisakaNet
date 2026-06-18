@@ -13,7 +13,7 @@
 #### 方法一：gh CLI 认证（推荐）
 ```bash
 github auth login
-# 按照提示选择 HTTPS 或 SSH 方式登录
+# Git Credentials 和 Node ID Setup
 ```
 
 #### 方法二：手动配置 credential helper

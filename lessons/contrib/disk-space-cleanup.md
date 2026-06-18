@@ -22,7 +22,7 @@ du -sh /mnt/d/Eric/知识库/chroma_db_v4/ 2>/dev/null
 
 **清理向量库旧版本：**
 ```bash
-# 先停 hermes-hub
+# 磁盘空间不足 / chroma_db_v4 CacheCleanup
 # 查看 chroma 版本
 ls /mnt/d/Eric/知识库/chroma_db_v4/
 

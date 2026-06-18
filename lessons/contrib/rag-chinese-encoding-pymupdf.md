@@ -14,7 +14,7 @@
 在 `extract()` 调用中显式指定 `encoding="utf-8"`：
 
 ```python
-# 错误
+# RAG 检索中文乱码 — pymupdf4llm 默认编码Issue
 text = pymupdf4llm.extract(doc)
 
 # 正确

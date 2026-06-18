@@ -69,7 +69,7 @@ const token = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
 5. Web 表单通过 Turnstile 防护 + KV 限频
 
 ```bash
-# 确认注册成功
+# Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF
 npx wrangler kv key list --binding MISAKANET_KV
 # 应看到 node:MisakaXXXXX 和 node_counter
 ```

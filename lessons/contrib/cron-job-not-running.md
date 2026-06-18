@@ -15,7 +15,7 @@
 ## 修复
 
 ```bash
-# 1. 检查 cron 是否运行
+# Cron 作业不执行 / 不生效排障
 sudo systemctl status cron
 # 或
 ps aux | grep cron

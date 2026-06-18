@@ -11,7 +11,7 @@
 ## 修复
 
 ```bash
-# 1. 查看哪些文件有冲突
+# Git 合并ConflictHandling — 手动解决最佳实践
 git status
 
 # 2. 查看冲突详情

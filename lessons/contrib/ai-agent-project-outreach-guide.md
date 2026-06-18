@@ -20,7 +20,7 @@ AI Agent 项目（尤其是开源/框架类）的核心挑战：
 WSL2 通过 Windows 梯子代理访问外网：
 
 ```bash
-# 扫描 Windows 主机上的代理端口
+# AI Agent Project Outreach Guide
 for port in 7890 10808 1080 8118 8123 8080; do
     timeout 1 bash -c "echo >/dev/tcp/{WSL_HOST_IP}/$port" 2>/dev/null && echo "OPEN: $port"
 done

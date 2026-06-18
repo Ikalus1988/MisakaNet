@@ -35,7 +35,7 @@ chrome.exe --remote-debugging-port=9222
 ### 步骤 2：启动 Claw Relay 连接 Chrome
 
 ```bash
-# 安装（如果需要）
+# Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器
 npm install -g openclaw
 
 # 配置文件 ~/.claw-relay/config.yaml

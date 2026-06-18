@@ -11,7 +11,7 @@ WSL2 访问 Windows NTFS 文件系统时有权限映射问题：Linux 的 `chmod
 ## 修复
 
 ```bash
-# 1. 检查是否是 NTFS 跨文件系统问题
+# Permission Denied / WSL NTFS 跨文件系统PermissionFix
 df -T /path/to/file  # 确认文件系统类型
 # 如果显示 9p 或 drvfs → 是 WSL 挂载点
 

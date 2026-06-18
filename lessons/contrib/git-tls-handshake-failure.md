@@ -14,7 +14,7 @@ gnutls_handshake() failed: The TLS connection was non-properly terminated.
 ## 修复
 
 ```bash
-# 1. 先重试一次（如果是瞬时问题）
+# GitHub TLS 握手失败 — gnutls_handshake() Error
 git pull origin main
 
 # 2. 如果持续失败，配置代理

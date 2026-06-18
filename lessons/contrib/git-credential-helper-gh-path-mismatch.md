@@ -48,7 +48,7 @@ git config --global --unset-all credential.https://gist.github.com.helper
 ### 3. 确保保留正确的 credential store
 
 ```bash
-# 确认 credential.helper=store 还在
+# gh credential helper 路径Error导致 git push 静默失败
 git config --global credential.helper store
 # 确认 .git-credentials 里有有效 token
 cat ~/.git-credentials

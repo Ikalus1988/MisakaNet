@@ -23,7 +23,7 @@ hermes config set FEISHU_APP_SECRET <new_secret>
 
 **Hub 凭证**：
 ```bash
-# 环境变量写在 ~/.bashrc
+# Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里
 export FEISHU_APP_ID=cli_a93f960281389bcd
 export FEISHU_APP_SECRET=[FEISHU_SECRET]
 

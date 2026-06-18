@@ -33,7 +33,7 @@ elif any(k in cleaned_text for k in FB_GOOD):
 维护 `_last_question[sender]` 字典，记录每位用户的上一条提问。
 
 ```python
-# 正常回答后记录
+# IM 机器人反馈收集与 JSONL 队列审核模式
 _last_question[sender_key] = current_question
 
 # 用户说"差评"时取出

@@ -21,7 +21,7 @@ load chunks → embed ALL 34100 (内存) → write ALL to Chroma
 改造 `build_edoc_chroma.py` 为小批次写入：
 
 ```python
-# 改造后：每 5000 条立即写入
+# Chroma 建库无 Checkpoint — 进程一死全部丢失
 def embed_and_build(chunks, model, collection, batch_size=5000):
     for i in range(0, len(chunks), batch_size):
         batch = chunks[i:i+batch_size]

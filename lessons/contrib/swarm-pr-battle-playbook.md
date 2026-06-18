@@ -1,6 +1,6 @@
 ---{"title": "Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams", "domain": "development", "tags": ["pr", "ai-review", "github-actions", "fatal-error", "spawn", "shell-injection", "esm", "ci", "playbook", "sop"], "status": "published", "confidence": "0.95", "source": "hermes_wsl2", "created": "2026-06-17", "updated": "2026-06-17"}---
 
-# Swarm PR Battle Playbook
+# Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams
 
 > Cross-project SOP for shipping `_ERROR_HANDLER` env-var fatal error hooks through AI-reviewed upstreams.
 > Generalized from 2 real PR campaigns (Node.js runtime + TypeScript bundler).

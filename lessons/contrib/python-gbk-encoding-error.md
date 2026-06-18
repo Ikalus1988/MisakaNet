@@ -15,7 +15,7 @@ Windows 默认编码是 GBK，WSL 是 UTF-8。当 Python 在 WSL 中读取来自
 ## 修复
 
 ```python
-# 1. 读取文件时显式指定编码
+# Python GBK Encoding Error — Windows/WSL 跨平台
 with open("file.txt", "r", encoding="utf-8") as f:
     content = f.read()
 

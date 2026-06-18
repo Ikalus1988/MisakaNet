@@ -56,7 +56,7 @@ def safe_json_parse(text: str) -> dict | None:
     
     return None
 
-# 使用
+# JSON 解析失败Handling — 截断 / 格式Error
 result = safe_json_parse(model_output)
 if result is None:
     print("JSON 解析失败，尝试重新生成")

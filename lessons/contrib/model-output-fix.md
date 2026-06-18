@@ -40,7 +40,7 @@ def safe_parse_json(raw: str) -> dict | None:
 
 **模型侧预防：**
 ```python
-# 增加 max_tokens 或改用更强的模型
+# 模型输出截断 / JSON 解析失败Handling
 response = client.messages.create(
     model="claude-sonnet-4-6",
     max_tokens=4096,  # 加大

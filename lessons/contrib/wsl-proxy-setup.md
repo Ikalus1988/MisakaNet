@@ -11,7 +11,7 @@ WSL2 有自己的网络命名空间，Windows 代理不会自动继承到 Linux 
 ## 修复
 
 ```bash
-# 1. 设置代理环境变量（临时）
+# WSL 代理Setup — 通过 Windows 梯子Access外网
 export http_proxy=http://$(hostname).local:7890
 export https_proxy=http://$(hostname).local:7890
 export HTTP_PROXY=$http_proxy

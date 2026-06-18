@@ -40,7 +40,7 @@ if: contains(fromJSON('["FIRST_TIMER", "FIRST_TIME_CONTRIBUTOR"]'),
 扩展 if 条件覆盖 `NONE`，或直接移除 author_association 限制：
 
 ```yaml
-# 方案 A：包含 NONE
+# PR Welcome Not Triggering — author_association NONE vs FIRST_TIMER Trap
 if: contains(fromJSON('["FIRST_TIMER", "FIRST_TIME_CONTRIBUTOR", "NONE"]'),
     github.event.pull_request.author_association)
 

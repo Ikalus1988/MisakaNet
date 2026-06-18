@@ -17,7 +17,7 @@ import re
 
 text = "<div>内容1</div><div>内容2</div>"
 
-# ❌ 贪婪：匹配到最后一个 </div>
+# 正则表达式 debugging — 贪婪匹配造成的意外结果
 re.findall(r"<div>(.*)</div>", text)
 # ['内容1</div><div>内容2']
 

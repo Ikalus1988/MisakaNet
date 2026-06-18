@@ -13,7 +13,7 @@ WSL2 使用动态内存分配，默认不自动回收。长时间运行的进程
 ## 修复
 
 ```bash
-# 1. 查看当前内存
+# WSL2 内存泄漏 / 内存占用过高
 free -h
 cat /proc/meminfo | grep MemAvailable
 

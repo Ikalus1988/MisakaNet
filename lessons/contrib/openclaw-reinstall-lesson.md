@@ -19,7 +19,7 @@
 重装前必须执行：
 
 ```bash
-# 1. 停止所有 openclaw 相关进程
+# OpenClaw 重装教训 — 删除前先停服务清残留
 systemctl --user stop openclaw-gateway.service
 pkill -f openclaw || true
 

@@ -14,7 +14,7 @@ wxauto 通过 Windows UI Automation API 操控微信桌面客户端，**依赖 W
 
 必须在 **Windows PowerShell 或 CMD** 中安装，不是在 WSL 终端：
 ```powershell
-# 先退出 WSL
+# wxauto 必须在 Windows Python 下安装，不能走 WSL pip
 exit
 # 在 Windows PowerShell 中
 pip install wxauto requests

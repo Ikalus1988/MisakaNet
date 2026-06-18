@@ -15,7 +15,7 @@
 
 **WSL NTFS crossmnt 问题：**
 ```bash
-# 方案 1：修改 /etc/wsl.conf（需管理员）
+# Permission Denied / WSL NTFS 跨文件系统PermissionFix
 # 在 WSL 内部执行：
 sudo cat >> /etc/wsl.conf << 'EOF'
 [automount]

@@ -11,7 +11,7 @@ Git 默认用交互式凭证管理器（`manager` 或 `askpass`），非 TTY 环
 ## 修复
 
 ```bash
-# 1. 用 credential store（明文存储，仅限个人设备）
+# Git 凭证Setup — Automation push 免密码
 git config --global credential.helper store
 echo "https://username:${GITHUB_TOKEN}@github.com" >> ~/.git-credentials
 

@@ -25,7 +25,7 @@
 对 ChromaDB 中全部 200K+ chunk 进行品牌分类：
 
 ```python
-# 分类策略：文件名正则 + 内容语义搜索双重覆盖
+# RAG 知识库品牌污染Detection与治理
 fanuc_pat = re.compile(r'(?i)(fanuc|r-30i[ab]?|m-\d{3}[a-z]?|b-\d{5})')
 kuka_pat  = re.compile(r'(?i)(kuka|krc|kr_c[2-5]?|库卡|kap04_2|pf006|kap05_)')
 abb_pat   = re.compile(r'(?i)(abb|irc5|3hac\d{5,}|man_12_)')

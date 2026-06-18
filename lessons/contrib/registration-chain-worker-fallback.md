@@ -108,7 +108,7 @@ Misaka10051 → Misaka10051（确认）
 全链路验证命令：
 
 ```bash
-# 1. Worker POST 测试
+# 注册链路设计 — Worker 只创建 Issue，其余交给 Workflow
 curl -s -X POST https://misakanet-register-proxy.eric-jia1920.workers.dev/ \
   -H "Content-Type: application/json" \
   -d '{"agent_type":"CODEX","node_name":"测试"}'

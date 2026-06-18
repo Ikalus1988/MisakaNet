@@ -47,6 +47,6 @@ print(data["choices"][0]["message"]["content"])
 ## 验证
 
 ```bash
-# 检查可用模型
+# OpenAI 兼容 API 的通用调用格式
 curl -s http://localhost:11434/v1/models | python3 -m json.tool
 ```

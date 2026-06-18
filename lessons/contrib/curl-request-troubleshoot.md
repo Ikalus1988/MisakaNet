@@ -11,7 +11,7 @@
 ## 修复
 
 ```bash
-# 1. DNS 解析
+# curl / wget 请求失败通用Diagnosis
 nslookup example.com
 dig example.com
 # 正常返回 IP 地址 → DNS OK

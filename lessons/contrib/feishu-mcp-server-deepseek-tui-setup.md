@@ -77,7 +77,7 @@ MCP 配置保存在 `~/.deepseek/mcp.json`。
 ## 部署步骤
 
 ```bash
-# 1. 创建项目
+# DeepSeek TUI — Feishu MCP Server Setup & Permission Boundaries
 mkdir -p .feishu-mcp-server && cd .feishu-mcp-server
 uv init --name feishu-mcp-server
 uv add mcp requests websocket-client
