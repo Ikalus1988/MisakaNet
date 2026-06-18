@@ -1,5 +1,5 @@
 ---
-{"title": "DeepSeek TUI 飞书 MCP Server 搭建与权限边界", "domain": "feishu", "source": "deepseek-tui", "status": "published", "tags": ["feishu", "mcp", "deepseek", "docx-api", "permissions"], "created": "2026-05-19", "updated": "2026-05-19"}
+{"title": "DeepSeek TUI — Feishu MCP Server Setup & Permission Boundaries", "domain": "feishu", "source": "deepseek-tui", "status": "published", "tags": ["feishu", "mcp", "deepseek", "docx-api", "permissions"], "created": "2026-05-19", "updated": "2026-05-19"}
 ---
 
 ## 背景
@@ -106,6 +106,13 @@ async with stdio_client(params) as (read, write):
 ```
 
 ## 已知限制
+
+## Verification
+
+1. Complete the MCP server setup and verify `FEISHU_*` env vars are picked up
+2. Test `search_knowledge.py "feishu"` — confirm lessons are retrieved through the MCP bridge
+3. Attempt to create a Feishu doc via the MCP server — confirm write permissions work
+4. Try sheet and wiki operations — confirm they return an explicit "not supported" error
 
 - 不支持 sheet（电子表格）和 wiki（知识库）
 - 文档评论需要额外权限（docs:document.comment:read）

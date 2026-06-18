@@ -777,7 +777,7 @@
   },
   {
     "id": "deepseek-tui-write-file-sandbox-worktree-git-path",
-    "title": "DeepSeek TUI Agent 模式下 write_file 写入不落地 + worktree git 链接路径断裂",
+    "title": "DeepSeek TUI — write_file Sandbox + Worktree Git Path Breakage",
     "domain": "devops",
     "tags": [
       "deepseek-tui",
@@ -899,7 +899,7 @@
   },
   {
     "id": "feishu-mcp-server-deepseek-tui-setup",
-    "title": "DeepSeek TUI 飞书 MCP Server 搭建与权限边界",
+    "title": "DeepSeek TUI — Feishu MCP Server Setup & Permission Boundaries",
     "domain": "feishu",
     "tags": [
       "feishu",
