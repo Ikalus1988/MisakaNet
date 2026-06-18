@@ -1,6 +1,6 @@
 # zsxh 小号执行计划
 
-> 生成: 2026-06-18 | OpenClaw ✅ → Playwright 🎯
+> 生成: 2026-06-18 | 全线出击：OpenClaw ✅ → Playwright 🎯 + Vite 🎯
 
 ---
 
@@ -27,10 +27,9 @@ cliProgram().catch(logErrorAndExit)
 | 维度 | 值 |
 |------|-----|
 | 语言 | TypeScript |
-| 收口 | `logErrorAndExit` 全局函数 + 多处 `.catch()` |
+| 收口 | `logErrorAndExit` + 多处 `.catch()` 链 |
 | 目标改动 | ~15 行注入 `PLAYWRIGHT_ERROR_HANDLER` |
-| 环境变量 | `PLAYWRIGHT_ERROR_HANDLER` |
-| 难度 | ⭐⭐（比 tsdown 多几个 catch 链）|
+| 难度 | ⭐⭐ |
 
 ### 动作清单
 
@@ -45,7 +44,38 @@ cliProgram().catch(logErrorAndExit)
 
 ---
 
-## Phase 3: E2B — 侦察 🔍
+## Phase 3: Vite — 正式 PR 🎯
+
+**仓库**: `vitejs/vite`
+**入口**: `packages/vite/src/node/cli.ts`
+
+```
+catch(e) { process.exit(1) }  ← 散布在各命令 action 中
+```
+
+**策略**: 环境变量 `VITE_ERROR_HANDLER`，开箱即用，零侵入。
+
+| 维度 | 值 |
+|------|-----|
+| 收口点 | 多个 `catch` 块中的 `process.exit(1)` |
+| 目标改动 | ~15 行 |
+| 话术 | "社区对全局错误接管通常关注侵入性和扩展性 — 环境变量方案零侵入" |
+| 难度 | ⭐ |
+
+### 动作清单
+
+```
+1. fork vitejs/vite
+2. 在 catch 块注入 VITE_ERROR_HANDLER
+3. build + 真 fatal path proof
+4. PR body（OpenClaw v6 模板改 Vite 版）
+5. commit + signoff + push
+6. 等社区 review
+```
+
+---
+
+## Phase 4: E2B — 侦察 🔍
 
 **仓库**: `e2b-dev/desktop` 或 `e2b-dev/cli`
 
@@ -59,10 +89,9 @@ cliProgram().catch(logErrorAndExit)
 
 ---
 
-## Phase 4: tsdown + Vite 跟进
+## Phase 5: tsdown 跟进
 
 - tsdown PR #1 — 等 ClawSweeper/Codex review
-- Vite — 侦查完成，catch 块定位完毕，待命
 
 ---
 
