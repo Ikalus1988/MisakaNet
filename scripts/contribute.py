@@ -218,14 +218,143 @@ def contribute(filepath: str):
     return True
 
 
+def _wizard():
+    """交互式贡献向导 — 引导用户逐步填写 lesson 内容"""
+    print("🎓 Welcome to Lesson Contribution Wizard!")
+    print("Answer the questions below to create a new lesson.")
+    print()
+
+    # Step 1: Problem
+    print("1. What's the problem you solved?")
+    print("   (Describe the symptom, be specific)")
+    problem = input("   > ").strip()
+    while not problem:
+        problem = input("   > ").strip()
+
+    # Step 2: Domain
+    known_domains = ["rag", "devops", "fanuc", "network", "feishu", "tts", "mcp", "agent-network", "marketing", "audio", "docker"]
+    print(f"\n2. What domain is this? ({', '.join(known_domains)})")
+    domain = input("   > ").strip().lower()
+    if domain not in known_domains:
+        print(f"   ⚠️  Unknown domain '{domain}', using it anyway.")
+
+    # Step 3: Common problem?
+    print("\n3. Is this a common problem? (affects multiple users/agents?) (y/n)")
+    is_common = input("   > ").strip().lower().startswith("y")
+
+    # Step 4: Root cause
+    print("\n4. What's the root cause? (technical detail)")
+    root_cause = input("   > ").strip()
+    while not root_cause:
+        root_cause = input("   > ").strip()
+
+    # Step 5: Solution
+    print("\n5. How to fix it? (describe step by step)")
+    solution = input("   > ").strip()
+    while not solution:
+        solution = input("   > ").strip()
+
+    # Step 6: Verification
+    print("\n6. How to verify the fix works? (command or test)")
+    verify = input("   > ").strip()
+    while not verify:
+        verify = input("   > ").strip()
+
+    # Step 7: Environment
+    print("\n7. What environment? (e.g., WSL2, Docker, Ubuntu 22.04, leave blank if generic)")
+    env = input("   > ").strip()
+
+    # Generate title from problem
+    title = problem[:100]
+    slug = _slugify(title)
+
+    # Build tags
+    tags = [domain]
+    if is_common:
+        tags.append("common")
+    if env:
+        tags.append(f"platform:{env.lower().replace(' ', '-')}")
+
+    # Build content
+    lines = [
+        f"## Problem",
+        "",
+        problem,
+        "",
+        f"## Root Cause",
+        "",
+        root_cause,
+        "",
+        f"## Solution",
+        "",
+        solution,
+        "",
+        f"## Verification",
+        "",
+        verify,
+        "",
+    ]
+    if env:
+        lines.insert(0, f"**Environment:** {env}")
+        lines.append("")
+    lines.append("## Notes")
+    lines.append("")
+    lines.append("<!-- Add caveats, edge cases, related lessons here -->")
+    lines.append("")
+
+    content = "\n".join(lines)
+
+    # Preview
+    print()
+    print("=" * 50)
+    print("📝 Lesson Preview")
+    print("=" * 50)
+    print(f"Title: {title}")
+    print(f"Domain: {domain}")
+    print(f"Tags: {', '.join(tags)}")
+    print(f"---")
+    print(content)
+    print("=" * 50)
+
+    # Confirm
+    print("\nReady to submit? (y/n)")
+    confirm = input("   > ").strip().lower().startswith("y")
+    if not confirm:
+        print("Cancelled.")
+        return False
+
+    # Write temp file and submit
+    tmp = LESSONS_DIR / f"__tmp_{slug}.md"
+    body = f"""---
+{{"title": "{title}", "domain": "{domain}", "tags": {json.dumps(tags)}, "status": "published", "created": "{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", "updated": "{datetime.now(timezone.utc).strftime('%Y-%m-%d')}", "source": "contributor"}}
+---
+
+{content}
+"""
+    tmp.write_text(body, encoding="utf-8")
+    try:
+        ok = contribute(str(tmp))
+        if ok:
+            print(f"✅ Lesson submitted! Title: {title}")
+            print(f"   Temp file: {tmp}")
+            print(f"   It will be cleaned up after submission.")
+        return ok
+    finally:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description="GitHub API 一键贡献 lesson")
     parser.add_argument("file", nargs="?", help="lesson 文件路径")
     parser.add_argument("-t", "--title", help="标题（配合 --content）")
     parser.add_argument("-d", "--domain", default="general", help="领域")
     parser.add_argument("content", nargs="?", help="内容（配合 -t -d）")
+    parser.add_argument("--wizard", action="store_true", help="交互式贡献向导")
     args = parser.parse_args()
 
+    if args.wizard:
+        return _wizard() or 0
     if args.file:
         contribute(args.file)
     elif args.title and args.content:
