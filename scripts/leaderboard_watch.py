@@ -29,6 +29,7 @@ TOKEN = os.environ.get("GH_TOKEN", "")
 DRY_RUN = "--dry-run" in sys.argv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+LESSONS_DIR = REPO_ROOT / "lessons"
 LEADERBOARD_FILE = REPO_ROOT / "data" / "leaderboard.json"
 
 GRAPHQL_QUERY = """
@@ -169,6 +170,31 @@ def compute_leaderboard():
                       "actions-user", "cloudflare-workers-and-pages[bot]",
                       "dependabot[bot]", "pre-commit-ci[bot]"}
     contrib = {k: v for k, v in contrib.items() if k not in EXCLUDE_LOGINS}
+
+    # Feature: lessons_contributed bonus — read source field from lesson frontmatter
+    lessons_bonus = {}
+    for lesson_file in sorted(LESSONS_DIR.rglob("*.md")):
+        if lesson_file.name in ("index.md", "TEMPLATE.md", "README.md"):
+            continue
+        if "_archive" in lesson_file.parts:
+            continue
+        text = lesson_file.read_text(encoding="utf-8", errors="replace")
+        m = re.match(r'^---\s*\n(\{.*?\})\s*\n---', text, re.DOTALL)
+        if m:
+            try:
+                fm = json.loads(m.group(1))
+                source = (fm.get("source") or "").lower().strip()
+                if source and source not in ("unknown", "contribute-api", "bootstrap", ""):
+                    lessons_bonus[source] = lessons_bonus.get(source, 0) + 1
+            except json.JSONDecodeError:
+                pass
+
+    # Apply lessons_contributed bonus: each contributed lesson adds 0.5 points
+    for login in contrib:
+        bonus = lessons_bonus.get(login, 0) * 0.5
+        if bonus > 0:
+            contrib[login] += bonus
+            print(f"  📚 {login}: +{bonus:.1f} from {lessons_bonus.get(login, 0)} lessons")
 
     # 排序
     sorted_contrib = sorted(contrib.items(), key=lambda x: -x[1])
