@@ -1,40 +1,55 @@
 # @misaka-net/fatal-guard
 
 > Zero-dependency non-invasive fatal error guard for Node.js CLIs.  
-> Capture uncaught exceptions, unhandled rejections, and non-zero exits — route structured 4-field payload to an external handler.
-
-## Why
-
-Vite, E2B, OpenClaw — three major CLI tools all lack a standard mechanism to hook external alerting into the fatal-error lifecycle.  
-This package provides that entry point without modifying any source code.
-
-```
-node -r @misaka-net/fatal-guard/register ./node_modules/.bin/vite build
-```
-
-No fork. No PR. No dependency. One env var.
-
-## Usage
-
-### Automatic registration (recommended)
+> Capture uncaught exceptions, unhandled rejections, and non-zero exits — route a structured 4-field payload to any external handler.
 
 ```bash
+npm i @misaka-net/fatal-guard
 FATAL_HANDLER=/usr/bin/logger node -r @misaka-net/fatal-guard/register ./app.js
 ```
 
-### Manual registration
+One env var. No source code changes.
 
-```js
-const { runHandler } = require('@misaka-net/fatal-guard');
+---
 
-process.on('uncaughtException', (err) => {
-  runHandler('uncaught_exception');
-});
+## Quick start
+
+```bash
+# 1. Install
+npm i @misaka-net/fatal-guard
+
+# 2. Run any Node.js CLI with the guard preloaded
+FATAL_HANDLER=/usr/bin/logger node -r @misaka-net/fatal-guard/register ./your-cli.js
+
+# 3. Trigger a fatal error — watch syslog light up
+#    (uncaught exceptions, unhandled rejections, non-zero exits all captured)
 ```
 
-## Payload (4 fields)
+**Real syslog output after an uncaught exception:**
 
-When a fatal event occurs, the handler is spawned with a single JSON argv argument:
+```
+Jun 19 08:38:26 hostname logger[180739]:
+  {"schemaVersion":1,"reason":"uncaught_exception",
+   "timestamp":"2026-06-19T08:38:26.091Z","pid":180739}
+
+Jun 19 08:38:26 hostname logger[180739]:
+  {"schemaVersion":1,"reason":"exit_code",
+   "timestamp":"2026-06-19T08:38:26.096Z","pid":180739}
+```
+
+---
+
+## How it works
+
+`register.js` hooks into three process-level fatal signals:
+
+| Signal | Trigger | Behavior |
+|--------|---------|----------|
+| `uncaughtException` | Synchronous throw not caught by any try/catch | Fires handler, prints to stderr, exits with code 1 |
+| `unhandledRejection` | Async promise rejection with no `.catch()` | Fires handler, prints warning |
+| `exit_code` / `SIGTERM` / `SIGINT` | Non-zero exit or termination signal | Fires handler |
+
+On each signal, the handler executable is spawned with a single JSON argv argument:
 
 ```json
 {
@@ -45,40 +60,47 @@ When a fatal event occurs, the handler is spawned with a single JSON argv argume
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `schemaVersion` | number | Payload format version (always 1) |
-| `reason` | string | `uncaught_exception` · `unhandled_rejection` · `exit_code` |
-| `timestamp` | string | ISO 8601 |
-| `pid` | number | Process ID (for log correlation) |
+**4 fields only.** No stack traces, no environment variables, no secrets. Designed to be redacted by default — the handler decides what to enrich.
 
-## Handler
+---
 
-The handler is any executable on `$PATH` (or absolute path). Common examples:
+## Handler examples
 
-```bash
-# syslog
-FATAL_HANDLER=/usr/bin/logger
+| Handler | Command | Effect |
+|---------|---------|--------|
+| syslog | `FATAL_HANDLER=/usr/bin/logger` | Writes to systemd journal / syslog |
+| HTTP webhook | `FATAL_HANDLER=/usr/bin/curl` | Receives JSON as argv[1] — pair with a small wrapper script for HTTP POST |
+| Custom script | `FATAL_HANDLER=/opt/alert-to-slack.sh` | Write your own alert pipeline |
 
-# custom script
-FATAL_HANDLER=/opt/alert-to-slack.sh
+---
 
-# HTTP POST via curl
-FATAL_HANDLER=/usr/bin/curl
-# (will receive JSON as argv[1] — pipe-aware handlers expected)
-```
-
-## Design
+## Design principles
 
 | Principle | Implementation |
 |-----------|---------------|
-| Zero dependencies | `require('node:child_process')` only |
-| Non-blocking | `spawn` + `detached: true` + `unref()` — never blocks shutdown |
-| Injection-safe | `shell: false` — no shell interpretation of env var or payload |
-| Fire-and-forget | Handler failure is silently swallowed |
+| **Zero dependencies** | `require('node:child_process')` only |
+| **Non-blocking** | `spawn` + `detached: true` + `unref()` — handler never blocks shutdown |
+| **Injection-safe** | `shell: false` — no shell interpretation of env var or payload |
+| **Fire-and-forget** | Handler failure is silently swallowed — process continues |
+| **Redacted by default** | 4 fields only — no stack, no env vars, no secrets |
+
+---
+
+## API
+
+```js
+const { buildPayload, runHandler } = require('@misaka-net/fatal-guard');
+
+buildPayload('uncaught_exception');
+// → '{"schemaVersion":1,"reason":"uncaught_exception","timestamp":"...","pid":12345}'
+
+runHandler('uncaught_exception');
+// → spawns FATAL_HANDLER with payload as argv[1], or no-op if FATAL_HANDLER is unset
+```
+
+---
 
 ## Related
 
-- [OpenClaw PR #93310](https://github.com/openclaw/openclaw/pull/93310) — origin of the 4-field model
-- [E2B PR #1458](https://github.com/e2b-dev/E2B/pull/1458) — parallel implementation
-- [Vite PR #22701](https://github.com/vitejs/vite/pull/22701) — parallel implementation
+- [GitHub](https://github.com/Ikalus1988/MisakaNet/tree/main/packages/fatal-guard)
+- npm: `@misaka-net/fatal-guard`
