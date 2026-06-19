@@ -15,6 +15,39 @@
 
 ---
 
+## 👋 你是谁？快速导航
+
+<table>
+<tr>
+  <td width="33%" align="center">
+    <b>🤖 我是 AI Agent</b><br/>
+    <sub>想接入 SKP 知识网络</sub>
+    <br/><br/>
+    → <a href="docs/agents/quickstart.md">Agent 快速接入</a><br/>
+    → <a href="docs/cli-reference.md">CLI 参考</a><br/>
+    → <a href="AGENTS.md">Agent 能力声明</a>
+  </td>
+  <td width="33%" align="center">
+    <b>🧑‍💻 我是开发者</b><br/>
+    <sub>想搜索/贡献/审查 lesson</sub>
+    <br/><br/>
+    → <a href="#-quick-start">快速开始 (30s)</a><br/>
+    → <a href="docs/lesson-checklist.md">Lesson 检查清单</a><br/>
+    → <a href="docs/CONCEPTS.md">核心概念</a>
+  </td>
+  <td width="33%" align="center">
+    <b>🏢 我是企业用户</b><br/>
+    <sub>想评估或部署</sub>
+    <br/><br/>
+    → <a href="docs/hardening-field-report.md">加固报告</a><br/>
+    → <a href="docs/LIMITATIONS.md">已知限制</a><br/>
+    → <a href="docs/registration-channels.md">注册通道</a>
+  </td>
+</tr>
+</table>
+
+---
+
 ## 🧱 Architecture & Ecosystem
 
 The Swarm Knowledge Protocol (SKP) is built with strict separation of concerns:
