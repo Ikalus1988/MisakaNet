@@ -1,0 +1,50 @@
+name: fatal-guard CI
+
+on:
+  push:
+    paths:
+      - 'packages/fatal-guard/**'
+  pull_request:
+    paths:
+      - 'packages/fatal-guard/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/fatal-guard
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check zero dependencies
+        run: |
+          DEPS=$(node -e "const p=require('./package.json');console.log(p.dependencies?Object.keys(p.dependencies).length:0)")
+          echo "dependencies: $DEPS"
+          [ "$DEPS" = "0" ] || { echo "FAIL: expected 0 dependencies"; exit 1; }
+
+      - name: Test — module loads without error
+        run: node -e "require('./register'); console.log('OK: module loaded')"
+
+      - name: Test — uncaughtException invokes handler
+        run: |
+          FATAL_HANDLER=/usr/bin/logger timeout 5 node -r ./register -e "
+            setTimeout(() => { throw new Error('ci-test'); }, 50);
+          " 2>&1 | grep -q 'fatal-guard uncaughtException' && echo 'PASS: uncaughtException' || echo 'FAIL'
+
+      - name: Test — handler receives syslog payload
+        run: |
+          FATAL_HANDLER=/usr/bin/logger timeout 5 node -r ./register -e "
+            setTimeout(() => { throw new Error('ci-syslog'); }, 50);
+          " 2>&1
+          sleep 1
+          journalctl --since '30 seconds ago' --no-pager -o cat 2>&1 | grep 'schemaVersion' | tail -1 | grep -q 'ci-syslog' && echo 'PASS: syslog payload' || echo 'FAIL: no syslog entry'
+
+      - name: Test — TypeScript declaration exists
+        run: |
+          test -f index.d.ts && node -e "require('fs').readFileSync('index.d.ts','utf-8').includes('FatalPayload')" && echo 'PASS: index.d.ts' || echo 'FAIL: missing index.d.ts'
