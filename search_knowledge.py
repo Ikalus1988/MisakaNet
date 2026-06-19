@@ -180,7 +180,7 @@ def heal(raw_log: str):
     ranked = _rank_docs(primary_sig, all_docs, titles_only=False, broad_only=True)
     found = _format_output(ranked, titles_only=False, top_k=5,
                            mode_label=f"lessons+reference  (All {len(all_docs)} items)",
-                           query=primary_sig)
+                           query=primary_sig, explain=False)
     _show_timing(time.time() - t0, len(all_docs))
 
     if unmatched_count > 0:
@@ -256,6 +256,8 @@ def main():
     top_k = 10
     use_semantic = False
     suggest = False
+    explain = False
+    env_filter: Optional[str] = None
     lang: Optional[str] = None
     domain: Optional[str] = None
     search_args = sys.argv[2:]
@@ -290,6 +292,12 @@ def main():
             domain = arg.split("=", 1)[1].lower()
         elif arg == "--domain" and i + 1 < len(search_args):
             domain = search_args[i + 1].lower()
+        elif arg == "--explain":
+            explain = True
+        elif arg.startswith("--env="):
+            env_filter = arg.split("=", 1)[1].lower()
+        elif arg == "--env" and i + 1 < len(search_args):
+            env_filter = search_args[i + 1].lower()
     t0 = time.time()
     found_any = False
 
@@ -328,6 +336,12 @@ def main():
         ref_docs = [d for d in ref_docs if d.domain and d.domain.lower() == domain]
         print(f"  🏷️  Filtering by domain: {domain}")
 
+    # Environment filter (--env)
+    if env_filter:
+        lessons_docs = [d for d in lessons_docs if any(env_filter in t.lower() for t in d.tags)]
+        ref_docs = [d for d in ref_docs if any(env_filter in t.lower() for t in d.tags)]
+        print(f"  💻 Filtering by environment: {env_filter}")
+
     if use_semantic:
         try:
             from hub.storage.vector_store import generate_embedding
@@ -351,7 +365,7 @@ def main():
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
         found = _format_output(filtered, titles_only, top_k,
                                mode_label=f"lessons/  (All {len(lessons_docs)} items)",
-                               query=query)
+                               query=query, explain=explain)
         found_any = found_any or found
     if ref_docs:
         ranked = _rank_docs(query, ref_docs, titles_only, broad_only=False)
@@ -359,7 +373,7 @@ def main():
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
         found = _format_output(filtered, titles_only, top_k,
                                mode_label=f"reference/  (All {len(ref_docs)} items)",
-                               query=query)
+                               query=query, explain=explain)
         found_any = found_any or found
     total_docs = len(lessons_docs) + len(ref_docs)
     if not found_any:

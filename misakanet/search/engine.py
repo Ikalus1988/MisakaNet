@@ -344,7 +344,8 @@ def _format_output(scored: list[tuple[float, CachedDoc]],
                    titles_only: bool = False,
                    top_k: int = 10,
                    mode_label: str = "",
-                   query: str = "") -> bool:
+                   query: str = "",
+                   explain: bool = False) -> bool:
     if not scored:
         return False
     n = len(scored)
@@ -370,6 +371,12 @@ def _format_output(scored: list[tuple[float, CachedDoc]],
         print(f"  {'':>25} {_score_bar(score):>15}  {time_str}")
         if match_reason:
             print(f"  {'':>25} (matched: {match_reason})")
+        # Feature: --explain score breakdown
+        if explain and query:
+            bm25 = _compute_bm25_scores(query, [doc])[0]
+            meta = _metadata_bonus(query, doc)
+            baseline = doc.score_baseline
+            print(f"  {'':>25} ↳ BM25: {bm25:.3f} | Meta: {meta:.3f} | Base: {baseline:.3f} | Tags: {', '.join(doc.tags[:5]) if doc.tags else '—'}")
         if titles_only:
             continue
         rel_dir = "lessons" if doc.is_lesson else "reference"
