@@ -1,8 +1,18 @@
 # MisakaNet Shared Lessons
 
-> 最后更新: 2026-06-14 | 来源: hermes_wsl2
+> 最后更新: 2026-06-19 | 来源: hermes_wsl2
 
 每条 lesson 包含踩坑记录、修复方法和验证方式，跨节点自动同步。
+
+## 分级说明
+
+| 目录 | 等级 | 说明 |
+|------|------|------|
+| `core/` | ⭐ 核心 | 经策划审查、安全扫描、CI 验证的标准答案 |
+| `verified/` | ✅ 已验证 | 经维护者人工审核确认正确 |
+| `contrib/` | 📦 贡献 | Agent/开发者提交，通过基础 CI (过渡目录) |
+| `draft/` | ✏️ 草稿 | 新提交，待审核 |
+| `_archive/` | 🗄️ 归档 | 已过时/原始转储，保留做历史参考 |
 
 ## 目录
 
@@ -16,15 +26,15 @@
 - [Chroma 建库无 Checkpoint — 进程一死全部丢失](chroma-rebuild-no-checkpoint.md) | rag | | bootstrap
 - [Chroma 建库无 Checkpoint — 进程一死全部丢失](chroma-rebuild-no-checkpoint-cn.md) | rag | | bootstrap
 - [ChromaDB 不能放在 NTFS 文件系统](chromadb-不能放在-ntfs-文件系统.md) | rag | "platform:wsl" | bootstrap
-- [Cronjob One-Shot Race Condition - Duplicate Execution](cronjob-one-shot-race-condition-duplicate-execution.md) | agent-network | | hermes_wsl2
-- [DCO 自动修复工作流 — /fix-dco 命令设计与实现](dco-auto-fix-workflow.md) | devops | "github-actions", "dco", "signoff", "issue_comment", "auto-fix", "fork-pr" | 2026-06-13
+- [Cronjob One-Shot Race Condition - Duplicate Execution](core/cronjob-one-shot-race-condition-duplicate-execution.md) | agent-network | | hermes_wsl2
+- [DCO 自动修复工作流 — /fix-dco 命令设计与实现](core/dco-auto-fix-workflow.md) | devops | "github-actions", "dco", "signoff", "issue_comment", "auto-fix", "fork-pr" | 2026-06-13
 - [FANUC KL: 1086 是代码行号而非错误码](fanuc-kl-1086-是代码行号而非错误码.md) | fanuc | | bootstrap
 - [FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure](fanuc-kl-bytes-ahead-是-karel-内置-procedure.md) | fanuc | | bootstrap
 - [FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异](fanuc-kl-err-abort-vs-err-pause.md) | fanuc | | bootstrap
 - [FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明](fanuc-kl-mm-module-h-no-routine.md) | fanuc | | bootstrap
 - [FANUC R-2000iC 检索混淆修复 — 关键词强制召回](fanuc-r-2000ic-retrieval-fix.md) | rag | | hermes_wsl
 - [FFmpeg 音频转码：必须用 libopus 而非 -format ogg](ffmpeg-audio-libopus-not-ogg.md) | audio | | hanged-man
-- [FReeLLMAPI Session Context Mixing - Cross-Thread Delivery](freellmapi-session-context-mixing-cross-thread-delivery.md) | agent-network | | hermes_wsl2
+- [FReeLLMAPI Session Context Mixing - Cross-Thread Delivery](core/freellmapi-session-context-mixing-cross-thread-delivery.md) | agent-network | | hermes_wsl2
 - [Feishu 凭证轮换后 Gateway 必须重启](feishu-凭证轮换后-gateway-必须重启.md) | feishu | | bootstrap
 - [Feishu 文件上传：file_type 必须用 opus](feishu-upload-file-type-opus.md) | feishu | | hanged-man
 - [Feishu 文档 URL：必须用 API 返回值，不要拼接](feishu-doc-url-use-api-return.md) | feishu | | hanged-man
@@ -43,8 +53,8 @@
 - [Model Switch Script Pattern — 多 Agent 模型管理](contrib/model-switch-script-pattern.md) | devops | "model-switching", "proxy", "config-management" | bootstrap
 - [OpenClaw Gateway 动态模块缺失 — 飞书消息分发失败](openclaw-gateway-dynamic-module-missing.md) | feishu | "platform:wsl" | bootstrap
 - [OpenClaw 重装教训 — 删除前先停服务清残留](openclaw-reinstall-lesson.md) | devops | | bootstrap
-- [PR 仓库清理 SOP — 过时/重复/已解决 PR 的处置策略](pr-cleanup-sop.md) | devops | "github-actions", "pr-management", "cleanup", "maintenance", "sop" | 2026-06-13
-- [PR Welcome 未触发排查 — author_association NONE vs FIRST_TIMER 陷阱](pull-request-welcome-trigger-trap.md) | devops | "github-actions", "pull_request_target", "author_association", "first-time-contributor", "welcome", "debug" | 2026-06-13
+- [PR 仓库清理 SOP — 过时/重复/已解决 PR 的处置策略](core/pr-cleanup-sop.md) | devops | "github-actions", "pr-management", "cleanup", "maintenance", "sop" | 2026-06-13
+- [PR Welcome 未触发排查 — author_association NONE vs FIRST_TIMER 陷阱](core/pull-request-welcome-trigger-trap.md) | devops | "github-actions", "pull_request_target", "author_association", "first-time-contributor", "welcome", "debug" | 2026-06-13
 - [Permission Denied / WSL NTFS 跨文件系统权限修复](permission-denied-fix.md) | devops | | hermes_wsl
 - [RAG Cross-Encoder Reranker CPU 瓶颈与 LLM 确定性调优](rag-cross-encoder-cpu-bottleneck.md) | rag | "scope:broad" | bootstrap
 - [RAG 三通道 LLM 容灾方案](rag-three-channel-llm-disaster-recovery.md) | rag | "scope:broad" | bootstrap
@@ -62,7 +72,7 @@
 - [api-rate-limit-handling-best-practices](api-rate-limit-handling-best-practices.md) | uncategorized | | 
 - [api-rate-limit-handling](api-rate-limit-handling.md) | uncategorized | | 
 - [audit-sampling-stratified-sampling-for-kb-inspection](audit-sampling-stratified-sampling-for-kb-inspection.md) | uncategorized | | 
-- [auto-merge-ci-pipeline](auto-merge-ci-pipeline.md) | uncategorized | | 
+- [auto-merge-ci-pipeline](core/auto-merge-ci-pipeline.md) | uncategorized | | 
 - [browser-harness-cdp-browser-automation](browser-harness-cdp-browser-automation.md) | uncategorized | | 
 - [chrome-relay-browser-automation](chrome-relay-browser-automation.md) | uncategorized | | 
 - [ci-dco-decouple-pythonpath-fork-pr](ci-dco-decouple-pythonpath-fork-pr.md) | uncategorized | | 
