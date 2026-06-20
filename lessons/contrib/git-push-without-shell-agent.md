@@ -69,3 +69,32 @@ gh api repos/<org>/<repo>/commits/main --jq .sha
 - `git push --force` 会覆盖远程历史 → 优先用 `--force-with-lease`
 - 裸 `git remote set-url` 注入 token 时，token 会暴露在 shell history 中
 - YOLO task 中如果用到 `apt install` 或 `pip install`，也需 `trust_mode=True` 否则卡审批
+
+## 扩展：GnuTLS 握手失败 / 网络不通时的直连绕过
+
+在某些网络环境下（如 WSL2 中 GFW 干扰），`git push` 会卡死在：
+
+```
+GnuTLS recv error (-110): The TLS connection was non-properly terminated.
+Failed to connect to github.com port 443 after xxx ms: Couldn't connect to server
+```
+
+此时 `curl` 可能正常但 `git` 不通。解决方式：用 GitHub 的真实 IP 直连 + `Host` header。
+
+```bash
+# 1. 获取 github.com 的真实 IP
+getent hosts github.com
+# → 20.205.243.166
+
+# 2. 用 IP 直连 push（绕过 DNS/SNI 干扰）
+git -c "http.extraHeader=Host: github.com" \
+    -c http.sslVerify=false \
+    push "https://<token>@20.205.243.166/<org>/<repo>.git" main
+```
+
+原理：
+- 用 `20.205.243.166`（GitHub 的真实 IP之一）绕过 DNS 污染
+- 用 `http.extraHeader=Host: github.com` 让服务端正确识别域名
+- 关闭 SSL 验证（因 IP 证书与域名不匹配）
+
+此方式也适用于 `git fetch` / `git clone`。
