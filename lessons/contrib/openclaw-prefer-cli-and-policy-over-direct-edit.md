@@ -1,4 +1,9 @@
 ---
+title: Openclaw Prefer Cli And Policy Over Direct Edit
+language: en
+---
+> **English Translation**
+---
 {"title": "OpenClaw优先CLI和官方策略", "domain": "agentops", "tags": ["openclaw", "cli", "policy", "config"], "domain_expert": "unknown"}
 ---
 
