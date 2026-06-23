@@ -1,4 +1,9 @@
 ---
+title: Lesson_File_Line_Number_Corruption
+language: en
+---
+> **English Translation**
+---
 {"title": "File Content Corrupted by Terminal Line-Number Prefixes", "domain": "devops", "tags": ["terminal", "sed", "line-number", "file-corruption", "html", "debug"], "status": "published", "created": "2026-06-20", "source": "codewhale"}
 ---
 
