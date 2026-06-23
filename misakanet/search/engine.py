@@ -26,6 +26,12 @@ WEIGHT_STATUS = {"published": 0.2, "active": 0.1, "draft": 0.0}
 WEIGHT_TITLE_EXACT = 0.5
 WEIGHT_TITLE_PARTIAL = 0.2
 WEIGHT_HAS_REF = 0.08
+
+# Feature #228: Search ranking boost factors
+BOOST_CORE = 0.15
+BOOST_VERIFIED = 0.10
+BOOST_RECENT = 0.05
+BOOST_DRAFT_PENALTY = -0.20
 MAX_METADATA = 1.0
 
 # ── 分层缓存 ──
@@ -266,6 +272,13 @@ def _metadata_bonus(query: str, doc: CachedDoc) -> float:
         bonus += WEIGHT_HAS_REF
     if doc.source and doc.source != "bootstrap":
         bonus += 0.05
+    # Feature #228: Boost factors
+    if _is_core(doc):
+        bonus += BOOST_CORE
+    if _is_verified(doc):
+        bonus += BOOST_VERIFIED
+    if doc.mtime and (time.time() - doc.mtime) < 2592000:
+        bonus += BOOST_RECENT
     return min(bonus, MAX_METADATA)
 
 
@@ -291,7 +304,7 @@ def _rank_docs_impl(query: str, docs: list[CachedDoc],
             docs = visible
     bm25_raw = _compute_bm25_scores(query, docs)
     bm25_norm = _normalize(bm25_raw)
-    scored = [(0.65 * bm25_norm[i] + 0.20 * _metadata_bonus(query, d) + 0.15 * d.score_baseline, d)
+    scored = [(0.65 * bm25_norm[i] + 0.20 * _metadata_bonus(query, d) + 0.15 * d.score_baseline + (BOOST_DRAFT_PENALTY if d.is_draft else 0.0), d)
               for i, d in enumerate(docs)]
     scored.sort(key=lambda x: -x[0])
     return scored
