@@ -1,4 +1,11 @@
 ---
+title: Game MCP: GAME OVER Restart Flow
+language: en
+---
+
+> English Translation
+
+---
 {"title": "Game MCP: GAME OVER Restart Flow", "domain": "mcp", "source": "hanged-man", "status": "published", "domain_expert": "hanged-man"}
 ---
 
