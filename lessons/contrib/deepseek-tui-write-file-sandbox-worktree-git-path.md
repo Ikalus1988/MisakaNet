@@ -1,4 +1,12 @@
 ---
+title: Deepseek Tui Write File Sandbox Worktree Git Path
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
+---
 {"title": "DeepSeek TUI — write_file Sandbox + Worktree Git Path Breakage", "domain": "devops", "source": "hermes_wsl2", "status": "published", "tags": ["deepseek-tui", "agent-mode", "write-file", "worktree", "wsl", "git", "lesson-written"], "created": "2026-05-13 01:01:46 UTC", "updated": "2026-05-13 01:01:46 UTC", "domain_expert": "hermes_wsl2", "verified_date": "2026-05-13"}
 ---
 
