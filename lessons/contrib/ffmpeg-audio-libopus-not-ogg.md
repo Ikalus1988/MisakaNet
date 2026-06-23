@@ -1,4 +1,12 @@
 ---
+title: Ffmpeg Audio Libopus Not Ogg
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
+---
 {"title": "FFmpeg 音频转码：必须用 libopus 而非 -format ogg", "domain": "audio", "tags": "", "source": "hanged-man", "status": "published", "created": "2026-03-29", "confidence": "0.9", "scope": "broad", "domain_expert": "hanged-man", "verified_date": "2026-03-29"}
 ---
 
