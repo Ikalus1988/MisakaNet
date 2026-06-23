@@ -1,3 +1,12 @@
+---
+title: Rag Brand Filter Three Pitfalls
+language: en
+---
+
+> **English Translation of:** lessons/contrib/rag-brand-filter-three-pitfalls.md
+> 
+> This is an English translation of the original Chinese lesson content.
+
 ---{"title": "RAG 品牌Filter三坑：条件触发、文件正则、BM25 Cache", "domain": "rag", "tags": ["rag", "brand-filter", "architecture", "chromadb", "bm25", "pitfall"], "confidence": 0.88, "created": "2026-05-29"}---
 
 ## 背景
