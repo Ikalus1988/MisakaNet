@@ -1,3 +1,11 @@
+---
+title: Feishu Wiki Batch Download
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
 ---{"title": "Feishu WikiBatch Download：文件类型Handling策略", "domain": "devops", "tags": "feishu, wiki, batch-download, file-type, pdf, docx, safari", "status": "published", "source": "hermes_wsl2", "updated": "2026-05-19 15:40:11 UTC"}---
 
 # Feishu WikiBatch Download：文件类型Handling策略
