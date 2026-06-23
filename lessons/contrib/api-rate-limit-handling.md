@@ -1,3 +1,11 @@
+---
+title: Api Rate Limit Handling
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
 ---{"title": "API 请求限流 (Rate Limit) Handling方案", "domain": "devops", "tags": ["api", "rate-limit", "retry", "429"]}---
 
 ## 背景
