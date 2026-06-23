@@ -1,4 +1,13 @@
 ---
+title: Wsl Pip Gbk Hub Poller Crash
+language: en
+---
+
+> **English Translation**
+> 
+> Translated from Chinese original for international contributors.
+
+---
 {"title": "WSL pip install GBK 编码导致 hub_poller 崩溃", "domain": "devops", "subdomain": "wsl", "source": "bootstrap", "status": "draft", "tags": ["project:agent-medici", "severity:critical", "platform:wsl", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 
