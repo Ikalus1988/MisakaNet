@@ -1,3 +1,8 @@
+---
+title: Python Pycache Stale
+language: en
+---
+> **English Translation**
 ---{"title": "Python 代码修改不生效 — stale .pyc Cache", "domain": "devops", "tags": ["python", "pyc", "cache", "debug"]}---
 
 ## 背景
