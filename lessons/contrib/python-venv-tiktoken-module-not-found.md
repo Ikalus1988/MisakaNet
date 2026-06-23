@@ -1,4 +1,9 @@
 ---
+title: Python Venv Tiktoken Module Not Found
+language: en
+---
+> **English Translation**
+---
 {"title": "Python venv 中 tiktoken 安装后仍报 ModuleNotFoundError", "domain": "development", "source": "Misaka10019", "tags": ["python", "venv", "tiktoken", "pip", "setuptools"], "domain_expert": "Misaka10019"}
 ---
 
