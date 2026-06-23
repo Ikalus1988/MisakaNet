@@ -1,3 +1,11 @@
+---
+title: Git Credentials And Node Id Setup
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
 ---{"title": "Git Credentials 和 Node ID Setup", "domain": "devops", "source": "hermes_wsl2", "status": "published", "tags": ["git", "credentials", "node-id", "setup"]}---
 
 ## Git Credentials 和 Node ID 配置
