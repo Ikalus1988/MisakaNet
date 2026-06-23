@@ -1,3 +1,11 @@
+---
+title: Api Rate Limit Handling Best Practices
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
 ---{"title": "API限流Handling最佳实践", "domain": "devops", "tags": ["api", "rate-limit", "backoff", "batch"]}---
 
 ## 背景
