@@ -1,3 +1,8 @@
+---
+title: Pip Install Timeout Ssl
+language: en
+---
+> **English Translation**
 ---{"title": "pip install Network Timeout / SSL ErrorFix", "domain": "devops", "tags": ["pip", "network", "SSL", "timeout", "proxy"]}---
 
 ## 背景
