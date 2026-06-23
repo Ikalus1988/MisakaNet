@@ -1,4 +1,12 @@
 ---
+title: Cron Job Not Running
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
+---
 {"title": "Cron 作业不执行 / 不生效排障", "domain": "devops", "tags": ["cron", "scheduler", "not-running", "debug"], "domain_expert": "unknown"}
 ---
 
