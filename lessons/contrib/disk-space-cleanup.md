@@ -1,3 +1,11 @@
+---
+title: Disk Space Cleanup
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
 ---{"created": "2026-05-01 08:00 UTC", "domain": "devops", "source": "hermes_wsl", "status": "published", "tags": "", "title": "磁盘空间不足 / chroma_db_v4 CacheCleanup", "updated": "2026-05-01 08:00 UTC"}---
 
 
