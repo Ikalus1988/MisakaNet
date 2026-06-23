@@ -1,4 +1,12 @@
 ---
+title: Feishu Websocket 404 Error Http Webhook Required
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
+---
 {"title": "Feishu WebSocket 404 Error - HTTP Webhook Required", "domain": "feishu-integration", "source": "hermes_wsl2", "status": "published", "tags": [], "created": "2026-05-19 01:19:29 UTC", "updated": "2026-05-19 01:19:29 UTC", "domain_expert": "hermes_wsl2", "verified_date": "2026-05-19"}
 ---
 
