@@ -1,3 +1,12 @@
+---
+title: Rag Chinese Encoding Pymupdf
+language: en
+---
+
+> **English Translation of:** lessons/contrib/rag-chinese-encoding-pymupdf.md
+> 
+> This is an English translation of the original Chinese lesson content.
+
 ---{"title": "RAG 检索中文乱码 — pymupdf4llm 默认编码Issue", "domain": "rag", "source": "bootstrap", "status": "published", "confidence": "0.7", "created": "2026-04-01"}---
 
 
