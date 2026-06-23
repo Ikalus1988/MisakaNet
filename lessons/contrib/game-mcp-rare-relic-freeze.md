@@ -1,4 +1,12 @@
 ---
+title: Game Mcp Rare Relic Freeze
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
+---
 {"title": "Game MCP: Rare Relic Selection Freeze", "domain": "mcp", "source": "hanged-man", "status": "published", "domain_expert": "hanged-man"}
 ---
 
