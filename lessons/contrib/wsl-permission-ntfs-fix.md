@@ -1,3 +1,12 @@
+---
+title: Wsl Permission Ntfs Fix
+language: en
+---
+
+> **English Translation**
+> 
+> Translated from Chinese original for international contributors.
+
 ---{"title": "Permission Denied / WSL NTFS 跨文件系统PermissionFix", "domain": "devops", "tags": ["permission", "wsl", "ntfs", "eacces", "filesystem"]}---
 
 ## 背景
