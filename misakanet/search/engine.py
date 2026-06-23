@@ -28,6 +28,15 @@ WEIGHT_TITLE_PARTIAL = 0.2
 WEIGHT_HAS_REF = 0.08
 MAX_METADATA = 1.0
 
+# Feature #228: boost core/verified/recent lessons, penalize drafts.
+# Multipliers added to the final composite score (not the BM25 term),
+# so they don't compete with the existing 0.65 / 0.20 / 0.15 weights.
+BOOST_CORE = 0.15
+BOOST_VERIFIED = 0.10
+BOOST_RECENT = 0.05
+BOOST_DRAFT = -0.20
+BOOST_RECENT_DAYS = 30
+
 # ── 分层缓存 ──
 _CACHE_DIR = REPO / ".cache"
 _CACHE_DB = _CACHE_DIR / "search_cache.db"
@@ -278,6 +287,24 @@ def _normalize(values: list[float]) -> list[float]:
     return [(v - mn) / (mx - mn) for v in values]
 
 
+def _compute_boost(doc: CachedDoc) -> float:
+    """Feature #228: per-doc boost factor summed into the final score.
+
+    Sum of the applicable multipliers. Kept additive (not multiplicative)
+    so the constants stay easy to reason about and tune.
+    """
+    boost = 0.0
+    if _is_core(doc):
+        boost += BOOST_CORE
+    if _is_verified(doc):
+        boost += BOOST_VERIFIED
+    if _is_recent(doc):
+        boost += BOOST_RECENT
+    if doc.is_draft:
+        boost += BOOST_DRAFT
+    return boost
+
+
 def _rank_docs_impl(query: str, docs: list[CachedDoc],
                     titles_only: bool = False,
                     broad_only: bool = False) -> list[tuple[float, CachedDoc]]:
@@ -291,8 +318,13 @@ def _rank_docs_impl(query: str, docs: list[CachedDoc],
             docs = visible
     bm25_raw = _compute_bm25_scores(query, docs)
     bm25_norm = _normalize(bm25_raw)
-    scored = [(0.65 * bm25_norm[i] + 0.20 * _metadata_bonus(query, d) + 0.15 * d.score_baseline, d)
-              for i, d in enumerate(docs)]
+    scored = [
+        (0.65 * bm25_norm[i]
+         + 0.20 * _metadata_bonus(query, d)
+         + 0.15 * d.score_baseline
+         + _compute_boost(d), d)
+        for i, d in enumerate(docs)
+    ]
     scored.sort(key=lambda x: -x[0])
     return scored
 
@@ -398,7 +430,10 @@ def _format_output(scored: list[tuple[float, CachedDoc]],
             bm25 = _compute_bm25_scores(query, [doc])[0]
             meta = _metadata_bonus(query, doc)
             baseline = doc.score_baseline
-            print(f"  {'':>25} ↳ BM25: {bm25:.3f} | Meta: {meta:.3f} | Base: {baseline:.3f} | Tags: {', '.join(doc.tags[:5]) if doc.tags else '—'}")
+            boost = _compute_boost(doc)  # Feature #228
+            tag_str = ", ".join(doc.tags[:5]) if doc.tags else "—"
+            print(f"  {'':>25} ↳ BM25: {bm25:.3f} | Meta: {meta:.3f} | "
+                  f"Base: {baseline:.3f} | Boost: {boost:+.2f} | Tags: {tag_str}")
         # Feature: related lessons (cross-lesson reference graph)
         if all_docs is not None:
             related = _get_related_lessons(doc, all_docs, max_related=3)
@@ -452,8 +487,8 @@ __all__ = [
     "CachedDoc", "LESSONS", "REFERENCES",
     "_load_docs", "_rank_docs", "_format_output", "_show_timing",
     "_tokenize", "_compute_bm25_scores", "_normalize",
-    "_is_verified", "_is_core", "_relative_time", "_get_match_reason",
-    "_get_related_lessons",
+    "_is_verified", "_is_core", "_is_recent", "_compute_boost",
+    "_relative_time", "_get_match_reason", "_get_related_lessons",
 ]
 
 
@@ -467,6 +502,15 @@ def _is_verified(doc: CachedDoc) -> bool:
 def _is_core(doc: CachedDoc) -> bool:
     """Check if lesson is in core/ directory."""
     return 'lessons/core/' in str(doc.filepath)
+
+
+def _is_recent(doc: CachedDoc) -> bool:
+    """Feature #228: True if lesson was updated within BOOST_RECENT_DAYS days."""
+    if not doc.mtime:
+        return False
+    import datetime
+    age_days = (datetime.datetime.now().timestamp() - doc.mtime) / 86400
+    return age_days <= BOOST_RECENT_DAYS
 
 
 def _relative_time(mtime: float) -> str:
