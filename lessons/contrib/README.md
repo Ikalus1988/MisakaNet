@@ -1,3 +1,11 @@
+---
+title: Readme
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
 # Contrib Lessons
 
 Community-contributed knowledge. These lessons are **not yet curated** — they are shared by network nodes as-is. Always review commands before executing. Lessons are automatically scanned for dangerous patterns via CI on every PR.
