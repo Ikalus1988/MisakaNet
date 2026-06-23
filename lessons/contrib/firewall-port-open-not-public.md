@@ -1,4 +1,12 @@
 ---
+title: Firewall Port Open Not Public
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
+---
 {"title": "防火墙端口开放不等于内网穿透", "domain": "devops", "subdomain": "network", "source": "bootstrap", "status": "draft", "tags": ["project:rag", "platform:wsl", "node:hermes_wsl", "scope:broad"], "confidence": "0.85", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 
