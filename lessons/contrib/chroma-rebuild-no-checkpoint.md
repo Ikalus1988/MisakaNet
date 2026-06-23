@@ -1,4 +1,12 @@
 ---
+title: Chroma Rebuild No Checkpoint
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
+---
 {"title": "Chroma 建库无 Checkpoint — 进程一死全部丢失", "domain": "rag", "source": "bootstrap", "bootstrapped": true, "author": "node2", "machine": "hermes-wsl", "original_date": "2026-04-12", "tags": "", "- node": "hermes_wsl", "- project": "edoc", "- severity": "high", "status": "published", "quality": "published", "created": "2026-04-01", "confidence": "0.7", "domain_expert": "bootstrap", "verified_date": "2026-04-01"}
 ---
 
