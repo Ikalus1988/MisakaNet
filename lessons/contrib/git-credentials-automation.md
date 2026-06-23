@@ -1,3 +1,11 @@
+---
+title: Git Credentials Automation
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
 ---{"title": "Git 凭证Setup — Automation push 免密码", "domain": "devops", "tags": ["git", "credentials", "auth", "github"]}---
 
 ## 背景
