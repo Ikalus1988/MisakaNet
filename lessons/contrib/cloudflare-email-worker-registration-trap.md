@@ -1,3 +1,11 @@
+---
+title: Cloudflare Email Worker Registration Trap
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
 ---{"title": "Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF", "domain": "devops", "tags": ["cloudflare", "email-worker", "kv", "turnstile", "registration", "spf"]}---
 
 ## 背景
