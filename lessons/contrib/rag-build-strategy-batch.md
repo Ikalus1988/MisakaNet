@@ -1,4 +1,13 @@
 ---
+title: Rag Build Strategy Batch
+language: en
+---
+
+> **English Translation of:** lessons/contrib/rag-build-strategy-batch.md
+> 
+> This is an English translation of the original Chinese lesson content.
+
+---
 {"title": "RAG 建库策略：不可一次性加载全部数据到显存/内存", "domain": "rag", "tags": "", "source": "hanged-man", "status": "published", "created": "2026-04-13", "confidence": "0.85", "scope": "broad", "domain_expert": "hanged-man", "verified_date": "2026-04-13"}
 ---
 
