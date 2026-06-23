@@ -1,3 +1,11 @@
+---
+title: Feishu Markdown Table Not Rendered
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
 ---{"title": "飞书 post Messaging中 Markdown 表格不渲染", "domain": "development", "source": "Misaka10019", "tags": ["feishu", "markdown", "table", "post", "lark"]}---
 
 ## 背景
