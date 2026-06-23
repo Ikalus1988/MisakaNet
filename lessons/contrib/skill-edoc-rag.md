@@ -1,4 +1,9 @@
 ---
+title: Skill Edoc Rag
+language: en
+---
+> **English Translation**
+---
 {"title": "edoc-rag", "domain": "rag", "source": "skill-harvest", "status": "draft", "confidence": "0.6", "created": "2026-05-20", "domain_expert": "skill-harvest", "verified_date": "2026-05-20"}
 ---
 
