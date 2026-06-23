@@ -1,4 +1,12 @@
 ---
+title: Git Push Without Shell Agent
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
+---
 {"title": "Git Push 的正确方式 — 在受限 Agent 环境中推送代码", "domain": "devops", "tags": ["git", "push", "agent", "gh-cli", "lesson"], "domain_expert": "unknown"}
 ---
 
