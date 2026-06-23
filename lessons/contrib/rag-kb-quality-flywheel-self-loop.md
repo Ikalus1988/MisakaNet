@@ -1,4 +1,13 @@
 ---
+title: Rag Kb Quality Flywheel Self Loop
+language: en
+---
+
+> **English Translation of:** lessons/contrib/rag-kb-quality-flywheel-self-loop.md
+> 
+> This is an English translation of the original Chinese lesson content.
+
+---
 {"title": "RAG 知识库质量飞轮：自闭环建设", "domain": "rag", "tags": ["rag", "flywheel", "quality", "audit", "feedback", "self-learning"], "confidence": 0.92, "created": "2026-05-21", "domain_expert": "unknown", "verified_date": "2026-05-21"}
 ---
 
