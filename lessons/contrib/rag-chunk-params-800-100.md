@@ -1,4 +1,13 @@
 ---
+title: Rag Chunk Params 800 100
+language: en
+---
+
+> **English Translation of:** lessons/contrib/rag-chunk-params-800-100.md
+> 
+> This is an English translation of the original Chinese lesson content.
+
+---
 {"title": "RAG 分块参数：800 字符 + 100 重叠 + 每文件最多 100 分块", "domain": "rag", "subdomain": "chunking", "source": "bootstrap", "status": "draft", "tags": ["project:self-grow-wiki", "severity:medium", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 
