@@ -1,4 +1,9 @@
 ---
+title: Shared Json Needs Atomic Write
+language: en
+---
+> **English Translation**
+---
 {"title": "共享JSON状态需要原子写入", "domain": "devops", "tags": ["json", "atomic", "race-condition", "runtime"], "domain_expert": "unknown"}
 ---
 
