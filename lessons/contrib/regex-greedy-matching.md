@@ -1,4 +1,9 @@
 ---
+title: Regex Greedy Matching
+language: en
+---
+> **English Translation**
+---
 {"title": "正则表达式 debugging — 贪婪匹配造成的意外结果", "domain": "development", "tags": ["regex", "debug", "greedy", "pattern"], "domain_expert": "unknown"}
 ---
 
