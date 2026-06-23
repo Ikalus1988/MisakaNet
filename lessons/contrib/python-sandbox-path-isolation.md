@@ -1,4 +1,9 @@
 ---
+title: Python Sandbox Path Isolation
+language: en
+---
+> **English Translation**
+---
 {"title": "Python 沙箱/受限环境 — PATH 和 sys.path 隔离", "domain": "development", "tags": ["python", "sandbox", "path", "import", "venv"], "domain_expert": "unknown"}
 ---
 
