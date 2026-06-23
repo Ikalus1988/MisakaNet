@@ -1,4 +1,9 @@
 ---
+title: Gpt Sovits Hubert 16Khz
+language: en
+---
+> **English Translation**
+---
 {"title": "GPT-SoVITS：HuBERT 必须 16kHz 且 get_model() 返回单体", "domain": "tts", "tags": "", "source": "hanged-man", "status": "published", "created": "2026-04-05", "confidence": "0.9", "scope": "narrow", "domain_expert": "hanged-man", "verified_date": "2026-04-05"}
 ---
 
