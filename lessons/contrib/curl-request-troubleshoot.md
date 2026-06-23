@@ -1,3 +1,11 @@
+---
+title: Curl Request Troubleshoot
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
 ---{"title": "curl / wget 请求失败通用Diagnosis", "domain": "devops", "tags": ["network", "curl", "wget", "debug", "troubleshoot"]}---
 
 ## 背景
