@@ -1,3 +1,11 @@
+---
+title: Gateway Hang Watchdog Recovery
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
 ---{"title": "Gateway 进程挂死未崩溃 — watchdog 自动Recovery", "domain": "devops", "source": "bootstrap", "status": "published", "confidence": "0.7", "created": "2026-04-01"}---
 
 
