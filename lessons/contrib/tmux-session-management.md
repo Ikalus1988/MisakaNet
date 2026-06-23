@@ -2,24 +2,24 @@
 {"title": "tmux 终端复用 — 断开不丢失会话", "domain": "development", "tags": ["tmux", "terminal", "session", "background"], "domain_expert": "unknown"}
 ---
 
-## 背景
+## Background
 
-SSH 断开或终端关闭后，正在运行的任务（训练、迁移、部署）中断。重新连接后无法恢复。
+SSH 断开或终端关闭后，正在Run的任务（训练、迁移、部署）中断。重新连接后无法恢复。
 
 ## 根因
 
-没有使用终端复用器。进程的父进程是 shell，shell 退出时子进程收到 SIGHUP 信号退出。
+没有Use终端复用器。进程的父进程是 shell，shell 退出时子进程收到 SIGHUP 信号退出。
 
-## 修复
+## Fix
 
 ```bash
 # tmux 终端复用 — 断开不丢失会话
 tmux new -s my-session
 
-# 2. 在会话中运行任务
+# 2. 在会话中Run任务
 python3 train.py
 
-# 3. 脱离会话（保持运行）
+# 3. 脱离会话（保持Run）
 # Ctrl+B 然后 D
 
 # 4. 重新连接

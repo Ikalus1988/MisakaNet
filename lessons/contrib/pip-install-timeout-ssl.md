@@ -1,14 +1,14 @@
 ---{"title": "pip install Network Timeout / SSL ErrorFix", "domain": "devops", "tags": ["pip", "network", "SSL", "timeout", "proxy"]}---
 
-## 背景
+## Background
 
-`pip install` 失败，报 `timeout`、`SSL: CERTIFICATE_VERIFY_FAILED`、或 `Connection broken` 错误。
+`pip install` 失败，报 `timeout`、`SSL: CERTIFICATE_VERIFY_FAILED`、或 `Connection broken` Error。
 
 ## 根因
 
-PyPI 默认源在国外，网络不稳定或被墙。pip 默认超时 15 秒，大包下载不够。
+PyPI Default源在国外，网络不稳定或被墙。pip Default超时 15 秒，大包Download不够。
 
-## 修复
+## Fix
 
 ```bash
 # pip install Network Timeout / SSL ErrorFix

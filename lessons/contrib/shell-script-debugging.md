@@ -1,29 +1,29 @@
 ---{"title": "Shell Debugging — set -x 与常见Pitfalls", "domain": "development", "tags": ["shell", "bash", "debug", "script"]}---
 
-## 背景
+## Background
 
-Shell 脚本报错但不显示问题行，或变量展开后不是预期值。
+Shell 脚本报错但不显示Problem行，或Variable展开后不是预期Value。
 
 ## 根因
 
-Shell 默认只输出执行结果，不输出执行过程。变量为空、特殊字符展开、IFS 分割等问题只有看到「实际执行了什么命令」才能发现。
+Shell Default只输出执行结果，不输出执行过程。Variable为空、特殊字符展开、IFS 分割等Problem只有看到「实际执行了什么Command」才能发现。
 
-## 修复
+## Fix
 
 ```bash
 #!/usr/bin/env bash
 # Shell Debugging — set -x 与常见Pitfalls
-set -x   # 打印执行的命令（+ 前缀）
-set -e   # 任何命令失败时退出
-set -u   # 使用未定义变量时报错
-set -o pipefail  # 管道中任一命令失败也算失败
+set -x   # 打印执行的Command（+ 前缀）
+set -e   # 任何Command失败时退出
+set -u   # Use未定义Variable时报错
+set -o pipefail  # 管道中任一Command失败也算失败
 
 # 推荐组合：脚本开头加这一行
 set -euxo pipefail
 
-# 示例 - 没加 set -x 看不出问题：
+# Example - 没加 set -x 看不出Problem：
 FILES=$(ls *.txt | head -5)
-for f in $FILES; do  # 如果文件名有空格，会被分割！
+for f in $FILES; do  # 如果File名有空格，会被分割！
     echo "处理: $f"
 done
 
@@ -42,9 +42,9 @@ done
 
 ## 陷阱
 
-| 场景 | 问题 | 修复 |
+| 场景 | Problem | Fix |
 |------|------|------|
-| 文件名含空格 | `for f in $FILES` 按空格分割 | `for f in "$FILES"` 或 `find -print0` |
-| 变量未定义 | 变成空字符串 | `set -u` 捕获 |
-| ls 结果赋值 | 带换行符 | 用 `mapfile` 或 `find` |
-| 管道静默失败 | 前一个命令失败但 `|` 忽略 | `set -o pipefail` |
+| File名含空格 | `for f in $FILES` 按空格分割 | `for f in "$FILES"` 或 `find -print0` |
+| Variable未定义 | 变成空字符串 | `set -u` 捕获 |
+| ls 结果赋Value | 带换行符 | 用 `mapfile` 或 `find` |
+| 管道静默失败 | 前一个Command失败但 `|` 忽略 | `set -o pipefail` |

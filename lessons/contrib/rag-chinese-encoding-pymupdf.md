@@ -1,20 +1,20 @@
----{"title": "RAG 检索中文乱码 — pymupdf4llm 默认编码Issue", "domain": "rag", "source": "bootstrap", "status": "published", "confidence": "0.7", "created": "2026-04-01"}---
+---{"title": "RAG 检索中文乱码 — pymupdf4llm Default编码Issue", "domain": "rag", "source": "bootstrap", "status": "published", "confidence": "0.7", "created": "2026-04-01"}---
 
 
-## 背景
+## Background
 
 构建 FANUC 知识库 RAG 时，检索中文报警码出现乱码。
 
 ## 根因
 
-`pymupdf4llm` 提取 PDF 时默认编码未指定 utf-8，含中文特殊字符的页面被截断。
+`pymupdf4llm` 提取 PDF 时Default编码未指定 utf-8，含中文特殊字符的页面被截断。
 
-## 修复
+## Fix
 
 在 `extract()` 调用中显式指定 `encoding="utf-8"`：
 
 ```python
-# RAG 检索中文乱码 — pymupdf4llm 默认编码Issue
+# RAG 检索中文乱码 — pymupdf4llm Default编码Issue
 text = pymupdf4llm.extract(doc)
 
 # 正确

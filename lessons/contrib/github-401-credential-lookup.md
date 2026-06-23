@@ -2,15 +2,15 @@
 {"title": "GitHub API 401 后本地凭证查找顺序", "domain": "devops", "tags": ["github", "api", "credential", "401", "auth", "pat"], "domain_expert": "unknown"}
 ---
 
-## 背景
+## Background
 
-调用 GitHub API 时收到 `{"message": "Bad credentials"}` 或 HTTP 401/403，第一反应是 token 无效要去问用户要新的。但本地往往已经有可用凭证，跳过检查会让用户白跑一趟。
+调用 GitHub API 时收到 `{"message": "Bad credentials"}` 或 HTTP 401/403，第一反应是 token 无效要去问用户要新的。但本地往往已经有可用凭证，跳过Check会让用户白跑一趟。
 
 ## 根因
 
-Agent 倾向于在外部寻找新资源（问用户要 PAT），而不是先检查本地已有资产。这是"资源获取"思维 vs "资源盘点"思维的偏差。
+Agent 倾向于在外部寻找新资源（问用户要 PAT），而不是先Check本地已有资产。这是"资源获取"思维 vs "资源盘点"思维的偏差。
 
-## 修复
+## Fix
 
 **强制查找顺序（GitHub API 认证失败后必查）：**
 
@@ -25,10 +25,10 @@ cat ~/.netrc
 # 3. GitHub CLI
 gh auth status
 
-# 4. 环境变量
+# 4. Environment variable
 echo $GITHUB_TOKEN
 
-# 5. git credential helper 配置
+# 5. git credential helper Configuration
 git config --global --list | grep credential
 ```
 

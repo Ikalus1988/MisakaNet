@@ -2,7 +2,7 @@
 {"title": "GPT-SoVITS：HuBERT 必须 16kHz 且 get_model() 返回单体", "domain": "tts", "tags": "", "source": "hanged-man", "status": "published", "created": "2026-04-05", "confidence": "0.9", "scope": "narrow", "domain_expert": "hanged-man", "verified_date": "2026-04-05"}
 ---
 
-## 问题
+## Problem
 
 HuBERT SSL 特征提取失败，音频克隆效果异常。
 
@@ -20,8 +20,8 @@ HuBERT SSL 特征提取失败，音频克隆效果异常。
 4. Check related logs or outputs for expected behavior
 
 
-## 常见错误
+## 常见Error
 
-- `get_model()` 返回值解包为元组 → 实际是单个对象
+- `get_model()` 返回Value解包为元组 → 实际是单个对象
 - `get_content(data, sr)` → 实际签名是 `(hmodel, wav_16k_tensor)`
 - 音频 32kHz → HuBERT 要求 16kHz

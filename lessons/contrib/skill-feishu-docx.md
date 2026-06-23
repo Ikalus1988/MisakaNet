@@ -4,20 +4,20 @@
 
 # feishu-docx
 
-通过 REST API（requests/curl）创建飞书云文档、写入内容块（docx API）、发送消息卡片、访问 Wiki 节点。涵盖 Bot 创建 docx、Bot 写入 Wiki 文档（跨租户权限限制）、纯文本考卷出卷等实战场景。
+Via REST API（requests/curl）Create飞书云文档、写入内容块（docx API）、发送消息卡片、访问 Wiki 节点。涵盖 Bot Create docx、Bot 写入 Wiki 文档（跨租户权限限制）、纯文本考卷出卷等实战场景。
 
-## 背景
+## Background
 
-feishu-docx 是 Hermes Agent 的一个技能模块，在日常使用中积累了一些实用经验和需要注意的问题。
+feishu-docx 是 Hermes Agent 的一个技能模块，在日常Use中积累了一些实用经验和RequireNote的Problem。
 
-## 问题
+## Problem
 
-使用过程中可能遇到的各种错误和异常情况。
+Use过程中可能遇到的各种Error和异常情况。
 
-## 修复方案
+## Fix方案
 
-参考技能文档中的具体步骤和配置方法。
+参考技能文档中的具体Steps和Configuration方法。
 
 ## 验证
 
-完成配置后可通过相关命令验证。
+完成Configuration后可ViaRelatedCommand验证。

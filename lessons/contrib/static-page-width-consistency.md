@@ -2,20 +2,20 @@
 {"title": "静态页面多组件宽度一致性——各自定义 max-width 导致视觉割裂", "domain": "frontend", "tags": ["css", "layout", "ux", "responsive"], "domain_expert": "unknown"}
 ---
 
-## 背景
+## Background
 
-页面各个功能区块宽度不一致：搜索栏 `max-width: 800px`，内容卡片 `max-width: 600px`，表单 `display: inline-block; min-width: 360px`，而其他区块又是全宽。页面看起来像拼凑的，没有统一感。
+页面各个功能区块宽度不一致：搜索栏 `max-width: 800px`，内容卡片 `max-width: 600px`，表单 `display: inline-block; min-width: 360px`，而Other区块又是全宽。页面看起来像拼凑的，没有统一感。
 
 ## 根因
 
-不同开发阶段各自设置了独立的宽度约束，没有统一的容器规范。实际容器由 `.container { max-width: 960px; padding: 0 20px; }` 控制内宽约 920px，但子组件各自覆盖了自己的 max-width。
+不同开发阶段各自Settings了独立的宽度约束，没有统一的容器规范。实际容器由 `.container { max-width: 960px; padding: 0 20px; }` 控制内宽约 920px，但子组件各自覆盖了自己的 max-width。
 
-## 修复方法
+## Fix方法
 
 1. **搜索栏**：移除 `max-width: 800px` 和额外 padding，自然继承容器宽度
 2. **内容卡片**：移除 `max-width: 600px`
-3. **表单**：移除 `display: inline-block` 和 `min-width: 360px`，块级元素自动 100%
-4. **所有区块统一使用容器宽度**，不再各自为政
+3. **表单**：移除 `display: inline-block` 和 `min-width: 360px`，块级元素Automatic 100%
+4. **所有区块统一Use容器宽度**，不再各自为政
 
 ## 核心原则
 
@@ -25,7 +25,7 @@
 所有内容区块视觉对齐，无拼凑感
 ```
 
-只有特殊元素（弹窗、代码块、侧边栏）才使用独立的 max-width，且应与容器宽度成比例。
+只有特殊元素（弹窗、代码块、侧边栏）才Use独立的 max-width，且应与容器宽度成比例。
 
 ## 验证
 
@@ -38,6 +38,6 @@
 静态页面的视觉统一性首先来自**宽度的一致性**。如果每个组件都有自己的 max-width，用户会明显感到"拼凑感"：
 
 1. **内容区块应直接继承容器宽度**——不要重复定义宽度约束
-2. **特殊元素才使用独立 max-width**——弹窗、代码块、侧边栏需要差异化
+2. **特殊元素才Use独立 max-width**——弹窗、代码块、侧边栏Require差异化
 3. **响应式设计时统一在容器层做 breakpoint**——而不是每个组件各自响应
 4. **CSS 中 "显式宽度越少，维护成本越低"**——继承比覆盖更稳定

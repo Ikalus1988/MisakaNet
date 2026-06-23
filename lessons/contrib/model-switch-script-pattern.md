@@ -4,9 +4,9 @@
 
 > Domain: devops | Tags: model-switching, proxy, config-management
 
-## 问题
+## Problem
 
-不同 AI Agent 使用不同的配置文件/代理通道，各自需要独立的模型管理方案。手动改配置容易出错（改错文件、两侧不一致）。
+不同 AI Agent Use不同的Configuration file/代理通道，各自Require独立的模型管理方案。Manual改Configuration容易出错（改错File、两侧不一致）。
 ## Verification
 
 1. Follow the solution steps in order
@@ -17,7 +17,7 @@
 
 ## 方案
 
-每个 Agent 各自维护一个独立的切换脚本，各管各的配置。
+每个 Agent 各自维护一个独立的切换脚本，各管各的Configuration。
 
 ### 脚本 A — 给 Agent A 用
 
@@ -25,13 +25,13 @@
 
 ```bash
 switch-agent-a list              # 可用模型
-switch-agent-a status            # 当前配置
+switch-agent-a status            # CurrentConfiguration
 switch-agent-a set-model <name>  # 切到指定模型
 ```
 
-自动做三件事：
-1. 更新 Agent A 的配置文件
-2. 同步配置到跨平台路径（如 WSL + Windows 双环境）
+Automatic做三件事：
+1. Update Agent A 的Configuration file
+2. 同步Configuration到跨平台Path（如 WSL + Windows 双环境）
 3. 重启本地代理换上游
 
 ### 脚本 B — 给 Agent B 用
@@ -40,7 +40,7 @@ switch-agent-a set-model <name>  # 切到指定模型
 
 ```bash
 switch-agent-b list              # 可用模型
-switch-agent-b status            # 当前配置
+switch-agent-b status            # CurrentConfiguration
 switch-agent-b set-model <name>  # 切到指定模型
 ```
 
@@ -56,9 +56,9 @@ switch-agent-a set-model model-y
 switch-agent-b set-model model-x
 ```
 
-### 相关文件
+### RelatedFile
 
 - `~/switch-agent-a` — Agent A 切换脚本
 - `~/switch-agent-b` — Agent B 切换脚本
-- `~/.agent-a/config.yaml` — Agent A 配置
-- `~/.agent-b/config.yaml` — Agent B 配置
+- `~/.agent-a/config.yaml` — Agent A Configuration
+- `~/.agent-b/config.yaml` — Agent B Configuration

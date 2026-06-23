@@ -2,9 +2,9 @@
 {"title": "知识图谱 UX 增强: 从高星项目提炼的 7 个交互模式", "domain": "development", "tags": ["knowledge-graph", "d3js", "ux", "graph-visualization", "force-directed"], "domain_expert": "unknown"}
 ---
 
-## 背景
+## Background
 
-知识图谱可视化项目存在典型问题: 节点过多导致信息过载、关系缺乏上下文、无法聚焦局部视图。
+知识图谱可视化项目存在典型Problem: 节点过多导致信息过载、关系缺乏上下文、无法聚焦局部视图。
 参考 GitHub 高星项目 (GraphRAG 25k⭐, Logseq 32k⭐, Cytoscape.js 10k⭐, react-force-graph 10k⭐) 的设计模式,
 提炼出 7 个可复用的交互增强方案。
 
@@ -13,7 +13,7 @@
 知识图谱可视化的核心矛盾是 **全局概览 vs 局部细节** 的平衡。
 高星项目的共同策略是 **渐进式披露 (Progressive Disclosure)**: 先展示局部, 再允许探索全局。
 
-## 修复
+## Fix
 
 ### 1. 局部图谱视图 (Logseq 模式)
 
@@ -39,11 +39,11 @@ function getNHopNeighbors(nodeId, hops, edges) {
 }
 ```
 
-面包屑导航支持逐级返回: `全局图谱 > 节点A > 节点B`
+面包屑导航Support逐级返回: `全局图谱 > 节点A > 节点B`
 
 ### 2. 社区聚类布局 (GraphRAG 模式)
 
-给 D3 force simulation 添加自定义聚类力:
+给 D3 force simulation Add自定义聚类力:
 
 ```javascript
 function forceCluster(nodes, getCategory) {
@@ -70,7 +70,7 @@ function forceCluster(nodes, getCategory) {
 
 ### 3. 边悬浮 tooltip (Cytoscape 模式)
 
-用透明宽线条作为 hover 区域, 解决细线条难以 hover 的问题:
+用透明宽线条作为 hover 区域, 解决细线条难以 hover 的Problem:
 
 ```javascript
 // 透明 hover 区域 (12px 宽)
@@ -83,7 +83,7 @@ linkGroup.selectAll('.edge-hit-area').data(links).join('line')
 
 ### 4. 高级筛选器 (Logseq 模式)
 
-多维筛选: 节点类型 / 实体类型 / 分类, 加上孤立节点隐藏和核心节点高亮:
+多维筛选: 节点Type / 实体Type / 分类, 加上孤立节点隐藏和核心节点高亮:
 
 ```javascript
 function isNodeVisible(node, filterState) {
@@ -94,9 +94,9 @@ function isNodeVisible(node, filterState) {
 }
 ```
 
-### 5. 物理参数控制 (react-force-graph 模式)
+### 5. 物理Parameter控制 (react-force-graph 模式)
 
-滑块控制引力、连接距离、碰撞半径, 实时更新 simulation:
+滑块控制引力、连接距离、碰撞半径, 实时Update simulation:
 
 ```javascript
 function updatePhysics(simulation, charge, dist, collide) {
@@ -125,16 +125,16 @@ d3.select(this).select('circle')
 ## 验证
 
 1. 局部视图: 双击高连接节点 → 只显示 10-30 个邻居, 面包屑可见
-2. 筛选器: 取消某类型 → 对应节点和边消失, 计数正确
-3. 聚类: 同类节点自动聚集, 不同类间距增大
-4. 边悬浮: hover 细线条 → tooltip 显示关系类型
+2. 筛选器: 取消某Type → 对应节点和边消失, 计数正确
+3. 聚类: 同类节点Automatic聚集, 不同类间距增大
+4. 边悬浮: hover 细线条 → tooltip 显示关系Type
 5. 物理控制: 拖动滑块 → 节点间距实时变化
 6. 核心高亮: 启用后 → 高连接节点出现红色边框
 
 ## 关键设计原则
 
-- **渐进式披露**: 默认局部视图, 按需展开全局
-- **多维筛选**: 不只是类型过滤, 要支持属性维度
-- **物理可调**: 让用户自定义布局参数, 而非固定
-- **边可读**: 细线条需要 hover 区域增强
+- **渐进式披露**: Default局部视图, 按需展开全局
+- **多维筛选**: 不只是Type过滤, 要Support属性维度
+- **物理可调**: 让用户自定义布局Parameter, 而非固定
+- **边可读**: 细线条Require hover 区域增强
 - **聚类力**: 自定义 D3 force 实现社区分组

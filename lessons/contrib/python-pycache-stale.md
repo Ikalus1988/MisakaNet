@@ -1,23 +1,23 @@
----{"title": "Python 代码修改不生效 — stale .pyc Cache", "domain": "devops", "tags": ["python", "pyc", "cache", "debug"]}---
+---{"title": "Python 代码Modify不生效 — stale .pyc Cache", "domain": "devops", "tags": ["python", "pyc", "cache", "debug"]}---
 
-## 背景
+## Background
 
-改了 Python 文件后运行，行为还是旧的。函数返回值、错误信息、path 等都没有改变。
+改了 Python File后Run，行为还是旧的。Function返回Value、Error信息、path 等都没有改变。
 
 ## 根因
 
-Python 的 `__pycache__` 目录缓存了编译后的 `.pyc` 文件。如果源文件修改时间没有正确更新（常见于 git checkout、文件复制、WSL/NTFS 文件系统），Python 会加载旧的 `.pyc`。
+Python 的 `__pycache__` Directory缓存了编译后的 `.pyc` File。如果源FileModify时间没有正确Update（常见于 git checkout、File复制、WSL/NTFS File系统），Python 会加载旧的 `.pyc`。
 
-## 修复
+## Fix
 
 ```bash
-# Python 代码修改不生效 — stale .pyc Cache
+# Python 代码Modify不生效 — stale .pyc Cache
 find . -type d -name __pycache__ -exec rm -rf {} +
 
-# 2. 或针对单个文件
+# 2. 或针对单个File
 rm -rf path/to/module/__pycache__
 
-# 3. 使用 PYTHONDONTWRITEBYTECODE 防止缓存
+# 3. Use PYTHONDONTWRITEBYTECODE 防止缓存
 export PYTHONDONTWRITEBYTECODE=1
 
 # 4. 验证：对比源码和缓存

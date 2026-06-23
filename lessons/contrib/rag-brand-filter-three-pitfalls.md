@@ -1,6 +1,6 @@
----{"title": "RAG 品牌Filter三坑：条件触发、文件正则、BM25 Cache", "domain": "rag", "tags": ["rag", "brand-filter", "architecture", "chromadb", "bm25", "pitfall"], "confidence": 0.88, "created": "2026-05-29"}---
+---{"title": "RAG 品牌Filter三坑：条件触发、File正则、BM25 Cache", "domain": "rag", "tags": ["rag", "brand-filter", "architecture", "chromadb", "bm25", "pitfall"], "confidence": 0.88, "created": "2026-05-29"}---
 
-## 背景
+## Background
 
 一个 FANUC 机器人 RAG 知识库在做质量巡检时发现品牌过滤策略存在三层设计缺陷，导致竞品文档持续混入检索结果。
 
@@ -17,37 +17,37 @@
 
 **正确做法：**
 - 品牌过滤应始终启用（always-on），非目标品牌文档在检索层直接排除
-- 如果全部结果被排除，作为应急保留 top-k 高分结果（但给 LLM 标注来源警告）
+- 如果全部结果被排除，作为应急保留 top-k 高分结果（但给 LLM 标注来源Warning）
 
-### 坑二：文件名正则替代元数据
+### 坑二：File名正则替代元数据
 
-**现象：** 品牌过滤使用正则匹配文件名，而不是元数据字段。
+**现象：** 品牌过滤Use正则匹配File名，而不是元数据字段。
 
 ```python
-# RAG 品牌Filter三坑：条件触发、文件正则、BM25 Cache
+# RAG 品牌Filter三坑：条件触发、File正则、BM25 Cache
 _fanuc_pat = re.compile(r'(?i)fanuc|B-\d{5}|R-30i[AB]|M-\d{3}|A-\d{5}')
 filtered = [c for c in chunks if _fanuc_pat.search(c["filename"])]
 ```
 
 **为什么是个坑：**
-- 文件名不合品牌命名规范的文档被遗漏（如 kap05_1_*.pdf 实际是 KUKA 文档）
+- File名不合品牌命名规范的文档被遗漏（如 kap05_1_*.pdf 实际是 KUKA 文档）
 - 每次查询都要做正则搜索，浪费 CPU
-- 添加新品牌/新模式需要改代码
-- 文件名和文档实际内容可能不一致
+- Add新品牌/新模式Require改代码
+- File名和文档实际内容可能不一致
 
 **正确做法：**
-- 在入库时通过元数据字段标记品牌（`brand: "fanuc" | "kuka" | "abb" | "unknown"`）
+- 在入库时Via元数据字段标记品牌（`brand: "fanuc" | "kuka" | "abb" | "unknown"`）
 - 过滤时直接读元数据字段，O(1) 判断，无需正则
 - 品牌检测逻辑集中在一次全量扫描，不分散到每次查询
 
 ### 坑三：BM25 缓存与元数据不一致
 
-**现象：** ChromaDB 元数据已更新，但检索仍返回旧数据。
+**现象：** ChromaDB 元数据已Update，但检索仍返回旧数据。
 
 **为什么是个坑：**
-- RAG 系统使用 BM25 索引加速关键词检索
-- BM25 索引从 ChromaDB 构建时会复制一份 metadata 到内存（通过 pickle 持久化到 `bm25_index.pkl`）
-- ChromaDB `update()` 更新元数据后，BM25 缓存中的 metadata 仍是旧的
+- RAG 系统Use BM25 索引加速关键词检索
+- BM25 索引从 ChromaDB 构建时会复制一份 metadata 到内存（Via pickle 持久化到 `bm25_index.pkl`）
+- ChromaDB `update()` Update元数据后，BM25 缓存中的 metadata 仍是旧的
 - 导致 `_build_chunk_v2()` 中的 `meta.get("brand", "unknown")` 永远返回 `"unknown"`
 
 ```python
@@ -60,9 +60,9 @@ def search(self, query, n_results, where_filter=None):
 ```
 
 **正确做法：**
-- 修改 ChromaDB 元数据后必须删除 BM25 缓存文件并重建索引
-- 或在 `_build_chunk_v2()` 中添加兜底：如果 meta 没有 brand 字段，从 ChromaDB 实时查询
-- 缓存文件通常较大（500MB+），重建需 2-5 分钟
+- Modify ChromaDB 元数据后必须Delete BM25 缓存File并重建索引
+- 或在 `_build_chunk_v2()` 中Add兜底：如果 meta 没有 brand 字段，从 ChromaDB 实时查询
+- 缓存File通常较大（500MB+），重建需 2-5 分钟
 ## Verification
 
 1. Follow the solution steps in order
@@ -73,10 +73,10 @@ def search(self, query, n_results, where_filter=None):
 
 ## 总结
 
-| 坑 | 现象 | 修复 |
+| 坑 | 现象 | Fix |
 |---|---|---|
 | 条件触发 | 查询无品牌名时过滤跳过 | always-on 始终过滤 |
-| 文件名正则 | 命名不规范的文档漏检 | 入库时元数据打标 |
-| BM25 缓存 | 更新元数据后缓存未刷新 | 显式删除缓存并重建 |
+| File名正则 | 命名不规范的文档漏检 | 入库时元数据打标 |
+| BM25 缓存 | Update元数据后缓存未刷新 | 显式Delete缓存并重建 |
 
-这三个问题同时存在时，品牌过滤基本上是形同虚设，无论 ChromaDB 中标记得多准确。
+这三个Problem同时存在时，品牌过滤基本上是形同虚设，无论 ChromaDB 中标记得多准确。

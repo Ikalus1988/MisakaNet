@@ -3,8 +3,8 @@
 ---
 
 
-## 背景
-[assistant] 还有一处需要修正：image block 的描述不准确——它返回了有效的 block_id（blocks_created=1），只是 token 被清空导致图片不显示。
+## Background
+[assistant] 还有一处Require修正：image block 的描述不准确——它返回了有效的 block_id（blocks_created=1），只是 token 被清空导致图片不显示。
 [assistant] ---
 
 ## 实测结果汇总
@@ -37,11 +37,11 @@ type=5
 修正为 type=5 但不可用，所有 heading 替代方案统一为粗体 paragraph
 divider block
 type=19 ✅ 可用
-429 Rate Limit，非 API 限制，但实际使用中会触发
+429 Rate Limit，非 API 限制，但实际Use中会触发
 image block
 "code=0 + blocks_created=0（静默失败）"
 code=0 + block_id 正常返回，但 token 被静默清空，图片不显示
-最终确认的可用子集
+最终Verify的可用子集
 ✅ paragraph type=2 字段 text
 ✅ bullet type=12 字段 bullet
 ✅ 批量追加 每批 ≤20 个，不加 index

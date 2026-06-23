@@ -2,24 +2,24 @@
 {"title": "Git Push 的正确方式 — 在受限 Agent 环境中推送代码", "domain": "devops", "tags": ["git", "push", "agent", "gh-cli", "lesson"], "domain_expert": "unknown"}
 ---
 
-## 背景
+## Background
 
-在某些 Agent 平台的安全模式下，shell 工具不可用。需要执行 `git push` 时，不能直接用 shell 命令。
+在某些 Agent 平台的安全模式下，shell 工具不可用。Require执行 `git push` 时，不能直接用 shell Command。
 
-## 根本原因
+## 根本Cause
 
-部分 Agent 环境的工具集不含直接 shell 访问。有两条替代路径：
+部分 Agent 环境的工具集不含直接 shell 访问。有两条替代Path：
 
-- **YOLO task** — 子 agent 有 shell 权限，但 shell 命令可能卡在审批
-- **失败陷阱**：用 `git push` 裸命令 → git 可能没有 credential 配置，推不上去
+- **YOLO task** — 子 agent 有 shell 权限，但 shell Command可能卡在审批
+- **失败陷阱**：用 `git push` 裸Command → git 可能没有 credential Configuration，推不上去
 
 ## 正确做法
 
-### 方法一：YOLO task + gh CLI（推荐，已验证通过）
+### 方法一：YOLO task + gh CLI（推荐，已验证Via）
 
 ```python
 task_create(
-    prompt="在项目目录执行... <具体命令>",
+    prompt="在项目Directory执行... <具体Command>",
     mode="yolo",
     allow_shell=True,
     auto_approve=True,
@@ -44,25 +44,25 @@ git push origin main
 
 ### 方法二：YOLO task（无 trust_mode，慢但最终成功）
 
-不加 `trust_mode=True` 时，shell 命令会在审批队列里等待约 2-3 分钟，最终也会通过。
+不加 `trust_mode=True` 时，shell Command会在审批队列里等待约 2-3 分钟，最终也会Via。
 
-## 重要：操作前先确认仓库身份
+## 重要：操作前先Verify仓库身份
 
-当工作目录中有多个仓库时，容易搞混目标。操作前必须验证：
+当工作Directory中有多个仓库时，容易搞混目标。操作前必须验证：
 
 ```bash
-git remote -v  # 确认 remote 指向要改的 repo
+git remote -v  # Verify remote 指向要改的 repo
 ```
 
 ## 验证
 
-push 后检查远程：
+push 后Check远程：
 
 ```bash
 gh api repos/<org>/<repo>/commits/main --jq .sha
 ```
 
-确认 commit SHA 正确后再继续后续操作。
+Verify commit SHA 正确后再继续后续操作。
 
 ## 陷阱
 

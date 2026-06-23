@@ -1,21 +1,21 @@
 ---
-{"title": "Python venv 激活失败或路径不匹配", "domain": "devops", "tags": ["python", "venv", "virtualenv", "path"], "domain_expert": "unknown"}
+{"title": "Python venv 激活失败或Path不匹配", "domain": "devops", "tags": ["python", "venv", "virtualenv", "path"], "domain_expert": "unknown"}
 ---
 
-## 背景
+## Background
 
 `source venv/bin/activate` 后 `which python` 还是系统 Python，或 `deactivate` 报错。
 
 ## 根因
 
-1. 当前 shell 是 fish/zsh 但用了 bash 语法（`source` vs `.`）
-2. 在 venv 外又创建了 venv（路径嵌套）
-3. `.bashrc` 中有硬编码路径覆盖了 PATH
+1. Current shell 是 fish/zsh 但用了 bash 语法（`source` vs `.`）
+2. 在 venv 外又Create了 venv（Path嵌套）
+3. `.bashrc` 中有硬编码Path覆盖了 PATH
 
-## 修复
+## Fix
 
 ```bash
-# Python venv 激活失败或路径不匹配
+# Python venv 激活失败或Path不匹配
 echo $SHELL
 
 # 2. 正确的激活方式
@@ -29,9 +29,9 @@ source venv/bin/activate.fish
 
 # 3. 验证
 which python   # 应指向 venv/bin/python
-python -c "import sys; print(sys.prefix)"  # 应显示 venv 路径
+python -c "import sys; print(sys.prefix)"  # 应显示 venv Path
 
-# 4. 重建 venv（如果目录损坏）
+# 4. 重建 venv（如果Directory损坏）
 rm -rf venv
 python3 -m venv venv
 source venv/bin/activate
@@ -47,5 +47,5 @@ pip install --upgrade pip setuptools wheel
 
 ## 陷阱
 
-- 永远不要在 venv 已激活时运行 `python3 -m venv venv` — 这会创建嵌套 venv
+- 永远不要在 venv 已激活时Run `python3 -m venv venv` — 这会Create嵌套 venv
 - 把 `source ~/venv/bin/activate` 写在 .bashrc 里会导致脚本 curl 等工具找不到 venv 包

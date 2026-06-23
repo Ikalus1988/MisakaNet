@@ -1,19 +1,19 @@
 ---
-{"title": "RAG 报警代码检索需要关键词强制召回", "domain": "rag", "subdomain": "fanuc", "source": "bootstrap", "status": "draft", "tags": ["project:self-grow-wiki", "severity:high", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
+{"title": "RAG 报警代码检索Require关键词强制召回", "domain": "rag", "subdomain": "fanuc", "source": "bootstrap", "status": "draft", "tags": ["project:self-grow-wiki", "severity:high", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 
-## 问题
+## Problem
 
-查询 "SRVO-023 机器人报警" 时 RAG 返回了不相关结果，没有返回正确的 FANUC 报警文档。
+查询 "SRVO-023 机器人报警" 时 RAG 返回了不Related结果，没有返回正确的 FANUC 报警文档。
 
 ## 根因
 
 ChromaDB 纯语义检索对短代码（SRVO-023、M-900 等）区分能力弱。数字字符串的嵌入向量
-容易与不相关文档混淆。x"2000" 在语义上同时匹配 FANUC 和 KUKA 文档。
+容易与不Related文档混淆。x"2000" 在语义上同时匹配 FANUC 和 KUKA 文档。
 
-## 修复
+## Fix
 
-在 rag_core.py 的 retrieve() 函数中加入关键词强制召回：
+在 rag_core.py 的 retrieve() Function中加入关键词强制召回：
 1. 报警代码模式：/[A-Z]+-\d+/ 匹配到则从文档标题/标签中强制召回含该代码的文档
 2. 机器人型号：型号名（如 M-900、R-30iB）做字符串匹配，混合到检索结果中
 

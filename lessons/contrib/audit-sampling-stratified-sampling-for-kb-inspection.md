@@ -2,21 +2,21 @@
 {"title": "巡检题库分层抽样策略", "domain": "rag", "tags": ["rag", "audit", "sampling", "quality", "test-bank"], "confidence": 0.88, "created": "2026-05-21", "domain_expert": "unknown", "verified_date": "2026-05-21"}
 ---
 
-## 背景
+## Background
 
-RAG 知识库质量巡检需要每天抽取少量题目进行自动测试。如果随机抽样，容易连续抽到同一类型的问题（如连续三天都是报警代码题），漏掉其他分类的质量退化。
+RAG 知识库质量巡检Require每天抽取少量题目进行Automatic测试。如果随机抽样，容易连续抽到同一Type的Problem（如连续三天都是报警代码题），漏掉Other分类的质量退化。
 
 ## 根因
 
-简单随机抽样（`random.sample`）在大题库 + 小样本（200 题抽 7 题）场景下，类型覆盖不稳定。
+简单随机抽样（`random.sample`）在大题库 + 小样本（200 题抽 7 题）场景下，Type覆盖不稳定。
 
-## 修复
+## Fix
 
 实现分层抽样策略：
 
 ```
 题库按 level + tag 分层：
-  L2（跨文档）: 弧焊调试 / 型号对比 / IO通信 / 安全配置
+  L2（跨文档）: 弧焊调试 / 型号对比 / IO通信 / 安全Configuration
   L3（高难度）: 弧焊故障 / 选型 / IO故障 / 负载惯量 / TCP设定
 
 抽样规则：
@@ -48,8 +48,8 @@ def sample_questions(bank, l2_count=2, l3_count=5):
 
 ## 验证
 
-连续运行 `--dry-run` 10 次，每次抽到的题目类型分布均匀，没有连续 3 次重复同一 tag 的情况。
+连续Run `--dry-run` 10 次，每次抽到的题目Type分布均匀，没有连续 3 次重复同一 tag 的情况。
 
 ## 适用场景
 
-任何需要从分类题库中定期抽样的 QA 系统都适用，不限于 RAG。
+任何Require从分类题库中定期抽样的 QA 系统都适用，不限于 RAG。

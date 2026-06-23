@@ -1,6 +1,6 @@
 ---{"title": "GitHub TLS 握手失败 — gnutls_handshake() Error", "domain": "devops", "tags": ["git", "github", "TLS", "SSL", "network"]}---
 
-## 背景
+## Background
 
 `git pull` 或 `git push` 时报：
 ```
@@ -9,15 +9,15 @@ gnutls_handshake() failed: The TLS connection was non-properly terminated.
 
 ## 根因
 
-通常是瞬时网络问题或代理配置不正确。git 在 TLS 层面断开连接。
+通常是瞬时网络Problem或代理Configuration不正确。git 在 TLS 层面断开连接。
 
-## 修复
+## Fix
 
 ```bash
 # GitHub TLS 握手失败 — gnutls_handshake() Error
 git pull origin main
 
-# 2. 如果持续失败，配置代理
+# 2. 如果持续失败，Configuration代理
 git config --global http.proxy http://127.0.0.1:7890
 git config --global https.proxy http://127.0.0.1:7890
 
@@ -29,5 +29,5 @@ git ls-remote origin HEAD
 ## 验证
 
 ```bash
-git pull  # 不再报 TLS 错误
+git pull  # 不再报 TLS Error
 ```

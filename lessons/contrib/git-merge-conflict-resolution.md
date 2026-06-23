@@ -1,40 +1,40 @@
----{"title": "Git 合并ConflictHandling — 手动解决最佳实践", "domain": "development", "tags": ["git", "merge", "conflict", "rebase"]}---
+---{"title": "Git 合并ConflictHandling — Manual解决最佳实践", "domain": "development", "tags": ["git", "merge", "conflict", "rebase"]}---
 
-## 背景
+## Background
 
-`git pull` 或 `git merge` 时报 `CONFLICT`，文件里出现 `<<<<<<<` 标记。不知如何选择。
+`git pull` 或 `git merge` 时报 `CONFLICT`，File里出现 `<<<<<<<` 标记。不知如何选择。
 
 ## 根因
 
-两个分支修改了同一文件的同一区域。Git 无法自动决定保留哪个版本。
+两个分支Modify了同一File的同一区域。Git 无法Automatic决定保留哪个Version。
 
-## 修复
+## Fix
 
 ```bash
-# Git 合并ConflictHandling — 手动解决最佳实践
+# Git 合并ConflictHandling — Manual解决最佳实践
 git status
 
-# 2. 查看冲突详情
+# 2. View冲突详情
 git diff
 
-# 3. 查看每个冲突文件的双方版本
-git checkout --ours filename.py   # 保留当前分支的版本
-git checkout --theirs filename.py # 保留合并进来的版本
+# 3. View每个冲突File的双方Version
+git checkout --ours filename.py   # 保留Current分支的Version
+git checkout --theirs filename.py # 保留合并进来的Version
 
-# 4. 手动编辑（推荐）：打开冲突文件，找 <<<<<<< 标记
+# 4. Manual编辑（推荐）：打开冲突File，找 <<<<<<< 标记
 # <<<<<<< HEAD
-# 你的修改
+# 你的Modify
 # =======
-# 对方的修改
+# 对方的Modify
 # >>>>>>> branch-name
 # 
-# 保留需要的部分，删除标记线
+# 保留Require的部分，Delete标记线
 
 # 5. 标记为已解决
 git add filename.py
 
 # 6. 完成合并
-git commit  # 使用自动生成的合并信息
+git commit  # UseAutomatic生成的合并信息
 
 # 7. 如果后悔了，取消合并
 git merge --abort

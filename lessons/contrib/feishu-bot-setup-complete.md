@@ -7,41 +7,41 @@
 4. Check related logs or outputs for expected behavior
 
 
-## 飞书机器人完整配置指南
+## 飞书机器人完整Configuration指南
 
 ### 概述
-本文档记录飞书机器人的完整配置过程，以及 Agent 与飞书消息平台的桥接设置。
+本文档记录飞书机器人的完整Configuration过程，以及 Agent 与飞书消息平台的桥接Settings。
 
-### 1. 安装桥接工具
+### 1. Install桥接工具
 
 ```bash
 npm install -g <bridge-tool>
 ```
 
-验证安装：
+验证Install：
 ```bash
 <bridge-tool> --version
 ```
 
-### 2. 创建配置文件
+### 2. CreateConfiguration file
 
 ```bash
 mkdir -p ~/.<bridge-tool>
 cp /path/to/<bridge-tool>/config.example.toml ~/.<bridge-tool>/config.toml
 ```
 
-### 3. 配置飞书机器人
+### 3. Configuration飞书机器人
 
-#### 3.1 创建飞书应用
+#### 3.1 Create飞书应用
 1. 登录 https://open.feishu.cn
-2. 创建企业应用
+2. Create企业应用
 3. 启用机器人能力
-4. 添加权限：`im:message.receive_v1`, `im:message:send_as_bot`
-5. 事件订阅：选择 WebSocket 长连接模式，添加事件 `im.message.receive_v1`
-6. 发布应用版本
+4. Add权限：`im:message.receive_v1`, `im:message:send_as_bot`
+5. 事件订阅：选择 WebSocket 长连接模式，Add事件 `im.message.receive_v1`
+6. 发布应用Version
 7. 复制 App ID 和 App Secret
 
-#### 3.2 编辑配置文件
+#### 3.2 编辑Configuration file
 
 ```toml
 [[projects]]
@@ -62,7 +62,7 @@ app_id = "cli_xxxxxxxxxxxx"
 app_secret = "xxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 
-### 4. 显示优化配置
+### 4. 显示优化Configuration
 
 禁用工具调用和上下文提示：
 
@@ -77,26 +77,26 @@ show_context_indicator = false
 reply_footer = false
 ```
 
-### 5. 启动
+### 5. Start
 
 ```bash
 <bridge-tool>
 ```
 
-### 6. 常见问题解决
+### 6. 常见Problem解决
 
-#### 6.1 配置文件语法错误
-**问题**：`Error loading config: parse config: toml: line XXX: expected value but found '"' instead`
+#### 6.1 Configuration file语法Error
+**Problem**：`Error loading config: parse config: toml: line XXX: expected value but found '"' instead`
 
-**原因**：配置文件中使用了 Unicode 引号，而不是标准 ASCII 引号（`"`）
+**Cause**：Configuration file中Use了 Unicode 引号，而不是标准 ASCII 引号（`"`）
 
 **解决**：
 ```bash
 sed -i 's/\xe2\x80\x9c/"/g; s/\xe2\x80\x9d/"/g' ~/.<bridge-tool>/config.toml
 ```
 
-#### 6.2 实例已在运行
-**问题**：`Error: another instance is already running`
+#### 6.2 实例已在Run
+**Problem**：`Error: another instance is already running`
 
 **解决**：
 ```bash
@@ -104,13 +104,13 @@ sed -i 's/\xe2\x80\x9c/"/g; s/\xe2\x80\x9d/"/g' ~/.<bridge-tool>/config.toml
 <bridge-tool>
 ```
 
-### 7. 验证配置
+### 7. 验证Configuration
 
-1. 检查状态：
+1. Check状态：
    ```bash
    <bridge-tool> status --force
    ```
-2. 查看日志：
+2. View日志：
    ```bash
    <bridge-tool> logs --force
    ```

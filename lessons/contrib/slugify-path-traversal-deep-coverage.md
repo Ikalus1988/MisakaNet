@@ -2,7 +2,7 @@
 {"title": "Slugify: deep coverage of path traversal, null bytes, and reserved names", "domain": "scripts", "tags": ["slugify", "path-traversal", "windows-reserved", "null-byte", "test-coverage", "hardening"], "domain_expert": "unknown"}
 ---
 
-## 问题
+## Problem
 
 The original 5-test `test_slugify.py` (merged in commit `6912f87` for issue #95) covered the basics: standard titles, slashes, emojis, reserved names, and length limits. But it did NOT explicitly verify the new task acceptance criteria for issue #95 (re-posted as EvoMap bounty `cmptjhjjg4ood7i2bkhkov`):
 
@@ -22,7 +22,7 @@ The original PR #97 focused on **fixing the implementation** and added "good eno
 2. **Path traversal tests were missing**: an attacker crafting a title with `../../etc/passwd` was never tested explicitly. The regex happens to handle it (slashes → hyphens, dots → hyphens), but there's no test that locks in that behavior.
 3. **Windows reserved name coverage was incomplete**: original tests checked `CON`, `prn`, `nul`, `com1` but missed `AUX`, `LPT1-LPT9`, and case variants. If someone refactors the reserved-name check (e.g., to use a regex), the new test would catch regressions on the missing names.
 
-## 修复方案
+## Fix方案
 
 Added a new test file `tests/test_slugify_path_traversal.py` (14 new tests) that explicitly covers the additional threat surface:
 

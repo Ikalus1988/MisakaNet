@@ -1,6 +1,6 @@
 ---{"title": "JSON 解析失败Handling — 截断 / 格式Error", "domain": "devops", "tags": ["json", "parse", "truncated", "llm", "output"]}---
 
-## 背景
+## Background
 
 从 LLM 输出或 API 返回中解析 JSON 时报 `json.decoder.JSONDecodeError`。常见于模型输出被截断、前后有多余字符。
 
@@ -17,7 +17,7 @@
 4. Check related logs or outputs for expected behavior
 
 
-## 修复
+## Fix
 
 ```python
 import json
@@ -48,7 +48,7 @@ def safe_json_parse(text: str) -> dict | None:
         except json.JSONDecodeError:
             pass
     
-    # 策略 4：使用 strict=False（允许控制字符）
+    # 策略 4：Use strict=False（允许控制字符）
     try:
         return json.loads(text, strict=False)
     except json.JSONDecodeError:

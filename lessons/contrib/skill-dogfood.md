@@ -6,18 +6,18 @@
 
 Exploratory QA of web apps: find bugs, evidence, reports.
 
-## 背景
+## Background
 
-dogfood 是 Hermes Agent 的一个技能模块，在日常使用中积累了一些实用经验和需要注意的问题。
+dogfood 是 Hermes Agent 的一个技能模块，在日常Use中积累了一些实用经验和RequireNote的Problem。
 
-## 问题
+## Problem
 
-使用过程中可能遇到的各种错误和异常情况。
+Use过程中可能遇到的各种Error和异常情况。
 
-## 修复方案
+## Fix方案
 
-参考技能文档中的具体步骤和配置方法。
+参考技能文档中的具体Steps和Configuration方法。
 
 ## 验证
 
-完成配置后可通过相关命令验证。
+完成Configuration后可ViaRelatedCommand验证。

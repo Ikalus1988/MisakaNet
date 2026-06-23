@@ -4,9 +4,9 @@
 
 > Domain: devops | Tags: ccswitch, hermes-switch, model, switching, proxy, deepseek, InternalGateway | Source: hermes_wsl
 
-## 问题
+## Problem
 
-Claude Code (cc) 和 Hermes Agent 使用不同的配置文件/代理通道，各自需要独立的模型管理方案。手动改配置容易出错（改错文件、两侧不一致）。
+Claude Code (cc) 和 Hermes Agent Use不同的Configuration file/代理通道，各自Require独立的模型管理方案。Manual改Configuration容易出错（改错File、两侧不一致）。
 
 ## 方案
 
@@ -18,13 +18,13 @@ Claude Code (cc) 和 Hermes Agent 使用不同的配置文件/代理通道，各
 
 ```bash
 ccswitch list              # 可用模型
-ccswitch status            # 当前配置
+ccswitch status            # CurrentConfiguration
 ccswitch ds-flash          # 切到 DeepSeek Flash
 ```
 
-自动做三件事：
-1. 更新 `~/.claude/settings.json`（WSL 侧）
-2. 更新 `/mnt/c/Users/hp/.claude/settings.json`（Windows 侧）
+Automatic做三件事：
+1. Update `~/.claude/settings.json`（WSL 侧）
+2. Update `/mnt/c/Users/hp/.claude/settings.json`（Windows 侧）
 3. 重启 `~/anthropic-openai-proxy.py` 换上游
 
 ### hermes-switch — 给 Hermes Agent 用
@@ -33,7 +33,7 @@ ccswitch ds-flash          # 切到 DeepSeek Flash
 
 ```bash
 hermes-switch list         # 可用模型
-hermes-switch status       # 当前配置
+hermes-switch status       # CurrentConfiguration
 hermes-switch ds-flash     # 切到 DeepSeek Flash
 ```
 
@@ -51,7 +51,7 @@ ccswitch InternalModel-2.5-pro
 hermes-switch ds-flash
 ```
 
-### 支持的模型
+### Support的模型
 
 | 短名 | 模型 | 上游 |
 |------|------|------|
@@ -69,10 +69,10 @@ hermes-switch ds-flash
 4. Check related logs or outputs for expected behavior
 
 
-## 相关文件
+## RelatedFile
 
 - `~/ccswitch` — cc 切换脚本
 - `~/hermes-switch` — Hermes 切换脚本
-- `~/.hermes/config.yaml` — Hermes 配置（含完整 fallback 链）
+- `~/.hermes/config.yaml` — Hermes Configuration（含完整 fallback 链）
 - `/tmp/proxy_env.sh` — InternalGateway API key
 - `~/anthropic-openai-proxy.py` — 本地代理

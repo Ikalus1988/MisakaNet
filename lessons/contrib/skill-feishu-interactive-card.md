@@ -4,20 +4,20 @@
 
 # feishu-interactive-card
 
-飞书互动卡片发送与回调处理 — 调试 230099/200621 错误，正确构建卡片 JSON，处理按钮点击回调。
+飞书互动卡片发送与回调处理 — 调试 230099/200621 Error，正确构建卡片 JSON，处理按钮点击回调。
 
-## 背景
+## Background
 
-feishu-interactive-card 是 Hermes Agent 的一个技能模块，在日常使用中积累了一些实用经验和需要注意的问题。
+feishu-interactive-card 是 Hermes Agent 的一个技能模块，在日常Use中积累了一些实用经验和RequireNote的Problem。
 
-## 问题
+## Problem
 
-使用过程中可能遇到的各种错误和异常情况。
+Use过程中可能遇到的各种Error和异常情况。
 
-## 修复方案
+## Fix方案
 
-参考技能文档中的具体步骤和配置方法。
+参考技能文档中的具体Steps和Configuration方法。
 
 ## 验证
 
-完成配置后可通过相关命令验证。
+完成Configuration后可ViaRelatedCommand验证。

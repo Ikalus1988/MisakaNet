@@ -1,13 +1,13 @@
 ---{"title": "OpenClaw Gateway 动态Module Not Found — 飞书Messaging分发失败", "domain": "feishu", "subdomain": "openclaw-debug", "source": "bootstrap", "status": "published", "confidence": "1.0", "created": "2026-05-18", "tags": "node:misaka10004\", \"platform:wsl\", \"severity:critical\", \"project:misakanet"}---
 
 
-## 问题
+## Problem
 
 飞书单聊和群聊均无回应。飞书长连接正常（WebSocket 显示 ON · OK），消息能收到，但 Bot 不回复。
 
 ## 根因
 
-**单聊：** OpenClaw 动态生成的 JS 模块文件丢失，导致消息分发时 ERR_MODULE_NOT_FOUND。
+**单聊：** OpenClaw 动态生成的 JS 模块File丢失，导致消息分发时 ERR_MODULE_NOT_FOUND。
 
 日志关键报错：
 ```
@@ -23,7 +23,7 @@ imported from .../get-reply-462JLlw-.js
 group oc_51cd445c9162f2d622f1a984e8bc3f4f not in groupAllowFrom (groupPolicy=allowlist)
 ```
 
-## 修复
+## Fix
 
 ### 单聊：重启 Gateway
 
@@ -33,9 +33,9 @@ systemctl --user restart openclaw-gateway
 
 Gateway 重启后动态模块会重新生成。
 
-### 群聊：添加群 ID 到 allowFrom
+### 群聊：Add群 ID 到 allowFrom
 
-配置文件路径：
+Configuration filePath：
 ```
 ~/.openclaw/credentials/feishu-default-allowFrom.json
 ```
@@ -50,7 +50,7 @@ Gateway 重启后动态模块会重新生成。
 }
 ```
 
-添加群 ID：
+Add群 ID：
 ```json
 {
   "version": 1,
@@ -61,14 +61,14 @@ Gateway 重启后动态模块会重新生成。
 }
 ```
 
-修改后需重启 Gateway：
+Modify后需重启 Gateway：
 ```bash
 systemctl --user restart openclaw-gateway
 ```
 
 ## 验证
 
-1. 检查 Gateway 日志无 ERR_MODULE_NOT_FOUND：
+1. Check Gateway 日志无 ERR_MODULE_NOT_FOUND：
    ```bash
    journalctl --user -u openclaw-gateway --no-pager -n 50 | grep -E "(ERR|error|ready)"
    ```
@@ -77,19 +77,19 @@ systemctl --user restart openclaw-gateway
 
 3. 群聊 @Bot，应有回应
 
-## 诊断命令
+## 诊断Command
 
-查看实时日志：
+View实时日志：
 ```bash
 journalctl --user -u openclaw-gateway --no-pager -f
 ```
 
-查看飞书 channel 状态：
+View飞书 channel 状态：
 ```bash
 openclaw status
 ```
 
-查看所有 session：
+View所有 session：
 ```bash
 openclaw sessions list
 ```

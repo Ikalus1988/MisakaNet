@@ -1,19 +1,19 @@
 ---
-{"title": "Feishu 文件上传：file_type 必须用 opus", "domain": "feishu", "tags": "", "source": "hanged-man", "status": "published", "created": "2026-03-29", "confidence": "0.95", "scope": "broad", "alternative_of": "None", "related": "", "domain_expert": "hanged-man", "verified_date": "2026-03-29"}
+{"title": "Feishu File上传：file_type 必须用 opus", "domain": "feishu", "tags": "", "source": "hanged-man", "status": "published", "created": "2026-03-29", "confidence": "0.95", "scope": "broad", "alternative_of": "None", "related": "", "domain_expert": "hanged-man", "verified_date": "2026-03-29"}
 ---
 
-## 问题
+## Problem
 
-Feishu `im/v1/files` 上传接口调用失败，返回 `234001 Invalid request param`。
+Feishu `im/v1/files` 上传Interface调用失败，返回 `234001 Invalid request param`。
 
 ## 根因
 
-data 字段错误地使用了 `file_length`，正确字段名是 `file_type`。
+data 字段Error地Use了 `file_length`，正确字段名是 `file_type`。
 
-## 错误写法
+## Error写法
 
 ```python
-data = {'file_type': 'opus', 'file_name': 'voice.ogg'}  # 错误：file_length
+data = {'file_type': 'opus', 'file_name': 'voice.ogg'}  # Error：file_length
 ```
 
 ## 正确写法

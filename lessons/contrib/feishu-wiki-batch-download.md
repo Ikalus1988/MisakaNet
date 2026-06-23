@@ -1,26 +1,26 @@
----{"title": "Feishu WikiBatch Download：文件类型Handling策略", "domain": "devops", "tags": "feishu, wiki, batch-download, file-type, pdf, docx, safari", "status": "published", "source": "hermes_wsl2", "updated": "2026-05-19 15:40:11 UTC"}---
+---{"title": "Feishu WikiBatch Download：FileTypeHandling策略", "domain": "devops", "tags": "feishu, wiki, batch-download, file-type, pdf, docx, safari", "status": "published", "source": "hermes_wsl2", "updated": "2026-05-19 15:40:11 UTC"}---
 
-# Feishu WikiBatch Download：文件类型Handling策略
+# Feishu WikiBatch Download：FileTypeHandling策略
 
-## 问题背景
+## ProblemBackground
 
-从企业知识库批量下载文件时，不同文件类型需要不同的提取策略。直接API调用无法处理所有类型。
+从企业知识库批量DownloadFile时，不同FileTypeRequire不同的提取策略。直接API调用无法处理所有Type。
 
-## 文件类型处理矩阵
+## FileType处理矩阵
 
-| 文件类型 | API可读 | Safari可读 | 处理策略 |
+| FileType | API可读 | Safari可读 | 处理策略 |
 |---------|---------|-----------|----------|
 | docx | ✅ | ✅ | 优先用API (doc_read) |
 | sheet | ✅ | ✅ | 用API (sheet_ops) 转markdown表格 |
 | PDF | ❌ | ✅ | Safari导航 → read_page → Python处理 |
-| PPTX | ❌ | ❌ | 占位符文件（无法自动提取） |
-| mindnote | ❌ | ❌ | 占位符文件（无法自动提取） |
-| XLSX (file类型) | ❌ | ❌ | 占位符文件（无法自动提取） |
+| PPTX | ❌ | ❌ | 占位符File（无法Automatic提取） |
+| mindnote | ❌ | ❌ | 占位符File（无法Automatic提取） |
+| XLSX (fileType) | ❌ | ❌ | 占位符File（无法Automatic提取） |
 
 ## 关键经验
 
-### 1. PDF文本提取的字符分离问题
-某些PDF渲染时每个字符占一行，需要Python脚本合并：
+### 1. PDF文本提取的字符分离Problem
+某些PDF渲染时每个字符占一行，RequirePython脚本合并：
 ```python
 # 单字符行合并逻辑
 if len(line) == 1:
@@ -33,18 +33,18 @@ else:
 ```
 
 ### 2. Safari导航失败的备用方案
-当`safari_navigate`失败时，使用JavaScript直接设置URL：
+当`safari_navigate`失败时，UseJavaScript直接SettingsURL：
 ```javascript
 window.location.href = '目标URL';
 ```
 
-### 3. 认证文件的处理
-需要登录的文件无法通过API自动下载，应创建占位符文件并标注：
-- 文件类型和节点令牌
-- 提示用户通过浏览器手动访问
+### 3. 认证File的处理
+Require登录的File无法ViaAPIAutomaticDownload，应Create占位符File并标注：
+- FileType和节点令牌
+- 提示用户Via浏览器Manual访问
 
-### 4. 目录结构保持
-批量下载时必须维持原始目录层级，便于后续检索和管理。
+### 4. Directory结构保持
+批量Download时必须维持原始Directory层级，便于后续检索和管理。
 
 ## 适用场景
 

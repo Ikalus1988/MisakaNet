@@ -2,15 +2,15 @@
 {"title": "正则表达式 debugging — 贪婪匹配造成的意外结果", "domain": "development", "tags": ["regex", "debug", "greedy", "pattern"], "domain_expert": "unknown"}
 ---
 
-## 背景
+## Background
 
 正则匹配返回了预期之外的大量文本。`<div>.*</div>` 匹配到了文档末尾而不是最近的闭合标签。
 
 ## 根因
 
-默认 `.*` 和 `.+` 是贪婪模式，匹配尽可能多的字符。
+Default `.*` 和 `.+` 是贪婪模式，匹配尽可能多的字符。
 
-## 修复
+## Fix
 
 ```python
 import re
@@ -25,7 +25,7 @@ re.findall(r"<div>(.*)</div>", text)
 re.findall(r"<div>(.*?)</div>", text)
 # ['内容1', '内容2']
 
-# ✅ 使用更精确的排除匹配
+# ✅ Use更精确的排除匹配
 re.findall(r"<div>([^<]*)</div>", text)
 # ['内容1', '内容2']
 ```
@@ -41,6 +41,6 @@ re.findall(r"<div>([^<]*)</div>", text)
 ## 验证
 
 ```bash
-# 确认期望的匹配范围
+# Verify期望的匹配范围
 python3 -c "import re; print(re.findall(r'YOUR_PATTERN', 'YOUR_TEXT'))"
 ```

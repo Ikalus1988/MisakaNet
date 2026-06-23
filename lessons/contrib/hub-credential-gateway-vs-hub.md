@@ -3,18 +3,18 @@
 ---
 
 
-## 背景
+## Background
 
-Hub 有两套配置体系，Gateway 和 Hub 读取不同的凭证位置，容易混淆。
+Hub 有两套Configuration体系，Gateway 和 Hub 读取不同的凭证位置，容易混淆。
 
 ## 凭证读取位置
 
-| 进程 | 配置文件 | 关键变量 |
+| 进程 | Configuration file | 关键Variable |
 |------|---------|---------|
 | Gateway | `~/.hermes/.env` | `FEISHU_APP_ID`, `FEISHU_APP_SECRET` |
-| Hub | `~/.bashrc` + `~/Agent-Medici/config.yaml` | `FEISHU_APP_ID`, `FEISHU_APP_SECRET`（环境变量）；`webhook_url`, `shared_secret`（config.yaml） |
+| Hub | `~/.bashrc` + `~/Agent-Medici/config.yaml` | `FEISHU_APP_ID`, `FEISHU_APP_SECRET`（Environment variable）；`webhook_url`, `shared_secret`（config.yaml） |
 
-## 修复
+## Fix
 
 **Gateway 凭证**（PID 1041579）：
 ```bash
@@ -27,7 +27,7 @@ hermes config set FEISHU_APP_SECRET <new_secret>
 export FEISHU_APP_ID=cli_a93f960281389bcd
 export FEISHU_APP_SECRET=[FEISHU_SECRET]
 
-# config.yaml 写死值
+# config.yaml 写死Value
 feishu:
   app_id: "cli_a93f960281389bcd"
   app_secret: "[FEISHU_SECRET]"
@@ -45,7 +45,7 @@ master:
 
 ## 关键点
 
-- Hub 需要 `.venv` Python（`~/.hermes/hermes-agent/.venv/bin/python3`），系统 Python 缺 `networkx`
-- Hub 启动脚本：`~/Agent-Medici/start_hub.sh`
-- Hub **不**用 watchdog 监控，需手动重启
+- Hub Require `.venv` Python（`~/.hermes/hermes-agent/.venv/bin/python3`），系统 Python 缺 `networkx`
+- Hub Start脚本：`~/Agent-Medici/start_hub.sh`
+- Hub **不**用 watchdog 监控，需Manual重启
 - Hub 和 Gateway 共享同一个 Feishu App

@@ -2,18 +2,18 @@
 {"title": "WSL pip install GBK 编码导致 hub_poller 崩溃", "domain": "devops", "subdomain": "wsl", "source": "bootstrap", "status": "draft", "tags": ["project:agent-medici", "severity:critical", "platform:wsl", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 
-## 问题
+## Problem
 
-Windows Hub 的 hub_poller.py 读取 config.yaml 时崩溃，错误信息为 UnicodeDecodeError。
+Windows Hub 的 hub_poller.py 读取 config.yaml 时崩溃，Error信息为 UnicodeDecodeError。
 
 ## 根因
 
-Windows 终端默认编码为 GBK，Python open() 默认使用系统编码读取文件。config.yaml 含中文字符，
+Windows 终端Default编码为 GBK，Python open() DefaultUse系统编码读取File。config.yaml 含中文字符，
 在 Windows 上 open() 未指定 encoding="utf-8" 时抛出 UnicodeDecodeError。
 
-## 修复
+## Fix
 
-所有文件读取操作显式指定 encoding="utf-8"：
+所有File读取操作显式指定 encoding="utf-8"：
 ```python
 with open(config_path, encoding="utf-8") as f:
     return yaml.safe_load(f)
@@ -23,7 +23,7 @@ with open(config_path, encoding="utf-8") as f:
 
 ## 验证
 
-在 Windows 终端手动运行 hub_poller.py，确认 config.yaml 正常加载，无 UnicodeDecodeError。
+在 Windows 终端ManualRun hub_poller.py，Verify config.yaml 正常加载，无 UnicodeDecodeError。
 
 ## 场景
 

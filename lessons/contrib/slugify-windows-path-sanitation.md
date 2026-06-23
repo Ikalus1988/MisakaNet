@@ -2,7 +2,7 @@
 {"title": "Slugify filename sanitation crash on Windows and WSL", "domain": "scripts", "tags": ["slugify", "windows", "wsl", "sanitation", "path-errors"], "domain_expert": "unknown"}
 ---
 
-## 问题
+## Problem
 
 When creating a new lesson using `scripts/new_lesson.py` (either interactively or via batch mode), if the user or agent supplies a title with special characters, slashes (`/`, `\`), emojis, or Windows reserved names, the `slugify` logic crashes, generates invalid file paths, or attempts to write to reserved devices (like `CON` or `PRN` on Windows). This disrupts the creation workflow on Windows and WSL systems.
 
@@ -12,7 +12,7 @@ When creating a new lesson using `scripts/new_lesson.py` (either interactively o
 2. **Empty Slug Fallbacks**: Emojis, diacritics, and special characters were stripped completely by regex. If the title consisted solely of these characters, `_slugify` returned an empty string `""`, leading to writing a hidden file `.md` directly to the `lessons/` root, which triggers crashes or invalid path errors.
 3. **Windows Reserved Names**: If the slug matches reserved keywords (like `CON`, `PRN`, `AUX`, `NUL`, etc.), Windows prevents creating the file or redirects the file write to physical devices/null, resulting in permission errors or environment crashes.
 
-## 修复方案
+## Fix方案
 
 Hardened the `_slugify` logic in `scripts/new_lesson.py` using standard library libraries and safeguards:
 1. **Unicode Decompositions**: Used `unicodedata.normalize('NFKD', title)` to strip accents and normalize letters.

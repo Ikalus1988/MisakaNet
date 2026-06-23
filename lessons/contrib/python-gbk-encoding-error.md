@@ -1,8 +1,8 @@
 ---{"title": "Python GBK Encoding Error — Windows/WSL 跨平台", "domain": "devops", "tags": ["python", "encoding", "gbk", "windows", "wsl"]}---
 
-## 背景
+## Background
 
-在 WSL 中运行 Python 脚本，读取或写入文件时报：
+在 WSL 中Run Python 脚本，读取或写入File时报：
 ```
 UnicodeDecodeError: 'gbk' codec can't decode byte ...
 ```
@@ -10,21 +10,21 @@ UnicodeDecodeError: 'gbk' codec can't decode byte ...
 
 ## 根因
 
-Windows 默认编码是 GBK，WSL 是 UTF-8。当 Python 在 WSL 中读取来自 Windows 的文件或输出日志到挂载盘时，默认编码检测失效。
+Windows Default编码是 GBK，WSL 是 UTF-8。当 Python 在 WSL 中读取来自 Windows 的File或输出日志到挂载盘时，Default编码检测失效。
 
-## 修复
+## Fix
 
 ```python
 # Python GBK Encoding Error — Windows/WSL 跨平台
 with open("file.txt", "r", encoding="utf-8") as f:
     content = f.read()
 
-# 2. 写入文件时指定编码
+# 2. 写入File时指定编码
 with open("file.txt", "w", encoding="utf-8") as f:
     f.write(content)
 
-# 3. 设置环境变量（推荐永久）
-# 在 ~/.bashrc 中添加：
+# 3. SettingsEnvironment variable（推荐永久）
+# 在 ~/.bashrc 中Add：
 export PYTHONIOENCODING=utf-8
 export LANG=C.UTF-8
 
