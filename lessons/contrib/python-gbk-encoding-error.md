@@ -1,3 +1,8 @@
+---
+title: Python Gbk Encoding Error
+language: en
+---
+> **English Translation**
 ---{"title": "Python GBK Encoding Error — Windows/WSL 跨平台", "domain": "devops", "tags": ["python", "encoding", "gbk", "windows", "wsl"]}---
 
 ## 背景
