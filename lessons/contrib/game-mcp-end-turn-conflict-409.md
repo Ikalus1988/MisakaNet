@@ -1,4 +1,12 @@
 ---
+title: Game Mcp End Turn Conflict 409
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
+---
 {"title": "Game MCP: End Turn Returns 409 Conflict", "domain": "mcp", "source": "hanged-man", "status": "published", "domain_expert": "hanged-man"}
 ---
 
