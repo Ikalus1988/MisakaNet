@@ -1,6 +1,7 @@
 ---
-title: CONTEXT COMPACTION] Earlier turns in this convers
-domain: rag
+domain: "rag"
+title: "CONTEXT COMPACTION] Earlier turns in this convers"
+verification: "metadata-normalized"
 source: bootstrap
 status: active
 confidence: 0.7

@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "正则表达式 debugging — 贪婪匹配造成的意外结果"
+verification: "metadata-normalized"
 {"title": "正则表达式 debugging — 贪婪匹配造成的意外结果", "domain": "development", "tags": ["regex", "debug", "greedy", "pattern"], "domain_expert": "unknown"}
 ---
 

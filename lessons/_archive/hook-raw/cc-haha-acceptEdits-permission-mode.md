@@ -1,6 +1,7 @@
 ---
-title: cc-haha 配置 acceptEdits 权限模式减少确认提示
-domain: agent-medici
+domain: "agent-medici"
+title: "cc-haha 配置 acceptEdits 权限模式减少确认提示"
+verification: "metadata-normalized"
 subdomain: cc-haha
 source: bootstrap
 status: draft

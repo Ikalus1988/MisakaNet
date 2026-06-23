@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "OpenClaw 重装教训 — 删除前先停服务清残留"
+verification: "metadata-normalized"
 {"title": "OpenClaw 重装教训 — 删除前先停服务清残留", "domain": "devops", "source": "bootstrap", "status": "published", "confidence": "0.7", "created": "2026-04-01", "domain_expert": "bootstrap", "verified_date": "2026-04-01"}
 ---
 

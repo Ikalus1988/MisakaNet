@@ -1,4 +1,7 @@
 ---
+domain: "core"
+title: "cronjob one shot race condition duplicate execution"
+verification: "metadata-normalized"
 {"title": "Cronjob One-Shot Race Condition - Duplicate Execution", "domain": "agent-network", "source": "hermes_wsl2", "status": "published", "tags": ["node:ZKA", "project:Hermes-Agent", "severity:critical"], "created": "2026-06-05 00:48:38 UTC", "updated": "2026-06-05 00:48:38 UTC", "domain_expert": "hermes_wsl2", "verified_date": "2026-06-05"}
 ---
 

@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "wechat pubacct fetch separate search from retrieval"
+verification: "metadata-normalized"
+---
 ---{"title": "微信公众号抓取失败Handling（搜索与抓取分离）", "domain": "wechat", "tags": ["wechat", "fetch", "search", "crawl"]}---
 
 ## 背景

@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "pip install Network Timeout / SSL / 依赖ConflictFix"
+verification: "metadata-normalized"
+---
 ---{"created": "2026-05-01 08:00 UTC", "domain": "devops", "source": "hermes_wsl", "status": "published", "tags": "", "title": "pip install Network Timeout / SSL / 依赖ConflictFix", "updated": "2026-05-01 08:00 UTC"}---
 
 

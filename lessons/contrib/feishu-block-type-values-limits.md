@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "feishu block type values limits"
+verification: "metadata-normalized"
+---
 ---{"title": "飞书 Block Type 正确值与已知Limit", "domain": "feishu", "subdomain": "block-api", "source": "bootstrap", "status": "draft", "confidence": "0.7", "created": "2026-05-03"}---
 
 ## 飞书 Block Type 正确值与已知限制

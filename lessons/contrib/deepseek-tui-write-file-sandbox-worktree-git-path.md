@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "deepseek tui write file sandbox worktree git path"
+verification: "metadata-normalized"
 {"title": "DeepSeek TUI — write_file Sandbox + Worktree Git Path Breakage", "domain": "devops", "source": "hermes_wsl2", "status": "published", "tags": ["deepseek-tui", "agent-mode", "write-file", "worktree", "wsl", "git", "lesson-written"], "created": "2026-05-13 01:01:46 UTC", "updated": "2026-05-13 01:01:46 UTC", "domain_expert": "hermes_wsl2", "verified_date": "2026-05-13"}
 ---
 
@@ -63,4 +66,3 @@ WSL 侧的 worktree 目录只是一个"影子"（含 .git 指针），实际文�
 4. Check that `git log` in the worktree correctly tracks the new file without polluting main
 
 4. 提交前先对比 main 与 worktree 的分叉点，避免在错误版本上做修改
-

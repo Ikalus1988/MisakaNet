@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "rag-audit-question-authoring"
+verification: "metadata-normalized"
 {"title": "rag-audit-question-authoring", "domain": "rag", "source": "skill-harvest", "status": "draft", "confidence": "0.6", "created": "2026-05-20", "domain_expert": "skill-harvest", "verified_date": "2026-05-20"}
 ---
 

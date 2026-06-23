@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "cc connect feishu display optimization"
+verification: "metadata-normalized"
+---
 ---{"title": "cc-connect 飞书显示Optimization：禁用工具调用和上下文提示", "domain": "feishu", "subdomain": "cc-connect", "source": "bootstrap", "status": "published", "confidence": "0.9", "created": "2026-05-19"}---
 
 ## cc-connect 飞书显示优化：禁用工具调用和上下文提示

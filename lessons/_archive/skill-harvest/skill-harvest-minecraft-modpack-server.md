@@ -1,5 +1,7 @@
 ---
+domain: "archive"
 title: "Minecraft Modpack Server"
+verification: "metadata-normalized"
 source: "skill-pipeline"
 status: "draft"
 created: "2026-05-09"

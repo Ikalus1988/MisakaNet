@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "WSL 代理Setup — 通过 Windows 梯子Access外网"
+verification: "metadata-normalized"
+---
 ---{"title": "WSL 代理Setup — 通过 Windows 梯子Access外网", "domain": "devops", "tags": ["wsl", "proxy", "network", "windows"]}---
 
 ## 背景

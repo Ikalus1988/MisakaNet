@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "JSON 解析失败Handling — 截断 / 格式Error"
+verification: "metadata-normalized"
+---
 ---{"title": "JSON 解析失败Handling — 截断 / 格式Error", "domain": "devops", "tags": ["json", "parse", "truncated", "llm", "output"]}---
 
 ## 背景

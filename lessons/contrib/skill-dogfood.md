@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "dogfood"
+verification: "metadata-normalized"
 {"title": "dogfood", "domain": "claude", "source": "skill-harvest", "status": "draft", "confidence": "0.6", "created": "2026-05-20", "domain_expert": "skill-harvest", "verified_date": "2026-05-20"}
 ---
 

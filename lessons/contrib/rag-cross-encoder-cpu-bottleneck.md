@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "RAG Cross-Encoder Reranker CPU Bottleneck与 LLM 确定性调优"
+verification: "metadata-normalized"
+---
 ---{"title": "RAG Cross-Encoder Reranker CPU Bottleneck与 LLM 确定性调优", "domain": "rag", "subdomain": "performance", "source": "bootstrap", "status": "published", "tags": ["project:self-grow-wiki", "node:hermes_wsl", "scope:broad", "severity:high"], "confidence": "0.9", "created": "2026-05-28"}---
 
 ## 问题

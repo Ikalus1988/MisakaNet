@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "write file sandbox worktree git path"
+verification: "metadata-normalized"
 {"title": "Agent Write File 写入不落地 + Worktree Git 链接路径断裂", "domain": "devops", "source": "hermes_wsl2", "status": "published", "tags": ["agent-mode", "write-file", "worktree", "wsl", "git", "lesson-written"], "created": "2026-05-13 01:01:46 UTC", "updated": "2026-05-13 01:01:46 UTC", "domain_expert": "hermes_wsl2", "verified_date": "2026-05-13"}
 ---
 

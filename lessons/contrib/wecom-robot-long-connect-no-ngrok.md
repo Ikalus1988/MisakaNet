@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "wecom robot long connect no ngrok"
+verification: "metadata-normalized"
 {"title": "企业微信机器人：长连接模式不需要 ngrok", "domain": "devops", "subdomain": "wecom", "source": "bootstrap", "status": "draft", "tags": ["project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow"], "confidence": "0.85", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 

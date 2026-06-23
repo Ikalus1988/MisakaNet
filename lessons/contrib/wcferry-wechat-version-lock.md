@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "wcferry wechat version lock"
+verification: "metadata-normalized"
 {"title": "wcferry 微信版本锁定 — 3.9.12.51 才能用", "domain": "devops", "subdomain": "wechat", "source": "bootstrap", "status": "draft", "tags": ["project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow"], "confidence": "0.85", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 

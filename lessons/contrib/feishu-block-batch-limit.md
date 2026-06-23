@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "feishu block batch limit"
+verification: "metadata-normalized"
+---
 ---{"title": "飞书 Block Batch写入上限", "domain": "feishu", "subdomain": "block-api", "source": "bootstrap", "status": "draft", "confidence": "0.7", "created": "2026-05-03"}---
 
 ## 飞书 Block 批量写入上限

@@ -1,3 +1,8 @@
+---
+domain: "general"
+title: "MisakaNet Shared Lessons"
+verification: "metadata-normalized"
+---
 # MisakaNet Shared Lessons
 
 > 最后更新: 2026-06-19 | 来源: hermes_wsl2

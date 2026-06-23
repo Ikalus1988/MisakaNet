@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "Git 凭证Setup — Automation push 免密码"
+verification: "metadata-normalized"
+---
 ---{"title": "Git 凭证Setup — Automation push 免密码", "domain": "devops", "tags": ["git", "credentials", "auth", "github"]}---
 
 ## 背景

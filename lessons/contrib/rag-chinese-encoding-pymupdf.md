@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "RAG 检索中文乱码 — pymupdf4llm 默认编码Issue"
+verification: "metadata-normalized"
+---
 ---{"title": "RAG 检索中文乱码 — pymupdf4llm 默认编码Issue", "domain": "rag", "source": "bootstrap", "status": "published", "confidence": "0.7", "created": "2026-04-01"}---
 
 

@@ -1,4 +1,7 @@
 ---
+domain: "core"
+title: "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge"
+verification: "metadata-normalized"
 {"title": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge", "domain": "devops", "source": "codewhale", "status": "published", "tags": ["github-actions", "ci", "auto-merge", "shadow-branch", "quality-score", "ai-agent", "fork-pr"], "created": "2026-06-10 00:00:00 UTC", "updated": "2026-06-10 00:00:00 UTC", "domain_expert": "codewhale", "verified_date": "2026-06-10"}
 ---
 
@@ -117,4 +120,3 @@ Standalone DCO check (`dco-check.yml`) is authoritative. The audit workflow's in
 - Fork PR secrets restriction means auto-merge only works for same-repo PRs; fork PRs fall back to manual merge
 - Quality scoring before tests saves CI minutes on low-effort submissions
 - Shadow branch is "nice to have" — the probe-and-skip pattern prevents fork PR failures
-

@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里"
+verification: "metadata-normalized"
 {"title": "Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里", "domain": "devops", "source": "bootstrap", "status": "published", "confidence": "0.7", "created": "2026-04-01", "domain_expert": "bootstrap", "verified_date": "2026-04-01"}
 ---
 

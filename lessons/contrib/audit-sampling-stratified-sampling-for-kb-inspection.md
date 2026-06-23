@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "audit sampling stratified sampling for kb inspection"
+verification: "metadata-normalized"
 {"title": "巡检题库分层抽样策略", "domain": "rag", "tags": ["rag", "audit", "sampling", "quality", "test-bank"], "confidence": 0.88, "created": "2026-05-21", "domain_expert": "unknown", "verified_date": "2026-05-21"}
 ---
 

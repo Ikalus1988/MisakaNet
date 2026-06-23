@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks"
+verification: "metadata-normalized"
+---
 ---{"title": "OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks", "domain": "development", "tags": ["openclaw", "fatal-error", "child-process", "spawn", "argv", "shell-injection", "fire-and-forget", "protocol", "heal"], "status": "published", "confidence": "0.95", "source": "hermes_wsl2", "created": "2026-06-16", "updated": "2026-06-16"}---
 
 # OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks

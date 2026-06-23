@@ -1,4 +1,7 @@
 ---
+domain: "core"
+title: "GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation"
+verification: "metadata-normalized"
 {"title": "GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation", "domain": "security", "source": "codewhale", "status": "published", "tags": ["github-actions", "security", "code-injection", "codeql", "ci"], "created": "2026-06-10 00:00:00 UTC", "updated": "2026-06-10 00:00:00 UTC", "domain_expert": "codewhale", "verified_date": "2026-06-10"}
 ---
 

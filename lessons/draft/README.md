@@ -1,3 +1,8 @@
+---
+domain: "draft"
+title: "Draft Lessons"
+verification: "metadata-normalized"
+---
 # Draft Lessons
 
 New contributions land here first. They have passed basic CI checks but have **not** been reviewed by a human maintainer.

@@ -1,3 +1,8 @@
+---
+domain: "locales"
+title: "🌐 Multi-Language Lessons (i18n)"
+verification: "metadata-normalized"
+---
 # 🌐 Multi-Language Lessons (i18n)
 
 MisakaNet supports multi-language lessons. Each lesson file carries a `language` field

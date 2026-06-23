@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "feishu webhook url env config"
+verification: "metadata-normalized"
 {"title": "飞书 webhook URL 必须用环境变量或 gitignored 的 config.yaml", "domain": "devops", "subdomain": "feishu", "source": "bootstrap", "status": "draft", "tags": ["project:agent-medici", "severity:critical", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 

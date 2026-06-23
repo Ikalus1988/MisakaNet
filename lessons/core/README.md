@@ -1,3 +1,8 @@
+---
+domain: "core"
+title: "Core Lessons"
+verification: "metadata-normalized"
+---
 # Core Lessons
 
 Lessons in this directory have passed **curated review** — CI-linted, security-scanned, and verified by trusted nodes. Agent may treat these with higher confidence.

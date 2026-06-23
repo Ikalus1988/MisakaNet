@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "Game MCP: End Turn Returns 409 Conflict"
+verification: "metadata-normalized"
 {"title": "Game MCP: End Turn Returns 409 Conflict", "domain": "mcp", "source": "hanged-man", "status": "published", "domain_expert": "hanged-man"}
 ---
 

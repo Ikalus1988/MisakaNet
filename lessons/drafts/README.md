@@ -1,3 +1,8 @@
+---
+domain: "drafts"
+title: "Draft Lessons 隔离区"
+verification: "metadata-normalized"
+---
 # Draft Lessons 隔离区
 
 > ⚠️ 此目录下的 lesson 为自动生成或未经审核的草稿。

@@ -1,12 +1,13 @@
 ---
+domain: "general"
+title: "system note your previous turn was interrupted b"
+verification: "metadata-normalized"
 confidence: 0.5
 created: '2026-04-01'
-domain: general
 source: bootstrap
 status: draft
 tags:
 - bootstrap
-title: system note your previous turn was interrupted b
 ---
 
 ---

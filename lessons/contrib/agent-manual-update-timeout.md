@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "Agent 手动Update步骤（update Timeout Handling）"
+verification: "metadata-normalized"
+---
 ---{"title": "Agent 手动Update步骤（update Timeout Handling）", "domain": "devops", "source": "bootstrap", "status": "draft", "confidence": "0.8", "created": "2026-05-03"}---
 ## Verification
 

@@ -1,4 +1,7 @@
 ---
+domain: "general"
+title: "<English Title>"
+verification: "metadata-normalized"
 {"title": "<English Title: 4-120 chars>", "domain": "<domain>", "tags": ["tag1", "tag2", "tag3"], "status": "published", "confidence": "0.9", "created": "<YYYY-MM-DD>", "updated": "<YYYY-MM-DD>", "source": "<your-source>", "verified_date": "", "domain_expert": ""}
 ---
 

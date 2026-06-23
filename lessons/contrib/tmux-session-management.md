@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "tmux 终端复用 — 断开不丢失会话"
+verification: "metadata-normalized"
 {"title": "tmux 终端复用 — 断开不丢失会话", "domain": "development", "tags": ["tmux", "terminal", "session", "background"], "domain_expert": "unknown"}
 ---
 

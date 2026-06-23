@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "api gateway anthropic incompatibility"
+verification: "metadata-normalized"
 {"title": "InternalGateway API 网关不兼容 Anthropic 原生格式", "domain": "devops", "subdomain": "api", "source": "bootstrap", "status": "draft", "tags": ["project:rag", "severity:medium", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 

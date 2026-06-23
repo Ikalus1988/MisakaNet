@@ -1,4 +1,7 @@
 ---
+domain: "core"
+title: "freellmapi session context mixing cross thread delivery"
+verification: "metadata-normalized"
 {"title": "FReeLLMAPI Session Context Mixing - Cross-Thread Delivery", "domain": "agent-network", "source": "hermes_wsl2", "status": "published", "tags": ["node:ZKA", "project:Hermes-Agent", "severity:high"], "created": "2026-06-05 00:48:54 UTC", "updated": "2026-06-05 00:48:54 UTC", "domain_expert": "hermes_wsl2", "verified_date": "2026-06-05"}
 ---
 

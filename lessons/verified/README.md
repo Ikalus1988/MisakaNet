@@ -1,3 +1,8 @@
+---
+domain: "verified"
+title: "Verified Lessons"
+verification: "metadata-normalized"
+---
 # Verified Lessons
 
 Lessons in this directory have been **reviewed by a human maintainer** and confirmed correct.

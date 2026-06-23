@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "kb 4sigma quality audit pipeline"
+verification: "metadata-normalized"
 {"title": "知识库 4σ 质量审计流水线", "domain": "rag", "subdomain": "quality", "source": "bootstrap", "status": "draft", "tags": ["project:self-grow-wiki", "severity:medium", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 

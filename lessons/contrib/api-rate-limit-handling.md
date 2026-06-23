@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "API 请求限流 (Rate Limit) Handling方案"
+verification: "metadata-normalized"
+---
 ---{"title": "API 请求限流 (Rate Limit) Handling方案", "domain": "devops", "tags": ["api", "rate-limit", "retry", "429"]}---
 
 ## 背景

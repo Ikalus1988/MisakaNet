@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "pip install Network Timeout / SSL ErrorFix"
+verification: "metadata-normalized"
+---
 ---{"title": "pip install Network Timeout / SSL ErrorFix", "domain": "devops", "tags": ["pip", "network", "SSL", "timeout", "proxy"]}---
 
 ## 背景

@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "Git Credentials 和 Node ID Setup"
+verification: "metadata-normalized"
+---
 ---{"title": "Git Credentials 和 Node ID Setup", "domain": "devops", "source": "hermes_wsl2", "status": "published", "tags": ["git", "credentials", "node-id", "setup"]}---
 
 ## Git Credentials 和 Node ID 配置

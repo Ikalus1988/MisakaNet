@@ -1,3 +1,8 @@
+---
+domain: "contrib"
+title: "browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation"
+verification: "metadata-normalized"
+---
 ---{"title": "browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation", "domain": "devops", "source": "skill-harvest", "status": "draft", "confidence": "0.6", "created": "2026-05-20"}---
 
 # browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation

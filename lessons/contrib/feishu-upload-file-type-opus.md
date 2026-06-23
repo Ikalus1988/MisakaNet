@@ -1,4 +1,7 @@
 ---
+domain: "contrib"
+title: "feishu upload file type opus"
+verification: "metadata-normalized"
 {"title": "Feishu 文件上传：file_type 必须用 opus", "domain": "feishu", "tags": "", "source": "hanged-man", "status": "published", "created": "2026-03-29", "confidence": "0.95", "scope": "broad", "alternative_of": "None", "related": "", "domain_expert": "hanged-man", "verified_date": "2026-03-29"}
 ---
 

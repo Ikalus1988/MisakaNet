@@ -1,6 +1,7 @@
 ---
-title: CONTEXT COMPACTION — REFERENCE ONLY] Earlier turn
-domain: feishu
+domain: "feishu"
+title: "CONTEXT COMPACTION — REFERENCE ONLY] Earlier turn"
+verification: "metadata-normalized"
 source: bootstrap
 status: active
 confidence: 0.7

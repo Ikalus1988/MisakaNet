@@ -1,6 +1,7 @@
 ---
-title: Config was last written by a newer OpenClaw (2026.
-domain: feishu
+domain: "feishu"
+title: "Config was last written by a newer OpenClaw (2026."
+verification: "metadata-normalized"
 source: bootstrap
 status: active
 confidence: 0.7
