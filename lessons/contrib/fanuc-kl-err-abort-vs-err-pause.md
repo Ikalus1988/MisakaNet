@@ -1,4 +1,12 @@
 ---
+title: Fanuc Kl Err Abort Vs Err Pause
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
+---
 {"title": "FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异", "domain": "fanuc", "subdomain": "error-handling", "source": "bootstrap", "status": "draft", "confidence": "0.7", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 
