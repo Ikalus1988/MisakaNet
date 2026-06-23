@@ -1,4 +1,13 @@
 ---
+title: Feishu Block Api False Success
+language: en
+---
+
+> **English Translation**
+> 
+> Translated from Chinese original for international contributors.
+
+---
 {"title": "飞书 Block API 假成功特征", "domain": "feishu", "subdomain": "block-api", "source": "bootstrap", "status": "draft", "confidence": "0.7", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 
