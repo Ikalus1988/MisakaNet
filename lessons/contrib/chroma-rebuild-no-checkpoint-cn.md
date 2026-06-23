@@ -1,4 +1,12 @@
 ---
+title: Chroma Rebuild No Checkpoint Cn
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
+---
 {"title": "Chroma 建库无 Checkpoint — 进程一死全部丢失", "domain": "rag", "source": "bootstrap", "status": "published", "confidence": "0.7", "created": "2026-04-01", "domain_expert": "bootstrap", "verified_date": "2026-04-01"}
 ---
 
