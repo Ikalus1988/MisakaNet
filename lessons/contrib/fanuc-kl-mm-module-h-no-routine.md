@@ -1,4 +1,12 @@
 ---
+title: Fanuc Kl Mm Module H No Routine
+language: en
+---
+
+> **English Translation**
+> Translated from Chinese original.
+
+---
 {"title": "FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明", "domain": "fanuc", "subdomain": "kl-modules", "source": "bootstrap", "status": "draft", "confidence": "0.7", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 
