@@ -1,16 +1,14 @@
 """MisakaNet 搜索引擎 — BM25 + 元数据加权 + 分层缓存。
 BM25 核心算法委托给 misakanet-core 包。
 """
-import sys
+
 import json
 import re
-import time
 import sqlite3
-from pathlib import Path
-from typing import Optional
 from dataclasses import dataclass, field
+from pathlib import Path
 
-from misakanet_core import BM25 as CoreBM25, ScoredDocument
+from misakanet_core import BM25, ScoredDocument
 
 REPO = Path(__file__).resolve().parent.parent.parent
 LESSONS = REPO / "lessons"
@@ -91,8 +89,8 @@ class CachedDoc:
         return 0.0 if self.is_draft else 0.1
 
 
-def _parse_json_frontmatter(text: str) -> Optional[dict]:
-    m = re.match(r'^---\s*\n?(\{.*?\})\n?---', text, re.DOTALL)
+def _parse_json_frontmatter(text: str) -> dict | None:
+    m = re.match(r"^---\s*\n?(\{.*?\})\n?---", text, re.DOTALL)
     if m:
         try:
             return json.loads(m.group(1))
@@ -103,21 +101,21 @@ def _parse_json_frontmatter(text: str) -> Optional[dict]:
 
 def _parse_yaml_frontmatter(text: str) -> dict:
     meta = {}
-    m = re.match(r'^---\s*\n(.*?)\n---', text, re.DOTALL)
+    m = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
     if not m:
         return meta
-    for line in m.group(1).split('\n'):
+    for line in m.group(1).split("\n"):
         line = line.strip()
-        if ':' not in line:
+        if ":" not in line:
             continue
-        key, _, val = line.partition(':')
+        key, _, val = line.partition(":")
         key = key.strip()
         val = val.strip().strip('"').strip("'")
-        if val.startswith('[') and val.endswith(']'):
+        if val.startswith("[") and val.endswith("]"):
             try:
                 meta[key] = json.loads(val.replace("'", '"'))
             except json.JSONDecodeError:
-                meta[key] = [v.strip().strip('"').strip("'") for v in val[1:-1].split(',')]
+                meta[key] = [v.strip().strip('"').strip("'") for v in val[1:-1].split(",")]
         else:
             meta[key] = val
     return meta
@@ -128,8 +126,10 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
     如果 is_lesson=True，同时扫描 core/ 和 contrib/ 子目录。"""
     docs = []
     conn = _l2()
-    known = {row[0]: (row[1], row[2]) for row in conn.execute(
-        "SELECT path, mtime, size FROM file_cache").fetchall()}
+    known = {
+        row[0]: (row[1], row[2])
+        for row in conn.execute("SELECT path, mtime, size FROM file_cache").fetchall()
+    }
     changed = 0
     # For lessons, scan both core/ and contrib/; for references, scan single directory
     search_dirs = [directory]
@@ -139,7 +139,7 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
         if not dir_path.exists():
             continue
         for f in sorted(dir_path.glob("**/*.md")):
-            if f.name == "index.md" or f.name.startswith('.'):
+            if f.name == "index.md" or f.name.startswith("."):
                 continue
             try:
                 st = f.stat()
@@ -149,15 +149,27 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
             cached = known.get(rel)
             if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
                 row = conn.execute(
-                    "SELECT title,domain,status,reference,scope,source,tags,language FROM file_cache WHERE path=?",
-                    (rel,)).fetchone()
+                    "SELECT title,domain,status,reference,scope,source,tags,language "
+                    "FROM file_cache WHERE path=?",
+                    (rel,),
+                ).fetchone()
                 if row:
                     tags = json.loads(row[6]) if row[6] else []
-                    doc = CachedDoc(filename=f.name, filepath=f, content="", mtime=st.st_mtime,
-                                    is_lesson=is_lesson, title=row[0] or f.stem, domain=row[1] or "",
-                                    status=row[2] or "", reference=row[3] or "",
-                                    scope=row[4] or "", source=row[5] or "", tags=tags,
-                                    language=row[7] or "")
+                    doc = CachedDoc(
+                        filename=f.name,
+                        filepath=f,
+                        content="",
+                        mtime=st.st_mtime,
+                        is_lesson=is_lesson,
+                        title=row[0] or f.stem,
+                        domain=row[1] or "",
+                        status=row[2] or "",
+                        reference=row[3] or "",
+                        scope=row[4] or "",
+                        source=row[5] or "",
+                        tags=tags,
+                        language=row[7] or "",
+                    )
                     doc.content = f.read_text(encoding="utf-8", errors="replace")
                     docs.append(doc)
                     continue
@@ -167,8 +179,13 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
                 continue
             if not content.strip():
                 continue
-            doc = CachedDoc(filename=f.name, filepath=f, content=content,
-                            mtime=st.st_mtime, is_lesson=is_lesson)
+            doc = CachedDoc(
+                filename=f.name,
+                filepath=f,
+                content=content,
+                mtime=st.st_mtime,
+                is_lesson=is_lesson,
+            )
             meta = _parse_json_frontmatter(content) or _parse_yaml_frontmatter(content)
             doc.title = meta.get("title", f.stem)
             doc.domain = meta.get("domain", "")
@@ -182,9 +199,24 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
             raw_tags = meta.get("tags", "")
             doc.tags = raw_tags if isinstance(raw_tags, list) else []
             docs.append(doc)
-            conn.execute("INSERT OR REPLACE INTO file_cache (path,mtime,size,title,domain,status,reference,scope,source,tags,language) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                         (rel, st.st_mtime, st.st_size, doc.title, doc.domain, doc.status,
-                          doc.reference, doc.scope, doc.source, json.dumps(doc.tags, ensure_ascii=False), doc.language))
+            conn.execute(
+                "INSERT OR REPLACE INTO file_cache "
+                "(path,mtime,size,title,domain,status,reference,scope,source,tags,language) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                (
+                    rel,
+                    st.st_mtime,
+                    st.st_size,
+                    doc.title,
+                    doc.domain,
+                    doc.status,
+                    doc.reference,
+                    doc.scope,
+                    doc.source,
+                    json.dumps(doc.tags, ensure_ascii=False),
+                    doc.language,
+                ),
+            )
             changed += 1
     conn.commit()
     if changed:
@@ -196,10 +228,9 @@ def _doc_cache_id(doc: CachedDoc) -> str:
     return str(doc.filepath.relative_to(REPO))
 
 
-
-def _search_cached(query: str, docs: list[CachedDoc],
-                   titles_only: bool = False,
-                   broad_only: bool = False) -> list[tuple[float, CachedDoc]]:
+def _search_cached(
+    query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False
+) -> list[tuple[float, CachedDoc]]:
     """L1缓存 — 相同 query 直接返回上次结果。"""
     key = f"{query}_{titles_only}_{broad_only}"
     if key in _L1_CACHE:
@@ -247,12 +278,9 @@ def _compute_bm25_scores(query: str, docs: list[CachedDoc]) -> list[float]:
         return [0.0] * len(docs)
 
     # Build ScoredDocument list for core engine
-    scored_docs = [
-        ScoredDocument(d.filename, _tokenize(d.content))
-        for d in docs
-    ]
+    scored_docs = [ScoredDocument(d.filename, _tokenize(d.content)) for d in docs]
 
-    engine = CoreBM25(scored_docs)
+    engine = BM25(scored_docs)
     results = engine.search(query, top_k=len(docs))
 
     # Map results back to original order
@@ -305,9 +333,9 @@ def _compute_boost(doc: CachedDoc) -> float:
     return boost
 
 
-def _rank_docs_impl(query: str, docs: list[CachedDoc],
-                    titles_only: bool = False,
-                    broad_only: bool = False) -> list[tuple[float, CachedDoc]]:
+def _rank_docs_impl(
+    query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False
+) -> list[tuple[float, CachedDoc]]:
     if not docs:
         return []
     if broad_only:
@@ -319,10 +347,13 @@ def _rank_docs_impl(query: str, docs: list[CachedDoc],
     bm25_raw = _compute_bm25_scores(query, docs)
     bm25_norm = _normalize(bm25_raw)
     scored = [
-        (0.65 * bm25_norm[i]
-         + 0.20 * _metadata_bonus(query, d)
-         + 0.15 * d.score_baseline
-         + _compute_boost(d), d)
+        (
+            0.65 * bm25_norm[i]
+            + 0.20 * _metadata_bonus(query, d)
+            + 0.15 * d.score_baseline
+            + _compute_boost(d),
+            d,
+        )
         for i, d in enumerate(docs)
     ]
     scored.sort(key=lambda x: -x[0])
@@ -336,7 +367,9 @@ def _highlight(text: str, query: str) -> str:
     for t in sorted(set(tokens), key=len, reverse=True):
         if len(t) < 1:
             continue
-        text = re.sub(re.escape(t), lambda m: f"\033[33m{m.group()}\033[0m", text, flags=re.IGNORECASE)
+        text = re.sub(
+            re.escape(t), lambda m: f"\033[33m{m.group()}\033[0m", text, flags=re.IGNORECASE
+        )
     return text
 
 
@@ -346,34 +379,34 @@ def _score_bar(score: float, width: int = 10) -> str:
     return "█" * filled + "░" * (width - filled) + f" {pct:.0%}"
 
 
-
-
 def _get_match_reason(query: str, doc: CachedDoc, score: float) -> str:
     """Feature #231: Show why this result was matched."""
     q = query.lower()
     t = doc.title.lower()
     reasons = []
-    
+
     # Check title match
     if q in t or any(word in t for word in q.split()):
         reasons.append("title")
-    
+
     # Check domain match
     if doc.domain and doc.domain.lower() in q:
         reasons.append("domain")
-    
+
     # Check content match (BM25 score > 0.3 indicates content match)
     if score > 0.3 and "title" not in reasons:
         reasons.append("content")
-    
+
     # Check if broad match
     if doc.scope == "broad":
         reasons.append("broad")
-    
+
     return ", ".join(reasons) if reasons else ""
 
-def _get_related_lessons(doc: CachedDoc, all_docs: list[CachedDoc],
-                         max_related: int = 3) -> list[tuple[str, str]]:
+
+def _get_related_lessons(
+    doc: CachedDoc, all_docs: list[CachedDoc], max_related: int = 3
+) -> list[tuple[str, str]]:
     """Find related lessons by shared tags. Returns [(title, filename), ...]."""
     if not doc.tags or not all_docs:
         return []
@@ -393,13 +426,15 @@ def _get_related_lessons(doc: CachedDoc, all_docs: list[CachedDoc],
     return [(t, f) for _, t, f in scored[:max_related]]
 
 
-def _format_output(scored: list[tuple[float, CachedDoc]],
-                   titles_only: bool = False,
-                   top_k: int = 10,
-                   mode_label: str = "",
-                   query: str = "",
-                   explain: bool = False,
-                   all_docs: Optional[list[CachedDoc]] = None) -> bool:
+def _format_output(
+    scored: list[tuple[float, CachedDoc]],
+    titles_only: bool = False,
+    top_k: int = 10,
+    mode_label: str = "",
+    query: str = "",
+    explain: bool = False,
+    all_docs: list[CachedDoc] | None = None,
+) -> bool:
     if not scored:
         return False
     n = len(scored)
@@ -413,14 +448,14 @@ def _format_output(scored: list[tuple[float, CachedDoc]],
         domain_tag = f"[{doc.domain}]" if doc.domain else ""
         status_tag = f"({doc.status})" if doc.status else ""
         ref_tag = f"→ {doc.reference}" if doc.reference else ""
-        
+
         # Feature #231: Match reason
         match_reason = _get_match_reason(query, doc, score)
-        
+
         # Build badge line
         badges = f"{core_tag} {verified_tag} {domain_tag}".strip()
         time_str = _relative_time(doc.mtime)
-        
+
         print(f"  {badges:<25} {doc.title} {status_tag}")
         print(f"  {'':>25} {_score_bar(score):>15}  {time_str}")
         if match_reason:
@@ -432,8 +467,10 @@ def _format_output(scored: list[tuple[float, CachedDoc]],
             baseline = doc.score_baseline
             boost = _compute_boost(doc)  # Feature #228
             tag_str = ", ".join(doc.tags[:5]) if doc.tags else "—"
-            print(f"  {'':>25} ↳ BM25: {bm25:.3f} | Meta: {meta:.3f} | "
-                  f"Base: {baseline:.3f} | Boost: {boost:+.2f} | Tags: {tag_str}")
+            print(
+                f"  {'':>25} ↳ BM25: {bm25:.3f} | Meta: {meta:.3f} | "
+                f"Base: {baseline:.3f} | Boost: {boost:+.2f} | Tags: {tag_str}"
+            )
         # Feature: related lessons (cross-lesson reference graph)
         if all_docs is not None:
             related = _get_related_lessons(doc, all_docs, max_related=3)
@@ -455,21 +492,21 @@ def _format_output(scored: list[tuple[float, CachedDoc]],
 
 def _get_preview(content: str, max_chars: int = 100) -> str:
     if not content:
-        return ''
-    lines = content.split('\n')
+        return ""
+    lines = content.split("\n")
     start = 0
-    if lines and lines[0].strip() == '---':
+    if lines and lines[0].strip() == "---":
         for i in range(1, len(lines)):
-            if lines[i].strip() == '---':
+            if lines[i].strip() == "---":
                 start = i + 1
                 break
     for line in lines[start:]:
         line = line.strip()
-        if line and not line.startswith('#') and not line.startswith('- **'):
+        if line and not line.startswith("#") and not line.startswith("- **"):
             if len(line) > max_chars:
-                return line[:max_chars] + '...'
+                return line[:max_chars] + "..."
             return line
-    return ''
+    return ""
 
 
 def _show_timing(elapsed: float, num_docs: int):
@@ -484,11 +521,23 @@ _rank_docs = _search_cached
 _rank_docs_impl_export = _rank_docs_impl
 
 __all__ = [
-    "CachedDoc", "LESSONS", "REFERENCES",
-    "_load_docs", "_rank_docs", "_format_output", "_show_timing",
-    "_tokenize", "_compute_bm25_scores", "_normalize",
-    "_is_verified", "_is_core", "_is_recent", "_compute_boost",
-    "_relative_time", "_get_match_reason", "_get_related_lessons",
+    "CachedDoc",
+    "LESSONS",
+    "REFERENCES",
+    "_load_docs",
+    "_rank_docs",
+    "_format_output",
+    "_show_timing",
+    "_tokenize",
+    "_compute_bm25_scores",
+    "_normalize",
+    "_is_verified",
+    "_is_core",
+    "_is_recent",
+    "_compute_boost",
+    "_relative_time",
+    "_get_match_reason",
+    "_get_related_lessons",
 ]
 
 
@@ -496,12 +545,13 @@ def _is_verified(doc: CachedDoc) -> bool:
     """Check if lesson has Verify/Verification section."""
     if not doc.content:
         return False
-    return bool(re.search(r'##\s*(Verify|Verification)', doc.content, re.IGNORECASE))
+    return bool(re.search(r"##\s*(Verify|Verification)", doc.content, re.IGNORECASE))
 
 
 def _is_core(doc: CachedDoc) -> bool:
     """Check if lesson is in core/ directory."""
-    return 'lessons/core/' in str(doc.filepath)
+    parts = [part.lower() for part in doc.filepath.parts]
+    return any(parts[i] == "lessons" and parts[i + 1] == "core" for i in range(len(parts) - 1))
 
 
 def _is_recent(doc: CachedDoc) -> bool:
@@ -509,6 +559,7 @@ def _is_recent(doc: CachedDoc) -> bool:
     if not doc.mtime:
         return False
     import datetime
+
     age_days = (datetime.datetime.now().timestamp() - doc.mtime) / 86400
     return age_days <= BOOST_RECENT_DAYS
 
@@ -516,17 +567,18 @@ def _is_recent(doc: CachedDoc) -> bool:
 def _relative_time(mtime: float) -> str:
     """Show relative update time."""
     if not mtime:
-        return ''
+        return ""
     import datetime
+
     now = datetime.datetime.now().timestamp()
     diff = now - mtime
     if diff < 60:
-        return 'just now'
+        return "just now"
     elif diff < 3600:
-        return f'{int(diff/60)}m ago'
+        return f"{int(diff/60)}m ago"
     elif diff < 86400:
-        return f'{int(diff/3600)}h ago'
+        return f"{int(diff/3600)}h ago"
     elif diff < 2592000:
-        return f'{int(diff/86400)}d ago'
+        return f"{int(diff/86400)}d ago"
     else:
-        return f'{int(diff/2592000)}mo ago'
+        return f"{int(diff/2592000)}mo ago"

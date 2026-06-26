@@ -150,29 +150,30 @@ jobs:
         if: steps.scope.outputs.scope == 'full'
         run: |
           echo "=== Scanning for hardcoded secrets ==="
-          python3 scripts/check_worker_secrets.py || echo "::warning::Secret scan found issues"
+          python3 scripts/check_worker_secrets.py
 
       # ── Dependency Audit (full scope only) ──
       - name: Dependency Audit
         if: steps.scope.outputs.scope == 'full'
         run: |
           echo "=== Python dependency audit ==="
-          pip install pip-audit 2>/dev/null || true
-          pip-audit --requirement requirements.txt 2>&1 || echo "::warning::pip-audit found vulnerabilities"
+          python3 -m pip install pip-audit
+          pip-audit --requirement requirements.txt
           echo "=== JS dependency audit ==="
-          if [ -f package.json ]; then
-            npm audit --audit-level=high 2>&1 || echo "::warning::npm audit found high-severity issues"
+          if [ -f web/package-lock.json ]; then
+            npm --prefix web audit --audit-level=high
           fi
-        continue-on-error: true
 
       # ── Test Suite (full scope only) ──
       - name: Run Test Suite
         if: steps.scope.outputs.scope == 'full'
         id: pytest
         run: |
-          pytest --cov=scripts --cov=misakanet --cov-report=term --cov-fail-under=20 tests/ > pytest_report.txt 2>&1 || true
+          set +e
+          pytest --cov=misakanet --cov-report=term --cov-fail-under=20 tests/ > pytest_report.txt 2>&1
+          status=$?
           cat pytest_report.txt
-        continue-on-error: true
+          exit "$status"
 
       - name: Parse Coverage
         if: steps.scope.outputs.scope == 'full'

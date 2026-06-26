@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 .cache/
+.coverage
 misakanet/profile.json
 misakanet/.quota.json
 *.pyo

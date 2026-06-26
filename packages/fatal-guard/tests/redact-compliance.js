@@ -4,8 +4,8 @@ const cases = [
   { name: 'jwt',            input: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozw' },
   { name: 'dsn',            input: 'postgres://user:pass@localhost:5432/db' },
   { name: 'aws_key',        input: 'AKIA1234567890123456' },
-  { name: 'github_token',   input: 'ghp_abcdefghijklmnopqrstuvwxyz1234567890' },
-  { name: 'openai_key',     input: 'sk-abcdefghijklmnopqrstuvwxyz123456' },
+  { name: 'github_token',   input: 'ghp_' + 'a'.repeat(36) },
+  { name: 'openai_key',     input: 'sk-' + 'a'.repeat(32) },
   { name: 'long_token',     input: 'x' .repeat(45) },
   { name: 'authz_header',   input: 'authorization: Bearer somevalue' },
 ];

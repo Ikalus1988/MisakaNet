@@ -8,6 +8,7 @@ Verifies that:
   3. Token save/load round-trips correctly without keyring
   4. AuditLogger does not crash on init
 """
+
 import json
 import os
 import sys
@@ -22,8 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.modules["aiohttp"] = mock.MagicMock()
 
 # Now safe to import
-import hub.master.token_manager  # noqa: E402
-from hub.master.token_manager import TokenManager, AuditLogger  # noqa: E402
+from hub.master.token_manager import AuditLogger, TokenManager  # noqa: E402
 
 
 class TestTokenManagerNoKeyring(unittest.TestCase):
@@ -42,14 +42,13 @@ class TestTokenManagerNoKeyring(unittest.TestCase):
             pass
 
     @mock.patch("hub.master.token_manager.os.path.expanduser")
-    def test_init_creates_empty_tokens_when_no_file_no_keyring(
-        self, mock_expanduser
-    ):
+    def test_init_creates_empty_tokens_when_no_file_no_keyring(self, mock_expanduser):
         """TokenManager starts with empty tokens when no keyring and no file."""
         mock_expanduser.return_value = self.token_path
 
         # Simulate keyring being completely absent
         import builtins
+
         orig_import = builtins.__import__
 
         def mock_import(name, *args, **kwargs):
@@ -70,6 +69,7 @@ class TestTokenManagerNoKeyring(unittest.TestCase):
         os.makedirs(self.tmpdir, exist_ok=True)
 
         import builtins
+
         orig_import = builtins.__import__
 
         def mock_import(name, *args, **kwargs):
@@ -90,7 +90,15 @@ class TestTokenManagerNoKeyring(unittest.TestCase):
 
             self.assertTrue(os.path.exists(self.token_path))
             mode = os.stat(self.token_path).st_mode & 0o777
-            self.assertEqual(mode, 0o600, f"Expected 0600, got {oct(mode)}")
+            if sys.platform == "win32":
+                self.assertWarnsRegex(
+                    UserWarning,
+                    "cannot guarantee POSIX 0600",
+                    tm._restrict_plaintext_file,
+                    self.token_path,
+                )
+            else:
+                self.assertEqual(mode, 0o600, f"Expected 0600, got {oct(mode)}")
 
             with open(self.token_path) as f:
                 saved = json.load(f)
@@ -113,6 +121,7 @@ class TestTokenManagerNoKeyring(unittest.TestCase):
         os.chmod(self.token_path, 0o600)
 
         import builtins
+
         orig_import = builtins.__import__
 
         def mock_import(name, *args, **kwargs):
@@ -124,9 +133,7 @@ class TestTokenManagerNoKeyring(unittest.TestCase):
             with self.assertWarns(UserWarning):
                 tm = TokenManager(keyring_service="test-nokeyring")
             self.assertIn("existing-token", tm._tokens)
-            self.assertEqual(
-                tm._tokens["existing-token"]["secret_hash"], "def456"
-            )
+            self.assertEqual(tm._tokens["existing-token"]["secret_hash"], "def456")
 
 
 class TestAuditLogger(unittest.TestCase):

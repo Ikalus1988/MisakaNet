@@ -11,7 +11,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TELEMETRY_PATH = REPO_ROOT / ".cache" / "langchain_telemetry.db"
 
@@ -20,33 +19,34 @@ def _connect(telemetry_path: str | Path) -> sqlite3.Connection:
     path = Path(telemetry_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(path))
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS search_telemetry (
-            query TEXT,
-            timestamp REAL,
-            latency_ms REAL,
-            cache_hit INTEGER
+    try:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS search_telemetry (
+                query TEXT,
+                timestamp REAL,
+                latency_ms REAL,
+                cache_hit INTEGER
+            )
+            """
         )
-        """
-    )
-    return conn
+        conn.commit()
+        return conn
+    except Exception:
+        conn.close()
+        raise
 
 
 def read_dashboard_data(telemetry_path: str | Path = DEFAULT_TELEMETRY_PATH) -> dict[str, Any]:
     """Read summary metrics and recent rows from the telemetry database."""
-    with _connect(telemetry_path) as conn:
-        total_searches = int(
-            conn.execute("SELECT COUNT(*) FROM search_telemetry").fetchone()[0]
-        )
+    conn = _connect(telemetry_path)
+    try:
+        total_searches = int(conn.execute("SELECT COUNT(*) FROM search_telemetry").fetchone()[0])
         hit_count = int(
-            conn.execute(
-                "SELECT COUNT(*) FROM search_telemetry WHERE cache_hit = 1"
-            ).fetchone()[0]
+            conn.execute("SELECT COUNT(*) FROM search_telemetry WHERE cache_hit = 1").fetchone()[0]
         )
         avg_latency_ms = float(
-            conn.execute("SELECT AVG(latency_ms) FROM search_telemetry").fetchone()[0]
-            or 0.0
+            conn.execute("SELECT AVG(latency_ms) FROM search_telemetry").fetchone()[0] or 0.0
         )
         avg_hit_latency = conn.execute(
             "SELECT AVG(latency_ms) FROM search_telemetry WHERE cache_hit = 1"
@@ -62,6 +62,8 @@ def read_dashboard_data(telemetry_path: str | Path = DEFAULT_TELEMETRY_PATH) -> 
             LIMIT 20
             """
         ).fetchall()
+    finally:
+        conn.close()
 
     saved_time_ms = 0.0
     if hit_count and avg_hit_latency is not None and avg_miss_latency is not None:
@@ -231,14 +233,12 @@ def render_dashboard_html(data: dict[str, Any]) -> str:
 
 def make_handler(telemetry_path: str | Path = DEFAULT_TELEMETRY_PATH):
     class DashboardHandler(BaseHTTPRequestHandler):
-        def do_GET(self) -> None:
+        def do_GET(self) -> None:  # noqa: N802 - stdlib BaseHTTPRequestHandler API
             if self.path not in {"/", ""}:
                 self.send_error(404, "Not found")
                 return
 
-            payload = render_dashboard_html(read_dashboard_data(telemetry_path)).encode(
-                "utf-8"
-            )
+            payload = render_dashboard_html(read_dashboard_data(telemetry_path)).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(payload)))

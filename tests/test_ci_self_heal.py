@@ -2,9 +2,12 @@
 
 Run with: python3 -m pytest tests/test_ci_self_heal.py -v
 """
+
 import json
 import os
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -12,9 +15,30 @@ import unittest
 class TestRetryBackoff(unittest.TestCase):
     """Test retry action behavior via subprocess."""
 
-    def _run_retry(self, command, max_attempts=3, backoff="exponential", base_seconds=1, retry_codes=""):
+    @classmethod
+    def setUpClass(cls):
+        cls.bash = shutil.which("bash")
+        if cls.bash:
+            probe = subprocess.run(
+                [cls.bash, "-c", "echo ok"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=10,
+            )
+            if probe.returncode != 0 or "ok" not in (probe.stdout or ""):
+                cls.bash = None
+
+    def setUp(self):
+        if not self.bash:
+            self.skipTest("requires a usable POSIX bash")
+
+    def _run_retry(
+        self, command, max_attempts=3, backoff="exponential", base_seconds=1, retry_codes=""
+    ):
         """Helper: run a command through retry logic."""
-        script = '''
+        script = """
         MAX_ATTEMPTS=%d
         BACKOFF="%s"
         BASE_SECONDS=%d
@@ -56,27 +80,36 @@ class TestRetryBackoff(unittest.TestCase):
 
         echo "attempts=$ATTEMPT exit=$FINAL_CODE"
         exit $FINAL_CODE
-        ''' % (max_attempts, backoff, base_seconds, retry_codes, __import__('shlex').quote(command))
-        result = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=30)
+        """ % (max_attempts, backoff, base_seconds, retry_codes, __import__("shlex").quote(command))
+        result = subprocess.run(
+            [self.bash, "-c", script],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+        )
         return result
 
     def test_succeeds_after_2_failures(self):
         """Retry succeeds after 2 failures -> final exit code 0."""
         # Write a helper script that counts attempts
         with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
-            f.write('#!/bin/bash\n')
-            f.write('COUNT_FILE=/tmp/retry_test_count\n')
+            f.write("#!/bin/bash\n")
+            f.write("COUNT_FILE=/tmp/retry_test_count\n")
             f.write('COUNT=$(cat "$COUNT_FILE" 2>/dev/null || echo 0)\n')
-            f.write('COUNT=$((COUNT + 1))\n')
+            f.write("COUNT=$((COUNT + 1))\n")
             f.write('echo "$COUNT" > "$COUNT_FILE"\n')
             f.write('if [ "$COUNT" -lt 3 ]; then exit 1; fi\n')
             f.write('rm -f "$COUNT_FILE"\n')
-            f.write('exit 0\n')
+            f.write("exit 0\n")
             script_path = f.name
         os.chmod(script_path, 0o755)
         try:
             result = self._run_retry(f"bash {script_path}", max_attempts=3, base_seconds=1)
-            self.assertEqual(result.returncode, 0, f"Expected success, got: {result.stdout} {result.stderr}")
+            self.assertEqual(
+                result.returncode, 0, f"Expected success, got: {result.stdout} {result.stderr}"
+            )
             self.assertIn("attempts=3", result.stdout)
         finally:
             os.unlink(script_path)
@@ -97,18 +130,24 @@ class TestFailureClassification(unittest.TestCase):
 
     def _classify(self, log_content, exit_code="1"):
         """Helper: write log to temp file and run classification."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".log", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".log", encoding="utf-8", delete=False
+        ) as f:
             f.write(log_content)
             log_file = f.name
 
         try:
             py_code = (
                 "import sys\n"
-                f"with open('{log_file}') as f:\n"
+                f"with open({json.dumps(log_file)}, encoding='utf-8') as f:\n"
                 "    log = f.read().lower()\n"
                 "patterns = {\n"
-                "    'network_timeout': ['timeout', 'timed out', 'connection refused', 'ssl', 'dns'],\n"
-                "    'permission_denied': ['permission denied', 'forbidden', '401', '403', 'unauthorized'],\n"
+                "    'network_timeout': [\n"
+                "        'timeout', 'timed out', 'connection refused', 'ssl', 'dns'\n"
+                "    ],\n"
+                "    'permission_denied': [\n"
+                "        'permission denied', 'forbidden', '401', '403', 'unauthorized'\n"
+                "    ],\n"
                 "    'race_condition': ['conflict', '409', 'race', 'concurrent', 'locked'],\n"
                 "    'flaky_test': ['flaky', 'intermittent', 'assert', 'test failed'],\n"
                 "    'real_bug': ['syntaxerror', 'typeerror', 'nameerror', 'importerror'],\n"
@@ -120,7 +159,7 @@ class TestFailureClassification(unittest.TestCase):
                 "        break\n"
                 "print(result)\n"
             )
-            result = subprocess.run(["python3", "-c", py_code], capture_output=True, text=True)
+            result = subprocess.run([sys.executable, "-c", py_code], capture_output=True, text=True)
             return result.stdout.strip()
         finally:
             os.unlink(log_file)
@@ -152,11 +191,12 @@ class TestBackoffCalculation(unittest.TestCase):
     def test_exponential_backoff_pattern(self):
         """Exponential backoff: base^attempt with jitter."""
         import random
+
         random.seed(42)
         base = 10
         for attempt in range(1, 4):
-            wait = (base ** attempt) * (1 + random.uniform(-0.2, 0.2))
-            expected_base = base ** attempt
+            wait = (base**attempt) * (1 + random.uniform(-0.2, 0.2))
+            expected_base = base**attempt
             self.assertGreater(wait, expected_base * 0.7)
             self.assertLess(wait, expected_base * 1.3)
 

@@ -1,34 +1,43 @@
 #!/usr/bin/env python3
 """
-Worker env/secret missing-scenario audit script.
+Repository secret and worker env handling audit script.
 
-Scans workers/ for hardcoded secrets and verifies that
-env.MISSING_VAR produces clear failure responses (not silent crashes).
+Scans tracked text files for hardcoded secrets and verifies that known
+worker env.MISSING_VAR cases produce clear failure responses (not silent
+crashes).
 
-Covers P1 item: Worker env/secret 缺失场景测试
+Covers:
+- Full-repository hardcoded credential scanning for CI gates.
+- Worker env/secret missing-scenario checks.
 """
-import json
-import os
+
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+
+for stream in (sys.stdout, sys.stderr):
+    if hasattr(stream, "reconfigure"):
+        stream.reconfigure(encoding="utf-8", errors="replace")
 
 # Known secret-like patterns that should NOT appear in source
 HARDCODED_SECRET_PATTERNS = [
     # Cloudflare-style Turnstile secrets
     (r"0x4[A-Za-z0-9_-]{30,}", "Turnstile secret key"),
     # GitHub tokens
-    (r"ghp_[A-Za-z0-9]{36}", "GitHub personal access token"),
+    (r"gh[pousr]_[A-Za-z0-9]{36,}", "GitHub token"),
     (r"github_pat_[A-Za-z0-9_]{22,}", "GitHub PAT (fine-grained)"),
     # Generic API key patterns
     (r"sk-[A-Za-z0-9]{32,}", "OpenAI-style API key"),
     # npm tokens
     (r"npm_[A-Za-z0-9]{36}", "npm access token"),
     # Generic base64-looking secrets longer than 32 chars assigned to variables
-    (r'(?:SECRET|TOKEN|KEY|PASSWORD)\s*[:=]\s*["\'][A-Za-z0-9+/=]{32,}["\']',
-     "Hardcoded secret in variable assignment"),
+    (
+        r'(?:SECRET|TOKEN|KEY|PASSWORD)\s*[:=]\s*["\'][A-Za-z0-9+/=]{32,}["\']',
+        "Hardcoded secret in variable assignment",
+    ),
 ]
 
 # Required env var checks — variables that should produce clear error when missing
@@ -41,6 +50,78 @@ REQUIRED_ENV_CHECKS = {
         }
     ]
 }
+
+SECRET_SCAN_EXTENSIONS = {
+    ".cfg",
+    ".cjs",
+    ".env",
+    ".example",
+    ".js",
+    ".json",
+    ".jsonc",
+    ".md",
+    ".mjs",
+    ".ps1",
+    ".py",
+    ".sh",
+    ".toml",
+    ".ts",
+    ".txt",
+    ".yaml",
+    ".yml",
+}
+
+SECRET_SCAN_SKIP_PARTS = {
+    ".git",
+    ".hydra",
+    ".pytest_cache",
+    ".responses",
+    ".ruff_cache",
+    ".venv",
+    ".worktrees",
+    "__pycache__",
+    "node_modules",
+    "site-packages",
+    "venv",
+}
+
+SECRET_SCAN_SKIP_SUFFIXES = {
+    ".lock",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".pkl",
+    ".pyc",
+    ".sqlite",
+    ".zip",
+}
+
+
+def iter_tracked_text_files() -> list[Path]:
+    """Return Git-tracked text-like files to scan for committed secrets."""
+    try:
+        output = subprocess.check_output(
+            ["git", "-C", str(REPO), "ls-files", "-z"],
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        return []
+
+    files: list[Path] = []
+    for raw in output.split(b"\0"):
+        if not raw:
+            continue
+        rel = Path(raw.decode("utf-8", errors="replace"))
+        if any(part in SECRET_SCAN_SKIP_PARTS for part in rel.parts):
+            continue
+        if rel.suffix.lower() in SECRET_SCAN_SKIP_SUFFIXES:
+            continue
+        if rel.suffix.lower() not in SECRET_SCAN_EXTENSIONS and "." in rel.name:
+            continue
+        path = REPO / rel
+        if path.is_file():
+            files.append(path)
+    return files
 
 
 def find_hardcoded_secrets(filepath: Path) -> list[dict]:
@@ -63,13 +144,13 @@ def find_hardcoded_secrets(filepath: Path) -> list[dict]:
 
         for pattern, desc in HARDCODED_SECRET_PATTERNS:
             if re.search(pattern, stripped):
-                # Double-check it's not a comment
-                findings.append({
-                    "file": str(filepath.relative_to(REPO)),
-                    "line": lineno,
-                    "type": desc,
-                    "snippet": stripped[:120],
-                })
+                findings.append(
+                    {
+                        "file": str(filepath.relative_to(REPO)),
+                        "line": lineno,
+                        "type": desc,
+                    }
+                )
 
     return findings
 
@@ -89,72 +170,76 @@ def check_env_var_handling(filepath: Path, checks: list[dict]) -> list[dict]:
 
         # Check 1: Is the env var referenced with a null/undefined check?
         null_check = re.search(
-            rf'(?:if\s*\(\s*!{re.escape(var_name)}\s*\)|{re.escape(var_name)}\s*===?\s*undefined|'
-            rf'{re.escape(var_name)}\s*===?\s*null|'
-            rf'!\s*{re.escape(var_name)})',
-            content
+            rf"(?:if\s*\(\s*!{re.escape(var_name)}\s*\)|{re.escape(var_name)}\s*===?\s*undefined|"
+            rf"{re.escape(var_name)}\s*===?\s*null|"
+            rf"!\s*{re.escape(var_name)})",
+            content,
         )
 
         # Check 2: Is there an error response when missing?
         # Look for error text near the env var usage, or generic "not configured" patterns
         has_error_response = bool(
             re.search(
-                rf'{re.escape(var_key)}.*not\s+(?:configured|set|found|available)',
-                content, re.IGNORECASE
-            ) or
-            re.search(
-                rf'(?:secret|{re.escape(var_key.lower())}).*not\s+configured',
-                content, re.IGNORECASE
+                rf"{re.escape(var_key)}.*not\s+(?:configured|set|found|available)",
+                content,
+                re.IGNORECASE,
+            )
+            or re.search(
+                rf"(?:secret|{re.escape(var_key.lower())}).*not\s+configured",
+                content,
+                re.IGNORECASE,
             )
         )
 
         # Check 3: Is there a status 500 or error code?
-        has_error_status = bool(re.search(
-            rf'(?:status.*500|new Response.*error|status:\s*500)',
-            content, re.IGNORECASE
-        ))
+        has_error_status = bool(
+            re.search(r"(?:status.*500|new Response.*error|status:\s*500)", content, re.IGNORECASE)
+        )
 
-        results.append({
-            "file": str(filepath.relative_to(REPO)),
-            "var": var_name,
-            "null_check": bool(null_check),
-            "error_response": has_error_response,
-            "error_status": has_error_status,
-            "verdict": "OK" if (null_check and has_error_response and has_error_status)
-            else "NEEDS_IMPROVEMENT",
-        })
+        results.append(
+            {
+                "file": str(filepath.relative_to(REPO)),
+                "var": var_name,
+                "null_check": bool(null_check),
+                "error_response": has_error_response,
+                "error_status": has_error_status,
+                "verdict": "OK"
+                if (null_check and has_error_response and has_error_status)
+                else "NEEDS_IMPROVEMENT",
+            }
+        )
 
     return results
 
 
 def main():
     print("=" * 60)
-    print("🔍 Worker Secret & Env Handling Audit")
+    print("🔍 Repository Secret & Worker Env Handling Audit")
     print("=" * 60)
 
     errors = 0
     warnings = 0
 
-    # Phase 1: Scan for hardcoded secrets across all workers
+    # Phase 1: Scan for hardcoded secrets across tracked text files
     print("\n📋 Phase 1: Hardcoded secret scan")
     print("-" * 40)
-    workers_dir = REPO / "workers"
-    if not workers_dir.exists():
-        print("  ⚠️  workers/ directory not found")
-        return
 
     all_findings = []
-    for js_file in workers_dir.rglob("*.js"):
-        findings = find_hardcoded_secrets(js_file)
+    scanned_files = iter_tracked_text_files()
+    if not scanned_files:
+        print("  ⚠️  No tracked text files found to scan")
+        warnings += 1
+
+    for source_file in scanned_files:
+        findings = find_hardcoded_secrets(source_file)
         all_findings.extend(findings)
 
     if all_findings:
         for f in all_findings:
             print(f"  ❌ {f['file']}:{f['line']} — {f['type']}")
-            print(f"     {f['snippet']}")
             errors += 1
     else:
-        print("  ✅ No hardcoded secrets found in worker source code")
+        print(f"  ✅ No hardcoded secrets found in {len(scanned_files)} tracked text files")
 
     # Phase 2: Check known env var handling
     print("\n📋 Phase 2: Env var missing-scenario checks")
@@ -169,26 +254,27 @@ def main():
         results = check_env_var_handling(filepath, checks)
         for r in results:
             status_icon = "✅" if r["verdict"] == "OK" else "⚠️"
-            print(f"  {status_icon} {r['var']:30s} | null_check={r['null_check']} "
-                  f"error_response={r['error_response']} error_status={r['error_status']} "
-                  f"→ {r['verdict']}")
+            print(
+                f"  {status_icon} {r['var']:30s} | null_check={r['null_check']} "
+                f"error_response={r['error_response']} error_status={r['error_status']} "
+                f"→ {r['verdict']}"
+            )
             if r["verdict"] != "OK":
                 warnings += 1
 
-    # Phase 3: Verify wrangler config references
-    print("\n📋 Phase 3: Wrangler config checks")
+    # Phase 3: Verify secret setup documentation
+    print("\n📋 Phase 3: Secret setup documentation checks")
     print("-" * 40)
-    wrangler_config = workers_dir / "wrangler.api.jsonc"
-    if wrangler_config.exists():
-        content = wrangler_config.read_text(encoding="utf-8", errors="replace")
-        if "TURNSTILE_SECRET" in content:
-            print("  ✅ TURNSTILE_SECRET referenced in wrangler config")
+    deployment_doc = REPO / "workers" / "email-register" / "README.md"
+    if deployment_doc.exists():
+        content = deployment_doc.read_text(encoding="utf-8", errors="replace")
+        if "TURNSTILE_SECRET" in content and "wrangler secret put" in content:
+            print("  ✅ TURNSTILE_SECRET secret setup documented")
         else:
-            print("  ⚠️  TURNSTILE_SECRET missing from wrangler config — "
-                  "deploy may fail")
+            print("  ⚠️  TURNSTILE_SECRET secret setup missing from deployment docs")
             warnings += 1
     else:
-        print("  ⚠️  wrangler.api.jsonc not found")
+        print("  ⚠️  email-register deployment README not found")
         warnings += 1
 
     # Summary

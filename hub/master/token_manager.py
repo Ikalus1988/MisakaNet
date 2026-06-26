@@ -1,12 +1,14 @@
 """
 Token Manager - Master token generation and keyring storage
 """
-import secrets
+
 import hashlib
-from datetime import datetime, timedelta
-from typing import Optional
 import json
 import os
+import secrets
+import warnings
+from datetime import datetime, timedelta
+from importlib.util import find_spec
 
 
 class TokenManager:
@@ -15,27 +17,21 @@ class TokenManager:
     Token TTL: 24 hours (configurable)
     """
 
-    def __init__(self, keyring_service: str = "hermes-hub",
-                 ttl_hours: int = 24):
+    def __init__(self, keyring_service: str = "hermes-hub", ttl_hours: int = 24):
         self.keyring_service = keyring_service
         self.ttl_hours = ttl_hours
         self._tokens: dict[str, dict] = {}
-        self._keyring_available = False
-        try:
-            import keyring
-            self._keyring_available = True
-        except ImportError:
-            pass
+        self._keyring_available = find_spec("keyring") is not None
         self._load_tokens()
 
     def _load_tokens(self):
-        """Load tokens — try keyring first, fall back to plaintext file with restricted permissions."""
+        """Load tokens from keyring or restricted plaintext fallback."""
         if self._keyring_available:
             import keyring
+
             try:
                 stored = keyring.get_password(self.keyring_service, "master_tokens")
                 if stored:
-                    import ast
                     self._tokens = json.loads(stored)
                     self._cleanup_expired()
                     return
@@ -44,29 +40,46 @@ class TokenManager:
 
         # Fallback: plaintext JSON file with owner-only permissions (chmod 600)
         # WARNING: This is NOT encrypted. Do NOT rely on this for high-security environments.
-        # On shared hosts or compromised machines, any process running as this user can read the file.
-        import warnings
+        # Any process running as this user can read the file on a compromised host.
         warnings.warn(
             "Master token fallback: storing tokens as plaintext JSON in ~/.hermes-tokens. "
-            "This is NOT encrypted. For production, ensure keyring is available or use a secrets manager."
+            "This is NOT encrypted. For production, use keyring or a secrets manager."
         )
         token_path = os.path.expanduser("~/.hermes-tokens")
         try:
-            with open(token_path, 'r') as f:
+            with open(token_path) as f:
                 self._tokens = json.load(f)
             self._cleanup_expired()
-            # Ensure file is only readable by owner
-            os.chmod(token_path, 0o600)
+            self._restrict_plaintext_file(token_path)
         except FileNotFoundError:
             self._tokens = {}
+
+    def _restrict_plaintext_file(self, token_path: str) -> bool:
+        """Best-effort owner-only permissions for the plaintext fallback file.
+
+        Returns True when POSIX mode bits confirm 0600. On Windows, Python's
+        chmod/stat mode bits do not express owner-only ACLs, so callers must
+        treat this fallback as weaker than keyring-backed storage.
+        """
+        if os.name == "nt":
+            warnings.warn(
+                "Master token fallback on Windows cannot guarantee POSIX 0600 "
+                "owner-only permissions. Use keyring or a secrets manager for production."
+            )
+            return False
+
+        os.chmod(token_path, 0o600)
+        return (os.stat(token_path).st_mode & 0o777) == 0o600
 
     def _save_tokens(self):
         """Save tokens — use keyring if available, else plaintext JSON fallback (NOT encrypted)"""
         if self._keyring_available:
             import keyring
+
             try:
-                keyring.set_password(self.keyring_service, "master_tokens",
-                                     json.dumps(self._tokens, default=str))
+                keyring.set_password(
+                    self.keyring_service, "master_tokens", json.dumps(self._tokens, default=str)
+                )
                 return
             except Exception:
                 pass
@@ -74,15 +87,16 @@ class TokenManager:
         # Fallback: plaintext JSON with owner-only permissions (NOT encrypted)
         token_path = os.path.expanduser("~/.hermes-tokens")
         os.makedirs(os.path.dirname(token_path), exist_ok=True)
-        with open(token_path, 'w') as f:
+        with open(token_path, "w") as f:
             json.dump(self._tokens, f, default=str)
-        os.chmod(token_path, 0o600)
+        self._restrict_plaintext_file(token_path)
 
     def _cleanup_expired(self):
         """Remove expired tokens"""
         now = datetime.now()
         expired = [
-            token for token, info in self._tokens.items()
+            token
+            for token, info in self._tokens.items()
             if datetime.fromisoformat(info["expires_at"]) < now
         ]
         for token in expired:
@@ -90,7 +104,7 @@ class TokenManager:
         if expired:
             self._save_tokens()
 
-    def generate_token(self, secret: str) -> Optional[str]:
+    def generate_token(self, secret: str) -> str | None:
         """
         Generate a new Master token.
 
@@ -101,10 +115,11 @@ class TokenManager:
             Token string if secret is valid, None otherwise
         """
         # Validate secret from config
-        config_path = os.path.join(os.path.dirname(__file__), '..', 'config.yaml')
+        config_path = os.path.join(os.path.dirname(__file__), "..", "config.yaml")
         try:
             import yaml
-            with open(config_path, 'r') as f:
+
+            with open(config_path) as f:
                 cfg = yaml.safe_load(f)
             expected_secret = cfg.get("master", {}).get("shared_secret", "")
         except Exception:
@@ -120,7 +135,7 @@ class TokenManager:
         self._tokens[token] = {
             "created_at": datetime.now().isoformat(),
             "expires_at": expires_at.isoformat(),
-            "secret_hash": hashlib.sha256(secret.encode()).hexdigest()
+            "secret_hash": hashlib.sha256(secret.encode()).hexdigest(),
         }
 
         self._save_tokens()
@@ -158,7 +173,7 @@ class TokenManager:
         self._tokens = {}
         self._save_tokens()
 
-    def get_token_info(self, token: str) -> Optional[dict]:
+    def get_token_info(self, token: str) -> dict | None:
         """Get token metadata"""
         if token in self._tokens:
             info = self._tokens[token].copy()
@@ -173,8 +188,7 @@ class AuditLogger:
     Retention: 30 days
     """
 
-    def __init__(self, log_path: str = "./storage/audit.jsonl",
-                 retention_days: int = 30):
+    def __init__(self, log_path: str = "./storage/audit.jsonl", retention_days: int = 30):
         self.log_path = log_path
         self.retention_days = retention_days
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
@@ -192,10 +206,10 @@ class AuditLogger:
             "timestamp": datetime.now().isoformat(),
             "action": action,
             "actor": actor[:8] + "...",  # Truncate for safety
-            "details": details
+            "details": details,
         }
 
-        with open(self.log_path, 'a') as f:
+        with open(self.log_path, "a") as f:
             f.write(json.dumps(entry, default=str) + "\n")
 
     def get_recent_logs(self, days: int = 7) -> list[dict]:
@@ -204,7 +218,7 @@ class AuditLogger:
         logs = []
 
         try:
-            with open(self.log_path, 'r') as f:
+            with open(self.log_path) as f:
                 for line in f:
                     entry = json.loads(line)
                     if datetime.fromisoformat(entry["timestamp"]) > cutoff:
@@ -220,13 +234,13 @@ class AuditLogger:
         valid_logs = []
 
         try:
-            with open(self.log_path, 'r') as f:
+            with open(self.log_path) as f:
                 for line in f:
                     entry = json.loads(line)
                     if datetime.fromisoformat(entry["timestamp"]) > cutoff:
                         valid_logs.append(entry)
 
-            with open(self.log_path, 'w') as f:
+            with open(self.log_path, "w") as f:
                 for entry in valid_logs:
                     f.write(json.dumps(entry, default=str) + "\n")
         except FileNotFoundError:

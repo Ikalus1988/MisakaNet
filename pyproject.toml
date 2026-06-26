@@ -48,6 +48,28 @@ harvest = [
     "scrapling[fetchers]",
 ]
 
+[tool.setuptools.packages.find]
+include = ["misakanet*"]
+exclude = [
+    "archive*",
+    "avatars*",
+    "bench_results*",
+    "data*",
+    "docs*",
+    "hub*",
+    "lessons*",
+    "meta*",
+    "packages*",
+    "promotional*",
+    "reference*",
+    "schemas*",
+    "scripts*",
+    "tasks*",
+    "tests*",
+    "web*",
+    "workers*",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"
