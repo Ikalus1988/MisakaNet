@@ -35,7 +35,9 @@ misaka-harvest = "scripts.misaka_harvest:main"
 hub = [
     "aiohttp>=3.9",
     "websocket-client>=1.6",
-    "chromadb>=0.4",
+    # ChromaDB 1.x is affected by CVE-2026-45829; use the latest 0.x line until
+    # a fixed 1.x release is available.
+    "chromadb>=0.4,<1.0",
     "networkx>=3.2",
     "PyYAML>=6.0",
     "numpy>=1.24",

@@ -1,7 +1,10 @@
 # Core dependencies
 aiohttp>=3.9.0
 websocket-client>=1.6.0
-chromadb>=0.4.0
+# ChromaDB 1.x is currently affected by CVE-2026-45829 (pre-auth RCE in the
+# Python FastAPI server). Keep CI/audit resolution on the latest 0.x line until
+# an advisory-published fixed 1.x release is available.
+chromadb>=0.4.0,<1.0.0
 networkx>=3.2
 PyYAML>=6.0
 numpy>=1.24.0
