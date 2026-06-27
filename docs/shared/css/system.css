@@ -1,0 +1,117 @@
+/* ═══════════════════════════════════════════════════════════════
+   Misaka Network — Design Tokens & System Styles (v20260628)
+   零依赖 · 原生 CSS 变量+嵌套 · 5KB 以内
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Tokens ─────────────────────────────────────────────────── */
+:root {
+  --cyan:        #00e5ff;
+  --cyan-dim:    rgba(0,229,255,0.25);
+  --magenta:     #ff0080;
+  --green:       #22c55e;
+  --yellow:      #facc15;
+  --red:         #ef4444;
+  --fanuc:       #FFCC00;
+  --bg-deep:     #070b15;
+  --bg-card:     rgba(10,16,30,0.75);
+  --border-glow: rgba(0,229,255,0.12);
+  --text-pri:    #e2e8f0;
+  --text-dim:    #64748b;
+  --font-sans:   'Inter','PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
+  --font-mono:   'JetBrains Mono','Fira Code',Menlo,monospace;
+  --grid-color:  rgba(255,255,255,0.04);
+  --grid-size:   40px;
+}
+
+/* ── Reset ──────────────────────────────────────────────────── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box }
+body {
+  background: var(--bg-deep);
+  color: var(--text-pri);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+a { color: var(--cyan); text-decoration: none;
+  &:hover { text-decoration: underline }
+}
+
+/* ── Grid Overlay (miaodx 风格纯 CSS 底纹) ──────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: -1;
+  background:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+  mask-image: radial-gradient(ellipse at center, rgba(0,0,0,.85) 0%, transparent 75%);
+}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.page { max-width:960px; margin:0 auto; padding:2rem 1.5rem; min-height:100vh }
+.header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem; flex-wrap:wrap; gap:1rem }
+.back-link  { font-size:.85rem; color:var(--text-dim);
+  &:hover { color: var(--cyan) }
+}
+
+/* ── Cards ──────────────────────────────────────────────────── */
+.card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-bottom:2rem }
+.card       { background:var(--bg-card); border:1px solid var(--border-glow); border-radius:8px; padding:1.25rem; text-align:center;
+  &:hover  { border-color: var(--cyan-dim) }
+}
+.card-num   { font-size:1.8rem; font-weight:800; color:var(--cyan) }
+.card-label { font-size:.7rem; color:var(--text-dim); margin-top:.25rem; text-transform:uppercase; letter-spacing:.06em }
+.card-link  { background:var(--bg-card); border:1px solid var(--border-glow); border-radius:8px; padding:1rem 1.25rem; display:flex; align-items:center; gap:.75rem; transition:.2s;
+  &:hover { border-color:var(--cyan-dim); background:rgba(0,229,255,.04) }
+}
+.card-link-icon { font-size:1.4rem; flex-shrink:0 }
+.card-link-title { font-weight:600; color:var(--cyan); font-size:.95rem }
+.card-link-desc  { font-size:.75rem; color:var(--text-dim); margin-top:2px }
+
+/* ── Search ─────────────────────────────────────────────────── */
+.search-box { background:var(--bg-card); border:1px solid var(--border-glow); border-radius:10px; padding:1.5rem; margin-bottom:2rem }
+.search-box label { font-size:.85rem; color:var(--text-dim); display:block; margin-bottom:.5rem }
+.search-row { display:flex; gap:.75rem }
+.search-input { flex:1; background:var(--bg-deep); border:1px solid rgba(255,255,255,.1); border-radius:6px; padding:.75rem 1rem; color:var(--text-pri); font-size:.95rem; font-family:var(--font-sans);
+  &::placeholder { color: var(--text-dim) }
+  &:focus { outline:none; border-color:var(--cyan); box-shadow:0 0 12px var(--cyan-dim) }
+}
+.btn { border:1px solid var(--cyan-dim); background:rgba(0,229,255,.1); color:var(--cyan); padding:.7rem 1.5rem; border-radius:6px; cursor:pointer; font-size:.9rem; font-family:var(--font-sans); transition:.2s;
+  &:hover { background:rgba(0,229,255,.2) }
+}
+.result-area { margin-top:1rem; display:none }
+.result-area pre { background:var(--bg-deep); border:1px solid rgba(255,255,255,.05); border-radius:6px; padding:1rem; font-size:.8rem; color:#a0aec0; white-space:pre-wrap; max-height:300px; overflow-y:auto; font-family:var(--font-mono) }
+.result-ok   { color:var(--green); font-size:.85rem; margin-bottom:.5rem }
+.result-err  { color:var(--yellow); font-size:.85rem }
+.result-err a { color:var(--cyan) }
+
+/* ── Pulse ──────────────────────────────────────────────────── */
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.pulse { animation:pulse 1.8s infinite }
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.page-footer { text-align:center; font-size:.73rem; color:var(--text-dim); margin-top:3rem }
+.page-footer a { color:var(--cyan);
+  &:hover { opacity:.8 }
+}
+
+/* ── Fanuc Overrides (工业区) ────────────────────────────────── */
+body.fanuc {
+  --cyan: var(--fanuc);
+  --cyan-dim: rgba(255,204,0,0.2);
+  --border-glow: rgba(255,204,0,0.1);
+  .card-num { color:var(--fanuc) }
+  .btn { border-color:rgba(255,204,0,.3); background:rgba(255,204,0,.08); color:var(--fanuc);
+    &:hover { background:rgba(255,204,0,.15) }
+  }
+  .search-input:focus { border-color:var(--fanuc); box-shadow:0 0 12px rgba(255,204,0,.2) }
+  .result-ok { color:var(--fanuc) }
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media(max-width:640px) {
+  .page { padding:1rem }
+  .card-grid { grid-template-columns:1fr 1fr }
+  .search-row { flex-direction:column }
+  .btn { text-align:center }
+}

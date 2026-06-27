@@ -4,108 +4,90 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FANUC RAG 知识库 — Misaka Network</title>
-<meta name="description" content="190份FANUC手册 · 200,835向量 · 95.2%召回率 — 飞书群即问即答的工业RAG知识库">
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config={theme:{extend:{colors:{cyan:'#00e5ff',magenta:'#ff0080',deep:'#070b15',card:'rgba(10,16,30,0.75)'}}}}</script>
-<style>
-  body { background: #070b15; color: #e2e8f0; font-family: 'Inter','PingFang SC','Microsoft YaHei',sans-serif; }
-  body::before { content:''; position:fixed; inset:0; background:linear-gradient(rgba(0,229,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.04) 1px,transparent 1px); background-size:40px 40px; mask-image:radial-gradient(ellipse at center,rgba(0,0,0,.8) 0%,transparent 75%); pointer-events:none; z-index:-1; }
-  .glow { box-shadow: 0 0 20px rgba(0,229,255,0.1); }
-  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
-  .pulse { animation: pulse 2s infinite; }
-</style>
+<meta name="description" content="190份FANUC手册 · 200,835向量 · 95.2%召回率">
+<link rel="stylesheet" href="/shared/css/system.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
-<body class="min-h-screen flex flex-col items-center px-4 py-8">
-  <a href="/" class="text-cyan/50 hover:text-cyan text-sm mb-8">← Misaka Network</a>
+<body class="fanuc">
 
-  <header class="text-center max-w-2xl mb-12">
-    <h1 class="text-3xl font-bold text-cyan mb-2">⚡ FANUC RAG 知识库</h1>
-    <p class="text-gray-400">190 份技术手册 · 200,835 向量 · 飞书群即问即答</p>
+<div class="page">
+  <!-- Header -->
+  <div class="header-row">
+    <a href="/" class="back-link">← Misaka Network</a>
+    <span style="font-size:.75rem;color:var(--text-dim)">状态：边缘节点联机 · 延迟：12ms · 数据版本：2026Q2</span>
+  </div>
+
+  <header style="text-align:center;margin-bottom:2.5rem">
+    <h1 style="font-size:2rem;font-weight:800;color:var(--fanuc);margin-bottom:.5rem">⚡ FANUC RAG 知识库</h1>
+    <p style="color:var(--text-dim);font-size:.9rem">190 份技术手册 · 200,835 向量 · 飞书群即问即答</p>
   </header>
 
-  <!-- 统计卡片 -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl w-full mb-10">
-    <div class="bg-card glow rounded-lg p-4 text-center border border-cyan/20">
-      <div class="text-2xl font-bold text-cyan">200,835</div>
-      <div class="text-xs text-gray-500 mt-1">文档向量</div>
-    </div>
-    <div class="bg-card glow rounded-lg p-4 text-center border border-cyan/20">
-      <div class="text-2xl font-bold text-green-400">95.2%</div>
-      <div class="text-xs text-gray-500 mt-1">有效召回率</div>
-    </div>
-    <div class="bg-card glow rounded-lg p-4 text-center border border-cyan/20">
-      <div class="text-2xl font-bold text-cyan">190+</div>
-      <div class="text-xs text-gray-500 mt-1">FANUC PDF</div>
-    </div>
-    <div class="bg-card glow rounded-lg p-4 text-center border border-cyan/20">
-      <div class="text-2xl font-bold text-cyan">飞书</div>
-      <div class="text-xs text-gray-500 mt-1">查询入口</div>
-    </div>
+  <!-- Stats -->
+  <div class="card-grid">
+    <div class="card"><div class="card-num">200,835</div><div class="card-label">文档向量</div></div>
+    <div class="card"><div class="card-num" style="color:var(--green)">95.2%</div><div class="card-label">有效召回率</div></div>
+    <div class="card"><div class="card-num">190+</div><div class="card-label">FANUC PDF</div></div>
+    <div class="card"><div class="card-num">飞书</div><div class="card-label">查询入口</div></div>
   </div>
 
-  <!-- 搜索框 (占位) -->
-  <div class="max-w-2xl w-full mb-10">
-    <div class="bg-card glow rounded-lg p-6 border border-cyan/20">
-      <label class="text-sm text-gray-400 mb-2 block">🔍 知识库检索 (本地服务)</label>
-      <div class="flex gap-3">
-        <input type="text" id="query" placeholder="SRVO-023 报警怎么处理..."
-          class="flex-1 bg-[#0d1117] border border-gray-700 rounded px-4 py-2 text-white placeholder-gray-600 focus:border-cyan outline-none"
-          onkeydown="if(event.key==='Enter')search()">
-        <button onclick="search()" class="bg-cyan/20 border border-cyan/40 text-cyan px-6 py-2 rounded hover:bg-cyan/30 transition">搜索</button>
-      </div>
-      <div id="result" class="mt-4 text-sm text-gray-400 hidden"></div>
+  <!-- Search -->
+  <div class="search-box">
+    <label>🔍 知识库检索</label>
+    <div class="search-row">
+      <input type="text" id="query" class="search-input" placeholder="SRVO-023 报警怎么处理..."
+             onkeydown="if(event.key==='Enter')search()">
+      <button class="btn" onclick="search()">搜索</button>
     </div>
+    <div id="result" class="result-area"></div>
   </div>
 
-  <!-- 快速入口 -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl w-full mb-12">
-    <a href="https://ikalus1988.github.io/rag-journey/" target="_blank"
-       class="bg-card glow rounded-lg p-4 border border-cyan/20 hover:border-cyan/50 transition flex items-center gap-3">
-      <span class="text-xl">📊</span>
-      <div><div class="font-semibold text-cyan">演进旅程</div><div class="text-xs text-gray-500">从 PDF 入库到自进化</div></div>
+  <!-- Links -->
+  <div class="card-grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+    <a href="https://ikalus1988.github.io/rag-journey/" target="_blank" class="card-link">
+      <span class="card-link-icon">📊</span>
+      <div><div class="card-link-title">演进旅程</div><div class="card-link-desc">从 PDF 入库到自进化</div></div>
     </a>
-    <a href="https://github.com/Ikalus1988/self-grow-wiki" target="_blank"
-       class="bg-card glow rounded-lg p-4 border border-cyan/20 hover:border-cyan/50 transition flex items-center gap-3">
-      <span class="text-xl">📦</span>
-      <div><div class="font-semibold text-cyan">源码仓库</div><div class="text-xs text-gray-500">self-grow-wiki on GitHub</div></div>
+    <a href="https://github.com/Ikalus1988/self-grow-wiki" target="_blank" class="card-link">
+      <span class="card-link-icon">📦</span>
+      <div><div class="card-link-title">源码仓库</div><div class="card-link-desc">self-grow-wiki</div></div>
     </a>
-    <div class="bg-card glow rounded-lg p-4 border border-cyan/20 flex items-center gap-3">
-      <span class="text-xl">🤖</span>
-      <div><div class="font-semibold text-cyan">飞书接入</div><div class="text-xs text-gray-500">群内 @正义 即问即答</div></div>
+    <div class="card-link">
+      <span class="card-link-icon">🤖</span>
+      <div><div class="card-link-title">飞书接入</div><div class="card-link-desc">群内 @正义 即问即答</div></div>
     </div>
-    <div class="bg-card glow rounded-lg p-4 border border-cyan/20 flex items-center gap-3">
-      <span class="text-xl">🔬</span>
-      <div><div class="font-semibold text-cyan">质量飞轮</div><div class="text-xs text-gray-500">每日巡检 · 自动进化</div></div>
+    <div class="card-link">
+      <span class="card-link-icon">🔬</span>
+      <div><div class="card-link-title">质量飞轮</div><div class="card-link-desc">每日巡检 · 自动进化</div></div>
     </div>
   </div>
 
-  <footer class="text-xs text-gray-600 text-center">
-    RAG 知识库 · <a href="https://github.com/Ikalus1988/self-grow-wiki" class="text-cyan/50 hover:text-cyan">self-grow-wiki</a> · 2026
+  <footer class="page-footer">
+    RAG 知识库 · <a href="https://github.com/Ikalus1988/self-grow-wiki">self-grow-wiki</a> · 2026
   </footer>
+</div>
 
-  <script>
-    // 搜索仅在本机 localhost:8002 可用时生效
-    async function search() {
-      const q = document.getElementById('query').value.trim();
-      const r = document.getElementById('result');
-      if (!q) return;
-      r.classList.remove('hidden');
-      r.innerHTML = '<span class="text-gray-500 pulse">检索中...</span>';
-      try {
-        const resp = await fetch('http://localhost:8002/query', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({query:q, top_k:3})
-        });
-        if (!resp.ok) throw new Error('RAG 服务不可用');
-        const data = await resp.json();
-        r.innerHTML = `<div class="text-green-400 mb-2">✅ 检索完成</div>
-          <pre class="text-xs text-gray-300 whitespace-pre-wrap bg-[#0d1117] p-3 rounded border border-gray-800 max-h-64 overflow-y-auto">${escapeHtml(data.answer||'无结果')}</pre>`;
-      } catch(e) {
-        r.innerHTML = `<div class="text-yellow-400">⚠️ 本地 RAG 服务未连接 (${e.message})</div>
-          <div class="text-xs text-gray-500 mt-1">请通过飞书 @正义 查询，或访问 <a href="https://ikalus1988.github.io/rag-journey/" class="text-cyan">演进页面</a></div>`;
-      }
-    }
-    function escapeHtml(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
-  </script>
+<script>
+async function search() {
+  const q = document.getElementById('query').value.trim();
+  const r = document.getElementById('result');
+  if (!q) return;
+  r.style.display = 'block';
+  r.innerHTML = '<span class="pulse" style="color:var(--text-dim)">检索中…</span>';
+  try {
+    const resp = await fetch('http://localhost:8002/query', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({query:q, top_k:3})
+    });
+    if (!resp.ok) throw new Error('RAG 服务不可用');
+    const data = await resp.json();
+    r.innerHTML = `<div class="result-ok">✅ 检索完成</div>
+      <pre>${escapeHtml(data.answer||'无结果')}</pre>`;
+  } catch(e) {
+    r.innerHTML = `<div class="result-err">⚠️ 本地 RAG 服务未连接 — 请通过飞书 @正义 查询，或访问 <a href="https://ikalus1988.github.io/rag-journey/">演进页面</a></div>`;
+  }
+}
+function escapeHtml(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML }
+</script>
 </body>
 </html>
