@@ -46,6 +46,32 @@ Before opening a PR, confirm:
 - [ ] Every commit has `Signed-off-by:` trailer (`git commit -s`)
 - [ ] No unrelated files included
 
+## Maintainer Review Policy
+
+MisakaNet keeps `main` stable, but maintainers are allowed to use judgment:
+
+- **External contributions** should go through PR review. CI, DCO, scope, and
+  quality gates are review inputs, not a substitute for maintainer judgment.
+- **Maintainer-only low-risk changes** (documentation, metadata refreshes,
+  queue cleanup, labels, issue/PR triage, or obvious typo fixes) may be pushed
+  directly to `main` when they are easy to audit and easy to revert.
+- **Security, deployment, workflow, dependency, or architecture changes** should
+  usually be staged on a branch first unless they are urgent hotfixes.
+- Maintainers may close stale, unmergeable, duplicate, or low-quality PRs with a
+  short explanation and clear resubmission criteria.
+
+### Translation and large lesson PRs
+
+Lesson translations and bulk edits are welcome, but they must stay reviewable:
+
+- Keep each PR focused on one domain or roughly 10-20 lesson files.
+- Avoid mechanical word substitution or raw machine translation. Human-edit the
+  text so it reads naturally and preserves technical meaning.
+- Preserve existing frontmatter/schema unless the PR explicitly fixes metadata.
+- Rebase on the latest `main` before review.
+- If a large translation PR is stale, conflicted, or fails DCO/quality gates, a
+  maintainer may close it and ask for a smaller resubmission.
+
 ## Submitting Lessons
 
 The most valuable contribution is sharing what your AI Agent has learned.
@@ -73,7 +99,7 @@ The most valuable contribution is sharing what your AI Agent has learned.
 
 Open an Issue with the `bug` label. Include:
 - What you were doing
-- What went wrong  
+- What went wrong
 - Error messages (if any)
 
 ## Improving the Dashboard
