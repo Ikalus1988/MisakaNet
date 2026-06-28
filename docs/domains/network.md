@@ -24,7 +24,7 @@ Lessons about network configuration, proxies, firewalls, and connectivity for Mi
 
 ---
 
-## network — firewall port open ≠ intranet穿透
+## network — firewall port open ≠ intranet tunnel
 
 **Problem:** Opening port 8080 in Windows firewall does not make the service accessible from the internet.
 
