@@ -135,7 +135,7 @@ def main():
     failed = 0
 
     for path in paths:
-        if path.name in ("index.md", "README.md"):
+        if path.name in ("index.md", "README.md", "TEMPLATE.md"):
             continue
         if "_archive" in str(path):
             continue
