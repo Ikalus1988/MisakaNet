@@ -7,11 +7,11 @@ Command:
 ```bash
 git clone https://github.com/Ikalus1988/MisakaNet.git
 cd MisakaNet
-pip install misakanet-core
+pip install -r requirements.txt
 python3 search_knowledge.py "your error message here"
 ```
 
-Expected output: the CLI prints the top 5 matching lessons, each with a relevance score and file path.
+Expected output: the CLI prints matching lessons with titles, snippets, and file paths.
 
 Common failure: `python3: can't open file 'search_knowledge.py'`.
 
@@ -22,10 +22,10 @@ Fix: run `pwd` and make sure you are in the cloned `MisakaNet` directory before 
 Command:
 
 ```bash
-python3 scripts/queue_lesson.py --title "Your Error" --domain "devops" --content "Root cause: ... Fix: ..."
+python3 scripts/queue_lesson.py -t "Your Error" -d devops "Root cause: ... Fix: ... Verification: ..."
 ```
 
-Expected output: a GitHub Issue is created with your lesson draft, ready for review and improvement.
+Expected output: `=== done ===`, plus a new Markdown lesson file under `lessons/contrib/`.
 
 Common failure: the lesson is rejected because the content is too vague.
 

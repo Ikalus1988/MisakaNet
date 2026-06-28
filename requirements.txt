@@ -1,10 +1,9 @@
 # MisakaNet core — pure Python, zero external dependencies
-# 核心搜索和 lesson 管理功能纯 Python 实现，无需安装任何依赖
+# 核心搜索和 lesson 管理功能依赖轻量核心包。
+misakanet-core>=2.7.0
 # 
 # Hub 依赖（federation, 飞书通知等）
 # 如需完整安装：pip install -r requirements.txt -r hub/requirements.txt
-# 当前自动包含 hub 依赖以通过 CI 审计
--r hub/requirements.txt
 #
 # 需要以下可选功能时请安装对应依赖：
 # - 语义搜索（--semantic）: pip install sentence-transformers
