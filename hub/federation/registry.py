@@ -14,6 +14,8 @@ from typing import Any
 
 import yaml
 
+from . import secrets as secret_store
+
 logger = logging.getLogger(__name__)
 
 
@@ -69,7 +71,7 @@ class FederationRegistry:
             yaml.dump(config, f, default_flow_style=False)
 
     def add_peer(self, node_id: str, repo_url: str, public_key_fingerprint: str | None = None) -> PeerNode:
-        """Add a new peer to the registry."""
+        """Add a new peer to the registry and generate an HMAC shared secret."""
         peer = PeerNode(
             node_id=node_id,
             repo_url=repo_url,
@@ -77,15 +79,19 @@ class FederationRegistry:
         )
         self.peers[node_id] = peer
         self.save()
-        logger.info("Added peer: %s (%s)", node_id, repo_url)
+
+        # Generate shared secret for HMAC-SHA256 authentication
+        secret_store.generate_shared_secret(node_id)
+        logger.info("Added peer: %s (%s) with HMAC secret", node_id, repo_url)
         return peer
 
     def remove_peer(self, node_id: str) -> bool:
-        """Remove a peer from the registry."""
+        """Remove a peer from the registry and revoke its HMAC secret."""
         if node_id in self.peers:
             del self.peers[node_id]
             self.save()
-            logger.info("Removed peer: %s", node_id)
+            secret_store.revoke_secret(node_id)
+            logger.info("Removed peer: %s (HMAC secret revoked)", node_id)
             return True
         return False
 
