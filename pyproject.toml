@@ -57,3 +57,6 @@ select = ["E", "F", "I", "N", "W", "UP"]
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.coverage.run]
+omit = ["scripts/*"]
