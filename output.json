@@ -1,0 +1,45 @@
+```json
+{
+  "title": "3 Debugging Lessons from Personal Experience",
+  "description": "Three debugging lessons learned in the past 30 days, structured with SKP format for developers.",
+  "content": [
+    {
+      "lesson": "Lesson 1: The Silent Timeout",
+      "domain": "Backend / API Development",
+      "tags": ["debugging", "timeout", "microservices", "async"],
+      "status": "Resolved",
+      "details": {
+        "problem": "A microservice endpoint occasionally returned 502 Bad Gateway with no error logs. The issue occurred randomly every 2-3 hours.",
+        "root_cause": "An upstream database query had no explicit timeout, and under peak load, it would hang indefinitely. The load balancer's 30-second timeout triggered, but the service never logged the hang because the query was in a synchronous block that didn't propagate exceptions.",
+        "solution": "Added a 10-second timeout to all database queries using `context.WithTimeout` in Go, and implemented a middleware to log any request that takes longer than 5 seconds.",
+        "key_takeaway": "Silent failures are often caused by missing timeouts. Always set explicit timeouts for I/O operations and log slow requests before they become errors."
+      }
+    },
+    {
+      "lesson": "Lesson 2: The Phantom Null Pointer",
+      "domain": "Frontend / React",
+      "tags": ["debugging", "null-pointer", "react", "state-management"],
+      "status": "Resolved",
+      "details": {
+        "problem": "A React component crashed intermittently with 'Cannot read property 'map' of undefined' on a production build, but worked fine in local development.",
+        "root_cause": "A third-party analytics library was mutating the global state object by adding a `_tracked` property. This caused the Redux state to become partially undefined when the library ran before the component's useEffect. Production's minified code changed execution order, exposing the bug.",
+        "solution": "Deep-cloned the state before passing to the analytics library using `JSON.parse(JSON.stringify(state))` and added a defensive check: `Array.isArray(data) && data.map(...)`.",
+        "key_takeaway": "Immutability violations from third-party libraries can cause race conditions. Always deep-clone data before passing to external code, and use defensive programming for data that could be undefined."
+      }
+    },
+    {
+      "lesson": "Lesson 3: The Race Condition in Deployment",
+      "domain": "DevOps / CI/CD",
+      "tags": ["debugging", "race-condition", "deployment", "kubernetes"],
+      "status": "Resolved",
+      "details": {
+        "problem": "After a blue-green deployment, 10% of users saw a blank page for 30 seconds. The old pods were still serving traffic, but the new pods had data inconsistency.",
+        "root_cause": "During deployment, a database migration ran in parallel with the new pods starting. The migration added a column that the new code expected, but the old pods (still serving) didn't have it. The migration completed successfully, but the new pods' readiness probe passed before the migration fully propagated to read replicas.",
+        "solution": "Changed the deployment pipeline to run migrations as a separate pre-deployment step with a 60-second cooldown before any new pods start. Also added a readiness probe that checks for the existence of the new column in the database.",
+        "key_takeaway": "Database migrations and code deployments must be serialized. Use a migration tool with rollback support and ensure readiness probes verify data schema compatibility, not just HTTP status."
+      }
+    }
+  ],
+  "summary": "In the past 30 days, three distinct debugging experiences highlighted common pitfalls: silent timeouts in microservices, phantom null pointers from state mutations, and race conditions between deployments and database migrations. Each lesson reinforces the need for explicit timeouts, defensive programming, and serialized deployment pipelines. These patterns are applicable across backend, frontend, and DevOps domains."
+}
+```
