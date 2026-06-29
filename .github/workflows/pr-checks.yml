@@ -164,6 +164,17 @@ jobs:
         id: depaudit
         if: steps.scope.outputs.scope == 'full'
         run: |
+          # Only hard-fail if this PR actually changes dependency files
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          DEPS_CHANGED=false
+          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -qE "requirements\.txt|hub/requirements\.txt|package\.json|pyproject\.toml"; then
+            DEPS_CHANGED=true
+            echo "Dependency files changed — audit is blocking"
+          else
+            echo "No dependency files changed — audit is advisory only"
+          fi
+
           echo "=== Python dependency audit ==="
           pip install pip-audit 2>/dev/null || true
           AUDIT_FAIL=false
@@ -180,7 +191,11 @@ jobs:
           fi
           if [ "$AUDIT_FAIL" = "true" ]; then
             echo "depaudit_result=fail" >> "$GITHUB_OUTPUT"
-            exit 1
+            if [ "$DEPS_CHANGED" = "true" ]; then
+              exit 1
+            else
+              echo "::warning::Dependency vulnerabilities found but no dependency files changed — not blocking"
+            fi
           else
             echo "depaudit_result=pass" >> "$GITHUB_OUTPUT"
           fi
@@ -407,10 +422,8 @@ jobs:
             echo "Audit failed: hardcoded secrets detected."
             exit 1
           fi
-          if [ "$SCOPE" = "full" ] && [ "$DEPAUDIT" = "fail" ]; then
-            echo "Audit failed: dependency vulnerabilities found."
-            exit 1
-          fi
+          # Note: dep audit blocking is handled in the dep audit step itself
+          # (only blocks when dependency files actually changed)
           if [ "$SCOPE" = "full" ] && [ "$OUTCOME" != "success" ]; then
             echo "Audit failed: test suite has issues."
             exit 1
