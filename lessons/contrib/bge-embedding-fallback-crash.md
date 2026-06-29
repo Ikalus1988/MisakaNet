@@ -5,26 +5,25 @@ verification: "metadata-normalized"
 {"title": "BGE embedding 模型需要降级 fallback 避免启动崩溃", "domain": "rag", "subdomain": "embedding", "source": "bootstrap", "status": "draft", "tags": ["project:agent-medici", "severity:high", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 
-## 问题
+## Problem
 
-HermesHub 启动时如果 BGE-m3 模型未下载到本地路径，SkillIndexer 直接崩溃。
-本地路径硬编码为 ~/.cache/huggingface/...，在其它机器上不存在。
+When HermesHub starts, if the BGE-m3 model has not been downloaded to the local path, SkillIndexer crashes immediately.
+The local path is hard-coded as `~/.cache/huggingface/...`, which does not exist on other machines.
 
-## 根因
+## Root Cause
 
-skill_indexer.py 的 _init_embedding_model() 用 local_files_only=True 加载模型，
-模型路径是硬编码的机器级绝对路径。没有 fallback 机制，也没有环境变量覆盖。
+`_init_embedding_model()` in `skill_indexer.py` loads the model with `local_files_only=True`, and the model path is a hard-coded machine-specific absolute path. There is no fallback mechanism and no environment-variable override.
 
-## 修复
+## Fix
 
-1. 移除硬编码绝对路径，改为：构造函数参数 → 环境变量 EMBEDDING_MODEL_PATH → 模型名（auto-download）
-2. 加载失败时有 try/except，降级为无嵌入模式（register_skill 跳过语义去重）
-3. _generate_embedding() 返回空列表，search_skills 退化为关键词匹配
+1. Remove the hard-coded absolute path and use: constructor parameter → `EMBEDDING_MODEL_PATH` environment variable → model name (auto-download)
+2. Wrap loading failures in try/except and degrade to no-embedding mode (`register_skill` skips semantic deduplication)
+3. Make `_generate_embedding()` return an empty list, so `search_skills` falls back to keyword matching
 
-## 验证
+## Verification
 
-在没有 BGE-m3 模型的机器上启动 hub，不崩溃，输出 "[Embedding] 降级运行 — 语义去重和搜索将不可用"。
+Start the hub on a machine without the BGE-m3 model. It does not crash and prints "[Embedding] degraded mode — semantic deduplication and search will be unavailable".
 
-## 场景
+## Scenario
 
-任何非开发机器的 Node 节点（Node 1/2/3/6），没有预下载 BGE-m3 模型缓存。
+Any non-development Node machine (Node 1/2/3/6) without a pre-downloaded BGE-m3 model cache.
