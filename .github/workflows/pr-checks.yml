@@ -37,9 +37,10 @@ jobs:
             exit 0
           fi
 
-          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | awk -F/ '{print $1}' | sort -u)
+          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          NON_LESSON=$(echo "$CHANGED" | grep -Ev '^(lessons/|\.github/workflows/(lesson-quality|pr-checks)\.yml$)' || true)
 
-          if echo "$CHANGED" | grep -qv "^lessons$"; then
+          if [ -n "$NON_LESSON" ]; then
             echo "scope=full" >> "$GITHUB_OUTPUT"
             echo "Scope: full (changes outside lessons/)"
           else
