@@ -5,33 +5,32 @@ verification: "metadata-normalized"
 {"title": "知识库 4σ 质量审计流水线", "domain": "rag", "subdomain": "quality", "source": "bootstrap", "status": "draft", "tags": ["project:self-grow-wiki", "severity:medium", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 
-## 问题
+## Problem
 
-RAG 知识库在持续导入文档后出现数据污染、版本混乱、来源不一致等问题，
-影响检索质量。
+After continuous document imports, the RAG knowledge base developed data contamination, version confusion, inconsistent sources, and other issues that affected retrieval quality.
 
-## 根因
+## Root Cause
 
-1. 多次导入同一文档的不同版本（旧版本未移除）
-2. OCR 导入引入乱码数据
-3. 同一知识点在多个文档中有不同表述
-4. 缺乏系统性的质量检查流程
+1. Multiple versions of the same document were imported repeatedly, with old versions not removed
+2. OCR imports introduced garbled data
+3. The same knowledge point appeared in multiple documents with different wording
+4. There was no systematic quality-check workflow
 
-## 修复
+## Fix
 
-建立 4σ 质量审计流水线：
-1. 污染清洗：删除非文档内容（乱码、空块、纯数字块）
-2. 版本去重：按文件名+导入时间识别重复
-3. 来源校正：统一文档路径、文件名、源 URL
-4. 质量评分：按完整性/清洁度/版本一致性打分
+Build a 4σ quality audit pipeline:
+1. Contamination cleanup: delete non-document content (garbled text, empty chunks, numeric-only chunks)
+2. Version deduplication: identify duplicates by filename + import time
+3. Source correction: standardize document paths, filenames, and source URLs
+4. Quality scoring: score by completeness, cleanliness, and version consistency
 
-实现为 daily_audit.py，cron 每日 6:00 自动运行。
-报告存 ~/audit_reports/audit_YYYY-MM-DD.json。
+Implement it as `daily_audit.py`, run automatically by cron every day at 06:00.
+Reports are stored at `~/audit_reports/audit_YYYY-MM-DD.json`.
 
-## 验证
+## Verification
 
-审计报告连续 7 天无新增污染，知识库评分稳定在 95% 以上。
+Audit reports showed no new contamination for 7 consecutive days, and the knowledge-base score stayed above 95%.
 
-## 场景
+## Scenario
 
-持续增长的 RAG 知识库（>150 份文档，>20 万向量），需要自动化质量保障。
+A continuously growing RAG knowledge base (>150 documents, >200K vectors) that needs automated quality assurance.
