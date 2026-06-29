@@ -1,8 +1,22 @@
 ---
-domain: "contrib"
-title: "rag kb quality flywheel self loop"
-verification: "metadata-normalized"
-{"title": "RAG 知识库质量飞轮：自闭环建设", "domain": "rag", "tags": ["rag", "flywheel", "quality", "audit", "feedback", "self-learning"], "confidence": 0.92, "created": "2026-05-21", "domain_expert": "unknown", "verified_date": "2026-05-21"}
+{
+  "title": "RAG Knowledge Base Quality Flywheel Self Loop",
+  "domain": "rag",
+  "source": "bootstrap",
+  "status": "draft",
+  "tags": [
+    "rag",
+    "flywheel",
+    "quality",
+    "audit",
+    "feedback",
+    "self-learning"
+  ],
+  "language": "en",
+  "created": "2026-05-21",
+  "domain_expert": "unknown",
+  "verified_date": "2026-05-21"
+}
 ---
 
 ## Background
@@ -15,6 +29,8 @@ A vertical-domain RAG knowledge base (190+ PDFs, 200K+ vectors) was already onli
 - No queue management, making review progress untraceable
 
 ## Root Cause
+
+Inspect the RAG config, ingestion log, retrieval log, and cache status to confirm the exact mismatch before applying the fix.
 
 The "flywheel" in the design document only covered the first half:
 
@@ -62,6 +78,14 @@ Data-flow validation:
 - `badcase_review.py list` shows 3 pending items
 - `badcase_review.py approve 1` moves the item into the approved queue
 - `badcase_review.py auto` automatically approves low-score badcases
+
+
+```bash
+# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
+python3 search_knowledge.py "rag verification smoke test" --lessons
+```
+
+Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
 
 ## File Structure
 

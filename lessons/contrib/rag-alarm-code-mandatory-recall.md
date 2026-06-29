@@ -1,8 +1,20 @@
 ---
-domain: "contrib"
-title: "rag alarm code mandatory recall"
-verification: "metadata-normalized"
-{"title": "RAG 报警代码检索需要关键词强制召回", "domain": "rag", "subdomain": "fanuc", "source": "bootstrap", "status": "draft", "tags": ["project:self-grow-wiki", "severity:high", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
+{
+  "title": "RAG Alarm Code Retrieval Needs Mandatory Keyword Recall",
+  "domain": "rag",
+  "source": "bootstrap",
+  "status": "draft",
+  "tags": [
+    "project:self-grow-wiki",
+    "severity:high",
+    "node:hermes_wsl"
+  ],
+  "language": "en",
+  "created": "2026-05-03",
+  "domain_expert": "bootstrap",
+  "verified_date": "2026-05-03",
+  "subdomain": "fanuc"
+}
 ---
 
 ## Problem
@@ -10,6 +22,8 @@ verification: "metadata-normalized"
 When querying "SRVO-023 robot alarm", RAG returned unrelated results instead of the correct FANUC alarm documentation.
 
 ## Root Cause
+
+Inspect the RAG config, ingestion log, retrieval log, and cache status to confirm the exact mismatch before applying the fix.
 
 Pure semantic retrieval in ChromaDB has weak discrimination for short codes (SRVO-023, M-900, etc.). Embedding vectors for numeric strings are easily confused with unrelated documents. x"2000" semantically matched both FANUC and KUKA documents.
 
@@ -22,6 +36,14 @@ Add keyword mandatory recall to the `retrieve()` function in `rag_core.py`:
 ## Verification
 
 The query "SRVO-023" returns the correct FANUC alarm document list and ranks it near the top. The query "FANUC R-2000iC maximum speed" no longer returns KUKA Series 2000 data.
+
+
+```bash
+# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
+python3 search_knowledge.py "rag verification smoke test" --lessons
+```
+
+Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
 
 ## Scenario
 

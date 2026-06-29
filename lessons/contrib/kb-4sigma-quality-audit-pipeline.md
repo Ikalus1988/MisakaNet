@@ -1,8 +1,20 @@
 ---
-domain: "contrib"
-title: "kb 4sigma quality audit pipeline"
-verification: "metadata-normalized"
-{"title": "知识库 4σ 质量审计流水线", "domain": "rag", "subdomain": "quality", "source": "bootstrap", "status": "draft", "tags": ["project:self-grow-wiki", "severity:medium", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
+{
+  "title": "Knowledge Base 4-Sigma Quality Audit Pipeline",
+  "domain": "rag",
+  "source": "bootstrap",
+  "status": "draft",
+  "tags": [
+    "project:self-grow-wiki",
+    "severity:medium",
+    "node:hermes_wsl"
+  ],
+  "language": "en",
+  "created": "2026-05-03",
+  "domain_expert": "bootstrap",
+  "verified_date": "2026-05-03",
+  "subdomain": "quality"
+}
 ---
 
 ## Problem
@@ -30,6 +42,14 @@ Reports are stored at `~/audit_reports/audit_YYYY-MM-DD.json`.
 ## Verification
 
 Audit reports showed no new contamination for 7 consecutive days, and the knowledge-base score stayed above 95%.
+
+
+```bash
+# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
+python3 search_knowledge.py "rag verification smoke test" --lessons
+```
+
+Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
 
 ## Scenario
 

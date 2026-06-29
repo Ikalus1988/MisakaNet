@@ -1,8 +1,20 @@
 ---
-domain: "contrib"
-title: "rag three channel llm disaster recovery"
-verification: "metadata-normalized"
-{"title": "RAG 三通道 LLM 容灾方案", "domain": "rag", "subdomain": "llm", "source": "bootstrap", "status": "draft", "tags": ["project:self-grow-wiki", "node:hermes_wsl", "scope:broad"], "confidence": "0.85", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
+{
+  "title": "RAG Three-Channel LLM Disaster Recovery",
+  "domain": "rag",
+  "source": "bootstrap",
+  "status": "draft",
+  "tags": [
+    "project:self-grow-wiki",
+    "node:hermes_wsl",
+    "scope:broad"
+  ],
+  "language": "en",
+  "created": "2026-05-03",
+  "domain_expert": "bootstrap",
+  "verified_date": "2026-05-03",
+  "subdomain": "llm"
+}
 ---
 
 ## Problem
@@ -10,6 +22,8 @@ verification: "metadata-normalized"
 When serving a RAG knowledge base externally (Gradio Web UI / WeChat bot), a single LLM API path may become unavailable due to network issues, quota limits, or server-side failures, causing the whole service to become unavailable.
 
 ## Root Cause
+
+Inspect the RAG config, ingestion log, retrieval log, and cache status to confirm the exact mismatch before applying the fix.
 
 Depending on one LLM channel creates a single point of failure. API rate limits, network fluctuations, and server upgrades can all make queries fail. In industrial-document scenarios, users expect fault tolerance rather than "service unavailable".
 
@@ -31,6 +45,14 @@ Core logic:
 
 After manually disconnecting the Windows proxy (primary channel unavailable), RAG could still return answers through local Ollama.
 Monitoring for 7 consecutive days showed no service interruption.
+
+
+```bash
+# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
+python3 search_knowledge.py "rag verification smoke test" --lessons
+```
+
+Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
 
 ## Scenario
 

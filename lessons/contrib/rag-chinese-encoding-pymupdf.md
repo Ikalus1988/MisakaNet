@@ -1,9 +1,18 @@
 ---
-domain: "contrib"
-title: "RAG 检索中文乱码 — pymupdf4llm 默认编码Issue"
-verification: "metadata-normalized"
+{
+  "title": "RAG Chinese Encoding with PyMuPDF",
+  "domain": "rag",
+  "source": "bootstrap",
+  "status": "draft",
+  "language": "en",
+  "tags": [
+    "project:self-grow-wiki",
+    "severity:medium",
+    "node:hermes-wsl"
+  ]
+}
 ---
----{"title": "RAG 检索中文乱码 — pymupdf4llm 默认编码Issue", "domain": "rag", "source": "bootstrap", "status": "published", "confidence": "0.7", "created": "2026-04-01"}---
+
 
 
 ## Background
@@ -11,6 +20,8 @@ verification: "metadata-normalized"
 When building a FANUC knowledge-base RAG system, retrieved Chinese alarm codes appeared garbled.
 
 ## Root Cause
+
+Inspect the RAG config, ingestion log, retrieval log, and cache status to confirm the exact mismatch before applying the fix.
 
 When `pymupdf4llm` extracted PDFs, the default encoding was not explicitly set to UTF-8, so pages containing Chinese special characters were truncated.
 
@@ -29,6 +40,14 @@ text = pymupdf4llm.extract(doc, encoding="utf-8")
 ## Verification
 
 Re-import PDFs containing Chinese alarm codes (for example, SRVO-023); retrieval returns the correct Chinese descriptions.
+
+
+```bash
+# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
+python3 search_knowledge.py "rag verification smoke test" --lessons
+```
+
+Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
 
 ## Key Points
 

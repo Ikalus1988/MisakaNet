@@ -1,9 +1,18 @@
 ---
-domain: "contrib"
-title: "RAG Cross-Encoder Reranker CPU Bottleneck与 LLM 确定性调优"
-verification: "metadata-normalized"
+{
+  "title": "RAG Cross Encoder CPU Bottleneck",
+  "domain": "rag",
+  "source": "bootstrap",
+  "status": "draft",
+  "language": "en",
+  "tags": [
+    "project:self-grow-wiki",
+    "severity:medium",
+    "node:hermes-wsl"
+  ]
+}
 ---
----{"title": "RAG Cross-Encoder Reranker CPU Bottleneck与 LLM 确定性调优", "domain": "rag", "subdomain": "performance", "source": "bootstrap", "status": "published", "tags": ["project:self-grow-wiki", "node:hermes_wsl", "scope:broad", "severity:high"], "confidence": "0.9", "created": "2026-05-28"}---
+
 
 ## Problem
 
@@ -73,6 +82,14 @@ share_session_in_channel = false  # Independent session per user
 1. Warm query speed: 44s → ~1.2s (tested twice through AP calls)
 2. Answer consistency: asking the same query twice in a row produced identical output
 3. Ranking quality spot check: answers did not degrade after disabling the reranker
+
+
+```bash
+# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
+python3 search_knowledge.py "rag verification smoke test" --lessons
+```
+
+Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
 
 ## Lessons Learned
 

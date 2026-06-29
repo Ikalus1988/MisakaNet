@@ -1,8 +1,20 @@
 ---
-domain: "contrib"
-title: "bge embedding fallback crash"
-verification: "metadata-normalized"
-{"title": "BGE embedding 模型需要降级 fallback 避免启动崩溃", "domain": "rag", "subdomain": "embedding", "source": "bootstrap", "status": "draft", "tags": ["project:agent-medici", "severity:high", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
+{
+  "title": "BGE Embedding Fallback Crash",
+  "domain": "rag",
+  "source": "bootstrap",
+  "status": "draft",
+  "tags": [
+    "project:agent-medici",
+    "severity:high",
+    "node:hermes_wsl"
+  ],
+  "language": "en",
+  "created": "2026-05-03",
+  "domain_expert": "bootstrap",
+  "verified_date": "2026-05-03",
+  "subdomain": "embedding"
+}
 ---
 
 ## Problem
@@ -11,6 +23,8 @@ When HermesHub starts, if the BGE-m3 model has not been downloaded to the local 
 The local path is hard-coded as `~/.cache/huggingface/...`, which does not exist on other machines.
 
 ## Root Cause
+
+Inspect the RAG config, ingestion log, retrieval log, and cache status to confirm the exact mismatch before applying the fix.
 
 `_init_embedding_model()` in `skill_indexer.py` loads the model with `local_files_only=True`, and the model path is a hard-coded machine-specific absolute path. There is no fallback mechanism and no environment-variable override.
 
@@ -23,6 +37,14 @@ The local path is hard-coded as `~/.cache/huggingface/...`, which does not exist
 ## Verification
 
 Start the hub on a machine without the BGE-m3 model. It does not crash and prints "[Embedding] degraded mode — semantic deduplication and search will be unavailable".
+
+
+```bash
+# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
+python3 search_knowledge.py "rag verification smoke test" --lessons
+```
+
+Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
 
 ## Scenario
 

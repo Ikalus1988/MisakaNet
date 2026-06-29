@@ -1,9 +1,18 @@
 ---
-domain: "contrib"
-title: "RAG 品牌Filter三坑：条件触发、文件正则、BM25 Cache"
-verification: "metadata-normalized"
+{
+  "title": "RAG Brand Filter Three Pitfalls",
+  "domain": "rag",
+  "source": "bootstrap",
+  "status": "draft",
+  "language": "en",
+  "tags": [
+    "project:self-grow-wiki",
+    "severity:medium",
+    "node:hermes-wsl"
+  ]
+}
 ---
----{"title": "RAG 品牌Filter三坑：条件触发、文件正则、BM25 Cache", "domain": "rag", "tags": ["rag", "brand-filter", "architecture", "chromadb", "bm25", "pitfall"], "confidence": 0.88, "created": "2026-05-29"}---
+
 
 ## Background
 
@@ -68,6 +77,10 @@ def search(self, query, n_results, where_filter=None):
 - After changing ChromaDB metadata, delete the BM25 cache file and rebuild the index
 - Or add a fallback in `_build_chunk_v2()`: if `meta` has no `brand` field, query ChromaDB live
 - Cache files are usually large (500MB+) and rebuilds take 2-5 minutes
+## Root Cause
+
+The failure mode comes from a concrete RAG pipeline design or configuration mismatch. Check the relevant log output, cache status, metadata fields, and retrieval configuration before changing prompts.
+
 ## Verification
 
 1. Follow the solution steps in order
@@ -75,6 +88,14 @@ def search(self, query, n_results, where_filter=None):
 3. Verify the symptom no longer occurs
 4. Check related logs or outputs for expected behavior
 
+
+
+```bash
+# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
+python3 search_knowledge.py "rag verification smoke test" --lessons
+```
+
+Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
 
 ## Summary
 
