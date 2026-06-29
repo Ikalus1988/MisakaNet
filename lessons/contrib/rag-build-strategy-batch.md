@@ -5,19 +5,19 @@ verification: "metadata-normalized"
 {"title": "RAG 建库策略：不可一次性加载全部数据到显存/内存", "domain": "rag", "tags": "", "source": "hanged-man", "status": "published", "created": "2026-04-13", "confidence": "0.85", "scope": "broad", "domain_expert": "hanged-man", "verified_date": "2026-04-13"}
 ---
 
-## 问题
+## Problem
 
-建库（chunks_v3, 34,100 docs）时一次性把所有数据加载到显存/WSL 内存，导致 LM Studio context overflow，后续引发 Summarization 超时 ×4 → LLM timeout → 驱动崩溃 → BSOD。
+During knowledge-base construction (chunks_v3, 34,100 docs), all data was loaded into VRAM/WSL memory at once. This caused an LM Studio context overflow, which then led to Summarization timeouts ×4 → LLM timeout → driver crash → BSOD.
 
-## 根因
+## Root Cause
 
-建库批次策略错误，没有分批处理大数据集。
+The knowledge-base build batch strategy was wrong: the large dataset was not processed in batches.
 
-## 正确做法
+## Correct Approach
 
-- 大型 RAG 建库时分批处理 embedding，每批数量在显存/内存可承受范围内
-- 或使用 streaming 方式逐文件处理
-- 验证：监控显存和内存使用量，设置阈值告警
+- When building a large RAG knowledge base, process embeddings in batches whose size fits within available VRAM/memory
+- Or use a streaming approach to process files one by one
+- Verification: monitor VRAM and memory usage, and set threshold alerts
 ## Verification
 
 1. Follow the solution steps in order
@@ -26,6 +26,6 @@ verification: "metadata-normalized"
 4. Check related logs or outputs for expected behavior
 
 
-## 教训
+## Lesson
 
-RAG 建库必须先小批量验证内存上限，再规模化。
+RAG knowledge-base construction must first validate memory limits with small batches before scaling up.
