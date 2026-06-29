@@ -240,7 +240,7 @@ jobs:
       - name: Post Audit Report
         if: always()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
         run: |
           SCOPE="${{ steps.scope.outputs.scope }}"
           OUTCOME="${{ steps.pytest.outcome }}"
