@@ -5,33 +5,32 @@ verification: "metadata-normalized"
 {"title": "RAG 分块参数：800 字符 + 100 重叠 + 每文件最多 100 分块", "domain": "rag", "subdomain": "chunking", "source": "bootstrap", "status": "draft", "tags": ["project:self-grow-wiki", "severity:medium", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
 ---
 
-## 问题
+## Problem
 
-FANUC PDF 文档导入 RAG 后，检索质量不稳定，长文档召回率低。
+After importing FANUC PDF documents into RAG, retrieval quality was unstable and recall was low for long documents.
 
-## 根因
+## Root Cause
 
-分块策略不当。分块过大（>2000 字符）导致单块包含多个主题，语义模糊；
-分块过小（<200 字符）导致上下文不足，嵌入向量区分度低。
+The chunking strategy was inappropriate. Chunks that are too large (>2000 characters) contain multiple topics and become semantically blurry; chunks that are too small (<200 characters) lack context and produce embeddings with low discriminative power.
 
-## 修复
+## Fix
 
-采用以下分块参数：
+Use the following chunking parameters:
 ```python
 RecursiveCharacterTextSplitter(
-    chunk_size=800,        # 每块约 800 字符
-    chunk_overlap=100,     # 块间 100 字符重叠
+    chunk_size=800,        # About 800 characters per chunk
+    chunk_overlap=100,     # 100-character overlap between chunks
     length_function=len,
     separators=["\n\n", "\n", "。", "！", "？", " ", ""]
 )
 ```
-每文件最多保留 100 分块，超出则截断（避免超大文档占满向量库）。
+Keep at most 100 chunks per file, truncating anything beyond that to prevent oversized documents from filling the vector store.
 
-## 验证
+## Verification
 
-对比测试 50 份文档，分块后检索准确率提升约 15%。
-单块内容 800 字符刚好覆盖一个技术点（如一个报警码的完整说明）。
+In a comparison test across 50 documents, retrieval accuracy improved by about 15% after chunking.
+A single 800-character chunk covers one technical point well, such as the complete description of an alarm code.
 
-## 场景
+## Scenario
 
-中英文混合技术文档（FANUC 手册），段落结构清晰的 PDF / Word 文档。
+Mixed Chinese/English technical documents (FANUC manuals), especially PDF / Word documents with clear paragraph structure.
