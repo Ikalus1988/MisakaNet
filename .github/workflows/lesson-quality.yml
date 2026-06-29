@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -39,7 +39,7 @@ jobs:
           : > quality_report.txt
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
-            mapfile -t TARGETS < <(git diff --name-only "origin/${{ github.base_ref }}"...HEAD -- 'lessons/**/*.md' 'lessons/*.md' 'reference/**/*.md' 'reference/*.md')
+            mapfile -t TARGETS < <(git diff --name-only "origin/${{ github.base_ref }}" HEAD -- 'lessons/**/*.md' 'lessons/*.md' 'reference/**/*.md' 'reference/*.md')
           else
             mapfile -t TARGETS < <(find lessons reference -name '*.md' 2>/dev/null | sort)
           fi
@@ -104,7 +104,8 @@ jobs:
 
             ${SUMMARY}${QS_SECTION}
 
-            All lessons meet the naming, frontmatter, and content standards."
+            All lessons meet the naming, frontmatter, and content standards." || \
+              echo "Could not post lesson quality pass comment to PR #$PR_NUM"
           else
             gh pr comment "$PR_NUM" --repo "${{ github.repository }}" \
               --body "### ❌ Lesson Quality Gate Failed
@@ -120,6 +121,8 @@ jobs:
 
             </details>
 
-            Fix the errors above and push again."
-            gh pr edit "$PR_NUM" --repo "${{ github.repository }}" --add-label "quality:needs-review"
+            Fix the errors above and push again." || \
+              echo "Could not post lesson quality failure comment to PR #$PR_NUM"
+            gh pr edit "$PR_NUM" --repo "${{ github.repository }}" --add-label "quality:needs-review" || \
+              echo "Could not add quality:needs-review label to PR #$PR_NUM"
           fi
