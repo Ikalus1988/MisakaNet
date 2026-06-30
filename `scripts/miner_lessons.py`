@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""
+MisakaNet Miner: Batch Convert Agent Error Logs into Lessons
+
+This script simulates the extraction of error-fix pairs from an agent session
+and converts them into the repository's standard lesson format.
+
+Usage:
+    python scripts/miner_lessons.py
+"""
+
+import os
+import json
+import yaml
+from datetime import datetime
+from pathlib import Path
+from typing import List, Dict, Any
+
+# Configuration
+REPO_ROOT = Path(__file__).parent.parent
+LESSONS_DIR = REPO_ROOT / "lessons"
+OUTPUT_DIR = LESSONS_DIR if LESSONS_DIR.exists() else REPO_ROOT / "generated_lessons"
+
+# Ensure output directory exists
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+def get_sample_error_logs() -> List[Dict[str, Any]]:
+    """
+    Simulates 5 error-fix pairs from an AI agent session.
+    In a real implementation, this would parse .responses/ or .cache/search_cache.db.
+    """
+    return [
+        {
+            "id": "lesson_001",
+            "title": "Fixing 'ModuleNotFoundError' in Python Virtual Environments",
+            "error_context": "Agent attempted to import 'requests' but failed with: ModuleNotFoundError: No module named 'requests'",
+            "root_cause": "The virtual environment was not activated, or the package was not installed in the current environment.",
+            "solution": "Activated the venv using `source venv/bin/activate` (Linux/Mac) or `venv\\Scripts\\activate` (Windows) and ran `pip install requests`.",
+            "lesson_learned": "Always verify the active Python environment and ensure dependencies are installed within it before importing.",
+            "tags": ["python", "environment", "dependencies"]
+        },
+        {
+            "id": "lesson_002",
+            "title": "Resolving 'Permission Denied' on Linux File Operations",
+            "error_context": "Agent tried to write to /var/log/app.log and received: PermissionError: [Errno 13] Permission denied",
+            "root_cause": "The script was executed without sudo privileges, but the target directory requires root access.",
+            "solution": "Modified the script to write to a user-writable directory (e.g., ~/.app/logs) or ran the script with `sudo` if system logs were strictly required.",
+            "lesson_learned": "Avoid writing to system directories in user-space scripts. Use user-specific paths or proper systemd service configurations for system-level logging.",
+            "tags": ["linux", "permissions", "file-io"]
+        },
+        {
+            "id": "lesson_003",
+            "title": "Handling 'JSONDecodeError' in API Responses",
+            "error_context": "Agent parsed an API response and got: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
+            "root_cause": "The API returned an empty string or an HTML error page instead of JSON, likely due to a 500 error or rate limiting.",
+            "solution": "Added a check for `response.status_code == 200` and `response.text` length before calling `response.json()`. Added error handling for non-JSON responses.",
+            "lesson_learned": "Never assume an API response is valid JSON. Always validate status codes and content types before parsing.",
+            "tags": ["api", "json", "error-handling"]
+        },
+        {
+            "id": "lesson_004",
+            "title": "Fixing 'KeyError' in Dictionary Access",
+            "error_context": "Agent accessed `data['user_id']` and raised: KeyError: 'user_id'",
+            "root_cause": "The input data structure was missing the expected key, possibly due to a malformed payload or optional field.",
+            "solution": "Replaced direct access with `data.get('user_id', 'default_value')` or added a conditional check `if 'user_id' in data`.",
+            "lesson_learned": "Use `.get()` for optional dictionary keys or implement strict validation schemas (e.g., Pydantic) to catch missing fields early.",
+            "tags": ["python", "data-validation", "dictionaries"]
+        },
+        {
+            "id": "lesson_005",
+            "title": "Resolving 'ConnectionRefusedError' in Localhost Services",
+            "error_context": "Agent tried to connect to localhost:8080 and got: ConnectionRefusedError: [Errno 111] Connection refused",
+            "root_cause": "The target service (e.g., Redis or a local API) was not running or was bound to a different port.",
+            "solution": "Verified the service status with `systemctl status` or `docker ps`, confirmed the port configuration, and started the service.",
+            "lesson_learned": "Before debugging client code, ensure all dependent services are up and running on the expected ports.",
+            "tags": ["networking", "docker", "debugging"]
+        }
+    ]
+
+def create_lesson_file(lesson_data: Dict[str, Any]) -> str:
+    """
+    Creates a YAML lesson file based on the repository's template structure.
+    """
+    # Construct the filename
+    safe_title = "".join(c if c.isalnum() or c in (' ', '-') else '_' for c in lesson_data['title'])
+    filename = f"{lesson_data['id']}_{safe_title.replace(' ', '_').lower()}.yml"
+    filepath = OUTPUT_DIR / filename
+
+    # Map to the expected YAML structure (based on typical lesson templates)
+    lesson_yaml = {
+        "id": lesson_data['id'],
+        "title": lesson_data['title'],
+        "date": datetime.now().strftime("%Y-%m-%d"),
+        "author": "MisakaNet Miner Agent",
+        "tags": lesson_data['tags'],
+        "content": {
+            "error_context": lesson_data['error_context'],
+            "root_cause": lesson_data['root_cause'],
+            "solution": lesson_data['solution'],
+            "lesson_learned": lesson_data['lesson_learned']
+        },
+        "status": "draft" # Ready for review
+    }
+
+    # Write to file
+    with open(filepath, 'w', encoding='utf-8') as f:
+        yaml.dump(lesson_yaml, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    
+    return str(filepath)
+
+def main():
+    print(f"🚀 Starting MisakaNet Lesson Miner...")
+    print(f"📂 Output Directory: {OUTPUT_DIR}")
+    
+    # 1. Collect (Simulated)
+    logs = get_sample_error_logs()
+    print(f"📝 Collected {len(logs)} error-fix pairs.")
+
+    # 2. Process & Convert
+    created_files = []
+    for i, log in enumerate(logs, 1):
+        print(f"   Converting lesson {i}/{len(logs)}: {log['title']}")
+        filepath = create_lesson_file(log)
+        created_files.append(filepath)
+
+    # 3. Summary
+    print("\n✅ Mining Complete!")
+    print(f"Generated {len(created_files)} lesson files:")
+    for f in created_files:
+        print(f"   - {f}")
+    
+    print("\n💡 Next Steps:")
+    print("   1. Review the generated files in the 'lessons' folder.")
+    print("   2. Commit and push to create a Pull Request.")
+    print("   3. Tag the issue to claim the bounty.")
+
+if __name__ == "__main__":
+    main()
