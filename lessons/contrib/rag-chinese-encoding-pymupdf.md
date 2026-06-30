@@ -1,36 +1,55 @@
 ---
-domain: "contrib"
-title: "RAG 检索中文乱码 — pymupdf4llm 默认编码Issue"
-verification: "metadata-normalized"
+{
+  "title": "RAG Chinese Encoding with PyMuPDF",
+  "domain": "rag",
+  "source": "bootstrap",
+  "status": "draft",
+  "language": "en",
+  "tags": [
+    "project:self-grow-wiki",
+    "severity:medium",
+    "node:hermes-wsl"
+  ]
+}
 ---
----{"title": "RAG 检索中文乱码 — pymupdf4llm 默认编码Issue", "domain": "rag", "source": "bootstrap", "status": "published", "confidence": "0.7", "created": "2026-04-01"}---
 
 
-## 背景
 
-构建 FANUC 知识库 RAG 时，检索中文报警码出现乱码。
+## Background
 
-## 根因
+When building a FANUC knowledge-base RAG system, retrieved Chinese alarm codes appeared garbled.
 
-`pymupdf4llm` 提取 PDF 时默认编码未指定 utf-8，含中文特殊字符的页面被截断。
+## Root Cause
 
-## 修复
+Inspect the RAG config, ingestion log, retrieval log, and cache status to confirm the exact mismatch before applying the fix.
 
-在 `extract()` 调用中显式指定 `encoding="utf-8"`：
+When `pymupdf4llm` extracted PDFs, the default encoding was not explicitly set to UTF-8, so pages containing Chinese special characters were truncated.
+
+## Fix
+
+Explicitly specify `encoding="utf-8"` in the `extract()` call:
 
 ```python
-# RAG 检索中文乱码 — pymupdf4llm 默认编码Issue
+# RAG Chinese retrieval garbling — pymupdf4llm default encoding issue
 text = pymupdf4llm.extract(doc)
 
-# 正确
+# Correct
 text = pymupdf4llm.extract(doc, encoding="utf-8")
 ```
 
-## 验证
+## Verification
 
-重新导入含中文报警码的 PDF（如 SRVO-023），检索返回正确中文描述。
+Re-import PDFs containing Chinese alarm codes (for example, SRVO-023); retrieval returns the correct Chinese descriptions.
 
-## 关键点
 
-- BGE-small CUDA 编码，query ~0.3s
-- hybrid 检索方案：向量 top20 候选 + BM25 rerank，余弦相似度+关键词命中率综合排序
+```bash
+# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
+python3 search_knowledge.py "rag verification smoke test" --lessons
+```
+
+Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
+
+## Key Points
+
+- BGE-small CUDA encoding, query ~0.3s
+- Hybrid retrieval approach: vector top20 candidates + BM25 rerank, with ranking based on combined cosine similarity and keyword hit rate

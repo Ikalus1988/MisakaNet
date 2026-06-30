@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -36,12 +36,29 @@ jobs:
         id: check
         continue-on-error: true
         run: |
-          python3 scripts/check_lesson_quality.py > quality_report.txt 2>&1 || true
+          : > quality_report.txt
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            mapfile -t TARGETS < <(git diff --name-only "origin/${{ github.base_ref }}" HEAD -- 'lessons/**/*.md' 'lessons/*.md' 'reference/**/*.md' 'reference/*.md')
+          else
+            mapfile -t TARGETS < <(find lessons reference -name '*.md' 2>/dev/null | sort)
+          fi
+
+          if [ "${#TARGETS[@]}" -eq 0 ]; then
+            echo "No changed lesson/reference markdown files." | tee -a quality_report.txt
+          else
+            for target in "${TARGETS[@]}"; do
+              [ -f "$target" ] || continue
+              python3 scripts/check_lesson_quality.py "$target" >> quality_report.txt 2>&1 || true
+            done
+          fi
+
           cat quality_report.txt
-          # 提取结论行
-          SUMMARY=$(grep "总计" quality_report.txt || echo "0 错误, 0 警告")
+          ERRORS=$(awk '/总计:/ {sum += $2} END {print sum+0}' quality_report.txt)
+          WARNINGS=$(awk '/总计:/ {sum += $4} END {print sum+0}' quality_report.txt)
+          SUMMARY="总计: ${ERRORS} 错误, ${WARNINGS} 警告"
           echo "summary=$SUMMARY" >> "$GITHUB_OUTPUT"
-          if echo "$SUMMARY" | grep -q "[1-9] 错误"; then
+          if [ "$ERRORS" -gt 0 ]; then
             echo "verdict=fail" >> "$GITHUB_OUTPUT"
           else
             echo "verdict=pass" >> "$GITHUB_OUTPUT"
@@ -87,7 +104,8 @@ jobs:
 
             ${SUMMARY}${QS_SECTION}
 
-            All lessons meet the naming, frontmatter, and content standards."
+            All lessons meet the naming, frontmatter, and content standards." || \
+              echo "Could not post lesson quality pass comment to PR #$PR_NUM"
           else
             gh pr comment "$PR_NUM" --repo "${{ github.repository }}" \
               --body "### ❌ Lesson Quality Gate Failed
@@ -103,6 +121,8 @@ jobs:
 
             </details>
 
-            Fix the errors above and push again."
-            gh pr edit "$PR_NUM" --repo "${{ github.repository }}" --add-label "quality:needs-review"
+            Fix the errors above and push again." || \
+              echo "Could not post lesson quality failure comment to PR #$PR_NUM"
+            gh pr edit "$PR_NUM" --repo "${{ github.repository }}" --add-label "quality:needs-review" || \
+              echo "Could not add quality:needs-review label to PR #$PR_NUM"
           fi

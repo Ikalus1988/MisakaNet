@@ -37,9 +37,10 @@ jobs:
             exit 0
           fi
 
-          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | awk -F/ '{print $1}' | sort -u)
+          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          NON_LESSON=$(echo "$CHANGED" | grep -Ev '^(lessons/|\.github/workflows/(lesson-quality|pr-checks)\.yml$)' || true)
 
-          if echo "$CHANGED" | grep -qv "^lessons$"; then
+          if [ -n "$NON_LESSON" ]; then
             echo "scope=full" >> "$GITHUB_OUTPUT"
             echo "Scope: full (changes outside lessons/)"
           else
@@ -229,7 +230,27 @@ jobs:
         id: schema
         continue-on-error: true
         run: |
-          if python3 scripts/validate_lessons.py 2>&1; then
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            mapfile -t TARGETS < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'lessons/**/*.md' 'lessons/*.md')
+          else
+            mapfile -t TARGETS < <(find lessons -name '*.md' 2>/dev/null | sort)
+          fi
+
+          RESULT=pass
+          if [ "${#TARGETS[@]}" -eq 0 ]; then
+            echo "No changed lesson markdown files."
+          else
+            for target in "${TARGETS[@]}"; do
+              [ -f "$target" ] || continue
+              if ! python3 scripts/validate_lessons.py "$target"; then
+                RESULT=fail
+              fi
+            done
+          fi
+
+          if [ "$RESULT" = "pass" ]; then
             echo "schema_result=pass" >> "$GITHUB_OUTPUT"
           else
             echo "schema_result=fail" >> "$GITHUB_OUTPUT"

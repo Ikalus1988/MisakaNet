@@ -1,37 +1,59 @@
 ---
-domain: "contrib"
-title: "rag three channel llm disaster recovery"
-verification: "metadata-normalized"
-{"title": "RAG 三通道 LLM 容灾方案", "domain": "rag", "subdomain": "llm", "source": "bootstrap", "status": "draft", "tags": ["project:self-grow-wiki", "node:hermes_wsl", "scope:broad"], "confidence": "0.85", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
+{
+  "title": "RAG Three-Channel LLM Disaster Recovery",
+  "domain": "rag",
+  "source": "bootstrap",
+  "status": "draft",
+  "tags": [
+    "project:self-grow-wiki",
+    "node:hermes_wsl",
+    "scope:broad"
+  ],
+  "language": "en",
+  "created": "2026-05-03",
+  "domain_expert": "bootstrap",
+  "verified_date": "2026-05-03",
+  "subdomain": "llm"
+}
 ---
 
-## 问题
+## Problem
 
-RAG 知识库对外服务（Gradio Web UI / 微信机器人）时，单路 LLM API 可能因网络、配额、服务端故障而不可用，导致整个服务不可用。
+When serving a RAG knowledge base externally (Gradio Web UI / WeChat bot), a single LLM API path may become unavailable due to network issues, quota limits, or server-side failures, causing the whole service to become unavailable.
 
-## 根因
+## Root Cause
 
-依赖单一 LLM 通道是单点故障。API 限流、网络波动、服务端升级都会导致查询失败。在工业文档场景下，用户期望容错而非"服务不可用"。
+Inspect the RAG config, ingestion log, retrieval log, and cache status to confirm the exact mismatch before applying the fix.
 
-## 修复
+Depending on one LLM channel creates a single point of failure. API rate limits, network fluctuations, and server upgrades can all make queries fail. In industrial-document scenarios, users expect fault tolerance rather than "service unavailable".
 
-实现三通道自动容灾，按优先级降级：
+## Fix
+
+Implement three-channel automatic disaster recovery, degrading by priority:
 ```
-Channel 1 (主)   InternalModel-Flash     api.internal-gateway.local    ~1.5s  内部网络
-Channel 2 (备)   Qwen 云端      通义千问 API            ~3s    公网
-Channel 3 (兜底) Qwen2.5:3b      localhost:11434         ~50s   Ollama 本地
+Channel 1 (primary)  InternalModel-Flash  api.internal-gateway.local  ~1.5s  internal network
+Channel 2 (backup)   Qwen cloud           Tongyi Qianwen API          ~3s    public internet
+Channel 3 (fallback) Qwen2.5:3b           localhost:11434             ~50s   local Ollama
 ```
 
-核心逻辑：
-- 先试主通道，超时或非 200 时自动切备
-- 备通道失败时切兜底（本地模型，无网络依赖）
-- 所有通道失效时返回纯检索结果（不生成答案）
+Core logic:
+- Try the primary channel first, and automatically switch to backup on timeout or non-200 responses
+- If the backup channel fails, switch to the fallback channel (local model, no network dependency)
+- If all channels fail, return pure retrieval results without generating an answer
 
-## 验证
+## Verification
 
-手动断掉 Windows 梯子（主通道不可用），RAG 仍能通过本地 Ollama 返回答案。
-连续 7 天监控无服务中断。
+After manually disconnecting the Windows proxy (primary channel unavailable), RAG could still return answers through local Ollama.
+Monitoring for 7 consecutive days showed no service interruption.
 
-## 场景
 
-任何需要对外提供稳定的 LLM 问答服务的生产环境。
+```bash
+# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
+python3 search_knowledge.py "rag verification smoke test" --lessons
+```
+
+Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
+
+## Scenario
+
+Any production environment that needs to provide stable external LLM Q&A service.
