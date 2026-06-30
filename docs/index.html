@@ -1764,21 +1764,21 @@ const DATA_BASE = "https://raw.githubusercontent.com/" + REPO + "/data";
 const WORKER_BASE = "";
 
 // Worker GitHub API 代理：通过 Worker 中转 GitHub API 请求，绕开浏览器端未认证限速
-const GITHUB_PROXY = WORKER_BASE ? `${WORKER_BASE}/api/github/repos/${REPO}` : BASE;
+const GITHUB_PROXY = WORKER_BASE ? `${WORKER_BASE}/api/github/repos/${REPO}` : `/api/github/repos/${REPO}`;
 
-// 将 GitHub API URL 转为 Worker 代理 URL（若非 GitHub URL 则原样返回）
+// 将 GitHub API URL 转为同域代理 URL
 function proxyGithubUrl(url) {
-  if (!url || !WORKER_BASE) return url;
+  if (!url) return url;
   const ghPrefix = "https://api.github.com/";
   if (url.startsWith(ghPrefix)) {
-    return WORKER_BASE + "/api/github/" + url.slice(ghPrefix.length);
+    return (WORKER_BASE || "") + "/api/github/" + url.slice(ghPrefix.length);
   }
   return url;
 }
 
-/** 返回数据源基础 URL：优先 Worker API，否则回退到 raw.githubusercontent.com */
+/** 返回数据源基础 URL：同域 /api */
 function getDataBase() {
-  return WORKER_BASE || DATA_BASE;
+  return WORKER_BASE || "/api";
 }
 
 // Debug: set localStorage.misaka_debug=true, then open console
@@ -2224,13 +2224,13 @@ function refreshStats() {
   loadStats();
 }
 
-/** 返回 counter 数据 URL：优先 Worker API，否则回退到 main 分支（data 分支 sync 可能滞后） */
+/** 返回 counter 数据 URL：同域 /api/counter（WORKER_BASE 已切换为同域模式） */
 function getCounterUrl() {
-  return WORKER_BASE ? `${WORKER_BASE}/api/counter` : `${RAW_BASE}/counter.json`;
+  return WORKER_BASE ? `${WORKER_BASE}/api/counter` : `/api/counter`;
 }
-/** 返回 lessons 数据 URL：优先 Worker API，否则回退到 raw.githubusercontent.com */
+/** 返回 lessons 数据 URL：同域 /api/lessons（WORKER_BASE 已切换为同域模式） */
 function getLessonsUrl() {
-  return WORKER_BASE ? `${WORKER_BASE}/api/lessons` : `${getDataBase()}/lessons.json`;
+  return WORKER_BASE ? `${WORKER_BASE}/api/lessons` : `/api/lessons`;
 }
 
 async function loadStats() {
