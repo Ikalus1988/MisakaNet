@@ -45,6 +45,11 @@ verification: "metadata-normalized"
 - [Universal Memory Protocol (UMP)](contrib/ump-universal-memory-protocol.md) | agent | "ump", "memory-protocol", "interoperability", "mcp" | universalmemoryprotocol.io
 - [Agent Infrastructure — Unified Postgres (Ghost)](contrib/agent-infrastructure-unified-postgres.md) | agent | "postgres", "agent-infra", "memory", "sandbox" | dev.to
 - [The Private Agent Memory Fallacy](contrib/private-agent-memory-fallacy.md) | agent | "memory-wallet", "portable-memory", "privacy" | blog.getzep.com
+- [GFW TLS SNI Block Pattern](contrib/gfw-tls-sni-block-pattern.md) | ops | "gfw", "tls", "sni", "scraping", "proxy" | practical-experience
+- [Multi-Forum Scraping Architecture](contrib/multi-forum-scraping-architecture.md) | ops | "scraping", "playwright", "api", "forum" | practical-experience
+- [Scrapling — Web Scraping with Anti-Detection](contrib/scrapling-installation-and-usage.md) | ops | "scrapling", "curl-cffi", "anti-detection" | github.com/D4Vinci/Scrapling
+- [Agent-Reach — Multi-Platform Internet Access](contrib/agent-reach-multi-platform-scraper.md) | agent | "agent-reach", "scraping", "reddit", "twitter" | github.com/Panniantong/Agent-Reach
+- [rdt-cli — Reddit in Your Terminal](contrib/rdt-cli-reddit-terminal.md) | ops | "rdt-cli", "reddit", "scraping", "cli" | github.com/public-clis/rdt-cli
 - [FFmpeg 音频转码：必须用 libopus 而非 -format ogg](contrib/ffmpeg-audio-libopus-not-ogg.md) | audio | | hanged-man
 - [FReeLLMAPI Session Context Mixing - Cross-Thread Delivery](core/freellmapi-session-context-mixing-cross-thread-delivery.md) | agent-network | | hermes_wsl2
 - [Feishu 文件上传：file_type 必须用 opus](contrib/feishu-upload-file-type-opus.md) | feishu | | hanged-man
