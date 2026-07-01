@@ -146,6 +146,22 @@ async function handleApiRequest(pathWithQuery, env) {
         timestamp: new Date().toISOString(),
       });
 
+    case "/api/helpful": {
+      // GET /api/helpful?lesson_id=<id> — return helpful count for a lesson
+      if (!env.MISAKANET_KV) {
+        return jsonResponse({ error: "KV not configured" }, 503);
+      }
+      const params = new URLSearchParams(search);
+      const lessonId = sanitizeIdentifier(params.get("lesson_id"), 100);
+      if (!lessonId) {
+        return jsonResponse({ error: "Missing lesson_id" }, 400);
+      }
+      const kvKey = `helpful:${lessonId}`;
+      const raw = await env.MISAKANET_KV.get(kvKey, "text");
+      const count = raw ? parseInt(raw, 10) || 0 : 0;
+      return jsonResponse({ lesson_id: lessonId, count });
+    }
+
     default:
       // 通用 GitHub API 代理: /api/github/* → api.github.com/*
       if (pathname.startsWith("/api/github/")) {
@@ -342,6 +358,41 @@ async function handleRegistration(request, env) {
   });
 }
 
+// ── "This helped me" 投票处理 ──
+async function handleHelpfulVote(request, env) {
+  if (!env.MISAKANET_KV) {
+    return jsonResponse({ error: "KV not configured" }, 503);
+  }
+
+  // 解析请求体
+  let body;
+  try {
+    if (parseInt(request.headers.get("content-length") || "0") > 10000) {
+      return jsonResponse({ error: "Request too large" }, 413);
+    }
+    body = await request.json();
+  } catch {
+    return jsonResponse({ error: "Invalid JSON" }, 400);
+  }
+
+  const lessonId = sanitizeIdentifier(body.lesson_id, 100);
+  if (!lessonId) {
+    return jsonResponse({ error: "Missing or invalid lesson_id" }, 400);
+  }
+
+  const kvKey = `helpful:${lessonId}`;
+  try {
+    const raw = await env.MISAKANET_KV.get(kvKey, "text");
+    const current = raw ? parseInt(raw, 10) || 0 : 0;
+    const newCount = current + 1;
+    await env.MISAKANET_KV.put(kvKey, String(newCount));
+    return jsonResponse({ lesson_id: lessonId, count: newCount });
+  } catch (err) {
+    console.error("helpful vote failed:", err.message);
+    return jsonResponse({ error: "Failed to record vote" }, 500);
+  }
+}
+
 // ── 主入口 (仅 API + 注册，静态文件由 Cloudflare Pages 独立服务) ──
 export default {
   async fetch(request, env) {
@@ -365,6 +416,11 @@ export default {
     // POST / 或 POST /api/register — 注册
     if (request.method === "POST" && (url.pathname === "/" || url.pathname === "/api/register")) {
       return await handleRegistration(request, env);
+    }
+
+    // POST /api/helpful — "This helped me" vote
+    if (request.method === "POST" && url.pathname === "/api/helpful") {
+      return await handleHelpfulVote(request, env);
     }
 
     // GET /ping — 保持 Worker 热实例

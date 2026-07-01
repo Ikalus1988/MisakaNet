@@ -1452,6 +1452,31 @@
     .agent-selector { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
     .register-form { padding: 20px 16px; }
   }
+
+  /* "This helped me" button */
+  .helpful-btn {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid rgba(0, 229, 255, 0.15);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .helpful-btn:hover:not(:disabled) {
+    border-color: var(--cyan-dim);
+    color: var(--cyan);
+  }
+  .helpful-btn:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+  .helpful-btn.voted {
+    color: var(--green);
+    border-color: rgba(34, 197, 94, 0.3);
+  }
 </style>
 </head>
 <body>
@@ -2062,6 +2087,9 @@ function searchLessons() {
     const safeSummary = DOMPurify.sanitize((l.summary || '').slice(0, 80));
     const safeDomain = DOMPurify.sanitize(l.domain || '');
     const safeTags = DOMPurify.sanitize((l.tags || []).slice(0, 3).join(', '));
+    const safeId = DOMPurify.sanitize(l.id || '').replace(/'/g, '');
+    const votedClass = hasVoted(safeId) ? ' voted' : '';
+    const votedDisabled = hasVoted(safeId) ? 'disabled' : '';
     return `<div style="padding:8px 12px;border-bottom:1px solid #21262d;cursor:pointer;transition:background 0.15s;"
            onmouseover="this.style.background='#161b22'"
            onmouseout="this.style.background=''"
@@ -2069,8 +2097,13 @@ function searchLessons() {
         <div style="font-size:13px;color:#58a6ff;">${safeTitle}</div>
         <div style="font-size:11px;color:#8b949e;margin-top:2px;">${safeSummary}</div>
         <div style="font-size:10px;color:#484f58;margin-top:1px;">${safeDomain} · ${safeTags}</div>
+        <button class="helpful-btn${votedClass}" data-lesson="${safeId}" ${votedDisabled} onclick="event.stopPropagation();handleHelpfulClick('${safeId}', this)">This helped me</button>
       </div>`;
   }).join("");
+  // Load helpful counts for each result button
+  container.querySelectorAll('.helpful-btn').forEach(btn => {
+    loadHelpfulCount(btn.getAttribute('data-lesson'), btn);
+  });
 }
 
 // ── Request collapsing: reuse in-flight promise for same URL ──
@@ -2108,6 +2141,89 @@ const fetchJSON = (url) => {
   _pendingPromises.set(url, p);
   return p;
 };
+
+// ── POST helper (same timeout/error pattern as fetchWithTimeout) ──
+async function fetchPOST(url, body, timeoutMs = 8000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    clearTimeout(timer);
+    if (r.status === 429) {
+      const retryAfter = r.headers.get('Retry-After');
+      if (DEBUG) console.log(`[MisakaNet] 429 rate limited on POST ${url}, retry after ${retryAfter || '?'}s`);
+      throw new Error(`HTTP 429${retryAfter ? ` (retry after ${retryAfter}s)` : ''}`);
+    }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (DEBUG) console.log(`[MisakaNet] POST ${url} (${r.status})`);
+    return r.json();
+  } catch(e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') {
+      throw new Error(`Request timed out after ${timeoutMs}ms`);
+    }
+    throw e;
+  }
+}
+
+// ── "This helped me" helpful vote system ──
+const HELPFUL_STORAGE_KEY = 'misaka_helpful_voted';
+
+function getVotedLessons() {
+  try {
+    return JSON.parse(localStorage.getItem(HELPFUL_STORAGE_KEY) || '[]');
+  } catch { return []; }
+}
+
+function hasVoted(lessonId) {
+  return getVotedLessons().includes(lessonId);
+}
+
+function markVoted(lessonId) {
+  const voted = getVotedLessons();
+  if (!voted.includes(lessonId)) {
+    voted.push(lessonId);
+    try { localStorage.setItem(HELPFUL_STORAGE_KEY, JSON.stringify(voted)); } catch {}
+  }
+}
+
+async function handleHelpfulClick(lessonId, btnEl) {
+  if (hasVoted(lessonId)) return;
+  btnEl.disabled = true;
+  btnEl.textContent = '...';
+  try {
+    const result = await fetchPOST(getHelpfulUrl(), { lesson_id: lessonId });
+    markVoted(lessonId);
+    const count = result.count || 0;
+    btnEl.textContent = `♥ ${count} found helpful`;
+    btnEl.classList.add('voted');
+  } catch (e) {
+    btnEl.disabled = false;
+    btnEl.textContent = 'This helped me';
+    if (DEBUG) console.log(`[MisakaNet] helpful vote failed: ${e.message}`);
+  }
+}
+
+async function loadHelpfulCount(lessonId, btnEl) {
+  if (!lessonId) return;
+  try {
+    const url = `${getHelpfulUrl()}?lesson_id=${encodeURIComponent(lessonId)}`;
+    const result = await fetchJSON(url);
+    const count = result.count || 0;
+    if (hasVoted(lessonId)) {
+      btnEl.textContent = `♥ ${count} found helpful`;
+      btnEl.classList.add('voted');
+      btnEl.disabled = true;
+    } else if (count > 0) {
+      btnEl.textContent = `♥ ${count} found helpful`;
+    }
+  } catch { /* silently fail — count is non-critical */ }
+}
 
 // ── Counter animation ──
 function animateCounter(el, target, duration = 800) {
@@ -2231,6 +2347,10 @@ function getCounterUrl() {
 /** 返回 lessons 数据 URL：同域 /api/lessons（WORKER_BASE 已切换为同域模式） */
 function getLessonsUrl() {
   return WORKER_BASE ? `${WORKER_BASE}/api/lessons` : `/api/lessons`;
+}
+/** 返回 helpful vote API URL：同域 /api/helpful */
+function getHelpfulUrl() {
+  return WORKER_BASE ? `${WORKER_BASE}/api/helpful` : `/api/helpful`;
 }
 
 async function loadStats() {
