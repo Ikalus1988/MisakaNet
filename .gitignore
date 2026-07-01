@@ -46,3 +46,4 @@ workers/wrangler.api.jsonc
 .coverage
 .hydra/
 .worktrees/
+data/sag.db

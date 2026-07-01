@@ -15,7 +15,7 @@ class TestHelpfulButtonFrontend(unittest.TestCase):
     """Verify docs/index.html contains the helpful button implementation."""
 
     def setUp(self):
-        self.html = (REPO_ROOT / "docs" / "index.html").read_text()
+        self.html = (REPO_ROOT / "docs" / "index.html").read_text(encoding="utf-8")
 
     def test_helpful_button_css_exists(self):
         """CSS class .helpful-btn is defined."""
@@ -67,7 +67,7 @@ class TestHelpfulButtonWorker(unittest.TestCase):
     """Verify workers/register-proxy.js contains the helpful API endpoint."""
 
     def setUp(self):
-        self.js = (REPO_ROOT / "workers" / "register-proxy.js").read_text()
+        self.js = (REPO_ROOT / "workers" / "register-proxy.js").read_text(encoding="utf-8")
 
     def test_get_helpful_endpoint_exists(self):
         """GET /api/helpful returns count for a lesson_id."""
