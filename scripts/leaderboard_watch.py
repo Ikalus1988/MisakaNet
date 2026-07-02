@@ -32,6 +32,7 @@ DRY_RUN = "--dry-run" in sys.argv
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LESSONS_DIR = REPO_ROOT / "lessons"
 LEADERBOARD_FILE = REPO_ROOT / "data" / "leaderboard.json"
+META_FILE = REPO_ROOT / "data" / "leaderboard_meta.json"
 
 GRAPHQL_QUERY = """
 query($owner: String!, $repo: String!, $cursor: String) {
@@ -90,12 +91,6 @@ def compute_leaderboard():
 
     while page < 20:  # 最多 20 页 = 2000 commits
         page += 1
-        q = GRAPHQL_QUERY
-        if cursor:
-            q = q.replace('$cursor: String', '$cursor: String', 1)
-            q = q.replace('after: $cursor', f'after: "{cursor}"')
-
-        # 直接用 hardcoded query 避免占位符问题
         query = """
         query {
           repository(owner: "%s", name: "%s") {
@@ -212,6 +207,24 @@ def load_previous_leaderboard():
     return None
 
 
+def load_meta():
+    """读取 leaderboard_meta.json，返回上次榜首"""
+    if META_FILE.exists():
+        try:
+            return json.loads(META_FILE.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {}
+
+
+def save_meta(meta: dict):
+    """原子写入 leaderboard_meta.json"""
+    LEADERBOARD_FILE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = META_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    tmp.replace(META_FILE)
+
+
 def save_leaderboard(data):
     """保存排行榜快照"""
     LEADERBOARD_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -292,27 +305,61 @@ def main():
 
     # 2. 读取上次快照
     previous = load_previous_leaderboard()
+    meta = load_meta()
     if previous:
         print(f"  Previous #1: {previous[0]['login']} ({previous[0]['score']})")
     else:
         print("  No previous leaderboard found (first run)")
 
-    # 3. 对比
-    changed = previous is None or (
+    # 3. 对比 — 同时检查贡献榜和 bench 榜（通过 meta）
+    contrib_changed = previous is None or (
         previous[0]["login"] != current[0]["login"] and
         abs(previous[0]["score"] - current[0]["score"]) > 0.5
     )
 
-    if changed:
+    bench_top_login = meta.get("top_agent", "")
+    bench_top_score = meta.get("top_score", 0)
+    bench_top = {"login": bench_top_login, "score": bench_top_score} if bench_top_login else None
+
+    # Also check if bench leaderboard #1 changed via gen_leaderboard.py output
+    bench_leaderboard_file = REPO_ROOT / "data" / "bench_leaderboard.json"
+    bench_leaderboard = None
+    if bench_leaderboard_file.exists():
+        try:
+            bl = json.loads(bench_leaderboard_file.read_text(encoding="utf-8"))
+            if bl.get("leaderboard"):
+                top_entry = bl["leaderboard"][0]
+                bench_top_login = top_entry["agent"]
+                bench_top_score = top_entry["passed"]
+                bench_top = {"login": bench_top_login, "score": bench_top_score}
+                prev_bench_top = meta.get("top_agent", "")
+                if prev_bench_top and prev_bench_top != bench_top_login:
+                    print(f"\n🔔 Bench leaderboard #1 changed: {prev_bench_top} → {bench_top_login}")
+                    bench_leaderboard = bl["leaderboard"]
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    if contrib_changed or bench_leaderboard:
         print(f"\n🔔 Leaderboard changed! Creating notification...")
         old_top = previous[0] if previous else None
         new_top = current[0]
         create_notification_issue(new_top, old_top, current)
+        if bench_leaderboard:
+            print(f"  Bench #1: {bench_top_login} ({bench_top_score} tasks)")
     else:
         print(f"\n✅ Leaderboard unchanged. No notification needed.")
 
     # 4. 保存新快照
     save_leaderboard(current)
+
+    # 5. 更新 meta（记录当前榜首，供下次对比）
+    if bench_top:
+        meta["top_agent"] = bench_top["login"]
+        meta["top_score"] = bench_top["score"]
+        meta["updated_at"] = datetime.now(timezone.utc).isoformat()
+        save_meta(meta)
+        print(f"  Meta saved to {META_FILE}")
+
     print("\nDone.")
 
 

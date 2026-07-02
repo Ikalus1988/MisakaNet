@@ -4,6 +4,7 @@
 读取 bench_results/*.json 聚合各 Agent 的跑分数据，生成：
   1. data/bench_leaderboard.json — 天梯榜数据（供 misakanet.org 渲染）
   2. Reputation Card 文本摘要（每个 Agent 一张）
+  3. data/leaderboard_meta.json — 记录当前榜首，用于 #1 变化检测
 
 用法:
     python3 scripts/gen_leaderboard.py               # 全量生成
@@ -20,6 +21,7 @@ REPO = Path(__file__).resolve().parent.parent
 RESULTS_DIR = REPO / "bench_results"
 OUTPUT = REPO / "data" / "bench_leaderboard.json"
 OUTPUT_DIR = OUTPUT.parent
+META_FILE = REPO / "data" / "leaderboard_meta.json"
 
 
 def load_all_results() -> list[dict]:
@@ -122,6 +124,24 @@ def generate_reputation_card(agent: dict) -> str:
     )
 
 
+def load_meta() -> dict:
+    """读取 leaderboard_meta.json，记录上次的榜首。"""
+    if META_FILE.exists():
+        try:
+            return json.loads(META_FILE.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {}
+
+
+def save_meta(meta: dict):
+    """原子写入 leaderboard_meta.json。"""
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = META_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    tmp.replace(META_FILE)
+
+
 def main():
     dry_run = "--dry-run" in sys.argv
     top_n = None
@@ -192,6 +212,24 @@ def main():
 
     if top_n is None and len(leaderboard) > 10:
         print(f"  ... +{len(leaderboard) - 10} more")
+
+    # --- #1 change detection & meta tracking ---
+    if leaderboard:
+        current_top = leaderboard[0]
+        meta = load_meta()
+        previous_top_agent = meta.get("top_agent", "")
+        previous_top_score = meta.get("top_score", 0)
+
+        if previous_top_agent and previous_top_agent != current_top["agent"]:
+            # #1 changed — print notification for caller (leaderboard_watch.py)
+            print(f"\n🔔 Leaderboard #1 changed: {previous_top_agent} → {current_top['agent']}")
+
+        meta["top_agent"] = current_top["agent"]
+        meta["top_score"] = current_top["passed"]
+        meta["updated_at"] = datetime.now(timezone.utc).isoformat()
+        meta["total_agents"] = len(leaderboard)
+        save_meta(meta)
+        print(f"   Meta saved to {META_FILE}")
 
 
 if __name__ == "__main__":
