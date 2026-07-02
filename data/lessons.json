@@ -1,5 +1,14 @@
 [
   {
+    "id": "LESSON_QUALITY_SCORING",
+    "title": "LESSON_QUALITY_SCORING",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "> 入库门槛：75 分（满分 100）",
+    "url": "lessons/LESSON_QUALITY_SCORING.md",
+    "updated": ""
+  },
+  {
     "id": "TEMPLATE",
     "title": "<English Title>",
     "domain": "general",
@@ -464,28 +473,55 @@
   },
   {
     "id": "agent-manual-update-timeout",
-    "title": "Agent 手动Update步骤（update Timeout Handling）",
-    "domain": "contrib",
+    "title": "agent-manual-update-timeout",
+    "domain": "uncategorized",
     "tags": [],
-    "summary": "---{\"title\": \"Agent 手动Update步骤（update Timeout Handling）\", \"domain\": \"devops\", \"source\": \"bootstrap\", \"status\": \"draft\", ...",
+    "summary": "{\"title\": \"Agent 手动Update步骤（update Timeout Handling）\", \"domain\": \"devops\", \"source\": \"bootstrap\", \"status\": \"published\",...",
     "url": "lessons/contrib/agent-manual-update-timeout.md",
     "updated": ""
   },
   {
-    "id": "agent-state-database-lock-cleanup",
-    "title": "Agent State Database Lock Issues — Cleanup Protocol",
-    "domain": "contrib",
+    "id": "agent-memory-extractor-timing",
+    "title": "agent-memory-extractor-timing",
+    "domain": "uncategorized",
     "tags": [],
-    "summary": "1. Follow the solution steps in order",
+    "summary": "{\"title\": \"Agent Memory Extractor Timing — Eager vs Lazy with Implementation\", \"domain\": \"agent\", \"subdomain\": \"memory\",...",
+    "url": "lessons/contrib/agent-memory-extractor-timing.md",
+    "updated": ""
+  },
+  {
+    "id": "agent-memory-three-index-architecture",
+    "title": "agent-memory-three-index-architecture",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Agent Memory Three-Index Architecture on Elasticsearch\", \"domain\": \"agent\", \"subdomain\": \"memory\", \"tags\": [\"...",
+    "url": "lessons/contrib/agent-memory-three-index-architecture.md",
+    "updated": ""
+  },
+  {
+    "id": "agent-reach-multi-platform-scraper",
+    "title": "agent-reach-multi-platform-scraper",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Agent-Reach — Multi-Platform Internet Access for AI Agents\", \"domain\": \"agent\", \"subdomain\": \"tooling\", \"tags...",
+    "url": "lessons/contrib/agent-reach-multi-platform-scraper.md",
+    "updated": ""
+  },
+  {
+    "id": "agent-state-database-lock-cleanup",
+    "title": "agent-state-database-lock-cleanup",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Agent State Database Lock Issues — Cleanup Protocol\", \"domain\": \"devops\", \"source\": \"hermes_wsl2\", \"status\": ...",
     "url": "lessons/contrib/agent-state-database-lock-cleanup.md",
     "updated": ""
   },
   {
     "id": "agent-write-file-sandbox-worktree-path-breakage",
-    "title": "agent write file sandbox worktree path breakage",
-    "domain": "contrib",
+    "title": "agent-write-file-sandbox-worktree-path-breakage",
+    "domain": "uncategorized",
     "tags": [],
-    "summary": "在对项目进行代码修改的过程中，使用 Agent 模式操作。操作环境为 WSL (Windows Subsystem for Linux)，仓库使用 worktree 管理。",
+    "summary": "{\"title\": \"Agent Write File 写入不落地 + Worktree Git 链接路径断裂\", \"domain\": \"devops\", \"source\": \"hermes_wsl2\", \"status\": \"publis...",
     "url": "lessons/contrib/agent-write-file-sandbox-worktree-path-breakage.md",
     "updated": ""
   },
@@ -692,29 +728,74 @@
     "updated": ""
   },
   {
-    "id": "fanuc-kl-err-abort-vs-err-pause",
-    "title": "fanuc kl err abort vs err pause",
-    "domain": "contrib",
+    "id": "fanuc-auto-abort-on-fault-restart",
+    "title": "fanuc-auto-abort-on-fault-restart",
+    "domain": "uncategorized",
     "tags": [],
-    "summary": "IPC 通信错误时未区分 ERR_ABORT 和 ERR_PAUSE，导致程序号丢失。",
+    "summary": "{\"title\": \"FANUC Auto Abort on Fault — Restart $SHELL_WRK Program\", \"domain\": \"fanuc\", \"subdomain\": \"error-handling\", \"t...",
+    "url": "lessons/contrib/fanuc-auto-abort-on-fault-restart.md",
+    "updated": ""
+  },
+  {
+    "id": "fanuc-do-not-found-in-program-reference-position",
+    "title": "fanuc-do-not-found-in-program-reference-position",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"FANUC DO Not Found in Program — Check Reference Position\", \"domain\": \"fanuc\", \"subdomain\": \"troubleshooting\",...",
+    "url": "lessons/contrib/fanuc-do-not-found-in-program-reference-position.md",
+    "updated": ""
+  },
+  {
+    "id": "fanuc-intp-102-detect-joint-olp-whitespace",
+    "title": "fanuc-intp-102-detect-joint-olp-whitespace",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"FANUC INTP-102 DETECT JOINT — OLP Whitespace Bug\", \"domain\": \"fanuc\", \"subdomain\": \"olp\", \"tags\": [\"intp-102\"...",
+    "url": "lessons/contrib/fanuc-intp-102-detect-joint-olp-whitespace.md",
+    "updated": ""
+  },
+  {
+    "id": "fanuc-io-marker-m-instruction",
+    "title": "fanuc-io-marker-m-instruction",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"FANUC IO Marker M[] Instruction — Background Logic Alternative\", \"domain\": \"fanuc\", \"subdomain\": \"tp-programm...",
+    "url": "lessons/contrib/fanuc-io-marker-m-instruction.md",
+    "updated": ""
+  },
+  {
+    "id": "fanuc-kl-err-abort-vs-err-pause",
+    "title": "fanuc-kl-err-abort-vs-err-pause",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异\", \"domain\": \"fanuc\", \"subdomain\": \"error-handling\", \"source\": \"bootstra...",
     "url": "lessons/contrib/fanuc-kl-err-abort-vs-err-pause.md",
     "updated": ""
   },
   {
     "id": "fanuc-kl-mm-module-h-no-routine",
-    "title": "fanuc kl mm module h no routine",
-    "domain": "contrib",
+    "title": "fanuc-kl-mm-module-h-no-routine",
+    "domain": "uncategorized",
     "tags": [],
-    "summary": "mm_module_h.kl（头文件）末尾有 `ROUTINE Check_Status(params) FROM MM_MODULE`（带参数版），导致 MM_MODULE.kl 中同名 routine 报\"already defined...",
+    "summary": "{\"title\": \"FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明\", \"domain\": \"fanuc\", \"subdomain\": \"kl-modules\", \"source\": \"bootstrap\",...",
     "url": "lessons/contrib/fanuc-kl-mm-module-h-no-routine.md",
     "updated": ""
   },
   {
-    "id": "fanuc-r-2000ic-retrieval-fix",
-    "title": "fanuc r 2000ic retrieval fix",
-    "domain": "contrib",
+    "id": "fanuc-profinet-32bit-real-value-transfer",
+    "title": "fanuc-profinet-32bit-real-value-transfer",
+    "domain": "uncategorized",
     "tags": [],
-    "summary": "---{\"created\": \"2026-04-30 08:50 UTC\", \"domain\": \"rag\", \"source\": \"hermes_wsl\", \"status\": \"published\", \"tags\": \"\", \"titl...",
+    "summary": "{\"title\": \"FANUC Profinet 32-bit Real Value Transfer Without KAREL\", \"domain\": \"fanuc\", \"subdomain\": \"profinet\", \"tags\":...",
+    "url": "lessons/contrib/fanuc-profinet-32bit-real-value-transfer.md",
+    "updated": ""
+  },
+  {
+    "id": "fanuc-r-2000ic-retrieval-fix",
+    "title": "fanuc-r-2000ic-retrieval-fix",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"created\": \"2026-04-30 08:50 UTC\", \"domain\": \"rag\", \"source\": \"hermes_wsl\", \"status\": \"published\", \"tags\": \"\", \"title\":...",
     "url": "lessons/contrib/fanuc-r-2000ic-retrieval-fix.md",
     "updated": ""
   },
@@ -878,6 +959,24 @@
     "tags": [],
     "summary": "---{\"title\": \"Gateway 进程挂死未崩溃 — watchdog 自动Recovery\", \"domain\": \"devops\", \"source\": \"bootstrap\", \"status\": \"published\", ...",
     "url": "lessons/contrib/gateway-hang-watchdog-recovery.md",
+    "updated": ""
+  },
+  {
+    "id": "gfw-tls-sni-block-pattern",
+    "title": "gfw-tls-sni-block-pattern",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"GFW TLS SNI Block Pattern — Why Tool-Layer Solutions Fail\", \"domain\": \"ops\", \"subdomain\": \"network\", \"tags\": ...",
+    "url": "lessons/contrib/gfw-tls-sni-block-pattern.md",
+    "updated": ""
+  },
+  {
+    "id": "ghidra-mcp-server-reverse-engineering",
+    "title": "ghidra-mcp-server-reverse-engineering",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Ghidra MCP Server — AI-Assisted Reverse Engineering\", \"domain\": \"mcp\", \"subdomain\": \"reverse-engineering\", \"t...",
+    "url": "lessons/contrib/ghidra-mcp-server-reverse-engineering.md",
     "updated": ""
   },
   {
@@ -1047,12 +1146,165 @@
     "updated": ""
   },
   {
-    "id": "lesson-management-standardization",
-    "title": "Lesson Management Standardization — Naming, Content Sanitization, and Automated Submission Pipeline",
-    "domain": "contrib",
+    "id": "lesson-10-microservices-latency-math",
+    "title": "lesson-10-microservices-latency-math",
+    "domain": "uncategorized",
     "tags": [],
-    "summary": "Over 180 lessons accumulated in the MisakaNet knowledge base with significant quality and consistency issues:",
+    "summary": "{\"title\": \"微服务延迟成本分析 — 何时不该用微服务\", \"domain\": \"ops\", \"subdomain\": \"architecture\", \"tags\": [\"microservices\", \"architecture\"...",
+    "url": "lessons/contrib/lesson-10-microservices-latency-math.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-11-github-commit-signing",
+    "title": "lesson-11-github-commit-signing",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"GitHub Commit Signing — GPG 防止提交伪造\", \"domain\": \"ops\", \"subdomain\": \"security\", \"tags\": [\"git\", \"github\", \"gpg...",
+    "url": "lessons/contrib/lesson-11-github-commit-signing.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-13-aws-lambda-microvms",
+    "title": "lesson-13-aws-lambda-microvms",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"AWS Lambda MicroVMs — 隔离沙箱与 Firecracker\", \"domain\": \"ops\", \"subdomain\": \"serverless\", \"tags\": [\"aws\", \"lambda...",
+    "url": "lessons/contrib/lesson-13-aws-lambda-microvms.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-14-api-pagination-design",
+    "title": "lesson-14-api-pagination-design",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"API 分页设计 — Cursor vs Offset vs Keyset\", \"domain\": \"ops\", \"subdomain\": \"api\", \"tags\": [\"api\", \"pagination\", \"c...",
+    "url": "lessons/contrib/lesson-14-api-pagination-design.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-15-cloudflare-workflows-durable",
+    "title": "lesson-15-cloudflare-workflows-durable",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Cloudflare Workflows — 持久化多步骤执行\", \"domain\": \"ops\", \"subdomain\": \"workflow\", \"tags\": [\"cloudflare\", \"workflows...",
+    "url": "lessons/contrib/lesson-15-cloudflare-workflows-durable.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-16-aws-ecs-high-resolution-metrics",
+    "title": "lesson-16-aws-ecs-high-resolution-metrics",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"AWS ECS 高分辨率指标 — 更快的自动扩缩容\", \"domain\": \"ops\", \"subdomain\": \"kubernetes\", \"tags\": [\"aws\", \"ecs\", \"metrics\", \"au...",
+    "url": "lessons/contrib/lesson-16-aws-ecs-high-resolution-metrics.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-17-segmentfault-mcp-standardization",
+    "title": "lesson-17-segmentfault-mcp-standardization",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"MCP — AI Agent 工具调用标准化协议\", \"domain\": \"mcp\", \"subdomain\": \"standardization\", \"tags\": [\"mcp\", \"agent\", \"tool-ca...",
+    "url": "lessons/contrib/lesson-17-segmentfault-mcp-standardization.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-18-database-performance-indexing",
+    "title": "lesson-18-database-performance-indexing",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"数据库性能 — 索引与查询优化实践\", \"domain\": \"ops\", \"subdomain\": \"database\", \"tags\": [\"database\", \"postgresql\", \"indexing\", ...",
+    "url": "lessons/contrib/lesson-18-database-performance-indexing.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-19-grpc-openapi-rest-comparison",
+    "title": "lesson-19-grpc-openapi-rest-comparison",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"gRPC vs OpenAPI vs REST — API 协议选择指南\", \"domain\": \"ops\", \"subdomain\": \"api\", \"tags\": [\"grpc\", \"openapi\", \"rest...",
+    "url": "lessons/contrib/lesson-19-grpc-openapi-rest-comparison.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-20-api-design-principles",
+    "title": "lesson-20-api-design-principles",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"API 设计原则 — 无抽象、一致性、幂等性\", \"domain\": \"ops\", \"subdomain\": \"api\", \"tags\": [\"api\", \"design\", \"principles\", \"rest\",...",
+    "url": "lessons/contrib/lesson-20-api-design-principles.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-9-redis-postgresql-replacement",
+    "title": "lesson-9-redis-postgresql-replacement",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Redis → PostgreSQL 替换 — 缓存/PubSub/队列统一\", \"domain\": \"ops\", \"subdomain\": \"database\", \"tags\": [\"redis\", \"postgre...",
+    "url": "lessons/contrib/lesson-9-redis-postgresql-replacement.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-management-standardization",
+    "title": "lesson-management-standardization",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Lesson Management Standardization — Naming, Content Sanitization, and Automated Submission Pipeline\", \"domain...",
     "url": "lessons/contrib/lesson-management-standardization.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-review-3-devops-platform-engineering",
+    "title": "lesson-review-3-devops-platform-engineering",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"DevOps Platform Engineering — Golden Paths to Reduce Cognitive Load\", \"domain\": \"ops\", \"subdomain\": \"devops\",...",
+    "url": "lessons/contrib/lesson-review-3-devops-platform-engineering.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-review-4-mcp-bedrock-integration",
+    "title": "lesson-review-4-mcp-bedrock-integration",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"MCP 协议 + Bedrock 实战 — Agent 外部工具调用标准化\", \"domain\": \"mcp\", \"subdomain\": \"integration\", \"tags\": [\"mcp\", \"bedrock...",
+    "url": "lessons/contrib/lesson-review-4-mcp-bedrock-integration.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-review-5-eks-version-rollback",
+    "title": "lesson-review-5-eks-version-rollback",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"EKS Kubernetes 版本回滚 — 安全升级集群\", \"domain\": \"ops\", \"subdomain\": \"kubernetes\", \"tags\": [\"kubernetes\", \"eks\", \"aws...",
+    "url": "lessons/contrib/lesson-review-5-eks-version-rollback.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-review-6-cloudflare-x402-monetization",
+    "title": "lesson-review-6-cloudflare-x402-monetization",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Cloudflare Monetization Gateway — x402 API 支付协议\", \"domain\": \"ops\", \"subdomain\": \"api\", \"tags\": [\"cloudflare\",...",
+    "url": "lessons/contrib/lesson-review-6-cloudflare-x402-monetization.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-review-7-cloudflare-saga-rollbacks",
+    "title": "lesson-review-7-cloudflare-saga-rollbacks",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Cloudflare Workflows Saga Rollback — Durable Multi-Step Compensation\", \"domain\": \"ops\", \"subdomain\": \"workflo...",
+    "url": "lessons/contrib/lesson-review-7-cloudflare-saga-rollbacks.md",
+    "updated": ""
+  },
+  {
+    "id": "lesson-review-8-cloudflare-ai-traffic-options",
+    "title": "lesson-review-8-cloudflare-ai-traffic-options",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Cloudflare AI Traffic Options — Content Monetization for the Agentic Internet\", \"domain\": \"ops\", \"subdomain\":...",
+    "url": "lessons/contrib/lesson-review-8-cloudflare-ai-traffic-options.md",
     "updated": ""
   },
   {
@@ -1071,6 +1323,15 @@
     "tags": [],
     "summary": "[assistant] 还有一处需要修正：image block 的描述不准确——它返回了有效的 block_id（blocks_created=1），只是 token 被清空导致图片不显示。",
     "url": "lessons/contrib/lessons-md-fix-heading-block-type.md",
+    "updated": ""
+  },
+  {
+    "id": "mcp-context-mode-98-reduction",
+    "title": "mcp-context-mode-98-reduction",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"MCP Context Mode — 98% Context Window Reduction for Claude Code\", \"domain\": \"mcp\", \"subdomain\": \"optimization...",
+    "url": "lessons/contrib/mcp-context-mode-98-reduction.md",
     "updated": ""
   },
   {
@@ -1116,6 +1377,15 @@
     "tags": [],
     "summary": "---{\"title\": \"多模型Switch脚本模式 — 双 Agent 模型管理\", \"confidence\": \"0.7\", \"created\": \"2026-05-02\", \"domain\": \"devops\", \"source\":...",
     "url": "lessons/contrib/model-switch-script-pattern.md",
+    "updated": ""
+  },
+  {
+    "id": "multi-forum-scraping-architecture",
+    "title": "multi-forum-scraping-architecture",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Multi-Forum Scraping Architecture — API vs Playwright\", \"domain\": \"ops\", \"subdomain\": \"scraping\", \"tags\": [\"s...",
+    "url": "lessons/contrib/multi-forum-scraping-architecture.md",
     "updated": ""
   },
   {
@@ -1215,6 +1485,15 @@
     "tags": [],
     "summary": "---{\"title\": \"pip install Network Timeout / SSL ErrorFix\", \"domain\": \"devops\", \"tags\": [\"pip\", \"network\", \"SSL\", \"timeou...",
     "url": "lessons/contrib/pip-install-timeout-ssl.md",
+    "updated": ""
+  },
+  {
+    "id": "private-agent-memory-fallacy",
+    "title": "private-agent-memory-fallacy",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"The Private Agent Memory Fallacy — Why Portable Memory Wallets Fail\", \"domain\": \"agent\", \"subdomain\": \"memory...",
+    "url": "lessons/contrib/private-agent-memory-fallacy.md",
     "updated": ""
   },
   {
@@ -1388,6 +1667,15 @@
     "updated": "2026-05-03"
   },
   {
+    "id": "rdt-cli-reddit-terminal",
+    "title": "rdt-cli-reddit-terminal",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"rdt-cli — Reddit in Your Terminal (Reverse-Engineered API)\", \"domain\": \"ops\", \"subdomain\": \"scraping\", \"tags\"...",
+    "url": "lessons/contrib/rdt-cli-reddit-terminal.md",
+    "updated": ""
+  },
+  {
     "id": "readme-seven-traps-fix-checklist",
     "title": "开源项目 README Optimization — 7 个常见Pitfalls与Fix Checklist",
     "domain": "contrib",
@@ -1412,6 +1700,51 @@
     "tags": [],
     "summary": "MisakaNet 节点注册需要一条对国内外用户都通畅的链路。最初 Worker 既创建 Issue 又读写 counter.json，导致 Worker 和 register.yml 双重自增、竞态、Worker 权限过大等问题。",
     "url": "lessons/contrib/registration-chain-worker-fallback.md",
+    "updated": ""
+  },
+  {
+    "id": "scrapling-installation-and-usage",
+    "title": "scrapling-installation-and-usage",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Scrapling — Web Scraping Library with Anti-Detection\", \"domain\": \"ops\", \"subdomain\": \"scraping\", \"tags\": [\"sc...",
+    "url": "lessons/contrib/scrapling-installation-and-usage.md",
+    "updated": ""
+  },
+  {
+    "id": "session-lesson-1-content-quality-scoring",
+    "title": "session-lesson-1-content-quality-scoring",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Content Quality Scoring System — Automated Lesson Evaluation\", \"domain\": \"ops\", \"subdomain\": \"automation\", \"t...",
+    "url": "lessons/contrib/session-lesson-1-content-quality-scoring.md",
+    "updated": ""
+  },
+  {
+    "id": "session-lesson-2-forum-accessibility-testing",
+    "title": "session-lesson-2-forum-accessibility-testing",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Forum Accessibility Testing — Systematic Reachability Check\", \"domain\": \"ops\", \"subdomain\": \"scraping\", \"tags...",
+    "url": "lessons/contrib/session-lesson-2-forum-accessibility-testing.md",
+    "updated": ""
+  },
+  {
+    "id": "session-lesson-3-lobsters-json-api",
+    "title": "session-lesson-3-lobsters-json-api",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Lobsters JSON API — Structured Tech Forum Scraping\", \"domain\": \"ops\", \"subdomain\": \"scraping\", \"tags\": [\"lobs...",
+    "url": "lessons/contrib/session-lesson-3-lobsters-json-api.md",
+    "updated": ""
+  },
+  {
+    "id": "session-lesson-4-playwright-forum-selectors",
+    "title": "session-lesson-4-playwright-forum-selectors",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"Playwright Forum Selectors — WoltLab/IPS/Common Patterns\", \"domain\": \"ops\", \"subdomain\": \"scraping\", \"tags\": ...",
+    "url": "lessons/contrib/session-lesson-4-playwright-forum-selectors.md",
     "updated": ""
   },
   {
@@ -1592,6 +1925,15 @@
     "tags": [],
     "summary": "wxauto 不够稳定时，考虑切换到 wcferry (WeChatFerry) 方案。但安装后无法 hook 微信进程。",
     "url": "lessons/contrib/wcferry-wechat-version-lock.md",
+    "updated": ""
+  },
+  {
+    "id": "webmcp-chrome-ai-agent-protocol",
+    "title": "webmcp-chrome-ai-agent-protocol",
+    "domain": "uncategorized",
+    "tags": [],
+    "summary": "{\"title\": \"webMCP — Chrome's Experimental Protocol for AI Agents\", \"domain\": \"mcp\", \"subdomain\": \"web\", \"tags\": [\"webmcp...",
+    "url": "lessons/contrib/webmcp-chrome-ai-agent-protocol.md",
     "updated": ""
   },
   {
