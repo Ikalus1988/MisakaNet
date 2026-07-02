@@ -4,13 +4,34 @@ Run with: python3 -m pytest tests/test_ci_self_heal.py -v
 """
 import json
 import os
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
 
 class TestRetryBackoff(unittest.TestCase):
     """Test retry action behavior via subprocess."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.bash = shutil.which("bash")
+        if cls.bash:
+            probe = subprocess.run(
+                [cls.bash, "-c", "echo ok"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=10,
+            )
+            if probe.returncode != 0 or "ok" not in (probe.stdout or ""):
+                cls.bash = None
+
+    def setUp(self):
+        if not self.bash:
+            self.skipTest("requires a usable POSIX bash")
 
     def _run_retry(self, command, max_attempts=3, backoff="exponential", base_seconds=1, retry_codes=""):
         """Helper: run a command through retry logic."""
@@ -57,7 +78,14 @@ class TestRetryBackoff(unittest.TestCase):
         echo "attempts=$ATTEMPT exit=$FINAL_CODE"
         exit $FINAL_CODE
         ''' % (max_attempts, backoff, base_seconds, retry_codes, __import__('shlex').quote(command))
-        result = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=30)
+        result = subprocess.run(
+            [self.bash, "-c", script],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+        )
         return result
 
     def test_succeeds_after_2_failures(self):
@@ -97,14 +125,14 @@ class TestFailureClassification(unittest.TestCase):
 
     def _classify(self, log_content, exit_code="1"):
         """Helper: write log to temp file and run classification."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".log", delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".log", encoding="utf-8", delete=False) as f:
             f.write(log_content)
             log_file = f.name
 
         try:
             py_code = (
                 "import sys\n"
-                f"with open('{log_file}') as f:\n"
+                f"with open({json.dumps(log_file)}, encoding='utf-8') as f:\n"
                 "    log = f.read().lower()\n"
                 "patterns = {\n"
                 "    'network_timeout': ['timeout', 'timed out', 'connection refused', 'ssl', 'dns'],\n"
@@ -120,7 +148,7 @@ class TestFailureClassification(unittest.TestCase):
                 "        break\n"
                 "print(result)\n"
             )
-            result = subprocess.run(["python3", "-c", py_code], capture_output=True, text=True)
+            result = subprocess.run([sys.executable, "-c", py_code], capture_output=True, text=True)
             return result.stdout.strip()
         finally:
             os.unlink(log_file)

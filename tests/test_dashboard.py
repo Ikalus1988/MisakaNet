@@ -14,7 +14,8 @@ class TestTelemetryDashboard(unittest.TestCase):
     def test_dashboard_serves_telemetry_html(self):
         with tempfile.TemporaryDirectory() as tmp:
             telemetry_path = Path(tmp) / "telemetry.db"
-            with sqlite3.connect(telemetry_path) as conn:
+            conn = sqlite3.connect(telemetry_path)
+            try:
                 conn.execute(
                     """
                     CREATE TABLE search_telemetry (
@@ -37,6 +38,9 @@ class TestTelemetryDashboard(unittest.TestCase):
                         ("<script>unsafe</script>", time.time(), 30.0, 1),
                     ],
                 )
+                conn.commit()
+            finally:
+                conn.close()
 
             server = create_server(port=0, telemetry_path=telemetry_path)
             self.assertIsInstance(server, ThreadingHTTPServer)

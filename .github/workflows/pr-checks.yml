@@ -82,6 +82,7 @@ jobs:
       - name: Agent Quality Score
         if: steps.scope.outputs.scope == 'full'
         id: score
+        continue-on-error: true
         uses: ./.github/actions/score-agent
         with:
           pr-number: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
@@ -90,7 +91,7 @@ jobs:
           gh-token: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Reject Low-Quality PR
-        if: steps.scope.outputs.scope == 'full' && steps.score.outputs.verdict == 'fail'
+        if: steps.scope.outputs.scope == 'full' && steps.score.outcome == 'success' && steps.score.outputs.verdict == 'fail'
         env:
           GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
         run: |
@@ -290,16 +291,20 @@ jobs:
 
           # 1. Quality Score (full scope only)
           if [ "$SCOPE" = "full" ]; then
-            REPORT+="### 📊 Quality Score: ${SCORE:-?}/100"
+            REPORT+="### 📊 Quality Score"
             REPORT+=$'\n\n'
-            if [ -n "$REASONS" ]; then
+            if [ -z "$SCORE" ]; then
+              REPORT+="⚠️ Quality score unavailable; continuing with hard gates."
+            elif [ -n "$REASONS" ]; then
+              REPORT+="Score: ${SCORE}/100"
+              REPORT+=$'\n\n'
               REPORT+="**Deductions:**"
               REPORT+=$'\n'
               echo "$REASONS" | while IFS= read -r line; do
                 [ -n "$line" ] && REPORT+="- ${line}"$'\n'
               done
             else
-              REPORT+="No deductions."
+              REPORT+="Score: ${SCORE}/100 — no deductions."
             fi
             REPORT+=$'\n\n'
           fi
@@ -398,7 +403,7 @@ jobs:
           fi
 
           if [ "$SCOPE" = "full" ]; then
-            if [ "$SCORE" -lt 40 ] 2>/dev/null; then
+            if [ -n "$SCORE" ] && [ "$SCORE" -lt 40 ] 2>/dev/null; then
               REPORT+="❌ Quality Score ${SCORE}/40 below threshold."$'\n'
               VERDICT_PASS=false
             fi

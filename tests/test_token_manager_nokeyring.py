@@ -90,7 +90,15 @@ class TestTokenManagerNoKeyring(unittest.TestCase):
 
             self.assertTrue(os.path.exists(self.token_path))
             mode = os.stat(self.token_path).st_mode & 0o777
-            self.assertEqual(mode, 0o600, f"Expected 0600, got {oct(mode)}")
+            if sys.platform == "win32":
+                self.assertWarnsRegex(
+                    UserWarning,
+                    "cannot guarantee POSIX 0600",
+                    tm._restrict_plaintext_file,
+                    self.token_path,
+                )
+            else:
+                self.assertEqual(mode, 0o600, f"Expected 0600, got {oct(mode)}")
 
             with open(self.token_path) as f:
                 saved = json.load(f)

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 import json
 import os
+import warnings
 
 
 class TokenManager:
@@ -45,7 +46,6 @@ class TokenManager:
         # Fallback: plaintext JSON file with owner-only permissions (chmod 600)
         # WARNING: This is NOT encrypted. Do NOT rely on this for high-security environments.
         # On shared hosts or compromised machines, any process running as this user can read the file.
-        import warnings
         warnings.warn(
             "Master token fallback: storing tokens as plaintext JSON in ~/.hermes-tokens. "
             "This is NOT encrypted. For production, ensure keyring is available or use a secrets manager."
@@ -55,10 +55,26 @@ class TokenManager:
             with open(token_path, 'r') as f:
                 self._tokens = json.load(f)
             self._cleanup_expired()
-            # Ensure file is only readable by owner
-            os.chmod(token_path, 0o600)
+            self._restrict_plaintext_file(token_path)
         except FileNotFoundError:
             self._tokens = {}
+
+    def _restrict_plaintext_file(self, token_path: str) -> bool:
+        """Best-effort owner-only permissions for the plaintext fallback file.
+
+        Returns True when POSIX mode bits confirm 0600. On Windows, Python's
+        chmod/stat mode bits do not express owner-only ACLs, so callers must
+        treat this fallback as weaker than keyring-backed storage.
+        """
+        if os.name == "nt":
+            warnings.warn(
+                "Master token fallback on Windows cannot guarantee POSIX 0600 "
+                "owner-only permissions. Use keyring or a secrets manager for production."
+            )
+            return False
+
+        os.chmod(token_path, 0o600)
+        return (os.stat(token_path).st_mode & 0o777) == 0o600
 
     def _save_tokens(self):
         """Save tokens — use keyring if available, else plaintext JSON fallback (NOT encrypted)"""
@@ -76,7 +92,7 @@ class TokenManager:
         os.makedirs(os.path.dirname(token_path), exist_ok=True)
         with open(token_path, 'w') as f:
             json.dump(self._tokens, f, default=str)
-        os.chmod(token_path, 0o600)
+        self._restrict_plaintext_file(token_path)
 
     def _cleanup_expired(self):
         """Remove expired tokens"""

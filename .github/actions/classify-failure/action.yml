@@ -28,87 +28,90 @@ runs:
         LOG_FILE="${{ inputs.log_file }}"
         EXIT_CODE="${{ inputs.exit_code }}"
 
-        CLASS=$(python3 -c "
-        import re, sys
+        export LOG_FILE EXIT_CODE
 
-        log = ''
-        try:
-            with open('$LOG_FILE', 'r') as f:
-                log = f.read()
-        except:
-            log = ''
+        CLASS=$(python3 <<'PY'
+import os
+import sys
 
-        exit_code = int('$EXIT_CODE') if '$EXIT_CODE'.isdigit() else 1
+log = ""
+try:
+    with open(os.environ.get("LOG_FILE", ""), encoding="utf-8", errors="replace") as f:
+        log = f.read()
+except OSError:
+    log = ""
 
-        # Network timeout patterns
-        if any(p in log.lower() for p in [
-            'timeout', 'timed out', 'connection refused', 'name resolution',
-            'ssl', 'tls', 'network', 'dns', 'errno', 'etimedout',
-            'econnrefused', 'econnreset', 'httperror', '502', '503', '504'
-        ]):
-            print('network_timeout')
-            sys.exit(0)
+exit_code_raw = os.environ.get("EXIT_CODE", "1")
+exit_code = int(exit_code_raw) if exit_code_raw.isdigit() else 1
+log_lower = log.lower()
 
-        # Permission denied patterns
-        if any(p in log.lower() for p in [
-            'permission denied', 'forbidden', '401', '403',
-            'authentication failed', 'token expired', 'unauthorized',
-            'secret', 'not allowed'
-        ]):
-            print('permission_denied')
-            sys.exit(0)
+if any(p in log_lower for p in [
+    "timeout", "timed out", "connection refused", "name resolution",
+    "ssl", "tls", "network", "dns", "errno", "etimedout",
+    "econnrefused", "econnreset", "httperror", "502", "503", "504",
+]):
+    print("network_timeout")
+    sys.exit(0)
 
-        # Race condition patterns
-        if any(p in log.lower() for p in [
-            'conflict', '409', 'race', 'concurrent',
-            'another process', 'locked', 'busy',
-            'already exists', 'duplicate'
-        ]):
-            print('race_condition')
-            sys.exit(0)
+if any(p in log_lower for p in [
+    "permission denied", "forbidden", "401", "403",
+    "authentication failed", "token expired", "unauthorized",
+    "secret", "not allowed",
+]):
+    print("permission_denied")
+    sys.exit(0)
 
-        # Flaky test patterns
-        if any(p in log.lower() for p in [
-            'flaky', 'intermittent', 'sometimes fails',
-            'passed on retry', 'random', 'unstable'
-        ]):
-            print('flaky_test')
-            sys.exit(0)
+if any(p in log_lower for p in [
+    "conflict", "409", "race", "concurrent",
+    "another process", "locked", "busy",
+    "already exists", "duplicate",
+]):
+    print("race_condition")
+    sys.exit(0)
 
-        # Test failures (likely flaky if retry helps)
-        if any(p in log.lower() for p in [
-            'assertionerror', 'assert', 'test failed',
-            'pytest', 'unittest', 'coverage'
-        ]):
-            print('flaky_test')
-            sys.exit(0)
+if any(p in log_lower for p in [
+    "flaky", "intermittent", "sometimes fails",
+    "passed on retry", "random", "unstable",
+]):
+    print("flaky_test")
+    sys.exit(0)
 
-        # Real bug patterns
-        if any(p in log.lower() for p in [
-            'syntaxerror', 'typeerror', 'nameerror', 'attributeerror',
-            'importerror', 'modulenotfounderror', 'keyerror', 'indexerror',
-            'valueerror', 'zerodivisionerror', 'segmentation fault',
-            'core dumped', 'fatal', 'panic'
-        ]):
-            print('real_bug')
-            sys.exit(0)
+if any(p in log_lower for p in [
+    "assertionerror", "assert", "test failed",
+    "pytest", "unittest", "coverage",
+]):
+    print("flaky_test")
+    sys.exit(0)
 
-        print('unknown')
-        ")
+if any(p in log_lower for p in [
+    "syntaxerror", "typeerror", "nameerror", "attributeerror",
+    "importerror", "modulenotfounderror", "keyerror", "indexerror",
+    "valueerror", "zerodivisionerror", "segmentation fault",
+    "core dumped", "fatal", "panic",
+]):
+    print("real_bug")
+    sys.exit(0)
+
+print("unknown")
+PY
+        )
+
 
         # Generate summary
-        SUMMARY=$(python3 -c "
-        log = ''
-        try:
-            with open('$LOG_FILE', 'r') as f:
-                lines = f.readlines()
-            # Get last 3 non-empty lines
-            relevant = [l.strip() for l in lines if l.strip()][-3:]
-            summary = ' | '.join(relevant)[:200]
-            print(summary if summary else 'No log content available')
-        except:
-            print('Could not read log file')
-        ")
+        SUMMARY=$(python3 <<'PY'
+import os
+
+try:
+    with open(os.environ.get("LOG_FILE", ""), encoding="utf-8", errors="replace") as f:
+        lines = f.readlines()
+    relevant = [line.strip() for line in lines if line.strip()][-3:]
+    summary = " | ".join(relevant)[:200]
+    print(summary if summary else "No log content available")
+except OSError:
+    print("Could not read log file")
+PY
+        )
+
 
         # Determine should_retry
         if [ "$CLASS" = "real_bug" ]; then

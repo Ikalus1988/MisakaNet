@@ -20,22 +20,28 @@ def _connect(telemetry_path: str | Path) -> sqlite3.Connection:
     path = Path(telemetry_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(path))
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS search_telemetry (
-            query TEXT,
-            timestamp REAL,
-            latency_ms REAL,
-            cache_hit INTEGER
+    try:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS search_telemetry (
+                query TEXT,
+                timestamp REAL,
+                latency_ms REAL,
+                cache_hit INTEGER
+            )
+            """
         )
-        """
-    )
-    return conn
+        conn.commit()
+        return conn
+    except Exception:
+        conn.close()
+        raise
 
 
 def read_dashboard_data(telemetry_path: str | Path = DEFAULT_TELEMETRY_PATH) -> dict[str, Any]:
     """Read summary metrics and recent rows from the telemetry database."""
-    with _connect(telemetry_path) as conn:
+    conn = _connect(telemetry_path)
+    try:
         total_searches = int(
             conn.execute("SELECT COUNT(*) FROM search_telemetry").fetchone()[0]
         )
@@ -62,6 +68,8 @@ def read_dashboard_data(telemetry_path: str | Path = DEFAULT_TELEMETRY_PATH) -> 
             LIMIT 20
             """
         ).fetchall()
+    finally:
+        conn.close()
 
     saved_time_ms = 0.0
     if hit_count and avg_hit_latency is not None and avg_miss_latency is not None:
@@ -83,7 +91,6 @@ def read_dashboard_data(telemetry_path: str | Path = DEFAULT_TELEMETRY_PATH) -> 
             for timestamp, query, latency_ms, cache_hit in recent_queries
         ],
     }
-
 
 def _format_timestamp(timestamp: float) -> str:
     if timestamp <= 0:

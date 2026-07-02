@@ -44,6 +44,8 @@ runs:
         BASE_SECONDS="${{ inputs.backoff_base_seconds }}"
         RETRY_CODES="${{ inputs.retry_on_exit_code }}"
         SHELL_CMD="${{ inputs.shell_override }}"
+        LOG_FILE="${GITHUB_WORKSPACE:-$PWD}/.retry-output.log"
+        : > "$LOG_FILE"
         ATTEMPT=0
         FINAL_CODE=0
 
@@ -51,12 +53,13 @@ runs:
           ATTEMPT=$((ATTEMPT + 1))
           echo "::group::Attempt $ATTEMPT/$MAX_ATTEMPTS"
 
-          # Run the command
-          $SHELL_CMD -c "${{ inputs.run }}"
-          EXIT_CODE=$?
+          # Run the command and preserve its output for downstream classification.
+          echo "Command: ${{ inputs.run }}" | tee -a "$LOG_FILE"
+          $SHELL_CMD -c "${{ inputs.run }}" 2>&1 | tee -a "$LOG_FILE"
+          EXIT_CODE=${PIPESTATUS[0]}
           FINAL_CODE=$EXIT_CODE
 
-          echo "Exit code: $EXIT_CODE"
+          echo "Exit code: $EXIT_CODE" | tee -a "$LOG_FILE"
           echo "::endgroup::"
 
           if [ $EXIT_CODE -eq 0 ]; then
