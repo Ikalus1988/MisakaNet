@@ -50,6 +50,9 @@ verification: "metadata-normalized"
 - [Scrapling — Web Scraping with Anti-Detection](contrib/scrapling-installation-and-usage.md) | ops | "scrapling", "curl-cffi", "anti-detection" | github.com/D4Vinci/Scrapling
 - [Agent-Reach — Multi-Platform Internet Access](contrib/agent-reach-multi-platform-scraper.md) | agent | "agent-reach", "scraping", "reddit", "twitter" | github.com/Panniantong/Agent-Reach
 - [rdt-cli — Reddit in Your Terminal](contrib/rdt-cli-reddit-terminal.md) | ops | "rdt-cli", "reddit", "scraping", "cli" | github.com/public-clis/rdt-cli
+- [MCP Context Mode — 98% Context Reduction](contrib/mcp-context-mode-98-reduction.md) | mcp | "mcp", "claude-code", "context-window", "optimization" | mksg.lu
+- [Ghidra MCP Server — AI Reverse Engineering](contrib/ghidra-mcp-server-reverse-engineering.md) | mcp | "mcp", "ghidra", "reverse-engineering", "security" | github.com/LaurieWired/GhidraMCP
+- [webMCP — Chrome AI Agent Protocol](contrib/webmcp-chrome-ai-agent-protocol.md) | mcp | "webmcp", "chrome", "ai-agents", "protocol" | dev.to
 - [FFmpeg 音频转码：必须用 libopus 而非 -format ogg](contrib/ffmpeg-audio-libopus-not-ogg.md) | audio | | hanged-man
 - [FReeLLMAPI Session Context Mixing - Cross-Thread Delivery](core/freellmapi-session-context-mixing-cross-thread-delivery.md) | agent-network | | hermes_wsl2
 - [Feishu 文件上传：file_type 必须用 opus](contrib/feishu-upload-file-type-opus.md) | feishu | | hanged-man
