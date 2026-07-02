@@ -35,6 +35,43 @@ verification: "metadata-normalized"
 - [FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异](contrib/fanuc-kl-err-abort-vs-err-pause.md) | fanuc | | bootstrap
 - [FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明](contrib/fanuc-kl-mm-module-h-no-routine.md) | fanuc | | bootstrap
 - [FANUC R-2000iC 检索混淆修复 — 关键词强制召回](contrib/fanuc-r-2000ic-retrieval-fix.md) | rag | | hermes_wsl
+- [FANUC Profinet 32-bit Real Value Transfer Without KAREL](contrib/fanuc-profinet-32bit-real-value-transfer.md) | fanuc | "profinet", "real-value", "32-bit", "gi-go", "plc-communication" | robot-forum.com
+- [FANUC INTP-102 DETECT JOINT — OLP Whitespace Bug](contrib/fanuc-intp-102-detect-joint-olp-whitespace.md) | fanuc | "intp-102", "detect-joint", "olp", "robodk", "whitespace" | robot-forum.com
+- [FANUC IO Marker M[] — Background Logic Alternative](contrib/fanuc-io-marker-m-instruction.md) | fanuc | "marker", "m-register", "handling-tool", "vass" | robot-forum.com
+- [FANUC DO Not Found in Program — Check Reference Position](contrib/fanuc-do-not-found-in-program-reference-position.md) | fanuc | "do", "reference-position", "background-logic" | robot-forum.com
+- [FANUC Auto Abort on Fault — Restart $SHELL_WRK Program](contrib/fanuc-auto-abort-on-fault-restart.md) | fanuc | "abort", "fault", "restart", "shell-wrk", "error-severity" | robot-forum.com
+- [Agent Memory Three-Index Architecture on Elasticsearch](contrib/agent-memory-three-index-architecture.md) | agent | "agent-memory", "elasticsearch", "episodic", "semantic", "procedural" | elastic.co
+- [Agent Memory Extractor Timing — Eager vs Lazy](contrib/agent-memory-extractor-timing.md) | agent | "agent-memory", "extractor", "timing", "token-efficiency" | brgsk.xyz
+- [Universal Memory Protocol (UMP)](contrib/ump-universal-memory-protocol.md) | agent | "ump", "memory-protocol", "interoperability", "mcp" | universalmemoryprotocol.io
+- [Agent Infrastructure — Unified Postgres (Ghost)](contrib/agent-infrastructure-unified-postgres.md) | agent | "postgres", "agent-infra", "memory", "sandbox" | dev.to
+- [The Private Agent Memory Fallacy](contrib/private-agent-memory-fallacy.md) | agent | "memory-wallet", "portable-memory", "privacy" | blog.getzep.com
+- [GFW TLS SNI Block Pattern](contrib/gfw-tls-sni-block-pattern.md) | ops | "gfw", "tls", "sni", "scraping", "proxy" | practical-experience
+- [Multi-Forum Scraping Architecture](contrib/multi-forum-scraping-architecture.md) | ops | "scraping", "playwright", "api", "forum" | practical-experience
+- [Scrapling — Web Scraping with Anti-Detection](contrib/scrapling-installation-and-usage.md) | ops | "scrapling", "curl-cffi", "anti-detection" | github.com/D4Vinci/Scrapling
+- [Agent-Reach — Multi-Platform Internet Access](contrib/agent-reach-multi-platform-scraper.md) | agent | "agent-reach", "scraping", "reddit", "twitter" | github.com/Panniantong/Agent-Reach
+- [rdt-cli — Reddit in Your Terminal](contrib/rdt-cli-reddit-terminal.md) | ops | "rdt-cli", "reddit", "scraping", "cli" | github.com/public-clis/rdt-cli
+- [MCP Context Mode — 98% Context Reduction](contrib/mcp-context-mode-98-reduction.md) | mcp | "mcp", "claude-code", "context-window", "optimization" | mksg.lu
+- [Ghidra MCP Server — AI Reverse Engineering](contrib/ghidra-mcp-server-reverse-engineering.md) | mcp | "mcp", "ghidra", "reverse-engineering", "security" | github.com/LaurieWired/GhidraMCP
+- [webMCP — Chrome AI Agent Protocol](contrib/webmcp-chrome-ai-agent-protocol.md) | mcp | "webmcp", "chrome", "ai-agents", "protocol" | dev.to
+- [MCP + Bedrock Integration](contrib/lesson-review-4-mcp-bedrock-integration.md) | mcp | "mcp", "bedrock", "aws", "tool-calling" | segmentfault.com
+- [EKS Kubernetes Version Rollback](contrib/lesson-review-5-eks-version-rollback.md) | ops | "kubernetes", "eks", "aws", "upgrade", "rollback" | aws.amazon.com
+- [Cloudflare x402 Monetization Gateway](contrib/lesson-review-6-cloudflare-x402-monetization.md) | ops | "cloudflare", "x402", "api", "monetization" | blog.cloudflare.com
+- [Redis → PostgreSQL 替换](contrib/lesson-9-redis-postgresql-replacement.md) | ops | "redis", "postgresql", "caching", "pubsub" | dev.to
+- [微服务延迟成本分析](contrib/lesson-10-microservices-latency-math.md) | ops | "microservices", "latency", "architecture" | dev.to
+- [GitHub Commit GPG 签名](contrib/lesson-11-github-commit-signing.md) | ops | "git", "github", "gpg", "security" | dev.to
+- [AWS Lambda MicroVMs](contrib/lesson-13-aws-lambda-microvms.md) | ops | "aws", "lambda", "microvm", "sandbox" | aws.amazon.com
+- [API 分页设计](contrib/lesson-14-api-pagination-design.md) | ops | "api", "pagination", "cursor", "keyset" | solovyov.net
+- [Cloudflare Workflows 持久化](contrib/lesson-15-cloudflare-workflows-durable.md) | ops | "cloudflare", "workflows", "durable" | blog.cloudflare.com
+- [AWS ECS 高分辨率指标](contrib/lesson-16-aws-ecs-high-resolution-metrics.md) | ops | "aws", "ecs", "metrics", "auto-scaling" | aws.amazon.com
+- [MCP 标准化协议](contrib/lesson-17-segmentfault-mcp-standardization.md) | mcp | "mcp", "agent", "tool-calling" | segmentfault.com
+- [数据库索引优化](contrib/lesson-18-database-performance-indexing.md) | ops | "database", "postgresql", "indexing", "performance" | practical-experience
+- [gRPC vs OpenAPI vs REST](contrib/lesson-19-grpc-openapi-rest-comparison.md) | ops | "grpc", "openapi", "rest", "api" | cloud.google.com
+- [API 设计原则](contrib/lesson-20-api-design-principles.md) | ops | "api", "design", "principles", "rest" | increase.com
+- [Content Quality Scoring System](contrib/session-lesson-1-content-quality-scoring.md) | ops | "quality", "scoring", "automation", "evaluation" | practical-experience
+- [Forum Accessibility Testing](contrib/session-lesson-2-forum-accessibility-testing.md) | ops | "scraping", "accessibility", "forum", "testing" | practical-experience
+- [Lobsters JSON API](contrib/session-lesson-3-lobsters-json-api.md) | ops | "lobsters", "api", "scraping", "json" | practical-experience
+- [Playwright Forum Selectors](contrib/session-lesson-4-playwright-forum-selectors.md) | ops | "playwright", "scraping", "selectors", "forum" | practical-experience
+- [DevOps Platform Engineering Golden Paths](contrib/lesson-review-3-devops-platform-engineering.md) | ops | "devops", "platform-engineering", "golden-paths" | dev.to
 - [FFmpeg 音频转码：必须用 libopus 而非 -format ogg](contrib/ffmpeg-audio-libopus-not-ogg.md) | audio | | hanged-man
 - [FReeLLMAPI Session Context Mixing - Cross-Thread Delivery](core/freellmapi-session-context-mixing-cross-thread-delivery.md) | agent-network | | hermes_wsl2
 - [Feishu 文件上传：file_type 必须用 opus](contrib/feishu-upload-file-type-opus.md) | feishu | | hanged-man

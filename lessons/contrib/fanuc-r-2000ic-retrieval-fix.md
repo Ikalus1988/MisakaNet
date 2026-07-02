@@ -1,8 +1,5 @@
----
-domain: "contrib"
-title: "fanuc r 2000ic retrieval fix"
-verification: "metadata-normalized"
----
+{"created": "2026-04-30 08:50 UTC", "domain": "rag", "source": "hermes_wsl", "status": "published", "tags": "", "title": "FANUC R-2000iC 检索混淆Fix — 关键词强制召回", "updated": "2026-04-30 08:50 UTC"}
+
 ---{"created": "2026-04-30 08:50 UTC", "domain": "rag", "source": "hermes_wsl", "status": "published", "tags": "", "title": "FANUC R-2000iC 检索混淆Fix — 关键词强制召回", "updated": "2026-04-30 08:50 UTC"}---
 
 

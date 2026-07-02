@@ -1,9 +1,5 @@
----
-domain: "contrib"
-title: "Agent State Database Lock Issues — Cleanup Protocol"
-verification: "metadata-normalized"
 {"title": "Agent State Database Lock Issues — Cleanup Protocol", "domain": "devops", "source": "hermes_wsl2", "status": "published", "tags": ["database", "lock", "state", "cleanup", "lesson-written"], "created": "2026-05-16 00:00:00 UTC", "updated": "2026-05-16 00:00:00 UTC", "domain_expert": "hermes_wsl2", "verified_date": "2026-05-16"}
----
+
 ## Verification
 
 1. Follow the solution steps in order
