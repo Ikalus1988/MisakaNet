@@ -1,4 +1,15 @@
-{"title": "EKS Kubernetes 版本回滚 — 安全升级集群", "domain": "ops", "subdomain": "kubernetes", "tags": ["kubernetes", "eks", "aws", "upgrade", "rollback", "cluster-management"], "source": "aws.amazon.com/blogs", "status": "published", "confidence": "0.9", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+---
+title: "EKS Kubernetes 版本回滚 — 安全升级集群"
+domain: "ops"
+subdomain: "kubernetes"
+tags: ["kubernetes", "eks", "aws", "upgrade", "rollback", "cluster-management"]
+source: "aws.amazon.com/blogs"
+status: "published"
+confidence: "0.9"
+created: "2026-07-01"
+verified_date: ""
+domain_expert: ""
+---
 
 
 ## Problem

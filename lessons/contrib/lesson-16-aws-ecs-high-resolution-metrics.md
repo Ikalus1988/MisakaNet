@@ -1,4 +1,15 @@
-{"title": "AWS ECS 高分辨率指标 — 更快的自动扩缩容", "domain": "ops", "subdomain": "kubernetes", "tags": ["aws", "ecs", "metrics", "auto-scaling", "monitoring"], "source": "aws.amazon.com/blogs", "status": "published", "confidence": "0.9", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+---
+title: "AWS ECS 高分辨率指标 — 更快的自动扩缩容"
+domain: "ops"
+subdomain: "kubernetes"
+tags: ["aws", "ecs", "metrics", "auto-scaling", "monitoring"]
+source: "aws.amazon.com/blogs"
+status: "published"
+confidence: "0.9"
+created: "2026-07-01"
+verified_date: ""
+domain_expert: ""
+---
 
 
 ## Problem

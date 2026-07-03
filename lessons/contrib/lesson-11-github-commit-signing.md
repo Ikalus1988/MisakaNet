@@ -1,4 +1,15 @@
-{"title": "GitHub Commit Signing — GPG 防止提交伪造", "domain": "ops", "subdomain": "security", "tags": ["git", "github", "gpg", "security", "commit-signing", "impersonation"], "source": "dev.to", "status": "published", "confidence": "0.95", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+---
+title: "GitHub Commit Signing — GPG 防止提交伪造"
+domain: "ops"
+subdomain: "security"
+tags: ["git", "github", "gpg", "security", "commit-signing", "impersonation"]
+source: "dev.to"
+status: "published"
+confidence: "0.95"
+created: "2026-07-01"
+verified_date: ""
+domain_expert: ""
+---
 
 
 ## Problem

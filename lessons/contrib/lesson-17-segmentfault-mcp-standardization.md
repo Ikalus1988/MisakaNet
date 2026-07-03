@@ -1,4 +1,15 @@
-{"title": "MCP — AI Agent 工具调用标准化协议", "domain": "mcp", "subdomain": "standardization", "tags": ["mcp", "agent", "tool-calling", "standardization", "protocol"], "source": "segmentfault.com", "status": "published", "confidence": "0.85", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+---
+title: "MCP — AI Agent 工具调用标准化协议"
+domain: "mcp"
+subdomain: "standardization"
+tags: ["mcp", "agent", "tool-calling", "standardization", "protocol"]
+source: "segmentfault.com"
+status: "published"
+confidence: "0.85"
+created: "2026-07-01"
+verified_date: ""
+domain_expert: ""
+---
 
 
 ## Problem

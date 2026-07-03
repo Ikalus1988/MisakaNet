@@ -1,4 +1,15 @@
-{"title": "Cloudflare Workflows — 持久化多步骤执行", "domain": "ops", "subdomain": "workflow", "tags": ["cloudflare", "workflows", "durable", "serverless", "state-machine"], "source": "blog.cloudflare.com", "status": "published", "confidence": "0.85", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+---
+title: "Cloudflare Workflows — 持久化多步骤执行"
+domain: "ops"
+subdomain: "workflow"
+tags: ["cloudflare", "workflows", "durable", "serverless", "state-machine"]
+source: "blog.cloudflare.com"
+status: "published"
+confidence: "0.85"
+created: "2026-07-01"
+verified_date: ""
+domain_expert: ""
+---
 
 
 ## Problem

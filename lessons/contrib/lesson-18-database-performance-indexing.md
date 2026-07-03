@@ -1,4 +1,15 @@
-{"title": "数据库性能 — 索引与查询优化实践", "domain": "ops", "subdomain": "database", "tags": ["database", "postgresql", "indexing", "performance", "query-optimization"], "source": "practical-experience", "status": "published", "confidence": "0.9", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+---
+title: "数据库性能 — 索引与查询优化实践"
+domain: "ops"
+subdomain: "database"
+tags: ["database", "postgresql", "indexing", "performance", "query-optimization"]
+source: "practical-experience"
+status: "published"
+confidence: "0.9"
+created: "2026-07-01"
+verified_date: ""
+domain_expert: ""
+---
 
 
 ## Problem

@@ -1,4 +1,15 @@
-{"title": "Cloudflare AI Traffic Options — Content Monetization for the Agentic Internet", "domain": "ops", "subdomain": "api", "tags": ["cloudflare", "ai", "monetization", "crawling", "pay-per-crawl", "content"], "source": "blog.cloudflare.com", "status": "published", "confidence": "0.85", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+---
+title: "Cloudflare AI Traffic Options — Content Monetization for the Agentic Internet"
+domain: "ops"
+subdomain: "api"
+tags: ["cloudflare", "ai", "monetization", "crawling", "pay-per-crawl", "content"]
+source: "blog.cloudflare.com"
+status: "published"
+confidence: "0.85"
+created: "2026-07-01"
+verified_date: ""
+domain_expert: ""
+---
 
 
 ## Problem
