@@ -370,6 +370,8 @@ Fresh challenges added weekly. No registration — just `/claim` and go.
 
 > 💡 Every lesson learned once is never debugged again.
 
+* [Troubleshooting FAQ](docs/troubleshooting.md) — Solutions for common setup errors, search issues, and DCO check failures.
+
 ## Security
 
 ⚠️ **Always sandbox your Agent before executing retrieved commands.** Lessons are community-contributed — review before run.
