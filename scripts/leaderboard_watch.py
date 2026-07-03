@@ -32,6 +32,7 @@ DRY_RUN = "--dry-run" in sys.argv
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LESSONS_DIR = REPO_ROOT / "lessons"
 LEADERBOARD_FILE = REPO_ROOT / "data" / "leaderboard.json"
+LEADERBOARD_META_FILE = REPO_ROOT / "data" / "leaderboard_meta.json"
 
 GRAPHQL_QUERY = """
 query($owner: String!, $repo: String!, $cursor: String) {
@@ -212,11 +213,49 @@ def load_previous_leaderboard():
     return None
 
 
+def atomic_write_json(path: Path, data):
+    """Write JSON through a temp file so readers never see partial data."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    tmp_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    tmp_path.replace(path)
+
+
+def leaderboard_top(leaderboard):
+    if not leaderboard:
+        return None
+    top = leaderboard[0]
+    return {
+        "login": top["login"],
+        "score": top["score"],
+    }
+
+
 def save_leaderboard(data):
     """保存排行榜快照"""
-    LEADERBOARD_FILE.parent.mkdir(parents=True, exist_ok=True)
-    json.dump(data, LEADERBOARD_FILE.open("w"), indent=2)
+    atomic_write_json(LEADERBOARD_FILE, data)
     print(f"  Leaderboard saved to {LEADERBOARD_FILE}")
+
+
+def save_leaderboard_meta(current, previous, issue_created):
+    """Persist the latest top contributor transition for the next workflow run."""
+    meta = {
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "current_top": leaderboard_top(current),
+        "previous_top": leaderboard_top(previous) if previous else None,
+        "issue_created": bool(issue_created),
+    }
+    atomic_write_json(LEADERBOARD_META_FILE, meta)
+    print(f"  Leaderboard metadata saved to {LEADERBOARD_META_FILE}")
+
+
+def has_leader_changed(previous, current):
+    """Return True only when the #1 contributor login changes."""
+    if not current:
+        return False
+    if not previous:
+        return True
+    return previous[0]["login"] != current[0]["login"]
 
 
 def create_notification_issue(new_top, old_top, changed):
@@ -298,21 +337,20 @@ def main():
         print("  No previous leaderboard found (first run)")
 
     # 3. 对比
-    changed = previous is None or (
-        previous[0]["login"] != current[0]["login"] and
-        abs(previous[0]["score"] - current[0]["score"]) > 0.5
-    )
+    changed = has_leader_changed(previous, current)
 
+    issue_created = False
     if changed:
         print(f"\n🔔 Leaderboard changed! Creating notification...")
         old_top = previous[0] if previous else None
         new_top = current[0]
-        create_notification_issue(new_top, old_top, current)
+        issue_created = create_notification_issue(new_top, old_top, current)
     else:
         print(f"\n✅ Leaderboard unchanged. No notification needed.")
 
     # 4. 保存新快照
     save_leaderboard(current)
+    save_leaderboard_meta(current, previous, issue_created)
     print("\nDone.")
 
 
