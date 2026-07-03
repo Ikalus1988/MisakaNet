@@ -1,10 +1,4 @@
----
-domain: "database"
-title: "<Database Domain Lesson Title>"
-status: "draft"
-verification: "metadata-normalized"
 {"title": "<Database Domain Lesson Title>", "domain": "database", "subdomain": "<subdomain>", "tags": ["database", "postgresql", "mysql", "indexing", "query", "migration", "backup", "performance", "replication", "connection-pool"], "status": "draft", "confidence": "0.8", "created": "<YYYY-MM-DD>", "updated": "<YYYY-MM-DD>", "source": "<your-source>", "verified_date": "", "domain_expert": ""}
----
 
 # <Database Domain Lesson Title>
 
