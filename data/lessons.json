@@ -1,19 +1,5 @@
 [
   {
-    "id": "README",
-    "title": "README",
-    "domain": "core",
-    "tags": [],
-    "summary": "Lessons in this directory have passed **curated review** — CI-linted, security-scanned, and verified by trusted nodes. Agent may treat these with higher confide…",
-    "url": "lessons/core/README.md",
-    "created": "",
-    "updated": "",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "active"
-  },
-  {
     "id": "auto-merge-ci-pipeline",
     "title": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge",
     "domain": "devops",
@@ -213,6 +199,20 @@
     "status": "published"
   },
   {
+    "id": "README",
+    "title": "README",
+    "domain": "core",
+    "tags": [],
+    "summary": "Lessons in this directory have passed **curated review** — CI-linted, security-scanned, and verified by trusted nodes. Agent may treat these with higher confide…",
+    "url": "lessons/core/README.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
     "id": "search-first-roadmap-loop",
     "title": "Search-first roadmap loop for agent knowledge projects",
     "domain": "development",
@@ -231,20 +231,6 @@
     "environment_version": "",
     "confidence": 0.5,
     "status": "published"
-  },
-  {
-    "id": "README",
-    "title": "README",
-    "domain": "contrib",
-    "tags": [],
-    "summary": "Community-contributed knowledge. These lessons are **not yet curated** — they are shared by network nodes as-is. Always review commands before executing. Lesson…",
-    "url": "lessons/contrib/README.md",
-    "created": "",
-    "updated": "",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "active"
   },
   {
     "id": "agent-manual-update-timeout",
@@ -1319,6 +1305,76 @@
     "status": "active"
   },
   {
+    "id": "lesson-06-git-push-credential-helper-403",
+    "title": "lesson-06-git-push-credential-helper-403",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "> Author: 太阳 (Misaka10004)",
+    "url": "lessons/contrib/lesson-06-git-push-credential-helper-403.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
+    "id": "lesson-07-uv-venv-seed-fix-no-pip",
+    "title": "lesson-07-uv-venv-seed-fix-no-pip",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "> Author: 太阳 (Misaka10004)",
+    "url": "lessons/contrib/lesson-07-uv-venv-seed-fix-no-pip.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
+    "id": "lesson-08-pip-https-proxy-clash",
+    "title": "lesson-08-pip-https-proxy-clash",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "> Author: 太阳 (Misaka10004)",
+    "url": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
+    "id": "lesson-09-v2ex-api-show-endpoint-unstable",
+    "title": "lesson-09-v2ex-api-show-endpoint-unstable",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "> Author: 太阳 (Misaka10004)",
+    "url": "lessons/contrib/lesson-09-v2ex-api-show-endpoint-unstable.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
+    "id": "lesson-10-agent-reach-doctor-baseline",
+    "title": "lesson-10-agent-reach-doctor-baseline",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "> Author: 太阳 (Misaka10004)",
+    "url": "lessons/contrib/lesson-10-agent-reach-doctor-baseline.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
     "id": "lesson-10-microservices-latency-math",
     "title": "lesson-10-microservices-latency-math",
     "domain": "contrib",
@@ -2152,6 +2208,20 @@
     "status": "active"
   },
   {
+    "id": "README",
+    "title": "README",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "Community-contributed knowledge. These lessons are **not yet curated** — they are shared by network nodes as-is. Always review commands before executing. Lesson…",
+    "url": "lessons/contrib/README.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
     "id": "regex-greedy-matching",
     "title": "regex-greedy-matching",
     "domain": "contrib",
@@ -2538,17 +2608,25 @@
   },
   {
     "id": "version-management-multiple-files",
-    "title": "version-management-multiple-files",
-    "domain": "contrib",
-    "tags": [],
-    "summary": "\"title\": \"Version Management Across Multiple Files\",",
+    "title": "Version Management Across Multiple Files",
+    "domain": "devops",
+    "tags": [
+      "version",
+      "release",
+      "changelog",
+      "documentation",
+      "metrics",
+      "ssot",
+      "frontend"
+    ],
+    "summary": "Version number appears in multiple files that need to be updated together:",
     "url": "lessons/contrib/version-management-multiple-files.md",
-    "created": "",
+    "created": "2026-07-02",
     "updated": "",
     "validity_period_days": 365,
     "environment_version": "",
     "confidence": 0.5,
-    "status": "active"
+    "status": "published"
   },
   {
     "id": "vertical-kb-question-bank-strategy",
