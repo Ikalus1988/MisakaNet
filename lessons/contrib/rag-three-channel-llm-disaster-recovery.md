@@ -3,7 +3,7 @@
   "title": "RAG Three-Channel LLM Disaster Recovery",
   "domain": "rag",
   "source": "bootstrap",
-  "status": "draft",
+  "status": "published",
   "tags": [
     "project:self-grow-wiki",
     "node:hermes_wsl",
@@ -27,7 +27,7 @@ Inspect the RAG config, ingestion log, retrieval log, and cache status to confir
 
 Depending on one LLM channel creates a single point of failure. API rate limits, network fluctuations, and server upgrades can all make queries fail. In industrial-document scenarios, users expect fault tolerance rather than "service unavailable".
 
-## Fix
+## Solution
 
 Implement three-channel automatic disaster recovery, degrading by priority:
 ```

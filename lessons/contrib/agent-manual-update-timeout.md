@@ -1,6 +1,6 @@
 {"title": "Agent 手动Update步骤（update Timeout Handling）", "domain": "devops", "source": "bootstrap", "status": "published", "confidence": "0.8", "created": "2026-05-03"}
 
----{"title": "Agent 手动Update步骤（update Timeout Handling）", "domain": "devops", "source": "bootstrap", "status": "draft", "confidence": "0.8", "created": "2026-05-03"}---
+---{"title": "Agent 手动Update步骤（update Timeout Handling）", "domain": "devops", "source": "bootstrap", "status": "published", "confidence": "0.8", "created": "2026-05-03"}---
 ## Verification
 
 1. Follow the solution steps in order
@@ -11,7 +11,7 @@
 
 ## Agent 手动更新步骤（update 超时处理）
 
-### 问题
+## Problem
 Agent 框架在通过内置更新命令更新时，因网络原因或镜像源问题，可能出现 update 超时，导致无法自动完成更新。
 
 ### 解决方案
@@ -51,3 +51,7 @@ rm -rf ~/.<agent>/cache/*
 
 ### 通用性
 此方案适用于大多数基于 GitHub Release 分发的 Agent 框架。如使用 Docker 部署，建议直接拉取新镜像。
+
+## Root Cause
+
+See problem description above for technical details.

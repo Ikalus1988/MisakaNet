@@ -3,7 +3,7 @@
   "title": "RAG Cross Encoder CPU Bottleneck",
   "domain": "rag",
   "source": "bootstrap",
-  "status": "draft",
+  "status": "published",
   "language": "en",
   "tags": [
     "project:self-grow-wiki",
@@ -33,7 +33,7 @@ RAG knowledge-base answers were too slow (113s cold start, 44s warm query), and 
 - No `seed` parameter was passed → every LLM call used a different random seed, so the same prompt + same context produced different outputs.
 - In group chat scenarios, `share_session_in_channel=true` caused multiple users to share one session, polluting context.
 
-## Fix
+## Solution
 
 ### Speed Optimization: Disable the Cross-Encoder Reranker Directly
 

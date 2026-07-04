@@ -3,7 +3,7 @@
   "title": "RAG Knowledge Base Quality Flywheel Self Loop",
   "domain": "rag",
   "source": "bootstrap",
-  "status": "draft",
+  "status": "published",
   "tags": [
     "rag",
     "flywheel",
@@ -39,7 +39,7 @@ The "flywheel" in the design document only covered the first half:
 - But the self-learning module (`kb_learning.py`), review tool (`badcase_review.py`), and synonym file (`synonyms.json`) are all missing
 - The code has imports but silently degrades with try/except, and the files were never created
 
-## Fix
+## Solution
 
 Implement a four-layer closed loop, where each layer can work independently:
 

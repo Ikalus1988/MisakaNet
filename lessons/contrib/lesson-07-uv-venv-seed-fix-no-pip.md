@@ -2,7 +2,7 @@
 domain: "devops"
 title: "Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo"
 verification: "metadata-normalized"
-{"title": "Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo", "domain": "devops", "tags": ["python", "venv", "uv", "pip", "wsl", "ubuntu", "pep-668", "agent-reach-install"], "status": "draft", "confidence": "0.92", "created": "2026-07-03", "updated": "2026-07-03", "source": "Real incident, agent-reach install (2026-07-03T00:25 GMT+8)", "verified_date": "", "domain_expert": ""}
+{"title": "Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo", "domain": "devops", "tags": ["python", "venv", "uv", "pip", "wsl", "ubuntu", "pep-668", "agent-reach-install"], "status": "published", "confidence": "0.92", "created": "2026-07-03", "updated": "2026-07-03", "source": "Real incident, agent-reach install (2026-07-03T00:25 GMT+8)", "verified_date": "", "domain_expert": ""}
 ---
 
 # Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo
@@ -51,7 +51,7 @@ WSL Ubuntu ships with just `python3`. Installing `python3-venv` would fix it but
 
 For **agent installs that run unattended** (cron jobs, automated setup), sudo is not available. The fix needs to work as a non-root user.
 
-## Fix
+## Solution
 
 Use `uv` (already installed at `/home/USER/.local/bin/uv` on this machine) with `--seed`:
 

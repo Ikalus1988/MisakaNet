@@ -3,7 +3,7 @@
   "title": "RAG Chunk Parameters 800 Characters and 100 Overlap",
   "domain": "rag",
   "source": "bootstrap",
-  "status": "draft",
+  "status": "published",
   "tags": [
     "project:self-grow-wiki",
     "severity:medium",
@@ -27,7 +27,7 @@ Inspect the RAG config, ingestion log, retrieval log, and cache status to confir
 
 The chunking strategy was inappropriate. Chunks that are too large (>2000 characters) contain multiple topics and become semantically blurry; chunks that are too small (<200 characters) lack context and produce embeddings with low discriminative power.
 
-## Fix
+## Solution
 
 Use the following chunking parameters:
 ```python

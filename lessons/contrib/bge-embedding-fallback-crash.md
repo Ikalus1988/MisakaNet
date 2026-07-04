@@ -3,7 +3,7 @@
   "title": "BGE Embedding Fallback Crash",
   "domain": "rag",
   "source": "bootstrap",
-  "status": "draft",
+  "status": "published",
   "tags": [
     "project:agent-medici",
     "severity:high",
@@ -28,7 +28,7 @@ Inspect the RAG config, ingestion log, retrieval log, and cache status to confir
 
 `_init_embedding_model()` in `skill_indexer.py` loads the model with `local_files_only=True`, and the model path is a hard-coded machine-specific absolute path. There is no fallback mechanism and no environment-variable override.
 
-## Fix
+## Solution
 
 1. Remove the hard-coded absolute path and use: constructor parameter → `EMBEDDING_MODEL_PATH` environment variable → model name (auto-download)
 2. Wrap loading failures in try/except and degrade to no-embedding mode (`register_skill` skips semantic deduplication)

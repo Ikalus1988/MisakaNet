@@ -3,7 +3,7 @@
   "title": "RAG Alarm Code Retrieval Needs Mandatory Keyword Recall",
   "domain": "rag",
   "source": "bootstrap",
-  "status": "draft",
+  "status": "published",
   "tags": [
     "project:self-grow-wiki",
     "severity:high",
@@ -27,7 +27,7 @@ Inspect the RAG config, ingestion log, retrieval log, and cache status to confir
 
 Pure semantic retrieval in ChromaDB has weak discrimination for short codes (SRVO-023, M-900, etc.). Embedding vectors for numeric strings are easily confused with unrelated documents. x"2000" semantically matched both FANUC and KUKA documents.
 
-## Fix
+## Solution
 
 Add keyword mandatory recall to the `retrieve()` function in `rag_core.py`:
 1. Alarm code pattern: when `/[A-Z]+-\d+/` matches, forcibly recall documents whose titles/tags contain that code

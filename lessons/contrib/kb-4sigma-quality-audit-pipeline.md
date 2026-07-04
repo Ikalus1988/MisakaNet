@@ -3,7 +3,7 @@
   "title": "Knowledge Base 4-Sigma Quality Audit Pipeline",
   "domain": "rag",
   "source": "bootstrap",
-  "status": "draft",
+  "status": "published",
   "tags": [
     "project:self-grow-wiki",
     "severity:medium",
@@ -28,7 +28,7 @@ After continuous document imports, the RAG knowledge base developed data contami
 3. The same knowledge point appeared in multiple documents with different wording
 4. There was no systematic quality-check workflow
 
-## Fix
+## Solution
 
 Build a 4σ quality audit pipeline:
 1. Contamination cleanup: delete non-document content (garbled text, empty chunks, numeric-only chunks)

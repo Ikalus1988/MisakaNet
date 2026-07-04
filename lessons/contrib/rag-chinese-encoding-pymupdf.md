@@ -3,7 +3,7 @@
   "title": "RAG Chinese Encoding with PyMuPDF",
   "domain": "rag",
   "source": "bootstrap",
-  "status": "draft",
+  "status": "published",
   "language": "en",
   "tags": [
     "project:self-grow-wiki",
@@ -25,7 +25,7 @@ Inspect the RAG config, ingestion log, retrieval log, and cache status to confir
 
 When `pymupdf4llm` extracted PDFs, the default encoding was not explicitly set to UTF-8, so pages containing Chinese special characters were truncated.
 
-## Fix
+## Solution
 
 Explicitly specify `encoding="utf-8"` in the `extract()` call:
 

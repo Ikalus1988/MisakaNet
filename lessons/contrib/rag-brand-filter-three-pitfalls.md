@@ -3,7 +3,7 @@
   "title": "RAG Brand Filter Three Pitfalls",
   "domain": "rag",
   "source": "bootstrap",
-  "status": "draft",
+  "status": "published",
   "language": "en",
   "tags": [
     "project:self-grow-wiki",

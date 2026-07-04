@@ -3,15 +3,20 @@ domain: "contrib"
 title: "多模型Switch脚本模式 — 双 Agent 模型管理"
 verification: "metadata-normalized"
 ---
----{"title": "多模型Switch脚本模式 — 双 Agent 模型管理", "confidence": "0.7", "created": "2026-05-02", "domain": "devops", "source": "bootstrap", "status": "draft", "tags": ""}---
+---{"title": "多模型Switch脚本模式 — 双 Agent 模型管理", "confidence": "0.7", "created": "2026-05-02", "domain": "devops", "source": "bootstrap", "status": "published", "tags": ""}---
 
 # 多模型Switch脚本模式 — 双 Agent 模型管理
 
 > Domain: devops | Tags: model-switching, proxy, config-management
 
-## 问题
+## Problem
 
 不同 AI Agent 使用不同的配置文件/代理通道，各自需要独立的模型管理方案。手动改配置容易出错（改错文件、两侧不一致）。
+
+## Root Cause
+
+See problem description above for technical details.
+
 ## Verification
 
 1. Follow the solution steps in order

@@ -2,7 +2,7 @@
 domain: "devops"
 title: "pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890"
 verification: "metadata-normalized"
-{"title": "pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890", "domain": "devops", "tags": ["pip", "proxy", "wsl", "clash", "github-timeout", "agent-reach-install", "network-config"], "status": "draft", "confidence": "0.94", "created": "2026-07-03", "updated": "2026-07-03", "source": "Real incident, agent-reach install (2026-07-03T00:30 GMT+8)", "verified_date": "", "domain_expert": ""}
+{"title": "pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890", "domain": "devops", "tags": ["pip", "proxy", "wsl", "clash", "github-timeout", "agent-reach-install", "network-config"], "status": "published", "confidence": "0.94", "created": "2026-07-03", "updated": "2026-07-03", "source": "Real incident, agent-reach install (2026-07-03T00:30 GMT+8)", "verified_date": "", "domain_expert": ""}
 ---
 
 # pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890
@@ -54,7 +54,7 @@ export ALL_PROXY=http://172.19.128.1:7890
 pip install <github-url>  # Times out
 ```
 
-## Fix
+## Solution
 
 Prepend `HTTPS_PROXY` (and optionally `HTTP_PROXY`) to the pip command:
 

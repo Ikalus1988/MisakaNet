@@ -2,7 +2,7 @@
 domain: "scraping"
 title: "V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead"
 verification: "metadata-normalized"
-{"title": "V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead", "domain": "scraping", "tags": ["v2ex", "api", "json-parse-error", "jina-reader", "fallback-strategy", "agent-reach"], "status": "draft", "confidence": "0.85", "created": "2026-07-03", "updated": "2026-07-03", "source": "Real incident, lesson fetching from V2EX 2026-07-03T00:42 GMT+8", "verified_date": "", "domain_expert": ""}
+{"title": "V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead", "domain": "scraping", "tags": ["v2ex", "api", "json-parse-error", "jina-reader", "fallback-strategy", "agent-reach"], "status": "published", "confidence": "0.85", "created": "2026-07-03", "updated": "2026-07-03", "source": "Real incident, lesson fetching from V2EX 2026-07-03T00:42 GMT+8", "verified_date": "", "domain_expert": ""}
 ---
 
 # V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead
@@ -48,7 +48,7 @@ curl -sS -H "Accept: application/json" "https://www.v2ex.com/api/topics/show.jso
 # → json.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
 ```
 
-## Fix
+## Solution
 
 Use **r.jina.ai** (Jina Reader) as a fallback — it fetches the URL and returns clean markdown regardless of V2EX's API quirks:
 

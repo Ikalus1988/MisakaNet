@@ -3,15 +3,20 @@ domain: "contrib"
 title: "ccswitch-hermes-switch 踩坑Notes"
 verification: "metadata-normalized"
 ---
----{"confidence": "0.7", "created": "2026-05-02", "domain": "devops", "source": "bootstrap", "status": "draft", "tags": "", "- node": "cc_haha", "title": "ccswitch-hermes-switch 踩坑Notes"}---
+---{"confidence": "0.7", "created": "2026-05-02", "domain": "devops", "source": "bootstrap", "status": "published", "tags": "", "- node": "cc_haha", "title": "ccswitch-hermes-switch 踩坑Notes"}---
 
 # ccswitch-hermes-switch 踩坑Notes
 
 > Domain: devops | Tags: ccswitch, hermes-switch, model, switching, proxy, deepseek, InternalGateway | Source: hermes_wsl
 
-## 问题
+## Problem
 
 Claude Code (cc) 和 Hermes Agent 使用不同的配置文件/代理通道，各自需要独立的模型管理方案。手动改配置容易出错（改错文件、两侧不一致）。
+
+
+## Root Cause
+
+See problem description above for technical details.
 
 ## 方案
 

@@ -2,7 +2,7 @@
 domain: "devops"
 title: "Git Push to Fork Repo: 'Permission Denied to Other User' — Wrong PAT Selected by Helper"
 verification: "metadata-normalized"
-{"title": "Git Push to Fork Repo: 'Permission Denied to Other User' — Wrong PAT Selected by Helper", "domain": "devops", "tags": ["git", "github", "credentials-helper", "pat", "multi-account", "403", "fork-workflow"], "status": "draft", "confidence": "0.95", "created": "2026-07-03", "updated": "2026-07-03", "source": "https://github.com/zsxh1990/pr-genius (commit history, 2026-07-02T23:36 GMT+8)", "verified_date": "", "domain_expert": ""}
+{"title": "Git Push to Fork Repo: 'Permission Denied to Other User' — Wrong PAT Selected by Helper", "domain": "devops", "tags": ["git", "github", "credentials-helper", "pat", "multi-account", "403", "fork-workflow"], "status": "published", "confidence": "0.95", "created": "2026-07-03", "updated": "2026-07-03", "source": "https://github.com/zsxh1990/pr-genius (commit history, 2026-07-02T23:36 GMT+8)", "verified_date": "", "domain_expert": ""}
 ---
 
 # Git Push to Fork Repo: "Permission Denied to Other User" — Wrong PAT Selected by Helper
@@ -51,7 +51,7 @@ git push origin main
 # ❌ Fails: "denied to Ikalus1988"
 ```
 
-## Fix
+## Solution
 
 Three-step recovery (takes <30 seconds):
 
