@@ -125,7 +125,8 @@ def validate_lesson(path: Path, schema: dict) -> tuple[int, list[str]]:
 def main():
     schema = load_schema()
     if len(sys.argv) > 1:
-        paths = [Path(sys.argv[1])]
+        # Resolve relative paths to absolute so relative_to(REPO_ROOT) works
+        paths = [Path(sys.argv[1]).resolve()]
     else:
         paths = sorted(LESSONS_DIR.glob("**/*.md"))
 
