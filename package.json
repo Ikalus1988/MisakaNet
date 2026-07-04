@@ -7,6 +7,10 @@
     "deploy:api": "cd workers && npx wrangler deploy --config wrangler.api.jsonc",
     "deploy:email": "cd workers/email-register && npx wrangler deploy",
     "deploy:all": "npm run deploy:web && npm run deploy:api && npm run deploy:email",
-    "deploy": "npm run deploy:all"
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.107.0"
   }
 }
