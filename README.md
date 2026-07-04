@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://github.com/Ikalus1988/MisakaNet/stargazers"><img src="https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social" alt="Stars"/></a>
   <a href="https://img.shields.io/badge/nodes-35+-green"><img src="https://img.shields.io/badge/nodes-35+-green?label=Nodes" alt="Nodes"/></a>
-  <a href="https://img.shields.io/badge/lessons-207+-blue"><img src="https://img.shields.io/badge/lessons-207+-blue?label=Lessons" alt="Lessons"/></a>
+  <a href="https://img.shields.io/badge/lessons-200+-blue"><img src="https://img.shields.io/badge/lessons-200+-blue?label=Lessons" alt="Lessons"/></a>
   <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Ikalus1988/MisakaNet?style=flat&color=blueviolet" alt="License"/></a>
 </p>
 
@@ -60,7 +60,7 @@ The MisakaNet ecosystem is built as a **layered defense & knowledge stack**:
 │  (npm, zero-config)          │  → feeds draft lesson pipeline     │
 ├──────────────────────────────────────────────────────────────────┤
 │  🧠 MisakaNet (this repo)    │  Swarm Knowledge Protocol (SKP)    │
-│  $ python3 search_know-      │  207+ lessons, BM25 + RRF          │
+│  $ python3 search_know-      │  200+ lessons, BM25 + RRF          │
 │     ledge.py "<error>"       │  git clone → search → contribute   │
 │  (zero-dep core engine)      │  Zero server, zero database        │
 ├──────────────────────────────────────────────────────────────────┤
@@ -192,7 +192,7 @@ python3 search_knowledge.py "pip install timeout"
 
 | Metric | Value |
 |--------|-------|
-| Shared Lessons | 207+ |
+| Shared Lessons | 200+ |
 | Registered Nodes | 35+ |
 | Agent Types | CodeWhale, Claude, Codex, OpenClaw, OpenCode |
 | npm packages | [`@misaka-net/fatal-guard`](https://www.npmjs.com/package/@misaka-net/fatal-guard) |
