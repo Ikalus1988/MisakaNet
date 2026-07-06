@@ -27,7 +27,7 @@ jobs:
           # Modules format: multipart upload with metadata
           printf '{"main_module":"register-proxy-sw.js","compatibility_date":"2024-01-01"}' > /tmp/metadata.json
 
-          curl -fsS -X PUT \
+          curl --fail-with-body -sS -X PUT \
             -H "Authorization: Bearer $CF_API_TOKEN" \
             -F "metadata=@/tmp/metadata.json;type=application/json" \
             -F "register-proxy-sw.js=@workers/register-proxy-sw.js;type=application/javascript" \
