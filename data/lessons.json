@@ -2194,25 +2194,17 @@
   },
   {
     "id": "rag-cross-encoder-cpu-bottleneck",
-    "title": "Cross-encoder reranker kills RAG latency on CPU-only machines",
-    "domain": "rag",
-    "tags": [
-      "rag",
-      "cross-encoder",
-      "reranking",
-      "cpu-bottleneck",
-      "latency",
-      "bge-reranker",
-      "performance"
-    ],
-    "summary": "Cross-encoder reranker (568M params) takes 40-60s on CPU, 97% of query latency. Solution: disable reranking or switch to bi-encoder/GPU.",
+    "title": "rag-cross-encoder-cpu-bottleneck",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "\"title\": \"Cross-encoder reranker kills RAG latency on CPU-only machines\",",
     "url": "lessons/contrib/rag-cross-encoder-cpu-bottleneck.md",
     "created": "",
-    "updated": "2026-07-06",
+    "updated": "",
     "validity_period_days": 365,
     "environment_version": "",
-    "confidence": 0.9,
-    "status": "published"
+    "confidence": 0.5,
+    "status": "active"
   },
   {
     "id": "rag-kb-quality-flywheel-self-loop",
