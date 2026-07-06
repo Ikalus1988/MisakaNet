@@ -1935,6 +1935,20 @@
     "status": "active"
   },
   {
+    "id": "pr-strategy",
+    "title": "pr-strategy",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "For repository-specific PR profiles, maintainer response patterns, and PR round evidence, query the pr-genius federation peer.",
+    "url": "lessons/contrib/pr-strategy.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
     "id": "private-agent-memory-fallacy",
     "title": "private-agent-memory-fallacy",
     "domain": "contrib",
