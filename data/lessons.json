@@ -713,6 +713,34 @@
     "status": "active"
   },
   {
+    "id": "fanuc-kl-1086-is-line-number-not-error-code",
+    "title": "fanuc-kl-1086-is-line-number-not-error-code",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "\"id\": \"fanuc-kl-1086-is-line-number-not-error-code\",",
+    "url": "lessons/contrib/fanuc-kl-1086-is-line-number-not-error-code.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
+    "id": "fanuc-kl-bytes-ahead-is-builtin-procedure",
+    "title": "fanuc-kl-bytes-ahead-is-builtin-procedure",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "\"id\": \"fanuc-kl-bytes-ahead-is-builtin-procedure\",",
+    "url": "lessons/contrib/fanuc-kl-bytes-ahead-is-builtin-procedure.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
     "id": "fanuc-kl-err-abort-vs-err-pause",
     "title": "fanuc-kl-err-abort-vs-err-pause",
     "domain": "contrib",
