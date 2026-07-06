@@ -1,3 +1,11 @@
+---
+title: "MisakaNet Lesson Quality Scoring"
+domain: "lesson"
+tags: [lesson, quality, scoring]
+status: "published"
+created: "2026-07-05"
+---
+
 # MisakaNet Lesson 质量评估打分系统
 
 > 入库门槛：75 分（满分 100）
