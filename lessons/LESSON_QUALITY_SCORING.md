@@ -1,3 +1,13 @@
+---
+title: MisakaNet Lesson Quality Scoring System
+domain: devops
+tags: [quality, scoring, validation, lesson-lifecycle]
+status: published
+source: misakanet
+created: 2026-06-01
+updated: 2026-07-06
+---
+
 # MisakaNet Lesson 质量评估打分系统
 
 > 入库门槛：75 分（满分 100）

@@ -150,6 +150,29 @@ export default {
       });
     }
 
+    // GET /api/helpful?lesson_id=<id> — return helpful count
+    if (request.method === "GET" && url.pathname === "/api/helpful") {
+      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+      const lessonId = sanitizeIdentifier(url.searchParams.get("lesson_id"), 100);
+      if (!lessonId) return jsonResponse({ error: "Missing lesson_id" }, 400);
+      const raw = await env.MISAKANET_KV.get(`helpful:${lessonId}`, "text");
+      return jsonResponse({ lesson_id: lessonId, count: raw ? parseInt(raw, 10) || 0 : 0 });
+    }
+
+    // POST /api/helpful — record a helpful vote
+    if (request.method === "POST" && url.pathname === "/api/helpful") {
+      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+      let voteBody;
+      try { voteBody = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
+      const lessonId = sanitizeIdentifier(voteBody.lesson_id, 100);
+      if (!lessonId) return jsonResponse({ error: "Missing lesson_id" }, 400);
+      const kvKey = `helpful:${lessonId}`;
+      const cur = parseInt(await env.MISAKANET_KV.get(kvKey, "text") || "0", 10) || 0;
+      const newCount = cur + 1;
+      await env.MISAKANET_KV.put(kvKey, String(newCount));
+      return jsonResponse({ lesson_id: lessonId, count: newCount });
+    }
+
     if (request.method !== "POST") {
       return jsonResponse({ error: "Method not allowed" }, 405);
     }
