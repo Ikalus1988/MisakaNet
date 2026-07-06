@@ -826,24 +826,17 @@
   },
   {
     "id": "feishu-block-api-false-success",
-    "title": "Feishu Block API returns code=0 but creates zero blocks under rate limiting",
-    "domain": "feishu",
-    "tags": [
-      "feishu",
-      "block-api",
-      "rate-limit",
-      "false-success",
-      "batch-write",
-      "retry"
-    ],
-    "summary": "Feishu block API returns code=0 but creates zero blocks under rate limiting. Solution: validate block count in response, batch large writes, handle body size limits.",
+    "title": "feishu-block-api-false-success",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "\"title\": \"Feishu Block API returns code=0 but creates zero blocks under rate limiting\",",
     "url": "lessons/contrib/feishu-block-api-false-success.md",
     "created": "",
-    "updated": "2026-07-06",
+    "updated": "",
     "validity_period_days": 365,
     "environment_version": "",
-    "confidence": 0.9,
-    "status": "published"
+    "confidence": 0.5,
+    "status": "active"
   },
   {
     "id": "feishu-block-batch-limit",
