@@ -178,6 +178,7 @@ python3 search_knowledge.py "pip install timeout"
 | Search | `python3 search_knowledge.py "<query>"` |
 | Contribute | `python3 scripts/queue_lesson.py --title "..." --domain "..." "..."` |
 | Dashboard | `python3 -m misakanet.tools.dashboard` |
+| **MCP Server** | `python3 scripts/mcp_server.py` — [docs/mcp.md](docs/mcp.md) |
 | **Full CLI reference →** | [`docs/cli-reference.md`](docs/cli-reference.md) |
 
 ### Register a node
