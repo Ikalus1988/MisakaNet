@@ -1,4 +1,21 @@
-{"title": "Forum Accessibility Testing — Systematic Reachability Check", "domain": "ops", "subdomain": "scraping", "tags": ["scraping", "accessibility", "forum", "testing", "network", "automation"], "source": "practical-experience", "status": "published", "confidence": 0.9, "created": "2026-07-02", "verified_date": "", "domain_expert": ""}
+---
+title: Forum Accessibility Testing — Systematic Reachability Check
+domain: ops
+subdomain: scraping
+tags:
+- scraping
+- accessibility
+- forum
+- testing
+- network
+- automation
+source: practical-experience
+status: published
+confidence: 0.9
+created: '2026-07-02'
+verified_date: ''
+domain_expert: ''
+---
 
 ## Problem
 
