@@ -1,4 +1,21 @@
-{"title": "Content Quality Scoring System — Automated Lesson Evaluation", "domain": "ops", "subdomain": "automation", "tags": ["quality", "scoring", "automation", "content", "evaluation", "rubric"], "source": "practical-experience", "status": "published", "confidence": 0.95, "created": "2026-07-02", "verified_date": "", "domain_expert": ""}
+---
+title: Content Quality Scoring System — Automated Lesson Evaluation
+domain: ops
+subdomain: automation
+tags:
+- quality
+- scoring
+- automation
+- content
+- evaluation
+- rubric
+source: practical-experience
+status: published
+confidence: 0.95
+created: '2026-07-02'
+verified_date: ''
+domain_expert: ''
+---
 
 ## Problem
 
