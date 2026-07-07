@@ -394,13 +394,26 @@ def expand_query(query: str, synonyms: dict | None = None, max_syns: int = 2) ->
         return query, {}
     return query + " " + " ".join(expanded_set), expansions
 
-def _rank_docs_impl(
+def _rank_docs_impl(query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False, synonyms: dict | None = None, explain: bool = False)
     query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False
 ) -> list[tuple[float, CachedDoc]]:
     if not docs:
         return []
     if broad_only:
         docs = [d for d in docs if d.scope == "broad"]
+    
+    # Synonym expansion
+    if synonyms:
+        expanded_query, expansions = expand_query(query, synonyms)
+        if expansions:
+            if explain:
+                print("[Synonym Expansion]")
+                for term, syns in expansions.items():
+                    print(f"  {term} -> {' '.join(syns)}")
+                print(f"[Original Query] {query}")
+                print(f"[Expanded Query] {expanded_query}")
+            query = expanded_query
+
     if not titles_only:
         visible = [d for d in docs if not d.is_draft]
         if visible:
