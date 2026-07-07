@@ -1,13 +1,13 @@
 ---
-{
-  "domain": "contrib",
-  "title": "API 请求限流 (Rate Limit) Handling方案",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: "API 请求限流 (Rate Limit) 处理方案"
+domain: "devops"
+tags:
+  - api
+  - rate-limit
+  - retry
+  - "429"
+created: "2026-05-21"
 ---
----{"title": "API 请求限流 (Rate Limit) Handling方案", "domain": "devops", "tags": ["api", "rate-limit", "retry", "429"]}---
 
 ## 背景
 
@@ -41,7 +41,7 @@ def api_call_with_retry(url, headers, max_retries=5):
     
     raise Exception(f"超过最大重试次数: {url}")
 
-# API 请求限流 (Rate Limit) Handling方案
+# GitHub API 特殊：检查剩余配额
 resp = requests.get("https://api.github.com/rate_limit")
 data = resp.json()
 print(f"剩余: {data['rate']['remaining']}/{data['rate']['limit']}")
