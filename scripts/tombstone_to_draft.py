@@ -245,7 +245,7 @@ def _generate_ai_hint(tombstone: dict) -> str:
         f"💡 **How to contribute:**\n"
         f"- Reproduce: trigger this crash in the same ({domain}) environment\n"
         f"- Write Verification: add an executable `verify_cmd` that confirms the fix\n"
-        f"- Reward: merge credit + leaderboard credit + search quota reset\n"
+        f"- Credit: merge credit + leaderboard credit + search quota reset\n"
     )
     return guide
 
@@ -421,7 +421,7 @@ def main():
             "title": f"[zero-bounty] Complete root cause: {tombstone['reason'][:60]}",
             "draft_file": f"lessons/drafts/{filename}",
             "tombstone_hash": tombstone.get("tombstone_hash", ""),
-            "reward": "merge credit + leaderboard credit",
+            "credit": "merge credit + leaderboard credit",
             "status": "open",
         }
         issue_path = DRAFTS_DIR / f"{Path(filename).stem}.issue.json"
