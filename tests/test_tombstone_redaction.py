@@ -13,7 +13,7 @@ class TestTombstoneRedaction(unittest.TestCase):
         cases = [
             (
                 "github token",
-                "ghp_abcdefghijklmnopqrstuvwxyzABCDEFGHIJ",
+                "ghp_abcdefghijklmnopqrstuvwxyz1234567890",
                 "[REDACTED_GITHUB_TOKEN]",
             ),
             (
