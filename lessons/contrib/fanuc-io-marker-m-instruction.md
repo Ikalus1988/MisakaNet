@@ -1,4 +1,21 @@
-{"title": "FANUC IO Marker M[] Instruction — Background Logic Alternative", "domain": "fanuc", "subdomain": "tp-programming", "tags": ["marker", "m-register", "io", "background-logic", "handling-tool", "vass"], "source": "robot-forum.com", "status": "published", "confidence": "0.85", "created": "2026-07-01", "verified_date": "", "domain_expert": "cattmampbell"}
+---
+title: FANUC IO Marker M[] Instruction — Background Logic Alternative
+domain: fanuc
+subdomain: tp-programming
+tags:
+- marker
+- m-register
+- io
+- background-logic
+- handling-tool
+- vass
+source: robot-forum.com
+status: published
+confidence: '0.85'
+created: '2026-07-01'
+verified_date: ''
+domain_expert: cattmampbell
+---
 
 
 ## Problem
