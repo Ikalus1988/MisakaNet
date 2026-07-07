@@ -72,7 +72,7 @@ def load_tasks(include_drafts: bool = False) -> list[dict]:
     tasks = []
     index = TASKS_DIR / "index.json"
     if index.exists():
-        tasks = json.loads(index.read_text())
+        tasks = json.loads(index.read_text(encoding="utf-8"))
 
     if include_drafts:
         drafts_dir = REPO_ROOT / "lessons" / "drafts"
@@ -130,7 +130,7 @@ def load_task_detail(task_id: str) -> dict:
     # Regular task
     path = TASKS_DIR / f"{task_id}.json"
     if path.exists():
-        return json.loads(path.read_text())
+        return json.loads(path.read_text(encoding="utf-8"))
 
     # Draft task (task_id starts with "draft-")
     if task_id.startswith("draft-"):
@@ -264,7 +264,7 @@ def main():
         tasks = tasks[:max_tasks]
 
     print(f"{'='*60}")
-    print(f"Bench Run — Agent: {agent_name}  Tasks: {len(tasks)}"
+    print(f"Bench Run - Agent: {agent_name}  Tasks: {len(tasks)}"
           f"{' (+drafts)' if include_drafts else ''}  Dry: {dry_run}")
     print(f"Time: {datetime.utcnow().isoformat()}Z")
     print(f"{'='*60}\n")
@@ -299,7 +299,7 @@ def main():
             "verify_detail": verify_detail,
         })
 
-        status_icon = "✅" if verify_status == "PASS" else ("⏭️" if verify_status == "SKIP" else "❌")
+        status_icon = "PASS" if verify_status == "PASS" else ("SKIP" if verify_status == "SKIP" else "FAIL")
         print(f"  {status_icon} verify: {verify_status} {verify_detail[:60]}")
         print()
 
@@ -333,7 +333,7 @@ def main():
             "results": results,
         }
         report_path = RESULTS_DIR / f"{run_id}_{agent_name}.json"
-        report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2))
+        report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"\nSaved: {report_path}")
 
 

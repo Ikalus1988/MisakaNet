@@ -10,7 +10,7 @@ MisakaNet Queue Lesson (节点侧)
     --title "FANUC R-2000iC 检索混淆修复" \
     --domain rag-retrieval \
     --tags fanuc,r-2000ic \
-    --content "根因: 跨品牌型号字符串 \"2000\" 同时匹配 KUKA 和 FANUC..."
+    "根因: 跨品牌型号字符串 \"2000\" 同时匹配 KUKA 和 FANUC..."
 
   # 方式 2: 简化版
   python3 scripts/queue_lesson.py \
@@ -27,7 +27,6 @@ import re
 import shlex
 import subprocess
 import sys
-import shlex
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -321,7 +320,7 @@ def main():
     parser.add_argument("--status", default="published",
                         choices=["published", "draft", "deprecated"],
                         help="lesson 状态，默认 published")
-    parser.add_argument("--file", help="已编辑好的 md 文件路径 (跳过 --title/--content)")
+    parser.add_argument("--file", help="已编辑好的 md 文件路径 (跳过 --title/正文参数)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Preview markdown; do not write files or run git")
     parser.add_argument("--suggest-git", action="store_true",
