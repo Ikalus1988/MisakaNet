@@ -2150,7 +2150,7 @@ async function fetchWithTimeout(url, timeoutMs = 8000) {
     }
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     if (DEBUG) console.log(`[MisakaNet] fetched ${url} (${r.status})`);
-    return r.json();
+    return readJsonResponse(r);
   } catch(e) {
     clearTimeout(timer);
     if (e.name === 'AbortError') {
@@ -2189,7 +2189,7 @@ async function fetchPOST(url, body, timeoutMs = 8000) {
     }
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     if (DEBUG) console.log(`[MisakaNet] POST ${url} (${r.status})`);
-    return r.json();
+    return readJsonResponse(r);
   } catch(e) {
     clearTimeout(timer);
     if (e.name === 'AbortError') {
@@ -2865,6 +2865,12 @@ function sanitizeInput(val, maxLen) {
   return val.trim();
 }
 
+function escapeHTML(val) {
+  return String(val ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
 function validateName(name) {
   if (!name) return '';
   if (name.length > 50) return 'Node name must be 50 chars or less';
@@ -2876,6 +2882,23 @@ function validateInviteCode(code) {
   if (!code) return '';
   if (code.length > 50) return 'Invite code must be 50 chars or less';
   if (!/^[a-zA-Z0-9_\-]+$/.test(code)) return 'Invite code: English/digits/underscore/hyphen only';
+}
+
+async function readJsonResponse(response) {
+  const text = await response.text();
+  const contentType = response.headers.get('content-type') || '';
+  const snippet = text.slice(0, 80);
+  if (!contentType.includes('application/json')) {
+    if (snippet.trimStart().startsWith('<')) {
+      throw new Error(`Proxy returned HTML (${response.status}). Refresh and try again, or use GitHub Issue registration.`);
+    }
+    throw new Error(`Non-JSON response (${response.status}): ${snippet}`);
+  }
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    throw new Error(`Invalid JSON response (${response.status}): ${snippet}`);
+  }
 }
 
 document.getElementById("register-agree").addEventListener("change", function() {
@@ -2951,7 +2974,7 @@ async function registerNode() {
 
   const r = await fetch(WORKER_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify({
         agent_type: selectedAgent,
         node_name: name,
@@ -2960,17 +2983,15 @@ async function registerNode() {
       })
     });
 
+    const data = await readJsonResponse(r);
     if (r.status === 429) {
       const retryAfter = r.headers.get('Retry-After');
       const wait = retryAfter ? parseInt(retryAfter) || 30 : 30;
       throw new Error(t('rateLimitWait').replace('{s}', wait));
     }
     if (!r.ok) {
-      const err = await r.json().catch(() => ({}));
-      throw new Error(err.message || "HTTP " + r.status);
+      throw new Error(data.message || data.error || "HTTP " + r.status);
     }
-
-    const data = await r.json();
     if (!data.success) {
       throw new Error(data.error || "Registration failed");
     }
@@ -3036,9 +3057,11 @@ async function registerNode() {
       const pollTimer = setInterval(async () => {
         polls++;
         try {
-          const cr = await fetch(`${GITHUB_PROXY}/issues/${data.issue_number}/comments`);
+          const cr = await fetch(`${GITHUB_PROXY}/issues/${data.issue_number}/comments`, {
+            headers: { "Accept": "application/json" },
+          });
           if (!cr.ok) return;
-          const comments = await cr.json();
+          const comments = await readJsonResponse(cr);
           for (const c of comments) {
             // Look for welcome message with confirmed node ID
             const match = c.body.match(/节点代号.*?[*]{2}(Misaka\d+)[*]{2}/);
@@ -3125,7 +3148,8 @@ async function registerNode() {
         </div>`;
     } else {
       result.className = "register-result error";
-      result.textContent = `${t("regFail")}: ${err.message}`;
+      const safeMessage = escapeHTML(err.message).slice(0, 300);
+      result.innerHTML = `${escapeHTML(t("regFail"))}: ${safeMessage}<br><a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=register.yml" target="_blank" style="color:#60a5fa;">Register via GitHub Issue</a>`;
     }
     btn.disabled = false;
     btn.textContent = t('registerBtn');

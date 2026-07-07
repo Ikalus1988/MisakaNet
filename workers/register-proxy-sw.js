@@ -199,6 +199,42 @@ export default {
       return jsonResponse({ lesson_id: lessonId, count: newCount });
     }
 
+    // GET /api/github/* - authenticated GitHub API proxy for the org frontend.
+    // Keep this before the HTML landing page; otherwise the frontend receives
+    // HTML and fails with: Unexpected token '<' while parsing JSON.
+    if (request.method === "GET" && url.pathname.startsWith("/api/github/")) {
+      const token = env.REGISTER_TOKEN;
+      if (!token) return jsonResponse({ error: "REGISTER_TOKEN not configured" }, 500);
+
+      const ghPath = url.pathname.slice("/api/github/".length);
+      const repoApiPrefix = `repos/${REPO}/`;
+      if (!ghPath) return jsonResponse({ error: "Missing GitHub API path" }, 400);
+      if (!ghPath.startsWith(repoApiPrefix)) return jsonResponse({ error: "Forbidden" }, 403);
+
+      const resp = await fetch(`${GITHUB_API}/${ghPath}${url.search}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "User-Agent": "MisakaNet-Worker",
+          Accept: "application/vnd.github.v3+json",
+        },
+      });
+
+      return new Response(resp.body, {
+        status: resp.status,
+        headers: {
+          "content-type": resp.headers.get("content-type") || "application/json",
+          ...CORS_HEADERS,
+          "Cache-Control": resp.ok ? "public, max-age=30" : "no-store",
+          "X-GitHub-Proxy": "misakanet",
+        },
+      });
+    }
+
+    // API routes must never fall through to the HTML landing page.
+    if (request.method === "GET" && url.pathname.startsWith("/api/")) {
+      return jsonResponse({ error: "Not found" }, 404);
+    }
+
     // Catch-all GET — landing page (must be after all API routes)
     if (request.method === "GET") {
       return new Response(`<!DOCTYPE html>
@@ -232,6 +268,10 @@ export default {
 
     if (request.method !== "POST") {
       return jsonResponse({ error: "Method not allowed" }, 405);
+    }
+
+    if (!["/", "/api/register", "/api/register/"].includes(url.pathname)) {
+      return jsonResponse({ error: "Not found" }, 404);
     }
 
     // 定期清理 rateMap
