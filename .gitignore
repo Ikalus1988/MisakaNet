@@ -47,3 +47,6 @@ workers/wrangler.api.jsonc
 .hydra/
 .worktrees/
 data/sag.db
+
+# Crawler flywheel metrics (local tracking)
+data/crawler_flywheel.jsonl
