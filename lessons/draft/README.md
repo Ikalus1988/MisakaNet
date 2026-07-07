@@ -9,6 +9,6 @@ New contributions land here first. They have passed basic CI checks but have **n
 
 ## Requirements to promote to verified/
 
-- [ ] All items in [Lesson Checklist](../docs/lesson-checklist.md) Must section pass
+- [ ] All items in [Lesson Checklist](../../docs/lesson-checklist.md) Must section pass
 - [ ] At least 4 Should items pass
 - [ ] A maintainer has reviewed and approved
