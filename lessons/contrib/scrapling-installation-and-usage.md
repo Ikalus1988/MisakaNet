@@ -1,4 +1,20 @@
-{"title": "Scrapling — Web Scraping Library with Anti-Detection", "domain": "ops", "subdomain": "scraping", "tags": ["scrapling", "scraping", "curl-cffi", "playwright", "anti-detection"], "source": "github.com/D4Vinci/Scrapling", "status": "published", "confidence": "0.8", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+---
+title: Scrapling — Web Scraping Library with Anti-Detection
+domain: ops
+subdomain: scraping
+tags:
+- scrapling
+- scraping
+- curl-cffi
+- playwright
+- anti-detection
+source: github.com/D4Vinci/Scrapling
+status: published
+confidence: '0.8'
+created: '2026-07-01'
+verified_date: ''
+domain_expert: ''
+---
 
 
 ## Problem
