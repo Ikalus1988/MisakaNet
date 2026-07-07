@@ -7,6 +7,20 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## v2.8.1 — 2026-07-07
+
+### Highlights
+- **A→C crash-to-draft hardening**: `tombstone_to_draft.py` now redacts tokens, emails, paths, IPs (stdlib-only). Bounty/reward language replaced with zero-bounty credit semantics.
+- **Safer contributor workflow**: `queue_lesson.py --dry-run --suggest-git` lets contributors preview lessons without triggering file writes or git operations.
+- **Frontend/API stability**: Frontend switched to same-origin `/api/lessons` (avoids GitHub raw 429). Worker restored `/api/counter`, `/api/lessons`, `/api/helpful` endpoints.
+- **Search/index alignment**: `export_okf.py --from-index` exports from `lessons.json`. OKF/SAG/Lessons all at 194 entries.
+- **Quality improvements**: Leaderboard scoring formula refined, `--explain` score breakdown added, 125 lesson metadata normalized, real incident lessons added.
+
+### Data
+- `data/lessons.json`, OKF export, and SAG-Lite index regenerated from the same source (194 aligned).
+
+---
+
 ## v2.8.0 — 2026-07-02
 
 ### 🔗 Federation
