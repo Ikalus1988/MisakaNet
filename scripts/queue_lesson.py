@@ -24,6 +24,7 @@ import argparse
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import shlex
@@ -37,10 +38,8 @@ if _SCRIPTS_DIR.exists() and str(_SCRIPTS_DIR) not in sys.path:
 
 REPO = "Ikalus1988/MisakaNet"
 NODE_ID = os.environ.get("MISAKANET_NODE_ID", "hermes_wsl2")
-LESSONS_DIR = Path(os.environ.get("LESSONS_DIR",
-                  Path(__file__).parent / ".." / "lessons"))
-# Fix repo root calculation to point to the repository root (resolved)
 REPO_ROOT = Path(__file__).resolve().parent.parent
+LESSONS_DIR = Path(os.environ.get("LESSONS_DIR", str(REPO_ROOT / "lessons")))
 
 
 def _get_token():
@@ -113,6 +112,13 @@ def _update_index(new_file, title, domain, tags, source):
     content = "\n".join(header + body_lines + [""])
     index_path.write_text(content, encoding="utf-8")
     print(f"  index: {len(body_lines)} lessons")
+
+def _print_suggested_git(filename, title):
+    rel = f"lessons/contrib/{filename}"
+    print("\n# Suggested next steps (not executed):")
+    print(f"git add {shlex.quote(rel)}")
+    print(f"git commit --signoff -m {shlex.quote(f'lessons: {title}')}")
+    print("git push origin main")
 
 
 def _render_lesson(title, domain, tags, content, source=NODE_ID, status="published"):
@@ -316,29 +322,26 @@ def main():
                         choices=["published", "draft", "deprecated"],
                         help="lesson 状态，默认 published")
     parser.add_argument("--file", help="已编辑好的 md 文件路径 (跳过 --title/--content)")
-    parser.add_argument("--dry-run", action="store_true", help="仅渲染 Markdown 到 stdout, 不写文件/不运行 git")
-    parser.add_argument("--suggest-git", action="store_true", help="与 --dry-run 一起使用时打印建议的 git 操作命令（不执行）")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Preview markdown; do not write files or run git")
+    parser.add_argument("--suggest-git", action="store_true",
+                        help="With --dry-run, print suggested git commands only")
     parser.add_argument("content", nargs="?", help="Lesson 内容（或通过 stdin）")
     args = parser.parse_args()
 
-    # suggest-git only valid with dry-run
     if args.suggest_git and not args.dry_run:
-        print("[error] --suggest-git 只能与 --dry-run 一起使用", file=sys.stderr)
-        sys.exit(2)
+        parser.error("--suggest-git requires --dry-run")
 
     # --file 模式: 直接导入
     if args.file:
         if args.dry_run:
-            # Print the file content (preview) and optionally suggest git commands
             src = Path(args.file)
             if not src.exists():
-                print(f"[error] 文件不存在: {args.file}", file=sys.stderr)
+                print(f"[error] file not found: {args.file}", file=sys.stderr)
                 sys.exit(1)
             content = src.read_text(encoding="utf-8")
             print(content)
-
             if args.suggest_git:
-                # derive destination
                 parts = content.split("---", 2)
                 fm_raw = parts[1].strip() if len(parts) > 1 else ""
                 try:
@@ -349,15 +352,10 @@ def main():
                 slug = _slugify(title)
                 filename = f"{slug}.md"
                 print("\n# Suggested commands to apply this preview:\n")
-                print("mkdir -p lessons")
-                print("cat > lessons/{} <<'EOF'".format(filename))
-                print(content)
-                print("EOF")
-                print("git add lessons/{} lessons/index.md".format(filename))
-                print("git commit -m {}".format(shlex.quote(f"lessons: {title}")))
+                print(f"git add lessons/contrib/{filename}")
+                print(f"git commit --signoff -m 'lessons: {title}'")
                 print("git push origin main")
             sys.exit(0)
-
         ok = write_lesson_from_file(args.file)
         print("=== done ===" if ok else "=== failed ===")
         sys.exit(0 if ok else 1)
@@ -379,19 +377,9 @@ def main():
 
     if args.dry_run:
         slug, filename, body = _render_lesson(args.title, args.domain, tags, content, source=NODE_ID, status=args.status)
-        # Print rendered markdown
         print(body)
-
         if args.suggest_git:
-            # Print safe, copy-paste commands (do not execute)
-            print("\n# Suggested commands to apply this preview:\n")
-            print("mkdir -p lessons")
-            print("cat > lessons/{} <<'EOF'".format(filename))
-            print(body)
-            print("EOF")
-            print("git add lessons/{} lessons/index.md".format(filename))
-            print("git commit -m {}".format(shlex.quote(f"lessons: {args.title}")))
-            print("git push origin main")
+            _print_suggested_git(filename, args.title)
         sys.exit(0)
 
     write_lesson(args.title, args.domain, tags, content, status=args.status)
