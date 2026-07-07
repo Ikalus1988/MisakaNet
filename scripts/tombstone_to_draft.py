@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
 """
-Tombstone → Draft Lesson 转换器
+Tombstone -> Draft Lesson converter
 
-将 fatal-guard 输出的 4-field JSON 墓碑转换为 MisakaNet draft lesson。
+Converts fatal-guard 4-field JSON tombstones into MisakaNet draft lessons.
 
-输入: fatal-guard 墓碑 JSON（stdin 或文件）
-输出: lessons/drafts/<slug>.md + 可选自动提 PR
+Input: fatal-guard tombstone JSON (stdin or file)
+Output: lessons/drafts/<slug>.md
 
-用法:
-    # 从文件读取
+Usage:
+    # From file
     python3 scripts/tombstone_to_draft.py --from-file tombstone.json
 
-    # 从 stdin 读取（管道接入 fatal-guard）
+    # From stdin (pipe from fatal-guard)
     fatal-guard -- node app.js 2>&1 | python3 scripts/tombstone_to_draft.py --stdin
 
-    # 预览模式（不写文件）
+    # Preview mode (no file written)
     python3 scripts/tombstone_to_draft.py --from-file tombstone.json --dry-run
-
-    # 自动创建悬赏 Issue
-    python3 scripts/tombstone_to_draft.py --from-file tombstone.json --create-bounty
 """
 
 import argparse
@@ -31,6 +28,44 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+
+
+def redact_snippet(text: str) -> str:
+    """Redact sensitive information from crash snippets.
+
+    Removes: tokens, emails, absolute paths, internal IPs.
+    Stdlib only — no external dependencies.
+    """
+    if not text:
+        return text
+
+    # GitHub PATs and API keys (ghp_, sk-, gho_, ghu_, ghs_, ghr_)
+    text = re.sub(r'ghp_[A-Za-z0-9]{36}', '[REDACTED_GITHUB_TOKEN]', text)
+    text = re.sub(r'sk-[A-Za-z0-9]{20,}', '[REDACTED_API_KEY]', text)
+    text = re.sub(r'gh[a-z]_[A-Za-z0-9]{30,}', '[REDACTED_GITHUB_TOKEN]', text)
+
+    # Bearer tokens
+    text = re.sub(r'Bearer\s+[A-Za-z0-9_\-\.]{20,}', 'Bearer [REDACTED]', text)
+    text = re.sub(r'Authorization:\s*[A-Za-z0-9_\-\.]{20,}', 'Authorization: [REDACTED]', text)
+
+    # Generic long hex/base64 tokens (40+ chars, likely tokens)
+    text = re.sub(r'\b[A-Fa-f0-9]{40,}\b', '[REDACTED_HEX]', text)
+
+    # Email addresses
+    text = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '[REDACTED_EMAIL]', text)
+
+    # Absolute Windows paths (C:\, D:\, etc.)
+    text = re.sub(r'[A-Za-z]:\\[^\s"\'<>|]+', '[REDACTED_PATH]', text)
+
+    # Absolute Linux/macOS paths (/home/, /Users/, /root/, /etc/, /var/, /tmp/)
+    text = re.sub(r'/(?:home|Users|root|etc|var|tmp|opt)/[^\s"\'<>|]+', '[REDACTED_PATH]', text)
+
+    # Internal/private IP addresses
+    text = re.sub(r'\b192\.168\.\d{1,3}\.\d{1,3}\b', '[REDACTED_IP]', text)
+    text = re.sub(r'\b10\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', '[REDACTED_IP]', text)
+    text = re.sub(r'\b172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}\b', '[REDACTED_IP]', text)
+
+    return text
 DRAFTS_DIR = REPO / "lessons" / "drafts"
 
 # 4-field tombstone protocol fields
@@ -55,9 +90,9 @@ def _parse_tombstone(data: dict) -> dict:
     return {
         "pid": int(data["pid"]),
         "timestamp": str(data["timestamp"]),
-        "reason": str(data["reason"]),
+        "reason": redact_snippet(str(data["reason"])),
         "exit_code": int(data["exit_code"]),
-        "snippet": str(data.get("snippet", ""))[:500],
+        "snippet": redact_snippet(str(data.get("snippet", ""))[:500]),
         "signal": str(data.get("signal", "")),
         "host": str(data.get("host", "")),
         "node_id": str(data.get("node_id", "unknown")),
@@ -113,7 +148,7 @@ def _generate_ai_hint(tombstone: dict) -> str:
             prompt = (
                 f"你是 MisakaNet 的崩溃诊断助手。以下是一个进程崩溃的墓碑数据，"
                 f"请用 1-2 句简洁中文描述可能的根因和复现建议，"
-                f"让新手能理解如何参与修复这个 Bounty：\n"
+                f"让新手能理解如何参与修复这个 agent task：\n"
                 f"reason: {reason}\n"
                 f"exit_code: {exit_code}\n"
                 f"snippet: {snippet[:300]}\n"
@@ -207,10 +242,10 @@ def _generate_ai_hint(tombstone: dict) -> str:
         guide += f"{i}. {hint}\n"
     guide += (
         f"\n---\n"
-        f"💡 **新手参与指南：**\n"
-        f"- 尝试复现：在相同环境（{domain}）中重现此崩溃\n"
-        f"- 补全 Verification：写出可执行的 `verify_cmd` 验证修复\n"
-        f"- 奖励：+20 信用点 + 搜索配额重置\n"
+        f"💡 **How to contribute:**\n"
+        f"- Reproduce: trigger this crash in the same ({domain}) environment\n"
+        f"- Write Verification: add an executable `verify_cmd` that confirms the fix\n"
+        f"- Reward: merge credit + leaderboard credit + search quota reset\n"
     )
     return guide
 
@@ -240,7 +275,7 @@ def _generate_draft(tombstone: dict, source_file: str = "", ai_hint: str = "") -
     frontmatter = {
         "title": title,
         "domain": domain,
-        "tags": ["draft", "auto-generated", "bounty", f"exit-code-{exit_code}"],
+        "tags": ["draft", "auto-generated", "agent-task", f"exit-code-{exit_code}"],
         "status": "draft",
         "source": "fatal-guard",
         "node_id": node,
@@ -306,10 +341,10 @@ def main():
     parser.add_argument("--from-file", dest="source_file", help="墓碑 JSON 文件路径")
     parser.add_argument("--stdin", action="store_true", help="从 stdin 读取墓碑 JSON")
     parser.add_argument("--dry-run", action="store_true", help="预览模式，不写文件")
-    parser.add_argument("--create-bounty", action="store_true",
-                        help="生成悬赏 Issue 元数据")
+    parser.add_argument("--create-issue", action="store_true",
+                        help="Generate issue metadata for this crash")
     parser.add_argument("--ai-hint", action="store_true",
-                        help="生成 AI 诊断盲盒提示，引导新手参与 Bounty")
+                        help="Generate AI diagnostic hint to guide contributors")
     args = parser.parse_args()
 
     # 读取输入
@@ -381,28 +416,27 @@ def main():
     print(f"  tombstone_hash: {tombstone.get('node_id', '?')}")
     print(f"  -> {output_path}")
 
-    if args.create_bounty:
-        bounty_meta = {
-            "title": f"Bounty: Complete Root Cause for {tombstone['reason'][:60]}",
+    if args.create_issue:
+        issue_meta = {
+            "title": f"[zero-bounty] Complete root cause: {tombstone['reason'][:60]}",
             "draft_file": f"lessons/drafts/{filename}",
-            "tombstone_hash": data.get("tombstone_hash", ""),
-            "reward": "search_quota_reset + 20_credit_points",
+            "tombstone_hash": tombstone.get("tombstone_hash", ""),
+            "reward": "merge credit + leaderboard credit",
             "status": "open",
         }
-        bounty_path = DRAFTS_DIR / f"{Path(filename).stem}.bounty.json"
-        bounty_path.write_text(
-            json.dumps(bounty_meta, ensure_ascii=False, indent=2) + "\n",
+        issue_path = DRAFTS_DIR / f"{Path(filename).stem}.issue.json"
+        issue_path.write_text(
+            json.dumps(issue_meta, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
-        print(f"  bounty: {bounty_path}")
+        print(f"  issue: {issue_path}")
 
-    # 提示下一步
+    # Next steps
     print()
-    print("  下一步:")
-    print(f"  1. 审核 draft: cat lessons/drafts/{filename}")
-    print(f"  2. 编辑补全 Root Cause + Solution + Verification")
-    print(f"  3. 提交 PR: git add lessons/drafts/ && git commit && git push")
-    print(f"  4. 或标记为悬赏: 在 Issue body 中 @agent 认领")
+    print("  Next steps:")
+    print(f"  1. Review draft: cat lessons/drafts/{filename}")
+    print(f"  2. Fill in Root Cause + Solution + Verification")
+    print(f"  3. Submit PR: git add lessons/drafts/ && git commit -s && git push")
 
 
 if __name__ == "__main__":
