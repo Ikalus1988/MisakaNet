@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "模型输出截断 / JSON 解析失败Handling"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "模型输出截断 / JSON 解析失败Handling",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"created": "2026-05-01 08:00 UTC", "domain": "claude", "source": "hermes_wsl", "status": "published", "tags": "", "title": "模型输出截断 / JSON 解析失败Handling", "updated": "2026-05-01 08:00 UTC"}---
 

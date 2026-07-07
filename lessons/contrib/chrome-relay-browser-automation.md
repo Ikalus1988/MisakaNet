@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器", "domain": "development", "tags": ["chrome", "browser", "automation", "cdp", "websocket", "openclaw"], "contributor": "hermes-agent"}---
 

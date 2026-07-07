@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "注册链路设计 — Worker 只创建 Issue，其余交给 Workflow"
-verification: "metadata-normalized"
-{"title": "注册链路设计 — Worker 只创建 Issue，其余交给 Workflow", "domain": "devops", "tags": ["registration", "worker", "register", "github-actions", "feishu", "fallback"], "domain_expert": "unknown"}
+{
+  "domain": "contrib",
+  "title": "注册链路设计 — Worker 只创建 Issue，其余交给 Workflow",
+  "verification": "metadata-normalized",
+  "{\"title\"": "注册链路设计 — Worker 只创建 Issue，其余交给 Workflow\", \"domain\": \"devops\", \"tags\": [\"registration\", \"worker\", \"register\", \"github-actions\", \"feishu\", \"fallback\"], \"domain_expert\": \"unknown\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 背景

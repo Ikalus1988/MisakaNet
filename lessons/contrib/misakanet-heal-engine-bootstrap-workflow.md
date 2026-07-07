@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "MisakaNet --heal Engine Bootstrap Workflow"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "MisakaNet --heal Engine Bootstrap Workflow",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "MisakaNet --heal Engine Bootstrap Workflow — From Traceback to Covered Lesson", "domain": "development", "scope": "broad", "tags": ["misakanet", "heal", "bm25", "broad-only", "fixture", "coverage", "lesson-submission", "workflow", "openclaw"], "status": "published", "confidence": "0.85", "source": "Misaka10004", "created": "2026-06-23", "updated": "2026-06-23"}---
 

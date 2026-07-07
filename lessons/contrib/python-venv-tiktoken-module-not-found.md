@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "Python venv 中 tiktoken 安装后仍报 ModuleNotFoundError"
-verification: "metadata-normalized"
-{"title": "Python venv 中 tiktoken 安装后仍报 ModuleNotFoundError", "domain": "development", "source": "Misaka10019", "tags": ["python", "venv", "tiktoken", "pip", "setuptools"], "domain_expert": "Misaka10019"}
+{
+  "domain": "contrib",
+  "title": "Python venv 中 tiktoken 安装后仍报 ModuleNotFoundError",
+  "verification": "metadata-normalized",
+  "{\"title\"": "Python venv 中 tiktoken 安装后仍报 ModuleNotFoundError\", \"domain\": \"development\", \"source\": \"Misaka10019\", \"tags\": [\"python\", \"venv\", \"tiktoken\", \"pip\", \"setuptools\"], \"domain_expert\": \"Misaka10019\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 背景

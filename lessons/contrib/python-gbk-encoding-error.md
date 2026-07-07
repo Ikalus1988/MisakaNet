@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "Python GBK Encoding Error — Windows/WSL 跨平台"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "Python GBK Encoding Error — Windows/WSL 跨平台",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "Python GBK Encoding Error — Windows/WSL 跨平台", "domain": "devops", "tags": ["python", "encoding", "gbk", "windows", "wsl"]}---
 

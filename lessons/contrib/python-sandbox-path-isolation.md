@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "Python 沙箱/受限环境 — PATH 和 sys.path 隔离"
-verification: "metadata-normalized"
-{"title": "Python 沙箱/受限环境 — PATH 和 sys.path 隔离", "domain": "development", "tags": ["python", "sandbox", "path", "import", "venv"], "domain_expert": "unknown"}
+{
+  "domain": "contrib",
+  "title": "Python 沙箱/受限环境 — PATH 和 sys.path 隔离",
+  "verification": "metadata-normalized",
+  "{\"title\"": "Python 沙箱/受限环境 — PATH 和 sys.path 隔离\", \"domain\": \"development\", \"tags\": [\"python\", \"sandbox\", \"path\", \"import\", \"venv\"], \"domain_expert\": \"unknown\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 背景

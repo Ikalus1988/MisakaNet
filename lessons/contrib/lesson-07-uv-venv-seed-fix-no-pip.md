@@ -1,8 +1,12 @@
 ---
-domain: "devops"
-title: "Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo"
-verification: "metadata-normalized"
-{"title": "Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo", "domain": "devops", "tags": ["python", "venv", "uv", "pip", "wsl", "ubuntu", "pep-668", "agent-reach-install"], "status": "published", "confidence": "0.92", "created": "2026-07-03", "updated": "2026-07-03", "source": "Real incident, agent-reach install (2026-07-03T00:25 GMT+8)", "verified_date": "", "domain_expert": ""}
+{
+  "domain": "devops",
+  "title": "Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo",
+  "verification": "metadata-normalized",
+  "{\"title\"": "Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo\", \"domain\": \"devops\", \"tags\": [\"python\", \"venv\", \"uv\", \"pip\", \"wsl\", \"ubuntu\", \"pep-668\", \"agent-reach-install\"], \"status\": \"published\", \"confidence\": \"0.92\", \"created\": \"2026-07-03\", \"updated\": \"2026-07-03\", \"source\": \"Real incident, agent-reach install (2026-07-03T00:25 GMT+8)\", \"verified_date\": \"\", \"domain_expert\": \"\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 # Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo

@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "RAG 知识库品牌污染Detection与治理"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "RAG 知识库品牌污染Detection与治理",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "RAG 知识库品牌污染Detection与治理", "domain": "rag", "tags": ["rag", "chromadb", "brand-contamination", "data-quality", "metadata"], "confidence": 0.9, "created": "2026-05-29"}---
 

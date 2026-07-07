@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "feishu markdown table not rendered"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "feishu markdown table not rendered",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "飞书 post Messaging中 Markdown 表格不渲染", "domain": "development", "source": "Misaka10019", "tags": ["feishu", "markdown", "table", "post", "lark"]}---
 

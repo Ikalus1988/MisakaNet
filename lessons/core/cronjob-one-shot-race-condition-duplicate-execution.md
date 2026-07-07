@@ -5,8 +5,8 @@
   "source": "hermes_wsl2",
   "status": "published",
   "tags": [
-    "node:ZKA",
-    "project:Hermes-Agent",
+    "node:zka",
+    "project:hermes-agent",
     "severity:critical"
   ],
   "created": "2026-06-05 00:48:38 UTC",

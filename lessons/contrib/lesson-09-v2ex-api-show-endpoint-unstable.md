@@ -1,8 +1,12 @@
 ---
-domain: "scraping"
-title: "V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead"
-verification: "metadata-normalized"
-{"title": "V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead", "domain": "scraping", "tags": ["v2ex", "api", "json-parse-error", "jina-reader", "fallback-strategy", "agent-reach"], "status": "published", "confidence": "0.85", "created": "2026-07-03", "updated": "2026-07-03", "source": "Real incident, lesson fetching from V2EX 2026-07-03T00:42 GMT+8", "verified_date": "", "domain_expert": ""}
+{
+  "domain": "scraping",
+  "title": "V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead",
+  "verification": "metadata-normalized",
+  "{\"title\"": "V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead\", \"domain\": \"scraping\", \"tags\": [\"v2ex\", \"api\", \"json-parse-error\", \"jina-reader\", \"fallback-strategy\", \"agent-reach\"], \"status\": \"published\", \"confidence\": \"0.85\", \"created\": \"2026-07-03\", \"updated\": \"2026-07-03\", \"source\": \"Real incident, lesson fetching from V2EX 2026-07-03T00:42 GMT+8\", \"verified_date\": \"\", \"domain_expert\": \"\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 # V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead

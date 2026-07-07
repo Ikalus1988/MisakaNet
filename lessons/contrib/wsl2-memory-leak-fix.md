@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "WSL2 内存泄漏 / 内存占用过高"
-verification: "metadata-normalized"
-{"title": "WSL2 内存泄漏 / 内存占用过高", "domain": "devops", "tags": ["wsl", "memory", "leak", "performance"], "domain_expert": "unknown"}
+{
+  "domain": "contrib",
+  "title": "WSL2 内存泄漏 / 内存占用过高",
+  "verification": "metadata-normalized",
+  "{\"title\"": "WSL2 内存泄漏 / 内存占用过高\", \"domain\": \"devops\", \"tags\": [\"wsl\", \"memory\", \"leak\", \"performance\"], \"domain_expert\": \"unknown\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 背景

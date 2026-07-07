@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "gh credential helper 路径Error导致 git push 静默失败"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "gh credential helper 路径Error导致 git push 静默失败",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "gh credential helper 路径Error导致 git push 静默失败", "domain": "devops", "tags": ["git", "github", "credential", "gh", "auth", "push"]}---
 

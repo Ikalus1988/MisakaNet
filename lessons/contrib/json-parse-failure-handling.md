@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "JSON 解析失败Handling — 截断 / 格式Error"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "JSON 解析失败Handling — 截断 / 格式Error",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "JSON 解析失败Handling — 截断 / 格式Error", "domain": "devops", "tags": ["json", "parse", "truncated", "llm", "output"]}---
 

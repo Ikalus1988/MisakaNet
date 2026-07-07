@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "Shell Debugging — set -x 与常见Pitfalls"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "Shell Debugging — set -x 与常见Pitfalls",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "Shell Debugging — set -x 与常见Pitfalls", "domain": "development", "tags": ["shell", "bash", "debug", "script"]}---
 

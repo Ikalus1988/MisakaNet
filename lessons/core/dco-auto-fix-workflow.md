@@ -6,7 +6,7 @@
     "github-actions",
     "dco",
     "signoff",
-    "issue_comment",
+    "issue-comment",
     "auto-fix",
     "fork-pr",
     "plan-b",

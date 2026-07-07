@@ -302,6 +302,27 @@ def _metadata_bonus(query: str, doc: CachedDoc) -> float:
     return min(bonus, MAX_METADATA)
 
 
+def _metadata_bonus_breakdown(query: str, doc: CachedDoc) -> list[tuple[str, float]]:
+    """Return per-field metadata bonus breakdown for --explain mode."""
+    parts = []
+    q = query.lower()
+    t = doc.title.lower()
+    if doc.domain and doc.domain.lower() in q:
+        parts.append(("domain_match", WEIGHT_DOMAIN_MATCH))
+    if t == q:
+        parts.append(("title_exact", WEIGHT_TITLE_EXACT))
+    elif q in t or any(word in t for word in q.split()):
+        parts.append(("title_partial", WEIGHT_TITLE_PARTIAL))
+    status_w = WEIGHT_STATUS.get(doc.status, 0.0)
+    if status_w:
+        parts.append((f"status({doc.status})", status_w))
+    if doc.reference:
+        parts.append(("has_reference", WEIGHT_HAS_REF))
+    if doc.source and doc.source != "bootstrap":
+        parts.append(("source", 0.05))
+    return parts
+
+
 def _normalize(values: list[float]) -> list[float]:
     if not values:
         return values
@@ -327,6 +348,20 @@ def _compute_boost(doc: CachedDoc) -> float:
     if doc.is_draft:
         boost += BOOST_DRAFT
     return boost
+
+
+def _compute_boost_breakdown(doc: CachedDoc) -> list[tuple[str, float]]:
+    """Return per-factor boost breakdown for --explain mode."""
+    parts = []
+    if _is_core(doc):
+        parts.append(("core", BOOST_CORE))
+    if _is_verified(doc):
+        parts.append(("verified", BOOST_VERIFIED))
+    if _is_recent(doc):
+        parts.append(("recent", BOOST_RECENT))
+    if doc.is_draft:
+        parts.append(("draft", BOOST_DRAFT))
+    return parts
 
 
 def _rank_docs_impl(
@@ -456,17 +491,29 @@ def _format_output(
         print(f"  {'':>25} {_score_bar(score):>15}  {time_str}")
         if match_reason:
             print(f"  {'':>25} (matched: {match_reason})")
-        # Feature: --explain score breakdown
+        # Feature: --explain score breakdown (#303)
         if explain and query:
             bm25 = _compute_bm25_scores(query, [doc])[0]
-            meta = _metadata_bonus(query, doc)
+            meta_parts = _metadata_bonus_breakdown(query, doc)
+            meta_total = sum(v for _, v in meta_parts)
             baseline = doc.score_baseline
-            boost = _compute_boost(doc)  # Feature #228
+            boost_parts = _compute_boost_breakdown(doc)
+            boost_total = sum(v for _, v in boost_parts)
             tag_str = ", ".join(doc.tags[:5]) if doc.tags else "—"
-            print(
-                f"  {'':>25} ↳ BM25: {bm25:.3f} | Meta: {meta:.3f} | "
-                f"Base: {baseline:.3f} | Boost: {boost:+.2f} | Tags: {tag_str}"
-            )
+
+            print(f"  {'':>25} ↳ BM25: {bm25:.3f}")
+            if meta_parts:
+                meta_detail = ", ".join(f"{k}(+{v:.2f})" for k, v in meta_parts)
+                print(f"  {'':>25}   Meta: {meta_total:.3f} = {meta_detail}")
+            else:
+                print(f"  {'':>25}   Meta: 0.000")
+            print(f"  {'':>25}   Base: {baseline:.3f}")
+            if boost_parts:
+                boost_detail = ", ".join(f"{k}({v:+.2f})" for k, v in boost_parts)
+                print(f"  {'':>25}   Boost: {boost_total:+.2f} = {boost_detail}")
+            else:
+                print(f"  {'':>25}   Boost: +0.00")
+            print(f"  {'':>25}   Tags: {tag_str}")
         # Feature: related lessons (cross-lesson reference graph)
         if all_docs is not None:
             related = _get_related_lessons(doc, all_docs, max_related=3)

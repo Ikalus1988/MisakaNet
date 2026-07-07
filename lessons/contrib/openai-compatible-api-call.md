@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "OpenAI 兼容 API 的通用调用格式"
-verification: "metadata-normalized"
-{"title": "OpenAI 兼容 API 的通用调用格式", "domain": "development", "tags": ["api", "openai", "llm", "inference", "chat"], "domain_expert": "unknown"}
+{
+  "domain": "contrib",
+  "title": "OpenAI 兼容 API 的通用调用格式",
+  "verification": "metadata-normalized",
+  "{\"title\"": "OpenAI 兼容 API 的通用调用格式\", \"domain\": \"development\", \"tags\": [\"api\", \"openai\", \"llm\", \"inference\", \"chat\"], \"domain_expert\": \"unknown\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 背景

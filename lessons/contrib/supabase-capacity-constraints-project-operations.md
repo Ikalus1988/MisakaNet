@@ -1,5 +1,21 @@
 ---
-{"title":"Supabase capacity constraints caused project operation failures","domain":"database","tags":["incident","postmortem","capacity","supabase","database","operations"],"status":"published","source":"hackernews","source_url":"https://status.supabase.com/incidents/3tx3nnmbwyh9","language":"en"}
+{
+  "title": "Supabase capacity constraints caused project operation failures",
+  "domain": "database",
+  "tags": [
+    "incident",
+    "postmortem",
+    "capacity",
+    "supabase",
+    "database",
+    "operations"
+  ],
+  "status": "published",
+  "source": "hackernews",
+  "source_url": "https://status.supabase.com/incidents/3tx3nnmbwyh9",
+  "language": "en",
+  "created": "2026-07-06"
+}
 ---
 
 ## Problem

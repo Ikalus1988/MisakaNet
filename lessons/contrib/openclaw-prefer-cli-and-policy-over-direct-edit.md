@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "openclaw prefer cli and policy over direct edit"
-verification: "metadata-normalized"
-{"title": "OpenClaw优先CLI和官方策略", "domain": "agentops", "tags": ["openclaw", "cli", "policy", "config"], "domain_expert": "unknown"}
+{
+  "domain": "contrib",
+  "title": "openclaw prefer cli and policy over direct edit",
+  "verification": "metadata-normalized",
+  "{\"title\"": "OpenClaw优先CLI和官方策略\", \"domain\": \"agentops\", \"tags\": [\"openclaw\", \"cli\", \"policy\", \"config\"], \"domain_expert\": \"unknown\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 背景

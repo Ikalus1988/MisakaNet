@@ -7,7 +7,7 @@
   "tags": [
     "project:agent-medici",
     "severity:high",
-    "node:hermes_wsl"
+    "node:hermes-wsl"
   ],
   "language": "en",
   "created": "2026-05-03",

@@ -9,7 +9,8 @@
     "project:self-grow-wiki",
     "severity:medium",
     "node:hermes-wsl"
-  ]
+  ],
+  "created": "2026-07-06"
 }
 ---
 

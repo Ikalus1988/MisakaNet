@@ -6,7 +6,7 @@
   "status": "published",
   "tags": [
     "project:self-grow-wiki",
-    "node:hermes_wsl",
+    "node:hermes-wsl",
     "scope:broad"
   ],
   "language": "en",

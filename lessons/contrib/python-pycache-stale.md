@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "Python 代码修改不生效 — stale .pyc Cache"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "Python 代码修改不生效 — stale .pyc Cache",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "Python 代码修改不生效 — stale .pyc Cache", "domain": "devops", "tags": ["python", "pyc", "cache", "debug"]}---
 

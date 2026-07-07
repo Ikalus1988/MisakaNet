@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "wxauto 必须在 Windows Python 下安装，不能走 WSL pip"
-verification: "metadata-normalized"
-{"title": "wxauto 必须在 Windows Python 下安装，不能走 WSL pip", "domain": "devops", "subdomain": "wechat", "source": "bootstrap", "status": "published", "tags": ["project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow"], "confidence": "0.85", "created": "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}
+{
+  "domain": "contrib",
+  "title": "wxauto 必须在 Windows Python 下安装，不能走 WSL pip",
+  "verification": "metadata-normalized",
+  "{\"title\"": "wxauto 必须在 Windows Python 下安装，不能走 WSL pip\", \"domain\": \"devops\", \"subdomain\": \"wechat\", \"source\": \"bootstrap\", \"status\": \"published\", \"tags\": [\"project:rag\", \"platform:windows\", \"node:hermes_wsl\", \"scope:narrow\"], \"confidence\": \"0.85\", \"created\": \"2026-05-03\", \"domain_expert\": \"bootstrap\", \"verified_date\": \"2026-05-03\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## Problem

@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "static page width consistency"
-verification: "metadata-normalized"
-{"title": "静态页面多组件宽度一致性——各自定义 max-width 导致视觉割裂", "domain": "frontend", "tags": ["css", "layout", "ux", "responsive"], "domain_expert": "unknown"}
+{
+  "domain": "contrib",
+  "title": "static page width consistency",
+  "verification": "metadata-normalized",
+  "{\"title\"": "静态页面多组件宽度一致性——各自定义 max-width 导致视觉割裂\", \"domain\": \"frontend\", \"tags\": [\"css\", \"layout\", \"ux\", \"responsive\"], \"domain_expert\": \"unknown\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 背景

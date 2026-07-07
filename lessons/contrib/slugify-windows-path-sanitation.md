@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "slugify windows path sanitation"
-verification: "metadata-normalized"
-{"title": "Slugify filename sanitation crash on Windows and WSL", "domain": "scripts", "tags": ["slugify", "windows", "wsl", "sanitation", "path-errors"], "domain_expert": "unknown"}
+{
+  "domain": "contrib",
+  "title": "slugify windows path sanitation",
+  "verification": "metadata-normalized",
+  "{\"title\"": "Slugify filename sanitation crash on Windows and WSL\", \"domain\": \"scripts\", \"tags\": [\"slugify\", \"windows\", \"wsl\", \"sanitation\", \"path-errors\"], \"domain_expert\": \"unknown\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 问题

@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "CodeWhale 中 git push 的正确方式 — YOLO task + gh CLI"
-verification: "metadata-normalized"
-{"title": "CodeWhale 中 git push 的正确方式 — YOLO task + gh CLI", "domain": "devops", "tags": ["codewhale", "git", "yolo", "push", "lesson"], "domain_expert": "unknown"}
+{
+  "domain": "contrib",
+  "title": "CodeWhale 中 git push 的正确方式 — YOLO task + gh CLI",
+  "verification": "metadata-normalized",
+  "{\"title\"": "CodeWhale 中 git push 的正确方式 — YOLO task + gh CLI\", \"domain\": \"devops\", \"tags\": [\"codewhale\", \"git\", \"yolo\", \"push\", \"lesson\"], \"domain_expert\": \"unknown\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 背景

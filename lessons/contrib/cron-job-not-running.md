@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "Cron 作业不执行 / 不生效排障"
-verification: "metadata-normalized"
-{"title": "Cron 作业不执行 / 不生效排障", "domain": "devops", "tags": ["cron", "scheduler", "not-running", "debug"], "domain_expert": "unknown"}
+{
+  "domain": "contrib",
+  "title": "Cron 作业不执行 / 不生效排障",
+  "verification": "metadata-normalized",
+  "{\"title\"": "Cron 作业不执行 / 不生效排障\", \"domain\": \"devops\", \"tags\": [\"cron\", \"scheduler\", \"not-running\", \"debug\"], \"domain_expert\": \"unknown\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 背景

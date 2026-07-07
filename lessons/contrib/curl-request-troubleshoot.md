@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "curl / wget 请求失败通用Diagnosis"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "curl / wget 请求失败通用Diagnosis",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "curl / wget 请求失败通用Diagnosis", "domain": "devops", "tags": ["network", "curl", "wget", "debug", "troubleshoot"]}---
 

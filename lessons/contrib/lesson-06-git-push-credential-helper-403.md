@@ -1,8 +1,12 @@
 ---
-domain: "devops"
-title: "Git Push to Fork Repo: 'Permission Denied to Other User' — Wrong PAT Selected by Helper"
-verification: "metadata-normalized"
-{"title": "Git Push to Fork Repo: 'Permission Denied to Other User' — Wrong PAT Selected by Helper", "domain": "devops", "tags": ["git", "github", "credentials-helper", "pat", "multi-account", "403", "fork-workflow"], "status": "published", "confidence": "0.95", "created": "2026-07-03", "updated": "2026-07-03", "source": "https://github.com/zsxh1990/pr-genius (commit history, 2026-07-02T23:36 GMT+8)", "verified_date": "", "domain_expert": ""}
+{
+  "domain": "devops",
+  "title": "Git Push to Fork Repo: 'Permission Denied to Other User' — Wrong PAT Selected by Helper",
+  "verification": "metadata-normalized",
+  "{\"title\"": "Git Push to Fork Repo: 'Permission Denied to Other User' — Wrong PAT Selected by Helper\", \"domain\": \"devops\", \"tags\": [\"git\", \"github\", \"credentials-helper\", \"pat\", \"multi-account\", \"403\", \"fork-workflow\"], \"status\": \"published\", \"confidence\": \"0.95\", \"created\": \"2026-07-03\", \"updated\": \"2026-07-03\", \"source\": \"https://github.com/zsxh1990/pr-genius (commit history, 2026-07-02T23:36 GMT+8)\", \"verified_date\": \"\", \"domain_expert\": \"\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 # Git Push to Fork Repo: "Permission Denied to Other User" — Wrong PAT Selected by Helper

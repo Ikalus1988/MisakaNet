@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "js dead code chain break"
-verification: "metadata-normalized"
-{"title": "JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效", "domain": "frontend", "tags": ["js", "runtime", "typeerror", "execution-model", "defensive"], "domain_expert": "unknown"}
+{
+  "domain": "contrib",
+  "title": "js dead code chain break",
+  "verification": "metadata-normalized",
+  "{\"title\"": "JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效\", \"domain\": \"frontend\", \"tags\": [\"js\", \"runtime\", \"typeerror\", \"execution-model\", \"defensive\"], \"domain_expert\": \"unknown\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 背景

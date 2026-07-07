@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix", "domain": "devops", "tags": ["github-actions", "ci", "dco", "python", "ai-agent", "fork-pr", "pytest", "coverage"], "status": "published", "source": "deepseek", "created": "2026-06-04 00:00:00 UTC", "updated": "2026-06-12 00:00:00 UTC"}---
 

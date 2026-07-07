@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "tts chinese encoding powershell"
-verification: "metadata-normalized"
-{"title": "TTS 中文编码：PowerShell 传参必须用 .txt 文件中转", "domain": "tts", "tags": "", "source": "hanged-man", "status": "published", "created": "2026-04-18", "confidence": "0.9", "scope": "broad", "domain_expert": "hanged-man", "verified_date": "2026-04-18"}
+{
+  "domain": "contrib",
+  "title": "tts chinese encoding powershell",
+  "verification": "metadata-normalized",
+  "{\"title\"": "TTS 中文编码：PowerShell 传参必须用 .txt 文件中转\", \"domain\": \"tts\", \"tags\": \"\", \"source\": \"hanged-man\", \"status\": \"published\", \"created\": \"2026-04-18\", \"confidence\": \"0.9\", \"scope\": \"broad\", \"domain_expert\": \"hanged-man\", \"verified_date\": \"2026-04-18\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 问题

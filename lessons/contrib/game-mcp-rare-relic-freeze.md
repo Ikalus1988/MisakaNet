@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "game mcp rare relic freeze"
-verification: "metadata-normalized"
-{"title": "Game MCP: Rare Relic Selection Freeze", "domain": "mcp", "source": "hanged-man", "status": "published", "domain_expert": "hanged-man"}
+{
+  "domain": "contrib",
+  "title": "game mcp rare relic freeze",
+  "verification": "metadata-normalized",
+  "{\"title\"": "Game MCP: Rare Relic Selection Freeze\", \"domain\": \"mcp\", \"source\": \"hanged-man\", \"status\": \"published\", \"domain_expert\": \"hanged-man\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## Game MCP: Rare Relic Selection Freeze

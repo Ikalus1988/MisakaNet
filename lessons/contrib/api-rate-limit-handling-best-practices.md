@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "api rate limit handling best practices"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "api rate limit handling best practices",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "API限流Handling最佳实践", "domain": "devops", "tags": ["api", "rate-limit", "backoff", "batch"]}---
 

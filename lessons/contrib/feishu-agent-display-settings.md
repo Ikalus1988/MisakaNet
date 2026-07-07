@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "feishu agent display settings"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "feishu agent display settings",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "飞书 Agent 显示Optimization：禁用工具调用和上下文提示", "domain": "feishu", "source": "bootstrap", "status": "published", "confidence": "0.9", "created": "2026-05-19"}---
 

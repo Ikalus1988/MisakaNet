@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "feishu bot setup complete"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "feishu bot setup complete",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "飞书机器人完整SetupGuide", "domain": "feishu", "source": "bootstrap", "status": "published", "confidence": "0.95", "created": "2026-05-19"}---
 ## Verification

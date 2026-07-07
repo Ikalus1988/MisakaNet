@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "slugify path traversal deep coverage"
-verification: "metadata-normalized"
-{"title": "Slugify: deep coverage of path traversal, null bytes, and reserved names", "domain": "scripts", "tags": ["slugify", "path-traversal", "windows-reserved", "null-byte", "test-coverage", "hardening"], "domain_expert": "unknown"}
+{
+  "domain": "contrib",
+  "title": "slugify path traversal deep coverage",
+  "verification": "metadata-normalized",
+  "{\"title\"": "Slugify: deep coverage of path traversal, null bytes, and reserved names\", \"domain\": \"scripts\", \"tags\": [\"slugify\", \"path-traversal\", \"windows-reserved\", \"null-byte\", \"test-coverage\", \"hardening\"], \"domain_expert\": \"unknown\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 问题

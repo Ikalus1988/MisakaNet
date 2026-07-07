@@ -1,8 +1,12 @@
 ---
-domain: "contrib"
-title: "feishu doc url use api return"
-verification: "metadata-normalized"
-{"title": "Feishu 文档 URL：必须用 API 返回值，不要拼接", "domain": "feishu", "tags": "", "source": "hanged-man", "status": "published", "created": "2026-03-29", "confidence": "0.95", "scope": "broad", "domain_expert": "hanged-man", "verified_date": "2026-03-29"}
+{
+  "domain": "contrib",
+  "title": "feishu doc url use api return",
+  "verification": "metadata-normalized",
+  "{\"title\"": "Feishu 文档 URL：必须用 API 返回值，不要拼接\", \"domain\": \"feishu\", \"tags\": \"\", \"source\": \"hanged-man\", \"status\": \"published\", \"created\": \"2026-03-29\", \"confidence\": \"0.95\", \"scope\": \"broad\", \"domain_expert\": \"hanged-man\", \"verified_date\": \"2026-03-29\"}",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 
 ## 问题

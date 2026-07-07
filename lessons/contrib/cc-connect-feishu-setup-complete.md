@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "cc connect feishu setup complete"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "cc connect feishu setup complete",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "cc-connect 飞书机器人完整SetupGuide", "domain": "feishu", "subdomain": "cc-connect", "source": "bootstrap", "status": "published", "confidence": "0.95", "created": "2026-05-19"}---
 ## Verification

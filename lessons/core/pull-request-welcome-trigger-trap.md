@@ -4,8 +4,8 @@
   "domain": "devops",
   "tags": [
     "github-actions",
-    "pull_request_target",
-    "author_association",
+    "pull-request-target",
+    "author-association",
     "first-time-contributor",
     "welcome",
     "debug"

@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "GitHub TLS 握手失败 — gnutls_handshake() Error"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "GitHub TLS 握手失败 — gnutls_handshake() Error",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "GitHub TLS 握手失败 — gnutls_handshake() Error", "domain": "devops", "tags": ["git", "github", "TLS", "SSL", "network"]}---
 

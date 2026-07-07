@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "磁盘空间不足 / chroma_db_v4 CacheCleanup"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "磁盘空间不足 / chroma_db_v4 CacheCleanup",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"created": "2026-05-01 08:00 UTC", "domain": "devops", "source": "hermes_wsl", "status": "published", "tags": "", "title": "磁盘空间不足 / chroma_db_v4 CacheCleanup", "updated": "2026-05-01 08:00 UTC"}---
 

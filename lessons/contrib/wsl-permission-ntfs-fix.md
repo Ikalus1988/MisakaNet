@@ -1,7 +1,11 @@
 ---
-domain: "contrib"
-title: "Permission Denied / WSL NTFS 跨文件系统PermissionFix"
-verification: "metadata-normalized"
+{
+  "domain": "contrib",
+  "title": "Permission Denied / WSL NTFS 跨文件系统PermissionFix",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "unknown"
+}
 ---
 ---{"title": "Permission Denied / WSL NTFS 跨文件系统PermissionFix", "domain": "devops", "tags": ["permission", "wsl", "ntfs", "eacces", "filesystem"]}---
 

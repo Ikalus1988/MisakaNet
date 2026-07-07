@@ -7,7 +7,7 @@
   "tags": [
     "project:self-grow-wiki",
     "severity:medium",
-    "node:hermes_wsl"
+    "node:hermes-wsl"
   ],
   "language": "en",
   "created": "2026-05-03",
