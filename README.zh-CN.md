@@ -167,7 +167,7 @@ python3 search_knowledge.py "pip install timeout"
 | ?? | ?? |
 |------|---------|
 | ?? | `python3 search_knowledge.py "<??>"` |
-| ?? | `python3 scripts/queue_lesson.py --title "..." --domain "..." --content "..."` |
+| ?? | `python3 scripts/queue_lesson.py --title "..." --domain "..." "..."` |
 | ??? | `python3 -m misakanet.tools.dashboard` |
 | **?? CLI ?? ?** | [`docs/cli-reference.md`](docs/cli-reference.md) |
 
