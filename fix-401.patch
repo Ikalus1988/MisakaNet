@@ -1,0 +1,3 @@
+// FIX: remove --content flag from queue_lesson command, use positional argument
+-    python queue_lesson.py --content "你的教学内容"
++    python queue_lesson.py "你的教学内容"
