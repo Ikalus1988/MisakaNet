@@ -429,6 +429,20 @@
     "status": "active"
   },
   {
+    "id": "auth-header-bug",
+    "title": "auth-header-bug",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "The Moorcheh API was not accepting authentication headers correctly, causing 401 Unauthorized errors.",
+    "url": "lessons/contrib/auth-header-bug.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
     "id": "bge-embedding-fallback-crash",
     "title": "BGE Embedding Fallback Crash",
     "domain": "rag",
@@ -2610,6 +2624,20 @@
     "summary": "> Cross-project SOP for shipping `_ERROR_HANDLER` env-var fatal error hooks through AI-reviewed upstreams.",
     "url": "lessons/contrib/swarm-pr-battle-playbook.md",
     "created": "2026-07-06",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
+    "id": "testimonio-misakanet",
+    "title": "testimonio-misakanet",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "��#\u0000 \u0000T\u0000e\u0000s\u0000t\u0000i\u0000m\u0000o\u0000n\u0000i\u0000o\u0000:\u0000 \u0000M\u0000i\u0000s\u0000a\u0000k\u0000a\u0000N\u0000e\u0000t\u0000 \u0000m\u0000e\u0000 \u0000a\u0000y\u0000u\u0000d\u0000o\u0000 \u0000a\u0000 \u0000r\u0000e\u0000s\u0000o\u0000l\u0000v\u0000e\u0000r\u0000 \u0000M\u0000o\u0000d\u0000u\u0000l\u0000e\u0000N\u0000o\u0000t\u0000F\u0000o\u0000u\u0000n\u0000d\u0000E\u0000r\u0000r\u0000o\u0000r\u0000",
+    "url": "lessons/contrib/testimonio-misakanet.md",
+    "created": "",
     "updated": "",
     "validity_period_days": 365,
     "environment_version": "",
