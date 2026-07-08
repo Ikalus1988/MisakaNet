@@ -364,6 +364,36 @@ def _compute_boost_breakdown(doc: CachedDoc) -> list[tuple[str, float]]:
     return parts
 
 
+# Synonym expansion
+SYNONYM_PATH = Path(__file__).resolve().parent.parent.parent / "synonyms.json"
+_SYN_CACHE = None
+
+def load_synonyms() -> dict:
+    global _SYN_CACHE
+    if _SYN_CACHE is not None:
+        return _SYN_CACHE
+    try:
+        with open(SYNONYM_PATH) as f:
+            _SYN_CACHE = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        _SYN_CACHE = {}
+    return _SYN_CACHE
+
+def expand_query(query: str, synonyms: dict | None = None, max_syns: int = 2):
+    if not synonyms:
+        return query, {}
+    terms = query.lower().split()
+    expansions = {}
+    exp_set = set()
+    for term in terms:
+        if term in synonyms:
+            syns = synonyms[term][:max_syns]
+            expansions[term] = syns
+            exp_set.update(syns)
+    if not expansions:
+        return query, {}
+    return query + " " + " ".join(exp_set), expansions
+
 def _rank_docs_impl(
     query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False
 ) -> list[tuple[float, CachedDoc]]:
