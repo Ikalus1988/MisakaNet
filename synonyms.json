@@ -1,0 +1,123 @@
+{
+  "timeout": [
+    "connection_refused",
+    "retry"
+  ],
+  "error": [
+    "exception",
+    "bug",
+    "failure"
+  ],
+  "crash": [
+    "hang",
+    "freeze",
+    "segfault"
+  ],
+  "slow": [
+    "latency",
+    "lag",
+    "degraded"
+  ],
+  "memory": [
+    "ram",
+    "heap",
+    "allocation"
+  ],
+  "network": [
+    "connection",
+    "tcp",
+    "socket",
+    "dns"
+  ],
+  "database": [
+    "db",
+    "sql",
+    "query",
+    "index"
+  ],
+  "auth": [
+    "login",
+    "authentication",
+    "credential"
+  ],
+  "cache": [
+    "redis",
+    "memcache",
+    "buffer"
+  ],
+  "deploy": [
+    "release",
+    "rollout",
+    "publish"
+  ],
+  "test": [
+    "unit_test",
+    "integration_test",
+    "regression"
+  ],
+  "security": [
+    "vulnerability",
+    "exploit",
+    "cve"
+  ],
+  "config": [
+    "configuration",
+    "settings",
+    "setup"
+  ],
+  "api": [
+    "rest",
+    "endpoint",
+    "interface"
+  ],
+  "async": [
+    "concurrent",
+    "parallel",
+    "non_blocking"
+  ],
+  "thread": [
+    "process",
+    "coroutine",
+    "worker"
+  ],
+  "queue": [
+    "message_queue",
+    "pub_sub",
+    "stream"
+  ],
+  "log": [
+    "logging",
+    "tracing",
+    "monitoring"
+  ],
+  "backup": [
+    "restore",
+    "recovery",
+    "snapshot"
+  ],
+  "encrypt": [
+    "decrypt",
+    "cipher",
+    "crypto"
+  ],
+  "load": [
+    "stress",
+    "benchmark",
+    "throughput"
+  ],
+  "docker": [
+    "container",
+    "image",
+    "pod"
+  ],
+  "response": [
+    "reply",
+    "answer",
+    "result"
+  ],
+  "request": [
+    "query",
+    "call",
+    "invoke"
+  ]
+}
