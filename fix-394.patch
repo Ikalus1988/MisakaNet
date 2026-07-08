@@ -1,0 +1,45 @@
+# FIX: Add regression tests for tombstone redaction covering all sensitive patterns
+import pytest
+from scripts.tombstone_to_draft import redact_snippet
+
+
+def test_redact_github_token():
+    input_text = "Token: ghp_1234567890abcdefg"
+    output = redact_snippet(input_text)
+    assert "ghp_1234567890abcdefg" not in output
+
+
+def test_redact_bearer_token():
+    input_text = "Authorization: Bearer my_secret_token_12345"
+    output = redact_snippet(input_text)
+    assert "my_secret_token_12345" not in output
+
+
+def test_redact_email():
+    input_text = "Contact: user@example.com"
+    output = redact_snippet(input_text)
+    assert "user@example.com" not in output
+
+
+def test_redact_windows_absolute_path():
+    input_text = "Path: C:\\Users\\Alice\\Documents\\file.txt"
+    output = redact_snippet(input_text)
+    assert "C:\\Users\\Alice\\Documents\\file.txt" not in output
+
+
+def test_redact_linux_absolute_path():
+    input_text = "Path: /home/alice/secret/data.txt"
+    output = redact_snippet(input_text)
+    assert "/home/alice/secret/data.txt" not in output
+
+
+def test_redact_internal_ip_192():
+    input_text = "Host: 192.168.1.100"
+    output = redact_snippet(input_text)
+    assert "192.168.1.100" not in output
+
+
+def test_redact_internal_ip_10():
+    input_text = "Host: 10.0.0.5"
+    output = redact_snippet(input_text)
+    assert "10.0.0.5" not in output
