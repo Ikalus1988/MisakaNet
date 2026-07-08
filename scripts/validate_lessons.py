@@ -11,6 +11,17 @@ import re
 import sys
 from pathlib import Path
 
+
+def configure_console_output() -> None:
+    """Avoid UnicodeEncodeError for emoji output on legacy Windows consoles."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(errors="replace")
+
+
+configure_console_output()
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_PATH = REPO_ROOT / "schemas" / "lesson.json"
 LESSONS_DIR = REPO_ROOT / "lessons"
