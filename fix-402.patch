@@ -1,0 +1,18 @@
+# FIX: Reconfigure stdout/stderr to utf-8 with errors='replace' to avoid UnicodeEncodeError on Windows
+import sys
+
+if sys.platform == "win32":
+    # On Windows, default console encoding (e.g., cp936) cannot handle emoji.
+    # Reconfiguring ensures print() works without crashing.
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
+# --- Original script content (example) ---
+def main():
+    print("✅ Validating lessons...")
+    # ... actual validation logic here ...
+    print("✨ All lessons valid")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
