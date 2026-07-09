@@ -50,6 +50,24 @@
 <script>
 const LESSONS_URL = "/data/lessons.json";
 let _lessons = null;
+let _lastResults = [];
+
+function escapeHTML(value) {
+  return String(value || '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+
+function getLessonUrl(lesson) {
+  const raw = lesson && (lesson.url || lesson.path || '');
+  if (!raw) return 'https://github.com/Ikalus1988/MisakaNet/tree/main/lessons';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return 'https://github.com/Ikalus1988/MisakaNet/blob/main/' + encodeURI(String(raw).replace(/^\/+/, ''));
+}
 
 function isSearchable(l) {
   const text = ((l.title||'') + ' ' + (l.summary||'')).toLowerCase();
@@ -74,22 +92,30 @@ function search(q) {
   }).filter(l => l.score > 0).sort((a,b) => b.score - a.score).slice(0, 20);
 }
 
+function updateUrl(q) {
+  const url = new URL(location);
+  if (q) url.searchParams.set('q', q);
+  else url.searchParams.delete('q');
+  history.replaceState(null, '', url);
+}
+
 function render(results, q) {
   const el = document.getElementById('results');
+  _lastResults = results;
   if (!results.length) {
     el.innerHTML = '<div class="fallback">' +
-      '<div style="margin-bottom:12px;">No exact match for "' + q.replace(/</g,'&lt;') + '". Try a broader term.</div>' +
-      '<div style="font-size:12px;"><a href="/skill.md">Install agent skill</a> · <a href="https://github.com/Ikalus1988/MisakaNet">Submit a lesson</a></div></div>';
+      '<div style="margin-bottom:12px;">No exact match for "' + escapeHTML(q) + '". Try a broader term.</div>' +
+      '<div style="font-size:12px;"><a href="/skill.md">Install agent skill</a> / <a href="https://github.com/Ikalus1988/MisakaNet">Submit a lesson</a></div></div>';
     return;
   }
   el.innerHTML = results.map(r => {
-    const title = (r.title||'').replace(/</g,'&lt;');
-    const summary = (r.summary||'').slice(0,150).replace(/</g,'&lt;');
-    const domain = r.domain||'general';
-    const status = r.status||'published';
-    const tags = (r.tags||[]).slice(0,4).map(t => t.replace(/</g,'&lt;')).join(', ');
-    const url = r.url ? 'https://github.com/Ikalus1988/MisakaNet/blob/main/' + r.url : '#';
-    return '<div class="result" onclick="window.open(\'' + url + '\',\'_blank\')">' +
+    const title = escapeHTML(r.title);
+    const summary = escapeHTML((r.summary||'').slice(0,150));
+    const domain = escapeHTML(r.domain||'general');
+    const status = escapeHTML(r.status||'published');
+    const tags = (r.tags||[]).slice(0,4).map(escapeHTML).join(', ');
+    const url = getLessonUrl(r);
+    return '<div class="result" tabindex="0" data-url="' + escapeHTML(url) + '">' +
       '<div class="result-title">' + title + '</div>' +
       '<div class="result-meta">' +
         '<span class="badge badge-domain">' + domain + '</span>' +
@@ -97,9 +123,26 @@ function render(results, q) {
       '</div>' +
       '<div class="result-summary">' + summary + '</div>' +
       (tags ? '<div class="result-tags">' + tags + '</div>' : '') +
-      '<a class="result-link" href="' + url + '" target="_blank" onclick="event.stopPropagation()">Open lesson →</a>' +
+      '<a class="result-link" href="' + escapeHTML(url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open lesson -&gt;</a>' +
     '</div>';
   }).join('');
+
+  el.querySelectorAll('.result').forEach(node => {
+    node.addEventListener('click', () => window.open(node.dataset.url, '_blank', 'noopener'));
+    node.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        window.open(node.dataset.url, '_blank', 'noopener');
+      }
+    });
+  });
+}
+
+function runSearch(q) {
+  const results = search(q);
+  render(results, q);
+  updateUrl(q);
+  return results;
 }
 
 async function init() {
@@ -107,9 +150,8 @@ async function init() {
     const r = await fetch(LESSONS_URL);
     if (!r.ok) throw new Error(r.status);
     _lessons = await r.json();
-    document.getElementById('stats').textContent = _lessons.filter(isSearchable).length + ' curated lessons · zero-dep · GitHub-audited';
+    document.getElementById('stats').textContent = _lessons.filter(isSearchable).length + ' curated lessons / zero-dep / GitHub-audited';
     document.getElementById('results').innerHTML = '';
-    // Check URL params
     const params = new URLSearchParams(location.search);
     const q = params.get('q');
     if (q) {
@@ -123,12 +165,17 @@ async function init() {
 
 document.getElementById('q').addEventListener('input', function() {
   const q = this.value.trim();
-  if (!q) { document.getElementById('results').innerHTML = ''; return; }
-  render(search(q), q);
-  // Update URL
-  const url = new URL(location);
-  url.searchParams.set('q', q);
-  history.replaceState(null, '', url);
+  if (!q) { _lastResults = []; document.getElementById('results').innerHTML = ''; updateUrl(''); return; }
+  runSearch(q);
+});
+
+document.getElementById('q').addEventListener('keydown', function(event) {
+  if (event.key !== 'Enter') return;
+  const q = this.value.trim();
+  if (!q) return;
+  event.preventDefault();
+  const results = runSearch(q);
+  if (results.length) window.open(getLessonUrl(results[0]), '_blank', 'noopener');
 });
 
 init();

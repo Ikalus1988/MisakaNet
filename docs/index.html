@@ -1521,7 +1521,7 @@
     <div id="lesson-count-search" style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Search failure lessons. OKF-compatible. Zero-dep local fallback. MCP-ready.</div>
   </div>
   <div style="margin:0 auto;position:relative;max-width:600px;">
-    <input id="search-input" type="text" placeholder="Search failure lessons... (e.g., pip timeout, profinet, database locked)" style="width:100%;padding:12px 16px;border:1px solid rgba(0,229,255,0.15);border-radius:10px;background:rgba(0,0,0,0.4);color:#e2e8f0;font-size:14px;outline:none;box-sizing:border-box;transition:border-color 0.25s;font-family:'Inter','Noto Sans SC',sans-serif;" oninput="debounceSearch()" onfocus="onSearchFocus(this)" onblur="setTimeout(()=>document.getElementById('search-results').style.display='none',200)"/>
+    <input id="search-input" type="text" placeholder="Search failure lessons... (e.g., pip timeout, profinet, database locked)" style="width:100%;padding:12px 16px;border:1px solid rgba(0,229,255,0.15);border-radius:10px;background:rgba(0,0,0,0.4);color:#e2e8f0;font-size:14px;outline:none;box-sizing:border-box;transition:border-color 0.25s;font-family:'Inter','Noto Sans SC',sans-serif;" oninput="debounceSearch()" onkeydown="handleSearchKeydown(event)" onfocus="onSearchFocus(this)" onblur="setTimeout(()=>document.getElementById('search-results').style.display='none',200)"/>
     <span class="search-hint" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);">⌘K</span>
     <div id="search-results" style="display:none;margin-top:6px;max-height:400px;overflow-y:auto;background:var(--bg-card);border:1px solid rgba(0,229,255,0.1);border-radius:10px;backdrop-filter:blur(8px);"></div>
   </div>
@@ -2079,7 +2079,7 @@ function onSearchFocus(el) {
         return `<div style="padding:8px 12px;border-bottom:1px solid rgba(0,229,255,0.05);cursor:pointer;transition:background 0.15s;"
                onmouseover="this.style.background='rgba(0,229,255,0.04)'"
                onmouseout="this.style.background=''"
-               onclick="window.open('https://github.com/Ikalus1988/MisakaNet/blob/main/' + encodeURIComponent(l.url || ''), '_blank')">
+               onclick="window.open(getLessonBlobUrl(l.url), '_blank')">
           <div style="font-size:12px;color:var(--cyan);">${safeTitle}</div>
           <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">${safeSummary}</div>
         </div>`;
@@ -2092,6 +2092,20 @@ let _searchTimeout = null;
 function debounceSearch() {
   if (_searchTimeout) clearTimeout(_searchTimeout);
   _searchTimeout = setTimeout(searchLessons, 200);
+}
+
+function getLessonBlobUrl(path) {
+  if (!path) return 'https://github.com/Ikalus1988/MisakaNet/tree/main/lessons';
+  if (/^https?:\/\//i.test(path)) return path;
+  return 'https://github.com/Ikalus1988/MisakaNet/blob/main/' + encodeURI(String(path).replace(/^\/+/, ''));
+}
+
+function handleSearchKeydown(event) {
+  if (event.key !== 'Enter') return;
+  const q = event.currentTarget.value.trim();
+  if (!q) return;
+  event.preventDefault();
+  window.location.href = `/search/?q=${encodeURIComponent(q)}`;
 }
 
 // Quality filter: exclude garbage lessons from search results
@@ -2149,7 +2163,7 @@ function searchLessons() {
     return `<div style="padding:10px 14px;border-bottom:1px solid rgba(0,229,255,0.06);cursor:pointer;transition:background 0.15s;"
            onmouseover="this.style.background='rgba(0,229,255,0.03)'"
            onmouseout="this.style.background=''"
-           onclick="window.open('https://github.com/Ikalus1988/MisakaNet/blob/main/' + encodeURIComponent(l.url || ''), '_blank')">
+           onclick="window.open(getLessonBlobUrl(l.url), '_blank')">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
           <span style="font-size:13px;color:#58a6ff;font-weight:500;">${safeTitle}</span>
           <span style="font-size:9px;color:${domainColor};background:rgba(0,229,255,0.06);padding:1px 6px;border-radius:4px;">${safeDomain}</span>
