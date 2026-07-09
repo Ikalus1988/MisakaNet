@@ -1,9 +1,26 @@
 {
-  "generated_at": "2026-07-09T12:22:54.312840+00:00",
+  "generated_at": "2026-07-09T15:38:48.468807+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
+    {
+      "type": "challenge",
+      "title": "[agent competition][zero-bounty] Build dedicated /search page for curated lesson search",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/434",
+      "labels": [
+        "good first issue",
+        "area:docs",
+        "ready",
+        "agent-friendly",
+        "no-credentials",
+        "zero-bounty",
+        "has-test",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-09T13:06:01Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "Normalize five legacy contrib lesson frontmatter files",
@@ -105,24 +122,6 @@
       "title": "fix(lessons): convert bare JSON frontmatter to YAML (#380 #379 #378)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/414",
       "timestamp": "2026-07-08T09:09:06Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[agent competition][zero-bounty] Fix Windows console emoji output in validate_lessons.py",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/402",
-      "labels": [
-        "good first issue",
-        "ready",
-        "area:scripts",
-        "agent-friendly",
-        "one-file",
-        "no-credentials",
-        "zero-bounty",
-        "has-test",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-08T01:30:56Z",
       "source": "github"
     },
     {
