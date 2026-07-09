@@ -4,7 +4,7 @@
 Usage:
     python3 scripts/build_feed.py
 
-Output: docs/api/feed.json
+Output: docs/data/feed.json
 
 No token required. GitHub API calls degrade gracefully to empty arrays on failure.
 """
@@ -16,7 +16,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LESSONS_PATH = REPO_ROOT / "data" / "lessons.json"
-OUTPUT_PATH = REPO_ROOT / "docs" / "api" / "feed.json"
+OUTPUT_PATH = REPO_ROOT / "docs" / "data" / "feed.json"
 
 
 def load_recent_lessons(limit: int = 5) -> list[dict]:
