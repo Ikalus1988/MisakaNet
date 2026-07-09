@@ -5,42 +5,49 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Search Verified Failure Lessons — MisakaNet</title>
 <style>
+  :root {
+    --font-ui: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "JetBrains Mono", "Fira Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --text-main: rgba(255,255,255,0.88);
+    --text-soft: rgba(255,255,255,0.72);
+    --text-muted: rgba(255,255,255,0.48);
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  body { font-family: var(--font-ui); background: #0d1117; color: var(--text-main); min-height: 100vh; }
   .container { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
-  h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-  .subtitle { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
+  h1 { font-family: var(--font-ui); font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
   .search-box { position: relative; margin-bottom: 16px; }
-  .search-box input { width: 100%; padding: 14px 16px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; color: #e6edf3; font-size: 15px; outline: none; font-family: inherit; }
+  .search-box input { width: 100%; padding: 14px 16px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; color: var(--text-main); font-size: 15px; font-family: var(--font-ui); outline: none; }
   .search-box input:focus { border-color: #58a6ff; }
   .search-box input::placeholder { color: #484f58; }
-  .stats { font-size: 12px; color: #484f58; margin-bottom: 20px; }
-  .results-header { font-size: 13px; color: #8b949e; margin-bottom: 12px; }
+  .stats { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+  .results-header { font-size: 13px; color: var(--text-soft); margin-bottom: 12px; }
   .result { padding: 16px; background: #161b22; border: 1px solid #21262d; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; }
   .result:hover { border-color: #30363d; }
-  .result-title { font-size: 15px; font-weight: 600; color: #e6edf3; margin-bottom: 4px; }
-  .result-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
-  .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+  .result-title { font-family: var(--font-ui); font-size: 16px; line-height: 1.35; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+  .result-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+  .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-family: var(--font-ui); }
   .badge-domain { background: rgba(88,166,255,0.1); color: #58a6ff; }
   .badge-status { background: rgba(35,134,54,0.15); color: #3fb950; }
   .badge-fatal { background: rgba(239,68,68,0.12); color: #f87171; }
   .badge-runtime { background: rgba(251,146,60,0.12); color: #fb923c; }
   .badge-setup { background: rgba(56,189,248,0.12); color: #38bdf8; }
-  .result-id { font-size: 10px; color: #484f58; font-family: monospace; }
-  .result-summary { font-size: 13px; color: #8b949e; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .result-tags { font-size: 11px; color: #484f58; margin-top: 6px; }
+  .result-id { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.02em; color: var(--text-muted); }
+  .result-summary { font-family: var(--font-ui); font-size: 13px; color: var(--text-soft); font-weight: 400; line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .result-tags { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
   .result-actions { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
-  .btn-primary { font-size: 12px; font-weight: 600; color: #0d1117; background: #58a6ff; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn-primary { font-family: var(--font-ui); font-size: 12px; font-weight: 600; color: #0d1117; background: #58a6ff; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
   .btn-primary:hover { opacity: 0.9; }
-  .btn-secondary { font-size: 12px; color: #8b949e; background: transparent; border: 1px solid #30363d; border-radius: 6px; padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn-secondary { font-family: var(--font-ui); font-size: 12px; color: var(--text-soft); background: transparent; border: 1px solid #30363d; border-radius: 6px; padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
   .btn-secondary:hover { border-color: #58a6ff; color: #58a6ff; }
   .lesson-preview { margin-top: 12px; padding: 12px; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; cursor: default; }
-  .lesson-preview pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.55 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; color: #c9d1d9; }
-  .preview-status { font-size: 12px; color: #8b949e; }
-  .fallback { padding: 24px; text-align: center; color: #8b949e; }
+  .lesson-preview pre { white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono); font-size: 12px; line-height: 1.65; color: #c9d1d9; }
+  .preview-status { font-size: 12px; color: var(--text-soft); }
+  .fallback { padding: 24px; text-align: center; color: var(--text-soft); }
   .fallback a { color: #58a6ff; text-decoration: none; }
   .fallback a:hover { text-decoration: underline; }
-  .loading { text-align: center; color: #484f58; padding: 40px; }
+  .loading { text-align: center; color: var(--text-muted); padding: 40px; }
   .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #21262d; }
   .footer a { color: #58a6ff; text-decoration: none; font-size: 13px; margin: 0 8px; }
 </style>
