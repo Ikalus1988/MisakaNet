@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Search curated MisakaNet lessons from the static lessons index.">
+<title>Lesson Search — Misaka Network</title>
+<style>
+  :root {
+    --bg: #070b15;
+    --panel: rgba(10, 16, 30, 0.84);
+    --panel-strong: rgba(14, 22, 40, 0.96);
+    --cyan: #00e5ff;
+    --cyan-dim: rgba(0, 229, 255, 0.22);
+    --text: #e2e8f0;
+    --muted: #8aa0b8;
+    --dim: #64748b;
+    --border: rgba(0, 229, 255, 0.16);
+    --warn: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text);
+    background:
+      radial-gradient(circle at 18% 10%, rgba(0, 229, 255, 0.17), transparent 28rem),
+      radial-gradient(circle at 80% 4%, rgba(255, 0, 128, 0.10), transparent 24rem),
+      linear-gradient(180deg, #08101e 0%, var(--bg) 58%);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.6;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(rgba(0, 229, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.8), transparent 76%);
+  }
+  a { color: var(--cyan); }
+  .wrap { width: min(1080px, calc(100% - 32px)); margin: 0 auto; padding: 40px 0 64px; position: relative; }
+  .top { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 42px; }
+  .brand { color: var(--muted); text-decoration: none; font-size: 14px; letter-spacing: 0.04em; }
+  .brand strong { color: var(--text); }
+  .home-link { text-decoration: none; border: 1px solid var(--border); border-radius: 999px; padding: 8px 13px; background: rgba(0, 229, 255, 0.06); font-size: 13px; }
+  .hero { max-width: 830px; margin-bottom: 24px; }
+  h1 { font-size: clamp(34px, 6vw, 64px); line-height: 1.03; margin: 0 0 14px; letter-spacing: -0.045em; }
+  .lead { margin: 0; color: var(--muted); font-size: clamp(16px, 2.2vw, 20px); }
+  .search-card { border: 1px solid var(--border); background: var(--panel); border-radius: 22px; padding: 22px; box-shadow: 0 24px 80px rgba(0,0,0,0.28), inset 0 1px rgba(255,255,255,0.04); backdrop-filter: blur(14px); }
+  form { display: grid; grid-template-columns: 1fr auto; gap: 12px; }
+  label { display: block; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+  input[type="search"] { width: 100%; border: 1px solid rgba(0, 229, 255, 0.24); border-radius: 14px; padding: 14px 16px; color: var(--text); background: rgba(0, 0, 0, 0.38); font-size: 16px; outline: none; }
+  input[type="search"]:focus { border-color: var(--cyan); box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.10); }
+  button { border: 0; border-radius: 14px; padding: 0 22px; color: #03131a; background: var(--cyan); font-weight: 800; cursor: pointer; font-size: 15px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; color: var(--dim); font-size: 13px; }
+  .chip { border: 1px solid rgba(0, 229, 255, 0.13); border-radius: 999px; padding: 3px 9px; background: rgba(0, 229, 255, 0.05); }
+  .quick { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--dim); font-size: 13px; }
+  .quick a { text-decoration: none; border: 1px solid rgba(0, 229, 255, 0.14); border-radius: 999px; padding: 5px 10px; background: rgba(0, 229, 255, 0.05); }
+  .status { margin: 24px 0 12px; color: var(--muted); min-height: 1.6em; }
+  .results { display: grid; gap: 12px; }
+  .result { display: block; text-decoration: none; color: inherit; border: 1px solid rgba(0, 229, 255, 0.12); border-radius: 18px; padding: 18px; background: var(--panel-strong); transition: border-color .16s, transform .16s, background .16s; }
+  .result:hover, .result:focus { border-color: rgba(0, 229, 255, 0.38); transform: translateY(-1px); background: rgba(18, 30, 54, 0.98); }
+  .result-head { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+  .result h2 { margin: 0; color: #eef7ff; font-size: 18px; line-height: 1.32; }
+  .domain { flex: 0 0 auto; color: var(--cyan); border: 1px solid rgba(0, 229, 255, 0.18); background: rgba(0, 229, 255, 0.07); border-radius: 999px; padding: 2px 8px; font-size: 12px; }
+  .summary { color: var(--muted); margin: 0 0 12px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; color: var(--dim); font-size: 12px; }
+  .tag { border-radius: 999px; background: rgba(148, 163, 184, 0.08); padding: 2px 8px; }
+  .empty { border: 1px dashed rgba(251, 191, 36, 0.42); background: rgba(251, 191, 36, 0.06); border-radius: 18px; padding: 20px; color: #f8df9a; }
+  .empty ul { margin: 10px 0 14px 20px; padding: 0; color: var(--muted); }
+  .noscript { margin-top: 18px; border: 1px solid rgba(251, 191, 36, 0.35); border-radius: 14px; padding: 14px; color: #f8df9a; background: rgba(251, 191, 36, 0.06); }
+  @media (max-width: 650px) { form { grid-template-columns: 1fr; } button { padding: 13px 18px; } .top, .result-head { align-items: flex-start; flex-direction: column; } }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <nav class="top" aria-label="Site navigation">
+      <a class="brand" href="/">← <strong>Misaka Network</strong></a>
+      <a class="home-link" href="/">Back to homepage</a>
+    </nav>
+
+    <section class="hero">
+      <h1>Curated lesson search</h1>
+      <p class="lead">A dedicated, static search page for MisakaNet lessons. It reads <code>/data/lessons.json</code> directly and never calls Worker APIs.</p>
+    </section>
+
+    <section class="search-card" aria-label="Lesson search">
+      <form id="search-form" action="/search/" method="get">
+        <div>
+          <label for="q">Search failure lessons</label>
+          <input id="q" name="q" type="search" placeholder="Try: pip timeout, feishu, database locked" autocomplete="off" autofocus>
+        </div>
+        <button type="submit">Search</button>
+      </form>
+      <div class="meta" aria-live="polite">
+        <span class="chip" id="lesson-count">Loading lessons…</span>
+        <span class="chip">Static JSON source</span>
+        <span class="chip">Quality-filtered</span>
+      </div>
+      <div class="quick" aria-label="Example searches">
+        Quick:
+        <a href="/search/?q=pip%20timeout">pip timeout</a>
+        <a href="/search/?q=feishu">feishu</a>
+        <a href="/search/?q=database%20locked">database locked</a>
+        <a href="/search/?q=nonexistent">nonexistent</a>
+      </div>
+      <noscript>
+        <div class="noscript">
+          JavaScript is disabled, so live filtering cannot run in this static page. The search form and links remain usable, and you can browse the raw lesson index at <a href="/data/lessons.json">/data/lessons.json</a> or submit a missing lesson on GitHub.
+        </div>
+      </noscript>
+    </section>
+
+    <p class="status" id="status" role="status">Enter a query to search curated lessons.</p>
+    <section class="results" id="results" aria-label="Search results"></section>
+  </main>
+
+<script>
+(function () {
+  'use strict';
+
+  const DATA_URL = '/data/lessons.json';
+  const REPO_BLOB = 'https://github.com/Ikalus1988/MisakaNet/blob/main/';
+  const MISSING_LESSON_URL = 'https://github.com/Ikalus1988/MisakaNet/issues/new?title=Missing%20lesson%3A%20&body=What%20did%20you%20search%20for%3F%0A%0AWhat%20lesson%20should%20exist%3F';
+  const BAD_PATTERNS = [
+    /context\s+compaction/i,
+    /mojibake/i,
+    /earlier\s+turns/i,
+    /assistant\s+(analysis|message|reply)/i,
+    /\b(system|developer|user)\s+prompt\b/i,
+    /poc\s+record/i,
+    /reasoning\s+trace/i,
+    /lorem\s+ipsum/i,
+    /�{2,}/
+  ];
+
+  const input = document.getElementById('q');
+  const form = document.getElementById('search-form');
+  const resultsEl = document.getElementById('results');
+  const statusEl = document.getElementById('status');
+  const countEl = document.getElementById('lesson-count');
+  let lessons = [];
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+    });
+  }
+
+  function normalise(value) {
+    return String(value || '').toLowerCase().normalize('NFKC');
+  }
+
+  function tokensFor(query) {
+    return normalise(query).split(/[\s,.;:/_-]+/).map(t => t.trim()).filter(Boolean);
+  }
+
+  function isQualityLesson(lesson) {
+    if (!lesson || typeof lesson.title !== 'string' || !lesson.title.trim()) return false;
+    if (!lesson.url || typeof lesson.url !== 'string') return false;
+    const haystack = [lesson.title, lesson.domain, lesson.summary, (lesson.tags || []).join(' ')].join(' ');
+    if (BAD_PATTERNS.some(pattern => pattern.test(haystack))) return false;
+    const replacementChars = (haystack.match(/�/g) || []).length;
+    if (replacementChars >= 2) return false;
+    if (normalise(lesson.status) === 'garbage') return false;
+    return true;
+  }
+
+  function scoreLesson(lesson, tokens) {
+    const title = normalise(lesson.title);
+    const domain = normalise(lesson.domain);
+    const summary = normalise(lesson.summary);
+    const tags = normalise((lesson.tags || []).join(' '));
+    let score = 0;
+    let matched = 0;
+
+    tokens.forEach(token => {
+      let tokenScore = 0;
+      if (title.includes(token)) tokenScore = Math.max(tokenScore, 100);
+      if (tags.includes(token)) tokenScore = Math.max(tokenScore, 60);
+      if (summary.includes(token)) tokenScore = Math.max(tokenScore, 30);
+      if (domain.includes(token)) tokenScore = Math.max(tokenScore, 18);
+      if (tokenScore > 0) matched += 1;
+      score += tokenScore;
+    });
+
+    if (title === tokens.join(' ')) score += 80;
+    if (matched === tokens.length) score += 40;
+    if (matched === 0) return 0;
+    return score + (matched / tokens.length);
+  }
+
+  function lessonHref(lesson) {
+    if (/^https?:\/\//i.test(lesson.url || '')) return lesson.url;
+    return REPO_BLOB + String(lesson.url || '').replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/');
+  }
+
+  function renderEmpty(query) {
+    const suggestions = lessons.slice(0, 5).map(l => '<li><a href="/search/?q=' + encodeURIComponent(l.title.split(/[—:-]/)[0].trim()) + '">' + escapeHtml(l.title) + '</a></li>').join('');
+    statusEl.textContent = 'No curated lessons matched “' + query + '”.';
+    resultsEl.innerHTML = '<div class="empty"><strong>No results found.</strong>' +
+      '<ul>' + suggestions + '</ul>' +
+      '<p>Try fewer words, search a domain such as <code>devops</code>, or <a href="' + MISSING_LESSON_URL + '">submit a missing lesson</a>.</p>' +
+      '</div>';
+  }
+
+  function renderResults(query) {
+    const tokens = tokensFor(query);
+    if (!tokens.length) {
+      statusEl.textContent = 'Enter a query to search curated lessons.';
+      resultsEl.innerHTML = '';
+      return;
+    }
+
+    const matches = lessons
+      .map(lesson => ({ lesson, score: scoreLesson(lesson, tokens) }))
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score || a.lesson.title.localeCompare(b.lesson.title))
+      .slice(0, 25);
+
+    if (!matches.length) {
+      renderEmpty(query);
+      return;
+    }
+
+    statusEl.textContent = matches.length + ' result' + (matches.length === 1 ? '' : 's') + ' for “' + query + '”.';
+    resultsEl.innerHTML = matches.map(({ lesson }) => {
+      const tags = (lesson.tags || []).slice(0, 8).map(tag => '<span class="tag">' + escapeHtml(tag) + '</span>').join('');
+      return '<a class="result" href="' + escapeHtml(lessonHref(lesson)) + '">' +
+        '<div class="result-head"><h2>' + escapeHtml(lesson.title) + '</h2><span class="domain">' + escapeHtml(lesson.domain || 'general') + '</span></div>' +
+        '<p class="summary">' + escapeHtml(lesson.summary || 'No summary provided.') + '</p>' +
+        (tags ? '<div class="tags">' + tags + '</div>' : '') +
+        '</a>';
+    }).join('');
+  }
+
+  function currentQuery() {
+    return new URLSearchParams(window.location.search).get('q') || '';
+  }
+
+  async function loadLessons() {
+    try {
+      const response = await fetch(DATA_URL, { headers: { 'Accept': 'application/json' } });
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const data = await response.json();
+      if (!Array.isArray(data)) throw new TypeError('lessons.json must be an array');
+      lessons = data.filter(isQualityLesson);
+      countEl.textContent = lessons.length + ' curated lessons';
+      renderResults(input.value.trim());
+    } catch (error) {
+      countEl.textContent = 'Lesson index unavailable';
+      statusEl.textContent = 'Could not load /data/lessons.json: ' + error.message;
+      resultsEl.innerHTML = '<div class="empty">The static lesson index could not be loaded. Try opening <a href="/data/lessons.json">/data/lessons.json</a> directly.</div>';
+    }
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    const query = input.value.trim();
+    const url = query ? '/search/?q=' + encodeURIComponent(query) : '/search/';
+    window.history.replaceState(null, '', url);
+    renderResults(query);
+  });
+
+  input.addEventListener('input', function () {
+    const query = input.value.trim();
+    window.history.replaceState(null, '', query ? '/search/?q=' + encodeURIComponent(query) : '/search/');
+    renderResults(query);
+  });
+
+  input.value = currentQuery();
+  window.MisakaLessonSearch = { tokensFor, isQualityLesson, scoreLesson };
+  loadLessons();
+}());
+</script>
+</body>
+</html>
