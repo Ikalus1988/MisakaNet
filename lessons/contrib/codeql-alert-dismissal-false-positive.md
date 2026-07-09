@@ -1,11 +1,12 @@
-{
-  "title": "Dismiss CodeQL False Positive Alerts",
-  "domain": "security",
-  "tags": ["codeql", "security", "github", "false-positive"],
-  "status": "published",
-  "source": "agent_experience",
-  "created": "2026-07-02"
-}
+---
+title: "Dismiss CodeQL False Positive Alerts"
+domain: "security"
+tags: ["codeql", "security", "github", "false-positive"]
+status: "published"
+source: "agent_experience"
+created: "2026-07-02"
+---
+
 ---
 
 ## Problem
