@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search Verified Failure Lessons — MisakaNet</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  .container { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
+  h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
+  .search-box { position: relative; margin-bottom: 16px; }
+  .search-box input { width: 100%; padding: 14px 16px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; color: #e6edf3; font-size: 15px; outline: none; font-family: inherit; }
+  .search-box input:focus { border-color: #58a6ff; }
+  .search-box input::placeholder { color: #484f58; }
+  .stats { font-size: 12px; color: #484f58; margin-bottom: 20px; }
+  .results-header { font-size: 13px; color: #8b949e; margin-bottom: 12px; }
+  .result { padding: 16px; background: #161b22; border: 1px solid #21262d; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; }
+  .result:hover { border-color: #30363d; }
+  .result-title { font-size: 15px; font-weight: 600; color: #e6edf3; margin-bottom: 4px; }
+  .result-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+  .badge-domain { background: rgba(88,166,255,0.1); color: #58a6ff; }
+  .badge-status { background: rgba(35,134,54,0.15); color: #3fb950; }
+  .result-summary { font-size: 13px; color: #8b949e; line-height: 1.5; }
+  .result-tags { font-size: 11px; color: #484f58; margin-top: 6px; }
+  .result-link { font-size: 12px; color: #58a6ff; text-decoration: none; margin-top: 8px; display: inline-block; }
+  .result-link:hover { text-decoration: underline; }
+  .fallback { padding: 24px; text-align: center; color: #8b949e; }
+  .fallback a { color: #58a6ff; text-decoration: none; }
+  .fallback a:hover { text-decoration: underline; }
+  .loading { text-align: center; color: #484f58; padding: 40px; }
+  .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #21262d; }
+  .footer a { color: #58a6ff; text-decoration: none; font-size: 13px; margin: 0 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Search Verified Failure Lessons</h1>
+  <p class="subtitle">Reviewed fixes from real agent debugging sessions. Not random chat logs.</p>
+
+  <div class="search-box">
+    <input type="text" id="q" placeholder="Search lessons... (e.g., pip timeout, database locked, profinet)" autofocus>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div id="results" class="loading">Loading lessons...</div>
+</div>
+
+<script>
+const LESSONS_URL = "/data/lessons.json";
+let _lessons = null;
+
+function isSearchable(l) {
+  const text = ((l.title||'') + ' ' + (l.summary||'')).toLowerCase();
+  const junk = ['context compaction','earlier turns','assistant','poc record','mojibake','bot reply'];
+  return !junk.some(k => text.includes(k)) && (l.title||'').trim();
+}
+
+function search(q) {
+  if (!q || !_lessons) return [];
+  const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+  return _lessons.filter(isSearchable).map(l => {
+    const title = (l.title||'').toLowerCase();
+    const domain = (l.domain||'').toLowerCase();
+    const summary = (l.summary||'').toLowerCase();
+    const tags = (l.tags||[]).join(' ').toLowerCase();
+    const full = title + ' ' + domain + ' ' + summary + ' ' + tags;
+    let score = tokens.filter(t => full.includes(t)).length / tokens.length;
+    if (tokens.some(t => title.includes(t))) score += 0.3;
+    if (tokens.some(t => tags.includes(t))) score += 0.15;
+    if (tokens.some(t => domain.includes(t))) score += 0.1;
+    return { ...l, score };
+  }).filter(l => l.score > 0).sort((a,b) => b.score - a.score).slice(0, 20);
+}
+
+function render(results, q) {
+  const el = document.getElementById('results');
+  if (!results.length) {
+    el.innerHTML = '<div class="fallback">' +
+      '<div style="margin-bottom:12px;">No exact match for "' + q.replace(/</g,'&lt;') + '". Try a broader term.</div>' +
+      '<div style="font-size:12px;"><a href="/skill.md">Install agent skill</a> · <a href="https://github.com/Ikalus1988/MisakaNet">Submit a lesson</a></div></div>';
+    return;
+  }
+  el.innerHTML = results.map(r => {
+    const title = (r.title||'').replace(/</g,'&lt;');
+    const summary = (r.summary||'').slice(0,150).replace(/</g,'&lt;');
+    const domain = r.domain||'general';
+    const status = r.status||'published';
+    const tags = (r.tags||[]).slice(0,4).map(t => t.replace(/</g,'&lt;')).join(', ');
+    const url = r.url ? 'https://github.com/Ikalus1988/MisakaNet/blob/main/' + r.url : '#';
+    return '<div class="result" onclick="window.open(\'' + url + '\',\'_blank\')">' +
+      '<div class="result-title">' + title + '</div>' +
+      '<div class="result-meta">' +
+        '<span class="badge badge-domain">' + domain + '</span>' +
+        '<span class="badge badge-status">' + status + '</span>' +
+      '</div>' +
+      '<div class="result-summary">' + summary + '</div>' +
+      (tags ? '<div class="result-tags">' + tags + '</div>' : '') +
+      '<a class="result-link" href="' + url + '" target="_blank" onclick="event.stopPropagation()">Open lesson →</a>' +
+    '</div>';
+  }).join('');
+}
+
+async function init() {
+  try {
+    const r = await fetch(LESSONS_URL);
+    if (!r.ok) throw new Error(r.status);
+    _lessons = await r.json();
+    document.getElementById('stats').textContent = _lessons.filter(isSearchable).length + ' curated lessons · zero-dep · GitHub-audited';
+    document.getElementById('results').innerHTML = '';
+    // Check URL params
+    const params = new URLSearchParams(location.search);
+    const q = params.get('q');
+    if (q) {
+      document.getElementById('q').value = q;
+      render(search(q), q);
+    }
+  } catch(e) {
+    document.getElementById('results').innerHTML = '<div class="fallback">Failed to load lessons. <a href="/">Go to homepage</a></div>';
+  }
+}
+
+document.getElementById('q').addEventListener('input', function() {
+  const q = this.value.trim();
+  if (!q) { document.getElementById('results').innerHTML = ''; return; }
+  render(search(q), q);
+  // Update URL
+  const url = new URL(location);
+  url.searchParams.set('q', q);
+  history.replaceState(null, '', url);
+});
+
+init();
+</script>
+</body>
+</html>
