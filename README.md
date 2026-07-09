@@ -346,7 +346,7 @@ Fresh challenges added weekly. No registration — just `/claim` and go.
 ## Contributors
 
 <a href="https://github.com/Ikalus1988/MisakaNet/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Ikalus1988/MisakaNet&max=40&columns=10" />
+  <img src="docs/assets/contributors.svg" alt="MisakaNet contributors" />
 </a>
 
 *Sorted by first contribution — the Network's founding lineage.*
