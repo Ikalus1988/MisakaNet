@@ -1521,7 +1521,7 @@
     <div id="lesson-count-search" style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Search failure lessons. OKF-compatible. Zero-dep local fallback. MCP-ready.</div>
   </div>
   <div style="margin:0 auto;position:relative;max-width:600px;">
-    <input id="search-input" type="text" placeholder="Search failure lessons... (e.g., pip timeout, profinet, database locked)" style="width:100%;padding:12px 16px;border:1px solid rgba(0,229,255,0.15);border-radius:10px;background:rgba(0,0,0,0.4);color:#e2e8f0;font-size:14px;outline:none;box-sizing:border-box;transition:border-color 0.25s;font-family:'Inter','Noto Sans SC',sans-serif;" oninput="searchLessons()" onfocus="onSearchFocus(this)" onblur="setTimeout(()=>document.getElementById('search-results').style.display='none',200)"/>
+    <input id="search-input" type="text" placeholder="Search failure lessons... (e.g., pip timeout, profinet, database locked)" style="width:100%;padding:12px 16px;border:1px solid rgba(0,229,255,0.15);border-radius:10px;background:rgba(0,0,0,0.4);color:#e2e8f0;font-size:14px;outline:none;box-sizing:border-box;transition:border-color 0.25s;font-family:'Inter','Noto Sans SC',sans-serif;" oninput="debounceSearch()" onfocus="onSearchFocus(this)" onblur="setTimeout(()=>document.getElementById('search-results').style.display='none',200)"/>
     <span class="search-hint" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);">⌘K</span>
     <div id="search-results" style="display:none;margin-top:6px;max-height:400px;overflow-y:auto;background:var(--bg-card);border:1px solid rgba(0,229,255,0.1);border-radius:10px;backdrop-filter:blur(8px);"></div>
   </div>
@@ -1631,46 +1631,9 @@
         <a href="https://github.com/Ikalus1988/MisakaNet" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:var(--cyan);color:var(--bg-deep);font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;text-decoration:none;transition:opacity 0.2s;">⭐ Star on GitHub</a>
         <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,229,255,0.1);color:var(--cyan);font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;text-decoration:none;border:1px solid var(--border-glow);">🤝 Contribute</a>
         <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/JOIN.md" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,229,255,0.1);color:var(--cyan);font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;text-decoration:none;border:1px solid var(--border-glow);">🔗 Join as Node</a>
-        <a href="/install/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,229,255,0.1);color:var(--cyan);font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;text-decoration:none;border:1px solid var(--border-glow);">📦 Install</a>
-        <a href="/skill.md" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,229,255,0.1);color:var(--cyan);font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;text-decoration:none;border:1px solid var(--border-glow);">🤖 Agent Skill</a>
       </div>
     </div>
   </div>
-
-  <!-- Live Feed -->
-  <div class="content-glass" style="margin-bottom:24px;">
-    <div style="padding:20px 24px;">
-      <h3 style="font-size:16px;font-weight:700;margin-bottom:4px;color:var(--text-primary);">📡 Live Feed</h3>
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">Agents crashed, fixed, and learned.</div>
-      <div id="live-feed" style="font-size:13px;color:var(--text-dim);">Loading...</div>
-    </div>
-  </div>
-  <script>
-  (function(){
-    const FEED_URL = "/data/feed.json";
-    const ICONS = { lesson: "📘", merged_pr: "✅", challenge: "⚡" };
-    const LABELS = { lesson: "Learned", merged_pr: "Merged", challenge: "Challenge" };
-    const container = document.getElementById("live-feed");
-    if (!container) return;
-
-    fetch(FEED_URL)
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(data => {
-        const items = (data.items || []).slice(0, 5);
-        if (!items.length) { container.textContent = "Live feed is warming up. Try search or install the agent skill."; return; }
-        container.innerHTML = items.map(item => {
-          const icon = ICONS[item.type] || "•";
-          const label = LABELS[item.type] || item.type;
-          const title = (item.title || "").substring(0, 60);
-          const url = item.url || "#";
-          return '<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);">' +
-            icon + ' <span style="color:var(--text-dim);font-size:11px;">' + label + '</span> · ' +
-            '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener" style="color:var(--text-primary);text-decoration:none;">' + title + '</a></div>';
-        }).join("");
-      })
-      .catch(() => { container.textContent = "Live feed is warming up. Try search or install the agent skill."; });
-  })();
-  </script>
 
   <!-- Product Matrix -->
   <div class="content-glass" style="margin-bottom:24px;">
@@ -2122,6 +2085,13 @@ function onSearchFocus(el) {
         </div>`;
       }).join("");
   }
+}
+
+// Debounce search to prevent lag on rapid typing
+let _searchTimeout = null;
+function debounceSearch() {
+  if (_searchTimeout) clearTimeout(_searchTimeout);
+  _searchTimeout = setTimeout(searchLessons, 200);
 }
 
 function searchLessons() {

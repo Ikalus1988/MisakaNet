@@ -1,4 +1,26 @@
-{"title": "<Network Domain Lesson Title>", "domain": "network", "subdomain": "<subdomain>", "tags": ["network", "dns", "tls", "proxy", "firewall", "load-balancer", "tcp", "http", "ssl", "vpn", "cdn"], "status": "draft", "confidence": "0.8", "created": "<YYYY-MM-DD>", "updated": "<YYYY-MM-DD>", "source": "<your-source>", "verified_date": "", "domain_expert": ""}
+---
+title: <Network Domain Lesson Title>
+domain: network
+subdomain: <subdomain>
+tags:
+  - network
+  - dns
+  - tls
+  - proxy
+  - firewall
+  - load-balancer
+  - tcp
+  - http
+  - ssl
+  - vpn
+status: draft
+confidence: 0.8
+created: <YYYY-MM-DD>
+updated: <YYYY-MM-DD>
+source: <your-source>
+verified_date: ''
+domain_expert: ''
+---
 
 # <Network Domain Lesson Title>
 

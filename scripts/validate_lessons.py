@@ -43,25 +43,59 @@ def extract_frontmatter(path: Path) -> tuple[dict | None, str | None]:
     # Simple YAML-like parser for common patterns
     try:
         fm = {}
+        current_key = None
+        current_list = None
+
         for line in raw.split("\n"):
+            # Check if this is a list item
+            if line.strip().startswith("- "):
+                if current_key and current_list is not None:
+                    item = line.strip()[2:].strip().strip('"').strip("'")
+                    current_list.append(item)
+                continue
+
             line = line.strip()
             if not line:
                 continue
+
             if ":" in line:
                 key, _, val = line.partition(":")
                 key = key.strip()
                 val = val.strip()
-                if val.startswith("[") and val.endswith("]"):
+
+                # Save previous list if exists
+                if current_key and current_list is not None:
+                    fm[current_key] = current_list
+                    current_list = None
+
+                if val == "":
+                    # Start a new list
+                    current_key = key
+                    current_list = []
+                elif val.startswith("[") and val.endswith("]"):
                     val = [v.strip().strip('"').strip("'") for v in val[1:-1].split(",")]
+                    fm[key] = val
+                    current_key = None
                 elif val.lower() == "true":
-                    val = True
+                    fm[key] = True
+                    current_key = None
                 elif val.lower() == "false":
-                    val = False
+                    fm[key] = False
+                    current_key = None
                 elif val.startswith('"') and val.endswith('"'):
-                    val = val[1:-1]
+                    fm[key] = val[1:-1]
+                    current_key = None
                 elif val.startswith("'") and val.endswith("'"):
-                    val = val[1:-1]
-                fm[key] = val
+                    fm[key] = val[1:-1]
+                    current_key = None
+                else:
+                    fm[key] = val
+                    current_key = None
+
+        # Save last list if exists
+        if current_key and current_list is not None:
+            fm[current_key] = current_list
+
         if fm:
             return fm, None
     except Exception:
