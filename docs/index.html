@@ -1521,7 +1521,7 @@
     <div id="lesson-count-search" style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Search failure lessons. OKF-compatible. Zero-dep local fallback. MCP-ready.</div>
   </div>
   <div style="margin:0 auto;position:relative;max-width:600px;">
-    <input id="search-input" type="text" placeholder="Search failure lessons... (e.g., pip timeout, profinet, database locked)" style="width:100%;padding:12px 16px;border:1px solid rgba(0,229,255,0.15);border-radius:10px;background:rgba(0,0,0,0.4);color:#e2e8f0;font-size:14px;outline:none;box-sizing:border-box;transition:border-color 0.25s;font-family:'Inter','Noto Sans SC',sans-serif;" oninput="searchLessons()" onfocus="onSearchFocus(this)" onblur="setTimeout(()=>document.getElementById('search-results').style.display='none',200)"/>
+    <input id="search-input" type="text" placeholder="Search failure lessons... (e.g., pip timeout, profinet, database locked)" style="width:100%;padding:12px 16px;border:1px solid rgba(0,229,255,0.15);border-radius:10px;background:rgba(0,0,0,0.4);color:#e2e8f0;font-size:14px;outline:none;box-sizing:border-box;transition:border-color 0.25s;font-family:'Inter','Noto Sans SC',sans-serif;" oninput="debounceSearch()" onfocus="onSearchFocus(this)" onblur="setTimeout(()=>document.getElementById('search-results').style.display='none',200)"/>
     <span class="search-hint" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);">⌘K</span>
     <div id="search-results" style="display:none;margin-top:6px;max-height:400px;overflow-y:auto;background:var(--bg-card);border:1px solid rgba(0,229,255,0.1);border-radius:10px;backdrop-filter:blur(8px);"></div>
   </div>
@@ -2085,6 +2085,13 @@ function onSearchFocus(el) {
         </div>`;
       }).join("");
   }
+}
+
+// Debounce search to prevent lag on rapid typing
+let _searchTimeout = null;
+function debounceSearch() {
+  if (_searchTimeout) clearTimeout(_searchTimeout);
+  _searchTimeout = setTimeout(searchLessons, 200);
 }
 
 function searchLessons() {
