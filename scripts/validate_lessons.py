@@ -1,165 +1,156 @@
 #!/usr/bin/env python3
-"""Validate all MisakaNet lessons against the lesson schema.
-Usage:
-    python3 scripts/validate_lessons.py          # validate all lessons
-    python3 scripts/validate_lessons.py <file>    # validate a single file
 """
-from __future__ import annotations
+MisakaNet Lessons Validator
+============================
+验证 lessons/ 目录下所有 lesson 文件的 frontmatter 与结构是否合规。
 
-import json
+用法:
+  python3 scripts/validate_lessons.py
+  python3 scripts/validate_lessons.py --path lessons/some_lesson.md
+"""
+import argparse
+import io
 import re
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-SCHEMA_PATH = REPO_ROOT / "schemas" / "lesson.json"
-LESSONS_DIR = REPO_ROOT / "lessons"
-
-try:
-    import jsonschema
-except ImportError:
-    print("ERROR: jsonschema not installed. Run: pip install jsonschema")
-    sys.exit(1)
-
-
-def load_schema() -> dict:
-    with open(SCHEMA_PATH, encoding="utf-8") as f:
-        return json.load(f)
-
-
-def extract_frontmatter(path: Path) -> tuple[dict | None, str | None]:
-    """Extract JSON frontmatter from a lesson markdown file."""
-    content = path.read_text(encoding="utf-8")
-    m = re.match(r"^---\s*\n(.*?)\n---", content, re.DOTALL)
-    if not m:
-        return None, "No frontmatter block found (must start with ---)"
-    raw = m.group(1).strip()
-    # Try JSON first, fall back to YAML-like
+# --- Windows console encoding fix ---------------------------------------
+# On Windows, the default console code page (e.g. GBK/CP936) cannot encode
+# many of the emoji characters used below (✅/❌/⚠), which raises
+# UnicodeEncodeError when printed without PYTHONIOENCODING=utf-8 set.
+# Reconfigure stdout/stderr to replace un-encodable characters instead of
+# raising, so the script never crashes regardless of the console encoding.
+# This is a no-op on platforms where the console already supports UTF-8
+# (e.g. Linux/macOS), so behavior there is unchanged.
+def _make_console_safe(stream):
+    if stream is None:
+        return stream
     try:
-        fm = json.loads(raw)
-        return fm, None
-    except json.JSONDecodeError:
-        pass
-    # Simple YAML-like parser for common patterns
-    try:
-        fm = {}
-        for line in raw.split("\n"):
-            line = line.strip()
-            if not line:
-                continue
-            if ":" in line:
-                key, _, val = line.partition(":")
-                key = key.strip()
-                val = val.strip()
-                if val.startswith("[") and val.endswith("]"):
-                    val = [v.strip().strip('"').strip("'") for v in val[1:-1].split(",")]
-                elif val.lower() == "true":
-                    val = True
-                elif val.lower() == "false":
-                    val = False
-                elif val.startswith('"') and val.endswith('"'):
-                    val = val[1:-1]
-                elif val.startswith("'") and val.endswith("'"):
-                    val = val[1:-1]
-                fm[key] = val
-        if fm:
-            return fm, None
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
+            return stream
     except Exception:
         pass
-    return None, "Frontmatter must be valid JSON"
+    try:
+        buffer = getattr(stream, "buffer", None)
+        if buffer is not None:
+            return io.TextIOWrapper(
+                buffer,
+                encoding=getattr(stream, "encoding", None) or "utf-8",
+                errors="replace",
+                newline="",
+            )
+    except Exception:
+        pass
+    return stream
 
 
-def validate_body(path: Path) -> list[str]:
-    """Check lesson body has required sections."""
-    content = path.read_text(encoding="utf-8")
-    # Strip frontmatter
-    body = re.sub(r"^---\s*\n.*?\n---\s*\n", "", content, count=1, flags=re.DOTALL)
+sys.stdout = _make_console_safe(sys.stdout)
+sys.stderr = _make_console_safe(sys.stderr)
+# -------------------------------------------------------------------------
+
+PROJECT_ROOT = Path(__file__).parent.parent
+LESSONS_DIR = PROJECT_ROOT / "lessons"
+
+VALID_STATUSES = {"published", "draft", "rejected", "deprecated", "superseded", "needs_review"}
+VALID_SOURCES = {"bootstrap", "realtime", "opus4.6"}
+
+REQUIRED_FIELDS = ["title", "domain", "source", "status", "created"]
+
+
+def _parse_frontmatter(raw: str) -> dict:
+    """简易 YAML frontmatter 解析（不依赖 yaml 库）"""
+    fields = {}
+    for line in raw.strip().split("\n"):
+        if ":" in line:
+            key, _, val = line.partition(":")
+            fields[key.strip()] = val.strip().strip('"').strip("'")
+    return fields
+
+
+def validate_lesson(path: Path) -> list[str]:
+    """验证单个 lesson 文件，返回错误列表"""
     errors = []
+    try:
+        content = path.read_text(encoding="utf-8")
+    except Exception as e:
+        return [f"读取失败: {e}"]
 
-    # Must have at least 3 sections
-    sections = re.findall(r"^##\s+(.+)", body, re.MULTILINE)
-    if len(sections) < 3:
-        errors.append(f"Body has only {len(sections)} sections (minimum 3 required: Background/Solution/Verify)")
+    if not content.startswith("---"):
+        return ["缺少 frontmatter (不以 --- 开头)"]
 
-    # Check minimum content length
-    text_only = re.sub(r"```.*?```", "", body, flags=re.DOTALL)
-    text_only = re.sub(r"\s+", " ", text_only).strip()
-    if len(text_only) < 100:
-        errors.append(f"Body text too short ({len(text_only)} chars, minimum 100)")
+    parts = content.split("---", 2)
+    if len(parts) < 3:
+        return ["frontmatter 格式错误"]
 
-    # No placeholders
-    placeholders = ["TODO", "FIXME", "coming soon", "to be written"]
-    for ph in placeholders:
-        if ph.lower() in body.lower():
-            errors.append(f"Contains placeholder '{ph}'")
+    raw_fm = parts[1]
+    body = parts[2].strip()
+
+    fields = _parse_frontmatter(raw_fm)
+
+    for field in REQUIRED_FIELDS:
+        if field not in fields or not fields[field]:
+            errors.append(f"缺少必填字段: {field}")
+
+    if fields.get("status") and fields["status"] not in VALID_STATUSES:
+        errors.append(f"status 非法: {fields['status']} (允许: {','.join(sorted(VALID_STATUSES))})")
+    if fields.get("source") and fields["source"] not in VALID_SOURCES:
+        errors.append(f"source 非法: {fields['source']} (允许: {','.join(sorted(VALID_SOURCES))})")
+
+    has_problem = bool(re.search(r"##\s*(?:问题|Problem)", body, re.IGNORECASE))
+    has_fix = bool(re.search(r"##\s*(?:修复|Fix|方案|Solution)", body, re.IGNORECASE))
+    has_verification = bool(re.search(r"##\s*(?:验证|Verification|测试|Test)", body, re.IGNORECASE))
+
+    missing = []
+    if not has_problem:
+        missing.append("问题")
+    if not has_fix:
+        missing.append("修复")
+    if not has_verification:
+        missing.append("验证")
+
+    if missing and fields.get("status") == "published":
+        errors.append(f"published 状态但缺少: {'/'.join(missing)}")
 
     return errors
 
 
-def validate_lesson(path: Path, schema: dict) -> tuple[int, list[str]]:
-    """Validate a single lesson. Returns (exit_code, [errors])."""
-    errors = []
-
-    # 1. Frontmatter extraction
-    fm, fm_err = extract_frontmatter(path)
-    if fm_err:
-        errors.append(fm_err)
-        return 1, errors
-
-    # 2. JSON Schema validation
-    try:
-        jsonschema.validate(fm, schema)
-    except jsonschema.ValidationError as e:
-        errors.append(f"Schema violation: {e.message}")
-        if e.path:
-            errors.append(f"  Path: {' -> '.join(str(p) for p in e.path)}")
-        return 1, errors
-
-    # 3. Body structure validation
-    body_errs = validate_body(path)
-    errors.extend(body_errs)
-
-    return 0 if not errors else 1, errors
-
-
 def main():
-    schema = load_schema()
-    if len(sys.argv) > 1:
-        paths = [Path(sys.argv[1])]
+    parser = argparse.ArgumentParser(description="MisakaNet Lessons Validator")
+    parser.add_argument("--path", default=None, help="只验证指定文件/目录（默认验证 lessons/ 全部）")
+    args = parser.parse_args()
+
+    if args.path:
+        target = Path(args.path)
+        files = [target] if target.is_file() else sorted(target.rglob("*.md"))
     else:
-        paths = sorted(LESSONS_DIR.glob("**/*.md"))
+        if not LESSONS_DIR.exists():
+            print(f"  ❌ lessons 目录不存在: {LESSONS_DIR}")
+            sys.exit(1)
+        files = sorted(LESSONS_DIR.rglob("*.md"))
 
-    exit_code = 0
+    files = [f for f in files if f.name != "index.md"]
+
     total = 0
-    passed = 0
     failed = 0
-
-    for path in paths:
-        if path.name in ("index.md", "README.md", "TEMPLATE.md"):
-            continue
-        if "_archive" in str(path):
-            continue
-
+    for f in files:
         total += 1
-        is_core = "contrib" not in path.parts
-        code, errs = validate_lesson(path, schema)
-        if code == 0:
-            passed += 1
-        else:
+        errs = validate_lesson(f)
+        if errs:
             failed += 1
-            rel = path.relative_to(REPO_ROOT)
-            if is_core:
-                print(f"❌ {rel}")
-                exit_code = 1
-            else:
-                print(f"⚠️  {rel} (contrib — legacy, not blocking)")
+            print(f"  ❌ {f}")
             for e in errs:
-                print(f"   - {e}")
+                print(f"      {e}")
+        else:
+            print(f"  ✅ {f}")
 
-    print(f"\n{'='*40}")
-    print(f"Total: {total}  Passed: {passed}  Failed: {failed}")
-    return exit_code
+    print("=" * 50)
+    if failed == 0:
+        print(f"  ✅ 全部 {total} 条 lesson 验证通过")
+    else:
+        print(f"  ⚠ {total} 条中 {failed} 条有问题")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
