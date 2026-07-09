@@ -124,10 +124,12 @@ function search(q) {
   }).filter(l => l.score > 0).sort((a,b) => b.score - a.score).slice(0, 20);
 }
 
-function updateUrl(q) {
+function updateUrl(q, lessonId) {
   const url = new URL(location);
   if (q) url.searchParams.set('q', q);
   else url.searchParams.delete('q');
+  if (lessonId) url.searchParams.set('lesson', lessonId);
+  else url.searchParams.delete('lesson');
   history.replaceState(null, '', url);
 }
 
@@ -140,18 +142,21 @@ function render(results, q) {
       '<div style="font-size:12px;"><a href="/skill.md">Install agent skill</a> / <a href="https://github.com/Ikalus1988/MisakaNet">Submit a lesson</a></div></div>';
     return;
   }
-  el.innerHTML = results.map((r, index) => {
+  let html = '<div class="results-header">Found ' + results.length + ' lessons for "' + escapeHTML(q) + '"</div>';
+  html += results.map((r, index) => {
     const title = escapeHTML(r.title);
     const summary = escapeHTML((r.summary||'').slice(0,150));
     const domain = escapeHTML(r.domain||'general');
     const status = escapeHTML(r.status||'published');
     const tags = (r.tags||[]).slice(0,4).map(escapeHTML).join(', ');
     const url = getLessonUrl(r);
-    return '<div class="result" tabindex="0" data-index="' + index + '">' +
+    const id = escapeHTML(r.id || '');
+    return '<div class="result" tabindex="0" data-index="' + index + '" data-id="' + id + '">' +
       '<div class="result-title">' + title + '</div>' +
       '<div class="result-meta">' +
         '<span class="badge badge-domain">' + domain + '</span>' +
         '<span class="badge badge-status">' + status + '</span>' +
+        '<span style="font-size:10px;color:#484f58;">' + id + '</span>' +
       '</div>' +
       '<div class="result-summary">' + summary + '</div>' +
       (tags ? '<div class="result-tags">' + tags + '</div>' : '') +
@@ -162,6 +167,7 @@ function render(results, q) {
       '<div class="lesson-preview" hidden></div>' +
     '</div>';
   }).join('');
+  el.innerHTML = html;
 }
 
 async function togglePreview(index) {
@@ -171,6 +177,7 @@ async function togglePreview(index) {
   if (!lesson || !panel) return;
   if (panel.dataset.loaded === 'true') {
     panel.hidden = !panel.hidden;
+    updateUrl(document.getElementById('q').value.trim(), panel.hidden ? null : (lesson.id || ''));
     return;
   }
 
@@ -189,6 +196,7 @@ async function togglePreview(index) {
     const clipped = body.length > 2400 ? body.slice(0, 2400) + '\n\n... (open on GitHub for full lesson)' : body;
     panel.dataset.loaded = 'true';
     panel.innerHTML = '<pre>' + escapeHTML(clipped || 'No preview body found. Open on GitHub for the full lesson.') + '</pre>';
+    updateUrl(document.getElementById('q').value.trim(), lesson.id || '');
   } catch (e) {
     panel.innerHTML = '<div class="preview-status">Preview unavailable. Use "Open on GitHub" for the full lesson.</div>';
   }
@@ -210,9 +218,16 @@ async function init() {
     document.getElementById('results').innerHTML = '';
     const params = new URLSearchParams(location.search);
     const q = params.get('q');
+    const lessonId = params.get('lesson');
     if (q) {
       document.getElementById('q').value = q;
-      render(search(q), q);
+      const results = search(q);
+      render(results, q);
+      // Auto-expand matching lesson
+      if (lessonId && results.length) {
+        const idx = results.findIndex(r => r.id === lessonId);
+        if (idx >= 0) setTimeout(() => togglePreview(idx), 300);
+      }
     }
   } catch(e) {
     document.getElementById('results').innerHTML = '<div class="fallback">Failed to load lessons. <a href="/">Go to homepage</a></div>';
