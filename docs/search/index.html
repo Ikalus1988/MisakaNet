@@ -25,8 +25,13 @@
   .badge-status { background: rgba(35,134,54,0.15); color: #3fb950; }
   .result-summary { font-size: 13px; color: #8b949e; line-height: 1.5; }
   .result-tags { font-size: 11px; color: #484f58; margin-top: 6px; }
-  .result-link { font-size: 12px; color: #58a6ff; text-decoration: none; margin-top: 8px; display: inline-block; }
-  .result-link:hover { text-decoration: underline; }
+  .result-actions { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
+  .result-link, .preview-button { font-size: 12px; color: #58a6ff; text-decoration: none; display: inline-block; }
+  .result-link:hover, .preview-button:hover { text-decoration: underline; }
+  .preview-button { border: 0; background: transparent; padding: 0; cursor: pointer; font: inherit; }
+  .lesson-preview { margin-top: 12px; padding: 12px; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; cursor: default; }
+  .lesson-preview pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.55 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; color: #c9d1d9; }
+  .preview-status { font-size: 12px; color: #8b949e; }
   .fallback { padding: 24px; text-align: center; color: #8b949e; }
   .fallback a { color: #58a6ff; text-decoration: none; }
   .fallback a:hover { text-decoration: underline; }
@@ -49,8 +54,10 @@
 
 <script>
 const LESSONS_URL = "/data/lessons.json";
+const RAW_BASE = "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/";
 let _lessons = null;
 let _lastResults = [];
+const _previewCache = new Map();
 
 function escapeHTML(value) {
   return String(value || '').replace(/[&<>"']/g, ch => ({
@@ -67,6 +74,31 @@ function getLessonUrl(lesson) {
   if (!raw) return 'https://github.com/Ikalus1988/MisakaNet/tree/main/lessons';
   if (/^https?:\/\//i.test(raw)) return raw;
   return 'https://github.com/Ikalus1988/MisakaNet/blob/main/' + encodeURI(String(raw).replace(/^\/+/, ''));
+}
+
+function getLessonPath(lesson) {
+  const raw = lesson && (lesson.url || lesson.path || '');
+  if (!raw) return '';
+  if (!/^https?:\/\//i.test(raw)) return String(raw).replace(/^\/+/, '');
+  try {
+    const url = new URL(raw);
+    let match = url.pathname.match(/\/Ikalus1988\/MisakaNet\/(?:blob|raw)\/main\/(.+)$/);
+    if (!match) match = url.pathname.match(/\/Ikalus1988\/MisakaNet\/main\/(.+)$/);
+    return match ? decodeURIComponent(match[1]) : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function getRawLessonUrl(lesson) {
+  const path = getLessonPath(lesson);
+  return path ? RAW_BASE + encodeURI(path) : getLessonUrl(lesson);
+}
+
+function stripFrontmatter(markdown) {
+  return String(markdown || '')
+    .replace(/^\uFEFF?---\s*\r?\n[\s\S]*?\r?\n---\s*\r?\n?/, '')
+    .trim();
 }
 
 function isSearchable(l) {
@@ -108,14 +140,14 @@ function render(results, q) {
       '<div style="font-size:12px;"><a href="/skill.md">Install agent skill</a> / <a href="https://github.com/Ikalus1988/MisakaNet">Submit a lesson</a></div></div>';
     return;
   }
-  el.innerHTML = results.map(r => {
+  el.innerHTML = results.map((r, index) => {
     const title = escapeHTML(r.title);
     const summary = escapeHTML((r.summary||'').slice(0,150));
     const domain = escapeHTML(r.domain||'general');
     const status = escapeHTML(r.status||'published');
     const tags = (r.tags||[]).slice(0,4).map(escapeHTML).join(', ');
     const url = getLessonUrl(r);
-    return '<div class="result" tabindex="0" data-url="' + escapeHTML(url) + '">' +
+    return '<div class="result" tabindex="0" data-index="' + index + '">' +
       '<div class="result-title">' + title + '</div>' +
       '<div class="result-meta">' +
         '<span class="badge badge-domain">' + domain + '</span>' +
@@ -123,19 +155,43 @@ function render(results, q) {
       '</div>' +
       '<div class="result-summary">' + summary + '</div>' +
       (tags ? '<div class="result-tags">' + tags + '</div>' : '') +
-      '<a class="result-link" href="' + escapeHTML(url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open lesson -&gt;</a>' +
+      '<div class="result-actions">' +
+        '<button class="preview-button" type="button" data-action="preview">Preview lesson</button>' +
+        '<a class="result-link" href="' + escapeHTML(url) + '" target="_blank" rel="noopener">Open on GitHub -&gt;</a>' +
+      '</div>' +
+      '<div class="lesson-preview" hidden></div>' +
     '</div>';
   }).join('');
+}
 
-  el.querySelectorAll('.result').forEach(node => {
-    node.addEventListener('click', () => window.open(node.dataset.url, '_blank', 'noopener'));
-    node.addEventListener('keydown', event => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        window.open(node.dataset.url, '_blank', 'noopener');
-      }
-    });
-  });
+async function togglePreview(index) {
+  const lesson = _lastResults[index];
+  const card = document.querySelector('.result[data-index="' + index + '"]');
+  const panel = card && card.querySelector('.lesson-preview');
+  if (!lesson || !panel) return;
+  if (panel.dataset.loaded === 'true') {
+    panel.hidden = !panel.hidden;
+    return;
+  }
+
+  panel.hidden = false;
+  panel.innerHTML = '<div class="preview-status">Loading lesson preview...</div>';
+  const rawUrl = getRawLessonUrl(lesson);
+  try {
+    let text = _previewCache.get(rawUrl);
+    if (!text) {
+      const response = await fetch(rawUrl);
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      text = await response.text();
+      _previewCache.set(rawUrl, text);
+    }
+    const body = stripFrontmatter(text);
+    const clipped = body.length > 2400 ? body.slice(0, 2400) + '\n\n... (open on GitHub for full lesson)' : body;
+    panel.dataset.loaded = 'true';
+    panel.innerHTML = '<pre>' + escapeHTML(clipped || 'No preview body found. Open on GitHub for the full lesson.') + '</pre>';
+  } catch (e) {
+    panel.innerHTML = '<div class="preview-status">Preview unavailable. Use "Open on GitHub" for the full lesson.</div>';
+  }
 }
 
 function runSearch(q) {
@@ -175,7 +231,24 @@ document.getElementById('q').addEventListener('keydown', function(event) {
   if (!q) return;
   event.preventDefault();
   const results = runSearch(q);
-  if (results.length) window.open(getLessonUrl(results[0]), '_blank', 'noopener');
+  if (results.length) togglePreview(0);
+});
+
+document.getElementById('results').addEventListener('click', function(event) {
+  if (event.target.closest('a')) return;
+  if (event.target.closest('.lesson-preview')) return;
+  const card = event.target.closest('.result');
+  if (!card) return;
+  togglePreview(Number(card.dataset.index));
+});
+
+document.getElementById('results').addEventListener('keydown', function(event) {
+  if (event.target.closest('a,button')) return;
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  const card = event.target.closest('.result');
+  if (!card) return;
+  event.preventDefault();
+  togglePreview(Number(card.dataset.index));
 });
 
 init();
