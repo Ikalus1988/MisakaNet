@@ -2094,6 +2094,15 @@ function debounceSearch() {
   _searchTimeout = setTimeout(searchLessons, 200);
 }
 
+// Quality filter: exclude garbage lessons from search results
+function isSearchableLesson(l) {
+  const text = ((l.title || '') + ' ' + (l.summary || '')).toLowerCase();
+  const garbage = ['context compaction', 'earlier turns', 'assistant', 'poc record', 'mojibake', 'bot reply', 'reasoning'];
+  if (garbage.some(kw => text.includes(kw))) return false;
+  if (!(l.title || '').trim()) return false;
+  return true;
+}
+
 function searchLessons() {
   const q = document.getElementById("search-input").value.trim().toLowerCase();
   const container = document.getElementById("search-results");
@@ -2102,14 +2111,29 @@ function searchLessons() {
     return;
   }
   const tokens = q.split(/\s+/).filter(Boolean);
-  const scored = _allLessons.map(l => {
-    const text = (l.title + " " + l.domain + " " + (l.summary || "") + " " + (l.tags || []).join(" ")).toLowerCase();
-    const score = tokens.filter(t => text.includes(t)).length / tokens.length;
+  const scored = _allLessons.filter(isSearchableLesson).map(l => {
+    const titleText = (l.title || '').toLowerCase();
+    const domainText = (l.domain || '').toLowerCase();
+    const summaryText = (l.summary || '').toLowerCase();
+    const tagText = (l.tags || []).join(' ').toLowerCase();
+    const fullText = titleText + ' ' + domainText + ' ' + summaryText + ' ' + tagText;
+    let score = tokens.filter(t => fullText.includes(t)).length / tokens.length;
+    // Title boost: exact title match or title token match
+    if (tokens.some(t => titleText.includes(t))) score += 0.3;
+    // Tag boost
+    if (tokens.some(t => tagText.includes(t))) score += 0.15;
+    // Domain boost
+    if (tokens.some(t => domainText.includes(t))) score += 0.1;
     return { ...l, score };
   }).filter(l => l.score > 0).sort((a, b) => b.score - a.score).slice(0, 10);
   if (scored.length === 0) {
     container.style.display = "block";
-    container.innerHTML = '<div style="padding:8px 12px;color:#8b949e;font-size:13px;">No results</div>';
+    const suggestions = _allLessons.filter(isSearchableLesson).slice(0, 3).map(l => l.title).join(', ');
+    container.innerHTML = '<div style="padding:12px;color:#8b949e;font-size:13px;">' +
+      '<div style="margin-bottom:8px;">No exact match. Try a broader term or check spelling.</div>' +
+      '<div style="font-size:12px;color:#484f58;">Popular: ' + suggestions + '</div>' +
+      '<div style="margin-top:8px;font-size:12px;"><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/skill.md" style="color:#58a6ff;">Submit a missing lesson →</a></div>' +
+      '</div>';
     return;
   }
   container.style.display = "block";
