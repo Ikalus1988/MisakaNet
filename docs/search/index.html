@@ -23,12 +23,17 @@
   .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
   .badge-domain { background: rgba(88,166,255,0.1); color: #58a6ff; }
   .badge-status { background: rgba(35,134,54,0.15); color: #3fb950; }
-  .result-summary { font-size: 13px; color: #8b949e; line-height: 1.5; }
+  .badge-fatal { background: rgba(239,68,68,0.12); color: #f87171; }
+  .badge-runtime { background: rgba(251,146,60,0.12); color: #fb923c; }
+  .badge-setup { background: rgba(56,189,248,0.12); color: #38bdf8; }
+  .result-id { font-size: 10px; color: #484f58; font-family: monospace; }
+  .result-summary { font-size: 13px; color: #8b949e; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .result-tags { font-size: 11px; color: #484f58; margin-top: 6px; }
   .result-actions { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
-  .result-link, .preview-button { font-size: 12px; color: #58a6ff; text-decoration: none; display: inline-block; }
-  .result-link:hover, .preview-button:hover { text-decoration: underline; }
-  .preview-button { border: 0; background: transparent; padding: 0; cursor: pointer; font: inherit; }
+  .btn-primary { font-size: 12px; font-weight: 600; color: #0d1117; background: #58a6ff; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-secondary { font-size: 12px; color: #8b949e; background: transparent; border: 1px solid #30363d; border-radius: 6px; padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn-secondary:hover { border-color: #58a6ff; color: #58a6ff; }
   .lesson-preview { margin-top: 12px; padding: 12px; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; cursor: default; }
   .lesson-preview pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.55 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; color: #c9d1d9; }
   .preview-status { font-size: 12px; color: #8b949e; }
@@ -133,6 +138,14 @@ function updateUrl(q, lessonId) {
   history.replaceState(null, '', url);
 }
 
+function inferBadge(r) {
+  const text = ((r.title||'') + ' ' + (r.summary||'') + ' ' + (r.tags||[]).join(' ')).toLowerCase();
+  if (/delete|drop|clear|overwrite|corrupt|destroy|清空|覆盖|丢数据/.test(text)) return { label: 'Fatal Pitfall', cls: 'badge-fatal' };
+  if (/timeout|locked|rate.limit|429|403|oom|crash|崩溃|超时|锁定/.test(text)) return { label: 'Runtime Failure', cls: 'badge-runtime' };
+  if (/setup|config|install|deploy|初始化|配置|安装/.test(text)) return { label: 'Setup Fix', cls: 'badge-setup' };
+  return { label: 'Verified', cls: 'badge-status' };
+}
+
 function render(results, q) {
   const el = document.getElementById('results');
   _lastResults = results;
@@ -142,27 +155,29 @@ function render(results, q) {
       '<div style="font-size:12px;"><a href="/skill.md">Install agent skill</a> / <a href="https://github.com/Ikalus1988/MisakaNet">Submit a lesson</a></div></div>';
     return;
   }
+  const searchable = _lessons ? _lessons.filter(isSearchable).length : 0;
   let html = '<div class="results-header">Found ' + results.length + ' lessons for "' + escapeHTML(q) + '"</div>';
+  html += '<div class="stats">' + searchable + ' curated lessons · static JSON · GitHub-audited · no database</div>';
   html += results.map((r, index) => {
     const title = escapeHTML(r.title);
-    const summary = escapeHTML((r.summary||'').slice(0,150));
+    const summary = escapeHTML((r.summary||'').slice(0,200));
     const domain = escapeHTML(r.domain||'general');
-    const status = escapeHTML(r.status||'published');
     const tags = (r.tags||[]).slice(0,4).map(escapeHTML).join(', ');
     const url = getLessonUrl(r);
     const id = escapeHTML(r.id || '');
+    const badge = inferBadge(r);
     return '<div class="result" tabindex="0" data-index="' + index + '" data-id="' + id + '">' +
-      '<div class="result-title">' + title + '</div>' +
       '<div class="result-meta">' +
+        '<span class="badge ' + badge.cls + '">' + badge.label + '</span>' +
         '<span class="badge badge-domain">' + domain + '</span>' +
-        '<span class="badge badge-status">' + status + '</span>' +
-        '<span style="font-size:10px;color:#484f58;">' + id + '</span>' +
       '</div>' +
+      '<div class="result-title">' + title + '</div>' +
+      '<div class="result-id">' + id + '</div>' +
       '<div class="result-summary">' + summary + '</div>' +
       (tags ? '<div class="result-tags">' + tags + '</div>' : '') +
       '<div class="result-actions">' +
-        '<button class="preview-button" type="button" data-action="preview">Preview lesson</button>' +
-        '<a class="result-link" href="' + escapeHTML(url) + '" target="_blank" rel="noopener">Open on GitHub -&gt;</a>' +
+        '<button class="btn-primary" type="button" data-action="preview">Read lesson</button>' +
+        '<a class="btn-secondary" href="' + escapeHTML(url) + '" target="_blank" rel="noopener">Open on GitHub</a>' +
       '</div>' +
       '<div class="lesson-preview" hidden></div>' +
     '</div>';
