@@ -1,9 +1,130 @@
 {
-  "generated_at": "2026-07-09T06:07:45.139431+00:00",
+  "generated_at": "2026-07-09T12:22:54.312840+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 5,
+  "item_count": 15,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "Normalize five legacy contrib lesson frontmatter files",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/431",
+      "timestamp": "2026-07-09T09:43:26Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[agent competition][zero-bounty] Harden SAG search empty/error states",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/430",
+      "labels": [
+        "good first issue",
+        "area:tests",
+        "ready",
+        "agent-friendly",
+        "no-credentials",
+        "zero-bounty",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-09T07:03:44Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[agent competition][zero-bounty] Blind test homepage SAG-Lite lesson search",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/429",
+      "labels": [
+        "good first issue",
+        "area:tests",
+        "ready",
+        "agent-friendly",
+        "no-credentials",
+        "zero-bounty",
+        "has-test",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-09T07:03:41Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "test: add queue_lesson dry-run smoke coverage",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/419",
+      "timestamp": "2026-07-08T15:56:42Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "Feat/misakanet-bounty-clean",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/418",
+      "timestamp": "2026-07-08T14:26:54Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[agent competition][zero-bounty] Audit and move non-lesson files out of lessons/",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/417",
+      "labels": [
+        "good first issue",
+        "ready",
+        "area:lessons",
+        "agent-friendly",
+        "no-credentials",
+        "zero-bounty",
+        "has-test",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-08T13:32:20Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[agent competition][zero-bounty] Add smoke test for queue_lesson.py --dry-run",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/416",
+      "labels": [
+        "good first issue",
+        "area:tests",
+        "ready",
+        "agent-friendly",
+        "one-file",
+        "no-credentials",
+        "zero-bounty",
+        "has-test",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-08T13:32:17Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat: reputation system with reuse signals and anti-gaming (#356)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/413",
+      "timestamp": "2026-07-08T09:10:14Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(lessons): convert bare JSON frontmatter to YAML (#380 #379 #378)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/414",
+      "timestamp": "2026-07-08T09:09:06Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[agent competition][zero-bounty] Fix Windows console emoji output in validate_lessons.py",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/402",
+      "labels": [
+        "good first issue",
+        "ready",
+        "area:scripts",
+        "agent-friendly",
+        "one-file",
+        "no-credentials",
+        "zero-bounty",
+        "has-test",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-08T01:30:56Z",
+      "source": "github"
+    },
     {
       "type": "lesson",
       "title": "AI Agent Project Outreach Guide",
