@@ -12,5 +12,13 @@
   },
   "devDependencies": {
     "wrangler": "^4.107.0"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/owner/repo/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
   }
 }
