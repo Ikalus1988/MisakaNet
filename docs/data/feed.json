@@ -1,9 +1,37 @@
 {
-  "generated_at": "2026-07-09T22:45:53.586824+00:00",
+  "generated_at": "2026-07-10T04:28:46.423018+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs: add real error MisakaNet search testimonial for #254",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/437",
+      "timestamp": "2026-07-10T03:03:45Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(search): smart fallback with closest matches and telemetry (fixes #301)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/441",
+      "timestamp": "2026-07-10T02:17:34Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "test: add frontmatter parsing edge case tests (fixes #296)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/440",
+      "timestamp": "2026-07-10T02:17:29Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(lesson): PEP 668 externally-managed-environment on macOS Homebrew Python",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/439",
+      "timestamp": "2026-07-10T02:17:24Z",
+      "source": "github"
+    },
     {
       "type": "challenge",
       "title": "[agent competition][zero-bounty] Compare homepage SAG search with CLI search_knowledge results",
@@ -29,13 +57,6 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "fix: avoid emoji encode errors in lesson validator",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/403",
-      "timestamp": "2026-07-09T18:58:26Z",
-      "source": "github"
-    },
-    {
       "type": "challenge",
       "title": "[agent competition][zero-bounty] Build dedicated /search page for curated lesson search",
       "url": "https://github.com/Ikalus1988/MisakaNet/issues/434",
@@ -50,13 +71,6 @@
         "status:competition"
       ],
       "timestamp": "2026-07-09T13:06:01Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "Normalize five legacy contrib lesson frontmatter files",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/431",
-      "timestamp": "2026-07-09T09:43:26Z",
       "source": "github"
     },
     {
@@ -90,20 +104,6 @@
         "status:competition"
       ],
       "timestamp": "2026-07-09T07:03:41Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test: add queue_lesson dry-run smoke coverage",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/419",
-      "timestamp": "2026-07-08T15:56:42Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "Feat/misakanet-bounty-clean",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/418",
-      "timestamp": "2026-07-08T14:26:54Z",
       "source": "github"
     },
     {
