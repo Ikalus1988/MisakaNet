@@ -390,3 +390,5 @@ See [LIMITATIONS.md](docs/LIMITATIONS.md) for known constraints and non-goals â€
 ---
 
 *Swarm Knowledge Protocol (SKP) â€” [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*
+
+DCO on Windows: [docs/dco-windows.md](docs/dco-windows.md).
