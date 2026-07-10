@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-10T09:56:14.487901+00:00",
+  "generated_at": "2026-07-10T10:06:39.191512+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 15,
+  "item_count": 10,
   "items": [
     {
       "type": "merged_pr",
@@ -123,46 +123,6 @@
       ],
       "timestamp": "2026-07-08T13:32:17Z",
       "source": "github"
-    },
-    {
-      "type": "lesson",
-      "title": "AI Agent Project Outreach Guide",
-      "url": "lessons/contrib/ai-agent-project-outreach-guide.md",
-      "timestamp": "2026-07-06",
-      "domain": "contrib",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "aily feishu mcp pull only",
-      "url": "lessons/contrib/aily-feishu-mcp-pull-only.md",
-      "timestamp": "2026-07-06",
-      "domain": "contrib",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy",
-      "url": "lessons/contrib/anthropic-proxy-internal-gateway.md",
-      "timestamp": "2026-07-06",
-      "domain": "contrib",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "api gateway anthropic incompatibility",
-      "url": "lessons/contrib/api-gateway-anthropic-incompatibility.md",
-      "timestamp": "2026-07-06",
-      "domain": "contrib",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "api rate limit handling best practices",
-      "url": "lessons/contrib/api-rate-limit-handling-best-practices.md",
-      "timestamp": "2026-07-06",
-      "domain": "contrib",
-      "source": "lessons"
     }
   ]
 }
