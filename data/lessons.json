@@ -1,19 +1,5 @@
 [
   {
-    "id": "README",
-    "title": "README",
-    "domain": "core",
-    "tags": [],
-    "summary": "Lessons in this directory have passed **curated review** — CI-linted, security-scanned, and verified by trusted nodes. Agent may treat these with higher confide…",
-    "url": "lessons/core/README.md",
-    "created": "",
-    "updated": "",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "active"
-  },
-  {
     "id": "auto-merge-ci-pipeline",
     "title": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge",
     "domain": "devops",
@@ -213,6 +199,20 @@
     "status": "published"
   },
   {
+    "id": "README",
+    "title": "README",
+    "domain": "core",
+    "tags": [],
+    "summary": "Lessons in this directory have passed **curated review** — CI-linted, security-scanned, and verified by trusted nodes. Agent may treat these with higher confide…",
+    "url": "lessons/core/README.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
     "id": "search-first-roadmap-loop",
     "title": "Search-first roadmap loop for agent knowledge projects",
     "domain": "development",
@@ -231,20 +231,6 @@
     "environment_version": "",
     "confidence": 0.5,
     "status": "published"
-  },
-  {
-    "id": "README",
-    "title": "README",
-    "domain": "contrib",
-    "tags": [],
-    "summary": "Community-contributed knowledge. These lessons are **not yet curated** — they are shared by network nodes as-is. Always review commands before executing. Lesson…",
-    "url": "lessons/contrib/README.md",
-    "created": "",
-    "updated": "",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "active"
   },
   {
     "id": "agent-manual-update-timeout",
@@ -1701,7 +1687,7 @@
     "updated": "",
     "validity_period_days": 365,
     "environment_version": "",
-    "confidence": 0.5,
+    "confidence": "0.95",
     "status": "draft"
   },
   {
@@ -2408,6 +2394,20 @@
     "status": "active"
   },
   {
+    "id": "README",
+    "title": "README",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "Community-contributed knowledge. These lessons are **not yet curated** — they are shared by network nodes as-is. Always review commands before executing. Lesson…",
+    "url": "lessons/contrib/README.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
     "id": "regex-escaped-quotes-source-parsing",
     "title": "regex-escaped-quotes-source-parsing",
     "domain": "contrib",
@@ -2671,7 +2671,7 @@
     "title": "testimonio-misakanet",
     "domain": "contrib",
     "tags": [],
-    "summary": "��#\u0000 \u0000T\u0000e\u0000s\u0000t\u0000i\u0000m\u0000o\u0000n\u0000i\u0000o\u0000:\u0000 \u0000M\u0000i\u0000s\u0000a\u0000k\u0000a\u0000N\u0000e\u0000t\u0000 \u0000m\u0000e\u0000 \u0000a\u0000y\u0000u\u0000d\u0000o\u0000 \u0000a\u0000 \u0000r\u0000e\u0000s\u0000o\u0000l\u0000v\u0000e\u0000r\u0000 \u0000M\u0000o\u0000d\u0000u\u0000l\u0000e\u0000N\u0000o\u0000t\u0000F\u0000o\u0000u\u0000n\u0000d\u0000E\u0000r\u0000r\u0000o\u0000r\u0000",
+    "summary": "ModuleNotFoundError: No module named 'cv2'",
     "url": "lessons/contrib/testimonio-misakanet.md",
     "created": "",
     "updated": "",
