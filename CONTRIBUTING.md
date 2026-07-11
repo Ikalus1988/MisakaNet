@@ -178,6 +178,8 @@ git commit --signoff -m "feat: your message"
 git commit --amend --signoff
 ```
 
+> ℹ️ **Windows Users:** For detailed instructions on fixing DCO issues on Windows (including rebase and force push), see the [Windows DCO Sign-off Guide](docs/dco-windows.md).
+
 The trailer looks like:
 ```
 Signed-off-by: Your Name <your@email.com>
