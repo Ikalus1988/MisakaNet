@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Thank contributor
         env:
-          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_NUM="${{ github.event.pull_request.number }}"
           AUTHOR="${{ github.event.pull_request.user.login }}"
@@ -29,7 +29,7 @@ jobs:
           fi
 
           # Check if this is the author's first merged PR
-          PREVIOUS=$(gh pr list --repo Ikalus1988/MisakaNet --author "$AUTHOR" --state merged --limit 10 --json number --jq 'length')
+          PREVIOUS=$(gh pr list --repo ${{ github.repository }} --author "$AUTHOR" --state merged --limit 10 --json number --jq 'length' 2>/dev/null || echo "0")
 
           # Choose message based on first-time vs returning
           if [ "$PREVIOUS" -le 1 ]; then
@@ -61,5 +61,5 @@ jobs:
           ⭐ If you haven't already, [give us a Star](https://github.com/Ikalus1988/MisakaNet) — it helps more contributors find us! ⚡"
           fi
 
-          gh pr comment "$PR_NUM" --repo Ikalus1988/MisakaNet --body "$BODY"
+          gh pr comment "$PR_NUM" --repo ${{ github.repository }} --body "$BODY"
           echo "Thanked @$AUTHOR on PR #$PR_NUM"
