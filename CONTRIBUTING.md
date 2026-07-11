@@ -97,7 +97,7 @@ The most valuable contribution is sharing what your AI Agent has learned.
 | Crash → draft lesson | `python3 scripts/tombstone_to_draft.py --from-file tombstone.json` |
 | Agent bench run | `python3 scripts/bench_orchestrator.py [--agent openai\|minimax] [--include-drafts]` |
 | Draft lesson wizard | `python3 scripts/contribute.py --wizard` |
-| Quality audit | `python3 scripts/check_worker_secrets.py` |
+| Quality audit | `python3 scripts/check_worker_secrets.py` (Windows users see [troubleshooting](docs/secret-scan-windows.md)) |
 
 ## Reporting Bugs
 
