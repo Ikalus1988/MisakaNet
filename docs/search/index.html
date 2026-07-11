@@ -15,8 +15,12 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: var(--font-ui); background: radial-gradient(circle at 50% -20%, rgba(88,166,255,0.09), transparent 38%), #0a0f1d; color: var(--text-main); min-height: 100vh; }
   .container { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
+  .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 4px; }
   h1 { font-family: var(--font-ui); font-size: 24px; font-weight: 700; margin-bottom: 4px; }
   .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+  .lang-switch { display: flex; gap: 6px; flex-shrink: 0; margin-top: 2px; }
+  .lang-switch button { background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.12); border-radius: 7px; padding: 4px 10px; cursor: pointer; font-size: 12px; font-family: var(--font-ui); }
+  .lang-switch button.active { color: #58a6ff; border-color: rgba(88,166,255,0.42); background: rgba(88,166,255,0.08); }
   .search-box { position: relative; margin-bottom: 16px; background: rgba(255,255,255,0.035); border: 1px solid rgba(88,166,255,0.24); border-radius: 14px; box-shadow: 0 0 0 1px rgba(88,166,255,0.04); transition: border-color 0.2s, box-shadow 0.2s; }
   .search-box:focus-within { border-color: rgba(88,166,255,0.62); background: rgba(88,166,255,0.06); box-shadow: 0 0 18px rgba(88,166,255,0.12); }
   .search-box input { width: 100%; padding: 15px 16px; background: transparent; border: 0; color: var(--text-main); font-size: 15px; font-family: var(--font-ui); outline: none; }
@@ -59,22 +63,125 @@
 </head>
 <body>
 <div class="container">
-  <h1>Search Verified Failure Lessons</h1>
-  <p class="subtitle">Reviewed fixes from real agent debugging sessions. Not random chat logs.</p>
+  <div class="topbar">
+    <div>
+      <h1 data-i18n="heading">Search Verified Failure Lessons</h1>
+      <p class="subtitle" data-i18n="subtitle">Reviewed fixes from real agent debugging sessions. Not random chat logs.</p>
+    </div>
+    <div class="lang-switch" aria-label="Language">
+      <button type="button" data-lang="zh">中</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
+  </div>
 
   <div class="search-box">
-    <input type="text" id="q" placeholder="Search lessons... (e.g., pip timeout, database locked, profinet)" autofocus>
+    <input type="text" id="q" data-i18n-placeholder="placeholder" placeholder="Search lessons... (e.g., pip timeout, database locked, profinet)" autofocus>
   </div>
   <div class="stats" id="stats"></div>
   <div id="results" class="loading">Loading lessons...</div>
 </div>
 
 <script>
+const I18N = {
+  en: {
+    pageTitle: 'Search Verified Failure Lessons — MisakaNet',
+    heading: 'Search Verified Failure Lessons',
+    subtitle: 'Reviewed fixes from real agent debugging sessions. Not random chat logs.',
+    placeholder: 'Search lessons... (e.g., pip timeout, database locked, profinet)',
+    loading: 'Loading lessons...',
+    stats: '{count} curated lessons / zero-dep / GitHub-audited',
+    resultsHeader: 'Found {count} lessons for "{q}"',
+    resultsStats: '{count} curated lessons · static JSON · GitHub-audited · no database',
+    noMatchPrefix: 'No exact match for',
+    noMatchSuffix: 'Try a broader term.',
+    installSkill: 'Install agent skill',
+    submitLesson: 'Submit a lesson',
+    readLesson: 'Read lesson',
+    collapse: 'Collapse',
+    openGitHub: 'Open on GitHub',
+    loadingPreview: 'Loading lesson preview...',
+    clipped: '... (open on GitHub for full lesson)',
+    noPreview: 'No preview body found. Open on GitHub for the full lesson.',
+    previewUnavailable: 'Preview unavailable. Use "Open on GitHub" for the full lesson.',
+    loadFailed: 'Failed to load lessons.',
+    goHome: 'Go to homepage',
+    badgeFatal: 'Fatal Pitfall',
+    badgeRuntime: 'Runtime Failure',
+    badgeSetup: 'Setup Fix',
+    badgeVerified: 'Verified',
+    githubAudited: 'GitHub-audited'
+  },
+  zh: {
+    pageTitle: '搜索已验证失败教训 — MisakaNet',
+    heading: '搜索已验证失败教训',
+    subtitle: '来自真实 AI Agent 调试会话的已审核修复，不是随机聊天记录。',
+    placeholder: '搜索 DCO、GitHub token、pip timeout、database locked...',
+    loading: '正在加载 lessons...',
+    stats: '{count} 条精选 lessons / 零依赖 / GitHub 审核',
+    resultsHeader: '为“{q}”找到 {count} 条 lesson',
+    resultsStats: '{count} 条精选 lessons · 静态 JSON · GitHub 审核 · 无数据库',
+    noMatchPrefix: '没有精确匹配',
+    noMatchSuffix: '可以试试更宽泛的关键词。',
+    installSkill: '安装 agent skill',
+    submitLesson: '提交 lesson',
+    readLesson: '阅读 lesson',
+    collapse: '收起',
+    openGitHub: '在 GitHub 打开',
+    loadingPreview: '正在加载 lesson 预览...',
+    clipped: '...（完整 lesson 请在 GitHub 打开）',
+    noPreview: '没有可预览正文。请在 GitHub 打开完整 lesson。',
+    previewUnavailable: '预览不可用。请使用“在 GitHub 打开”查看完整 lesson。',
+    loadFailed: 'Lessons 加载失败。',
+    goHome: '回到首页',
+    badgeFatal: '致命踩坑',
+    badgeRuntime: '运行失败',
+    badgeSetup: '配置修复',
+    badgeVerified: '已验证',
+    githubAudited: 'GitHub 审核'
+  }
+};
 const LESSONS_URL = "/data/lessons.json";
 const RAW_BASE = "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/";
 let _lessons = null;
 let _lastResults = [];
 const _previewCache = new Map();
+let LANG = localStorage.getItem('misakanet-lang') || localStorage.getItem('misaka_lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
+
+function t(key, vars = {}) {
+  let value = (I18N[LANG] && I18N[LANG][key]) || I18N.en[key] || key;
+  Object.keys(vars).forEach(name => {
+    value = value.split('{' + name + '}').join(String(vars[name]));
+  });
+  return value;
+}
+
+function updateStats() {
+  if (!_lessons) return;
+  document.getElementById('stats').textContent = t('stats', { count: _lessons.filter(isSearchable).length });
+}
+
+function setLang(lang) {
+  LANG = lang === 'zh' ? 'zh' : 'en';
+  localStorage.setItem('misakanet-lang', LANG);
+  document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
+  document.title = t('pageTitle');
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll('[data-lang]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === LANG);
+  });
+  if (!_lessons) {
+    document.getElementById('results').textContent = t('loading');
+    return;
+  }
+  updateStats();
+  const q = document.getElementById('q').value.trim();
+  if (q) render(_lastResults, q);
+}
 
 function escapeHTML(value) {
   return String(value || '').replace(/[&<>"']/g, ch => ({
@@ -160,10 +267,10 @@ function getTakeaway(r) {
 
 function inferBadge(r) {
   const text = ((r.title||'') + ' ' + (r.summary||'') + ' ' + (r.tags||[]).join(' ')).toLowerCase();
-  if (/delete|drop|clear|overwrite|corrupt|destroy|清空|覆盖|丢数据/.test(text)) return { label: 'Fatal Pitfall', cls: 'badge-fatal' };
-  if (/timeout|locked|rate.limit|429|403|oom|crash|崩溃|超时|锁定/.test(text)) return { label: 'Runtime Failure', cls: 'badge-runtime' };
-  if (/setup|config|install|deploy|初始化|配置|安装/.test(text)) return { label: 'Setup Fix', cls: 'badge-setup' };
-  return { label: 'Verified', cls: 'badge-status' };
+  if (/delete|drop|clear|overwrite|corrupt|destroy|清空|覆盖|丢数据/.test(text)) return { key: 'badgeFatal', cls: 'badge-fatal' };
+  if (/timeout|locked|rate.limit|429|403|oom|crash|崩溃|超时|锁定/.test(text)) return { key: 'badgeRuntime', cls: 'badge-runtime' };
+  if (/setup|config|install|deploy|初始化|配置|安装/.test(text)) return { key: 'badgeSetup', cls: 'badge-setup' };
+  return { key: 'badgeVerified', cls: 'badge-status' };
 }
 
 function render(results, q) {
@@ -171,13 +278,13 @@ function render(results, q) {
   _lastResults = results;
   if (!results.length) {
     el.innerHTML = '<div class="fallback">' +
-      '<div style="margin-bottom:12px;">No exact match for "' + escapeHTML(q) + '". Try a broader term.</div>' +
-      '<div style="font-size:12px;"><a href="/skill.md">Install agent skill</a> / <a href="https://github.com/Ikalus1988/MisakaNet">Submit a lesson</a></div></div>';
+      '<div style="margin-bottom:12px;">' + t('noMatchPrefix') + ' "' + escapeHTML(q) + '". ' + t('noMatchSuffix') + '</div>' +
+      '<div style="font-size:12px;"><a href="/skill.md">' + t('installSkill') + '</a> / <a href="https://github.com/Ikalus1988/MisakaNet">' + t('submitLesson') + '</a></div></div>';
     return;
   }
   const searchable = _lessons ? _lessons.filter(isSearchable).length : 0;
-  let html = '<div class="results-header">Found ' + results.length + ' lessons for "' + escapeHTML(q) + '"</div>';
-  html += '<div class="stats">' + searchable + ' curated lessons · static JSON · GitHub-audited · no database</div>';
+  let html = '<div class="results-header">' + t('resultsHeader', { count: results.length, q: escapeHTML(q) }) + '</div>';
+  html += '<div class="stats">' + t('resultsStats', { count: searchable }) + '</div>';
   html += results.map((r, index) => {
     const takeaway = escapeHTML(getTakeaway(r));
     const title = escapeHTML(r.title);
@@ -190,17 +297,17 @@ function render(results, q) {
     const showTitle = takeaway !== title; // show title as meta only if different
     return '<div class="result" tabindex="0" data-index="' + index + '" data-id="' + id + '">' +
       '<div class="result-meta">' +
-        '<span class="badge ' + badge.cls + '">' + badge.label + '</span>' +
+        '<span class="badge ' + badge.cls + '">' + t(badge.key) + '</span>' +
         '<span class="badge badge-domain">' + domain + '</span>' +
-        '<span class="badge badge-status">GitHub-audited</span>' +
+        '<span class="badge badge-status">' + t('githubAudited') + '</span>' +
       '</div>' +
       '<div class="result-title">' + takeaway + '</div>' +
       (showTitle ? '<div class="result-id">' + id + '</div>' : '') +
       '<div class="result-summary">' + summary + '</div>' +
       (tags ? '<div class="result-tags">' + tags + '</div>' : '') +
       '<div class="result-actions">' +
-        '<button class="btn-primary" type="button" data-action="preview">Read lesson</button>' +
-        '<a class="btn-secondary" href="' + escapeHTML(url) + '" target="_blank" rel="noopener">Open on GitHub</a>' +
+        '<button class="btn-primary" type="button" data-action="preview">' + t('readLesson') + '</button>' +
+        '<a class="btn-secondary" href="' + escapeHTML(url) + '" target="_blank" rel="noopener">' + t('openGitHub') + '</a>' +
       '</div>' +
       '<div class="lesson-preview" hidden></div>' +
     '</div>';
@@ -238,22 +345,22 @@ async function togglePreview(index) {
     if (p !== panel) {
       p.hidden = true;
       const otherBtn = p.closest('.result').querySelector('[data-action="preview"]');
-      if (otherBtn) otherBtn.textContent = 'Read lesson';
+      if (otherBtn) otherBtn.textContent = t('readLesson');
     }
   });
 
   if (panel.dataset.loaded === 'true') {
     panel.hidden = !panel.hidden;
     const btn = card.querySelector('[data-action="preview"]');
-    if (btn) btn.textContent = panel.hidden ? 'Read lesson' : 'Collapse';
+    if (btn) btn.textContent = panel.hidden ? t('readLesson') : t('collapse');
     updateUrl(document.getElementById('q').value.trim(), panel.hidden ? null : (lesson.id || ''));
     return;
   }
 
   panel.hidden = false;
-  panel.innerHTML = '<div class="preview-status">Loading lesson preview...</div>';
+  panel.innerHTML = '<div class="preview-status">' + t('loadingPreview') + '</div>';
   const btn = card.querySelector('[data-action="preview"]');
-  if (btn) btn.textContent = 'Collapse';
+  if (btn) btn.textContent = t('collapse');
   const rawUrl = getRawLessonUrl(lesson);
   try {
     let text = _previewCache.get(rawUrl);
@@ -264,12 +371,12 @@ async function togglePreview(index) {
       _previewCache.set(rawUrl, text);
     }
     const body = stripFrontmatter(text);
-    const clipped = body.length > 2400 ? body.slice(0, 2400) + '\n\n... (open on GitHub for full lesson)' : body;
+    const clipped = body.length > 2400 ? body.slice(0, 2400) + '\n\n' + t('clipped') : body;
     panel.dataset.loaded = 'true';
-    panel.innerHTML = renderMarkdown(clipped || 'No preview body found. Open on GitHub for the full lesson.');
+    panel.innerHTML = renderMarkdown(clipped || t('noPreview'));
     updateUrl(document.getElementById('q').value.trim(), lesson.id || '');
   } catch (e) {
-    panel.innerHTML = '<div class="preview-status">Preview unavailable. Use "Open on GitHub" for the full lesson.</div>';
+    panel.innerHTML = '<div class="preview-status">' + t('previewUnavailable') + '</div>';
   }
 }
 
@@ -285,7 +392,7 @@ async function init() {
     const r = await fetch(LESSONS_URL);
     if (!r.ok) throw new Error(r.status);
     _lessons = await r.json();
-    document.getElementById('stats').textContent = _lessons.filter(isSearchable).length + ' curated lessons / zero-dep / GitHub-audited';
+    updateStats();
     document.getElementById('results').innerHTML = '';
     const params = new URLSearchParams(location.search);
     const q = params.get('q');
@@ -301,9 +408,13 @@ async function init() {
       }
     }
   } catch(e) {
-    document.getElementById('results').innerHTML = '<div class="fallback">Failed to load lessons. <a href="/">Go to homepage</a></div>';
+    document.getElementById('results').innerHTML = '<div class="fallback">' + t('loadFailed') + ' <a href="/">' + t('goHome') + '</a></div>';
   }
 }
+
+document.querySelectorAll('[data-lang]').forEach(btn => {
+  btn.addEventListener('click', () => setLang(btn.dataset.lang));
+});
 
 document.getElementById('q').addEventListener('input', function() {
   const q = this.value.trim();
@@ -337,6 +448,7 @@ document.getElementById('results').addEventListener('keydown', function(event) {
   togglePreview(Number(card.dataset.index));
 });
 
+setLang(LANG);
 init();
 </script>
 </body>

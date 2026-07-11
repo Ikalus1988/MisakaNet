@@ -9,7 +9,11 @@
     "source_type": "issue",
     "consent": "public-issue",
     "redacted": true,
-    "date": "2026-07-10"
+    "date": "2026-07-10",
+    "role_zh": "初次贡献者",
+    "quote_zh": "我在 Windows 上遇到的 DCO sign-off 问题，变成了每个新贡献者都能复用的 quickstart。",
+    "pain_zh": "DCO 检查挡住了 onboarding，不知道在 Windows 上如何使用 git commit --signoff",
+    "helped_by_zh": "维护者引导 + issue 模板，最终沉淀为 #443"
   },
   {
     "author": "SparshGarg999",
@@ -21,7 +25,11 @@
     "source_type": "pull_request",
     "consent": "public-pr",
     "redacted": true,
-    "date": "2026-07-11"
+    "date": "2026-07-11",
+    "role_zh": "初次贡献者",
+    "quote_zh": "我的入门摩擦——Windows 上 secret-scan Unicode 崩溃——变成了整个网络的贡献者指南。",
+    "pain_zh": "在 Windows 运行 check_worker_secrets.py 时触发 Python UnicodeEncodeError",
+    "helped_by_zh": "提交 #444，维护者通过 PR #449 合并 troubleshooting 文档"
   },
   {
     "author": "2lll5",
@@ -33,7 +41,11 @@
     "source_type": "pull_request",
     "consent": "public-pr",
     "redacted": true,
-    "date": "2026-07-07"
+    "date": "2026-07-07",
+    "role_zh": "现场测试者",
+    "quote_zh": "搜索把一次真实 Agent 失败转成了可执行的排查路径：不是聊天记录，而是可复用 lesson。",
+    "pain_zh": "Agent 崩溃后缺少结构化痕迹，后续很难复盘",
+    "helped_by_zh": "BM25 搜索在 200+ lessons 中找到相关修复路径"
   },
   {
     "author": "zsxh1990",
@@ -45,7 +57,11 @@
     "source_type": "pull_request",
     "consent": "public-pr",
     "redacted": true,
-    "date": "2026-07-08"
+    "date": "2026-07-08",
+    "role_zh": "核心贡献者",
+    "quote_zh": "QA 找出了搜索强项和协议需要清理的地方，现在所有人的数据都更干净。",
+    "pain_zh": "frontmatter 格式不一致，让 lessons 更难被搜索",
+    "helped_by_zh": "通过 #414、#428、#432 等 PR 规范化历史 lesson 格式"
   },
   {
     "author": "Syzygys",
@@ -57,6 +73,10 @@
     "source_type": "pull_request",
     "consent": "public-pr",
     "redacted": true,
-    "date": "2026-07-08"
+    "date": "2026-07-08",
+    "role_zh": "现场测试者",
+    "quote_zh": "我给 queue_lesson.py 加了 smoke test；zero-bounty 任务足够清晰，第一天就能贡献。",
+    "pain_zh": "lesson queueing 脚本缺少测试覆盖",
+    "helped_by_zh": "清晰的 issue 模板给出了文件路径、验收标准和验证命令"
   }
 ]
