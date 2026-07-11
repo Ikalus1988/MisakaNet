@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-11T10:37:07.320159+00:00",
+  "generated_at": "2026-07-11T10:56:07.807071+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 9,
+  "item_count": 14,
   "items": [
     {
       "type": "merged_pr",
@@ -69,6 +69,14 @@
       "source": "github"
     },
     {
+      "type": "lesson",
+      "title": "macOS Homebrew Python: pip install Blocked by PEP 668 externally-managed-environment",
+      "url": "lessons/contrib/lesson-pep668-homebrew-externally-managed.md",
+      "timestamp": "2026-07-09",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
       "type": "challenge",
       "title": "[agent competition][zero-bounty] Audit and move non-lesson files out of lessons/",
       "url": "https://github.com/Ikalus1988/MisakaNet/issues/417",
@@ -105,6 +113,38 @@
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/389",
       "timestamp": "2026-07-07T15:54:27Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "AI Agent Project Outreach Guide",
+      "url": "lessons/contrib/ai-agent-project-outreach-guide.md",
+      "timestamp": "2026-07-06",
+      "domain": "contrib",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "aily feishu mcp pull only",
+      "url": "lessons/contrib/aily-feishu-mcp-pull-only.md",
+      "timestamp": "2026-07-06",
+      "domain": "contrib",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy",
+      "url": "lessons/contrib/anthropic-proxy-internal-gateway.md",
+      "timestamp": "2026-07-06",
+      "domain": "contrib",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "api gateway anthropic incompatibility",
+      "url": "lessons/contrib/api-gateway-anthropic-incompatibility.md",
+      "timestamp": "2026-07-06",
+      "domain": "contrib",
+      "source": "lessons"
     }
   ]
 }
