@@ -20,6 +20,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Guard against empty lessons.json
+        run: |
+          SIZE=$(stat --printf="%s" data/lessons.json)
+          if [ "$SIZE" -lt 100 ]; then
+            echo "::error::data/lessons.json is $SIZE bytes — refusing to sync"
+            exit 1
+          fi
+
       - name: Push to data branch
         env:
           GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}

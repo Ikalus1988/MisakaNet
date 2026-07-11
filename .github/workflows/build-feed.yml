@@ -26,6 +26,20 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Guard against empty lessons.json
+        run: |
+          SIZE=$(stat --printf="%s" data/lessons.json)
+          if [ "$SIZE" -lt 100 ]; then
+            echo "::error::data/lessons.json is $SIZE bytes — refusing to sync empty/truncated file"
+            exit 1
+          fi
+          COUNT=$(python3 -c "import json; print(len(json.load(open('data/lessons.json'))))")
+          if [ "$COUNT" -lt 10 ]; then
+            echo "::error::data/lessons.json has only $COUNT lessons — refusing to sync"
+            exit 1
+          fi
+          echo "Guard passed: $SIZE bytes, $COUNT lessons"
+
       - name: Sync lessons.json to docs/data/
         run: cp data/lessons.json docs/data/lessons.json
 
