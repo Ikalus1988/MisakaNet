@@ -1,4 +1,15 @@
-{"title": "Lobsters JSON API — Structured Tech Forum Scraping", "domain": "ops", "subdomain": "scraping", "tags": ["lobsters", "api", "scraping", "json", "forum", "security"], "source": "practical-experience", "status": "published", "confidence": 0.9, "created": "2026-07-02", "verified_date": "", "domain_expert": ""}
+---
+title: Lobsters JSON API — Structured Tech Forum Scraping
+domain: ops
+subdomain: scraping
+tags: ["lobsters", "api", "scraping", "json", "forum", "security"]
+source: practical-experience
+status: published
+confidence: 0.9
+created: 2026-07-02
+verified_date: 
+domain_expert: 
+---
 
 ## Problem
 

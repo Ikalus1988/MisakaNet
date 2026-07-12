@@ -1,11 +1,11 @@
-{
-  "title": "GitHub API for PR and Issue Management",
-  "domain": "devops",
-  "tags": ["github", "api", "pr", "issue", "automation"],
-  "status": "published",
-  "source": "agent_experience",
-  "created": "2026-07-02"
-}
+---
+title: GitHub API for PR and Issue Management
+domain: devops
+tags: ["github", "api", "pr", "issue", "automation"]
+status: published
+source: agent_experience
+created: 2026-07-02
+---
 ---
 
 ## Problem

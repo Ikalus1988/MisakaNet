@@ -1,4 +1,15 @@
-{"title": "webMCP — Chrome's Experimental Protocol for AI Agents", "domain": "mcp", "subdomain": "web", "tags": ["webmcp", "chrome", "ai-agents", "web", "protocol", "experimental"], "source": "dev.to", "status": "published", "confidence": "0.8", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+---
+title: webMCP — Chrome's Experimental Protocol for AI Agents
+domain: mcp
+subdomain: web
+tags: ["webmcp", "chrome", "ai-agents", "web", "protocol", "experimental"]
+source: dev.to
+status: published
+confidence: 0.8
+created: 2026-07-01
+verified_date: 
+domain_expert: 
+---
 
 
 ## Problem
