@@ -1867,12 +1867,6 @@
     <div class="loading-item" data-i18n="loading">加载中...</div>
   </div>
 
-  <!-- Active Nodes -->
-  <div class="section-title" id="active-title" style="display:none;">🌐 <span data-i18n="activeSection">当前活跃节点</span> <span id="active-count"></span></div>
-  <div class="active-list" id="active-list" style="display:none;">
-    <div class="loading-item" data-i18n="loading">加载中...</div>
-  </div>
-
   <!-- Register Form -->
   <div class="register-section">
     <div class="register-title" data-i18n="registerTitle">🌐 没有 GitHub？直接注册</div>
@@ -2654,7 +2648,6 @@ window.addEventListener('storage', (e) => {
       const { ts } = JSON.parse(e.newValue || '{}');
       if (ts && Date.now() - ts <= CACHE_TTL && document.visibilityState === 'visible') {
         if (typeof loadStats === 'function') loadStats();
-        if (typeof loadActiveNodes === 'function') loadActiveNodes();
       }
     } catch {}
   }
@@ -2768,7 +2761,6 @@ async function loadStats() {
 
   loadRecentRegistrations();
   loadContributors();
-  loadActiveNodes();
 }
 
 async function loadRecentRegistrations() {
@@ -3611,16 +3603,13 @@ document.getElementById('register-btn').addEventListener('click', registerNode);
     TEST_NODES = new Set(data.tests || []);
   } catch(e) {}
   loadStats();
-  loadActiveNodes();
   loadContributors();
 })();
-setInterval(loadActiveNodes, 30 * 60 * 1000);
 
 // 用户切回 tab 时静默刷新（利用缓存 TTL，不清缓存）
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     loadStats();
-    loadActiveNodes();
   }
 });
 </script>
