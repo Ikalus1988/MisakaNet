@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-11T22:10:53.069245+00:00",
+  "generated_at": "2026-07-12T04:03:41.935602+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 11,
+  "item_count": 12,
   "items": [
     {
       "type": "merged_pr",
@@ -16,6 +16,23 @@
       "title": "Normalize five legacy contrib lesson frontmatter files",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/431",
       "timestamp": "2026-07-09T09:43:26Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[agent competition][zero-bounty] Blind test homepage SAG-Lite lesson search",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/429",
+      "labels": [
+        "good first issue",
+        "area:tests",
+        "ready",
+        "agent-friendly",
+        "no-credentials",
+        "zero-bounty",
+        "has-test",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-09T07:03:41Z",
       "source": "github"
     },
     {
