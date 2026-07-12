@@ -89,9 +89,9 @@ const I18N = {
     subtitle: 'Reviewed fixes from real agent debugging sessions. Not random chat logs.',
     placeholder: 'Search lessons... (e.g., pip timeout, database locked, profinet)',
     loading: 'Loading lessons...',
-    stats: '{count} curated lessons / zero-dep / GitHub-audited',
+    stats: '{count} searchable lessons · {total} total · zero-dep · GitHub-audited',
     resultsHeader: 'Found {count} lessons for "{q}"',
-    resultsStats: '{count} curated lessons · static JSON · GitHub-audited · no database',
+    resultsStats: '{count} searchable lessons · {total} total · static JSON · GitHub-audited',
     noMatchPrefix: 'No exact match for',
     noMatchSuffix: 'Try a broader term.',
     installSkill: 'Install agent skill',
@@ -117,9 +117,9 @@ const I18N = {
     subtitle: '来自真实 AI Agent 调试会话的已审核修复，不是随机聊天记录。',
     placeholder: '搜索 DCO、GitHub token、pip timeout、database locked...',
     loading: '正在加载 lessons...',
-    stats: '{count} 条精选 lessons / 零依赖 / GitHub 审核',
-    resultsHeader: '为“{q}”找到 {count} 条 lesson',
-    resultsStats: '{count} 条精选 lessons · 静态 JSON · GitHub 审核 · 无数据库',
+    stats: '{count} 条可搜索 lessons · {total} 条总计 · 零依赖 · GitHub 审核',
+    resultsHeader: '为”{q}”找到 {count} 条 lesson',
+    resultsStats: '{count} 条可搜索 lessons · {total} 条总计 · 静态 JSON · GitHub 审核',
     noMatchPrefix: '没有精确匹配',
     noMatchSuffix: '可以试试更宽泛的关键词。',
     installSkill: '安装 agent skill',
@@ -157,7 +157,9 @@ function t(key, vars = {}) {
 
 function updateStats() {
   if (!_lessons) return;
-  document.getElementById('stats').textContent = t('stats', { count: _lessons.filter(isSearchable).length });
+  const searchable = _lessons.filter(isSearchable).length;
+  const total = _lessons.length;
+  document.getElementById('stats').textContent = t('stats', { count: searchable, total });
 }
 
 function setLang(lang) {
@@ -283,8 +285,9 @@ function render(results, q) {
     return;
   }
   const searchable = _lessons ? _lessons.filter(isSearchable).length : 0;
+  const total = _lessons ? _lessons.length : 0;
   let html = '<div class="results-header">' + t('resultsHeader', { count: results.length, q: escapeHTML(q) }) + '</div>';
-  html += '<div class="stats">' + t('resultsStats', { count: searchable }) + '</div>';
+  html += '<div class="stats">' + t('resultsStats', { count: searchable, total }) + '</div>';
   html += results.map((r, index) => {
     const takeaway = escapeHTML(getTakeaway(r));
     const title = escapeHTML(r.title);
