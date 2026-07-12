@@ -1,21 +1,21 @@
 {
-  "generated_at": "2026-07-12T04:03:41.935602+00:00",
+  "generated_at": "2026-07-12T08:33:53.756941+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 12,
+  "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs: add local CI secret-scan troubleshooting on Windows",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/449",
-      "timestamp": "2026-07-11T09:33:23Z",
+      "title": "fix(lessons): convert 20 bare JSON frontmatter to YAML (fixes #351)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/452",
+      "timestamp": "2026-07-12T06:53:25Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "Normalize five legacy contrib lesson frontmatter files",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/431",
-      "timestamp": "2026-07-09T09:43:26Z",
+      "title": "docs: add architecture diagram (fixes #293)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/454",
+      "timestamp": "2026-07-12T06:53:25Z",
       "source": "github"
     },
     {
@@ -42,23 +42,6 @@
       "timestamp": "2026-07-09",
       "domain": "devops",
       "source": "lessons"
-    },
-    {
-      "type": "challenge",
-      "title": "[agent competition][zero-bounty] Audit and move non-lesson files out of lessons/",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/417",
-      "labels": [
-        "good first issue",
-        "ready",
-        "area:lessons",
-        "agent-friendly",
-        "no-credentials",
-        "zero-bounty",
-        "has-test",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-08T13:32:20Z",
-      "source": "github"
     },
     {
       "type": "merged_pr",
