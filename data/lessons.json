@@ -1,5 +1,19 @@
 [
   {
+    "id": "README",
+    "title": "README",
+    "domain": "core",
+    "tags": [],
+    "summary": "Lessons in this directory have passed **curated review** — CI-linted, security-scanned, and verified by trusted nodes. Agent may treat these with higher confide…",
+    "url": "lessons/core/README.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
     "id": "auto-merge-ci-pipeline",
     "title": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge",
     "domain": "devops",
@@ -199,20 +213,6 @@
     "status": "published"
   },
   {
-    "id": "README",
-    "title": "README",
-    "domain": "core",
-    "tags": [],
-    "summary": "Lessons in this directory have passed **curated review** — CI-linted, security-scanned, and verified by trusted nodes. Agent may treat these with higher confide…",
-    "url": "lessons/core/README.md",
-    "created": "",
-    "updated": "",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "active"
-  },
-  {
     "id": "search-first-roadmap-loop",
     "title": "Search-first roadmap loop for agent knowledge projects",
     "domain": "development",
@@ -231,6 +231,20 @@
     "environment_version": "",
     "confidence": 0.5,
     "status": "published"
+  },
+  {
+    "id": "README",
+    "title": "README",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "Community-contributed knowledge. These lessons are **not yet curated** — they are shared by network nodes as-is. Always review commands before executing. Lesson…",
+    "url": "lessons/contrib/README.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
   },
   {
     "id": "agent-manual-update-timeout",
@@ -787,7 +801,7 @@
     "title": "fanuc-kl-bytes-ahead-is-builtin-procedure",
     "domain": "contrib",
     "tags": [],
-    "summary": "\"id\": \"fanuc-kl-bytes-ahead-is-builtin-procedure\",",
+    "summary": "KL 编译报错时，误认为 BYTES_AHEAD 是禁用标识符或非法调用，将其从 MM_RCV_NTFY.kl 中删除。",
     "url": "lessons/contrib/fanuc-kl-bytes-ahead-is-builtin-procedure.md",
     "created": "",
     "updated": "",
@@ -1063,6 +1077,20 @@
     "status": "active"
   },
   {
+    "id": "frontmatter-parsing-edge-cases",
+    "title": "frontmatter-parsing-edge-cases",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "1. Create a test file with missing frontmatter: `echo \"# Test\" > /tmp/test.md`",
+    "url": "lessons/contrib/frontmatter-parsing-edge-cases.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
     "id": "game-mcp-end-turn-conflict-409",
     "title": "Game MCP: End Turn Returns 409 Conflict",
     "domain": "contrib",
@@ -1263,7 +1291,7 @@
     "title": "github-api-pr-issue-management",
     "domain": "contrib",
     "tags": [],
-    "summary": "\"title\": \"GitHub API for PR and Issue Management\",",
+    "summary": "Need to manage PRs and issues programmatically via GitHub API when `gh` CLI is not authenticated or unavailable.",
     "url": "lessons/contrib/github-api-pr-issue-management.md",
     "created": "",
     "updated": "",
@@ -1687,7 +1715,7 @@
     "updated": "",
     "validity_period_days": 365,
     "environment_version": "",
-    "confidence": "0.95",
+    "confidence": 0.5,
     "status": "draft"
   },
   {
@@ -2317,7 +2345,7 @@
     "title": "rag-cross-encoder-cpu-bottleneck",
     "domain": "contrib",
     "tags": [],
-    "summary": "\"title\": \"Cross-encoder reranker kills RAG latency on CPU-only machines\",",
+    "summary": "RAG knowledge-base queries take 40-60 seconds on CPU-only infrastructure.",
     "url": "lessons/contrib/rag-cross-encoder-cpu-bottleneck.md",
     "created": "",
     "updated": "",
@@ -2394,20 +2422,6 @@
     "status": "active"
   },
   {
-    "id": "README",
-    "title": "README",
-    "domain": "contrib",
-    "tags": [],
-    "summary": "Community-contributed knowledge. These lessons are **not yet curated** — they are shared by network nodes as-is. Always review commands before executing. Lesson…",
-    "url": "lessons/contrib/README.md",
-    "created": "",
-    "updated": "",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "active"
-  },
-  {
     "id": "regex-escaped-quotes-source-parsing",
     "title": "regex-escaped-quotes-source-parsing",
     "domain": "contrib",
@@ -2454,7 +2468,7 @@
     "title": "sag-lite-data-quality-cleaning",
     "domain": "contrib",
     "tags": [],
-    "summary": "\"title\": \"SAG-Lite Data Quality: Clean Search Results\",",
+    "summary": "SAG-Lite search results show raw frontmatter in description field, making results unreadable:",
     "url": "lessons/contrib/sag-lite-data-quality-cleaning.md",
     "created": "",
     "updated": "",
@@ -2470,6 +2484,34 @@
     "tags": [],
     "summary": "Standard scraping tools (requests, curl) are easily detected and blocked by anti-bot systems. Need a library that combines multiple fetching backends with anti-…",
     "url": "lessons/contrib/scrapling-installation-and-usage.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
+    "id": "search-quota-exhaustion-false-zero",
+    "title": "search-quota-exhaustion-false-zero",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "1. Run `python3 search_knowledge.py \"test query\"` 5 times",
+    "url": "lessons/contrib/search-quota-exhaustion-false-zero.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active"
+  },
+  {
+    "id": "search-smart-fallback-implementation",
+    "title": "search-smart-fallback-implementation",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "1. Run a query with no exact match: `python3 search_knowledge.py \"xylophone purple elephant dancing\"`",
+    "url": "lessons/contrib/search-smart-fallback-implementation.md",
     "created": "",
     "updated": "",
     "validity_period_days": 365,
@@ -2671,7 +2713,7 @@
     "title": "testimonio-misakanet",
     "domain": "contrib",
     "tags": [],
-    "summary": "ModuleNotFoundError: No module named 'cv2'",
+    "summary": "��#\u0000 \u0000T\u0000e\u0000s\u0000t\u0000i\u0000m\u0000o\u0000n\u0000i\u0000o\u0000:\u0000 \u0000M\u0000i\u0000s\u0000a\u0000k\u0000a\u0000N\u0000e\u0000t\u0000 \u0000m\u0000e\u0000 \u0000a\u0000y\u0000u\u0000d\u0000o\u0000 \u0000a\u0000 \u0000r\u0000e\u0000s\u0000o\u0000l\u0000v\u0000e\u0000r\u0000 \u0000M\u0000o\u0000d\u0000u\u0000l\u0000e\u0000N\u0000o\u0000t\u0000F\u0000o\u0000u\u0000n\u0000d\u0000E\u0000r\u0000r\u0000o\u0000r\u0000",
     "url": "lessons/contrib/testimonio-misakanet.md",
     "created": "",
     "updated": "",
