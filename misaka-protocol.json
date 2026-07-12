@@ -38,11 +38,42 @@
     }
   },
 
+  "trust_tiers": {
+    "github-verified": {
+      "method": "github-oauth",
+      "trust_level": "verified",
+      "requires_verification": false,
+      "badge_display": "✅",
+      "search_ranking_boost": 1.15
+    },
+    "mail-verified": {
+      "method": "email-verification",
+      "trust_level": "verified",
+      "requires_verification": true,
+      "badge_display": "📧",
+      "search_ranking_boost": 1.10
+    },
+    "web-verified": {
+      "method": "web-registration",
+      "trust_level": "verified",
+      "requires_verification": false,
+      "badge_display": "🌐",
+      "search_ranking_boost": 1.05
+    },
+    "anonymous": {
+      "method": "none",
+      "trust_level": "unverified",
+      "requires_verification": false,
+      "badge_display": "👤",
+      "search_ranking_boost": 1.0
+    }
+  },
+
   "registration": {
     "github": {
       "method": "issue",
       "trigger_labels": ["join", "register", "注册", "加入", "Registration"],
-      "trust_level": "verified",
+      "trust_tier": "github-verified",
       "node_prefix": "Misaka",
       "counter_path": "data/counter.json",
       "avatar_generator": "scripts/misakanet-avatar.py"
@@ -50,7 +81,7 @@
     "email": {
       "method": "email",
       "address": "bot@misakanet.org",
-      "trust_level": "unverified",
+      "trust_tier": "mail-verified",
       "requires_verification": true,
       "node_prefix": "Misaka",
       "counter_kv": "MISAKANET_KV"
@@ -115,6 +146,20 @@
           "git-commit-msg hook (on failed commit → auto-harvest)",
           "ci-pipeline (agent auto-submit lessons)"
         ]
+      }
+    },
+    "federation": {
+      "peers": {
+        "pr-genius": {
+          "repo": "https://github.com/zsxh1990/pr-genius",
+          "role": "external-pr-intelligence",
+          "mode": "query-only",
+          "direction": "bidirectional-reference",
+          "source_of_truth": "pr-genius owns PR profiles and PR rounds; MisakaNet owns generalized lessons",
+          "license": "MIT upstream; preserve attribution when importing",
+          "since": "2026-07-02",
+          "status": "experimental"
+        }
       }
     }
   }

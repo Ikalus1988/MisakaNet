@@ -22,10 +22,21 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 PROFILE_PATH = REPO / "misakanet" / "profile.json"
 LESSONS_DIR = REPO / "lessons"
+PROTOCOL_PATH = REPO / "misaka-protocol.json"
 
 STAGES = ["newcomer", "active", "contributor"]
 STAGE_SEARCH_THRESHOLD = 3    # 3 次搜索 → active
 STAGE_LESSON_THRESHOLD = 1    # 1 条 lesson → contributor
+
+
+def _load_protocol() -> dict:
+    """Load trust tier definitions from misaka-protocol.json."""
+    if PROTOCOL_PATH.exists():
+        try:
+            return json.loads(PROTOCOL_PATH.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {}
 
 
 def _load() -> dict:
@@ -99,6 +110,39 @@ def get_lesson_count() -> int:
     return _load().get("lesson_count", 0)
 
 
+def get_trust_tier() -> str:
+    """Return the trust tier name from profile, defaulting to 'anonymous'."""
+    p = _load()
+    return p.get("trust_tier", "anonymous")
+
+
+def get_trust_tier_config(tier_name: str = None) -> dict:
+    """Read trust tier config from misaka-protocol.json.
+    
+    Args:
+        tier_name: Tier name to look up. If None, uses current profile's tier.
+    
+    Returns:
+        Dict with method, trust_level, requires_verification, badge_display, search_ranking_boost.
+        Falls back to anonymous tier defaults if not found.
+    """
+    protocol = _load_protocol()
+    trust_tiers = protocol.get("trust_tiers", {})
+    
+    if tier_name is None:
+        tier_name = get_trust_tier()
+    
+    default = {
+        "method": "none",
+        "trust_level": "unverified",
+        "requires_verification": False,
+        "badge_display": "👤",
+        "search_ranking_boost": 1.0
+    }
+    
+    return trust_tiers.get(tier_name, default)
+
+
 def increment_search():
     """搜索计数+1，跨阈值时自动升阶段并持久化。"""
     p = _load()
@@ -141,11 +185,17 @@ def apply_referral(code: str) -> bool:
 
 
 def get_credit_weight() -> float:
-    """基于阶段的检索权重加成。"""
+    """基于阶段的检索权重加成，读取 trust_tiers 配置。"""
     p = _load()
     stage = p.get("stage", "newcomer")
-    weights = {"newcomer": 1.0, "active": 1.05, "contributor": 1.10}
-    return weights.get(stage, 1.0)
+    stage_weights = {"newcomer": 1.0, "active": 1.05, "contributor": 1.10}
+    stage_weight = stage_weights.get(stage, 1.0)
+    
+    # Apply trust tier boost from protocol config
+    tier_config = get_trust_tier_config()
+    trust_boost = tier_config.get("search_ranking_boost", 1.0)
+    
+    return stage_weight * trust_boost
 
 
 # ── 轻量配额制 (Proof of Access lite) ──
@@ -196,14 +246,14 @@ def check_quota() -> tuple:
     if remaining <= 0:
         return (
             False,
-            f"[MisakaNet] 搜索额度已用尽 ({FREE_SEARCH_QUOTA}/{FREE_SEARCH_QUOTA})。\\n"
-            f"    贡献 1 条 lesson 即可恢复额度：\\n"
+            f"[MisakaNet] 搜索额度已用尽 ({FREE_SEARCH_QUOTA}/{FREE_SEARCH_QUOTA})。\n"
+            f"    贡献 1 条 lesson 即可恢复额度：\n"
             f"    python3 scripts/queue_lesson.py -t '标题' -d <domain> '...'",
         )
     if remaining <= 2:
         return (
             True,
-            f"[MisakaNet] 搜索额度剩余 {remaining}/{FREE_SEARCH_QUOTA}。\\n"
+            f"[MisakaNet] 搜索额度剩余 {remaining}/{FREE_SEARCH_QUOTA}。\n"
             f"    额度用完后需贡献 lesson 来恢复。",
         )
     return True, ""
