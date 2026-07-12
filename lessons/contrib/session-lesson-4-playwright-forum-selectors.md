@@ -1,4 +1,15 @@
-{"title": "Playwright Forum Selectors — WoltLab/IPS/Common Patterns", "domain": "ops", "subdomain": "scraping", "tags": ["playwright", "scraping", "selectors", "forum", "automation"], "source": "practical-experience", "status": "published", "confidence": 0.85, "created": "2026-07-02", "verified_date": "", "domain_expert": ""}
+---
+title: Playwright Forum Selectors — WoltLab/IPS/Common Patterns
+domain: ops
+subdomain: scraping
+tags: ["playwright", "scraping", "selectors", "forum", "automation"]
+source: practical-experience
+status: published
+confidence: 0.85
+created: 2026-07-02
+verified_date: 
+domain_expert: 
+---
 
 ## Problem
 

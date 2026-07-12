@@ -1,11 +1,11 @@
-{
-  "title": "SAG-Lite Data Quality: Clean Search Results",
-  "domain": "devops",
-  "tags": ["search", "sqlite", "fts5", "data-quality", "misakanet"],
-  "status": "published",
-  "source": "agent_experience",
-  "created": "2026-07-02"
-}
+---
+title: "SAG-Lite Data Quality: Clean Search Results"
+domain: devops
+tags: ["search", "sqlite", "fts5", "data-quality", "misakanet"]
+status: published
+source: agent_experience
+created: 2026-07-02
+---
 ---
 
 ## Problem

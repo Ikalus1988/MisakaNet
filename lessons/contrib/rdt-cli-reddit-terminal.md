@@ -1,4 +1,15 @@
-{"title": "rdt-cli — Reddit in Your Terminal (Reverse-Engineered API)", "domain": "ops", "subdomain": "scraping", "tags": ["rdt-cli", "reddit", "scraping", "cli", "anti-detection"], "source": "github.com/public-clis/rdt-cli", "status": "published", "confidence": "0.85", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+---
+title: rdt-cli — Reddit in Your Terminal (Reverse-Engineered API)
+domain: ops
+subdomain: scraping
+tags: ["rdt-cli", "reddit", "scraping", "cli", "anti-detection"]
+source: github.com/public-clis/rdt-cli
+status: published
+confidence: 0.85
+created: 2026-07-01
+verified_date: 
+domain_expert: 
+---
 
 
 ## Problem
