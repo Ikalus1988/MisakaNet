@@ -7,6 +7,29 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## v2.9.2 — 2026-07-13
+
+### Highlights
+- **Chinese README rewrite**: Complete rewrite of `README.zh-CN.md` replacing corrupted mojibake encoding. Narrative synced with English: Git-backed failure lesson network, 205+ lessons, 52+ nodes.
+- **ROADMAP.md**: Updated v2.9.x planning and v3.0 candidates.
+
+---
+
+## v2.9.1 — 2026-07-12
+
+### Highlights
+- **Crawler discoverability**: Added `sitemap.xml` (8 URLs), `robots.txt`, canonical URLs, OpenGraph metadata for homepage and search page.
+- **Release metadata sync**: README badges updated (52+ nodes, 205+ lessons), STATUS.md updated, stale release text fixed.
+- **Frontend stabilization**: Nav drawer anchor targets, Network Signals compact stats bar, search count searchable/total breakdown.
+- **Architecture diagram**: Merged PR #454 — `docs/architecture-293.md`.
+- **Frontmatter batch**: Merged PR #452 — 20 bare JSON frontmatter converted to YAML.
+
+### Fixes
+- Removed misleading active nodes panel from homepage.
+- Fixed `skill.md` link in nav drawer (root → docs/).
+
+---
+
 ## v2.9.0 — 2026-07-12
 
 ### Highlights
