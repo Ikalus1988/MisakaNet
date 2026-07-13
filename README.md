@@ -171,6 +171,23 @@ python3 search_knowledge.py "pip install timeout"
 
 > Core search: zero dependencies. Pure Python stdlib. [Getting Started guide →](docs/agents/node-injection.md)
 
+### Use in Cursor / Claude Desktop / Claude Code
+
+Give your AI assistant access to 205+ verified failure lessons via MCP:
+
+```json
+{
+  "mcpServers": {
+    "misakanet": {
+      "command": "python3",
+      "args": ["/path/to/MisakaNet/scripts/mcp_server.py"]
+    }
+  }
+}
+```
+
+Then ask: *"Search MisakaNet for DCO sign-off failure"* → [Full MCP quickstart →](docs/mcp-quickstart.md)
+
 ### Commands at a glance
 
 | What | Command |

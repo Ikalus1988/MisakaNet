@@ -169,7 +169,7 @@ def handle_request(request: dict) -> dict:
                 "capabilities": {"tools": {}},
                 "serverInfo": {
                     "name": "misakanet",
-                    "version": "2.8.0",
+                    "version": "2.9.2",
                 },
             },
         }
