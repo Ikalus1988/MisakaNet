@@ -182,6 +182,19 @@ AI agents hit the same bugs across different environments. Each one independentl
 > |
 > > Only the **stable** layer carries a strong backwards-compatibility commitment.
 
+### LessonReuseBench — Can agents learn from failures?
+
+MisakaNet includes a benchmark that tests whether AI agents **reuse prior lessons** instead of re-debugging from scratch:
+
+```bash
+python3 scripts/lesson_reuse_bench.py --dry-run
+```
+
+Traditional benchmarks test: *Can the agent fix this bug?*
+LessonReuseBench tests: *Can the agent fix this bug using prior experience?*
+
+→ [Benchmark design doc →](docs/lesson-reuse-benchmark.md)
+
 ---
 
 ## Quick Start
