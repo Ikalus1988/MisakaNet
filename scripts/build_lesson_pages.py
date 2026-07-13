@@ -192,6 +192,7 @@ def generate_sitemap(lesson_slugs: list, domains: list) -> str:
     static = [
         ("https://misakanet.org/", "weekly", "1.0"),
         ("https://misakanet.org/search/", "weekly", "0.9"),
+        ("https://misakanet.org/troubleshooting/", "weekly", "0.8"),
     ]
     for url, freq, prio in static:
         lines.append(f"  <url><loc>{url}</loc><changefreq>{freq}</changefreq><priority>{prio}</priority></url>")

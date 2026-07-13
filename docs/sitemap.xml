@@ -2,6 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://misakanet.org/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://misakanet.org/search/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://misakanet.org/troubleshooting/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/core/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/devops/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/agent-network/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
