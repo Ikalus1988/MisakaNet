@@ -62,18 +62,34 @@ grep -E "ROBOT:|VERSION:|FEATURE\[125\]" <backup_dir>/ERRCURR.LS
 # $FEATURE[125]: M-900iB/280L
 ```
 
-### Step 2: kconvars Conversion (If Available)
+### Step 2: kconvars Conversion
 
-```bash
+**Critical**: `kconvars.exe` crashes with segfault (exit 139) when called from Git Bash / MSYS2 shell. Use PowerShell's `System.Diagnostics.Process` object instead.
+
+```powershell
 # Copy to ASCII-only path (kconvars fails with non-ASCII paths)
-mkdir /tmp/fanuc_conv
-cp <backup_dir>/SYSVARS.SV /tmp/fanuc_conv/sysvars.sv
+$workdir = "$env:TEMP\fanuc_conv"
+New-Item -ItemType Directory -Path $workdir -Force
+Copy-Item "<backup_dir>\SYSVARS.SV" "$workdir\sysvars.sv"
 
-# Convert
-kconvars.exe /tmp/fanuc_conv/sysvars.sv /tmp/fanuc_conv/sysvars_out.txt
+# Convert via PowerShell Process (avoids bash segfault)
+$kconvars = "C:\Program Files (x86)\FANUC\WinOLPC\bin\kconvars.exe"
+$pinfo = New-Object System.Diagnostics.ProcessStartInfo
+$pinfo.FileName = $kconvars
+$pinfo.Arguments = "$workdir\sysvars.sv $workdir\sysvars_out.txt"
+$pinfo.WorkingDirectory = $workdir
+$pinfo.UseShellExecute = $false
+$pinfo.RedirectStandardOutput = $true
+$pinfo.RedirectStandardError = $true
+$pinfo.CreateNoWindow = $true
+
+$p = New-Object System.Diagnostics.Process
+$p.StartInfo = $pinfo
+$p.Start() | Out-Null
+$p.WaitForExit(10000)
 
 # Extract payload data
-grep "PAYLOAD" /tmp/fanuc_conv/sysvars_out.txt
+Select-String -Path "$workdir\sysvars_out.txt" -Pattern "PAYLOAD"
 ```
 
 Expected output for a robot with `$PLST_GRP1` configured:
@@ -185,5 +201,6 @@ for fname in os.listdir(backup):
 - **$PLID_GRP vs $PLST_GRP**: `$PLID_GRP` stores the payload identification data (calculated from tool definition), while `$PLST_GRP1` stores the payload set configuration. Both may coexist.
 - **FANUC VR format**: Magic header `FE EF`, followed by version (2 bytes), uncompressed size (4 bytes), then `FF 41` marks the data section. Variable names are preceded by `FF` markers.
 - **kconvars versions**: The tool supports V6.40 through V9.40. Use `/ver` to match the backup firmware version. Mismatched versions may produce incorrect output or crash.
+- **kconvars bash segfault (exit 139)**: `kconvars.exe` crashes when invoked from Git Bash / MSYS2 shell due to DLL loading conflicts. The workaround is to use PowerShell's `System.Diagnostics.Process` object, which handles Windows process creation correctly. This has been verified on Windows 11 with WinOLPC V9.40-1.
 - **No open-source parser exists**: As of 2026, no mature open-source tool can fully decode FANUC `.vr` binary format. The proprietary encoding includes variable-length integers, type markers, and non-IEEE-754 floats.
 - **Related files by priority**: `ERRCURR.LS` (text, instant) > `SYSVARS.SV` (binary, needs kconvars) > `CBPARAM.VR` (binary, gripper-specific) > `ERRHIST.LS` (text, historical).
