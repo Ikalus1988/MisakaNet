@@ -57,6 +57,33 @@
     }
   },
 
+  "trust_tiers": {
+    "github-verified": {
+      "method": "github",
+      "trust_level": "verified",
+      "requires_verification": false,
+      "badge_display": "github-verified"
+    },
+    "mail-verified": {
+      "method": "email",
+      "trust_level": "unverified",
+      "requires_verification": true,
+      "badge_display": "mail-verified"
+    },
+    "web-verified": {
+      "method": "web",
+      "trust_level": "unverified",
+      "requires_verification": true,
+      "badge_display": "web-verified"
+    },
+    "anonymous": {
+      "method": "none",
+      "trust_level": "unverified",
+      "requires_verification": false,
+      "badge_display": "anonymous"
+    }
+  },
+
   "dco": {
     "enabled": true,
     "required_for": ["ring-1", "ring-2"],
