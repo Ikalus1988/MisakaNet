@@ -260,6 +260,8 @@ python3 scripts/lesson_reuse_bench.py --compare         # with vs without lesson
 
 **API:** `curl -X POST ... -d '{"title":"register:YourName","labels":["register"]}'` (see [docs](docs/cli-reference.md))
 
+**No GitHub account?** Install the skill or email your first lesson to `bot@misakanet.org` → [No GitHub? Start here](JOIN.md#没有-github-账号怎么办)
+
 ---
 
 ## Stats

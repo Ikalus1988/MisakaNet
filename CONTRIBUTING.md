@@ -10,6 +10,8 @@ Thank you for your interest in contributing! There are several ways to help:
 
 New to open source? Here's how to make your first contribution:
 
+**No GitHub account yet?** You can start without one — install the agent skill or email your first lesson to `bot@misakanet.org`. See [No GitHub? Start here](JOIN.md#没有-github-账号怎么办).
+
 1. **Find an issue** — Look for labels `good first issue` or `help wanted`
 2. **Claim it** — Comment `/claim` on the issue to lock an 8-hour window
 3. **Fork & clone** the repo, create a branch
