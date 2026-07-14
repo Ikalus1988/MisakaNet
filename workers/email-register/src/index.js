@@ -8,6 +8,7 @@
  *   2. KV Rate Limit（每 IP 1h/次，每邮箱 24h/次）
  *   3. 临时邮箱域名黑名单
  */
+import protocol from '../../../misaka-protocol.json';
 
 // ── 临时邮箱域名黑名单（top 30） ──
 const TEMP_EMAIL_DOMAINS = new Set([
@@ -88,10 +89,13 @@ export default {
       const nextNum = (parseInt(counter) || 10052) + 1;
       const nodeId = `Misaka${String(nextNum).padStart(5, '0')}`;
       await env.MISAKANET_KV.put('node_counter', String(nextNum));
+      const emailTier = protocol.registration?.email?.trust_tier || 
+        Object.keys(protocol.trust_tiers || {}).find(k => protocol.trust_tiers[k].method === 'email') || 
+        'mail-verified';
       await env.MISAKANET_KV.put(`node:${nodeId}`, JSON.stringify({
         nodeId, email: sender,
         registeredAt: receivedAt,
-        source: 'email', trustLevel: 'mail-verified',
+        source: 'email', trustLevel: emailTier,
         intakeId,
       }));
       console.log(`Registered via email: ${nodeId} <${sender}>`);
@@ -168,10 +172,12 @@ export default {
       const nextNum = (parseInt(counter) || 10052) + 1;
       const nodeId = `Misaka${String(nextNum).padStart(5, '0')}`;
       await env.MISAKANET_KV.put('node_counter', String(nextNum));
+      const webTier = Object.keys(protocol.trust_tiers || {}).find(k => protocol.trust_tiers[k].method === 'web') || 
+        'web-verified';
       await env.MISAKANET_KV.put(`node:${nodeId}`, JSON.stringify({
         nodeId, email, name,
         registeredAt: new Date().toISOString(),
-        source: 'web', trustLevel: 'web-verified'
+        source: 'web', trustLevel: webTier
       }));
 
       return new Response(renderPage('success', { nodeId, email, name }), {
