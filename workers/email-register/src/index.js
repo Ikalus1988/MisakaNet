@@ -24,6 +24,8 @@ const TEMP_EMAIL_DOMAINS = new Set([
 export default {
   async email(message, env, ctx) {
     const sender = message.from;
+    const recipient = message.to;
+    const subject = message.headers.get('subject') || '';
     const domain = sender.split('@')[1]?.toLowerCase() || '';
 
     // 防御: 临时邮箱拦截
@@ -40,16 +42,60 @@ export default {
     }
     await env.MISAKANET_KV.put(`rate:email:${sender}`, String(Date.now()), { expirationTtl: 86400 });
 
-    const counter = await env.MISAKANET_KV.get('node_counter', 'text');
-    const nextNum = (parseInt(counter) || 10052) + 1;
-    const nodeId = `Misaka${String(nextNum).padStart(5, '0')}`;
-    await env.MISAKANET_KV.put('node_counter', String(nextNum));
-    await env.MISAKANET_KV.put(`node:${nodeId}`, JSON.stringify({
-      nodeId, email: sender,
-      registeredAt: new Date().toISOString(),
-      source: 'email', trustLevel: 'mail-verified'
-    }));
-    console.log(`Registered via email: ${nodeId} <${sender}>`);
+    // ── P1a: intake tracking ──
+    const intakeId = crypto.randomUUID();
+    const receivedAt = new Date().toISOString();
+
+    // Detect intake type from subject/body hints
+    const subjectLower = subject.toLowerCase();
+    let intakeType = 'unknown';
+    if (subjectLower.includes('register') || subjectLower.includes('注册')) {
+      intakeType = 'registration';
+    } else if (subjectLower.includes('lesson') || subjectLower.includes('投稿')) {
+      intakeType = 'lesson-submission';
+    } else if (subjectLower.includes('bug') || subjectLower.includes('issue')) {
+      intakeType = 'bug-report';
+    }
+
+    // Write intake record to KV
+    await env.MISAKANET_KV.put(`email-intake:${intakeId}`, JSON.stringify({
+      intakeId,
+      from: sender,
+      to: recipient,
+      subject,
+      intakeType,
+      receivedAt,
+      status: 'forwarded_to_maintainer',
+    }), { expirationTtl: 2592000 }); // 30 days
+
+    console.log(`Intake ${intakeId}: ${intakeType} from ${sender} — "${subject}"`);
+
+    // Forward to maintainer with tracking header
+    const forwardHeaders = new Headers();
+    forwardHeaders.set('X-MisakaNet-Intake-Id', intakeId);
+    forwardHeaders.set('X-MisakaNet-Intake-Type', intakeType);
+
+    if (env.MAINTAINER_EMAIL) {
+      await message.forward(env.MAINTAINER_EMAIL, forwardHeaders);
+      console.log(`Forwarded ${intakeId} to ${env.MAINTAINER_EMAIL}`);
+    } else {
+      console.warn('MAINTAINER_EMAIL not configured — intake stored in KV only');
+    }
+
+    // ── Registration flow (if intake type is registration) ──
+    if (intakeType === 'registration') {
+      const counter = await env.MISAKANET_KV.get('node_counter', 'text');
+      const nextNum = (parseInt(counter) || 10052) + 1;
+      const nodeId = `Misaka${String(nextNum).padStart(5, '0')}`;
+      await env.MISAKANET_KV.put('node_counter', String(nextNum));
+      await env.MISAKANET_KV.put(`node:${nodeId}`, JSON.stringify({
+        nodeId, email: sender,
+        registeredAt: receivedAt,
+        source: 'email', trustLevel: 'mail-verified',
+        intakeId,
+      }));
+      console.log(`Registered via email: ${nodeId} <${sender}>`);
+    }
   },
 
   async fetch(request, env) {
