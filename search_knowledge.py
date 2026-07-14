@@ -4,9 +4,13 @@
 Ecosystem links:
     from misakanet_core import BM25, tokenize, rrf
 """
+import contextlib
+import io
+import json
 import sys
 import time
 import re
+from pathlib import Path
 from typing import Optional
 
 # ── 生态核心声明 ──
@@ -20,6 +24,29 @@ except ImportError as e:
         sys.exit(1)
     raise
 from misakanet.tools.lesson_scorer import DEFAULT_TELEMETRY, format_lesson_scores, score_lessons
+
+
+def _json_result(score, doc) -> dict:
+    """Convert a ranked document to the stable public JSON schema."""
+    from misakanet.search.engine import REPO, _get_preview
+
+    try:
+        path = doc.filepath.relative_to(REPO).as_posix()
+    except ValueError:
+        path = doc.filepath.as_posix()
+    return {
+        "title": doc.title,
+        "domain": doc.domain,
+        "tags": list(doc.tags),
+        "score": round(float(score), 6),
+        "path": path,
+        "preview": _get_preview(doc.content, max_chars=120),
+    }
+
+
+def _print_json_error(message: str) -> None:
+    """Emit a machine-readable error without contaminating it with CLI prose."""
+    print(json.dumps({"error": message}, ensure_ascii=False))
 
 
 def _ensure_utf8_stdout():
@@ -375,7 +402,15 @@ def main():
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)
-    query = sys.argv[1]
+    json_output = "--json" in args
+    positional_args = [arg for arg in args if arg != "--json"]
+    if not positional_args or positional_args[0].startswith("--"):
+        if json_output:
+            _print_json_error("a search query is required")
+        else:
+            print(__doc__)
+        sys.exit(1)
+    query = positional_args[0]
     mode = "all"
     titles_only = False
     broad_only = False
@@ -386,7 +421,7 @@ def main():
     env_filter: Optional[str] = None
     lang: Optional[str] = None
     domain: Optional[str] = None
-    search_args = sys.argv[2:]
+    search_args = positional_args[1:]
     for i, arg in enumerate(search_args):
         if arg == "--ref":
             mode = "ref"
@@ -428,9 +463,12 @@ def main():
     from misakanet.profile import check_quota as _check_quota
     allowed, quota_msg = _check_quota()
     if not allowed:
-        print(quota_msg, file=sys.stderr)
+        if json_output:
+            _print_json_error(quota_msg)
+        else:
+            print(quota_msg, file=sys.stderr)
         sys.exit(1)
-    if quota_msg:
+    if quota_msg and not json_output:
         print(quota_msg, file=sys.stderr)
         print("", file=sys.stderr)
 
@@ -438,7 +476,7 @@ def main():
     found_any = False
 
     # --suggest mode: list matching titles when query >= 2 chars
-    if suggest and len(query) >= 2:
+    if suggest and len(query) >= 2 and not json_output:
         q = query.lower()
         lessons_docs = _load_docs(LESSONS, is_lesson=True) if mode in ("all", "lessons") else []
         ref_docs = _load_docs(REFERENCES, is_lesson=False) if mode in ("all", "ref") else []
@@ -457,26 +495,49 @@ def main():
         _show_timing(time.time() - t0, len(all_docs))
         return
 
-    lessons_docs = _load_docs(LESSONS, is_lesson=True) if mode in ("all", "lessons") else []
-    ref_docs = _load_docs(REFERENCES, is_lesson=False) if mode in ("all", "ref") else []
+    # Cache migrations can report status to stdout. Capture those messages in
+    # JSON mode so stdout remains directly pipeable to jq.
+    output_context = contextlib.redirect_stdout(io.StringIO()) if json_output else contextlib.nullcontext()
+    with output_context:
+        lessons_docs = _load_docs(LESSONS, is_lesson=True) if mode in ("all", "lessons") else []
+        ref_docs = _load_docs(REFERENCES, is_lesson=False) if mode in ("all", "ref") else []
 
     # Language filter
     if lang:
         lessons_docs = [d for d in lessons_docs if d.language == lang]
         ref_docs = [d for d in ref_docs if d.language == lang]
-        print(f"  🌐 Filtering by language: {lang}")
+        if not json_output:
+            print(f"  🌐 Filtering by language: {lang}")
 
     # Domain filter (fix #229)
     if domain:
         lessons_docs = [d for d in lessons_docs if d.domain and d.domain.lower() == domain]
         ref_docs = [d for d in ref_docs if d.domain and d.domain.lower() == domain]
-        print(f"  🏷️  Filtering by domain: {domain}")
+        if not json_output:
+            print(f"  🏷️  Filtering by domain: {domain}")
 
     # Environment filter (--env)
     if env_filter:
         lessons_docs = [d for d in lessons_docs if any(env_filter in t.lower() for t in d.tags)]
         ref_docs = [d for d in ref_docs if any(env_filter in t.lower() for t in d.tags)]
-        print(f"  💻 Filtering by environment: {env_filter}")
+        if not json_output:
+            print(f"  💻 Filtering by environment: {env_filter}")
+
+    if json_output:
+        all_docs = lessons_docs + ref_docs
+        with contextlib.redirect_stdout(io.StringIO()):
+            ranked = _rank_docs(query, all_docs, titles_only, broad_only)
+        results = [
+            _json_result(score, doc)
+            for score, doc in ranked
+            if score >= 0.1
+        ][:top_k]
+        if results:
+            from misakanet.profile import increment_search, consume_quota
+            increment_search()
+            consume_quota()
+        print(json.dumps(results, ensure_ascii=False, indent=2))
+        return
 
     if use_semantic:
         try:
@@ -620,4 +681,12 @@ Error encountered during `{query[:60]}`.
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as exc:
+        if "--json" in sys.argv:
+            _print_json_error(str(exc))
+            raise SystemExit(1)
+        raise

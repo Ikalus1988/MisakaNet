@@ -13,6 +13,7 @@ python3 search_knowledge.py <query> [options]
 | `--ref` | Mode | Switch to reference search mode (not a path/id filter) | `--ref` |
 | `--top=<N>` | Pagination | Show top N results (default: 10) | `--top=3` |
 | `--titles` | Display | Show titles only | `--titles` |
+| `--json` | Display | Emit a JSON array with `title`, `domain`, `tags`, `score`, `path`, and `preview`; errors are JSON objects | `"pip timeout" --json \| jq '.[0]'` |
 | `--broad` | Matching | Broader keyword matching | `--broad` |
 | `--suggest` | Mode | List matching titles (≥2 chars) | `--suggest` |
 | `--semantic` | Mode | Use sentence-transformers _(optional dep)_ | `--semantic` |
@@ -26,6 +27,13 @@ python3 search_knowledge.py <query> [options]
 | `--harvest --from-file=<f>` | Mode | Parse log for errors → draft lesson | `--harvest --from-file=crash.log` |
 
 **Exit codes:** `0` = results found, `1` = no results or error.
+
+`--json` keeps standard output machine-readable, so it can be piped directly to
+tools such as `jq`:
+
+```bash
+python3 search_knowledge.py "database locked" --json --top=3 | jq '.[].path'
+```
 
 ## Other CLI Tools
 
