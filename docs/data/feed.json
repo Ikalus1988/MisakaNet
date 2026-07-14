@@ -1,44 +1,42 @@
 {
-  "generated_at": "2026-07-14T08:29:42.788298+00:00",
+  "generated_at": "2026-07-14T10:57:13.445190+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
     {
       "type": "merged_pr",
+      "title": "feat(search): show match reasons",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/469",
+      "timestamp": "2026-07-14T10:43:03Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat: add Japanese quickstart guide (docs/quickstart-jp.md)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/468",
+      "timestamp": "2026-07-14T10:42:19Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat: unify verified semantics — badge only (fixes #352)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/466",
+      "timestamp": "2026-07-14T09:07:00Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(search): add machine-readable JSON output",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/463",
+      "timestamp": "2026-07-14T09:05:46Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "feat: add network domain lesson template (fixes #295)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/461",
       "timestamp": "2026-07-14T04:06:13Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix: sync lesson count across STATUS.md and README (fixes #298)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/460",
-      "timestamp": "2026-07-14T04:06:10Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test: add domain extraction tests (fixes #297)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/458",
-      "timestamp": "2026-07-14T04:06:08Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[good first issue] Add Japanese quickstart (docs/quickstart-jp.md)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/462",
-      "labels": [
-        "good first issue",
-        "area:docs",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "one-file",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-14T04:03:14Z",
       "source": "github"
     },
     {
@@ -54,20 +52,6 @@
         "benchmark"
       ],
       "timestamp": "2026-07-14T01:52:07Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(lessons): convert 20 bare JSON frontmatter to YAML (fixes #351)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/452",
-      "timestamp": "2026-07-12T06:53:25Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs: add architecture diagram (fixes #293)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/454",
-      "timestamp": "2026-07-12T06:53:25Z",
       "source": "github"
     },
     {
@@ -113,21 +97,6 @@
       "source": "github"
     },
     {
-      "type": "challenge",
-      "title": "[P1] Decide verified/ semantics — directory vs badge",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/352",
-      "labels": [
-        "enhancement",
-        "good first issue",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-06T02:40:29Z",
-      "source": "github"
-    },
-    {
       "type": "lesson",
       "title": "AI Agent Project Outreach Guide",
       "url": "lessons/contrib/ai-agent-project-outreach-guide.md",
@@ -158,6 +127,36 @@
       "timestamp": "2026-07-06",
       "domain": "contrib",
       "source": "lessons"
+    },
+    {
+      "type": "challenge",
+      "title": "[Ecosystem] Build Cursor integration for MisakaNet lessons",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/318",
+      "labels": [
+        "enhancement",
+        "Ring-3",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-02T16:01:30Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Ecosystem] Build VS Code extension for MisakaNet lesson search",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/317",
+      "labels": [
+        "enhancement",
+        "Ring-3",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-02T16:01:28Z",
+      "source": "github"
     }
   ]
 }
