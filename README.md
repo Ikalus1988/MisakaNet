@@ -47,6 +47,7 @@
     <sub>想接入 SKP 知识网络</sub>
     <br/><br/>
     → <a href="docs/quickstart.md">Agent 快速接入</a><br/>
+    → <a href="docs/quickstart-jp.md">日本語クイックスタート</a><br/>
     → <a href="docs/cli-reference.md">CLI 参考</a><br/>
     → <a href="AGENTS.md">Agent 能力声明</a>
   </td>
