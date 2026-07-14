@@ -51,6 +51,43 @@ class TestSearchKnowledgeStdout(unittest.TestCase):
         self.assertEqual(result["path"], "lessons/example.md")
         self.assertEqual(result["score"], 0.123457)
 
+    def test_json_result_includes_match_reason_when_query_is_provided(self):
+        doc = mock.Mock(
+            title="Network timeout",
+            domain="devops",
+            tags=["network", "retry"],
+            filepath=Path(search_knowledge.__file__).parent / "lessons" / "example.md",
+            content="---\ntitle: Example\n---\n\nRetry the network timeout with backoff.",
+        )
+
+        result = search_knowledge._json_result(0.5, doc, query="timeout network")
+
+        self.assertIn("title keyword 'timeout'", result["match_reason"])
+        self.assertIn("tag 'network'", result["match_reason"])
+        self.assertIn("[timeout]", result["preview_highlighted"].lower())
+
+    def test_json_result_includes_score_breakdown_when_verbose(self):
+        doc = mock.Mock(
+            title="Network timeout",
+            domain="devops",
+            status="published",
+            reference="",
+            scope="",
+            source="manual",
+            tags=["network"],
+            filepath=Path(search_knowledge.__file__).parent / "lessons" / "example.md",
+            content="Network timeout retry.",
+            score_baseline=0.1,
+            is_draft=False,
+            mtime=0.0,
+        )
+
+        result = search_knowledge._json_result(0.5, doc, query="timeout", verbose=True)
+
+        self.assertIn("score_breakdown", result)
+        self.assertIn("bm25", result["score_breakdown"])
+        self.assertIn("metadata", result["score_breakdown"])
+
     def test_json_error_is_parseable(self):
         stdout = io.StringIO()
         with mock.patch.object(search_knowledge.sys, "stdout", stdout):

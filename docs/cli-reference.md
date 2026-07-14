@@ -20,6 +20,7 @@ python3 search_knowledge.py <query> [options]
 | `--score` | Mode | Lesson quality scoring from telemetry | `--score --top=5` |
 | `--telemetry=<path>` | Scoring | Custom telemetry DB path | `--telemetry=/tmp/t.db --score` |
 | `--explain` | Search | Show BM25/Meta/Base score breakdown | `--explain` |
+| `--verbose` | Search | Alias for `--explain`; JSON output includes `score_breakdown` | `--verbose --json` |
 | `--env=<env>` | Filter | Filter by environment tag (wsl2, docker, ...) | `--env=wsl2` |
 | `--domain=<d>` | Filter | Filter by domain (devops, rag, ...) | `--domain=devops` |
 | `--lang=<lang>` | Filter | Filter by language | `--lang=zh` |

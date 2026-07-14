@@ -391,6 +391,16 @@ def _rank_docs_impl(
     return scored
 
 
+def _matching_terms(text: str, query: str) -> list[str]:
+    text_l = text.lower()
+    matches = []
+    for token in _tokenize(query):
+        token_l = token.lower()
+        if token_l and token_l in text_l and token_l not in matches:
+            matches.append(token_l)
+    return matches
+
+
 def _highlight(text: str, query: str) -> str:
     tokens = _tokenize(query)
     if not tokens:
@@ -404,35 +414,69 @@ def _highlight(text: str, query: str) -> str:
     return text
 
 
+def _highlight_plain(text: str, query: str) -> str:
+    """Highlight matching terms without ANSI escapes for JSON consumers."""
+    highlighted = text
+    for token in sorted(set(_tokenize(query)), key=len, reverse=True):
+        highlighted = re.sub(
+            re.escape(token),
+            lambda m: f"[{m.group()}]",
+            highlighted,
+            flags=re.IGNORECASE,
+        )
+    return highlighted
+
+
 def _score_bar(score: float, width: int = 10) -> str:
     pct = max(0.0, min(score, 1.0))
     filled = round(pct * width)
     return "█" * filled + "░" * (width - filled) + f" {pct:.0%}"
 
 
-def _get_match_reason(query: str, doc: CachedDoc, score: float) -> str:
-    """Feature #231: Show why this result was matched."""
-    q = query.lower()
-    t = doc.title.lower()
+def _get_match_reason(query: str, doc: CachedDoc, score: float | None = None) -> str:
+    """Show why this result was matched, including field names and terms."""
     reasons = []
 
-    # Check title match
-    if q in t or any(word in t for word in q.split()):
-        reasons.append("title")
+    for term in _matching_terms(doc.title, query):
+        reasons.append(f"title keyword '{term}'")
 
-    # Check domain match
-    if doc.domain and doc.domain.lower() in q:
-        reasons.append("domain")
+    for term in _matching_terms(doc.domain, query):
+        if term == doc.domain.lower():
+            reasons.append(f"domain '{doc.domain}'")
+        else:
+            reasons.append(f"domain keyword '{term}'")
 
-    # Check content match (BM25 score > 0.3 indicates content match)
-    if score > 0.3 and "title" not in reasons:
-        reasons.append("content")
+    for tag in doc.tags:
+        tag_text = str(tag)
+        for term in _matching_terms(tag_text, query):
+            if term == tag_text.lower():
+                reasons.append(f"tag '{tag_text}'")
+            else:
+                reasons.append(f"tag keyword '{term}'")
 
-    # Check if broad match
+    for term in _matching_terms(doc.content, query):
+        if not any(f"'{term}'" in reason for reason in reasons):
+            reasons.append(f"content keyword '{term}'")
+
     if doc.scope == "broad":
         reasons.append("broad")
 
-    return ", ".join(reasons) if reasons else ""
+    if not reasons and score is not None and score > 0:
+        reasons.append("BM25 content score")
+
+    return " + ".join(dict.fromkeys(reasons))
+
+
+def _score_breakdown(query: str, doc: CachedDoc) -> dict:
+    bm25 = _compute_bm25_scores(query, [doc])[0]
+    meta_parts = _metadata_bonus_breakdown(query, doc)
+    boost_parts = _compute_boost_breakdown(doc)
+    return {
+        "bm25": round(float(bm25), 6),
+        "metadata": {key: round(float(value), 6) for key, value in meta_parts},
+        "baseline": round(float(doc.score_baseline), 6),
+        "boost": {key: round(float(value), 6) for key, value in boost_parts},
+    }
 
 
 def _get_related_lessons(
@@ -580,6 +624,8 @@ __all__ = [
     "_compute_boost",
     "_relative_time",
     "_get_match_reason",
+    "_highlight_plain",
+    "_score_breakdown",
     "_get_related_lessons",
 ]
 

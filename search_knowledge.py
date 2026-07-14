@@ -26,22 +26,35 @@ except ImportError as e:
 from misakanet.tools.lesson_scorer import DEFAULT_TELEMETRY, format_lesson_scores, score_lessons
 
 
-def _json_result(score, doc) -> dict:
+def _json_result(score, doc, query: str = "", verbose: bool = False) -> dict:
     """Convert a ranked document to the stable public JSON schema."""
-    from misakanet.search.engine import REPO, _get_preview
+    from misakanet.search.engine import (
+        REPO,
+        _get_match_reason,
+        _get_preview,
+        _highlight_plain,
+        _score_breakdown,
+    )
 
     try:
         path = doc.filepath.relative_to(REPO).as_posix()
     except ValueError:
         path = doc.filepath.as_posix()
-    return {
+    preview = _get_preview(doc.content, max_chars=120)
+    result = {
         "title": doc.title,
         "domain": doc.domain,
         "tags": list(doc.tags),
         "score": round(float(score), 6),
         "path": path,
-        "preview": _get_preview(doc.content, max_chars=120),
+        "preview": preview,
     }
+    if query:
+        result["match_reason"] = _get_match_reason(query, doc, score)
+        result["preview_highlighted"] = _highlight_plain(preview, query)
+    if verbose and query:
+        result["score_breakdown"] = _score_breakdown(query, doc)
+    return result
 
 
 def _print_json_error(message: str) -> None:
@@ -418,6 +431,7 @@ def main():
     use_semantic = False
     suggest = False
     explain = False
+    verbose = False
     env_filter: Optional[str] = None
     lang: Optional[str] = None
     domain: Optional[str] = None
@@ -454,6 +468,9 @@ def main():
         elif arg == "--domain" and i + 1 < len(search_args):
             domain = search_args[i + 1].lower()
         elif arg == "--explain":
+            explain = True
+        elif arg == "--verbose":
+            verbose = True
             explain = True
         elif arg.startswith("--env="):
             env_filter = arg.split("=", 1)[1].lower()
@@ -528,7 +545,7 @@ def main():
         with contextlib.redirect_stdout(io.StringIO()):
             ranked = _rank_docs(query, all_docs, titles_only, broad_only)
         results = [
-            _json_result(score, doc)
+            _json_result(score, doc, query=query, verbose=verbose)
             for score, doc in ranked
             if score >= 0.1
         ][:top_k]
