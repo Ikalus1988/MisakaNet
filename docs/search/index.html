@@ -26,6 +26,8 @@
   .lang-switch { display: flex; gap: 6px; flex-shrink: 0; margin-top: 2px; }
   .lang-switch button { background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.12); border-radius: 7px; padding: 4px 10px; cursor: pointer; font-size: 12px; font-family: var(--font-ui); }
   .lang-switch button.active { color: #58a6ff; border-color: rgba(88,166,255,0.42); background: rgba(88,166,255,0.08); }
+  .home-link { display: inline-block; color: var(--text-muted); font-size: 13px; text-decoration: none; margin-bottom: 8px; transition: color 0.15s; }
+  .home-link:hover { color: #58a6ff; }
   .search-box { position: relative; margin-bottom: 16px; background: rgba(255,255,255,0.035); border: 1px solid rgba(88,166,255,0.24); border-radius: 14px; box-shadow: 0 0 0 1px rgba(88,166,255,0.04); transition: border-color 0.2s, box-shadow 0.2s; }
   .search-box:focus-within { border-color: rgba(88,166,255,0.62); background: rgba(88,166,255,0.06); box-shadow: 0 0 18px rgba(88,166,255,0.12); }
   .search-box input { width: 100%; padding: 15px 16px; background: transparent; border: 0; color: var(--text-main); font-size: 15px; font-family: var(--font-ui); outline: none; }
@@ -70,6 +72,7 @@
 <div class="container">
   <div class="topbar">
     <div>
+      <a href="/" class="home-link" data-i18n="goHome">← Go to homepage</a>
       <h1 data-i18n="heading">Search Verified Failure Lessons</h1>
       <p class="subtitle" data-i18n="subtitle">Reviewed fixes from real agent debugging sessions. Not random chat logs.</p>
     </div>
