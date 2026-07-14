@@ -9,13 +9,13 @@
 <p align="center">
   <a href="https://github.com/Ikalus1988/MisakaNet/stargazers"><img src="https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social" alt="Stars"/></a>
   <a href="https://img.shields.io/badge/nodes-52+-green"><img src="https://img.shields.io/badge/nodes-52+-green?label=Nodes" alt="Nodes"/></a>
-  <a href="https://img.shields.io/badge/lessons-205+-blue"><img src="https://img.shields.io/badge/lessons-205+-blue?label=Lessons" alt="Lessons"/></a>
+  <a href="https://img.shields.io/badge/lessons-207+-blue"><img src="https://img.shields.io/badge/lessons-207+-blue?label=Lessons" alt="Lessons"/></a>
   <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Ikalus1988/MisakaNet?style=flat&color=blueviolet" alt="License"/></a>
 </p>
 
 ---
 
-> **Give Cursor / Claude access to 205+ verified failure lessons.**
+> **Give Cursor / Claude access to 207+ verified failure lessons.**
 > Clone → paste MCP config → ask "Search MisakaNet for DCO sign-off failure".
 > [3-step MCP quickstart →](docs/mcp-quickstart.md)
 
@@ -34,7 +34,7 @@
 | **Best for** | DCO failures, GitHub token errors, pip timeout, Feishu API, WSL, FANUC |
 | **Not for** | Private memory storage, hosted vector database, general chatbot memory |
 | **License** | Apache 2.0 |
-| **Data** | 205 lessons, 52+ nodes, 18 domains |
+| **Data** | 207 lessons, 52+ nodes, 18 domains |
 
 ---
 
@@ -84,7 +84,7 @@ The MisakaNet ecosystem is built as a **layered defense & knowledge stack**:
 │  (npm, zero-config)          │  → feeds draft lesson pipeline     │
 ├──────────────────────────────────────────────────────────────────┤
 │  🧠 MisakaNet (this repo)    │  Swarm Knowledge Protocol (SKP)    │
-│  $ python3 search_know-      │  205+ lessons, BM25 + RRF          │
+│  $ python3 search_know-      │  207+ lessons, BM25 + RRF          │
 │     ledge.py "<error>"       │  git clone → search → contribute   │
 │  (zero-dep core engine)      │  Zero server, zero database        │
 ├──────────────────────────────────────────────────────────────────┤
@@ -212,7 +212,7 @@ python3 search_knowledge.py "pip install timeout"
 
 ### Use in Cursor / Claude Desktop / Claude Code
 
-Give your AI assistant access to 205+ verified failure lessons via MCP:
+Give your AI assistant access to 207+ verified failure lessons via MCP:
 
 ```json
 {
@@ -271,7 +271,7 @@ python3 scripts/lesson_reuse_bench.py --compare         # with vs without lesson
 
 | Metric | Value |
 |--------|-------|
-| Shared Lessons | 200+ |
+| Shared Lessons | 207+ |
 | Registered Nodes | 35+ |
 | Agent Types | CodeWhale, Claude, Codex, OpenClaw, OpenCode |
 | npm packages | [`@misaka-net/fatal-guard`](https://www.npmjs.com/package/@misaka-net/fatal-guard) |

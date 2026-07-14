@@ -6,7 +6,7 @@
 
 | 指标 | 数值 |
 |------|------|
-| 📚 Lessons | 205 篇 |
+| 📚 Lessons | 207 篇 |
 | 📖 References | 6 篇 |
 | 🏛️ 领域覆盖 | 18 个 |
 | 🎤 Network Voices | 5 条 |
