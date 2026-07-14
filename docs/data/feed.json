@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-07-14T08:31:40.693957+00:00",
+  "generated_at": "2026-07-14T09:07:10.295170+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat: unify verified semantics — badge only (fixes #352)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/466",
+      "timestamp": "2026-07-14T09:07:00Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(search): add machine-readable JSON output",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/463",
+      "timestamp": "2026-07-14T09:05:46Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat: add network domain lesson template (fixes #295)",
@@ -65,20 +79,6 @@
       "source": "lessons"
     },
     {
-      "type": "merged_pr",
-      "title": "fix(lessons): convert 20 bare JSON frontmatter to YAML (fixes #351)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/452",
-      "timestamp": "2026-07-12T06:53:25Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs: add architecture diagram (fixes #293)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/454",
-      "timestamp": "2026-07-12T06:53:25Z",
-      "source": "github"
-    },
-    {
       "type": "challenge",
       "title": "[Bounty][$0][agent competition] Blind test homepage SAG-Lite lesson search",
       "url": "https://github.com/Ikalus1988/MisakaNet/issues/429",
@@ -121,21 +121,6 @@
       "source": "github"
     },
     {
-      "type": "challenge",
-      "title": "[P1] Decide verified/ semantics — directory vs badge",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/352",
-      "labels": [
-        "enhancement",
-        "good first issue",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-06T02:40:29Z",
-      "source": "github"
-    },
-    {
       "type": "lesson",
       "title": "AI Agent Project Outreach Guide",
       "url": "lessons/contrib/ai-agent-project-outreach-guide.md",
@@ -158,6 +143,21 @@
       "timestamp": "2026-07-06",
       "domain": "contrib",
       "source": "lessons"
+    },
+    {
+      "type": "challenge",
+      "title": "[Ecosystem] Build Cursor integration for MisakaNet lessons",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/318",
+      "labels": [
+        "enhancement",
+        "Ring-3",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-02T16:01:30Z",
+      "source": "github"
     }
   ]
 }
