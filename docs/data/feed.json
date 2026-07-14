@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-07-14T14:18:36.462846+00:00",
+  "generated_at": "2026-07-14T16:41:14.177726+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat: add trust_tiers to protocol, registration reads from protocol",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/473",
+      "timestamp": "2026-07-14T14:24:51Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs: add glossary of SKP/MisakaNet terms (fixes #299)",
@@ -44,13 +51,6 @@
       "title": "feat: unify verified semantics — badge only (fixes #352)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/466",
       "timestamp": "2026-07-14T09:07:00Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(search): add machine-readable JSON output",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/463",
-      "timestamp": "2026-07-14T09:05:46Z",
       "source": "github"
     },
     {
@@ -104,21 +104,6 @@
       "source": "lessons"
     },
     {
-      "type": "challenge",
-      "title": "Add trust_tiers to misaka-protocol.json",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/354",
-      "labels": [
-        "enhancement",
-        "good first issue",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-06T02:50:41Z",
-      "source": "github"
-    },
-    {
       "type": "lesson",
       "title": "AI Agent Project Outreach Guide",
       "url": "lessons/contrib/ai-agent-project-outreach-guide.md",
@@ -155,6 +140,21 @@
         "status:competition"
       ],
       "timestamp": "2026-07-02T16:01:30Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Ecosystem] Build VS Code extension for MisakaNet lesson search",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/317",
+      "labels": [
+        "enhancement",
+        "Ring-3",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-02T16:01:28Z",
       "source": "github"
     }
   ]
