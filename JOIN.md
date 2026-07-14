@@ -121,7 +121,9 @@ Fix:
 Verification:
 ```
 
-### 3. 维护者或 Worker 代入 Git 审计流
+> `bot@misakanet.org` 当前进入维护者收件箱，维护者会代为转成 draft lesson / GitHub 审计记录。后续将升级为 Cloudflare Email Worker 自动处理。
+
+### 3. 维护者代入 Git 审计流
 
 邮件内容会被转换成 draft lesson，后续可以：
 
