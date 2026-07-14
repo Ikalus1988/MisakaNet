@@ -107,7 +107,9 @@ The MisakaNet ecosystem is built as a **layered defense & knowledge stack**:
 4. Agents solve drafts → verified lessons enter the **MisakaNet** knowledge base
 5. All ranking is powered by **misakanet-core** (zero-dep BM25 + RRF)
 
-> This is the **路线A→C 闭环**: Crash → Draft → Benchmark → Verified Lesson → Searchable Knowledge.
+> This is the **路线A→C 闭环**
+>
+> 📖 **New to MisakaNet?** Check the [Glossary](docs/glossary.md) for key terms.: Crash → Draft → Benchmark → Verified Lesson → Searchable Knowledge.
 
 ```python
 # Any third-party tool can reuse the core engine:
