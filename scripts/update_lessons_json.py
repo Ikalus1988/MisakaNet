@@ -86,6 +86,8 @@ def main():
             status = meta.get("status", "active")
             summary = meta.get("summary", "") or get_summary(content)
             rel_path = f.relative_to(LESSONS_DIR).as_posix()
+            # Check for Verification section (badge-only verified semantics)
+            verified = bool(re.search(r"##\s*(Verify|Verification)", content, re.IGNORECASE))
             entries.append({
                 "id": f.stem,
                 "title": title,
@@ -99,6 +101,7 @@ def main():
                 "environment_version": "",
                 "confidence": 0.5,
                 "status": status,
+                "verified": verified,
             })
 
     OUTPUT.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
