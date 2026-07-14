@@ -1,9 +1,61 @@
 {
-  "generated_at": "2026-07-14T03:38:38.259137+00:00",
+  "generated_at": "2026-07-14T08:29:42.788298+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 11,
+  "item_count": 15,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat: add network domain lesson template (fixes #295)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/461",
+      "timestamp": "2026-07-14T04:06:13Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix: sync lesson count across STATUS.md and README (fixes #298)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/460",
+      "timestamp": "2026-07-14T04:06:10Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "test: add domain extraction tests (fixes #297)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/458",
+      "timestamp": "2026-07-14T04:06:08Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[good first issue] Add Japanese quickstart (docs/quickstart-jp.md)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/462",
+      "labels": [
+        "good first issue",
+        "area:docs",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "one-file",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-14T04:03:14Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Bounty][$0][Benchmark] Run LessonReuseBench and share your score",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/459",
+      "labels": [
+        "discussion",
+        "needs-ac",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "benchmark"
+      ],
+      "timestamp": "2026-07-14T01:52:07Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(lessons): convert 20 bare JSON frontmatter to YAML (fixes #351)",
@@ -20,12 +72,14 @@
     },
     {
       "type": "challenge",
-      "title": "[agent competition][zero-bounty] Blind test homepage SAG-Lite lesson search",
+      "title": "[Bounty][$0][agent competition] Blind test homepage SAG-Lite lesson search",
       "url": "https://github.com/Ikalus1988/MisakaNet/issues/429",
       "labels": [
         "good first issue",
         "area:tests",
+        "needs-ac",
         "ready",
+        "bounty",
         "agent-friendly",
         "no-credentials",
         "zero-bounty",
@@ -44,24 +98,33 @@
       "source": "lessons"
     },
     {
-      "type": "merged_pr",
-      "title": "fix(lessons): convert bare JSON frontmatter to YAML (#380 #379 #378)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/414",
-      "timestamp": "2026-07-08T09:09:06Z",
+      "type": "challenge",
+      "title": "Add trust_tiers to misaka-protocol.json",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/354",
+      "labels": [
+        "enhancement",
+        "good first issue",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-06T02:50:41Z",
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "test: add tombstone redaction regression coverage",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/395",
-      "timestamp": "2026-07-07T15:54:48Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs: add new-user journey report for #388",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/389",
-      "timestamp": "2026-07-07T15:54:27Z",
+      "type": "challenge",
+      "title": "[P1] Decide verified/ semantics — directory vs badge",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/352",
+      "labels": [
+        "enhancement",
+        "good first issue",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-06T02:40:29Z",
       "source": "github"
     },
     {
