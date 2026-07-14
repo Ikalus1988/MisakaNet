@@ -1817,6 +1817,28 @@
     "status": "active"
   },
   {
+    "id": "lesson-template-network",
+    "title": "Network Domain Lesson Template",
+    "domain": "network",
+    "tags": [
+      "http",
+      "dns",
+      "proxy",
+      "ssl",
+      "websocket",
+      "timeout",
+      "template"
+    ],
+    "summary": "Describe the network-related issue encountered.",
+    "url": "lessons/contrib/lesson-template-network.md",
+    "created": "2026-07-13",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published"
+  },
+  {
     "id": "lesson_file_line_number_corruption",
     "title": "Before — inspect raw first line",
     "domain": "contrib",
