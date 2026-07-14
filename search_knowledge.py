@@ -386,6 +386,7 @@ def main():
     env_filter: Optional[str] = None
     lang: Optional[str] = None
     domain: Optional[str] = None
+    json_output = False
     search_args = sys.argv[2:]
     for i, arg in enumerate(search_args):
         if arg == "--ref":
@@ -418,6 +419,8 @@ def main():
             domain = arg.split("=", 1)[1].lower()
         elif arg == "--domain" and i + 1 < len(search_args):
             domain = search_args[i + 1].lower()
+        elif arg == "--json":
+            json_output = True
         elif arg == "--explain":
             explain = True
         elif arg.startswith("--env="):
@@ -496,25 +499,65 @@ def main():
     MIN_SCORE_THRESHOLD = 0.1  # Minimum score to consider as "found"
     
     all_docs = lessons_docs + ref_docs
+    all_results = []
+
     if lessons_docs:
         ranked = _rank_docs(query, lessons_docs, titles_only, broad_only)
         # Only show results above threshold
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
-        found = _format_output(filtered, titles_only, top_k,
-                               mode_label=f"lessons/  (All {len(lessons_docs)} items)",
-                               query=query, explain=explain,
-                               all_docs=all_docs)
-        found_any = found_any or found
+        if json_output:
+            for score, doc in filtered[:top_k]:
+                all_results.append({
+                    "title": doc.title,
+                    "domain": doc.domain or "",
+                    "tags": doc.tags[:5] if doc.tags else [],
+                    "score": round(score, 3),
+                    "path": str(doc.filepath),
+                    "preview": doc.content[:200] if doc.content else "",
+                    "status": doc.status or "",
+                    "source": "lessons",
+                })
+        else:
+            found = _format_output(filtered, titles_only, top_k,
+                                   mode_label=f"lessons/  (All {len(lessons_docs)} items)",
+                                   query=query, explain=explain,
+                                   all_docs=all_docs)
+            found_any = found_any or found
+
     if ref_docs:
         ranked = _rank_docs(query, ref_docs, titles_only, broad_only=False)
         # Only show results above threshold
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
-        found = _format_output(filtered, titles_only, top_k,
-                               mode_label=f"reference/  (All {len(ref_docs)} items)",
-                               query=query, explain=explain,
-                               all_docs=all_docs)
-        found_any = found_any or found
+        if json_output:
+            for score, doc in filtered[:top_k]:
+                all_results.append({
+                    "title": doc.title,
+                    "domain": doc.domain or "",
+                    "tags": doc.tags[:5] if doc.tags else [],
+                    "score": round(score, 3),
+                    "path": str(doc.filepath),
+                    "preview": doc.content[:200] if doc.content else "",
+                    "status": doc.status or "",
+                    "source": "reference",
+                })
+        else:
+            found = _format_output(filtered, titles_only, top_k,
+                                   mode_label=f"reference/  (All {len(ref_docs)} items)",
+                                   query=query, explain=explain,
+                                   all_docs=all_docs)
+            found_any = found_any or found
+
     total_docs = len(lessons_docs) + len(ref_docs)
+
+    # JSON output mode
+    if json_output:
+        import json
+        if all_results:
+            print(json.dumps(all_results, indent=2, ensure_ascii=False))
+        else:
+            print(json.dumps({"error": "no_results", "query": query}, ensure_ascii=False))
+        return
+
     if not found_any:
         # Feature #301: Smart fallback with closest matches
         _smart_fallback(query, lessons_docs + ref_docs)
