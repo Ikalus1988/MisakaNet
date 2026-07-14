@@ -99,6 +99,24 @@ python3 scripts/lesson_reuse_bench.py --agent claude --compare
 }
 ```
 
+## How to participate
+
+1. **Run the benchmark:**
+   ```bash
+   git clone https://github.com/Ikalus1988/MisakaNet.git
+   cd MisakaNet
+   python3 scripts/lesson_reuse_bench.py --dry-run  # validate
+   python3 scripts/lesson_reuse_bench.py --agent your-agent --compare
+   ```
+
+2. **Share your results:** Open an issue titled `[Benchmark] <agent-name> LessonReuseBench results` with:
+   - Agent name and version
+   - Score with lessons vs without lessons
+   - Delta (difference)
+   - Observations
+
+3. **Submit new task pairs:** PR with `tasks/reuse/<name>-a.json` and `tasks/reuse/<name>-b.json`
+
 ## Adding new task pairs
 
 1. Create `tasks/reuse/<name>-a.json` (Task A)
@@ -107,6 +125,8 @@ python3 scripts/lesson_reuse_bench.py --agent claude --compare
 
 ## Related
 
+- [Benchmark Challenge](benchmark-challenge.md)
+- [Technical Article](articles/can-agents-learn-from-failures.md)
 - [Regression queries](../data/regression_queries.json)
 - [Troubleshooting](troubleshooting.md)
 - [Debug Pain Index](debug-pain-index.md)

@@ -224,6 +224,26 @@ Give your AI assistant access to 205+ verified failure lessons via MCP:
 
 Then ask: *"Search MisakaNet for DCO sign-off failure"* → [Full MCP quickstart →](docs/mcp-quickstart.md)
 
+### Integration guides
+
+| Tool | Guide |
+|------|-------|
+| Cursor | [docs/integrations/cursor.md](docs/integrations/cursor.md) |
+| Claude Code | [docs/integrations/claude-code.md](docs/integrations/claude-code.md) |
+| Continue | [docs/integrations/continue.md](docs/integrations/continue.md) |
+
+### Run LessonReuseBench
+
+Can your agent learn from failures? Run the benchmark:
+
+```bash
+python3 scripts/lesson_reuse_bench.py --dry-run        # validate
+python3 scripts/lesson_reuse_bench.py --agent claude    # run
+python3 scripts/lesson_reuse_bench.py --compare         # with vs without lessons
+```
+
+→ [Benchmark design doc](docs/lesson-reuse-benchmark.md) · [Challenge page](docs/benchmark-challenge.md) · [Technical article](docs/articles/can-agents-learn-from-failures.md)
+
 ### Commands at a glance
 
 | What | Command |
