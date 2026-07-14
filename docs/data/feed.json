@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-07-14T10:58:41.520774+00:00",
+  "generated_at": "2026-07-14T12:33:25.148746+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs: add glossary of SKP/MisakaNet terms (fixes #299)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/465",
+      "timestamp": "2026-07-14T11:32:59Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(search): show match reasons",
@@ -16,6 +23,20 @@
       "title": "feat: add Japanese quickstart guide (docs/quickstart-jp.md)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/468",
       "timestamp": "2026-07-14T10:42:19Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Bounty][$0] Productionize bot@misakanet.org email intake",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/470",
+      "labels": [
+        "enhancement",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-14T10:30:58Z",
       "source": "github"
     },
     {
@@ -33,13 +54,6 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "feat: add network domain lesson template (fixes #295)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/461",
-      "timestamp": "2026-07-14T04:06:13Z",
-      "source": "github"
-    },
-    {
       "type": "challenge",
       "title": "[Bounty][$0][Benchmark] Run LessonReuseBench and share your score",
       "url": "https://github.com/Ikalus1988/MisakaNet/issues/459",
@@ -53,6 +67,14 @@
       ],
       "timestamp": "2026-07-14T01:52:07Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "FANUC Backup Payload Extraction — .VR/.SV Binary Parsing and .LS Text Fallback",
+      "url": "lessons/contrib/fanuc-backup-payload-extraction.md",
+      "timestamp": "2026-07-14",
+      "domain": "fanuc",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -121,14 +143,6 @@
       "source": "lessons"
     },
     {
-      "type": "lesson",
-      "title": "Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy",
-      "url": "lessons/contrib/anthropic-proxy-internal-gateway.md",
-      "timestamp": "2026-07-06",
-      "domain": "contrib",
-      "source": "lessons"
-    },
-    {
       "type": "challenge",
       "title": "[Ecosystem] Build Cursor integration for MisakaNet lessons",
       "url": "https://github.com/Ikalus1988/MisakaNet/issues/318",
@@ -141,21 +155,6 @@
         "status:competition"
       ],
       "timestamp": "2026-07-02T16:01:30Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Ecosystem] Build VS Code extension for MisakaNet lesson search",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/317",
-      "labels": [
-        "enhancement",
-        "Ring-3",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-02T16:01:28Z",
       "source": "github"
     }
   ]

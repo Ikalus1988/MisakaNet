@@ -3222,5 +3222,28 @@
     "confidence": 0.5,
     "status": "active",
     "verified": true
+  },
+  {
+    "id": "fanuc-backup-payload-extraction",
+    "title": "FANUC Backup Payload Extraction — .VR/.SV Binary Parsing and .LS Text Fallback",
+    "domain": "fanuc",
+    "tags": [
+      "backup",
+      "payload",
+      "vr-file",
+      "sv-file",
+      "kconvars",
+      "sysvars",
+      "cbparam",
+      "plst-grp",
+      "binary-parsing",
+      "spottool"
+    ],
+    "summary": "FANUC robot backup .vr/.sv files use proprietary binary encoding. Payload data can be extracted from ERRCURR.LS (plain text, instant) or via kconvars.exe conversion of SYSVARS.SV. Two storage mechanisms exist: PLST_GRP1[1..10] standard system and CBPARAM.VR MH gripper wizard.",
+    "url": "lessons/contrib/fanuc-backup-payload-extraction.md",
+    "created": "2026-07-14",
+    "updated": "2026-07-14",
+    "source": "internal",
+    "status": "published"
   }
 ]
