@@ -83,7 +83,7 @@ The MisakaNet ecosystem is built as a **layered defense & knowledge stack**:
 │  (npm, zero-config)          │  → feeds draft lesson pipeline     │
 ├──────────────────────────────────────────────────────────────────┤
 │  🧠 MisakaNet (this repo)    │  Swarm Knowledge Protocol (SKP)    │
-│  $ python3 search_know-      │  200+ lessons, BM25 + RRF          │
+│  $ python3 search_know-      │  205+ lessons, BM25 + RRF          │
 │     ledge.py "<error>"       │  git clone → search → contribute   │
 │  (zero-dep core engine)      │  Zero server, zero database        │
 ├──────────────────────────────────────────────────────────────────┤
