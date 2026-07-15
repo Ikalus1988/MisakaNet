@@ -467,6 +467,136 @@ def _get_match_reason(query: str, doc: CachedDoc, score: float | None = None) ->
     return " + ".join(dict.fromkeys(reasons))
 
 
+# ── Heuristic confidence / result_type classification ──
+
+# Patterns that indicate actionable lessons (have concrete fix steps)
+_ACTIONABLE_SIGNALS = re.compile(
+    r"(fix|solution|workaround|step\s*\d|verify|verification|"
+    r"error.code|exit.code|return.code|"
+    r"```|pip install|git |curl |chmod |mkdir |export )",
+    re.IGNORECASE,
+)
+
+# Patterns that indicate common/reference content (generic, not specific)
+_COMMON_PATTERNS = re.compile(
+    r"(github.com.*443|connectivity|checklist|basic|intro|overview|"
+    r"getting.started|quick.start|faq|troubleshooting.general|"
+    r"network.*basics|git.*basics|config.*general|auth.*basics)",
+    re.IGNORECASE,
+)
+
+# Error code pattern (specific technical signal)
+_ERROR_CODE_PATTERN = re.compile(
+    r"(GH\d{3,4}|E\d{3,5}|W\d{3,5}|SEC\d+|INTP-\d+|KL-\d+|"
+    r"exit\s+(?:code|status)\s+\d+|HTTP\s+\d{3}|error\s+code\s+\d+)",
+    re.IGNORECASE,
+)
+
+
+def _classify_confidence(
+    doc: CachedDoc, query: str, match_reasons: str, score: float
+) -> str:
+    """Classify result confidence: high | medium | low.
+
+    Heuristic rules (no schema migration required):
+    - high: error codes in title/content, clear fix steps, verification section,
+            high match score, title match
+    - low: common patterns, generic titles, low score, only content keyword match
+    - medium: everything else
+    """
+    title_lower = doc.title.lower()
+    content_lower = doc.content[:2000].lower()
+    reasons_lower = match_reasons.lower()
+
+    # High confidence signals
+    has_error_code = bool(_ERROR_CODE_PATTERN.search(doc.title + " " + doc.content[:500]))
+    has_actionable = bool(_ACTIONABLE_SIGNALS.search(content_lower))
+    has_verification = "## verification" in content_lower or "## verify" in content_lower
+    has_title_match = "title keyword" in reasons_lower or "title exact" in reasons_lower
+    high_score = score >= 0.6
+
+    if has_error_code and has_title_match:
+        return "high"
+    if has_verification and has_actionable and high_score:
+        return "high"
+    if has_title_match and high_score and has_actionable:
+        return "high"
+
+    # Low confidence signals
+    is_common = bool(_COMMON_PATTERNS.search(title_lower + " " + content_lower[:500]))
+    only_content_match = "content keyword" in reasons_lower and "title" not in reasons_lower and "tag" not in reasons_lower
+    low_score = score < 0.35
+    generic_title = len(title_lower.split()) <= 3 and not has_error_code
+
+    if is_common and low_score:
+        return "low"
+    if only_content_match and low_score:
+        return "low"
+    if generic_title and low_score and not has_actionable:
+        return "low"
+
+    return "medium"
+
+
+def _classify_result_type(doc: CachedDoc, confidence: str) -> str:
+    """Classify result type: actionable | common | related.
+
+    - actionable: high/medium confidence with fix steps or verification
+    - common: low confidence or generic reference content
+    - related: medium confidence but no clear fix steps (background/context)
+    """
+    if confidence == "low":
+        return "common"
+
+    content_lower = doc.content[:2000].lower()
+    has_actionable = bool(_ACTIONABLE_SIGNALS.search(content_lower))
+
+    if confidence == "high":
+        return "actionable"
+    if confidence == "medium" and has_actionable:
+        return "actionable"
+    if confidence == "medium":
+        return "related"
+
+    return "common"
+
+
+def _get_why_matched(match_reasons: str) -> dict:
+    """Parse match reasons into structured explanation.
+
+    Returns dict with matched_terms, match_fields, and summary.
+    """
+    if not match_reasons:
+        return {"matched_terms": [], "match_fields": [], "summary": "no match"}
+
+    parts = [r.strip() for r in match_reasons.split("+")]
+    matched_terms = []
+    match_fields = []
+
+    for part in parts:
+        # Extract quoted terms
+        quoted = re.findall(r"'([^']+)'", part)
+        matched_terms.extend(quoted)
+
+        # Extract field names
+        if part.startswith("title"):
+            match_fields.append("title")
+        elif part.startswith("domain"):
+            match_fields.append("domain")
+        elif part.startswith("tag"):
+            match_fields.append("tags")
+        elif part.startswith("content"):
+            match_fields.append("content")
+        elif part == "broad":
+            match_fields.append("broad")
+
+    return {
+        "matched_terms": list(dict.fromkeys(matched_terms)),
+        "match_fields": list(dict.fromkeys(match_fields)),
+        "summary": match_reasons,
+    }
+
+
 def _score_breakdown(query: str, doc: CachedDoc) -> dict:
     bm25 = _compute_bm25_scores(query, [doc])[0]
     meta_parts = _metadata_bonus_breakdown(query, doc)

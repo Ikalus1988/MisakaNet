@@ -30,8 +30,11 @@ def _json_result(score, doc, query: str = "", verbose: bool = False) -> dict:
     """Convert a ranked document to the stable public JSON schema."""
     from misakanet.search.engine import (
         REPO,
+        _classify_confidence,
+        _classify_result_type,
         _get_match_reason,
         _get_preview,
+        _get_why_matched,
         _highlight_plain,
         _score_breakdown,
     )
@@ -50,8 +53,13 @@ def _json_result(score, doc, query: str = "", verbose: bool = False) -> dict:
         "preview": preview,
     }
     if query:
-        result["match_reason"] = _get_match_reason(query, doc, score)
+        match_reason = _get_match_reason(query, doc, score)
+        result["match_reason"] = match_reason
         result["preview_highlighted"] = _highlight_plain(preview, query)
+        confidence = _classify_confidence(doc, query, match_reason, score)
+        result["confidence"] = confidence
+        result["result_type"] = _classify_result_type(doc, confidence)
+        result["why_matched"] = _get_why_matched(match_reason)
     if verbose and query:
         result["score_breakdown"] = _score_breakdown(query, doc)
     return result

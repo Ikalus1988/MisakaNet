@@ -44,6 +44,15 @@
   .badge-fatal { background: rgba(239,68,68,0.12); color: #f87171; }
   .badge-runtime { background: rgba(251,146,60,0.12); color: #fb923c; }
   .badge-setup { background: rgba(56,189,248,0.12); color: #38bdf8; }
+  .badge-high { background: rgba(35,134,54,0.15); color: #3fb950; }
+  .badge-medium { background: rgba(251,146,60,0.12); color: #fb923c; }
+  .badge-low { background: rgba(139,148,158,0.12); color: #8b949e; }
+  .section-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 20px 0 8px; }
+  .fold-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: var(--text-muted); background: transparent; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 12px; margin: 8px 0; transition: color 0.15s, border-color 0.15s; }
+  .fold-toggle:hover { color: #58a6ff; border-color: rgba(88,166,255,0.3); }
+  .fold-toggle .arrow { transition: transform 0.2s; }
+  .fold-toggle.open .arrow { transform: rotate(90deg); }
+  .match-explain { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
   .result-id { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.02em; color: var(--text-muted); }
   .result-summary { font-family: var(--font-ui); font-size: 13px; color: var(--text-soft); font-weight: 400; line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .result-tags { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
@@ -283,6 +292,40 @@ function inferBadge(r) {
   return { key: 'badgeVerified', cls: 'badge-status' };
 }
 
+// ── Client-side confidence / result_type classification ──
+const ACTIONABLE_RE = /fix|solution|workaround|step\s*\d|verify|verification|error.code|exit.code|```|pip install|git |curl |chmod|mkdir|export /i;
+const COMMON_RE = /github.com.*443|connectivity|checklist|basic|intro|overview|getting.started|quick.start|faq|troubleshooting.general|network.*basics|git.*basics|config.*general/i;
+const ERROR_CODE_RE = /GH\d{3,4}|E\d{3,5}|INTP-\d+|KL-\d+|exit\s+(?:code|status)\s+\d+|HTTP\s+\d{3}/i;
+
+function classifyResult(r, score) {
+  const title = (r.title || '').toLowerCase();
+  const summary = (r.summary || '').toLowerCase();
+  const tags = (r.tags || []).join(' ').toLowerCase();
+  const content = title + ' ' + summary + ' ' + tags;
+
+  const hasErrorCode = ERROR_CODE_RE.test(r.title + ' ' + (r.summary || '').slice(0, 300));
+  const hasActionable = ACTIONABLE_RE.test(r.summary || '');
+  const hasVerification = /## verification|## verify/i.test(r.summary || '');
+  const isCommon = COMMON_RE.test(title + ' ' + summary.slice(0, 300));
+  const highScore = score >= 0.6;
+  const lowScore = score < 0.35;
+
+  // Confidence
+  let confidence = 'medium';
+  if ((hasErrorCode && score > 0.4) || (hasVerification && hasActionable && highScore)) {
+    confidence = 'high';
+  } else if ((isCommon && lowScore) || (score < 0.25 && !hasActionable)) {
+    confidence = 'low';
+  }
+
+  // Result type
+  let resultType = 'related';
+  if (confidence === 'low') resultType = 'common';
+  else if (confidence === 'high' || (confidence === 'medium' && hasActionable)) resultType = 'actionable';
+
+  return { confidence, resultType };
+}
+
 function render(results, q) {
   const el = document.getElementById('results');
   _lastResults = results;
@@ -294,9 +337,17 @@ function render(results, q) {
   }
   const searchable = _lessons ? _lessons.filter(isSearchable).length : 0;
   const total = _lessons ? _lessons.length : 0;
-  let html = '<div class="results-header">' + t('resultsHeader', { count: results.length, q: escapeHTML(q) }) + '</div>';
-  html += '<div class="stats">' + t('resultsStats', { count: searchable, total }) + '</div>';
-  html += results.map((r, index) => {
+
+  // Classify and group results
+  const classified = results.map((r, index) => {
+    const { confidence, resultType } = classifyResult(r, r.score || 0);
+    return { ...r, _index: index, _confidence: confidence, _resultType: resultType };
+  });
+  const topFixes = classified.filter(r => r._resultType === 'actionable');
+  const commonRefs = classified.filter(r => r._resultType === 'common');
+  const relatedRefs = classified.filter(r => r._resultType === 'related');
+
+  function renderCard(r) {
     const takeaway = escapeHTML(getTakeaway(r));
     const title = escapeHTML(r.title);
     const summary = escapeHTML((r.summary||'').slice(0,200));
@@ -305,12 +356,13 @@ function render(results, q) {
     const url = getLessonUrl(r);
     const id = escapeHTML(r.id || '');
     const badge = inferBadge(r);
-    const showTitle = takeaway !== title; // show title as meta only if different
-    return '<div class="result" tabindex="0" data-index="' + index + '" data-id="' + id + '">' +
+    const confBadge = r._confidence === 'high' ? 'badge-high' : r._confidence === 'low' ? 'badge-low' : 'badge-medium';
+    const showTitle = takeaway !== title;
+    return '<div class="result" tabindex="0" data-index="' + r._index + '" data-id="' + id + '">' +
       '<div class="result-meta">' +
         '<span class="badge ' + badge.cls + '">' + t(badge.key) + '</span>' +
         '<span class="badge badge-domain">' + domain + '</span>' +
-        '<span class="badge badge-status">' + t('githubAudited') + '</span>' +
+        '<span class="badge ' + confBadge + '">' + r._confidence + '</span>' +
       '</div>' +
       '<div class="result-title">' + takeaway + '</div>' +
       (showTitle ? '<div class="result-id">' + id + '</div>' : '') +
@@ -322,7 +374,34 @@ function render(results, q) {
       '</div>' +
       '<div class="lesson-preview" hidden></div>' +
     '</div>';
-  }).join('');
+  }
+
+  let html = '<div class="results-header">' + t('resultsHeader', { count: results.length, q: escapeHTML(q) }) + '</div>';
+  html += '<div class="stats">' + t('resultsStats', { count: searchable, total }) + '</div>';
+
+  // Top fixes
+  if (topFixes.length) {
+    html += '<div class="section-label">Top fixes</div>';
+    html += topFixes.map(renderCard).join('');
+  }
+
+  // Related (if no top fixes, show related as primary)
+  if (!topFixes.length && relatedRefs.length) {
+    html += '<div class="section-label">Results</div>';
+    html += relatedRefs.map(renderCard).join('');
+  } else if (relatedRefs.length) {
+    html += '<div class="section-label">Related</div>';
+    html += relatedRefs.map(renderCard).join('');
+  }
+
+  // Common references (folded)
+  if (commonRefs.length) {
+    html += '<button class="fold-toggle" type="button" onclick="this.classList.toggle(\'open\');this.nextElementSibling.hidden=!this.nextElementSibling.hidden">' +
+      '<span class="arrow">▸</span> Common references (' + commonRefs.length + ')' +
+      '</button>';
+    html += '<div hidden>' + commonRefs.map(renderCard).join('') + '</div>';
+  }
+
   el.innerHTML = html;
 }
 
