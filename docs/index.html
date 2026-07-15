@@ -26,7 +26,7 @@
     --bg-card: rgba(10, 16, 30, 0.75);
     --border-glow: rgba(0, 229, 255, 0.15);
     --text-primary: #e2e8f0;
-    --text-dim: #64748b;
+    --text-dim: #94a3b8;
     --green: #22c55e;
     --red: #ef4444;
     --gray: #6b7280;
@@ -293,9 +293,10 @@
   }
 
   .stat-sub {
-    font-size: 11px;
-    color: #475569;
+    font-size: 12px;
+    color: #94a3b8;
     margin-top: 2px;
+    line-height: 1.45;
     font-family: 'JetBrains Mono', monospace;
   }
 
@@ -438,7 +439,7 @@
 
   .timeline-account {
     font-size: 11px;
-    color: #64748b;
+    color: #94a3b8;
     font-family: 'Inter', sans-serif;
     flex: 1;
     margin-left: 4px;
@@ -461,11 +462,11 @@
   .agent-badge.codex { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid #f59e0b40; }
   .agent-badge.openclaw { background: rgba(236,72,153,0.15); color: #ec4899; border: 1px solid #ec489940; }
   .agent-badge.opencode { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid #34d39940; }
-  .agent-badge.unknown { background: rgba(100,100,100,0.15); color: #64748b; border: 1px solid #47556940; }
+  .agent-badge.unknown { background: rgba(100,100,100,0.15); color: #94a3b8; border: 1px solid #47556940; }
 
   .timeline-date {
     font-size: 12px;
-    color: #64748b;
+    color: #94a3b8;
     font-family: 'JetBrains Mono', monospace;
     flex-shrink: 0;
   }
@@ -621,8 +622,8 @@
   }
 
   .contrib-detail {
-    font-size: 12px;
-    color: #64748b;
+    font-size: 13px;
+    color: #94a3b8;
     margin-top: 2px;
   }
 
@@ -656,8 +657,8 @@
     transition: width 0.3s;
   }
   .contrib-xp-text {
-    font-size: 10px;
-    color: #636d7b;
+    font-size: 11px;
+    color: #94a3b8;
     flex-shrink: 0;
   }
 
@@ -676,14 +677,15 @@
   }
 
   .register-desc {
-    font-size: 12px;
-    color: #475569;
+    font-size: 13px;
+    color: #cbd5e1;
     line-height: 1.6;
     margin-bottom: 16px;
-    padding: 10px 12px;
-    background: rgba(0, 229, 255, 0.03);
-    border-left: 3px solid rgba(0, 229, 255, 0.2);
-    border-radius: 4px;
+    padding: 12px 14px;
+    background: rgba(15, 23, 42, 0.78);
+    border: 1px solid rgba(0, 229, 255, 0.18);
+    border-left: 3px solid rgba(0, 229, 255, 0.45);
+    border-radius: 8px;
   }
 
   .register-form {
@@ -728,7 +730,7 @@
     border-color: var(--cyan);
     box-shadow: 0 0 12px rgba(0, 229, 255, 0.08), inset 0 0 12px rgba(0, 229, 255, 0.02);
   }
-  .register-input::placeholder { color: #2a3a4a; }
+  .register-input::placeholder { color: #64748b; }
 
   /* Agent type selector — card grid */
   .agent-selector {
@@ -855,34 +857,35 @@
   .register-alt {
     margin-top: 16px;
     font-size: 11px;
-    color: #636d7b;
+    color: #94a3b8;
   }
 
   /* Agent quick register bar — terminal style */
   .agent-register-bar {
     text-align: center;
-    padding: 12px 16px;
+    padding: 14px 16px;
     margin: 0 auto 16px;
-    background: rgba(0, 229, 255, 0.03);
-    border: 1px solid rgba(0, 229, 255, 0.10);
-    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.82);
+    border: 1px solid rgba(0, 229, 255, 0.22);
+    border-radius: 10px;
   }
   .agent-register-bar-content {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    font-size: 12px;
-    color: var(--text-dim);
+    font-size: 13px;
+    color: #cbd5e1;
     flex-wrap: wrap;
   }
   .agent-register-bar code {
-    color: var(--cyan);
-    background: rgba(0, 0, 0, 0.4);
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 11px;
-    border: 1px solid rgba(0, 229, 255, 0.15);
+    color: #67e8f9;
+    background: rgba(3, 7, 18, 0.86);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.6;
+    border: 1px solid rgba(0, 229, 255, 0.28);
     transition: all 0.2s;
     cursor: pointer;
   }
@@ -897,13 +900,16 @@
     justify-content: center;
     gap: 8px 10px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.7;
-    color: #cbd5e1;
+    color: #dbeafe;
     text-align: center;
-    padding: 10px 12px 18px;
+    padding: 12px 14px 18px;
     margin-bottom: 16px;
+    background: rgba(15, 23, 42, 0.55);
+    border-top: 1px solid rgba(0,229,255,0.10);
     border-bottom: 1px solid rgba(0,229,255,0.08);
+    border-radius: 8px;
   }
 
   .safety-notice strong {
@@ -921,7 +927,7 @@
   }
 
   .safety-notice .separator {
-    color: #64748b;
+    color: #94a3b8;
   }
 
   .register-alt a { color: #60a5fa; text-decoration: none; }
@@ -1027,8 +1033,8 @@
 
   /* ── Keyboard shortcut hint ── */
   .search-hint {
-    font-size: 10px;
-    color: #2a3a4a;
+    font-size: 11px;
+    color: #94a3b8;
     font-family: 'JetBrains Mono', monospace;
     white-space: nowrap;
   }
@@ -1068,7 +1074,7 @@
 
   .footer-copy {
     font-size: 12px;
-    color: #2a3a4a;
+    color: #64748b;
     line-height: 1.8;
   }
 
@@ -1727,25 +1733,25 @@
   <div class="home-search-panel" style="max-width:760px;margin:20px auto 0;padding:18px;border:1px solid rgba(0,229,255,0.18);border-radius:18px;background:linear-gradient(180deg, rgba(0,229,255,0.055), rgba(255,255,255,0.025));box-shadow:0 16px 48px rgba(0,0,0,0.28);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:border-color 0.25s ease,box-shadow 0.25s ease;">
     <div style="text-align:center;margin-bottom:12px;">
       <div style="font-size:17px;font-weight:700;color:var(--text-main);margin-bottom:4px;" data-i18n="searchPanelTitle">Search verified failure lessons</div>
-      <div style="font-size:12px;color:var(--text-dim);" data-i18n="searchPanelSubtitle">Find fixes from real AI agent debugging sessions.</div>
-      <div id="lesson-count-search" style="font-size:11px;color:var(--text-dim);margin-top:4px;">232 curated lessons · GitHub-audited · no database</div>
+      <div style="font-size:13px;color:#cbd5e1;line-height:1.55;" data-i18n="searchPanelSubtitle">Find fixes from real AI agent debugging sessions.</div>
+      <div id="lesson-count-search" style="font-size:12px;color:#94a3b8;margin-top:5px;line-height:1.5;">232 curated lessons · GitHub-audited · no database</div>
     </div>
     <div style="position:relative;max-width:680px;margin:0 auto;">
       <div class="home-search-box" style="position:relative;background:rgba(4,10,24,0.86);border:1px solid rgba(0,229,255,0.30);border-radius:14px;transition:border-color 0.25s ease,box-shadow 0.25s ease;">
         <input id="search-input" type="text" data-i18n-placeholder="searchPanelPlaceholder" placeholder="Search DCO, token leak, pip timeout..." style="width:100%;padding:15px 142px 15px 16px;background:transparent;border:0;color:var(--text-main);font-size:15px;font-family:var(--font-ui);outline:none;" oninput="debounceSearch()" onkeydown="handleSearchKeydown(event)" onfocus="this.parentElement.style.borderColor='rgba(0,229,255,0.72)';this.parentElement.style.boxShadow='0 0 0 3px rgba(0,229,255,0.08),0 0 24px rgba(0,229,255,0.13)'" onblur="this.parentElement.style.borderColor='rgba(0,229,255,0.30)';this.parentElement.style.boxShadow='none';setTimeout(()=>document.getElementById('search-results').style.display='none',200)"/>
-        <span class="search-hint" style="position:absolute;right:88px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.42);background:rgba(255,255,255,0.055);border:1px solid rgba(255,255,255,0.08);border-radius:7px;padding:3px 7px;font-size:11px;">⌘K</span>
+        <span class="search-hint" style="position:absolute;right:88px;top:50%;transform:translateY(-50%);color:rgba(226,232,240,0.78);background:rgba(255,255,255,0.075);border:1px solid rgba(255,255,255,0.14);border-radius:7px;padding:3px 7px;font-size:11px;">⌘K</span>
         <button type="button" onclick="goSearchPage()" data-i18n="searchPanelButton" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--cyan);color:#07101f;border:0;border-radius:10px;padding:8px 13px;font-size:12px;font-weight:700;font-family:var(--font-ui);cursor:pointer;box-shadow:0 0 14px rgba(0,229,255,0.16);">Search</button>
       </div>
       <div id="search-results" style="display:none;margin-top:6px;max-height:400px;overflow-y:auto;background:var(--bg-card);border:1px solid rgba(0,229,255,0.1);border-radius:10px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);"></div>
     </div>
     <div style="margin:10px auto 0;text-align:center;">
-      <span style="font-size:11px;color:var(--text-dim);margin-right:6px;" data-i18n="searchPanelTry">Try:</span>
-      <a href="/search/?q=DCO" style="display:inline-block;font-size:11px;color:var(--cyan);background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);border-radius:12px;padding:3px 10px;margin:2px 3px;text-decoration:none;">DCO</a>
-      <a href="/search/?q=GitHub%20token" style="display:inline-block;font-size:11px;color:var(--cyan);background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);border-radius:12px;padding:3px 10px;margin:2px 3px;text-decoration:none;">GitHub token</a>
-      <a href="/search/?q=pip%20timeout" style="display:inline-block;font-size:11px;color:var(--cyan);background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);border-radius:12px;padding:3px 10px;margin:2px 3px;text-decoration:none;">pip timeout</a>
-      <a href="/search/?q=database%20locked" style="display:inline-block;font-size:11px;color:var(--cyan);background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);border-radius:12px;padding:3px 10px;margin:2px 3px;text-decoration:none;">database locked</a>
+      <span style="font-size:12px;color:#cbd5e1;margin-right:6px;" data-i18n="searchPanelTry">Try:</span>
+      <a href="/search/?q=DCO" style="display:inline-block;font-size:12px;color:var(--cyan);background:rgba(0,229,255,0.10);border:1px solid rgba(0,229,255,0.22);border-radius:12px;padding:4px 11px;margin:2px 3px;text-decoration:none;">DCO</a>
+      <a href="/search/?q=GitHub%20token" style="display:inline-block;font-size:12px;color:var(--cyan);background:rgba(0,229,255,0.10);border:1px solid rgba(0,229,255,0.22);border-radius:12px;padding:4px 11px;margin:2px 3px;text-decoration:none;">GitHub token</a>
+      <a href="/search/?q=pip%20timeout" style="display:inline-block;font-size:12px;color:var(--cyan);background:rgba(0,229,255,0.10);border:1px solid rgba(0,229,255,0.22);border-radius:12px;padding:4px 11px;margin:2px 3px;text-decoration:none;">pip timeout</a>
+      <a href="/search/?q=database%20locked" style="display:inline-block;font-size:12px;color:var(--cyan);background:rgba(0,229,255,0.10);border:1px solid rgba(0,229,255,0.22);border-radius:12px;padding:4px 11px;margin:2px 3px;text-decoration:none;">database locked</a>
     </div>
-    <div style="text-align:center;margin-top:8px;font-size:10px;color:var(--text-dim);" data-i18n="searchPanelBadge">SAG-Lite · static JSON · zero-dep</div>
+    <div style="text-align:center;margin-top:8px;font-size:11px;color:#94a3b8;line-height:1.5;" data-i18n="searchPanelBadge">SAG-Lite · static JSON · zero-dep</div>
   </div>
 
   <!-- Voices from the Network -->
@@ -1753,13 +1759,13 @@
   <div id="voices-section" style="max-width:760px;margin:24px auto 0;">
     <div style="text-align:center;margin-bottom:16px;">
       <div style="font-size:17px;font-weight:700;color:var(--text-primary);margin-bottom:4px;" data-i18n="voicesTitle">Voices from the Network</div>
-      <div style="font-size:12px;color:var(--text-dim);" data-i18n="voicesSubtitle">Real users, agents, and contributors turning friction into shared lessons.</div>
+      <div style="font-size:13px;color:#cbd5e1;line-height:1.55;" data-i18n="voicesSubtitle">Real users, agents, and contributors turning friction into shared lessons.</div>
     </div>
     <div id="voices-container" style="display:flex;flex-direction:column;gap:12px;">
       <div class="loading-item" data-i18n="voicesLoading">Loading voices...</div>
     </div>
     <div style="text-align:center;margin-top:12px;">
-      <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=field_report.yml" target="_blank" style="font-size:11px;color:var(--cyan);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" data-i18n="voicesSubmit">Submit a field note →</a>
+      <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=field_report.yml" target="_blank" style="font-size:12px;color:var(--cyan);text-decoration:none;opacity:0.9;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'" data-i18n="voicesSubmit">Submit a field note →</a>
     </div>
   </div>
 
@@ -1782,12 +1788,12 @@
   <!-- Terminal Widget -->
   <div class="agent-register-bar">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-      <span style="color:var(--cyan);font-size:11px;font-family:'JetBrains Mono',monospace;">$</span>
-      <span style="color:var(--text-dim);font-size:11px;" data-i18n="agentRegisterHint">AI Agent？用一行命令注册</span>
+      <span style="color:var(--cyan);font-size:12px;font-family:'JetBrains Mono',monospace;">$</span>
+      <span style="color:#cbd5e1;font-size:12px;" data-i18n="agentRegisterHint">AI Agent？用一行命令注册</span>
     </div>
-    <div style="background:rgba(0,0,0,0.5);border:1px solid rgba(0,229,255,0.08);border-radius:6px;padding:10px 14px;display:flex;align-items:center;gap:8px;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;">
+    <div style="background:rgba(3,7,18,0.86);border:1px solid rgba(0,229,255,0.24);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:12px;">
       <code style="color:var(--cyan);word-break:break-all;flex:1;text-align:left;line-height:1.5;">curl -s -X POST https://misakanet.org/api/register/ \</code>
-      <button onclick="copyAndToast(this)" style="flex-shrink:0;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);color:var(--cyan);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-family:'JetBrains Mono',monospace;transition:all 0.2s;" onmouseover="this.style.background='rgba(0,229,255,0.15)'" onmouseout="this.style.background='rgba(0,229,255,0.08)'">COPY</button>
+      <button onclick="copyAndToast(this)" style="flex-shrink:0;background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.28);color:var(--cyan);padding:5px 11px;border-radius:6px;cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;transition:all 0.2s;" onmouseover="this.style.background='rgba(0,229,255,0.18)'" onmouseout="this.style.background='rgba(0,229,255,0.12)'">COPY</button>
     </div>
   </div>
 
@@ -2084,7 +2090,7 @@ function copyAndToast(btn) {
     clearTimeout(copyBtnTimer);
     copyBtnTimer = setTimeout(() => {
       btn.textContent = orig;
-      btn.style.borderColor = 'rgba(0,229,255,0.15)';
+      btn.style.borderColor = 'rgba(0,229,255,0.28)';
       btn.style.color = 'var(--cyan)';
       btn.style.boxShadow = 'none';
     }, 1800);
@@ -2359,23 +2365,23 @@ function renderVoices() {
     const safeSource = DOMPurify.sanitize(v.source_url || '#');
     const sourceLabel = DOMPurify.sanitize(getVoiceSourceLabel(v.source_type));
     return `
-      <div style="background:var(--bg-card);border:1px solid var(--border-glow);border-radius:14px;padding:18px 22px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:border-color 0.2s,box-shadow 0.2s;"
-           onmouseover="this.style.borderColor='rgba(0,229,255,0.3)';this.style.boxShadow='0 0 20px rgba(0,229,255,0.06)'"
-           onmouseout="this.style.borderColor='var(--border-glow)';this.style.boxShadow='none'">
+      <div style="background:rgba(15,23,42,0.82);border:1px solid rgba(0,229,255,0.22);border-radius:14px;padding:20px 22px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:border-color 0.2s,box-shadow 0.2s;"
+           onmouseover="this.style.borderColor='rgba(0,229,255,0.42)';this.style.boxShadow='0 0 20px rgba(0,229,255,0.08)'"
+           onmouseout="this.style.borderColor='rgba(0,229,255,0.22)';this.style.boxShadow='none'">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
           <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-primary);">${safeAuthor}</span>
-          <span style="font-size:10px;color:var(--cyan);background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);padding:1px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace;">${safeRole}</span>
+          <span style="font-size:11px;color:var(--cyan);background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.24);padding:2px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace;">${safeRole}</span>
         </div>
-        <div style="font-size:14px;color:var(--text-primary);line-height:1.6;margin-bottom:10px;font-style:italic;opacity:0.9;">
+        <div style="font-size:14px;color:#f8fafc;line-height:1.65;margin-bottom:12px;font-style:italic;opacity:1;">
           "${safeQuote}"
         </div>
-        <div style="font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:8px;">
-          <span style="color:#ef4444;opacity:0.7;">${t('voicePainLabel')}:</span> ${safePain}
+        <div style="font-size:13px;color:#cbd5e1;line-height:1.65;margin-bottom:8px;">
+          <span style="color:#f87171;font-weight:700;">${t('voicePainLabel')}:</span> ${safePain}
         </div>
-        <div style="font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;">
-          <span style="color:#22c55e;opacity:0.7;">${t('voiceHelpedLabel')}:</span> ${safeHelped}
+        <div style="font-size:13px;color:#cbd5e1;line-height:1.65;margin-bottom:10px;">
+          <span style="color:#86efac;font-weight:700;">${t('voiceHelpedLabel')}:</span> ${safeHelped}
         </div>
-        <a href="${safeSource}" target="_blank" rel="noopener" style="font-size:11px;color:var(--cyan);text-decoration:none;font-family:'JetBrains Mono',monospace;opacity:0.6;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
+        <a href="${safeSource}" target="_blank" rel="noopener" style="font-size:12px;color:var(--cyan);text-decoration:none;font-family:'JetBrains Mono',monospace;opacity:0.9;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.9'">
           ${t('voiceView')} ${sourceLabel} →
         </a>
       </div>`;
@@ -2405,7 +2411,7 @@ function onSearchFocus(el) {
     const container = document.getElementById("search-results");
     const preview = _allLessons.slice(0, 3);
     container.style.display = "block";
-    container.innerHTML = '<div style="padding:6px 12px;font-size:10px;color:#2a3a4a;font-family:JetBrains Mono,monospace;">RECENT LESSONS</div>' +
+    container.innerHTML = '<div style="padding:7px 12px;font-size:11px;color:#94a3b8;font-family:JetBrains Mono,monospace;">RECENT LESSONS</div>' +
       preview.map(l => {
         const safeTitle = DOMPurify.sanitize(l.title);
         const safeSummary = DOMPurify.sanitize((l.summary || '').slice(0, 60));
@@ -2415,7 +2421,7 @@ function onSearchFocus(el) {
                onmouseout="this.style.background=''"
                onclick="window.location.href='${safeUrl}'">
           <div style="font-size:12px;color:var(--cyan);">${safeTitle}</div>
-          <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">${safeSummary}</div>
+          <div style="font-size:12px;color:#cbd5e1;margin-top:2px;line-height:1.45;">${safeSummary}</div>
         </div>`;
       }).join("");
   }
@@ -2489,7 +2495,7 @@ function searchLessons() {
     const suggestions = _allLessons.filter(isSearchableLesson).slice(0, 3).map(l => l.title).join(', ');
     container.innerHTML = '<div style="padding:12px;color:#8b949e;font-size:13px;">' +
       '<div style="margin-bottom:8px;">No exact match. Try a broader term or check spelling.</div>' +
-      '<div style="font-size:12px;color:#484f58;">Popular: ' + suggestions + '</div>' +
+      '<div style="font-size:12px;color:#94a3b8;">Popular: ' + suggestions + '</div>' +
       '<div style="margin-top:8px;font-size:12px;"><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/skill.md" style="color:#58a6ff;">Submit a missing lesson →</a></div>' +
       '</div>';
     return;
@@ -2514,7 +2520,7 @@ function searchLessons() {
           <span style="font-size:9px;color:${domainColor};background:rgba(0,229,255,0.06);padding:1px 6px;border-radius:4px;">${safeDomain}</span>
         </div>
         <div style="font-size:12px;color:var(--text-dim);line-height:1.4;">${safeSummary}</div>
-        ${safeTags ? `<div style="font-size:10px;color:#484f58;margin-top:4px;">${safeTags}</div>` : ''}
+        ${safeTags ? `<div style="font-size:11px;color:#94a3b8;margin-top:4px;">${safeTags}</div>` : ''}
         <button class="helpful-btn${votedClass}" data-lesson="${safeId}" ${votedDisabled} onclick="event.stopPropagation();handleHelpfulClick('${safeId}', this)">This helped me</button>
       </div>`;
   }).join("");
@@ -3389,20 +3395,20 @@ async function registerNode() {
   // ── Terminal handshake animation ──
   result.style.display = "block";
   result.className = "register-result";
-  result.style.background = "rgba(0,0,0,0.4)";
-  result.style.border = "1px solid rgba(0,229,255,0.1)";
+  result.style.background = "rgba(15,23,42,0.82)";
+  result.style.border = "1px solid rgba(0,229,255,0.24)";
   result.style.color = "var(--cyan)";
   result.style.textAlign = "left";
   result.style.fontFamily = "'JetBrains Mono', monospace";
-  result.style.fontSize = "11px";
+  result.style.fontSize = "12px";
   result.style.padding = "14px 18px";
-  result.innerHTML = `<span style="color:#475569;">> </span><span>CONNECTING TO NETWORK...</span>`;
+  result.innerHTML = `<span style="color:#94a3b8;">> </span><span>CONNECTING TO NETWORK...</span>`;
   
   await new Promise(r => setTimeout(r, 300));
-  result.innerHTML += `<br><span style="color:#475569;">> </span><span>AUTHENTICATING NODE...</span>`;
+  result.innerHTML += `<br><span style="color:#94a3b8;">> </span><span>AUTHENTICATING NODE...</span>`;
   
   await new Promise(r => setTimeout(r, 250));
-  result.innerHTML += `<br><span style="color:#475569;">> </span><span>REQUESTING PROXY TOKEN...</span>`;
+  result.innerHTML += `<br><span style="color:#94a3b8;">> </span><span>REQUESTING PROXY TOKEN...</span>`;
 
   const r = await fetch(WORKER_URL, {
       method: "POST",
@@ -3439,21 +3445,21 @@ async function registerNode() {
     const entryTestSteps = LANG === 'en' ? `
       <b>📋 Next: Configure Your Agent</b><br>
       1. Have your Agent download the knowledge index:<br>
-      <code style="font-size:11px;word-break:break-all;">https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/data/lessons.json</code><br>
+      <code style="font-size:12px;word-break:break-all;">https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/data/lessons.json</code><br>
       2. Ask your Agent to search for <b>"pip install timeout or SSL error"</b><br>
       3. Your Agent returns the result and files a usage report<br>
       <br>
       <small>See the welcome message for full instructions.</small>` : `
       <b>🤖 下一步：配置你的 Agent</b><br>
       1. 在 Agent 内运行命令，下载知识索引：<br>
-      <code style="font-size:11px;word-break:break-all;">https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/data/lessons.json</code><br>
+      <code style="font-size:12px;word-break:break-all;">https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/data/lessons.json</code><br>
       2. 让 Agent 搜索 <b>"pip install 超时或 SSL 错误"</b> 相关知识<br>
       3. Agent 输出检索结论并提交使用报告<br>
       <br>
       <small>完整指引见欢迎消息。</small>`;
 
     // Terminal access granted
-    result.innerHTML += `<br><span style="color:#475569;">> </span><span style="color:#22c55e;">ACCESS GRANTED: ${estimatedName}</span>`;
+    result.innerHTML += `<br><span style="color:#94a3b8;">> </span><span style="color:#22c55e;">ACCESS GRANTED: ${estimatedName}</span>`;
     await new Promise(r => setTimeout(r, 400));
 
     // Build success UI
@@ -3467,16 +3473,16 @@ async function registerNode() {
           <span style="font-size:22px;">🧠</span>
           <div>
             <div class="reg-node-name" style="font-weight:700;font-size:14px;font-family:'JetBrains Mono',monospace;">${estimatedName}</div>
-            <div style="font-size:11px;color:#636d7b;">Agent: ${getAgentLabel(selectedAgent)} · 预估 #${estimatedNode}${name ? `<br>注册名称: ${name}` : ""}</div>
+            <div style="font-size:12px;color:#94a3b8;">Agent: ${getAgentLabel(selectedAgent)} · 预估 #${estimatedNode}${name ? `<br>注册名称: ${name}` : ""}</div>
           </div>
           <span class="reg-status-icon" style="margin-left:auto;font-size:11px;color:#58a6ff;animation:pulse 1.5s infinite;">⏳</span>
           <span class="reg-status-text" style="font-size:11px;color:#58a6ff;">分配中</span>
         </div>
       </div>
-      <div style="margin:10px 0;padding:8px 10px;background:#0d1117;border-radius:6px;font-size:12px;color:#636d7b;line-height:1.7;">
+      <div style="margin:10px 0;padding:10px 12px;background:#0f172a;border-radius:8px;border:1px solid rgba(148,163,184,0.22);font-size:13px;color:#cbd5e1;line-height:1.7;">
         ${entryTestSteps}
       </div>
-      <div class="reg-wait-msg" style="text-align:center;margin-top:10px;font-size:12px;color:#636d7b;">
+      <div class="reg-wait-msg" style="text-align:center;margin-top:10px;font-size:13px;color:#cbd5e1;">
         ⏳ 无需审核，自动分配中（最终节点号以 Issue 回复为准，预计30秒后刷新可见）<br>
         <a href="${issue.html_url}" target="_blank" style="color:#60a5fa;">📋 查看欢迎消息</a>
       </div>`;
