@@ -135,7 +135,6 @@ def run_dco_benchmark() -> dict:
         "lesson_title": lessons[0].get("title", "") if lessons else "",
         "fix_applied": len(lessons) > 0,
         "fix_verified": result["signed_off"],
-        "commit_sha": commit_sha,
     }
 
 

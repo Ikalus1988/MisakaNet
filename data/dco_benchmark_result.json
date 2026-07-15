@@ -3,6 +3,5 @@
   "lesson_found": true,
   "lesson_title": "DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation",
   "fix_applied": true,
-  "fix_verified": true,
-  "commit_sha": "c7a6c467271aa4df64d12bbc633c7e8215f8ca63"
+  "fix_verified": true
 }
