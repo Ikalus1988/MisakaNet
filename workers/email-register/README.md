@@ -59,8 +59,14 @@ Contact: admin@example.com
 ## Testing
 
 ```bash
-# Send a test email from any address to bot@misakanet.org
-# with subject "register" and a Node Name in the body.
+# Unit-test MIME/body parsing, intake classification, and reply content
+node --test workers/email-register/email-utils.test.mjs
+
+# Validate the Worker bundle (including Cloudflare runtime imports)
+npx wrangler deploy --config workers/email-register/wrangler.jsonc --dry-run
+
+# End-to-end: send a message to bot@misakanet.org, then verify Worker logs,
+# the `email-intake:*` KV record, forwarding, audit issue, and confirmation reply.
 ```
 
 ## Environment Variables / Secrets
@@ -68,10 +74,12 @@ Contact: admin@example.com
 | Secret | Required | Description |
 |--------|----------|-------------|
 | `TURNSTILE_SECRET` | Yes | Turnstile secret key for CAPTCHA verification (set via `wrangler secret put`) |
-| `GH_TOKEN` | No | GitHub PAT for creating registration Issues |
-| `MISAKANET_KV` | Yes (binding) | KV namespace for node counter + registrations |
+| `GH_TOKEN` | No | GitHub PAT for creating audit Issues |
+| `GH_REPO` | No | Audit repository (defaults to `Ikalus1988/MisakaNet`) |
+| `MAINTAINER_EMAIL` | No | Verified Email Routing destination for forwarded copies |
+| `MISAKANET_KV` | Yes (binding) | KV namespace for counters, stable sender/node mapping, and intake records |
 
 ## GitHub Issue Sync
 
-If `GH_TOKEN` is configured, the Worker also creates a GitHub Issue in
-`Ikalus1988/MisakaNet` with label `registered` + `email` for auditability.
+If `GH_TOKEN` is configured, the Worker creates an audit Issue in `GH_REPO`.
+Lesson submissions use `lesson-intake`; other intake uses `registered` + `email`.
