@@ -1,0 +1,7 @@
+{
+  "scenario": "dco_fix",
+  "lesson_found": true,
+  "lesson_title": "DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation",
+  "fix_applied": true,
+  "fix_verified": true
+}

@@ -1,0 +1,32 @@
+{
+    "name": "fanuc-payload-a",
+    "pair": "fanuc-payload",
+    "phase": "A",
+    "description": "Extract payload data from a FANUC R-2000iC robot backup. The backup contains VR files but no direct payload information.",
+    "setup": {
+        "repo_state": "FANUC robot backup directory with VR files",
+        "ci_state": "N/A",
+        "error_message": "Cannot read payload data from FANUC backup: VR files are in proprietary binary format, not human-readable"
+    },
+    "expected_outcome": {
+        "fix_commands": [
+            "Use kcontrans converter to transform VR files to VA format",
+            "Parse VA file to extract payload variables",
+            "Map variable indices to payload names"
+        ],
+        "lesson_generated": true,
+        "lesson_fields": [
+            "title",
+            "domain",
+            "problem",
+            "root_cause",
+            "solution",
+            "verification"
+        ]
+    },
+    "validation": {
+        "payload_extracted": true,
+        "lesson_schema_valid": true,
+        "lesson_has_kcontrans_reference": true
+    }
+}
