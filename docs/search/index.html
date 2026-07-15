@@ -61,6 +61,13 @@
   .btn-primary:hover { opacity: 0.9; }
   .btn-secondary { font-family: var(--font-ui); font-size: 12px; color: var(--text-soft); background: transparent; border: 1px solid #30363d; border-radius: 6px; padding: 6px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
   .btn-secondary:hover { border-color: #58a6ff; color: #58a6ff; }
+  .feedback-bar { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+  .feedback-btn { font-family: var(--font-ui); font-size: 11px; color: var(--text-muted); background: transparent; border: 1px solid rgba(255,255,255,0.08); border-radius: 5px; padding: 3px 8px; cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s; }
+  .feedback-btn:hover { color: #58a6ff; border-color: rgba(88,166,255,0.3); }
+  .feedback-btn.selected { color: #3fb950; border-color: rgba(35,134,54,0.4); background: rgba(35,134,54,0.08); pointer-events: none; }
+  .feedback-summary { display: flex; gap: 12px; align-items: center; justify-content: center; padding: 12px; margin-top: 16px; border-top: 1px solid #21262d; font-size: 12px; color: var(--text-muted); }
+  .feedback-summary a { color: #58a6ff; text-decoration: none; }
+  .feedback-summary a:hover { text-decoration: underline; }
   .lesson-preview { margin-top: 12px; padding: 12px; border: 1px solid rgba(88,166,255,0.16); border-radius: 8px; background: #0b1020; cursor: default; }
   .lesson-preview h2 { font-family: var(--font-ui); font-size: 15px; font-weight: 700; color: var(--text-main); margin: 18px 0 8px; }
   .lesson-preview h3 { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: var(--text-main); margin: 14px 0 6px; }
@@ -96,6 +103,7 @@
   </div>
   <div class="stats" id="stats"></div>
   <div id="results" class="loading">Loading lessons...</div>
+  <div id="feedback-summary" class="feedback-summary" hidden></div>
 </div>
 
 <script>
@@ -122,6 +130,12 @@ const I18N = {
     previewUnavailable: 'Preview unavailable. Use "Open on GitHub" for the full lesson.',
     loadFailed: 'Failed to load lessons.',
     goHome: 'Go to homepage',
+    feedbackIrrelevant: 'Irrelevant',
+    feedbackTooBasic: 'Too basic',
+    feedbackHelpful: 'Helpful',
+    feedbackRecorded: '{count} feedback recorded',
+    feedbackCopy: 'Copy feedback',
+    feedbackSubmit: 'Open GitHub issue',
     badgeFatal: 'Fatal Pitfall',
     badgeRuntime: 'Runtime Failure',
     badgeSetup: 'Setup Fix',
@@ -150,6 +164,12 @@ const I18N = {
     previewUnavailable: '预览不可用。请使用“在 GitHub 打开”查看完整 lesson。',
     loadFailed: 'Lessons 加载失败。',
     goHome: '回到首页',
+    feedbackIrrelevant: '无关',
+    feedbackTooBasic: '太基础',
+    feedbackHelpful: '有帮助',
+    feedbackRecorded: '已记录 {count} 条反馈',
+    feedbackCopy: '复制反馈',
+    feedbackSubmit: '提交到 GitHub',
     badgeFatal: '致命踩坑',
     badgeRuntime: '运行失败',
     badgeSetup: '配置修复',
@@ -326,6 +346,69 @@ function classifyResult(r, score) {
   return { confidence, resultType };
 }
 
+// ── Feedback system (localStorage MVP) ──
+const FEEDBACK_KEY = 'misakanet-search-feedback';
+
+function getFeedbackStore() {
+  try { return JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]'); } catch { return []; }
+}
+
+function saveFeedback(entry) {
+  const store = getFeedbackStore();
+  store.push(entry);
+  localStorage.setItem(FEEDBACK_KEY, JSON.stringify(store));
+  updateFeedbackSummary();
+}
+
+function getFeedbackForLesson(lessonId, query) {
+  return getFeedbackStore().find(f => f.lesson_id === lessonId && f.query === query);
+}
+
+function submitFeedback(lessonId, query, feedback) {
+  const existing = getFeedbackForLesson(lessonId, query);
+  if (existing) return;
+  saveFeedback({
+    query,
+    lesson_id: lessonId,
+    feedback,
+    ts: new Date().toISOString(),
+  });
+  // Update button state
+  const bar = document.querySelector('[data-feedback-id="' + lessonId + '"]');
+  if (bar) {
+    bar.querySelectorAll('.feedback-btn').forEach(btn => {
+      if (btn.dataset.type === feedback) btn.classList.add('selected');
+      else btn.style.display = 'none';
+    });
+  }
+}
+
+function updateFeedbackSummary() {
+  const el = document.getElementById('feedback-summary');
+  if (!el) return;
+  const count = getFeedbackStore().length;
+  if (count === 0) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = t('feedbackRecorded', { count }) +
+    ' · <a href="#" onclick="copyFeedback();return false">' + t('feedbackCopy') + '</a>' +
+    ' · <a href="#" onclick="openFeedbackIssue();return false">' + t('feedbackSubmit') + '</a>';
+}
+
+function copyFeedback() {
+  const data = JSON.stringify(getFeedbackStore(), null, 2);
+  navigator.clipboard.writeText(data).then(() => alert('Feedback copied to clipboard.'));
+}
+
+function openFeedbackIssue() {
+  const store = getFeedbackStore();
+  const body = '## Search Feedback\n\n```json\n' + JSON.stringify(store, null, 2) + '\n```\n\n_Submitted via misakanet.org/search/_';
+  const url = 'https://github.com/Ikalus1988/MisakaNet/issues/new?title=' +
+    encodeURIComponent('[Search] Feedback report') +
+    '&body=' + encodeURIComponent(body) +
+    '&labels=feedback';
+  window.open(url, '_blank');
+}
+
 function render(results, q) {
   const el = document.getElementById('results');
   _lastResults = results;
@@ -371,6 +454,11 @@ function render(results, q) {
       '<div class="result-actions">' +
         '<button class="btn-primary" type="button" data-action="preview">' + t('readLesson') + '</button>' +
         '<a class="btn-secondary" href="' + escapeHTML(url) + '" target="_blank" rel="noopener">' + t('openGitHub') + '</a>' +
+      '</div>' +
+      '<div class="feedback-bar" data-feedback-id="' + id + '" data-query="' + escapeHTML(q) + '">' +
+        '<button class="feedback-btn" data-type="irrelevant" onclick="submitFeedback(\'' + id + '\',\'' + escapeHTML(q) + '\',\'irrelevant\')">' + t('feedbackIrrelevant') + '</button>' +
+        '<button class="feedback-btn" data-type="too_basic" onclick="submitFeedback(\'' + id + '\',\'' + escapeHTML(q) + '\',\'too_basic\')">' + t('feedbackTooBasic') + '</button>' +
+        '<button class="feedback-btn" data-type="helpful" onclick="submitFeedback(\'' + id + '\',\'' + escapeHTML(q) + '\',\'helpful\')">' + t('feedbackHelpful') + '</button>' +
       '</div>' +
       '<div class="lesson-preview" hidden></div>' +
     '</div>';
@@ -540,6 +628,7 @@ document.getElementById('results').addEventListener('keydown', function(event) {
 
 setLang(LANG);
 init();
+updateFeedbackSummary();
 </script>
 </body>
 </html>
