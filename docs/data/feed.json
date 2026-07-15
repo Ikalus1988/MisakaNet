@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-07-14T22:26:22.465948+00:00",
+  "generated_at": "2026-07-15T03:40:58.157684+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "Add 7 FANUC robot lessons from internal training materials",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/474",
+      "timestamp": "2026-07-15T02:16:28Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix: sync lesson count across STATUS.md, README, and frontend (#298)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/476",
+      "timestamp": "2026-07-15T02:14:56Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat: dynamically load trust level in registration worker",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/477",
+      "timestamp": "2026-07-15T02:14:28Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat: add trust_tiers to protocol, registration reads from protocol",
@@ -19,20 +40,6 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "feat(search): show match reasons",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/469",
-      "timestamp": "2026-07-14T10:43:03Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat: add Japanese quickstart guide (docs/quickstart-jp.md)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/468",
-      "timestamp": "2026-07-14T10:42:19Z",
-      "source": "github"
-    },
-    {
       "type": "challenge",
       "title": "[Bounty][$0] Productionize bot@misakanet.org email intake",
       "url": "https://github.com/Ikalus1988/MisakaNet/issues/470",
@@ -44,13 +51,6 @@
         "status:competition"
       ],
       "timestamp": "2026-07-14T10:30:58Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat: unify verified semantics — badge only (fixes #352)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/466",
-      "timestamp": "2026-07-14T09:07:00Z",
       "source": "github"
     },
     {
