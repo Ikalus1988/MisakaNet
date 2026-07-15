@@ -185,6 +185,8 @@ def main():
 
         if args.output:
             output = {
+                "kind": "search_retrieval_probe",
+                "simulated_execution": True,
                 "agent": "pr-genius-search",
                 "with_lessons": avg_with,
                 "without_lessons": avg_without,

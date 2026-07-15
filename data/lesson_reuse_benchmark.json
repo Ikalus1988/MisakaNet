@@ -1,9 +1,11 @@
 {
+  "kind": "search_retrieval_probe",
+  "simulated_execution": true,
   "agent": "pr-genius-search",
   "with_lessons": 0.808,
   "without_lessons": 0.5,
   "delta": 0.30800000000000005,
-  "note": "This is a lesson search retrieval probe, not a real LessonReuseBench runner. task_b_pass and ci_pr_compliance are simulated.",
+  "note": "task_b_pass and ci_pr_compliance are simulated (placeholder)",
   "pairs": [
     {
       "pair": "anti-crawl",
@@ -317,7 +319,5 @@
         "score": 0.5
       }
     }
-  ],
-  "kind": "search_retrieval_probe",
-  "simulated_execution": true
+  ]
 }
