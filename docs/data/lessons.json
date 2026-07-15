@@ -485,6 +485,27 @@
     "verified": false
   },
   {
+    "id": "benchmark-honesty-simulated-vs-real",
+    "title": "Benchmark Honesty — Distinguishing Simulated vs Real Results",
+    "domain": "contrib",
+    "tags": [
+      "benchmark",
+      "honesty",
+      "testing",
+      "contrib",
+      "agent"
+    ],
+    "summary": "When contributing benchmark results to open-source projects, presenting simulated or partial results as real evidence leads to maintainer rejection and lost tru…",
+    "url": "lessons/contrib/benchmark-honesty-simulated-vs-real.md",
+    "created": "2026-07-15",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
+    "verified": true
+  },
+  {
     "id": "bge-embedding-fallback-crash",
     "title": "BGE Embedding Fallback Crash",
     "domain": "rag",
@@ -712,6 +733,27 @@
     "confidence": 0.5,
     "status": "active",
     "verified": false
+  },
+  {
+    "id": "cross-repo-contribution-strategy",
+    "title": "Cross-Repo Contribution Strategy — Finding and Contributing to New Repos",
+    "domain": "contrib",
+    "tags": [
+      "contrib",
+      "strategy",
+      "github",
+      "open-source",
+      "agent"
+    ],
+    "summary": "Agents and developers often get stuck contributing to the same repos. Finding new repos to contribute to requires systematic exploration.",
+    "url": "lessons/contrib/cross-repo-contribution-strategy.md",
+    "created": "2026-07-15",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
+    "verified": true
   },
   {
     "id": "cross-sheet-name-merge-data-chaos",
@@ -2381,6 +2423,27 @@
     "environment_version": "",
     "confidence": 0.5,
     "status": "active",
+    "verified": true
+  },
+  {
+    "id": "maintainer-feedback-iteration",
+    "title": "Maintainer Feedback Iteration — Address Blockers, Not Just Comments",
+    "domain": "contrib",
+    "tags": [
+      "contrib",
+      "maintainer",
+      "feedback",
+      "iteration",
+      "pr"
+    ],
+    "summary": "When maintainers provide feedback on PRs, contributors often address surface-level comments while missing the core blockers. This leads to multiple review cycle…",
+    "url": "lessons/contrib/maintainer-feedback-iteration.md",
+    "created": "2026-07-15",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
     "verified": true
   },
   {
