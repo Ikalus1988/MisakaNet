@@ -1,3 +1,8 @@
+# ⚠️ Legacy Hub configuration example.
+# The Hub was an early private-LAN knowledge reuse prototype.
+# Current recommended usage: docs/search, MCP server, and Cloudflare Workers.
+# See hub/README.md for details.
+#
 # MisakaNet Hub 配置示例
 # 复制本文件为 config.yaml 并填入实际值
 # config.yaml 已在 .gitignore 中，不会提交到 Git

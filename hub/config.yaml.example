@@ -1,3 +1,8 @@
+# ⚠️ Legacy Hub configuration example.
+# The Hub was an early private-LAN knowledge reuse prototype.
+# Current recommended usage: docs/search, MCP server, and Cloudflare Workers.
+# See hub/README.md for details.
+#
 # Hermes Hub 配置
 # 虫群记忆系统 v2.0
 
