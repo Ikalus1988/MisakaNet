@@ -1,0 +1,77 @@
+name: Lesson Feedback
+description: Did a lesson help you? Or not? Tell us in 5 lines.
+title: "feedback: "
+labels: [feedback, usage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Did a MisakaNet lesson help you?
+
+        Even a short answer is valuable. No need to write a full report.
+
+        **You can also just comment on an existing issue or PR** — this template is optional.
+
+  - type: dropdown
+    id: helped
+    attributes:
+      label: Did a lesson help you?
+      options:
+        - "Yes — a lesson saved me time or helped me avoid a mistake"
+        - "No — I searched but didn't find anything useful"
+        - "I didn't know I could search lessons"
+        - "I haven't used MisakaNet lessons yet"
+    validations:
+      required: true
+
+  - type: input
+    id: lesson
+    attributes:
+      label: Which lesson? (if applicable)
+      description: "Lesson title or filename. Leave blank if none."
+      placeholder: "e.g., dco-auto-fix-workflow, pip-install-timeout-ssl"
+    validations:
+      required: false
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem were you solving?
+      description: "A sentence or two. What were you trying to do?"
+      placeholder: "I was trying to fix a DCO check failure on Windows..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Did it save time or avoid a mistake?
+      options:
+        - "Yes — saved me 30+ minutes"
+        - "Yes — saved me a few minutes"
+        - "Somewhat — pointed me in the right direction"
+        - "Not really"
+        - "N/A"
+    validations:
+      required: false
+
+  - type: textarea
+    id: missing
+    attributes:
+      label: What was missing or confusing?
+      description: "Optional. What would have made the lesson more useful?"
+      placeholder: "The fix steps were outdated / I needed more context / ..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: quote
+    attributes:
+      label: Can we quote this anonymously?
+      description: "We may use anonymous quotes in README or docs to show MisakaNet is useful."
+      options:
+        - "Yes, anonymously"
+        - "Yes, with my GitHub username"
+        - "No"
+    validations:
+      required: false

@@ -34,32 +34,28 @@ jobs:
 
           # Choose message based on first-time vs returning
           if [ "$PREVIOUS" -le 1 ]; then
-            # First-time contributor — peak dopamine moment
-            BODY="🎉 **Congratulations, @${AUTHOR}! Your PR has been merged!**
+            # First-time contributor
+            BODY="🎉 **Merged! Welcome, @${AUTHOR}.**
 
-          You are now an official contributor to MisakaNet — the Swarm Knowledge Network for AI Agents.
+          **${TITLE}** (+${ADDITIONS} lines, ${FILES} files)
 
-          **What you just built:** ${TITLE} (+${ADDITIONS} lines across ${FILES} files)
+          Thanks for contributing to MisakaNet. Your work is now part of the knowledge base.
 
-          ### ⭐ Show the world you're a contributor
-          Give MisakaNet a Star — your contributor badge will shine on your GitHub profile forever:
-          👉 [⭐ Star this repo](https://github.com/Ikalus1988/MisakaNet)
+          Quick question — did any MisakaNet lesson, doc, or search result help you while working on this PR?
+          If yes, we'd love to know which one. If not, we'd love to know what would help.
+          → [Share feedback](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml)
 
-          ### 🚀 What's next?
-          - 🏷️ Your name is now on the [Contributor Leaderboard](https://ikalus1988.github.io)
-          - 🔍 Browse [open bounties](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3Abounty) for your next contribution
-          - 💬 Join [Discussions](https://github.com/Ikalus1988/MisakaNet/discussions) to connect with other contributors
-
-          One node learns, all nodes benefit. Welcome aboard. ⚡"
+          No pressure. Even a one-line answer helps us improve. ⚡"
           else
             # Returning contributor
             BODY="✅ **Merged!** Thanks again, @${AUTHOR}.
 
           **${TITLE}** (+${ADDITIONS} lines, ${FILES} files)
 
-          Your contributions are making MisakaNet's knowledge base stronger. Every lesson helps another agent skip a failure path.
+          Quick question — did any MisakaNet lesson help you this time?
+          → [Share feedback](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml)
 
-          ⭐ If you haven't already, [give us a Star](https://github.com/Ikalus1988/MisakaNet) — it helps more contributors find us! ⚡"
+          No need to reply if nothing comes to mind. ⚡"
           fi
 
           gh pr comment "$PR_NUM" --repo ${{ github.repository }} --body "$BODY"
