@@ -162,25 +162,6 @@
     "verified": true
   },
   {
-    "id": "hx-state-database-lock-issues-cleanup-protocol",
-    "title": "Hermes State Database Lock Issues - Cleanup Protocol",
-    "domain": "agent-network",
-    "tags": [
-      "node:zka",
-      "project:hermes-agent",
-      "severity:high"
-    ],
-    "summary": "Hermes agent shows 'database is locked' error on SQLite state.db. Cronjobs stop firing.",
-    "url": "lessons/core/hx-state-database-lock-issues-cleanup-protocol.md",
-    "created": "2026-06-05 00:49:07 UTC",
-    "updated": "2026-06-05 00:49:07 UTC",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "published",
-    "verified": true
-  },
-  {
     "id": "pr-cleanup-sop",
     "title": "PR Cleanup SOP — Stale/Duplicate/Resolved PR Disposition",
     "domain": "devops",
@@ -348,21 +329,6 @@
     "confidence": 0.5,
     "status": "active",
     "verified": true
-  },
-  {
-    "id": "agent-write-file-sandbox-worktree-path-breakage",
-    "title": "agent-write-file-sandbox-worktree-path-breakage",
-    "domain": "contrib",
-    "tags": [],
-    "summary": "在对项目进行代码修改的过程中，使用 Agent 模式操作。操作环境为 WSL (Windows Subsystem for Linux)，仓库使用 worktree 管理。",
-    "url": "lessons/contrib/agent-write-file-sandbox-worktree-path-breakage.md",
-    "created": "",
-    "updated": "",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "active",
-    "verified": false
   },
   {
     "id": "ai-agent-project-outreach-guide",
@@ -606,21 +572,6 @@
     "tags": [],
     "summary": "Agent 内跑 BGE-large-zh 建库（约30分钟），Gateway 重启后整个数据库为空，0条向量入库。",
     "url": "lessons/contrib/chroma-rebuild-no-checkpoint-cn.md",
-    "created": "2026-07-06",
-    "updated": "",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "active",
-    "verified": false
-  },
-  {
-    "id": "chroma-rebuild-no-checkpoint",
-    "title": "Chroma 建库无 Checkpoint — 进程一死全部丢失",
-    "domain": "contrib",
-    "tags": [],
-    "summary": "Agent 内跑 BGE-large-zh 建库（约30分钟），Gateway 重启后整个数据库为空，0条向量入库。",
-    "url": "lessons/contrib/chroma-rebuild-no-checkpoint.md",
     "created": "2026-07-06",
     "updated": "",
     "validity_period_days": 365,
@@ -2702,21 +2653,6 @@
     "verified": false
   },
   {
-    "id": "pip-install-failure-fix",
-    "title": "pip install Network Timeout / SSL / 依赖ConflictFix",
-    "domain": "contrib",
-    "tags": [],
-    "summary": "pip install 或 conda install 失败，常见场景：",
-    "url": "lessons/contrib/pip-install-failure-fix.md",
-    "created": "2026-07-06",
-    "updated": "",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "active",
-    "verified": false
-  },
-  {
     "id": "pip-install-timeout-ssl",
     "title": "pip install Network Timeout / SSL ErrorFix",
     "domain": "contrib",
@@ -3504,36 +3440,6 @@
     "tags": [],
     "summary": "配置企业微信机器人回调时，传统方案需要 ngrok/frp 做内网穿透，增加复杂度、暴露端口、需要 HTTPS 证书。",
     "url": "lessons/contrib/wecom-robot-long-connect-no-ngrok.md",
-    "created": "2026-07-06",
-    "updated": "",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "active",
-    "verified": true
-  },
-  {
-    "id": "write-file-sandbox-worktree-git-path",
-    "title": "write file sandbox worktree git path",
-    "domain": "contrib",
-    "tags": [],
-    "summary": "在对项目进行代码修改的过程中，使用 Agent 模式操作。操作环境为 WSL (Windows Subsystem for Linux)，仓库使用 worktree 管理。",
-    "url": "lessons/contrib/write-file-sandbox-worktree-git-path.md",
-    "created": "2026-07-06",
-    "updated": "",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "active",
-    "verified": false
-  },
-  {
-    "id": "wsl-permission-ntfs-fix",
-    "title": "Permission Denied / WSL NTFS 跨文件系统PermissionFix",
-    "domain": "contrib",
-    "tags": [],
-    "summary": "操作 `/mnt/c/` 下的文件时报 `Permission denied` 或 `EACCES`；或 `git` 在 `/mnt/c/` 下报错。",
-    "url": "lessons/contrib/wsl-permission-ntfs-fix.md",
     "created": "2026-07-06",
     "updated": "",
     "validity_period_days": 365,
