@@ -72,6 +72,13 @@
 
 ---
 
+> **Did a lesson help you?** We're trying to verify that MisakaNet's lessons are actually useful in practice.
+> If any lesson, search result, or doc saved you time or helped you avoid a mistake, we'd love to hear about it.
+> → [Share feedback](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml) (5 lines, anonymous OK)
+> → [Join the discussion](https://github.com/Ikalus1988/MisakaNet/discussions/487)
+
+---
+
 ## 🧱 Product Matrix — The Full Stack
 
 The MisakaNet ecosystem is built as a **layered defense & knowledge stack**:
