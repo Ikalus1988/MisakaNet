@@ -7,6 +7,7 @@ on:
   pull_request:
     paths:
       - 'packages/fatal-guard/**'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,6 +15,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Skip if triggered by push but no fatal-guard files changed
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || contains(toJSON(github.event.commits), 'packages/fatal-guard/')
     defaults:
       run:
         working-directory: packages/fatal-guard
