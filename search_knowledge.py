@@ -249,6 +249,75 @@ def heal(raw_log: str):
     print()
 
 
+def _edit_distance(s1: str, s2: str) -> int:
+    """Levenshtein edit distance — O(len(s1)*len(s2))."""
+    if len(s1) < len(s2):
+        return _edit_distance(s2, s1)
+    if not s2:
+        return len(s1)
+    prev = list(range(len(s2) + 1))
+    for i, c1 in enumerate(s1):
+        curr = [i + 1]
+        for j, c2 in enumerate(s2):
+            cost = 0 if c1 == c2 else 1
+            curr.append(min(curr[j] + 1, prev[j + 1] + 1, prev[j] + cost))
+        prev = curr
+    return prev[len(s2)]
+
+
+def _typo_retry_search(
+    query: str, docs: list, titles_only: bool, broad_only: bool, top_k: int
+) -> tuple[list[tuple[float, object]], str]:
+    """Retry search with edit-distance fuzzy matching on title keywords.
+
+    For each query token, find title tokens within edit distance ≤2.
+    Build a corrected query from the best matches, then re-rank.
+    Returns (ranked_results, corrected_query) or ([], original_query).
+    """
+    query_tokens = query.lower().split()
+    if not query_tokens:
+        return [], query
+
+    # Build vocabulary from all doc titles
+    title_vocab: dict[str, list[str]] = {}  # token -> [original forms]
+    for doc in docs:
+        for tok in re.findall(r'\w+', doc.title.lower()):
+            if len(tok) >= 2:
+                title_vocab.setdefault(tok, []).append(tok)
+
+    # For each query token, find best fuzzy match in title vocab
+    corrected_tokens = []
+    has_correction = False
+    for qt in query_tokens:
+        if qt in title_vocab:
+            corrected_tokens.append(qt)
+            continue
+        best_dist = 999
+        best_match = qt
+        for vocab_tok in title_vocab:
+            # Skip if length difference > 2 (pruning for speed)
+            if abs(len(vocab_tok) - len(qt)) > 2:
+                continue
+            dist = _edit_distance(qt, vocab_tok)
+            if dist <= 2 and dist < best_dist:
+                best_dist = dist
+                best_match = vocab_tok
+        corrected_tokens.append(best_match)
+        if best_match != qt:
+            has_correction = True
+
+    if not has_correction:
+        return [], query
+
+    corrected_query = " ".join(corrected_tokens)
+    from misakanet.search.engine import _rank_docs_impl
+    ranked = _rank_docs_impl(corrected_query, docs, titles_only, broad_only)
+    filtered = [(s, d) for s, d in ranked if s >= 0.1]
+    if not filtered:
+        return [], query
+    return filtered[:top_k], corrected_query
+
+
 def _find_closest_matches(query: str, docs: list, top_n: int = 3) -> list:
     """Find closest matches by keyword overlap scoring."""
     query_words = set(re.findall(r'\w+', query.lower()))
@@ -446,6 +515,7 @@ def main():
     explain = False
     verbose = False
     agent_mode = False
+    strict = False
     env_filter: Optional[str] = None
     lang: Optional[str] = None
     domain: Optional[str] = None
@@ -488,6 +558,8 @@ def main():
             explain = True
         elif arg == "--agent":
             agent_mode = True
+        elif arg == "--strict":
+            strict = True
         elif arg.startswith("--env="):
             env_filter = arg.split("=", 1)[1].lower()
         elif arg == "--env" and i + 1 < len(search_args):
@@ -565,6 +637,20 @@ def main():
             for score, doc in ranked
             if score >= 0.1
         ]
+        # Feature #314: Typo tolerance for JSON mode
+        if not results and not strict:
+            typo_results, corrected = _typo_retry_search(
+                query, all_docs, titles_only, broad_only, top_k
+            )
+            if typo_results:
+                results = [
+                    _json_result(score, doc, query=corrected, verbose=verbose)
+                    for score, doc in typo_results
+                ]
+                for r in results:
+                    r["typo_corrected"] = True
+                    r["original_query"] = query
+                    r["corrected_query"] = corrected
         # Agent mode: only return actionable/high-confidence results
         if agent_mode:
             results = [r for r in results if r.get("result_type") == "actionable" and r.get("confidence") != "low"]
@@ -613,6 +699,19 @@ def main():
                                all_docs=all_docs)
         found_any = found_any or found
     total_docs = len(lessons_docs) + len(ref_docs)
+    if not found_any and not strict:
+        # Feature #314: Typo tolerance — retry with edit distance ≤2
+        all_docs_for_typo = lessons_docs + ref_docs
+        typo_results, corrected = _typo_retry_search(
+            query, all_docs_for_typo, titles_only, broad_only, top_k
+        )
+        if typo_results:
+            print(f"\n  🔍 Showing results for '{corrected}' (searched: '{query}')\n")
+            for score, doc in typo_results:
+                tag = f"[{doc.domain}]" if doc.domain else ""
+                title = doc.title[:60] or doc.filename
+                print(f"  {score:.3f}  {tag:<18} {title}")
+            found_any = True
     if not found_any:
         # Feature #301: Smart fallback with closest matches
         _smart_fallback(query, lessons_docs + ref_docs)
