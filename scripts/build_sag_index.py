@@ -147,6 +147,7 @@ def search(db_path: Path, query: str, domain: str | None = None, top: int = 5) -
             "tags": r["tags"],
             "source": r["source"],
             "path": r["path"],
+            "status": r["status"] or "",
             "score": round(abs(r["rank"]), 4) if r["rank"] else 0,
         })
 

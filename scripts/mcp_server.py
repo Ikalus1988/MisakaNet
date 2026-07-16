@@ -140,7 +140,7 @@ TOOLS = [
     },
     {
         "name": "misakanet_submit_usage",
-        "description": "Report that a lesson was used to solve a problem. Helps the network learn which lessons are valuable.",
+        "description": "[Experimental] Report that a lesson was used to solve a problem. Currently logs locally only.",
         "inputSchema": {
             "type": "object",
             "properties": {

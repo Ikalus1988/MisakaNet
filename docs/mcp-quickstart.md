@@ -1,6 +1,6 @@
 # MCP Quickstart — Use MisakaNet in Cursor / Claude Desktop / Claude Code
 
-Give your AI coding assistant access to 205+ verified failure lessons from real debugging sessions.
+Give your AI coding assistant access to 235+ verified failure lessons from real debugging sessions.
 
 ## What you get
 
