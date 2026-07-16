@@ -2769,7 +2769,7 @@ function getCounterUrl() {
 }
 /** 返回 lessons 数据 URL：静态 /data/lessons.json（避开 Worker 污染数据源） */
 function getLessonsUrl() {
-  return "/data/lessons.json";
+  return "data/lessons.json";
 }
 /** 返回 helpful vote API URL：同域 /api/helpful */
 function getHelpfulUrl() {
@@ -2800,7 +2800,7 @@ async function loadStats() {
 
   // Feed count from feed.json
   try {
-    const feed = await fetchJSON('/data/feed.json');
+    const feed = await fetchJSON('data/feed.json');
     const feedCount = Array.isArray(feed) ? feed.length : (feed.items ? feed.items.length : feed.item_count || 0);
     if (feedCount > 0) {
       animateCounter(document.getElementById("feed-count"), feedCount);
