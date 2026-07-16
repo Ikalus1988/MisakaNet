@@ -1,42 +1,14 @@
 {
-  "generated_at": "2026-07-16T11:14:14.291629+00:00",
+  "generated_at": "2026-07-16T16:45:52.866945+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(benchmark): add Retrieval NoiseBench (fixes #481)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/486",
-      "timestamp": "2026-07-16T04:20:49Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(search): add typo tolerance with edit distance ≤2 (fixes #314)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/483",
-      "timestamp": "2026-07-16T04:20:41Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(search): optimize BM25 field weights (fixes #311)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/484",
-      "timestamp": "2026-07-16T04:20:34Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(lessons): merge 6 duplicate lesson pairs (fixes #310)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/485",
-      "timestamp": "2026-07-16T04:20:26Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat: add lesson search retrieval probe (addresses #459)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/479",
-      "timestamp": "2026-07-15T11:31:51Z",
+      "title": "feat: dynamically load trust level in registration worker",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/477",
+      "timestamp": "2026-07-15T02:14:28Z",
       "source": "github"
     },
     {
@@ -64,12 +36,33 @@
       "source": "lessons"
     },
     {
+      "type": "merged_pr",
+      "title": "feat(search): show match reasons",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/469",
+      "timestamp": "2026-07-14T10:43:03Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat: add Japanese quickstart guide (docs/quickstart-jp.md)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/468",
+      "timestamp": "2026-07-14T10:42:19Z",
+      "source": "github"
+    },
+    {
       "type": "lesson",
       "title": "Network Domain Lesson Template",
       "url": "lessons/contrib/lesson-template-network.md",
       "timestamp": "2026-07-13",
       "domain": "network",
       "source": "lessons"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: add local CI secret-scan troubleshooting on Windows",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/449",
+      "timestamp": "2026-07-11T09:33:23Z",
+      "source": "github"
     },
     {
       "type": "challenge",
@@ -97,6 +90,13 @@
       "timestamp": "2026-07-09",
       "domain": "devops",
       "source": "lessons"
+    },
+    {
+      "type": "merged_pr",
+      "title": "test: add queue_lesson dry-run smoke coverage",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/419",
+      "timestamp": "2026-07-08T15:56:42Z",
+      "source": "github"
     },
     {
       "type": "challenge",
