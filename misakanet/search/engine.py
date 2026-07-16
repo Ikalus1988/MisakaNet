@@ -19,11 +19,11 @@ INDEX = LESSONS / "index.md"
 
 K1 = 1.5
 B = 0.75
-WEIGHT_DOMAIN_MATCH = 0.3
-WEIGHT_STATUS = {"published": 0.2, "active": 0.1, "draft": 0.0}
-WEIGHT_TITLE_EXACT = 0.5
-WEIGHT_TITLE_PARTIAL = 0.2
-WEIGHT_HAS_REF = 0.08
+WEIGHT_DOMAIN_MATCH = 0.25
+WEIGHT_STATUS = {"published": 0.0, "active": 0.1, "draft": 0.0}
+WEIGHT_TITLE_EXACT = 0.8
+WEIGHT_TITLE_PARTIAL = 0.4
+WEIGHT_HAS_REF = 0.12
 MAX_METADATA = 1.0
 
 # Feature #228: boost core/verified/recent lessons, penalize drafts.
