@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-16T19:37:04.219273+00:00",
+  "generated_at": "2026-07-16T22:26:13.472574+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 15,
+  "item_count": 10,
   "items": [
     {
       "type": "lesson",
@@ -46,9 +46,9 @@
     },
     {
       "type": "merged_pr",
-      "title": "feat: dynamically load trust level in registration worker",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/477",
-      "timestamp": "2026-07-15T02:14:28Z",
+      "title": "feat: add trust_tiers to protocol, registration reads from protocol",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/473",
+      "timestamp": "2026-07-14T14:24:51Z",
       "source": "github"
     },
     {
@@ -73,89 +73,10 @@
       "source": "github"
     },
     {
-      "type": "challenge",
-      "title": "[Bounty][$0][agent competition] Blind test homepage SAG-Lite lesson search",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/429",
-      "labels": [
-        "good first issue",
-        "area:tests",
-        "needs-ac",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "no-credentials",
-        "zero-bounty",
-        "has-test",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-09T07:03:41Z",
-      "source": "github"
-    },
-    {
       "type": "merged_pr",
       "title": "test: add queue_lesson dry-run smoke coverage",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/419",
       "timestamp": "2026-07-08T15:56:42Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Ecosystem] Build Cursor integration for MisakaNet lessons",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/318",
-      "labels": [
-        "enhancement",
-        "Ring-3",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-02T16:01:30Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Ecosystem] Build VS Code extension for MisakaNet lesson search",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/317",
-      "labels": [
-        "enhancement",
-        "Ring-3",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-02T16:01:28Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Quality] Detect and flag low-quality lesson submissions",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/315",
-      "labels": [
-        "enhancement",
-        "Ring-3",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-02T16:01:23Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Search] Query expansion with domain-specific synonyms",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/313",
-      "labels": [
-        "enhancement",
-        "Ring-3",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-02T16:01:16Z",
       "source": "github"
     }
   ]
