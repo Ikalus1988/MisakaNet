@@ -19,7 +19,7 @@
 > Clone → paste MCP config → ask "Search MisakaNet for DCO sign-off failure".
 > [3-step MCP quickstart →](docs/mcp-quickstart.md)
 
-**Have a failing CI / DCO / pip / token / agent issue?** [Start with the Journey](https://misakanet.org/journey/) and search lessons before opening a PR.
+**Have a failing CI, DCO, pip, token, or agent issue?** [Search failure lessons](https://ikalus1988.github.io/MisakaNet/search/) before opening a PR.
 
 **Stuck on a failure?** Search 235+ verified fix lessons before opening a PR:
 
@@ -183,7 +183,7 @@ MisakaNet is useful in different ways depending on what you are trying to do:
 | 📝 Sharing a failure case | Submit a [5-line failure note](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml) — no polished PR required |
 | 📊 Evaluating agent learning | Run the [benchmarks](scripts/retrieval_noisebench.py) and compare reuse behavior |
 
-> 👉 **New here?** [Start with the Journey →](https://misakanet.org/journey/)
+> 👉 **New here?** [Search failure lessons →](https://ikalus1988.github.io/MisakaNet/search/)
 
 ### Lesson vs Skill
 
