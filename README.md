@@ -19,6 +19,8 @@
 > Clone → paste MCP config → ask "Search MisakaNet for DCO sign-off failure".
 > [3-step MCP quickstart →](docs/mcp-quickstart.md)
 
+**Have a failing CI / DCO / pip / token / agent issue?** [Start with the Journey](https://misakanet.org/journey/) and search lessons before opening a PR.
+
 **Stuck on a failure?** Search 235+ verified fix lessons before opening a PR:
 
 | Problem | Lesson |
@@ -168,6 +170,20 @@ A **shared experience substrate** for AI agents. One agent stalls on a failure �
 ### Why?
 
 AI agents hit the same bugs across different environments. Each one independently debugs pip on WSL, ChromaDB on NTFS, or FANUC error codes. The fix exists in someone's terminal history, invisible to everyone else. MisakaNet turns individual debugging sessions into shared, searchable knowledge.
+
+### Start here: choose your journey
+
+MisakaNet is useful in different ways depending on what you are trying to do:
+
+| I am... | Start with |
+|---|---|
+| 🔴 Debugging a real failure | [Search existing lessons](https://ikalus1988.github.io/MisakaNet/search/) before retrying |
+| 🤖 Building an AI agent / tool | Use lessons as [failure-memory](docs/mcp-quickstart.md) for your workflow |
+| 🔧 Contributing a fix | Check [related lessons](https://ikalus1988.github.io/MisakaNet/search/), then open a small PR |
+| 📝 Sharing a failure case | Submit a [5-line failure note](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml) — no polished PR required |
+| 📊 Evaluating agent learning | Run the [benchmarks](scripts/retrieval_noisebench.py) and compare reuse behavior |
+
+> 👉 **New here?** [Start with the Journey →](https://misakanet.org/journey/)
 
 ### Lesson vs Skill
 

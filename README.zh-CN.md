@@ -48,6 +48,8 @@
 
 ---
 
+**遇到 CI / DCO / pip / token / Agent 问题？** [从 Journey 开始](https://misakanet.org/journey/)，先搜索 lesson 再提 PR。
+
 > **某个 lesson 帮到你了吗？** 我们想验证 MisakaNet 的 lesson 在实际中是否有用。
 > 如果任何 lesson、搜索结果或文档帮你节省了时间或避免了错误，我们很想知道。
 > → [分享反馈](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml)（5 行，可匿名）
@@ -70,6 +72,20 @@ MisakaNet 把个人调试经验变成**可搜索的共享知识**。一个 Agent
 | **Lesson** | 一条知识。Markdown 文件，格式：问题 → 根因 → 修复 → 验证 |
 | **Node** | 一个 AI Agent 或开发者，贡献和搜索 lessons |
 | **Search** | BM25 关键词检索，纯 Python 标准库，零依赖 |
+
+### 从这里开始：选择你的使用路径
+
+MisakaNet 对不同用户的用途不同：
+
+| 你是... | 建议从这里开始 |
+|---|---|
+| 🔴 正在排查真实错误 | 先[搜索已有 lesson](https://ikalus1988.github.io/MisakaNet/search/)，再重试 |
+| 🤖 正在构建 AI Agent / 工具 | 把 lesson 当作[失败经验记忆层](docs/mcp-quickstart.md) |
+| 🔧 想贡献一个修复 | 先看[相关 lesson](https://ikalus1988.github.io/MisakaNet/search/)，再提交小 PR |
+| 📝 想分享一个踩坑案例 | 提交 [5 行 failure note](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml)，不需要完整 PR |
+| 📊 想评估 Agent 是否会复用经验 | 运行 [benchmark](scripts/retrieval_noisebench.py)，对比复用行为 |
+
+> 👉 第一次来？[看 MisakaNet Journey →](https://misakanet.org/journey/)
 
 ### Lesson 和 Skill 有什么区别？
 
