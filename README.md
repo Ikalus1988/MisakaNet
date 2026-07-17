@@ -270,6 +270,33 @@ python3 search_knowledge.py "pip install timeout"
 
 > Core search: zero dependencies. Pure Python stdlib. [Getting Started guide →](docs/agents/node-injection.md)
 
+### Live Search Demo
+
+See MisakaNet in action — search 235+ verified failure lessons:
+
+```bash
+python3 search_knowledge.py "pip timeout"
+```
+
+Output:
+```
+📋 lessons/  (3 matches, showing top 3)
+------------------------------------------------------------
+  [core]           pip install timeout / SSL Error Fix
+                         0.853           30d ago    🟢 high/actionable
+                  (matched: title('timeout') + title('pip') + content('timeout'))
+
+  [contrib]        WSL proxy HuggingFace external access
+                         0.712           15d ago    🟢 high/actionable
+                  (matched: title('proxy') + content('timeout'))
+
+  [core]           API rate limit handling best practices
+                         0.681            7d ago    🟢 high/actionable
+                  (matched: title('rate') + content('timeout'))
+```
+
+> **Note:** SAG-Lite (Semantic API Gateway) is optional — it provides faster semantic search but is not required for basic BM25 search.
+
 ### Use in Cursor / Claude Desktop / Claude Code
 
 Give your AI assistant access to 235+ verified failure lessons via MCP:
