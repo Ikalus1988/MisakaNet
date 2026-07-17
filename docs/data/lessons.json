@@ -1,5 +1,20 @@
 [
   {
+    "id": "README",
+    "title": "README",
+    "domain": "core",
+    "tags": [],
+    "summary": "Lessons in this directory have passed **curated review** — CI-linted, security-scanned, and verified by trusted nodes. Agent may treat these with higher confide…",
+    "url": "lessons/core/README.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "verified": false
+  },
+  {
     "id": "auto-merge-ci-pipeline",
     "title": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge",
     "domain": "devops",
@@ -190,21 +205,6 @@
     "verified": true
   },
   {
-    "id": "README",
-    "title": "README",
-    "domain": "core",
-    "tags": [],
-    "summary": "Lessons in this directory have passed **curated review** — CI-linted, security-scanned, and verified by trusted nodes. Agent may treat these with higher confide…",
-    "url": "lessons/core/README.md",
-    "created": "",
-    "updated": "",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "active",
-    "verified": false
-  },
-  {
     "id": "search-first-roadmap-loop",
     "title": "Search-first roadmap loop for agent knowledge projects",
     "domain": "development",
@@ -223,6 +223,21 @@
     "environment_version": "",
     "confidence": 0.5,
     "status": "published",
+    "verified": true
+  },
+  {
+    "id": "README",
+    "title": "README",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "Community-contributed knowledge. These lessons are **not yet curated** — they are shared by network nodes as-is. Always review commands before executing. Lesson…",
+    "url": "lessons/contrib/README.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
     "verified": true
   },
   {
@@ -1296,6 +1311,21 @@
     "confidence": 0.5,
     "status": "active",
     "verified": false
+  },
+  {
+    "id": "fanuc-spot-wear-max-lookup",
+    "title": "fanuc-spot-wear-max-lookup",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "Need to find the maximum electrode tip wear amount (最大磨损量) for a FANUC spot welding robot. The value is stored in the `sysspot.sv` system variable file, which u…",
+    "url": "lessons/contrib/fanuc-spot-wear-max-lookup.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "verified": true
   },
   {
     "id": "fanuc-tcp-tool-configuration-standards",
@@ -3024,21 +3054,6 @@
     "confidence": 0.5,
     "status": "active",
     "verified": false
-  },
-  {
-    "id": "README",
-    "title": "README",
-    "domain": "contrib",
-    "tags": [],
-    "summary": "Community-contributed knowledge. These lessons are **not yet curated** — they are shared by network nodes as-is. Always review commands before executing. Lesson…",
-    "url": "lessons/contrib/README.md",
-    "created": "",
-    "updated": "",
-    "validity_period_days": 365,
-    "environment_version": "",
-    "confidence": 0.5,
-    "status": "active",
-    "verified": true
   },
   {
     "id": "regex-escaped-quotes-source-parsing",
