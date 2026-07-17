@@ -519,6 +519,8 @@ def main():
     env_filter: Optional[str] = None
     lang: Optional[str] = None
     domain: Optional[str] = None
+    status_filter: Optional[str] = None
+    tags_filter: list[str] = []
     search_args = positional_args[1:]
     for i, arg in enumerate(search_args):
         if arg == "--ref":
@@ -551,6 +553,14 @@ def main():
             domain = arg.split("=", 1)[1].lower()
         elif arg == "--domain" and i + 1 < len(search_args):
             domain = search_args[i + 1].lower()
+        elif arg.startswith("--status="):
+            status_filter = arg.split("=", 1)[1].lower()
+        elif arg == "--status" and i + 1 < len(search_args):
+            status_filter = search_args[i + 1].lower()
+        elif arg.startswith("--tags="):
+            tags_filter = [t.strip().lower() for t in arg.split("=", 1)[1].split(",")]
+        elif arg == "--tags" and i + 1 < len(search_args):
+            tags_filter = [t.strip().lower() for t in search_args[i + 1].split(",")]
         elif arg == "--explain":
             explain = True
         elif arg == "--verbose":
@@ -627,6 +637,20 @@ def main():
         ref_docs = [d for d in ref_docs if any(env_filter in t.lower() for t in d.tags)]
         if not json_output:
             print(f"  💻 Filtering by environment: {env_filter}")
+
+    # Status filter (fix #308)
+    if status_filter:
+        lessons_docs = [d for d in lessons_docs if d.status and d.status.lower() == status_filter]
+        ref_docs = [d for d in ref_docs if d.status and d.status.lower() == status_filter]
+        if not json_output:
+            print(f"  📋 Filtering by status: {status_filter}")
+
+    # Tags filter (fix #308) - AND logic
+    if tags_filter:
+        lessons_docs = [d for d in lessons_docs if d.tags and all(t.lower() in [tag.lower() for tag in d.tags] for t in tags_filter)]
+        ref_docs = [d for d in ref_docs if d.tags and all(t.lower() in [tag.lower() for tag in d.tags] for t in tags_filter)]
+        if not json_output:
+            print(f"  🏷️  Filtering by tags (AND): {', '.join(tags_filter)}")
 
     if json_output:
         all_docs = lessons_docs + ref_docs
