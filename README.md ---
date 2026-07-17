@@ -1,0 +1,60 @@
+
+## Quickstart (5 min)
+
+### Step 1: Clone the Repository
+
+Open your terminal and run:
+
+```bash
+git clone https://github.com/Ikalus1988/MisakaNet.git
+cd MisakaNet
+```
+
+### Step 2: Install Dependencies
+
+MisakaNet requires Python 3.10+ and no additional dependencies beyond the Python standard library. Ensure you have Python installed:
+
+```bash
+python3 --version
+```
+
+### Step 3: Run Your First Search
+
+Execute the following command to run a search:
+
+```bash
+python3 search_knowledge.py "pip install timeout"
+```
+
+### Step 4: Understand the Output
+
+The output will display the most relevant lessons related to your query. For example:
+
+```bash
+  ✅ [0.85] pip install timeout
+      → matched: DCO sign-off fails on Windows
+  💡 View full content: cat lessons/contrib/dco-auto-fix-workflow.md
+  💡 Contribute new knowledge: python3 scripts/queue_lesson.py -t 'title' -d domain 'content...'
+```
+
+This indicates that the search found a relevant lesson with a high confidence score. You can view the full content of the lesson by running the provided `cat` command or contribute new knowledge using the `queue_lesson.py` script.
+
+### Sample Search Command and Output
+
+Run the following command to search for lessons related to "pip install timeout":
+
+```bash
+python3 search_knowledge.py "pip install timeout"
+```
+
+Sample output:
+
+```bash
+  ✅ [0.85] pip install timeout
+      → matched: DCO sign-off fails on Windows
+  💡 View full content: cat lessons/contrib/dco-auto-fix-workflow.md
+  💡 Contribute new knowledge: python3 scripts/queue_lesson.py -t 'title' -d domain 'content...'
+```
+
+This output shows that a relevant lesson was found with a high confidence score. You can view the full lesson content or contribute new knowledge if needed.
+```
