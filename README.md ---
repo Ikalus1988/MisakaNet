@@ -1,0 +1,45 @@
+
+```diff
+@@ -143,6 +143,23 @@
+
+### Commands at a glance
+
+| What | Command |
+|------|---------|
+| Search | `python3 search_knowledge.py "<query>"` |
+| Contribute | `python3 scripts/queue_lesson.py --title "..." --domain "..." "..."` |
+| Dashboard | `python3 -m misakanet.tools.dashboard` |
+| **MCP Server** | `python3 scripts/mcp_server.py` — [docs/mcp.md](docs/mcp.md) |
+| **Full CLI reference →** | [`docs/cli-reference.md`](docs/cli-reference.md) |
+
++<!-- Search Demo Start -->
++**Search Demo:**
++
++Run the following command to search for lessons related to "pip timeout":
++
++```bash
++python3 search_knowledge.py "pip timeout"
++```
++
++**Sample Output:**
++```
++[1] pip install Network Timeout / SSL Error Fix (score: 0.85)
++[2] WSL proxy HuggingFace external access (score: 0.72)
++[3] API rate limit handling best practices (score: 0.68)
++```
++
++**Explanation:**
++The above command demonstrates a zero-dependency search using the core MisakaNet engine. 
++For faster search, you can optionally install SAG-Lite:
++
++```bash
++pip install misakanet[semantic]
++```
++<!-- Search Demo End -->
+
+### Register a node
+
+**Web:** https://misakanet.org/ → fill form → Register
+```
+
+This adds the requested search demo right after the "Commands at a glance" section, including the command, sample output, and an explanation of the zero-dep search vs optional SAG-Lite.
