@@ -1,0 +1,39 @@
+```python
+# Change this line:
+if not found_any and not strict:
+    # Feature #314: Typo tolerance — retry with edit distance ≤2
+    all_docs_for_typo = lessons_docs + ref_docs
+    typo_results, corrected = _typo_retry_search(
+        query, all_docs_for_typo, titles_only, broad_only, top_k
+    )
+    if typo_results:
+        print(f"\n  🔍 Showing results for '{corrected}' (searched: '{query}')\n")
+        for score, doc in typo_results:
+            tag = f"[{doc.domain}]" if doc.domain else ""
+            title = doc.title[:60] or doc.filename
+            print(f"  {score:.3f}  {tag:<18} {title}")
+        found_any = True
+
+# To this:
+if not found_any and not strict:
+    # Feature #314: Typo tolerance — retry with edit distance ≤2
+    all_docs_for_typo = lessons_docs + ref_docs
+    typo_results, corrected = _typo_retry_search(
+        query, all_docs_for_typo, titles_only, broad_only, top_k
+    )
+    if typo_results:
+        print(f"\n  🔍 Showing results for '{corrected}' (searched: '{query}')\n")
+        for score, doc in typo_results:
+            tag = f"[{doc.domain}]" if doc.domain else ""
+            title = doc.title[:60] or doc.filename
+            print(f"  {score:.3f}  {tag:<18} {title}")
+        found_any = True
+    else:
+        # Feature #301: Smart fallback with closest matches
+        _smart_fallback(query, lessons_docs + ref_docs)
+
+    # Log zero-result query for gap analysis
+    _log_zero_result(query)
+```
+
+This change ensures that the `_smart_fallback` function is called even if the typo retry search does not find any results, providing a better fallback mechanism for zero-result queries.
