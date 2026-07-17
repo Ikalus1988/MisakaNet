@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "misakanet-search-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-05-23",
+  "observability": {
+    "enabled": true
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "usage_model": "bundled",
+  "limits": {
+    "cpu_ms": 50
+  },
+  "triggers": {
+    "crons": []
+  }
+}
