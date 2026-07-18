@@ -76,6 +76,66 @@ jobs:
             echo "qscore_verdict=ok" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: 100-point Quality Rubric (changed files only)
+        id: rubric
+        continue-on-error: true
+        run: |
+          : > rubric_report.txt
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            mapfile -t RUBRIC_TARGETS < <(git diff --name-only "origin/${{ github.base_ref }}" HEAD -- 'lessons/**/*.md' 'lessons/*.md')
+          else
+            mapfile -t RUBRIC_TARGETS < <(find lessons -name '*.md' 2>/dev/null | sort)
+          fi
+
+          if [ "${#RUBRIC_TARGETS[@]}" -eq 0 ]; then
+            echo "No changed lesson files for rubric scoring." | tee -a rubric_report.txt
+            echo "rubric_verdict=skip" >> "$GITHUB_OUTPUT"
+          else
+            python3 scripts/quality_scorer.py ${RUBRIC_TARGETS[@]} --json > rubric_report.json 2>&1 || true
+            python3 -c "
+          import json, sys
+          try:
+              data = json.load(open('rubric_report.json'))
+              total = data.get('total', 0)
+              passed = data.get('passed', 0)
+              failed = data.get('failed', 0)
+              avg = data.get('avg_score', 0)
+              below = [l for l in data.get('lessons', []) if l.get('score', 0) < 75]
+              print(f'Rubric: {total} lessons, {passed} pass, {failed} fail, avg {avg}')
+              for l in below:
+                  notes = []
+                  for dim, info in l.get('breakdown', {}).items():
+                      for n in info.get('notes', []):
+                          notes.append(f'  [{dim}] {n}')
+                  print(f'  ❌ {l[\"file\"]} — {l[\"score\"]}/100 ({l[\"grade\"]})')
+                  for n in notes:
+                      print(f'    {n}')
+              if below:
+                  print(f'rubric_verdict=fail')
+              else:
+                  print(f'rubric_verdict=pass')
+          except Exception as e:
+              print(f'Rubric parse error: {e}')
+              print(f'rubric_verdict=error')
+          " | tee -a rubric_report.txt
+            RUBRIC_VERDICT=$(grep 'rubric_verdict=' rubric_report.txt | tail -1 | cut -d= -f2)
+            echo "rubric_verdict=$RUBRIC_VERDICT" >> "$GITHUB_OUTPUT"
+            echo "rubric_summary=$(head -1 rubric_report.txt)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Duplicate detection
+        id: dedup
+        continue-on-error: true
+        run: |
+          python3 scripts/find_duplicate_lessons.py --threshold 0.8 --json > dedup_report.json 2>&1 || true
+          DEDUP_COUNT=$(python3 -c "import json; print(len(json.load(open('dedup_report.json'))))" 2>/dev/null || echo "0")
+          echo "dedup_count=$DEDUP_COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$DEDUP_COUNT" -gt 0 ]; then
+            echo "dedup_verdict=warn" >> "$GITHUB_OUTPUT"
+          else
+            echo "dedup_verdict=ok" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Post quality report on PR
         if: always() && github.event_name == 'pull_request'
         env:
@@ -85,10 +145,16 @@ jobs:
           SUMMARY="${{ steps.check.outputs.summary }}"
           QS_VERDICT="${{ steps.qscore.outputs.qscore_verdict }}"
           QS_SUMMARY="${{ steps.qscore.outputs.qscore_summary }}"
+          RUBRIC_VERDICT="${{ steps.rubric.outputs.rubric_verdict }}"
+          RUBRIC_SUMMARY="${{ steps.rubric.outputs.rubric_summary }}"
+          DEDUP_COUNT="${{ steps.dedup.outputs.dedup_count }}"
+          DEDUP_VERDICT="${{ steps.dedup.outputs.dedup_verdict }}"
           PR_NUM="${{ github.event.pull_request.number }}"
           REPORT_BODY=$(cat quality_report.txt)
 
           QS_SECTION=""
+          RUBRIC_SECTION=""
+          DEDUP_SECTION=""
 
           if [ "$QS_VERDICT" = "warn" ]; then
             QS_SECTION="
@@ -98,11 +164,41 @@ jobs:
           "
           fi
 
+          if [ "$RUBRIC_VERDICT" = "fail" ]; then
+            RUBRIC_BODY=$(cat rubric_report.txt)
+            RUBRIC_SECTION="
+
+          ### 📊 100-Point Quality Rubric
+          ${RUBRIC_SUMMARY}
+
+          <details><summary>Details</summary>
+
+          \`\`\`
+          ${RUBRIC_BODY}
+          \`\`\`
+
+          </details>
+          "
+          elif [ "$RUBRIC_VERDICT" = "pass" ]; then
+            RUBRIC_SECTION="
+
+          ### 📊 100-Point Quality Rubric: ✅ ${RUBRIC_SUMMARY}
+          "
+          fi
+
+          if [ "$DEDUP_VERDICT" = "warn" ]; then
+            DEDUP_SECTION="
+
+          ### 🔁 Duplicate Detection: ${DEDUP_COUNT} near-duplicate pair(s) found
+          Run \`python3 scripts/find_duplicate_lessons.py --threshold 0.8\` for details.
+          "
+          fi
+
           if [ "$VERDICT" = "pass" ]; then
             gh pr comment "$PR_NUM" --repo "${{ github.repository }}" \
               --body "### ✅ Lesson Quality Gate Passed
 
-            ${SUMMARY}${QS_SECTION}
+            ${SUMMARY}${QS_SECTION}${RUBRIC_SECTION}${DEDUP_SECTION}
 
             All lessons meet the naming, frontmatter, and content standards." || \
               echo "Could not post lesson quality pass comment to PR #$PR_NUM"
@@ -110,7 +206,7 @@ jobs:
             gh pr comment "$PR_NUM" --repo "${{ github.repository }}" \
               --body "### ❌ Lesson Quality Gate Failed
 
-            ${SUMMARY}${QS_SECTION}
+            ${SUMMARY}${QS_SECTION}${RUBRIC_SECTION}${DEDUP_SECTION}
 
             <details>
             <summary>Details</summary>
