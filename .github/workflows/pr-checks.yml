@@ -207,9 +207,16 @@ jobs:
         if: steps.scope.outputs.scope == 'full'
         id: pytest
         run: |
-          pytest --cov=scripts --cov=misakanet --cov-report=term --cov-fail-under=20 tests/ > pytest_report.txt 2>&1
+          pytest --cov=scripts --cov=misakanet --cov-report=term --cov-report=xml --cov-fail-under=20 tests/ > pytest_report.txt 2>&1
           cat pytest_report.txt
         continue-on-error: true
+
+      - name: Upload Coverage to Codecov
+        if: steps.scope.outputs.scope == 'full'
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
 
       - name: Parse Coverage
         if: steps.scope.outputs.scope == 'full'
