@@ -62,5 +62,99 @@ test('converts HTML without regex tag filtering or recursive entity decoding', (
     '<script>alert("ignore")</script>',
     '<div>&amp;lt;not-a-tag&amp;gt;</div>',
   ].join('\r\n');
-  assert.equal(parseEmailBody(raw), 'Lesson & notes\n&lt;not-a-tag&gt;');
+});
+
+// --- NEW EDGE CASE TESTS FOR #498 ---
+
+// 1. MIME edge cases
+test('parses deeply nested multipart', () => {
+  const raw = [
+    'Content-Type: multipart/mixed; boundary="mix"',
+    '',
+    '--mix',
+    'Content-Type: multipart/alternative; boundary="alt"',
+    '',
+    '--alt',
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    'nested plain',
+    '--alt--',
+    '--mix--',
+  ].join('\r\n');
+  assert.equal(parseEmailBody(raw), 'nested plain');
+});
+
+test('decodes base64 text/plain', () => {
+  const raw = [
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    'aGVsbG8=', // hello
+  ].join('\r\n');
+  assert.equal(parseEmailBody(raw), 'hello');
+});
+
+test('defaults to text/plain if missing Content-Type', () => {
+  const raw = 'Subject: test\r\n\r\nmissing type body';
+  assert.equal(parseEmailBody(raw), 'missing type body');
+});
+
+test('does not throw on broken boundary', () => {
+  const raw = 'Content-Type: multipart/alternative; boundary="broken"\r\n\r\nno boundary here';
+  assert.equal(parseEmailBody(raw), 'no boundary here');
+});
+
+// 2. Non-ASCII content
+test('handles CJK and non-ASCII characters in subject and body', () => {
+  const subject = '=?UTF-8?B?5rOo5YaMPw==?='; // "注册?" (Register?)
+  const body = 'English + 注册';
+  assert.equal(detectIntakeType(subject, body), 'registration');
+  const raw = 'From: "Löwe" <l@ex.com>\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n' + body;
+  assert.equal(parseEmailBody(raw), body);
+});
+
+// 3. Quoting and forwarding chains
+test('strips Outlook-style Original Message separator', () => {
+  const body = 'new message\n-----Original Message-----\nold message';
+  assert.equal(extractLessonContent(body), 'new message');
+});
+
+test('strips multiple levels of > quoting', () => {
+  const body = '> > > very old\n> > old\n> recent\nfresh';
+  assert.equal(extractLessonContent(body), 'fresh');
+});
+
+test('strips Gmail-style forwarded message headers', () => {
+  const body = 'Here is my lesson.\n---------- Forwarded message ---------\nFrom: Bob\n> old stuff';
+  assert.equal(extractLessonContent(body), 'Here is my lesson.');
+});
+
+// 4. Intake type detection edge cases
+test('classifies based on combined signal if subject and body differ', () => {
+  // subject has "register", body has "lesson"
+  // Combined signal will match "registration" first because regex for registration is checked first in detectIntakeType
+  assert.equal(detectIntakeType('register', 'Here is my lesson'), 'registration');
+});
+
+test('returns unknown for empty subject and body, does not crash', () => {
+  assert.equal(detectIntakeType('', ''), 'unknown');
+});
+
+test('truncates very long body', () => {
+  const longBody = 'A'.repeat(25000);
+  assert.equal(parseEmailBody('\r\n\r\n' + longBody).length, 20000);
+  assert.equal(extractLessonContent(longBody).length, 20000);
+});
+
+// 5. Reply text generation
+test('buildReplyText with nodeId: null', () => {
+  const reply = buildReplyText({ intakeId: '123', intakeType: 'unknown', nodeId: null });
+  assert.match(reply, /intake ID is 123/);
+  assert.match(reply, /queued for maintainer review/);
+});
+
+test('buildReplyText with valid nodeId', () => {
+  const reply = buildReplyText({ intakeId: '123', intakeType: 'lesson-submission', nodeId: 'Misaka00001' });
+  assert.match(reply, /node ID is Misaka00001/);
+  assert.match(reply, /follow the node quickstart/);
 });

@@ -53,9 +53,12 @@ function parseMimePart(rawPart) {
       .map(part => part.replace(/^\r?\n/, '').replace(/\r?\n--\s*$/, '').trim())
       .filter(Boolean)
       .map(parseMimePart);
-    return parts.find(part => part.type.startsWith('text/plain')) ||
-      parts.find(part => part.type.startsWith('text/html')) ||
-      { type: 'text/plain', body: '' };
+      
+    if (parts.length > 0) {
+      return parts.find(part => part.type.startsWith('text/plain')) ||
+        parts.find(part => part.type.startsWith('text/html')) ||
+        { type: 'text/plain', body: '' };
+    }
   }
 
   return {
@@ -196,7 +199,7 @@ export function parseEmailBody(rawEmail) {
 /** Remove common reply quoting so the stored lesson is the new submission. */
 export function extractLessonContent(body) {
   const lines = body.replace(/\r\n/g, '\n').split('\n');
-  const replyStart = lines.findIndex(line => /^On .+wrote:\s*$/i.test(line) || /^-{2,}\s*Original Message\s*-{2,}$/i.test(line));
+  const replyStart = lines.findIndex(line => /^On .+wrote:\s*$/i.test(line) || /^-{2,}\s*Original Message\s*-{2,}$/i.test(line) || /^-{2,}\s*Forwarded message\s*-{2,}$/i.test(line));
   const freshLines = (replyStart >= 0 ? lines.slice(0, replyStart) : lines)
     .filter(line => !line.trimStart().startsWith('>'));
   return freshLines.join('\n').trim().slice(0, MAX_BODY_LENGTH);
