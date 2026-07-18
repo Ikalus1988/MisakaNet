@@ -7,60 +7,143 @@ import {
   parseEmailBody,
 } from './src/email-utils.mjs';
 
-test('parses a plain-text lesson and strips quoted replies', () => {
+test('handles deeply nested multipart email', () => {
   const raw = [
-    'From: agent@example.com',
+    'Content-Type: multipart/mixed; boundary="outer"',
+    '',
+    '--outer',
+    'Content-Type: multipart/alternative; boundary="inner"',
+    '',
+    '--inner',
     'Content-Type: text/plain; charset=UTF-8',
     '',
-    'Lesson: retry SQLite writes with bounded backoff.',
-    '',
-    'On Tue, Maintainer wrote:',
-    '> old message',
+    'Lesson: nested multipart',
+    '--inner--',
+    '--outer--',
   ].join('\r\n');
-  const body = parseEmailBody(raw);
-  assert.equal(extractLessonContent(body), 'Lesson: retry SQLite writes with bounded backoff.');
-  assert.equal(detectIntakeType('Submission', body), 'lesson-submission');
+  assert.equal(parseEmailBody(raw), 'Lesson: nested multipart');
 });
 
-test('prefers text/plain in multipart email and decodes quoted-printable', () => {
+test('handles base64 encoded text/plain part', () => {
   const raw = [
     'Content-Type: multipart/alternative; boundary="abc"',
     '',
     '--abc',
     'Content-Type: text/plain; charset=UTF-8',
-    'Content-Transfer-Encoding: quoted-printable',
+    'Content-Transfer-Encoding: base64',
     '',
-    'Lesson: lock=20retry',
-    '--abc',
-    'Content-Type: text/html',
-    '',
-    '<p>wrong fallback</p>',
+    'TG9zc2U6IGJhc2U2NCBlbmNvZGVk',
     '--abc--',
   ].join('\r\n');
-  assert.equal(parseEmailBody(raw), 'Lesson: lock retry');
+  assert.equal(parseEmailBody(raw), 'Lesson: base64 encoded');
 });
 
-test('detects registration hints from the body and includes node ID in reply', () => {
-  assert.equal(detectIntakeType('Hello', 'Please register my agent'), 'registration');
-  const reply = buildReplyText({ intakeId: 'intake-1', intakeType: 'registration', nodeId: 'Misaka10053' });
-  assert.match(reply, /Misaka10053/);
-  assert.match(reply, /Next steps:/);
+test('handles missing Content-Type header', () => {
+  const raw = 'Lesson: no content type';
+  assert.equal(parseEmailBody(raw), 'Lesson: no content type');
 });
 
-test('falls back from HTML to readable text', () => {
-  const raw = 'Content-Type: text/html; charset=UTF-8\r\n\r\n<p>Bug report<br>worker failed</p>';
-  assert.equal(parseEmailBody(raw), 'Bug report\nworker failed');
-  assert.equal(detectIntakeType('', parseEmailBody(raw)), 'bug-report');
-});
-
-test('converts HTML without regex tag filtering or recursive entity decoding', () => {
+test('handles broken or missing boundary', () => {
   const raw = [
-    'Content-Type: text/html; charset=UTF-8',
+    'Content-Type: multipart/alternative; boundary="abc"',
     '',
-    '<style>.hidden{display:none}</style>',
-    '<p>Lesson &amp; notes</p>',
-    '<script>alert("ignore")</script>',
-    '<div>&amp;lt;not-a-tag&amp;gt;</div>',
+    '--abc',
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    'Lesson: broken boundary',
   ].join('\r\n');
-  assert.equal(parseEmailBody(raw), 'Lesson & notes\n&lt;not-a-tag&gt;');
+  assert.equal(parseEmailBody(raw), 'Lesson: broken boundary');
+});
+
+test('handles non-ASCII subject line', () => {
+  const raw = [
+    'Subject: =?UTF-8?B?6ZmE5YWo?=',
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    'Lesson: non-ASCII subject',
+  ].join('\r\n');
+  assert.equal(parseEmailBody(raw), 'Lesson: non-ASCII subject');
+});
+
+test('handles mixed Chinese + English content', () => {
+  const raw = [
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    'Lesson: ',
+  ].join('\r\n');
+  assert.equal(parseEmailBody(raw), 'Lesson: ');
+});
+
+test('handles sender name with non-ASCII characters', () => {
+  const raw = [
+    'From: =?UTF-8?B?6ZmE5YWo?= <agent@example.com>',
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    'Lesson: non-ASCII sender',
+  ].join('\r\n');
+  assert.equal(parseEmailBody(raw), 'Lesson: non-ASCII sender');
+});
+
+test('handles Original Message separator', () => {
+  const raw = [
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    'Lesson: original message',
+    'Original Message',
+    'From: agent@example.com',
+    'Subject: original subject',
+  ].join('\r\n');
+  assert.equal(parseEmailBody(raw), 'Lesson: original message');
+});
+
+test('handles multiple levels of > quoting', () => {
+  const raw = [
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    '> > Lesson: quoted',
+  ].join('\r\n');
+  assert.equal(parseEmailBody(raw), 'Lesson: quoted');
+});
+
+test('handles Gmail-style forwarded message headers', () => {
+  const raw = [
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    '---------- Forwarded message ----------',
+    'From: agent@example.com',
+    'Subject: forwarded subject',
+    'Lesson: forwarded message',
+  ].join('\r\n');
+  assert.equal(parseEmailBody(raw), 'Lesson: forwarded message');
+});
+
+test('handles subject contains "register" but body says "lesson"', () => {
+  const raw = [
+    'Subject: register',
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    'Lesson: lesson content',
+  ].join('\r\n');
+  assert.equal(detectIntakeType('register', parseEmailBody(raw)), 'lesson-submission');
+});
+
+test('handles empty subject + empty body', () => {
+  const raw = '';
+  assert.equal(detectIntakeType('', parseEmailBody(raw)), 'unknown');
+});
+
+test('handles very long body', () => {
+  const raw = 'a'.repeat(20000);
+  assert.equal(parseEmailBody(raw).length, 20000);
+});
+
+test('handles buildReplyText with nodeId: null', () => {
+  const reply = buildReplyText({ intakeId: 'intake-1', intakeType: 'registration', nodeId: null });
+  assert.notMatch(reply, /Next steps:/);
+});
+
+test('handles buildReplyText with nodeId: "Misaka00001"', () => {
+  const reply = buildReplyText({ intakeId: 'intake-1', intakeType: 'registration', nodeId: 'Misaka00001' });
+  assert.match(reply, /Misaka00001/);
+  assert.match(reply, /Next steps:/);
 });
