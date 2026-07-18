@@ -1,9 +1,32 @@
 {
-  "generated_at": "2026-07-18T16:14:48.994870+00:00",
+  "generated_at": "2026-07-18T19:36:38.953835+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat: add Dockerfile for Glama MCP server detection",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/500",
+      "timestamp": "2026-07-18T16:57:14Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Tests][Bounty] Harden email intake parser with edge-case coverage",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/498",
+      "labels": [
+        "good first issue",
+        "area:tests",
+        "needs-ac",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition"
+      ],
+      "timestamp": "2026-07-18T16:50:44Z",
+      "source": "github"
+    },
     {
       "type": "lesson",
       "title": "Bounty Contributors Are Not Always Users",
@@ -56,13 +79,6 @@
       "title": "feat(search): show match reasons",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/469",
       "timestamp": "2026-07-14T10:43:03Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat: add Japanese quickstart guide (docs/quickstart-jp.md)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/468",
-      "timestamp": "2026-07-14T10:42:19Z",
       "source": "github"
     },
     {
@@ -141,21 +157,6 @@
         "status:competition"
       ],
       "timestamp": "2026-07-02T16:01:23Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Search] Query expansion with domain-specific synonyms",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/313",
-      "labels": [
-        "enhancement",
-        "Ring-3",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-02T16:01:16Z",
       "source": "github"
     }
   ]
