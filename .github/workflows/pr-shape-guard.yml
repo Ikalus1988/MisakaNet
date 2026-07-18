@@ -1,0 +1,133 @@
+name: PR Shape Guard
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+
+jobs:
+  audit-shape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: PR shape guard
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- misakanet-pr-shape-guard -->';
+            const pr = context.payload.pull_request;
+
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                per_page: 100,
+              }
+            );
+
+            const failures = [];
+
+            for (const f of files) {
+              const name = f.filename;
+
+              // Rule 1: generated temp/patch filenames
+              if (name.includes(' ---') || name.endsWith('---')) {
+                failures.push(`**文件名污染**: \`${name}\` 看起来是生成器残留文件名。`);
+              }
+
+              // Rule 2: destructive README rewrite
+              if (name === 'README.md' && f.deletions > 120) {
+                failures.push(`**破坏性 README 修改**: README.md 删除了 ${f.deletions} 行，疑似替换全文而非小改。`);
+              }
+
+              // Rule 3: source file contains pasted markdown/diff
+              if (/\.(py|js|ts|go)$/.test(name) && f.patch) {
+                const added = f.patch
+                  .split('\n')
+                  .filter(line => line.startsWith('+') && !line.startsWith('+++'))
+                  .map(line => line.slice(1));
+
+                if (added.some(line =>
+                  line.startsWith('```') ||
+                  line.startsWith('diff --git') ||
+                  line.startsWith('@@ ') ||
+                  line.includes('# Change this line:')
+                )) {
+                  failures.push(`**Diff/Markdown 泄露**: \`${name}\` 中疑似粘贴了 patch 或 markdown 代码块。`);
+                }
+              }
+
+              // Rule 4: large deletion in core search file
+              if (name === 'search_knowledge.py' && f.deletions > 100) {
+                failures.push(`**核心文件高风险删除**: \`search_knowledge.py\` 删除了 ${f.deletions} 行，需要人工 review。`);
+              }
+            }
+
+            // Rule 5: docs-only title but code changed
+            const titleBody = `${pr.title}\n${pr.body || ''}`.toLowerCase();
+            const claimsDocsOnly = titleBody.includes('docs:') || titleBody.includes('docs-only') || titleBody.includes('[docs]');
+            const codeChanged = files.some(f => /\.(py|js|ts|go)$/.test(f.filename));
+            if (claimsDocsOnly && codeChanged) {
+              failures.push('**范围越权**: PR 声明为 docs-only/docs，但实际修改了代码文件。');
+            }
+
+            if (failures.length === 0) return;
+
+            const body = `${marker}
+            ### ⚠️ PR Shape Guard detected unsafe patch patterns
+
+            Hi @${pr.user.login}, thanks for the contribution. This PR is not ready for review because its patch shape looks unsafe.
+
+            **Detected issues:**
+
+            ${failures.map(x => `- ${x}`).join('\n')}
+
+            ---
+
+            **How to fix:**
+
+            Please recreate or rebase the PR from \`main\` with a clean, minimal patch:
+
+            - edit the intended file directly
+            - do not create files like \`README.md ---\`
+            - do not paste markdown diff blocks into source files
+            - do not replace the whole README or core source file
+            - keep one issue per PR
+
+            Thanks — happy to review a corrected PR.
+            `;
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                per_page: 100,
+              }
+            );
+
+            const old = comments.find(c => c.body && c.body.includes(marker));
+
+            if (old) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: old.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body,
+              });
+            }
+
+            core.setFailed('PR Shape Guard failed.');
