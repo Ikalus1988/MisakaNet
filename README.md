@@ -52,6 +52,35 @@
 
 ---
 
+## Quickstart (5 min)
+
+Get from zero to your first search with only Git and Python 3.10+.
+
+```bash
+git clone https://github.com/Ikalus1988/MisakaNet.git
+cd MisakaNet
+pip install misakanet-core
+python3 search_knowledge.py "DCO sign-off" --top=3
+```
+
+What you should see:
+
+```text
+# ranked lesson hits with title / domain / score
+# exit code 0 when results are found
+```
+
+Useful next commands:
+
+```bash
+python3 search_knowledge.py "pip install timeout" --top=5
+python3 search_knowledge.py "database locked" --json --top=3
+```
+
+If search fails with `ModuleNotFoundError: misakanet_core`, install the package name with a hyphen: `pip install misakanet-core`.
+
+More detail: [docs/quickstart.md](docs/quickstart.md) · common failures: [docs/troubleshooting.md](docs/troubleshooting.md)
+
 ## 👋 你是谁？快速导航
 
 <table>
