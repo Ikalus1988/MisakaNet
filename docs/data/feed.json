@@ -1,30 +1,46 @@
 {
-  "generated_at": "2026-07-18T22:10:16.900964+00:00",
+  "generated_at": "2026-07-19T04:02:02.859299+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
     {
+      "type": "challenge",
+      "title": "[Journey][Bounty] Test the full MisakaNet onboarding path and report real friction",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/510",
+      "labels": [
+        "good first issue",
+        "needs-ac",
+        "ready",
+        "bounty",
+        "docs",
+        "agent-friendly",
+        "status:competition",
+        "user-research",
+        "journey-report"
+      ],
+      "timestamp": "2026-07-19T03:14:27Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(quality): implement 100-point lesson quality scorer (fixes #315)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/501",
+      "timestamp": "2026-07-19T02:38:03Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "test: harden email intake parser with edge-case coverage (#498)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/505",
+      "timestamp": "2026-07-19T02:17:43Z",
+      "source": "github"
+    },
+    {
       "type": "merged_pr",
       "title": "feat: add Dockerfile for Glama MCP server detection",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/500",
       "timestamp": "2026-07-18T16:57:14Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Tests][Bounty] Harden email intake parser with edge-case coverage",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/498",
-      "labels": [
-        "good first issue",
-        "area:tests",
-        "needs-ac",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition"
-      ],
-      "timestamp": "2026-07-18T16:50:44Z",
       "source": "github"
     },
     {
@@ -76,13 +92,6 @@
     },
     {
       "type": "merged_pr",
-      "title": "feat(search): show match reasons",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/469",
-      "timestamp": "2026-07-14T10:43:03Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
       "title": "docs: add local CI secret-scan troubleshooting on Windows",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/449",
       "timestamp": "2026-07-11T09:33:23Z",
@@ -105,13 +114,6 @@
         "status:competition"
       ],
       "timestamp": "2026-07-09T07:03:41Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test: add queue_lesson dry-run smoke coverage",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/419",
-      "timestamp": "2026-07-08T15:56:42Z",
       "source": "github"
     },
     {
@@ -146,8 +148,8 @@
     },
     {
       "type": "challenge",
-      "title": "[Quality] Detect and flag low-quality lesson submissions",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/315",
+      "title": "[Search] Query expansion with domain-specific synonyms",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/313",
       "labels": [
         "enhancement",
         "Ring-3",
@@ -156,7 +158,7 @@
         "agent-friendly",
         "status:competition"
       ],
-      "timestamp": "2026-07-02T16:01:23Z",
+      "timestamp": "2026-07-02T16:01:16Z",
       "source": "github"
     }
   ]
