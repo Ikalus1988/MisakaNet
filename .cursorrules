@@ -1,0 +1,11 @@
+rules:
+  - name: "Search MisakaNet for Lessons"
+    description: "Searches MisakaNet for relevant coding lessons."
+    trigger:
+      - command: "search-misakanet"
+    action:
+      - type: "query-mcp-server"
+        url: "http://localhost:8080/search"
+        method: "POST"
+        body:
+          query: "{query}"
