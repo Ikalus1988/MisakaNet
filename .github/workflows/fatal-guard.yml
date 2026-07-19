@@ -15,8 +15,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # Skip if triggered by push but no fatal-guard files changed
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || contains(toJSON(github.event.commits), 'packages/fatal-guard/')
+    # paths filters already gate push/PR; keep workflow_dispatch always runnable.
+    # Avoid a job-level if that can leave 0 jobs and mark the workflow as failed.
     defaults:
       run:
         working-directory: packages/fatal-guard
