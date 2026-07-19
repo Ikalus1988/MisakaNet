@@ -40,7 +40,7 @@ python3 search_knowledge.py "错误关键词" --lessons
 每次会话开始时执行：
 
 ```bash
-cd ~/Agent-Medici && git pull --ff-only
+cd ~/MisakaNet && git pull --ff-only
 python3 search_knowledge.py "当前话题" --lessons
 ```
 
@@ -50,15 +50,15 @@ python3 search_knowledge.py "当前话题" --lessons
 
 ```bash
 # cron 配置
-*/10 * * * * cd ~/Agent-Medici && git pull --ff-only
+*/10 * * * * cd ~/MisakaNet && git pull --ff-only
 ```
 
 ## 保持同步
 
 ```bash
 # 每次会话开始时
-cd ~/Agent-Medici && git pull --ff-only
+cd ~/MisakaNet && git pull --ff-only
 
 # 或设 cron（Hermes/cc-haha 等常驻节点）
-*/10 * * * * cd ~/Agent-Medici && git pull --ff-only
+*/10 * * * * cd ~/MisakaNet && git pull --ff-only
 ```

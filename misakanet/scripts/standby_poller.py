@@ -10,7 +10,7 @@ MisakaNet Standby Poller (备 Hub 节点侧)
   python3 misakanet/scripts/standby_poller.py
 
   # Cron 模式（每 5 分钟）
-  */5 * * * * python3 /path/to/Agent-Medici/misakanet/scripts/standby_poller.py
+  */5 * * * * python3 /path/to/MisakaNet/misakanet/scripts/standby_poller.py
 
 依赖:
   pip install requests pyyaml
@@ -33,7 +33,7 @@ STARTUP_DELAY = 300  # 5 分钟
 
 
 def _load_config():
-    """读取 Agent-Medici config.yaml"""
+    """读取 MisakaNet config.yaml"""
     import yaml
     config_path = PROJECT_ROOT / "config.yaml"
     if config_path.exists():

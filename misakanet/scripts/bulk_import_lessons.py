@@ -24,7 +24,7 @@ MisakaNet 历史教训批量提取工具 (Phase 1)
   python3 misakanet/scripts/bulk_import_lessons.py wizard node1_hermes
 
 Schema:
-  见 schema 说明：https://github.com/Ikalus1988/Agent-Medici
+  见 schema 说明：https://github.com/Ikalus1988/MisakaNet
 """
 import argparse
 import json

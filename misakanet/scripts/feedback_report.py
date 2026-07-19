@@ -5,8 +5,8 @@ MisakaNet Feedback Reporter (节点侧)
 收集近期 skill 使用记录，通过 GitHub Issues 上报到 Hub。
 
 运行方式:
-  1. 手动: python3 /path/to/Agent-Medici/misakanet/scripts/feedback_report.py
-  2. Cron: */5 * * * * python3 /path/to/Agent-Medici/misakanet/scripts/feedback_report.py
+  1. 手动: python3 /path/to/MisakaNet/misakanet/scripts/feedback_report.py
+  2. Cron: */5 * * * * python3 /path/to/MisakaNet/misakanet/scripts/feedback_report.py
 
 依赖: curl + GitHub token（从 ~/.git-credentials 读取）
 """

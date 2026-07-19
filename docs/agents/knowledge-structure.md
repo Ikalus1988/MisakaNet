@@ -3,7 +3,7 @@
 ## 目录结构
 
 ```
-Agent-Medici/
+MisakaNet/
 ├── lessons/                  # 跨节点共享知识（踩坑记录）
 ├── reference/                # 完整方案文档
 ├── misakanet/                # 通信模块

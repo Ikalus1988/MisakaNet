@@ -81,7 +81,7 @@ python3 scripts/queue_lesson.py \
 
 ```bash
 # 每次会话开始时
-cd ~/Agent-Medici && git pull --ff-only
+cd ~/MisakaNet && git pull --ff-only
 ```
 
 ## 优先技能
