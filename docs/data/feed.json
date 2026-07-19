@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-07-19T13:57:37.671919+00:00",
+  "generated_at": "2026-07-19T16:15:18.975310+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs: add 5-minute quickstart section to README",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/524",
+      "timestamp": "2026-07-19T16:05:30Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore: replace active Agent-Medici path references with MisakaNet",
@@ -23,13 +30,6 @@
       "title": "docs: add contributor troubleshooting FAQ",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/520",
       "timestamp": "2026-07-19T12:05:05Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat: resolve email intake forwarding headers gap and fix doc references",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/515",
-      "timestamp": "2026-07-19T12:05:01Z",
       "source": "github"
     },
     {
