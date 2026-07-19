@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Thank contributor
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
         run: |
           PR_NUM="${{ github.event.pull_request.number }}"
           AUTHOR="${{ github.event.pull_request.user.login }}"
