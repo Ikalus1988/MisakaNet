@@ -1,9 +1,44 @@
 {
-  "generated_at": "2026-07-19T10:47:10.613700+00:00",
+  "generated_at": "2026-07-19T13:57:37.671919+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 13,
+  "item_count": 15,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore: replace active Agent-Medici path references with MisakaNet",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/517",
+      "timestamp": "2026-07-19T12:06:16Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: add Codex journey report",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/523",
+      "timestamp": "2026-07-19T12:05:10Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: add contributor troubleshooting FAQ",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/520",
+      "timestamp": "2026-07-19T12:05:05Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat: resolve email intake forwarding headers gap and fix doc references",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/515",
+      "timestamp": "2026-07-19T12:05:01Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "ci: stop fatal-guard false failure when paths do not match",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/518",
+      "timestamp": "2026-07-19T12:02:58Z",
+      "source": "github"
+    },
     {
       "type": "challenge",
       "title": "[Journey][Bounty] Test the full MisakaNet onboarding path and report real friction",
@@ -20,27 +55,6 @@
         "journey-report"
       ],
       "timestamp": "2026-07-19T03:14:27Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(quality): implement 100-point lesson quality scorer (fixes #315)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/501",
-      "timestamp": "2026-07-19T02:38:03Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test: harden email intake parser with edge-case coverage (#498)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/505",
-      "timestamp": "2026-07-19T02:17:43Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat: add Dockerfile for Glama MCP server detection",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/500",
-      "timestamp": "2026-07-18T16:57:14Z",
       "source": "github"
     },
     {
