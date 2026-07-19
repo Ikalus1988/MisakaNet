@@ -1,16 +1,37 @@
 {
-  "name": "misakanet",
-  "private": true,
-  "description": "Deployment scripts for MisakaNet Workers",
-  "scripts": {
-    "deploy:web": "cd web && npx wrangler deploy",
-    "deploy:api": "cd workers && npx wrangler deploy --config wrangler.api.jsonc",
-    "deploy:email": "cd workers/email-register && npx wrangler deploy",
-    "deploy:all": "npm run deploy:web && npm run deploy:api && npm run deploy:email",
-    "deploy": "wrangler deploy",
-    "preview": "wrangler dev"
-  },
-  "devDependencies": {
-    "wrangler": "^4.107.0"
-  }
+    "name": "misakanet-lessons",
+    "displayName": "MisakaNet Lessons",
+    "description": "Search and open MisakaNet lessons in VS Code",
+    "version": "0.0.1",
+    "publisher": "your-publisher-name",
+    "engines": {
+        "vscode": "^1.60.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "onCommand:misakanet.searchLessons"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "misakanet.searchLessons",
+                "title": "Search MisakaNet Lessons"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p./",
+        "watch": "tsc -watch -p./",
+        "postinstall": "node./node_modules/vscode/bin/postinstall"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.60.0",
+        "@types/node": "^14.17.0",
+        "typescript": "^4.3.5",
+        "vscode": "^1.1.37"
+    }
 }
