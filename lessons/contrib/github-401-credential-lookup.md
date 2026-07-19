@@ -3,7 +3,7 @@
   "domain": "contrib",
   "title": "GitHub API 401 后本地凭证查找顺序",
   "verification": "metadata-normalized",
-  "{\"title\"": "GitHub API 401 后本地凭证查找顺序\", \"domain\": \"devops\", \"tags\": [\"github\", \"api\", \"credential\", \"401\", \"auth\", \"pat\"], \"domain_expert\": \"unknown\"}",
+  "tags": ["github", "api", "credential", "401", "auth", "pat"],
   "created": "2026-07-06",
   "source": "unknown"
 }

@@ -269,7 +269,7 @@ function stripFrontmatter(markdown) {
 
 function isSearchable(l) {
   const text = ((l.title||'') + ' ' + (l.summary||'')).toLowerCase();
-  const junk = ['context compaction','earlier turns','assistant','poc record','mojibake','bot reply'];
+  const junk = ['context compaction','earlier turns','poc record','mojibake','bot reply'];
   return !junk.some(k => text.includes(k)) && (l.title||'').trim();
 }
 
