@@ -37,6 +37,21 @@ def parse_frontmatter(text: str) -> dict:
         return {}
 
 
+def get_preview(content: str, max_chars: int = 2400) -> str:
+    """Extract lesson body after frontmatter for inline preview."""
+    lines = content.split('\n')
+    start = 0
+    if lines and lines[0].strip() == '---':
+        for i in range(1, len(lines)):
+            if lines[i].strip() == '---':
+                start = i + 1
+                break
+    body = '\n'.join(lines[start:]).strip()
+    if len(body) > max_chars:
+        body = body[:max_chars] + '\n\n[clipped]'
+    return body
+
+
 def get_summary(content: str, max_chars: int = 160) -> str:
     """Extract first meaningful sentence after frontmatter."""
     lines = content.split('\n')
@@ -85,6 +100,7 @@ def main():
                 tags = [tags] if tags else []
             status = meta.get("status", "active")
             summary = meta.get("summary", "") or get_summary(content)
+            preview = get_preview(content)
             rel_path = f.relative_to(LESSONS_DIR).as_posix()
             # Check for Verification section (badge-only verified semantics)
             verified = bool(re.search(r"##\s*(Verify|Verification)", content, re.IGNORECASE))
@@ -94,6 +110,7 @@ def main():
                 "domain": domain,
                 "tags": tags,
                 "summary": summary,
+                "preview": preview,
                 "url": f"lessons/{rel_path}",
                 "created": meta.get("created", ""),
                 "updated": meta.get("updated", ""),

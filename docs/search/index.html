@@ -578,16 +578,9 @@ async function togglePreview(index) {
   panel.innerHTML = '<div class="preview-status">' + t('loadingPreview') + '</div>';
   const btn = card.querySelector('[data-action="preview"]');
   if (btn) btn.textContent = t('collapse');
-  const rawUrl = getRawLessonUrl(lesson);
   try {
-    let text = _previewCache.get(rawUrl);
-    if (!text) {
-      const response = await fetch(rawUrl);
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      text = await response.text();
-      _previewCache.set(rawUrl, text);
-    }
-    const body = stripFrontmatter(text);
+    // Use pre-generated preview from lessons.json (no remote fetch)
+    const body = lesson.preview || '';
     const clipped = body.length > 2400 ? body.slice(0, 2400) + '\n\n' + t('clipped') : body;
     panel.dataset.loaded = 'true';
     panel.innerHTML = renderMarkdown(clipped || t('noPreview'));
