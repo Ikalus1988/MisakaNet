@@ -3,7 +3,7 @@
 # ================================
 # ⚠️ DEPRECATED — 请使用 Python 版: draft_reminder.py
 # 保留以兼容已有 cron 迁移。新部署请用 Python 版。
-# Cron: 0 9,14 * * * python3 ~/Agent-Medici/misakanet/scripts/draft_reminder.py
+# Cron: 0 9,14 * * * python3 ~/MisakaNet/misakanet/scripts/draft_reminder.py
 
 set -e
 
@@ -63,7 +63,7 @@ if [ -n "$FEISHU_WEBHOOK" ]; then
         TITLE=$(grep -m1 'title:' "$f" | sed 's/.*title: *//; s/^"//; s/"$//')
         MSG="$MSG  • $TITLE (${FILE_AGE}h)\\n"
     done
-    MSG="$MSG\n审核: python3 ~/Agent-Medici/misakanet/scripts/queue_hook_stats.py list-drafts"
+    MSG="$MSG\n审核: python3 ~/MisakaNet/misakanet/scripts/queue_hook_stats.py list-drafts"
 
     curl -s -X POST "$FEISHU_WEBHOOK" \
       -H "Content-Type: application/json" \

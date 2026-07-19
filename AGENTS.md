@@ -1,4 +1,4 @@
-# Agent-Medici 节点接入规则
+# MisakaNet 节点接入规则
 
 > 任何节点加入虫群后，按以下规则检索和贡献知识。
 
@@ -49,7 +49,7 @@ python3 scripts/queue_lesson.py \
 
 ```bash
 # 每次会话开始时
-cd ~/Agent-Medici && git pull --ff-only
+cd ~/MisakaNet && git pull --ff-only
 ```
 
 ## 详细指南

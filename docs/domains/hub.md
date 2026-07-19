@@ -18,7 +18,7 @@ Lessons about the Hermes Hub — central coordination layer for the MisakaNet sw
 
 **Problem:** Gateway and Hub have separate credential stores — updating one does not update the other.
 
-**Fix:** Gateway uses `~/.hermes/.env`, Hub uses `~/Agent-Medici/config.yaml` + environment variables. Both must be updated separately.
+**Fix:** Gateway uses `~/.hermes/.env`, Hub uses `~/MisakaNet/config.yaml` + environment variables. Both must be updated separately.
 
 **Verify:** Both Gateway and Hub can authenticate to Feishu independently.
 

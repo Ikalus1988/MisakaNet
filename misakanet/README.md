@@ -1,6 +1,6 @@
 ## MisakaNet — 节点技能反馈通信模块
 
-**MisakaNet 是 Agent-Medici 的通信子模块。**  
+**MisakaNet 是通信子模块。** (注：Agent-Medici 是其前身项目，现已全面迁移至 MisakaNet。)  
 节点通过 GitHub Issues 上报 skill 使用反馈，Hub 消费后更新 Knowledge Graph。
 
 ### 目录结构
@@ -37,13 +37,13 @@ misakanet/
 
 **节点侧（WSL）：**
 ```bash
-cd /path/to/agent-medici
+cd /path/to/MisakaNet
 python misakanet/scripts/feedback_report.py
 ```
 
 **Hub 侧（Windows）：**
 ```powershell
-cd C:\Users\Eric Jia\agent-medici
+cd C:\Users\Eric Jia\MisakaNet
 $env:MISAKANET_TOKEN = "ghp_..."
 python misakanet\scripts\hub_poller.py
 ```

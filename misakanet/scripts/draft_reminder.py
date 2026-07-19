@@ -7,7 +7,7 @@ MisakaNet Lesson Draft Reminder (v2)
 用法:
   python3 misakanet/scripts/draft_reminder.py
 
-Cron: 0 9,14 * * * python3 /path/to/Agent-Medici/misakanet/scripts/draft_reminder.py
+Cron: 0 9,14 * * * python3 /path/to/MisakaNet/misakanet/scripts/draft_reminder.py
        (每天 9:00 和 14:00 各跑一次)
 """
 
