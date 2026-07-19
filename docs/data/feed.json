@@ -1,21 +1,21 @@
 {
-  "generated_at": "2026-07-19T17:35:37.137830+00:00",
+  "generated_at": "2026-07-19T19:36:31.216828+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs: add 5-minute quickstart section to README",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/524",
-      "timestamp": "2026-07-19T16:05:30Z",
+      "title": "Fix #459: [Benchmark] Implement real LessonReuseBench runner or manual evidence protocol",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/526",
+      "timestamp": "2026-07-19T17:35:55Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore: replace active Agent-Medici path references with MisakaNet",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/517",
-      "timestamp": "2026-07-19T12:06:16Z",
+      "title": "docs: add 5-minute quickstart section to README",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/524",
+      "timestamp": "2026-07-19T16:05:30Z",
       "source": "github"
     },
     {
