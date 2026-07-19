@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-MisakaNet Hub Poller (Hub 侧 - Agent-Medici 集成版)
+MisakaNet Hub Poller (Hub 侧集成版)
 ====================================================
 从 GitHub Issues 消费节点上报的反馈，直接更新 Hub 的 Knowledge Graph。
 
-部署: agent-medici/misakanet/scripts/hub_poller.py
-运行: cd /path/to/agent-medici && python misakanet/scripts/hub_poller.py
+部署: MisakaNet/misakanet/scripts/hub_poller.py
+运行: cd /path/to/MisakaNet && python misakanet/scripts/hub_poller.py
 
 依赖:
   pip install requests pyyaml
@@ -18,7 +18,7 @@ import sys
 import yaml
 from datetime import datetime, timezone
 
-# 项目根目录 (agent-medici/)
+# 项目根目录 (MisakaNet/)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
@@ -28,7 +28,7 @@ API_BASE = "https://api.github.com"
 
 
 def _load_config():
-    """读取 Agent-Medici config.yaml"""
+    """读取 MisakaNet config.yaml"""
     config_path = os.path.join(PROJECT_ROOT, "config.yaml")
     with open(config_path, encoding="utf-8") as f:
         return yaml.safe_load(f)
@@ -178,7 +178,7 @@ def mark_processed(issue_number, feedback, success):
 
 def main():
     print("=" * 55)
-    print(f"  MisakaNet Hub Poller (Agent-Medici 集成)")
+    print(f"  MisakaNet Hub Poller")
     print(f"  repo: {REPO}")
     print(f"  time: {datetime.now(timezone.utc).isoformat()}")
     print("=" * 55)
@@ -192,7 +192,7 @@ def main():
         kg = _get_graph()
     except ImportError as e:
         print(f"[error] 无法加载 KnowledgeGraph: {e}", file=sys.stderr)
-        print("  确保在 Agent-Medici 项目根目录下运行本脚本", file=sys.stderr)
+        print("  确保在 MisakaNet 项目根目录下运行本脚本", file=sys.stderr)
         sys.exit(1)
 
     # 检查 hook stats 并推送飞书（独立于 Issues，每次均执行）
