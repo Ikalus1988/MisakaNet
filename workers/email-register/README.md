@@ -56,7 +56,15 @@ npx wrangler deploy
 #    Destination: bot@misakanet.org → Worker: misakanet-email-register
 ```
 
-## Email Aliases
+## Email Intake (Current Setup)
+
+**Current recommended setup:** catch-all `*@misakanet.org` → agent mailbox → agent classifies locally.
+
+The Worker is an **experimental / future public intake gateway**. It activates when intake volume or spam risk requires automated routing.
+
+## Optional Future Cloudflare Email Routing
+
+When public intake volume grows, these aliases can be routed to the Worker:
 
 | Address | Purpose | Output |
 |---------|---------|--------|
@@ -65,17 +73,17 @@ npx wrangler deploy
 | `join@misakanet.org` | "I want to be a node" | Node registration |
 | `bot@misakanet.org` | Legacy / auto-detect | Classify by content |
 
-All aliases route through the same Worker. Recipient-based routing takes priority over content detection.
+> **Note:** These routes are optional. The current catch-all setup works fine for low-to-medium volume. Only enable Worker routing when you need automated filtering, rate limiting, or spam blocking at scale.
 
 ## Email Format
 
 ```
-To: rescue@misakanet.org
-Subject: pip install keeps timing out
+To: bot@misakanet.org
+Subject: register  (or 注册 / join / Registration)
 
-What were you trying to do: install packages on WSL
-What went wrong: pip timeout after 30s
-Setup: WSL2 Ubuntu 22.04, corporate proxy
+Node Name: my-agent
+Public Key: ssh-ed25519 AAAAC3...
+Contact: admin@example.com
 ```
 
 See [docs/email-intake.md](../../docs/email-intake.md) for the full intake guide.

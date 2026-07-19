@@ -53,15 +53,7 @@ export default {
     const rawEmail = await new Response(message.raw).text();
     const emailBody = parseEmailBody(rawEmail);
     const lessonContent = extractLessonContent(emailBody);
-    // Route by recipient address (takes priority over content detection)
-    const recipientLocal = recipient.split('@')[0]?.toLowerCase() || '';
-    const ROUTED_TYPES = {
-      'rescue': 'rescue-request',
-      'lessons': 'lesson-submission',
-      'join': 'registration',
-      'feedback': 'rescue-request',
-    };
-    const intakeType = ROUTED_TYPES[recipientLocal] || detectIntakeType(subject, lessonContent);
+    const intakeType = detectIntakeType(subject, lessonContent);
     const intakeId = crypto.randomUUID();
     const receivedAt = new Date().toISOString();
     let nodeId = await env.MISAKANET_KV.get(`email-node:${sender}`, 'text');

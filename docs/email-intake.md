@@ -2,17 +2,31 @@
 
 > Don't have a GitHub account? Send us a debugging story by email.
 
-## How It Works
+## Current Setup
 
 ```
-You send an email
+You send an email to bot@misakanet.org
     ↓
-We classify it (rescue / lesson / registration)
+Agent mailbox receives it (catch-all)
     ↓
-We reply to confirm receipt
+Agent classifies locally (rescue / lesson / registration)
     ↓
-We anonymize and process your submission
+Agent replies to confirm receipt
     ↓
+Agent anonymizes and processes your submission
+    ↓
+If you consent, it becomes a public lesson or rescue card
+```
+
+**Addresses:** Any `*@misakanet.org` works. We recommend:
+- `bot@misakanet.org` — general intake (current)
+- `rescue@misakanet.org` — emergency help (future)
+- `lessons@misakanet.org` — share a fix (future)
+- `join@misakanet.org` — register as a node (future)
+
+> **Note:** The dedicated addresses (`rescue@`, `lessons@`, `join@`) are documented for future use when intake volume requires automated Worker routing. Currently, all email goes through the agent mailbox catch-all.
+
+## How It Works
 If you consent, it becomes a public lesson or rescue card
 ```
 

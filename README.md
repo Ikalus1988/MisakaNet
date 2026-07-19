@@ -351,7 +351,7 @@ python3 scripts/lesson_reuse_bench.py --compare         # with vs without lesson
 
 **API:** `curl -X POST ... -d '{"title":"register:YourName","labels":["register"]}'` (see [docs](docs/cli-reference.md))
 
-**No GitHub account?** Email your story to `rescue@misakanet.org` (help!) or `lessons@misakanet.org` (share a fix) → [Email Intake Guide](docs/email-intake.md)
+**No GitHub account?** Email your story to `bot@misakanet.org` → [Email Intake Guide](docs/email-intake.md)
 
 ---
 

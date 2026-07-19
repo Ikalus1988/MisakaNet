@@ -211,47 +211,15 @@ export function detectIntakeType(subject, body) {
 }
 
 export function buildReplyText({ intakeId, intakeType, nodeId }) {
-  // Type-specific reply templates (user-friendly, no jargon)
-  const TEMPLATES = {
-    'rescue-request': [
-      'Got it. You don\'t need a GitHub account.',
-      '',
-      'We\'re searching our knowledge base for a matching fix.',
-      'If we find one, we\'ll reply within 24 hours.',
-      '',
-      'If you\'d like to add more context, just reply to this email.',
-    ],
-    'lesson-submission': [
-      'Got it. You don\'t need a GitHub account.',
-      '',
-      'We\'ll review your submission and draft a lesson file.',
-      'Before publishing, we\'ll ask you to confirm.',
-      '',
-      'If your email contains sensitive info, reply "do not publish"',
-      'and we\'ll treat it as a private note only.',
-    ],
-    'registration': [
-      `Welcome! Your node ID is ${nodeId || 'pending'}.`,
-      '',
-      'You\'re now registered in the MisakaNet ecosystem.',
-      'Your trust tier: mail-verified',
-      '',
-      'To upgrade your trust level, contribute a lesson or rescue card.',
-    ],
-  };
-
-  const template = TEMPLATES[intakeType];
-  if (template) {
-    return template.join('\n') + `\n\nRef: ${intakeId}`;
-  }
-
-  // Fallback for unknown types
+  const identifier = nodeId ? `Your node ID is ${nodeId}.` : `Your intake ID is ${intakeId}.`;
   return [
     'Thanks for contacting MisakaNet.',
     '',
-    nodeId ? `Your node ID is ${nodeId}.` : `Your intake ID is ${intakeId}.`,
+    identifier,
     `Submission type: ${intakeType}`,
     '',
-    'Your submission is queued for maintainer review.',
-  ].join('\n') + `\n\nRef: ${intakeId}`;
+    nodeId
+      ? 'Next steps: clone https://github.com/Ikalus1988/MisakaNet and follow the node quickstart.'
+      : 'Your submission is queued for maintainer review. Keep the intake ID for follow-up.',
+  ].join('\n');
 }
