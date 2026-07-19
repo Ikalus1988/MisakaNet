@@ -353,6 +353,8 @@ python3 scripts/lesson_reuse_bench.py --compare         # with vs without lesson
 
 **No GitHub account?** Email your story to `bot@misakanet.org` → [Email Intake Guide](docs/email-intake.md)
 
+**Want to help without changing code?** Try the MisakaNet journey and report friction: [#510](https://github.com/Ikalus1988/MisakaNet/issues/510)
+
 ---
 
 ## Stats
