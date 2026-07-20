@@ -1,3 +1,11 @@
+"""Template agent implementation.
+
+This is a template/stub file demonstrating the agent interface pattern.
+It does not contain real agent logic and should not be used directly
+in production. Replace the placeholder logic with your own implementation,
+or copy this file as a starting point for a new agent.
+"""
+
 class YourAgent:
     def __init__(self, name):
         self.name = name
