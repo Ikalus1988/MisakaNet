@@ -518,6 +518,8 @@ Active competitions → [status:competition issues](https://github.com/Ikalus198
 
 Fresh challenges added weekly. No registration — just `/claim` and go.
 
+Labels → [label system reference](docs/label-system.md)
+
 ---
 ---
 
