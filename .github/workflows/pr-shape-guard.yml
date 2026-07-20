@@ -13,7 +13,7 @@ jobs:
   audit-shape:
     runs-on: ubuntu-latest
     steps:
-      - name: PR shape guard
+      - name: Shape guard + auto-label
         uses: actions/github-script@v7
         with:
           script: |
@@ -30,7 +30,12 @@ jobs:
               }
             );
 
+            const names = files.map(f => f.filename);
             const failures = [];
+
+            // ═══════════════════════════════════════════
+            // SHAPE CHECKS (failures block merge)
+            // ═══════════════════════════════════════════
 
             for (const f of files) {
               const name = f.filename;
@@ -76,9 +81,9 @@ jobs:
               failures.push('**范围越权**: PR 声明为 docs-only/docs，但实际修改了代码文件。');
             }
 
-            if (failures.length === 0) return;
-
-            const body = `${marker}
+            // Post shape guard comment if failures
+            if (failures.length > 0) {
+              const body = `${marker}
             ### ⚠️ PR Shape Guard detected unsafe patch patterns
 
             Hi @${pr.user.login}, thanks for the contribution. This PR is not ready for review because its patch shape looks unsafe.
@@ -102,49 +107,41 @@ jobs:
             Thanks — happy to review a corrected PR.
             `;
 
-            const comments = await github.paginate(
-              github.rest.issues.listComments,
-              {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                per_page: 100,
+              const comments = await github.paginate(
+                github.rest.issues.listComments,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  per_page: 100,
+                }
+              );
+
+              const old = comments.find(c => c.body && c.body.includes(marker));
+
+              if (old) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: old.id,
+                  body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body,
+                });
               }
-            );
-
-            const old = comments.find(c => c.body && c.body.includes(marker));
-
-            if (old) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: old.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                body,
-              });
             }
 
-            core.setFailed('PR Shape Guard failed.');
-
-      - name: Auto-label PR scope and quality gate
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const pr = context.payload.pull_request;
-            const files = await github.paginate(
-              github.rest.pulls.listFiles,
-              { owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number, per_page: 100 }
-            );
+            // ═══════════════════════════════════════════
+            // AUTO-LABEL (scope / risk / shape / quality)
+            // ═══════════════════════════════════════════
 
             const toAdd = [];
             const toRemove = [];
-            const names = files.map(f => f.filename);
 
             // ── Gate 1: Scope ──
             const isDocs = names.every(n => /\.(md|txt|rst)$/.test(n) || n.startsWith('docs/'));
@@ -166,7 +163,7 @@ jobs:
             // ── Gate 3: Shape (mutual exclusion, highest priority wins) ──
             const isGenerated = names.some(n => n.includes(' ---') || n.endsWith('---'));
             const isDestructive = files.some(f => f.filename === 'README.md' && f.deletions > 120);
-            const hasShapeRisk = typeof failures !== 'undefined' && failures.length > 0;
+            const hasShapeRisk = failures.length > 0;
 
             // Priority: destructive-rewrite > generated-file > shape-risk > shape-safe
             if (isDestructive) {
@@ -182,6 +179,16 @@ jobs:
               toAdd.push('shape-safe');
               toRemove.push('shape-risk', 'generated-file', 'destructive-rewrite');
             }
+
+            // ── Gate 4: DCO / rebase (based on commit metadata) ──
+            const commits = await github.paginate(
+              github.rest.pulls.listCommits,
+              { owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number, per_page: 100 }
+            );
+            const hasDCO = commits.every(c =>
+              c.commit.message.includes('Signed-off-by:')
+            );
+            if (!hasDCO) toAdd.push('needs-dco');
 
             // ── Apply labels ──
             const existing = pr.labels.map(l => l.name);
@@ -206,4 +213,8 @@ jobs:
                   name: label,
                 });
               } catch (e) { /* label may not exist on this PR */ }
+            }
+
+            if (failures.length > 0) {
+              core.setFailed('PR Shape Guard failed.');
             }

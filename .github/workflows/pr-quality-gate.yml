@@ -1,0 +1,84 @@
+name: PR Quality Gate
+
+# Runs after CI checks complete to apply quality labels
+on:
+  check_run:
+    types: [completed]
+  pull_request:
+    types: [synchronize]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  quality-labels:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'check_run' || github.event_name == 'pull_request'
+    steps:
+      - name: Apply quality gate labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get the PR number from context
+            let prNumber;
+            if (context.eventName === 'check_run') {
+              const prs = context.payload.check_run.pull_requests;
+              if (!prs || prs.length === 0) return;
+              prNumber = prs[0].number;
+            } else {
+              prNumber = context.payload.pull_request.number;
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Get PR details
+            const pr = await github.rest.pulls.get({
+              owner, repo, pull_number: prNumber,
+            });
+
+            // Get all check runs for the PR head
+            const checkRuns = await github.paginate(
+              github.rest.checks.listForRef,
+              { owner, repo, ref: pr.data.head.sha, per_page: 100 }
+            );
+
+            const allPassed = checkRuns.every(cr =>
+              cr.conclusion === 'success' || cr.conclusion === 'skipped' || cr.conclusion === 'neutral'
+            );
+            const anyFailed = checkRuns.some(cr => cr.conclusion === 'failure');
+            const allComplete = checkRuns.every(cr => cr.status === 'completed');
+
+            const existing = pr.data.labels.map(l => l.name);
+            const toAdd = [];
+            const toRemove = [];
+
+            // ready-to-merge: all checks passed + mergeable + no shape-risk
+            if (allComplete && allPassed && !anyFailed) {
+              if (pr.data.mergeable && !existing.includes('shape-risk') && !existing.includes('destructive-rewrite')) {
+                toAdd.push('ready-to-merge');
+              }
+              toRemove.push('needs-rebase');
+            } else {
+              toRemove.push('ready-to-merge');
+            }
+
+            // needs-rebase: has merge conflicts
+            if (pr.data.mergeable === false) {
+              toAdd.push('needs-rebase');
+              toRemove.push('ready-to-merge');
+            }
+
+            // Apply
+            const uniqueAdd = toAdd.filter(l => !existing.includes(l));
+            const uniqueRemove = toRemove.filter(l => existing.includes(l));
+
+            if (uniqueAdd.length > 0) {
+              await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: uniqueAdd });
+            }
+            for (const label of uniqueRemove) {
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number: prNumber, name: label });
+              } catch (e) {}
+            }
