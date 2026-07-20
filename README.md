@@ -30,8 +30,8 @@
 |---|---|
 | 🔴 DCO sign-off fails on Windows | [→ dco-auto-fix-workflow](lessons/core/dco-auto-fix-workflow.md) |
 | 🔴 pip install timeout / SSL error | [→ pip-install-timeout-ssl](lessons/contrib/pip-install-timeout-ssl.md) |
-| 🔴 Secret scan / token in commit | [→ codeql-alert-dismissal-false-positive](lessons/core/codeql-alert-dismissal-false-positive.md) |
-| 🔴 GitHub API 401 / token expired | [→ github-401-credential-lookup](lessons/core/github-401-credential-lookup.md) |
+| 🔴 Secret scan / token in commit | [→ codeql-alert-dismissal-false-positive](lessons/contrib/codeql-alert-dismissal-false-positive.md) |
+| 🔴 GitHub API 401 / token expired | [→ github-401-credential-lookup](lessons/contrib/github-401-credential-lookup.md) |
 
 [🔍 Search all lessons →](https://ikalus1988.github.io/MisakaNet/search/)
 
