@@ -11,11 +11,9 @@ misakanet/
 ├── schema/
 │   ├── feedback.schema.json             # 反馈数据 JSON Schema
 │   └── response.schema.json             # Hub 回复 JSON Schema
-├── scripts/
-│   ├── feedback_report.py               # 节点侧：收集 + 上报反馈
-│   └── hub_poller.py                    # Hub 侧：消费反馈 + 更新图谱
-├── .feedback/                           # 本地反馈缓存（节点侧）
-└── .responses/                          # Hub 处理摘要存档
+└── scripts/
+    ├── feedback_report.py               # 节点侧：收集 + 上报反馈
+    └── hub_poller.py                    # Hub 侧：消费反馈 + 更新图谱
 ```
 
 ### 消息生命周期
