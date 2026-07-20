@@ -5,6 +5,7 @@ BM25 核心算法委托给 misakanet-core 包。
 import json
 import re
 import sqlite3
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -225,16 +226,17 @@ def _doc_cache_id(doc: CachedDoc) -> str:
 
 
 def _search_cached(
-    query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False
+    query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False,
+    rerank: bool = False,
 ) -> list[tuple[float, CachedDoc]]:
     """L1缓存 — 相同 query 直接返回上次结果。"""
-    key = f"{query}_{titles_only}_{broad_only}"
+    key = f"{query}_{titles_only}_{broad_only}_{rerank}"
     if key in _L1_CACHE:
         doc_map = {_doc_cache_id(d): d for d in docs}
         result = [(s, doc_map[fid]) for s, fid in _L1_CACHE[key] if fid in doc_map]
         if len(result) == len(_L1_CACHE[key]):
             return result
-    result = _rank_docs_impl(query, docs, titles_only, broad_only)
+    result = _rank_docs_impl(query, docs, titles_only, broad_only, rerank=rerank)
     _L1_CACHE[key] = [(s, _doc_cache_id(d)) for s, d in result[:20]]
     if len(_L1_CACHE) > _L1_MAX:
         del _L1_CACHE[next(iter(_L1_CACHE))]
@@ -365,7 +367,8 @@ def _compute_boost_breakdown(doc: CachedDoc) -> list[tuple[str, float]]:
 
 
 def _rank_docs_impl(
-    query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False
+    query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False,
+    rerank: bool = False,
 ) -> list[tuple[float, CachedDoc]]:
     if not docs:
         return []
@@ -388,7 +391,73 @@ def _rank_docs_impl(
         for i, d in enumerate(docs)
     ]
     scored.sort(key=lambda x: -x[0])
+
+    # Cross-encoder reranking (Issue #312)
+    if rerank:
+        scored = _cross_encoder_rerank(query, scored)
+
     return scored
+
+
+# ── Cross-encoder reranking (Issue #312) ──
+_CROSS_ENCODER = None
+_CROSS_ENCODER_FAILED = False
+
+
+def _get_cross_encoder():
+    """Lazy-load cross-encoder model. Returns None if unavailable."""
+    global _CROSS_ENCODER, _CROSS_ENCODER_FAILED
+    if _CROSS_ENCODER_FAILED:
+        return None
+    if _CROSS_ENCODER is not None:
+        return _CROSS_ENCODER
+    try:
+        from sentence_transformers import CrossEncoder
+        _CROSS_ENCODER = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", max_length=512)
+        return _CROSS_ENCODER
+    except (ImportError, Exception) as e:
+        _CROSS_ENCODER_FAILED = True
+        print(f"  ⚠️ Cross-encoder unavailable ({e}), falling back to BM25", file=sys.stderr)
+        return None
+
+
+def _cross_encoder_rerank(
+    query: str, scored: list[tuple[float, CachedDoc]], top_k: int = 10
+) -> list[tuple[float, CachedDoc]]:
+    """Rerank top-K results using cross-encoder for better precision.
+
+    Falls back to original BM25 ranking if cross-encoder unavailable.
+    """
+    if not scored:
+        return scored
+
+    encoder = _get_cross_encoder()
+    if encoder is None:
+        return scored  # graceful fallback
+
+    # Take top-K for reranking (cross-encoder is expensive)
+    candidates = scored[:top_k]
+    remainder = scored[top_k:]
+
+    # Build query-doc pairs
+    pairs = [(query, f"{d.title} {d.content[:300]}") for _, d in candidates]
+
+    try:
+        # Cross-encoder scores (higher = more relevant)
+        ce_scores = encoder.predict(pairs)
+        # Normalize CE scores to [0, 1]
+        ce_norm = _normalize(list(ce_scores))
+
+        # Blend: 70% cross-encoder + 30% original BM25 composite
+        reranked = [
+            (0.70 * ce_norm[i] + 0.30 * orig_score, doc)
+            for i, (orig_score, doc) in enumerate(candidates)
+        ]
+        reranked.sort(key=lambda x: -x[0])
+        return reranked + remainder
+    except Exception as e:
+        print(f"  ⚠️ Cross-encoder rerank failed ({e}), using BM25", file=sys.stderr)
+        return scored
 
 
 def _matching_terms(text: str, query: str) -> list[str]:

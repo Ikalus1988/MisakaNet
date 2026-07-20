@@ -511,6 +511,7 @@ def main():
     broad_only = False
     top_k = 10
     use_semantic = False
+    use_rerank = False
     suggest = False
     explain = False
     verbose = False
@@ -549,6 +550,8 @@ def main():
             lang = search_args[i + 1]
         elif arg == "--semantic":
             use_semantic = True
+        elif arg == "--rerank":
+            use_rerank = True
         elif arg.startswith("--domain="):
             domain = arg.split("=", 1)[1].lower()
         elif arg == "--domain" and i + 1 < len(search_args):
@@ -705,7 +708,7 @@ def main():
     
     all_docs = lessons_docs + ref_docs
     if lessons_docs:
-        ranked = _rank_docs(query, lessons_docs, titles_only, broad_only)
+        ranked = _rank_docs(query, lessons_docs, titles_only, broad_only, rerank=use_rerank)
         # Only show results above threshold
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
         found = _format_output(filtered, titles_only, top_k,
@@ -714,7 +717,7 @@ def main():
                                all_docs=all_docs)
         found_any = found_any or found
     if ref_docs:
-        ranked = _rank_docs(query, ref_docs, titles_only, broad_only=False)
+        ranked = _rank_docs(query, ref_docs, titles_only, broad_only=False, rerank=use_rerank)
         # Only show results above threshold
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
         found = _format_output(filtered, titles_only, top_k,
