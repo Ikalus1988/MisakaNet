@@ -214,8 +214,13 @@ MisakaNet is useful in different ways depending on what you are trying to do:
 | 🔧 Contributing a fix | Check [related lessons](https://ikalus1988.github.io/MisakaNet/search/), then open a small PR |
 | 📝 Sharing a failure case | Submit a [5-line failure note](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml) — no polished PR required |
 | 📊 Evaluating agent learning | Run the [benchmarks](scripts/retrieval_noisebench.py) and compare reuse behavior |
+| 💬 Reporting friction | [Email intake](docs/email-intake.md) or [journey report #510](https://github.com/Ikalus1988/MisakaNet/issues/510) |
 
 > 👉 **New here?** [Search failure lessons →](https://ikalus1988.github.io/MisakaNet/search/)
+>
+> No GitHub account? Email `bot@misakanet.org` → [Email intake guide](docs/email-intake.md)
+>
+> Understanding the system → [Label system](docs/label-system.md) · [Troubleshooting](docs/troubleshooting.md)
 
 ### Lesson vs Skill
 
