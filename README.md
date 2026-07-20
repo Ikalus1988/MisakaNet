@@ -222,6 +222,22 @@ MisakaNet is useful in different ways depending on what you are trying to do:
 >
 > Understanding the system → [Label system](docs/label-system.md) · [Troubleshooting](docs/troubleshooting.md)
 
+**See it in action:**
+
+```
+$ python3 search_knowledge.py "GitHub token 401"
+
+📋 lessons/  (2 matches)
+──────────────────────────────────────────────────
+  [core]    github-401-credential-lookup       0.89   🟢 high/actionable
+            Fix: check ~/.git-credentials and ~/.netrc before asking for a new PAT.
+
+  [contrib] github-api-rate-limit-handling     0.71   🟢 high/actionable
+            Fix: use conditional requests with ETag/Last-Modified headers.
+```
+
+> *(GIF demo coming — search → open result → see feedback/email/node entry)*
+
 ### Lesson vs Skill
 
 MisakaNet lessons are **not** skills.
