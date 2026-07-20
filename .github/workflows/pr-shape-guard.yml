@@ -131,3 +131,60 @@ jobs:
             }
 
             core.setFailed('PR Shape Guard failed.');
+
+      - name: Auto-label PR scope
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              { owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number, per_page: 100 }
+            );
+
+            const labels = [];
+            const names = files.map(f => f.filename);
+            const exts = names.map(n => n.split('.').pop());
+
+            // Scope labels
+            const isDocs = names.every(n => /\.(md|txt|rst)$/.test(n) || n.startsWith('docs/'));
+            const isTests = names.every(n => /test|spec|fixture/.test(n));
+            const isLessons = names.every(n => n.startsWith('lessons/'));
+
+            if (isDocs && names.length > 0) labels.push('docs-only');
+            if (isTests && names.length > 0) labels.push('tests-only');
+            if (isLessons && names.length > 0) labels.push('lessons-only');
+
+            // Risk labels
+            const touchesWorkflow = names.some(n => n.startsWith('.github/workflows/'));
+            const touchesCore = names.some(n => ['search_knowledge.py', 'misaka-protocol.json'].includes(n));
+            const largeDeletion = files.some(f => f.deletions > 100);
+
+            if (touchesCore || largeDeletion) labels.push('risk:high');
+            if (touchesWorkflow) labels.push('workflow-change');
+
+            // Generated file detection
+            const isGenerated = names.some(n => n.includes(' ---') || n.endsWith('---'));
+            if (isGenerated) labels.push('generated-file');
+
+            // Destructive rewrite detection
+            const isDestructive = files.some(f => f.filename === 'README.md' && f.deletions > 120);
+            if (isDestructive) labels.push('destructive-rewrite');
+
+            // Shape risk
+            if (failures && failures.length > 0) labels.push('shape-risk');
+            else labels.push('shape-safe');
+
+            // Apply labels (only add, never remove)
+            if (labels.length > 0) {
+              const existing = pr.labels.map(l => l.name);
+              const toAdd = labels.filter(l => !existing.includes(l));
+              if (toAdd.length > 0) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  labels: toAdd,
+                });
+              }
+            }
