@@ -22,9 +22,9 @@ jobs:
       - name: Mirror PR to Shadow Branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          PR_NUM="${{ github.event.pull_request.number }}"
-          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
           SHADOW_REF="refs/heads/shadow/pr-${PR_NUM}"
 
           echo "=== Shadow Branch: PR #$PR_NUM ==="

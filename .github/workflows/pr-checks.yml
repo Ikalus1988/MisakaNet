@@ -475,8 +475,9 @@ jobs:
         if: success() && github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          PR_NUM="${{ github.event.pull_request.number }}"
           echo "=== Auto-Merge Gate for PR #$PR_NUM ==="
 
           if [ -z "$GH_TOKEN" ] || [ "$GH_TOKEN" = "" ]; then
@@ -494,5 +495,5 @@ jobs:
           [ "$UNCHECKED" -gt 0 ] && { echo "AC not all checked. Skipping."; exit 0; }
 
           gh pr merge "$PR_NUM" --repo Ikalus1988/MisakaNet --merge --auto \
-            --subject "Auto-merge #$PR_NUM: ${{ github.event.pull_request.title }}"
+            --subject "Auto-merge #$PR_NUM: $PR_TITLE"
           echo "Auto-merge enabled for PR #$PR_NUM"
