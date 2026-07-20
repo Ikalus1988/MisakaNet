@@ -54,19 +54,25 @@ jobs:
             const toAdd = [];
             const toRemove = [];
 
-            // ready-to-merge: all checks passed + mergeable + no shape-risk
-            if (allComplete && allPassed && !anyFailed) {
-              if (pr.data.mergeable && !existing.includes('shape-risk') && !existing.includes('destructive-rewrite')) {
-                toAdd.push('ready-to-merge');
-              }
-              toRemove.push('needs-rebase');
-            } else {
-              toRemove.push('ready-to-merge');
-            }
-
             // needs-rebase: has merge conflicts
             if (pr.data.mergeable === false) {
               toAdd.push('needs-rebase');
+            } else {
+              toRemove.push('needs-rebase');
+            }
+
+            // ready-to-merge: ALL gates must pass
+            const gateBlocked =
+              !allComplete || anyFailed || !allPassed ||       // checks
+              pr.data.mergeable === false ||                   // conflicts
+              existing.includes('shape-risk') ||               // shape
+              existing.includes('destructive-rewrite') ||      // destructive
+              existing.includes('generated-file') ||           // needs confirm
+              existing.includes('needs-dco');                  // missing signoff
+
+            if (!gateBlocked && pr.data.mergeable === true) {
+              toAdd.push('ready-to-merge');
+            } else {
               toRemove.push('ready-to-merge');
             }
 
