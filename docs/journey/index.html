@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MisakaNet — 新用户注册模拟旅程</title>
+<title>MisakaNet — Newcomer Journey</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -259,10 +259,10 @@
 </head>
 <body>
 <div class="container">
-  <h1>⚡ MisakaNet 新用户贡献旅程</h1>
-  <p class="subtitle" style="margin-bottom:0.5rem;">从发现 Issue 到 PR 合并的全流程模拟</p>
+  <h1>⚡ MisakaNet Newcomer Journey</h1>
+  <p class="subtitle" style="margin-bottom:0.5rem;">Understand → Search → Use → Feedback → Optional Contribution</p>
   <div style="text-align:center;margin-bottom:0.75rem;">
-    <span style="display:inline-block;padding:0.2rem 0.8rem;border:1px solid #30363d;border-radius:12px;font-size:0.7rem;color:#8b949e;background:#0d1117;">📊 历史存档: Active Sandbox Replay (Scenario: #191 baobao)</span>
+    <span style="display:inline-block;padding:0.2rem 0.8rem;border:1px solid #30363d;border-radius:12px;font-size:0.7rem;color:#8b949e;background:#0d1117;">No GitHub account needed. No PR required.</span>
   </div>
 
   <div class="progress-bar" id="progressBar"></div>
@@ -273,14 +273,11 @@
 
 <script>
 const STEPS = [
-  { id: 'discover', label: '发现 Issue', icon: '🔍' },
-  { id: 'claim', label: '留言 /claim', icon: '✋' },
-  { id: 'welcome', label: 'Bot 欢迎', icon: '🤖' },
-  { id: 'fork', label: 'Fork & 开发', icon: '🔄' },
-  { id: 'pr', label: '提交 PR', icon: '📤' },
-  { id: 'dco', label: 'DCO 检查', icon: '🔒' },
-  { id: 'audit', label: 'CI 审计', icon: '🧪' },
-  { id: 'merge', label: '合并 🎉', icon: '✅' },
+  { id: 'understand', label: 'Understand', icon: '💡' },
+  { id: 'search', label: 'Search', icon: '🔍' },
+  { id: 'use', label: 'Use', icon: '📖' },
+  { id: 'feedback', label: 'Feedback', icon: '💬' },
+  { id: 'contribute', label: 'Contribute', icon: '📤' },
 ];
 
 let currentStep = -1;
@@ -333,278 +330,171 @@ function renderStep(idx) {
 
   const s = STEPS[idx];
   switch (s.id) {
-    case 'discover': renderDiscover(card); break;
-    case 'claim': renderClaim(card); break;
-    case 'welcome': renderWelcome(card); break;
-    case 'fork': renderFork(card); break;
-    case 'pr': renderPR(card); break;
-    case 'dco': renderDCO(card); break;
-    case 'audit': renderAudit(card); break;
-    case 'merge': renderMerge(card); break;
+    case 'understand': renderUnderstand(card); break;
+    case 'search': renderSearch(card); break;
+    case 'use': renderUse(card); break;
+    case 'feedback': renderFeedback(card); break;
+    case 'contribute': renderContribute(card); break;
   }
 }
 
-function renderDiscover(card) {
-  addLog('Agent scan: scanning Ikalus1988/MisakaNet for open issues...');
-  setTimeout(() => addLog('Agent scan: found issue #191 — "good first issue: Add Chinese translation of README.md"'), 300);
-  setTimeout(() => addLog('Agent scan: labels: good-first-issue, documentation | AC: 4 items | Est. effort: 30min'), 600);
+function renderUnderstand(card) {
+  addLog('Visiting MisakaNet for the first time...');
+  setTimeout(() => addLog('Reading README: what is MisakaNet?'), 300);
+  setTimeout(() => addLog('Lesson ≠ Skill — lessons are failure memories for agents'), 600);
   card.innerHTML = `
     <div class="card-header">
-      <div class="icon icon-gh">🔍</div>
-      <div class="name">REAPR Bot 扫描仓库</div>
-      <span class="tag">Agent</span>
+      <div class="icon">💡</div>
+      <div class="name">Understand MisakaNet</div>
+      <span class="tag">Step 1</span>
     </div>
     <div class="card-body">
-      <p>在 <span class="highlight">Ikalus1988/MisakaNet</span> 中发现开放 Issue：</p>
+      <p>MisakaNet is a <span class="highlight">shared failure-memory layer</span> for developers and agents.</p>
       <div style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:1rem;margin:0.75rem 0;">
-        <div style="display:flex;gap:0.5rem;align-items:start;">
-          <span style="font-size:1.2rem;">📝</span>
-          <div>
-            <div style="font-weight:600;color:#58a6ff;">good first issue: Add Chinese (zh-CN) translation of README.md</div>
-            <div style="color:#8b949e;font-size:0.8rem;">#191 opened by Ikalus1988</div>
-            <div style="margin-top:0.5rem;display:flex;gap:0.3rem;flex-wrap:wrap;">
-              <span class="badge badge-green">good first issue</span>
-              <span class="badge badge-blue">documentation</span>
-              <span class="badge badge-yellow">effort: 30min</span>
-              <span class="ring-badge ring-3">🌱 Ring-3</span>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div style="font-weight:600;color:#58a6ff;margin-bottom:0.5rem;">📖 Lesson</div>
+            <div style="color:#8b949e;font-size:0.85rem;">
+              Failure experience / debugging knowledge<br>
+              <span style="color:#3fb950;">Helps agents avoid repeating known failures</span>
+            </div>
+          </div>
+          <div style="flex:1;min-width:200px;">
+            <div style="font-weight:600;color:#d29922;margin-bottom:0.5rem;">🔧 Skill</div>
+            <div style="color:#8b949e;font-size:0.85rem;">
+              Executable capability / workflow / tool<br>
+              <span style="color:#8b949e;">Helps agents complete tasks</span>
             </div>
           </div>
         </div>
       </div>
-      <p>Acceptance Criteria（4 项）：</p>
-      <pre><span class="comment">- [ ] Create README.zh-CN.md in repo root</span>
-<span class="comment">- [ ] Translate all sections accurately</span>
-<span class="comment">- [ ] Keep same structure as English README</span>
-<span class="comment">- [ ] Add language badge linking to Chinese version</span></pre>
+      <p style="color:#8b949e;font-size:0.85rem;">You don't need to understand everything. Just know: <span style="color:#c9d1d9;">when something breaks, search here first.</span></p>
     </div>
   `;
 }
 
-function renderClaim(card) {
-  addLog('User: commenting /claim on issue #191...');
-  setTimeout(() => addLog('GitHub: 8-hour exclusive window locked for baobao/mkcash'), 400);
+function renderSearch(card) {
+  addLog('Opening search page...');
+  setTimeout(() => addLog('Searching: "GitHub token 401"'), 400);
+  setTimeout(() => addLog('Found: github-401-credential-lookup (score: 0.89)'), 800);
   card.innerHTML = `
     <div class="card-header">
-      <div class="icon icon-user">👤</div>
-      <div class="name">baobao (mkcash)</div>
-      <span class="tag">贡献者</span>
+      <div class="icon">🔍</div>
+      <div class="name">Search for a Lesson</div>
+      <span class="tag">Step 2</span>
     </div>
     <div class="card-body">
-      <p>在 Issue #191 下留言：</p>
-      <pre><span class="cmd">/claim</span></pre>
-      <p style="margin-top:0.5rem;">系统响应：</p>
-      <pre><span class="out">✅ Issue #191 已锁定 4 小时独占窗口</span>
-<span class="out">⏰ 截止时间: ${new Date(Date.now() + 4*3600000).toLocaleTimeString()}</span>
-<span class="comment">📌 到期未提交 PR 将自动解锁</span></pre>
-    </div>
-  `;
-}
+      <pre><span class="cmd">python3 search_knowledge.py "GitHub token 401"</span>
 
-function renderWelcome(card) {
-  addLog('Bot: detecting first-time comment on good-first-issue...');
-  setTimeout(() => addLog('github-actions[bot]: posting welcome message...'), 500);
-  card.innerHTML = `
-    <div class="card-header">
-      <div class="icon icon-bot">🤖</div>
-      <div class="name">github-actions[bot]</div>
-      <span class="tag">自动回复</span>
-    </div>
-    <div class="card-body">
-      <p>Newbie Welcome 工作流自动触发 👇</p>
-      <div style="background:#0d1117;border:1px solid #21262d;border-radius:6px;padding:1rem;margin:0.75rem 0;">
-        <div style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">👋 Welcome to MisakaNet!</div>
-        <div style="color:#8b949e;font-size:0.85rem;">
-          <div>1. 📖 Read the <span style="color:#58a6ff;">CONTRIBUTING.md</span> guide</div>
-          <div>2. ✋ <span style="color:#d29922;">/claim</span> this issue — 8h exclusive window</div>
-          <div>3. 💻 Implement with <code>git commit -s</code></div>
-          <div>4. 📤 Submit a PR — CI audits automatically</div>
-          <div style="margin-top:0.5rem;color:#8b949e;">⭐ Star the repo to help others discover it!</div>
-        </div>
-      </div>
-    </div>
-  `;
-}
+<span class="out">📋 lessons/  (2 matches)</span>
+<span class="out">──────────────────────────────────────────────────</span>
+<span class="out">  [core]    github-401-credential-lookup       0.89   🟢 high/actionable</span>
+<span class="out">            Fix: check ~/.git-credentials before asking for a new PAT.</span>
 
-function renderFork(card) {
-  addLog('User: forking repository...', 'info');
-  setTimeout(() => addLog('User: git clone git@github.com:mkcash/MisakaNet.git', 'info'), 400);
-  setTimeout(() => addLog('User: git checkout -b fix/chinese-readme', 'info'), 700);
-  setTimeout(() => addLog('User: creating README.zh-CN.md...', 'info'), 1000);
-  card.innerHTML = `
-    <div class="card-header">
-      <div class="icon icon-user">👤</div>
-      <div class="name">baobao (mkcash)</div>
-      <span class="tag">本地开发</span>
-    </div>
-    <div class="card-body">
-      <pre><span class="comment"># Fork & Clone</span>
-<span class="cmd">gh repo fork</span> Ikalus1988/MisakaNet --clone
-<span class="cmd">cd</span> MisakaNet
-<span class="cmd">git checkout -b</span> fix/chinese-readme
-
-<span class="comment"># 修改内容</span>
-<span class="cmd">vim</span> README.zh-CN.md
-<span class="cmd">vim</span> README.md         <span class="comment"># 加中文版本徽章</span>
-
-<span class="comment"># 运行测试确认不破坏现有功能</span>
-<span class="cmd">pytest tests/</span>
-<span class="out">✅ All tests passed</span></pre>
-    </div>
-  `;
-}
-
-function renderPR(card) {
-  addLog('User: git add && git commit -s...', 'info');
-  setTimeout(() => addLog('User: git push origin fix/chinese-readme', 'info'), 400);
-  setTimeout(() => addLog('User: creating pull request...', 'info'), 700);
-  setTimeout(() => addLog('CI: triggered by pull_request:opened event', 'info'), 1000);
-  card.innerHTML = `
-    <div class="card-header">
-      <div class="icon icon-user">👤</div>
-      <div class="name">baobao (mkcash)</div>
-      <span class="tag">提交 PR</span>
-    </div>
-    <div class="card-body">
-      <pre><span class="comment"># Git 提交</span>
-<span class="cmd">git add</span> README.zh-CN.md README.md
-<span class="cmd">git commit -s -m</span> "feat: add Chinese (zh-CN) translation of README.md"
-<span class="cmd">git push origin</span> fix/chinese-readme
-
-<span class="comment"># PR 已创建</span>
-<span class="out">→ https://github.com/Ikalus1988/MisakaNet/pull/196</span></pre>
-      <div style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:0.75rem;margin-top:0.5rem;">
-        <div style="font-weight:600;">🔀 fix(#191): good first issue: Add Chinese (zh-CN) translation of README.md</div>
-        <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
-          <span class="badge badge-yellow">等待 CI</span>
-          <span class="badge badge-blue">DCO 待检查</span>
-          <span class="badge badge-blue">audit 待检查</span>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function renderDCO(card) {
-  addLog('DCO Check: scanning commits for Signed-off-by...', 'info');
-  setTimeout(() => addLog('DCO Check: commits: 1 | all signed-off ✅', 'ok'), 500);
-  card.innerHTML = `
-    <div class="card-header">
-      <div class="icon icon-ci">🔒</div>
-      <div class="name">DCO Check 工作流</div>
-      <span class="tag">自动门禁</span>
-    </div>
-    <div class="card-body">
-      <div class="check-row">
-        <span class="status status-pass">✓</span>
-        <span>Commit <code>abc1234</code> — <span class="success">Signed-off-by: mkcash &lt;mkcash@users.noreply.github.com&gt;</span></span>
-      </div>
+<span class="out">  [contrib] github-api-rate-limit-handling     0.71   🟢 high/actionable</span>
+<span class="out">            Fix: use conditional requests with ETag headers.</span></pre>
       <div style="margin-top:0.75rem;">
-        <span class="badge badge-green">✅ DCO 检查通过</span>
-      </div>
-      <pre style="margin-top:0.5rem;"><span class="out">✅ All commits have Signed-off-by.</span>
-<span class="comment"># 如果 DCO 失败，bot 会自动留言：</span>
-<span class="err">❌ Commit xyz7890 is missing Signed-off-by:</span>
-<span class="comment">→ github-actions[bot] 发布修复指引 + ⭐ 提示</span></pre>
-    </div>
-  `;
-}
-
-function renderAudit(card) {
-  addLog('Misaka Network Agent Auditor: running full CI suite...');
-  setTimeout(() => addLog('Quality Score: 85/100 — PASS'), 500);
-  setTimeout(() => addLog('PR Size: 2 files, 124 additions — OK'), 800);
-  setTimeout(() => addLog('Test Suite: pytest — ✅ PASS, coverage 82%'), 1100);
-  setTimeout(() => addLog('Shadow Branch: isolated eval — ✅ clean'), 1400);
-  card.innerHTML = `
-    <div class="card-header">
-      <div class="icon icon-ci">🧪</div>
-      <div class="name">Misaka Network Agent Auditor</div>
-      <span class="tag">自动化审计</span>
-    </div>
-    <div class="card-body">
-      <div class="check-row">
-        <span class="status status-pass">✓</span>
-        <span style="flex:1;">Agent Quality Score</span>
-        <span class="badge badge-green">85/100</span>
-      </div>
-      <div class="check-row">
-        <span class="status status-pass">✓</span>
-        <span style="flex:1;">PR Size Check (2 files, +124)</span>
-        <span class="badge badge-green">OK</span>
-      </div>
-      <div class="check-row">
-        <span class="status status-pass">✓</span>
-        <span style="flex:1;">Test Suite (pytest — 82% coverage)</span>
-        <span class="badge badge-green">PASS</span>
-      </div>
-      <div class="check-row">
-        <span class="status status-pass">✓</span>
-        <span style="flex:1;">Shadow Branch Isolation</span>
-        <span class="badge badge-green">CLEAN</span>
-      </div>
-      <div class="check-row">
-        <span class="status status-pass">✓</span>
-        <span style="flex:1;">DCO / Signed-off-by</span>
-        <span class="badge badge-green">PASS</span>
-      </div>
-      <div style="margin-top:0.75rem;padding:0.5rem;background:#0d1117;border-radius:6px;border:1px solid #21262d;">
-        <span class="success">✅ All checks passed — Auto-Merge Gate ready</span>
+        <a href="https://ikalus1988.github.io/MisakaNet/search/" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #238636;border-radius:6px;color:#3fb950;text-decoration:none;font-size:0.85rem;background:#0d1117;">
+          🔍 Open Search Page →
+        </a>
       </div>
     </div>
   `;
 }
 
-function renderMerge(card) {
-  addLog('Human maintainer: reviewing PR #196...');
-  setTimeout(() => addLog('Human maintainer: all AC checked, tests passing — merging...'), 500);
-  setTimeout(() => addLog('Human maintainer: posting thank-you comment with ⭐ prompt'), 800);
-  setTimeout(() => addLog('[INFO] Human code review active (Ring-3). Autonomous Peer Review engine deploys in Q3 2026.'), 1100);
+function renderUse(card) {
+  addLog('Reading lesson: github-401-credential-lookup...');
+  setTimeout(() => addLog('Applying fix: check local credentials first'), 400);
+  setTimeout(() => addLog('Problem resolved without opening an issue'), 700);
   card.innerHTML = `
     <div class="card-header">
-      <div class="icon icon-gh">✅</div>
-      <div class="name">Ikalus1988 (Maintainer)</div>
-      <span class="tag">人类终审</span>
+      <div class="icon">📖</div>
+      <div class="name">Use the Lesson</div>
+      <span class="tag">Step 3</span>
     </div>
     <div class="card-body">
-      <div style="text-align:center;padding:1rem 0;">
-        <div style="font-size:3rem;margin-bottom:0.5rem;">🎉</div>
-        <div style="font-size:1.2rem;font-weight:600;color:#3fb950;">PR #196 merged into main!</div>
-        <div style="color:#8b949e;margin-top:0.25rem;">fix(#191): good first issue — Chinese README translation</div>
-      </div>
-
-      <div style="background:#0d1117;border:1px solid #21262d;border-radius:6px;padding:0.75rem;margin:0.75rem 0;">
-        <div style="color:#8b949e;font-size:0.8rem;">Maintainer 评论：</div>
-        <div style="margin-top:0.3rem;font-style:italic;">
-          "Great job! Clean translation, all AC satisfied. Welcome to the MisakaNet community! 🚀"
-        </div>
-        <div style="margin-top:0.5rem;color:#8b949e;font-size:0.8rem;">
-          ⭐ If you find this project useful, consider starring the repo!
+      <p>You found a matching lesson. Read it and apply the fix:</p>
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:1rem;margin:0.75rem 0;">
+        <div style="font-weight:600;color:#58a6ff;">github-401-credential-lookup</div>
+        <div style="color:#8b949e;font-size:0.85rem;margin-top:0.5rem;">
+          <strong>Problem:</strong> GitHub API returns 401 Bad credentials<br>
+          <strong>Root cause:</strong> Agent asks for new PAT instead of checking local credentials<br>
+          <strong>Fix:</strong> Check ~/.git-credentials, ~/.netrc, gh auth status first
         </div>
       </div>
+      <p style="color:#8b949e;font-size:0.85rem;">
+        If the lesson helped: great, you're done.<br>
+        If it didn't: tell us — that's feedback.
+      </p>
+    </div>
+  `;
+}
 
-      <div class="node-graph">
-        <div class="node-item">发现 Issue<div class="num">🔍</div></div>
-        <span class="arrow">→</span>
-        <div class="node-item">Claim<div class="num">✋</div></div>
-        <span class="arrow">→</span>
-        <div class="node-item">开发<div class="num">💻</div></div>
-        <span class="arrow">→</span>
-        <div class="node-item">PR<div class="num">📤</div></div>
-        <span class="arrow">→</span>
-        <div class="node-item">CI<div class="num">🧪</div></div>
-        <span class="arrow">→</span>
-        <div class="node-item" style="border-color:#3fb950;">Merged!<div class="num">✅</div></div>
+function renderFeedback(card) {
+  addLog('Opening feedback path...');
+  setTimeout(() => addLog('Options: email, journey report, or issue comment'), 400);
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="icon">💬</div>
+      <div class="name">Send Feedback</div>
+      <span class="tag">Step 4</span>
+    </div>
+    <div class="card-body">
+      <p>You don't need a GitHub account. You don't need to write a PR.</p>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin:0.75rem 0;">
+        <a href="mailto:bot@misakanet.org" style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;background:#0d1117;">
+          <span style="font-weight:600;">📧 Email</span>
+          <span style="color:#8b949e;font-size:0.8rem;">bot@misakanet.org</span>
+          <span style="color:#8b949e;font-size:0.75rem;">Send a screenshot, a one-liner, or just "it didn't work"</span>
+        </a>
+        <a href="https://github.com/Ikalus1988/MisakaNet/issues/510" target="_blank" style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;background:#0d1117;">
+          <span style="font-weight:600;">🚶 Journey Report</span>
+          <span style="color:#8b949e;font-size:0.8rem;">#510</span>
+          <span style="color:#8b949e;font-size:0.75rem;">Walk through the repo and report where you got stuck</span>
+        </a>
+        <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml" target="_blank" style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;background:#0d1117;">
+          <span style="font-weight:600;">📝 Lesson Feedback</span>
+          <span style="color:#8b949e;font-size:0.8rem;">5-line form</span>
+          <span style="color:#8b949e;font-size:0.75rem;">Tell us which lesson helped (or didn't)</span>
+        </a>
       </div>
+      <p style="color:#8b949e;font-size:0.85rem;">
+        Negative feedback is welcome. "I don't understand X" is more useful than "everything is fine."
+      </p>
+    </div>
+  `;
+}
 
-      <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
-        <a href="https://github.com/mkcash" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;font-size:0.8rem;background:#0d1117;">
-          👤 baobao (mkcash)
+function renderContribute(card) {
+  addLog('Optional: contributing to MisakaNet...');
+  setTimeout(() => addLog('Many ways to contribute — PR is just one of them'), 400);
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="icon">📤</div>
+      <div class="name">Contribute (Optional)</div>
+      <span class="tag">Step 5</span>
+    </div>
+    <div class="card-body">
+      <p>PR is optional. There are many ways to contribute:</p>
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:1rem;margin:0.75rem 0;">
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          <div><span style="color:#3fb950;">✓</span> Report friction via email</div>
+          <div><span style="color:#3fb950;">✓</span> Write a journey report</div>
+          <div><span style="color:#3fb950;">✓</span> Share a debugging story</div>
+          <div><span style="color:#3fb950;">✓</span> Submit a lesson candidate</div>
+          <div><span style="color:#3fb950;">✓</span> Fix a typo in docs</div>
+          <div><span style="color:#58a6ff;">○</span> Open a PR (if you want to)</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
+        <a href="https://github.com/Ikalus1988/MisakaNet/labels/good%20first%20issue" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;font-size:0.85rem;background:#0d1117;">
+          🏷️ Good First Issues
         </a>
-        <a href="https://github.com/Ikalus1988/MisakaNet/pulls?q=author%3Amkcash" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;font-size:0.8rem;background:#0d1117;">
-          📋 baobao 的 PR
+        <a href="https://github.com/Ikalus1988/MisakaNet/labels/bounty" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;font-size:0.85rem;background:#0d1117;">
+          💰 Bounties
         </a>
-        <a href="https://misakanet.org/" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #238636;border-radius:6px;color:#3fb950;text-decoration:none;font-size:0.8rem;background:#0d1117;">
-          🏆 Leaderboard →
+        <a href="docs/label-system.md" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;font-size:0.85rem;background:#0d1117;">
+          📋 Label System
         </a>
       </div>
     </div>
@@ -616,13 +506,13 @@ function updateControls() {
   const isLast = currentStep === STEPS.length - 1;
   const isFirst = currentStep === 0;
   c.innerHTML = `
-    <button class="btn" onclick="goStep(-1)" ${isFirst ? 'disabled style="opacity:0.4"' : ''}>← 上一步</button>
+    <button class="btn" onclick="goStep(-1)" ${isFirst ? 'disabled style="opacity:0.4"' : ''}>← Back</button>
     ${!autoMode ?
-      `<button class="btn" onclick="toggleAuto()">▶ 自动播放</button>` :
-      `<button class="btn btn-primary" onclick="toggleAuto()">⏸ 暂停</button>`
+      `<button class="btn" onclick="toggleAuto()">▶ Auto Play</button>` :
+      `<button class="btn btn-primary" onclick="toggleAuto()">⏸ Pause</button>`
     }
-    <button class="btn btn-primary" onclick="goStep(1)" ${isLast ? 'disabled style="opacity:0.5"' : ''}>下一步 →</button>
-    ${isLast ? '<button class="btn" onclick="resetJourney()">🔄 重新开始</button>' : ''}
+    <button class="btn btn-primary" onclick="goStep(1)" ${isLast ? 'disabled style="opacity:0.5"' : ''}>Next →</button>
+    ${isLast ? '<button class="btn" onclick="resetJourney()">🔄 Restart</button>' : ''}
   `;
 }
 
