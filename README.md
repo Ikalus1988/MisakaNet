@@ -236,7 +236,7 @@ $ python3 search_knowledge.py "GitHub token 401"
             Fix: use conditional requests with ETag/Last-Modified headers.
 ```
 
-> *(GIF demo coming — search → open result → see feedback/email/node entry)*
+![Search lesson demo](promotional/search%20lesson.gif)
 
 ### Lesson vs Skill
 
