@@ -19,69 +19,65 @@ import subprocess
 import sys
 
 
-def run_wrangler(command: str, kv_id: str = None) -> str:
-    """Run a wrangler KV command and return stdout."""
-    cmd = ["npx", "wrangler", "kv", "key"]
-    cmd.extend(command.split())
-    if kv_id:
-        cmd.extend(["--namespace-id", kv_id])
+def read_counter_file(repo_root: Path) -> dict:
+    """Read node counter from data/counter.json (source of truth)."""
+    counter_path = repo_root / "data" / "counter.json"
+    if not counter_path.exists():
+        return {"current": None, "updated": None}
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-        if result.returncode != 0:
-            return ""
-        return result.stdout.strip()
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return ""
+        data = json.loads(counter_path.read_text(encoding="utf-8"))
+        return {"current": data.get("current"), "updated": data.get("updated", "?")[:10]}
+    except (json.JSONDecodeError, OSError):
+        return {"current": None, "updated": None}
+
+
+def read_test_nodes(repo_root: Path) -> list:
+    """Read test/non-formal node IDs from test-nodes.json."""
+    test_path = repo_root / "test-nodes.json"
+    if not test_path.exists():
+        return []
+    try:
+        data = json.loads(test_path.read_text(encoding="utf-8"))
+        return data.get("tests", [])
+    except (json.JSONDecodeError, OSError):
+        return []
 
 
 def main():
     parser = argparse.ArgumentParser(description="MisakaNet node status dashboard")
-    parser.add_argument("--kv-id", help="KV namespace ID", default=None)
     parser.add_argument("--json", action="store_true", help="JSON output")
     args = parser.parse_args()
 
-    kv_id = args.kv_id or "d5fb6b0797b84d17b0586fb982231ffe"
+    repo_root = Path(__file__).resolve().parent.parent
 
-    # Get node_counter
-    counter_raw = run_wrangler(f"get node_counter", kv_id)
-    counter = int(counter_raw) if counter_raw and counter_raw.isdigit() else None
-
-    # Calculate latest node ID
+    # Read from data/counter.json (source of truth)
+    counter_info = read_counter_file(repo_root)
+    counter = counter_info["current"]
     latest_id = f"Misaka{str(counter).zfill(5)}" if counter else "unknown"
+    test_nodes = read_test_nodes(repo_root)
 
-    # Sample some recent nodes (check last 10 IDs)
-    active_nodes = []
-    if counter:
-        for i in range(max(0, counter - 9), counter + 1):
-            node_id = f"Misaka{str(i).zfill(5)}"
-            node_data = run_wrangler(f'get "node:{node_id}"', kv_id)
-            if node_data:
-                try:
-                    info = json.loads(node_data)
-                    active_nodes.append({
-                        "nodeId": info.get("nodeId", node_id),
-                        "source": info.get("source", "?"),
-                        "registeredAt": info.get("registeredAt", "?")[:10],
-                    })
-                except json.JSONDecodeError:
-                    active_nodes.append({"nodeId": node_id, "source": "?", "registeredAt": "?"})
+    # Count lessons
+    lessons_dir = repo_root / "lessons"
+    lesson_count = 0
+    for subdir in ("core", "contrib"):
+        d = lessons_dir / subdir
+        if d.exists():
+            lesson_count += len(list(d.glob("*.md")))
 
     if args.json:
         print(json.dumps({
             "counter": counter,
             "latest_node_id": latest_id,
-            "active_nodes_sample": active_nodes,
-            "active_count": len(active_nodes),
+            "counter_updated": counter_info["updated"],
+            "test_nodes_count": len(test_nodes),
+            "lesson_count": lesson_count,
         }, ensure_ascii=False, indent=2))
     else:
-        print(f"Node Counter:    {counter or 'unknown'}")
-        print(f"Latest Node ID:  {latest_id}")
-        print(f"Active (sampled): {len(active_nodes)}/10")
-        if active_nodes:
-            print()
-            print("Recent nodes:")
-            for n in active_nodes:
-                print(f"  {n['nodeId']}  source={n['source']}  registered={n['registeredAt']}")
+        print(f"Node Counter:     {counter or 'unknown'}")
+        print(f"Latest Node ID:   {latest_id}")
+        print(f"Counter updated:  {counter_info['updated']}")
+        print(f"Test nodes:       {len(test_nodes)} (excluded from active count)")
+        print(f"Lessons:          {lesson_count}")
 
 
 if __name__ == "__main__":
