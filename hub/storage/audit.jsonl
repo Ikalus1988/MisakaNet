@@ -1,6 +1,0 @@
-{"timestamp": "2026-04-26T23:03:30.769585", "action": "FOOL_UNLOCK", "actor": "ZQEaGKRi...", "details": {"success": true}}
-{"timestamp": "2026-04-26T23:03:30.786465", "action": "VIEW_SYNC_STATUS", "actor": "ZQEaGKRi...", "details": {}}
-{"timestamp": "2026-04-26T23:03:30.793020", "action": "LIST_AGENTS", "actor": "ZQEaGKRi...", "details": {}}
-{"timestamp": "2026-04-26T23:16:26.385210", "action": "FOOL_UNLOCK", "actor": "HbiezEUB...", "details": {"success": true}}
-{"timestamp": "2026-04-26T23:16:50.451920", "action": "LIST_AGENTS", "actor": "HbiezEUB...", "details": {}}
-{"timestamp": "2026-04-26T23:17:53.554527", "action": "TRIGGER_SYNC", "actor": "HbiezEUB...", "details": {}}

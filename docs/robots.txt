@@ -1,8 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /api/
-
-Sitemap: https://misakanet.org/sitemap.xml
-
-# MisakaNet — Git-backed failure lesson network for AI agents
-# 205+ curated lessons, zero-dependency, GitHub-audited
