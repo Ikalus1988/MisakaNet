@@ -1,9 +1,25 @@
 {
-  "generated_at": "2026-07-20T14:36:00.707057+00:00",
+  "generated_at": "2026-07-20T16:47:27.022635+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
+    {
+      "type": "challenge",
+      "title": "[Lesson][Bounty] Submit a debugging lesson from your own experience",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/535",
+      "labels": [
+        "good first issue",
+        "needs-ac",
+        "area:lessons",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:quick"
+      ],
+      "timestamp": "2026-07-20T16:38:49Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "Add journey report: Newcomer onboarding experience test",
@@ -151,23 +167,6 @@
         "priority:later"
       ],
       "timestamp": "2026-07-02T16:01:28Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[API] Add GraphQL API for flexible lesson queries",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/316",
-      "labels": [
-        "enhancement",
-        "Ring-3",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition",
-        "pool:deep",
-        "priority:later"
-      ],
-      "timestamp": "2026-07-02T16:01:25Z",
       "source": "github"
     }
   ]
