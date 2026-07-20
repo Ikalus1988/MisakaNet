@@ -19,7 +19,7 @@ Ring-4 是 MisakaNet 贡献体系中最轻量的赛道，专为**首次贡献者
 
 **步骤：**
 1. 选择一个英文 Lesson（如 `lessons/contrib/slugify-path-traversal-deep-coverage.md`）
-2. 在 `lessons/locales/{lang}/` 下创建对应文件
+2. 在 `lessons/contrib/` 下创建翻译文件，frontmatter 加 `"language": "{lang}"`
 3. 保留 frontmatter 不变，只翻译正文内容
 4. 在 tags 中添加 `"locale:{lang}"`
 5. 提交 PR
