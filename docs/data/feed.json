@@ -1,21 +1,35 @@
 {
-  "generated_at": "2026-07-21T16:50:18.423075+00:00",
+  "generated_at": "2026-07-21T19:56:10.613618+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(deps): bump tj-actions/changed-files from 44 to 46 in /.github/workflows",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/553",
-      "timestamp": "2026-07-21T04:53:04Z",
+      "title": "docs(lessons): archive duplicate Feishu bot setup (#552)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/554",
+      "timestamp": "2026-07-21T17:50:19Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(search): add cross-encoder reranking for top-10 results (fixes #312)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/534",
-      "timestamp": "2026-07-21T02:58:53Z",
+      "title": "fix(ci): lesson quality total_score 0-1 for CI threshold",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/557",
+      "timestamp": "2026-07-21T17:50:11Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: #257 RAG batch already English (audit)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/555",
+      "timestamp": "2026-07-21T17:50:01Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(deps): bump tj-actions/changed-files from 44 to 46 in /.github/workflows",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/553",
+      "timestamp": "2026-07-21T04:53:04Z",
       "source": "github"
     },
     {
@@ -26,18 +40,12 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "docs(lessons): GitHub sudo email OTP wrong input field",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/542",
-      "timestamp": "2026-07-21T02:27:38Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lesson(contrib): add agent-readfile-silent-truncation debugging story [Closes #535]",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/544",
-      "timestamp": "2026-07-21T02:27:31Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "Near-duplicate Feishu bot lessons: keep cc-connect, archive generic stub",
+      "url": "lessons/contrib/feishu-bot-setup-complete.md",
+      "timestamp": "2026-07-21",
+      "domain": "feishu",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -90,14 +98,6 @@
       ],
       "timestamp": "2026-07-19T03:14:27Z",
       "source": "github"
-    },
-    {
-      "type": "lesson",
-      "title": "Bounty Contributors Are Not Always Users",
-      "url": "lessons/contrib/bounty-contributors-are-not-always-users.md",
-      "timestamp": "2026-07-17",
-      "domain": "growth",
-      "source": "lessons"
     },
     {
       "type": "challenge",
