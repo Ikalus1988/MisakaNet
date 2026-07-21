@@ -149,3 +149,5 @@ cc-connect
 
 - cc-connect GitHub: https://github.com/chenhg5/cc-connect
 - 飞书开放平台: https://open.feishu.cn
+
+> Related: generic stub/redirect at [`feishu-bot-setup-complete.md`](./feishu-bot-setup-complete.md) (duplicate cleanup #552).
