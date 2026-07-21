@@ -59,3 +59,10 @@ some-agent --version
 
 - Prefer pinned versions in production agents; auto-update is optional.
 - Corporate networks may need HTTP_PROXY / HTTPS_PROXY — set them before retrying.
+
+### Extra operational detail
+
+When rate limits or merge conflicts hit an agent overnight job, prefer failing closed with a clear log line rather than spinning. Persist the last successful artifact path, sleep with jitter, and resume. Document the exact HTTP status and response headers in the proof folder so the next run can tune backoff without guessing.
+
+For production earn loops, pair this lesson with TaskBounty sniper idle behavior and Superteam credit gates: empty inventory is not a code failure.
+
