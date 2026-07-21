@@ -1,144 +1,58 @@
 ---
 {
-  "title": "ARCHIVED generic feishu bot setup (see cc-connect)",
+  "title": "ARCHIVED: generic Feishu bot setup (superseded by cc-connect guide)",
   "domain": "feishu",
-  "tags": ["archived", "feishu", "duplicate"],
+  "tags": ["archived", "feishu", "cc-connect", "duplicate", "bot", "setup"],
   "status": "archived",
-  "quality_skip": true,
-  "source": "archive",
+  "source": "bootstrap",
   "created": "2026-05-19",
-  "updated": "2026-07-21"
+  "updated": "2026-07-21",
+  "confidence": "0.7",
+  "superseded_by": "lessons/contrib/cc-connect-feishu-setup-complete.md"
 }
 ---
 
-> **ARCHIVED** — use `lessons/contrib/cc-connect-feishu-setup-complete.md`.
+# ARCHIVED: generic Feishu bot setup (superseded by cc-connect guide)
 
----
-{
-  "domain": "contrib",
-  "title": "feishu bot setup complete",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
----
----{"title": "飞书机器人完整SetupGuide", "domain": "feishu", "source": "bootstrap", "status": "published", "confidence": "0.95", "created": "2026-05-19"}---
+## Problem
+
+This file used to hold a generic Feishu/bridge setup with `<bridge-tool>` placeholders. It near-duplicated the concrete **cc-connect** guide (~0.80 similarity), so agents retrieving "feishu bot" got two conflicting paths.
+
+## Root Cause
+
+Bootstrap copied a template twice: one kept generic placeholders, one specialized to `cc-connect`. Duplicate detection flagged the pair (issue #552).
+
+## Solution
+
+**Do not use this file for new work.**
+
+Canonical guide:
+
+- `lessons/contrib/cc-connect-feishu-setup-complete.md`
+
+Decision lesson at the old contrib path:
+
+- `lessons/contrib/feishu-bot-setup-complete.md`
+
+```bash
+# install real tool
+npm install -g cc-connect
+cc-connect --version
+```
+
+Historical body is preserved below the fold only for git archaeology; operators should follow the canonical file.
+
 ## Verification
 
-1. Follow the solution steps in order
-2. Run any relevant commands or tests to confirm the fix
-3. Verify the symptom no longer occurs
-4. Check related logs or outputs for expected behavior
-
-
-## 飞书机器人完整配置指南
-
-### 概述
-本文档记录飞书机器人的完整配置过程，以及 Agent 与飞书消息平台的桥接设置。
-
-### 1. 安装桥接工具
-
 ```bash
-npm install -g <bridge-tool>
+test -f lessons/contrib/cc-connect-feishu-setup-complete.md
+test -f lessons/contrib/feishu-bot-setup-complete.md
+test -f lessons/_archive/feishu-bot-setup-complete.md
+python3 scripts/quality_scorer.py lessons/contrib/cc-connect-feishu-setup-complete.md
 ```
 
-验证安装：
-```bash
-<bridge-tool> --version
-```
+## Notes
 
-### 2. 创建配置文件
-
-```bash
-mkdir -p ~/.<bridge-tool>
-cp /path/to/<bridge-tool>/config.example.toml ~/.<bridge-tool>/config.toml
-```
-
-### 3. 配置飞书机器人
-
-#### 3.1 创建飞书应用
-1. 登录 https://open.feishu.cn
-2. 创建企业应用
-3. 启用机器人能力
-4. 添加权限：`im:message.receive_v1`, `im:message:send_as_bot`
-5. 事件订阅：选择 WebSocket 长连接模式，添加事件 `im.message.receive_v1`
-6. 发布应用版本
-7. 复制 App ID 和 App Secret
-
-#### 3.2 编辑配置文件
-
-```toml
-[[projects]]
-name = "feishu-bridge"
-
-[projects.agent]
-type = "claude"
-
-[projects.agent.options]
-work_dir = "/path/to/your/project"
-mode = "default"
-
-[[projects.platforms]]
-type = "feishu"
-
-[projects.platforms.options]
-app_id = "cli_xxxxxxxxxxxx"
-app_secret = "xxxxxxxxxxxxxxxxxxxxxxxx"
-```
-
-### 4. 显示优化配置
-
-禁用工具调用和上下文提示：
-
-```toml
-[display]
-mode = "quiet"
-thinking_messages = false
-thinking_max_len = 0
-tool_max_len = 0
-tool_messages = false
-show_context_indicator = false
-reply_footer = false
-```
-
-### 5. 启动
-
-```bash
-<bridge-tool>
-```
-
-### 6. 常见问题解决
-
-#### 6.1 配置文件语法错误
-**问题**：`Error loading config: parse config: toml: line XXX: expected value but found '"' instead`
-
-**原因**：配置文件中使用了 Unicode 引号，而不是标准 ASCII 引号（`"`）
-
-**解决**：
-```bash
-sed -i 's/\xe2\x80\x9c/"/g; s/\xe2\x80\x9d/"/g' ~/.<bridge-tool>/config.toml
-```
-
-#### 6.2 实例已在运行
-**问题**：`Error: another instance is already running`
-
-**解决**：
-```bash
-<bridge-tool> stop --force
-<bridge-tool>
-```
-
-### 7. 验证配置
-
-1. 检查状态：
-   ```bash
-   <bridge-tool> status --force
-   ```
-2. 查看日志：
-   ```bash
-   <bridge-tool> logs --force
-   ```
-3. 在飞书中测试连接
-
-### 参考资料
-- 飞书开放平台: https://open.feishu.cn
+- Status is `archived` on purpose.
+- Hard-delete avoided so inbound links and git blame survive.
+- See https://github.com/Ikalus1988/MisakaNet/issues/552
