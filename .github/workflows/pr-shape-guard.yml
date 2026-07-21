@@ -150,7 +150,10 @@ jobs:
 
             if (isDocs && names.length > 0) toAdd.push('docs-only');
             else if (isTests && names.length > 0) toAdd.push('tests-only');
-            else if (isLessons && names.length > 0) toAdd.push('lessons-only');
+            else if (isLessons && names.length > 0) {
+              toAdd.push('lessons-only');
+              toAdd.push('needs-human-review'); // content quality needs maintainer judgment
+            }
 
             // ── Gate 2: Risk ──
             const touchesWorkflow = names.some(n => n.startsWith('.github/workflows/'));
