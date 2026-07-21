@@ -101,3 +101,5 @@ return '数据加载失败，已使用缓存显示';
 3. **非关键数据失败不应阻断关键数据展示**——统计数字和主要内容应该互不影响
 4. **没有超时的 fetch 是永久挂起的隐患**——即使请求本地 JSON 文件也应有超时保护
 5. **如果项目频繁遇到限流**，考虑引入 GitHub Actions 定时缓存 + 静态 JSON 的 hybrid 架构，或使用代理后端
+
+> English: [`lessons/en/static-page-github-api-fault-tolerance.md`](../../lessons/en/static-page-github-api-fault-tolerance.md)

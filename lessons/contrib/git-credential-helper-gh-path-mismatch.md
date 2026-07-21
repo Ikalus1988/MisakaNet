@@ -90,3 +90,5 @@ git push
 - 新装 `gh` 后用 `gh auth login` 登录后，检查 credential helper 是否引入了错误路径
 - 如果同时使用 `credential.helper store` 和 `gh auth git-credential`，确保 `gh auth git-credential` 的路径与二进制位置一致
 - 用 `which gh` 确认真实路径，与 git config 中的 credential helper 路径对比
+
+> English: [`lessons/en/git-credential-helper-gh-path-mismatch.md`](../../lessons/en/git-credential-helper-gh-path-mismatch.md)
