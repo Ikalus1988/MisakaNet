@@ -1,13 +1,27 @@
 ---
 {
-  "domain": "contrib",
-  "title": "cc connect feishu setup complete",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "title": "cc-connect Feishu bot complete setup guide",
+  "domain": "feishu",
+  "tags": ["feishu", "cc-connect", "bot", "setup", "agent", "bridge", "npm"],
+  "status": "published",
+  "source": "bootstrap",
+  "created": "2026-05-19",
+  "updated": "2026-07-21",
+  "confidence": "0.95",
+  "verification": "metadata-normalized"
 }
 ---
----{"title": "cc-connect 飞书机器人完整SetupGuide", "domain": "feishu", "subdomain": "cc-connect", "source": "bootstrap", "status": "published", "confidence": "0.95", "created": "2026-05-19"}---
+
+## Problem
+
+Agents need a complete, copy-pasteable path to connect coding agents to Feishu (Lark) via **cc-connect**. Incomplete or placeholder (`<bridge-tool>`) docs cause failed installs and duplicate lessons.
+
+## Root Cause
+
+Generic bridge docs omit the real package name and concrete config paths. Operators then invent parallel "complete setup" notes that drift into near-duplicates.
+
+## Solution
+
 ## Verification
 
 1. Follow the solution steps in order
@@ -149,3 +163,11 @@ cc-connect
 
 - cc-connect GitHub: https://github.com/chenhg5/cc-connect
 - 飞书开放平台: https://open.feishu.cn
+
+> Related: generic stub/redirect at [`feishu-bot-setup-complete.md`](./feishu-bot-setup-complete.md) (duplicate cleanup #552).
+
+
+## Notes
+
+- Prefer this file over archived generic Feishu stubs.
+- Duplicate cleanup decision: issue #552 / `feishu-bot-setup-complete.md` decision lesson.
