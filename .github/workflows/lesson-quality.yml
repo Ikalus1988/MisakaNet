@@ -28,7 +28,7 @@ jobs:
 
       - name: Get changed lesson files
         id: changed
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@v46
         with:
           files: |
             lessons/**/*.md
