@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-07-22T09:03:32.817049+00:00",
+  "generated_at": "2026-07-22T11:22:36.996996+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
     {
       "type": "merged_pr",
+      "title": "docs(lessons): EN batch6 (WSL proxy, sandbox paths, git+node id)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/563",
+      "timestamp": "2026-07-22T09:19:33Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(journey): agent onboarding friction v2 (CI quality false reds)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/562",
+      "timestamp": "2026-07-22T09:19:29Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(lessons): EN batch5 (shell debug, tiktoken, Feishu webhook env)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/561",
+      "timestamp": "2026-07-22T09:19:25Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(lessons): EN batch4 (venv, git creds, OpenAI-compatible API)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/560",
+      "timestamp": "2026-07-22T09:19:21Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "docs(lessons): EN batch (rate-limit, git conflict, agent update)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/556",
       "timestamp": "2026-07-22T02:21:30Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(lessons): EN batch3 (pip SSL, cron, DCO forks)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/558",
-      "timestamp": "2026-07-22T02:21:05Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(ci): quality-check continue-on-error when fork cannot comment",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/559",
-      "timestamp": "2026-07-22T02:21:01Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(lessons): archive duplicate Feishu bot setup (#552)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/554",
-      "timestamp": "2026-07-21T17:50:19Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(ci): lesson quality total_score 0-1 for CI threshold",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/557",
-      "timestamp": "2026-07-21T17:50:11Z",
       "source": "github"
     },
     {
