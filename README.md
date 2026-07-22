@@ -2,6 +2,8 @@
 
 > **MisakaNet** is the flagship reference implementation of the Swarm Knowledge Protocol.
 
+mcp-name: io.github.ikalus1988/misakanet
+
 <p align="center">
   <img src="promotional/og-card.png" width="720" alt="MisakaNet — SKP Reference Implementation"/>
 </p>
