@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.ikalus1988/misakanet",
+  "name": "io.github.Ikalus1988/misakanet",
   "description": "Agent failure memory network. Search 235+ verified debugging lessons from real engineering sessions.",
   "repository": {
     "url": "https://github.com/Ikalus1988/MisakaNet",
