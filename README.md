@@ -10,7 +10,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 
 <p align="center">
   <a href="https://github.com/Ikalus1988/MisakaNet/stargazers"><img src="https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social" alt="Stars"/></a>
-  <a href="https://img.shields.io/badge/nodes-235+-green"><img src="https://img.shields.io/badge/nodes-235+-green?label=Nodes" alt="Nodes"/></a>
+  <a href="https://img.shields.io/badge/nodes-52+-green"><img src="https://img.shields.io/badge/nodes-52+-green?label=Nodes" alt="Nodes"/></a>
   <a href="https://img.shields.io/badge/lessons-235+-blue"><img src="https://img.shields.io/badge/lessons-235+-blue?label=Lessons" alt="Lessons"/></a>
   <a href="https://glama.ai/mcp/servers"><img src="https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/badge" alt="MCP Server on Glama"/></a>
   <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Ikalus1988/MisakaNet?style=flat&color=blueviolet" alt="License"/></a>
@@ -70,7 +70,7 @@ $ python3 search_knowledge.py "GitHub token 401"
 | **Best for** | DCO failures, GitHub token errors, pip timeout, Feishu API, WSL, FANUC |
 | **Not for** | Private memory storage, hosted vector database, general chatbot memory |
 | **License** | Apache 2.0 |
-| **Data** | 235 lessons, 235+ nodes, 18 domains |
+| **Data** | 235 lessons, 52+ nodes, 18 domains |
 
 ---
 
