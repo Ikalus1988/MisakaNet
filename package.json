@@ -1,6 +1,7 @@
 {
   "name": "misakanet",
   "private": true,
+  "license": "Apache-2.0",
   "description": "Deployment scripts for MisakaNet Workers",
   "scripts": {
     "deploy:web": "cd web && npx wrangler deploy",
