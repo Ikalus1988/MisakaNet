@@ -1,0 +1,53 @@
+{
+  "name": "misakanet-lessons",
+  "displayName": "MisakaNet Lessons",
+  "description": "Search MisakaNet debugging lessons from VS Code",
+  "version": "0.1.0",
+  "publisher": "misakanet",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "misakanet.search",
+        "title": "Search MisakaNet Lessons"
+      },
+      {
+        "command": "misakanet.list",
+        "title": "List MisakaNet Lessons"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "misakanet",
+          "title": "MisakaNet",
+          "icon": "$(book)"
+        }
+      ]
+    },
+    "views": {
+      "misakanet": [
+        {
+          "id": "misakanet-lessons",
+          "name": "Lessons"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.0.0"
+  }
+}
