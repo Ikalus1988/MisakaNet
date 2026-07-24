@@ -44,13 +44,27 @@ jobs:
             setTimeout(() => { throw new Error('ci-test'); }, 50);
           " 2>&1 | grep -q 'fatal-guard uncaughtException' && echo 'PASS: uncaughtException' || echo 'FAIL'
 
-      - name: Test handler receives syslog payload
+      - name: Test — handler receives payload
         run: |
-          FATAL_HANDLER=/usr/bin/logger timeout 5 node -r ./register -e "
-            setTimeout(() => { throw new Error('ci-syslog'); }, 50);
-          " 2>&1
+          PAYLOAD_FILE=$(mktemp)
+          cat > /tmp/test-handler.sh << 'HANDLER'
+          #!/bin/bash
+          echo "$1" > "$PAYLOAD_FILE"
+          HANDLER
+          chmod +x /tmp/test-handler.sh
+          export PAYLOAD_FILE
+          FATAL_HANDLER=/tmp/test-handler.sh timeout 5 node -r ./register -e "
+            setTimeout(() => { throw new Error('ci-payload-test'); }, 50);
+          " 2>&1 || true
           sleep 1
-          journalctl --since '30 seconds ago' --no-pager -o cat 2>&1 | grep 'schemaVersion' | tail -1 | grep -q 'ci-syslog' && echo 'PASS: syslog payload' || echo 'FAIL: no syslog entry'
+          if [ -f "$PAYLOAD_FILE" ] && grep -q 'schemaVersion' "$PAYLOAD_FILE" && grep -q 'uncaught_exception' "$PAYLOAD_FILE"; then
+            echo 'PASS: handler received payload'
+            cat "$PAYLOAD_FILE"
+          else
+            echo 'FAIL: no payload received'
+            [ -f "$PAYLOAD_FILE" ] && cat "$PAYLOAD_FILE"
+          fi
+          rm -f "$PAYLOAD_FILE" /tmp/test-handler.sh
 
       - name: Test TypeScript declaration exists
         run: |
