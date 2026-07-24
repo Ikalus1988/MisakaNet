@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-07-23T22:27:32.333597+00:00",
+  "generated_at": "2026-07-24T03:50:12.650641+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lesson): add git force-with-lease and detached HEAD recovery lesson (#535)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/538",
+      "timestamp": "2026-07-24T03:40:46Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(lesson): add CSS z-index stacking context debugging lesson (#535)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/539",
+      "timestamp": "2026-07-24T03:40:43Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(triage): add feedback auto-classifier engine and test suite",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/579",
+      "timestamp": "2026-07-24T03:12:10Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(lessons): EN batch15 (cron streams, JSONL ledger, cookie export)",
@@ -16,27 +37,6 @@
       "title": "docs(lessons): EN batch14 (PR checklist, idle exit, multi-lane)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/572",
       "timestamp": "2026-07-23T16:58:27Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(lessons): EN batch13 (flock, backoff cap, scout/worker modes)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/571",
-      "timestamp": "2026-07-23T08:17:23Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(lessons): EN batch12 (SAST logs, atomic write, User-Agent)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/570",
-      "timestamp": "2026-07-23T08:17:19Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(lessons): EN batch11 (curl fail-fast, mkdir -p, timeout)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/569",
-      "timestamp": "2026-07-23T08:17:16Z",
       "source": "github"
     },
     {

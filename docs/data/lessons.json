@@ -816,6 +816,22 @@
     "verified": true
   },
   {
+    "id": "css-z-index-stacking-context-modal",
+    "title": "css-z-index-stacking-context-modal",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "A modal overlay with `z-index: 9999` was appearing **behind** an element with `z-index: 100`. Setting higher z-index values on the modal had no effect. The moda…",
+    "preview": "{\"title\": \"CSS z-index Not Working — Stacking Context Inversion in Modal Overlays\", \"domain\": \"frontend\", \"subdomain\": \"css\", \"tags\": [\"css\", \"z-index\", \"stacking-context\", \"modal\", \"overlay\", \"position\"], \"source\": \"hermes-agent\", \"status\": \"published\", \"confidence\": \"0.95\", \"created\": \"2026-07-21\", \"verified_date\": \"\", \"domain_expert\": \"\"}\n\n\n## Problem\n\nA modal overlay with `z-index: 9999` was appearing **behind** an element with `z-index: 100`. Setting higher z-index values on the modal had no effect. The modal's backdrop was visible, but the modal content was hidden behind another page element.\n\n```css\n/* This didn't work — modal still behind other elements */\n.modal-overlay {\n    position: fixed;\n    z-index: 9999;\n    background: rgba(0,0,0,0.5);\n}\n.modal-content {\n    position: relative;\n    z-index: 10000;\n}\n```\n\n## Root Cause\n\nThe modal was rendered inside a parent element that had `transform: translateX(...)` applied (for a slide-in sidebar animation). In CSS, any element with a `transform`, `filter`, `perspective`, `clip-path`, `mask`, or `isolation` property value other than `none` creates a **new stacking context**.\n\nOnce a new stacking context is created, z-index values are **relative to that context**, not the document root. The parent's stacking context was lower in the global stacking order than the competing element.\n\n```html\n<!-- Parent creates its own stacking context via transform -->\n<div class=\"sidebar\" style=\"transform: translateX(0); position: relative; z-index: 1;\">\n    <div class=\"modal-overlay\" style=\"position: fixed; z-index: 9999;\">\n        <!-- z-index: 9999 is still INSIDE the sidebar's stacking context -->\n        <!-- It can never escape above elements OUTSIDE the sidebar -->\n    </div>\n</div>\n\n<div class=\"page-header\" style=\"position: sticky; z-index: 100;\">\n    <!-- This element is at document-root stacking context level -->\n    <!-- z-index: 100 here > z-index: 9999 of modal because modal is nested -->\n</div>\n```\n\n## Fix\n\n**Option 1: Render modals at the document root (recommended)**\n\nMove the modal markup outside any stacking-context-creating parent. In React:\n\n```jsx\n// Instead of rendering inside the sidebar component,\n// render modals at the root level using a portal:\nimport { createPortal } from 'react-dom';\n\nfunction Modal({ children }) {\n    return createPortal(\n        <div className=\"modal-overlay\">\n            <\n\n[clipped]",
+    "url": "lessons/contrib/css-z-index-stacking-context-modal.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "verified": true
+  },
+  {
     "id": "curl-request-troubleshoot",
     "title": "curl / wget 请求失败通用Diagnosis",
     "domain": "contrib",
@@ -1902,6 +1918,22 @@
     "verified": false
   },
   {
+    "id": "git-force-with-lease-detached-head",
+    "title": "git-force-with-lease-detached-head",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "After a `git rebase` on a feature branch that was force-pushed, the local branch's commit history no longer matches the remote. Running `git pull` produces:",
+    "preview": "{\"title\": \"Git Push Force-With-Lease — Detached HEAD Recovery After Hash Change\", \"domain\": \"devops\", \"subdomain\": \"git\", \"tags\": [\"git\", \"force-push\", \"detached-head\", \"rebase\", \"recovery\"], \"source\": \"hermes-agent\", \"status\": \"published\", \"confidence\": \"0.90\", \"created\": \"2026-07-21\", \"verified_date\": \"\", \"domain_expert\": \"\"}\n\n\n## Problem\n\nAfter a `git rebase` on a feature branch that was force-pushed, the local branch's commit history no longer matches the remote. Running `git pull` produces:\n\n```\nYour branch and 'origin/feat/foo' have diverged,\nand have 3 and 3 different commits each, respectively.\n```\n\nRunning `git push --force` creates risk of overwriting others' work. But `git pull --rebase` fails because the branch has already been rebased and force-pushed elsewhere (e.g., from another machine or CI pipeline).\n\nThe real danger: `git push --force` can silently destroy commits pushed by collaborators that you haven't seen.\n\n## Root Cause\n\nThe standard `git push --force` (`-f`) overwrites the remote ref unconditionally. This is dangerous because:\n\n```bash\n# Dangerous — overwrites remote without checking\ngit push --force origin feature-branch\n```\n\nBetween the time you last fetched and your push, someone else could have pushed new commits to the same branch (e.g., from CI auto-fix, a colleague's hotfix, or another machine). A force push would wipe those commits.\n\n## Fix\n\nUse `--force-with-lease` instead of `--force`. This checks that the remote ref is still at the commit you expect before overwriting:\n\n```bash\n# Safe — only overwrites if remote hasn't moved\ngit push --force-with-lease origin feature-branch\n```\n\nIf someone else has pushed in the meantime, Git rejects the push with:\n\n```\n! [rejected]    feature-branch -> feature-branch (stale info)\nerror: failed to push some refs to 'github.com:user/repo.git'\nhint: Updates were rejected because the remote contains work that you do\nhint: not have locally.\n```\n\nThis is exactly what you want — it stops you from destroying someone else's work.\n\n### Scenario: After Rebase + Force Push\n\nWhen you rebase and need to push:\n\n```bash\n# 1. Rebase onto latest main\ngit rebase main\n\n# 2. Push with safety check\ngit push --force-with-lease origin feature-branch\n```\n\nIf the push fails with \"stale info\":\n\n```bash\n# 3. Fetch the latest remote state and see what changed\ngit fetch origin\ngit log origin/feature-branch --oneline -\n\n[clipped]",
+    "url": "lessons/contrib/git-force-with-lease-detached-head.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "verified": true
+  },
+  {
     "id": "git-merge-conflict-resolution",
     "title": "Git 合并ConflictHandling — 手动解决最佳实践",
     "domain": "contrib",
@@ -2026,6 +2058,22 @@
     "environment_version": "",
     "confidence": 0.5,
     "status": "published",
+    "verified": true
+  },
+  {
+    "id": "go-scheduler-deadlock-lock-order",
+    "title": "go-scheduler-deadlock-lock-order",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "A Go application using the `go-co-op/gocron` v1 scheduler would hang indefinitely when a scheduled job tried to remove itself and schedule a new replacement job…",
+    "preview": "{\"title\": \"Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1\", \"domain\": \"go\", \"subdomain\": \"concurrency\", \"tags\": [\"deadlock\", \"mutex\", \"sync\", \"scheduler\", \"gocron\"], \"source\": \"hermes-agent\", \"status\": \"published\", \"confidence\": \"0.95\", \"created\": \"2026-07-21\", \"verified_date\": \"\", \"domain_expert\": \"\"}\n\n\n## Problem\n\nA Go application using the `go-co-op/gocron` v1 scheduler would hang indefinitely when a scheduled job tried to remove itself and schedule a new replacement job in the same execution. The symptom was a complete freeze — no subsequent jobs would run, and the scheduler never returned.\n\nThe deadlock occurred with this pattern:\n```go\njob, _ := s.Every(10 * time.Millisecond).Do(func() {\n    s.RemoveByReference(job)        // Remove self\n    s.Every(10 * time.Millisecond).Do(func() {\n        // New job — never reached\n    })\n})\n```\n\n## Root Cause\n\nThe `RemoveByID` method held `jobsMutex.Lock()` via `defer` while calling `stopJob()` → `job.stop()`:\n\n```go\n// Original (deadlocking) code:\nfunc (s *Scheduler) RemoveByID(job *Job) error {\n    s.jobsMutex.Lock()\n    defer s.jobsMutex.Unlock()  // Lock held through entire function\n    if _, ok := s.jobs[job.id]; ok {\n        s.stopJob(job)          // still holding jobsMutex.Lock!\n        delete(s.jobs, job.id)\n        return nil\n    }\n    return ErrJobNotFound\n}\n```\n\nMeanwhile, the scheduler's `runJobs()` method held `jobsMutex.RLock()` while iterating over jobs and sending them to the executor:\n\n```go\nfunc (s *Scheduler) runJobs() {\n    s.jobsMutex.RLock()\n    defer s.jobsMutex.RUnlock()\n    for _, job := range s.jobs {\n        // send job to executor...\n        s.runContinuous(job)\n    }\n}\n```\n\nThe deadlock scenario:\n1. **runJobs** acquires `jobsMutex.RLock()` and starts iterating\n2. For one job, it sends to the executor via `runContinuous` → `run` → executor channel\n3. **Executor** picks up the job and spawns a goroutine to run it\n4. The **job goroutine** calls `RemoveByReference(job)` → `RemoveByID`\n5. `RemoveByID` tries to acquire `jobsMutex.Lock()` — **but `runJobs` still holds `RLock`**\n6. In Go's `sync.RWMutex`, once a writer (`Lock()`) is queued waiting for readers to release, **no new readers can acquire the lock either**\n7. The scheduler's subsequent operations (which need `RLock`) also block\n8. **Result**: Complete deadlock — the job goroutine blocks trying to acquire a write lock, \n\n[clipped]",
+    "url": "lessons/contrib/go-scheduler-deadlock-lock-order.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
     "verified": true
   },
   {
