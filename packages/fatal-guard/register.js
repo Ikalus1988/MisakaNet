@@ -23,19 +23,29 @@
  */
 
 const { spawn } = require('node:child_process');
+const { redact } = require('./src/lib/redact');
 
-/** 4-field payload builder */
-function buildPayload(reason) {
-  return JSON.stringify({
+/** Payload builder with diagnostic fields */
+function buildPayload(reason, error) {
+  const payload = {
     schemaVersion: 1,
     reason,
     timestamp: new Date().toISOString(),
     pid: process.pid,
-  });
+  };
+  if (error) {
+    const err = typeof error === 'string' ? { message: error } : error;
+    payload.errorName = err.name || 'Error';
+    payload.message = redact(String(err.message || '')).slice(0, 300);
+    if (err.stack) {
+      payload.stackSnippet = redact(String(err.stack)).slice(0, 1000);
+    }
+  }
+  return JSON.stringify(payload);
 }
 
 /** Fire-and-forget external handler invocation (supports env var fallback chain) */
-function runHandler(reason) {
+function runHandler(reason, error) {
   const handler = (
     process.env.FATAL_HANDLER ||
     process.env.MISAKANET_ERROR_HANDLER ||
@@ -47,7 +57,7 @@ function runHandler(reason) {
   if (!handler) return;
 
   try {
-    const payload = buildPayload(reason);
+    const payload = buildPayload(reason, error);
     const child = spawn(handler, [payload], {
       stdio: 'ignore',
       detached: true,
@@ -64,7 +74,7 @@ function runHandler(reason) {
 
 /** uncaughtException — fatal, process must exit after this */
 process.on('uncaughtException', (err) => {
-  runHandler('uncaught_exception');
+  runHandler('uncaught_exception', err);
   process.stderr.write(`[fatal-guard] uncaughtException: ${err?.stack || err?.message || err}\n`);
   // Exit explicitly — having a listener makes Node think the error is handled
   setImmediate(() => process.exit(1));
@@ -72,7 +82,8 @@ process.on('uncaughtException', (err) => {
 
 /** unhandledRejection — may or may not be fatal, depending on Node version */
 process.on('unhandledRejection', (reason) => {
-  runHandler('unhandled_rejection');
+  const err = reason instanceof Error ? reason : new Error(String(reason));
+  runHandler('unhandled_rejection', err);
 });
 
 /** beforeExit — capture non-zero exit codes */

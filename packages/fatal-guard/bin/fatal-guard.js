@@ -84,12 +84,14 @@ child.on('exit', (code, signal) => {
       const rawSnippet = stderrBuffer
         ? stderrBuffer.split('\n').filter(Boolean).slice(-4).join('\n').trim()
         : `[fatal-guard] process crashed (exit code: ${code}, signal: ${signal})`;
-      const snippet = redact(rawSnippet).slice(0, 500);
+      const snippet = redact(rawSnippet).slice(0, 1000);
       const payload = JSON.stringify({
         ...JSON.parse(buildPayload(reason)),
-        snippet,
+        errorName: signal ? `Signal:${signal}` : 'ProcessCrash',
+        message: `exit code: ${code}, signal: ${signal}`,
+        stackSnippet: snippet,
       });
-      runHandler(reason, payload);
+      runHandler(reason, null, payload);
     } catch (_) {}
   }
 

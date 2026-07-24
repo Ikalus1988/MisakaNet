@@ -18,6 +18,7 @@
  */
 
 const { spawn } = require('node:child_process');
+const { redact } = require('./src/lib/redact');
 
 /**
  * @typedef {Object} FatalPayload
@@ -25,16 +26,35 @@ const { spawn } = require('node:child_process');
  * @property {string} reason — "uncaught_exception" | "unhandled_rejection" | "exit_code"
  * @property {string} timestamp — ISO 8601 timestamp
  * @property {number} pid — Process ID
+ * @property {string} [errorName] — Error constructor name (v0.3+)
+ * @property {string} [message] — Redacted error message (v0.3+)
+ * @property {string} [stackSnippet] — Redacted stack trace snippet (v0.3+)
  */
 
-/** Build a 4-field JSON payload string. @param {string} reason @returns {string} */
-function buildPayload(reason) {
-  return JSON.stringify({
+/**
+ * Build a JSON payload string with diagnostic fields.
+ * @param {string} reason
+ * @param {Error|string} [error] — optional error object or message
+ * @returns {string}
+ */
+function buildPayload(reason, error) {
+  const payload = {
     schemaVersion: 1,
     reason,
     timestamp: new Date().toISOString(),
     pid: process.pid,
-  });
+  };
+
+  if (error) {
+    const err = typeof error === 'string' ? { message: error } : error;
+    payload.errorName = err.name || 'Error';
+    payload.message = redact(String(err.message || '')).slice(0, 300);
+    if (err.stack) {
+      payload.stackSnippet = redact(String(err.stack)).slice(0, 1000);
+    }
+  }
+
+  return JSON.stringify(payload);
 }
 
 /**
@@ -43,9 +63,10 @@ function buildPayload(reason) {
  * Never throws. Never blocks shutdown.
  *
  * @param {string} reason
+ * @param {Error|string} [error] — optional error object for diagnostic payload
  * @param {string} [customPayload] — optional pre-built JSON payload (wrapper mode passes extra fields)
  */
-function runHandler(reason, customPayload) {
+function runHandler(reason, error, customPayload) {
   const handler = (
     process.env.FATAL_HANDLER ||
     process.env.MISAKANET_ERROR_HANDLER ||
@@ -57,7 +78,7 @@ function runHandler(reason, customPayload) {
   if (!handler) return;
 
   try {
-    const payload = customPayload || buildPayload(reason);
+    const payload = customPayload || buildPayload(reason, error);
     const child = spawn(handler, [payload], {
       stdio: 'ignore',
       detached: true,

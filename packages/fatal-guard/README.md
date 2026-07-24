@@ -31,7 +31,21 @@ npm i @misaka-net/fatal-guard
 FATAL_HANDLER=/usr/bin/logger node -r @misaka-net/fatal-guard/register ./app.js
 ```
 
-Both modes produce identical 4-field payloads in syslog on crash.
+Both modes produce identical payloads in syslog on crash (7 fields since v0.3):
+
+```json
+{
+  "schemaVersion": 1,
+  "reason": "uncaught_exception",
+  "timestamp": "2026-07-24T...",
+  "pid": 12345,
+  "errorName": "TypeError",
+  "message": "Cannot read properties of undefined",
+  "stackSnippet": "TypeError: Cannot read properties...\n    at app.js:42:3"
+}
+```
+
+All diagnostic fields (`errorName`, `message`, `stackSnippet`) are automatically redacted to prevent secret leakage.
 
 ```bash
 # 1. Install
