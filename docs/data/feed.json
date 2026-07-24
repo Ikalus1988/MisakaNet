@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-07-24T08:47:04.544372+00:00",
+  "generated_at": "2026-07-24T11:14:55.201198+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "test(fatal-guard): add crash scenario tests (fixes #581)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/584",
+      "timestamp": "2026-07-24T10:06:26Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(lesson): add git force-with-lease and detached HEAD recovery lesson (#535)",
@@ -30,13 +37,6 @@
       "title": "docs(lessons): EN batch15 (cron streams, JSONL ledger, cookie export)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/573",
       "timestamp": "2026-07-23T16:58:31Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(lessons): EN batch14 (PR checklist, idle exit, multi-lane)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/572",
-      "timestamp": "2026-07-23T16:58:27Z",
       "source": "github"
     },
     {
