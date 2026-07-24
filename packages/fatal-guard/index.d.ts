@@ -13,7 +13,7 @@ export interface FatalPayload {
   pid: number;
   /** Error constructor name (v0.3+) */
   errorName?: string;
-  /** Redacted error message, max 300 chars (v0.3+) */
+  /** Redacted error message, max 500 chars (v0.3+) */
   message?: string;
   /** Redacted stack trace snippet, max 1000 chars (v0.3+) */
   stackSnippet?: string;

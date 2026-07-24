@@ -48,7 +48,7 @@ function buildPayload(reason, error) {
   if (error) {
     const err = typeof error === 'string' ? { message: error } : error;
     payload.errorName = err.name || 'Error';
-    payload.message = redact(String(err.message || '')).slice(0, 300);
+    payload.message = redact(String(err.message || '')).slice(0, 500);
     if (err.stack) {
       payload.stackSnippet = redact(String(err.stack)).slice(0, 1000);
     }
