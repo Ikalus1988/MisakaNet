@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-07-25T14:04:30.034522+00:00",
+  "generated_at": "2026-07-25T16:13:18.144711+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 14,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(deps-dev): bump postcss from 8.5.15 to 8.5.23 in /web",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/586",
+      "timestamp": "2026-07-25T16:02:51Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat: add GraphQL API for lesson queries (fixes #316)",
@@ -30,13 +37,6 @@
       "title": "feat(lesson): add git force-with-lease and detached HEAD recovery lesson (#535)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/538",
       "timestamp": "2026-07-24T03:40:46Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(lesson): add CSS z-index stacking context debugging lesson (#535)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/539",
-      "timestamp": "2026-07-24T03:40:43Z",
       "source": "github"
     },
     {
