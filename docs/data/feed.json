@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-07-25T03:41:42.650876+00:00",
+  "generated_at": "2026-07-25T08:25:48.449357+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 15,
+  "item_count": 14,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat: add GraphQL API for lesson queries (fixes #316)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/576",
+      "timestamp": "2026-07-25T06:08:59Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(lessons): EN batch16 (links.json types, restart, honest cash)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/585",
+      "timestamp": "2026-07-25T05:48:38Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "test(fatal-guard): add crash scenario tests (fixes #581)",
@@ -23,20 +37,6 @@
       "title": "feat(lesson): add CSS z-index stacking context debugging lesson (#535)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/539",
       "timestamp": "2026-07-24T03:40:43Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(triage): add feedback auto-classifier engine and test suite",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/579",
-      "timestamp": "2026-07-24T03:12:10Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(lessons): EN batch15 (cron streams, JSONL ledger, cookie export)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/573",
-      "timestamp": "2026-07-23T16:58:31Z",
       "source": "github"
     },
     {
@@ -138,36 +138,19 @@
     },
     {
       "type": "challenge",
-      "title": "[Ecosystem] Build VS Code extension for MisakaNet lesson search",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/317",
+      "title": "[Lesson] Translate top10 most-viewed Chinese lessons to English",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/309",
       "labels": [
-        "enhancement",
-        "Ring-3",
-        "bounty",
-        "agent-friendly",
-        "status:competition",
-        "pool:deep",
-        "status:needs-design",
-        "priority:later"
-      ],
-      "timestamp": "2026-07-02T16:01:28Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[API] Add GraphQL API for flexible lesson queries",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/316",
-      "labels": [
-        "enhancement",
-        "Ring-3",
+        "Ring-2",
         "ready",
+        "area:lessons",
         "bounty",
         "agent-friendly",
         "status:competition",
-        "pool:deep",
+        "pool:quick",
         "priority:later"
       ],
-      "timestamp": "2026-07-02T16:01:25Z",
+      "timestamp": "2026-07-02T15:59:51Z",
       "source": "github"
     }
   ]
