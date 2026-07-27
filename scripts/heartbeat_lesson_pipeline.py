@@ -576,7 +576,7 @@ def main():
     candidates = [c for c in candidates if is_lesson_worthy(c)]
     print(f"📊 After lesson-worthiness filter: {len(candidates)} (dropped {before_filter - len(candidates)} news/opinion)")
     candidates.sort(key=rank_candidate, reverse=True)
-    candidates = candidates[:args.target * 3]  # fetch 3x to account for quality failures
+    candidates = candidates[:args.target * 5]  # fetch 5x to account for quality failures and fact-check rejections
 
     print(f"📊 After dedup & rank: {len(candidates)}")
     print()
