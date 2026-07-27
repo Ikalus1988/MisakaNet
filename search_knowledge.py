@@ -11,6 +11,7 @@ import sys
 import time
 import re
 from pathlib import Path
+from datetime import datetime
 from typing import Optional
 
 # ── 生态核心声明 ──
@@ -554,6 +555,7 @@ def main():
     agent_mode = False
     strict = False
     env_filter: Optional[str] = None
+    feedback_mode = False
     lang: Optional[str] = None
     domain: Optional[str] = None
     status_filter: Optional[str] = None
@@ -613,6 +615,8 @@ def main():
             env_filter = arg.split("=", 1)[1].lower()
         elif arg == "--env" and i + 1 < len(search_args):
             env_filter = search_args[i + 1].lower()
+        elif arg == "--feedback":
+            feedback_mode = True
     # ── 轻量配额检查 ──
     from misakanet.profile import check_quota as _check_quota
     allowed, quota_msg = _check_quota()
@@ -789,6 +793,29 @@ def main():
     if found_any:
         print(f"  💡 View full content: cat lessons/<filename>.md")
         print(f"  💡 Contribute new knowledge: python3 scripts/queue_lesson.py -t 'title' -d domain 'content...'")
+        print()
+
+    if feedback_mode and found_any and not json_output:
+        print()
+        try:
+            feedback = input('Was this helpful? (y/n/comment): ').strip()
+            if feedback:
+                log_dir = Path('data')
+                log_dir.mkdir(exist_ok=True)
+                feedback_file = log_dir / 'search-feedback.jsonl'
+                results_shown = []
+                if 'filtered' in locals():
+                    results_shown = [doc.title for score, doc in filtered[:top_k]]
+                entry = {
+                    'timestamp': datetime.utcnow().isoformat() + 'Z',
+                    'query': query,
+                    'results': results_shown,
+                    'feedback': feedback
+                }
+                with open(feedback_file, 'a', encoding='utf-8') as f:
+                    f.write(json.dumps(entry) + '\n')
+        except (EOFError, KeyboardInterrupt):
+            pass
         print()
 
 
