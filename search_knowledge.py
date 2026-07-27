@@ -511,6 +511,9 @@ def main():
         heal(log)
         return
 
+
+    # ── Feedback mode ──
+    use_feedback = "--feedback" in args
     if "--score" in args:
         top_k = None
         telemetry_path = DEFAULT_TELEMETRY
@@ -790,7 +793,36 @@ def main():
         print(f"  💡 View full content: cat lessons/<filename>.md")
         print(f"  💡 Contribute new knowledge: python3 scripts/queue_lesson.py -t 'title' -d domain 'content...'")
         print()
+    if use_feedback:
+        _prompt_feedback(query)
 
+
+
+def _prompt_feedback(query: str = ""):
+    """Prompt user for feedback and log to JSONL."""
+    import datetime as _dt
+    feedback_dir = Path("data")
+    feedback_dir.mkdir(parents=True, exist_ok=True)
+    feedback_file = feedback_dir / "search-feedback.jsonl"
+    try:
+        print("\n" + "=" * 50)
+        response = input("  Was this helpful? (y/n/comment): ").strip()
+        entry = {
+            "query": query,
+            "results_shown": True,
+            "feedback": response if response else "(empty)",
+            "timestamp": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        with open(feedback_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        if response.lower() == "y":
+            print("  ✅ Thanks! Feedback logged.")
+        elif response.lower() == "n":
+            print("  📝 Thanks! We'll improve search quality.")
+        else:
+            print(f"  💬 Comment saved. Thanks!")
+    except (EOFError, KeyboardInterrupt):
+        pass
 
 def _harvest_from_file(filepath: str):
     """Log Harvester prototype — parse error log and generate lesson draft."""
