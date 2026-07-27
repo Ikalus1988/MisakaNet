@@ -35,10 +35,16 @@ def classify_feedback(text: str) -> Tuple[str, float, Dict[str, Any]]:
     clean_text = text.strip()
     words = clean_text.split()
     
-    if len(words) < 5 or not clean_text:
+    if len(words) < 3 or not clean_text:
         return "noise", 0.95, {"reason": "Feedback too short or empty"}
     
     text_lower = clean_text.lower()
+
+    # Keywords signaling MisakaNet internal bugs — check early regardless of length
+    misaka_bug_indicators = [
+        "misakanet", "wrangler.jsonc", "worker 500", "bench_orchestrator"
+    ]
+    is_misaka_bug = any(ind in text_lower for ind in misaka_bug_indicators)
 
     # Keywords signaling a fix or solution
     fix_indicators = [
@@ -47,21 +53,18 @@ def classify_feedback(text: str) -> Tuple[str, float, Dict[str, Any]]:
     ]
     has_fix = any(ind in text_lower for ind in fix_indicators) or "```" in text
 
+    if is_misaka_bug and not has_fix:
+        return "bug-report", 0.90, {"category": "bug-report"}
+
+    if len(words) < 3 or not clean_text:
+        return "noise", 0.95, {"reason": "Feedback too short or empty"}
+
     # Keywords signaling an error or symptom
     problem_indicators = [
-        "error:", "exception:", "failed with", "traceback",
+        "error:", "exception:", "failed", "expired", "traceback",
         "cannot connect", "unable to", "issue:", "bug:", "problem:"
     ]
     has_problem = any(ind in text_lower for ind in problem_indicators)
-
-    # Keywords signaling MisakaNet internal bugs
-    misaka_bug_indicators = [
-        "misakanet", "wrangler.jsonc", "worker 500", "bench_orchestrator"
-    ]
-    is_misaka_bug = any(ind in text_lower for ind in misaka_bug_indicators)
-
-    if is_misaka_bug and not has_fix:
-        return "bug-report", 0.90, {"category": "bug-report"}
 
     if has_fix and (has_problem or len(words) >= 15):
         return "lesson-candidate", 0.88, {"category": "lesson-candidate"}
