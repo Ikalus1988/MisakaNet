@@ -379,7 +379,7 @@ LESSON:
 def fact_check_lesson(lesson_text: str, article_content: str) -> tuple[bool, list[str]]:
     """Verify lesson claims against original article. Returns (pass, issues)."""
     prompt = FACT_CHECK_PROMPT.format(
-        article=article_content[:4000],
+        article=article_content[:10000],
         lesson=lesson_text[:3000],
     )
     result = call_llm(prompt, max_tokens=300)
@@ -434,7 +434,7 @@ def generate_lesson_prompt(candidate: dict, content: str) -> str:
     POINTS: {candidate.get('points', 0)}
 
     ARTICLE CONTENT:
-    {content[:6000]}
+    {content[:12000]}
     """)
 
 
