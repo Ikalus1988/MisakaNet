@@ -510,7 +510,6 @@ def main():
     parser.add_argument("--sources", default="hn,devto", help="Comma-separated sources")
     parser.add_argument("--min-points", type=int, default=100, help="Min HN points")
     parser.add_argument("--days", type=int, default=7, help="Lookback days")
-    parser.add_argument("--upstream", action="store_true", help="Push directly to Ikalus1988/MisakaNet (upstream)")
     args = parser.parse_args()
 
     print(f"=== Heartbeat Lesson Pipeline ===")
@@ -618,7 +617,7 @@ def main():
 
     if passed and not args.dry_run:
         branch = f"feat/heartbeat-lessons-{datetime.now().strftime('%Y%m%d')}"
-        push_target = "upstream" if args.upstream else "origin"
+        push_target = "origin"
         git_operations(passed, branch, push_target)
     elif passed and args.dry_run:
         print("\nDRY RUN — would create PR with:")
