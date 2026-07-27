@@ -553,6 +553,7 @@ def main():
     verbose = False
     agent_mode = False
     strict = False
+    feedback_mode = False
     env_filter: Optional[str] = None
     lang: Optional[str] = None
     domain: Optional[str] = None
@@ -609,6 +610,8 @@ def main():
             agent_mode = True
         elif arg == "--strict":
             strict = True
+        elif arg == "--feedback":
+            feedback_mode = True
         elif arg.startswith("--env="):
             env_filter = arg.split("=", 1)[1].lower()
         elif arg == "--env" and i + 1 < len(search_args):
@@ -742,11 +745,14 @@ def main():
             use_semantic = False
     MIN_SCORE_THRESHOLD = 0.1  # Minimum score to consider as "found"
     
+    all_filtered = []
+    
     all_docs = lessons_docs + ref_docs
     if lessons_docs:
         ranked = _rank_docs(query, lessons_docs, titles_only, broad_only, rerank=use_rerank)
         # Only show results above threshold
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
+        all_filtered.extend(filtered[:top_k])
         found = _format_output(filtered, titles_only, top_k,
                                mode_label=f"lessons/  (All {len(lessons_docs)} items)",
                                query=query, explain=explain,
@@ -756,6 +762,7 @@ def main():
         ranked = _rank_docs(query, ref_docs, titles_only, broad_only=False, rerank=use_rerank)
         # Only show results above threshold
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
+        all_filtered.extend(filtered[:top_k])
         found = _format_output(filtered, titles_only, top_k,
                                mode_label=f"reference/  (All {len(ref_docs)} items)",
                                query=query, explain=explain,
@@ -769,6 +776,7 @@ def main():
             query, all_docs_for_typo, titles_only, broad_only, top_k
         )
         if typo_results:
+            all_filtered.extend(typo_results[:top_k])
             print(f"\n  🔍 Showing results for '{corrected}' (searched: '{query}')\n")
             for score, doc in typo_results:
                 tag = f"[{doc.domain}]" if doc.domain else ""
@@ -790,6 +798,25 @@ def main():
         print(f"  💡 View full content: cat lessons/<filename>.md")
         print(f"  💡 Contribute new knowledge: python3 scripts/queue_lesson.py -t 'title' -d domain 'content...'")
         print()
+    if feedback_mode and not json_output:
+        try:
+            response = input("Was this helpful? (y/n/comment) ").strip()
+            import datetime
+            from pathlib import Path
+            feedback_dir = Path("data")
+            feedback_dir.mkdir(exist_ok=True)
+            feedback_file = feedback_dir / "search-feedback.jsonl"
+            shown_ids = [d.filepath.as_posix() for _, d in all_filtered]
+            entry = {
+                "query": query,
+                "results_shown": shown_ids,
+                "feedback": response,
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            }
+            with open(feedback_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry) + "\n")
+        except (EOFError, KeyboardInterrupt):
+            pass
 
 
 def _harvest_from_file(filepath: str):
