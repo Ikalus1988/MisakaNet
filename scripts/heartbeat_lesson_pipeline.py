@@ -423,12 +423,26 @@ def save_and_score_lesson(content: str, slug: str, threshold: int = 75) -> dict 
 
 # ─── Git Operations ────────────────────────────────────────────────────────
 
-def git_operations(lesson_files: list[Path], branch_name: str) -> bool:
-    """Create branch, commit, push, and create PR."""
+def git_operations(lesson_files: list[Path], branch_name: str, push_target: str = "origin") -> bool:
+    """Create branch, commit, push, and create PR.
+
+    push_target: "origin" (fork, default) or "upstream" (Ikalus1988/MisakaNet)
+    """
     try:
+        # Ensure upstream remote exists
+        if push_target == "upstream":
+            result = subprocess.run(["git", "remote", "get-url", "upstream"], capture_output=True, text=True, cwd=REPO)
+            if result.returncode != 0:
+                subprocess.run(["git", "remote", "add", "upstream", "https://github.com/Ikalus1988/MisakaNet.git"], cwd=REPO, check=True, capture_output=True)
+            fetch_ref = "upstream/main"
+            push_ref = f"upstream {branch_name}"
+        else:
+            fetch_ref = "origin/main"
+            push_ref = f"origin {branch_name}"
+
         # Create branch
-        subprocess.run(["git", "fetch", "origin", "main"], cwd=REPO, check=True, capture_output=True)
-        subprocess.run(["git", "checkout", "-b", branch_name, "origin/main"], cwd=REPO, check=True, capture_output=True)
+        subprocess.run(["git", "fetch", push_target if push_target == "upstream" else "origin", "main"], cwd=REPO, check=True, capture_output=True)
+        subprocess.run(["git", "checkout", "-b", branch_name, fetch_ref], cwd=REPO, check=True, capture_output=True)
 
         # Add files
         for f in lesson_files:
@@ -443,9 +457,9 @@ def git_operations(lesson_files: list[Path], branch_name: str) -> bool:
         subprocess.run(["git", "commit", "-m", msg], cwd=REPO, check=True, capture_output=True)
 
         # Push
-        subprocess.run(["git", "push", "origin", branch_name], cwd=REPO, check=True, capture_output=True)
+        subprocess.run(["git", "push", push_target, branch_name], cwd=REPO, check=True, capture_output=True)
 
-        # Create PR
+        # Create PR (only needed when pushing to fork)
         pr_body = f"## Heartbeat Lesson Batch\n\n"
         pr_body += f"**{count} lessons** extracted from high-point HN/Dev.to posts.\n\n"
         pr_body += "### Quality Scores\n\n"
@@ -457,12 +471,22 @@ def git_operations(lesson_files: list[Path], branch_name: str) -> bool:
         title_count = min(count, 10)
         pr_title = f"feat(lessons): {title_count} community lessons (heartbeat batch)"
 
-        result = subprocess.run(
-            ["gh", "pr", "create", "--repo", "Ikalus1988/MisakaNet",
-             "--head", f"zsxh1990:{branch_name}", "--base", "main",
-             "--title", pr_title, "--body", pr_body],
-            capture_output=True, text=True, cwd=REPO,
-        )
+        if push_target == "upstream":
+            # Direct push to upstream — create PR from branch
+            result = subprocess.run(
+                ["gh", "pr", "create", "--repo", "Ikalus1988/MisakaNet",
+                 "--head", branch_name, "--base", "main",
+                 "--title", pr_title, "--body", pr_body],
+                capture_output=True, text=True, cwd=REPO,
+            )
+        else:
+            # Push to fork — create PR from fork:branch to upstream
+            result = subprocess.run(
+                ["gh", "pr", "create", "--repo", "Ikalus1988/MisakaNet",
+                 "--head", f"zsxh1990:{branch_name}", "--base", "main",
+                 "--title", pr_title, "--body", pr_body],
+                capture_output=True, text=True, cwd=REPO,
+            )
         if result.returncode == 0:
             pr_url = result.stdout.strip()
             print(f"\n🎉 PR created: {pr_url}")
@@ -486,7 +510,7 @@ def main():
     parser.add_argument("--sources", default="hn,devto", help="Comma-separated sources")
     parser.add_argument("--min-points", type=int, default=100, help="Min HN points")
     parser.add_argument("--days", type=int, default=7, help="Lookback days")
-    parser.add_argument("--llm-provider", default="mify", help="LLM provider for extraction")
+    parser.add_argument("--upstream", action="store_true", help="Push directly to Ikalus1988/MisakaNet (upstream)")
     args = parser.parse_args()
 
     print(f"=== Heartbeat Lesson Pipeline ===")
@@ -594,7 +618,8 @@ def main():
 
     if passed and not args.dry_run:
         branch = f"feat/heartbeat-lessons-{datetime.now().strftime('%Y%m%d')}"
-        git_operations(passed, branch)
+        push_target = "upstream" if args.upstream else "origin"
+        git_operations(passed, branch, push_target)
     elif passed and args.dry_run:
         print("\nDRY RUN — would create PR with:")
         for f in passed:
