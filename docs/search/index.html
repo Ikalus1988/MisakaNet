@@ -381,11 +381,23 @@ function submitFeedback(lessonId, query, feedback) {
   saveFeedback(entry);
   restoreFeedbackState(lessonId, query);
 
-  // POST to backend (fire-and-forget, localStorage is primary)
+  // POST to backend feedback hub (fire-and-forget, localStorage is primary)
+  // Sends richer payload for the unified triage pipeline
+  const feedbackText = `Search feedback on lesson "${lessonId}": user rated this result as "${feedback}" for query "${query}".`;
   fetch(FEEDBACK_API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(entry),
+    body: JSON.stringify({
+      text: feedbackText,
+      source: 'search-page',
+      metadata: {
+        lesson_id: lessonId,
+        query: query,
+        feedback_type: feedback,
+        user_agent: navigator.userAgent,
+        url: window.location.href
+      }
+    }),
   }).catch(() => {}); // silent fail, localStorage is fallback
 }
 
