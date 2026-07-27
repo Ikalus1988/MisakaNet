@@ -356,18 +356,27 @@ def call_llm(prompt: str, max_tokens: int = 4000) -> str | None:
 
 FACT_CHECK_PROMPT = """You are a fact-checker. Your ONLY job is to output a JSON object.
 
-Compare the LESSON below against the ARTICLE. Find any fabricated claims.
+Compare the LESSON below against the ARTICLE. Find any fabricated CONTENT claims.
 
-RULES:
-- Numbers (sizes, percentages, metrics) must match the article
-- Code must be from the article or marked "not provided in source"
-- Verification steps must be from the article or "not specified in source"
-- If the article doesn't mention something, it's fabricated
+IGNORE these metadata fields (they are required by the schema and will always be "fabricated"):
+- created date (always set to today)
+- confidence value (always set by the system)
+- status field (always "published")
+- source URL (always set from the candidate)
+
+ONLY check these content claims:
+- Problem description: must match the article
+- Root Cause: must match the article (or "not specified in source")
+- Solution steps: must be from the article (or "not specified in source")
+- Verification: must be from the article (or "not specified in source")
+- Code examples: must be from the article (or "not provided in source")
+- Numbers/metrics: must match the article
+- Any specific technical details: must be from the article
 
 Output ONLY this JSON, nothing else:
 {{"pass": true, "issues": []}}
 or
-{{"pass": false, "issues": ["fabricated claim 1", "fabricated claim 2"]}}
+{{"pass": false, "issues": ["fabricated content claim 1", "fabricated content claim 2"]}}
 
 ARTICLE:
 {article}
