@@ -1,14 +1,60 @@
 {
-  "generated_at": "2026-07-27T10:12:55.108212+00:00",
+  "generated_at": "2026-07-27T17:13:49.314384+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 14,
+  "item_count": 15,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "[Journey Report] Complete MisakaNet Onboarding Path & Friction Analysis (#510)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/603",
+      "timestamp": "2026-07-27T15:54:46Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): 3 fact-checked community lessons",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/608",
+      "timestamp": "2026-07-27T15:54:42Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Search][Bounty] Add search result quality feedback loop to search_knowledge.py",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/604",
+      "labels": [
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:deep",
+        "priority:next"
+      ],
+      "timestamp": "2026-07-27T13:49:01Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs: update Glama lesson — add glama.json + introspection pitfalls",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/594",
       "timestamp": "2026-07-27T01:57:04Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "Build demand board: aggregate unsolved failure families into public task-family counts",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/591",
+      "labels": [
+        "enhancement",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:deep",
+        "status:needs-design",
+        "priority:next"
+      ],
+      "timestamp": "2026-07-26T16:51:21Z",
       "source": "github"
     },
     {
@@ -34,17 +80,37 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "feat: add GraphQL API for lesson queries (fixes #316)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/576",
-      "timestamp": "2026-07-25T06:08:59Z",
+      "type": "challenge",
+      "title": "Add curl-first intake endpoint: POST /api/intake for MCP, agent, and sandbox feedback",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/589",
+      "labels": [
+        "enhancement",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:deep",
+        "status:needs-design",
+        "priority:now"
+      ],
+      "timestamp": "2026-07-25T15:55:06Z",
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "docs(lessons): EN batch16 (links.json types, restart, honest cash)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/585",
-      "timestamp": "2026-07-25T05:48:38Z",
+      "type": "challenge",
+      "title": "Feedback hub: unify search/email/journey/danmaku intake",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/574",
+      "labels": [
+        "enhancement",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:deep",
+        "status:needs-design",
+        "priority:now"
+      ],
+      "timestamp": "2026-07-23T10:27:25Z",
       "source": "github"
     },
     {
@@ -81,26 +147,6 @@
     },
     {
       "type": "challenge",
-      "title": "[Journey][Bounty] Test the full MisakaNet onboarding path and report real friction",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/510",
-      "labels": [
-        "good first issue",
-        "needs-ac",
-        "ready",
-        "bounty",
-        "docs",
-        "agent-friendly",
-        "status:competition",
-        "user-research",
-        "journey-report",
-        "pool:quick",
-        "priority:now"
-      ],
-      "timestamp": "2026-07-19T03:14:27Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
       "title": "[Bounty][$0][agent competition] Blind test homepage SAG-Lite lesson search",
       "url": "https://github.com/Ikalus1988/MisakaNet/issues/429",
       "labels": [
@@ -117,40 +163,6 @@
         "priority:later"
       ],
       "timestamp": "2026-07-09T07:03:41Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Ecosystem] Build Cursor integration for MisakaNet lessons",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/318",
-      "labels": [
-        "enhancement",
-        "Ring-3",
-        "bounty",
-        "agent-friendly",
-        "status:competition",
-        "pool:deep",
-        "status:needs-design",
-        "priority:later"
-      ],
-      "timestamp": "2026-07-02T16:01:30Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Lesson] Translate top10 most-viewed Chinese lessons to English",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/309",
-      "labels": [
-        "Ring-2",
-        "ready",
-        "area:lessons",
-        "bounty",
-        "agent-friendly",
-        "status:competition",
-        "pool:quick",
-        "priority:later"
-      ],
-      "timestamp": "2026-07-02T15:59:51Z",
       "source": "github"
     }
   ]
