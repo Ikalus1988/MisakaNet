@@ -636,7 +636,7 @@ def main():
     print(f"📝 Extracting lessons via LLM (target={args.target})...")
     passed = []
     failed = 0
-    for i, candidate in enumerate(candidates[:args.target + 5]):  # extra buffer for failures
+    for i, candidate in enumerate(candidates):  # iterate all candidates until target reached
         if len(passed) >= args.target:
             break
         domain = classify_domain(candidate["title"], candidate.get("url", ""))
