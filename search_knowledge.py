@@ -433,6 +433,24 @@ def _smart_fallback(query: str, docs: list):
     print()
 
 
+def _log_feedback(query: str, result_ids: list[str], feedback: str):
+    """Log search feedback to data/search-feedback.jsonl (no PII)."""
+    import datetime
+    feedback_file = Path(__file__).parent / "data" / "search-feedback.jsonl"
+    entry = {
+        "query": query,
+        "results": result_ids,
+        "feedback": feedback,
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+    try:
+        feedback_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(feedback_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
 def main():
     _ensure_utf8_stdout()
     args = sys.argv[1:]
@@ -553,6 +571,7 @@ def main():
     verbose = False
     agent_mode = False
     strict = False
+    use_feedback = False
     env_filter: Optional[str] = None
     lang: Optional[str] = None
     domain: Optional[str] = None
@@ -609,6 +628,8 @@ def main():
             agent_mode = True
         elif arg == "--strict":
             strict = True
+        elif arg == "--feedback":
+            use_feedback = True
         elif arg.startswith("--env="):
             env_filter = arg.split("=", 1)[1].lower()
         elif arg == "--env" and i + 1 < len(search_args):
@@ -741,12 +762,19 @@ def main():
             print("  ⚠️ Falling back to BM25")
             use_semantic = False
     MIN_SCORE_THRESHOLD = 0.1  # Minimum score to consider as "found"
+    shown_result_ids: list[str] = []
     
     all_docs = lessons_docs + ref_docs
     if lessons_docs:
         ranked = _rank_docs(query, lessons_docs, titles_only, broad_only, rerank=use_rerank)
         # Only show results above threshold
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
+        if use_feedback:
+            for _, d in filtered[:top_k]:
+                try:
+                    shown_result_ids.append(d.filepath.relative_to(REPO).as_posix())
+                except (ValueError, AttributeError):
+                    shown_result_ids.append(getattr(d, 'filename', d.title))
         found = _format_output(filtered, titles_only, top_k,
                                mode_label=f"lessons/  (All {len(lessons_docs)} items)",
                                query=query, explain=explain,
@@ -756,6 +784,12 @@ def main():
         ranked = _rank_docs(query, ref_docs, titles_only, broad_only=False, rerank=use_rerank)
         # Only show results above threshold
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
+        if use_feedback:
+            for _, d in filtered[:top_k]:
+                try:
+                    shown_result_ids.append(d.filepath.relative_to(REPO).as_posix())
+                except (ValueError, AttributeError):
+                    shown_result_ids.append(getattr(d, 'filename', d.title))
         found = _format_output(filtered, titles_only, top_k,
                                mode_label=f"reference/  (All {len(ref_docs)} items)",
                                query=query, explain=explain,
@@ -790,6 +824,15 @@ def main():
         print(f"  💡 View full content: cat lessons/<filename>.md")
         print(f"  💡 Contribute new knowledge: python3 scripts/queue_lesson.py -t 'title' -d domain 'content...'")
         print()
+
+    if use_feedback:
+        try:
+            answer = input("Was this helpful? (y/n/comment): ").strip()
+        except (EOFError, KeyboardInterrupt):
+            answer = ""
+        if answer:
+            _log_feedback(query, shown_result_ids, answer)
+            print("  ✓ Feedback recorded.")
 
 
 def _harvest_from_file(filepath: str):
