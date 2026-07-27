@@ -243,6 +243,149 @@ export default {
       return jsonResponse({ accepted: accepted.length });
     }
 
+    // ── Demand Board ──
+
+    // Task family classifier (same logic as misakanet/insights/__init__.py)
+    function classifyTaskFamily(query, lessonId) {
+      const q = ((query || "") + " " + (lessonId || "")).toLowerCase();
+      const keywords = {
+        "github-auth": ["github", "auth", "token", "oauth", "git credential"],
+        "npm-publish": ["npm", "publish", "package", "node"],
+        "cloudflare-worker": ["cloudflare", "worker", "wrangler", "cf"],
+        "mcp-registry": ["mcp", "registry", "server", "tool"],
+        "glama-release": ["glama", "release", "gateway"],
+        "python-env": ["python", "pip", "venv", "conda", "pyenv", "virtualenv"],
+        "database-lock": ["database", "deadlock", "sql", "mysql", "postgres", "transaction"],
+        "crawler-block": ["crawl", "scrape", "403", "429", "bot detect"],
+        "agent-tooling": ["agent", "langchain", "skill plugin", "tool call"],
+      };
+      for (const [family, terms] of Object.entries(keywords)) {
+        if (terms.some((t) => q.includes(t))) return family;
+      }
+      return "unclassified";
+    }
+
+    // GET /api/insights/demand-board — public aggregate demand board
+    if (request.method === "GET" && url.pathname === "/api/insights/demand-board") {
+      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+
+      const windowDays = parseInt(url.searchParams.get("days") || "30", 10) || 30;
+      const now = Date.now();
+      const cutoff7d = now - 7 * 86400_000;
+      const cutoff30d = now - windowDays * 86400_000;
+
+      const family7d = {};
+      const family30d = {};
+      const familyLastSeen = {};
+
+      try {
+        const feedbackList = await env.MISAKANET_KV.list({ prefix: "feedback:" });
+        for (const key of feedbackList.keys) {
+          try {
+            const raw = await env.MISAKANET_KV.get(key.name, "text");
+            if (!raw) continue;
+            const rec = JSON.parse(raw);
+            const ts = Date.parse(rec.ts);
+            if (isNaN(ts)) continue;
+            const feedback = rec.feedback || "";
+            if (feedback !== "irrelevant" && feedback !== "too_basic") continue;
+
+            const family = classifyTaskFamily(rec.query, rec.lesson_id);
+            if (ts >= cutoff30d) {
+              family30d[family] = (family30d[family] || 0) + 1;
+              if (ts >= cutoff7d) family7d[family] = (family7d[family] || 0) + 1;
+              const day = new Date(ts).toISOString().slice(0, 10);
+              if (!familyLastSeen[family] || day > familyLastSeen[family]) {
+                familyLastSeen[family] = day;
+              }
+            }
+          } catch { /* skip malformed record */ }
+        }
+      } catch { /* KV list may fail on free tier */ }
+
+      const summary = Object.keys(family30d)
+        .sort((a, b) => (family30d[b] || 0) - (family30d[a] || 0))
+        .map((family) => ({
+          taskFamily: family,
+          unsolved7d: family7d[family] || 0,
+          unsolved30d: family30d[family] || 0,
+          lastSeen: familyLastSeen[family] || "",
+          actionUrl:
+            "https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml",
+        }));
+
+      return jsonResponse({
+        success: true,
+        available: summary.length > 0,
+        windowDays,
+        summary,
+        meta: {
+          r_level: "R1_descriptive",
+          privacy: "aggregate-only",
+          raw_query: false,
+          pii: false,
+        },
+      });
+    }
+
+    // GET /api/insights/demand-map — maintainer-only detailed map
+    if (request.method === "GET" && url.pathname === "/api/insights/demand-map") {
+      const key = url.searchParams.get("key") || "";
+      const expectedKey = env.MAINTAINER_KEY || "";
+      if (!expectedKey || key !== expectedKey) {
+        return jsonResponse({ error: "Invalid maintainer key" }, 403);
+      }
+
+      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+
+      const windowDays = parseInt(url.searchParams.get("days") || "30", 10) || 30;
+      const now = Date.now();
+      const cutoff = now - windowDays * 86400_000;
+
+      const buckets = {};
+
+      try {
+        const feedbackList = await env.MISAKANET_KV.list({ prefix: "feedback:" });
+        for (const key of feedbackList.keys) {
+          try {
+            const raw = await env.MISAKANET_KV.get(key.name, "text");
+            if (!raw) continue;
+            const rec = JSON.parse(raw);
+            const ts = Date.parse(rec.ts);
+            if (isNaN(ts) || ts < cutoff) continue;
+            const feedback = rec.feedback || "";
+            if (feedback !== "irrelevant" && feedback !== "too_basic") continue;
+
+            const family = classifyTaskFamily(rec.query, rec.lesson_id);
+            const day = new Date(ts).toISOString().slice(0, 10);
+            const reason = `feedback:${feedback}`;
+            const bucketKey = `${family}|${day}|${reason}`;
+
+            if (!buckets[bucketKey]) {
+              buckets[bucketKey] = { unsolvedCount: 0, sources: new Set() };
+            }
+            buckets[bucketKey].unsolvedCount++;
+            buckets[bucketKey].sources.add(rec.lesson_id || "");
+          } catch { /* skip */ }
+        }
+      } catch { /* KV list may fail */ }
+
+      const resultBuckets = Object.entries(buckets)
+        .sort()
+        .map(([key, data]) => {
+          const [taskFamily, bucketDay, unsolvedReason] = key.split("|");
+          return {
+            taskFamily,
+            bucketDay,
+            unsolvedReason,
+            unsolvedCount: data.unsolvedCount,
+            distinctSourceCount: data.sources.size,
+          };
+        });
+
+      return jsonResponse({ buckets: resultBuckets });
+    }
+
     // GET /api/github/* - authenticated GitHub API proxy for the org frontend.
     // Keep this before the HTML landing page; otherwise the frontend receives
     // HTML and fails with: Unexpected token '<' while parsing JSON.
