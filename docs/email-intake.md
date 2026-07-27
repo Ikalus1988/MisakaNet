@@ -1,8 +1,10 @@
 # Email Intake — No GitHub Required
 
-> Don't have a GitHub account? Send us a debugging story by email.
+> Don't have a GitHub account? Send us a debugging story by email — or use curl.
 
 ## Current Setup
+
+### Email Channel
 
 ```
 You send an email to bot@misakanet.org
@@ -21,6 +23,49 @@ If you consent, it becomes a public lesson or rescue card
 **Address:** `bot@misakanet.org` — all intake goes here.
 
 > Catch-all `*@misakanet.org` is active — if you write to any address @misakanet.org, we'll receive it. But `bot@` is the recommended address.
+
+### Curl / API Channel (NEW)
+
+```
+You POST JSON to https://misakanet.org/api/intake
+    ↓
+Worker validates, redacts secrets, rate-limits
+    ↓
+Intake stored in KV with 90-day TTL
+    ↓
+Use scripts/intake_digest.py to pull and classify
+    ↓
+If consent is allow_anonymous_publish, it may become public
+```
+
+**Usage:**
+```bash
+curl -X POST https://misakanet.org/api/intake \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "diagnostic",
+    "source": "curl",
+    "message": "pip install keeps timing out behind corporate proxy",
+    "context": {"tool": "pip", "version": "24.0", "platform": "linux"},
+    "consent": "private_only"
+  }'
+```
+
+**Intake types:** `diagnostic`, `lesson_candidate`, `friction`, `bug`, `node_join`, `unsolved`
+
+**Sources:** `mcp`, `curl`, `frontend`, `agent`
+
+**Consent options:**
+- `private_only` (default): Intake stays private, informs internal notes only
+- `allow_anonymous_publish`: May be published anonymously after review
+
+**Security guarantees:**
+- IP rate limited (10/hour)
+- Max body 8KB
+- Secrets automatically redacted (tokens, keys, passwords)
+- No auto GitHub issue creation
+- No auto public lesson publishing
+- No attachment/link execution
 
 ## How It Works
 If you consent, it becomes a public lesson or rescue card

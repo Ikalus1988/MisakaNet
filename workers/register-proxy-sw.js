@@ -243,6 +243,87 @@ export default {
       return jsonResponse({ accepted: accepted.length });
     }
 
+    // POST /api/intake — general-purpose intake for MCP, agents, sandbox
+    if (request.method === "POST" && url.pathname === "/api/intake") {
+      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+
+      // IP rate limit: 10 per hour per IP
+      const intakeIp = request.headers.get("CF-Connecting-IP") || "unknown";
+      const intakeRateKey = `rate:intake:${intakeIp}`;
+      const intakeRateRaw = await env.MISAKANET_KV.get(intakeRateKey, "text");
+      const intakeRateCount = intakeRateRaw ? parseInt(intakeRateRaw, 10) || 0 : 0;
+      if (intakeRateCount >= 10) return jsonResponse({ error: "Rate limited. Try again later." }, 429);
+      await env.MISAKANET_KV.put(intakeRateKey, String(intakeRateCount + 1), { expirationTtl: 3600 });
+
+      // Max body 8KB
+      const contentLength = parseInt(request.headers.get("content-length") || "0");
+      if (contentLength > 8192) return jsonResponse({ error: "Request too large (max 8KB)" }, 413);
+
+      let intakeBody;
+      try { intakeBody = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
+
+      const allowedTypes = ["diagnostic", "lesson_candidate", "friction", "bug", "node_join", "unsolved"];
+      const allowedSources = ["mcp", "curl", "frontend", "agent"];
+      const allowedConsent = ["private_only", "allow_anonymous_publish"];
+
+      const type = String(intakeBody.type || "").slice(0, 30);
+      const source = String(intakeBody.source || "").slice(0, 20);
+      const message = String(intakeBody.message || "").slice(0, 2000);
+      const consent = String(intakeBody.consent || "private_only").slice(0, 30);
+
+      if (!type || !allowedTypes.includes(type)) {
+        return jsonResponse({ error: "Missing or invalid type. Allowed: " + allowedTypes.join(", ") }, 400);
+      }
+      if (!source || !allowedSources.includes(source)) {
+        return jsonResponse({ error: "Missing or invalid source. Allowed: " + allowedSources.join(", ") }, 400);
+      }
+      if (!message.trim()) {
+        return jsonResponse({ error: "Missing message" }, 400);
+      }
+      if (!allowedConsent.includes(consent)) {
+        return jsonResponse({ error: "Invalid consent. Allowed: " + allowedConsent.join(", ") }, 400);
+      }
+
+      // Secret redaction: strip common credential patterns from message and context
+      function redactSecrets(str) {
+        return String(str || "")
+          .replace(/(?:ghp_|gho_|github_pat_|sk-|xox[baprs]-|AIza[0-9A-Za-z\\-_]{35}|AKIA[0-9A-Z]{16})[A-Za-z0-9_\\-]{20,}/g, "[REDACTED]")
+          .replace(/(?:Bearer|token|key|secret|password|passwd|api[_-]?key)[:=]\\s*[^\\s,;]+/gi, "$1=[REDACTED]")
+          .replace(/-----BEGIN [A-Z ]+ PRIVATE KEY-----([\\s\\S]*?)-----END [A-Z ]+ PRIVATE KEY-----/g, "[REDACTED PRIVATE KEY]");
+      }
+
+      const context = intakeBody.context && typeof intakeBody.context === "object" ? intakeBody.context : {};
+      // Field whitelist for context
+      const safeContext = {};
+      const allowedContextFields = ["tool", "version", "platform", "os", "language", "query"];
+      for (const key of allowedContextFields) {
+        if (context[key] !== undefined) {
+          safeContext[key] = redactSecrets(String(context[key]).slice(0, 200));
+        }
+      }
+
+      const intakeId = crypto.randomUUID();
+      const record = {
+        intakeId,
+        type,
+        source,
+        message: redactSecrets(message),
+        context: safeContext,
+        consent,
+        ts: intakeBody.ts || new Date().toISOString(),
+        ip: intakeIp,
+      };
+
+      await env.MISAKANET_KV.put(
+        `intake:${intakeId}`,
+        JSON.stringify(record),
+        { expirationTtl: 7776000 }, // 90 days
+      );
+
+      console.log(`Intake ${intakeId}: ${type} from ${source} — consent: ${consent}`);
+      return jsonResponse({ accepted: true, intake_id: intakeId });
+    }
+
     // GET /api/github/* - authenticated GitHub API proxy for the org frontend.
     // Keep this before the HTML landing page; otherwise the frontend receives
     // HTML and fails with: Unexpected token '<' while parsing JSON.
