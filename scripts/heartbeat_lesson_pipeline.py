@@ -144,17 +144,51 @@ TECH_KEYWORDS = [
     "prompt injection",
     "debugging lesson",
     "performance optimization",
-    "memory leak",
-    "database migration",
+    "memory leak fix",
+    "database migration lesson",
     "deploy rollback",
-    "security vulnerability",
-    "CI CD broken",
-    "kubernetes crash",
-    "MCP server",
-    "agent architecture",
-    "Redis cache",
-    "Postgres tuning",
-    "Docker networking",
+    "security vulnerability fix",
+    "CI CD broken fix",
+    "kubernetes crash debug",
+    "MCP server built",
+    "agent architecture lesson",
+    "Redis production lesson",
+    "Postgres tuning lesson",
+    "Docker networking fix",
+    "race condition debugging",
+    "deadlock lesson",
+    "data corruption fix",
+    "schema migration lesson",
+    "zero downtime deploy",
+    "load testing lesson",
+    "incident response lesson",
+    "on call lesson",
+    "observability lesson",
+    "error handling pattern",
+    "retry logic lesson",
+    "circuit breaker pattern",
+    "graceful degradation",
+    "I tried building",
+    "what I learned building",
+    "lessons from production",
+    "tricky bug fix",
+    "root cause analysis",
+    "memory leak debugging",
+    "OOM crash fix",
+    "timeout debugging",
+    "certificate expired fix",
+    "DNS resolution lesson",
+    "Nginx config lesson",
+    "Go goroutine leak",
+    "Python asyncio bug",
+    "Rust memory safety",
+    "TypeScript type error",
+    "SQL query optimization",
+    "cache invalidation lesson",
+    "distributed system lesson",
+    "microservice debugging",
+    "API design lesson",
+    "backward compatibility fix",
 ]
 
 
@@ -563,10 +597,10 @@ def main():
         candidates.extend(fetch_hn_stories(args.min_points, args.days))
         print("📡 Fetching HN stories (keyword search)...")
         for kw in TECH_KEYWORDS:
-            candidates.extend(fetch_hn_by_keyword(kw, min_points=30, limit=3))
+            candidates.extend(fetch_hn_by_keyword(kw, min_points=30, limit=5))
     if "devto" in args.sources:
         print("📡 Fetching Dev.to articles...")
-        for tag in ["mcp", "agent", "devops", "python"]:
+        for tag in ["mcp", "agent", "devops", "python", "security", "database", "rust", "go", "typescript", "docker", "kubernetes"]:
             candidates.extend(fetch_devto_articles(tag, args.days))
 
     print(f"📊 Raw candidates: {len(candidates)}")
