@@ -372,26 +372,80 @@ def call_llm(prompt: str, max_tokens: int = 4000) -> str | None:
         return None
 
 
+FACT_CHECK_PROMPT = """You are a fact-checker. Your ONLY job is to output a JSON object.
+
+Compare the LESSON below against the ARTICLE. Find any fabricated claims.
+
+RULES:
+- Numbers (sizes, percentages, metrics) must match the article
+- Code must be from the article or marked "not provided in source"
+- Verification steps must be from the article or "not specified in source"
+- If the article doesn't mention something, it's fabricated
+
+Output ONLY this JSON, nothing else:
+{{"pass": true, "issues": []}}
+or
+{{"pass": false, "issues": ["fabricated claim 1", "fabricated claim 2"]}}
+
+ARTICLE:
+{article}
+
+LESSON:
+{lesson}"""
+
+
+def fact_check_lesson(lesson_text: str, article_content: str) -> tuple[bool, list[str]]:
+    """Verify lesson claims against original article. Returns (pass, issues)."""
+    prompt = FACT_CHECK_PROMPT.format(
+        article=article_content[:4000],
+        lesson=lesson_text[:3000],
+    )
+    result = call_llm(prompt, max_tokens=300)
+    if not result:
+        return False, ["LLM fact-check failed"]
+    try:
+        m = re.search(r"\{[^}]+\}", result, re.DOTALL)
+        if m:
+            # Handle multi-line JSON
+            json_str = m.group()
+            # Fix common JSON issues
+            json_str = re.sub(r'\n', ' ', json_str)
+            data = json.loads(json_str)
+            passed = data.get("pass", False)
+            issues = data.get("issues", [])
+            return passed, issues
+    except (json.JSONDecodeError, KeyError):
+        pass
+    return False, ["Fact-check response unparseable"]
+
+
 def generate_lesson_prompt(candidate: dict, content: str) -> str:
     """Generate LLM prompt for lesson extraction."""
     return textwrap.dedent(f"""\
     Extract a MisakaNet lesson from this article. Output ONLY the lesson markdown file, nothing else.
+
+    CRITICAL RULE — DO NOT FABRICATE:
+    - Every claim MUST come from the original article
+    - If the article doesn't provide code examples, write "not provided in source"
+    - If the article doesn't provide verification steps, write "not specified in source"
+    - If the article doesn't provide specific numbers, write "not specified in source"
+    - NEVER invent code, metrics, or steps that aren't in the article
 
     REQUIREMENTS (must follow exactly or quality gate fails):
     1. First line: JSON frontmatter between --- delimiters with these fields:
        {{"title": "...", "domain": "...", "tags": [...], "language": "en", "status": "published",
          "source": "article_url", "created": "{datetime.now().strftime('%Y-%m-%d')}", "confidence": "0.85"}}
     2. Required sections in this exact order:
-       - ## Problem (specific scenario, not generic)
-       - ## Root Cause (technical detail, not vague)
-       - ## Solution (actionable steps with code/config examples)
-       - ## Verification (executable commands with expected output)
-       - ## Notes (generalization to other contexts)
-       - ## References (source URL + HN discussion if applicable)
+       - ## Problem (specific scenario from the article)
+       - ## Root Cause (technical detail from the article)
+       - ## Solution (steps from the article, or "not specified in source" if missing)
+       - ## Verification (from the article, or "not specified in source" if missing)
+       - ## Notes (generalization from the article)
+       - ## References (source URL)
     3. Code blocks MUST have language tags (```python, ```sql, ```bash, etc.)
-    4. Problem section must describe a CONCRETE scenario (who, what tool, what action, what went wrong)
-    5. Solution must have numbered steps with code examples
-    6. Verification must have copy-pasteable commands
+    4. Problem section must describe a CONCRETE scenario from the article
+    5. Solution must have numbered steps — use article's own words, don't invent
+    6. Verification: if the article doesn't provide this, write "not specified in source"
 
     SOURCE: {candidate['url']}
     TITLE: {candidate['title']}
@@ -593,6 +647,14 @@ def main():
         # Strip markdown fences if LLM wrapped them
         lesson_text = re.sub(r"^```(?:markdown)?\s*\n", "", lesson_text)
         lesson_text = re.sub(r"\n```\s*$", "", lesson_text)
+
+        # Fact-check: verify lesson claims against original article
+        print(f"         Fact-checking against source...")
+        passed_check, issues = fact_check_lesson(lesson_text, content)
+        if not passed_check:
+            print(f"         🚫 Fact-check FAILED: {'; '.join(issues[:3])}")
+            failed += 1
+            continue
 
         # Save and score
         result = save_and_score_lesson(lesson_text, slug, args.threshold)
