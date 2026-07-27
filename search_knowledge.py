@@ -474,6 +474,41 @@ def _collect_feedback(query: str, result_ids: list) -> None:
         print(f"  ⚠️  Could not log feedback: {e}", file=sys.stderr)
 
 
+def _prompt_feedback(query: str, found_any: bool):
+    """Prompt user for search result feedback and log to data/search-feedback.jsonl."""
+    import datetime
+    try:
+        print("─── Search Feedback ───")
+        answer = input(f"  Was this helpful? (y/n/c=comment/Enter=skip): ").strip().lower()
+        feedback_data = {
+            "query": query,
+            "found_results": found_any,
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+        if answer == "y":
+            feedback_data["feedback"] = "helpful"
+        elif answer == "n":
+            feedback_data["feedback"] = "not_helpful"
+        elif answer == "c":
+            comment = input("  Your comment: ").strip()
+            feedback_data["feedback"] = "comment"
+            feedback_data["comment"] = comment
+        else:
+            return  # skip, no feedback to log
+
+        # Log to data/search-feedback.jsonl
+        log_dir = Path("data")
+        log_dir.mkdir(exist_ok=True)
+        log_file = log_dir / "search-feedback.jsonl"
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(feedback_data) + "\n")
+        print(f"  ✅ Feedback saved to {log_file}")
+        print()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        pass  # Non-interactive mode, skip feedback
+
+
 def main():
     _ensure_utf8_stdout()
     args = sys.argv[1:]
@@ -593,6 +628,7 @@ def main():
     explain = False
     verbose = False
     agent_mode = False
+    feedback = False
     strict = False
     use_feedback = False
     env_filter: Optional[str] = None
@@ -649,6 +685,8 @@ def main():
             explain = True
         elif arg == "--agent":
             agent_mode = True
+        elif arg == "--feedback":
+            feedback = True
         elif arg == "--strict":
             strict = True
         elif arg == "--feedback":
@@ -836,6 +874,8 @@ def main():
         if use_feedback and not json_output:
             _collect_feedback(query, result_ids if 'result_ids' in dir() else [])
         print()
+    if feedback:
+        _prompt_feedback(query, found_any)
 
 
 def _harvest_from_file(filepath: str):
