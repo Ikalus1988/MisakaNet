@@ -108,6 +108,56 @@ def fetch_hn_stories(min_points: int = 100, days: int = 7) -> list[dict]:
     return stories
 
 
+def fetch_hn_by_keyword(keyword: str, min_points: int = 30, limit: int = 5) -> list[dict]:
+    """Search HN by keyword for targeted technical content."""
+    url = (
+        f"https://hn.algolia.com/api/v1/search?"
+        f"query={urllib.request.quote(keyword)}&tags=story"
+        f"&hitsPerPage={limit}&numericFilters=points>{min_points}"
+    )
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "MisakaNet-Heartbeat/1.0"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read())
+    except Exception as e:
+        print(f"⚠️  HN keyword search error for '{keyword}': {e}", file=sys.stderr)
+        return []
+
+    stories = []
+    for h in data.get("hits", []):
+        stories.append({
+            "source": "hn",
+            "id": h["objectID"],
+            "title": h.get("title", ""),
+            "url": h.get("url", ""),
+            "points": h.get("points", 0),
+            "comments": h.get("num_comments", 0),
+            "author": h.get("author", ""),
+            "created_at": h.get("created_at", ""),
+            "hn_url": f"https://news.ycombinator.com/item?id={h['objectID']}",
+        })
+    return stories
+
+
+TECH_KEYWORDS = [
+    "postmortem incident",
+    "prompt injection",
+    "debugging lesson",
+    "performance optimization",
+    "memory leak",
+    "database migration",
+    "deploy rollback",
+    "security vulnerability",
+    "CI CD broken",
+    "kubernetes crash",
+    "MCP server",
+    "agent architecture",
+    "Redis cache",
+    "Postgres tuning",
+    "Docker networking",
+]
+
+
 def fetch_devto_articles(tag: str = "mcp", days: int = 7, top: int = 7) -> list[dict]:
     """Fetch top Dev.to articles."""
     url = f"https://dev.to/api/articles?tag={tag}&top={top}&per_page=20"
@@ -446,8 +496,11 @@ def main():
     # 1. Fetch candidates
     candidates = []
     if "hn" in args.sources:
-        print("📡 Fetching HN stories...")
+        print("📡 Fetching HN stories (popularity)...")
         candidates.extend(fetch_hn_stories(args.min_points, args.days))
+        print("📡 Fetching HN stories (keyword search)...")
+        for kw in TECH_KEYWORDS:
+            candidates.extend(fetch_hn_by_keyword(kw, min_points=30, limit=3))
     if "devto" in args.sources:
         print("📡 Fetching Dev.to articles...")
         for tag in ["mcp", "agent", "devops", "python"]:
