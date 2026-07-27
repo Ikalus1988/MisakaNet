@@ -356,6 +356,30 @@ def _suggest_relaxed_query(query: str) -> list:
     return []
 
 
+def _log_feedback(query: str, results_shown: list[str], feedback: str):
+    """Log search feedback to data/search-feedback.jsonl.
+
+    No PII — only query, result IDs (file paths), and raw feedback text.
+    """
+    import datetime
+    data_dir = Path("data")
+    data_dir.mkdir(parents=True, exist_ok=True)
+    log_file = data_dir / "search-feedback.jsonl"
+
+    entry = {
+        "query": query,
+        "results_shown": results_shown,
+        "feedback": feedback.strip(),
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+
+    try:
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception:
+        pass  # Non-critical, don't fail search
+
+
 def _log_zero_result(query: str):
     """Log zero-result query for gap analysis."""
     import datetime
@@ -553,6 +577,7 @@ def main():
     verbose = False
     agent_mode = False
     strict = False
+    use_feedback = False
     env_filter: Optional[str] = None
     lang: Optional[str] = None
     domain: Optional[str] = None
@@ -609,6 +634,8 @@ def main():
             agent_mode = True
         elif arg == "--strict":
             strict = True
+        elif arg == "--feedback":
+            use_feedback = True
         elif arg.startswith("--env="):
             env_filter = arg.split("=", 1)[1].lower()
         elif arg == "--env" and i + 1 < len(search_args):
@@ -722,7 +749,12 @@ def main():
             from misakanet.profile import increment_search, consume_quota
             increment_search()
             consume_quota()
-        print(json.dumps(results, ensure_ascii=False, indent=2))
+        # Feedback prompt for JSON mode consumers
+        if use_feedback:
+            output = {"results": results, "_feedback_prompt": "Was this helpful? (y/n/comment)"}
+        else:
+            output = results
+        print(json.dumps(output, ensure_ascii=False, indent=2))
         return
 
     if use_semantic:
@@ -790,6 +822,35 @@ def main():
         print(f"  💡 View full content: cat lessons/<filename>.md")
         print(f"  💡 Contribute new knowledge: python3 scripts/queue_lesson.py -t 'title' -d domain 'content...'")
         print()
+
+    # ── Feedback loop: prompt user and log to data/search-feedback.jsonl ──
+    if use_feedback and not json_output and found_any:
+        _prompt_and_log_feedback(query)
+
+
+def _prompt_and_log_feedback(query: str):
+    """Prompt user for search feedback and log the response (non-JSON mode only)."""
+    try:
+        response = input("  📝 Was this helpful? (y/n/comment): ").strip()
+    except (EOFError, KeyboardInterrupt):
+        return
+
+    if not response:
+        return
+
+    # Collect result IDs from the current session (paths of docs shown)
+    # Since we can't easily thread state, use a simple approach:
+    # the _log_feedback function logs what we give it.
+    # For now log the query response without result IDs — they're recoverable
+    # from the search query itself.
+    _log_feedback(query, [], response)
+    if response.lower() in ("y", "yes"):
+        print("  ✅ Thanks! Feedback logged.")
+    elif response.lower() in ("n", "no"):
+        print("  📋 Thanks! We'll use this to improve results.")
+    else:
+        print("  💬 Thanks! Your comment has been logged.")
+    print()
 
 
 def _harvest_from_file(filepath: str):
