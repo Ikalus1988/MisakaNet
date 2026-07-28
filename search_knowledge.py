@@ -356,6 +356,49 @@ def _suggest_relaxed_query(query: str) -> list:
     return []
 
 
+
+def _collect_feedback(query: str, result_ids: list[str]) -> None:
+    """Prompt user for feedback and log to data/search-feedback.jsonl.
+
+    Only logs query, result IDs, feedback, and timestamp - no PII.
+    """
+    import datetime
+
+    print()
+    try:
+        answer = input("  Was this helpful? (y/n/comment): ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return
+
+    if not answer:
+        return
+
+    # Normalise y/n to boolean-ish, otherwise keep as comment
+    if answer.lower() in ("y", "yes"):
+        feedback = "helpful"
+    elif answer.lower() in ("n", "no"):
+        feedback = "not_helpful"
+    else:
+        feedback = answer[:200]  # cap comment length
+
+    entry = {
+        "query": query,
+        "result_ids": result_ids,
+        "feedback": feedback,
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+
+    feedback_file = Path(__file__).parent / "data" / "search-feedback.jsonl"
+    feedback_file.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with open(feedback_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        print("  \u2705 Feedback logged. Thank you!")
+    except OSError as e:
+        print(f"  \u26a0\ufe0f Could not write feedback: {e}", file=sys.stderr)
+
+
 def _log_zero_result(query: str):
     """Log zero-result query for gap analysis."""
     import datetime
@@ -553,6 +596,7 @@ def main():
     verbose = False
     agent_mode = False
     strict = False
+    use_feedback = False
     env_filter: Optional[str] = None
     lang: Optional[str] = None
     domain: Optional[str] = None
@@ -609,6 +653,9 @@ def main():
             agent_mode = True
         elif arg == "--strict":
             strict = True
+        elif arg == "--feedback":
+            use_feedback = True
+
         elif arg.startswith("--env="):
             env_filter = arg.split("=", 1)[1].lower()
         elif arg == "--env" and i + 1 < len(search_args):
@@ -786,6 +833,15 @@ def main():
         from misakanet.profile import increment_search, consume_quota
         increment_search()
         consume_quota()
+    # --feedback: prompt user and log to data/search-feedback.jsonl
+    if use_feedback and found_any and not json_output:
+        _result_ids = []
+        if lessons_docs or ref_docs:
+            _all = lessons_docs + ref_docs
+            _ranked = _rank_docs(query, _all, titles_only, broad_only)
+            _result_ids = [d.title for s, d in _ranked[:top_k] if s >= 0.1]
+        _collect_feedback(query, _result_ids)
+
     if found_any:
         print(f"  💡 View full content: cat lessons/<filename>.md")
         print(f"  💡 Contribute new knowledge: python3 scripts/queue_lesson.py -t 'title' -d domain 'content...'")
