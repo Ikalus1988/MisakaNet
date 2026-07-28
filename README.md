@@ -1,5 +1,7 @@
 # Swarm Knowledge Protocol (SKP)
 
+[![MCP Toplist](https://mcptoplist.com/badge/io.github.Ikalus1988%2Fmisakanet.svg)](https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet)
+
 > **MisakaNet** is the flagship reference implementation of the Swarm Knowledge Protocol.
 
 mcp-name: io.github.Ikalus1988/misakanet
