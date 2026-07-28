@@ -243,6 +243,78 @@ export default {
       return jsonResponse({ accepted: accepted.length });
     }
 
+
+    // POST /api/intake — general-purpose intake for MCP, agents, sandbox (Issue #589)
+    if (request.method === "POST" && url.pathname === "/api/intake") {
+      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+
+      // Max body 8KB
+      const contentLength = parseInt(request.headers.get("content-length") || "0");
+      if (contentLength > 8192) return jsonResponse({ error: "Request too large (max 8KB)" }, 413);
+
+      // IP rate limit: 10 per hour
+      const intakeIp = request.headers.get("CF-Connecting-IP") || "unknown";
+      const intakeRateKey = `rate:intake:${intakeIp}`;
+      const intakeRateRaw = await env.MISAKANET_KV.get(intakeRateKey, "text");
+      const intakeRateCount = intakeRateRaw ? parseInt(intakeRateRaw, 10) || 0 : 0;
+      if (intakeRateCount >= 10) return jsonResponse({ error: "Rate limited (10/hour). Try again later." }, 429);
+      await env.MISAKANET_KV.put(intakeRateKey, String(intakeRateCount + 1), { expirationTtl: 3600 });
+
+      let intakeBody;
+      try { intakeBody = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
+
+      // Field whitelist + validation
+      const VALID_TYPES = ["diagnostic", "lesson_candidate", "friction", "bug", "node_join"];
+      const VALID_SOURCES = ["mcp", "curl", "frontend", "agent"];
+      const VALID_CONSENT = ["private_only", "allow_anonymous_publish"];
+
+      const { type, source, message, context, lesson_id, contact, consent, ts } = intakeBody || {};
+      if (!type || !VALID_TYPES.includes(type)) return jsonResponse({ error: "Invalid or missing 'type'. Must be one of: " + VALID_TYPES.join(", ") }, 400);
+      if (!source || !VALID_SOURCES.includes(source)) return jsonResponse({ error: "Invalid or missing 'source'. Must be one of: " + VALID_SOURCES.join(", ") }, 400);
+      if (!message || typeof message !== "string" || !message.trim()) return jsonResponse({ error: "Missing 'message'" }, 400);
+
+      // Secret redaction (reuse fatal-guard patterns)
+      const REDACT_PATTERNS = [
+        /(?:sk|pk|rk|ak)[_-][a-zA-Z0-9]{20,}/g,           // API keys
+        /(?:ghp|gho|ghu|ghs|ghr)_[a-zA-Z0-9]{36,}/g,      // GitHub tokens
+        /xox[bpras]-[a-zA-Z0-9\-]{10,}/g,                 // Slack tokens
+        /-----BEGIN (?:RSA |EC )?PRIVATE KEY-----[\s\S]*?-----END/g,  // Private keys
+        /(?:password|passwd|secret|token)\s*[:=]\s*\S+/gi,  // key=value secrets
+        /\b(?:\d[ -]*?){13,16}\b/g,                       // Credit card numbers
+      ];
+      function redactSecrets(text) {
+        let result = String(text).slice(0, 2000);
+        for (const pat of REDACT_PATTERNS) {
+          result = result.replace(pat, "[REDACTED]");
+        }
+        return result;
+      }
+
+      const intakeId = crypto.randomUUID();
+      const record = {
+        intakeId,
+        type,
+        source,
+        message: redactSecrets(message),
+        context: context ? JSON.parse(redactSecrets(JSON.stringify(context)).slice(0, 1000)) : {},
+        lesson_id: lesson_id ? String(lesson_id).slice(0, 200) : null,
+        contact: contact ? String(contact).slice(0, 200) : null,
+        consent: VALID_CONSENT.includes(consent) ? consent : "private_only",
+        ts: ts || new Date().toISOString(),
+        received_at: new Date().toISOString(),
+        ip_hash: intakeIp.slice(0, 8),  // partial IP for rate debugging only
+      };
+
+      await env.MISAKANET_KV.put(
+        `intake:${intakeId}`,
+        JSON.stringify(record),
+        { expirationTtl: 7776000 },  // 90 days
+      );
+
+      console.log(`Intake ${intakeId}: type=${type} source=${source}`);
+      return jsonResponse({ accepted: true, intake_id: intakeId, consent: record.consent });
+    }
+
     // GET /api/github/* - authenticated GitHub API proxy for the org frontend.
     // Keep this before the HTML landing page; otherwise the frontend receives
     // HTML and fails with: Unexpected token '<' while parsing JSON.

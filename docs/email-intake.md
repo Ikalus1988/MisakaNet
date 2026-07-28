@@ -102,6 +102,52 @@ For when you want to register as a MisakaNet node.
 
 ---
 
+
+---
+
+## curl / API Intake (No Email, No GitHub)
+
+For MCP servers, agents, CI pipelines, and sandbox environments — the lowest-friction channel.
+
+**Endpoint:** `POST https://misakanet.org/api/intake`
+
+**Example:**
+```bash
+curl -X POST https://misakanet.org/api/intake \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "diagnostic",
+    "source": "curl",
+    "message": "pip install times out behind corporate proxy",
+    "context": {"tool": "fatal-guard", "version": "0.3.0", "platform": "linux"},
+    "consent": "private_only"
+  }'
+```
+
+**Fields:**
+
+| Field | Required | Values |
+|-------|----------|--------|
+| `type` | yes | `diagnostic`, `lesson_candidate`, `friction`, `bug`, `node_join` |
+| `source` | yes | `mcp`, `curl`, `frontend`, `agent` |
+| `message` | yes | Short description (max 2000 chars, secrets auto-redacted) |
+| `context` | no | JSON object with tool/version/platform metadata |
+| `lesson_id` | no | Related lesson ID |
+| `contact` | no | Optional contact info |
+| `consent` | no | `private_only` (default) or `allow_anonymous_publish` |
+
+**Security:**
+- IP rate limited: 10 requests/hour
+- Max body: 8KB
+- Secrets auto-redacted (API keys, tokens, private keys, passwords)
+- Default consent: `private_only` — nothing is published without explicit opt-in
+- No auto GitHub issue creation, no link execution
+
+**Response:**
+```json
+{"accepted": true, "intake_id": "uuid", "consent": "private_only"}
+```
+
 ## Privacy & Consent
 
 - **We never publish your name, email, or company without permission**
