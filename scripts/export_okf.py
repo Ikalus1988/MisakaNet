@@ -1,258 +1,171 @@
 #!/usr/bin/env python3
-"""Export MisakaNet lessons to OKF (Open Knowledge Format) compatible JSONL.
+"""Export MisakaNet lessons to OKF (Open Knowledge Format) JSONL.
+
+OKF required fields: type, title, description, tags, timestamp
+Output: data/okf/lessons.jsonl (one lesson per line)
 
 Usage:
-    python3 scripts/export_okf.py                    # export all lessons
-    python3 scripts/export_okf.py --output data/okf/ # custom output dir
-    python3 scripts/export_okf.py --domain devops    # filter by domain
-
-Output: data/okf/lessons.jsonl (one JSON object per line)
-Each line: {"type":"lesson","title":"...","description":"...","tags":[...],"timestamp":"...","domain":"...","source":"..."}
+    python3 scripts/export_okf.py [--output data/okf/] [--validate]
 """
-from __future__ import annotations
-
 import argparse
 import json
+import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LESSONS_DIR = REPO_ROOT / "lessons"
-DEFAULT_OUTPUT = REPO_ROOT / "data" / "okf"
+REQUIRED_OKF_FIELDS = {"type", "title", "description", "tags", "timestamp"}
 
 
-def extract_frontmatter(path: Path) -> dict | None:
-    """Extract JSON or YAML frontmatter from a lesson file."""
+def parse_frontmatter(content: str) -> dict:
+    """Extract JSON or YAML frontmatter from markdown."""
+    if not content.startswith("---"):
+        return {}
+    end = content.find("---", 3)
+    if end == -1:
+        return {}
+    fm_text = content[3:end].strip()
+    # Try JSON first
     try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return None
-
-    # Try JSON frontmatter first
-    import re
-    m = re.match(r"^---\s*\n(\{.*?\})\n---", text, re.DOTALL)
-    if m:
-        try:
-            return json.loads(m.group(1))
-        except json.JSONDecodeError:
-            pass
-
-    # Try YAML-like frontmatter
-    m = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
-    if not m:
-        return None
-
-    meta = {}
-    for line in m.group(1).split("\n"):
-        line = line.strip()
-        if ":" not in line or line.startswith("{"):
-            continue
-        key, _, val = line.partition(":")
-        key = key.strip()
-        val = val.strip().strip('"').strip("'")
-        if val.startswith("[") and val.endswith("]"):
-            try:
-                meta[key] = json.loads(val.replace("'", '"'))
-            except json.JSONDecodeError:
-                meta[key] = [v.strip().strip('"').strip("'") for v in val[1:-1].split(",")]
-        else:
-            meta[key] = val
-    return meta
+        return json.loads(fm_text)
+    except json.JSONDecodeError:
+        pass
+    # Fallback: simple YAML key: value
+    result = {}
+    for line in fm_text.split("\n"):
+        if ":" in line:
+            key, val = line.split(":", 1)
+            result[key.strip()] = val.strip().strip("\"\'")
+    return result
 
 
-def extract_description(text: str, max_len: int = 200) -> str:
-    """Extract a short description from the lesson body."""
-    import re
-    # Remove frontmatter (both ---{json}--- and ---\nyaml\n--- formats)
-    m = re.match(r"^---.*?---\s*", text, re.DOTALL)
-    if m:
-        text = text[m.end():]
+def extract_title(content: str, fallback: str) -> str:
+    """Get title from first heading or frontmatter."""
+    for line in content.split("\n"):
+        if line.startswith("# "):
+            return line[2:].strip()
+    return fallback
 
-    # Also remove any remaining frontmatter-like patterns
-    text = re.sub(r'^\s*\{.*?\}\s*$', '', text, flags=re.MULTILINE)
 
-    # Find first non-heading, non-empty, non-metadata line
-    for line in text.split("\n"):
-        line = line.strip()
-        if not line:
-            continue
-        if line.startswith("#"):
-            continue
-        if line.startswith("```"):
-            continue
-        if line.startswith("---"):
-            continue
-        if line.startswith("{") and line.endswith("}"):
-            continue
-        # Truncate
-        if len(line) > max_len:
-            return line[:max_len] + "..."
-        return line
+def extract_description(content: str) -> str:
+    """Get first meaningful paragraph as description."""
+    in_frontmatter = content.startswith("---")
+    lines = content.split("\n")
+    if in_frontmatter:
+        end = content.find("---", 3)
+        if end != -1:
+            lines = content[end + 3:].split("\n")
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and not stripped.startswith("---"):
+            return stripped[:300]
     return ""
 
 
-def lesson_to_okf(path: Path, domain_filter: str | None = None) -> dict | None:
-    """Convert a lesson file to OKF format."""
-    meta = extract_frontmatter(path)
-    if not meta:
-        return None
-
-    # Domain: use frontmatter domain, fallback to folder name
-    domain = meta.get("domain", "")
-    if not domain or domain == "contrib":
-        # Try to infer from folder
-        parts = str(path.relative_to(REPO_ROOT)).split("\\")
-        if len(parts) >= 2:
-            folder = parts[1]  # e.g., "core", "contrib"
-            if folder in ("core", "contrib"):
-                domain = meta.get("subdomain", "general")
-            else:
-                domain = folder
-
-    if domain_filter and domain != domain_filter:
-        return None
-
+def lesson_to_okf(path: Path) -> dict | None:
+    """Convert a lesson markdown file to OKF format."""
     try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
         return None
 
-    # Extract description from body if not in frontmatter
-    description = meta.get("description", "")
-    if not description:
-        description = extract_description(text)
+    fm = parse_frontmatter(content)
+    rel_path = str(path.relative_to(REPO_ROOT))
+    stem = path.stem
 
-    # Normalize tags
-    tags = meta.get("tags", [])
-    if isinstance(tags, str):
-        # Handle comma-separated string
-        if tags.startswith("["):
-            try:
-                tags = json.loads(tags)
-            except json.JSONDecodeError:
-                tags = [t.strip() for t in tags.strip("[]").split(",")]
-        else:
-            tags = [t.strip() for t in tags.split(",") if t.strip()]
-
-    # Build OKF record
     okf = {
         "type": "lesson",
-        "title": meta.get("title", path.stem),
-        "description": description,
-        "tags": tags,
-        "timestamp": meta.get("created", meta.get("updated", "")),
-        "domain": domain,
-        "source": meta.get("source", ""),
-        "status": meta.get("status", "published"),
-        "path": str(path.relative_to(REPO_ROOT)).replace("\\", "/"),
+        "id": stem,
+        "title": fm.get("title", extract_title(content, stem.replace("-", " ").title())),
+        "description": fm.get("description", "") or extract_description(content),
+        "tags": fm.get("tags", []),
+        "timestamp": fm.get("created", fm.get("updated", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))),
+        "domain": fm.get("domain", ""),
+        "source_path": rel_path,
+        "confidence": fm.get("confidence", ""),
+        "status": fm.get("status", "published"),
     }
 
-    # Optional fields
-    if meta.get("verified_date"):
-        okf["verified_date"] = meta["verified_date"]
-    if meta.get("domain_expert"):
-        okf["domain_expert"] = meta["domain_expert"]
+    # Fallback description from title if empty
+    if not okf["description"]:
+        okf["description"] = f"Lesson: {okf['title']}"
+
+    # Ensure tags is a list; generate fallback from domain/title if empty
+    if isinstance(okf["tags"], str):
+        okf["tags"] = [t.strip() for t in okf["tags"].split(",") if t.strip()]
+    if not okf["tags"]:
+        # Fallback: use domain + first 2 title words as tags
+        fallback_tags = []
+        if okf["domain"]:
+            fallback_tags.append(okf["domain"])
+        title_words = okf["title"].lower().split()[:2]
+        fallback_tags.extend(w for w in title_words if w not in fallback_tags)
+        okf["tags"] = fallback_tags or ["general"]
 
     return okf
 
 
+def validate_okf(record: dict) -> list[str]:
+    """Validate OKF required fields. Returns list of errors."""
+    errors = []
+    for field in REQUIRED_OKF_FIELDS:
+        if field not in record or not record[field]:
+            errors.append(f"Missing or empty required field: {field}")
+    if not isinstance(record.get("tags"), list):
+        errors.append("tags must be a list")
+    return errors
+
+
 def main():
     parser = argparse.ArgumentParser(description="Export MisakaNet lessons to OKF format")
-    parser.add_argument("--output", type=str, default=str(DEFAULT_OUTPUT), help="Output directory")
-    parser.add_argument("--domain", type=str, default=None, help="Filter by domain")
-    parser.add_argument("--format", choices=["jsonl", "json"], default="jsonl", help="Output format")
-    parser.add_argument("--from-index", action="store_true", help="Read from data/lessons.json instead of raw files")
+    parser.add_argument("--output", "-o", default="data/okf/", help="Output directory")
+    parser.add_argument("--validate", action="store_true", help="Validate OKF fields and report errors")
     args = parser.parse_args()
 
-    output_dir = Path(args.output)
+    output_dir = REPO_ROOT / args.output
     output_dir.mkdir(parents=True, exist_ok=True)
+    output_file = output_dir / "lessons.jsonl"
 
-    # Fast path: read from pre-built lessons.json index
-    if args.from_index:
-        index_path = REPO_ROOT / "data" / "lessons.json"
-        if not index_path.exists():
-            print(f"Error: {index_path} not found. Run misakanet-index.py first.", file=sys.stderr)
-            sys.exit(1)
-        lessons = json.loads(index_path.read_text(encoding="utf-8"))
-        okf_records = []
-        for lesson in lessons:
-            if args.domain and lesson.get("domain") != args.domain:
-                continue
-            okf_records.append({
-                "type": "lesson",
-                "title": lesson.get("title", ""),
-                "description": lesson.get("summary", lesson.get("description", "")),
-                "tags": lesson.get("tags", []),
-                "timestamp": lesson.get("created", lesson.get("updated", "")),
-                "domain": lesson.get("domain", ""),
-                "source": lesson.get("source", ""),
-                "status": lesson.get("status", "published"),
-                "path": lesson.get("url", lesson.get("path", "")),
-            })
-        # Write output
-        if args.format == "jsonl":
-            output_file = output_dir / "lessons.jsonl"
-            with open(output_file, "w", encoding="utf-8") as f:
-                for record in okf_records:
-                    f.write(json.dumps(record, ensure_ascii=False) + "\n")
-        else:
-            output_file = output_dir / "lessons.json"
-            with open(output_file, "w", encoding="utf-8") as f:
-                json.dump(okf_records, f, ensure_ascii=False, indent=2)
-        print(f"Exported {len(okf_records)} lessons from index to {output_file}")
-        print(f"Domains: {len(set(r['domain'] for r in okf_records))}")
-        return
+    if not LESSONS_DIR.exists():
+        print(f"Error: lessons directory not found: {LESSONS_DIR}", file=sys.stderr)
+        sys.exit(1)
 
-    # Collect all lesson files
-    lesson_files = []
-    for subdir in ["core", "contrib"]:
-        d = LESSONS_DIR / subdir
-        if d.exists():
-            lesson_files.extend(sorted(d.glob("*.md")))
+    lessons = sorted(LESSONS_DIR.rglob("*.md"))
+    # Skip archived lessons
+    lessons = [l for l in lessons if "_archive" not in str(l)]
 
-    # Convert to OKF
-    okf_records = []
-    skipped = 0
-    for path in lesson_files:
-        if path.name == "README.md":
+    records = []
+    validation_errors = []
+
+    for path in lessons:
+        okf = lesson_to_okf(path)
+        if okf is None:
             continue
-        record = lesson_to_okf(path, domain_filter=args.domain)
-        if record:
-            okf_records.append(record)
+        records.append(okf)
+
+        if args.validate:
+            errors = validate_okf(okf)
+            if errors:
+                validation_errors.append((str(path.relative_to(REPO_ROOT)), errors))
+
+    # Write JSONL
+    with open(output_file, "w", encoding="utf-8") as f:
+        for record in records:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    print(f"Exported {len(records)} lessons to {output_file}")
+
+    if args.validate:
+        if validation_errors:
+            print(f"\nValidation errors ({len(validation_errors)} files):", file=sys.stderr)
+            for path, errors in validation_errors[:10]:
+                print(f"  {path}: {'; '.join(errors)}", file=sys.stderr)
+            sys.exit(1)
         else:
-            skipped += 1
-
-    # Write output
-    if args.format == "jsonl":
-        output_file = output_dir / "lessons.jsonl"
-        with open(output_file, "w", encoding="utf-8") as f:
-            for record in okf_records:
-                f.write(json.dumps(record, ensure_ascii=False) + "\n")
-    else:
-        output_file = output_dir / "lessons.json"
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(okf_records, f, ensure_ascii=False, indent=2)
-
-    # Summary
-    print(f"Exported {len(okf_records)} lessons to {output_file}")
-    if skipped:
-        print(f"Skipped {skipped} files (no valid frontmatter)")
-    print(f"Domains: {len(set(r['domain'] for r in okf_records))}")
-    print(f"Format: {args.format}")
-
-    # Validate OKF required fields
-    missing = []
-    for r in okf_records:
-        for field in ["type", "title", "description", "tags", "timestamp"]:
-            if not r.get(field):
-                missing.append(f"{r.get('path', '?')}: missing {field}")
-    if missing:
-        print(f"\nWarnings ({len(missing)} missing fields):")
-        for m in missing[:10]:
-            print(f"  {m}")
-        if len(missing) > 10:
-            print(f"  ... and {len(missing) - 10} more")
+            print("Validation passed: all records have required OKF fields")
 
 
 if __name__ == "__main__":

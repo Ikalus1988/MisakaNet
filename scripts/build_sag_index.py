@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-"""Build SAG-Lite SQLite FTS5 index from OKF bundle.
+"""Build SAG-Lite SQLite search index from OKF bundle.
+
+SAG-Lite: SQLite-backed Agent Knowledge search.
+No vector DB needed — uses FTS5 for full-text search.
 
 Usage:
-    python3 scripts/build_sag_index.py                      # build from default OKF path
-    python3 scripts/build_sag_index.py --okf data/okf/      # custom OKF path
-    python3 scripts/build_sag_index.py --output data/sag.db # custom output
+    python3 scripts/build_sag_index.py [--db data/sag/search.db]
 
-Then query:
-    python3 scripts/build_sag_index.py --query "database locked"
+Requires: python3 scripts/export_okf.py to be run first (generates data/okf/lessons.jsonl)
 """
-from __future__ import annotations
-
 import argparse
 import json
 import sqlite3
@@ -18,175 +16,96 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_OKF = REPO_ROOT / "data" / "okf"
-DEFAULT_DB = REPO_ROOT / "data" / "sag.db"
+OKF_FILE = REPO_ROOT / "data" / "okf" / "lessons.jsonl"
 
 
-def build_index(okf_path: Path, db_path: Path) -> int:
-    """Build FTS5 index from OKF JSONL bundle."""
-    jsonl_file = okf_path / "lessons.jsonl"
-    if not jsonl_file.exists():
-        print(f"Error: {jsonl_file} not found. Run export_okf.py first.")
+def build_index(db_path: Path, okf_file: Path) -> int:
+    """Build SQLite FTS5 index from OKF JSONL."""
+    if not okf_file.exists():
+        print(f"Error: OKF file not found: {okf_file}", file=sys.stderr)
+        print("Run: python3 scripts/export_okf.py first", file=sys.stderr)
         sys.exit(1)
 
-    # Read OKF records
-    records = []
-    with open(jsonl_file, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
-
-    # Create SQLite database
-    if db_path.exists():
-        db_path.unlink()
+    db_path.parent.mkdir(parents=True, exist_ok=True)
 
     conn = sqlite3.connect(str(db_path))
-    conn.execute("PRAGMA journal_mode=WAL")
+    cur = conn.cursor()
 
-    # Main table
-    conn.execute("""
+    # Create tables
+    cur.executescript("""
+        DROP TABLE IF EXISTS lessons;
+        DROP TABLE IF EXISTS lessons_fts;
+
         CREATE TABLE lessons (
-            id INTEGER PRIMARY KEY,
+            id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
             description TEXT,
             domain TEXT,
             tags TEXT,
-            source TEXT,
-            status TEXT,
-            path TEXT,
             timestamp TEXT,
-            verified_date TEXT,
-            domain_expert TEXT
-        )
-    """)
+            source_path TEXT,
+            confidence TEXT,
+            status TEXT
+        );
 
-    # FTS5 virtual table for full-text search
-    conn.execute("""
         CREATE VIRTUAL TABLE lessons_fts USING fts5(
-            title,
-            description,
-            tags,
-            domain,
-            content=lessons,
-            content_rowid=id
-        )
+            title, description, tags, domain,
+            content='lessons',
+            content_rowid='rowid'
+        );
+
+        CREATE TRIGGER lessons_ai AFTER INSERT ON lessons BEGIN
+            INSERT INTO lessons_fts(rowid, title, description, tags, domain)
+            VALUES (new.rowid, new.title, new.description, new.tags, new.domain);
+        END;
+
+        CREATE TRIGGER lessons_ad AFTER DELETE ON lessons BEGIN
+            INSERT INTO lessons_fts(lessons_fts, rowid, title, description, tags, domain)
+            VALUES ('delete', old.rowid, old.title, old.description, old.tags, old.domain);
+        END;
     """)
 
-    # Insert records
-    for r in records:
-        tags_str = ", ".join(r.get("tags", []))
-        conn.execute(
-            "INSERT INTO lessons (title, description, domain, tags, source, status, path, timestamp, verified_date, domain_expert) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                r.get("title", ""),
-                r.get("description", ""),
-                r.get("domain", ""),
-                tags_str,
-                r.get("source", ""),
-                r.get("status", ""),
-                r.get("path", ""),
-                r.get("timestamp", ""),
-                r.get("verified_date", ""),
-                r.get("domain_expert", ""),
-            ),
-        )
-
-    # Populate FTS index
-    conn.execute("INSERT INTO lessons_fts(lessons_fts) VALUES('rebuild')")
+    # Load OKF records
+    count = 0
+    with open(okf_file, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            record = json.loads(line)
+            tags_str = ",".join(record.get("tags", []))
+            cur.execute(
+                "INSERT OR REPLACE INTO lessons (id, title, description, domain, tags, timestamp, source_path, confidence, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    record.get("id", ""),
+                    record.get("title", ""),
+                    record.get("description", ""),
+                    record.get("domain", ""),
+                    tags_str,
+                    record.get("timestamp", ""),
+                    record.get("source_path", ""),
+                    record.get("confidence", ""),
+                    record.get("status", ""),
+                ),
+            )
+            count += 1
 
     conn.commit()
     conn.close()
-
-    return len(records)
-
-
-def search(db_path: Path, query: str, domain: str | None = None, top: int = 5) -> list[dict]:
-    """Search the SAG-Lite index."""
-    if not db_path.exists():
-        print(f"Error: {db_path} not found. Run build first.")
-        sys.exit(1)
-
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
-
-    if domain:
-        sql = """
-            SELECT l.*, rank
-            FROM lessons_fts fts
-            JOIN lessons l ON l.id = fts.rowid
-            WHERE lessons_fts MATCH ? AND l.domain = ?
-            ORDER BY rank
-            LIMIT ?
-        """
-        rows = conn.execute(sql, (query, domain, top)).fetchall()
-    else:
-        sql = """
-            SELECT l.*, rank
-            FROM lessons_fts fts
-            JOIN lessons l ON l.id = fts.rowid
-            WHERE lessons_fts MATCH ?
-            ORDER BY rank
-            LIMIT ?
-        """
-        rows = conn.execute(sql, (query, top)).fetchall()
-
-    conn.close()
-
-    results = []
-    for r in rows:
-        # Clean description: remove any remaining frontmatter patterns
-        desc = r["description"] or ""
-        if desc.startswith("---") or desc.startswith("{"):
-            desc = ""
-
-        results.append({
-            "title": r["title"],
-            "description": desc,
-            "domain": r["domain"],
-            "tags": r["tags"],
-            "source": r["source"],
-            "path": r["path"],
-            "status": r["status"] or "",
-            "score": round(abs(r["rank"]), 4) if r["rank"] else 0,
-        })
-
-    return results
+    return count
 
 
 def main():
-    parser = argparse.ArgumentParser(description="SAG-Lite: SQLite FTS5 search for MisakaNet")
-    parser.add_argument("--okf", type=str, default=str(DEFAULT_OKF), help="OKF bundle directory")
-    parser.add_argument("--output", type=str, default=str(DEFAULT_DB), help="SQLite database path")
-    parser.add_argument("--query", type=str, default=None, help="Search query")
-    parser.add_argument("--domain", type=str, default=None, help="Filter by domain")
-    parser.add_argument("--top", type=int, default=5, help="Number of results")
-    parser.add_argument("--json", action="store_true", help="Output as JSON")
+    parser = argparse.ArgumentParser(description="Build SAG-Lite SQLite search index")
+    parser.add_argument("--db", default="data/sag/search.db", help="SQLite database path")
+    parser.add_argument("--okf", default=None, help="OKF JSONL file (default: data/okf/lessons.jsonl)")
     args = parser.parse_args()
 
-    db_path = Path(args.output)
+    db_path = REPO_ROOT / args.db
+    okf_file = Path(args.okf) if args.okf else OKF_FILE
 
-    if args.query:
-        # Search mode
-        results = search(db_path, args.query, domain=args.domain, top=args.top)
-        if args.json:
-            print(json.dumps(results, ensure_ascii=False, indent=2))
-        else:
-            if not results:
-                print("No results found.")
-                return
-            for i, r in enumerate(results, 1):
-                print(f"[{i}] {r['title']} (score: {r['score']})")
-                print(f"    Domain: {r['domain']} | Source: {r['source']}")
-                if r['description']:
-                    print(f"    {r['description'][:100]}")
-                print()
-    else:
-        # Build mode
-        okf_path = Path(args.okf)
-        count = build_index(okf_path, db_path)
-        print(f"SAG-Lite index built: {count} lessons -> {db_path}")
-        print(f"Query: python3 scripts/build_sag_index.py --query \"your search\"")
+    count = build_index(db_path, okf_file)
+    print(f"Built SAG-Lite index: {count} lessons -> {db_path}")
 
 
 if __name__ == "__main__":
