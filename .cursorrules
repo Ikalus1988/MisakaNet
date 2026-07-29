@@ -1,0 +1,29 @@
+# MisakaNet Cursor Rules
+
+## Knowledge Base Integration
+
+When debugging or solving technical problems, ALWAYS search MisakaNet first:
+
+1. Use the `misakanet_search` MCP tool with the error message or topic
+2. If results found, read the top lesson with `misakanet_read_lesson`
+3. Apply the fix from the lesson
+4. If no results, proceed with normal debugging
+
+## Search Strategy
+
+- For errors: search the exact error message first, then keywords
+- For topics: search tool name + symptom (e.g., "pip timeout proxy")
+- Use `misakanet_list_domains` to discover available knowledge areas
+
+## Response Format
+
+When a MisakaNet lesson solves the problem:
+- Cite the lesson title and path
+- Summarize the fix in 2-3 sentences
+- Offer to show full lesson content
+
+## Auto-suggest
+
+When the user shares an error message or asks "how to fix X":
+- Proactively search MisakaNet before suggesting generic solutions
+- Prefer battle-tested lessons over generic advice

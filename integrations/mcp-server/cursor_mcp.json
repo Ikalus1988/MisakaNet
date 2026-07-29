@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "misakanet": {
+      "command": "python3",
+      "args": [
+        "integrations/mcp-server/server.py"
+      ],
+      "cwd": "."
+    }
+  }
+}
