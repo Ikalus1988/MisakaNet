@@ -850,3 +850,4 @@ if __name__ == "__main__":
             _print_json_error(str(exc))
             raise SystemExit(1)
         raise
+import locale
