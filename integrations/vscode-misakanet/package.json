@@ -1,0 +1,45 @@
+{
+  "name": "misakanet-search",
+  "displayName": "MisakaNet Search",
+  "description": "Search MisakaNet knowledge base from VS Code",
+  "version": "0.1.0",
+  "publisher": "gpcaom-svg",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "misakanet.search",
+        "title": "MisakaNet: Search Lessons"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "misakanet.search",
+        "key": "ctrl+shift+m",
+        "mac": "cmd+shift+m"
+      }
+    ],
+    "configuration": {
+      "title": "MisakaNet",
+      "properties": {
+        "misakanet.repoPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to MisakaNet repo (auto-detected if empty)"
+        },
+        "misakanet.topResults": {
+          "type": "number",
+          "default": 5,
+          "description": "Number of results to show"
+        }
+      }
+    }
+  }
+}
