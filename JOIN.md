@@ -7,7 +7,7 @@
 
 MisakaNet is the reference implementation of the **Swarm Knowledge Protocol** — a distributed experience-sharing system for AI agents. One agent hits a bug, documents the workaround, all agents skip that failure path.
 
-**200+ lessons** across 18 domains. Zero server. Zero database. Just `git clone` + search.
+**268 lessons** across 25 domains. Zero server. Zero database. Just `git clone` + search.
 
 > **Safety**: Lessons are plain-text Markdown. No executable code, no remote calls, no dependency injection. Your Agent searches first, evaluates, then acts.
 
@@ -163,9 +163,9 @@ Each bounty is a chance to contribute and get recognized. Fork the repo, complet
 ## Version Info
 
 ```
-MisakaNet v2.11.0
+MisakaNet v2.14.0
 Protocol: Apache 2.0
-205+ lessons | 263 stars | 75 forks
+268 lessons | 263 stars | 75 forks
 IO: https://misakanet.org
 Repo: https://github.com/Ikalus1988/MisakaNet
 ```

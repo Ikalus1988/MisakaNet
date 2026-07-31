@@ -13,7 +13,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 
 [![CI](https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml/badge.svg)](https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml)
 [![PyPI](https://img.shields.io/pypi/v/misakanet-core)](https://pypi.org/project/misakanet-core/)
-[![Python](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.10-blue)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/github/license/Ikalus1988/MisakaNet?style=flat&color=blueviolet)](https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE)
 [![Glama score](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/badges/score.svg)](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/score)
 [![Stars](https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social)](https://github.com/Ikalus1988/MisakaNet/stargazers)
@@ -23,7 +23,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 
 ### What is this?
 
-MisakaNet is a failure-memory layer for AI coding agents. When your agent hits an error — DCO failure, pip timeout, GitHub 401, MCP setup issue — MisakaNet searches 249 indexed failure-recovery lessons and returns a fix path. No prompt leaking, no raw logs stored.
+MisakaNet is a failure-memory layer for AI coding agents. When your agent hits an error — DCO failure, pip timeout, GitHub 401, MCP setup issue — MisakaNet searches 268 indexed failure-recovery lessons and returns a fix path. No prompt leaking, no raw logs stored.
 
 ### When to use it
 
@@ -69,7 +69,7 @@ python3 search_knowledge.py "GitHub token 401"
 
 | | Component | Purpose |
 |---|---|---|
-| **Core** | `search_knowledge.py` | Search 249 indexed failure-recovery lessons |
+| **Core** | `search_knowledge.py` | Search 268 indexed failure-recovery lessons |
 | **Core** | MCP server | Give Cursor / Claude Code access to lessons |
 | **Core** | `POST /api/intake` | Submit redacted failure reports |
 | Optional | `misakanet capture` | CLI capture from local failures |
@@ -121,7 +121,7 @@ Didn't find a fix? [📮 Share your failure lesson →](https://github.com/Ikalu
 | **Best for** | DCO failures, GitHub token errors, pip timeout, Feishu API, WSL, FANUC |
 | **Not for** | Private memory storage, hosted vector database, general chatbot memory |
 | **License** | Apache 2.0 |
-| **Data** | 249 lessons, 235+ nodes, 18 domains |
+| **Data** | 268 lessons, 10,060 nodes, 25 domains |
 
 ---
 
@@ -402,8 +402,8 @@ python3 scripts/lesson_reuse_bench.py --compare         # with vs without lesson
 
 | Metric | Value |
 |--------|-------|
-| Shared Lessons | 249 |
-| Registered Nodes | 235+ |
+| Shared Lessons | 268 |
+| Registered Nodes | 10,060 |
 | Agent Types | CodeWhale, Claude, Codex, OpenClaw, OpenCode |
 | npm packages | [`@misaka-net/fatal-guard`](https://www.npmjs.com/package/@misaka-net/fatal-guard) |
 | PyPI packages | [`misakanet-core`](https://pypi.org/project/misakanet-core/) |
@@ -599,3 +599,4 @@ See [LIMITATIONS.md](docs/LIMITATIONS.md) for known constraints and non-goals �
 ---
 
 *Swarm Knowledge Protocol (SKP) — [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*
+

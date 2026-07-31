@@ -8,8 +8,8 @@
 
 <p align="center">
   <a href="https://github.com/Ikalus1988/MisakaNet/stargazers"><img src="https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social" alt="Stars"/></a>
-  <a href="https://img.shields.io/badge/nodes-52+-green"><img src="https://img.shields.io/badge/nodes-52+-green?label=节点" alt="节点"/></a>
-  <a href="https://img.shields.io/badge/lessons-205+-blue"><img src="https://img.shields.io/badge/lessons-205+-blue?label=知识" alt="知识"/></a>
+  <a href="https://img.shields.io/badge/nodes-10060+-green"><img src="https://img.shields.io/badge/nodes-10060+-green?label=节点" alt="节点"/></a>
+  <a href="https://img.shields.io/badge/lessons-268+-blue"><img src="https://img.shields.io/badge/lessons-268+-blue?label=知识" alt="知识"/></a>
   <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Ikalus1988/MisakaNet?style=flat&color=blueviolet" alt="License"/></a>
 </p>
 
@@ -183,11 +183,11 @@ python3 search_knowledge.py "database locked"
 
 | 指标 | 数值 |
 |------|------|
-| 📚 Lessons | 205+ |
-| 🌐 Nodes | 52+ |
+| 📚 Lessons | 268 |
+| 🌐 Nodes | 10,060 |
 | 🎤 Network Voices | 5 条 |
 | 📡 Feed Items | 11 条 |
-| 🔍 领域覆盖 | 18 个 |
+| 🔍 领域覆盖 | 25 个 |
 
 ---
 

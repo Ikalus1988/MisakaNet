@@ -6,12 +6,12 @@
 
 | 指标 | 数值 |
 |------|------|
-| 📚 Lessons | 249 篇 |
+| 📚 Lessons | 268 篇 |
 | 📖 References | 6 篇 |
-| 🏛️ 领域覆盖 | 18 个 |
+| 🏛️ 领域覆盖 | 25 个 |
 | 🎤 Network Voices | 5 条 |
 | 📡 Feed Items | 11 条 |
-| 🌐 Registered Nodes | 52+ |
+| 🌐 Registered Nodes | 10,060 |
 | ⭐ Stars | 263+ |
 | 🍴 Forks | 75+ |
 
