@@ -12,7 +12,7 @@ Connect MisakaNet to your AI coding tool. Search 207+ lessons directly from your
 | **Aider** | Planned | — |
 | **VS Code** | Planned | — |
 | **Cline** | Planned | — |
-| **Shell alias** | Ready | See below |
+| **Shell alias** | Ready | [See plugin + formatted output](../integrations/shell/README.md) |
 
 ## Quick: Shell Alias
 

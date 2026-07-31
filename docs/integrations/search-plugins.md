@@ -7,7 +7,7 @@ Search MisakaNet from your favorite tools.
 | Tool | Location | Type |
 |------|----------|------|
 | VS Code | `integrations/vscode-misakanet/` | Extension |
-| Shell (Bash/Zsh) | `integrations/shell/misaka.sh` | Function + completion |
+| Shell (Bash/Zsh) | `scripts/misaka-search.sh` | Function + completion + formatted output |
 | Aider | via shell integration | Custom command |
 
 ## VS Code Extension
@@ -22,7 +22,7 @@ Search MisakaNet from your favorite tools.
 ## Shell
 
 ```bash
-source integrations/shell/misaka.sh
+source scripts/misaka-search.sh
 misaka "pip timeout" --top 5
 ```
 
