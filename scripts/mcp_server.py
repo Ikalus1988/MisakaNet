@@ -239,7 +239,7 @@ PROMPTS = [
         "title": "Release Audit",
         "description": "Check release readiness against MisakaNet quality gates",
         "arguments": [
-            {"name": "version", "description": "Version to audit (e.g., v2.12.0)", "required": True},
+            {"name": "version", "description": "Version to audit (e.g., v2.14.0)", "required": True},
         ],
     },
 ]
@@ -421,7 +421,7 @@ def handle_request(request: dict) -> dict:
                 },
                 "serverInfo": {
                     "name": "misakanet",
-                    "version": "2.12.0",
+                    "version": "2.14.0",
                 },
             },
         }

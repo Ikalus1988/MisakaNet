@@ -71,6 +71,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 | `misakanet_search` | Search lessons by query | `query` (required), `domain?`, `top?` (default 5) |
 | `misakanet_get_lesson` | Get a specific lesson | `path` or `id` (required) |
 | `misakanet_submit_usage` | **[Experimental]** Report lesson usage (local log only) | `lesson_id` (required), `tool?`, `outcome?` |
+| `misakanet_usage_status` | Show usage status and remaining read quota | `user?` (optional) |
 
 ## Resources
 
