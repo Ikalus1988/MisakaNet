@@ -1,0 +1,11 @@
+task_id: 08_json_schema
+title: JSON schema validation error
+category: failure-recovery
+description: 'Test agent ability to recover from: JSON schema validation error'
+error_message: 'jsonschema.exceptions.ValidationError: required property missing'
+expected_lesson_path: lessons/core/json-schema-validation.md
+tags:
+- benchmark
+- self-healing
+- acceptance
+timeout_seconds: 60

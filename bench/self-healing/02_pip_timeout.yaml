@@ -1,0 +1,12 @@
+task_id: 02_pip_timeout
+title: pip install timeout
+category: failure-recovery
+description: 'Test agent ability to recover from: pip install timeout'
+error_message: 'WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None,
+  status=None)) after connection broken by ReadTimeoutError'
+expected_lesson_path: lessons/core/pip-timeout-recovery.md
+tags:
+- benchmark
+- self-healing
+- acceptance
+timeout_seconds: 60

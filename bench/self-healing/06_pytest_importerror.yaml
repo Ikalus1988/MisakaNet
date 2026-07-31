@@ -1,0 +1,11 @@
+task_id: 06_pytest_importerror
+title: pytest ImportError
+category: failure-recovery
+description: 'Test agent ability to recover from: pytest ImportError'
+error_message: 'ImportError: No module named pytest'
+expected_lesson_path: lessons/core/pytest-importerror.md
+tags:
+- benchmark
+- self-healing
+- acceptance
+timeout_seconds: 60

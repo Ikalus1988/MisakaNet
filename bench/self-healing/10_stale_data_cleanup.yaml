@@ -1,0 +1,11 @@
+task_id: 10_stale_data_cleanup
+title: Stale generated data cleanup
+category: failure-recovery
+description: 'Test agent ability to recover from: Stale generated data cleanup'
+error_message: 'Error: Stale data detected - generated files older than source'
+expected_lesson_path: lessons/core/stale-data-cleanup.md
+tags:
+- benchmark
+- self-healing
+- acceptance
+timeout_seconds: 60

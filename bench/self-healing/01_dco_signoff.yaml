@@ -1,0 +1,11 @@
+task_id: 01_dco_signoff
+title: DCO sign-off failure
+category: failure-recovery
+description: 'Test agent ability to recover from: DCO sign-off failure'
+error_message: Your commits are missing DCO sign-off. Please run git rebase --signoff.
+expected_lesson_path: lessons/core/dco-auto-fix-workflow.md
+tags:
+- benchmark
+- self-healing
+- acceptance
+timeout_seconds: 60

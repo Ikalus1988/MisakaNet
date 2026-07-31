@@ -1,0 +1,11 @@
+task_id: 05_windows_gbk
+title: Windows encoding (GBK)
+category: failure-recovery
+description: 'Test agent ability to recover from: Windows encoding (GBK)'
+error_message: 'UnicodeDecodeError: gbk codec cant decode byte 0x80 in position 0'
+expected_lesson_path: lessons/core/windows-gbk-encoding.md
+tags:
+- benchmark
+- self-healing
+- acceptance
+timeout_seconds: 60

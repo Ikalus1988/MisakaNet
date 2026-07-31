@@ -1,0 +1,11 @@
+task_id: 03_github_token_401
+title: GitHub token 401
+category: failure-recovery
+description: 'Test agent ability to recover from: GitHub token 401'
+error_message: 'Error: gh api failed: 401 Unauthorized. Bad credentials'
+expected_lesson_path: lessons/core/github-token-401-fix.md
+tags:
+- benchmark
+- self-healing
+- acceptance
+timeout_seconds: 60

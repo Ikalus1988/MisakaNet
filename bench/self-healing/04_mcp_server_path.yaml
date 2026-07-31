@@ -1,0 +1,11 @@
+task_id: 04_mcp_server_path
+title: MCP server path error
+category: failure-recovery
+description: 'Test agent ability to recover from: MCP server path error'
+error_message: 'Error: spawn python ENOENT - MCP server script not found at path'
+expected_lesson_path: lessons/core/mcp-server-path-error.md
+tags:
+- benchmark
+- self-healing
+- acceptance
+timeout_seconds: 60

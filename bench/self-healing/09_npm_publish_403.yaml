@@ -1,0 +1,11 @@
+task_id: 09_npm_publish_403
+title: npm publish 403
+category: failure-recovery
+description: 'Test agent ability to recover from: npm publish 403'
+error_message: npm ERR! code E403 403 Forbidden - You do not have permission to publish
+expected_lesson_path: lessons/core/npm-publish-403.md
+tags:
+- benchmark
+- self-healing
+- acceptance
+timeout_seconds: 60

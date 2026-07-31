@@ -1,0 +1,11 @@
+task_id: 07_cloudflare_deploy
+title: Cloudflare deploy failure
+category: failure-recovery
+description: 'Test agent ability to recover from: Cloudflare deploy failure'
+error_message: 'Error: code 10021 Zone not found or access denied'
+expected_lesson_path: lessons/core/cloudflare-deploy-failure.md
+tags:
+- benchmark
+- self-healing
+- acceptance
+timeout_seconds: 60
