@@ -105,3 +105,4 @@ git -c "http.extraHeader=Host: github.com" \
 - 关闭 SSL 验证（因 IP 证书与域名不匹配）
 
 此方式也适用于 `git fetch` / `git clone`。
+> English: [`lessons/en/git-push-without-shell-agent.md`](../../lessons/en/git-push-without-shell-agent.md)

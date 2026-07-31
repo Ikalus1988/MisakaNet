@@ -155,3 +155,5 @@ done
 SCRIPT
 chmod +x ping_github.sh
 ```
+
+> English: [`lessons/en/github-dns-443-block-hosts-workaround.md`](../../lessons/en/github-dns-443-block-hosts-workaround.md)

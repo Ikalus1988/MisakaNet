@@ -1,62 +1,86 @@
 ---
 {
-  "title": "Git credentials + node id setup for Misaka-style agents",
-  "domain": "git",
-  "tags": ["git", "credentials", "node", "misakanet", "token", "agent"],
+  "title": "Git credentials and Node ID setup",
+  "domain": "devops",
+  "tags": ["git", "credentials", "node-id", "setup"],
   "status": "published",
   "lang": "en",
-  "source": "uncledad96-glitch",
+  "source": "wasim-builds",
   "translated_from": "lessons/contrib/git-credentials-and-node-id-setup.md",
-  "created": "2026-07-22",
-  "updated": "2026-07-22",
-  "confidence": "0.9"
+  "created": "2026-07-31",
+  "updated": "2026-07-31"
 }
 ---
 
-# Git credentials + node id setup for Misaka-style agents
+# Git credentials and Node ID setup
+
+> English translation of `lessons/contrib/git-credentials-and-node-id-setup.md`
 
 ## Problem
 
-Agent cannot push PRs or identify its node. Interactive login pops in headless runs; node id missing from lesson tags.
+When using git in a new environment without correctly configuring credentials and node identifier, you may encounter:
 
-## Root Cause
+1. `git push` prompts for 401 Unauthorized or asks for username/password
+2. Node cannot be correctly identified
 
-No stored credential helper; `user.name` / email unset; node id never written into env or lesson frontmatter tags.
+## Git credentials setup
 
-## Solution
+### Method 1: gh CLI authentication (recommended)
 
 ```bash
-git config --global user.name "your-bot-name"
-git config --global user.email "you@users.noreply.github.com"
-gh auth login --with-token < ~/.secrets/github-pat.txt
-gh auth setup-git
-GIT_TERMINAL_PROMPT=0 git ls-remote origin
-
-# optional node id for lesson tags
-export MISAKA_NODE_ID="node:your-handle"
+gh auth login
 ```
 
-Lesson tags example:
+### Method 2: Manual credential helper configuration
+
+```bash
+git config --global credential.helper store
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+```
+
+### Method 3: Use PAT (Personal Access Token)
+
+```bash
+git remote set-url origin https://<USERNAME>:<PAT>@github.com/<org>/<repo>.git
+```
+
+## Node ID setup
+
+In some distributed systems, each node needs a unique identifier:
+
+```bash
+# set node identifier
+export NODE_ID="<node-name>"
+```
+
+And specify it in the project configuration file:
 
 ```json
-"tags": ["node:your-handle", "project:earn-loop"]
-```
-
-Always sign off:
-
-```bash
-git commit -s -m "docs: message"
+{
+  "node": {
+    "id": "<node-name>",
+    "name": "<display-name>"
+  }
+}
 ```
 
 ## Verification
 
 ```bash
-gh auth status
-git config --get user.email
-GIT_TERMINAL_PROMPT=0 git push
+# verify git configuration
+git config --list | grep -E "user.(name|email)|credential"
+
+# verify connection
+git fetch --dry-run
 ```
 
 ## Notes
 
-- PAT scopes: `repo`, `read:org`, `workflow` as needed.
-- Never commit the PAT; mode 600 secrets only.
+- Treat PAT as a password; do not commit it to the repository
+- Different platforms use different credential helpers (Windows: manager, macOS: osxkeychain, Linux: libsecret)
+- Once a Node ID is used, keep it unchanged to avoid confusion
+
+## Related
+
+- `git-credentials-and-node-id-setup` (Chinese original)

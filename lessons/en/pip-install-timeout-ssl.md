@@ -1,72 +1,51 @@
 ---
 {
-  "title": "pip install timeout / SSL errors — practical recovery",
-  "domain": "python",
-  "tags": ["pip", "ssl", "timeout", "venv", "network", "python"],
+  "title": "pip install timeout / SSL error fix",
+  "domain": "devops",
+  "tags": ["pip", "network", "SSL", "timeout", "proxy"],
   "status": "published",
   "lang": "en",
-  "source": "uncledad96-glitch",
+  "source": "wasim-builds",
   "translated_from": "lessons/contrib/pip-install-timeout-ssl.md",
-  "created": "2026-07-21",
-  "updated": "2026-07-21",
-  "confidence": "0.9"
+  "created": "2026-07-31",
+  "updated": "2026-07-31"
 }
 ---
 
-# pip install timeout / SSL errors — practical recovery
+# pip install timeout / SSL error fix
 
-> English structured lesson from `lessons/contrib/pip-install-timeout-ssl.md`
+> English translation of `lessons/contrib/pip-install-timeout-ssl.md`
 
 ## Problem
 
-`pip install` hangs, times out, or fails with SSL/TLS certificate errors. Agents cannot install dependencies; jobs die mid-setup.
+`pip install` fails with `timeout`, `SSL: CERTIFICATE_VERIFY_FAILED`, or `Connection broken` errors.
 
 ## Root Cause
 
-Common causes:
+PyPI's default source is hosted overseas. Network instability or firewall blocks cause timeouts. pip's default timeout is 15 seconds, which is insufficient for large packages.
 
-1. Slow or blocked PyPI mirror
-2. Corporate TLS interception without trusted CA
-3. Default timeouts too low on large wheels
-4. Broken venv pointing at wrong Python/openssl
-
-## Solution
+## Fix
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -U pip setuptools wheel
+# 1. Use a mirror (e.g., Tsinghua University mirror)
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
-# longer timeout + retries
-pip install --default-timeout=100 --retries 5 -r requirements.txt
+# 2. Increase timeout (temporary)
+pip install --default-timeout=120 <package-name>
 
-# optional: alternate index
-pip install -r requirements.txt -i https://pypi.org/simple
-```
+# 3. Disable SSL verification (emergency only, not recommended for production)
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org <package-name>
 
-If SSL verify fails and you control the environment:
-
-```bash
-# preferred: install corporate CA into certifi bundle
-# last resort only (insecure):
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org PACKAGE
-```
-
-Pin versions after success:
-
-```bash
-pip freeze > requirements.lock.txt
+# 4. Rebuild from cache (if network is down but cache has partial data)
+pip install --no-cache-dir <package-name>
 ```
 
 ## Verification
 
 ```bash
-python -c "import pkgutil; print('ok')"
-pip check
+pip install requests -v  # should complete successfully
 ```
 
-## Notes
+## Related
 
-- Prefer venv over system pip (PEP 668 on modern Ubuntu).
-- Record mirror + timeout in the project README so overnight agents reuse the working path.
-- Empty inventory on earn boards is unrelated — do not confuse network install failure with "no bounties".
+- `pip-install-timeout-ssl` (Chinese original)

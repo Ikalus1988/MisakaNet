@@ -1,66 +1,69 @@
 ---
 {
-  "title": "Python venv troubleshoot — activation and path mismatches",
-  "domain": "python",
-  "tags": ["python", "venv", "virtualenv", "path", "pep668", "agent"],
+  "title": "Python venv activation failure or path mismatch",
+  "domain": "devops",
+  "tags": ["python", "venv", "virtualenv", "path"],
   "status": "published",
   "lang": "en",
-  "source": "uncledad96-glitch",
+  "source": "wasim-builds",
   "translated_from": "lessons/contrib/python-venv-troubleshoot.md",
-  "created": "2026-07-22",
-  "updated": "2026-07-22",
-  "confidence": "0.9"
+  "created": "2026-07-31",
+  "updated": "2026-07-31"
 }
 ---
 
-# Python venv troubleshoot — activation and path mismatches
+# Python venv activation failure or path mismatch
+
+> English translation of `lessons/contrib/python-venv-troubleshoot.md`
 
 ## Problem
 
-`python` still points at system Python after “activating” a venv. `pip install` hits PEP 668 externally-managed-environment, or modules import from the wrong prefix. Overnight agents fail package installs.
+After `source venv/bin/activate`, `which python` still points to system Python, or `deactivate` errors out.
 
 ## Root Cause
 
-1. Activation script not sourced (run as `./activate` instead of `source`).
-2. Wrong shell (fish needs `activate.fish`).
-3. Nested shells / cron without activation.
-4. Ubuntu/Debian PEP 668 blocks system pip.
+1. Current shell is fish/zsh but bash syntax was used (`source` vs `.`)
+2. Created a venv inside an already-active venv (nested paths)
+3. `.bashrc` contains hardcoded paths that override PATH
 
-## Solution
-
-```bash
-python3 -m venv .venv
-# bash/zsh
-source .venv/bin/activate
-# fish
-# source .venv/bin/activate.fish
-
-which python
-python -c "import sys; print(sys.prefix)"
-# must show .../.venv
-
-python -m pip install -U pip
-python -m pip install -r requirements.txt
-```
-
-Cron / no-TTY:
+## Fix
 
 ```bash
-/home/you/proj/.venv/bin/python script.py
-# or
-export PATH="/home/you/proj/.venv/bin:$PATH"
+# 1. Check current shell
+echo $SHELL
+
+# 2. Correct activation method
+# bash/zsh:
+source venv/bin/activate
+# or:
+. venv/bin/activate
+
+# fish:
+source venv/bin/activate.fish
+
+# 3. Verify
+which python   # should point to venv/bin/python
+python -c "import sys; print(sys.prefix)"  # should show venv path
+
+# 4. Rebuild venv (if directory is corrupted)
+rm -rf venv
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip setuptools wheel
 ```
 
 ## Verification
 
-```bash
-test "$(python -c 'import sys; print(sys.prefix)')" = "$(pwd)/.venv" || \
-  test -x .venv/bin/python
-python -m pip check
-```
+1. Follow the solution steps in order
+2. Run any relevant commands or tests to confirm the fix
+3. Verify the symptom no longer occurs
+4. Check related logs or outputs for expected behavior
 
-## Notes
+## Traps
 
-- Prefer `python -m pip` over bare `pip`.
-- Never `sudo pip install` into system Python for agent jobs.
-- Pair with the pip SSL/timeout EN lesson when installs hang.
+- Never run `python3 -m venv venv` while a venv is already active — this creates a nested venv
+- Putting `source ~/venv/bin/activate` in `.bashrc` causes tools like `curl` and scripts to fail to find venv packages
+
+## Related
+
+- `python-venv-troubleshoot` (Chinese original)

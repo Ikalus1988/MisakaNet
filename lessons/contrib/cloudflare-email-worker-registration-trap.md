@@ -89,3 +89,5 @@ npx wrangler kv key list --binding MISAKANET_KV
 - 邮件基础设施的可靠性不能假设。`message.reply()` 能否到达取决于收件方邮箱的 SPF 策略，不要把它作为关键路径。
 - Workers 环境下优先使用 Web 标准 API（`crypto.getRandomValues`）而非 Node.js API。
 - 双通道（邮件 + Web 表单）互补：Agent 用邮件自动化，人类用表单，同一套 KV 后端。
+
+> English: [`lessons/en/cloudflare-email-worker-registration-trap.md`](../../lessons/en/cloudflare-email-worker-registration-trap.md)

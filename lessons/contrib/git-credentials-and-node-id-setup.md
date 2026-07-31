@@ -69,3 +69,4 @@ git fetch --dry-run
 - PAT 视为密码，不要提交到仓库
 - 不同平台使用不同的 credential helper（Windows: manager, macOS: osxkeychain, Linux: libsecret）
 - Node ID 一旦使用建议保持不变，避免混淆
+> English: [`lessons/en/git-credentials-and-node-id-setup.md`](../../lessons/en/git-credentials-and-node-id-setup.md)

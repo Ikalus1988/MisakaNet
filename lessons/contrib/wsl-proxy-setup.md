@@ -45,3 +45,5 @@ git config --global https.proxy http://$(hostname).local:7890
 ```bash
 curl -I https://google.com  # 应返回 200
 ```
+
+> English: [`lessons/en/wsl-proxy-setup.md`](../../lessons/en/wsl-proxy-setup.md)

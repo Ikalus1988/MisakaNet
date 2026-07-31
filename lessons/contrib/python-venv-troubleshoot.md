@@ -56,3 +56,5 @@ pip install --upgrade pip setuptools wheel
 
 - 永远不要在 venv 已激活时运行 `python3 -m venv venv` — 这会创建嵌套 venv
 - 把 `source ~/venv/bin/activate` 写在 .bashrc 里会导致脚本 curl 等工具找不到 venv 包
+
+> English: [`lessons/en/python-venv-troubleshoot.md`](../../lessons/en/python-venv-troubleshoot.md)

@@ -1,53 +1,58 @@
 ---
 {
-  "title": "WSL proxy setup so git/pip reach the network",
-  "domain": "wsl",
-  "tags": ["wsl", "proxy", "git", "pip", "network", "windows"],
+  "title": "WSL proxy setup — access the internet through Windows proxy",
+  "domain": "devops",
+  "tags": ["wsl", "proxy", "network", "windows"],
   "status": "published",
   "lang": "en",
-  "source": "uncledad96-glitch",
+  "source": "wasim-builds",
   "translated_from": "lessons/contrib/wsl-proxy-setup.md",
-  "created": "2026-07-22",
-  "updated": "2026-07-22",
-  "confidence": "0.9"
+  "created": "2026-07-31",
+  "updated": "2026-07-31"
 }
 ---
 
-# WSL proxy setup so git/pip reach the network
+# WSL proxy setup — access the internet through Windows proxy
+
+> English translation of `lessons/contrib/wsl-proxy-setup.md`
 
 ## Problem
 
-Inside WSL, `pip`, `curl`, and `git` time out while Windows browser works. Agents cannot install deps.
+`curl google.com` fails inside WSL, but Windows can access the internet normally. WSL does not automatically inherit the Windows proxy.
 
 ## Root Cause
 
-WSL does not inherit the Windows system proxy. Host proxy (e.g. Clash on :7890) is only reachable via the Windows host IP / `hostname.local`.
+WSL2 has its own network namespace. The Windows proxy is not automatically inherited into the Linux environment.
 
-## Solution
+## Fix
 
 ```bash
-# adjust port to your proxy
+# 1. Set proxy environment variables
 export http_proxy=http://$(hostname).local:7890
 export https_proxy=http://$(hostname).local:7890
 export HTTP_PROXY=$http_proxy
 export HTTPS_PROXY=$https_proxy
-export NO_PROXY=localhost,127.0.0.1,.local
 
-# git does not always honor env
-git config --global http.proxy "$http_proxy"
-git config --global https.proxy "$https_proxy"
+# 2. Make permanent in ~/.bashrc
+echo '
+export http_proxy=http://$(hostname).local:7890
+export https_proxy=http://$(hostname).local:7890
+export NO_PROXY=localhost,127.0.0.1,.local
+' >> ~/.bashrc
+
+# 3. Configure git separately (WSL git does not use environment variables)
+git config --global http.proxy http://$(hostname).local:7890
+git config --global https.proxy http://$(hostname).local:7890
 ```
 
-Persist in `~/.bashrc` and reopen the shell.
+**Note:** Port 7890 is a common proxy port. The actual port depends on your proxy software (Clash defaults to 7890, v2ray defaults to 10808).
 
 ## Verification
 
 ```bash
-curl -I https://pypi.org
-git ls-remote https://github.com/git/git.git | head
+curl -I https://google.com  # should return 200
 ```
 
-## Notes
+## Related
 
-- On pure Linux (no WSL) this lesson does not apply — use network manager proxy instead.
-- Do not commit corporate proxy passwords into the repo.
+- `wsl-proxy-setup` (Chinese original)

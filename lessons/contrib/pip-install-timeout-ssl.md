@@ -38,3 +38,5 @@ pip install --no-cache-dir <包名>
 ```bash
 pip install requests -v  # 应正常完成
 ```
+
+> English: [`lessons/en/pip-install-timeout-ssl.md`](../../lessons/en/pip-install-timeout-ssl.md)
