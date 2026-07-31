@@ -13,8 +13,8 @@ MisakaNet uses three trust levels for lessons. These terms are used consistently
 ## Usage
 
 - **README / public site**: Use "indexed" when counting total lessons.
-  - ✅ "249 indexed failure-recovery lessons"
-  - ❌ "249 verified failure lessons" (unless all 249 have been fact-checked)
+  - ✅ "385 indexed failure-recovery lessons"
+  - ❌ "385 verified failure lessons" (unless all 385 have been fact-checked)
 
 - **Lesson frontmatter**: `status` field uses `draft`, `published`, or `deprecated`.
   - `published` means it passed the quality gate, not that it was manually verified.
