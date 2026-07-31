@@ -1,6 +1,6 @@
 # MisakaNet Shared Lessons
 
-> 最后更新: 2026-07-09 17:29:45 UTC | 来源: Real incident, running validate.py on macOS Homebrew Python 3.14 (2026-07-09)
+> 最后更新: 2026-07-31 17:56:36 UTC | 来源: hermes_wsl2
 
 每条 lesson 包含踩坑记录、修复方法和验证方式，跨节点自动同步。
 
@@ -21,6 +21,7 @@
 - [Agent 手动更新步骤（update 超时处理）](contrib/agent-manual-update-timeout.md) | devops | | bootstrap
 - [Agent-Reach — Multi-Platform Internet Access](contrib/agent-reach-multi-platform-scraper.md) | agent | "agent-reach", "scraping", "reddit", "twitter" | github.com/Panniantong/Agent-Reach
 - [BGE embedding 模型需要降级 fallback 避免启动崩溃](contrib/bge-embedding-fallback-crash.md) | rag | | bootstrap
+- [Benchmark smoke test lesson](benchmark-smoke-test-lesson.md) | benchmark |  | hermes_wsl2
 - [Chroma 建库无 Checkpoint — 进程一死全部丢失](contrib/chroma-rebuild-no-checkpoint-cn.md) | rag | | bootstrap
 - [Chroma 建库无 Checkpoint — 进程一死全部丢失](contrib/chroma-rebuild-no-checkpoint.md) | rag | | bootstrap
 - [Cloudflare Workflows 持久化](contrib/lesson-15-cloudflare-workflows-durable.md) | ops | "cloudflare", "workflows", "durable" | blog.cloudflare.com
