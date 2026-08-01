@@ -36,6 +36,16 @@
   <li>JSON/YAML parsing fails on Windows but works on Linux</li>
 </ul>
 
+<h2>Real Failure Queries</h2>
+<p>These are actual search queries from users who encountered Windows encoding issues. Click to search MisakaNet for matching lessons:</p>
+<ul>
+  <li><a href="https://misakanet.org/search/?q=UnicodeDecodeError+gbk+codec+Windows"><code>UnicodeDecodeError: 'gbk' codec can't decode byte</code></a></li>
+  <li><a href="https://misakanet.org/search/?q=pre-commit+DCO+encoding+error+Windows"><code>pre-commit DCO check fails with encoding error</code></a></li>
+  <li><a href="https://misakanet.org/search/?q=PowerShell+PYTHONUTF8+encoding+fix"><code>PowerShell $env:PYTHONUTF8 encoding fix</code></a></li>
+  <li><a href="https://misakanet.org/search/?q=Python+open+file+encoding+utf-8+Windows"><code>Python open() file encoding utf-8 on Windows</code></a></li>
+  <li><a href="https://misakanet.org/search/?q=Git+commit+message+garbled+Windows"><code>Git commit message garbled on Windows</code></a></li>
+</ul>
+
 <h2>Root Causes</h2>
 <ul>
   <li>Windows default encoding is GBK (CP936), not UTF-8</li>
@@ -47,20 +57,27 @@
 
 <h2>Search MisakaNet</h2>
 <p>Your issue may already have a fix:</p>
-<a href="https://ikalus1988.github.io/MisakaNet/search/" class="cta">Search Windows encoding lessons →</a>
+<a href="https://misakanet.org/search/?q=Windows+encoding+error" class="cta">Search Windows encoding lessons →</a>
 
 <h2>Top Lessons</h2>
 <ul>
-  <li><a href="https://ikalus1988.github.io/MisakaNet/search/">GBK codec error in pre-commit</a></li>
-  <li><a href="https://ikalus1988.github.io/MisakaNet/search/">Python UTF-8 mode on Windows</a></li>
-  <li><a href="https://ikalus1988.github.io/MisakaNet/search/">Git commit encoding settings</a></li>
+  <li><a href="https://misakanet.org/search/?q=GBK+codec+error+pre-commit+Windows">GBK codec error in pre-commit — search lessons</a></li>
+  <li><a href="https://misakanet.org/search/?q=Python+UTF-8+mode+Windows">Python UTF-8 mode on Windows — search lessons</a></li>
+  <li><a href="https://misakanet.org/search/?q=Git+commit+encoding+settings+Windows">Git commit encoding settings — search lessons</a></li>
+  <li><a href="https://misakanet.org/search/?q=PowerShell+PYTHONUTF8+encoding">PowerShell PYTHONUTF8 encoding fix — search lessons</a></li>
 </ul>
 
 <h2>Quick Fix Checklist</h2>
 <pre><code># 1. Set Python UTF-8 mode (fixes most issues)
+# CMD:
 set PYTHONUTF8=1
 # Or permanently:
 setx PYTHONUTF8 1
+
+# PowerShell:
+$env:PYTHONUTF8 = "1"
+# Or permanently (machine-wide):
+[Environment]::SetEnvironmentVariable("PYTHONUTF8", "1", "Machine")
 
 # 2. Git encoding config
 git config --global core.quotepath false
@@ -79,6 +96,6 @@ git config --global i18n.commitEncoding utf-8
 <pre><code>python3 scripts/misaka_capture.py --summary "Windows encoding error: &lt;your error&gt;" --source cli</code></pre>
 <p>Or <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml">open an intake issue →</a></p>
 
-<div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/docs/troubleshooting.md">Troubleshooting FAQ</a></div>
+<div class="back"><a href="/">← Back to MisakaNet</a> · <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/troubleshooting.md">Troubleshooting FAQ</a></div>
 </body>
 </html>
