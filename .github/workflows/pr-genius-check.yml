@@ -6,15 +6,17 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   pr-genius:
+    if: |
+      !github.event.pull_request.draft &&
+      !contains(github.event.pull_request.labels.*.name, 'docs-only')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: zsxh1990/pr-genius/.github/actions/pr-genius-check@main
+      - uses: zsxh1990/pr-genius/.github/actions/pr-genius-check@v1.0.0
         id: pr-genius
         with:
           title: ${{ github.event.pull_request.title }}
