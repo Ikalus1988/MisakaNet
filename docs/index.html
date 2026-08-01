@@ -1645,6 +1645,192 @@
     .nav-toggle { top: 12px; left: 12px; padding: 6px 10px; font-size: 12px; }
     .drawer { width: 260px; left: -280px; }
   }
+
+  /* ── Danmaku Friction Wall ── */
+  .danmaku-toggle {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 999;
+    background: rgba(0, 229, 255, 0.10);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    color: var(--cyan);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+  }
+  .danmaku-toggle:hover {
+    background: rgba(0, 229, 255, 0.18);
+    border-color: rgba(0, 229, 255, 0.45);
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.12);
+  }
+  .danmaku-toggle.off {
+    background: rgba(100, 100, 120, 0.10);
+    border-color: rgba(100, 100, 120, 0.20);
+    color: #6b7280;
+  }
+
+  /* Danmaku container — fixed overlay, pointer-events: none so clicks pass through */
+  .danmaku-stage {
+    position: fixed;
+    inset: 0;
+    z-index: 998;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .danmaku-stage.active {
+    pointer-events: none;
+  }
+
+  /* Individual danmaku items */
+  .danmaku-item {
+    position: absolute;
+    white-space: nowrap;
+    font-size: 13px;
+    color: rgba(226, 232, 240, 0.85);
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.7), 0 0 3px rgba(0, 0, 0, 0.5);
+    font-family: 'Inter', 'PingFang SC', 'Noto Sans SC', sans-serif;
+    pointer-events: none;
+    animation: danmaku-scroll linear forwards;
+    opacity: 0.75;
+    padding: 2px 0;
+    line-height: 1.3;
+  }
+  .danmaku-item .dm-label {
+    display: inline-block;
+    background: rgba(0, 229, 255, 0.15);
+    border-radius: 3px;
+    padding: 0 4px;
+    font-size: 10px;
+    margin-right: 4px;
+    color: var(--cyan);
+    vertical-align: middle;
+  }
+
+  @keyframes danmaku-scroll {
+    0% {
+      transform: translateX(100vw);
+      opacity: 0.75;
+    }
+    5% {
+      opacity: 0.9;
+    }
+    90% {
+      opacity: 0.9;
+    }
+    100% {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+  }
+
+  /* Danmaku input panel — bottom-right floating */
+  .danmaku-input-panel {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 999;
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 320px;
+    pointer-events: auto;
+  }
+  .danmaku-input-panel.open {
+    display: flex;
+  }
+
+  .danmaku-input-box {
+    display: flex;
+    align-items: center;
+    background: rgba(4, 10, 24, 0.92);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    border-radius: 12px;
+    padding: 5px 8px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  }
+  .danmaku-input-box input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: 'Inter', 'PingFang SC', sans-serif;
+    outline: none;
+    padding: 6px 8px;
+    min-width: 150px;
+  }
+  .danmaku-input-box input::placeholder {
+    color: #6b7280;
+  }
+  .danmaku-input-box button {
+    background: var(--cyan);
+    color: #07101f;
+    border: 0;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: opacity 0.2s;
+  }
+  .danmaku-input-box button:hover {
+    opacity: 0.85;
+  }
+  .danmaku-input-box button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .danmaku-disclaimer {
+    font-size: 10px;
+    color: #6b7280;
+    text-align: right;
+    padding: 0 4px;
+    line-height: 1.4;
+  }
+  .danmaku-disclaimer a {
+    color: var(--cyan);
+    text-decoration: none;
+  }
+  .danmaku-disclaimer a:hover {
+    text-decoration: underline;
+  }
+
+  /* Mobile: danmaku off by default, smaller */
+  @media (max-width: 640px) {
+    .danmaku-toggle {
+      top: 8px;
+      right: 8px;
+      padding: 4px 10px;
+      font-size: 10px;
+    }
+    .danmaku-item {
+      font-size: 11px;
+    }
+    .danmaku-input-panel {
+      bottom: 12px;
+      right: 12px;
+      max-width: 260px;
+    }
+    .danmaku-input-box input {
+      min-width: 100px;
+      font-size: 12px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -1752,6 +1938,23 @@
       <a href="/search/?q=database%20locked" style="display:inline-block;font-size:12px;color:var(--cyan);background:rgba(0,229,255,0.10);border:1px solid rgba(0,229,255,0.22);border-radius:12px;padding:4px 11px;margin:2px 3px;text-decoration:none;">database locked</a>
     </div>
     <div style="text-align:center;margin-top:8px;font-size:11px;color:#94a3b8;line-height:1.5;" data-i18n="searchPanelBadge">SAG-Lite · static JSON · zero-dep</div>
+  </div>
+
+  <!-- Danmaku Friction Wall Toggle -->
+  <button class="danmaku-toggle" id="danmakuToggle" onclick="toggleDanmaku()" title="Toggle friction feedback wall">
+    <span>💬</span> <span id="danmakuToggleLabel">Danmaku</span>
+  </button>
+
+  <!-- Danmaku Stage — bullet screen display -->
+  <div class="danmaku-stage" id="danmakuStage"></div>
+
+  <!-- Danmaku Input Panel -->
+  <div class="danmaku-input-panel" id="danmakuInputPanel">
+    <div class="danmaku-input-box">
+      <input type="text" id="danmakuInput" placeholder="Say where you got stuck..." maxlength="200" onkeydown="if(event.key==='Enter')sendDanmaku()">
+      <button id="danmakuSendBtn" onclick="sendDanmaku()">Send</button>
+    </div>
+    <div class="danmaku-disclaimer">You can vent, ask questions, or just send an emoji. <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=bug_report.md" target="_blank">Please do not post secrets, tokens, or personal info.</a></div>
   </div>
 
   <!-- Voices from the Network -->
@@ -3662,6 +3865,220 @@ document.addEventListener('visibilitychange', () => {
     loadStats();
   }
 });
+
+// ── Danmaku Friction Wall ──
+// State
+let danmakuEnabled = false;
+let danmakuMessages = [];
+let danmakuPollTimer = null;
+let danmakuLastId = null;
+let danmakuActiveItems = 0;
+const DANMAKU_MAX_DESKTOP = 10;
+const DANMAKU_MAX_MOBILE = 4;
+
+// Sensitive content patterns — blocks attacks, slurs, tokens/secrets, personal info, spam, URL spam
+const DANMAKU_BLOCKED = [
+  /\b(?:fuck|shit|asshole|bitch|dick|cunt|bastard|whore|slut|damn|crap)\b/i,
+  /\b(?:nigger|faggot|retard|kike|spic|chink|gook|wetback|raghead)\b/i,
+  /\b(?:sk[ -]?[a-z0-9]{20,}|[a-z0-9]{30,})\b/i,
+  /(?:https?:\/\/[^\s]{30,}|bit\.ly\/[a-z0-9]{5,}|tinyurl\.com\/[a-z0-9]{5,})/i,
+  /\b(?:\d{3}[-.]?\d{3}[-.]?\d{4}|[\w.+-]+@[\w-]+\.[\w]{2,})\b/,
+  /\b(?:AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|gho_[a-zA-Z0-9]{36}|ghu_[a-zA-Z0-9]{36}|ghs_[a-zA-Z0-9]{36}|ghr_[a-zA-Z0-9]{36}|xox[bpsa]-[a-zA-Z0-9]{10,}|-----BEGIN (?:RSA |EC )?PRIVATE KEY-----)/,
+];
+
+function isDanmakuBlocked(text) {
+  for (const p of DANMAKU_BLOCKED) {
+    if (p.test(text)) return true;
+  }
+  return false;
+}
+
+function isMobileDevice() {
+  return window.innerWidth < 640;
+}
+
+function getDanmakuPref() {
+  const saved = localStorage.getItem('misaka_danmaku');
+  if (saved === 'on') return true;
+  if (saved === 'off') return false;
+  // Default: desktop ON, mobile OFF
+  return !isMobileDevice();
+}
+
+function saveDanmakuPref(enabled) {
+  localStorage.setItem('misaka_danmaku', enabled ? 'on' : 'off');
+}
+
+function toggleDanmaku() {
+  danmakuEnabled = !danmakuEnabled;
+  saveDanmakuPref(danmakuEnabled);
+  applyDanmakuState();
+}
+
+function applyDanmakuState() {
+  const toggle = document.getElementById('danmakuToggle');
+  const label = document.getElementById('danmakuToggleLabel');
+  const stage = document.getElementById('danmakuStage');
+  const panel = document.getElementById('danmakuInputPanel');
+
+  if (danmakuEnabled) {
+    toggle.classList.remove('off');
+    label.textContent = 'Danmaku ON';
+    stage.classList.add('active');
+    panel.classList.add('open');
+    startDanmakuPolling();
+  } else {
+    toggle.classList.add('off');
+    label.textContent = 'Danmaku OFF';
+    stage.classList.remove('active');
+    panel.classList.remove('open');
+    stopDanmakuPolling();
+    clearDanmakuStage();
+  }
+}
+
+function clearDanmakuStage() {
+  const stage = document.getElementById('danmakuStage');
+  stage.innerHTML = '';
+  danmakuActiveItems = 0;
+}
+
+function addDanmakuItem(text, label) {
+  if (!danmakuEnabled) return;
+  const stage = document.getElementById('danmakuStage');
+  const isMobile = isMobileDevice();
+  const max = isMobile ? DANMAKU_MAX_MOBILE : DANMAKU_MAX_DESKTOP;
+
+  // Remove old items if over limit
+  while (danmakuActiveItems >= max) {
+    const first = stage.firstChild;
+    if (first) {
+      first.remove();
+      danmakuActiveItems--;
+    } else break;
+  }
+
+  const el = document.createElement('div');
+  el.className = 'danmaku-item';
+
+  // Random vertical position (top 10% to 75%)
+  const topPct = 8 + Math.random() * 55;
+  el.style.top = topPct + '%';
+
+  // Random scroll duration (12-20s for desktop, 8-14s for mobile)
+  const duration = isMobile ? 8 + Math.random() * 6 : 12 + Math.random() * 8;
+  el.style.animationDuration = duration + 's';
+
+  if (label) {
+    const span = document.createElement('span');
+    span.className = 'dm-label';
+    span.textContent = label;
+    el.appendChild(span);
+  }
+
+  // Sanitize text with DOMPurify if available
+  const safeText = typeof DOMPurify !== 'undefined'
+    ? DOMPurify.sanitize(text, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })
+    : text.replace(/<[^>]*>/g, '');
+  el.appendChild(document.createTextNode(safeText));
+
+  stage.appendChild(el);
+  danmakuActiveItems++;
+
+  // Auto-remove when animation ends
+  el.addEventListener('animationend', () => {
+    el.remove();
+    danmakuActiveItems--;
+  });
+}
+
+async function sendDanmaku() {
+  const input = document.getElementById('danmakuInput');
+  const btn = document.getElementById('danmakuSendBtn');
+  const text = input.value.trim();
+
+  if (!text || text.length < 1 || text.length > 200) return;
+
+  // Client-side filter
+  if (isDanmakuBlocked(text)) {
+    addDanmakuItem('🚫 This message was blocked by the filter.', 'filtered');
+    input.value = '';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  // Optimistic: show locally immediately
+  addDanmakuItem(text, 'you');
+
+  // POST to API
+  try {
+    const r = await fetch('/api/danmaku/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: text,
+        lang: document.documentElement.lang || 'en',
+        source: 'web',
+        created_at: new Date().toISOString()
+      }),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    danmakuLastId = data.id || null;
+  } catch (e) {
+    // Worker offline — show locally without server storage
+    console.warn('Danmaku: worker unavailable, showing locally', e.message);
+  }
+
+  input.value = '';
+  btn.disabled = false;
+  btn.textContent = 'Send';
+}
+
+async function fetchDanmakuMessages() {
+  try {
+    const url = danmakuLastId
+      ? `/api/danmaku/?since=${danmakuLastId}`
+      : '/api/danmaku/';
+    const r = await fetch(url);
+    if (!r.ok) return;
+    const data = await r.json();
+    const messages = Array.isArray(data) ? data : (data.messages || []);
+    for (const msg of messages) {
+      if (msg.id === danmakuLastId) continue;
+      if (msg.status === 'hidden') continue;
+      // Filter blocked content
+      if (isDanmakuBlocked(msg.text)) continue;
+      addDanmakuItem(msg.text, msg.lang === 'zh' ? '弹幕' : 'dm');
+      danmakuLastId = msg.id;
+    }
+  } catch (e) {
+    // Silent fail — polling continues
+  }
+}
+
+function startDanmakuPolling() {
+  stopDanmakuPolling();
+  // Initial fetch
+  fetchDanmakuMessages();
+  // Poll every 8 seconds
+  danmakuPollTimer = setInterval(fetchDanmakuMessages, 8000);
+}
+
+function stopDanmakuPolling() {
+  if (danmakuPollTimer) {
+    clearInterval(danmakuPollTimer);
+    danmakuPollTimer = null;
+  }
+}
+
+// Init danmaku on page load
+(function initDanmaku() {
+  danmakuEnabled = getDanmakuPref();
+  applyDanmakuState();
+})();
 </script>
 </body>
 </html>
