@@ -1,0 +1,31 @@
+body {
+    font-family: Arial, sans-serif;
+}
+#danmaku-toggle {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+}
+#danmaku-input {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background-color: #f0f0f0;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    display: none;
+}
+#danmaku-display {
+    position: fixed;
+    top: 50px;
+    right: 10px;
+    width: 200px;
+    height: 300px;
+    overflow-y: auto;
+    background-color: #f0f0f0;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
