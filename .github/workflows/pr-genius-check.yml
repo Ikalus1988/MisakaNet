@@ -21,38 +21,28 @@ jobs:
           repo: ${{ github.repository }}
           body: ${{ github.event.pull_request.body }}
 
-      - name: Comment on PR
+      - name: Output PR Genius result
         if: always()
-        uses: actions/github-script@v7
+        shell: bash
         env:
           TIER: ${{ steps.pr-genius.outputs.tier }}
           RESULT: ${{ steps.pr-genius.outputs.result }}
-        with:
-          script: |
-            const tier = process.env.TIER || 'unknown';
-            const emoji = tier === 'high_risk' ? '🔴' : tier === 'medium_risk' ? '🟡' : '🟢';
-
-            let parsed = {};
-            try { parsed = JSON.parse(process.env.RESULT || '{}'); } catch(e) {}
-
-            const checklist = (parsed.checklist || [])
-              .map(c => `- **[${c.priority}]** ${c.action}: ${c.hint || ''}`)
-              .join('\n');
-
-            const body = [
-              `## ${emoji} PR Genius Analysis`,
-              '',
-              `**Risk Level:** ${tier}`,
-              '',
-              checklist ? `### Checklist\n${checklist}` : '',
-              '',
-              '---',
-              '*Powered by [PR Genius](https://github.com/zsxh1990/pr-genius)*'
-            ].filter(Boolean).join('\n');
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: body
-            });
+        run: |
+          echo "=========================================="
+          echo "PR Genius Analysis"
+          echo "=========================================="
+          echo "Risk Level: $TIER"
+          echo ""
+          echo "$RESULT" | python3 -c "
+          import json, sys
+          try:
+              d = json.load(sys.stdin)
+              checklist = d.get('checklist', [])
+              if checklist:
+                  print('Checklist:')
+                  for c in checklist:
+                      print(f\"  [{c.get('priority','')}] {c.get('action','')}: {c.get('hint','')}\")
+          except:
+              pass
+          " 2>/dev/null
+          echo "=========================================="
