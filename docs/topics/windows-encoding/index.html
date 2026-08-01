@@ -8,6 +8,7 @@
 <link rel="canonical" href="https://misakanet.org/topics/windows-encoding/">
 <meta property="og:title" content="Windows Encoding Errors — MisakaNet">
 <meta property="og:description" content="Fix UnicodeDecodeError, GBK codec errors, and encoding issues on Windows.">
+<meta property="og:url" content="https://misakanet.org/topics/windows-encoding/">
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0a0f1d; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
   a { color: #58a6ff; }
@@ -18,6 +19,7 @@
   li { margin-bottom: 8px; }
   code { background: rgba(110,118,129,0.2); padding: 2px 6px; border-radius: 4px; font-size: 14px; }
   pre { background: #161b22; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 14px; }
+  .query { display: block; color: #8b949e; font-size: 13px; margin-top: 2px; }
   .cta { background: #1f6feb; color: #fff; padding: 12px 24px; border-radius: 6px; display: inline-block; margin-top: 12px; margin-bottom: 12px; text-decoration: none; }
   .back { margin-top: 32px; font-size: 13px; }
 </style>
@@ -30,10 +32,20 @@
 <ul>
   <li><code>UnicodeDecodeError: 'gbk' codec can't decode byte 0x94</code></li>
   <li><code>UnicodeDecodeError: 'utf-8' codec can't decode byte</code></li>
+  <li><code>UnicodeEncodeError: 'gbk' codec can't encode character</code></li>
   <li>Git commit message garbled or rejected by pre-commit hooks</li>
   <li>Python script crashes reading files with non-ASCII content</li>
   <li><code>pre-commit</code> DCO check fails with encoding error</li>
   <li>JSON/YAML parsing fails on Windows but works on Linux</li>
+</ul>
+
+<h2>Real failure queries (from search logs)</h2>
+<ul>
+  <li><code>UnicodeEncodeError gbk codec can't encode character</code><span class="query">— most common when printing/writing non-ASCII to a GBK console</span></li>
+  <li><code>UnicodeDecodeError gbk codec can't decode byte python</code><span class="query">— reading a UTF-8 file with the Windows default GBK codec</span></li>
+  <li><code>pre-commit gbk encoding error windows</code><span class="query">— hook reads files with the system default encoding</span></li>
+  <li><code>PYTHONUTF8 powershell set env</code><span class="query">— how to enable Python UTF-8 mode persistently on Windows</span></li>
+  <li><code>git commit message garbled windows encoding</code><span class="query">— locale-driven commit encoding producing mojibake</span></li>
 </ul>
 
 <h2>Root Causes</h2>
@@ -47,24 +59,28 @@
 
 <h2>Search MisakaNet</h2>
 <p>Your issue may already have a fix:</p>
-<a href="https://ikalus1988.github.io/MisakaNet/search/" class="cta">Search Windows encoding lessons →</a>
+<a href="/search/" class="cta">Search Windows encoding lessons →</a>
 
 <h2>Top Lessons</h2>
 <ul>
-  <li><a href="https://ikalus1988.github.io/MisakaNet/search/">GBK codec error in pre-commit</a></li>
-  <li><a href="https://ikalus1988.github.io/MisakaNet/search/">Python UTF-8 mode on Windows</a></li>
-  <li><a href="https://ikalus1988.github.io/MisakaNet/search/">Git commit encoding settings</a></li>
+  <li><a href="/lessons/python-gbk-encoding-error/">Python GBK encoding error — read/write as UTF-8 explicitly</a></li>
+  <li><a href="/lessons/wsl-pip-gbk-hub-poller-crash/">WSL pip GBK hub poller crash — set PYTHONUTF8</a></li>
+  <li><a href="/lessons/tts-chinese-encoding-powershell/">Chinese encoding in PowerShell TTS pipeline</a></li>
 </ul>
 
 <h2>Quick Fix Checklist</h2>
 <pre><code># 1. Set Python UTF-8 mode (fixes most issues)
-set PYTHONUTF8=1
-# Or permanently:
+#    PowerShell (persistent):
 setx PYTHONUTF8 1
+#    PowerShell (current session only):
+$env:PYTHONUTF8 = "1"
+#    CMD:
+set PYTHONUTF8=1
 
 # 2. Git encoding config
 git config --global core.quotepath false
 git config --global i18n.commitEncoding utf-8
+git config --global i18n.logOutputEncoding utf-8
 
 # 3. For pre-commit hooks, add to .pre-commit-config.yaml:
 # default_language_version:
