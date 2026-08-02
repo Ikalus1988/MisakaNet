@@ -78,9 +78,14 @@ jobs:
               if (name === 'search_knowledge.py' && f.deletions > 100) {
                 failures.push(`**核心文件高风险删除**: \`search_knowledge.py\` 删除了 ${f.deletions} 行，需要人工 review。`);
               }
+
+              // Rule 4b: generated cache files
+              if (name === '__pycache__' || name.endsWith('.pyc') || name === '.pytest_cache' || name.endsWith('.egg-info')) {
+                failures.push(`**Remove __pycache__/ files before submitting**: \`${name}\` 是生成缓存文件，请在提交前清理。`);
+              }
             }
 
-            // Rule 5: docs-only title but code changed
+            // Rule 6: docs-only title but code changed
             const titleBody = `${pr.title}\n${pr.body || ''}`.toLowerCase();
             const claimsDocsOnly = titleBody.includes('docs:') || titleBody.includes('docs-only') || titleBody.includes('[docs]');
             const codeChanged = files.some(f => /\.(py|js|ts|go)$/.test(f.filename));
