@@ -1,4 +1,74 @@
 {
-  "$schema": "https://glama.ai/mcp/schemas/server.json",
-  "maintainers": ["Ikalus1988"]
+  "name": "misakanet",
+  "displayName": "MisakaNet",
+  "description": "Use MisakaNet when your coding agent hits an error - Search 1M+ GitHub issues instantly via MCP",
+  "version": "1.0.0",
+  "author": "MisakaNet Team",
+  "homepage": "https://github.com/misakanet/misakanet",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/misakanet/misakanet.git"
+  },
+  "license": "MIT",
+  "categories": ["development", "search", "debugging"],
+  "tags": ["github", "issues", "search", "debugging", "errors", "solutions"],
+  "quickStart": {
+    "installation": "npm install -g @misakanet/mcp-server",
+    "configuration": {
+      "claude": {
+        "mcpServers": {
+          "misakanet": {
+            "command": "npx",
+            "args": ["-y", "@misakanet/mcp-server"]
+          }
+        }
+      },
+      "cursor": {
+        "mcpServers": {
+          "misakanet": {
+            "command": "npx",
+            "args": ["-y", "@misakanet/mcp-server"]
+          }
+        }
+      }
+    },
+    "firstQuery": "Search MisakaNet for \"database locked\"",
+    "expectedOutput": "A list of relevant GitHub issues with titles, repositories, URLs, and solution snippets related to database locked errors."
+  },
+  "tools": [
+    {
+      "name": "search_issues",
+      "description": "Search GitHub issues across 1M+ indexed repositories",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "description": "Search terms (e.g., 'database locked', 'CORS error')",
+          "required": true
+        },
+        "limit": {
+          "type": "number",
+          "description": "Maximum results to return (default: 10, max: 50)",
+          "required": false,
+          "default": 10
+        }
+      },
+      "examples": [
+        "Search MisakaNet for \"database locked\"",
+        "Search MisakaNet for \"CORS policy blocked\" with limit 5",
+        "Find GitHub issues about \"webpack build failed\""
+      ]
+    }
+  ],
+  "useCases": [
+    "Debug cryptic error messages by finding real-world solutions",
+    "Discover how others solved similar problems",
+    "Find relevant GitHub issues and discussions",
+    "Get context-aware error resolution suggestions"
+  ],
+  "features": [
+    "Instant search across 1M+ GitHub issues",
+    "Semantic search for contextually similar issues",
+    "Direct links to GitHub discussions and solutions",
+    "Works seamlessly with Claude, Cursor, and other MCP clients"
+  ]
 }

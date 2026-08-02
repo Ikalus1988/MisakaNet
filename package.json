@@ -1,20 +1,46 @@
 {
-  "name": "misakanet",
-  "private": true,
-  "license": "Apache-2.0",
-  "description": "Deployment scripts for MisakaNet Workers",
+  "name": "@misakanet/mcp-server",
+  "version": "1.0.0",
+  "description": "Use MisakaNet when your coding agent hits an error - Search 1M+ GitHub issues instantly via MCP",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "misakanet-mcp": "dist/index.js"
+  },
   "scripts": {
-    "deploy:web": "cd web && npx wrangler deploy",
-    "deploy:api": "cd workers && npx wrangler deploy --config wrangler.api.jsonc",
-    "deploy:email": "cd workers/email-register && npx wrangler deploy",
-    "deploy:all": "npm run deploy:web && npm run deploy:api && npm run deploy:email",
-    "deploy": "wrangler deploy",
-    "preview": "wrangler dev"
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepare": "npm run build",
+    "inspector": "npx @modelcontextprotocol/inspector node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "github",
+    "issues",
+    "search",
+    "debugging",
+    "errors",
+    "solutions",
+    "model-context-protocol"
+  ],
+  "author": "MisakaNet Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/misakanet/misakanet.git"
+  },
+  "homepage": "https://github.com/misakanet/misakanet#readme",
+  "bugs": {
+    "url": "https://github.com/misakanet/misakanet/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0"
   },
   "devDependencies": {
-    "wrangler": "^4.107.0"
-  },
-  "overrides": {
-    "sharp": "0.35.3"
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
   }
 }
