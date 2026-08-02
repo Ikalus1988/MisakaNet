@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Troubleshoot Windows encoding errors including GBK codec issues, UnicodeEncodeError, and pre-commit failures. Find solutions for PowerShell UTF-8 configuration.">
+    <title>Windows Encoding Troubleshooting | MisakaNet</title>
+    <link rel="canonical" href="https://misakanet.org/topics/windows-encoding/">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+        .symptom-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .fix-box {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .example-query {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        pre code {
+            background: none;
+            color: inherit;
+        }
+        .cta-button {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 10px 10px 0;
+            font-weight: bold;
+        }
+        .cta-button:hover {
+            background: #2980b9;
+        }
+        .cta-button.secondary {
+            background: #95a5a6;
+        }
+        .cta-button.secondary:hover {
+            background: #7f8c8d;
+        }
+        ul {
+            margin: 15px 0;
+        }
+        li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🪟 Windows Encoding Troubleshooting</h1>
+    
+    <p>Experiencing encoding errors on Windows? You're not alone. This page helps you diagnose and fix common Windows-specific encoding issues with Python, Git, and development tools.</p>
+
+    <h2>Common Symptoms</h2>
+    <div class="symptom-box">
+        <ul>
+            <li><code>UnicodeEncodeError: 'gbk' codec can't encode character</code></li>
+            <li><code>UnicodeDecodeError: 'charmap' codec can't decode byte</code></li>
+            <li>Pre-commit hooks failing with encoding errors</li>
+            <li>Git operations showing garbled characters</li>
+            <li>Python scripts failing when writing to console or files</li>
+            <li>PowerShell displaying incorrect characters</li>
+        </ul>
+    </div>
+
+    <h2>Real Failure Examples</h2>
+    <p>Here are actual error patterns Windows developers encounter:</p>
+
+    <div class="example-query">
+        <strong>GBK codec error:</strong><br>
+        UnicodeEncodeError: 'gbk' codec can't encode character '\u2019' in position 42
+    </div>
+
+    <div class="example-query">
+        <strong>Pre-commit encoding failure:</strong><br>
+        [INFO] Initializing environment for https://github.com/pre-commit/pre-commit-hooks.<br>
+        UnicodeDecodeError: 'charmap' codec can't decode byte 0x9d in position 1234
+    </div>
+
+    <div class="example-query">
+        <strong>PowerShell UTF-8 issue:</strong><br>
+        Exception calling "WriteLine" with "1" argument(s): "The handle is invalid"<br>
+        Unable to write Unicode characters to console
+    </div>
+
+    <div class="example-query">
+        <strong>Python file write error:</strong><br>
+        UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-5: character maps to &lt;undefined&gt;
+    </div>
+
+    <div class="example-query">
+        <strong>Git log encoding:</strong><br>
+        fatal: cannot convert from UTF-8 to GBK<br>
+        error: failed to execute prompt script
+    </div>
+
+    <h2>Root Causes</h2>
+    <p>Windows encoding issues typically stem from:</p>
+    <ul>
+        <li><strong>Legacy code page defaults:</strong> Windows uses CP1252 or GBK instead of UTF-8 by default</li>
+        <li><strong>Python's locale detection:</strong> Python inherits Windows' non-UTF-8 encoding for file I/O and console output</li>
+        <li><strong>PowerShell encoding:</strong> PowerShell may default to ASCII or system code page</li>
+        <li><strong>Environment variable gaps:</strong> Missing <code>PYTHONUTF8</code> or <code>PYTHONIOENCODING</code> settings</li>
+    </ul>
+
+    <h2>Quick Fixes</h2>
+    
+    <div class="fix-box">
+        <h3>1. Enable Python UTF-8 Mode (Recommended)</h3>
+        <p><strong>PowerShell (current session):</strong></p>
+        <pre><code>$env:PYTHONUTF8 = "1"</code></pre>
+        
+        <p><strong>PowerShell (permanent):</strong></p>
+        <pre><code>[System.Environment]::SetEnvironmentVariable('PYTHONUTF8', '1', 'User')</code></pre>
+        
+        <p><strong>Command Prompt (current session):</strong></p>
+        <pre><code>set PYTHONUTF8=1</code></pre>
+        
+        <p><strong>System-wide (via System Properties):</strong></p>
+        <ol>
+            <li>Open System Properties → Advanced → Environment Variables</li>
+            <li>Add new User or System variable: <code>PYTHONUTF8</code> = <code>1</code></li>
+            <li>Restart your terminal/IDE</li>
+        </ol>
+    </div>
+
+    <div class="fix-box">
+        <h3>2. Configure PowerShell Output Encoding</h3>
+        <p>Add to your PowerShell profile (<code>$PROFILE</code>):</p>
+        <pre><code>$OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding = [System.Text.Encoding]::UTF8</code></pre>
+    </div>
+
+    <div class="fix-box">
+        <h3>3. Set Git Encoding</h3>
+        <pre><code>git config --global core.quotepath false
+git config --global gui.encoding utf-8
+git config --global i18n.commit.encoding utf-8
+git config --global i18n.logoutputencoding utf-8</code></pre>
+    </div>
+
+    <div class="fix-box">
+        <h3>4. Python Script-Level Fix</h3>
+        <p>Add at the top of your Python scripts:</p>
+        <pre><code>import sys
+import io
+
+# Force UTF-8 for stdout/stderr
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')</code></pre>
+    </div>
+
+    <div class="fix-box">
+        <h3>5. Windows System Locale (Advanced)</h3>
+        <p>Enable UTF-8 system-wide (Windows 10 1903+):</p>
+        <ol>
+            <li>Control Panel → Region → Administrative → Change system locale</li>
+            <li>Check "Beta: Use Unicode UTF-8 for worldwide language support"</li>
+            <li>Restart your computer</li>
+        </ol>
+        <p><strong>Warning:</strong> This may affect legacy applications.</p>
+    </div>
+
+    <h2>Search for Solutions</h2>
+    <p>Can't find your specific error? Search our knowledge base:</p>
+    <a href="/search?q=windows+encoding+error" class="cta-button">Search Encoding Issues</a>
+    <a href="/search?q=UnicodeEncodeError+windows" class="cta-button secondary">Search Unicode Errors</a>
+
+    <h2>Still Stuck?</h2>
+    <p>If these fixes don't resolve your issue:</p>
+    <ul>
+        <li><a href="/troubleshooting">Visit our full troubleshooting guide</a></li>
+        <li><a href="/intake">Submit a detailed issue report</a> with your error message and environment details</li>
+    </ul>
+    
+    <a href="/troubleshooting" class="cta-button">Full Troubleshooting Guide</a>
+    <a href="/intake" class="cta-button secondary">Submit Issue Report</a>
+
+    <hr style="margin: 40px 0;">
+    <p style="color: #7f8c8d; font-size: 14px;">
+        <strong>Related topics:</strong> Python encoding, Windows UTF-8, PowerShell encoding, pre-commit hooks, Git encoding, GBK codec
+    </p>
+</body>
+</html>
