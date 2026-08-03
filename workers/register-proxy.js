@@ -246,6 +246,26 @@ async function getWithCache(env, cacheKey, fetchFn) {
   return data;
 }
 
+
+async function handleUnsolvedMap(env) {
+  if (!env.MISAKANET_KV) return jsonResponse({ success: true, available: false, unsolved: [] });
+  const DEMAND_PREFIX = "demand:family:";
+  const families = ["github-auth", "npm-publish", "cloudflare-worker", "mcp-registry", "glama-release", "python-env", "database-lock", "crawler-block", "agent-tooling", "lesson-feedback", "bug-report", "unclassified"];
+  const unsolved = [];
+  for (const family of families) {
+    const record = await env.MISAKANET_KV.get(`${DEMAND_PREFIX}${family}`, "json");
+    if (!record || !record.days) continue;
+    let unsolved_count = 0;
+    for (const bucket of Object.values(record.days)) {
+      unsolved_count += Object.values(bucket.reasons || {}).reduce((s, r) => s + (r.count || 0), 0);
+    }
+    if (unsolved_count > 0) {
+      unsolved.push({ task_family: family, unsolved_count: unsolved_count, reason: "no match / low confidence" });
+    }
+  }
+  return jsonResponse({ success: true, unsolved });
+}
+
 // ── API 路由处理 ──
 async function handleApiRequest(pathWithQuery, env, request) {
   // 分离路径与查询参数
@@ -257,6 +277,7 @@ async function handleApiRequest(pathWithQuery, env, request) {
   if (pathname === "/api/insights/demand-board") {
     return handleDemandBoard(env);
   }
+  if (pathname === "/api/insights/unsolved-map") { return handleUnsolvedMap(env); }
   if (pathname === "/api/insights/demand-map") {
     return handleDemandMap(request, env);
   }
