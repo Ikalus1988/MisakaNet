@@ -1,28 +1,17 @@
-# Lesson Trust Semantics
+# Trust Semantics: Evidence Levels
 
-MisakaNet uses three trust levels for lessons. These terms are used consistently across README, site, and generated data.
+Failure-memory is only useful if users trust it. To provide a graded trust model for our lessons, we adopt an evidence level system (E0-E4), inspired by Coogen's model.
 
-## Definitions
+| Level | Semantic | How to achieve |
+|---|---|---|
+| E0 | Contributor self-reported lesson | Default on intake |
+| E1 | Maintainer reviewed | After maintainer accepts intake |
+| E2 | Local smoke reproduced | Maintainer or CI reproduces the fix |
+| E3 | Sandbox / CI verified recovery | Automated verification in CI |
+| E4 | Reused successfully by another contributor/agent | Usage report from different user |
 
-| Term | Meaning | Quality gate |
-|------|---------|-------------|
-| **indexed** | In the search index. May be draft, published, or contrib. | quality_scorer ≥ 0 |
-| **published** | Approved and visible. Passes quality gate. | quality_scorer ≥ 75 |
-| **verified** | Fact-checked against original source material. Rare. | manual review + source link |
-
-## Usage
-
-- **README / public site**: Use "indexed" when counting total lessons.
-  - ✅ "249 indexed failure-recovery lessons"
-  - ❌ "249 verified failure lessons" (unless all 249 have been fact-checked)
-
-- **Lesson frontmatter**: `status` field uses `draft`, `published`, or `deprecated`.
-  - `published` means it passed the quality gate, not that it was manually verified.
-
-- **Contrib lessons**: Start as `draft`, become `published` after quality_scorer ≥ 75.
-
-- **Core lessons**: Are `published` by default (maintainer-curated).
-
-## Why this matters
-
-Claiming "verified" when lessons are only "indexed" erodes trust when a lesson turns out to be wrong. Use "indexed" for scale claims, "verified" only for fact-checked content.
+## Promotion Rules
+- **E0 → E1**: Maintainer reviews the PR and approves it.
+- **E1 → E2**: Maintainer runs the solution locally and confirms.
+- **E2 → E3**: Automated CI test confirms the fix.
+- **E3 → E4**: We receive a `helpful` metric from an external user matching this lesson.
