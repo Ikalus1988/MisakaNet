@@ -16,6 +16,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 [![Python](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/github/license/Ikalus1988/MisakaNet?style=flat&color=blueviolet)](https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE)
 [![Glama score](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/badges/score.svg)](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/score)
+[![MCP quickstart](https://img.shields.io/badge/MCP-quickstart-blue)](docs/quickstart.md)
 [![Stars](https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social)](https://github.com/Ikalus1988/MisakaNet/stargazers)
 [![MCP Toplist: Top 1% of 81,852](https://mcptoplist.com/badge/io.github.Ikalus1988%2Fmisakanet.svg)](https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet)
 
@@ -46,7 +47,9 @@ MisakaNet is a failure-memory layer for AI coding agents. When your agent hits a
 }
 ```
 
-Then ask: *"Search MisakaNet for DCO sign-off failure"*
+Then ask your MCP client: *"Search MisakaNet for database locked"*
+
+**Expected output:** a list of matching failure-recovery lessons with title, score, and fix path — e.g. `[{"title": "sqlite3.OperationalError: database locked", "score": 0.92, "path": "lessons/core/sqlite-locked-fix.md"}]`
 
 **Option B: CLI**
 
