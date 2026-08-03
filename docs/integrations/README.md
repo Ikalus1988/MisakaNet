@@ -44,6 +44,13 @@ results = tool._run("database locked")
 
 MisakaNet ships as an MCP server for Claude Code, Cursor, Continue.dev, and any MCP-compatible tool.
 
+> **Glama analytics note:** MisakaNet is already registered as an MCP server
+> (see the Glama badge on the [root README](/#glama-score)). Local stdio MCP
+> calls work — see the [smoke test report](../mcp-smoke-report.md) for proof.
+> A Glama scorecard showing `Tool Calls = 0` only means *no calls were routed
+> through Glama's gateway*, not that MCP is broken.
+> See [glama-analytics.md](glama-analytics.md) for the full explanation.
+
 ### Claude Code Setup
 
 Add to `~/.claude/settings.json`:
