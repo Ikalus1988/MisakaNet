@@ -108,7 +108,28 @@ git push origin fix/my-error
 
 ## Step 3: Integrate with Your Agent (2 minutes)
 
-**Python (LangChain):**
+**Option A — Docker (no local Python setup):**
+
+```bash
+# Pull the latest image from GHCR
+docker pull ghcr.io/ikalus1988/misakanet:latest
+
+# Run directly (stdio mode for MCP clients)
+docker run -i ghcr.io/ikalus1988/misakanet:latest
+
+# Or run with a specific lesson directory mounted
+docker run -i -v $(pwd)/lessons:/app/lessons ghcr.io/ikalus1988/misakanet:latest
+```
+
+**Use cases for Docker:**
+
+| Use case | How to use |
+|----------|-----------|
+| **Claude Desktop MCP** | Add to MCP config: `"command": "docker", "args": ["run", "--rm", "-i", "ghcr.io/ikalus1988/misakanet:latest"]` |
+| **CI smoke test** | `docker run --rm ghcr.io/ikalus1988/misakanet:latest python3 search_knowledge.py "test query"` |
+| **Isolated trial** | No local Python needed — just Docker installed |
+
+**Option B — Python (LangChain):**
 
 ```python
 from misakanet.tools.langchain_tool import MisakaNetSearchTool
