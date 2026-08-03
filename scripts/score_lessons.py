@@ -22,8 +22,9 @@ LESSONS_DIR = REPO / "lessons"
 RISK_LOW_CONFIDENCE = 0.65
 RISK_VERY_LOW_CONFIDENCE = 0.4
 
-WEIGHT_CLARITY = 0.5
-WEIGHT_VERIFY = 0.3
+WEIGHT_CLARITY = 0.4
+WEIGHT_VERIFY = 0.2
+WEIGHT_EVIDENCE = 0.2
 WEIGHT_COVERAGE = 0.2
 
 # Environment signal patterns
@@ -94,11 +95,19 @@ def score_lesson(filepath: Path) -> dict:
     else:
         coverage = 0.0
 
-    score = WEIGHT_CLARITY * clarity + WEIGHT_VERIFY * verify + WEIGHT_COVERAGE * coverage
+
+    # --- evidence_level ---
+    evidence_str = fm.get('evidence_level', 'E0').upper()
+    evidence_map = {'E0': 0.0, 'E1': 0.25, 'E2': 0.5, 'E3': 0.75, 'E4': 1.0}
+    evidence = evidence_map.get(evidence_str, 0.0)
+
+    score = WEIGHT_CLARITY * clarity + WEIGHT_VERIFY * verify + WEIGHT_COVERAGE * coverage + WEIGHT_EVIDENCE * evidence
+
 
     return {
         "file": str(filepath.relative_to(REPO)),
         "score": round(score, 3),
+        "evidence_level": evidence_str,
         "clarity": clarity,
         "verify": verify,
         "coverage": coverage,
@@ -144,11 +153,11 @@ def main():
 
     print(f"Checked {len(results)} lessons. Average score: {avg:.3f}")
     print()
-    print(f"{'Score':<8} {'Clarity':<8} {'Verify':<8} {'Coverage':<10} File")
+    print(f"{'Score':<8} {'Clarity':<8} {'Verify':<8} {'Coverage':<10} {'Evidence':<8} File")
     print("-" * 70)
     for r in sorted(results, key=lambda x: x["score"]):
         tag = " ⚠️" if threshold and r["score"] < threshold else ""
-        print(f"{r['score']:<8.3f} {r['clarity']:<8.1f} {r['verify']:<8.1f} {r['coverage']:<10.1f} {r['file']}{tag}")
+        print(f"{r['score']:<8.3f} {r['clarity']:<8.1f} {r['verify']:<8.1f} {r['coverage']:<10.1f} {r['evidence_level']:<8} {r['file']}{tag}")
 
     print()
     print(f"Average: {avg:.3f}")
