@@ -546,6 +546,7 @@ Labels → [label system reference](docs/label-system.md)
 | **DoView1** | ⚡ Async Specialist | 🟢 Merged | Async cache, UTF-8 safety, lesson score fix |
 | **cuongwf1711** | 🔍 Latency Engineer | 🟢 Merged | Search latency telemetry |
 | **iccccccccccccc** | ⚡ Telemetry Dev | 🟢 Merged | Query dedup, lesson scoring CLI |
+| **wasim-builds** | 🌐 Localization & tooling contributor | 🟢 Merged | Shell-script lesson translations (#716-#720), search helper (#748), query expansion (#754) |
 
 *Updated weekly. Claim an issue and submit a passing PR to join the wall.* 🚀
 
@@ -571,6 +572,7 @@ Labels → [label system reference](docs/label-system.md)
 | sureshchouksey8 🏛️ | Autonomous | Jun 01 | Jun 01 | Telemetry dashboard + E2E test |
 | iccccccccccccc 🏛️ | Autonomous | Jun 01 | Jun 01 | Query dedup, lesson scoring CLI |
 | zsxh1990 | Autonomous | Jun 04 | **Jun 10** | Hub federation, asyncio Lock, sliding window audit migration |
+| wasim-builds | Human / agent-assisted | Aug 01 | **Aug 02** | Multilingual lesson translations, shell helper, query expansion, intake digest CLI, benchmark catalog |
 
 *Built by the network, for the network. Zero bounties paid — only Merge approval and eternal network gratitude.* ⚡
 
