@@ -4,7 +4,11 @@
   "title": "MisakaNet Lesson",
   "description": "Schema for validating MisakaNet lesson Markdown frontmatter",
   "type": "object",
-  "required": ["title", "domain", "status"],
+  "required": [
+    "title",
+    "domain",
+    "status"
+  ],
   "properties": {
     "title": {
       "type": "string",
@@ -15,11 +19,14 @@
     "domain": {
       "type": "string",
       "minLength": 2,
-      "description": "Knowledge domain — should match a domain file in docs/domains/"
+      "description": "Knowledge domain \u2014 should match a domain file in docs/domains/"
     },
     "tags": {
       "type": "array",
-      "items": { "type": "string", "minLength": 2 },
+      "items": {
+        "type": "string",
+        "minLength": 2
+      },
       "minItems": 1,
       "maxItems": 10,
       "uniqueItems": true,
@@ -33,7 +40,11 @@
     },
     "status": {
       "type": "string",
-      "enum": ["published", "draft", "archived"],
+      "enum": [
+        "published",
+        "draft",
+        "archived"
+      ],
       "description": "Publication status"
     },
     "source": {
@@ -47,6 +58,18 @@
     "updated": {
       "type": "string",
       "description": "Last-updated timestamp"
+    },
+    "evidence_level": {
+      "type": "string",
+      "enum": [
+        "E0",
+        "E1",
+        "E2",
+        "E3",
+        "E4"
+      ],
+      "default": "E0",
+      "description": "Evidence level of the lesson. E0=Self-reported, E1=Maintainer reviewed, E2=Smoke reproduced, E3=CI verified, E4=External reused"
     }
   }
 }
