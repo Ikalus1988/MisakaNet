@@ -253,6 +253,22 @@
     "verified": true
   },
   {
+    "id": "agent-error-handling-hi",
+    "title": "agent-error-handling-hi",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "AI एजेंट बाहरी सेवाओं (API, MCP सर्वर, डेटाबेस) को कॉल करते समय विफल हो सकते हैं। बिना उचित त्रुटि हैंडलिंग के, एक विफलता पूरे कार्य को रोक सकती है।",
+    "preview": "## समस्या\n\nAI एजेंट बाहरी सेवाओं (API, MCP सर्वर, डेटाबेस) को कॉल करते समय विफल हो सकते हैं। बिना उचित त्रुटि हैंडलिंग के, एक विफलता पूरे कार्य को रोक सकती है।\n\n## मूल कारण\n\nएजेंट आमतौर पर \"खुश पथ\" (happy path) के लिए लिखे जाते हैं। त्रुटि मार्ग (error paths) को अनदेखा किया जाता है, जिससे:\n- अनंत लूप (infinite loops)\n- डेटा हानि (data loss)\n- संसाधन रिसाव (resource leaks)\n\n## समाधान\n\n**तीन-स्तरीय त्रुटि हैंडलिंग:**\n\n```python\nimport asyncio\nfrom typing import Optional\n\nasync def resilient_call(func, *args, max_retries=3, fallback=None):\n    \"\"\"पुनर्प्रयास और फॉलबैक के साथ लचीला कॉल।\"\"\"\n    last_error = None\n    \n    for attempt in range(max_retries):\n        try:\n            return await func(*args)\n        except Exception as e:\n            last_error = e\n            if attempt < max_retries - 1:\n                # एक्सपोनेंशियल बैकऑफ\n                wait_time = 2 ** attempt\n                await asyncio.sleep(wait_time)\n    \n    # सभी प्रयास विफल - फॉलबैक का उपयोग करें\n    if fallback:\n        return await fallback(*args)\n    \n    raise last_error\n```\n\n## सत्यापन\n\n1. पुनर्प्रयास तर्क का परीक्षण करें\n2. फॉलबैक व्यवहार का सत्यापन करें\n3. बैकऑफ समय की जांच करें\n\n## नोट्स\n\n- हमेशा अधिकतम पुनर्प्रयास सेट करें\n- एक्सपोनेंशियल बैकऑफ का उपयोग करें\n- फॉलबैक हमेशा प्रदान करें\n- त्रुटियों को लॉग करें\n\n## स्रोत\n\nचीनी पाठ से अनुवाद, लेखक zsxh1990।",
+    "url": "lessons/contrib/agent-error-handling-hi.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "verified": false
+  },
+  {
     "id": "agent-manual-update-timeout",
     "title": "agent-manual-update-timeout",
     "domain": "contrib",
@@ -1003,8 +1019,8 @@
     "title": "fanuc-alarm-code-reference",
     "domain": "contrib",
     "tags": [],
-    "summary": "FANUC 机器人在运行过程中会产生各类报警代码，现场工程师需要快速查询报警含义并采取正确的处理措施。本文整理 FANUC 常见报警代码的分类体系和处理要点。",
-    "preview": "{\"id\": \"fanuc-alarm-code-reference\", \"title\": \"FANUC Robot Alarm Code Reference Table\", \"domain\": \"fanuc\", \"subdomain\": \"alarm-troubleshooting\", \"source\": \"bbs.gongkong.com/d/202401/915680\", \"status\": \"draft\", \"confidence\": 0.6, \"created\": \"2026-07-12\", \"tags\": [\"fanuc\", \"alarm\", \"error-code\", \"troubleshooting\", \"reference\"], \"quality_score\": 43, \"problem\": \"FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。\", \"root_cause\": \"FANUC 控制器报警代码体系庞大，涵盖运动控制(MOTN)、程序(PROG)、系统(SYST)、通讯(COMM)、KAREL(INTP)等多个子系统。每个子系统的报警代码格式不同，含义各异。原帖提供了一个报警代码表的附件下载，但实际内容需要积分获取。\", \"solution\": \"1. 掌握 FANUC 报警代码的分类体系：MOTN（运动）、PROG（程序）、SYST（系统）、COMM（通讯）、INTP（KAREL）等\\n2. 熟悉常见报警代码的含义和标准处理流程\\n3. 建立现场报警代码速查清单\\n4. 利用 FANUC 控制器内置的帮助功能查看报警详情\", \"verification\": \"1. 能够快速识别报警代码所属子系统\\n2. 对常见报警代码能在 5 分钟内给出处理方案\\n3. 报警处理后机器人恢复正常运行\"}\n\n## FANUC 机器人报警代码参考\n\n### 问题描述\n\nFANUC 机器人在运行过程中会产生各类报警代码，现场工程师需要快速查询报警含义并采取正确的处理措施。本文整理 FANUC 常见报警代码的分类体系和处理要点。\n\n### 根因分析\n\nFANUC 控制器报警代码按子系统分类，每个子系统有独立的代码前缀：\n\n| 前缀 | 子系统 | 说明 | 典型场景 |\n|------|--------|------|----------|\n| **MOTN** | 运动控制 | 机器人运动相关报警 | 碰撞、超行程、动作锁定 |\n| **PROG** | 程序 | TP/LS 程序执行报警 | 程序语法错误、逻辑异常 |\n| **SYST** | 系统 | 控制器系统报警 | 内存不足、硬件故障 |\n| **COMM** | 通讯 | 网络和 I/O 通讯报警 | PROFINET 断线、EIP 超时 |\n| **INTP** | KAREL | KAREL 解释器报警 | CALL 错误、变量异常 |\n| **IOGEN** | I/O | 通用 I/O 报警 | 信号配置错误 |\n| **SERVO** | 伺服 | 伺服驱动报警 | 电机过流、编码器故障 |\n\n### 修复方法/技术要点\n\n#### 常见报警代码速查\n\n**运动控制类（MOTN）：**\n\n| 代码 | 含义 | 处理方法 |\n|------|------|----------|\n| MOTN-023 | 动作锁定（Motion Lock） | 检查运动组配置、条件等待是否满足 |\n| MOTN-018 | 位置不可达 | 检查目标位置是否在工作空间内 |\n| MOTN-050 | 碰撞检测 | 检查机器人路径是否有障碍物 |\n\n**程序类（PROG）：**\n\n| 代码 | 含义 | 处理方法 |\n|------|------|----------|\n| PROG-004 | 程序不存在 | 确认程序名正确、已加载 |\n| PROG-017 | 程序被保护 | 解除程序写保护 |\n| PROG-035 | 超出寄存器范围 | 检查 R/PR/VR 寄存器编号 |\n\n**系统类（SYST）：**\n\n| 代码 | 含义 | 处理方法 |\n|------|------|----------|\n| SYST-012 | 内存不足 | 清理无用程序和变量 |\n| SYST-044 | 电池电压低 | 更换控制器电池 |\n\n**通讯类（COMM）：**\n\n| 代码 | 含义 | 处理方法 |\n|------|------|----------|\n| COMM-007 | PROFINET 通讯超时 | 检查网线连接和 IP 配置 |\n| COMM-013 | I/O 通讯断开 | 检查 I/O 模块和总线连接 |\n\n**KAREL 类（INTP）：**\n\n| 代码 | 含义 | 处理方法 |\n|------|------|----------|\n| INTP-316 | CALL 呼叫错误 | 检查调用语法和目标程序 |\n| INTP-1086 | 行号（非错误码） | KTRANS 编译输出的行号信息 |\n\n#### 报警处理通用流程\n\n1. **记录报警代码**：记下完整的报警代码和附加信息\n2. **确认报警级别**：Fault（故障）> Error（错误）> Warning（警告）> Info（信息）\n3. **查看帮助信息**：在示教器上按 HELP 键查看报警详情\n4. **执行标准处理**：根据报警类型采取对应措施\n5. **复位报警**：处理完成后按 RESET 键复位\n6. **验证恢复**：确认机器人功能恢复正常\n\n### 验证方式\n\n1. 报警代码查询响\n\n[clipped]",
+    "summary": "FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。",
+    "preview": "## Problem\n\nFANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。\n\n## Root Cause\n\nFANUC 控制器报警代码体系庞大，涵盖运动控制(MOTN)、程序(PROG)、系统(SYST)、通讯(COMM)、KAREL(INTP) 等多个子系统。每个子系统的报警代码格式不同，含义各异。\n\n## FANUC 机器人报警代码参考\n\n### 问题描述\n\nFANUC 机器人在运行过程中会产生各类报警代码，现场工程师需要快速查询报警含义并采取正确的处理措施。本文整理 FANUC 常见报警代码的分类体系和处理要点。\n\n### 根因分析\n\nFANUC 控制器报警代码按子系统分类，每个子系统有独立的代码前缀：\n\n| 前缀 | 子系统 | 说明 | 典型场景 |\n|------|--------|------|----------|\n| **MOTN** | 运动控制 | 机器人运动相关报警 | 碰撞、超行程、动作锁定 |\n| **PROG** | 程序 | TP/LS 程序执行报警 | 程序语法错误、逻辑异常 |\n| **SYST** | 系统 | 控制器系统报警 | 内存不足、硬件故障 |\n| **COMM** | 通讯 | 网络和 I/O 通讯报警 | PROFINET 断线、EIP 超时 |\n| **INTP** | KAREL | KAREL 解释器报警 | CALL 错误、变量异常 |\n| **IOGEN** | I/O | 通用 I/O 报警 | 信号配置错误 |\n| **SERVO** | 伺服 | 伺服驱动报警 | 电机过流、编码器故障 |\n\n### 修复方法/技术要点\n\n#### 常见报警代码速查\n\n**运动控制类（MOTN）：**\n\n| 代码 | 含义 | 处理方法 |\n|------|------|----------|\n| MOTN-023 | 动作锁定（Motion Lock） | 检查运动组配置、条件等待是否满足 |\n| MOTN-018 | 位置不可达 | 检查目标位置是否在工作空间内 |\n| MOTN-050 | 碰撞检测 | 检查机器人路径是否有障碍物 |\n\n**程序类（PROG）：**\n\n| 代码 | 含义 | 处理方法 |\n|------|------|----------|\n| PROG-004 | 程序不存在 | 确认程序名正确、已加载 |\n| PROG-017 | 程序被保护 | 解除程序写保护 |\n| PROG-035 | 超出寄存器范围 | 检查 R/PR/VR 寄存器编号 |\n\n**系统类（SYST）：**\n\n| 代码 | 含义 | 处理方法 |\n|------|------|----------|\n| SYST-012 | 内存不足 | 清理无用程序和变量 |\n| SYST-044 | 电池电压低 | 更换控制器电池 |\n\n**通讯类（COMM）：**\n\n| 代码 | 含义 | 处理方法 |\n|------|------|----------|\n| COMM-007 | PROFINET 通讯超时 | 检查网线连接和 IP 配置 |\n| COMM-013 | I/O 通讯断开 | 检查 I/O 模块和总线连接 |\n\n**KAREL 类（INTP）：**\n\n| 代码 | 含义 | 处理方法 |\n|------|------|----------|\n| INTP-316 | CALL 呼叫错误 | 检查调用语法和目标程序 |\n| INTP-1086 | 行号（非错误码） | KTRANS 编译输出的行号信息 |\n\n#### 报警处理通用流程\n\n1. **记录报警代码**：记下完整的报警代码和附加信息\n2. **确认报警级别**：Fault（故障）> Error（错误）> Warning（警告）> Info（信息）\n3. **查看帮助信息**：在示教器上按 HELP 键查看报警详情\n4. **执行标准处理**：根据报警类型采取对应措施\n5. **复位报警**：处理完成后按 RESET 键复位\n6. **验证恢复**：确认机器人功能恢复正常\n\n### Verification\n\n1. 报警代码查询响应时间 < 5 分钟\n2. 处理方案执行后机器人恢复正常运行\n3. 同一报警代码在根因消除后不再重复出现\n\n### 来源\n\n- 帖子：[FANUC报警代码表](https://bbs.gongkong.com/d/202401/915680/915680_1.shtml)\n- 作者：刘海均，2024-01-29\n- 说明：原帖为附件下载（含图片和文件，需 5 积分），本 lesson 基于 FANUC 通用报警体系整理，非原帖附件内容的直接复制",
     "url": "lessons/contrib/fanuc-alarm-code-reference.md",
     "created": "",
     "updated": "",
@@ -1012,7 +1028,7 @@
     "environment_version": "",
     "confidence": 0.5,
     "status": "active",
-    "verified": false
+    "verified": true
   },
   {
     "id": "fanuc-alarm-severity-guide",
@@ -2995,6 +3011,22 @@
     "verified": true
   },
   {
+    "id": "mcp-server-testing-patterns-ru",
+    "title": "mcp-server-testing-patterns-ru",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "MCP сервер использует stdio транспорт (stdin/stdout JSON-RPC). Тестирование требует запуска подпроцесса, записи в stdin и парсинга stdout. Это:",
+    "preview": "## Проблема\n\nMCP сервер использует stdio транспорт (stdin/stdout JSON-RPC). Тестирование требует запуска подпроцесса, записи в stdin и парсинга stdout. Это:\n1. Медленно (требуется fork процесса)\n2. Сложно для отладки (stdout смешивает протокольные сообщения и логи)\n3. Зависит от полного окружения (индекс поиска, база данных и т.д.)\n\n## Корневая причина\n\nОсновная логика MCP сервера находится в функции `handle_request()`. stdio — это только транспортный слой. Прямой вызов обработчика пропускает весь транспортный слой.\n\n## Решение\n\n**Вызов JSON-RPC обработчика напрямую, без запуска подпроцесса:**\n\n```python\nfrom scripts.mcp_server import handle_request\n\ndef rpc(method: str, params: dict = None) -> dict:\n    \"\"\"Отправить JSON-RPC запрос обработчику напрямую.\"\"\"\n    return handle_request({\n        \"jsonrpc\": \"2.0\",\n        \"id\": 1,\n        \"method\": method,\n        \"params\": params or {}\n    })\n\n# Тест поиска\nresult = rpc(\"tools/call\", {\n    \"name\": \"misakanet.search\",\n    \"arguments\": {\"query\": \"database locked\", \"limit\": 3}\n})\nprint(result)\n```\n\n## Проверка\n\n1. Импортируйте `handle_request` из модуля MCP сервера\n2. Создайте вспомогательную функцию, оборачивающую JSON-RPC формат\n3. Вызовите инструменты напрямую без подпроцесса\n4. Проверьте структуру ответа\n\n## Примечания\n\n- Это работает только для серверов с stdio транспортом\n- Для SSE/HTTP серверов используйте HTTP API напрямую\n- Пропустите тестирование транспорта, если нужно протестировать только логику инструментов\n- Используйте тестирование через подпроцесс для интеграционных тестов\n\n## Источник\n\nПеревод с китайского урока, автор zsxh1990.",
+    "url": "lessons/contrib/mcp-server-testing-patterns-ru.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "verified": false
+  },
+  {
     "id": "mcp-server-that-reduces-claude-code-context-consumption-by-9",
     "title": "Context Mode: Reducing Claude Code Context Consumption by 98%",
     "domain": "ai-agents",
@@ -4210,6 +4242,22 @@
     "confidence": 0.5,
     "status": "active",
     "verified": false
+  },
+  {
+    "id": "tor-orbot-privacy-in-react-native-tr",
+    "title": "tor-orbot-privacy-in-react-native-tr",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "Mobil uygulamada gizlilik amacıyla Tor kullanımı hedefleniyordu ancak Orbot’un çalışıp çalışmadığı, cihazda yüklü olup olmadığı ve API trafiğinin gerçekten Tor …",
+    "preview": "# React Native uygulamasında Orbot (Tor) ile gizlilik akışı\n## Problem\nMobil uygulamada gizlilik amacıyla Tor kullanımı hedefleniyordu ancak Orbot’un çalışıp çalışmadığı, cihazda yüklü olup olmadığı ve API trafiğinin gerçekten Tor üzerinden geçip geçmediği net değildi. Kullanıcılar “Tor açık” sanırken uygulama normal ağ üzerinden istek atabiliyor ve gerçek anonimlik sağlanamıyordu.\n\n## Root Cause\nOrbot yalnızca cihaz düzeyinde bir Tor proxy sağlar. React Native tarafında soketler otomatik olarak SOCKS5 üzerinden yönlendirilmez. Uygulama, Orbot’un durumunu kontrol etmeden veya proxy tercihini kaydetmeden API isteklerini normal şekilde göndermeye devam eder.\n\n## Solution\nTor kullanımını güvenli hale getirmek için uygulamada ayrı bir gizlilik akışı tanımlandı.\n\n### Step 1 — Orbot kontrolü\n```javascript\nimport { Linking, Platform } from 'react-native';\n\nconst ORBOT_URI = 'orbot://';\n\nasync function isOrbotInstalled() {\n  if (Platform.OS !== 'android') return false;\n  try { return await Linking.canOpenURL(ORBOT_URI); } catch { return false; }\n}\n```\n\n### Step 2 — Kullanıcı tercihini sakla\n```javascript\nimport AsyncStorage from '@react-native-async-storage/async-storage';\n\nconst PREF_KEY = '@MyApp:privacy_preferences';\n\nasync function setUseTorProxy(enabled) {\n  await AsyncStorage.setItem(PREF_KEY, JSON.stringify({ useTorProxy: enabled }));\n}\n```\n\n### Step 3 — API isteklerini işaretle\n```javascript\nimport api from './api';\n\nfunction applyTorPreference(enabled) {\n  if (enabled) api.defaults.headers.common['X-Tor-Requested'] = 'true';\n  else delete api.defaults.headers.common['X-Tor-Requested'];\n}\n```\n\n## Verification\n1. Orbot yüklü değilken “Tor’u etkinleştir” butonunun Orbot sayfasını açtığını doğrula.\n2. Tercih aktifken API isteklerinde `X-Tor-Requested: true` başlığını gör.\n3. `https://check.torproject.org/api/ip` ile IP doğrulaması yap.\n\n## Notes\n- Orbot’un çalışması tek başına trafik tünellemesini garanti etmez; gerçek SOCKS5 yönlendirmesi için native proxy modülü gerekir.\n- Üretim ortamında “Tor aktif” rozeti yalnızca proxy gerçekten devredeyken gösterilmelidir.",
+    "url": "lessons/contrib/tor-orbot-privacy-in-react-native-tr.md",
+    "created": "",
+    "updated": "",
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "verified": true
   },
   {
     "id": "tts-chinese-encoding-powershell",

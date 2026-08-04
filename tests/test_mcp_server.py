@@ -7,6 +7,7 @@ Usage:
     python3 tests/test_mcp_server.py
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -45,6 +46,15 @@ def test_initialize():
     result = resp.get("result", {})
     check("has protocolVersion", "protocolVersion" in result)
     check("has serverInfo.name", result.get("serverInfo", {}).get("name") == "misakanet")
+    expected_version = re.search(
+        r'^version\s*=\s*["\']([^"\']+)["\']',
+        (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8", errors="replace"),
+        re.MULTILINE,
+    ).group(1)
+    check(
+        "has current serverInfo.version",
+        result.get("serverInfo", {}).get("version") == expected_version,
+    )
     check("has capabilities.tools", "tools" in result.get("capabilities", {}))
 
 

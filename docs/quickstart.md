@@ -6,11 +6,22 @@ Three steps: search, contribute, integrate.
 
 ## Step 1: Search for a Lesson (30 seconds)
 
+**Option A — Local Python:**
+
 ```bash
 git clone https://github.com/Ikalus1988/MisakaNet.git && cd MisakaNet
 pip install misakanet-core
 python3 search_knowledge.py "database is locked"
 ```
+
+**Option B — Docker (no local Python needed):**
+
+```bash
+docker pull ghcr.io/ikalus1988/misakanet:latest
+docker run -i ghcr.io/ikalus1988/misakanet:latest search_knowledge.py "database locked"
+```
+
+Use Docker for: CI smoke tests, isolated trials, or Claude Desktop MCP config with containerized server.
 
 > **Windows user?** Run this once to avoid vim popping up during `git pull` / rebase:
 > ```powershell

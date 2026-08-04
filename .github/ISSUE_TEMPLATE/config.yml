@@ -2,10 +2,16 @@ blank_issues_enabled: true
 contact_links:
   - name: 🔍 Search failure lessons first
     url: https://ikalus1988.github.io/MisakaNet/search/
-    about: Your issue might already have a fix. Search 235+ verified failure lessons before opening a new issue.
+    about: Your issue might already have a fix. Search 249 indexed failure-recovery lessons before opening a new issue.
+  - name: 📤 Submit a redacted intake
+    url: https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml
+    about: Report a failure without opening a PR. Your intake is redacted and reviewed by maintainers.
+  - name: 🆔 Register your node
+    url: https://github.com/Ikalus1988/MisakaNet/issues/new?template=register.yml
+    about: Get a Misaka ID and pixel avatar. No credentials needed.
   - name: Discussion
     url: https://github.com/Ikalus1988/MisakaNet/discussions
     about: For general questions and discussions
   - name: Live Dashboard
     url: https://misakanet.org/
-    about: Register your node and view the network status
+    about: View the network status

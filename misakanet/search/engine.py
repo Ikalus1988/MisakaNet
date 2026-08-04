@@ -27,6 +27,44 @@ WEIGHT_TITLE_PARTIAL = 0.4
 WEIGHT_HAS_REF = 0.12
 MAX_METADATA = 1.0
 
+# Feature #532: domain synonym query expansion.
+_SYNONYM_MAP: dict[str, list[str]] = {
+    "mcp": ["setup", "tools/list"],
+    "tool": ["setup", "mcp"],
+    "setup": ["mcp", "install"],
+    "gbk": ["unicode", "encoding"],
+    "unicode": ["gbk", "encoding"],
+    "encoding": ["gbk", "unicode"],
+    "dco": ["signoff", "signed-off-by"],
+    "signoff": ["dco", "signed-off-by"],
+    "signed-off-by": ["dco", "signoff"],
+    "pip": ["ssl", "proxy"],
+    "timeout": ["ssl", "proxy"],
+    "ssl": ["pip", "timeout"],
+    "proxy": ["pip", "ssl", "timeout"],
+    "git": ["credential", "push"],
+    "credential": ["git", "auth"],
+    "auth": ["credential", "token"],
+    "token": ["auth", "credential"],
+    "401": ["auth", "credential"],
+    "403": ["auth", "permission"],
+    "cron": ["scheduler", "systemd"],
+    "scheduler": ["cron", "systemd"],
+    "wsl": ["windows", "proxy"],
+    "windows": ["wsl", "proxy"],
+    "cloudflare": ["worker", "deploy"],
+    "worker": ["cloudflare", "deploy"],
+    "deploy": ["worker", "cloudflare"],
+    "npm": ["publish", "403"],
+    "publish": ["npm", "403"],
+    "json": ["schema", "parse"],
+    "schema": ["json", "validate"],
+    "validate": ["schema", "json"],
+    "stale": ["cache", "pyc"],
+    "cache": ["stale", "pyc"],
+    "pyc": ["cache", "stale"],
+}
+
 # Feature #228: boost core/verified/recent lessons, penalize drafts.
 # Multipliers added to the final composite score (not the BM25 term),
 # so they don't compete with the existing 0.65 / 0.20 / 0.15 weights.
@@ -366,6 +404,24 @@ def _compute_boost_breakdown(doc: CachedDoc) -> list[tuple[str, float]]:
     return parts
 
 
+def _expand_query(query: str) -> str:
+    """Feature #532: expand query with synonyms from _SYNONYM_MAP.
+
+    Appends lower-cased synonyms to the original query so BM25 can match
+    documents containing related terms. Unmapped queries are returned
+    unchanged.
+    """
+    tokens = [t.lower() for t in _tokenize(query) if t]
+    expanded = list(tokens)
+    seen = set(tokens)
+    for token in tokens:
+        for syn in _SYNONYM_MAP.get(token, []):
+            if syn not in seen:
+                expanded.append(syn)
+                seen.add(syn)
+    return " ".join(expanded)
+
+
 def _rank_docs_impl(
     query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False,
     rerank: bool = False,
@@ -378,7 +434,8 @@ def _rank_docs_impl(
         visible = [d for d in docs if not d.is_draft]
         if visible:
             docs = visible
-    bm25_raw = _compute_bm25_scores(query, docs)
+    expanded_query = _expand_query(query)
+    bm25_raw = _compute_bm25_scores(expanded_query, docs)
     bm25_norm = _normalize(bm25_raw)
     scored = [
         (
@@ -593,7 +650,11 @@ def _classify_confidence(
 
     # Low confidence signals
     is_common = bool(_COMMON_PATTERNS.search(title_lower + " " + content_lower[:500]))
-    only_content_match = "content keyword" in reasons_lower and "title" not in reasons_lower and "tag" not in reasons_lower
+    only_content_match = (
+        "content keyword" in reasons_lower
+        and "title" not in reasons_lower
+        and "tag" not in reasons_lower
+    )
     low_score = score < 0.35
     generic_title = len(title_lower.split()) <= 3 and not has_error_code
 
@@ -763,7 +824,7 @@ def _format_output(
         # Confidence / result type / signal level
         confidence = _classify_confidence(doc, query, match_reason, score)
         result_type = _classify_result_type(doc, confidence)
-        signal_level = _get_signal_level(doc, confidence)
+        _get_signal_level(doc, confidence)
         conf_icon = {"high": "🟢", "medium": "🟡", "low": "⚫"}.get(confidence, "⚪")
 
         # Build badge line
@@ -771,7 +832,8 @@ def _format_output(
         time_str = _relative_time(doc.mtime)
 
         print(f"  {badges:<25} {doc.title} {status_tag}")
-        print(f"  {'':>25} {_score_bar(score):>15}  {time_str}  {conf_icon} {confidence}/{result_type}")
+        score_bar = _score_bar(score)
+        print(f"  {'':>25} {score_bar:>15}  {time_str}  {conf_icon} {confidence}/{result_type}")
         if match_reason:
             print(f"  {'':>25} (matched: {match_reason})")
         # Feature: --explain score breakdown (#303)
@@ -866,6 +928,8 @@ __all__ = [
     "_highlight_plain",
     "_score_breakdown",
     "_get_related_lessons",
+    "_expand_query",
+    "_SYNONYM_MAP",
 ]
 
 

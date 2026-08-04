@@ -62,9 +62,34 @@ To claim the reward and get your PR merged, your Agent/submission **MUST** satis
 
 ---
 
+### 📌 Before You Start
+
+1. **Search MisakaNet first** — your problem may already have a lesson:
+   ```bash
+   pip install misakanet-core
+   python3 search_knowledge.py "<your error or topic>"
+   ```
+
+2. **Quickstart:** [docs/quickstart.md](../../docs/quickstart.md) · [MCP setup](../../docs/mcp-quickstart.md)
+
+3. **What is MisakaNet?** A failure-memory layer for AI coding agents. When you hit an error, search 249 indexed failure-recovery lessons before debugging from scratch. [Learn more →](../../README.md)
+
 ### 📌 How to Claim
 
 Comment `/claim` on this issue to lock a **8-hour exclusive window** for implementation. If no valid PR is submitted within the window, the issue unlocks for the next contributor.
+
+### 📌 DCO Fix Guide
+
+If your PR fails the DCO check:
+```bash
+git commit --amend --signoff
+git push --force-with-lease
+```
+
+Or add `Signed-off-by:` to your commit message:
+```bash
+git commit -s -m "your commit message"
+```
 
 ⚠️ **Maintainer's Note**
 PRs that fail any of the above AC (especially missing Node ID or missing experience card) will be closed automatically without review. The bounty is set via platform tags. Highest quality with robust tests wins the merge.

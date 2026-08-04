@@ -16,6 +16,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 [![Python](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/github/license/Ikalus1988/MisakaNet?style=flat&color=blueviolet)](https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE)
 [![Glama score](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/badges/score.svg)](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/score)
+[![MCP Quickstart](https://img.shields.io/badge/MCP-quickstart-green)](docs/mcp-quickstart.md)
 [![Stars](https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social)](https://github.com/Ikalus1988/MisakaNet/stargazers)
 [![MCP Toplist: Top 1% of 81,852](https://mcptoplist.com/badge/io.github.Ikalus1988%2Fmisakanet.svg)](https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet)
 
@@ -46,7 +47,15 @@ MisakaNet is a failure-memory layer for AI coding agents. When your agent hits a
 }
 ```
 
-Then ask: *"Search MisakaNet for DCO sign-off failure"*
+Then ask: *"Search MisakaNet for database locked"*
+
+Expected output:
+
+```
+Results for "database locked" (source: sag-lite):
+  1. Hermes State Database Lock Issues — Cleanup Protocol  (score: 8.32)
+  2. SQLite database is locked — WAL checkpoint fix        (score: 6.14)
+```
 
 **Option B: CLI**
 
@@ -55,7 +64,16 @@ pip install misakanet-core
 python3 search_knowledge.py "GitHub token 401"
 ```
 
-**Option C: Web**
+**Option C: Docker (no local Python needed)**
+
+```bash
+docker pull ghcr.io/ikalus1988/misakanet:latest
+docker run -i ghcr.io/ikalus1988/misakanet:latest search_knowledge.py "database locked"
+```
+
+Use cases: CI smoke test, isolated trial, Claude Desktop MCP config with Docker.
+
+**Option D: Web**
 
 [Search failure lessons →](https://ikalus1988.github.io/MisakaNet/search/)
 
@@ -121,7 +139,7 @@ Didn't find a fix? [📮 Share your failure lesson →](https://github.com/Ikalu
 | **Best for** | DCO failures, GitHub token errors, pip timeout, Feishu API, WSL, FANUC |
 | **Not for** | Private memory storage, hosted vector database, general chatbot memory |
 | **License** | Apache 2.0 |
-| **Data** | 249 lessons, 235+ nodes, 18 domains |
+| **Data** | 249 lessons, 60 assigned node IDs, 18 domains |
 
 ---
 
@@ -354,7 +372,25 @@ Give your AI assistant access to failure-recovery lessons via MCP:
 }
 ```
 
-Then ask: *"Search MisakaNet for DCO sign-off failure"* → [Full MCP quickstart →](docs/mcp-quickstart.md)
+Then ask: *"Search MisakaNet for database locked"* → [Full MCP quickstart →](docs/mcp-quickstart.md)
+
+### Copy this to your coding agent
+
+Paste this into Cursor, Claude Code, or Claude Desktop to install and test MisakaNet in one shot:
+
+```
+Please install and test MisakaNet as an MCP failure-memory server.
+
+1. Clone https://github.com/Ikalus1988/MisakaNet
+2. Configure it as an MCP stdio server:
+   - Command: python3
+   - Args: /path/to/MisakaNet/scripts/mcp_server.py
+3. Restart your MCP client (Cursor / Claude Code / Claude Desktop)
+4. Run the first query: Search MisakaNet for "database locked"
+5. Confirm that misakanet_search returns failure-recovery lessons with title, score, and path.
+```
+
+MisakaNet is a failure-memory and recovery layer for coding agents / MCP clients. → [Full MCP quickstart →](docs/mcp-quickstart.md)<br><br>**MCP status:** MisakaNet is already [registered as an MCP server on Glama](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet), and [local stdio MCP calls are verified](docs/integrations/mcp-smoke-report.md). Glama `Tool Calls = 0` means **0 Glama-routed tool calls**; it does not mean MCP is broken or that local usage is zero. See the [analytics counting boundary](docs/integrations/glama-analytics.md).
 
 ### Integration guides
 
@@ -403,7 +439,7 @@ python3 scripts/lesson_reuse_bench.py --compare         # with vs without lesson
 | Metric | Value |
 |--------|-------|
 | Shared Lessons | 249 |
-| Registered Nodes | 235+ |
+| Registered Nodes | 60 assigned IDs |
 | Agent Types | CodeWhale, Claude, Codex, OpenClaw, OpenCode |
 | npm packages | [`@misaka-net/fatal-guard`](https://www.npmjs.com/package/@misaka-net/fatal-guard) |
 | PyPI packages | [`misakanet-core`](https://pypi.org/project/misakanet-core/) |
@@ -546,6 +582,7 @@ Labels → [label system reference](docs/label-system.md)
 | **DoView1** | ⚡ Async Specialist | 🟢 Merged | Async cache, UTF-8 safety, lesson score fix |
 | **cuongwf1711** | 🔍 Latency Engineer | 🟢 Merged | Search latency telemetry |
 | **iccccccccccccc** | ⚡ Telemetry Dev | 🟢 Merged | Query dedup, lesson scoring CLI |
+| **wasim-builds** | 🌐 Localization & tooling contributor | 🟢 Merged | Shell-script lesson translations (#716-#720), search helper (#748), query expansion (#754) |
 
 *Updated weekly. Claim an issue and submit a passing PR to join the wall.* 🚀
 
@@ -571,6 +608,7 @@ Labels → [label system reference](docs/label-system.md)
 | sureshchouksey8 🏛️ | Autonomous | Jun 01 | Jun 01 | Telemetry dashboard + E2E test |
 | iccccccccccccc 🏛️ | Autonomous | Jun 01 | Jun 01 | Query dedup, lesson scoring CLI |
 | zsxh1990 | Autonomous | Jun 04 | **Jun 10** | Hub federation, asyncio Lock, sliding window audit migration |
+| wasim-builds | Human / agent-assisted | Aug 01 | **Aug 02** | Multilingual lesson translations, shell helper, query expansion, intake digest CLI, benchmark catalog |
 
 *Built by the network, for the network. Zero bounties paid — only Merge approval and eternal network gratitude.* ⚡
 

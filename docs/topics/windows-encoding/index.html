@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Windows Encoding (GBK/Unicode) Errors — MisakaNet</title>
+<meta name="description" content="Fix UnicodeDecodeError, GBK codec errors, and encoding issues on Windows for Python, Git, PowerShell, and CI. Search failure-recovery lessons.">
+<link rel="canonical" href="https://misakanet.org/topics/windows-encoding/">
+<meta property="og:title" content="Windows Encoding Errors — MisakaNet">
+<meta property="og:description" content="Fix UnicodeDecodeError, GBK codec errors, and encoding issues on Windows for Python, Git, PowerShell, and CI.">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0a0f1d; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
+  a { color: #58a6ff; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  h2 { font-size: 18px; margin-top: 32px; margin-bottom: 12px; color: #c9d1d9; }
+  .count { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 8px; }
+  code { background: rgba(110,118,129,0.2); padding: 2px 6px; border-radius: 4px; font-size: 14px; }
+  pre { background: #161b22; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 14px; }
+  .cta { background: #1f6feb; color: #fff; padding: 12px 24px; border-radius: 6px; display: inline-block; margin-top: 12px; margin-bottom: 12px; text-decoration: none; }
+  .back { margin-top: 32px; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>Windows Encoding (GBK/Unicode) Errors</h1>
+<div class="count">Common on Chinese/Japanese/Korean Windows systems. Fix encoding errors in Python, Git, PowerShell, and CI.</div>
+
+<h2>Common Symptoms</h2>
+<ul>
+  <li><code>UnicodeDecodeError: 'gbk' codec can't decode byte 0x94</code></li>
+  <li><code>UnicodeDecodeError: 'utf-8' codec can't decode byte</code></li>
+  <li><code>UnicodeEncodeError: 'gbk' codec can't encode character</code> when printing non-ASCII output</li>
+  <li>Git commit message garbled or rejected by pre-commit hooks</li>
+  <li>Python script crashes reading files with non-ASCII content</li>
+  <li><code>pre-commit</code> DCO check fails with encoding error</li>
+  <li>JSON/YAML parsing fails on Windows but works on Linux</li>
+  <li>PowerShell redirects UTF-8 output to a file that comes out mojibake</li>
+</ul>
+
+<h2>Root Causes</h2>
+<ul>
+  <li>Windows default encoding is GBK (CP936), not UTF-8</li>
+  <li>Python 3.11 and earlier don't default to UTF-8 on Windows</li>
+  <li>Git on Windows uses system locale for commit message encoding</li>
+  <li>pre-commit hooks read files with system default encoding</li>
+  <li>Files created on Linux (UTF-8) opened on Windows (GBK)</li>
+  <li>PowerShell 5.1 uses the system ANSI codepage for <code>&gt;</code> redirection</li>
+</ul>
+
+<h2>Real Failure Queries</h2>
+<p>Try these searches to find a matching lesson — each query reflects a real Windows encoding failure:</p>
+<ul>
+  <li><a href="https://misakanet.org/search/?q=gbk+codec+can%27t+decode+byte">gbk codec can't decode byte</a> — the most common GBK read failure</li>
+  <li><a href="https://misakanet.org/search/?q=UnicodeEncodeError+gbk+codec+can%27t+encode">UnicodeEncodeError gbk codec can't encode</a> — printing/redirecting non-ASCII output</li>
+  <li><a href="https://misakanet.org/search/?q=pre-commit+encoding+DCO+gbk">pre-commit encoding DCO gbk</a> — hooks failing on Chinese/Japanese commit messages</li>
+  <li><a href="https://misakanet.org/search/?q=PowerShell+PYTHONUTF8+encoding">PowerShell PYTHONUTF8 encoding</a> — UTF-8 mode and redirection fixes</li>
+  <li><a href="https://misakanet.org/search/?q=git+commit+encoding+windows+utf-8">git commit encoding windows utf-8</a> — garbled commit messages</li>
+</ul>
+
+<h2>Search MisakaNet</h2>
+<p>Your issue may already have a fix:</p>
+<a href="https://ikalus1988.github.io/MisakaNet/search/" class="cta">Search Windows encoding lessons →</a>
+
+<h2>Quick Fix Checklist</h2>
+<pre><code># 1. Set Python UTF-8 mode (fixes most issues)
+set PYTHONUTF8=1
+# Or permanently:
+setx PYTHONUTF8 1
+
+# PowerShell equivalent (session):
+$env:PYTHONUTF8 = "1"
+# PowerShell permanent (user scope):
+[Environment]::SetEnvironmentVariable("PYTHONUTF8", "1", "User")
+
+# 2. Git encoding config
+git config --global core.quotepath false
+git config --global i18n.commitEncoding utf-8
+
+# 3. For pre-commit hooks, add to .pre-commit-config.yaml:
+# default_language_version:
+#   python: python3
+# And ensure the hook reads UTF-8 explicitly.
+
+# 4. For scripts, always specify encoding:
+# open(file, encoding='utf-8')
+# subprocess.run(..., encoding='utf-8', errors='replace')
+
+# 5. PowerShell redirection to UTF-8 (5.1):
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+# Or run: chcp 65001</code></pre>
+
+<h2>If No Lesson Matches</h2>
+<p>Submit a redacted failure report:</p>
+<pre><code>python3 scripts/misaka_capture.py --summary "Windows encoding error: &lt;your error&gt;" --source cli</code></pre>
+<p>Or <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml">open an intake issue →</a></p>
+
+<div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/docs/troubleshooting.md">Troubleshooting FAQ</a></div>
+</body>
+</html>

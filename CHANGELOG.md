@@ -7,6 +7,32 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## v2.15.0 — 2026-08-03
+
+### Highlights
+
+- **First-call quickstart**: README now shows `Search MisakaNet for "database locked"` with expected output. New users can verify MCP works in 5 minutes.
+- **Glama analytics boundary documented**: `docs/integrations/glama-analytics.md` — 0 Glama-routed tool calls ≠ 0 usage. MCP stdio works independently.
+- **Runtime smoke matrix**: `docs/integrations/runtime-smoke-matrix.md` — verified entry points for Cursor, Claude Code, `misaka run`, and shell helper.
+- **GHCR container quickstart**: Docker option added to README and quickstart. `docker pull ghcr.io/ikalus1988/misakanet:latest`.
+- **PR Genius v1.3.1**: Pinned by commit SHA, advisory-only, checkout removed, continue-on-error enabled. 12 PR observation report: 100% accuracy.
+- **server.json updated**: Description emphasizes first use case, not lesson count.
+- **Integration index refreshed**: `docs/integrations/README.md` reflects current status (Cursor ✅, Claude Code ✅, shell ✅).
+
+### Docs
+
+- `docs/integrations/glama-analytics.md` — Glama counting boundary, external communication wording
+- `docs/integrations/runtime-smoke-matrix.md` — 4 entry points with setup/trigger/expected/limitations
+- `docs/integrations/mcp-smoke-report.md` — MCP stdio verification (carried from v2.14.0)
+- `docs/maintainer/handoff-2026-08-03.md` — maintainer closeout notes
+- `docs/quickstart.md` — Docker option added
+
+### Data
+
+- 271 lessons, 25 domains, 374 stars, 137 forks
+
+---
+
 ## v2.14.0 — 2026-07-29
 
 ### Highlights

@@ -24,11 +24,30 @@ Usage:
 from __future__ import annotations
 
 import json
+import re
 import sys
+from importlib import metadata
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
+
+
+def get_server_version() -> str:
+    """Return the installed or checkout package version for MCP metadata."""
+    try:
+        return metadata.version("misakanet")
+    except metadata.PackageNotFoundError:
+        pyproject = REPO_ROOT / "pyproject.toml"
+        if pyproject.exists():
+            match = re.search(
+                r'^version\s*=\s*["\']([^"\']+)["\']',
+                pyproject.read_text(encoding="utf-8", errors="replace"),
+                re.MULTILINE,
+            )
+            if match:
+                return match.group(1)
+    return "0.0.0"
 
 # Import SAG-Lite search
 try:
@@ -421,7 +440,7 @@ def handle_request(request: dict) -> dict:
                 },
                 "serverInfo": {
                     "name": "misakanet",
-                    "version": "2.12.0",
+                    "version": get_server_version(),
                 },
             },
         }

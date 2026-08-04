@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.pyc
+.pytest_cache/
 .cache/
 node_modules/
 misakanet/profile.json
