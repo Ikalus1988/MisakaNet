@@ -59,7 +59,11 @@ except ImportError:
 
 # Import BM25 search fallback
 try:
-    from misakanet.search.engine import MisakaNetSearchEngine
+    from misakanet.search.engine import (
+        LESSONS,
+        _load_docs_cached,
+        _search_cached,
+    )
     HAS_BM25 = True
 except ImportError:
     HAS_BM25 = False
@@ -78,8 +82,17 @@ def handle_search(args: dict) -> dict:
         results = sag_search(SAG_DB, query, domain=domain, top=top)
         return {"results": results, "source": "sag-lite"}
     elif HAS_BM25:
-        engine = MisakaNetSearchEngine()
-        results = engine.search(query, top=top)
+        docs = _load_docs_cached(LESSONS, is_lesson=True)
+        scored = _search_cached(query, docs)
+        results = []
+        for score, doc in scored[:top]:
+            results.append({
+                "title": doc.title,
+                "path": str(doc.filepath),
+                "score": round(score, 3),
+                "domain": doc.domain,
+                "status": doc.status,
+            })
         return {"results": results, "source": "bm25"}
     else:
         return {"error": "No search engine available. Run: python3 scripts/build_sag_index.py"}
