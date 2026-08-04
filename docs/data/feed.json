@@ -1,103 +1,150 @@
 {
-  "generated_at": "2026-08-15T09:45:19.090700+00:00",
+  "generated_at": "2026-08-04T11:34:54.083226+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 11,
+  "item_count": 14,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat: auto-infer evidence_level from lesson content",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/967",
-      "timestamp": "2026-08-15T01:01:39Z",
+      "title": "docs: clarify Glama-routed MCP analytics",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/797",
+      "timestamp": "2026-08-04T01:53:47Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "Fix: Voice hook Windows compatibility (python3->python) + /claim #932",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/995",
-      "timestamp": "2026-08-15T01:01:35Z",
+      "title": "docs(blog): first-call contributor intro (#782)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/784",
+      "timestamp": "2026-08-03T15:57:34Z",
       "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(dx): add setup-dev.sh for pre-commit hook installation",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1008",
-      "timestamp": "2026-08-15T01:01:23Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(fatal-guard): add Docker support with multi-stage build",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1020",
-      "timestamp": "2026-08-15T01:01:19Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(bench): add versioned benchmark result schema",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1024",
-      "timestamp": "2026-08-14T15:48:05Z",
-      "source": "github"
-    },
-    {
-      "type": "lesson",
-      "title": "Accidental __pycache__ artifacts committed to a data repository",
-      "url": "lessons/contrib/accidental-pycache-commit.md",
-      "timestamp": "2026-08-11 00:00:00 UTC",
-      "domain": "development",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "CDN edge cache serves stale responses for minutes after deploy",
-      "url": "lessons/contrib/cdn-edge-cache-stale-after-deploy.md",
-      "timestamp": "2026-08-11 00:00:00 UTC",
-      "domain": "network",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "CI key rotation silently breaking scheduled automation without a code change",
-      "url": "lessons/contrib/ci-key-rotation-silent-failure.md",
-      "timestamp": "2026-08-11 00:00:00 UTC",
-      "domain": "devops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Banking-style escrow fee estimate has a per-provider rounding disparity",
-      "url": "lessons/contrib/escrow-fee-rounding-per-provider.md",
-      "timestamp": "2026-08-11 00:00:00 UTC",
-      "domain": "development",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "git worktree commit lost after pushing from the wrong directory",
-      "url": "lessons/contrib/git-worktree-dangling-commit-recovery.md",
-      "timestamp": "2026-08-11 00:00:00 UTC",
-      "domain": "development",
-      "source": "lessons"
     },
     {
       "type": "challenge",
-      "title": "[Bounty][$0][agent competition] Blind test homepage SAG-Lite lesson search",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/429",
+      "title": "[Analytics] Add privacy-preserving unsolved failure map",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/788",
       "labels": [
-        "good first issue",
-        "area:tests",
-        "needs-ac",
         "ready",
+        "bounty",
         "agent-friendly",
-        "no-credentials",
-        "zero-bounty",
-        "has-test",
         "status:competition",
-        "pool:quick",
+        "pool:roadmap",
         "priority:later"
       ],
-      "timestamp": "2026-07-09T07:03:41Z",
+      "timestamp": "2026-08-03T10:05:20Z",
       "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Trust] Add evidence levels for failure-recovery lessons",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/786",
+      "labels": [
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:roadmap",
+        "priority:later"
+      ],
+      "timestamp": "2026-08-03T10:04:09Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Health] Add recurring public site health snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/783",
+      "labels": [
+        "area:docs",
+        "ready",
+        "bounty",
+        "status:competition",
+        "priority:later"
+      ],
+      "timestamp": "2026-08-03T07:10:20Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[CI] Observe PR Genius v1.3.1 on next 5 non-docs PRs",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/781",
+      "labels": [
+        "area:workflow",
+        "ready",
+        "bounty",
+        "status:competition",
+        "priority:next"
+      ],
+      "timestamp": "2026-08-03T07:09:55Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "ci: upgrade pr-genius action to v1.3.1",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/773",
+      "timestamp": "2026-08-03T03:45:09Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: establish minimum growth funnel dashboard",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/765",
+      "timestamp": "2026-08-03T01:22:19Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[P2][Analytics] Track first-call funnel manually for Glama",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/763",
+      "labels": [
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:quick",
+        "priority:later",
+        "纯文档"
+      ],
+      "timestamp": "2026-08-02T06:59:51Z",
+      "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "USDC: base units vs human amounts — агент платит 1000x или думает, что 1000 USDC это $1000",
+      "url": "lessons/contrib/usdc-base-units-vs-human-amounts-agent-marketplaces-ru.md",
+      "timestamp": "2026-07-30",
+      "domain": "crypto-ops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Claude Code can debug low-level cryptography — ML-DSA signature verification failure",
+      "url": "lessons/contrib/claude-code-debugging-ml-dsa-cryptography.md",
+      "timestamp": "2026-07-29",
+      "domain": "debugging",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption",
+      "url": "lessons/contrib/mcp-tool-error-convention-inconsistency.md",
+      "timestamp": "2026-07-29",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "TypeScript solution-style tsconfig — tsc --noEmit checks nothing silently",
+      "url": "lessons/contrib/typescript-solution-tsconfig-silent-nocheck.md",
+      "timestamp": "2026-07-29",
+      "domain": "typescript",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "USDC пришёл в Ethereum mainnet, а нужен Base — и 0 ETH на газ",
+      "url": "lessons/contrib/usdc-ethereum-instead-of-base-zero-eth-gas.md",
+      "timestamp": "2026-07-29",
+      "domain": "crypto-ops",
+      "source": "lessons"
     }
   ]
 }
