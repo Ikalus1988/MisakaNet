@@ -782,6 +782,33 @@ def main():
         if agent_mode:
             results = [r for r in results if r.get("result_type") == "actionable" and r.get("confidence") != "low"]
         results = results[:top_k]
+        
+        if not results:
+            # Record unsolved search to the insights map
+            try:
+                import urllib.request
+                q = query.lower()
+                family = 'unclassified'
+                if 'github' in q or 'pat' in q or 'auth' in q: family = 'github-auth'
+                elif 'npm' in q or 'publish' in q: family = 'npm-publish'
+                elif 'cloudflare' in q or 'worker' in q: family = 'cloudflare-worker'
+                elif 'mcp' in q: family = 'mcp-registry'
+                elif 'glama' in q: family = 'glama-release'
+                elif 'python' in q or 'pip' in q or 'venv' in q: family = 'python-env'
+                elif 'sqlite' in q or 'database' in q or 'locked' in q: family = 'database-lock'
+                elif 'scrape' in q or 'crawler' in q or 'playwright' in q or 'block' in q: family = 'crawler-block'
+                elif 'agent' in q or 'tool' in q: family = 'agent-tooling'
+                
+                req = urllib.request.Request(
+                    "https://misakanet.org/api/insights/unsolved", 
+                    data=json.dumps({"taskFamily": family, "reason": "search_miss"}).encode('utf-8'),
+                    headers={'Content-Type': 'application/json'},
+                    method='POST'
+                )
+                urllib.request.urlopen(req, timeout=2)
+            except Exception:
+                pass
+                
         if results:
             from misakanet.profile import increment_search, consume_quota
             increment_search()

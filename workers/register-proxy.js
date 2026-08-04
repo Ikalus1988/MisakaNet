@@ -189,6 +189,36 @@ async function handleDemandMap(request, env) {
   return jsonResponse({ buckets: await buildDemandMapBuckets(env) });
 }
 
+// GET /api/insights/unsolved-map -- public, returns demand map buckets for open analytics
+async function handleUnsolvedMap(request, env) {
+  if (!env.MISAKANET_KV) {
+    return jsonResponse({ buckets: [] });
+  }
+  return jsonResponse({ buckets: await buildDemandMapBuckets(env) });
+}
+
+// POST /api/insights/unsolved -- public endpoint to record unsolved searches
+async function handleUnsolvedSignal(request, env) {
+  if (request.method !== "POST") return jsonResponse({ error: "Method Not Allowed" }, 405);
+  try {
+    const body = await request.json();
+    if (!body.taskFamily || typeof body.taskFamily !== "string") {
+      return jsonResponse({ error: "Invalid taskFamily" }, 400);
+    }
+    // Do not record raw query or personal info, only reason and taskFamily
+    await recordUnsolvedSignal(env, {
+      taskFamily: body.taskFamily,
+      reason: typeof body.reason === "string" ? body.reason : "unspecified",
+      sourceId: body.sourceId,
+      day: body.day
+    });
+    return jsonResponse({ success: true });
+  } catch (e) {
+    return jsonResponse({ error: "Invalid request" }, 400);
+  }
+}
+
+
 // ── 从 GitHub API (带 Token) 获取文件内容 ──
 async function fetchFromGitHub(token, path, ref = "data") {
   const url = `${GITHUB_API}/repos/${REPO}/contents/${path}?ref=${encodeURIComponent(ref)}`;
@@ -259,6 +289,12 @@ async function handleApiRequest(pathWithQuery, env, request) {
   }
   if (pathname === "/api/insights/demand-map") {
     return handleDemandMap(request, env);
+  }
+  if (pathname === "/api/insights/unsolved-map") {
+    return handleUnsolvedMap(request, env);
+  }
+  if (pathname === "/api/insights/unsolved") {
+    return handleUnsolvedSignal(request, env);
   }
 
   const token = env.REGISTER_TOKEN;
@@ -534,6 +570,14 @@ async function handleHelpfulVote(request, env) {
 
   const kvKey = `helpful:${lessonId}`;
   try {
+    if (body.helpful === false) {
+      await recordUnsolvedSignal(env, {
+        taskFamily: "unclassified",
+        reason: "stale_lesson",
+        sourceId: lessonId
+      });
+      return jsonResponse({ lesson_id: lessonId, status: "recorded_as_stale" });
+    }
     const raw = await env.MISAKANET_KV.get(kvKey, "text");
     const current = raw ? parseInt(raw, 10) || 0 : 0;
     const newCount = current + 1;
