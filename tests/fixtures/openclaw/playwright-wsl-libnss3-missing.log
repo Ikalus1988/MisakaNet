@@ -1,0 +1,21 @@
+2026-06-13 21:48:02 [openclaw.cron.opire_v2] starting playwright fetch for app.opire.dev/home
+2026-06-13 21:48:02 [openclaw.tools.scrapling] selected fetcher: playwright (browser=true)
+2026-06-13 21:48:02 [openclaw.tools.playwright] BrowserType.launch(executable_path=None, headless=True, args=['--no-sandbox'])
+2026-06-13 21:48:03 [openclaw.tools.playwright] TRACE: launching /root/.cache/ms-playwright/chromium-1223/chrome-linux/chrome
+2026-06-13 21:48:03 [playwright._impl._driver] subprocess spawned pid=18472
+2026-06-13 21:48:03 [openclaw.tools.playwright] ERROR: BrowserType.launch: Failed to load libnss3.so
+2026-06-13 21:48:03 [openclaw.tools.playwright] Traceback (most recent call last):
+  File "/tmp/scrapling-venv/lib/python3.12/site-packages/playwright/_impl/_driver.py", line 487, in compute_driver_executable
+    self._driver = compute_driver_executable()
+  File "/tmp/scrapling-venv/lib/python3.12/site-packages/playwright/driver/package/lib/server/registry/index.js", line 1098, in launch
+    throw new Error('Failed to load ' + lib + '. Try running "playwright install-deps".');
+  File "/tmp/scrapling-venv/lib/python3.12/site-packages/playwright/driver/package/lib/server/registry/index.js", line 1102, in launch
+Error: Failed to load libnss3.so
+2026-06-13 21:48:03 [openclaw.tools.playwright] hint: try `playwright install-deps` or set executable_path to a system chromium that ships with libnss3
+2026-06-13 21:48:03 [openclaw.cron.opire_v2] ERROR: fetcher failed, falling back to curl_cffi
+2026-06-13 21:48:03 [openclaw.tools.scrapling] fallback to curl_cffi (no browser)
+2026-06-13 21:48:04 [openclaw.tools.scrapling] curl_cffi fetched 11.2 KB (status=200, ttfb=412ms)
+2026-06-13 21:48:04 [openclaw.cron.opire_v2] parse stage: scrapling parse (no JS execution)
+2026-06-13 21:48:04 [openclaw.cron.opire_v2] warning: SPA page may not have rendered client-side content; partial data only
+2026-06-13 21:48:04 [openclaw.cron.opire_v2] done (degraded): bounties=0 (real value expected, fallback path)
+2026-06-13 21:48:04 [openclaw.cron.opire_v2] post-mortem: --heal recommended; lesson candidate: libnss3 missing on WSL2 image

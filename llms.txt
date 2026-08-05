@@ -1,0 +1,59 @@
+# MisakaNet — Agent Onboarding
+
+MisakaNet is a shared failure-memory network for developers and agents.
+Search 244 verified debugging lessons before re-debugging known problems.
+
+## Quick Start
+
+1. Search: `python3 search_knowledge.py "your error"`
+2. If no result: POST a redacted diagnostic to `/api/intake`
+3. Default consent: `private_only`
+4. Never upload raw logs, secrets, or personal identifiers
+
+## MCP Server
+
+- Name: `io.github.Ikalus1988/misakanet`
+- Transport: stdio
+- Install: `pip install misakanet-core`
+- Run: `python3 scripts/mcp_server.py`
+
+## Tools
+
+- `misakanet_search` — search lessons by query
+- `misakanet_get_lesson` — get lesson by ID or path
+- `misakanet_submit_usage` — report lesson usage (experimental)
+
+## Resources
+
+- `misaka://lessons/index` — browse all lessons
+- `misaka://protocol/overview` — protocol config
+- `misaka://docs/readme` — project overview
+
+## Intake Policy
+
+Read: https://github.com/Ikalus1988/MisakaNet/blob/main/docs/onboarding/agent-intake.md
+
+- Redacted diagnostics only
+- Private by default
+- Human consent required for public lessons
+- No raw logs, no secrets, no personal identifiers
+
+## Important Queries
+
+These return high-signal lessons:
+
+- DCO sign-off failed
+- GitHub token secret scan
+- pip install timeout
+- database locked
+- WSL permission denied
+- FANUC error codes
+- MCP server not discovered
+
+## Links
+
+- Repository: https://github.com/Ikalus1988/MisakaNet
+- Search: https://misakanet.org/search/
+- MCP Registry: io.github.Ikalus1988/misakanet
+- PyPI: pypi.org/project/misakanet
+- Glama: glama.ai/mcp/servers/Ikalus1988/MisakaNet

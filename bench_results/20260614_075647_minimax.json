@@ -1,0 +1,22 @@
+{
+  "run_id": "20260614_075647",
+  "agent": "minimax",
+  "model": "abab6.5s-chat",
+  "timestamp": "2026-06-14T07:56:47.384513Z",
+  "total_tasks": 1,
+  "passed": 1,
+  "failed": 0,
+  "skipped": 0,
+  "total_api_time": 0.2,
+  "results": [
+    {
+      "task_id": "lesson-dco-auto-fix-workflow",
+      "title": "DCO 自动修复工作流 — /fix-dco 命令设计与实现",
+      "domain": "devops",
+      "agent_reply_chars": 46,
+      "elapsed_seconds": 0.2,
+      "verify_status": "PASS",
+      "verify_detail": "  OK: task valid"
+    }
+  ]
+}

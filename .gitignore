@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.cache/
+node_modules/
+misakanet/profile.json
+misakanet/.quota.json
+*.pyo
+venv/
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+*.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# RAG runtime data
+rag_chromadb/
+audit_reports/
+*.pkl
+
+# Large files
+*.rar
+*.zip
+*.7z
+*.exe
+scripts/_*.py
+workers/wrangler.api.jsonc
+.wrangler/
+.dev.vars*
+!.dev.vars.example
+!.env.example
+
+# Local agent/workflow runtime artifacts
+.coverage
+.hydra/
+.worktrees/
+data/sag.db
+
+# Crawler flywheel metrics (local tracking)
+data/crawler_flywheel.jsonl
+
+# Hub runtime/generated artifacts (regenerable, not source-of-truth)
+hub/storage/audit.jsonl
+hub/storage/skill_index.json
+
+# Usage meter runtime data (local tracking)
+data/usage_credits.jsonl
+data/contribution_queue.jsonl
+
+# local search quality feedback (issue #604)
+data/search-feedback.jsonl

@@ -1,0 +1,68 @@
+name: Auto-Merge Docs PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    # Only run on PRs that are:
+    # 1. From external contributors (not from Ikalus1988 or zsxh1990)
+    # 2. Docs-only (no code changes)
+    # 3. Labeled 'good first issue' or 'area:docs'
+    # 4. Not draft
+    if: >
+      !github.event.pull_request.draft &&
+      github.event.pull_request.user.login != 'Ikalus1988' &&
+      github.event.pull_request.user.login != 'zsxh1990' &&
+      (
+        contains(github.event.pull_request.labels.*.name, 'good first issue') ||
+        contains(github.event.pull_request.labels.*.name, 'area:docs')
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if docs-only
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
+
+            const docsOnly = files.data.every(f =>
+              f.filename.endsWith('.md') ||
+              f.filename.endsWith('.txt') ||
+              f.filename.startsWith('docs/') ||
+              f.filename.startsWith('lessons/') ||
+              f.filename === 'CONTRIBUTING.md' ||
+              f.filename === 'README.md' ||
+              f.filename === 'JOIN.md' ||
+              f.filename === 'CHANGELOG.md'
+            );
+
+            core.setOutput('docs-only', docsOnly);
+            core.info(`Docs-only: ${docsOnly} (${files.data.length} files)`);
+
+      - name: Enable auto-merge
+        if: steps.check.outputs.docs-only == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUM="${{ github.event.pull_request.number }}"
+
+          # Enable auto-merge with squash
+          gh pr merge "$PR_NUM" \
+            --repo "${{ github.repository }}" \
+            --squash \
+            --auto \
+            --delete-branch
+
+          echo "Auto-merge enabled for PR #$PR_NUM (docs-only)"
