@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-05T14:35:55.393473+00:00",
+  "generated_at": "2026-08-05T16:54:28.065476+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 15,
+  "item_count": 14,
   "items": [
     {
       "type": "merged_pr",
@@ -30,13 +30,6 @@
       "title": "docs: clarify Glama-routed MCP analytics",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/797",
       "timestamp": "2026-08-04T01:53:47Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(blog): first-call contributor intro (#782)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/784",
-      "timestamp": "2026-08-03T15:57:34Z",
       "source": "github"
     },
     {
