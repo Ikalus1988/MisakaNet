@@ -1,79 +1,42 @@
 {
-  "generated_at": "2026-08-05T16:54:28.065476+00:00",
+  "generated_at": "2026-08-05T19:57:21.548353+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 14,
+  "item_count": 15,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(deps): bump undici from 7.28.0 to 7.29.0 in /web",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/803",
-      "timestamp": "2026-08-04T15:51:08Z",
+      "title": "experiment: declare remote endpoint in glama.json",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/817",
+      "timestamp": "2026-08-05T17:07:59Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): add 4 session lessons from 2026-08-04",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/801",
-      "timestamp": "2026-08-04T15:50:59Z",
+      "title": "feat(trust): add evidence levels E0-E4 for lessons (#786)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/810",
+      "timestamp": "2026-08-05T17:02:17Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(mcp): use correct BM25 search API in MCP server",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/800",
-      "timestamp": "2026-08-04T15:50:34Z",
+      "title": "feat(insights): add privacy-preserving unsolved failure map (#788)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/809",
+      "timestamp": "2026-08-05T17:01:15Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs: clarify Glama-routed MCP analytics",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/797",
-      "timestamp": "2026-08-04T01:53:47Z",
+      "title": "feat(health): add repeatable public site health snapshot (#783)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/808",
+      "timestamp": "2026-08-05T17:00:50Z",
       "source": "github"
     },
     {
-      "type": "challenge",
-      "title": "[Analytics] Add privacy-preserving unsolved failure map",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/788",
-      "labels": [
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition",
-        "pool:roadmap",
-        "priority:later"
-      ],
-      "timestamp": "2026-08-03T10:05:20Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Trust] Add evidence levels for failure-recovery lessons",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/786",
-      "labels": [
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition",
-        "pool:roadmap",
-        "priority:later"
-      ],
-      "timestamp": "2026-08-03T10:04:09Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Health] Add recurring public site health snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/783",
-      "labels": [
-        "area:docs",
-        "ready",
-        "bounty",
-        "status:competition",
-        "priority:later"
-      ],
-      "timestamp": "2026-08-03T07:10:20Z",
+      "type": "merged_pr",
+      "title": "Update fix: resolve corrupt and malformed lesson metadata fr",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/812",
+      "timestamp": "2026-08-05T17:00:29Z",
       "source": "github"
     },
     {
@@ -104,6 +67,21 @@
         "纯文档"
       ],
       "timestamp": "2026-08-02T06:59:51Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[P3][Benchmark] Build 10-task Agent Self-Healing mini benchmark",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/682",
+      "labels": [
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:deep",
+        "priority:later"
+      ],
+      "timestamp": "2026-07-31T11:01:15Z",
       "source": "github"
     },
     {
@@ -145,6 +123,44 @@
       "timestamp": "2026-07-29",
       "domain": "crypto-ops",
       "source": "lessons"
+    },
+    {
+      "type": "challenge",
+      "title": "[Cleanup] Review near-duplicate Feishu bot setup lessons",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/552",
+      "labels": [
+        "good first issue",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "zero-bounty",
+        "status:competition",
+        "pool:quick",
+        "priority:later",
+        "纯文档"
+      ],
+      "timestamp": "2026-07-21T02:30:51Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Bounty][$0][agent competition] Blind test homepage SAG-Lite lesson search",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/429",
+      "labels": [
+        "good first issue",
+        "area:tests",
+        "needs-ac",
+        "ready",
+        "agent-friendly",
+        "no-credentials",
+        "zero-bounty",
+        "has-test",
+        "status:competition",
+        "pool:quick",
+        "priority:later"
+      ],
+      "timestamp": "2026-07-09T07:03:41Z",
+      "source": "github"
     }
   ]
 }
