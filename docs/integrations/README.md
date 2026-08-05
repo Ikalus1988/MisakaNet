@@ -6,6 +6,7 @@ Connect MisakaNet to your AI coding tool. Search 271+ failure-recovery lessons d
 
 | Tool | Status | Setup |
 |------|--------|-------|
+| **Remote MCP** | ✅ Ready | [Streamable HTTP Guide](mcp-remote.md) |
 | **Cursor** | ✅ Ready | [Failure-memory rule](cursor-failure-memory.md) |
 | **Claude Code** | ✅ Ready | [Failure playbook](claude-code-failure-memory.md) |
 | **Continue.dev** | ✅ Ready | [Setup Guide](continue/README.md) |

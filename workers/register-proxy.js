@@ -30,7 +30,7 @@ const PROXY_CACHE_TTL = 30_000;
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 function jsonResponse(body, status = 200) {
@@ -545,6 +545,248 @@ async function handleHelpfulVote(request, env) {
   }
 }
 
+// ── Remote Streamable MCP 端点 (#804) ──
+function validateMcpAuthAndOrigin(request, env) {
+  if (env && env.MCP_BEARER_TOKEN) {
+    const authHeader = request.headers.get("Authorization") || request.headers.get("authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return { ok: false, response: jsonResponse({ error: "Unauthorized" }, 401) };
+    }
+    const token = authHeader.slice(7).trim();
+    if (!timingSafeEqual(token, env.MCP_BEARER_TOKEN)) {
+      return { ok: false, response: jsonResponse({ error: "Unauthorized" }, 401) };
+    }
+  }
+
+  if (env && env.ALLOWED_ORIGINS) {
+    const origin = request.headers.get("Origin") || request.headers.get("origin") || "";
+    const allowedList = String(env.ALLOWED_ORIGINS).split(",").map((s) => s.trim()).filter(Boolean);
+    if (origin && allowedList.length > 0 && !allowedList.includes(origin)) {
+      return { ok: false, response: jsonResponse({ error: "Forbidden origin" }, 403) };
+    }
+  }
+
+  return { ok: true };
+}
+
+async function getLessons(env) {
+  if (env && env.LESSONS_DATA && Array.isArray(env.LESSONS_DATA)) {
+    return env.LESSONS_DATA;
+  }
+  if (env && env.REGISTER_TOKEN) {
+    try {
+      const data = await getWithCache(env, "proxy:lessons", () =>
+        fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data")
+      );
+      if (Array.isArray(data)) return data;
+    } catch { /* fetch failed */ }
+  }
+  if (env && env.MISAKANET_KV) {
+    try {
+      const cached = await env.MISAKANET_KV.get("proxy:lessons", "json");
+      if (cached && cached.data && Array.isArray(cached.data)) {
+        return cached.data;
+      }
+    } catch { /* KV fallback */ }
+  }
+  return [];
+}
+
+async function executeWorkerSearch(env, { query = "", domain = "", top = 5 } = {}) {
+  if (!query || typeof query !== "string") {
+    return { error: "query is required" };
+  }
+
+  const lessons = await getLessons(env);
+  const qTerms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const targetDomain = domain ? domain.toLowerCase() : null;
+
+  const scored = [];
+  for (const lesson of lessons) {
+    if (targetDomain && lesson.domain && lesson.domain.toLowerCase() !== targetDomain) {
+      continue;
+    }
+
+    let score = 0;
+    const title = (lesson.title || "").toLowerCase();
+    const tags = Array.isArray(lesson.tags) ? lesson.tags.map((t) => String(t).toLowerCase()) : [];
+    const summary = (lesson.summary || "").toLowerCase();
+    const preview = (lesson.preview || "").toLowerCase();
+    const id = (lesson.id || "").toLowerCase();
+
+    for (const term of qTerms) {
+      if (title.includes(term)) score += 5;
+      if (id.includes(term)) score += 3;
+      if (tags.some((t) => t.includes(term))) score += 3;
+      if (summary.includes(term)) score += 2;
+      if (preview.includes(term)) score += 1;
+    }
+
+    if (score > 0) {
+      scored.push({
+        id: lesson.id,
+        title: lesson.title,
+        path: lesson.url || `lessons/${lesson.domain || "core"}/${lesson.id}.md`,
+        score,
+        domain: lesson.domain,
+        summary: lesson.summary,
+        status: lesson.status || "published",
+      });
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  const results = scored.slice(0, Math.max(1, top));
+  return { results, source: "worker-native" };
+}
+
+async function executeWorkerGetLesson(env, { path = "", id = "" } = {}) {
+  const pathOrId = path || id;
+  if (!pathOrId) {
+    return { error: "path or id is required" };
+  }
+
+  const lessons = await getLessons(env);
+  const cleanTarget = pathOrId.replace(/^lessons\/(core|contrib)\//, "").replace(/\.md$/, "");
+
+  const found = lessons.find(
+    (l) => l.id === pathOrId || l.url === pathOrId || l.id === cleanTarget
+  );
+
+  if (!found) {
+    return { error: `Lesson not found: ${pathOrId}` };
+  }
+
+  return {
+    path: found.url || `lessons/${found.domain || "core"}/${found.id}.md`,
+    content: (found.preview || found.summary || "").slice(0, 5000),
+  };
+}
+
+const REMOTE_MCP_TOOLS = [
+  {
+    name: "misakanet_search",
+    description: "Search MisakaNet's public failure-lesson index by error text, keyword, or topic.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Required error message, keyword, or topic." },
+        domain: { type: "string", description: "Optional domain filter (devops, python, network, feishu, rag, fanuc, mcp)." },
+        top: { type: "integer", description: "Maximum ranked results to return. Defaults to 5." },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "misakanet_get_lesson",
+    description: "Fetch one public MisakaNet lesson by repository path or lesson ID.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Lesson path relative to repository." },
+        id: { type: "string", description: "Lesson ID." },
+      },
+    },
+  },
+];
+
+async function handleRemoteMcpRequest(request, env) {
+  const authVal = validateMcpAuthAndOrigin(request, env);
+  if (!authVal.ok) {
+    return authVal.response;
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse(
+      {
+        jsonrpc: "2.0",
+        id: null,
+        error: { code: -32700, message: "Parse error" },
+      },
+      400
+    );
+  }
+
+  const { jsonrpc = "2.0", method, params = {}, id = null } = body || {};
+
+  if (method === "initialize") {
+    return jsonResponse({
+      jsonrpc: "2.0",
+      id,
+      result: {
+        protocolVersion: "2025-06-18",
+        capabilities: {
+          tools: {},
+        },
+        serverInfo: {
+          name: "misakanet-worker",
+          version: "2.15.0",
+        },
+      },
+    });
+  }
+
+  if (method === "notifications/initialized") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+
+  if (method === "tools/list") {
+    return jsonResponse({
+      jsonrpc: "2.0",
+      id,
+      result: { tools: REMOTE_MCP_TOOLS },
+    });
+  }
+
+  if (method === "tools/call") {
+    const toolName = params.name;
+    const toolArgs = params.arguments || {};
+
+    if (toolName === "misakanet_search") {
+      const result = await executeWorkerSearch(env, toolArgs);
+      return jsonResponse({
+        jsonrpc: "2.0",
+        id,
+        result: {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+        },
+      });
+    }
+
+    if (toolName === "misakanet_get_lesson") {
+      const result = await executeWorkerGetLesson(env, toolArgs);
+      return jsonResponse({
+        jsonrpc: "2.0",
+        id,
+        result: {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+        },
+      });
+    }
+
+    return jsonResponse({
+      jsonrpc: "2.0",
+      id,
+      error: {
+        code: -32601,
+        message: `Method or tool not found: ${toolName}`,
+      },
+    });
+  }
+
+  return jsonResponse({
+    jsonrpc: "2.0",
+    id,
+    error: {
+      code: -32601,
+      message: `Method not found: ${method}`,
+    },
+  });
+}
+
 // ── 主入口 (仅 API + 注册，静态文件由 Cloudflare Pages 独立服务) ──
 export default {
   async fetch(request, env) {
@@ -553,6 +795,11 @@ export default {
     // CORS preflight
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: CORS_HEADERS });
+    }
+
+    // POST /mcp — Remote Streamable MCP endpoint
+    if (request.method === "POST" && url.pathname === "/mcp") {
+      return await handleRemoteMcpRequest(request, env);
     }
 
     // API 路由 (GET) — 传入完整 URL（含 query params）支持 GitHub API 代理
@@ -603,4 +850,8 @@ export {
   buildDemandMapBuckets,
   handleDemandBoard,
   handleDemandMap,
+  validateMcpAuthAndOrigin,
+  executeWorkerSearch,
+  executeWorkerGetLesson,
+  handleRemoteMcpRequest,
 };
