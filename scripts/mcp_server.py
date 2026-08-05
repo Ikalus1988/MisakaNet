@@ -544,12 +544,59 @@ def handle_request(request: dict) -> dict:
             "error": {"code": -32601, "message": f"Unknown method: {method}"},
         }
 
+def run_sse_server(host: str = "0.0.0.0", port: int = 8000):
+    """Remote Streamable HTTP / SSE Endpoint katmanı."""
+    from mcp.server.sse import SseServerTransport
+    from starlette.applications import Starlette
+    from starlette.routing import Route
+    import uvicorn
+
+    sse = SseServerTransport("/messages")
+
+    async def handle_sse(request):
+        async with sse.connect_sse(
+            request.scope, request.receive, request._send
+        ) as streams:
+            await app_server.run(
+                streams[0], streams[1], app_server.create_initialization_options()
+            )
+
+    async def handle_messages(request):
+        await sse.handle_post_message(request.scope, request.receive, request._send)
+
+    starlette_app = Starlette(
+        routes=[
+            Route("/sse", endpoint=handle_sse),
+            Route("/messages", endpoint=handle_messages, methods=["POST"]),
+        ]
+    )
+
+    sys.stderr.write(f"🚀 MisakaNet Remote MCP HTTP Endpoint: http://{host}:{port}/sse\n")
+    uvicorn.run(starlette_app, host=host, port=port)
 
 def main():
-    """MCP stdio server loop."""
-    # Write to stderr for debug (stdout is for MCP protocol)
+    """MCP server entrypoint (stdio & SSE transport support)."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="MisakaNet MCP Server")
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "sse"],
+        default="stdio",
+        help="Transport type (stdio or sse)",
+    )
+    parser.add_argument("--port", type=int, default=8000, help="SSE Server port")
+    args = parser.parse_args()
+
+    if args.transport == "sse":
+        run_sse_server(port=args.port)
+        return
+
+    # Default stdio server loop
     sys.stderr.write("MisakaNet MCP Server started\n")
-    sys.stderr.write(f"SAG-Lite: {'available' if HAS_SAG else 'not available (run build_sag_index.py)'}\n")
+    sys.stderr.write(
+        f"SAG-Lite: {'available' if HAS_SAG else 'not available (run build_sag_index.py)'}\n"
+    )
     sys.stderr.write(f"BM25: {'available' if HAS_BM25 else 'not available'}\n")
 
     for line in sys.stdin:
@@ -570,3 +617,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
