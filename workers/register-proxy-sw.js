@@ -47,8 +47,17 @@ function jsonResponse(body, status = 200) {
   });
 }
 
+// atob() yields one char per byte, so multi-byte UTF-8 (the Chinese lessons)
+// would come back as mojibake without decoding the bytes explicitly.
+function decodeBase64Utf8(b64) {
+  const binary = atob(String(b64).replace(/\s/g, ""));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder("utf-8").decode(bytes);
+}
+
 // ── GitHub API fetch with token ──
-async function fetchFromGitHub(token, path, ref = "data") {
+async function fetchTextFromGitHub(token, path, ref = "data") {
   const url = `${GITHUB_API}/repos/${REPO}/contents/${path}?ref=${encodeURIComponent(ref)}`;
   const resp = await fetch(url, {
     headers: { Authorization: `Bearer ${token}`, "User-Agent": "MisakaNet-Worker", Accept: "application/vnd.github.v3+json" },
@@ -56,7 +65,11 @@ async function fetchFromGitHub(token, path, ref = "data") {
   if (!resp.ok) throw new Error(`GitHub API ${resp.status}`);
   const data = await resp.json();
   if (!data.content || data.encoding !== "base64") throw new Error("Unexpected GitHub response");
-  return JSON.parse(atob(data.content));
+  return decodeBase64Utf8(data.content);
+}
+
+async function fetchFromGitHub(token, path, ref = "data") {
+  return JSON.parse(await fetchTextFromGitHub(token, path, ref));
 }
 
 // ── KV cache wrapper ──
@@ -79,6 +92,421 @@ function sanitizeIdentifier(val, maxLen) {
   if (val.length > maxLen) val = val.slice(0, maxLen);
   // 只允许字母、数字、下划线、连字符、中文
   return val.replace(/[^\w\u4e00-\u9fa5\-]/g, "");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Remote MCP endpoint — POST /mcp (Issue #804)
+//
+// Streamable HTTP transport, Phase 1 = read-only: misakanet_search and
+// misakanet_get_lesson. Any MCP client (Claude, Cursor, Copilot, Glama) can
+// connect without cloning the repo. Writes (submit_usage, usage_status) are
+// deliberately out of scope here.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const MCP_PATH = "/mcp";
+const MCP_DEFAULT_PROTOCOL = "2025-06-18";
+// Newest first — 2026-07-28 is the forward-compat RC, 2025-03-26 the legacy fallback.
+const MCP_SUPPORTED_PROTOCOLS = ["2026-07-28", "2025-06-18", "2025-03-26"];
+// Used when the MCP_VERSION secret is unset. Kept in sync with pyproject.toml
+// by tests/test_mcp_remote_worker.py.
+const MCP_FALLBACK_VERSION = "2.15.0";
+const MCP_LESSON_REF = "main";
+const MCP_INDEX_PATH = "lessons.json";
+const MCP_INDEX_REF = "data";
+const MCP_MAX_BODY = 65_536;
+const MCP_MAX_RESULTS = 20;
+const MCP_LESSON_MAX_CHARS = 5000;
+
+// Origin allowlist (DNS rebinding protection). Non-browser MCP clients send no
+// Origin header at all; only a *present and unknown* Origin is rejected.
+const MCP_ALLOWED_ORIGINS = [
+  "https://misakanet.org",
+  "https://www.misakanet.org",
+  "https://ikalus1988.github.io",
+  "https://glama.ai",
+  "https://claude.ai",
+  "https://cursor.com",
+];
+
+const MCP_TOOLS = [
+  {
+    name: "misakanet_search",
+    description:
+      "Search MisakaNet's public failure-lesson index by error text, keyword, or topic. " +
+      "Use when you need to discover relevant lessons and do not already know a lesson ID. " +
+      "Input: query is required; domain optionally filters by lesson domain; top limits ranked " +
+      "results (default 5, max 20). Output: JSON with results[] of ranked lesson summaries " +
+      "(id, title, domain, tags, status, path, score) plus count and source. Error cases: missing " +
+      "query, or upstream index unavailable. Side effects: none — read-only. Do not send private " +
+      "logs or prompts; search with redacted snippets only. Use misakanet_get_lesson for full content.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Required redacted error message, keyword, or topic (for example: 'database is locked')." },
+        domain: { type: "string", description: "Optional domain filter such as devops, python, network, rag, or mcp." },
+        top: { type: "integer", description: "Maximum ranked results to return. Defaults to 5, capped at 20." },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "misakanet_get_lesson",
+    description:
+      "Fetch one public MisakaNet lesson as markdown, by repository path or lesson ID. Use after " +
+      "misakanet_search returns a promising result, or when a lesson is explicitly referenced; not " +
+      "for broad discovery. Input: provide either path (lessons/<dir>/<id>.md) or id. Output: JSON " +
+      "with path, content (truncated to 5000 characters), length, and truncated flag. Error cases: " +
+      "missing path/id, or lesson not found. Side effects: none — read-only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Lesson path relative to the repository, for example lessons/core/auto-merge-ci-pipeline.md." },
+        id: { type: "string", description: "Lesson ID, usually the filename without .md, for example auto-merge-ci-pipeline." },
+      },
+    },
+  },
+];
+
+function mcpTimingSafeEqual(a, b) {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length || a.length === 0) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return mismatch === 0;
+}
+
+function mcpBearerToken(request) {
+  const header = (request.headers.get("Authorization") || "").trim();
+  const match = /^Bearer\s+(.+)$/i.exec(header);
+  return match ? match[1].trim() : "";
+}
+
+function mcpOriginAllowed(origin, env = {}) {
+  if (!origin) return true; // curl / native MCP hosts never send Origin
+  const extra = String(env.MCP_ALLOWED_ORIGINS || "").split(",").map((o) => o.trim()).filter(Boolean);
+  return MCP_ALLOWED_ORIGINS.includes(origin) || extra.includes(origin);
+}
+
+function mcpCorsHeaders(origin, env) {
+  const headers = {
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type, MCP-Protocol-Version, Mcp-Session-Id",
+    "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
+  };
+  // Only echo an Origin that already passed the allowlist above.
+  if (origin && mcpOriginAllowed(origin, env)) headers["Access-Control-Allow-Origin"] = origin;
+  return headers;
+}
+
+function mcpJson(body, status, origin, env, extraHeaders = {}) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "content-type": "application/json",
+      "Cache-Control": "no-store",
+      ...mcpCorsHeaders(origin, env),
+      ...extraHeaders,
+    },
+  });
+}
+
+function mcpErrorBody(id, code, message) {
+  return { jsonrpc: "2.0", id: id ?? null, error: { code, message } };
+}
+
+function mcpServerVersion(env) {
+  return String(env.MCP_VERSION || MCP_FALLBACK_VERSION);
+}
+
+// ── Ranking ──
+// Lightweight keyword scoring over the lessons.json index. CJK queries have no
+// whitespace, so CJK tokens also contribute their character bigrams.
+function mcpTokenize(text) {
+  const tokens = [];
+  for (const raw of String(text).toLowerCase().split(/[^\p{L}\p{N}_]+/u)) {
+    if (!raw) continue;
+    const isCjk = /[\u3400-\u9fff\u3040-\u30ff]/.test(raw); // CJK ideographs + kana
+    if (raw.length >= 2 || isCjk) tokens.push(raw);
+    if (isCjk && raw.length > 2) {
+      for (let i = 0; i < raw.length - 1; i++) tokens.push(raw.slice(i, i + 2));
+    }
+  }
+  return [...new Set(tokens)];
+}
+
+const MCP_FIELD_WEIGHTS = [
+  ["title", 5],
+  ["tags", 4],
+  ["id", 3],
+  ["domain", 3],
+  ["summary", 2],
+  ["preview", 1],
+];
+
+function mcpScoreLesson(lesson, tokens, phrase) {
+  const fields = {
+    title: String(lesson.title || ""),
+    tags: Array.isArray(lesson.tags) ? lesson.tags.join(" ") : String(lesson.tags || ""),
+    id: String(lesson.id || ""),
+    domain: String(lesson.domain || ""),
+    summary: String(lesson.summary || ""),
+    preview: String(lesson.preview || ""),
+  };
+
+  let score = 0;
+  for (const [field, weight] of MCP_FIELD_WEIGHTS) {
+    const hay = fields[field].toLowerCase();
+    if (!hay) continue;
+    for (const token of tokens) if (hay.includes(token)) score += weight;
+    if (phrase.length >= 3 && hay.includes(phrase)) score += weight * 2;
+  }
+  if (score === 0) return 0;
+
+  if (lesson.verified) score += 1;
+  if (lesson.status && lesson.status !== "active") score -= 1;
+  const confidence = typeof lesson.confidence === "number" ? lesson.confidence : 0.5;
+  return Math.round((score + confidence) * 1000) / 1000;
+}
+
+function mcpRankLessons(lessons, { query, domain, top = 5 } = {}) {
+  const tokens = mcpTokenize(query);
+  const phrase = String(query).toLowerCase().trim();
+  const wantedDomain = domain ? String(domain).toLowerCase() : null;
+
+  const scored = [];
+  for (const lesson of Array.isArray(lessons) ? lessons : []) {
+    if (!lesson || typeof lesson !== "object") continue;
+    if (wantedDomain && String(lesson.domain || "").toLowerCase() !== wantedDomain) continue;
+    const score = mcpScoreLesson(lesson, tokens, phrase);
+    if (score > 0) scored.push({ lesson, score });
+  }
+
+  scored.sort((a, b) => b.score - a.score || String(a.lesson.id || "").localeCompare(String(b.lesson.id || "")));
+  return scored.slice(0, top).map(({ lesson, score }) => ({
+    id: lesson.id || null,
+    title: lesson.title || null,
+    domain: lesson.domain || null,
+    tags: Array.isArray(lesson.tags) ? lesson.tags : [],
+    status: lesson.status || null,
+    verified: !!lesson.verified,
+    path: lesson.url || null,
+    score,
+  }));
+}
+
+// Only repository lesson markdown is reachable — no traversal, no other paths.
+function mcpSafeLessonPath(candidate) {
+  const path = String(candidate || "").replace(/^\.\//, "").trim();
+  if (path.includes("..")) return null;
+  if (!/^lessons\/[A-Za-z0-9._/-]+\.md$/.test(path)) return null;
+  return path;
+}
+
+async function mcpLoadLessons(env) {
+  const token = env.REGISTER_TOKEN;
+  if (!token) throw new Error("REGISTER_TOKEN not configured");
+  // Same cache key as GET /api/lessons — one index fetch serves both.
+  return getWithCache(env, "proxy:lessons", () => fetchFromGitHub(token, MCP_INDEX_PATH, MCP_INDEX_REF));
+}
+
+async function mcpToolSearch(args, env) {
+  const query = typeof args.query === "string" ? args.query.trim() : "";
+  if (!query) return { error: "query is required" };
+
+  const requestedTop = parseInt(args.top, 10);
+  const top = Math.min(Math.max(Number.isFinite(requestedTop) ? requestedTop : 5, 1), MCP_MAX_RESULTS);
+  const lessons = await mcpLoadLessons(env);
+  const results = mcpRankLessons(lessons, { query, domain: args.domain, top });
+
+  return { query, count: results.length, results, source: "misakanet-worker" };
+}
+
+// path wins when given; otherwise resolve the ID through the index, falling
+// back to the two conventional lesson directories.
+async function mcpLessonCandidates(args, env) {
+  const explicit = mcpSafeLessonPath(args.path);
+  if (explicit) return [explicit];
+
+  const raw = typeof args.id === "string" && args.id ? args.id : args.path;
+  const id = sanitizeIdentifier(String(raw || "").replace(/\.md$/, ""), 120);
+  if (!id) return [];
+
+  const candidates = [];
+  try {
+    const lessons = await mcpLoadLessons(env);
+    const hit = (Array.isArray(lessons) ? lessons : []).find(
+      (lesson) => lesson && String(lesson.id || "").toLowerCase() === id.toLowerCase(),
+    );
+    const indexed = hit && mcpSafeLessonPath(hit.url);
+    if (indexed) candidates.push(indexed);
+  } catch { /* index unavailable — fall through to the conventional paths */ }
+
+  for (const dir of ["core", "contrib"]) {
+    const guess = mcpSafeLessonPath(`lessons/${dir}/${id}.md`);
+    if (guess && !candidates.includes(guess)) candidates.push(guess);
+  }
+  return candidates;
+}
+
+async function mcpToolGetLesson(args, env) {
+  if (!args.path && !args.id) return { error: "path or id is required" };
+
+  const token = env.REGISTER_TOKEN;
+  if (!token) throw new Error("REGISTER_TOKEN not configured");
+
+  const candidates = await mcpLessonCandidates(args, env);
+  if (!candidates.length) return { error: `Lesson not found: ${String(args.path || args.id).slice(0, 120)}` };
+
+  for (const path of candidates) {
+    let markdown;
+    try {
+      markdown = await fetchTextFromGitHub(token, path, MCP_LESSON_REF);
+    } catch {
+      continue;
+    }
+    const truncated = markdown.length > MCP_LESSON_MAX_CHARS;
+    return {
+      path,
+      length: markdown.length,
+      truncated,
+      content: truncated ? markdown.slice(0, MCP_LESSON_MAX_CHARS) : markdown,
+    };
+  }
+
+  return { error: `Lesson not found: ${String(args.path || args.id).slice(0, 120)}` };
+}
+
+async function mcpCallTool(name, args, env) {
+  const handlers = {
+    misakanet_search: mcpToolSearch,
+    misakanet_get_lesson: mcpToolGetLesson,
+  };
+  const handler = handlers[name];
+  if (!handler) return null;
+
+  let payload;
+  try {
+    payload = await handler(args && typeof args === "object" ? args : {}, env);
+  } catch (err) {
+    payload = { error: `Upstream failure: ${err.message}` };
+  }
+
+  // Tool-level failures stay inside the result with isError, per MCP spec —
+  // only protocol failures become JSON-RPC errors.
+  return {
+    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+    isError: !!payload.error,
+  };
+}
+
+// Returns a JSON-RPC response object, or null for notifications (nothing to send back).
+async function mcpDispatch(message, env) {
+  const id = message.id ?? null;
+  const method = String(message.method || "");
+  const params = message.params && typeof message.params === "object" ? message.params : {};
+
+  if (method.startsWith("notifications/")) return null;
+
+  switch (method) {
+    case "initialize": {
+      const requested = String(params.protocolVersion || "");
+      const negotiated = MCP_SUPPORTED_PROTOCOLS.includes(requested) ? requested : MCP_DEFAULT_PROTOCOL;
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          protocolVersion: negotiated,
+          capabilities: { tools: { listChanged: false } },
+          serverInfo: { name: "misakanet", title: "MisakaNet", version: mcpServerVersion(env) },
+          instructions:
+            "MisakaNet is a cross-agent index of failure lessons. Search it with misakanet_search " +
+            "before debugging a recurring error, then read the full lesson with misakanet_get_lesson. " +
+            "Read-only: never send private logs, prompts, or secrets.",
+        },
+      };
+    }
+
+    case "ping":
+      return { jsonrpc: "2.0", id, result: {} };
+
+    case "tools/list":
+      return { jsonrpc: "2.0", id, result: { tools: MCP_TOOLS } };
+
+    case "tools/call": {
+      const name = String(params.name || "");
+      const result = await mcpCallTool(name, params.arguments, env);
+      if (!result) return mcpErrorBody(id, -32602, `Unknown tool: ${name}`);
+      console.log(`[mcp] tools/call ${name}`);
+      return { jsonrpc: "2.0", id, result };
+    }
+
+    default:
+      return mcpErrorBody(id, -32601, `Method not found: ${method}`);
+  }
+}
+
+async function handleMcpRequest(request, env) {
+  const origin = request.headers.get("Origin");
+
+  // 1. Origin allowlist — DNS rebinding protection, checked before auth.
+  if (!mcpOriginAllowed(origin, env)) {
+    return mcpJson(mcpErrorBody(null, -32000, "Forbidden origin"), 403, null, env);
+  }
+
+  // 2. Bearer auth.
+  if (!env.MCP_TOKEN) {
+    return mcpJson(mcpErrorBody(null, -32000, "MCP endpoint not configured (MCP_TOKEN missing)"), 503, origin, env);
+  }
+  if (!mcpTimingSafeEqual(mcpBearerToken(request), String(env.MCP_TOKEN))) {
+    return mcpJson(mcpErrorBody(null, -32001, "Unauthorized"), 401, origin, env, {
+      "WWW-Authenticate": 'Bearer realm="misakanet-mcp"',
+    });
+  }
+
+  // 3. Transport-level validation.
+  const headerVersion = request.headers.get("MCP-Protocol-Version");
+  if (headerVersion && !MCP_SUPPORTED_PROTOCOLS.includes(headerVersion)) {
+    return mcpJson(mcpErrorBody(null, -32000, `Unsupported MCP-Protocol-Version: ${headerVersion}`), 400, origin, env);
+  }
+  if (parseInt(request.headers.get("content-length") || "0", 10) > MCP_MAX_BODY) {
+    return mcpJson(mcpErrorBody(null, -32600, "Request too large"), 413, origin, env);
+  }
+
+  let message;
+  try {
+    message = await request.json();
+  } catch {
+    return mcpJson(mcpErrorBody(null, -32700, "Parse error"), 400, origin, env);
+  }
+  if (Array.isArray(message)) {
+    return mcpJson(mcpErrorBody(null, -32600, "JSON-RPC batching is not supported (removed in MCP 2025-06-18)"), 400, origin, env);
+  }
+  if (!message || typeof message !== "object" || message.jsonrpc !== "2.0" || typeof message.method !== "string") {
+    return mcpJson(mcpErrorBody(message && message.id, -32600, "Invalid Request"), 400, origin, env);
+  }
+
+  const responseHeaders = { "MCP-Protocol-Version": headerVersion || MCP_DEFAULT_PROTOCOL };
+
+  let response;
+  try {
+    response = await mcpDispatch(message, env);
+  } catch (err) {
+    console.error("[mcp] internal error", err.message);
+    return mcpJson(mcpErrorBody(message.id, -32603, `Internal error: ${err.message}`), 500, origin, env, responseHeaders);
+  }
+
+  // Notifications carry no response body.
+  if (!response) return new Response(null, { status: 202, headers: { ...mcpCorsHeaders(origin, env), ...responseHeaders } });
+  return mcpJson(response, 200, origin, env, responseHeaders);
+}
+
+// GET/DELETE /mcp — no server-initiated SSE stream is offered, so the spec
+// requires 405 plus Accept-Post advertising the POST content type.
+function mcpMethodNotAllowed(request, env) {
+  return mcpJson(mcpErrorBody(null, -32000, "Method not allowed. Use POST /mcp (Streamable HTTP)."), 405, request.headers.get("Origin"), env, {
+    "Accept-Post": "application/json",
+    Allow: "POST, OPTIONS",
+  });
 }
 
 async function probeKeepaliveEndpoint(endpoint) {
@@ -127,6 +555,18 @@ async function runKeepaliveSweep(cron = "manual") {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    // Remote MCP endpoint (#804) — own auth/CORS rules, so it goes before the
+    // generic OPTIONS handler and every /api route.
+    if (url.pathname === MCP_PATH || url.pathname === `${MCP_PATH}/`) {
+      if (request.method === "OPTIONS") {
+        return new Response(null, { status: 204, headers: mcpCorsHeaders(request.headers.get("Origin"), env) });
+      }
+      if (request.method === "POST") {
+        return handleMcpRequest(request, env);
+      }
+      return mcpMethodNotAllowed(request, env);
+    }
 
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: CORS_HEADERS });
@@ -528,4 +968,22 @@ export default {
   async scheduled(controller, env, ctx) {
     ctx.waitUntil(runKeepaliveSweep(controller.cron));
   },
+};
+
+// Named exports for unit tests only (workers/mcp-remote.test.mjs). Wrangler
+// deploys this file for its default export; the extra exports are inert there.
+export {
+  MCP_PATH,
+  MCP_TOOLS,
+  MCP_DEFAULT_PROTOCOL,
+  MCP_SUPPORTED_PROTOCOLS,
+  MCP_FALLBACK_VERSION,
+  decodeBase64Utf8,
+  handleMcpRequest,
+  mcpMethodNotAllowed,
+  mcpOriginAllowed,
+  mcpRankLessons,
+  mcpSafeLessonPath,
+  mcpTimingSafeEqual,
+  mcpTokenize,
 };

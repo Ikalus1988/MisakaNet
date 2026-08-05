@@ -6,6 +6,7 @@ Connect MisakaNet to your AI coding tool. Search 271+ failure-recovery lessons d
 
 | Tool | Status | Setup |
 |------|--------|-------|
+| **Remote MCP (any client)** | ✅ Ready | [`POST /mcp` setup](mcp-remote.md) — no clone required |
 | **Cursor** | ✅ Ready | [Failure-memory rule](cursor-failure-memory.md) |
 | **Claude Code** | ✅ Ready | [Failure playbook](claude-code-failure-memory.md) |
 | **Continue.dev** | ✅ Ready | [Setup Guide](continue/README.md) |
@@ -14,6 +15,24 @@ Connect MisakaNet to your AI coding tool. Search 271+ failure-recovery lessons d
 | **Aider** | Planned | — |
 | **VS Code** | Planned | — |
 | **Cline** | Planned | — |
+
+## Quick: Remote MCP
+
+No clone, no Python — point any MCP client at the hosted endpoint:
+
+```json
+{
+  "mcpServers": {
+    "misakanet": {
+      "type": "http",
+      "url": "https://misakanet.org/mcp",
+      "headers": { "Authorization": "Bearer YOUR_MCP_TOKEN" }
+    }
+  }
+}
+```
+
+Full instructions, tool reference, and curl verification: [mcp-remote.md](mcp-remote.md).
 
 ## Public smoke evidence
 

@@ -85,6 +85,27 @@ jobs:
 | GET | `/api/health` | 健康检查，返回 Token / KV 配置状态 |
 | GET | `/api/helpful?lesson_id=<id>` | 返回该 lesson 的 "helped me" 投票数 |
 | POST | `/` | 节点注册（IP 限流 1 次/30s） |
+| POST | `/mcp` | 远程 MCP 端点（Streamable HTTP，需 Bearer `MCP_TOKEN`） |
+| GET | `/mcp` | 405 + `Accept-Post: application/json`（不提供 SSE 流） |
+
+### Remote MCP endpoint (Issue #804)
+
+`POST /mcp` 暴露只读 MCP 工具 `misakanet_search` 与 `misakanet_get_lesson`，任何 MCP 客户端
+（Claude / Cursor / Copilot / Glama）无需 clone 仓库即可连接。协议版本 `2025-06-18`（兼容
+`2026-07-28` RC），无状态、不返回 session ID。
+
+| 变量名 | 必需 | 说明 |
+|--------|------|------|
+| `MCP_TOKEN` | 是 | Bearer 令牌；未配置时 `/mcp` 返回 503 |
+| `MCP_VERSION` | 否 | `serverInfo.version`，默认取 `pyproject.toml` 版本 |
+| `MCP_ALLOWED_ORIGINS` | 否 | 额外允许的 Origin（逗号分隔），用于 DNS rebinding 防护白名单 |
+
+```bash
+npx wrangler secret put MCP_TOKEN --name misakanet-register-proxy
+node --test workers/mcp-remote.test.mjs   # 传输层 / 鉴权 / 工具 / 排序单测
+```
+
+连接方式与 curl 验证：[docs/integrations/mcp-remote.md](../docs/integrations/mcp-remote.md)。
 
 ### Insights endpoints (Issue #591)
 
