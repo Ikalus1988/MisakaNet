@@ -1,8 +1,13 @@
 # Remote MCP Endpoint
 
-MisakaNet exposes a Streamable HTTP MCP endpoint at `https://misakanet.org/mcp`.
+> **Remote MCP endpoint:** `https://misakanet.org/mcp`
+> **Transport:** Streamable HTTP
+> **Auth:** Bearer token
+> **Protocol:** MCP 2025-06-18 (forward-compatible with 2026-07-28 RC)
 
-Protocol: MCP 2025-06-18 (forward-compatible with 2026-07-28 RC).
+MisakaNet exposes a Streamable HTTP MCP endpoint at `https://misakanet.org/mcp`. Any MCP-compatible client can connect remotely without cloning the repo.
+
+The server also supports local stdio transport as an alternative (see [Local stdio](#local-stdio-alternative) below).
 
 ## Quick Start
 
