@@ -1,0 +1,60 @@
+name: 'MisakaNet Capture'
+description: 'Capture redacted failure logs as MisakaNet intake artifacts. Does NOT auto-publish.'
+inputs:
+  summary:
+    description: 'Short failure summary'
+    required: true
+  log-file:
+    description: 'Path to log file to capture (redacted before storage)'
+    required: false
+    default: ''
+  source:
+    description: 'Source identifier (e.g. github-actions, ci)'
+    required: false
+    default: 'github-actions'
+runs:
+  using: 'composite'
+  steps:
+    - name: Capture redacted failure report
+      shell: bash
+      env:
+        MISAKA_SUMMARY: ${{ inputs.summary }}
+        MISAKA_LOG_FILE: ${{ inputs.log-file }}
+        MISAKA_SOURCE: ${{ inputs.source }}
+      run: |
+        echo "::group::MisakaNet Capture"
+
+        # Build context from log file if provided
+        CONTEXT_ARG=""
+        if [ -n "$MISAKA_LOG_FILE" ] && [ -f "$MISAKA_LOG_FILE" ]; then
+          # Truncate to last 200 lines to avoid huge artifacts
+          tail -200 "$MISAKA_LOG_FILE" > /tmp/misaka-context.txt
+          CONTEXT_ARG="--context /tmp/misaka-context.txt"
+        fi
+
+        # Run capture (redaction happens inside)
+        python3 scripts/misaka_capture.py \
+          --summary "$MISAKA_SUMMARY" \
+          --source "$MISAKA_SOURCE" \
+          $CONTEXT_ARG > /tmp/misaka-capture-result.json 2>&1 || true
+
+        # Upload as artifact (never auto-publishes)
+        echo "Capture result:"
+        cat /tmp/misaka-capture-result.json
+
+        # Save to artifact
+        mkdir -p /tmp/misaka-artifacts
+        cp /tmp/misaka-capture-result.json /tmp/misaka-artifacts/
+        if [ -f /tmp/misaka-context.txt ]; then
+          cp /tmp/misaka-context.txt /tmp/misaka-artifacts/
+        fi
+
+        echo "::endgroup::"
+
+    - name: Upload capture artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: misaka-capture-${{ github.run_id }}
+        path: /tmp/misaka-artifacts/
+        retention-days: 30

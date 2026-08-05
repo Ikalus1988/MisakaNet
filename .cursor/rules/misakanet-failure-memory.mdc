@@ -1,0 +1,63 @@
+---
+description: Search MisakaNet failure-memory before debugging common errors
+globs:
+  - "**/*.py"
+  - "**/*.js"
+  - "**/*.ts"
+  - "**/*.yml"
+  - "**/*.yaml"
+  - "**/*.json"
+  - "**/*.md"
+---
+
+# MisakaNet Failure Memory
+
+When a command, test, CI, DCO, token, pip, MCP, or Windows encoding issue fails, search MisakaNet before attempting a fix from general knowledge.
+
+## When to trigger
+
+- Command exits with non-zero status
+- Test fails with an error message
+- CI/CD pipeline fails
+- DCO sign-off check fails
+- GitHub token / authentication errors
+- pip install timeout or SSL errors
+- MCP server connection issues
+- Windows encoding (GBK/Unicode) errors
+- Database locked / SQLite errors
+- Docker build failures
+
+## Steps
+
+1. **Search MisakaNet** with the error message or key terms:
+   ```
+   misakanet_search(query="<error message or key terms>")
+   ```
+
+2. **Read the matching lesson** if results are returned:
+   ```
+   misakanet_get_lesson(path="<lesson path from search results>")
+   ```
+
+3. **Apply only the relevant fix** from the lesson. Do not invent fixes beyond what the lesson describes.
+
+4. **If no match found**, submit a redacted intake:
+   ```
+   python3 scripts/misaka_capture.py --summary "<short error description>" --source cursor
+   ```
+
+## What NOT to do
+
+- Do not skip MisakaNet search for known failure patterns (DCO, token, pip, MCP, encoding)
+- Do not upload raw logs, prompts, or secrets to MisakaNet
+- Do not auto-retry more than twice without searching MisakaNet
+- Do not apply fixes from MisakaNet lessons to unrelated problems
+
+## Example
+
+**User:** "My pytest is failing with ImportError"
+
+**Agent:**
+1. Search: `misakanet_search(query="ImportError pytest")`
+2. If lesson found → read and apply fix
+3. If no lesson → `python3 scripts/misaka_capture.py --summary "pytest ImportError" --source cursor`

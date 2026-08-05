@@ -1,0 +1,42 @@
+name: Newbie Welcome
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  welcome:
+    if: |
+      !github.event.issue.pull_request &&
+      contains(github.event.issue.labels.*.name, 'good first issue') &&
+      !contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              "## Welcome to MisakaNet!",
+              "",
+              "You're commenting on a **Good First Issue**.",
+              "",
+              "### Quick Start",
+              "",
+              "1. **Search first** - your fix may already exist: [Search lessons](https://ikalus1988.github.io/MisakaNet/search/)",
+              "2. **Register your node** - get a Misaka ID: [Register](https://github.com/Ikalus1988/MisakaNet/issues/new?template=register.yml)",
+              "3. **Claim** this issue - comment `/claim` for an 8-hour exclusive window",
+              "4. **Sign commits** - `git commit -s` (DCO required)",
+              "5. **Submit PR** - CI checks run automatically",
+              "",
+              "Need help? Ask in this thread."
+            ].join("\n");
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });

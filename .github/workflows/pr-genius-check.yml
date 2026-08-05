@@ -1,0 +1,51 @@
+name: PR Genius Check
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-genius:
+    if: |
+      !github.event.pull_request.draft &&
+      !contains(github.event.pull_request.labels.*.name, 'docs-only')
+    runs-on: ubuntu-latest
+    steps:
+      # No checkout needed — PR Genius action reads PR metadata via API only
+
+      - uses: zsxh1990/pr-genius/.github/actions/pr-genius-check@d0c91188e3db91e4010dbd9660d499aa7c61e791  # v1.3.1
+        id: pr-genius
+        continue-on-error: true  # advisory only: never block merge on tool failure
+        with:
+          title: ${{ github.event.pull_request.title }}
+          repo: ${{ github.repository }}
+          body: ${{ github.event.pull_request.body }}
+
+      - name: Output PR Genius result
+        if: always()
+        shell: bash
+        env:
+          TIER: ${{ steps.pr-genius.outputs.tier }}
+          RESULT: ${{ steps.pr-genius.outputs.result }}
+        run: |
+          echo "=========================================="
+          echo "PR Genius Analysis"
+          echo "=========================================="
+          echo "Risk Level: $TIER"
+          echo ""
+          echo "$RESULT" | python3 -c "
+          import json, sys
+          try:
+              d = json.load(sys.stdin)
+              checklist = d.get('checklist', [])
+              if checklist:
+                  print('Checklist:')
+                  for c in checklist:
+                      print(f\"  [{c.get('priority','')}] {c.get('action','')}: {c.get('hint','')}\")
+          except:
+              pass
+          " 2>/dev/null
+          echo "=========================================="

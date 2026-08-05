@@ -1,0 +1,150 @@
+{
+  "generated_at": "2026-08-05T16:55:15.191365+00:00",
+  "repo": "https://github.com/Ikalus1988/MisakaNet",
+  "site": "https://misakanet.org",
+  "item_count": 14,
+  "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(deps): bump undici from 7.28.0 to 7.29.0 in /web",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/803",
+      "timestamp": "2026-08-04T15:51:08Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): add 4 session lessons from 2026-08-04",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/801",
+      "timestamp": "2026-08-04T15:50:59Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(mcp): use correct BM25 search API in MCP server",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/800",
+      "timestamp": "2026-08-04T15:50:34Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: clarify Glama-routed MCP analytics",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/797",
+      "timestamp": "2026-08-04T01:53:47Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Analytics] Add privacy-preserving unsolved failure map",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/788",
+      "labels": [
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:roadmap",
+        "priority:later"
+      ],
+      "timestamp": "2026-08-03T10:05:20Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Trust] Add evidence levels for failure-recovery lessons",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/786",
+      "labels": [
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:roadmap",
+        "priority:later"
+      ],
+      "timestamp": "2026-08-03T10:04:09Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Health] Add recurring public site health snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/783",
+      "labels": [
+        "area:docs",
+        "ready",
+        "bounty",
+        "status:competition",
+        "priority:later"
+      ],
+      "timestamp": "2026-08-03T07:10:20Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[CI] Observe PR Genius v1.3.1 on next 5 non-docs PRs",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/781",
+      "labels": [
+        "area:workflow",
+        "ready",
+        "bounty",
+        "status:competition",
+        "priority:next"
+      ],
+      "timestamp": "2026-08-03T07:09:55Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[P2][Analytics] Track first-call funnel manually for Glama",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/763",
+      "labels": [
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:quick",
+        "priority:later",
+        "纯文档"
+      ],
+      "timestamp": "2026-08-02T06:59:51Z",
+      "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "USDC: base units vs human amounts — агент платит 1000x или думает, что 1000 USDC это $1000",
+      "url": "lessons/contrib/usdc-base-units-vs-human-amounts-agent-marketplaces-ru.md",
+      "timestamp": "2026-07-30",
+      "domain": "crypto-ops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Claude Code can debug low-level cryptography — ML-DSA signature verification failure",
+      "url": "lessons/contrib/claude-code-debugging-ml-dsa-cryptography.md",
+      "timestamp": "2026-07-29",
+      "domain": "debugging",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption",
+      "url": "lessons/contrib/mcp-tool-error-convention-inconsistency.md",
+      "timestamp": "2026-07-29",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "TypeScript solution-style tsconfig — tsc --noEmit checks nothing silently",
+      "url": "lessons/contrib/typescript-solution-tsconfig-silent-nocheck.md",
+      "timestamp": "2026-07-29",
+      "domain": "typescript",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "USDC пришёл в Ethereum mainnet, а нужен Base — и 0 ETH на газ",
+      "url": "lessons/contrib/usdc-ethereum-instead-of-base-zero-eth-gas.md",
+      "timestamp": "2026-07-29",
+      "domain": "crypto-ops",
+      "source": "lessons"
+    }
+  ]
+}

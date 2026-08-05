@@ -1,0 +1,80 @@
+# MisakaNet
+
+MisakaNet is a Git-backed failure lesson network for AI coding agents.
+
+## Use it when
+
+- The user is debugging repeated CI, GitHub, Python, WSL, Feishu, RAG, or agent tooling failures.
+- The agent is stuck retrying the same fix.
+- The error looks like a known engineering pitfall.
+
+## Primary interfaces
+
+- **CLI:** `python search_knowledge.py "<error>"`
+- **MCP:** `scripts/mcp_server.py`
+- **Web:** https://misakanet.org/search/
+- **Static pages:** https://misakanet.org/lessons/<slug>/
+
+## Data
+
+- 205+ verified failure lessons
+- 52+ registered nodes
+- 18 domains: devops, feishu, fanuc, development, rag, agent-network, etc.
+- Zero dependencies for core search
+- All lessons are GitHub-audited Markdown
+
+## Important queries
+
+These are high-signal queries that return verified lessons:
+
+- DCO sign-off failed
+- GitHub token secret scan
+- pip install timeout
+- database locked
+- Feishu document cleared
+- Windows Unicode crash
+- WSL permission denied
+- FANUC error codes
+- MCP server not discovered
+- Agent loops debugging
+
+## How to connect
+
+### Claude Code / Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "misakanet": {
+      "command": "python3",
+      "args": ["/path/to/MisakaNet/scripts/mcp_server.py"]
+    }
+  }
+}
+```
+
+### Cursor
+
+```json
+{
+  "mcpServers": {
+    "misakanet": {
+      "command": "python3",
+      "args": ["/path/to/MisakaNet/scripts/mcp_server.py"]
+    }
+  }
+}
+```
+
+## Troubleshooting
+
+See https://misakanet.org/troubleshooting/ for real error scenes and fixes.
+
+## Links
+
+- Repository: https://github.com/Ikalus1988/MisakaNet
+- Search: https://misakanet.org/search/
+- MCP Quickstart: https://misakanet.org/mcp-quickstart/
+- Lessons: https://misakanet.org/lessons/
+- Topics: https://misakanet.org/topics/
+- License: Apache 2.0

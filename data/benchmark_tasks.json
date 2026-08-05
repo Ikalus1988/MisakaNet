@@ -1,0 +1,82 @@
+[
+  {
+    "task_id": "self-heal-dco-signoff",
+    "title": "DCO sign-off failure — commit missing Signed-off-by",
+    "failure": "PR fails DCO check because one or more commits lack a Signed-off-by trailer.",
+    "expected_action": "Run git rebase --signoff (or git commit --amend --signoff) to add the trailer to every commit, then force-push.",
+    "lesson_ref": "lessons/core/dco-auto-fix-workflow.md",
+    "verifier_type": "command_exit"
+  },
+  {
+    "task_id": "self-heal-pip-timeout",
+    "title": "pip install timeout — network stalls on PyPI",
+    "failure": "pip install times out after 15 s with ConnectionError or SSLError.",
+    "expected_action": "Switch to a mirror index-url (e.g. tsinghua), increase --default-timeout, or add --trusted-host as a temporary bypass.",
+    "lesson_ref": "lessons/contrib/pip-install-timeout-ssl.md",
+    "verifier_type": "command_exit"
+  },
+  {
+    "task_id": "self-heal-github-401",
+    "title": "GitHub API 401 — local credential lookup before asking for a new token",
+    "failure": "GitHub API returns HTTP 401 Bad credentials. The agent asks the user for a new PAT without checking local stores.",
+    "expected_action": "Inspect ~/.git-credentials, ~/.netrc, gh auth status, $GITHUB_TOKEN, and git credential.helper config in that order; only then request a new token.",
+    "lesson_ref": "lessons/contrib/github-401-credential-lookup.md",
+    "verifier_type": "command_exit"
+  },
+  {
+    "task_id": "self-heal-mcp-path-error",
+    "title": "MCP server path error — module not found at runtime",
+    "failure": "MCP server fails to start with ModuleNotFoundError because PYTHONPATH or the working directory is wrong.",
+    "expected_action": "Set PYTHONPATH to the project root or install the package in editable mode (pip install -e .) before launching the server.",
+    "lesson_ref": "lessons/contrib/python-sandbox-path-isolation.md",
+    "verifier_type": "command_exit"
+  },
+  {
+    "task_id": "self-heal-windows-gbk",
+    "title": "Windows GBK encoding error — subprocess output crashes on decode",
+    "failure": "Python subprocess on Windows raises UnicodeDecodeError because stdout uses GBK instead of UTF-8.",
+    "expected_action": "Set PYTHONIOENCODING=utf-8, use errors='replace' in open/read calls, or switch the console code page to UTF-8 (chcp 65001).",
+    "lesson_ref": "lessons/contrib/python-gbk-encoding-error.md",
+    "verifier_type": "command_exit"
+  },
+  {
+    "task_id": "self-heal-pytest-importerror",
+    "title": "pytest ImportError — stale __pycache__ after a module rename",
+    "failure": "pytest crashes with ImportError after renaming a module because .pyc cache still exports the old symbol.",
+    "expected_action": "Remove __pycache__ and .pytest_cache, then re-run pytest.",
+    "lesson_ref": "lessons/contrib/python-pycache-stale.md",
+    "verifier_type": "command_exit"
+  },
+  {
+    "task_id": "self-heal-cloudflare-deploy",
+    "title": "Cloudflare Worker deploy failure — wrangler.toml missing or misconfigured",
+    "failure": "npx wrangler deploy exits non-zero because the Worker is not bound to the correct account_id or route.",
+    "expected_action": "Verify wrangler.toml has the right account_id, route, and zone_id; run wrangler whoami to confirm the logged-in account.",
+    "lesson_ref": "lessons/contrib/cloudflare-email-worker-registration-trap.md",
+    "verifier_type": "command_exit"
+  },
+  {
+    "task_id": "self-heal-json-schema-error",
+    "title": "JSON schema validation error — input missing required fields",
+    "failure": "Downstream tool rejects a JSON payload because required keys are absent or the type is wrong.",
+    "expected_action": "Validate the payload against the JSON schema before sending; fix missing or mistyped fields.",
+    "lesson_ref": "lessons/contrib/json-parse-failure-handling.md",
+    "verifier_type": "command_exit"
+  },
+  {
+    "task_id": "self-heal-npm-publish-403",
+    "title": "npm publish 403 — scope not owned or token lacks privilege",
+    "failure": "npm publish returns HTTP 403 because the auth token does not have publish rights for the scope.",
+    "expected_action": "Check npm auth token (npm whoami), ensure 2FA is enabled, and verify the scope is owned; regenerate the token if needed.",
+    "lesson_ref": "lessons/contrib/npm-eacces-permission-error-linux.md",
+    "verifier_type": "command_exit"
+  },
+  {
+    "task_id": "self-heal-stale-generated-data",
+    "title": "Stale generated data cleanup — lessons.json or index.md out of sync",
+    "failure": "Generated artifacts (data/lessons.json, lessons/index.md) are stale after adding/removing lesson files.",
+    "expected_action": "Run the regeneration script (python3 scripts/update_lessons_json.py and/or python3 scripts/build_lesson_pages.py) and verify the generated file checksum changed.",
+    "lesson_ref": "lessons/contrib/shared-json-needs-atomic-write.md",
+    "verifier_type": "command_exit"
+  }
+]
