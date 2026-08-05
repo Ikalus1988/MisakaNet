@@ -9,6 +9,10 @@ import {
   buildDemandMapBuckets,
   handleDemandBoard,
   handleDemandMap,
+  handleMcpRequest,
+  validateMcpAuthAndOrigin,
+  isValidMcpOrigin,
+  searchLessonsInWorker,
 } from './register-proxy.js';
 
 function createFakeKV(seed = {}) {
@@ -160,3 +164,176 @@ test('handleDemandMap requires a maintainer key and rejects mismatches', async (
   assert.equal(body.buckets[0].unsolvedCount, 1);
   assert.equal(body.buckets[0].distinctSourceCount, 1);
 });
+
+test('GET /mcp returns 405 Method Not Allowed with Accept: POST header', async () => {
+  const req = new Request('https://misakanet.org/mcp', { method: 'GET' });
+  const res = await handleMcpRequest(req, { MCP_TOKEN: 'test-token' });
+  assert.equal(res.status, 405);
+  assert.equal(res.headers.get('Accept'), 'POST');
+  assert.equal(res.headers.get('Allow'), 'POST');
+});
+
+test('POST /mcp requires valid Bearer token (401 on missing/invalid)', async () => {
+  const env = { MCP_TOKEN: 'secret-mcp-token' };
+
+  // Missing header
+  const req1 = new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize' }),
+  });
+  const res1 = await handleMcpRequest(req1, env);
+  assert.equal(res1.status, 401);
+
+  // Wrong token
+  const req2 = new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer wrong-token',
+    },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize' }),
+  });
+  const res2 = await handleMcpRequest(req2, env);
+  assert.equal(res2.status, 401);
+});
+
+test('POST /mcp validates Origin header (403 on invalid Origin)', async () => {
+  const env = { MCP_TOKEN: 'valid-token' };
+
+  // Invalid Origin
+  const req1 = new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer valid-token',
+      Origin: 'http://malicious-site.example.com',
+    },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize' }),
+  });
+  const res1 = await handleMcpRequest(req1, env);
+  assert.equal(res1.status, 403);
+
+  // Valid Origin
+  const req2 = new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer valid-token',
+      Origin: 'https://glama.ai',
+    },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize' }),
+  });
+  const res2 = await handleMcpRequest(req2, env);
+  assert.equal(res2.status, 200);
+});
+
+test('POST /mcp initialize method returns serverInfo and protocolVersion', async () => {
+  const env = { MCP_TOKEN: 'valid-token', MCP_VERSION: '0.9.1' };
+  const req = new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer valid-token',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: { protocolVersion: '2025-06-18' },
+    }),
+  });
+  const res = await handleMcpRequest(req, env);
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.equal(data.jsonrpc, '2.0');
+  assert.equal(data.id, 1);
+  assert.equal(data.result.protocolVersion, '2025-06-18');
+  assert.equal(data.result.serverInfo.name, 'misakanet-remote');
+  assert.equal(data.result.serverInfo.version, '0.9.1');
+});
+
+test('POST /mcp tools/list method exposes misakanet_search and misakanet_get_lesson', async () => {
+  const env = { MCP_TOKEN: 'valid-token' };
+  const req = new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer valid-token',
+    },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }),
+  });
+  const res = await handleMcpRequest(req, env);
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  const toolNames = data.result.tools.map((t) => t.name);
+  assert.deepEqual(toolNames, ['misakanet_search', 'misakanet_get_lesson']);
+});
+
+test('searchLessonsInWorker ranks matching lessons by keywords', () => {
+  const mockLessons = [
+    {
+      id: 'db-lock',
+      title: 'Database Locked in SQLite',
+      domain: 'database-lock',
+      tags: ['sqlite', 'lock'],
+      summary: 'Fix database is locked error',
+      url: 'lessons/core/db-lock.md',
+    },
+    {
+      id: 'npm-401',
+      title: 'NPM Publish Unauthorized',
+      domain: 'npm-publish',
+      tags: ['npm'],
+      summary: 'Fix 401 Unauthorized during npm publish',
+      url: 'lessons/core/npm-401.md',
+    },
+  ];
+
+  const results = searchLessonsInWorker(mockLessons, 'database locked', null, 5);
+  assert.equal(results.length, 1);
+  assert.equal(results[0].title, 'Database Locked in SQLite');
+  assert.equal(results[0].path, 'lessons/core/db-lock.md');
+});
+
+test('POST /mcp tools/call misakanet_search executes search query', async () => {
+  const mockLessons = [
+    {
+      id: 'db-lock',
+      title: 'Database Locked in SQLite',
+      domain: 'database-lock',
+      tags: ['sqlite', 'lock'],
+      summary: 'Fix database is locked error',
+      url: 'lessons/core/db-lock.md',
+    },
+  ];
+  const env = {
+    MCP_TOKEN: 'valid-token',
+    MISAKANET_KV: createFakeKV({
+      'proxy:lessons': JSON.stringify({ data: mockLessons, ts: Date.now() }),
+    }),
+  };
+
+  const req = new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer valid-token',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 3,
+      method: 'tools/call',
+      params: {
+        name: 'misakanet_search',
+        arguments: { query: 'database locked' },
+      },
+    }),
+  });
+  const res = await handleMcpRequest(req, env);
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.equal(data.id, 3);
+  assert.ok(data.result.content[0].text.includes('Database Locked in SQLite'));
+});
+

@@ -545,6 +545,337 @@ async function handleHelpfulVote(request, env) {
   }
 }
 
+// ── MCP Remote Endpoint Handler (Issue #804) ──
+function decodeBase64Utf8(base64) {
+  const binary = atob(base64.replace(/\s/g, ""));
+  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  return new TextDecoder("utf-8").decode(bytes);
+}
+
+async function fetchFromGitHubText(token, path, ref = "main") {
+  const url = `${GITHUB_API}/repos/${REPO}/contents/${path}?ref=${encodeURIComponent(ref)}`;
+  const resp = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "User-Agent": "MisakaNet-Worker",
+      Accept: "application/vnd.github.v3+json",
+    },
+  });
+  if (!resp.ok) {
+    throw new Error(`GitHub API ${resp.status}`);
+  }
+  const data = await resp.json();
+  if (data.content && data.encoding === "base64") {
+    return decodeBase64Utf8(data.content);
+  }
+  throw new Error("Unexpected GitHub API response format");
+}
+
+function isValidMcpOrigin(originHeader) {
+  if (!originHeader) return true;
+  try {
+    const parsed = new URL(originHeader);
+    const host = parsed.hostname.toLowerCase();
+    const scheme = parsed.protocol.toLowerCase();
+
+    if (scheme === "vscode-webview:" || scheme === "app:" || scheme === "chrome-extension:") {
+      return true;
+    }
+
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "misakanet.org" ||
+      host.endsWith(".misakanet.org") ||
+      host === "glama.ai" ||
+      host.endsWith(".glama.ai") ||
+      host === "claude.ai" ||
+      host.endsWith(".claude.ai") ||
+      host === "cursor.sh" ||
+      host.endsWith(".cursor.sh") ||
+      host === "github.com" ||
+      host.endsWith(".github.com")
+    ) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function validateMcpAuthAndOrigin(request, env) {
+  const mcpToken = env.MCP_TOKEN;
+  if (!mcpToken) {
+    return { valid: false, status: 401, error: "MCP_TOKEN not configured on server" };
+  }
+
+  const authHeader = request.headers.get("Authorization") || "";
+  const parts = authHeader.trim().split(/\s+/);
+  if (parts.length !== 2 || parts[0].toLowerCase() !== "bearer" || !timingSafeEqual(parts[1], mcpToken)) {
+    return { valid: false, status: 401, error: "Missing or invalid Bearer token" };
+  }
+
+  const origin = request.headers.get("Origin");
+  if (origin && !isValidMcpOrigin(origin)) {
+    return { valid: false, status: 403, error: "Invalid Origin" };
+  }
+
+  return { valid: true };
+}
+
+function searchLessonsInWorker(lessons, query, domain, top = 5) {
+  if (!Array.isArray(lessons) || !query) return [];
+  const terms = String(query).toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return [];
+
+  const scored = [];
+  for (const item of lessons) {
+    if (domain && item.domain !== domain) continue;
+    let score = 0;
+
+    const titleLower = (item.title || "").toLowerCase();
+    const summaryLower = (item.summary || "").toLowerCase();
+    const previewLower = (item.preview || "").toLowerCase();
+    const idLower = (item.id || "").toLowerCase();
+    const urlLower = (item.url || "").toLowerCase();
+    const tagsLower = Array.isArray(item.tags) ? item.tags.join(" ").toLowerCase() : "";
+
+    for (const term of terms) {
+      if (titleLower.includes(term)) score += 3;
+      if (tagsLower.includes(term)) score += 2;
+      if (idLower.includes(term) || urlLower.includes(term)) score += 2;
+      if (summaryLower.includes(term)) score += 1;
+      if (previewLower.includes(term)) score += 1;
+    }
+
+    if (score > 0) {
+      scored.push({
+        title: item.title,
+        path: item.url || `lessons/${item.domain}/${item.id}.md`,
+        score: Math.min(score, 10),
+        domain: item.domain,
+        status: item.status || "active",
+        summary: item.summary,
+      });
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, top);
+}
+
+async function handleMcpRequest(request, env) {
+  if (request.method === "GET") {
+    return new Response("Method Not Allowed. Use POST /mcp for MCP Streamable HTTP transport.", {
+      status: 405,
+      headers: {
+        "Accept": "POST",
+        "Allow": "POST",
+        "Content-Type": "text/plain",
+        ...CORS_HEADERS,
+      },
+    });
+  }
+
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", {
+      status: 405,
+      headers: { "Accept": "POST", "Allow": "POST", ...CORS_HEADERS },
+    });
+  }
+
+  const authValidation = validateMcpAuthAndOrigin(request, env);
+  if (!authValidation.valid) {
+    return jsonResponse({ error: authValidation.error }, authValidation.status);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse({
+      jsonrpc: "2.0",
+      id: null,
+      error: { code: -32700, message: "Parse error: Invalid JSON" },
+    }, 400);
+  }
+
+  const { jsonrpc, id = null, method, params = {} } = body || {};
+
+  switch (method) {
+    case "initialize": {
+      const serverVersion = env.MCP_VERSION || "1.0.0";
+      return jsonResponse({
+        jsonrpc: "2.0",
+        id,
+        result: {
+          protocolVersion: params.protocolVersion || "2025-06-18",
+          capabilities: {
+            tools: {},
+          },
+          serverInfo: {
+            name: "misakanet-remote",
+            version: serverVersion,
+          },
+        },
+      });
+    }
+
+    case "tools/list": {
+      return jsonResponse({
+        jsonrpc: "2.0",
+        id,
+        result: {
+          tools: [
+            {
+              name: "misakanet_search",
+              description: "Search MisakaNet failure-recovery lessons by query, domain, or limit",
+              inputSchema: {
+                type: "object",
+                properties: {
+                  query: { type: "string", description: "Search query keywords or error text" },
+                  domain: { type: "string", description: "Optional domain filter" },
+                  top: { type: "number", description: "Maximum number of results to return (default: 5)" },
+                },
+                required: ["query"],
+              },
+            },
+            {
+              name: "misakanet_get_lesson",
+              description: "Get full lesson markdown content by path or ID",
+              inputSchema: {
+                type: "object",
+                properties: {
+                  path: { type: "string", description: "Lesson path or ID" },
+                  id: { type: "string", description: "Alternative lesson ID" },
+                },
+              },
+            },
+          ],
+        },
+      });
+    }
+
+    case "tools/call": {
+      const toolName = params.name;
+      const args = params.arguments || {};
+
+      if (toolName === "misakanet_search") {
+        const query = args.query || "";
+        const domain = args.domain;
+        const top = typeof args.top === "number" ? args.top : 5;
+
+        let results = [];
+        try {
+          const token = env.REGISTER_TOKEN;
+          const lessons = await getWithCache(env, "proxy:lessons", async () => {
+            if (token) {
+              return await fetchFromGitHub(token, "lessons.json", "data");
+            }
+            const rawResp = await fetch("https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/lessons.json");
+            return await rawResp.json();
+          });
+          results = searchLessonsInWorker(lessons, query, domain, top);
+        } catch (err) {
+          console.error("MCP search error:", err.message);
+        }
+
+        const formattedText = JSON.stringify({ results, source: "remote-search" }, null, 2);
+        return jsonResponse({
+          jsonrpc: "2.0",
+          id,
+          result: {
+            content: [
+              {
+                type: "text",
+                text: formattedText,
+              },
+            ],
+            results,
+            source: "remote-search",
+          },
+        });
+      }
+
+      if (toolName === "misakanet_get_lesson") {
+        const pathOrId = args.path || args.id || "";
+        if (!pathOrId) {
+          return jsonResponse({
+            jsonrpc: "2.0",
+            id,
+            result: {
+              content: [{ type: "text", text: "error: path or id is required" }],
+              error: "path or id is required",
+            },
+          });
+        }
+
+        let content = "";
+        let finalPath = pathOrId;
+        try {
+          const token = env.REGISTER_TOKEN;
+          if (!pathOrId.includes("/") && !pathOrId.endsWith(".md")) {
+            const lessons = await getWithCache(env, "proxy:lessons", async () => {
+              if (token) return await fetchFromGitHub(token, "lessons.json", "data");
+              const rawResp = await fetch("https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/lessons.json");
+              return await rawResp.json();
+            });
+            const found = Array.isArray(lessons) && lessons.find((l) => l.id === pathOrId);
+            if (found && found.url) {
+              finalPath = found.url;
+            } else {
+              finalPath = `lessons/core/${pathOrId}.md`;
+            }
+          }
+
+          if (token) {
+            content = await fetchFromGitHubText(token, finalPath, "main");
+          } else {
+            const rawResp = await fetch(`https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/${finalPath}`);
+            if (rawResp.ok) {
+              content = await rawResp.text();
+            } else {
+              content = `Error: Lesson not found: ${pathOrId}`;
+            }
+          }
+          content = content.slice(0, 5000);
+        } catch (err) {
+          content = `Error reading lesson: ${err.message}`;
+        }
+
+        return jsonResponse({
+          jsonrpc: "2.0",
+          id,
+          result: {
+            content: [
+              {
+                type: "text",
+                text: content,
+              },
+            ],
+            path: finalPath,
+          },
+        });
+      }
+
+      return jsonResponse({
+        jsonrpc: "2.0",
+        id,
+        error: { code: -32601, message: `Tool not found: ${toolName}` },
+      });
+    }
+
+    default: {
+      return jsonResponse({
+        jsonrpc: "2.0",
+        id,
+        error: { code: -32601, message: `Method not found: ${method}` },
+      });
+    }
+  }
+}
+
 // ── 主入口 (仅 API + 注册，静态文件由 Cloudflare Pages 独立服务) ──
 export default {
   async fetch(request, env) {
@@ -553,6 +884,11 @@ export default {
     // CORS preflight
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: CORS_HEADERS });
+    }
+
+    // Remote MCP endpoint (POST /mcp, GET /mcp)
+    if (url.pathname === "/mcp" || url.pathname === "/api/mcp") {
+      return await handleMcpRequest(request, env);
     }
 
     // API 路由 (GET) — 传入完整 URL（含 query params）支持 GitHub API 代理
@@ -603,4 +939,8 @@ export {
   buildDemandMapBuckets,
   handleDemandBoard,
   handleDemandMap,
+  handleMcpRequest,
+  validateMcpAuthAndOrigin,
+  isValidMcpOrigin,
+  searchLessonsInWorker,
 };
