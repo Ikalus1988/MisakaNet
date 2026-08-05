@@ -81,6 +81,224 @@ function sanitizeIdentifier(val, maxLen) {
   return val.replace(/[^\w\u4e00-\u9fa5\-]/g, "");
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Unsolved failure map (Issue #788)
+//
+// Shows which failure families have no effective lesson. Aggregate-only by
+// construction: a query is classified into a task family in memory and then
+// discarded — no raw query, prompt, log, path, or identifier is ever written.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const UNSOLVED_KV_PREFIX = "unsolved:family:";
+const UNSOLVED_STALE_PREFIX = "unsolved:lesson:";
+const UNSOLVED_WINDOW_DAYS = 30;
+const UNSOLVED_MAX_STALE_LESSONS = 20;
+const UNSOLVED_LOW_SCORE = 0.35; // matches the frontend's "low confidence" band
+
+// Reason enum — the only values that may ever reach storage or output.
+const UNSOLVED_REASONS = ["no_match", "low_confidence", "not_helpful", "outdated_lesson", "missing_runtime_path"];
+
+// Task families and the keyword clusters that derive them. Labels come from
+// this table, never from user input.
+const UNSOLVED_FAMILIES = [
+  ["github-auth", ["github", "gh auth", "401", "403", "permission denied", "pat", "token expired", "dco", "sign-off", "signoff"]],
+  ["npm-publish", ["npm", "yarn", "pnpm", "eotp", "publish", "registry", "package.json"]],
+  ["cloudflare-worker", ["cloudflare", "worker", "wrangler", "kv namespace", "durable object", "pages"]],
+  ["mcp-registry", ["mcp", "model context protocol", "stdio", "tools/list", "tools/call", "mcp server"]],
+  ["glama-release", ["glama", "listing", "release", "changelog", "tag"]],
+  ["python-env", ["pip", "venv", "virtualenv", "conda", "poetry", "modulenotfounderror", "importerror", "pytest", "python"]],
+  ["database-lock", ["database is locked", "database locked", "sqlite", "deadlock", "lock timeout", "busy timeout", "postgres", "mysql"]],
+  ["crawler-block", ["crawler", "scrape", "robots.txt", "cloudflare challenge", "captcha", "rate limit", "429", "blocked"]],
+  ["agent-tooling", ["agent", "claude", "cursor", "copilot", "codex", "aider", "prompt", "context window", "tool call"]],
+  ["ci-pipeline", ["ci", "github actions", "workflow", "runner", "pipeline", "build failed", "job failed"]],
+  ["encoding-locale", ["gbk", "utf-8", "unicodedecodeerror", "encoding", "locale", "mojibake", "codec"]],
+  ["container-deploy", ["docker", "container", "ghcr", "image", "kubernetes", "k8s", "crashloopbackoff", "compose"]],
+];
+const UNSOLVED_FALLBACK_FAMILY = "unclassified";
+const UNSOLVED_FAMILY_WHITELIST = [...UNSOLVED_FAMILIES.map(([family]) => family), UNSOLVED_FALLBACK_FAMILY];
+
+// Derives a family label from query text. The text is never returned or stored:
+// only the label leaves this function.
+function classifyTaskFamily(text) {
+  const haystack = String(text || "").toLowerCase();
+  if (!haystack.trim()) return UNSOLVED_FALLBACK_FAMILY;
+
+  let best = UNSOLVED_FALLBACK_FAMILY;
+  let bestScore = 0;
+  for (const [family, keywords] of UNSOLVED_FAMILIES) {
+    let score = 0;
+    for (const keyword of keywords) {
+      // Multi-word keywords are stronger evidence than single tokens.
+      if (haystack.includes(keyword)) score += keyword.includes(" ") ? 2 : 1;
+    }
+    if (score > bestScore) {
+      best = family;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+function normalizeUnsolvedReason(reason) {
+  return UNSOLVED_REASONS.includes(reason) ? reason : "no_match";
+}
+
+function unsolvedDay(date = new Date()) {
+  return date.toISOString().slice(0, 10);
+}
+
+function pruneUnsolvedDays(days, windowDays = UNSOLVED_WINDOW_DAYS) {
+  const cutoff = Date.now() - windowDays * 86_400_000;
+  for (const day of Object.keys(days)) {
+    if (new Date(`${day}T00:00:00Z`).getTime() < cutoff) delete days[day];
+  }
+  return days;
+}
+
+// Writes one aggregate signal. Callers must pass a derived family and an enum
+// reason — never raw text.
+async function recordUnsolvedSearch(env, { taskFamily, reason, day } = {}) {
+  if (!env.MISAKANET_KV) return null;
+  const family = UNSOLVED_FAMILY_WHITELIST.includes(taskFamily) ? taskFamily : UNSOLVED_FALLBACK_FAMILY;
+  const normalizedReason = normalizeUnsolvedReason(reason);
+  const bucketDay = day || unsolvedDay();
+  const kvKey = `${UNSOLVED_KV_PREFIX}${family}`;
+
+  const stored = await env.MISAKANET_KV.get(kvKey, "json");
+  const record = stored && typeof stored === "object" && stored.days ? stored : { days: {} };
+  pruneUnsolvedDays(record.days);
+
+  const dayBucket = record.days[bucketDay] || (record.days[bucketDay] = { reasons: {} });
+  dayBucket.reasons[normalizedReason] = (dayBucket.reasons[normalizedReason] || 0) + 1;
+
+  await env.MISAKANET_KV.put(kvKey, JSON.stringify(record), { expirationTtl: (UNSOLVED_WINDOW_DAYS + 7) * 86_400 });
+  return { taskFamily: family, reason: normalizedReason, day: bucketDay };
+}
+
+// Tracks lessons that keep drawing not-helpful feedback. Lesson IDs are public
+// repository identifiers, not user data.
+async function recordStaleLesson(env, lessonId, day) {
+  if (!env.MISAKANET_KV || !lessonId) return;
+  const kvKey = `${UNSOLVED_STALE_PREFIX}${lessonId}`;
+  const stored = await env.MISAKANET_KV.get(kvKey, "json");
+  const record = stored && typeof stored === "object" && stored.days ? stored : { days: {} };
+  pruneUnsolvedDays(record.days);
+  const bucketDay = day || unsolvedDay();
+  record.days[bucketDay] = (record.days[bucketDay] || 0) + 1;
+  await env.MISAKANET_KV.put(kvKey, JSON.stringify(record), { expirationTtl: (UNSOLVED_WINDOW_DAYS + 7) * 86_400 });
+}
+
+function sumUnsolvedDays(days, windowDays) {
+  const cutoff = Date.now() - windowDays * 86_400_000;
+  let total = 0;
+  const reasons = {};
+  let lastSeen = null;
+
+  for (const [day, bucket] of Object.entries(days || {})) {
+    const dayTime = new Date(`${day}T00:00:00Z`).getTime();
+    const entries = typeof bucket === "number" ? { total: bucket } : (bucket.reasons || {});
+    const dayCount = Object.values(entries).reduce((sum, n) => sum + (n || 0), 0);
+    if (dayCount > 0 && (!lastSeen || day > lastSeen)) lastSeen = day;
+    if (dayTime < cutoff) continue;
+    total += dayCount;
+    for (const [reason, count] of Object.entries(entries)) {
+      reasons[reason] = (reasons[reason] || 0) + count;
+    }
+  }
+  return { total, reasons, lastSeen };
+}
+
+async function buildUnsolvedMap(env) {
+  const families = [];
+  for (const family of UNSOLVED_FAMILY_WHITELIST) {
+    const record = await env.MISAKANET_KV.get(`${UNSOLVED_KV_PREFIX}${family}`, "json");
+    if (!record || !record.days) continue;
+    const { total: unsolved30d, reasons, lastSeen } = sumUnsolvedDays(record.days, UNSOLVED_WINDOW_DAYS);
+    if (unsolved30d <= 0) continue;
+    const { total: unsolved7d } = sumUnsolvedDays(record.days, 7);
+    families.push({ taskFamily: family, unsolved7d, unsolved30d, reasons, lastSeen });
+  }
+  families.sort((a, b) => b.unsolved30d - a.unsolved30d || a.taskFamily.localeCompare(b.taskFamily));
+
+  const staleLessons = [];
+  let cursor;
+  do {
+    const listed = await env.MISAKANET_KV.list({ prefix: UNSOLVED_STALE_PREFIX, cursor });
+    for (const key of listed.keys || []) {
+      const record = await env.MISAKANET_KV.get(key.name, "json");
+      if (!record || !record.days) continue;
+      const { total: notHelpful30d, lastSeen } = sumUnsolvedDays(record.days, UNSOLVED_WINDOW_DAYS);
+      if (notHelpful30d <= 0) continue;
+      staleLessons.push({ lessonId: key.name.slice(UNSOLVED_STALE_PREFIX.length), notHelpful30d, lastSeen });
+    }
+    cursor = listed.list_complete ? null : listed.cursor;
+  } while (cursor);
+  staleLessons.sort((a, b) => b.notHelpful30d - a.notHelpful30d || a.lessonId.localeCompare(b.lessonId));
+
+  return { families, staleLessons: staleLessons.slice(0, UNSOLVED_MAX_STALE_LESSONS) };
+}
+
+// GET /api/insights/unsolved-map — public, aggregate-only.
+async function handleUnsolvedMap(env) {
+  const available = !!env.MISAKANET_KV;
+  const data = available ? await buildUnsolvedMap(env) : { families: [], staleLessons: [] };
+  return jsonResponse({
+    success: true,
+    available,
+    windowDays: UNSOLVED_WINDOW_DAYS,
+    taskFamilies: UNSOLVED_FAMILY_WHITELIST,
+    reasons: UNSOLVED_REASONS,
+    families: data.families,
+    staleLessons: data.staleLessons,
+    meta: { privacy: "aggregate-only", raw_query: false, prompts: false, logs: false, paths: false, pii: false },
+  });
+}
+
+// POST /api/search-signal — records that a search went unsolved. The query is
+// classified here and dropped; only the derived family + reason are persisted.
+async function handleSearchSignal(request, env) {
+  if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+
+  if (parseInt(request.headers.get("content-length") || "0", 10) > 4096) {
+    return jsonResponse({ error: "Request too large" }, 413);
+  }
+
+  // IP rate limit: 30 signals per IP per minute.
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const rateKey = `rate:signal:${ip}`;
+  const rateCount = parseInt((await env.MISAKANET_KV.get(rateKey, "text")) || "0", 10) || 0;
+  if (rateCount >= 30) return jsonResponse({ error: "Rate limited. Try again later." }, 429);
+  await env.MISAKANET_KV.put(rateKey, String(rateCount + 1), { expirationTtl: 60 });
+
+  let body;
+  try { body = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
+
+  const { query, result_count: resultCount, top_score: topScore, reason, lesson_id: lessonId } = body || {};
+  if (typeof query !== "string" || !query.trim()) return jsonResponse({ error: "Missing 'query'" }, 400);
+
+  // Solved searches are not recorded at all — the map only tracks gaps.
+  const count = Number.isFinite(Number(resultCount)) ? Number(resultCount) : 0;
+  const score = Number.isFinite(Number(topScore)) ? Number(topScore) : 0;
+  let derivedReason = reason;
+  if (!UNSOLVED_REASONS.includes(derivedReason)) {
+    if (count <= 0) derivedReason = "no_match";
+    else if (score < UNSOLVED_LOW_SCORE) derivedReason = "low_confidence";
+    else return jsonResponse({ recorded: false, reason: "search_was_solved" });
+  }
+
+  const recorded = await recordUnsolvedSearch(env, {
+    taskFamily: classifyTaskFamily(query),
+    reason: derivedReason,
+  });
+  if (derivedReason === "not_helpful" && lessonId) {
+    await recordStaleLesson(env, sanitizeIdentifier(lessonId, 200));
+  }
+
+  // Log the derived label only — never the query itself.
+  console.log(`[unsolved] ${recorded.taskFamily} ${recorded.reason}`);
+  return jsonResponse({ recorded: true, taskFamily: recorded.taskFamily, reason: recorded.reason });
+}
+
 async function probeKeepaliveEndpoint(endpoint) {
   const resp = await fetch(endpoint.url, {
     headers: { "User-Agent": "MisakaNet-Register-Proxy-Keepalive/1.0" },
@@ -238,9 +456,22 @@ export default {
         );
         accepted.push(feedbackId);
         console.log(`Feedback ${feedbackId}: ${feedback} on ${lesson_id} for "${query}"`);
+
+        // Unsolved failure map (#788): a not-helpful verdict means the lesson
+        // did not close the gap. Aggregate-only — the query is classified and
+        // dropped, and only the public lesson ID is counted.
+        if (feedback === "irrelevant" || feedback === "too_basic") {
+          await recordUnsolvedSearch(env, { taskFamily: classifyTaskFamily(query), reason: "not_helpful" });
+          await recordStaleLesson(env, sanitizeIdentifier(record.lesson_id, 200));
+        }
       }
 
       return jsonResponse({ accepted: accepted.length });
+    }
+
+    // POST /api/search-signal — unsolved-search intake for the failure map (#788)
+    if (request.method === "POST" && url.pathname === "/api/search-signal") {
+      return handleSearchSignal(request, env);
     }
 
     // POST /api/intake — general-purpose intake for MCP, agents, sandbox (#589)
@@ -323,6 +554,11 @@ export default {
 
       console.log(`Intake ${intakeId}: type=${type} source=${source} family=${family}`);
       return jsonResponse({ accepted: true, intake_id: intakeId, consent: record.consent });
+    }
+
+    // GET /api/insights/unsolved-map — public aggregate failure map (#788)
+    if (request.method === "GET" && url.pathname === "/api/insights/unsolved-map") {
+      return handleUnsolvedMap(env);
     }
 
     // GET /api/insights/demand-board — public aggregate view of intake clusters
@@ -528,4 +764,18 @@ export default {
   async scheduled(controller, env, ctx) {
     ctx.waitUntil(runKeepaliveSweep(controller.cron));
   },
+};
+
+// Named exports for unit tests only (workers/unsolved-map.test.mjs). Wrangler
+// deploys this file for its default export; the extra exports are inert there.
+export {
+  UNSOLVED_FAMILY_WHITELIST,
+  UNSOLVED_REASONS,
+  UNSOLVED_WINDOW_DAYS,
+  buildUnsolvedMap,
+  classifyTaskFamily,
+  handleSearchSignal,
+  handleUnsolvedMap,
+  recordStaleLesson,
+  recordUnsolvedSearch,
 };

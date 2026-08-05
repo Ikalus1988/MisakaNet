@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MisakaNet — Unsolved Failure Map</title>
+<meta name="description" content="Which failure families MisakaNet has no effective lesson for. Aggregate counts only — no raw queries, prompts, logs, or identifiers.">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0d1117; color: #c9d1d9; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem;
+  }
+  .container { max-width: 820px; width: 100%; }
+  h1 { font-size: 1.5rem; font-weight: 600; color: #58a6ff; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.05rem; font-weight: 600; color: #e6edf3; margin: 2rem 0 0.75rem; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.6; }
+  .privacy {
+    border: 1px solid #30363d; border-left: 3px solid #3fb950; border-radius: 8px;
+    background: #161b22; padding: 0.9rem 1rem; font-size: 0.85rem; color: #8b949e; line-height: 1.7;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid #21262d; }
+  th { color: #8b949e; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:hover { background: #161b22; }
+  .family { color: #e6edf3; font-weight: 600; }
+  .reasons { color: #8b949e; font-size: 0.8rem; }
+  .bar { height: 4px; background: #1f6feb; border-radius: 2px; margin-top: 4px; }
+  .state { color: #8b949e; font-size: 0.9rem; padding: 1.25rem 0; }
+  .state.error { color: #f85149; }
+  .table-wrap { overflow-x: auto; }
+  a { color: #58a6ff; }
+  footer { margin-top: 2.5rem; font-size: 0.8rem; color: #6e7681; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⚡ Unsolved Failure Map</h1>
+  <p class="subtitle">
+    Where MisakaNet's lesson coverage has gaps: failure families whose searches found nothing,
+    found only low-confidence matches, or whose lessons were reported as not helpful.
+    Rolling 30-day window.
+  </p>
+
+  <div class="privacy">
+    <strong>Privacy:</strong> aggregate counts only. Task-family labels are derived from query
+    clustering on the server and the query text is discarded immediately — no raw queries, prompts,
+    logs, file paths, session data, or user identifiers are stored or shown here.
+  </div>
+
+  <h2>Top unsolved families</h2>
+  <div class="table-wrap">
+    <table id="families-table" hidden>
+      <thead>
+        <tr><th>Task family</th><th class="num">7d</th><th class="num">30d</th><th>Reasons</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="state" id="families-state">Loading…</div>
+
+  <h2>Lessons reported as not helpful</h2>
+  <div class="table-wrap">
+    <table id="stale-table" hidden>
+      <thead>
+        <tr><th>Lesson</th><th class="num">Not-helpful (30d)</th><th>Last seen</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="state" id="stale-state">Loading…</div>
+
+  <footer>
+    Source: <code>GET /api/insights/unsolved-map</code> ·
+    <a href="https://github.com/Ikalus1988/MisakaNet/issues/788">issue #788</a> ·
+    A family with a high count is an invitation:
+    <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml">share a lesson</a>
+    that closes the gap.
+  </footer>
+</div>
+
+<script>
+const API = window.location.origin + '/api/insights/unsolved-map';
+
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderFamilies(families) {
+  const table = document.getElementById('families-table');
+  const state = document.getElementById('families-state');
+  if (!families.length) {
+    state.textContent = 'No unsolved searches recorded in the last 30 days.';
+    return;
+  }
+  const max = Math.max(...families.map(f => f.unsolved30d));
+  table.querySelector('tbody').innerHTML = families.map(f => {
+    const reasons = Object.entries(f.reasons || {})
+      .sort((a, b) => b[1] - a[1])
+      .map(([reason, count]) => escapeHTML(reason.replace(/_/g, ' ')) + ' ×' + count)
+      .join(', ');
+    const width = Math.round((f.unsolved30d / max) * 100);
+    return '<tr>' +
+      '<td><span class="family">' + escapeHTML(f.taskFamily) + '</span>' +
+        '<div class="bar" style="width:' + width + '%"></div></td>' +
+      '<td class="num">' + f.unsolved7d + '</td>' +
+      '<td class="num">' + f.unsolved30d + '</td>' +
+      '<td class="reasons">' + (reasons || '—') + '</td>' +
+    '</tr>';
+  }).join('');
+  table.hidden = false;
+  state.hidden = true;
+}
+
+function renderStale(lessons) {
+  const table = document.getElementById('stale-table');
+  const state = document.getElementById('stale-state');
+  if (!lessons.length) {
+    state.textContent = 'No lessons flagged as not helpful in the last 30 days.';
+    return;
+  }
+  table.querySelector('tbody').innerHTML = lessons.map(l =>
+    '<tr>' +
+      '<td><a href="/search/?q=' + encodeURIComponent(l.lessonId) + '">' + escapeHTML(l.lessonId) + '</a></td>' +
+      '<td class="num">' + l.notHelpful30d + '</td>' +
+      '<td class="reasons">' + escapeHTML(l.lastSeen || '—') + '</td>' +
+    '</tr>').join('');
+  table.hidden = false;
+  state.hidden = true;
+}
+
+fetch(API)
+  .then(r => r.json())
+  .then(data => {
+    if (!data.available) {
+      document.getElementById('families-state').textContent = 'Insights storage is not configured on this deployment.';
+      document.getElementById('stale-state').hidden = true;
+      return;
+    }
+    renderFamilies(data.families || []);
+    renderStale(data.staleLessons || []);
+  })
+  .catch(() => {
+    for (const id of ['families-state', 'stale-state']) {
+      const el = document.getElementById(id);
+      el.textContent = 'Could not load the map. Try again later.';
+      el.className = 'state error';
+    }
+  });
+</script>
+</body>
+</html>
