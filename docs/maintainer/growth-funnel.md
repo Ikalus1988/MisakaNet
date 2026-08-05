@@ -1,65 +1,51 @@
-# Growth Funnel Dashboard
+# MisakaNet Growth Funnel (增长漏斗)
+> Baseline: 2026-08-05 | Updated weekly
 
-This document tracks weekly growth metrics for the project across discovery (Glama), GitHub, and distribution channels (PyPI, GHCR). It gives maintainers a lightweight, at-a-glance view of where users are dropping off in the funnel — from seeing the profile, to clicking through, to actually using the tool.
+## Metrics Baseline
 
-## How to update this weekly
+| Metric | Current | Notes |
+|--------|---------|-------|
+| Glama profile views | 1,433 | glama.ai/mcp/servers/@Ikalus1988/misakanet |
+| Glama impressions | 80 | MCP server impressions |
+| Glama clicks | 8 | Clicks to server page |
+| Glama CTR | 10% | Click-through rate |
+| Glama tool calls | 0 | Actual MCP tool invocations |
+| GitHub unique visitors | ~176 | 14-day unique visitors |
+| PyPI downloads | TBD | Package: misakanet |
+| GHCR pulls | TBD | Docker image pulls |
 
-1. Copy the **Weekly Template** section below.
-2. Paste it at the top of the **Update Log**, filling in this week's date and numbers.
-3. Pull numbers from:
-   - **Glama**: project dashboard → Analytics tab (views, impressions, clicks, CTR, tool calls)
-   - **GitHub**: repo → Insights → Traffic (unique visitors)
-   - **PyPI**: [pypistats.org](https://pypistats.org) or `pip download` stats for the package name
-   - **GHCR**: package page → Insights (pulls), if published
-4. Commit the update — no code changes or release needed, this is doc-only.
+## Funnel Stages
 
----
+Awareness → Interest → Trial → Activation → Retention
 
-## Baseline (established this week)
+| Stage | Metric | Current |
+|-------|--------|---------|
+| Awareness | Glama views + GitHub uniques | ~1,609 |
+| Interest | Glama clicks | 8 |
+| Trial | Glama tool calls | 0 |
+| Activation | Node registrations | TBD |
+| Retention | Repeat tool calls | TBD |
 
-| Metric                 | Current |
-| ---------------------- | ------- |
-| Glama profile views    | 1,433   |
-| Glama impressions      | 80      |
-| Glama clicks           | 8       |
-| Glama CTR              | 10%     |
-| Glama tool calls       | 0       |
-| GitHub unique visitors | ~176    |
-| PyPI downloads         | TBD     |
-| GHCR pulls             | TBD     |
+## Weekly Update Template
 
-**Notes on baseline:**
-
-- Glama CTR (10%) is healthy relative to impressions, but _tool calls = 0_ is the key funnel gap right now — people are viewing and clicking but not invoking the tool. Worth flagging as the metric to watch closest.
-- PyPI downloads and GHCR pulls are not yet instrumented/tracked — first priority for next update is filling these in so the full funnel (view → click → install → use) is visible.
-
----
-
-## Weekly Template
-
-Copy this block for each new entry in the Update Log below.
-
-```markdown
 ### Week of YYYY-MM-DD
 
-| Metric                 | This Week | Last Week | Δ   |
-| ---------------------- | --------- | --------- | --- |
-| Glama profile views    |           |           |     |
-| Glama impressions      |           |           |     |
-| Glama clicks           |           |           |     |
-| Glama CTR              |           |           |     |
-| Glama tool calls       |           |           |     |
-| GitHub unique visitors |           |           |     |
-| PyPI downloads         |           |           |     |
-| GHCR pulls             |           |           |     |
+| Metric | This Week | Last Week | Delta |
+|--------|-----------|-----------|-------|
+| Glama profile views | | | |
+| Glama impressions | | | |
+| Glama clicks | | | |
+| Glama CTR | | | |
+| Glama tool calls | | | |
+| GitHub unique visitors | | | |
 
-## **Observations:**
+### Observations
+- 
 
-## **Actions for next week:**
-```
+### Actions
+- 
 
----
-
-## Update Log
-
-_(Add new weekly entries above this line, most recent first.)_
+## Data Sources
+- Glama: https://glama.ai/mcp/servers/@Ikalus1988/misakanet
+- GitHub Traffic: https://github.com/Ikalus1988/MisakaNet/graphs/traffic
+- PyPI: https://pypi.org/project/misakanet/
