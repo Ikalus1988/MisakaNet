@@ -10,10 +10,12 @@ Standard release process. Do not skip steps.
    python -m pytest
    ```
 
-2. **Run site-health**
+2. **Run site-health** (issue #783 — also run it after any Worker / frontend change)
    ```bash
-   python scripts/misakanet_growth.py site-health --source-root .
+   python3 scripts/site_health_check.py --write --strict
    ```
+   Writes `docs/maintainer/site-health-YYYY-MM-DD.md` and exits non-zero if any
+   endpoint or frontend entry point is not OK. Commit the snapshot with the release.
 
 3. **Update version**
    - `pyproject.toml`: `version = "X.Y.Z"`

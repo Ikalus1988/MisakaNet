@@ -46,6 +46,7 @@ python3 search_knowledge.py "database locked" --json --top=3 | jq '.[].path'
 | `python3 scripts/bench_orchestrator.py [--include-drafts]` | Agent benchmark runner (Phase B/C) |
 | `python3 scripts/contribute.py --wizard` | 7-step interactive lesson creation wizard |
 | `python3 scripts/check_worker_secrets.py` | Scan workers/ for hardcoded secrets |
+| `python3 scripts/site_health_check.py [--write] [--strict]` | Public site + Worker health snapshot (read-only probes) |
 | `python3 search_knowledge.py --score` | Telemetry-based lesson ranking |
 | `python3 -m misakanet.tools.dashboard` | Launch telemetry dashboard (stdlib HTTP server) |
 
