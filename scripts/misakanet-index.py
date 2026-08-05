@@ -20,6 +20,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from misakanet.evidence import evidence_of  # noqa: E402
+
 
 def parse_frontmatter(text: str) -> dict | None:
     """解析 --- 包裹的 JSON frontmatter（支持空行）"""
@@ -95,6 +98,8 @@ def build_index(lessons_dir: str | Path) -> list[dict]:
                 "environment_version": fm.get("environment_version", "") if fm else "",
                 "confidence": fm.get("confidence", 0.5) if fm else 0.5,
                 "status": fm.get("status", "active") if fm else "active",
+                # Evidence level (#786) — missing frontmatter means E0.
+                "evidence_level": evidence_of(fm),
             }
             index.append(entry)
 

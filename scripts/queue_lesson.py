@@ -38,6 +38,11 @@ if _SCRIPTS_DIR.exists() and str(_SCRIPTS_DIR) not in sys.path:
 REPO = "Ikalus1988/MisakaNet"
 NODE_ID = os.environ.get("MISAKANET_NODE_ID", "hermes_wsl2")
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+from misakanet.evidence import DEFAULT_EVIDENCE_LEVEL  # noqa: E402
+
 LESSONS_DIR = Path(os.environ.get("LESSONS_DIR", str(REPO_ROOT / "lessons")))
 
 
@@ -131,6 +136,8 @@ def _render_lesson(title, domain, tags, content, source=NODE_ID, status="publish
         "domain": domain,
         "source": source,
         "status": status,
+        # New lessons start self-reported (#786); promotion is a maintainer action.
+        "evidence_level": DEFAULT_EVIDENCE_LEVEL,
         "tags": tags,
         "created": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
         "updated": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
@@ -158,6 +165,8 @@ def write_lesson(title, domain, tags, content, source=NODE_ID, status="published
         "domain": domain,
         "source": source,
         "status": status,
+        # New lessons start self-reported (#786); promotion is a maintainer action.
+        "evidence_level": DEFAULT_EVIDENCE_LEVEL,
         "tags": tags,
         "created": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
         "updated": now.strftime("%Y-%m-%d %H:%M:%S UTC"),

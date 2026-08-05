@@ -18,6 +18,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 LESSONS_DIR = REPO / "lessons"
 
+sys.path.insert(0, str(REPO))
+from misakanet.evidence import evidence_of, evidence_weight, trust_score  # noqa: E402
+
 # Thresholds
 RISK_LOW_CONFIDENCE = 0.65
 RISK_VERY_LOW_CONFIDENCE = 0.4
@@ -96,12 +99,21 @@ def score_lesson(filepath: Path) -> dict:
 
     score = WEIGHT_CLARITY * clarity + WEIGHT_VERIFY * verify + WEIGHT_COVERAGE * coverage
 
+    # --- evidence level (#786) ---
+    # Quality score keeps its own meaning (and its CI threshold); the evidence
+    # level rescales it into a trust score, so a self-reported lesson and a
+    # CI-verified one no longer look identical at the same writing quality.
+    level = evidence_of(fm)
+
     return {
         "file": str(filepath.relative_to(REPO)),
         "score": round(score, 3),
         "clarity": clarity,
         "verify": verify,
         "coverage": coverage,
+        "evidence_level": level,
+        "evidence_weight": evidence_weight(level),
+        "trust_score": trust_score(score, level),
         "has_root_section": has_root_section,
         "has_verify_section": has_verify_section,
     }
@@ -117,7 +129,8 @@ def main():
         files = [f for f in files if f.name not in ("index.md", "TEMPLATE.md", "README.md")
                  and "_archive" not in f.parts]
     elif args and args[0].endswith(".md"):
-        files = [Path(args[0])]
+        # Resolve so a relative path (the usage in the docstring) works too.
+        files = [Path(args[0]).resolve()]
         threshold = None
     else:
         files = sorted(LESSONS_DIR.rglob("*.md"))
@@ -142,16 +155,25 @@ def main():
     below = [r for r in results if r["score"] < (threshold or 0)]
     avg = sum(r["score"] for r in results) / len(results)
 
+    avg_trust = sum(r["trust_score"] for r in results) / len(results)
+
     print(f"Checked {len(results)} lessons. Average score: {avg:.3f}")
     print()
-    print(f"{'Score':<8} {'Clarity':<8} {'Verify':<8} {'Coverage':<10} File")
-    print("-" * 70)
+    print(f"{'Score':<8} {'Trust':<8} {'Ev':<4} {'Clarity':<8} {'Verify':<8} {'Coverage':<10} File")
+    print("-" * 82)
     for r in sorted(results, key=lambda x: x["score"]):
         tag = " ⚠️" if threshold and r["score"] < threshold else ""
-        print(f"{r['score']:<8.3f} {r['clarity']:<8.1f} {r['verify']:<8.1f} {r['coverage']:<10.1f} {r['file']}{tag}")
+        print(f"{r['score']:<8.3f} {r['trust_score']:<8.3f} {r['evidence_level']:<4} "
+              f"{r['clarity']:<8.1f} {r['verify']:<8.1f} {r['coverage']:<10.1f} {r['file']}{tag}")
 
     print()
-    print(f"Average: {avg:.3f}")
+    print(f"Average: {avg:.3f}  (trust: {avg_trust:.3f})")
+
+    # Evidence distribution — how much of the corpus is still self-reported.
+    levels = {}
+    for r in results:
+        levels[r["evidence_level"]] = levels.get(r["evidence_level"], 0) + 1
+    print("Evidence: " + "  ".join(f"{lvl}={levels.get(lvl, 0)}" for lvl in ("E0", "E1", "E2", "E3", "E4")))
 
     if threshold is not None:
         print(f"Threshold: {threshold}")
