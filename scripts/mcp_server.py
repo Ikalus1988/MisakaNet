@@ -144,7 +144,15 @@ def handle_search(args: dict) -> dict:
     top = args.get("top", 5)
 
     if not query:
-        return {"error": "query is required"}
+        return {
+            "error": "query is required",
+            "hint": "Try: {"query": "python async", "domain": "core"}",
+            "examples": [
+                "{"query": "machine learning"}",
+                "{"query": "REST API", "top": 3}",
+                "{"query": "tutorial", "domain": "core"}"
+            ]
+        }
 
     if HAS_SAG:
         results = sag_search(SAG_DB, query, domain=domain, top=top)
@@ -167,14 +175,25 @@ def handle_search(args: dict) -> dict:
         results = _fallback_search(query, domain=domain, top=top)
         if results is not None:
             return {"results": results, "source": "fallback"}
-        return {"error": "No search engine available and no lessons.json found. Run: python3 scripts/build_sag_index.py"}
+        return {
+            "error": "Search engine unavailable — index not built",
+            "action": "Run: python3 scripts/build_sag_index.py to enable BM25/SAG search",
+            "fallback": "Browse lessons via misaka://lessons/index resource instead"
+        }
 
 
 def handle_get_lesson(args: dict) -> dict:
     """Get a lesson by path or ID."""
     path_or_id = args.get("path", args.get("id", ""))
     if not path_or_id:
-        return {"error": "path or id is required"}
+        return {
+            "error": "path or id is required",
+            "hint": "Try: {"path": "lessons/core/welcome.md"} or {"id": "welcome"}",
+            "examples": [
+                "{"path": "lessons/core/async-python.md"}",
+                "{"id": "async-python"}"
+            ]
+        }
 
     # Try direct path
     lesson_path = REPO_ROOT / path_or_id
@@ -187,7 +206,11 @@ def handle_get_lesson(args: dict) -> dict:
                 break
 
     if not lesson_path.exists():
-        return {"error": f"Lesson not found: {path_or_id}"}
+        return {
+            "error": f"Lesson not found: {path_or_id}",
+            "hint": "Use misakanet_search to find available lessons by keyword",
+            "suggestion": "Try searching with: {"query": "" + path_or_id.replace("-", " ") + ""}"
+        }
 
     content = lesson_path.read_text(encoding="utf-8", errors="replace")
     return {
