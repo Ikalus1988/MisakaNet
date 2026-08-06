@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Ikalus1988/MisakaNet/schema/response.schema.json",
+  "title": "MisakaNet Hub Response",
+  "description": "Hub 处理后给节点的建议回复",
+  "type": "object",
+  "required": ["target_node", "timestamp", "type"],
+  "properties": {
+    "target_node": {
+      "type": "string",
+      "description": "目标节点 ID"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["graph_update", "recommendation", "arbitration_notice", "ack"]
+    },
+    "payload": {
+      "type": "object",
+      "description": "根据 type 不同承载不同数据"
+    },
+    "processed_feedback": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "已处理的反馈文件名列表"
+    }
+  }
+}

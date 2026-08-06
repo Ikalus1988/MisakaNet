@@ -1,0 +1,22 @@
+{
+  "name": "dco-a",
+  "pair": "dco",
+  "phase": "A",
+  "description": "Fix a PR that fails DCO check due to missing Signed-off-by line.",
+  "setup": {
+    "repo_state": "branch with 1 commit missing sign-off",
+    "ci_state": "dco-check.yml failing",
+    "error_message": "DCO check failed — Commit abc1234: Missing Signed-off-by line"
+  },
+  "expected_outcome": {
+    "fix_commands": ["git commit --amend --signoff --no-edit", "git push --force-with-lease"],
+    "lesson_generated": true,
+    "lesson_fields": ["title", "domain", "problem", "root_cause", "solution", "verification"]
+  },
+  "validation": {
+    "ci_passes": true,
+    "lesson_schema_valid": true,
+    "lesson_has_fix_command": true
+  },
+  "teaches": "DCO sign-off requirement and fix pattern"
+}

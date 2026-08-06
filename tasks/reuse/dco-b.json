@@ -1,0 +1,25 @@
+{
+  "name": "dco-b",
+  "pair": "dco",
+  "phase": "B",
+  "description": "Fix a PR that fails DCO check because the sign-off email doesn't match the commit author email.",
+  "setup": {
+    "repo_state": "branch with commit signed off with wrong email",
+    "ci_state": "dco-check.yml failing",
+    "error_message": "DCO check failed — Commit abc5678: Signed-off-by email (wrong@example.com) doesn't match author (correct@example.com)",
+    "lesson_pool_available": true,
+    "relevant_lesson": "dco-auto-fix-workflow"
+  },
+  "expected_outcome": {
+    "retrieves_lesson": true,
+    "avoids_dead_end": "don't just amend --signoff again (same wrong email)",
+    "fix_commands": ["git config user.email correct@example.com", "git commit --amend --signoff --no-edit --reset-author", "git push --force-with-lease"],
+    "lesson_generated": false
+  },
+  "validation": {
+    "ci_passes": true,
+    "searched_misakanet": true,
+    "found_dco_lesson": true
+  },
+  "measures": "Whether agent retrieves prior DCO lesson and adapts it to email mismatch variant"
+}

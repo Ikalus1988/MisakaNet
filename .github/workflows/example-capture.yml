@@ -1,0 +1,34 @@
+# Example: capture CI failures as MisakaNet intake artifacts
+# This workflow does NOT auto-publish — it only generates redacted artifacts.
+#
+# Usage:
+#   - uses: Ikalus1988/MisakaNet/.github/actions/misaka-capture@main
+#     if: failure()
+#     with:
+#       summary: "CI failed"
+#       log-file: pytest.log
+
+name: Example Capture (not active)
+
+on:
+  workflow_dispatch:  # Manual trigger only — this is an example
+
+
+permissions:
+  contents: read
+jobs:
+  example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests (example)
+        run: python -m pytest || true
+
+      - name: Capture failure
+        if: failure()
+        uses: ./.github/actions/misaka-capture
+        with:
+          summary: "pytest failed"
+          log-file: pytest.log
+          source: github-actions

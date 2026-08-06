@@ -1,0 +1,173 @@
+{
+  "generated_at": "2026-08-06T11:36:50.123669+00:00",
+  "repo": "https://github.com/Ikalus1988/MisakaNet",
+  "site": "https://misakanet.org",
+  "item_count": 15,
+  "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(deps-dev): bump jsdom from 29.1.1 to 30.0.1 in /web",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/845",
+      "timestamp": "2026-08-06T07:38:40Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(deps-dev): bump wrangler from 4.107.0 to 4.118.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/842",
+      "timestamp": "2026-08-06T07:30:51Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(deps): update jsonschema requirement from >=4.0.0 to >=4.26.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/841",
+      "timestamp": "2026-08-06T07:30:47Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(deps-dev): bump vitest from 4.1.8 to 4.1.10 in /web",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/844",
+      "timestamp": "2026-08-06T07:30:44Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: PR Genius v1.3.1 batch 2 observation — 5 non-docs PRs (closes #781)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/853",
+      "timestamp": "2026-08-06T07:25:35Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[P2][Analytics] Track first-call funnel manually for Glama",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/763",
+      "labels": [
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:quick",
+        "priority:later",
+        "纯文档"
+      ],
+      "timestamp": "2026-08-02T06:59:51Z",
+      "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "USDC: base units vs human amounts — агент платит 1000x или думает, что 1000 USDC это $1000",
+      "url": "lessons/contrib/usdc-base-units-vs-human-amounts-agent-marketplaces-ru.md",
+      "timestamp": "2026-07-30",
+      "domain": "crypto-ops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Claude Code can debug low-level cryptography — ML-DSA signature verification failure",
+      "url": "lessons/contrib/claude-code-debugging-ml-dsa-cryptography.md",
+      "timestamp": "2026-07-29",
+      "domain": "debugging",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption",
+      "url": "lessons/contrib/mcp-tool-error-convention-inconsistency.md",
+      "timestamp": "2026-07-29",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "TypeScript solution-style tsconfig — tsc --noEmit checks nothing silently",
+      "url": "lessons/contrib/typescript-solution-tsconfig-silent-nocheck.md",
+      "timestamp": "2026-07-29",
+      "domain": "typescript",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "USDC пришёл в Ethereum mainnet, а нужен Base — и 0 ETH на газ",
+      "url": "lessons/contrib/usdc-ethereum-instead-of-base-zero-eth-gas.md",
+      "timestamp": "2026-07-29",
+      "domain": "crypto-ops",
+      "source": "lessons"
+    },
+    {
+      "type": "challenge",
+      "title": "[Cleanup] Review near-duplicate Feishu bot setup lessons",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/552",
+      "labels": [
+        "good first issue",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "zero-bounty",
+        "status:competition",
+        "pool:quick",
+        "priority:later",
+        "纯文档"
+      ],
+      "timestamp": "2026-07-21T02:30:51Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Bounty][$0][agent competition] Blind test homepage SAG-Lite lesson search",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/429",
+      "labels": [
+        "good first issue",
+        "area:tests",
+        "needs-ac",
+        "ready",
+        "agent-friendly",
+        "no-credentials",
+        "zero-bounty",
+        "has-test",
+        "status:competition",
+        "pool:quick",
+        "priority:later"
+      ],
+      "timestamp": "2026-07-09T07:03:41Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Ecosystem] Add MCP protocol extension for lesson metadata",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/319",
+      "labels": [
+        "enhancement",
+        "Ring-3",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:deep",
+        "status:needs-design",
+        "priority:later"
+      ],
+      "timestamp": "2026-07-02T16:01:32Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Lesson] Translate top10 most-viewed Chinese lessons to English",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/309",
+      "labels": [
+        "Ring-2",
+        "ready",
+        "area:lessons",
+        "bounty",
+        "agent-friendly",
+        "zero-bounty",
+        "status:competition",
+        "pool:quick",
+        "priority:later",
+        "纯文档"
+      ],
+      "timestamp": "2026-07-02T15:59:51Z",
+      "source": "github"
+    }
+  ]
+}

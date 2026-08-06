@@ -1,0 +1,29 @@
+{
+    "name": "fanuc-payload-b",
+    "pair": "fanuc-payload",
+    "phase": "B",
+    "description": "Extract payload data from a different FANUC robot backup (LR Mate 200iD). Same VR file format, different variable layout.",
+    "setup": {
+        "repo_state": "FANUC LR Mate backup directory with VR files",
+        "ci_state": "N/A",
+        "error_message": "Cannot read payload data from FANUC backup: VR files are in proprietary binary format",
+        "lesson_pool_available": true,
+        "relevant_lesson": "fanuc-payload-estimation"
+    },
+    "expected_outcome": {
+        "retrieves_lesson": true,
+        "avoids_dead_end": "don't try to parse VR files directly — use kcontrans converter",
+        "fix_commands": [
+            "Use kcontrans to convert VR to VA format",
+            "Extract payload from VA file",
+            "Handle different variable layout for LR Mate"
+        ],
+        "lesson_generated": false
+    },
+    "validation": {
+        "searched_misakanet": true,
+        "found_fanuc_lesson": true,
+        "used_kcontrans": true
+    },
+    "measures": "Whether agent retrieves FANUC payload lesson and applies kcontrans approach"
+}
