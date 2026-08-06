@@ -1,65 +1,58 @@
 # Growth Funnel Dashboard
 
-This document tracks weekly growth metrics for the project across discovery (Glama), GitHub, and distribution channels (PyPI, GHCR). It gives maintainers a lightweight, at-a-glance view of where users are dropping off in the funnel — from seeing the profile, to clicking through, to actually using the tool.
+> Auto-generated baseline — updated weekly via `docs/maintainer/growth-funnel.md`
 
-## How to update this weekly
+## Current Baseline (2026-08-06)
 
-1. Copy the **Weekly Template** section below.
-2. Paste it at the top of the **Update Log**, filling in this week's date and numbers.
-3. Pull numbers from:
-   - **Glama**: project dashboard → Analytics tab (views, impressions, clicks, CTR, tool calls)
-   - **GitHub**: repo → Insights → Traffic (unique visitors)
-   - **PyPI**: [pypistats.org](https://pypistats.org) or `pip download` stats for the package name
-   - **GHCR**: package page → Insights (pulls), if published
-4. Commit the update — no code changes or release needed, this is doc-only.
+| Metric | Current | Trend | Notes |
+|--------|---------|-------|-------|
+| Glama profile views | 1,433 | — | Baseline established |
+| Glama impressions | 80 | — | |
+| Glama clicks | 8 | — | |
+| Glama CTR | 10% | — | Clicks / Impressions |
+| Glama tool calls | 0 | — | |
+| GitHub unique visitors | ~176 | — | From GitHub Insights |
+| PyPI downloads | TBD | — | [pypistats](https://pypistats.org/packages/misakanet-core) |
+| GHCR pulls | TBD | — | From GitHub Packages |
 
----
-
-## Baseline (established this week)
-
-| Metric                 | Current |
-| ---------------------- | ------- |
-| Glama profile views    | 1,433   |
-| Glama impressions      | 80      |
-| Glama clicks           | 8       |
-| Glama CTR              | 10%     |
-| Glama tool calls       | 0       |
-| GitHub unique visitors | ~176    |
-| PyPI downloads         | TBD     |
-| GHCR pulls             | TBD     |
-
-**Notes on baseline:**
-
-- Glama CTR (10%) is healthy relative to impressions, but _tool calls = 0_ is the key funnel gap right now — people are viewing and clicking but not invoking the tool. Worth flagging as the metric to watch closest.
-- PyPI downloads and GHCR pulls are not yet instrumented/tracked — first priority for next update is filling these in so the full funnel (view → click → install → use) is visible.
-
----
-
-## Weekly Template
-
-Copy this block for each new entry in the Update Log below.
+## Weekly Update Template
 
 ```markdown
-### Week of YYYY-MM-DD
+## Week of YYYY-MM-DD
 
-| Metric                 | This Week | Last Week | Δ   |
-| ---------------------- | --------- | --------- | --- |
-| Glama profile views    |           |           |     |
-| Glama impressions      |           |           |     |
-| Glama clicks           |           |           |     |
-| Glama CTR              |           |           |     |
-| Glama tool calls       |           |           |     |
-| GitHub unique visitors |           |           |     |
-| PyPI downloads         |           |           |     |
-| GHCR pulls             |           |           |     |
+| Metric | This Week | Last Week | Δ | Notes |
+|--------|-----------|-----------|---|-------|
+| Glama profile views | N | N | ±N | |
+| Glama impressions | N | N | ±N | |
+| Glama clicks | N | N | ±N | |
+| Glama CTR | N% | N% | ±N% | |
+| Glama tool calls | N | N | ±N | |
+| GitHub unique visitors | N | N | ±N | |
+| PyPI downloads | N | N | ±N | |
+| GHCR pulls | N | N | ±N | |
 
-## **Observations:**
+### Highlights
+- [Key observation 1]
+- [Key observation 2]
 
-## **Actions for next week:**
+### Actions
+- [ ] [Action item 1]
+- [ ] [Action item 2]
 ```
 
----
+## Data Sources
 
-## Update Log
+| Metric | Source | How to get |
+|--------|--------|------------|
+| Glama profile views | [Glama MCP Server Page](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet) | Glama dashboard (requires owner login) |
+| Glama impressions/clicks/CTR | Glama analytics | Same as above |
+| GitHub unique visitors | [GitHub Insights](https://github.com/Ikalus1988/MisakaNet/graphs/traffic) | Traffic tab → Visitors |
+| PyPI downloads | [pypistats.org](https://pypistats.org/packages/misakanet-core) | Auto-tracked |
+| GHCR pulls | GitHub Packages | Package → Usage metrics |
 
-_(Add new weekly entries above this line, most recent first.)_
+## Notes
+
+- Glama metrics require maintainer access to the Glama dashboard
+- GitHub traffic data is available to repo owners under Insights → Traffic
+- PyPI and GHCR metrics can be automated via CI (future improvement)
+- Update frequency: weekly (recommended Monday morning)
