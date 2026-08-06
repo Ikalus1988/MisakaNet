@@ -11,12 +11,12 @@ Journey reports from 6 contributors revealed consistent UX friction points. This
 
 | ID | Finding | Severity | Source | Absorbed? | Action |
 |----|---------|----------|--------|-----------|--------|
-| **UX-1** | Token acquisition undocumented | Blocking | #850, #836, #834, #833, #847 | ❌ | Need: docs update or self-service token flow |
+| **UX-1** | Token acquisition undocumented | Blocking | #850, #836, #834, #833, #847 | ✅ | [#860] Added token acquisition docs to mcp-remote.md |
 | **UX-2** | Search empty state confusing | Medium | #850, #836 | ❌ | Need: better "no results" messaging |
 | **UX-3** | Post-registration wait/refresh unclear | Medium | #850 | ❌ | Need: UX copy in registration flow |
 | **UX-4** | README vs issue body discovery path | Low | #850 | ❌ | Need: unified first-touch strategy |
-| **UX-5** | Workflow 403/bot label misleading | Medium | #850, #836 | ❌ | Need: docs explaining CI behavior for new contributors |
-| **UX-6** | Error messages don't guide to fix | Low | #834, #833 | ❌ | Need: actionable error responses |
+| **UX-5** | Workflow 403/bot label misleading | Medium | #850, #836 | ✅ | [#860] Added CI behavior explanation to CONTRIBUTING.md |
+| **UX-6** | Error messages don't guide to fix | Low | #834, #833 | ✅ | [#860] Updated troubleshooting table in mcp-remote.md with actionable guidance |
 
 ## Detail per Finding
 
@@ -88,16 +88,16 @@ These are all non-blocking or expected for first-time contributors, but the labe
 
 | Finding | Issue Created | Docs Updated | Lesson Created | Code Fix |
 |---------|--------------|--------------|----------------|----------|
-| UX-1 | ❌ | ❌ | ❌ | ❌ |
+| UX-1 | ❌ | ✅ | ❌ | ❌ |
 | UX-2 | ❌ | ❌ | ❌ | ❌ |
 | UX-3 | ❌ | ❌ | ❌ | ❌ |
 | UX-4 | ❌ | ❌ | ❌ | ❌ |
-| UX-5 | ❌ | ❌ | ❌ | ❌ |
-| UX-6 | ❌ | ❌ | ❌ | ❌ |
+| UX-5 | ❌ | ✅ | ❌ | ❌ |
+| UX-6 | ❌ | ✅ | ❌ | ❌ |
 
 ## Next Steps
 
-1. Create issues for each finding (or group related ones)
-2. Prioritize UX-1 (blocking) and UX-5 (misleading CI)
-3. Update docs for quick wins (UX-2, UX-3, UX-5, UX-6)
+1. ~~Create issues for each finding~~ — ✅ [#855] exists
+2. ~~Prioritize UX-1 (blocking) and UX-5 (misleading CI)~~ — ✅ [#860] absorbed
+3. ~~Update docs for quick wins (UX-2, UX-3, UX-5, UX-6)~~ — ✅ [#860] absorbed UX-5, UX-6; UX-2, UX-3 pending
 4. Defer UX-4 to v2.17 (needs product decision)
