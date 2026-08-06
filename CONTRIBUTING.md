@@ -52,6 +52,29 @@ Before opening a PR, confirm:
 - [ ] Every commit has `Signed-off-by:` trailer (`git commit -s`)
 - [ ] No unrelated files included
 
+
+## 🔍 Understanding CI Checks
+
+When you open a PR, several automated checks run. Here's what each one means and whether you need to act on it:
+
+### Checks that ALWAYS matter
+
+| Check | What it does | If it fails |
+|-------|-------------|-------------|
+| **DCO** | Verifies every commit has `Signed-off-by:` | You MUST fix this. Run `git commit -s --amend` and force-push. |
+| **Lint (ruff)** | Checks Python code style | You MUST fix lint errors before merge. |
+| **Tests (pytest)** | Runs the test suite | You MUST ensure tests pass unless the failure is pre-existing on `main`. |
+
+### Checks that are ADVISORY only (do NOT block merge)
+
+| Check | What it does | If it fails |
+|-------|-------------|-------------|
+| **pr-genius** | AI code review assistant | **Advisory only — never blocks merge.** This is an automated suggestion tool. A `pr-genius: fail` does NOT mean your PR is rejected. |
+| **Workers Builds (misakanet-web)** | Deploys a preview of the Cloudflare Worker | **Known transient issue.** New contributor PRs often trigger a Workers Builds failure because of missing secrets in the fork. This is expected and does NOT block your PR. |
+| **auto-merge** | Automatically merges approved PRs | **Requires maintainer approval for first-time contributors.** An `auto-merge: fail` simply means the maintainer hasn't reviewed yet — it is NOT a rejection. |
+
+> ⚠️ **Important for new contributors:** If you see `pr-genius: fail`, `Workers Builds: fail`, or `auto-merge: fail` on your first PR, **these are all expected and non-blocking**. The only checks you need to worry about are DCO, lint, and tests. Ask in the PR comments if you're unsure.
+
 ## Maintainer Review Policy
 
 MisakaNet keeps `main` stable, but maintainers are allowed to use judgment:
