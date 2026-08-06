@@ -7,6 +7,45 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## v2.16.0 — 2026-08-06
+
+### Highlights
+
+- **Remote MCP stable**: Glama remote endpoint declared (#817), BM25 search API fix in MCP server (#800), MCP first-call user journey validated (#830/#850/#851). Remote MCP now works end-to-end: discover → configure → call.
+- **Agent Self-Healing benchmark**: 10-task mini benchmark covering common agent failure patterns (#852). Provides a reproducible eval harness for agent recovery quality.
+- **Contributor reputation points**: Non-transferable reputation system tracking contribution quality over time (#848/#819).
+- **Site health monitoring**: Repeatable public site health snapshot with automated endpoint + frontend probes (#808/#783). Run `python scripts/site_health_check.py --write --strict` before each release.
+- **Unsolved failure map**: Privacy-preserving aggregate view of intake submission clusters by domain (#809/#788).
+- **Evidence levels E0-E4**: Standardized evidence taxonomy for lessons — from hearsay (E0) to verified reproduction (E4) (#810/#786).
+- **Growth funnel dashboard**: Minimum growth funnel metrics established (#765).
+- **Glama analytics boundary clarified**: Documentation distinguishing Glama-routed tool calls from local stdio MCP usage (#797).
+- **PR Genius v1.3.1 observation complete**: Batch 2 of 5 non-docs PRs observed. 100% accuracy maintained, advisory-only confirmed (#853/#781).
+- **Contributor intro**: First-call contributor story and onboarding blog post (#784/#782).
+
+### Bug fixes
+
+- `mcp_server.py` uses correct BM25 search API path (fixes #799)
+- Corrupt and malformed lesson metadata resolved (#812)
+
+### Data
+
+- 192 lessons (from site health snapshot), 4 new session lessons added (#801)
+- 10,061+ counter hits
+
+### Dependency updates
+
+- JS/TS: undici 7.28→7.29, vitest 4.1.8→4.1.10, wrangler 4.107→4.118, jsdom 29.1→30.0
+- Python: jsonschema ≥4.0→≥4.26
+- CI: codecov/codecov-action 5→7, actions/labeler 5→7, actions/github-script 7→9, docker/build-push-action 5→7, docker/metadata-action 5→6
+
+### Docs
+
+- `docs/maintainer/site-health-2026-08-06.md` — release snapshot, all endpoints ✅
+- `docs/maintainer/handoff-2026-08-06.md` — maintainer closeout notes
+- `docs/journey-reports/2026-08-06-remote-mcp.md` — remote MCP first-call validation
+
+---
+
 ## v2.15.0 — 2026-08-03
 
 ### Highlights
