@@ -52,6 +52,44 @@ Before opening a PR, confirm:
 - [ ] Every commit has `Signed-off-by:` trailer (`git commit -s`)
 - [ ] No unrelated files included
 
+
+
+## Understanding CI Checks
+
+When you open a PR, several automated checks run. **These are quality gates, not rejections.** Here's what each one means:
+
+### CI Bots — What They Do
+
+| Check | What It Is | What "Fail" Means |
+|-------|-----------|-------------------|
+| **pr-genius** | AI code review assistant | Feedback on code quality — not a rejection. Read the suggestions but don't panic. |
+| **Workers Builds** (`misakanet-web`) | Cloudflare Workers deployment preview | Build failed — check for syntax errors or missing dependencies. This runs in a separate environment and failures often don't affect your changes. |
+| **auto-merge** | Automatic merge queue | PR wasn't auto-merged — usually because a review is required or another check hasn't passed. Manual merge is still available. |
+| **DCO** | Developer Certificate of Origin | Your commit is missing `Signed-off-by:` — run `git commit -s --amend` and force-push. |
+| **Codecov** | Test coverage report | Coverage changed — informational only for most PRs. |
+
+### Common Scenarios for New Contributors
+
+> **"pr-genius: fail"** → Your code has suggestions for improvement. Read them, apply what makes sense, and move on. The maintainer decides what matters.
+
+> **"Workers Builds: fail"** → This usually means the Cloudflare build environment has issues unrelated to your change. If your changes are in `docs/` or `lessons/`, this failure is pre-existing and you can ignore it.
+
+> **"auto-merge: fail"** → This is expected for first-time contributors. The maintainer will merge manually after review.
+
+> **"DCO: fail"** → The ONLY blocker you must fix. Run:
+> ```bash
+> git commit -s --amend --no-edit
+> git push --force
+> ```
+
+### When to Worry
+
+- **DCO fail**: Always fix — your PR won't be merged without it
+- **Test failures in files you changed**: Fix the tests
+- **Build failures from your code changes**: Debug and fix
+
+For anything else: **the maintainer will tell you if it matters.** Don't assume a red X means your PR is rejected.
+
 ## Maintainer Review Policy
 
 MisakaNet keeps `main` stable, but maintainers are allowed to use judgment:
