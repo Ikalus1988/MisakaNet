@@ -491,8 +491,12 @@ function render(results, q) {
   reportUnsolvedSearch(q, results);
   if (!results.length) {
     el.innerHTML = '<div class="fallback">' +
-      '<div style="margin-bottom:12px;">' + t('noMatchPrefix') + ' "' + escapeHTML(q) + '". ' + t('noMatchSuffix') + '</div>' +
-      '<div style="font-size:12px;"><a href="/skill.md">' + t('installSkill') + '</a> / <a href="https://github.com/Ikalus1988/MisakaNet">' + t('submitLesson') + '</a></div></div>';
+      '<div style="margin-bottom:8px;">' + t('noMatchPrefix') + ' "' + escapeHTML(q) + '". ' + t('noMatchSuffix') + '</div>' +
+      '<div style="font-size:13px;margin-bottom:12px;max-width:480px;margin-left:auto;margin-right:auto;">' +
+        'Try using fewer keywords, checking spelling, or browsing by <a href="/topics/" style="color:#58a6ff;">topic</a>. ' +
+        'Popular queries: <code style="font-size:11px;">pip timeout</code>, <code style="font-size:11px;">database locked</code>, <code style="font-size:11px;">DCO sign-off</code>, <code style="font-size:11px;">git rebase</code>.' +
+      '</div>' +
+      '<div style="font-size:12px;"><a href="/skill.md">' + t('installSkill') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet">' + t('submitLesson') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-request.yml">Request a lesson</a></div></div>';
     return;
   }
   const searchable = _lessons ? _lessons.filter(isSearchable).length : 0;
