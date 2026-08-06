@@ -1,56 +1,42 @@
 {
-  "generated_at": "2026-08-06T03:42:29.538657+00:00",
+  "generated_at": "2026-08-06T09:08:27.494309+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 15,
   "items": [
     {
       "type": "merged_pr",
-      "title": "experiment: declare remote endpoint in glama.json",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/817",
-      "timestamp": "2026-08-05T17:07:59Z",
+      "title": "chore(deps-dev): bump jsdom from 29.1.1 to 30.0.1 in /web",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/845",
+      "timestamp": "2026-08-06T07:38:40Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(trust): add evidence levels E0-E4 for lessons (#786)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/810",
-      "timestamp": "2026-08-05T17:02:17Z",
+      "title": "chore(deps-dev): bump wrangler from 4.107.0 to 4.118.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/842",
+      "timestamp": "2026-08-06T07:30:51Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(insights): add privacy-preserving unsolved failure map (#788)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/809",
-      "timestamp": "2026-08-05T17:01:15Z",
+      "title": "chore(deps): update jsonschema requirement from >=4.0.0 to >=4.26.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/841",
+      "timestamp": "2026-08-06T07:30:47Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(health): add repeatable public site health snapshot (#783)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/808",
-      "timestamp": "2026-08-05T17:00:50Z",
+      "title": "chore(deps-dev): bump vitest from 4.1.8 to 4.1.10 in /web",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/844",
+      "timestamp": "2026-08-06T07:30:44Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "Update fix: resolve corrupt and malformed lesson metadata fr",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/812",
-      "timestamp": "2026-08-05T17:00:29Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[CI] Observe PR Genius v1.3.1 on next 5 non-docs PRs",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/781",
-      "labels": [
-        "area:workflow",
-        "ready",
-        "bounty",
-        "status:competition",
-        "priority:next"
-      ],
-      "timestamp": "2026-08-03T07:09:55Z",
+      "title": "docs: PR Genius v1.3.1 batch 2 observation — 5 non-docs PRs (closes #781)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/853",
+      "timestamp": "2026-08-06T07:25:35Z",
       "source": "github"
     },
     {
@@ -67,21 +53,6 @@
         "纯文档"
       ],
       "timestamp": "2026-08-02T06:59:51Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[P3][Benchmark] Build 10-task Agent Self-Healing mini benchmark",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/682",
-      "labels": [
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition",
-        "pool:deep",
-        "priority:later"
-      ],
-      "timestamp": "2026-07-31T11:01:15Z",
       "source": "github"
     },
     {
@@ -160,6 +131,42 @@
         "priority:later"
       ],
       "timestamp": "2026-07-09T07:03:41Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Ecosystem] Add MCP protocol extension for lesson metadata",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/319",
+      "labels": [
+        "enhancement",
+        "Ring-3",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "pool:deep",
+        "status:needs-design",
+        "priority:later"
+      ],
+      "timestamp": "2026-07-02T16:01:32Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Lesson] Translate top10 most-viewed Chinese lessons to English",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/309",
+      "labels": [
+        "Ring-2",
+        "ready",
+        "area:lessons",
+        "bounty",
+        "agent-friendly",
+        "zero-bounty",
+        "status:competition",
+        "pool:quick",
+        "priority:later",
+        "纯文档"
+      ],
+      "timestamp": "2026-07-02T15:59:51Z",
       "source": "github"
     }
   ]
