@@ -213,7 +213,7 @@ jobs:
 
       - name: Upload Coverage to Codecov
         if: steps.scope.outputs.scope == 'full'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: ./coverage.xml
           fail_ci_if_error: false
