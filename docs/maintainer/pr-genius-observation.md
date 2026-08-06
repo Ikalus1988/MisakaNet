@@ -120,3 +120,4 @@ Suggested next step: pin action to commit SHA for reproducibility.
 | 2026-08-02 | harbor #2121: CI_FAILING, caught lockfile drift ✅ |
 | 2026-08-02 | holmesgpt #2305: CI_FAILING, caught CLA/DCO issues ✅ |
 | 2026-08-03 | This report: 12 PRs, 100% accuracy |
+| 2026-08-06 | Batch 2 observation started (#781): 5 PRs queued (#852, #851, #850, #848, #837). See `pr-genius-v1.3.1-observation-batch2.md` |
