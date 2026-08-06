@@ -140,6 +140,7 @@ def handle_search(args: dict) -> dict:
     """Search MisakaNet lessons."""
     query = args.get("query", "")
     domain = args.get("domain")
+    tags = args.get("tags")
     top = args.get("top", 5)
 
     if not query:
@@ -267,6 +268,18 @@ RESOURCES = [
         "description": "Latest release notes and version history",
         "mimeType": "text/markdown",
     },
+    {
+        "uri": "misakanet://lessons/{id}",
+        "name": "Lesson by ID",
+        "description": "Full lesson content and metadata by lesson ID",
+        "mimeType": "application/json",
+    },
+    {
+        "uri": "misakanet://domains",
+        "name": "Domain List",
+        "description": "List all knowledge domains with lesson counts",
+        "mimeType": "application/json",
+    },
 ]
 
 
@@ -313,6 +326,40 @@ def handle_resources_read(uri: str) -> dict:
         if p.exists():
             return {"content": p.read_text(encoding="utf-8", errors="replace")[:4000]}
         return {"error": "STATUS.md not found"}
+
+    elif uri.startswith("misakanet://lessons/"):
+        lesson_id = uri.replace("misakanet://lessons/", "")
+        for subdir in ["core", "contrib", "draft", "en"]:
+            d = REPO_ROOT / "lessons" / subdir
+            if d.exists():
+                for f in d.glob("*.md"):
+                    if f.stem == lesson_id:
+                        content_text = f.read_text(encoding="utf-8", errors="replace")
+                        return {
+                            "id": f.stem,
+                            "path": str(f.relative_to(REPO_ROOT)),
+                            "title": content_text.split("\n")[0].replace("# ", "").strip(),
+                            "domain": subdir,
+                            "content": content_text[:8000],
+                            "word_count": len(content_text.split()),
+                        }
+        return {"error": f"Lesson not found: {lesson_id}"}
+
+    elif uri == "misakanet://domains":
+        from collections import Counter
+        domain_counts = Counter()
+        for subdir in ["core", "contrib", "draft", "en"]:
+            d = REPO_ROOT / "lessons" / subdir
+            if d.exists():
+                for f in d.glob("*.md"):
+                    content_text = f.read_text(encoding="utf-8", errors="replace")
+                    domain = subdir
+                    if "domain:" in content_text[:500]:
+                        for line in content_text[:500].split("\n"):
+                            if line.strip().startswith("domain:"):
+                                domain = line.split(":", 1)[1].strip()
+                    domain_counts[domain] += 1
+        return [{"name": d, "lesson_count": c} for d, c in sorted(domain_counts.items())]
 
     return {"error": f"Unknown resource: {uri}"}
 
