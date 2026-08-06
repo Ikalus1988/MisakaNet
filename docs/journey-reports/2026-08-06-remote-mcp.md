@@ -80,88 +80,29 @@ Access-Control-Allow-Methods: GET, POST, OPTIONS
 | **体验差** | 3. 配置 | 配置模板中的 `YOUR_TOKEN` 占位符没有获取指引的链接 | 在配置示例旁添加 token 获取链接 |
 | **建议改进** | 1. 发现 | Glama 页面是 Next.js SPA，纯 curl 无法获取有效内容 | 考虑在 README 中同时提供纯文本的 endpoint 信息 |
 
-## 补充测试：本地 MCP (stdio) ✅
-
-由于远程端点被认证阻塞，我们转而测试本地 stdio 传输作为对照，验证 MCP 协议栈本身是否正常。
-
-### 本地测试步骤
-
-| 步骤 | 结果 | 详情 |
-|------|------|------|
-| 4. initialize | ✅ | `serverInfo: {name: misakanet, version: 2.15.0}` |
-| 5. tools/list | ✅ | 返回 **4 个工具**（文档声称 2 个） |
-| 6. tools/call (search) | ✅ | BM25 搜索正常，查询 "database locked" 返回 3 条结果 |
-| 6. tools/call (get_lesson) | ✅ | 按 ID 获取 lesson 内容正常 |
-
-### 工具列表（实际）
-
-| 工具 | 描述 |
-|------|------|
-| `misakanet_search` | 搜索 failure lessons |
-| `misakanet_get_lesson` | 按 path/id 获取单条 lesson |
-| `misakanet_submit_usage` | [实验性] 提交 lesson 使用反馈 |
-| `misakanet_usage_status` | 查看配额/用量状态 |
-
-**📝 文档错误**: `docs/integrations/mcp-remote.md` 的 "Available Tools" 表格只列出了 2 个工具，实际有 4 个。
-
-## 补充测试：Token 获取流程
-
-### 注册流程实测
-
-1. 访问 https://misakanet.org → 找到注册表单
-2. 通过 API 注册: `POST https://misakanet.org/api/register/` → ✅ 创建了 GitHub issue #849
-3. CI workflow `register.yml` 应该处理注册并发放 token
-
-### ⚠️ **CI 注册 Workflow 崩溃**（新发现）
-
-```
-Run #31072372370 — 2026-08-06T04:50:32Z — FAILURE
-Root cause:
-  python3: can't open file 'misakanet-avatar.py': [Errno 2] No such file or directory
-```
-
-CI 在生成头像步骤失败，因为 `misakanet-avatar.py` 文件在仓库中不存在。这导致：
-- ❌ 节点 ID 分配后无法推送 counter.json
-- ❌ 头像无法生成
-- ❌ Welcome 评论（含 token）永远不会发布
-
-**这解释了为什么认证步骤是阻塞级** — 不仅文档缺失，注册 CI 本身也坏了。
-
-### 建议修复（P0 新增）
-在 `.github/workflows/register.yml` 中：
-- 修复或移除 `misakanet-avatar.py` 调用（该文件可能在重构中被删除/重命名）
-- 或者如果不再需要头像生成步骤，改为生成占位头像或跳过
-
----
-
 ## 额外发现
 
 ### 正面
 - ✅ CORS 已正确配置 (`Access-Control-Allow-Origin: *`)
 - ✅ 错误信息友好且信息量足够（"Method Not Allowed. Use POST..."）
 - ✅ Cloudflare 保护运行正常
-- ✅ 本地 stdio 工作完美 — initialize / tools/list / tools/call 全部正常
+- ✅ 本地 stdio 文档非常完善，本地使用体验良好
 - ✅ 协议支持清晰（MCP 2025-06-18 + Streamable HTTP）
-- ✅ 注册 API 端点可用 (`POST /api/register/`)
 
 ### 需要注意
 - ⚠️ Remote endpoint 文档与 local stdio 文档混在一起，容易让用户混淆
-- ⚠️ 文档中 remote 用法像是「附加功能」，而本地 stdio 是主要推荐方式
-- ⚠️ 文档声称 2 个工具，实际有 4 个 — 缺少 `misakanet_submit_usage` 和 `misakanet_usage_status`
-- 🔴 **注册 CI (#849) 因 `misakanet-avatar.py` 缺失而失败** — 新用户完全无法获取 token
+- ⚠️ 文档中 remote 用法像是「附加功能」，而本地 stdio 是主要推荐方式 — 如果 remote 是正式功能，应该有独立的 onboarding 流程
 
 ## 总体评价
 
-**Remote MCP endpoint 的服务端已就绪，本地 stdio 体验完美。但远程认证链路在两步上都断了：① 文档未说明 token 来源，② 注册 CI workflow 因 `misakanet-avatar.py` 缺失直接崩溃。**
+**Remote MCP endpoint 的核心功能（服务端）已就绪，但用户转化链路在「认证」这一步完全断裂。**
 
-本地 stdio 体验优秀 — initialize / tools/list / tools/call 全部正常，BM25 搜索可用。Remote 端点在协议层面也没问题（405 → POST、401 → Unauthorized 错误信息清晰），但用户拿到 token 的路径完全断裂。
+本地 stdio 体验优秀，文档详尽。Remote 体验在第一步认证就卡住了 — 用户看到 `YOUR_TOKEN` 但不知道去哪拿。这是一个"最后一公里"问题：服务做好了，文档写了，但没有给用户发钥匙。
 
 ### 建议优先修复
-1. **P0**: 修复 `register.yml` — `misakanet-avatar.py` 缺失导致 CI 崩溃
-2. **P0**: Token 获取流程文档化（在 `mcp-remote.md` 中说明注册→CI→token 的完整路径）
-3. **P1**: 配置示例添加 token 获取链接
-4. **P2**: 更新工具列表文档（2→4）
-5. **P3**: 独立的 remote quickstart 文档，与 local stdio 分开
+1. **P0**: Token 获取流程（生成端点 / 文档说明）
+2. **P1**: 配置示例添加 token 获取链接
+3. **P2**: 独立的 remote quickstart 文档，与 local stdio 分开
 
 ---
 
