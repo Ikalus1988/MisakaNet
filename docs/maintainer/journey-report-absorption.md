@@ -113,3 +113,20 @@ These are all non-blocking or expected for first-time contributors, but the labe
 - **UX-4** — Deferred to v2.17 per product decision.
 
 Signed-off-by: laurentketterle-hub <laurentketterle-hub@users.noreply.github.com>
+## Pending Items (post-#868)
+
+These UX gaps were identified in reports but need further design or upstream changes:
+
+| ID | Gap | Blocker | Suggested Action |
+|----|-----|---------|------------------|
+| UX-2 | Dark mode onboarding toggle | Needs design decision | Open design issue with mockups |
+| UX-3 | Mobile lesson navigation | Responsive layout work | Tag as  for frontend contributors |
+| UX-4 | Search result relevance feedback | Needs telemetry pipeline | Coordinate with #763 analytics funnel |
+
+## MCP Server UX Improvements (this PR)
+
+Enhanced error responses in  with actionable guidance:
+
+- : Returns hints + examples when query is missing, actionable fallback when index unavailable
+- : Structured error with hints for path/id, search suggestion when lesson not found
+- All error responses now follow the  pattern for MCP client display
