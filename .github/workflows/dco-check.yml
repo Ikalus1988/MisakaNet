@@ -92,7 +92,7 @@ jobs:
       - name: Post DCO status on PR
         if: always()
         continue-on-error: true  # fork PR may not have checks:write permission
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             try {

@@ -30,7 +30,7 @@ jobs:
 
       - name: Handle fork PR — manual instructions only
         if: steps.pr.outputs.isFork == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.issues.createComment({
@@ -57,7 +57,7 @@ jobs:
 
       - name: Validate this is a PR issue
         if: steps.pr.outputs.isFork != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const issue = await github.rest.issues.get({
@@ -128,7 +128,7 @@ jobs:
 
       - name: Post success comment (same-repo only)
         if: steps.pr.outputs.isFork != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.issues.createComment({
