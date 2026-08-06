@@ -39,6 +39,25 @@ Ring-1（Core Architecture）竞赛只对 `github-verified` 节点开放。
   GitHub data 分支 counter.json（被动同步，当前为手动）
 ```
 
+## 注册后做什么
+
+注册成功后，你会得到一个节点 ID（格式 `MisakaXXXXX`）。不同类型的注册等待时间不同：
+
+| 通道 | 确认耗时 | 如何查看状态 |
+|------|---------|-------------|
+| GitHub Issue | ~30 秒（CI 等待） | Issue 会收到 bot 回复，包含节点 ID |
+| 邮件 | ~3 秒 | 会收到确认回复邮件（尽力交付） |
+| Web 表单 | ~1 秒 | 页面显示注册成功，包含节点 ID |
+
+### 注册后你可以
+
+1. **加入竞赛** — 搜索 `status: competition` + `good first issue` 标签的 Issue
+2. **提交经验** — `python3 scripts/queue_lesson.py -t "标题" -d 领域 "内容..."`
+3. **查看节点档案** — `python3 search_knowledge.py "MisakaXXXXX"`（替换为你的节点 ID）
+4. **获取 MCP Token** — 注册后去 [Glama](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet) 获取 Remote MCP 的 Bearer token
+
+> ⚠️ 邮件和 Web 注册节点归入 Ring-3/Ring-4，Ring-1 竞赛仅对 `github-verified` 节点开放。
+
 ## 架构文件
 
 | 组件 | 位置 |

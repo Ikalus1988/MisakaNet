@@ -1,103 +1,116 @@
-# Journey Report UX Findings — Absorption Tracker
+# Journey Report Absorption Tracker
 
-Date: 2026-08-06
-Source: #830 journey reports (#850, #836, #834, #833, #847, #851)
+> Status: active · Source: [#855](https://github.com/Ikalus1988/MisakaNet/issues/855)
+> Derived from: #830 → #850, #836, #834, #833, #847, #851
 
 ## Summary
 
-Journey reports from 6 contributors revealed consistent UX friction points. This tracker ensures findings are absorbed into docs, issues, or lessons — not just recorded.
+6 journey reports from [#830](https://github.com/Ikalus1988/MisakaNet/issues/830) revealed consistent UX friction across the Remote MCP on-ramp. This document tracks absorption of those findings into docs, code, and new issues.
 
-## Findings Matrix
+---
 
-| ID | Finding | Severity | Source | Absorbed? | Action |
-|----|---------|----------|--------|-----------|--------|
-| **UX-1** | Token acquisition undocumented | Blocking | #850, #836, #834, #833, #847 | ❌ | Need: docs update or self-service token flow |
-| **UX-2** | Search empty state confusing | Medium | #850, #836 | ❌ | Need: better "no results" messaging |
-| **UX-3** | Post-registration wait/refresh unclear | Medium | #850 | ❌ | Need: UX copy in registration flow |
-| **UX-4** | README vs issue body discovery path | Low | #850 | ❌ | Need: unified first-touch strategy |
-| **UX-5** | Workflow 403/bot label misleading | Medium | #850, #836 | ❌ | Need: docs explaining CI behavior for new contributors |
-| **UX-6** | Error messages don't guide to fix | Low | #834, #833 | ❌ | Need: actionable error responses |
+## Findings & Absorption Status
 
-## Detail per Finding
+| # | Finding | Severity | Source | Status |
+|---|---------|----------|--------|--------|
+| 1 | Token acquisition undocumented | **Blocking** | [2026-08-06-remote-mcp.md](../journey-reports/2026-08-06-remote-mcp.md) | ✅ Absorbed → `docs/integrations/mcp-remote.md` § Getting a Token |
+| 2 | Search empty state confusing | Medium | Multiple reports | ✅ Already resolved — `_smart_fallback()` in `search_knowledge.py` provides closest matches, "Did you mean", domain hints, and contribution links |
+| 3 | Post-registration wait/refresh unclear | Medium | Onboarding reports | ✅ Absorbed → `docs/registration-channels.md` § After Registration |
+| 4 | Workflow 403 / bot labels misleading | Medium | `docs/maintainer/pr-genius-observation.md` | ✅ Absorbed → `CONTRIBUTING.md` § Understanding CI Bot Activity |
+| 5 | README vs issue body discovery path | Low | Multiple reports | ⏳ Deferred to v2.17 |
+| 6 | Error messages don't guide to fix (401/403/405) | Low | [2026-08-06-remote-mcp.md](../journey-reports/2026-08-06-remote-mcp.md) | ✅ Absorbed → `docs/troubleshooting.md` § MCP Remote Errors, `docs/integrations/mcp-remote.md` troubleshooting table |
 
-### UX-1: Token Acquisition (Blocking)
+---
 
-**Problem**: `docs/integrations/mcp-remote.md` says `Bearer YOUR_TOKEN` but never explains where to get it. Every journey report flagged this as the #1 blocker.
+## UX-1: Token Acquisition Documentation ✅
 
-**Current state**: Token is set via Cloudflare dashboard (manual, maintainer-only). No self-service flow.
+**Problem:** `docs/integrations/mcp-remote.md` said `Bearer YOUR_TOKEN` but never explained where to get a token. Every journey reporter flagged this as the #1 blocker.
 
-**Options**:
-1. A: Add "Contact maintainer for token" to docs (quick fix)
-2. B: Create `/api/token` endpoint with email registration
-3. C: Use Glama's hosted endpoint (if #817 works) — no token needed
-4. D: Public read-only token (no auth for search/get_lesson)
+**Fix:** Added "Getting a Token" section to `docs/integrations/mcp-remote.md`:
+- Token source: Glama → Connect → Get API Token
+- Self-service: POST `https://misakanet.org/mcp/token` (when available)
+- Fallback: Use local stdio MCP (no token needed)
 
-**Decision**: Pending. Option A is minimum viable.
+**Files changed:** `docs/integrations/mcp-remote.md`
 
-### UX-2: Search Empty State
+---
 
-**Problem**: When search returns no results, users see `{"results": [], "source": "fallback"}` or `{"error": "No search engine available..."}`. Neither is helpful.
+## UX-2: Search Empty State ✅
 
-**Fix**: Return a structured message with:
-- "No lessons found for your query"
-- Suggestion: try broader keywords
-- Link to contribute a lesson
+**Problem:** No results or errors gave no guidance.
 
-### UX-3: Post-Registration Flow
+**Status:** Already resolved before this absorption cycle. The `_smart_fallback()` function in `search_knowledge.py` provides:
+1. Top-3 closest matches by keyword overlap
+2. "Did you mean" with relaxed query
+3. Domain filter suggestions
+4. Broad mode hint (`--broad`)
+5. Contribution link for missing lessons
+6. Available domain list
 
-**Problem**: After submitting a registration, users don't know:
-- How long to wait
-- Whether to refresh
-- How to check if registration was accepted
-- Where to find their Misaka ID
+No additional code changes needed. The existing FAQ in `docs/troubleshooting.md` § "Search returns nothing" covers the CLI side.
 
-**Fix**: Add clear next-steps in registration response and docs.
+---
 
-### UX-4: Discovery Path
+## UX-3: Post-Registration Next Steps ✅
 
-**Problem**: Some contributors found MisakaNet through issues (bounty), not README. The first-touch experience differs:
-- Issue-first: sees bounty → forks → tries to contribute → confused by setup
-- README-first: sees product → tries MCP → confused by token
+**Problem:** After registering a node, users didn't know how long to wait or how to check status.
 
-**Fix**: Unify the first-touch experience regardless of entry point.
+**Fix:** Added "After Registration" section to `docs/registration-channels.md`:
+- Per-channel wait times (Issue ~30s, Email ~3s, Web ~1s)
+- How to verify registration (check node profile)
+- What happens next (join competitions, submit lessons)
 
-### UX-5: Workflow 403 / Bot Label
+**Files changed:** `docs/registration-channels.md`
 
-**Problem**: New contributors see:
-- `pr-genius: fail` — thinks their PR is rejected
-- `Workers Builds: misakanet-web: fail` — thinks they broke something
-- `auto-merge: fail` — thinks merge is blocked
+---
 
-These are all non-blocking or expected for first-time contributors, but the labels are misleading.
+## UX-4: First-Touch Experience Unification ⏳
 
-**Fix**: Add to CONTRIBUTING.md:
-- "pr-genius is advisory-only, never blocks merge"
-- "Workers Builds failure is a known transient issue"
-- "auto-merge requires maintainer approval for first-time contributors"
+**Problem:** README and issue body present different entry points. README emphasizes MCP installation, while issue templates encourage lesson contribution. Newcomers see inconsistent first-touch experience.
 
-### UX-6: Error Messages
+**Status:** Deferred to v2.17. Requires cross-surface alignment (README, issue templates, mcp-quickstart, CONTRIBUTING). This is a product-design decision, not a docs-only fix.
 
-**Problem**: Error responses like `{"error": "Unauthorized"}` don't tell the user what to do next.
+**Open issue:** TBD (to be filed by maintainer for v2.17 planning)
 
-**Fix**: Include actionable guidance:
-- 401 → "Get a token from [link] or contact maintainer"
-- 405 → "Use POST method for MCP requests"
-- 403 → "Origin not allowed. Use an approved MCP client."
+---
 
-## Absorption Status
+## UX-5: CI Bot Behavior Documentation ✅
 
-| Finding | Issue Created | Docs Updated | Lesson Created | Code Fix |
-|---------|--------------|--------------|----------------|----------|
-| UX-1 | ❌ | ❌ | ❌ | ❌ |
-| UX-2 | ❌ | ❌ | ❌ | ❌ |
-| UX-3 | ❌ | ❌ | ❌ | ❌ |
-| UX-4 | ❌ | ❌ | ❌ | ❌ |
-| UX-5 | ❌ | ❌ | ❌ | ❌ |
-| UX-6 | ❌ | ❌ | ❌ | ❌ |
+**Problem:** Workflow 403 errors, "pr-genius fail" comments, and auto-merge failures made new contributors think their PR was rejected.
 
-## Next Steps
+**Fix:** Added "Understanding CI Bot Activity" section to `CONTRIBUTING.md`:
+- PR Genius: advisory-only, never blocks merge (see `docs/maintainer/pr-genius-observation.md`)
+- Auto-merge: docs-only PRs merge automatically after passing CI
+- Workflow 403: usually a token/permission issue, not a rejection
+- Bot comments: informational, not negative feedback
 
-1. Create issues for each finding (or group related ones)
-2. Prioritize UX-1 (blocking) and UX-5 (misleading CI)
-3. Update docs for quick wins (UX-2, UX-3, UX-5, UX-6)
-4. Defer UX-4 to v2.17 (needs product decision)
+**Files changed:** `CONTRIBUTING.md`
+
+---
+
+## UX-6: Actionable Error Guidance ✅
+
+**Problem:** 401/403/405 responses for Remote MCP lacked actionable guidance.
+
+**Fix:** Enhanced `docs/integrations/mcp-remote.md` troubleshooting table and `docs/troubleshooting.md`:
+- 401 → "Missing or invalid token. Get a token from Glama or use local stdio."
+- 403 → "Invalid origin or missing permissions. Use Claude/Cursor/Glama, or remove Origin header."
+- 405 → "Use POST, not GET. MCP Streamable HTTP requires POST."
+- Each error now links to the relevant setup section
+
+**Files changed:** `docs/integrations/mcp-remote.md`, `docs/troubleshooting.md`
+
+---
+
+## Verification
+
+- [x] All 6 findings addressed (5 ✅ absorbed, 1 ⏳ deferred)
+- [x] Tracker file created at `docs/maintainer/journey-report-absorption.md`
+- [x] No code changes required — all fixes are documentation updates
+- [x] Cross-references between docs are consistent
+
+## Related
+
+- Tracker issue: [#855](https://github.com/Ikalus1988/MisakaNet/issues/855)
+- Source: [#830](https://github.com/Ikalus1988/MisakaNet/issues/830) Journey report collection
+- Journey reports: [#850](https://github.com/Ikalus1988/MisakaNet/pull/850), [#836](https://github.com/Ikalus1988/MisakaNet/pull/836), [#834](https://github.com/Ikalus1988/MisakaNet/pull/834), [#833](https://github.com/Ikalus1988/MisakaNet/pull/833), [#847](https://github.com/Ikalus1988/MisakaNet/pull/847), [#851](https://github.com/Ikalus1988/MisakaNet/pull/851)

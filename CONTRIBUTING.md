@@ -222,6 +222,22 @@ localStorage.removeItem('misaka_debug');
 
 Include any `[MisakaNet]` log output when filing bug reports — it helps pinpoint the issue immediately.
 
+## Understanding CI Bot Activity
+
+MisakaNet uses several automated bots in CI. Their comments and statuses are advisory — **they do not mean your PR is rejected**.
+
+### Bot Behavior Guide
+
+| Bot / Check | What it does | What it means for you |
+|-------------|-------------|----------------------|
+| **PR Genius** (`pr-genius[bot]`) | Advisory risk assessment | 🔵 Informational only — never blocks merge. See [observation report](docs/maintainer/pr-genius-observation.md) |
+| **Auto-merge** | Automatically merges docs-only PRs after CI passes | 🟢 Normal behavior — your PR was approved and merged |
+| **Workflow 403** | GitHub token/permission issue on a CI step | 🟡 CI configuration issue, NOT your fault — the step is configured `continue-on-error` |
+| **DCO check** (`dco-check.yml`) | Checks commit sign-off | 🔴 Blocks merge if failing — run `git commit --amend --signoff --no-edit` |
+| **Quality gate** (`pr-quality-gate.yml`) | Validates lesson quality and scope | 🔴 Blocks merge if failing — check `CONTRIBUTING.md` for requirements |
+
+> 💡 **Key takeaway:** Bot comments like "pr-genius fail" or "Workers Builds fail" are automated diagnostics. They do not mean a maintainer reviewed and rejected your code. Look for human comments from the maintainer (@Ikalus1988) for actual review feedback.
+
 ## Governance & Review Ladder
 
 MisakaNet operates on a **contribution-driven meritocracy**. Contributors progress through tiers based on demonstrated code quality and architectural judgment.

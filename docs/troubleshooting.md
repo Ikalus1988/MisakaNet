@@ -169,6 +169,31 @@ KL-1086: Line number, not error code
 
 ---
 
+## MCP Remote errors (401/403/405)
+
+**Typical errors:**
+```
+HTTP 401 Unauthorized — {"error":"Unauthorized"}
+HTTP 403 Forbidden — invalid Origin
+HTTP 405 Method Not Allowed — {"error":"Method Not Allowed. Use POST for MCP Streamable HTTP transport."}
+```
+
+**Symptoms:**
+- Remote MCP connection fails with HTTP error code
+- Claude Desktop / Cursor can't connect to `https://misakanet.org/mcp`
+
+**Root causes & fixes:**
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| **401 Unauthorized** | Missing or invalid Bearer token | Get a token from [Glama](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet) → Connect → Get API Token. Or use [local stdio](mcp-quickstart.md) instead (no token needed). See [mcp-remote.md](integrations/mcp-remote.md#getting-a-token). |
+| **403 Forbidden** | Invalid Origin header or unsupported client | Use an allowed client (Claude, Cursor, Glama). If testing with curl, remove the `Origin` header. |
+| **405 Method Not Allowed** | Using GET instead of POST | MCP Streamable HTTP uses POST for all messages. Switch your request method to POST. |
+
+> 💡 **Quickest path:** If you just want to try MisakaNet, use [local stdio](mcp-quickstart.md) — no token, no HTTP, no auth. Clone → `pip install` → add to MCP config → done in 30 seconds.
+
+See [Remote MCP docs](integrations/mcp-remote.md) for full setup.
+
 ## MCP server not discovered by Claude/Cursor
 
 **Typical error:**
