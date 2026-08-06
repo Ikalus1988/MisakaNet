@@ -9,6 +9,17 @@ MisakaNet exposes a Streamable HTTP MCP endpoint at `https://misakanet.org/mcp`.
 
 The server also supports local stdio transport as an alternative (see [Local stdio](#local-stdio-alternative) below).
 
+## Getting a Token
+
+To use the remote MCP endpoint, you need a Bearer token. Here's how:
+
+1. **Register** — The token is provisioned automatically when you register as a MisakaNet node. See the [registration flow](https://github.com/Ikalus1988/MisakaNet#-setup--registration) for details.
+2. **Check CI** — After registration, a CI workflow creates your node entry. You'll receive your token and Misaka ID once it completes (typically within a few minutes).
+3. **Alternative: Glama** — If you're using [Glama](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet), you can connect without a token — Glama handles auth automatically.
+4. **Contact maintainer** — If you're blocked, open an issue or reach out via the [MisakaNet community](https://github.com/Ikalus1988/MisakaNet).
+
+> ⚠️ **First-time contributors:** The registration → CI → token pipeline may take a few minutes. If your registration CI fails, check that you've filled in all required fields — missing data is the most common cause.
+
 ## Quick Start
 
 ### Claude Desktop / Claude Code
@@ -40,12 +51,14 @@ Add header: `Authorization: Bearer YOUR_TOKEN`
 2. Click "Connect" or add as a custom endpoint
 3. URL: `https://misakanet.org/mcp`
 
-## Available Tools (Read-Only)
+## Available Tools
 
 | Tool | Description |
 |------|-------------|
 | `misakanet_search` | Search failure lessons by keyword, error text, or topic |
 | `misakanet_get_lesson` | Fetch one lesson by path or ID |
+| `misakanet_submit_usage` | Submit usage feedback for a lesson |
+| `misakanet_usage_status` | Check your usage quota and remaining credits |
 
 ## Protocol Details
 
@@ -96,9 +109,11 @@ Add to MCP config:
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| 401 Unauthorized | Missing or invalid token | Check `Authorization` header |
-| 403 Forbidden | Invalid Origin header | Use allowed client (Claude, Cursor, Glama) or remove Origin |
-| 405 Method Not Allowed | Using GET instead of POST | MCP Streamable HTTP uses POST |
-| 400 Bad Request | Protocol version mismatch | Include `MCP-Protocol-Version: 2025-06-18` |
-| 429 Rate Limited | Too many requests | Wait and retry |
-| Empty search results | Query too narrow | Try broader keywords |
+| 401 Unauthorized | Missing or invalid token | [Get a token](#getting-a-token) via registration, or use Glama for auto-auth |
+| 403 Forbidden | Invalid Origin header | Use an allowed client (Claude, Cursor, Glama) or remove the Origin header. If your client is new, request allowlist addition. |
+| 405 Method Not Allowed | Using GET instead of POST | MCP Streamable HTTP uses POST for all messages |
+| 400 Bad Request | Protocol version mismatch | Include `MCP-Protocol-Version: 2025-06-18` header |
+| 429 Rate Limited | Too many requests | Wait and retry; check your quota with `misakanet_usage_status` |
+| Empty search results | Query too narrow | Try broader keywords, or browse the [lessons index](https://misakanet.org) |
+
+> 💡 **Stuck on auth?** The #1 blocker reported by new users is token acquisition. Start with the [Getting a Token](#getting-a-token) section above. If your registration CI failed, open an issue with the CI run URL — the maintainer can help.
