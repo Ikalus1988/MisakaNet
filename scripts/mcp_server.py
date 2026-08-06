@@ -144,7 +144,10 @@ def handle_search(args: dict) -> dict:
     top = args.get("top", 5)
 
     if not query:
-        return {"error": "query is required"}
+        return {
+            "error": "query is required",
+            "guidance": "Provide a search term (e.g. 'pip install timeout'). For broader results, try shorter keywords. See docs/integrations/mcp-remote.md for usage examples."
+        }
 
     if HAS_SAG:
         results = sag_search(SAG_DB, query, domain=domain, top=top)
@@ -167,14 +170,20 @@ def handle_search(args: dict) -> dict:
         results = _fallback_search(query, domain=domain, top=top)
         if results is not None:
             return {"results": results, "source": "fallback"}
-        return {"error": "No search engine available and no lessons.json found. Run: python3 scripts/build_sag_index.py"}
+        return {
+            "error": "No search engine available and no lessons.json found. Run: python3 scripts/build_sag_index.py",
+            "guidance": "To obtain a token or search lessons, refer to docs/integrations/mcp-remote.md or contact maintainer."
+        }
 
 
 def handle_get_lesson(args: dict) -> dict:
     """Get a lesson by path or ID."""
     path_or_id = args.get("path", args.get("id", ""))
     if not path_or_id:
-        return {"error": "path or id is required"}
+        return {
+            "error": "path or id is required",
+            "guidance": "Provide a lesson path (e.g. 'lessons/core/auto-merge-ci-pipeline.md') or lesson ID. Use misakanet_search first to discover available lessons."
+        }
 
     # Try direct path
     lesson_path = REPO_ROOT / path_or_id
@@ -187,7 +196,10 @@ def handle_get_lesson(args: dict) -> dict:
                 break
 
     if not lesson_path.exists():
-        return {"error": f"Lesson not found: {path_or_id}"}
+        return {
+            "error": f"Lesson not found: {path_or_id}",
+            "guidance": f"Use misakanet_search with a related keyword to discover available lessons, or check docs/integrations/mcp-remote.md for the lesson index."
+        }
 
     content = lesson_path.read_text(encoding="utf-8", errors="replace")
     return {
@@ -203,7 +215,10 @@ def handle_submit_usage(args: dict) -> dict:
     outcome = args.get("outcome", "unknown")
 
     if not lesson_id:
-        return {"error": "lesson_id is required"}
+        return {
+            "error": "lesson_id is required",
+            "guidance": "Provide the lesson ID (e.g. 'auto-merge-ci-pipeline'). Use misakanet_search to discover lesson IDs by topic."
+        }
 
     # For now, just log locally
     report = {
