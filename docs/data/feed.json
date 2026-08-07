@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-08-07T07:44:08.389891+00:00",
+  "generated_at": "2026-08-07T10:13:16.138678+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(ux): implement journey report absorber to extract actionable docs and issue tickets (#868)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/878",
+      "timestamp": "2026-08-07T07:50:29Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(security): escape m.time in danmaku widget — CodeQL #45",
@@ -30,13 +37,6 @@
       "title": "feat: MCP lesson resources + domains + tags search (#319)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/854",
       "timestamp": "2026-08-06T16:22:24Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat: cleanup feishu duplicate lessons (#552)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/856",
-      "timestamp": "2026-08-06T16:22:20Z",
       "source": "github"
     },
     {
