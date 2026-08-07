@@ -50,7 +50,7 @@
 
   function render(){
     feed.innerHTML=msgs.slice(-30).map(m=>
-      '<div class="danmaku-msg"><span class="time">'+m.time+'</span> '+esc(m.text)+'</div>'
+      '<div class="danmaku-msg"><span class="time">'+esc(m.time)+'</span> '+esc(m.text)+'</div>'
     ).join('');
     count.textContent=msgs.length;
     feed.scrollTop=feed.scrollHeight;
