@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-08-06T14:37:28.663577+00:00",
+  "generated_at": "2026-08-07T00:17:17.283592+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 15,
+  "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(deps-dev): bump jsdom from 29.1.1 to 30.0.1 in /web",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/845",
-      "timestamp": "2026-08-06T07:38:40Z",
+      "title": "feat: MCP lesson resources + domains + tags search (#319)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/854",
+      "timestamp": "2026-08-06T16:22:24Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps-dev): bump wrangler from 4.107.0 to 4.118.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/842",
-      "timestamp": "2026-08-06T07:30:51Z",
+      "title": "feat: cleanup feishu duplicate lessons (#552)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/856",
+      "timestamp": "2026-08-06T16:22:20Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps): update jsonschema requirement from >=4.0.0 to >=4.26.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/841",
-      "timestamp": "2026-08-06T07:30:47Z",
+      "title": "feat: add opt-out danmaku feedback wall (#513)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/857",
+      "timestamp": "2026-08-06T16:22:16Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps-dev): bump vitest from 4.1.8 to 4.1.10 in /web",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/844",
-      "timestamp": "2026-08-06T07:30:44Z",
+      "title": "feat: absorb journey report UX findings — token docs, CI explainer, search UX, registration flow (closes #855)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/859",
+      "timestamp": "2026-08-06T14:48:15Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs: PR Genius v1.3.1 batch 2 observation — 5 non-docs PRs (closes #781)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/853",
-      "timestamp": "2026-08-06T07:25:35Z",
+      "title": "[#835] docs: v2.16.0 release notes (clean — replaces #862)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/863",
+      "timestamp": "2026-08-06T14:48:11Z",
       "source": "github"
     },
     {
@@ -97,24 +97,6 @@
     },
     {
       "type": "challenge",
-      "title": "[Cleanup] Review near-duplicate Feishu bot setup lessons",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/552",
-      "labels": [
-        "good first issue",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "zero-bounty",
-        "status:competition",
-        "pool:quick",
-        "priority:later",
-        "纯文档"
-      ],
-      "timestamp": "2026-07-21T02:30:51Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
       "title": "[Bounty][$0][agent competition] Blind test homepage SAG-Lite lesson search",
       "url": "https://github.com/Ikalus1988/MisakaNet/issues/429",
       "labels": [
@@ -131,23 +113,6 @@
         "priority:later"
       ],
       "timestamp": "2026-07-09T07:03:41Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Ecosystem] Add MCP protocol extension for lesson metadata",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/319",
-      "labels": [
-        "enhancement",
-        "Ring-3",
-        "bounty",
-        "agent-friendly",
-        "status:competition",
-        "pool:deep",
-        "status:needs-design",
-        "priority:later"
-      ],
-      "timestamp": "2026-07-02T16:01:32Z",
       "source": "github"
     },
     {
