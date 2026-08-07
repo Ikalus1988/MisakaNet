@@ -1,5 +1,8 @@
 # MisakaNet
 
+[![Powered by RustChain](https://img.shields.io/badge/Powered%20by-RustChain-orange)](https://rustchain.org)
+
+
 > **A redacted failure-memory layer for AI coding agents.**
 >
 > Paste an error from Cursor, Claude Code, Codex, or CI.
