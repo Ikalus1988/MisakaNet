@@ -86,14 +86,14 @@ These are all non-blocking or expected for first-time contributors, but the labe
 
 ## Absorption Status
 
-| Finding | Issue Created | Docs Updated | Lesson Created | Code Fix |
-|---------|--------------|--------------|----------------|----------|
-| UX-1 | ❌ | ❌ | ❌ | ❌ |
-| UX-2 | ❌ | ❌ | ❌ | ❌ |
-| UX-3 | ❌ | ❌ | ❌ | ❌ |
-| UX-4 | ❌ | ❌ | ❌ | ❌ |
-| UX-5 | ❌ | ❌ | ❌ | ❌ |
-| UX-6 | ❌ | ❌ | ❌ | ❌ |
+| Finding | Issue Created | Docs Updated | Lesson Created | Code Fix | Absorbed? |
+|---------|--------------|--------------|----------------|----------|-----------|
+| UX-1 | N/A | ✅ | N/A | N/A | ✅ |
+| UX-2 | N/A | ✅ | N/A | ✅ | ✅ |
+| UX-3 | N/A | ✅ | N/A | N/A | ✅ |
+| UX-4 | Deferred v2.17 | ❌ | ❌ | ❌ | ⏳ Deferred |
+| UX-5 | N/A | ✅ | N/A | N/A | ✅ |
+| UX-6 | N/A | ✅ | N/A | ✅ | ✅ |
 
 ## Next Steps
 
