@@ -640,3 +640,19 @@ See [LIMITATIONS.md](docs/LIMITATIONS.md) for known constraints and non-goals â€
 ---
 
 *Swarm Knowledge Protocol (SKP) â€” [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*
+
+
+## Documentation & CI Boost
+
+### Quick Start
+```bash
+git clone https://github.com/Ikalus1988/MisakaNet.git
+cd MisakaNet
+```
+
+### Enhanced Features
+- Comprehensive inline documentation
+- Automated CI pipeline with GitHub Actions
+- Test coverage for core modules
+
+*Boost contributed by Bounty Hunter*
