@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-08-10T08:07:05.766109+00:00",
+  "generated_at": "2026-08-10T10:37:50.104704+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(contributor): add PR Genius anti-patterns reference",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/938",
+      "timestamp": "2026-08-10T10:25:20Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(voice): add global disable switch",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/936",
+      "timestamp": "2026-08-10T10:21:24Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(voice): add Windows support for voice hook script",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/931",
+      "timestamp": "2026-08-10T08:16:23Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(voice): test report and improved hook script",
@@ -16,27 +37,6 @@
       "title": "feat(voice): MCP voice hooks for audio prompts on tool use",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/928",
       "timestamp": "2026-08-10T06:53:06Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test(mcp): cover lessons.json keyword fallback (Issue #913)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/924",
-      "timestamp": "2026-08-10T03:31:17Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test: stress MCP endpoint under concurrent load",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/925",
-      "timestamp": "2026-08-10T03:30:36Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(voice): implement voice prompts playback and /connect page",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/927",
-      "timestamp": "2026-08-10T03:29:31Z",
       "source": "github"
     },
     {
