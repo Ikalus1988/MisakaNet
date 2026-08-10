@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MisakaNet — Connect</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #1e1e2e;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --accent: #6366f1;
+      --accent-dim: #4f46e5;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+    .logo { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 2rem; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 420px;
+    }
+    .pair-code {
+      font-size: 2.5rem;
+      font-weight: bold;
+      letter-spacing: 0.3em;
+      text-align: center;
+      padding: 1rem;
+      background: #1a1a2e;
+      border-radius: 8px;
+      margin: 1rem 0;
+      user-select: all;
+      color: var(--accent);
+    }
+    .pair-code.loading { color: var(--muted); font-size: 1rem; letter-spacing: normal; }
+    .pair-code.expired { color: var(--red); font-size: 1rem; letter-spacing: normal; }
+    .status {
+      text-align: center;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-top: 1rem;
+    }
+    .status.waiting { background: #1e1e3a; color: var(--yellow); }
+    .status.success { background: #0f2a1a; color: var(--green); }
+    .status.error { background: #2a0f0f; color: var(--red); }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-top: 0.75rem;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #1a1a2e; }
+    .btn.primary {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: white;
+    }
+    .btn.primary:hover { background: var(--accent); }
+    .voice-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: #1a1a2e;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .voice-toggle:hover { background: #222240; }
+    .voice-label { font-size: 0.85rem; }
+    .voice-label small { color: var(--muted); }
+    .toggle-switch {
+      width: 40px;
+      height: 22px;
+      border-radius: 11px;
+      background: #333;
+      position: relative;
+      transition: background 0.2s;
+    }
+    .toggle-switch.on { background: var(--accent); }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: white;
+      transition: transform 0.2s;
+    }
+    .toggle-switch.on::after { transform: translateX(18px); }
+    .footer {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+  <div class="logo">&#x26A1; MisakaNet</div>
+  <div class="subtitle">Pair your mobile device</div>
+
+  <div class="card">
+    <div id="code" class="pair-code loading">Generating pairing code...</div>
+    <div id="status" class="status waiting pulse">Waiting for pairing...</div>
+
+    <div id="voiceToggle" class="voice-toggle" style="display:none;">
+      <div class="voice-label">
+        &#x1F3B5; Enable Misaka Voice<br>
+        <small>Audio prompts on events</small>
+      </div>
+      <div id="toggleSwitch" class="toggle-switch"></div>
+    </div>
+
+    <button id="refreshBtn" class="btn" style="display:none;">Refresh Code</button>
+    <button id="disconnectBtn" class="btn" style="display:none;">Disconnect</button>
+  </div>
+
+  <div class="footer">
+    <a href="/">Back to Network</a>
+  </div>
+
+  <!-- Voice prompts (preloaded when enabled) -->
+  <audio id="voiceConnect" preload="auto" src="/assets/voice/connect-success.mp3"></audio>
+  <audio id="voicePair" preload="auto" src="/assets/voice/pair-success.mp3"></audio>
+  <audio id="voiceLesson" preload="auto" src="/assets/voice/lesson-found.mp3"></audio>
+  <audio id="voiceFailure" preload="auto" src="/assets/voice/failure-warning.mp3"></audio>
+
+  <script>
+    const API_BASE = location.origin;
+    const codeEl = document.getElementById('code');
+    const statusEl = document.getElementById('status');
+    const voiceToggle = document.getElementById('voiceToggle');
+    const toggleSwitch = document.getElementById('toggleSwitch');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+
+    const voices = {
+      connect: document.getElementById('voiceConnect'),
+      pair: document.getElementById('voicePair'),
+      lesson: document.getElementById('voiceLesson'),
+      failure: document.getElementById('voiceFailure'),
+    };
+
+    let pairingCode = null;
+    let pollTimer = null;
+    let expiryTimer = null;
+    let paired = false;
+
+    // --- Voice ---
+    let voiceEnabled = localStorage.getItem('misaka-voice') === 'true';
+
+    function updateVoiceUI() {
+      toggleSwitch.classList.toggle('on', voiceEnabled);
+    }
+
+    function playVoice(name) {
+      if (!voiceEnabled || !voices[name]) return;
+      voices[name].currentTime = 0;
+      voices[name].play().catch(() => {});
+    }
+
+    voiceToggle.addEventListener('click', () => {
+      voiceEnabled = !voiceEnabled;
+      localStorage.setItem('misaka-voice', voiceEnabled);
+      updateVoiceUI();
+      if (voiceEnabled) playVoice('connect');
+    });
+
+    // --- Pairing ---
+    async function requestCode() {
+      if (pollTimer) clearInterval(pollTimer);
+      if (expiryTimer) clearTimeout(expiryTimer);
+      paired = false;
+
+      codeEl.textContent = 'Generating...';
+      codeEl.className = 'pair-code loading';
+      statusEl.textContent = 'Waiting for pairing...';
+      statusEl.className = 'status waiting pulse';
+      refreshBtn.style.display = 'none';
+      disconnectBtn.style.display = 'none';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/connect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.code) {
+          codeEl.textContent = 'Failed to generate code';
+          codeEl.className = 'pair-code expired';
+          statusEl.textContent = data.error || 'Unknown error';
+          statusEl.className = 'status error';
+          refreshBtn.style.display = 'block';
+          return;
+        }
+
+        pairingCode = data.code;
+        codeEl.textContent = data.code;
+        codeEl.className = 'pair-code';
+
+        // Show voice toggle after code is generated
+        voiceToggle.style.display = 'flex';
+        updateVoiceUI();
+
+        // Poll for pairing completion
+        startPolling(data.code);
+
+        // Auto-expire
+        expiryTimer = setTimeout(() => {
+          if (!paired) {
+            codeEl.textContent = 'Code expired';
+            codeEl.className = 'pair-code expired';
+            statusEl.textContent = 'Request a new code';
+            statusEl.className = 'status error';
+            if (pollTimer) clearInterval(pollTimer);
+            refreshBtn.style.display = 'block';
+          }
+        }, 10 * 60 * 1000);
+
+      } catch (err) {
+        codeEl.textContent = 'Connection error';
+        codeEl.className = 'pair-code expired';
+        statusEl.textContent = err.message;
+        statusEl.className = 'status error';
+        refreshBtn.style.display = 'block';
+      }
+    }
+
+    async function startPolling(code) {
+      pollTimer = setInterval(async () => {
+        if (paired) { clearInterval(pollTimer); return; }
+        try {
+          const res = await fetch(`${API_BASE}/api/pair`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          const data = await res.json();
+          if (data.paired && data.token) {
+            paired = true;
+            clearInterval(pollTimer);
+            if (expiryTimer) clearTimeout(expiryTimer);
+
+            // Save token for future use
+            try {
+              localStorage.setItem('misaka-token', data.token);
+            } catch (e) {}
+
+            codeEl.textContent = 'Paired!';
+            codeEl.className = 'pair-code';
+            codeEl.style.color = 'var(--green)';
+            statusEl.textContent = 'Device connected successfully';
+            statusEl.className = 'status success';
+
+            playVoice('pair');
+            disconnectBtn.style.display = 'block';
+          }
+        } catch (err) {
+          // Polling error — keep trying
+        }
+      }, 2000);
+    }
+
+    // --- Disconnect ---
+    disconnectBtn.addEventListener('click', () => {
+      try { localStorage.removeItem('misaka-token'); } catch (e) {}
+      paired = false;
+      requestCode();
+    });
+
+    // --- Init ---
+    refreshBtn.addEventListener('click', requestCode);
+    requestCode();
+  </script>
+</body>
+</html>
