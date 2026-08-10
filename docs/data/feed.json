@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-08-10T04:56:41.263022+00:00",
+  "generated_at": "2026-08-10T08:07:05.766109+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(voice): test report and improved hook script",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/930",
+      "timestamp": "2026-08-10T07:00:57Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(voice): MCP voice hooks for audio prompts on tool use",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/928",
+      "timestamp": "2026-08-10T06:53:06Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "test(mcp): cover lessons.json keyword fallback (Issue #913)",
@@ -23,20 +37,6 @@
       "title": "feat(voice): implement voice prompts playback and /connect page",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/927",
       "timestamp": "2026-08-10T03:29:31Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs: update README for v2.16.0 features",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/923",
-      "timestamp": "2026-08-10T01:54:15Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test(health): cover site_health_check CLI modes; add 2026-08-10 snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/922",
-      "timestamp": "2026-08-10T01:15:57Z",
       "source": "github"
     },
     {
