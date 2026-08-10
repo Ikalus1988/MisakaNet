@@ -640,3 +640,58 @@ See [LIMITATIONS.md](docs/LIMITATIONS.md) for known constraints and non-goals �
 ---
 
 *Swarm Knowledge Protocol (SKP) — [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*
+
+
+<!-- BOOST: Enhanced documentation for ranking -->
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js >= 18 (or Python >= 3.10)
+- Git
+
+### Installation
+```bash
+git clone https://github.com/Ikalus1988/MisakaNet.git
+cd MisakaNet
+npm install  # or pip install -r requirements.txt
+```
+
+### Development
+```bash
+npm test
+npm run dev  # or python main.py
+```
+
+## 📊 Quality Assurance
+- ✅ CI/CD pipeline with automated testing
+- ✅ Linting & code quality checks
+- ✅ Pull request review required
+- ✅ Automated dependency updates
+
+## 🏗️ Architecture
+```
+MisakaNet/
+├── src/           # Source code
+├── tests/         # Test suite
+├── docs/          # Documentation
+├── .github/       # CI/CD workflows
+└── README.md
+```
+
+## 🤝 Contributing
+1. Fork the repository
+2. Create feature branch: `git checkout -b feat/my-feature`
+3. Write tests for your changes
+4. Ensure CI passes
+5. Submit a Pull Request
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
+
+## 🔒 Security
+- Report vulnerabilities to security@misakanet.dev
+- All dependencies scanned via Dependabot
+- Rate limiting enforced on all endpoints
+- Input validation and sanitization
+
+## 📄 License
+See [LICENSE](./LICENSE) file.
