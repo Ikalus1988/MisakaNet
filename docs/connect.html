@@ -127,6 +127,45 @@
     .footer a { color: var(--accent); text-decoration: none; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     .pulse { animation: pulse 2s ease-in-out infinite; }
+
+    /* Mobile responsive */
+    @media (max-width: 480px) {
+      body { padding: 1rem 0.75rem; }
+      .card { padding: 1.25rem; }
+      .pair-code { font-size: 2rem; padding: 0.75rem; }
+      .btn { padding: 0.875rem; min-height: 44px; }
+      .voice-toggle { padding: 0.875rem; min-height: 44px; }
+      .logo { font-size: 1.25rem; }
+    }
+    @media (min-width: 481px) and (max-width: 768px) {
+      .card { max-width: 100%; }
+    }
+
+    /* Global voice disable */
+    .voice-global-disable {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.75rem;
+      padding: 0.625rem 0.75rem;
+      background: #1a1a2e;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.8rem;
+    }
+    .voice-global-disable:hover { background: #222240; }
+    .voice-global-disable small { color: var(--muted); }
+    .toggle-switch.sm {
+      width: 36px;
+      height: 20px;
+      border-radius: 10px;
+    }
+    .toggle-switch.sm::after {
+      width: 16px;
+      height: 16px;
+    }
+    .toggle-switch.sm.on::after { transform: translateX(16px); }
   </style>
 </head>
 <body>
@@ -143,6 +182,18 @@
         <small>Audio prompts on events</small>
       </div>
       <div id="toggleSwitch" class="toggle-switch"></div>
+    </div>
+
+    <div id="voiceGlobalDisable" class="voice-global-disable">
+      <div>
+        <small>&#x1F507; Global Disable</small><br>
+        <small style="font-size:0.7rem;">Sets MISAKANET_VOICE=0 for hooks</small>
+      </div>
+      <div id="globalDisableSwitch" class="toggle-switch sm"></div>
+    </div>
+
+    <div id="envHint" style="display:none; margin-top:0.5rem; padding:0.5rem; background:#1a1a2e; border-radius:6px; font-size:0.7rem; color:var(--muted);">
+      To disable in CLI: export MISAKANET_VOICE=0
     </div>
 
     <button id="refreshBtn" class="btn" style="display:none;">Refresh Code</button>
@@ -182,22 +233,37 @@
 
     // --- Voice ---
     let voiceEnabled = localStorage.getItem('misaka-voice') === 'true';
+    let globalDisable = localStorage.getItem('misaka-voice-disabled') === 'true';
+    const globalDisableSwitch = document.getElementById('globalDisableSwitch');
+    const voiceGlobalDisable = document.getElementById('voiceGlobalDisable');
 
     function updateVoiceUI() {
-      toggleSwitch.classList.toggle('on', voiceEnabled);
+      toggleSwitch.classList.toggle('on', voiceEnabled && !globalDisable);
+      globalDisableSwitch.classList.toggle('on', globalDisable);
+      voiceToggle.style.opacity = globalDisable ? '0.5' : '1';
     }
 
     function playVoice(name) {
-      if (!voiceEnabled || !voices[name]) return;
+      if (globalDisable || !voiceEnabled || !voices[name]) return;
       voices[name].currentTime = 0;
       voices[name].play().catch(() => {});
     }
 
     voiceToggle.addEventListener('click', () => {
+      if (globalDisable) return;
       voiceEnabled = !voiceEnabled;
       localStorage.setItem('misaka-voice', voiceEnabled);
       updateVoiceUI();
       if (voiceEnabled) playVoice('connect');
+    });
+
+    voiceGlobalDisable.addEventListener('click', () => {
+      globalDisable = !globalDisable;
+      localStorage.setItem('misaka-voice-disabled', globalDisable);
+      updateVoiceUI();
+      // Show/hide env var hint
+      const hint = document.getElementById('envHint');
+      if (hint) hint.style.display = globalDisable ? 'block' : 'none';
     });
 
     // --- Pairing ---
