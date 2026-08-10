@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-08-09T21:50:04.070637+00:00",
+  "generated_at": "2026-08-10T02:36:41.604087+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs: fix MCP pairing endpoint paths in v2.16.0 release notes",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/893",
-      "timestamp": "2026-08-09T17:41:54Z",
+      "title": "docs: update README for v2.16.0 features",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/923",
+      "timestamp": "2026-08-10T01:54:15Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat: add lesson quality gate for new contributions",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/894",
-      "timestamp": "2026-08-09T17:41:37Z",
+      "title": "test(health): cover site_health_check CLI modes; add 2026-08-10 snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/922",
+      "timestamp": "2026-08-10T01:15:57Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "[#868] docs: verify UX-1/UX-5 absorption status, track pending items",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/873",
-      "timestamp": "2026-08-07T14:07:12Z",
+      "title": "chore(deps): bump actions/stale from 9 to 11",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/921",
+      "timestamp": "2026-08-10T01:15:18Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(ux): implement journey report absorber to extract actionable docs and issue tickets (#868)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/878",
-      "timestamp": "2026-08-07T07:50:29Z",
+      "title": "chore(deps): bump docker/login-action from 3 to 4",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/920",
+      "timestamp": "2026-08-10T01:15:10Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(security): escape m.time in danmaku widget — CodeQL #45",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/877",
-      "timestamp": "2026-08-07T04:00:16Z",
+      "title": "chore(deps): bump actions/github-script from 7 to 9",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/919",
+      "timestamp": "2026-08-10T01:15:03Z",
       "source": "github"
     },
     {
