@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-08-10T02:36:41.604087+00:00",
+  "generated_at": "2026-08-10T04:56:41.263022+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "test(mcp): cover lessons.json keyword fallback (Issue #913)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/924",
+      "timestamp": "2026-08-10T03:31:17Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "test: stress MCP endpoint under concurrent load",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/925",
+      "timestamp": "2026-08-10T03:30:36Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(voice): implement voice prompts playback and /connect page",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/927",
+      "timestamp": "2026-08-10T03:29:31Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs: update README for v2.16.0 features",
@@ -16,27 +37,6 @@
       "title": "test(health): cover site_health_check CLI modes; add 2026-08-10 snapshot",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/922",
       "timestamp": "2026-08-10T01:15:57Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): bump actions/stale from 9 to 11",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/921",
-      "timestamp": "2026-08-10T01:15:18Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): bump docker/login-action from 3 to 4",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/920",
-      "timestamp": "2026-08-10T01:15:10Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): bump actions/github-script from 7 to 9",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/919",
-      "timestamp": "2026-08-10T01:15:03Z",
       "source": "github"
     },
     {
