@@ -152,12 +152,14 @@ def handle_search(args: dict) -> dict:
                 "{\"query\": \"REST API\", \"top\": 3}",
                 "{\"query\": \"tutorial\", \"domain\": \"core\"}"
             ],
-            "guidance": "Provide a search term (e.g. 'pip install timeout'). For broader results, try shorter keywords. See docs/integrations/mcp-remote.md for usage examples."
+            "guidance": "Provide a search term (e.g. 'pip install timeout'). For broader results, try shorter keywords. See docs/integrations/mcp-remote.md for usage examples.",
+            "voice": "failure-warning",
         }
 
     if HAS_SAG:
         results = sag_search(SAG_DB, query, domain=domain, top=top)
-        return {"results": results, "source": "sag-lite"}
+        voice = "lesson-found" if results else "failure-warning"
+        return {"results": results, "source": "sag-lite", "voice": voice}
     elif HAS_BM25:
         docs = _load_docs_cached(LESSONS, is_lesson=True)
         scored = _search_cached(query, docs)
@@ -170,17 +172,20 @@ def handle_search(args: dict) -> dict:
                 "domain": doc.domain,
                 "status": doc.status,
             })
-        return {"results": results, "source": "bm25"}
+        voice = "lesson-found" if results else "failure-warning"
+        return {"results": results, "source": "bm25", "voice": voice}
     else:
         # Fallback: lightweight keyword search from lessons.json
         results = _fallback_search(query, domain=domain, top=top)
         if results is not None:
-            return {"results": results, "source": "fallback"}
+            voice = "lesson-found" if results else "failure-warning"
+            return {"results": results, "source": "fallback", "voice": voice}
         return {
             "error": "Search engine unavailable — index not built",
             "action": "Run: python3 scripts/build_sag_index.py to enable BM25/SAG search",
             "fallback": "Browse lessons via misaka://lessons/index resource instead",
-            "guidance": "To obtain a token or search lessons, refer to docs/integrations/mcp-remote.md or contact maintainer."
+            "guidance": "To obtain a token or search lessons, refer to docs/integrations/mcp-remote.md or contact maintainer.",
+            "voice": "failure-warning",
         }
 
 
@@ -195,7 +200,8 @@ def handle_get_lesson(args: dict) -> dict:
                 "{\"path\": \"lessons/core/async-python.md\"}",
                 "{\"id\": \"async-python\"}"
             ],
-            "guidance": "Provide a lesson path (e.g. 'lessons/core/auto-merge-ci-pipeline.md') or lesson ID. Use misakanet_search first to discover available lessons."
+            "guidance": "Provide a lesson path (e.g. 'lessons/core/auto-merge-ci-pipeline.md') or lesson ID. Use misakanet_search first to discover available lessons.",
+            "voice": "failure-warning",
         }
 
     # Try direct path
@@ -213,13 +219,15 @@ def handle_get_lesson(args: dict) -> dict:
             "error": f"Lesson not found: {path_or_id}",
             "hint": "Use misakanet_search to find available lessons by keyword",
             "suggestion": "Try searching with: {\"query\": \"" + path_or_id.replace("-", " ") + "\"}",
-            "guidance": f"Use misakanet_search with a related keyword to discover available lessons, or check docs/integrations/mcp-remote.md for the lesson index."
+            "guidance": f"Use misakanet_search with a related keyword to discover available lessons, or check docs/integrations/mcp-remote.md for the lesson index.",
+            "voice": "failure-warning",
         }
 
     content = lesson_path.read_text(encoding="utf-8", errors="replace")
     return {
         "path": str(lesson_path.relative_to(REPO_ROOT)),
         "content": content[:5000],  # Truncate for MCP context window
+        "voice": "connect-success",
     }
 
 
@@ -232,7 +240,8 @@ def handle_submit_usage(args: dict) -> dict:
     if not lesson_id:
         return {
             "error": "lesson_id is required",
-            "guidance": "Provide the lesson ID (e.g. 'auto-merge-ci-pipeline'). Use misakanet_search to discover lesson IDs by topic."
+            "guidance": "Provide the lesson ID (e.g. 'auto-merge-ci-pipeline'). Use misakanet_search to discover lesson IDs by topic.",
+            "voice": "failure-warning",
         }
 
     # For now, just log locally
@@ -241,6 +250,7 @@ def handle_submit_usage(args: dict) -> dict:
         "tool": tool,
         "outcome": outcome,
         "status": "logged",
+        "voice": "pair-success",
     }
 
     # TODO: POST to /api/usage or create GitHub Issue

@@ -127,21 +127,48 @@
     .footer a { color: var(--accent); text-decoration: none; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     .pulse { animation: pulse 2s ease-in-out infinite; }
-  /* Mobile responsive */
-  @media (max-width: 768px) {
-    body { padding: 1rem; }
-    .card { padding: 20px; }
-    .pair-code { font-size: 2rem; letter-spacing: 0.2em; }
-    .btn { padding: 12px 20px; font-size: 14px; min-height: 44px; }
-  }
-  @media (max-width: 480px) {
-    body { padding: 0.75rem; }
-    .card { padding: 16px; }
-    .pair-code { font-size: 1.5rem; letter-spacing: 0.15em; }
-    .voice-toggle { padding: 10px; }
-    .btn { padding: 10px 16px; font-size: 13px; min-height: 48px; }
-    .toggle { min-width: 44px; min-height: 44px; }
-  }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      body { padding: 1rem; }
+      .card { padding: 20px; }
+      .pair-code { font-size: 2rem; letter-spacing: 0.2em; }
+      .btn { padding: 12px 20px; font-size: 14px; min-height: 44px; }
+    }
+    @media (max-width: 480px) {
+      body { padding: 0.75rem; }
+      .card { padding: 16px; }
+      .pair-code { font-size: 1.5rem; letter-spacing: 0.15em; }
+      .voice-toggle { padding: 10px; }
+      .btn { padding: 10px 16px; font-size: 13px; min-height: 48px; }
+      .toggle { min-width: 44px; min-height: 44px; }
+    }
+
+    /* Global voice disable toggle */
+    .voice-global-disable {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.75rem;
+      padding: 0.625rem 0.75rem;
+      background: #1a1a2e;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.8rem;
+    }
+    .voice-global-disable:hover { background: #222240; }
+    .voice-global-disable small { color: var(--muted); }
+    .toggle-switch.sm {
+      width: 36px;
+      height: 20px;
+      border-radius: 10px;
+    }
+    .toggle-switch.sm::after {
+      width: 16px;
+      height: 16px;
+    }
+    .toggle-switch.sm.on::after { transform: translateX(16px); }
   </style>
 </head>
 <body>
@@ -158,6 +185,18 @@
         <small>Audio prompts on events</small>
       </div>
       <div id="toggleSwitch" class="toggle-switch"></div>
+    </div>
+
+    <div id="voiceGlobalDisable" class="voice-global-disable">
+      <div>
+        <small>&#x1F507; Global Disable</small><br>
+        <small style="font-size:0.7rem;">Sets MISAKANET_VOICE=0 for hooks</small>
+      </div>
+      <div id="globalDisableSwitch" class="toggle-switch sm"></div>
+    </div>
+
+    <div id="envHint" style="display:none; margin-top:0.5rem; padding:0.5rem; background:#1a1a2e; border-radius:6px; font-size:0.7rem; color:var(--muted);">
+      To disable in CLI: export MISAKANET_VOICE=0
     </div>
 
     <button id="refreshBtn" class="btn" style="display:none;">Refresh Code</button>
@@ -197,22 +236,36 @@
 
     // --- Voice ---
     let voiceEnabled = localStorage.getItem('misaka-voice') === 'true';
+    let globalDisable = localStorage.getItem('misaka-voice-disabled') === 'true';
+    const globalDisableSwitch = document.getElementById('globalDisableSwitch');
+    const voiceGlobalDisable = document.getElementById('voiceGlobalDisable');
+    const envHint = document.getElementById('envHint');
 
     function updateVoiceUI() {
-      toggleSwitch.classList.toggle('on', voiceEnabled);
+      toggleSwitch.classList.toggle('on', voiceEnabled && !globalDisable);
+      globalDisableSwitch.classList.toggle('on', globalDisable);
+      voiceToggle.style.opacity = globalDisable ? '0.5' : '1';
+      if (envHint) envHint.style.display = globalDisable ? 'block' : 'none';
     }
 
     function playVoice(name) {
-      if (!voiceEnabled || !voices[name]) return;
+      if (globalDisable || !voiceEnabled || !voices[name]) return;
       voices[name].currentTime = 0;
       voices[name].play().catch(() => {});
     }
 
     voiceToggle.addEventListener('click', () => {
+      if (globalDisable) return;
       voiceEnabled = !voiceEnabled;
       localStorage.setItem('misaka-voice', voiceEnabled);
       updateVoiceUI();
       if (voiceEnabled) playVoice('connect');
+    });
+
+    voiceGlobalDisable.addEventListener('click', () => {
+      globalDisable = !globalDisable;
+      localStorage.setItem('misaka-voice-disabled', globalDisable);
+      updateVoiceUI();
     });
 
     // --- Pairing ---
