@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/Ikalus1988/MisakaNet#readme",
   "devDependencies": {
-    "jsdom": "^29.1.1",
-    "vitest": "^4.1.8"
+    "jsdom": "^30.0.1",
+    "vitest": "^4.1.10"
   }
 }

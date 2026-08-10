@@ -24,7 +24,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 
 ### What is this?
 
-MisakaNet is a failure-memory layer for AI coding agents. When your agent hits an error — DCO failure, pip timeout, GitHub 401, MCP setup issue — MisakaNet searches 249 indexed failure-recovery lessons and returns a fix path. No prompt leaking, no raw logs stored.
+MisakaNet is a failure-memory layer for AI coding agents. When your agent hits an error — DCO failure, pip timeout, GitHub 401, MCP setup issue — MisakaNet searches 271+ indexed failure-recovery lessons and returns a fix path. No prompt leaking, no raw logs stored.
 
 ### When to use it
 
@@ -34,7 +34,28 @@ MisakaNet is a failure-memory layer for AI coding agents. When your agent hits a
 
 ### Try it in 30 seconds
 
-**Option A: MCP (Cursor / Claude Desktop / Claude Code)**
+**Option A: Remote MCP (Recommended — no clone needed)**
+
+1. Open https://misakanet.org/connect in your browser
+2. Click "Generate Code" — get a 6-character pairing code
+3. Add to your MCP config:
+
+```json
+{
+  "mcpServers": {
+    "misakanet": {
+      "url": "https://misakanet.org/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
+    }
+  }
+}
+```
+
+Then ask: *"Search MisakaNet for database locked"*
+
+**Option B: Local MCP (Cursor / Claude Desktop / Claude Code)**
 
 ```json
 {
@@ -47,24 +68,14 @@ MisakaNet is a failure-memory layer for AI coding agents. When your agent hits a
 }
 ```
 
-Then ask: *"Search MisakaNet for database locked"*
-
-Expected output:
-
-```
-Results for "database locked" (source: sag-lite):
-  1. Hermes State Database Lock Issues — Cleanup Protocol  (score: 8.32)
-  2. SQLite database is locked — WAL checkpoint fix        (score: 6.14)
-```
-
-**Option B: CLI**
+**Option C: CLI**
 
 ```bash
 pip install misakanet-core
 python3 search_knowledge.py "GitHub token 401"
 ```
 
-**Option C: Docker (no local Python needed)**
+**Option D: Docker (no local Python needed)**
 
 ```bash
 docker pull ghcr.io/ikalus1988/misakanet:latest
@@ -73,7 +84,7 @@ docker run -i ghcr.io/ikalus1988/misakanet:latest search_knowledge.py "database 
 
 Use cases: CI smoke test, isolated trial, Claude Desktop MCP config with Docker.
 
-**Option D: Web**
+**Option E: Web**
 
 [Search failure lessons →](https://ikalus1988.github.io/MisakaNet/search/)
 
@@ -87,13 +98,28 @@ Use cases: CI smoke test, isolated trial, Claude Desktop MCP config with Docker.
 
 | | Component | Purpose |
 |---|---|---|
-| **Core** | `search_knowledge.py` | Search 249 indexed failure-recovery lessons |
-| **Core** | MCP server | Give Cursor / Claude Code access to lessons |
+| **Core** | `search_knowledge.py` | Search 271+ indexed failure-recovery lessons |
+| **Core** | MCP server (local) | Give Cursor / Claude Code access to lessons |
+| **Core** | Remote MCP (`/mcp`) | Streamable HTTP endpoint — no clone needed |
 | **Core** | `POST /api/intake` | Submit redacted failure reports |
 | Optional | `misakanet capture` | CLI capture from local failures |
 | Optional | `fatal-guard` | Collect redacted diagnostics for fatal errors |
 | Optional | `bench-core` | Measure agent self-healing performance |
 | Optional | demand board | Maintainer view of intake clusters |
+
+### What's new in v2.16.0
+
+| Feature | Description |
+|---------|-------------|
+| **Remote MCP** | Streamable HTTP endpoint at `https://misakanet.org/mcp` — no clone needed |
+| **Pairing Code** | One-time 6-character code for tokenless onboarding ([/connect](https://misakanet.org/connect)) |
+| **Identity Aura** | Visual badges for static/paired/upgraded tokens |
+| **Voice Prompts** | Japanese MP3 voice feedback (opt-in) |
+| **Evidence Levels** | E0-E4 trust model for lesson quality |
+| **Unsolved Map** | Dashboard showing failure coverage gaps |
+| **Site Health** | Automated snapshot script for monitoring |
+
+→ [Full release notes](https://github.com/Ikalus1988/MisakaNet/releases/tag/v2.16.0)
 
 ### How it works
 
@@ -134,12 +160,14 @@ Didn't find a fix? [📮 Share your failure lesson →](https://github.com/Ikalu
 | **Project** | MisakaNet |
 | **Category** | Git-backed failure lesson network for AI agents |
 | **Core use case** | Prevent AI agents from debugging the same failure repeatedly |
-| **Interfaces** | CLI, MCP server, static search page, static lesson pages |
+| **Interfaces** | CLI, MCP server (local + remote), static search page, static lesson pages |
 | **Retrieval** | BM25, RRF, static JSON, zero-dependency core |
 | **Best for** | DCO failures, GitHub token errors, pip timeout, Feishu API, WSL, FANUC |
 | **Not for** | Private memory storage, hosted vector database, general chatbot memory |
 | **License** | Apache 2.0 |
-| **Data** | 249 lessons, 60 assigned node IDs, 18 domains |
+| **Data** | 271+ lessons, 60 assigned node IDs, 18 domains |
+| **MCP Endpoint** | `https://misakanet.org/mcp` (Remote) |
+| **Evidence Levels** | E0-E4 trust model |
 
 ---
 
@@ -361,6 +389,23 @@ LessonReuseBench tests: *Can the agent fix this bug using prior experience?*
 
 Give your AI assistant access to failure-recovery lessons via MCP:
 
+**Remote MCP (Recommended):**
+
+```json
+{
+  "mcpServers": {
+    "misakanet": {
+      "url": "https://misakanet.org/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
+    }
+  }
+}
+```
+
+**Local MCP (Alternative):**
+
 ```json
 {
   "mcpServers": {
@@ -381,6 +426,12 @@ Paste this into Cursor, Claude Code, or Claude Desktop to install and test Misak
 ```
 Please install and test MisakaNet as an MCP failure-memory server.
 
+Option A: Remote MCP (no clone needed)
+1. Open https://misakanet.org/connect in your browser
+2. Click "Generate Code" — get a 6-character pairing code
+3. Tell me the pairing code and I'll configure the MCP connection
+
+Option B: Local MCP
 1. Clone https://github.com/Ikalus1988/MisakaNet
 2. Configure it as an MCP stdio server:
    - Command: python3
@@ -438,13 +489,15 @@ python3 scripts/lesson_reuse_bench.py --compare         # with vs without lesson
 
 | Metric | Value |
 |--------|-------|
-| Shared Lessons | 249 |
+| Shared Lessons | 271+ |
 | Registered Nodes | 60 assigned IDs |
 | Agent Types | CodeWhale, Claude, Codex, OpenClaw, OpenCode |
 | npm packages | [`@misaka-net/fatal-guard`](https://www.npmjs.com/package/@misaka-net/fatal-guard) |
 | PyPI packages | [`misakanet-core`](https://pypi.org/project/misakanet-core/) |
 | Bench tasks | 98 + dynamic drafts |
 | Domains | RAG, DevOps, Feishu, Fanuc, Network, Claude, Hub |
+| MCP Endpoint | `https://misakanet.org/mcp` (Remote) |
+| Evidence Levels | E0-E4 trust model |
 
 ## Key Domain Examples
 

@@ -24,10 +24,21 @@ Do **not** say:
 
 ## Focus areas (in order)
 
-1. **Clarify Glama counting boundary** — document that Tool Calls = 0 is a measurement gap, not a failure
-2. **Check Glama Gateway support** — confirm whether Glama can host/route MisakaNet tools (see Follow-up below)
-3. **Improve first-call docs** — copy-paste config, recommended first query, expected output
+1. **Clarify Glama counting boundary** – document that Tool Calls = 0 is a measurement gap, not a failure
+2. **Check Glama Gateway support** – confirm whether Glama can host/route MisakaNet tools (see Follow-up below)
+3. **Improve first-call docs** – copy-paste config, recommended first query, expected output
 4. Do **not** frame any of this as "MCP broken"
+
+## Glama capability check
+
+Current Glama docs indicate the platform does support both hosted MCP deployments and a Gateway endpoint for routed calls:
+
+- Hosting: https://glama.ai/mcp/hosting
+- Gateway: https://glama.ai/mcp/gateway
+
+That means the remaining question is narrower than "can Glama do MCP?" The open question is whether MisakaNet currently has a deployed hosted endpoint / routed connection profile, or only a directory listing with analytics that still reports zero routed calls.
+
+If a hosted endpoint exists, the next valid test is one `tools/call` through that endpoint and then a delayed analytics re-check.
 
 ## Evidence collected
 

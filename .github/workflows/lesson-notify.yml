@@ -13,7 +13,7 @@ jobs:
     if: contains(github.event.issue.labels.*.name, 'new-lesson') || contains(github.event.issue.title, 'new-lesson')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Send Feishu notification with retry
         uses: ./.github/actions/retry/

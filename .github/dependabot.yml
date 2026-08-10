@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # GitHub Actions — auto-update action SHA pins
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    # PR Genius, wrangler-action, etc. — Dependabot will open PRs for new versions
+    # We keep SHA pinning + manual review (never auto-merge)
+
+  # npm — root package.json
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+
+  # npm — web/ (Cloudflare Pages frontend)
+  - package-ecosystem: npm
+    directory: "/web"
+    schedule:
+      interval: weekly
+
+  # pip — Python dependencies
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly

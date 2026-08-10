@@ -1,0 +1,7 @@
+name = "misakanet-register-proxy"
+main = "register-proxy-sw.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "MISAKANET_KV"
+id = "YOUR_KV_NAMESPACE_ID"

@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Area labels (by file path)
-        uses: actions/labeler@v5
+        uses: actions/labeler@v7
         with:
           repo-token: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
           configuration-path: .github/labeler.yml
 
       - name: Shape guard + auto-label
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
           script: |

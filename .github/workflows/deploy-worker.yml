@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Deploy Worker with Wrangler
         env:
@@ -24,9 +24,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          npx wrangler deploy workers/register-proxy-sw.js \
-            --name misakanet-register-proxy \
-            --compatibility-date 2024-01-01
+          cd workers
+          npx wrangler deploy
 
       - name: Ensure keepalive schedule
         env:

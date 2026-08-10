@@ -36,6 +36,12 @@
       "enum": ["published", "draft", "archived"],
       "description": "Publication status"
     },
+    "evidence_level": {
+      "type": "string",
+      "enum": ["E0", "E1", "E2", "E3", "E4"],
+      "default": "E0",
+      "description": "How well this lesson is evidenced — E0 self-reported, E1 maintainer reviewed, E2 locally reproduced, E3 CI/sandbox verified, E4 reused by another contributor. Missing means E0. See docs/trust-semantics.md"
+    },
     "source": {
       "type": "string",
       "description": "Origin of this lesson"

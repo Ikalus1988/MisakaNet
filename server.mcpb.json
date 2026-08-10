@@ -1,7 +1,7 @@
 {
   "name": "io.github.Ikalus1988/misakanet",
-  "description": "Agent failure memory network. Search 244 indexed failure lessons from real engineering sessions.",
-  "version": "2.12.3",
+  "description": "Agent failure memory network. Search 275+ verified debugging lessons from real engineering sessions. Includes guided prompts for failure triage and release auditing.",
+  "version": "2.16.0",
   "runtime": {
     "command": "python3",
     "args": ["scripts/mcp_server.py"],

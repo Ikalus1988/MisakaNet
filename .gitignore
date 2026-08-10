@@ -62,3 +62,4 @@ data/contribution_queue.jsonl
 
 # local search quality feedback (issue #604)
 data/search-feedback.jsonl
+.private/

@@ -47,6 +47,7 @@
   .badge-high { background: rgba(35,134,54,0.15); color: #3fb950; }
   .badge-medium { background: rgba(251,146,60,0.12); color: #fb923c; }
   .badge-low { background: rgba(139,148,158,0.12); color: #8b949e; }
+  .badge-evidence { background: rgba(163,113,247,0.14); color: #a371f7; cursor: help; }
   .section-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 20px 0 8px; }
   .fold-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: var(--text-muted); background: transparent; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 12px; margin: 8px 0; transition: color 0.15s, border-color 0.15s; }
   .fold-toggle:hover { color: #58a6ff; border-color: rgba(88,166,255,0.3); }
@@ -315,6 +316,22 @@ function inferBadge(r) {
   return { key: 'badgeVerified', cls: 'badge-status' };
 }
 
+// ── Evidence levels (#786) — see docs/trust-semantics.md ──
+const EVIDENCE_LABELS = {
+  E0: 'E0 — contributor self-reported',
+  E1: 'E1 — maintainer reviewed',
+  E2: 'E2 — local smoke reproduced',
+  E3: 'E3 — CI / sandbox verified recovery',
+  E4: 'E4 — reused by another contributor or agent',
+};
+
+// Missing or unknown values read as E0: evidence is never assumed.
+function evidenceInfo(level) {
+  const key = String(level || '').trim().toUpperCase();
+  const normalized = EVIDENCE_LABELS[key] ? key : 'E0';
+  return { level: normalized, label: EVIDENCE_LABELS[normalized] };
+}
+
 // ── Client-side confidence / result_type classification ──
 const ACTIONABLE_RE = /fix|solution|workaround|step\s*\d|verify|verification|error.code|exit.code|```|pip install|git |curl |chmod|mkdir|export /i;
 const COMMON_RE = /github.com.*443|connectivity|checklist|basic|intro|overview|getting.started|quick.start|faq|troubleshooting.general|network.*basics|git.*basics|config.*general/i;
@@ -368,6 +385,27 @@ function getFeedbackForLesson(lessonId, query) {
 }
 
 const FEEDBACK_API = window.location.origin + '/api/feedback';
+const SEARCH_SIGNAL_API = window.location.origin + '/api/search-signal';
+
+// Unsolved failure map (#788). Only searches that found nothing useful are
+// reported; the backend derives a task-family label and drops the query, so no
+// raw query text is ever stored. Fire-and-forget, deduped per query per session.
+const _signalledQueries = new Set();
+
+function reportUnsolvedSearch(q, results) {
+  if (!q) return;
+  const topScore = results.length ? (results[0].score || 0) : 0;
+  if (results.length && topScore >= 0.35) return; // solved — nothing to report
+  const key = q.toLowerCase().trim();
+  if (_signalledQueries.has(key)) return;
+  _signalledQueries.add(key);
+
+  fetch(SEARCH_SIGNAL_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: q, result_count: results.length, top_score: topScore }),
+  }).catch(() => {}); // silent fail — insights are best-effort
+}
 
 function submitFeedback(lessonId, query, feedback) {
   const existing = getFeedbackForLesson(lessonId, query);
@@ -450,10 +488,15 @@ function openFeedbackIssue() {
 function render(results, q) {
   const el = document.getElementById('results');
   _lastResults = results;
+  reportUnsolvedSearch(q, results);
   if (!results.length) {
     el.innerHTML = '<div class="fallback">' +
-      '<div style="margin-bottom:12px;">' + t('noMatchPrefix') + ' "' + escapeHTML(q) + '". ' + t('noMatchSuffix') + '</div>' +
-      '<div style="font-size:12px;"><a href="/skill.md">' + t('installSkill') + '</a> / <a href="https://github.com/Ikalus1988/MisakaNet">' + t('submitLesson') + '</a></div></div>';
+      '<div style="margin-bottom:8px;">' + t('noMatchPrefix') + ' "' + escapeHTML(q) + '". ' + t('noMatchSuffix') + '</div>' +
+      '<div style="font-size:13px;margin-bottom:12px;max-width:480px;margin-left:auto;margin-right:auto;">' +
+        'Try using fewer keywords, checking spelling, or browsing by <a href="/topics/" style="color:#58a6ff;">topic</a>. ' +
+        'Popular queries: <code style="font-size:11px;">pip timeout</code>, <code style="font-size:11px;">database locked</code>, <code style="font-size:11px;">DCO sign-off</code>, <code style="font-size:11px;">git rebase</code>.' +
+      '</div>' +
+      '<div style="font-size:12px;"><a href="/skill.md">' + t('installSkill') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet">' + t('submitLesson') + '</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-request.yml">Request a lesson</a></div></div>';
     return;
   }
   const searchable = _lessons ? _lessons.filter(isSearchable).length : 0;
@@ -478,12 +521,14 @@ function render(results, q) {
     const id = escapeHTML(r.id || '');
     const badge = inferBadge(r);
     const confBadge = r._confidence === 'high' ? 'badge-high' : r._confidence === 'low' ? 'badge-low' : 'badge-medium';
+    const ev = evidenceInfo(r.evidence_level);
     const showTitle = takeaway !== title;
     return '<div class="result" tabindex="0" data-index="' + r._index + '" data-id="' + id + '">' +
       '<div class="result-meta">' +
         '<span class="badge ' + badge.cls + '">' + t(badge.key) + '</span>' +
         '<span class="badge badge-domain">' + domain + '</span>' +
         '<span class="badge ' + confBadge + '">' + r._confidence + '</span>' +
+        '<span class="badge badge-evidence" title="' + escapeHTML(ev.label) + '">' + ev.level + '</span>' +
       '</div>' +
       '<div class="result-title">' + takeaway + '</div>' +
       (showTitle ? '<div class="result-id">' + id + '</div>' : '') +

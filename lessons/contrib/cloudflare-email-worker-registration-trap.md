@@ -1,13 +1,10 @@
 ---
-{
-  "domain": "contrib",
-  "title": "Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: "Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF"
+domain: "devops"
+tags: ["cloudflare", "email-worker", "kv", "turnstile", "registration", "spf"]
+created: "2026-07-06"
+source: "unknown"
 ---
----{"title": "Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF", "domain": "devops", "tags": ["cloudflare", "email-worker", "kv", "turnstile", "registration", "spf"]}---
 
 ## 背景
 

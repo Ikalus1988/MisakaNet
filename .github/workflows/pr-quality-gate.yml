@@ -17,7 +17,7 @@ jobs:
     if: github.event_name == 'check_run' || github.event_name == 'pull_request'
     steps:
       - name: Apply quality gate labels
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             // Get the PR number from context

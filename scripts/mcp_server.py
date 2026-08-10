@@ -59,37 +59,144 @@ except ImportError:
 
 # Import BM25 search fallback
 try:
-    from misakanet.search.engine import MisakaNetSearchEngine
+    from misakanet.search.engine import (
+        LESSONS,
+        _load_docs_cached,
+        _search_cached,
+    )
     HAS_BM25 = True
 except ImportError:
     HAS_BM25 = False
+
+
+def _fallback_search(query: str, domain: str = None, top: int = 5) -> list | None:
+    """Lightweight keyword search from lessons.json — zero dependencies.
+
+    Used when SAG-Lite and BM25 are both unavailable (e.g. Glama sandbox).
+    Returns None if lessons.json is not found (caller should show error).
+    Returns [] if lessons.json exists but no matches (caller should show empty results).
+    """
+    import json as _json
+
+    # Try multiple locations for lessons.json
+    candidates = [
+        REPO_ROOT / "data" / "lessons.json",
+        REPO_ROOT / "lessons.json",
+    ]
+    lessons = None
+    for path in candidates:
+        if path.exists():
+            try:
+                lessons = _json.loads(path.read_text(encoding="utf-8", errors="replace"))
+                break
+            except Exception:
+                continue
+
+    if not lessons or not isinstance(lessons, list):
+        return None
+
+    q = query.lower()
+    q_words = [w for w in q.split() if len(w) > 2]
+    scored = []
+
+    for lesson in lessons:
+        if not isinstance(lesson, dict):
+            continue
+        if domain and lesson.get("domain", "").lower() != domain.lower():
+            continue
+
+        title = (lesson.get("title") or "").lower()
+        summary = (lesson.get("summary") or "").lower()
+        lesson_domain = (lesson.get("domain") or "").lower()
+        tags = " ".join(lesson.get("tags", [])).lower() if isinstance(lesson.get("tags"), list) else ""
+        text = f"{title} {summary} {lesson_domain} {tags}"
+
+        score = 0
+        if q in text:
+            score += 10
+        for w in q_words:
+            if w in text:
+                score += 2
+            if w in title:
+                score += 1
+
+        if score > 0:
+            scored.append((score, lesson))
+
+    scored.sort(key=lambda x: -x[0])
+    return [
+        {
+            "title": l.get("title", ""),
+            "path": l.get("url", l.get("path", "")),
+            "score": round(s, 3),
+            "domain": l.get("domain", ""),
+            "status": l.get("status", ""),
+        }
+        for s, l in scored[:top]
+    ]
 
 
 def handle_search(args: dict) -> dict:
     """Search MisakaNet lessons."""
     query = args.get("query", "")
     domain = args.get("domain")
+    tags = args.get("tags")
     top = args.get("top", 5)
 
     if not query:
-        return {"error": "query is required"}
+        return {
+            "error": "query is required",
+            "hint": "Try: {\"query\": \"python async\", \"domain\": \"core\"}",
+            "examples": [
+                "{\"query\": \"machine learning\"}",
+                "{\"query\": \"REST API\", \"top\": 3}",
+                "{\"query\": \"tutorial\", \"domain\": \"core\"}"
+            ],
+            "guidance": "Provide a search term (e.g. 'pip install timeout'). For broader results, try shorter keywords. See docs/integrations/mcp-remote.md for usage examples."
+        }
 
     if HAS_SAG:
         results = sag_search(SAG_DB, query, domain=domain, top=top)
         return {"results": results, "source": "sag-lite"}
     elif HAS_BM25:
-        engine = MisakaNetSearchEngine()
-        results = engine.search(query, top=top)
+        docs = _load_docs_cached(LESSONS, is_lesson=True)
+        scored = _search_cached(query, docs)
+        results = []
+        for score, doc in scored[:top]:
+            results.append({
+                "title": doc.title,
+                "path": str(doc.filepath),
+                "score": round(score, 3),
+                "domain": doc.domain,
+                "status": doc.status,
+            })
         return {"results": results, "source": "bm25"}
     else:
-        return {"error": "No search engine available. Run: python3 scripts/build_sag_index.py"}
+        # Fallback: lightweight keyword search from lessons.json
+        results = _fallback_search(query, domain=domain, top=top)
+        if results is not None:
+            return {"results": results, "source": "fallback"}
+        return {
+            "error": "Search engine unavailable — index not built",
+            "action": "Run: python3 scripts/build_sag_index.py to enable BM25/SAG search",
+            "fallback": "Browse lessons via misaka://lessons/index resource instead",
+            "guidance": "To obtain a token or search lessons, refer to docs/integrations/mcp-remote.md or contact maintainer."
+        }
 
 
 def handle_get_lesson(args: dict) -> dict:
     """Get a lesson by path or ID."""
     path_or_id = args.get("path", args.get("id", ""))
     if not path_or_id:
-        return {"error": "path or id is required"}
+        return {
+            "error": "path or id is required",
+            "hint": "Try: {\"path\": \"lessons/core/welcome.md\"} or {\"id\": \"welcome\"}",
+            "examples": [
+                "{\"path\": \"lessons/core/async-python.md\"}",
+                "{\"id\": \"async-python\"}"
+            ],
+            "guidance": "Provide a lesson path (e.g. 'lessons/core/auto-merge-ci-pipeline.md') or lesson ID. Use misakanet_search first to discover available lessons."
+        }
 
     # Try direct path
     lesson_path = REPO_ROOT / path_or_id
@@ -102,7 +209,12 @@ def handle_get_lesson(args: dict) -> dict:
                 break
 
     if not lesson_path.exists():
-        return {"error": f"Lesson not found: {path_or_id}"}
+        return {
+            "error": f"Lesson not found: {path_or_id}",
+            "hint": "Use misakanet_search to find available lessons by keyword",
+            "suggestion": "Try searching with: {\"query\": \"" + path_or_id.replace("-", " ") + "\"}",
+            "guidance": f"Use misakanet_search with a related keyword to discover available lessons, or check docs/integrations/mcp-remote.md for the lesson index."
+        }
 
     content = lesson_path.read_text(encoding="utf-8", errors="replace")
     return {
@@ -118,7 +230,10 @@ def handle_submit_usage(args: dict) -> dict:
     outcome = args.get("outcome", "unknown")
 
     if not lesson_id:
-        return {"error": "lesson_id is required"}
+        return {
+            "error": "lesson_id is required",
+            "guidance": "Provide the lesson ID (e.g. 'auto-merge-ci-pipeline'). Use misakanet_search to discover lesson IDs by topic."
+        }
 
     # For now, just log locally
     report = {
@@ -183,6 +298,18 @@ RESOURCES = [
         "description": "Latest release notes and version history",
         "mimeType": "text/markdown",
     },
+    {
+        "uri": "misakanet://lessons/{id}",
+        "name": "Lesson by ID",
+        "description": "Full lesson content and metadata by lesson ID",
+        "mimeType": "application/json",
+    },
+    {
+        "uri": "misakanet://domains",
+        "name": "Domain List",
+        "description": "List all knowledge domains with lesson counts",
+        "mimeType": "application/json",
+    },
 ]
 
 
@@ -229,6 +356,40 @@ def handle_resources_read(uri: str) -> dict:
         if p.exists():
             return {"content": p.read_text(encoding="utf-8", errors="replace")[:4000]}
         return {"error": "STATUS.md not found"}
+
+    elif uri.startswith("misakanet://lessons/"):
+        lesson_id = uri.replace("misakanet://lessons/", "")
+        for subdir in ["core", "contrib", "draft", "en"]:
+            d = REPO_ROOT / "lessons" / subdir
+            if d.exists():
+                for f in d.glob("*.md"):
+                    if f.stem == lesson_id:
+                        content_text = f.read_text(encoding="utf-8", errors="replace")
+                        return {
+                            "id": f.stem,
+                            "path": str(f.relative_to(REPO_ROOT)),
+                            "title": content_text.split("\n")[0].replace("# ", "").strip(),
+                            "domain": subdir,
+                            "content": content_text[:8000],
+                            "word_count": len(content_text.split()),
+                        }
+        return {"error": f"Lesson not found: {lesson_id}"}
+
+    elif uri == "misakanet://domains":
+        from collections import Counter
+        domain_counts = Counter()
+        for subdir in ["core", "contrib", "draft", "en"]:
+            d = REPO_ROOT / "lessons" / subdir
+            if d.exists():
+                for f in d.glob("*.md"):
+                    content_text = f.read_text(encoding="utf-8", errors="replace")
+                    domain = subdir
+                    if "domain:" in content_text[:500]:
+                        for line in content_text[:500].split("\n"):
+                            if line.strip().startswith("domain:"):
+                                domain = line.split(":", 1)[1].strip()
+                    domain_counts[domain] += 1
+        return [{"name": d, "lesson_count": c} for d, c in sorted(domain_counts.items())]
 
     return {"error": f"Unknown resource: {uri}"}
 
