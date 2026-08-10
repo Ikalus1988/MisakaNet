@@ -127,6 +127,21 @@
     .footer a { color: var(--accent); text-decoration: none; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     .pulse { animation: pulse 2s ease-in-out infinite; }
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .card { padding: 20px; }
+    .pair-code { font-size: 2rem; letter-spacing: 0.2em; }
+    .btn { padding: 12px 20px; font-size: 14px; min-height: 44px; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 0.75rem; }
+    .card { padding: 16px; }
+    .pair-code { font-size: 1.5rem; letter-spacing: 0.15em; }
+    .voice-toggle { padding: 10px; }
+    .btn { padding: 10px 16px; font-size: 13px; min-height: 48px; }
+    .toggle { min-width: 44px; min-height: 44px; }
+  }
   </style>
 </head>
 <body>
