@@ -640,3 +640,16 @@ See [LIMITATIONS.md](docs/LIMITATIONS.md) for known constraints and non-goals â€
 ---
 
 *Swarm Knowledge Protocol (SKP) â€” [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*
+
+## Development & Testing
+
+### Quick Start
+1. Python 3.10+ required
+2. Install: `pip install -e .`
+3. Run tests: `pytest tests/`
+
+### CI/CD
+See `.github/workflows/boost-quality.yml` for automated Python CI pipeline.
+
+### Contributing
+Fork, create feature branches, add tests. Open a PR.
