@@ -33,3 +33,10 @@ def test_valid_lesson_allowed():
     result = handle_get_lesson({"path": "lessons/core/dco-auto-fix-workflow.md"})
     # Should not contain access denied error
     assert "access denied" not in result.get("error", "").lower()
+
+
+def test_lesson_id_allowed():
+    """Lesson ID lookup should work (fallback to lessons/core|contrib/)."""
+    result = handle_get_lesson({"id": "dco-auto-fix-workflow"})
+    assert "content" in result
+    assert "error" not in result

@@ -204,31 +204,31 @@ def handle_get_lesson(args: dict) -> dict:
             "voice": "failure-warning",
         }
 
-    # Try direct path (with path traversal protection)
-    lesson_path = (REPO_ROOT / path_or_id).resolve()
-    if not lesson_path.is_relative_to(REPO_ROOT.resolve()):
-        return {
-            "error": "Invalid path: path traversal detected",
-            "hint": "Use misakanet_search to find available lessons by keyword",
-            "voice": "failure-warning",
-        }
-    # Restrict to lessons/ directory and .md files only
-    lessons_dir = (REPO_ROOT / "lessons").resolve()
-    if not lesson_path.is_relative_to(lessons_dir) or not lesson_path.suffix == ".md":
-        return {
-            "error": "Access denied: only lessons/*.md files are accessible",
-            "hint": "Use misakanet_search to find available lessons by keyword",
-            "voice": "failure-warning",
-        }
-    if not lesson_path.exists():
-        # Try searching by ID in lessons/
-        for subdir in ["core", "contrib"]:
-            candidate = REPO_ROOT / "lessons" / subdir / f"{path_or_id}.md"
-            if candidate.exists():
-                lesson_path = candidate
-                break
+    # Helper: check if path is within allowed lessons directory
+    def _is_allowed_lesson_path(p):
+        resolved = p.resolve()
+        lessons_dir = (REPO_ROOT / "lessons").resolve()
+        return resolved.is_relative_to(lessons_dir) and resolved.suffix == ".md"
 
-    if not lesson_path.exists():
+    # Try direct path first (with traversal protection)
+    lesson_path = (REPO_ROOT / path_or_id).resolve()
+    if lesson_path.is_relative_to(REPO_ROOT.resolve()) and _is_allowed_lesson_path(lesson_path):
+        if lesson_path.exists():
+            content = lesson_path.read_text(encoding="utf-8", errors="replace")
+            return {
+                "path": str(lesson_path.relative_to(REPO_ROOT)),
+                "content": content[:5000],
+                "voice": "connect-success",
+            }
+
+    # Fallback: try searching by ID in lessons/core|contrib/
+    for subdir in ["core", "contrib"]:
+        candidate = REPO_ROOT / "lessons" / subdir / f"{path_or_id}.md"
+        if candidate.exists() and _is_allowed_lesson_path(candidate):
+            lesson_path = candidate
+            break
+
+    if not lesson_path.exists() or not _is_allowed_lesson_path(lesson_path):
         return {
             "error": f"Lesson not found: {path_or_id}",
             "hint": "Use misakanet_search to find available lessons by keyword",
