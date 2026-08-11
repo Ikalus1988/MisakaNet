@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-08-10T22:00:16.057885+00:00",
+  "generated_at": "2026-08-11T02:29:40.901356+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "test(bench): add SAG-Lite performance benchmark suite",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/949",
+      "timestamp": "2026-08-11T01:25:14Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs(contributor): add PR Genius anti-patterns reference",
@@ -30,13 +37,6 @@
       "title": "docs(voice): test report and improved hook script",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/930",
       "timestamp": "2026-08-10T07:00:57Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(voice): MCP voice hooks for audio prompts on tool use",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/928",
-      "timestamp": "2026-08-10T06:53:06Z",
       "source": "github"
     },
     {
