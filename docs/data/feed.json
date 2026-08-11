@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-08-11T10:12:59.742944+00:00",
+  "generated_at": "2026-08-11T13:45:20.734245+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fixGX1): unify lesson directory contract",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/968",
+      "timestamp": "2026-08-11T13:22:07Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(security): P0 hotfix — path traversal + XSS + secret redaction (clean)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/969",
+      "timestamp": "2026-08-11T13:02:12Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat: enhance PR Genius output analysis",
@@ -23,20 +37,6 @@
       "title": "feat: add 3 more original failure-recovery lessons (mergeable_state, contents-API sha, CDN edge cache)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/956",
       "timestamp": "2026-08-11T04:47:08Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat: add 3 original failure-recovery lessons (webhook dedupe scope, Go toolchain arch, pycache cleanup)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/950",
-      "timestamp": "2026-08-11T04:44:44Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test(bench): add SAG-Lite performance benchmark suite",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/949",
-      "timestamp": "2026-08-11T01:25:14Z",
       "source": "github"
     },
     {
