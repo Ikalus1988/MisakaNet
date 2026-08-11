@@ -204,8 +204,14 @@ def handle_get_lesson(args: dict) -> dict:
             "voice": "failure-warning",
         }
 
-    # Try direct path
-    lesson_path = REPO_ROOT / path_or_id
+    # Try direct path (with path traversal protection)
+    lesson_path = (REPO_ROOT / path_or_id).resolve()
+    if not lesson_path.is_relative_to(REPO_ROOT.resolve()):
+        return {
+            "error": "Invalid path: path traversal detected",
+            "hint": "Use misakanet_search to find available lessons by keyword",
+            "voice": "failure-warning",
+        }
     if not lesson_path.exists():
         # Try searching by ID in lessons/
         for subdir in ["core", "contrib"]:

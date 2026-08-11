@@ -42,6 +42,13 @@ export default {
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(sender)) {
+      console.log(`Invalid email format: ${sender}`);
+      return;
+    }
+
     const lastReg = await env.MISAKANET_KV.get(`rate:email:${sender}`, 'text');
     if (lastReg && (Date.now() - parseInt(lastReg)) < 86400000) {
       console.log(`Rate limited email: ${sender}`);
@@ -228,6 +235,30 @@ export default {
   }
 };
 
+function redactSecrets(text) {
+  if (!text) return text;
+  // Redact common secret patterns
+  return text
+    .replace(/ghp_[A-Za-z0-9]{36}/g, '[REDACTED_GITHUB_TOKEN]')
+    .replace(/gho_[A-Za-z0-9]{36}/g, '[REDACTED_GITHUB_TOKEN]')
+    .replace(/github_pat_[A-Za-z0-9_]{82}/g, '[REDACTED_GITHUB_TOKEN]')
+    .replace(/sk-[A-Za-z0-9]{48}/g, '[REDACTED_API_KEY]')
+    .replace(/AKIA[A-Z0-9]{16}/g, '[REDACTED_AWS_KEY]')
+    .replace(/-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----[\s\S]*?-----END (RSA |EC |DSA )?PRIVATE KEY-----/g, '[REDACTED_PRIVATE_KEY]')
+    .replace(/(?:password|passwd|pwd)\s*[:=]\s*[^\s,;]+/gi, '[REDACTED_PASSWORD]')
+    .replace(/(?:token|secret|api_key|apikey)\s*[:=]\s*[^\s,;]+/gi, '[REDACTED_SECRET]');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function createAuditIssue(env, intake) {
   const repo = env.GH_REPO || 'Ikalus1988/MisakaNet';
   const labels = intake.intakeType === 'lesson-submission'
@@ -256,7 +287,7 @@ async function createAuditIssue(env, intake) {
         '',
         '## Parsed content',
         '',
-        content.replace(/<!--/g, '&lt;!--').slice(0, 12000),
+        redactSecrets(content).replace(/<!--/g, '&lt;!--').slice(0, 12000),
       ].filter(Boolean).join('\n'),
     }),
   });
@@ -310,8 +341,8 @@ function renderPage(view, data) {
       <div class="card">
         <div class="badge">✅ Registered</div>
         <h1>Welcome to the network</h1>
-        <div class="node-id">${data.nodeId}</div>
-        <p style="text-align:center;margin-bottom:20px">${data.email}${data.name ? ' · ' + data.name : ''}</p>
+        <div class="node-id">${escapeHtml(data.nodeId)}</div>
+        <p style="text-align:center;margin-bottom:20px">${escapeHtml(data.email)}${data.name ? ' · ' + escapeHtml(data.name) : ''}</p>
         <div class="steps">
           <b>Next steps:</b><br>
           1. <code>git clone https://github.com/Ikalus1988/MisakaNet.git</code><br>

@@ -75,7 +75,9 @@ def misakanet_get_lesson(path: str = "", id: str = "") -> dict:
     if not path_or_id:
         return {"error": "path or id is required", "voice": "failure-warning"}
 
-    lesson_path = REPO_ROOT / path_or_id
+    lesson_path = (REPO_ROOT / path_or_id).resolve()
+    if not lesson_path.is_relative_to(REPO_ROOT.resolve()):
+        return {"error": "Invalid path: path traversal detected", "voice": "failure-warning"}
     if not lesson_path.exists():
         for subdir in ["core", "contrib"]:
             candidate = REPO_ROOT / "lessons" / subdir / f"{path_or_id}.md"
