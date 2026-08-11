@@ -8,7 +8,7 @@
 mcp-name: io.github.Ikalus1988/misakanet
 
 <p align="center">
-  <img src="promotional/og-card.png" width="720" alt="MisakaNet — Failure Memory for AI Agents"/>
+  <img src="promotional/misaka-compare.jpg" width="720" alt="MisakaNet — Before: 30+ min manual debugging vs After: 0.02s with MCP"/>
 </p>
 
 [![CI](https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml/badge.svg)](https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml)
