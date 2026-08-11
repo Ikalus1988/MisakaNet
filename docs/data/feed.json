@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-08-11T13:45:20.734245+00:00",
+  "generated_at": "2026-08-11T16:12:18.943228+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs: add PR Genius efficiency analysis",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/971",
+      "timestamp": "2026-08-11T14:18:29Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: add API.md, DEPLOYMENT.md + extend ARCHITECTURE.md, CONTRIBUTING.md",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/970",
+      "timestamp": "2026-08-11T14:18:22Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: sync README numbers to actual 275 indexed lessons",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/965",
+      "timestamp": "2026-08-11T14:18:18Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fixGX1): unify lesson directory contract",
@@ -16,27 +37,6 @@
       "title": "fix(security): P0 hotfix — path traversal + XSS + secret redaction (clean)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/969",
       "timestamp": "2026-08-11T13:02:12Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat: enhance PR Genius output analysis",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/957",
-      "timestamp": "2026-08-11T08:37:01Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat: add 2 more original failure-recovery lessons (rate-limit auth, cross-repo schema coupling)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/954",
-      "timestamp": "2026-08-11T04:48:11Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat: add 3 more original failure-recovery lessons (mergeable_state, contents-API sha, CDN edge cache)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/956",
-      "timestamp": "2026-08-11T04:47:08Z",
       "source": "github"
     },
     {
