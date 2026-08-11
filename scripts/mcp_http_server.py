@@ -78,6 +78,10 @@ def misakanet_get_lesson(path: str = "", id: str = "") -> dict:
     lesson_path = (REPO_ROOT / path_or_id).resolve()
     if not lesson_path.is_relative_to(REPO_ROOT.resolve()):
         return {"error": "Invalid path: path traversal detected", "voice": "failure-warning"}
+    # Restrict to lessons/ directory and .md files only
+    lessons_dir = (REPO_ROOT / "lessons").resolve()
+    if not lesson_path.is_relative_to(lessons_dir) or not lesson_path.suffix == ".md":
+        return {"error": "Access denied: only lessons/*.md files are accessible", "voice": "failure-warning"}
     if not lesson_path.exists():
         for subdir in ["core", "contrib"]:
             candidate = REPO_ROOT / "lessons" / subdir / f"{path_or_id}.md"

@@ -84,13 +84,15 @@ export default {
       console.log(`Registered via email: ${nodeId} <${sender}>`);
     }
 
+    // Redact secrets before storing in KV
+    const safeLessonContent = redactSecrets(lessonContent);
     const intakeRecord = {
       intakeId,
       from: sender,
       to: recipient,
       subject,
       intakeType,
-      lessonContent,
+      lessonContent: safeLessonContent,
       nodeId,
       receivedAt,
       status: 'processed',

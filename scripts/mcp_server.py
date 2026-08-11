@@ -212,6 +212,14 @@ def handle_get_lesson(args: dict) -> dict:
             "hint": "Use misakanet_search to find available lessons by keyword",
             "voice": "failure-warning",
         }
+    # Restrict to lessons/ directory and .md files only
+    lessons_dir = (REPO_ROOT / "lessons").resolve()
+    if not lesson_path.is_relative_to(lessons_dir) or not lesson_path.suffix == ".md":
+        return {
+            "error": "Access denied: only lessons/*.md files are accessible",
+            "hint": "Use misakanet_search to find available lessons by keyword",
+            "voice": "failure-warning",
+        }
     if not lesson_path.exists():
         # Try searching by ID in lessons/
         for subdir in ["core", "contrib"]:
