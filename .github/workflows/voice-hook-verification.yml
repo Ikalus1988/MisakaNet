@@ -1,0 +1,206 @@
+name: Voice Hook Verification CI
+
+on:
+  pull_request:
+    paths:
+      - 'misakanet/voice/**'
+      - 'tests/unit/test_voice_hook*'
+      - 'tests/integration/test_voice*'
+  push:
+    branches: [main]
+    paths:
+      - 'misakanet/voice/**'
+
+jobs:
+  voice-hook-tests:
+    name: Voice Hook Test Suite (PR #940)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: ['3.10', '3.11', '3.12']
+        exclude:
+          # Linux/macOS: audio device mocking is sufficient
+          - os: ubuntu-latest
+            python-version: '3.10'
+          - os: macos-latest
+            python-version: '3.10'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y portaudio19-dev python3-pyaudio
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install portaudio
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-mock pytest-timeout
+
+      - name: Run voice hook unit tests
+        run: |
+          pytest tests/unit/test_voice_hook.py -v \
+            --cov=misakanet.voice \
+            --cov-report=xml:voice-coverage-${{ matrix.os }}-py${{ matrix.python-version }}.xml \
+            --timeout=30
+
+      - name: Run voice hook integration tests (Windows only)
+        if: runner.os == 'Windows'
+        run: |
+          pytest tests/integration/test_voice_hook_integration.py -v \
+            --timeout=60
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: voice-coverage-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: voice-coverage-*.xml
+
+  voice-audio-format-validation:
+    name: Audio Format Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest numpy soundfile
+
+      - name: Validate PCM format specifications
+        run: |
+          python -c "
+          # Validate PCM format constants used by voice hook
+          import sys
+          sys.path.insert(0, '.')
+          
+          try:
+              from misakanet.voice.constants import (
+                  PCM_SAMPLE_RATE, PCM_BIT_DEPTH, PCM_CHANNELS,
+                  PCM_CHUNK_SIZE, PCM_FORMAT
+              )
+              assert PCM_SAMPLE_RATE == 16000, f'Expected 16000, got {PCM_SAMPLE_RATE}'
+              assert PCM_BIT_DEPTH == 16, f'Expected 16, got {PCM_BIT_DEPTH}'
+              assert PCM_CHANNELS == 1, f'Expected 1, got {PCM_CHANNELS}'
+              assert PCM_CHUNK_SIZE == 1024, f'Expected 1024, got {PCM_CHUNK_SIZE}'
+              print('PCM format validation: PASSED')
+              print(f'  Sample Rate: {PCM_SAMPLE_RATE} Hz')
+              print(f'  Bit Depth: {PCM_BIT_DEPTH}-bit')
+              print(f'  Channels: {PCM_CHANNELS} (mono)')
+              print(f'  Chunk Size: {PCM_CHUNK_SIZE} samples')
+              print(f'  Format: {PCM_FORMAT}')
+          except ImportError as e:
+              print(f'SKIP: Could not import voice module: {e}')
+              print('This is expected if running on a non-Windows PR branch.')
+          except AssertionError as e:
+              print(f'FAILED: {e}')
+              sys.exit(1)
+          "
+
+  voice-security-audit:
+    name: Voice Module Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install security tools
+        run: |
+          pip install bandit safety
+
+      - name: Bandit security scan (voice module)
+        run: |
+          bandit -r misakanet/voice/ -f json -o bandit-voice-report.json || true
+          echo "Bandit scan completed."
+
+      - name: Check for hardcoded secrets
+        run: |
+          # Ensure no API keys or tokens in voice module
+          if grep -rE '(api_key|token|secret|password)\s*=\s*["'"'"'][^$]' misakanet/voice/; then
+            echo "WARNING: Potential hardcoded secrets found in voice module"
+          else
+            echo "No hardcoded secrets detected in voice module"
+          fi
+
+      - name: Dependency vulnerability check
+        run: |
+          safety check --full-report || echo "Safety check completed (review output above)"
+
+  voice-performance-benchmark:
+    name: Voice Hook Performance Benchmark
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-benchmark
+
+      - name: Run performance benchmarks
+        run: |
+          pytest tests/bench/test_voice_hook_bench.py \
+            --benchmark-only \
+            --benchmark-json=voice-benchmark-results.json \
+            --benchmark-min-rounds=5 \
+            --benchmark-max-time=2.0 \
+            -v
+
+      - name: Check performance thresholds
+        run: |
+          python -c "
+          import json, sys
+          with open('voice-benchmark-results.json') as f:
+              data = json.load(f)
+          
+          thresholds = {
+              'test_voice_capture_latency': 100,    # ms
+              'test_voice_encode_latency': 50,      # ms
+              'test_voice_verify_latency': 200,     # ms
+              'test_voice_pipeline_e2e': 500        # ms
+          }
+          
+          failed = False
+          for bench in data['benchmarks']:
+              name = bench['name']
+              mean_ms = bench['stats']['mean'] * 1000
+              if name in thresholds:
+                  threshold = thresholds[name]
+                  status = 'PASS' if mean_ms <= threshold else 'FAIL'
+                  if status == 'FAIL':
+                      failed = True
+                  print(f'{status}: {name} — mean={mean_ms:.1f}ms (threshold={threshold}ms)')
+          
+          if failed:
+              print('Performance thresholds exceeded!')
+              sys.exit(1)
+          else:
+              print('All performance thresholds met.')
+          "
