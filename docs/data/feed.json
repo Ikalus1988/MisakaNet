@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-08-12T16:11:22.457533+00:00",
+  "generated_at": "2026-08-12T19:29:18.851756+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 8,
+  "item_count": 9,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "test(identity): verify Identity Aura badges for all three token types",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/993",
+      "timestamp": "2026-08-12T17:26:57Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs: add FAQ for setup and contributions",
