@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-08-12T07:54:37.057296+00:00",
+  "generated_at": "2026-08-12T10:28:11.335408+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 11,
+  "item_count": 8,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs: add PR Genius efficiency analysis",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/971",
-      "timestamp": "2026-08-11T14:18:29Z",
+      "title": "docs: add FAQ for setup and contributions",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/988",
+      "timestamp": "2026-08-12T10:18:42Z",
       "source": "github"
     },
     {
@@ -16,27 +16,6 @@
       "title": "docs: add API.md, DEPLOYMENT.md + extend ARCHITECTURE.md, CONTRIBUTING.md",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/970",
       "timestamp": "2026-08-11T14:18:22Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs: sync README numbers to actual 275 indexed lessons",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/965",
-      "timestamp": "2026-08-11T14:18:18Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fixGX1): unify lesson directory contract",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/968",
-      "timestamp": "2026-08-11T13:22:07Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(security): P0 hotfix — path traversal + XSS + secret redaction (clean)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/969",
-      "timestamp": "2026-08-11T13:02:12Z",
       "source": "github"
     },
     {
