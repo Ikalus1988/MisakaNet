@@ -3,16 +3,29 @@
   "title": "KAREL Core Utility Modules: errors, system, Strings API Reference",
   "domain": "fanuc",
   "subdomain": "karel-programming",
-  "source": "github.com/kobbled/ka-boost/.claude/rules/layer-1-core-utilities.md",
+  "source": "pr",
   "status": "draft",
   "confidence": 0.85,
   "created": "2026-07-12",
-  "tags": ["fanuc", "karel", "ka-boost", "errors", "strings", "system", "utility", "api"],
+  "tags": [
+    "fanuc",
+    "karel",
+    "ka-boost",
+    "errors",
+    "strings",
+    "system",
+    "utility",
+    "api"
+  ],
   "quality_score": 85,
   "problem": "KAREL 缺乏标准库，错误处理、字符串操作、系统类型定义等基础功能需要从零实现，代码复用率低。",
   "root_cause": "KAREL 语言没有标准库，连基本的字符串分割、类型转换、错误码管理都需要手动实现。Ka-Boost Layer 1 提供三个核心模块（errors, system, Strings）作为所有上层模块的基础。",
   "solution": "使用 Ka-Boost Layer 1 的三个基础模块：errors（错误处理+变量初始化）、system（系统类型+时间+坐标系）、Strings（字符串全操作），作为 KAREL 项目的基础设施。",
-  "verification": "1. errors 模块：karelError 能输出到 TP 显示和历史记录；2. system 模块：system__date()/system__time() 返回正确格式；3. Strings 模块：split_str、i_to_s/r_to_s 等函数在 KUnit 测试中通过。"
+  "verification": "1. errors 模块：karelError 能输出到 TP 显示和历史记录；2. system 模块：system__date()/system__time() 返回正确格式；3. Strings 模块：split_str、i_to_s/r_to_s 等函数在 KUnit 测试中通过。",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-15T10:25:40+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 472
 }
 
 ## KAREL Core Utility Modules: errors, system, Strings API Reference

@@ -1,10 +1,15 @@
 ---
 {
-  "domain": "contrib",
-  "title": "misakanet refactor v2 review",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "misakanet refactor v2 review\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 ---{"title": "MisakaNet Refactoring复盘 — 从中心协调到 Agent 图书馆", "domain": "development", "tags": ["refactor", "architecture", "v2", "misakanet"], "status": "published", "source": "deepseek", "created": "2026-05-30 02:00:00 UTC", "updated": "2026-05-30 02:00:00 UTC"}---

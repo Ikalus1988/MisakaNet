@@ -1,18 +1,20 @@
 ---
-title: "跨 Sheet 同名合并导致数据混乱：机器人唯一标识必须带前缀"
-domain: "data"
-subdomain: "data-pipeline"
-tags:
-  - data-pipeline
-  - dedup
-  - unique-key
-  - excel
-source: "zsxh1990"
-status: "published"
-confidence: "1.0"
-created: "2026-06-25"
-domain_expert: "zsxh1990"
-verified_date: "2026-07-06"
+{
+  "title": "跨 Sheet 同名合并导致数据混乱：机器人唯一标识必须带前缀",
+  "domain": "data",
+  "subdomain": "data-pipeline",
+  "tags": "",
+  "source": "pr",
+  "status": "published",
+  "confidence": "1.0",
+  "created": "2026-06-25",
+  "domain_expert": "zsxh1990",
+  "verified_date": "2026-07-06",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-07T11:58:11+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 375
+}
 ---
 
 ## Problem

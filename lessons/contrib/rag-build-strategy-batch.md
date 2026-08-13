@@ -1,5 +1,6 @@
 ---
 {
+<<<<<<< HEAD
   "title": "RAG Build Strategy Batch",
   "domain": "rag",
   "source": "hanged-man",
@@ -20,6 +21,25 @@
     "risks": ["memory_pressure", "no_checkpoint", "batch_overflow", "driver_crash"],
     "severity": "critical"
   }
+=======
+  "\"title\"": "RAG Build Strategy Batch\",",
+  "\"domain\"": "rag\",",
+  "\"source\"": "hanged-man\",",
+  "\"status\"": "published\",",
+  "\"tags\"": "[",
+  "\"project": "self-grow-wiki\",",
+  "\"severity": "medium\",",
+  "\"node": "hermes-wsl",
+  "\"language\"": "en\",",
+  "\"created\"": "2026-04-13\",",
+  "\"domain_expert\"": "hanged-man\",",
+  "\"verified_date\"": "2026-04-13",
+  "author": "2lll5",
+  "source": "pr",
+  "edited_at": "2026-06-30T14:39:15+08:00",
+  "merged_by": "2lll5",
+  "pr": 263
+>>>>>>> 434731e0 (feat: track lesson provenance end to end)
 }
 ---
 

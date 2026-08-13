@@ -1,13 +1,18 @@
 ---
-title: "ModuleNotFoundError in Python trotz pip install"
-domain: "python"
-tags: [python, pip, module, path, virtualenv]
-language: de
-status: published
-source: "https://docs.python.org/3/tutorial/venv.html"
-created: 2026-07-29
-confidence: 0.9
-verified_date: 2026-07-29
+{
+  "title": "ModuleNotFoundError in Python trotz pip install",
+  "domain": "python",
+  "tags": "[python, pip, module, path, virtualenv]",
+  "language": "de",
+  "status": "published",
+  "source": "manual",
+  "created": "2026-07-29",
+  "confidence": 0.9,
+  "verified_date": "2026-07-29",
+  "author": "tarotoads-debug",
+  "edited_at": "2026-07-29T09:28:33-07:00",
+  "merged_by": "tarotoads-debug"
+}
 ---
 
 ## Problem

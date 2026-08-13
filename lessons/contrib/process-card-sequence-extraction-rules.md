@@ -1,19 +1,20 @@
 ---
-title: "工艺卡步序提取：辅助动作不算独立步序，按工艺动作分界"
-domain: "engineering"
-subdomain: "process-analysis"
-tags:
-  - process-card
-  - time-chart
-  - sequence
-  - cycle-time
-  - robot
-source: "zsxh1990"
-status: "published"
-confidence: "0.95"
-created: "2026-07-03"
-domain_expert: "zsxh1990"
-verified_date: "2026-07-06"
+{
+  "title": "工艺卡步序提取：辅助动作不算独立步序，按工艺动作分界",
+  "domain": "engineering",
+  "subdomain": "process-analysis",
+  "tags": "",
+  "source": "pr",
+  "status": "published",
+  "confidence": "0.95",
+  "created": "2026-07-03",
+  "domain_expert": "zsxh1990",
+  "verified_date": "2026-07-06",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-07T11:58:11+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 375
+}
 ---
 
 ## Problem

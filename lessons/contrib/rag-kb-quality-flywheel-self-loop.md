@@ -1,21 +1,19 @@
 ---
 {
-  "title": "RAG Knowledge Base Quality Flywheel Self Loop",
-  "domain": "rag",
-  "source": "bootstrap",
-  "status": "published",
-  "tags": [
-    "rag",
-    "flywheel",
-    "quality",
-    "audit",
-    "feedback",
-    "self-learning"
-  ],
-  "language": "en",
-  "created": "2026-05-21",
-  "domain_expert": "unknown",
-  "verified_date": "2026-05-21"
+  "\"title\"": "RAG Knowledge Base Quality Flywheel Self Loop\",",
+  "\"domain\"": "rag\",",
+  "\"source\"": "bootstrap\",",
+  "\"status\"": "published\",",
+  "\"tags\"": "[",
+  "\"language\"": "en\",",
+  "\"created\"": "2026-05-21\",",
+  "\"domain_expert\"": "unknown\",",
+  "\"verified_date\"": "2026-05-21",
+  "author": "GoThundercats",
+  "source": "pr",
+  "edited_at": "2026-07-06T09:29:40+08:00",
+  "merged_by": "GoThundercats",
+  "pr": 348
 }
 ---
 

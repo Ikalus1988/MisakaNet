@@ -1,11 +1,16 @@
 ---
 {
-  "domain": "contrib",
-  "title": "deepseek tui write file sandbox worktree git path",
-  "verification": "metadata-normalized",
-  "{\"title\"": "DeepSeek TUI — write_file Sandbox + Worktree Git Path Breakage\", \"domain\": \"devops\", \"source\": \"hermes_wsl2\", \"status\": \"published\", \"tags\": [\"deepseek-tui\", \"agent-mode\", \"write-file\", \"worktree\", \"wsl\", \"git\", \"lesson-written\"], \"created\": \"2026-05-13 01:01:46 UTC\", \"updated\": \"2026-05-13 01:01:46 UTC\", \"domain_expert\": \"hermes_wsl2\", \"verified_date\": \"2026-05-13\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "deepseek tui write file sandbox worktree git path\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"{\\\"title\\\"\"": "DeepSeek TUI — write_file Sandbox + Worktree Git Path Breakage\\\", \\\"domain\\\": \\\"devops\\\", \\\"source\\\": \\\"hermes_wsl2\\\", \\\"status\\\": \\\"published\\\", \\\"tags\\\": [\\\"deepseek-tui\\\", \\\"agent-mode\\\", \\\"write-file\\\", \\\"worktree\\\", \\\"wsl\\\", \\\"git\\\", \\\"lesson-written\\\"], \\\"created\\\": \\\"2026-05-13 01:01:46 UTC\\\", \\\"updated\\\": \\\"2026-05-13 01:01:46 UTC\\\", \\\"domain_expert\\\": \\\"hermes_wsl2\\\", \\\"verified_date\\\": \\\"2026-05-13\\\"}\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 

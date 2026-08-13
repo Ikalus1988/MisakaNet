@@ -1,20 +1,36 @@
 ---
-title: "FANUC Backup Payload Extraction — .VR/.SV Binary Parsing and .LS Text Fallback"
-domain: "fanuc"
-subdomain: "backup-analysis"
-tags: ["backup", "payload", "vr-file", "sv-file", "kconvars", "sysvars", "cbparam", "plst-grp", "binary-parsing", "spottool"]
-source: "internal"
-status: "published"
-confidence: "0.85"
-created: "2026-07-14"
-verified_date: "2026-07-14"
-domain_expert: ""
-evidence:
-  level: "pre_ingest_reused"
-  source_type: "colleague_memory_dump"
-  verified_by: "maintainer"
-  context: "Distilled from real field debugging session. kcantrans VR-variable access path verified as practically useful before ingestion."
-  public_quote_allowed: false
+{
+  "title": "FANUC Backup Payload Extraction — .VR/.SV Binary Parsing and .LS Text Fallback",
+  "domain": "fanuc",
+  "subdomain": "backup-analysis",
+  "tags": [
+    "backup",
+    "payload",
+    "vr-file",
+    "sv-file",
+    "kconvars",
+    "sysvars",
+    "cbparam",
+    "plst-grp",
+    "binary-parsing",
+    "spottool"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": "0.85",
+  "created": "2026-07-14",
+  "verified_date": "2026-07-14",
+  "domain_expert": "",
+  "evidence": "",
+  "level": "pre_ingest_reused",
+  "source_type": "colleague_memory_dump",
+  "verified_by": "maintainer",
+  "context": "Distilled from real field debugging session. kcantrans VR-variable access path verified as practically useful before ingestion.",
+  "public_quote_allowed": false,
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-17T00:48:44+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 

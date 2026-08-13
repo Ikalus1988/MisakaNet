@@ -1,14 +1,28 @@
 ---
-title: Cross-encoder reranker kills RAG latency on CPU-only machines
-domain: rag
-subdomain: reranking
-tags: ["rag", "cross-encoder", "reranking", "cpu-bottleneck", "latency", "bge-reranker", "performance"]
-status: published
-confidence: 0.9
-created: 2026-07-06
-updated: 2026-07-06
-source: zsxh1990
-verified_date: 2026-07-06
+{
+  "title": "Cross-encoder reranker kills RAG latency on CPU-only machines",
+  "domain": "rag",
+  "subdomain": "reranking",
+  "tags": [
+    "rag",
+    "cross-encoder",
+    "reranking",
+    "cpu-bottleneck",
+    "latency",
+    "bge-reranker",
+    "performance"
+  ],
+  "status": "published",
+  "confidence": 0.9,
+  "created": "2026-07-06",
+  "updated": "2026-07-06",
+  "source": "pr",
+  "verified_date": "2026-07-06",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-12T12:28:29+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 351
+}
 ---
 
 # Cross-encoder reranker kills RAG latency on CPU-only machines

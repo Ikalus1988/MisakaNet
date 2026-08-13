@@ -1,14 +1,25 @@
 ---
-id: fanuc-alarm-code-reference
-title: "FANUC Robot Alarm Code Reference Table"
-domain: fanuc
-subdomain: alarm-troubleshooting
-source: "bbs.gongkong.com/d/202401/915680"
-status: draft
-confidence: 0.6
-created: "2026-07-12"
-tags: ["fanuc", "alarm", "error-code", "troubleshooting", "reference"]
-quality_score: 43
+{
+  "id": "fanuc-alarm-code-reference",
+  "title": "FANUC Robot Alarm Code Reference Table",
+  "domain": "fanuc",
+  "subdomain": "alarm-troubleshooting",
+  "source": "manual",
+  "status": "draft",
+  "confidence": 0.6,
+  "created": "2026-07-12",
+  "tags": [
+    "fanuc",
+    "alarm",
+    "error-code",
+    "troubleshooting",
+    "reference"
+  ],
+  "quality_score": 43,
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-04T00:03:23+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 ## Problem

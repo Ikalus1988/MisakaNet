@@ -326,7 +326,7 @@ def _wizard():
     # Write temp file and submit
     tmp = LESSONS_DIR / f"__tmp_{slug}.md"
     body = f"""---
-{{"title": "{title}", "domain": "{domain}", "tags": {json.dumps(tags)}, "status": "published", "created": "{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", "updated": "{datetime.now(timezone.utc).strftime('%Y-%m-%d')}", "source": "contributor"}}
+{{"title": "{title}", "domain": "{domain}", "tags": {json.dumps(tags)}, "status": "published", "created": "{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", "updated": "{datetime.now(timezone.utc).strftime('%Y-%m-%d')}", "source": "manual"}}
 ---
 
 {content}
@@ -362,7 +362,7 @@ def main():
         slug = _slugify(args.title)
         tmp = LESSONS_DIR / f"__tmp_{slug}.md"
         body = f"""---
-{{"title": "{args.title}", "domain": "{args.domain}", "tags": [], "status": "published", "created": "{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", "source": "contribute-api"}}
+{{"title": "{args.title}", "domain": "{args.domain}", "tags": [], "status": "published", "created": "{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", "source": "intake"}}
 ---
 
 {args.content}

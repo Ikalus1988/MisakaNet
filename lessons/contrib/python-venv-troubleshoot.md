@@ -1,11 +1,16 @@
 ---
 {
-  "domain": "contrib",
-  "title": "Python venv 激活失败或路径不匹配",
-  "verification": "metadata-normalized",
-  "{\"title\"": "Python venv 激活失败或路径不匹配\", \"domain\": \"devops\", \"tags\": [\"python\", \"venv\", \"virtualenv\", \"path\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "Python venv 激活失败或路径不匹配\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"{\\\"title\\\"\"": "Python venv 激活失败或路径不匹配\\\", \\\"domain\\\": \\\"devops\\\", \\\"tags\\\": [\\\"python\\\", \\\"venv\\\", \\\"virtualenv\\\", \\\"path\\\"], \\\"domain_expert\\\": \\\"unknown\\\"}\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 

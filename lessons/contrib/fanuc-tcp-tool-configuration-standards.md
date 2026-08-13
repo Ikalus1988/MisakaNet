@@ -1,12 +1,28 @@
 ---
-title: "FANUC TCP and Tool Configuration — Standards for Automotive Applications"
-domain: "fanuc"
-subdomain: "configuration"
-tags: ["tcp", "tool", "utool", "uframe", "payload", "coordinate", "automotive", "welding", "gluing", "riveting"]
-status: "published"
-source: "internal-training"
-confidence: "0.9"
-created: "2026-07-14"
+{
+  "title": "FANUC TCP and Tool Configuration — Standards for Automotive Applications",
+  "domain": "fanuc",
+  "subdomain": "configuration",
+  "tags": [
+    "tcp",
+    "tool",
+    "utool",
+    "uframe",
+    "payload",
+    "coordinate",
+    "automotive",
+    "welding",
+    "gluing",
+    "riveting"
+  ],
+  "status": "published",
+  "source": "manual",
+  "confidence": "0.9",
+  "created": "2026-07-14",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-15T10:16:28+08:00",
+  "merged_by": "zsxh1990"
+}
 ---
 
 ## Problem

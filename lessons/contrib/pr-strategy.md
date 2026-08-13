@@ -1,11 +1,16 @@
 ---
-title: External PR Strategy via pr-genius
-domain: contrib
-tags: [github-pr, external-pr, pr-genius, federation]
-status: published
-source: pr-genius
-created: 2026-07-06
-updated: 2026-07-06
+{
+  "title": "External PR Strategy via pr-genius",
+  "domain": "contrib",
+  "tags": "[github-pr, external-pr, pr-genius, federation]",
+  "status": "published",
+  "source": "pr",
+  "created": "2026-07-06",
+  "updated": "2026-07-06",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-06T09:52:00+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 # External PR Strategy via pr-genius

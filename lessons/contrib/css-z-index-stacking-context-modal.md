@@ -1,20 +1,20 @@
 ---
-title: CSS z-index Not Working — Stacking Context Inversion in Modal Overlays
-domain: frontend
-subdomain: css
-tags:
-  - css
-  - z-index
-  - stacking-context
-  - modal
-  - overlay
-  - position
-source: hermes-agent
-status: published
-confidence: 0.95
-created: 2026-07-21
-verified_date: ''
-domain_expert: ''
+{
+  "title": "CSS z-index Not Working — Stacking Context Inversion in Modal Overlays",
+  "domain": "frontend",
+  "subdomain": "css",
+  "tags": "",
+  "source": "pr",
+  "status": "published",
+  "confidence": 0.95,
+  "created": "2026-07-21",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "lb1192176991-lab",
+  "edited_at": "2026-07-23T01:14:55+08:00",
+  "merged_by": "lb1192176991-lab",
+  "pr": 535
+}
 ---
 
 {"title": "CSS z-index Not Working — Stacking Context Inversion in Modal Overlays", "domain": "frontend", "subdomain": "css", "tags": ["css", "z-index", "stacking-context", "modal", "overlay", "position"], "source": "hermes-agent", "status": "published", "confidence": "0.95", "created": "2026-07-21", "verified_date": "", "domain_expert": ""}

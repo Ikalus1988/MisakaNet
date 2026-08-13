@@ -93,13 +93,19 @@ def _l2():
             CREATE TABLE IF NOT EXISTS file_cache (
                 path TEXT PRIMARY KEY, mtime REAL, size INT,
                 title TEXT, domain TEXT, status TEXT,
-                reference TEXT, scope TEXT, source TEXT, tags TEXT, language TEXT
+                reference TEXT, scope TEXT, source TEXT, tags TEXT, language TEXT,
+                author TEXT, pr TEXT, edited_at TEXT, merged_by TEXT
             )""")
         # Migration: add language column if upgrading from older schema
         try:
             _L2_CONN.execute("ALTER TABLE file_cache ADD COLUMN language TEXT")
         except sqlite3.OperationalError:
             pass  # column already exists
+        for column in ("author", "pr", "edited_at", "merged_by"):
+            try:
+                _L2_CONN.execute(f"ALTER TABLE file_cache ADD COLUMN {column} TEXT")
+            except sqlite3.OperationalError:
+                pass
         _L2_CONN.commit()
     return _L2_CONN
 
@@ -117,6 +123,10 @@ class CachedDoc:
     source: str = ""
     tags: list = field(default_factory=list)
     language: str = ""
+    author: str = ""
+    pr: str = ""
+    edited_at: str = ""
+    merged_by: str = ""
     mtime: float = 0.0
     is_lesson: bool = True
 
@@ -189,7 +199,7 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
             cached = known.get(rel)
             if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
                 row = conn.execute(
-                    "SELECT title,domain,status,reference,scope,source,tags,language "
+                    "SELECT title,domain,status,reference,scope,source,tags,language,author,pr,edited_at,merged_by "
                     "FROM file_cache WHERE path=?",
                     (rel,),
                 ).fetchone()
@@ -209,6 +219,10 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
                         source=row[5] or "",
                         tags=tags,
                         language=row[7] or "",
+                        author=row[8] or "",
+                        pr=row[9] or "",
+                        edited_at=row[10] or "",
+                        merged_by=row[11] or "",
                     )
                     doc.content = f.read_text(encoding="utf-8", errors="replace")
                     docs.append(doc)
@@ -232,13 +246,17 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
             doc.scope = meta.get("scope", "")
             doc.source = meta.get("source", "")
             doc.language = meta.get("language", "")
+            doc.author = str(meta.get("author", "") or "")
+            doc.pr = str(meta.get("pr", "") or "")
+            doc.edited_at = str(meta.get("edited_at", "") or "")
+            doc.merged_by = str(meta.get("merged_by", "") or "")
             raw_tags = meta.get("tags", "")
             doc.tags = raw_tags if isinstance(raw_tags, list) else []
             docs.append(doc)
             conn.execute(
                 "INSERT OR REPLACE INTO file_cache "
-                "(path,mtime,size,title,domain,status,reference,scope,source,tags,language) "
-                "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                "(path,mtime,size,title,domain,status,reference,scope,source,tags,language,author,pr,edited_at,merged_by) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     rel,
                     st.st_mtime,
@@ -251,6 +269,10 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
                     doc.source,
                     json.dumps(doc.tags, ensure_ascii=False),
                     doc.language,
+                    doc.author,
+                    doc.pr,
+                    doc.edited_at,
+                    doc.merged_by,
                 ),
             )
             changed += 1

@@ -3,16 +3,29 @@
   "title": "Ka-Boost: 8-Layer KAREL Module Architecture and Build System",
   "domain": "fanuc",
   "subdomain": "karel-architecture",
-  "source": "github.com/kobbled/ka-boost/CLAUDE.md",
+  "source": "pr",
   "status": "draft",
   "confidence": 0.85,
   "created": "2026-07-12",
-  "tags": ["fanuc", "karel", "ka-boost", "architecture", "module-system", "rossum", "build-system", "gpp"],
+  "tags": [
+    "fanuc",
+    "karel",
+    "ka-boost",
+    "architecture",
+    "module-system",
+    "rossum",
+    "build-system",
+    "gpp"
+  ],
   "quality_score": 85,
   "problem": "KAREL 语言缺乏标准库、泛型、关联数组、字符串操作等现代编程基础设施，大型项目（如 5 轴 DLP 3D 打印切片器）难以模块化开发和维护。",
   "root_cause": "KAREL 是类 Pascal 的编译语言，运行在 FANUC 控制器上，语言特性有限。Ka-Boost 通过 GPP 预处理器实现泛型、命名空间、OOP 类等高级特性，并建立 8 层模块依赖体系填补标准库空白。",
   "solution": "采用 Ka-Boost 的分层模块架构：从底层预处理器宏（Layer 0）到高层系统（Layer 7），每层只依赖下层。使用 rossum 包管理器 + ninja 构建系统管理依赖和编译。",
-  "verification": "1. rossum 能解析 package.json 依赖图并生成 build.ninja；2. ninja 编译所有 .kl/.klc 文件生成 .pc 二进制；3. kpush 成功部署到控制器；4. 各层模块单元测试通过（KUnit HTTP 访问）。"
+  "verification": "1. rossum 能解析 package.json 依赖图并生成 build.ninja；2. ninja 编译所有 .kl/.klc 文件生成 .pc 二进制；3. kpush 成功部署到控制器；4. 各层模块单元测试通过（KUnit HTTP 访问）。",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-15T10:25:40+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 472
 }
 
 ## Ka-Boost: 8-Layer KAREL Module Architecture and Build System

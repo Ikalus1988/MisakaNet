@@ -57,7 +57,11 @@ def build_index(okf_path: Path, db_path: Path) -> int:
             path TEXT,
             timestamp TEXT,
             verified_date TEXT,
-            domain_expert TEXT
+            domain_expert TEXT,
+            author TEXT,
+            pr TEXT,
+            edited_at TEXT,
+            merged_by TEXT
         )
     """)
 
@@ -77,7 +81,7 @@ def build_index(okf_path: Path, db_path: Path) -> int:
     for r in records:
         tags_str = ", ".join(r.get("tags", []))
         conn.execute(
-            "INSERT INTO lessons (title, description, domain, tags, source, status, path, timestamp, verified_date, domain_expert) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO lessons (title, description, domain, tags, source, status, path, timestamp, verified_date, domain_expert, author, pr, edited_at, merged_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 r.get("title", ""),
                 r.get("description", ""),
@@ -89,6 +93,10 @@ def build_index(okf_path: Path, db_path: Path) -> int:
                 r.get("timestamp", ""),
                 r.get("verified_date", ""),
                 r.get("domain_expert", ""),
+                r.get("author", ""),
+                r.get("pr", ""),
+                r.get("edited_at", ""),
+                r.get("merged_by", ""),
             ),
         )
 
@@ -146,6 +154,10 @@ def search(db_path: Path, query: str, domain: str | None = None, top: int = 5) -
             "domain": r["domain"],
             "tags": r["tags"],
             "source": r["source"],
+            "author": r["author"] or "",
+            "pr": r["pr"] or "",
+            "edited_at": r["edited_at"] or "",
+            "merged_by": r["merged_by"] or "",
             "path": r["path"],
             "status": r["status"] or "",
             "score": round(abs(r["rank"]), 4) if r["rank"] else 0,

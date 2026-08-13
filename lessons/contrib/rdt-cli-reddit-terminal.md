@@ -1,14 +1,26 @@
 ---
-title: rdt-cli — Reddit in Your Terminal (Reverse-Engineered API)
-domain: ops
-subdomain: scraping
-tags: ["rdt-cli", "reddit", "scraping", "cli", "anti-detection"]
-source: github.com/public-clis/rdt-cli
-status: published
-confidence: 0.85
-created: 2026-07-01
-verified_date: 
-domain_expert: 
+{
+  "title": "rdt-cli — Reddit in Your Terminal (Reverse-Engineered API)",
+  "domain": "ops",
+  "subdomain": "scraping",
+  "tags": [
+    "rdt-cli",
+    "reddit",
+    "scraping",
+    "cli",
+    "anti-detection"
+  ],
+  "source": "pr",
+  "status": "published",
+  "confidence": 0.85,
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-12T12:28:29+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 351
+}
 ---
 
 

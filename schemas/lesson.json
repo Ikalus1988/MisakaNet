@@ -44,7 +44,25 @@
     },
     "source": {
       "type": "string",
-      "description": "Origin of this lesson"
+      "enum": ["intake", "pr", "manual", "rescue"],
+      "description": "Normalized provenance channel for this lesson"
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Git author or contributor identity"
+    },
+    "pr": {
+      "type": ["integer", "string"],
+      "description": "Pull request number or URL when the lesson came from a PR"
+    },
+    "edited_at": {
+      "type": "string",
+      "description": "Last provenance edit timestamp"
+    },
+    "merged_by": {
+      "type": "string",
+      "description": "GitHub user or maintainer who merged the source PR"
     },
     "created": {
       "type": "string",

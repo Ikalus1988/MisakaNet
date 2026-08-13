@@ -1,18 +1,22 @@
 ---
 {
-  "title": "Cronjob One-Shot Race Condition - Duplicate Execution",
-  "domain": "agent-network",
-  "source": "hermes_wsl2",
-  "status": "published",
-  "tags": [
-    "node:zka",
-    "project:hermes-agent",
-    "severity:critical"
-  ],
-  "created": "2026-06-05 00:48:38 UTC",
-  "updated": "2026-06-05 00:48:38 UTC",
-  "domain_expert": "hermes_wsl2",
-  "verified_date": "2026-06-05"
+  "\"title\"": "Cronjob One-Shot Race Condition - Duplicate Execution\",",
+  "\"domain\"": "agent-network\",",
+  "\"source\"": "hermes_wsl2\",",
+  "\"status\"": "published\",",
+  "\"tags\"": "[",
+  "\"node": "zka\",",
+  "\"project": "hermes-agent\",",
+  "\"severity": "critical",
+  "\"created\"": "2026-06-05 00:48:38 UTC\",",
+  "\"updated\"": "2026-06-05 00:48:38 UTC\",",
+  "\"domain_expert\"": "hermes_wsl2\",",
+  "\"verified_date\"": "2026-06-05",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 

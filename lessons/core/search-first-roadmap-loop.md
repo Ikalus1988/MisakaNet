@@ -1,5 +1,11 @@
 ---
-{"title":"Search-first roadmap loop for agent knowledge projects","domain":"development","status":"published","tags":["roadmap","search","onboarding","release","strategy"],"language":"en","source":"strategy-session-2026-07-02","created":"2026-07-02 00:00:00 UTC","updated":"2026-07-02 00:00:00 UTC"}
+{
+  "{\"title\"": "Search-first roadmap loop for agent knowledge projects\",\"domain\":\"development\",\"status\":\"published\",\"tags\":[\"roadmap\",\"search\",\"onboarding\",\"release\",\"strategy\"],\"language\":\"en\",\"source\":\"strategy-session-2026-07-02\",\"created\":\"2026-07-02 00:00:00 UTC\",\"updated\":\"2026-07-02 00:00:00 UTC\"}",
+  "author": "Ikalus1988",
+  "source": "manual",
+  "edited_at": "2026-07-02T23:29:49+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 ## Problem

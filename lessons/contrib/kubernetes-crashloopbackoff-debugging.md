@@ -1,17 +1,17 @@
 ---
-title: Tips for Debugging Kubernetes CrashLoopBackOff in a Container
-domain: kubernetes
-tags:
-  - debugging
-  - crashloopbackoff
-  - container
-  - kubernetes
-  - troubleshooting
-language: en
-status: published
-source: https://releaseapp.io/blog/kubernetes-how-to-debug-crashloopbackoff-in-a-container
-created: 2026-07-28
-confidence: 0.85
+{
+  "title": "Tips for Debugging Kubernetes CrashLoopBackOff in a Container",
+  "domain": "kubernetes",
+  "tags": "",
+  "language": "en",
+  "status": "published",
+  "source": "manual",
+  "created": "2026-07-28",
+  "confidence": 0.85,
+  "author": "zsxh1990",
+  "edited_at": "2026-07-29T09:18:36+08:00",
+  "merged_by": "zsxh1990"
+}
 ---
 
 ## Problem

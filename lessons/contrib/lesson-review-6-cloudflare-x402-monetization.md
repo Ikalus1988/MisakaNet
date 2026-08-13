@@ -1,14 +1,26 @@
 ---
-title: "Cloudflare Monetization Gateway — x402 API 支付协议"
-domain: "ops"
-subdomain: "api"
-tags: ["cloudflare", "x402", "api", "monetization", "payment", "mcp"]
-source: "blog.cloudflare.com"
-status: "published"
-confidence: "0.8"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+{
+  "title": "Cloudflare Monetization Gateway — x402 API 支付协议",
+  "domain": "ops",
+  "subdomain": "api",
+  "tags": [
+    "cloudflare",
+    "x402",
+    "api",
+    "monetization",
+    "payment",
+    "mcp"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": "0.8",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-04T11:38:13+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 

@@ -1,5 +1,6 @@
 ---
 {
+<<<<<<< HEAD
   "title": "Glama MCP Server Deployment — 10 Build Failures and Fixes",
   "domain": "devops",
   "tags": ["glama", "mcp", "docker", "uv", "deployment", "ci-cd", "badges", "markdown"],
@@ -8,6 +9,19 @@
   "source": "agent_experience",
   "created": "2026-07-26",
   "confidence": "0.95"
+=======
+  "\"title\"": "Glama MCP Server Deployment — 10 Build Failures and Fixes\",",
+  "\"domain\"": "devops\",",
+  "\"tags\"": "[\"glama\", \"mcp\", \"docker\", \"uv\", \"deployment\", \"ci-cd\", \"badges\", \"markdown\"],",
+  "\"status\"": "published\",",
+  "\"source\"": "agent_experience\",",
+  "\"created\"": "2026-07-26\",",
+  "\"confidence\"": "0.95",
+  "author": "zsxh1990",
+  "source": "manual",
+  "edited_at": "2026-07-29T14:04:33+08:00",
+  "merged_by": "zsxh1990"
+>>>>>>> 434731e0 (feat: track lesson provenance end to end)
 }
 ---
 

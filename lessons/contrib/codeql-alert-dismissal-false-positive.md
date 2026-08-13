@@ -1,10 +1,21 @@
 ---
-title: "Dismiss CodeQL False Positive Alerts"
-domain: "security"
-tags: ["codeql", "security", "github", "false-positive"]
-status: "published"
-source: "agent_experience"
-created: "2026-07-02"
+{
+  "title": "Dismiss CodeQL False Positive Alerts",
+  "domain": "security",
+  "tags": [
+    "codeql",
+    "security",
+    "github",
+    "false-positive"
+  ],
+  "status": "published",
+  "source": "pr",
+  "created": "2026-07-02",
+  "author": "2lll5",
+  "edited_at": "2026-07-09T17:43:25+08:00",
+  "merged_by": "2lll5",
+  "pr": 431
+}
 ---
 
 ---

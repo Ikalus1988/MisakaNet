@@ -1,11 +1,15 @@
 ---
 {
-  "domain": "contrib",
-  "title": "GitHub API 401 后本地凭证查找顺序",
-  "verification": "metadata-normalized",
-  "tags": ["github", "api", "credential", "401", "auth", "pat"],
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "GitHub API 401 后本地凭证查找顺序\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"tags\"": "[\"github\", \"api\", \"credential\", \"401\", \"auth\", \"pat\"],",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "uncledad96-glitch",
+  "source": "manual",
+  "edited_at": "2026-07-20T23:21:02+02:00",
+  "merged_by": "uncledad96-glitch"
 }
 ---
 

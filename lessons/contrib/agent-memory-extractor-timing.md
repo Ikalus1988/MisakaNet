@@ -1,9 +1,21 @@
 ---
-title: "Agent Memory Extractor Timing — Eager vs Lazy with Implementation"
-domain: "agent"
-tags: ["agent-memory", "extractor", "timing", "token-efficiency", "quality"]
-status: "published"
-source: "brgsk.xyz"
+{
+  "title": "Agent Memory Extractor Timing — Eager vs Lazy with Implementation",
+  "domain": "agent",
+  "tags": [
+    "agent-memory",
+    "extractor",
+    "timing",
+    "token-efficiency",
+    "quality"
+  ],
+  "status": "published",
+  "source": "pr",
+  "author": "2lll5",
+  "edited_at": "2026-07-08T09:06:05+08:00",
+  "merged_by": "2lll5",
+  "pr": 399
+}
 ---
 
 

@@ -1,13 +1,19 @@
 ---
-title: "FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明"
-domain: fanuc
-subdomain: kl-modules
-source: bootstrap
-status: published
-confidence: 0.7
-created: 2026-05-03
-domain_expert: bootstrap
-verified_date: 2026-05-03
+{
+  "title": "FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明",
+  "domain": "fanuc",
+  "subdomain": "kl-modules",
+  "source": "pr",
+  "status": "published",
+  "confidence": 0.7,
+  "created": "2026-05-03",
+  "domain_expert": "bootstrap",
+  "verified_date": "2026-05-03",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-12T12:28:29+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 351
+}
 ---
 
 

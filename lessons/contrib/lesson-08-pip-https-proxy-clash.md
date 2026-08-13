@@ -1,11 +1,16 @@
 ---
 {
-  "domain": "devops",
-  "title": "pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890",
-  "verification": "metadata-normalized",
-  "{\"title\"": "pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890\", \"domain\": \"devops\", \"tags\": [\"pip\", \"proxy\", \"wsl\", \"clash\", \"github-timeout\", \"agent-reach-install\", \"network-config\"], \"status\": \"published\", \"confidence\": \"0.94\", \"created\": \"2026-07-03\", \"updated\": \"2026-07-03\", \"source\": \"Real incident, agent-reach install (2026-07-03T00:30 GMT+8)\", \"verified_date\": \"\", \"domain_expert\": \"\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "devops\",",
+  "\"title\"": "pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"{\\\"title\\\"\"": "pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890\\\", \\\"domain\\\": \\\"devops\\\", \\\"tags\\\": [\\\"pip\\\", \\\"proxy\\\", \\\"wsl\\\", \\\"clash\\\", \\\"github-timeout\\\", \\\"agent-reach-install\\\", \\\"network-config\\\"], \\\"status\\\": \\\"published\\\", \\\"confidence\\\": \\\"0.94\\\", \\\"created\\\": \\\"2026-07-03\\\", \\\"updated\\\": \\\"2026-07-03\\\", \\\"source\\\": \\\"Real incident, agent-reach install (2026-07-03T00:30 GMT+8)\\\", \\\"verified_date\\\": \\\"\\\", \\\"domain_expert\\\": \\\"\\\"}\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 

@@ -1,11 +1,16 @@
 ---
 {
-  "domain": "contrib",
-  "title": "feishu upload file type opus",
-  "verification": "metadata-normalized",
-  "{\"title\"": "Feishu 文件上传：file_type 必须用 opus\", \"domain\": \"feishu\", \"tags\": \"\", \"source\": \"hanged-man\", \"status\": \"published\", \"created\": \"2026-03-29\", \"confidence\": \"0.95\", \"scope\": \"broad\", \"alternative_of\": \"None\", \"related\": \"\", \"domain_expert\": \"hanged-man\", \"verified_date\": \"2026-03-29\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "feishu upload file type opus\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"{\\\"title\\\"\"": "Feishu 文件上传：file_type 必须用 opus\\\", \\\"domain\\\": \\\"feishu\\\", \\\"tags\\\": \\\"\\\", \\\"source\\\": \\\"hanged-man\\\", \\\"status\\\": \\\"published\\\", \\\"created\\\": \\\"2026-03-29\\\", \\\"confidence\\\": \\\"0.95\\\", \\\"scope\\\": \\\"broad\\\", \\\"alternative_of\\\": \\\"None\\\", \\\"related\\\": \\\"\\\", \\\"domain_expert\\\": \\\"hanged-man\\\", \\\"verified_date\\\": \\\"2026-03-29\\\"}\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 

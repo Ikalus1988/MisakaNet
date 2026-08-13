@@ -1,5 +1,11 @@
 ---
-{"title": "MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption", "domain": "mcp", "tags": ["mcp", "error_handling", "convention", "git", "commit_message"], "language": "en", "status": "published", "source": "https://dev.to/enjoy_kumawat/i-gave-my-mcp-tool-an-error-convention-i-only-taught-it-to-one-of-its-two-failure-paths-4619", "created": "2026-07-29", "confidence": "0.85"}
+{
+  "{\"title\"": "MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption\", \"domain\": \"mcp\", \"tags\": [\"mcp\", \"error_handling\", \"convention\", \"git\", \"commit_message\"], \"language\": \"en\", \"status\": \"published\", \"source\": \"https://dev.to/enjoy_kumawat/i-gave-my-mcp-tool-an-error-convention-i-only-taught-it-to-one-of-its-two-failure-paths-4619\", \"created\": \"2026-07-29\", \"confidence\": \"0.85\"}",
+  "author": "zsxh1990",
+  "source": "manual",
+  "edited_at": "2026-07-29T09:45:21+08:00",
+  "merged_by": "zsxh1990"
+}
 ---
 
 ## Problem

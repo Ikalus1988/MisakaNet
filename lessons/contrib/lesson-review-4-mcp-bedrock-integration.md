@@ -1,14 +1,26 @@
 ---
-title: "MCP 协议 + Bedrock 实战 — Agent 外部工具调用标准化"
-domain: "mcp"
-subdomain: "integration"
-tags: ["mcp", "bedrock", "aws", "agent", "tool-calling", "standardization"]
-source: "segmentfault.com"
-status: "published"
-confidence: "0.85"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+{
+  "title": "MCP 协议 + Bedrock 实战 — Agent 外部工具调用标准化",
+  "domain": "mcp",
+  "subdomain": "integration",
+  "tags": [
+    "mcp",
+    "bedrock",
+    "aws",
+    "agent",
+    "tool-calling",
+    "standardization"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": "0.85",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-04T11:38:13+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 

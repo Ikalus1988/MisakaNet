@@ -149,10 +149,9 @@ def lesson_to_okf(path: Path, domain_filter: str | None = None) -> dict | None:
     }
 
     # Optional fields
-    if meta.get("verified_date"):
-        okf["verified_date"] = meta["verified_date"]
-    if meta.get("domain_expert"):
-        okf["domain_expert"] = meta["domain_expert"]
+    for field in ("verified_date", "domain_expert", "author", "pr", "edited_at", "merged_by"):
+        if meta.get(field):
+            okf[field] = meta[field]
 
     return okf
 
@@ -179,7 +178,7 @@ def main():
         for lesson in lessons:
             if args.domain and lesson.get("domain") != args.domain:
                 continue
-            okf_records.append({
+            record = {
                 "type": "lesson",
                 "title": lesson.get("title", ""),
                 "description": lesson.get("summary", lesson.get("description", "")),
@@ -189,7 +188,11 @@ def main():
                 "source": lesson.get("source", ""),
                 "status": lesson.get("status", "published"),
                 "path": lesson.get("url", lesson.get("path", "")),
-            })
+            }
+            for field in ("author", "pr", "edited_at", "merged_by"):
+                if lesson.get(field):
+                    record[field] = lesson[field]
+            okf_records.append(record)
         # Write output
         if args.format == "jsonl":
             output_file = output_dir / "lessons.jsonl"

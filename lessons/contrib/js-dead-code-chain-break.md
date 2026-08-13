@@ -1,10 +1,21 @@
 ---
-title: "JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效"
-domain: "frontend"
-tags: ["js", "runtime", "typeerror", "execution-model", "defensive"]
-domain_expert: "unknown"
-created: "2026-07-06"
-source: "unknown"
+{
+  "title": "JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效",
+  "domain": "frontend",
+  "tags": [
+    "js",
+    "runtime",
+    "typeerror",
+    "execution-model",
+    "defensive"
+  ],
+  "domain_expert": "unknown",
+  "created": "2026-07-06",
+  "source": "manual",
+  "author": "Muhammad Bilal Mukhtar",
+  "edited_at": "2026-08-06T01:00:28+08:00",
+  "merged_by": "Muhammad Bilal Mukhtar"
+}
 ---
 
 ## 背景

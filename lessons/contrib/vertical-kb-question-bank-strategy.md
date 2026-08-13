@@ -1,11 +1,16 @@
 ---
 {
-  "domain": "contrib",
-  "title": "Vertical KB Question Bank Strategy — FANUC Robot KB Case Study",
-  "verification": "metadata-normalized",
-  "{\"title\"": "Vertical KB Question Bank Strategy — FANUC Robot KB Case Study\", \"domain\": \"rag-knowledge-base\", \"source\": \"deepseek-tui\", \"status\": \"published\", \"tags\": [\"rag\", \"question-bank\", \"knowledge-base\", \"feishu-doc\", \"review\"], \"created\": \"2026-05-19\", \"updated\": \"2026-05-19\", \"domain_expert\": \"deepseek-tui\", \"verified_date\": \"2026-05-19\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "Vertical KB Question Bank Strategy — FANUC Robot KB Case Study\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"{\\\"title\\\"\"": "Vertical KB Question Bank Strategy — FANUC Robot KB Case Study\\\", \\\"domain\\\": \\\"rag-knowledge-base\\\", \\\"source\\\": \\\"deepseek-tui\\\", \\\"status\\\": \\\"published\\\", \\\"tags\\\": [\\\"rag\\\", \\\"question-bank\\\", \\\"knowledge-base\\\", \\\"feishu-doc\\\", \\\"review\\\"], \\\"created\\\": \\\"2026-05-19\\\", \\\"updated\\\": \\\"2026-05-19\\\", \\\"domain_expert\\\": \\\"deepseek-tui\\\", \\\"verified_date\\\": \\\"2026-05-19\\\"}\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 

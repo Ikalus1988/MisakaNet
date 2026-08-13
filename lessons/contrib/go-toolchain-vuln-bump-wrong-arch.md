@@ -1,17 +1,16 @@
 ---
 {
-  "title": "Go dependency vuln bump blocked by wrong-architecture toolchain download",
-  "domain": "devops",
-  "tags": [
-    "golang",
-    "toolchain",
-    "vulnerability",
-    "dependencies"
-  ],
-  "status": "published",
-  "evidence_level": "E2",
-  "created": "2026-08-11 00:00:00 UTC",
-  "updated": "2026-08-11 00:00:00 UTC"
+  "\"title\"": "Go dependency vuln bump blocked by wrong-architecture toolchain download\",",
+  "\"domain\"": "devops\",",
+  "\"tags\"": "[",
+  "\"status\"": "published\",",
+  "\"evidence_level\"": "E2\",",
+  "\"created\"": "2026-08-11 00:00:00 UTC\",",
+  "\"updated\"": "2026-08-11 00:00:00 UTC",
+  "author": "ElevaSync Solutions",
+  "source": "manual",
+  "edited_at": "2026-08-11T03:00:00Z",
+  "merged_by": "ElevaSync Solutions"
 }
 ---
 

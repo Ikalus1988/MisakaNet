@@ -1,13 +1,18 @@
 ---
-title: "Error de DCO sign-off en commits de Git en Windows"
-domain: "devops"
-tags: [git, dco, windows, signoff, commit]
-language: es
-status: published
-source: "https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/dco-auto-fix-workflow.md"
-created: 2026-07-29
-confidence: 0.9
-verified_date: 2026-07-29
+{
+  "title": "Error de DCO sign-off en commits de Git en Windows",
+  "domain": "devops",
+  "tags": "[git, dco, windows, signoff, commit]",
+  "language": "es",
+  "status": "published",
+  "source": "manual",
+  "created": "2026-07-29",
+  "confidence": 0.9,
+  "verified_date": "2026-07-29",
+  "author": "tarotoads-debug",
+  "edited_at": "2026-07-29T09:23:25-07:00",
+  "merged_by": "tarotoads-debug"
+}
 ---
 
 ## Problem

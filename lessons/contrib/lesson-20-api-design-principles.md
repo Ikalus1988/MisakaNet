@@ -1,14 +1,25 @@
 ---
-title: "API 设计原则 — 无抽象、一致性、幂等性"
-domain: "ops"
-subdomain: "api"
-tags: ["api", "design", "principles", "rest", "consistency"]
-source: "increase.com/articles"
-status: "published"
-confidence: "0.85"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+{
+  "title": "API 设计原则 — 无抽象、一致性、幂等性",
+  "domain": "ops",
+  "subdomain": "api",
+  "tags": [
+    "api",
+    "design",
+    "principles",
+    "rest",
+    "consistency"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": "0.85",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-04T11:38:13+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 

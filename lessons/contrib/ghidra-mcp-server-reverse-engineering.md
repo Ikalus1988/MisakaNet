@@ -1,4 +1,25 @@
-{"title": "Ghidra MCP Server — AI-Assisted Reverse Engineering", "domain": "mcp", "subdomain": "reverse-engineering", "tags": ["mcp", "ghidra", "reverse-engineering", "binary-analysis", "security"], "source": "github.com/LaurieWired/GhidraMCP", "status": "published", "confidence": "0.85", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+{
+  "title": "Ghidra MCP Server — AI-Assisted Reverse Engineering",
+  "domain": "mcp",
+  "subdomain": "reverse-engineering",
+  "tags": [
+    "mcp",
+    "ghidra",
+    "reverse-engineering",
+    "binary-analysis",
+    "security"
+  ],
+  "source": "pr",
+  "status": "published",
+  "confidence": "0.85",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-02T16:15:59+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 277
+}
 
 
 ## Problem

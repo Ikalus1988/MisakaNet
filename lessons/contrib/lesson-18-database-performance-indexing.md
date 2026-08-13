@@ -1,14 +1,25 @@
 ---
-title: "数据库性能 — 索引与查询优化实践"
-domain: "ops"
-subdomain: "database"
-tags: ["database", "postgresql", "indexing", "performance", "query-optimization"]
-source: "practical-experience"
-status: "published"
-confidence: "0.9"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+{
+  "title": "数据库性能 — 索引与查询优化实践",
+  "domain": "ops",
+  "subdomain": "database",
+  "tags": [
+    "database",
+    "postgresql",
+    "indexing",
+    "performance",
+    "query-optimization"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": "0.9",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-04T11:38:13+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 

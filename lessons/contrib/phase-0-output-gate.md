@@ -1,11 +1,16 @@
 ---
 {
-  "domain": "contrib",
-  "title": "phase 0 output gate",
-  "verification": "metadata-normalized",
-  "{\"title\"": "Phase 0 Output Gate — Agent 的硬性知识检索规则\", \"domain\": \"methodology\", \"tags\": [\"output-gate\", \"knowledge-reuse\", \"methodology\", \"core\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "phase 0 output gate\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"{\\\"title\\\"\"": "Phase 0 Output Gate — Agent 的硬性知识检索规则\\\", \\\"domain\\\": \\\"methodology\\\", \\\"tags\\\": [\\\"output-gate\\\", \\\"knowledge-reuse\\\", \\\"methodology\\\", \\\"core\\\"], \\\"domain_expert\\\": \\\"unknown\\\"}\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 

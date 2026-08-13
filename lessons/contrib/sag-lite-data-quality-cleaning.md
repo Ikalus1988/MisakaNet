@@ -1,10 +1,22 @@
 ---
-title: "SAG-Lite Data Quality: Clean Search Results"
-domain: devops
-tags: ["search", "sqlite", "fts5", "data-quality", "misakanet"]
-status: published
-source: agent_experience
-created: 2026-07-02
+{
+  "title": "SAG-Lite Data Quality: Clean Search Results",
+  "domain": "devops",
+  "tags": [
+    "search",
+    "sqlite",
+    "fts5",
+    "data-quality",
+    "misakanet"
+  ],
+  "status": "published",
+  "source": "pr",
+  "created": "2026-07-02",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-12T12:28:29+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 351
+}
 ---
 ---
 

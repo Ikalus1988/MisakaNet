@@ -1,4 +1,28 @@
-{"title": "Agent Web Access Toolchain — 7 Libraries for Reliable Forum Scraping", "domain": "agent", "subdomain": "tooling", "tags": ["agent-tooling", "web-access", "curl-cffi", "scrapling", "drissionpage", "scraping", "forum", "tls-fingerprint"], "source": "practical-experience", "status": "published", "confidence": "0.85", "created": "2026-07-14", "verified_date": "2026-07-14", "domain_expert": ""}
+{
+  "title": "Agent Web Access Toolchain — 7 Libraries for Reliable Forum Scraping",
+  "domain": "agent",
+  "subdomain": "tooling",
+  "tags": [
+    "agent-tooling",
+    "web-access",
+    "curl-cffi",
+    "scrapling",
+    "drissionpage",
+    "scraping",
+    "forum",
+    "tls-fingerprint"
+  ],
+  "source": "pr",
+  "status": "published",
+  "confidence": "0.85",
+  "created": "2026-07-14",
+  "verified_date": "2026-07-14",
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-15T10:25:40+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 472
+}
 
 
 ## Problem

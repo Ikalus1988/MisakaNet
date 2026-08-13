@@ -1,18 +1,16 @@
 ---
 {
-  "title": "git worktree commit lost after pushing from the wrong directory",
-  "domain": "development",
-  "tags": [
-    "git",
-    "worktree",
-    "reflog",
-    "recovery",
-    "branch"
-  ],
-  "status": "published",
-  "evidence_level": "E2",
-  "created": "2026-08-11 00:00:00 UTC",
-  "updated": "2026-08-11 00:00:00 UTC"
+  "\"title\"": "git worktree commit lost after pushing from the wrong directory\",",
+  "\"domain\"": "development\",",
+  "\"tags\"": "[",
+  "\"status\"": "published\",",
+  "\"evidence_level\"": "E2\",",
+  "\"created\"": "2026-08-11 00:00:00 UTC\",",
+  "\"updated\"": "2026-08-11 00:00:00 UTC",
+  "author": "ElevaSync Solutions",
+  "source": "manual",
+  "edited_at": "2026-08-11T03:55:00Z",
+  "merged_by": "ElevaSync Solutions"
 }
 ---
 

@@ -1,17 +1,16 @@
 ---
 {
-  "title": "npm install failing on one host but not another (native build arch mismatch)",
-  "domain": "development",
-  "tags": [
-    "npm",
-    "node",
-    "portability",
-    "ci"
-  ],
-  "status": "published",
-  "evidence_level": "E2",
-  "created": "2026-08-11 00:00:00 UTC",
-  "updated": "2026-08-11 00:00:00 UTC"
+  "\"title\"": "npm install failing on one host but not another (native build arch mismatch)\",",
+  "\"domain\"": "development\",",
+  "\"tags\"": "[",
+  "\"status\"": "published\",",
+  "\"evidence_level\"": "E2\",",
+  "\"created\"": "2026-08-11 00:00:00 UTC\",",
+  "\"updated\"": "2026-08-11 00:00:00 UTC",
+  "author": "ElevaSync Solutions",
+  "source": "manual",
+  "edited_at": "2026-08-11T03:00:00Z",
+  "merged_by": "ElevaSync Solutions"
 }
 ---
 

@@ -1,10 +1,15 @@
 ---
 {
-  "domain": "contrib",
-  "title": "Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 ---{"title": "Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams", "domain": "development", "tags": ["pr", "ai-review", "github-actions", "fatal-error", "spawn", "shell-injection", "esm", "ci", "playbook", "sop"], "status": "published", "confidence": "0.95", "source": "hermes_wsl2", "created": "2026-06-17", "updated": "2026-06-17"}---

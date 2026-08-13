@@ -1,5 +1,11 @@
 ---
-{"title": "Context Mode: Reducing Claude Code Context Consumption by 98%", "domain": "ai-agents", "tags": ["mcp", "claude", "context-management", "performance"], "language": "en", "status": "published", "source": "https://mksg.lu/blog/context-mode", "created": "2026-07-28", "confidence": "0.85"}
+{
+  "{\"title\"": "Context Mode: Reducing Claude Code Context Consumption by 98%\", \"domain\": \"ai-agents\", \"tags\": [\"mcp\", \"claude\", \"context-management\", \"performance\"], \"language\": \"en\", \"status\": \"published\", \"source\": \"https://mksg.lu/blog/context-mode\", \"created\": \"2026-07-28\", \"confidence\": \"0.85\"}",
+  "author": "zsxh1990",
+  "source": "manual",
+  "edited_at": "2026-07-29T09:18:36+08:00",
+  "merged_by": "zsxh1990"
+}
 ---
 
 ## Problem

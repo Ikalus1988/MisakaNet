@@ -1,16 +1,17 @@
 ---
-title: "正则陷阱 — 源码中转义引号导致非贪婪匹配提前终止"
-domain: development
-tags:
-  - regex
-  - python
-  - source-parsing
-  - escape-sequences
-  - debug
-status: published
-source: practical-experience
-confidence: 0.9
-created: 2026-07-07
+{
+  "title": "正则陷阱 — 源码中转义引号导致非贪婪匹配提前终止",
+  "domain": "development",
+  "tags": "",
+  "status": "published",
+  "source": "pr",
+  "confidence": 0.9,
+  "created": "2026-07-07",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-08T17:09:01+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 415
+}
 ---
 
 ## Problem

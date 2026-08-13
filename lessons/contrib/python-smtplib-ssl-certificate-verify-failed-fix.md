@@ -1,8 +1,14 @@
 ---
-domain: "automation"
-title: "Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails Via Gmail"
-status: "published"
-{"title": "Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails Via Gmail", "domain": "automation", "tags": ["python", "ssl", "smtp", "gmail", "network", "email"], "status": "published", "confidence": "0.95", "created": "2026-07-30", "updated": "2026-07-30", "source": "https://github.com/agente-gaudi/n8n-automation-workflows", "verified_date": "2026-07-30", "domain_expert": "python-net"}
+{
+  "domain": "automation",
+  "title": "Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails Via Gmail",
+  "status": "published",
+  "{\"title\"": "Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails Via Gmail\", \"domain\": \"automation\", \"tags\": [\"python\", \"ssl\", \"smtp\", \"gmail\", \"network\", \"email\"], \"status\": \"published\", \"confidence\": \"0.95\", \"created\": \"2026-07-30\", \"updated\": \"2026-07-30\", \"source\": \"https://github.com/agente-gaudi/n8n-automation-workflows\", \"verified_date\": \"2026-07-30\", \"domain_expert\": \"python-net\"}",
+  "author": "agente-gaudi",
+  "source": "manual",
+  "edited_at": "2026-07-30T01:17:36-03:00",
+  "merged_by": "agente-gaudi"
+}
 ---
 
 # Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails Via Gmail

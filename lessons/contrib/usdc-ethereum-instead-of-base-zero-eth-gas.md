@@ -1,15 +1,19 @@
 ---
 {
-  "title": "USDC пришёл в Ethereum mainnet, а нужен Base — и 0 ETH на газ",
-  "domain": "crypto-ops",
-  "tags": ["usdc", "base", "ethereum", "bridge", "gas", "cow-protocol", "agent", "wallet"],
-  "status": "published",
-  "lang": "ru",
-  "language": "ru",
-  "source": "brok-best agent ops 2026-07-29 (live wallet bridge)",
-  "created": "2026-07-29",
-  "updated": "2026-07-29",
-  "confidence": "0.92"
+  "\"title\"": "USDC пришёл в Ethereum mainnet, а нужен Base — и 0 ETH на газ\",",
+  "\"domain\"": "crypto-ops\",",
+  "\"tags\"": "[\"usdc\", \"base\", \"ethereum\", \"bridge\", \"gas\", \"cow-protocol\", \"agent\", \"wallet\"],",
+  "\"status\"": "published\",",
+  "\"lang\"": "ru\",",
+  "\"language\"": "ru\",",
+  "\"source\"": "brok-best agent ops 2026-07-29 (live wallet bridge)\",",
+  "\"created\"": "2026-07-29\",",
+  "\"updated\"": "2026-07-29\",",
+  "\"confidence\"": "0.92",
+  "author": "Brok Malkotsis",
+  "source": "manual",
+  "edited_at": "2026-07-29T23:40:42Z",
+  "merged_by": "Brok Malkotsis"
 }
 ---
 

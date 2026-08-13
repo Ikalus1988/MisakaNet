@@ -1,4 +1,32 @@
-{"id":"fanuc-karel-uv-to-xyzwpr-pipeline","title":"UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion","domain":"fanuc","subdomain":"karel-slicer","source":"github-ka-boost-layer7-high-level-systems.md","status":"draft","confidence":0.8,"created":"2026-07-12","tags":["fanuc","karel","path-planning","slicer","uv-to-xyzwpr","dxf","svg","5-axis"],"quality_score":80,"problem":"5轴DLP 3D打印切片器需要将2D切片几何(SVG/DXF)转换为机器人可执行的XYZWPR运动指令，中间涉及光栅化、路径规划、坐标系转换、多层迭代等复杂流程","root_cause":"切片器管线跨越多个模块(draw→pathplan→pathmake→pathmotion→pathlayer)，每个模块负责不同阶段的转换，缺乏统一的端到端参考文档","solution":"Ka-Boost Layer7实现完整的UV→XYZWPR管线：draw模块做2D光栅化和轮廓提取，pathplan用图算法排序路径段，pathmake做插值和坐标转换，pathmotion发TP运动指令，pathlayer做逐层迭代和硬件控制","verification":"通过实际5轴DLP打印验证管线完整性，Python工具链(DXF/SVG解析、Clipper裁剪、Matplotlib可视化)用于离线验证几何正确性"}
+{
+  "id": "fanuc-karel-uv-to-xyzwpr-pipeline",
+  "title": "UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion",
+  "domain": "fanuc",
+  "subdomain": "karel-slicer",
+  "source": "pr",
+  "status": "draft",
+  "confidence": 0.8,
+  "created": "2026-07-12",
+  "tags": [
+    "fanuc",
+    "karel",
+    "path-planning",
+    "slicer",
+    "uv-to-xyzwpr",
+    "dxf",
+    "svg",
+    "5-axis"
+  ],
+  "quality_score": 80,
+  "problem": "5轴DLP 3D打印切片器需要将2D切片几何(SVG/DXF)转换为机器人可执行的XYZWPR运动指令，中间涉及光栅化、路径规划、坐标系转换、多层迭代等复杂流程",
+  "root_cause": "切片器管线跨越多个模块(draw→pathplan→pathmake→pathmotion→pathlayer)，每个模块负责不同阶段的转换，缺乏统一的端到端参考文档",
+  "solution": "Ka-Boost Layer7实现完整的UV→XYZWPR管线：draw模块做2D光栅化和轮廓提取，pathplan用图算法排序路径段，pathmake做插值和坐标转换，pathmotion发TP运动指令，pathlayer做逐层迭代和硬件控制",
+  "verification": "通过实际5轴DLP打印验证管线完整性，Python工具链(DXF/SVG解析、Clipper裁剪、Matplotlib可视化)用于离线验证几何正确性",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-15T10:25:40+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 472
+}
 
 ### 问题描述
 

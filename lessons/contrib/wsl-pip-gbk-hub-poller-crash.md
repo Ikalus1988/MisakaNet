@@ -1,11 +1,16 @@
 ---
 {
-  "domain": "contrib",
-  "title": "wsl pip gbk hub poller crash",
-  "verification": "metadata-normalized",
-  "{\"title\"": "WSL pip install GBK 编码导致 hub_poller 崩溃\", \"domain\": \"devops\", \"subdomain\": \"wsl\", \"source\": \"bootstrap\", \"status\": \"published\", \"tags\": [\"project:agent-medici\", \"severity:critical\", \"platform:wsl\", \"node:hermes_wsl\"], \"confidence\": \"0.8\", \"created\": \"2026-05-03\", \"domain_expert\": \"bootstrap\", \"verified_date\": \"2026-05-03\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "wsl pip gbk hub poller crash\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"{\\\"title\\\"\"": "WSL pip install GBK 编码导致 hub_poller 崩溃\\\", \\\"domain\\\": \\\"devops\\\", \\\"subdomain\\\": \\\"wsl\\\", \\\"source\\\": \\\"bootstrap\\\", \\\"status\\\": \\\"published\\\", \\\"tags\\\": [\\\"project:agent-medici\\\", \\\"severity:critical\\\", \\\"platform:wsl\\\", \\\"node:hermes_wsl\\\"], \\\"confidence\\\": \\\"0.8\\\", \\\"created\\\": \\\"2026-05-03\\\", \\\"domain_expert\\\": \\\"bootstrap\\\", \\\"verified_date\\\": \\\"2026-05-03\\\"}\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 

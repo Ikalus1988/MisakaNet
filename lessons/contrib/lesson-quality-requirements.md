@@ -1,10 +1,19 @@
 {
   "title": "Lesson Quality Requirements: failure-memory protocol Format",
   "domain": "devops",
-  "tags": ["lesson", "quality", "format", "skp", "misakanet"],
+  "tags": [
+    "lesson",
+    "quality",
+    "format",
+    "skp",
+    "misakanet"
+  ],
   "status": "published",
-  "source": "agent_experience",
-  "created": "2026-07-02"
+  "source": "manual",
+  "created": "2026-07-02",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-02T17:02:43+08:00",
+  "merged_by": "Ikalus1988"
 }
 ---
 

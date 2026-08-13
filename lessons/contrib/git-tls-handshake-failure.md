@@ -1,10 +1,15 @@
 ---
 {
-  "domain": "contrib",
-  "title": "GitHub TLS 握手失败 — gnutls_handshake() Error",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "GitHub TLS 握手失败 — gnutls_handshake() Error\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 ---{"title": "GitHub TLS 握手失败 — gnutls_handshake() Error", "domain": "devops", "tags": ["git", "github", "TLS", "SSL", "network"]}---

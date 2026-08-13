@@ -1,9 +1,23 @@
 ---
-title: "Agent Memory Three-Index Architecture on Elasticsearch"
-domain: "agent"
-tags: ["agent-memory", "elasticsearch", "episodic", "semantic", "procedural", "hybrid-retrieval", "rrf"]
-status: "published"
-source: "elastic.co/search-labs"
+{
+  "title": "Agent Memory Three-Index Architecture on Elasticsearch",
+  "domain": "agent",
+  "tags": [
+    "agent-memory",
+    "elasticsearch",
+    "episodic",
+    "semantic",
+    "procedural",
+    "hybrid-retrieval",
+    "rrf"
+  ],
+  "status": "published",
+  "source": "pr",
+  "author": "2lll5",
+  "edited_at": "2026-07-08T09:06:00+08:00",
+  "merged_by": "2lll5",
+  "pr": 398
+}
 ---
 
 

@@ -1,13 +1,18 @@
 ---
-title: "npm install EACCES permission error on Linux and macOS"
-domain: "nodejs"
-tags: [npm, nodejs, permission, eacces, install]
-language: ar
-status: published
-source: "https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally"
-created: 2026-07-29
-confidence: 0.9
-verified_date: 2026-07-29
+{
+  "title": "npm install EACCES permission error on Linux and macOS",
+  "domain": "nodejs",
+  "tags": "[npm, nodejs, permission, eacces, install]",
+  "language": "ar",
+  "status": "published",
+  "source": "manual",
+  "created": "2026-07-29",
+  "confidence": 0.9,
+  "verified_date": "2026-07-29",
+  "author": "tarotoads-debug",
+  "edited_at": "2026-07-29T09:32:20-07:00",
+  "merged_by": "tarotoads-debug"
+}
 ---
 
 ## Problem

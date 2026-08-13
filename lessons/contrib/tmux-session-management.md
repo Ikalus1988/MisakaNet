@@ -1,11 +1,16 @@
 ---
 {
-  "domain": "contrib",
-  "title": "tmux 终端复用 — 断开不丢失会话",
-  "verification": "metadata-normalized",
-  "{\"title\"": "tmux 终端复用 — 断开不丢失会话\", \"domain\": \"development\", \"tags\": [\"tmux\", \"terminal\", \"session\", \"background\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "tmux 终端复用 — 断开不丢失会话\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"{\\\"title\\\"\"": "tmux 终端复用 — 断开不丢失会话\\\", \\\"domain\\\": \\\"development\\\", \\\"tags\\\": [\\\"tmux\\\", \\\"terminal\\\", \\\"session\\\", \\\"background\\\"], \\\"domain_expert\\\": \\\"unknown\\\"}\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 
