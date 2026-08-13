@@ -42,31 +42,11 @@ jobs:
 
       - name: Test uncaughtException invokes handler
         run: |
-          FATAL_HANDLER=/usr/bin/logger timeout 5 node -r ./register -e "
-            setTimeout(() => { throw new Error('ci-test'); }, 50);
-          " 2>&1 | grep -q 'fatal-guard uncaughtException' && echo 'PASS: uncaughtException' || echo 'FAIL'
+          node --test tests/smoke.test.js
 
-      - name: Test — handler receives payload
+      - name: Test legacy verification suite
         run: |
-          PAYLOAD_FILE=$(mktemp)
-          cat > /tmp/test-handler.sh << 'HANDLER'
-          #!/bin/bash
-          echo "$1" > "$PAYLOAD_FILE"
-          HANDLER
-          chmod +x /tmp/test-handler.sh
-          export PAYLOAD_FILE
-          FATAL_HANDLER=/tmp/test-handler.sh timeout 5 node -r ./register -e "
-            setTimeout(() => { throw new Error('ci-payload-test'); }, 50);
-          " 2>&1 || true
-          sleep 1
-          if [ -f "$PAYLOAD_FILE" ] && grep -q 'schemaVersion' "$PAYLOAD_FILE" && grep -q 'uncaught_exception' "$PAYLOAD_FILE"; then
-            echo 'PASS: handler received payload'
-            cat "$PAYLOAD_FILE"
-          else
-            echo 'FAIL: no payload received'
-            [ -f "$PAYLOAD_FILE" ] && cat "$PAYLOAD_FILE"
-          fi
-          rm -f "$PAYLOAD_FILE" /tmp/test-handler.sh
+          node tests/verify-fix.js
 
       - name: Test TypeScript declaration exists
         run: |

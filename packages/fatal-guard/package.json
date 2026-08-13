@@ -4,7 +4,7 @@
   "description": "Zero-dependency non-invasive fatal error guard — capture uncaught exceptions and unhandled rejections, route redacted diagnostic payload to external handler via process.env.FATAL_HANDLER",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/windows-path.test.js && node --test tests/windows-compat.test.js && node tests/redact-compliance.js && node tests/verify-fix.js"
+    "test": "node tests/windows-path.test.js && node --test tests/smoke.test.js && node tests/redact-compliance.js && node tests/verify-fix.js"
   },
   "bin": {
     "fatal-guard": "./bin/fatal-guard.js"

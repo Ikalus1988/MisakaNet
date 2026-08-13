@@ -80,7 +80,16 @@ function runHandler(reason, error, customPayload) {
 
   try {
     const payload = customPayload || buildPayload(reason, error);
-    const invocation = buildSpawnSpec(handler, [payload]);
+    let handlerArgs = [];
+    if (process.env.FATAL_HANDLER_ARGS) {
+      try {
+        const parsed = JSON.parse(process.env.FATAL_HANDLER_ARGS);
+        if (Array.isArray(parsed) && parsed.every((arg) => typeof arg === 'string')) {
+          handlerArgs = parsed;
+        }
+      } catch (_) {}
+    }
+    const invocation = buildSpawnSpec(handler, [...handlerArgs, payload]);
     const child = spawn(invocation.command, invocation.args, {
       stdio: 'ignore',
       detached: true,

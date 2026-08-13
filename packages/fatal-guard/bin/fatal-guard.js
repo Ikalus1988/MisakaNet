@@ -93,6 +93,9 @@ child.on('exit', (code, signal) => {
         errorName: signal ? `Signal:${signal}` : 'ProcessCrash',
         message: `exit code: ${code}, signal: ${signal}`,
         stackSnippet: snippet,
+        exit_code: code ?? 1,
+        signal: signal || '',
+        snippet,
       });
       runHandler(reason, null, payload);
     } catch (_) {}
