@@ -5,6 +5,7 @@
 
 const REPO = "Ikalus1988/MisakaNet";
 const GITHUB_API = "https://api.github.com";
+const PUBLIC_DATA_BASE = "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/data";
 const PROXY_CACHE_TTL = 30_000;
 const KEEPALIVE_ENDPOINTS = [
   { name: "health", url: "https://misakanet.org/api/health", json: true },
@@ -443,6 +444,136 @@ async function getWithCache(env, cacheKey, fetchFn) {
     try { await env.MISAKANET_KV.put(cacheKey, JSON.stringify({ ts: Date.now(), data }), { expirationTtl: Math.ceil(PROXY_CACHE_TTL / 1000) + 30 }); } catch {}
   }
   return data;
+}
+
+async function fetchPublicJson(path) {
+  const resp = await fetch(`${PUBLIC_DATA_BASE}/${path}`, {
+    headers: { "User-Agent": "MisakaNet-Insights/1.0", Accept: "application/json" },
+  });
+  if (!resp.ok) throw new Error(`Public data ${resp.status}`);
+  return resp.json();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Contributor reputation leaderboard (Issue #908)
+//
+// The source of truth is data/contributor-points.json, the same non-transferable
+// point ledger used by scripts/update_contributor_points.py. Period filters are
+// calculated from its history so the public view does not confuse all-time
+// totals with recent activity.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const REPUTATION_MAX_ENTRIES = 20;
+const REPUTATION_PERIODS = {
+  "all-time": null,
+  monthly: 30,
+  weekly: 7,
+};
+
+function normalizeReputationPeriod(value) {
+  const period = String(value || "all-time").toLowerCase();
+  if (period === "all_time" || period === "alltime") return "all-time";
+  if (period === "month") return "monthly";
+  if (period === "week") return "weekly";
+  return Object.prototype.hasOwnProperty.call(REPUTATION_PERIODS, period) ? period : null;
+}
+
+function parseTimestamp(value) {
+  const timestamp = Date.parse(String(value || ""));
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function roundPoints(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function buildReputationLeaderboard(source, period = "all-time", now = Date.now()) {
+  const normalizedPeriod = normalizeReputationPeriod(period);
+  if (!normalizedPeriod) throw new Error("Unsupported reputation period");
+
+  const contributors = source && typeof source.contributors === "object"
+    ? source.contributors
+    : {};
+  const windowDays = REPUTATION_PERIODS[normalizedPeriod];
+  const cutoff = windowDays === null ? null : now - windowDays * 86_400_000;
+  const rows = [];
+
+  for (const [login, record] of Object.entries(contributors)) {
+    if (!record || typeof record !== "object") continue;
+    const history = Array.isArray(record.history) ? record.history : [];
+    const events = history.filter((event) => {
+      if (cutoff === null) return true;
+      const timestamp = parseTimestamp(event && event.timestamp);
+      return timestamp !== null && timestamp >= cutoff;
+    });
+    const historyPoints = events.reduce((sum, event) => {
+      const points = Number(event && event.points);
+      return Number.isFinite(points) ? sum + points : sum;
+    }, 0);
+    const ledgerTotal = Number(record.total_points);
+    const totalPoints = Number.isFinite(ledgerTotal)
+      ? ledgerTotal
+      : history.reduce((sum, event) => {
+        const points = Number(event && event.points);
+        return Number.isFinite(points) ? sum + points : sum;
+      }, 0);
+    const points = cutoff === null ? totalPoints : historyPoints;
+
+    // A monthly/weekly leaderboard should contain contributors with activity
+    // in that window, while all-time preserves a ledger entry even at zero.
+    if (cutoff !== null && events.length === 0) continue;
+    rows.push({
+      login: String(login).slice(0, 64),
+      points: roundPoints(points),
+      totalPoints: roundPoints(totalPoints),
+      activityCount: events.length,
+      lastActivity: typeof record.last_activity === "string" ? record.last_activity : null,
+    });
+  }
+
+  rows.sort((a, b) => b.points - a.points || b.totalPoints - a.totalPoints || a.login.localeCompare(b.login));
+  return rows.slice(0, REPUTATION_MAX_ENTRIES).map((row, index) => ({ ...row, rank: index + 1 }));
+}
+
+async function handleReputationLeaderboard(request, env) {
+  const requested = new URL(request.url).searchParams.get("period") || "all-time";
+  const period = normalizeReputationPeriod(requested);
+  if (!period) {
+    return jsonResponse({
+      success: false,
+      error: "Unsupported period",
+      supportedPeriods: Object.keys(REPUTATION_PERIODS),
+    }, 400);
+  }
+
+  try {
+    let source = env.REPUTATION_DATA;
+    if (typeof source === "string") source = JSON.parse(source);
+    if (!source || typeof source !== "object") {
+      source = await getWithCache(
+        env,
+        "insights:reputation-points",
+        () => fetchPublicJson("contributor-points.json"),
+      );
+    }
+    const contributors = source && typeof source.contributors === "object" ? source.contributors : {};
+    return jsonResponse({
+      success: true,
+      period,
+      windowDays: REPUTATION_PERIODS[period],
+      updatedAt: typeof source._last_updated === "string" ? source._last_updated : null,
+      totalContributors: Object.keys(contributors).length,
+      leaderboard: buildReputationLeaderboard(source, period),
+      meta: {
+        pointsSource: "data/contributor-points.json",
+        cashValue: false,
+        transferable: false,
+      },
+    });
+  } catch (error) {
+    console.error("[reputation] source unavailable", error && error.message);
+    return jsonResponse({ success: false, error: "Reputation data unavailable", period }, 502);
+  }
 }
 
 function sanitizeIdentifier(val, maxLen) {
@@ -933,6 +1064,11 @@ export default {
       return handleUnsolvedMap(env);
     }
 
+    // GET /api/insights/reputation-leaderboard — public points leaderboard (#908)
+    if (request.method === "GET" && url.pathname === "/api/insights/reputation-leaderboard") {
+      return handleReputationLeaderboard(request, env);
+    }
+
     // GET /api/insights/demand-board — public aggregate view of intake clusters
     if (request.method === "GET" && url.pathname === "/api/insights/demand-board") {
       if (!env.MISAKANET_KV) return jsonResponse({ success: true, available: false, summary: [] });
@@ -1346,8 +1482,10 @@ export {
   UNSOLVED_WINDOW_DAYS,
   buildUnsolvedMap,
   classifyTaskFamily,
+  buildReputationLeaderboard,
   getIdentityAura,
   handleSearchSignal,
+  handleReputationLeaderboard,
   handleUnsolvedMap,
   recordStaleLesson,
   recordUnsolvedSearch,
