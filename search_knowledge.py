@@ -266,7 +266,9 @@ def _edit_distance(s1: str, s2: str) -> int:
 
 
 def _typo_retry_search(
-    query: str, docs: list, titles_only: bool, broad_only: bool, top_k: int
+    query: str, docs: list, titles_only: bool, broad_only: bool, top_k: int,
+    bm25_weight: float = DEFAULT_BM25_WEIGHT,
+    vector_weight: float = DEFAULT_VECTOR_WEIGHT,
 ) -> tuple[list[tuple[float, object]], str]:
     """Retry search with edit-distance fuzzy matching on title keywords.
 
@@ -311,7 +313,10 @@ def _typo_retry_search(
 
     corrected_query = " ".join(corrected_tokens)
     from misakanet.search.engine import _rank_docs_impl
-    ranked = _rank_docs_impl(corrected_query, docs, titles_only, broad_only)
+    ranked = _rank_docs_impl(
+        corrected_query, docs, titles_only, broad_only,
+        bm25_weight=bm25_weight, vector_weight=vector_weight,
+    )
     filtered = [(s, d) for s, d in ranked if s >= 0.1]
     if not filtered:
         return [], query
@@ -618,6 +623,14 @@ def main():
     domain: Optional[str] = None
     status_filter: Optional[str] = None
     tags_filter: list[str] = []
+    try:
+        bm25_weight, vector_weight = load_search_weights()
+    except ValueError as exc:
+        if json_output:
+            _print_json_error(str(exc))
+        else:
+            print(f"Invalid retrieval weights: {exc}", file=sys.stderr)
+        sys.exit(1)
     search_args = positional_args[1:]
     for i, arg in enumerate(search_args):
         if arg == "--ref":
@@ -646,6 +659,14 @@ def main():
             lang = search_args[i + 1]
         elif arg == "--semantic":
             use_semantic = True
+        elif arg.startswith("--bm25-weight="):
+            bm25_weight = float(arg.split("=", 1)[1])
+        elif arg == "--bm25-weight" and i + 1 < len(search_args):
+            bm25_weight = float(search_args[i + 1])
+        elif arg.startswith("--vector-weight="):
+            vector_weight = float(arg.split("=", 1)[1])
+        elif arg == "--vector-weight" and i + 1 < len(search_args):
+            vector_weight = float(search_args[i + 1])
         elif arg == "--rerank":
             use_rerank = True
         elif arg.startswith("--domain="):
@@ -675,6 +696,14 @@ def main():
             env_filter = arg.split("=", 1)[1].lower()
         elif arg == "--env" and i + 1 < len(search_args):
             env_filter = search_args[i + 1].lower()
+    try:
+        bm25_weight, vector_weight = _validate_search_weights(bm25_weight, vector_weight)
+    except ValueError as exc:
+        if json_output:
+            _print_json_error(str(exc))
+        else:
+            print(f"Invalid retrieval weights: {exc}", file=sys.stderr)
+        sys.exit(1)
     # ── 轻量配额检查 ──
     from misakanet.profile import check_quota as _check_quota
     allowed, quota_msg = _check_quota()
@@ -758,7 +787,10 @@ def main():
     if json_output:
         all_docs = lessons_docs + ref_docs
         with contextlib.redirect_stdout(io.StringIO()):
-            ranked = _rank_docs(query, all_docs, titles_only, broad_only)
+            ranked = _rank_docs(
+                query, all_docs, titles_only, broad_only,
+                bm25_weight=bm25_weight, vector_weight=vector_weight,
+            )
         results = [
             _json_result(score, doc, query=query, verbose=verbose)
             for score, doc in ranked
@@ -767,7 +799,8 @@ def main():
         # Feature #314: Typo tolerance for JSON mode
         if not results and not strict:
             typo_results, corrected = _typo_retry_search(
-                query, all_docs, titles_only, broad_only, top_k
+                query, all_docs, titles_only, broad_only, top_k,
+                bm25_weight=bm25_weight, vector_weight=vector_weight,
             )
             if typo_results:
                 results = [
@@ -808,7 +841,10 @@ def main():
     
     all_docs = lessons_docs + ref_docs
     if lessons_docs:
-        ranked = _rank_docs(query, lessons_docs, titles_only, broad_only, rerank=use_rerank)
+        ranked = _rank_docs(
+            query, lessons_docs, titles_only, broad_only, rerank=use_rerank,
+            bm25_weight=bm25_weight, vector_weight=vector_weight,
+        )
         # Only show results above threshold
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
         for _score, doc in filtered[:top_k]:
@@ -821,7 +857,10 @@ def main():
                                all_docs=all_docs)
         found_any = found_any or found
     if ref_docs:
-        ranked = _rank_docs(query, ref_docs, titles_only, broad_only=False, rerank=use_rerank)
+        ranked = _rank_docs(
+            query, ref_docs, titles_only, broad_only=False, rerank=use_rerank,
+            bm25_weight=bm25_weight, vector_weight=vector_weight,
+        )
         # Only show results above threshold
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
         for _score, doc in filtered[:top_k]:
@@ -838,7 +877,8 @@ def main():
         # Feature #314: Typo tolerance — retry with edit distance ≤2
         all_docs_for_typo = lessons_docs + ref_docs
         typo_results, corrected = _typo_retry_search(
-            query, all_docs_for_typo, titles_only, broad_only, top_k
+            query, all_docs_for_typo, titles_only, broad_only, top_k,
+            bm25_weight=bm25_weight, vector_weight=vector_weight,
         )
         if typo_results:
             print(f"\n  🔍 Showing results for '{corrected}' (searched: '{query}')\n")

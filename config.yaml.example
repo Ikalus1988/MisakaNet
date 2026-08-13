@@ -7,6 +7,12 @@
 # 复制本文件为 config.yaml 并填入实际值
 # config.yaml 已在 .gitignore 中，不会提交到 Git
 
+# ── Retrieval ranking ──
+# BM25 remains available when the optional vector backend is not installed.
+retrieval:
+  bm25_weight: 0.5
+  vector_weight: 0.5
+
 # ── Hub 基本信息 ──
 hub:
   name: "misaka-hub"              # Hub 实例名称（唯一标识）
@@ -51,3 +57,8 @@ master:
   keyring_service: "misakanet-master"
   token_ttl_hours: 24
   audit_log_days: 90
+# Retrieval ranking defaults. BM25 remains available when the optional vector
+# backend is not installed; hosted deployments can tune the blend per query.
+retrieval:
+  bm25_weight: 0.5
+  vector_weight: 0.5

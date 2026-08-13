@@ -3,6 +3,8 @@ BM25 核心算法委托给 misakanet-core 包。
 """
 
 import json
+import math
+import os
 import re
 import sqlite3
 import sys
@@ -26,6 +28,8 @@ WEIGHT_TITLE_EXACT = 0.8
 WEIGHT_TITLE_PARTIAL = 0.4
 WEIGHT_HAS_REF = 0.12
 MAX_METADATA = 1.0
+DEFAULT_BM25_WEIGHT = 0.5
+DEFAULT_VECTOR_WEIGHT = 0.5
 
 # Feature #532: domain synonym query expansion.
 _SYNONYM_MAP: dict[str, list[str]] = {
@@ -265,16 +269,20 @@ def _doc_cache_id(doc: CachedDoc) -> str:
 
 def _search_cached(
     query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False,
-    rerank: bool = False,
+    rerank: bool = False, bm25_weight: float = DEFAULT_BM25_WEIGHT,
+    vector_weight: float = DEFAULT_VECTOR_WEIGHT,
 ) -> list[tuple[float, CachedDoc]]:
     """L1缓存 — 相同 query 直接返回上次结果。"""
-    key = f"{query}_{titles_only}_{broad_only}_{rerank}"
+    key = f"{query}_{titles_only}_{broad_only}_{rerank}_{bm25_weight}_{vector_weight}"
     if key in _L1_CACHE:
         doc_map = {_doc_cache_id(d): d for d in docs}
         result = [(s, doc_map[fid]) for s, fid in _L1_CACHE[key] if fid in doc_map]
         if len(result) == len(_L1_CACHE[key]):
             return result
-    result = _rank_docs_impl(query, docs, titles_only, broad_only, rerank=rerank)
+    result = _rank_docs_impl(
+        query, docs, titles_only, broad_only, rerank=rerank,
+        bm25_weight=bm25_weight, vector_weight=vector_weight,
+    )
     _L1_CACHE[key] = [(s, _doc_cache_id(d)) for s, d in result[:20]]
     if len(_L1_CACHE) > _L1_MAX:
         del _L1_CACHE[next(iter(_L1_CACHE))]
@@ -322,6 +330,33 @@ def _compute_bm25_scores(query: str, docs: list[CachedDoc]) -> list[float]:
     # Map results back to original order
     result_scores = {r.doc_id: r.score for r in results}
     return [result_scores.get(d.filename, 0.0) for d in docs]
+
+
+def _compute_vector_scores(query: str, docs: list[CachedDoc]) -> list[float]:
+    """Compute cosine similarities through the optional embedding backend.
+
+    The backend is intentionally lazy: installations without semantic-search
+    dependencies receive zero vector scores and continue with BM25. This
+    keeps the default CLI usable while allowing hosted deployments to opt into
+    real hybrid retrieval through the same ranking function.
+    """
+    if not docs:
+        return []
+    try:
+        from hub.storage.vector_store import generate_embedding
+
+        query_embedding = generate_embedding(query)
+        doc_embeddings = [generate_embedding(f"{doc.title}\n{doc.content[:4000]}") for doc in docs]
+    except (ImportError, RuntimeError, OSError, ValueError):
+        return [0.0] * len(docs)
+
+    def cosine(left, right):
+        numerator = sum(a * b for a, b in zip(left, right))
+        left_norm = math.sqrt(sum(a * a for a in left))
+        right_norm = math.sqrt(sum(b * b for b in right))
+        return numerator / (left_norm * right_norm) if left_norm and right_norm else 0.0
+
+    return [cosine(query_embedding, embedding) for embedding in doc_embeddings]
 
 
 def _metadata_bonus(query: str, doc: CachedDoc) -> float:
@@ -424,7 +459,8 @@ def _expand_query(query: str) -> str:
 
 def _rank_docs_impl(
     query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False,
-    rerank: bool = False,
+    rerank: bool = False, bm25_weight: float = DEFAULT_BM25_WEIGHT,
+    vector_weight: float = DEFAULT_VECTOR_WEIGHT, vector_scores: list[float] | None = None,
 ) -> list[tuple[float, CachedDoc]]:
     if not docs:
         return []
@@ -434,12 +470,16 @@ def _rank_docs_impl(
         visible = [d for d in docs if not d.is_draft]
         if visible:
             docs = visible
+    bm25_weight, vector_weight = _validate_search_weights(bm25_weight, vector_weight)
     expanded_query = _expand_query(query)
     bm25_raw = _compute_bm25_scores(expanded_query, docs)
     bm25_norm = _normalize(bm25_raw)
+    vector_raw = vector_scores if vector_scores is not None else _compute_vector_scores(query, docs)
+    vector_norm = _normalize(vector_raw)
     scored = [
         (
-            0.65 * bm25_norm[i]
+            bm25_weight * bm25_norm[i]
+            + vector_weight * vector_norm[i]
             + 0.20 * _metadata_bonus(query, d)
             + 0.15 * d.score_baseline
             + _compute_boost(d),
@@ -771,6 +811,52 @@ def _score_breakdown(query: str, doc: CachedDoc) -> dict:
         "baseline": round(float(doc.score_baseline), 6),
         "boost": {key: round(float(value), 6) for key, value in boost_parts},
     }
+
+
+def load_search_weights(config_path: str | Path | None = None) -> tuple[float, float]:
+    """Resolve retrieval weights from env or a small YAML/JSON config file."""
+    path_value = config_path or os.environ.get("MISAKANET_CONFIG", "config.yaml")
+    path = Path(path_value)
+    values: dict[str, float] = {}
+    if path.exists():
+        try:
+            if path.suffix.lower() == ".json":
+                raw = json.loads(path.read_text(encoding="utf-8"))
+                section = raw.get("retrieval", {}) if isinstance(raw, dict) else {}
+                values = {key: float(section[key]) for key in ("bm25_weight", "vector_weight") if key in section}
+            else:
+                in_retrieval = False
+                for line in path.read_text(encoding="utf-8").splitlines():
+                    stripped = line.strip()
+                    if not stripped or stripped.startswith("#"):
+                        continue
+                    if stripped == "retrieval:":
+                        in_retrieval = True
+                        continue
+                    if in_retrieval and not line.startswith((" ", "\t")):
+                        in_retrieval = False
+                    if in_retrieval and ":" in stripped:
+                        key, raw_value = (part.strip() for part in stripped.split(":", 1))
+                        if key in ("bm25_weight", "vector_weight"):
+                            values[key] = float(raw_value)
+        except (OSError, ValueError, json.JSONDecodeError):
+            values = {}
+    bm25 = float(os.environ.get("MISAKANET_BM25_WEIGHT", values.get("bm25_weight", DEFAULT_BM25_WEIGHT)))
+    vector = float(os.environ.get("MISAKANET_VECTOR_WEIGHT", values.get("vector_weight", DEFAULT_VECTOR_WEIGHT)))
+    return _validate_search_weights(bm25, vector)
+
+
+def _validate_search_weights(bm25_weight: float, vector_weight: float) -> tuple[float, float]:
+    """Validate and normalize the hybrid retrieval weights."""
+    try:
+        bm25 = float(bm25_weight)
+        vector = float(vector_weight)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("search weights must be numeric") from exc
+    if bm25 < 0 or vector < 0 or bm25 + vector <= 0:
+        raise ValueError("search weights must be non-negative and not both zero")
+    total = bm25 + vector
+    return bm25 / total, vector / total
 
 
 def _get_related_lessons(

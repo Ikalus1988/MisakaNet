@@ -61,12 +61,28 @@ except ImportError:
 try:
     from misakanet.search.engine import (
         LESSONS,
+        load_search_weights,
         _load_docs_cached,
         _search_cached,
     )
     HAS_BM25 = True
 except ImportError:
     HAS_BM25 = False
+
+    def load_search_weights():
+        """Keep the MCP fallback usable when optional BM25 deps are absent."""
+        return 0.5, 0.5
+
+    def _validate_search_weights(bm25_weight, vector_weight):
+        try:
+            bm25 = float(bm25_weight)
+            vector = float(vector_weight)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("search weights must be numeric") from exc
+        if bm25 < 0 or vector < 0 or bm25 + vector <= 0:
+            raise ValueError("search weights must be non-negative and not both zero")
+        total = bm25 + vector
+        return bm25 / total, vector / total
 
 
 def _fallback_search(query: str, domain: str = None, top: int = 5) -> list | None:
@@ -142,6 +158,13 @@ def handle_search(args: dict) -> dict:
     domain = args.get("domain")
     tags = args.get("tags")
     top = args.get("top", 5)
+    try:
+        configured_bm25, configured_vector = load_search_weights()
+        bm25_weight = float(args.get("bm25_weight", configured_bm25))
+        vector_weight = float(args.get("vector_weight", configured_vector))
+        bm25_weight, vector_weight = _validate_search_weights(bm25_weight, vector_weight)
+    except (TypeError, ValueError) as exc:
+        return {"error": f"invalid retrieval weights: {exc}", "voice": "failure-warning"}
 
     if not query:
         return {
@@ -156,13 +179,16 @@ def handle_search(args: dict) -> dict:
             "voice": "failure-warning",
         }
 
-    if HAS_SAG:
+    custom_weights = "bm25_weight" in args or "vector_weight" in args
+    if HAS_SAG and not custom_weights:
         results = sag_search(SAG_DB, query, domain=domain, top=top)
         voice = "lesson-found" if results else "failure-warning"
         return {"results": results, "source": "sag-lite", "voice": voice}
     elif HAS_BM25:
         docs = _load_docs_cached(LESSONS, is_lesson=True)
-        scored = _search_cached(query, docs)
+        scored = _search_cached(
+            query, docs, bm25_weight=bm25_weight, vector_weight=vector_weight,
+        )
         results = []
         for score, doc in scored[:top]:
             results.append({
@@ -171,6 +197,10 @@ def handle_search(args: dict) -> dict:
                 "score": round(score, 3),
                 "domain": doc.domain,
                 "status": doc.status,
+                "retrieval": {
+                    "bm25_weight": round(bm25_weight, 6),
+                    "vector_weight": round(vector_weight, 6),
+                },
             })
         voice = "lesson-found" if results else "failure-warning"
         return {"results": results, "source": "bm25", "voice": voice}
@@ -542,6 +572,8 @@ TOOLS = [
                 "query": {"type": "string", "description": "Required redacted error message, keyword, or topic (for example: 'pip install timeout' or 'DCO sign-off failed')."},
                 "domain": {"type": "string", "description": "Optional domain filter such as devops, python, network, feishu, rag, fanuc, or mcp."},
                 "top": {"type": "integer", "description": "Maximum ranked results to return. Defaults to 5; keep small for MCP context and latency."},
+                "bm25_weight": {"type": "number", "minimum": 0, "description": "Optional BM25 blend weight; normalized with vector_weight."},
+                "vector_weight": {"type": "number", "minimum": 0, "description": "Optional semantic-vector blend weight; normalized with bm25_weight."},
             },
             "required": ["query"],
         },
