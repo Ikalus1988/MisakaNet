@@ -8,6 +8,17 @@ npm i @misaka-net/fatal-guard
 FATAL_HANDLER=/usr/bin/logger node -r @misaka-net/fatal-guard/register ./app.js
 ```
 
+For handlers that need an explicit executable plus arguments (useful on
+Windows where a `.js` file is not directly spawnable), set
+`FATAL_HANDLER_ARGS` to a JSON string array. The payload is appended as the
+last argument and the child is still started with `shell: false`:
+
+```bash
+FATAL_HANDLER=node \
+FATAL_HANDLER_ARGS='["/opt/bin/record-fatal.js"]' \
+node -r @misaka-net/fatal-guard/register ./app.js
+```
+
 One env var. No source code changes.
 
 ---

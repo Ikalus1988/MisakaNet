@@ -14,7 +14,11 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     # paths filters already gate push/PR; keep workflow_dispatch always runnable.
     # Avoid a job-level if that can leave 0 jobs and mark the workflow as failed.
     defaults:
@@ -30,9 +34,7 @@ jobs:
 
       - name: Check zero dependencies
         run: |
-          DEPS=$(node -e "const p=require('./package.json');console.log(p.dependencies?Object.keys(p.dependencies).length:0)")
-          echo "dependencies: $DEPS"
-          [ "$DEPS" = "0" ] || { echo "FAIL: expected 0 dependencies"; exit 1; }
+          node -e "const p=require('./package.json'); const n=Object.keys(p.dependencies||{}).length; console.log('dependencies:', n); if (n !== 0) process.exit(1)"
 
       - name: Test module loads without error
         run: |
@@ -40,32 +42,12 @@ jobs:
 
       - name: Test uncaughtException invokes handler
         run: |
-          FATAL_HANDLER=/usr/bin/logger timeout 5 node -r ./register -e "
-            setTimeout(() => { throw new Error('ci-test'); }, 50);
-          " 2>&1 | grep -q 'fatal-guard uncaughtException' && echo 'PASS: uncaughtException' || echo 'FAIL'
+          node --test tests/smoke.test.js
 
-      - name: Test — handler receives payload
+      - name: Test legacy verification suite
         run: |
-          PAYLOAD_FILE=$(mktemp)
-          cat > /tmp/test-handler.sh << 'HANDLER'
-          #!/bin/bash
-          echo "$1" > "$PAYLOAD_FILE"
-          HANDLER
-          chmod +x /tmp/test-handler.sh
-          export PAYLOAD_FILE
-          FATAL_HANDLER=/tmp/test-handler.sh timeout 5 node -r ./register -e "
-            setTimeout(() => { throw new Error('ci-payload-test'); }, 50);
-          " 2>&1 || true
-          sleep 1
-          if [ -f "$PAYLOAD_FILE" ] && grep -q 'schemaVersion' "$PAYLOAD_FILE" && grep -q 'uncaught_exception' "$PAYLOAD_FILE"; then
-            echo 'PASS: handler received payload'
-            cat "$PAYLOAD_FILE"
-          else
-            echo 'FAIL: no payload received'
-            [ -f "$PAYLOAD_FILE" ] && cat "$PAYLOAD_FILE"
-          fi
-          rm -f "$PAYLOAD_FILE" /tmp/test-handler.sh
+          node tests/verify-fix.js
 
       - name: Test TypeScript declaration exists
         run: |
-          test -f index.d.ts && node -e "require('fs').readFileSync('index.d.ts','utf-8').includes('FatalPayload')" && echo 'PASS: index.d.ts' || echo 'FAIL: missing index.d.ts'
+          node -e "const fs=require('fs'); if (!fs.existsSync('index.d.ts') || !fs.readFileSync('index.d.ts','utf8').includes('FatalPayload')) process.exit(1); console.log('PASS: index.d.ts')"
