@@ -1,0 +1,16 @@
+{
+  "scenario": "timeout-hang",
+  "title": "Process hangs until the benchmark timeout",
+  "failure": {
+    "type": "timeout",
+    "command": "python3 hang.py",
+    "timeout_seconds": 1
+  },
+  "expected_fix": "Add a bounded timeout or terminate the hung process and report the timeout explicitly.",
+  "expected_outcome": "timeout",
+  "verifier": {
+    "type": "process_timeout",
+    "command": "python3 hang.py",
+    "timeout_seconds": 1
+  }
+}

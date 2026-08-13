@@ -1,152 +1,119 @@
 #!/usr/bin/env python3
-"""Phase B benchmark orchestrator with isolated, timed task execution.
+"""Load and verify the five canonical self-healing benchmark fixtures.
 
-The runner deliberately does not invoke a paid model.  It executes the
-checked-in fixtures (or an explicitly supplied agent command), records the
-observed outcome, and leaves the model integration as a replaceable boundary.
+The fixture format is deliberately data-first: expected.json documents the
+failure and verifier, while setup.sh and teardown.sh own the temporary state.
 """
-
 from __future__ import annotations
 
 import argparse
 import json
 import os
-import random
-import shlex
+import shutil
 import subprocess
-import sys
 import tempfile
-import time
-from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
+
+FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures"
+REQUIRED_EXPECTED_FIELDS = {"scenario", "title", "failure", "expected_fix", "expected_outcome", "verifier"}
+EXPECTED_OUTCOMES = {"success", "success_with_human_input", "timeout"}
+VERIFIER_TYPES = {"command_exit", "file_content", "process_timeout"}
 
 
-ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_TASKS = Path(__file__).with_name("tasks.json")
-SANDBOX = Path(__file__).with_name("sandbox.sh")
+def fixture_names() -> list[str]:
+    return sorted(path.name for path in FIXTURES_DIR.iterdir() if path.is_dir())
 
 
-def load_tasks(path: Path = DEFAULT_TASKS) -> list[dict]:
-    """Load and validate the small, reviewable task catalog."""
-    rows = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(rows, list) or not rows:
-        raise ValueError("tasks.json must contain a non-empty array")
-    seen = set()
-    for row in rows:
-        if not isinstance(row, dict) or not row.get("task_id"):
-            raise ValueError("each task requires a task_id")
-        if row["task_id"] in seen:
-            raise ValueError(f"duplicate task_id: {row['task_id']}")
-        if not isinstance(row.get("fixture"), str) or not row["fixture"].strip():
-            raise ValueError(f"task {row['task_id']} requires a fixture")
-        seen.add(row["task_id"])
-    return rows
+def load_fixture(name: str) -> dict[str, Any]:
+    if name not in fixture_names():
+        raise ValueError(f"unknown fixture {name!r}; choose from: {', '.join(fixture_names())}")
+    path = FIXTURES_DIR / name
+    expected_path = path / "expected.json"
+    setup_path = path / "setup.sh"
+    teardown_path = path / "teardown.sh"
+    if not expected_path.is_file() or not setup_path.is_file() or not teardown_path.is_file():
+        raise ValueError(f"fixture {name!r} must contain setup.sh, expected.json, and teardown.sh")
+    expected = json.loads(expected_path.read_text(encoding="utf-8"))
+    missing = REQUIRED_EXPECTED_FIELDS - expected.keys()
+    if missing:
+        raise ValueError(f"fixture {name!r} missing expected.json fields: {sorted(missing)}")
+    verifier = expected["verifier"]
+    if verifier.get("type") not in VERIFIER_TYPES:
+        raise ValueError(f"fixture {name!r} has unsupported verifier type {verifier.get('type')!r}")
+    if expected["expected_outcome"] not in EXPECTED_OUTCOMES:
+        raise ValueError(f"fixture {name!r} has unsupported expected outcome")
+    return {"name": name, "path": str(path), "expected": expected}
 
 
-def _run_command(command: list[str], cwd: Path, timeout: float) -> tuple[str, str, int | None, float]:
-    started = time.monotonic()
+def _run(command: str, workdir: Path, timeout: float) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(command, shell=True, cwd=workdir, text=True, capture_output=True, timeout=timeout)
+
+
+def verify_fixture(name: str) -> dict[str, Any]:
+    fixture = load_fixture(name)
+    path = Path(fixture["path"])
+    expected = fixture["expected"]
+    workdir = Path(tempfile.mkdtemp(prefix=f"misakanet-fixture-{name}-"))
     try:
-        completed = subprocess.run(
-            command,
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            env={
-                "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
-                "PYTHONDONTWRITEBYTECODE": "1",
-            },
-        )
-        outcome = "success" if completed.returncode == 0 else "failure"
-        output = (completed.stdout + completed.stderr).strip()
-        return outcome, output, completed.returncode, time.monotonic() - started
-    except subprocess.TimeoutExpired as exc:
-        output = ((exc.stdout or "") + (exc.stderr or "")).strip()
-        return "timeout", output or f"timed out after {timeout}s", None, time.monotonic() - started
-    except OSError as exc:
-        return "error", str(exc), None, time.monotonic() - started
+        setup = subprocess.run([str(path / "setup.sh"), str(workdir)], text=True, capture_output=True, timeout=10)
+        if setup.returncode:
+            return {"fixture": name, "status": "FAIL", "reason": "setup failed", "output": setup.stderr}
 
-
-def run_task(task: dict, timeout: float = 30, agent_command: str | None = None) -> dict:
-    """Run a task in a fresh temp directory and return a result row."""
-    with tempfile.TemporaryDirectory(prefix=f"misakanet-{task['task_id']}-") as temp:
-        root = Path(temp)
-        fixture = root / "fixture.py"
-        fixture.write_text(task["fixture"], encoding="utf-8")
-        if agent_command:
-            command = shlex.split(agent_command) + [str(fixture)]
+        verifier = expected["verifier"]
+        verifier_type = verifier["type"]
+        if verifier_type == "file_content":
+            target = workdir / verifier["path"]
+            content = target.read_text(encoding="utf-8") if target.exists() else ""
+            if "must_contain" in verifier:
+                ok = verifier["must_contain"] in content
+            else:
+                ok = verifier["must_not_contain"] not in content
+            detail = f"checked {target}"
+        elif verifier_type == "command_exit":
+            result = _run(verifier["command"], workdir, 10)
+            ok = result.returncode == verifier["expected_exit_code"]
+            detail = f"exit={result.returncode}, expected={verifier['expected_exit_code']}"
         else:
-            command = ["bash", str(SANDBOX), str(fixture)]
-        outcome, output, returncode, elapsed = _run_command(command, root, timeout)
-    return {
-        "task_id": task["task_id"],
-        "name": task.get("name", task["task_id"]),
-        "category": task.get("category", ""),
-        "outcome": outcome,
-        "attempts": 1,
-        "duration_ms": round(elapsed * 1000, 3),
-        "cost_usd": 0.0,
-        "lessons_used": [],
-        "error": None if outcome == "success" else output,
-        "returncode": returncode,
-    }
+            try:
+                result = _run(verifier["command"], workdir, verifier["timeout_seconds"])
+                ok = False
+                detail = f"process exited with code {result.returncode} before timeout"
+            except subprocess.TimeoutExpired:
+                ok = True
+                detail = f"timed out at {verifier['timeout_seconds']}s as expected"
 
-
-def run(tasks: list[dict], timeout: float = 30, seed: int | None = None,
-        agent_command: str | None = None) -> dict:
-    """Run tasks sequentially and produce a machine-readable report."""
-    ordered = list(tasks)
-    if seed is not None:
-        random.Random(seed).shuffle(ordered)
-    rows = [run_task(task, timeout=timeout, agent_command=agent_command) for task in ordered]
-    successful = sum(row["outcome"] == "success" for row in rows)
-    total = len(rows)
-    return {
-        "meta": {
-            "run_id": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "git_sha": _git_sha(),
-            "seed": seed,
-            "timeout_seconds": timeout,
-            "agent_command": agent_command or "fixture sandbox",
-        },
-        "tasks": rows,
-        "summary": {
-            "total_tasks": total,
-            "success_rate": round(successful / total, 6) if total else 0.0,
-            "mean_attempts": round(sum(row["attempts"] for row in rows) / total, 3) if total else 0.0,
-            "mean_duration": round(sum(row["duration_ms"] for row in rows) / total, 3) if total else 0.0,
-            "total_cost": 0.0,
-        },
-    }
-
-
-def _git_sha() -> str:
-    try:
-        return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, timeout=5).strip()
-    except (OSError, subprocess.SubprocessError):
-        return "unknown"
+        return {"fixture": name, "status": "PASS" if ok else "FAIL", "detail": detail}
+    finally:
+        subprocess.run([str(path / "teardown.sh"), str(workdir)], text=True, capture_output=True, timeout=10)
+        shutil.rmtree(workdir, ignore_errors=True)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--tasks", type=Path, default=DEFAULT_TASKS)
-    parser.add_argument("--output", type=Path, default=Path("bench_results/phase-b/results.json"))
-    parser.add_argument("--timeout", type=float, default=30)
-    parser.add_argument("--seed", type=int)
-    parser.add_argument("--agent-command", help="Optional command that receives the fixture path")
-    parser.add_argument("--dry-run", action="store_true", help="List tasks without executing fixtures")
+    parser.add_argument("--list", action="store_true", help="list fixture names")
+    parser.add_argument("--fixture", choices=fixture_names(), help="load and verify one fixture")
+    parser.add_argument("--json", action="store_true", help="emit machine-readable output")
     args = parser.parse_args()
-    tasks = load_tasks(args.tasks)
-    if args.dry_run:
-        print(json.dumps({"tasks": [task["task_id"] for task in tasks], "seed": args.seed}, indent=2))
-        return 0
-    result = run(tasks, timeout=args.timeout, seed=args.seed, agent_command=args.agent_command)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"wrote {args.output}")
-    print(f"summary: {result['summary']}")
-    return 0
+
+    if args.list:
+        result: Any = [load_fixture(name)["expected"] | {"name": name} for name in fixture_names()]
+    elif args.fixture:
+        result = verify_fixture(args.fixture)
+    else:
+        result = [verify_fixture(name) for name in fixture_names()]
+
+    if args.json:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    elif args.list:
+        for item in result:
+            print(f"{item['name']}: {item['title']}")
+    elif isinstance(result, list):
+        for item in result:
+            print(f"{item['status']} {item['fixture']}: {item.get('detail', item.get('reason', ''))}")
+    else:
+        print(f"{result['status']} {result['fixture']}: {result.get('detail', result.get('reason', ''))}")
+    return 0 if (args.list or all(item["status"] == "PASS" for item in (result if isinstance(result, list) else [result]))) else 1
 
 
 if __name__ == "__main__":
