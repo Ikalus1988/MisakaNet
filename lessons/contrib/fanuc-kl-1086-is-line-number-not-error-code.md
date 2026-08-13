@@ -15,6 +15,8 @@
   "solution": "1. 报错信息中的数字需区分：行号 vs 错误码\n2. ERR_ABORT=2 是真正导致'所有任务中止'的根因（而非 1086）\n3. IPC 通信超时导致 ERR_ABORT 触发 → 根因是 Mech-Vision 12:00 文件夹切换竞争",
   "verification": "复现 IPC 超时场景，确认 1086 出现在 KTRANS 编译输出中（而非运行时日志）。"
 }
+# FANUC KL: 1086 是代码行号而非错误码
+
 
 ## FANUC KL: 1086 是代码行号而非错误码
 

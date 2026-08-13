@@ -12,6 +12,8 @@ domain_expert:
 ---
 
 
+# GFW TLS SNI Block Pattern — Why Tool-Layer Solutions Fail
+
 ## Problem
 
 Web scraping tools (curl, Playwright, scrapling, Safari MCP) all fail to connect to certain domains (e.g., reddit.com, stackoverflow.com) from networks behind the GFW, even though DNS resolves correctly.

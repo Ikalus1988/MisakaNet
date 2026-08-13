@@ -9,6 +9,8 @@
 }
 ---
 
+# gpt sovits name2text arpabet
+
 ## 问题
 
 训练时数据加载器逐字查 phoneme 词典，全部 KeyError。

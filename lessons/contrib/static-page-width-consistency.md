@@ -9,6 +9,8 @@
 }
 ---
 
+# static page width consistency
+
 ## 背景
 
 页面各个功能区块宽度不一致：搜索栏 `max-width: 800px`，内容卡片 `max-width: 600px`，表单 `display: inline-block; min-width: 360px`，而其他区块又是全宽。页面看起来像拼凑的，没有统一感。

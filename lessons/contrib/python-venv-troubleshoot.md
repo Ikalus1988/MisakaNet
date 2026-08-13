@@ -9,6 +9,8 @@
 }
 ---
 
+# Python venv 激活失败或路径不匹配
+
 ## 背景
 
 `source venv/bin/activate` 后 `which python` 还是系统 Python，或 `deactivate` 报错。

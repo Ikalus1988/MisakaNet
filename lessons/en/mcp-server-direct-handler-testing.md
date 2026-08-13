@@ -9,6 +9,8 @@ created: 2026-07-07
 lang: en
 ---
 
+# MCP Server Testing — Call Handler Directly, Skip stdio Transport
+
 ## Problem
 
 MCP Server uses stdio transport. Testing requires starting a subprocess, writing to stdin, and parsing stdout. This is slow, hard to debug, and depends on full environment.

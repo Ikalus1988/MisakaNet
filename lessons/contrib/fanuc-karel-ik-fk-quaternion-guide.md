@@ -1,4 +1,6 @@
 {"id":"fanuc-karel-ik-fk-quaternion-guide","title":"IK/FK and Quaternion Math Guide for FANUC KAREL Robot Programming","domain":"fanuc","subdomain":"karel-kinematics","source":"github-ka-boost-kl-pose-readme.md","status":"draft","confidence":0.85,"created":"2026-07-12","tags":["fanuc","karel","ik","fk","quaternion","euler","pose","gimbal-lock","coordinate-system"],"quality_score":85,"problem":"FANUC KAREL机器人编程中，IK/FK求解、欧拉角处理、坐标系转换等操作容易出错，尤其是万向锁问题、z_axis参数误用、PR模式不匹配等常见陷阱","root_cause":"KAREL原生运动学函数有限，欧拉角在±90°俯仰角附近存在万向锁，坐标系约定(ZYX/RPY)容易混淆，PR寄存器有joint/Cartesian两种模式需要区分","solution":"pose库提供：solveIK/solveK做IK/FK(需检查get_ok)、vector_to_euler2用四元数避免万向锁、cylindrical_to_cartesian支持Z_AXES/VERT_AXES等z_axis参数、mask_posreg_xyz/orient做选择性PR更新、correctFrame用四元数对齐工具坐标系","verification":"KUnit测试套件覆盖IK/FK往返精度、四元数运算正确性、圆柱坐标转换精度；6种常见模式(路径规划IK、圆柱映射、表面法线对齐、切线转欧拉、选择性PR更新、4x4矩阵组合)均有完整代码示例"}
+# IK/FK and Quaternion Math Guide for FANUC KAREL Robot Programming
+
 
 ### 问题描述
 

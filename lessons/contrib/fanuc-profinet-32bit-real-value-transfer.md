@@ -12,6 +12,8 @@ domain_expert:
 ---
 
 
+# FANUC Profinet 32-bit Real Value Transfer Without KAREL
+
 ## Problem
 
 SCARA 12iA + R-30iB Compact Plus needs to send/receive 32-bit real values via Profinet, but GI/GO are limited to 16-bit integer groups. KAREL is not available.

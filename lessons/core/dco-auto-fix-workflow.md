@@ -22,6 +22,8 @@
 ---
 
 
+# DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation
+
 ## Root Cause
 
 贡献者提交 PR 后 DCO（Signed-off-by）检查失败是最常见的阻塞原因之一。尤其是 AI Agent 自动提交的 PR，经常缺签。需要在 PR 评论区提供一键自动修复能力。

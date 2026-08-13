@@ -17,6 +17,8 @@
 }
 ---
 
+# RAG Alarm Code Retrieval Needs Mandatory Keyword Recall
+
 ## Problem
 
 When querying "SRVO-023 robot alarm", RAG returned unrelated results instead of the correct FANUC alarm documentation.

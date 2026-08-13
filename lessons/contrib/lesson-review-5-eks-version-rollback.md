@@ -12,6 +12,8 @@ domain_expert: ""
 ---
 
 
+# EKS Kubernetes 版本回滚 — 安全升级集群
+
 ## Problem
 
 升级 Kubernetes 控制平面是单向操作——开源 K8s 不支持控制平面回滚。团队因此延迟升级，错过安全补丁。

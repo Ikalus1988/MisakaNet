@@ -7,6 +7,8 @@ status: "draft"
 created: "2026-05-09"
 ---
 
+# Knowledge Base Quality Audit
+
 ## 背景
 
 （此 lesson 从 skill `knowledge-base-quality-audit` 自动提取，待补全）

@@ -9,6 +9,8 @@
 }
 ---
 
+# ffmpeg audio libopus not ogg
+
 ## 问题
 
 FFmpeg 输出 OGG 文件为 0 字节。

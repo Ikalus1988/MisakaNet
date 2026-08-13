@@ -9,6 +9,8 @@
 }
 ---
 
+# Game MCP: End Turn Returns 409 Conflict
+
 ## Game MCP: End Turn Returns 409 Conflict
 
 ### Problem

@@ -10,6 +10,8 @@ confidence: 0.9
 verified_date: 2026-07-29
 ---
 
+# SSH host key verification failed when connecting to a remote server
+
 ## Problem
 
 This error occurs when SSH refuses to connect to a remote server because the host key has changed or is unknown. The connection fails with:

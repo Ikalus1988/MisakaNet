@@ -7,6 +7,8 @@
   "source": "unknown"
 }
 ---
+# feishu agent display settings
+
 ---{"title": "飞书 Agent 显示Optimization：禁用工具调用和上下文提示", "domain": "feishu", "source": "bootstrap", "status": "published", "confidence": "0.9", "created": "2026-05-19"}---
 
 ## 飞书 Agent 显示优化：禁用工具调用和上下文提示

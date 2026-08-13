@@ -16,6 +16,8 @@
 }
 ---
 
+# RAG Build Strategy Batch
+
 ## Problem
 
 During knowledge-base construction (chunks_v3, 34,100 docs), all data was loaded into VRAM/WSL memory at once. This caused an LM Studio context overflow, which then led to Summarization timeouts ×4 → LLM timeout → driver crash → BSOD.

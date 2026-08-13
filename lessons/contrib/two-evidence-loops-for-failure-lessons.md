@@ -10,6 +10,8 @@
 }
 ---
 
+# Two Evidence Loops for Failure Lessons
+
 ## Problem
 
 A failure-lesson project can undercount real value if it only treats public feedback signals as proof of reuse. Helpful votes, feedback issues, and usage reports are important, but some lessons have already been reused before they are published.

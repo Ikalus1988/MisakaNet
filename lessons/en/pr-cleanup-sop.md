@@ -19,6 +19,8 @@
 }
 ---
 
+# PR Cleanup SOP — Stale/Duplicate/Resolved PR Disposition
+
 > Translated from: [lessons/core/pr-cleanup-sop.md](../core/pr-cleanup-sop.md)
 
 ## Root Cause

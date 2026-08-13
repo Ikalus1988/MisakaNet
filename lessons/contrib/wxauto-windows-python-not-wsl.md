@@ -9,6 +9,8 @@
 }
 ---
 
+# wxauto 必须在 Windows Python 下安装，不能走 WSL pip
+
 ## Problem
 
 在 WSL2 中 `pip install wxauto` 报错 `No matching distribution found`。wxauto 是 Windows-only 库。

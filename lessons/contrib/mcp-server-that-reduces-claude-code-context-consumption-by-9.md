@@ -2,6 +2,8 @@
 {"title": "Context Mode: Reducing Claude Code Context Consumption by 98%", "domain": "ai-agents", "tags": ["mcp", "claude", "context-management", "performance"], "language": "en", "status": "published", "source": "https://mksg.lu/blog/context-mode", "created": "2026-07-28", "confidence": "0.85"}
 ---
 
+# Context Mode: Reducing Claude Code Context Consumption by 98%
+
 ## Problem
 
 Claude Code sessions using MCP tools rapidly consume the 200K context window. A single Playwright snapshot costs 56 KB, twenty GitHub issues cost 59 KB, and one access log costs 45 KB. With 81+ tools active and tool definitions consuming 143K tokens (72%) before the first message, after 30 minutes 40% of context is depleted. This limits productive session time to approximately 30 minutes before significant slowdown occurs.

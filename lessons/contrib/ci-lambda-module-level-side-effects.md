@@ -14,6 +14,8 @@ confidence: 0.9
 created: 2026-07-07
 ---
 
+# CI 测试陷阱 — 模块级副作用导致 import 失败
+
 ## Problem
 
 Python 测试文件尝试 `importlib.import_module()` 导入 Lambda 函数模块，CI 报错：

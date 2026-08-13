@@ -17,6 +17,8 @@
 }
 ---
 
+# RAG Three-Channel LLM Disaster Recovery
+
 ## Problem
 
 When serving a RAG knowledge base externally (Gradio Web UI / WeChat bot), a single LLM API path may become unavailable due to network issues, quota limits, or server-side failures, causing the whole service to become unavailable.

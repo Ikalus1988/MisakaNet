@@ -17,6 +17,8 @@
 ---
 
 
+# Hermes State Database Lock Issues - Cleanup Protocol
+
 Hermes agent shows 'database is locked' error on SQLite state.db. Cronjobs stop firing.
 
 ## Root Cause

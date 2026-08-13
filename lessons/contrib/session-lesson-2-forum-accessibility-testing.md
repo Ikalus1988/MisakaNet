@@ -11,6 +11,8 @@ verified_date:
 domain_expert: 
 ---
 
+# Forum Accessibility Testing — Systematic Reachability Check
+
 ## Problem
 
 批量抓取前不知道哪些论坛可达。盲目尝试浪费时间，需要系统化的可达性测试。

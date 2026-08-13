@@ -10,6 +10,8 @@ created: "2026-07-01"
 lang: en
 ---
 
+# Database Performance — Indexing and Query Optimization
+
 ## Problem
 
 Slow queries are the performance bottleneck for most web applications. Missing indexes, full table scans, and N+1 queries are the most common causes.

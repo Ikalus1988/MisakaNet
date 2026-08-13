@@ -12,6 +12,8 @@ domain_expert: ""
 ---
 
 
+# FANUC INTP-102 DETECT JOINT — OLP Whitespace Bug
+
 ## Problem
 
 OLP tool (RoboDK) generates programs with `DETECT JOINT[3,22]` that throw INTP-102 ("Code format is not valid") on the controller. Manually typing the same command on the teach pendant works fine. The .ls file appears visually identical.

@@ -7,6 +7,8 @@
   "source": "unknown"
 }
 ---
+# gh credential helper 路径Error导致 git push 静默失败
+
 ---{"title": "gh credential helper 路径Error导致 git push 静默失败", "domain": "devops", "tags": ["git", "github", "credential", "gh", "auth", "push"]}---
 
 ## 背景

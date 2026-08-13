@@ -7,6 +7,8 @@
   "source": "unknown"
 }
 ---
+# Permission Denied / WSL NTFS 跨文件系统PermissionFix
+
 ---{"created": "2026-05-01 08:00 UTC", "domain": "devops", "source": "hermes_wsl", "status": "published", "tags": "", "title": "Permission Denied / WSL NTFS 跨文件系统PermissionFix", "updated": "2026-05-01 08:00 UTC"}---
 
 

@@ -10,6 +10,8 @@ tags:
 - bootstrap
 ---
 
+# system note your previous turn was interrupted b
+
 ---
 tags:
 - bootstrap

@@ -9,6 +9,8 @@
 }
 ---
 
+# promo use real examples not hypotheticals
+
 ## 问题
 
 写推广帖时用了虚构的 pip install 梗，用户反馈"换一个"——因为假例子没有说服力，读者能感觉到是编的。

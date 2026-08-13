@@ -21,6 +21,8 @@
 ---
 
 
+# Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge
+
 ## Root Cause
 
 Manual merge is the bottleneck in zero-bounty open-source workflows. Maintainers must review every PR, click merge, post thank-you comments — repetitive work that doesn't scale when AI agents submit PRs at high velocity.

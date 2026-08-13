@@ -19,6 +19,8 @@
 }
 ---
 
+# GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation
+
 > Translated from: [lessons/core/github-actions-code-injection.md](../core/github-actions-code-injection.md)
 
 ## Root Cause

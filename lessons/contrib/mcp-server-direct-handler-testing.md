@@ -13,6 +13,8 @@ confidence: 0.85
 created: 2026-07-07
 ---
 
+# MCP Server 测试 — 直接调用 handler 跳过 stdio 传输
+
 ## Problem
 
 MCP Server 使用 stdio 传输（stdin/stdout JSON-RPC），测试时需要启动子进程、写入 stdin、解析 stdout。这种方式：

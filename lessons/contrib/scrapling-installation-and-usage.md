@@ -12,6 +12,8 @@ domain_expert:
 ---
 
 
+# Scrapling — Web Scraping Library with Anti-Detection
+
 ## Problem
 
 Standard scraping tools (requests, curl) are easily detected and blocked by anti-bot systems. Need a library that combines multiple fetching backends with anti-detection.

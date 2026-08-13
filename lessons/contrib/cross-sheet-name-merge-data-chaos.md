@@ -15,6 +15,8 @@ domain_expert: "zsxh1990"
 verified_date: "2026-07-06"
 ---
 
+# 跨 Sheet 同名合并导致数据混乱：机器人唯一标识必须带前缀
+
 ## Problem
 
 不同 Excel Sheet（如区域A/区域B）都有同名机器人（如 `R01`），直接按 `robotName` 字段聚合会把不同工位的机器人合并成一台，导致工序序列混乱、统计数据错误。

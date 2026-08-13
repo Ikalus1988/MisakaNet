@@ -12,6 +12,8 @@ domain_expert: ""
 ---
 
 
+# AWS ECS 高分辨率指标 — 更快的自动扩缩容
+
 ## Problem
 
 ECS 默认 CloudWatch 指标 1 分钟粒度，自动扩缩容响应慢。流量突增时，1 分钟才能触发扩容，用户体验下降。

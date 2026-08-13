@@ -9,6 +9,8 @@ created: 2026-07-28
 confidence: 0.85
 ---
 
+# Debugging memory leaks in Ruby
+
 ## Problem
 
 Ruby applications can experience memory leaks ranging from tiny constant memory growth to sudden spurts during job queue processing. Simply restarting processes via monitoring tools (monit, inspeqtor, unicorn worker killers) masks the underlying problem and leads to performance degradation, instability, larger memory requirements, and reduced confidence in Ruby.

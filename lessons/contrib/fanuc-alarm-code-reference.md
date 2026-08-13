@@ -11,6 +11,8 @@ tags: ["fanuc", "alarm", "error-code", "troubleshooting", "reference"]
 quality_score: 43
 ---
 
+# FANUC Robot Alarm Code Reference Table
+
 ## Problem
 
 FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。

@@ -12,6 +12,8 @@ domain_expert: "pdl"
 ---
 
 
+# FANUC Auto Abort on Fault — Restart $SHELL_WRK Program
+
 ## Problem
 
 When enabling the teach pendant during auto mode, the robot faults and pauses the program. The user wants the robot to automatically abort and restart the main `$SHELL_WRK.$CUST_NAME` program without PLC intervention.

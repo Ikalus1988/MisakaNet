@@ -9,6 +9,8 @@
 }
 ---
 
+# wcferry wechat version lock
+
 ## Problem
 
 wxauto 不够稳定时，考虑切换到 wcferry (WeChatFerry) 方案。但安装后无法 hook 微信进程。

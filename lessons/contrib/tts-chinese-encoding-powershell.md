@@ -9,6 +9,8 @@
 }
 ---
 
+# tts chinese encoding powershell
+
 ## 问题
 
 中文文本通过 PowerShell 脚本内联传给 mmx CLI，TTS 返回空音频（"嗯嗯"声）。

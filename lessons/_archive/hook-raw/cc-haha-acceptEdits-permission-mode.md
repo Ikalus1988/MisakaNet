@@ -10,6 +10,8 @@ confidence: 0.95
 created: 2026-05-12
 ---
 
+# cc-haha 配置 acceptEdits 权限模式减少确认提示
+
 ## 问题
 
 cc-haha (Claude Code fork) 默认每次文件编辑和 bash 命令都需要用户确认，导致长任务或自动化场景下频繁中断。

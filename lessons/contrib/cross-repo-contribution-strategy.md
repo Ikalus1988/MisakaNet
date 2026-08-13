@@ -10,6 +10,8 @@
 }
 ---
 
+# Cross-Repo Contribution Strategy — Finding and Contributing to New Repos
+
 ## Problem
 
 Agents and developers often get stuck contributing to the same repos. Finding new repos to contribute to requires systematic exploration.

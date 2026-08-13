@@ -9,6 +9,8 @@ created: 2026-07-07
 lang: en
 ---
 
+# Regex Trap — Escaped Quotes in Source Code Cause Premature Non-Greedy Match Termination
+
 ## Problem
 
 When using regex to extract default values from Python source code like `os.environ.get("KEY", "default_value")`, the extraction gets truncated at escaped quotes.

@@ -16,6 +16,8 @@ solution: 恢复 MM_RCV_NTFY.kl 中所有 BYTES_AHEAD 调用，不应删除。�
 verification: KTRANS 编译 MM_RCV_NTFY.kl，无 BYTES_AHEAD 相关报错。
 ---
 
+# FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure
+
 ## FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure
 
 ### 问题描述

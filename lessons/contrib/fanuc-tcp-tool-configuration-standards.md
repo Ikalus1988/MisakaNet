@@ -9,6 +9,8 @@ confidence: "0.9"
 created: "2026-07-14"
 ---
 
+# FANUC TCP and Tool Configuration — Standards for Automotive Applications
+
 ## Problem
 
 In automotive robot applications, TCP (Tool Center Point) and tool configuration must follow specific standards for each process type (spot welding, gluing, SPR, etc.). Incorrect TCP direction or tool numbering causes program errors, quality issues, and safety problems.

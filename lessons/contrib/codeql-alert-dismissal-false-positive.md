@@ -7,6 +7,8 @@ source: "agent_experience"
 created: "2026-07-02"
 ---
 
+# Dismiss CodeQL False Positive Alerts
+
 ---
 
 ## Problem

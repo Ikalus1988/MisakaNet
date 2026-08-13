@@ -10,6 +10,8 @@
 ---
 
 
+# hub feishu wsclient start never called
+
 ## 背景
 
 Hub 配置了 `im.message.receive_v1` 和 `p2p_card_action.trigger` 回调，但从未收到飞书消息。

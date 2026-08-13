@@ -7,6 +7,8 @@ status: "draft"
 created: "2026-05-09"
 ---
 
+# Gradio Feedback Panel
+
 ## 背景
 
 （此 lesson 从 skill `gradio-feedback-panel` 自动提取，待补全）

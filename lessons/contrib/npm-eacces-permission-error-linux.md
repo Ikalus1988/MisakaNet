@@ -10,6 +10,8 @@ confidence: 0.9
 verified_date: 2026-07-29
 ---
 
+# npm install EACCES permission error on Linux and macOS
+
 ## Problem
 
 This error occurs when running `npm install -g` without sufficient permissions. The command fails with:

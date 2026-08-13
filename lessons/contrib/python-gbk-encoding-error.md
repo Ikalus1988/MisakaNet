@@ -7,6 +7,8 @@
   "source": "unknown"
 }
 ---
+# Python GBK Encoding Error — Windows/WSL 跨平台
+
 ---{"title": "Python GBK Encoding Error — Windows/WSL 跨平台", "domain": "devops", "tags": ["python", "encoding", "gbk", "windows", "wsl"]}---
 
 ## 背景

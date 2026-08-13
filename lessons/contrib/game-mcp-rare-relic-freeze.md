@@ -9,6 +9,8 @@
 }
 ---
 
+# game mcp rare relic freeze
+
 ## Game MCP: Rare Relic Selection Freeze
 
 ### Problem

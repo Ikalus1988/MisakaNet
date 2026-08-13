@@ -9,6 +9,8 @@
 }
 ---
 
+# slugify windows path sanitation
+
 ## 问题
 
 When creating a new lesson using `scripts/new_lesson.py` (either interactively or via batch mode), if the user or agent supplies a title with special characters, slashes (`/`, `\`), emojis, or Windows reserved names, the `slugify` logic crashes, generates invalid file paths, or attempts to write to reserved devices (like `CON` or `PRN` on Windows). This disrupts the creation workflow on Windows and WSL systems.

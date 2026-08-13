@@ -16,6 +16,8 @@ domain_expert: "zsxh1990"
 verified_date: "2026-07-06"
 ---
 
+# GFW TLS SNI 阻断：工具层全部无效，只有代理能解
+
 ## Problem
 
 从中国大陆抓取 Reddit/StackOverflow 等站点时，所有工具层方案（curl、Playwright、scrapling、Safari MCP、WebFetch、Agent-Reach Jina Reader）全部超时失败。Agent 误判为"工具配置问题"，反复尝试不同工具浪费大量时间。

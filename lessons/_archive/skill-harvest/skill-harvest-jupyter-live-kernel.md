@@ -7,6 +7,8 @@ status: "draft"
 created: "2026-05-09"
 ---
 
+# Jupyter Live Kernel
+
 ## 背景
 
 （此 lesson 从 skill `jupyter-live-kernel` 自动提取，待补全）

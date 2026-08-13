@@ -19,6 +19,8 @@
 }
 ---
 
+# RAG Knowledge Base Quality Flywheel Self Loop
+
 ## Background
 
 A vertical-domain RAG knowledge base (190+ PDFs, 200K+ vectors) was already online, supporting natural-language Q&A and daily automated inspections. However, issues found by inspections still had to be handled manually, so the whole loop lacked automation:

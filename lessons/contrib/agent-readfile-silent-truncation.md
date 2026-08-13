@@ -13,6 +13,8 @@
 }
 ---
 
+# Agent read_file Silent Truncation in Multi-Brain Meeting Recovery
+
 ## Problem
 
 A three-brain AI meeting system (大乔 proposals → 小乔 review → main fusion) writes meeting

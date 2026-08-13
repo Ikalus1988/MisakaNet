@@ -18,6 +18,8 @@ evidence:
 ---
 
 
+# FANUC Backup Payload Extraction — .VR/.SV Binary Parsing and .LS Text Fallback
+
 ## Problem
 
 Given a FANUC robot backup directory, extract the payload (load mass, center of gravity, inertia) configuration. The backup contains 300+ files in proprietary binary formats (`.vr`, `.sv`) that cannot be read with standard text editors. The official conversion tool `kconvars.exe` may crash due to missing `robot.ini` or path encoding issues.

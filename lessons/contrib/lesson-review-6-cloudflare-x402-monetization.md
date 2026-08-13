@@ -12,6 +12,8 @@ domain_expert: ""
 ---
 
 
+# Cloudflare Monetization Gateway — x402 API 支付协议
+
 ## Problem
 
 Web 30 年来的经济模式是"内容换注意力"（广告/订阅/电商）。AI Agent 时代，Agent 不看广告、不订阅、不浏览——传统变现模式失效。

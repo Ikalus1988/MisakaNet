@@ -7,6 +7,8 @@ created: "2026-07-06"
 source: "unknown"
 ---
 
+# JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效
+
 ## 背景
 
 JavaScript 是单线程事件驱动模型。同步执行线程中任何一个未捕获的异常（TypeError、ReferenceError 等）都会导致**整个执行线程中断**，该线程后续所有代码不再执行。常见场景：

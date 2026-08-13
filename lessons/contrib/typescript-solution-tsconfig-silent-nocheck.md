@@ -2,6 +2,8 @@
 {"title": "TypeScript solution-style tsconfig — tsc --noEmit checks nothing silently", "domain": "typescript", "tags": ["typescript", "tsconfig", "type_checking", "ci", "build"], "language": "en", "status": "published", "source": "https://dev.to/henry_dan_81513dd35a2f540/it-passed-because-it-never-looked-552l", "created": "2026-07-29", "confidence": "0.90"}
 ---
 
+# TypeScript solution-style tsconfig — tsc --noEmit checks nothing silently
+
 ## Problem
 
 After four consecutive clean runs of `npx tsc --noEmit`, a production page showed an error instead of content. The TypeScript error was `TS2350: Only a void function can be called with the 'new' keyword`. The type checker reported zero errors on every run.

@@ -7,6 +7,8 @@
   "source": "unknown"
 }
 ---
+# wechat pubacct fetch separate search from retrieval
+
 ---{"title": "微信公众号抓取失败Handling（搜索与抓取分离）", "domain": "wechat", "tags": ["wechat", "fetch", "search", "crawl"]}---
 
 ## 背景

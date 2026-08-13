@@ -14,6 +14,8 @@ created: 2026-07-28
 confidence: 0.85
 ---
 
+# Tips for Debugging Kubernetes CrashLoopBackOff in a Container
+
 ## Problem
 
 CrashLoopBackOff is a Kubernetes pod status that indicates a container is crashing and being automatically restarted in a loop. This can result from several types of misconfigurations including inability to connect to persistent volumes, init-container misconfiguration, or application code failures. The primary debugging challenge is understanding why the service fails to stay running.

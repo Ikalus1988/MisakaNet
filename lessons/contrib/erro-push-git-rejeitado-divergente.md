@@ -10,6 +10,8 @@ confidence: 0.9
 verified_date: 2026-07-29
 ---
 
+# Erro de push rejeitado no Git: branches divergentes e como resolver
+
 ## Problem
 
 This error occurs when Git refuses to push local commits because the remote branch has commits that the local branch does not. The push fails with:

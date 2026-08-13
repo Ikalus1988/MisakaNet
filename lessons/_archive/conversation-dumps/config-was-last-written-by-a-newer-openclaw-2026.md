@@ -8,6 +8,8 @@ confidence: 0.7
 created: 2026-04-01
 ---
 
+# Config was last written by a newer OpenClaw (2026.
+
 ## 背景
 [assistant] <think>
 The POC results are clear. Let me summarize:

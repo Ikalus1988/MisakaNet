@@ -9,6 +9,8 @@ confidence: "0.9"
 created: "2026-07-14"
 ---
 
+# FANUC Robot Program Inspection Methodology — Systematic Check Guide
+
 ## Problem
 
 Robot programs need systematic inspection before production to catch signal mapping errors, safety violations, and logic bugs. Without a structured methodology, inspectors miss critical issues or check inconsistently across different robots.

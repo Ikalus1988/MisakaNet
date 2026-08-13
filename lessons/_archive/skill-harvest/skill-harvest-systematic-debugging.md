@@ -7,6 +7,8 @@ status: "draft"
 created: "2026-05-09"
 ---
 
+# Systematic Debugging
+
 ## 背景
 
 （此 lesson 从 skill `systematic-debugging` 自动提取，待补全）

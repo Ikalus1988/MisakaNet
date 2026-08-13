@@ -9,6 +9,8 @@
 }
 ---
 
+# wecom robot long connect no ngrok
+
 ## Problem
 
 配置企业微信机器人回调时，传统方案需要 ngrok/frp 做内网穿透，增加复杂度、暴露端口、需要 HTTPS 证书。

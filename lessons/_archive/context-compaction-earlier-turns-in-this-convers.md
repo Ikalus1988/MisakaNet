@@ -12,6 +12,8 @@ tags:
 
 
 
+# CONTEXT COMPACTION] Earlier turns in this convers
+
 ## 背景
 [assistant] <think>
 The user is asking about the progress of their knowledge base (知识库). Let me check the session history and memory to understand what's been done with the knowledge base.

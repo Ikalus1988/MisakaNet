@@ -16,6 +16,8 @@ domain_expert: "zsxh1990"
 verified_date: "2026-07-06"
 ---
 
+# 飞书 doc_delete_blocks_by_range 不传 end 会删到文档末尾
+
 ## Problem
 
 调用飞书 `doc_delete_blocks_by_range` 时只传了 `start=0` 没传 `end`，想删5行残留旧内容，结果工具从 start 一直删到文档末尾，**删掉 172 个块，整篇文档被清空**（含标题、阶段性汇报、backup 全部内容）。用户靠飞书历史版本才恢复。

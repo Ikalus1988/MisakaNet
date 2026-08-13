@@ -19,6 +19,8 @@
 ---
 
 
+# PR Cleanup SOP — Stale/Duplicate/Resolved PR Disposition
+
 ## Root Cause
 
 开放 PR 堆积会消耗维护者心力。AI Agent 提交 PR 的高频场景下，重复/过时/已解决 PR 尤其常见。需要一套系统化的处置策略。

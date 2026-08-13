@@ -9,6 +9,8 @@
 }
 ---
 
+# deepseek tui write file sandbox worktree git path
+
 ## 背景
 
 在 Agent-Medici 项目的 search_knowledge.py v2 升级过程中，使用 DeepSeek TUI Agent 模式进行代码修改。操作环境为 WSL (Windows Subsystem for Linux)，仓库使用 Hydra worktree 管理。

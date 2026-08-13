@@ -22,6 +22,8 @@
 }
 ---
 
+# DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation
+
 > Translated from: [lessons/core/dco-auto-fix-workflow.md](../core/dco-auto-fix-workflow.md)
 
 ## Root Cause

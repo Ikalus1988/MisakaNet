@@ -9,6 +9,8 @@
 }
 ---
 
+# Auto-Welcome Newcomers via issue_comment Event
+
 ## 背景
 
 开源项目设置 Good First Issues 后，新手贡献者往往不知道如何开始。需要一种自动化的方式在贡献者评论 Issue 时立即给予引导。

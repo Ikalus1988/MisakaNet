@@ -10,6 +10,8 @@ confidence: 0.95
 verified_date: 2026-07-10
 ---
 
+# Search Smart Fallback — Turning Zero Results into Discovery
+
 ## Verification
 
 1. Run a query with no exact match: `python3 search_knowledge.py "xylophone purple elephant dancing"`

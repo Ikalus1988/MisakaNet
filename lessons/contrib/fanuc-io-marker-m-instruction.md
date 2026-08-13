@@ -12,6 +12,8 @@ domain_expert: cattmampbell
 ---
 
 
+# FANUC IO Marker M[] Instruction — Background Logic Alternative
+
 ## Problem
 
 The M[] option appears in the I/O replace menu but is undocumented in standard TP programming guides. Users don't know what it does or when to use it.

@@ -7,6 +7,8 @@ status: "draft"
 created: "2026-05-09"
 ---
 
+# Native Claude Code Wsl Bare Fix
+
 ## 背景
 
 （此 lesson 从 skill `native-claude-code-wsl-bare-fix` 自动提取，待补全）

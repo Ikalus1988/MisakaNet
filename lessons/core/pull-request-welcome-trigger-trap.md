@@ -20,6 +20,8 @@
 ---
 
 
+# PR Welcome Not Triggering — author_association NONE vs FIRST_TIMER Trap
+
 ## Root Cause
 
 首次贡献者提交 PR 后，`pr-welcome.yml`（使用 `pull_request_target` 事件）状态显示 **Skipped**，欢迎评论未发出。

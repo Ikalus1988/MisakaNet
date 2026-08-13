@@ -10,6 +10,8 @@
 }
 ---
 
+# Maintainer Feedback Iteration — Address Blockers, Not Just Comments
+
 ## Problem
 
 When maintainers provide feedback on PRs, contributors often address surface-level comments while missing the core blockers. This leads to multiple review cycles and frustration.

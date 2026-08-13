@@ -6,6 +6,8 @@ status: published
 source: agent_experience
 created: 2026-07-02
 ---
+# SAG-Lite Data Quality: Clean Search Results
+
 ---
 
 ## Problem

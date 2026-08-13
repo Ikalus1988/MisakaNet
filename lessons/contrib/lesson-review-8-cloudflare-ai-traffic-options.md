@@ -12,6 +12,8 @@ domain_expert: ""
 ---
 
 
+# Cloudflare AI Traffic Options — Content Monetization for the Agentic Internet
+
 ## Problem
 
 AI crawlers take content and send nothing back. Small sites face a Faustian bargain: show up in search and let AI train on you, or risk losing discoverability.

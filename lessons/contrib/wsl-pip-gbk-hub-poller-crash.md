@@ -9,6 +9,8 @@
 }
 ---
 
+# wsl pip gbk hub poller crash
+
 ## Problem
 
 Windows Hub 的 hub_poller.py 读取 config.yaml 时崩溃，错误信息为 UnicodeDecodeError。

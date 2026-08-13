@@ -11,6 +11,8 @@ verified_date: 2026-05-03
 ---
 
 
+# FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明
+
 ## FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明
 
 ### 问题描述

@@ -18,6 +18,8 @@
 }
 ---
 
+# Supabase capacity constraints caused project operation failures
+
 ## Problem
 
 On 2026-06-30, Supabase reported an incident titled **"Project status change failures in multiple regions"**. Users could see repeated failures when trying to create projects, resize projects, provision branches, restart projects, restore projects, or perform database upgrades.

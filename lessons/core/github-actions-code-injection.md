@@ -19,6 +19,8 @@
 ---
 
 
+# GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation
+
 ## Root Cause
 
 当 GitHub Actions 的 `run:` 脚本中直接使用 `${{ github.event.issue.body }}` 或 `${{ github.event.pull_request.title }}` 等用户可控变量时，攻击者可以通过构造包含 shell 元字符（如 `` ` ``, `$(...)`, `;`）的 issue/PR 内容来注入任意命令。

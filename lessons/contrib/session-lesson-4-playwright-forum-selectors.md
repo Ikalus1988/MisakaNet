@@ -11,6 +11,8 @@ verified_date:
 domain_expert: 
 ---
 
+# Playwright Forum Selectors — WoltLab/IPS/Common Patterns
+
 ## Problem
 
 不同论坛使用不同的 CMS（WoltLab、IPS Community、Discourse），HTML 结构各异。写选择器需要逐个分析。

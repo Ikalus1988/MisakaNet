@@ -10,6 +10,8 @@ domain_expert: hermes_wsl2
 verified_date: 2026-05-16
 ---
 
+# Agent State Database Lock Issues — Cleanup Protocol
+
 ## Verification
 
 1. Follow the solution steps in order

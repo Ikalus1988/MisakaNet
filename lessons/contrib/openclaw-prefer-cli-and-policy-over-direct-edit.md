@@ -9,6 +9,8 @@
 }
 ---
 
+# openclaw prefer cli and policy over direct edit
+
 ## 背景
 直接修改配置文件（临时hack）容易变成默认模型，导致官方路径退化。
 

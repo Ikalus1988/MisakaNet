@@ -9,6 +9,8 @@
 }
 ---
 
+# feishu upload file type opus
+
 ## 问题
 
 Feishu `im/v1/files` 上传接口调用失败，返回 `234001 Invalid request param`。

@@ -12,6 +12,8 @@ domain_expert: ""
 ---
 
 
+# DevOps Platform Engineering — Golden Paths to Reduce Cognitive Load
+
 ## Problem
 
 The "DevOps hero" approach — trying to master every tool (Docker, K8s, Terraform, Ansible, Jenkins, ArgoCD, Prometheus, Grafana) — leads to burnout. 80% of time fighting YAML, 20% building.

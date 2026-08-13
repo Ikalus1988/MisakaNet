@@ -7,6 +7,8 @@ source: "brgsk.xyz"
 ---
 
 
+# Agent Memory Extractor Timing — Eager vs Lazy with Implementation
+
 ## Problem
 
 Agent memory extractors that run at the wrong time waste tokens or produce low-quality extractions. Eager extraction (every message) wastes tokens on small talk. Lazy extraction (end of session) degrades quality on long transcripts due to "lost in the middle" effect.

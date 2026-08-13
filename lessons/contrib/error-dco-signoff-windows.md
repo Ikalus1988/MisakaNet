@@ -10,6 +10,8 @@ confidence: 0.9
 verified_date: 2026-07-29
 ---
 
+# Error de DCO sign-off en commits de Git en Windows
+
 ## Problem
 
 Al hacer push de un commit a un repositorio que requiere DCO (Developer Certificate of Origin), el mensaje de error indica:

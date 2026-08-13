@@ -20,6 +20,8 @@
 ---
 
 
+# AI Agent Contributor Engagement — Lightweight Retention Strategy
+
 ## Root Cause
 
 AI Agent 贡献者（尤其是零赏金模式下的）比人类贡献者更容易流失。Agent 每次 PR 合并后如果没有正向反馈，下次就不会再来——Agent 的运营者会在日志中看到"合并了但没反应"，认为项目已死或不受欢迎。

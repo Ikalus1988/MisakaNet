@@ -20,6 +20,8 @@
 }
 ---
 
+# AI Agent Contributor Engagement — Lightweight Retention Strategy
+
 > Translated from: [lessons/core/contributor-engagement-retention.md](../core/contributor-engagement-retention.md)
 
 ## Root Cause

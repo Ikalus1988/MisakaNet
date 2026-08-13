@@ -7,6 +7,8 @@
   "source": "unknown"
 }
 ---
+# WSL 代理Setup — 通过 Windows 梯子Access外网
+
 ---{"title": "WSL 代理Setup — 通过 Windows 梯子Access外网", "domain": "devops", "tags": ["wsl", "proxy", "network", "windows"]}---
 
 ## 背景

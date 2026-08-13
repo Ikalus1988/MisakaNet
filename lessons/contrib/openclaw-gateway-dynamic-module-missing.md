@@ -7,6 +7,8 @@
   "source": "unknown"
 }
 ---
+# openclaw gateway dynamic module missing
+
 ---{"title": "OpenClaw Gateway 动态Module Not Found — 飞书Messaging分发失败", "domain": "feishu", "subdomain": "openclaw-debug", "source": "bootstrap", "status": "published", "confidence": "1.0", "created": "2026-05-18", "tags": "node:misaka10004\", \"platform:wsl\", \"severity:critical\", \"project:misakanet"}---
 
 

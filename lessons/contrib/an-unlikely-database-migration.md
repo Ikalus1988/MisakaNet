@@ -9,6 +9,8 @@ created: "2026-07-28"
 confidence: 0.85
 ---
 
+# An Unlikely Database Migration: From JSON Files to etcd
+
 ## Problem
 
 Tailscale's control plane (CONTROL) began using a JSON file-based persistence layer that became a significant bottleneck as the service scaled. The database file reached a peak size of 150MB, with the entire file being rewritten on every data change. Even with optimizations like NVMe drives and splitting data into two halves (important data vs. ephemeral data on tmpfs), performance degraded as the file I/O became the limiting factor.

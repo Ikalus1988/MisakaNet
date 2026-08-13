@@ -10,6 +10,8 @@
 }
 ---
 
+# Repository Traffic Is Not Lesson Use
+
 ## Problem
 
 A repository can show strong clone, star, fork, issue, and pull-request activity while still having no evidence that users are reading or applying the knowledge assets inside it.

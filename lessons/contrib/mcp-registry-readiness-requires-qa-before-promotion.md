@@ -10,6 +10,8 @@
 }
 ---
 
+# MCP Registry Readiness Requires QA Before Promotion
+
 ## Problem
 
 Submitting an MCP server to a public registry before its smoke tests, tool descriptions, and user-facing install path are ready can waste the first discovery wave. Registry traffic is only useful if new users can connect, understand the tools, and get a helpful result quickly.

@@ -11,6 +11,8 @@ verified_date:
 domain_expert: 
 ---
 
+# Lobsters JSON API — Structured Tech Forum Scraping
+
 ## Problem
 
 Lobste.rs 是高质量技术论坛（安全/Rust/系统），但没有搜索 API。需要通过 JSON 端点获取内容。

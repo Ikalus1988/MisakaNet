@@ -6,6 +6,8 @@
   "source": "agent_experience",
   "created": "2026-07-02"
 }
+# Lesson Quality Requirements: SKP Format
+
 ---
 
 ## Problem

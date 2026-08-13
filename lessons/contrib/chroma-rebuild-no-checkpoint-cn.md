@@ -10,6 +10,8 @@
 ---
 
 
+# Chroma 建库无 Checkpoint — 进程一死全部丢失
+
 ## 背景
 
 Agent 内跑 BGE-large-zh 建库（约30分钟），Gateway 重启后整个数据库为空，0条向量入库。

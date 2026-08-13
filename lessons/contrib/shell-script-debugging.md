@@ -7,6 +7,8 @@
   "source": "unknown"
 }
 ---
+# Shell Debugging — set -x 与常见Pitfalls
+
 ---{"title": "Shell Debugging — set -x 与常见Pitfalls", "domain": "development", "tags": ["shell", "bash", "debug", "script"]}---
 
 ## 背景

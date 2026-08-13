@@ -12,6 +12,8 @@ domain_expert: ""
 ---
 
 
+# GitHub Commit Signing — GPG 防止提交伪造
+
 ## Problem
 
 任何人都可以用你的名字和邮箱设置 git config，推送提交，在 GitHub 上显示为你的作品。唯一的区别：没有 "Verified" 徽章。

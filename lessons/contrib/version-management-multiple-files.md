@@ -9,6 +9,8 @@
 }
 ---
 
+# Version Management Across Multiple Files
+
 ## Problem
 
 Version number appears in multiple files that need to be updated together:

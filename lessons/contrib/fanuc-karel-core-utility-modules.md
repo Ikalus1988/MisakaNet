@@ -14,6 +14,8 @@
   "solution": "使用 Ka-Boost Layer 1 的三个基础模块：errors（错误处理+变量初始化）、system（系统类型+时间+坐标系）、Strings（字符串全操作），作为 KAREL 项目的基础设施。",
   "verification": "1. errors 模块：karelError 能输出到 TP 显示和历史记录；2. system 模块：system__date()/system__time() 返回正确格式；3. Strings 模块：split_str、i_to_s/r_to_s 等函数在 KUnit 测试中通过。"
 }
+# KAREL Core Utility Modules: errors, system, Strings API Reference
+
 
 ## KAREL Core Utility Modules: errors, system, Strings API Reference
 

@@ -10,6 +10,8 @@
 }
 ---
 
+# Glama MCP Server Deployment — 10 Build Failures and Fixes
+
 ## Problem
 
 Deploying a Python MCP server to Glama (MCP registry) requires passing their automated Docker build + introspection test. The build environment uses `debian:trixie-slim` + `uv` (not pip) + Node.js, which has several pitfalls for Python projects.

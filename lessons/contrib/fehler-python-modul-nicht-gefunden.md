@@ -10,6 +10,8 @@ confidence: 0.9
 verified_date: 2026-07-29
 ---
 
+# ModuleNotFoundError in Python trotz pip install
+
 ## Problem
 
 This error occurs when a Python module cannot be found at runtime even though `pip install` succeeded. Running a script fails with:

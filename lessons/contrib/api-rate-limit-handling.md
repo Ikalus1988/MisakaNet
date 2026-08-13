@@ -9,6 +9,8 @@ tags:
 created: "2026-05-21"
 ---
 
+# API 请求限流 (Rate Limit) 处理方案
+
 ## 背景
 
 调用第三方 API 时返回 HTTP 429（Too Many Requests）或 403（被限流）。自动化脚本因未处理限流而中断。

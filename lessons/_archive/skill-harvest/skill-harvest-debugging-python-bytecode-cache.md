@@ -7,6 +7,8 @@ status: "draft"
 created: "2026-05-09"
 ---
 
+# Debugging Python Bytecode Cache
+
 ## 背景
 
 （此 lesson 从 skill `debugging-python-bytecode-cache` 自动提取，待补全）

@@ -12,6 +12,8 @@ domain_expert: ""
 ---
 
 
+# Cloudflare Workflows — 持久化多步骤执行
+
 ## Problem
 
 Serverless 函数是无状态的。多步骤流程（审批、数据处理、编排）需要跨步骤持久化状态，传统方式需要外部数据库或消息队列。

@@ -19,6 +19,8 @@
 }
 ---
 
+# PR Welcome Not Triggering — author_association NONE Trap
+
 > Translated from: [lessons/core/pull-request-welcome-trigger-trap.md](../core/pull-request-welcome-trigger-trap.md)
 
 ## Root Cause

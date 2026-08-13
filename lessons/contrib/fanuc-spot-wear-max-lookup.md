@@ -17,6 +17,8 @@ evidence:
   public_quote_allowed: false
 ---
 
+# FANUC Spot Weld Tip Max Wear Amount — sysspot.sv Variable Lookup via kconvars
+
 ## Problem
 
 Need to find the maximum electrode tip wear amount (最大磨损量) for a FANUC spot welding robot. The value is stored in the `sysspot.sv` system variable file, which uses FANUC's proprietary binary format and cannot be read with standard text editors.

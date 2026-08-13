@@ -9,6 +9,8 @@ confidence: "0.9"
 created: "2026-07-14"
 ---
 
+# FANUC Payload Estimation — Auto and Manual Load Configuration
+
 ## Problem
 
 FANUC robots require accurate payload (load) configuration for safe and precise motion. Incorrect payload settings cause poor motion accuracy, excessive motor load, and can trigger collisions or servo alarms. Engineers need to know how to estimate and configure payloads correctly.

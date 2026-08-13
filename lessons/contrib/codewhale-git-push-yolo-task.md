@@ -9,6 +9,8 @@
 }
 ---
 
+# CodeWhale 中 git push 的正确方式 — YOLO task + gh CLI
+
 ## 背景
 
 在 CodeWhale 的 Agent 模式中，`exec_shell` 工具不可用。需要执行 `git push` 时，不能直接用 shell 命令。

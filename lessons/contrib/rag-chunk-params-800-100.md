@@ -17,6 +17,8 @@
 }
 ---
 
+# RAG Chunk Parameters 800 Characters and 100 Overlap
+
 ## Problem
 
 After importing FANUC PDF documents into RAG, retrieval quality was unstable and recall was low for long documents.

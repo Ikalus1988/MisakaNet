@@ -9,6 +9,8 @@
 }
 ---
 
+# Git Push 的正确方式 — 在受限 Agent 环境中推送代码
+
 ## 背景
 
 在某些 Agent 平台的安全模式下，shell 工具不可用。需要执行 `git push` 时，不能直接用 shell 命令。

@@ -12,6 +12,8 @@ domain_expert: ""
 ---
 
 
+# Redis → PostgreSQL 替换 — 缓存/PubSub/队列统一
+
 ## Problem
 
 典型 Web 应用同时用 PostgreSQL（持久化）+ Redis（缓存/PubSub/队列），两个数据库 = 两个备份点、两个监控、两个故障点。Redis 用 RAM（贵），持久化复杂。

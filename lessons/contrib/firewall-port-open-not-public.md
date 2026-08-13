@@ -9,6 +9,8 @@
 }
 ---
 
+# firewall port open not public
+
 ## Problem
 
 为 wcferry 开放 Windows 防火墙端口 10086 时，误以为这是"内网穿透"操作，担心安全性。

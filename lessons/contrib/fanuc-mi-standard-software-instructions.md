@@ -9,6 +9,8 @@ confidence: "0.9"
 created: "2026-07-14"
 ---
 
+# FANUC MI Standard Software — Complete Instruction Reference (MI01-MI22)
+
 ## Problem
 
 MI Standard Software is a comprehensive instruction library for automotive FANUC robots, covering PLC communication, tool change, spot welding, gluing, SPR riveting, FDS, stud welding, and more. Engineers need a quick reference for all MI module instructions and their parameters.

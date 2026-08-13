@@ -9,6 +9,8 @@
 }
 ---
 
+# Vertical KB Question Bank Strategy — FANUC Robot KB Case Study
+
 ## 背景
 
 在飞书云文档中维护一个 FANUC 机器人垂直知识库的题库，经历了从第一批到第三批的迭代，发现了一些关键管理策略。

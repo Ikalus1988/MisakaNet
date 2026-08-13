@@ -14,6 +14,8 @@
   "solution": "采用 Ka-Boost 的分层模块架构：从底层预处理器宏（Layer 0）到高层系统（Layer 7），每层只依赖下层。使用 rossum 包管理器 + ninja 构建系统管理依赖和编译。",
   "verification": "1. rossum 能解析 package.json 依赖图并生成 build.ninja；2. ninja 编译所有 .kl/.klc 文件生成 .pc 二进制；3. kpush 成功部署到控制器；4. 各层模块单元测试通过（KUnit HTTP 访问）。"
 }
+# Ka-Boost: 8-Layer KAREL Module Architecture and Build System
+
 
 ## Ka-Boost: 8-Layer KAREL Module Architecture and Build System
 

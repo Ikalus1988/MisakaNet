@@ -12,6 +12,8 @@ domain_expert: ""
 ---
 
 
+# API 分页设计 — Cursor vs Offset vs Keyset
+
 ## Problem
 
 API 分页设计选择不当会导致性能问题（OFFSET 大偏移量慢）、数据重复/遗漏（并发写入时）、用户体验差。

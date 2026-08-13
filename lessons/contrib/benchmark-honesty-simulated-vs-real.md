@@ -10,6 +10,8 @@
 }
 ---
 
+# Benchmark Honesty — Distinguishing Simulated vs Real Results
+
 ## Problem
 
 When contributing benchmark results to open-source projects, presenting simulated or partial results as real evidence leads to maintainer rejection and lost trust.

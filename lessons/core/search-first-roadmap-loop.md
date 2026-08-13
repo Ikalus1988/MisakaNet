@@ -2,6 +2,8 @@
 {"title":"Search-first roadmap loop for agent knowledge projects","domain":"development","status":"published","tags":["roadmap","search","onboarding","release","strategy"],"language":"en","source":"strategy-session-2026-07-02","created":"2026-07-02 00:00:00 UTC","updated":"2026-07-02 00:00:00 UTC"}
 ---
 
+# Search-first roadmap loop for agent knowledge projects
+
 ## Problem
 
 A growing agent-knowledge project can accumulate many valid directions at once: reusable experience substrate, lightweight MCP or tool adapters, OKF-compatible export, SQLite or SAG-style search, public roadmap and bounty issues, model or agent capability evaluation, frontend onboarding, and journey pages.

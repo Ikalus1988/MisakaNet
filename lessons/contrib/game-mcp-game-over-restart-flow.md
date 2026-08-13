@@ -9,6 +9,8 @@
 }
 ---
 
+# Game MCP: GAME OVER Restart Flow
+
 ## Game MCP: GAME OVER Restart Flow
 
 ### Problem

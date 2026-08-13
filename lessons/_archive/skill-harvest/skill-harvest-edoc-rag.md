@@ -7,6 +7,8 @@ status: "draft"
 created: "2026-05-09"
 ---
 
+# Edoc Rag
+
 ## 背景
 
 （此 lesson 从 skill `edoc-rag` 自动提取，待补全）

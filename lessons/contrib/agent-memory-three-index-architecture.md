@@ -7,6 +7,8 @@ source: "elastic.co/search-labs"
 ---
 
 
+# Agent Memory Three-Index Architecture on Elasticsearch
+
 ## Problem
 
 Agent memory systems that store everything in one bucket fail to model different lifecycles. Episodic events (high write, time-decay), semantic facts (low write, supersede on contradiction), and procedural playbooks (low write, outcome feedback) have incompatible update and aging rules.

@@ -9,6 +9,8 @@ confidence: "0.95"
 created: "2026-07-14"
 ---
 
+# FANUC DCS Safety System — Configuration and Stop Modes
+
 ## Problem
 
 FANUC DCS (Dual Check Safety) is a critical safety system that uses independent dual CPUs to monitor robot position and speed. Misconfiguration can lead to safety violations or false trips. Engineers need to understand the DCS architecture, stop modes, and safety I/O to configure it correctly.

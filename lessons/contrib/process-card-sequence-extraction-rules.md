@@ -16,6 +16,8 @@ domain_expert: "zsxh1990"
 verified_date: "2026-07-06"
 ---
 
+# 工艺卡步序提取：辅助动作不算独立步序，按工艺动作分界
+
 ## Problem
 
 从工艺卡 Time Chart 提取机器人步序时，三种常见错误：

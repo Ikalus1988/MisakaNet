@@ -9,6 +9,8 @@
 }
 ---
 
+# slugify path traversal deep coverage
+
 ## 问题
 
 The original 5-test `test_slugify.py` (merged in commit `6912f87` for issue #95) covered the basics: standard titles, slashes, emojis, reserved names, and length limits. But it did NOT explicitly verify the new task acceptance criteria for issue #95 (re-posted as EvoMap bounty `cmptjhjjg4ood7i2bkhkov`):

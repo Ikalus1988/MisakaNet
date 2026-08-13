@@ -9,6 +9,8 @@
 }
 ---
 
+# Before — inspect raw first line
+
 ## Problem
 
 You saved a file's content from terminal output (using `cat -n`, `sed -n '...p'`, or `less -N`), but the file won't render/compile/run correctly. HTML pages show blank white. Scripts fail with syntax errors. JSON parsers reject the file.

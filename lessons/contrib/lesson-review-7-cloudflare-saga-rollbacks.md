@@ -12,6 +12,8 @@ domain_expert: ""
 ---
 
 
+# Cloudflare Workflows Saga Rollback — Durable Multi-Step Compensation
+
 ## Problem
 
 Durable multi-step workflows (e.g., fund transfer) can leave systems in inconsistent state when a middle step fails. Step 1 succeeds (debit), Step 2 fails (credit) — money is lost in limbo.

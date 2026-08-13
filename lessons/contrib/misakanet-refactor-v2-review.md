@@ -7,6 +7,8 @@
   "source": "unknown"
 }
 ---
+# misakanet refactor v2 review
+
 ---{"title": "MisakaNet Refactoring复盘 — 从中心协调到 Agent 图书馆", "domain": "development", "tags": ["refactor", "architecture", "v2", "misakanet"], "status": "published", "source": "deepseek", "created": "2026-05-30 02:00:00 UTC", "updated": "2026-05-30 02:00:00 UTC"}---
 
 ## 根因

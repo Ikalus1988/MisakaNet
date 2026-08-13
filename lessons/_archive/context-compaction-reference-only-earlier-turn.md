@@ -12,6 +12,8 @@ tags:
 
 
 
+# CONTEXT COMPACTION — REFERENCE ONLY] Earlier turn
+
 ## 背景
 [assistant] <think>
 The user is asking why the disaster recovery (容灾) failed. Based on the context, they likely mean the OpenClaw watchdog (openclaw-watchdog) that was set up to monitor the OpenClaw Gateway proce

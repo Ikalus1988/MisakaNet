@@ -10,6 +10,8 @@
 ---
 
 
+# Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里
+
 ## 背景
 
 Hub 有两套配置体系，Gateway 和 Hub 读取不同的凭证位置，容易混淆。

@@ -13,6 +13,8 @@ confidence: 0.9
 created: 2026-07-07
 ---
 
+# 正则陷阱 — 源码中转义引号导致非贪婪匹配提前终止
+
 ## Problem
 
 用正则从 Python 源码中提取 `os.environ.get("KEY", "default_value")` 的默认值时，提取结果被截断：

@@ -9,6 +9,8 @@
 }
 ---
 
+# GitHub DNS 污染/443端口不通 — hosts 备用 IP 方案
+
 ## 背景
 
 `git push` / `git fetch` 持续超时或报 TLS 握手错误：

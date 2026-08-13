@@ -7,6 +7,8 @@
   "source": "unknown"
 }
 ---
+# feishu block type values limits
+
 ---{"title": "飞书 Block Type 正确值与已知Limit", "domain": "feishu", "subdomain": "block-api", "source": "bootstrap", "status": "published", "confidence": "0.7", "created": "2026-05-03"}---
 
 ## 飞书 Block Type 正确值与已知限制

@@ -9,6 +9,8 @@ confidence: "0.95"
 created: "2026-07-14"
 ---
 
+# FANUC Alarm Severity Levels — Handling and Color Codes
+
 ## Problem
 
 FANUC controllers display alarms with different severity levels, but engineers don't always understand the implications of each level — which ones stop the robot, which cut servo power, and which require immediate action vs. can be deferred.

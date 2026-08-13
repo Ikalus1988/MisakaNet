@@ -12,6 +12,8 @@ domain_expert:
 ---
 
 
+# rdt-cli — Reddit in Your Terminal (Reverse-Engineered API)
+
 ## Problem
 
 Reddit's official API closed self-service registration in 2025-11. Anonymous .json endpoints are blocked (403). Need a way to access Reddit programmatically.

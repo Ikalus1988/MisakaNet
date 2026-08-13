@@ -9,6 +9,8 @@
 }
 ---
 
+# static page github api 403 rate limit
+
 ## 背景
 
 纯静态页面（无后端代理，HTML + JS 直接部署在 CDN/GitHub Pages 上）需要通过浏览器端 JavaScript 直接调用第三方 API。这种架构面临几个固有风险：

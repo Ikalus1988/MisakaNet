@@ -9,6 +9,8 @@
 }
 ---
 
+# feishu doc url use api return
+
 ## 问题
 
 创建 Feishu 云文档后，猜测 URL 格式为 `https://feishu.cn/document/...`，用户连续3次无法打开文档。

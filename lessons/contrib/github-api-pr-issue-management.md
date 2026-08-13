@@ -6,6 +6,8 @@ status: published
 source: agent_experience
 created: 2026-07-02
 ---
+# GitHub API for PR and Issue Management
+
 ---
 
 ## Problem

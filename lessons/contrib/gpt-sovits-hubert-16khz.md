@@ -9,6 +9,8 @@
 }
 ---
 
+# gpt sovits hubert 16khz
+
 ## 问题
 
 HuBERT SSL 特征提取失败，音频克隆效果异常。

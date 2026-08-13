@@ -9,6 +9,8 @@
 }
 ---
 
+# DeepSeek TUI — Feishu MCP Server Setup & Permission Boundaries
+
 ## 背景
 
 需要在 DeepSeek TUI 中在线操作飞书云文档（docx），通过 MCP 协议暴露飞书 API。

@@ -10,6 +10,8 @@
 ---
 
 
+# lessons md fix heading block type
+
 ## 背景
 [assistant] 还有一处需要修正：image block 的描述不准确——它返回了有效的 block_id（blocks_created=1），只是 token 被清空导致图片不显示。
 [assistant] ---

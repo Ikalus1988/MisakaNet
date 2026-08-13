@@ -15,6 +15,8 @@
 ---
 
 
+# RAG Brand Filter Three Pitfalls
+
 ## Background
 
 During a quality inspection of a FANUC robot RAG knowledge base, the team found three design flaws in the brand-filtering strategy that allowed competitor documents to keep leaking into retrieval results.

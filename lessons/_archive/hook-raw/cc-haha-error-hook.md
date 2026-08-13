@@ -14,6 +14,8 @@ tags:
 updated: 2026-04-30 09:30 UTC
 ---
 
+# cc-haha PostToolUseFailure 钩子 — Bash 失败时提示 lessons
+
 ## 问题
 
 cc-haha 的 Bash 工具执行失败时，模型不知道去翻共享 lessons，

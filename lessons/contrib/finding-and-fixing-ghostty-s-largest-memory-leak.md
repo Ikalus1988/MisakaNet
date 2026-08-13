@@ -2,6 +2,8 @@
 {"title": "Finding and fixing Ghostty's largest memory leak", "domain": "memory_management", "tags": ["memory_leak", "memory_management", "terminal", "optimization", "debugging"], "language": "en", "status": "published", "source": "https://mitchellh.com/writing/ghostty-memory-leak-fix", "created": "2026-07-28", "confidence": "0.85"}
 ---
 
+# Finding and fixing Ghostty's largest memory leak
+
 ## Problem
 
 Ghostty users reported excessive memory consumption, with one user reporting 37 GB of memory usage after 10 days of uptime. The leak was present since at least Ghostty 1.0 but only became apparent at scale when Claude Code started producing the correct conditions to trigger it with regular multi-codepoint grapheme outputs that force Ghostty to use non-standard pages combined with significant scrollback output on the primary screen.

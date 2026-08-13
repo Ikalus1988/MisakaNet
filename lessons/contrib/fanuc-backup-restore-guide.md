@@ -9,6 +9,8 @@ confidence: "0.9"
 created: "2026-07-14"
 ---
 
+# FANUC Robot Backup and Restore — Full, Mirror, Auto, and File Restore
+
 ## Problem
 
 FANUC robot controllers support multiple backup types (full backup, mirror/image backup, auto backup) with different contents, restore procedures, and use cases. Engineers often confuse them or use the wrong type for their situation.

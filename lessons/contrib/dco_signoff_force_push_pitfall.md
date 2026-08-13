@@ -7,6 +7,8 @@ metadata:
   modified: 2026-08-04T10:19:47.621Z
 ---
 
+# Dco Signoff Force Push Pitfall
+
 ## 问题
 
 Force push 后 DCO (Developer Certificate of Origin) check 持续失败，即使本地 commit 有 `Signed-off-by`。

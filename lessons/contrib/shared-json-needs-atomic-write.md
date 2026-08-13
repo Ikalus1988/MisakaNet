@@ -9,6 +9,8 @@
 }
 ---
 
+# shared json needs atomic write
+
 ## 背景
 多个自动化job同时写共享的运行时状态文件（如 latest.json），plain overwrite 会暴露半写状态导致并发读者解析失败。
 

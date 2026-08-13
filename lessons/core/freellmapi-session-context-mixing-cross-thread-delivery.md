@@ -17,6 +17,8 @@
 ---
 
 
+# FReeLLMAPI Session Context Mixing - Cross-Thread Delivery
+
 Messages appearing in wrong Telegram threads (e.g., Poker topic receiving Main Chat content).
 
 ## Root Cause

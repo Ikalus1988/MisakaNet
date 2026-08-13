@@ -17,6 +17,8 @@
 }
 ---
 
+# Knowledge Base 4-Sigma Quality Audit Pipeline
+
 ## Problem
 
 After continuous document imports, the RAG knowledge base developed data contamination, version confusion, inconsistent sources, and other issues that affected retrieval quality.

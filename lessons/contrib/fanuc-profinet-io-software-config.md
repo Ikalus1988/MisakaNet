@@ -14,6 +14,8 @@
   "solution": "使用 PFN-CT V1.0.14 软件配置 FANUC 机器人的 PROFINET IO 通信参数。该软件为 PC 端工具，用于配置从站设备参数并生成配置文件。",
   "verification": "1. PFN-CT 软件安装并能正常启动；2. 能加载 FANUC 机器人的 GSD 文件；3. IO 模块配置完成并下载到控制器；4. PLC 端能识别 FANUC PROFINET IO 从站并建立通信。"
 }
+# FANUC Robot PROFINET IO Configuration with PFN-CT Software
+
 
 ## FANUC Robot PROFINET IO Configuration with PFN-CT Software
 

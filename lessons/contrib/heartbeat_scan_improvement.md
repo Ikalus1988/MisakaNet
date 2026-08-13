@@ -7,6 +7,8 @@ metadata:
   modified: 2026-08-04T10:19:56.150Z
 ---
 
+# Heartbeat Scan Improvement
+
 ## 问题
 
 心跳只用 `gh search prs --author` 扫描，漏掉了：

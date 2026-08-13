@@ -14,6 +14,8 @@
   "solution": "按照完整流程配置：网络连接（IP/子网/DHCP）→ 服务器配置（S8 tag/18735 端口/SM 协议）→ Logger 配置（S7 tag/18736）→ MAPPDK 程序部署 → 验证通信。",
   "verification": "1. 控制器 IP 可 ping 通；2. S8 服务器 Current State 为 STARTED；3. 外部客户端能连接 18735 端口；4. MAPPDK 程序在控制器上运行中。"
 }
+# FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup
+
 
 ## FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup
 

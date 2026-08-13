@@ -16,6 +16,8 @@ verified_date: ''
 domain_expert: ''
 ---
 
+# Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1
+
 {"title": "Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1", "domain": "go", "subdomain": "concurrency", "tags": ["deadlock", "mutex", "sync", "scheduler", "gocron"], "source": "hermes-agent", "status": "published", "confidence": "0.95", "created": "2026-07-21", "verified_date": "", "domain_expert": ""}
 
 

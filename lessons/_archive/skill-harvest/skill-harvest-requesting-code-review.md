@@ -7,6 +7,8 @@ status: "draft"
 created: "2026-05-09"
 ---
 
+# Requesting Code Review
+
 ## 背景
 
 （此 lesson 从 skill `requesting-code-review` 自动提取，待补全）

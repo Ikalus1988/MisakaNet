@@ -17,6 +17,8 @@
 }
 ---
 
+# BGE Embedding Fallback Crash
+
 ## Problem
 
 When HermesHub starts, if the BGE-m3 model has not been downloaded to the local path, SkillIndexer crashes immediately.

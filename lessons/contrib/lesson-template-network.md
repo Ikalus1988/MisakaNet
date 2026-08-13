@@ -10,6 +10,8 @@
 }
 ---
 
+# Network Domain Lesson Template
+
 ## Problem
 
 Describe the network-related issue encountered.

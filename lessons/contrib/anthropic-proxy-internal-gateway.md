@@ -9,6 +9,8 @@
 }
 ---
 
+# Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy
+
 ## 问题
 
 internal-gateway.local API 端点 (`https://api.internal-gateway.local/v1`) 只接受 OpenAI 格式 (`/v1/chat/compositions`)，不支持 Anthropic 原生格式 (`/v1/messages`)。

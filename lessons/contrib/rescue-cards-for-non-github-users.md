@@ -10,6 +10,8 @@
 }
 ---
 
+# When Lessons Are Too Heavy, Use Rescue Cards
+
 ## Problem
 
 Not every real user can read a full technical lesson, open a GitHub issue, or write a structured report. Some users only know that a zip file will not open, a PDF cannot be read, a SaaS document cannot be created, or an app upgrade failed.

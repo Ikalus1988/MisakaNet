@@ -12,6 +12,8 @@ domain_expert:
 ---
 
 
+# webMCP — Chrome's Experimental Protocol for AI Agents
+
 ## Problem
 
 Websites are designed for humans. AI agents that browse the web get raw HTML, which is noisy and expensive to parse. There's no standard way for a website to expose structured data to AI agents.

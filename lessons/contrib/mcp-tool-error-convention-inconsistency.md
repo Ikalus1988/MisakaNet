@@ -2,6 +2,8 @@
 {"title": "MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption", "domain": "mcp", "tags": ["mcp", "error_handling", "convention", "git", "commit_message"], "language": "en", "status": "published", "source": "https://dev.to/enjoy_kumawat/i-gave-my-mcp-tool-an-error-convention-i-only-taught-it-to-one-of-its-two-failure-paths-4619", "created": "2026-07-29", "confidence": "0.85"}
 ---
 
+# MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption
+
 ## Problem
 
 An MCP tool `generate_commit_message` converts git diffs into Conventional Commit messages via `claude -p`. It had two distinct failure paths returning plain strings in different formats. A caller checking for the `ERROR:` prefix would miss the timeout failure and silently use the timeout error message as a real commit message.

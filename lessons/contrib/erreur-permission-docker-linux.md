@@ -10,6 +10,8 @@ confidence: 0.9
 verified_date: 2026-07-29
 ---
 
+# Erreur de permission Docker: permission denied sur /var/run/docker.sock
+
 ## Problem
 
 This error occurs when a non-root user tries to run Docker commands on Linux without proper group membership. Every `docker` command fails with:

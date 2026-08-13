@@ -7,6 +7,8 @@ metadata:
   modified: 2026-08-04T09:43:52.372Z
 ---
 
+# Github Api Pr Submission Pitfalls
+
 ## 背景
 
 网络慢无法 clone 大仓时，可用 GitHub Contents API 直接创建分支、修改文件、提 PR。但有 4 个常见坑。

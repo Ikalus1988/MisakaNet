@@ -9,6 +9,8 @@
 }
 ---
 
+# phase 0 output gate
+
 ## 背景
 
 Agent 在 context 中看到了知识但不一定会用。即使指令写了"不可跳过"，Agent 的惯性行为是直接执行任务、跳过检索。

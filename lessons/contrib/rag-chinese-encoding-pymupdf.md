@@ -16,6 +16,8 @@
 
 
 
+# RAG Chinese Encoding with PyMuPDF
+
 ## Background
 
 When building a FANUC knowledge-base RAG system, retrieved Chinese alarm codes appeared garbled.

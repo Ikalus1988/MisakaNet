@@ -12,6 +12,8 @@ domain_expert: "Nation"
 ---
 
 
+# FANUC DO Not Found in Program — Check Reference Position
+
 ## Problem
 
 A digital output (e.g., DO[66]) is confirmed active on the robot, but searching all TP programs for "DO[66]" or "DO[" returns zero results. The output is being set somewhere, but not in any visible program code.

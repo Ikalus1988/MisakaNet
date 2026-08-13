@@ -1,4 +1,6 @@
 {"title": "Ghidra MCP Server — AI-Assisted Reverse Engineering", "domain": "mcp", "subdomain": "reverse-engineering", "tags": ["mcp", "ghidra", "reverse-engineering", "binary-analysis", "security"], "source": "github.com/LaurieWired/GhidraMCP", "status": "published", "confidence": "0.85", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+# Ghidra MCP Server — AI-Assisted Reverse Engineering
+
 
 
 ## Problem

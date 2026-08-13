@@ -9,6 +9,8 @@
 }
 ---
 
+# 注册链路设计 — Worker 只创建 Issue，其余交给 Workflow
+
 ## 背景
 
 MisakaNet 节点注册需要一条对国内外用户都通畅的链路。最初 Worker 既创建 Issue 又读写 counter.json，导致 Worker 和 register.yml 双重自增、竞态、Worker 权限过大等问题。

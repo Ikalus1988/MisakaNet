@@ -7,6 +7,8 @@ status: "draft"
 created: "2026-05-09"
 ---
 
+# Airtable
+
 ## 背景
 
 （此 lesson 从 skill `airtable` 自动提取，待补全）

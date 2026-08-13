@@ -12,6 +12,8 @@ domain_expert: ""
 ---
 
 
+# gRPC vs OpenAPI vs REST — API 协议选择指南
+
 ## Problem
 
 选择 API 协议时，REST、OpenAPI、gRPC 各有优劣，没有清晰的选择指南。

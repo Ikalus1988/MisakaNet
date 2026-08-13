@@ -7,6 +7,8 @@ status: "draft"
 created: "2026-05-09"
 ---
 
+# Self Grow Wiki Code Review
+
 ## 背景
 
 （此 lesson 从 skill `self-grow-wiki-code-review` 自动提取，待补全）
