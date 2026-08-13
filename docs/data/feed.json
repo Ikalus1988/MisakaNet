@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-08-13T03:01:36.958576+00:00",
+  "generated_at": "2026-08-13T05:09:43.467178+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(release): sync v2.17 lesson count and data index",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/996",
+      "timestamp": "2026-08-13T03:37:55Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat: add 3 more original failure-recovery lessons (git worktree recovery, escrow fee rounding, squash force-push lease)",
@@ -30,13 +37,6 @@
       "title": "test(identity): verify Identity Aura badges for all three token types",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/993",
       "timestamp": "2026-08-12T17:26:57Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs: add FAQ for setup and contributions",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/988",
-      "timestamp": "2026-08-12T10:18:42Z",
       "source": "github"
     },
     {
