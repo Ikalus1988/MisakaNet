@@ -1,18 +1,16 @@
 ---
 {
-  "title": "mergeable_state blocked does not mean failing CI",
-  "domain": "development",
-  "tags": [
-    "github",
-    "ci",
-    "pull-request",
-    "merge-queue",
-    "workflow"
-  ],
-  "status": "published",
-  "evidence_level": "E2",
-  "created": "2026-08-11 00:00:00 UTC",
-  "updated": "2026-08-11 00:00:00 UTC"
+  "\"title\"": "mergeable_state blocked does not mean failing CI\",",
+  "\"domain\"": "development\",",
+  "\"tags\"": "[",
+  "\"status\"": "published\",",
+  "\"evidence_level\"": "E2\",",
+  "\"created\"": "2026-08-11 00:00:00 UTC\",",
+  "\"updated\"": "2026-08-11 00:00:00 UTC",
+  "author": "ElevaSync Solutions",
+  "source": "manual",
+  "edited_at": "2026-08-11T03:40:00Z",
+  "merged_by": "ElevaSync Solutions"
 }
 ---
 

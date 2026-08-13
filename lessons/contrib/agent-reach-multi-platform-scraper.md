@@ -1,20 +1,20 @@
 ---
-title: Agent-Reach — Multi-Platform Internet Access for AI Agents
-domain: agent
-subdomain: tooling
-tags:
-  - agent-reach
-  - scraping
-  - reddit
-  - twitter
-  - bilibili
-  - mcp
-source: github.com/Panniantong/Agent-Reach
-status: published
-confidence: 0.85
-created: 2026-07-01
-verified_date: ''
-domain_expert: ''
+{
+  "title": "Agent-Reach — Multi-Platform Internet Access for AI Agents",
+  "domain": "agent",
+  "subdomain": "tooling",
+  "tags": "",
+  "source": "pr",
+  "status": "published",
+  "confidence": 0.85,
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-08T17:09:06+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 414
+}
 ---
 
 {"title": "Agent-Reach — Multi-Platform Internet Access for AI Agents", "domain": "agent", "subdomain": "tooling", "tags": ["agent-reach", "scraping", "reddit", "twitter", "bilibili", "mcp"], "source": "github.com/Panniantong/Agent-Reach", "status": "published", "confidence": "0.85", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}

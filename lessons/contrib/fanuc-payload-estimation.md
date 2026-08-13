@@ -1,12 +1,26 @@
 ---
-title: "FANUC Payload Estimation — Auto and Manual Load Configuration"
-domain: "fanuc"
-subdomain: "configuration"
-tags: ["payload", "load", "estimation", "tcp", "tool", "mass", "inertia", "center-of-gravity"]
-status: "published"
-source: "internal-training"
-confidence: "0.9"
-created: "2026-07-14"
+{
+  "title": "FANUC Payload Estimation — Auto and Manual Load Configuration",
+  "domain": "fanuc",
+  "subdomain": "configuration",
+  "tags": [
+    "payload",
+    "load",
+    "estimation",
+    "tcp",
+    "tool",
+    "mass",
+    "inertia",
+    "center-of-gravity"
+  ],
+  "status": "published",
+  "source": "manual",
+  "confidence": "0.9",
+  "created": "2026-07-14",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-15T10:16:28+08:00",
+  "merged_by": "zsxh1990"
+}
 ---
 
 ## Problem

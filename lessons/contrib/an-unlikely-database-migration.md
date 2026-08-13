@@ -1,12 +1,24 @@
 ---
-title: "An Unlikely Database Migration: From JSON Files to etcd"
-domain: "database-architecture"
-tags: ["database-migration", "etcd", "golang", "control-plane", "performance", "key-value-store"]
-language: "en"
-status: "published"
-source: "https://tailscale.com/blog/an-unlikely-database-migration/"
-created: "2026-07-28"
-confidence: 0.85
+{
+  "title": "An Unlikely Database Migration: From JSON Files to etcd",
+  "domain": "database-architecture",
+  "tags": [
+    "database-migration",
+    "etcd",
+    "golang",
+    "control-plane",
+    "performance",
+    "key-value-store"
+  ],
+  "language": "en",
+  "status": "published",
+  "source": "manual",
+  "created": "2026-07-28",
+  "confidence": 0.85,
+  "author": "zsxh1990",
+  "edited_at": "2026-07-29T09:18:36+08:00",
+  "merged_by": "zsxh1990"
+}
 ---
 
 ## Problem

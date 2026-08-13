@@ -48,6 +48,13 @@ def _json_result(score, doc, query: str = "", verbose: bool = False) -> dict:
         "title": doc.title,
         "domain": doc.domain,
         "tags": list(doc.tags),
+        "provenance": {
+            "author": doc.author,
+            "pr": doc.pr,
+            "source": doc.source,
+            "edited_at": doc.edited_at,
+            "merged_by": doc.merged_by,
+        },
         "score": round(float(score), 6),
         "path": path,
         "preview": preview,

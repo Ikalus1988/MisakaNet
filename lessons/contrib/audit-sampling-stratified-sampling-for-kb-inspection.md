@@ -1,14 +1,16 @@
 ---
-title: "巡检题库分层抽样策略"
-domain: "rag"
-tags:
-  - rag
-  - audit
-  - sampling
-  - quality
-  - test-bank
-confidence: 0.88
-created: "2026-05-21"
+{
+  "title": "巡检题库分层抽样策略",
+  "domain": "rag",
+  "tags": "",
+  "confidence": 0.88,
+  "created": "2026-05-21",
+  "author": "Ikalus1988",
+  "source": "pr",
+  "edited_at": "2026-07-07T15:57:50+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 373
+}
 ---
 
 ## 背景

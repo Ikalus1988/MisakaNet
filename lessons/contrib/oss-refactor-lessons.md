@@ -1,10 +1,15 @@
 ---
 {
-  "domain": "contrib",
-  "title": "oss refactor lessons",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "oss refactor lessons\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 ---{"title": "开源项目Refactoring复盘 — 从功能堆砌到减法优先", "domain": "development", "tags": ["refactor", "architecture", "lessons", "open-source", "cleanup", "focus", "repository-management"], "status": "published", "source": "deepseek", "created": "2026-05-30 04:00:00 UTC", "updated": "2026-06-14 00:00:00 UTC"}---

@@ -1,10 +1,15 @@
 ---
 {
-  "domain": "contrib",
-  "title": "wsl proxy huggingface external",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "wsl proxy huggingface external\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 ---{"title": "WSL 需要代理Setup才能Access HuggingFace 和外部网络", "domain": "devops", "subdomain": "wsl", "source": "bootstrap", "status": "published", "tags": ["project:self-grow-wiki", "severity:high", "platform:wsl", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03"}---

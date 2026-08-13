@@ -1,7 +1,13 @@
 ---
-title: "压缩包打不开？先别急，试这 3 步"
-domain: devops
-evidence_level: E1
+{
+  "title": "压缩包打不开？先别急，试这 3 步",
+  "domain": "devops",
+  "evidence_level": "E1",
+  "author": "Ikalus1988",
+  "source": "rescue",
+  "edited_at": "2026-08-13T00:39:45+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 # 压缩包打不开？先别急，试这 3 步

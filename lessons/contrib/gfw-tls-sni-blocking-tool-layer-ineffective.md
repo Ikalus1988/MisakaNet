@@ -1,19 +1,20 @@
 ---
-title: "GFW TLS SNI 阻断：工具层全部无效，只有代理能解"
-domain: "devops"
-subdomain: "network"
-tags:
-  - gfw
-  - tls-sni
-  - scraper
-  - proxy
-  - china-network
-source: "zsxh1990"
-status: "published"
-confidence: "1.0"
-created: "2026-07-01"
-domain_expert: "zsxh1990"
-verified_date: "2026-07-06"
+{
+  "title": "GFW TLS SNI 阻断：工具层全部无效，只有代理能解",
+  "domain": "devops",
+  "subdomain": "network",
+  "tags": "",
+  "source": "pr",
+  "status": "published",
+  "confidence": "1.0",
+  "created": "2026-07-01",
+  "domain_expert": "zsxh1990",
+  "verified_date": "2026-07-06",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-07T11:58:11+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 375
+}
 ---
 
 ## Problem

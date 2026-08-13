@@ -1,10 +1,15 @@
 ---
 {
-  "domain": "contrib",
-  "title": "Shell Debugging — set -x 与常见Pitfalls",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "Shell Debugging — set -x 与常见Pitfalls\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 ---{"title": "Shell Debugging — set -x 与常见Pitfalls", "domain": "development", "tags": ["shell", "bash", "debug", "script"]}---

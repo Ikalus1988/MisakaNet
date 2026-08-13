@@ -1,10 +1,17 @@
 ---
-name: cubic-ai-vs-pr-genius
-description: Cubic AI 与 PR Genius 对比——即时触发、diff 逐行、正向确认三点可借鉴
-metadata:
-  type: feedback
-  originSessionId: c8d99950-7aef-46ad-b4ce-4d0f910c86e9
-  modified: 2026-08-04T10:20:05.320Z
+{
+  "name": "cubic-ai-vs-pr-genius",
+  "description": "Cubic AI 与 PR Genius 对比——即时触发、diff 逐行、正向确认三点可借鉴",
+  "metadata": "",
+  "type": "feedback",
+  "originSessionId": "c8d99950-7aef-46ad-b4ce-4d0f910c86e9",
+  "modified": "2026-08-04T10:20:05.320Z",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-08-04T23:50:59+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 801
+}
 ---
 
 ## 背景

@@ -1,11 +1,16 @@
 ---
-title: "Search SSOT: Fixing Data Source Pollution in Static-Deployed Sites"
-domain: devops
-tags: [search, ssot, data-source, static-site, worker, github-pages, frontend]
-status: published
-source: misakanet
-created: 2026-07-10
-updated: 2026-07-10
+{
+  "title": "Search SSOT: Fixing Data Source Pollution in Static-Deployed Sites",
+  "domain": "devops",
+  "tags": "[search, ssot, data-source, static-site, worker, github-pages, frontend]",
+  "status": "published",
+  "source": "manual",
+  "created": "2026-07-10",
+  "updated": "2026-07-10",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-10T17:56:48+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 # Search SSOT: Fixing Data Source Pollution

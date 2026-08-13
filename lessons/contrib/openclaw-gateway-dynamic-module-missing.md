@@ -1,10 +1,15 @@
 ---
 {
-  "domain": "contrib",
-  "title": "openclaw gateway dynamic module missing",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "openclaw gateway dynamic module missing\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 ---{"title": "OpenClaw Gateway 动态Module Not Found — 飞书Messaging分发失败", "domain": "feishu", "subdomain": "openclaw-debug", "source": "bootstrap", "status": "published", "confidence": "1.0", "created": "2026-05-18", "tags": "node:misaka10004\", \"platform:wsl\", \"severity:critical\", \"project:misakanet"}---

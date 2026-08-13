@@ -1,13 +1,18 @@
 ---
-title: "Erreur de permission Docker: permission denied sur /var/run/docker.sock"
-domain: "devops"
-tags: [docker, linux, permission, socket, security]
-language: fr
-status: published
-source: "https://docs.docker.com/engine/install/linux-postinstall/"
-created: 2026-07-29
-confidence: 0.9
-verified_date: 2026-07-29
+{
+  "title": "Erreur de permission Docker: permission denied sur /var/run/docker.sock",
+  "domain": "devops",
+  "tags": "[docker, linux, permission, socket, security]",
+  "language": "fr",
+  "status": "published",
+  "source": "manual",
+  "created": "2026-07-29",
+  "confidence": 0.9,
+  "verified_date": "2026-07-29",
+  "author": "tarotoads-debug",
+  "edited_at": "2026-07-29T09:27:32-07:00",
+  "merged_by": "tarotoads-debug"
+}
 ---
 
 ## Problem

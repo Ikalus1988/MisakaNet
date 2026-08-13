@@ -1,5 +1,11 @@
 ---
-{"title": "Data Quality Fix: Always Keep Three Layers (DB + ETL + Query)", "domain": "data-engineering", "tags": ["data-quality", "etl", "sql", "normalization", "defense-in-depth"], "status": "published", "evidence_level": "E2", "created": "2026-08-06", "updated": "2026-08-06", "source": "b2-robot-utilization project — FE/TGO line name normalization", "verified_date": "2026-08-06"}
+{
+  "{\"title\"": "Data Quality Fix: Always Keep Three Layers (DB + ETL + Query)\", \"domain\": \"data-engineering\", \"tags\": [\"data-quality\", \"etl\", \"sql\", \"normalization\", \"defense-in-depth\"], \"status\": \"published\", \"evidence_level\": \"E2\", \"created\": \"2026-08-06\", \"updated\": \"2026-08-06\", \"source\": \"b2-robot-utilization project — FE/TGO line name normalization\", \"verified_date\": \"2026-08-06\"}",
+  "author": "Ikalus1988",
+  "source": "manual",
+  "edited_at": "2026-08-11T21:14:18+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 # Data Quality Fix: Always Keep Three Layers (DB + ETL + Query)

@@ -1,14 +1,26 @@
 ---
-title: "Redis → PostgreSQL 替换 — 缓存/PubSub/队列统一"
-domain: "ops"
-subdomain: "database"
-tags: ["redis", "postgresql", "caching", "pubsub", "database", "performance"]
-source: "dev.to"
-status: "published"
-confidence: "0.9"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+{
+  "title": "Redis → PostgreSQL 替换 — 缓存/PubSub/队列统一",
+  "domain": "ops",
+  "subdomain": "database",
+  "tags": [
+    "redis",
+    "postgresql",
+    "caching",
+    "pubsub",
+    "database",
+    "performance"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": "0.9",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-04T11:38:13+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 

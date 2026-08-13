@@ -1,14 +1,25 @@
 ---
-title: "MCP — AI Agent 工具调用标准化协议"
-domain: "mcp"
-subdomain: "standardization"
-tags: ["mcp", "agent", "tool-calling", "standardization", "protocol"]
-source: "segmentfault.com"
-status: "published"
-confidence: "0.85"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+{
+  "title": "MCP — AI Agent 工具调用标准化协议",
+  "domain": "mcp",
+  "subdomain": "standardization",
+  "tags": [
+    "mcp",
+    "agent",
+    "tool-calling",
+    "standardization",
+    "protocol"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": "0.85",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-04T11:38:13+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 

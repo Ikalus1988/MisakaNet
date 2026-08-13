@@ -37,6 +37,7 @@ if _SCRIPTS_DIR.exists() and str(_SCRIPTS_DIR) not in sys.path:
 
 REPO = "Ikalus1988/MisakaNet"
 NODE_ID = os.environ.get("MISAKANET_NODE_ID", "hermes_wsl2")
+PROVENANCE_SOURCES = {"intake", "pr", "manual", "rescue"}
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 if str(REPO_ROOT) not in sys.path:
@@ -131,16 +132,21 @@ def _render_lesson(title, domain, tags, content, source=NODE_ID, status="publish
     filename = f"{slug}.md"
 
     now = datetime.now(timezone.utc)
+    normalized_source = source if source in PROVENANCE_SOURCES else "intake"
+    author = os.environ.get("MISAKANET_AUTHOR", NODE_ID)
     frontmatter = {
         "title": title,
         "domain": domain,
-        "source": source,
+        "source": normalized_source,
+        "author": author,
         "status": status,
         # New lessons start self-reported (#786); promotion is a maintainer action.
         "evidence_level": DEFAULT_EVIDENCE_LEVEL,
         "tags": tags,
         "created": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
         "updated": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "edited_at": now.isoformat(),
+        "merged_by": os.environ.get("MISAKANET_MERGED_BY", author),
     }
 
     body = f"---\n{json.dumps(frontmatter, ensure_ascii=False)}\n---\n\n{content}\n"
@@ -160,16 +166,21 @@ def write_lesson(title, domain, tags, content, source=NODE_ID, status="published
     mode = "更新" if filepath.exists() else "新建"
     existing_content = filepath.read_text(encoding="utf-8") if filepath.exists() else ""
 
+    normalized_source = source if source in PROVENANCE_SOURCES else "intake"
+    author = os.environ.get("MISAKANET_AUTHOR", NODE_ID)
     frontmatter = {
         "title": title,
         "domain": domain,
-        "source": source,
+        "source": normalized_source,
+        "author": author,
         "status": status,
         # New lessons start self-reported (#786); promotion is a maintainer action.
         "evidence_level": DEFAULT_EVIDENCE_LEVEL,
         "tags": tags,
         "created": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
         "updated": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "edited_at": now.isoformat(),
+        "merged_by": os.environ.get("MISAKANET_MERGED_BY", author),
     }
 
     body = f"---\n {json.dumps(frontmatter, ensure_ascii=False)}\n ---\n\n{content}\n"

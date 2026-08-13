@@ -1,16 +1,17 @@
 ---
-title: "MCP Server 测试 — 直接调用 handler 跳过 stdio 传输"
-domain: development
-tags:
-  - mcp
-  - testing
-  - json-rpc
-  - python
-  - unit-test
-status: published
-source: practical-experience
-confidence: 0.85
-created: 2026-07-07
+{
+  "title": "MCP Server 测试 — 直接调用 handler 跳过 stdio 传输",
+  "domain": "development",
+  "tags": "",
+  "status": "published",
+  "source": "pr",
+  "confidence": 0.85,
+  "created": "2026-07-07",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-08T17:09:01+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 415
+}
 ---
 
 ## Problem

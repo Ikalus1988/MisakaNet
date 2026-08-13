@@ -1,11 +1,16 @@
 ---
 {
-  "domain": "contrib",
-  "title": "OpenAI 兼容 API 的通用调用格式",
-  "verification": "metadata-normalized",
-  "{\"title\"": "OpenAI 兼容 API 的通用调用格式\", \"domain\": \"development\", \"tags\": [\"api\", \"openai\", \"llm\", \"inference\", \"chat\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "OpenAI 兼容 API 的通用调用格式\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"{\\\"title\\\"\"": "OpenAI 兼容 API 的通用调用格式\\\", \\\"domain\\\": \\\"development\\\", \\\"tags\\\": [\\\"api\\\", \\\"openai\\\", \\\"llm\\\", \\\"inference\\\", \\\"chat\\\"], \\\"domain_expert\\\": \\\"unknown\\\"}\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 

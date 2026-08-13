@@ -1,10 +1,15 @@
 ---
 {
-  "domain": "contrib",
-  "title": "MisakaNet --heal UX Gap — Suggested queue_lesson.py Command Uses Wrong Flag",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "MisakaNet --heal UX Gap — Suggested queue_lesson.py Command Uses Wrong Flag\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 ---{"title": "MisakaNet --heal UX Gap — Suggested queue_lesson.py Command Uses Wrong Flag (--file not -f)", "domain": "development", "scope": "broad", "tags": ["misakanet", "heal", "ux", "queue-lesson", "cli", "argparse", "fixture", "openclaw", "flag-mismatch"], "status": "published", "confidence": "0.9", "source": "Misaka10004", "created": "2026-06-23", "updated": "2026-06-23"}---

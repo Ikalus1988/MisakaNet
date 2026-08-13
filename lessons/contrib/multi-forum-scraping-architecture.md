@@ -1,4 +1,26 @@
-{"title": "Multi-Forum Scraping Architecture — API vs Playwright", "domain": "ops", "subdomain": "scraping", "tags": ["scraping", "playwright", "api", "forum", "automation", "data-collection"], "source": "practical-experience", "status": "published", "confidence": "0.9", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+{
+  "title": "Multi-Forum Scraping Architecture — API vs Playwright",
+  "domain": "ops",
+  "subdomain": "scraping",
+  "tags": [
+    "scraping",
+    "playwright",
+    "api",
+    "forum",
+    "automation",
+    "data-collection"
+  ],
+  "source": "pr",
+  "status": "published",
+  "confidence": "0.9",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-02T16:15:59+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 277
+}
 
 
 ## Problem

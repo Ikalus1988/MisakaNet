@@ -1,14 +1,27 @@
 ---
-title: FANUC Profinet 32-bit Real Value Transfer Without KAREL
-domain: fanuc
-subdomain: profinet
-tags: ["profinet", "real-value", "32-bit", "gi-go", "plc-communication", "scara"]
-source: robot-forum.com
-status: published
-confidence: 0.85
-created: 2026-07-01
-verified_date: 
-domain_expert: 
+{
+  "title": "FANUC Profinet 32-bit Real Value Transfer Without KAREL",
+  "domain": "fanuc",
+  "subdomain": "profinet",
+  "tags": [
+    "profinet",
+    "real-value",
+    "32-bit",
+    "gi-go",
+    "plc-communication",
+    "scara"
+  ],
+  "source": "pr",
+  "status": "published",
+  "confidence": 0.85,
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-12T12:28:29+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 351
+}
 ---
 
 

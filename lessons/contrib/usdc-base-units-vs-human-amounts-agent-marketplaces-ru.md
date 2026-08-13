@@ -1,16 +1,20 @@
 ---
 {
-  "title": "USDC: base units vs human amounts — агент платит 1000x или думает, что 1000 USDC это $1000",
-  "domain": "crypto-ops",
-  "tags": ["usdc", "base-units", "decimals", "taskmarket", "x402", "agent", "marketplace", "eip-712"],
-  "status": "published",
-  "lang": "ru",
-  "language": "ru",
-  "source": "https://taskmarket.dev/skill.md + live Base wallet ops 2026-07-30",
-  "created": "2026-07-30",
-  "updated": "2026-07-30",
-  "verified_date": "2026-07-30",
-  "confidence": "0.93"
+  "\"title\"": "USDC: base units vs human amounts — агент платит 1000x или думает, что 1000 USDC это $1000\",",
+  "\"domain\"": "crypto-ops\",",
+  "\"tags\"": "[\"usdc\", \"base-units\", \"decimals\", \"taskmarket\", \"x402\", \"agent\", \"marketplace\", \"eip-712\"],",
+  "\"status\"": "published\",",
+  "\"lang\"": "ru\",",
+  "\"language\"": "ru\",",
+  "\"source\"": "https://taskmarket.dev/skill.md + live Base wallet ops 2026-07-30\",",
+  "\"created\"": "2026-07-30\",",
+  "\"updated\"": "2026-07-30\",",
+  "\"verified_date\"": "2026-07-30\",",
+  "\"confidence\"": "0.93",
+  "author": "Brok Malkotsis",
+  "source": "manual",
+  "edited_at": "2026-07-30T02:53:42Z",
+  "merged_by": "Brok Malkotsis"
 }
 ---
 

@@ -1,21 +1,18 @@
 ---
 {
-  "title": "AI Agent Contributor Engagement — Lightweight Retention Strategy",
-  "domain": "devops",
-  "source": "codewhale",
-  "status": "published",
-  "tags": [
-    "open-source",
-    "community",
-    "contributor-retention",
-    "ai-agent",
-    "misakanet",
-    "social"
-  ],
-  "created": "2026-06-10 00:00:00 UTC",
-  "updated": "2026-06-10 00:00:00 UTC",
-  "domain_expert": "codewhale",
-  "verified_date": "2026-06-10"
+  "\"title\"": "AI Agent Contributor Engagement — Lightweight Retention Strategy\",",
+  "\"domain\"": "devops\",",
+  "\"source\"": "codewhale\",",
+  "\"status\"": "published\",",
+  "\"tags\"": "[",
+  "\"created\"": "2026-06-10 00:00:00 UTC\",",
+  "\"updated\"": "2026-06-10 00:00:00 UTC\",",
+  "\"domain_expert\"": "codewhale\",",
+  "\"verified_date\"": "2026-06-10",
+  "author": "Ikalus1988",
+  "source": "manual",
+  "edited_at": "2026-06-27T23:35:55+08:00",
+  "merged_by": "Ikalus1988"
 }
 ---
 

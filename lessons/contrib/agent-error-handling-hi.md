@@ -1,12 +1,23 @@
 ---
-title: "एजेंट त्रुटि हैंडलिंग — पुनर्प्रयास और फॉलबैक पैटर्न"
-domain: agents
-tags: ["agent", "error-handling", "hindi", "resilience", "tutorial"]
-source: "practical-experience"
-status: published
-confidence: 0.85
-created: 2026-08-01
-lang: hi
+{
+  "title": "एजेंट त्रुटि हैंडलिंग — पुनर्प्रयास और फॉलबैक पैटर्न",
+  "domain": "agents",
+  "tags": [
+    "agent",
+    "error-handling",
+    "hindi",
+    "resilience",
+    "tutorial"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": 0.85,
+  "created": "2026-08-01",
+  "lang": "hi",
+  "author": "zsxh1990",
+  "edited_at": "2026-08-02T00:17:21+08:00",
+  "merged_by": "zsxh1990"
+}
 ---
 
 ## समस्या

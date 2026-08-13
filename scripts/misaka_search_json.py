@@ -83,6 +83,12 @@ def search(query: str, top: int = 5, include_reference: bool = True) -> list[dic
                 "domain": doc.domain,
                 "status": doc.status,
                 "source": doc.source,
+                "author": doc.author,
+                "provenance": {
+                    "pr": doc.pr,
+                    "edited_at": doc.edited_at,
+                    "merged_by": doc.merged_by,
+                },
                 "snippet": make_snippet(doc.content, query),
             }
         )

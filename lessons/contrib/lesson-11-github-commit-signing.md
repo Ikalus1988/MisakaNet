@@ -1,14 +1,26 @@
 ---
-title: "GitHub Commit Signing — GPG 防止提交伪造"
-domain: "ops"
-subdomain: "security"
-tags: ["git", "github", "gpg", "security", "commit-signing", "impersonation"]
-source: "dev.to"
-status: "published"
-confidence: "0.95"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+{
+  "title": "GitHub Commit Signing — GPG 防止提交伪造",
+  "domain": "ops",
+  "subdomain": "security",
+  "tags": [
+    "git",
+    "github",
+    "gpg",
+    "security",
+    "commit-signing",
+    "impersonation"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": "0.95",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-04T11:38:13+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 

@@ -277,7 +277,7 @@ def _generate_draft(tombstone: dict, source_file: str = "", ai_hint: str = "") -
         "domain": domain,
         "tags": ["draft", "auto-generated", "agent-task", f"exit-code-{exit_code}"],
         "status": "draft",
-        "source": "fatal-guard",
+        "source": "rescue",
         "node_id": node,
         "tombstone_hash": tombstone_hash,
         "tombstone_ref": source_file if source_file else f"tombstone:{tombstone_hash}",

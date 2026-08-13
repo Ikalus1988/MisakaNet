@@ -1,18 +1,16 @@
 ---
 {
-  "title": "Banking-style escrow fee estimate has a per-provider rounding disparity",
-  "domain": "development",
-  "tags": [
-    "payments",
-    "calculation",
-    "rounding",
-    "precision",
-    "ledger"
-  ],
-  "status": "published",
-  "evidence_level": "E2",
-  "created": "2026-08-11 00:00:00 UTC",
-  "updated": "2026-08-11 00:00:00 UTC"
+  "\"title\"": "Banking-style escrow fee estimate has a per-provider rounding disparity\",",
+  "\"domain\"": "development\",",
+  "\"tags\"": "[",
+  "\"status\"": "published\",",
+  "\"evidence_level\"": "E2\",",
+  "\"created\"": "2026-08-11 00:00:00 UTC\",",
+  "\"updated\"": "2026-08-11 00:00:00 UTC",
+  "author": "ElevaSync Solutions",
+  "source": "manual",
+  "edited_at": "2026-08-11T03:55:00Z",
+  "merged_by": "ElevaSync Solutions"
 }
 ---
 

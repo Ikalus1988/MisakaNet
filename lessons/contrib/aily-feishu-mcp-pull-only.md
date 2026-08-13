@@ -1,11 +1,16 @@
 ---
 {
-  "domain": "contrib",
-  "title": "aily feishu mcp pull only",
-  "verification": "metadata-normalized",
-  "{\"title\"": "aily 飞书 MCP 通道：只能拉取不能推送\", \"domain\": \"feishu\", \"subdomain\": \"mcp-capability\", \"source\": \"bootstrap\", \"status\": \"published\", \"confidence\": \"0.7\", \"created\": \"2026-05-03\", \"domain_expert\": \"bootstrap\", \"verified_date\": \"2026-05-03\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "aily feishu mcp pull only\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"{\\\"title\\\"\"": "aily 飞书 MCP 通道：只能拉取不能推送\\\", \\\"domain\\\": \\\"feishu\\\", \\\"subdomain\\\": \\\"mcp-capability\\\", \\\"source\\\": \\\"bootstrap\\\", \\\"status\\\": \\\"published\\\", \\\"confidence\\\": \\\"0.7\\\", \\\"created\\\": \\\"2026-05-03\\\", \\\"domain_expert\\\": \\\"bootstrap\\\", \\\"verified_date\\\": \\\"2026-05-03\\\"}\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 

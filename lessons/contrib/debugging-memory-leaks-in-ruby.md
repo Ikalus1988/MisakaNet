@@ -1,12 +1,17 @@
 ---
-title: Debugging memory leaks in Ruby
-domain: Ruby/Performance
-tags: [memory-leaks, debugging, Ruby, Rails, heap-dump, ObjectSpace]
-language: en
-status: published
-source: https://samsaffron.com/archive/2015/03/31/debugging-memory-leaks-in-ruby
-created: 2026-07-28
-confidence: 0.85
+{
+  "title": "Debugging memory leaks in Ruby",
+  "domain": "Ruby/Performance",
+  "tags": "[memory-leaks, debugging, Ruby, Rails, heap-dump, ObjectSpace]",
+  "language": "en",
+  "status": "published",
+  "source": "manual",
+  "created": "2026-07-28",
+  "confidence": 0.85,
+  "author": "zsxh1990",
+  "edited_at": "2026-07-29T09:18:36+08:00",
+  "merged_by": "zsxh1990"
+}
 ---
 
 ## Problem

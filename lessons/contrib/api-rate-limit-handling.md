@@ -1,12 +1,15 @@
 ---
-title: "API 请求限流 (Rate Limit) 处理方案"
-domain: "devops"
-tags:
-  - api
-  - rate-limit
-  - retry
-  - "429"
-created: "2026-05-21"
+{
+  "title": "API 请求限流 (Rate Limit) 处理方案",
+  "domain": "devops",
+  "tags": "",
+  "created": "2026-05-21",
+  "author": "Ikalus1988",
+  "source": "pr",
+  "edited_at": "2026-07-07T15:57:50+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 373
+}
 ---
 
 ## 背景

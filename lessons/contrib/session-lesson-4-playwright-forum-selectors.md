@@ -1,14 +1,26 @@
 ---
-title: Playwright Forum Selectors — WoltLab/IPS/Common Patterns
-domain: ops
-subdomain: scraping
-tags: ["playwright", "scraping", "selectors", "forum", "automation"]
-source: practical-experience
-status: published
-confidence: 0.85
-created: 2026-07-02
-verified_date: 
-domain_expert: 
+{
+  "title": "Playwright Forum Selectors — WoltLab/IPS/Common Patterns",
+  "domain": "ops",
+  "subdomain": "scraping",
+  "tags": [
+    "playwright",
+    "scraping",
+    "selectors",
+    "forum",
+    "automation"
+  ],
+  "source": "pr",
+  "status": "published",
+  "confidence": 0.85,
+  "created": "2026-07-02",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-12T12:28:29+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 351
+}
 ---
 
 ## Problem

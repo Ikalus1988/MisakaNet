@@ -1,14 +1,27 @@
 ---
-title: Forum Accessibility Testing — Systematic Reachability Check
-domain: ops
-subdomain: scraping
-tags: ["scraping", "accessibility", "forum", "testing", "network", "automation"]
-source: practical-experience
-status: published
-confidence: 0.9
-created: 2026-07-02
-verified_date: 
-domain_expert: 
+{
+  "title": "Forum Accessibility Testing — Systematic Reachability Check",
+  "domain": "ops",
+  "subdomain": "scraping",
+  "tags": [
+    "scraping",
+    "accessibility",
+    "forum",
+    "testing",
+    "network",
+    "automation"
+  ],
+  "source": "pr",
+  "status": "published",
+  "confidence": 0.9,
+  "created": "2026-07-02",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-12T12:28:29+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 351
+}
 ---
 
 ## Problem

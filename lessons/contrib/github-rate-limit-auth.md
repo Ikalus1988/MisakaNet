@@ -1,18 +1,16 @@
 ---
 {
-  "title": "GitHub rate limiting hitting unauthenticated searches during automation",
-  "domain": "network",
-  "tags": [
-    "github",
-    "rate-limit",
-    "api",
-    "automation",
-    "token"
-  ],
-  "status": "published",
-  "evidence_level": "E2",
-  "created": "2026-08-11 00:00:00 UTC",
-  "updated": "2026-08-11 00:00:00 UTC"
+  "\"title\"": "GitHub rate limiting hitting unauthenticated searches during automation\",",
+  "\"domain\"": "network\",",
+  "\"tags\"": "[",
+  "\"status\"": "published\",",
+  "\"evidence_level\"": "E2\",",
+  "\"created\"": "2026-08-11 00:00:00 UTC\",",
+  "\"updated\"": "2026-08-11 00:00:00 UTC",
+  "author": "ElevaSync Solutions",
+  "source": "manual",
+  "edited_at": "2026-08-11T03:15:00Z",
+  "merged_by": "ElevaSync Solutions"
 }
 ---
 

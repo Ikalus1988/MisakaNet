@@ -2,14 +2,25 @@
   "title": "Feishu Block API returns code=0 but creates zero blocks under rate limiting",
   "domain": "feishu",
   "subdomain": "block-api",
-  "tags": ["feishu", "block-api", "rate-limit", "false-success", "batch-write", "retry"],
+  "tags": [
+    "feishu",
+    "block-api",
+    "rate-limit",
+    "false-success",
+    "batch-write",
+    "retry"
+  ],
   "status": "published",
   "confidence": "0.9",
   "created": "2026-07-06",
   "updated": "2026-07-06",
-  "source": "zsxh1990",
+  "source": "pr",
   "verified_date": "2026-07-06",
-  "domain_expert": "zsxh1990"
+  "domain_expert": "zsxh1990",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-06T15:55:29+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 359
 }
 
 # Feishu Block API returns code=0 but creates zero blocks under rate limiting

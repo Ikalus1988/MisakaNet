@@ -1,7 +1,13 @@
 ---
-title: "Testimonio: MisakaNet me ayudo a resolver ModuleNotFoundError"
-domain: devops
-evidence_level: E1
+{
+  "title": "Testimonio: MisakaNet me ayudo a resolver ModuleNotFoundError",
+  "domain": "devops",
+  "evidence_level": "E1",
+  "author": "Ikalus1988",
+  "source": "manual",
+  "edited_at": "2026-08-13T00:39:45+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 # Testimonio: MisakaNet me ayudo a resolver ModuleNotFoundError

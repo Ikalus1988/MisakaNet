@@ -99,7 +99,11 @@ def interactive():
     fix = _input_or_default("  3. 怎么修复的")
     verify = _input_or_default("  4. 怎么验证修复结果")
 
-    source = os.environ.get("MISAKANET_NODE_ID", "manual")
+    source = os.environ.get("MISAKANET_SOURCE", "manual")
+    if source not in {"intake", "pr", "manual", "rescue"}:
+        source = "manual"
+    author = os.environ.get("MISAKANET_AUTHOR", "unknown")
+    merged_by = os.environ.get("MISAKANET_MERGED_BY", author)
     now = datetime.now(timezone.utc)
 
     frontmatter = {
@@ -110,7 +114,11 @@ def interactive():
         "tags": tags,
         "created": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
         "updated": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "edited_at": now.isoformat(),
+        "merged_by": merged_by,
     }
+    if author:
+        frontmatter["author"] = author
 
     body = f"""---
 {json.dumps(frontmatter, ensure_ascii=False)}
@@ -161,7 +169,11 @@ def interactive():
 
 def batch(title: str, domain: str, content: str, tags: list[str] = None):
     """非交互式快速创建，适合 agent 调用。"""
-    source = os.environ.get("MISAKANET_NODE_ID", "agent")
+    source = os.environ.get("MISAKANET_SOURCE", "manual")
+    if source not in {"intake", "pr", "manual", "rescue"}:
+        source = "manual"
+    author = os.environ.get("MISAKANET_AUTHOR", "unknown")
+    merged_by = os.environ.get("MISAKANET_MERGED_BY", author)
     now = datetime.now(timezone.utc)
 
     frontmatter = {
@@ -172,7 +184,11 @@ def batch(title: str, domain: str, content: str, tags: list[str] = None):
         "tags": tags or [],
         "created": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
         "updated": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "edited_at": now.isoformat(),
+        "merged_by": merged_by,
     }
+    if author:
+        frontmatter["author"] = author
 
     body = f"""---
 {json.dumps(frontmatter, ensure_ascii=False)}

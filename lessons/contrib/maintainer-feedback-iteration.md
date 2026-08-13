@@ -1,12 +1,16 @@
 ---
 {
-  "domain": "contrib",
-  "title": "Maintainer Feedback Iteration — Address Blockers, Not Just Comments",
-  "tags": ["contrib", "maintainer", "feedback", "iteration", "pr"],
-  "status": "draft",
-  "source": "Multiple PR review cycles",
-  "created": "2026-07-15",
-  "confidence": "0.95"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "Maintainer Feedback Iteration — Address Blockers, Not Just Comments\",",
+  "\"tags\"": "[\"contrib\", \"maintainer\", \"feedback\", \"iteration\", \"pr\"],",
+  "\"status\"": "draft\",",
+  "\"source\"": "Multiple PR review cycles\",",
+  "\"created\"": "2026-07-15\",",
+  "\"confidence\"": "0.95",
+  "author": "zsxh1990",
+  "source": "intake",
+  "edited_at": "2026-07-15T19:31:51+08:00",
+  "merged_by": "zsxh1990"
 }
 ---
 

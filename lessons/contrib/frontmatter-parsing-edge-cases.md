@@ -1,4 +1,24 @@
-{"title": "Frontmatter Parsing Edge Cases — Silent Failures and Data Loss", "domain": "devops", "source": "MisakaNet validate_lessons.py testing", "status": "draft", "tags": ["frontmatter", "parsing", "validation", "edge-cases", "data-loss"], "created": "2026-07-10 00:00:00 UTC", "updated": "2026-07-10 00:00:00 UTC", "confidence": "0.95", "verified_date": "2026-07-10"}
+{
+  "title": "Frontmatter Parsing Edge Cases — Silent Failures and Data Loss",
+  "domain": "devops",
+  "source": "pr",
+  "status": "draft",
+  "tags": [
+    "frontmatter",
+    "parsing",
+    "validation",
+    "edge-cases",
+    "data-loss"
+  ],
+  "created": "2026-07-10 00:00:00 UTC",
+  "updated": "2026-07-10 00:00:00 UTC",
+  "confidence": "0.95",
+  "verified_date": "2026-07-10",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-12T12:28:08+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 267
+}
 
 ## Verification
 

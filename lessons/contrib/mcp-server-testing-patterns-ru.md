@@ -1,12 +1,23 @@
 ---
-title: "Паттерны тестирования MCP серверов — прямой вызов обработчика"
-domain: development
-tags: ["mcp", "testing", "russian", "agent", "tutorial"]
-source: "practical-experience"
-status: published
-confidence: 0.85
-created: 2026-08-01
-lang: ru
+{
+  "title": "Паттерны тестирования MCP серверов — прямой вызов обработчика",
+  "domain": "development",
+  "tags": [
+    "mcp",
+    "testing",
+    "russian",
+    "agent",
+    "tutorial"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": 0.85,
+  "created": "2026-08-01",
+  "lang": "ru",
+  "author": "zsxh1990",
+  "edited_at": "2026-08-02T00:17:21+08:00",
+  "merged_by": "zsxh1990"
+}
 ---
 
 ## Проблема

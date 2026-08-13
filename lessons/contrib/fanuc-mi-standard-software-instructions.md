@@ -1,12 +1,30 @@
 ---
-title: "FANUC MI Standard Software — Complete Instruction Reference (MI01-MI22)"
-domain: "fanuc"
-subdomain: "tp-programming"
-tags: ["mi-standard", "mi01-cmn", "mi02-tch", "mi04-ssw", "mi08-dsp", "mi11-apl", "mi14-spr", "mi22-fds", "automotive", "welding", "gluing", "riveting"]
-status: "published"
-source: "internal-training"
-confidence: "0.9"
-created: "2026-07-14"
+{
+  "title": "FANUC MI Standard Software — Complete Instruction Reference (MI01-MI22)",
+  "domain": "fanuc",
+  "subdomain": "tp-programming",
+  "tags": [
+    "mi-standard",
+    "mi01-cmn",
+    "mi02-tch",
+    "mi04-ssw",
+    "mi08-dsp",
+    "mi11-apl",
+    "mi14-spr",
+    "mi22-fds",
+    "automotive",
+    "welding",
+    "gluing",
+    "riveting"
+  ],
+  "status": "published",
+  "source": "manual",
+  "confidence": "0.9",
+  "created": "2026-07-14",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-15T10:16:28+08:00",
+  "merged_by": "zsxh1990"
+}
 ---
 
 ## Problem

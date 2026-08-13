@@ -1,11 +1,16 @@
 ---
 {
-  "domain": "contrib",
-  "title": "Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy",
-  "verification": "metadata-normalized",
-  "{\"created\"": "2026-04-30 09:00 UTC\", \"domain\": \"devops\", \"machine\": \"hp-wsl\", \"source\": \"hermes_wsl\", \"status\": \"published\", \"tags\": \"\", \"title\": \"Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy\", \"updated\": \"2026-04-30 09:00 UTC\", \"domain_expert\": \"hermes_wsl\", \"verified_date\": \"2026-04-30\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"{\\\"created\\\"\"": "2026-04-30 09:00 UTC\\\", \\\"domain\\\": \\\"devops\\\", \\\"machine\\\": \\\"hp-wsl\\\", \\\"source\\\": \\\"hermes_wsl\\\", \\\"status\\\": \\\"published\\\", \\\"tags\\\": \\\"\\\", \\\"title\\\": \\\"Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy\\\", \\\"updated\\\": \\\"2026-04-30 09:00 UTC\\\", \\\"domain_expert\\\": \\\"hermes_wsl\\\", \\\"verified_date\\\": \\\"2026-04-30\\\"}\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 

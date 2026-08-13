@@ -41,6 +41,7 @@ EXCLUDE_DIRS = {
 NON_LESSON_DIRS = {
     "en", "hi", "id", "ru", "tr", "vi", "zh",
 }
+PROVENANCE_SOURCES = {"intake", "pr", "manual", "rescue"}
 
 
 def is_lesson_file(file_path: Path, lessons_dir: Path) -> bool:
@@ -98,6 +99,13 @@ def parse_frontmatter(content: str) -> tuple[dict | None, int]:
         end_idx = content.find("---", 3)
         if end_idx > 0:
             yaml_str = content[3:end_idx].strip()
+            try:
+                parsed = json.loads(yaml_str)
+                if isinstance(parsed, dict):
+                    body_start = content[:end_idx].count("\n") + 1
+                    return parsed, body_start
+            except json.JSONDecodeError:
+                pass
             # Simple YAML parsing (key: value pairs)
             data = {}
             for line in yaml_str.split("\n"):
@@ -130,6 +138,38 @@ def check_frontmatter(content: str, file_path: Path) -> list[dict[str, str]]:
             "severity": "high",
             "file": str(file_path),
             "message": "No frontmatter found (expected YAML --- or JSON {})"
+        })
+    return issues
+
+
+def check_provenance(content: str, file_path: Path) -> list[dict[str, str]]:
+    """Require an auditable provenance tuple on published lessons."""
+    frontmatter, _ = parse_frontmatter(content)
+    if not frontmatter or frontmatter.get("status") != "published":
+        return []
+    issues = []
+    source = str(frontmatter.get("source", "")).strip().lower()
+    if source not in PROVENANCE_SOURCES:
+        issues.append({
+            "rule": "invalid_provenance_source",
+            "severity": "medium",
+            "file": str(file_path),
+            "message": "Published lesson needs source=intake|pr|manual|rescue",
+        })
+    for field in ("author", "edited_at", "merged_by"):
+        if not str(frontmatter.get(field, "")).strip():
+            issues.append({
+                "rule": f"missing_{field}",
+                "severity": "medium",
+                "file": str(file_path),
+                "message": f"Published lesson is missing provenance field '{field}'",
+            })
+    if source == "pr" and not str(frontmatter.get("pr", "")).strip():
+        issues.append({
+            "rule": "missing_pr",
+            "severity": "medium",
+            "file": str(file_path),
+            "message": "source=pr requires a PR number or URL",
         })
     return issues
 
@@ -250,6 +290,7 @@ def lint_lesson(file_path: Path, lessons_dir: Path) -> list[dict[str, str]]:
     content = file_path.read_text(encoding="utf-8")
     issues = []
     issues.extend(check_frontmatter(content, file_path))
+    issues.extend(check_provenance(content, file_path))
     issues.extend(check_title(content, file_path))
     issues.extend(check_length(content, file_path))
     issues.extend(check_links(content, file_path, lessons_dir))

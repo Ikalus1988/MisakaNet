@@ -1,13 +1,18 @@
 ---
-title: "SSH host key verification failed when connecting to a remote server"
-domain: "devops"
-tags: [ssh, host-key, verification, remote, security]
-language: ja
-status: published
-source: "https://docs.github.com/en/authentication/troubleshooting-ssh/error-host-key-verification-failed"
-created: 2026-07-29
-confidence: 0.9
-verified_date: 2026-07-29
+{
+  "title": "SSH host key verification failed when connecting to a remote server",
+  "domain": "devops",
+  "tags": "[ssh, host-key, verification, remote, security]",
+  "language": "ja",
+  "status": "published",
+  "source": "manual",
+  "created": "2026-07-29",
+  "confidence": 0.9,
+  "verified_date": "2026-07-29",
+  "author": "tarotoads-debug",
+  "edited_at": "2026-07-29T09:32:01-07:00",
+  "merged_by": "tarotoads-debug"
+}
 ---
 
 ## Problem

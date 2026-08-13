@@ -1,20 +1,18 @@
 ---
 {
-  "title": "PR Cleanup SOP — Stale/Duplicate/Resolved PR Disposition",
-  "domain": "devops",
-  "tags": [
-    "github-actions",
-    "pr-management",
-    "cleanup",
-    "maintenance",
-    "sop"
-  ],
-  "status": "published",
-  "source": "codewhale",
-  "created": "2026-06-13 00:00:00 UTC",
-  "updated": "2026-06-13 00:00:00 UTC",
-  "domain_expert": "codewhale",
-  "verified_date": "2026-06-13"
+  "\"title\"": "PR Cleanup SOP — Stale/Duplicate/Resolved PR Disposition\",",
+  "\"domain\"": "devops\",",
+  "\"tags\"": "[",
+  "\"status\"": "published\",",
+  "\"source\"": "codewhale\",",
+  "\"created\"": "2026-06-13 00:00:00 UTC\",",
+  "\"updated\"": "2026-06-13 00:00:00 UTC\",",
+  "\"domain_expert\"": "codewhale\",",
+  "\"verified_date\"": "2026-06-13",
+  "author": "Ikalus1988",
+  "source": "pr",
+  "edited_at": "2026-07-02T10:01:58+08:00",
+  "merged_by": "Ikalus1988"
 }
 ---
 

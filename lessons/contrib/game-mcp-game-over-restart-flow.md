@@ -1,11 +1,16 @@
 ---
 {
-  "domain": "contrib",
-  "title": "Game MCP: GAME OVER Restart Flow",
-  "verification": "metadata-normalized",
-  "{\"title\"": "Game MCP: GAME OVER Restart Flow\", \"domain\": \"mcp\", \"source\": \"hanged-man\", \"status\": \"published\", \"domain_expert\": \"hanged-man\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "Game MCP: GAME OVER Restart Flow\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"{\\\"title\\\"\"": "Game MCP: GAME OVER Restart Flow\\\", \\\"domain\\\": \\\"mcp\\\", \\\"source\\\": \\\"hanged-man\\\", \\\"status\\\": \\\"published\\\", \\\"domain_expert\\\": \\\"hanged-man\\\"}\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 

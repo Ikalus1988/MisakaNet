@@ -1,14 +1,26 @@
 ---
-title: "FANUC DO Not Found in Program — Check Reference Position"
-domain: "fanuc"
-subdomain: "troubleshooting"
-tags: ["do", "digital-output", "reference-position", "background-logic", "space-function", "search"]
-source: "robot-forum.com"
-status: "published"
-confidence: "0.9"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: "Nation"
+{
+  "title": "FANUC DO Not Found in Program — Check Reference Position",
+  "domain": "fanuc",
+  "subdomain": "troubleshooting",
+  "tags": [
+    "do",
+    "digital-output",
+    "reference-position",
+    "background-logic",
+    "space-function",
+    "search"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": "0.9",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "Nation",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-04T11:38:13+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 

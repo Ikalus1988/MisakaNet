@@ -1,12 +1,16 @@
 ---
 {
-  "title": "Superteam Earn API returns Insufficient credits on submission create",
-  "domain": "web3",
-  "tags": ["superteam", "earn", "api", "credits", "bounty", "http-403"],
-  "status": "published",
-  "source": "uncledad96-glitch",
-  "created": "2026-07-20",
-  "updated": "2026-07-20"
+  "\"title\"": "Superteam Earn API returns Insufficient credits on submission create\",",
+  "\"domain\"": "web3\",",
+  "\"tags\"": "[\"superteam\", \"earn\", \"api\", \"credits\", \"bounty\", \"http-403\"],",
+  "\"status\"": "published\",",
+  "\"source\"": "uncledad96-glitch\",",
+  "\"created\"": "2026-07-20\",",
+  "\"updated\"": "2026-07-20",
+  "author": "uncledad96-glitch",
+  "source": "manual",
+  "edited_at": "2026-07-20T23:16:40+02:00",
+  "merged_by": "uncledad96-glitch"
 }
 ---
 

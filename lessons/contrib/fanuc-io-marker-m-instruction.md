@@ -1,14 +1,27 @@
 ---
-title: FANUC IO Marker M[] Instruction — Background Logic Alternative
-domain: fanuc
-subdomain: tp-programming
-tags: ["marker", "m-register", "io", "background-logic", "handling-tool", "vass"]
-source: robot-forum.com
-status: published
-confidence: 0.85
-created: 2026-07-01
-verified_date: 
-domain_expert: cattmampbell
+{
+  "title": "FANUC IO Marker M[] Instruction — Background Logic Alternative",
+  "domain": "fanuc",
+  "subdomain": "tp-programming",
+  "tags": [
+    "marker",
+    "m-register",
+    "io",
+    "background-logic",
+    "handling-tool",
+    "vass"
+  ],
+  "source": "pr",
+  "status": "published",
+  "confidence": 0.85,
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "cattmampbell",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-12T12:28:29+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 351
+}
 ---
 
 

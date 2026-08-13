@@ -1,17 +1,17 @@
 ---
-title: "CI 测试陷阱 — 模块级副作用导致 import 失败"
-domain: devops
-tags:
-  - ci
-  - python
-  - lambda
-  - boto3
-  - module-import
-  - side-effects
-status: published
-source: practical-experience
-confidence: 0.9
-created: 2026-07-07
+{
+  "title": "CI 测试陷阱 — 模块级副作用导致 import 失败",
+  "domain": "devops",
+  "tags": "",
+  "status": "published",
+  "source": "pr",
+  "confidence": 0.9,
+  "created": "2026-07-07",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-08T17:09:01+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 415
+}
 ---
 
 ## Problem

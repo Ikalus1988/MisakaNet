@@ -1,10 +1,16 @@
 ---
-title: Agent 手动Update步骤（update Timeout Handling）
-domain: devops
-source: bootstrap
-status: published
-confidence: 0.8
-created: 2026-05-03
+{
+  "title": "Agent 手动Update步骤（update Timeout Handling）",
+  "domain": "devops",
+  "source": "pr",
+  "status": "published",
+  "confidence": 0.8,
+  "created": "2026-05-03",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-08T17:09:06+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 414
+}
 ---
 
 ---{"title": "Agent 手动Update步骤（update Timeout Handling）", "domain": "devops", "source": "bootstrap", "status": "published", "confidence": "0.8", "created": "2026-05-03"}---

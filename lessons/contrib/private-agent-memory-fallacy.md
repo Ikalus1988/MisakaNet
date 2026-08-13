@@ -1,4 +1,25 @@
-{"title": "The Private Agent Memory Fallacy — Why Portable Memory Wallets Fail", "domain": "agent", "subdomain": "memory", "tags": ["memory-wallet", "portable-memory", "privacy", "interoperability", "zep"], "source": "blog.getzep.com", "status": "published", "confidence": "0.85", "created": "2026-07-01", "verified_date": "", "domain_expert": "daniel-chalef"}
+{
+  "title": "The Private Agent Memory Fallacy — Why Portable Memory Wallets Fail",
+  "domain": "agent",
+  "subdomain": "memory",
+  "tags": [
+    "memory-wallet",
+    "portable-memory",
+    "privacy",
+    "interoperability",
+    "zep"
+  ],
+  "source": "pr",
+  "status": "published",
+  "confidence": "0.85",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "daniel-chalef",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-02T16:15:59+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 277
+}
 
 
 ## Problem

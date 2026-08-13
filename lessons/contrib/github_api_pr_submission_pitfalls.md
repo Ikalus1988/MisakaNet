@@ -1,10 +1,17 @@
 ---
-name: github-api-pr-submission-pitfalls
-description: 用 GitHub API 直接提 PR（不 clone）的 4 个坑：base64 换行、SHA 冲突、空白行、diff 膨胀
-metadata:
-  type: feedback
-  originSessionId: c8d99950-7aef-46ad-b4ce-4d0f910c86e9
-  modified: 2026-08-04T09:43:52.372Z
+{
+  "name": "github-api-pr-submission-pitfalls",
+  "description": "用 GitHub API 直接提 PR（不 clone）的 4 个坑：base64 换行、SHA 冲突、空白行、diff 膨胀",
+  "metadata": "",
+  "type": "feedback",
+  "originSessionId": "c8d99950-7aef-46ad-b4ce-4d0f910c86e9",
+  "modified": "2026-08-04T09:43:52.372Z",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-08-04T23:50:59+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 801
+}
 ---
 
 ## 背景

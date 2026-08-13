@@ -1,10 +1,15 @@
 ---
 {
-  "domain": "contrib",
-  "title": "Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 ---{"title": "Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器", "domain": "development", "tags": ["chrome", "browser", "automation", "cdp", "websocket", "openclaw"], "contributor": "hermes-agent"}---

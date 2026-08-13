@@ -1,11 +1,15 @@
 ---
 {
-  "domain": "contrib",
-  "title": "static page github api 403 rate limit",
-  "verification": "metadata-normalized",
-  "{\"title\"": "静态页面调用外部 API 的容错设计原则\", \"domain\": \"frontend\", \"tags\": [\"api\", \"rate-limit\", \"static-site\", \"error-handling\", \"fault-tolerance\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "static page github api 403 rate limit\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"{\\\"title\\\"\"": "静态页面调用外部 API 的容错设计原则\\\", \\\"domain\\\": \\\"frontend\\\", \\\"tags\\\": [\\\"api\\\", \\\"rate-limit\\\", \\\"static-site\\\", \\\"error-handling\\\", \\\"fault-tolerance\\\"], \\\"domain_expert\\\": \\\"unknown\\\"}\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "uncledad96-glitch",
+  "source": "manual",
+  "edited_at": "2026-07-20T23:21:02+02:00",
+  "merged_by": "uncledad96-glitch"
 }
 ---
 

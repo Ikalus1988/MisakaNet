@@ -1,12 +1,26 @@
 ---
-title: "FANUC DCS Safety System — Configuration and Stop Modes"
-domain: "fanuc"
-subdomain: "safety"
-tags: ["dcs", "safety", "dual-check", "emergency-stop", "fence", "stop-mode", "safety-io", "iso13849"]
-status: "published"
-source: "internal-training"
-confidence: "0.95"
-created: "2026-07-14"
+{
+  "title": "FANUC DCS Safety System — Configuration and Stop Modes",
+  "domain": "fanuc",
+  "subdomain": "safety",
+  "tags": [
+    "dcs",
+    "safety",
+    "dual-check",
+    "emergency-stop",
+    "fence",
+    "stop-mode",
+    "safety-io",
+    "iso13849"
+  ],
+  "status": "published",
+  "source": "manual",
+  "confidence": "0.95",
+  "created": "2026-07-14",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-15T10:16:28+08:00",
+  "merged_by": "zsxh1990"
+}
 ---
 
 ## Problem

@@ -1,14 +1,27 @@
 ---
-title: "FANUC Auto Abort on Fault — Restart $SHELL_WRK Program"
-domain: "fanuc"
-subdomain: "error-handling"
-tags: ["abort", "fault", "restart", "shell-wrk", "bg-logic", "error-severity", "auto-recovery"]
-source: "robot-forum.com"
-status: "published"
-confidence: "0.8"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: "pdl"
+{
+  "title": "FANUC Auto Abort on Fault — Restart $SHELL_WRK Program",
+  "domain": "fanuc",
+  "subdomain": "error-handling",
+  "tags": [
+    "abort",
+    "fault",
+    "restart",
+    "shell-wrk",
+    "bg-logic",
+    "error-severity",
+    "auto-recovery"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": "0.8",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "pdl",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-04T11:38:13+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 

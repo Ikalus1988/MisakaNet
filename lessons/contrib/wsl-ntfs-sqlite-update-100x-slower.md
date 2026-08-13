@@ -1,5 +1,11 @@
 ---
-{"title": "WSL NTFS SQLite UPDATE 100x slower than ext4", "domain": "data-engineering", "tags": ["wsl", "sqlite", "performance", "ntfs", "windows"], "status": "published", "evidence_level": "E2", "created": "2026-08-06", "updated": "2026-08-06", "source": "b2-robot-utilization project", "verified_date": "2026-08-06"}
+{
+  "{\"title\"": "WSL NTFS SQLite UPDATE 100x slower than ext4\", \"domain\": \"data-engineering\", \"tags\": [\"wsl\", \"sqlite\", \"performance\", \"ntfs\", \"windows\"], \"status\": \"published\", \"evidence_level\": \"E2\", \"created\": \"2026-08-06\", \"updated\": \"2026-08-06\", \"source\": \"b2-robot-utilization project\", \"verified_date\": \"2026-08-06\"}",
+  "author": "Ikalus1988",
+  "source": "manual",
+  "edited_at": "2026-08-11T21:14:18+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 # WSL NTFS SQLite UPDATE 100x slower than ext4

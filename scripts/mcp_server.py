@@ -171,6 +171,13 @@ def handle_search(args: dict) -> dict:
                 "score": round(score, 3),
                 "domain": doc.domain,
                 "status": doc.status,
+                "author": doc.author,
+                "source": doc.source,
+                "provenance": {
+                    "pr": doc.pr,
+                    "edited_at": doc.edited_at,
+                    "merged_by": doc.merged_by,
+                },
             })
         voice = "lesson-found" if results else "failure-warning"
         return {"results": results, "source": "bm25", "voice": voice}
@@ -531,7 +538,7 @@ TOOLS = [
             "Input semantics: query is required; domain optionally filters by lesson domain; top limits "
             "ranked results and defaults to 5. Output schema: JSON with results[] and source; each "
             "result is a ranked lesson summary that may include path, title, domain/status, score/rank, "
-            "and match details depending on the active index. Error cases: missing query, unavailable "
+            "author/source provenance, and match details depending on the active index. Error cases: missing query, unavailable "
             "search index, or no matches (empty results). Side effects: none. Auth: none. Rate limits: "
             "local stdio process only; callers should keep result counts small. Do not use for private "
             "log collection; search only with redacted snippets. Use misakanet_get_lesson for full content."

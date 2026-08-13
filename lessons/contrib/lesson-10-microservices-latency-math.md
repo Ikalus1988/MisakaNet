@@ -1,14 +1,25 @@
 ---
-title: "微服务延迟成本分析 — 何时不该用微服务"
-domain: "ops"
-subdomain: "architecture"
-tags: ["microservices", "architecture", "latency", "performance", "monolith"]
-source: "dev.to"
-status: "published"
-confidence: "0.9"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+{
+  "title": "微服务延迟成本分析 — 何时不该用微服务",
+  "domain": "ops",
+  "subdomain": "architecture",
+  "tags": [
+    "microservices",
+    "architecture",
+    "latency",
+    "performance",
+    "monolith"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": "0.9",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-04T11:38:13+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 

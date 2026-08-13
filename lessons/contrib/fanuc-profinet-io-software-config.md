@@ -3,16 +3,28 @@
   "title": "FANUC Robot PROFINET IO Configuration with PFN-CT Software",
   "domain": "fanuc",
   "subdomain": "profinet-io",
-  "source": "bbs.gongkong.com/d/202311/912784",
+  "source": "pr",
   "status": "draft",
   "confidence": 0.6,
   "created": "2026-07-12",
-  "tags": ["fanuc", "profinet", "io", "pfn-ct", "plc", "fieldbus", "configuration"],
+  "tags": [
+    "fanuc",
+    "profinet",
+    "io",
+    "pfn-ct",
+    "plc",
+    "fieldbus",
+    "configuration"
+  ],
   "quality_score": 60,
   "problem": "FANUC 机器人需要与 PROFINET IO 主站（如西门子 PLC）通信，需要专用配置软件来设置 PROFINET IO 从站参数。",
   "root_cause": "FANUC 机器人作为 PROFINET IO 从站时，需要使用专用的 PFN-CT（PROFINET Configuration Tool）软件在 PC 端配置 GSD 文件、IO 模块映射等参数，然后下载到控制器。该软件不随控制器出厂提供，需要单独获取。",
   "solution": "使用 PFN-CT V1.0.14 软件配置 FANUC 机器人的 PROFINET IO 通信参数。该软件为 PC 端工具，用于配置从站设备参数并生成配置文件。",
-  "verification": "1. PFN-CT 软件安装并能正常启动；2. 能加载 FANUC 机器人的 GSD 文件；3. IO 模块配置完成并下载到控制器；4. PLC 端能识别 FANUC PROFINET IO 从站并建立通信。"
+  "verification": "1. PFN-CT 软件安装并能正常启动；2. 能加载 FANUC 机器人的 GSD 文件；3. IO 模块配置完成并下载到控制器；4. PLC 端能识别 FANUC PROFINET IO 从站并建立通信。",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-15T10:25:40+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 472
 }
 
 ## FANUC Robot PROFINET IO Configuration with PFN-CT Software

@@ -1,14 +1,26 @@
 ---
-title: "API 分页设计 — Cursor vs Offset vs Keyset"
-domain: "ops"
-subdomain: "api"
-tags: ["api", "pagination", "cursor", "offset", "keyset", "design"]
-source: "solovyov.net"
-status: "published"
-confidence: "0.9"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+{
+  "title": "API 分页设计 — Cursor vs Offset vs Keyset",
+  "domain": "ops",
+  "subdomain": "api",
+  "tags": [
+    "api",
+    "pagination",
+    "cursor",
+    "offset",
+    "keyset",
+    "design"
+  ],
+  "source": "manual",
+  "status": "published",
+  "confidence": "0.9",
+  "created": "2026-07-01",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-07-04T11:38:13+08:00",
+  "merged_by": "Ikalus1988"
+}
 ---
 
 

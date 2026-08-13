@@ -1,12 +1,22 @@
 ---
-title: "حل مشكلة استنفاد تجميع اتصالات قاعدة البيانات PostgreSQL في بيئات الإنتاج"
-domain: "database"
-tags: ["postgresql", "nodejs", "backend", "performance"]
-language: ar
-status: published
-source: "https://github.com/brianc/node-postgres/issues/1920"
-created: 2026-07-29
-confidence: 0.85
+{
+  "title": "حل مشكلة استنفاد تجميع اتصالات قاعدة البيانات PostgreSQL في بيئات الإنتاج",
+  "domain": "database",
+  "tags": [
+    "postgresql",
+    "nodejs",
+    "backend",
+    "performance"
+  ],
+  "language": "ar",
+  "status": "published",
+  "source": "manual",
+  "created": "2026-07-29",
+  "confidence": 0.85,
+  "author": "Skull0716",
+  "edited_at": "2026-07-29T10:46:46-06:00",
+  "merged_by": "Skull0716"
+}
 ---
 
 # حل مشكلة استنفاد تجميع اتصالات قاعدة البيانات PostgreSQL في بيئات الإنتاج

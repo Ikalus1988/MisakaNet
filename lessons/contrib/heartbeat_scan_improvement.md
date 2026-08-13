@@ -1,10 +1,17 @@
 ---
-name: heartbeat-scan-improvement
-description: 心跳扫描必须同时查 author PR 和 involvement issue，否则 claimed issue 会丢失
-metadata:
-  type: feedback
-  originSessionId: c8d99950-7aef-46ad-b4ce-4d0f910c86e9
-  modified: 2026-08-04T10:19:56.150Z
+{
+  "name": "heartbeat-scan-improvement",
+  "description": "心跳扫描必须同时查 author PR 和 involvement issue，否则 claimed issue 会丢失",
+  "metadata": "",
+  "type": "feedback",
+  "originSessionId": "c8d99950-7aef-46ad-b4ce-4d0f910c86e9",
+  "modified": "2026-08-04T10:19:56.150Z",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-08-04T23:50:59+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 801
+}
 ---
 
 ## 问题

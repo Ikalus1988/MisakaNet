@@ -1,12 +1,27 @@
 ---
-title: "FANUC Alarm Severity Levels — Handling and Color Codes"
-domain: "fanuc"
-subdomain: "troubleshooting"
-tags: ["alarm", "severity", "warn", "pause", "stop", "servo", "abort", "system", "troubleshooting"]
-status: "published"
-source: "internal-training"
-confidence: "0.95"
-created: "2026-07-14"
+{
+  "title": "FANUC Alarm Severity Levels — Handling and Color Codes",
+  "domain": "fanuc",
+  "subdomain": "troubleshooting",
+  "tags": [
+    "alarm",
+    "severity",
+    "warn",
+    "pause",
+    "stop",
+    "servo",
+    "abort",
+    "system",
+    "troubleshooting"
+  ],
+  "status": "published",
+  "source": "manual",
+  "confidence": "0.95",
+  "created": "2026-07-14",
+  "author": "zsxh1990",
+  "edited_at": "2026-07-15T10:16:28+08:00",
+  "merged_by": "zsxh1990"
+}
 ---
 
 ## Problem

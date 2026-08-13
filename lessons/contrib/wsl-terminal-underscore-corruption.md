@@ -1,10 +1,15 @@
 ---
 {
-  "domain": "contrib",
-  "title": "WSL 终端编辑Setup危险 — TTy粘贴吞下划线",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "\"domain\"": "contrib\",",
+  "\"title\"": "WSL 终端编辑Setup危险 — TTy粘贴吞下划线\",",
+  "\"verification\"": "metadata-normalized\",",
+  "\"created\"": "2026-07-06\",",
+  "\"source\"": "unknown",
+  "author": "zsxh1990",
+  "source": "pr",
+  "edited_at": "2026-07-07T11:57:40+08:00",
+  "merged_by": "zsxh1990",
+  "pr": 382
 }
 ---
 ---{"title": "WSL 终端编辑Setup危险 — TTy粘贴吞下划线", "domain": "devops", "source": "bootstrap", "bootstrapped": true, "author": "node2", "machine": "hermes-wsl", "original_date": "2026-04-24", "tags": "", "- node": "hermes_wsl", "- project": "wsl", "- severity": "high", "status": "published", "quality": "published", "created": "2026-04-01", "confidence": "0.7"}---
