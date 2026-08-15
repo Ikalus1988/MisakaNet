@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-08-15T15:37:49.853902+00:00",
+  "generated_at": "2026-08-15T18:48:57.178096+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix: replace bare excepts and remove duplicate hashlib import",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1047",
+      "timestamp": "2026-08-15T16:32:21Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat: add dsh plugin packaging for dsh plugin add",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1055",
+      "timestamp": "2026-08-15T16:32:17Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(pr-genius): add observation log and FP/FN regression tracking (#1037)",
@@ -23,20 +37,6 @@
       "title": "feat: auto-infer evidence_level from lesson content",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/967",
       "timestamp": "2026-08-15T01:01:39Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "Fix: Voice hook Windows compatibility (python3->python) + /claim #932",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/995",
-      "timestamp": "2026-08-15T01:01:35Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(dx): add setup-dev.sh for pre-commit hook installation",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1008",
-      "timestamp": "2026-08-15T01:01:23Z",
       "source": "github"
     },
     {
