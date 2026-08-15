@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-08-15T13:00:51.910175+00:00",
+  "generated_at": "2026-08-15T15:37:49.853902+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(pr-genius): add observation log and FP/FN regression tracking (#1037)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1045",
+      "timestamp": "2026-08-15T13:55:45Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(pr-genius): add statistics dashboard, metrics collector, and API (#1035)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1046",
+      "timestamp": "2026-08-15T13:55:41Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat: auto-infer evidence_level from lesson content",
@@ -23,20 +37,6 @@
       "title": "feat(dx): add setup-dev.sh for pre-commit hook installation",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1008",
       "timestamp": "2026-08-15T01:01:23Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(fatal-guard): add Docker support with multi-stage build",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1020",
-      "timestamp": "2026-08-15T01:01:19Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(bench): add versioned benchmark result schema",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1024",
-      "timestamp": "2026-08-14T15:48:05Z",
       "source": "github"
     },
     {
