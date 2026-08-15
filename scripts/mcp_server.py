@@ -194,6 +194,43 @@ def handle_search(args: dict) -> dict:
         }
 
 
+def handle_preflight(args: dict) -> dict:
+    """Evaluate task intent and environment against lesson triggers for safety preflight."""
+    intent = args.get("intent", "")
+    if not intent:
+        return {
+            "error": "intent is required",
+            "hint": "Try: {\"intent\": \"rag_build vector_index\", \"commands\": [\"build_index\"], \"environments\": [\"wsl\", \"gpu\"]}",
+            "guidance": "Provide an intent description (e.g. 'rag_build', 'sqlite_batch_update') and optional planned commands/environments.",
+            "voice": "failure-warning",
+        }
+
+    commands = args.get("commands", [])
+    if isinstance(commands, str):
+        commands = [commands]
+    environments = args.get("environments", [])
+    if isinstance(environments, str):
+        environments = [environments]
+    risks = args.get("risks", [])
+    if isinstance(risks, str):
+        risks = [risks]
+
+    try:
+        from scripts.mcp_preflight import preflight_check
+        res = preflight_check(
+            intent=intent,
+            commands=commands,
+            environments=environments,
+            risks=risks,
+        )
+        return res
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": f"Preflight evaluation failed: {e}",
+        }
+
+
 def handle_get_lesson(args: dict) -> dict:
     """Get a lesson by path or ID."""
     path_or_id = args.get("path", args.get("id", ""))
@@ -596,6 +633,40 @@ TOOLS = [
         },
     },
     {
+        "name": "misakanet_preflight",
+        "description": (
+            "Proactively evaluate task intent, commands, environment, and risks against "
+            "structured lesson triggers before executing high-risk operations. "
+            "Input semantics: intent is required (action description or keyword); commands, "
+            "environments, and risks are optional descriptor lists. "
+            "Output schema: JSON with status, intent, risk_level (critical/high/medium/low/none), "
+            "requires_confirmation (boolean), matched_count, and ranked recommendations[] with lessons. "
+            "Error cases: missing intent. Side effects: none. Auth: none. Rate limits: none."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "intent": {"type": "string", "description": "Required intent or planned task description (e.g., 'rag_build', 'wsl_setup', 'sqlite_batch_update')."},
+                "commands": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional list of shell commands, tool calls, or script names planned for execution.",
+                },
+                "environments": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional list of runtime environment tags (e.g. ['wsl', 'gpu', 'cuda', 'windows']).",
+                },
+                "risks": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional list of anticipated risk keywords (e.g. ['memory_pressure', 'no_checkpoint', 'batch_overflow']).",
+                },
+            },
+            "required": ["intent"],
+        },
+    },
+    {
         "name": "misakanet_usage_status",
         "description": (
             "Check current usage status and remaining quota. Use to see how many free lesson reads "
@@ -653,6 +724,7 @@ def handle_request(request: dict) -> dict:
             "misakanet_search": handle_search,
             "misakanet_get_lesson": handle_get_lesson,
             "misakanet_submit_usage": handle_submit_usage,
+            "misakanet_preflight": handle_preflight,
             "misakanet_usage_status": handle_usage_status,
         }
 

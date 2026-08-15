@@ -1,5 +1,46 @@
 ---
-{"title": "WSL NTFS SQLite UPDATE 100x slower than ext4", "domain": "data-engineering", "tags": ["wsl", "sqlite", "performance", "ntfs", "windows"], "status": "published", "evidence_level": "E2", "created": "2026-08-06", "updated": "2026-08-06", "source": "b2-robot-utilization project", "verified_date": "2026-08-06"}
+{
+  "title": "WSL NTFS SQLite UPDATE 100x slower than ext4",
+  "domain": "data-engineering",
+  "tags": [
+    "wsl",
+    "sqlite",
+    "performance",
+    "ntfs",
+    "windows"
+  ],
+  "status": "published",
+  "evidence_level": "E2",
+  "created": "2026-08-06",
+  "updated": "2026-08-06",
+  "source": "b2-robot-utilization project",
+  "verified_date": "2026-08-06",
+  "triggers": {
+    "intents": [
+      "sqlite_batch_update",
+      "wal_checkpoint",
+      "large_database_migration"
+    ],
+    "commands": [
+      "sqlite3",
+      "drvfs",
+      "mount /mnt/d",
+      "python sqlite3"
+    ],
+    "environments": [
+      "wsl",
+      "wsl2",
+      "ntfs",
+      "windows"
+    ],
+    "risks": [
+      "severe_i_o_bottleneck",
+      "lock_timeout",
+      "fsync_latency"
+    ],
+    "severity": "high"
+  }
+}
 ---
 
 # WSL NTFS SQLite UPDATE 100x slower than ext4

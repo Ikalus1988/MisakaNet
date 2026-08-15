@@ -1,11 +1,45 @@
 ---
 {
-  "domain": "contrib",
   "title": "WSL2 内存泄漏 / 内存占用过高",
-  "verification": "metadata-normalized",
-  "{\"title\"": "WSL2 内存泄漏 / 内存占用过高\", \"domain\": \"devops\", \"tags\": [\"wsl\", \"memory\", \"leak\", \"performance\"], \"domain_expert\": \"unknown\"}",
+  "domain": "devops",
+  "source": "unknown",
+  "status": "published",
+  "tags": [
+    "wsl",
+    "memory",
+    "leak",
+    "performance",
+    "vram"
+  ],
+  "language": "zh",
   "created": "2026-07-06",
-  "source": "unknown"
+  "domain_expert": "unknown",
+  "triggers": {
+    "intents": [
+      "wsl_setup",
+      "memory_allocation",
+      "run_heavy_agent",
+      "vector_db"
+    ],
+    "commands": [
+      "free -h",
+      "drop_caches",
+      "wsl --shutdown",
+      "wslconfig"
+    ],
+    "environments": [
+      "wsl",
+      "wsl2",
+      "windows"
+    ],
+    "risks": [
+      "memory_pressure",
+      "oom",
+      "system_freeze",
+      "vram_leak"
+    ],
+    "severity": "high"
+  }
 }
 ---
 

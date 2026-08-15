@@ -1,13 +1,50 @@
 ---
 {
+  "title": "feishu block batch limit",
+  "domain": "feishu",
+  "source": "bootstrap",
+  "status": "published",
+  "tags": [
+    "feishu",
+    "block-api",
+    "rate-limit",
+    "batch"
+  ],
+  "language": "zh",
+  "created": "2026-05-03",
+  "triggers": {
+    "intents": [
+      "feishu_doc_write",
+      "bulk_block_create",
+      "batch_sync_wiki"
+    ],
+    "commands": [
+      "create_blocks",
+      "batch_create",
+      "feishu_api"
+    ],
+    "environments": [
+      "cloud",
+      "worker",
+      "python3"
+    ],
+    "risks": [
+      "silent_truncation",
+      "batch_overflow",
+      "rate_limit_429"
+    ],
+    "severity": "medium"
+  }
+}
+---
+
+{
   "domain": "contrib",
   "title": "feishu block batch limit",
   "verification": "metadata-normalized",
   "created": "2026-07-06",
   "source": "unknown"
 }
----
----{"title": "飞书 Block Batch写入上限", "domain": "feishu", "subdomain": "block-api", "source": "bootstrap", "status": "draft", "confidence": "0.7", "created": "2026-05-03"}---
 
 ## 飞书 Block 批量写入上限
 

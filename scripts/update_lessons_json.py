@@ -104,7 +104,7 @@ def main():
             rel_path = f.relative_to(LESSONS_DIR).as_posix()
             # Check for Verification section (badge-only verified semantics)
             verified = bool(re.search(r"##\s*(Verify|Verification)", content, re.IGNORECASE))
-            entries.append({
+            entry = {
                 "id": f.stem,
                 "title": title,
                 "domain": domain,
@@ -119,7 +119,10 @@ def main():
                 "confidence": 0.5,
                 "status": status,
                 "verified": verified,
-            })
+            }
+            if "triggers" in meta and isinstance(meta["triggers"], dict):
+                entry["triggers"] = meta["triggers"]
+            entries.append(entry)
 
     OUTPUT.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"OK lessons.json updated: {len(entries)} entries")

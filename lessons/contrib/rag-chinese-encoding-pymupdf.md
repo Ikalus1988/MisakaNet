@@ -8,13 +8,39 @@
   "tags": [
     "project:self-grow-wiki",
     "severity:medium",
-    "node:hermes-wsl"
+    "node:hermes-wsl",
+    "pdf",
+    "encoding"
   ],
-  "created": "2026-07-06"
+  "created": "2026-07-06",
+  "triggers": {
+    "intents": [
+      "pdf_extraction",
+      "pdf_batch_extract",
+      "rag_ingest_documents",
+      "ocr"
+    ],
+    "commands": [
+      "pymupdf4llm",
+      "fitz",
+      "extract_pdf",
+      "build_corpus"
+    ],
+    "environments": [
+      "wsl",
+      "linux",
+      "python3"
+    ],
+    "risks": [
+      "garbled_text",
+      "encoding_corruption",
+      "silent_truncation",
+      "chinese_encoding_failure"
+    ],
+    "severity": "medium"
+  }
 }
 ---
-
-
 
 ## Background
 

@@ -1,14 +1,49 @@
 ---
 {
-  "domain": "contrib",
   "title": "Chroma 建库无 Checkpoint — 进程一死全部丢失",
-  "verification": "metadata-normalized",
-  "{\"title\"": "Chroma 建库无 Checkpoint — 进程一死全部丢失\", \"domain\": \"rag\", \"source\": \"bootstrap\", \"status\": \"published\", \"confidence\": \"0.7\", \"created\": \"2026-04-01\", \"domain_expert\": \"bootstrap\", \"verified_date\": \"2026-04-01\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
+  "domain": "rag",
+  "source": "bootstrap",
+  "status": "published",
+  "tags": [
+    "rag",
+    "chromadb",
+    "checkpoint",
+    "batch-processing",
+    "bge-embedding"
+  ],
+  "language": "zh",
+  "created": "2026-04-01",
+  "domain_expert": "bootstrap",
+  "verified_date": "2026-04-01",
+  "triggers": {
+    "intents": [
+      "chroma_build",
+      "vector_index",
+      "embedding_batch",
+      "rag_indexing"
+    ],
+    "commands": [
+      "build_edoc_chroma",
+      "chroma",
+      "bge-large-zh",
+      "embed_and_build"
+    ],
+    "environments": [
+      "wsl",
+      "gpu",
+      "gateway",
+      "linux"
+    ],
+    "risks": [
+      "no_checkpoint",
+      "batch_overflow",
+      "process_crash",
+      "unpersisted_data"
+    ],
+    "severity": "critical"
+  }
 }
 ---
-
 
 ## 背景
 

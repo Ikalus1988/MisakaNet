@@ -7,15 +7,44 @@
   "tags": [
     "project:self-grow-wiki",
     "severity:medium",
-    "node:hermes-wsl"
+    "node:hermes-wsl",
+    "rag",
+    "memory",
+    "batch"
   ],
   "language": "en",
   "created": "2026-04-13",
   "domain_expert": "hanged-man",
-  "verified_date": "2026-04-13"
+  "verified_date": "2026-04-13",
+  "triggers": {
+    "intents": [
+      "rag_build",
+      "embedding",
+      "vector_index",
+      "batch_processing"
+    ],
+    "commands": [
+      "build_index",
+      "chroma",
+      "faiss",
+      "embedding",
+      "build_edoc"
+    ],
+    "environments": [
+      "wsl",
+      "gpu",
+      "cuda"
+    ],
+    "risks": [
+      "memory_pressure",
+      "no_checkpoint",
+      "batch_overflow",
+      "driver_crash"
+    ],
+    "severity": "critical"
+  }
 }
 ---
-
 ## Problem
 
 During knowledge-base construction (chunks_v3, 34,100 docs), all data was loaded into VRAM/WSL memory at once. This caused an LM Studio context overflow, which then led to Summarization timeouts ×4 → LLM timeout → driver crash → BSOD.

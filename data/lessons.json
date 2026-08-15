@@ -579,7 +579,9 @@
     "tags": [
       "project:agent-medici",
       "severity:high",
-      "node:hermes-wsl"
+      "node:hermes-wsl",
+      "embedding",
+      "huggingface"
     ],
     "summary": "When HermesHub starts, if the BGE-m3 model has not been downloaded to the local path, SkillIndexer crashes immediately.",
     "preview": "## Problem\n\nWhen HermesHub starts, if the BGE-m3 model has not been downloaded to the local path, SkillIndexer crashes immediately.\nThe local path is hard-coded as `~/.cache/huggingface/...`, which does not exist on other machines.\n\n## Root Cause\n\nInspect the RAG config, ingestion log, retrieval log, and cache status to confirm the exact mismatch before applying the fix.\n\n`_init_embedding_model()` in `skill_indexer.py` loads the model with `local_files_only=True`, and the model path is a hard-coded machine-specific absolute path. There is no fallback mechanism and no environment-variable override.\n\n## Solution\n\n1. Remove the hard-coded absolute path and use: constructor parameter → `EMBEDDING_MODEL_PATH` environment variable → model name (auto-download)\n2. Wrap loading failures in try/except and degrade to no-embedding mode (`register_skill` skips semantic deduplication)\n3. Make `_generate_embedding()` return an empty list, so `search_skills` falls back to keyword matching\n\n## Verification\n\nStart the hub on a machine without the BGE-m3 model. It does not crash and prints \"[Embedding] degraded mode — semantic deduplication and search will be unavailable\".\n\n\n```bash\n# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.\npython3 search_knowledge.py \"rag verification smoke test\" --lessons\n```\n\nEnvironment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.\n\n## Scenario\n\nAny non-development Node machine (Node 1/2/3/6) without a pre-downloaded BGE-m3 model cache.",
@@ -590,7 +592,34 @@
     "environment_version": "",
     "confidence": 0.5,
     "status": "published",
-    "verified": true
+    "verified": true,
+    "triggers": {
+      "intents": [
+        "embedding_initialization",
+        "skill_indexer",
+        "model_loading",
+        "offline_inference"
+      ],
+      "commands": [
+        "skill_indexer",
+        "bge-m3",
+        "huggingface_download",
+        "_init_embedding_model"
+      ],
+      "environments": [
+        "wsl",
+        "linux",
+        "offline",
+        "gpu"
+      ],
+      "risks": [
+        "missing_model_file",
+        "hardcoded_path",
+        "crash_on_startup",
+        "no_fallback"
+      ],
+      "severity": "high"
+    }
   },
   {
     "id": "bounty-contributors-are-not-always-users",
@@ -727,18 +756,51 @@
   {
     "id": "chroma-rebuild-no-checkpoint-cn",
     "title": "Chroma 建库无 Checkpoint — 进程一死全部丢失",
-    "domain": "contrib",
-    "tags": [],
+    "domain": "rag",
+    "tags": [
+      "rag",
+      "chromadb",
+      "checkpoint",
+      "batch-processing",
+      "bge-embedding"
+    ],
     "summary": "Agent 内跑 BGE-large-zh 建库（约30分钟），Gateway 重启后整个数据库为空，0条向量入库。",
     "preview": "## 背景\n\nAgent 内跑 BGE-large-zh 建库（约30分钟），Gateway 重启后整个数据库为空，0条向量入库。\n\n## 根因\n\n旧脚本设计把所有 34,100 条 embedding 算完后才写 Chroma，进程一死 = 从零开始，没有 checkpoint 能力。\n\n```\nload chunks → embed ALL 34100 (内存) → write ALL to Chroma\n                                    ↑ 这一步还没到就崩了\n```\n\n## 修复\n\n改造 `build_edoc_chroma.py` 为小批次写入：\n\n```python\n# Chroma 建库无 Checkpoint — 进程一死全部丢失\ndef embed_and_build(chunks, model, collection, batch_size=5000):\n    for i in range(0, len(chunks), batch_size):\n        batch = chunks[i:i+batch_size]\n        embeddings = model.encode([c[\"text\"] for c in batch])\n        collection.add(\n            ids=[c[\"id\"] for c in batch],\n            embeddings=embeddings.tolist(),\n            documents=[c[\"text\"] for c in batch]\n        )\n        print(f\"[Checkpoint] Written {i+batch_size}/{len(chunks)}\")\n```\n\n**启动方式改为后台独立运行**（不在 agent 里跑）：\n\n```bash\ncd ~//hf-mirror.com \\\n~/.hermes/hermes-agent/.venv/bin/python3 ~/.hermes/scripts/build_edoc_chroma.py \\\n2>&1 | tee /mnt/d/Eric/知识库/chroma_db_v3/build.log &\n```\n\n## 验证\n\n```bash\n# 检查入库数量\npython3 -c \"import chromadb; c=chromadb.PersistentClient('/path/to/chroma_db'); print(c.get_collection('edoc').count())\"\n```\n\n## 关键点\n\n- 建库 ~30 分钟的任务必须在独立终端跑，绝不能在飞书 agent 子进程里跑\n- stdout 有缓冲，`tee` 才能写到文件留下完整记录",
     "url": "lessons/contrib/chroma-rebuild-no-checkpoint-cn.md",
-    "created": "2026-07-06",
+    "created": "2026-04-01",
     "updated": "",
     "validity_period_days": 365,
     "environment_version": "",
     "confidence": 0.5,
-    "status": "active",
-    "verified": false
+    "status": "published",
+    "verified": false,
+    "triggers": {
+      "intents": [
+        "chroma_build",
+        "vector_index",
+        "embedding_batch",
+        "rag_indexing"
+      ],
+      "commands": [
+        "build_edoc_chroma",
+        "chroma",
+        "bge-large-zh",
+        "embed_and_build"
+      ],
+      "environments": [
+        "wsl",
+        "gpu",
+        "gateway",
+        "linux"
+      ],
+      "risks": [
+        "no_checkpoint",
+        "batch_overflow",
+        "process_crash",
+        "unpersisted_data"
+      ],
+      "severity": "critical"
+    }
   },
   {
     "id": "chrome-relay-browser-automation",
@@ -1802,18 +1864,46 @@
   {
     "id": "feishu-block-batch-limit",
     "title": "feishu block batch limit",
-    "domain": "contrib",
-    "tags": [],
-    "summary": "批量创建 block 时，每次超过约 20 个触发限流或静默截断。",
-    "preview": "---{\"title\": \"飞书 Block Batch写入上限\", \"domain\": \"feishu\", \"subdomain\": \"block-api\", \"source\": \"bootstrap\", \"status\": \"draft\", \"confidence\": \"0.7\", \"created\": \"2026-05-03\"}---\n\n## 飞书 Block 批量写入上限\n\n## Problem\n批量创建 block 时，每次超过约 20 个触发限流或静默截断。\n\n## Root Cause\n服务端对单次 batch 请求有隐性上限，未在文档中说明。\n\n## Solution\n每批 ≤20 个 block；`parent_block_id` 使用 DOC_ID（不加 index）；超量时分批发送并加 500ms 间隔。\n\n## Verification\n连续写入 100 个 block，逐批确认 `blocks_created` 计数。",
+    "domain": "feishu",
+    "tags": [
+      "feishu",
+      "block-api",
+      "rate-limit",
+      "batch"
+    ],
+    "summary": "\"domain\": \"contrib\",",
+    "preview": "{\n  \"domain\": \"contrib\",\n  \"title\": \"feishu block batch limit\",\n  \"verification\": \"metadata-normalized\",\n  \"created\": \"2026-07-06\",\n  \"source\": \"unknown\"\n}\n\n## 飞书 Block 批量写入上限\n\n## Problem\n批量创建 block 时，每次超过约 20 个触发限流或静默截断。\n\n## Root Cause\n服务端对单次 batch 请求有隐性上限，未在文档中说明。\n\n## Solution\n每批 ≤20 个 block；`parent_block_id` 使用 DOC_ID（不加 index）；超量时分批发送并加 500ms 间隔。\n\n## Verification\n连续写入 100 个 block，逐批确认 `blocks_created` 计数。",
     "url": "lessons/contrib/feishu-block-batch-limit.md",
-    "created": "2026-07-06",
+    "created": "2026-05-03",
     "updated": "",
     "validity_period_days": 365,
     "environment_version": "",
     "confidence": 0.5,
-    "status": "active",
-    "verified": true
+    "status": "published",
+    "verified": true,
+    "triggers": {
+      "intents": [
+        "feishu_doc_write",
+        "bulk_block_create",
+        "batch_sync_wiki"
+      ],
+      "commands": [
+        "create_blocks",
+        "batch_create",
+        "feishu_api"
+      ],
+      "environments": [
+        "cloud",
+        "worker",
+        "python3"
+      ],
+      "risks": [
+        "silent_truncation",
+        "batch_overflow",
+        "rate_limit_429"
+      ],
+      "severity": "medium"
+    }
   },
   {
     "id": "feishu-block-type-values-limits",
@@ -3959,7 +4049,10 @@
     "tags": [
       "project:self-grow-wiki",
       "severity:medium",
-      "node:hermes-wsl"
+      "node:hermes-wsl",
+      "rag",
+      "memory",
+      "batch"
     ],
     "summary": "During knowledge-base construction (chunks_v3, 34,100 docs), all data was loaded into VRAM/WSL memory at once. This caused an LM Studio context overflow, which …",
     "preview": "## Problem\n\nDuring knowledge-base construction (chunks_v3, 34,100 docs), all data was loaded into VRAM/WSL memory at once. This caused an LM Studio context overflow, which then led to Summarization timeouts ×4 → LLM timeout → driver crash → BSOD.\n\n## Root Cause\n\nInspect the RAG config, ingestion log, retrieval log, and cache status to confirm the exact mismatch before applying the fix.\n\nThe knowledge-base build batch strategy was wrong: the large dataset was not processed in batches.\n\n## Correct Approach\n\n- When building a large RAG knowledge base, process embeddings in batches whose size fits within available VRAM/memory\n- Or use a streaming approach to process files one by one\n- Verification: monitor VRAM and memory usage, and set threshold alerts\n## Verification\n\n1. Follow the solution steps in order\n2. Run any relevant commands or tests to confirm the fix\n3. Verify the symptom no longer occurs\n4. Check related logs or outputs for expected behavior\n\n\n\n```bash\n# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.\npython3 search_knowledge.py \"rag verification smoke test\" --lessons\n```\n\nEnvironment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.\n\n## Lesson\n\nRAG knowledge-base construction must first validate memory limits with small batches before scaling up.",
@@ -3970,7 +4063,34 @@
     "environment_version": "",
     "confidence": 0.5,
     "status": "published",
-    "verified": true
+    "verified": true,
+    "triggers": {
+      "intents": [
+        "rag_build",
+        "embedding",
+        "vector_index",
+        "batch_processing"
+      ],
+      "commands": [
+        "build_index",
+        "chroma",
+        "faiss",
+        "embedding",
+        "build_edoc"
+      ],
+      "environments": [
+        "wsl",
+        "gpu",
+        "cuda"
+      ],
+      "risks": [
+        "memory_pressure",
+        "no_checkpoint",
+        "batch_overflow",
+        "driver_crash"
+      ],
+      "severity": "critical"
+    }
   },
   {
     "id": "rag-chinese-encoding-pymupdf",
@@ -3979,7 +4099,9 @@
     "tags": [
       "project:self-grow-wiki",
       "severity:medium",
-      "node:hermes-wsl"
+      "node:hermes-wsl",
+      "pdf",
+      "encoding"
     ],
     "summary": "When building a FANUC knowledge-base RAG system, retrieved Chinese alarm codes appeared garbled.",
     "preview": "## Background\n\nWhen building a FANUC knowledge-base RAG system, retrieved Chinese alarm codes appeared garbled.\n\n## Root Cause\n\nInspect the RAG config, ingestion log, retrieval log, and cache status to confirm the exact mismatch before applying the fix.\n\nWhen `pymupdf4llm` extracted PDFs, the default encoding was not explicitly set to UTF-8, so pages containing Chinese special characters were truncated.\n\n## Solution\n\nExplicitly specify `encoding=\"utf-8\"` in the `extract()` call:\n\n```python\n# RAG Chinese retrieval garbling — pymupdf4llm default encoding issue\ntext = pymupdf4llm.extract(doc)\n\n# Correct\ntext = pymupdf4llm.extract(doc, encoding=\"utf-8\")\n```\n\n## Verification\n\nRe-import PDFs containing Chinese alarm codes (for example, SRVO-023); retrieval returns the correct Chinese descriptions.\n\n\n```bash\n# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.\npython3 search_knowledge.py \"rag verification smoke test\" --lessons\n```\n\nEnvironment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.\n\n## Key Points\n\n- BGE-small CUDA encoding, query ~0.3s\n- Hybrid retrieval approach: vector top20 candidates + BM25 rerank, with ranking based on combined cosine similarity and keyword hit rate",
@@ -3990,7 +4112,33 @@
     "environment_version": "",
     "confidence": 0.5,
     "status": "published",
-    "verified": true
+    "verified": true,
+    "triggers": {
+      "intents": [
+        "pdf_extraction",
+        "pdf_batch_extract",
+        "rag_ingest_documents",
+        "ocr"
+      ],
+      "commands": [
+        "pymupdf4llm",
+        "fitz",
+        "extract_pdf",
+        "build_corpus"
+      ],
+      "environments": [
+        "wsl",
+        "linux",
+        "python3"
+      ],
+      "risks": [
+        "garbled_text",
+        "encoding_corruption",
+        "silent_truncation",
+        "chinese_encoding_failure"
+      ],
+      "severity": "medium"
+    }
   },
   {
     "id": "rag-chunk-params-800-100",
@@ -4883,7 +5031,32 @@
     "environment_version": "",
     "confidence": 0.5,
     "status": "published",
-    "verified": true
+    "verified": true,
+    "triggers": {
+      "intents": [
+        "sqlite_batch_update",
+        "wal_checkpoint",
+        "large_database_migration"
+      ],
+      "commands": [
+        "sqlite3",
+        "drvfs",
+        "mount /mnt/d",
+        "python sqlite3"
+      ],
+      "environments": [
+        "wsl",
+        "wsl2",
+        "ntfs",
+        "windows"
+      ],
+      "risks": [
+        "severe_i_o_bottleneck",
+        "lock_timeout",
+        "fsync_latency"
+      ],
+      "severity": "high"
+    }
   },
   {
     "id": "wsl-pip-gbk-hub-poller-crash",
@@ -4968,8 +5141,14 @@
   {
     "id": "wsl2-memory-leak-fix",
     "title": "WSL2 内存泄漏 / 内存占用过高",
-    "domain": "contrib",
-    "tags": [],
+    "domain": "devops",
+    "tags": [
+      "wsl",
+      "memory",
+      "leak",
+      "performance",
+      "vram"
+    ],
     "summary": "WSL2 运行几天后吃掉 8GB+ 内存，Windows 变卡。`free -h` 显示已用内存极高。",
     "preview": "## 背景\n\nWSL2 运行几天后吃掉 8GB+ 内存，Windows 变卡。`free -h` 显示已用内存极高。\n\n## 根因\n\nWSL2 使用动态内存分配，默认不自动回收。长时间运行的进程（如 Python 服务、向量数据库）申请的内存在进程退出后不会立刻归还 Windows。\n\n## 修复\n\n```bash\n# WSL2 内存泄漏 / 内存占用过高\nfree -h\ncat /proc/meminfo | grep MemAvailable\n\n# 2. 限制 WSL2 最大内存（在 Windows 用户目录下创建 .wslconfig）\n# 文件路径: C:\\Users\\<用户名>\\.wslconfig\n#\n# [wsl2]\n# memory=4GB\n# swap=2GB\n# localhostForwarding=true\n\n# 3. 手动释放缓存\nsudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'\n\n# 4. 重启 WSL（从 Windows PowerShell）\n# wsl --shutdown\n# wsl\n```\n\n## 验证\n\n```bash\nfree -h  # 内存应恢复到限制值内\n```",
     "url": "lessons/contrib/wsl2-memory-leak-fix.md",
@@ -4978,8 +5157,34 @@
     "validity_period_days": 365,
     "environment_version": "",
     "confidence": 0.5,
-    "status": "active",
-    "verified": false
+    "status": "published",
+    "verified": false,
+    "triggers": {
+      "intents": [
+        "wsl_setup",
+        "memory_allocation",
+        "run_heavy_agent",
+        "vector_db"
+      ],
+      "commands": [
+        "free -h",
+        "drop_caches",
+        "wsl --shutdown",
+        "wslconfig"
+      ],
+      "environments": [
+        "wsl",
+        "wsl2",
+        "windows"
+      ],
+      "risks": [
+        "memory_pressure",
+        "oom",
+        "system_freeze",
+        "vram_leak"
+      ],
+      "severity": "high"
+    }
   },
   {
     "id": "wxauto-im-feedback-collection-jsonl-queue",

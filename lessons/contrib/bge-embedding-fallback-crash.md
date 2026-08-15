@@ -7,13 +7,42 @@
   "tags": [
     "project:agent-medici",
     "severity:high",
-    "node:hermes-wsl"
+    "node:hermes-wsl",
+    "embedding",
+    "huggingface"
   ],
   "language": "en",
   "created": "2026-05-03",
   "domain_expert": "bootstrap",
   "verified_date": "2026-05-03",
-  "subdomain": "embedding"
+  "subdomain": "embedding",
+  "triggers": {
+    "intents": [
+      "embedding_initialization",
+      "skill_indexer",
+      "model_loading",
+      "offline_inference"
+    ],
+    "commands": [
+      "skill_indexer",
+      "bge-m3",
+      "huggingface_download",
+      "_init_embedding_model"
+    ],
+    "environments": [
+      "wsl",
+      "linux",
+      "offline",
+      "gpu"
+    ],
+    "risks": [
+      "missing_model_file",
+      "hardcoded_path",
+      "crash_on_startup",
+      "no_fallback"
+    ],
+    "severity": "high"
+  }
 }
 ---
 

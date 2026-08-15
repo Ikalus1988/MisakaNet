@@ -4,7 +4,11 @@
   "title": "MisakaNet Lesson",
   "description": "Schema for validating MisakaNet lesson Markdown frontmatter",
   "type": "object",
-  "required": ["title", "domain", "status"],
+  "required": [
+    "title",
+    "domain",
+    "status"
+  ],
   "properties": {
     "title": {
       "type": "string",
@@ -19,7 +23,10 @@
     },
     "tags": {
       "type": "array",
-      "items": { "type": "string", "minLength": 2 },
+      "items": {
+        "type": "string",
+        "minLength": 2
+      },
       "minItems": 1,
       "maxItems": 10,
       "uniqueItems": true,
@@ -33,12 +40,22 @@
     },
     "status": {
       "type": "string",
-      "enum": ["published", "draft", "archived"],
+      "enum": [
+        "published",
+        "draft",
+        "archived"
+      ],
       "description": "Publication status"
     },
     "evidence_level": {
       "type": "string",
-      "enum": ["E0", "E1", "E2", "E3", "E4"],
+      "enum": [
+        "E0",
+        "E1",
+        "E2",
+        "E3",
+        "E4"
+      ],
       "default": "E0",
       "description": "How well this lesson is evidenced — E0 self-reported, E1 maintainer reviewed, E2 locally reproduced, E3 CI/sandbox verified, E4 reused by another contributor. Missing means E0. See docs/trust-semantics.md"
     },
@@ -53,6 +70,59 @@
     "updated": {
       "type": "string",
       "description": "Last-updated timestamp"
+    },
+    "triggers": {
+      "description": "Structured triggers for proactive retrieval before executing risky intents/commands",
+      "type": "object",
+      "properties": {
+        "intents": {
+          "description": "Agent intent keywords/actions that match this lesson",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "commands": {
+          "description": "Shell commands, script names, or tools that trigger this lesson",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "environments": {
+          "description": "Environment/OS/hardware tags (e.g. wsl, gpu, cuda, linux, docker)",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "risks": {
+          "description": "Risk taxonomy tags (e.g. memory_pressure, no_checkpoint, batch_overflow, silent_failure)",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "severity": {
+          "description": "Risk severity level",
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        }
+      },
+      "additionalProperties": true
     }
   }
 }
