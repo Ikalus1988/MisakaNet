@@ -1,82 +1,82 @@
 {
-  "generated_at": "2026-08-13T13:50:51.126403+00:00",
+  "generated_at": "2026-08-15T11:21:49.558789+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(release): sync v2.17 lesson count and data index",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/996",
-      "timestamp": "2026-08-13T03:37:55Z",
+      "title": "feat: auto-infer evidence_level from lesson content",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/967",
+      "timestamp": "2026-08-15T01:01:39Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat: add 3 more original failure-recovery lessons (git worktree recovery, escrow fee rounding, squash force-push lease)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/983",
-      "timestamp": "2026-08-13T01:31:22Z",
+      "title": "Fix: Voice hook Windows compatibility (python3->python) + /claim #932",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/995",
+      "timestamp": "2026-08-15T01:01:35Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs: add Python/TypeScript code style guidelines",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/994",
-      "timestamp": "2026-08-13T01:31:18Z",
+      "title": "feat(dx): add setup-dev.sh for pre-commit hook installation",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1008",
+      "timestamp": "2026-08-15T01:01:23Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(connect): add mobile responsive CSS for /connect page (Fixes #904)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/974",
-      "timestamp": "2026-08-13T01:31:13Z",
+      "title": "feat(fatal-guard): add Docker support with multi-stage build",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1020",
+      "timestamp": "2026-08-15T01:01:19Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "test(identity): verify Identity Aura badges for all three token types",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/993",
-      "timestamp": "2026-08-12T17:26:57Z",
+      "title": "feat(bench): add versioned benchmark result schema",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1024",
+      "timestamp": "2026-08-14T15:48:05Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "USDC: base units vs human amounts — агент платит 1000x или думает, что 1000 USDC это $1000",
-      "url": "lessons/contrib/usdc-base-units-vs-human-amounts-agent-marketplaces-ru.md",
-      "timestamp": "2026-07-30",
-      "domain": "crypto-ops",
+      "title": "Accidental __pycache__ artifacts committed to a data repository",
+      "url": "lessons/contrib/accidental-pycache-commit.md",
+      "timestamp": "2026-08-11 00:00:00 UTC",
+      "domain": "development",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "Claude Code can debug low-level cryptography — ML-DSA signature verification failure",
-      "url": "lessons/contrib/claude-code-debugging-ml-dsa-cryptography.md",
-      "timestamp": "2026-07-29",
-      "domain": "debugging",
+      "title": "CDN edge cache serves stale responses for minutes after deploy",
+      "url": "lessons/contrib/cdn-edge-cache-stale-after-deploy.md",
+      "timestamp": "2026-08-11 00:00:00 UTC",
+      "domain": "network",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption",
-      "url": "lessons/contrib/mcp-tool-error-convention-inconsistency.md",
-      "timestamp": "2026-07-29",
-      "domain": "mcp",
+      "title": "CI key rotation silently breaking scheduled automation without a code change",
+      "url": "lessons/contrib/ci-key-rotation-silent-failure.md",
+      "timestamp": "2026-08-11 00:00:00 UTC",
+      "domain": "devops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "TypeScript solution-style tsconfig — tsc --noEmit checks nothing silently",
-      "url": "lessons/contrib/typescript-solution-tsconfig-silent-nocheck.md",
-      "timestamp": "2026-07-29",
-      "domain": "typescript",
+      "title": "Banking-style escrow fee estimate has a per-provider rounding disparity",
+      "url": "lessons/contrib/escrow-fee-rounding-per-provider.md",
+      "timestamp": "2026-08-11 00:00:00 UTC",
+      "domain": "development",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "USDC пришёл в Ethereum mainnet, а нужен Base — и 0 ETH на газ",
-      "url": "lessons/contrib/usdc-ethereum-instead-of-base-zero-eth-gas.md",
-      "timestamp": "2026-07-29",
-      "domain": "crypto-ops",
+      "title": "git worktree commit lost after pushing from the wrong directory",
+      "url": "lessons/contrib/git-worktree-dangling-commit-recovery.md",
+      "timestamp": "2026-08-11 00:00:00 UTC",
+      "domain": "development",
       "source": "lessons"
     },
     {
