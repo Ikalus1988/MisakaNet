@@ -6,7 +6,7 @@ for f in sorted(Path(__file__).resolve().parent.parent.joinpath('lessons').glob(
     if not c.startswith('---'): continue
     end = c.index('---', 3)
     try: fm = json.loads(c[3:end].strip())
-    except: continue
+    except (ValueError, json.JSONDecodeError): continue
     eng = fm.get('title', '')
     if not eng: continue
     lines = c.split('\n')

@@ -186,7 +186,7 @@ class SkillIndexer:
                     with os.fdopen(fd, 'w') as f:
                         json.dump(self.index, f, indent=2, default=str)
                     shutil.move(tmp_path, self.index_path)
-                except:
+                except BaseException:
                     if os.path.exists(tmp_path):
                         os.unlink(tmp_path)
                     raise

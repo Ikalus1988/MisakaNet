@@ -195,7 +195,6 @@ def generate_embedding(text: str, model: str = "BAAI/bge-base-zh-v1.5") -> list[
     # Dev fallback: hash-based pseudo-embedding (meaningless similarity — for testing only)
     import logging as _log
     _log.warning("[Embedding] ⚠️ Using SHA256 hash pseudo-embedding (dev mode). Semantic search results are NOT meaningful.")
-    import hashlib
     hash_bytes = hashlib.sha256(text.encode()).digest()
     arr = np.frombuffer(hash_bytes, dtype=np.float32)
     arr = arr / np.linalg.norm(arr)
