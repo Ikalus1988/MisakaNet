@@ -3,6 +3,15 @@
   "private": true,
   "license": "Apache-2.0",
   "description": "Deployment scripts for MisakaNet Workers",
+  "files": [
+    "SKILL.md",
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
   "scripts": {
     "deploy:web": "cd web && npx wrangler deploy",
     "deploy:api": "cd workers && npx wrangler deploy --config wrangler.api.jsonc",
