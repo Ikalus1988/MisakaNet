@@ -276,6 +276,14 @@ def handle_submit_usage(args: dict) -> dict:
     return report
 
 
+def handle_preflight(args: dict) -> dict:
+    """Handle misakanet_preflight tool call."""
+    intent = args.get("intent", "")
+    context = args.get("context")
+    from scripts.mcp_preflight import evaluate_intent
+    return evaluate_intent(intent, context)
+
+
 def handle_usage_status(args: dict) -> dict:
     """Show current usage status and remaining quota."""
     try:
@@ -529,6 +537,24 @@ def handle_prompts_get(name: str, arguments: dict) -> dict:
 # ── MCP Tools ──
 TOOLS = [
     {
+        "name": "misakanet_preflight",
+        "description": (
+            "Evaluate action intent and context before high-risk tasks (such as RAG build, GPU/WSL heavy operations, "
+            "or bulk data import) to get proactive risk assessment, relevant lesson guidance, and safety guards. "
+            "Input semantics: intent is required (description of the planned action); context is optional (environment "
+            "details like OS, VRAM, data size). Output schema: JSON with risk ('low', 'medium', 'high', 'critical'), "
+            "matched_lessons[], guards[], and recommendation. Side effects: none. Auth: none."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "intent": {"type": "string", "description": "Required action intent description (e.g. 'build RAG index from 218 PDFs')."},
+                "context": {"type": "string", "description": "Optional environment context (e.g. 'WSL, GPU 8GB VRAM')."},
+            },
+            "required": ["intent"],
+        },
+    },
+    {
         "name": "misakanet_search",
         "description": (
             "Search MisakaNet's public failure-lesson index by error text, keyword, or topic. "
@@ -654,6 +680,7 @@ def handle_request(request: dict) -> dict:
             "misakanet_get_lesson": handle_get_lesson,
             "misakanet_submit_usage": handle_submit_usage,
             "misakanet_usage_status": handle_usage_status,
+            "misakanet_preflight": handle_preflight,
         }
 
         handler = handlers.get(tool_name)

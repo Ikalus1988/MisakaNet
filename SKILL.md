@@ -11,18 +11,20 @@ Use MisakaNet when you encounter:
 - **CI failures**: DCO sign-off, lint errors, test failures, build failures
 - **Tool failures**: MCP server crashes, API timeouts, auth errors
 - **Regression**: something that worked before now fails
+- **Preflight checks**: high-risk operations (RAG index builds, GPU/WSL heavy jobs, bulk imports)
 
 Do NOT use MisakaNet for:
 
 - Normal code completion or refactoring
 - Questions about how to use a library (use documentation instead)
 - Feature requests or design discussions
-- Anything that isn't a failure or error
+- Anything that isn't a failure, error, or high-risk execution boundary
 
 ## Recovery flow
 
 ```
-1. Hit an error
+1. Before high-risk tasks: run preflight check
+   Hit an error during execution
    ↓
 2. Search MisakaNet for matching lessons
    ↓
@@ -33,6 +35,14 @@ Do NOT use MisakaNet for:
 ```
 
 ## Tools
+
+### Preflight risk evaluation
+
+```
+misakanet_preflight(intent="build RAG index from 218 PDFs", context="WSL, GPU 8GB VRAM")
+```
+
+Evaluates intent against failure patterns and returns risk level, matched lessons, and safety guard checklists before execution.
 
 ### Search for lessons
 
@@ -68,7 +78,18 @@ Shows remaining quota and credits.
 
 ## Examples
 
-### Example 1: DCO sign-off failure
+### Example 1: Preflight check before RAG build
+
+```
+Intent: "build RAG index from 218 PDFs"
+Context: "WSL, GPU 8GB VRAM"
+
+Action: misakanet_preflight(intent="build RAG index from 218 PDFs", context="WSL, GPU 8GB VRAM")
+Result: Risk "critical", guards suggest batch_size <= 8, 3-5 doc sampling, and checkpointing.
+Action taken: Run probe first with 3 docs, verify VRAM, then scale up safely.
+```
+
+### Example 2: DCO sign-off failure
 
 ```
 Error: Expected "Signed-off-by: Your Name <your@email.com>"
@@ -79,7 +100,7 @@ Fix: git commit --signoff
 Outcome: misakanet_submit_usage(lesson_id="dco-signoff-missing", outcome="solved")
 ```
 
-### Example 2: Python import error
+### Example 3: Python import error
 
 ```
 Error: ModuleNotFoundError: No module named 'requests'
@@ -90,7 +111,7 @@ Fix: pip install requests
 Outcome: misakanet_submit_usage(lesson_id="python-import-error-fix", outcome="solved")
 ```
 
-### Example 3: MCP server crash
+### Example 4: MCP server crash
 
 ```
 Error: MCP server crashed during startup: JSONDecodeError
