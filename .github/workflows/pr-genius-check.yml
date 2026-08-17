@@ -24,7 +24,7 @@ jobs:
           repo: ${{ github.repository }}
           body: ${{ github.event.pull_request.body }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Output enhanced PR Genius result
         if: always()
