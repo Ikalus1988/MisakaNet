@@ -27,6 +27,94 @@ curl -sS https://misakanet.org/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"kind":"missing_lesson","problem":"SHORT REDACTED PROBLEM","error":"OPTIONAL REDACTED ERROR","what_tried":"OPTIONAL","fix":"OPTIONAL","verification":"OPTIONAL","matched_lesson_id":"","source":"remote-agent"}}}'
 ```
 
+### Python snippet (direct `tools/call`)
+
+Anonymous crawlers and scripts can call `misakanet_submit_intake` directly using `urllib` or `requests` by supplying explicit headers:
+
+```python
+import json
+import urllib.request
+
+payload = {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+        "name": "misakanet_submit_intake",
+        "arguments": {
+            "kind": "missing_lesson",
+            "problem": "SHORT REDACTED PROBLEM",
+            "error": "OPTIONAL REDACTED ERROR",
+            "what_tried": "OPTIONAL WHAT WAS TRIED",
+            "fix": "OPTIONAL RECOMMENDED FIX",
+            "verification": "OPTIONAL VERIFICATION STEPS",
+            "matched_lesson_id": "",
+            "source": "crawler-python",
+        },
+    },
+}
+
+data = json.dumps(payload).encode("utf-8")
+req = urllib.request.Request(
+    "https://misakanet.org/mcp",
+    data=data,
+    headers={
+        "Content-Type": "application/json",
+        "Accept": "application/json, text/event-stream",
+        "Origin": "https://claude.ai",
+        "User-Agent": "MisakaNet-Remote-Agent/1.0",
+        "MCP-Protocol-Version": "2025-06-18",
+    },
+    method="POST",
+)
+
+with urllib.request.urlopen(req, timeout=15) as resp:
+    result = json.loads(resp.read().decode("utf-8"))
+    print("Response:", result)
+```
+
+### Node.js / Fetch snippet (direct `tools/call`)
+
+```javascript
+const payload = {
+  jsonrpc: "2.0",
+  id: 1,
+  method: "tools/call",
+  params: {
+    name: "misakanet_submit_intake",
+    arguments: {
+      kind: "missing_lesson",
+      problem: "SHORT REDACTED PROBLEM",
+      error: "OPTIONAL REDACTED ERROR",
+      what_tried: "OPTIONAL WHAT WAS TRIED",
+      fix: "OPTIONAL RECOMMENDED FIX",
+      verification: "OPTIONAL VERIFICATION STEPS",
+      matched_lesson_id: "",
+      source: "crawler-node"
+    }
+  }
+};
+
+const response = await fetch("https://misakanet.org/mcp", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Accept": "application/json, text/event-stream",
+    "Origin": "https://claude.ai",
+    "User-Agent": "MisakaNet-Remote-Agent/1.0",
+    "MCP-Protocol-Version": "2025-06-18"
+  },
+  body: JSON.stringify(payload)
+});
+
+const result = await response.json();
+console.log("Response:", result);
+```
+
+> **Note for anonymous intake clients:**
+> Anonymous clients should skip `initialize` and `tools/list` and call `tools/call` directly for `misakanet_submit_intake`. Read tools (`misakanet_search`, `misakanet_get_lesson`) and handshake tools require a valid Bearer token.
+> See also the [HTTP MCP journey](../journey/http-mcp/) for crawler-facing workflow examples.
+
 Safety rules:
 
 - Keep the request under 8 KB.

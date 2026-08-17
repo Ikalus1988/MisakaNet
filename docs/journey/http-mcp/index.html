@@ -95,6 +95,75 @@
   -H "User-Agent: MisakaNet-Remote-Agent/1.0" \
   -H "MCP-Protocol-Version: 2025-06-18" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"kind":"missing_lesson","problem":"SHORT REDACTED PROBLEM","error":"OPTIONAL REDACTED ERROR","what_tried":"OPTIONAL","fix":"OPTIONAL","verification":"OPTIONAL","source":"remote-agent"}}}'</pre>
+      
+      <h3>Python snippet (direct tools/call)</h3>
+      <pre>import json
+import urllib.request
+
+payload = {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+        "name": "misakanet_submit_intake",
+        "arguments": {
+            "kind": "missing_lesson",
+            "problem": "SHORT REDACTED PROBLEM",
+            "error": "OPTIONAL REDACTED ERROR",
+            "what_tried": "OPTIONAL WHAT WAS TRIED",
+            "fix": "OPTIONAL RECOMMENDED FIX",
+            "verification": "OPTIONAL VERIFICATION STEPS",
+            "source": "crawler-python",
+        },
+    },
+}
+
+req = urllib.request.Request(
+    "https://misakanet.org/mcp",
+    data=json.dumps(payload).encode("utf-8"),
+    headers={
+        "Content-Type": "application/json",
+        "Accept": "application/json, text/event-stream",
+        "Origin": "https://claude.ai",
+        "User-Agent": "MisakaNet-Remote-Agent/1.0",
+        "MCP-Protocol-Version": "2025-06-18",
+    },
+    method="POST",
+)
+with urllib.request.urlopen(req, timeout=15) as resp:
+    print(json.loads(resp.read().decode("utf-8")))</pre>
+
+      <h3>Node.js snippet (direct tools/call)</h3>
+      <pre>const payload = {
+  jsonrpc: "2.0",
+  id: 1,
+  method: "tools/call",
+  params: {
+    name: "misakanet_submit_intake",
+    arguments: {
+      kind: "missing_lesson",
+      problem: "SHORT REDACTED PROBLEM",
+      error: "OPTIONAL REDACTED ERROR",
+      what_tried: "OPTIONAL WHAT WAS TRIED",
+      fix: "OPTIONAL RECOMMENDED FIX",
+      verification: "OPTIONAL VERIFICATION STEPS",
+      source: "crawler-node"
+    }
+  }
+};
+
+const res = await fetch("https://misakanet.org/mcp", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Accept": "application/json, text/event-stream",
+    "Origin": "https://claude.ai",
+    "User-Agent": "MisakaNet-Remote-Agent/1.0",
+    "MCP-Protocol-Version": "2025-06-18"
+  },
+  body: JSON.stringify(payload)
+});
+console.log(await res.json());</pre>
       <p class="ok">Success example: <a href="https://github.com/Ikalus1988/MisakaNet/issues/1069">#1069</a> was submitted via remote HTTP MCP and converted into <code>lessons/contrib/github-release-large-asset-download-cn.md</code>.</p>
     </section>
   </div>
