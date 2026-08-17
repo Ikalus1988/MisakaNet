@@ -156,7 +156,7 @@ def misakanet_submit_intake(
     Dedup hash recorded in issue body for maintainer-side duplicate detection.
     Requires gh CLI with repo write access. If gh fails, returns error (no silent fallback).
     """
-    if not problem:
+    if not problem or not str(problem).strip():
         return {"error": "problem is required", "voice": "failure-warning"}
 
     # ── Token check (if configured) ──
@@ -241,10 +241,12 @@ def misakanet_submit_intake(
             f"_Dedup hash: {dedup_hash}_",
         ])
 
-        # Sanitize title: strip markdown, newlines, collapse whitespace
+        # Sanitize title: strip markdown headings, backticks/codeblocks, URLs, collapse whitespace
         import re as _re
-        raw_title = _re.sub(r"^#{1,6}\s+", "", safe_problem, flags=_re.MULTILINE)
-        raw_title = _re.sub(r"```[\s\S]*?```", "", raw_title)
+        raw_title = _re.sub(r"```[\s\S]*?```", "", safe_problem)
+        raw_title = _re.sub(r"#+", " ", raw_title)
+        raw_title = _re.sub(r"`[^`]*`", "", raw_title)
+        raw_title = _re.sub(r"https?://\S+", "", raw_title)
         raw_title = _re.sub(r"\n+", " ", raw_title)
         raw_title = _re.sub(r"\s+", " ", raw_title).strip()[:80]
         title = f"[Intake] {raw_title or 'failure case'}"
