@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/ikalus1988-misakanet-badge.png)](https://mseep.ai/app/ikalus1988-misakanet)
+
 <div align="right">
 
 [English](README.md) | [日本語](README.ja.md)
