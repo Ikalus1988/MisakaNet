@@ -1,27 +1,24 @@
-"""
-Feishu Notifier - 飞书通知模块
-当仲裁案例创建时，通过飞书机器人通知用户
-"""
-import requests
+import os
 import json
-from typing import Optional
+import urllib.request
 
-
-class FeishuNotifier:
-    """
-    飞书通知器
-    使用飞书机器人 webhook 发送通知
-    """
-
-    def __init__(self, webhook_url: str = None):
-        self.webhook_url = webhook_url
-
-    def notify_arbitration_case(self, case: dict, feishu_webhook: str = None) -> bool:
-        """
-        发送仲裁案例通知到飞书（卡片+按钮）
-        case: 包含 id, skill_name, versions 等字段
-        """
-        webhook = feishu_webhook or self.webhook_url
+def notify_feishu(title: str, text_content: str) -> bool:
+    webhook_url = os.environ.get('FEISHU_WEBHOOK')
+    if not webhook_url:
+        return False
+    payload = {
+        "msg_type": "interactive",
+        "card": {
+            "header": {"title": {"tag": "plain_text", "content": title}, "template": "turquoise"},
+            "elements": [{"tag": "div", "text": {"tag": "lark_md", "content": text_content}}]
+        }
+    }
+    try:
+        req = urllib.request.Request(webhook_url, data=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.status == 200
+    except Exception:
+        return Falsewebhook_url
         if not webhook:
             print("[Feishu] 未配置 webhook，跳过通知")
             return False
