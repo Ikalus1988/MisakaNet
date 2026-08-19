@@ -289,7 +289,8 @@ jobs:
             --ignore=tests/test_queue_lesson_dry_run.py \
             --ignore=tests/test_ci_self_heal.py \
             --ignore=tests/test_evidence_levels.py \
-            tests/ 2>&1 | tee pytest_report.txt || true
+            tests/ > pytest_report.txt 2>&1
+          cat pytest_report.txt
         continue-on-error: true
 
       - name: Upload Coverage to Codecov
