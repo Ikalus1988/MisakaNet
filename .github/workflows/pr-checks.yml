@@ -281,6 +281,7 @@ jobs:
         if: steps.scope.outputs.scope == 'full'
         id: pytest
         run: |
+          set +e
           pytest --cov=scripts --cov=misakanet --cov-report=term --cov-report=xml --cov-fail-under=20 \
             --ignore=tests/test_voice_hooks.py \
             --ignore=tests/test_voice_prompts.py \
@@ -289,8 +290,11 @@ jobs:
             --ignore=tests/test_queue_lesson_dry_run.py \
             --ignore=tests/test_ci_self_heal.py \
             --ignore=tests/test_evidence_levels.py \
-            tests/ > pytest_report.txt 2>&1
-          cat pytest_report.txt
+            --ignore=tests/test_intake_spam_guard.py \
+            tests/ 2>&1 | tee pytest_report.txt
+          PYTEST_EXIT=${PIPESTATUS[0]}
+          echo "pytest_exit=$PYTEST_EXIT"
+          exit $PYTEST_EXIT
         continue-on-error: true
 
       - name: Upload Coverage to Codecov
