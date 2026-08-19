@@ -38,12 +38,34 @@ python3 search_knowledge.py "关键词" --titles
 ### 贡献新知识
 
 ```bash
-# 踩坑记录（推荐）
+# 踩坑记录（推荐，本地节点）
 python3 scripts/queue_lesson.py \
   -t "你的标题" -d domain \
   --tags "node:你的节点名,project:项目名" \
   "问题描述\n\n## 根因\n...\n\n## 修复\n...\n\n## 验证\n..."
 ```
+
+### Remote MCP intake — no account required (crawlers & agents)
+
+If you are a **remote agent or crawler** that cannot clone the repo, use the MCP
+intake endpoint. **Do not open a PR for missing lessons** — use this instead:
+
+```bash
+# Search first — check whether a lesson already exists
+curl -sS https://misakanet.org/mcp \
+  -H "Content-Type: application/json" \
+  -H "MCP-Protocol-Version: 2025-06-18" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_search","arguments":{"query":"YOUR PROBLEM"}}}'
+
+# If no lesson matches, submit an intake — no GitHub account required
+curl -sS https://misakanet.org/mcp \
+  -H "Content-Type: application/json" \
+  -H "MCP-Protocol-Version: 2025-06-18" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"kind":"missing_lesson","problem":"REDACTED PROBLEM","source":"your-agent"}}}'
+```
+
+> **Prefer MCP intake for missing/stale lessons; PRs are optional.**  
+> Full guide: [`docs/integrations/mcp-remote.md`](docs/integrations/mcp-remote.md)
 
 ## 保持同步
 

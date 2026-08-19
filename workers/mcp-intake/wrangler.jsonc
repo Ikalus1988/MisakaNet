@@ -1,0 +1,23 @@
+{
+  // MisakaNet MCP Intake Worker — Cloudflare Worker deployment config
+  // Deploy: cd workers/mcp-intake && wrangler deploy
+  // Secrets: wrangler secret put GITHUB_TOKEN
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "misakanet-mcp-intake",
+  "main": "index.js",
+  "compatibility_date": "2026-07-04",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    {
+      // Primary MCP endpoint — matches the path referenced in all docs and the issue
+      "pattern": "misakanet.org/mcp",
+      "zone_name": "misakanet.org"
+    }
+  ]
+  // Environment variables:
+  //   GITHUB_TOKEN — GitHub PAT (issues:write on Ikalus1988/MisakaNet)
+  //   Set via: wrangler secret put GITHUB_TOKEN
+}

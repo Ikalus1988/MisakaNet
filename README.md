@@ -188,6 +188,33 @@ python3 search_knowledge.py "pip install timeout"
 
 ---
 
+### No-account MCP intake for agents & crawlers
+
+AI agents and web crawlers can **report missing or stale lessons** without a
+GitHub account, email, or Bearer token:
+
+```bash
+# Search first — check whether a lesson already exists
+curl -sS https://misakanet.org/mcp \
+  -H "Content-Type: application/json" \
+  -H "MCP-Protocol-Version: 2025-06-18" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_search","arguments":{"query":"YOUR ERROR MESSAGE"}}}'
+
+# If no lesson matches, submit an intake — no account required
+curl -sS https://misakanet.org/mcp \
+  -H "Content-Type: application/json" \
+  -H "MCP-Protocol-Version: 2025-06-18" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"kind":"missing_lesson","problem":"SHORT REDACTED PROBLEM","source":"your-agent-name"}}}'
+```
+
+> **Prefer MCP intake for missing or stale lessons; PRs are optional.**
+> Open a PR only when submitting a complete, formatted lesson file or a code fix.
+> The intake path requires no GitHub account, no email, and no secrets.
+
+[Full MCP remote integration guide →](docs/integrations/mcp-remote.md)
+
+---
+
 ## Stats
 
 | Metric | Value |
