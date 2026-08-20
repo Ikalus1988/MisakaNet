@@ -28,23 +28,6 @@ mcp-name: io.github.Ikalus1988/misakanet
 
 ---
 
-## What is this?
-
-**Git-backed failure-memory for AI coding agents.** Zero dependencies. Zero server. Zero database.
-
-Agent hits an error → search 290 lessons → get a fix path. No prompt leaking, no raw logs stored.
-
-**🔥 New: No-account MCP intake.** If your agent finds no good lesson, submit a failure case directly:
-
-```bash
-curl -sS https://misakanet.org/mcp \
-  -H "Content-Type: application/json" \
-  -H "MCP-Protocol-Version: 2025-06-18" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"problem":"YOUR PROBLEM","source":"your-agent"}}}'
-```
-
-**No GitHub account. No email. No Bearer token. No browser.** The intake becomes a maintainer-visible GitHub issue for review.
-
 ## Try in 30 seconds
 
 **Option 1 — Search a failure:**
@@ -76,6 +59,23 @@ python3 scripts/mcp_deepseek_adapter.py
 ```
 
 → [HTTP MCP journey](docs/journey/http-mcp/) · [Remote MCP intake docs](docs/integrations/mcp-remote.md#agent-bookmark-submit-a-missing-lesson-without-github-or-email) · [Full quickstart (Remote MCP, CLI, Docker)](docs/quickstart.md) · [Troubleshooting](docs/troubleshooting.md)
+
+## What is this?
+
+**Git-backed failure-memory for AI coding agents.** Zero dependencies. Zero server. Zero database.
+
+Agent hits an error → search 290 lessons → get a fix path. No prompt leaking, no raw logs stored.
+
+**🔥 New: No-account MCP intake.** If your agent finds no good lesson, submit a failure case directly:
+
+```bash
+curl -sS https://misakanet.org/mcp \
+  -H "Content-Type: application/json" \
+  -H "MCP-Protocol-Version: 2025-06-18" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"problem":"YOUR PROBLEM","source":"your-agent"}}}'
+```
+
+**No GitHub account. No email. No Bearer token. No browser.** The intake becomes a maintainer-visible GitHub issue for review.
 
 ### See it in 8 seconds
 
