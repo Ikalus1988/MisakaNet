@@ -337,6 +337,108 @@ def handle_submit_intake(args: dict) -> dict:
     }
 
 
+def handle_write_lesson(args: dict) -> dict:
+    """Submit a structured lesson via registered agent token."""
+    from scripts.contribution_queue import submit_contribution
+
+    title = args.get("title", "")
+    domain = args.get("domain", "")
+    problem = args.get("problem", "")
+    root_cause = args.get("root_cause", "")
+    fix = args.get("fix", "")
+    verification = args.get("verification", "")
+    tags = args.get("tags", [])
+    source = args.get("source", "mcp-agent")
+    token = args.get("token", "")
+
+    # Validate required fields
+    missing = []
+    if not title:
+        missing.append("title")
+    if not domain:
+        missing.append("domain")
+    if not problem:
+        missing.append("problem")
+    if not root_cause:
+        missing.append("root_cause")
+    if not fix:
+        missing.append("fix")
+
+    if missing:
+        return {
+            "submitted": False,
+            "error": f"Missing required fields: {', '.join(missing)}",
+            "hint": "write_lesson requires title, domain, problem, root_cause, and fix.",
+        }
+
+    # Require registered agent token
+    if not token or token.startswith("anon:"):
+        return {
+            "submitted": False,
+            "error": "Registered agent token required",
+            "hint": "Use misakanet_submit_intake for anonymous submissions. write_lesson requires a registered agent token.",
+        }
+
+    # Build structured message
+    parts = [
+        f"# {title}",
+        f"Domain: {domain}",
+        f"Tags: {', '.join(tags) if tags else 'none'}",
+        "",
+        "## Problem",
+        problem,
+        "",
+        "## Root Cause",
+        root_cause,
+        "",
+        "## Fix",
+        fix,
+    ]
+    if verification:
+        parts.extend(["", "## Verification", verification])
+    message = "\n".join(parts)
+
+    result = submit_contribution(
+        contrib_type="lesson",
+        user=token,
+        title=title,
+        message=message,
+        problem=problem,
+        root_cause=root_cause,
+        fix=fix,
+        verification=verification,
+        source=source,
+    )
+
+    if "error" in result:
+        return {
+            "submitted": False,
+            "error": result["error"],
+            "message": result.get("message", ""),
+            "existing_id": result.get("existing_id", ""),
+        }
+
+    quality_score = result.get("quality_score", 0)
+    if quality_score < 75:
+        return {
+            "submitted": False,
+            "error": f"Quality score too low: {quality_score}/100 (minimum 75)",
+            "quality_score": quality_score,
+            "quality_notes": result.get("quality_notes", []),
+            "hint": "Improve problem description, root cause analysis, or add verification steps.",
+        }
+
+    return {
+        "submitted": True,
+        "lesson_id": result["id"],
+        "status": "pending_review",
+        "quality_score": quality_score,
+        "quality_notes": result.get("quality_notes", []),
+        "redactions_applied": result.get("redactions_applied", 0),
+        "receipt": f"Lesson {result['id']} queued for review. Quality: {quality_score}/100.",
+    }
+
+
 def handle_preflight(args: dict) -> dict:
     """Check risk level before executing high-risk operations."""
     from scripts.mcp_preflight import preflight_check
@@ -722,6 +824,61 @@ TOOLS = [
         },
     },
     {
+        "name": "misakanet_write_lesson",
+        "description": (
+            "Submit a complete, structured failure lesson. Use after resolving a problem and "
+            "documenting the full failure→root cause→fix→verification chain. Requires a registered "
+            "agent token (not anonymous). Input: title, domain, problem, root_cause, fix (all "
+            "required); verification, tags, token, source (optional). Output: lesson_id, status "
+            "(pending_review), quality_score. Lessons must score ≥75 to enter the review queue. "
+            "Auth: registered agent token required. Use misakanet_submit_intake for anonymous "
+            "submissions. Side effects: writes to data/contribution_queue.jsonl."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Required lesson title — short, specific, kebab-case friendly (e.g. 'pip install timeout on corporate proxy').",
+                },
+                "domain": {
+                    "type": "string",
+                    "description": "Required domain: devops, python, network, feishu, rag, fanuc, mcp, docker, git, etc.",
+                },
+                "problem": {
+                    "type": "string",
+                    "description": "Required description of the failure (max 2000 chars).",
+                },
+                "root_cause": {
+                    "type": "string",
+                    "description": "Required root cause analysis — why did it fail?",
+                },
+                "fix": {
+                    "type": "string",
+                    "description": "Required fix — what resolved the problem?",
+                },
+                "verification": {
+                    "type": "string",
+                    "description": "Optional: how to confirm the fix works.",
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional tags for categorization (e.g. ['proxy', 'pip', 'corporate-network']).",
+                },
+                "token": {
+                    "type": "string",
+                    "description": "Registered agent token (e.g. 'token:abc123'). Required for write_lesson.",
+                },
+                "source": {
+                    "type": "string",
+                    "description": "Calling client: codex, claude-code, cursor, dsh, or other.",
+                },
+            },
+            "required": ["title", "domain", "problem", "root_cause", "fix"],
+        },
+    },
+    {
         "name": "misakanet_preflight",
         "description": (
             "Check risk level before executing high-risk operations. Matches agent intent "
@@ -797,6 +954,8 @@ def handle_request(request: dict) -> dict:
             "misakanet_get_lesson": handle_get_lesson,
             "misakanet_submit_usage": handle_submit_usage,
             "misakanet_submit_intake": handle_submit_intake,
+            "misakanet_write_lesson": handle_write_lesson,
+            "misakanet_preflight": handle_preflight,
             "misakanet_usage_status": handle_usage_status,
         }
 
