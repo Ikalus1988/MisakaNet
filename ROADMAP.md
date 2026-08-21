@@ -14,13 +14,13 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 
 ## Current baseline
 
-- Release/distribution: PyPI `misakanet 2.16.0`, GitHub release `v2.16.0`,
+- Release/distribution: PyPI `misakanet-core`, GitHub release `v2.18.0`,
   Glama indexed/scored, MCP Toplist badge live, Remote MCP endpoint.
-- **v2.16.0 done** (2026-08-11): Remote MCP, pairing code, Identity Aura, Voice Prompts, evidence levels, security hotfixes.
+- **v2.18.0 done (2026-08-21): Agent-first registration, preflight guardrails, Remote MCP intake): Remote MCP, pairing code, Identity Aura, Voice Prompts, evidence levels, security hotfixes.
 - Test suite: passing.
 - Public site is online: homepage, `/search/`, journey page, Worker APIs, and
   lesson data endpoints are healthy.
-- Corpus wording baseline: **289 indexed failure lessons**; avoid claiming
+- Corpus wording baseline: **377 indexed failure lessons**; avoid claiming
   all are verified unless also stating the verified count separately.
 - Local MCP server exposes three tools: `misakanet_search`,
   `misakanet_get_lesson`, and `misakanet_submit_usage`.
