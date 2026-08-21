@@ -1,0 +1,73 @@
+name: Update Badge Counts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lessons/**"
+      - "scripts/mcp_server.py"
+  workflow_run:
+    workflows: ["Lesson Quality Gate", "Update Lessons"]
+    types: [completed]
+  schedule:
+    - cron: "23 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-badges:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Count lessons
+        id: count
+        run: |
+          LESSON_COUNT=$(find lessons/ -name "*.md" \
+            ! -name "README.md" \
+            ! -name "LESSON_QUALITY*" \
+            ! -name "CONCEPTS*" \
+            ! -name "DUPLICATE*" \
+            ! -path "lessons/_archive/*" \
+            | wc -l)
+          echo "lessons=$LESSON_COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Count domains
+        run: |
+          DOMAIN_COUNT=$(grep -rh "^domain:" lessons/ --include="*.md" 2>/dev/null \
+            | sed 's/domain: *//' | sort -u | wc -l)
+          echo "domains=$DOMAIN_COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Count MCP tools
+        run: |
+          TOOL_COUNT=$(grep -c '"name": "misakanet_' scripts/mcp_server.py || echo "0")
+          echo "tools=$TOOL_COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Generate badge JSONs
+        run: |
+          mkdir -p badges
+          echo '{"schemaVersion":1,"label":"lessons","message":"'"$(find lessons/ -name '*.md' ! -name 'README*' ! -name 'LESSON_QUALITY*' ! -name 'CONCEPTS*' ! -name 'DUPLICATE*' ! -path 'lessons/_archive/*' | wc -l)"'","color":"brightgreen"}' > badges/lessons.json
+          echo '{"schemaVersion":1,"label":"MCP tools","message":"'"$(grep -c '\"name\": \"misakanet_' scripts/mcp_server.py)"'","color":"purple"}' > badges/tools.json
+
+      - name: Push to data branch
+        env:
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.dev"
+          git remote set-url origin "https://x-access-token:${GIT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch origin data
+          git checkout --track origin/data
+          mkdir -p badges
+          cp -f ../badges/*.json badges/ 2>/dev/null || true
+          if ! git diff --quiet badges/; then
+            git add badges/
+            git commit -m "badges: auto-update lesson/tool counts"
+            git push origin data
+          else
+            echo "No badge changes"
+          fi
