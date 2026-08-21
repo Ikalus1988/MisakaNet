@@ -58,3 +58,4 @@ These return high-signal lessons:
 - PyPI: pypi.org/project/misakanet
 - Glama: glama.ai/mcp/servers/Ikalus1988/MisakaNet
 # bounty-fix-ref: https://github.com/Ikalus1988/MisakaNet/issues/818
+# bounty-fix-ref: https://github.com/Ikalus1988/MisakaNet/issues/818
