@@ -256,7 +256,7 @@ async function getIdentityAura(env, token) {
   return IDENTITY_AURA.basic;
 }
 
-async function handleMcpToolCall(env, toolName, args, authToken) {
+async function handleMcpToolCall(env, toolName, args, authToken, clientIp) {
   if (toolName === "misakanet_register") {
     const agentType = args.agent_type || "unknown";
     if (!env.MISAKANET_KV) return { error: "KV not configured" };
@@ -292,7 +292,7 @@ async function handleMcpToolCall(env, toolName, args, authToken) {
 
     // Rate limit: 5 free searches/day per IP for remote HTTP
     // Local stdio MCP is unlimited (user has the code)
-    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const ip = clientIp || "unknown";
     const today = new Date().toISOString().slice(0, 10);
     const rateKey = `rate:search:${ip}:${today}`;
     if (env.MISAKANET_KV) {
@@ -560,7 +560,8 @@ async function handleMcpRequest(request, env) {
           error: { code: -32602, message: "Missing tool name" },
         });
       }
-      const result = await handleMcpToolCall(env, toolName, args, token);
+      const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
+      const result = await handleMcpToolCall(env, toolName, args, token, clientIp);
       return mcpJsonResponse({
         jsonrpc: "2.0", id: reqId,
         result: { content: [{ type: "text", text: JSON.stringify(result) }] },
