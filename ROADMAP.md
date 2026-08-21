@@ -1,8 +1,8 @@
-# MisakaNet 3-Month Roadmap
+# MisakaNet 4-Month Roadmap
 
-Last updated: 2026-08-11
+Last updated: 2026-08-21
 
-This roadmap covers August-October 2026. It is biased toward one practical
+This roadmap covers August-November 2026. It is biased toward one practical
 flywheel:
 
 ```text
@@ -185,6 +185,57 @@ local MCP contract -> external listing metadata -> user can install/search witho
 
 A release is not ready if it improves badges while making installation or
 runtime verification less clear.
+
+## November 2026 - v2.18: Agent Memory Quality Loop
+
+Goal: close the loop from "lesson exists" to "lesson is used and stays fresh".
+Inspired by competitive research into TeamMemory (MCP team memory) and WeKnora
+(Tencent RAG platform). See #1162-#1168.
+
+| Issue | Priority | Track | What | Gate |
+|---|---:|---|---|---|
+| #1162 | P0 | Faithfulness | RAGAS-style auto-detect lesson usage via LLM judge | `faithfulness_eval.py` runs on usage_log, `was_used` count > 0 |
+| #1163 | P0 | Freshness | Quality decay with configurable lifecycle (14d protection, −1/day) | `freshness_scorer.py` runs, stale lessons flagged |
+| #1164 | P1 | Demand Board | Gap analysis: track zero-result queries, surface unmet needs | `gap_analyzer.py` outputs top 20 gaps, demand board has Gaps tab |
+| #1165 | P1 | MCP | `misakanet_context` tool: proactive lessons at task start | Tool registered in `tools/list`, returns compact context ≤500 tokens |
+| #1167 | P1 | Search | Progressive disclosure: compact→summary→full detail levels | `misakanet_search` accepts `detail` param, compact ≤80 tok/lesson |
+| #1166 | P1 | Intake | Memory dump watcher: auto-extract lessons from agent logs | `misakanet watch` monitors dir, creates drafts with `pending_review` |
+
+### v2.18 Definition of Done
+
+```bash
+python scripts/faithfulness_eval.py --batch data/usage_log.jsonl --threshold 0.5
+python scripts/freshness_scorer.py --lessons-dir lessons --report
+python scripts/gap_analyzer.py --input data/search_gaps.jsonl --top 20
+```
+
+并且：
+- `misakanet_search` supports `detail=compact|summary|full`
+- `misakanet_context` tool in `tools/list`
+- Freshness scores in lesson metadata
+- Demand board shows Gaps tab
+- Usage log has ≥1 entry with `was_used=True`
+
+### Quality Loop Architecture
+
+```text
+Agent searches → compact results → uses lesson → faithfulness eval → was_used
+    ↓                                                                       ↓
+    └── freshness boost ←───────────────────────────────────────────────────┘
+        ↓
+    Lesson stays fresh → appears higher in search → more usage → flywheel
+```
+
+### Competitive Insights Applied
+
+| Source | Insight | MisakaNet Action |
+|---|---|---|
+| TeamMemory | RAGAS faithfulness eval auto-detects usage | #1162 LLM judge on usage_log |
+| TeamMemory | Quality decay (14d protection, −1/day, slow below 50) | #1163 freshness lifecycle |
+| TeamMemory | Obsidian Watcher auto-extracts from vault | #1166 memory dump watcher |
+| WeKnora | Progressive skill loading (L1→L2→L3) | #1167 compact→summary→full |
+| WeKnora | 29 MCP tools with scoped runtime | #1165 context tool for proactive lessons |
+
 
 ## External channel policy (external amplifiers)
 
