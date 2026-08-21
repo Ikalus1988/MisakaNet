@@ -76,6 +76,19 @@ Agent hits an error → search 290 lessons → get a fix path. No prompt leaking
 | Remote MCP | HTTP endpoint | https://misakanet.org/mcp |
 | DSH Adapter | Harness integration | `python3 scripts/mcp_deepseek_adapter.py` |
 
+### Agent compatibility
+
+| Agent | Integration | Status |
+|---|---|---|
+| Claude Code | MCP + SKILL.md | ✅ Supported |
+| Codex | MCP + AGENTS.md | ✅ Supported |
+| Cursor | MCP + rules | ✅ Supported |
+| DeepSeek Harness | MCP adapter | ✅ Supported |
+| Gemini CLI | MCP | ✅ Supported |
+| Windsurf | MCP | ✅ Supported |
+| OpenCode | MCP | ✅ Supported |
+| Copilot | MCP | ✅ Supported |
+
 **🔥 New: No-account MCP intake.** If your agent finds no good lesson, submit a failure case directly:
 
 ```bash
