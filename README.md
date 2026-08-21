@@ -34,32 +34,44 @@ mcp-name: io.github.Ikalus1988/misakanet
 
 Agent hits an error → search 290 lessons → get a fix path. No prompt leaking, no raw logs stored.
 
-**🔥 New: No-account MCP intake.** If your agent finds no good lesson, submit a failure case directly:
+### Agent compatibility
 
-```bash
-curl -sS https://misakanet.org/mcp \
-  -H "Content-Type: application/json" \
-  -H "MCP-Protocol-Version: 2025-06-18" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"problem":"YOUR PROBLEM","source":"your-agent"}}}'
-```
+| Agent | Integration | Status |
+|---|---|---|
+| Claude Code | MCP + SKILL.md | ✅ Supported |
+| Codex | MCP + AGENTS.md | ✅ Supported |
+| Cursor | MCP + rules | ✅ Supported |
+| DeepSeek Harness | MCP adapter | ✅ Supported |
+| Gemini CLI | MCP | ✅ Supported |
+| Windsurf | MCP | ✅ Supported |
+| OpenCode | MCP | ✅ Supported |
+| Copilot | MCP | ✅ Supported |
 
-**No GitHub account. No email. No Bearer token. No browser.** The intake becomes a maintainer-visible GitHub issue for review.
+### Integration surfaces
 
-## Try in 30 seconds
+| Surface | What it does | Entry point |
+|---|---|---|
+| MCP | Search, get lesson, submit intake | `python3 scripts/mcp_server.py` |
+| CLI | Direct commands | `python3 search_knowledge.py` |
+| SKILL.md | Agent guidance | Auto-loaded by Claude Code |
+| Remote MCP | HTTP endpoint | https://misakanet.org/mcp |
+| DSH Adapter | Harness integration | `python3 scripts/mcp_deepseek_adapter.py` |
 
-**Option 1 — Search a failure:**
+## Quick Start: Connect your agent
+
+**Option 1 — Claude Code / Cursor / Codex (MCP):**
 ```bash
 git clone https://github.com/Ikalus1988/MisakaNet.git && cd MisakaNet
-python3 scripts/misakanet_cli.py smoke
-```
-
-**Option 2 — Connect MCP to your agent:**
-```bash
 python3 scripts/mcp_server.py
 # Add to your MCP config, then ask: "Search MisakaNet for pip install timeout"
 ```
 
-**Option 3 — Submit a missing lesson via remote MCP (no account):**
+**Option 2 — DeepSeek Harness:**
+```bash
+python3 scripts/mcp_deepseek_adapter.py
+```
+
+**Option 3 — Remote MCP (no install, no account):**
 ```bash
 curl -sS https://misakanet.org/mcp \
   -H "Content-Type: application/json" \
@@ -70,12 +82,12 @@ curl -sS https://misakanet.org/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"kind":"missing_lesson","problem":"SHORT REDACTED PROBLEM","error":"OPTIONAL REDACTED ERROR","what_tried":"OPTIONAL","fix":"OPTIONAL","verification":"OPTIONAL","source":"remote-agent"}}}'
 ```
 
-**Option 4 — DeepSeekHarness recovery adapter:**
+**Option 4 — CLI smoke test (no agent needed):**
 ```bash
-python3 scripts/mcp_deepseek_adapter.py
+python3 scripts/misakanet_cli.py smoke
 ```
 
-→ [HTTP MCP journey](docs/journey/http-mcp/) · [Remote MCP intake docs](docs/integrations/mcp-remote.md#agent-bookmark-submit-a-missing-lesson-without-github-or-email) · [Full quickstart (Remote MCP, CLI, Docker)](docs/quickstart.md) · [Troubleshooting](docs/troubleshooting.md)
+→ [Full quickstart (Remote MCP, CLI, Docker)](docs/quickstart.md) · [Troubleshooting](docs/troubleshooting.md)
 
 ### See it in 8 seconds
 
