@@ -9,7 +9,7 @@
 > **Git-backed failure-memory for AI coding agents.**
 >
 > Zero dependencies. Zero server. Zero database.
-> Paste an error → search 290 lessons → get a fix path.
+> Paste an error → search 377 lessons → get a fix path.
 
 mcp-name: io.github.Ikalus1988/misakanet
 
@@ -77,7 +77,7 @@ Returns `node_id` + `token`. Use token for unlimited remote searches.
 
 **Git-backed failure-memory for AI coding agents.** Zero dependencies. Zero server. Zero database.
 
-Agent hits an error → search 290 lessons → get a fix path. No prompt leaking, no raw logs stored.
+Agent hits an error → search 377 lessons → get a fix path. No prompt leaking, no raw logs stored.
 
 ### Integration surfaces
 
@@ -147,7 +147,7 @@ curl -sS https://misakanet.org/mcp \
 | **Security Fix** | CodeQL #49: URL validation uses `startswith()` instead of substring check |
 | **Worker Syntax Fix** | Fixed pre-existing missing closing brace in `register-proxy-sw.js` |
 | **Issue Evaluator** | PR Genius extended with issue quality review (spam, secrets, labels) |
-| **290 Lessons** | First lesson from remote MCP intake (#1069 → `github-release-large-asset-download-cn.md`) |
+| **377 Lessons** | First lesson from remote MCP intake (#1069 → `github-release-large-asset-download-cn.md`) |
 
 → [Full release notes](https://github.com/Ikalus1988/MisakaNet/releases/tag/v2.18.0)
 
