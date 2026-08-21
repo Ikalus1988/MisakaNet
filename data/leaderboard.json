@@ -1,55 +1,55 @@
 [
   {
     "login": "uncledad96-glitch",
-    "score": 37.82
+    "score": 37.63
   },
   {
     "login": "zsxh1990",
-    "score": 27.53
+    "score": 28.97
   },
   {
     "login": "2lll5",
-    "score": 5.62
+    "score": 5.52
   },
   {
     "login": "liona can",
-    "score": 5.4
+    "score": 5.29
   },
   {
     "login": "laurentketterle-hub",
-    "score": 4.67
+    "score": 4.59
   },
   {
     "login": "yunaremaia",
-    "score": 3.8
+    "score": 3.72
   },
   {
     "login": "brok-best",
-    "score": 2.44
-  },
-  {
-    "login": "ghzhost",
-    "score": 2.39
+    "score": 2.38
   },
   {
     "login": "tarotoads-debug",
     "score": 2.35
   },
   {
+    "login": "ghzhost",
+    "score": 2.35
+  },
+  {
     "login": "wasim-builds",
-    "score": 1.89
-  },
-  {
-    "login": "elevasyncsolutions-jpg",
-    "score": 1.86
-  },
-  {
-    "login": "kilo",
     "score": 1.85
   },
   {
+    "login": "elevasyncsolutions-jpg",
+    "score": 1.82
+  },
+  {
+    "login": "kilo",
+    "score": 1.81
+  },
+  {
     "login": "solaris",
-    "score": 1.47
+    "score": 1.43
   },
   {
     "login": "aj0070",
@@ -57,7 +57,7 @@
   },
   {
     "login": "pnpn1212",
-    "score": 1.0
+    "score": 0.99
   },
   {
     "login": "lb1192176991-lab",
@@ -69,47 +69,47 @@
   },
   {
     "login": "ninghuagui-debug",
-    "score": 0.96
-  },
-  {
-    "login": "waterwang",
     "score": 0.95
   },
   {
-    "login": "misterio070",
+    "login": "waterwang",
     "score": 0.94
   },
   {
+    "login": "misterio070",
+    "score": 0.93
+  },
+  {
     "login": "chfr19820610-cell",
-    "score": 0.88
+    "score": 0.86
   },
   {
     "login": "agente-gaudi",
-    "score": 0.83
-  },
-  {
-    "login": "zeroknowledge0x",
-    "score": 0.66
+    "score": 0.82
   },
   {
     "login": "noreply",
-    "score": 0.62
-  },
-  {
-    "login": "sparshgarg999",
     "score": 0.61
   },
   {
     "login": "jamboriu",
-    "score": 0.61
+    "score": 0.6
+  },
+  {
+    "login": "sparshgarg999",
+    "score": 0.6
   },
   {
     "login": "samarth1306w",
-    "score": 0.58
+    "score": 0.57
+  },
+  {
+    "login": "zeroknowledge0x",
+    "score": 0.56
   },
   {
     "login": "lincai505011-ops",
-    "score": 0.57
+    "score": 0.56
   },
   {
     "login": "bilaldeveloper4312",
@@ -121,15 +121,15 @@
   },
   {
     "login": "ankitaadvitot",
-    "score": 0.54
+    "score": 0.53
   },
   {
     "login": "th3slack3r",
-    "score": 0.54
+    "score": 0.53
   },
   {
     "login": "rerzx",
-    "score": 0.53
+    "score": 0.52
   },
   {
     "login": "skull0716",
@@ -137,7 +137,7 @@
   },
   {
     "login": "nordikdata bounty bot",
-    "score": 0.5
+    "score": 0.49
   },
   {
     "login": "mochigem",
@@ -148,12 +148,12 @@
     "score": 0.47
   },
   {
-    "login": "yh-liao-07",
-    "score": 0.45
+    "login": "votienduong2208",
+    "score": 0.31
   },
   {
-    "login": "votienduong2208",
-    "score": 0.32
+    "login": "yh-liao-07",
+    "score": 0.24
   },
   {
     "login": "abhiavi",
@@ -181,15 +181,15 @@
   },
   {
     "login": "zhangjianming7051",
-    "score": 0.22
+    "score": 0.21
   },
   {
     "login": "xkes101116-hub",
-    "score": 0.22
+    "score": 0.21
   },
   {
     "login": "foxymantou",
-    "score": 0.22
+    "score": 0.21
   },
   {
     "login": "syzygys",
@@ -201,7 +201,7 @@
   },
   {
     "login": "lovewave02",
-    "score": 0.19
+    "score": 0.18
   },
   {
     "login": "gothundercats",
@@ -230,9 +230,5 @@
   {
     "login": "pian0",
     "score": 0.1
-  },
-  {
-    "login": "doview1",
-    "score": 0.08
   }
 ]

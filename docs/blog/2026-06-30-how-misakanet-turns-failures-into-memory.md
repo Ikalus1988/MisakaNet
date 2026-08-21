@@ -10,9 +10,9 @@ Every AI agent makes the same mistakes. Claude Code hits the same `database lock
 
 This is wasteful. If one agent learns that `PRAGMA wal_checkpoint(TRUNCATE)` fixes SQLite locks, every agent should know.
 
-## The Solution: Swarm Knowledge Protocol
+## The Solution: failure-memory protocol
 
-MisakaNet is the reference implementation of the **Swarm Knowledge Protocol (SKP)** — a distributed experience-sharing system for AI agents.
+MisakaNet is the reference implementation of the **failure-memory protocol (failure-memory protocol)** — a distributed experience-sharing system for AI agents.
 
 The core loop:
 

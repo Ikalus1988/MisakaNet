@@ -1,21 +1,57 @@
 {
-  "generated_at": "2026-08-20T09:53:50.744047+00:00",
+  "generated_at": "2026-08-20T21:48:14.780773+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 13,
+  "item_count": 12,
   "items": [
+    {
+      "type": "challenge",
+      "title": "[Feature] One-command agent setup: misakanet setup --agent xxx",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1150",
+      "labels": [
+        "enhancement",
+        "ready",
+        "agent-friendly",
+        "zero-bounty",
+        "status:competition",
+        "pool:deep"
+      ],
+      "timestamp": "2026-08-20T16:26:19Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(tools): add lesson deduplication script (#1053)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1135",
+      "timestamp": "2026-08-20T15:42:00Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(tools): add intake triage classifier (#1051)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1136",
+      "timestamp": "2026-08-20T15:41:56Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(onboarding): move 'Try in 30 seconds' to first screen (#1058)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1134",
+      "timestamp": "2026-08-20T15:28:32Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(mcp): add misakanet_write_lesson tool (#1122)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1137",
+      "timestamp": "2026-08-20T15:28:28Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(sync): [Distribution] Feishu bot: notify team when new lessons are published (closes #1052)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1126",
       "timestamp": "2026-08-19T07:37:56Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat: search latency benchmark (#1050) and changelog generator (#1054)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1125",
-      "timestamp": "2026-08-19T06:42:07Z",
       "source": "github"
     },
     {
@@ -57,59 +93,6 @@
       "timestamp": "2026-08-19",
       "domain": "mcp",
       "source": "lessons"
-    },
-    {
-      "type": "challenge",
-      "title": "[Feature] write_lesson MCP tool: agents can submit structured lessons",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1122",
-      "labels": [
-        "enhancement",
-        "ready",
-        "agent-friendly",
-        "zero-bounty",
-        "has-test",
-        "status:competition"
-      ],
-      "timestamp": "2026-08-18T15:51:44Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Feature] search rate limit: 5 free/day, then requires registration",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1121",
-      "labels": [
-        "enhancement",
-        "needs-ac",
-        "ready",
-        "agent-friendly",
-        "no-credentials",
-        "zero-bounty",
-        "has-test",
-        "status:competition"
-      ],
-      "timestamp": "2026-08-18T15:51:20Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(mcp): publish crawler-facing snippets for direct HTTP tools/call (#1092)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1096",
-      "timestamp": "2026-08-18T13:21:16Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test(mcp): add spam-guard regression corpus for anonymous submissions (#1094)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1097",
-      "timestamp": "2026-08-18T13:21:12Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix: replace bare excepts and remove duplicate hashlib import",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1047",
-      "timestamp": "2026-08-15T16:32:21Z",
-      "source": "github"
     },
     {
       "type": "challenge",

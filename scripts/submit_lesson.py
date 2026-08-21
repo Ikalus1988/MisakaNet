@@ -222,7 +222,7 @@ def commit_and_push(files: list[Path], message: str | None):
 
     pat = find_pat()
     os.environ["GH_TOKEN"] = pat
-    os.environ["GIT_ASKPASS"] = "echo"  # 防止交互式密码提示
+    os.environ["GIT_Afailure-memory protocolASS"] = "echo"  # 防止交互式密码提示
 
     # 设置 git remote 使用 PAT
     remote_url = f"https://ikalus:{pat}@github.com/Ikalus1988/MisakaNet.git"
@@ -250,13 +250,13 @@ def commit_and_push(files: list[Path], message: str | None):
         # 先 pull rebase
         subprocess.run(["git", "pull", "--rebase", "origin", "main"],
                        cwd=REPO, capture_output=True,
-                       env={**os.environ, "GIT_ASKPASS": "echo"})
+                       env={**os.environ, "GIT_Afailure-memory protocolASS": "echo"})
         # push
         result = subprocess.run(
             ["git", "remote", "set-url", "origin", remote_url,
              "&&", "git", "push", "origin", "main"],
             cwd=REPO, capture_output=True, text=True, shell=True,
-            env={**os.environ, "GIT_ASKPASS": "echo"}
+            env={**os.environ, "GIT_Afailure-memory protocolASS": "echo"}
         )
         if result.returncode == 0:
             print(green(f"  🚀 推送成功! commit: {msg}"))

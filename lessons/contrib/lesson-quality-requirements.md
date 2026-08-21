@@ -1,5 +1,5 @@
 {
-  "title": "Lesson Quality Requirements: SKP Format",
+  "title": "Lesson Quality Requirements: failure-memory protocol Format",
   "domain": "devops",
   "tags": ["lesson", "quality", "format", "skp", "misakanet"],
   "status": "published",

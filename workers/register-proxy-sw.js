@@ -248,6 +248,24 @@ async function getIdentityAura(env, token) {
 async function handleMcpToolCall(env, toolName, args, authToken) {
   if (toolName === "misakanet_search") {
     if (!args.query) return { error: "query is required" };
+
+    // Rate limit: 5 free searches/day per IP for remote HTTP
+    // Local stdio MCP is unlimited (user has the code)
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const today = new Date().toISOString().slice(0, 10);
+    const rateKey = `rate:search:${ip}:${today}`;
+    if (env.MISAKANET_KV) {
+      const count = parseInt(await env.MISAKANET_KV.get(rateKey, "text") || "0");
+      if (count >= 5) {
+        return {
+          error: "Rate limit: 5 free searches per day exceeded",
+          hint: "Register to get unlimited access: misakanet_register",
+          voice: "failure-warning",
+        };
+      }
+      await env.MISAKANET_KV.put(rateKey, String(count + 1), { expirationTtl: 86400 });
+    }
+
     let lessons;
     try {
       lessons = await getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));

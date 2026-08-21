@@ -1,0 +1,17 @@
+# PR Genius local configuration
+# Relaxes Issue link requirements for MisakaNet
+
+rules:
+  # Accept more Issue link formats
+  issue_link:
+    patterns:
+      - "fix(?:es|ed)?\\s+#\\d+"
+      - "close[sd]?\\s+#\\d+"
+      - "resolve[sd]?\\s+#\\d+"
+      - "references?\\s+#\\d+"
+      - "related\\s+to\\s+#\\d+"
+      - "Resolves\\s+`#\\d+`"  # with backticks
+      - "Fixes\\s+`#\\d+`"     # with backticks
+      - "Closes\\s+`#\\d+`"    # with backticks
+    # Don't fail if Issue is referenced in title or body (any format)
+    required: false

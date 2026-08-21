@@ -77,7 +77,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 | URI | Description |
 |-----|-------------|
 | `misaka://lessons/index` | Browse all published lessons (core + contrib) |
-| `misaka://protocol/overview` | Swarm Knowledge Protocol config (trust tiers, rings, scoring) |
+| `misaka://protocol/overview` | failure-memory protocol config (trust tiers, rings, scoring) |
 | `misaka://docs/readme` | Project overview and quickstart |
 | `misaka://docs/faq` | Troubleshooting FAQ |
 | `misaka://docs/changelog` | Latest release notes |

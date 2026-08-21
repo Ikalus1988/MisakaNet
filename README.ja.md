@@ -361,4 +361,4 @@ CIは危険パターン（`rm -rf`、`curl | sh`、バッククォートイン�
 
 ---
 
-*Swarm Knowledge Protocol (SKP) — [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*
+*failure-memory protocol (failure-memory protocol) — [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*

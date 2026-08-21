@@ -913,7 +913,7 @@ def _harvest_from_file(filepath: str):
         print(f"  L{lineno}: {line[:120]}")
     print()
     
-    # Generate SKP-compliant lesson draft
+    # Generate failure-memory protocol-compliant lesson draft
     print("=" * 50)
     print("📝 Generated Lesson Draft")
     print("=" * 50)

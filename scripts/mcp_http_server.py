@@ -329,7 +329,7 @@ def lessons_index() -> str:
 
 @mcp.resource("misaka://protocol/overview")
 def protocol_overview() -> str:
-    """Swarm Knowledge Protocol configuration."""
+    """failure-memory protocol configuration."""
     p = REPO_ROOT / "misaka-protocol.json"
     if p.exists():
         return p.read_text(encoding="utf-8")

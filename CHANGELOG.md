@@ -249,7 +249,7 @@ All notable changes to the Misaka Network project are documented here.
 - **fatal-guard v0.2.2**: wrapper mode (`fatal-guard -- <cmd>`), multi-env-var fallback, env redaction (redact.js), syslog payload, npm published as `@misaka-net/fatal-guard`
 - **Proof of Access Quota**: 5 free searches for new nodes, unlimited for contributors, quota resets on lesson contribution
 - **Python Guard Sidecar**: `python3 -m misakanet.guard --to-draft -- <cmd>` — crash capture + auto-draft generation
-- **Log Harvester CLI**: `--harvest --from-file <path>` — parse error logs and generate SKP-compliant lesson drafts
+- **Log Harvester CLI**: `--harvest --from-file <path>` — parse error logs and generate failure-memory protocol-compliant lesson drafts
 - **Cross-Lesson Reference Graph**: related lessons discovered by shared tags
 - **Contributor Score**: `lessons_contributed` bonus added to leaderboard formula
 - **Search Ranking Boost** (#228): core (+0.15), verified (+0.10), recent (+0.05) lessons ranked higher; drafts penalized (-0.20)

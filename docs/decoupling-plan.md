@@ -21,7 +21,7 @@ MisakaNet/
 
 | Repo | Contents | Responsibility |
 |------|----------|---------------|
-| `Ikalus1988/MisakaNet` (shrunk) | `misakanet/`, `search_knowledge.py`, `lessons/`, `docs/`, `scripts/` | Core SKP engine + knowledge base |
+| `Ikalus1988/MisakaNet` (shrunk) | `misakanet/`, `search_knowledge.py`, `lessons/`, `docs/`, `scripts/` | Core failure-memory protocol engine + knowledge base |
 | `Ikalus1988/MisakaNet-Hub` | `hub/`, `config.yaml` | Hub server, federation, arbitration |
 | `Ikalus1988/MisakaNet-Web` | `web/` | Dashboard, node management |
 

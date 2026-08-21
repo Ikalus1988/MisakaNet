@@ -27,7 +27,7 @@ pr-genius is a query-only federation peer of MisakaNet.
 
 - Generalized debugging lessons (not repo-specific)
 - BM25 + RRF search across all lessons
-- SKP (Swarm Knowledge Protocol) for agent experience sharing
+- failure-memory protocol (failure-memory protocol) for agent experience sharing
 - Quality scoring and lesson lifecycle management
 
 ## How to query pr-genius from MisakaNet

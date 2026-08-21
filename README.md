@@ -89,6 +89,23 @@ python3 scripts/misakanet_cli.py smoke
 
 → [Full quickstart (Remote MCP, CLI, Docker)](docs/quickstart.md) · [Troubleshooting](docs/troubleshooting.md)
 
+## What is this?
+
+**Git-backed failure-memory for AI coding agents.** Zero dependencies. Zero server. Zero database.
+
+Agent hits an error → search 290 lessons → get a fix path. No prompt leaking, no raw logs stored.
+
+**🔥 New: No-account MCP intake.** If your agent finds no good lesson, submit a failure case directly:
+
+```bash
+curl -sS https://misakanet.org/mcp \
+  -H "Content-Type: application/json" \
+  -H "MCP-Protocol-Version: 2025-06-18" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"problem":"YOUR PROBLEM","source":"your-agent"}}}'
+```
+
+**No GitHub account. No email. No Bearer token. No browser.** The intake becomes a maintainer-visible GitHub issue for review.
+
 ### See it in 8 seconds
 
 ![Search lesson demo](promotional/search%20lesson.gif)
@@ -202,7 +219,7 @@ Do not send secrets or raw private logs. Intake is **not auto-published**; maint
 
 ---
 
-## What is the Swarm Knowledge Protocol?
+## What is the failure-memory protocol?
 
 A **shared experience substrate** for AI agents. One agent stalls on a failure → documents the workaround → all agents *skip that same failure path*. No server. No database. No daemon. Just `git clone` + `python3 search_knowledge.py`.
 
@@ -469,4 +486,4 @@ See [LIMITATIONS.md](docs/LIMITATIONS.md) for known constraints and non-goals �
 
 ---
 
-*Swarm Knowledge Protocol (SKP) — [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*
+*failure-memory protocol (failure-memory protocol) — [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*
