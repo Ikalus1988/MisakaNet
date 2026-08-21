@@ -28,21 +28,21 @@ mcp-name: io.github.Ikalus1988/misakanet
 
 ---
 
-## Try in 30 seconds
+## Quick Start: Connect your agent
 
-**Option 1 — Search a failure:**
+**Option 1 — Claude Code / Cursor / Codex (MCP):**
 ```bash
 git clone https://github.com/Ikalus1988/MisakaNet.git && cd MisakaNet
-python3 scripts/misakanet_cli.py smoke
-```
-
-**Option 2 — Connect MCP to your agent:**
-```bash
 python3 scripts/mcp_server.py
 # Add to your MCP config, then ask: "Search MisakaNet for pip install timeout"
 ```
 
-**Option 3 — Submit a missing lesson via remote MCP (no account):**
+**Option 2 — DeepSeek Harness:**
+```bash
+python3 scripts/mcp_deepseek_adapter.py
+```
+
+**Option 3 — Remote MCP (no install, no account):**
 ```bash
 curl -sS https://misakanet.org/mcp \
   -H "Content-Type: application/json" \
@@ -53,12 +53,12 @@ curl -sS https://misakanet.org/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"kind":"missing_lesson","problem":"SHORT REDACTED PROBLEM","error":"OPTIONAL REDACTED ERROR","what_tried":"OPTIONAL","fix":"OPTIONAL","verification":"OPTIONAL","source":"remote-agent"}}}'
 ```
 
-**Option 4 — DeepSeekHarness recovery adapter:**
+**Option 4 — CLI smoke test (no agent needed):**
 ```bash
-python3 scripts/mcp_deepseek_adapter.py
+python3 scripts/misakanet_cli.py smoke
 ```
 
-→ [HTTP MCP journey](docs/journey/http-mcp/) · [Remote MCP intake docs](docs/integrations/mcp-remote.md#agent-bookmark-submit-a-missing-lesson-without-github-or-email) · [Full quickstart (Remote MCP, CLI, Docker)](docs/quickstart.md) · [Troubleshooting](docs/troubleshooting.md)
+→ [Full quickstart (Remote MCP, CLI, Docker)](docs/quickstart.md) · [Troubleshooting](docs/troubleshooting.md)
 
 ## What is this?
 
