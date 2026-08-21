@@ -66,6 +66,16 @@ python3 scripts/mcp_deepseek_adapter.py
 
 Agent hits an error → search 290 lessons → get a fix path. No prompt leaking, no raw logs stored.
 
+### Integration surfaces
+
+| Surface | What it does | Entry point |
+|---|---|---|
+| MCP | Search, get lesson, submit intake | `python3 scripts/mcp_server.py` |
+| CLI | Direct commands | `python3 search_knowledge.py` |
+| SKILL.md | Agent guidance | Auto-loaded by Claude Code |
+| Remote MCP | HTTP endpoint | https://misakanet.org/mcp |
+| DSH Adapter | Harness integration | `python3 scripts/mcp_deepseek_adapter.py` |
+
 **🔥 New: No-account MCP intake.** If your agent finds no good lesson, submit a failure case directly:
 
 ```bash
