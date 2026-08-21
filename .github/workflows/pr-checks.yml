@@ -358,14 +358,14 @@ jobs:
           echo "=== Lesson Count Consistency ==="
           # Count actual lesson files
           ACTUAL=$(find lessons/ -name "*.md" -not -path "*/_archive/*" -not -path "*/drafts/*" | wc -l)
-          # Extract claimed count from STATUS.md
-          CLAIMED=$(grep -oP '\d+(?= lessons)' STATUS.md | head -1)
+          # Extract claimed count from STATUS.md (handles "377 篇" format)
+          CLAIMED=$(grep -oE "[0-9]+ 篇" STATUS.md | head -1 | grep -oE "[0-9]+")
           if [ -z "$CLAIMED" ]; then
             echo "::warning::Could not extract lesson count from STATUS.md"
             exit 0
           fi
           echo "Actual: $ACTUAL lessons"
-          echo "Claimed: $CLAIMED lessons in STATUS.md"
+          echo "Claimed: $CLAIMED in STATUS.md"
           if [ "$ACTUAL" -ne "$CLAIMED" ]; then
             echo "::error::Lesson count mismatch: actual=$ACTUAL, claimed=$CLAIMED in STATUS.md"
             exit 1

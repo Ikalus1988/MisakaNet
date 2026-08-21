@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-08-21T09:55:04.841326+00:00",
+  "generated_at": "2026-08-21T13:16:14.636583+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs: sync STATUS.md, ROADMAP.md, README.md to v2.18.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1171",
+      "timestamp": "2026-08-21T10:57:46Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: add agent compatibility grid (#1147)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1153",
+      "timestamp": "2026-08-21T09:57:44Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs: add integration surfaces table (#1151)",
@@ -23,20 +37,6 @@
       "title": "feat(tools): add lesson deduplication script (#1053)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1135",
       "timestamp": "2026-08-20T15:42:00Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(tools): add intake triage classifier (#1051)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1136",
-      "timestamp": "2026-08-20T15:41:56Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(mcp): add misakanet_write_lesson tool (#1122)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1137",
-      "timestamp": "2026-08-20T15:28:28Z",
       "source": "github"
     },
     {
