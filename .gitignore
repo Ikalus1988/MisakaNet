@@ -66,3 +66,5 @@ data/search-feedback.jsonl
 
 # Benchmark results (local only)
 bench_results/
+.aider*
+.aider*
