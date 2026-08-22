@@ -1,0 +1,14 @@
+# Repo-specific PR Genius rules. Core rules remain portable.
+rules:
+  - id: dco
+    enabled: true
+  - id: lesson-lint
+    name: Lesson lint
+    category: repo
+    paths: ["lessons/*.md", "data/**/*.md"]
+    command: "python3 scripts/check_lesson_quality.py"
+  - id: mcp-tests
+    name: MCP server tests
+    category: repo
+    paths: ["scripts/mcp_*.py", "tests/test_mcp*.py"]
+    command: "pytest -q tests -k mcp"
