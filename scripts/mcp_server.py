@@ -23,7 +23,9 @@ Usage:
 """
 from __future__ import annotations
 
+import fnmatch
 import json
+import os
 import re
 import sys
 from importlib import metadata
@@ -975,6 +977,43 @@ TOOLS = [
 ]
 
 
+def _filtered_tools() -> list[dict]:
+    """Return TOOLS filtered by MISAKA_TOOL_FILTER env var.
+
+    Filter format:
+        "+search,get_lesson" — allowlist (only these tools)
+        "-write_lesson,preflight" — denylist (hide these tools)
+        "+misakanet_*" — wildcard allowlist
+        "-misakanet_write_*" — wildcard denylist
+
+    Default (no filter): return all tools.
+    """
+    tool_filter = os.environ.get("MISAKA_TOOL_FILTER", "").strip()
+    if not tool_filter:
+        return TOOLS
+
+    is_allowlist = tool_filter.startswith("+")
+    is_denylist = tool_filter.startswith("-")
+
+    if not (is_allowlist or is_denylist):
+        # Default to allowlist if no prefix
+        patterns = [p.strip() for p in tool_filter.split(",") if p.strip()]
+        is_allowlist = True
+    else:
+        patterns = [p.strip() for p in tool_filter[1:].split(",") if p.strip()]
+
+    if not patterns:
+        return TOOLS
+
+    def matches_any(tool_name: str) -> bool:
+        return any(fnmatch.fnmatch(tool_name, p) for p in patterns)
+
+    if is_allowlist:
+        return [t for t in TOOLS if matches_any(t["name"])]
+    else:
+        return [t for t in TOOLS if not matches_any(t["name"])]
+
+
 def handle_request(request: dict) -> dict:
     """Handle a JSON-RPC request."""
     method = request.get("method", "")
@@ -1003,7 +1042,7 @@ def handle_request(request: dict) -> dict:
         return {
             "jsonrpc": "2.0",
             "id": req_id,
-            "result": {"tools": TOOLS},
+            "result": {"tools": _filtered_tools()},
         }
 
     elif method == "tools/call":
