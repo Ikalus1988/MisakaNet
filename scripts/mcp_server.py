@@ -469,6 +469,44 @@ def handle_usage_status(args: dict) -> dict:
         return {"error": str(e), "user": "unknown", "free_reads_remaining": -1}
 
 
+def handle_register(args: dict) -> dict:
+    """Register an agent and return a node_id + token for unlimited access."""
+    import hashlib
+    import secrets
+    from datetime import datetime, timezone
+
+    agent_type = args.get("agent_type", "unknown")
+
+    # Generate deterministic node_id from agent_type + random suffix
+    suffix = secrets.token_hex(3).upper()
+    node_id = f"Misaka{int(suffix, 16) % 100000:05d}"
+
+    # Generate token
+    token = f"mcp_{secrets.token_urlsafe(24)}"
+
+    registered_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+    # Persist registration to usage_meter so token:user can be tracked
+    try:
+        from scripts.usage_meter import _save_record
+        _save_record({
+            "user": f"token:{token}",
+            "action": "register",
+            "node_id": node_id,
+            "agent_type": agent_type,
+            "ts": registered_at,
+        })
+    except Exception:
+        pass  # Non-fatal: registration still returns token
+
+    return {
+        "node_id": node_id,
+        "token": token,
+        "registered_at": registered_at,
+        "agent_type": agent_type,
+    }
+
+
 # ── MCP Resources ──
 RESOURCES = [
     {
@@ -916,6 +954,24 @@ TOOLS = [
             },
         },
     },
+    {
+        "name": "misakanet_register",
+        "description": (
+            "Register an agent and receive a node_id and token for unlimited remote MCP access. "
+            "Local stdio MCP is unlimited and does not need registration. For remote HTTP MCP, "
+            "call this tool first to get a token, then pass it as the user parameter in subsequent "
+            "calls (e.g. user='token:<your-token>'). Input semantics: agent_type is optional "
+            "(defaults to 'unknown'). Output schema: JSON with node_id, token, registered_at, "
+            "and agent_type. Error cases: none. Side effects: persists registration record. "
+            "Auth: none. Rate limits: one registration per session."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "agent_type": {"type": "string", "description": "Optional agent type identifier (e.g. 'claude-code', 'cursor', 'aider'). Defaults to 'unknown'."},
+            },
+        },
+    },
 ]
 
 
@@ -962,6 +1018,7 @@ def handle_request(request: dict) -> dict:
             "misakanet_write_lesson": handle_write_lesson,
             "misakanet_preflight": handle_preflight,
             "misakanet_usage_status": handle_usage_status,
+            "misakanet_register": handle_register,
         }
 
         handler = handlers.get(tool_name)

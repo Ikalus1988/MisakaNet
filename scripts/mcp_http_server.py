@@ -310,6 +310,47 @@ def misakanet_usage_status(user: str = "anon:mcp-default") -> dict:
         return {"error": str(e), "user": "unknown", "free_reads_remaining": -1}
 
 
+@mcp.tool()
+def misakanet_register(agent_type: str = "unknown") -> dict:
+    """Register an agent and receive a node_id and token for unlimited remote MCP access.
+
+    Local stdio MCP is unlimited and does not need registration. For remote HTTP MCP,
+    call this tool first to get a token, then pass it as the user parameter in subsequent
+    calls (e.g. user='token:<your-token>').
+    """
+    import secrets
+    from datetime import datetime, timezone
+
+    # Generate deterministic node_id from agent_type + random suffix
+    suffix = secrets.token_hex(3).upper()
+    node_id = f"Misaka{int(suffix, 16) % 100000:05d}"
+
+    # Generate token
+    token = f"mcp_{secrets.token_urlsafe(24)}"
+
+    registered_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+    # Persist registration to usage_meter so token:user can be tracked
+    try:
+        from scripts.usage_meter import _save_record
+        _save_record({
+            "user": f"token:{token}",
+            "action": "register",
+            "node_id": node_id,
+            "agent_type": agent_type,
+            "ts": registered_at,
+        })
+    except Exception:
+        pass  # Non-fatal: registration still returns token
+
+    return {
+        "node_id": node_id,
+        "token": token,
+        "registered_at": registered_at,
+        "agent_type": agent_type,
+    }
+
+
 # ── Resources ──
 @mcp.resource("misaka://lessons/index")
 def lessons_index() -> str:
