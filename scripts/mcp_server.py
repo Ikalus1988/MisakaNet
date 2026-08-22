@@ -778,7 +778,8 @@ TOOLS = [
             "(short description of the failure); kind defaults to missing_lesson; error, what_tried, "
             "fix, verification, and matched_lesson_id are optional. Output schema: JSON with "
             "submitted (boolean), intake_id, status (pending_review), redactions_applied, "
-            "quality_score, and receipt. Side effects: writes to data/contribution_queue.jsonl. "
+            "quality_score, and receipt. Error cases: missing problem, duplicate submission. "
+            "Side effects: writes to data/contribution_queue.jsonl. "
             "Auth: none. Rate limits: local stdio process only. All fields are auto-redacted "
             "for secrets before persistence. Do not include raw logs, prompts, file contents, "
             "or secrets."
@@ -828,11 +829,13 @@ TOOLS = [
         "description": (
             "Submit a complete, structured failure lesson. Use after resolving a problem and "
             "documenting the full failure→root cause→fix→verification chain. Requires a registered "
-            "agent token (not anonymous). Input: title, domain, problem, root_cause, fix (all "
-            "required); verification, tags, token, source (optional). Output: lesson_id, status "
-            "(pending_review), quality_score. Lessons must score ≥75 to enter the review queue. "
+            "agent token (not anonymous). Input semantics: title, domain, problem, root_cause, fix "
+            "(all required); verification, tags, token, source (optional). Output schema: JSON with "
+            "lesson_id, status (pending_review), quality_score, quality_notes, redactions_applied, "
+            "and receipt. Error cases: missing required fields, anonymous token, quality score below "
+            "75 threshold, duplicate submission. Side effects: writes to data/contribution_queue.jsonl. "
             "Auth: registered agent token required. Use misakanet_submit_intake for anonymous "
-            "submissions. Side effects: writes to data/contribution_queue.jsonl."
+            "submissions. Rate limits: local stdio process only."
         ),
         "inputSchema": {
             "type": "object",
@@ -883,8 +886,10 @@ TOOLS = [
         "description": (
             "Check risk level before executing high-risk operations. Matches agent intent "
             "against lesson triggers to provide proactive warnings. Use before RAG builds, "
-            "WSL/GPU tasks, bulk imports, or any operation that might fail. Input: intent "
-            "(required), context (optional). Output: risk level, matched lessons, guards."
+            "WSL/GPU tasks, bulk imports, or any operation that might fail. Input semantics: "
+            "intent (required), context (optional). Output schema: JSON with risk level, "
+            "matched lessons, and guards. Error cases: missing intent. Side effects: none. "
+            "Auth: none. Rate limits: local stdio process only."
         ),
         "inputSchema": {
             "type": "object",

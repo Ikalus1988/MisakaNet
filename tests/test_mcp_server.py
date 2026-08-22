@@ -257,6 +257,124 @@ def test_usage_status():
     check("returns is_registered", "is_registered" in result)
 
 
+def test_write_lesson_missing_fields():
+    print("\n-- tools/call: misakanet_write_lesson missing fields --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_write_lesson",
+        "arguments": {"title": "test"},
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns submitted=False", result.get("submitted") is False)
+    check("returns error for missing fields", "error" in result)
+    check("error mentions missing fields", "Missing required fields" in result.get("error", ""))
+
+
+def test_write_lesson_no_token():
+    print("\n-- tools/call: misakanet_write_lesson no token --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_write_lesson",
+        "arguments": {
+            "title": "test lesson",
+            "domain": "python",
+            "problem": "Something failed during build",
+            "root_cause": "Missing dependency",
+            "fix": "Install the package",
+        },
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns submitted=False", result.get("submitted") is False)
+    check("returns error for no token", "error" in result)
+    check("error mentions token required", "token required" in result.get("error", "").lower())
+
+
+def test_write_lesson_anon_token():
+    print("\n-- tools/call: misakanet_write_lesson anon token --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_write_lesson",
+        "arguments": {
+            "title": "test lesson",
+            "domain": "python",
+            "problem": "Something failed during build",
+            "root_cause": "Missing dependency",
+            "fix": "Install the package",
+            "token": "anon:test",
+        },
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns submitted=False", result.get("submitted") is False)
+    check("rejects anon token", "token required" in result.get("error", "").lower())
+
+
+def test_write_lesson_low_quality():
+    print("\n-- tools/call: misakanet_write_lesson low quality --")
+    import uuid
+    unique = uuid.uuid4().hex[:8]
+    resp = rpc("tools/call", {
+        "name": "misakanet_write_lesson",
+        "arguments": {
+            "title": f"test {unique}",
+            "domain": "misc",
+            "problem": "nope",
+            "root_cause": "nope",
+            "fix": "nope",
+            "token": "token:test-agent",
+        },
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns submitted=False", result.get("submitted") is False)
+    check("rejects low quality", "Quality score too low" in result.get("error", ""))
+    check("returns quality_score", "quality_score" in result)
+
+
+def test_write_lesson_success():
+    print("\n-- tools/call: misakanet_write_lesson success --")
+    import uuid
+    unique = uuid.uuid4().hex[:8]
+    title = f"pip install timeout on corporate proxy {unique}"
+    resp = rpc("tools/call", {
+        "name": "misakanet_write_lesson",
+        "arguments": {
+            "title": title,
+            "domain": "python",
+            "problem": "When running pip install behind a corporate proxy, the connection times out after 15 seconds. This happens because the proxy requires authentication but pip does not send credentials by default.",
+            "root_cause": "pip does not automatically use HTTP_PROXY_AUTH environment variables. The proxy returns 407 Proxy Authentication Required but pip treats this as a timeout.",
+            "fix": "Set HTTP_PROXY and HTTPS_PROXY with embedded credentials: export HTTP_PROXY=http://user:pass@proxy:8080. Or use pip --proxy flag.",
+            "verification": "Run pip install requests behind proxy and verify it completes within 30 seconds.",
+            "token": "token:test-agent",
+            "source": "smoke-test",
+        },
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns submitted=True", result.get("submitted") is True)
+    check("returns lesson_id", "lesson_id" in result)
+    check("status is pending_review", result.get("status") == "pending_review")
+    check("returns quality_score", "quality_score" in result)
+    check("quality_score >= 75", result.get("quality_score", 0) >= 75)
+    check("returns receipt", "receipt" in result)
+    # Clean up test contribution from queue
+    queue_path = Path("data/contribution_queue.jsonl")
+    if queue_path.exists():
+        lines = queue_path.read_text().strip().split("\n")
+        lines = [l for l in lines if unique not in l]
+        queue_path.write_text("\n".join(lines) + "\n" if lines else "")
+
+
+def test_preflight_missing_intent():
+    print("\n-- tools/call: misakanet_preflight missing intent --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_preflight",
+        "arguments": {},
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns error for missing intent", "error" in result)
+
+
 if __name__ == "__main__":
     print("MisakaNet MCP Server smoke test")
     test_initialize()
@@ -268,6 +386,12 @@ if __name__ == "__main__":
     test_unknown_tool()
     test_no_drafts_in_search()
     test_usage_status()
+    test_write_lesson_missing_fields()
+    test_write_lesson_no_token()
+    test_write_lesson_anon_token()
+    test_write_lesson_low_quality()
+    test_write_lesson_success()
+    test_preflight_missing_intent()
 
     print(f"\n{'=' * 40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

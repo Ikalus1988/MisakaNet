@@ -68,3 +68,5 @@ data/search-feedback.jsonl
 bench_results/
 .aider*
 .aider*
+coverage.xml
+data/lessons.db
