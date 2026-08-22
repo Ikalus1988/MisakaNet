@@ -219,7 +219,7 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
       const detail = result.error
         ? result.error.message
         : `exit=${result.status} stderr=${(result.stderr || '').toString().slice(0, 200)}`;
-      try { fs.writeFileSync(path.join(os.tmpdir(), `fatal-guard-err-${process.pid}.txt`), detail); } catch (_) {}
+      process.stderr.write(`fatal-guard: Windows handler failed: ${detail}\n`);
     }
   } else {
     const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs, payload]);
