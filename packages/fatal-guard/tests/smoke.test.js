@@ -29,7 +29,7 @@ test('crash smoke captures a four-field tombstone and converts it to a draft', a
     const handler = path.join(tmp, 'record-handler.js');
     await writeFile(handler, [
       '#!/usr/bin/env node',
-      "require('node:fs').writeFileSync(process.env.PAYLOAD_FILE, process.argv.at(-1));",
+      "require('node:fs').writeFileSync(process.env.PAYLOAD_FILE, process.env.PAYLOAD_DATA || process.argv.at(-1));",
     ].join('\n') + '\n');
     await chmod(handler, 0o755);
 

@@ -204,9 +204,19 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
     ...invocation.options,
   };
   if (process.platform === 'win32') {
-    // On Windows, process.exit() kills child processes before they can write
-    // the payload. Use spawnSync so the handler completes before we exit.
-    spawnSync(invocation.command, invocation.args, { ...spawnOpts, timeout: HANDLER_TIMEOUT_MS });
+    // On Windows, detached processes die when the parent exits via process.exit().
+    // Use spawnSync so the handler completes before we exit.
+    const result = spawnSync(invocation.command, invocation.args, {
+      ...spawnOpts,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: HANDLER_TIMEOUT_MS,
+    });
+    if (result.error || (result.status !== null && result.status !== 0)) {
+      const detail = result.error
+        ? result.error.message
+        : `exit=${result.status} stderr=${(result.stderr || '').toString().slice(0, 200)}`;
+      process.stderr.write(`fatal-guard: Windows handler failed: ${detail}\n`);
+    }
   } else {
     const reporter = spawn(invocation.command, invocation.args, {
       ...spawnOpts,
