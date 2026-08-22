@@ -12,7 +12,7 @@
  *   3  wrapped command exceeded --timeout
  */
 
-const { spawn } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { buildPayload } = require('../index');
@@ -197,17 +197,22 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
     } catch (_) {}
   }
   const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs, payload]);
-  const reporter = spawn(invocation.command, invocation.args, {
+  const spawnOpts = {
     stdio: 'ignore',
-    detached: process.platform !== 'win32',
     shell: false,
     windowsHide: true,
     ...invocation.options,
-  });
-  reporter.on('error', () => {});
-  // On Windows, detached:true + unref() doesn't keep the child alive after
-  // the parent exits. Keep the child referenced so the parent waits for it.
-  if (process.platform !== 'win32') {
+  };
+  if (process.platform === 'win32') {
+    // On Windows, process.exit() kills child processes before they can write
+    // the payload. Use spawnSync so the handler completes before we exit.
+    spawnSync(invocation.command, invocation.args, { ...spawnOpts, timeout: HANDLER_TIMEOUT_MS });
+  } else {
+    const reporter = spawn(invocation.command, invocation.args, {
+      ...spawnOpts,
+      detached: true,
+    });
+    reporter.on('error', () => {});
     reporter.unref();
   }
 }
