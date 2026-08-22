@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-22T04:00:09.674776+00:00",
+  "generated_at": "2026-08-22T07:01:38.885138+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 11,
+  "item_count": 7,
   "items": [
     {
       "type": "lesson",
@@ -49,34 +49,6 @@
       "title": "ci: add PR-Agent for AI code review alongside PR Genius",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1185",
       "timestamp": "2026-08-21T16:39:44Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "ci: auto-update lesson/tool badge counts via GitHub Actions",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1173",
-      "timestamp": "2026-08-21T15:53:52Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(roadmap): add competitive analysis track — v2.18 Agent Memory Quality Loop",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1169",
-      "timestamp": "2026-08-21T15:41:46Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs: sync STATUS.md, ROADMAP.md, README.md to v2.18.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1171",
-      "timestamp": "2026-08-21T10:57:46Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs: add agent compatibility grid (#1147)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1153",
-      "timestamp": "2026-08-21T09:57:44Z",
       "source": "github"
     },
     {
