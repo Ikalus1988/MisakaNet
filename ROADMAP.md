@@ -1,9 +1,10 @@
 # MisakaNet 4-Month Roadmap
 
-Last updated: 2026-08-21
+Last updated: 2026-08-22
 
 This roadmap covers August-November 2026. It is biased toward one practical
-flywheel:
+flywheel. The November section integrates competitive analysis findings from
+TeamMemory and WeKnora research (#1162-#1168).
 
 ```text
 private intake -> classification -> maintainer demand board -> curated lesson/rescue/issue
