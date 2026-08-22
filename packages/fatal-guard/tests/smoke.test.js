@@ -79,11 +79,15 @@ test('crash smoke captures a four-field tombstone and converts it to a draft', a
       let marker = 'not found';
       try { marker = await readFile(markerFile, 'utf8'); } catch (_) {}
       let payloadTmp = 'not found';
+      let errFile = 'not found';
       try {
         payloadTmp = await readFile(path.join(os.tmpdir(), `fatal-guard-${result.pid || 'unknown'}.json`), 'utf8');
         payloadTmp = payloadTmp.slice(0, 100);
       } catch (_) {}
-      assert.fail(`fatal handler did not write a payload (marker: ${marker}, payloadTmp: ${payloadTmp}, stderr: ${(result.stderr || '').slice(0, 200)})`);
+      try {
+        errFile = await readFile(path.join(os.tmpdir(), `fatal-guard-err-${result.pid || 'unknown'}.txt`), 'utf8');
+      } catch (_) {}
+      assert.fail(`fatal handler did not write a payload (marker: ${marker}, payloadTmp: ${payloadTmp}, err: ${errFile}, stderr: ${(result.stderr || '').slice(0, 200)})`);
     }
     for (const field of ['schemaVersion', 'reason', 'timestamp', 'pid']) {
       assert.ok(Object.hasOwn(payload, field), `missing ${field}`);

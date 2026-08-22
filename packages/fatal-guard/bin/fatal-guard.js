@@ -12,7 +12,7 @@
  *   3  wrapped command exceeded --timeout
  */
 
-const { spawn, execFileSync } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -204,17 +204,21 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
   };
   if (process.platform === 'win32') {
     // On Windows, detached processes die when the parent exits via process.exit().
-    // Use execFileSync which routes through cmd.exe and reliably waits for completion.
+    // Use spawnSync which blocks until the handler completes.
     const payloadTmp = path.join(os.tmpdir(), `fatal-guard-${process.pid}.json`);
     try { fs.writeFileSync(payloadTmp, payload); } catch (_) {}
     const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs]);
-    try {
-      execFileSync(invocation.command, invocation.args, {
-        timeout: HANDLER_TIMEOUT_MS,
-        stdio: 'ignore',
-        env: { ...process.env, FATAL_PAYLOAD_FILE: payloadTmp },
-      });
-    } catch (_) {}
+    const result = spawnSync(invocation.command, invocation.args, {
+      timeout: HANDLER_TIMEOUT_MS,
+      stdio: 'ignore',
+      env: { ...process.env, FATAL_PAYLOAD_FILE: payloadTmp, FATAL_PAYLOAD: payload },
+    });
+    if (result.error || (result.status !== null && result.status !== 0)) {
+      const detail = result.error
+        ? result.error.message
+        : `exit=${result.status} stderr=${(result.stderr || '').toString().slice(0, 200)}`;
+      try { fs.writeFileSync(path.join(os.tmpdir(), `fatal-guard-err-${process.pid}.txt`), detail); } catch (_) {}
+    }
   } else {
     const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs, payload]);
     const reporter = spawn(invocation.command, invocation.args, {
