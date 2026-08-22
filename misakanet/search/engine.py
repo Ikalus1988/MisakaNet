@@ -4,6 +4,7 @@ BM25 核心算法委托给 misakanet-core 包。
 
 import json
 import math
+import os
 import re
 import sqlite3
 import sys
@@ -27,6 +28,8 @@ WEIGHT_TITLE_EXACT = 0.8
 WEIGHT_TITLE_PARTIAL = 0.4
 WEIGHT_HAS_REF = 0.12
 MAX_METADATA = 1.0
+DEFAULT_BM25_WEIGHT = 0.5
+DEFAULT_VECTOR_WEIGHT = 0.5
 
 # Feature #532: domain synonym query expansion.
 _SYNONYM_MAP: dict[str, list[str]] = {
@@ -266,16 +269,20 @@ def _doc_cache_id(doc: CachedDoc) -> str:
 
 def _search_cached(
     query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False,
-    rerank: bool = False,
+    rerank: bool = False, bm25_weight: float = DEFAULT_BM25_WEIGHT,
+    vector_weight: float = DEFAULT_VECTOR_WEIGHT,
 ) -> list[tuple[float, CachedDoc]]:
     """L1缓存 — 相同 query 直接返回上次结果。"""
-    key = f"{query}_{titles_only}_{broad_only}_{rerank}"
+    key = f"{query}_{titles_only}_{broad_only}_{rerank}_{bm25_weight}_{vector_weight}"
     if key in _L1_CACHE:
         doc_map = {_doc_cache_id(d): d for d in docs}
         result = [(s, doc_map[fid]) for s, fid in _L1_CACHE[key] if fid in doc_map]
         if len(result) == len(_L1_CACHE[key]):
             return result
-    result = _rank_docs_impl(query, docs, titles_only, broad_only, rerank=rerank)
+    result = _rank_docs_impl(
+        query, docs, titles_only, broad_only, rerank=rerank,
+        bm25_weight=bm25_weight, vector_weight=vector_weight,
+    )
     _L1_CACHE[key] = [(s, _doc_cache_id(d)) for s, d in result[:20]]
     if len(_L1_CACHE) > _L1_MAX:
         del _L1_CACHE[next(iter(_L1_CACHE))]
@@ -323,6 +330,33 @@ def _compute_bm25_scores(query: str, docs: list[CachedDoc]) -> list[float]:
     # Map results back to original order
     result_scores = {r.doc_id: r.score for r in results}
     return [result_scores.get(d.filename, 0.0) for d in docs]
+
+
+def _compute_vector_scores(query: str, docs: list[CachedDoc]) -> list[float]:
+    """Compute cosine similarities through the optional embedding backend.
+
+    The backend is intentionally lazy: installations without semantic-search
+    dependencies receive zero vector scores and continue with BM25. This
+    keeps the default CLI usable while allowing hosted deployments to opt into
+    real hybrid retrieval through the same ranking function.
+    """
+    if not docs:
+        return []
+    try:
+        from hub.storage.vector_store import generate_embedding
+
+        query_embedding = generate_embedding(query)
+        doc_embeddings = [generate_embedding(f"{doc.title}\n{doc.content[:4000]}") for doc in docs]
+    except (ImportError, RuntimeError, OSError, ValueError):
+        return [0.0] * len(docs)
+
+    def cosine(left, right):
+        numerator = sum(a * b for a, b in zip(left, right))
+        left_norm = math.sqrt(sum(a * a for a in left))
+        right_norm = math.sqrt(sum(b * b for b in right))
+        return numerator / (left_norm * right_norm) if left_norm and right_norm else 0.0
+
+    return [cosine(query_embedding, embedding) for embedding in doc_embeddings]
 
 
 def _metadata_bonus(query: str, doc: CachedDoc) -> float:
@@ -425,7 +459,8 @@ def _expand_query(query: str) -> str:
 
 def _rank_docs_impl(
     query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False,
-    rerank: bool = False,
+    rerank: bool = False, bm25_weight: float = DEFAULT_BM25_WEIGHT,
+    vector_weight: float = DEFAULT_VECTOR_WEIGHT, vector_scores: list[float] | None = None,
 ) -> list[tuple[float, CachedDoc]]:
     if not docs:
         return []
@@ -435,12 +470,16 @@ def _rank_docs_impl(
         visible = [d for d in docs if not d.is_draft]
         if visible:
             docs = visible
+    bm25_weight, vector_weight = _validate_search_weights(bm25_weight, vector_weight)
     expanded_query = _expand_query(query)
     bm25_raw = _compute_bm25_scores(expanded_query, docs)
     bm25_norm = _normalize(bm25_raw)
+    vector_raw = vector_scores if vector_scores is not None else _compute_vector_scores(query, docs)
+    vector_norm = _normalize(vector_raw)
     scored = [
         (
-            0.65 * bm25_norm[i]
+            bm25_weight * bm25_norm[i]
+            + vector_weight * vector_norm[i]
             + 0.20 * _metadata_bonus(query, d)
             + 0.15 * d.score_baseline
             + _compute_boost(d),
@@ -762,77 +801,62 @@ def _get_why_matched(match_reasons: str) -> dict:
     }
 
 
-def _term_tfidf(query: str, doc: CachedDoc, docs: list[CachedDoc] | None = None) -> list[dict]:
-    """Return transparent per-term TF/IDF contributions for an explanation."""
-    corpus = docs or [doc]
-    query_terms = list(dict.fromkeys(_tokenize(query)))
-    tokenized = [_tokenize(item.content) for item in corpus]
-    total_docs = max(len(tokenized), 1)
-    doc_index = next((index for index, item in enumerate(corpus) if item.filename == doc.filename), 0)
-    doc_tokens = tokenized[doc_index]
-    details = []
-    for term in query_terms:
-        tf = doc_tokens.count(term)
-        if not tf:
-            continue
-        document_frequency = sum(term in tokens for tokens in tokenized)
-        idf = math.log((total_docs + 1) / (document_frequency + 1)) + 1
-        details.append({"term": term, "term_frequency": tf,
-                       "document_frequency": document_frequency,
-                       "tfidf": round(tf * idf, 6)})
-    return details
-
-
-def _entity_matches(query: str, doc: CachedDoc) -> dict[str, list[str]]:
-    terms = set(_tokenize(query))
-    matches = {}
-    for field, value in (("title", doc.title), ("domain", doc.domain), ("tags", " ".join(map(str, doc.tags)))):
-        found = [term for term in _tokenize(value) if term in terms]
-        if found:
-            matches[field] = list(dict.fromkeys(found))
-    return matches
-
-
-def _vector_similarity(query: str, doc: CachedDoc) -> float | None:
-    """Return optional cosine similarity, or None when vectors are unavailable."""
-    try:
-        from hub.storage.vector_store import generate_embedding
-        query_embedding = generate_embedding(query)
-        doc_embedding = generate_embedding(f"{doc.title}\n{doc.content[:4000]}")
-        numerator = sum(a * b for a, b in zip(query_embedding, doc_embedding))
-        left_norm = math.sqrt(sum(a * a for a in query_embedding))
-        right_norm = math.sqrt(sum(b * b for b in doc_embedding))
-        return round(numerator / (left_norm * right_norm), 6) if left_norm and right_norm else 0.0
-    except (ImportError, RuntimeError, OSError, ValueError):
-        return None
-
-
-def _score_breakdown(query: str, doc: CachedDoc, docs: list[CachedDoc] | None = None) -> dict:
-    """Return field-level ranking evidence for CLI/API explain modes."""
+def _score_breakdown(query: str, doc: CachedDoc) -> dict:
     bm25 = _compute_bm25_scores(query, [doc])[0]
     meta_parts = _metadata_bonus_breakdown(query, doc)
     boost_parts = _compute_boost_breakdown(doc)
-    vector = _vector_similarity(query, doc)
-    metadata_total = sum(value for _, value in meta_parts)
-    boost_total = sum(value for _, value in boost_parts)
     return {
         "bm25": round(float(bm25), 6),
-        "bm25_terms": _term_tfidf(query, doc, docs),
-        "vector_similarity": vector,
-        "entity_matches": _entity_matches(query, doc),
-        "hybrid": {
-            "bm25_component": round(0.65 * float(bm25), 6),
-            "metadata_component": round(0.20 * metadata_total, 6),
-            "baseline_component": round(0.15 * float(doc.score_baseline), 6),
-            "boost_component": round(boost_total, 6),
-            "vector_component": vector,
-        },
         "metadata": {key: round(float(value), 6) for key, value in meta_parts},
-        "metadata_total": round(metadata_total, 6),
         "baseline": round(float(doc.score_baseline), 6),
         "boost": {key: round(float(value), 6) for key, value in boost_parts},
-        "boost_total": round(boost_total, 6),
     }
+
+
+def load_search_weights(config_path: str | Path | None = None) -> tuple[float, float]:
+    """Resolve retrieval weights from env or a small YAML/JSON config file."""
+    path_value = config_path or os.environ.get("MISAKANET_CONFIG", "config.yaml")
+    path = Path(path_value)
+    values: dict[str, float] = {}
+    if path.exists():
+        try:
+            if path.suffix.lower() == ".json":
+                raw = json.loads(path.read_text(encoding="utf-8"))
+                section = raw.get("retrieval", {}) if isinstance(raw, dict) else {}
+                values = {key: float(section[key]) for key in ("bm25_weight", "vector_weight") if key in section}
+            else:
+                in_retrieval = False
+                for line in path.read_text(encoding="utf-8").splitlines():
+                    stripped = line.strip()
+                    if not stripped or stripped.startswith("#"):
+                        continue
+                    if stripped == "retrieval:":
+                        in_retrieval = True
+                        continue
+                    if in_retrieval and not line.startswith((" ", "\t")):
+                        in_retrieval = False
+                    if in_retrieval and ":" in stripped:
+                        key, raw_value = (part.strip() for part in stripped.split(":", 1))
+                        if key in ("bm25_weight", "vector_weight"):
+                            values[key] = float(raw_value)
+        except (OSError, ValueError, json.JSONDecodeError):
+            values = {}
+    bm25 = float(os.environ.get("MISAKANET_BM25_WEIGHT", values.get("bm25_weight", DEFAULT_BM25_WEIGHT)))
+    vector = float(os.environ.get("MISAKANET_VECTOR_WEIGHT", values.get("vector_weight", DEFAULT_VECTOR_WEIGHT)))
+    return _validate_search_weights(bm25, vector)
+
+
+def _validate_search_weights(bm25_weight: float, vector_weight: float) -> tuple[float, float]:
+    """Validate and normalize the hybrid retrieval weights."""
+    try:
+        bm25 = float(bm25_weight)
+        vector = float(vector_weight)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("search weights must be numeric") from exc
+    if bm25 < 0 or vector < 0 or bm25 + vector <= 0:
+        raise ValueError("search weights must be non-negative and not both zero")
+    total = bm25 + vector
+    return bm25 / total, vector / total
 
 
 def _get_related_lessons(
@@ -900,32 +924,24 @@ def _format_output(
             print(f"  {'':>25} (matched: {match_reason})")
         # Feature: --explain score breakdown (#303)
         if explain and query:
-            breakdown = _score_breakdown(query, doc, docs=all_docs)
+            bm25 = _compute_bm25_scores(query, [doc])[0]
+            meta_parts = _metadata_bonus_breakdown(query, doc)
+            meta_total = sum(v for _, v in meta_parts)
+            baseline = doc.score_baseline
+            boost_parts = _compute_boost_breakdown(doc)
+            boost_total = sum(v for _, v in boost_parts)
             tag_str = ", ".join(doc.tags[:5]) if doc.tags else "—"
 
-            vector_label = f"{breakdown['vector_similarity']:.3f}" if breakdown['vector_similarity'] is not None else "unavailable"
-            print(f"  {'':>25} ↳ Hybrid components: BM25 {breakdown['hybrid']['bm25_component']:.3f}; "
-                  f"metadata {breakdown['hybrid']['metadata_component']:.3f}; "
-                  f"vector {vector_label}")
-            if breakdown["bm25_terms"]:
-                terms = ", ".join(
-                    f"{item['term']} tf={item['term_frequency']} tfidf={item['tfidf']:.2f}"
-                    for item in breakdown["bm25_terms"]
-                )
-                print(f"  {'':>25}   Terms: {terms}")
-            else:
-                print(f"  {'':>25}   Terms: none")
-            if breakdown["entity_matches"]:
-                print(f"  {'':>25}   Entities: {breakdown['entity_matches']}")
-            if breakdown["metadata"]:
-                meta_detail = ", ".join(f"{key}(+{value:.2f})" for key, value in breakdown["metadata"].items())
-                print(f"  {'':>25}   Meta: {breakdown['metadata_total']:.3f} = {meta_detail}")
+            print(f"  {'':>25} ↳ BM25: {bm25:.3f}")
+            if meta_parts:
+                meta_detail = ", ".join(f"{k}(+{v:.2f})" for k, v in meta_parts)
+                print(f"  {'':>25}   Meta: {meta_total:.3f} = {meta_detail}")
             else:
                 print(f"  {'':>25}   Meta: 0.000")
-            print(f"  {'':>25}   Base: {breakdown['baseline']:.3f}")
-            if breakdown["boost"]:
-                boost_detail = ", ".join(f"{key}({value:+.2f})" for key, value in breakdown["boost"].items())
-                print(f"  {'':>25}   Boost: {breakdown['boost_total']:+.2f} = {boost_detail}")
+            print(f"  {'':>25}   Base: {baseline:.3f}")
+            if boost_parts:
+                boost_detail = ", ".join(f"{k}({v:+.2f})" for k, v in boost_parts)
+                print(f"  {'':>25}   Boost: {boost_total:+.2f} = {boost_detail}")
             else:
                 print(f"  {'':>25}   Boost: +0.00")
             print(f"  {'':>25}   Tags: {tag_str}")

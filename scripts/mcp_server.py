@@ -61,12 +61,28 @@ except ImportError:
 try:
     from misakanet.search.engine import (
         LESSONS,
+        load_search_weights,
         _load_docs_cached,
         _search_cached,
     )
     HAS_BM25 = True
 except ImportError:
     HAS_BM25 = False
+
+    def load_search_weights():
+        """Keep the MCP fallback usable when optional BM25 deps are absent."""
+        return 0.5, 0.5
+
+    def _validate_search_weights(bm25_weight, vector_weight):
+        try:
+            bm25 = float(bm25_weight)
+            vector = float(vector_weight)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("search weights must be numeric") from exc
+        if bm25 < 0 or vector < 0 or bm25 + vector <= 0:
+            raise ValueError("search weights must be non-negative and not both zero")
+        total = bm25 + vector
+        return bm25 / total, vector / total
 
 
 def _fallback_search(query: str, domain: str = None, top: int = 5) -> list | None:
@@ -142,7 +158,13 @@ def handle_search(args: dict) -> dict:
     domain = args.get("domain")
     tags = args.get("tags")
     top = args.get("top", 5)
-    explain = bool(args.get("explain", False))
+    try:
+        configured_bm25, configured_vector = load_search_weights()
+        bm25_weight = float(args.get("bm25_weight", configured_bm25))
+        vector_weight = float(args.get("vector_weight", configured_vector))
+        bm25_weight, vector_weight = _validate_search_weights(bm25_weight, vector_weight)
+    except (TypeError, ValueError) as exc:
+        return {"error": f"invalid retrieval weights: {exc}", "voice": "failure-warning"}
 
     if not query:
         return {
@@ -157,26 +179,29 @@ def handle_search(args: dict) -> dict:
             "voice": "failure-warning",
         }
 
-    if HAS_SAG and not explain:
+    custom_weights = "bm25_weight" in args or "vector_weight" in args
+    if HAS_SAG and not custom_weights:
         results = sag_search(SAG_DB, query, domain=domain, top=top)
         voice = "lesson-found" if results else "failure-warning"
         return {"results": results, "source": "sag-lite", "voice": voice}
     elif HAS_BM25:
         docs = _load_docs_cached(LESSONS, is_lesson=True)
-        scored = _search_cached(query, docs)
+        scored = _search_cached(
+            query, docs, bm25_weight=bm25_weight, vector_weight=vector_weight,
+        )
         results = []
-        from misakanet.search.engine import _score_breakdown
         for score, doc in scored[:top]:
-            result = {
+            results.append({
                 "title": doc.title,
                 "path": str(doc.filepath),
                 "score": round(score, 3),
                 "domain": doc.domain,
                 "status": doc.status,
-            }
-            if explain:
-                result["score_breakdown"] = _score_breakdown(query, doc, docs=docs)
-            results.append(result)
+                "retrieval": {
+                    "bm25_weight": round(bm25_weight, 6),
+                    "vector_weight": round(vector_weight, 6),
+                },
+            })
         voice = "lesson-found" if results else "failure-warning"
         return {"results": results, "source": "bm25", "voice": voice}
     else:
@@ -276,180 +301,6 @@ def handle_submit_usage(args: dict) -> dict:
     return report
 
 
-def handle_submit_intake(args: dict) -> dict:
-    """Submit a failure-case intake via the contribution queue."""
-    from scripts.contribution_queue import submit_contribution
-
-    kind = args.get("kind", "missing_lesson")
-    problem = args.get("problem", "")
-    error = args.get("error", "")
-    what_tried = args.get("what_tried", "")
-    fix = args.get("fix", "")
-    verification = args.get("verification", "")
-    matched_lesson_id = args.get("matched_lesson_id", "")
-    source = args.get("source", "other")
-
-    if not problem:
-        return {
-            "error": "problem is required",
-            "hint": "Describe the failure or gap you encountered.",
-        }
-
-    # Build message from available fields
-    parts = [f"Kind: {kind}"]
-    if error:
-        parts.append(f"Error: {error}")
-    if what_tried:
-        parts.append(f"Tried: {what_tried}")
-    if fix:
-        parts.append(f"Fix: {fix}")
-    if verification:
-        parts.append(f"Verification: {verification}")
-    message = "\n".join(parts)
-
-    result = submit_contribution(
-        contrib_type="intake",
-        user="mcp-agent",
-        title=problem[:200],
-        message=message,
-        problem=problem,
-        fix=fix,
-        verification=verification,
-        source=source,
-        lesson_id=matched_lesson_id,
-    )
-
-    if "error" in result:
-        return {
-            "submitted": False,
-            "error": result["error"],
-            "message": result.get("message", ""),
-            "existing_id": result.get("existing_id", ""),
-        }
-
-    return {
-        "submitted": True,
-        "intake_id": result["id"],
-        "status": result["status"],
-        "redactions_applied": result.get("redactions_applied", 0),
-        "quality_score": result.get("quality_score", 0),
-        "receipt": f"Keep this ID ({result['id']}); no account or email is required.",
-    }
-
-
-def handle_write_lesson(args: dict) -> dict:
-    """Submit a structured lesson via registered agent token."""
-    from scripts.contribution_queue import submit_contribution
-
-    title = args.get("title", "")
-    domain = args.get("domain", "")
-    problem = args.get("problem", "")
-    root_cause = args.get("root_cause", "")
-    fix = args.get("fix", "")
-    verification = args.get("verification", "")
-    tags = args.get("tags", [])
-    source = args.get("source", "mcp-agent")
-    token = args.get("token", "")
-
-    # Validate required fields
-    missing = []
-    if not title:
-        missing.append("title")
-    if not domain:
-        missing.append("domain")
-    if not problem:
-        missing.append("problem")
-    if not root_cause:
-        missing.append("root_cause")
-    if not fix:
-        missing.append("fix")
-
-    if missing:
-        return {
-            "submitted": False,
-            "error": f"Missing required fields: {', '.join(missing)}",
-            "hint": "write_lesson requires title, domain, problem, root_cause, and fix.",
-        }
-
-    # Require registered agent token
-    if not token or token.startswith("anon:"):
-        return {
-            "submitted": False,
-            "error": "Registered agent token required",
-            "hint": "Use misakanet_submit_intake for anonymous submissions. write_lesson requires a registered agent token.",
-        }
-
-    # Build structured message
-    parts = [
-        f"# {title}",
-        f"Domain: {domain}",
-        f"Tags: {', '.join(tags) if tags else 'none'}",
-        "",
-        "## Problem",
-        problem,
-        "",
-        "## Root Cause",
-        root_cause,
-        "",
-        "## Fix",
-        fix,
-    ]
-    if verification:
-        parts.extend(["", "## Verification", verification])
-    message = "\n".join(parts)
-
-    result = submit_contribution(
-        contrib_type="lesson",
-        user=token,
-        title=title,
-        message=message,
-        problem=problem,
-        root_cause=root_cause,
-        fix=fix,
-        verification=verification,
-        source=source,
-    )
-
-    if "error" in result:
-        return {
-            "submitted": False,
-            "error": result["error"],
-            "message": result.get("message", ""),
-            "existing_id": result.get("existing_id", ""),
-        }
-
-    quality_score = result.get("quality_score", 0)
-    if quality_score < 75:
-        return {
-            "submitted": False,
-            "error": f"Quality score too low: {quality_score}/100 (minimum 75)",
-            "quality_score": quality_score,
-            "quality_notes": result.get("quality_notes", []),
-            "hint": "Improve problem description, root cause analysis, or add verification steps.",
-        }
-
-    return {
-        "submitted": True,
-        "lesson_id": result["id"],
-        "status": "pending_review",
-        "quality_score": quality_score,
-        "quality_notes": result.get("quality_notes", []),
-        "redactions_applied": result.get("redactions_applied", 0),
-        "receipt": f"Lesson {result['id']} queued for review. Quality: {quality_score}/100.",
-    }
-
-
-def handle_preflight(args: dict) -> dict:
-    """Check risk level before executing high-risk operations."""
-    from scripts.mcp_preflight import preflight_check
-    intent = args.get("intent", "")
-    context = args.get("context", "")
-    if not intent:
-        return {"error": "intent is required", "voice": "failure-warning"}
-    result = preflight_check(intent, context)
-    return result
-
-
 def handle_usage_status(args: dict) -> dict:
     """Show current usage status and remaining quota."""
     try:
@@ -480,7 +331,7 @@ RESOURCES = [
     {
         "uri": "misaka://protocol/overview",
         "name": "Protocol Overview",
-        "description": "failure-memory protocol configuration (trust tiers, rings, scoring)",
+        "description": "Swarm Knowledge Protocol configuration (trust tiers, rings, scoring)",
         "mimeType": "application/json",
     },
     {
@@ -708,9 +559,7 @@ TOOLS = [
             "Search MisakaNet's public failure-lesson index by error text, keyword, or topic. "
             "Use when you need to discover relevant lessons and do not already know a lesson ID. "
             "Input semantics: query is required; domain optionally filters by lesson domain; top limits "
-            "ranked results and defaults to 5. Set explain=true to return matched terms, TF-IDF, "
-            "entity matches, vector similarity, and hybrid score components. Output schema: JSON "
-            "with results[] and source; each "
+            "ranked results and defaults to 5. Output schema: JSON with results[] and source; each "
             "result is a ranked lesson summary that may include path, title, domain/status, score/rank, "
             "and match details depending on the active index. Error cases: missing query, unavailable "
             "search index, or no matches (empty results). Side effects: none. Auth: none. Rate limits: "
@@ -723,7 +572,8 @@ TOOLS = [
                 "query": {"type": "string", "description": "Required redacted error message, keyword, or topic (for example: 'pip install timeout' or 'DCO sign-off failed')."},
                 "domain": {"type": "string", "description": "Optional domain filter such as devops, python, network, feishu, rag, fanuc, or mcp."},
                 "top": {"type": "integer", "description": "Maximum ranked results to return. Defaults to 5; keep small for MCP context and latency."},
-                "explain": {"type": "boolean", "description": "Include score evidence for each result; vector similarity is null when the optional backend is unavailable."},
+                "bm25_weight": {"type": "number", "minimum": 0, "description": "Optional BM25 blend weight; normalized with vector_weight."},
+                "vector_weight": {"type": "number", "minimum": 0, "description": "Optional semantic-vector blend weight; normalized with bm25_weight."},
             },
             "required": ["query"],
         },
@@ -767,132 +617,6 @@ TOOLS = [
                 "outcome": {"type": "string", "description": "Short result label such as solved, partial, or not-helpful."},
             },
             "required": ["lesson_id"],
-        },
-    },
-    {
-        "name": "misakanet_submit_intake",
-        "description": (
-            "Submit a failure-case intake when no matching lesson exists or a lesson was "
-            "stale/incorrect. Use after misakanet_search fails to find a good match, or when "
-            "the user resolved a problem not yet documented. Input semantics: problem is required "
-            "(short description of the failure); kind defaults to missing_lesson; error, what_tried, "
-            "fix, verification, and matched_lesson_id are optional. Output schema: JSON with "
-            "submitted (boolean), intake_id, status (pending_review), redactions_applied, "
-            "quality_score, and receipt. Side effects: writes to data/contribution_queue.jsonl. "
-            "Auth: none. Rate limits: local stdio process only. All fields are auto-redacted "
-            "for secrets before persistence. Do not include raw logs, prompts, file contents, "
-            "or secrets."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "kind": {
-                    "type": "string",
-                    "enum": ["missing_lesson", "stale_lesson", "new_lesson_candidate"],
-                    "description": "Type of intake. missing_lesson = no match found; stale_lesson = matched but wrong; new_lesson_candidate = user resolved a new problem.",
-                },
-                "problem": {
-                    "type": "string",
-                    "description": "Required short description of the failure or gap (max 2000 chars).",
-                },
-                "error": {
-                    "type": "string",
-                    "description": "Optional short error message (auto-redacted).",
-                },
-                "what_tried": {
-                    "type": "string",
-                    "description": "Optional: what was attempted before or during the failure.",
-                },
-                "fix": {
-                    "type": "string",
-                    "description": "Optional: how the problem was resolved, if known.",
-                },
-                "verification": {
-                    "type": "string",
-                    "description": "Optional: how to confirm the fix works.",
-                },
-                "matched_lesson_id": {
-                    "type": "string",
-                    "description": "Optional: lesson ID that was checked but did not help (for stale_lesson).",
-                },
-                "source": {
-                    "type": "string",
-                    "description": "Calling client: codex, claude-code, cursor, dsh, curl, or other.",
-                },
-            },
-            "required": ["problem"],
-        },
-    },
-    {
-        "name": "misakanet_write_lesson",
-        "description": (
-            "Submit a complete, structured failure lesson. Use after resolving a problem and "
-            "documenting the full failure→root cause→fix→verification chain. Requires a registered "
-            "agent token (not anonymous). Input: title, domain, problem, root_cause, fix (all "
-            "required); verification, tags, token, source (optional). Output: lesson_id, status "
-            "(pending_review), quality_score. Lessons must score ≥75 to enter the review queue. "
-            "Auth: registered agent token required. Use misakanet_submit_intake for anonymous "
-            "submissions. Side effects: writes to data/contribution_queue.jsonl."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "title": {
-                    "type": "string",
-                    "description": "Required lesson title — short, specific, kebab-case friendly (e.g. 'pip install timeout on corporate proxy').",
-                },
-                "domain": {
-                    "type": "string",
-                    "description": "Required domain: devops, python, network, feishu, rag, fanuc, mcp, docker, git, etc.",
-                },
-                "problem": {
-                    "type": "string",
-                    "description": "Required description of the failure (max 2000 chars).",
-                },
-                "root_cause": {
-                    "type": "string",
-                    "description": "Required root cause analysis — why did it fail?",
-                },
-                "fix": {
-                    "type": "string",
-                    "description": "Required fix — what resolved the problem?",
-                },
-                "verification": {
-                    "type": "string",
-                    "description": "Optional: how to confirm the fix works.",
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Optional tags for categorization (e.g. ['proxy', 'pip', 'corporate-network']).",
-                },
-                "token": {
-                    "type": "string",
-                    "description": "Registered agent token (e.g. 'token:abc123'). Required for write_lesson.",
-                },
-                "source": {
-                    "type": "string",
-                    "description": "Calling client: codex, claude-code, cursor, dsh, or other.",
-                },
-            },
-            "required": ["title", "domain", "problem", "root_cause", "fix"],
-        },
-    },
-    {
-        "name": "misakanet_preflight",
-        "description": (
-            "Check risk level before executing high-risk operations. Matches agent intent "
-            "against lesson triggers to provide proactive warnings. Use before RAG builds, "
-            "WSL/GPU tasks, bulk imports, or any operation that might fail. Input: intent "
-            "(required), context (optional). Output: risk level, matched lessons, guards."
-        ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "intent": {"type": "string", "description": "Task intent description (e.g. 'build RAG index from PDFs')"},
-                "context": {"type": "string", "description": "Environment context (e.g. 'WSL, GPU 8GB')"},
-            },
-            "required": ["intent"],
         },
     },
     {
@@ -953,9 +677,6 @@ def handle_request(request: dict) -> dict:
             "misakanet_search": handle_search,
             "misakanet_get_lesson": handle_get_lesson,
             "misakanet_submit_usage": handle_submit_usage,
-            "misakanet_submit_intake": handle_submit_intake,
-            "misakanet_write_lesson": handle_write_lesson,
-            "misakanet_preflight": handle_preflight,
             "misakanet_usage_status": handle_usage_status,
         }
 

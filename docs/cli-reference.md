@@ -43,6 +43,7 @@ python3 search_knowledge.py "database locked" --json --top=3 | jq '.[].path'
 | `python3 scripts/new_lesson.py` | Interactive lesson generator |
 | `python3 scripts/queue_lesson.py` | Queue a lesson via CLI args |
 | `python3 scripts/tombstone_to_draft.py --from-file <f>` | fatal-guard tombstone → draft lesson |
+| `python3 search_knowledge.py <query> --bm25-weight <n> --vector-weight <n>` | tune hybrid retrieval weights |
 | `python3 scripts/bench_orchestrator.py [--include-drafts]` | Agent benchmark runner (Phase B/C) |
 | `python3 scripts/contribute.py --wizard` | 7-step interactive lesson creation wizard |
 | `python3 scripts/check_worker_secrets.py` | Scan workers/ for hardcoded secrets |
