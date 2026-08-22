@@ -12,7 +12,7 @@
  *   3  wrapped command exceeded --timeout
  */
 
-const { spawn, spawnSync } = require('node:child_process');
+const { spawn, spawnSync, execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { buildPayload } = require('../index');
@@ -203,23 +203,18 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
   };
   if (process.platform === 'win32') {
     // On Windows, detached processes die when the parent exits via process.exit().
-    // Write the payload to a temp file and pass the path via env var to avoid
-    // command-line length/quoting issues with large JSON payloads.
+    // Use execFileSync which routes through cmd.exe and reliably waits for completion.
     const payloadTmp = path.join(os.tmpdir(), `fatal-guard-${process.pid}.json`);
     try { fs.writeFileSync(payloadTmp, payload); } catch (_) {}
     const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs]);
-    const result = spawnSync(invocation.command, invocation.args, {
-      ...spawnOpts,
-      ...invocation.options,
-      timeout: HANDLER_TIMEOUT_MS,
-      env: { ...process.env, FATAL_PAYLOAD_FILE: payloadTmp },
-    });
-    if (result.error || (result.status !== null && result.status !== 0)) {
-      const detail = result.error
-        ? result.error.message
-        : `exit=${result.status} stderr=${(result.stderr || '').toString().slice(0, 200)}`;
-      process.stderr.write(`fatal-guard: Windows handler failed: ${detail}\n`);
-    }
+    try {
+      execFileSync(invocation.command, invocation.args, {
+        timeout: HANDLER_TIMEOUT_MS,
+        stdio: 'ignore',
+        env: { ...process.env, FATAL_PAYLOAD_FILE: payloadTmp },
+        windowsHide: true,
+      });
+    } catch (_) {}
   } else {
     const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs, payload]);
     const reporter = spawn(invocation.command, invocation.args, {
