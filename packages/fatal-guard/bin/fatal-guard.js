@@ -199,13 +199,17 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
   const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs, payload]);
   const reporter = spawn(invocation.command, invocation.args, {
     stdio: 'ignore',
-    detached: true,
+    detached: process.platform !== 'win32',
     shell: false,
     windowsHide: true,
     ...invocation.options,
   });
   reporter.on('error', () => {});
-  reporter.unref();
+  // On Windows, detached:true + unref() doesn't keep the child alive after
+  // the parent exits. Keep the child referenced so the parent waits for it.
+  if (process.platform !== 'win32') {
+    reporter.unref();
+  }
 }
 
 function main() {
