@@ -124,7 +124,9 @@ function handlerSpec() {
 
 // Parse a handler command without invoking a shell. This supports the documented
 // `/path/to/handler` form and simple quoted paths while keeping payloads argv-safe.
+// On Windows, backslashes are path separators (not escape characters).
 function splitCommand(value) {
+  const isWindows = process.platform === 'win32';
   const parts = [];
   let part = '';
   let quote = '';
@@ -133,7 +135,7 @@ function splitCommand(value) {
     if (escaped) {
       part += char;
       escaped = false;
-    } else if (char === '\\') {
+    } else if (char === '\\' && !isWindows) {
       escaped = true;
     } else if (quote) {
       if (char === quote) quote = '';
