@@ -98,6 +98,7 @@ test('crash smoke captures a four-field tombstone and converts it to a draft', a
 
     const draft = await run(PYTHON, [CONVERTER, '--from-file', payloadFile, '--dry-run'], {
       cwd: path.join(PACKAGE_ROOT, '..', '..'),
+      env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
     });
     assert.equal(draft.code, 0, draft.stderr);
     assert.match(draft.stdout, /\[DRY RUN\]/);
