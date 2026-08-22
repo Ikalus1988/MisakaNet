@@ -46,13 +46,16 @@ test('crash smoke captures a four-field tombstone and converts it to a draft', a
 
     // The handler is detached by design; poll briefly instead of sleeping a
     // fixed interval so the test remains fast on both Linux and Windows.
+    // Windows needs more time due to process group detachment overhead.
+    const maxAttempts = process.platform === 'win32' ? 60 : 30;
+    const pollInterval = process.platform === 'win32' ? 100 : 50;
     let payload;
-    for (let attempt = 0; attempt < 30; attempt += 1) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       try {
         payload = JSON.parse(await readFile(payloadFile, 'utf8'));
         break;
       } catch (_) {
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
       }
     }
     assert.ok(payload, 'fatal handler did not write a payload');

@@ -201,6 +201,7 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
     stdio: 'ignore',
     detached: true,
     shell: false,
+    windowsHide: true,
     ...invocation.options,
   });
   reporter.on('error', () => {});
