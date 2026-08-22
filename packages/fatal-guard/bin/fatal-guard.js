@@ -206,10 +206,12 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
   if (process.platform === 'win32') {
     // On Windows, detached processes die when the parent exits via process.exit().
     // Use spawnSync so the handler completes before we exit.
+    // Pass the payload via FATAL_PAYLOAD env var to avoid Windows command-line
+    // length/quoting issues with large JSON strings.
     const result = spawnSync(invocation.command, invocation.args, {
       ...spawnOpts,
-      stdio: ['ignore', 'pipe', 'pipe'],
       timeout: HANDLER_TIMEOUT_MS,
+      env: { ...process.env, FATAL_PAYLOAD: payload },
     });
     if (result.error || (result.status !== null && result.status !== 0)) {
       const detail = result.error

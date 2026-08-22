@@ -29,7 +29,10 @@ test('crash smoke captures a four-field tombstone and converts it to a draft', a
     const handler = path.join(tmp, 'record-handler.js');
     await writeFile(handler, [
       '#!/usr/bin/env node',
-      "require('node:fs').writeFileSync(process.env.PAYLOAD_FILE, process.env.PAYLOAD_DATA || process.argv.at(-1));",
+      // On Windows, the payload is passed via FATAL_PAYLOAD env var to avoid
+      // command-line quoting issues with large JSON strings.
+      "const data = process.env.FATAL_PAYLOAD || process.argv.at(-1);",
+      "require('node:fs').writeFileSync(process.env.PAYLOAD_FILE, data);",
     ].join('\n') + '\n');
     await chmod(handler, 0o755);
 
