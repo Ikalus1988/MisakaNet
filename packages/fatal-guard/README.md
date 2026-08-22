@@ -25,6 +25,26 @@ One env var. No source code changes.
 
 ## Quick start
 
+### CLI flags and exit codes
+
+The wrapper provides deterministic CLI behavior:
+
+```text
+0  wrapped command completed successfully
+1  wrapped command failed or could not be started
+2  invalid usage
+3  wrapped command exceeded --timeout
+```
+
+```bash
+fatal-guard --help
+fatal-guard --version
+fatal-guard --timeout 5000 -- node app.js
+```
+
+`--timeout` defaults to `0` (disabled). A missing executable, malformed option,
+or missing `FATAL_HANDLER` on a crash produces an actionable stderr message.
+
 ### Wrapper mode (no code changes needed)
 
 ```bash
