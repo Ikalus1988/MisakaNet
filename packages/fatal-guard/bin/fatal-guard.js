@@ -17,6 +17,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { buildPayload } = require('../index');
 const { redact } = require('../src/lib/redact');
+const { buildSpawnSpec } = require('../src/lib/spawn-command');
 
 const EXIT = Object.freeze({ OK: 0, ERROR: 1, USAGE: 2, TIMEOUT: 3 });
 const FATAL_SIGNALS = new Set([
@@ -153,17 +154,21 @@ function splitCommand(value) {
   return parts;
 }
 
-function reportCrash(reason, error, stderrBuffer) {
+function reportCrash(reason, error, stderrBuffer, exitCode) {
   const handler = handlerSpec();
   const rawSnippet = stderrBuffer
     ? stderrBuffer.split('\n').filter(Boolean).slice(-4).join('\n').trim()
     : `[fatal-guard] process crashed (${reason})`;
-  const payload = JSON.stringify({
+  const payloadObj = {
     ...JSON.parse(buildPayload(reason, error)),
     errorName: error?.name || 'ProcessCrash',
     message: redact(error?.message || reason).slice(0, 500),
     stackSnippet: redact(rawSnippet).slice(0, 1000),
-  });
+  };
+  if (exitCode !== undefined) {
+    payloadObj.exit_code = exitCode;
+  }
+  const payload = JSON.stringify(payloadObj);
 
   if (!handler) {
     process.stderr.write('fatal-guard: FATAL_HANDLER is not set; crash report was not sent.\n');
@@ -182,31 +187,24 @@ function reportCrash(reason, error, stderrBuffer) {
     return;
   }
 
-  const reporter = spawn(command[0], [...command.slice(1), payload], {
-    stdio: ['ignore', 'pipe', 'pipe'],
-    shell: false,
-  });
-  let output = '';
-  let errorOutput = '';
-  reporter.stdout?.on('data', (chunk) => { output += chunk.toString(); });
-  reporter.stderr?.on('data', (chunk) => { errorOutput += chunk.toString(); });
-  const timer = setTimeout(() => reporter.kill('SIGKILL'), HANDLER_TIMEOUT_MS);
-  reporter.on('error', (handlerError) => {
-    clearTimeout(timer);
-    process.stderr.write(`fatal-guard: handler failed: ${handlerError.message}\n`);
-  });
-  reporter.on('close', (code) => {
-    clearTimeout(timer);
-    if (code !== 0) {
-      process.stderr.write(`fatal-guard: handler exited with code ${code}${errorOutput ? `: ${redact(errorOutput).trim()}` : ''}\n`);
-    } else if (output.trim()) {
-      try {
-        JSON.parse(output);
-      } catch (_) {
-        process.stderr.write('fatal-guard: handler returned invalid JSON output.\n');
+  let handlerArgs = [];
+  if (process.env.FATAL_HANDLER_ARGS) {
+    try {
+      const parsed = JSON.parse(process.env.FATAL_HANDLER_ARGS);
+      if (Array.isArray(parsed) && parsed.every((arg) => typeof arg === 'string')) {
+        handlerArgs = parsed;
       }
-    }
+    } catch (_) {}
+  }
+  const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs, payload]);
+  const reporter = spawn(invocation.command, invocation.args, {
+    stdio: 'ignore',
+    detached: true,
+    shell: false,
+    ...invocation.options,
   });
+  reporter.on('error', () => {});
+  reporter.unref();
 }
 
 function main() {
@@ -247,7 +245,7 @@ function main() {
     finished = true;
     if (timeoutTimer) clearTimeout(timeoutTimer);
     if (timedOut) {
-      reportCrash('timeout', new Error(`command timed out after ${timeout}ms`), stderrBuffer);
+      reportCrash('timeout', new Error(`command timed out after ${timeout}ms`), stderrBuffer, EXIT.TIMEOUT);
       process.exit(EXIT.TIMEOUT);
     }
     if (spawnError) process.exit(EXIT.ERROR);
@@ -256,7 +254,7 @@ function main() {
       || /error|exception|traceback|failed|fatal|killed/i.test(stderrBuffer);
     if (crashed && hasError) {
       const reason = signal ? `killed_by_${signal}` : 'process_crash';
-      reportCrash(reason, new Error(`exit code: ${code}, signal: ${signal || 'none'}`), stderrBuffer);
+      reportCrash(reason, new Error(`exit code: ${code}, signal: ${signal || 'none'}`), stderrBuffer, code);
     }
     process.exit(code ?? EXIT.ERROR);
   });
