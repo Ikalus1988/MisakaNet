@@ -18,7 +18,7 @@ function run(command, args, options = {}) {
     child.stdout.on('data', (chunk) => { stdout += chunk; });
     child.stderr.on('data', (chunk) => { stderr += chunk; });
     child.once('error', reject);
-    child.once('close', (code, signal) => resolve({ code, signal, stdout, stderr }));
+    child.once('close', (code, signal) => resolve({ code, signal, stdout, stderr, pid: child.pid }));
   });
 }
 
@@ -80,8 +80,7 @@ test('crash smoke captures a four-field tombstone and converts it to a draft', a
       try { marker = await readFile(markerFile, 'utf8'); } catch (_) {}
       let payloadTmp = 'not found';
       try {
-        const os = require('node:os');
-        payloadTmp = await readFile(require('node:path').join(os.tmpdir(), `fatal-guard-${result.pid || 'unknown'}.json`), 'utf8');
+        payloadTmp = await readFile(path.join(os.tmpdir(), `fatal-guard-${result.pid || 'unknown'}.json`), 'utf8');
         payloadTmp = payloadTmp.slice(0, 100);
       } catch (_) {}
       assert.fail(`fatal handler did not write a payload (marker: ${marker}, payloadTmp: ${payloadTmp}, stderr: ${(result.stderr || '').slice(0, 200)})`);

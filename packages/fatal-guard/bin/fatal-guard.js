@@ -12,8 +12,9 @@
  *   3  wrapped command exceeded --timeout
  */
 
-const { spawn, spawnSync, execFileSync } = require('node:child_process');
+const { spawn, execFileSync } = require('node:child_process');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { buildPayload } = require('../index');
 const { redact } = require('../src/lib/redact');
@@ -212,7 +213,6 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
         timeout: HANDLER_TIMEOUT_MS,
         stdio: 'ignore',
         env: { ...process.env, FATAL_PAYLOAD_FILE: payloadTmp },
-        windowsHide: true,
       });
     } catch (_) {}
   } else {
