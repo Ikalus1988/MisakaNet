@@ -6,10 +6,10 @@
 
 | 指标 | 数值 |
 |------|------|
-| 📚 Lessons | 382 篇 |
+| 📚 Lessons | 388 篇 |
 | 🏛️ 领域覆盖 | 25+ 个 |
 | 🔧 MCP Tools | 7 个 (local) + register (remote) |
-| ⭐ Stars | 374 |
+| ⭐ Stars | 421 |
 | 🍴 Forks | 137 |
 | 🌐 Active Contributors | 10+ |
 
