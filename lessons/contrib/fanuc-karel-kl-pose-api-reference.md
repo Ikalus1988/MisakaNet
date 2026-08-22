@@ -3,7 +3,7 @@
   "title": "KAREL Pose Library API Reference — IK/FK, Quaternion, Matrix Transforms",
   "domain": "fanuc",
   "subdomain": "karel-kinematics",
-  "source": "pr",
+  "source": "manual",
   "status": "draft",
   "confidence": 0.85,
   "created": "2026-07-12",
@@ -22,10 +22,9 @@
   "root_cause": "KAREL原生仅提供基础PR读写和简单的位姿操作，缺少IK/FK求解器、万向锁安全的旋转表示、以及多坐标系之间的转换工具",
   "solution": "Ka-Boost pose库提供完整的运动学工具链：solveIK/solveK做IK/FK、quaternion子模块避免万向锁、matpose做4x4矩阵变换、cylindrical_to_cartesian做圆柱坐标转换、correctFrame用四元数对齐工具坐标系到工件表面",
   "verification": "通过KUnit测试套件验证：test_pose.kl覆盖IK/FK往返、字符串构造、mask操作、圆柱转换、外接圆心；test_matpose.kl覆盖矩阵和四元数运算",
-  "author": "Ikalus1988",
-  "edited_at": "2026-07-15T10:25:40+08:00",
-  "merged_by": "Ikalus1988",
-  "pr": 472
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 
 ### 问题描述

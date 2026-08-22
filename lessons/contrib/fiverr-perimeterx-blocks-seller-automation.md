@@ -1,16 +1,22 @@
 ---
 {
-  "\"title\"": "Fiverr PerimeterX captcha blocks headless seller gig creation\",",
-  "\"domain\"": "web\",",
-  "\"tags\"": "[\"fiverr\", \"captcha\", \"perimeterx\", \"playwright\", \"seller\", \"automation\"],",
-  "\"status\"": "published\",",
-  "\"source\"": "uncledad96-glitch\",",
-  "\"created\"": "2026-07-20\",",
-  "\"updated\"": "2026-07-20",
-  "author": "uncledad96-glitch",
+  "title": "Fiverr PerimeterX captcha blocks headless seller gig creation",
+  "domain": "web",
+  "tags": [
+    "fiverr",
+    "captcha",
+    "perimeterx",
+    "playwright",
+    "seller",
+    "automation"
+  ],
+  "status": "published",
   "source": "manual",
-  "edited_at": "2026-07-20T23:17:44+02:00",
-  "merged_by": "uncledad96-glitch"
+  "created": "2026-07-20",
+  "updated": "2026-07-20",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

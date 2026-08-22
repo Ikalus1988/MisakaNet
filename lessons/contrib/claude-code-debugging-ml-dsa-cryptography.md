@@ -1,10 +1,23 @@
 ---
 {
-  "{\"title\"": "Claude Code can debug low-level cryptography — ML-DSA signature verification failure\", \"domain\": \"debugging\", \"tags\": [\"claude_code\", \"cryptography\", \"post_quantum\", \"ml_dsa\", \"debugging\", \"go\"], \"language\": \"en\", \"status\": \"published\", \"source\": \"https://words.filippo.io/claude-debugging/\", \"created\": \"2026-07-29\", \"confidence\": \"0.90\"}",
-  "author": "zsxh1990",
+  "title": "Claude Code can debug low-level cryptography — ML-DSA signature verification failure",
+  "domain": "debugging",
+  "tags": [
+    "claude_code",
+    "cryptography",
+    "post_quantum",
+    "ml_dsa",
+    "debugging",
+    "go"
+  ],
+  "language": "en",
+  "status": "published",
   "source": "manual",
-  "edited_at": "2026-07-29T09:45:21+08:00",
-  "merged_by": "zsxh1990"
+  "created": "2026-07-29",
+  "confidence": "0.90",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

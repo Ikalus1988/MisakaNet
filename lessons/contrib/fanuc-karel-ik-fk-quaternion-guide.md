@@ -3,7 +3,7 @@
   "title": "IK/FK and Quaternion Math Guide for FANUC KAREL Robot Programming",
   "domain": "fanuc",
   "subdomain": "karel-kinematics",
-  "source": "pr",
+  "source": "manual",
   "status": "draft",
   "confidence": 0.85,
   "created": "2026-07-12",
@@ -23,10 +23,9 @@
   "root_cause": "KAREL原生运动学函数有限，欧拉角在±90°俯仰角附近存在万向锁，坐标系约定(ZYX/RPY)容易混淆，PR寄存器有joint/Cartesian两种模式需要区分",
   "solution": "pose库提供：solveIK/solveK做IK/FK(需检查get_ok)、vector_to_euler2用四元数避免万向锁、cylindrical_to_cartesian支持Z_AXES/VERT_AXES等z_axis参数、mask_posreg_xyz/orient做选择性PR更新、correctFrame用四元数对齐工具坐标系",
   "verification": "KUnit测试套件覆盖IK/FK往返精度、四元数运算正确性、圆柱坐标转换精度；6种常见模式(路径规划IK、圆柱映射、表面法线对齐、切线转欧拉、选择性PR更新、4x4矩阵组合)均有完整代码示例",
-  "author": "Ikalus1988",
-  "edited_at": "2026-07-15T10:25:40+08:00",
-  "merged_by": "Ikalus1988",
-  "pr": 472
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 
 ### 问题描述

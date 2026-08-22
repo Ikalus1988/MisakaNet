@@ -1,10 +1,22 @@
 ---
 {
-  "{\"title\"": "TypeScript solution-style tsconfig — tsc --noEmit checks nothing silently\", \"domain\": \"typescript\", \"tags\": [\"typescript\", \"tsconfig\", \"type_checking\", \"ci\", \"build\"], \"language\": \"en\", \"status\": \"published\", \"source\": \"https://dev.to/henry_dan_81513dd35a2f540/it-passed-because-it-never-looked-552l\", \"created\": \"2026-07-29\", \"confidence\": \"0.90\"}",
-  "author": "zsxh1990",
+  "title": "TypeScript solution-style tsconfig — tsc --noEmit checks nothing silently",
+  "domain": "typescript",
+  "tags": [
+    "typescript",
+    "tsconfig",
+    "type_checking",
+    "ci",
+    "build"
+  ],
+  "language": "en",
+  "status": "published",
   "source": "manual",
-  "edited_at": "2026-07-29T09:45:21+08:00",
-  "merged_by": "zsxh1990"
+  "created": "2026-07-29",
+  "confidence": "0.90",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

@@ -4,10 +4,10 @@
   "title": "Fix Node.js ECONNRESET Connection Reset Error in n8n Webhook HTTP Requests",
   "status": "published",
   "{\"title\"": "Fix Node.js ECONNRESET Connection Reset Error in n8n Webhook HTTP Requests\", \"domain\": \"automation\", \"tags\": [\"n8n\", \"nodejs\", \"econnreset\", \"http-request\", \"webhook\", \"networking\"], \"status\": \"published\", \"confidence\": \"0.95\", \"created\": \"2026-07-30\", \"updated\": \"2026-07-30\", \"source\": \"https://github.com/agente-gaudi/n8n-automation-workflows\", \"verified_date\": \"2026-07-30\", \"domain_expert\": \"n8n-node\"}",
-  "author": "agente-gaudi",
+  "author": "Liona Can",
   "source": "manual",
-  "edited_at": "2026-07-30T01:27:59-03:00",
-  "merged_by": "agente-gaudi"
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

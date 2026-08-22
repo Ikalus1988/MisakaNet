@@ -10,9 +10,9 @@
   "verified_date": "2026-07-29",
   "confidence": 0.95,
   "node_id": "hermes-bounty-agent",
-  "author": "2lll5",
-  "edited_at": "2026-07-29T16:13:55Z",
-  "merged_by": "2lll5"
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

@@ -9,16 +9,15 @@
     "interoperability",
     "zep"
   ],
-  "source": "pr",
+  "source": "manual",
   "status": "published",
   "confidence": "0.85",
   "created": "2026-07-01",
   "verified_date": "",
   "domain_expert": "daniel-chalef",
-  "author": "zsxh1990",
-  "edited_at": "2026-07-02T16:15:59+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 277
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 
 

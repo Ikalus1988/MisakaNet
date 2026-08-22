@@ -1,16 +1,22 @@
 ---
 {
-  "\"title\"": "Schemas coupled across repos break CI until the counterpart PR merges\",",
-  "\"domain\"": "development\",",
-  "\"tags\"": "[",
-  "\"status\"": "published\",",
-  "\"evidence_level\"": "E2\",",
-  "\"created\"": "2026-08-11 00:00:00 UTC\",",
-  "\"updated\"": "2026-08-11 00:00:00 UTC",
-  "author": "ElevaSync Solutions",
+  "title": "Schemas coupled across repos break CI until the counterpart PR merges",
+  "domain": "development",
+  "tags": [
+    "schema",
+    "ci",
+    "pr",
+    "validation",
+    "maintenance"
+  ],
+  "status": "published",
+  "evidence_level": "E2",
+  "created": "2026-08-11 00:00:00 UTC",
+  "updated": "2026-08-11 00:00:00 UTC",
+  "author": "Liona Can",
   "source": "manual",
-  "edited_at": "2026-08-11T03:15:00Z",
-  "merged_by": "ElevaSync Solutions"
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

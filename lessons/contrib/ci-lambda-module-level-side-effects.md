@@ -4,13 +4,12 @@
   "domain": "devops",
   "tags": "",
   "status": "published",
-  "source": "pr",
+  "source": "manual",
   "confidence": 0.9,
   "created": "2026-07-07",
-  "author": "zsxh1990",
-  "edited_at": "2026-07-08T17:09:01+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 415
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

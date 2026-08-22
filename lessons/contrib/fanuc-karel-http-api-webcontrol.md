@@ -1,5 +1,34 @@
 ---
-{"id":"fanuc-karel-http-api-webcontrol","title":"FANUC KAREL HTTP API — WebControl Robot Motion and Monitoring","domain":"fanuc","subdomain":"karel-webcontrol","source":"github-fanuc-webcontrol-api.md","status":"draft","confidence":0.75,"created":"2026-07-12","updated":"2026-08-13","evidence_level":"E0","tags":["fanuc","karel","http","api","webcontrol","rest","motion","monitoring"],"quality_score":75,"problem":"需要通过HTTP接口远程控制FANUC机器人运动、监控状态、管理程序执行，但FANUC原生不提供REST API","root_cause":"FANUC控制器内置KAREL webserver，但官方文档分散，缺少完整的API参考和使用示例","solution":"基于KAREL webserver实现HTTP API：webcontrol端点发送6种运动模式(关节/笛卡尔×绝对/相对)、webmonitor返回完整状态JSON(关节/笛卡尔/限位/状态/错误)、weblimit设置18个运动限位、webstart运行TP程序、webabort紧急停止","verification":"webcontrol/weblimit成功返回204状态码；webmonitor返回完整JSON包含joint/pose/limit/status/message/error/timestamp字段；各KAREL程序(webabort/webcheck/webkeep/webreset等)功能独立可测"}
+{
+  "id": "fanuc-karel-http-api-webcontrol",
+  "title": "FANUC KAREL HTTP API — WebControl Robot Motion and Monitoring",
+  "domain": "fanuc",
+  "subdomain": "karel-webcontrol",
+  "source": "manual",
+  "status": "draft",
+  "confidence": 0.75,
+  "created": "2026-07-12",
+  "updated": "2026-08-13",
+  "evidence_level": "E0",
+  "tags": [
+    "fanuc",
+    "karel",
+    "http",
+    "api",
+    "webcontrol",
+    "rest",
+    "motion",
+    "monitoring"
+  ],
+  "quality_score": 75,
+  "problem": "需要通过HTTP接口远程控制FANUC机器人运动、监控状态、管理程序执行，但FANUC原生不提供REST API",
+  "root_cause": "FANUC控制器内置KAREL webserver，但官方文档分散，缺少完整的API参考和使用示例",
+  "solution": "基于KAREL webserver实现HTTP API：webcontrol端点发送6种运动模式(关节/笛卡尔×绝对/相对)、webmonitor返回完整状态JSON(关节/笛卡尔/限位/状态/错误)、weblimit设置18个运动限位、webstart运行TP程序、webabort紧急停止",
+  "verification": "webcontrol/weblimit成功返回204状态码；webmonitor返回完整JSON包含joint/pose/limit/status/message/error/timestamp字段；各KAREL程序(webabort/webcheck/webkeep/webreset等)功能独立可测",
+  "author": "Liona Can",
+  "edited_at": "2026-08-13T15:09:39-04:00",
+  "merged_by": "Liona Can"
+}
 ---
 
 ### 问题描述

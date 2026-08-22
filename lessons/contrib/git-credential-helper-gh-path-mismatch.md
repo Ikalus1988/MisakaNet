@@ -1,14 +1,13 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "gh credential helper 路径Error导致 git push 静默失败\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "uncledad96-glitch",
+  "domain": "contrib",
+  "title": "gh credential helper 路径Error导致 git push 静默失败",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
   "source": "manual",
-  "edited_at": "2026-07-20T23:21:02+02:00",
-  "merged_by": "uncledad96-glitch"
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 ---{"title": "gh credential helper 路径Error导致 git push 静默失败", "domain": "devops", "tags": ["git", "github", "credential", "gh", "auth", "push"]}---

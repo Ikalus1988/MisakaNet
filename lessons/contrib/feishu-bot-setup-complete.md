@@ -1,20 +1,25 @@
 ---
 {
-  "\"title\"": "Near-duplicate Feishu bot lessons: keep cc-connect, archive generic stub\",",
-  "\"domain\"": "feishu\",",
-  "\"tags\"": "[\"feishu\", \"cc-connect\", \"duplicate\", \"lesson-quality\", \"archive\", \"cleanup\"],",
-  "\"status\"": "published\",",
-  "\"source\"": "uncledad96-glitch\",",
-  "\"created\"": "2026-07-21\",",
-  "\"updated\"": "2026-07-21\",",
-  "\"confidence\"": "0.9\",",
-  "\"supersedes\"": "lessons/_archive/feishu-bot-setup-complete.md\",",
-  "\"see_also\"": "lessons/contrib/cc-connect-feishu-setup-complete.md",
-  "author": "uncledad96-glitch",
-  "source": "pr",
-  "edited_at": "2026-07-21T12:26:29+02:00",
-  "merged_by": "uncledad96-glitch",
-  "pr": 552
+  "title": "Near-duplicate Feishu bot lessons: keep cc-connect, archive generic stub",
+  "domain": "feishu",
+  "tags": [
+    "feishu",
+    "cc-connect",
+    "duplicate",
+    "lesson-quality",
+    "archive",
+    "cleanup"
+  ],
+  "status": "published",
+  "source": "manual",
+  "created": "2026-07-21",
+  "updated": "2026-07-21",
+  "confidence": "0.9",
+  "supersedes": "lessons/_archive/feishu-bot-setup-complete.md",
+  "see_also": "lessons/contrib/cc-connect-feishu-setup-complete.md",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

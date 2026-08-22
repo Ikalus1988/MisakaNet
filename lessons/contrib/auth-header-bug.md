@@ -3,10 +3,10 @@
   "title": "Moorcheh API Auth Header Bug",
   "domain": "api",
   "evidence_level": "E1",
-  "author": "Ikalus1988",
+  "author": "Liona Can",
   "source": "manual",
-  "edited_at": "2026-08-13T00:39:45+08:00",
-  "merged_by": "Ikalus1988"
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

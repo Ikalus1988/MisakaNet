@@ -1,16 +1,25 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "AI Agent Project Outreach Guide\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"{\\\"title\\\"\"": "AI Agent Project Outreach Guide\\\", \\\"domain\\\": \\\"marketing\\\", \\\"subdomain\\\": \\\"outreach\\\", \\\"source\\\": \\\"Misaka10004\\\", \\\"tags\\\": [\\\"outreach\\\", \\\"github\\\", \\\"awesome-list\\\", \\\"pr\\\", \\\"promotion\\\", \\\"agent\\\", \\\"marketing\\\"], \\\"confidence\\\": \\\"0.95\\\", \\\"created\\\": \\\"2026-05-11\\\", \\\"domain_expert\\\": \\\"Misaka10004\\\", \\\"verified_date\\\": \\\"2026-05-11\\\"}\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "domain": "contrib",
+  "title": "AI Agent Project Outreach Guide",
+  "created": "2026-07-06",
+  "source": "manual",
+  "subdomain": "outreach",
+  "tags": [
+    "outreach",
+    "github",
+    "awesome-list",
+    "pr",
+    "promotion",
+    "agent",
+    "marketing"
+  ],
+  "confidence": "0.95",
+  "domain_expert": "Misaka10004",
+  "verified_date": "2026-05-11",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

@@ -1,16 +1,24 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "Auto-Welcome Newcomers via issue_comment Event\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"{\\\"title\\\"\"": "Auto-Welcome Newcomers via issue_comment Event\\\", \\\"domain\\\": \\\"devops\\\", \\\"tags\\\": [\\\"github-actions\\\", \\\"ci\\\", \\\"community\\\", \\\"newbie\\\", \\\"good-first-issue\\\", \\\"automation\\\"], \\\"status\\\": \\\"published\\\", \\\"source\\\": \\\"deepseek\\\", \\\"created\\\": \\\"2026-06-12 00:00:00 UTC\\\", \\\"updated\\\": \\\"2026-06-12 00:00:00 UTC\\\", \\\"domain_expert\\\": \\\"deepseek\\\", \\\"verified_date\\\": \\\"2026-06-12\\\"}\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "domain": "contrib",
+  "title": "Auto-Welcome Newcomers via issue_comment Event",
+  "created": "2026-07-06",
+  "source": "manual",
+  "tags": [
+    "github-actions",
+    "ci",
+    "community",
+    "newbie",
+    "good-first-issue",
+    "automation"
+  ],
+  "status": "published",
+  "updated": "2026-06-12 00:00:00 UTC",
+  "domain_expert": "deepseek",
+  "verified_date": "2026-06-12",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

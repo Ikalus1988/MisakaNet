@@ -1,9 +1,8 @@
 ---
 {
-<<<<<<< HEAD
   "title": "RAG Build Strategy Batch",
   "domain": "rag",
-  "source": "hanged-man",
+  "source": "manual",
   "status": "published",
   "tags": [
     "project:self-grow-wiki",
@@ -15,31 +14,35 @@
   "domain_expert": "hanged-man",
   "verified_date": "2026-04-13",
   "triggers": {
-    "intents": ["rag_build", "embedding", "vector_index", "batch_processing"],
-    "commands": ["build_index", "chroma", "faiss", "embedding", "build_edoc"],
-    "environments": ["wsl", "gpu", "cuda"],
-    "risks": ["memory_pressure", "no_checkpoint", "batch_overflow", "driver_crash"],
+    "intents": [
+      "rag_build",
+      "embedding",
+      "vector_index",
+      "batch_processing"
+    ],
+    "commands": [
+      "build_index",
+      "chroma",
+      "faiss",
+      "embedding",
+      "build_edoc"
+    ],
+    "environments": [
+      "wsl",
+      "gpu",
+      "cuda"
+    ],
+    "risks": [
+      "memory_pressure",
+      "no_checkpoint",
+      "batch_overflow",
+      "driver_crash"
+    ],
     "severity": "critical"
-  }
-=======
-  "\"title\"": "RAG Build Strategy Batch\",",
-  "\"domain\"": "rag\",",
-  "\"source\"": "hanged-man\",",
-  "\"status\"": "published\",",
-  "\"tags\"": "[",
-  "\"project": "self-grow-wiki\",",
-  "\"severity": "medium\",",
-  "\"node": "hermes-wsl",
-  "\"language\"": "en\",",
-  "\"created\"": "2026-04-13\",",
-  "\"domain_expert\"": "hanged-man\",",
-  "\"verified_date\"": "2026-04-13",
-  "author": "2lll5",
-  "source": "pr",
-  "edited_at": "2026-06-30T14:39:15+08:00",
-  "merged_by": "2lll5",
-  "pr": 263
->>>>>>> 434731e0 (feat: track lesson provenance end to end)
+  },
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

@@ -2,14 +2,24 @@
 {
   "title": "中文 BM25 搜索：滑动窗口子串加分与唯一候选加分",
   "domain": "search",
-  "tags": ["bm25", "chinese", "search", "recall", "sliding-window"],
+  "tags": [
+    "bm25",
+    "chinese",
+    "search",
+    "recall",
+    "sliding-window"
+  ],
   "status": "published",
   "evidence_level": "E2",
-  "source": "mcp-intake-1112",
+  "source": "pr",
   "created": "2026-08-18",
   "updated": "",
   "verified_date": "",
-  "domain_expert": ""
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-18T12:06:05+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 1114
 }
 ---
 

@@ -2,14 +2,25 @@
 {
   "title": "GitHub Release 大文件下载在 CN 网络超时：分段并行下载方案",
   "domain": "devops",
-  "tags": ["github", "download", "cn-network", "proxy", "large-file", "timeout"],
+  "tags": [
+    "github",
+    "download",
+    "cn-network",
+    "proxy",
+    "large-file",
+    "timeout"
+  ],
   "status": "published",
   "evidence_level": "E2",
-  "source": "mcp-intake-1069",
+  "source": "pr",
   "created": "2026-08-17",
   "updated": "",
   "verified_date": "",
-  "domain_expert": ""
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-17T00:45:43+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 1069
 }
 ---
 

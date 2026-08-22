@@ -4,16 +4,15 @@
   "domain": "frontend",
   "subdomain": "css",
   "tags": "",
-  "source": "pr",
+  "source": "manual",
   "status": "published",
   "confidence": 0.95,
   "created": "2026-07-21",
   "verified_date": "",
   "domain_expert": "",
-  "author": "lb1192176991-lab",
-  "edited_at": "2026-07-23T01:14:55+08:00",
-  "merged_by": "lb1192176991-lab",
-  "pr": 535
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

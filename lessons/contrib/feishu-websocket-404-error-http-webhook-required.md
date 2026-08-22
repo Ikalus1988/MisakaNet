@@ -2,13 +2,22 @@
 {
   "title": "Feishu WebSocket 404 Error - HTTP Webhook Required",
   "domain": "feishu",
-  "tags": ["feishu", "websocket", "webhook", "http", "api"],
+  "tags": [
+    "feishu",
+    "websocket",
+    "webhook",
+    "http",
+    "api"
+  ],
   "status": "published",
   "evidence_level": "E0",
-  "source": "session-feedback",
+  "source": "intake",
   "created": "2026-05-19",
   "updated": "2026-07-06",
-  "verification": "metadata-normalized"
+  "verification": "metadata-normalized",
+  "author": "Liona Can",
+  "edited_at": "2026-08-13T15:09:39-04:00",
+  "merged_by": "Liona Can"
 }
 ---
 

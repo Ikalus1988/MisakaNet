@@ -12,16 +12,15 @@
     "forum",
     "tls-fingerprint"
   ],
-  "source": "pr",
+  "source": "manual",
   "status": "published",
   "confidence": "0.85",
   "created": "2026-07-14",
   "verified_date": "2026-07-14",
   "domain_expert": "",
-  "author": "Ikalus1988",
-  "edited_at": "2026-07-15T10:25:40+08:00",
-  "merged_by": "Ikalus1988",
-  "pr": 472
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 
 

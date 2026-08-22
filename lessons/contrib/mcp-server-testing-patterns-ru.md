@@ -14,9 +14,9 @@
   "confidence": 0.85,
   "created": "2026-08-01",
   "lang": "ru",
-  "author": "zsxh1990",
-  "edited_at": "2026-08-02T00:17:21+08:00",
-  "merged_by": "zsxh1990"
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

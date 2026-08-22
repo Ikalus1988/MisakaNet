@@ -2,11 +2,20 @@
 {
   "title": "PR Genius issue evaluator: batch review intake issues",
   "domain": "mcp",
-  "tags": ["mcp", "pr-genius", "intake", "evaluation", "batch"],
+  "tags": [
+    "mcp",
+    "pr-genius",
+    "intake",
+    "evaluation",
+    "batch"
+  ],
   "status": "published",
   "evidence_level": "E2",
-  "source": "mcp-intake-93ea9844b4",
-  "created": "2026-08-19"
+  "source": "pr",
+  "created": "2026-08-19",
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-19T09:52:24+08:00",
+  "merged_by": "Ikalus1988"
 }
 ---
 

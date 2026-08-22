@@ -1,18 +1,18 @@
 ---
 {
-  "\"title\"": "Agent read_file Silent Truncation in Multi-Brain Meeting Recovery\",",
-  "\"domain\"": "agent\",",
-  "\"tags\"": "[",
-  "\"project": "hermes-agent-cluster\",",
-  "\"severity": "high\",",
-  "\"pattern": "file-handling\",",
-  "\"tool": "read-file",
-  "\"status\"": "published\",",
-  "\"source\"": "ninghuagui-debug",
-  "author": "ninghuagui-debug",
+  "title": "Agent read_file Silent Truncation in Multi-Brain Meeting Recovery",
+  "domain": "agent",
+  "tags": [
+    "project:hermes-agent-cluster",
+    "severity:high",
+    "pattern:file-handling",
+    "tool:read-file"
+  ],
+  "status": "published",
   "source": "manual",
-  "edited_at": "2026-07-21T04:07:06+08:00",
-  "merged_by": "ninghuagui-debug"
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

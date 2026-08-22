@@ -1,15 +1,13 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "开源项目 README Optimization — 7 个常见Pitfalls与Fix Checklist\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "domain": "contrib",
+  "title": "开源项目 README Optimization — 7 个常见Pitfalls与Fix Checklist",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "manual",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 ---{"title": "开源项目 README Optimization — 7 个常见Pitfalls与Fix Checklist", "domain": "development", "tags": ["readme", "open-source", "documentation", "marketing", "community"], "status": "published", "source": "deepseek", "created": "2026-06-04 00:00:00 UTC", "updated": "2026-06-04 00:00:00 UTC"}---

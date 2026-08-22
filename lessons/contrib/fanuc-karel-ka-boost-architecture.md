@@ -3,7 +3,7 @@
   "title": "Ka-Boost: 8-Layer KAREL Module Architecture and Build System",
   "domain": "fanuc",
   "subdomain": "karel-architecture",
-  "source": "pr",
+  "source": "manual",
   "status": "draft",
   "confidence": 0.85,
   "created": "2026-07-12",
@@ -22,10 +22,9 @@
   "root_cause": "KAREL 是类 Pascal 的编译语言，运行在 FANUC 控制器上，语言特性有限。Ka-Boost 通过 GPP 预处理器实现泛型、命名空间、OOP 类等高级特性，并建立 8 层模块依赖体系填补标准库空白。",
   "solution": "采用 Ka-Boost 的分层模块架构：从底层预处理器宏（Layer 0）到高层系统（Layer 7），每层只依赖下层。使用 rossum 包管理器 + ninja 构建系统管理依赖和编译。",
   "verification": "1. rossum 能解析 package.json 依赖图并生成 build.ninja；2. ninja 编译所有 .kl/.klc 文件生成 .pc 二进制；3. kpush 成功部署到控制器；4. 各层模块单元测试通过（KUnit HTTP 访问）。",
-  "author": "Ikalus1988",
-  "edited_at": "2026-07-15T10:25:40+08:00",
-  "merged_by": "Ikalus1988",
-  "pr": 472
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 
 ## Ka-Boost: 8-Layer KAREL Module Architecture and Build System

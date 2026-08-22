@@ -1,15 +1,22 @@
 ---
 {
-  "\"title\"": "Version Management Across Multiple Files\",",
-  "\"domain\"": "devops\",",
-  "\"tags\"": "[\"version\", \"release\", \"changelog\", \"documentation\", \"metrics\", \"ssot\", \"frontend\"],",
-  "\"status\"": "published\",",
-  "\"source\"": "agent_experience\",",
-  "\"created\"": "2026-07-02",
-  "author": "Ikalus1988",
+  "title": "Version Management Across Multiple Files",
+  "domain": "devops",
+  "tags": [
+    "version",
+    "release",
+    "changelog",
+    "documentation",
+    "metrics",
+    "ssot",
+    "frontend"
+  ],
+  "status": "published",
   "source": "manual",
-  "edited_at": "2026-07-04T11:55:07+08:00",
-  "merged_by": "Ikalus1988"
+  "created": "2026-07-02",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

@@ -2,14 +2,23 @@
 {
   "title": "GitHub Actions composite action 3 个常见陷阱",
   "domain": "devops",
-  "tags": ["github-actions", "composite", "yaml", "shell-injection"],
+  "tags": [
+    "github-actions",
+    "composite",
+    "yaml",
+    "shell-injection"
+  ],
   "status": "published",
   "evidence_level": "E2",
-  "source": "mcp-intake-1102",
+  "source": "pr",
   "created": "2026-08-18",
   "updated": "",
   "verified_date": "",
-  "domain_expert": ""
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-18T12:51:50+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 1102
 }
 ---
 

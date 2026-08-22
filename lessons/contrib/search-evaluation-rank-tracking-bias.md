@@ -2,14 +2,24 @@
 {
   "title": "搜索评估陷阱：评估函数先检查标题再检查内容导致 rank 偏差",
   "domain": "search",
-  "tags": ["search", "evaluation", "rank", "recall", "bias"],
+  "tags": [
+    "search",
+    "evaluation",
+    "rank",
+    "recall",
+    "bias"
+  ],
   "status": "published",
   "evidence_level": "E2",
-  "source": "mcp-intake-1113",
+  "source": "pr",
   "created": "2026-08-18",
   "updated": "",
   "verified_date": "",
-  "domain_expert": ""
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-18T12:06:05+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 1114
 }
 ---
 

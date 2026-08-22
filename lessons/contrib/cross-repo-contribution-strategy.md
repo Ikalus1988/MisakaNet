@@ -1,16 +1,21 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "Cross-Repo Contribution Strategy — Finding and Contributing to New Repos\",",
-  "\"tags\"": "[\"contrib\", \"strategy\", \"github\", \"open-source\", \"agent\"],",
-  "\"status\"": "draft\",",
-  "\"source\"": "Multi-repo contribution session\",",
-  "\"created\"": "2026-07-15\",",
-  "\"confidence\"": "0.90",
-  "author": "zsxh1990",
+  "domain": "contrib",
+  "title": "Cross-Repo Contribution Strategy — Finding and Contributing to New Repos",
+  "tags": [
+    "contrib",
+    "strategy",
+    "github",
+    "open-source",
+    "agent"
+  ],
+  "status": "draft",
   "source": "manual",
-  "edited_at": "2026-07-15T19:31:51+08:00",
-  "merged_by": "zsxh1990"
+  "created": "2026-07-15",
+  "confidence": "0.90",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

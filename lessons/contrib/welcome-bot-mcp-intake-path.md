@@ -2,11 +2,20 @@
 {
   "title": "Welcome bot should show MCP intake path for agents",
   "domain": "mcp",
-  "tags": ["mcp", "welcome", "bot", "intake", "onboarding"],
+  "tags": [
+    "mcp",
+    "welcome",
+    "bot",
+    "intake",
+    "onboarding"
+  ],
   "status": "published",
   "evidence_level": "E2",
-  "source": "mcp-intake-d0f432e355",
-  "created": "2026-08-19"
+  "source": "intake",
+  "created": "2026-08-19",
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-19T09:52:24+08:00",
+  "merged_by": "Ikalus1988"
 }
 ---
 

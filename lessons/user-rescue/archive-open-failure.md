@@ -3,10 +3,10 @@
   "title": "压缩包打不开？先别急，试这 3 步",
   "domain": "devops",
   "evidence_level": "E1",
-  "author": "Ikalus1988",
+  "author": "Liona Can",
   "source": "rescue",
-  "edited_at": "2026-08-13T00:39:45+08:00",
-  "merged_by": "Ikalus1988"
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

@@ -1,16 +1,22 @@
 ---
 {
-  "\"title\"": "TaskBounty payout POST succeeds but solver_readiness still fails\",",
-  "\"domain\"": "web3\",",
-  "\"tags\"": "[\"taskbounty\", \"payout\", \"api\", \"readiness\", \"solana\", \"usdc\"],",
-  "\"status\"": "published\",",
-  "\"source\"": "uncledad96-glitch\",",
-  "\"created\"": "2026-07-20\",",
-  "\"updated\"": "2026-07-20",
-  "author": "uncledad96-glitch",
+  "title": "TaskBounty payout POST succeeds but solver_readiness still fails",
+  "domain": "web3",
+  "tags": [
+    "taskbounty",
+    "payout",
+    "api",
+    "readiness",
+    "solana",
+    "usdc"
+  ],
+  "status": "published",
   "source": "manual",
-  "edited_at": "2026-07-20T23:18:49+02:00",
-  "merged_by": "uncledad96-glitch"
+  "created": "2026-07-20",
+  "updated": "2026-07-20",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

@@ -1,16 +1,21 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "Benchmark Honesty — Distinguishing Simulated vs Real Results\",",
-  "\"tags\"": "[\"benchmark\", \"honesty\", \"testing\", \"contrib\", \"agent\"],",
-  "\"status\"": "draft\",",
-  "\"source\"": "PR review feedback analysis\",",
-  "\"created\"": "2026-07-15\",",
-  "\"confidence\"": "0.95",
-  "author": "zsxh1990",
-  "source": "manual",
-  "edited_at": "2026-07-15T19:31:51+08:00",
-  "merged_by": "zsxh1990"
+  "domain": "contrib",
+  "title": "Benchmark Honesty — Distinguishing Simulated vs Real Results",
+  "tags": [
+    "benchmark",
+    "honesty",
+    "testing",
+    "contrib",
+    "agent"
+  ],
+  "status": "draft",
+  "source": "pr",
+  "created": "2026-07-15",
+  "confidence": "0.95",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

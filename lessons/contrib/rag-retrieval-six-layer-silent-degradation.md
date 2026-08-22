@@ -2,14 +2,25 @@
 {
   "title": "RAG 检索六层静默退化：BM25 失败 + 截断 + 分数混合导致有效 chunk 被丢弃",
   "domain": "rag",
-  "tags": ["rag", "retrieval", "bm25", "truncation", "chinese", "fanuc"],
+  "tags": [
+    "rag",
+    "retrieval",
+    "bm25",
+    "truncation",
+    "chinese",
+    "fanuc"
+  ],
   "status": "published",
   "evidence_level": "E2",
-  "source": "closed-pr-1044",
+  "source": "pr",
   "created": "2026-08-18",
   "updated": "",
   "verified_date": "",
-  "domain_expert": ""
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-18T16:35:43+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 1044
 }
 ---
 

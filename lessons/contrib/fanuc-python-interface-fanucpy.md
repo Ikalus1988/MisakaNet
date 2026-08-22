@@ -3,7 +3,7 @@
   "title": "FANUC Robot Python Control via fanucpy Library",
   "domain": "fanuc",
   "subdomain": "python-interface",
-  "source": "pr",
+  "source": "manual",
   "status": "draft",
   "confidence": 0.8,
   "created": "2026-07-12",
@@ -20,10 +20,9 @@
   "root_cause": "FANUC 控器运行 KAREL/TP 语言，不直接支持 Python。需要一个中间层：Python 客户端通过 TCP/IP Socket Messaging（R648 选项）与控制器上的 KAREL 服务端程序通信，实现远程控制。",
   "solution": "使用 fanucpy 开源库（pip install fanucpy），配合控制器端的 MAPPDK 驱动（KAREL+TP 程序），通过 socket 协议实现 Python→FANUC 的全功能控制。",
   "verification": "1. pip install fanucpy 成功；2. 控制器端 MAPPDK 服务运行且端口 18735 可达；3. robot.connect() 返回成功；4. robot.get_curpos() 能返回当前位姿。",
-  "author": "Ikalus1988",
-  "edited_at": "2026-07-15T10:25:40+08:00",
-  "merged_by": "Ikalus1988",
-  "pr": 472
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 
 ## FANUC Robot Python Control via fanucpy Library

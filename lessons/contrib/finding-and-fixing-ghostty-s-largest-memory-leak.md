@@ -1,10 +1,22 @@
 ---
 {
-  "{\"title\"": "Finding and fixing Ghostty's largest memory leak\", \"domain\": \"memory_management\", \"tags\": [\"memory_leak\", \"memory_management\", \"terminal\", \"optimization\", \"debugging\"], \"language\": \"en\", \"status\": \"published\", \"source\": \"https://mitchellh.com/writing/ghostty-memory-leak-fix\", \"created\": \"2026-07-28\", \"confidence\": \"0.85\"}",
-  "author": "zsxh1990",
+  "title": "Finding and fixing Ghostty's largest memory leak",
+  "domain": "memory_management",
+  "tags": [
+    "memory_leak",
+    "memory_management",
+    "terminal",
+    "optimization",
+    "debugging"
+  ],
+  "language": "en",
+  "status": "published",
   "source": "manual",
-  "edited_at": "2026-07-29T09:18:36+08:00",
-  "merged_by": "zsxh1990"
+  "created": "2026-07-28",
+  "confidence": "0.85",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

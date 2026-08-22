@@ -3,16 +3,15 @@
   "title": "FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明",
   "domain": "fanuc",
   "subdomain": "kl-modules",
-  "source": "pr",
+  "source": "manual",
   "status": "published",
   "confidence": 0.7,
   "created": "2026-05-03",
   "domain_expert": "bootstrap",
   "verified_date": "2026-05-03",
-  "author": "zsxh1990",
-  "edited_at": "2026-07-12T12:28:29+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 351
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

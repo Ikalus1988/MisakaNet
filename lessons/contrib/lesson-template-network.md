@@ -1,17 +1,23 @@
 ---
 {
-  "\"title\"": "Network Domain Lesson Template\",",
-  "\"domain\"": "network\",",
-  "\"tags\"": "[\"http\", \"dns\", \"proxy\", \"ssl\", \"websocket\", \"timeout\", \"template\"],",
-  "\"status\"": "published\",",
-  "\"source\"": "template\",",
-  "\"created\"": "2026-07-13\",",
-  "\"confidence\"": "1.0",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-14T11:57:22+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 295
+  "title": "Network Domain Lesson Template",
+  "domain": "network",
+  "tags": [
+    "http",
+    "dns",
+    "proxy",
+    "ssl",
+    "websocket",
+    "timeout",
+    "template"
+  ],
+  "status": "published",
+  "source": "manual",
+  "created": "2026-07-13",
+  "confidence": "1.0",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

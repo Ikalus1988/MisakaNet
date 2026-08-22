@@ -2,14 +2,13 @@
 {
   "title": "Agent 手动Update步骤（update Timeout Handling）",
   "domain": "devops",
-  "source": "pr",
+  "source": "manual",
   "status": "published",
   "confidence": 0.8,
   "created": "2026-05-03",
-  "author": "zsxh1990",
-  "edited_at": "2026-07-08T17:09:06+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 414
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

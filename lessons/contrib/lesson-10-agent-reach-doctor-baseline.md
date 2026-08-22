@@ -1,16 +1,28 @@
 ---
 {
-  "\"domain\"": "tooling\",",
-  "\"title\"": "Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"{\\\"title\\\"\"": "Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login\\\", \\\"domain\\\": \\\"tooling\\\", \\\"tags\\\": [\\\"agent-reach\\\", \\\"doctor\\\", \\\"channel-availability\\\", \\\"baseline\\\", \\\"v2ex\\\", \\\"rss\\\", \\\"jina\\\", \\\"bilibili\\\", \\\"cookie-required\\\"], \\\"status\\\": \\\"published\\\", \\\"confidence\\\": \\\"0.88\\\", \\\"created\\\": \\\"2026-07-03\\\", \\\"updated\\\": \\\"2026-07-03\\\", \\\"source\\\": \\\"Real test output 2026-07-03T00:32 GMT+8 on WSL Ubuntu\\\", \\\"verified_date\\\": \\\"\\\", \\\"domain_expert\\\": \\\"\\\"}\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "domain": "tooling",
+  "title": "Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login",
+  "created": "2026-07-06",
+  "source": "manual",
+  "tags": [
+    "agent-reach",
+    "doctor",
+    "channel-availability",
+    "baseline",
+    "v2ex",
+    "rss",
+    "jina",
+    "bilibili",
+    "cookie-required"
+  ],
+  "status": "published",
+  "confidence": "0.88",
+  "updated": "2026-07-03",
+  "verified_date": "",
+  "domain_expert": "",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

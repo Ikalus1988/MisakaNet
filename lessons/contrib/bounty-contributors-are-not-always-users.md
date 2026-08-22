@@ -1,16 +1,21 @@
 ---
 {
-  "\"domain\"": "growth\",",
-  "\"title\"": "Bounty Contributors Are Not Always Users\",",
-  "\"tags\"": "[\"bounty\", \"contributors\", \"growth\", \"feedback\", \"community\"],",
-  "\"status\"": "published\",",
-  "\"source\"": "generalized contributor funnel analysis\",",
-  "\"created\"": "2026-07-17\",",
-  "\"confidence\"": "0.88",
-  "author": "Ikalus1988",
+  "domain": "growth",
+  "title": "Bounty Contributors Are Not Always Users",
+  "tags": [
+    "bounty",
+    "contributors",
+    "growth",
+    "feedback",
+    "community"
+  ],
+  "status": "published",
   "source": "manual",
-  "edited_at": "2026-07-17T01:09:07+08:00",
-  "merged_by": "Ikalus1988"
+  "created": "2026-07-17",
+  "confidence": "0.88",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

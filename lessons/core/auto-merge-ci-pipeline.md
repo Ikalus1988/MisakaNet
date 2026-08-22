@@ -1,18 +1,25 @@
 ---
 {
-  "\"title\"": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge\",",
-  "\"domain\"": "devops\",",
-  "\"source\"": "codewhale\",",
-  "\"status\"": "published\",",
-  "\"tags\"": "[",
-  "\"created\"": "2026-06-10 00:00:00 UTC\",",
-  "\"updated\"": "2026-06-10 00:00:00 UTC\",",
-  "\"domain_expert\"": "codewhale\",",
-  "\"verified_date\"": "2026-06-10",
-  "author": "Ikalus1988",
+  "title": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge",
+  "domain": "devops",
   "source": "manual",
-  "edited_at": "2026-06-27T23:35:55+08:00",
-  "merged_by": "Ikalus1988"
+  "status": "published",
+  "tags": [
+    "github-actions",
+    "ci",
+    "auto-merge",
+    "shadow-branch",
+    "quality-score",
+    "ai-agent",
+    "fork-pr"
+  ],
+  "created": "2026-06-10 00:00:00 UTC",
+  "updated": "2026-06-10 00:00:00 UTC",
+  "domain_expert": "codewhale",
+  "verified_date": "2026-06-10",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

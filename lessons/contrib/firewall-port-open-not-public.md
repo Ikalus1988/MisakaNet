@@ -1,16 +1,23 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "firewall port open not public\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"{\\\"title\\\"\"": "防火墙端口开放不等于内网穿透\\\", \\\"domain\\\": \\\"devops\\\", \\\"subdomain\\\": \\\"network\\\", \\\"source\\\": \\\"bootstrap\\\", \\\"status\\\": \\\"published\\\", \\\"tags\\\": [\\\"project:rag\\\", \\\"platform:wsl\\\", \\\"node:hermes_wsl\\\", \\\"scope:broad\\\"], \\\"confidence\\\": \\\"0.85\\\", \\\"created\\\": \\\"2026-05-03\\\", \\\"domain_expert\\\": \\\"bootstrap\\\", \\\"verified_date\\\": \\\"2026-05-03\\\"}\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "domain": "contrib",
+  "title": "firewall port open not public",
+  "created": "2026-07-06",
+  "source": "manual",
+  "subdomain": "network",
+  "status": "published",
+  "tags": [
+    "project:rag",
+    "platform:wsl",
+    "node:hermes_wsl",
+    "scope:broad"
+  ],
+  "confidence": "0.85",
+  "domain_expert": "bootstrap",
+  "verified_date": "2026-05-03",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

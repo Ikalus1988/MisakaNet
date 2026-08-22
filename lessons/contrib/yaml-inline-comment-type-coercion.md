@@ -2,14 +2,23 @@
 {
   "title": "YAML 内联注释导致类型强制转换失败",
   "domain": "devops",
-  "tags": ["yaml", "type-coercion", "parser", "comment"],
+  "tags": [
+    "yaml",
+    "type-coercion",
+    "parser",
+    "comment"
+  ],
   "status": "published",
   "evidence_level": "E2",
-  "source": "mcp-intake-1100",
+  "source": "pr",
   "created": "2026-08-18",
   "updated": "",
   "verified_date": "",
-  "domain_expert": ""
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-18T12:51:50+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 1102
 }
 ---
 

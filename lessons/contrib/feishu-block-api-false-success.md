@@ -14,13 +14,12 @@
   "confidence": "0.9",
   "created": "2026-07-06",
   "updated": "2026-07-06",
-  "source": "pr",
+  "source": "manual",
   "verified_date": "2026-07-06",
   "domain_expert": "zsxh1990",
-  "author": "zsxh1990",
-  "edited_at": "2026-07-06T15:55:29+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 359
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 
 # Feishu Block API returns code=0 but creates zero blocks under rate limiting

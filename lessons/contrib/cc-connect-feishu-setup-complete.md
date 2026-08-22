@@ -1,19 +1,25 @@
 ---
 {
-  "\"title\"": "cc-connect Feishu bot complete setup guide\",",
-  "\"domain\"": "feishu\",",
-  "\"tags\"": "[\"feishu\", \"cc-connect\", \"bot\", \"setup\", \"agent\", \"bridge\", \"npm\"],",
-  "\"status\"": "published\",",
-  "\"source\"": "bootstrap\",",
-  "\"created\"": "2026-05-19\",",
-  "\"updated\"": "2026-07-21\",",
-  "\"confidence\"": "0.95\",",
-  "\"verification\"": "metadata-normalized",
-  "author": "uncledad96-glitch",
-  "source": "pr",
-  "edited_at": "2026-07-21T12:26:29+02:00",
-  "merged_by": "uncledad96-glitch",
-  "pr": 552
+  "title": "cc-connect Feishu bot complete setup guide",
+  "domain": "feishu",
+  "tags": [
+    "feishu",
+    "cc-connect",
+    "bot",
+    "setup",
+    "agent",
+    "bridge",
+    "npm"
+  ],
+  "status": "published",
+  "source": "manual",
+  "created": "2026-05-19",
+  "updated": "2026-07-21",
+  "confidence": "0.95",
+  "verification": "metadata-normalized",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

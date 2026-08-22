@@ -1,10 +1,22 @@
 ---
 {
-  "{\"title\"": "MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption\", \"domain\": \"mcp\", \"tags\": [\"mcp\", \"error_handling\", \"convention\", \"git\", \"commit_message\"], \"language\": \"en\", \"status\": \"published\", \"source\": \"https://dev.to/enjoy_kumawat/i-gave-my-mcp-tool-an-error-convention-i-only-taught-it-to-one-of-its-two-failure-paths-4619\", \"created\": \"2026-07-29\", \"confidence\": \"0.85\"}",
-  "author": "zsxh1990",
+  "title": "MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption",
+  "domain": "mcp",
+  "tags": [
+    "mcp",
+    "error_handling",
+    "convention",
+    "git",
+    "commit_message"
+  ],
+  "language": "en",
+  "status": "published",
   "source": "manual",
-  "edited_at": "2026-07-29T09:45:21+08:00",
-  "merged_by": "zsxh1990"
+  "created": "2026-07-29",
+  "confidence": "0.85",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

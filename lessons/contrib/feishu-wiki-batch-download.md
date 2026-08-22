@@ -1,15 +1,13 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "Feishu WikiBatch Download：文件类型Handling策略\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "domain": "contrib",
+  "title": "Feishu WikiBatch Download：文件类型Handling策略",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "manual",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 ---{"title": "Feishu WikiBatch Download：文件类型Handling策略", "domain": "devops", "tags": "feishu, wiki, batch-download, file-type, pdf, docx, safari", "status": "published", "source": "hermes_wsl2", "updated": "2026-05-19 15:40:11 UTC"}---

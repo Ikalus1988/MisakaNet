@@ -2,11 +2,20 @@
 {
   "title": "Remote search rate limiting: 5 free/day, then registration",
   "domain": "mcp",
-  "tags": ["mcp", "rate-limit", "search", "registration", "abuse"],
+  "tags": [
+    "mcp",
+    "rate-limit",
+    "search",
+    "registration",
+    "abuse"
+  ],
   "status": "published",
   "evidence_level": "E2",
-  "source": "mcp-intake-fb741dcb9d",
-  "created": "2026-08-19"
+  "source": "intake",
+  "created": "2026-08-19",
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-19T09:52:24+08:00",
+  "merged_by": "Ikalus1988"
 }
 ---
 

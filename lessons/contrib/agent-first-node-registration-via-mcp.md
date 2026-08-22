@@ -2,11 +2,20 @@
 {
   "title": "Agent-first node registration via MCP",
   "domain": "mcp",
-  "tags": ["mcp", "registration", "agent", "node", "token"],
+  "tags": [
+    "mcp",
+    "registration",
+    "agent",
+    "node",
+    "token"
+  ],
   "status": "published",
   "evidence_level": "E2",
-  "source": "mcp-intake-53a0f3ec83",
-  "created": "2026-08-19"
+  "source": "intake",
+  "created": "2026-08-19",
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-19T09:52:24+08:00",
+  "merged_by": "Ikalus1988"
 }
 ---
 

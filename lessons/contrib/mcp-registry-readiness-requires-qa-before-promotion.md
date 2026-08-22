@@ -1,16 +1,21 @@
 ---
 {
-  "\"domain\"": "mcp\",",
-  "\"title\"": "MCP Registry Readiness Requires QA Before Promotion\",",
-  "\"tags\"": "[\"mcp\", \"registry\", \"qa\", \"glama\", \"tooling\"],",
-  "\"status\"": "published\",",
-  "\"source\"": "generalized MCP listing readiness analysis\",",
-  "\"created\"": "2026-07-17\",",
-  "\"confidence\"": "0.86",
-  "author": "Ikalus1988",
+  "domain": "mcp",
+  "title": "MCP Registry Readiness Requires QA Before Promotion",
+  "tags": [
+    "mcp",
+    "registry",
+    "qa",
+    "glama",
+    "tooling"
+  ],
+  "status": "published",
   "source": "manual",
-  "edited_at": "2026-07-17T01:09:07+08:00",
-  "merged_by": "Ikalus1988"
+  "created": "2026-07-17",
+  "confidence": "0.86",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

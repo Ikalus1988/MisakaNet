@@ -2,7 +2,7 @@
 {
   "title": "Agent State Database Lock Issues — Cleanup Protocol",
   "domain": "devops",
-  "source": "pr",
+  "source": "manual",
   "status": "published",
   "tags": [
     "database",
@@ -15,10 +15,9 @@
   "updated": "2026-05-16 00:00:00 UTC",
   "domain_expert": "hermes_wsl2",
   "verified_date": "2026-05-16",
-  "author": "zsxh1990",
-  "edited_at": "2026-07-12T12:28:29+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 351
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

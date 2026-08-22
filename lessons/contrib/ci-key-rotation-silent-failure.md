@@ -1,16 +1,21 @@
 ---
 {
-  "\"title\"": "CI key rotation silently breaking scheduled automation without a code change\",",
-  "\"domain\"": "devops\",",
-  "\"tags\"": "[",
-  "\"status\"": "published\",",
-  "\"evidence_level\"": "E2\",",
-  "\"created\"": "2026-08-11 00:00:00 UTC\",",
-  "\"updated\"": "2026-08-11 00:00:00 UTC",
-  "author": "ElevaSync Solutions",
+  "title": "CI key rotation silently breaking scheduled automation without a code change",
+  "domain": "devops",
+  "tags": [
+    "credentials",
+    "rotation",
+    "automation",
+    "secret"
+  ],
+  "status": "published",
+  "evidence_level": "E2",
+  "created": "2026-08-11 00:00:00 UTC",
+  "updated": "2026-08-11 00:00:00 UTC",
+  "author": "Liona Can",
   "source": "manual",
-  "edited_at": "2026-08-11T03:00:00Z",
-  "merged_by": "ElevaSync Solutions"
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

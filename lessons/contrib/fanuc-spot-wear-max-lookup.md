@@ -24,9 +24,9 @@
   "verified_by": "maintainer",
   "context": "Distilled from field debugging session. kconvars sysspot.sv parsing path verified as practically useful.",
   "public_quote_allowed": false,
-  "author": "Ikalus1988",
-  "edited_at": "2026-07-17T11:21:04+08:00",
-  "merged_by": "Ikalus1988"
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

@@ -1,16 +1,20 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "Git Push 的正确方式 — 在受限 Agent 环境中推送代码\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"{\\\"title\\\"\"": "Git Push 的正确方式 — 在受限 Agent 环境中推送代码\\\", \\\"domain\\\": \\\"devops\\\", \\\"tags\\\": [\\\"git\\\", \\\"push\\\", \\\"agent\\\", \\\"gh-cli\\\", \\\"lesson\\\"], \\\"domain_expert\\\": \\\"unknown\\\"}\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "domain": "contrib",
+  "title": "Git Push 的正确方式 — 在受限 Agent 环境中推送代码",
+  "created": "2026-07-06",
+  "source": "manual",
+  "tags": [
+    "git",
+    "push",
+    "agent",
+    "gh-cli",
+    "lesson"
+  ],
+  "domain_expert": "unknown",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

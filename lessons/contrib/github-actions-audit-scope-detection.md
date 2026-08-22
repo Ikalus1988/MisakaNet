@@ -2,11 +2,20 @@
 {
   "title": "GitHub Actions audit: scope detection for bot PRs",
   "domain": "devops",
-  "tags": ["github-actions", "ci", "audit", "dependabot", "scope"],
+  "tags": [
+    "github-actions",
+    "ci",
+    "audit",
+    "dependabot",
+    "scope"
+  ],
   "status": "published",
   "evidence_level": "E2",
-  "source": "mcp-intake-1dcd078f12",
-  "created": "2026-08-19"
+  "source": "intake",
+  "created": "2026-08-19",
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-19T09:52:24+08:00",
+  "merged_by": "Ikalus1988"
 }
 ---
 

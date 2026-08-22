@@ -3,7 +3,7 @@
   "title": "FANUC Handling Robot Unexpected Auto Mode Dropout Diagnosis",
   "domain": "fanuc",
   "subdomain": "troubleshooting",
-  "source": "pr",
+  "source": "manual",
   "status": "draft",
   "confidence": 0.7,
   "created": "2026-07-12",
@@ -20,10 +20,9 @@
   "root_cause": "社区技术共识指向快换耦合器（quick-change coupler）的电气触点问题。搬运机器人在抓件→焊接→放件流程中，销式快换耦合器需断开/重连。断开/重连过程中的瞬间信号丢失会触发 FANUC 控制器退出自动模式。具体原因包括：1) 快换耦合器触点接触不良（磨损/污染）；2) 机械对位精度不足导致连接不稳；3) 焊接线缆虚焊或连接松动。",
   "solution": "1. 清洁检查快换耦合器触点，排除磨损或污染\n2. 验证耦合器机械对位精度，确保连接稳定\n3. 编写监控程序，逐一检测信号线的瞬断情况\n4. 若无法定位具体故障线，更换整条线束\n5. 检查信号线焊接质量，排除虚焊问题",
   "verification": "1. 清洁/更换触点后连续运行 3 天无掉自动现象\n2. 监控程序记录的信号瞬断次数降为 0\n3. 更换线束后问题彻底消失",
-  "author": "Ikalus1988",
-  "edited_at": "2026-07-15T10:25:40+08:00",
-  "merged_by": "Ikalus1988",
-  "pr": 472
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 
 ## FANUC 搬运机器人掉自动模式诊断

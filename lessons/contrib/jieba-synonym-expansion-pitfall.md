@@ -2,14 +2,24 @@
 {
   "title": "同义词扩展陷阱：jieba.add_word() 改变全局分词行为导致回归",
   "domain": "search",
-  "tags": ["jieba", "synonym", "chinese", "segmentation", "regression"],
+  "tags": [
+    "jieba",
+    "synonym",
+    "chinese",
+    "segmentation",
+    "regression"
+  ],
   "status": "published",
   "evidence_level": "E2",
-  "source": "mcp-intake-1114",
+  "source": "pr",
   "created": "2026-08-18",
   "updated": "",
   "verified_date": "",
-  "domain_expert": ""
+  "domain_expert": "",
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-18T12:06:05+08:00",
+  "merged_by": "Ikalus1988",
+  "pr": 1114
 }
 ---
 

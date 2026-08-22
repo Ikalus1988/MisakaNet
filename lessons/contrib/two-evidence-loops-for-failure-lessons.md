@@ -1,16 +1,21 @@
 ---
 {
-  "\"domain\"": "growth\",",
-  "\"title\"": "Two Evidence Loops for Failure Lessons\",",
-  "\"tags\"": "[\"evidence\", \"lessons\", \"reuse\", \"growth\", \"feedback\"],",
-  "\"status\"": "published\",",
-  "\"source\"": "generalized maintainer retrospective\",",
-  "\"created\"": "2026-07-17\",",
-  "\"confidence\"": "0.90",
-  "author": "Ikalus1988",
+  "domain": "growth",
+  "title": "Two Evidence Loops for Failure Lessons",
+  "tags": [
+    "evidence",
+    "lessons",
+    "reuse",
+    "growth",
+    "feedback"
+  ],
+  "status": "published",
   "source": "manual",
-  "edited_at": "2026-07-17T01:09:07+08:00",
-  "merged_by": "Ikalus1988"
+  "created": "2026-07-17",
+  "confidence": "0.90",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

@@ -1,16 +1,18 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "ffmpeg audio libopus not ogg\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"{\\\"title\\\"\"": "FFmpeg 音频转码：必须用 libopus 而非 -format ogg\\\", \\\"domain\\\": \\\"audio\\\", \\\"tags\\\": \\\"\\\", \\\"source\\\": \\\"hanged-man\\\", \\\"status\\\": \\\"published\\\", \\\"created\\\": \\\"2026-03-29\\\", \\\"confidence\\\": \\\"0.9\\\", \\\"scope\\\": \\\"broad\\\", \\\"domain_expert\\\": \\\"hanged-man\\\", \\\"verified_date\\\": \\\"2026-03-29\\\"}\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "domain": "contrib",
+  "title": "ffmpeg audio libopus not ogg",
+  "created": "2026-07-06",
+  "source": "manual",
+  "tags": "",
+  "status": "published",
+  "confidence": "0.9",
+  "scope": "broad",
+  "domain_expert": "hanged-man",
+  "verified_date": "2026-03-29",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

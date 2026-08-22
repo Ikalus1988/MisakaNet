@@ -1,15 +1,13 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "feishu agent display settings\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "domain": "contrib",
+  "title": "feishu agent display settings",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "manual",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 ---{"title": "飞书 Agent 显示Optimization：禁用工具调用和上下文提示", "domain": "feishu", "source": "bootstrap", "status": "published", "confidence": "0.9", "created": "2026-05-19"}---

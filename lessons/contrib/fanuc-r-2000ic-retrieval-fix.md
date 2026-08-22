@@ -2,19 +2,17 @@
 {
   "created": "2026-04-30 08:50 UTC",
   "domain": "rag",
-  "source": "pr",
+  "source": "manual",
   "status": "published",
-  "tags": "",
   "title": "FANUC R-2000iC 检索混淆Fix — 关键词强制召回",
   "updated": "2026-04-30 08:50 UTC",
-  "author": "zsxh1990",
-  "edited_at": "2026-07-12T12:28:29+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 351
+  "verification": "ai-generated",
+  "last_updated": "2026-04-30 08:50 UTC",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
-
----{"created": "2026-04-30 08:50 UTC", "domain": "rag", "source": "hermes_wsl", "status": "published", "tags": "", "title": "FANUC R-2000iC 检索混淆Fix — 关键词强制召回", "updated": "2026-04-30 08:50 UTC"}---
 
 
 ## 问题

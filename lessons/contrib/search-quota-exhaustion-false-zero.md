@@ -1,7 +1,7 @@
 {
   "title": "Search Quota Exhaustion Causes False Zero Results",
   "domain": "devops",
-  "source": "pr",
+  "source": "manual",
   "status": "draft",
   "tags": [
     "search",
@@ -14,10 +14,9 @@
   "updated": "2026-07-10 00:00:00 UTC",
   "confidence": "0.95",
   "verified_date": "2026-07-10",
-  "author": "zsxh1990",
-  "edited_at": "2026-07-12T12:28:08+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 267
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 
 ## Verification

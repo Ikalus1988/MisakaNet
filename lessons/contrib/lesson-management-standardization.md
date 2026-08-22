@@ -13,13 +13,12 @@
   "status": "published",
   "confidence": 0.95,
   "created": "2026-06-14",
-  "source": "pr",
+  "source": "manual",
   "domain_expert": "codewhale",
   "verified_date": "2026-06-14",
-  "author": "zsxh1990",
-  "edited_at": "2026-07-12T12:28:29+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 351
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

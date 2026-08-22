@@ -3,7 +3,7 @@
   "title": "FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup",
   "domain": "fanuc",
   "subdomain": "communication",
-  "source": "pr",
+  "source": "manual",
   "status": "draft",
   "confidence": 0.85,
   "created": "2026-07-12",
@@ -21,10 +21,9 @@
   "root_cause": "FANUC 控制器支持 User Socket Messaging（R648 选件）实现 TCP/IP 通信，但配置步骤分散在多个菜单中，涉及网络配置、服务器设置、KAREL 程序部署等多个环节，容易遗漏。",
   "solution": "按照完整流程配置：网络连接（IP/子网/DHCP）→ 服务器配置（S8 tag/18735 端口/SM 协议）→ Logger 配置（S7 tag/18736）→ MAPPDK 程序部署 → 验证通信。",
   "verification": "1. 控制器 IP 可 ping 通；2. S8 服务器 Current State 为 STARTED；3. 外部客户端能连接 18735 端口；4. MAPPDK 程序在控制器上运行中。",
-  "author": "Ikalus1988",
-  "edited_at": "2026-07-15T10:25:40+08:00",
-  "merged_by": "Ikalus1988",
-  "pr": 472
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 
 ## FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup

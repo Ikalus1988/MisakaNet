@@ -1,19 +1,26 @@
 ---
 {
-  "\"title\"": "DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation\",",
-  "\"domain\"": "devops\",",
-  "\"tags\"": "[",
-  "\"status\"": "published\",",
-  "\"source\"": "codewhale\",",
-  "\"created\"": "2026-06-13 00:00:00 UTC\",",
-  "\"updated\"": "2026-06-14 00:00:00 UTC\",",
-  "\"domain_expert\"": "codewhale\",",
-  "\"verified_date\"": "2026-06-14",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "title": "DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation",
+  "domain": "devops",
+  "tags": [
+    "github-actions",
+    "dco",
+    "signoff",
+    "issue-comment",
+    "auto-fix",
+    "fork-pr",
+    "plan-b",
+    "supply-chain"
+  ],
+  "status": "published",
+  "source": "manual",
+  "created": "2026-06-13 00:00:00 UTC",
+  "updated": "2026-06-14 00:00:00 UTC",
+  "domain_expert": "codewhale",
+  "verified_date": "2026-06-14",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

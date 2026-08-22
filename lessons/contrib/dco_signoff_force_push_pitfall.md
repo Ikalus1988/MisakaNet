@@ -2,17 +2,26 @@
 {
   "title": "DCO Signoff Lost During Force Push",
   "domain": "devops",
-  "tags": ["git", "dco", "signoff", "force-push", "pull-request"],
+  "tags": [
+    "git",
+    "dco",
+    "signoff",
+    "force-push",
+    "pull-request"
+  ],
   "status": "published",
   "evidence_level": "E0",
-  "source": "session-feedback",
+  "source": "intake",
   "created": "2026-08-04",
   "updated": "2026-08-04",
   "metadata": {
     "type": "feedback",
     "originSessionId": "c8d99950-7aef-46ad-b4ce-4d0f910c86e9",
     "modified": "2026-08-04T10:19:47.621Z"
-  }
+  },
+  "author": "Liona Can",
+  "edited_at": "2026-08-13T15:09:39-04:00",
+  "merged_by": "Liona Can"
 }
 ---
 

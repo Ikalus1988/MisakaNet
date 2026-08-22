@@ -1,16 +1,21 @@
 ---
 {
-  "\"domain\"": "growth\",",
-  "\"title\"": "Repository Traffic Is Not Lesson Use\",",
-  "\"tags\"": "[\"analytics\", \"growth\", \"feedback\", \"lessons\", \"metrics\"],",
-  "\"status\"": "published\",",
-  "\"source\"": "generalized repository traffic analysis\",",
-  "\"created\"": "2026-07-17\",",
-  "\"confidence\"": "0.90",
-  "author": "Ikalus1988",
+  "domain": "growth",
+  "title": "Repository Traffic Is Not Lesson Use",
+  "tags": [
+    "analytics",
+    "growth",
+    "feedback",
+    "lessons",
+    "metrics"
+  ],
+  "status": "published",
   "source": "manual",
-  "edited_at": "2026-07-17T01:09:07+08:00",
-  "merged_by": "Ikalus1988"
+  "created": "2026-07-17",
+  "confidence": "0.90",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

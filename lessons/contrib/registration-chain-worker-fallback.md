@@ -1,16 +1,21 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "注册链路设计 — Worker 只创建 Issue，其余交给 Workflow\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"{\\\"title\\\"\"": "注册链路设计 — Worker 只创建 Issue，其余交给 Workflow\\\", \\\"domain\\\": \\\"devops\\\", \\\"tags\\\": [\\\"registration\\\", \\\"worker\\\", \\\"register\\\", \\\"github-actions\\\", \\\"feishu\\\", \\\"fallback\\\"], \\\"domain_expert\\\": \\\"unknown\\\"}\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "domain": "contrib",
+  "title": "注册链路设计 — Worker 只创建 Issue，其余交给 Workflow",
+  "created": "2026-07-06",
+  "source": "manual",
+  "tags": [
+    "registration",
+    "worker",
+    "register",
+    "github-actions",
+    "feishu",
+    "fallback"
+  ],
+  "domain_expert": "unknown",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

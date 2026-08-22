@@ -1,16 +1,21 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "Before — inspect raw first line\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"{\\\"title\\\"\"": "File Content Corrupted by Terminal Line-Number Prefixes\\\", \\\"domain\\\": \\\"devops\\\", \\\"tags\\\": [\\\"terminal\\\", \\\"sed\\\", \\\"line-number\\\", \\\"file-corruption\\\", \\\"html\\\", \\\"debug\\\"], \\\"status\\\": \\\"published\\\", \\\"created\\\": \\\"2026-06-20\\\", \\\"source\\\": \\\"codewhale\\\"}\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "domain": "contrib",
+  "title": "Before — inspect raw first line",
+  "created": "2026-07-06",
+  "source": "manual",
+  "tags": [
+    "terminal",
+    "sed",
+    "line-number",
+    "file-corruption",
+    "html",
+    "debug"
+  ],
+  "status": "published",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

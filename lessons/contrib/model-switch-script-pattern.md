@@ -1,15 +1,13 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "多模型Switch脚本模式 — 双 Agent 模型管理\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "domain": "contrib",
+  "title": "多模型Switch脚本模式 — 双 Agent 模型管理",
+  "verification": "metadata-normalized",
+  "created": "2026-07-06",
+  "source": "manual",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 ---{"title": "多模型Switch脚本模式 — 双 Agent 模型管理", "confidence": "0.7", "created": "2026-05-02", "domain": "devops", "source": "bootstrap", "status": "published", "tags": ""}---

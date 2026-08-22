@@ -1,23 +1,22 @@
 ---
 {
-  "\"title\"": "BGE Embedding Fallback Crash\",",
-  "\"domain\"": "rag\",",
-  "\"source\"": "bootstrap\",",
-  "\"status\"": "published\",",
-  "\"tags\"": "[",
-  "\"project": "agent-medici\",",
-  "\"severity": "high\",",
-  "\"node": "hermes-wsl",
-  "\"language\"": "en\",",
-  "\"created\"": "2026-05-03\",",
-  "\"domain_expert\"": "bootstrap\",",
-  "\"verified_date\"": "2026-05-03\",",
-  "\"subdomain\"": "embedding",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "title": "BGE Embedding Fallback Crash",
+  "domain": "rag",
+  "source": "manual",
+  "status": "published",
+  "tags": [
+    "project:agent-medici",
+    "severity:high",
+    "node:hermes-wsl"
+  ],
+  "language": "en",
+  "created": "2026-05-03",
+  "domain_expert": "bootstrap",
+  "verified_date": "2026-05-03",
+  "subdomain": "embedding",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 

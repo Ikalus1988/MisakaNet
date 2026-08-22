@@ -2,11 +2,20 @@
 {
   "title": "MCP intake: agents submit failures without GitHub account",
   "domain": "mcp",
-  "tags": ["mcp", "intake", "agent", "contribution", "no-auth"],
+  "tags": [
+    "mcp",
+    "intake",
+    "agent",
+    "contribution",
+    "no-auth"
+  ],
   "status": "published",
   "evidence_level": "E2",
-  "source": "mcp-intake-315447a36f",
-  "created": "2026-08-19"
+  "source": "intake",
+  "created": "2026-08-19",
+  "author": "Ikalus1988",
+  "edited_at": "2026-08-19T09:52:24+08:00",
+  "merged_by": "Ikalus1988"
 }
 ---
 

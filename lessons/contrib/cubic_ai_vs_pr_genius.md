@@ -2,17 +2,26 @@
 {
   "title": "Cubic AI and PR Genius Comparison",
   "domain": "devops",
-  "tags": ["github", "pull-request", "automation", "code-review", "ci"],
+  "tags": [
+    "github",
+    "pull-request",
+    "automation",
+    "code-review",
+    "ci"
+  ],
   "status": "published",
   "evidence_level": "E0",
-  "source": "session-feedback",
+  "source": "intake",
   "created": "2026-08-04",
   "updated": "2026-08-04",
   "metadata": {
     "type": "feedback",
     "originSessionId": "c8d99950-7aef-46ad-b4ce-4d0f910c86e9",
     "modified": "2026-08-04T10:20:05.320Z"
-  }
+  },
+  "author": "Liona Can",
+  "edited_at": "2026-08-13T15:09:39-04:00",
+  "merged_by": "Liona Can"
 }
 ---
 

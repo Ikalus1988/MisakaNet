@@ -3,7 +3,7 @@
   "title": "Geometry and Kinematics Layer — Shapes, Pose, Sensors for Robot Programming",
   "domain": "fanuc",
   "subdomain": "karel-geometry",
-  "source": "pr",
+  "source": "manual",
   "status": "draft",
   "confidence": 0.8,
   "created": "2026-07-12",
@@ -22,10 +22,9 @@
   "root_cause": "FANUC KAREL标准库仅提供基础数学函数，没有面向机器人应用的几何计算库和传感器抽象层",
   "solution": "Ka-Boost Layer6提供三个模块：shapes模块实现3D几何图元(plane/line/segment/box/cylinder)及交集/投影/碰撞检测；pose模块提供运动学和坐标变换(详见pose专题)；sensors模块封装ToF激光测距传感器(支持Keyence IL300/IL065、Panasonic MLDS)，含校准、滑动窗口平均、边沿检测",
   "verification": "shapes模块通过TP交互式示教程序验证(如shp_splitedv、incylinder)；sensors模块通过实际传感器标定和空间扫描验证",
-  "author": "Ikalus1988",
-  "edited_at": "2026-07-15T10:25:40+08:00",
-  "merged_by": "Ikalus1988",
-  "pr": 472
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 
 ### 问题描述

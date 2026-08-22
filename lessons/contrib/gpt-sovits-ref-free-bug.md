@@ -1,16 +1,18 @@
 ---
 {
-  "\"domain\"": "contrib\",",
-  "\"title\"": "gpt sovits ref free bug\",",
-  "\"verification\"": "metadata-normalized\",",
-  "\"{\\\"title\\\"\"": "GPT-SoVITS：ref_free bug——prompt_text 为空时参数被覆盖\\\", \\\"domain\\\": \\\"tts\\\", \\\"tags\\\": \\\"\\\", \\\"source\\\": \\\"hanged-man\\\", \\\"status\\\": \\\"published\\\", \\\"created\\\": \\\"2026-04-06\\\", \\\"confidence\\\": \\\"0.9\\\", \\\"scope\\\": \\\"narrow\\\", \\\"domain_expert\\\": \\\"hanged-man\\\", \\\"verified_date\\\": \\\"2026-04-06\\\"}\",",
-  "\"created\"": "2026-07-06\",",
-  "\"source\"": "unknown",
-  "author": "zsxh1990",
-  "source": "pr",
-  "edited_at": "2026-07-07T11:57:40+08:00",
-  "merged_by": "zsxh1990",
-  "pr": 382
+  "domain": "contrib",
+  "title": "gpt sovits ref free bug",
+  "created": "2026-07-06",
+  "source": "manual",
+  "tags": "",
+  "status": "published",
+  "confidence": "0.9",
+  "scope": "narrow",
+  "domain_expert": "hanged-man",
+  "verified_date": "2026-04-06",
+  "author": "Liona Can",
+  "edited_at": "2026-08-21T13:12:59+08:00",
+  "merged_by": "Liona Can"
 }
 ---
 
