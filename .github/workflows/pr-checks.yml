@@ -319,6 +319,22 @@ jobs:
           fi
           printf '## Test Suite\n\n| Metric | Value |\n|--------|-------|\n| Outcome | %s |\n| Coverage | %s%% |\n\n' "${RESULT}" "${coverage}" >> "$GITHUB_STEP_SUMMARY"
 
+      # ── Type Checking (full scope only) ──
+      - name: Type Check (mypy)
+        if: steps.scope.outputs.scope == 'full'
+        id: mypy
+        continue-on-error: true
+        run: |
+          pip install mypy
+          mypy misakanet/ --ignore-missing-imports 2>&1 | tee mypy_report.txt
+          MYPY_EXIT=${PIPESTATUS[0]}
+          echo "mypy_exit=$MYPY_EXIT" >> "$GITHUB_OUTPUT"
+          if [ "$MYPY_EXIT" -eq 0 ]; then
+            echo "✅ mypy passed"
+          else
+            echo "⚠️ mypy found issues (non-blocking)"
+          fi
+
       # ── Lesson Schema Validation (all PRs) ──
       - name: Validate Lesson Schema
         id: schema
