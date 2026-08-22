@@ -399,7 +399,7 @@ Use skills when you want an agent to do something. Use MisakaNet when you want a
 | [SwarmClaw](https://github.com/swarmclawai/swarmclaw) | ![stars](https://img.shields.io/github/stars/swarmclawai/swarmclaw?style=social) | 🟡 Warm | Runtime federation | Python | `pip install` |
 | [Agent-KB](https://github.com/OPPO-PersonalAI/Agent-KB) | ![stars](https://img.shields.io/github/stars/OPPO-PersonalAI/Agent-KB?style=social) | 🔬 Research | Shared experience pool / research prototype | Docker + PostgreSQL | Docker (~15min) |
 | [MemoryCustodian](https://github.com/waittim/MemoryCustodian) | ![stars](https://img.shields.io/github/stars/waittim/MemoryCustodian?style=social) | 🟡 Warm | Personal memory | Python | `pip install` |
-| [GoodMemory](https://github.com/hjqcan/GoodMemory) | ![stars](https://img.shields.io/github/stars/hjqcan/GoodMemory?style=social) | ✅ Active | Personal memory | Python | `pip install` |
+| [GoodMemory](https://github.com/hjqcan/GoodMemory) | ![stars](https://img.shields.io/github/stars/hjqcan/GoodMemory?style=social) | ✅ Active | Local / app-level memory | TypeScript + Bun/SQLite | `npm install` |
 
 > **MisakaNet is not the only shared memory system.** Its edge is:
 > - **Git-backed** — every lesson is a Markdown file, fully auditable, version-controlled
