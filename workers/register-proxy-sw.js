@@ -39,6 +39,38 @@ function jsonResponse(body, status = 200) {
   });
 }
 
+// ── Debug Logging ──
+// MISAKA_DEBUG=1: auth/connection diagnostics
+// MISAKA_DEBUG=2: full request/response logging (verbose)
+
+function getDebugLevel(env) {
+  const level = parseInt(env?.MISAKA_DEBUG || "0", 10);
+  return isNaN(level) ? 0 : Math.min(level, 2);
+}
+
+function debugLog(env, level, ...args) {
+  if (getDebugLevel(env) >= level) {
+    console.log("[MISAKA_DEBUG]", ...args);
+  }
+}
+
+function maskToken(token) {
+  if (!token) return "(empty)";
+  if (token.length <= 8) return token.slice(0, 3) + "...";
+  return token.slice(0, 6) + "..." + token.slice(-4);
+}
+
+function addDebugContext(env, errorObj, context) {
+  if (getDebugLevel(env) < 1) return errorObj;
+  return {
+    ...errorObj,
+    debug: {
+      ...context,
+      timestamp: new Date().toISOString(),
+    },
+  };
+}
+
 // ── MCP (Model Context Protocol) over Streamable HTTP ──
 // Spec: 2025-06-18 + forward-compat with 2026-07-28 RC
 // - Supports initialize handshake (2025-06-18) AND stateless direct calls (2026-07-28)
@@ -623,8 +655,18 @@ async function handleMcpRequest(request, env) {
   }
 
   if (!authed) {
+    debugLog(env, 1, "Auth failed", {
+      hasToken: !!token,
+      tokenPrefix: maskToken(token),
+      hasExpectedToken: !!expectedToken,
+      isIntakeCall,
+    });
     return mcpJsonResponse(
-      { jsonrpc: "2.0", error: { code: -32000, message: "Unauthorized" } },
+      { jsonrpc: "2.0", error: addDebugContext(env, { code: -32000, message: "Unauthorized" }, {
+        step: "authentication",
+        reason: token ? "token_invalid_or_expired" : "no_token_provided",
+        token_prefix: maskToken(token),
+      }) },
       401,
     );
   }
@@ -632,8 +674,17 @@ async function handleMcpRequest(request, env) {
   // 3. Protocol version check (header-based, per 2025-06-18 spec)
   const protocolVersion = request.headers.get("MCP-Protocol-Version") || MCP_PROTOCOL_VERSION;
   if (!SUPPORTED_PROTOCOL_VERSIONS.includes(protocolVersion)) {
+    debugLog(env, 1, "Protocol version mismatch", {
+      provided: protocolVersion,
+      supported: SUPPORTED_PROTOCOL_VERSIONS,
+    });
     return mcpJsonResponse(
-      { jsonrpc: "2.0", error: { code: -32600, message: `Unsupported protocol version: ${protocolVersion}` } },
+      { jsonrpc: "2.0", error: addDebugContext(env, { code: -32600, message: `Unsupported protocol version: ${protocolVersion}` }, {
+        step: "protocol_version_check",
+        reason: "version_not_supported",
+        provided_version: protocolVersion,
+        supported_versions: SUPPORTED_PROTOCOL_VERSIONS,
+      }) },
       400,
     );
   }
@@ -669,6 +720,15 @@ async function handleMcpRequest(request, env) {
 
   const { id, method, params } = body;
   const reqId = id ?? null;
+
+  // Log full request at debug level 2
+  debugLog(env, 2, "MCP request", {
+    method,
+    params: params ? JSON.stringify(params).slice(0, 500) : null,
+    reqId,
+    tokenPrefix: maskToken(token),
+    protocolVersion,
+  });
 
     // 2026-07-28 RC: validate Mcp-Method / Mcp-Name headers match body
     const hdrMethod = request.headers.get("Mcp-Method");
@@ -712,6 +772,7 @@ async function handleMcpRequest(request, env) {
     }
 
     if (method === "tools/list") {
+      debugLog(env, 2, "tools/list: returning", MCP_TOOLS.length, "tools");
       return mcpJsonResponse({
         jsonrpc: "2.0", id: reqId,
         result: { tools: MCP_TOOLS },
@@ -722,21 +783,33 @@ async function handleMcpRequest(request, env) {
       const toolName = params?.name || hdrName;
       const args = params?.arguments || {};
       if (!toolName) {
+        const err = { code: -32602, message: "Missing tool name" };
+        debugLog(env, 1, "MCP tool call: missing tool name");
         return mcpJsonResponse({
           jsonrpc: "2.0", id: reqId,
-          error: { code: -32602, message: "Missing tool name" },
+          error: addDebugContext(env, err, { step: "tool_call", reason: "missing_name" }),
         });
       }
       // Check tool exists before dispatching
       const availableTools = MCP_TOOLS.map(t => t.name);
       if (!availableTools.includes(toolName)) {
+        const err = { code: -32601, message: `Tool not found: ${toolName}`, available_tools: availableTools };
+        debugLog(env, 1, "MCP tool not found:", toolName, "| available:", availableTools.join(","));
         return mcpJsonResponse({
           jsonrpc: "2.0", id: reqId,
-          error: { code: -32601, message: `Tool not found: ${toolName}`, available_tools: availableTools },
+          error: addDebugContext(env, err, { step: "tool_call", reason: "not_found", requested: toolName }),
         });
       }
       const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
       const result = await handleMcpToolCall(env, toolName, args, token, clientIp);
+
+      // Log tool call result at debug level 2
+      debugLog(env, 2, "MCP tool result", {
+        toolName,
+        hasError: !!result?.error,
+        resultKeys: Object.keys(result || {}),
+      });
+
       return mcpJsonResponse({
         jsonrpc: "2.0", id: reqId,
         result: { content: [{ type: "text", text: JSON.stringify(result) }] },
