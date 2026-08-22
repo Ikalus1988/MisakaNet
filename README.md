@@ -77,6 +77,8 @@ curl -sS https://misakanet.org/mcp \
 
 Returns `node_id` + `token`. Use token for unlimited remote searches.
 
+**Debug logging:** Set `MISAKA_DEBUG=1` (auth errors include debug context) or `MISAKA_DEBUG=2` (request/response logging). Debug context is stripped by default; only shown when enabled.
+
 ## What is this?
 
 **Git-backed failure-memory for AI coding agents.** Zero dependencies. Zero server. Zero database.
