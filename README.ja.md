@@ -213,7 +213,7 @@ MisakaNet レッスン     →  既知の障害を回避
 | [SwarmClaw](https://github.com/swarmclawai/swarmclaw) | ![stars](https://img.shields.io/github/stars/swarmclawai/swarmclaw?style=social) | 🟡 温かい | ランタイムフェデレーション | Python | `pip install` |
 | [Agent-KB](https://github.com/OPPO-PersonalAI/Agent-KB) | ![stars](https://img.shields.io/github/stars/OPPO-PersonalAI/Agent-KB?style=social) | 🔬 研究 | 共有経験プール/研究プロトタイプ | Docker + PostgreSQL | Docker（約15分） |
 | [MemoryCustodian](https://github.com/waittim/MemoryCustodian) | ![stars](https://img.shields.io/github/stars/waittim/MemoryCustodian?style=social) | 🟡 温かい | 個人メモリ | Python | `pip install` |
-| [GoodMemory](https://github.com/hjqcan/GoodMemory) | ![stars](https://img.shields.io/github/stars/hjqcan/GoodMemory?style=social) | ✅ アクティブ | 個人メモリ | Python | `pip install` |
+| [GoodMemory](https://github.com/hjqcan/GoodMemory) | ![stars](https://img.shields.io/github/stars/hjqcan/GoodMemory?style=social) | ✅ アクティブ | ローカル / アプリレベルのメモリ | TypeScript + Bun/SQLite | `npm install` |
 
 > **MisakaNetは唯一の共有メモリシステムではありません。** 強みは：
 > - **Gitバックアップ** — すべてのレッスンはMarkdownファイルで、完全に監査可能、バージョン管理対象
