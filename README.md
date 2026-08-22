@@ -57,10 +57,30 @@ misakanet "database is locked"
 # Or: python3 -m search_knowledge "your error here"
 ```
 
-**Option 4 — DeepSeek Harness:**
+**Option 4 — Python library (for scripts/notebooks):**
+```bash
+pip install misakanet-core
+```
+```python
+from misakanet.search import search_lessons
+results = search_lessons("pip install timeout")
+for r in results:
+    print(r["title"], r["score"])
+```
+
+**Option 5 — DeepSeek Harness:**
 ```bash
 python3 scripts/mcp_deepseek_adapter.py
 ```
+
+### Try it now
+
+| Method | Command | Time |
+|---|---|---|
+| Remote MCP | `curl -sS https://misakanet.org/mcp ...` | 10s |
+| Local MCP | `git clone ... && python3 scripts/mcp_server.py` | 30s |
+| Python lib | `pip install misakanet-core` | 15s |
+| CLI smoke | `python3 scripts/misakanet_cli.py smoke` | 5s |
 
 → [Full quickstart (Remote MCP, CLI, Docker)](docs/quickstart.md) · [Troubleshooting](docs/troubleshooting.md)
 
