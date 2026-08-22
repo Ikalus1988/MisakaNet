@@ -27,12 +27,26 @@ test('crash smoke captures a four-field tombstone and converts it to a draft', a
   try {
     const payloadFile = path.join(tmp, 'tombstone.json');
     const handler = path.join(tmp, 'record-handler.js');
+    const markerFile = path.join(tmp, 'handler-ran.marker');
     await writeFile(handler, [
       '#!/usr/bin/env node',
-      // On Windows, the payload is passed via FATAL_PAYLOAD env var to avoid
-      // command-line quoting issues with large JSON strings.
-      "const data = process.env.FATAL_PAYLOAD || process.argv.at(-1);",
-      "require('node:fs').writeFileSync(process.env.PAYLOAD_FILE, data);",
+      "const fs = require('node:fs');",
+      `try { fs.writeFileSync(${JSON.stringify(markerFile)}, 'ran'); } catch(_) {}`,
+      "let data;",
+      "if (process.env.FATAL_PAYLOAD_FILE) {",
+      "  try { data = fs.readFileSync(process.env.FATAL_PAYLOAD_FILE, 'utf8'); } catch(e) {",
+      `    fs.writeFileSync(${JSON.stringify(markerFile)}, 'read-error: ' + e.message);`,
+      "  }",
+      "} else {",
+      "  data = process.env.FATAL_PAYLOAD || process.argv.at(-1);",
+      "}",
+      "if (data) {",
+      "  try { fs.writeFileSync(process.env.PAYLOAD_FILE, data); } catch(e) {",
+      `    fs.writeFileSync(${JSON.stringify(markerFile)}, 'write-error: ' + e.message);`,
+      "  }",
+      "} else {",
+      `  fs.writeFileSync(${JSON.stringify(markerFile)}, 'no-data');`,
+      "}",
     ].join('\n') + '\n');
     await chmod(handler, 0o755);
 
@@ -60,7 +74,18 @@ test('crash smoke captures a four-field tombstone and converts it to a draft', a
         await new Promise((resolve) => setTimeout(resolve, pollInterval));
       }
     }
-    assert.ok(payload, 'fatal handler did not write a payload');
+    if (!payload) {
+      // Debug: check if handler ran at all
+      let marker = 'not found';
+      try { marker = await readFile(markerFile, 'utf8'); } catch (_) {}
+      let payloadTmp = 'not found';
+      try {
+        const os = require('node:os');
+        payloadTmp = await readFile(require('node:path').join(os.tmpdir(), `fatal-guard-${result.pid || 'unknown'}.json`), 'utf8');
+        payloadTmp = payloadTmp.slice(0, 100);
+      } catch (_) {}
+      assert.fail(`fatal handler did not write a payload (marker: ${marker}, payloadTmp: ${payloadTmp}, stderr: ${(result.stderr || '').slice(0, 200)})`);
+    }
     for (const field of ['schemaVersion', 'reason', 'timestamp', 'pid']) {
       assert.ok(Object.hasOwn(payload, field), `missing ${field}`);
     }

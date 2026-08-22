@@ -123,9 +123,7 @@ function handlerSpec() {
 
 // Parse a handler command without invoking a shell. This supports the documented
 // `/path/to/handler` form and simple quoted paths while keeping payloads argv-safe.
-// On Windows, backslashes are path separators (not escape characters).
 function splitCommand(value) {
-  const isWindows = process.platform === 'win32';
   const parts = [];
   let part = '';
   let quote = '';
@@ -134,7 +132,7 @@ function splitCommand(value) {
     if (escaped) {
       part += char;
       escaped = false;
-    } else if (char === '\\' && !isWindows) {
+    } else if (char === '\\') {
       escaped = true;
     } else if (quote) {
       if (char === quote) quote = '';
@@ -198,22 +196,23 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
       }
     } catch (_) {}
   }
-  const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs, payload]);
   const spawnOpts = {
     stdio: 'ignore',
     shell: false,
     windowsHide: true,
-    ...invocation.options,
   };
   if (process.platform === 'win32') {
     // On Windows, detached processes die when the parent exits via process.exit().
-    // Use spawnSync so the handler completes before we exit.
-    // Pass the payload via FATAL_PAYLOAD env var to avoid Windows command-line
-    // length/quoting issues with large JSON strings.
+    // Write the payload to a temp file and pass the path via env var to avoid
+    // command-line length/quoting issues with large JSON payloads.
+    const payloadTmp = path.join(os.tmpdir(), `fatal-guard-${process.pid}.json`);
+    try { fs.writeFileSync(payloadTmp, payload); } catch (_) {}
+    const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs]);
     const result = spawnSync(invocation.command, invocation.args, {
       ...spawnOpts,
+      ...invocation.options,
       timeout: HANDLER_TIMEOUT_MS,
-      env: { ...process.env, FATAL_PAYLOAD: payload },
+      env: { ...process.env, FATAL_PAYLOAD_FILE: payloadTmp },
     });
     if (result.error || (result.status !== null && result.status !== 0)) {
       const detail = result.error
@@ -222,8 +221,10 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
       process.stderr.write(`fatal-guard: Windows handler failed: ${detail}\n`);
     }
   } else {
+    const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs, payload]);
     const reporter = spawn(invocation.command, invocation.args, {
       ...spawnOpts,
+      ...invocation.options,
       detached: true,
     });
     reporter.on('error', () => {});
