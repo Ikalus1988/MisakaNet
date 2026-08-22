@@ -1,0 +1,135 @@
+name: Search MisakaNet on CI Failure
+
+on:
+  workflow_run:
+    workflows: ["*"]
+    types: [completed]
+
+jobs:
+  search-lessons:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout MisakaNet
+        uses: actions/checkout@v7
+        with:
+          repository: Ikalus1988/MisakaNet
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install misakanet-core
+
+      - name: Get failure context
+        id: context
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+
+            // Get associated PRs
+            const prs = run.pull_requests || [];
+            const prNumber = prs.length > 0 ? prs[0].number : null;
+
+            // Get failure logs
+            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: run.id,
+              filter: 'failed'
+            });
+
+            let errorSignatures = [];
+            for (const job of jobs.jobs) {
+              try {
+                const { data: logs } = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  job_id: job.id
+                });
+
+                // Extract error lines (last 50 lines, filter for errors)
+                const lines = logs.split('\n');
+                const errorLines = lines
+                  .filter(l => /error|fail|exception|traceback/i.test(l))
+                  .slice(-10);
+                errorSignatures.push(...errorLines);
+              } catch (e) {
+                // Logs may not be available
+              }
+            }
+
+            core.setOutput('pr_number', prNumber || '');
+            core.setOutput('error_signatures', errorSignatures.join('\n').slice(0, 2000));
+            core.setOutput('run_url', run.html_url);
+            core.setOutput('run_name', run.name || 'CI');
+
+      - name: Search MisakaNet
+        if: steps.context.outputs.error_signatures != ''
+        id: search
+        run: |
+          ERROR_SIG="${{ steps.context.outputs.error_signatures }}"
+          # Take first 3 error lines as search query
+          QUERY=$(echo "$ERROR_SIG" | head -3 | tr '\n' ' ' | head -c 200)
+
+          if [ -z "$QUERY" ]; then
+            echo "results=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Searching MisakaNet for: $QUERY"
+
+          # Use search_knowledge.py
+          RESULT=$(python3 search_knowledge.py "$QUERY" --json --top 3 2>/dev/null || echo "[]")
+
+          # Check if we got results
+          COUNT=$(echo "$RESULT" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
+
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "results<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$RESULT" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Comment on PR
+        if: steps.context.outputs.pr_number != '' && steps.search.outputs.count != '0'
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.context.outputs.pr_number }}
+          RESULTS: ${{ steps.search.outputs.results }}
+          RUN_URL: ${{ steps.context.outputs.run_url }}
+          RUN_NAME: ${{ steps.context.outputs.run_name }}
+        with:
+          script: |
+            const results = JSON.parse(process.env.RESULTS || '[]');
+            const prNumber = parseInt(process.env.PR_NUMBER);
+
+            if (!results.length) return;
+
+            let body = `## 💡 MisakaNet: Related lessons found\n\n`;
+            body += `CI failed in [${process.env.RUN_NAME}](${process.env.RUN_URL}). `;
+            body += `Here are potentially relevant lessons:\n\n`;
+
+            for (const r of results.slice(0, 3)) {
+              body += `### ${r.title}\n`;
+              body += `> ${r.preview || 'No preview'}\n\n`;
+              body += `- **Domain**: ${r.domain || 'general'}\n`;
+              body += `- **Score**: ${(r.score * 100).toFixed(0)}%\n`;
+              body += `- **Path**: \`${r.path}\`\n\n`;
+            }
+
+            body += `---\n`;
+            body += `_To search manually: \`python3 search_knowledge.py "your error"\`_\n`;
+            body += `_To disable: remove or comment out ci-lesson-search.yml_\n`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: body
+            });
