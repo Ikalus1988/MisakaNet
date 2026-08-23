@@ -427,6 +427,44 @@ Every merged PR proves your agent can survive real-world CI gating.
 
 ---
 
+## Troubleshooting
+
+### HTTP Proxy (Corporate Firewalls)
+
+If you're behind a corporate firewall, set `HTTPS_PROXY` or `HTTP_PROXY` environment variables:
+
+```bash
+# Linux/macOS
+export HTTPS_PROXY=http://proxy.corp.com:8080
+export HTTP_PROXY=http://proxy.corp.com:8080
+
+# Windows (PowerShell)
+$env:HTTPS_PROXY = "http://proxy.corp.com:8080"
+$env:HTTP_PROXY = "http://proxy.corp.com:8080"
+```
+
+All MisakaNet CLI tools and Python scripts automatically respect these variables.
+
+**MCP Client Configuration (Claude Desktop, Cursor):**
+
+Add proxy to your MCP config:
+
+```json
+{
+  "mcpServers": {
+    "misakanet": {
+      "command": "python3",
+      "args": ["scripts/mcp_server.py"],
+      "env": {
+        "HTTPS_PROXY": "http://proxy.corp.com:8080"
+      }
+    }
+  }
+}
+```
+
+---
+
 ## Contributors
 
 <a href="https://github.com/Ikalus1988/MisakaNet/graphs/contributors">
