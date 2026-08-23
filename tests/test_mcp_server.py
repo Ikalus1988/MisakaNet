@@ -375,6 +375,32 @@ def test_preflight_missing_intent():
     check("returns error for missing intent", "error" in result)
 
 
+def test_memory_context_no_task():
+    print("\n-- tools/call: misakanet_memory_context no task --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_memory_context",
+        "arguments": {},
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns error for missing task", "error" in result)
+    check("error mentions task required", "task" in result.get("error", "").lower())
+
+
+def test_memory_context_basic():
+    print("\n-- tools/call: misakanet_memory_context basic --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_memory_context",
+        "arguments": {"task": "set up pip install behind corporate proxy"},
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("has task field", result.get("task") == "set up pip install behind corporate proxy")
+    check("has lesson_count", "lesson_count" in result)
+    check("has context_block", "context_block" in result)
+    check("context_block contains MisakaNet", "MisakaNet" in result.get("context_block", ""))
+
+
 if __name__ == "__main__":
     print("MisakaNet MCP Server smoke test")
     test_initialize()
@@ -392,6 +418,8 @@ if __name__ == "__main__":
     test_write_lesson_low_quality()
     test_write_lesson_success()
     test_preflight_missing_intent()
+    test_memory_context_no_task()
+    test_memory_context_basic()
 
     print(f"\n{'=' * 40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
