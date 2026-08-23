@@ -35,6 +35,15 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 
+def _log_gap(query: str, source: str = "mcp") -> None:
+    """Log a zero-result search query for gap analysis. Best-effort, never raises."""
+    try:
+        from scripts.search_gap_logger import log_zero_result
+        log_zero_result(query, source=source)
+    except Exception:
+        pass  # never let logging break search
+
+
 def get_server_version() -> str:
     """Return the installed or checkout package version for MCP metadata."""
     try:
@@ -161,6 +170,8 @@ def handle_search(args: dict) -> dict:
 
     if HAS_SAG and not explain:
         results = sag_search(SAG_DB, query, domain=domain, top=top)
+        if not results:
+            _log_gap(query, "mcp")
         voice = "lesson-found" if results else "failure-warning"
         return {"results": results, "source": "sag-lite", "voice": voice}
     elif HAS_BM25:
@@ -179,12 +190,16 @@ def handle_search(args: dict) -> dict:
             if explain:
                 result["score_breakdown"] = _score_breakdown(query, doc, docs=docs)
             results.append(result)
+        if not results:
+            _log_gap(query, "mcp")
         voice = "lesson-found" if results else "failure-warning"
         return {"results": results, "source": "bm25", "voice": voice}
     else:
         # Fallback: lightweight keyword search from lessons.json
         results = _fallback_search(query, domain=domain, top=top)
         if results is not None:
+            if not results:
+                _log_gap(query, "mcp")
             voice = "lesson-found" if results else "failure-warning"
             return {"results": results, "source": "fallback", "voice": voice}
         return {

@@ -187,6 +187,12 @@ def main():
     p_sum = sub.add_parser("summary", help="Show summary")
     p_sum.add_argument("--json", action="store_true")
 
+    # gaps — search gap clusters
+    p_gaps = sub.add_parser("gaps", help="Show search gap clusters")
+    p_gaps.add_argument("--top", type=int, default=10, help="Top N clusters")
+    p_gaps.add_argument("--threshold", type=float, default=0.5, help="Similarity threshold")
+    p_gaps.add_argument("--json", action="store_true")
+
     args = parser.parse_args()
 
     if args.cmd == "record":
@@ -231,6 +237,25 @@ def main():
             for cat, c in summary["by_category"].items():
                 print(f"    {cat:<12} {c}")
         print()
+
+    elif args.cmd == "gaps":
+        from scripts.gap_cluster import load_queries, cluster_queries
+        queries = load_queries()
+        if not queries:
+            print("  No gap queries found. Searches must return zero results first.")
+        else:
+            clusters = cluster_queries(queries, threshold=args.threshold)
+            top = clusters[: args.top]
+            if getattr(args, "json", False):
+                print(json.dumps({"total_queries": len(queries), "clusters": top}, indent=2, ensure_ascii=False))
+            else:
+                print(f"\n  Search Gaps — {len(queries)} queries, {len(clusters)} clusters")
+                print(f"\n  {'#':<4} {'Count':<8} {'Sample queries'}")
+                print(f"  {'-'*4} {'-'*8} {'-'*50}")
+                for i, c in enumerate(top, 1):
+                    samples = ", ".join(c["queries"][:2])
+                    print(f"  {i:<4} {c['count']:<8} {samples[:50]}")
+            print()
 
     else:
         parser.print_help()
