@@ -7,12 +7,23 @@ Usage:
     python3 tests/test_mcp_server.py
 """
 import json
+import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
+
+# ── Test token setup ──
+# Create a temporary secrets directory with a test token so verify_token works
+_TEST_SECRETS_DIR = tempfile.mkdtemp(prefix="misaka_test_secrets_")
+os.environ["MISAKA_SECRETS_DIR"] = _TEST_SECRETS_DIR
+
+from hub.federation.secrets import generate_shared_secret
+_TEST_NODE_ID = "test-agent"
+_TEST_TOKEN = generate_shared_secret(_TEST_NODE_ID)
 
 from scripts.mcp_server import TOOLS, handle_request
 
@@ -320,7 +331,7 @@ def test_write_lesson_low_quality():
             "problem": "nope",
             "root_cause": "nope",
             "fix": "nope",
-            "token": "token:test-agent",
+            "token": _TEST_TOKEN,
         },
     })
     result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
@@ -344,7 +355,7 @@ def test_write_lesson_success():
             "root_cause": "pip does not automatically use HTTP_PROXY_AUTH environment variables. The proxy returns 407 Proxy Authentication Required but pip treats this as a timeout.",
             "fix": "Set HTTP_PROXY and HTTPS_PROXY with embedded credentials: export HTTP_PROXY=http://user:pass@proxy:8080. Or use pip --proxy flag.",
             "verification": "Run pip install requests behind proxy and verify it completes within 30 seconds.",
-            "token": "token:test-agent",
+            "token": _TEST_TOKEN,
             "source": "smoke-test",
         },
     })
@@ -375,6 +386,41 @@ def test_preflight_missing_intent():
     check("returns error for missing intent", "error" in result)
 
 
+def test_memory_context_no_task():
+    print("\n-- tools/call: misakanet_memory_context no task --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_memory_context",
+        "arguments": {},
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns error for missing task", "error" in result)
+    check("error mentions task required", "task" in result.get("error", "").lower())
+
+
+def test_memory_context_basic():
+    print("\n-- tools/call: misakanet_memory_context basic --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_memory_context",
+        "arguments": {"task": "set up pip install behind corporate proxy"},
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("has task field", result.get("task") == "set up pip install behind corporate proxy")
+    check("has lesson_count", "lesson_count" in result)
+    check("has context_block", "context_block" in result)
+    check("context_block contains MisakaNet", "MisakaNet" in result.get("context_block", ""))
+
+
+def _cleanup_test_secrets():
+    """Remove temporary test secrets directory."""
+    import shutil
+    try:
+        shutil.rmtree(_TEST_SECRETS_DIR, ignore_errors=True)
+    except Exception:
+        pass
+
+
 if __name__ == "__main__":
     print("MisakaNet MCP Server smoke test")
     test_initialize()
@@ -392,7 +438,10 @@ if __name__ == "__main__":
     test_write_lesson_low_quality()
     test_write_lesson_success()
     test_preflight_missing_intent()
+    test_memory_context_no_task()
+    test_memory_context_basic()
 
     print(f"\n{'=' * 40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
+    _cleanup_test_secrets()
     sys.exit(1 if FAIL else 0)

@@ -373,8 +373,10 @@ def handle_write_lesson(args: dict) -> dict:
             "hint": "write_lesson requires title, domain, problem, root_cause, and fix.",
         }
 
-    # Require registered agent token
-    if not token or token.startswith("anon:"):
+    # Require registered agent token — verify against federation secrets
+    from hub.federation.secrets import verify_token
+    node_id = verify_token(token)
+    if not node_id:
         return {
             "submitted": False,
             "error": "Registered agent token required",
@@ -402,7 +404,7 @@ def handle_write_lesson(args: dict) -> dict:
 
     result = submit_contribution(
         contrib_type="lesson",
-        user=token,
+        user=node_id,
         title=title,
         message=message,
         problem=problem,
@@ -450,6 +452,73 @@ def handle_preflight(args: dict) -> dict:
         return {"error": "intent is required", "voice": "failure-warning"}
     result = preflight_check(intent, context)
     return result
+
+
+def handle_memory_context(args: dict) -> dict:
+    """Pull relevant lessons as context for a task description.
+
+    Intended to be called at the start of a task, so the agent has
+    failure-memory injected into its context before it begins work.
+    """
+    task = args.get("task", "")
+    domain = args.get("domain")
+    top_n = min(args.get("top_n", 5), 10)
+
+    if not task:
+        return {
+            "error": "task is required",
+            "hint": "Describe the task you are about to perform (e.g. 'set up ChromaDB RAG pipeline').",
+            "voice": "failure-warning",
+        }
+
+    # Reuse the existing search infrastructure
+    if HAS_SAG:
+        results = sag_search(SAG_DB, task, domain=domain, top=top_n)
+    elif HAS_BM25:
+        docs = _load_docs_cached(LESSONS, is_lesson=True)
+        scored = _search_cached(task, docs)
+        results = []
+        for score, doc in scored[:top_n]:
+            results.append({
+                "title": doc.title,
+                "path": str(doc.filepath),
+                "score": round(score, 3),
+                "domain": doc.domain,
+                "status": doc.status,
+            })
+    else:
+        results = _fallback_search(task, domain=domain, top=top_n)
+        if results is None:
+            results = []
+
+    # Build condensed context block for agent injection
+    context_lines = []
+    for i, r in enumerate(results, 1):
+        title = r.get("title", "Untitled")
+        lesson_id = r.get("id") or r.get("path", "")
+        problem = r.get("problem", "")
+        fix = r.get("fix", "")
+        entry = f"{i}. [{title}] ({lesson_id})"
+        if problem:
+            entry += f"\n   Problem: {problem[:200]}"
+        if fix:
+            entry += f"\n   Fix: {fix[:200]}"
+        context_lines.append(entry)
+
+    context_block = "\n".join(context_lines) if context_lines else "(No matching lessons found)"
+
+    return {
+        "task": task,
+        "lesson_count": len(results),
+        "lessons": results,
+        "context_block": (
+            f"## Relevant MisakaNet Lessons ({len(results)} found)\n"
+            f"Task: {task}\n\n{context_block}\n\n"
+            "Use these lessons to avoid known pitfalls. "
+            "Search MisakaNet for more details if needed."
+        ),
+        "voice": "lesson-found" if results else "failure-warning",
+    }
 
 
 def handle_usage_status(args: dict) -> dict:
@@ -941,6 +1010,37 @@ TOOLS = [
         },
     },
     {
+        "name": "misakanet_memory_context",
+        "description": (
+            "Pull relevant failure-memory lessons as context before starting a task. "
+            "Call this at the beginning of a coding session or before attempting a "
+            "non-trivial operation. Returns a condensed context block with matching "
+            "lessons (problem + fix summaries) that can be injected into the agent's "
+            "system prompt. Input semantics: task (required), domain (optional filter), "
+            "top_n (optional, default 5, max 10). Output schema: JSON with task, "
+            "lesson_count, lessons array, and context_block (ready-to-inject markdown). "
+            "Error cases: missing task. Side effects: none. Auth: none. Rate limits: none."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "task": {
+                    "type": "string",
+                    "description": "Task description (e.g. 'set up ChromaDB RAG pipeline', 'deploy FastAPI to production').",
+                },
+                "domain": {
+                    "type": "string",
+                    "description": "Optional domain filter (e.g. 'rag', 'docker', 'python').",
+                },
+                "top_n": {
+                    "type": "integer",
+                    "description": "Number of lessons to return (default 5, max 10).",
+                },
+            },
+            "required": ["task"],
+        },
+    },
+    {
         "name": "misakanet_usage_status",
         "description": (
             "Check current usage status and remaining quota. Use to see how many free lesson reads "
@@ -1056,6 +1156,7 @@ def handle_request(request: dict) -> dict:
             "misakanet_submit_intake": handle_submit_intake,
             "misakanet_write_lesson": handle_write_lesson,
             "misakanet_preflight": handle_preflight,
+            "misakanet_memory_context": handle_memory_context,
             "misakanet_usage_status": handle_usage_status,
             "misakanet_register": handle_register,
         }
