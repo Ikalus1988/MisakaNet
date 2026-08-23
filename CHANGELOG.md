@@ -7,6 +7,65 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.19.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.18.0...v2.19.0) (2026-08-23)
+
+
+### Features
+
+* batch improvements - lessons, provenance, scripts ([873d068](https://github.com/Ikalus1988/MisakaNet/commit/873d0689dc4e361d70e7c2e5c53b35de0973824d))
+* **ci:** add mypy type checking for misakanet/ core package ([#1241](https://github.com/Ikalus1988/MisakaNet/issues/1241)) ([5114a7b](https://github.com/Ikalus1988/MisakaNet/commit/5114a7b5da71f8f31f45a66b74617d670288fd62)), closes [#1181](https://github.com/Ikalus1988/MisakaNet/issues/1181)
+* **dx:** changelog generator with tests and CI integration ([#1216](https://github.com/Ikalus1988/MisakaNet/issues/1216)) ([781e024](https://github.com/Ikalus1988/MisakaNet/commit/781e0244cd9f590ffdc8da456221b64d1b62009e))
+* dynamic badges for README ([5bd3870](https://github.com/Ikalus1988/MisakaNet/commit/5bd3870f820f3595a0e0e867ebee95ad54ae653a))
+* **fatal-guard:** harden CLI entry point ([13bab43](https://github.com/Ikalus1988/MisakaNet/commit/13bab4394da950264962da2db6f8503f881ceec6))
+* implement release-please workflow ([9f25f86](https://github.com/Ikalus1988/MisakaNet/commit/9f25f8608d13b4f58b0a99adbd5979be250550ac))
+* **mcp:** add debug logging for Remote MCP endpoint ([#1230](https://github.com/Ikalus1988/MisakaNet/issues/1230)) ([be853e0](https://github.com/Ikalus1988/MisakaNet/commit/be853e0bd3535a159a89b2ef449e4572f8b43c17)), closes [#1206](https://github.com/Ikalus1988/MisakaNet/issues/1206)
+* **mcp:** add misakanet_register tool to local MCP servers ([01bb346](https://github.com/Ikalus1988/MisakaNet/commit/01bb346487250fbed0e59a17d7310e1429ff0da8))
+* **mcp:** add tool filtering via MISAKA_TOOL_FILTER env var ([#1204](https://github.com/Ikalus1988/MisakaNet/issues/1204)) ([#1228](https://github.com/Ikalus1988/MisakaNet/issues/1228)) ([01d2225](https://github.com/Ikalus1988/MisakaNet/commit/01d22251f6d15964e31f8ef42876d4894477f9bf))
+* **mcp:** add write_lesson and preflight tools to remote Worker ([#1225](https://github.com/Ikalus1988/MisakaNet/issues/1225)) ([6a709f8](https://github.com/Ikalus1988/MisakaNet/commit/6a709f80dcb9724410a92abcb6d8d8592a5a2ce8))
+* **mcp:** improve tool descriptions + add write_lesson tests ([c81c766](https://github.com/Ikalus1988/MisakaNet/commit/c81c766a4123890f55ca1cd3954fe49b65db3b5e))
+* **pr-genius:** make rules configurable via .pr-genius.yaml ([#1215](https://github.com/Ikalus1988/MisakaNet/issues/1215)) ([f96f06b](https://github.com/Ikalus1988/MisakaNet/commit/f96f06b071bc60be65d8461d023b677b0687ba5b))
+* **provenance:** add lesson provenance tracking to 9 core lessons ([892e129](https://github.com/Ikalus1988/MisakaNet/commit/892e129a0f7fe0c01fe16af3033dd193a506969e))
+
+
+### Bug Fixes
+
+* add --config wrangler.toml to ensure the correct Worker is deployed. ([132e37b](https://github.com/Ikalus1988/MisakaNet/commit/132e37b52b2f17dc051baaf76c03c015a21e0114))
+* address 3 P0 code review issues ([d07d93c](https://github.com/Ikalus1988/MisakaNet/commit/d07d93c90e37d8e7f429ed160fc3de9a3b4d4a9b))
+* address P1 code review issues ([a24bcab](https://github.com/Ikalus1988/MisakaNet/commit/a24bcab10b0cfb40c436e6574c065132f5275df5))
+* **ci:** skip DCO check for release-please bot PRs ([4e261e0](https://github.com/Ikalus1988/MisakaNet/commit/4e261e00530f13b81939c1c26becb705a6a91229))
+* **ci:** specify --config wrangler.toml in deploy-worker workflow ([132e37b](https://github.com/Ikalus1988/MisakaNet/commit/132e37b52b2f17dc051baaf76c03c015a21e0114))
+* exclude README.md from lessons.json index ([a70349c](https://github.com/Ikalus1988/MisakaNet/commit/a70349cff29acef5a5c68a6f9f943a0b31f798dd))
+* **fatal-guard:** suppress CodeQL false positive shell injection alerts ([efcb216](https://github.com/Ikalus1988/MisakaNet/commit/efcb2160ad266d0ac5e84d9c71f54ae6fb118a23))
+* **fatal-guard:** Windows path handling + FATAL_HANDLER_ARGS + exit_code ([6df5d5a](https://github.com/Ikalus1988/MisakaNet/commit/6df5d5aed3dd3bc30dd864800bdaed862c5f2115))
+* **fatal-guard:** Windows payload via temp file instead of CLI arg ([a82e0be](https://github.com/Ikalus1988/MisakaNet/commit/a82e0be69afcad735cce2d41567981f237b8d067))
+* hardcoded paths and data consistency ([d45ab95](https://github.com/Ikalus1988/MisakaNet/commit/d45ab9564633f486d7b37ca7e63ce0a54f8e4e7f))
+* KV namespace ID and reputation leaderboard test ([0ea76ec](https://github.com/Ikalus1988/MisakaNet/commit/0ea76ecb48f2ae914e813f69d710a9ac0b01d5a3))
+* **mcp:** return tool not found for unknown tools ([#1226](https://github.com/Ikalus1988/MisakaNet/issues/1226)) ([cf48077](https://github.com/Ikalus1988/MisakaNet/commit/cf4807732dec0c7a5c64c351f0f92348651923c5))
+* remove STATUS.md references from scripts ([584411b](https://github.com/Ikalus1988/MisakaNet/commit/584411bbbb5100fa6c0cd0136a829e644202580d))
+* **security:** unify three redaction implementations ([#1188](https://github.com/Ikalus1988/MisakaNet/issues/1188)) ([3ed66e0](https://github.com/Ikalus1988/MisakaNet/commit/3ed66e05d0ed864570cbc08258fe2f31eb478230))
+* update STATUS.md lesson count to 382 + add CI check ([ce0fae2](https://github.com/Ikalus1988/MisakaNet/commit/ce0fae26afa5c8fb286ccff0c52d2fb7cdc66342))
+* **worker:** address 5 security/quality issues from Aider second audit ([9ffd22b](https://github.com/Ikalus1988/MisakaNet/commit/9ffd22bf0211b303b80fe07d92d0b6c058cc0f03))
+* **worker:** resolve ReferenceError in misakanet_search MCP tool ([ca3291d](https://github.com/Ikalus1988/MisakaNet/commit/ca3291d3509ecb8af60fa10f16c11f4b244430f5)), closes [#1186](https://github.com/Ikalus1988/MisakaNet/issues/1186)
+* **worker:** store mcp_token: KV key during registration ([06885e1](https://github.com/Ikalus1988/MisakaNet/commit/06885e1873949bf5b0e9fca95dd68550d10fd5af))
+* **worker:** use ESM imports for lib modules ([15fc7d5](https://github.com/Ikalus1988/MisakaNet/commit/15fc7d554ea60f04de13e12884e170f44e30593c))
+* **workflow:** add missing step id for tools count ([451face](https://github.com/Ikalus1988/MisakaNet/commit/451faceb3a3fae9ee72106337792f0f90e12dcb6))
+* **workflow:** fix badge detection for untracked files ([cbb2253](https://github.com/Ikalus1988/MisakaNet/commit/cbb22531cff850d574bb7b6aa5d0f60fed533ea3))
+* **workflow:** fix step reference for tools count ([70903d1](https://github.com/Ikalus1988/MisakaNet/commit/70903d1c115ed8680b510cf16090423f622978d1))
+
+
+### Documentation
+
+* add agent compatibility grid to README ([#1153](https://github.com/Ikalus1988/MisakaNet/issues/1153)) ([a886c52](https://github.com/Ikalus1988/MisakaNet/commit/a886c52cb18f3dcc729d7713c0534682584ae2a1)), closes [#1147](https://github.com/Ikalus1988/MisakaNet/issues/1147)
+* add pip install example + Try it now table to README ([#1194](https://github.com/Ikalus1988/MisakaNet/issues/1194)) ([#1227](https://github.com/Ikalus1988/MisakaNet/issues/1227)) ([a16fbb1](https://github.com/Ikalus1988/MisakaNet/commit/a16fbb1b970cee8c2f2d970fc0e33d0feb8339a0))
+* fix lesson count to 310 (actual data/lessons.json count) ([953b18a](https://github.com/Ikalus1988/MisakaNet/commit/953b18a7bba602f1b911a09d5e376c30912e583e))
+* **mcp:** update remote MCP intake ways and tool list ([5e40250](https://github.com/Ikalus1988/MisakaNet/commit/5e402500210156d6f0c020b872d0fffbdac8fdc6))
+* **readme:** add PyPI install option to Quick Start ([15c4287](https://github.com/Ikalus1988/MisakaNet/commit/15c4287ae698f0249450e8c2d3c455c74b2f802f))
+* **readme:** deduplicate curl examples, fix lesson count ([ba3347c](https://github.com/Ikalus1988/MisakaNet/commit/ba3347cdb6f35c55db16e240a6c4b784864237fd)), closes [#1195](https://github.com/Ikalus1988/MisakaNet/issues/1195)
+* **roadmap:** add competitive analysis track (v2.18 Agent Memory Quality Loop) ([#1169](https://github.com/Ikalus1988/MisakaNet/issues/1169)) ([1348510](https://github.com/Ikalus1988/MisakaNet/commit/13485107ff0a1a7d023234b67517af272abea985))
+* simplify Quick Start — remote MCP as primary entry point ([e811e58](https://github.com/Ikalus1988/MisakaNet/commit/e811e585f4a8737417eae9fdf43c93fe62dbefbc))
+* sync STATUS.md, ROADMAP.md, README.md to v2.18.0 ([#1171](https://github.com/Ikalus1988/MisakaNet/issues/1171)) ([7fe7474](https://github.com/Ikalus1988/MisakaNet/commit/7fe7474a99396bab0c80b34406696806225e3d3f))
+* update lesson count in STATUS.md from 310 to 388 ([d7a1c29](https://github.com/Ikalus1988/MisakaNet/commit/d7a1c291c1bff7c29c2fd2fd3ffe814e755cec63))
+
 ## v2.18.0 — 2026-08-21
 
 ### Highlights
