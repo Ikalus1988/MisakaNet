@@ -22,6 +22,21 @@ Key concerns when reviewing:
 Mark changes to scripts/mcp_server.py, scripts/intake_redact.py, misakanet/search/, misakanet/evidence.py as high-sensitivity.
 """
 
+[pr_reviewer]
+require_score_review = true
+require_tests_review = true
+require_estimate_effort_to_review = true
+extra_instructions = """
+This is a Git-backed failure-memory system for AI coding agents (MisakaNet).
+Key concerns when reviewing:
+1. BM25 search quality — changes to search_knowledge.py or search engine code
+2. Intake redaction — changes to intake_redact.py must not leak secrets
+3. MCP protocol — changes to mcp_server.py must maintain JSON-RPC compliance
+4. Evidence levels — changes to evidence.py affect trust scoring (E0-E4)
+5. Zero-dependency principle — core misakanet/ package must not add new dependencies
+Mark changes to scripts/mcp_server.py, scripts/intake_redact.py, misakanet/search/, misakanet/evidence.py as high-sensitivity.
+"""
+
 [pr_description]
 enable_semantic_files_types = true
 extra_instructions = """

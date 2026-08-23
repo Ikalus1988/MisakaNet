@@ -29,6 +29,3 @@ jobs:
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CONFIG: |
-            config.model="openrouter/minimax/m3"
-            pr_reviewer.extra_instructions="This is a Git-backed failure-memory system for AI agents. Focus on security (intake redaction), search quality (BM25), and MCP protocol compliance."
