@@ -1,3 +1,4 @@
+# Issue #1174: CI failure → auto-search MisakaNet lessons → PR comment
 name: Search MisakaNet on CI Failure
 
 on:
@@ -5,134 +6,156 @@ on:
     workflows: ["*"]
     types: [completed]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   search-lessons:
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
-      - name: Checkout MisakaNet
+      - name: Checkout
         uses: actions/checkout@v7
-        with:
-          repository: Ikalus1988/MisakaNet
 
       - name: Setup Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
-
-      - name: Install dependencies
-        run: pip install misakanet-core
+          python-version: '3.12'
 
       - name: Get failure context
-        id: context
+        id: failure-context
         uses: actions/github-script@v7
         with:
           script: |
-            const run = context.payload.workflow_run;
+            const runId = context.payload.workflow_run.id;
+            const repo = context.repo;
 
-            // Get associated PRs
-            const prs = run.pull_requests || [];
-            const prNumber = prs.length > 0 ? prs[0].number : null;
-
-            // Get failure logs
-            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: run.id,
+            // Get failed jobs
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: repo.owner,
+              repo: repo.repo,
+              run_id: runId,
               filter: 'failed'
             });
 
-            let errorSignatures = [];
-            for (const job of jobs.jobs) {
+            // Get logs from first failed job
+            let errorLines = [];
+            if (jobs.data.jobs.length > 0) {
+              const jobId = jobs.data.jobs[0].id;
               try {
-                const { data: logs } = await github.rest.actions.downloadJobLogsForWorkflowRun({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  job_id: job.id
+                const logs = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                  owner: repo.owner,
+                  repo: repo.repo,
+                  job_id: jobId
                 });
-
-                // Extract error lines (last 50 lines, filter for errors)
-                const lines = logs.split('\n');
-                const errorLines = lines
-                  .filter(l => /error|fail|exception|traceback/i.test(l))
-                  .slice(-10);
-                errorSignatures.push(...errorLines);
+                // Extract error signatures
+                const logText = logs.data;
+                const lines = logText.split('\n');
+                const errorPatterns = [
+                  /Error:/i,
+                  /FAILED/i,
+                  /Exception:/i,
+                  /Traceback/i,
+                  /fatal:/i,
+                  /error\[/
+                ];
+                for (const line of lines.slice(-100)) { // Last 100 lines
+                  if (errorPatterns.some(p => p.test(line))) {
+                    errorLines.push(line.trim());
+                  }
+                }
               } catch (e) {
-                // Logs may not be available
+                core.warning(`Could not fetch logs: ${e.message}`);
               }
             }
 
-            core.setOutput('pr_number', prNumber || '');
-            core.setOutput('error_signatures', errorSignatures.join('\n').slice(0, 2000));
-            core.setOutput('run_url', run.html_url);
-            core.setOutput('run_name', run.name || 'CI');
-
-      - name: Search MisakaNet
-        if: steps.context.outputs.error_signatures != ''
-        id: search
-        run: |
-          # Use environment variable to avoid shell escaping issues
-          export ERROR_SIG="$ERROR_SIGNATURES"
-          # Take first 3 error lines, strip special chars, use as search query
-          QUERY=$(echo "$ERROR_SIG" | head -3 | tr -cd '[:alnum:][:space:].,-' | tr '\n' ' ' | head -c 200)
-
-          if [ -z "$QUERY" ]; then
-            echo "count=0" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "Searching MisakaNet for: $QUERY"
-
-          # Use search_knowledge.py
-          RESULT=$(python3 search_knowledge.py "$QUERY" --json --top 3 2>/dev/null || echo "[]")
-
-          # Check if we got results
-          COUNT=$(echo "$RESULT" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
-
-          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
-          echo "results<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$RESULT" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-        env:
-          ERROR_SIGNATURES: ${{ steps.context.outputs.error_signatures }}
-
-      - name: Comment on PR
-        if: steps.context.outputs.pr_number != '' && steps.search.outputs.count != '0'
-        uses: actions/github-script@v7
-        env:
-          PR_NUMBER: ${{ steps.context.outputs.pr_number }}
-          RESULTS: ${{ steps.search.outputs.results }}
-          RUN_URL: ${{ steps.context.outputs.run_url }}
-          RUN_NAME: ${{ steps.context.outputs.run_name }}
-        with:
-          script: |
-            const results = JSON.parse(process.env.RESULTS || '[]');
-            const prNumber = parseInt(process.env.PR_NUMBER);
-
-            if (!results.length) return;
-
-            let body = `## 💡 MisakaNet: Related lessons found\n\n`;
-            body += `CI failed in [${process.env.RUN_NAME}](${process.env.RUN_URL}). `;
-            body += `Here are potentially relevant lessons:\n\n`;
-
-            for (const r of results.slice(0, 3)) {
-              body += `### ${r.title}\n`;
-              body += `> ${r.preview || 'No preview'}\n\n`;
-              body += `- **Domain**: ${r.domain || 'general'}\n`;
-              body += `- **Score**: ${(r.score * 100).toFixed(0)}%\n`;
-              body += `- **Path**: \`${r.path}\`\n\n`;
+            // Get PR number from workflow_run
+            let prNumber = null;
+            if (context.payload.workflow_run.pull_requests &&
+                context.payload.workflow_run.pull_requests.length > 0) {
+              prNumber = context.payload.workflow_run.pull_requests[0].number;
             }
 
-            body += `---\n`;
-            body += `_To search manually: \`python3 search_knowledge.py "your error"\`_\n`;
-            body += `_To disable: remove or comment out ci-lesson-search.yml_\n`;
+            core.setOutput('error_lines', errorLines.slice(0, 10).join('\n'));
+            core.setOutput('pr_number', prNumber || '');
+            core.setOutput('has_errors', errorLines.length > 0 ? 'true' : 'false');
 
-            await github.rest.issues.createComment({
+      - name: Search MisakaNet
+        if: steps.failure-context.outputs.has_errors == 'true'
+        id: search
+        env:
+          ERROR_LINES: ${{ steps.failure-context.outputs.error_lines }}
+        run: |
+          # Search using misakanet CLI
+          QUERY=$(echo "$ERROR_LINES" | head -3 | tr '\n' ' ' | cut -c1-200)
+          echo "search_query=$QUERY" >> $GITHUB_OUTPUT
+
+          # Try local search first
+          RESULTS=$(python3 scripts/misakanet_cli.py search "$QUERY" --json --limit 3 2>/dev/null || echo '{"results":[]}')
+
+          # Extract match count
+          MATCH_COUNT=$(echo "$RESULTS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('results',[])))" 2>/dev/null || echo "0")
+          echo "match_count=$MATCH_COUNT" >> $GITHUB_OUTPUT
+
+          if [ "$MATCH_COUNT" -gt "0" ]; then
+            # Format results for PR comment
+            COMMENT=$(echo "$RESULTS" | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          lines = ['## 🔍 MisakaNet found matching lessons', '', '| Lesson | Problem | Fix |', '|--------|---------|-----|']
+          for r in data.get('results', [])[:3]:
+              title = r.get('title', 'Untitled')
+              problem = r.get('problem', '')[:80] + ('...' if len(r.get('problem','')) > 80 else '')
+              fix = r.get('fix', '')[:80] + ('...' if len(r.get('fix','')) > 80 else '')
+              link = r.get('link', '')
+              if link:
+                  lines.append(f'| [{title}]({link}) | {problem} | {fix} |')
+              else:
+                  lines.append(f'| {title} | {problem} | {fix} |')
+          lines.extend(['', '> Powered by [MisakaNet](https://github.com/Ikalus1988/MisakaNet) — failure-memory for AI agents'])
+          print('\\n'.join(lines))
+          " 2>/dev/null || echo "")
+            echo "comment<<EOF" >> $GITHUB_OUTPUT
+            echo "$COMMENT" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment on PR
+        if: steps.search.outputs.match_count > 0 && steps.failure-context.outputs.pr_number != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt('${{ steps.failure-context.outputs.pr_number }}');
+            const comment = `${{ steps.search.outputs.comment }}`;
+
+            // Check for existing comment to avoid spam
+            const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              body: body
+              per_page: 100
             });
+
+            const existing = comments.data.find(c =>
+              c.body.includes('MisakaNet found matching lessons') &&
+              c.user.login === 'github-actions[bot]'
+            );
+
+            if (existing) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: comment
+              });
+            }
