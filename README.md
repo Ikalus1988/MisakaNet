@@ -4,6 +4,10 @@
 
 </div>
 
+<p align="center">
+  <img src="promotional/banner-brand.svg" width="100%" alt="MisakaNet — Git-backed failure-memory for AI coding agents"/>
+</p>
+
 # MisakaNet
 
 > **Git-backed failure-memory for AI coding agents.**
@@ -17,16 +21,21 @@ mcp-name: io.github.Ikalus1988/misakanet
   <img src="promotional/misaka-compare.jpg" width="720" alt="MisakaNet — Before: 30+ min manual debugging vs After: 0.02s with MCP"/>
 </p>
 
-[![Lessons](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json)](https://github.com/Ikalus1988/MisakaNet/tree/main/lessons)
-[![MCP Tools](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/tools.json)](https://github.com/Ikalus1988/MisakaNet/blob/main/scripts/mcp_server.py)
-[![CI](https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml/badge.svg)](https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml)
-[![PyPI](https://img.shields.io/pypi/v/misakanet)](https://pypi.org/project/misakanet/)
-[![Python](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/github/license/Ikalus1988/MisakaNet?style=flat&color=blueviolet)](https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE)
-[![Glama score](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/badges/score.svg)](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/score)
-[![MCP Quickstart](https://img.shields.io/badge/MCP-quickstart-green)](docs/mcp-quickstart.md)
-[![Stars](https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social)](https://github.com/Ikalus1988/MisakaNet/stargazers)
-[![MCP Toplist](https://mcptoplist.com/badge/io.github.Ikalus1988%2Fmisakanet.svg)](https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet)
+<p align="center">
+  <a href="https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml"><img src="https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml/badge.svg" alt="CI"></a>
+  <a href="https://pypi.org/project/misakanet/"><img src="https://img.shields.io/pypi/v/misakanet?style=for-the-badge&logo=pypi&logoColor=white" alt="PyPI"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
+  <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Ikalus1988/MisakaNet?style=for-the-badge&color=blueviolet" alt="License"></a>
+  <a href="https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/score"><img src="https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/badges/score.svg" alt="Glama score"></a>
+  <a href="https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet"><img src="https://mcptoplist.com/badge/io.github.Ikalus1988%2Fmisakanet.svg" alt="MCP Toplist"></a>
+</p>
+
+<p align="center">
+  <a href="docs/mcp-quickstart.md"><img src="https://img.shields.io/badge/MCP-quickstart-2EA44F?style=for-the-badge" alt="MCP Quickstart"></a>
+  <a href="https://github.com/Ikalus1988/MisakaNet/stargazers"><img src="https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=for-the-badge&logo=github" alt="Stars"></a>
+  <img src="https://img.shields.io/badge/lessons-382-FF6B6B?style=for-the-badge" alt="382 Lessons">
+  <img src="https://img.shields.io/badge/response-0.02s-4ECDC4?style=for-the-badge" alt="0.02s Response">
+</p>
 
 ---
 
@@ -139,6 +148,15 @@ Agent hits an error → search lessons → get a fix path. No prompt leaking, no
 | DSH Adapter | Harness integration | `python3 scripts/mcp_deepseek_adapter.py` |
 
 ### Agent compatibility
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Claude_Code-MCP-7C3AED?style=flat-square&logo=anthropic" alt="Claude Code">
+  <img src="https://img.shields.io/badge/Codex-MCP-000000?style=flat-square&logo=openai" alt="Codex">
+  <img src="https://img.shields.io/badge/Cursor-MCP-000000?style=flat-square&logo=cursor" alt="Cursor">
+  <img src="https://img.shields.io/badge/Gemini_CLI-MCP-4285F4?style=flat-square&logo=google" alt="Gemini CLI">
+  <img src="https://img.shields.io/badge/Windsurf-MCP-00D4AA?style=flat-square" alt="Windsurf">
+  <img src="https://img.shields.io/badge/Copilot-MCP-000000?style=flat-square&logo=github" alt="Copilot">
+</p>
 
 | Agent | Integration | Status |
 |---|---|---|
