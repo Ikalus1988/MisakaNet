@@ -7,6 +7,21 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.19.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.19.0...v2.19.1) (2026-08-23)
+
+
+### Bug Fixes
+
+* **workflow:** update lesson count pattern in release-please ([d690a43](https://github.com/Ikalus1988/MisakaNet/commit/d690a438e3f29809e2d208f5b227706b8fa45472))
+
+
+### Documentation
+
+* clean README duplicate content ([61c4e27](https://github.com/Ikalus1988/MisakaNet/commit/61c4e27198c05866324313649f3529496010a807))
+* manually update version to v2.19.0 and lesson count to 435 ([e6a51d3](https://github.com/Ikalus1988/MisakaNet/commit/e6a51d3b7b97350bb8516b557601af73976b26a7))
+* **readme:** update version to v2.19.0 ([c5e18a5](https://github.com/Ikalus1988/MisakaNet/commit/c5e18a5e580247133ebcece2d3d274fd0bb79e38))
+* simplify README roadmap and playground ([b15faaf](https://github.com/Ikalus1988/MisakaNet/commit/b15faaf9475f51096b13e17d927c52091f1ab691))
+
 ## [2.19.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.18.0...v2.19.0) (2026-08-23)
 
 
