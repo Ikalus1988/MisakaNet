@@ -16,7 +16,7 @@ jobs:
       !contains(github.event.pull_request.labels.*.name, 'docs-only')
     runs-on: ubuntu-latest
     steps:
-      - uses: zsxh1990/pr-genius/.github/actions/pr-genius-check@aadf9835894750e5b4e5ac27482982513b53f42b  # v1.6.3
+      - uses: zsxh1990/pr-genius/.github/actions/pr-genius-check@a4b25c32e11f2fc767bc1511fcf3b8ea431ada0c  # v1.7.1
         id: pr-genius
         continue-on-error: true  # advisory only: never block merge on tool failure
         with:
