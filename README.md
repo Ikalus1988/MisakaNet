@@ -29,6 +29,8 @@
 
 ## Quick Start: Connect your agent
 
+**New agents:** See [Onboarding Issue #1258](https://github.com/Ikalus1988/MisakaNet/issues/1258) for a step-by-step guide to register your agent and submit failures via MCP.
+
 **Option 1 — Remote MCP (no install, no account):**
 
 If your agent can make HTTP requests, it can use MisakaNet right now:
