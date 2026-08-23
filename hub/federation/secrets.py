@@ -111,6 +111,40 @@ def revoke_secret(node_id: str) -> bool:
     return False
 
 
+def verify_token(token: str) -> Optional[str]:
+    """Verify a token against all registered nodes.
+
+    Accepts raw hex tokens or 'token:<hex>' prefixed format.
+    Returns the node_id if valid, None otherwise.
+    """
+    if not token:
+        return None
+
+    # Strip 'token:' prefix if present
+    raw = token
+    if raw.startswith("token:"):
+        raw = raw[6:]
+
+    secrets_dir = _secrets_dir()
+    if not secrets_dir.exists():
+        return None
+
+    for node_dir in secrets_dir.iterdir():
+        if not node_dir.is_dir():
+            continue
+        key_path = node_dir / _KEY_FILE
+        if not key_path.exists():
+            continue
+        try:
+            data = json.loads(key_path.read_text())
+            if data.get("secret") == raw:
+                return data.get("node_id", node_dir.name)
+        except (json.JSONDecodeError, OSError):
+            continue
+
+    return None
+
+
 def _safe_filename(node_id: str) -> str:
     """Sanitize node_id for use as a directory name."""
     # Allow alphanumeric, hyphens, underscores, dots
