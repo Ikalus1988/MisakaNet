@@ -738,6 +738,230 @@ def format_result_comment(result: AutoReviewResult) -> str:
     return "\n".join(lines)
 
 
+# === Archiving Functions ===
+
+def get_archive_paths(issue_number: int) -> dict[str, Path]:
+    """Get archive paths for an issue.
+
+    Returns dict with keys: confidence_judgment, badcase, intake_md, metadata_json
+    """
+    base_dir = Path(__file__).parent.parent
+
+    confidence_dir = base_dir / "confidence-judgment" / str(issue_number)
+    badcase_dir = base_dir / "badcase" / str(issue_number)
+
+    return {
+        "confidence_judgment": confidence_dir,
+        "badcase": badcase_dir,
+        "intake_md": "intake.md",
+        "metadata_json": "metadata.json",
+        "reasons_md": "reasons.md",
+        "feedback_md": "feedback.md",
+    }
+
+
+def create_archive_files(
+    result: AutoReviewResult,
+    title: str,
+    body: str,
+) -> dict[str, str]:
+    """Create archive files for review/reject decisions.
+
+    Returns dict with keys: archive_path, archive_type, files_created
+    """
+    paths = get_archive_paths(result.issue_number)
+    files_created = []
+
+    if result.decision == "review":
+        archive_dir = paths["confidence_judgment"]
+        archive_type = "confidence-judgment"
+    elif result.decision == "reject":
+        archive_dir = paths["badcase"]
+        archive_type = "badcase"
+    else:
+        return {"archive_path": "", "archive_type": "", "files_created": []}
+
+    # Create directory
+    archive_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create intake.md
+    intake_path = archive_dir / paths["intake_md"]
+    intake_content = f"""---
+issue_number: {result.issue_number}
+title: "{title}"
+score: {result.final_score}
+decision: {result.decision}
+created_at: "{__import__('datetime').datetime.utcnow().isoformat()}Z"
+---
+
+# {title}
+
+{body}
+"""
+    intake_path.write_text(intake_content, encoding="utf-8")
+    files_created.append(str(intake_path))
+
+    # Create metadata.json
+    metadata_path = archive_dir / paths["metadata_json"]
+    metadata = {
+        "issue_number": result.issue_number,
+        "title": title,
+        "intake_score": result.intake_score,
+        "dimensions": {
+            dim.name: {
+                "score": dim.score,
+                "weight": dim.weight,
+                "weighted": dim.score * dim.weight,
+                "reasons": dim.reasons,
+            }
+            for dim in result.dimensions
+        },
+        "weighted_score": result.weighted_score,
+        "confidence": result.confidence,
+        "final_score": result.final_score,
+        "decision": result.decision,
+        "reasons": result.reasons,
+        "suggestions": result.suggestions,
+        "lesson_title": result.lesson_title,
+        "lesson_domain": result.lesson_domain,
+        "lesson_tags": result.lesson_tags,
+        "created_at": __import__('datetime').datetime.utcnow().isoformat() + "Z",
+    }
+    metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    files_created.append(str(metadata_path))
+
+    # Create reasons.md for rejected issues
+    if result.decision == "reject":
+        reasons_path = archive_dir / paths["reasons_md"]
+        reasons_content = f"""# Rejection Reasons
+
+## Issue #{result.issue_number}: {title}
+
+**Score:** {result.final_score}/100
+**Decision:** Auto-rejected
+
+## Reasons
+
+"""
+        for reason in [r for r in result.reasons if r.startswith("✗")]:
+            reasons_content += f"- {reason}\n"
+
+        reasons_content += f"""
+## Suggestions for Improvement
+
+"""
+        for suggestion in result.suggestions:
+            reasons_content += f"- {suggestion}\n"
+
+        reasons_path.write_text(reasons_content, encoding="utf-8")
+        files_created.append(str(reasons_path))
+
+    # Create feedback.md template for review issues
+    if result.decision == "review":
+        feedback_path = archive_dir / paths["feedback_md"]
+        feedback_content = f"""# Feedback
+
+## Issue #{result.issue_number}: {title}
+
+**Score:** {result.final_score}/100
+**Status:** Pending review
+
+## Feedback Log
+
+<!-- Add feedback entries below -->
+
+| Date | User | Action | Notes |
+|------|------|--------|-------|
+| | | | |
+
+## Re-evaluation History
+
+<!-- Will be populated when re-evaluated -->
+
+| Date | Old Score | New Score | Trigger |
+|------|-----------|-----------|---------|
+| | | | |
+"""
+        feedback_path.write_text(feedback_content, encoding="utf-8")
+        files_created.append(str(feedback_path))
+
+    return {
+        "archive_path": str(archive_dir),
+        "archive_type": archive_type,
+        "files_created": files_created,
+    }
+
+
+def update_index_file(archive_type: str, result: AutoReviewResult, title: str) -> None:
+    """Update the index.json file for the archive type."""
+    base_dir = Path(__file__).parent.parent
+
+    if archive_type == "confidence-judgment":
+        index_path = base_dir / "confidence-judgment" / "index.json"
+    elif archive_type == "badcase":
+        index_path = base_dir / "badcase" / "index.json"
+    else:
+        return
+
+    # Load existing index or create new
+    if index_path.exists():
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+    else:
+        index = {
+            "version": "1.0",
+            "last_updated": "",
+            "items": [],
+            "stats": {"total": 0},
+        }
+
+    # Add new item
+    item = {
+        "issue_number": result.issue_number,
+        "title": title,
+        "score": result.final_score,
+        "confidence": result.confidence,
+        "created_at": __import__('datetime').datetime.utcnow().isoformat() + "Z",
+        "status": "pending",
+        "feedback_count": 0,
+    }
+
+    if archive_type == "badcase":
+        item["category"] = categorize_rejection(result)
+        item["rejection_reasons"] = [r for r in result.reasons if r.startswith("✗")]
+
+    index["items"].append(item)
+    index["last_updated"] = __import__('datetime').datetime.utcnow().isoformat() + "Z"
+    index["stats"]["total"] = len(index["items"])
+
+    if archive_type == "badcase":
+        # Count by category
+        categories = {}
+        for i in index["items"]:
+            cat = i.get("category", "unknown")
+            categories[cat] = categories.get(cat, 0) + 1
+        index["stats"]["by_category"] = categories
+
+    # Save index
+    index_path.parent.mkdir(parents=True, exist_ok=True)
+    index_path.write_text(json.dumps(index, indent=2), encoding="utf-8")
+
+
+def categorize_rejection(result: AutoReviewResult) -> str:
+    """Categorize why an issue was rejected."""
+    reasons_text = " ".join(result.reasons).lower()
+
+    if "very short word count" in reasons_text or "too short" in reasons_text:
+        return "vague"
+    elif "missing required field" in reasons_text:
+        return "incomplete"
+    elif "test" in reasons_text or "heartbeat" in reasons_text:
+        return "test"
+    elif "spam" in reasons_text or "promotional" in reasons_text:
+        return "spam"
+    else:
+        return "incomplete"
+
+
 # === CLI ===
 
 def main():
@@ -748,6 +972,8 @@ def main():
     parser.add_argument("--file", "-f", help="Read body from file")
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
     parser.add_argument("--test", action="store_true", help="Mark as test issue")
+    parser.add_argument("--archive", "-a", action="store_true",
+                       help="Create archive files for review/reject decisions")
     parser.add_argument("--min-score", "-m", type=int, default=0,
                        help="Exit with error if score below threshold")
 
@@ -769,9 +995,21 @@ def main():
     # Run auto-review
     result = auto_review_issue(issue_number, title, body, args.test)
 
+    # Create archive files if requested
+    if args.archive and result.decision in ["review", "reject"]:
+        archive_info = create_archive_files(result, title, body)
+        update_index_file(archive_info["archive_type"], result, title)
+
+        if not args.json:
+            print(f"\n📁 Archived to: {archive_info['archive_path']}")
+            print(f"   Files created: {len(archive_info['files_created'])}")
+
     # Output
     if args.json:
-        print(format_result_json(result))
+        output = json.loads(format_result_json(result))
+        if args.archive and result.decision in ["review", "reject"]:
+            output["archive"] = archive_info
+        print(json.dumps(output, indent=2))
     else:
         print(format_result_comment(result))
 

@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-08-23T16:51:26.903658Z",
+  "items": [
+    {
+      "issue_number": 9999,
+      "title": "[Intake] Test short issue",
+      "score": 8.4375,
+      "confidence": 0.75,
+      "created_at": "2026-08-23T16:51:26.903658Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "vague",
+      "rejection_reasons": [
+        "\u2717 problem missing",
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 Only 0 generic tech keywords",
+        "\u2717 No verification section",
+        "\u2717 Very short word count: 7",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No headers",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    }
+  ],
+  "stats": {
+    "total": 1,
+    "by_category": {
+      "vague": 1
+    }
+  }
+}

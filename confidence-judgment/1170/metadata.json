@@ -1,0 +1,101 @@
+{
+  "issue_number": 1170,
+  "title": "[Intake] GitHub\u8bbf\u95ee\u4e0e\u63a8\u9001\u95ee\u9898",
+  "intake_score": 58,
+  "dimensions": {
+    "completeness": {
+      "score": 85,
+      "weight": 0.25,
+      "weighted": 21.25,
+      "reasons": [
+        "\u2713 problem present",
+        "\u2713 error present",
+        "\u2713 fix present",
+        "\u2713 verification present (bonus)",
+        "\u2713 background present (bonus)"
+      ]
+    },
+    "generalization": {
+      "score": 50,
+      "weight": 0.15,
+      "weighted": 7.5,
+      "reasons": [
+        "\u2713 No user-specific paths",
+        "\u2713 No internal references",
+        "\u2717 Only 2 generic tech keywords",
+        "\u2713 1 environment mentioned",
+        "\u2717 Contains specific project names"
+      ]
+    },
+    "verification": {
+      "score": 35,
+      "weight": 0.3,
+      "weighted": 10.5,
+      "reasons": [
+        "\u2713 Verification section present",
+        "\u2713 Has verification steps (list)",
+        "\u2713 Verification results mentioned in body"
+      ]
+    },
+    "detail": {
+      "score": 60,
+      "weight": 0.2,
+      "weighted": 12.0,
+      "reasons": [
+        "\u2713 Good word count: 275",
+        "\u2717 No code blocks",
+        "\u2713 3 error patterns (excellent)",
+        "\u2713 3 technical depth indicators"
+      ]
+    },
+    "format": {
+      "score": 30,
+      "weight": 0.1,
+      "weighted": 3.0,
+      "reasons": [
+        "\u2713 8 headers (excellent)",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    }
+  },
+  "weighted_score": 54.25,
+  "confidence": 0.9,
+  "final_score": 48.825,
+  "decision": "review",
+  "reasons": [
+    "\u2713 problem present",
+    "\u2713 error present",
+    "\u2713 fix present",
+    "\u2713 verification present (bonus)",
+    "\u2713 background present (bonus)",
+    "\u2713 No user-specific paths",
+    "\u2713 No internal references",
+    "\u2717 Only 2 generic tech keywords",
+    "\u2713 1 environment mentioned",
+    "\u2717 Contains specific project names",
+    "\u2713 Verification section present",
+    "\u2713 Has verification steps (list)",
+    "\u2713 Verification results mentioned in body",
+    "\u2713 Good word count: 275",
+    "\u2717 No code blocks",
+    "\u2713 3 error patterns (excellent)",
+    "\u2713 3 technical depth indicators",
+    "\u2713 8 headers (excellent)",
+    "\u2717 No lists",
+    "\u2717 No frontmatter"
+  ],
+  "suggestions": [
+    "Add a 'Error' section",
+    "Include actual error messages or stack traces",
+    "Fill in or remove empty sections"
+  ],
+  "lesson_title": "github\u8bbf\u95ee\u4e0e\u63a8\u9001\u95ee\u9898",
+  "lesson_domain": "git",
+  "lesson_tags": [
+    "git",
+    "mcp",
+    "debugging"
+  ],
+  "created_at": "2026-08-23T16:51:11.890558Z"
+}
