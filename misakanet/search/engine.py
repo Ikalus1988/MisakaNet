@@ -438,11 +438,14 @@ def _rank_docs_impl(
     expanded_query = _expand_query(query)
     bm25_raw = _compute_bm25_scores(expanded_query, docs)
     bm25_norm = _normalize(bm25_raw)
+    # Load configurable weights (Issue #1220)
+    from scripts.search_config import get_cached_config
+    cfg = get_cached_config()
     scored = [
         (
-            0.65 * bm25_norm[i]
-            + 0.20 * _metadata_bonus(query, d)
-            + 0.15 * d.score_baseline
+            cfg.bm25_weight * bm25_norm[i]
+            + cfg.metadata_weight * _metadata_bonus(query, d)
+            + cfg.baseline_weight * d.score_baseline
             + _compute_boost(d),
             d,
         )
@@ -809,6 +812,8 @@ def _vector_similarity(query: str, doc: CachedDoc) -> float | None:
 
 def _score_breakdown(query: str, doc: CachedDoc, docs: list[CachedDoc] | None = None) -> dict:
     """Return field-level ranking evidence for CLI/API explain modes."""
+    from scripts.search_config import get_cached_config
+    cfg = get_cached_config()
     bm25 = _compute_bm25_scores(query, [doc])[0]
     meta_parts = _metadata_bonus_breakdown(query, doc)
     boost_parts = _compute_boost_breakdown(doc)
@@ -821,9 +826,9 @@ def _score_breakdown(query: str, doc: CachedDoc, docs: list[CachedDoc] | None = 
         "vector_similarity": vector,
         "entity_matches": _entity_matches(query, doc),
         "hybrid": {
-            "bm25_component": round(0.65 * float(bm25), 6),
-            "metadata_component": round(0.20 * metadata_total, 6),
-            "baseline_component": round(0.15 * float(doc.score_baseline), 6),
+            "bm25_component": round(cfg.bm25_weight * float(bm25), 6),
+            "metadata_component": round(cfg.metadata_weight * metadata_total, 6),
+            "baseline_component": round(cfg.baseline_weight * float(doc.score_baseline), 6),
             "boost_component": round(boost_total, 6),
             "vector_component": vector,
         },

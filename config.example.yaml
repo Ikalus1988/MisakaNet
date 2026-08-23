@@ -1,0 +1,10 @@
+# MisakaNet Configuration Example
+# Copy to config.yaml and customize as needed.
+
+# Search scoring weights (Issue #1220)
+# Weights must sum to 1.0
+search:
+  bm25_weight: 0.65      # BM25 keyword relevance
+  metadata_weight: 0.20  # Domain/tag/title match
+  baseline_weight: 0.15  # Document baseline score
+  rrf_k: 60              # Reciprocal Rank Fusion constant (future vector hybrid)

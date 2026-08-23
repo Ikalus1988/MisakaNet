@@ -62,6 +62,9 @@ data/contribution_queue.jsonl
 
 # local search quality feedback (issue #604)
 data/search-feedback.jsonl
+
+# Zero-result search gap logging (issue #1175)
+data/search_gaps.jsonl
 .private/
 
 # Benchmark results (local only)
