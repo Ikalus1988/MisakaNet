@@ -232,6 +232,101 @@ function searchLessons(lessons, query, domain, top = 5) {
   }));
 }
 
+// ── BM25 Search (pre-computed index) ──
+// Uses a pre-computed inverted index for proper BM25 scoring
+// with IDF weighting and document length normalization
+
+const BM25_STOPWORDS = new Set([
+  "the", "be", "to", "of", "and", "a", "in", "that", "have", "i",
+  "it", "for", "not", "on", "with", "he", "as", "you", "do", "at",
+  "this", "but", "his", "by", "from", "they", "we", "say", "her",
+  "she", "or", "an", "will", "my", "one", "all", "would", "there",
+  "their", "what", "so", "up", "out", "if", "about", "who", "get",
+  "which", "go", "me", "when", "make", "can", "like", "time", "no",
+  "just", "him", "know", "take", "people", "into", "year", "your",
+  "good", "some", "could", "them", "see", "other", "than", "then",
+]);
+
+function bm25Tokenize(text) {
+  return text.toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(/\s+/)
+    .filter(t => t.length >= 2 && !BM25_STOPWORDS.has(t));
+}
+
+function searchLessonsBM25(index, query, domain, top = 5) {
+  if (!index || !index.terms || !index.docs || !query) return [];
+
+  const queryTerms = bm25Tokenize(query);
+  if (queryTerms.length === 0) return [];
+
+  const { docCount, avgDocLen, k1 = 1.5, b = 0.75, terms, docs } = index;
+  const scores = new Float64Array(docCount);
+  const matched = new Uint8Array(docCount);
+
+  // Score each document using BM25
+  for (const term of queryTerms) {
+    const termData = terms[term];
+    if (!termData) continue;
+
+    const { idf, docs: termDocs } = termData;
+    for (const entry of termDocs) {
+      const { doc, tf, len } = entry;
+      // BM25 scoring formula
+      const norm = 1 - b + b * (len / avgDocLen);
+      const score = idf * ((tf * (k1 + 1)) / (tf + k1 * norm));
+      scores[doc] += score;
+      matched[doc] = 1;
+    }
+  }
+
+  // Collect and sort results
+  const results = [];
+  for (let i = 0; i < docCount; i++) {
+    if (!matched[i]) continue;
+    const doc = docs[i];
+
+    // Apply domain filter
+    if (domain && doc.domain && doc.domain.toLowerCase() !== domain.toLowerCase()) {
+      continue;
+    }
+
+    results.push({ doc, score: scores[i] });
+  }
+
+  results.sort((a, b) => b.score - a.score);
+  return results.slice(0, top).map(({ doc, score }) => ({
+    id: doc.id || "",
+    title: doc.title || "",
+    domain: doc.domain || "",
+    path: doc.path || "",
+    score: Math.round(score * 100) / 100,
+  }));
+}
+
+// Load BM25 index from KV or cache
+let _bm25Index = null;
+let _bm25IndexExpiry = 0;
+
+async function loadBM25Index(env) {
+  const now = Date.now();
+  if (_bm25Index && now < _bm25IndexExpiry) return _bm25Index;
+
+  if (!env.MISAKANET_KV) return null;
+
+  try {
+    const index = await env.MISAKANET_KV.get("worker_search_index", "json");
+    if (index && index.version === 1) {
+      _bm25Index = index;
+      _bm25IndexExpiry = now + 300_000; // Cache for 5 minutes
+      return index;
+    }
+  } catch (e) {
+    debugLog(env, 1, "Failed to load BM25 index", { error: e.message });
+  }
+  return null;
+}
+
 // Fetch a single lesson markdown from GitHub
 async function fetchLessonContent(env, lessonPath, lessonId) {
   const token = env.REGISTER_TOKEN;
@@ -369,9 +464,22 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp) {
     } catch (e) {
       return { error: `Failed to load lessons: ${e.message}` };
     }
-    const results = searchLessons(lessons, args.query, args.domain, args.top || 5);
+
+    // Try BM25 search first (if index available), fall back to naive search
+    let results;
+    let source = "worker-search";
+    const bm25Index = await loadBM25Index(env);
+    if (bm25Index) {
+      results = searchLessonsBM25(bm25Index, args.query, args.domain, args.top || 5);
+      source = "worker-bm25";
+      debugLog(env, 2, "BM25 search", { query: args.query, results: results.length });
+    } else {
+      results = searchLessons(lessons, args.query, args.domain, args.top || 5);
+      debugLog(env, 2, "Fallback search", { query: args.query, results: results.length });
+    }
+
     const aura = await getIdentityAura(env, authToken);
-    return { results, source: "worker-search", query: args.query, identity: aura };
+    return { results, source, query: args.query, identity: aura };
   }
 
   if (toolName === "misakanet_get_lesson") {
@@ -1464,6 +1572,50 @@ export default {
     // POST /api/search-signal — unsolved-search intake for the failure map (#788)
     if (request.method === "POST" && url.pathname === "/api/search-signal") {
       return handleSearchSignal(request, env);
+    }
+
+    // POST /api/search-index — sync BM25 search index to KV
+    if (request.method === "POST" && url.pathname === "/api/search-index") {
+      const syncToken = request.headers.get("X-Sync-Token");
+      if (!syncToken || !env.SYNC_TOKEN || !timingSafeEqual(syncToken, env.SYNC_TOKEN)) {
+        return jsonResponse({ error: "Unauthorized" }, 401);
+      }
+      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 500);
+
+      try {
+        const body = await request.json();
+        if (!body.version || !body.terms || !body.docs) {
+          return jsonResponse({ error: "Invalid index format" }, 400);
+        }
+        await env.MISAKANET_KV.put("worker_search_index", JSON.stringify(body), {
+          expirationTtl: 86400 * 7, // 7 days
+        });
+        return jsonResponse({
+          success: true,
+          docCount: body.docCount,
+          termCount: Object.keys(body.terms).length,
+        });
+      } catch (e) {
+        return jsonResponse({ error: e.message }, 400);
+      }
+    }
+
+    // GET /api/search-index — get current index stats
+    if (request.method === "GET" && url.pathname === "/api/search-index") {
+      if (!env.MISAKANET_KV) return jsonResponse({ available: false });
+      try {
+        const index = await env.MISAKANET_KV.get("worker_search_index", "json");
+        if (!index) return jsonResponse({ available: false });
+        return jsonResponse({
+          available: true,
+          docCount: index.docCount,
+          termCount: Object.keys(index.terms).length,
+          avgDocLen: index.avgDocLen,
+          builtAt: index.built_at,
+        });
+      } catch {
+        return jsonResponse({ available: false });
+      }
     }
 
     // POST /api/intake — general-purpose intake for MCP, agents, sandbox (#589)
