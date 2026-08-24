@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-08-24T02:00:55.087304+00:00",
+  "generated_at": "2026-08-24T10:07:42.148317+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 12,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat: add Hypothesis fuzz tests (#1182)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1256",
-      "timestamp": "2026-08-23T16:02:04Z",
+      "title": "chore(deps): bump zsxh1990/pr-genius/.github/actions/pr-genius-check from 1.6.2 to 1.7.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1269",
+      "timestamp": "2026-08-24T07:43:19Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat: add provenance metadata to lessons (#1219)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1255",
-      "timestamp": "2026-08-23T16:02:00Z",
+      "title": "chore(deps): bump googleapis/release-please-action from 4 to 5",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1270",
+      "timestamp": "2026-08-24T07:43:15Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat: HTTP proxy support for Remote MCP (#1207)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1250",
-      "timestamp": "2026-08-23T16:01:56Z",
+      "title": "chore(deps-dev): bump wrangler from 4.123.0 to 4.125.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1271",
+      "timestamp": "2026-08-24T07:43:12Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(ci): add multi-OS matrix (ubuntu/windows/macos × Python 3.10-3.12)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1232",
-      "timestamp": "2026-08-23T16:01:34Z",
+      "title": "chore(deps): bump actions/setup-python from 5 to 7",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1272",
+      "timestamp": "2026-08-24T07:43:08Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat: implement freshness decay model (#1163)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1262",
-      "timestamp": "2026-08-23T15:49:56Z",
+      "title": "chore(deps): bump actions/github-script from 7 to 9",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1275",
+      "timestamp": "2026-08-24T06:38:23Z",
       "source": "github"
     },
     {

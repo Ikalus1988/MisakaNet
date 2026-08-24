@@ -1,0 +1,95 @@
+{
+  "issue_number": 1196,
+  "title": "[Intake] \u80cc\u666f 2026-08-21/22 R-2000iC \u6362\u6cb9\u5468\u671f\u6848\u4f8b\uff1ahermes \u56de\u7b54\"\u6570\u503c\u5bf9\uff08\u78b0\u5de7\uff09\u4f46\u6765\u6e90\u9519\u4f4d\"\uff0c\u2463 \u8bef\u5224\"KB \u84b8\u998f\u8986\u76d6\u7f3a\u53e3\"\u2014\u2014\u5b9e\u9645 **B",
+  "intake_score": 51,
+  "dimensions": {
+    "completeness": {
+      "score": 85,
+      "weight": 0.25,
+      "weighted": 21.25,
+      "reasons": [
+        "\u2713 problem present",
+        "\u2713 error present",
+        "\u2713 fix present",
+        "\u2713 verification present (bonus)",
+        "\u2713 background present (bonus)"
+      ]
+    },
+    "generalization": {
+      "score": 45,
+      "weight": 0.15,
+      "weighted": 6.75,
+      "reasons": [
+        "\u2713 No user-specific paths",
+        "\u2713 No internal references",
+        "\u2717 Only 0 generic tech keywords",
+        "\u2717 Contains specific project names"
+      ]
+    },
+    "verification": {
+      "score": 20,
+      "weight": 0.3,
+      "weighted": 6.0,
+      "reasons": [
+        "\u2713 Verification section present",
+        "\u2713 Has verification steps (list)"
+      ]
+    },
+    "detail": {
+      "score": 30,
+      "weight": 0.2,
+      "weighted": 6.0,
+      "reasons": [
+        "\u2713 Excellent word count: 334",
+        "\u2717 No code blocks",
+        "\u2717 No error messages"
+      ]
+    },
+    "format": {
+      "score": 30,
+      "weight": 0.1,
+      "weighted": 3.0,
+      "reasons": [
+        "\u2713 8 headers (excellent)",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    }
+  },
+  "weighted_score": 43.0,
+  "confidence": 0.9,
+  "final_score": 38.7,
+  "decision": "review",
+  "reasons": [
+    "\u2713 problem present",
+    "\u2713 error present",
+    "\u2713 fix present",
+    "\u2713 verification present (bonus)",
+    "\u2713 background present (bonus)",
+    "\u2713 No user-specific paths",
+    "\u2713 No internal references",
+    "\u2717 Only 0 generic tech keywords",
+    "\u2717 Contains specific project names",
+    "\u2713 Verification section present",
+    "\u2713 Has verification steps (list)",
+    "\u2713 Excellent word count: 334",
+    "\u2717 No code blocks",
+    "\u2717 No error messages",
+    "\u2713 8 headers (excellent)",
+    "\u2717 No lists",
+    "\u2717 No frontmatter"
+  ],
+  "suggestions": [
+    "Add a 'Error' section",
+    "Include actual error messages or stack traces",
+    "Fill in or remove empty sections"
+  ],
+  "lesson_title": "\u80cc\u666f-2026-08-2122-r-2000ic-\u6362\u6cb9\u5468\u671f\u6848\u4f8bhermes-\u56de\u7b54\u6570\u503c\u5bf9\u78b0\u5de7\u4f46\u6765\u6e90\u9519\u4f4d\u2463-\u8bef\u5224kb-\u84b8\u998f\u8986\u76d6\u7f3a\u53e3\u5b9e\u9645-b",
+  "lesson_domain": "mcp",
+  "lesson_tags": [
+    "mcp",
+    "rag",
+    "debugging"
+  ],
+  "created_at": "2026-08-24T07:05:32.854289Z"
+}

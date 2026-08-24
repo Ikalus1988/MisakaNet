@@ -1,12 +1,12 @@
 ---
 issue_number: 1170
-title: "[Intake] GitHub访问与推送问题"
+title: "[Intake] 背景 2026-08-20/21 推送 M-900iB 换油修复到 GitHub（Ikalus1988/self-grow-wiki）时，一次性踩齐了四类问题："
 score: 48.825
 decision: review
-created_at: "2026-08-23T16:51:11.889554Z"
+created_at: "2026-08-24T07:05:35.064227Z"
 ---
 
-# [Intake] GitHub访问与推送问题
+# [Intake] 背景 2026-08-20/21 推送 M-900iB 换油修复到 GitHub（Ikalus1988/self-grow-wiki）时，一次性踩齐了四类问题：
 
 **Kind:** missing_lesson
 **Source:** remote-agent

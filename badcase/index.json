@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "last_updated": "2026-08-23T16:51:26.903658Z",
+  "last_updated": "2026-08-24T10:23:52.608901Z",
   "items": [
     {
       "issue_number": 9999,
@@ -24,12 +24,308 @@
         "\u2717 No lists",
         "\u2717 No frontmatter"
       ]
+    },
+    {
+      "issue_number": 1224,
+      "title": "[Intake] Test intake from v2.18 comprehensive test \u2014 this is a test submission, please ig",
+      "score": 17.25,
+      "confidence": 0.75,
+      "created_at": "2026-08-24T07:05:26.381939Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "test",
+      "rejection_reasons": [
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 Only 0 generic tech keywords",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1223,
+      "title": "[Intake] Windows CI: three bugs in one session. (1) splitCommand() strips backslashes fro",
+      "score": 22.8,
+      "confidence": 0.8,
+      "created_at": "2026-08-24T07:05:28.545585Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "incomplete",
+      "rejection_reasons": [
+        "\u2717 fix missing",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1222,
+      "title": "[Intake] Node.js: missing `require(\"node:os\")` inside `try/catch(_){}` silently kills ent",
+      "score": 23.400000000000002,
+      "confidence": 0.8,
+      "created_at": "2026-08-24T07:05:30.795492Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "test",
+      "rejection_reasons": [
+        "\u2717 fix missing",
+        "\u2717 Only 2 generic tech keywords",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1166,
+      "title": "[Intake] Memory dump watcher: auto-extract lessons from agent logs",
+      "score": 32.4,
+      "confidence": 0.9,
+      "created_at": "2026-08-24T10:22:53.370208Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "test",
+      "rejection_reasons": [
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 Contains user-specific paths",
+        "\u2717 Contains specific project names",
+        "\u2717 No verification section",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1144,
+      "title": "[Intake] Duplicate lesson: data-quality-three-layer-fix-pattern.md exists in both lessons",
+      "score": 15.5625,
+      "confidence": 0.75,
+      "created_at": "2026-08-24T10:23:00.346039Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "incomplete",
+      "rejection_reasons": [
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 Only 1 generic tech keywords",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1143,
+      "title": "[Intake] Multi-language dedup: shell-script-debugging.md has 7 copies (contrib, en, hi, i",
+      "score": 15.5625,
+      "confidence": 0.75,
+      "created_at": "2026-08-24T10:23:02.521337Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "incomplete",
+      "rejection_reasons": [
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 Only 1 generic tech keywords",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1142,
+      "title": "[Intake] i18n dedup review: 29 lessons in lessons/en/ are English translations of lessons",
+      "score": 15.5625,
+      "confidence": 0.75,
+      "created_at": "2026-08-24T10:23:32.699263Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "incomplete",
+      "rejection_reasons": [
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 Only 1 generic tech keywords",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1141,
+      "title": "[Intake] Archived duplicate: feishu-bot-setup-complete.md exists in both lessons/_archive",
+      "score": 15.5625,
+      "confidence": 0.75,
+      "created_at": "2026-08-24T10:23:34.700455Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "incomplete",
+      "rejection_reasons": [
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 Only 1 generic tech keywords",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1140,
+      "title": "[Intake] Duplicate lesson: wsl-ntfs-sqlite-update-100x-slower.md exists in both lessons/ ",
+      "score": 16.6875,
+      "confidence": 0.75,
+      "created_at": "2026-08-24T10:23:36.833598Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "incomplete",
+      "rejection_reasons": [
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 Only 1 generic tech keywords",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1139,
+      "title": "[Intake] Duplicate lesson: macos-homebrew-python-pip-install-blocked-by-pep-668-externa.m",
+      "score": 17.8125,
+      "confidence": 0.75,
+      "created_at": "2026-08-24T10:23:38.986184Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "incomplete",
+      "rejection_reasons": [
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1138,
+      "title": "[Intake] Test intake from node6 - verifying MCP endpoint connectivity",
+      "score": 17.8125,
+      "confidence": 0.75,
+      "created_at": "2026-08-24T10:23:41.686062Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "test",
+      "rejection_reasons": [
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 Only 1 generic tech keywords",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1130,
+      "title": "[Intake] zsh: command not found: python",
+      "score": 15.0,
+      "confidence": 0.75,
+      "created_at": "2026-08-24T10:23:43.952132Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "incomplete",
+      "rejection_reasons": [
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 Only 1 generic tech keywords",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1129,
+      "title": "[Intake] YOUR PROBLEM",
+      "score": 15.0,
+      "confidence": 0.75,
+      "created_at": "2026-08-24T10:23:46.016670Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "incomplete",
+      "rejection_reasons": [
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 Only 0 generic tech keywords",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1119,
+      "title": "[Intake] End-to-end test: agent submits failure via remote MCP",
+      "score": 17.25,
+      "confidence": 0.75,
+      "created_at": "2026-08-24T10:23:50.482512Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "test",
+      "rejection_reasons": [
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 Only 0 generic tech keywords",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    },
+    {
+      "issue_number": 1118,
+      "title": "[Intake] Test: verifying MCP intake path from CONTRIBUTING.md",
+      "score": 17.25,
+      "confidence": 0.75,
+      "created_at": "2026-08-24T10:23:52.608901Z",
+      "status": "pending",
+      "feedback_count": 0,
+      "category": "test",
+      "rejection_reasons": [
+        "\u2717 error missing",
+        "\u2717 fix missing",
+        "\u2717 Only 0 generic tech keywords",
+        "\u2717 No verification section",
+        "\u2717 No code blocks",
+        "\u2717 No error messages",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
     }
   ],
   "stats": {
-    "total": 1,
+    "total": 16,
     "by_category": {
-      "vague": 1
+      "vague": 1,
+      "test": 6,
+      "incomplete": 9
     }
   }
 }

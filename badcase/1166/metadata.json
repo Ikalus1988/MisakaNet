@@ -1,0 +1,98 @@
+{
+  "issue_number": 1166,
+  "title": "[Intake] Memory dump watcher: auto-extract lessons from agent logs",
+  "intake_score": 50,
+  "dimensions": {
+    "completeness": {
+      "score": 25,
+      "weight": 0.25,
+      "weighted": 6.25,
+      "reasons": [
+        "\u2713 problem present",
+        "\u2717 error missing",
+        "\u2717 fix missing"
+      ]
+    },
+    "generalization": {
+      "score": 25,
+      "weight": 0.15,
+      "weighted": 3.75,
+      "reasons": [
+        "\u2717 Contains user-specific paths",
+        "\u2713 No internal references",
+        "\u2713 3 generic tech keywords",
+        "\u2717 Contains specific project names"
+      ]
+    },
+    "verification": {
+      "score": 10,
+      "weight": 0.3,
+      "weighted": 3.0,
+      "reasons": [
+        "\u2717 No verification section",
+        "\u2713 Test/verification mentioned in body"
+      ]
+    },
+    "detail": {
+      "score": 75,
+      "weight": 0.2,
+      "weighted": 15.0,
+      "reasons": [
+        "\u2713 Excellent word count: 578",
+        "\u2713 3 code blocks (excellent)",
+        "\u2713 1 error pattern",
+        "\u2713 3 technical depth indicators"
+      ]
+    },
+    "format": {
+      "score": 80,
+      "weight": 0.1,
+      "weighted": 8.0,
+      "reasons": [
+        "\u2713 15 headers (excellent)",
+        "\u2713 23 list items (excellent)",
+        "\u2717 No frontmatter",
+        "\u2713 2 code blocks with language tags",
+        "\u2713 Contains tables"
+      ]
+    }
+  },
+  "weighted_score": 36.0,
+  "confidence": 0.9,
+  "final_score": 32.4,
+  "decision": "reject",
+  "reasons": [
+    "\u2713 problem present",
+    "\u2717 error missing",
+    "\u2717 fix missing",
+    "\u2717 Contains user-specific paths",
+    "\u2713 No internal references",
+    "\u2713 3 generic tech keywords",
+    "\u2717 Contains specific project names",
+    "\u2717 No verification section",
+    "\u2713 Test/verification mentioned in body",
+    "\u2713 Excellent word count: 578",
+    "\u2713 3 code blocks (excellent)",
+    "\u2713 1 error pattern",
+    "\u2713 3 technical depth indicators",
+    "\u2713 15 headers (excellent)",
+    "\u2713 23 list items (excellent)",
+    "\u2717 No frontmatter",
+    "\u2713 2 code blocks with language tags",
+    "\u2713 Contains tables"
+  ],
+  "suggestions": [
+    "Add a 'Error' section",
+    "Add a 'Fix' section",
+    "Include actual error messages or stack traces",
+    "Fill in or remove empty sections"
+  ],
+  "lesson_title": "memory-dump-watcher-auto-extract-lessons-from-agent-logs",
+  "lesson_domain": "git",
+  "lesson_tags": [
+    "mcp",
+    "api",
+    "debugging"
+  ],
+  "created_at": "2026-08-24T10:22:53.364943Z"
+}
