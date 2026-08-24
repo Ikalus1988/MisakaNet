@@ -29,7 +29,6 @@ Tool mapping:
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -39,12 +38,12 @@ ADAPTER_VERSION = "1.0.0"
 
 # ── Import existing MCP handlers ──────────────────────────────────
 sys.path.insert(0, str(REPO_ROOT))
-from scripts.mcp_server import (
-    handle_search,
+from scripts.mcp_server import (  # noqa: E402, I001
+    get_server_version,
     handle_get_lesson,
+    handle_search,
     handle_submit_usage,
     handle_usage_status,
-    get_server_version,
 )
 
 
@@ -221,7 +220,7 @@ def handle_deepseek_status(args: dict) -> dict:
     # Check search engine
     engines = []
     try:
-        from scripts.build_sag_index import search as sag_search
+        from scripts.build_sag_index import search as _sag_search  # noqa: F401
         sag_db = REPO_ROOT / "data" / "sag.db"
         if sag_db.exists():
             engines.append("sag-lite")
@@ -229,7 +228,7 @@ def handle_deepseek_status(args: dict) -> dict:
         pass
 
     try:
-        from misakanet.search.engine import LESSONS
+        from misakanet.search.engine import LESSONS as _LESSONS  # noqa: F401
         engines.append("bm25")
     except ImportError:
         pass
@@ -281,13 +280,13 @@ def handle_deepseek_doctor(args: dict) -> dict:
     # Check search engine
     engine_status = "none"
     try:
-        from scripts.build_sag_index import search as sag_search
+        from scripts.build_sag_index import search as _sag_search  # noqa: F401
         if sag_db.exists():
             engine_status = "sag-lite"
     except ImportError:
         pass
     try:
-        from misakanet.search.engine import LESSONS
+        from misakanet.search.engine import LESSONS as _LESSONS  # noqa: F401
         engine_status = "bm25"
     except ImportError:
         pass
@@ -317,7 +316,11 @@ def handle_deepseek_smoke(args: dict) -> dict:
 
     # Test 1: Search
     try:
-        search_result = handle_deepseek_search({"query": smoke_query, "top": 1})
+        search_result = handle_deepseek_search({
+            "query": smoke_query,
+            "top": 1,
+            "detail": "full",
+        })
         result_count = len(search_result.get("results", []))
         results["search"] = {
             "status": "ok" if result_count > 0 else "fail",
