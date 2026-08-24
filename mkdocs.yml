@@ -1,0 +1,130 @@
+site_name: MisakaNet Docs
+site_url: https://docs.misakanet.dev
+site_description: Documentation for MisakaNet - distributed failure-lesson knowledge network
+site_author: MisakaNet Contributors
+
+repo_name: Ikalus1988/MisakaNet
+repo_url: https://github.com/Ikalus1988/MisakaNet
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: true
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: Ikalus1988
+      repo: MisakaNet
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Ikalus1988/MisakaNet
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/misakanet
+  generator: false
+
+extra_css:
+  - assets/stylesheets/custom.css
+
+extra_javascript:
+  - assets/javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Quickstart: quickstart.md
+      - MCP Setup: mcp-quickstart.md
+      - CLI Reference: cli-reference.md
+      - Troubleshooting: troubleshooting.md
+  - Concepts:
+      - How It Works: CONCEPTS.md
+      - Evidence Levels: trust-semantics.md
+      - Quality Scoring: quality-score.md
+      - Glossary: glossary.md
+  - Integrations:
+      - Overview: integrations/README.md
+      - Claude Code: integrations/claude-code.md
+      - Cursor: integrations/cursor.md
+      - Continue: integrations/continue.md
+      - MCP Remote: integrations/mcp-remote.md
+  - Architecture:
+      - Overview: architecture-293.md
+      - Decision Records: adr/
+  - Community:
+      - Agents: agents/
+      - Bounty: bounty-notes/
+      - Contributor Points: contributor-points.md
+  - Blog:
+      - blog/
