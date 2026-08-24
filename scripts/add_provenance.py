@@ -1,274 +1,229 @@
 #!/usr/bin/env python3
-"""Add provenance metadata to lessons (Issue #1219).
-
-Scans lesson markdown files and adds provenance section to those missing it.
+"""Add provenance blocks to lessons that lack them.
 
 Usage:
-    python3 scripts/add_provenance.py --dry-run
-    python3 scripts/add_provenance.py --apply
-    python3 scripts/add_provenance.py --domain ops --dry-run
+    python3 scripts/add_provenance.py [--domain contrib|devops] [--dry-run]
 
-Provenance format:
-    provenance:
-      source: "internal" | "external" | "community"
-      contributor: "Node Name"
-      merged_at: "YYYY-MM-DD"
-      evidence: "post-publication" | "pr-merged" | "issue-resolved"
+Infer provenance from:
+- source field in frontmatter
+- created date
+- Git history (if available)
 """
 from __future__ import annotations
 
 import argparse
 import json
 import re
+import subprocess
 import sys
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
-
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LESSONS_DIR = REPO_ROOT / "lessons"
 
 
-@dataclass
-class LessonInfo:
-    """Lesson metadata."""
-    path: Path
-    title: str
-    domain: str
-    has_provenance: bool
-    frontmatter: dict
+def get_git_info(filepath: Path) -> dict | None:
+    """Get git history for a file (who merged, when)."""
+    try:
+        # Get the last commit that modified this file
+        result = subprocess.run(
+            ["git", "log", "--format=%H|%an|%ae|%aI", "-1", "--", str(filepath)],
+            capture_output=True, text=True, cwd=REPO_ROOT
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            parts = result.stdout.strip().split("|")
+            if len(parts) == 4:
+                return {
+                    "commit": parts[0][:8],
+                    "author": parts[1],
+                    "email": parts[2],
+                    "date": parts[3][:10],
+                }
+    except Exception:
+        pass
+    return None
 
 
-def parse_frontmatter(content: str) -> tuple[dict, str]:
-    """Parse YAML-like frontmatter from markdown content."""
-    if not content.startswith("---"):
-        return {}, content
+def infer_provenance(frontmatter: dict, git_info: dict | None) -> dict:
+    """Infer provenance from frontmatter and git history."""
+    source = frontmatter.get("source", "unknown")
+    created = frontmatter.get("created", "")
 
-    # Find end of frontmatter
-    end_idx = content.find("---", 3)
-    if end_idx == -1:
-        return {}, content
-
-    frontmatter_str = content[3:end_idx].strip()
-    body = content[end_idx + 3:].strip()
-
-    # Simple key-value parser (not full YAML)
-    frontmatter = {}
-    current_key = None
-    current_value = []
-
-    for line in frontmatter_str.split("\n"):
-        if line.startswith("  ") and current_key:
-            # Continuation of previous value
-            current_value.append(line.strip())
-        elif ":" in line and not line.startswith(" "):
-            # New key-value pair
-            if current_key:
-                frontmatter[current_key] = "\n".join(current_value).strip()
-            key, _, value = line.partition(":")
-            current_key = key.strip()
-            current_value = [value.strip()] if value.strip() else []
-        elif line.strip().startswith("- "):
-            # List item
-            if current_key:
-                current_value.append(line.strip())
-
-    if current_key:
-        frontmatter[current_key] = "\n".join(current_value).strip()
-
-    return frontmatter, body
-
-
-def has_provenance_section(content: str) -> bool:
-    """Check if content already has provenance section."""
-    return "provenance:" in content or "provenance:" in content.lower()
-
-
-def extract_domain_from_path(path: Path) -> str:
-    """Extract domain from file path."""
-    # lessons/contrib/file.md -> contrib
-    # lessons/en/file.md -> en (language, skip)
-    parts = path.relative_to(LESSONS_DIR).parts
-    if len(parts) > 1:
-        domain = parts[0]
-        if domain in ("en", "hi", "id", "ru", "tr"):
-            return "unknown"  # Language directories
-        return domain
-    return "unknown"
-
-
-def guess_contributor(frontmatter: dict, path: Path) -> str:
-    """Guess contributor from metadata."""
-    # Check for explicit contributor
-    if "contributor" in frontmatter:
-        return frontmatter["contributor"]
-
-    # Check title for node names
-    title = frontmatter.get("title", "")
-    node_patterns = [
-        r"Misaka\d+",
-        r"Node\d+",
-        r"Agent\d+",
-    ]
-    for pattern in node_patterns:
-        match = re.search(pattern, title)
-        if match:
-            return match.group(0)
-
-    # Default based on domain
-    domain = extract_domain_from_path(path)
-    if domain == "contrib":
-        return "Community"
-    elif domain == "core":
-        return "MisakaNet Core"
+    # Determine source type
+    if source in ("practical-experience", "internal"):
+        source_type = "internal"
+    elif source.startswith("http"):
+        source_type = "external-reference"
+    elif source == "github-pr":
+        source_type = "github-pr"
     else:
-        return "Unknown"
+        source_type = "unknown"
+
+    # Determine contributor
+    contributor = "unknown"
+    if git_info:
+        contributor = git_info["author"]
+    elif source_type == "internal":
+        contributor = "MisakaNet Community"
+
+    # Determine merged_at
+    merged_at = created
+    if git_info:
+        merged_at = git_info["date"]
+
+    return {
+        "source": source_type,
+        "contributor": contributor,
+        "merged_at": merged_at,
+        "evidence": "post-publication" if source_type == "unknown" else "pr-merged",
+    }
 
 
-def guess_source(domain: str) -> str:
-    """Guess source from domain."""
-    if domain == "contrib":
-        return "community"
-    elif domain in ("core", "devops"):
-        return "internal"
-    else:
-        return "external"
+def add_provenance_to_file(filepath: Path, dry_run: bool = False) -> bool:
+    """Add provenance block to a lesson file. Returns True if modified."""
+    content = filepath.read_text(encoding="utf-8")
 
+    # Check if already has provenance
+    if "provenance:" in content:
+        return False
 
-def add_provenance(content: str, contributor: str, source: str) -> str:
-    """Add provenance section to content."""
-    # Find insertion point (after frontmatter)
-    if not content.startswith("---"):
-        # No frontmatter, add at beginning
-        provenance = f"""---
-provenance:
-  source: "{source}"
-  contributor: "{contributor}"
-  merged_at: "2026-08-23"
-  evidence: "post-publication"
----
-"""
-        return provenance + content
+    created = ""
+    source = "unknown"
+    new_content = None
 
-    # Find end of frontmatter
-    end_idx = content.find("---", 3)
-    if end_idx == -1:
-        return content
+    # Format 1: ---\n{JSON}\nprovenance:\n...\n---\nbody
+    if content.startswith("---"):
+        # Find the first closing ---
+        first_close = content.find("---", 3)
+        if first_close == -1:
+            return False
 
-    # Insert provenance before closing ---
-    before = content[:end_idx]
-    after = content[end_idx:]
+        frontmatter_text = content[3:first_close]
+        rest = content[first_close + 3:]
 
-    provenance = f"""provenance:
-  source: "{source}"
-  contributor: "{contributor}"
-  merged_at: "2026-08-23"
-  evidence: "post-publication"
-"""
-
-    return before + provenance + after
-
-
-def scan_lessons(domain_filter: Optional[str] = None) -> list[LessonInfo]:
-    """Scan for lessons without provenance."""
-    lessons = []
-
-    for md_file in LESSONS_DIR.rglob("*.md"):
-        # Skip templates, archive, etc.
-        if md_file.parent.name in ("_archive", "templates", "draft", "drafts"):
-            continue
-        if md_file.name in ("index.md", "TEMPLATE.md", "LESSON_QUALITY_SCORING.md"):
-            continue
-
+        # Try JSON parse
         try:
-            content = md_file.read_text(encoding="utf-8")
-        except Exception:
-            continue
+            fm_json = json.loads(frontmatter_text)
+            created = fm_json.get("created", "")
+            source = fm_json.get("source", "unknown")
+        except json.JSONDecodeError:
+            # Try YAML-style key: value
+            for line in frontmatter_text.strip().split("\n"):
+                if ":" in line:
+                    key, _, value = line.partition(":")
+                    key = key.strip()
+                    value = value.strip().strip('"').strip("'")
+                    if key == "created":
+                        created = value
+                    elif key == "source":
+                        source = value
 
-        frontmatter, body = parse_frontmatter(content)
-        domain = extract_domain_from_path(md_file)
+        # Get git info
+        git_info = get_git_info(filepath)
 
-        # Apply domain filter
-        if domain_filter and domain != domain_filter:
-            continue
+        # Infer provenance
+        provenance = infer_provenance({"source": source, "created": created}, git_info)
 
-        lessons.append(LessonInfo(
-            path=md_file,
-            title=frontmatter.get("title", md_file.stem),
-            domain=domain,
-            has_provenance=has_provenance_section(content),
-            frontmatter=frontmatter,
-        ))
+        # Build provenance block
+        prov_block = f"\nprovenance:\n"
+        prov_block += f'  source: "{provenance["source"]}"\n'
+        prov_block += f'  contributor: "{provenance["contributor"]}"\n'
+        prov_block += f'  merged_at: "{provenance["merged_at"]}"\n'
+        prov_block += f'  evidence: "{provenance["evidence"]}"\n'
 
-    return lessons
+        new_content = f"---{frontmatter_text}{prov_block}---{rest}"
+
+    # Format 2: {JSON}\n---\nbody or {JSON}\n\n## body
+    elif content.startswith("{"):
+        try:
+            # Try to find --- separator first
+            json_end = content.find("\n---")
+            if json_end != -1:
+                json_text = content[:json_end]
+                rest = content[json_end:]
+            else:
+                # Fall back to multiple newlines (handle \n\n, \n\n\n, etc.)
+                import re
+                match = re.search(r'\n{2,}', content)
+                if not match:
+                    return False
+                json_end = match.start()
+                json_text = content[:json_end]
+                rest = content[json_end:]
+
+            fm_json = json.loads(json_text)
+            created = fm_json.get("created", "")
+            source = fm_json.get("source", "unknown")
+
+            # Get git info
+            git_info = get_git_info(filepath)
+
+            # Infer provenance
+            provenance = infer_provenance({"source": source, "created": created}, git_info)
+
+            # Add provenance to the JSON object
+            fm_json["provenance"] = {
+                "source": provenance["source"],
+                "contributor": provenance["contributor"],
+                "merged_at": provenance["merged_at"],
+                "evidence": provenance["evidence"],
+            }
+            # Preserve original formatting (pretty-printed or single-line)
+            if "\n" in json_text:
+                new_content = json.dumps(fm_json, ensure_ascii=False, indent=2) + rest
+            else:
+                new_content = json.dumps(fm_json, ensure_ascii=False) + rest
+        except (json.JSONDecodeError, ValueError):
+            return False
+    else:
+        return False
+
+    if new_content is None:
+        return False
+
+    if dry_run:
+        print(f"  Would add provenance to {filepath.name}: {provenance}")
+        return True
+
+    filepath.write_text(new_content, encoding="utf-8")
+    print(f"  Added provenance to {filepath.name}: {provenance}")
+    return True
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Add provenance to lessons")
-    parser.add_argument("--dry-run", action="store_true", help="Show what would be changed")
-    parser.add_argument("--apply", action="store_true", help="Apply changes")
-    parser.add_argument("--domain", "-d", help="Filter by domain")
-    parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
-
+    parser.add_argument("--domain", choices=["contrib", "devops", "all"], default="all",
+                        help="Domain to process")
+    parser.add_argument("--dry-run", action="store_true", help="Show what would be done")
+    parser.add_argument("--limit", type=int, default=None, help="Max files to process")
     args = parser.parse_args()
 
-    if not args.dry_run and not args.apply:
-        parser.error("Specify --dry-run or --apply")
+    domains = ["contrib", "devops"] if args.domain == "all" else [args.domain]
+    total_modified = 0
 
-    # Scan lessons
-    lessons = scan_lessons(args.domain)
+    for domain in domains:
+        domain_dir = LESSONS_DIR / domain
+        if not domain_dir.exists():
+            print(f"Skipping {domain}: directory not found")
+            continue
 
-    # Filter those without provenance
-    missing = [l for l in lessons if not l.has_provenance]
-    has_prov = [l for l in lessons if l.has_provenance]
+        files = sorted(domain_dir.glob("*.md"))
+        # Skip non-lesson files
+        files = [f for f in files if f.name not in ("README.md", "index.md", "_meta.md")]
+        print(f"\nProcessing {domain}: {len(files)} files")
 
-    # Output summary
-    if args.json:
-        result = {
-            "total_scanned": len(lessons),
-            "has_provenance": len(has_prov),
-            "missing_provenance": len(missing),
-            "lessons": [
-                {
-                    "path": str(l.path.relative_to(REPO_ROOT)),
-                    "title": l.title,
-                    "domain": l.domain,
-                }
-                for l in missing
-            ],
-        }
-        print(json.dumps(result, indent=2))
-    else:
-        print(f"Scanned {len(lessons)} lessons")
-        print(f"  Has provenance: {len(has_prov)}")
-        print(f"  Missing provenance: {len(missing)}")
+        modified = 0
+        for filepath in files:
+            if args.limit and modified >= args.limit:
+                break
+            if add_provenance_to_file(filepath, args.dry_run):
+                modified += 1
 
-        if missing:
-            print(f"\nLessons to update:")
-            for l in missing[:20]:  # Show first 20
-                print(f"  - {l.path.relative_to(REPO_ROOT)} ({l.domain})")
-            if len(missing) > 20:
-                print(f"  ... and {len(missing) - 20} more")
+        total_modified += modified
+        action = "Would modify" if args.dry_run else "Modified"
+        print(f"  {action} {modified}/{len(files)} files")
 
-    # Apply changes
-    if args.apply and missing:
-        print(f"\nAdding provenance to {len(missing)} lessons...")
-        updated = 0
-
-        for lesson in missing:
-            try:
-                content = lesson.path.read_text(encoding="utf-8")
-                contributor = guess_contributor(lesson.frontmatter, lesson.path)
-                source = guess_source(lesson.domain)
-
-                new_content = add_provenance(content, contributor, source)
-                lesson.path.write_text(new_content, encoding="utf-8")
-                updated += 1
-            except Exception as e:
-                print(f"  Error updating {lesson.path}: {e}", file=sys.stderr)
-
-        print(f"Updated {updated} lessons")
+    print(f"\nTotal: {total_modified} files {'would be ' if args.dry_run else ''}modified")
 
 
 if __name__ == "__main__":

@@ -6,6 +6,12 @@
   "created": "2026-07-06",
   "source": "unknown"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 ---{"created": "2026-05-01 08:00 UTC", "domain": "claude", "source": "hermes_wsl", "status": "published", "tags": "", "title": "模型输出截断 / JSON 解析失败Handling", "updated": "2026-05-01 08:00 UTC"}---
 

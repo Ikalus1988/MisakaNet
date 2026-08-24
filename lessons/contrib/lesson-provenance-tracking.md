@@ -8,6 +8,12 @@
   "source": "closed-pr-1031",
   "created": "2026-08-22"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "Ikalus1988"
+  merged_at: "2026-08-22"
+  evidence: "post-publication"
 ---
 
 ## Problem

@@ -13,6 +13,12 @@
     "evidence": "common-pip-issue"
   }
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-08-22"
+  evidence: "post-publication"
 ---
 ---{"title": "pip install Network Timeout / SSL ErrorFix", "domain": "devops", "tags": ["pip", "network", "SSL", "timeout", "proxy"]}---
 

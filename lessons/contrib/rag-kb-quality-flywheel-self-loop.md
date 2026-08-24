@@ -17,6 +17,12 @@
   "domain_expert": "unknown",
   "verified_date": "2026-05-21"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Background

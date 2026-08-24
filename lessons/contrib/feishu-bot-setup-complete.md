@@ -11,6 +11,12 @@
   "supersedes": "lessons/_archive/feishu-bot-setup-complete.md",
   "see_also": "lessons/contrib/cc-connect-feishu-setup-complete.md"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 # Near-duplicate Feishu bot lessons: keep cc-connect, archive generic stub

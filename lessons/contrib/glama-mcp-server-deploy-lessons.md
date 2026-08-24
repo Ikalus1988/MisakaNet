@@ -9,6 +9,12 @@
   "created": "2026-07-26",
   "confidence": "0.95"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "Liona Can"
+  merged_at: "2026-08-13"
+  evidence: "post-publication"
 ---
 
 ## Problem

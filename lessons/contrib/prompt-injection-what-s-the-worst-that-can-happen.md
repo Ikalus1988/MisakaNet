@@ -9,6 +9,12 @@
   "created": "2026-07-27",
   "confidence": "0.85"
 }
+
+provenance:
+  source: "external-reference"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "pr-merged"
 ---
 
 ## Problem

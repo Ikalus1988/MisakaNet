@@ -6,6 +6,12 @@
   "created": "2026-07-06",
   "source": "unknown"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 ---{"title": "MisakaNet --heal UX Gap — Suggested queue_lesson.py Command Uses Wrong Flag (--file not -f)", "domain": "development", "scope": "broad", "tags": ["misakanet", "heal", "ux", "queue-lesson", "cli", "argparse", "fixture", "openclaw", "flag-mismatch"], "status": "published", "confidence": "0.9", "source": "Misaka10004", "created": "2026-06-23", "updated": "2026-06-23"}---
 

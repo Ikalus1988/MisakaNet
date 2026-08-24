@@ -14,6 +14,12 @@
     "modified": "2026-08-04T09:43:52.372Z"
   }
 }
+
+provenance:
+  source: "unknown"
+  contributor: "Liona Can"
+  merged_at: "2026-08-13"
+  evidence: "post-publication"
 ---
 
 ## 背景

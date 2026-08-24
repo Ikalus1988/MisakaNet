@@ -9,6 +9,12 @@ confidence: 0.9
 created: 2026-07-02
 verified_date: 
 domain_expert: 
+
+provenance:
+  source: "internal"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "pr-merged"
 ---
 
 ## Problem

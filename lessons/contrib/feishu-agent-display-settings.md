@@ -6,6 +6,12 @@
   "created": "2026-07-06",
   "source": "unknown"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 ---{"title": "飞书 Agent 显示Optimization：禁用工具调用和上下文提示", "domain": "feishu", "source": "bootstrap", "status": "published", "confidence": "0.9", "created": "2026-05-19"}---
 

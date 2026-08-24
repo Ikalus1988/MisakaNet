@@ -9,6 +9,12 @@ created: 2026-07-06
 updated: 2026-07-06
 source: zsxh1990
 verified_date: 2026-07-06
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 # Cross-encoder reranker kills RAG latency on CPU-only machines

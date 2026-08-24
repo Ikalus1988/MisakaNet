@@ -8,6 +8,12 @@
   "created": "2026-07-20",
   "updated": "2026-07-20"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 # GitHub sudo email OTP fails when the wrong input is filled

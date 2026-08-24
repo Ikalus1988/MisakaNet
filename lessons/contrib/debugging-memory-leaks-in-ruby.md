@@ -7,6 +7,12 @@ status: published
 source: https://samsaffron.com/archive/2015/03/31/debugging-memory-leaks-in-ruby
 created: 2026-07-28
 confidence: 0.85
+
+provenance:
+  source: "external-reference"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "pr-merged"
 ---
 
 ## Problem

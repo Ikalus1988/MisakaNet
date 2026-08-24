@@ -6,6 +6,12 @@
   "created": "2026-07-06",
   "source": "unknown"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 ---{"title": "微信公众号抓取失败Handling（搜索与抓取分离）", "domain": "wechat", "tags": ["wechat", "fetch", "search", "crawl"]}---
 

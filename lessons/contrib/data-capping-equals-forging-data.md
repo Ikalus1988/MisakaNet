@@ -13,6 +13,12 @@ confidence: "1.0"
 created: "2026-06-25"
 domain_expert: "zsxh1990"
 verified_date: "2026-07-06"
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Problem

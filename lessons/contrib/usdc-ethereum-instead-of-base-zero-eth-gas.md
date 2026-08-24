@@ -11,6 +11,12 @@
   "updated": "2026-07-29",
   "confidence": "0.92"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 # USDC пришёл в Ethereum mainnet, а нужен Base — и 0 ETH на газ

@@ -15,6 +15,12 @@ evidence:
   verified_by: "maintainer"
   context: "Distilled from field debugging session. kconvars sysspot.sv parsing path verified as practically useful."
   public_quote_allowed: false
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Problem

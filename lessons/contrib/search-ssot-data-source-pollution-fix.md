@@ -6,6 +6,12 @@ status: published
 source: misakanet
 created: 2026-07-10
 updated: 2026-07-10
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 # Search SSOT: Fixing Data Source Pollution

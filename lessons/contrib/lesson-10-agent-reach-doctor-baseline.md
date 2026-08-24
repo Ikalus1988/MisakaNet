@@ -7,6 +7,12 @@
   "created": "2026-07-06",
   "source": "unknown"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 # Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login

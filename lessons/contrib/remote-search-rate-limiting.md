@@ -8,6 +8,12 @@
   "source": "mcp-intake-fb741dcb9d",
   "created": "2026-08-19"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "Ikalus1988"
+  merged_at: "2026-08-19"
+  evidence: "post-publication"
 ---
 
 ## Problem

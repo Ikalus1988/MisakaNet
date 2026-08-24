@@ -6,6 +6,12 @@ status: published
 source: pr-genius
 created: 2026-07-06
 updated: 2026-07-06
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 # External PR Strategy via pr-genius

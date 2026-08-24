@@ -12,6 +12,12 @@ status: published
 source: https://releaseapp.io/blog/kubernetes-how-to-debug-crashloopbackoff-in-a-container
 created: 2026-07-28
 confidence: 0.85
+
+provenance:
+  source: "external-reference"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "pr-merged"
 ---
 
 ## Problem
