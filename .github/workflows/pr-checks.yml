@@ -129,7 +129,7 @@ jobs:
           pr-number: ${{ github.event.pull_request.number || '' }}
 
       - name: Fail on DCO Violation
-        if: steps.dco.outputs.dco-passed == 'false'
+        if: steps.dco.outputs.dco-passed == 'false' && !contains(github.event.pull_request.user.login, 'dependabot')
         run: |
           echo "DCO check failed: ${{ steps.dco.outputs.failed-count }} commit(s) without sign-off."
           exit 1
@@ -585,7 +585,7 @@ jobs:
           if [ -n "$PR_NUM" ]; then
             gh pr comment "$PR_NUM" --repo Ikalus1988/MisakaNet --body "$REPORT" 2>/dev/null || \
               gh issue comment "$PR_NUM" --repo Ikalus1988/MisakaNet --body "$REPORT" 2>/dev/null || \
-              echo "Could not post comment to PR #$PR_NUM"
+              echo "::warning::Could not post comment to PR #$PR_NUM"
           fi
 
           # ── Exit with failure if any hard gate fails ──

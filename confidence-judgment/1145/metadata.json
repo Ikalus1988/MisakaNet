@@ -1,0 +1,89 @@
+{
+  "issue_number": 1145,
+  "title": "[Intake] DSH Desktop 2.0.1: after migrating DSH_HOME with robocopy, the dsh-managed profi",
+  "intake_score": 81,
+  "dimensions": {
+    "completeness": {
+      "score": 80,
+      "weight": 0.25,
+      "weighted": 20.0,
+      "reasons": [
+        "\u2713 problem present",
+        "\u2713 error present",
+        "\u2713 fix present",
+        "\u2713 verification present (bonus)"
+      ]
+    },
+    "generalization": {
+      "score": 55,
+      "weight": 0.15,
+      "weighted": 8.25,
+      "reasons": [
+        "\u2713 No user-specific paths",
+        "\u2713 No internal references",
+        "\u2717 Only 2 generic tech keywords"
+      ]
+    },
+    "verification": {
+      "score": 20,
+      "weight": 0.3,
+      "weighted": 6.0,
+      "reasons": [
+        "\u2713 Verification section present",
+        "\u2713 Has verification steps (list)"
+      ]
+    },
+    "detail": {
+      "score": 30,
+      "weight": 0.2,
+      "weighted": 6.0,
+      "reasons": [
+        "\u2713 Excellent word count: 331",
+        "\u2717 No code blocks",
+        "\u2717 No error messages"
+      ]
+    },
+    "format": {
+      "score": 30,
+      "weight": 0.1,
+      "weighted": 3.0,
+      "reasons": [
+        "\u2713 5 headers (excellent)",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    }
+  },
+  "weighted_score": 43.25,
+  "confidence": 0.9,
+  "final_score": 38.925000000000004,
+  "decision": "review",
+  "reasons": [
+    "\u2713 problem present",
+    "\u2713 error present",
+    "\u2713 fix present",
+    "\u2713 verification present (bonus)",
+    "\u2713 No user-specific paths",
+    "\u2713 No internal references",
+    "\u2717 Only 2 generic tech keywords",
+    "\u2713 Verification section present",
+    "\u2713 Has verification steps (list)",
+    "\u2713 Excellent word count: 331",
+    "\u2717 No code blocks",
+    "\u2717 No error messages",
+    "\u2713 5 headers (excellent)",
+    "\u2717 No lists",
+    "\u2717 No frontmatter"
+  ],
+  "suggestions": [
+    "Include actual error messages or stack traces"
+  ],
+  "lesson_title": "dsh-desktop-201-after-migrating-dsh_home-with-robocopy-the-dsh-managed-profi",
+  "lesson_domain": "node",
+  "lesson_tags": [
+    "node",
+    "mcp",
+    "error"
+  ],
+  "created_at": "2026-08-24T10:22:57.885363Z"
+}

@@ -232,6 +232,101 @@ function searchLessons(lessons, query, domain, top = 5) {
   }));
 }
 
+// ── BM25 Search (pre-computed index) ──
+// Uses a pre-computed inverted index for proper BM25 scoring
+// with IDF weighting and document length normalization
+
+const BM25_STOPWORDS = new Set([
+  "the", "be", "to", "of", "and", "a", "in", "that", "have", "i",
+  "it", "for", "not", "on", "with", "he", "as", "you", "do", "at",
+  "this", "but", "his", "by", "from", "they", "we", "say", "her",
+  "she", "or", "an", "will", "my", "one", "all", "would", "there",
+  "their", "what", "so", "up", "out", "if", "about", "who", "get",
+  "which", "go", "me", "when", "make", "can", "like", "time", "no",
+  "just", "him", "know", "take", "people", "into", "year", "your",
+  "good", "some", "could", "them", "see", "other", "than", "then",
+]);
+
+function bm25Tokenize(text) {
+  return text.toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(/\s+/)
+    .filter(t => t.length >= 2 && !BM25_STOPWORDS.has(t));
+}
+
+function searchLessonsBM25(index, query, domain, top = 5) {
+  if (!index || !index.terms || !index.docs || !query) return [];
+
+  const queryTerms = bm25Tokenize(query);
+  if (queryTerms.length === 0) return [];
+
+  const { docCount, avgDocLen, k1 = 1.5, b = 0.75, terms, docs } = index;
+  const scores = new Float64Array(docCount);
+  const matched = new Uint8Array(docCount);
+
+  // Score each document using BM25
+  for (const term of queryTerms) {
+    const termData = terms[term];
+    if (!termData) continue;
+
+    const { idf, docs: termDocs } = termData;
+    for (const entry of termDocs) {
+      const { doc, tf, len } = entry;
+      // BM25 scoring formula
+      const norm = 1 - b + b * (len / avgDocLen);
+      const score = idf * ((tf * (k1 + 1)) / (tf + k1 * norm));
+      scores[doc] += score;
+      matched[doc] = 1;
+    }
+  }
+
+  // Collect and sort results
+  const results = [];
+  for (let i = 0; i < docCount; i++) {
+    if (!matched[i]) continue;
+    const doc = docs[i];
+
+    // Apply domain filter
+    if (domain && doc.domain && doc.domain.toLowerCase() !== domain.toLowerCase()) {
+      continue;
+    }
+
+    results.push({ doc, score: scores[i] });
+  }
+
+  results.sort((a, b) => b.score - a.score);
+  return results.slice(0, top).map(({ doc, score }) => ({
+    id: doc.id || "",
+    title: doc.title || "",
+    domain: doc.domain || "",
+    path: doc.path || "",
+    score: Math.round(score * 100) / 100,
+  }));
+}
+
+// Load BM25 index from KV or cache
+let _bm25Index = null;
+let _bm25IndexExpiry = 0;
+
+async function loadBM25Index(env) {
+  const now = Date.now();
+  if (_bm25Index && now < _bm25IndexExpiry) return _bm25Index;
+
+  if (!env.MISAKANET_KV) return null;
+
+  try {
+    const index = await env.MISAKANET_KV.get("worker_search_index", "json");
+    if (index && index.version === 1) {
+      _bm25Index = index;
+      _bm25IndexExpiry = now + 300_000; // Cache for 5 minutes
+      return index;
+    }
+  } catch (e) {
+    debugLog(env, 1, "Failed to load BM25 index", { error: e.message });
+  }
+  return null;
+}
+
 // Fetch a single lesson markdown from GitHub
 async function fetchLessonContent(env, lessonPath, lessonId) {
   const token = env.REGISTER_TOKEN;
@@ -369,9 +464,22 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp) {
     } catch (e) {
       return { error: `Failed to load lessons: ${e.message}` };
     }
-    const results = searchLessons(lessons, args.query, args.domain, args.top || 5);
+
+    // Try BM25 search first (if index available), fall back to naive search
+    let results;
+    let source = "worker-search";
+    const bm25Index = await loadBM25Index(env);
+    if (bm25Index) {
+      results = searchLessonsBM25(bm25Index, args.query, args.domain, args.top || 5);
+      source = "worker-bm25";
+      debugLog(env, 2, "BM25 search", { query: args.query, results: results.length });
+    } else {
+      results = searchLessons(lessons, args.query, args.domain, args.top || 5);
+      debugLog(env, 2, "Fallback search", { query: args.query, results: results.length });
+    }
+
     const aura = await getIdentityAura(env, authToken);
-    return { results, source: "worker-search", query: args.query, identity: aura };
+    return { results, source, query: args.query, identity: aura };
   }
 
   if (toolName === "misakanet_get_lesson") {
@@ -618,10 +726,24 @@ function mcpJsonResponse(body, status = 200, extraHeaders = {}) {
   });
 }
 
-async function handleMcpRequest(request, env) {
+function mcpSseResponse(body, status = 200, extraHeaders = {}) {
+  const data = `event: message\ndata: ${JSON.stringify(body)}\n\n`;
+  return new Response(data, {
+    status,
+    headers: {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache",
+      ...CORS_HEADERS,
+      ...extraHeaders,
+    },
+  });
+}
+
+async function handleMcpRequest(request, env, useSse = false) {
+  const respond = useSse ? mcpSseResponse : mcpJsonResponse;
   // 1. Origin validation (MCP spec: prevent DNS rebinding)
   if (!validateMcpOrigin(request)) {
-    return mcpJsonResponse(
+    return respond(
       { jsonrpc: "2.0", error: { code: -32000, message: "Forbidden: invalid Origin" } },
       403,
     );
@@ -661,7 +783,7 @@ async function handleMcpRequest(request, env) {
       hasExpectedToken: !!expectedToken,
       isIntakeCall,
     });
-    return mcpJsonResponse(
+    return respond(
       { jsonrpc: "2.0", error: addDebugContext(env, { code: -32000, message: "Unauthorized" }, {
         step: "authentication",
         reason: token ? "token_invalid_or_expired" : "no_token_provided",
@@ -678,7 +800,7 @@ async function handleMcpRequest(request, env) {
       provided: protocolVersion,
       supported: SUPPORTED_PROTOCOL_VERSIONS,
     });
-    return mcpJsonResponse(
+    return respond(
       { jsonrpc: "2.0", error: addDebugContext(env, { code: -32600, message: `Unsupported protocol version: ${protocolVersion}` }, {
         step: "protocol_version_check",
         reason: "version_not_supported",
@@ -693,7 +815,7 @@ async function handleMcpRequest(request, env) {
   // clients using chunked transfer encoding may omit it.
   const declaredLength = Number.parseInt(request.headers.get("content-length") || "0", 10);
   if (Number.isFinite(declaredLength) && declaredLength > MAX_MCP_REQUEST_BYTES) {
-    return mcpJsonResponse({
+    return respond({
       jsonrpc: "2.0", id: null,
       error: { code: -32600, message: `Request too large (max ${MAX_MCP_REQUEST_BYTES} bytes)` },
     }, 413);
@@ -701,7 +823,7 @@ async function handleMcpRequest(request, env) {
 
   const rawBody = await request.text().catch(() => null);
   if (rawBody !== null && new TextEncoder().encode(rawBody).byteLength > MAX_MCP_REQUEST_BYTES) {
-    return mcpJsonResponse({
+    return respond({
       jsonrpc: "2.0", id: null,
       error: { code: -32600, message: `Request too large (max ${MAX_MCP_REQUEST_BYTES} bytes)` },
     }, 413);
@@ -712,7 +834,7 @@ async function handleMcpRequest(request, env) {
     body = rawBody === null ? null : JSON.parse(rawBody);
   } catch {}
   if (!body) {
-    return mcpJsonResponse({
+    return respond({
       jsonrpc: "2.0", id: null,
       error: { code: -32700, message: "Parse error" },
     }, 400);
@@ -734,13 +856,13 @@ async function handleMcpRequest(request, env) {
     const hdrMethod = request.headers.get("Mcp-Method");
     const hdrName = request.headers.get("Mcp-Name");
     if (hdrMethod && method && hdrMethod !== method) {
-      return mcpJsonResponse({
+      return respond({
         jsonrpc: "2.0", id: reqId,
         error: { code: -32600, message: `Mcp-Method header (${hdrMethod}) does not match body method (${method})` },
       }, 400);
     }
     if (hdrName && params?.name && hdrName !== params.name) {
-      return mcpJsonResponse({
+      return respond({
         jsonrpc: "2.0", id: reqId,
         error: { code: -32600, message: `Mcp-Name header (${hdrName}) does not match body name (${params.name})` },
       }, 400);
@@ -761,7 +883,7 @@ async function handleMcpRequest(request, env) {
       const negotiatedVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(params?.protocolVersion)
         ? params.protocolVersion
         : MCP_PROTOCOL_VERSION;
-      return mcpJsonResponse({
+      return respond({
         jsonrpc: "2.0", id: reqId,
         result: {
           protocolVersion: negotiatedVersion,
@@ -773,7 +895,7 @@ async function handleMcpRequest(request, env) {
 
     if (method === "tools/list") {
       debugLog(env, 2, "tools/list: returning", MCP_TOOLS.length, "tools");
-      return mcpJsonResponse({
+      return respond({
         jsonrpc: "2.0", id: reqId,
         result: { tools: MCP_TOOLS },
       });
@@ -785,7 +907,7 @@ async function handleMcpRequest(request, env) {
       if (!toolName) {
         const err = { code: -32602, message: "Missing tool name" };
         debugLog(env, 1, "MCP tool call: missing tool name");
-        return mcpJsonResponse({
+        return respond({
           jsonrpc: "2.0", id: reqId,
           error: addDebugContext(env, err, { step: "tool_call", reason: "missing_name" }),
         });
@@ -795,7 +917,7 @@ async function handleMcpRequest(request, env) {
       if (!availableTools.includes(toolName)) {
         const err = { code: -32601, message: `Tool not found: ${toolName}`, available_tools: availableTools };
         debugLog(env, 1, "MCP tool not found:", toolName, "| available:", availableTools.join(","));
-        return mcpJsonResponse({
+        return respond({
           jsonrpc: "2.0", id: reqId,
           error: addDebugContext(env, err, { step: "tool_call", reason: "not_found", requested: toolName }),
         });
@@ -810,7 +932,7 @@ async function handleMcpRequest(request, env) {
         resultKeys: Object.keys(result || {}),
       });
 
-      return mcpJsonResponse({
+      return respond({
         jsonrpc: "2.0", id: reqId,
         result: { content: [{ type: "text", text: JSON.stringify(result) }] },
       });
@@ -818,7 +940,7 @@ async function handleMcpRequest(request, env) {
 
     // server/discover (2026-07-28 RC) — alias for capabilities query
     if (method === "server/discover") {
-      return mcpJsonResponse({
+      return respond({
         jsonrpc: "2.0", id: reqId,
         result: {
           capabilities: { tools: {} },
@@ -827,7 +949,7 @@ async function handleMcpRequest(request, env) {
       });
     }
 
-    return mcpJsonResponse({
+    return respond({
       jsonrpc: "2.0", id: reqId,
       error: { code: -32601, message: `Method not found: ${method}` },
     });
@@ -1466,6 +1588,50 @@ export default {
       return handleSearchSignal(request, env);
     }
 
+    // POST /api/search-index — sync BM25 search index to KV
+    if (request.method === "POST" && url.pathname === "/api/search-index") {
+      const syncToken = request.headers.get("X-Sync-Token");
+      if (!syncToken || !env.SYNC_TOKEN || !timingSafeEqual(syncToken, env.SYNC_TOKEN)) {
+        return jsonResponse({ error: "Unauthorized" }, 401);
+      }
+      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 500);
+
+      try {
+        const body = await request.json();
+        if (!body.version || !body.terms || !body.docs) {
+          return jsonResponse({ error: "Invalid index format" }, 400);
+        }
+        await env.MISAKANET_KV.put("worker_search_index", JSON.stringify(body), {
+          expirationTtl: 86400 * 7, // 7 days
+        });
+        return jsonResponse({
+          success: true,
+          docCount: body.docCount,
+          termCount: Object.keys(body.terms).length,
+        });
+      } catch (e) {
+        return jsonResponse({ error: e.message }, 400);
+      }
+    }
+
+    // GET /api/search-index — get current index stats
+    if (request.method === "GET" && url.pathname === "/api/search-index") {
+      if (!env.MISAKANET_KV) return jsonResponse({ available: false });
+      try {
+        const index = await env.MISAKANET_KV.get("worker_search_index", "json");
+        if (!index) return jsonResponse({ available: false });
+        return jsonResponse({
+          available: true,
+          docCount: index.docCount,
+          termCount: Object.keys(index.terms).length,
+          avgDocLen: index.avgDocLen,
+          builtAt: index.built_at,
+        });
+      } catch {
+        return jsonResponse({ available: false });
+      }
+    }
+
     // POST /api/intake — general-purpose intake for MCP, agents, sandbox (#589)
     // Redacts secrets before persistence. Records demand signals for unmatched items.
     if (request.method === "POST" && url.pathname === "/api/intake") {
@@ -1707,7 +1873,9 @@ export default {
 
     // POST /mcp — Streamable HTTP MCP endpoint (read-only tools)
     if (request.method === "POST" && url.pathname === "/mcp") {
-      return handleMcpRequest(request, env);
+      const accept = request.headers.get("Accept") || "";
+      const useSse = accept.includes("text/event-stream");
+      return handleMcpRequest(request, env, useSse);
     }
     // OPTIONS /mcp — CORS preflight (browser clients need this)
     if (request.method === "OPTIONS" && url.pathname === "/mcp") {
@@ -1720,9 +1888,35 @@ export default {
         },
       });
     }
-    // GET /mcp — per spec, return 405 (no SSE stream offered)
+    // GET /mcp — SSE stream for server-initiated messages
     if (request.method === "GET" && url.pathname === "/mcp") {
-      return new Response(JSON.stringify({ error: "Method Not Allowed. Use POST for MCP Streamable HTTP transport." }), {
+      const accept = request.headers.get("Accept") || "";
+      if (accept.includes("text/event-stream")) {
+        // SSE stream — keep connection open for server-initiated notifications
+        const stream = new ReadableStream({
+          start(controller) {
+            const encoder = new TextEncoder();
+            controller.enqueue(encoder.encode("event: connected\ndata: {}\n\n"));
+            // Keep-alive ping every 30s
+            const interval = setInterval(() => {
+              try {
+                controller.enqueue(encoder.encode(": keepalive\n\n"));
+              } catch {
+                clearInterval(interval);
+              }
+            }, 30000);
+            // Note: In Cloudflare Workers, the stream closes when the request is cancelled
+          },
+        });
+        return new Response(stream, {
+          headers: {
+            "content-type": "text/event-stream",
+            "cache-control": "no-cache",
+            ...CORS_HEADERS,
+          },
+        });
+      }
+      return new Response(JSON.stringify({ error: "Method Not Allowed. Use POST for MCP Streamable HTTP transport, or GET with Accept: text/event-stream for SSE." }), {
         status: 405,
         headers: { "content-type": "application/json", "Accept-Post": "application/json, text/event-stream", ...CORS_HEADERS },
       });
