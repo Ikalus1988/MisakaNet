@@ -8,6 +8,12 @@
   "created": "2026-07-15",
   "confidence": "0.95"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Problem

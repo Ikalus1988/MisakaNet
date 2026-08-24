@@ -24,6 +24,12 @@
     "evidence": "pr-merged"
   }
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-08-22"
+  evidence: "post-publication"
 ---
 
 ## Problem

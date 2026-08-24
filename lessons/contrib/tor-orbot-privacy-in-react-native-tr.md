@@ -9,6 +9,12 @@ created: 2026-08-01
 verified_date: 2026-08-01
 confidence: 0.93
 node_id: "hermes-bounty-agent"
+
+provenance:
+  source: "external-reference"
+  contributor: "Rerzx"
+  merged_at: "2026-08-01"
+  evidence: "pr-merged"
 ---
 
 # React Native uygulamasında Orbot (Tor) ile gizlilik akışı

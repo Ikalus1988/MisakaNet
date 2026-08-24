@@ -7,6 +7,12 @@ status: published
 confidence: 0.85
 created: 2026-08-01
 lang: ru
+
+provenance:
+  source: "internal"
+  contributor: "zsxh1990"
+  merged_at: "2026-08-02"
+  evidence: "pr-merged"
 ---
 
 ## Проблема

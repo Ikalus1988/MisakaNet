@@ -6,6 +6,12 @@
   "created": "2026-07-06",
   "source": "unknown"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 ---{"title": "WSL Windows 终端复制粘贴吞下划线Issue", "domain": "devops", "tags": ["wsl", "terminal", "windows", "encoding"]}---
 

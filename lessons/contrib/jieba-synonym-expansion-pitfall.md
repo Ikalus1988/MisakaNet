@@ -11,6 +11,12 @@
   "verified_date": "",
   "domain_expert": ""
 }
+
+provenance:
+  source: "unknown"
+  contributor: "Ikalus1988"
+  merged_at: "2026-08-18"
+  evidence: "post-publication"
 ---
 
 ## Problem

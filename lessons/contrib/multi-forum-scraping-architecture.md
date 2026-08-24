@@ -1,4 +1,4 @@
-{"title": "Multi-Forum Scraping Architecture — API vs Playwright", "domain": "ops", "subdomain": "scraping", "tags": ["scraping", "playwright", "api", "forum", "automation", "data-collection"], "source": "practical-experience", "status": "published", "confidence": "0.9", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
+{"title": "Multi-Forum Scraping Architecture — API vs Playwright", "domain": "ops", "subdomain": "scraping", "tags": ["scraping", "playwright", "api", "forum", "automation", "data-collection"], "source": "practical-experience", "status": "published", "confidence": "0.9", "created": "2026-07-01", "verified_date": "", "domain_expert": "", "provenance": {"source": "internal", "contributor": "misakanet-bot", "merged_at": "2026-07-31", "evidence": "pr-merged"}}
 
 
 ## Problem

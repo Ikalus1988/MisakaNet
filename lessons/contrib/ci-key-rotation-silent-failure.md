@@ -13,6 +13,12 @@
   "created": "2026-08-11 00:00:00 UTC",
   "updated": "2026-08-11 00:00:00 UTC"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "ElevaSync Solutions"
+  merged_at: "2026-08-11"
+  evidence: "post-publication"
 ---
 
 # CI key rotation silently breaking scheduled automation without a code change

@@ -10,6 +10,12 @@
   "updated": "2026-07-06",
   "verification": "metadata-normalized"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "Liona Can"
+  merged_at: "2026-08-13"
+  evidence: "post-publication"
 ---
 
 问题: 飞书 WebSocket 接收消息 API 返回 404 错误。测试端点: wss://open.feishu.cn/open-apis/bot/v3/ws, /bot/v2/ws, /im/v1/ws, /im/v2/ws, /webhook/v1/ws。所有端点均返回 404。修复: 消息发送功能正常 (通过 HTTP API with receive_id_type=chat_id), 但接收消息必须使用 HTTP Webhook 回调方式。验证: 2026-05-19 测试确认。

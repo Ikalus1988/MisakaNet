@@ -1,11 +1,4 @@
-{
-  "title": "Lesson Quality Requirements: failure-memory protocol Format",
-  "domain": "devops",
-  "tags": ["lesson", "quality", "format", "skp", "misakanet"],
-  "status": "published",
-  "source": "agent_experience",
-  "created": "2026-07-02"
-}
+{"title": "Lesson Quality Requirements: failure-memory protocol Format", "domain": "devops", "tags": ["lesson", "quality", "format", "skp", "misakanet"], "status": "published", "source": "agent_experience", "created": "2026-07-02", "provenance": {"source": "unknown", "contributor": "Ikalus1988", "merged_at": "2026-08-20", "evidence": "post-publication"}}
 ---
 
 ## Problem

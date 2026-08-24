@@ -7,6 +7,12 @@ status: "published"
 source: "internal-training"
 confidence: "0.95"
 created: "2026-07-14"
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Problem

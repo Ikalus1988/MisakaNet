@@ -7,6 +7,12 @@
   "source": "issue-1223",
   "created": "2026-08-23"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "Ikalus1988"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

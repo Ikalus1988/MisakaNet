@@ -23,6 +23,12 @@
     "evidence": "common-pattern"
   }
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-08-22"
+  evidence: "post-publication"
 ---
 
 # Data Quality Fix: Always Keep Three Layers (DB + ETL + Query)

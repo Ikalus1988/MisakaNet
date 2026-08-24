@@ -8,6 +8,12 @@ source: "https://docs.github.com/en/get-started/using-git/dealing-with-non-fast-
 created: 2026-07-29
 confidence: 0.9
 verified_date: 2026-07-29
+
+provenance:
+  source: "external-reference"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "pr-merged"
 ---
 
 ## Problem

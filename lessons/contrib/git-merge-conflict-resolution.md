@@ -6,6 +6,12 @@
   "created": "2026-07-06",
   "source": "unknown"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 ---{"title": "Git 合并ConflictHandling — 手动解决最佳实践", "domain": "development", "tags": ["git", "merge", "conflict", "rebase"]}---
 

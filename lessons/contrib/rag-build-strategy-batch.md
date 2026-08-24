@@ -21,6 +21,12 @@
     "severity": "critical"
   }
 }
+
+provenance:
+  source: "unknown"
+  contributor: "Ikalus1988"
+  merged_at: "2026-08-19"
+  evidence: "post-publication"
 ---
 
 ## Problem

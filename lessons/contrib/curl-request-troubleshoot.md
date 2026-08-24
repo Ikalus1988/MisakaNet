@@ -6,6 +6,12 @@
   "created": "2026-07-06",
   "source": "unknown"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 ---{"title": "curl / wget 请求失败通用Diagnosis", "domain": "devops", "tags": ["network", "curl", "wget", "debug", "troubleshoot"]}---
 

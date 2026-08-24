@@ -1,5 +1,11 @@
 ---
 {"title": "Claude Code can debug low-level cryptography — ML-DSA signature verification failure", "domain": "debugging", "tags": ["claude_code", "cryptography", "post_quantum", "ml_dsa", "debugging", "go"], "language": "en", "status": "published", "source": "https://words.filippo.io/claude-debugging/", "created": "2026-07-29", "confidence": "0.90"}
+
+provenance:
+  source: "external-reference"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "pr-merged"
 ---
 
 ## Problem

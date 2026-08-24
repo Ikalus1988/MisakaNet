@@ -1,4 +1,4 @@
-{"title": "Search Quota Exhaustion Causes False Zero Results", "domain": "devops", "source": "MisakaNet local search testing", "status": "draft", "tags": ["search", "quota", "rate-limit", "misleading-error", "debugging"], "created": "2026-07-10 00:00:00 UTC", "updated": "2026-07-10 00:00:00 UTC", "confidence": "0.95", "verified_date": "2026-07-10"}
+{"title": "Search Quota Exhaustion Causes False Zero Results", "domain": "devops", "source": "MisakaNet local search testing", "status": "draft", "tags": ["search", "quota", "rate-limit", "misleading-error", "debugging"], "created": "2026-07-10 00:00:00 UTC", "updated": "2026-07-10 00:00:00 UTC", "confidence": "0.95", "verified_date": "2026-07-10", "provenance": {"source": "unknown", "contributor": "misakanet-bot", "merged_at": "2026-07-31", "evidence": "post-publication"}}
 
 ## Verification
 

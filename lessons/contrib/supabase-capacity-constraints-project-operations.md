@@ -16,6 +16,12 @@
   "language": "en",
   "created": "2026-07-06"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Problem

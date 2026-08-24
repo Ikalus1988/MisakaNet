@@ -2,6 +2,12 @@
 title: "Testimonio: MisakaNet me ayudo a resolver ModuleNotFoundError"
 domain: devops
 evidence_level: E1
+
+provenance:
+  source: "unknown"
+  contributor: "Ikalus1988"
+  merged_at: "2026-08-13"
+  evidence: "post-publication"
 ---
 
 # Testimonio: MisakaNet me ayudo a resolver ModuleNotFoundError

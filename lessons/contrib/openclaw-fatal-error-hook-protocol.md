@@ -6,6 +6,12 @@
   "created": "2026-07-06",
   "source": "unknown"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 ---{"title": "OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks", "domain": "development", "tags": ["openclaw", "fatal-error", "child-process", "spawn", "argv", "shell-injection", "fire-and-forget", "protocol", "heal"], "status": "published", "confidence": "0.95", "source": "hermes_wsl2", "created": "2026-06-16", "updated": "2026-06-16"}---
 

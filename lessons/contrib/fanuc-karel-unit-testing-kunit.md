@@ -1,19 +1,4 @@
-{
-  "id": "fanuc-karel-unit-testing-kunit",
-  "title": "Unit Testing FANUC KAREL Programs with KUnit Framework",
-  "domain": "fanuc",
-  "subdomain": "karel-testing",
-  "source": "github.com/kylerlippincott/kunit",
-  "status": "draft",
-  "confidence": 0.8,
-  "created": "2026-07-12",
-  "tags": ["fanuc", "karel", "unit-testing", "kunit", "roboguide", "quality"],
-  "quality_score": 80,
-  "problem": "FANUC KAREL 程序缺乏单元测试手段，无法在部署前验证逻辑正确性，调试依赖实机运行。",
-  "root_cause": "KAREL 是类 Pascal 的编译语言，运行在 FANUC 控制器上，没有原生的测试框架。KUnit 通过 KAREL 程序实现测试运行器，利用控制器的 HTTP 服务提供 Web 浏览器访问的测试结果输出。",
-  "solution": "使用 KUnit 框架编写 KAREL 单元测试：编写返回 BOOLEAN 的测试函数，通过 HTTP 端点运行测试并在浏览器查看结果。",
-  "verification": "1. kunit.pc 和 strings.pc 已部署到控制器；2. 测试程序翻译编译成功；3. 浏览器访问 http://robot_ip/KAREL/kunit?filenames=test_name 显示测试结果；4. 所有断言通过，0 failures。"
-}
+{"id": "fanuc-karel-unit-testing-kunit", "title": "Unit Testing FANUC KAREL Programs with KUnit Framework", "domain": "fanuc", "subdomain": "karel-testing", "source": "github.com/kylerlippincott/kunit", "status": "draft", "confidence": 0.8, "created": "2026-07-12", "tags": ["fanuc", "karel", "unit-testing", "kunit", "roboguide", "quality"], "quality_score": 80, "problem": "FANUC KAREL 程序缺乏单元测试手段，无法在部署前验证逻辑正确性，调试依赖实机运行。", "root_cause": "KAREL 是类 Pascal 的编译语言，运行在 FANUC 控制器上，没有原生的测试框架。KUnit 通过 KAREL 程序实现测试运行器，利用控制器的 HTTP 服务提供 Web 浏览器访问的测试结果输出。", "solution": "使用 KUnit 框架编写 KAREL 单元测试：编写返回 BOOLEAN 的测试函数，通过 HTTP 端点运行测试并在浏览器查看结果。", "verification": "1. kunit.pc 和 strings.pc 已部署到控制器；2. 测试程序翻译编译成功；3. 浏览器访问 http://robot_ip/KAREL/kunit?filenames=test_name 显示测试结果；4. 所有断言通过，0 failures。", "provenance": {"source": "unknown", "contributor": "misakanet-bot", "merged_at": "2026-07-31", "evidence": "post-publication"}}
 
 ## Unit Testing FANUC KAREL Programs with KUnit Framework
 

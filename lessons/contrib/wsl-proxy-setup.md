@@ -6,6 +6,12 @@
   "created": "2026-07-06",
   "source": "unknown"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 ---{"title": "WSL 代理Setup — 通过 Windows 梯子Access外网", "domain": "devops", "tags": ["wsl", "proxy", "network", "windows"]}---
 

@@ -5,6 +5,12 @@ tags: ["codeql", "security", "github", "false-positive"]
 status: "published"
 source: "agent_experience"
 created: "2026-07-02"
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ---

@@ -9,6 +9,12 @@ confidence: "0.9"
 created: "2026-07-01"
 verified_date: ""
 domain_expert: "Nation"
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 

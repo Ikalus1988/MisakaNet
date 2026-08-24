@@ -11,6 +11,12 @@ status: published
 source: practical-experience
 confidence: 0.9
 created: 2026-07-07
+
+provenance:
+  source: "internal"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "pr-merged"
 ---
 
 ## Problem

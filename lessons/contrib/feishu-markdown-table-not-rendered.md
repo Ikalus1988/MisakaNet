@@ -6,6 +6,12 @@
   "created": "2026-07-06",
   "source": "unknown"
 }
+
+provenance:
+  source: "unknown"
+  contributor: "misakanet-bot"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 ---{"title": "飞书 post Messaging中 Markdown 表格不渲染", "domain": "development", "source": "Misaka10019", "tags": ["feishu", "markdown", "table", "post", "lark"]}---
 

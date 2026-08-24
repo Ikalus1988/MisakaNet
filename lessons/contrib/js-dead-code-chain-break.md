@@ -5,6 +5,12 @@ tags: ["js", "runtime", "typeerror", "execution-model", "defensive"]
 domain_expert: "unknown"
 created: "2026-07-06"
 source: "unknown"
+
+provenance:
+  source: "unknown"
+  contributor: "Muhammad Bilal Mukhtar"
+  merged_at: "2026-08-05"
+  evidence: "post-publication"
 ---
 
 ## 背景
