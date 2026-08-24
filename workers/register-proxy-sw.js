@@ -479,15 +479,24 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp) {
       return { submitted: false, error: "Missing required fields: title, domain, problem, root_cause, fix" };
     }
     if (!agentToken || !agentToken.startsWith("mcp_")) {
+      debugLog(env, 1, "write_lesson: missing or malformed agentToken", { hasToken: !!agentToken, prefix: agentToken?.slice(0, 8) });
       return { submitted: false, error: "Registered agent token required. Use misakanet_register first." };
     }
-    // Validate token
-    if (env.MISAKANET_KV) {
-      const tokenData = await env.MISAKANET_KV.get(`mcp_token:${agentToken}`, "json");
-      if (!tokenData || new Date(tokenData.expires) < new Date()) {
-        return { submitted: false, error: "Invalid or expired token. Use misakanet_register to get a new one." };
-      }
+    // Validate token against KV
+    if (!env.MISAKANET_KV) {
+      debugLog(env, 1, "write_lesson: MISAKANET_KV not configured");
+      return { submitted: false, error: "Server configuration error: KV store not available." };
     }
+    const tokenData = await env.MISAKANET_KV.get(`mcp_token:${agentToken}`, "json");
+    if (!tokenData) {
+      debugLog(env, 1, "write_lesson: token not found in KV", { key: `mcp_token:${agentToken.slice(0, 12)}...` });
+      return { submitted: false, error: "Token not registered. Use misakanet_register first." };
+    }
+    if (new Date(tokenData.expires) < new Date()) {
+      debugLog(env, 1, "write_lesson: token expired", { expires: tokenData.expires });
+      return { submitted: false, error: "Token expired. Use misakanet_register to get a new one." };
+    }
+    debugLog(env, 2, "write_lesson: token verified", { agent: tokenData.agent_type, node: tokenData.node_id });
     // Quality check: basic length requirements
     const qualityScore = Math.min(100,
       (problem.length >= 20 ? 25 : problem.length) +
@@ -651,7 +660,11 @@ async function handleMcpRequest(request, env) {
     const tokenData = await env.MISAKANET_KV.get(`mcp_token:${token}`, "json");
     if (tokenData && new Date(tokenData.expires) > new Date()) {
       authed = true;
+    } else {
+      debugLog(env, 1, "MCP token KV lookup failed", { found: !!tokenData, expired: tokenData ? new Date(tokenData.expires) < new Date() : null });
     }
+  } else if (token && token.startsWith("mcp_") && !env.MISAKANET_KV) {
+    debugLog(env, 1, "MCP token provided but MISAKANET_KV not configured");
   }
 
   if (!authed) {
