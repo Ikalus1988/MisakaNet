@@ -90,7 +90,7 @@ def test_search():
     print("\n-- tools/call: misakanet_search --")
     resp = rpc("tools/call", {
         "name": "misakanet_search",
-        "arguments": {"query": "CI pipeline", "top": 3},
+        "arguments": {"query": "CI pipeline", "top": 3, "detail": "full"},
     })
     result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
     result = json.loads(result_text)
@@ -227,7 +227,7 @@ def test_no_drafts_in_search():
     print("\n-- search scope: no drafts --")
     resp = rpc("tools/call", {
         "name": "misakanet_search",
-        "arguments": {"query": "draft test lesson", "top": 10},
+        "arguments": {"query": "draft test lesson", "top": 10, "detail": "full"},
     })
     result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
     result = json.loads(result_text)
@@ -375,6 +375,145 @@ def test_preflight_missing_intent():
     check("returns error for missing intent", "error" in result)
 
 
+def test_progressive_disclosure_schema():
+    """Tool schema exposes detail enum with compact/summary/full."""
+    print("\n-- progressive disclosure: tool schema --")
+    tools = {t["name"]: t for t in TOOLS}
+    search = tools.get("misakanet_search", {})
+    props = search.get("inputSchema", {}).get("properties", {})
+    detail_prop = props.get("detail", {})
+    check("detail param exists", bool(detail_prop))
+    check(
+        "detail enum has 3 levels",
+        detail_prop.get("enum") == ["compact", "summary", "full"],
+        f"got: {detail_prop.get('enum')}",
+    )
+
+
+def test_progressive_disclosure_compact():
+    """Compact detail returns id/title/problem/freshness fields."""
+    print("\n-- progressive disclosure: compact --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_search",
+        "arguments": {"query": "CI pipeline", "top": 2, "detail": "compact"},
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+
+    if "error" in result:
+        print(f"  WARN Search unavailable: {result.get('error')}")
+        return
+
+    results = result.get("results", [])
+    check("compact returns list", isinstance(results, list))
+    check("response has detail field", result.get("detail") == "compact")
+    if results:
+        first = results[0]
+        check("compact has title", "title" in first)
+        check("compact has problem", "problem" in first)
+        check("compact has freshness", "freshness" in first)
+
+
+def test_progressive_disclosure_summary():
+    """Summary detail adds domain/tags fields."""
+    print("\n-- progressive disclosure: summary --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_search",
+        "arguments": {"query": "CI pipeline", "top": 2, "detail": "summary"},
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+
+    if "error" in result:
+        print(f"  WARN Search unavailable: {result.get('error')}")
+        return
+
+    results = result.get("results", [])
+    check("summary returns list", isinstance(results, list))
+    check("response has detail field", result.get("detail") == "summary")
+    if results:
+        first = results[0]
+        check("summary has tags", "tags" in first)
+        check("summary has domain", "domain" in first)
+
+
+def test_progressive_disclosure_full():
+    """Full detail passes results through unchanged."""
+    print("\n-- progressive disclosure: full --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_search",
+        "arguments": {"query": "CI pipeline", "top": 2, "detail": "full"},
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+
+    if "error" in result:
+        print(f"  WARN Search unavailable: {result.get('error')}")
+        return
+
+    results = result.get("results", [])
+    check("full returns list", isinstance(results, list))
+    check("response has detail field", result.get("detail") == "full")
+    if results:
+        first = results[0]
+        check("full preserves title", "title" in first)
+
+
+def test_helper_functions():
+    """Unit tests for progressive disclosure helper functions."""
+    print("\n-- progressive disclosure: helpers --")
+    from scripts.mcp_server import (
+        _apply_detail_level,
+        _compact_result,
+        _extract_problem_fix,
+        _freshness,
+        _summary_result,
+    )
+
+    # _freshness
+    check("freshness fresh", _freshness("2026-08-20") == "fresh")
+    check("freshness recent", _freshness("2026-07-01") == "recent")
+    check("freshness aging", _freshness("2026-02-01") == "aging")
+    check("freshness stale", _freshness("2025-01-01") == "stale")
+    check("freshness unknown", _freshness("") == "unknown")
+
+    # _compact_result
+    c = _compact_result({
+        "id": "test-1", "title": "Test",
+        "summary": "A problem", "evidence_level": "confirmed",
+    })
+    check("compact has id", c["id"] == "test-1")
+    check("compact has title", c["title"] == "Test")
+    check("compact has problem", c["problem"] == "A problem")
+
+    # _summary_result
+    s = _summary_result({
+        "id": "test-2", "title": "Test2",
+        "summary": "B", "tags": ["ci"], "domain": "devops",
+    })
+    check("summary has tags", s["tags"] == ["ci"])
+    check("summary has domain", s["domain"] == "devops")
+
+    # _extract_problem_fix
+    md = "## Problem\nSomething broke badly\n## Solution\nFixed it\n"
+    p, f = _extract_problem_fix(md)
+    check("extract problem", "Something broke" in p)
+    check("extract fix", "Fixed it" in f)
+
+    # _apply_detail_level compact
+    compacted = _apply_detail_level(
+        [{"title": "T", "summary": "S", "score": 1.5}], "compact"
+    )
+    check("apply compact preserves score", compacted[0].get("score") == 1.5)
+
+    # _apply_detail_level summary
+    summed = _apply_detail_level(
+        [{"title": "T", "summary": "S", "tags": ["a"], "domain": "d"}],
+        "summary",
+    )
+    check("apply summary has tags", summed[0]["tags"] == ["a"])
+
+
 if __name__ == "__main__":
     print("MisakaNet MCP Server smoke test")
     test_initialize()
@@ -392,6 +531,11 @@ if __name__ == "__main__":
     test_write_lesson_low_quality()
     test_write_lesson_success()
     test_preflight_missing_intent()
+    test_progressive_disclosure_schema()
+    test_progressive_disclosure_compact()
+    test_progressive_disclosure_summary()
+    test_progressive_disclosure_full()
+    test_helper_functions()
 
     print(f"\n{'=' * 40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
