@@ -71,6 +71,106 @@ except ImportError:
     HAS_BM25 = False
 
 
+def _extract_problem_fix(content: str) -> tuple[str, str]:
+    """Extract one-line problem and fix from lesson markdown content."""
+    import re
+
+    problem = ""
+    fix = ""
+    # Look for ## Problem / ## Root Cause / ## Symptom sections
+    for section_re in [
+        r"##\s*(?:Problem|Root\s*Cause|Symptom)\s*\n(.*?)(?=\n##|\Z)",
+    ]:
+        m = re.search(section_re, content, re.DOTALL | re.IGNORECASE)
+        if m:
+            # First non-empty line as problem
+            for line in m.group(1).strip().splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    problem = line[:120]
+                    break
+        if problem:
+            break
+    # Look for ## Solution / ## Fix / ## Workaround
+    for section_re in [
+        r"##\s*(?:Solution|Fix|Workaround|Resolution)\s*\n(.*?)(?=\n##|\Z)",
+    ]:
+        m = re.search(section_re, content, re.DOTALL | re.IGNORECASE)
+        if m:
+            for line in m.group(1).strip().splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    fix = line[:120]
+                    break
+        if fix:
+            break
+    return problem, fix
+
+
+def _apply_detail_level(results: list[dict], detail: str) -> list[dict]:
+    """Transform search results to the requested detail level."""
+    if detail == "summary":
+        return [_summary_result(r) for r in results]
+    # compact — keep core fields, trim verbose ones
+    compact = []
+    for r in results:
+        compact.append({
+            "id": r.get("id", ""),
+            "title": r.get("title", ""),
+            "problem": r.get("summary", r.get("problem", ""))[:120],
+            "freshness": r.get("freshness", ""),
+            "evidence_level": r.get("evidence_level", ""),
+            # Preserve score if present (BM25/SAG rank)
+            **({"score": r["score"]} if "score" in r else {}),
+        })
+    return compact
+
+
+def _compact_result(lesson: dict) -> dict:
+    """Build compact result (~80 tokens/lesson)."""
+    return {
+        "id": lesson.get("id", ""),
+        "title": lesson.get("title", ""),
+        "problem": lesson.get("summary", "")[:120],
+        "freshness": _freshness(lesson.get("updated", lesson.get("created", ""))),
+        "evidence_level": lesson.get("evidence_level", ""),
+    }
+
+
+def _summary_result(lesson: dict, content: str = "") -> dict:
+    """Build summary result (~200 tokens/lesson)."""
+    result = _compact_result(lesson)
+    if content:
+        problem, fix = _extract_problem_fix(content)
+        result["problem"] = problem or result.get("problem", "")
+        result["fix"] = fix
+    result["tags"] = lesson.get("tags", [])
+    result["domain"] = lesson.get("domain", "")
+    return result
+
+
+def _freshness(date_str: str) -> str:
+    """Classify lesson freshness from date string."""
+    from datetime import datetime, timezone
+
+    if not date_str:
+        return "unknown"
+    try:
+        dt = datetime.fromisoformat(date_str.replace(" UTC", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        days = (datetime.now(timezone.utc) - dt).days
+        if days < 30:
+            return "fresh"
+        if days < 180:
+            return "recent"
+        if days < 365:
+            return "aging"
+        return "stale"
+    except (ValueError, TypeError):
+        return "unknown"
+
+
 def _fallback_search(query: str, domain: str = None, top: int = 5) -> list | None:
     """Lightweight keyword search from lessons.json — zero dependencies.
 
@@ -145,6 +245,7 @@ def handle_search(args: dict) -> dict:
     tags = args.get("tags")
     top = args.get("top", 5)
     explain = bool(args.get("explain", False))
+    detail = args.get("detail", "compact")  # compact | summary | full
 
     if not query:
         return {
@@ -159,14 +260,15 @@ def handle_search(args: dict) -> dict:
             "voice": "failure-warning",
         }
 
+    source = ""
+    results = []
+
     if HAS_SAG and not explain:
         results = sag_search(SAG_DB, query, domain=domain, top=top)
-        voice = "lesson-found" if results else "failure-warning"
-        return {"results": results, "source": "sag-lite", "voice": voice}
+        source = "sag-lite"
     elif HAS_BM25:
         docs = _load_docs_cached(LESSONS, is_lesson=True)
         scored = _search_cached(query, docs)
-        results = []
         from misakanet.search.engine import _score_breakdown
         for score, doc in scored[:top]:
             result = {
@@ -177,23 +279,45 @@ def handle_search(args: dict) -> dict:
                 "status": doc.status,
             }
             if explain:
-                result["score_breakdown"] = _score_breakdown(query, doc, docs=docs)
+                result["score_breakdown"] = _score_breakdown(
+                    query, doc, docs=docs
+                )
             results.append(result)
-        voice = "lesson-found" if results else "failure-warning"
-        return {"results": results, "source": "bm25", "voice": voice}
+        source = "bm25"
     else:
         # Fallback: lightweight keyword search from lessons.json
         results = _fallback_search(query, domain=domain, top=top)
-        if results is not None:
-            voice = "lesson-found" if results else "failure-warning"
-            return {"results": results, "source": "fallback", "voice": voice}
-        return {
-            "error": "Search engine unavailable — index not built",
-            "action": "Run: python3 scripts/build_sag_index.py to enable BM25/SAG search",
-            "fallback": "Browse lessons via misaka://lessons/index resource instead",
-            "guidance": "To obtain a token or search lessons, refer to docs/integrations/mcp-remote.md or contact maintainer.",
-            "voice": "failure-warning",
-        }
+        if results is None:
+            return {
+                "error": "Search engine unavailable — index not built",
+                "action": (
+                    "Run: python3 scripts/build_sag_index.py"
+                    " to enable BM25/SAG search"
+                ),
+                "fallback": (
+                    "Browse lessons via misaka://lessons/index"
+                    " resource instead"
+                ),
+                "guidance": (
+                    "To obtain a token or search lessons, refer to"
+                    " docs/integrations/mcp-remote.md."
+                ),
+                "voice": "failure-warning",
+            }
+        source = "fallback"
+
+    # ── Progressive disclosure: transform by detail level ──
+
+    if results and detail in ("compact", "summary"):
+        results = _apply_detail_level(results, detail)
+
+    voice = "lesson-found" if results else "failure-warning"
+    return {
+        "results": results,
+        "source": source,
+        "detail": detail,
+        "voice": voice,
+    }
 
 
 def handle_get_lesson(args: dict) -> dict:
@@ -749,8 +873,10 @@ TOOLS = [
             "Use when you need to discover relevant lessons and do not already know a lesson ID. "
             "Input semantics: query is required; domain optionally filters by lesson domain; top limits "
             "ranked results and defaults to 5. Set explain=true to return matched terms, TF-IDF, "
-            "entity matches, vector similarity, and hybrid score components. Output schema: JSON "
-            "with results[] and source; each "
+            "entity matches, vector similarity, and hybrid score components. "
+            "detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad "
+            "scans, summary (~200 tok) with domain/tags/fix, full for complete lesson markdown. "
+            "Output schema: JSON with results[] and source; each "
             "result is a ranked lesson summary that may include path, title, domain/status, score/rank, "
             "and match details depending on the active index. Error cases: missing query, unavailable "
             "search index, or no matches (empty results). Side effects: none. Auth: none. Rate limits: "
@@ -764,6 +890,15 @@ TOOLS = [
                 "domain": {"type": "string", "description": "Optional domain filter such as devops, python, network, feishu, rag, fanuc, or mcp."},
                 "top": {"type": "integer", "description": "Maximum ranked results to return. Defaults to 5; keep small for MCP context and latency."},
                 "explain": {"type": "boolean", "description": "Include score evidence for each result; vector similarity is null when the optional backend is unavailable."},
+                "detail": {
+                    "type": "string",
+                    "enum": ["compact", "summary", "full"],
+                    "description": (
+                        "Progressive disclosure: compact (default, ~80 tok/lesson) shows id/title/problem/freshness; "
+                        "summary (~200 tok) adds domain/tags/fix; full returns complete lesson markdown. "
+                        "Use compact for broad scans, full only after narrowing results."
+                    ),
+                },
             },
             "required": ["query"],
         },
