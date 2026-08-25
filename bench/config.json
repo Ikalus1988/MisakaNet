@@ -1,0 +1,11 @@
+{
+  "tasks": [
+    "search_knowledge",
+    "retrieve_lessons",
+    "generate_fix",
+    "validate_patch",
+    "integration_test"
+  ],
+  "iterations": 3,
+  "timeout_seconds": 300
+}
