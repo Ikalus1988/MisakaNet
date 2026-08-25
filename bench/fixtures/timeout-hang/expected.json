@@ -1,16 +1,22 @@
 {
   "scenario": "timeout-hang",
-  "title": "Process hangs until the benchmark timeout",
-  "failure": {
+  "description": "Script hangs in infinite loop",
+  "difficulty": "edge_case",
+  "expected_failure": {
     "type": "timeout",
-    "command": "python3 hang.py",
-    "timeout_seconds": 1
+    "message_pattern": "timeout|Timeout|killed|SIGKILL|SIGTERM",
+    "exit_code": null
   },
-  "expected_fix": "Add a bounded timeout or terminate the hung process and report the timeout explicitly.",
+  "fix": {
+    "action": "add_timeout",
+    "command": "timeout 5 python hang_script.py",
+    "description": "Wrap the script with timeout command to kill after 5 seconds",
+    "alternative_fix": {
+      "action": "fix_code",
+      "command": "python fixed_script.py",
+      "description": "Use the fixed version with built-in timeout handling"
+    }
+  },
   "expected_outcome": "timeout",
-  "verifier": {
-    "type": "process_timeout",
-    "command": "python3 hang.py",
-    "timeout_seconds": 1
-  }
+  "timeout_seconds": 10
 }
