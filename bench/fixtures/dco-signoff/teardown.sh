@@ -1,5 +1,13 @@
-#!/usr/bin/env bash
+#!/bin/bash
+# DCO Sign-off Fixture Teardown
+# Cleans up the work directory
+
 set -euo pipefail
 
-workdir=${1:?usage: teardown.sh WORKDIR}
-rm -rf -- "$workdir"
+FIXTURE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORK_DIR="${FIXTURE_DIR}/work"
+
+if [[ -d "${WORK_DIR}" ]]; then
+  rm -rf "${WORK_DIR}"
+  echo "Cleaned up ${WORK_DIR}"
+fi
