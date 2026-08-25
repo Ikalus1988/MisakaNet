@@ -1,1 +1,1 @@
-"""Benchmark runners and result contracts."""
+"""MisakaNet Benchmark Package"""
