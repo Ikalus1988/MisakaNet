@@ -1,0 +1,17 @@
+{
+  "scenario": "mcp-server-crash",
+  "description": "MCP server crashes on invalid JSON input",
+  "difficulty": "complex",
+  "expected_failure": {
+    "type": "json_decode_error",
+    "message_pattern": "FATAL: Invalid JSON|JSONDecodeError|Expecting value",
+    "exit_code": 1
+  },
+  "fix": {
+    "action": "fix_json_input",
+    "command": "cat valid_request.json | python mcp_server.py",
+    "description": "Use valid JSON input instead of malformed JSON"
+  },
+  "expected_outcome": "success",
+  "timeout_seconds": 30
+}
