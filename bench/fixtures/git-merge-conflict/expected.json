@@ -1,16 +1,18 @@
 {
   "scenario": "git-merge-conflict",
-  "title": "Git merge conflict on the same file",
-  "failure": {
+  "description": "Git merge conflict on same lines of a file",
+  "difficulty": "medium",
+  "expected_failure": {
     "type": "merge_conflict",
-    "path": "repo/config.txt",
-    "evidence": "git status reports an unmerged path and the file contains conflict markers."
+    "message_pattern": "CONFLICT.*content|Automatic merge failed|<<<<<<< HEAD",
+    "exit_code": 1
   },
-  "expected_fix": "Resolve the conflict markers, stage the resolved file, and complete the merge commit.",
-  "expected_outcome": "success_with_human_input",
-  "verifier": {
-    "type": "file_content",
-    "path": "repo/config.txt",
-    "must_contain": "<<<<<<< HEAD"
-  }
+  "fix": {
+    "action": "manual_resolve",
+    "command": "cat > shared.txt << 'EOF'\nline 1\nline 2 resolved merge\nline 3\nEOF\ngit add shared.txt\ngit commit -m 'Resolve merge conflict'",
+    "description": "Manually resolve the conflict by editing the file, then commit",
+    "requires_human_input": true
+  },
+  "expected_outcome": "success",
+  "timeout_seconds": 60
 }

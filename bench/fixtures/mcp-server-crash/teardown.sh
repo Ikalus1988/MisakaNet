@@ -1,5 +1,5 @@
 #!/bin/bash
-# Python Import Error Fixture Teardown
+# MCP Server Crash Fixture Teardown
 # Cleans up the work directory
 
 set -euo pipefail

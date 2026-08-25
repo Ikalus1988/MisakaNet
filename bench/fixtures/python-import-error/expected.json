@@ -1,16 +1,22 @@
 {
   "scenario": "python-import-error",
-  "title": "Python import error for a missing module",
-  "failure": {
-    "type": "ModuleNotFoundError",
-    "command": "python3 app.py",
+  "description": "Python script imports non-existent module",
+  "difficulty": "medium",
+  "expected_failure": {
+    "type": "import_error",
+    "message_pattern": "ModuleNotFoundError: No module named 'nonexistent_module_xyz_12345'",
     "exit_code": 1
   },
-  "expected_fix": "Install the dependency or replace the import with the intended available module.",
+  "fix": {
+    "action": "install_module",
+    "command": "pip install nonexistent_module_xyz_12345",
+    "description": "Install the missing module (will fail - module doesn't exist), or fix the import",
+    "alternative_fix": {
+      "action": "fix_import",
+      "command": "sed -i 's/import nonexistent_module_xyz_12345/import json/' broken_script.py",
+      "description": "Replace the invalid import with a valid standard library import"
+    }
+  },
   "expected_outcome": "success",
-  "verifier": {
-    "type": "command_exit",
-    "command": "python3 app.py",
-    "expected_exit_code": 1
-  }
+  "timeout_seconds": 60
 }
