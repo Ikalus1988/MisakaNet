@@ -1,40 +1,19 @@
 {
   "name": "@misaka-net/fatal-guard",
-  "version": "0.3.0",
-  "description": "Zero-dependency non-invasive fatal error guard — capture uncaught exceptions and unhandled rejections, route redacted diagnostic payload to external handler via process.env.FATAL_HANDLER",
+  "version": "1.0.0",
+  "description": "Fatal error guard for Node.js processes",
   "main": "index.js",
-  "scripts": {
-    "test": "node tests/cli-contract.js && node tests/verify-fix.js && node tests/crash-scenarios.js && node tests/redact-compliance.js"
-  },
   "bin": {
-    "fatal-guard": "./bin/fatal-guard.js"
+    "fatal-guard": "bin/fatal-guard.js"
   },
-  "exports": {
-    ".": "./index.js",
-    "./register": "./register.js"
+  "scripts": {
+    "test": "node test/cli.test.js"
   },
-  "files": [
-    "index.js",
-    "register.js",
-    "index.d.ts",
-    "bin/fatal-guard.js",
-    "src/lib/redact.js",
-    "src/lib/resolve-handler.js",
-    "README.md"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Ikalus1988/MisakaNet",
-    "directory": "packages/fatal-guard"
-  },
-  "keywords": [
-    "fatal",
-    "error-handler",
-    "uncaught-exception",
-    "unhandled-rejection",
-    "process-exit",
-    "guard",
-    "misakanet"
-  ],
-  "license": "MIT"
+  "keywords": ["fatal", "error", "guard", "cli"],
+  "author": "MisakaNet",
+  "license": "MIT",
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
