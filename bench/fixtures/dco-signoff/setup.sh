@@ -1,15 +1,30 @@
-#!/usr/bin/env bash
+#!/bin/bash
+# DCO Sign-off Fixture Setup
+# Creates a commit without --signoff to trigger DCO failure
+
 set -euo pipefail
 
-workdir=${1:?usage: setup.sh WORKDIR}
-rm -rf -- "$workdir"
-mkdir -p "$workdir/repo"
+FIXTURE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORK_DIR="${FIXTURE_DIR}/work"
 
-git -C "$workdir/repo" init -q
-git -C "$workdir/repo" config user.name "Fixture Author"
-git -C "$workdir/repo" config user.email "fixture@example.invalid"
-printf 'fixture\n' > "$workdir/repo/README.md"
-git -C "$workdir/repo" add README.md
-git -C "$workdir/repo" -c commit.gpgsign=false commit -q -m 'fixture commit without DCO sign-off'
+# Clean up any previous run
+rm -rf "${WORK_DIR}"
+mkdir -p "${WORK_DIR}"
+cd "${WORK_DIR}"
 
-git -C "$workdir/repo" log -1 --format='%B' > "$workdir/commit-message.txt"
+# Initialize a git repo
+git init -q
+git config user.email "test@example.com"
+git config user.name "Test User"
+
+# Create a file and commit without signoff
+echo "initial content" > file.txt
+git add file.txt
+git commit -m "Initial commit without signoff" -q
+
+# Create a second commit without signoff (this will be the one checked)
+echo "new content" > file2.txt
+git add file2.txt
+git commit -m "Add file2 without signoff" -q
+
+echo "Setup complete. Commit HEAD lacks DCO sign-off."
