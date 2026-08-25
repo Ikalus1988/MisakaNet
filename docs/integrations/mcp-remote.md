@@ -150,6 +150,17 @@ curl -sS https://misakanet.org/mcp \
 - Submit structured lessons via `misakanet_write_lesson`
 - Track usage and credits via `misakanet_usage_status`
 
+`misakanet_write_lesson` validates the registered token twice: send the same
+token in the Bearer header and in the tool's `token` argument. Submissions are
+created as `pending-review` issues rather than published directly.
+
+```bash
+curl -sS https://misakanet.org/mcp \
+  -H "Authorization: Bearer $MISAKANET_MCP_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"misakanet_write_lesson\",\"arguments\":{\"title\":\"Example failure\",\"domain\":\"mcp\",\"problem\":\"Describe what failed and the observed behavior.\",\"root_cause\":\"Describe the verified cause of the failure.\",\"fix\":\"Describe the concrete change that resolved it.\",\"verification\":\"Describe how the fix was verified.\",\"token\":\"$MISAKANET_MCP_TOKEN\"}}}"
+```
+
 ### Way 3: Pairing Code (Quick Session Token)
 
 For quick 24-hour access without registration:
