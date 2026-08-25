@@ -1,0 +1,5 @@
+# Feishu Bot Configuration
+feishu:
+  enabled: true
+  webhook_url: ""  # Set via environment variable FEISHU_WEBHOOK_URL
+  notify_on_lesson_merge: true
