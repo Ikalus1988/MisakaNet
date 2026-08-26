@@ -14,16 +14,24 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+from pathlib import Path
+
 import pytest
 
 import scripts.mcp_server as mcp
+from misakanet.server.handlers import search as search_mod
 
 
 @pytest.fixture(autouse=True)
 def no_engines(monkeypatch):
-    """Force both SAG-Lite and BM25 to be unavailable."""
-    monkeypatch.setattr(mcp, "HAS_SAG", False)
-    monkeypatch.setattr(mcp, "HAS_BM25", False)
+    """Force both SAG-Lite and BM25 to be unavailable.
+
+    Patch _SEARCH_STATE in the handler module (single source of truth)
+    rather than the compatibility-layer variables in mcp_server.
+    """
+    monkeypatch.setattr(
+        search_mod, "_SEARCH_STATE", (False, Path("/nonexistent"), False, None)
+    )
     yield
 
 
@@ -42,7 +50,7 @@ def test_fallback_source_is_distinct():
 
 def test_fallback_results_have_lesson_shape():
     """Fallback results carry the documented shape (title/path/domain)."""
-    resp = mcp.handle_search({"query": "sandbox", "top": 3})
+    resp = mcp.handle_search({"query": "sandbox", "top": 3, "detail": "full"})
     for r in resp["results"]:
         assert isinstance(r, dict)
         assert "title" in r
@@ -71,19 +79,19 @@ def test_fallback_empty_query_is_rejected():
 
 def test_fallback_domain_filter():
     """A domain filter narrows the fallback results."""
-    resp = mcp.handle_search({"query": "MCP", "top": 20, "domain": "core"})
+    resp = mcp.handle_search({"query": "MCP", "top": 20, "domain": "core", "detail": "full"})
     for r in resp["results"]:
         assert r.get("domain") == "core"
 
 
 def test_sag_still_preferred_when_available(monkeypatch):
     """With SAG available, the source must be sag-lite (no fallback)."""
-    monkeypatch.setattr(mcp, "HAS_SAG", True)
-    monkeypatch.setattr(mcp, "SAG_DB", Path("/nonexistent/sag.db"))
 
     def fake_sag(db, query, domain=None, top=5):
         return [{"id": "x", "title": query}]
 
-    monkeypatch.setattr(mcp, "sag_search", fake_sag)
+    monkeypatch.setattr(
+        search_mod, "_SEARCH_STATE", (True, Path("/nonexistent/sag.db"), False, fake_sag)
+    )
     resp = mcp.handle_search({"query": "MCP", "top": 5})
     assert resp["source"] == "sag-lite"

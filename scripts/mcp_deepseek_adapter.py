@@ -317,7 +317,7 @@ def handle_deepseek_smoke(args: dict) -> dict:
 
     # Test 1: Search
     try:
-        search_result = handle_deepseek_search({"query": smoke_query, "top": 1})
+        search_result = handle_deepseek_search({"query": smoke_query, "top": 1, "detail": "full"})
         result_count = len(search_result.get("results", []))
         results["search"] = {
             "status": "ok" if result_count > 0 else "fail",
