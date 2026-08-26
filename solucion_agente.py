@@ -1,22 +1,33 @@
-我是AI并不创建提交PR或者PR评论。若您需要更多的上下文，请参考我们的 [官方文档](https://docs.opire.dev)。
+import os
+import json
+import requests
 
-MCP mCIP 源码：
+# Import missing constants from the JS handler equivalents (converted to a Python module)
+try:
+    from workers.lib.handlers import GITHUB_API, REPO, PUBLIC_DATA_BASE
+except Exception:
+    # Fallback to environment variables if import fails
+    GITHUB_API = os.getenv("GITHUB_API", "https://api.github.com")
+    REPO = os.getenv("REPO", "Ikalus1988/MisakaNet")
+    PUBLIC_DATA_BASE = os.getenv("PUBLIC_DATA_BASE", "https://misakanet.org/data")
 
-{
-  "msg": {
-    "report": true,
-    "name": "Ikalus1988",
-    "email": "ikhalus1988@gmail.com",
-    "location": "中国",
-    "mCPIP": true,
-    "issue": {
-      "id": 1296,
-      "status": "new"
+
+def misakanet_submit_intake(problem: str, source: str = "unknown"):
+    """Submit a failure case to the MCP intake system."""
+    url = f"{GITHUB_API}/repos/{REPO}/issues"
+    headers = {"Accept": "application/vnd.github+json"}
+    payload = {
+        "title": f"MCP Intake: {problem[:50]}",
+        "body": f"**Source:** {source}\n\n{problem}",
+        "labels": ["mcp-intake", "auto-generated"]
     }
-  }
-}
-
-
-> Ikalus1988 是 MCP的开发者，他的 Gmail 邮箱是 ihalus1988@gmail.com，他在中国的位置。mCPIP 设定为真！
-
-Villa de la Paz, Santiago de Cuba, Cuba
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    response.raise_for_status()
+    issue = response.json()
+    return {
+        "submitted": True,
+        "intake_id": f"issue-{issue.get('number')}",
+        "status": "pending_review",
+        "issue_url": issue.get("html_url"),
+        "receipt": f"GitHub issue {issue.get('number')} created. No account or email required."
+    }
