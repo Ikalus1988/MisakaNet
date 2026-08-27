@@ -74,6 +74,30 @@ TOOLS = [
                         " full only after narrowing results."
                     ),
                 },
+                "bm25_weight": {
+                    "type": "number",
+                    "description": (
+                        "Override BM25 keyword weight (0-1)."
+                        " Higher values favor exact keyword matches."
+                        " Default: 0.65. All weights must sum to 1.0."
+                    ),
+                },
+                "metadata_weight": {
+                    "type": "number",
+                    "description": (
+                        "Override metadata bonus weight (0-1)."
+                        " Higher values favor lessons with matching"
+                        " domain/tags. Default: 0.20."
+                    ),
+                },
+                "baseline_weight": {
+                    "type": "number",
+                    "description": (
+                        "Override baseline score weight (0-1)."
+                        " Higher values favor proven/popular lessons."
+                        " Default: 0.15."
+                    ),
+                },
             },
             "required": ["query"],
         },

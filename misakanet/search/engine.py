@@ -274,17 +274,19 @@ def _doc_cache_id(doc: CachedDoc) -> str:
 def _search_cached(
     query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False,
     rerank: bool = False,
+    weights: dict | None = None,
 ) -> list[tuple[float, CachedDoc]]:
     """L1缓存 — 相同 query 直接返回上次结果。"""
     # Add corpus fingerprint to cache key to avoid stale results
     corpus_fingerprint = hash(tuple(sorted(d.filepath.name for d in docs[:100])))
-    key = f"{query}_{titles_only}_{broad_only}_{rerank}_{corpus_fingerprint}"
+    weight_key = tuple(sorted(weights.items())) if weights else ""
+    key = f"{query}_{titles_only}_{broad_only}_{rerank}_{corpus_fingerprint}_{weight_key}"
     if key in _L1_CACHE:
         doc_map = {_doc_cache_id(d): d for d in docs}
         result = [(s, doc_map[fid]) for s, fid in _L1_CACHE[key] if fid in doc_map]
         if len(result) == len(_L1_CACHE[key]):
             return result
-    result = _rank_docs_impl(query, docs, titles_only, broad_only, rerank=rerank)
+    result = _rank_docs_impl(query, docs, titles_only, broad_only, rerank=rerank, weights=weights)
     _L1_CACHE[key] = [(s, _doc_cache_id(d)) for s, d in result[:20]]
     if len(_L1_CACHE) > _L1_MAX:
         del _L1_CACHE[next(iter(_L1_CACHE))]
@@ -444,6 +446,7 @@ def _expand_query(query: str) -> str:
 def _rank_docs_impl(
     query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False,
     rerank: bool = False,
+    weights: dict | None = None,
 ) -> list[tuple[float, CachedDoc]]:
     if not docs:
         return []
@@ -456,14 +459,18 @@ def _rank_docs_impl(
     expanded_query = _expand_query(query)
     bm25_raw = _compute_bm25_scores(expanded_query, docs)
     bm25_norm = _normalize(bm25_raw)
-    # Load configurable weights (Issue #1220)
+    # Load configurable weights (Issue #1220, #1001)
     from scripts.search_config import get_cached_config
     cfg = get_cached_config()
+    # Per-request weight overrides (Issue #1001)
+    bm25_w = weights.get("bm25_weight", cfg.bm25_weight) if weights else cfg.bm25_weight
+    meta_w = weights.get("metadata_weight", cfg.metadata_weight) if weights else cfg.metadata_weight
+    base_w = weights.get("baseline_weight", cfg.baseline_weight) if weights else cfg.baseline_weight
     scored = [
         (
-            cfg.bm25_weight * bm25_norm[i]
-            + cfg.metadata_weight * _metadata_bonus(query, d)
-            + cfg.baseline_weight * d.score_baseline
+            bm25_w * bm25_norm[i]
+            + meta_w * _metadata_bonus(query, d)
+            + base_w * d.score_baseline
             + _compute_boost(d),
             d,
         )

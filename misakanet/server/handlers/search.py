@@ -197,6 +197,16 @@ def handle_search(args: dict) -> dict:
     explain = bool(args.get("explain", False))
     detail = args.get("detail", "compact")  # compact | summary | full
 
+    # Per-request weight overrides (Issue #1001)
+    weights = {}
+    for wkey in ("bm25_weight", "metadata_weight", "baseline_weight"):
+        val = args.get(wkey)
+        if val is not None:
+            try:
+                weights[wkey] = float(val)
+            except (ValueError, TypeError):
+                pass
+
     if not query:
         return {
             "error": "query is required",
@@ -228,7 +238,7 @@ def handle_search(args: dict) -> dict:
         )
 
         docs = _load_docs_cached(LESSONS, is_lesson=True)
-        scored = _search_cached(query, docs)
+        scored = _search_cached(query, docs, weights=weights or None)
         for score, doc in scored[:top]:
             result = {
                 "title": doc.title,
