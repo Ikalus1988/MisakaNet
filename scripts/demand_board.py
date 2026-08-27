@@ -158,6 +158,68 @@ def list_items(state: str = "", family: str = "", limit: int = 50) -> list[dict]
     return items[-limit:]
 
 
+# ── Gap analysis: zero-result search queries (Issue #1164) ──
+
+GAPS_FILE = REPO_ROOT / "data" / "search_gaps.jsonl"
+
+
+def load_gaps() -> list[dict]:
+    """Load zero-result search queries."""
+    if not GAPS_FILE.exists():
+        return []
+    gaps = []
+    with open(GAPS_FILE, encoding="utf-8") as f:
+        for line in f:
+            try:
+                gaps.append(json.loads(line.strip()))
+            except json.JSONDecodeError:
+                continue
+    return gaps
+
+
+def get_gap_summary(top: int = 20) -> dict:
+    """Aggregate gap data: cluster similar queries, rank by frequency."""
+    gaps = load_gaps()
+    if not gaps:
+        return {"total": 0, "clusters": []}
+
+    # Count query frequencies
+    from collections import Counter
+    query_counts = Counter(g["query"].lower().strip() for g in gaps)
+
+    # Simple clustering: merge queries with >50% word overlap
+    clusters = []
+    used = set()
+    for query, count in query_counts.most_common():
+        if query in used:
+            continue
+        words = set(query.split())
+        cluster = {"queries": [query], "count": count}
+        used.add(query)
+
+        for other_query, other_count in query_counts.items():
+            if other_query in used:
+                continue
+            other_words = set(other_query.split())
+            if not words or not other_words:
+                continue
+            overlap = len(words & other_words) / max(len(words), len(other_words))
+            if overlap >= 0.5:
+                cluster["queries"].append(other_query)
+                cluster["count"] += other_count
+                used.add(other_query)
+
+        cluster["representative"] = cluster["queries"][0]
+        clusters.append(cluster)
+
+    clusters.sort(key=lambda c: c["count"], reverse=True)
+    return {
+        "total": len(gaps),
+        "unique_queries": len(query_counts),
+        "clusters": clusters[:top],
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description="Demand board — intake cluster tracking")
     sub = parser.add_subparsers(dest="cmd")
@@ -182,6 +244,11 @@ def main():
     p_ovr.add_argument("--state", default="", help="New state")
     p_ovr.add_argument("--category", default="", help="New category")
     p_ovr.add_argument("--note", default="", help="Override note")
+
+    # gaps
+    p_gaps = sub.add_parser("gaps", help="Show zero-result search gap clusters")
+    p_gaps.add_argument("--top", type=int, default=10, help="Top N clusters")
+    p_gaps.add_argument("--json", action="store_true")
 
     # summary
     p_sum = sub.add_parser("summary", help="Show summary")
@@ -215,6 +282,23 @@ def main():
             print(f"  Not found: {args.id}", file=sys.stderr)
             sys.exit(1)
 
+    elif args.cmd == "gaps":
+        gap_summary = get_gap_summary(args.top)
+        if getattr(args, "json", False):
+            print(json.dumps(gap_summary, ensure_ascii=False, indent=2))
+        else:
+            print(f"\n  Search Gaps — {gap_summary['total']} zero-result queries")
+            if gap_summary.get("unique_queries"):
+                print(f"  Unique queries: {gap_summary['unique_queries']}")
+            if not gap_summary["clusters"]:
+                print("  No gap data yet. Search queries with zero results are logged to data/search_gaps.jsonl")
+            else:
+                print(f"\n  {'#':<4} {'Count':<8} Representative")
+                print(f"  {'-'*4} {'-'*8} {'-'*50}")
+                for idx, c in enumerate(gap_summary["clusters"], 1):
+                    print(f"  {idx:<4} {c['count']:<8} {c['representative']}")
+        print()
+
     elif args.cmd == "summary":
         summary = get_summary()
         if getattr(args, "json", False):
@@ -230,6 +314,13 @@ def main():
             print(f"\n  By category:")
             for cat, c in summary["by_category"].items():
                 print(f"    {cat:<12} {c}")
+
+        # Gap integration in summary
+        gap_summary = get_gap_summary(5)
+        if gap_summary["total"] > 0:
+            print(f"\n  Top Content Gaps ({gap_summary['total']} zero-result queries):")
+            for idx, c in enumerate(gap_summary["clusters"][:5], 1):
+                print(f"    {idx}. {c['representative']} ({c['count']}x)")
         print()
 
     else:

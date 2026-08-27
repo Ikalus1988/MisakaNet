@@ -6,6 +6,25 @@ from datetime import datetime, timezone
 
 from .._config import REPO_ROOT, _init_search
 
+# Gap analysis: log zero-result queries (Issue #1164)
+_GAPS_FILE = REPO_ROOT / "data" / "search_gaps.jsonl"
+
+
+def _log_search_gap(query: str, source: str) -> None:
+    """Log a zero-result search query for gap analysis."""
+    try:
+        entry = {
+            "query": query,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "result_count": 0,
+            "source": source,
+        }
+        _GAPS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(_GAPS_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception:
+        pass  # Non-critical, don't break search
+
 # Lazy init on first call
 _SEARCH_STATE = None
 
@@ -281,6 +300,10 @@ def handle_search(args: dict, search_state=None) -> dict:
 
     if results and detail in ("compact", "summary"):
         results = _apply_detail_level(results, detail)
+
+    # ── Gap analysis: log zero-result queries (Issue #1164) ──
+    if not results:
+        _log_search_gap(query, source)
 
     voice = "lesson-found" if results else "failure-warning"
     return {

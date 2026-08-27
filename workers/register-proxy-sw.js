@@ -482,6 +482,22 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp) {
     };
   }
 
+  // Gap analysis: log zero-result search queries to KV (Issue #1164)
+  async function logSearchGap(env, query, source) {
+    try {
+      if (!env.MISAKANET_KV) return;
+      const key = `gap:${query.toLowerCase().trim()}`;
+      const existing = await env.MISAKANET_KV.get(key, { type: "json" });
+      const entry = {
+        query,
+        count: (existing?.count || 0) + 1,
+        source,
+        lastSeen: new Date().toISOString(),
+      };
+      await env.MISAKANET_KV.put(key, JSON.stringify(entry), { expirationTtl: 86400 * 90 });
+    } catch (_) {}
+  }
+
   if (toolName === "misakanet_search") {
     if (!args.query) return { error: "query is required" };
 
@@ -520,6 +536,11 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp) {
     } else {
       results = searchLessons(lessons, args.query, args.domain, args.top || 5);
       debugLog(env, 2, "Fallback search", { query: args.query, results: results.length });
+    }
+
+    // Gap analysis: log zero-result queries (Issue #1164)
+    if ((!results || results.length === 0) && args.query) {
+      logSearchGap(env, args.query, source).catch(() => {});
     }
 
     // Progressive disclosure: transform by detail level
