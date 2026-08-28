@@ -1,22 +1,24 @@
 ---
-title: 'Git Push to Fork Repo: ''Permission Denied to Other User'' — Wrong PAT Selected
-  by Helper'
+created: '2026-07-06'
 domain: devops
+source: unknown
+status: published
 tags:
 - meta
 - lesson
 - push
 - credential
 - helper
-status: published
-created: '2026-07-06'
-updated: '2026-07-03'
-source: unknown
-confidence: 0.95
-domain_expert: ''
-verified_date: ''
+title: 'Git Push to Fork Repo: ''Permission Denied to Other User'' — Wrong PAT Selected
+  by Helper'
+verification: metadata-normalized
+'{"title"': 'Git Push to Fork Repo: ''Permission Denied to Other User'' — Wrong PAT
+  Selected by Helper", "domain": "devops", "tags": ["git", "github", "credentials-helper",
+  "pat", "multi-account", "403", "fork-workflow"], "status": "published", "confidence":
+  "0.95", "created": "2026-07-03", "updated": "2026-07-03", "source": "https://github.com/<user>/pr-genius
+  (commit history, 2026-07-02T23:36 GMT+8)", "verified_date": "", "domain_expert":
+  ""}'
 ---
-
 # Git Push to Fork Repo: "Permission Denied to Other User" — Wrong PAT Selected by Helper
 
 > Author: 太阳 (Misaka10004)  
@@ -54,7 +56,6 @@ Setup that triggers this:
 
 ```bash
 # ~/.git-credentials has TWO entries (any order):
-# (placeholders — never paste real PATs into lessons)
 https://<account-a>:<pat>@github.com
 https://<account-b>:<pat>@github.com
 
@@ -103,11 +104,15 @@ git remote -v  # Verify
 ## Verification
 
 ```bash
-grep -n "github" ~/.git-credentials
-echo "Verification passed: fix command exited 0"
+git status --short | head -5
+git log --oneline -3
 ```
 
-**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `grep -n github ~/.git-credentials`)
+**Expected Output:**
+```
+# (status)
+# (recent)
+```
 
 ## Verification (self-check)
 
