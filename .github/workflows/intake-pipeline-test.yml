@@ -50,26 +50,64 @@ jobs:
           INT_KIND: ${{ github.event.inputs.kind || 'missing_lesson' }}
           INT_PROBLEM: ${{ github.event.inputs.problem || 'pip install fails with ReadTimeoutError behind corporate proxy' }}
         run: |
-          python3 - <<'PY' | tee /tmp/pipeline-result.json
-          import json, os, subprocess, time
+          set -euo pipefail
+          export SOURCE_ID="ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "SOURCE_ID=${SOURCE_ID}" >> "$GITHUB_ENV"
+          python3 - <<'PY'
+          import json, os, subprocess
           payload = {
               "kind": os.environ["INT_KIND"],
               "problem": os.environ["INT_PROBLEM"],
-              "source": "ci-smoke",
-              "source_id": f"ci-{int(time.time())}",
+              "source": "ci-e2e",
+              "source_id": os.environ["SOURCE_ID"],
+              "fix": "Use a proxy-aware package index and retry the install.",
+              "verification": "A clean install completes successfully.",
           }
           r = subprocess.run(
               ["python3", "scripts/intake_pipeline.py", "--input", json.dumps(payload)],
               capture_output=True, text=True,
           )
-          print(r.stdout.strip() or r.stderr)
+          if r.returncode:
+              raise SystemExit(r.stderr or r.stdout)
+          result = json.loads(r.stdout)
+          assert result["persisted"] is True, result
+          assert result["duplicate"] is False, result
+          issue = result.get("issue") or {}
+          assert issue.get("issue_number"), result
+          assert issue.get("issue_url"), result
+          with open("/tmp/pipeline-result.json", "w") as f:
+              json.dump(result, f)
+          print(json.dumps(result, indent=2))
           PY
 
-      - name: Verify draft persisted
+      - name: Verify persisted draft, issue backfill, and idempotency
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+          INT_KIND: ${{ github.event.inputs.kind || 'missing_lesson' }}
+          INT_PROBLEM: ${{ github.event.inputs.problem || 'pip install fails with ReadTimeoutError behind corporate proxy' }}
         run: |
+          set -euo pipefail
           cd workers
+          result="$(cat /tmp/pipeline-result.json)"
+          issue_number="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["issue"]["issue_number"])' <<<"$result")"
           wrangler d1 execute misakanet-db --remote --command \
-            "SELECT id, kind, source_id, status, issue_number FROM lesson_drafts ORDER BY created DESC LIMIT 3;"
+            "SELECT id, kind, source_id, status, issue_number, issue_url FROM lesson_drafts WHERE source_id='${SOURCE_ID}';" \
+            | tee /tmp/draft-query.txt
+          grep -F "${SOURCE_ID}" /tmp/draft-query.txt
+          grep -F 'review' /tmp/draft-query.txt
+          grep -F "${issue_number}" /tmp/draft-query.txt
+          cd ..
+          python3 scripts/intake_pipeline.py --input "$(python3 - <<'PY'
+          import json, os
+          print(json.dumps({"kind": os.environ["INT_KIND"], "problem": os.environ["INT_PROBLEM"], "source": "ci-e2e", "source_id": os.environ["SOURCE_ID"], "fix": "Use a proxy-aware package index and retry the install.", "verification": "A clean install completes successfully."}))
+          PY
+          )" > /tmp/pipeline-rerun.json
+          python3 - <<'PY'
+          import json
+          result = json.load(open('/tmp/pipeline-rerun.json'))
+          assert result['persisted'] is False, result
+          assert result['duplicate'] is True, result
+          assert 'issue' not in result, result
+          PY
+          echo "Verified issue #${issue_number}, D1 backfill, and duplicate suppression."
