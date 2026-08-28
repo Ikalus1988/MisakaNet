@@ -65,7 +65,7 @@ git config --global --unset-all credential.https://gist.github.com.helper
 git config --global credential.helper store
 # 确认 .git-credentials 里有有效 token
 cat ~/.git-credentials
-# 格式: https://<username>:<token>@github.com
+# 格式: https://<username>:<token>@github.com（占位符示例，非真实凭证）
 ```
 
 ### 4. 验证
