@@ -12,6 +12,11 @@
   "verified_date": "2026-07-30",
   "confidence": "0.93"
 }
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # USDC: base units vs human amounts — агент платит 1000x или думает, что 1000 USDC это $1000

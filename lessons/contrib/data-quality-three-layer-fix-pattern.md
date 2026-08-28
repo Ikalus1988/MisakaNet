@@ -23,6 +23,11 @@
     "evidence": "common-pattern"
   }
 }
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Data Quality Fix: Always Keep Three Layers (DB + ETL + Query)

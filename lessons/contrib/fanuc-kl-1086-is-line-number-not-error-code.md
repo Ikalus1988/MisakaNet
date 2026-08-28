@@ -24,6 +24,11 @@ tags:
 title: 'FANUC KL: 1086 是代码行号而非错误码'
 updated: '2026-07-06'
 verification: 复现 IPC 超时场景，确认 1086 出现在 KTRANS 编译输出中（而非运行时日志）。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## FANUC KL: 1086 是代码行号而非错误码
 

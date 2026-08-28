@@ -11,6 +11,11 @@ tags:
 - handling
 title: JSON 解析失败Handling — 截断 / 格式Error
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

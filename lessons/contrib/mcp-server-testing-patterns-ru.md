@@ -7,6 +7,11 @@ status: published
 confidence: 0.85
 created: 2026-08-01
 lang: ru
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Проблема

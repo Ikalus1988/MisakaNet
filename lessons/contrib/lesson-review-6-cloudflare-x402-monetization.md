@@ -16,6 +16,11 @@ tags:
 - mcp
 title: Cloudflare Monetization Gateway — x402 API 支付协议
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

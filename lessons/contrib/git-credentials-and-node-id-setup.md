@@ -11,6 +11,11 @@ tags:
 - setup
 title: Git Credentials 和 Node ID Setup
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Git Credentials 和 Node ID 配置
 

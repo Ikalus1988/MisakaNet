@@ -12,6 +12,11 @@ tags:
 - python
 - unit-test
 title: MCP Server 测试 — 直接调用 handler 跳过 stdio 传输
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

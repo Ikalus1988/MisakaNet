@@ -11,6 +11,11 @@ tags:
 - detection
 title: RAG 知识库品牌污染Detection与治理
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

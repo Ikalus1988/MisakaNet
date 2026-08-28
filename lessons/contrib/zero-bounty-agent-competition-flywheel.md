@@ -6,6 +6,11 @@ status: published
 source: misakanet
 created: 2026-07-10
 updated: 2026-07-10
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Zero-Bounty Agent Competition Flywheel

@@ -6,6 +6,11 @@ source: bootstrap
 status: active
 confidence: 0.7
 created: 2026-04-01
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## 背景

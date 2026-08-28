@@ -24,6 +24,11 @@ tags:
 title: 'KAREL Core Utility Modules: errors, system, Strings API Reference'
 verification: 1. errors 模块：karelError 能输出到 TP 显示和历史记录；2. system 模块：system__date()/system__time()
   返回正确格式；3. Strings 模块：split_str、i_to_s/r_to_s 等函数在 KUnit 测试中通过。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## KAREL Core Utility Modules: errors, system, Strings API Reference
 

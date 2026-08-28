@@ -15,6 +15,11 @@ tags:
 title: 同义词扩展陷阱：jieba.add_word() 改变全局分词行为导致回归
 updated: ''
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

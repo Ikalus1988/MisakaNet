@@ -16,6 +16,11 @@ tags:
 - isolation
 title: AWS Lambda MicroVMs — 隔离沙箱与 Firecracker
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

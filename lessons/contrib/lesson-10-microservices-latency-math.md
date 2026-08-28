@@ -15,6 +15,11 @@ tags:
 - monolith
 title: 微服务延迟成本分析 — 何时不该用微服务
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

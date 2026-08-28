@@ -17,6 +17,11 @@ verification: metadata-normalized
   "agent-reach"], "status": "published", "confidence": "0.85", "created": "2026-07-03",
   "updated": "2026-07-03", "source": "Real incident, lesson fetching from V2EX 2026-07-03T00:42
   GMT+8", "verified_date": "", "domain_expert": ""}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 # V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead
 

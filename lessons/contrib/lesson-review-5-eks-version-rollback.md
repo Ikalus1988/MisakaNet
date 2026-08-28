@@ -16,6 +16,11 @@ tags:
 - cluster-management
 title: EKS Kubernetes 版本回滚 — 安全升级集群
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

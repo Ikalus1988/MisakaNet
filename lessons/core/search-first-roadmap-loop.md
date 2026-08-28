@@ -1,5 +1,10 @@
 ---
 {"title":"Search-first roadmap loop for agent knowledge projects","domain":"development","status":"published","tags":["roadmap","search","onboarding","release","strategy"],"language":"en","source":"strategy-session-2026-07-02","created":"2026-07-02 00:00:00 UTC","updated":"2026-07-02 00:00:00 UTC"}
+provenance:
+  source: "internal"
+  contributor: "MisakaNet Core"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

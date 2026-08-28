@@ -21,6 +21,11 @@ verified_date: '2026-05-13'
   "agent-mode", "write-file", "worktree", "wsl", "git", "lesson-written"], "created":
   "2026-05-13 01:01:46 UTC", "updated": "2026-05-13 01:01:46 UTC", "domain_expert":
   "hermes_wsl2", "verified_date": "2026-05-13"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

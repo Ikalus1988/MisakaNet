@@ -16,6 +16,11 @@ verification: metadata-normalized
 '{"title"': 'Slugify: deep coverage of path traversal, null bytes, and reserved names",
   "domain": "scripts", "tags": ["slugify", "path-traversal", "windows-reserved", "null-byte",
   "test-coverage", "hardening"], "domain_expert": "unknown"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

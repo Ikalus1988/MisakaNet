@@ -16,6 +16,11 @@ verification: metadata-normalized
   "network-config"], "status": "published", "confidence": "0.94", "created": "2026-07-03",
   "updated": "2026-07-03", "source": "Real incident, agent-reach install (2026-07-03T00:30
   GMT+8)", "verified_date": "", "domain_expert": ""}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 # pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890
 

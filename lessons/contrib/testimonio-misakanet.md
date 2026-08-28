@@ -6,6 +6,11 @@ tags:
 - testimonio
 - misakanet
 title: 'Testimonio: MisakaNet me ayudo a resolver ModuleNotFoundError'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 # Testimonio: MisakaNet me ayudo a resolver ModuleNotFoundError
 

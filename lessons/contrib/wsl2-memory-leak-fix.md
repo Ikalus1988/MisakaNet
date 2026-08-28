@@ -14,6 +14,11 @@ title: WSL2 内存泄漏 / 内存占用过高
 verification: metadata-normalized
 '{"title"': 'WSL2 内存泄漏 / 内存占用过高", "domain": "devops", "tags": ["wsl", "memory", "leak",
   "performance"], "domain_expert": "unknown"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

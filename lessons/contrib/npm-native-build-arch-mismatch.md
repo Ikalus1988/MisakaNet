@@ -13,6 +13,11 @@
   "created": "2026-08-11 00:00:00 UTC",
   "updated": "2026-08-11 00:00:00 UTC"
 }
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # npm install failing on one host but not another (native build arch mismatch)

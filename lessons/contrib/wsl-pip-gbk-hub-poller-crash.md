@@ -18,6 +18,11 @@ verified_date: '2026-05-03'
   "wsl", "source": "bootstrap", "status": "published", "tags": ["project:agent-medici",
   "severity:critical", "platform:wsl", "node:hermes_wsl"], "confidence": "0.8", "created":
   "2026-05-03", "domain_expert": "bootstrap", "verified_date": "2026-05-03"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

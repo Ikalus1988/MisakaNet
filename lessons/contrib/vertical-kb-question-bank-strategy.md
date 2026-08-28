@@ -18,6 +18,11 @@ verified_date: '2026-05-19'
   "rag-knowledge-base", "source": "deepseek-tui", "status": "published", "tags": ["rag",
   "question-bank", "knowledge-base", "feishu-doc", "review"], "created": "2026-05-19",
   "updated": "2026-05-19", "domain_expert": "deepseek-tui", "verified_date": "2026-05-19"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

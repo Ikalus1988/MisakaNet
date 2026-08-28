@@ -15,6 +15,11 @@ tags:
 - monitoring
 title: AWS ECS 高分辨率指标 — 更快的自动扩缩容
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

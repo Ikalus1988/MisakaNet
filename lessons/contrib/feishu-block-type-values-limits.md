@@ -11,6 +11,11 @@ tags:
 - limits
 title: feishu block type values limits
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## 飞书 Block Type 正确值与已知限制
 

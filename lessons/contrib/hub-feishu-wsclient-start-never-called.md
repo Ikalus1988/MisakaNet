@@ -17,6 +17,11 @@ verified_date: '2026-04-01'
 '{"title"': 'Hub FeishuWSClient.start() 从未调用 — WebSocket 接收死代码", "domain": "feishu",
   "source": "bootstrap", "status": "published", "confidence": "0.7", "created": "2026-04-01",
   "domain_expert": "bootstrap", "verified_date": "2026-04-01"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

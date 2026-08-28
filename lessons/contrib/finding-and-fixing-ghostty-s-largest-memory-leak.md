@@ -1,5 +1,10 @@
 ---
 {"title": "Finding and fixing Ghostty's largest memory leak", "domain": "memory_management", "tags": ["memory_leak", "memory_management", "terminal", "optimization", "debugging"], "language": "en", "status": "published", "source": "https://mitchellh.com/writing/ghostty-memory-leak-fix", "created": "2026-07-28", "confidence": "0.85"}
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

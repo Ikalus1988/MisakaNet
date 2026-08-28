@@ -15,6 +15,11 @@ verification: metadata-normalized
   "agent-reach-install"], "status": "published", "confidence": "0.92", "created":
   "2026-07-03", "updated": "2026-07-03", "source": "Real incident, agent-reach install
   (2026-07-03T00:25 GMT+8)", "verified_date": "", "domain_expert": ""}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 # Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo
 

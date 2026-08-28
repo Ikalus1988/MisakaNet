@@ -15,6 +15,11 @@ tags:
 title: 搜索评估陷阱：评估函数先检查标题再检查内容导致 rank 偏差
 updated: ''
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

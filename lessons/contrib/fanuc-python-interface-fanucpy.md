@@ -22,6 +22,11 @@ tags:
 title: FANUC Robot Python Control via fanucpy Library
 verification: 1. pip install fanucpy 成功；2. 控制器端 MAPPDK 服务运行且端口 18735 可达；3. robot.connect()
   返回成功；4. robot.get_curpos() 能返回当前位姿。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## FANUC Robot Python Control via fanucpy Library
 

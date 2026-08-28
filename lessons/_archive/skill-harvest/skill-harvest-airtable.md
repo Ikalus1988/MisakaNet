@@ -5,6 +5,11 @@ verification: "metadata-normalized"
 source: "skill-pipeline"
 status: "draft"
 created: "2026-05-09"
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## 背景

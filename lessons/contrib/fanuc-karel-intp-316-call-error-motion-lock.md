@@ -30,6 +30,11 @@ tags:
 - call-error
 title: 'FANUC KAREL: INTP-316 调用TP程序触发动作锁定'
 verification: 在 KAREL 中执行 CALL 'TEST.TP'，确认无 INTP-316 报错且机器人正常运动。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## FANUC KAREL: INTP-316 调用TP程序触发动作锁定
 

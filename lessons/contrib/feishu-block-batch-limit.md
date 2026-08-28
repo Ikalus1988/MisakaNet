@@ -10,6 +10,11 @@ tags:
 - limit
 title: feishu block batch limit
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## 飞书 Block 批量写入上限
 

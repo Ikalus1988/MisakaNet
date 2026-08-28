@@ -12,6 +12,11 @@ tags:
 - execution-model
 - defensive
 title: JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

@@ -13,6 +13,11 @@ title: static page width consistency
 verification: metadata-normalized
 '{"title"': '静态页面多组件宽度一致性——各自定义 max-width 导致视觉割裂", "domain": "frontend", "tags": ["css",
   "layout", "ux", "responsive"], "domain_expert": "unknown"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

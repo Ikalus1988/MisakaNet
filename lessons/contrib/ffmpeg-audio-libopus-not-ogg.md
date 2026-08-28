@@ -16,6 +16,11 @@ verified_date: '2026-03-29'
 '{"title"': 'FFmpeg 音频转码：必须用 libopus 而非 -format ogg", "domain": "audio", "tags": "",
   "source": "hanged-man", "status": "published", "created": "2026-03-29", "confidence":
   "0.9", "scope": "broad", "domain_expert": "hanged-man", "verified_date": "2026-03-29"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

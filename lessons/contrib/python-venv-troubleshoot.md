@@ -14,6 +14,11 @@ title: Python venv 激活失败或路径不匹配
 verification: metadata-normalized
 '{"title"': 'Python venv 激活失败或路径不匹配", "domain": "devops", "tags": ["python", "venv",
   "virtualenv", "path"], "domain_expert": "unknown"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

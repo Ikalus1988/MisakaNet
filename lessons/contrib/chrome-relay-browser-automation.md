@@ -11,6 +11,11 @@ tags:
 - browser
 title: Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

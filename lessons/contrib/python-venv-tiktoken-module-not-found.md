@@ -16,6 +16,11 @@ verification: metadata-normalized
 '{"title"': 'Python venv 中 tiktoken 安装后仍报 ModuleNotFoundError", "domain": "development",
   "source": "Misaka10019", "tags": ["python", "venv", "tiktoken", "pip", "setuptools"],
   "domain_expert": "Misaka10019"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

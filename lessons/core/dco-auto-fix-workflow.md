@@ -19,6 +19,11 @@
   "domain_expert": "codewhale",
   "verified_date": "2026-06-14"
 }
+provenance:
+  source: "internal"
+  contributor: "MisakaNet Core"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 

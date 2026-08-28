@@ -10,6 +10,11 @@
   "updated": "2026-07-23",
   "confidence": "0.9"
 }
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Idle-exit cleanly when bounty boards are empty

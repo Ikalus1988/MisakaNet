@@ -16,6 +16,11 @@ tags:
 - architecture
 title: gRPC vs OpenAPI vs REST — API 协议选择指南
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

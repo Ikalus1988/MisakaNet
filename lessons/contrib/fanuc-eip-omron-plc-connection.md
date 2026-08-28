@@ -36,6 +36,11 @@ verification: '1. OMRON PLC 编程软件显示 FANUC EIP 设备在线
   3. FANUC 输出 DO 信号，PLC 侧读取值正确
 
   4. 通讯无超时或断线报警'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## FANUC 机器人与 OMRON PLC 的 EtherNet/IP 连接
 

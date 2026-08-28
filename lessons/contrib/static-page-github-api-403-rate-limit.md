@@ -14,6 +14,11 @@ title: static page github api 403 rate limit
 verification: metadata-normalized
 '{"title"': '静态页面调用外部 API 的容错设计原则", "domain": "frontend", "tags": ["api", "rate-limit",
   "static-site", "error-handling", "fault-tolerance"], "domain_expert": "unknown"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

@@ -32,6 +32,11 @@ verification: '1. 清洁/更换触点后连续运行 3 天无掉自动现象
   2. 监控程序记录的信号瞬断次数降为 0
 
   3. 更换线束后问题彻底消失'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## FANUC 搬运机器人掉自动模式诊断
 

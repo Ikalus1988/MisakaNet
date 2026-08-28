@@ -20,6 +20,11 @@ verified_date: '2026-03-29'
   "hanged-man", "status": "published", "created": "2026-03-29", "confidence": "0.95",
   "scope": "broad", "alternative_of": "None", "related": "", "domain_expert": "hanged-man",
   "verified_date": "2026-03-29"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

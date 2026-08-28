@@ -15,6 +15,11 @@ verified_date: '2026-04-06'
 '{"title"': 'GPT-SoVITS：ref_free bug——prompt_text 为空时参数被覆盖", "domain": "tts", "tags":
   "", "source": "hanged-man", "status": "published", "created": "2026-04-06", "confidence":
   "0.9", "scope": "narrow", "domain_expert": "hanged-man", "verified_date": "2026-04-06"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

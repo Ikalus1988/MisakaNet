@@ -16,6 +16,11 @@ tags:
 title: GitHub Release 大文件下载在 CN 网络超时：分段并行下载方案
 updated: ''
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

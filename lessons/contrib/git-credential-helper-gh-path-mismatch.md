@@ -12,6 +12,11 @@ tags:
 - mismatch
 title: gh credential helper 路径Error导致 git push 静默失败
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

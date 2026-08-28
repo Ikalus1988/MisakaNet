@@ -1,5 +1,10 @@
 ---
 {"title": "macOS Homebrew Python: pip install Blocked by PEP 668 externally-managed-environment", "domain": "devops", "tags": ["python", "pip", "homebrew", "macos", "pep-668", "venv", "pyyaml"], "status": "published", "evidence_level": "E2", "created": "2026-07-09", "updated": "2026-07-09", "source": "Real incident, running validate.py on macOS Homebrew Python 3.14 (2026-07-09)", "verified_date": "2026-07-09"}
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # macOS Homebrew Python: pip install Blocked by PEP 668 externally-managed-environment

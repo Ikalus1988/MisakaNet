@@ -8,6 +8,11 @@
   "source": "closed-pr-1031",
   "created": "2026-08-22"
 }
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

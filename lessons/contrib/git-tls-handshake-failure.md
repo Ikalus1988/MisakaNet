@@ -10,6 +10,11 @@ tags:
 - failure
 title: GitHub TLS 握手失败 — gnutls_handshake() Error
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

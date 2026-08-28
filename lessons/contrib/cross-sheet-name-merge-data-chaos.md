@@ -14,6 +14,11 @@ tags:
 - excel
 title: 跨 Sheet 同名合并导致数据混乱：机器人唯一标识必须带前缀
 verified_date: '2026-07-06'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

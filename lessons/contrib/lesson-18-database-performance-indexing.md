@@ -15,6 +15,11 @@ tags:
 - query-optimization
 title: 数据库性能 — 索引与查询优化实践
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

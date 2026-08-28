@@ -10,6 +10,11 @@
   "created": "2026-08-02",
   "updated": "2026-08-02"
 }
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # JSON parse failure handling — truncated / malformed output

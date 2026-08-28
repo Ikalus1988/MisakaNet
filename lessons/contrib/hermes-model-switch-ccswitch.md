@@ -12,6 +12,11 @@ tags:
 - ccswitch
 title: ccswitch-hermes-switch 踩坑Notes
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 # ccswitch-hermes-switch 踩坑Notes
 

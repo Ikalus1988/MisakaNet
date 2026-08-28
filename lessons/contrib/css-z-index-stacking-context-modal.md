@@ -15,6 +15,11 @@ confidence: 0.95
 created: 2026-07-21
 verified_date: ''
 domain_expert: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 {"title": "CSS z-index Not Working — Stacking Context Inversion in Modal Overlays", "domain": "frontend", "subdomain": "css", "tags": ["css", "z-index", "stacking-context", "modal", "overlay", "position"], "source": "hermes-agent", "status": "published", "confidence": "0.95", "created": "2026-07-21", "verified_date": "", "domain_expert": ""}

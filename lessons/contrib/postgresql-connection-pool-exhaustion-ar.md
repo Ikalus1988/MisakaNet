@@ -7,6 +7,11 @@ status: published
 source: "https://github.com/brianc/node-postgres/issues/1920"
 created: 2026-07-29
 confidence: 0.85
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # حل مشكلة استنفاد تجميع اتصالات قاعدة البيانات PostgreSQL في بيئات الإنتاج

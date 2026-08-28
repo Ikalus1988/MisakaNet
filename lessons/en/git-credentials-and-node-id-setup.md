@@ -11,6 +11,11 @@
   "updated": "2026-07-22",
   "confidence": "0.9"
 }
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Git credentials + node id setup for Misaka-style agents

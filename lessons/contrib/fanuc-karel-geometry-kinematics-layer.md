@@ -22,6 +22,11 @@ tags:
 - collision
 title: Geometry and Kinematics Layer — Shapes, Pose, Sensors for Robot Programming
 verification: shapes模块通过TP交互式示教程序验证(如shp_splitedv、incylinder)；sensors模块通过实际传感器标定和空间扫描验证
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ### Problem描述
 

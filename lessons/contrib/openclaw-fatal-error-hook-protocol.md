@@ -11,6 +11,11 @@ tags:
 - protocol
 title: OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 # OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks
 

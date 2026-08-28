@@ -11,6 +11,11 @@ tags:
 - checklist
 title: 开源项目 README Optimization — 7 个常见Pitfalls与Fix Checklist
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Root Cause
 

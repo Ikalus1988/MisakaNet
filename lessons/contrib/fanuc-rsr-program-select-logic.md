@@ -41,6 +41,11 @@ verification: '1. 程序能通过 RSR 正常启动执行
   4. DO/DI 信号时序与 PLC 配合正确
 
   5. 循环逻辑完整，达到上限后正确触发 PLC 信号'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## FANUC RSR 程序的 OFFSET 与 SELECT 逻辑
 

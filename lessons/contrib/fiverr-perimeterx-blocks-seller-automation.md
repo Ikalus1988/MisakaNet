@@ -8,6 +8,11 @@
   "created": "2026-07-20",
   "updated": "2026-07-20"
 }
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Fiverr PerimeterX captcha blocks headless seller gig creation

@@ -14,6 +14,11 @@ confidence: 0.90
 created: 2026-07-21
 verified_date: ''
 domain_expert: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 {"title": "Git Push Force-With-Lease — Detached HEAD Recovery After Hash Change", "domain": "devops", "subdomain": "git", "tags": ["git", "force-push", "detached-head", "rebase", "recovery"], "source": "hermes-agent", "status": "published", "confidence": "0.90", "created": "2026-07-21", "verified_date": "", "domain_expert": ""}

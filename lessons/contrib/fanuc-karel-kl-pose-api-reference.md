@@ -21,6 +21,11 @@ tags:
 - coordinate-transform
 title: KAREL Pose Library API Reference — IK/FK, Quaternion, Matrix Transforms
 verification: 通过KUnit测试套件验证：test_pose.kl覆盖IK/FK往返、字符串构造、mask操作、圆柱转换、外接圆心；test_matpose.kl覆盖矩阵和四元数运算
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ### Problem描述
 

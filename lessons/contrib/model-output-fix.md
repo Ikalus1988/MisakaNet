@@ -9,6 +9,11 @@ tags:
 - output
 title: 模型输出截断 / JSON 解析失败Handling
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

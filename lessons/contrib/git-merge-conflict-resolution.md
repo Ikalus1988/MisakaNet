@@ -11,6 +11,11 @@ tags:
 - resolution
 title: Git 合并ConflictHandling — 手动解决最佳实践
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

@@ -40,6 +40,11 @@ verification: '1. 在 TIA Portal 中确认 PROFINET 网络拓扑显示 FANUC Dev
   3. 通过 PLC 发送 RSR/PNS 启动信号，确认机器人自动执行目标程序
 
   4. 监控通讯状态无断线或超时报警'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## FANUC PROFINET 通讯与 S7-1200 外部启动配置
 

@@ -17,6 +17,11 @@ verification: metadata-normalized
   "v2ex", "rss", "jina", "bilibili", "cookie-required"], "status": "published", "confidence":
   "0.88", "created": "2026-07-03", "updated": "2026-07-03", "source": "Real test output
   2026-07-03T00:32 GMT+8 on WSL Ubuntu", "verified_date": "", "domain_expert": ""}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 # Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login
 

@@ -11,6 +11,11 @@ tags:
 - missing
 title: WSL Windows 终端复制粘贴吞下划线Issue
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

@@ -16,6 +16,11 @@ tags:
 - impersonation
 title: GitHub Commit Signing — GPG 防止提交伪造
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

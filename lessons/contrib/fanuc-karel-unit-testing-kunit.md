@@ -21,6 +21,11 @@ tags:
 title: Unit Testing FANUC KAREL Programs with KUnit Framework
 verification: 1. kunit.pc 和 strings.pc 已部署到控制器；2. 测试程序翻译编译成功；3. 浏览器访问 http://robot_ip/KAREL/kunit?filenames=test_name
   显示测试结果；4. 所有断言通过，0 failures。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Unit Testing FANUC KAREL Programs with KUnit Framework
 

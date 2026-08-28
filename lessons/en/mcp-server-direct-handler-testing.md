@@ -7,6 +7,11 @@ source: practical-experience
 confidence: 0.85
 created: 2026-07-07
 lang: en
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

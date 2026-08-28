@@ -11,6 +11,11 @@ tags:
 - recovery
 title: Gateway 进程挂死未崩溃 — watchdog 自动Recovery
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

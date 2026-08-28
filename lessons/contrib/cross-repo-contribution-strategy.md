@@ -11,6 +11,11 @@ tags:
 - open-source
 - agent
 title: Cross-Repo Contribution Strategy — Finding and Contributing to New Repos
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

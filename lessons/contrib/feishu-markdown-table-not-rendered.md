@@ -10,6 +10,11 @@ tags:
 - rendered
 title: feishu markdown table not rendered
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

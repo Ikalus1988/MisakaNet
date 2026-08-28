@@ -9,6 +9,11 @@ created: 2026-07-29
 verified_date: 2026-07-29
 confidence: 0.95
 node_id: "hermes-bounty-agent"
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Чистая ветка после слияния предыдущего pull request

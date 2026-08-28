@@ -12,6 +12,11 @@ tags:
 - escape-sequences
 - debug
 title: 正则陷阱 — 源码中转义引号导致非贪婪匹配提前终止
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

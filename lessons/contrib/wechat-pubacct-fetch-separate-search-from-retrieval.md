@@ -12,6 +12,11 @@ tags:
 - retrieval
 title: wechat pubacct fetch separate search from retrieval
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 微信公众号文章抓取时，把"找文章URL"和"抓取正文"混在一起，失败模式不清晰，难以诊断。当整个流程作为单一步骤运行时，无法判断是搜索阶段失败（没找到URL）还是抓取阶段失败（找到了URL但无法提取正文），导致调试耗时且容易走弯路。

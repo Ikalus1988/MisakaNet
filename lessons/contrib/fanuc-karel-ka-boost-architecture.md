@@ -24,6 +24,11 @@ tags:
 title: 'Ka-Boost: 8-Layer KAREL Module Architecture and Build System'
 verification: 1. rossum 能解析 package.json 依赖图并生成 build.ninja；2. ninja 编译所有 .kl/.klc
   文件生成 .pc 二进制；3. kpush 成功部署到控制器；4. 各层模块单元测试通过（KUnit HTTP 访问）。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Ka-Boost: 8-Layer KAREL Module Architecture and Build System
 

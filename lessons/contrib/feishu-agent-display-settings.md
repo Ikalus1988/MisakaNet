@@ -10,6 +10,11 @@ tags:
 - settings
 title: feishu agent display settings
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## 飞书 Agent 显示优化：禁用工具调用和上下文提示
 

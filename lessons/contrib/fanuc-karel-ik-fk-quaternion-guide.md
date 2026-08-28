@@ -22,6 +22,11 @@ tags:
 - coordinate-system
 title: IK/FK and Quaternion Math Guide for FANUC KAREL Robot Programming
 verification: KUnit测试套件覆盖IK/FK往返精度、四元数运算正确性、圆柱坐标转换精度；6种常见模式(路径规划IK、圆柱映射、表面法线对齐、切线转欧拉、选择性PR更新、4x4矩阵组合)均有完整代码示例
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ### Problem描述
 

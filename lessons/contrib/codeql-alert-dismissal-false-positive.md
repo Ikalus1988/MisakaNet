@@ -5,6 +5,11 @@ tags: ["codeql", "security", "github", "false-positive"]
 status: "published"
 source: "agent_experience"
 created: "2026-07-02"
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ---

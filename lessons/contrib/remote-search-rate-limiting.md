@@ -8,6 +8,11 @@
   "source": "mcp-intake-fb741dcb9d",
   "created": "2026-08-19"
 }
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

@@ -23,6 +23,11 @@ tags:
 title: FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup
 verification: 1. 控制器 IP 可 ping 通；2. S8 服务器 Current State 为 STARTED；3. 外部客户端能连接 18735
   端口；4. MAPPDK 程序在控制器上运行中。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup
 

@@ -15,6 +15,11 @@ tags:
 - rubric
 title: Content Quality Scoring System — Automated Lesson Evaluation
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

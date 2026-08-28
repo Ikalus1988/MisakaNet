@@ -16,6 +16,11 @@ tags:
 - performance
 title: Redis → PostgreSQL 替换 — 缓存/PubSub/队列统一
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

@@ -14,6 +14,11 @@ tags:
 - data-integrity
 title: 数据封顶=伪造数据：超出阈值应剔除而非截断
 verified_date: '2026-07-06'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

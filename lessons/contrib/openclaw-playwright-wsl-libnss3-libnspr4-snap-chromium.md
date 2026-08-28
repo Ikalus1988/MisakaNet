@@ -18,6 +18,11 @@ verification: metadata-normalized
   "playwright", "chromium", "wsl", "libnss3", "libnspr4", "snap", "browser-automation",
   "executable_path"], "created": "2026-06-23", "updated": "2026-06-23", "verified_date":
   "", "domain_expert": ""}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 # Playwright Chromium launch fails on WSL2 with missing libnss3 / libnspr4
 

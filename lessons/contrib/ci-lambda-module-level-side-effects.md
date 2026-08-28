@@ -13,6 +13,11 @@ tags:
 - module-import
 - side-effects
 title: CI 测试陷阱 — 模块级副作用导致 import 失败
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

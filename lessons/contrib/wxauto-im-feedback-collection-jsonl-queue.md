@@ -20,6 +20,11 @@ verified_date: '2026-05-21'
 '{"title"': 'IM 机器人反馈收集与 JSONL 队列审核模式", "domain": "rag", "tags": ["rag", "feedback",
   "queue", "jsonl", "wechat", "wxauto", "workflow"], "confidence": 0.9, "created":
   "2026-05-21", "domain_expert": "unknown", "verified_date": "2026-05-21"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

@@ -6,6 +6,11 @@ status: published
 source: pr-genius
 created: 2026-07-06
 updated: 2026-07-06
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # External PR Strategy via pr-genius

@@ -14,6 +14,11 @@ tags:
 title: YAML 内联注释导致类型强制转换失败
 updated: ''
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

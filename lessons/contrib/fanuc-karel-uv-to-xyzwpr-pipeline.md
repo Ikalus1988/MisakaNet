@@ -21,6 +21,11 @@ tags:
 - 5-axis
 title: UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion
 verification: 通过实际5轴DLP打印验证管线完整性，Python工具链(DXF/SVG解析、Clipper裁剪、Matplotlib可视化)用于离线验证几何正确性
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ### Problem描述
 

@@ -20,6 +20,11 @@
   "domain_expert": "codewhale",
   "verified_date": "2026-06-14"
 }
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 > Translated from: [lessons/core/dco-auto-fix-workflow.md](../core/dco-auto-fix-workflow.md)

@@ -2,6 +2,11 @@
 title: "FANUC 备份打不开？先别急，试这 3 步"
 domain: fanuc
 evidence_level: E1
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # FANUC 备份打不开？先别急，试这 3 步

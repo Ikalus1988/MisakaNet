@@ -10,6 +10,11 @@ tags:
 - setup
 title: WSL 代理Setup — 通过 Windows 梯子Access外网
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

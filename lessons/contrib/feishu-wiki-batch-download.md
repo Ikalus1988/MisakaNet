@@ -11,6 +11,11 @@ tags:
 - download
 title: Feishu WikiBatch Download：文件类型Handling策略
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 # Feishu WikiBatch Download：文件类型Handling策略
 

@@ -9,6 +9,11 @@ tags:
 - review
 title: misakanet refactor v2 review
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Root Cause
 

@@ -5,6 +5,11 @@ tags: ["cloudflare", "workers", "routes", "mcp", "404", "diagnosis"]
 status: "published"
 source: "intake-issue-1307"
 created: "2026-08-27"
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # MCP Endpoint 404: Zone Route Points to Worker Without MCP Implementation

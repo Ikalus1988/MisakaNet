@@ -18,6 +18,11 @@ verified_date: '2026-05-03'
   "bootstrap", "status": "published", "tags": ["project:rag", "platform:wsl", "node:hermes_wsl",
   "scope:broad"], "confidence": "0.85", "created": "2026-05-03", "domain_expert":
   "bootstrap", "verified_date": "2026-05-03"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

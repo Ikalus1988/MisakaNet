@@ -14,6 +14,11 @@
     "modified": "2026-08-04T10:19:47.621Z"
   }
 }
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

@@ -8,6 +8,11 @@ source: "https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/dco-auto
 created: 2026-07-29
 confidence: 0.9
 verified_date: 2026-07-29
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

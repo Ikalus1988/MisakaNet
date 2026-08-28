@@ -22,6 +22,11 @@ tags:
 title: FANUC Robot PROFINET IO Configuration with PFN-CT Software
 verification: 1. PFN-CT 软件安装并能正常启动；2. 能加载 FANUC 机器人的 GSD 文件；3. IO 模块配置完成并下载到控制器；4.
   PLC 端能识别 FANUC PROFINET IO 从站并建立通信。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## FANUC Robot PROFINET IO Configuration with PFN-CT Software
 

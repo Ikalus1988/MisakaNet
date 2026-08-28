@@ -17,6 +17,11 @@ tags:
 - tls-fingerprint
 title: Agent Web Access Toolchain — 7 Libraries for Reliable Forum Scraping
 verified_date: '2026-07-14'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

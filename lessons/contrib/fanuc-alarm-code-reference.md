@@ -9,6 +9,11 @@ confidence: 0.6
 created: "2026-07-12"
 tags: ["fanuc", "alarm", "error-code", "troubleshooting", "reference"]
 quality_score: 43
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

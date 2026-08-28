@@ -5,6 +5,11 @@ tags: ["cloudflare", "workers", "deploy", "mcp", "multipart", "kv", "sandbox"]
 status: "published"
 source: "intake-issue-1305"
 created: "2026-08-27"
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Cloudflare Worker Programmatic Deploy: Three Pitfalls

@@ -10,6 +10,11 @@
   "updated": "2026-07-06",
   "verification": "metadata-normalized"
 }
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## 问题描述

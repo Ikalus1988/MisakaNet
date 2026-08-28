@@ -9,6 +9,11 @@ confidence: 0.8
 created: 2026-07-01
 verified_date: 
 domain_expert: 
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 

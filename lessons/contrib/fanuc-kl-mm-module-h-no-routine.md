@@ -13,6 +13,11 @@ tags:
 - routine
 title: 'FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明'
 verified_date: 2026-05-03
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明
 

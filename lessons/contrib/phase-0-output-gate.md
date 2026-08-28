@@ -13,6 +13,11 @@ title: phase 0 output gate
 verification: metadata-normalized
 '{"title"': 'Phase 0 Output Gate — Agent 的硬性知识检索规则", "domain": "methodology", "tags":
   ["output-gate", "knowledge-reuse", "methodology", "core"], "domain_expert": "unknown"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

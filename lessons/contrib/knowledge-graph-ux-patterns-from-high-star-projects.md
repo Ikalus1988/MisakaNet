@@ -14,6 +14,11 @@ title: knowledge graph ux patterns from high star projects
 verification: metadata-normalized
 '{"title"': '知识图谱 UX 增强: 从高星项目提炼的 7 个交互模式", "domain": "development", "tags": ["knowledge-graph",
   "d3js", "ux", "graph-visualization", "force-directed"], "domain_expert": "unknown"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

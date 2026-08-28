@@ -11,6 +11,11 @@ tags:
 - pattern
 title: 多模型Switch脚本模式 — 双 Agent 模型管理
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 # 多模型Switch脚本模式 — 双 Agent 模型管理
 

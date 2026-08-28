@@ -10,6 +10,11 @@ tags:
 - automation
 title: Git 凭证Setup — Automation push 免密码
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

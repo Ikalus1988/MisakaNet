@@ -10,6 +10,11 @@ tags:
 - stale
 title: Python 代码修改不生效 — stale .pyc Cache
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

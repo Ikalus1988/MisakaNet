@@ -10,6 +10,11 @@ tags:
 - fork
 title: GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix
 verification: metadata-normalized
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Root Cause
 

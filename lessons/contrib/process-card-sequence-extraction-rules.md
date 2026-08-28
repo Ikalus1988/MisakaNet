@@ -15,6 +15,11 @@ tags:
 - robot
 title: 工艺卡步序提取：辅助动作不算独立步序，按工艺动作分界
 verified_date: '2026-07-06'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

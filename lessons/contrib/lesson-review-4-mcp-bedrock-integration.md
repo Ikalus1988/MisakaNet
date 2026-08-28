@@ -16,6 +16,11 @@ tags:
 - standardization
 title: MCP 协议 + Bedrock 实战 — Agent 外部工具调用标准化
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## Problem
 

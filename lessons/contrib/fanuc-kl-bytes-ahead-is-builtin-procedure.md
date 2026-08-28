@@ -22,6 +22,11 @@ tags:
 title: 'FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure'
 updated: 2026-07-06
 verification: KTRANS 编译 MM_RCV_NTFY.kl，无 BYTES_AHEAD 相关报错。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 ## FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure
 

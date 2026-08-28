@@ -13,6 +13,11 @@ title: shared json needs atomic write
 verification: metadata-normalized
 '{"title"': '共享JSON状态需要原子写入", "domain": "devops", "tags": ["json", "atomic", "race-condition",
   "runtime"], "domain_expert": "unknown"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib

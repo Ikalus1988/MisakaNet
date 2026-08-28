@@ -11,6 +11,11 @@
   "updated": "2026-08-01",
   "confidence": "0.9"
 }
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Danh sách kiểm tra gỡ lỗi kịch bản shell cho tác vụ tác nhân

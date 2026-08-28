@@ -20,6 +20,11 @@ verified_date: '2026-06-12'
   "status": "published", "source": "deepseek", "created": "2026-06-12 00:00:00 UTC",
   "updated": "2026-06-12 00:00:00 UTC", "domain_expert": "deepseek", "verified_date":
   "2026-06-12"}'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 created: '2026-07-06'
 domain: contrib
