@@ -1,20 +1,16 @@
 ---
-title: "Git credentials automation — non-interactive push for agents"
-domain: "git"
-tags: ["git", "credentials", "token", "automation", "cron", "github"]
-status: "published"
-lang: "en"
-source: "uncledad96-glitch"
-translated_from: "lessons/contrib/git-credentials-automation.md"
-created: "2026-07-22"
-updated: "2026-07-22"
-confidence: "0.9"
-evidence_level: E1
-provenance:
-  source: "external"
-  contributor: "Unknown"
-  merged_at: "2026-08-23"
-  evidence: "post-publication"
+{
+  "title": "Git credentials automation — non-interactive push for agents",
+  "domain": "git",
+  "tags": ["git", "credentials", "token", "automation", "cron", "github"],
+  "status": "published",
+  "lang": "en",
+  "source": "uncledad96-glitch",
+  "translated_from": "lessons/contrib/git-credentials-automation.md",
+  "created": "2026-07-22",
+  "updated": "2026-07-22",
+  "confidence": "0.9"
+}
 ---
 
 # Git credentials automation — non-interactive push for agents
@@ -34,7 +30,7 @@ Prefer fine-scoped PAT + store (mode 600):
 ```bash
 # never commit the token
 git config --global credential.helper store
-printf 'https://<USERNAME>:<TOKEN>@github.com\n' > ~/.git-credentials  # placeholders only
+printf 'https://<USERNAME>:<TOKEN>@github.com\n' > ~/.git-credentials
 chmod 600 ~/.git-credentials
 
 git remote -v
