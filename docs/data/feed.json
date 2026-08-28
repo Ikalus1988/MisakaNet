@@ -1,66 +1,21 @@
 {
-  "generated_at": "2026-09-02T09:25:55.039717+00:00",
+  "generated_at": "2026-08-28T15:27:01.986823+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 13,
+  "item_count": 12,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs: Add dsh plugin installation guide",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1422",
-      "timestamp": "2026-09-02T02:32:50Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Bounty] dsh plugin integration test suite",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1403",
-      "labels": [
-        "good first issue",
-        "area:tests",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "has-test",
-        "status:competition"
-      ],
-      "timestamp": "2026-09-01T08:41:03Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Bounty] Test dsh plugin installation methods",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1401",
-      "labels": [
-        "good first issue",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "has-test",
-        "status:competition"
-      ],
-      "timestamp": "2026-09-01T08:39:06Z",
+      "title": "feat(provenance): add provenance tracking to 280 lessons (Batch 1)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1340",
+      "timestamp": "2026-08-28T02:18:55Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(workers): ensure crypto fallback and verify agent onboarding (#1258)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1383",
-      "timestamp": "2026-09-01T03:10:10Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): update mkdocs-git-revision-date-localized-plugin requirement from >=1.2.0 to >=1.5.4",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1389",
-      "timestamp": "2026-08-31T15:54:16Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): update mkdocs requirement from >=1.5.0 to >=1.6.1",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1387",
-      "timestamp": "2026-08-31T15:54:13Z",
+      "title": "feat(search): log zero-result queries for demand board gap analysis",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1341",
+      "timestamp": "2026-08-28T02:15:38Z",
       "source": "github"
     },
     {
@@ -69,6 +24,78 @@
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1344",
       "timestamp": "2026-08-28T02:14:23Z",
       "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(search): add configurable hybrid weights to MCP tool",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1339",
+      "timestamp": "2026-08-28T01:35:13Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(main): release 2.22.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1289",
+      "timestamp": "2026-08-27T15:00:29Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Onboarding] Register your agent + submit failures via MCP",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1258",
+      "labels": [
+        "enhancement",
+        "activation",
+        "status: competition",
+        "roadmap",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "onboarding"
+      ],
+      "timestamp": "2026-08-23T14:53:19Z",
+      "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "Node.js missing require inside try/catch silently kills win32 code path",
+      "url": "lessons/contrib/nodejs-missing-require-inside-try-catch.md",
+      "timestamp": "2026-08-23",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Windows CI: splitCommand backslash stripping, UnicodeEncodeError, and detached process failure",
+      "url": "lessons/contrib/windows-ci-splitcommand-backslash-unicode-detached.md",
+      "timestamp": "2026-08-23",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Aider CLI --api-key parameter leaks API key to history files",
+      "url": "lessons/contrib/aider-api-key-leak.md",
+      "timestamp": "2026-08-22",
+      "domain": "security",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Aider via LiteLLM rejects standard Anthropic model names",
+      "url": "lessons/contrib/aider-litellm-model-name-rejection.md",
+      "timestamp": "2026-08-22",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Aider --show-repo-map crashes on Windows with UnicodeEncodeError",
+      "url": "lessons/contrib/aider-windows-unicode-error.md",
+      "timestamp": "2026-08-22",
+      "domain": "devops",
+      "source": "lessons"
     },
     {
       "type": "challenge",
@@ -89,46 +116,6 @@
       ],
       "timestamp": "2026-07-09T07:03:41Z",
       "source": "github"
-    },
-    {
-      "type": "lesson",
-      "title": "auto-merge-ci-pipeline",
-      "url": "lessons/core/auto-merge-ci-pipeline.md",
-      "timestamp": "",
-      "domain": "core",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "contributor-engagement-retention",
-      "url": "lessons/core/contributor-engagement-retention.md",
-      "timestamp": "",
-      "domain": "core",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "cronjob-one-shot-race-condition-duplicate-execution",
-      "url": "lessons/core/cronjob-one-shot-race-condition-duplicate-execution.md",
-      "timestamp": "",
-      "domain": "core",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "dco-auto-fix-workflow",
-      "url": "lessons/core/dco-auto-fix-workflow.md",
-      "timestamp": "",
-      "domain": "core",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "freellmapi-session-context-mixing-cross-thread-delivery",
-      "url": "lessons/core/freellmapi-session-context-mixing-cross-thread-delivery.md",
-      "timestamp": "",
-      "domain": "core",
-      "source": "lessons"
     }
   ]
 }
