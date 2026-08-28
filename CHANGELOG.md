@@ -7,6 +7,29 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.23.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.22.0...v2.23.0) (2026-08-28)
+
+
+### Features
+
+* **benchmark:** Workers AI lesson benchmark script (cloudflare.ai/playground automation) ([0f60bcf](https://github.com/Ikalus1988/MisakaNet/commit/0f60bcf1af7f8ac2f69528db6f08ef58ca34af3f))
+* **benchmark:** Workers AI lesson benchmark with RAG compare + weekly CI ([7075966](https://github.com/Ikalus1988/MisakaNet/commit/7075966b792aa1f9d5bbf77679d09e52c0acf3f7))
+* **lessons:** add 3 lessons from intake submissions ([24e6705](https://github.com/Ikalus1988/MisakaNet/commit/24e6705a2f660591ef36215149ac2ceb5a7331cf))
+* **lessons:** add asyncio CancelledError lesson (from [#1298](https://github.com/Ikalus1988/MisakaNet/issues/1298)) ([847ca36](https://github.com/Ikalus1988/MisakaNet/commit/847ca363da07d9123d18436c27a4fe4e1109e947))
+
+
+### Bug Fixes
+
+* **benchmark:** auto-create output dir (docs/benchmarks) ([7d41042](https://github.com/Ikalus1988/MisakaNet/commit/7d410429e9ae35e4705d49ceaa606462acd10d98))
+* **ci:** rebase before push in benchmark report step (handle concurrent commits) ([e7bd6bc](https://github.com/Ikalus1988/MisakaNet/commit/e7bd6bc45aa1b4c583bf951fdf5e30e552ee42dd))
+* **lessons:** add verification output to 4 files + upgrade verification for 273 files ([770bf79](https://github.com/Ikalus1988/MisakaNet/commit/770bf79e683bc08fb542330bedfd3d2156f70bbd))
+
+
+### Documentation
+
+* add dsh.so badges and agent-native capability description ([1a3cb83](https://github.com/Ikalus1988/MisakaNet/commit/1a3cb831bf6b3ae665603fbf823bd5632b7696c3))
+* add weekly Workers AI benchmark badge to README ([a7b2ae5](https://github.com/Ikalus1988/MisakaNet/commit/a7b2ae5b179cf146e590f8b4d11fd651230dc3ad))
+
 ## [2.22.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.21.0...v2.22.0) (2026-08-27)
 
 
