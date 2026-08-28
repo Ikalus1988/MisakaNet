@@ -30,7 +30,7 @@ Prefer fine-scoped PAT + store (mode 600):
 ```bash
 # never commit the token
 git config --global credential.helper store
-printf 'https://<USERNAME>:<TOKEN>@github.com\n' > ~/.git-credentials
+printf 'https://<USERNAME>:<TOKEN>@github.com\n' > ~/.git-credentials  # placeholders only
 chmod 600 ~/.git-credentials
 
 git remote -v

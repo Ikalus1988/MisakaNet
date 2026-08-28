@@ -56,6 +56,7 @@ Setup that triggers this:
 
 ```bash
 # ~/.git-credentials has TWO entries (any order):
+# (placeholders — never paste real PATs into lessons)
 https://<account-a>:<pat>@github.com
 https://<account-b>:<pat>@github.com
 

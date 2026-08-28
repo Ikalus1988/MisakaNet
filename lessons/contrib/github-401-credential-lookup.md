@@ -29,7 +29,7 @@ Agent 倾向于在外部寻找新资源（问用户要 PAT），而不是先检�
 ```bash
 # GitHub API 401 后本地凭证查找顺序
 cat ~/.git-credentials
-# 格式: https://<username>:<token>@github.com
+# 格式: https://<username>:<token>@github.com（占位符示例，非真实凭证）
 
 # 2. netrc
 cat ~/.netrc
