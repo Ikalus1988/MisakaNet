@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-08-29T10:09:58.116394+00:00",
+  "generated_at": "2026-08-29T16:45:40.581460+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 12,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(provenance): add provenance tracking to 280 lessons (Batch 1)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1340",
-      "timestamp": "2026-08-28T02:18:55Z",
+      "title": "test: verify question intake MCP contract",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1366",
+      "timestamp": "2026-08-29T13:59:48Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(search): log zero-result queries for demand board gap analysis",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1341",
-      "timestamp": "2026-08-28T02:15:38Z",
+      "title": "feat(mcp): guide no-match searches into intake",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1379",
+      "timestamp": "2026-08-29T13:59:41Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.23.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1344",
-      "timestamp": "2026-08-28T02:14:23Z",
+      "title": "test: verify clone-less remote lesson search",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1378",
+      "timestamp": "2026-08-29T13:59:35Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(search): add configurable hybrid weights to MCP tool",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1339",
-      "timestamp": "2026-08-28T01:35:13Z",
+      "title": "docs: correct GoodMemory runtime and install",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1229",
+      "timestamp": "2026-08-29T10:46:50Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.22.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1289",
-      "timestamp": "2026-08-27T15:00:29Z",
+      "title": "test: verify intake pipeline E2E persistence and idempotency",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1371",
+      "timestamp": "2026-08-29T10:46:44Z",
       "source": "github"
     },
     {
