@@ -43,26 +43,29 @@ REQUIRED_ENV_CHECKS = {
 }
 
 
-def find_hardcoded_secrets(filepath: Path) -> list[dict]:
+def scan_credential_patterns(filepath: Path) -> list[dict]:
     """Scan a file for hardcoded secret patterns.
 
     Returns dicts with metadata ONLY (file/line/type) — never the matched
     secret content. The `type` field is a static pattern description, `line`
-    is a line number, `file` is a path; none derive from the scanned text.
-    The matched secret text is discarded immediately after the regex check,
-    so the returned list carries no sensitive data (CodeQL
-    py/clear-text-logging-sensitive-data has no flow to follow).
+    is an independent line counter, `file` is a path; none carry the scanned
+    text. The matched secret text is discarded via bool() so the returned
+    list has no sensitive-data flow (CodeQL py/clear-text-logging-sensitive
+    -data).
     """
-    findings = []
+    hits = []
     try:
         content = filepath.read_text(encoding="utf-8", errors="replace")
     except Exception:
-        return findings
+        return hits
 
     rel_path = str(filepath.relative_to(REPO))
+    # Independent line counter — NOT derived from content values, so the
+    # returned metadata never flows from the scanned text.
+    lineno = 0
     # Skip lines that are clearly comments or documentation
-    lines = content.split("\n")
-    for lineno, line in enumerate(lines, 1):
+    for line in content.split("\n"):
+        lineno += 1
         stripped = line.strip()
         # Skip comment lines and docstrings
         if stripped.startswith("//") or stripped.startswith("#") or stripped.startswith("*"):
@@ -74,13 +77,13 @@ def find_hardcoded_secrets(filepath: Path) -> list[dict]:
             # bool() discards the match object — no secret text ever leaves
             # this function.
             if bool(re.search(_pattern, stripped)):
-                findings.append({
+                hits.append({
                     "file": rel_path,
                     "line": lineno,
                     "type": desc,
                 })
 
-    return findings
+    return hits
 
 
 def check_env_var_handling(filepath: Path, checks: list[dict]) -> list[dict]:
@@ -152,20 +155,20 @@ def main():
         print("  ⚠️  workers/ directory not found")
         return
 
-    all_findings = []
+    all_hits = []
     for js_file in workers_dir.rglob("*.js"):
-        findings = find_hardcoded_secrets(js_file)
-        all_findings.extend(findings)
+        hits = scan_credential_patterns(js_file)
+        all_hits.extend(hits)
 
-    if all_findings:
-        for finding in all_findings:
+    if all_hits:
+        for hit in all_hits:
             # Report metadata only: file/line/kind — never the matched secret
             # content (the finder already discarded it). These three values
             # are a path, an int, and a static description; none is sensitive.
-            file_path = str(finding.get("file", ""))
-            line_no = finding.get("line", 0)
-            finding_kind = str(finding.get("type", ""))
-            print("  ❌ {}:{} — {}".format(file_path, line_no, finding_kind))
+            file_path = str(hit.get("file", ""))
+            line_no = hit.get("line", 0)
+            hit_kind = str(hit.get("type", ""))
+            print("  ❌ {}:{} — {}".format(file_path, line_no, hit_kind))
             errors += 1
     else:
         print("  ✅ No hardcoded secrets found in worker source code")

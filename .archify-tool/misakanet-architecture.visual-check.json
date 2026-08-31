@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "visual-check",
+  "status": "fail",
+  "visualReview": "pending",
+  "artifact": {
+    "path": "/home/eric_jia/MisakaNet/.archify-tool/misakanet-architecture.html",
+    "sha256": "7b93c636815a5bd7a1351cbc8f5052b1e0cad4dc0508d06a6940288ff6157924",
+    "bytes": 720757
+  },
+  "state": {
+    "detail": "read",
+    "motion": "still"
+  },
+  "chrome": {
+    "status": "available",
+    "executable": "/snap/bin/chromium"
+  },
+  "diagnostics": [
+    {
+      "code": "viewer/visual-check-runtime",
+      "severity": "error",
+      "message": "visual-check could not complete its Chrome inspection.",
+      "subject": {
+        "artifact": "/home/eric_jia/MisakaNet/.archify-tool/misakanet-architecture.html"
+      },
+      "evidence": {
+        "reason": "Chrome DevTools write pipe failed: read ECONNRESET [ECONNRESET]\nChrome process: still running.\nChrome stderr:\ninternal error, please report: running \"chromium\" failed: cannot create XDG_RUNTIME_DIR folder \"/run/user/1000/snap.chromium\": mkdir /run/user/1000/snap.chromium: permission denied"
+      },
+      "supportedFixes": [
+        "resolve the reported Chrome inspection error, then rerun visual-check"
+      ]
+    }
+  ],
+  "containment": {
+    "status": "fail",
+    "viewports": []
+  },
+  "readability": {
+    "status": "fail",
+    "minimumProjectedNodeTextPx": 6,
+    "viewports": []
+  },
+  "viewerChrome": {
+    "status": "fail",
+    "viewports": []
+  },
+  "captures": {
+    "status": "fail",
+    "screenshots": [],
+    "contactSheet": null
+  },
+  "sidecars": {
+    "receipt": "misakanet-architecture.visual-check.json",
+    "contactSheet": "misakanet-architecture.visual-check.html"
+  },
+  "error": "Chrome DevTools write pipe failed: read ECONNRESET [ECONNRESET]\nChrome process: still running.\nChrome stderr:\ninternal error, please report: running \"chromium\" failed: cannot create XDG_RUNTIME_DIR folder \"/run/user/1000/snap.chromium\": mkdir /run/user/1000/snap.chromium: permission denied"
+}

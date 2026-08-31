@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "MisakaNet — Knowledge Network Runtime",
+    "output": "misakanet-architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "lesson-search",
+        "label": "Lesson search path",
+        "focus": [
+          "users",
+          "cli",
+          "mcp",
+          "engine",
+          "lessons"
+        ],
+        "note": "Primary path: agent or developer queries BM25 over the shared lesson corpus."
+      },
+      {
+        "id": "node-sync",
+        "label": "Node sync and hub",
+        "focus": [
+          "hub",
+          "sync",
+          "lessons"
+        ],
+        "note": "Hub pulls and rebuilds the knowledge graph; notifier fans out change signals."
+      },
+      {
+        "id": "publish-and-gates",
+        "label": "Publish + CI gates",
+        "focus": [
+          "users",
+          "ci",
+          "lessons",
+          "web"
+        ],
+        "note": "Lesson PRs flow through 50 GitHub workflows before publishing to the dashboard."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "users",
+      "type": "external",
+      "label": "Agent / Developer",
+      "sublabel": "Node runtime",
+      "pos": [
+        40,
+        320
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "cli",
+      "type": "frontend",
+      "label": "CLI Frontend",
+      "sublabel": "search_knowledge.py",
+      "pos": [
+        220,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ],
+      "tag": "python3 -m misakanet"
+    },
+    {
+      "id": "mcp",
+      "type": "cloud",
+      "label": "MCP Server",
+      "sublabel": "scripts/mcp_server.py",
+      "pos": [
+        220,
+        440
+      ],
+      "size": [
+        140,
+        64
+      ],
+      "tag": "stdio + HTTP"
+    },
+    {
+      "id": "engine",
+      "type": "backend",
+      "label": "BM25 Engine",
+      "sublabel": "engine.py",
+      "pos": [
+        420,
+        320
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "tag": "L1/L2 cache + RRF"
+    },
+    {
+      "id": "lessons",
+      "type": "database",
+      "label": "lessons/",
+      "sublabel": "shared knowledge",
+      "pos": [
+        640,
+        320
+      ],
+      "size": [
+        140,
+        64
+      ],
+      "tag": "317+ markdown"
+    },
+    {
+      "id": "profile",
+      "type": "database",
+      "label": "Node Profile",
+      "sublabel": "profile.json",
+      "pos": [
+        420,
+        140
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "stage + referral"
+    },
+    {
+      "id": "hub",
+      "type": "backend",
+      "label": "Misaka Hub",
+      "sublabel": "misaka_hub.py",
+      "pos": [
+        840,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ],
+      "tag": "optional scheduler"
+    },
+    {
+      "id": "sync",
+      "type": "messagebus",
+      "label": "Sync & Notifiers",
+      "sublabel": "git fetch + alerts",
+      "pos": [
+        1020,
+        200
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "tag": "Discord / Slack / Email / Feishu"
+    },
+    {
+      "id": "ci",
+      "type": "security",
+      "label": "GitHub CI",
+      "sublabel": "50 workflows",
+      "pos": [
+        840,
+        440
+      ],
+      "size": [
+        140,
+        64
+      ],
+      "tag": "pr-shape-guard, lesson-gate, dco"
+    },
+    {
+      "id": "web",
+      "type": "cloud",
+      "label": "Cloudflare Worker",
+      "sublabel": "dashboard SPA",
+      "pos": [
+        1020,
+        440
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "tag": "MISAKANET_KV + D1"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Local Node (git clone)",
+      "wraps": [
+        "cli",
+        "mcp",
+        "engine",
+        "profile",
+        "lessons",
+        "hub",
+        "sync"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "Trust boundary: lessons/contributions",
+      "wraps": [
+        "lessons",
+        "ci"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "users-cli",
+      "from": "users",
+      "to": "cli",
+      "label": "shell",
+      "variant": "emphasis"
+    },
+    {
+      "id": "users-mcp",
+      "from": "users",
+      "to": "mcp",
+      "label": "JSON-RPC",
+      "variant": "emphasis"
+    },
+    {
+      "id": "cli-engine",
+      "from": "cli",
+      "to": "engine",
+      "label": "query"
+    },
+    {
+      "id": "mcp-engine",
+      "from": "mcp",
+      "to": "engine",
+      "label": "search/get_lesson"
+    },
+    {
+      "id": "engine-lessons",
+      "from": "engine",
+      "to": "lessons",
+      "label": "BM25 scan"
+    },
+    {
+      "id": "engine-profile",
+      "from": "engine",
+      "to": "profile",
+      "label": "stage lookup",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "hub-lessons",
+      "from": "hub",
+      "to": "lessons",
+      "label": "git fetch",
+      "variant": "dashed"
+    },
+    {
+      "id": "hub-sync",
+      "from": "hub",
+      "to": "sync",
+      "label": "events"
+    },
+    {
+      "id": "sync-federation",
+      "from": "sync",
+      "to": "web",
+      "label": "alert",
+      "variant": "dashed",
+      "labelDy": 48
+    },
+    {
+      "id": "ci-lessons",
+      "from": "ci",
+      "to": "lessons",
+      "label": "PR gate",
+      "variant": "security",
+      "fromSide": "left",
+      "toSide": "bottom"
+    },
+    {
+      "id": "ci-web",
+      "from": "ci",
+      "to": "web",
+      "label": "deploy",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Knowledge core",
+      "items": [
+        "BM25 over lessons/ in pure Python stdlib",
+        "L1/L2 cache + RRF reranking",
+        "Optional --semantic flag via sentence-transformers"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Distribution",
+      "items": [
+        "git push/pull as primary transport",
+        "Optional Hub rebuilds knowledge graph",
+        "Federation peers authenticate via HMAC"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Quality gates",
+      "items": [
+        "50 GitHub workflows: shape, lesson, DCO, secret scan",
+        "MisakaHub notifiers: Discord / Slack / Email / Feishu",
+        "MCP intake accepts failures without GitHub account"
+      ]
+    }
+  ]
+}

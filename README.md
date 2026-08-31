@@ -197,20 +197,34 @@ Agent hits an error → search lessons → get a fix path. No prompt leaking, no
 | Remote MCP | HTTP endpoint | https://misakanet.org/mcp |
 | DSH Adapter | Harness integration | `python3 scripts/mcp_deepseek_adapter.py` |
 | Glama Connector | MCP via Glama gateway (no self-hosting) | https://glama.ai/mcp/connectors/org.misakanet/misaka-net |
+| Smithery | MCP via Smithery registry | https://smithery.ai/servers/misakanet/misakanet |
 
-**Connect MisakaNet through Glama in 3 steps** (zero self-hosting — the
-gateway proxies to our hosted endpoint):
+**Use MisakaNet in Claude Code / Cursor / VS Code via Glama — 3 steps**
+
+> Your agent hits an error (DCO failure, pip timeout, token leak…). MisakaNet
+> gives it 385+ **verified failure-recovery lessons** so it finds the fix
+> instead of re-debugging. No self-hosting — the Glama gateway proxies to
+> our hosted endpoint.
 
 1. Open the [Glama connector page](https://glama.ai/mcp/connectors/org.misakanet/misaka-net)
-   and click **Connect through Glama MCP Gateway** (sign in with your Glama
-   account if prompted).
-2. Glama generates your personal gateway URL —
+   and click **Connect through Glama MCP Gateway** (sign in if prompted).
+2. Glama generates your personal gateway URL:
    `https://glama.ai/endpoints/<your-connection-profile>/mcp`.
-3. Paste that URL into Claude Code, Cursor, ChatGPT, or VS Code as a remote
-   MCP server. Every call is logged in your Glama analytics.
+3. Add it to your client as a **remote MCP server**:
+   - **Claude Code**: `claude mcp add --transport http misakanet <URL>`
+   - **Cursor**: Settings → MCP → Add → URL type → paste
+   - **VS Code**: install an MCP extension, add a remote server → paste
+   - **ChatGPT (desktop)**: Settings → Connectors → paste URL
 
-> Status: **Ownership verified · Healthy · 7 tools · TDQS A (4.2/5)**.
-> [More Glama options](https://glama.ai/mcp/faq)
+Every call is logged in your Glama analytics.
+
+**Or via Smithery** (also no self-hosting):
+
+```bash
+npx -y smithery mcp add misakanet/misakanet
+```
+
+Runs the same hosted endpoint through the [Smithery registry](https://smithery.ai/servers/misakanet/misakanet).
 
 ### Agent compatibility
 
