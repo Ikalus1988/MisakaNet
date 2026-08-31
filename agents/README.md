@@ -13,7 +13,7 @@ agent is expected to satisfy:
 
 | Method | Purpose |
 |---|---|
-| `__init__(name)` | Take a stable identifier (used as the `agent_id` in hub telemetry). |
+| `__init__(name)` | Take a stable identifier (used as the `agent_id` in usage/telemetry). |
 | `run(task, lesson=None)` | Execute one task; pass a prior `lesson` (or list of lessons) when you want the agent to consult MisakaNet knowledge before acting. |
 | `get_lesson(result)` | Convert a `run()` result into a lesson-shaped dict so it can be fed back into a future `run()` call. |
 
@@ -29,10 +29,6 @@ turn it into a working agent:
 
 ## When this file is NOT the right starting point
 
-- **You are integrating Hermes Agent's Feishu bot with the hub.** Use
-  `hub/sync/feishu_notifier.py` directly — the bot runs in a separate
-  process (`~/.hermes/hermes-agent/`) and only needs its credentials
-  exported so the hub can push notifications into the same Feishu chat.
 - **You want a server-side lesson search/MCP integration.** Use
   `scripts/mcp_server.py` (the MCP server) or `search_knowledge.py`,
   not a custom agent.
@@ -44,7 +40,5 @@ turn it into a working agent:
 
 - `lessons/contrib/hermes-model-switch-ccswitch.md` — Hermes/CC model
   switching conventions.
-- `lessons/contrib/hub-credential-gateway-vs-hub.md` — where the hub
-  reads credentials vs. where Hermes' gateway reads them.
-- `lessons/contrib/misakanet-refactor-v2-review.md` — how the hub was
-  trimmed down; `your_agent.py` predates that refactor.
+- `lessons/contrib/misakanet-refactor-v2-review.md` — how the package
+  was trimmed down; `your_agent.py` predates that refactor.

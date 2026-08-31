@@ -12,7 +12,6 @@ MisakaNet 提供三条注册通道，面向不同用户群体。
 | **验证** | GitHub 账号背书 | 发件地址（无额外验证） | Turnstile + 邮箱限频 |
 | **信任等级** | github-verified | mail-verified | web-verified |
 | **节点 ID 分配** | register.yml workflow | Worker email handler | Worker fetch handler |
-| **头像生成** | misakanet-avatar.py | 无（邮件/Web 注册暂无头像） | 无 |
 | **回复确认** | GitHub Issue comment | email reply（尽力交付） | HTML 成功页面 |
 | **防滥用** | GitHub Rate Limit | 邮箱 28h 限频 + 临时邮箱黑名单 | Turnstile + IP 限频 + 邮箱限频 |
 | **注册耗时** | ~30s（CI 等待） | ~3s（KV 写入） | ~1s（KV 写入） |

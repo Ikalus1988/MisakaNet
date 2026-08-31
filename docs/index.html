@@ -420,17 +420,6 @@
     z-index: 1;
   }
 
-  .timeline-avatar {
-    width: 38px;
-    height: 38px;
-    border-radius: 8px;
-    image-rendering: pixelated;
-    border: 1px solid #30363d;
-    flex-shrink: 0;
-    transition: transform 0.2s;
-  }
-
-  .timeline-item:hover .timeline-avatar { transform: scale(1.1); }
 
   .timeline-order {
     font-size: 11px;
@@ -2080,14 +2069,6 @@ function getDataBase() {
 // Debug: set localStorage.misaka_debug=true, then open console
 const DEBUG = (() => { try { return localStorage.getItem('misaka_debug') === 'true'; } catch { return false; } })();
 
-const AVATAR_URL = (id) => `${RAW_BASE}/avatars/Misaka${String(id).padStart(5, "0")}.png`;
-const SCARF_COLORS = [
-  "#4682d2", "#d25050", "#55b969", "#d7b42d",
-  "#af64d2", "#eb9137", "#d764a5", "#3cb9c3",
-  "#9bcd9b", "#6496cd", "#c3a08c", "#50505a"
-];
-const SCARF_COLOR = (num) => SCARF_COLORS[num % 12];
-
 // ── Toast notification ──
 let toastTimer = null;
 let copyBtnTimer = null;
@@ -2899,9 +2880,6 @@ async function loadRecentRegistrations() {
         ? result.nodeNum
         : (CURRENT_COUNTER - idx);
       const date = new Date(issue.created_at).toISOString().slice(0, 10);
-      const avatarSrc = AVATAR_URL(number);
-      const scarfColor = SCARF_COLOR(nth);
-
       // Detect agent type from registration body "Agent 类型: **XXX**"
       let agentType = 'hermes';
       const body = issue.body || '';
@@ -2925,10 +2903,6 @@ async function loadRecentRegistrations() {
       return `
         <div class="timeline-item">
           <div class="timeline-dot"></div>
-          <img class="timeline-avatar" src="${avatarSrc}"
-               alt="Misaka${number}" loading="lazy"
-               style="border-color:${scarfColor};box-shadow:0 0 0 1px ${scarfColor}40;"
-               onerror="this.style.display='none'">
           <div class="timeline-order">#${nth}</div>
           <div class="timeline-name">Misaka${String(number).padStart(5, "0")}</div>
           <div class="timeline-account">${accountLabel}</div>
@@ -2947,8 +2921,6 @@ async function loadRecentRegistrations() {
         const number = result ? result.nodeNum : (CURRENT_COUNTER - realIdx);
         const date = new Date(issue.created_at).toISOString().slice(0, 10);
         const nth = registrations.length - realIdx;
-        const avatarSrc = AVATAR_URL(number);
-        const scarfColor = SCARF_COLOR(nth);
         let agentType = 'hermes';
         const body = issue.body || '';
         const agentMatch = body.match(/Agent\s*类型[：:]\s*\*\*(\w+)\*\*/i);
@@ -2957,7 +2929,7 @@ async function loadRecentRegistrations() {
         const isPublicReg = body.includes('通过公开通道');
         const accountLabel = isPublicReg ? t('publicUser') : `@${issue.user.login}`;
         const agentBadge = `<span class="agent-badge ${getAgentBadgeClass(agentType)}">${getAgentLabel(agentType)}</span>`;
-        return `<div class="timeline-item"><div class="timeline-dot"></div><img class="timeline-avatar" src="${avatarSrc}" alt="Misaka${number}" loading="lazy" style="border-color:${scarfColor};box-shadow:0 0 0 1px ${scarfColor}40;" onerror="this.style.display='none'"><div class="timeline-order">#${nth}</div><div class="timeline-name">Misaka${String(number).padStart(5, "0")}</div><div class="timeline-account">${accountLabel}</div>${agentBadge}<div class="timeline-date">${date}</div></div>`;
+        return `<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-order">#${nth}</div><div class="timeline-name">Misaka${String(number).padStart(5, "0")}</div><div class="timeline-account">${accountLabel}</div>${agentBadge}<div class="timeline-date">${date}</div></div>`;
       }).join("");
 
       list.innerHTML += `
