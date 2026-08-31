@@ -144,7 +144,7 @@
         140,
         64
       ],
-      "tag": "optional scheduler"
+      "tag": "sync only · arbitration not wired"
     },
     {
       "id": "sync",
