@@ -4,7 +4,7 @@
 // 环境变量: REGISTER_TOKEN (GitHub PAT, 需 issues:write)
 
 // Imported modules — loaded at startup via dynamic import (ESM compatible)
-const crypto = globalThis.crypto || (await import("node:crypto")).webcrypto || (await import("node:crypto"));
+const crypto = globalThis.crypto || (await import("node:crypto")).webcrypto;
 const _utils = await import("./lib/utils.js");
 const {
   CORS_HEADERS, timingSafeEqual, sanitizeIdentifier,

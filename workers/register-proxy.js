@@ -3,6 +3,7 @@
 // 环境变量: REGISTER_TOKEN (GitHub PAT, 需 contents+issues write)
 //          MAINTAINER_KEY (可选, 保护 /api/insights/demand-map)
 // KV Namespace: MISAKANET_KV (可选，用于缓存数据代理响应 + 需求看板聚合)
+const crypto = globalThis.crypto || (await import("node:crypto")).webcrypto;
 
 const REPO = "Ikalus1988/MisakaNet";
 const GITHUB_API = "https://api.github.com";
