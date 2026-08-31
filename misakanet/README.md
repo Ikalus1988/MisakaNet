@@ -1,51 +1,51 @@
-## MisakaNet — 节点技能反馈通信模块
+# MisakaNet Python Package
 
-**MisakaNet 是通信子模块（前身为 Agent-Medici 通信层，现为独立项目）。**  
-节点通过 GitHub Issues 上报 skill 使用反馈，Hub 消费后更新 Knowledge Graph。
+The `misakanet/` package is the importable core of MisakaNet — a git-backed
+failure-memory network for AI agents. It provides search, evidence
+grading, and the MCP server implementation.
 
-### 目录结构
+> 2026-08-31: rewritten — the previous "Node/Hub/Knowledge Graph" protocol
+> framing described a centralized federation design that was never deployed.
+> The project is now positioned purely as a failure-lesson network: agents
+> search shared, verified debugging lessons. No hub, no node federation, no
+> graph.
 
+## Modules
+
+| Module | Purpose |
+|--------|---------|
+| `misakanet/search/engine.py` | BM25 search over `lessons/` (pure stdlib), L1/L2 cache, metadata scoring |
+| `misakanet/search/embeddings.py` | Optional `--semantic` embeddings (sentence-transformers) |
+| `misakanet/evidence.py` | Evidence levels E0–E4 normalization and trust scoring |
+| `misakanet/freshness.py` | Lesson freshness decay / recency scoring |
+| `misakanet/guard.py` | Secret redaction guard (redact before truncate) |
+| `misakanet/profile.py` | Node profile (stage + referral), atomic writes |
+| `misakanet/server/` | MCP server implementation (protocol, handlers, tools, resources, prompts) |
+| `misakanet/tools/` | Integrations: dashboard, langchain tool, lesson scorer, telemetry |
+| `misakanet/graphql/` | GraphQL schema over lesson search |
+| `misakanet/scripts/` | Operational scripts (clean pipeline, inject helpers, draft reminders, hook stats) |
+
+## Quick start
+
+```python
+from misakanet.search import search_lessons
+results = search_lessons("pip install timeout")
+for r in results:
+    print(r["title"], r["score"])
 ```
-misakanet/
-├── .github/ISSUE_TEMPLATE/feedback.yml  # Issue 模板（结构化上报）
-├── schema/
-│   ├── feedback.schema.json             # 反馈数据 JSON Schema
-│   └── response.schema.json             # Hub 回复 JSON Schema
-└── scripts/
-    ├── feedback_report.py               # 节点侧：收集 + 上报反馈
-```
 
-### 消息生命周期
+## CLI
 
-```
-节点 (hp WSL)                     GitHub Issues               Hub (Windows)
-     │                                │                           │
-     │── POST /issues (feedback) ───→ │                           │
-     │  labels: feedback,unprocessed  │                           │
-     │                                │── GET /issues?labels= ──→│
-     │                                │   feedback,unprocessed    │
-     │                                │                           │── 解析 body
-     │                                │                           │── 更新 KnowledgeGraph
-     │                                │←── POST comment ────────│
-     │                                │←── PATCH labels + close │
-```
-
-### 快速使用
-
-**节点侧（WSL）：**
 ```bash
-cd /path/to/MisakaNet
-python misakanet/scripts/feedback_report.py
+python3 -m misakanet           # usage overview
+python3 -m misakanet.search    # (if exposed) search entry
 ```
 
-**Hub 侧（Windows）：**
-```powershell
-cd C:\Users\Eric Jia\MisakaNet
-$env:MISAKANET_TOKEN = "ghp_..."
+## Testing
+
+The package ships with a test suite under `tests/` covering search quality,
+evidence grading, MCP protocol, and redaction. Run:
+
+```bash
+python3 -m pytest tests/ -q
 ```
-
-### 设计原则
-
-- **节点是 Pull 方** — Hub 不下指令，只写建议到图谱
-- **GitHub Issues = 消息通道** — Labels 做 topic 路由，无并发冲突
-- **技能内容留在节点** — Hub 只存 embedding + meta + 图谱，不存完整 skill
