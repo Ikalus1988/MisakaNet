@@ -1,0 +1,23 @@
+name: "MisakaNet CodeQL config"
+
+# Applied via the github-codeql-config-file repository property (default
+# setup, supported 2026-08-04+). No codeql.yml workflow needed.
+
+queries:
+  - uses: security-extended
+
+# py/clear-text-logging-sensitive-data on scripts/check_worker_secrets.py:
+# FALSE POSITIVE. The audit tool deliberately reports discovery locations
+# (file/line/static pattern description) — never the matched secret text.
+# The finder discards the match object via bool(), uses an independent line
+# counter, and neutral naming; but CodeQL's interprocedural taint still
+# traces read_text() → return → print. Inline lgtm/codeql comments are not
+# honored by codeql-action@v4, so the supported suppression is this
+# query-filters exclude, scoped narrowly to this one file.
+# See docs/reviews/2026-08-30-dual-axis-review.md (audit tool, prints
+# metadata only).
+query-filters:
+  - exclude:
+      id: py/clear-text-logging-sensitive-data
+      paths:
+        - scripts/check_worker_secrets.py
