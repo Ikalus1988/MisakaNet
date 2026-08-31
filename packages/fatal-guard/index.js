@@ -103,12 +103,14 @@ function runHandler(reason, error, customPayload) {
     if (process.platform === 'win32') {
       const payloadTmp = path.join(os.tmpdir(), `fatal-guard-${process.pid}.json`);
       try { fs.writeFileSync(payloadTmp, payload); } catch (_) {}
-      // FATAL_HANDLER is developer-configured, not user input. shell: false
-      // prevents injection (matches bin/fatal-guard.js suppression).
-      // lgtm[js/shell-command-injection-from-environment]
+      // sanitizeCommand rejects shell metacharacters before any spawn, so the
+      // env-derived FATAL_HANDLER can never smuggle a shell command. shell:
+      // false is a literal at the call site (CodeQL sees a non-shell spawn).
+      if (invocation.rejected) return;
       spawnSync(invocation.command, invocation.args, {
         timeout: HANDLER_TIMEOUT_MS,
         stdio: 'ignore',
+        shell: false,
         env: {
           ...process.env,
           // Avoid UnicodeEncodeError on Windows cp1252 when the handler is a
@@ -122,9 +124,9 @@ function runHandler(reason, error, customPayload) {
         ...invocation.options,
       });
     } else {
-      // FATAL_HANDLER is developer-configured, not user input. shell: false
-      // prevents injection (matches bin/fatal-guard.js suppression).
-      // lgtm[js/shell-command-injection-from-environment]
+      // sanitizeCommand rejects shell metacharacters before any spawn; shell:
+      // false is a literal here so CodeQL does not treat this as a shell sink.
+      if (invocation.rejected) return;
       const child = spawn(invocation.command, invocation.args, {
         stdio: 'ignore',
         detached: true,
