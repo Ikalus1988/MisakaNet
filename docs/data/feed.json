@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-08-31T13:58:57.115421+00:00",
+  "generated_at": "2026-08-31T20:51:31.443506+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 12,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(deps): update mkdocs-git-revision-date-localized-plugin requirement from >=1.2.0 to >=1.5.4",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1389",
+      "timestamp": "2026-08-31T15:54:16Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(deps): update mkdocs requirement from >=1.5.0 to >=1.6.1",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1387",
+      "timestamp": "2026-08-31T15:54:13Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(deps): update mcp requirement from >=2.0.0 to >=2.1.1",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1392",
+      "timestamp": "2026-08-31T15:21:53Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(deps): update pymdown-extensions requirement from >=10.0.0 to >=11.0.2",
@@ -16,27 +37,6 @@
       "title": "chore(deps): update mkdocs-material requirement from >=9.5.0 to >=9.7.7",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1393",
       "timestamp": "2026-08-31T11:44:23Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): bump zsxh1990/pr-genius/.github/actions/pr-genius-check from 1.7.0 to 1.7.2",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1390",
-      "timestamp": "2026-08-31T11:43:55Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps-dev): bump wrangler from 4.125.0 to 4.127.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1388",
-      "timestamp": "2026-08-31T11:43:52Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): bump actions/cache from 4 to 6",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1386",
-      "timestamp": "2026-08-31T11:43:50Z",
       "source": "github"
     },
     {
