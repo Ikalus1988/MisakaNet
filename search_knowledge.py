@@ -868,8 +868,8 @@ def main():
 
     if use_semantic:
         try:
-            from hub.storage.vector_store import generate_embedding
-            from hub.storage.vector_store import embedding_service_health
+            from misakanet.search.embeddings import generate_embedding
+            from misakanet.search.embeddings import embedding_service_health
             health = embedding_service_health()
             if health.get("status") == "ok":
                 print("  🔬 Semantic search enabled")
@@ -878,7 +878,7 @@ def main():
                 print("  ⚠️ Falling back to BM25 — semantic search is not available")
                 use_semantic = False
         except ImportError:
-            print("  ⚠️ --semantic requires sentence-transformers and hub.storage.vector_store")
+            print("  ⚠️ --semantic requires sentence-transformers and misakanet.search.embeddings")
             print("  ⚠️ Falling back to BM25")
             use_semantic = False
     MIN_SCORE_THRESHOLD = 0.1  # Minimum score to consider as "found"

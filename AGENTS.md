@@ -58,21 +58,6 @@ python3 scripts/queue_lesson.py \
 cd ~/MisakaNet && git pull --ff-only
 ```
 
-## Hub / Feishu 通知（可选）
-
-如果你接了 `hub/misaka_hub.py` 并想复用 Hermes Agent 的飞书机器人：
-
-```bash
-# Hermes gateway 已经从 ~/.hermes/.env 读取这些变量
-# 直接 source 即可让 hub 沿用同一个 bot、同一批可见用户
-source ~/.hermes/.env
-
-# 启动 hub（dry-run 模式只 log 不真发）
-FEISHU_HOME_CHANNEL=oc_xxx python3 -m hub.misaka_hub
-```
-
-凭据永远不要写进 `hub/config.yaml`。详见 `hub/README.md` 与
-`hub/sync/feishu_notifier.py`。
 
 ## 详细指南
 

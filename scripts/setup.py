@@ -71,18 +71,6 @@ def check_environment() -> dict:
     _check("核心搜索: 零依赖（纯 Python stdlib）", True)
     state["core_ok"] = True
 
-    # Hub 依赖检查
-    hub_deps = {"aiohttp": False, "PyYAML": False, "networkx": False, "chromadb": False}
-    for pkg in hub_deps:
-        try:
-            __import__(pkg.replace("-", "_"))
-            hub_deps[pkg] = True
-        except ImportError:
-            pass
-    hub_installed = sum(1 for v in hub_deps.values() if v)
-    _check(f"Hub 依赖: {hub_installed}/{len(hub_deps)} 已安装", hub_installed == len(hub_deps))
-    state["hub_deps"] = hub_deps
-    state["hub_ok"] = hub_installed == len(hub_deps)
 
     # Lessons 统计
     lessons = list(REPO.glob("lessons/**/*.md"))
@@ -101,11 +89,6 @@ def check_environment() -> dict:
         except Exception:
             pass
 
-    # 是否已配置 hub
-    config_path = REPO / "config.yaml"
-    ok = config_path.exists()
-    _check(f"Hub 配置: {'已配置' if ok else '未配置 (config.yaml 不存在)'}", ok)
-    state["config_ok"] = ok
 
     print()
     return state
@@ -118,19 +101,6 @@ def setup_wizard():
     print("=" * 50)
     print("  MisakaNet 安装向导")
     print("=" * 50)
-
-    # 安装 Hub 依赖
-    if not state.get("hub_ok"):
-        print("\n📦 Hub 依赖未完全安装")
-        ans = input("  安装 Hub 依赖? (Y/n): ").strip().lower()
-        if ans != "n":
-            req = REPO / "requirements.txt"
-            if req.exists():
-                _run([sys.executable, "-m", "pip", "install", "-r", str(req)])
-                print("  ✅ Hub 依赖安装完成")
-            else:
-                print("  ⚠️ 未找到 requirements.txt")
-
     # 配置 GitHub Token
     if not state.get("github_auth_ok"):
         print("\n🔑 GitHub Token 配置")
@@ -168,7 +138,6 @@ def setup_wizard():
     print(f"  搜索:   python3 search_knowledge.py \"关键词\"")
     print(f"  贡献:   python3 scripts/contribute.py path/to/lesson.md")
     print(f"  新建:   python3 scripts/new_lesson.py")
-    print(f"  Hub:    python3 hub/misaka_hub.py")
     print()
 
 

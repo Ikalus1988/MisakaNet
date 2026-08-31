@@ -834,7 +834,7 @@ def _entity_matches(query: str, doc: CachedDoc) -> dict[str, list[str]]:
 def _vector_similarity(query: str, doc: CachedDoc) -> float | None:
     """Return optional cosine similarity, or None when vectors are unavailable."""
     try:
-        from hub.storage.vector_store import generate_embedding
+        from misakanet.search.embeddings import generate_embedding
         query_embedding = generate_embedding(query)
         doc_embedding = generate_embedding(f"{doc.title}\n{doc.content[:4000]}")
         numerator = sum(a * b for a, b in zip(query_embedding, doc_embedding))

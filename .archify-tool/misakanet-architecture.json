@@ -22,8 +22,6 @@
         "id": "node-sync",
         "label": "Node sync and hub",
         "focus": [
-          "hub",
-          "sync",
           "lessons"
         ],
         "note": "Hub pulls and rebuilds the knowledge graph; notifier fans out change signals."
@@ -132,36 +130,6 @@
       "tag": "stage + referral"
     },
     {
-      "id": "hub",
-      "type": "backend",
-      "label": "Misaka Hub",
-      "sublabel": "misaka_hub.py",
-      "pos": [
-        840,
-        200
-      ],
-      "size": [
-        140,
-        64
-      ],
-      "tag": "sync only · arbitration not wired"
-    },
-    {
-      "id": "sync",
-      "type": "messagebus",
-      "label": "Sync & Notifiers",
-      "sublabel": "git fetch + alerts",
-      "pos": [
-        1020,
-        200
-      ],
-      "size": [
-        160,
-        64
-      ],
-      "tag": "Discord / Slack / Email / Feishu"
-    },
-    {
       "id": "ci",
       "type": "security",
       "label": "GitHub CI",
@@ -201,9 +169,7 @@
         "mcp",
         "engine",
         "profile",
-        "lessons",
-        "hub",
-        "sync"
+        "lessons"
       ]
     },
     {
@@ -255,27 +221,6 @@
       "label": "stage lookup",
       "fromSide": "top",
       "toSide": "bottom"
-    },
-    {
-      "id": "hub-lessons",
-      "from": "hub",
-      "to": "lessons",
-      "label": "git fetch",
-      "variant": "dashed"
-    },
-    {
-      "id": "hub-sync",
-      "from": "hub",
-      "to": "sync",
-      "label": "events"
-    },
-    {
-      "id": "sync-federation",
-      "from": "sync",
-      "to": "web",
-      "label": "alert",
-      "variant": "dashed",
-      "labelDy": 48
     },
     {
       "id": "ci-lessons",

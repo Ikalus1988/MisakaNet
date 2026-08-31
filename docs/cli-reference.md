@@ -57,11 +57,3 @@ python3 search_knowledge.py "database locked" --json --top=3 | jq '.[].path'
 | `MISAKANET_HOME` | `~/.misakanet` | Data directory (cache, telemetry DB) |
 | `MISAKANET_TELEMETRY` | `$MISAKANET_HOME/langchain_telemetry.db` | Telemetry database path |
 
-## Hub (Advanced)
-
-| Command | Description |
-|---------|-------------|
-| `python3 hub/misaka_hub.py` | Start Hub orchestration server |
-| `python3 -m misakanet.scripts.hub_poller` | Poll Hub for new lessons |
-
-> Requires: `pip install -r hub/requirements.txt`

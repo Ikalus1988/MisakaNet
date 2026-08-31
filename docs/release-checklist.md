@@ -26,7 +26,7 @@ Standard release process. Do not skip steps.
 
 5. **Update stale docs**
    - Scan for old lesson/node counts: `grep -rn "235\+\|244\|旧数字" --include="*.md" --include="*.html" --include="*.json"`
-   - Update: README.md, docs/index.html, docs/search/index.html, docs/mcp-quickstart.md, hub/README.md, STATUS.md, server.json description
+   - Update: README.md, docs/index.html, docs/search/index.html, docs/mcp-quickstart.md, STATUS.md, server.json description
 
 ## Release
 

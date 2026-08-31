@@ -13,7 +13,6 @@ misakanet/
 │   └── response.schema.json             # Hub 回复 JSON Schema
 └── scripts/
     ├── feedback_report.py               # 节点侧：收集 + 上报反馈
-    └── hub_poller.py                    # Hub 侧：消费反馈 + 更新图谱
 ```
 
 ### 消息生命周期
@@ -43,7 +42,6 @@ python misakanet/scripts/feedback_report.py
 ```powershell
 cd C:\Users\Eric Jia\MisakaNet
 $env:MISAKANET_TOKEN = "ghp_..."
-python misakanet\scripts\hub_poller.py
 ```
 
 ### 设计原则

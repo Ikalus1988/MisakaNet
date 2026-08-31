@@ -22,21 +22,6 @@ misakanet/
 └── node/                # Node scripts
     └── __init__.py
 
-hub/
-├── misaka_hub.py        # Lightweight sync scheduler (172 lines)
-├── master/
-│   └── master_api.py    # Master mode API
-├── orchestrator/
-│   ├── arbitration_queue.py  # Conflict detection (notify_fn hook)
-│   ├── confidence.py         # Confidence model
-│   ├── skill_indexer.py      # Skill indexing
-│   ├── subscription.py       # Subscription manager
-│   └── knowledge_graph.py    # Knowledge graph (hub/storage/)
-└── sync/
-    ├── notifier.py       # Discord / Slack / Email notifiers
-    ├── feishu_notifier.py    # Feishu webhook notifier (optional)
-    └── sync_scheduler.py     # Periodic git sync
-
 scripts/
 ├── new_lesson.py         # Interactive lesson wizard
 ├── contribute.py         # GitHub API lesson submission (no fork needed)
@@ -55,7 +40,6 @@ reference/                # Reference documents (6 .md files)
 
 - **git push/pull** — lesson sharing. Each Node pushes to GitHub, others pull.
 - **GitHub Issues** — registration and manual conflict resolution.
-- **Hub (optional)** — periodic git fetch and knowledge graph rebuild. Not required for single-Node setups.
 - **Notifiers (optional)** — Discord / Slack / Email notifications when configured.
 
 ## Key decisions
@@ -63,7 +47,7 @@ reference/                # Reference documents (6 .md files)
 - **Git as transport** — zero infrastructure, every Node has a full offline copy.
 - **Markdown as storage** — human-readable, diffable, mergeable.
 - **Python stdlib for search** — git clone and you're done. No pip install needed for core functionality.
-- **No mandatory daemon** — the Hub is optional. MisakaNet works as a pure git repo.
+- **No mandatory daemon** — MisakaNet works as a pure git repo.
 - **Three concepts** — Lesson / Node / Search. Everything else is implementation detail.
 
 ## CI Pipeline Architecture
@@ -123,15 +107,7 @@ scripts/mcp_http_server.py
   └── mcp.server.fastmcp (FastMCP framework)
   └── same search backends as mcp_server.py
 
-hub/misaka_hub.py
-  └── hub/sync/sync_scheduler.py (git-based sync)
-  └── hub/storage/knowledge_graph.py (graph rebuild)
-  └── hub/sync/notifier.py (Discord/Slack/Email)
 
-hub/federation/
-  └── hmac_auth.py (shared-secret authentication)
-  └── registry.py (peer node directory)
-  └── sync_protocol.py (inter-node sync)
 
 web/ (Cloudflare Workers)
   └── docs/index.html (vanilla JS SPA, zero dependencies)
@@ -143,7 +119,6 @@ web/ (Cloudflare Workers)
 | Extension | Mechanism | Example |
 |-----------|-----------|---------|
 | **New search backend** | Register in `misakanet.search.engine` | Add `ElasticsearchEngine` class |
-| **New notifier channel** | Implement `hub/sync/notifier.py` interface | `TeamsNotifier`, `TelegramNotifier` |
 | **New MCP tool** | Decorate with `@mcp.tool()` in `mcp_server.py` | `misakanet.recommend` tool |
 | **New CI gate** | Add workflow to `.github/workflows/` | `pr-benchmark.yml` |
 | **New lesson domain** | Create subdirectory in `lessons/` | `lessons/kubernetes/` |
