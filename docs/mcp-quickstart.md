@@ -29,6 +29,21 @@ Please install and test MisakaNet as an MCP failure-memory server.
 
 MisakaNet is a failure-memory and recovery layer for coding agents / MCP clients. Local stdio MCP calls work independently of Glama analytics.
 
+## Fastest: connect via Glama (no clone, no self-hosting)
+
+The [Glama connector](https://glama.ai/mcp/connectors/org.misakanet/misaka-net)
+proxies to MisakaNet's hosted endpoint — you skip the local setup entirely:
+
+1. Open the connector page and click **Connect through Glama MCP Gateway**.
+2. Glama gives you a personal gateway URL:
+   `https://glama.ai/endpoints/<your-connection-profile>/mcp`.
+3. Add that URL to your client (Claude Code `mcp.json`, Cursor, VS Code,
+   ChatGPT) as a remote MCP server.
+
+Status on Glama: **Ownership verified · Healthy · 7 tools · TDQS A (4.2/5)**.
+Prefer local? Use the stdio setup below — it works offline and independently
+of Glama.
+
 ## Setup
 
 ### Claude Code

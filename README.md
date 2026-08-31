@@ -196,7 +196,21 @@ Agent hits an error → search lessons → get a fix path. No prompt leaking, no
 | SKILL.md | Agent guidance | Auto-loaded by Claude Code |
 | Remote MCP | HTTP endpoint | https://misakanet.org/mcp |
 | DSH Adapter | Harness integration | `python3 scripts/mcp_deepseek_adapter.py` |
-| Glama Connector | One-click MCP install via Glama | https://glama.ai/mcp/connectors/org.misakanet/misaka-net |
+| Glama Connector | MCP via Glama gateway (no self-hosting) | https://glama.ai/mcp/connectors/org.misakanet/misaka-net |
+
+**Connect MisakaNet through Glama in 3 steps** (zero self-hosting — the
+gateway proxies to our hosted endpoint):
+
+1. Open the [Glama connector page](https://glama.ai/mcp/connectors/org.misakanet/misaka-net)
+   and click **Connect through Glama MCP Gateway** (sign in with your Glama
+   account if prompted).
+2. Glama generates your personal gateway URL —
+   `https://glama.ai/endpoints/<your-connection-profile>/mcp`.
+3. Paste that URL into Claude Code, Cursor, ChatGPT, or VS Code as a remote
+   MCP server. Every call is logged in your Glama analytics.
+
+> Status: **Ownership verified · Healthy · 7 tools · TDQS A (4.2/5)**.
+> [More Glama options](https://glama.ai/mcp/faq)
 
 ### Agent compatibility
 
