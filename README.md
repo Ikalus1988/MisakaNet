@@ -590,3 +590,9 @@ See [LIMITATIONS.md](docs/LIMITATIONS.md) for known constraints and non-goals â€
 ---
 
 *failure-memory protocol (failure-memory protocol) â€” [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*
+
+## Test Suite
+To run the dsh plugin test suite, execute:
+``bash
+node --test tests/dsh/*.test.js
+``n
