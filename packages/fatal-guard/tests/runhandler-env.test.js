@@ -94,6 +94,21 @@ test('runHandler source wires PYTHONIOENCODING=utf-8 in both branches', () => {
   assert.match(src, /child\.unref\(\)/);
 });
 
+test('runHandler imports os/fs/path at module scope, not inside try/catch (bug #1222)', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'index.js'), 'utf8');
+  const runHandlerStart = src.indexOf('function runHandler');
+  assert.ok(runHandlerStart > 0, 'runHandler not found');
+  const preamble = src.slice(0, runHandlerStart);
+  assert.match(preamble, /require\(['"]node:os['"]\)/);
+  assert.match(preamble, /require\(['"]node:fs['"]\)/);
+  assert.match(preamble, /require\(['"]node:path['"]\)/);
+
+  const runHandlerBody = src.slice(runHandlerStart);
+  assert.doesNotMatch(runHandlerBody, /require\(['"]node:os['"]\)/);
+  assert.doesNotMatch(runHandlerBody, /require\(['"]node:fs['"]\)/);
+  assert.doesNotMatch(runHandlerBody, /require\(['"]node:path['"]\)/);
+});
+
 test('runHandler does not throw when FATAL_HANDLER is unset (safe no-op)', () => {
   delete process.env.FATAL_HANDLER;
   assert.doesNotThrow(() => runHandler('noop', new Error('safe')));
