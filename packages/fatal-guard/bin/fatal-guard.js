@@ -240,9 +240,12 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
 function main() {
   const { command, timeout } = parseArgs(process.argv.slice(2));
   const stderrIsTTY = !!process.stderr.isTTY;
-  const child = spawn(command[0], command.slice(1), {
+  // Use buildSpawnSpec to handle Windows .cmd/.bat routing through ComSpec
+  const invocation = buildSpawnSpec(command[0], command.slice(1));
+  const child = spawn(invocation.command, invocation.args, {
     stdio: ['inherit', 'inherit', stderrIsTTY ? 'inherit' : 'pipe'],
     shell: false,
+    ...invocation.options,
   });
 
   let stderrBuffer = '';

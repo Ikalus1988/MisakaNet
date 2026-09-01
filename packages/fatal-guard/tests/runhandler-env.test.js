@@ -37,14 +37,17 @@ test('PYTHONIOENCODING=utf-8 is wired into runHandler env contract (bug #1373 pr
   const tmp = await mkdtemp(path.join(os.tmpdir(), 'fatal-guard-encoding-'));
   try {
     const logPath = path.join(tmp, 'log.txt');
+    // Use forward slashes to avoid backslash escaping issues on Windows
+    const logPathPosix = logPath.replace(/\\/g, '/');
     const handler = await makeHandler(tmp, `
 const fs = require('fs');
-fs.writeFileSync('${logPath}', 'PYTHONIOENCODING=' + (process.env.PYTHONIOENCODING || 'unset') + '\\n');
+fs.writeFileSync('${logPathPosix}', 'PYTHONIOENCODING=' + (process.env.PYTHONIOENCODING || 'unset') + '\\n');
 process.exit(0);
 `);
     // Mirror the env contract runHandler uses on POSIX. If the contract
     // is wrong, the child writes 'unset'.
-    const result = spawnSync(handler, [], {
+    // Use process.execPath to run .js files on Windows
+    const result = spawnSync(process.execPath, [handler], {
       env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
       stdio: 'ignore',
     });
@@ -60,9 +63,11 @@ test('runHandler payload is delivered as the last argv entry (bug #1373 problem 
   const tmp = await mkdtemp(path.join(os.tmpdir(), 'fatal-guard-argv-'));
   try {
     const logPath = path.join(tmp, 'log.txt');
+    // Use forward slashes to avoid backslash escaping issues on Windows
+    const logPathPosix = logPath.replace(/\\/g, '/');
     const handler = await makeHandler(tmp, `
 const fs = require('fs');
-fs.writeFileSync('${logPath}', 'argv=' + JSON.stringify(process.argv.slice(2)) + '\\n');
+fs.writeFileSync('${logPathPosix}', 'argv=' + JSON.stringify(process.argv.slice(2)) + '\\n');
 process.exit(0);
 `);
     // runHandler appends the JSON payload to handlerArgs. Mirror that.
@@ -72,7 +77,8 @@ process.exit(0);
       timestamp: '2026-08-30T00:00:00.000Z',
       pid: 1,
     });
-    const result = spawnSync(handler, [payload], { stdio: 'ignore' });
+    // Use process.execPath to run .js files on Windows
+    const result = spawnSync(process.execPath, [handler, payload], { stdio: 'ignore' });
     assert.equal(result.status, 0);
     const log = await readFile(logPath, 'utf8');
     assert.match(log, /argv=\["\{\\"schemaVersion\\":1,\\"reason\\":\\"argv-test\\"/, `expected payload, got: ${log}`);
