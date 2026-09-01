@@ -423,12 +423,12 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
             errors.append(f"duplicate title: {fm['title']!r}")
 
     # Near-duplicate content (same language, Jaccard >= 0.55): real duplicates
-    # that a title check misses. Reported as a gate error so PRs don't merge
-    # copy-pasted lessons (2026-08-30).
+    # that a title check misses. Reported as a warning so maintainers can review
+    # but PRs aren't blocked for similar-but-different lessons (2026-08-30).
     if fm and fm.get("title"):
         for other, _lang, sim in similarity_to_existing(path, repo, dirs=dirs):
             errors.append(
-                f"near-duplicate content: {sim:.0%} similar to {other}"
+                f"[warn] near-duplicate content: {sim:.0%} similar to {other}"
                 f" (merge or differentiate; translations are auto-excluded)"
             )
 

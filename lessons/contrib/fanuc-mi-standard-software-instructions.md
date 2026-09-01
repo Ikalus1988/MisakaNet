@@ -12,8 +12,6 @@ tags:
 - mi22-fds
 - automotive
 - welding
-- gluing
-- riveting
 status: published
 created: '2026-07-14'
 source: internal-training
