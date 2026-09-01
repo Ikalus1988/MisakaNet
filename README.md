@@ -27,6 +27,7 @@
 [![MCP Quickstart](https://img.shields.io/badge/MCP-quickstart-green)](docs/mcp-quickstart.md)
 [![dsh.so risk](https://www.dsh.so/badge/misakanet.svg)](https://www.dsh.so/artifact/misakanet/)
 [![dsh.so install](https://www.dsh.so/badge/install/misakanet.svg)](https://www.dsh.so/artifact/misakanet/)
+[![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/plugins/ikalus1988/misakanet)
 [![Benchmark](https://img.shields.io/badge/Benchmark-Weekly%20Workers%20AI-blue)](https://github.com/Ikalus1988/MisakaNet/tree/main/docs/benchmarks)
 [![Stars](https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social)](https://github.com/Ikalus1988/MisakaNet/stargazers)
 [![MCP Toplist](https://mcptoplist.com/badge/io.github.Ikalus1988%2Fmisakanet.svg)](https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet)
