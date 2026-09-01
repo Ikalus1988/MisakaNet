@@ -215,7 +215,12 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
     const result = spawnSync(invocation.command, invocation.args, {
       timeout: HANDLER_TIMEOUT_MS,
       stdio: 'ignore',
-      env: { ...process.env, FATAL_PAYLOAD_FILE: payloadTmp, FATAL_PAYLOAD: payload },
+      env: {
+        ...process.env,
+        PYTHONIOENCODING: 'utf-8',
+        FATAL_PAYLOAD_FILE: payloadTmp,
+        FATAL_PAYLOAD: payload,
+      },
     });
     if (result.error || (result.status !== null && result.status !== 0)) {
       const detail = result.error
