@@ -46,8 +46,8 @@
   <table class="table">
     <thead><tr><th>HTTP MCP function</th><th>Auth</th><th>Use when</th><th>End state</th></tr></thead>
     <tbody>
-      <tr><td><code>misakanet_search</code></td><td>Bearer required</td><td>You have a redacted error, stack trace fragment, tool name, or recovery topic.</td><td>Ranked candidate lessons.</td></tr>
-      <tr><td><code>misakanet_get_lesson</code></td><td>Bearer required</td><td>Search returned a promising lesson path/id, or a user referenced one.</td><td>Lesson markdown for the agent context.</td></tr>
+      <tr><td><code>misakanet_search</code></td><td><span class="badge">No Bearer</span></td><td>You have a redacted error, stack trace fragment, tool name, or recovery topic.</td><td>Ranked candidate lessons.</td></tr>
+      <tr><td><code>misakanet_get_lesson</code></td><td><span class="badge">No Bearer</span></td><td>Search returned a promising lesson path/id, or a user referenced one.</td><td>Lesson markdown for the agent context.</td></tr>
       <tr><td><code>misakanet_submit_intake</code></td><td><span class="badge">No Bearer</span></td><td>No good lesson exists, or a lesson is stale/incorrect.</td><td>GitHub issue with <code>intake</code>, <code>mcp-intake</code>, <code>pending-review</code>.</td></tr>
     </tbody>
   </table>
@@ -57,8 +57,8 @@
       <h2>Journey 1 — Search <span class="tag">misakanet_search</span></h2>
       <p><strong>Goal:</strong> let an agent find prior fixes before inventing a new recovery plan.</p>
       <ol class="steps">
-        <li>Obtain a read token through pairing or a maintainer-provided token.</li>
-        <li>Send a concise, redacted query. Do not upload raw logs.</li>
+        <li>Send a concise, redacted query anonymously — no token, no pairing needed.</li>
+        <li>Do not upload raw logs or secrets; the server redacts and guards against abuse.</li>
         <li>Review top results and decide whether one is actionable.</li>
       </ol>
       <pre>{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_search","arguments":{"query":"GitHub Release large asset download timeout CN","top":3}}}</pre>
@@ -71,7 +71,7 @@
       <p><strong>Goal:</strong> pull only the lesson the agent intends to use.</p>
       <ol class="steps">
         <li>Take a <code>path</code> or <code>id</code> from search output.</li>
-        <li>Fetch the lesson body over HTTP MCP with Bearer auth.</li>
+        <li>Fetch the lesson body over HTTP MCP (anonymous read, no Bearer needed).</li>
         <li>Apply the recovery steps and optionally cite the lesson in the agent's final answer.</li>
       </ol>
       <pre>{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"misakanet_get_lesson","arguments":{"path":"lessons/contrib/github-release-large-asset-download-cn.md"}}}</pre>
