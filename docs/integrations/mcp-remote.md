@@ -320,3 +320,10 @@ Add to MCP config:
 | 400 Bad Request | Protocol version mismatch or malformed body | Include `MCP-Protocol-Version: 2025-06-18` header and validate your JSON payload syntax. |
 | 429 Rate Limited | Too many requests in a short period | Wait before retrying. `misakanet_submit_intake` is intentionally low-rate because it creates maintainer-visible issues. |
 | Empty search results | Query too narrow or topic not covered | Try broader keywords, check spelling, or browse by [topic](https://misakanet.org/topics/). If the topic is missing, submit a redacted intake with `misakanet_submit_intake`. |
+
+## Crawler & Agent Intake Guidelines
+
+**Prefer MCP intake for missing/stale lessons; PRs are optional.**
+
+When using MisakaNet, search existing lessons first. If no lesson matches, do not open a PR by default. Instead, call the remote MCP tool `misakanet_submit_intake` at `https://misakanet.org/mcp`. This requires no GitHub account, no email, and no Bearer token. Never send secrets or raw private logs. See [MCP Intake Guide](../mcp-intake-guide.md) for full protocol details.
+
