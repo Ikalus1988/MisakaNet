@@ -23,12 +23,6 @@ jobs:
         run: |
           echo "🔍 Scanning lessons for suspicious content..."
           EXIT_CODE=0
-          # True-danger patterns only. \beval\b and \bexec\b were removed —
-          # too high a false-positive rate: they have legitimate uses in
-          # security-education content (shell fd locks `exec 9>...`, JS
-          # `eval()`, Python `eval()`). rm -rf / curl|sh etc. have almost no
-          # legitimate use in lessons. Fenced-code stripping (PR #1400) and
-          # _archive/ exclusion already reduce remaining noise.
           PATTERNS=(
             'rm\s+-rf'
             'rm\s+-fr'
@@ -37,29 +31,39 @@ jobs:
             'wget.+pipe.+sh'
             'curl.+bash'
             'bash.+dev/tcp'
-            # '`[^`]*`'  — removed: too noisy, flags all inline code
+            '\beval\b'
+            '\bexec\b'
           )
 
-          # Recursive scan: lessons/*.md misses lessons/contrib, lessons/core,
-          # lessons/en etc. (the bulk of the corpus). Use find + rglob.
-          # Exclude _archive/ directory (historical content, not active lessons)
+          # Strip markdown code blocks (``` ... ```) before scanning.
+          # This prevents false positives from security education content
+          # that legitimately discusses dangerous patterns inside code fences.
+          strip_code_blocks() {
+            awk 'BEGIN{in_block=0} /^```/{in_block=!in_block; next} !in_block{print}' "$1"
+          }
+
           while IFS= read -r file; do
+            # Extract prose-only content (outside code blocks)
+            PROSE=$(strip_code_blocks "$file")
+            if [ -z "$PROSE" ]; then
+              continue
+            fi
             for pattern in "${PATTERNS[@]}"; do
-              if grep -Eq "$pattern" "$file" 2>/dev/null; then
+              if echo "$PROSE" | grep -Eq "$pattern" 2>/dev/null; then
                 echo "⚠️  WARNING: Suspicious pattern found in $file: $pattern"
-                grep -En "$pattern" "$file" || true
+                echo "$PROSE" | grep -nE "$pattern" || true
                 EXIT_CODE=1
               fi
             done
-          done < <(find lessons -name "*.md" -type f -not -path "*/_archive/*" | sort)
+          done < <(find lessons -name "*.md" -type f | sort)
 
           if [ "$EXIT_CODE" -eq 0 ]; then
             echo "✅ All lessons passed security scan."
           else
-            echo "❌ Some lessons contain potentially dangerous patterns."
+            echo "❌ Some lessons contain potentially dangerous patterns outside code blocks."
             echo ""
-            echo "These may be legitimate (e.g., explaining a fix)."
-            echo "Please review and ensure commands are wrapped in code blocks."
+            echo "Patterns inside fenced code blocks (\\\`\\\`\\\`) are ignored."
+            echo "Move dangerous commands into code blocks if they are educational content."
           fi
           exit $EXIT_CODE
 
@@ -77,5 +81,5 @@ jobs:
                 echo "ℹ️  Review: $file → $line"
               fi
             done < "$file"
-          done < <(find lessons -name "*.md" -type f -not -path "*/_archive/*" | sort)
+          done < <(find lessons -name "*.md" -type f | sort)
           echo "✅ Scan complete."
