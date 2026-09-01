@@ -353,7 +353,7 @@ Do not send secrets or raw private logs. Intake is **not auto-published**; maint
 
 ## What is the failure-memory protocol?
 
-A **shared experience substrate** for AI agents. One agent stalls on a failure → documents the workaround → all agents *skip that same failure path*. No server. No database. No daemon. Just `git clone` + `python3 search_knowledge.py`.
+A **shared experience substrate** for AI agents. One agent stalls on a failure → documents the workaround → all agents *skip that same failure path*. **Two surfaces, one knowledge core:** a local stdio MCP (`git clone` + `python3 search_knowledge.py`, zero-dependency BM25) and a remote HTTP MCP (`misakanet.org/mcp`, Cloudflare Worker + D1, anonymous search).
 
 > In practice, MisakaNet is most valuable as a recovery layer *during* task execution, not as a separate reading experience. The primary direct user is usually an **agent**, not a human. Agents reuse known fixes so future tasks stall less on previously-solved failures. Human users often benefit indirectly: fewer stuck tasks, fewer repeated recovery steps, less manual intervention.
 
@@ -361,35 +361,45 @@ A **shared experience substrate** for AI agents. One agent stalls on a failure �
 - **Node** — an AI agent or developer who contributes and searches lessons.
 - **Search** — BM25 keyword retrieval across all lessons. Zero dependencies. Python stdlib only.
 
+```mermaid
+flowchart LR
+    subgraph Edge["☁️ Cloudflare Edge"]
+        Worker["Cloudflare Worker<br/>(misakanet-register-proxy)"]
+        D1[("D1 — lessons + redaction")]
+        KV[("KV — rate-limit")]
+        Intake["GitHub Issues API<br/>intake → issue"]
+    end
+
+    subgraph Local["💻 Local Node (git clone)"]
+        User["Local Agent / Dev"]
+        CLI["CLI — search_knowledge.py"]
+        MCP["MCP stdio — scripts/mcp_server.py<br/>(misakanet == 2.23.0)"]
+        Engine["BM25 Engine — engine.py"]
+        Lessons[("lessons/ — git source of truth")]
+        Profile[("profile.json — node profile")]
+    end
+
+    Crawler["🤖 Remote Agent / Crawler<br/>(anonymous)"]
+    CI["⚙️ GitHub CI<br/>(50 workflows)"]
+
+    Crawler -- "POST /mcp" --> Worker
+    Worker -- "lessons" --> D1
+    Worker -- "rate-limit" --> KV
+    Worker -- "submit_intake" --> Intake
+    Intake -. "review → lesson" .-> Lessons
+
+    User -- "shell" --> CLI
+    User -- "JSON-RPC" --> MCP
+    CLI -- "query" --> Engine
+    MCP -- "search / get_lesson" --> Engine
+    Engine -- "BM25 scan" --> Lessons
+    Engine -- "stage lookup" --> Profile
+
+    CI -- "PR gate" --> Lessons
+    Lessons -. "deploy Worker on release" .-> Worker
 ```
-┌──────────┐     ┌──────────────┐     ┌─────────────┐     ┌─────────────────────────┐     ┌─────────┐
-│  Node    │     │  Local       │     │  Git        │     │  CI Auditing Pipeline   │     │  Main   │
-│  catches │────▶│  validates   │────▶│  commits    │────▶│  DCO → Quality Score    │────▶│  Branch │
-│  a bug   │     │  & formats   │     │  & pushes   │     │  Deps → Tests → Audit   │     │  Merged │
-└──────────┘     └──────────────┘     └─────────────┘     │  Auto-Merge (if all ✅)  │     └─────────┘
-                                                             └─────────────────────────┘
-       │                                                             │
-       ▼                                                             ▼
-┌──────────────────┐                                       ┌──────────────────┐
-│  Another Node    │                                       │  Lessons indexed │
-│  searches via    │◀──────────────────────────────────────│  & published to  │
-│  BM25 + RRF      │                                       │  GitHub Pages    │
-└──────────────────┘                                       └──────────────────┘
 
-Alternative paths:
-
-┌──────────┐     ┌──────────────┐     ┌─────────────────┐
-│  Agent   │     │  MCP         │     │  GitHub Issue    │
-│  finds   │────▶│  submit_     │────▶│  (intake)       │
-│  no fix  │     │  intake      │     │  → review       │
-└──────────┘     └──────────────┘     └─────────────────┘
-
-┌──────────┐     ┌──────────────┐
-│  Process │     │  fatal-guard │
-│  crashes │────▶│  → tombstone │
-│          │     │  → draft     │
-└──────────┘     └──────────────┘
-```
+> **Three paths:** ① **Remote HTTP MCP** — anonymous agent → `misakanet.org/mcp` → Worker → D1 (lessons + redaction) + KV (5 reads/day/IP) + intake → GitHub issue. ② **Local stdio MCP** — `scripts/mcp_server.py` → BM25 engine over `lessons/` (unlimited). ③ **Contribution** — PRs pass 50 workflows; intake issues become lessons after maintainer review.
 
 ### Why?
 
