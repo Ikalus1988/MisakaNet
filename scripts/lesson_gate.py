@@ -72,9 +72,16 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
 # ── Field validators ────────────────────────────────────────────────
 def validate_required(fm: dict) -> list[str]:
     errors = []
-    for field in ("title", "domain", "tags", "status", "evidence_level"):
+    for field in ("title", "domain", "tags", "status"):
         if field not in fm or fm[field] in (None, ""):
             errors.append(f"missing required field: {field}")
+    # Accept either top-level evidence_level or provenance.evidence
+    has_evidence = (
+        fm.get("evidence_level") not in (None, "")
+        or (isinstance(fm.get("provenance"), dict) and fm["provenance"].get("evidence") not in (None, ""))
+    )
+    if not has_evidence:
+        errors.append("missing required field: evidence_level (or provenance.evidence)")
     return errors
 
 
@@ -165,9 +172,27 @@ def find_duplicate_title(title: str, repo: Path = REPO, exclude_file: Path | Non
     if not title:
         return False
     norm = title.strip().lower()
+    # Determine which lesson subdirectory the file being checked belongs to,
+    # so translations (en/) don't flag originals (core/contrib) as duplicates.
+    exclude_dir = None
+    if exclude_file is not None:
+        try:
+            rel = Path(exclude_file).resolve().relative_to(repo / "lessons")
+            exclude_dir = rel.parts[0]  # e.g. "core", "contrib", "en"
+        except (ValueError, IndexError):
+            pass
     for f in _iter_active_lessons(repo):
         if exclude_file is not None and f.resolve() == Path(exclude_file).resolve():
             continue
+        # Skip files in a different lesson subdirectory (avoids cross-language
+        # false positives between core/contrib and en translations).
+        if exclude_dir is not None:
+            try:
+                f_rel = f.resolve().relative_to(repo / "lessons")
+                if f_rel.parts[0] != exclude_dir:
+                    continue
+            except (ValueError, IndexError):
+                pass
         try:
             fm, _ = parse_frontmatter(f.read_text(encoding="utf-8", errors="ignore"))
         except Exception:
