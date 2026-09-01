@@ -10,7 +10,7 @@ export function request(method, params = {}, id = 1) {
     const pythonCmd = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
     const child = spawn(pythonCmd, ['scripts/mcp_server.py'], {cwd: root});
     let output = '';
-    const timer = setTimeout(() => { child.kill(); reject(new Error(`timeout waiting for ${method}`)); }, 15000);
+    const timer = setTimeout(() => { child.kill(); reject(new Error(`timeout waiting for ${method}`)); }, 30000);
     child.stdout.on('data', chunk => { output += chunk; });
     child.stderr.on('data', () => {});
     child.on('error', reject);
