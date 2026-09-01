@@ -1260,6 +1260,26 @@
     "trust_score": 0.35
   },
   {
+    "id": "dsh-plugin-install-github-codeload-timeout",
+    "title": "dsh-plugin-install-github-codeload-timeout",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "Installing a DSH (DeepSeek Harness) plugin from the [dsh-plugin.org](https://dsh-plugin.org) marketplace failed with `安装失败 — 请求超时：无法访问 GitHub 或网络不稳定` (request t…",
+    "preview": "## Problem\n\nInstalling a DSH (DeepSeek Harness) plugin from the [dsh-plugin.org](https://dsh-plugin.org) marketplace failed with `安装失败 — 请求超时：无法访问 GitHub 或网络不稳定` (request timeout: cannot reach GitHub or network unstable). The marketplace's registered install command was:\n\n```bash\ndsh plugin --profile web add github:ikalus1988/misakanet\n```\n\n## Root Cause\n\n`dsh plugin add github:<owner>/<repo>` resolves through **codeload.github.com** to download the repository tarball. In some networks (especially in CN/GFW environments), `codeload.github.com` is blocked or times out while `api.github.com`, `raw.githubusercontent.com`, and `registry.npmjs.org` remain reachable. The install log shows:\n\n```\n[WARN] GET https://codeload.github.com/ikalus1988/misakanet/tar.gz/2932d914... error (23). Will retry in 10 seconds. 2 retries left.\n[WARN] ... Will retry in 1 minute. 1 retries left.\n```\n\nError code 23 = write error during curl download (network-level), not a plugin defect.\n\nA second contributing factor: the marketplace metadata (`npmPackage` field) may be stale/empty, forcing the marketplace to fall back to the git channel even when an npm package exists.\n\n## Fix\n\n1. **Prefer the npm channel** when the plugin is published to npm (independent of GitHub codeload):\n\n```bash\ndsh plugin add misakanet   # from npm registry — fast, no GitHub dependency\n```\n\n2. Verify connectivity per endpoint before choosing a channel:\n\n```bash\ncurl -sS -o /dev/null -w \"%{http_code}\\n\" https://codeload.github.com/   # often blocked\ncurl -sS -o /dev/null -w \"%{http_code}\\n\" https://registry.npmjs.org/    # usually OK\n```\n\n3. On Windows, note that `python3` may not exist — only `python`. Cross-platform plugin test helpers must detect this:\n\n```js\nconst python = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');\n```\n\n4. If you maintain a marketplace listing, keep `npmPackage` updated so the marketplace offers the npm channel.\n\n## Verification\n\n- `dsh plugin add misakanet` completes in ~1s (resolved, downloaded, added) when the package is on npm.\n- `dsh plugin --profile <name> --dump-config` shows the `# == misakanet` layer for the installed bundle.\n- The failing git-channel command reproduces the timeout deterministically in networks where codeload is blocked.",
+    "url": "lessons/contrib/dsh-plugin-install-github-codeload-timeout.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35
+  },
+  {
     "id": "erreur-permission-docker-linux",
     "title": "erreur-permission-docker-linux",
     "domain": "contrib",
