@@ -62,7 +62,13 @@ MisakaNet is optimized for AI agents:
 
 ---
 
-## Quick Start: Connect your agent
+## Quick Start
+
+### dsh Installation
+``bash
+dsh plugin add misakanet
+``nFor more methods, see the [dsh Installation Guide](docs/dsh-installation.md).
+: Connect your agent
 
 **Option 1 — Remote MCP (no install, no account):**
 
@@ -590,3 +596,4 @@ See [LIMITATIONS.md](docs/LIMITATIONS.md) for known constraints and non-goals �
 ---
 
 *failure-memory protocol (failure-memory protocol) — [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*
+

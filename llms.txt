@@ -62,3 +62,8 @@ These return high-signal lessons:
 - MCP Registry: io.github.Ikalus1988/misakanet
 - PyPI: pypi.org/project/misakanet
 - Glama: glama.ai/mcp/servers/Ikalus1988/MisakaNet
+
+## dsh Installation
+If running in a dsh environment, agents can install the plugin directly:
+dsh plugin add misakanet
+
