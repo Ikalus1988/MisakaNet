@@ -11,6 +11,11 @@ status: published
 created: '2026-07-17'
 source: generalized MCP listing readiness analysis
 confidence: 0.86
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

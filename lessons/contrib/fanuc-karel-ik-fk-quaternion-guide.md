@@ -21,6 +21,11 @@ problem: FANUC KAREL机器人编程中，IK/FK求解、欧拉角处理、坐标�
 quality_score: 85
 root_cause: KAREL原生运动学函数有限，欧拉角在±90°俯仰角附近存在万向锁，坐标系约定(ZYX/RPY)容易混淆，PR寄存器有joint/Cartesian两种模式需要区分
 solution: pose库提供：solveIK/solveK做IK/FK(需检查get_ok)、vector_to_euler2用四元数避免万向锁、cylindrical_to_cartesian支持Z_AXES/VERT_AXES等z_axis参数、mask_posreg_xyz/orient做选择性PR更新、correctFrame用四元数对齐工具坐标系
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ### Problem描述

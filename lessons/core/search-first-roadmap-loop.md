@@ -12,6 +12,11 @@ created: 2026-07-02 00:00:00 UTC
 updated: 2026-07-02 00:00:00 UTC
 language: en
 source: strategy-session-2026-07-02
+provenance:
+  source: "internal"
+  contributor: "MisakaNet Core"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

@@ -11,6 +11,11 @@ confidence: 0.9
 domain_expert: hanged-man
 verified_date: '2026-04-06'
 scope: narrow
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ---

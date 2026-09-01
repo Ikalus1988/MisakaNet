@@ -13,6 +13,11 @@ language: ar
 source: https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally
 confidence: 0.9
 verified_date: 2026-07-29
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem
