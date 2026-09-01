@@ -70,7 +70,7 @@ Standard release process. Do not skip steps.
 - **`misakanet-core`** — only if search core library changed
 - **Smithery** — continue pause
 - **GitHub /mcp** — continue pause until v2.13+ demo-ready
-- **`server.mcpb`** — do not rebuild for Smithery
+- **`server.mcpb`** — removed (2026-09-02); use `server.json` (v2.23.0) as the MCP manifest
 
 ## Order principle
 
