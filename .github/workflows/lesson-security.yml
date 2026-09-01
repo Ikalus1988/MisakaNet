@@ -31,18 +31,25 @@ jobs:
             'wget.+pipe.+sh'
             'curl.+bash'
             'bash.+dev/tcp'
-            '\beval\b'
-            '\bexec\b'
+            # Note: \beval\b and \bexec\b removed — too broad, flags
+            # legitimate educational content (bundle exec, kubectl exec,
+            # eval() in JavaScript, etc.)
           )
 
-          # Strip markdown code blocks (``` ... ```) before scanning.
-          # This prevents false positives from security education content
-          # that legitimately discusses dangerous patterns inside code fences.
+          # Strip markdown code blocks (``` ... ```) and inline code (`...`)
+          # before scanning. This prevents false positives from security
+          # education content that legitimately discusses dangerous patterns.
           strip_code_blocks() {
-            awk 'BEGIN{in_block=0} /^```/{in_block=!in_block; next} !in_block{print}' "$1"
+            # Remove fenced code blocks, then remove inline code backticks
+            awk 'BEGIN{in_block=0} /^```/{in_block=!in_block; next} !in_block{print}' "$1" \
+              | sed 's/`[^`]*`//g'
           }
 
           while IFS= read -r file; do
+            # Skip archived lessons — they are historical and not executed
+            if echo "$file" | grep -q "lessons/_archive/"; then
+              continue
+            fi
             # Extract prose-only content (outside code blocks)
             PROSE=$(strip_code_blocks "$file")
             if [ -z "$PROSE" ]; then
