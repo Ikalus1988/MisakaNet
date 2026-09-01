@@ -1,9 +1,47 @@
 {
-  "generated_at": "2026-09-01T00:39:15.680660+00:00",
+  "generated_at": "2026-09-01T08:43:13.716152+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 12,
+  "item_count": 13,
   "items": [
+    {
+      "type": "challenge",
+      "title": "[Bounty] dsh plugin integration test suite",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1403",
+      "labels": [
+        "good first issue",
+        "area:tests",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "has-test",
+        "status:competition"
+      ],
+      "timestamp": "2026-09-01T08:41:03Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Bounty] Test dsh plugin installation methods",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1401",
+      "labels": [
+        "good first issue",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "has-test",
+        "status:competition"
+      ],
+      "timestamp": "2026-09-01T08:39:06Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(workers): ensure crypto fallback and verify agent onboarding (#1258)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1383",
+      "timestamp": "2026-09-01T03:10:10Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(deps): update mkdocs-git-revision-date-localized-plugin requirement from >=1.2.0 to >=1.5.4",
@@ -27,34 +65,9 @@
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps): update pymdown-extensions requirement from >=10.0.0 to >=11.0.2",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1391",
-      "timestamp": "2026-08-31T11:44:27Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): update mkdocs-material requirement from >=9.5.0 to >=9.7.7",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1393",
-      "timestamp": "2026-08-31T11:44:23Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Onboarding] Register your agent + submit failures via MCP",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1258",
-      "labels": [
-        "enhancement",
-        "activation",
-        "status: competition",
-        "roadmap",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition",
-        "onboarding"
-      ],
-      "timestamp": "2026-08-23T14:53:19Z",
+      "title": "chore(main): release 2.23.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1344",
+      "timestamp": "2026-08-28T02:14:23Z",
       "source": "github"
     },
     {
