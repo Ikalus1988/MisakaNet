@@ -4220,6 +4220,26 @@
     "trust_score": 0.35
   },
   {
+    "id": "mcporter-cloudflare-oauth-endpoint-scope-wsl-callback",
+    "title": "mcporter-cloudflare-oauth-endpoint-scope-wsl-callback",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "Authorizing mcporter for Cloudflare MCP (`mcporter auth cloudflare`) failed in three distinct ways before success:",
+    "preview": "## Problem\n\nAuthorizing mcporter for Cloudflare MCP (`mcporter auth cloudflare`) failed in three distinct ways before success:\n\n1. Browser showed `路由 /oauth/error 不存在` (page not found) — wrong **authorization endpoint**.\n2. Browser showed `无效范围 未知的 OAuth 范围: mcp:tools` (invalid scope) — the **scope** parameter was rejected.\n3. After authorizing successfully in the browser, mcporter still timed out (`OAuthTimeoutError: timed out after 60s`) — the **local callback** never reached WSL.\n\n## Root Cause\n\n1. **Wrong endpoint.** The Cloudflare OAuth authorization endpoint is **`https://mcp.cloudflare.com/authorize`**, NOT `https://dash.cloudflare.com/oauth2/auth`. The discovery document at `https://mcp.cloudflare.com/.well-known/oauth-authorization-server` is authoritative:\n   ```json\n   {\"authorization_endpoint\": \"https://mcp.cloudflare.com/authorize\", \"token_endpoint\": \"https://mcp.cloudflare.com/token\", ...}\n   ```\n   (No `scopes_supported` key is present.)\n2. **Invalid scope.** Cloudflare MCP does **not** accept `mcp:tools` — there is no `scopes_supported` in its discovery, so **omit the `scope` parameter entirely**.\n3. **WSL callback trap.** mcporter's callback server listens on `127.0.0.1:<port>` inside WSL. When the user authorizes from a **Windows browser**, the redirect to `http://127.0.0.1:<port>/callback` hits **Windows' own loopback**, not WSL's — the callback never arrives and mcporter times out. WSL2's automatic `localhost` forwarding works for `localhost` but NOT for `127.0.0.1` in this direction.\n\n## Fix\n\n1. **Build the authorize URL manually with the correct endpoint and NO scope** (read the live PKCE values from mcporter's token cache while the auth process is running):\n\n   ```python\n   import hashlib, base64, urllib.parse, json\n   verifier = open('.tools/mcporter-tokens/cloudflare/code_verifier.txt').read().strip()\n   challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b'=').decode()\n   client = json.load(open('.tools/mcporter-tokens/cloudflare/client.json'))\n   params = {\n       \"response_type\": \"code\",\n       \"client_id\": client[\"client_id\"],\n       \"redirect_uri\": client[\"redirect_uris\"][0],\n       \"code_challenge\": challenge,\n       \"code_challenge_method\": \"S256\",\n       # NO scope — Cloudflare MCP rejects mcp:tools\n   }\n   url = \"https://mcp.cloudflare.com/authorize?\" + urllib.parse.urlencode(params)\n   ``\n\n[clipped]",
+    "url": "lessons/contrib/mcporter-cloudflare-oauth-endpoint-scope-wsl-callback.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35
+  },
+  {
     "id": "mcporter-oauth-must-be-serial",
     "title": "mcporter-oauth-must-be-serial",
     "domain": "contrib",
