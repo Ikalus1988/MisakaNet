@@ -38,6 +38,7 @@ jobs:
 
           # Recursive scan: lessons/*.md misses lessons/contrib, lessons/core,
           # lessons/en etc. (the bulk of the corpus). Use find + rglob.
+          # Exclude _archive/ directory (historical content, not active lessons)
           while IFS= read -r file; do
             for pattern in "${PATTERNS[@]}"; do
               if grep -Eq "$pattern" "$file" 2>/dev/null; then
@@ -46,7 +47,7 @@ jobs:
                 EXIT_CODE=1
               fi
             done
-          done < <(find lessons -name "*.md" -type f | sort)
+          done < <(find lessons -name "*.md" -type f -not -path "*/_archive/*" | sort)
 
           if [ "$EXIT_CODE" -eq 0 ]; then
             echo "✅ All lessons passed security scan."
@@ -72,5 +73,5 @@ jobs:
                 echo "ℹ️  Review: $file → $line"
               fi
             done < "$file"
-          done < <(find lessons -name "*.md" -type f | sort)
+          done < <(find lessons -name "*.md" -type f -not -path "*/_archive/*" | sort)
           echo "✅ Scan complete."
