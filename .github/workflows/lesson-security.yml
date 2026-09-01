@@ -37,12 +37,12 @@ jobs:
             'wget.+pipe.+sh'
             'curl.+bash'
             'bash.+dev/tcp'
-            # 'bevalb' and 'bexecb' removed — too high false-positive rate
+            # 'bevalb' and 'bexecb' removed — too high false-positive rate (bundle exec, kubectl exec, eval() in JS, etc.)
           )
 
-          # Strip markdown code blocks (``` ... ```) before scanning.
-          # This prevents false positives from security education content
-          # that legitimately discusses dangerous patterns inside code fences.
+          # Strip markdown code blocks (``` ... ```) and inline code (`...`)
+          # before scanning. This prevents false positives from security
+          # education content that legitimately discusses dangerous patterns.
           # Exclude _archive/ directory (historical content, not active lessons)
           #
           # Strip fenced code blocks (``` ... ```) before scanning so that
