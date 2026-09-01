@@ -20,6 +20,11 @@ root_cause: FANUC 控器运行 KAREL/TP 语言，不直接支持 Python。需要
   Messaging（R648 选项）与控制器上的 KAREL 服务端程序通信，实现远程控制。
 solution: 使用 fanucpy 开源库（pip install fanucpy），配合控制器端的 MAPPDK 驱动（KAREL+TP 程序），通过 socket
   协议实现 Python→FANUC 的全功能控制。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## FANUC Robot Python Control via fanucpy Library

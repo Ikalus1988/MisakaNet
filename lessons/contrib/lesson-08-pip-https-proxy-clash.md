@@ -14,6 +14,11 @@ source: unknown
 confidence: 0.94
 domain_expert: ''
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890
