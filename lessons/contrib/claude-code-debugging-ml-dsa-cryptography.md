@@ -14,6 +14,11 @@ created: '2026-07-29'
 language: en
 source: https://words.filippo.io/claude-debugging/
 confidence: 0.9
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

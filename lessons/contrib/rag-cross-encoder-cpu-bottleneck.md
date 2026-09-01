@@ -16,6 +16,11 @@ source: <user>
 confidence: 0.9
 verified_date: 2026-07-06
 subdomain: reranking
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Cross-encoder reranker kills RAG latency on CPU-only machines

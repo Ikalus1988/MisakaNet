@@ -14,6 +14,11 @@ language: en
 source: bootstrap
 domain_expert: unknown
 verified_date: '2026-05-21'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Background

@@ -14,6 +14,11 @@ updated: 2026-06-12 00:00:00 UTC
 source: deepseek
 domain_expert: deepseek
 verified_date: '2026-06-12'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ---

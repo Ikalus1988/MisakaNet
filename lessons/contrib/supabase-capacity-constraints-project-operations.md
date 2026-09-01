@@ -13,6 +13,11 @@ created: '2026-07-06'
 language: en
 source: hackernews
 source_url: https://status.supabase.com/incidents/3tx3nnmbwyh9
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

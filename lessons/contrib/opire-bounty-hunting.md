@@ -11,6 +11,11 @@ tags:
 status: published
 created: 2026-08-28
 language: zh
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Opire Bounty 实战经验

@@ -26,6 +26,11 @@ evidence:
   context: Distilled from real field debugging session. kcantrans VR-variable access
     path verified as practically useful before ingestion.
   public_quote_allowed: false
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem
