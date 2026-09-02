@@ -14,6 +14,12 @@ source: mcp-intake-1100
 domain_expert: ''
 verified_date: ''
 evidence_level: E2
+
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-18"
+  evidence: "post-publication"
 ---
 
 ## Problem

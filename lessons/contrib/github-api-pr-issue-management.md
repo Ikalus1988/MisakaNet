@@ -1,6 +1,7 @@
 ---
 title: GitHub API for PR and Issue Management
 domain: devops
+evidence_level: E1
 tags:
 - github
 - api
@@ -10,6 +11,12 @@ tags:
 status: published
 created: 2026-07-02
 source: agent_experience
+
+provenance:
+  source: "external"
+  contributor: "agent_experience"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ---

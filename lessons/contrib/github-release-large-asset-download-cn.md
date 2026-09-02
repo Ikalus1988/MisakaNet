@@ -16,6 +16,12 @@ source: mcp-intake-1069
 domain_expert: ''
 verified_date: ''
 evidence_level: E2
+
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-17"
+  evidence: "post-publication"
 ---
 
 ## Problem

@@ -1,6 +1,7 @@
 ---
 title: Frontmatter Parsing Edge Cases — Silent Failures and Data Loss
 domain: devops
+evidence_level: E1
 tags:
 - frontmatter
 - parsing
@@ -13,6 +14,12 @@ updated: 2026-07-10 00:00:00 UTC
 source: MisakaNet validate_lessons.py testing
 confidence: 0.95
 verified_date: '2026-07-10'
+
+provenance:
+  source: "external"
+  contributor: "MisakaNet"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Verification
