@@ -1,0 +1,318 @@
+{
+  "runs": [
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge (auto-merge-ci-pipeline)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is likely due to a missing configuration file for the auto-merge feature in your CI pipeline. Here's a step-by-step solution to resolve the issue:\n\n**Step 1: Check if the auto-merge feature is enabled in your GitHub repository**\n\n1. Go to your GitHub repository.\n2. Click on the \"Settings\" icon (gear icon) on the left sidebar.\n3. Click on \"Actions\" from the dropdown menu.\n4. Scroll down to the \"Auto-merge\" section.\n5. If the auto-merge feature is enabled, you should see a toggle switch next to it. If it's not enabled, toggle the switch to enable it.\n\n**Step 2: Create a `auto-merge.yml` file in your repository**\n\n1. Create a new file named `auto-merge.yml` in the root of your repository.\n2. Add the following configuration to the file:\n\n```yml\nname: Auto-Merge CI Pipeline\non:\n  push:\n    branches: [ main ]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v3\n      - name: Install dependencies\n        run: |\n         ",
+      "metrics": {
+        "length": 1019,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 2,
+        "lesson_hits": 5,
+        "lesson_hit_rate": 0.833
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge (auto-merge-ci-pipeline)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "Based on the provided information, I'll create a fully automated CI pipeline that handles the entire PR lifecycle from submission to merge. Here's an example YAML file:\n\n```yml\nname: Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge\n\non:\n  pull_request:\n    branches:\n      - main\n    types:\n      - opened\n      - synchronize\n\njobs:\n  auto-merge:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v3\n\n      - name: DCO check (standalone)\n        run: |\n          dco check --repo-owner $GITHUB_REPOSITORY --repo-name $GITHUB_REPOSITORY --branch $GITHUB_BRANCH\n\n      - name: Quality Score (noise ratio + title heuristics)\n        id: quality-score\n        run: |\n          DIFF=$(gh api repos/$GITHUB_REPOSITORY/pulls/$GITHUB_EVENT_NUMBER/files --paginate --jq '[.[].patch // \"\"] | join(\"\\n\")')\n          TOTAL=$(echo \"$DIFF\" | grep -c '^[+-]')\n          NOISE=$(echo \"$DIFF\" | grep -cE '^[+-]\\s",
+      "metrics": {
+        "length": 978,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 0,
+        "lesson_hits": 5,
+        "lesson_hit_rate": 0.833
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "AI Agent Contributor Engagement — Lightweight Retention Strategy (contributor-engagement-retention)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "以下是解决问题的具体步骤：\n\n1. 每次合并后发感谢评论：\n   - 选用一个Merge 账号（例如 `@project-merger`)\n   - 使用 GitHub 的 API 或者手动写评论\n   - 评论内容参考示例\n\n   ```bash\n# 使用 GitHub API\ncurl -X POST \\\n  https://api.github.com/repos/{owner}/{repo}/issues/comments \\\n  -H 'Authorization: Bearer {token}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"body\": \"Solid addition — the Lock gating and persistent connection pattern makes the telemetry pipeline genuinely robust under concurrent access.\", \"user\": \"@project-merger\"}'\n```\n\n   ```bash\n# 手动写评论\ngit checkout {branch}\ngit merge {merge-hash}\ngit checkout {branch}\necho \"Solid addition — the Lock gating and persistent connection pattern makes the telemetry pipeline genuinely robust under concurrent access.\" | git commit -m \"Thanks for the PR!\"\n```\n\n2. Star 贡献者的仓库：\n   - 使用 GitHub API\n   - 选取贡献者非 fork 的仓库\n   - 使用 `star` 选项\n",
+      "metrics": {
+        "length": 835,
+        "commands": 9,
+        "command_list": [
+          "curl -X POST \\",
+          "https://api.github.com/repos/{owner}/{repo}/issues/comments \\",
+          "-H 'Authorization: Bearer {token}' \\",
+          "-H 'Content-Type: application/json' \\",
+          "-d '{\"body\": \"Solid addition — the Lock gating and persistent connection pattern makes the telemetry pipeline genuinely robust under concurrent access.\", \"user\": \"@project-merger\"}'"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 5,
+        "lesson_hits": 5,
+        "lesson_hit_rate": 0.833
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge (auto-merge-ci-pipeline)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is likely due to a change in the CircleCI configuration file (`.circleci/config.yml`) or the project's dependencies. Here's a step-by-step guide to help you troubleshoot and fix the issue:\n\n**Step 1: Check the CircleCI configuration file (.circleci/config.yml)**\n\n1. Open your project's `.circleci/config.yml` file in a text editor.\n2. Look for the `Auto-Merge CI Pipeline` section.\n3. Ensure that the `dco` command is correct and up-to-date. You can check the [DCO (Developer Certificate of Origin) documentation](https://contribution.kubernetes.io/dco/) for the latest instructions.\n4. Verify that the `quality_score` command is correct and up-to-date. You can check the [Quality Score documentation](https://circleci.com/docs/2.0/quality-score/) for the latest instructions.\n5. Check that the `shadow_branch` command is correct and up-to-date. You can check the [Shadow Branch documentation](https://circleci.com/docs/2.0/continuous-integration-parallelism/) for the latest instructions.\n6. Verify that the `dynamic_deps` command is correct and up-to-date. You",
+      "metrics": {
+        "length": 1093,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": false,
+        "inline_code_count": 7,
+        "lesson_hits": 6,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge (auto-merge-ci-pipeline)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To implement the Dynamic Dependency Discovery (find -name requirements.txt) step in your CI pipeline, you'll need to add a script that checks for a `requirements.txt` file in the repository and extracts the dependencies. Here's a step-by-step guide to help you achieve this:\n\n**Step 1: Create a new script**\n\nCreate a new file in your repository's `.github/workflows` directory, e.g., `dynamic-deps.yml`. Add the following script:\n```yaml\nname: Dynamic Dependency Discovery\n\non:\n  pull_request:\n    types: [opened, synchronize]\n\njobs:\n  dynamic-deps:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v3\n\n      - name: Find requirements.txt\n        run: |\n          if [ -f \"requirements.txt\" ]; then\n            echo \"Found requirements.txt file\"\n            cat requirements.txt\n          else\n            echo \"No requirements.txt file found\"\n          fi\n```\nThis script checks if a `requirements.txt` file exists in the repository and prints its contents if found.\n\n**Step 2: Extract dependencies from requirements.txt**\n\nTo extract dependencies from `requirements.txt`, you can use a Python script. Create a",
+      "metrics": {
+        "length": 1160,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "AI Agent Contributor Engagement — Lightweight Retention Strategy (contributor-engagement-retention)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error message you're seeing is likely related to the Google Cloud Console, which is used to manage and monitor Cloud resources, including AI and Machine Learning services.\n\nThe error \"AI Agent Contributor Engagement — Lightweight Retention Strategy (contributor-engagement-retention)\" typically indicates that there is an issue with the retention strategy for the AI agent contributor engagement.\n\nHere is a concrete, actionable fix with exact commands:\n\n**Step 1: Delete the existing retention strategy**\n\n1. Open the Google Cloud Console: https://console.cloud.google.com/\n2. Navigate to the AI Engine page: Navigate to AI Engine > Agents > [Agent Name] > Settings > Retention Strategy\n3. Click on the \"Delete\" button next to the retention strategy.\n\n**Step 2: Create a new retention strategy**\n\n1. Navigate to AI Engine > Agents > [Agent Name] > Settings > Retention Strategy\n2. Click on the \"Create a new retention strategy\" button\n3. Select \"Lightweight\" as the strategy type\n4. Configure the strategy settings as desired (e.g., set the number of days to retain data)\n5. Click \"Create\" to create the new retention strategy\n\n**Step 3: Verify the retention strategy**\n\n1. Navigate to AI Engine",
+      "metrics": {
+        "length": 1200,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 0,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.167
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "AI Agent Contributor Engagement — Lightweight Retention Strategy (contributor-engagement-retention)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering seems to be related to a GitHub Action, specifically the \"AI Agent Contributor Engagement — Lightweight Retention Strategy\" workflow. Without more information about the error, I'll provide a general solution to troubleshoot and fix the issue.\n\n**Troubleshooting Steps:**\n\n1. **Check the workflow file**: Open the `contributor-engagement-retention.yml` file in your repository's `.github/workflows` directory. Look for any syntax errors or outdated dependencies.\n2. **Verify the dependencies**: Ensure that the dependencies listed in the `requirements` section are up-to-date and correctly installed.\n3. **Check the environment variables**: Verify that the environment variables required by the workflow are set correctly.\n\n**Concrete, Actionable Fix:**\n\nAssuming the error is related to a missing dependency or an outdated environment variable, here's a step-by-step solution:\n\n**Step 1: Update the dependencies**\n\nIn the `contributor-engagement-retention.yml` file, update the `requirements` section to include the latest versions of the required dependencies.\n\n```yaml\nname: AI Agent Contributor Engagement — Lightweight Retention Strategy\n\non:\n  workflow_dispatch:\n  schedule:\n    - cron: 0 0 * * *\n\njobs:\n  retention:\n    runs",
+      "metrics": {
+        "length": 1260,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.167
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "AI Agent Contributor Engagement — Lightweight Retention Strategy (contributor-engagement-retention)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To implement the suggested fix, you'll need to use GitHub's API and scripting capabilities. Here's a step-by-step guide to get you started:\n\n**Step 1: Install required tools**\n\nYou'll need to install `git`, `curl`, and `jq` to interact with GitHub's API.\n\n```bash\nsudo apt-get install git curl jq\n```\n\n**Step 2: Set up GitHub API credentials**\n\nCreate a personal access token on GitHub with the `repo` scope to access repository data.\n\n1. Go to your GitHub profile and click on **Settings**.\n2. Click on **Developer settings**.\n3. Click on **Personal access tokens**.\n4. Click on **Generate new token**.\n5. Choose the `repo` scope and click on **Generate token**.\n6. Copy the generated token.\n\n**Step 3: Create a script to automate the process**\n\nCreate a new file called `github-retention.py` with the following content:\n```python\nimport os\nimport json\nimport requests\n\n# Set your GitHub API token\nGITHUB_TOKEN = \"YOUR_GITHUB_TOKEN_HERE\"\n\n# Set the repository owner and name\nREPO_OWNER = \"your-repo-owner\"\nREPO_NAME = \"your-repo-name\"\n\n",
+      "metrics": {
+        "length": 1037,
+        "commands": 1,
+        "command_list": [
+          "sudo apt-get install git curl jq"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation (github-actions-code-injection)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "解决 GitHub Actions 脚本注入问题的步骤如下：\n\n1. **找到问题的位置**：在您的 YAML 脚本中，找到直接使用 `${{ github.event.issue.body }}` 或 `${{ github.event.pull_request.title }}` 等用户可控变量的行。\n\n2. **更改变量传递方式**：将这些变量通过 `env:` 传递，而不是直接内联到 `run:` 脚本中。\n\n3. **修复示例**：\n\n   **Before (vulnerable)**：\n   ```yaml\n- run: |\n    TITLE=\"${{ github.event.issue.title }}\"\n    if echo \"$TITLE\" | grep -qi \"bug\"; then echo \"is bug\"; fi\n  env:\n    ISSUE_TITLE: ${{ github.event.issue.title }}\n```\n\n   **After (safe)**：\n   ```yaml\n- run: |\n    if echo \"$ISSUE_TITLE\" | grep -qi \"bug\"; then echo \"is bug\"; fi\n  env:\n    ISSUE_TITLE: ${{ github.event.issue.title }}\n```\n\n4. **验证结果**：\n\n   *   **步骤 1：** 创建一个工作流，其中包含以下内容：\n     ```yaml\nname",
+      "metrics": {
+        "length": 676,
+        "commands": 3,
+        "command_list": [
+          "**After (safe)**：",
+          "4. **验证结果**：",
+          "*   **步骤 1：** 创建一个工作流，其中包含以下内容："
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation (github-actions-code-injection)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to GitHub Actions using a new security feature that restricts the use of inline interpolation in scripts. To fix this, you can use environment variables instead. Here's a concrete, actionable fix with exact commands:\n\n**Before:**\n\nIn your `.yml` file, you have a script that uses inline interpolation:\n```yaml\nname: Build and deploy\non:\n  push:\n    branches:\n      - main\njobs:\n  build-and-deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v3\n      - name: Run script\n        run: |\n          echo \"Deploying to $DEPLOY_URL\"\n          curl -X POST -H \"Content-Type: application/json\" -d '{\"key\": \"value\"}' $DEPLOY_URL\n```\n**After:**\n\nReplace the inline interpolation with environment variables:\n```yaml\nname: Build and deploy\non:\n  push:\n    branches:\n      - main\njobs:\n  build-and-deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v3\n      - name: Set environment variable\n       ",
+      "metrics": {
+        "length": 1029,
+        "commands": 2,
+        "command_list": [
+          "**After:**",
+          "Replace the inline interpolation with environment variables:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 3,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.167
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Search-first roadmap loop for agent knowledge projects (search-first-roadmap-loop)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the \"Search-first roadmap loop\" error, you can try the following steps:\n\n1. **Create a search index**: First, you need to create a search index for your project. You can use SQLite or SAG-Lite for this purpose. Here's an example using SQLite:\n\n```bash\n# Create a SQLite database for the search index\nsqlite3 search_index.db\n```\n\n2. **Create a search table**: Create a table to store the search results. Here's an example SQL query:\n\n```sql\nCREATE TABLE search_results (\n    id INTEGER PRIMARY KEY,\n    title TEXT,\n    description TEXT,\n    url TEXT\n);\n```\n\n3. **Populate the search index**: Populate the search index with your project's documentation. You can use a tool like `mkdocs` to generate the documentation.\n\n```bash\n# Generate the documentation\nmkdocs new --site . --site-dir docs\n\n# Create a search index\npython manage.py makemigrations\npython manage.py migrate\n```\n\n4. **Create a search view**: Create a view to handle the search requests. Here's an example using Django:\n\n```python\n# Create a new view\nfrom django.shortcuts import render\nfrom .models import SearchResult\n\ndef search(request):\n",
+      "metrics": {
+        "length": 1112,
+        "commands": 3,
+        "command_list": [
+          "sqlite3 search_index.db",
+          "3. **Populate the search index**: Populate the search index with your project's documentation. You can use a tool like `mkdocs` to generate the documentation.",
+          "4. **Create a search view**: Create a view to handle the search requests. Here's an example using Django:"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 7,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation (github-actions-code-injection)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the GitHub Actions Script Injection vulnerability, you need to refactor your workflow to use environment variables instead of inline interpolation. Here's a step-by-step guide:\n\n**Step 1: Identify the vulnerable code**\n\nLook for `run:` scripts that contain user-controlled variables, such as `{{ github.event.issue.body }}` or `{{ github.event.pull_request.title }}`.\n\n**Step 2: Refactor the code**\n\nFor each vulnerable script, create an environment variable by adding an `env:` section with the user-controlled variable. Then, use the environment variable in the `run:` script.\n\n**Example:**\n\nBefore (vulnerable):\n```yaml\n- run: |\n    BODY=\"${{ github.event.issue.body }}\"\n    echo \"$BODY\" | grep \"keyword\"\n```\n\nAfter (safe):\n```yaml\n- run: |\n    echo \"$ISSUE_BODY\" | grep \"keyword\"\n  env:\n    ISSUE_BODY: ${{ github.event.issue.body }}\n```\n\n**Complete fix:**\n\nBefore (vulnerable):\n```yaml\n- run: |\n    TITLE=\"${{ github.event.issue.title }}\"\n    if echo \"$TITLE\" | grep -qi \"bug\"; then echo \"is bug\"; fi\n```\n\nAfter (safe):\n```yaml\n- run: |\n   ",
+      "metrics": {
+        "length": 1052,
+        "commands": 4,
+        "command_list": [
+          "After (safe):",
+          "**Complete fix:**",
+          "Before (vulnerable):",
+          "After (safe):"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation (github-actions-code-injection)",
+      "condition": "plain",
+      "status": 200,
+      "content": "**GitHub Actions Script Injection Fix**\n\nThe error \"GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation\" occurs when you're using inline interpolation to inject environment variables into your GitHub Actions script. This is a security risk because it allows an attacker to inject malicious code.\n\nTo fix this, you should use environment variables instead of inline interpolation. Here's a step-by-step guide:\n\n### Step 1: Define the environment variable in your GitHub Actions workflow file\n\nReplace the inline interpolation with an environment variable. For example, if you're using a variable named `API_KEY`, you can define it as follows:\n\n```yaml\nname: My Workflow\non: [push]\nenv:\n  API_KEY: ${{ secrets.API_KEY }}\njobs:\n  my-job:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Run a command\n        run: |\n          echo $API_KEY\n          curl -X GET https://api.example.com/endpoint -H \"Authorization: Bearer $API_KEY\"\n```\n\n### Step 2: Store the secret in your GitHub repository settings\n\nTo use the `secrets` keyword in your workflow file, you need to store the secret in your GitHub repository settings.\n\n1. Go to your repository settings on",
+      "metrics": {
+        "length": 1187,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 3,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.167
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Search-first roadmap loop for agent knowledge projects (search-first-roadmap-loop)",
+      "condition": "plain",
+      "status": 200,
+      "content": "To fix the \"Search-first roadmap loop for agent knowledge projects\" error, you'll need to identify the specific project or agent that's causing the loop and update its configuration accordingly. Here's a step-by-step guide to help you resolve the issue:\n\n**Step 1: Identify the problematic project or agent**\n\n1. Check the Confluence page for the project or agent that's causing the loop. Look for any recent changes or updates.\n2. Check the agent's configuration and workflow to see if there are any circular dependencies or infinite loops.\n\n**Step 2: Update the project's or agent's configuration**\n\n1. Open the Confluence page for the project or agent that's causing the loop.\n2. Click on the \"Edit\" button to edit the page.\n3. In the \"Edit\" page, click on the \"Configure\" or \"Settings\" tab.\n4. Look for the \"Search-first roadmap loop\" setting and update it to point to a different project or agent.\n5. Save the changes to the page.\n\n**Example Commands:**\n\nIf you're using a command-line interface like the Confluence REST API, you can use the following commands to update the project's or agent's configuration:\n\n```bash\n# Update the project's configuration\ncurl",
+      "metrics": {
+        "length": 1166,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 0,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "Search-first roadmap loop for agent knowledge projects (search-first-roadmap-loop)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "**Fixing the Search-First Roadmap Loop**\n\nTo resolve the search-first roadmap loop issue, you need to separate the project's message into distinct layers, focusing on a concrete, actionable first user action. Here's a step-by-step guide to fix the problem:\n\n### Step 1: Refactor the README and Homepage\n\n Update the README and homepage to provide a clear, concrete first user action. For example:\n\n* Remove architecture explanations and focus on the search feature.\n* Add a prominent call-to-action (CTA) button, such as \"Search for a solution to your problem.\"\n* Use a concise, attention-grabbing headline, like \"Find answers to your questions.\"\n\nExample README:\n```markdown\n# [Project Name]\n\nFind answers to your questions\n============================\n\nSearch for a solution to your problem\n----------------------------------------\n\n[Search button]\n```\n\n### Step 2: Implement a Layered Message\n\nCreate a layered message structure to separate the project's message into distinct layers:\n\n1. **Format layer**: Use OKF-compatible Markdown lessons for documentation.\n2. **Search layer**: Implement a zero-dependency local search, and optionally use SQLite/SAG-Lite indexing for improved performance.\n3. **Access layer**: Provide a clear, concrete first user action",
+      "metrics": {
+        "length": 1262,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 1,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "Search-first roadmap loop for agent knowledge projects (search-first-roadmap-loop)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The \"Search-first roadmap loop for agent knowledge projects\" error is a common issue in LUIS (Language Understanding Intelligent Service) and can be fixed by updating the LUIS model to a new version or by retraining the model. Here are the steps to resolve the issue:\n\n**Method 1: Update the LUIS model**\n\n1. **Sign in to Azure portal**: Go to the Azure portal and sign in with your Microsoft account.\n2. **Navigate to LUIS**: In the Azure portal, navigate to LUIS by searching for \"LUIS\" in the top search bar.\n3. **Select your app**: Select the LUIS app that is causing the issue.\n4. **Click on \"Versions\"**: In the left menu, click on \"Versions\".\n5. **Click on \"Update\"**: Click on the \"Update\" button next to the current version of the model.\n6. **Wait for the update to complete**: Wait for the update to complete. This may take a few minutes.\n\n**Method 2: Retrain the LUIS model**\n\n1. **Sign in to Azure portal**: Go to the Azure portal and sign in with your Microsoft account.\n2. **Navigate to LUIS**: In the Azure portal, navigate to LUIS by",
+      "metrics": {
+        "length": 1049,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": false,
+        "inline_code_count": 0,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    }
+  ],
+  "models": [],
+  "scenarios": []
+}

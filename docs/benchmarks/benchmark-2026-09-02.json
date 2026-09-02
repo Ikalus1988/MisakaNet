@@ -1,0 +1,172 @@
+{
+  "runs": [
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge (auto-merge-ci-pipeline)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is likely due to a missing or incompatible version of the `auto-merge-ci-pipeline` plugin in your `~/.gitconfig` file or `~/.gitmodules` file.\n\nHere are the steps to fix this issue:\n\n**Step 1: Update the plugin**\n\nRun the following command to update the `auto-merge-ci-pipeline` plugin:\n```bash\ngit config --global plugin.auto-merge-ci-pipeline.update true\n```\nThis will update the plugin to the latest version.\n\n**Step 2: Verify the plugin version**\n\nRun the following command to verify the plugin version:\n```bash\ngit config --global plugin.auto-merge-ci-pipeline.status\n```\nThis should display the current version of the plugin.\n\n**Step 3: Re-run the auto-merge command**\n\nIf you're still encountering issues, try re-running the auto-merge command:\n```bash\ngit auto-merge-ci-pipeline\n```\nThis should resolve the error.\n\n**Step 4: Verify the shadow branch**\n\nTo verify that the shadow branch has been created, run the following command:\n```bash\ngit branch -a\n```\nThis should display the shadow branch.\n\n**Additional Troubleshooting Steps**\n\nIf you're still",
+      "metrics": {
+        "length": 1088,
+        "commands": 4,
+        "command_list": [
+          "git config --global plugin.auto-merge-ci-pipeline.update true",
+          "git config --global plugin.auto-merge-ci-pipeline.status",
+          "git auto-merge-ci-pipeline",
+          "git branch -a"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "AI Agent Contributor Engagement — Lightweight Retention Strategy (contributor-engagement-retention)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering seems to be related to a Cloud Security Command Center (Cloud SCC) finding. The specific error message \"AI Agent Contributor Engagement — Lightweight Retention Strategy\" suggests that there might be an issue with the Cloud SCC's ability to properly engage with your AI agents.\n\nHere's a step-by-step guide to resolve this issue:\n\n**Step 1: Update the Cloud SCC Agent**\n\nUpdate the Cloud SCC agent to the latest version. This will ensure that the agent has the necessary dependencies and patches to properly engage with your AI agents.\n\n```bash\ngcloud beta security-center agents update <AGENT_NAME> --version <LATEST_VERSION>\n```\n\nReplace `<AGENT_NAME>` with the name of your Cloud SCC agent and `<LATEST_VERSION>` with the latest version available.\n\n**Step 2: Enable the Lightweight Retention Strategy**\n\nEnable the Lightweight Retention Strategy for your Cloud SCC agent. This will allow the agent to properly engage with your AI agents.\n\n```bash\ngcloud beta security-center agents update <AGENT_NAME> --enable-lightweight-retention-strategy\n```\n\nReplace `<AGENT_NAME>` with the name of your Cloud SCC agent.\n\n**Step 3: Verify the Agent Configuration**\n\nVerify that the Cloud SCC agent is properly configured to engage with",
+      "metrics": {
+        "length": 1255,
+        "commands": 2,
+        "command_list": [
+          "gcloud beta security-center agents update <AGENT_NAME> --version <LATEST_VERSION>",
+          "gcloud beta security-center agents update <AGENT_NAME> --enable-lightweight-retention-strategy"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 6,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge (auto-merge-ci-pipeline)",
+      "condition": "plain",
+      "status": 200,
+      "content": "To resolve the \"Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge\" error, follow these steps:\n\n**Step 1: Check the repository's configuration**\n\nThe error might be due to incorrect repository configuration. Make sure the repository is set up correctly for auto-merge. You can check the repository's configuration by running the following command:\n\n```bash\ngit config --global auto-merge.enabled\n```\n\nIf the output is `true`, then auto-merge is enabled. If the output is `false`, then you need to enable it.\n\n**Step 2: Enable auto-merge**\n\nTo enable auto-merge, run the following command:\n\n```bash\ngit config --global auto-merge.enabled true\n```\n\n**Step 3: Check the Dynamic Dependencies**\n\nDynamic dependencies might be causing the issue. You can check the dynamic dependencies by running the following command:\n\n```bash\ngit config --global auto-merge.dynamic-deps\n```\n\nIf the output is `true`, then dynamic dependencies are enabled. If the output is `false`, then you need to enable it.\n\n**Step 4: Enable dynamic dependencies**\n\nTo enable dynamic dependencies, run the following command:\n\n```bash\ngit config --",
+      "metrics": {
+        "length": 1146,
+        "commands": 3,
+        "command_list": [
+          "git config --global auto-merge.enabled",
+          "git config --global auto-merge.enabled true",
+          "git config --global auto-merge.dynamic-deps"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 10,
+        "lesson_hits": 6,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "AI Agent Contributor Engagement — Lightweight Retention Strategy (contributor-engagement-retention)",
+      "condition": "plain",
+      "status": 200,
+      "content": "However, I need more information about the error you're encountering. The error message you provided doesn't give me enough context to provide a specific solution.\n\nThat being said, the `contributor-engagement-retention` model is a pre-trained model in the Hugging Face Transformers library, and it's likely that you're trying to use it in a Python script. Here are some common issues that might cause errors when using this model:\n\n1. **Model not found**: Make sure you have the correct model name and version installed in your environment. You can check the available models and versions using the following command:\n   ```bash\npip list transformers\n```\n   If the model is not found, you can install it using:\n   ```bash\npip install transformers transformers-models-contributor-engagement-retention\n```\n\n2. **Model loading issues**: Ensure that you're loading the model correctly. Here's an example of how to load the `contributor-engagement-retention` model:\n   ```python\nfrom transformers import AutoModelForSequenceClassification, AutoTokenizer\n\n# Load the pre-trained model and tokenizer\nmodel = AutoModelForSequenceClassification.from_pretrained(\"huggingface/transformers-models-contributor-engagement-retention\")\ntokenizer = AutoTokenizer.from",
+      "metrics": {
+        "length": 1251,
+        "commands": 2,
+        "command_list": [
+          "pip list transformers",
+          "pip install transformers transformers-models-contributor-engagement-retention"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation (github-actions-code-injection)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error \"GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation\" is raised when GitHub Actions detects that inline interpolation is being used in a script. This is a security risk because inline interpolation can be used to inject arbitrary code into the workflow.\n\nTo fix this error, you can replace inline interpolation with environment variables. Here's how you can do it:\n\n**Before:**\n```yml\nname: My Workflow\non:\n  push:\n    branches:\n      - main\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v3\n      - name: Run script\n        run: |\n          echo \"Hello, World!\"\n```\n\n**After:**\n```yml\nname: My Workflow\non:\n  push:\n    branches:\n      - main\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v3\n      - name: Run script\n        run: |\n          echo \"$GITHUB_TOKEN\" # or any other environment variable\n```\n\nIn the above example, `echo \"$GITHUB_TOKEN\"` will print the value of the `",
+      "metrics": {
+        "length": 1051,
+        "commands": 1,
+        "command_list": [
+          "**After:**"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.167
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Search-first roadmap loop for agent knowledge projects (search-first-roadmap-loop)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error \"Search-first roadmap loop for agent knowledge projects\" typically occurs when an agent is stuck in an infinite loop while searching for knowledge projects. Here's a concrete, actionable fix with exact commands:\n\n**Fix:**\n\n1. **Stop the agent**: Immediately stop the agent by running the following command:\n\n```bash\njupyter notebook --stop <notebook_id>\n```\n\nReplace `<notebook_id>` with the actual ID of the notebook that contains the agent.\n\n2. **Clear the agent's cache**: Clear the agent's cache by running the following command:\n\n```bash\npython -m spacy stop -n <agent_name>\n```\n\nReplace `<agent_name>` with the actual name of the agent.\n\n3. **Delete the agent's knowledge graph**: Delete the agent's knowledge graph by running the following command:\n\n```bash\npython -m spacy delete -n <agent_name> --graph\n```\n\nReplace `<agent_name>` with the actual name of the agent.\n\n4. **Restart the agent**: Restart the agent by running the following command:\n\n```bash\njupyter notebook --start <notebook_id>\n```\n\nReplace `<notebook_id>` with the actual ID of the notebook that contains the agent.\n\n5. **Check for knowledge project issues",
+      "metrics": {
+        "length": 1141,
+        "commands": 4,
+        "command_list": [
+          "jupyter notebook --stop <notebook_id>",
+          "python -m spacy stop -n <agent_name>",
+          "python -m spacy delete -n <agent_name> --graph",
+          "jupyter notebook --start <notebook_id>"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation (github-actions-code-injection)",
+      "condition": "plain",
+      "status": 200,
+      "content": "**Fixing GitHub Actions Script Injection Vulnerability**\n\nThe error you're encountering is a result of a security vulnerability in GitHub Actions that allows for script injection. To fix this, you need to replace inline interpolation with environment variables. Here's a concrete, actionable fix:\n\n### Before (Vulnerable Code)\n\n```yml\nname: CI\n\non:\n  push:\n    branches:\n      - main\n\njobs:\n  build-and-deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v3\n      - name: Setup Node.js\n        uses: actions/setup-node@v3\n        with:\n          node-version: '14'\n      - name: Install dependencies\n        run: |\n          npm install\n          npm install ${{ github.event.inputs.dependencies }}\n```\n\n### After (Fixed Code)\n\n```yml\nname: CI\n\non:\n  push:\n    branches:\n      - main\n\nenv:\n  DEPENDENCIES: ${{ github.event.inputs.dependencies }}\n\njobs:\n  build-and-deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v3\n      - name: Setup Node.js\n       ",
+      "metrics": {
+        "length": 1061,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 2,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.167
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+      "scenario": "Search-first roadmap loop for agent knowledge projects (search-first-roadmap-loop)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The \"search-first-roadmap-loop\" error typically occurs when there's an infinite loop in the search-first roadmap of an agent knowledge project in Dialogflow. To resolve this issue, follow these steps:\n\n### Step 1: Identify the issue\n\nTo start, you'll need to identify the exact intent that's causing the loop. You can do this by going to the 'Intents' tab in the Dialogflow console and looking for any intents that have a high number of responses or a lot of nested contexts.\n\n### Step 2: Review the intent structure\n\nNext, review the structure of the intent that's causing the issue. Look for any contexts that are being triggered recursively, which can cause an infinite loop.\n\n### Step 3: Update the intent structure\n\nTo fix the issue, you'll need to update the intent structure to avoid the recursive loop. Here are the steps to do so:\n\n1. **Remove nested contexts**: If you find any contexts that are being triggered recursively, remove them. Instead, use a single context that covers all the necessary conditions.\n2. **Use a single response**: If you have multiple responses in an intent, consider merging them into a single response. This can help avoid the loop.\n3. **Update the context**: If you",
+      "metrics": {
+        "length": 1204,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 0,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    }
+  ],
+  "models": [],
+  "scenarios": []
+}
