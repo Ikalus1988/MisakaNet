@@ -10,6 +10,12 @@ status: published
 created: 2026-08-11 00:00:00 UTC
 updated: 2026-08-11 00:00:00 UTC
 evidence_level: E2
+
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-11"
+  evidence: "post-publication"
 ---
 
 # CI key rotation silently breaking scheduled automation without a code change

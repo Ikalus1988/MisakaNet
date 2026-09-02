@@ -1,6 +1,7 @@
 ---
 title: Automação do GitHub quando o comando gh não está instalado
 domain: devops
+evidence_level: E1
 tags:
 - github
 - automacao
@@ -15,6 +16,12 @@ source: https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-
 confidence: 0.95
 verified_date: 2026-07-29
 node_id: hermes-bounty-agent
+
+provenance:
+  source: "external"
+  contributor: "https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 # Automação do GitHub quando o comando `gh` não está instalado

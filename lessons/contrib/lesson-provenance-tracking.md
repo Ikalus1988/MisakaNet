@@ -10,6 +10,12 @@ status: published
 created: '2026-08-22'
 source: closed-pr-1031
 evidence_level: E2
+
+provenance:
+  source: "external"
+  contributor: "closed-pr-1031"
+  merged_at: "2026-08-22"
+  evidence: "post-publication"
 ---
 
 ## Problem

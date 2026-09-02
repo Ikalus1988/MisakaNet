@@ -2,6 +2,7 @@
 title: 'Cloudflare Worker Programmatic Deploy: Three Pitfalls — Sandbox Egress, 32KB
   Limit, multipart Content-Type'
 domain: devops
+evidence_level: E1
 tags:
 - cloudflare
 - workers
@@ -13,6 +14,12 @@ tags:
 status: published
 created: '2026-08-27'
 source: intake-issue-1305
+
+provenance:
+  source: "external"
+  contributor: "intake-issue-1305"
+  merged_at: "2026-08-28"
+  evidence: "post-publication"
 ---
 
 # Cloudflare Worker Programmatic Deploy: Three Pitfalls

@@ -1,6 +1,7 @@
 ---
 title: pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890
 domain: devops
+evidence_level: E1
 tags:
 - meta
 - lesson
@@ -14,6 +15,12 @@ source: unknown
 confidence: 0.94
 domain_expert: ''
 verified_date: ''
+
+provenance:
+  source: "external"
+  contributor: "unknown"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 # pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890

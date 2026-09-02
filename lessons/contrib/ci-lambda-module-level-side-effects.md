@@ -1,6 +1,7 @@
 ---
 title: CI 测试陷阱 — 模块级副作用导致 import 失败
 domain: devops
+evidence_level: E1
 tags:
 - ci
 - python
@@ -13,6 +14,12 @@ created: 2026-07-07
 language: zh
 source: practical-experience
 confidence: 0.9
+
+provenance:
+  source: "external"
+  contributor: "practical-experience"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Problem

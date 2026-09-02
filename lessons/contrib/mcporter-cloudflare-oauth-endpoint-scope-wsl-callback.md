@@ -14,6 +14,12 @@ status: published
 created: '2026-09-02'
 source: benchmark-oauth-2026-09-02
 evidence_level: E0
+
+provenance:
+  source: "external"
+  contributor: "benchmark-oauth-2026-09-02"
+  merged_at: "2026-09-02"
+  evidence: "post-publication"
 ---
 
 ## Problem

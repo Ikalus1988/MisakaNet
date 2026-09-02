@@ -11,6 +11,12 @@ status: published
 created: '2026-08-19'
 source: mcp-intake-64eb5d4f88
 evidence_level: E2
+
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-19"
+  evidence: "post-publication"
 ---
 
 ## Problem

@@ -1,6 +1,7 @@
 ---
 title: Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge
 domain: devops
+evidence_level: E1
 tags:
 - github-actions
 - ci
@@ -15,6 +16,12 @@ updated: 2026-06-10 00:00:00 UTC
 source: codewhale
 domain_expert: codewhale
 verified_date: '2026-06-10'
+
+provenance:
+  source: "external"
+  contributor: "codewhale"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Root Cause
