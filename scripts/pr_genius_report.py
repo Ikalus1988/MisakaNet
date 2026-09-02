@@ -67,7 +67,7 @@ def load_config() -> dict[str, Any]:
             user = yaml.safe_load(f) or {}
     except ImportError:
         # Minimal YAML parser for flat key: value and lists
-        user = _parse_yaml_minimal(CONFIG_FILE.read_text(encoding="utf-8"))
+        print("USING MINIMAL"); user = _parse_yaml_minimal(CONFIG_FILE.read_text(encoding="utf-8"))
     # Merge user config with defaults
     config = _deep_merge(_DEFAULT_CONFIG, user)
     return config
@@ -76,56 +76,41 @@ def load_config() -> dict[str, Any]:
 def _parse_yaml_minimal(text: str) -> dict:
     """Minimal YAML parser for .pr-genius.yaml (no dependency)."""
     import re as _re
-    result: dict[str, Any] = {}
-    current_section = None
-    current_subsection = None
-    current_list_key = None
+    result: dict = {}
+    stack = [result]
+    indent_levels = [-1]
+    
     for line in text.splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
         indent = len(line) - len(line.lstrip())
-        # List item
-        if stripped.startswith("- "):
-            value = stripped[2:].strip().strip('"').strip("'")
-            if current_list_key and current_subsection and current_section:
-                result.setdefault(current_section, {}).setdefault(current_subsection, {}).setdefault(current_list_key, []).append(value)
-            continue
-        # Key: value
+        
         match = _re.match(r'^(\w[\w_]*)\s*:\s*(.*)', stripped)
         if not match:
             continue
+            
         key, value = match.group(1), match.group(2).strip().strip('"').strip("'")
-        if indent == 0:
-            current_section = key
-            current_subsection = None
-            current_list_key = None
-            result.setdefault(current_section, {})
-        elif indent <= 4:
-            current_subsection = key
-            current_list_key = None
-            if value:
-                # Try to parse as number
-                try:
-                    value = int(value)
-                except ValueError:
-                    if value.lower() in ("true", "false"):
-                        value = value.lower() == "true"
-                result.setdefault(current_section, {})[current_subsection] = value
-            else:
-                result.setdefault(current_section, {}).setdefault(current_subsection, {})
+        
+        if value:
+            try:
+                value = int(value)
+            except ValueError:
+                if value.lower() in ("true", "false"):
+                    value = value.lower() == "true"
         else:
-            # Deeper nesting (patterns config)
-            if value:
-                try:
-                    value = int(value)
-                except ValueError:
-                    if value.lower() in ("true", "false"):
-                        value = value.lower() == "true"
-                result.setdefault(current_section, {}).setdefault(current_subsection, {})[key] = value
-            else:
-                current_list_key = key
-                result.setdefault(current_section, {}).setdefault(current_subsection, {}).setdefault(key, [])
+            value = {}
+            
+        while indent <= indent_levels[-1] and len(stack) > 1:
+            stack.pop()
+            indent_levels.pop()
+            
+        stack[-1][key] = value
+        
+        if isinstance(value, dict):
+            stack.append(value)
+            indent_levels.append(indent)
+            
     return result
 
 
