@@ -8,6 +8,7 @@ permissions:
   checks: read
   contents: read
   pull-requests: read
+  issues: write  # post/update PR Genius analysis as a visible PR comment
 
 jobs:
   pr-genius:

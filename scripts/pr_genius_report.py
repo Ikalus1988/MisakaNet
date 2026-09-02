@@ -451,6 +451,57 @@ def github_get_check_runs(url: str, token: str) -> list[dict[str, Any]]:
         page += 1
 
 
+def github_post_issue_comment(
+    repository: str, number: int, body: str, token: str
+) -> None:
+    """Post (or update) a PR Genius analysis as an issue comment so it is
+    visible on the PR page — mirroring pr-agent's /review behavior. Existing
+    comments from the same bot with the marker are updated in place to avoid
+    comment spam on repeated syncs."""
+    marker = "<!-- pr-genius:report -->"
+    url = f"https://api.github.com/repos/{repository}/issues/{number}/comments"
+    list_req = urllib.request.Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+    )
+    try:
+        with urllib.request.urlopen(list_req, timeout=30) as response:
+            existing = json.load(response)
+    except urllib.error.HTTPError:
+        existing = []
+    for comment in existing or []:
+        if marker in (comment.get("body") or ""):
+            patch = urllib.request.Request(
+                comment["url"],
+                data=json.dumps({"body": body + "\n" + marker}).encode(),
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/vnd.github+json",
+                    "X-GitHub-Api-Version": "2022-11-28",
+                    "Content-Type": "application/json",
+                },
+                method="PATCH",
+            )
+            urllib.request.urlopen(patch, timeout=30)
+            return
+    post = urllib.request.Request(
+        url,
+        data=json.dumps({"body": body + "\n" + marker}).encode(),
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    urllib.request.urlopen(post, timeout=30)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", required=True, help="GitHub pull_request event JSON")
@@ -477,6 +528,12 @@ def main() -> int:
     report = analyze(pr, files, commits, checks, config=config)
     output = json.dumps(report, indent=2) if args.json else render(report, args.risk)
     print(output)
+    # Post a visible PR comment (mirrors pr-agent /review) unless --json.
+    if not args.json:
+        try:
+            github_post_issue_comment(repository, number, output, token)
+        except Exception as exc:  # advisory only — never fail the workflow
+            print(f"  ⚠️  Could not post PR Genius comment: {exc}", file=sys.stderr)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary and not args.json:
         with open(summary, "a", encoding="utf-8") as handle:
