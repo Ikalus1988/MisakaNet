@@ -9,7 +9,8 @@
     "deploy:email": "cd workers/email-register && npx wrangler deploy",
     "deploy:all": "npm run deploy:web && npm run deploy:api && npm run deploy:email",
     "deploy": "wrangler deploy",
-    "preview": "wrangler dev"
+    "preview": "wrangler dev",
+    "test:dsh": "vitest run tests/dsh/"
   },
   "devDependencies": {
     "wrangler": "^4.107.0"

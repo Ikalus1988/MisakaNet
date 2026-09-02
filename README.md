@@ -384,6 +384,7 @@ python3 scripts/lesson_reuse_bench.py --compare         # with vs without lesson
 | Contribute | `python3 scripts/queue_lesson.py --title "..." --domain "..." "..."` |
 | Dashboard | `python3 -m misakanet.tools.dashboard` |
 | **MCP Server** | `python3 scripts/mcp_server.py` — [docs/mcp.md](docs/mcp.md) |
+| **DSH Tests** | `npm run test:dsh` to run the integration test suite for the DSH plugin |
 | **Full CLI reference →** | [`docs/cli-reference.md`](docs/cli-reference.md) |
 
 ### Register a node

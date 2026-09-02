@@ -1,0 +1,21 @@
+name: DSH Plugin Tests
+
+on:
+  pull_request:
+    paths:
+      - 'tests/dsh/**'
+      - '.github/workflows/dsh-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install -g vitest
+      - name: Run Tests
+        run: vitest run tests/dsh/
