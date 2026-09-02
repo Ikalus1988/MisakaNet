@@ -116,6 +116,42 @@ def validate_evidence(evidence_level) -> list[str]:
     return []
 
 
+EVIDENCE_REF_RE = re.compile(
+    r"^(?:repro:https?://\S+|ci:https?://\S+|issue:#[0-9]+|commit:[0-9a-fA-F]{7,40}|https?://\S+)$"
+)
+
+
+def validate_evidence_refs(evidence_refs) -> list[str]:
+    """Validate evidence_refs field if present (Issue #1439).
+
+    Supported formats:
+      - repro:https://... (reproduction log)
+      - ci:https://... (CI run)
+      - issue:#1234 (issue reference)
+      - commit:<sha> (commit hash)
+      - https://... (direct URL)
+    """
+    if evidence_refs is None:
+        return []
+    if not isinstance(evidence_refs, list):
+        return ["evidence_refs must be a list of strings"]
+    errors = []
+    for ref in evidence_refs:
+        if not isinstance(ref, str):
+            errors.append(f"evidence_refs item must be a string, got {type(ref).__name__}")
+            continue
+        ref_str = ref.strip()
+        if not ref_str:
+            errors.append("evidence_refs item cannot be empty")
+            continue
+        if not EVIDENCE_REF_RE.match(ref_str):
+            errors.append(
+                f"invalid evidence_ref format: {ref!r} "
+                "(expected repro:https://..., ci:https://..., issue:#1234, commit:<sha>, or https://...)"
+            )
+    return errors
+
+
 def validate_content_len(content: str) -> bool:
     return len(content.strip()) >= MIN_CONTENT_CHARS
 
@@ -342,6 +378,7 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
         errors += validate_tags(fm.get("tags")) if "tags" in fm else []
         errors += validate_status(fm.get("status")) if "status" in fm else []
         errors += validate_evidence(fm.get("evidence_level")) if "evidence_level" in fm else []
+        errors += validate_evidence_refs(fm.get("evidence_refs")) if "evidence_refs" in fm else []
 
     if not validate_content_len(content):
         errors.append(f"content too short (< {MIN_CONTENT_CHARS} chars excluding frontmatter)")

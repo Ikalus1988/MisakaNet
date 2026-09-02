@@ -94,6 +94,32 @@ Claiming "verified" when lessons are only "indexed" erodes trust when a lesson t
 
 To promote a lesson, edit `evidence_level` in its frontmatter in the same PR that carries the evidence (review comment, reproduction log, CI run link, or the usage report).
 
+### Evidence References (`evidence_refs`) (Issue #1439)
+
+Lessons can optionally specify `evidence_refs` in their frontmatter to declare verifiable evidence sources at contribution time:
+
+```yaml
+---
+title: "Fix ECONNRESET in Redis connection pool under load"
+domain: "devops"
+tags: ["redis", "connection-pool", "econnreset"]
+status: "published"
+evidence_level: "E3"
+evidence_refs:
+  - "ci:https://github.com/org/repo/actions/runs/12345678"
+  - "repro:https://gist.github.com/user/abcdef123456"
+  - "issue:#1439"
+  - "commit:a1b2c3d4e5f6"
+---
+```
+
+Supported formats:
+- `repro:https://...` — Link to reproduction logs / environment steps.
+- `ci:https://...` — Link to CI run or test action proving the fix.
+- `issue:#<num>` — Issue reference where the problem/fix is tracked.
+- `commit:<sha>` — Git commit SHA introducing the fix or reproduction test.
+- `https://...` — Direct URL to external public evidence/documentation.
+
 ### me_events: live reuse signals (tool-level semantics)
 
 `misakanet_me_events` aggregates a lesson's **live reuse evidence** — helpful votes (KV), regression-benchmark citations, and cross-node confirmations. It uses the E-level vocabulary as *signal strength*, not as the frontmatter promotion chain:

@@ -35,6 +35,7 @@
 - [ ] **related lessons**：引用其他 lesson 时用相对路径
 - [ ] **适用环境说明**：若与环境相关，标注 `platform:wsl` / `platform:linux` / `platform:docker` 等
 - [ ] **来源标注**：`source` 字段填写贡献者标识而非泛称
+- [ ] **证据引用（evidence_refs）**：可选，提供可验证的证据来源（如 `repro:https://...`、`ci:https://...`、`issue:#1234`、`commit:<sha>` 或 URL）
 - [ ] **无超长行**：每行 <= 120 字符（代码块除外）
 - [ ] **英文用语**：术语统一（如 "root cause" 不混用 "reason"）
 
