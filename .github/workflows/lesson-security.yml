@@ -23,6 +23,12 @@ jobs:
         run: |
           echo "🔍 Scanning lessons for suspicious content..."
           EXIT_CODE=0
+          # True-danger patterns only. \beval\b and \bexec\b were removed —
+          # too high a false-positive rate: they have legitimate uses in
+          # security-education content (shell fd locks `exec 9>...`, JS
+          # `eval()`, Python `eval()`). rm -rf / curl|sh etc. have almost no
+          # legitimate use in lessons. Fenced-code stripping (PR #1400) and
+          # _archive/ exclusion already reduce remaining noise.
           PATTERNS=(
             'rm\s+-rf'
             'rm\s+-fr'
@@ -31,8 +37,6 @@ jobs:
             'wget.+pipe.+sh'
             'curl.+bash'
             'bash.+dev/tcp'
-            '\beval\b'
-            '\bexec\b'
             # '`[^`]*`'  — removed: too noisy, flags all inline code
           )
 

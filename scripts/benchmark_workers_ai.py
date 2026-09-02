@@ -152,12 +152,86 @@ def score_response(content: str, reference_commands: list | None = None) -> dict
     }
 
 
-def _lesson_has_commands(md: Path) -> bool:
+def _extract_commands(md: Path) -> list[str]:
+    """Extract real executable commands from a lesson's Fix/Solution section.
+
+    Only fenced blocks with an executable language tag (bash/sh/shell/zsh) are
+    treated as commands. Plain fenced blocks without a language tag are often
+    ASCII flow diagrams (e.g. 'PR opened -> Shadow Branch -> ...') — those are
+    NOT commands and must be skipped, otherwise the reference answer fed to the
+    model is misleading (observed: 8B hit 100% -> 50% on auto-merge lesson).
+    """
     text = md.read_text(encoding="utf-8", errors="ignore")
-    fix_sec = re.search(r"## (?:Solution|Fix|修复|解法)\s*\n(.*?)(?:\n##|\Z)", text, re.S)
+    # Fix/Solution section spans from its heading to the NEXT top-level (## X)
+    # heading — ### subsections belong to the fix body and must be included.
+    fix_sec = re.search(r"## (?:Solution|Fix|修复|解法)\s*\n(.*?)(?=\n##\s|[ \t]*\Z)", text, re.S)
     if not fix_sec:
+        return []
+    cmds: list[str] = []
+    # Inline backticks are commands only when they are single-line shell-ish
+    # tokens. Skip multi-line spans and flow/pseudo-code: arrows (->, →),
+    # prose filler words, and step-like numbering indicate prose, not a command.
+    for m in re.finditer(r"`([^`]{6,})`", fix_sec.group(1)):
+        tok = m.group(1).strip()
+        if "\n" in tok or "→" in tok or "->" in tok:
+            continue
+        # Skip prose markers: CJK chars, em/en-dashes, filler words.
+        if re.search(r"[\u4e00-\u9fff—–…]", tok):
+            continue
+        if _looks_like_command(tok):
+            cmds.append(tok)
+    # Fenced blocks: executable shells (bash/sh/shell/zsh) extract every line;
+    # yaml/yml extracts only lines under a `run:` key (GitHub Actions style).
+    for m in re.finditer(r"```(bash|sh|shell|zsh|yaml|yml)\s*\n(.*?)```", fix_sec.group(1), re.S):
+        lang, block = m.group(1).lower(), m.group(2)
+        if lang in ("yaml", "yml"):
+            in_run, run_indent = False, None
+            for line in block.splitlines():
+                if re.match(r"^\s*run\s*:\s*\|?\s*$", line):
+                    in_run, run_indent = True, len(line) - len(line.lstrip())
+                    continue
+                if in_run:
+                    indent = len(line) - len(line.lstrip())
+                    s = line.strip()
+                    if not s:
+                        continue
+                    if indent <= run_indent:  # back to a sibling yaml key
+                        if re.match(r"^[a-zA-Z_]+:", s) and s.split(":",1)[0] not in ("run",):
+                            in_run = False
+                            continue
+                    if s and not s.startswith("#") and not re.match(r"^[a-z_]+:", s) and _looks_like_command(s):
+                        cmds.append(s)
+        else:
+            for line in block.splitlines():
+                s = line.strip()
+                if s and not s.startswith("#") and _looks_like_command(s):
+                    cmds.append(s)
+    return list(dict.fromkeys(cmds))[:8]
+
+
+def _looks_like_command(line: str) -> bool:
+    """Heuristic: does this line read like an executable shell command?
+
+    Filters prose/flow text out of extracted candidates. A line is a command
+    if it starts with a known command word or contains shell syntax (assignment,
+    $var, pipe, redirect, sub-shell, flag options) — prose filler won't.
+    """
+    s = line.strip()
+    if not s or len(s) > 200:
         return False
-    return bool(re.search(r"`[^`]{6,}`|```", fix_sec.group(1)))
+    if re.search(r"[\u4e00-\u9fff]", s):        # CJK prose
+        return False
+    if re.match(r"^[A-Za-z][A-Za-z0-9_./-]*(\s|$)", s):   # starts like a command name
+        # reject sentence-like prose
+        if re.search(r"\b(?:is|are|was|were|the|a|an|and|or|of|for|to|when|if|this|that|these|those|it|will|should|can|may|must|not|only|after|before|use|uses|using|based)\b", s, re.I) and not re.search(r"[=|<>&|;`$]", s):
+            return False
+        return True
+    # command continuation / shell syntax lines
+    return bool(re.search(r"^(?:[A-Za-z_][\w]*=|\$\(|[\w./-]+(?: |$).*[-][a-zA-Z])", s)) and not re.search(r"\b(?:is|are|the|a|an|of|for|to)\b", s, re.I)
+
+
+def _lesson_has_commands(md: Path) -> bool:
+    return bool(_extract_commands(md))
 
 
 def load_all_scenarios() -> list[str]:
@@ -195,14 +269,9 @@ def load_lesson_context(scene: str, max_chars: int = 1500) -> tuple:
             if p.exists():
                 text = p.read_text(encoding="utf-8", errors="ignore")
                 body = re.sub(r"^---\n.*?\n---", "", text, flags=re.S)
-                fix_sec = re.search(r"## (?:Solution|Fix|修复|解法)\s*\n(.*?)(?:\n##|\Z)", text, re.S)
-                cmds = []
-                if fix_sec:
-                    cmds = [l.strip() for l in re.findall(r"`([^`]{6,})`", fix_sec.group(1))]
-                    cmds += [l.strip() for l in re.findall(r"```\w*\s*\n(.*?)```", fix_sec.group(1), re.S)
-                             for l in l.splitlines() if l.strip() and not l.strip().startswith("#")]
                 clean = re.sub(r"[#*`>]", "", body)
-                return clean.strip()[:max_chars], list(dict.fromkeys(cmds))[:6]
+                cmds = _extract_commands(p)
+                return clean.strip()[:max_chars], cmds
     return "", []
 
 
