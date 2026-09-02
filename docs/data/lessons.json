@@ -1240,6 +1240,26 @@
     "trust_score": 0.35
   },
   {
+    "id": "deepwiki-review-fair-hits-stale-misses-trajectory",
+    "title": "deepwiki-review-fair-hits-stale-misses-trajectory",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "An external architecture review (DeepWiki AI analysis) judged MisakaNet as a",
+    "preview": "## Problem\n\nAn external architecture review (DeepWiki AI analysis) judged MisakaNet as a\n\"wrapped personal/small-team tool\" with a weak moat, no real-time sync, and a\nvulnerable position against model vendors internalizing memory. Some claims were\nfair; several were based on a stale snapshot that predates the Cloudflare\nWorker + D1 remote surface.\n\n## Root Cause\n\n1. **Docs lagged code.** `docs/LIMITATIONS.md` and README prose (\"No server. No\n   database. No daemon. Just git clone + python3\") were written in the\n   pure-local era and never updated after the remote HTTP MCP surface\n   (`misakanet.org/mcp`, Cloudflare Worker + D1 + KV, anonymous search)\n   shipped. Reviewers reading docs first conclude \"local-only tool\".\n2. **Genuine debt exists.** `search_knowledge.py` is ~1050 lines mixing search,\n   heal/diagnose mode, GraphQL playground, harvest, feedback, quota checks and\n   typo correction — a real \"swiss-army CLI\". CI validates format/DCO/dangerous\n   patterns but not factual correctness. No embedding in the core (by design).\n\n## Fair hits (keep honest about these)\n\n- **Search is keyword BM25**; semantic similarity needs an external embedding\n  service (`--semantic` flag exists, not default).\n- **Scale ceiling**: local core loads all lessons into memory (>50k lessons is\n  heavy); git is not a database; local sync is batch by design.\n- **No automated fact-checking** — lessons are community-contributed; evidence\n  levels (E0–E4) + `me_events` reuse signals are the corrective signals.\n- **Technical moat is thin** (BM25+Git+Markdown is replicable); the moat is the\n  corpus (321 lessons) and network effects, which are early (5 contributors in\n  docs/community/voices.json).\n- **Model vendors may internalize failure memory** — the real existential risk;\n  counter-positioning is to sit close to agent runtimes (fatal-guard crash\n  hook, me_events reuse evidence, MCP-first tools).\n\n## Stale-snapshot misses (correct the record)\n\n- \"Zero-infrastructure / no server / no database\" is **outdated**: there is now a\n  Cloudflare Worker + D1 remote surface serving `misakanet.org/mcp` (anonymous\n  search + intake → GitHub issue). README and LIMITATIONS were updated 2026-09-02\n  (\"Two surfaces, one knowledge core\").\n- \"Should extract misakanet-core to PyPI\" **already happened**: `misakanet-core`\n  is a published PyPI dependency (>=2.7.0); the repo is the orchestration layer.\n\n[clipped]",
+    "url": "lessons/contrib/deepwiki-review-fair-hits-stale-misses-trajectory.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35
+  },
+  {
     "id": "disk-space-cleanup",
     "title": "disk-space-cleanup",
     "domain": "contrib",
