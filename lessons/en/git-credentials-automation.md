@@ -3,6 +3,8 @@ title: "Git credentials automation — non-interactive push for agents"
 domain: "git"
 tags: ["git", "credentials", "token", "automation", "cron", "github"]
 status: "published"
+provenance:
+  evidence: "post-publication"
 lang: "en"
 source: "uncledad96-glitch"
 translated_from: "lessons/contrib/git-credentials-automation.md"
