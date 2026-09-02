@@ -1,23 +1,20 @@
 ---
-title: gh credential helper 路径Error导致 git push 静默失败
+created: '2026-07-06'
 domain: git
+language: zh
+source: unknown
+status: published
+provenance:
+  evidence: "post-publication"
 tags:
 - git
 - credential
 - helper
 - path
 - mismatch
-status: published
-created: '2026-07-06'
-language: zh
-source: unknown
-provenance:
-  source: "community"
-  contributor: "Community"
-  merged_at: "2026-08-23"
-  evidence: "post-publication"
+title: gh credential helper 路径Error导致 git push 静默失败
+verification: metadata-normalized
 ---
-
 ## Problem
 
 执行 `git push` 时卡住或报错：
@@ -83,11 +80,15 @@ git ls-remote origin HEAD
 ## Verification
 
 ```bash
-git config --global --list | grep credential
-echo "Verification passed: fix command exited 0"
+git status --short | head -5
+git log --oneline -3
 ```
 
-**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `git config --global --list | grep credential`)
+**Expected Output:**
+```
+# (status)
+# (recent)
+```
 
 ## 预防
 
