@@ -1,0 +1,11 @@
+{
+  "name": "MisakaNet",
+  "description": "MisakaNet failure lesson network MCP server: search 300+ verified debugging lessons, submit failure intakes, write lessons, and run preflight risk checks.",
+  "version": "2.16.0",
+  "remotes": [
+    {
+      "url": "https://misakanet.org/mcp",
+      "type": "streamable-http"
+    }
+  ]
+}

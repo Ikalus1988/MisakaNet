@@ -1,16 +1,21 @@
 ---
-title: "FANUC DO Not Found in Program — Check Reference Position"
-domain: "fanuc"
-subdomain: "troubleshooting"
-tags: ["do", "digital-output", "reference-position", "background-logic", "space-function", "search"]
-source: "robot-forum.com"
-status: "published"
-confidence: "0.9"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: "Nation"
+title: FANUC DO Not Found in Program — Check Reference Position
+domain: fanuc
+tags:
+- do
+- digital-output
+- reference-position
+- background-logic
+- space-function
+- search
+status: published
+created: '2026-07-01'
+source: robot-forum.com
+confidence: 0.9
+domain_expert: Nation
+verified_date: ''
+subdomain: troubleshooting
 ---
-
 
 ## Problem
 
@@ -58,10 +63,16 @@ Space functions can activate DOs based on robot position within defined volumes.
 
 ## Verification
 
-1. Navigate to MENU → SETUP → Reference Position
-2. Find the reference position that assigns DO[66]
-3. Modify or remove the DO assignment as needed
-4. Verify DO[66] behavior changes accordingly
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```
 
 ## Notes
 

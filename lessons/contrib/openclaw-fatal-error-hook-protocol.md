@@ -1,13 +1,16 @@
 ---
-{
-  "domain": "contrib",
-  "title": "OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks
+domain: openclaw
+tags:
+- openclaw
+- fatal
+- error
+- hook
+- protocol
+status: published
+created: '2026-07-06'
+source: unknown
 ---
----{"title": "OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks", "domain": "development", "tags": ["openclaw", "fatal-error", "child-process", "spawn", "argv", "shell-injection", "fire-and-forget", "protocol", "heal"], "status": "published", "confidence": "0.95", "source": "hermes_wsl2", "created": "2026-06-16", "updated": "2026-06-16"}---
 
 # OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks
 
@@ -119,6 +122,17 @@ Operators who need full context should use OpenClaw's existing stability-bundle 
 
 ## Verification
 
+```bash
+# Verify error handler protocol
+grep -r "OPENCLAW_ERROR_HANDLER" . 2>/dev/null | head -3
+echo "Protocol reference checked"
+```
+
+**Expected Output:**
+```
+# (handler references found)
+Protocol reference checked
+```
 ### Proof Script
 
 ```bash
@@ -165,4 +179,4 @@ Any CLI tool that adopts this env-var-based fatal error hook becomes a first-cla
 - **Repo:** `openclaw/openclaw`
 - **PR:** #93310
 - **Final commit (fork):** `2298a37a8c`
-- **Branch:** `feat/openclaw-error-handler-env` on `zsxh1990/openclaw`
+- **Branch:** `feat/openclaw-error-handler-env` on `<user>/openclaw`

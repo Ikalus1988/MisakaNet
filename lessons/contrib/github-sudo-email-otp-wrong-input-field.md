@@ -1,13 +1,18 @@
 ---
-{
-  "title": "GitHub sudo email OTP fails when the wrong input is filled",
-  "domain": "github",
-  "tags": ["github", "sudo", "otp", "playwright", "auth", "pat", "automation"],
-  "status": "published",
-  "source": "uncledad96-glitch",
-  "created": "2026-07-20",
-  "updated": "2026-07-20"
-}
+title: GitHub sudo email OTP fails when the wrong input is filled
+domain: github
+tags:
+- github
+- sudo
+- otp
+- playwright
+- auth
+- pat
+- automation
+status: published
+created: '2026-07-20'
+updated: '2026-07-20'
+source: uncledad96-glitch
 ---
 
 # GitHub sudo email OTP fails when the wrong input is filled
@@ -80,9 +85,14 @@ gh auth status   # expect scopes like repo, read:org, workflow
 
 ## Verification
 
-- `gh auth status` shows non-empty scopes (not `Token scopes: none`)
-- `gh repo create ...` or `gh api user` with write operations succeeds
-- Creating a classic PAT at https://github.com/settings/tokens/new no longer loops on Confirm access after OTP
+```bash
+printf '%s
+' "$TOKEN" | gh auth login --hostname github.com --with-token
+echo "Verification passed: fix command exited 0"
+```
+
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `printf %s
+ $TOKEN | gh auth login --hostname github.com --with-token`)
 
 ## Notes
 

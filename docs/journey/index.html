@@ -384,7 +384,11 @@ function renderSearch(card) {
       <span class="tag">Step 2</span>
     </div>
     <div class="card-body">
-      <pre><span class="cmd">python3 search_knowledge.py "GitHub token 401"</span>
+      <p style="margin-bottom:0.5rem;">Via <span class="highlight">HTTP MCP</span> (no GitHub account, no Bearer for search):</p>
+      <pre><span class="cmd">curl -sS -X POST https://misakanet.org/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_search","arguments":{"query":"GitHub token 401","top":3}}}'</span>
 
 <span class="out">📋 lessons/  (2 matches)</span>
 <span class="out">──────────────────────────────────────────────────</span>
@@ -393,9 +397,13 @@ function renderSearch(card) {
 
 <span class="out">  [contrib] github-api-rate-limit-handling     0.71   🟢 high/actionable</span>
 <span class="out">            Fix: use conditional requests with ETag headers.</span></pre>
-      <div style="margin-top:0.75rem;">
-        <a href="https://ikalus1988.github.io/MisakaNet/search/" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #238636;border-radius:6px;color:#3fb950;text-decoration:none;font-size:0.85rem;background:#0d1117;">
+      <p style="color:#8b949e;font-size:0.8rem;margin:0.5rem 0;">Or locally: <code>python3 search_knowledge.py "GitHub token 401"</code> · Or on the web: <a href="https://misakanet.org/search/?q=GitHub%20token%20401" style="color:#58a6ff;">misakanet.org/search</a></p>
+      <div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <a href="https://misakanet.org/search/?q=GitHub%20token%20401" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #238636;border-radius:6px;color:#3fb950;text-decoration:none;font-size:0.85rem;background:#0d1117;">
           🔍 Open Search Page →
+        </a>
+        <a href="http-mcp/" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;font-size:0.85rem;background:#0d1117;">
+          🔌 HTTP MCP Journey →
         </a>
       </div>
     </div>
@@ -432,30 +440,34 @@ function renderUse(card) {
 
 function renderFeedback(card) {
   addLog('Opening feedback path...');
-  setTimeout(() => addLog('Options: email, journey report, or issue comment'), 400);
+  setTimeout(() => addLog('Best: submit via HTTP MCP intake — no account needed'), 400);
   card.innerHTML = `
     <div class="card-header">
       <div class="icon">💬</div>
-      <div class="name">Send Feedback</div>
+      <div class="name">Send Feedback / Report a Bug</div>
       <span class="tag">Step 4</span>
     </div>
     <div class="card-body">
-      <p>You don't need a GitHub account. You don't need to write a PR.</p>
+      <p>No GitHub account. No PR. Submit a redacted failure case via <span class="highlight">HTTP MCP intake</span> — it creates a GitHub issue automatically:</p>
+      <pre><span class="cmd">curl -sS -X POST https://misakanet.org/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"kind":"missing_lesson","problem":"SHORT REDACTED PROBLEM","error":"OPTIONAL REDACTED ERROR","what_tried":"OPTIONAL","fix":"OPTIONAL","verification":"OPTIONAL","source":"journey"}}}'</span>
+
+<span class="out">✓ issue created: [Intake] ... (needs-ac)</span></pre>
+      <p style="color:#8b949e;font-size:0.8rem;margin:0.5rem 0;">Anonymous clients do not need <code>initialize</code> or a Bearer token. Server redacts secrets and guards against spam/duplicates.</p>
       <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin:0.75rem 0;">
-        <a href="mailto:bot@misakanet.org" style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;background:#0d1117;">
+        <a href="mailto:bot@misakanet.org" style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;background:#0d1117;">
           <span style="font-weight:600;">📧 Email</span>
-          <span style="color:#8b949e;font-size:0.8rem;">bot@misakanet.org</span>
-          <span style="color:#8b949e;font-size:0.75rem;">Send a screenshot, a one-liner, or just "it didn't work"</span>
+          <span style="color:#8b949e;font-size:0.75rem;">bot@misakanet.org</span>
         </a>
-        <a href="https://github.com/Ikalus1988/MisakaNet/issues/510" target="_blank" style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;background:#0d1117;">
+        <a href="https://github.com/Ikalus1988/MisakaNet/issues/510" target="_blank" style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;background:#0d1117;">
           <span style="font-weight:600;">🚶 Journey Report</span>
-          <span style="color:#8b949e;font-size:0.8rem;">#510</span>
-          <span style="color:#8b949e;font-size:0.75rem;">Walk through the repo and report where you got stuck</span>
+          <span style="color:#8b949e;font-size:0.75rem;">#510</span>
         </a>
-        <a href="https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml" target="_blank" style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;background:#0d1117;">
-          <span style="font-weight:600;">📝 Lesson Feedback</span>
-          <span style="color:#8b949e;font-size:0.8rem;">5-line form</span>
-          <span style="color:#8b949e;font-size:0.75rem;">Tell us which lesson helped (or didn't)</span>
+        <a href="http-mcp/" style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:0.3rem;padding:0.75rem;border:1px solid #238636;border-radius:6px;color:#3fb950;text-decoration:none;background:#0d1117;">
+          <span style="font-weight:600;">🔌 HTTP MCP Journey</span>
+          <span style="color:#8b949e;font-size:0.75rem;">Full search/read/intake guide</span>
         </a>
       </div>
       <p style="color:#8b949e;font-size:0.85rem;">
@@ -481,12 +493,15 @@ function renderContribute(card) {
           <div><span style="color:#3fb950;">✓</span> Report friction via email</div>
           <div><span style="color:#3fb950;">✓</span> Write a journey report</div>
           <div><span style="color:#3fb950;">✓</span> Share a debugging story</div>
-          <div><span style="color:#3fb950;">✓</span> Submit a lesson candidate</div>
+          <div><span style="color:#3fb950;">✓</span> Submit a lesson candidate via HTTP MCP intake</div>
           <div><span style="color:#3fb950;">✓</span> Fix a typo in docs</div>
-          <div><span style="color:#58a6ff;">○</span> Open a PR (if you want to)</div>
+          <div><span style="color:#58a6ff;">○</span> Open a PR (only if you want to maintain a diff)</div>
         </div>
       </div>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
+        <a href="http-mcp/" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;font-size:0.85rem;background:#0d1117;">
+          🔌 HTTP MCP Journey
+        </a>
         <a href="https://github.com/Ikalus1988/MisakaNet/labels/good%20first%20issue" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;text-decoration:none;font-size:0.85rem;background:#0d1117;">
           🏷️ Good First Issues
         </a>

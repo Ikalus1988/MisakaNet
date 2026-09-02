@@ -2,7 +2,7 @@ name: 御坂网络注册
 
 on:
   issues:
-    types: [opened]
+    types: [opened, reopened]
   # 手动触发兜底（Worker 不通时用）
   workflow_dispatch:
     inputs:
@@ -37,12 +37,12 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -84,14 +84,11 @@ jobs:
           json.dump(c, open('data/counter.json','w'), indent=2)
           "
 
-            # Generate avatar
-            python3 misakanet-avatar.py $next --output avatars
-
             # Commit and push (fail-safe if another run pushed first)
             git config user.name "misakanet-bot"
             git config user.email "bot@misakanet.dev"
             git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Ikalus1988/MisakaNet.git
-            git add --force data/counter.json avatars/${user}.png
+            git add --force data/counter.json
             git commit -m "register: ${user}" || true
 
             if git push --force-with-lease; then
@@ -111,7 +108,7 @@ jobs:
           fi
 
       - name: Post welcome message with entry test
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           NODE_ALREADY_ASSIGNED: ${{ steps.assign.outputs.NODE_ALREADY_ASSIGNED }}
           NEXT: ${{ steps.assign.outputs.NEXT }}
@@ -125,8 +122,6 @@ jobs:
               return;
             }
             const user = process.env.USER;
-            const avatarUrl = `https://raw.githubusercontent.com/${context.repo.owner}/${context.repo.repo}/main/avatars/${user}.png`;
-
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -138,7 +133,6 @@ jobs:
                 `你的节点代号：**${user}**`,
                 alreadyAssigned ? `（注册方式：邮件）` : '',
                 '',
-                alreadyAssigned ? '' : `![${user}](${avatarUrl})`,
                 '',
                 '---',
                 '',
@@ -173,7 +167,7 @@ jobs:
             });
 
       - name: Close issue + mark registered
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.issues.addLabels({

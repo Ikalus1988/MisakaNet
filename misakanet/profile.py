@@ -16,6 +16,7 @@ import random
 import string
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -39,11 +40,25 @@ def _load() -> dict:
 
 
 def _save(profile: dict):
+    """原子写入：使用临时文件 + rename 避免并发损坏。"""
     PROFILE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    PROFILE_PATH.write_text(
-        json.dumps(profile, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
+    import tempfile
+    # 在同一目录创建临时文件，确保 rename 原子性
+    fd, tmp_path = tempfile.mkstemp(
+        dir=str(PROFILE_PATH.parent),
+        prefix=".profile-",
+        suffix=".tmp"
     )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(json.dumps(profile, ensure_ascii=False, indent=2) + "\n")
+        os.replace(tmp_path, str(PROFILE_PATH))
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def _backfill() -> dict:
@@ -64,7 +79,7 @@ def _backfill() -> dict:
                 ["git", "log", "--author=" + node_id, "--oneline", "--", "lessons/"],
                 capture_output=True, text=True, timeout=5, cwd=str(REPO),
             )
-            if r.stdout.strip():
+            if r.returncode == 0 and r.stdout.strip():
                 # 有提交记录
                 lesson_count = len(r.stdout.strip().split("\n"))
                 profile["lesson_count"] = lesson_count
@@ -72,7 +87,8 @@ def _backfill() -> dict:
                     profile["stage"] = "contributor"
                 else:
                     profile["stage"] = "active"
-    except Exception:
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        # git 不存在、超时或权限问题，保持 newcomer 状态
         pass
     _save(profile)
     return profile
@@ -171,11 +187,24 @@ def _load_quota() -> dict:
 
 
 def _save_quota(quota: dict):
+    """原子写入配额文件，避免并发损坏。"""
     _QUOTA_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _QUOTA_PATH.write_text(
-        json.dumps(quota, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
+    import tempfile
+    fd, tmp_path = tempfile.mkstemp(
+        dir=str(_QUOTA_PATH.parent),
+        prefix=".quota-",
+        suffix=".tmp",
     )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(json.dumps(quota, ensure_ascii=False, indent=2) + "\n")
+        os.replace(tmp_path, str(_QUOTA_PATH))
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def check_quota() -> tuple:

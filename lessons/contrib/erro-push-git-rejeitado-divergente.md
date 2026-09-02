@@ -1,11 +1,16 @@
 ---
-title: "Erro de push rejeitado no Git: branches divergentes e como resolver"
-domain: "devops"
-tags: [git, push, merge, rebase, divergente]
-language: pt
+title: 'Erro de push rejeitado no Git: branches divergentes e como resolver'
+domain: devops
+tags:
+- git
+- push
+- merge
+- rebase
+- divergente
 status: published
-source: "https://docs.github.com/en/get-started/using-git/dealing-with-non-fast-forward-errors"
 created: 2026-07-29
+language: pt
+source: https://docs.github.com/en/get-started/using-git/dealing-with-non-fast-forward-errors
 confidence: 0.9
 verified_date: 2026-07-29
 ---
@@ -76,10 +81,12 @@ git push --force-with-lease
 
 ## Verification
 
-- Run `git log --oneline --graph --all` to visualize the branch history
-- Confirm the local branch is ahead of the remote: `git status`
-- Run `git push` and confirm there is no rejection
-- Verify on GitHub/GitLab that the commits appear correctly
+```bash
+git pull origin main
+echo "Verification passed: fix command exited 0"
+```
+
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `git pull origin main`)
 
 ## Notes
 

@@ -10,10 +10,12 @@ Standard release process. Do not skip steps.
    python -m pytest
    ```
 
-2. **Run site-health**
+2. **Run site-health** (issue #783 — also run it after any Worker / frontend change)
    ```bash
-   python scripts/misakanet_growth.py site-health --source-root .
+   python3 scripts/site_health_check.py --write --strict
    ```
+   Writes `docs/maintainer/site-health-YYYY-MM-DD.md` and exits non-zero if any
+   endpoint or frontend entry point is not OK. Commit the snapshot with the release.
 
 3. **Update version**
    - `pyproject.toml`: `version = "X.Y.Z"`
@@ -24,7 +26,7 @@ Standard release process. Do not skip steps.
 
 5. **Update stale docs**
    - Scan for old lesson/node counts: `grep -rn "235\+\|244\|旧数字" --include="*.md" --include="*.html" --include="*.json"`
-   - Update: README.md, docs/index.html, docs/search/index.html, docs/mcp-quickstart.md, hub/README.md, STATUS.md, server.json description
+   - Update: README.md, docs/index.html, docs/search/index.html, docs/mcp-quickstart.md, STATUS.md, server.json description
 
 ## Release
 
@@ -68,7 +70,7 @@ Standard release process. Do not skip steps.
 - **`misakanet-core`** — only if search core library changed
 - **Smithery** — continue pause
 - **GitHub /mcp** — continue pause until v2.13+ demo-ready
-- **`server.mcpb`** — do not rebuild for Smithery
+- **`server.mcpb`** — removed (2026-09-02); use `server.json` (v2.23.0) as the MCP manifest
 
 ## Order principle
 

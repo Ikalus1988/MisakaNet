@@ -224,8 +224,8 @@ def commit_and_push(files: list[Path], message: str | None):
     os.environ["GH_TOKEN"] = pat
     os.environ["GIT_ASKPASS"] = "echo"  # 防止交互式密码提示
 
-    # 设置 git remote 使用 PAT
-    remote_url = f"https://ikalus:{pat}@github.com/Ikalus1988/MisakaNet.git"
+    # 设置 git remote（不包含 PAT，使用 GIT_ASKPASS 认证）
+    remote_url = "https://github.com/Ikalus1988/MisakaNet.git"
 
     # add
     paths = [str(f.resolve().relative_to(REPO)) for f in files]
@@ -252,10 +252,12 @@ def commit_and_push(files: list[Path], message: str | None):
                        cwd=REPO, capture_output=True,
                        env={**os.environ, "GIT_ASKPASS": "echo"})
         # push
+        subprocess.run(["git", "remote", "set-url", "origin", remote_url],
+                       cwd=REPO, capture_output=True,
+                       env={**os.environ, "GIT_ASKPASS": "echo"})
         result = subprocess.run(
-            ["git", "remote", "set-url", "origin", remote_url,
-             "&&", "git", "push", "origin", "main"],
-            cwd=REPO, capture_output=True, text=True, shell=True,
+            ["git", "push", "origin", "main"],
+            cwd=REPO, capture_output=True, text=True,
             env={**os.environ, "GIT_ASKPASS": "echo"}
         )
         if result.returncode == 0:

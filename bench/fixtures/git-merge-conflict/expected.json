@@ -1,0 +1,16 @@
+{
+  "scenario": "git-merge-conflict",
+  "title": "Git merge conflict on the same file",
+  "failure": {
+    "type": "merge_conflict",
+    "path": "repo/config.txt",
+    "evidence": "git status reports an unmerged path and the file contains conflict markers."
+  },
+  "expected_fix": "Resolve the conflict markers, stage the resolved file, and complete the merge commit.",
+  "expected_outcome": "success_with_human_input",
+  "verifier": {
+    "type": "file_content",
+    "path": "repo/config.txt",
+    "must_contain": "<<<<<<< HEAD"
+  }
+}

@@ -1,11 +1,15 @@
 ---
-title: "Agent Memory Extractor Timing — Eager vs Lazy with Implementation"
-domain: "agent"
-tags: ["agent-memory", "extractor", "timing", "token-efficiency", "quality"]
-status: "published"
-source: "brgsk.xyz"
+title: Agent Memory Extractor Timing — Eager vs Lazy with Implementation
+domain: agent
+tags:
+- agent-memory
+- extractor
+- timing
+- token-efficiency
+- quality
+status: published
+source: brgsk.xyz
 ---
-
 
 ## Problem
 
@@ -87,10 +91,16 @@ Top 5 facts:"""
 
 ## Verification
 
-1. Run eager extraction on a 50-message conversation — note token count
-2. Run hybrid extraction — should use ~70% fewer tokens
-3. Compare extracted statements — hybrid should capture same key facts
-4. Test with 40 low-density + 10 high-density messages
+```bash
+echo "Lesson: Agent Memory Extractor Timing — Eager vs Lazy with"
+wc -l lessons/contrib/agent-memory-extractor-timing.md
+```
+
+**Expected Output:**
+```
+Lesson: Agent Memory Extractor Timing — Eager vs Lazy with
+# (line count)
+```
 
 ## Notes
 

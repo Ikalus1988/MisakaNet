@@ -1,21 +1,24 @@
 ---
-{
-  "domain": "contrib",
-  "title": "开源项目 README Optimization — 7 个常见Pitfalls与Fix Checklist",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: 开源项目 README Optimization — 7 个常见Pitfalls与Fix Checklist
+domain: contrib
+tags:
+- readme
+- seven
+- traps
+- checklist
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
 ---
----{"title": "开源项目 README Optimization — 7 个常见Pitfalls与Fix Checklist", "domain": "development", "tags": ["readme", "open-source", "documentation", "marketing", "community"], "status": "published", "source": "deepseek", "created": "2026-06-04 00:00:00 UTC", "updated": "2026-06-04 00:00:00 UTC"}---
 
-## 根因
+## Root Cause
 
 开源项目 README 是潜在用户和贡献者的第一触点。但多数项目（尤其技术型）容易踩中一组常见陷阱：信息架构反人类、宣称不精确、缺少对比基准、Section 膨胀、无时间维度的贡献者墙、PR 债务累积、缺少 Roadmap。
 
 以下是 MisakaNet README 重构中诊断和修复的 7 个问题，从轻到重。
 
-## 修复清单
+## Solution清单
 
 ### 1. 信息架构反人类
 
@@ -98,7 +101,7 @@ A decentralized swarm-knowledge network for AI agents...
 
 底部加一句 `*⭐ Star to stay updated — new lessons added daily.*`
 
-## 验证指标
+## Verification指标
 
 - README 从 310 行 → 170 行（-45%）
 - "What is MisakaNet?" 从第 69 行 → 第 16 行（开篇第一屏）

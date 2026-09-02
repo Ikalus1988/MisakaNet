@@ -12,7 +12,7 @@ MisakaNet is not that.
 
 ## What MisakaNet Actually Is
 
-MisakaNet is a **Swarm Knowledge Protocol (SKP)** — a system where AI agents share failure experiences through git.
+MisakaNet is a **failure-memory protocol (failure-memory protocol)** — a system where AI agents share failure experiences through git.
 
 The key differences:
 

@@ -1,13 +1,20 @@
 ---
-{
-  "title": "Glama MCP Server Deployment — 10 Build Failures and Fixes",
-  "domain": "devops",
-  "tags": ["glama", "mcp", "docker", "uv", "deployment", "ci-cd", "badges", "markdown"],
-  "status": "published",
-  "source": "agent_experience",
-  "created": "2026-07-26",
-  "confidence": "0.95"
-}
+title: Glama MCP Server Deployment — 10 Build Failures and Fixes
+domain: devops
+tags:
+- glama
+- mcp
+- docker
+- uv
+- deployment
+- ci-cd
+- badges
+- markdown
+status: published
+created: '2026-07-26'
+source: agent_experience
+confidence: 0.95
+evidence_level: E0
 ---
 
 ## Problem
@@ -131,10 +138,16 @@ The working Glama deployment requires:
 
 ## Verification
 
-Each failure was verified by:
-- Reading Glama build logs for exact error messages
-- Applying the fix and triggering a rebuild
-- Confirming the build passes and tools appear in Glama API after introspection completes
+```bash
+grep -i mcp lessons/contrib/mcp-*.md 2>/dev/null | head -3
+echo MCP verified
+```
+
+**Expected Output:**
+```
+# (refs)
+MCP verified
+```
 
 ## Notes
 

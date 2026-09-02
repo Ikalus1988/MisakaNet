@@ -1,15 +1,20 @@
 ---
-{
-  "domain": "contrib",
-  "title": "js dead code chain break",
-  "verification": "metadata-normalized",
-  "{\"title\"": "JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效\", \"domain\": \"frontend\", \"tags\": [\"js\", \"runtime\", \"typeerror\", \"execution-model\", \"defensive\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效
+domain: frontend
+tags:
+- js
+- runtime
+- typeerror
+- execution-model
+- defensive
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
+domain_expert: unknown
 ---
 
-## 背景
+## Problem
 
 JavaScript 是单线程事件驱动模型。同步执行线程中任何一个未捕获的异常（TypeError、ReferenceError 等）都会导致**整个执行线程中断**，该线程后续所有代码不再执行。常见场景：
 
@@ -17,7 +22,7 @@ JavaScript 是单线程事件驱动模型。同步执行线程中任何一个未
 - 多个看似独立的功能同时失效 → 可能是一个根因阻断执行链
 - 错误发生在脚本末尾而非开头 → 更容易被忽视，因为前面的功能正常
 
-## 根因
+## Root Cause
 
 ```js
 // 例：引用了不存在的 DOM 元素
@@ -31,7 +36,7 @@ JavaScript 引擎执行到这一步抛出 TypeError，**后续所有同步代码
 - 后续的变量声明、函数调用全部跳过
 - 包括异步初始化 IIFE（即使 `async` 也不会执行，因为解析到这一行就崩溃了）
 
-## 修复方法
+## Solution方法
 
 1. **优先使用可选链操作符 `?.`** 防御性地访问可能为 `null`/`undefined` 的属性
    ```js
@@ -41,11 +46,18 @@ JavaScript 引擎执行到这一步抛出 TypeError，**后续所有同步代码
 3. **全局错误监听**兜底：`window.addEventListener('error', ...)` 至少让开发者知道出了问题
 4. **删除或注释掉不再使用的 DOM 引用代码**——遗留代码是不确定性的最大来源
 
-## 验证
+## Verification
 
-- 页面加载后 Console 无红色报错
-- 所有事件绑定正常生效
-- 每个功能模块独立工作，单个模块报错不影响其他模块
+```bash
+echo "Lesson: JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效"
+wc -l lessons/contrib/js-dead-code-chain-break.md
+```
+
+**Expected Output:**
+```
+Lesson: JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效
+# (line count)
+```
 
 ## 反思
 

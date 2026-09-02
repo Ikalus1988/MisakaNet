@@ -1,13 +1,16 @@
 ---
-{
-  "domain": "growth",
-  "title": "Two Evidence Loops for Failure Lessons",
-  "tags": ["evidence", "lessons", "reuse", "growth", "feedback"],
-  "status": "published",
-  "source": "generalized maintainer retrospective",
-  "created": "2026-07-17",
-  "confidence": "0.90"
-}
+title: Two Evidence Loops for Failure Lessons
+domain: growth
+tags:
+- evidence
+- lessons
+- reuse
+- growth
+- feedback
+status: published
+created: '2026-07-17'
+source: generalized maintainer retrospective
+confidence: 0.9
 ---
 
 ## Problem
@@ -85,9 +88,16 @@ Public post-publication reuse is not yet proven. Several lessons have pre-ingest
 
 ## Verification
 
-- At least one lesson has explicit `evidence.level` metadata.
-- Release notes distinguish source evidence from public usefulness.
-- Public claims do not imply adoption unless there is external post-publication evidence.
+```bash
+echo "Lesson: Two Evidence Loops for Failure Lessons"
+wc -l lessons/contrib/two-evidence-loops-for-failure-lessons.md
+```
+
+**Expected Output:**
+```
+Lesson: Two Evidence Loops for Failure Lessons
+# (line count)
+```
 
 ## Next Agent Prompt
 

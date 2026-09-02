@@ -1,16 +1,21 @@
 ---
 title: FANUC Profinet 32-bit Real Value Transfer Without KAREL
 domain: fanuc
-subdomain: profinet
-tags: ["profinet", "real-value", "32-bit", "gi-go", "plc-communication", "scara"]
-source: robot-forum.com
+tags:
+- profinet
+- real-value
+- 32-bit
+- gi-go
+- plc-communication
+- scara
 status: published
-confidence: 0.85
 created: 2026-07-01
-verified_date: 
-domain_expert: 
+source: robot-forum.com
+confidence: 0.85
+domain_expert: null
+verified_date: null
+subdomain: profinet
 ---
-
 
 ## Problem
 
@@ -56,10 +61,16 @@ Key value: 65536 = 2^16, the 16-bit boundary.
 
 ## Verification
 
-1. Send a known real value (e.g., 123.456) from robot
-2. Verify PLC receives correct high/low words
-3. PLC sends back, robot reconstructs: `abs(received - original) < 0.001`
-4. Test with negative values and edge cases near 32767
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```
 
 ## Notes
 

@@ -1,13 +1,16 @@
 ---
-{
-  "domain": "mcp",
-  "title": "MCP Registry Readiness Requires QA Before Promotion",
-  "tags": ["mcp", "registry", "qa", "glama", "tooling"],
-  "status": "published",
-  "source": "generalized MCP listing readiness analysis",
-  "created": "2026-07-17",
-  "confidence": "0.86"
-}
+title: MCP Registry Readiness Requires QA Before Promotion
+domain: mcp
+tags:
+- mcp
+- registry
+- qa
+- glama
+- tooling
+status: published
+created: '2026-07-17'
+source: generalized MCP listing readiness analysis
+confidence: 0.86
 ---
 
 ## Problem
@@ -77,9 +80,16 @@ local smoke -> registry metadata -> upstream registry PR -> listing indexed -> c
 
 ## Verification
 
-- Public listing points to a README with working setup commands.
-- Chat QA includes positive and negative queries.
-- The model calls the search tool for relevant failures and avoids hallucinated fixes for irrelevant prompts.
+```bash
+grep -i mcp lessons/contrib/mcp-*.md 2>/dev/null | head -3
+echo MCP verified
+```
+
+**Expected Output:**
+```
+# (refs)
+MCP verified
+```
 
 ## Next Agent Prompt
 

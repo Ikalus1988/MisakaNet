@@ -1,6 +1,6 @@
 # MCP Quickstart — Use MisakaNet in Cursor / Claude Desktop / Claude Code
 
-Give your AI coding assistant access to 249 indexed failure-recovery lessons from real debugging sessions.
+Give your AI coding assistant access to 310+ indexed failure-recovery lessons from real debugging sessions.
 
 ## What you get
 
@@ -10,6 +10,39 @@ When your agent encounters an error, it can search MisakaNet for known fixes bef
 You: "My pip install keeps timing out on WSL"
 Agent: *searches MisakaNet* → finds pip-install-timeout-ssl lesson → applies fix
 ```
+
+## Copy this to your coding agent
+
+Paste this into Cursor, Claude Code, or Claude Desktop to install and test MisakaNet in one shot:
+
+```
+Please install and test MisakaNet as an MCP failure-memory server.
+
+1. Clone https://github.com/Ikalus1988/MisakaNet
+2. Configure it as an MCP stdio server:
+   - Command: python3
+   - Args: /path/to/MisakaNet/scripts/mcp_server.py
+3. Restart your MCP client (Cursor / Claude Code / Claude Desktop)
+4. Run the first query: Search MisakaNet for "database locked"
+5. Confirm that misakanet_search returns failure-recovery lessons with title, score, and path.
+```
+
+MisakaNet is a failure-memory and recovery layer for coding agents / MCP clients. Local stdio MCP calls work independently of Glama analytics.
+
+## Fastest: connect via Glama (no clone, no self-hosting)
+
+The [Glama connector](https://glama.ai/mcp/connectors/org.misakanet/misaka-net)
+proxies to MisakaNet's hosted endpoint — you skip the local setup entirely:
+
+1. Open the connector page and click **Connect through Glama MCP Gateway**.
+2. Glama gives you a personal gateway URL:
+   `https://glama.ai/endpoints/<your-connection-profile>/mcp`.
+3. Add that URL to your client (Claude Code `mcp.json`, Cursor, VS Code,
+   ChatGPT) as a remote MCP server.
+
+Status on Glama: **Ownership verified · Healthy · 7 tools · TDQS A (4.2/5)**.
+Prefer local? Use the stdio setup below — it works offline and independently
+of Glama.
 
 ## Setup
 
@@ -53,6 +86,28 @@ Add to `.cursor/mcp.json` in your project:
     "misakanet": {
       "command": "python3",
       "args": ["/path/to/MisakaNet/scripts/mcp_server.py"]
+    }
+  }
+}
+```
+
+### Docker / GHCR
+
+No local Python setup needed — pull the container and run:
+
+```bash
+docker pull ghcr.io/ikalus1988/misakanet:2.15.0
+docker run -i ghcr.io/ikalus1988/misakanet:2.15.0
+```
+
+Or use in MCP config:
+
+```json
+{
+  "mcpServers": {
+    "misakanet": {
+      "command": "docker",
+      "args": ["run", "-i", "ghcr.io/ikalus1988/misakanet:2.15.0"]
     }
   }
 }

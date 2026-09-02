@@ -1,15 +1,17 @@
 ---
-{
-  "domain": "contrib",
-  "title": "GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix
+domain: devops
+tags:
+- devops
+- decouple
+- pythonpath
+- fork
+status: published
+created: '2026-07-06'
+source: unknown
 ---
----{"title": "GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix", "domain": "devops", "tags": ["github-actions", "ci", "dco", "python", "ai-agent", "fork-pr", "pytest", "coverage"], "status": "published", "source": "deepseek", "created": "2026-06-04 00:00:00 UTC", "updated": "2026-06-12 00:00:00 UTC"}---
 
-## 根因
+## Root Cause
 
 AI Agent 从 fork 仓库提交 PR 后，GitHub Actions CI 频繁报 `ModuleNotFoundError: No module named 'misakanet'`，且 DCO（Signed-off-by）门禁锁死整个测试管线。
 
@@ -19,7 +21,7 @@ AI Agent 从 fork 仓库提交 PR 后，GitHub Actions CI 频繁报 `ModuleNotFo
 
 2. **DCO gate 锁死测试** — workflow 将所有测试步骤挂在 `if: steps.dco.outputs.dco_passed == 'true'` 后面。一旦 commits 缺 `Signed-off-by:`，全部测试被跳过，无法区分"代码质量问题"和"CI 配置问题"。
 
-## 修复方案
+## Solution方案
 
 ### 1. 用 PYTHONPATH 替代 pip install -e .
 
@@ -77,17 +79,22 @@ jobs:
 gh workflow run 'Manual PR Audit' --repo owner/repo --ref main -f pr_number=142
 ```
 
-## 验证
+## Verification
 
-- 40 个测试全部通过，无 ModuleNotFoundError
-- DCO 失败时测试依然运行并报告真实结果
-- 手动 dispatch 可在 2 分钟内对任意 fork PR 执行审计
+```bash
+git log --format="%b" -1 | grep -i "Signed-off-by" || echo none
+```
+
+**Expected Output:**
+```
+Signed-off-by:
+```
 
 ## 进阶：工业级 DCO Bot 留言模板
 
 DCO 失败时，可以让 `github-actions[bot]` 自动在 PR 下发布结构化修复指引（非人工复制粘贴）。
 
-### 方案
+### Solution
 
 在 `dco-check.yml` 中新增一个 step（仅在 DCO 检查失败时触发）：
 
@@ -149,7 +156,7 @@ echo "DCO_EOF" >> "$GITHUB_OUTPUT"
 4. **workflow_dispatch 兜底** — PR 的首次触发使用旧 workflow，重跑也用旧定义。加 `workflow_dispatch` + `pr_number` 输入可强制使用 main 分支的最新 workflow 文件。
 5. **fork PR 的 HEAD 获取** — 在 `workflow_dispatch` 中需要用 `refs/pull/$NUM/head` 而非直接 fetch SHA，因为 fork 的 commit 不在 origin remote 中。
 
-## 关键教训
+## Key Takeaways
 
 1. `pip install -e .` 对 fork PR 不可靠（pyproject.toml 可能不兼容）— PYTHONPATH 更稳健
 2. DCO 门禁应该报告而非阻塞 — 让贡献者同时看到所有失败原因

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>Start — MisakaNet</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Connect your AI agent to MisakaNet failure memory. You only do two things — authorize, then see results.">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #0d1117; color: #e6edf3; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+  .card { max-width: 540px; text-align: center; background: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 40px; }
+  h1 { color: #f0c040; font-size: 26px; margin-bottom: 6px; }
+  .tagline { color: #a371f7; font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  p { color: #8b949e; font-size: 14px; line-height: 1.7; }
+  .code { font-family: monospace; font-size: 32px; color: #58a6ff; background: #0d1117; padding: 16px 24px; border-radius: 8px; letter-spacing: 4px; margin: 20px 0; border: 1px solid #30363d; }
+  .btn { display: inline-block; padding: 12px 24px; background: #238636; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 14px; }
+  .btn:hover { background: #2ea043; }
+  .btn-voice { background: transparent; border: 1px solid #a371f7; color: #a371f7; padding: 8px 16px; font-size: 12px; }
+  .btn-voice:hover { background: rgba(163,113,247,0.1); }
+  .steps { text-align: left; margin: 20px 0; }
+  .steps li { color: #c9d1d9; margin: 8px 0; font-size: 14px; }
+  .timer { color: #f85149; font-size: 12px; margin-top: 8px; }
+  .links { margin-top: 18px; font-size: 13px; }
+  .links a { color: #58a6ff; text-decoration: none; margin: 0 8px; }
+  .links a:hover { text-decoration: underline; }
+  @media (max-width: 768px) {
+    body { padding: 16px; }
+    .card { padding: 24px; }
+    .code { font-size: 24px; letter-spacing: 3px; padding: 14px 20px; word-break: break-all; }
+    .btn { min-height: 44px; padding: 12px 20px; font-size: 14px; }
+    .btn-voice { min-height: 44px; padding: 10px 16px; font-size: 13px; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 12px; }
+    .card { padding: 16px; max-width: 100%; }
+    .code { font-size: 18px; letter-spacing: 2px; padding: 12px 16px; }
+    .btn { min-height: 48px; padding: 14px 16px; font-size: 13px; }
+    .btn-voice { min-height: 48px; padding: 12px 14px; font-size: 12px; }
+    .steps { margin: 16px 0; }
+    .steps li { font-size: 13px; }
+  }
+</style></head>
+<body>
+<div class="card">
+  <h1>⚡ MisakaNet Start</h1>
+  <div class="tagline">你只做两件事——授权，看结果</div>
+  <p>You only do two things — authorize, then see results.</p>
+  <button class="btn" onclick="getCode()">Generate Code / 生成配对码</button>
+  <div id="voice-section" style="margin-top:12px;">
+    <button class="btn btn-voice" onclick="enableMisakaVoice()">Enable Misaka Voice</button>
+  </div>
+  <div id="result" style="display:none">
+    <div class="code" id="code">------</div>
+    <div class="timer" id="timer">Expires in 10:00</div>
+    <div class="steps">
+      <p><strong>授权 Authorize:</strong></p>
+      <ol>
+        <li>Copy the code above</li>
+        <li>Paste it to your AI agent</li>
+        <li>The agent calls <code>/mcp/pair</code> to get a token</li>
+      </ol>
+      <p><strong>看结果 See results:</strong></p>
+      <ol start="4">
+        <li>Agent searches <code>/mcp</code> for lessons</li>
+        <li>Watch fixes land in your sessions</li>
+      </ol>
+    </div>
+    <div style="margin-top:16px;padding:12px;background:rgba(163,113,247,0.1);border:1px solid rgba(163,113,247,0.3);border-radius:8px;font-size:13px;color:#a371f7;">
+      <strong>🧠 Upgrade to Shared Vision Mode</strong><br>
+      Complete registration + avatar to unlock the Misaka Network identity badge.<br>
+      <span style="color:#8b949e;font-size:12px;">御坂ネットワークの共有視界モードにアップグレードできます。</span>
+    </div>
+  </div>
+  <div class="links">
+    <a href="/search/">Search lessons</a> ·
+    <a href="/journey/">Journey</a> ·
+    <a href="https://github.com/Ikalus1988/MisakaNet">GitHub</a>
+  </div>
+</div>
+<script>
+const MISAKA_VOICE_KEY = "misakanet_voice_enabled";
+const MISAKA_VOICE = {
+  connect: "/assets/voice/connect-success.v2.mp3",
+  pair: "/assets/voice/pair-success.v2.mp3",
+  found: "/assets/voice/lesson-found.v2.mp3",
+  warning: "/assets/voice/failure-warning.v2.mp3",
+};
+
+function isMisakaVoiceEnabled() {
+  return localStorage.getItem(MISAKA_VOICE_KEY) === "1";
+}
+
+function enableMisakaVoice() {
+  localStorage.setItem(MISAKA_VOICE_KEY, "1");
+  document.getElementById("voice-section").innerHTML = '<span style="color:#a371f7;font-size:12px;">Voice enabled</span>';
+  playMisakaVoice("connect");
+}
+
+function playMisakaVoice(key) {
+  if (!isMisakaVoiceEnabled()) return;
+  const src = MISAKA_VOICE[key];
+  if (!src) return;
+  const audio = new Audio(src);
+  audio.volume = 0.75;
+  audio.play().catch(() => {});
+}
+
+async function getCode() {
+  const r = await fetch('/mcp/connect', {method:'POST'});
+  const d = await r.json();
+  if(d.code) {
+    document.getElementById('code').textContent = d.code;
+    document.getElementById('result').style.display = 'block';
+    let s = d.expires_in || 600;
+    setInterval(() => { if(s>0){s--;document.getElementById('timer').textContent='Expires in '+Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60;}}, 1000);
+    playMisakaVoice("connect");
+  }
+}
+</script>
+<script>
+// Honor ?intent= (id-only instrumentation) on the static page.
+(function () {
+  var intent = new URLSearchParams(window.location.search).get('intent');
+  if (intent) {
+    var link = document.querySelector('a[href^="/search/"]');
+    if (link) link.href = '/search/?intent=' + encodeURIComponent(intent);
+  }
+})();
+</script>
+</body>
+</html>

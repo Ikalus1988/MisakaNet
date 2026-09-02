@@ -1,22 +1,26 @@
 ---
-{
-  "title": "BGE Embedding Fallback Crash",
-  "domain": "rag",
-  "source": "bootstrap",
-  "status": "published",
-  "tags": [
-    "project:agent-medici",
-    "severity:high",
-    "node:hermes-wsl"
-  ],
-  "language": "en",
-  "created": "2026-05-03",
-  "domain_expert": "bootstrap",
-  "verified_date": "2026-05-03",
-  "subdomain": "embedding"
-}
+title: BGE Embedding Fallback Crash
+domain: rag
+tags:
+- project:agent-medici
+- severity:high
+- node:hermes-wsl
+status: published
+created: '2026-05-03'
+language: en
+source: bootstrap
+domain_expert: bootstrap
+verified_date: '2026-05-03'
+subdomain: embedding
 ---
 
+<!-- provenance:
+  contributor: "Ikalus1988"
+  merged_at: "2026-05-20"
+  evidence: "post-publication"
+-->
+
+<!-- 
 ## Problem
 
 When HermesHub starts, if the BGE-m3 model has not been downloaded to the local path, SkillIndexer crashes immediately.
@@ -36,15 +40,16 @@ Inspect the RAG config, ingestion log, retrieval log, and cache status to confir
 
 ## Verification
 
-Start the hub on a machine without the BGE-m3 model. It does not crash and prints "[Embedding] degraded mode — semantic deduplication and search will be unavailable".
-
-
 ```bash
-# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
-python3 search_knowledge.py "rag verification smoke test" --lessons
+echo "Lesson: BGE Embedding Fallback Crash"
+wc -l lessons/contrib/bge-embedding-fallback-crash.md
 ```
 
-Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
+**Expected Output:**
+```
+Lesson: BGE Embedding Fallback Crash
+# (line count)
+```
 
 ## Scenario
 

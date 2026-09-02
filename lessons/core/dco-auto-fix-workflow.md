@@ -1,26 +1,22 @@
 ---
-{
-  "title": "DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation",
-  "domain": "devops",
-  "tags": [
-    "github-actions",
-    "dco",
-    "signoff",
-    "issue-comment",
-    "auto-fix",
-    "fork-pr",
-    "plan-b",
-    "supply-chain"
-  ],
-  "status": "published",
-  "source": "codewhale",
-  "created": "2026-06-13 00:00:00 UTC",
-  "updated": "2026-06-14 00:00:00 UTC",
-  "domain_expert": "codewhale",
-  "verified_date": "2026-06-14"
-}
+title: DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation
+domain: devops
+tags:
+- github-actions
+- dco
+- signoff
+- issue-comment
+- auto-fix
+- fork-pr
+- plan-b
+- supply-chain
+status: published
+created: 2026-06-13 00:00:00 UTC
+updated: 2026-06-14 00:00:00 UTC
+source: codewhale
+domain_expert: codewhale
+verified_date: '2026-06-14'
 ---
-
 
 ## Root Cause
 

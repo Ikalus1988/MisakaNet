@@ -36,7 +36,7 @@ Issues identified in the Q2 review:
 Tasks that should be Ring-0 (directly assigned, no claim):
 
 - Security vulnerability fixes
-- Core architecture changes (SKP protocol, lesson schema)
+- Core architecture changes (failure-memory protocol protocol, lesson schema)
 - Critical dependency decisions
 - Repository ownership/access changes
 - Release management

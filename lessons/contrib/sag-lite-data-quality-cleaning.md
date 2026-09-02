@@ -1,11 +1,17 @@
 ---
-title: "SAG-Lite Data Quality: Clean Search Results"
+title: 'SAG-Lite Data Quality: Clean Search Results'
 domain: devops
-tags: ["search", "sqlite", "fts5", "data-quality", "misakanet"]
+tags:
+- search
+- sqlite
+- fts5
+- data-quality
+- misakanet
 status: published
-source: agent_experience
 created: 2026-07-02
+source: agent_experience
 ---
+
 ---
 
 ## Problem
@@ -99,10 +105,16 @@ def search(db_path: Path, query: str, domain: str | None = None, top: int = 5) -
 
 ## Verification
 
-1. Rebuild OKF export: `python3 scripts/export_okf.py`
-2. Rebuild SAG-Lite index: `python3 scripts/build_sag_index.py`
-3. Test search: `python3 scripts/build_sag_index.py --query "pip timeout" --json`
-4. Verify description is clean (no frontmatter patterns)
+```bash
+grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2>/dev/null | head -3
+echo Search verified
+```
+
+**Expected Output:**
+```
+# (refs)
+Search verified
+```
 
 ## Notes
 

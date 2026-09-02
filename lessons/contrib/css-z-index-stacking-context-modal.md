@@ -1,24 +1,21 @@
 ---
 title: CSS z-index Not Working — Stacking Context Inversion in Modal Overlays
 domain: frontend
-subdomain: css
 tags:
-  - css
-  - z-index
-  - stacking-context
-  - modal
-  - overlay
-  - position
-source: hermes-agent
+- css
+- z-index
+- stacking-context
+- modal
+- overlay
+- position
 status: published
-confidence: 0.95
 created: 2026-07-21
-verified_date: ''
+source: hermes-agent
+confidence: 0.95
 domain_expert: ''
+verified_date: ''
+subdomain: css
 ---
-
-{"title": "CSS z-index Not Working — Stacking Context Inversion in Modal Overlays", "domain": "frontend", "subdomain": "css", "tags": ["css", "z-index", "stacking-context", "modal", "overlay", "position"], "source": "hermes-agent", "status": "published", "confidence": "0.95", "created": "2026-07-21", "verified_date": "", "domain_expert": ""}
-
 
 ## Problem
 
@@ -114,12 +111,16 @@ If the modal MUST stay inside the sidebar:
 
 ## Verification
 
-1. Open browser DevTools → Elements panel
-2. Select the modal element
-3. Check the **Computed** tab → look for "Stacking context" indicator
-4. Check the ancestor chain — which element creates the root stacking context for the modal?
-5. In Chrome DevTools: the badge `^` icon on an element indicates it creates a new stacking context
-6. **The test**: set a breakpoint or inspect the modal before it appears. Scroll the ancestor chain. The modal's z-index is only meaningful inside the deepest stacking context ancestor.
+```bash
+echo "Lesson: CSS z-index Not Working — Stacking Context Inversi"
+wc -l lessons/contrib/css-z-index-stacking-context-modal.md
+```
+
+**Expected Output:**
+```
+Lesson: CSS z-index Not Working — Stacking Context Inversi
+# (line count)
+```
 
 ## Debugging Checklist
 

@@ -7,6 +7,8 @@ Usage:
     python3 tests/test_mcp_server.py
 """
 import json
+import os
+import re
 import sys
 from pathlib import Path
 
@@ -45,6 +47,15 @@ def test_initialize():
     result = resp.get("result", {})
     check("has protocolVersion", "protocolVersion" in result)
     check("has serverInfo.name", result.get("serverInfo", {}).get("name") == "misakanet")
+    expected_version = re.search(
+        r'^version\s*=\s*["\']([^"\']+)["\']',
+        (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8", errors="replace"),
+        re.MULTILINE,
+    ).group(1)
+    check(
+        "has current serverInfo.version",
+        result.get("serverInfo", {}).get("version") == expected_version,
+    )
     check("has capabilities.tools", "tools" in result.get("capabilities", {}))
 
 
@@ -56,6 +67,7 @@ def test_tools_list():
     check("has misakanet_search", "misakanet_search" in tool_names)
     check("has misakanet_get_lesson", "misakanet_get_lesson" in tool_names)
     check("has misakanet_submit_usage", "misakanet_submit_usage" in tool_names)
+    check("has misakanet_submit_intake", "misakanet_submit_intake" in tool_names)
     check("search requires query", "query" in tools[0]["inputSchema"]["required"])
 
 
@@ -131,14 +143,81 @@ def test_get_lesson():
 
 def test_submit_usage():
     print("\n-- tools/call: misakanet_submit_usage --")
-    resp = rpc("tools/call", {
-        "name": "misakanet_submit_usage",
-        "arguments": {"lesson_id": "test-lesson", "tool": "smoke-test", "outcome": "solved"},
-    })
+    # Deterministic: force the offline fallback (the worker POST routing is
+    # covered by tests/test_submit_usage.py with a mocked transport).
+    os.environ["MISAKANET_USAGE_DISABLE_REMOTE"] = "1"
+    try:
+        resp = rpc("tools/call", {
+            "name": "misakanet_submit_usage",
+            "arguments": {"lesson_id": "test-lesson", "tool": "smoke-test", "outcome": "solved"},
+        })
+    finally:
+        del os.environ["MISAKANET_USAGE_DISABLE_REMOTE"]
     result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
     result = json.loads(result_text)
     check("returns status", "status" in result)
     check("status is logged", result.get("status") == "logged")
+
+
+def test_submit_intake():
+    print("\n-- tools/call: misakanet_submit_intake --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_submit_intake",
+        "arguments": {
+            "kind": "missing_lesson",
+            "problem": "pip install fails on WSL with SSL timeout",
+            "error": "SSL: CERTIFICATE_VERIFY_FAILED",
+            "source": "claude-code",
+        },
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns submitted", result.get("submitted") is True)
+    check("returns intake_id", "intake_id" in result)
+    check("status is pending_review", result.get("status") == "pending_review")
+    check("returns redactions_applied", "redactions_applied" in result)
+    check("returns quality_score", "quality_score" in result)
+    check("returns receipt", "receipt" in result)
+
+
+def test_submit_intake_missing_problem():
+    print("\n-- tools/call: misakanet_submit_intake missing problem --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_submit_intake",
+        "arguments": {"kind": "missing_lesson"},
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns error when problem missing", "error" in result)
+
+
+def test_submit_intake_dedup():
+    print("\n-- tools/call: misakanet_submit_intake dedup --")
+    args = {
+        "kind": "missing_lesson",
+        "problem": "Unique dedup test case XYZ123",
+        "source": "smoke-test",
+    }
+    resp1 = rpc("tools/call", {"name": "misakanet_submit_intake", "arguments": args})
+    resp2 = rpc("tools/call", {"name": "misakanet_submit_intake", "arguments": args})
+    r1 = json.loads(resp1.get("result", {}).get("content", [{}])[0].get("text", "{}"))
+    r2 = json.loads(resp2.get("result", {}).get("content", [{}])[0].get("text", "{}"))
+    check("first submission succeeds", r1.get("submitted") is True)
+    check("duplicate rejected", r2.get("submitted") is False or "error" in r2)
+
+
+def test_submit_intake_title_sanitization():
+    print("\n-- tools/call: misakanet_submit_intake title sanitization --")
+    args = {
+        "kind": "missing_lesson",
+        "problem": "## 背景\n\nfeishu-interactive-card 是 Hermes Agent 的一个技能模块\n\n在日常使用中积累了一些实用经验",
+        "source": "smoke-test",
+    }
+    resp = rpc("tools/call", {"name": "misakanet_submit_intake", "arguments": args})
+    result = json.loads(resp.get("result", {}).get("content", [{}])[0].get("text", "{}"))
+    check("submission succeeds", result.get("submitted") is True)
+    # Verify no markdown headings in intake_id (which comes from GitHub issue)
+    check("has intake_id", "intake_id" in result)
 
 
 def test_unknown_tool():
@@ -185,6 +264,124 @@ def test_usage_status():
     check("returns is_registered", "is_registered" in result)
 
 
+def test_write_lesson_missing_fields():
+    print("\n-- tools/call: misakanet_write_lesson missing fields --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_write_lesson",
+        "arguments": {"title": "test"},
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns submitted=False", result.get("submitted") is False)
+    check("returns error for missing fields", "error" in result)
+    check("error mentions missing fields", "Missing required fields" in result.get("error", ""))
+
+
+def test_write_lesson_no_token():
+    print("\n-- tools/call: misakanet_write_lesson no token --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_write_lesson",
+        "arguments": {
+            "title": "test lesson",
+            "domain": "python",
+            "problem": "Something failed during build",
+            "root_cause": "Missing dependency",
+            "fix": "Install the package",
+        },
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns submitted=False", result.get("submitted") is False)
+    check("returns error for no token", "error" in result)
+    check("error mentions token required", "token required" in result.get("error", "").lower())
+
+
+def test_write_lesson_anon_token():
+    print("\n-- tools/call: misakanet_write_lesson anon token --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_write_lesson",
+        "arguments": {
+            "title": "test lesson",
+            "domain": "python",
+            "problem": "Something failed during build",
+            "root_cause": "Missing dependency",
+            "fix": "Install the package",
+            "token": "anon:test",
+        },
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns submitted=False", result.get("submitted") is False)
+    check("rejects anon token", "token required" in result.get("error", "").lower())
+
+
+def test_write_lesson_low_quality():
+    print("\n-- tools/call: misakanet_write_lesson low quality --")
+    import uuid
+    unique = uuid.uuid4().hex[:8]
+    resp = rpc("tools/call", {
+        "name": "misakanet_write_lesson",
+        "arguments": {
+            "title": f"test {unique}",
+            "domain": "misc",
+            "problem": "nope",
+            "root_cause": "nope",
+            "fix": "nope",
+            "token": "token:test-agent",
+        },
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns submitted=False", result.get("submitted") is False)
+    check("rejects low quality", "Quality score too low" in result.get("error", ""))
+    check("returns quality_score", "quality_score" in result)
+
+
+def test_write_lesson_success():
+    print("\n-- tools/call: misakanet_write_lesson success --")
+    import uuid
+    unique = uuid.uuid4().hex[:8]
+    title = f"pip install timeout on corporate proxy {unique}"
+    resp = rpc("tools/call", {
+        "name": "misakanet_write_lesson",
+        "arguments": {
+            "title": title,
+            "domain": "python",
+            "problem": "When running pip install behind a corporate proxy, the connection times out after 15 seconds. This happens because the proxy requires authentication but pip does not send credentials by default.",
+            "root_cause": "pip does not automatically use HTTP_PROXY_AUTH environment variables. The proxy returns 407 Proxy Authentication Required but pip treats this as a timeout.",
+            "fix": "Set HTTP_PROXY and HTTPS_PROXY with embedded credentials: export HTTP_PROXY=http://user:pass@proxy:8080. Or use pip --proxy flag.",
+            "verification": "Run pip install requests behind proxy and verify it completes within 30 seconds.",
+            "token": "token:test-agent",
+            "source": "smoke-test",
+        },
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns submitted=True", result.get("submitted") is True)
+    check("returns lesson_id", "lesson_id" in result)
+    check("status is pending_review", result.get("status") == "pending_review")
+    check("returns quality_score", "quality_score" in result)
+    check("quality_score >= 75", result.get("quality_score", 0) >= 75)
+    check("returns receipt", "receipt" in result)
+    # Clean up test contribution from queue
+    queue_path = Path("data/contribution_queue.jsonl")
+    if queue_path.exists():
+        lines = queue_path.read_text(encoding="utf-8").strip().split("\n")
+        lines = [l for l in lines if unique not in l]
+        queue_path.write_text("\n".join(lines) + "\n" if lines else "", encoding="utf-8")
+
+
+def test_preflight_missing_intent():
+    print("\n-- tools/call: misakanet_preflight missing intent --")
+    resp = rpc("tools/call", {
+        "name": "misakanet_preflight",
+        "arguments": {},
+    })
+    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+    result = json.loads(result_text)
+    check("returns error for missing intent", "error" in result)
+
+
 if __name__ == "__main__":
     print("MisakaNet MCP Server smoke test")
     test_initialize()
@@ -196,6 +393,12 @@ if __name__ == "__main__":
     test_unknown_tool()
     test_no_drafts_in_search()
     test_usage_status()
+    test_write_lesson_missing_fields()
+    test_write_lesson_no_token()
+    test_write_lesson_anon_token()
+    test_write_lesson_low_quality()
+    test_write_lesson_success()
+    test_preflight_missing_intent()
 
     print(f"\n{'=' * 40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

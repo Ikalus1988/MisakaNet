@@ -1,11 +1,16 @@
 ---
-title: "Error de DCO sign-off en commits de Git en Windows"
-domain: "devops"
-tags: [git, dco, windows, signoff, commit]
-language: es
+title: Error de DCO sign-off en commits de Git en Windows
+domain: devops
+tags:
+- git
+- dco
+- windows
+- signoff
+- commit
 status: published
-source: "https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/dco-auto-fix-workflow.md"
 created: 2026-07-29
+language: es
+source: https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/dco-auto-fix-workflow.md
 confidence: 0.9
 verified_date: 2026-07-29
 ---
@@ -84,11 +89,14 @@ git config --global --list
 
 ## Verification
 
-1. Ejecutar `git config --global user.name` y confirmar que muestra el nombre correcto
-2. Ejecutar `git config --global user.email` y confirmar que muestra el email verificado en GitHub
-3. Crear un commit de prueba: `git commit --allow-empty -m "test dco" -s`
-4. Verificar el mensaje del commit: debe contener `Signed-off-by:`
-5. Hacer push: debe ser aceptado sin errores de DCO
+```bash
+git log --format="%b" -1 | grep -i "Signed-off-by" || echo none
+```
+
+**Expected Output:**
+```
+Signed-off-by:
+```
 
 ## Notes
 

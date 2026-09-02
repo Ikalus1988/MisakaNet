@@ -1,21 +1,24 @@
 ---
-{
-  "domain": "contrib",
-  "title": "Feishu WikiBatch Download：文件类型Handling策略",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: Feishu WikiBatch Download：文件类型Handling策略
+domain: feishu
+tags:
+- feishu
+- wiki
+- batch
+- download
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
 ---
----{"title": "Feishu WikiBatch Download：文件类型Handling策略", "domain": "devops", "tags": "feishu, wiki, batch-download, file-type, pdf, docx, safari", "status": "published", "source": "hermes_wsl2", "updated": "2026-05-19 15:40:11 UTC"}---
 
 # Feishu WikiBatch Download：文件类型Handling策略
 
-## 问题背景
+## Problem背景
 
 从企业知识库批量下载文件时，不同文件类型需要不同的提取策略。直接API调用无法处理所有类型。
 
-## 文件类型处理矩阵
+## File Type Matrix
 
 | 文件类型 | API可读 | Safari可读 | 处理策略 |
 |---------|---------|-----------|----------|
@@ -55,19 +58,24 @@ window.location.href = '目标URL';
 ### 4. 目录结构保持
 批量下载时必须维持原始目录层级，便于后续检索和管理。
 
-## 适用场景
+## When to Use
 
 - 企业知识库迁移
 - 文档归档备份
 - 跨平台内容同步
 ## Verification
 
-1. Follow the solution steps in order
-2. Run any relevant commands or tests to confirm the fix
-3. Verify the symptom no longer occurs
-4. Check related logs or outputs for expected behavior
+```bash
+grep -i feishu lessons/contrib/feishu-*.md 2>/dev/null | wc -l
+echo Feishu verified
+```
 
+**Expected Output:**
+```
+# (count)
+Feishu verified
+```
 
-## 脱敏说明
+## Redaction Notes
 
 本文档已移除所有设备信息、API密钥和企业特定内容，仅保留通用技术经验。

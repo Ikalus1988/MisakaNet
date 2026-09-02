@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MisakaNet — PR Genius Performance & Insights</title>
+<meta name="description" content="Operational metrics, success rates, latency distribution, and PR type breakdown for PR Genius automated quality checks.">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0d1117; color: #c9d1d9; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem;
+  }
+  .container { max-width: 900px; width: 100%; }
+  h1 { font-size: 1.5rem; font-weight: 600; color: #58a6ff; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.05rem; font-weight: 600; color: #e6edf3; margin: 2rem 0 0.75rem; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.6; }
+  .privacy {
+    border: 1px solid #30363d; border-left: 3px solid #58a6ff; border-radius: 8px;
+    background: #161b22; padding: 0.9rem 1rem; font-size: 0.85rem; color: #8b949e; line-height: 1.7;
+    margin-bottom: 1.5rem;
+  }
+  .controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .btn-period {
+    background: #21262d; border: 1px solid #30363d; color: #c9d1d9; padding: 6px 14px;
+    border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 500;
+  }
+  .btn-period.active {
+    background: #1f6feb; border-color: #388bfd; color: #ffffff;
+  }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+  .card {
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    padding: 1rem; text-align: center;
+  }
+  .card-num { font-size: 1.6rem; font-weight: 700; color: #f0f6fc; margin-bottom: 0.25rem; }
+  .card-label { font-size: 0.78rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; }
+  .card.accent .card-num { color: #3fb950; }
+  .card.latency .card-num { color: #d29922; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+  .panel { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.25rem; }
+  .panel h3 { font-size: 0.95rem; color: #e6edf3; margin-bottom: 1rem; font-weight: 600; }
+
+  .bar-row { display: flex; align-items: center; margin-bottom: 0.75rem; font-size: 0.85rem; }
+  .bar-label { width: 90px; color: #8b949e; }
+  .bar-track { flex: 1; height: 16px; background: #21262d; border-radius: 4px; overflow: hidden; margin: 0 0.75rem; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+  .bar-fill.success { background: #3fb950; }
+  .bar-fill.failure { background: #f85149; }
+  .bar-fill.skip { background: #8b949e; }
+  .bar-fill.code { background: #58a6ff; }
+  .bar-fill.docs { background: #bc8cff; }
+  .bar-fill.mixed { background: #d29922; }
+  .bar-val { width: 60px; text-align: right; color: #c9d1d9; font-weight: 500; font-family: monospace; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 1px solid #21262d; }
+  th { color: #8b949e; font-weight: 500; font-size: 0.78rem; text-transform: uppercase; }
+  td.num { text-align: right; font-family: monospace; }
+  
+  .state { text-align: center; padding: 3rem 1rem; color: #8b949e; font-size: 0.9rem; }
+  .state.error { color: #f85149; }
+  .footer { margin-top: 2rem; font-size: 0.8rem; color: #484f58; text-align: center; }
+  .footer a { color: #58a6ff; text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⚡ PR Genius Workflow Insights</h1>
+  <p class="subtitle">Real-time telemetry, automated triage metrics, and human adoption statistics for MisakaNet PR Genius.</p>
+
+  <div class="privacy">
+    <strong>Transparency:</strong> Aggregated from public GitHub Actions workflow runs and maintainer review logs. Metrics update automatically on each run.
+  </div>
+
+  <div class="controls">
+    <button class="btn-period active" onclick="switchPeriod('all_time')">All-Time</button>
+    <button class="btn-period" onclick="switchPeriod('30d')">Last 30 Days</button>
+    <button class="btn-period" onclick="switchPeriod('7d')">Last 7 Days</button>
+  </div>
+
+  <div id="state" class="state">Loading PR Genius statistics...</div>
+
+  <div id="content" hidden>
+    <div class="cards">
+      <div class="card accent">
+        <div class="card-num" id="stat-success-rate">0%</div>
+        <div class="card-label">Success Rate</div>
+      </div>
+      <div class="card latency">
+        <div class="card-num" id="stat-median-latency">0s</div>
+        <div class="card-label">Median Latency</div>
+      </div>
+      <div class="card">
+        <div class="card-num" id="stat-p95-latency">0s</div>
+        <div class="card-label">P95 Latency</div>
+      </div>
+      <div class="card">
+        <div class="card-num" id="stat-total-runs">0</div>
+        <div class="card-label">Observed Runs</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Outcome Distribution</h3>
+        <div class="bar-row">
+          <div class="bar-label">Success</div>
+          <div class="bar-track"><div class="bar-fill success" id="bar-success"></div></div>
+          <div class="bar-val" id="val-success">0%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Failure</div>
+          <div class="bar-track"><div class="bar-fill failure" id="bar-failure"></div></div>
+          <div class="bar-val" id="val-failure">0%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Skipped</div>
+          <div class="bar-track"><div class="bar-fill skip" id="bar-skip"></div></div>
+          <div class="bar-val" id="val-skip">0%</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>PR Type Breakdown</h3>
+        <div class="bar-row">
+          <div class="bar-label">Code</div>
+          <div class="bar-track"><div class="bar-fill code" id="bar-code"></div></div>
+          <div class="bar-val" id="val-code">0</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Docs / Lessons</div>
+          <div class="bar-track"><div class="bar-fill docs" id="bar-docs"></div></div>
+          <div class="bar-val" id="val-docs">0</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Mixed</div>
+          <div class="bar-track"><div class="bar-fill mixed" id="bar-mixed"></div></div>
+          <div class="bar-val" id="val-mixed">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-bottom: 1.5rem;">
+      <h3>Window Summary Comparison</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Time Window</th>
+            <th class="num">Runs</th>
+            <th class="num">Success %</th>
+            <th class="num">Fail %</th>
+            <th class="num">Median Latency</th>
+            <th class="num">P95 Latency</th>
+          </tr>
+        </thead>
+        <tbody id="summary-table-body">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    Misaka Network &middot; <a href="/MisakaNet/">Home</a> &middot; <a href="/MisakaNet/insights/lesson-coverage.html">Lesson Coverage</a> &middot; <a href="https://github.com/Ikalus1988/MisakaNet">GitHub</a>
+  </div>
+</div>
+
+<script>
+let globalData = null;
+let currentPeriod = 'all_time';
+
+function escapeHTML(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function updateView() {
+  if (!globalData || !globalData.windows) return;
+  const win = globalData.windows[currentPeriod] || globalData.windows['all_time'];
+  if (!win) return;
+
+  document.getElementById('stat-success-rate').textContent = win.success_rate + '%';
+  document.getElementById('stat-median-latency').textContent = win.median_latency_seconds + 's';
+  document.getElementById('stat-p95-latency').textContent = win.p95_latency_seconds + 's';
+  document.getElementById('stat-total-runs').textContent = win.total_runs;
+
+  const totalRuns = Math.max(1, win.total_runs);
+  const succPct = win.success_rate;
+  const failPct = win.failure_rate;
+  const skipPct = win.skip_rate;
+
+  document.getElementById('bar-success').style.width = Math.min(100, succPct) + '%';
+  document.getElementById('val-success').textContent = succPct + '%';
+
+  document.getElementById('bar-failure').style.width = Math.min(100, failPct) + '%';
+  document.getElementById('val-failure').textContent = failPct + '%';
+
+  document.getElementById('bar-skip').style.width = Math.min(100, skipPct) + '%';
+  document.getElementById('val-skip').textContent = skipPct + '%';
+
+  const prDist = win.pr_type_distribution || { code: 0, docs: 0, mixed: 0 };
+  const totalTypes = Math.max(1, prDist.code + prDist.docs + prDist.mixed);
+  
+  document.getElementById('bar-code').style.width = Math.min(100, Math.round((prDist.code / totalTypes) * 100)) + '%';
+  document.getElementById('val-code').textContent = prDist.code;
+
+  document.getElementById('bar-docs').style.width = Math.min(100, Math.round((prDist.docs / totalTypes) * 100)) + '%';
+  document.getElementById('val-docs').textContent = prDist.docs;
+
+  document.getElementById('bar-mixed').style.width = Math.min(100, Math.round((prDist.mixed / totalTypes) * 100)) + '%';
+  document.getElementById('val-mixed').textContent = prDist.mixed;
+
+  // Table summary
+  const rows = [
+    { name: 'Last 7 Days', key: '7d' },
+    { name: 'Last 30 Days', key: '30d' },
+    { name: 'All-Time', key: 'all_time' },
+  ];
+  const tbody = document.getElementById('summary-table-body');
+  tbody.innerHTML = rows.map(r => {
+    const d = globalData.windows[r.key] || {};
+    return '<tr>' +
+      '<td><strong>' + escapeHTML(r.name) + '</strong></td>' +
+      '<td class="num">' + (d.total_runs || 0) + '</td>' +
+      '<td class="num" style="color:#3fb950;">' + (d.success_rate || 0) + '%</td>' +
+      '<td class="num" style="color:#f85149;">' + (d.failure_rate || 0) + '%</td>' +
+      '<td class="num">' + (d.median_latency_seconds || 0) + 's</td>' +
+      '<td class="num">' + (d.p95_latency_seconds || 0) + 's</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function switchPeriod(p) {
+  currentPeriod = p;
+  document.querySelectorAll('.btn-period').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('onclick').includes(p));
+  });
+  updateView();
+}
+
+async function loadData() {
+  const stateEl = document.getElementById('state');
+  const contentEl = document.getElementById('content');
+  const primaryApi = window.location.origin + '/api/insights/pr-genius';
+  const fallbackUrl = 'https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/data/pr-genius-stats.json';
+
+  try {
+    let res = await fetch(primaryApi, { cache: 'no-store' });
+    if (res.ok) {
+      globalData = await res.json();
+    } else {
+      let fRes = await fetch(fallbackUrl);
+      if (!fRes.ok) throw new Error('Fallback failed');
+      globalData = await fRes.json();
+    }
+    stateEl.hidden = true;
+    contentEl.hidden = false;
+    updateView();
+  } catch (err) {
+    // If running standalone or raw file, try relative data path
+    try {
+      let rRes = await fetch('../../data/pr-genius-stats.json');
+      if (!rRes.ok) throw new Error('Local fetch failed');
+      globalData = await rRes.json();
+      stateEl.hidden = true;
+      contentEl.hidden = false;
+      updateView();
+    } catch (e2) {
+      stateEl.textContent = 'Could not load PR Genius metrics. Please try again later.';
+      stateEl.className = 'state error';
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+</body>
+</html>

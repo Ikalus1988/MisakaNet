@@ -1,0 +1,87 @@
+name: Lesson Quality Gate
+
+# Structural gate (issue #889): blocks PRs whose NEW/CHANGED lessons fail the
+# quality checks (required frontmatter fields, min content length, duplicate
+# titles, allowed domain, tag format). Runs only on lessons/ changes.
+on:
+  pull_request:
+    paths:
+      - 'lessons/**'
+      - 'scripts/lesson_gate.py'
+      - 'tests/test_lesson_gate.py'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install lesson gate dependencies
+        run: python3 -m pip install -q pyyaml
+
+      - name: Get changed lesson files
+        id: changed
+        uses: tj-actions/changed-files@v47.0.6
+        with:
+          files: |
+            lessons/**/*.md
+
+      - name: Run lesson quality gate
+        if: steps.changed.outputs.any_changed == 'true'
+        id: gate
+        run: |
+          FILES="${{ steps.changed.outputs.all_changed_files }}"
+          # Convert space-separated list to args (paths have no spaces in this repo)
+          # bash -e would abort before the report and exit code are captured.
+          set +e
+          python3 scripts/lesson_gate.py $FILES > gate_report.txt 2>&1
+          GATE_EXIT=$?
+          set -e
+          cat gate_report.txt
+          echo "gate_exit=$GATE_EXIT" >> "$GITHUB_OUTPUT"
+          if [ "$GATE_EXIT" -ne 0 ]; then
+            echo "❌ Lesson quality gate FAILED — see report below."
+            exit 1
+          fi
+
+      - name: Run unit tests for the gate
+        if: steps.changed.outputs.any_changed == 'true'
+        run: |
+          pip install -q pytest
+          python3 -m pytest tests/test_lesson_gate.py -q
+
+      - name: Comment gate result on PR
+        if: steps.changed.outputs.any_changed == 'true'
+        continue-on-error: true
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            let report = '✅ **Lesson Quality Gate passed.**';
+            let icon = '✅';
+            try {
+              const gateReport = fs.readFileSync('gate_report.txt', 'utf8');
+              if (gateReport.includes('FAIL')) {
+                icon = '❌';
+                report = '❌ **Lesson Quality Gate failed.** Check the report below.';
+              }
+              report += '\n\n```\n' + gateReport + '\n```';
+            } catch (e) {}
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report,
+            });

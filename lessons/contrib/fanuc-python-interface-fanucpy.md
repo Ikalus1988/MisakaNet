@@ -1,27 +1,34 @@
-{
-  "id": "fanuc-python-interface-fanucpy",
-  "title": "FANUC Robot Python Control via fanucpy Library",
-  "domain": "fanuc",
-  "subdomain": "python-interface",
-  "source": "github.com/torayeff/fanucpy",
-  "status": "draft",
-  "confidence": 0.8,
-  "created": "2026-07-12",
-  "tags": ["fanuc", "python", "fanucpy", "socket-messaging", "robot-control", "uop-sop"],
-  "quality_score": 80,
-  "problem": "需要从 Python 端控制 FANUC 机器人运动、查询状态、操作夹爪和数字 IO，但 FANUC 控制器原生不支持 Python 接口。",
-  "root_cause": "FANUC 控器运行 KAREL/TP 语言，不直接支持 Python。需要一个中间层：Python 客户端通过 TCP/IP Socket Messaging（R648 选项）与控制器上的 KAREL 服务端程序通信，实现远程控制。",
-  "solution": "使用 fanucpy 开源库（pip install fanucpy），配合控制器端的 MAPPDK 驱动（KAREL+TP 程序），通过 socket 协议实现 Python→FANUC 的全功能控制。",
-  "verification": "1. pip install fanucpy 成功；2. 控制器端 MAPPDK 服务运行且端口 18735 可达；3. robot.connect() 返回成功；4. robot.get_curpos() 能返回当前位姿。"
-}
+---
+title: FANUC Robot Python Control via fanucpy Library
+domain: fanuc
+tags:
+- fanuc
+- python
+- fanucpy
+- socket-messaging
+- robot-control
+- uop-sop
+status: draft
+created: '2026-07-12'
+source: github.com/torayeff/fanucpy
+confidence: 0.8
+subdomain: python-interface
+id: fanuc-python-interface-fanucpy
+problem: 需要从 Python 端控制 FANUC 机器人运动、查询状态、操作夹爪和数字 IO，但 FANUC 控制器原生不支持 Python 接口。
+quality_score: 80
+root_cause: FANUC 控器运行 KAREL/TP 语言，不直接支持 Python。需要一个中间层：Python 客户端通过 TCP/IP Socket
+  Messaging（R648 选项）与控制器上的 KAREL 服务端程序通信，实现远程控制。
+solution: 使用 fanucpy 开源库（pip install fanucpy），配合控制器端的 MAPPDK 驱动（KAREL+TP 程序），通过 socket
+  协议实现 Python→FANUC 的全功能控制。
+---
 
 ## FANUC Robot Python Control via fanucpy Library
 
-### 问题描述
+### Problem描述
 
 需要从 Python 端控制 FANUC 工业机器人，包括关节运动、笛卡尔运动、夹爪控制、IO 读写、状态查询等操作。FANUC 控制器原生只支持 KAREL 和 TP 语言，没有 Python 接口。
 
-### 根因分析
+### Root Cause分析
 
 FANUC 控制器（如 R-30iB Mate Plus）运行专有的 KAREL/TP 语言环境，无法直接执行 Python 代码。解决方案是利用控制器的 **User Socket Messaging**（R648 选件）功能：
 
@@ -29,7 +36,7 @@ FANUC 控制器（如 R-30iB Mate Plus）运行专有的 KAREL/TP 语言环境�
 - Python 端：通过 TCP socket 发送结构化指令，接收执行结果
 - 通信协议：基于 socket messaging 的请求-响应模式
 
-### 修复方法/技术要点
+### Solution方法/技术要点
 
 #### 1. 环境准备
 
@@ -136,7 +143,7 @@ robot.call_prog(prog_name)
 | R[81], R[82], R[83] | 速度、加速度、连续值 |
 | PR[81] | 位置/关节值 |
 
-### 验证方式
+### Verification方式
 
 1. `pip install fanucpy` 安装无报错
 2. 控制器端 MAPPDK 服务已在 S8 端口 18735 启动（SHOW → Servers → S8 → Current State: STARTED）
@@ -149,3 +156,17 @@ robot.call_prog(prog_name)
 - GitHub: torayeff/fanucpy — Python package for FANUC industrial robots
 - MAPPDK Driver 文档：github.com/torayeff/fanucpy/blob/main/fanuc.md
 - 学术引用：Torayev et al., "Towards Modular and Plug-and-Produce Manufacturing Apps", Procedia CIRP, 2022
+
+
+## Verification
+
+```bash
+python3 --version
+python3 -c 'import sys; print(sys.version)'
+```
+
+**Expected Output:**
+```
+Python 3.
+3.
+```

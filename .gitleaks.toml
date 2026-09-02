@@ -1,0 +1,24 @@
+title = "MisakaNet gitleaks configuration"
+
+# Extend default rules (github PATs, slack tokens, AWS keys, etc.)
+[extend]
+useDefault = true
+
+# MisakaNet allowlist: intentional false positives.
+# - lessons/hook-raw archives contain redacted incident transcripts (REDACTED placeholders)
+# - tests/test_intake_redaction.py uses masked fixtures (ghp_ABCDEF***)
+# NOTE (2026-08-30): docs/index.html allowlist removed — the hardcoded Feishu
+# webhook was replaced by a server-side Worker proxy (/api/fallback-register);
+# the file must stay scanner-clean from now on.
+[allowlist]
+description = "MisakaNet intentional false positives (test fixtures, redacted placeholders, CSS)"
+paths = [
+]
+regexTarget = "secret"
+regexes = [
+    '''REDACTED''',
+    '''\*''',                    # masked fixtures like ghp_ABCDEF***
+    '''token_hex''',             # Python secrets.token_hex() API call
+    '''REPLACE_WITH''',
+    '''xoxb-''',                 # test slack fixture
+]

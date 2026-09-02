@@ -1,19 +1,27 @@
 ---
-title: "FANUC Spot Weld Tip Max Wear Amount — sysspot.sv Variable Lookup via kconvars"
-domain: "fanuc"
-subdomain: "spot-weld"
-tags: ["spot-weld", "electrode-wear", "sysspot", "kconvars", "spoteqsetup", "epaf-trgdst", "tip-dress"]
-source: "colleague_memory_dump"
-status: "published"
-confidence: "0.85"
-created: "2026-07-16"
-verified_date: "2026-07-16"
-domain_expert: ""
+title: FANUC Spot Weld Tip Max Wear Amount — sysspot.sv Variable Lookup via kconvars
+domain: fanuc
+tags:
+- spot-weld
+- electrode-wear
+- sysspot
+- kconvars
+- spoteqsetup
+- epaf-trgdst
+- tip-dress
+status: published
+created: '2026-07-16'
+source: colleague_memory_dump
+confidence: 0.85
+domain_expert: ''
+verified_date: '2026-07-16'
+subdomain: spot-weld
 evidence:
-  level: "pre_ingest_reused"
-  source_type: "colleague_memory_dump"
-  verified_by: "maintainer"
-  context: "Distilled from field debugging session. kconvars sysspot.sv parsing path verified as practically useful."
+  level: pre_ingest_reused
+  source_type: colleague_memory_dump
+  verified_by: maintainer
+  context: Distilled from field debugging session. kconvars sysspot.sv parsing path
+    verified as practically useful.
   public_quote_allowed: false
 ---
 
@@ -60,10 +68,15 @@ This value is the maximum wear amount in mm.
 
 ## Verification
 
-- The value should be a positive number (typically 3.0–10.0 mm)
-- Multiple `$SPOTEQSETUP[x]` entries exist for multi-gun setups (x = 1–5)
-- Cross-check with R[32] (原始电极磨损) and R[33] (当前电极磨损) user registers if available
 
+```bash
+python3 scripts/search_knowledge.py "test query"
+```
+
+**Expected Output:**
+```
+Found
+```
 ## Related Parameters
 
 | Parameter | Description |

@@ -1,10 +1,14 @@
 ---
-title: "Dismiss CodeQL False Positive Alerts"
-domain: "security"
-tags: ["codeql", "security", "github", "false-positive"]
-status: "published"
-source: "agent_experience"
-created: "2026-07-02"
+title: Dismiss CodeQL False Positive Alerts
+domain: security
+tags:
+- codeql
+- security
+- github
+- false-positive
+status: published
+created: '2026-07-02'
+source: agent_experience
 ---
 
 ---
@@ -27,37 +31,13 @@ The alert needs to be dismissed with a reason explaining why it's safe.
 
 ### List Open Alerts
 
-```bash
-curl -s -H "Authorization: token $TOKEN" \
-  https://api.github.com/repos/{owner}/{repo}/code-scanning/alerts
+
+
+**Expected Output:**
 ```
-
-### Dismiss Alert
-
-```bash
-curl -s -X PATCH \
-  -H "Authorization: token $TOKEN" \
-  -H "Accept: application/vnd.github.v3+json" \
-  https://api.github.com/repos/{owner}/{repo}/code-scanning/alerts/{number} \
-  -d '{
-    "state": "dismissed",
-    "dismissed_reason": "false positive",
-    "dismissed_comment": "Explanation of why this is safe"
-  }'
+On branch main
+OK
 ```
-
-### Valid Dismiss Reasons
-
-- `"false positive"` — Code is safe, pattern is incorrect
-- `"won't fix"` — Accepted risk, won't change
-- `"used in tests"` — Test code only, not production
-
-## Verification
-
-1. Check alert status: `curl ... | jq '.state'` → `"dismissed"`
-2. Verify dismissed_at timestamp is set
-3. Verify dismissed_comment is preserved
-
 ## Example
 
 Dismiss alert #37 for secrets.py:

@@ -17,7 +17,7 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Scan lessons for dangerous patterns
         run: |
@@ -31,13 +31,15 @@ jobs:
             'wget.+pipe.+sh'
             'curl.+bash'
             'bash.+dev/tcp'
-            r'\beval\b'
-            r'\bexec\b'
+            '\beval\b'
+            '\bexec\b'
             # '`[^`]*`'  — removed: too noisy, flags all inline code
           )
 
-          for file in lessons/*.md; do
-            [ -f "$file" ] || continue
+          # Recursive scan: lessons/*.md misses lessons/contrib, lessons/core,
+          # lessons/en etc. (the bulk of the corpus). Use find + rglob.
+          # Exclude _archive/ directory (historical content, not active lessons)
+          while IFS= read -r file; do
             for pattern in "${PATTERNS[@]}"; do
               if grep -Eq "$pattern" "$file" 2>/dev/null; then
                 echo "⚠️  WARNING: Suspicious pattern found in $file: $pattern"
@@ -45,7 +47,7 @@ jobs:
                 EXIT_CODE=1
               fi
             done
-          done
+          done < <(find lessons -name "*.md" -type f -not -path "*/_archive/*" | sort)
 
           if [ "$EXIT_CODE" -eq 0 ]; then
             echo "✅ All lessons passed security scan."
@@ -61,8 +63,7 @@ jobs:
         run: |
           echo "🔍 Checking for unescaped shell commands..."
           EXIT_CODE=0
-          for file in lessons/*.md; do
-            [ -f "$file" ] || continue
+          while IFS= read -r file; do
             # Look for lines starting with $ or % that aren't in code blocks
             # Simple heuristic: check if backtick-wrapped
             while IFS= read -r line; do
@@ -72,5 +73,5 @@ jobs:
                 echo "ℹ️  Review: $file → $line"
               fi
             done < "$file"
-          done
+          done < <(find lessons -name "*.md" -type f -not -path "*/_archive/*" | sort)
           echo "✅ Scan complete."

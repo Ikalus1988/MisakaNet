@@ -1,5 +1,18 @@
 ---
-{"title": "MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption", "domain": "mcp", "tags": ["mcp", "error_handling", "convention", "git", "commit_message"], "language": "en", "status": "published", "source": "https://dev.to/enjoy_kumawat/i-gave-my-mcp-tool-an-error-convention-i-only-taught-it-to-one-of-its-two-failure-paths-4619", "created": "2026-07-29", "confidence": "0.85"}
+title: MCP tool ERROR convention — inconsistency between failure paths causes silent
+  data corruption
+domain: mcp
+tags:
+- mcp
+- error_handling
+- convention
+- git
+- commit_message
+status: published
+created: '2026-07-29'
+language: en
+source: https://dev.to/enjoy_kumawat/i-gave-my-mcp-tool-an-error-convention-i-only-taught-it-to-one-of-its-two-failure-paths-4619
+confidence: 0.85
 ---
 
 ## Problem
@@ -25,7 +38,16 @@ This makes both failure paths consistent so `.startswith("ERROR:")` works as a c
 
 ## Verification
 
-not specified in source
+```bash
+git status --short | head -5
+git log --oneline -3
+```
+
+**Expected Output:**
+```
+# (status)
+# (recent)
+```
 
 ## Notes
 

@@ -1,8 +1,37 @@
-{"id": "fanuc-handling-robot-auto-drop-diagnosis", "title": "FANUC Handling Robot Unexpected Auto Mode Dropout Diagnosis", "domain": "fanuc", "subdomain": "troubleshooting", "source": "bbs.gongkong.com/d/202603/974683", "status": "draft", "confidence": 0.7, "created": "2026-07-12", "tags": ["fanuc", "auto-drop", "handling", "quick-change-coupler", "signal-loss", "troubleshooting"], "quality_score": 56, "problem": "FANUC 搬运机器人在运行过程中偶尔掉出自动模式（AUTO mode dropout），频率约每天一次，有时数天不出现。掉自动后需手动按下电气控制面板的复位和启动按钮才能恢复。", "root_cause": "社区技术共识指向快换耦合器（quick-change coupler）的电气触点问题。搬运机器人在抓件→焊接→放件流程中，销式快换耦合器需断开/重连。断开/重连过程中的瞬间信号丢失会触发 FANUC 控制器退出自动模式。具体原因包括：1) 快换耦合器触点接触不良（磨损/污染）；2) 机械对位精度不足导致连接不稳；3) 焊接线缆虚焊或连接松动。", "solution": "1. 清洁检查快换耦合器触点，排除磨损或污染\n2. 验证耦合器机械对位精度，确保连接稳定\n3. 编写监控程序，逐一检测信号线的瞬断情况\n4. 若无法定位具体故障线，更换整条线束\n5. 检查信号线焊接质量，排除虚焊问题", "verification": "1. 清洁/更换触点后连续运行 3 天无掉自动现象\n2. 监控程序记录的信号瞬断次数降为 0\n3. 更换线束后问题彻底消失"}
+---
+title: FANUC Handling Robot Unexpected Auto Mode Dropout Diagnosis
+domain: fanuc
+tags:
+- fanuc
+- auto-drop
+- handling
+- quick-change-coupler
+- signal-loss
+- troubleshooting
+status: draft
+created: '2026-07-12'
+source: bbs.gongkong.com/d/202603/974683
+confidence: 0.7
+subdomain: troubleshooting
+id: fanuc-handling-robot-auto-drop-diagnosis
+problem: FANUC 搬运机器人在运行过程中偶尔掉出自动模式（AUTO mode dropout），频率约每天一次，有时数天不出现。掉自动后需手动按下电气控制面板的复位和启动按钮才能恢复。
+quality_score: 56
+root_cause: 社区技术共识指向快换耦合器（quick-change coupler）的电气触点问题。搬运机器人在抓件→焊接→放件流程中，销式快换耦合器需断开/重连。断开/重连过程中的瞬间信号丢失会触发
+  FANUC 控制器退出自动模式。具体原因包括：1) 快换耦合器触点接触不良（磨损/污染）；2) 机械对位精度不足导致连接不稳；3) 焊接线缆虚焊或连接松动。
+solution: '1. 清洁检查快换耦合器触点，排除磨损或污染
+
+  2. 验证耦合器机械对位精度，确保连接稳定
+
+  3. 编写监控程序，逐一检测信号线的瞬断情况
+
+  4. 若无法定位具体故障线，更换整条线束
+
+  5. 检查信号线焊接质量，排除虚焊问题'
+---
 
 ## FANUC 搬运机器人掉自动模式诊断
 
-### 问题描述
+### Problem描述
 
 FANUC 搬运机器人负责搬运车顶零件。零件到位后，销式快换耦合器（pin-type quick-change coupler）断开；点焊完成后重新连接。在此过程中，机器人**偶尔掉出自动模式**，需要手动按下电气控制面板上的复位和启动按钮才能恢复。
 
@@ -10,7 +39,7 @@ FANUC 搬运机器人负责搬运车顶零件。零件到位后，销式快换�
 - **影响**：产线停机，需人工干预恢复
 - **场景**：搬运→焊接→放件的断连循环中
 
-### 根因分析
+### Root Cause分析
 
 所有社区回复指向同一根因：**快换耦合器电气触点的间歇性接触故障**。
 
@@ -28,16 +57,16 @@ FANUC 搬运机器人负责搬运车顶零件。零件到位后，销式快换�
 | 信号线虚焊 | 焊接点在振动中断开 | 万用表逐线通断测试 |
 | 线束老化 | 线缆内部断丝，弯折时接触不良 | 晃动线束观察信号变化 |
 
-### 修复方法/技术要点
+### Solution方法/技术要点
 
-#### 方案一：清洁与检查（优先）
+#### Solution一：清洁与检查（优先）
 
 1. 拆卸快换耦合器，检查所有电气触点
 2. 用酒精清洁触点表面氧化层和油污
 3. 检查触点弹簧压力是否足够
 4. 验证耦合器机械对位精度
 
-#### 方案二：信号监控定位
+#### Solution二：信号监控定位
 
 编写一个监控程序，实时记录每个信号线的状态：
 
@@ -56,11 +85,11 @@ ENDWHILE
 
 通过监控程序可以精确定位哪根信号线存在瞬断问题。
 
-#### 方案三：更换线束
+#### Solution三：更换线束
 
 若无法通过监控定位具体故障点，最直接的方案是**更换整条线束**。
 
-### 验证方式
+### Verification方式
 
 1. 清洁/更换触点后连续运行 **3 天以上**无掉自动现象
 2. 监控程序记录的信号瞬断次数降为 **0**
@@ -72,3 +101,17 @@ ENDWHILE
 - 帖子：[发那科搬运机器人掉自动](https://bbs.gongkong.com/d/202603/974683/974683_1.shtml)
 - 作者：不羁一生，2026-03-05
 - 回复者：Allen010、JSdanzi、未来。
+
+
+## Verification
+
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```

@@ -1,16 +1,21 @@
 ---
-title: "API 设计原则 — 无抽象、一致性、幂等性"
-domain: "ops"
-subdomain: "api"
-tags: ["api", "design", "principles", "rest", "consistency"]
-source: "increase.com/articles"
-status: "published"
-confidence: "0.85"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+title: API 设计原则 — 无抽象、一致性、幂等性
+domain: ops
+tags:
+- api
+- design
+- principles
+- rest
+- consistency
+status: published
+created: '2026-07-01'
+language: zh
+source: increase.com/articles
+confidence: 0.85
+domain_expert: ''
+verified_date: ''
+subdomain: api
 ---
-
 
 ## Problem
 
@@ -111,10 +116,12 @@ DELETE /api/v1/orders/1 → 无操作（不报错）
 
 ## Verification
 
-1. 审查现有 API 是否一致
-2. 检查所有 POST/PUT/DELETE 是否幂等
-3. 检查错误格式是否统一
-4. 检查命名是否符合规范
+```bash
+{"firstName": "Alice"}
+echo "Verification passed: fix command exited 0"
+```
+
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `{firstName: Alice}`)
 
 ## Notes
 

@@ -1,9 +1,10 @@
-# MisakaNet 3-Month Roadmap
+# MisakaNet 4-Month Roadmap
 
-Last updated: 2026-07-29
+Last updated: 2026-08-22
 
-This roadmap covers August-October 2026. It is biased toward one practical
-flywheel:
+This roadmap covers August-November 2026. It is biased toward one practical
+flywheel. The November section integrates competitive analysis findings from
+TeamMemory and WeKnora research (#1162-#1168).
 
 ```text
 private intake -> classification -> maintainer demand board -> curated lesson/rescue/issue
@@ -14,14 +15,13 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 
 ## Current baseline
 
-- Release/distribution: PyPI `misakanet 2.14.0`, GitHub release `v2.14.0`,
-  Glama indexed/scored, MCP Toplist badge live.
-- **v2.14.0 done** (2026-07-29): contribution credits, usage quota, capture CLI,
-  contribution queue, maintainer review, runtime entry (Cursor/Claude Code), trust semantics.
-- Test suite: 432 passed, 10 pre-existing failures (unrelated to v2.14.0).
+- Release/distribution: PyPI `misakanet-core`, GitHub release `v2.18.0`,
+  Glama indexed/scored, MCP Toplist badge live, Remote MCP endpoint.
+- **v2.18.0 done (2026-08-21): Agent-first registration, preflight guardrails, Remote MCP intake): Remote MCP, pairing code, Identity Aura, Voice Prompts, evidence levels, security hotfixes.
+- Test suite: passing.
 - Public site is online: homepage, `/search/`, journey page, Worker APIs, and
   lesson data endpoints are healthy.
-- Corpus wording baseline: **244 indexed failure lessons**; avoid claiming
+- Corpus wording baseline: **377 indexed failure lessons**; avoid claiming
   all are verified unless also stating the verified count separately.
 - Local MCP server exposes three tools: `misakanet_search`,
   `misakanet_get_lesson`, and `misakanet_submit_usage`.
@@ -29,7 +29,35 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 - External listing posture: Glama/MCP Registry/MCP Toplist are stable; Smithery
   and GitHub `/mcp` inclusion are deferred until the product loop is stronger.
 
-## August 2026 - v2.13.0: feedback intake loop
+## August 2026 - v2.17.0: Trust & Curation Hardening
+
+Goal: 把 v2.16.0 的增长势能收敛成"可信、可维护、可审计的 failure-memory 网络"。
+
+| Track | Priority | What to ship | Gate |
+|---|---:|---|---|
+| **Lesson Lint** | P0 | `scripts/lesson_lint.py` 非阻塞试运行 | 0 high issues, CI job running |
+| **GX1 闭环** | P0 | #968 合并, lessons.json 同步 | README/STATUS/lessons.json = 289 |
+| **版本漂移清理** | P0 | STATUS/ROADMAP 同步到 v2.17 | 无版本号矛盾 |
+| **Security 收尾** | P0 | #969 合并, #964 关闭 | Release notes 包含安全修复 |
+| **定位固化** | P1 | "这不是什么" + Git-backed 到 CONCEPTS.md | 文档一致 |
+| **Duplicate governance** | P1 | 重复 lesson 处理流程 | docs/duplicate-governance.md |
+| **Regression queries** | P1 | `data/regression_queries.json` | 覆盖 6 个核心 failure 类型 |
+
+### v2.17.0 Definition of Done
+
+```bash
+python scripts/lesson_lint.py --lessons-dir lessons --fail-on high
+python scripts/lesson_gate.py <changed lessons>
+python scripts/site_health.py
+```
+
+并且：
+- README / STATUS / ROADMAP 数字一致（289）
+- `data/lessons.json` 已重新生成
+- 没有无关未跟踪文件
+- Lesson lint 0 high issues
+
+## August 2026 - v2.16.0: Remote MCP + Security hardening
 
 Goal: a sandbox, agent, or human can submit a private redacted failure report;
 maintainers can classify and route it without exposing raw logs or prompts.
@@ -77,7 +105,7 @@ Out of scope for v2.13.0:
 - Full Danmaku launch
 - Re-publishing Smithery or bumping registry versions just for listing polish
 
-## September 2026 - v2.14.0: curation and trust quality
+## September 2026 - v2.17.0: curation and trust quality
 
 Goal: turn intake into trustworthy public knowledge without metric drift or
 lesson spam.
@@ -118,7 +146,7 @@ intake cluster -> maintainer review -> trusted public artifact or explicit rejec
 
 A release is not ready if intake accumulates without a review path.
 
-## October 2026 - v2.15/v3.0 readiness: distribution confidence
+## October 2026 - v2.18/v3.0 readiness: distribution confidence
 
 Goal: make external discovery channels reflect a stable product, not a vanity
 badge collection.
@@ -158,6 +186,57 @@ local MCP contract -> external listing metadata -> user can install/search witho
 
 A release is not ready if it improves badges while making installation or
 runtime verification less clear.
+
+## November 2026 - v2.18: Agent Memory Quality Loop
+
+Goal: close the loop from "lesson exists" to "lesson is used and stays fresh".
+Inspired by competitive research into TeamMemory (MCP team memory) and WeKnora
+(Tencent RAG platform). See #1162-#1168.
+
+| Issue | Priority | Track | What | Gate |
+|---|---:|---|---|---|
+| #1162 | P0 | Faithfulness | RAGAS-style auto-detect lesson usage via LLM judge | `faithfulness_eval.py` runs on usage_log, `was_used` count > 0 |
+| #1163 | P0 | Freshness | Quality decay with configurable lifecycle (14d protection, −1/day) | `freshness_scorer.py` runs, stale lessons flagged |
+| #1164 | P1 | Demand Board | Gap analysis: track zero-result queries, surface unmet needs | `gap_analyzer.py` outputs top 20 gaps, demand board has Gaps tab |
+| #1165 | P1 | MCP | `misakanet_context` tool: proactive lessons at task start | Tool registered in `tools/list`, returns compact context ≤500 tokens |
+| #1167 | P1 | Search | Progressive disclosure: compact→summary→full detail levels | `misakanet_search` accepts `detail` param, compact ≤80 tok/lesson |
+| #1166 | P1 | Intake | Memory dump watcher: auto-extract lessons from agent logs | `misakanet watch` monitors dir, creates drafts with `pending_review` |
+
+### v2.18 Definition of Done
+
+```bash
+python scripts/faithfulness_eval.py --batch data/usage_log.jsonl --threshold 0.5
+python scripts/freshness_scorer.py --lessons-dir lessons --report
+python scripts/gap_analyzer.py --input data/search_gaps.jsonl --top 20
+```
+
+并且：
+- `misakanet_search` supports `detail=compact|summary|full`
+- `misakanet_context` tool in `tools/list`
+- Freshness scores in lesson metadata
+- Demand board shows Gaps tab
+- Usage log has ≥1 entry with `was_used=True`
+
+### Quality Loop Architecture
+
+```text
+Agent searches → compact results → uses lesson → faithfulness eval → was_used
+    ↓                                                                       ↓
+    └── freshness boost ←───────────────────────────────────────────────────┘
+        ↓
+    Lesson stays fresh → appears higher in search → more usage → flywheel
+```
+
+### Competitive Insights Applied
+
+| Source | Insight | MisakaNet Action |
+|---|---|---|
+| TeamMemory | RAGAS faithfulness eval auto-detects usage | #1162 LLM judge on usage_log |
+| TeamMemory | Quality decay (14d protection, −1/day, slow below 50) | #1163 freshness lifecycle |
+| TeamMemory | Obsidian Watcher auto-extracts from vault | #1166 memory dump watcher |
+| WeKnora | Progressive skill loading (L1→L2→L3) | #1167 compact→summary→full |
+| WeKnora | 29 MCP tools with scoped runtime | #1165 context tool for proactive lessons |
+
 
 ## External channel policy (external amplifiers)
 

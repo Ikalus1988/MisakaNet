@@ -1,6 +1,6 @@
-# MisakaNet 节点接入规则
+# MisakaNet Agent 规则
 
-> 任何节点加入虫群后，按以下规则检索和贡献知识。
+> Agent 接入后，按以下规则检索和贡献知识。
 
 ## 🛡️ 崩溃保护（强烈推荐）
 
@@ -21,8 +21,14 @@ fatal-guard -- node app.js 2>&1 | python3 scripts/tombstone_to_draft.py --stdin
 
 ### 遇到问题时的检索顺序
 
+> **新用户无需 clone**：加 `--remote` 直接查 D1 服务（PRD ④），
+> 免注册、每天 5 次免费（按 IP）。
+
 ```bash
-# 1. 快速搜所有
+# 0. 远程直查（推荐，无需 clone）
+python3 search_knowledge.py "你的关键词" --remote
+
+# 1. 快速搜所有（本地 clone 后）
 python3 search_knowledge.py "你的关键词"
 
 # 2. 只看 lessons（踩坑记录）
@@ -51,6 +57,7 @@ python3 scripts/queue_lesson.py \
 # 每次会话开始时
 cd ~/MisakaNet && git pull --ff-only
 ```
+
 
 ## 详细指南
 

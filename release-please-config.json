@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "changelog-sections": [
+        { "type": "feat", "section": "Features" },
+        { "type": "fix", "section": "Bug Fixes" },
+        { "type": "docs", "section": "Documentation" },
+        { "type": "refactor", "section": "Refactoring" },
+        { "type": "test", "section": "Tests" },
+        { "type": "ci", "section": "CI/CD" }
+      ],
+      "extra-files": [
+        "docs/index.html",
+        "README.md"
+      ]
+    }
+  }
+}

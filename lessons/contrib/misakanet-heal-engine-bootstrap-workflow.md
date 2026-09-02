@@ -1,13 +1,16 @@
 ---
-{
-  "domain": "contrib",
-  "title": "MisakaNet --heal Engine Bootstrap Workflow",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: MisakaNet --heal Engine Bootstrap Workflow
+domain: contrib
+tags:
+- misakanet
+- heal
+- engine
+- bootstrap
+- workflow
+status: published
+created: '2026-07-06'
+source: unknown
 ---
----{"title": "MisakaNet --heal Engine Bootstrap Workflow — From Traceback to Covered Lesson", "domain": "development", "scope": "broad", "tags": ["misakanet", "heal", "bm25", "broad-only", "fixture", "coverage", "lesson-submission", "workflow", "openclaw"], "status": "published", "confidence": "0.85", "source": "Misaka10004", "created": "2026-06-23", "updated": "2026-06-23"}---
 
 # MisakaNet --heal Engine Bootstrap Workflow
 
@@ -112,49 +115,14 @@ Then **edit** the generated `lessons/contrib/<slug>.md` to fill in `## Problem`,
 
 After committing the new lesson (and waiting for the corpus index to rebuild — typically via the `update_lessons_json.py` workflow or next agent boot), re-run `--heal` on the same log:
 
-```bash
-python3 search_knowledge.py --heal /tmp/agent-crash.log
-# Expected: 📊 Coverage: 2/2 signatures matched (100.0%)
-#          ✅ All signatures covered by swarm knowledge.
+
+
+**Expected Output:**
 ```
-
-If coverage is still `<100%`, the new lesson's `broad_only` filter probably doesn't match — check the `scope: broad` frontmatter tag, and the `tags` field should include 1-2 terms that BM25 tokenizes from the error signature (e.g. `libnss3`, `playwright`, `wsl`).
-
-## Verification
-
-End-to-end loop, validated with a real production traceback:
-
-**Log input** (Playwright on WSL2, system chromium missing libnss3):
-
+Python check passed
+On branch main
+Found
 ```
-Error: Failed to launch chromium-headless-shell: libnss3.so: cannot open shared object file
-    at /usr/lib/chromium-browser/chromium-browser:125
-    spawn /usr/bin/chromium-browser EACCES
-    at child_process.spawn (node:internal/child_process:421)
-```
-
-**First --heal run** (no lesson existed yet):
-
-```
-Coverage: 0/1 signatures matched (0.0%)
-  📝 1 unmatched signature(s) — auto-generated fixtures in tests/fixtures/openclaw/
-     Submit a lesson to improve coverage:
-     python3 scripts/queue_lesson.py -t 'your title' -d openclaw -f tests/fixtures/openclaw/unmatched_a1b2c3d4.log
-```
-
-**Lesson submitted** (commit `lessons: openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium` with `scope: broad` tag), PR #244.
-
-**Second --heal run** (after merge, corpus rebuilt):
-
-```
-[MisakaNet] 🔍 Extracted 1 error signature(s)
-  ✅ matched: 'libnss3.so not found' (score: 0.72, lesson: openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium)
-  📊 Coverage: 1/1 signatures matched (100.0%)
-  ✅ All signatures covered by swarm knowledge.
-```
-
-**Result**: 0% → 100% coverage, single lesson, fixture → published in <30 minutes. The bootstrap workflow validated end-to-end.
-
 ## Notes
 
 - **`broad_only=True` is non-negotiable** — `heal()` filters to lessons with `scope: broad` frontmatter. Lessons with `scope: narrow` (project-specific) are intentionally excluded from the swarm search. See `misakanet/search/engine.py:286-288`.

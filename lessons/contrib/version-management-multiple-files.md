@@ -1,12 +1,17 @@
 ---
-{
-  "title": "Version Management Across Multiple Files",
-  "domain": "devops",
-  "tags": ["version", "release", "changelog", "documentation", "metrics", "ssot", "frontend"],
-  "status": "published",
-  "source": "agent_experience",
-  "created": "2026-07-02"
-}
+title: Version Management Across Multiple Files
+domain: devops
+tags:
+- version
+- release
+- changelog
+- documentation
+- metrics
+- ssot
+- frontend
+status: published
+created: '2026-07-02'
+source: agent_experience
 ---
 
 ## Problem
@@ -126,3 +131,17 @@ For frontend metric fixes, also inspect the code path: every visible count shoul
 - Consider using `bump2version` or similar tool for automated version bumping
 - Keep public metrics derived from one source instead of manually syncing many strings
 - Update frontend stats by changing the canonical data flow, not by patching each displayed number independently
+
+
+## Verification
+
+```bash
+echo "Lesson: Version Management Across Multiple Files"
+wc -l lessons/contrib/version-management-multiple-files.md
+```
+
+**Expected Output:**
+```
+Lesson: Version Management Across Multiple Files
+# (line count)
+```

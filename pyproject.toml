@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "misakanet"
-version = "2.14.0"
+version = "2.23.0"
 description = "AI Agent 分布式经验知识共享系统 — 踩坑一次，全网受益"
 readme = "README.md"
 license = "Apache-2.0"
@@ -37,7 +37,7 @@ misaka-harvest = "scripts.misaka_harvest:main"
 hub = [
     "aiohttp>=3.9",
     "websocket-client>=1.6",
-    "chromadb>=0.4",
+    "chromadb>=0.4",  # Note: CVE-2026-45829 pending fix upstream
     "networkx>=3.2",
     "PyYAML>=6.0",
     "numpy>=1.24",
@@ -62,3 +62,20 @@ quote-style = "double"
 
 [tool.coverage.run]
 omit = ["scripts/*"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "misakanet.*"
+disallow_untyped_defs = true
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.165.10",
+    "pytest>=9.1.1",
+]

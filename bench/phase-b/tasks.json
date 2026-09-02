@@ -1,0 +1,20 @@
+[
+  {
+    "task_id": "dco-signoff",
+    "name": "DCO Sign-Off Failure",
+    "category": "git",
+    "fixture": "import sys\nprint(\"Expected Signed-off-by\")\nsys.exit(1)\n"
+  },
+  {
+    "task_id": "pytest-import",
+    "name": "Python Import Error",
+    "category": "python",
+    "fixture": "import missing_phase_b_dependency\n"
+  },
+  {
+    "task_id": "mcp-crash",
+    "name": "MCP Server Crash",
+    "category": "mcp",
+    "fixture": "raise RuntimeError(\"MCP server crashed during startup\")\n"
+  }
+]

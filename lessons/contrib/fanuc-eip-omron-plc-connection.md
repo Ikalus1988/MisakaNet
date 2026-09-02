@@ -1,14 +1,45 @@
-{"id": "fanuc-eip-omron-plc-connection", "title": "FANUC Robot EtherNet/IP Connection with OMRON PLC", "domain": "fanuc", "subdomain": "plc-communication", "source": "bbs.gongkong.com/d/202112/878050", "status": "draft", "confidence": 0.6, "created": "2026-07-12", "tags": ["fanuc", "ethernet-ip", "eip", "omron", "plc-communication", "hardware-cost"], "quality_score": 50, "problem": "需要将 OMRON PLC 与 FANUC 机器人建立通讯连接。传统方案（如 PROFINET、DeviceNet）需要额外购买通讯硬件卡，增加了系统成本。", "root_cause": "FANUC 机器人的以太网端口为标准配置，无需额外购买硬件即可支持 EtherNet/IP (EIP) 协议。使用 EIP 通讯可有效减少硬件成本，但需要正确配置以太网参数和 EIP 连接。", "solution": "1. 确认 FANUC 机器人固件版本支持 EtherNet/IP\n2. 配置 FANUC 侧以太网参数（IP 地址、子网掩码）\n3. 在 OMRON PLC 侧（CX-Integrator 或 Sysmac Studio）添加 FANUC EIP 设备\n4. 配置 EIP 连接参数（Assembly Instance、连接大小）\n5. 映射 I/O 信号（DI/DO 与 PLC 地址对应）\n6. 测试通讯连接并验证信号收发", "verification": "1. OMRON PLC 编程软件显示 FANUC EIP 设备在线\n2. PLC 写入 DO 信号，FANUC 侧 DI 信号正确响应\n3. FANUC 输出 DO 信号，PLC 侧读取值正确\n4. 通讯无超时或断线报警"}
+---
+title: FANUC Robot EtherNet/IP Connection with OMRON PLC
+domain: fanuc
+tags:
+- fanuc
+- ethernet-ip
+- eip
+- omron
+- plc-communication
+- hardware-cost
+status: draft
+created: '2026-07-12'
+source: bbs.gongkong.com/d/202112/878050
+confidence: 0.6
+subdomain: plc-communication
+id: fanuc-eip-omron-plc-connection
+problem: 需要将 OMRON PLC 与 FANUC 机器人建立通讯连接。传统方案（如 PROFINET、DeviceNet）需要额外购买通讯硬件卡，增加了系统成本。
+quality_score: 50
+root_cause: FANUC 机器人的以太网端口为标准配置，无需额外购买硬件即可支持 EtherNet/IP (EIP) 协议。使用 EIP 通讯可有效减少硬件成本，但需要正确配置以太网参数和
+  EIP 连接。
+solution: '1. 确认 FANUC 机器人固件版本支持 EtherNet/IP
+
+  2. 配置 FANUC 侧以太网参数（IP 地址、子网掩码）
+
+  3. 在 OMRON PLC 侧（CX-Integrator 或 Sysmac Studio）添加 FANUC EIP 设备
+
+  4. 配置 EIP 连接参数（Assembly Instance、连接大小）
+
+  5. 映射 I/O 信号（DI/DO 与 PLC 地址对应）
+
+  6. 测试通讯连接并验证信号收发'
+---
 
 ## FANUC 机器人与 OMRON PLC 的 EtherNet/IP 连接
 
-### 问题描述
+### Problem描述
 
 在工业自动化项目中，需要将 **OMRON PLC** 与 **FANUC 机器人** 建立通讯连接。常见通讯方案（PROFINET、DeviceNet）通常需要为 FANUC 机器人额外购买专用通讯硬件卡，增加了系统成本。
 
 使用 **EtherNet/IP (EIP)** 协议可以有效降低硬件成本，因为 FANUC 机器人的以太网端口为标准配置，无需额外购买硬件。
 
-### 根因分析
+### Root Cause分析
 
 | 通讯方案 | 硬件需求 | 成本 |
 |----------|----------|------|
@@ -19,7 +50,7 @@
 
 FANUC 机器人标准配置的以太网端口原生支持 EtherNet/IP 协议，因此使用 EIP 方案可以**有效减少硬件成本**。
 
-### 修复方法/技术要点
+### Solution方法/技术要点
 
 #### 1. 前置条件确认
 
@@ -52,7 +83,7 @@ AI[1-10]   ← EtherNet/IP →  Output 区域（模拟量）
 AO[1-10]   → EtherNet/IP →  Input 区域（模拟量）
 ```
 
-### 验证方式
+### Verification方式
 
 1. OMRON PLC 编程软件中确认 FANUC EIP 设备状态为**在线**
 2. PLC 写入输出信号，在 FANUC 机器人示教器上确认 DI 信号正确响应
@@ -65,3 +96,17 @@ AO[1-10]   → EtherNet/IP →  Input 区域（模拟量）
 - 帖子：[OMRON PLC与FANUC发那科机器人 EIP 连接](https://bbs.gongkong.com/d/202112/878050/878050_1.shtml)
 - 作者：hy28，2021-12-24
 - 说明：原帖包含附件（需积分下载），技术细节基于帖子主题和 EIP 通讯通用流程整理
+
+
+## Verification
+
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```

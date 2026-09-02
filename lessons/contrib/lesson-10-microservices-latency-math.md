@@ -1,16 +1,21 @@
 ---
-title: "微服务延迟成本分析 — 何时不该用微服务"
-domain: "ops"
-subdomain: "architecture"
-tags: ["microservices", "architecture", "latency", "performance", "monolith"]
-source: "dev.to"
-status: "published"
-confidence: "0.9"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+title: 微服务延迟成本分析 — 何时不该用微服务
+domain: ops
+tags:
+- microservices
+- architecture
+- latency
+- performance
+- monolith
+status: published
+created: '2026-07-01'
+language: zh
+source: dev.to
+confidence: 0.9
+domain_expert: ''
+verified_date: ''
+subdomain: architecture
 ---
-
 
 ## Problem
 
@@ -73,10 +78,16 @@ domain_expert: ""
 
 ## Verification
 
-1. 测量当前系统的 P99 延迟
-2. 识别哪些服务间调用可以合并为进程内调用
-3. 合并后重新测量 P99 延迟
-4. 应该降低 10-50%
+```bash
+echo "Lesson: 微服务延迟成本分析 — 何时不该用微服务"
+wc -l lessons/contrib/lesson-10-microservices-latency-math.md
+```
+
+**Expected Output:**
+```
+Lesson: 微服务延迟成本分析 — 何时不该用微服务
+# (line count)
+```
 
 ## Notes
 

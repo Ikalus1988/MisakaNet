@@ -1,16 +1,22 @@
 ---
-title: "gRPC vs OpenAPI vs REST — API 协议选择指南"
-domain: "ops"
-subdomain: "api"
-tags: ["grpc", "openapi", "rest", "api", "protocol", "architecture"]
-source: "cloud.google.com/blog"
-status: "published"
-confidence: "0.9"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+title: gRPC vs OpenAPI vs REST — API 协议选择指南
+domain: ops
+tags:
+- grpc
+- openapi
+- rest
+- api
+- protocol
+- architecture
+status: published
+created: '2026-07-01'
+language: zh
+source: cloud.google.com/blog
+confidence: 0.9
+domain_expert: ''
+verified_date: ''
+subdomain: api
 ---
-
 
 ## Problem
 
@@ -109,10 +115,16 @@ message User {
 
 ## Verification
 
-1. 对同一 API 分别用 REST、OpenAPI、gRPC 实现
-2. 测量延迟和吞吐量
-3. gRPC 应该快 2-5x
-4. 测量开发效率（代码生成 vs 手写）
+```bash
+echo "Lesson: gRPC vs OpenAPI vs REST — API 协议选择指南"
+wc -l lessons/contrib/lesson-19-grpc-openapi-rest-comparison.md
+```
+
+**Expected Output:**
+```
+Lesson: gRPC vs OpenAPI vs REST — API 协议选择指南
+# (line count)
+```
 
 ## Notes
 

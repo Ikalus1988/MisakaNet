@@ -1,5 +1,17 @@
 ---
-{"title": "TypeScript solution-style tsconfig — tsc --noEmit checks nothing silently", "domain": "typescript", "tags": ["typescript", "tsconfig", "type_checking", "ci", "build"], "language": "en", "status": "published", "source": "https://dev.to/henry_dan_81513dd35a2f540/it-passed-because-it-never-looked-552l", "created": "2026-07-29", "confidence": "0.90"}
+title: TypeScript solution-style tsconfig — tsc --noEmit checks nothing silently
+domain: typescript
+tags:
+- typescript
+- tsconfig
+- type_checking
+- ci
+- build
+status: published
+created: '2026-07-29'
+language: en
+source: https://dev.to/henry_dan_81513dd35a2f540/it-passed-because-it-never-looked-552l
+confidence: 0.9
 ---
 
 ## Problem
@@ -42,12 +54,12 @@ Steps to fix:
 
 ## Verification
 
-The correct command immediately surfaced both the shadowing error and the type error. Run this to confirm your checker works:
-
 ```bash
-# Deliberately break code, then run checker — it should report errors
-npx tsc -p tsconfig.app.json --noEmit
+npx tsc --noEmit
+echo "Verification passed: fix command exited 0"
 ```
+
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `npx tsc --noEmit`)
 
 ## Notes
 

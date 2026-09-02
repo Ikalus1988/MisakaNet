@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Area labels (by file path)
-        uses: actions/labeler@v5
+        uses: actions/labeler@v7
         with:
           repo-token: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
           configuration-path: .github/labeler.yml
 
       - name: Shape guard + auto-label
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
           script: |
@@ -78,9 +78,15 @@ jobs:
               if (name === 'search_knowledge.py' && f.deletions > 100) {
                 failures.push(`**核心文件高风险删除**: \`search_knowledge.py\` 删除了 ${f.deletions} 行，需要人工 review。`);
               }
+
+              // Rule 5: generated cache / build artifacts
+              const cachePatterns = [/__pycache__\//, /\.pyc$/, /\.pytest_cache\//, /\.egg-info\//];
+              if (cachePatterns.some(p => p.test(name))) {
+                failures.push(`**缓存/构建产物泄露**: \`${name}\` 是自动生成的缓存文件，提交前请清理。`);
+              }
             }
 
-            // Rule 5: docs-only title but code changed
+            // Rule 6: docs-only title but code changed
             const titleBody = `${pr.title}\n${pr.body || ''}`.toLowerCase();
             const claimsDocsOnly = titleBody.includes('docs:') || titleBody.includes('docs-only') || titleBody.includes('[docs]');
             const codeChanged = files.some(f => /\.(py|js|ts|go)$/.test(f.filename));

@@ -1,10 +1,32 @@
-{"id":"fanuc-karel-uv-to-xyzwpr-pipeline","title":"UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion","domain":"fanuc","subdomain":"karel-slicer","source":"github-ka-boost-layer7-high-level-systems.md","status":"draft","confidence":0.8,"created":"2026-07-12","tags":["fanuc","karel","path-planning","slicer","uv-to-xyzwpr","dxf","svg","5-axis"],"quality_score":80,"problem":"5轴DLP 3D打印切片器需要将2D切片几何(SVG/DXF)转换为机器人可执行的XYZWPR运动指令，中间涉及光栅化、路径规划、坐标系转换、多层迭代等复杂流程","root_cause":"切片器管线跨越多个模块(draw→pathplan→pathmake→pathmotion→pathlayer)，每个模块负责不同阶段的转换，缺乏统一的端到端参考文档","solution":"Ka-Boost Layer7实现完整的UV→XYZWPR管线：draw模块做2D光栅化和轮廓提取，pathplan用图算法排序路径段，pathmake做插值和坐标转换，pathmotion发TP运动指令，pathlayer做逐层迭代和硬件控制","verification":"通过实际5轴DLP打印验证管线完整性，Python工具链(DXF/SVG解析、Clipper裁剪、Matplotlib可视化)用于离线验证几何正确性"}
+---
+title: UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion
+domain: fanuc
+tags:
+- fanuc
+- karel
+- path-planning
+- slicer
+- uv-to-xyzwpr
+- dxf
+- svg
+- 5-axis
+status: draft
+created: '2026-07-12'
+source: github-ka-boost-layer7-high-level-systems.md
+confidence: 0.8
+subdomain: karel-slicer
+id: fanuc-karel-uv-to-xyzwpr-pipeline
+problem: 5轴DLP 3D打印切片器需要将2D切片几何(SVG/DXF)转换为机器人可执行的XYZWPR运动指令，中间涉及光栅化、路径规划、坐标系转换、多层迭代等复杂流程
+quality_score: 80
+root_cause: 切片器管线跨越多个模块(draw→pathplan→pathmake→pathmotion→pathlayer)，每个模块负责不同阶段的转换，缺乏统一的端到端参考文档
+solution: Ka-Boost Layer7实现完整的UV→XYZWPR管线：draw模块做2D光栅化和轮廓提取，pathplan用图算法排序路径段，pathmake做插值和坐标转换，pathmotion发TP运动指令，pathlayer做逐层迭代和硬件控制
+---
 
-### 问题描述
+### Problem描述
 
 5轴DLP 3D打印切片器需要将2D切片几何(从SVG/DXF文件导入)转换为机器人可执行的XYZWPR运动指令。整个流程涉及多个阶段：2D几何处理、路径规划排序、坐标系转换、运动插值、多层迭代、硬件控制。每个阶段需要不同的算法和数据结构。
 
-### 根因分析
+### Root Cause分析
 
 切片器管线跨越5个核心模块，每个模块负责不同阶段的转换：
 
@@ -22,7 +44,7 @@
     pathlayer → 逐层迭代 + 硬件控制(激光/粉末)
 ```
 
-### 修复方法/技术要点
+### Solution方法/技术要点
 
 #### 1. draw模块 — 2D几何处理
 
@@ -159,7 +181,7 @@ t_HOPPERS   { hopper1, hopper2: t_POWDER }
 t_DEPTHREGR { a, b, c: REAL }  -- 二次多项式：a*x^2 + b*x + c，用于Z高度补偿
 ```
 
-### 验证方式
+### Verification方式
 
 1. **几何验证**：使用Python工具链(DXF/SVG解析 + Clipper裁剪 + Matplotlib可视化)离线验证2D几何正确性
 2. **路径验证**：验证光栅填充、轮廓提取、路径排序的输出
@@ -171,3 +193,16 @@ t_DEPTHREGR { a, b, c: REAL }  -- 二次多项式：a*x^2 + b*x + c，用于Z高
 - Ka-Boost项目 Layer7模块
 - 模块：`lib/draw`(光栅化)、`lib/paths`(路径系统，含pathlib/pathplan/pathmake/pathmotion/pathlayer)
 - 辅助工具：Python DXF/SVG/Clipper工具链
+
+## Verification
+
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```

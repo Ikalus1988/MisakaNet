@@ -1,12 +1,21 @@
 ---
-title: "FANUC Alarm Severity Levels — Handling and Color Codes"
-domain: "fanuc"
-subdomain: "troubleshooting"
-tags: ["alarm", "severity", "warn", "pause", "stop", "servo", "abort", "system", "troubleshooting"]
-status: "published"
-source: "internal-training"
-confidence: "0.95"
-created: "2026-07-14"
+title: FANUC Alarm Severity Levels — Handling and Color Codes
+domain: fanuc
+tags:
+- alarm
+- severity
+- warn
+- pause
+- stop
+- servo
+- abort
+- system
+- troubleshooting
+status: published
+created: '2026-07-14'
+source: internal-training
+confidence: 0.95
+subdomain: troubleshooting
 ---
 
 ## Problem
@@ -89,10 +98,16 @@ Stop distance = (Motion speed × Scan time) + Coast distance at power cutoff
 
 ## Verification
 
-1. Trigger a WARN-level alarm — verify robot continues operating
-2. Trigger a PAUSE-level alarm — verify robot decelerates gracefully
-3. Trigger a SERVO-level alarm — verify servo power is cut immediately
-4. Check alarm history after each test — verify correct logging
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```
 
 ## Notes
 

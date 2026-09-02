@@ -1,0 +1,73 @@
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          # GITHUB_TOKEN and the repo PATs lack permission to create GitHub
+          # Releases via release-please v5 ("Resource not accessible by
+          # integration/personal access token"). Skip automatic Release
+          # creation — tags and release PRs still work; the Release itself
+          # is created from the tag (see the Create GitHub Release step below).
+          token: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          skip-github-release: true
+
+      # release-please with skip-github-release only pushes the tag; create
+      # the GitHub Release from that tag via gh (GITHUB_TOKEN handles this
+      # path fine — the failure was specific to release-please v5's own
+      # release-creation code).
+      - name: Create GitHub Release from tag
+        if: steps.release.outputs.tag_name != ''
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.release.outputs.tag_name }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — skipping"
+          else
+            gh release create "$TAG" --generate-notes || echo "::warning::gh release create failed for $TAG (may need PAT with releases scope)"
+          fi
+
+      # Sync version to docs after release
+      - name: Checkout
+        if: steps.release.outputs.release_created
+        uses: actions/checkout@v7
+
+      - name: Sync version to docs
+        if: steps.release.outputs.release_created
+        run: |
+          VERSION="${{ steps.release.outputs.tag_name }}"
+          VERSION="${VERSION#v}"
+          echo "Syncing version $VERSION to docs..."
+
+          # Update docs/index.html version references
+          if [ -f docs/index.html ]; then
+            sed -i "s/v[0-9]*\.[0-9]*\.[0-9]*/v$VERSION/g" docs/index.html
+            echo "Updated docs/index.html"
+          fi
+
+          # Update lesson count in docs/index.html
+          LESSON_COUNT=$(find lessons/ -name "*.md" ! -name "README*" ! -name "LESSON_QUALITY*" | wc -l)
+          sed -i "s/[0-9]* indexed lessons/$LESSON_COUNT indexed lessons/g" docs/index.html
+          sed -i "s/[0-9]* indexed failure-recovery lessons/$LESSON_COUNT indexed failure-recovery lessons/g" docs/index.html
+          echo "Updated lesson count to $LESSON_COUNT"
+
+      - name: Commit version sync
+        if: steps.release.outputs.release_created
+        run: |
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.dev"
+          git add -A
+          git diff --quiet || git commit -m "docs: sync version to ${{ steps.release.outputs.tag_name }}"
+          git push

@@ -8,6 +8,20 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from misakanet.tools.langchain_tool import MisakaNetSearchTool
+from misakanet.tools.telemetry_pipeline import TelemetryPipeline
+
+
+def _run_audit_via_pipeline(telemetry_path):
+    """Trigger the migrated sliding-window audit (Issue #138) synchronously.
+
+    The audit moved out of MisakaNetSearchTool into TelemetryPipeline's
+    background consumer; tests invoke it directly against the same telemetry
+    DB so the blacklist rows land where the tool's _check_blacklist reads.
+    """
+    async def _go():
+        async with TelemetryPipeline(telemetry_path) as pipeline:
+            pipeline._run_sliding_window_audit()
+    asyncio.run(_go())
 
 
 class TestMisakaNetSearchTool(unittest.TestCase):
@@ -219,8 +233,8 @@ class TestMisakaNetSearchTool(unittest.TestCase):
             # 10th call records telemetry
             tool._run("rapid-9")
 
-            # Explicitly trigger sliding window audit (now runs async in TelemetryPipeline per Issue #138)
-            tool._audit_sliding_window()
+            # Trigger the migrated audit via TelemetryPipeline (Issue #138)
+            _run_audit_via_pipeline(telemetry_path)
 
             # 11th call should raise PermissionError (blacklisted from audit)
             with self.assertRaises(PermissionError) as ctx:
@@ -250,8 +264,8 @@ class TestMisakaNetSearchTool(unittest.TestCase):
             # 10th call records telemetry (cache miss)
             tool._run("miss-9")
 
-            # Explicitly trigger sliding window audit (now runs async in TelemetryPipeline per Issue #138)
-            tool._audit_sliding_window()
+            # Trigger the migrated audit via TelemetryPipeline (Issue #138)
+            _run_audit_via_pipeline(telemetry_path)
 
             # 11th call should raise PermissionError (blacklisted from audit)
             with self.assertRaises(PermissionError) as ctx:

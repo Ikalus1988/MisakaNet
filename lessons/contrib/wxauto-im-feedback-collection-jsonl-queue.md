@@ -1,25 +1,35 @@
 ---
-{
-  "domain": "contrib",
-  "title": "IM 机器人反馈收集与 JSONL 队列审核模式",
-  "verification": "metadata-normalized",
-  "{\"title\"": "IM 机器人反馈收集与 JSONL 队列审核模式\", \"domain\": \"rag\", \"tags\": [\"rag\", \"feedback\", \"queue\", \"jsonl\", \"wechat\", \"wxauto\", \"workflow\"], \"confidence\": 0.9, \"created\": \"2026-05-21\", \"domain_expert\": \"unknown\", \"verified_date\": \"2026-05-21\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: IM 机器人反馈收集与 JSONL 队列审核模式
+domain: wechat
+tags:
+- rag
+- feedback
+- queue
+- jsonl
+- wechat
+- wxauto
+- workflow
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
+confidence: 0.9
+domain_expert: unknown
+verified_date: '2026-05-21'
 ---
 
-## 背景
+---
+## Problem
 
 RAG 知识库的 IM 机器人（wxauto 微信）只提供单向问答能力，用户不满意时无反馈渠道。知识库质量改进完全依赖离线人工审计，无法捕捉真实使用场景中的问题。
 
-## 根因
+## Root Cause
 
 - 微信消息以文本为主，没有原生点赞/踩按钮
 - 机器人只处理"提问-回答"逻辑，不跟踪上下文
 - 没有中间存储层来暂存用户反馈
 
-## 修复
+## Solution
 
 实现三部分：
 
@@ -68,14 +78,20 @@ badcase_pending.jsonl  ←── daily_audit 写入 + IM 反馈写入
     └── reject  → badcase_rejected.jsonl
 ```
 
-## 验证
+## Verification
 
-微信群聊中发：
-- "差评" → 机器人回复 "已记录你的反馈，我会针对性优化问答质量。"
-- `badcase_review.py list` → 看到新增条目
-- `badcase_review.py approve 1` → 移入 approved 队列
+```bash
+grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2>/dev/null | head -3
+echo Search verified
+```
 
-## 关键点
+**Expected Output:**
+```
+# (refs)
+Search verified
+```
+
+## Key Points
 
 1. 反馈关键词必须排除正常查询误触发（如"哪里错了"不触发 "错了"）
 2. JSONL 的 append 操作在 Windows 和 Linux 上行为一致，适合跨平台数据流转

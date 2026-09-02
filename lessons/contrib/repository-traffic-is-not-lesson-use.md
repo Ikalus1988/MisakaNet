@@ -1,13 +1,16 @@
 ---
-{
-  "domain": "growth",
-  "title": "Repository Traffic Is Not Lesson Use",
-  "tags": ["analytics", "growth", "feedback", "lessons", "metrics"],
-  "status": "published",
-  "source": "generalized repository traffic analysis",
-  "created": "2026-07-17",
-  "confidence": "0.90"
-}
+title: Repository Traffic Is Not Lesson Use
+domain: growth
+tags:
+- analytics
+- growth
+- feedback
+- lessons
+- metrics
+status: published
+created: '2026-07-17'
+source: generalized repository traffic analysis
+confidence: 0.9
 ---
 
 ## Problem
@@ -79,9 +82,16 @@ Repository traffic is active, but public lesson-use evidence is still being coll
 
 ## Verification
 
-- Search page appears in top referrer or page-view paths.
-- At least one public feedback event exists: helpful vote, lesson-feedback issue, usage report, or cited lesson.
-- Release notes separate traffic metrics from usefulness metrics.
+```bash
+echo "Lesson: Repository Traffic Is Not Lesson Use"
+wc -l lessons/contrib/repository-traffic-is-not-lesson-use.md
+```
+
+**Expected Output:**
+```
+Lesson: Repository Traffic Is Not Lesson Use
+# (line count)
+```
 
 ## Next Agent Prompt
 

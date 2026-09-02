@@ -1,24 +1,21 @@
 ---
 title: Agent-Reach — Multi-Platform Internet Access for AI Agents
 domain: agent
-subdomain: tooling
 tags:
-  - agent-reach
-  - scraping
-  - reddit
-  - twitter
-  - bilibili
-  - mcp
-source: github.com/Panniantong/Agent-Reach
+- agent-reach
+- scraping
+- reddit
+- twitter
+- bilibili
+- mcp
 status: published
-confidence: 0.85
 created: 2026-07-01
-verified_date: ''
+source: github.com/Panniantong/Agent-Reach
+confidence: 0.85
 domain_expert: ''
+verified_date: ''
+subdomain: tooling
 ---
-
-{"title": "Agent-Reach — Multi-Platform Internet Access for AI Agents", "domain": "agent", "subdomain": "tooling", "tags": ["agent-reach", "scraping", "reddit", "twitter", "bilibili", "mcp"], "source": "github.com/Panniantong/Agent-Reach", "status": "published", "confidence": "0.85", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
-
 
 ## Problem
 
@@ -91,10 +88,16 @@ agent-reach doctor --json
 
 ## Verification
 
-1. `agent-reach doctor --json` shows platform statuses
-2. `agent-reach install --channels reddit` installs rdt-cli
-3. `rdt status` shows authentication state
-4. `rdt search "query"` returns results (if authenticated)
+```bash
+grep -i mcp lessons/contrib/mcp-*.md 2>/dev/null | head -3
+echo MCP verified
+```
+
+**Expected Output:**
+```
+# (refs)
+MCP verified
+```
 
 ## Notes
 

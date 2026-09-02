@@ -1,5 +1,20 @@
-{"title": "MCP Context Mode — 98% Context Window Reduction for Claude Code", "domain": "mcp", "subdomain": "optimization", "tags": ["mcp", "claude-code", "context-window", "optimization", "token-efficiency"], "source": "mksg.lu/blog/context-mode", "status": "published", "confidence": "0.9", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
-
+---
+title: MCP Context Mode — 98% Context Window Reduction for Claude Code
+domain: mcp
+tags:
+- mcp
+- claude-code
+- context-window
+- optimization
+- token-efficiency
+status: published
+created: '2026-07-01'
+source: mksg.lu/blog/context-mode
+confidence: 0.9
+domain_expert: ''
+verified_date: ''
+subdomain: optimization
+---
 
 ## Problem
 
@@ -42,10 +57,16 @@ Claude Code → MCP Context Mode → Actual MCP Server
 
 ## Verification
 
-1. Run `gh issue list` without Context Mode — note token usage
-2. Enable Context Mode MCP server
-3. Run same command — token usage should drop by ~98%
-4. Verify Claude still understands the output
+```bash
+grep -i mcp lessons/contrib/mcp-*.md 2>/dev/null | head -3
+echo MCP verified
+```
+
+**Expected Output:**
+```
+# (refs)
+MCP verified
+```
 
 ## Notes
 

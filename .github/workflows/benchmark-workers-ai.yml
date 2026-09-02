@@ -1,0 +1,59 @@
+name: Workers AI Lesson Benchmark (weekly)
+
+on:
+  schedule:
+    # Weekly: Monday 02:00 UTC (Sun night US / Mon morning Asia — high-traffic window)
+    - cron: '0 2 * * 1'
+  workflow_dispatch:          # manual trigger
+    inputs:
+      scenarios:
+        description: 'Number of scenarios (leave empty for full scan)'
+        required: false
+      models:
+        description: 'Comma-separated model ids (default: free llama/qwen set)'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Run lesson benchmark (with vs without lesson context)
+        env:
+          AI_GATEWAY_ID: misakanet-bench
+          AI_GATEWAY_TOKEN: ${{ secrets.AI_GATEWAY_TOKEN }}
+        run: |
+          SCEN="${{ github.event.inputs.scenarios || '' }}"
+          # Free-tier only (2026-08-30): llama-3.3-70b billed $0.11 past the
+          # 10k neurons/day allocation. 3b full + 8b strong stay inside the
+          # free pool; --neuron-budget hard-stops before any billing.
+          ARGS="--all --compare --strong-subset 40 --concurrency 5 \
+            --full-model @cf/meta/llama-3.2-3b-instruct \
+            --strong-model @cf/meta/llama-3.1-8b-instruct-fp8-fast \
+            --neuron-budget 10000"
+          [ -n "$SCEN" ] && ARGS="--scenarios $SCEN --compare --strong-subset 40 --concurrency 5 \
+            --full-model @cf/meta/llama-3.2-3b-instruct \
+            --strong-model @cf/meta/llama-3.1-8b-instruct-fp8-fast \
+            --neuron-budget 10000"
+          python3 scripts/benchmark_workers_ai.py $ARGS \
+            --output docs/benchmarks/latest.json
+
+      - name: Commit benchmark report
+        run: |
+          mkdir -p docs/benchmarks
+          TS=$(date -u +%Y-%m-%d)
+          cp docs/benchmarks/latest.json "docs/benchmarks/benchmark-$TS.json" 2>/dev/null || true
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.org"
+          git add docs/benchmarks/ || true
+          git diff --cached --quiet || git commit -m "chore(benchmark): weekly Workers AI lesson benchmark report [$TS] [skip ci]"
+          git pull --rebase origin main 2>&1 || true
+          git push || { echo "push conflict, retrying..."; sleep 5; git pull --rebase origin main 2>&1 || true; git push || echo "push skipped"; }

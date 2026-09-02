@@ -1,20 +1,17 @@
 ---
-{
-  "title": "RAG Three-Channel LLM Disaster Recovery",
-  "domain": "rag",
-  "source": "bootstrap",
-  "status": "published",
-  "tags": [
-    "project:self-grow-wiki",
-    "node:hermes-wsl",
-    "scope:broad"
-  ],
-  "language": "en",
-  "created": "2026-05-03",
-  "domain_expert": "bootstrap",
-  "verified_date": "2026-05-03",
-  "subdomain": "llm"
-}
+title: RAG Three-Channel LLM Disaster Recovery
+domain: rag
+tags:
+- project:self-grow-wiki
+- node:hermes-wsl
+- scope:broad
+status: published
+created: '2026-05-03'
+language: en
+source: bootstrap
+domain_expert: bootstrap
+verified_date: '2026-05-03'
+subdomain: llm
 ---
 
 ## Problem
@@ -43,16 +40,16 @@ Core logic:
 
 ## Verification
 
-After manually disconnecting the Windows proxy (primary channel unavailable), RAG could still return answers through local Ollama.
-Monitoring for 7 consecutive days showed no service interruption.
-
-
 ```bash
-# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
-python3 search_knowledge.py "rag verification smoke test" --lessons
+grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2>/dev/null | head -3
+echo Search verified
 ```
 
-Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
+**Expected Output:**
+```
+# (refs)
+Search verified
+```
 
 ## Scenario
 

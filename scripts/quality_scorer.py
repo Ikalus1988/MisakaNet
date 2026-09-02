@@ -17,6 +17,7 @@ Usage:
 """
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -24,6 +25,11 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 LESSONS_DIR = REPO / "lessons"
 sys.path.insert(0, str(REPO))
+
+# Grade thresholds (可被环境变量覆盖)
+GRADE_A_THRESHOLD = int(os.environ.get("QUALITY_GRADE_A", "85"))
+GRADE_B_THRESHOLD = int(os.environ.get("QUALITY_GRADE_B", "75"))
+PASS_THRESHOLD = int(os.environ.get("QUALITY_PASS_THRESHOLD", "75"))
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -81,41 +87,30 @@ def extract_frontmatter(content: str) -> tuple[dict | None, str | None]:
         return fm, None
     except json.JSONDecodeError:
         pass
-    # YAML-like fallback
+    # YAML-like fallback using safer parsing
     try:
-        fm = {}
-        current_key = None
-        current_list = None
-        for line in raw.split("\n"):
-            if line.strip().startswith("- "):
-                if current_key and current_list is not None:
-                    current_list.append(line.strip()[2:].strip().strip("\"'"))
-                continue
-            line = line.strip()
-            if not line:
-                continue
-            if ":" in line:
+        try:
+            import yaml
+            fm = yaml.safe_load(raw)
+            return (fm, None) if isinstance(fm, dict) and fm else (None, "Empty frontmatter")
+        except ImportError:
+            # Minimal YAML fallback (key: value only, no nested structures)
+            fm = {}
+            for line in raw.split("\n"):
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if ":" not in line:
+                    continue
                 key, _, val = line.partition(":")
                 key, val = key.strip(), val.strip()
-                if current_key and current_list is not None:
-                    fm[current_key] = current_list
-                    current_list = None
-                if val == "":
-                    current_key, current_list = key, []
-                elif val.startswith("[") and val.endswith("]"):
-                    fm[key] = [v.strip().strip("\"'") for v in val[1:-1].split(",")]
-                    current_key = None
-                elif val.lower() in ("true", "false"):
+                if val.lower() in ("true", "false"):
                     fm[key] = val.lower() == "true"
-                    current_key = None
                 else:
                     fm[key] = val.strip("\"'")
-                    current_key = None
-        if current_key and current_list is not None:
-            fm[current_key] = current_list
-        return (fm, None) if fm else (None, "Empty frontmatter")
-    except Exception:
-        return None, "Frontmatter parse error"
+            return (fm, None) if fm else (None, "Empty frontmatter")
+    except Exception as e:
+        return None, f"Frontmatter parse error: {e}"
 
 
 def get_body(content: str) -> str:
@@ -437,9 +432,9 @@ def score_lesson(
 
     total = meta_pts + struct_pts + content_pts + dedup_pts + trust_pts
 
-    if total >= 85:
+    if total >= GRADE_A_THRESHOLD:
         grade = "A"
-    elif total >= 75:
+    elif total >= GRADE_B_THRESHOLD:
         grade = "B"
     else:
         grade = "F"
@@ -448,7 +443,7 @@ def score_lesson(
         "file": rel_path,
         "score": total,
         "grade": grade,
-        "pass": total >= 75,
+        "pass": total >= PASS_THRESHOLD,
         "breakdown": {
             "metadata": {"score": meta_pts, "max": 20, "notes": meta_notes},
             "structure": {"score": struct_pts, "max": 25, "notes": struct_notes},
@@ -478,7 +473,7 @@ def main():
     args = sys.argv[1:]
     json_mode = "--json" in args
     ci_mode = "--ci" in args
-    threshold = 75 if ci_mode else None
+    threshold = PASS_THRESHOLD if ci_mode else None
 
     # Parse --threshold N
     for i, arg in enumerate(args):

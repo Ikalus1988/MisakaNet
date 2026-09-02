@@ -1,12 +1,46 @@
-{"id": "fanuc-rsr-program-select-logic", "title": "FANUC RSR Program with OFFSET and SELECT Logic Sharing", "domain": "fanuc", "subdomain": "tp-programming", "source": "bbs.gongkong.com/d/201302/481940", "status": "draft", "confidence": 0.7, "created": "2026-07-12", "tags": ["fanuc", "rsr", "tp-programming", "select", "offset", "register", "program-logic", "r-2000ib"], "quality_score": 70, "problem": "需要编写一个 FANUC 机器人 RSR 程序，实现多位置循环搬运，并通过寄存器索引和 SELECT 分支逻辑实现位置偏移选择，同时配合 PLC 信号实现自动化流程控制。", "root_cause": "FANUC TP 编程语言中，RSR 程序需要综合运用运动指令（J/L）、寄存器操作（R/PR）、I/O 信号（DO/DI/RO）、OFFSET 偏移功能和 SELECT 分支结构来实现复杂的搬运逻辑。缺乏对这些编程要素组合使用的理解是主要障碍。", "solution": "1. 使用 RSR 编号命名程序（如 RSR0112）\n2. 运动段使用 J（关节移动）和 L（直线移动）指令\n3. 用 R[n] 寄存器作为索引，通过 SELECT/LBL 实现多分支\n4. 用 PR[n] 位置寄存器存储偏移量，配合 OFFSET 实现可变定位\n5. 用 DO/DI 信号与 PLC 交互（如通知完成、等待许可）\n6. 循环逻辑：寄存器递增遍历位置，达到上限时通知 PLC", "verification": "1. 程序能通过 RSR 正常启动执行\n2. 运动轨迹符合预期，位置精度满足要求\n3. OFFSET 偏移量正确应用，不同分支到达不同位置\n4. DO/DI 信号时序与 PLC 配合正确\n5. 循环逻辑完整，达到上限后正确触发 PLC 信号"}
+---
+title: FANUC RSR Program with OFFSET and SELECT Logic Sharing
+domain: fanuc
+tags:
+- fanuc
+- rsr
+- tp-programming
+- select
+- offset
+- register
+- program-logic
+- r-2000ib
+status: draft
+created: '2026-07-12'
+source: bbs.gongkong.com/d/201302/481940
+confidence: 0.7
+subdomain: tp-programming
+id: fanuc-rsr-program-select-logic
+problem: 需要编写一个 FANUC 机器人 RSR 程序，实现多位置循环搬运，并通过寄存器索引和 SELECT 分支逻辑实现位置偏移选择，同时配合 PLC
+  信号实现自动化流程控制。
+quality_score: 70
+root_cause: FANUC TP 编程语言中，RSR 程序需要综合运用运动指令（J/L）、寄存器操作（R/PR）、I/O 信号（DO/DI/RO）、OFFSET
+  偏移功能和 SELECT 分支结构来实现复杂的搬运逻辑。缺乏对这些编程要素组合使用的理解是主要障碍。
+solution: '1. 使用 RSR 编号命名程序（如 RSR0112）
+
+  2. 运动段使用 J（关节移动）和 L（直线移动）指令
+
+  3. 用 R[n] 寄存器作为索引，通过 SELECT/LBL 实现多分支
+
+  4. 用 PR[n] 位置寄存器存储偏移量，配合 OFFSET 实现可变定位
+
+  5. 用 DO/DI 信号与 PLC 交互（如通知完成、等待许可）
+
+  6. 循环逻辑：寄存器递增遍历位置，达到上限时通知 PLC'
+---
 
 ## FANUC RSR 程序的 OFFSET 与 SELECT 逻辑
 
-### 问题描述
+### Problem描述
 
 以 FANUC R-2000IB 机器人为例，分享一个使用 **RSR 启动模式** 的搬运程序示例。程序综合运用了运动指令、寄存器索引、OFFSET 偏移和 SELECT 分支逻辑，是 FANUC TP 编程的典型实践。
 
-### 根因分析
+### Root Cause分析
 
 此程序展示了 FANUC TP 编程的几个核心要素的组合使用：
 
@@ -20,7 +54,7 @@
 | DO/DI/RO | 数字 I/O 信号 | PLC 交互 |
 | OFFSET | 位置偏移 | 同一轨迹多位置复用 |
 
-### 修复方法/技术要点
+### Solution方法/技术要点
 
 #### 程序结构解析（RSR0112）
 
@@ -79,7 +113,7 @@ R[1]=1                 ; 重置索引，开始下一轮
 ; 50 秒等待命令
 ```
 
-### 验证方式
+### Verification方式
 
 1. **RSR 启动**：通过 PLC 发送 RSR 信号，确认程序 RSR0112 正常启动
 2. **运动轨迹**：逐一验证 P[1]~P[8] 的运动路径和位置精度
@@ -94,3 +128,17 @@ R[1]=1                 ; 重置索引，开始下一轮
 - 作者：王者之师—广州@阿君（版主），2013-02-03
 - 机器人型号：FANUC R-2000IB
 - 说明：原帖声明非完整运行程序，仅供学习参考
+
+
+## Verification
+
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```

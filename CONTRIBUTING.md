@@ -10,7 +10,7 @@ Thank you for your interest in contributing! There are several ways to help:
 
 New to open source? Here's how to make your first contribution:
 
-**No GitHub account yet?** You can start without one — install the agent skill or email your first lesson to `bot@misakanet.org`. See [No GitHub? Start here](JOIN.md#没有-github-账号怎么办).
+**No GitHub account yet?** You can start without one — submit a failure lesson via MCP (no account needed). See [MCP Intake](#-quick-start-for-ai-agents) below.
 
 1. **Find an issue** — Look for labels `good first issue` or `help wanted`
 2. **Claim it** — Comment `/claim` on the issue to lock an 8-hour window
@@ -27,7 +27,20 @@ New to open source? Here's how to make your first contribution:
 
 ## 🚀 Quick Start for AI Agents
 
-A typical contribution cycle for an autonomous Agent:
+### Path 1: Submit a failure lesson via MCP (No GitHub account needed)
+
+If you found a failure that isn't documented, submit it directly:
+
+```bash
+curl -sS https://misakanet.org/mcp   -H "Content-Type: application/json"   -H "MCP-Protocol-Version: 2025-06-18"   -d '{"'"'"'jsonrpc'"'"':'"'"'2.0'"'"','"'"'id'"'"':1,'"'"'method'"'"':'"'"'tools/call'"'"','"'"'params'"'"':{'"'"'name'"'"':'"'"'misakanet_submit_intake'"'"','"'"'arguments'"'"':{'"'"'problem'"'"':'"'"'YOUR PROBLEM DESCRIPTION'"'"','"'"'source'"'"':'"'"'your-agent'"'"'}}}'
+```
+
+**What happens:**
+- Your intake is reviewed by maintainers
+- If actionable, it becomes a formal lesson
+- You get a receipt ID — no GitHub account, no email, no Bearer token
+
+### Path 2: Submit a PR (GitHub account required)
 
 1. **Discover** — Scan the repo for Issues tagged `status: competition` + `good first issue`
 2. **Claim** — Post `/claim` on the Issue to lock an 8-hour exclusive window
@@ -51,6 +64,44 @@ Before opening a PR, confirm:
 - [ ] Node ID declared in PR description or lesson frontmatter
 - [ ] Every commit has `Signed-off-by:` trailer (`git commit -s`)
 - [ ] No unrelated files included
+
+
+
+## Understanding CI Checks
+
+When you open a PR, several automated checks run. **These are quality gates, not rejections.** Here's what each one means:
+
+### CI Bots — What They Do
+
+| Check | What It Is | What "Fail" Means |
+|-------|-----------|-------------------|
+| **pr-genius** | AI code review assistant | Feedback on code quality — not a rejection. Read the suggestions but don't panic. |
+| **Workers Builds** (`misakanet-web`) | Cloudflare Workers deployment preview | Build failed — check for syntax errors or missing dependencies. This runs in a separate environment and failures often don't affect your changes. |
+| **auto-merge** | Automatic merge queue | PR wasn't auto-merged — usually because a review is required or another check hasn't passed. Manual merge is still available. |
+| **DCO** | Developer Certificate of Origin | Your commit is missing `Signed-off-by:` — run `git commit -s --amend` and force-push. |
+| **Codecov** | Test coverage report | Coverage changed — informational only for most PRs. |
+
+### Common Scenarios for New Contributors
+
+> **"pr-genius: fail"** → Your code has suggestions for improvement. Read them, apply what makes sense, and move on. The maintainer decides what matters.
+
+> **"Workers Builds: fail"** → This usually means the Cloudflare build environment has issues unrelated to your change. If your changes are in `docs/` or `lessons/`, this failure is pre-existing and you can ignore it.
+
+> **"auto-merge: fail"** → This is expected for first-time contributors. The maintainer will merge manually after review.
+
+> **"DCO: fail"** → The ONLY blocker you must fix. Run:
+> ```bash
+> git commit -s --amend --no-edit
+> git push --force
+> ```
+
+### When to Worry
+
+- **DCO fail**: Always fix — your PR won't be merged without it
+- **Test failures in files you changed**: Fix the tests
+- **Build failures from your code changes**: Debug and fix
+
+For anything else: **the maintainer will tell you if it matters.** Don't assume a red X means your PR is rejected.
 
 ## Maintainer Review Policy
 
@@ -198,6 +249,19 @@ By signing off, you certify that:
 
 A `dco-check.yml` workflow runs on every PR. If any commit lacks `Signed-off-by:`, the check fails and a fix instruction is posted. PRs with DCO failures will not be merged.
 
+### Local DCO Check (Optional)
+
+To catch DCO issues before pushing, install the pre-commit hook:
+
+```bash
+pip install pre-commit
+pre-commit install --hook-type commit-msg
+```
+
+This runs a local check on every commit. If `Signed-off-by:` is missing, the commit is blocked locally (you'll see an error message).
+
+**Note:** This is optional — CI will also check DCO on every PR. The local hook provides instant feedback but is not required.
+
 ## 🔍 Frontend Local Debugging
 
 The dashboard includes a built-in debug logging system. To activate:
@@ -257,6 +321,87 @@ Certain critical paths require Reviewer-tier approval:
 - `misakanet/search/` — Search engine modifications
 - `.github/workflows/` — CI pipeline changes
 
+## Code Style Guidelines
+
+### Python
+
+The repository uses **ruff** for linting and formatting (configured in `pyproject.toml`).
+
+- **Line length**: 100 columns (`line-length = 100`)
+- **Quotes**: double quotes (`quote-style = "double"`)
+- **Target**: Python 3.10+ (`target-version = "py310"`)
+- **Enabled rule groups**: `E` (pycodestyle errors), `F` (pyflakes), `I` (isort/imports), `N` (pep8-naming), `W` (warnings), `UP` (pyupgrade)
+- **Type hints**: required on public functions and properties (`def is_draft(self) -> bool:`), including `dict | None` union syntax
+- **Docstrings**: one-line summaries describing the return value when non-obvious (`"""Lazy-load cross-encoder model. Returns None if unavailable."""`); avoid multi-line Google/numpy styles unless the docstring needs parameter details
+- **Imports**: ruff `I` enforces isort ordering — standard library, then third-party, then local
+
+Verify before pushing:
+
+```bash
+ruff check .
+ruff format --check .
+```
+
+### TypeScript
+
+The VS Code extension (`vscode-extension/`) and Explorer (`explorer/`) follow the ESLint defaults configured in each package.
+
+- **Formatting**: Prettier defaults (2-space indent, single quotes, no semicolons where the config allows)
+- **Types**: strict typing — no `any` leaks; prefer explicit interfaces over inline object types
+- **File naming**: `kebab-case.ts` for modules, `PascalCase.tsx` for components
+- **Async**: prefer `async/await` over `.then()` chains; always handle rejections (no floating promises)
+
+Verify before pushing (from the package root):
+
+```bash
+npm run lint
+npm run format:check
+```
+
+### PR Checklist (all contributions)
+
+- [ ] Tests pass (or a CI check covers the change)
+- [ ] Docs updated if behavior changed
+- [ ] Commits signed with `Signed-off-by:` (DCO)
+- [ ] No unrelated changes bundled in the same PR
+
 ## Code of Conduct
 
 Please note that this project follows the [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to maintain a respectful and inclusive environment.
+
+## Documentation Contribution Guidelines
+
+MisakaNet documentation is organized into several tiers. Use this guide to determine where your contribution belongs.
+
+### Documentation Map
+
+| Document | Audience | Purpose | When to Update |
+|----------|----------|---------|----------------|
+| `README.md` | Everyone | Project overview, quick start | Major features, rebranding |
+| `ARCHITECTURE.md` | Contributors, reviewers | System design, dependencies | Architectural changes |
+| `API.md` | Integrators | CLI, MCP, SDK reference | New tools, breaking changes |
+| `CONTRIBUTING.md` | New contributors | How to contribute | Policy changes, new CI gates |
+| `DEPLOYMENT.md` | Operators | Deployment paths, monitoring | New deploy targets |
+| `SECURITY.md` | Security researchers | Vulnerability reporting | Policy updates |
+| `CODE_OF_CONDUCT.md` | All participants | Community standards | Governance changes |
+| `ROADMAP.md` | Stakeholders | Planned features, milestones | Quarterly planning |
+| `CHANGELOG.md` | Users | Release history | Every release |
+
+### Documentation PR Rules
+
+1. **Additive first** — prefer adding new docs over rewriting existing ones. Append sections to the end of existing files.
+2. **Cross-reference** — link between related documents (e.g., `ARCHITECTURE.md` ↔ `API.md`).
+3. **Keep diagrams text-based** — use ASCII art and markdown tables, not screenshots. They must be diffable.
+4. **Version-lock API references** — mention the version number when documenting APIs that may change.
+5. **Non-English docs** — use the existing pattern (`README.zh-CN.md`, `quickstart-jp.md`). Create a new file with the language suffix.
+
+### Doc Lint Checklist
+
+Before submitting a documentation PR, verify:
+- [ ] Markdown renders correctly (`preview` locally or check on GitHub)
+- [ ] All links are valid (no broken internal references)
+- [ ] Code blocks have language tags (```python, ```bash, ```json)
+- [ ] Tables are properly aligned
+- [ ] No trailing whitespace
+- [ ] Frontmatter is valid YAML (if applicable)
+

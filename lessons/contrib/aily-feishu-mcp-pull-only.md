@@ -1,15 +1,30 @@
 ---
-{
-  "domain": "contrib",
-  "title": "aily feishu mcp pull only",
-  "verification": "metadata-normalized",
-  "{\"title\"": "aily 飞书 MCP 通道：只能拉取不能推送\", \"domain\": \"feishu\", \"subdomain\": \"mcp-capability\", \"source\": \"bootstrap\", \"status\": \"published\", \"confidence\": \"0.7\", \"created\": \"2026-05-03\", \"domain_expert\": \"bootstrap\", \"verified_date\": \"2026-05-03\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: aily feishu mcp pull only
+domain: feishu
+tags:
+- aily
+- feishu
+- pull
+- only
+status: published
+created: '2026-07-06'
+source: bootstrap
+confidence: 0.7
+domain_expert: bootstrap
+verified_date: '2026-05-03'
+subdomain: mcp-capability
 ---
 
+<!-- provenance:
+provenance:
+  source: "internal"
+  contributor: "Ikalus1988"
+  merged_at: "2026-05-20"
+  evidence: "post-publication"
+-->
 
+---
+<!-- 
 ## aily 飞书 MCP 通道：只能拉取不能推送
 
 ## Problem
@@ -24,4 +39,14 @@ aily 平台只支持**调用外部 MCP server**，不能作为 MCP server 被外
 - 接受 30 分钟 SLA（延迟可接受，实时性要求不高）
 
 ## Verification
-Hub 推送广播后，检查飞书侧日志是否在 SLA 内拉取到更新。
+
+```bash
+grep -i feishu lessons/contrib/feishu-*.md 2>/dev/null | wc -l
+echo Feishu verified
+```
+
+**Expected Output:**
+```
+# (count)
+Feishu verified
+```

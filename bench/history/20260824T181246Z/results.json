@@ -1,0 +1,145 @@
+{
+  "run_id": "20260824T181246Z",
+  "started_at": "2026-08-24T18:12:44.499350+00:00",
+  "seed": null,
+  "mode": "with-misakanet",
+  "tasks": [
+    {
+      "task_id": "dco-signoff",
+      "name": "DCO Sign-Off Failure",
+      "category": "git",
+      "outcome": "success",
+      "attempts": 1,
+      "duration_ms": 0.0,
+      "cost_usd": 0.0,
+      "lessons_used": [
+        "git"
+      ],
+      "error": null
+    },
+    {
+      "task_id": "pip-timeout",
+      "name": "pip install Timeout",
+      "category": "python",
+      "outcome": "success",
+      "attempts": 1,
+      "duration_ms": 0.0,
+      "cost_usd": 0.0,
+      "lessons_used": [
+        "python"
+      ],
+      "error": null
+    },
+    {
+      "task_id": "github-401",
+      "name": "GitHub Token 401",
+      "category": "auth",
+      "outcome": "success",
+      "attempts": 1,
+      "duration_ms": 0.0,
+      "cost_usd": 0.0,
+      "lessons_used": [
+        "auth"
+      ],
+      "error": null
+    },
+    {
+      "task_id": "mcp-path",
+      "name": "MCP Server Path Error",
+      "category": "mcp",
+      "outcome": "success",
+      "attempts": 1,
+      "duration_ms": 0.0,
+      "cost_usd": 0.0,
+      "lessons_used": [
+        "mcp"
+      ],
+      "error": null
+    },
+    {
+      "task_id": "gbk-encoding",
+      "name": "Windows GBK Encoding",
+      "category": "encoding",
+      "outcome": "success",
+      "attempts": 1,
+      "duration_ms": 0.0,
+      "cost_usd": 0.0,
+      "lessons_used": [
+        "encoding"
+      ],
+      "error": null
+    },
+    {
+      "task_id": "pytest-import",
+      "name": "pytest ImportError",
+      "category": "python",
+      "outcome": "success",
+      "attempts": 1,
+      "duration_ms": 0.0,
+      "cost_usd": 0.0,
+      "lessons_used": [
+        "python"
+      ],
+      "error": null
+    },
+    {
+      "task_id": "cloudflare",
+      "name": "Cloudflare Deploy Failure",
+      "category": "ci",
+      "outcome": "success",
+      "attempts": 1,
+      "duration_ms": 0.0,
+      "cost_usd": 0.0,
+      "lessons_used": [
+        "ci"
+      ],
+      "error": null
+    },
+    {
+      "task_id": "json-schema",
+      "name": "JSON Schema Validation Error",
+      "category": "validation",
+      "outcome": "success",
+      "attempts": 1,
+      "duration_ms": 0.0,
+      "cost_usd": 0.0,
+      "lessons_used": [
+        "validation"
+      ],
+      "error": null
+    },
+    {
+      "task_id": "npm-publish",
+      "name": "npm publish 403",
+      "category": "npm",
+      "outcome": "success",
+      "attempts": 1,
+      "duration_ms": 0.0,
+      "cost_usd": 0.0,
+      "lessons_used": [
+        "npm"
+      ],
+      "error": null
+    },
+    {
+      "task_id": "stale-data",
+      "name": "Stale Generated Data Cleanup",
+      "category": "ci",
+      "outcome": "success",
+      "attempts": 1,
+      "duration_ms": 0.0,
+      "cost_usd": 0.0,
+      "lessons_used": [
+        "ci"
+      ],
+      "error": null
+    }
+  ],
+  "summary": {
+    "total_tasks": 10,
+    "success_rate": 1.0,
+    "mean_attempts": 1.0,
+    "mean_duration_ms": 0.0,
+    "total_cost_usd": 0.0
+  }
+}

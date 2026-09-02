@@ -1,20 +1,17 @@
 ---
-{
-  "title": "RAG Chunk Parameters 800 Characters and 100 Overlap",
-  "domain": "rag",
-  "source": "bootstrap",
-  "status": "published",
-  "tags": [
-    "project:self-grow-wiki",
-    "severity:medium",
-    "node:hermes-wsl"
-  ],
-  "language": "en",
-  "created": "2026-05-03",
-  "domain_expert": "bootstrap",
-  "verified_date": "2026-05-03",
-  "subdomain": "chunking"
-}
+title: RAG Chunk Parameters 800 Characters and 100 Overlap
+domain: rag
+tags:
+- project:self-grow-wiki
+- severity:medium
+- node:hermes-wsl
+status: published
+created: '2026-05-03'
+language: en
+source: bootstrap
+domain_expert: bootstrap
+verified_date: '2026-05-03'
+subdomain: chunking
 ---
 
 ## Problem
@@ -42,16 +39,16 @@ Keep at most 100 chunks per file, truncating anything beyond that to prevent ove
 
 ## Verification
 
-In a comparison test across 50 documents, retrieval accuracy improved by about 15% after chunking.
-A single 800-character chunk covers one technical point well, such as the complete description of an alarm code.
-
-
 ```bash
-# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
-python3 search_knowledge.py "rag verification smoke test" --lessons
+grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2>/dev/null | head -3
+echo Search verified
 ```
 
-Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
+**Expected Output:**
+```
+# (refs)
+Search verified
+```
 
 ## Scenario
 

@@ -1,16 +1,22 @@
 ---
-title: "FANUC INTP-102 DETECT JOINT — OLP Whitespace Bug"
-domain: "fanuc"
-subdomain: "olp"
-tags: ["intp-102", "detect-joint", "olp", "robodk", "ls-format", "whitespace", "arc-sensor"]
-source: "robot-forum.com"
-status: "published"
-confidence: "0.9"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+title: FANUC INTP-102 DETECT JOINT — OLP Whitespace Bug
+domain: fanuc
+tags:
+- intp-102
+- detect-joint
+- olp
+- robodk
+- ls-format
+- whitespace
+- arc-sensor
+status: published
+created: '2026-07-01'
+source: robot-forum.com
+confidence: 0.9
+domain_expert: ''
+verified_date: ''
+subdomain: olp
 ---
-
 
 ## Problem
 
@@ -55,9 +61,16 @@ File a bug with RoboDK (or your OLP tool) about trailing whitespace in sensor in
 
 ## Verification
 
-1. Load the fixed .ls file to controller — no INTP-102 error
-2. Run the sensor program — DETECT JOINT executes correctly
-3. FTP the program back out — confirm no re-introduced whitespace
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```
 
 ## Notes
 

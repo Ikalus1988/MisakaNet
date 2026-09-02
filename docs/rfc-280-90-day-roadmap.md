@@ -120,7 +120,7 @@ Using MisakaNet lessons as **test cases** for agent capabilities: can the agent 
 
 ### Federated MisakaNet (multiple instances, shared protocol)
 - Interesting long-term, but premature. The single-instance MisakaNet needs to prove product-market fit first.
-- The SKP (Shared Knowledge Protocol) architecture supports this in theory, but no one has tested it.
+- The failure-memory protocol (Shared Knowledge Protocol) architecture supports this in theory, but no one has tested it.
 
 ### Enterprise / Internal deployment
 - Companies could run their own MisakaNet instance for internal failure lessons.

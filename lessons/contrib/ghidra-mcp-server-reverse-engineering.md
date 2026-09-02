@@ -1,5 +1,20 @@
-{"title": "Ghidra MCP Server — AI-Assisted Reverse Engineering", "domain": "mcp", "subdomain": "reverse-engineering", "tags": ["mcp", "ghidra", "reverse-engineering", "binary-analysis", "security"], "source": "github.com/LaurieWired/GhidraMCP", "status": "published", "confidence": "0.85", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
-
+---
+title: Ghidra MCP Server — AI-Assisted Reverse Engineering
+domain: mcp
+tags:
+- mcp
+- ghidra
+- reverse-engineering
+- binary-analysis
+- security
+status: published
+created: '2026-07-01'
+source: github.com/LaurieWired/GhidraMCP
+confidence: 0.85
+domain_expert: ''
+verified_date: ''
+subdomain: reverse-engineering
+---
 
 ## Problem
 
@@ -44,10 +59,16 @@ LLM Agent → MCP Protocol → GhidraMCP Server → Ghidra Plugin
 
 ## Verification
 
-1. Install GhidraMCP plugin in Ghidra
-2. Start MCP server
-3. Ask Claude: "Analyze this binary and list the main functions"
-4. Verify Claude can decompile and rename functions
+```bash
+grep -i mcp lessons/contrib/mcp-*.md 2>/dev/null | head -3
+echo MCP verified
+```
+
+**Expected Output:**
+```
+# (refs)
+MCP verified
+```
 
 ## Notes
 

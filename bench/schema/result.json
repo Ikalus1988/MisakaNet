@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://misakanet.org/schemas/benchmark-result.json",
+  "title": "MisakaNet benchmark result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["meta", "tasks", "summary"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "timestamp", "git_sha", "platform", "node_version"],
+      "properties": {
+        "run_id": {"type": "string", "minLength": 1},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "git_sha": {"type": "string", "minLength": 1},
+        "platform": {"type": "string", "minLength": 1},
+        "node_version": {"type": "string", "minLength": 1},
+        "agent": {"type": "string"},
+        "model": {"type": "string"}
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id", "name", "category", "outcome", "attempts",
+          "duration_ms", "cost_usd", "lessons_used", "error"
+        ],
+        "properties": {
+          "task_id": {"type": "string", "minLength": 1},
+          "name": {"type": "string", "minLength": 1},
+          "category": {"type": "string"},
+          "outcome": {"enum": ["success", "failure", "timeout", "error"]},
+          "attempts": {"type": "integer", "minimum": 0},
+          "duration_ms": {"type": "number", "minimum": 0},
+          "cost_usd": {"type": "number", "minimum": 0},
+          "lessons_used": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "error": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total_tasks", "success_rate", "mean_attempts",
+        "mean_duration", "total_cost"
+      ],
+      "properties": {
+        "total_tasks": {"type": "integer", "minimum": 0},
+        "success_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "mean_attempts": {"type": "number", "minimum": 0},
+        "mean_duration": {"type": "number", "minimum": 0},
+        "total_cost": {"type": "number", "minimum": 0}
+      }
+    },
+    "diff": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "baseline_run_id": {"type": "string"},
+        "changed_outcomes": {"type": "array", "items": {"type": "object"}},
+        "regressions": {"type": "array", "items": {"type": "object"}}
+      }
+    },
+    "legacy": {
+      "type": "object",
+      "description": "Optional fields retained for existing leaderboard consumers.",
+      "additionalProperties": true
+    }
+  }
+}

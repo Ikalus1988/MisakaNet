@@ -1,24 +1,20 @@
 ---
-{
-  "title": "PR Welcome Not Triggering — author_association NONE vs FIRST_TIMER Trap",
-  "domain": "devops",
-  "tags": [
-    "github-actions",
-    "pull-request-target",
-    "author-association",
-    "first-time-contributor",
-    "welcome",
-    "debug"
-  ],
-  "status": "published",
-  "source": "codewhale",
-  "created": "2026-06-13 00:00:00 UTC",
-  "updated": "2026-06-13 00:00:00 UTC",
-  "domain_expert": "codewhale",
-  "verified_date": "2026-06-13"
-}
+title: PR Welcome Not Triggering — author_association NONE vs FIRST_TIMER Trap
+domain: devops
+tags:
+- github-actions
+- pull-request-target
+- author-association
+- first-time-contributor
+- welcome
+- debug
+status: published
+created: 2026-06-13 00:00:00 UTC
+updated: 2026-06-13 00:00:00 UTC
+source: codewhale
+domain_expert: codewhale
+verified_date: '2026-06-13'
 ---
-
 
 ## Root Cause
 

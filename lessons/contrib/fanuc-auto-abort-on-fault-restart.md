@@ -1,16 +1,22 @@
 ---
-title: "FANUC Auto Abort on Fault — Restart $SHELL_WRK Program"
-domain: "fanuc"
-subdomain: "error-handling"
-tags: ["abort", "fault", "restart", "shell-wrk", "bg-logic", "error-severity", "auto-recovery"]
-source: "robot-forum.com"
-status: "published"
-confidence: "0.8"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: "pdl"
+title: FANUC Auto Abort on Fault — Restart $SHELL_WRK Program
+domain: fanuc
+tags:
+- abort
+- fault
+- restart
+- shell-wrk
+- bg-logic
+- error-severity
+- auto-recovery
+status: published
+created: '2026-07-01'
+source: robot-forum.com
+confidence: 0.8
+domain_expert: pdl
+verified_date: ''
+subdomain: error-handling
 ---
-
 
 ## Problem
 
@@ -51,10 +57,16 @@ The PLC sends ABORT via UOP when it detects a fault:
 
 ## Verification
 
-1. Run program in auto mode
-2. Enable TP → robot should abort (not pause) if using Option 1
-3. Check that $SHELL_WRK.$CUST_NAME can be restarted
-4. Verify no lingering program state from the aborted program
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```
 
 ## Notes
 

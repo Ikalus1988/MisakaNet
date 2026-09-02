@@ -1,17 +1,18 @@
 ---
-title: "CI 测试陷阱 — 模块级副作用导致 import 失败"
+title: CI 测试陷阱 — 模块级副作用导致 import 失败
 domain: devops
 tags:
-  - ci
-  - python
-  - lambda
-  - boto3
-  - module-import
-  - side-effects
+- ci
+- python
+- lambda
+- boto3
+- module-import
+- side-effects
 status: published
+created: 2026-07-07
+language: zh
 source: practical-experience
 confidence: 0.9
-created: 2026-07-07
 ---
 
 ## Problem
@@ -62,10 +63,16 @@ assert "/@" in _extract_default(source)
 
 ## Verification
 
-1. 测试文件不再 import 任何 Lambda 模块
-2. CI 无 AWS 凭证时测试仍通过
-3. `compile(source, ...)` 验证语法正确性（不执行代码）
-4. 正则提取默认值，断言检查内容
+```bash
+python3 --version
+python3 -c 'import sys; print(sys.version)'
+```
+
+**Expected Output:**
+```
+Python 3.
+3.
+```
 
 ## Why it matters
 

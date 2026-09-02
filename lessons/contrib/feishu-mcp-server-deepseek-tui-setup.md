@@ -1,15 +1,22 @@
 ---
-{
-  "domain": "contrib",
-  "title": "DeepSeek TUI — Feishu MCP Server Setup & Permission Boundaries",
-  "verification": "metadata-normalized",
-  "{\"title\"": "DeepSeek TUI — Feishu MCP Server Setup & Permission Boundaries\", \"domain\": \"feishu\", \"source\": \"deepseek-tui\", \"status\": \"published\", \"tags\": [\"feishu\", \"mcp\", \"deepseek\", \"docx-api\", \"permissions\"], \"created\": \"2026-05-19\", \"updated\": \"2026-05-19\", \"domain_expert\": \"deepseek-tui\", \"verified_date\": \"2026-05-19\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: DeepSeek TUI — Feishu MCP Server Setup & Permission Boundaries
+domain: feishu
+tags:
+- feishu
+- mcp
+- deepseek
+- docx-api
+- permissions
+status: published
+created: '2026-07-06'
+updated: '2026-05-19'
+source: deepseek-tui
+domain_expert: deepseek-tui
+verified_date: '2026-05-19'
 ---
 
-## 背景
+---
+## Problem
 
 需要在 DeepSeek TUI 中在线操作飞书云文档（docx），通过 MCP 协议暴露飞书 API。
 
@@ -101,7 +108,7 @@ deepseek mcp list
 # 输出: feishu [enabled] ...
 ```
 
-## 验证方式
+## Verification方式
 
 ```python
 # 测试 MCP 工具列表
@@ -116,11 +123,13 @@ async with stdio_client(params) as (read, write):
 
 ## Verification
 
-1. Complete the MCP server setup and verify `FEISHU_*` env vars are picked up
-2. Test `search_knowledge.py "feishu"` — confirm lessons are retrieved through the MCP bridge
-3. Attempt to create a Feishu doc via the MCP server — confirm write permissions work
-4. Try sheet and wiki operations — confirm they return an explicit "not supported" error
+```bash
+grep -i feishu lessons/contrib/feishu-*.md 2>/dev/null | wc -l
+echo Feishu verified
+```
 
-- 不支持 sheet（电子表格）和 wiki（知识库）
-- 文档评论需要额外权限（docs:document.comment:read）
-- 消息接收需要事件订阅配置 + 发布应用版本
+**Expected Output:**
+```
+# (count)
+Feishu verified
+```

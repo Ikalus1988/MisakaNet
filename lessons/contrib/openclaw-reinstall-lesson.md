@@ -1,27 +1,32 @@
 ---
-{
-  "domain": "contrib",
-  "title": "OpenClaw 重装教训 — 删除前先停服务清残留",
-  "verification": "metadata-normalized",
-  "{\"title\"": "OpenClaw 重装教训 — 删除前先停服务清残留\", \"domain\": \"devops\", \"source\": \"bootstrap\", \"status\": \"published\", \"confidence\": \"0.7\", \"created\": \"2026-04-01\", \"domain_expert\": \"bootstrap\", \"verified_date\": \"2026-04-01\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: OpenClaw 重装教训 — 删除前先停服务清残留
+domain: openclaw
+tags:
+- openclaw
+- reinstall
+- lesson
+status: published
+created: '2026-07-06'
+language: zh
+source: bootstrap
+confidence: 0.7
+domain_expert: bootstrap
+verified_date: '2026-04-01'
 ---
 
-
-## 背景
+---
+## Problem
 
 愚者飞书机器人无反应，尝试重装 OpenClaw。
 
-## 根因
+## Root Cause
 
 重装前未停止原有服务，导致：
 1. systemd service 和手动后台进程争抢端口
 2. watchdog 监控的端口（18790）与实际 gateway 端口（3456）不一致
 3. 旧模块残留导致 `Cannot find module '@buape/carbon'`
 
-## 修复
+## Solution
 
 重装前必须执行：
 
@@ -48,13 +53,18 @@ npm install -g openclaw --prefix ~/.npm-global
 systemctl --user start openclaw-gateway.service
 ```
 
-## 验证
+## Verification
 
-- `systemctl --user status openclaw-gateway.service` — active (running)
-- `ps aux | grep openclaw | grep -v grep` — 只有 systemd 进程
-- 飞书发消息测试响应
 
-## 关键点
+```bash
+python3 scripts/search_knowledge.py "test query"
+```
+
+**Expected Output:**
+```
+Found
+```
+## Key Points
 
 - Windows 代理地址：`<HOST_IP>:7890`
 - npm 全局安装在 `~/.npm-global/`，不是系统目录

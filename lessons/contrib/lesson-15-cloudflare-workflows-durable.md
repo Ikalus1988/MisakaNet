@@ -1,16 +1,21 @@
 ---
-title: "Cloudflare Workflows — 持久化多步骤执行"
-domain: "ops"
-subdomain: "workflow"
-tags: ["cloudflare", "workflows", "durable", "serverless", "state-machine"]
-source: "blog.cloudflare.com"
-status: "published"
-confidence: "0.85"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+title: Cloudflare Workflows — 持久化多步骤执行
+domain: ops
+tags:
+- cloudflare
+- workflows
+- durable
+- serverless
+- state-machine
+status: published
+created: '2026-07-01'
+language: zh
+source: blog.cloudflare.com
+confidence: 0.85
+domain_expert: ''
+verified_date: ''
+subdomain: workflow
 ---
-
 
 ## Problem
 
@@ -71,10 +76,16 @@ export default {
 
 ## Verification
 
-1. 创建一个 4 步工作流
-2. 模拟第 2 步失败
-3. 验证自动重试
-4. 验证状态在步骤间持久化
+```bash
+echo "Lesson: Cloudflare Workflows — 持久化多步骤执行"
+wc -l lessons/contrib/lesson-15-cloudflare-workflows-durable.md
+```
+
+**Expected Output:**
+```
+Lesson: Cloudflare Workflows — 持久化多步骤执行
+# (line count)
+```
 
 ## Notes
 

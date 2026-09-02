@@ -1,0 +1,15 @@
+node_modules
+tests
+test
+__tests__
+*.test.js
+*.spec.js
+.git
+.gitignore
+.dockerignore
+Dockerfile
+docker-compose.yml
+README.md
+LICENSE
+coverage
+.nyc_output

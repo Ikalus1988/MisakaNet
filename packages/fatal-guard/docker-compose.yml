@@ -1,0 +1,20 @@
+services:
+  fatal-guard:
+    build: .
+    volumes:
+      - ./test-app:/app/test-app
+    working_dir: /app
+    command: ["--", "node", "/app/test-app/crash.js"]
+    environment:
+      - FATAL_HANDLER=/app/test-app/handler.js
+
+  test-crasher:
+    build: .
+    volumes:
+      - ./test-app:/app/test-app
+    working_dir: /app
+    command: ["--", "node", "/app/test-app/crash.js"]
+    environment:
+      - FATAL_HANDLER=/app/test-app/handler.js
+    profiles:
+      - test

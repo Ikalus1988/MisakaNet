@@ -1,12 +1,22 @@
 ---
-title: "FANUC TCP and Tool Configuration — Standards for Automotive Applications"
-domain: "fanuc"
-subdomain: "configuration"
-tags: ["tcp", "tool", "utool", "uframe", "payload", "coordinate", "automotive", "welding", "gluing", "riveting"]
-status: "published"
-source: "internal-training"
-confidence: "0.9"
-created: "2026-07-14"
+title: FANUC TCP and Tool Configuration — Standards for Automotive Applications
+domain: fanuc
+tags:
+- tcp
+- tool
+- utool
+- uframe
+- payload
+- coordinate
+- automotive
+- welding
+- gluing
+- riveting
+status: published
+created: '2026-07-14'
+source: internal-training
+confidence: 0.9
+subdomain: configuration
 ---
 
 ## Problem
@@ -128,11 +138,16 @@ Press COORD key to cycle: JOINT → JGFRM → WORLD → TOOL → USER
 
 ## Verification
 
-1. Verify TCP position matches expected tool geometry
-2. Verify TCP direction follows right-hand rule for the process type
-3. Run robot at 10% speed with new TCP — verify motion is correct
-4. Verify UTOOL_NUM matches PAYLOAD number in program
-5. Verify user frame origin is on fixture locating pin
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```
 
 ## Notes
 

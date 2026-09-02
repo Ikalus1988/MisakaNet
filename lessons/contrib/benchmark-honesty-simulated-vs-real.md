@@ -1,15 +1,25 @@
 ---
-{
-  "domain": "contrib",
-  "title": "Benchmark Honesty — Distinguishing Simulated vs Real Results",
-  "tags": ["benchmark", "honesty", "testing", "contrib", "agent"],
-  "status": "draft",
-  "source": "PR review feedback analysis",
-  "created": "2026-07-15",
-  "confidence": "0.95"
-}
+title: Benchmark Honesty — Distinguishing Simulated vs Real Results
+domain: agent
+tags:
+- benchmark
+- honesty
+- testing
+- contrib
+- agent
+status: draft
+created: '2026-07-15'
+source: PR review feedback analysis
+confidence: 0.95
 ---
 
+<!-- provenance:
+  contributor: "<user>"
+  merged_at: "2026-07-15"
+  evidence: "post-publication"
+-->
+
+<!-- 
 ## Problem
 
 When contributing benchmark results to open-source projects, presenting simulated or partial results as real evidence leads to maintainer rejection and lost trust.
@@ -49,10 +59,15 @@ The line between "validation test" and "real benchmark" is often blurry. A scrip
 
 ## Verification
 
-1. Check artifact contains `kind` and `simulated_execution` fields
-2. Confirm no auto-closing references to related issues
-3. Verify maintainer accepts the scope
 
+```bash
+python3 scripts/search_knowledge.py "test query"
+```
+
+**Expected Output:**
+```
+Found
+```
 ## Related
 
 - PR #479 review feedback

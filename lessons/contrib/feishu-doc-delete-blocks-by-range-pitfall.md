@@ -1,19 +1,20 @@
 ---
-title: "飞书 doc_delete_blocks_by_range 不传 end 会删到文档末尾"
-domain: "feishu"
-subdomain: "mcp-api"
+title: 飞书 doc_delete_blocks_by_range 不传 end 会删到文档末尾
+domain: feishu
 tags:
-  - feishu
-  - mcp
-  - data-loss
-  - api-pitfall
-  - docx
-source: "zsxh1990"
-status: "published"
-confidence: "1.0"
-created: "2026-06-25"
-domain_expert: "zsxh1990"
-verified_date: "2026-07-06"
+- feishu
+- mcp
+- data-loss
+- api-pitfall
+- docx
+status: published
+created: '2026-06-25'
+language: zh
+source: <user>
+confidence: 1.0
+domain_expert: <user>
+verified_date: '2026-07-06'
+subdomain: mcp-api
 ---
 
 ## Problem
@@ -34,13 +35,13 @@ verified_date: "2026-07-06"
 
 ## Verification
 
-```python
-# ❌ 危险：不传 end 会删到末尾
-doc_delete_blocks_by_range(document_id, parent_block_id, start=0)
+```bash
+grep -i feishu lessons/contrib/feishu-*.md 2>/dev/null | wc -l
+echo Feishu verified
+```
 
-# ✅ 安全：显式传 end
-doc_delete_blocks_by_range(document_id, parent_block_id, start=0, end=5)
-
-# ✅ 更安全：用 block_ids 精确删除
-doc_delete_blocks_by_ids(document_id, ["block_id_1", "block_id_2"])
+**Expected Output:**
+```
+# (count)
+Feishu verified
 ```

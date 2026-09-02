@@ -19,16 +19,21 @@ from __future__ import annotations
 
 import json
 import os
+import platform
+import shutil
 import subprocess
 import sys
 import time
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TASKS_DIR = REPO_ROOT / "tasks"
 RESULTS_DIR = REPO_ROOT / "bench_results"
+
+sys.path.insert(0, str(REPO_ROOT))
+from bench.schema.validate import validate_result
 
 # ── Agent Config ──
 AGENTS = {
@@ -218,6 +223,81 @@ def run_verify(task_id: str) -> tuple[str, str]:
         return "FAIL", result.stderr.strip() or result.stdout.strip()
 
 
+def _git_sha() -> str:
+    """Return the current revision, or an explicit unknown marker."""
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True, timeout=5
+        ).strip()
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
+
+
+def _node_version() -> str:
+    """Capture the Node runtime used by the web/worker portions of the repo."""
+    node = shutil.which("node")
+    if not node:
+        return "unavailable"
+    try:
+        return subprocess.check_output([node, "--version"], text=True, timeout=5).strip()
+    except (OSError, subprocess.SubprocessError):
+        return "unavailable"
+
+
+def _result_document(run_id: str, agent_name: str, results: list[dict],
+                     passed: int, total_time: float) -> dict:
+    """Convert internal runner rows into the versioned result contract."""
+    tasks = []
+    for row in results:
+        outcome = {"PASS": "success", "FAIL": "failure", "SKIP": "error"}.get(
+            row["verify_status"], "error"
+        )
+        tasks.append({
+            "task_id": row["task_id"],
+            "name": row["title"] or row["task_id"],
+            "category": row["domain"],
+            "outcome": outcome,
+            "attempts": 1,
+            "duration_ms": round(row["elapsed_seconds"] * 1000, 3),
+            "cost_usd": 0.0,
+            "lessons_used": [],
+            "error": None if outcome == "success" else row["verify_detail"],
+        })
+
+    task_count = len(tasks)
+    result = {
+        "meta": {
+            "run_id": run_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "git_sha": _git_sha(),
+            "platform": platform.platform(),
+            "node_version": _node_version(),
+            "agent": agent_name,
+            "model": AGENTS[agent_name]["model"],
+        },
+        "tasks": tasks,
+        "summary": {
+            "total_tasks": task_count,
+            "success_rate": round(passed / task_count, 6) if task_count else 0.0,
+            "mean_attempts": 1.0 if task_count else 0.0,
+            "mean_duration": round(total_time * 1000 / task_count, 3) if task_count else 0.0,
+            "total_cost": 0.0,
+        },
+        "legacy": {
+            "agent": agent_name,
+            "model": AGENTS[agent_name]["model"],
+            "total_tasks": task_count,
+            "passed": passed,
+            "failed": sum(1 for row in results if row["verify_status"] == "FAIL"),
+            "skipped": sum(1 for row in results if row["verify_status"] == "SKIP"),
+            "total_api_time": round(total_time, 1),
+            "results": results,
+        },
+    }
+    validate_result(result)
+    return result
+
+
 def main():
     args = sys.argv[1:]
     agent_name = "minimax"
@@ -320,18 +400,7 @@ def main():
     if not dry_run:
         run_id = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-        report = {
-            "run_id": run_id,
-            "agent": agent_name,
-            "model": AGENTS[agent_name]["model"],
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "total_tasks": len(results),
-            "passed": passed,
-            "failed": failed,
-            "skipped": skipped,
-            "total_api_time": round(total_time, 1),
-            "results": results,
-        }
+        report = _result_document(run_id, agent_name, results, passed, total_time)
         report_path = RESULTS_DIR / f"{run_id}_{agent_name}.json"
         report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"\nSaved: {report_path}")

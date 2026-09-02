@@ -2,7 +2,7 @@
 
 This integration lets Continue users search MisakaNet lessons from inside the AI
 chat panel by typing `@misaka <query>`. It returns the lesson title, score, file
-path, and a relevant snippet so the model can ground its answer in swarm
+path, and a relevant snippet so the model can ground its answer in failure-memory
 knowledge instead of asking you to leave the editor.
 
 ## What it provides

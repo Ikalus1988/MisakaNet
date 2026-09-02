@@ -46,7 +46,7 @@ class TestSearchKnowledgeStdout(unittest.TestCase):
         result = search_knowledge._json_result(0.12345678, doc)
 
         self.assertEqual(
-            set(result), {"title", "domain", "tags", "score", "path", "preview"}
+            set(result), {"title", "domain", "tags", "score", "path", "preview", "freshness"}
         )
         self.assertEqual(result["path"], "lessons/example.md")
         self.assertEqual(result["score"], 0.123457)
@@ -94,6 +94,52 @@ class TestSearchKnowledgeStdout(unittest.TestCase):
             search_knowledge._print_json_error("query failed")
 
         self.assertEqual(json.loads(stdout.getvalue()), {"error": "query failed"})
+
+
+class TestRemoteDocs(unittest.TestCase):
+    """PRD ④: --remote mode loads lessons from the D1 service."""
+
+    def _mock_response(self, payload):
+        resp = mock.Mock()
+        resp.read.return_value = json.dumps(payload).encode("utf-8")
+        resp.__enter__ = mock.Mock(return_value=resp)
+        resp.__exit__ = mock.Mock(return_value=False)
+        return resp
+
+    def test_load_remote_docs_builds_cached_docs(self):
+        payload = [
+            {"id": "pip-mirror", "title": "pip timeout mirror", "domain": "python",
+             "status": "published", "tags": ["pip"], "path": "lessons/core/pip-mirror.md",
+             "description": "use a mirror", "problem": "pip times out"},
+            {"id": "dco", "title": "DCO signoff", "domain": "git",
+             "status": "published", "tags": ["dco"], "path": "lessons/core/dco.md",
+             "description": "signoff required", "problem": ""},
+        ]
+        with mock.patch("urllib.request.urlopen", return_value=self._mock_response(payload)):
+            docs = search_knowledge._load_remote_docs()
+
+        self.assertEqual(len(docs), 2)
+        self.assertEqual(docs[0].filename, "pip-mirror")
+        self.assertEqual(docs[0].title, "pip timeout mirror")
+        self.assertEqual(docs[0].domain, "python")
+        self.assertEqual(docs[0].tags, ["pip"])
+        self.assertTrue(docs[0].content)  # description used as content
+        # filepath absolute under repo root → _doc_cache_id works
+        self.assertTrue(docs[0].filepath.is_absolute())
+
+    def test_load_remote_docs_falls_back_to_problem_field(self):
+        payload = [
+            {"id": "x", "title": "X", "domain": "devops", "status": "published",
+             "tags": [], "path": "lessons/contrib/x.md", "problem": "the failure"},
+        ]
+        with mock.patch("urllib.request.urlopen", return_value=self._mock_response(payload)):
+            docs = search_knowledge._load_remote_docs()
+        self.assertIn("the failure", docs[0].content)
+
+    def test_load_remote_docs_rejects_non_list(self):
+        with mock.patch("urllib.request.urlopen", return_value=self._mock_response({"error": "x"})):
+            with self.assertRaises(RuntimeError):
+                search_knowledge._load_remote_docs()
 
 
 if __name__ == "__main__":

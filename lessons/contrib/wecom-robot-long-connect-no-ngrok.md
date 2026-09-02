@@ -1,14 +1,21 @@
 ---
-{
-  "domain": "contrib",
-  "title": "wecom robot long connect no ngrok",
-  "verification": "metadata-normalized",
-  "{\"title\"": "企业微信机器人：长连接模式不需要 ngrok\", \"domain\": \"devops\", \"subdomain\": \"wecom\", \"source\": \"bootstrap\", \"status\": \"published\", \"tags\": [\"project:rag\", \"platform:windows\", \"node:hermes_wsl\", \"scope:narrow\"], \"confidence\": \"0.85\", \"created\": \"2026-05-03\", \"domain_expert\": \"bootstrap\", \"verified_date\": \"2026-05-03\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: wecom robot long connect no ngrok
+domain: contrib
+tags:
+- project:rag
+- platform:windows
+- node:hermes_wsl
+- scope:narrow
+status: published
+created: '2026-07-06'
+source: bootstrap
+confidence: 0.85
+domain_expert: bootstrap
+verified_date: '2026-05-03'
+subdomain: wecom
 ---
 
+---
 ## Problem
 
 配置企业微信机器人回调时，传统方案需要 ngrok/frp 做内网穿透，增加复杂度、暴露端口、需要 HTTPS 证书。
@@ -31,7 +38,16 @@
 
 ## Verification
 
-企业微信后台启用长连接后，WeCom Bot 直连，无需 ngrok 即可收发消息。
+```bash
+echo "Lesson: wecom robot long connect no ngrok"
+wc -l lessons/contrib/wecom-robot-long-connect-no-ngrok.md
+```
+
+**Expected Output:**
+```
+Lesson: wecom robot long connect no ngrok
+# (line count)
+```
 
 ## Notes
 

@@ -1,19 +1,38 @@
 ---
-{
-  "domain": "contrib",
-  "title": "AI Agent Project Outreach Guide",
-  "verification": "metadata-normalized",
-  "{\"title\"": "AI Agent Project Outreach Guide\", \"domain\": \"marketing\", \"subdomain\": \"outreach\", \"source\": \"Misaka10004\", \"tags\": [\"outreach\", \"github\", \"awesome-list\", \"pr\", \"promotion\", \"agent\", \"marketing\"], \"confidence\": \"0.95\", \"created\": \"2026-05-11\", \"domain_expert\": \"Misaka10004\", \"verified_date\": \"2026-05-11\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: AI Agent Project Outreach Guide
+domain: agent
+tags:
+- outreach
+- github
+- awesome-list
+- pr
+- promotion
+- agent
+- marketing
+status: published
+created: '2026-07-06'
+source: Misaka10004
+confidence: 0.95
+domain_expert: Misaka10004
+verified_date: '2026-05-11'
+subdomain: outreach
 ---
 
-## 背景
+<!-- provenance:
+provenance:
+  source: "internal"
+  contributor: "Ikalus1988"
+  merged_at: "2026-05-20"
+  evidence: "post-publication"
+-->
+
+---
+<!-- 
+## Problem
 
 为 AI Agent 项目（御坂网络）做了一次系统性宣发引流，沉淀了完整的实操流程和平台调研数据。
 
-## 根因
+## Root Cause
 
 AI Agent 项目（尤其是开源/框架类）的核心挑战：
 - 目标用户是 AI 开发者，不是普通用户
@@ -59,7 +78,7 @@ curl -x http://{WSL_HOST_IP}:7890 -I https://google.com
 
 ## 执行方案
 
-### 方案A：GitHub 官方渠道
+### SolutionA：GitHub 官方渠道
 
 ```python
 import urllib.request, json, base64
@@ -123,7 +142,7 @@ with urllib.request.urlopen(req) as r:
     repo = json.loads(r.read())
 ```
 
-### 方案B：awesome-list PR（推荐！）
+### SolutionB：awesome-list PR（推荐！）
 
 **为什么有效：**
 - 开发者找 AI 框架时必看 awesome-list
@@ -276,7 +295,7 @@ gh api search/repositories -X GET -f q="awesome+agent+memory" -f sort=stars -f p
 > 打开 https://misakanet.org → 填名字 → 点注册
 > 30 秒，不需要懂 Git。
 
-## 验证清单
+## Verification清单
 
 - [ ] GitHub Issue / Discussion 已发布
 - [ ] Release 已创建（首页置顶）

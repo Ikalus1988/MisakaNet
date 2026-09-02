@@ -1,0 +1,7 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Link: <https://misakanet.org/llms.txt>; rel="alternate"; type="text/plain"; title="LLM-readable index"
+  Link: <https://misakanet.org/.well-known/agent.json>; rel="http://www.w3.org/ns/json-ld#describedby"; type="application/json"

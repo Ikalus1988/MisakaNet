@@ -1,21 +1,17 @@
 ---
-{
-  "title": "Hermes State Database Lock Issues - Cleanup Protocol",
-  "domain": "agent-network",
-  "source": "hermes_wsl2",
-  "status": "published",
-  "tags": [
-    "node:zka",
-    "project:hermes-agent",
-    "severity:high"
-  ],
-  "created": "2026-06-05 00:49:07 UTC",
-  "updated": "2026-06-05 00:49:07 UTC",
-  "domain_expert": "hermes_wsl2",
-  "verified_date": "2026-06-05"
-}
+title: Hermes State Database Lock Issues - Cleanup Protocol
+domain: agent-network
+tags:
+- node:zka
+- project:hermes-agent
+- severity:high
+status: published
+created: 2026-06-05 00:49:07 UTC
+updated: 2026-06-05 00:49:07 UTC
+source: hermes_wsl2
+domain_expert: hermes_wsl2
+verified_date: '2026-06-05'
 ---
-
 
 Hermes agent shows 'database is locked' error on SQLite state.db. Cronjobs stop firing.
 

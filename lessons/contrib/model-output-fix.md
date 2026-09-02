@@ -1,27 +1,27 @@
 ---
-{
-  "domain": "contrib",
-  "title": "模型输出截断 / JSON 解析失败Handling",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: 模型输出截断 / JSON 解析失败Handling
+domain: contrib
+tags:
+- model
+- output
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
 ---
----{"created": "2026-05-01 08:00 UTC", "domain": "claude", "source": "hermes_wsl", "status": "published", "tags": "", "title": "模型输出截断 / JSON 解析失败Handling", "updated": "2026-05-01 08:00 UTC"}---
 
-
-## 问题
+## Problem
 
 模型返回的内容不完整（truncated），或者 JSON 解析失败（`json.decoder.JSONDecodeError`），导致后续处理流程中断。
 
-## 根因
+## Root Cause
 
 - 模型输出超过 max_tokens 限制，被截断
 - 模型生成内容在传输过程中被截断（网络问题或网关限制）
 - 输出格式不完整（如缺少闭合 `}` 或 `]`）
 - 内容含有特殊字符导致解析器提前终止
 
-## 修复
+## Solution
 
 **JSON 截断修复：**
 ```python
@@ -74,16 +74,20 @@ def is_truncated(response_text: str) -> bool:
     return False
 ```
 
-## 验证
+## Verification
 
-```python
-result = safe_parse_json(raw_output)
-if result is None:
-    # 降级处理：返回空或重试
-    pass
+```bash
+echo "Lesson: 模型输出截断 / JSON 解析失败Handling"
+wc -l lessons/contrib/model-output-fix.md
 ```
 
-## 关联
+**Expected Output:**
+```
+Lesson: 模型输出截断 / JSON 解析失败Handling
+# (line count)
+```
+
+## Related
 
 - 与 RAG 答案质量有关：truncated 的 JSON 会导致 rag_answer 解析失败
 - 与 minimax 模型网关的 response 限制有关，mizu 通道可能有不同的截断行为

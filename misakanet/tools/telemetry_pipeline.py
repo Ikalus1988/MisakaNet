@@ -235,7 +235,7 @@ class TelemetryPipeline:
     def _run_sliding_window_audit(self) -> None:
         """Run sliding window audit over last 10 telemetry rows.
 
-        Mirrors the audit logic from MisakaNetSearchTool._audit_sliding_window.
+        Migrated from MisakaNetSearchTool._audit_sliding_window (Issue #138).
         Uses the same persistent connection (under write lock).
         """
         if self._conn is None:

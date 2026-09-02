@@ -4,45 +4,35 @@
 Redacts: API keys, GitHub tokens, Slack tokens, private keys,
 passwords, credit cards, and environment variable dumps.
 
+Patterns are loaded from workers/lib/redact-patterns.json (single source
+of truth shared with the JS implementation).
+
 Usage:
     from scripts.intake_redact import redact_payload, redact_text
     safe = redact_text(raw_message)
     safe_record = redact_payload(raw_record)
 """
+import json
 import re
+from pathlib import Path
 from typing import Any
 
-# ── Redaction patterns (order matters: longest match first) ──
+# ── Load shared redaction patterns ──
 
-REDACT_PATTERNS: list[tuple[re.Pattern, str]] = [
-    # Private keys (PEM blocks) — must come first (large multiline match)
-    (re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END(?: RSA | EC | OPENSSH )?PRIVATE KEY-----", re.IGNORECASE),
-     "[REDACTED:private_key]"),
-    # GitHub tokens (ghp_, gho_, ghu_, ghs_, ghr_, github_pat_) — before generic key-value
-    (re.compile(r"(?:ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9]{10,}"),
-     "[REDACTED:github_token]"),
-    # Slack tokens (xoxb-, xoxp-, xoxa-, xoxr-)
-    (re.compile(r"xox[bpras]-[a-zA-Z0-9\-]{10,}"),
-     "[REDACTED:slack_token]"),
-    # AWS access key — before generic key-value
-    (re.compile(r"(?:AKIA|ABIA|ACCA|ASIA)[A-Z0-9]{16}"),
-     "[REDACTED:aws_key]"),
-    # Generic API keys (sk-*, pk-*, rk-*, ak-* with 10+ chars)
-    (re.compile(r"(?:sk|pk|rk|ak)[_-][a-zA-Z0-9]{10,}"),
-     "[REDACTED:api_key]"),
-    # Bearer token in headers — before generic key-value
-    (re.compile(r"(?:Bearer|Authorization)\s+[a-zA-Z0-9\-._~+/]+=*", re.IGNORECASE),
-     "[REDACTED:bearer_token]"),
-    # key=value or key: value secrets (password, passwd, secret, token, api_key, apikey, database_url)
-    (re.compile(r"(?:password|passwd|secret|token|api[_-]?key|apikey|database[_-]?url)\s*[:=]\s*\S+", re.IGNORECASE),
-     "[REDACTED:credential]"),
-    # Credentials in URLs (user:pass@host)
-    (re.compile(r"://[^:]+:[^@]+@[^\s]+"),
-     "://[REDACTED:url_credential]@host"),
-    # Credit card numbers (13-19 digits, with optional spaces/dashes)
-    (re.compile(r"\b(?:\d[ -]*?){13,19}\b"),
-     "[REDACTED:card_number]"),
-]
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_PATTERN_FILE = _REPO_ROOT / "workers" / "lib" / "redact-patterns.json"
+
+def _load_patterns() -> list[tuple[re.Pattern, str]]:
+    """Load patterns from shared JSON file."""
+    data = json.loads(_PATTERN_FILE.read_text(encoding="utf-8"))
+    flags_map = {"i": re.IGNORECASE, "g": 0, "gi": re.IGNORECASE}
+    result = []
+    for p in data:
+        flags = flags_map.get(p.get("flags", "g"), 0)
+        result.append((re.compile(p["pattern"], flags), p["replacement"]))
+    return result
+
+REDACT_PATTERNS: list[tuple[re.Pattern, str]] = _load_patterns()
 
 # Patterns for detecting env-dump payloads
 ENV_DUMP_PATTERNS = [
@@ -81,7 +71,8 @@ def redact_payload(record: dict[str, Any]) -> dict[str, Any]:
         safe["_env_dump_detected"] = True
 
     # Redact string fields that may contain secrets
-    for field in ("message", "context", "description", "error", "traceback"):
+    for field in ("message", "context", "description", "error", "traceback",
+                   "title", "problem", "root_cause", "fix", "verification"):
         if field in safe and isinstance(safe[field], str):
             safe[field] = redact_text(safe[field])
 

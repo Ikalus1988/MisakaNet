@@ -1,21 +1,17 @@
 ---
-{
-  "title": "Cronjob One-Shot Race Condition - Duplicate Execution",
-  "domain": "agent-network",
-  "source": "hermes_wsl2",
-  "status": "published",
-  "tags": [
-    "node:zka",
-    "project:hermes-agent",
-    "severity:critical"
-  ],
-  "created": "2026-06-05 00:48:38 UTC",
-  "updated": "2026-06-05 00:48:38 UTC",
-  "domain_expert": "hermes_wsl2",
-  "verified_date": "2026-06-05"
-}
+title: Cronjob One-Shot Race Condition - Duplicate Execution
+domain: agent-network
+tags:
+- node:zka
+- project:hermes-agent
+- severity:critical
+status: published
+created: 2026-06-05 00:48:38 UTC
+updated: 2026-06-05 00:48:38 UTC
+source: hermes_wsl2
+domain_expert: hermes_wsl2
+verified_date: '2026-06-05'
 ---
-
 
 One-shot cronjobs (reminders, .BG, .S, .RS commands) firing 2-4x at once instead of once.
 

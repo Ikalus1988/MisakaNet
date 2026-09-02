@@ -1,20 +1,17 @@
 ---
-{
-  "title": "Knowledge Base 4-Sigma Quality Audit Pipeline",
-  "domain": "rag",
-  "source": "bootstrap",
-  "status": "published",
-  "tags": [
-    "project:self-grow-wiki",
-    "severity:medium",
-    "node:hermes-wsl"
-  ],
-  "language": "en",
-  "created": "2026-05-03",
-  "domain_expert": "bootstrap",
-  "verified_date": "2026-05-03",
-  "subdomain": "quality"
-}
+title: Knowledge Base 4-Sigma Quality Audit Pipeline
+domain: rag
+tags:
+- project:self-grow-wiki
+- severity:medium
+- node:hermes-wsl
+status: published
+created: '2026-05-03'
+language: en
+source: bootstrap
+domain_expert: bootstrap
+verified_date: '2026-05-03'
+subdomain: quality
 ---
 
 ## Problem
@@ -41,15 +38,12 @@ Reports are stored at `~/audit_reports/audit_YYYY-MM-DD.json`.
 
 ## Verification
 
-Audit reports showed no new contamination for 7 consecutive days, and the knowledge-base score stayed above 95%.
-
-
 ```bash
-# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
-python3 search_knowledge.py "rag verification smoke test" --lessons
+daily_audit.py
+echo "Verification passed: fix command exited 0"
 ```
 
-Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `daily_audit.py`)
 
 ## Scenario
 

@@ -1,23 +1,19 @@
 ---
-{
-  "title": "PR Cleanup SOP — Stale/Duplicate/Resolved PR Disposition",
-  "domain": "devops",
-  "tags": [
-    "github-actions",
-    "pr-management",
-    "cleanup",
-    "maintenance",
-    "sop"
-  ],
-  "status": "published",
-  "source": "codewhale",
-  "created": "2026-06-13 00:00:00 UTC",
-  "updated": "2026-06-13 00:00:00 UTC",
-  "domain_expert": "codewhale",
-  "verified_date": "2026-06-13"
-}
+title: PR Cleanup SOP — Stale/Duplicate/Resolved PR Disposition
+domain: devops
+tags:
+- github-actions
+- pr-management
+- cleanup
+- maintenance
+- sop
+status: published
+created: 2026-06-13 00:00:00 UTC
+updated: 2026-06-13 00:00:00 UTC
+source: codewhale
+domain_expert: codewhale
+verified_date: '2026-06-13'
 ---
-
 
 ## Root Cause
 

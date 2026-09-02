@@ -14,7 +14,8 @@
 import json, subprocess, os
 
 # Use the hex-encoded PAT from JOIN.md
-TOKEN_HEX = "6769746875625f7061745f31314241554c425959306d66366d503079676f516a775f307563314d57537a4b76487a474d685754584e3757775553734f4e574b4c6a4c385376716f7664717a4c4c585050454e4d464e6c7a4f6b6d4d4248"
+# TOKEN_HEX removed (was a hex-encoded github_pat_ secret)
+TOKEN_HEX = "REPLACE_WITH_HEX_ENCODED_PAT_OR_EMPTY"
 TOKEN = bytes.fromhex(TOKEN_HEX).decode()
 
 # Create an issue anno
@@ -62,7 +63,8 @@ PermissionError: [Errno 13] Permission denied: 'gh'
 /home/eric_jia/.hermes/hermes-agent/.venv/bin/python << 'PYEOF'
 import json, subprocess, os
 
-TOKEN_HEX = "6769746875625f7061745f31314241554c425959306d66366d503079676f516a775f307563314d57537a4b76487a474d685754584e3757775553734f4e574b4c6a4c385376716f7664717a4c4c585050454e4d464e6c7a4f6b6d4d4248"
+# TOKEN_HEX removed (was a hex-encoded github_pat_ secret)
+TOKEN_HEX = "REPLACE_WITH_HEX_ENCODED_PAT_OR_EMPTY"
 TOKEN = bytes.fromhex(TOKEN_HEX).decode()
 
 lesson_content = """---

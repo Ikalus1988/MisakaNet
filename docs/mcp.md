@@ -70,14 +70,14 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 |------|-------------|------------|
 | `misakanet_search` | Search lessons by query | `query` (required), `domain?`, `top?` (default 5) |
 | `misakanet_get_lesson` | Get a specific lesson | `path` or `id` (required) |
-| `misakanet_submit_usage` | **[Experimental]** Report lesson usage (local log only) | `lesson_id` (required), `tool?`, `outcome?` |
+| `misakanet_submit_usage` | Report lesson usage — outcome feeds live reuse signals (solved → helpful vote; partial/not-helpful → feedback) | `lesson_id` (required), `tool?`, `outcome?` |
 
 ## Resources
 
 | URI | Description |
 |-----|-------------|
 | `misaka://lessons/index` | Browse all published lessons (core + contrib) |
-| `misaka://protocol/overview` | Swarm Knowledge Protocol config (trust tiers, rings, scoring) |
+| `misaka://protocol/overview` | failure-memory protocol config (trust tiers, rings, scoring) |
 | `misaka://docs/readme` | Project overview and quickstart |
 | `misaka://docs/faq` | Troubleshooting FAQ |
 | `misaka://docs/changelog` | Latest release notes |
@@ -123,9 +123,9 @@ This tests:
 ## Security & Boundaries
 
 - **Not a skill marketplace.** MisakaNet is a failure memory network — lessons come from real debugging sessions, not curated skill packs.
-- **Read-only by default.** Tools like `misakanet_search` and `misakanet_get_lesson` are read-only. `misakanet_submit_usage` is **experimental** and currently logs locally only — no data is sent externally.
+- **Read-only by default.** Tools like `misakanet_search` and `misakanet_get_lesson` are read-only. `misakanet_submit_usage` reports the lesson outcome to the public worker endpoint (`/api/helpful` for solved, `/api/feedback` for partial/not-helpful) — offline-safe: it falls back to local logging when the worker is unreachable.
 - **No raw sensitive content uploaded.** Search queries stay local. Lesson content is public (open-source repo). Usage reports contain only lesson ID + outcome, not source code or error logs.
-- **Write operations require explicit confirmation.** If `submit_usage` is extended to create GitHub Issues in the future, it will require user confirmation before submission.
+- **Write operations require explicit confirmation.** `misakanet_write_lesson` and `misakanet_submit_intake` create GitHub issues only when called — nothing is sent without an explicit tool call.
 
 ## Glama
 

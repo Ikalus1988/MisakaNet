@@ -1,4 +1,8 @@
 {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
-  "maintainers": ["Ikalus1988"]
+  "maintainers": ["Ikalus1988"],
+  "remote": {
+    "url": "https://misakanet.org/mcp",
+    "transport": "streamable-http"
+  }
 }

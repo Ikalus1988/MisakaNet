@@ -41,9 +41,12 @@ When a command, test, CI, DCO, token, pip, MCP, or Windows encoding issue fails,
 
 3. **Apply only the relevant fix** from the lesson. Do not invent fixes beyond what the lesson describes.
 
-4. **If no match found**, submit a redacted intake:
+4. **If no match found**, submit a redacted intake via MCP (no GitHub account needed):
    ```
-   python3 scripts/misaka_capture.py --summary "<short error description>" --source cursor
+   curl -sS https://misakanet.org/mcp \
+     -H "Content-Type: application/json" \
+     -H "MCP-Protocol-Version: 2025-06-18" \
+     -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"problem":"<short error description>","source":"cursor"}}}'
    ```
 
 ## What NOT to do
@@ -53,6 +56,15 @@ When a command, test, CI, DCO, token, pip, MCP, or Windows encoding issue fails,
 - Do not auto-retry more than twice without searching MisakaNet
 - Do not apply fixes from MisakaNet lessons to unrelated problems
 
+## MCP Tools Available
+
+| Tool | Auth | Purpose |
+|---|---|---|
+| `misakanet_search` | ≤5 free/day remote | Search lessons |
+| `misakanet_get_lesson` | ≤5 free/day remote | Get lesson content |
+| `misakanet_submit_intake` | No auth needed | Submit failure case |
+| `misakanet_submit_usage` | No auth needed | Submit usage feedback |
+
 ## Example
 
 **User:** "My pytest is failing with ImportError"
@@ -60,4 +72,4 @@ When a command, test, CI, DCO, token, pip, MCP, or Windows encoding issue fails,
 **Agent:**
 1. Search: `misakanet_search(query="ImportError pytest")`
 2. If lesson found → read and apply fix
-3. If no lesson → `python3 scripts/misaka_capture.py --summary "pytest ImportError" --source cursor`
+3. If no lesson → submit intake via MCP

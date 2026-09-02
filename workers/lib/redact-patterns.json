@@ -1,0 +1,65 @@
+[
+  {
+    "id": "private_key",
+    "pattern": "-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----[\\s\\S]*?-----END(?: RSA | EC | OPENSSH )?PRIVATE KEY-----",
+    "flags": "gi",
+    "replacement": "[REDACTED:private_key]",
+    "description": "PEM private key blocks"
+  },
+  {
+    "id": "github_token",
+    "pattern": "(?:ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9]{10,}",
+    "flags": "g",
+    "replacement": "[REDACTED:github_token]",
+    "description": "GitHub Personal Access Token and other GitHub tokens"
+  },
+  {
+    "id": "slack_token",
+    "pattern": "xox[bpras]-[a-zA-Z0-9\\-]{10,}",
+    "flags": "g",
+    "replacement": "[REDACTED:slack_token]",
+    "description": "Slack bot/user/app tokens"
+  },
+  {
+    "id": "aws_key",
+    "pattern": "(?:AKIA|ABIA|ACCA|ASIA)[A-Z0-9]{16}",
+    "flags": "g",
+    "replacement": "[REDACTED:aws_key]",
+    "description": "AWS access key IDs"
+  },
+  {
+    "id": "api_key",
+    "pattern": "(?:sk|pk|rk|ak)[_-][a-zA-Z0-9]{10,}",
+    "flags": "g",
+    "replacement": "[REDACTED:api_key]",
+    "description": "Generic API keys (OpenAI sk-*, etc.)"
+  },
+  {
+    "id": "bearer_token",
+    "pattern": "(?:Bearer|Authorization)\\s+[a-zA-Z0-9\\-._~+/]+=*",
+    "flags": "gi",
+    "replacement": "[REDACTED:bearer_token]",
+    "description": "Bearer tokens in Authorization headers"
+  },
+  {
+    "id": "credential",
+    "pattern": "(?:password|passwd|secret|token|api[_-]?key|apikey|database[_-]?url)\\s*[:=]\\s*\\S+",
+    "flags": "gi",
+    "replacement": "[REDACTED:credential]",
+    "description": "Generic key=value credential assignments"
+  },
+  {
+    "id": "url_credential",
+    "pattern": "://[^:]+:[^@]+@[^\\s]+",
+    "flags": "g",
+    "replacement": "://[REDACTED:url_credential]@host",
+    "description": "Credentials embedded in URLs (user:pass@host)"
+  },
+  {
+    "id": "card_number",
+    "pattern": "\\b(?:\\d[ -]*?){13,19}\\b",
+    "flags": "g",
+    "replacement": "[REDACTED:card_number]",
+    "description": "Credit card numbers (13-19 digits)"
+  }
+]

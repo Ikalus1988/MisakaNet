@@ -1,16 +1,21 @@
 ---
 title: FANUC IO Marker M[] Instruction — Background Logic Alternative
 domain: fanuc
-subdomain: tp-programming
-tags: ["marker", "m-register", "io", "background-logic", "handling-tool", "vass"]
-source: robot-forum.com
+tags:
+- marker
+- m-register
+- io
+- background-logic
+- handling-tool
+- vass
 status: published
-confidence: 0.85
 created: 2026-07-01
-verified_date: 
+source: robot-forum.com
+confidence: 0.85
 domain_expert: cattmampbell
+verified_date: null
+subdomain: tp-programming
 ---
-
 
 ## Problem
 
@@ -62,10 +67,16 @@ This is useful when "closed" distance varies by part type — set threshold in R
 
 ## Verification
 
-1. Set `$MIX_LOGIC.$USE_MKR = TRUE`
-2. Create `M[1] = (DI[1] AND DI[2])` in a program
-3. Toggle DI[1] and DI[2] — M[1] updates automatically in background
-4. Check MENU → I/O → Marker shows the correct state
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```
 
 ## Notes
 

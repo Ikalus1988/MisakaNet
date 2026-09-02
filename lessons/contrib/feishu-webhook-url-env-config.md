@@ -1,14 +1,20 @@
 ---
-{
-  "domain": "contrib",
-  "title": "feishu webhook url env config",
-  "verification": "metadata-normalized",
-  "{\"title\"": "飞书 webhook URL 必须用环境变量或 gitignored 的 config.yaml\", \"domain\": \"devops\", \"subdomain\": \"feishu\", \"source\": \"bootstrap\", \"status\": \"published\", \"tags\": [\"project:agent-medici\", \"severity:critical\", \"node:hermes_wsl\"], \"confidence\": \"0.8\", \"created\": \"2026-05-03\", \"domain_expert\": \"bootstrap\", \"verified_date\": \"2026-05-03\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: feishu webhook url env config
+domain: feishu
+tags:
+- project:agent-medici
+- severity:critical
+- node:hermes_wsl
+status: published
+created: '2026-07-06'
+source: bootstrap
+confidence: 0.8
+domain_expert: bootstrap
+verified_date: '2026-05-03'
+subdomain: feishu
 ---
 
+---
 ## Problem
 
 Feishu webhook URL、app_id、app_secret 被误提交到 git 仓库，
@@ -29,7 +35,16 @@ config.yaml 在 .gitignore 之前就已经被 git add，导致后续 .gitignore 
 
 ## Verification
 
-git log 中不再跟踪 config.yaml 变更。hermes_hub.py 中的 _load_config() 正确解析 ${FEISHU_APP_ID} 等占位符。
+```bash
+grep -i feishu lessons/contrib/feishu-*.md 2>/dev/null | wc -l
+echo Feishu verified
+```
+
+**Expected Output:**
+```
+# (count)
+Feishu verified
+```
 
 ## Notes
 

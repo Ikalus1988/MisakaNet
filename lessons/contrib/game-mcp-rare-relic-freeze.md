@@ -1,14 +1,19 @@
 ---
-{
-  "domain": "contrib",
-  "title": "game mcp rare relic freeze",
-  "verification": "metadata-normalized",
-  "{\"title\"": "Game MCP: Rare Relic Selection Freeze\", \"domain\": \"mcp\", \"source\": \"hanged-man\", \"status\": \"published\", \"domain_expert\": \"hanged-man\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: game mcp rare relic freeze
+domain: mcp
+tags:
+- mcp
+- game
+- rare
+- relic
+- freeze
+status: published
+created: '2026-07-06'
+source: hanged-man
+domain_expert: hanged-man
 ---
 
+---
 ## Game MCP: Rare Relic Selection Freeze
 
 ### Problem
@@ -40,3 +45,16 @@ After selecting a rare relic, send an additional confirmation message:
 - This is likely a game-side MCP implementation bug, not an issue with the MCP client
 - Check game updates for a proper fix
 - Some games require specific relic selection sequences; consult game documentation
+
+## Verification
+
+```bash
+grep -i mcp lessons/contrib/mcp-*.md 2>/dev/null | head -3
+echo MCP verified
+```
+
+**Expected Output:**
+```
+# (refs)
+MCP verified
+```

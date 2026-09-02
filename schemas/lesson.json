@@ -36,6 +36,12 @@
       "enum": ["published", "draft", "archived"],
       "description": "Publication status"
     },
+    "evidence_level": {
+      "type": "string",
+      "enum": ["E0", "E1", "E2", "E3", "E4"],
+      "default": "E0",
+      "description": "How well this lesson is evidenced — E0 self-reported, E1 maintainer reviewed, E2 locally reproduced, E3 CI/sandbox verified, E4 reused by another contributor. Missing means E0. See docs/trust-semantics.md"
+    },
     "source": {
       "type": "string",
       "description": "Origin of this lesson"
@@ -47,6 +53,41 @@
     "updated": {
       "type": "string",
       "description": "Last-updated timestamp"
+    },
+    "triggers": {
+      "type": "object",
+      "description": "Structured triggers for proactive retrieval before executing risky intents/commands",
+      "properties": {
+        "intents": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true,
+          "description": "Agent intent keywords/actions that match this lesson"
+        },
+        "commands": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true,
+          "description": "Shell commands, script names, or tools that trigger this lesson"
+        },
+        "environments": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true,
+          "description": "Environment/OS/hardware tags (e.g. wsl, gpu, cuda, linux, docker)"
+        },
+        "risks": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true,
+          "description": "Risk taxonomy tags (e.g. memory_pressure, no_checkpoint, batch_overflow, silent_failure)"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "description": "Risk severity level for this lesson"
+        }
+      }
     }
   }
 }

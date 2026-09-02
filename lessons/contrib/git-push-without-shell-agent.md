@@ -1,19 +1,26 @@
 ---
-{
-  "domain": "contrib",
-  "title": "Git Push 的正确方式 — 在受限 Agent 环境中推送代码",
-  "verification": "metadata-normalized",
-  "{\"title\"": "Git Push 的正确方式 — 在受限 Agent 环境中推送代码\", \"domain\": \"devops\", \"tags\": [\"git\", \"push\", \"agent\", \"gh-cli\", \"lesson\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: Git Push 的正确方式 — 在受限 Agent 环境中推送代码
+domain: git
+tags:
+- git
+- push
+- agent
+- gh-cli
+- lesson
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
+domain_expert: unknown
+evidence_level: E1
 ---
 
-## 背景
+---
+## Problem
 
 在某些 Agent 平台的安全模式下，shell 工具不可用。需要执行 `git push` 时，不能直接用 shell 命令。
 
-## 根本原因
+## Root Cause
 
 部分 Agent 环境的工具集不含直接 shell 访问。有两条替代路径：
 
@@ -45,7 +52,7 @@ gh repo sync <org>/<repo> --branch main --force
 
 ```bash
 git remote set-url origin \
-  https://x-access-token:${GH_TOKEN}@github.com/<org>/<repo>.git
+  https://*-******-*****************@github.com/<org>/<repo>.git
 git push origin main
 ```
 
@@ -61,7 +68,7 @@ git push origin main
 git remote -v  # 确认 remote 指向要改的 repo
 ```
 
-## 验证
+## Verification
 
 push 后检查远程：
 
@@ -69,9 +76,27 @@ push 后检查远程：
 gh api repos/<org>/<repo>/commits/main --jq .sha
 ```
 
-确认 commit SHA 正确后再继续后续操作。
+预期输出（成功时返回最新 commit 的 SHA，40 位十六进制字符串）：
 
-## 陷阱
+```
+a3f1c2e8b4d7091f6e5a2c3b1d4e7f8a9b0c1d2e
+```
+
+确认该 SHA 与本地 `git log` 的最新提交一致：
+
+```bash
+git log -1 --format="%H"
+```
+
+预期输出（应与上方远程 SHA 完全相同）：
+
+```
+a3f1c2e8b4d7091f6e5a2c3b1d4e7f8a9b0c1d2e
+```
+
+如果两者一致，说明 push 成功，可继续后续操作。
+
+## Pitfalls
 
 - `git push --force` 会覆盖远程历史 → 优先用 `--force-with-lease`
 - 裸 `git remote set-url` 注入 token 时，token 会暴露在 shell history 中

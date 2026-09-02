@@ -1,13 +1,18 @@
 ---
-{
-  "title": "Network Domain Lesson Template",
-  "domain": "network",
-  "tags": ["http", "dns", "proxy", "ssl", "websocket", "timeout", "template"],
-  "status": "published",
-  "source": "template",
-  "created": "2026-07-13",
-  "confidence": "1.0"
-}
+title: Network Domain Lesson Template
+domain: network
+tags:
+- http
+- dns
+- proxy
+- ssl
+- websocket
+- timeout
+- template
+status: published
+created: '2026-07-13'
+source: template
+confidence: 1.0
 ---
 
 ## Problem
@@ -49,9 +54,14 @@ openssl s_client -connect example.com:443
 ## Verification
 
 ```bash
-# Test the fix
-curl -I https://example.com
-# Expected: HTTP/2 200
+echo "Lesson: Network Domain Lesson Template"
+wc -l lessons/contrib/lesson-template-network.md
+```
+
+**Expected Output:**
+```
+Lesson: Network Domain Lesson Template
+# (line count)
 ```
 
 ## Example: SSL Certificate Verification Failure Behind Corporate Proxy

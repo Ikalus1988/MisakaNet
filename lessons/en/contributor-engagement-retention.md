@@ -18,6 +18,11 @@
   "domain_expert": "codewhale",
   "verified_date": "2026-06-10"
 }
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 > Translated from: [lessons/core/contributor-engagement-retention.md](../core/contributor-engagement-retention.md)

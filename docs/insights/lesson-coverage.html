@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MisakaNet — Lesson Coverage</title>
+<meta name="description" content="Public dashboard of MisakaNet lesson coverage, unsolved failure gaps, and lessons needing review.">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0d1117; color: #c9d1d9; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem;
+  }
+  .container { max-width: 900px; width: 100%; }
+  h1 { font-size: 1.5rem; font-weight: 600; color: #58a6ff; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.05rem; font-weight: 600; color: #e6edf3; margin: 2rem 0 0.75rem; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.6; }
+  .privacy {
+    border: 1px solid #30363d; border-left: 3px solid #3fb950; border-radius: 8px;
+    background: #161b22; padding: 0.9rem 1rem; font-size: 0.85rem; color: #8b949e; line-height: 1.7;
+  }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-top: 1.5rem; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 0.85rem; }
+  .card-label { color: #8b949e; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  .card-value { color: #e6edf3; font-size: 1.45rem; font-weight: 600; margin-top: 0.35rem; }
+  .chart { display: grid; gap: 0.7rem; }
+  .family-row { display: grid; grid-template-columns: 150px 1fr 55px; gap: 0.75rem; align-items: center; font-size: 0.85rem; }
+  .family-name { color: #e6edf3; overflow-wrap: anywhere; }
+  .track { height: 9px; background: #21262d; border-radius: 5px; overflow: hidden; }
+  .bar { height: 100%; border-radius: 5px; background: #3fb950; min-width: 2px; }
+  .bar.review { background: #d29922; }
+  .bar.uncovered { background: #f85149; }
+  .count { color: #8b949e; text-align: right; font-variant-numeric: tabular-nums; }
+  .status { font-size: 0.72rem; margin-left: 0.35rem; white-space: nowrap; }
+  .status.covered { color: #3fb950; }
+  .status.needs-review { color: #d29922; }
+  .status.uncovered { color: #f85149; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid #21262d; }
+  th { color: #8b949e; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:hover { background: #161b22; }
+  .state { color: #8b949e; font-size: 0.9rem; padding: 1.25rem 0; }
+  .state.error { color: #f85149; }
+  a { color: #58a6ff; }
+  footer { margin-top: 2.5rem; font-size: 0.8rem; color: #6e7681; line-height: 1.8; }
+  @media (max-width: 700px) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    .family-row { grid-template-columns: 125px 1fr 45px; }
+  }
+  @media (max-width: 460px) {
+    body { padding: 1.25rem 0.75rem; }
+    .family-row { grid-template-columns: 1fr 80px; }
+    .family-name { grid-column: 1 / -1; }
+    .track { grid-column: 1; }
+    .count { grid-column: 2; grid-row: 2; }
+    th, td { padding: 0.55rem 0.45rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🗺️ Lesson Coverage</h1>
+  <p class="subtitle">
+    Which failure families have reusable lessons, and where recent unsolved signals
+    suggest that existing coverage needs review? The dashboard uses the public lesson index
+    plus aggregate signals from the last 30 days.
+  </p>
+
+  <div class="privacy">
+    <strong>Privacy:</strong> this view contains public lesson metadata and aggregate family counts only.
+    Raw search queries, prompts, logs, paths, and personal identifiers are never returned.
+  </div>
+
+  <div class="cards" id="cards" hidden>
+    <div class="card"><div class="card-label">Published lessons</div><div class="card-value" id="published">—</div></div>
+    <div class="card"><div class="card-label">Family coverage</div><div class="card-value" id="coverage">—</div></div>
+    <div class="card"><div class="card-label">Coverage gaps</div><div class="card-value" id="gaps">—</div></div>
+    <div class="card"><div class="card-label">Unsolved families</div><div class="card-value" id="unsolved">—</div></div>
+  </div>
+
+  <div class="state" id="state">Loading…</div>
+  <section id="content" hidden>
+    <h2>Coverage by failure family</h2>
+    <div class="chart" id="chart"></div>
+
+    <h2>Prioritized gaps</h2>
+    <div class="table-wrap">
+      <table id="gaps-table">
+        <thead><tr><th>Family</th><th>Status</th><th class="num">Lessons</th><th class="num">Unsolved (30d)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <h2>Lessons reported as not helpful</h2>
+    <div class="table-wrap">
+      <table id="stale-table">
+        <thead><tr><th>Lesson</th><th class="num">Reports (30d)</th><th>Last seen</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Source: <code>GET /api/insights/lesson-coverage</code> ·
+    <a href="https://github.com/Ikalus1988/MisakaNet/issues/905">issue #905</a> ·
+    <a href="unsolved-map.html">unsolved failure map</a>
+  </footer>
+</div>
+
+<script>
+const API = window.location.origin + '/api/insights/lesson-coverage';
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function statusLabel(value) {
+  return String(value || '').replace('-', ' ');
+}
+
+function render(data) {
+  const metrics = data.metrics || {};
+  document.getElementById('published').textContent = metrics.publishedLessons || 0;
+  document.getElementById('coverage').textContent = (metrics.coveragePercent || 0) + '%';
+  document.getElementById('gaps').textContent = metrics.gapCount || 0;
+  document.getElementById('unsolved').textContent = metrics.unsolvedFamilyCount || 0;
+  document.getElementById('cards').hidden = false;
+
+  const families = data.families || [];
+  const maxLessons = Math.max(1, ...families.map(f => Number(f.lessonCount) || 0));
+  document.getElementById('chart').innerHTML = families.map(f => {
+    const status = escapeHTML(f.coverageStatus || 'uncovered');
+    const width = Math.round(((Number(f.lessonCount) || 0) / maxLessons) * 100);
+    return '<div class="family-row">' +
+      '<div class="family-name">' + escapeHTML(f.taskFamily) + '<span class="status ' + status + '">' + escapeHTML(statusLabel(f.coverageStatus)) + '</span></div>' +
+      '<div class="track"><div class="bar ' + status + '" style="width:' + width + '%"></div></div>' +
+      '<div class="count">' + escapeHTML(f.lessonCount) + '</div>' +
+    '</div>';
+  }).join('');
+
+  document.querySelector('#gaps-table tbody').innerHTML = (data.gaps || []).map(f =>
+    '<tr><td>' + escapeHTML(f.taskFamily) + '</td>' +
+      '<td class="status ' + escapeHTML(f.coverageStatus) + '">' + escapeHTML(statusLabel(f.coverageStatus)) + '</td>' +
+      '<td class="num">' + escapeHTML(f.lessonCount) + '</td>' +
+      '<td class="num">' + escapeHTML(f.unsolved30d) + '</td></tr>'
+  ).join('') || '<tr><td colspan="4">No coverage gaps in the current family set.</td></tr>';
+
+  document.querySelector('#stale-table tbody').innerHTML = (data.staleLessons || []).map(l =>
+    '<tr><td>' + escapeHTML(l.lessonId) + '</td>' +
+      '<td class="num">' + escapeHTML(l.notHelpful30d) + '</td>' +
+      '<td>' + escapeHTML(l.lastSeen || '—') + '</td></tr>'
+  ).join('') || '<tr><td colspan="3">No lessons flagged as not helpful in the current window.</td></tr>';
+
+  document.getElementById('content').hidden = false;
+  document.getElementById('state').hidden = true;
+}
+
+fetch(API, { cache: 'no-store' })
+  .then(response => response.json().then(data => ({ response, data })))
+  .then(({ response, data }) => {
+    if (!response.ok || !data.success) throw new Error(data.error || 'request failed');
+    render(data);
+  })
+  .catch(() => {
+    const state = document.getElementById('state');
+    state.textContent = 'Could not load coverage data. Try again later.';
+    state.className = 'state error';
+  });
+</script>
+</body>
+</html>

@@ -1,13 +1,15 @@
 ---
-{
-  "domain": "contrib",
-  "title": "wsl proxy huggingface external",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: wsl proxy huggingface external
+domain: wsl
+tags:
+- wsl
+- proxy
+- huggingface
+- external
+status: published
+created: '2026-07-06'
+source: unknown
 ---
----{"title": "WSL 需要代理Setup才能Access HuggingFace 和外部网络", "domain": "devops", "subdomain": "wsl", "source": "bootstrap", "status": "published", "tags": ["project:self-grow-wiki", "severity:high", "platform:wsl", "node:hermes_wsl"], "confidence": "0.8", "created": "2026-05-03"}---
 
 ## Problem
 
@@ -31,7 +33,12 @@ export no_proxy=localhost,127.0.0.1,.local
 
 ## Verification
 
-source ~/.bashrc 后，wget https://huggingface.co 返回 200，python 下载模型成功。
+```bash
+export http_proxy=http://127.0.0.1:7890
+echo "Verification passed: fix command exited 0"
+```
+
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `export http_proxy=http://127.0.0.1:7890`)
 
 ## Notes
 

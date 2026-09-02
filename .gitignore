@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.pyc
+.pytest_cache/
 .cache/
 node_modules/
 misakanet/profile.json
@@ -48,12 +49,29 @@ workers/wrangler.api.jsonc
 .worktrees/
 data/sag.db
 
+# Local toolchain (agent session caches, OAuth vaults — machine-specific)
+.tools/
+.tmp-cf/
+.nodes/
+.npm-cache/
+.pnpm-store/
+.agent-reach-home/
+.cursor/mcp.json
+
+# Session handoff doc (contains credential hints — keep local)
+docs/prd/HANDOFF.md
+
+# Local status snapshot (deliberately removed from repo in ed0316f9)
+STATUS.md
+
 # Crawler flywheel metrics (local tracking)
 data/crawler_flywheel.jsonl
 
 # Hub runtime/generated artifacts (regenerable, not source-of-truth)
 hub/storage/audit.jsonl
 hub/storage/skill_index.json
+# Hub orchestrator artifacts produced at startup (sqlite databases)
+storage/
 
 # Usage meter runtime data (local tracking)
 data/usage_credits.jsonl
@@ -61,3 +79,14 @@ data/contribution_queue.jsonl
 
 # local search quality feedback (issue #604)
 data/search-feedback.jsonl
+
+# Zero-result search gap logging (issue #1175)
+data/search_gaps.jsonl
+.private/
+
+# Benchmark results (local only)
+bench_results/
+.aider*
+.aider*
+coverage.xml
+data/lessons.db

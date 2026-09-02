@@ -1,11 +1,17 @@
 ---
-title: "An Unlikely Database Migration: From JSON Files to etcd"
-domain: "database-architecture"
-tags: ["database-migration", "etcd", "golang", "control-plane", "performance", "key-value-store"]
-language: "en"
-status: "published"
-source: "https://tailscale.com/blog/an-unlikely-database-migration/"
-created: "2026-07-28"
+title: 'An Unlikely Database Migration: From JSON Files to etcd'
+domain: database-architecture
+tags:
+- database-migration
+- etcd
+- golang
+- control-plane
+- performance
+- key-value-store
+status: published
+created: '2026-07-28'
+language: en
+source: https://tailscale.com/blog/an-unlikely-database-migration/
 confidence: 0.85
 ---
 
@@ -45,7 +51,16 @@ The team also evaluated but rejected alternatives:
 
 ## Verification
 
-not specified in source
+```bash
+echo "Lesson: An Unlikely Database Migration: From JSON Files to"
+wc -l lessons/contrib/an-unlikely-database-migration.md
+```
+
+**Expected Output:**
+```
+Lesson: An Unlikely Database Migration: From JSON Files to
+# (line count)
+```
 
 ## Notes
 

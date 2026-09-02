@@ -12,6 +12,11 @@ tags:
 - lessons
 - error-interception
 updated: 2026-04-30 09:30 UTC
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## 问题

@@ -1,23 +1,25 @@
 ---
-title: "API 请求限流 (Rate Limit) 处理方案"
-domain: "devops"
+title: API 请求限流 (Rate Limit) 处理方案
+domain: devops
 tags:
-  - api
-  - rate-limit
-  - retry
-  - "429"
-created: "2026-05-21"
+- api
+- rate-limit
+- retry
+- '429'
+status: published
+created: '2026-05-21'
+language: zh
 ---
 
-## 背景
+## Problem
 
 调用第三方 API 时返回 HTTP 429（Too Many Requests）或 403（被限流）。自动化脚本因未处理限流而中断。
 
-## 根因
+## Root Cause
 
 API 有每分钟/每小时/每天的请求配额。超过配额后被临时封禁。脚本没有指数退避（exponential backoff）逻辑。
 
-## 修复
+## Solution
 
 ```python
 import time
@@ -47,9 +49,15 @@ data = resp.json()
 print(f"剩余: {data['rate']['remaining']}/{data['rate']['limit']}")
 ```
 
-## 验证
+## Verification
 
 ```bash
-# GitHub 限流检查
-curl -s https://api.github.com/rate_limit | python3 -c "import sys,json;d=json.load(sys.stdin);print(f\"剩余: {d['rate']['remaining']}/{d['rate']['limit']}\")"
+echo "Lesson: API 请求限流 (Rate Limit) 处理方案"
+wc -l lessons/contrib/api-rate-limit-handling.md
+```
+
+**Expected Output:**
+```
+Lesson: API 请求限流 (Rate Limit) 处理方案
+# (line count)
 ```

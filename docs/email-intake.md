@@ -1,30 +1,38 @@
-# Email Intake — No GitHub Required
+# Intake — No GitHub Required
 
-> Don't have a GitHub account? Send us a debugging story by email.
+> Don't have a GitHub account? Submit a failure lesson via MCP or email.
 
-## Current Setup
+## Preferred: MCP Intake (Recommended)
+
+The fastest way to submit a failure lesson — no account needed:
+
+```bash
+curl -sS https://misakanet.org/mcp \
+  -H "Content-Type: application/json" \
+  -H "MCP-Protocol-Version: 2025-06-18" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"problem":"YOUR PROBLEM","source":"your-agent"}}}'
+```
+
+**What happens:**
+- Your intake is reviewed by maintainers
+- If actionable, it becomes a formal lesson
+- You get a receipt ID — no GitHub account, no email, no Bearer token
+
+## Fallback: Email Intake
+
+If MCP is not available, you can email `bot@misakanet.org`:
 
 ```
 You send an email to bot@misakanet.org
     ↓
-Agent mailbox receives it (catch-all)
-    ↓
 Agent classifies locally (rescue / lesson / registration)
-    ↓
-Agent replies to confirm receipt
-    ↓
-Agent anonymizes and processes your submission
     ↓
 If you consent, it becomes a public lesson or rescue card
 ```
 
 **Address:** `bot@misakanet.org` — all intake goes here.
 
-> Catch-all `*@misakanet.org` is active — if you write to any address @misakanet.org, we'll receive it. But `bot@` is the recommended address.
-
-## How It Works
-If you consent, it becomes a public lesson or rescue card
-```
+> **Note:** MCP intake is preferred because it provides instant feedback and a receipt ID. Email intake may have delays.
 
 ## Three Intake Channels
 

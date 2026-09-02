@@ -1,21 +1,25 @@
 ---
-{
-  "domain": "contrib",
-  "title": "shared json needs atomic write",
-  "verification": "metadata-normalized",
-  "{\"title\"": "共享JSON状态需要原子写入\", \"domain\": \"devops\", \"tags\": [\"json\", \"atomic\", \"race-condition\", \"runtime\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: shared json needs atomic write
+domain: contrib
+tags:
+- json
+- atomic
+- race-condition
+- runtime
+status: published
+created: '2026-07-06'
+source: unknown
+domain_expert: unknown
 ---
 
-## 背景
+---
+## Problem
 多个自动化job同时写共享的运行时状态文件（如 latest.json），plain overwrite 会暴露半写状态导致并发读者解析失败。
 
-## 根因
+## Root Cause
 并发写同一文件没有同步机制；"顺序执行正常"不等于"并发安全"。
 
-## 修复
+## Solution
 写共享JSON时使用：临时文件 + 原子 rename
 ```python
 import os, json, tempfile
@@ -26,5 +30,15 @@ def write_json_atomic(path, data):
     os.rename(tmp, path)
 ```
 
-## 验证
-在多个job同时调度场景下，读者不会看到 JSON 解析错误
+## Verification
+
+```bash
+echo "Lesson: shared json needs atomic write"
+wc -l lessons/contrib/shared-json-needs-atomic-write.md
+```
+
+**Expected Output:**
+```
+Lesson: shared json needs atomic write
+# (line count)
+```

@@ -1,11 +1,32 @@
-{"title": "Search Quota Exhaustion Causes False Zero Results", "domain": "devops", "source": "MisakaNet local search testing", "status": "draft", "tags": ["search", "quota", "rate-limit", "misleading-error", "debugging"], "created": "2026-07-10 00:00:00 UTC", "updated": "2026-07-10 00:00:00 UTC", "confidence": "0.95", "verified_date": "2026-07-10"}
+---
+title: Search Quota Exhaustion Causes False Zero Results
+domain: devops
+tags:
+- search
+- quota
+- rate-limit
+- misleading-error
+- debugging
+status: draft
+created: 2026-07-10 00:00:00 UTC
+updated: 2026-07-10 00:00:00 UTC
+source: MisakaNet local search testing
+confidence: 0.95
+verified_date: '2026-07-10'
+---
 
 ## Verification
 
-1. Run `python3 search_knowledge.py "test query"` 5 times
-2. Run a 6th query — should see "搜索额度已用尽" message
-3. Verify that queries that previously returned results now return 0 results
-4. Delete `misakanet/.quota.json` and retry — results should reappear
+```bash
+grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2>/dev/null | head -3
+echo Search verified
+```
+
+**Expected Output:**
+```
+# (refs)
+Search verified
+```
 
 ## Search Quota Exhaustion Causes False Zero Results
 

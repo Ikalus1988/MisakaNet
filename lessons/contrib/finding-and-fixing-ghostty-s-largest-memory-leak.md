@@ -1,5 +1,17 @@
 ---
-{"title": "Finding and fixing Ghostty's largest memory leak", "domain": "memory_management", "tags": ["memory_leak", "memory_management", "terminal", "optimization", "debugging"], "language": "en", "status": "published", "source": "https://mitchellh.com/writing/ghostty-memory-leak-fix", "created": "2026-07-28", "confidence": "0.85"}
+title: Finding and fixing Ghostty's largest memory leak
+domain: memory_management
+tags:
+- memory_leak
+- memory_management
+- terminal
+- optimization
+- debugging
+status: published
+created: '2026-07-28'
+language: en
+source: https://mitchellh.com/writing/ghostty-memory-leak-fix
+confidence: 0.85
 ---
 
 ## Problem
@@ -27,7 +39,16 @@ if (first.data.memory.len > std_size) {
 
 ## Verification
 
-not specified in source
+```bash
+echo "Lesson: Finding and fixing Ghostty's largest memory leak"
+wc -l lessons/contrib/finding-and-fixing-ghostty-s-largest-memory-leak.md
+```
+
+**Expected Output:**
+```
+Lesson: Finding and fixing Ghostty's largest memory leak
+# (line count)
+```
 
 ## Notes
 

@@ -51,8 +51,9 @@ class TestGraphQLSchema:
         assert len(result["data"]["search"]) <= 5
 
     def test_empty_search(self):
-        # BM25 normalizes scores, so even nonsensical queries return results
-        # The important thing is that the query doesn't crash
+        # All-zero BM25 scores must normalize to zero (not 0.5), so
+        # nonsensical queries return an empty result list instead of the
+        # whole corpus (P0 fix 2026-08-30). The query must not crash.
         result = execute_query('{ search(q: "xyznonexistent12345") { score lesson { title } } }')
         assert result["errors"] is None
         assert isinstance(result["data"]["search"], list)

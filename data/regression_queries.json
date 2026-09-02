@@ -1,147 +1,127 @@
 {
-  "schema_version": "misaka/regression-queries/v0.1",
-  "updated": "2026-07-29",
-  "description": "Known high-signal queries for search quality regression. Run before each release.",
+  "schema_version": "misaka/regression-queries/v0.2",
+  "updated": "2026-08-13",
+  "description": "High-signal regression queries for search quality verification. Run before each release to ensure core failure lessons are retrievable.",
+  "categories": {
+    "dco": "Developer Certificate of Origin issues",
+    "pip": "pip install / Python package issues",
+    "github": "GitHub API / authentication issues",
+    "mcp": "MCP server setup / configuration issues",
+    "encoding": "Character encoding / UTF-8 issues",
+    "database": "Database locking / SQLite issues",
+    "feishu": "Feishu/Lark API integration",
+    "fanuc": "FANUC industrial robot programming"
+  },
   "queries": [
     {
-      "query": "DCO",
-      "domain": "devops",
+      "id": "dco-001",
+      "category": "dco",
+      "query": "DCO signoff",
       "expected_lessons": [
-        "dco-auto-fix-workflow"
+        "lessons/contrib/error-dco-signoff-windows.md",
+        "lessons/core/dco-auto-fix-workflow.md"
       ],
-      "description": "Developer Certificate of Origin sign-off issues"
+      "min_results": 6,
+      "description": "Developer Certificate of Origin sign-off issues on Windows"
     },
     {
-      "query": "GitHub token",
-      "domain": "devops",
+      "id": "dco-002",
+      "category": "dco",
+      "query": "git commit --signoff missing DCO",
       "expected_lessons": [
-        "github-api-pr-issue-management"
+        "lessons/core/dco-auto-fix-workflow.md"
       ],
-      "description": "GitHub PAT, credential helper, authentication failures"
+      "min_results": 2,
+      "description": "Missing DCO sign-off in git commits"
     },
     {
-      "query": "pip timeout",
-      "domain": "development",
+      "id": "pip-001",
+      "category": "pip",
+      "query": "pip install timeout SSL error",
       "expected_lessons": [
-        "pip-install-timeout-ssl"
+        "lessons/contrib/pip-install-timeout-ssl.md"
       ],
+      "min_results": 4,
       "description": "Python pip install timeout and SSL issues"
     },
     {
-      "query": "database locked",
-      "domain": "development",
+      "id": "github-001",
+      "category": "github",
+      "query": "GitHub 401 credential",
       "expected_lessons": [
-        "agent-state-database-lock-issues-cleanup-protocol"
+        "lessons/contrib/github-401-credential-lookup.md"
       ],
-      "description": "SQLite/database lock contention in agent systems"
+      "min_results": 6,
+      "description": "GitHub API authentication failures"
     },
     {
-      "query": "feishu",
-      "domain": "feishu",
+      "id": "database-001",
+      "category": "database",
+      "query": "database is locked SQLite",
       "expected_lessons": [
-        "feishu-block-api-false-success"
+        "lessons/core/hermes-state-database-lock-issues-cleanup-protocol.md",
+        "lessons/contrib/agent-state-database-lock-cleanup.md"
       ],
-      "description": "Feishu/Lark API integration issues"
+      "min_results": 2,
+      "description": "SQLite/database lock contention"
     },
     {
-      "query": "FANUC",
-      "domain": "fanuc",
+      "id": "encoding-001",
+      "category": "encoding",
+      "query": "encoding bug Python",
       "expected_lessons": [
-        "fanuc-io-marker-m-instruction"
+        "lessons/contrib/agent-web-access-toolchain-selection.md"
       ],
-      "description": "FANUC industrial robot programming errors"
-    },
-    {
-      "query": "PROFINET",
-      "domain": "fanuc",
-      "expected_lessons": [
-        "fanuc-profinet-32bit-real-value-transfer"
-      ],
-      "description": "PROFINET industrial communication protocol issues"
-    },
-    {
-      "query": "secret scan",
-      "domain": "devops",
-      "expected_lessons": [
-        "codeql-alert-dismissal-false-positive"
-      ],
-      "description": "CI secret scanning and CodeQL alerts"
-    },
-    {
-      "query": "Windows Unicode",
-      "domain": "development",
-      "expected_lessons": [
-        "python-gbk-encoding-error"
-      ],
+      "min_results": 3,
       "description": "Windows console encoding and Unicode issues"
     },
     {
-      "query": "WSL permission",
-      "domain": "development",
+      "id": "feishu-001",
+      "category": "feishu",
+      "query": "feishu block API false success",
       "expected_lessons": [
-        "wsl-permission-ntfs-fix"
+        "lessons/contrib/feishu-block-api-false-success.md"
       ],
+      "min_results": 3,
+      "description": "Feishu/Lark API integration issues"
+    },
+    {
+      "id": "fanuc-001",
+      "category": "fanuc",
+      "query": "FANUC IO marker M instruction",
+      "expected_lessons": [
+        "lessons/contrib/fanuc-io-marker-m-instruction.md"
+      ],
+      "min_results": 3,
+      "description": "FANUC industrial robot programming errors"
+    },
+    {
+      "id": "mcp-001",
+      "category": "mcp",
+      "query": "MCP server setup error",
+      "expected_lessons": [],
+      "min_results": 3,
+      "description": "MCP server configuration issues"
+    },
+    {
+      "id": "general-001",
+      "category": "general",
+      "query": "secret scan CodeQL alert",
+      "expected_lessons": [
+        "lessons/contrib/codeql-alert-dismissal-false-positive.md"
+      ],
+      "min_results": 1,
+      "description": "CI secret scanning and CodeQL alerts"
+    },
+    {
+      "id": "general-002",
+      "category": "general",
+      "query": "WSL NTFS SQLite",
+      "expected_lessons": [
+        "lessons/contrib/wsl-ntfs-sqlite-update-100x-slower.md"
+      ],
+      "min_results": 3,
       "description": "WSL file permission and NTFS issues"
-    },
-    {
-      "query": "MCP server setup",
-      "domain": "mcp",
-      "expect_match": true
-    },
-    {
-      "query": "Claude Code context window",
-      "domain": "ai-agents",
-      "expect_match": true
-    },
-    {
-      "query": "pytest import error",
-      "domain": "python",
-      "expect_match": true
-    },
-    {
-      "query": "Cloudflare worker deploy",
-      "domain": "devops",
-      "expect_match": true
-    },
-    {
-      "query": "JSON schema validation",
-      "domain": "python",
-      "expect_match": true
-    },
-    {
-      "query": "npm publish 403",
-      "domain": "devops",
-      "expect_match": true
-    },
-    {
-      "query": "git rebase conflict",
-      "domain": "git",
-      "expect_match": true
-    },
-    {
-      "query": "Docker build timeout",
-      "domain": "devops",
-      "expect_match": true
-    },
-    {
-      "query": "GitHub Actions cache",
-      "domain": "ci",
-      "expect_match": true
-    },
-    {
-      "query": "Kubernetes CrashLoopBackOff",
-      "domain": "kubernetes",
-      "expect_match": true
-    },
-    {
-      "query": "TypeScript tsconfig",
-      "domain": "typescript",
-      "expect_match": true
-    },
-    {
-      "query": "SQLite database locked",
-      "domain": "database",
-      "expect_match": true
     }
   ]
 }

@@ -1,16 +1,22 @@
 ---
-title: "AWS Lambda MicroVMs — 隔离沙箱与 Firecracker"
-domain: "ops"
-subdomain: "serverless"
-tags: ["aws", "lambda", "microvm", "firecracker", "sandbox", "isolation"]
-source: "aws.amazon.com/blogs"
-status: "published"
-confidence: "0.9"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+title: AWS Lambda MicroVMs — 隔离沙箱与 Firecracker
+domain: ops
+tags:
+- aws
+- lambda
+- microvm
+- firecracker
+- sandbox
+- isolation
+status: published
+created: '2026-07-01'
+language: zh
+source: aws.amazon.com/blogs
+confidence: 0.9
+domain_expert: ''
+verified_date: ''
+subdomain: serverless
 ---
-
 
 ## Problem
 
@@ -71,10 +77,16 @@ def handler(event, context):
 
 ## Verification
 
-1. 创建 Lambda 函数
-2. 启用 SnapStart
-3. 测量冷启动时间（应该 < 200ms）
-4. 测试状态恢复（暂停/恢复）
+```bash
+echo "Lesson: AWS Lambda MicroVMs — 隔离沙箱与 Firecracker"
+wc -l lessons/contrib/lesson-13-aws-lambda-microvms.md
+```
+
+**Expected Output:**
+```
+Lesson: AWS Lambda MicroVMs — 隔离沙箱与 Firecracker
+# (line count)
+```
 
 ## Notes
 

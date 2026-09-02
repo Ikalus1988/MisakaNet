@@ -2,7 +2,7 @@
 
 ## Context
 
-A swarm-knowledge open source project underwent a full-day hardening session to transform from a single-script prototype into a dual-layer production ecosystem. This report documents the patterns used — each is generic and applicable to any open-source project approaching public scrutiny.
+A failure-memory open source project underwent a full-day hardening session to transform from a single-script prototype into a dual-layer production ecosystem. This report documents the patterns used — each is generic and applicable to any open-source project approaching public scrutiny.
 
 ## Key Actions & Generic Patterns
 

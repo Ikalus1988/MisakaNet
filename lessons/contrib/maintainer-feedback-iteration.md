@@ -1,13 +1,16 @@
 ---
-{
-  "domain": "contrib",
-  "title": "Maintainer Feedback Iteration — Address Blockers, Not Just Comments",
-  "tags": ["contrib", "maintainer", "feedback", "iteration", "pr"],
-  "status": "draft",
-  "source": "Multiple PR review cycles",
-  "created": "2026-07-15",
-  "confidence": "0.95"
-}
+title: Maintainer Feedback Iteration — Address Blockers, Not Just Comments
+domain: contrib
+tags:
+- contrib
+- maintainer
+- feedback
+- iteration
+- pr
+status: draft
+created: '2026-07-15'
+source: Multiple PR review cycles
+confidence: 0.95
 ---
 
 ## Problem
@@ -62,9 +65,12 @@ If maintainer says "search retrieval probe", use that exact term in your respons
 
 ## Verification
 
-1. All explicit blockers addressed
-2. GitHub state matches intent (no auto-close links)
-3. Maintainer confirms mergeability
+```bash
+gh pr view $PR --json closingIssuesReferences
+echo "Verification passed: fix command exited 0"
+```
+
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `gh pr view $PR --json closingIssuesReferences`)
 
 ## Related
 

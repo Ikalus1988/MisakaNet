@@ -20,7 +20,7 @@
 
 ### What worked
 
-- The README explains the core concept clearly once it reaches "What is the Swarm Knowledge Protocol?" and "Lesson vs Skill". My working model after reading it: MisakaNet is a git-backed failure-memory layer where agents and developers publish specific failure lessons, not reusable execution skills.
+- The README explains the core concept clearly once it reaches "What is the failure-memory protocol?" and "Lesson vs Skill". My working model after reading it: MisakaNet is a git-backed failure-memory layer where agents and developers publish specific failure lessons, not reusable execution skills.
 - The public homepage loaded successfully from `https://misakanet.org/` with HTTP 200 and a 140210 byte HTML response. The page contains visible search, registration, recent-node, and feedback paths.
 - The public search page loaded successfully from `https://ikalus1988.github.io/MisakaNet/search/?q=DCO%20sign-off%20failure` with HTTP 200 and a 32180 byte HTML response.
 - After installing the declared dependencies in a throwaway venv, local search worked for the journey query:

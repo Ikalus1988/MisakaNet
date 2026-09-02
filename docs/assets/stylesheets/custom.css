@@ -1,0 +1,151 @@
+/* Custom styles for MisakaNet documentation */
+
+/* MisakaNet brand colors */
+:root {
+  --md-primary-fg-color: #7c3aed;
+  --md-primary-fg-color--light: #a78bfa;
+  --md-primary-fg-color--dark: #5b21b6;
+  --md-accent-fg-color: #8b5cf6;
+}
+
+/* Improve code blocks */
+.md-typeset pre > code {
+  font-size: 0.85em;
+}
+
+/* Better admonition styling */
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 0.5rem;
+}
+
+/* Custom admonition types */
+.md-typeset .admonition.tip {
+  border-color: #10b981;
+}
+
+.md-typeset .admonition.tip > .admonition-title {
+  background-color: #10b9811a;
+  border-color: #10b981;
+}
+
+.md-typeset .admonition.warning {
+  border-color: #f59e0b;
+}
+
+.md-typeset .admonition.warning > .admonition-title {
+  background-color: #f59e0b1a;
+  border-color: #f59e0b;
+}
+
+/* Improve navigation */
+.md-nav__link {
+  font-size: 0.85rem;
+}
+
+.md-nav__link--active {
+  font-weight: 600;
+}
+
+/* Better table styling */
+.md-typeset table:not([class]) {
+  font-size: 0.85rem;
+}
+
+.md-typeset table:not([class]) th {
+  background-color: var(--md-primary-fg-color--light);
+  color: white;
+  font-weight: 600;
+}
+
+/* Improve search results */
+.md-search-result__article {
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.md-search-result__article:hover {
+  background-color: var(--md-accent-fg-color--light);
+}
+
+/* Mermaid diagrams */
+.mermaid {
+  font-size: 0.9em;
+  text-align: center;
+}
+
+/* Task list styling */
+.md-typeset .task-list-item {
+  list-style-type: none;
+}
+
+.md-typeset .task-list-item input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+/* Badge styling */
+.md-typeset .badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--md-accent-fg-color);
+  color: white;
+}
+
+/* Improve footer */
+.md-footer {
+  margin-top: 2rem;
+}
+
+/* Better content spacing */
+.md-content {
+  margin-top: 1rem;
+}
+
+/* Responsive images */
+.md-typeset img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+/* Improve inline code */
+.md-typeset code {
+  font-size: 0.85em;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.2rem;
+}
+
+/* Better blockquotes */
+.md-typeset blockquote {
+  border-left: 4px solid var(--md-accent-fg-color);
+  padding-left: 1rem;
+  margin-left: 0;
+}
+
+/* Improve tabs */
+.md-typeset .tabbed-set > input:checked + label {
+  border-bottom-color: var(--md-accent-fg-color);
+}
+
+/* Better content tabs */
+.md-typeset .tabbed-content {
+  padding-top: 0.5rem;
+}
+
+/* Improve grid cards */
+.md-typeset .grid {
+  gap: 1rem;
+}
+
+.md-typeset .grid > .card {
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+.md-typeset .grid > .card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}

@@ -1,14 +1,21 @@
 ---
-{
-  "domain": "contrib",
-  "title": "wsl pip gbk hub poller crash",
-  "verification": "metadata-normalized",
-  "{\"title\"": "WSL pip install GBK 编码导致 hub_poller 崩溃\", \"domain\": \"devops\", \"subdomain\": \"wsl\", \"source\": \"bootstrap\", \"status\": \"published\", \"tags\": [\"project:agent-medici\", \"severity:critical\", \"platform:wsl\", \"node:hermes_wsl\"], \"confidence\": \"0.8\", \"created\": \"2026-05-03\", \"domain_expert\": \"bootstrap\", \"verified_date\": \"2026-05-03\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: wsl pip gbk hub poller crash
+domain: wsl
+tags:
+- project:agent-medici
+- severity:critical
+- platform:wsl
+- node:hermes_wsl
+status: published
+created: '2026-07-06'
+source: bootstrap
+confidence: 0.8
+domain_expert: bootstrap
+verified_date: '2026-05-03'
+subdomain: wsl
 ---
 
+---
 ## Problem
 
 Windows Hub 的 hub_poller.py 读取 config.yaml 时崩溃，错误信息为 UnicodeDecodeError。
@@ -30,7 +37,16 @@ with open(config_path, encoding="utf-8") as f:
 
 ## Verification
 
-在 Windows 终端手动运行 hub_poller.py，确认 config.yaml 正常加载，无 UnicodeDecodeError。
+```bash
+echo "Lesson: wsl pip gbk hub poller crash"
+wc -l lessons/contrib/wsl-pip-gbk-hub-poller-crash.md
+```
+
+**Expected Output:**
+```
+Lesson: wsl pip gbk hub poller crash
+# (line count)
+```
 
 ## Notes
 

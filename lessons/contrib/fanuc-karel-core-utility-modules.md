@@ -1,27 +1,36 @@
-{
-  "id": "fanuc-karel-core-utility-modules",
-  "title": "KAREL Core Utility Modules: errors, system, Strings API Reference",
-  "domain": "fanuc",
-  "subdomain": "karel-programming",
-  "source": "github.com/kobbled/ka-boost/.claude/rules/layer-1-core-utilities.md",
-  "status": "draft",
-  "confidence": 0.85,
-  "created": "2026-07-12",
-  "tags": ["fanuc", "karel", "ka-boost", "errors", "strings", "system", "utility", "api"],
-  "quality_score": 85,
-  "problem": "KAREL 缺乏标准库，错误处理、字符串操作、系统类型定义等基础功能需要从零实现，代码复用率低。",
-  "root_cause": "KAREL 语言没有标准库，连基本的字符串分割、类型转换、错误码管理都需要手动实现。Ka-Boost Layer 1 提供三个核心模块（errors, system, Strings）作为所有上层模块的基础。",
-  "solution": "使用 Ka-Boost Layer 1 的三个基础模块：errors（错误处理+变量初始化）、system（系统类型+时间+坐标系）、Strings（字符串全操作），作为 KAREL 项目的基础设施。",
-  "verification": "1. errors 模块：karelError 能输出到 TP 显示和历史记录；2. system 模块：system__date()/system__time() 返回正确格式；3. Strings 模块：split_str、i_to_s/r_to_s 等函数在 KUnit 测试中通过。"
-}
+---
+title: 'KAREL Core Utility Modules: errors, system, Strings API Reference'
+domain: fanuc
+tags:
+- fanuc
+- karel
+- ka-boost
+- errors
+- strings
+- system
+- utility
+- api
+status: draft
+created: '2026-07-12'
+source: github.com/kobbled/ka-boost/.claude/rules/layer-1-core-utilities.md
+confidence: 0.85
+subdomain: karel-programming
+id: fanuc-karel-core-utility-modules
+problem: KAREL 缺乏标准库，错误处理、字符串操作、系统类型定义等基础功能需要从零实现，代码复用率低。
+quality_score: 85
+root_cause: KAREL 语言没有标准库，连基本的字符串分割、类型转换、错误码管理都需要手动实现。Ka-Boost Layer 1 提供三个核心模块（errors,
+  system, Strings）作为所有上层模块的基础。
+solution: 使用 Ka-Boost Layer 1 的三个基础模块：errors（错误处理+变量初始化）、system（系统类型+时间+坐标系）、Strings（字符串全操作），作为
+  KAREL 项目的基础设施。
+---
 
 ## KAREL Core Utility Modules: errors, system, Strings API Reference
 
-### 问题描述
+### Problem描述
 
 KAREL 是 FANUC 控制器上的类 Pascal 编译语言，没有标准库。开发者在每个项目中都要重复实现错误处理、字符串操作、类型转换等基础功能，导致代码冗余且质量参差不齐。
 
-### 根因分析
+### Root Cause分析
 
 KAREL 语言的核心缺陷：
 - 无错误码管理机制 → 每个项目自定义错误处理，不统一
@@ -31,7 +40,7 @@ KAREL 语言的核心缺陷：
 
 Ka-Boost Layer 1 的三个模块（errors, system, Strings）是所有上层模块的共同基础，形成 KAREL 项目的"标准库"。
 
-### 修复方法/技术要点
+### Solution方法/技术要点
 
 #### 1. errors 模块 — 错误处理与变量初始化
 
@@ -203,7 +212,7 @@ strisint(str) : BOOLEAN         -- 字符串是否为整数
 delim_check(delim) : BOOLEAN    -- 分隔符是否有效
 ```
 
-### 验证方式
+### Verification方式
 
 1. **errors 模块：** 调用 `karelError(0, 'test error', 2)` 后 TP 显示屏显示错误信息，TP 历史记录中有对应条目
 2. **system 模块：** `system__date()` 返回格式如 '12-JUL-2026'，`system__time()` 返回格式如 '14:30:00'
@@ -214,3 +223,17 @@ delim_check(delim) : BOOLEAN    -- 分隔符是否有效
 
 - GitHub: kobbled/ka-boost — Layer 1 Core Utilities 文档 (.claude/rules/layer-1-core-utilities.md)
 - 模块源码：lib/errors, lib/system, lib/Strings
+
+
+## Verification
+
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```

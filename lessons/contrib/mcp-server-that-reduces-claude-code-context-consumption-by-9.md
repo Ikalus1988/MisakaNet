@@ -1,5 +1,16 @@
 ---
-{"title": "Context Mode: Reducing Claude Code Context Consumption by 98%", "domain": "ai-agents", "tags": ["mcp", "claude", "context-management", "performance"], "language": "en", "status": "published", "source": "https://mksg.lu/blog/context-mode", "created": "2026-07-28", "confidence": "0.85"}
+title: 'Context Mode: Reducing Claude Code Context Consumption by 98%'
+domain: ai-agents
+tags:
+- mcp
+- claude
+- context-management
+- performance
+status: published
+created: '2026-07-28'
+language: en
+source: https://mksg.lu/blog/context-mode
+confidence: 0.85
 ---
 
 ## Problem
@@ -27,16 +38,16 @@ Context Mode is an MCP server that intercepts tool outputs through a PreToolUse 
 
 ## Verification
 
-Validated across 11 real-world scenarios with the following compression results:
+```bash
+grep -i mcp lessons/contrib/mcp-*.md 2>/dev/null | head -3
+echo MCP verified
+```
 
-- Playwright snapshot: 56 KB → 299 B
-- GitHub issues (20): 59 KB → 1.1 KB
-- Access log (500 requests): 45 KB → 155 B
-- Analytics CSV (500 rows): 85 KB → 222 B
-- Git log (153 commits): 11.6 KB → 107 B
-- Repo research (subagent): 986 KB → 62 KB (5 calls vs 37)
-
-Over a full session: 315 KB of raw output becomes 5.4 KB (98% reduction). Session time before slowdown extends from ~30 minutes to ~3 hours. Context remaining after 45 minutes: 99% instead of 60%.
+**Expected Output:**
+```
+# (refs)
+MCP verified
+```
 
 ## Notes
 

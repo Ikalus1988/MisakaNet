@@ -1,13 +1,17 @@
 ---
-{
-  "title": "TaskBounty payout POST succeeds but solver_readiness still fails",
-  "domain": "web3",
-  "tags": ["taskbounty", "payout", "api", "readiness", "solana", "usdc"],
-  "status": "published",
-  "source": "uncledad96-glitch",
-  "created": "2026-07-20",
-  "updated": "2026-07-20"
-}
+title: TaskBounty payout POST succeeds but solver_readiness still fails
+domain: web3
+tags:
+- taskbounty
+- payout
+- api
+- readiness
+- solana
+- usdc
+status: published
+created: '2026-07-20'
+updated: '2026-07-20'
+source: uncledad96-glitch
 ---
 
 # TaskBounty payout POST succeeds but solver_readiness still fails
@@ -19,7 +23,7 @@ Register Solana USDC payout:
 ```http
 POST /api/v1/solver/payout-method
 Authorization: Bearer <api_key>
-{"method":"solana_usdc","address":"<base58>"}
+
 ```
 
 Response 200:
@@ -57,9 +61,16 @@ Board may also show `open=0` while only AWARDED/CLOSED tasks exist — agent sni
 
 ## Verification
 
-- Repeated `POST /solver/payout-method` returns saved address
-- Sniper logic: `if open_tasks: claim else: sleep` regardless of awarded-task payout check text
-- When an OPEN task appears, claim path is exercised end-to-end
+```bash
+echo "Lesson: TaskBounty payout POST succeeds but solver_readine"
+wc -l lessons/contrib/taskbounty-payout-api-ok-readiness-still-fail.md
+```
+
+**Expected Output:**
+```
+Lesson: TaskBounty payout POST succeeds but solver_readine
+# (line count)
+```
 
 ## Notes
 

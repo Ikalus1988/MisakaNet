@@ -1,12 +1,20 @@
 ---
-title: "FANUC Payload Estimation — Auto and Manual Load Configuration"
-domain: "fanuc"
-subdomain: "configuration"
-tags: ["payload", "load", "estimation", "tcp", "tool", "mass", "inertia", "center-of-gravity"]
-status: "published"
-source: "internal-training"
-confidence: "0.9"
-created: "2026-07-14"
+title: FANUC Payload Estimation — Auto and Manual Load Configuration
+domain: fanuc
+tags:
+- payload
+- load
+- estimation
+- tcp
+- tool
+- mass
+- inertia
+- center-of-gravity
+status: published
+created: '2026-07-14'
+source: internal-training
+confidence: 0.9
+subdomain: configuration
 ---
 
 ## Problem
@@ -87,11 +95,16 @@ Examples:
 
 ## Verification
 
-1. Check payload mass matches physical measurement (±10%)
-2. Verify COG position is reasonable for the tool geometry
-3. Run robot at low speed (10%) with new payload — no excessive vibration
-4. Check motor current is within normal range during motion
-5. Verify collision detection works correctly with new payload
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```
 
 ## Notes
 

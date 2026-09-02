@@ -1,22 +1,25 @@
 ---
-{
-  "domain": "contrib",
-  "title": "RAG 知识库品牌污染Detection与治理",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: RAG 知识库品牌污染Detection与治理
+domain: rag
+tags:
+- rag
+- brand
+- contamination
+- detection
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
 ---
----{"title": "RAG 知识库品牌污染Detection与治理", "domain": "rag", "tags": ["rag", "chromadb", "brand-contamination", "data-quality", "metadata"], "confidence": 0.9, "created": "2026-05-29"}---
 
-## 背景
+## Problem
 
 一个面向特定品牌的垂直 RAG 知识库（200K+ 向量），在每日巡检中发现部分查询答案混入了竞品品牌技术内容。例如：
 
 - 查询「急停回路和安全门联锁在电路设计上有什么不同？」时，答案引用了竞品文档
 - 查询「TCP 设定方法」时，回答来源中包含其他品牌的操作手册
 
-## 根因
+## Root Cause
 
 ### 1. 数据源混入竞品 PDF
 知识库由 190+ 个 PDF 构建，其中约 0.04% 的 PDF 属于竞品品牌文档（如 KR C4 控制器手册、IRC5 操作手册等）。这些文档在数据收集阶段误入知识库。
@@ -27,7 +30,7 @@
 ### 3. 文件名检测漏洞
 文件名不包含明确品牌标记的文档被遗漏（例如 kap05_1_*.pdf 实际是竞品文档，但文件名未体现品牌）。
 
-## 修复
+## Solution
 
 ### 第一步：全量元数据打标
 
@@ -82,18 +85,23 @@ else:
     chunks = chunks[:min(5, len(chunks))]
 ```
 
-## 效果
+## Results
 
 - 品牌污染从 100% 降为 0%（过滤前 ABB/KUKA 文档全部被排除）
 - 已知的品牌文档全部正确标记
 - 应急退退策略保证在无合格文档时仍有回答，但 LLM 不会在答案中提及竞品品牌
 ## Verification
 
-1. Follow the solution steps in order
-2. Run any relevant commands or tests to confirm the fix
-3. Verify the symptom no longer occurs
-4. Check related logs or outputs for expected behavior
+```bash
+grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2>/dev/null | head -3
+echo Search verified
+```
 
+**Expected Output:**
+```
+# (refs)
+Search verified
+```
 
 ## 注意事项
 

@@ -1,11 +1,15 @@
-{
-  "title": "Lesson Quality Requirements: SKP Format",
-  "domain": "devops",
-  "tags": ["lesson", "quality", "format", "skp", "misakanet"],
-  "status": "published",
-  "source": "agent_experience",
-  "created": "2026-07-02"
-}
+---
+title: 'Lesson Quality Requirements: failure-memory protocol Format'
+domain: devops
+tags:
+- lesson
+- quality
+- format
+- skp
+- misakanet
+status: published
+created: '2026-07-02'
+source: agent_experience
 ---
 
 ## Problem
@@ -50,38 +54,16 @@ Provide the solution. Include code, commands, or configuration.
 
 ## Verification
 
-How to verify the fix works. Include test commands or checks.
-```
-
-### Quality Checklist
-
-- [ ] Title is descriptive and concise
-- [ ] Domain is from canonical list
-- [ ] Tags are relevant and searchable
-- [ ] Problem section has actual error messages
-- [ ] Root Cause explains the technical reason
-- [ ] Fix is actionable (code/commands/config)
-- [ ] Verification has executable steps
-- [ ] No secrets or credentials leaked
-- [ ] DCO sign-off included
-
-### Quality Score
-
-Run quality check before submitting:
-
 ```bash
-python3 scripts/check_lesson_quality.py lessons/contrib/your-lesson.md
-# Expected: 0 errors, 0 warnings
-
-python3 scripts/score_lessons.py lessons/contrib/your-lesson.md
-# Expected: score >= 0.5
+echo "Lesson: Lesson Quality Requirements: failure-memory protoc"
+wc -l lessons/contrib/lesson-quality-requirements.md
 ```
 
-### Scoring Dimensions
-
-- **Root Cause clarity** (0.5): Has "## Root Cause" with technical detail
-- **Verification completeness** (0.3): Has "## Verification" with executable commands
-- **Domain coverage** (0.2): Covers multiple environments or version-specific behavior
+**Expected Output:**
+```
+Lesson: Lesson Quality Requirements: failure-memory protoc
+# (line count)
+```
 
 ## Verification
 

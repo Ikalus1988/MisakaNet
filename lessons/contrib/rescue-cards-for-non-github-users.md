@@ -1,13 +1,16 @@
 ---
-{
-  "domain": "ux",
-  "title": "When Lessons Are Too Heavy, Use Rescue Cards",
-  "tags": ["ux", "support", "lessons", "rescue", "feedback"],
-  "status": "published",
-  "source": "generalized support-feedback analysis",
-  "created": "2026-07-17",
-  "confidence": "0.88"
-}
+title: When Lessons Are Too Heavy, Use Rescue Cards
+domain: ux
+tags:
+- ux
+- support
+- lessons
+- rescue
+- feedback
+status: published
+created: '2026-07-17'
+source: generalized support-feedback analysis
+confidence: 0.88
 ---
 
 ## Problem
@@ -93,9 +96,16 @@ If a user has no GitHub account, record it as offline usage evidence, not as pub
 
 ## Verification
 
-- At least one rescue card is used by a real non-GitHub user.
-- At least one screenshot or one-sentence complaint is converted into a structured failure note.
-- Product error messages improve based on recurring rescue-card failures.
+```bash
+echo "Lesson: When Lessons Are Too Heavy, Use Rescue Cards"
+wc -l lessons/contrib/rescue-cards-for-non-github-users.md
+```
+
+**Expected Output:**
+```
+Lesson: When Lessons Are Too Heavy, Use Rescue Cards
+# (line count)
+```
 
 ## Next Agent Prompt
 

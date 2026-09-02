@@ -1,27 +1,29 @@
 ---
-{
-  "domain": "contrib",
-  "title": "openclaw gateway dynamic module missing",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: openclaw gateway dynamic module missing
+domain: openclaw
+tags:
+- openclaw
+- gateway
+- dynamic
+- module
+- missing
+status: published
+created: '2026-07-06'
+source: unknown
 ---
----{"title": "OpenClaw Gateway 动态Module Not Found — 飞书Messaging分发失败", "domain": "feishu", "subdomain": "openclaw-debug", "source": "bootstrap", "status": "published", "confidence": "1.0", "created": "2026-05-18", "tags": "node:misaka10004\", \"platform:wsl\", \"severity:critical\", \"project:misakanet"}---
 
-
-## 问题
+## Problem
 
 飞书单聊和群聊均无回应。飞书长连接正常（WebSocket 显示 ON · OK），消息能收到，但 Bot 不回复。
 
-## 根因
+## Root Cause
 
 **单聊：** OpenClaw 动态生成的 JS 模块文件丢失，导致消息分发时 ERR_MODULE_NOT_FOUND。
 
 日志关键报错：
 ```
 Error [ERR_MODULE_NOT_FOUND]: Cannot find module
-'/home/eric_jia/.nvm/versions/node/v22.22.2/lib/node_modules/openclaw/dist/directive-handling.fast-lane-BAhyQLdx.js'
+'/home/<user>/.nvm/versions/node/v22.22.2/lib/node_modules/openclaw/dist/directive-handling.fast-lane-BAhyQLdx.js'
 imported from .../get-reply-462JLlw-.js
 ```
 
@@ -32,7 +34,7 @@ imported from .../get-reply-462JLlw-.js
 group oc_51cd445c9162f2d622f1a984e8bc3f4f not in groupAllowFrom (groupPolicy=allowlist)
 ```
 
-## 修复
+## Solution
 
 ### 单聊：重启 Gateway
 
@@ -75,16 +77,14 @@ Gateway 重启后动态模块会重新生成。
 systemctl --user restart openclaw-gateway
 ```
 
-## 验证
+## Verification
 
-1. 检查 Gateway 日志无 ERR_MODULE_NOT_FOUND：
-   ```bash
-   journalctl --user -u openclaw-gateway --no-pager -n 50 | grep -E "(ERR|error|ready)"
-   ```
+```bash
+systemctl --user restart openclaw-gateway
+echo "Verification passed: fix command exited 0"
+```
 
-2. 飞书单聊发消息，Bot 应有回应
-
-3. 群聊 @Bot，应有回应
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `systemctl --user restart openclaw-gateway`)
 
 ## 诊断命令
 

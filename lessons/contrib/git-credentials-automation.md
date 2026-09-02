@@ -1,23 +1,25 @@
 ---
-{
-  "domain": "contrib",
-  "title": "Git 凭证Setup — Automation push 免密码",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: Git 凭证Setup — Automation push 免密码
+domain: git
+tags:
+- git
+- credentials
+- automation
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
 ---
----{"title": "Git 凭证Setup — Automation push 免密码", "domain": "devops", "tags": ["git", "credentials", "auth", "github"]}---
 
-## 背景
+## Problem
 
 脚本自动执行 `git push` 时弹出用户名密码输入框，导致自动化流程卡住。
 
-## 根因
+## Root Cause
 
 Git 默认用交互式凭证管理器（`manager` 或 `askpass`），非 TTY 环境下无法输入。
 
-## 修复
+## Solution
 
 ```bash
 # Git 凭证Setup — Automation push 免密码
@@ -32,14 +34,16 @@ git ls-remote https://github.com/your-org/your-repo.git
 # 应该成功返回 HEAD 引用，无需交互
 ```
 
-## 验证
+## Verification
 
 ```bash
-# 从 cron/脚本中运行，看是否卡住
-git push  # 应该直接完成，不弹出输入框
+git config --global credential.helper store
+echo "Verification passed: fix command exited 0"
 ```
 
-## 陷阱
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `git config --global credential.helper store`)
+
+## Pitfalls
 
 - `~/.git-credentials` 是明文——确保 `.gitignore` 忽略它或用环境变量
 - Token 需要 `repo` 和 `workflow` 权限

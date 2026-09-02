@@ -64,7 +64,6 @@
       ],
       "node_prefix": "Misaka",
       "counter_path": "data/counter.json",
-      "avatar_generator": "scripts/misakanet-avatar.py",
       "trust_tier": "github-verified",
       "trust_level_reference": "trust_tiers.github-verified.trust_level"
     },
@@ -152,7 +151,7 @@
     }
   },
   "nodes": {
-    "current_count": 52,
+    "current_count": 60,
     "prefix": "Misaka",
     "counter_start": 10000
   },

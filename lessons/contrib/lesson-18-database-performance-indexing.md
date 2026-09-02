@@ -1,16 +1,21 @@
 ---
-title: "数据库性能 — 索引与查询优化实践"
-domain: "ops"
-subdomain: "database"
-tags: ["database", "postgresql", "indexing", "performance", "query-optimization"]
-source: "practical-experience"
-status: "published"
-confidence: "0.9"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+title: 数据库性能 — 索引与查询优化实践
+domain: ops
+tags:
+- database
+- postgresql
+- indexing
+- performance
+- query-optimization
+status: published
+created: '2026-07-01'
+language: zh
+source: practical-experience
+confidence: 0.9
+domain_expert: ''
+verified_date: ''
+subdomain: database
 ---
-
 
 ## Problem
 
@@ -88,11 +93,15 @@ SELECT * FROM orders WHERE user_id = 123 AND created_at > '2026-01-01';
 
 ## Verification
 
-1. 运行 `EXPLAIN ANALYZE` 在慢查询上
-2. 检查是否使用索引
-3. 添加缺失的索引
-4. 重新测量查询时间
 
+```bash
+python3 scripts/search_knowledge.py "test query"
+```
+
+**Expected Output:**
+```
+Found
+```
 ## Notes
 
 - 80% 的性能问题可以通过加索引解决

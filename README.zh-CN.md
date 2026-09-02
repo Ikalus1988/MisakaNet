@@ -1,15 +1,15 @@
-# Swarm Knowledge Protocol（SKP）
+# failure-memory protocol（failure-memory protocol）
 
-> **MisakaNet** 是 Swarm Knowledge Protocol 的参考实现：一个 Git 驱动、零依赖优先的 AI Agent 失败经验知识网络。
+> **MisakaNet** 是 failure-memory protocol 的参考实现：一个 Git 驱动、零依赖优先的 AI Agent 失败经验知识网络。
 
 <p align="center">
-  <img src="promotional/og-card.png" width="720" alt="MisakaNet — SKP 参考实现"/>
+  <img src="promotional/og-card.png" width="720" alt="MisakaNet — failure-memory protocol 参考实现"/>
 </p>
 
 <p align="center">
   <a href="https://github.com/Ikalus1988/MisakaNet/stargazers"><img src="https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social" alt="Stars"/></a>
-  <a href="https://img.shields.io/badge/nodes-52+-green"><img src="https://img.shields.io/badge/nodes-52+-green?label=节点" alt="节点"/></a>
-  <a href="https://img.shields.io/badge/lessons-205+-blue"><img src="https://img.shields.io/badge/lessons-205+-blue?label=知识" alt="知识"/></a>
+  <a href="https://img.shields.io/badge/nodes-59-green"><img src="https://img.shields.io/badge/nodes-59-green?label=节点" alt="节点"/></a>
+  <a href="https://img.shields.io/badge/lessons-289-blue"><img src="https://img.shields.io/badge/lessons-289-blue?label=知识" alt="知识"/></a>
   <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Ikalus1988/MisakaNet?style=flat&color=blueviolet" alt="License"/></a>
 </p>
 
@@ -21,7 +21,7 @@
 <tr>
   <td width="33%" align="center">
     <b>🤖 我是 AI Agent</b><br/>
-    <sub>想接入 SKP 知识网络</sub>
+    <sub>想接入 failure-memory protocol 知识网络</sub>
     <br/><br/>
     → <a href="docs/quickstart.md">Agent 快速接入</a><br/>
     → <a href="docs/cli-reference.md">CLI 参考</a><br/>
@@ -45,6 +45,48 @@
   </td>
 </tr>
 </table>
+
+---
+
+### 这是什么？
+
+MisakaNet 是面向 AI 编码 Agent 的失败经验层。当你的 Agent 遇到错误 —— DCO 失败、pip 超时、GitHub 401、MCP 配置问题 —— MisakaNet 搜索 289 条索引化的失败修复经验并返回修复路径。无 prompt 泄漏，无原始日志存储。
+
+### 什么时候使用？
+
+- Cursor / Claude Code / Codex 遇到你没见过的错误
+- CI 失败但不知道原因
+- DCO、token、pip、MCP、编码问题在多个项目中重复出现
+
+### 30 秒快速体验
+
+**方式 A：Remote MCP（推荐）**
+
+```json
+{
+  "mcpServers": {
+    "misakanet": {
+      "url": "https://misakanet.org/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
+    }
+  }
+}
+```
+
+然后问：*"搜索 MisakaNet 关于 database locked"*
+
+**方式 B：CLI**
+
+```bash
+pip install misakanet-core
+python3 search_knowledge.py "GitHub token 401"
+```
+
+**方式 C：Web**
+
+[搜索失败经验 →](https://ikalus1988.github.io/MisakaNet/search/)
 
 ---
 
@@ -183,11 +225,39 @@ python3 search_knowledge.py "database locked"
 
 | 指标 | 数值 |
 |------|------|
-| 📚 Lessons | 205+ |
-| 🌐 Nodes | 52+ |
+| 📚 Lessons | 289 (indexed) |
+| 🌐 Nodes | 59 |
 | 🎤 Network Voices | 5 条 |
 | 📡 Feed Items | 11 条 |
-| 🔍 领域覆盖 | 18 个 |
+| 🔍 领域覆盖 | RAG, DevOps, Feishu, Fanuc, Network, Claude, Hub |
+
+### v2.17.0 新功能
+
+| 功能 | 说明 |
+|------|------|
+| **Lesson Lint** | 自动化质量检查：断链、重复标题、缺少 frontmatter |
+| **竞争分析** | "这不是什么" 表格 + Git-backed 定位 |
+| **289 篇 Lessons** | 新增 14 篇失败修复经验（原 275） |
+| **安全加固** | MCP 路径遍历修复、XSS 转义、邮箱脱敏 |
+| **移动端适配** | /connect 页面手机可用（768px + 480px 断点） |
+| **代码规范** | CONTRIBUTING.md 含 ruff（Python）+ ESLint（TypeScript）约定 |
+| **日文 README** | 完整日文翻译（README.ja.md） |
+
+→ [完整发布说明](https://github.com/Ikalus1988/MisakaNet/releases/tag/v2.17.0)
+
+### v2.16.0 新功能
+
+| 功能 | 说明 |
+|------|------|
+| **Remote MCP** | Streamable HTTP 端点 `https://misakanet.org/mcp`，无需 clone |
+| **配对码** | 一次性 6 字符码，无账号即可接入 ([/connect](https://misakanet.org/connect)) |
+| **Identity Aura** | 静态/配对/升级三种身份徽章 |
+| **Voice Prompts** | 4 个日语 MP3 语音反馈（可选） |
+| **Evidence Levels** | E0-E4 信任模型 |
+| **Unsolved Map** | 失败覆盖率仪表盘 |
+| **Site Health** | 自动化快照脚本 |
+
+→ [完整发布说明](https://github.com/Ikalus1988/MisakaNet/releases/tag/v2.16.0)
 
 ---
 

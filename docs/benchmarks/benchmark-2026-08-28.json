@@ -1,0 +1,655 @@
+{
+  "models": [
+    "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "@cf/qwen/qwen2.5-coder-32b-instruct",
+    "@cf/meta/llama-3.2-3b-instruct"
+  ],
+  "scenarios": [
+    "A growing agent-knowledge project can accumulate many valid directions at once: reusable experience substrate, lightweight MCP or tool adapters, OKF-compatible export, SQLite or SAG-style search, public roadmap and bounty issues, model or agent capability evaluation, frontend onboarding, and journey pages.\n\nAll of these may be useful, but a new visitor still asks one concrete question: can I paste a real error and find a useful lesson fast? If the homepage, README, and release notes explain architecture before showing a working search result, the project feels abstract even when the underlying system is healthy. (search-first-roadmap-loop)",
+    "A pull request intended to change CSV data rows also shipped `__pycache__/csv_to_json.cpython-314.pyc` (and similar bytecode files). The reviewer flagged it as a MEDIUM issue: repository bloat, non-deterministic artifacts, and potential noise that obscures the real diff. The branch could not merge until the artifacts were removed. (accidental-pycache-commit)",
+    "Current node registration requires GitHub account and opening an issue, which is too slow for autonomous agents. (agent-first-node-registration-via-mcp)"
+  ],
+  "compare": true,
+  "runs": [
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "scenario": "A growing agent-knowledge project can accumulate many valid directions at once: reusable experience substrate, lightweight MCP or tool adapters, OKF-compatible export, SQLite or SAG-style search, public roadmap and bounty issues, model or agent capability evaluation, frontend onboarding, and journey pages.\n\nAll of these may be useful, but a new visitor still asks one concrete question: can I paste a real error and find a useful lesson fast? If the homepage, README, and release notes explain architecture before showing a working search result, the project feels abstract even when the underlying system is healthy. (search-first-roadmap-loop)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To address the issue of a growing agent-knowledge project feeling abstract and not providing a clear, low-friction path for new visitors to find useful lessons quickly, follow these concrete steps:\n\n### 1. Simplify the Homepage and README\n\nFirst, ensure that the homepage and README file of your project are straightforward and focus on the primary action you want users to take: searching for and finding useful lessons.\n\n- **Edit `README.md`**: Begin with a brief introduction to your project, followed by a clear example of how to use it, focusing on the search functionality.\n  \n  Example:\n  ```markdown\n  # Agent-Knowledge Project\n  A repository for sharing and finding lessons on agent-knowledge.\n  \n  ## Getting Started\n  1. Clone this repository: `git clone https://your-repo-url.com/agent-knowledge.git`\n  2. Navigate into the project directory: `cd agent-knowledge`\n  3. Install dependencies if necessary (for example, for a Python project): `pip install -r requirements.txt`\n  4. Start the local search server (if applicable): `python search_server.py`\n  5. Open your web browser and navigate to `http://localhost:8000` (or the specified",
+      "metrics": {
+        "length": 1148,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "scenario": "A growing agent-knowledge project can accumulate many valid directions at once: reusable experience substrate, lightweight MCP or tool adapters, OKF-compatible export, SQLite or SAG-style search, public roadmap and bounty issues, model or agent capability evaluation, frontend onboarding, and journey pages.\n\nAll of these may be useful, but a new visitor still asks one concrete question: can I paste a real error and find a useful lesson fast? If the homepage, README, and release notes explain architecture before showing a working search result, the project feels abstract even when the underlying system is healthy. (search-first-roadmap-loop)",
+      "condition": "plain",
+      "status": 200,
+      "content": "To address the issue of a project feeling abstract due to an overly complex introduction, we can simplify the onboarding process by prioritizing a \"search-first\" approach. This involves ensuring that new visitors can quickly find useful information by pasting a real error and getting a helpful response. Here's a step-by-step, actionable plan to achieve this:\n\n### 1. Simplify the Homepage\n\nFirst, we need to make sure the homepage is straightforward and immediately useful to new visitors. \n\n- **Edit the Homepage Content:**\n  - Open your project's homepage file (usually `index.html` or `README.md` if you're using GitHub Pages or a similar platform).\n  - Replace the existing content with a brief introduction that mentions the project's purpose and its ability to help users find solutions by searching for error messages.\n\n### 2. Implement a Search Function\n\nEnsure that your project has a functional search feature that allows users to quickly find relevant information.\n\n- **For Static Sites (e.g., GitHub Pages):**\n  - If you're using a static site generator like Jekyll, you can add a search plugin. For example, you can use `jekyll-search` or a similar plugin.\n  - Follow the plugin's documentation to install and configure it. Typically",
+      "metrics": {
+        "length": 1248,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 3,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "scenario": "A pull request intended to change CSV data rows also shipped `__pycache__/csv_to_json.cpython-314.pyc` (and similar bytecode files). The reviewer flagged it as a MEDIUM issue: repository bloat, non-deterministic artifacts, and potential noise that obscures the real diff. The branch could not merge until the artifacts were removed. (accidental-pycache-commit)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the issue of accidental `__pycache__` artifacts committed to a data repository, follow these steps with exact commands:\n\n### Step 1: Remove the artifacts from the index and disk\n\nFirst, you need to remove the `__pycache__` directories and any `.pyc` files from both the Git index and your local disk. Run the following commands in your terminal:\n\n```bash\ngit rm --cached -r __pycache__ 2>/dev/null || true\ngit rm -r --cached '*.pyc' 2>/dev/null || true\nrm -rf __pycache__\n```\n\nThese commands remove the `__pycache__` directories and any `.pyc` files from the Git index and then delete them from your local filesystem.\n\n### Step 2: Add a .gitignore covering Python bytecode\n\nTo prevent `__pycache__` directories and `.pyc` files from being committed in the future, you should add them to your `.gitignore` file. If you don't have a `.gitignore` file, create one in the root of your repository and add the following lines:\n\n```plaintext\n__pycache__/\n*.pyc\n```\n\nIf you already have a `.gitignore` file",
+      "metrics": {
+        "length": 1005,
+        "commands": 3,
+        "command_list": [
+          "git rm --cached -r __pycache__ 2>/dev/null || true",
+          "git rm -r --cached '*.pyc' 2>/dev/null || true",
+          "rm -rf __pycache__"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 13,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "scenario": "A pull request intended to change CSV data rows also shipped `__pycache__/csv_to_json.cpython-314.pyc` (and similar bytecode files). The reviewer flagged it as a MEDIUM issue: repository bloat, non-deterministic artifacts, and potential noise that obscures the real diff. The branch could not merge until the artifacts were removed. (accidental-pycache-commit)",
+      "condition": "plain",
+      "status": 200,
+      "content": "**Fixing Accidental Commit of `__pycache__` Files**\n\nTo resolve the issue, you'll need to remove the `__pycache__` files from your Git repository. Here are the steps:\n\n### Step 1: Remove `__pycache__` Files from Git Index\n\nRun the following command to remove the `__pycache__` files from your Git index:\n```bash\ngit rm -r --cached __pycache__\n```\nThis command will remove the `__pycache__` directory and its contents from your Git index, but not from your local file system.\n\n### Step 2: Add `__pycache__` to `.gitignore`\n\nTo prevent `__pycache__` files from being committed in the future, add the following line to your `.gitignore` file:\n```bash\n__pycache__/\n```\nYou can do this using your favorite text editor or by running the following command:\n```bash\necho \"__pycache__/\" >> .gitignore\n```\n### Step 3: Commit Changes\n\nCommit the changes to your `.gitignore` file and the removal of `__pycache__` files from your Git index:\n```bash\ngit add .gitignore\ngit commit -m",
+      "metrics": {
+        "length": 969,
+        "commands": 3,
+        "command_list": [
+          "git rm -r --cached __pycache__",
+          "__pycache__/",
+          "echo \"__pycache__/\" >> .gitignore"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 17,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "scenario": "Current node registration requires GitHub account and opening an issue, which is too slow for autonomous agents. (agent-first-node-registration-via-mcp)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To address the issue of slow node registration for autonomous agents, you can implement the `misakanet_register` MCP tool as described. Here's a step-by-step guide to achieve this:\n\n### Step 1: Create the `misakanet_register` MCP Tool\n\nFirst, you need to create a Python script that will handle the registration process. This script will generate a unique `node_id` and `token` for each registering agent.\n\nCreate a file named `misakanet_register.py` with the following content:\n\n```python\nimport uuid\nimport time\nimport json\nimport os\n\ndef register_agent(agent_type):\n    # Generate unique node_id and token\n    node_id = f\"Misaka{uuid.uuid4().hex[:8]}\"\n    token = f\"mcp_{uuid.uuid4().hex[:16]}\"\n    \n    # Store token in KV for validation (assuming a KV store like Redis)\n    # For simplicity, we'll use a local JSON file here\n    kv_store = \"tokens.json\"\n    if not os.path.exists(kv_store):\n        with open(kv_store, \"w\") as f:\n            json.dump({}, f)\n    \n    with open(kv_store, \"r+\") as f:\n        tokens = json.load(f)\n        tokens",
+      "metrics": {
+        "length": 1049,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": false,
+        "inline_code_count": 5,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.75
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "scenario": "Current node registration requires GitHub account and opening an issue, which is too slow for autonomous agents. (agent-first-node-registration-via-mcp)",
+      "condition": "plain",
+      "status": 200,
+      "content": "To resolve the error related to agent-first-node-registration-via-mcp, which requires a GitHub account and opening an issue for node registration, you can use the `mcp` command-line tool to register a node programmatically. This approach allows for autonomous agent registration without the need for manual GitHub interaction.\n\nHere's a step-by-step guide to registering a node using `mcp`:\n\n### Prerequisites\n1. **Install `mcp`**: Ensure you have the `mcp` tool installed. If not, you can install it using the package manager appropriate for your operating system or by downloading it from its official repository.\n\n2. **Have an MCP Server**: Ensure you have access to an MCP (Mesh Central Proxy) server. If you're running your own, make sure it's configured and running.\n\n### Steps to Register a Node\n\n1. **Generate a Node Key**:\n   First, generate a unique key for your node. This can be done using tools like OpenSSL. For example:\n   ```bash\n   openssl rand -base64 32\n   ```\n   This command generates a random base64-encoded string that will serve as your node's key.\n\n2. **Register the Node**:\n   Use the `mcp` tool to register your",
+      "metrics": {
+        "length": 1138,
+        "commands": 1,
+        "command_list": [
+          "openssl rand -base64 32"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/qwen/qwen2.5-coder-32b-instruct",
+      "scenario": "A growing agent-knowledge project can accumulate many valid directions at once: reusable experience substrate, lightweight MCP or tool adapters, OKF-compatible export, SQLite or SAG-style search, public roadmap and bounty issues, model or agent capability evaluation, frontend onboarding, and journey pages.\n\nAll of these may be useful, but a new visitor still asks one concrete question: can I paste a real error and find a useful lesson fast? If the homepage, README, and release notes explain architecture before showing a working search result, the project feels abstract even when the underlying system is healthy. (search-first-roadmap-loop)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To address the issue you've described, we need to streamline the user experience for new visitors by making it easy for them to perform a search and find useful lessons right away. Here's a step-by-step solution with exact commands to help you implement the changes:\n\n### Step 1: Simplify the Homepage\n\nEnsure that the homepage clearly highlights the primary functionality: searching for errors and finding lessons. Here’s how you can structure it:\n\n1. **Title and Description**: Make the title and description concise and focused on the core functionality.\n2. **Search Box**: Place a prominent search box at the top or center of the homepage.\n3. **Quick Start Guide**: Include a brief guide on how to use the search feature.\n\n### Step 2: Implement Zero-Dependency Local Search\n\nTo provide an immediate search experience, implement a zero-dependency local search feature. Here’s a simple example using JavaScript:\n\n1. **Create a Search HTML Form**:\n   ```html\n   <form id=\"search-form\">\n       <input type=\"text\" id=\"search-input\" placeholder=\"Paste your error here...\">\n       <button type=\"submit\">Search</button>\n   </form>\n   <div id=\"search-results\"></div>\n   ```\n\n2. **Add JavaScript",
+      "metrics": {
+        "length": 1189,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": false,
+        "inline_code_count": 1,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/qwen/qwen2.5-coder-32b-instruct",
+      "scenario": "A growing agent-knowledge project can accumulate many valid directions at once: reusable experience substrate, lightweight MCP or tool adapters, OKF-compatible export, SQLite or SAG-style search, public roadmap and bounty issues, model or agent capability evaluation, frontend onboarding, and journey pages.\n\nAll of these may be useful, but a new visitor still asks one concrete question: can I paste a real error and find a useful lesson fast? If the homepage, README, and release notes explain architecture before showing a working search result, the project feels abstract even when the underlying system is healthy. (search-first-roadmap-loop)",
+      "condition": "plain",
+      "status": 200,
+      "content": "To address the issue you're facing, it's important to prioritize user experience by making it easy for new visitors to see immediate value from your project. One effective way to do this is by creating a simple, clear, and interactive search feature that users can try right away. Here’s a step-by-step guide to implementing a basic search functionality using SQLite for demonstration purposes:\n\n### Step 1: Set Up SQLite Database\n\nFirst, ensure you have SQLite installed on your system. You can install it via package managers like `apt` for Ubuntu or `brew` for macOS.\n\n#### On Ubuntu:\n```bash\nsudo apt-get update\nsudo apt-get install sqlite3 libsqlite3-dev\n```\n\n#### On macOS:\n```bash\nbrew install sqlite\n```\n\n### Step 2: Create a Sample Database\n\nCreate a sample SQLite database with some error messages and solutions.\n\n```bash\nsqlite3 errors.db\n```\n\nInside the SQLite shell, run the following commands to create a table and insert some data:\n\n```sql\nCREATE TABLE error_messages (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    error_text TEXT NOT NULL,\n    solution TEXT NOT NULL\n);\n\nINSERT INTO error_messages (error_text, solution) VALUES \n('ModuleNotFoundError: No module named \\'requests\\'',",
+      "metrics": {
+        "length": 1199,
+        "commands": 4,
+        "command_list": [
+          "sudo apt-get update",
+          "sudo apt-get install sqlite3 libsqlite3-dev",
+          "brew install sqlite",
+          "sqlite3 errors.db"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 8,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/qwen/qwen2.5-coder-32b-instruct",
+      "scenario": "A pull request intended to change CSV data rows also shipped `__pycache__/csv_to_json.cpython-314.pyc` (and similar bytecode files). The reviewer flagged it as a MEDIUM issue: repository bloat, non-deterministic artifacts, and potential noise that obscures the real diff. The branch could not merge until the artifacts were removed. (accidental-pycache-commit)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "Certainly! Let's go through the steps to resolve this issue and ensure it doesn't happen again in the future.\n\n### Step-by-Step Fix\n\n#### Step 1: Remove the Artifacts from the Index and Disk\n\nFirst, you need to remove the `__pycache__` directories and `.pyc` files from both the staging area and your working directory.\n\n```bash\n# Remove __pycache__ directories from the index and disk\ngit rm --cached -r __pycache__ 2>/dev/null || true\n\n# Remove .pyc files from the index and disk\ngit rm -r --cached '.pyc' 2>/dev/null || true\n\n# Remove __pycache__ directories from the disk\nrm -rf __pycache__\n```\n\n#### Step 2: Add a `.gitignore` File\n\nCreate or update a `.gitignore` file to prevent `__pycache__` directories and `.pyc` files from being tracked by Git in the future.\n\n```bash\n# Create or edit the .gitignore file\necho \"__pycache__/\" >> .gitignore\necho \"*.pyc\" >> .gitignore\n\n# Stage the .gitignore file\ngit add .gitignore\n```\n\n####",
+      "metrics": {
+        "length": 934,
+        "commands": 6,
+        "command_list": [
+          "git rm --cached -r __pycache__ 2>/dev/null || true",
+          "git rm -r --cached '.pyc' 2>/dev/null || true",
+          "rm -rf __pycache__",
+          "echo \"__pycache__/\" >> .gitignore",
+          "echo \"*.pyc\" >> .gitignore"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 9,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/qwen/qwen2.5-coder-32b-instruct",
+      "scenario": "A pull request intended to change CSV data rows also shipped `__pycache__/csv_to_json.cpython-314.pyc` (and similar bytecode files). The reviewer flagged it as a MEDIUM issue: repository bloat, non-deterministic artifacts, and potential noise that obscures the real diff. The branch could not merge until the artifacts were removed. (accidental-pycache-commit)",
+      "condition": "plain",
+      "status": 200,
+      "content": "Certainly! To resolve this issue, you need to remove the `__pycache__` directory and its contents from your repository. Additionally, you should ensure that such files do not get committed in the future by adding them to your `.gitignore` file.\n\nHere are the steps to fix the issue:\n\n1. **Remove the `__pycache__` directory and its contents from your local repository:**\n\n   ```bash\n   rm -rf __pycache__\n   ```\n\n2. **Stage the removal of the `__pycache__` directory for commit:**\n\n   ```bash\n   git add --all\n   ```\n\n3. **Commit the changes to remove the `__pycache__` directory:**\n\n   ```bash\n   git commit -m \"Remove __pycache__ directory and its contents\"\n   ```\n\n4. **Add `__pycache__/` to your `.gitignore` file to prevent it from being tracked in the future:**\n\n   Open your `.gitignore` file in a text editor and add the following line if it's not already present:\n\n   ```\n   __pycache__/\n   ```\n\n5. **Stage the updated `.gitignore` file:**\n\n   ```bash\n   git add .gitignore",
+      "metrics": {
+        "length": 982,
+        "commands": 4,
+        "command_list": [
+          "rm -rf __pycache__",
+          "git add --all",
+          "git commit -m \"Remove __pycache__ directory and its contents\"",
+          "__pycache__/"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 17,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/qwen/qwen2.5-coder-32b-instruct",
+      "scenario": "Current node registration requires GitHub account and opening an issue, which is too slow for autonomous agents. (agent-first-node-registration-via-mcp)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To address the issue of slow node registration for autonomous agents via GitHub issues, you can implement the `misakanet_register` MCP tool as described. Below are the concrete steps and commands to set up this tool.\n\n### Step-by-Step Implementation\n\n1. **Create the `misakanet_register` Script**\n\n   First, create a Python script named `misakanet_register.py` that will handle the registration process. This script will generate a unique `node_id` and `token`, store them in a key-value (KV) store, and return them to the agent.\n\n   ```bash\n   touch misakanet_register.py\n   ```\n\n   Open `misakanet_register.py` and add the following code:\n\n   ```python\n   import argparse\n   import uuid\n   import time\n   import json\n   import os\n\n   # Simulated KV store using a JSON file\n   KV_STORE_FILE = 'kv_store.json'\n\n   def load_kv_store():\n       if os.path.exists(KV_STORE_FILE):\n           with open(KV_STORE_FILE, 'r') as f:\n               return json.load(f)\n       return {}\n\n   def save_kv_store(kv_store):\n       with open(KV_STORE_FILE, 'w') as f:\n           json.dump",
+      "metrics": {
+        "length": 1071,
+        "commands": 1,
+        "command_list": [
+          "touch misakanet_register.py"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 8,
+        "lesson_hits": 2,
+        "lesson_hit_rate": 0.5
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/qwen/qwen2.5-coder-32b-instruct",
+      "scenario": "Current node registration requires GitHub account and opening an issue, which is too slow for autonomous agents. (agent-first-node-registration-via-mcp)",
+      "condition": "plain",
+      "status": 200,
+      "content": "To address the issue of autonomous agents needing a faster way to register nodes without manually creating a GitHub issue, you can explore alternative methods provided by the system or platform you're using. Since the specific platform or tool isn't mentioned, I'll provide a general approach assuming you're working with a system that supports API-based node registration.\n\n### Step-by-Step Fix Using an API\n\n1. **Check API Documentation:**\n   - First, ensure that the platform provides an API for node registration. Refer to the official documentation for details on available endpoints, authentication methods, and request formats.\n\n2. **Obtain API Access:**\n   - If the platform supports API access, you'll need to obtain the necessary credentials (API key, token, etc.). This is often done through a developer portal or settings section in the platform's web interface.\n\n3. **Write a Script for Node Registration:**\n   - Create a script that uses the API to register nodes. Below is a generic example using `curl` to make an HTTP POST request. Replace placeholders with actual values from your platform's documentation.\n\n```bash\n#!/bin/bash\n\n# Define variables\nAPI_URL=\"https://api.example.com/nodes/register\"\nAPI_TOKEN=\"your_api_token_here\"\nNODE_NAME=\"your_node",
+      "metrics": {
+        "length": 1267,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": false,
+        "inline_code_count": 1,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A growing agent-knowledge project can accumulate many valid directions at once: reusable experience substrate, lightweight MCP or tool adapters, OKF-compatible export, SQLite or SAG-style search, public roadmap and bounty issues, model or agent capability evaluation, frontend onboarding, and journey pages.\n\nAll of these may be useful, but a new visitor still asks one concrete question: can I paste a real error and find a useful lesson fast? If the homepage, README, and release notes explain architecture before showing a working search result, the project feels abstract even when the underlying system is healthy. (search-first-roadmap-loop)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The issue you're facing is that your project has multiple audiences with different needs, and when these paths are mixed together, it leads to a \"drift\" in the user experience. To fix this, you need to create a layered message that keeps the first user action concrete and actionable.\n\nHere's a step-by-step guide to help you implement this solution:\n\n**Step 1: Create a clear and concise homepage**\n\n* Update your homepage to clearly state the problem and the solution.\n* Use a simple and concise message that explains the issue and the benefits of the layered message approach.\n\nExample:\n```markdown\n# Agent-Knowledge Project\n\nAre you an agent or a tool user? Do you want to clone, search, reuse, and report? Or are you a maintainer and contributor looking for direction?\n\nWe've got two audiences with different needs. But what if we told you there's a way to keep both paths clear and actionable?\n\nIntroducing our layered message approach!\n\n## Format layer: OKF-compatible Markdown lessons\nLearn from our experts with our OKF-compatible Markdown lessons.\n\n## Search layer: zero-dependency local search, optional SQLite/SAG-Lite index\nFind what you need with our zero-dependency local search.\n\n## Access layer: login and authorization\n",
+      "metrics": {
+        "length": 1237,
+        "commands": 0,
+        "command_list": [],
+        "has_command_block": false,
+        "actionable": true,
+        "inline_code_count": 0,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A growing agent-knowledge project can accumulate many valid directions at once: reusable experience substrate, lightweight MCP or tool adapters, OKF-compatible export, SQLite or SAG-style search, public roadmap and bounty issues, model or agent capability evaluation, frontend onboarding, and journey pages.\n\nAll of these may be useful, but a new visitor still asks one concrete question: can I paste a real error and find a useful lesson fast? If the homepage, README, and release notes explain architecture before showing a working search result, the project feels abstract even when the underlying system is healthy. (search-first-roadmap-loop)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The issue you're facing is that your project's homepage, README, and release notes are explaining the architecture, but not providing a concrete example or a working search result, which can be confusing for new visitors. Here's a concrete, actionable fix with exact commands:\n\n**Step 1: Create a simple example**\n\nCreate a new file called `example_search_result.md` in the root of your project with the following content:\n```markdown\n# Example Search Result\n\nThis is an example search result.\n\nYou can paste this error and find a useful lesson fast:\n```\n**Step 2: Add a link to the example search result**\n\nUpdate your `README.md` file to include a link to the example search result:\n```markdown\n# [Agent-Knowledge Project](https://github.com/your-username/agent-knowledge-project)\n\n## Getting Started\n\n* Read the [architecture documentation](https://github.com/your-username/agent-knowledge-project/wiki/Architecture)\n* See an example search result: [Example Search Result](https://github.com/your-username/agent-knowledge-project/blob/main/example_search_result.md)\n```\n**Step 3: Add a search button to the homepage**\n\nUpdate your `index.md` file to include a search button",
+      "metrics": {
+        "length": 1176,
+        "commands": 2,
+        "command_list": [
+          "**Step 2: Add a link to the example search result**",
+          "Update your `README.md` file to include a link to the example search result:"
+        ],
+        "has_command_block": true,
+        "actionable": false,
+        "inline_code_count": 6,
+        "lesson_hits": 4,
+        "lesson_hit_rate": 0.667
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A pull request intended to change CSV data rows also shipped `__pycache__/csv_to_json.cpython-314.pyc` (and similar bytecode files). The reviewer flagged it as a MEDIUM issue: repository bloat, non-deterministic artifacts, and potential noise that obscures the real diff. The branch could not merge until the artifacts were removed. (accidental-pycache-commit)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the accidental `__pycache__` artifacts committed to a data repository, follow these steps:\n\n**Step 1: Remove the artifacts from the index and disk**\n\n```bash\n# Remove the staged artifacts from the index\ngit rm --cached -r __pycache__ 2/dev/null || true\n\n# Remove the staged artifacts from the disk\ngit rm -r --cached '.pyc' 2/dev/null || true\n\n# Manually remove the Python bytecode files from the disk\nrm -rf __pycache__\n```\n\n**Step 2: Add a `.gitignore` covering Python bytecode**\n\nCreate a new file named `.gitignore` in the root of your repository with the following contents:\n\n```text\n__pycache__/\n.pyc\n```\n\n**Step 3: Re-stage only the intended files instead of the whole directory**\n\n```bash\n# Re-stage only the intended files\ngit add references/offers/sdks.csv\n```\n\n**Step 4: Commit the changes with a meaningful message**\n\n```bash\n# Commit the changes\ngit commit -m \"fix: remove committed pycache artifacts\"\n```\n\n**Verification**\n\n```bash\n# Verify the diff contains only intended changes\ngit status --short |",
+      "metrics": {
+        "length": 1022,
+        "commands": 6,
+        "command_list": [
+          "git rm --cached -r __pycache__ 2/dev/null || true",
+          "git rm -r --cached '.pyc' 2/dev/null || true",
+          "rm -rf __pycache__",
+          "**Step 3: Re-stage only the intended files instead of the whole directory**",
+          "**Step 4: Commit the changes with a meaningful message**"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 1.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "A pull request intended to change CSV data rows also shipped `__pycache__/csv_to_json.cpython-314.pyc` (and similar bytecode files). The reviewer flagged it as a MEDIUM issue: repository bloat, non-deterministic artifacts, and potential noise that obscures the real diff. The branch could not merge until the artifacts were removed. (accidental-pycache-commit)",
+      "condition": "plain",
+      "status": 200,
+      "content": "To fix the accidental-pycache-commit issue, you'll need to remove the Python bytecode files generated by the `csv_to_json` module. Here's a step-by-step solution:\n\n**Step 1: Find the problematic files**\n\nRun the following command to find the Python bytecode files generated by the `csv_to_json` module:\n```bash\ngit ls-files --other --directory .\n```\nThis command will show you the paths of the Python bytecode files.\n\n**Step 2: Remove the bytecode files**\n\nRun the following command to remove the bytecode files:\n```bash\ngit rm --cached -r .\n```\nThis command will remove the files from the Git index, but leave them on your local machine.\n\n**Step 3: Commit the changes**\n\nRun the following command to commit the changes:\n```bash\ngit commit -m \"Remove accidental Python bytecode files\"\n```\nThis command will create a new commit that removes the bytecode files.\n\n**Step 4: Force-push the branch**\n\nSince the branch couldn't merge before, you'll need to force-push the branch to update the remote repository:\n```bash\ngit push origin <branch-name> --force-with-lease\n```\nReplace `<branch-name>` with the name of your branch.\n\n**Step ",
+      "metrics": {
+        "length": 1129,
+        "commands": 4,
+        "command_list": [
+          "git ls-files --other --directory .",
+          "git rm --cached -r .",
+          "git commit -m \"Remove accidental Python bytecode files\"",
+          "git push origin <branch-name> --force-with-lease"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 10,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Current node registration requires GitHub account and opening an issue, which is too slow for autonomous agents. (agent-first-node-registration-via-mcp)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To fix the error, you need to install the `misakanet_register` tool. Here's a step-by-step guide:\n\n**Step 1: Install Python and required dependencies**\n\nIf you haven't installed Python and required dependencies, run the following commands:\n```bash\nsudo apt-get update\nsudo apt-get install python3 python3-pip\npip3 install --upgrade pip\n```\n\n**Step 2: Install the misakanet_register tool**\n\nRun the following command to install the `misakanet_register` tool:\n```bash\npip3 install misakanet-register\n```\n\n**Step 3: Configure the misakanet_register tool**\n\nCreate a configuration file for the `misakanet_register` tool. You can use the following command to create a default configuration file:\n```bash\nmisakanet-register config create\n```\n\n**Step 4: Update the configuration file**\n\nUpdate the `misakanet_register` configuration file to include your `MISAKANET_TOKEN` and `MISAKANET_URL`. You can do this by running the following command:\n```bash\nmisakanet-register config update\n```\n\n**Step 5: Register your node**\n\nRun the following command to register your node using the `mis",
+      "metrics": {
+        "length": 1076,
+        "commands": 6,
+        "command_list": [
+          "sudo apt-get update",
+          "sudo apt-get install python3 python3-pip",
+          "pip3 install --upgrade pip",
+          "pip3 install misakanet-register",
+          "misakanet-register config create"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 14,
+        "lesson_hits": 1,
+        "lesson_hit_rate": 0.25
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Current node registration requires GitHub account and opening an issue, which is too slow for autonomous agents. (agent-first-node-registration-via-mcp)",
+      "condition": "plain",
+      "status": 200,
+      "content": "The error you're encountering is due to the requirement of GitHub account and opening an issue for node registration, which might be too slow for autonomous agents. Here's a concrete, actionable fix:\n\n**Method 1: Using the `--no-require-github` flag**\n\nYou can use the `--no-require-github` flag when running the command to register the node. This flag disables the GitHub requirement.\n\n```bash\n# For Linux or macOS\nnats-server register --no-require-github <your-node-name> <your-node-address>\n\n# For Windows\nnats-server register --no-require-github <your-node-name> <your-node-address>\n```\n\n**Method 2: Creating a GitHub Token**\n\nAnother approach is to create a GitHub token that has the required permissions to register a node. You can then use this token when registering the node.\n\nHere's how to create a GitHub token:\n\n```bash\n# Create a new GitHub token\ngh token create --public --repo --full-control\n\n# Use the generated token to register the node\nnats-server register --github-token <your-github-token> <your-node-name> <your-node-address>\n```\n\n**Method 3: Using a GitHub App**\n\nIf you have",
+      "metrics": {
+        "length": 1098,
+        "commands": 4,
+        "command_list": [
+          "nats-server register --no-require-github <your-node-name> <your-node-address>",
+          "nats-server register --no-require-github <your-node-name> <your-node-address>",
+          "gh token create --public --repo --full-control",
+          "nats-server register --github-token <your-github-token> <your-node-name> <your-node-address>"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 5,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Agent-Reach — Multi-Platform Internet Access for AI Agents (agent-reach-multi-platform-scraper)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "The error you're experiencing is likely due to the fact that the `agent-reach` tool is not properly configured or installed. Here's a step-by-step guide to help you fix the issue:\n\n**Step 1: Install the `agent-reach` tool**\n\nIf you haven't already, install the `agent-reach` tool using the following command:\n```bash\npip install https://github.com/Panniantong/agent-reach/archive/main.zip\n```\n**Step 2: Create a virtual environment**\n\nCreate a new virtual environment for `agent-reach` using the following command:\n```bash\npython3 -m venv ~/.agent-reach-venv\n```\n**Step 3: Activate the virtual environment**\n\nActivate the virtual environment using the following command:\n```bash\nsource ~/.agent-reach-venv/bin/activate\n```\n**Step 4: Install required channels**\n\nInstall the required channels for the platforms you want to access. For example, to install the `reddit` and `twitter` channels, use the following command:\n```bash\nagent-reach install --channels reddit,twitter\n```\n**Step 5: Configure proxy (if needed)**\n\nIf you're behind a proxy, configure it using the",
+      "metrics": {
+        "length": 1065,
+        "commands": 4,
+        "command_list": [
+          "pip install https://github.com/Panniantong/agent-reach/archive/main.zip",
+          "python3 -m venv ~/.agent-reach-venv",
+          "source ~/.agent-reach-venv/bin/activate",
+          "agent-reach install --channels reddit,twitter"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 13,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.6
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Agent-Reach — Multi-Platform Internet Access for AI Agents (agent-reach-multi-platform-scraper)",
+      "condition": "plain",
+      "status": 200,
+      "content": "I don't see any code or error message in your question. However, I can provide a general solution for a common issue that might be related to the Agent-Reach project.\n\nIf you're experiencing issues with installing the `agent-reach-multi-platform-scraper` package, here are some steps you can try:\n\n**Step 1: Update pip**\n\nOpen your terminal and run the following command to update pip:\n\n```bash\npython -m pip install --upgrade pip\n```\n\n**Step 2: Install dependencies**\n\nRun the following command to install the required dependencies:\n\n```bash\npython -m pip install -r requirements.txt\n```\n\nIf you don't have a `requirements.txt` file, you can create one by running:\n\n```bash\npython -m pip freeze > requirements.txt\n```\n\n**Step 3: Install the agent-reach package**\n\nRun the following command to install the `agent-reach` package:\n\n```bash\npython -m pip install agent-reach\n```\n\n**Step 4: Install the scraper**\n\nRun the following command to install the `agent-reach-multi-platform-scraper` package:\n\n```bash\npython -m pip install agent-reach-multi-platform-scraper\n```\n\nIf you're still experiencing issues, you",
+      "metrics": {
+        "length": 1108,
+        "commands": 5,
+        "command_list": [
+          "python -m pip install --upgrade pip",
+          "python -m pip install -r requirements.txt",
+          "python -m pip freeze > requirements.txt",
+          "python -m pip install agent-reach",
+          "python -m pip install agent-reach-multi-platform-scraper"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 13,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.6
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "scenario": "Agent-Reach — Multi-Platform Internet Access for AI Agents (agent-reach-multi-platform-scraper)",
+      "condition": "with_lesson",
+      "status": 200,
+      "content": "To resolve the issue of AI agents needing to access multiple internet platforms with varying authentication and API requirements, follow these concrete steps using the Agent-Reach tool:\n\n### Step 1: Create a Virtual Environment\n\nFirst, create a virtual environment to isolate the Agent-Reach installation and its dependencies. Open your terminal and run:\n\n```bash\npython3 -m venv ~/.agent-reach-venv\n```\n\n### Step 2: Activate the Virtual Environment\n\nActivate the virtual environment you just created:\n\n```bash\nsource ~/.agent-reach-venv/bin/activate\n```\n\nOn Windows, use:\n\n```bash\n~/.agent-reach-venv/Scripts/activate\n```\n\n### Step 3: Install Agent-Reach\n\nInstall Agent-Reach from the GitHub repository:\n\n```bash\npip install https://github.com/Panniantong/agent-reach/archive/main.zip\n```\n\n### Step 4: Install Channels\n\nInstall the channels (platforms) you need. For example, to install Reddit and Twitter, run:\n\n```bash\nagent-reach install --channels reddit,twitter\n```\n\nThis command installs the necessary tools like `rdt-cli` for Reddit and `twitter-cli` for Twitter.\n\n### Step 5: Auto-",
+      "metrics": {
+        "length": 1090,
+        "commands": 5,
+        "command_list": [
+          "python3 -m venv ~/.agent-reach-venv",
+          "source ~/.agent-reach-venv/bin/activate",
+          "~/.agent-reach-venv/Scripts/activate",
+          "pip install https://github.com/Panniantong/agent-reach/archive/main.zip",
+          "agent-reach install --channels reddit,twitter"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 11,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.6
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "scenario": "Agent-Reach — Multi-Platform Internet Access for AI Agents (agent-reach-multi-platform-scraper)",
+      "condition": "plain",
+      "status": 200,
+      "content": "To provide a concrete and actionable fix for the issue you're encountering with Agent-Reach, a multi-platform internet access tool for AI agents, I would need more specific details about the error message you're seeing. However, since you haven't provided the exact error message, I'll guide you through a general troubleshooting process that might help resolve common issues. This process includes updating dependencies, checking for compatibility issues, and ensuring that your environment is correctly set up.\n\n### Step 1: Update Your Dependencies\n\nFirst, ensure that all your dependencies are up to date. If you're using `pip` for Python packages, you can update your dependencies by running:\n\n```bash\npip install --upgrade -r requirements.txt\n```\n\nIf you're using a virtual environment, make sure it's activated before running the command.\n\n### Step 2: Check Compatibility\n\nEnsure that your Python version and other dependencies are compatible with Agent-Reach. You can check your Python version with:\n\n```bash\npython --version\n```\n\nOr, if you have both Python 2 and Python 3 installed and want to check the version of Python 3 specifically:\n\n```bash\npython3 --version\n```\n\n### Step 3: Reinstall Agent-Reach\n\nSometimes, simply reinstalling the",
+      "metrics": {
+        "length": 1248,
+        "commands": 3,
+        "command_list": [
+          "pip install --upgrade -r requirements.txt",
+          "python --version",
+          "python3 --version"
+        ],
+        "has_command_block": true,
+        "actionable": true,
+        "inline_code_count": 6,
+        "lesson_hits": 3,
+        "lesson_hit_rate": 0.6
+      },
+      "error": null
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "scenario": "Agent Web Access Toolchain — 7 Libraries for Reliable Forum Scraping (agent-web-access-toolchain-selection)",
+      "condition": "with_lesson",
+      "status": 429,
+      "content": "",
+      "metrics": {
+        "length": 0,
+        "commands": 0,
+        "has_command_block": false,
+        "actionable": false,
+        "has_code_inline": false,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": "b'{\"name\":\"AiError\",\"internalCode\":4006,\"httpCode\":429,\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare\\'s Workers Paid plan if you would like to continue usage. (0b36b6f6-fb80-489c'"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Agent Web Access Toolchain — 7 Libraries for Reliable Forum Scraping (agent-web-access-toolchain-selection)",
+      "condition": "with_lesson",
+      "status": 429,
+      "content": "",
+      "metrics": {
+        "length": 0,
+        "commands": 0,
+        "has_command_block": false,
+        "actionable": false,
+        "has_code_inline": false,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": "b'{\"name\":\"AiError\",\"internalCode\":4006,\"httpCode\":429,\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare\\'s Workers Paid plan if you would like to continue usage. (47830c18-da00-4a6a'"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Aider CLI `--api-key` parameter leaks API key to `.aider.chat.history.md`, bash history, and `/proc/pid/cmdline`.\n\nWhen a user runs a command like:\n```bash\naider --api-key sk-ant-api03-XXXXXXXXXXXXXXXXXXXX\n```\n\nThe API key is exposed in at least three places:\n1. **Shell history files** (e.g., `~/.bash_history`, `~/.zsh_history`) — persisted across sessions and often synced or backed up.\n2. **Aider's own chat history file** (`.aider.chat.history.md`) — written to the project directory and may be committed to version control.\n3. **`/proc/<pid>/cmdline`** — readable by other processes on the same host while the process is running, which is a risk in shared or multi-tenant environments. (aider-api-key-leak)",
+      "condition": "with_lesson",
+      "status": 429,
+      "content": "",
+      "metrics": {
+        "length": 0,
+        "commands": 0,
+        "has_command_block": false,
+        "actionable": false,
+        "has_code_inline": false,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": "b'{\"name\":\"AiError\",\"internalCode\":4006,\"httpCode\":429,\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare\\'s Workers Paid plan if you would like to continue usage. (352c4aa4-3819-4566'"
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "scenario": "Agent Web Access Toolchain — 7 Libraries for Reliable Forum Scraping (agent-web-access-toolchain-selection)",
+      "condition": "plain",
+      "status": 429,
+      "content": "",
+      "metrics": {
+        "length": 0,
+        "commands": 0,
+        "has_command_block": false,
+        "actionable": false,
+        "has_code_inline": false,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": "b'{\"name\":\"AiError\",\"internalCode\":4006,\"httpCode\":429,\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare\\'s Workers Paid plan if you would like to continue usage. (3198b649-cf84-4d16'"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Agent Web Access Toolchain — 7 Libraries for Reliable Forum Scraping (agent-web-access-toolchain-selection)",
+      "condition": "plain",
+      "status": 429,
+      "content": "",
+      "metrics": {
+        "length": 0,
+        "commands": 0,
+        "has_command_block": false,
+        "actionable": false,
+        "has_code_inline": false,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": "b'{\"name\":\"AiError\",\"internalCode\":4006,\"httpCode\":429,\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare\\'s Workers Paid plan if you would like to continue usage. (b9b23713-c335-4a57'"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge (auto-merge-ci-pipeline)",
+      "condition": "with_lesson",
+      "status": 429,
+      "content": "",
+      "metrics": {
+        "length": 0,
+        "commands": 0,
+        "has_command_block": false,
+        "actionable": false,
+        "has_code_inline": false,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": "b'{\"name\":\"AiError\",\"internalCode\":4006,\"httpCode\":429,\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare\\'s Workers Paid plan if you would like to continue usage. (a2b0b428-ef89-4fd3'"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "AI Agent Contributor Engagement — Lightweight Retention Strategy (contributor-engagement-retention)",
+      "condition": "with_lesson",
+      "status": 429,
+      "content": "",
+      "metrics": {
+        "length": 0,
+        "commands": 0,
+        "has_command_block": false,
+        "actionable": false,
+        "has_code_inline": false,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": "b'{\"name\":\"AiError\",\"internalCode\":4006,\"httpCode\":429,\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare\\'s Workers Paid plan if you would like to continue usage. (978ed7dd-a38c-4f9d'"
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "scenario": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge (auto-merge-ci-pipeline)",
+      "condition": "with_lesson",
+      "status": 429,
+      "content": "",
+      "metrics": {
+        "length": 0,
+        "commands": 0,
+        "has_command_block": false,
+        "actionable": false,
+        "has_code_inline": false,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": "b'{\"name\":\"AiError\",\"internalCode\":4006,\"httpCode\":429,\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare\\'s Workers Paid plan if you would like to continue usage. (2d6bba4d-a003-4826'"
+    },
+    {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "scenario": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge (auto-merge-ci-pipeline)",
+      "condition": "plain",
+      "status": 429,
+      "content": "",
+      "metrics": {
+        "length": 0,
+        "commands": 0,
+        "has_command_block": false,
+        "actionable": false,
+        "has_code_inline": false,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": "b'{\"name\":\"AiError\",\"internalCode\":4006,\"httpCode\":429,\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare\\'s Workers Paid plan if you would like to continue usage. (f640c53f-8d8f-4f2f'"
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "scenario": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge (auto-merge-ci-pipeline)",
+      "condition": "plain",
+      "status": 429,
+      "content": "",
+      "metrics": {
+        "length": 0,
+        "commands": 0,
+        "has_command_block": false,
+        "actionable": false,
+        "has_code_inline": false,
+        "lesson_hits": 0,
+        "lesson_hit_rate": 0.0
+      },
+      "error": "b'{\"name\":\"AiError\",\"internalCode\":4006,\"httpCode\":429,\"message\":\"AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare\\'s Workers Paid plan if you would like to continue usage. (bb8a4940-ede0-4555'"
+    }
+  ]
+}

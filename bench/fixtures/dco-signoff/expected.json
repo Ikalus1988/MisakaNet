@@ -1,0 +1,15 @@
+{
+  "scenario": "dco-signoff",
+  "title": "DCO sign-off missing from a commit",
+  "failure": {
+    "type": "missing_dco_trailer",
+    "evidence": "The latest commit has no Signed-off-by trailer."
+  },
+  "expected_fix": "Amend or recreate the commit with git commit --signoff, then verify the trailer.",
+  "expected_outcome": "success",
+  "verifier": {
+    "type": "file_content",
+    "path": "commit-message.txt",
+    "must_not_contain": "Signed-off-by:"
+  }
+}

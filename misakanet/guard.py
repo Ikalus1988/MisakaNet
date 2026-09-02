@@ -32,6 +32,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
+import tempfile
 from pathlib import Path
 
 # ── 安全意识：检测到的 secret pattern 会从 snippet 中过滤 ──
@@ -124,11 +125,9 @@ def main():
     parser.add_argument("cmd", nargs=argparse.REMAINDER, help="要包装的命令")
     args = parser.parse_args()
 
-    if not args.cmd or args.cmd[0] == "--":
-        args.cmd = args.cmd[1:] if args.cmd[0] == "--" and len(args.cmd) > 1 else args.cmd
+    # argparse.REMAINDER 已自动处理 '--' 分隔符
     if not args.cmd:
-        print("错误: 缺少要包装的命令", file=sys.stderr)
-        print("用法: python3 -m misakanet.guard -- <command>", file=sys.stderr)
+        parser.print_help(file=sys.stderr)
         sys.exit(1)
 
     # 启动子进程
@@ -153,25 +152,19 @@ def main():
     # 转发信号
     _forward_signals(proc.pid)
 
-    # 读取 stderr（逐行，非阻塞）
-    def _read_stderr():
-        if proc.stderr is None:
-            return
-        for line in proc.stderr:
+    # 使用 communicate() 确保完整读取 stderr
+    _, stderr_output = proc.communicate()
+    exit_code = proc.returncode
+
+    # 处理 stderr 行
+    if stderr_output:
+        for line in stderr_output.splitlines(keepends=True):
             stderr_lines.append(line)
-            # 透传 stderr 到父进程（保持原始颜色/ANSI）
-            sys.stderr.write(line)
+            # 透传 stderr 到父进程（脱敏后输出）
+            sys.stderr.write(_redact(line))
             sys.stderr.flush()
             if len(stderr_lines) > args.capture_lines + 100:
                 stderr_lines.pop(0)
-
-    import threading
-    reader = threading.Thread(target=_read_stderr, daemon=True)
-    reader.start()
-
-    # 等待子进程结束
-    exit_code = proc.wait()
-    reader.join(timeout=2)
 
     # 生成墓碑
     signal_num = None
@@ -197,8 +190,12 @@ def main():
         repo = Path(__file__).resolve().parent.parent
         draft_script = repo / "scripts" / "tombstone_to_draft.py"
         if draft_script.exists():
-            tmp = Path(f"/tmp/misakanet-tombstone-{os.getpid()}.json")
-            tmp.write_text(tombstone_json, encoding="utf-8")
+            fd, tmp_path = tempfile.mkstemp(prefix="misakanet-tombstone-", suffix=".json")
+            tmp = Path(tmp_path)
+            try:
+                os.write(fd, tombstone_json.encode("utf-8"))
+            finally:
+                os.close(fd)
             try:
                 subprocess.run(
                     [sys.executable, str(draft_script),
@@ -207,8 +204,8 @@ def main():
                     stdout=subprocess.DEVNULL,
                 )
                 print(f"[misakanet.guard] draft lesson 已生成", file=sys.stderr)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[misakanet.guard] draft lesson 生成失败: {e}", file=sys.stderr)
             finally:
                 try:
                     tmp.unlink()

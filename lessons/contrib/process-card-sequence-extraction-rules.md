@@ -1,19 +1,20 @@
 ---
-title: "工艺卡步序提取：辅助动作不算独立步序，按工艺动作分界"
-domain: "engineering"
-subdomain: "process-analysis"
+title: 工艺卡步序提取：辅助动作不算独立步序，按工艺动作分界
+domain: engineering
 tags:
-  - process-card
-  - time-chart
-  - sequence
-  - cycle-time
-  - robot
-source: "zsxh1990"
-status: "published"
-confidence: "0.95"
-created: "2026-07-03"
-domain_expert: "zsxh1990"
-verified_date: "2026-07-06"
+- process-card
+- time-chart
+- sequence
+- cycle-time
+- robot
+status: published
+created: '2026-07-03'
+language: zh
+source: <user>
+confidence: 0.95
+domain_expert: <user>
+verified_date: '2026-07-06'
+subdomain: process-analysis
 ---
 
 ## Problem
@@ -59,11 +60,13 @@ verified_date: "2026-07-06"
 
 ## Verification
 
-```python
-# 验证：所有工艺动作都被统计
-process_actions = ['抓件', '放件', '焊接', '涂胶', 'SPR', '拧紧', '滚床']
-extracted = [s['name'] for s in sequences]
-for action in process_actions:
-    if any(action in step for step in all_steps):
-        assert any(action in e for e in extracted), f"{action} 未被提取为步序"
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
 ```

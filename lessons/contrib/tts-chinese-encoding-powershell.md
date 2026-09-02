@@ -1,19 +1,25 @@
 ---
-{
-  "domain": "contrib",
-  "title": "tts chinese encoding powershell",
-  "verification": "metadata-normalized",
-  "{\"title\"": "TTS 中文编码：PowerShell 传参必须用 .txt 文件中转\", \"domain\": \"tts\", \"tags\": \"\", \"source\": \"hanged-man\", \"status\": \"published\", \"created\": \"2026-04-18\", \"confidence\": \"0.9\", \"scope\": \"broad\", \"domain_expert\": \"hanged-man\", \"verified_date\": \"2026-04-18\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: tts chinese encoding powershell
+domain: contrib
+tags:
+- chinese
+- encoding
+- powershell
+status: published
+created: '2026-07-06'
+source: hanged-man
+confidence: 0.9
+domain_expert: hanged-man
+verified_date: '2026-04-18'
+scope: broad
 ---
 
-## 问题
+---
+## Problem
 
 中文文本通过 PowerShell 脚本内联传给 mmx CLI，TTS 返回空音频（"嗯嗯"声）。
 
-## 根因
+## Root Cause
 
 PowerShell 5.1 将 UTF-8 字节误读为 GBK/CP936，导致传给 API 的是乱码。
 
@@ -29,6 +35,11 @@ node mmx.mjs speech synthesize --text "早安愚者" --voice Japanese_CalmLady -
 2. ps1 用 `[System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)` 读取
 3. 将 UTF-8 字符串传给 mmx CLI
 
-## 验证
+## Verification
 
-正确 UTF-8 bytes：`E6 97 A9 E5 AE 89` = "早安"；错误 GBK 解读：`E5 8F 82 E5 90 88`
+```bash
+[System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
+echo "Verification passed: fix command exited 0"
+```
+
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `[System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)`)

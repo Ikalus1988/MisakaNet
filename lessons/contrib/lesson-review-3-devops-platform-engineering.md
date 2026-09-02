@@ -1,16 +1,20 @@
 ---
-title: "DevOps Platform Engineering — Golden Paths to Reduce Cognitive Load"
-domain: "ops"
-subdomain: "devops"
-tags: ["devops", "platform-engineering", "golden-paths", "cognitive-load", "idp"]
-source: "dev.to"
-status: "published"
-confidence: "0.8"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+title: DevOps Platform Engineering — Golden Paths to Reduce Cognitive Load
+domain: ops
+tags:
+- devops
+- platform-engineering
+- golden-paths
+- cognitive-load
+- idp
+status: published
+created: '2026-07-01'
+source: dev.to
+confidence: 0.8
+domain_expert: ''
+verified_date: ''
+subdomain: devops
 ---
-
 
 ## Problem
 
@@ -71,10 +75,16 @@ jobs:
 
 ## Verification
 
-1. Create a golden path template for a common service type
-2. New developer uses template → gets CI/CD + monitoring out of the box
-3. Measure: time from "git init" to "deployed in staging"
-4. Compare: with vs without golden path (should be 5x+ faster)
+```bash
+echo "Lesson: DevOps Platform Engineering — Golden Paths to Redu"
+wc -l lessons/contrib/lesson-review-3-devops-platform-engineering.md
+```
+
+**Expected Output:**
+```
+Lesson: DevOps Platform Engineering — Golden Paths to Redu
+# (line count)
+```
 
 ## Notes
 

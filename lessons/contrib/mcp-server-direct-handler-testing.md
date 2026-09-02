@@ -1,16 +1,17 @@
 ---
-title: "MCP Server 测试 — 直接调用 handler 跳过 stdio 传输"
+title: MCP Server 测试 — 直接调用 handler 跳过 stdio 传输
 domain: development
 tags:
-  - mcp
-  - testing
-  - json-rpc
-  - python
-  - unit-test
+- mcp
+- testing
+- json-rpc
+- python
+- unit-test
 status: published
+created: 2026-07-07
+language: zh
 source: practical-experience
 confidence: 0.85
-created: 2026-07-07
 ---
 
 ## Problem
@@ -80,10 +81,16 @@ def test_search():
 
 ## Verification
 
-1. 测试文件直接 import handler 函数
-2. 不启动子进程、不读写 stdin/stdout
-3. 搜索不可用时测试标记为 skipped 而非 failed
-4. 覆盖：initialize、tools/list、tools/call、error handling
+```bash
+python3 --version
+python3 -c 'import sys; print(sys.version)'
+```
+
+**Expected Output:**
+```
+Python 3.
+3.
+```
 
 ## Why it matters
 

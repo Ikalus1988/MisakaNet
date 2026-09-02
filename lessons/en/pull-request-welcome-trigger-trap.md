@@ -17,6 +17,11 @@
   "domain_expert": "codewhale",
   "verified_date": "2026-06-13"
 }
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 > Translated from: [lessons/core/pull-request-welcome-trigger-trap.md](../core/pull-request-welcome-trigger-trap.md)

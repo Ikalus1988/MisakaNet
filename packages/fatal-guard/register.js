@@ -24,6 +24,7 @@
 
 const { spawn } = require('node:child_process');
 const { redact } = require('./src/lib/redact');
+const { buildSpawnSpec } = require('./src/lib/spawn-command');
 
 /** Payload builder with diagnostic fields */
 function buildPayload(reason, error) {
@@ -58,10 +59,21 @@ function runHandler(reason, error) {
 
   try {
     const payload = buildPayload(reason, error);
-    const child = spawn(handler, [payload], {
+    let handlerArgs = [];
+    if (process.env.FATAL_HANDLER_ARGS) {
+      try {
+        const parsed = JSON.parse(process.env.FATAL_HANDLER_ARGS);
+        if (Array.isArray(parsed) && parsed.every((arg) => typeof arg === 'string')) {
+          handlerArgs = parsed;
+        }
+      } catch (_) {}
+    }
+    const invocation = buildSpawnSpec(handler, [...handlerArgs, payload]);
+    const child = spawn(invocation.command, invocation.args, {
       stdio: 'ignore',
       detached: true,
       shell: false,
+      ...invocation.options,
     });
     child.on('error', () => { /* swallow — handler failure must not block */ });
     child.unref();

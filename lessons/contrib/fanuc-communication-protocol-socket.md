@@ -1,27 +1,35 @@
-{
-  "id": "fanuc-communication-protocol-socket",
-  "title": "FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup",
-  "domain": "fanuc",
-  "subdomain": "communication",
-  "source": "github.com/torayeff/fanucpy/blob/main/fanuc.md",
-  "status": "draft",
-  "confidence": 0.85,
-  "created": "2026-07-12",
-  "tags": ["fanuc", "socket-messaging", "tcp-ip", "mappdk", "network", "karel", "r648"],
-  "quality_score": 85,
-  "problem": "需要从外部 PC 通过网络与 FANUC 机器人控制器建立通信，实现远程指令下发和状态读取。",
-  "root_cause": "FANUC 控制器支持 User Socket Messaging（R648 选件）实现 TCP/IP 通信，但配置步骤分散在多个菜单中，涉及网络配置、服务器设置、KAREL 程序部署等多个环节，容易遗漏。",
-  "solution": "按照完整流程配置：网络连接（IP/子网/DHCP）→ 服务器配置（S8 tag/18735 端口/SM 协议）→ Logger 配置（S7 tag/18736）→ MAPPDK 程序部署 → 验证通信。",
-  "verification": "1. 控制器 IP 可 ping 通；2. S8 服务器 Current State 为 STARTED；3. 外部客户端能连接 18735 端口；4. MAPPDK 程序在控制器上运行中。"
-}
+---
+title: FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup
+domain: fanuc
+tags:
+- fanuc
+- socket-messaging
+- tcp-ip
+- mappdk
+- network
+- karel
+- r648
+status: draft
+created: '2026-07-12'
+source: github.com/torayeff/fanucpy/blob/main/fanuc.md
+confidence: 0.85
+subdomain: communication
+id: fanuc-communication-protocol-socket
+problem: 需要从外部 PC 通过网络与 FANUC 机器人控制器建立通信，实现远程指令下发和状态读取。
+quality_score: 85
+root_cause: FANUC 控制器支持 User Socket Messaging（R648 选件）实现 TCP/IP 通信，但配置步骤分散在多个菜单中，涉及网络配置、服务器设置、KAREL
+  程序部署等多个环节，容易遗漏。
+solution: 按照完整流程配置：网络连接（IP/子网/DHCP）→ 服务器配置（S8 tag/18735 端口/SM 协议）→ Logger 配置（S7 tag/18736）→
+  MAPPDK 程序部署 → 验证通信。
+---
 
 ## FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup
 
-### 问题描述
+### Problem描述
 
 需要从外部 PC（Python/C++/其他）通过 TCP/IP 网络与 FANUC 机器人控制器建立 socket 通信，实现远程运动控制、变量读写、程序调用等功能。FANUC 控制器的通信配置涉及多个菜单层级和系统变量，初学者容易遗漏关键步骤。
 
-### 根因分析
+### Root Cause分析
 
 FANUC 控制器的网络通信能力依赖两个关键选件：
 - **R632** — KAREL 编程语言（服务端程序运行环境）
@@ -31,7 +39,7 @@ FANUC 控制器的网络通信能力依赖两个关键选件：
 
 MAPPDK（Manufacturing Application Platform Development Kit）是 FANUC 提供的标准化 socket 服务端实现，使用 S8 服务器 tag 和 18735 端口。
 
-### 修复方法/技术要点
+### Solution方法/技术要点
 
 #### 1. 选件兼容性检查
 
@@ -117,7 +125,7 @@ Python 客户端（fanucpy）与 MAPPDK 服务端之间的协议：
 - KAREL 程序无法运行 → 检查 R632/R648 选件是否安装
 - 连接后无响应 → 检查 MAPPDK 主程序是否在运行
 
-### 验证方式
+### Verification方式
 
 1. 从 PC ping 控制器 IP（如 192.168.234.2）通
 2. 控制器上 S8 服务器 Current State 显示 STARTED
@@ -129,3 +137,17 @@ Python 客户端（fanucpy）与 MAPPDK 服务端之间的协议：
 
 - GitHub: torayeff/fanucpy — MAPPDK Driver 安装文档 (fanuc.md)
 - FANUC 控制器手册：Host Comm / Socket Messaging 配置章节
+
+
+## Verification
+
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```

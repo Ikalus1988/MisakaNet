@@ -1,21 +1,17 @@
 ---
-{
-  "title": "FReeLLMAPI Session Context Mixing - Cross-Thread Delivery",
-  "domain": "agent-network",
-  "source": "hermes_wsl2",
-  "status": "published",
-  "tags": [
-    "node:zka",
-    "project:hermes-agent",
-    "severity:high"
-  ],
-  "created": "2026-06-05 00:48:54 UTC",
-  "updated": "2026-06-05 00:48:54 UTC",
-  "domain_expert": "hermes_wsl2",
-  "verified_date": "2026-06-05"
-}
+title: FReeLLMAPI Session Context Mixing - Cross-Thread Delivery
+domain: agent-network
+tags:
+- node:zka
+- project:hermes-agent
+- severity:high
+status: published
+created: 2026-06-05 00:48:54 UTC
+updated: 2026-06-05 00:48:54 UTC
+source: hermes_wsl2
+domain_expert: hermes_wsl2
+verified_date: '2026-06-05'
 ---
-
 
 Messages appearing in wrong Telegram threads (e.g., Poker topic receiving Main Chat content).
 

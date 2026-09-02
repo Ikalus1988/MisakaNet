@@ -15,7 +15,7 @@ repos:
 
   # check-dco: 验证 commit message 包含 Signed-off-by 行
   - repo: https://github.com/Ikalus1988/pre-commit-dco
-    rev: 179f50b
+    rev: 44b86d9
     hooks:
       - id: check-dco
 
@@ -33,4 +33,11 @@ repos:
         entry: python3 scripts/check_lesson_quality.py
         language: system
         files: ^lessons/.*\.md$
+        pass_filenames: false
+      # gitleaks: 阻止密钥/Token 提交（本地二进制，无需网络）
+      - id: gitleaks
+        name: gitleaks secret scan
+        entry: gitleaks git --pre-commit --redact --config .gitleaks.toml
+        language: system
+        always_run: true
         pass_filenames: false

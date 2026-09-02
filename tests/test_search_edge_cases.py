@@ -221,6 +221,38 @@ def test_compute_bm25_scores_emoji_query():
     assert len(scores) == 1
 
 
+# ── _normalize regression tests (P0 fix 2026-08-30) ──
+
+def test_normalize_all_zero_stays_zero():
+    """All-zero (no-match) vectors must stay zero, not be lifted to 0.5.
+
+    Previously _normalize([0,0,0]) → [0.5,0.5,0.5], which pushed garbage
+    queries past the 0.1 threshold and returned the whole corpus.
+    """
+    from misakanet.search.engine import _normalize
+    assert _normalize([0.0, 0.0, 0.0]) == [0.0, 0.0, 0.0]
+    assert _normalize([0.0]) == [0.0]
+
+
+def test_normalize_flat_nonzero_uses_neutral():
+    """A flat non-zero vector (no spread) keeps the neutral 0.5."""
+    from misakanet.search.engine import _normalize
+    assert _normalize([0.7, 0.7, 0.7]) == [0.5, 0.5, 0.5]
+
+
+def test_normalize_spread_scales_between_zero_and_one():
+    """A vector with spread normalizes to [0,1] range."""
+    from misakanet.search.engine import _normalize
+    result = _normalize([1.0, 3.0, 5.0])
+    assert result == [0.0, 0.5, 1.0]
+
+
+def test_normalize_empty_list_passthrough():
+    """Empty input passes through unchanged."""
+    from misakanet.search.engine import _normalize
+    assert _normalize([]) == []
+
+
 if __name__ == "__main__":
     import pytest
     pytest.main([__file__, "-v"])

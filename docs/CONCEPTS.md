@@ -4,9 +4,24 @@
 
 ---
 
+## 一句话定位
+
+**MisakaNet is a Git-backed failure-memory layer for AI coding agents.**
+
+不是通用记忆系统，不是 Agent runtime，不是向量数据库。
+是专注、轻量、可审计的失败恢复知识层。
+
+---
+
 ## 什么是 MisakaNet？
 
 MisakaNet 是一个**连接 AI Agent 的基础设施**。就像互联网连接电脑一样，MisakaNet 把分散在不同机器上的 AI Agent 连接起来，让它们可以共享经验、发现能力、协同工作。
+
+**核心优势：**
+- **Git-backed** — 所有 lesson 都是 Git 仓库中的 Markdown 文件，完全可审计
+- **Zero-dependency** — 核心搜索只使用 Python 标准库，无需向量数据库
+- **Purpose-built** — 专注于失败恢复，不是通用记忆系统
+- **Public by default** — lesson 默认公开，贡献需要 DCO 签名
 
 ---
 

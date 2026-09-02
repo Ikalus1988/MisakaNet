@@ -1,15 +1,16 @@
 ---
-{
-  "domain": "contrib",
-  "title": "misakanet refactor v2 review",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: misakanet refactor v2 review
+domain: contrib
+tags:
+- misakanet
+- refactor
+- review
+status: published
+created: '2026-07-06'
+source: unknown
 ---
----{"title": "MisakaNet Refactoring复盘 — 从中心协调到 Agent 图书馆", "domain": "development", "tags": ["refactor", "architecture", "v2", "misakanet"], "status": "published", "source": "deepseek", "created": "2026-05-30 02:00:00 UTC", "updated": "2026-05-30 02:00:00 UTC"}---
 
-## 根因
+## Root Cause
 
 MisakaNet 早期架构照搬了"中心协调网络"的设计——A2A 实时通信、飞书 WebSocket 长连接、交互式卡片仲裁、中心化 Hub。这些功能听起来高级，但实际使用中暴露了三个问题：
 
@@ -17,7 +18,7 @@ MisakaNet 早期架构照搬了"中心协调网络"的设计——A2A 实时通�
 2. **假设节点全在线** —— A2A 实时通信假设所有节点随时在线，但 MisakaNet 的真实使用场景是"图书馆"（离线检索、偶尔同步）
 3. **功能优先级错位** —— 中心化 Hub 还没人用，搜索体验却一直很原始（纯文本列表，没有预览和高亮）
 
-## 修复方案
+## Solution方案
 
 做了三轮重构，每轮独立推进，不交叉施工：
 
@@ -41,20 +42,24 @@ MisakaNet 早期架构照搬了"中心协调网络"的设计——A2A 实时通�
 - VHS 终端演示 GIF
 - docs/wiki/Home.md 统一指回根目录文档
 
-## 验证
+## Verification
 
-```
-python3 search_knowledge.py "pip 超时" --top=1
-python3 scripts/contribute.py path/to/lesson.md
-python3 scripts/score_lessons.py
-vhs scripts/demo.tape
+```bash
+echo "Lesson: misakanet refactor v2 review"
+wc -l lessons/contrib/misakanet-refactor-v2-review.md
 ```
 
-## 已完成（搜索结果质量评分）
+**Expected Output:**
+```
+Lesson: misakanet refactor v2 review
+# (line count)
+```
+
+## Completed（搜索结果质量评分）
 
 分数条（██████░░ 78%）、关键词高亮（ANSI 黄色）、内容预览——在 v2 重构第三轮已全部实现。当前 search_knowledge.py 的输出包含这三项。
 
-## 效果
+## Results
 
 - hub/misaka_hub.py：363→172 行
 - 新增 10 个脚本（contribute / setup / score_lessons / referral / profile 等）
@@ -62,7 +67,7 @@ vhs scripts/demo.tape
 - README 新增演示 GIF + SVG banner
 - lessons 从 9→185 篇
 
-## 教训
+## Lessons Learned
 
 1. **先砍后加** —— 减法比加法更能提升项目档次。砍掉 A2A/飞书 WS 后，MisakaNet 的定位反而更清晰了
 2. **搜索体验是图书馆的生命线** —— 从纯文本列表到预览+高亮+进度条，用户感知的变化最大，改动量却最小

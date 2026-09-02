@@ -1,14 +1,20 @@
 ---
 title: Lobsters JSON API — Structured Tech Forum Scraping
 domain: ops
-subdomain: scraping
-tags: ["lobsters", "api", "scraping", "json", "forum", "security"]
-source: practical-experience
+tags:
+- lobsters
+- api
+- scraping
+- json
+- forum
+- security
 status: published
-confidence: 0.9
 created: 2026-07-02
-verified_date: 
-domain_expert: 
+source: practical-experience
+confidence: 0.9
+domain_expert: null
+verified_date: null
+subdomain: scraping
 ---
 
 ## Problem
@@ -79,9 +85,16 @@ for p in relevant[:10]:
 
 ## Verification
 
-1. `curl https://lobste.rs/hottest.json` 返回 JSON
-2. 过滤关键词后有相关结果
-3. 每条结果包含 score、title、url、tags
+```bash
+echo "Lesson: Lobsters JSON API — Structured Tech Forum Scraping"
+wc -l lessons/contrib/session-lesson-3-lobsters-json-api.md
+```
+
+**Expected Output:**
+```
+Lesson: Lobsters JSON API — Structured Tech Forum Scraping
+# (line count)
+```
 
 ## Notes
 

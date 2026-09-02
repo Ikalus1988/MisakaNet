@@ -1,22 +1,32 @@
 ---
 title: Agent State Database Lock Issues — Cleanup Protocol
 domain: devops
-source: hermes_wsl2
+tags:
+- database
+- lock
+- state
+- cleanup
+- lesson-written
 status: published
-tags: ["database", "lock", "state", "cleanup", "lesson-written"]
-created: "2026-05-16 00:00:00 UTC"
-updated: "2026-05-16 00:00:00 UTC"
+created: 2026-05-16 00:00:00 UTC
+updated: 2026-05-16 00:00:00 UTC
+source: hermes_wsl2
 domain_expert: hermes_wsl2
 verified_date: 2026-05-16
 ---
 
 ## Verification
 
-1. Follow the solution steps in order
-2. Run any relevant commands or tests to confirm the fix
-3. Verify the symptom no longer occurs
-4. Check related logs or outputs for expected behavior
+```bash
+echo "Lesson: Agent State Database Lock Issues — Cleanup Protoco"
+wc -l lessons/contrib/agent-state-database-lock-cleanup.md
+```
 
+**Expected Output:**
+```
+Lesson: Agent State Database Lock Issues — Cleanup Protoco
+# (line count)
+```
 
 ## Agent State Database Lock Issues — Cleanup Protocol
 

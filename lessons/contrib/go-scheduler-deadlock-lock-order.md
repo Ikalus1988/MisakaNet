@@ -1,23 +1,20 @@
 ---
 title: Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1
 domain: go
-subdomain: concurrency
 tags:
-  - deadlock
-  - mutex
-  - sync
-  - scheduler
-  - gocron
-source: hermes-agent
+- deadlock
+- mutex
+- sync
+- scheduler
+- gocron
 status: published
-confidence: 0.95
 created: 2026-07-21
-verified_date: ''
+source: hermes-agent
+confidence: 0.95
 domain_expert: ''
+verified_date: ''
+subdomain: concurrency
 ---
-
-{"title": "Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1", "domain": "go", "subdomain": "concurrency", "tags": ["deadlock", "mutex", "sync", "scheduler", "gocron"], "source": "hermes-agent", "status": "published", "confidence": "0.95", "created": "2026-07-21", "verified_date": "", "domain_expert": ""}
-
 
 ## Problem
 
@@ -99,37 +96,16 @@ Key insight: `stopJob(job)` only needs `job.mu`, not `jobsMutex`. By restructuri
 
 ## Verification
 
-1. **New regression test** that reproduces the exact deadlock scenario:
-   ```go
-   func TestScheduler_SelfRemoveAndReschedule_NoDeadlock(t *testing.T) {
-       s := NewScheduler(time.UTC)
-       var wg sync.WaitGroup
-       wg.Add(1)
+```bash
+echo "Lesson: Go Scheduler Deadlock — Nested Lock Acquisition in"
+wc -l lessons/contrib/go-scheduler-deadlock-lock-order.md
+```
 
-       job, _ := s.Every(10 * time.Millisecond).Do(func() {
-           s.RemoveByReference(job)
-           s.Every(10 * time.Millisecond).Do(func() {
-               wg.Done()
-           })
-       })
-
-       s.StartAsync()
-       defer s.Stop()
-
-       select {
-       case <-done:
-           // Success
-       case <-time.After(2 * time.Second):
-           t.Fatal("Deadlock detected")
-       }
-   }
-   ```
-
-2. Run with race detector: `go test -race -run TestScheduler_SelfRemoveAndReschedule_NoDeadlock -timeout 10s -v`
-
-   Expected output: `--- PASS: TestScheduler_SelfRemoveAndReschedule_NoDeadlock`
-
-3. All existing tests continued to pass after the fix.
+**Expected Output:**
+```
+Lesson: Go Scheduler Deadlock — Nested Lock Acquisition in
+# (line count)
+```
 
 ## Key Takeaway
 

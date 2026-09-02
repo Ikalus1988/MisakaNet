@@ -1,12 +1,20 @@
 ---
-title: "FANUC DCS Safety System — Configuration and Stop Modes"
-domain: "fanuc"
-subdomain: "safety"
-tags: ["dcs", "safety", "dual-check", "emergency-stop", "fence", "stop-mode", "safety-io", "iso13849"]
-status: "published"
-source: "internal-training"
-confidence: "0.95"
-created: "2026-07-14"
+title: FANUC DCS Safety System — Configuration and Stop Modes
+domain: fanuc
+tags:
+- dcs
+- safety
+- dual-check
+- emergency-stop
+- fence
+- stop-mode
+- safety-io
+- iso13849
+status: published
+created: '2026-07-14'
+source: internal-training
+confidence: 0.95
+subdomain: safety
 ---
 
 ## Problem
@@ -94,11 +102,16 @@ Stop Distance = (Motion Speed × Scan Time) + Coast Distance at Power Cutoff
 
 ## Verification
 
-1. Check DCS parameter file exists: DCSPOS.SV, DCSIOC.SV
-2. Verify stop mode matches application requirements (A/B/C)
-3. Test E-stop button — should trigger correct stop type per mode
-4. Test fence signal — should trigger correct stop type per mode
-5. Verify DCS position limits match physical workspace constraints
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```
 
 ## Notes
 

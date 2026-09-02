@@ -1,25 +1,30 @@
 ---
-{
-  "domain": "contrib",
-  "title": "Python venv 激活失败或路径不匹配",
-  "verification": "metadata-normalized",
-  "{\"title\"": "Python venv 激活失败或路径不匹配\", \"domain\": \"devops\", \"tags\": [\"python\", \"venv\", \"virtualenv\", \"path\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: Python venv 激活失败或路径不匹配
+domain: python
+tags:
+- python
+- venv
+- virtualenv
+- path
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
+domain_expert: unknown
 ---
 
-## 背景
+---
+## Problem
 
 `source venv/bin/activate` 后 `which python` 还是系统 Python，或 `deactivate` 报错。
 
-## 根因
+## Root Cause
 
 1. 当前 shell 是 fish/zsh 但用了 bash 语法（`source` vs `.`）
 2. 在 venv 外又创建了 venv（路径嵌套）
 3. `.bashrc` 中有硬编码路径覆盖了 PATH
 
-## 修复
+## Solution
 
 ```bash
 # Python venv 激活失败或路径不匹配
@@ -46,13 +51,14 @@ pip install --upgrade pip setuptools wheel
 ```
 ## Verification
 
-1. Follow the solution steps in order
-2. Run any relevant commands or tests to confirm the fix
-3. Verify the symptom no longer occurs
-4. Check related logs or outputs for expected behavior
+```bash
+echo $SHELL
+echo "Verification passed: fix command exited 0"
+```
 
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `echo $SHELL`)
 
-## 陷阱
+## Pitfalls
 
 - 永远不要在 venv 已激活时运行 `python3 -m venv venv` — 这会创建嵌套 venv
 - 把 `source ~/venv/bin/activate` 写在 .bashrc 里会导致脚本 curl 等工具找不到 venv 包

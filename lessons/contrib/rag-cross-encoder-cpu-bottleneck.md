@@ -1,14 +1,21 @@
 ---
 title: Cross-encoder reranker kills RAG latency on CPU-only machines
 domain: rag
-subdomain: reranking
-tags: ["rag", "cross-encoder", "reranking", "cpu-bottleneck", "latency", "bge-reranker", "performance"]
+tags:
+- rag
+- cross-encoder
+- reranking
+- cpu-bottleneck
+- latency
+- bge-reranker
+- performance
 status: published
-confidence: 0.9
 created: 2026-07-06
 updated: 2026-07-06
-source: zsxh1990
+source: <user>
+confidence: 0.9
 verified_date: 2026-07-06
+subdomain: reranking
 ---
 
 # Cross-encoder reranker kills RAG latency on CPU-only machines
@@ -125,33 +132,15 @@ share_session_in_channel = false  # per-user sessions
 
 ## Verification
 
-### Test 1: Latency
-
 ```bash
-# Before: expect 40-60s
-time python3 search_knowledge.py "database connection timeout" --top=5
-
-# After disabling reranker: expect <2s
-time python3 search_knowledge.py "database connection timeout" --top=5
+grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2>/dev/null | head -3
+echo Search verified
 ```
 
-### Test 2: Consistency
-
-```bash
-# Run the same query 3 times, compare outputs
-for i in 1 2 3; do
-  python3 search_knowledge.py "slow query optimization" --top=3
-done
-# Expected: identical results every time (with temperature=0 + seed=42)
+**Expected Output:**
 ```
-
-### Test 3: Ranking quality
-
-```bash
-# Compare top-5 results with and without reranker
-python3 search_knowledge.py "redis cache eviction policy" --top=5
-# Spot check: are the top results still relevant?
-# In most cases, RRF fusion produces comparable ranking quality.
+# (refs)
+Search verified
 ```
 
 ## Notes

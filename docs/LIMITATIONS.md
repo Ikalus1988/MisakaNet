@@ -1,6 +1,6 @@
 # Limitations & Non-Goals
 
-MisakaNet is designed for a specific niche: **decentralized, git-backed swarm knowledge sharing for AI agents**. It is not a general-purpose solution. This document honestly describes what the system does not do well.
+MisakaNet is designed for a specific niche: **decentralized, git-backed failure-memory sharing for AI agents**. It is not a general-purpose solution. This document honestly describes what the system does not do well.
 
 ## Search
 

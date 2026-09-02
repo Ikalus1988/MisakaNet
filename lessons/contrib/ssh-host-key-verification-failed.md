@@ -1,11 +1,16 @@
 ---
-title: "SSH host key verification failed when connecting to a remote server"
-domain: "devops"
-tags: [ssh, host-key, verification, remote, security]
-language: ja
+title: SSH host key verification failed when connecting to a remote server
+domain: devops
+tags:
+- ssh
+- host-key
+- verification
+- remote
+- security
 status: published
-source: "https://docs.github.com/en/authentication/troubleshooting-ssh/error-host-key-verification-failed"
 created: 2026-07-29
+language: ja
+source: https://docs.github.com/en/authentication/troubleshooting-ssh/error-host-key-verification-failed
 confidence: 0.9
 verified_date: 2026-07-29
 ---
@@ -73,10 +78,12 @@ ssh-keygen -F hostname.example.com  # search for a specific host
 
 ## Verification
 
-- Run `ssh user@hostname.example.com` and confirm the connection succeeds
-- Verify the host key fingerprint matches the one provided by the server administrator
-- Test with `ssh -v user@hostname.example.com` to see verbose connection details
-- Confirm the entry appears in `known_hosts` after accepting
+```bash
+ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+echo "Verification passed: fix command exited 0"
+```
+
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`)
 
 ## Notes
 

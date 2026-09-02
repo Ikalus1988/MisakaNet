@@ -1,0 +1,80 @@
+name: Sync Lessons to D1 (PRD ④)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lessons/**"
+  schedule:
+    # Daily sync keeps D1 current even without lesson changes
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install wrangler
+        run: npm install -g wrangler
+
+      # Self-heal: if the DB was deleted, recreate it via Cloudflare REST API.
+      # (Bootstrap workflow normally handles creation; this guards the daily path.)
+      - name: Create D1 database if missing
+        id: create
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+        run: |
+          set -euo pipefail
+          ACCT="$CLOUDFLARE_ACCOUNT_ID"
+          API="https://api.cloudflare.com/client/v4/accounts/$ACCT/d1/database"
+          EXISTING=$(curl -fsS --max-time 30 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "$API?per_page=50" | python3 -c "import json,sys; d=json.load(sys.stdin); print(next((x['uuid'] for x in d.get('result',[]) if x.get('name')=='misakanet-db'),''))" || true)
+          if [ -n "$EXISTING" ]; then
+            echo "database_id=$EXISTING" >> "$GITHUB_OUTPUT"
+          else
+            echo "Creating D1 database 'misakanet-db'..."
+            RESP=$(curl -fsS --max-time 30 -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{"name":"misakanet-db"}' "$API")
+            NEW_ID=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('result',{}).get('uuid',''))")
+            if [ -z "$NEW_ID" ]; then
+              echo "::error::Could not get database_id from Cloudflare API response"
+              exit 1
+            fi
+            echo "database_id=$NEW_ID" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Apply D1 schema (idempotent)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+        run: |
+          cd workers
+          wrangler d1 execute misakanet-db --remote --file=d1/schema.sql
+
+      - name: Sync lessons to D1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+        run: |
+          # --prune deletes D1 rows whose lesson no longer exists in the repo
+          # (upsert-only sync left stale rows like the merged WSL lesson).
+          python3 scripts/sync_lessons_to_d1.py --db misakanet-db --execute --prune
+
+      - name: Verify D1 row count
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+        run: |
+          cd workers
+          wrangler d1 execute misakanet-db --remote --command "SELECT COUNT(*) AS n FROM lessons;"

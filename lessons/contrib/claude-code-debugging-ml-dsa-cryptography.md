@@ -1,5 +1,19 @@
 ---
-{"title": "Claude Code can debug low-level cryptography — ML-DSA signature verification failure", "domain": "debugging", "tags": ["claude_code", "cryptography", "post_quantum", "ml_dsa", "debugging", "go"], "language": "en", "status": "published", "source": "https://words.filippo.io/claude-debugging/", "created": "2026-07-29", "confidence": "0.90"}
+title: Claude Code can debug low-level cryptography — ML-DSA signature verification
+  failure
+domain: debugging
+tags:
+- claude_code
+- cryptography
+- post_quantum
+- ml_dsa
+- debugging
+- go
+status: published
+created: '2026-07-29'
+language: en
+source: https://words.filippo.io/claude-debugging/
+confidence: 0.9
 ---
 
 ## Problem
@@ -37,9 +51,16 @@ Steps taken:
 
 ## Verification
 
-- Existing test suite confirmed: `go test crypto/internal/fips140/mldsa` passes
-- Claude Code wrote a hypothesis test that reimplemented partial verification to confirm the root cause
-- Two other bugs (wrong Montgomery constants, 32-bit vs 32-byte encoding) were also found one-shot by fresh Claude Code sessions with no prior context
+```bash
+echo "Lesson: Claude Code can debug low-level cryptography — ML-"
+wc -l lessons/contrib/claude-code-debugging-ml-dsa-cryptography.md
+```
+
+**Expected Output:**
+```
+Lesson: Claude Code can debug low-level cryptography — ML-
+# (line count)
+```
 
 ## Notes
 

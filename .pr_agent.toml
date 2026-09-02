@@ -1,0 +1,44 @@
+[config]
+model = "openai/minimax-M3"
+fallback_models = []
+custom_model_max_tokens = 16384
+
+[pr_reviewer]
+# Skip ticket compliance for release-please PRs (they only update CHANGELOG)
+ignore_pr_title = ["^\\[Auto\\]", "^Auto", "^chore\\(main\\): release"]
+# Require tests for non-docs PRs
+require_tests_review = true
+# Enable security review
+require_security_review = true
+# Enable effort estimation
+require_estimate_effort_to_review = true
+# Enable ticket analysis (but skip for release PRs)
+require_ticket_analysis_review = true
+# Max findings per review
+num_max_findings = 5
+# Publish even if no suggestions
+publish_output_no_suggestions = true
+# Use persistent comment (update instead of new comment)
+persistent_comment = true
+# Enable intro text with summary
+enable_intro_text = true
+# Disable help text (reduces noise)
+enable_help_text = false
+# Enable coverage footer
+enable_review_coverage_footer = true
+# Extra instructions for better reviews
+extra_instructions = """
+Focus on:
+1. Code correctness and potential bugs
+2. Security vulnerabilities
+3. Test coverage gaps
+4. Scope creep (changes unrelated to PR title/description)
+5. API compatibility breaks
+
+IMPORTANT: If the PR title starts with "chore(main): release" or the PR description says "this pr was generated with release please", DO NOT perform ticket compliance analysis. Release PRs only update CHANGELOG.md and version numbers - there is no code to review against ticket acceptance criteria. Just note "Release PR - no code changes to review" and skip.
+
+For docs-only PRs:
+- Check for factual accuracy
+- Verify code examples are correct
+- Check for broken links
+"""

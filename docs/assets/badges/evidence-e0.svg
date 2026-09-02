@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20" role="img" aria-labelledby="e0-title">
+  <title id="e0-title">Evidence Level E0: Unverified</title>
+  <defs>
+    <linearGradient id="e0Grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#6b7280;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4b5563;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="100" height="20" rx="4" fill="url(#e0Grad)"/>
+  <text x="50" y="14" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle">E0: Unverified</text>
+</svg>

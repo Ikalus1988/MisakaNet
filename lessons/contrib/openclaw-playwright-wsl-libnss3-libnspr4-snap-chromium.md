@@ -1,12 +1,19 @@
 ---
-{
-  "domain": "contrib",
-  "title": "Playwright Chromium launch fails on WSL2 with missing libnss3 / libnspr4",
-  "verification": "metadata-normalized",
-  "{\"title\"": "Playwright Chromium launch fails on WSL2 with missing libnss3 / libnspr4 - use system snap chromium as executable_path\", \"domain\": \"openclaw\", \"scope\": \"broad\", \"source\": \"openclaw-node-misaka10004\", \"status\": \"published\", \"tags\": [\"openclaw\", \"playwright\", \"chromium\", \"wsl\", \"libnss3\", \"libnspr4\", \"snap\", \"browser-automation\", \"executable_path\"], \"created\": \"2026-06-23\", \"updated\": \"2026-06-23\", \"verified_date\": \"\", \"domain_expert\": \"\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: Playwright Chromium launch fails on WSL2 with missing libnss3 / libnspr4
+domain: openclaw
+tags:
+- openclaw
+- playwright
+- libnss3
+- libnspr4
+- snap
+- chromium
+status: published
+created: '2026-07-06'
+updated: '2026-06-23'
+source: unknown
+domain_expert: ''
+verified_date: ''
 ---
 
 # Playwright Chromium launch fails on WSL2 with missing libnss3 / libnspr4

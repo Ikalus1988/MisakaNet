@@ -1,0 +1,90 @@
+{
+  "issue_number": 1139,
+  "title": "[Intake] Duplicate lesson: macos-homebrew-python-pip-install-blocked-by-pep-668-externa.m",
+  "intake_score": 47,
+  "dimensions": {
+    "completeness": {
+      "score": 25,
+      "weight": 0.25,
+      "weighted": 6.25,
+      "reasons": [
+        "\u2713 problem present",
+        "\u2717 error missing",
+        "\u2717 fix missing"
+      ]
+    },
+    "generalization": {
+      "score": 80,
+      "weight": 0.15,
+      "weighted": 12.0,
+      "reasons": [
+        "\u2713 No user-specific paths",
+        "\u2713 No internal references",
+        "\u2713 3 generic tech keywords",
+        "\u2713 2 environments mentioned"
+      ]
+    },
+    "verification": {
+      "score": 0,
+      "weight": 0.3,
+      "weighted": 0.0,
+      "reasons": [
+        "\u2717 No verification section"
+      ]
+    },
+    "detail": {
+      "score": 25,
+      "weight": 0.2,
+      "weighted": 5.0,
+      "reasons": [
+        "\u2713 Good word count: 169",
+        "\u2717 No code blocks",
+        "\u2717 No error messages"
+      ]
+    },
+    "format": {
+      "score": 5,
+      "weight": 0.1,
+      "weighted": 0.5,
+      "reasons": [
+        "\u2713 1 header",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    }
+  },
+  "weighted_score": 23.75,
+  "confidence": 0.75,
+  "final_score": 17.8125,
+  "decision": "reject",
+  "reasons": [
+    "\u2713 problem present",
+    "\u2717 error missing",
+    "\u2717 fix missing",
+    "\u2713 No user-specific paths",
+    "\u2713 No internal references",
+    "\u2713 3 generic tech keywords",
+    "\u2713 2 environments mentioned",
+    "\u2717 No verification section",
+    "\u2713 Good word count: 169",
+    "\u2717 No code blocks",
+    "\u2717 No error messages",
+    "\u2713 1 header",
+    "\u2717 No lists",
+    "\u2717 No frontmatter"
+  ],
+  "suggestions": [
+    "Add a 'Error' section",
+    "Add a 'Fix' section",
+    "Include actual error messages or stack traces",
+    "Add more sections for better structure"
+  ],
+  "lesson_title": "duplicate-lesson-macos-homebrew-python-pip-install-blocked-by-pep-668-externam",
+  "lesson_domain": "python",
+  "lesson_tags": [
+    "python",
+    "node",
+    "mcp"
+  ],
+  "created_at": "2026-08-24T10:23:38.984199Z"
+}

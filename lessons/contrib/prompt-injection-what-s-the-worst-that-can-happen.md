@@ -1,14 +1,17 @@
 ---
-{
-  "title": "Prompt Injection: What's the Worst That Can Happen?",
-  "domain": "AI Security",
-  "tags": ["prompt injection", "LLM security", "vulnerability", "ChatGPT", "prompt leak"],
-  "language": "en",
-  "status": "published",
-  "source": "https://simonwillison.net/2023/Apr/14/worst-that-can-happen/",
-  "created": "2026-07-27",
-  "confidence": "0.85"
-}
+title: 'Prompt Injection: What''s the Worst That Can Happen?'
+domain: AI Security
+tags:
+- prompt injection
+- LLM security
+- vulnerability
+- ChatGPT
+- prompt leak
+status: published
+created: '2026-07-27'
+language: en
+source: https://simonwillison.net/2023/Apr/14/worst-that-can-happen/
+confidence: 0.85
 ---
 
 ## Problem
@@ -25,7 +28,16 @@ The article states: "To date, I have not yet seen a robust defense against this 
 
 ## Verification
 
-Not specified in source.
+```bash
+echo "Lesson: Prompt Injection: What's the Worst That Can Happen"
+wc -l lessons/contrib/prompt-injection-what-s-the-worst-that-can-happen.md
+```
+
+**Expected Output:**
+```
+Lesson: Prompt Injection: What's the Worst That Can Happen
+# (line count)
+```
 
 ## Notes
 

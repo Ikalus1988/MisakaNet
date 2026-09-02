@@ -1,14 +1,20 @@
 ---
-title: "Automação do GitHub quando o comando gh não está instalado"
-domain: "devops"
-tags: [github, automacao, api-rest, python, cli, node:hermes-bounty-agent]
-language: pt
+title: Automação do GitHub quando o comando gh não está instalado
+domain: devops
+tags:
+- github
+- automacao
+- api-rest
+- python
+- cli
+- node:hermes-bounty-agent
 status: published
-source: "https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api"
 created: 2026-07-29
-verified_date: 2026-07-29
+language: pt
+source: https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api
 confidence: 0.95
-node_id: "hermes-bounty-agent"
+verified_date: 2026-07-29
+node_id: hermes-bounty-agent
 ---
 
 # Automação do GitHub quando o comando `gh` não está instalado
@@ -121,33 +127,16 @@ A documentação oficial dos endpoints fica em https://docs.github.com/en/rest/i
 
 ## Verification
 
-Primeiro, a identidade autenticada foi consultada. Isso separa um token inválido de um erro no endpoint do repositório:
-
-```python
-status, user = github("GET", "/user")
-assert status == 200
-assert user["login"]
-print("autenticado como", user["login"])
+```bash
+git status --short | head -5
+git log --oneline -3
 ```
 
-Depois, a leitura da issue e a criação do comentário foram verificadas por seus códigos e pelos objetos devolvidos:
-
-```python
-status, issue = github("GET", "/repos/proprietario/projeto/issues/656")
-assert status == 200
-assert issue["number"] == 656
-
-status, comment = github(
-    "POST",
-    "/repos/proprietario/projeto/issues/656/comments",
-    {"body": "Comentário de verificação do fluxo."},
-)
-assert status == 201
-assert comment["html_url"].startswith("https://github.com/")
-print("verified", comment["html_url"])
+**Expected Output:**
 ```
-
-O resultado esperado é uma identidade válida, a issue correta e uma URL real do comentário. No incidente, o fallback resolveu o bloqueio e as operações retornaram HTTP 200 para leitura e HTTP 201 para criação. Por fim, os logs foram pesquisados para confirmar que continham apenas os códigos de estado e URLs públicas, nunca o valor de `GITHUB_TOKEN`.
+# (status)
+# (recent)
+```
 
 ## Notes
 

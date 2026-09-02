@@ -3,6 +3,7 @@
 // 环境变量: REGISTER_TOKEN (GitHub PAT, 需 contents+issues write)
 //          MAINTAINER_KEY (可选, 保护 /api/insights/demand-map)
 // KV Namespace: MISAKANET_KV (可选，用于缓存数据代理响应 + 需求看板聚合)
+const crypto = globalThis.crypto || (await import("node:crypto")).webcrypto;
 
 const REPO = "Ikalus1988/MisakaNet";
 const GITHUB_API = "https://api.github.com";
@@ -254,6 +255,9 @@ async function handleApiRequest(pathWithQuery, env, request) {
   const search = qIdx >= 0 ? pathWithQuery.slice(qIdx) : "";
 
   // 需求看板端点不依赖 REGISTER_TOKEN（GitHub 代理专用），单独处理
+  if (pathname === "/api/insights/pr-genius") {
+    return handlePrGeniusStats(env);
+  }
   if (pathname === "/api/insights/demand-board") {
     return handleDemandBoard(env);
   }
@@ -380,8 +384,8 @@ function serveLandingPage() {
 
 // ── 注册处理 ──
 async function handleRegistration(request, env) {
-  // 定期清理 rateMap
-  if (Math.random() < 0.02) cleanRateMap();
+  // 定期清理 rateMap (probabilistic, not security-sensitive)
+  if (crypto.getRandomValues(new Uint8Array(1))[0] < 6) cleanRateMap();
 
   // IP 限流
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
@@ -546,6 +550,25 @@ async function handleHelpfulVote(request, env) {
 }
 
 // ── 主入口 (仅 API + 注册，静态文件由 Cloudflare Pages 独立服务) ──
+
+// ── PR Genius Workflow Stats (Issue #1035) ──
+async function handlePrGeniusStats(env) {
+  const token = env.REGISTER_TOKEN;
+  try {
+    const data = await getWithCache(env, "proxy:pr-genius-stats", async () => {
+      if (token) {
+        return fetchFromGitHub(token, "data/pr-genius-stats.json");
+      }
+      const resp = await fetch("https://raw.githubusercontent.com/" + REPO + "/main/data/pr-genius-stats.json");
+      if (!resp.ok) throw new Error("Failed to fetch pr-genius-stats.json: " + resp.status);
+      return resp.json();
+    });
+    return jsonResponse(data);
+  } catch (err) {
+    return jsonResponse({ error: "Failed to load PR Genius statistics: " + err.message }, 502);
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -603,4 +626,5 @@ export {
   buildDemandMapBuckets,
   handleDemandBoard,
   handleDemandMap,
+  handlePrGeniusStats,
 };

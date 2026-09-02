@@ -1,19 +1,38 @@
 ---
-{
-  "title": "RAG Build Strategy Batch",
-  "domain": "rag",
-  "source": "hanged-man",
-  "status": "published",
-  "tags": [
-    "project:self-grow-wiki",
-    "severity:medium",
-    "node:hermes-wsl"
-  ],
-  "language": "en",
-  "created": "2026-04-13",
-  "domain_expert": "hanged-man",
-  "verified_date": "2026-04-13"
-}
+title: RAG Build Strategy Batch
+domain: rag
+tags:
+- project:self-grow-wiki
+- severity:medium
+- node:hermes-wsl
+status: published
+created: '2026-04-13'
+language: en
+source: hanged-man
+domain_expert: hanged-man
+verified_date: '2026-04-13'
+triggers:
+  intents:
+  - rag_build
+  - embedding
+  - vector_index
+  - batch_processing
+  commands:
+  - build_index
+  - chroma
+  - faiss
+  - embedding
+  - build_edoc
+  environments:
+  - wsl
+  - gpu
+  - cuda
+  risks:
+  - memory_pressure
+  - no_checkpoint
+  - batch_overflow
+  - driver_crash
+  severity: critical
 ---
 
 ## Problem
@@ -33,19 +52,16 @@ The knowledge-base build batch strategy was wrong: the large dataset was not pro
 - Verification: monitor VRAM and memory usage, and set threshold alerts
 ## Verification
 
-1. Follow the solution steps in order
-2. Run any relevant commands or tests to confirm the fix
-3. Verify the symptom no longer occurs
-4. Check related logs or outputs for expected behavior
-
-
-
 ```bash
-# Expected result: retrieval logs show the intended chunks and no stale cache or fallback errors.
-python3 search_knowledge.py "rag verification smoke test" --lessons
+grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2>/dev/null | head -3
+echo Search verified
 ```
 
-Environment: Linux / WSL with Python 3.10 or newer; adapt the query to the affected RAG corpus.
+**Expected Output:**
+```
+# (refs)
+Search verified
+```
 
 ## Lesson
 

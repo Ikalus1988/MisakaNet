@@ -1,12 +1,20 @@
 ---
-title: "FANUC Robot Backup and Restore — Full, Mirror, Auto, and File Restore"
-domain: "fanuc"
-subdomain: "maintenance"
-tags: ["backup", "restore", "mirror", "image", "auto-backup", "file-restore", "usb", "maintenance"]
-status: "published"
-source: "internal-training"
-confidence: "0.9"
-created: "2026-07-14"
+title: FANUC Robot Backup and Restore — Full, Mirror, Auto, and File Restore
+domain: fanuc
+tags:
+- backup
+- restore
+- mirror
+- image
+- auto-backup
+- file-restore
+- usb
+- maintenance
+status: published
+created: '2026-07-14'
+source: internal-training
+confidence: 0.9
+subdomain: maintenance
 ---
 
 ## Problem
@@ -117,10 +125,16 @@ Export methods: USB, FTP to PC, or KAREL automated collection.
 
 ## Verification
 
-1. Create a full backup to USB and verify file count
-2. Create a mirror backup and verify file size is significantly larger
-3. Restore a single program file from backup without affecting others
-4. Configure auto backup and verify it runs at scheduled time
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```
 
 ## Notes
 

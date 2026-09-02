@@ -1,0 +1,181 @@
+name: MCP Intake Triage
+
+on:
+  issues:
+    types: [opened, edited, labeled, reopened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Existing intake issue number to triage"
+        required: true
+        type: string
+
+jobs:
+  triage:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.issue.labels.*.name, 'intake') ||
+      contains(github.event.issue.labels.*.name, 'mcp-intake') ||
+      startsWith(github.event.issue.title, '[Intake]')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    env:
+      ISSUE_NUMBER: ${{ github.event.inputs.issue_number || github.event.issue.number }}
+    steps:
+      - name: Classify MCP intake issue
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            let issue = context.payload.issue;
+            let issue_number = context.issue?.number;
+            if (!issue || !issue_number) {
+              const input = process.env.ISSUE_NUMBER || '';
+              issue_number = Number(input);
+              if (!issue_number || isNaN(issue_number)) {
+                core.setFailed(`Invalid issue number: "${input}"`);
+                return;
+              }
+              const response = await github.rest.issues.get({ owner, repo, issue_number });
+              issue = response.data;
+            }
+            const title = issue.title || '';
+            const body = issue.body || '';
+            const labelNames = new Set((issue.labels || []).map((label) => label.name));
+
+            const isIntake =
+              labelNames.has('intake') ||
+              labelNames.has('mcp-intake') ||
+              title.startsWith('[Intake]') ||
+              /Submitted via remote MCP/i.test(body);
+
+            if (!isIntake) {
+              core.info(`Issue #${issue_number} is not an MCP intake; skipping.`);
+              return;
+            }
+
+            const source = (body.match(/\*\*Source:\*\*\s*([^\n]+)/i)?.[1] || '').trim();
+            const kind = (body.match(/\*\*Kind:\*\*\s*([^\n]+)/i)?.[1] || '').trim();
+            const dedup = (body.match(/\*\*Dedup:\*\*\s*`?([^`\n]+)`?/i)?.[1] || '').trim();
+            const text = `${title}\n${body}`;
+
+            const isTest = /heartbeat-verify|heartbeat verify|session-test/i.test(text) || /heartbeat|session-test/i.test(source);
+            const isHarvestedAgentSkill = /harvested from local lesson skill-|Hermes Agent/i.test(text);
+            const hasProblem = /##\s+Problem/i.test(body);
+            const hasVerification = /##\s+Verification/i.test(body);
+            const hasFix = /##\s+Fix/i.test(body);
+            const hasTried = /##\s+What was tried/i.test(body);
+            const hasCoreStructure = hasProblem && hasVerification && (hasFix || hasTried);
+
+            // ── Issue type detection ──
+            const isBug = /\b(error|crash|fail|bug|broken|exception|traceback|segfault)\b/i.test(text);
+            const isFeature = /\b(feature|enhancement|add|support|implement|improve|new)\b/i.test(text);
+            const isQuestion = /\b(how|why|what|question|help|docs|documentation)\b/i.test(text) && !isBug;
+
+            let issueType = 'unknown';
+            if (isBug) issueType = 'bug';
+            else if (isFeature) issueType = 'feature';
+            else if (isQuestion) issueType = 'question';
+
+            // ── Priority scoring (0-100) ──
+            let priorityScore = 50; // baseline
+            // Structure bonus
+            if (hasCoreStructure) priorityScore += 15;
+            if (hasProblem) priorityScore += 5;
+            if (hasFix) priorityScore += 5;
+            if (hasVerification) priorityScore += 5;
+            if (hasTried) priorityScore += 5;
+            // Content quality
+            const wordCount = body.split(/\s+/).length;
+            if (wordCount >= 100) priorityScore += 10;
+            else if (wordCount >= 50) priorityScore += 5;
+            // Code/error evidence
+            if (/```/.test(body)) priorityScore += 5;
+            if (/Error:|Traceback|Exception|ENOENT|EACCES|404|500/i.test(body)) priorityScore += 5;
+            // Source bonus
+            if (source && !isTest) priorityScore += 5;
+            // Penalties
+            if (isTest) priorityScore -= 30;
+            if (wordCount < 20) priorityScore -= 20;
+            if (!hasProblem && !hasFix) priorityScore -= 15;
+            // Clamp
+            priorityScore = Math.max(0, Math.min(100, priorityScore));
+
+            let priorityLabel = 'priority:low';
+            if (priorityScore >= 80) priorityLabel = 'priority:high';
+            else if (priorityScore >= 60) priorityLabel = 'priority:medium';
+
+            let classification = 'lesson-candidate';
+            let suggestedAction = 'Review manually. Convert to a formal lesson if the failure, fix, and verification are concrete; otherwise ask for details or close.';
+            const labelsToAdd = ['intake', 'mcp-intake', 'pending-review', 'needs-human-review'];
+
+            if (isTest) {
+              classification = 'intake-test';
+              suggestedAction = 'Verify the transport path, then close as a test intake. Do not convert to a lesson unless it captures a reusable failure pattern.';
+              labelsToAdd.push('test');
+            } else if (isHarvestedAgentSkill) {
+              classification = 'harvested-agent-skill';
+              suggestedAction = 'Batch review with related harvested skill intakes. Convert only if it contains a concrete failure/recovery pattern; close vague module summaries.';
+              labelsToAdd.push('agent-friendly');
+            }
+
+            if (!hasCoreStructure) {
+              labelsToAdd.push('needs-ac');
+            }
+
+            // Add priority and type labels
+            labelsToAdd.push(priorityLabel);
+            if (issueType !== 'unknown') {
+              labelsToAdd.push(`type:${issueType}`);
+            }
+
+            const missingLabels = [...new Set(labelsToAdd)].filter((label) => !labelNames.has(label));
+            if (missingLabels.length > 0) {
+              await github.rest.issues.addLabels({ owner, repo, issue_number, labels: missingLabels });
+              core.info(`Added labels: ${missingLabels.join(', ')}`);
+            } else {
+              core.info('No labels to add.');
+            }
+
+            const marker = '<!-- misakanet-intake-triage -->';
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const alreadyCommented = comments.some((comment) => comment.body && comment.body.includes(marker));
+            if (alreadyCommented) {
+              core.info('Triage comment already exists; skipping comment.');
+              return;
+            }
+
+            const checklist = [
+              marker,
+              '## MCP Intake Triage',
+              '',
+              `- Classification: \`${classification}\``,
+              `- Issue type: \`${issueType}\``,
+              `- Priority: \`${priorityLabel}\` (score: ${priorityScore}/100)`,
+              `- Kind: \`${kind || 'unknown'}\``,
+              `- Source: \`${source || 'unknown'}\``,
+              `- Dedup: \`${dedup || 'missing'}\``,
+              `- Core structure: ${hasCoreStructure ? 'present' : 'incomplete'}`,
+              '',
+              '### Suggested maintainer action',
+              '',
+              suggestedAction,
+              '',
+              '### Review checklist',
+              '',
+              '- [ ] Confirm no secrets, internal URLs, or personal data remain.',
+              '- [ ] Search existing lessons for duplicates using the dedup hash and topic.',
+              '- [ ] Decide: convert to lesson / ask for more detail / close as duplicate, test, or vague intake.',
+              '',
+              '_Automated triage only. This does not publish lessons or close issues._',
+            ].join('\n');
+
+            await github.rest.issues.createComment({ owner, repo, issue_number, body: checklist });
+            core.info(`Posted triage comment for ${classification}.`);

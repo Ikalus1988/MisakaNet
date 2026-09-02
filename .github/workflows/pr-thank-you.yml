@@ -1,0 +1,48 @@
+name: PR Thank You
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  thank:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const pr = github.event.pull_request;
+            const author = pr.user.login;
+            const title = pr.title;
+            const number = pr.number;
+
+            // Skip bots
+            if (pr.user.type === "Bot" || author.includes("[bot]")) {
+              return;
+            }
+
+            const body = [
+              "## 🎉 Merged — Thank you!",
+              "",
+              "Your contribution has been merged into main.",
+              "",
+              "**PR:** #" + number + " — " + title,
+              "",
+              "**What's next:**",
+              "- Your code is now part of MisakaNet's 298+ lessons / core codebase",
+              "- Feel free to pick up another issue labeled `good first issue` or `status: competition`",
+              "- Questions? Ask in this thread or open a Discussion",
+              "",
+              "Welcome to the MisakaNet contributor community! 🧠"
+            ].join("\n");
+
+            await github.rest.issues.createComment({
+              issue_number: number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

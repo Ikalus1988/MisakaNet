@@ -1,0 +1,66 @@
+name: MCP Endpoint Stress Tests
+
+on:
+  pull_request:
+    paths:
+      - "workers/register-proxy-sw.js"
+      - "workers/mcp-endpoint.stress.test.mjs"
+      - "workers/mcp-no-match.test.mjs"
+      - "workers/d1-lesson-service.test.mjs"
+      - "workers/mcp-anonymous-read.test.mjs"
+      - "workers/intake-kind.test.mjs"
+      - ".github/workflows/mcp-stress.yml"
+  push:
+    branches: [main]
+    paths:
+      - "workers/register-proxy-sw.js"
+      - "workers/mcp-endpoint.stress.test.mjs"
+      - "workers/mcp-no-match.test.mjs"
+      - "workers/d1-lesson-service.test.mjs"
+      - "workers/mcp-anonymous-read.test.mjs"
+      - "workers/intake-kind.test.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Run MCP stress suite
+        run: |
+          set -o pipefail
+          node --expose-gc --test workers/mcp-endpoint.stress.test.mjs 2>&1 | tee mcp-stress-results.txt
+      - name: Run MCP no-match tests (PRD ① intake loop)
+        run: |
+          node --test workers/mcp-no-match.test.mjs
+      - name: Run D1 lesson service tests (PRD ④)
+        run: |
+          node --test workers/d1-lesson-service.test.mjs
+      - name: Run MCP anonymous-read tests (PRD ④ free quota)
+        run: |
+          node --test workers/mcp-anonymous-read.test.mjs
+      - name: Run submit_intake kind tests (question kind)
+        run: |
+          node --test workers/intake-kind.test.mjs
+      - name: Publish performance metrics
+        if: always()
+        run: |
+          {
+            echo "## MCP stress metrics"
+            echo '```json'
+            grep 'MCP_STRESS_METRIC' mcp-stress-results.txt | sed 's/^.*MCP_STRESS_METRIC //' || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload stress results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mcp-stress-results
+          path: mcp-stress-results.txt

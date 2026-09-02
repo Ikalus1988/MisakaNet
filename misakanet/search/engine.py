@@ -3,6 +3,7 @@ BM25 核心算法委托给 misakanet-core 包。
 """
 
 import json
+import math
 import re
 import sqlite3
 import sys
@@ -27,6 +28,44 @@ WEIGHT_TITLE_PARTIAL = 0.4
 WEIGHT_HAS_REF = 0.12
 MAX_METADATA = 1.0
 
+# Feature #532: domain synonym query expansion.
+_SYNONYM_MAP: dict[str, list[str]] = {
+    "mcp": ["setup", "tools/list"],
+    "tool": ["setup", "mcp"],
+    "setup": ["mcp", "install"],
+    "gbk": ["unicode", "encoding"],
+    "unicode": ["gbk", "encoding"],
+    "encoding": ["gbk", "unicode"],
+    "dco": ["signoff", "signed-off-by"],
+    "signoff": ["dco", "signed-off-by"],
+    "signed-off-by": ["dco", "signoff"],
+    "pip": ["ssl", "proxy"],
+    "timeout": ["ssl", "proxy"],
+    "ssl": ["pip", "timeout"],
+    "proxy": ["pip", "ssl", "timeout"],
+    "git": ["credential", "push"],
+    "credential": ["git", "auth"],
+    "auth": ["credential", "token"],
+    "token": ["auth", "credential"],
+    "401": ["auth", "credential"],
+    "403": ["auth", "permission"],
+    "cron": ["scheduler", "systemd"],
+    "scheduler": ["cron", "systemd"],
+    "wsl": ["windows", "proxy"],
+    "windows": ["wsl", "proxy"],
+    "cloudflare": ["worker", "deploy"],
+    "worker": ["cloudflare", "deploy"],
+    "deploy": ["worker", "cloudflare"],
+    "npm": ["publish", "403"],
+    "publish": ["npm", "403"],
+    "json": ["schema", "parse"],
+    "schema": ["json", "validate"],
+    "validate": ["schema", "json"],
+    "stale": ["cache", "pyc"],
+    "cache": ["stale", "pyc"],
+    "pyc": ["cache", "stale"],
+}
+
 # Feature #228: boost core/verified/recent lessons, penalize drafts.
 # Multipliers added to the final composite score (not the BM25 term),
 # so they don't compete with the existing 0.65 / 0.20 / 0.15 weights.
@@ -36,20 +75,27 @@ BOOST_RECENT = 0.05
 BOOST_DRAFT = -0.20
 BOOST_RECENT_DAYS = 30
 
+# Cross-encoder reranking weights — now configurable via search_config
+# (Issue #312, defaults: cross_encoder=0.70, bm25_rerank=0.30)
+
 # ── 分层缓存 ──
+import threading
+
 _CACHE_DIR = REPO / ".cache"
 _CACHE_DB = _CACHE_DIR / "search_cache.db"
 _L1_CACHE = {}
 _L1_MAX = 50
 _L2_CONN = None
+_CACHE_LOCK = threading.RLock()
 
 
 def _l2():
     global _L2_CONN
-    if _L2_CONN is None:
-        _CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        _L2_CONN = sqlite3.connect(str(_CACHE_DB))
-        _L2_CONN.execute("PRAGMA journal_mode=WAL")
+    with _CACHE_LOCK:
+        if _L2_CONN is None:
+            _CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            _L2_CONN = sqlite3.connect(str(_CACHE_DB), check_same_thread=False)
+            _L2_CONN.execute("PRAGMA journal_mode=WAL")
         _L2_CONN.execute("""
             CREATE TABLE IF NOT EXISTS file_cache (
                 path TEXT PRIMARY KEY, mtime REAL, size INT,
@@ -228,15 +274,19 @@ def _doc_cache_id(doc: CachedDoc) -> str:
 def _search_cached(
     query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False,
     rerank: bool = False,
+    weights: dict | None = None,
 ) -> list[tuple[float, CachedDoc]]:
     """L1缓存 — 相同 query 直接返回上次结果。"""
-    key = f"{query}_{titles_only}_{broad_only}_{rerank}"
+    # Add corpus fingerprint to cache key to avoid stale results
+    corpus_fingerprint = hash(tuple(sorted(d.filepath.name for d in docs[:100])))
+    weight_key = tuple(sorted(weights.items())) if weights else ""
+    key = f"{query}_{titles_only}_{broad_only}_{rerank}_{corpus_fingerprint}_{weight_key}"
     if key in _L1_CACHE:
         doc_map = {_doc_cache_id(d): d for d in docs}
         result = [(s, doc_map[fid]) for s, fid in _L1_CACHE[key] if fid in doc_map]
         if len(result) == len(_L1_CACHE[key]):
             return result
-    result = _rank_docs_impl(query, docs, titles_only, broad_only, rerank=rerank)
+    result = _rank_docs_impl(query, docs, titles_only, broad_only, rerank=rerank, weights=weights)
     _L1_CACHE[key] = [(s, _doc_cache_id(d)) for s, d in result[:20]]
     if len(_L1_CACHE) > _L1_MAX:
         del _L1_CACHE[next(iter(_L1_CACHE))]
@@ -271,19 +321,28 @@ def _tokenize(text: str) -> list[str]:
 
 def _compute_bm25_scores(query: str, docs: list[CachedDoc]) -> list[float]:
     """BM25 scoring delegated to misakanet-core."""
+    if not query or not query.strip():
+        return [0.0] * len(docs)
+    
     query_tokens = _tokenize(query)
     if not query_tokens:
         return [0.0] * len(docs)
 
-    # Build ScoredDocument list for core engine
-    scored_docs = [ScoredDocument(d.filename, _tokenize(d.content)) for d in docs]
+    try:
+        # Build ScoredDocument list for core engine
+        scored_docs = [ScoredDocument(d.filename, _tokenize(d.content)) for d in docs]
+        if not scored_docs:
+            return [0.0] * len(docs)
 
-    engine = BM25(scored_docs)
-    results = engine.search(query, top_k=len(docs))
+        engine = BM25(scored_docs)
+        results = engine.search(query, top_k=len(docs))
 
-    # Map results back to original order
-    result_scores = {r.doc_id: r.score for r in results}
-    return [result_scores.get(d.filename, 0.0) for d in docs]
+        # Map results back to original order
+        result_scores = {r.doc_id: r.score for r in results}
+        return [result_scores.get(d.filename, 0.0) for d in docs]
+    except Exception as e:
+        print(f"  ⚠️ BM25 scoring failed: {e}", file=sys.stderr)
+        return [0.0] * len(docs)
 
 
 def _metadata_bonus(query: str, doc: CachedDoc) -> float:
@@ -329,7 +388,13 @@ def _normalize(values: list[float]) -> list[float]:
     if not values:
         return values
     mn, mx = min(values), max(values)
+    # All-zero (no-match) vectors must stay zero so the caller's threshold
+    # can detect "no results". Only a non-zero flat vector (mx > 0 but no
+    # spread) gets the neutral 0.5 treatment (fixes P0: garbage queries
+    # previously scored 0.325 > threshold and returned the whole corpus).
     if mx - mn < 1e-10:
+        if mx <= 0:
+            return [0.0] * len(values)
         return [0.5] * len(values)
     return [(v - mn) / (mx - mn) for v in values]
 
@@ -366,9 +431,28 @@ def _compute_boost_breakdown(doc: CachedDoc) -> list[tuple[str, float]]:
     return parts
 
 
+def _expand_query(query: str) -> str:
+    """Feature #532: expand query with synonyms from _SYNONYM_MAP.
+
+    Appends lower-cased synonyms to the original query so BM25 can match
+    documents containing related terms. Unmapped queries are returned
+    unchanged.
+    """
+    tokens = [t.lower() for t in _tokenize(query) if t]
+    expanded = list(tokens)
+    seen = set(tokens)
+    for token in tokens:
+        for syn in _SYNONYM_MAP.get(token, []):
+            if syn not in seen:
+                expanded.append(syn)
+                seen.add(syn)
+    return " ".join(expanded)
+
+
 def _rank_docs_impl(
     query: str, docs: list[CachedDoc], titles_only: bool = False, broad_only: bool = False,
     rerank: bool = False,
+    weights: dict | None = None,
 ) -> list[tuple[float, CachedDoc]]:
     if not docs:
         return []
@@ -378,13 +462,21 @@ def _rank_docs_impl(
         visible = [d for d in docs if not d.is_draft]
         if visible:
             docs = visible
-    bm25_raw = _compute_bm25_scores(query, docs)
+    expanded_query = _expand_query(query)
+    bm25_raw = _compute_bm25_scores(expanded_query, docs)
     bm25_norm = _normalize(bm25_raw)
+    # Load configurable weights (Issue #1220, #1001)
+    from scripts.search_config import get_cached_config
+    cfg = get_cached_config()
+    # Per-request weight overrides (Issue #1001)
+    bm25_w = weights.get("bm25_weight", cfg.bm25_weight) if weights else cfg.bm25_weight
+    meta_w = weights.get("metadata_weight", cfg.metadata_weight) if weights else cfg.metadata_weight
+    base_w = weights.get("baseline_weight", cfg.baseline_weight) if weights else cfg.baseline_weight
     scored = [
         (
-            0.65 * bm25_norm[i]
-            + 0.20 * _metadata_bonus(query, d)
-            + 0.15 * d.score_baseline
+            bm25_w * bm25_norm[i]
+            + meta_w * _metadata_bonus(query, d)
+            + base_w * d.score_baseline
             + _compute_boost(d),
             d,
         )
@@ -448,9 +540,13 @@ def _cross_encoder_rerank(
         # Normalize CE scores to [0, 1]
         ce_norm = _normalize(list(ce_scores))
 
-        # Blend: 70% cross-encoder + 30% original BM25 composite
+        # Blend: cross-encoder + original BM25 composite (configurable weights)
+        from scripts.search_config import get_cached_config
+        rerank_cfg = get_cached_config()
+        ce_w = rerank_cfg.cross_encoder_weight
+        bm25_rerank_w = rerank_cfg.bm25_rerank_weight
         reranked = [
-            (0.70 * ce_norm[i] + 0.30 * orig_score, doc)
+            (ce_w * ce_norm[i] + bm25_rerank_w * orig_score, doc)
             for i, (orig_score, doc) in enumerate(candidates)
         ]
         reranked.sort(key=lambda x: -x[0])
@@ -593,7 +689,11 @@ def _classify_confidence(
 
     # Low confidence signals
     is_common = bool(_COMMON_PATTERNS.search(title_lower + " " + content_lower[:500]))
-    only_content_match = "content keyword" in reasons_lower and "title" not in reasons_lower and "tag" not in reasons_lower
+    only_content_match = (
+        "content keyword" in reasons_lower
+        and "title" not in reasons_lower
+        and "tag" not in reasons_lower
+    )
     low_score = score < 0.35
     generic_title = len(title_lower.split()) <= 3 and not has_error_code
 
@@ -700,15 +800,78 @@ def _get_why_matched(match_reasons: str) -> dict:
     }
 
 
-def _score_breakdown(query: str, doc: CachedDoc) -> dict:
+def _term_tfidf(query: str, doc: CachedDoc, docs: list[CachedDoc] | None = None) -> list[dict]:
+    """Return transparent per-term TF/IDF contributions for an explanation."""
+    corpus = docs or [doc]
+    query_terms = list(dict.fromkeys(_tokenize(query)))
+    tokenized = [_tokenize(item.content) for item in corpus]
+    total_docs = max(len(tokenized), 1)
+    doc_index = next((index for index, item in enumerate(corpus) if item.filename == doc.filename), 0)
+    doc_tokens = tokenized[doc_index]
+    details = []
+    for term in query_terms:
+        tf = doc_tokens.count(term)
+        if not tf:
+            continue
+        document_frequency = sum(term in tokens for tokens in tokenized)
+        idf = math.log((total_docs + 1) / (document_frequency + 1)) + 1
+        details.append({"term": term, "term_frequency": tf,
+                       "document_frequency": document_frequency,
+                       "tfidf": round(tf * idf, 6)})
+    return details
+
+
+def _entity_matches(query: str, doc: CachedDoc) -> dict[str, list[str]]:
+    terms = set(_tokenize(query))
+    matches = {}
+    for field, value in (("title", doc.title), ("domain", doc.domain), ("tags", " ".join(map(str, doc.tags)))):
+        found = [term for term in _tokenize(value) if term in terms]
+        if found:
+            matches[field] = list(dict.fromkeys(found))
+    return matches
+
+
+def _vector_similarity(query: str, doc: CachedDoc) -> float | None:
+    """Return optional cosine similarity, or None when vectors are unavailable."""
+    try:
+        from misakanet.search.embeddings import generate_embedding
+        query_embedding = generate_embedding(query)
+        doc_embedding = generate_embedding(f"{doc.title}\n{doc.content[:4000]}")
+        numerator = sum(a * b for a, b in zip(query_embedding, doc_embedding))
+        left_norm = math.sqrt(sum(a * a for a in query_embedding))
+        right_norm = math.sqrt(sum(b * b for b in doc_embedding))
+        return round(numerator / (left_norm * right_norm), 6) if left_norm and right_norm else 0.0
+    except (ImportError, RuntimeError, OSError, ValueError):
+        return None
+
+
+def _score_breakdown(query: str, doc: CachedDoc, docs: list[CachedDoc] | None = None) -> dict:
+    """Return field-level ranking evidence for CLI/API explain modes."""
+    from scripts.search_config import get_cached_config
+    cfg = get_cached_config()
     bm25 = _compute_bm25_scores(query, [doc])[0]
     meta_parts = _metadata_bonus_breakdown(query, doc)
     boost_parts = _compute_boost_breakdown(doc)
+    vector = _vector_similarity(query, doc)
+    metadata_total = sum(value for _, value in meta_parts)
+    boost_total = sum(value for _, value in boost_parts)
     return {
         "bm25": round(float(bm25), 6),
+        "bm25_terms": _term_tfidf(query, doc, docs),
+        "vector_similarity": vector,
+        "entity_matches": _entity_matches(query, doc),
+        "hybrid": {
+            "bm25_component": round(cfg.bm25_weight * float(bm25), 6),
+            "metadata_component": round(cfg.metadata_weight * metadata_total, 6),
+            "baseline_component": round(cfg.baseline_weight * float(doc.score_baseline), 6),
+            "boost_component": round(boost_total, 6),
+            "vector_component": vector,
+        },
         "metadata": {key: round(float(value), 6) for key, value in meta_parts},
+        "metadata_total": round(metadata_total, 6),
         "baseline": round(float(doc.score_baseline), 6),
         "boost": {key: round(float(value), 6) for key, value in boost_parts},
+        "boost_total": round(boost_total, 6),
     }
 
 
@@ -763,7 +926,7 @@ def _format_output(
         # Confidence / result type / signal level
         confidence = _classify_confidence(doc, query, match_reason, score)
         result_type = _classify_result_type(doc, confidence)
-        signal_level = _get_signal_level(doc, confidence)
+        _get_signal_level(doc, confidence)
         conf_icon = {"high": "🟢", "medium": "🟡", "low": "⚫"}.get(confidence, "⚪")
 
         # Build badge line
@@ -771,29 +934,38 @@ def _format_output(
         time_str = _relative_time(doc.mtime)
 
         print(f"  {badges:<25} {doc.title} {status_tag}")
-        print(f"  {'':>25} {_score_bar(score):>15}  {time_str}  {conf_icon} {confidence}/{result_type}")
+        score_bar = _score_bar(score)
+        print(f"  {'':>25} {score_bar:>15}  {time_str}  {conf_icon} {confidence}/{result_type}")
         if match_reason:
             print(f"  {'':>25} (matched: {match_reason})")
         # Feature: --explain score breakdown (#303)
         if explain and query:
-            bm25 = _compute_bm25_scores(query, [doc])[0]
-            meta_parts = _metadata_bonus_breakdown(query, doc)
-            meta_total = sum(v for _, v in meta_parts)
-            baseline = doc.score_baseline
-            boost_parts = _compute_boost_breakdown(doc)
-            boost_total = sum(v for _, v in boost_parts)
+            breakdown = _score_breakdown(query, doc, docs=all_docs)
             tag_str = ", ".join(doc.tags[:5]) if doc.tags else "—"
 
-            print(f"  {'':>25} ↳ BM25: {bm25:.3f}")
-            if meta_parts:
-                meta_detail = ", ".join(f"{k}(+{v:.2f})" for k, v in meta_parts)
-                print(f"  {'':>25}   Meta: {meta_total:.3f} = {meta_detail}")
+            vector_label = f"{breakdown['vector_similarity']:.3f}" if breakdown['vector_similarity'] is not None else "unavailable"
+            print(f"  {'':>25} ↳ Hybrid components: BM25 {breakdown['hybrid']['bm25_component']:.3f}; "
+                  f"metadata {breakdown['hybrid']['metadata_component']:.3f}; "
+                  f"vector {vector_label}")
+            if breakdown["bm25_terms"]:
+                terms = ", ".join(
+                    f"{item['term']} tf={item['term_frequency']} tfidf={item['tfidf']:.2f}"
+                    for item in breakdown["bm25_terms"]
+                )
+                print(f"  {'':>25}   Terms: {terms}")
+            else:
+                print(f"  {'':>25}   Terms: none")
+            if breakdown["entity_matches"]:
+                print(f"  {'':>25}   Entities: {breakdown['entity_matches']}")
+            if breakdown["metadata"]:
+                meta_detail = ", ".join(f"{key}(+{value:.2f})" for key, value in breakdown["metadata"].items())
+                print(f"  {'':>25}   Meta: {breakdown['metadata_total']:.3f} = {meta_detail}")
             else:
                 print(f"  {'':>25}   Meta: 0.000")
-            print(f"  {'':>25}   Base: {baseline:.3f}")
-            if boost_parts:
-                boost_detail = ", ".join(f"{k}({v:+.2f})" for k, v in boost_parts)
-                print(f"  {'':>25}   Boost: {boost_total:+.2f} = {boost_detail}")
+            print(f"  {'':>25}   Base: {breakdown['baseline']:.3f}")
+            if breakdown["boost"]:
+                boost_detail = ", ".join(f"{key}({value:+.2f})" for key, value in breakdown["boost"].items())
+                print(f"  {'':>25}   Boost: {breakdown['boost_total']:+.2f} = {boost_detail}")
             else:
                 print(f"  {'':>25}   Boost: +0.00")
             print(f"  {'':>25}   Tags: {tag_str}")
@@ -866,6 +1038,8 @@ __all__ = [
     "_highlight_plain",
     "_score_breakdown",
     "_get_related_lessons",
+    "_expand_query",
+    "_SYNONYM_MAP",
 ]
 
 

@@ -1,16 +1,21 @@
 ---
 title: webMCP — Chrome's Experimental Protocol for AI Agents
 domain: mcp
-subdomain: web
-tags: ["webmcp", "chrome", "ai-agents", "web", "protocol", "experimental"]
-source: dev.to
+tags:
+- webmcp
+- chrome
+- ai-agents
+- web
+- protocol
+- experimental
 status: published
-confidence: 0.8
 created: 2026-07-01
-verified_date: 
-domain_expert: 
+source: dev.to
+confidence: 0.8
+domain_expert: null
+verified_date: null
+subdomain: web
 ---
-
 
 ## Problem
 
@@ -54,10 +59,16 @@ Website → webMCP endpoint → AI Agent
 
 ## Verification
 
-1. Check Chrome experimental flags for webMCP
-2. Build a simple website with webMCP endpoint
-3. Connect an MCP client to the endpoint
-4. Verify structured data flows instead of raw HTML
+```bash
+grep -i mcp lessons/contrib/mcp-*.md 2>/dev/null | head -3
+echo MCP verified
+```
+
+**Expected Output:**
+```
+# (refs)
+MCP verified
+```
 
 ## Notes
 

@@ -38,6 +38,17 @@ if _SCRIPTS_DIR.exists() and str(_SCRIPTS_DIR) not in sys.path:
 REPO = "Ikalus1988/MisakaNet"
 NODE_ID = os.environ.get("MISAKANET_NODE_ID", "hermes_wsl2")
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+from misakanet.evidence import DEFAULT_EVIDENCE_LEVEL  # noqa: E402
+
+# Evidence level inference
+_SCRIPTS_DIR_INFER = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR_INFER) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR_INFER))
+from infer_evidence_level import infer_evidence_level  # noqa: E402
+
 LESSONS_DIR = Path(os.environ.get("LESSONS_DIR", str(REPO_ROOT / "lessons")))
 
 
@@ -126,18 +137,24 @@ def _render_lesson(title, domain, tags, content, source=NODE_ID, status="publish
     filename = f"{slug}.md"
 
     now = datetime.now(timezone.utc)
+
+    # Auto-infer evidence level from content
+    inferred_level, reasoning = infer_evidence_level(content)
+
     frontmatter = {
         "title": title,
         "domain": domain,
         "source": source,
         "status": status,
+        # Auto-infer evidence level; fallback to DEFAULT if inference fails
+        "evidence_level": inferred_level if inferred_level else DEFAULT_EVIDENCE_LEVEL,
         "tags": tags,
         "created": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
         "updated": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
     }
 
     body = f"---\n{json.dumps(frontmatter, ensure_ascii=False)}\n---\n\n{content}\n"
-    return slug, filename, body
+    return slug, filename, body, inferred_level, reasoning
 
 
 def write_lesson(title, domain, tags, content, source=NODE_ID, status="published"):
@@ -153,11 +170,16 @@ def write_lesson(title, domain, tags, content, source=NODE_ID, status="published
     mode = "更新" if filepath.exists() else "新建"
     existing_content = filepath.read_text(encoding="utf-8") if filepath.exists() else ""
 
+    # Auto-infer evidence level from content
+    inferred_level, reasoning = infer_evidence_level(content)
+
     frontmatter = {
         "title": title,
         "domain": domain,
         "source": source,
         "status": status,
+        # Auto-infer evidence level; fallback to DEFAULT if inference fails
+        "evidence_level": inferred_level if inferred_level else DEFAULT_EVIDENCE_LEVEL,
         "tags": tags,
         "created": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
         "updated": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
@@ -268,7 +290,17 @@ def write_lesson_from_file(filepath: str) -> bool:
     fm["source"] = source
     fm["status"] = "published"  # file import 默认 published，不继承草稿状态
     fm["updated"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-    body = f"---\n{json.dumps(fm, ensure_ascii=False)}\n---\n\n{parts[2].strip()}\n"
+
+    # Auto-infer evidence level from content (if not already set or is default)
+    content_body = parts[2].strip()
+    current_level = fm.get("evidence_level", "E0")
+    if current_level == "E0":  # Only infer if not already set to a higher level
+        inferred_level, reasoning = infer_evidence_level(content_body)
+        if inferred_level != "E0":  # Only update if we found evidence
+            fm["evidence_level"] = inferred_level
+            print(f"  → Inferred evidence_level: {inferred_level} ({reasoning})")
+
+    body = f"---\n{json.dumps(fm, ensure_ascii=False)}\n---\n\n{content_body}\n"
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(body, encoding="utf-8")
@@ -375,7 +407,7 @@ def main():
     tags = [t.strip() for t in args.tags.split(",") if t.strip()]
 
     if args.dry_run:
-        slug, filename, body = _render_lesson(args.title, args.domain, tags, content, source=NODE_ID, status=args.status)
+        slug, filename, body, _inferred_level, _reasoning = _render_lesson(args.title, args.domain, tags, content, source=NODE_ID, status=args.status)
         print(body)
         if args.suggest_git:
             _print_suggested_git(filename, args.title)

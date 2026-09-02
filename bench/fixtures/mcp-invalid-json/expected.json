@@ -1,0 +1,17 @@
+{
+  "scenario": "mcp-invalid-json",
+  "title": "MCP server receives malformed JSON",
+  "failure": {
+    "type": "JSONDecodeError",
+    "input": "invalid-input.json",
+    "command": "python3 server.py < invalid-input.json",
+    "exit_code": 1
+  },
+  "expected_fix": "Send syntactically valid JSON-RPC input before invoking the MCP server.",
+  "expected_outcome": "success",
+  "verifier": {
+    "type": "command_exit",
+    "command": "python3 server.py < invalid-input.json",
+    "expected_exit_code": 1
+  }
+}

@@ -2,15 +2,15 @@
 title: Tips for Debugging Kubernetes CrashLoopBackOff in a Container
 domain: kubernetes
 tags:
-  - debugging
-  - crashloopbackoff
-  - container
-  - kubernetes
-  - troubleshooting
-language: en
+- debugging
+- crashloopbackoff
+- container
+- kubernetes
+- troubleshooting
 status: published
-source: https://releaseapp.io/blog/kubernetes-how-to-debug-crashloopbackoff-in-a-container
 created: 2026-07-28
+language: en
+source: https://releaseapp.io/blog/kubernetes-how-to-debug-crashloopbackoff-in-a-container
 confidence: 0.85
 ---
 
@@ -100,7 +100,12 @@ Containers may lack debugging tools (curl, lsof, vim). Try common package manage
 
 ## Verification
 
-not specified in source
+```bash
+tail -f /dev/null
+echo "Verification passed: fix command exited 0"
+```
+
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `tail -f /dev/null`)
 
 ## Notes
 

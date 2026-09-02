@@ -1,0 +1,19 @@
+{
+  "_schema": "1.0",
+  "_description": "Non-transferable contributor reputation points. No cash value.",
+  "_last_updated": "2026-08-26T00:00:00Z",
+  "contributors": {
+    "Jason-liuwei": {
+      "total_points": 10,
+      "history": [
+        {
+          "action": "bug_report_merged",
+          "points": 10,
+          "date": "2026-08-26",
+          "ref": "issue-1323",
+          "description": "DSH plugin install failure — entry file missing"
+        }
+      ]
+    }
+  }
+}

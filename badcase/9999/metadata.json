@@ -1,0 +1,94 @@
+{
+  "issue_number": 9999,
+  "title": "[Intake] Test short issue",
+  "intake_score": 0,
+  "dimensions": {
+    "completeness": {
+      "score": 0,
+      "weight": 0.25,
+      "weighted": 0.0,
+      "reasons": [
+        "\u2717 problem missing",
+        "\u2717 error missing",
+        "\u2717 fix missing"
+      ]
+    },
+    "generalization": {
+      "score": 55,
+      "weight": 0.15,
+      "weighted": 8.25,
+      "reasons": [
+        "\u2713 No user-specific paths",
+        "\u2713 No internal references",
+        "\u2717 Only 0 generic tech keywords"
+      ]
+    },
+    "verification": {
+      "score": 10,
+      "weight": 0.3,
+      "weighted": 3.0,
+      "reasons": [
+        "\u2717 No verification section",
+        "\u2713 Test/verification mentioned in body"
+      ]
+    },
+    "detail": {
+      "score": 0,
+      "weight": 0.2,
+      "weighted": 0.0,
+      "reasons": [
+        "\u2717 Very short word count: 7",
+        "\u2717 No code blocks",
+        "\u2717 No error messages"
+      ]
+    },
+    "format": {
+      "score": 0,
+      "weight": 0.1,
+      "weighted": 0.0,
+      "reasons": [
+        "\u2717 No headers",
+        "\u2717 No lists",
+        "\u2717 No frontmatter"
+      ]
+    }
+  },
+  "weighted_score": 11.25,
+  "confidence": 0.75,
+  "final_score": 8.4375,
+  "decision": "reject",
+  "reasons": [
+    "\u2717 problem missing",
+    "\u2717 error missing",
+    "\u2717 fix missing",
+    "\u2713 No user-specific paths",
+    "\u2713 No internal references",
+    "\u2717 Only 0 generic tech keywords",
+    "\u2717 No verification section",
+    "\u2713 Test/verification mentioned in body",
+    "\u2717 Very short word count: 7",
+    "\u2717 No code blocks",
+    "\u2717 No error messages",
+    "\u2717 No headers",
+    "\u2717 No lists",
+    "\u2717 No frontmatter"
+  ],
+  "suggestions": [
+    "Add a 'Problem' section",
+    "Add a 'Error' section",
+    "Add a 'Fix' section",
+    "Add more detail to your explanation",
+    "Use markdown headers to organize content",
+    "Consider adding code examples or error messages",
+    "Add code snippets to illustrate the problem or fix",
+    "Include actual error messages or stack traces"
+  ],
+  "lesson_title": "test-short-issue",
+  "lesson_domain": "general",
+  "lesson_tags": [
+    "debugging",
+    "troubleshooting",
+    "lesson"
+  ],
+  "created_at": "2026-08-23T16:51:26.900654Z"
+}

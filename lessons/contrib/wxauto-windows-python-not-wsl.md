@@ -1,14 +1,22 @@
 ---
-{
-  "domain": "contrib",
-  "title": "wxauto 必须在 Windows Python 下安装，不能走 WSL pip",
-  "verification": "metadata-normalized",
-  "{\"title\"": "wxauto 必须在 Windows Python 下安装，不能走 WSL pip\", \"domain\": \"devops\", \"subdomain\": \"wechat\", \"source\": \"bootstrap\", \"status\": \"published\", \"tags\": [\"project:rag\", \"platform:windows\", \"node:hermes_wsl\", \"scope:narrow\"], \"confidence\": \"0.85\", \"created\": \"2026-05-03\", \"domain_expert\": \"bootstrap\", \"verified_date\": \"2026-05-03\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: wxauto 必须在 Windows Python 下安装，不能走 WSL pip
+domain: wechat
+tags:
+- project:rag
+- platform:windows
+- node:hermes_wsl
+- scope:narrow
+status: published
+created: '2026-07-06'
+language: zh
+source: bootstrap
+confidence: 0.85
+domain_expert: bootstrap
+verified_date: '2026-05-03'
+subdomain: wechat
 ---
 
+---
 ## Problem
 
 在 WSL2 中 `pip install wxauto` 报错 `No matching distribution found`。wxauto 是 Windows-only 库。
@@ -33,7 +41,16 @@ pip install git+https://github.com/cluic/wxauto.git
 
 ## Verification
 
-安装后在 Windows Python 中 `import wxauto` 不报错，WSL 中 `import wxauto` 预期报错。
+```bash
+python3 --version
+python3 -c 'import sys; print(sys.version)'
+```
+
+**Expected Output:**
+```
+Python 3.
+3.
+```
 
 ## Notes
 

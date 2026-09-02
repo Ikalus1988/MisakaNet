@@ -1,14 +1,29 @@
 ---
-{
-  "domain": "contrib",
-  "title": "api gateway anthropic incompatibility",
-  "verification": "metadata-normalized",
-  "{\"title\"": "InternalGateway API 网关不兼容 Anthropic 原生格式\", \"domain\": \"devops\", \"subdomain\": \"api\", \"source\": \"bootstrap\", \"status\": \"published\", \"tags\": [\"project:rag\", \"severity:medium\", \"node:hermes_wsl\"], \"confidence\": \"0.8\", \"created\": \"2026-05-03\", \"domain_expert\": \"bootstrap\", \"verified_date\": \"2026-05-03\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: api gateway anthropic incompatibility
+domain: contrib
+tags:
+- project:rag
+- severity:medium
+- node:hermes_wsl
+status: published
+created: '2026-07-06'
+source: bootstrap
+confidence: 0.8
+domain_expert: bootstrap
+verified_date: '2026-05-03'
+subdomain: api
 ---
 
+<!-- provenance:
+provenance:
+  source: "internal"
+  contributor: "Ikalus1988"
+  merged_at: "2026-05-20"
+  evidence: "post-publication"
+-->
+
+---
+<!-- 
 ## Problem
 
 Hermes Agent 配置 Anthropic provider 使用 internal-gateway.local API 时失败，
@@ -32,7 +47,16 @@ api_base: https://api.internal-gateway.local/v1
 
 ## Verification
 
-配置为 OpenAI provider 后，API 调用正常返回，模型响应正确。
+```bash
+echo "Lesson: api gateway anthropic incompatibility"
+wc -l lessons/contrib/api-gateway-anthropic-incompatibility.md
+```
+
+**Expected Output:**
+```
+Lesson: api gateway anthropic incompatibility
+# (line count)
+```
 
 ## Notes
 

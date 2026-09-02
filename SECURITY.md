@@ -4,8 +4,8 @@
 
 | Version | Supported |
 |---------|-----------|
-| v1.x    | ✅ Active development |
-| < 1.0   | ❌ Pre-release |
+| v2.x    | ✅ Active development |
+| < 2.0   | ❌ Pre-release |
 
 ## Reporting a Vulnerability
 

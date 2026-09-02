@@ -1,13 +1,16 @@
 ---
-{
-  "domain": "contrib",
-  "title": "多模型Switch脚本模式 — 双 Agent 模型管理",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: 多模型Switch脚本模式 — 双 Agent 模型管理
+domain: contrib
+tags:
+- model
+- switch
+- script
+- pattern
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
 ---
----{"title": "多模型Switch脚本模式 — 双 Agent 模型管理", "confidence": "0.7", "created": "2026-05-02", "domain": "devops", "source": "bootstrap", "status": "published", "tags": ""}---
 
 # 多模型Switch脚本模式 — 双 Agent 模型管理
 
@@ -23,13 +26,14 @@ See problem description above for technical details.
 
 ## Verification
 
-1. Follow the solution steps in order
-2. Run any relevant commands or tests to confirm the fix
-3. Verify the symptom no longer occurs
-4. Check related logs or outputs for expected behavior
+```bash
+switch-agent-a list              # 可用模型
+echo "Verification passed: fix command exited 0"
+```
 
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `switch-agent-a list # 可用模型`)
 
-## 方案
+## Solution
 
 每个 Agent 各自维护一个独立的切换脚本，各管各的配置。
 

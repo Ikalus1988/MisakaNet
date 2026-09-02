@@ -1,16 +1,24 @@
 ---
-{
-  "domain": "contrib",
-  "title": "browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation
+domain: automation
+tags:
+- automation
+- browser
+- harness
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
+confidence: 0.6
 ---
----{"title": "browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation", "domain": "devops", "source": "skill-harvest", "status": "published", "confidence": "0.6", "created": "2026-05-20"}---
 
-# browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation
+<!-- provenance:
+  contributor: "Ikalus1988"
+  merged_at: "2026-05-20"
+  evidence: "post-publication"
+-->
 
+<!-- 
 ## Background
 
 browser-harness 是 browser-use 团队的开源项目，定位是「给 AI 用的浏览器控制层」。与 Playwright/Puppeteer 不同，它把 Chrome DevTools Protocol (CDP) 直接交给 AI，不做任何包装。
@@ -140,11 +148,16 @@ ws.send(json.dumps({"type": "batch", "actions": [
 可以同时跑，互不干扰。Chrome Relay 也支持连外部 Chrome（需 `--no-chrome` + 配置 `cdpUrl`）。
 ## Verification
 
-1. Follow the solution steps in order
-2. Run any relevant commands or tests to confirm the fix
-3. Verify the symptom no longer occurs
-4. Check related logs or outputs for expected behavior
+```bash
+echo "Lesson: browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation"
+wc -l lessons/contrib/browser-harness-cdp-browser-automation.md
+```
 
+**Expected Output:**
+```
+Lesson: browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation
+# (line count)
+```
 
 ## 文档
 

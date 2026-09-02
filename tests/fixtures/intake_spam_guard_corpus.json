@@ -1,0 +1,105 @@
+[
+  {
+    "id": "oversized_body_20k",
+    "category": "body_size_limit",
+    "expected_action": "truncate_or_block",
+    "payload": {
+      "problem": "Oversized intake problem log with repeated data. ",
+      "error": "Repeated error log details. ",
+      "what_tried": "Repeated attempts and retries. ",
+      "fix": "Apply truncation and bounded streaming buffer. ",
+      "source": "stress-test"
+    },
+    "description": "Submission exceeding field limits must be safely truncated to max bounds without crashing issue creation"
+  },
+  {
+    "id": "spam_keywords_casino",
+    "category": "spam_keywords",
+    "expected_action": "block",
+    "payload": {
+      "problem": "Join our online casino and get free money instantly! Click here: https://spam.example.com",
+      "source": "spammer"
+    },
+    "description": "Explicit spam keywords (casino, free money, click here) should be rejected deterministically"
+  },
+  {
+    "id": "spam_keywords_crypto_pump",
+    "category": "spam_keywords",
+    "expected_action": "block",
+    "payload": {
+      "problem": "Buy now 100x gem token on solana crypto pump",
+      "error": "viagra pills discount",
+      "source": "spammer"
+    },
+    "description": "Crypto pump and medication spam keywords should be rejected deterministically"
+  },
+  {
+    "id": "empty_problem",
+    "category": "empty_vague",
+    "expected_action": "block",
+    "payload": {
+      "problem": "",
+      "source": "empty-agent"
+    },
+    "description": "Empty problem description must be rejected with an actionable error hint"
+  },
+  {
+    "id": "vague_whitespace_only",
+    "category": "empty_vague",
+    "expected_action": "block",
+    "payload": {
+      "problem": "   \n\t  ",
+      "source": "blank-bot"
+    },
+    "description": "Whitespace-only problem description must be rejected with an actionable error hint"
+  },
+  {
+    "id": "markdown_heavy_injection",
+    "category": "markdown_heavy",
+    "expected_action": "sanitize_and_accept",
+    "payload": {
+      "problem": "# # # Critical Vulnerability in auth\n```bash\nrm -rf /\n```\n[Link](https://example.com) with **bold** text",
+      "error": "```python\nprint('nested code block')\n```",
+      "fix": "Use `#heading` sanitization",
+      "source": "sec-tester"
+    },
+    "description": "Markdown heavy formatting, headings, and code blocks must sanitize title without crashing or injecting raw markdown into issue title"
+  },
+  {
+    "id": "secret_pat_and_db_url",
+    "category": "secret_strings",
+    "expected_action": "redact_and_accept",
+    "payload": {
+      "problem": "Failed to connect to database using postgres://admin:SuperSecretPass123!@db.internal:5432/prod",
+      "error": "GitHub API error 401 with token ghp_ABCdefGHIJklmnoPQRstuvWXYZ1234567890",
+      "what_tried": "Passed Bearer sk-ant-api03-abcdefghijklmnopqrstuvwxyz1234567890",
+      "source": "agent-reporter"
+    },
+    "description": "Secrets, DB credentials, PATs, and API keys must be redacted before GitHub issue body construction"
+  },
+  {
+    "id": "secret_rsa_private_key",
+    "category": "secret_strings",
+    "expected_action": "redact_and_accept",
+    "payload": {
+      "problem": "SSH deployment failure\n-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0m...\n-----END RSA PRIVATE KEY-----",
+      "source": "dev-deploy"
+    },
+    "description": "PEM private keys must be fully redacted before GitHub issue body construction"
+  },
+  {
+    "id": "valid_concise_intake",
+    "category": "valid_concise",
+    "expected_action": "accept",
+    "payload": {
+      "kind": "missing_lesson",
+      "problem": "FastMCP server raises TypeError when client sends empty params object on tools/list",
+      "error": "TypeError: FastMCP.list_tools() takes 0 positional arguments but 1 was given",
+      "what_tried": "Tested passing params: {} vs omitting params",
+      "fix": "Decorate list_tools handler with optional arguments check or default dict",
+      "verification": "Ran pytest tests/test_mcp_server.py and verified both payloads pass",
+      "source": "valid-agent"
+    },
+    "description": "Clean, concise technical failure report with problem, error, fix, and verification must pass cleanly"
+  }
+]

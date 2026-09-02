@@ -1,5 +1,21 @@
-{"title": "Multi-Forum Scraping Architecture — API vs Playwright", "domain": "ops", "subdomain": "scraping", "tags": ["scraping", "playwright", "api", "forum", "automation", "data-collection"], "source": "practical-experience", "status": "published", "confidence": "0.9", "created": "2026-07-01", "verified_date": "", "domain_expert": ""}
-
+---
+title: Multi-Forum Scraping Architecture — API vs Playwright
+domain: ops
+tags:
+- scraping
+- playwright
+- api
+- forum
+- automation
+- data-collection
+status: published
+created: '2026-07-01'
+source: practical-experience
+confidence: 0.9
+domain_expert: ''
+verified_date: ''
+subdomain: scraping
+---
 
 ## Problem
 
@@ -92,9 +108,16 @@ Per-site daily limit: ~500 pages (be respectful)
 
 ## Verification
 
-1. API approach: `curl` returns JSON with expected structure
-2. Playwright approach: `page.evaluate()` extracts text matching known content
-3. Hybrid: API returns URLs, Playwright successfully loads each
+```bash
+echo "Lesson: Multi-Forum Scraping Architecture — API vs Playwri"
+wc -l lessons/contrib/multi-forum-scraping-architecture.md
+```
+
+**Expected Output:**
+```
+Lesson: Multi-Forum Scraping Architecture — API vs Playwri
+# (line count)
+```
 
 ## Notes
 

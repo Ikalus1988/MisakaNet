@@ -1,17 +1,20 @@
 ---
-{
-  "domain": "contrib",
-  "title": "Git Credentials 和 Node ID Setup",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: Git Credentials 和 Node ID Setup
+domain: git
+tags:
+- git
+- credentials
+- node
+- setup
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
 ---
----{"title": "Git Credentials 和 Node ID Setup", "domain": "devops", "source": "hermes_wsl2", "status": "published", "tags": ["git", "credentials", "node-id", "setup"]}---
 
 ## Git Credentials 和 Node ID 配置
 
-### 问题
+### Problem
 在新环境中使用 git 操作时，如果没有正确配置凭证和节点标识，会遇到：
 
 1. `git push` 提示 401 Unauthorized 或要求用户名密码
@@ -56,7 +59,7 @@ export NODE_ID="<node-name>"
 }
 ```
 
-### 验证
+### Verification
 ```bash
 # 验证 git 配置
 git config --list | grep -E "user.(name|email)|credential"
@@ -69,3 +72,16 @@ git fetch --dry-run
 - PAT 视为密码，不要提交到仓库
 - 不同平台使用不同的 credential helper（Windows: manager, macOS: osxkeychain, Linux: libsecret）
 - Node ID 一旦使用建议保持不变，避免混淆
+
+## Verification
+
+```bash
+git status --short | head -5
+git log --oneline -3
+```
+
+**Expected Output:**
+```
+# (status)
+# (recent)
+```

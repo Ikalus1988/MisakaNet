@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """CLI thin wrapper — core implementation in misakanet/search/engine.py
 
+Search modes:
+    python3 search_knowledge.py "pip timeout"            # local repo BM25 (needs clone)
+    python3 search_knowledge.py "pip timeout" --remote   # D1 service (PRD ④, no clone)
+
 Ecosystem links:
     from misakanet_core import BM25, tokenize, rrf
 """
@@ -67,6 +71,17 @@ def _json_result(score, doc, query: str = "", verbose: bool = False) -> dict:
         result["why_matched"] = _get_why_matched(match_reason)
     if verbose and query:
         result["score_breakdown"] = _score_breakdown(query, doc)
+    # Freshness badge (tier info)
+    try:
+        from misakanet.freshness import compute_freshness_from_content
+        freshness = compute_freshness_from_content(doc.content)
+        result["freshness"] = {
+            "score": freshness["score"],
+            "tier": freshness["tier"]["tier"],
+            "badge": freshness["tier"]["badge"],
+        }
+    except Exception:
+        pass  # freshness is non-critical
     return result
 
 
@@ -247,6 +262,63 @@ def heal(raw_log: str):
         print(f"        python3 scripts/queue_lesson.py -t 'your title' -d <domain> 'content...'")
 
     print()
+
+
+# ── Remote mode (PRD ④): search the D1 service instead of local files ──
+# `python3 search_knowledge.py "query" --remote` pulls lessons from
+# https://misakanet.org/api/lessons (D1-backed, no clone needed) and runs the
+# same BM25 pipeline over them. `--local` (default) keeps the old behavior.
+
+_REMOTE_API = "https://misakanet.org/api/lessons"
+_REMOTE_CACHE_TTL = 300  # seconds
+
+
+def _load_remote_docs(timeout: int = 30) -> list:
+    """Fetch lesson index from the D1 service and build CachedDoc objects."""
+    import urllib.request
+
+    from misakanet.search.engine import CachedDoc
+    repo_root = Path(__file__).resolve().parent
+
+    # Use the structured filters endpoint when we can cache per-query; for a
+    # plain corpus load, grab a large page and let BM25 rank locally.
+    url = f"{_REMOTE_API}?limit=5000"
+    req = urllib.request.Request(url, headers={"User-Agent": "misakanet-cli/remote", "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        data = json.loads(r.read().decode("utf-8"))
+    if not isinstance(data, list):
+        raise RuntimeError(f"Unexpected /api/lessons response: {str(data)[:200]}")
+
+    docs = []
+    for item in data:
+        body = item.get("description") or item.get("problem") or ""
+        # Use an absolute path under the repo root so _doc_cache_id's
+        # relative_to(REPO) works for remote docs too.
+        rel = item.get("path") or f"lessons/remote/{item.get('id', 'remote.md')}.md"
+        docs.append(CachedDoc(
+            filename=item.get("id", ""),
+            filepath=repo_root / rel,
+            content=body,
+            title=item.get("title", item.get("id", "")),
+            domain=item.get("domain", ""),
+            status=item.get("status", ""),
+            tags=item.get("tags") or [],
+            language=item.get("language", ""),
+            is_lesson=True,
+        ))
+    return docs
+
+
+def _load_docs_anywhere(mode: str, remote: bool, domain: str | None = None,
+                        status_filter: str | None = None, tags_filter: list[str] | None = None) -> list:
+    """Load docs from remote D1 (--remote) or local repo (default)."""
+    if remote:
+        try:
+            return _load_remote_docs()
+        except Exception as e:
+            print(f"  ⚠️ Remote search failed ({e}); falling back to local", file=sys.stderr)
+    from misakanet.search.engine import _load_docs, LESSONS
+    return _load_docs(LESSONS, is_lesson=True)
 
 
 def _edit_distance(s1: str, s2: str) -> int:
@@ -613,6 +685,7 @@ def main():
     agent_mode = False
     strict = False
     use_feedback = False
+    remote = "--remote" in args
     env_filter: Optional[str] = None
     lang: Optional[str] = None
     domain: Optional[str] = None
@@ -676,17 +749,21 @@ def main():
         elif arg == "--env" and i + 1 < len(search_args):
             env_filter = search_args[i + 1].lower()
     # ── 轻量配额检查 ──
-    from misakanet.profile import check_quota as _check_quota
-    allowed, quota_msg = _check_quota()
-    if not allowed:
-        if json_output:
-            _print_json_error(quota_msg)
-        else:
+    # Remote mode queries the D1 service, whose quota (5 free reads/day per
+    # IP, PRD ④) is enforced server-side — skip the local node quota so a
+    # fresh clone without a profile can still search.
+    if not remote:
+        from misakanet.profile import check_quota as _check_quota
+        allowed, quota_msg = _check_quota()
+        if not allowed:
+            if json_output:
+                _print_json_error(quota_msg)
+            else:
+                print(quota_msg, file=sys.stderr)
+            sys.exit(1)
+        if quota_msg and not json_output:
             print(quota_msg, file=sys.stderr)
-        sys.exit(1)
-    if quota_msg and not json_output:
-        print(quota_msg, file=sys.stderr)
-        print("", file=sys.stderr)
+            print("", file=sys.stderr)
 
     t0 = time.time()
     found_any = False
@@ -696,7 +773,7 @@ def main():
     # --suggest mode: list matching titles when query >= 2 chars
     if suggest and len(query) >= 2 and not json_output:
         q = query.lower()
-        lessons_docs = _load_docs(LESSONS, is_lesson=True) if mode in ("all", "lessons") else []
+        lessons_docs = _load_docs_anywhere(mode, remote) if mode in ("all", "lessons") else []
         ref_docs = _load_docs(REFERENCES, is_lesson=False) if mode in ("all", "ref") else []
         all_docs = lessons_docs + ref_docs
         matches = []
@@ -717,7 +794,7 @@ def main():
     # JSON mode so stdout remains directly pipeable to jq.
     output_context = contextlib.redirect_stdout(io.StringIO()) if json_output else contextlib.nullcontext()
     with output_context:
-        lessons_docs = _load_docs(LESSONS, is_lesson=True) if mode in ("all", "lessons") else []
+        lessons_docs = _load_docs_anywhere(mode, remote) if mode in ("all", "lessons") else []
         ref_docs = _load_docs(REFERENCES, is_lesson=False) if mode in ("all", "ref") else []
 
     # Language filter
@@ -782,7 +859,7 @@ def main():
         if agent_mode:
             results = [r for r in results if r.get("result_type") == "actionable" and r.get("confidence") != "low"]
         results = results[:top_k]
-        if results:
+        if results and not remote:
             from misakanet.profile import increment_search, consume_quota
             increment_search()
             consume_quota()
@@ -791,8 +868,8 @@ def main():
 
     if use_semantic:
         try:
-            from hub.storage.vector_store import generate_embedding
-            from hub.storage.vector_store import embedding_service_health
+            from misakanet.search.embeddings import generate_embedding
+            from misakanet.search.embeddings import embedding_service_health
             health = embedding_service_health()
             if health.get("status") == "ok":
                 print("  🔬 Semantic search enabled")
@@ -801,7 +878,7 @@ def main():
                 print("  ⚠️ Falling back to BM25 — semantic search is not available")
                 use_semantic = False
         except ImportError:
-            print("  ⚠️ --semantic requires sentence-transformers and hub.storage.vector_store")
+            print("  ⚠️ --semantic requires sentence-transformers and misakanet.search.embeddings")
             print("  ⚠️ Falling back to BM25")
             use_semantic = False
     MIN_SCORE_THRESHOLD = 0.1  # Minimum score to consider as "found"
@@ -857,12 +934,15 @@ def main():
         # Log zero-result query for gap analysis
         _log_zero_result(query)
     _show_timing(time.time() - t0, total_docs)
-    if found_any and not suggest:
+    if found_any and not suggest and not remote:
         from misakanet.profile import increment_search, consume_quota
         increment_search()
         consume_quota()
     if found_any:
-        print(f"  💡 View full content: cat lessons/<filename>.md")
+        if remote:
+            print(f"  💡 Full content: https://misakanet.org/lessons/<slug>/  (or MCP misakanet_get_lesson)")
+        else:
+            print(f"  💡 View full content: cat lessons/<filename>.md")
         print(f"  💡 Contribute new knowledge: python3 scripts/queue_lesson.py -t 'title' -d domain 'content...'")
         if use_feedback and not json_output:
             _collect_feedback(query, shown_result_ids)
@@ -913,7 +993,7 @@ def _harvest_from_file(filepath: str):
         print(f"  L{lineno}: {line[:120]}")
     print()
     
-    # Generate SKP-compliant lesson draft
+    # Generate failure-memory protocol-compliant lesson draft
     print("=" * 50)
     print("📝 Generated Lesson Draft")
     print("=" * 50)

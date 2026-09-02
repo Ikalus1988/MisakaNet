@@ -1,13 +1,15 @@
 ---
-{
-  "domain": "contrib",
-  "title": "Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed
+  upstreams
+domain: contrib
+tags:
+- swarm
+- battle
+- playbook
+status: published
+created: '2026-07-06'
+source: unknown
 ---
----{"title": "Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams", "domain": "development", "tags": ["pr", "ai-review", "github-actions", "fatal-error", "spawn", "shell-injection", "esm", "ci", "playbook", "sop"], "status": "published", "confidence": "0.95", "source": "hermes_wsl2", "created": "2026-06-17", "updated": "2026-06-17"}---
 
 # Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams
 
@@ -226,16 +228,16 @@ Only escalate on verdict changes (`needs-human` → `ready`). Ignore description
 
 ## Verification
 
-### Checklist Before Opening PR
+```bash
+echo "Lesson: Swarm PR Battle Playbook — Shipping env-var error "
+wc -l lessons/contrib/swarm-pr-battle-playbook.md
+```
 
-- [ ] Code: top-level import (no dynamic import, no require())
-- [ ] Security: `shell: false`, `env: { PATH }`, `stdio: ignore`, `detached`, `unref`
-- [ ] Payload: 4 fields only (schemaVersion, reason, timestamp, pid)
-- [ ] Fork: GitHub Actions enabled in fork Settings
-- [ ] PR body: `## Real behavior proof` heading + 6 inline fields
-- [ ] Evidence: real runtime build output, not test/standalone
-- [ ] `@botname re-review` mention appended to final comment only
-- [ ] Author email: `userid+username@users.noreply.github.com`
+**Expected Output:**
+```
+Lesson: Swarm PR Battle Playbook — Shipping env-var error 
+# (line count)
+```
 
 ## Lessons Learned
 

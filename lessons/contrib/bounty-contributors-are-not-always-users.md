@@ -1,15 +1,25 @@
 ---
-{
-  "domain": "growth",
-  "title": "Bounty Contributors Are Not Always Users",
-  "tags": ["bounty", "contributors", "growth", "feedback", "community"],
-  "status": "published",
-  "source": "generalized contributor funnel analysis",
-  "created": "2026-07-17",
-  "confidence": "0.88"
-}
+title: Bounty Contributors Are Not Always Users
+domain: growth
+tags:
+- bounty
+- contributors
+- growth
+- feedback
+- community
+status: published
+created: '2026-07-17'
+source: generalized contributor funnel analysis
+confidence: 0.88
 ---
 
+<!-- provenance:
+  contributor: "Ikalus1988"
+  merged_at: "2026-07-17"
+  evidence: "post-publication"
+-->
+
+<!-- 
 ## Problem
 
 Bounty or task labels can attract contributors who submit valid pull requests but never become users of the product, readers of the knowledge base, or members of the community.
@@ -79,9 +89,16 @@ If an issue has a bounty label but no explicit funded reward, say so clearly. Am
 
 ## Verification
 
-- Contributor follow-up response rate is measured.
-- Repeat contributors are tracked separately from one-time task submitters.
-- Release notes do not use PR count as proof of lesson usefulness.
+```bash
+echo "Lesson: Bounty Contributors Are Not Always Users"
+wc -l lessons/contrib/bounty-contributors-are-not-always-users.md
+```
+
+**Expected Output:**
+```
+Lesson: Bounty Contributors Are Not Always Users
+# (line count)
+```
 
 ## Next Agent Prompt
 

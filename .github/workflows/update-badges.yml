@@ -1,0 +1,99 @@
+name: Update Badge Counts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lessons/**"
+      - "scripts/mcp_server.py"
+  workflow_run:
+    workflows: ["Lesson Quality Gate", "Update Lessons"]
+    types: [completed]
+  schedule:
+    - cron: "23 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-badges:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Count lessons
+        id: count
+        run: |
+          LESSON_COUNT=$(find lessons/ -name "*.md" \
+            ! -name "README.md" \
+            ! -name "LESSON_QUALITY*" \
+            ! -name "CONCEPTS*" \
+            ! -name "DUPLICATE*" \
+            ! -path "lessons/_archive/*" \
+            | wc -l)
+          echo "lessons=$LESSON_COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Count domains
+        run: |
+          DOMAIN_COUNT=$(grep -rh "^domain:" lessons/ --include="*.md" 2>/dev/null \
+            | sed 's/domain: *//' | sort -u | wc -l)
+          echo "domains=$DOMAIN_COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Count MCP tools
+        id: tools
+        run: |
+          # MCP tool definitions live in the worker (register-proxy-sw.js).
+          # grep -c prints "0" AND exits 1 when nothing matches, so `|| echo 0`
+          # would double-print and break $GITHUB_OUTPUT — use awk to force a
+          # single clean count instead.
+          TOOL_COUNT=$(grep -cE 'name: "misakanet_' workers/register-proxy-sw.js | awk '{print $1+0}')
+          echo "tools=$TOOL_COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Generate badge JSONs
+        run: |
+          mkdir -p /tmp/badges
+          LESSON_COUNT="${{ steps.count.outputs.lessons }}"
+          TOOL_COUNT="${{ steps.tools.outputs.tools }}"
+          DOMAIN_COUNT=$(grep -rh "^domain:" lessons/ --include="*.md" 2>/dev/null \
+            | sed 's/domain: *//' | sort -u | wc -l)
+          echo "{\"schemaVersion\":1,\"label\":\"lessons\",\"message\":\"$LESSON_COUNT\",\"color\":\"brightgreen\"}" > /tmp/badges/lessons.json
+          echo "{\"schemaVersion\":1,\"label\":\"MCP tools\",\"message\":\"$TOOL_COUNT\",\"color\":\"purple\"}" > /tmp/badges/tools.json
+          echo "{\"schemaVersion\":1,\"label\":\"domains\",\"message\":\"$DOMAIN_COUNT\",\"color\":\"blue\"}" > /tmp/badges/domains.json
+          echo "Generated badges: lessons=$LESSON_COUNT, tools=$TOOL_COUNT, domains=$DOMAIN_COUNT"
+          cat /tmp/badges/lessons.json
+          cat /tmp/badges/tools.json
+          cat /tmp/badges/domains.json
+
+      - name: Push to data branch
+        env:
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.dev"
+          git remote set-url origin "https://x-access-token:${GIT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          # Save badges to temp location before switching branches
+          cp -r /tmp/badges /tmp/badges-backup
+
+          # Switch to data branch
+          git fetch origin data
+          git checkout --track origin/data || git checkout data
+
+          # Ensure badges directory exists
+          mkdir -p badges
+
+          # Copy badges from backup
+          cp -f /tmp/badges-backup/*.json badges/
+
+          # Stage badges and check for changes
+          git add badges/
+          if ! git diff --cached --quiet; then
+            git commit -m "badges: auto-update lesson/tool counts [skip ci]"
+            git push origin data
+            echo "✅ Badges updated and pushed"
+          else
+            echo "⚠️ No badge changes detected"
+          fi

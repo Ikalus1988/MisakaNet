@@ -1,39 +1,40 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # MisakaNet Search Plugin
-# Usage: misaka-search "your search query"
-# Add to ~/.bashrc or ~/.zshrc: source /path/to/misaka-search.sh
+# Usage: source scripts/misaka-search.sh
+#        misaka-search "your search query"
+#        mk "your search query"
+#
+# Docs: https://github.com/Ikalus1988/MisakaNet#search
 
-MISAKANET_DIR="${MISAKANET_DIR:-$HOME/repos/MisakaNet}"
+set -euo pipefail
 
-misaka-search() {
-    if [ -z "$1" ]; then
+_misaka_search() {
+    if [ $# -eq 0 ]; then
         echo "Usage: misaka-search <query>"
         echo "Example: misaka-search 'database locked'"
         return 1
     fi
 
+    local query="$*"
+
+    if [ -z "${MISAKANET_DIR:-}" ]; then
+        echo "Error: MISAKANET_DIR environment variable is not set." >&2
+        return 1
+    fi
+
     if [ ! -d "$MISAKANET_DIR" ]; then
-        echo "Cloning MisakaNet..."
-        git clone https://github.com/Ikalus1988/MisakaNet.git "$MISAKANET_DIR"
+        echo "Error: MISAKANET_DIR='$MISAKANET_DIR' does not exist." >&2
+        return 1
+    fi
+
+    if [ ! -f "$MISAKANET_DIR/search_knowledge.py" ]; then
+        echo "Error: search_knowledge.py not found in MISAKANET_DIR." >&2
+        return 1
     fi
 
     cd "$MISAKANET_DIR" || return 1
-    
-    # Reset quota if exhausted
-    if [ -f "misakanet/.quota.json" ]; then
-        python3 -c "
-import json
-with open('misakanet/.quota.json') as f:
-    q = json.load(f)
-if q.get('search_count', 0) >= q.get('quota_max', 5):
-    q['search_count'] = 0
-    with open('misakanet/.quota.json', 'w') as f:
-        json.dump(q, f)
-" 2>/dev/null
-    fi
 
-    # Search
-    python3 search_knowledge.py "$*" --top 5 --json 2>/dev/null | python3 -c "
+    python3 search_knowledge.py "$query" --top 5 --json 2>/dev/null | python3 -c "
 import json, sys
 try:
     results = json.load(sys.stdin)
@@ -55,8 +56,10 @@ except Exception as e:
 "
 }
 
-# Alias for quick access
-alias misaka='misaka-search'
-alias mk='misaka-search'
+misaka-search() {
+    _misaka_search "$@"
+}
 
-echo "MisakaNet search loaded. Use: misaka-search <query> or mk <query>"
+mk() {
+    _misaka_search "$@"
+}

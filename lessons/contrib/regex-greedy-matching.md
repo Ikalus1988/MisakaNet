@@ -1,23 +1,28 @@
 ---
-{
-  "domain": "contrib",
-  "title": "正则表达式 debugging — 贪婪匹配造成的意外结果",
-  "verification": "metadata-normalized",
-  "{\"title\"": "正则表达式 debugging — 贪婪匹配造成的意外结果\", \"domain\": \"development\", \"tags\": [\"regex\", \"debug\", \"greedy\", \"pattern\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: 正则表达式 debugging — 贪婪匹配造成的意外结果
+domain: contrib
+tags:
+- regex
+- debug
+- greedy
+- pattern
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
+domain_expert: unknown
 ---
 
-## 背景
+---
+## Problem
 
 正则匹配返回了预期之外的大量文本。`<div>.*</div>` 匹配到了文档末尾而不是最近的闭合标签。
 
-## 根因
+## Root Cause
 
 默认 `.*` 和 `.+` 是贪婪模式，匹配尽可能多的字符。
 
-## 修复
+## Solution
 
 ```python
 import re
@@ -45,9 +50,15 @@ re.findall(r"<div>([^<]*)</div>", text)
 | `.+` | 任意字符1次+ | `.+?` |
 | `\d+` | 数字1次+ | `\d+?` |
 
-## 验证
+## Verification
 
 ```bash
-# 确认期望的匹配范围
-python3 -c "import re; print(re.findall(r'YOUR_PATTERN', 'YOUR_TEXT'))"
+echo "Lesson: 正则表达式 debugging — 贪婪匹配造成的意外结果"
+wc -l lessons/contrib/regex-greedy-matching.md
+```
+
+**Expected Output:**
+```
+Lesson: 正则表达式 debugging — 贪婪匹配造成的意外结果
+# (line count)
 ```

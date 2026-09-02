@@ -33,15 +33,8 @@ def read_counter_file(repo_root: Path) -> dict:
 
 
 def read_test_nodes(repo_root: Path) -> list:
-    """Read test/non-formal node IDs from test-nodes.json."""
-    test_path = repo_root / "test-nodes.json"
-    if not test_path.exists():
-        return []
-    try:
-        data = json.loads(test_path.read_text(encoding="utf-8"))
-        return data.get("tests", [])
-    except (json.JSONDecodeError, OSError):
-        return []
+    """Read test/non-formal node IDs (legacy, returns empty)."""
+    return []
 
 
 def main():

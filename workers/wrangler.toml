@@ -1,0 +1,16 @@
+name = "misakanet-register-proxy"
+main = "register-proxy-sw.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "MISAKANET_KV"
+id = "d5fb6b0797b84d17b0586fb982231ffe"
+
+# PRD ④: D1 lesson service (serving layer; GitHub repo stays source of truth).
+# Create once: wrangler d1 create misakanet-db  →  paste database_id below,
+# then apply schema: wrangler d1 execute misakanet-db --remote --file=d1/schema.sql
+# and sync: python3 ../scripts/sync_lessons_to_d1.py --db misakanet-db --execute
+[[d1_databases]]
+binding = "MISAKANET_D1"
+database_name = "misakanet-db"
+database_id = "b9adbe87-6bbf-4d2f-ae56-41c3487b2831"

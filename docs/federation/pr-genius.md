@@ -7,7 +7,7 @@ pr-genius is a query-only federation peer of MisakaNet.
 | Peer | Role |
 |------|------|
 | **pr-genius** | Evidence-backed external PR intelligence and PR rounds archive. |
-| **MisakaNet** | Generalized agent failure/recovery lessons and swarm knowledge network. |
+| **MisakaNet** | Generalized agent failure/recovery lessons and failure-memory network. |
 
 ## Rules
 
@@ -27,7 +27,7 @@ pr-genius is a query-only federation peer of MisakaNet.
 
 - Generalized debugging lessons (not repo-specific)
 - BM25 + RRF search across all lessons
-- SKP (Swarm Knowledge Protocol) for agent experience sharing
+- failure-memory protocol (failure-memory protocol) for agent experience sharing
 - Quality scoring and lesson lifecycle management
 
 ## How to query pr-genius from MisakaNet

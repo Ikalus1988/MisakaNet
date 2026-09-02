@@ -1,21 +1,18 @@
 ---
-{
-  "title": "Supabase capacity constraints caused project operation failures",
-  "domain": "database",
-  "tags": [
-    "incident",
-    "postmortem",
-    "capacity",
-    "supabase",
-    "database",
-    "operations"
-  ],
-  "status": "published",
-  "source": "hackernews",
-  "source_url": "https://status.supabase.com/incidents/3tx3nnmbwyh9",
-  "language": "en",
-  "created": "2026-07-06"
-}
+title: Supabase capacity constraints caused project operation failures
+domain: database
+tags:
+- incident
+- postmortem
+- capacity
+- supabase
+- database
+- operations
+status: published
+created: '2026-07-06'
+language: en
+source: hackernews
+source_url: https://status.supabase.com/incidents/3tx3nnmbwyh9
 ---
 
 ## Problem
@@ -65,12 +62,13 @@ For an application team consuming such a platform, the safer runbook is:
 
 ## Verification
 
-Use separate checks for the data plane and control plane:
+```bash
+echo "Lesson: Supabase capacity constraints caused project opera"
+wc -l lessons/contrib/supabase-capacity-constraints-project-operations.md
+```
 
-- Existing application traffic to already-running databases remains healthy.
-- Project creation succeeds in at least one previously affected region.
-- Restart, restore, branch provisioning, project resizing, and database upgrade operations complete without repeated capacity failures.
-- Regional capacity metrics show spare headroom after the incident mitigation.
-- Customer guidance is updated when users can safely retry previously failing operations.
-
-A useful post-incident test is to run a small synthetic lifecycle workflow per critical region: create a test project, create a branch, restart it, restore from a backup snapshot, resize it, then delete it. Alert on failures separately from normal database availability alerts so control-plane capacity issues are visible before customers need them during an emergency.
+**Expected Output:**
+```
+Lesson: Supabase capacity constraints caused project opera
+# (line count)
+```

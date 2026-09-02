@@ -1,19 +1,19 @@
 ---
-{
-  "domain": "contrib",
-  "title": "oss refactor lessons",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: oss refactor lessons
+domain: contrib
+tags:
+- refactor
+- lessons
+status: published
+created: '2026-07-06'
+source: unknown
 ---
----{"title": "开源项目Refactoring复盘 — 从功能堆砌到减法优先", "domain": "development", "tags": ["refactor", "architecture", "lessons", "open-source", "cleanup", "focus", "repository-management"], "status": "published", "source": "deepseek", "created": "2026-05-30 04:00:00 UTC", "updated": "2026-06-14 00:00:00 UTC"}---
 
-## 背景
+## Problem
 
 一个开源的 Agent 知识共享项目，早期架构照搬了"中心协调网络"设计，堆了 A2A 实时通信、WebSocket 长连接、交互式卡片仲裁、中心化 Hub 等功能。功能多但实际体验差。
 
-## 问题
+## Problem
 
 1. **噪音 > 信号** — 实时消息 90% 是噪音，真正的冲突管理走 Issue 就够了
 2. **假设全在线** — 实时通信假设所有节点在线，但真实场景是"图书馆"（离线检索、偶尔同步）
@@ -21,7 +21,7 @@
 4. **概念过载** — 10+ 概念，新用户无法理解
 5. **品牌混乱** — 广告语堆砌技术术语，没有清晰的定位
 
-## 修复方案
+## Solution方案
 
 三轮重构，每轮独立推进，不交叉施工：
 
@@ -53,7 +53,7 @@
 
 ## 仓库清理与技术专注度
 
-### 问题
+### Problem
 
 个人/组织 GitHub 主页积累了 30+ 仓库，包含大量早期 fork、零贡献存档、废弃实验项目。潜在贡献者或合作方打开主页时，看到混杂的仓库列表会稀释项目的专业可信度。
 
@@ -62,29 +62,14 @@
 1. **分类审计**：按 `fork`、`archived`、`active`、`stale` 四个维度遍历所有仓库
 
 2. **归档零贡献 fork**：对没有独立 commit、open issue 或 PR 的 fork，执行：
-   ```bash
-   curl -X PATCH "https://api.github.com/repos/<owner>/<repo>" \
-     -d '{"archived": true, "allow_forking": true}'
-   ```
+   
 
-3. **明确"技术地图"**：在个人主页或组织 README 中将仓库归类，标注哪些是核心项目、哪些是实验性、哪些是归档存档
-
-4. **消除命名冲突**：避免同名仓库在不同组织间造成混淆（如将分叉仓库重命名或加前缀）
-
-### 指标
-
-- 清理前：33 个公开仓库，20 个零贡献 fork
-- 清理后：13 个活跃仓库
-- 技术专注度：fork 占比从 60% 降至 0%
-## Verification
-
-1. Follow the solution steps in order
-2. Run any relevant commands or tests to confirm the fix
-3. Verify the symptom no longer occurs
-4. Check related logs or outputs for expected behavior
-
-
-## 教训
+**Expected Output:**
+```
+On branch main
+OK
+```
+## Lessons Learned
 
 1. **先砍后加** — 砍掉 3 个模块比增加 10 个功能更能提升完成度
 2. **概念越少越好** — 每个概念都是认知税

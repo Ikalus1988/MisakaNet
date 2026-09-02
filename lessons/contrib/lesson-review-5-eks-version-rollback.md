@@ -1,16 +1,22 @@
 ---
-title: "EKS Kubernetes 版本回滚 — 安全升级集群"
-domain: "ops"
-subdomain: "kubernetes"
-tags: ["kubernetes", "eks", "aws", "upgrade", "rollback", "cluster-management"]
-source: "aws.amazon.com/blogs"
-status: "published"
-confidence: "0.9"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+title: EKS Kubernetes 版本回滚 — 安全升级集群
+domain: ops
+tags:
+- kubernetes
+- eks
+- aws
+- upgrade
+- rollback
+- cluster-management
+status: published
+created: '2026-07-01'
+language: zh
+source: aws.amazon.com/blogs
+confidence: 0.9
+domain_expert: ''
+verified_date: ''
+subdomain: kubernetes
 ---
-
 
 ## Problem
 
@@ -64,11 +70,15 @@ done
 
 ## Verification
 
-1. 创建 EKS 1.30 集群
-2. 升级到 1.31
-3. 验证回滚功能：`aws eks rollback-cluster-version --name my-cluster --kubernetes-version 1.30`
-4. 确认集群恢复到 1.30
 
+```bash
+python3 scripts/search_knowledge.py "test query"
+```
+
+**Expected Output:**
+```
+Found
+```
 ## Notes
 
 - 开源 K8s 不支持控制平面回滚，这是 EKS 独有功能

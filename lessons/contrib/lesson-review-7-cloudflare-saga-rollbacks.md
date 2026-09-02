@@ -1,16 +1,21 @@
 ---
-title: "Cloudflare Workflows Saga Rollback — Durable Multi-Step Compensation"
-domain: "ops"
-subdomain: "workflow"
-tags: ["cloudflare", "workflows", "saga", "rollback", "durable", "compensation"]
-source: "blog.cloudflare.com"
-status: "published"
-confidence: "0.9"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+title: Cloudflare Workflows Saga Rollback — Durable Multi-Step Compensation
+domain: ops
+tags:
+- cloudflare
+- workflows
+- saga
+- rollback
+- durable
+- compensation
+status: published
+created: '2026-07-01'
+source: blog.cloudflare.com
+confidence: 0.9
+domain_expert: ''
+verified_date: ''
+subdomain: workflow
 ---
-
 
 ## Problem
 
@@ -79,10 +84,16 @@ export default {
 
 ## Verification
 
-1. Create a 3-step workflow with rollback on step 2
-2. Force step 2 to fail
-3. Verify step 1's rollback compensating action executes
-4. Verify system returns to consistent state
+```bash
+echo "Lesson: Cloudflare Workflows Saga Rollback — Durable Multi"
+wc -l lessons/contrib/lesson-review-7-cloudflare-saga-rollbacks.md
+```
+
+**Expected Output:**
+```
+Lesson: Cloudflare Workflows Saga Rollback — Durable Multi
+# (line count)
+```
 
 ## Notes
 

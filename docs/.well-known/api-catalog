@@ -1,0 +1,26 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://misakanet.org/mcp",
+      "service-desc": [
+        { "href": "https://misakanet.org/.well-known/mcp.json", "type": "application/json" }
+      ],
+      "service-doc": [
+        { "href": "https://misakanet.org/llms.txt", "type": "text/plain" },
+        { "href": "https://misakanet.org/mcp-quickstart/", "type": "text/html" }
+      ]
+    },
+    {
+      "anchor": "https://misakanet.org/api/",
+      "service-doc": [
+        { "href": "https://misakanet.org/llms-full.txt", "type": "text/plain" }
+      ],
+      "status": [
+        { "href": "https://misakanet.org/api/health", "type": "application/json" }
+      ],
+      "service-meta": [
+        { "href": "https://github.com/Ikalus1988/MisakaNet", "type": "text/html" }
+      ]
+    }
+  ]
+}

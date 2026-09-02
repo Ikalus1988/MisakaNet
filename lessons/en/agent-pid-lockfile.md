@@ -10,6 +10,11 @@
   "updated": "2026-07-22",
   "confidence": "0.9"
 }
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # PID lockfile so earn loops do not double-run

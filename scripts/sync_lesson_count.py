@@ -15,7 +15,6 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 LESSONS_JSON = REPO / "data" / "lessons.json"
-STATUS_MD = REPO / "STATUS.md"
 README_MD = REPO / "README.md"
 FRONTEND_HTML = REPO / "docs" / "index.html"
 
@@ -25,22 +24,6 @@ def get_lesson_count() -> int:
     with open(LESSONS_JSON, "r", encoding="utf-8") as f:
         lessons = json.load(f)
     return len(lessons)
-
-
-def sync_status_md(count: int, dry_run: bool = False) -> list[str]:
-    """Sync lesson count in STATUS.md."""
-    changes = []
-    text = STATUS_MD.read_text(encoding="utf-8")
-    # Pattern: | 📚 Lessons | XXX 篇 |
-    pattern = r"(\| 📚 Lessons \|\s*)\d+(\s*篇\s*\|)"
-    replacement = rf"\g<1>{count}\2"
-    if re.search(pattern, text):
-        new_text = re.sub(pattern, replacement, text)
-        if new_text != text:
-            changes.append(f"STATUS.md: lesson count updated to {count}")
-            if not dry_run:
-                STATUS_MD.write_text(new_text, encoding="utf-8")
-    return changes
 
 
 def sync_readme_md(count: int, dry_run: bool = False) -> list[str]:
@@ -119,13 +102,6 @@ def check_count_in_files(count: int) -> tuple[list[str], bool]:
     """Check all files for stale lesson counts. Returns (issues, is_clean)."""
     issues = []
 
-    # STATUS.md
-    text = STATUS_MD.read_text(encoding="utf-8")
-    if re.search(r'\|\s*📚\s*Lessons\s*\|\s*\d+\s*篇\s*\|', text):
-        m = re.search(r'\|\s*📚\s*Lessons\s*\|\s*(\d+)\s*篇\s*\|', text)
-        if m and int(m.group(1)) != count:
-            issues.append(f"STATUS.md has lesson count {m.group(1)}, expected {count}")
-
     # README.md — look for lesson-count-specific patterns, not PR numbers
     text = README_MD.read_text(encoding="utf-8")
     # Match patterns like "205+", "200+", "205 lessons" — but ignore "#NNN" (PR refs)
@@ -173,7 +149,6 @@ def main():
                 print(f"  - {issue}", file=sys.stderr)
             sys.exit(1)
 
-    all_changes += sync_status_md(count)
     all_changes += sync_readme_md(count)
     all_changes += sync_frontend_html(count)
 

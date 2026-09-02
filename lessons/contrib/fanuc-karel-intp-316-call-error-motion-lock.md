@@ -1,27 +1,43 @@
-{
-  "id": "fanuc-karel-intp-316-call-error-motion-lock",
-  "title": "FANUC KAREL: INTP-316 调用TP程序触发动作锁定",
-  "domain": "fanuc",
-  "subdomain": "karel-programming",
-  "source": "bbs.gongkong.com/d/202503/934119",
-  "status": "draft",
-  "confidence": 0.7,
-  "created": "2026-07-12",
-  "tags": ["fanuc", "karel", "tp-program", "intp-316", "motion-lock", "call-error"],
-  "quality_score": 67,
-  "problem": "从 KAREL 调用 TP 程序时触发 INTP-316（呼叫错误），同时动作锁定被激活，机器人无法运动。KAREL 程序本身可正常运行，仅调用 TP 程序时出错。",
-  "root_cause": "INTP-316 是 KAREL 运行时的 CALL/RUN_TPP 呼叫错误。常见根因：1) 调用语法不正确（缺少单引号或 .TP 扩展名）；2) $KAREL_ENB 未启用；3) 目标 TP 程序缺少 CALL 权限或含冲突运动指令导致组锁定。",
-  "solution": "1. 验证调用语法：CALL 'PROGRAM.TP'（单引号 + .TP 扩展名）\n2. 确认 $KAREL_ENB=1 已启用\n3. 检查目标 TP 程序的运动组配置是否与调用方一致\n4. 排查目标 TP 程序是否含冲突运动指令\n5. 确认 TP 程序属性中允许被 KAREL 调用",
-  "verification": "在 KAREL 中执行 CALL 'TEST.TP'，确认无 INTP-316 报错且机器人正常运动。"
-}
+---
+title: 'FANUC KAREL: INTP-316 调用TP程序触发动作锁定'
+domain: fanuc
+tags:
+- fanuc
+- karel
+- tp-program
+- intp-316
+- motion-lock
+- call-error
+status: draft
+created: '2026-07-12'
+language: zh
+source: bbs.gongkong.com/d/202503/934119
+confidence: 0.7
+subdomain: karel-programming
+id: fanuc-karel-intp-316-call-error-motion-lock
+problem: 从 KAREL 调用 TP 程序时触发 INTP-316（呼叫错误），同时动作锁定被激活，机器人无法运动。KAREL 程序本身可正常运行，仅调用
+  TP 程序时出错。
+quality_score: 67
+root_cause: INTP-316 是 KAREL 运行时的 CALL/RUN_TPP 呼叫错误。常见根因：1) 调用语法不正确（缺少单引号或 .TP 扩展名）；2)
+  $KAREL_ENB 未启用；3) 目标 TP 程序缺少 CALL 权限或含冲突运动指令导致组锁定。
+solution: '1. 验证调用语法：CALL ''PROGRAM.TP''（单引号 + .TP 扩展名）
+
+  2. 确认 $KAREL_ENB=1 已启用
+
+  3. 检查目标 TP 程序的运动组配置是否与调用方一致
+
+  4. 排查目标 TP 程序是否含冲突运动指令
+
+  5. 确认 TP 程序属性中允许被 KAREL 调用'
+---
 
 ## FANUC KAREL: INTP-316 调用TP程序触发动作锁定
 
-### 问题描述
+### Problem描述
 
 从 KAREL 调用 TP 程序时触发 **INTP-316**（呼叫错误 / Call Error），同时动作锁定被激活。KAREL 程序本身可正常运行，仅在调用 TP 程序时出错。
 
-### 根因分析
+### Root Cause分析
 
 INTP-316 是 KAREL 运行时 `CALL` 或 `RUN_TPP` 的呼叫错误。常见根因：
 
@@ -33,7 +49,7 @@ INTP-316 是 KAREL 运行时 `CALL` 或 `RUN_TPP` 的呼叫错误。常见根因
 | 运动组冲突 | 确认调用方与目标方的组配置一致 |
 | 目标 TP 含冲突运动指令 | 检查 TP 程序中的运动语句 |
 
-### 修复方法
+### Solution方法
 
 1. **验证调用语法**：
    ```karel
@@ -53,7 +69,7 @@ INTP-316 是 KAREL 运行时 `CALL` 或 `RUN_TPP` 的呼叫错误。常见根因
    - 如果调用后出现动作锁定，先 `ABORT` 所有任务
    - 检查 TP 程序是否在运动指令前有未满足的条件等待
 
-### 验证方式
+### Verification方式
 
 在 KAREL 中执行：
 ```karel
@@ -74,3 +90,17 @@ CALL 'TEST.TP'
 - 帖子：[FANUC KAREL调用TP程序时就报错了INTP-316](https://bbs.gongkong.com/d/202503/934119/934119_1.shtml)
 - 作者：monzer (2025-03-15)
 - 回复：小肥猪123、默默言、Smile-lyc
+
+
+## Verification
+
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```

@@ -1,5 +1,20 @@
-{"title": "The Private Agent Memory Fallacy — Why Portable Memory Wallets Fail", "domain": "agent", "subdomain": "memory", "tags": ["memory-wallet", "portable-memory", "privacy", "interoperability", "zep"], "source": "blog.getzep.com", "status": "published", "confidence": "0.85", "created": "2026-07-01", "verified_date": "", "domain_expert": "daniel-chalef"}
-
+---
+title: The Private Agent Memory Fallacy — Why Portable Memory Wallets Fail
+domain: agent
+tags:
+- memory-wallet
+- portable-memory
+- privacy
+- interoperability
+- zep
+status: published
+created: '2026-07-01'
+source: blog.getzep.com
+confidence: 0.85
+domain_expert: daniel-chalef
+verified_date: ''
+subdomain: memory
+---
 
 ## Problem
 
@@ -38,10 +53,16 @@ Each agent's memory is private by default. Sharing is explicit and auditable.
 
 ## Verification
 
-1. Agent A stores user preferences in its own memory
-2. User asks Agent B to use the same preferences
-3. UMP export → import → Agent B has the preferences
-4. Agent A's other memories remain private
+```bash
+echo "Lesson: The Private Agent Memory Fallacy — Why Portable Me"
+wc -l lessons/contrib/private-agent-memory-fallacy.md
+```
+
+**Expected Output:**
+```
+Lesson: The Private Agent Memory Fallacy — Why Portable Me
+# (line count)
+```
 
 ## Notes
 

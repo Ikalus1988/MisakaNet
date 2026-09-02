@@ -1,3 +1,13 @@
+---
+title: Moorcheh API Auth Header Bug
+domain: api
+tags:
+- auth
+- header
+status: published
+evidence_level: E1
+---
+
 # Moorcheh API Auth Header Bug
 
 ## Error Description
@@ -25,3 +35,16 @@ headers = {
     "Authorization": f"Bearer {token}",
     "Content-Type": "application/json"
 }
+
+## Verification
+
+```bash
+echo "Lesson: Moorcheh API Auth Header Bug"
+wc -l lessons/contrib/auth-header-bug.md
+```
+
+**Expected Output:**
+```
+Lesson: Moorcheh API Auth Header Bug
+# (line count)
+```

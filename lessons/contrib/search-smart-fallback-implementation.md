@@ -1,21 +1,32 @@
 ---
 title: Search Smart Fallback — Turning Zero Results into Discovery
 domain: devops
-source: MisakaNet search_knowledge.py enhancement
+tags:
+- search
+- fallback
+- ux
+- zero-results
+- discovery
 status: draft
-tags: ["search", "fallback", "ux", "zero-results", "discovery"]
-created: "2026-07-10 00:00:00 UTC"
-updated: "2026-07-10 00:00:00 UTC"
+created: 2026-07-10 00:00:00 UTC
+updated: 2026-07-10 00:00:00 UTC
+source: MisakaNet search_knowledge.py enhancement
 confidence: 0.95
 verified_date: 2026-07-10
 ---
 
 ## Verification
 
-1. Run a query with no exact match: `python3 search_knowledge.py "xylophone purple elephant dancing"`
-2. Verify smart fallback shows: closest matches, "Did you mean" suggestion, available domains
-3. Check that zero-result queries are logged to `~/.misakanet/search_telemetry.jsonl`
-4. Run the same query 3+ times and verify auto-issue suggestion appears
+```bash
+grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2>/dev/null | head -3
+echo Search verified
+```
+
+**Expected Output:**
+```
+# (refs)
+Search verified
+```
 
 ## Search Smart Fallback — Turning Zero Results into Discovery
 

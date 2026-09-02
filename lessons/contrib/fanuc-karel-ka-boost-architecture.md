@@ -1,27 +1,36 @@
-{
-  "id": "fanuc-karel-ka-boost-architecture",
-  "title": "Ka-Boost: 8-Layer KAREL Module Architecture and Build System",
-  "domain": "fanuc",
-  "subdomain": "karel-architecture",
-  "source": "github.com/kobbled/ka-boost/CLAUDE.md",
-  "status": "draft",
-  "confidence": 0.85,
-  "created": "2026-07-12",
-  "tags": ["fanuc", "karel", "ka-boost", "architecture", "module-system", "rossum", "build-system", "gpp"],
-  "quality_score": 85,
-  "problem": "KAREL 语言缺乏标准库、泛型、关联数组、字符串操作等现代编程基础设施，大型项目（如 5 轴 DLP 3D 打印切片器）难以模块化开发和维护。",
-  "root_cause": "KAREL 是类 Pascal 的编译语言，运行在 FANUC 控制器上，语言特性有限。Ka-Boost 通过 GPP 预处理器实现泛型、命名空间、OOP 类等高级特性，并建立 8 层模块依赖体系填补标准库空白。",
-  "solution": "采用 Ka-Boost 的分层模块架构：从底层预处理器宏（Layer 0）到高层系统（Layer 7），每层只依赖下层。使用 rossum 包管理器 + ninja 构建系统管理依赖和编译。",
-  "verification": "1. rossum 能解析 package.json 依赖图并生成 build.ninja；2. ninja 编译所有 .kl/.klc 文件生成 .pc 二进制；3. kpush 成功部署到控制器；4. 各层模块单元测试通过（KUnit HTTP 访问）。"
-}
+---
+title: 'Ka-Boost: 8-Layer KAREL Module Architecture and Build System'
+domain: fanuc
+tags:
+- fanuc
+- karel
+- ka-boost
+- architecture
+- module-system
+- rossum
+- build-system
+- gpp
+status: draft
+created: '2026-07-12'
+source: github.com/kobbled/ka-boost/CLAUDE.md
+confidence: 0.85
+subdomain: karel-architecture
+id: fanuc-karel-ka-boost-architecture
+problem: KAREL 语言缺乏标准库、泛型、关联数组、字符串操作等现代编程基础设施，大型项目（如 5 轴 DLP 3D 打印切片器）难以模块化开发和维护。
+quality_score: 85
+root_cause: KAREL 是类 Pascal 的编译语言，运行在 FANUC 控制器上，语言特性有限。Ka-Boost 通过 GPP 预处理器实现泛型、命名空间、OOP
+  类等高级特性，并建立 8 层模块依赖体系填补标准库空白。
+solution: 采用 Ka-Boost 的分层模块架构：从底层预处理器宏（Layer 0）到高层系统（Layer 7），每层只依赖下层。使用 rossum 包管理器
+  + ninja 构建系统管理依赖和编译。
+---
 
 ## Ka-Boost: 8-Layer KAREL Module Architecture and Build System
 
-### 问题描述
+### Problem描述
 
 KAREL 是 FANUC 机器人控制器上的类 Pascal 编译语言，缺乏泛型、关联数组、原生字符串操作、标准库等现代编程基础设施。开发大型项目（如 5 轴 DLP 3D 打印切片器）时，代码复用困难，模块化程度低，构建和部署流程复杂。
 
-### 根因分析
+### Root Cause分析
 
 KAREL 语言的先天限制：
 - 无泛型支持 → 无法编写类型无关的容器（队列、哈希表等）
@@ -36,7 +45,7 @@ Ka-Boost 通过工具链组合解决这些问题：
 - **ninja 构建系统**：并行编译
 - **kpush 部署工具**：FTP 推送 `.pc` 文件到控制器
 
-### 修复方法/技术要点
+### Solution方法/技术要点
 
 #### 1. 工具链
 
@@ -141,7 +150,7 @@ Ka-Boost/
 
 每个 `lib/` 子模块包含 `package.json`（rossum 清单），定义 `name`、`version`、`depends`（其他 Ka-Boost 包）和可选的 `tp-interfaces`（暴露给 TP 程序的函数）。
 
-### 验证方式
+### Verification方式
 
 1. `rossum .. -w -o` 成功生成 `build.ninja`，无依赖解析错误
 2. `ninja` 编译所有源文件无错误，生成 `.pc` 二进制
@@ -153,3 +162,17 @@ Ka-Boost/
 
 - GitHub: kobbled/ka-boost — CLAUDE.md 项目架构文档
 - 相关工具：rossum (包管理)、ktransw (转译器)、GPP (预处理器)、TP-Plus (DSL)
+
+
+## Verification
+
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```

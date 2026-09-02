@@ -1,0 +1,136 @@
+name: Intake Auto Review
+
+on:
+  issues:
+    # Review once per intake. 'labeled' is deliberately excluded: this
+    # workflow itself applies labels, so listening to it re-triggered the
+    # review (and posted duplicate comments) on every label change. Manual
+    # re-review stays available via workflow_dispatch.
+    types: [opened, reopened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to review"
+        required: true
+        type: string
+
+jobs:
+  auto-review:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.issue.labels.*.name, 'intake') ||
+      contains(github.event.issue.labels.*.name, 'mcp-intake') ||
+      startsWith(github.event.issue.title, '[Intake]')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    env:
+      ISSUE_NUMBER: ${{ github.event.inputs.issue_number || github.event.issue.number }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install pyyaml jsonschema
+
+      - name: Run auto-review
+        id: review
+        run: |
+          # Get issue details
+          ISSUE_BODY=$(gh issue view $ISSUE_NUMBER --repo ${{ github.repository }} --json body --jq '.body')
+          ISSUE_TITLE=$(gh issue view $ISSUE_NUMBER --repo ${{ github.repository }} --json title --jq '.title')
+
+          # Save body to temp file
+          echo "$ISSUE_BODY" > /tmp/issue_body.txt
+
+          # Run auto-review with archiving (exit code 1 = reject, not an error)
+          RESULT=$(python3 scripts/intake_auto_review.py \
+            --issue $ISSUE_NUMBER \
+            --title "$ISSUE_TITLE" \
+            --file /tmp/issue_body.txt \
+            --archive \
+            --json 2>&1) || true
+
+          # Parse result
+          DECISION=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['decision'])")
+          FINAL_SCORE=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['final_score'])")
+          LESSON_TITLE=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['lesson_title'])")
+          LESSON_DOMAIN=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['lesson_domain'])")
+          LESSON_TAGS=$(echo "$RESULT" | python3 -c "import sys,json; print(','.join(json.load(sys.stdin)['lesson_tags']))")
+          ARCHIVE_PATH=$(echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('archive',{}).get('archive_path',''))" 2>/dev/null || echo "")
+
+          echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
+          echo "final_score=$FINAL_SCORE" >> "$GITHUB_OUTPUT"
+          echo "lesson_title=$LESSON_TITLE" >> "$GITHUB_OUTPUT"
+          echo "lesson_domain=$LESSON_DOMAIN" >> "$GITHUB_OUTPUT"
+          echo "lesson_tags=$LESSON_TAGS" >> "$GITHUB_OUTPUT"
+          echo "archive_path=$ARCHIVE_PATH" >> "$GITHUB_OUTPUT"
+
+          # Generate comment (exit code 1 = reject, not an error)
+          COMMENT=$(python3 scripts/intake_auto_review.py \
+            --issue $ISSUE_NUMBER \
+            --title "$ISSUE_TITLE" \
+            --file /tmp/issue_body.txt 2>&1) || true
+
+          # Save comment to file
+          echo "$COMMENT" > /tmp/review_comment.txt
+
+      - name: Post review comment
+        run: |
+          COMMENT=$(cat /tmp/review_comment.txt)
+          ARCHIVE_PATH="${{ steps.review.outputs.archive_path }}"
+
+          # Idempotency guard: if a review comment already exists on this
+          # issue, skip posting (prevents duplicates on re-runs).
+          if gh issue view $ISSUE_NUMBER --repo ${{ github.repository }} --json comments --jq '.comments[].body' \
+            | grep -q "## \[REVIEW\]"; then
+            echo "Review comment already exists — skipping."
+            exit 0
+          fi
+
+          # Add archive info to comment if applicable
+          if [ -n "$ARCHIVE_PATH" ]; then
+            COMMENT="$COMMENT
+
+          📁 **Archived to:** \`$ARCHIVE_PATH\`"
+          fi
+
+          gh issue comment $ISSUE_NUMBER --repo ${{ github.repository }} --body "$COMMENT"
+
+      - name: Apply labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DECISION="${{ steps.review.outputs.decision }}"
+
+          # Remove existing review labels
+          gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
+            --remove-label "auto-approved" \
+            --remove-label "auto-rejected" \
+            --remove-label "needs-human-review" \
+            --remove-label "pending-review" 2>/dev/null || true
+
+          # Apply new label based on decision.
+          # NOTE: auto-review NEVER auto-creates a lesson PR anymore (removed
+          # 2026-08-30). Approve only signals a machine recommendation; a
+          # maintainer must still review the issue body and merge any lesson
+          # PR manually. This closes the anonymous issue → published-lesson
+          # poisoning chain (issue body is attacker-controlled).
+          if [ "$DECISION" = "approve" ]; then
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
+              --add-label "auto-approved" \
+              --add-label "needs-human-review"
+          elif [ "$DECISION" = "reject" ]; then
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
+              --add-label "auto-rejected" \
+              --add-label "needs-salvage"
+          else
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
+              --add-label "needs-human-review"
+          fi

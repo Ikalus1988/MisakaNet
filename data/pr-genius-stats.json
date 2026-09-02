@@ -1,0 +1,69 @@
+{
+  "repo": "Ikalus1988/MisakaNet",
+  "generated_at": "2026-08-15T12:09:47.142725+00:00",
+  "summary": {
+    "total_observed_runs": 266,
+    "all_time_success_rate": 79.32,
+    "median_latency_seconds": 9.0,
+    "human_adoption_rate": 96.0
+  },
+  "windows": {
+    "7d": {
+      "total_runs": 266,
+      "success_rate": 79.32,
+      "failure_rate": 1.5,
+      "skip_rate": 19.17,
+      "median_latency_seconds": 9.0,
+      "p95_latency_seconds": 17.0,
+      "pr_type_distribution": {
+        "code": 150,
+        "docs": 48,
+        "mixed": 68
+      },
+      "status_counts": {
+        "success": 211,
+        "failure": 4,
+        "skipped": 51,
+        "other": 0
+      }
+    },
+    "30d": {
+      "total_runs": 266,
+      "success_rate": 79.32,
+      "failure_rate": 1.5,
+      "skip_rate": 19.17,
+      "median_latency_seconds": 9.0,
+      "p95_latency_seconds": 17.0,
+      "pr_type_distribution": {
+        "code": 150,
+        "docs": 48,
+        "mixed": 68
+      },
+      "status_counts": {
+        "success": 211,
+        "failure": 4,
+        "skipped": 51,
+        "other": 0
+      }
+    },
+    "all_time": {
+      "total_runs": 266,
+      "success_rate": 79.32,
+      "failure_rate": 1.5,
+      "skip_rate": 19.17,
+      "median_latency_seconds": 9.0,
+      "p95_latency_seconds": 17.0,
+      "pr_type_distribution": {
+        "code": 150,
+        "docs": 48,
+        "mixed": 68
+      },
+      "status_counts": {
+        "success": 211,
+        "failure": 4,
+        "skipped": 51,
+        "other": 0
+      }
+    }
+  }
+}

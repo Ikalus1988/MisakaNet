@@ -1,8 +1,23 @@
 {
   "name": "misakanet",
-  "private": true,
+  "version": "2.23.0",
   "license": "Apache-2.0",
-  "description": "Deployment scripts for MisakaNet Workers",
+  "description": "MisakaNet DSH plugin + deployment scripts — shared failure-memory skill and Workers deployment",
+  "files": [
+    "SKILL.md",
+    "skills/",
+    "cordis.patch.yml",
+    "index.js",
+    "index.d.ts"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
   "scripts": {
     "deploy:web": "cd web && npx wrangler deploy",
     "deploy:api": "cd workers && npx wrangler deploy --config wrangler.api.jsonc",
@@ -13,9 +28,12 @@
     "test:dsh": "vitest run tests/dsh/"
   },
   "devDependencies": {
-    "wrangler": "^4.107.0"
+    "wrangler": "^4.127.0"
   },
   "overrides": {
     "sharp": "0.35.3"
-  }
+  },
+  "main": "index.js",
+  "types": "index.d.ts",
+  "type": "module"
 }

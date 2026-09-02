@@ -11,7 +11,11 @@ Output:
 
 import json
 import os
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from misakanet.evidence import describe  # noqa: E402
 
 LESSONS_JSON = Path("data/lessons.json")
 LESSONS_DIR = Path("docs/lessons")
@@ -52,6 +56,7 @@ HTML_TEMPLATE = """\
   a {{ color: #58a6ff; }}
   h1 {{ font-size: 24px; margin-bottom: 8px; }}
   .meta {{ color: #8b949e; font-size: 13px; margin-bottom: 24px; }}
+  .evidence {{ background: rgba(163,113,247,0.14); color: #a371f7; border-radius: 4px; padding: 2px 6px; font-size: 12px; cursor: help; }}
   .section {{ margin-bottom: 24px; }}
   .section h2 {{ font-size: 16px; color: #58a6ff; margin-bottom: 8px; }}
   .section p {{ color: #c9d1d9; font-size: 14px; }}
@@ -139,8 +144,15 @@ def build_lesson_page(lesson: dict) -> str:
 
     tags_html = "".join(f'<span class="tag">{t}</span>' for t in tags[:6])
 
+    # Evidence level (#786) — how well this lesson is backed, not how well written.
+    evidence = describe(lesson.get("evidence_level"))
+    evidence_html = (
+        f'<span class="evidence" title="{evidence["how_to_achieve"]}">'
+        f'Evidence {evidence["evidence_level"]} — {evidence["label"]}</span>'
+    )
+
     body = f"""<h1>{title}</h1>
-<div class="meta">Domain: <a href="/topics/{domain}/">{domain}</a></div>
+<div class="meta">Domain: <a href="/topics/{domain}/">{domain}</a> · {evidence_html}</div>
 <div class="tags">{tags_html}</div>
 <div class="section">
   <h2>Summary</h2>

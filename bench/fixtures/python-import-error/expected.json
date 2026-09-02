@@ -1,0 +1,16 @@
+{
+  "scenario": "python-import-error",
+  "title": "Python import error for a missing module",
+  "failure": {
+    "type": "ModuleNotFoundError",
+    "command": "python3 app.py",
+    "exit_code": 1
+  },
+  "expected_fix": "Install the dependency or replace the import with the intended available module.",
+  "expected_outcome": "success",
+  "verifier": {
+    "type": "command_exit",
+    "command": "python3 app.py",
+    "expected_exit_code": 1
+  }
+}

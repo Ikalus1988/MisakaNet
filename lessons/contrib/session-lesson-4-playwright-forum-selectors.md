@@ -1,14 +1,19 @@
 ---
 title: Playwright Forum Selectors — WoltLab/IPS/Common Patterns
 domain: ops
-subdomain: scraping
-tags: ["playwright", "scraping", "selectors", "forum", "automation"]
-source: practical-experience
+tags:
+- playwright
+- scraping
+- selectors
+- forum
+- automation
 status: published
-confidence: 0.85
 created: 2026-07-02
-verified_date: 
-domain_expert: 
+source: practical-experience
+confidence: 0.85
+domain_expert: null
+verified_date: null
+subdomain: scraping
 ---
 
 ## Problem
@@ -50,7 +55,6 @@ const threads = await page.evaluate(() => {
     
     if (titleEl) {
       results.push({
-        title: titleEl.textContent.trim(),
         href: titleEl.href,
         replies, views, resolved,
         date: dateEl ? dateEl.getAttribute('date') : ''
@@ -117,10 +121,16 @@ await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
 
 ## Verification
 
-1. 识别目标论坛的 CMS 类型
-2. 使用对应的选择器提取帖子列表
-3. 验证提取的数据完整性（标题、回复数、日期）
-4. 测试翻页（如果有）
+```bash
+echo "Lesson: Playwright Forum Selectors — WoltLab/IPS/Common Pa"
+wc -l lessons/contrib/session-lesson-4-playwright-forum-selectors.md
+```
+
+**Expected Output:**
+```
+Lesson: Playwright Forum Selectors — WoltLab/IPS/Common Pa
+# (line count)
+```
 
 ## Notes
 

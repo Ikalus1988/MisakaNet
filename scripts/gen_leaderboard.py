@@ -33,11 +33,53 @@ def load_all_results() -> list[dict]:
     for f in sorted(RESULTS_DIR.glob("*.json")):
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
+            data = _normalize_result(data)
             data["_source_file"] = f.name
             runs.append(data)
         except (json.JSONDecodeError, OSError):
             continue
     return runs
+
+
+def _normalize_result(data: dict) -> dict:
+    """Accept both the legacy runner format and the versioned schema.
+
+    The leaderboard predates ``bench/schema/result.json``.  Flattening the
+    compatibility section here lets old reports and new reports contribute to
+    one board without making every consumer understand both layouts.
+    """
+    if data.get("agent"):
+        return data
+    legacy = data.get("legacy") if isinstance(data.get("legacy"), dict) else {}
+    if legacy:
+        return {**data, **legacy}
+
+    meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
+    tasks = data.get("tasks") if isinstance(data.get("tasks"), list) else []
+    summary = data.get("summary") if isinstance(data.get("summary"), dict) else {}
+    results = [
+        {
+            "task_id": task.get("task_id", ""),
+            "title": task.get("name", ""),
+            "domain": task.get("category", ""),
+            "verify_status": "PASS" if task.get("outcome") == "success" else "FAIL",
+        }
+        for task in tasks
+    ]
+    passed = sum(1 for task in tasks if task.get("outcome") == "success")
+    return {
+        **data,
+        "agent": meta.get("agent", "unknown"),
+        "model": meta.get("model", "?"),
+        "run_id": meta.get("run_id", "?"),
+        "timestamp": meta.get("timestamp", ""),
+        "total_tasks": summary.get("total_tasks", len(tasks)),
+        "passed": passed,
+        "failed": len(tasks) - passed,
+        "skipped": sum(1 for task in tasks if task.get("outcome") == "error"),
+        "total_api_time": sum(float(task.get("duration_ms", 0)) for task in tasks) / 1000,
+        "results": results,
+    }
 
 
 def aggregate_by_agent(runs: list[dict]) -> list[dict]:

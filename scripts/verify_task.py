@@ -11,6 +11,7 @@ Usage:
 """
 import json
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -48,10 +49,24 @@ def check_execution(task: dict) -> dict:
 
     result = {"passed": 0, "total": 1, "checks": {"test_cmd_executed": False}}
 
+    # P1-2 fix (2026-08-30): test_cmd comes from tasks/*.json which is
+    # extracted from lesson markdown — attacker-controllable. Never run with
+    # shell=True (arbitrary code execution). shlex.split + no shell keeps
+    # simple command lines working while preventing shell metacharacter
+    # injection (mirrors scripts/misaka_verify.py).
+    try:
+        cmd_argv = shlex.split(test_cmd)
+    except ValueError as e:
+        result["checks"]["failure_reason"] = f"Invalid test_cmd quoting: {e}"
+        return result
+    if not cmd_argv:
+        result["checks"]["failure_reason"] = "Empty test_cmd"
+        return result
+
     try:
         proc = subprocess.run(
-            test_cmd,
-            shell=True,
+            cmd_argv,
+            shell=False,
             capture_output=True,
             text=True,
             cwd=str(REPO),

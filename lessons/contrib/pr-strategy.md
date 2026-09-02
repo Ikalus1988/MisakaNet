@@ -1,11 +1,15 @@
 ---
 title: External PR Strategy via pr-genius
 domain: contrib
-tags: [github-pr, external-pr, pr-genius, federation]
+tags:
+- github-pr
+- external-pr
+- pr-genius
+- federation
 status: published
-source: pr-genius
 created: 2026-07-06
 updated: 2026-07-06
+source: pr-genius
 ---
 
 # External PR Strategy via pr-genius
@@ -14,7 +18,7 @@ For repository-specific PR profiles, maintainer response patterns, and PR round 
 
 ## Canonical peer
 
-https://github.com/zsxh1990/pr-genius
+https://github.com/<user>/pr-genius
 
 ## What pr-genius contains
 
@@ -35,7 +39,7 @@ python3 search_knowledge.py "pr-genius federation"
 python3 search_knowledge.py "external PR strategy"
 
 # Query pr-genius directly
-# Clone: git clone https://github.com/zsxh1990/pr-genius
+# Clone: git clone https://github.com/<user>/pr-genius
 # Search: python3 search_knowledge.py "astral-sh/uv" (in pr-genius repo)
 ```
 
@@ -44,3 +48,17 @@ python3 search_knowledge.py "external PR strategy"
 - Query-only: pr-genius content is not auto-synced into MisakaNet
 - Imported lessons must preserve upstream provenance, commit SHA, license, and evidence URLs
 - See `docs/federation/pr-genius.md` for full peer declaration
+
+
+## Verification
+
+```bash
+echo "Lesson: External PR Strategy via pr-genius"
+wc -l lessons/contrib/pr-strategy.md
+```
+
+**Expected Output:**
+```
+Lesson: External PR Strategy via pr-genius
+# (line count)
+```

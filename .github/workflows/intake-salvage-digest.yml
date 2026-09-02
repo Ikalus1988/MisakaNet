@@ -1,0 +1,116 @@
+name: Intake Salvage Digest
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # Daily at 08:00 UTC
+  workflow_dispatch:
+
+jobs:
+  salvage-digest:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.10"
+
+      - name: Generate salvage digest
+        run: |
+          # Get all auto-rejected issues
+          ISSUES=$(gh issue list --repo ${{ github.repository }} \
+            --label "auto-rejected" \
+            --state open \
+            --json number,title,labels,createdAt \
+            --limit 50 2>/dev/null)
+
+          if [ "$ISSUES" = "[]" ] || [ -z "$ISSUES" ]; then
+            echo "No rejected issues found."
+            exit 0
+          fi
+
+          # Generate markdown digest
+          DIGEST="# 📋 Intake Salvage Digest\n\n"
+          DIGEST+="**Generated:** $(date -u +%Y-%m-%d %H:%M UTC)\n\n"
+          DIGEST+="## Auto-Rejected Issues\n\n"
+          DIGEST+="These issues were auto-rejected but may have salvageable content.\n\n"
+          DIGEST+="| Issue | Title | Created | Action |\n"
+          DIGEST+="|-------|-------|---------|--------|\n"
+
+          # Parse issues
+          echo "$ISSUES" | python3 -c "
+          import sys, json
+          issues = json.load(sys.stdin)
+          for issue in issues:
+              num = issue['number']
+              title = issue['title'][:50]
+              created = issue['createdAt'][:10]
+              print(f'| #{num} | {title} | {created} | [Review](https://github.com/Ikalus1988/MisakaNet/issues/{num}) |')
+          " >> /tmp/digest_table.txt
+
+          DIGEST+=$(cat /tmp/digest_table.txt)
+          DIGEST+="\n\n## Salvage Actions\n\n"
+          DIGEST+="For each rejected issue, you can:\n"
+          DIGEST+="1. **Improve** — Add missing content and re-submit\n"
+          DIGEST+="2. **Convert** — Manually create lesson if valuable\n"
+          DIGEST+="3. **Close** — Reject permanently if not useful\n\n"
+          DIGEST+="## How to Improve\n\n"
+          DIGEST+="To improve a rejected issue:\n"
+          DIGEST+="1. Add a `## Error` section with error messages\n"
+          DIGEST+="2. Add code blocks with examples\n"
+          DIGEST+="3. Add verification steps in `## Verification`\n"
+          DIGEST+="4. Remove user-specific paths\n"
+          DIGEST+="5. Add more technical detail\n\n"
+          DIGEST+="---\n"
+          DIGEST+="_This is an automated digest. Run `/salvage-review` to manually review issues._"
+
+          # Save digest
+          echo -e "$DIGEST" > /tmp/salvage_digest.md
+
+          # Post as issue comment or create new issue
+          DIGEST_ISSUE=$(gh issue list --repo ${{ github.repository }} \
+            --label "salvage-digest" \
+            --state open \
+            --json number \
+            --limit 1 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['number'] if json.load(sys.stdin) else '')")
+
+          if [ -n "$DIGEST_ISSUE" ]; then
+            # Update existing issue
+            gh issue comment $DIGEST_ISSUE --repo ${{ github.repository }} \
+              --body-file /tmp/salvage_digest.md
+          else
+            # Create new issue
+            gh issue create --repo ${{ github.repository }} \
+              --title "📋 Intake Salvage Digest - $(date -u +%Y-%m-%d)" \
+              --body-file /tmp/salvage_digest.md \
+              --label "salvage-digest,needs-human-review"
+          fi
+
+      - name: Cleanup old rejected issues
+        run: |
+          # Auto-close rejected issues older than 30 days
+          ISSUES=$(gh issue list --repo ${{ github.repository }} \
+            --label "auto-rejected" \
+            --state open \
+            --json number,createdAt \
+            --limit 100 2>/dev/null)
+
+          echo "$ISSUES" | python3 -c "
+          import sys, json
+          from datetime import datetime, timedelta
+
+          issues = json.load(sys.stdin)
+          cutoff = datetime.now() - timedelta(days=30)
+
+          for issue in issues:
+              created = datetime.fromisoformat(issue['createdAt'].replace('Z', '+00:00'))
+              if created < cutoff:
+                  print(issue['number'])
+          " | while read ISSUE_NUM; do
+            gh issue close $ISSUE_NUM --repo ${{ github.repository }} \
+              --comment "Auto-closed after 30 days. This issue was auto-rejected and not salvaged." \
+              --reason "not-planned" 2>/dev/null || true
+          done

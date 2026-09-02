@@ -1,0 +1,122 @@
+name: D1 Bootstrap (PRD ④)
+
+# One-time + recovery bootstrap for the D1 lesson service. Creates the D1
+# database if missing, writes its database_id back into workers/wrangler.toml,
+# applies the schema, syncs all lessons, and deploys the worker so the D1
+# binding goes live. Idempotent — safe to re-run.
+#
+# Why not local: the Cloudflare token lives in repo secrets (CF_API_TOKEN);
+# local OAuth (mcporter) expires hourly and needs a browser.
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_deploy:
+        description: 'Skip the final wrangler deploy (default: false)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # to commit the database_id back to wrangler.toml
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install wrangler
+        run: npm install -g wrangler
+
+      - name: Create D1 database if missing (Cloudflare REST API)
+        id: create
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+        run: |
+          set -euo pipefail
+          ACCT="$CLOUDFLARE_ACCOUNT_ID"
+          API="https://api.cloudflare.com/client/v4/accounts/$ACCT/d1/database"
+          # 1) Try to find existing DB by name
+          EXISTING=$(curl -fsS --max-time 30 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "$API?per_page=50" | python3 -c "import json,sys; d=json.load(sys.stdin); print(next((x['uuid'] for x in d.get('result',[]) if x.get('name')=='misakanet-db'),''))" || true)
+          if [ -n "$EXISTING" ]; then
+            echo "D1 database 'misakanet-db' already exists: $EXISTING"
+            echo "database_id=$EXISTING" >> "$GITHUB_OUTPUT"
+          else
+            echo "Creating D1 database 'misakanet-db'..."
+            RESP=$(curl -fsS --max-time 30 -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{"name":"misakanet-db"}' "$API")
+            echo "$RESP"
+            NEW_ID=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('result',{}).get('uuid',''))")
+            if [ -z "$NEW_ID" ]; then
+              echo "::error::Could not get database_id from Cloudflare API response"
+              exit 1
+            fi
+            echo "database_id=$NEW_ID" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Write database_id into wrangler.toml
+        id: write
+        env:
+          DB_ID: ${{ steps.create.outputs.database_id }}
+        run: |
+          set -euo pipefail
+          if ! grep -q "REPLACE_WITH_D1_DATABASE_ID" workers/wrangler.toml; then
+            echo "wrangler.toml already has a real database_id"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          sed -i "s/REPLACE_WITH_D1_DATABASE_ID/$DB_ID/" workers/wrangler.toml
+          grep -q "$DB_ID" workers/wrangler.toml || { echo "::error::failed to write database_id"; exit 1; }
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Commit database_id back to main
+        if: steps.write.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.org"
+          git add workers/wrangler.toml
+          git commit -m "chore(d1): bind misakanet-db database_id (PRD ④ bootstrap) [skip ci]"
+          git pull --rebase origin main 2>&1 || true
+          git push origin main 2>&1 || { echo "push conflict, retrying..."; sleep 5; git pull --rebase origin main 2>&1 || true; git push origin main; }
+
+      - name: Apply D1 schema (idempotent)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+        run: |
+          cd workers
+          wrangler d1 execute misakanet-db --remote --file=d1/schema.sql
+
+      - name: Sync lessons to D1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+        run: |
+          python3 scripts/sync_lessons_to_d1.py --db misakanet-db --execute
+
+      - name: Verify D1 row count
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+        run: |
+          cd workers
+          wrangler d1 execute misakanet-db --remote --command "SELECT COUNT(*) AS n FROM lessons;"
+
+      - name: Deploy worker with D1 binding
+        if: ${{ !github.event.inputs.skip_deploy || github.event.inputs.skip_deploy == 'false' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          cd workers
+          npx wrangler deploy --config wrangler.toml

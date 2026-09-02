@@ -20,6 +20,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from misakanet.evidence import evidence_of, trust_score  # noqa: E402
+
 
 def parse_frontmatter(text: str) -> dict | None:
     """解析 --- 包裹的 JSON frontmatter（支持空行）"""
@@ -71,7 +74,7 @@ def build_index(lessons_dir: str | Path) -> list[dict]:
         if not subdir_path.exists():
             continue
         for f in sorted(subdir_path.glob("*.md")):
-            if f.name == "index.md" or f.name.startswith("."):
+            if f.name in ("index.md", "README.md") or f.name.startswith("."):
                 continue
 
             content = f.read_text(encoding="utf-8")
@@ -81,6 +84,22 @@ def build_index(lessons_dir: str | Path) -> list[dict]:
             domain = fm.get("domain", "") if fm else ""
             if not domain or domain == "contrib":
                 domain = fm.get("subdomain", subdir) if fm else subdir
+
+            # Evidence level (#786): frontmatter wins when present; legacy
+            # lessons that predate the field get a content-inferred level
+            # (same inference the intake pipeline uses — queue_lesson.py).
+            # Coogen borrow (Phase 2): public pages show evidence counts
+            # (E3+/E4) instead of composite averages.
+            raw_level = fm.get("evidence_level") if fm else None
+            if raw_level is not None:
+                evidence_level = evidence_of(fm)
+                evidence_source = "frontmatter"
+            else:
+                from scripts.infer_evidence_level import infer_evidence_level
+                evidence_level, _ = infer_evidence_level(content)
+                evidence_source = "inferred"
+
+            confidence = fm.get("confidence", 0.5) if fm else 0.5
 
             entry = {
                 "id": f.stem,
@@ -93,8 +112,14 @@ def build_index(lessons_dir: str | Path) -> list[dict]:
                 "updated": fm.get("updated", "") if fm else "",
                 "validity_period_days": fm.get("validity_period_days", 365) if fm else 365,
                 "environment_version": fm.get("environment_version", "") if fm else "",
-                "confidence": fm.get("confidence", 0.5) if fm else 0.5,
+                "confidence": confidence,
                 "status": fm.get("status", "active") if fm else "active",
+                "evidence_level": evidence_level,
+                "evidence_source": evidence_source,
+                # trust = quality(confidence) scaled by evidence (E0 keeps 70%,
+                # E4 keeps 100%) — the number public pages may show instead of
+                # a composite/average score.
+                "trust_score": trust_score(confidence, evidence_level),
             }
             index.append(entry)
 

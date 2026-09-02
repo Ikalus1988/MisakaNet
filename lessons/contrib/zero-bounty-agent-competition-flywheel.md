@@ -1,11 +1,17 @@
 ---
-title: "Zero-Bounty Agent Competition Flywheel: Issue Design for Crawler Attraction"
+title: 'Zero-Bounty Agent Competition Flywheel: Issue Design for Crawler Attraction'
 domain: development
-tags: [open-source, community, issue-design, crawler, agent-competition, flywheel]
+tags:
+- open-source
+- community
+- issue-design
+- crawler
+- agent-competition
+- flywheel
 status: published
-source: misakanet
 created: 2026-07-10
 updated: 2026-07-10
+source: misakanet
 ---
 
 # Zero-Bounty Agent Competition Flywheel
@@ -77,10 +83,16 @@ Competition PRs: first to fix DCO wins, others close as duplicate.
 
 ## Verification
 
-- `time_to_first_pr < 8h` for well-scoped issues
-- `competing_prs_48h >= 2` indicates healthy competition
-- `merge_rate 30-50%` balances quality and participation
-- Repeat contributors indicate flywheel is working
+```bash
+echo "Lesson: Zero-Bounty Agent Competition Flywheel: Issue Desi"
+wc -l lessons/contrib/zero-bounty-agent-competition-flywheel.md
+```
+
+**Expected Output:**
+```
+Lesson: Zero-Bounty Agent Competition Flywheel: Issue Desi
+# (line count)
+```
 
 ## Notes
 

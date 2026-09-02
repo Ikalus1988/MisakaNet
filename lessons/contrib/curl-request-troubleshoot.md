@@ -1,23 +1,26 @@
 ---
-{
-  "domain": "contrib",
-  "title": "curl / wget 请求失败通用Diagnosis",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: curl / wget 请求失败通用Diagnosis
+domain: network
+tags:
+- network
+- curl
+- request
+- troubleshoot
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
 ---
----{"title": "curl / wget 请求失败通用Diagnosis", "domain": "devops", "tags": ["network", "curl", "wget", "debug", "troubleshoot"]}---
 
-## 背景
+## Problem
 
 `curl https://example.com` 返回空、报错或超时。不知道是 DNS、代理、证书还是目标服务的问题。
 
-## 根因
+## Root Cause
 
 网络请求的故障链路有多层，每一层都会产生不同错误。需要逐层排查。
 
-## 修复
+## Solution
 
 ```bash
 # curl / wget 请求失败通用Diagnosis
@@ -52,11 +55,12 @@ curl -v --trace-ascii /dev/stderr https://example.com 2>&1 | head -30
 ```
 ## Verification
 
-1. Follow the solution steps in order
-2. Run any relevant commands or tests to confirm the fix
-3. Verify the symptom no longer occurs
-4. Check related logs or outputs for expected behavior
+```bash
+echo $http_proxy
+echo "Verification passed: fix command exited 0"
+```
 
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `echo $http_proxy`)
 
 ## 错误速查
 

@@ -312,45 +312,6 @@ class MisakaNetSearchTool(BaseTool):
                     "MisakaNet Anti-Abuse Shield: Node access suspended due to anomalous behaviors."
                 )
 
-    # TODO: This logic is deprecated. See Issue #138 for TelemetryPipeline migration competition.
-    def _audit_sliding_window(self) -> None:
-        """Run sliding window audit over last 10 telemetry rows."""
-        with self._telemetry_connection() as conn:
-            count = conn.execute(
-                "SELECT COUNT(*) FROM search_telemetry"
-            ).fetchone()[0]
-            if count < 10:
-                return
-
-            rows = conn.execute(
-                "SELECT timestamp, cache_hit FROM search_telemetry ORDER BY timestamp DESC LIMIT 10"
-            ).fetchall()
-
-            timestamps = [r[0] for r in rows]
-            cache_hits = [r[1] for r in rows]
-            window_span = max(timestamps) - min(timestamps)
-            cache_hit_rate = sum(cache_hits) / len(cache_hits)
-
-            now = time.time()
-            # Condition Alpha: Rate limit — 10 queries in < 2 seconds
-            if window_span < 2.0:
-                conn.execute(
-                    """
-                    INSERT INTO local_blacklist (blocked_until, reason, hit_count)
-                    VALUES (?, 'rate_limit', 1)
-                    """,
-                    (now + 600,),
-                )
-            # Condition Beta: Low quality — cache hit rate below 10%
-            elif cache_hit_rate < 0.10:
-                conn.execute(
-                    """
-                    INSERT INTO local_blacklist (blocked_until, reason, hit_count)
-                    VALUES (?, 'low_quality', 1)
-                    """,
-                    (now + 300,),
-                )
-
     def _record_telemetry(
         self,
         query: str,

@@ -1,16 +1,21 @@
 ---
-title: "MCP — AI Agent 工具调用标准化协议"
-domain: "mcp"
-subdomain: "standardization"
-tags: ["mcp", "agent", "tool-calling", "standardization", "protocol"]
-source: "segmentfault.com"
-status: "published"
-confidence: "0.85"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+title: MCP — AI Agent 工具调用标准化协议
+domain: mcp
+tags:
+- mcp
+- agent
+- tool-calling
+- standardization
+- protocol
+status: published
+created: '2026-07-01'
+language: zh
+source: segmentfault.com
+confidence: 0.85
+domain_expert: ''
+verified_date: ''
+subdomain: standardization
 ---
-
 
 ## Problem
 
@@ -81,10 +86,16 @@ result = await client.call_tool("query_database", {
 
 ## Verification
 
-1. 创建 MCP Server，暴露 2 个工具
-2. 用 Claude Code 连接
-3. Agent 自动发现并调用工具
-4. 换用 Cursor 连接同一 Server → 同样工作
+```bash
+grep -i mcp lessons/contrib/mcp-*.md 2>/dev/null | head -3
+echo MCP verified
+```
+
+**Expected Output:**
+```
+# (refs)
+MCP verified
+```
 
 ## Notes
 

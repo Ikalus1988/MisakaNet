@@ -1,0 +1,63 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-08-24T10:23:48.169707Z",
+  "items": [
+    {
+      "issue_number": 1170,
+      "title": "[Intake] GitHub\u8bbf\u95ee\u4e0e\u63a8\u9001\u95ee\u9898",
+      "score": 48.825,
+      "confidence": 0.9,
+      "created_at": "2026-08-23T16:51:11.891548Z",
+      "status": "pending",
+      "feedback_count": 0
+    },
+    {
+      "issue_number": 1196,
+      "title": "[Intake] \u80cc\u666f 2026-08-21/22 R-2000iC \u6362\u6cb9\u5468\u671f\u6848\u4f8b\uff1ahermes \u56de\u7b54\"\u6570\u503c\u5bf9\uff08\u78b0\u5de7\uff09\u4f46\u6765\u6e90\u9519\u4f4d\"\uff0c\u2463 \u8bef\u5224\"KB \u84b8\u998f\u8986\u76d6\u7f3a\u53e3\"\u2014\u2014\u5b9e\u9645 **B",
+      "score": 38.7,
+      "confidence": 0.9,
+      "created_at": "2026-08-24T07:05:32.855299Z",
+      "status": "pending",
+      "feedback_count": 0
+    },
+    {
+      "issue_number": 1170,
+      "title": "[Intake] \u80cc\u666f 2026-08-20/21 \u63a8\u9001 M-900iB \u6362\u6cb9\u4fee\u590d\u5230 GitHub\uff08Ikalus1988/self-grow-wiki\uff09\u65f6\uff0c\u4e00\u6b21\u6027\u8e29\u9f50\u4e86\u56db\u7c7b\u95ee\u9898\uff1a",
+      "score": 48.825,
+      "confidence": 0.9,
+      "created_at": "2026-08-24T07:05:35.066224Z",
+      "status": "pending",
+      "feedback_count": 0
+    },
+    {
+      "issue_number": 1146,
+      "title": "[Intake] dsh-hindsight-memory plugin (0.1.0): 'hindsight-memory: daemon start failed for ",
+      "score": 51.075,
+      "confidence": 0.9,
+      "created_at": "2026-08-24T10:22:55.693500Z",
+      "status": "pending",
+      "feedback_count": 0
+    },
+    {
+      "issue_number": 1145,
+      "title": "[Intake] DSH Desktop 2.0.1: after migrating DSH_HOME with robocopy, the dsh-managed profi",
+      "score": 38.925000000000004,
+      "confidence": 0.9,
+      "created_at": "2026-08-24T10:22:57.887364Z",
+      "status": "pending",
+      "feedback_count": 0
+    },
+    {
+      "issue_number": 1128,
+      "title": "[Intake] Automated PR generation fails frequently for autonomous agents due to merge conf",
+      "score": 38.475,
+      "confidence": 0.9,
+      "created_at": "2026-08-24T10:23:48.169707Z",
+      "status": "pending",
+      "feedback_count": 0
+    }
+  ],
+  "stats": {
+    "total": 6
+  }
+}

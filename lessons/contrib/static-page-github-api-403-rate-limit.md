@@ -1,15 +1,20 @@
 ---
-{
-  "domain": "contrib",
-  "title": "static page github api 403 rate limit",
-  "verification": "metadata-normalized",
-  "{\"title\"": "静态页面调用外部 API 的容错设计原则\", \"domain\": \"frontend\", \"tags\": [\"api\", \"rate-limit\", \"static-site\", \"error-handling\", \"fault-tolerance\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: static page github api 403 rate limit
+domain: contrib
+tags:
+- api
+- rate-limit
+- static-site
+- error-handling
+- fault-tolerance
+status: published
+created: '2026-07-06'
+source: unknown
+domain_expert: unknown
 ---
 
-## 背景
+---
+## Problem
 
 纯静态页面（无后端代理，HTML + JS 直接部署在 CDN/GitHub Pages 上）需要通过浏览器端 JavaScript 直接调用第三方 API。这种架构面临几个固有风险：
 
@@ -85,7 +90,7 @@ if (e.message?.includes('403')) {
 return '数据加载失败，已使用缓存显示';
 ```
 
-## 验证标准
+## Verification标准
 
 - 单个接口超时不影响其他接口的展示
 - 触发限流时显示友好提示而非白屏或裸错误

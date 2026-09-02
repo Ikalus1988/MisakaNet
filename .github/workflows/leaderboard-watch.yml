@@ -13,12 +13,12 @@ jobs:
   watch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -33,7 +33,9 @@ jobs:
           if [ -f data/leaderboard.json ]; then
             git config user.name "misakanet-bot"
             git config user.email "bot@misakanet.org"
-            git add data/leaderboard.json
+            # leaderboard_watch.py also writes leaderboard_meta.json; stage both
+            # so `git pull --rebase` never trips on unstaged changes.
+            git add data/leaderboard.json data/leaderboard_meta.json
             git diff --cached --quiet || git commit -s -m "chore: update leaderboard snapshot [skip ci]"
             git pull --rebase origin main || true
             git push

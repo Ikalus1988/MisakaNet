@@ -1,32 +1,40 @@
 ---
-{
-  "domain": "contrib",
-  "title": "JSON 解析失败Handling — 截断 / 格式Error",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: JSON 解析失败Handling — 截断 / 格式Error
+domain: contrib
+tags:
+- json
+- parse
+- failure
+- handling
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
 ---
----{"title": "JSON 解析失败Handling — 截断 / 格式Error", "domain": "devops", "tags": ["json", "parse", "truncated", "llm", "output"]}---
 
-## 背景
+## Problem
 
 从 LLM 输出或 API 返回中解析 JSON 时报 `json.decoder.JSONDecodeError`。常见于模型输出被截断、前后有多余字符。
 
-## 根因
+## Root Cause
 
 1. 模型输出在 JSON 完成前被截断（token 限制）
 2. 模型在 JSON 前后加了 markdown 代码块标记 ```json ... ```
 3. JSON 内容含未转义的特殊字符
 ## Verification
 
-1. Follow the solution steps in order
-2. Run any relevant commands or tests to confirm the fix
-3. Verify the symptom no longer occurs
-4. Check related logs or outputs for expected behavior
+```bash
+echo "Lesson: JSON 解析失败Handling — 截断 / 格式Error"
+wc -l lessons/contrib/json-parse-failure-handling.md
+```
 
+**Expected Output:**
+```
+Lesson: JSON 解析失败Handling — 截断 / 格式Error
+# (line count)
+```
 
-## 修复
+## Solution
 
 ```python
 import json

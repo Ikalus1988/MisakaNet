@@ -1,18 +1,25 @@
 # Integrations
 
-Connect MisakaNet to your AI coding tool. Search 207+ lessons directly from your workflow.
+Connect MisakaNet to your AI coding tool. Search 287 failure-recovery lessons directly from your workflow.
 
 ## Available Integrations
 
 | Tool | Status | Setup |
 |------|--------|-------|
+| **Cursor** | ✅ Ready | [Failure-memory rule](cursor-failure-memory.md) |
+| **Claude Code** | ✅ Ready | [Failure playbook](claude-code-failure-memory.md) |
 | **Continue.dev** | ✅ Ready | [Setup Guide](continue/README.md) |
-| **Claude Code** | ✅ Ready | MCP server — see below |
-| **Cursor** | Planned | — |
+| **Shell** | ✅ Ready | `misaka-search.sh` — see below |
+| **`misaka run`** | ✅ Ready | `python scripts/misaka_run.py <cmd>` |
 | **Aider** | Planned | — |
 | **VS Code** | Planned | — |
 | **Cline** | Planned | — |
-| **Shell alias** | Ready | See below |
+
+## Public smoke evidence
+
+- [MCP smoke report](mcp-smoke-report.md) — local stdio tool calls verified.
+- [Runtime smoke matrix](runtime-smoke-matrix.md) — Cursor / Claude Code / misaka run / shell entry points.
+- [Glama Analytics counting boundary](glama-analytics.md) — 0 Glama-routed tool calls ≠ 0 usage.
 
 ## Quick: Shell Alias
 

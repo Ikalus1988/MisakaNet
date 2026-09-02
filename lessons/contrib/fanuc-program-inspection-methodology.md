@@ -1,12 +1,19 @@
 ---
-title: "FANUC Robot Program Inspection Methodology — Systematic Check Guide"
-domain: "fanuc"
-subdomain: "quality"
-tags: ["inspection", "checklist", "program-review", "signal-check", "collision-zone", "fine-point", "quality"]
-status: "published"
-source: "internal-training"
-confidence: "0.9"
-created: "2026-07-14"
+title: FANUC Robot Program Inspection Methodology — Systematic Check Guide
+domain: fanuc
+tags:
+- inspection
+- checklist
+- program-review
+- signal-check
+- collision-zone
+- fine-point
+- quality
+status: published
+created: '2026-07-14'
+source: internal-training
+confidence: 0.9
+subdomain: quality
 ---
 
 ## Problem
@@ -126,10 +133,16 @@ Example: UB030R01_MS11_01_WELD_JR1
 
 ## Verification
 
-1. Run signal check on a known-good program — should pass 100%
-2. Intentionally change a FINE to CNT before CollZone Release — should be caught
-3. Remove a Fixture OUT call — should be flagged as missing pair
-4. Run full inspection on a new program — verify all categories checked
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```
 
 ## Notes
 

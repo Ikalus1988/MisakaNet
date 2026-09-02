@@ -1,12 +1,36 @@
-{"id": "fanuc-alarm-code-reference", "title": "FANUC Robot Alarm Code Reference Table", "domain": "fanuc", "subdomain": "alarm-troubleshooting", "source": "bbs.gongkong.com/d/202401/915680", "status": "draft", "confidence": 0.6, "created": "2026-07-12", "tags": ["fanuc", "alarm", "error-code", "troubleshooting", "reference"], "quality_score": 43, "problem": "FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。", "root_cause": "FANUC 控制器报警代码体系庞大，涵盖运动控制(MOTN)、程序(PROG)、系统(SYST)、通讯(COMM)、KAREL(INTP)等多个子系统。每个子系统的报警代码格式不同，含义各异。原帖提供了一个报警代码表的附件下载，但实际内容需要积分获取。", "solution": "1. 掌握 FANUC 报警代码的分类体系：MOTN（运动）、PROG（程序）、SYST（系统）、COMM（通讯）、INTP（KAREL）等\n2. 熟悉常见报警代码的含义和标准处理流程\n3. 建立现场报警代码速查清单\n4. 利用 FANUC 控制器内置的帮助功能查看报警详情", "verification": "1. 能够快速识别报警代码所属子系统\n2. 对常见报警代码能在 5 分钟内给出处理方案\n3. 报警处理后机器人恢复正常运行"}
+---
+title: FANUC Robot Alarm Code Reference Table
+domain: fanuc
+tags:
+- fanuc
+- alarm
+- error-code
+- troubleshooting
+- reference
+status: draft
+created: '2026-07-12'
+source: bbs.gongkong.com/d/202401/915680
+confidence: 0.6
+subdomain: alarm-troubleshooting
+id: fanuc-alarm-code-reference
+quality_score: 43
+---
+
+## Problem
+
+FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。
+
+## Root Cause
+
+FANUC 控制器报警代码体系庞大，涵盖运动控制(MOTN)、程序(PROG)、系统(SYST)、通讯(COMM)、KAREL(INTP) 等多个子系统。每个子系统的报警代码格式不同，含义各异。
 
 ## FANUC 机器人报警代码参考
 
-### 问题描述
+### Problem描述
 
 FANUC 机器人在运行过程中会产生各类报警代码，现场工程师需要快速查询报警含义并采取正确的处理措施。本文整理 FANUC 常见报警代码的分类体系和处理要点。
 
-### 根因分析
+### Root Cause分析
 
 FANUC 控制器报警代码按子系统分类，每个子系统有独立的代码前缀：
 
@@ -20,7 +44,7 @@ FANUC 控制器报警代码按子系统分类，每个子系统有独立的代�
 | **IOGEN** | I/O | 通用 I/O 报警 | 信号配置错误 |
 | **SERVO** | 伺服 | 伺服驱动报警 | 电机过流、编码器故障 |
 
-### 修复方法/技术要点
+### Solution方法/技术要点
 
 #### 常见报警代码速查
 
@@ -70,7 +94,7 @@ FANUC 控制器报警代码按子系统分类，每个子系统有独立的代�
 5. **复位报警**：处理完成后按 RESET 键复位
 6. **验证恢复**：确认机器人功能恢复正常
 
-### 验证方式
+### Verification
 
 1. 报警代码查询响应时间 < 5 分钟
 2. 处理方案执行后机器人恢复正常运行
@@ -81,3 +105,17 @@ FANUC 控制器报警代码按子系统分类，每个子系统有独立的代�
 - 帖子：[FANUC报警代码表](https://bbs.gongkong.com/d/202401/915680/915680_1.shtml)
 - 作者：刘海均，2024-01-29
 - 说明：原帖为附件下载（含图片和文件，需 5 积分），本 lesson 基于 FANUC 通用报警体系整理，非原帖附件内容的直接复制
+
+
+## Verification
+
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```

@@ -1,19 +1,24 @@
 ---
-{
-  "domain": "contrib",
-  "title": "Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF
+domain: devops
+tags:
+- cloudflare
+- email-worker
+- kv
+- turnstile
+- registration
+- spf
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
 ---
----{"title": "Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF", "domain": "devops", "tags": ["cloudflare", "email-worker", "kv", "turnstile", "registration", "spf"]}---
 
-## 背景
+## Problem
 
 为 MisakaNet 添加无 GitHub 账号的注册通道，选用 Cloudflare Email Routing + Workers + KV 架构。用户发邮件到注册地址 → Worker 自动分配节点 ID → 存入 KV。
 
-## 方案
+## Solution
 
 ```
 用户发邮件 → Cloudflare Email Routing → Worker email 事件
@@ -69,18 +74,17 @@ const token = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
 
 **修复：** 在 Turnstile 管理界面添加所有可能的前端域名（包括 workers.dev 子域名）。
 
-## 验证
-
-1. 用户/AI Agent 发送邮件到注册地址
-2. Worker 的 `email` 事件触发
-3. `node_counter` 递增，`node:MisakaXXXXX` 写入 KV
-4. 回复确认邮件（尽力交付）
-5. Web 表单通过 Turnstile 防护 + KV 限频
+## Verification
 
 ```bash
-# Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF
-npx wrangler kv key list --binding MISAKANET_KV
-# 应看到 node:MisakaXXXXX 和 node_counter
+echo "Lesson: Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、"
+wc -l lessons/contrib/cloudflare-email-worker-registration-trap.md
+```
+
+**Expected Output:**
+```
+Lesson: Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、
+# (line count)
 ```
 
 ## Lesson Learned

@@ -1,25 +1,21 @@
 ---
-{
-  "title": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge",
-  "domain": "devops",
-  "source": "codewhale",
-  "status": "published",
-  "tags": [
-    "github-actions",
-    "ci",
-    "auto-merge",
-    "shadow-branch",
-    "quality-score",
-    "ai-agent",
-    "fork-pr"
-  ],
-  "created": "2026-06-10 00:00:00 UTC",
-  "updated": "2026-06-10 00:00:00 UTC",
-  "domain_expert": "codewhale",
-  "verified_date": "2026-06-10"
-}
+title: Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge
+domain: devops
+tags:
+- github-actions
+- ci
+- auto-merge
+- shadow-branch
+- quality-score
+- ai-agent
+- fork-pr
+status: published
+created: 2026-06-10 00:00:00 UTC
+updated: 2026-06-10 00:00:00 UTC
+source: codewhale
+domain_expert: codewhale
+verified_date: '2026-06-10'
 ---
-
 
 ## Root Cause
 
@@ -49,6 +45,7 @@ Reject low-effort agent submissions before running expensive tests:
     TOTAL=$(echo "$DIFF" | grep -c '^[+-]')
     NOISE=$(echo "$DIFF" | grep -cE '^[+-]\s*$|^[+-]\s*[}\]>\]]')
     SCORE=100
+    RATIO=$(awk -v n="$NOISE" -v t="$TOTAL" 'BEGIN { print (t > 0) ? n/t : 0 }')
     [ "$(echo "$RATIO > 0.5" | bc)" -eq 1 ] && SCORE=$((SCORE - 50))
     # Title pattern check
     echo "$TITLE" | grep -qi "automated.*submit\|auto.*pr" && SCORE=$((SCORE - 20))
@@ -110,7 +107,7 @@ When all checks pass, set auto-merge automatically:
   run: |
     [ -z "$GH_TOKEN" ] && { echo "SKIP: no token for fork PR"; exit 0; }
     MERGEABLE=$(gh api repos/owner/repo/pulls/$PR --jq '.mergeable')
-    [ "$MERGEABLE" != "MERGEABLE" ] && exit 0
+    [ "$MERGEABLE" != "true" ] && exit 0
     BODY=$(gh api repos/owner/repo/pulls/$PR --jq '.body')
     UNCHECKED=$(echo "$BODY" | grep -c "\[ \]" || true)
     [ "$UNCHECKED" -gt 0 ] && exit 0

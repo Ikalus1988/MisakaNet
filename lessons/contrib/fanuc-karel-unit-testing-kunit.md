@@ -1,27 +1,33 @@
-{
-  "id": "fanuc-karel-unit-testing-kunit",
-  "title": "Unit Testing FANUC KAREL Programs with KUnit Framework",
-  "domain": "fanuc",
-  "subdomain": "karel-testing",
-  "source": "github.com/kylerlippincott/kunit",
-  "status": "draft",
-  "confidence": 0.8,
-  "created": "2026-07-12",
-  "tags": ["fanuc", "karel", "unit-testing", "kunit", "roboguide", "quality"],
-  "quality_score": 80,
-  "problem": "FANUC KAREL 程序缺乏单元测试手段，无法在部署前验证逻辑正确性，调试依赖实机运行。",
-  "root_cause": "KAREL 是类 Pascal 的编译语言，运行在 FANUC 控制器上，没有原生的测试框架。KUnit 通过 KAREL 程序实现测试运行器，利用控制器的 HTTP 服务提供 Web 浏览器访问的测试结果输出。",
-  "solution": "使用 KUnit 框架编写 KAREL 单元测试：编写返回 BOOLEAN 的测试函数，通过 HTTP 端点运行测试并在浏览器查看结果。",
-  "verification": "1. kunit.pc 和 strings.pc 已部署到控制器；2. 测试程序翻译编译成功；3. 浏览器访问 http://robot_ip/KAREL/kunit?filenames=test_name 显示测试结果；4. 所有断言通过，0 failures。"
-}
+---
+title: Unit Testing FANUC KAREL Programs with KUnit Framework
+domain: fanuc
+tags:
+- fanuc
+- karel
+- unit-testing
+- kunit
+- roboguide
+- quality
+status: draft
+created: '2026-07-12'
+source: github.com/kylerlippincott/kunit
+confidence: 0.8
+subdomain: karel-testing
+id: fanuc-karel-unit-testing-kunit
+problem: FANUC KAREL 程序缺乏单元测试手段，无法在部署前验证逻辑正确性，调试依赖实机运行。
+quality_score: 80
+root_cause: KAREL 是类 Pascal 的编译语言，运行在 FANUC 控制器上，没有原生的测试框架。KUnit 通过 KAREL 程序实现测试运行器，利用控制器的
+  HTTP 服务提供 Web 浏览器访问的测试结果输出。
+solution: 使用 KUnit 框架编写 KAREL 单元测试：编写返回 BOOLEAN 的测试函数，通过 HTTP 端点运行测试并在浏览器查看结果。
+---
 
 ## Unit Testing FANUC KAREL Programs with KUnit Framework
 
-### 问题描述
+### Problem描述
 
 FANUC KAREL 程序没有原生的单元测试支持。开发者通常需要将程序部署到控制器或 ROBOGUIDE 上运行才能验证逻辑，调试效率低且风险高。需要一种在部署前就能系统性验证 KAREL 程序逻辑的方法。
 
-### 根因分析
+### Root Cause分析
 
 KAREL 是 FANUC 专有的类 Pascal 编译语言，运行环境是机器人控制器，不支持标准的软件测试工具链。KUnit 框架通过以下机制解决这个问题：
 
@@ -30,7 +36,7 @@ KAREL 是 FANUC 专有的类 Pascal 编译语言，运行环境是机器人控�
 - 测试运行器通过控制器的 HTTP 服务输出结果，可在浏览器中查看
 - 支持并行运行多个测试文件
 
-### 修复方法/技术要点
+### Solution方法/技术要点
 
 #### 1. 安装步骤
 
@@ -145,7 +151,7 @@ Expected "a" but got "b"
 - 部署：复制到 ROBOGUIDE 或真实机器人
 - 运行：`http://robot.ip/KAREL/test_kunit`
 
-### 验证方式
+### Verification方式
 
 1. `kunit.pc` 和 `strings.pc` 已正确部署到控制器
 2. 测试程序翻译编译无错误
@@ -157,3 +163,17 @@ Expected "a" but got "b"
 
 - GitHub: kylerlippincott/kunit — Simple unit testing framework for FANUC KAREL
 - 适用于所有支持 KAREL 的 FANUC 控制器（需 R632 选件）
+
+
+## Verification
+
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```

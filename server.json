@@ -1,23 +1,25 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.Ikalus1988/misakanet",
-  "description": "Agent failure memory network. Search 249 indexed failure-recovery lessons and route redacted feedback intake for maintainers.",
+  "description": "Failure-memory layer for coding agents. When your agent hits an error, search real failure-recovery lessons and get a fix path. Supports MCP, CLI, and intake.",
   "repository": {
     "url": "https://github.com/Ikalus1988/MisakaNet",
     "source": "github"
   },
-  "version": "2.14.0",
+  "version": "2.23.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "misakanet",
-      "version": "2.14.0",
+      "version": "2.23.0",
       "transport": {
         "type": "stdio"
       },
       "runtime": {
         "command": "python3",
-        "args": ["scripts/mcp_server.py"]
+        "args": [
+          "scripts/mcp_server.py"
+        ]
       }
     }
   ]

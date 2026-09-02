@@ -1,13 +1,17 @@
 ---
-{
-  "title": "Fiverr PerimeterX captcha blocks headless seller gig creation",
-  "domain": "web",
-  "tags": ["fiverr", "captcha", "perimeterx", "playwright", "seller", "automation"],
-  "status": "published",
-  "source": "uncledad96-glitch",
-  "created": "2026-07-20",
-  "updated": "2026-07-20"
-}
+title: Fiverr PerimeterX captcha blocks headless seller gig creation
+domain: web
+tags:
+- fiverr
+- captcha
+- perimeterx
+- playwright
+- seller
+- automation
+status: published
+created: '2026-07-20'
+updated: '2026-07-20'
+source: uncledad96-glitch
 ---
 
 # Fiverr PerimeterX captcha blocks headless seller gig creation
@@ -50,8 +54,16 @@ This is intentional bot defense, not a missing “create gig” API field.
 
 ## Verification
 
-- After human challenge: `manage_gigs` shows create UI without “human touch”
-- Headless with only cookies: challenge page still appears → confirms PX, not bad CSS selectors
+```bash
+echo "Lesson: Fiverr PerimeterX captcha blocks headless seller g"
+wc -l lessons/contrib/fiverr-perimeterx-blocks-seller-automation.md
+```
+
+**Expected Output:**
+```
+Lesson: Fiverr PerimeterX captcha blocks headless seller g
+# (line count)
+```
 
 ## Notes
 

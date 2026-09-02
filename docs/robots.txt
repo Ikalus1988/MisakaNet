@@ -2,7 +2,37 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
+# AI crawlers — MisakaNet is a failure-lesson network built for AI agents; explicitly welcomed.
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
 Sitemap: https://misakanet.org/sitemap.xml
 
+# Content Signals — 明确 AI 内容使用策略
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
+
 # MisakaNet — Git-backed failure lesson network for AI agents
-# 205+ curated lessons, zero-dependency, GitHub-audited

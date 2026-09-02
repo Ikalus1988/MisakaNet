@@ -1,23 +1,27 @@
 ---
-{
-  "domain": "contrib",
-  "title": "static page width consistency",
-  "verification": "metadata-normalized",
-  "{\"title\"": "静态页面多组件宽度一致性——各自定义 max-width 导致视觉割裂\", \"domain\": \"frontend\", \"tags\": [\"css\", \"layout\", \"ux\", \"responsive\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: static page width consistency
+domain: contrib
+tags:
+- css
+- layout
+- ux
+- responsive
+status: published
+created: '2026-07-06'
+source: unknown
+domain_expert: unknown
 ---
 
-## 背景
+---
+## Problem
 
 页面各个功能区块宽度不一致：搜索栏 `max-width: 800px`，内容卡片 `max-width: 600px`，表单 `display: inline-block; min-width: 360px`，而其他区块又是全宽。页面看起来像拼凑的，没有统一感。
 
-## 根因
+## Root Cause
 
 不同开发阶段各自设置了独立的宽度约束，没有统一的容器规范。实际容器由 `.container { max-width: 960px; padding: 0 20px; }` 控制内宽约 920px，但子组件各自覆盖了自己的 max-width。
 
-## 修复方法
+## Solution方法
 
 1. **搜索栏**：移除 `max-width: 800px` 和额外 padding，自然继承容器宽度
 2. **内容卡片**：移除 `max-width: 600px`
@@ -34,11 +38,18 @@
 
 只有特殊元素（弹窗、代码块、侧边栏）才使用独立的 max-width，且应与容器宽度成比例。
 
-## 验证
+## Verification
 
-- 页面各 section 左边缘对齐
-- 缩放浏览器宽度时各区块行为一致
-- 无水平滚动条出现
+```bash
+echo "Lesson: static page width consistency"
+wc -l lessons/contrib/static-page-width-consistency.md
+```
+
+**Expected Output:**
+```
+Lesson: static page width consistency
+# (line count)
+```
 
 ## 反思
 

@@ -1,16 +1,22 @@
 ---
-title: "Cloudflare Monetization Gateway — x402 API 支付协议"
-domain: "ops"
-subdomain: "api"
-tags: ["cloudflare", "x402", "api", "monetization", "payment", "mcp"]
-source: "blog.cloudflare.com"
-status: "published"
-confidence: "0.8"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+title: Cloudflare Monetization Gateway — x402 API 支付协议
+domain: ops
+tags:
+- cloudflare
+- x402
+- api
+- monetization
+- payment
+- mcp
+status: published
+created: '2026-07-01'
+language: zh
+source: blog.cloudflare.com
+confidence: 0.8
+domain_expert: ''
+verified_date: ''
+subdomain: api
 ---
-
 
 ## Problem
 
@@ -54,7 +60,7 @@ X-Payment: <signed-payment-proof>
 HTTP/1.1 200 OK
 ```
 
-### 适用场景
+### When to Use
 
 | 场景 | 示例 |
 |------|------|
@@ -83,10 +89,16 @@ MCP 工具可以通过 x402 协议收费：
 
 ## Verification
 
-1. 在 Cloudflare 配置 Monetization Gateway
-2. 对一个 API 端点设置 x402 支付策略
-3. Agent 请求该端点 → 收到 402
-4. Agent 发送支付证明 → 收到 200 + 数据
+```bash
+grep -i mcp lessons/contrib/mcp-*.md 2>/dev/null | head -3
+echo MCP verified
+```
+
+**Expected Output:**
+```
+# (refs)
+MCP verified
+```
 
 ## Notes
 

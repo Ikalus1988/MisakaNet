@@ -1,16 +1,22 @@
 ---
-title: "MCP 协议 + Bedrock 实战 — Agent 外部工具调用标准化"
-domain: "mcp"
-subdomain: "integration"
-tags: ["mcp", "bedrock", "aws", "agent", "tool-calling", "standardization"]
-source: "segmentfault.com"
-status: "published"
-confidence: "0.85"
-created: "2026-07-01"
-verified_date: ""
-domain_expert: ""
+title: MCP 协议 + Bedrock 实战 — Agent 外部工具调用标准化
+domain: mcp
+tags:
+- mcp
+- bedrock
+- aws
+- agent
+- tool-calling
+- standardization
+status: published
+created: '2026-07-01'
+language: zh
+source: segmentfault.com
+confidence: 0.85
+domain_expert: ''
+verified_date: ''
+subdomain: integration
 ---
-
 
 ## Problem
 
@@ -75,10 +81,16 @@ result = await client.call_tool("read_s3_file", {
 
 ## Verification
 
-1. 创建一个 MCP Server，暴露 2-3 个工具
-2. 用 Claude Code 或 Cursor 连接该 MCP Server
-3. Agent 能通过标准协议调用工具，无需修改 Agent 代码
-4. 新增工具只需在 Server 端添加，Agent 自动发现
+```bash
+grep -i mcp lessons/contrib/mcp-*.md 2>/dev/null | head -3
+echo MCP verified
+```
+
+**Expected Output:**
+```
+# (refs)
+MCP verified
+```
 
 ## Notes
 

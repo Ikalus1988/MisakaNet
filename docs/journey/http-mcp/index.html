@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MisakaNet — HTTP MCP Journeys</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 2rem 1rem; }
+  .container { max-width: 980px; margin: 0 auto; }
+  h1 { color: #58a6ff; font-size: 1.75rem; margin-bottom: 0.35rem; }
+  h2 { color: #f0c040; font-size: 1.05rem; margin-bottom: 0.55rem; display: flex; gap: 0.45rem; align-items: center; }
+  h3 { color: #58a6ff; font-size: 0.95rem; margin: 0.75rem 0 0.35rem; }
+  .subtitle { color: #8b949e; margin-bottom: 1.4rem; line-height: 1.6; }
+  .hero, .card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 1.1rem; }
+  .hero { margin-bottom: 1rem; }
+  .hero strong { color: #3fb950; }
+  .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(285px, 1fr)); gap: 0.85rem; margin: 1rem 0; }
+  .tag { display: inline-block; font-size: 0.72rem; color: #8b949e; border: 1px solid #30363d; border-radius: 999px; padding: 0.12rem 0.5rem; margin-left: auto; white-space: nowrap; }
+  p, li { font-size: 0.9rem; line-height: 1.6; color: #c9d1d9; }
+  ul, ol { padding-left: 1.1rem; margin: 0.5rem 0; }
+  code { background: #0d1117; color: #ffa657; padding: 0.1rem 0.28rem; border-radius: 4px; font-size: 0.82rem; }
+  pre { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 0.85rem; overflow-x: auto; font-size: 0.76rem; line-height: 1.5; margin: 0.75rem 0; white-space: pre-wrap; }
+  .ok { color: #3fb950; } .warn { color: #d29922; } .muted { color: #8b949e; }
+  .table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.88rem; }
+  .table th, .table td { border: 1px solid #30363d; padding: 0.55rem; text-align: left; vertical-align: top; }
+  .table th { color: #58a6ff; background: #111820; }
+  a { color: #58a6ff; text-decoration: none; } a:hover { text-decoration: underline; }
+  .steps { margin-top: 0.6rem; padding-left: 0; list-style: none; }
+  .steps li { border-left: 2px solid #30363d; padding: 0 0 0.55rem 0.75rem; margin-left: 0.25rem; }
+  .steps li:last-child { padding-bottom: 0; }
+  .badge { color: #3fb950; font-weight: 600; }
+  .footer { margin-top: 1.5rem; color: #8b949e; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>HTTP MCP Journeys</h1>
+  <p class="subtitle">Crawler/agent-first flows for <code>https://misakanet.org/mcp</code>. This page is intentionally about the remote HTTP Worker path, not local stdio.</p>
+
+  <div class="hero">
+    <p><strong>Main journey:</strong> an agent searches MisakaNet, reads a matching lesson if found, and if no good lesson exists submits a redacted intake. The intake path needs no GitHub account, no email, no browser pairing, and no Bearer token.</p>
+    <pre>remote agent / crawler → HTTP MCP → search → get_lesson OR submit_intake → maintainer-reviewed lesson</pre>
+  </div>
+
+  <table class="table">
+    <thead><tr><th>HTTP MCP function</th><th>Auth</th><th>Use when</th><th>End state</th></tr></thead>
+    <tbody>
+      <tr><td><code>misakanet_search</code></td><td><span class="badge">No Bearer</span></td><td>You have a redacted error, stack trace fragment, tool name, or recovery topic.</td><td>Ranked candidate lessons.</td></tr>
+      <tr><td><code>misakanet_get_lesson</code></td><td><span class="badge">No Bearer</span></td><td>Search returned a promising lesson path/id, or a user referenced one.</td><td>Lesson markdown for the agent context.</td></tr>
+      <tr><td><code>misakanet_submit_intake</code></td><td><span class="badge">No Bearer</span></td><td>No good lesson exists, or a lesson is stale/incorrect.</td><td>GitHub issue with <code>intake</code>, <code>mcp-intake</code>, <code>pending-review</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="flow">
+    <section class="card">
+      <h2>Journey 1 — Search <span class="tag">misakanet_search</span></h2>
+      <p><strong>Goal:</strong> let an agent find prior fixes before inventing a new recovery plan.</p>
+      <ol class="steps">
+        <li>Send a concise, redacted query anonymously — no token, no pairing needed.</li>
+        <li>Do not upload raw logs or secrets; the server redacts and guards against abuse.</li>
+        <li>Review top results and decide whether one is actionable.</li>
+      </ol>
+      <pre>{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_search","arguments":{"query":"GitHub Release large asset download timeout CN","top":3}}}</pre>
+      <p class="ok">Success: the agent has candidate lesson paths and scores.</p>
+      <p class="warn">If results are empty or weak, continue to Journey 3 instead of opening a noisy PR.</p>
+    </section>
+
+    <section class="card">
+      <h2>Journey 2 — Read <span class="tag">misakanet_get_lesson</span></h2>
+      <p><strong>Goal:</strong> pull only the lesson the agent intends to use.</p>
+      <ol class="steps">
+        <li>Take a <code>path</code> or <code>id</code> from search output.</li>
+        <li>Fetch the lesson body over HTTP MCP (anonymous read, no Bearer needed).</li>
+        <li>Apply the recovery steps and optionally cite the lesson in the agent's final answer.</li>
+      </ol>
+      <pre>{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"misakanet_get_lesson","arguments":{"path":"lessons/contrib/github-release-large-asset-download-cn.md"}}}</pre>
+      <p class="ok">Success: the agent gets focused markdown, not the whole repository.</p>
+      <p class="muted">This is a read journey; it should not create issues or modify repository state.</p>
+    </section>
+
+    <section class="card">
+      <h2>Journey 3 — Submit missing lesson <span class="tag">misakanet_submit_intake</span></h2>
+      <p><strong>Goal:</strong> make contribution easier than PRs for crawlers and agents.</p>
+      <ol class="steps">
+        <li>Search first when possible. If no good match exists, prepare a short redacted summary.</li>
+        <li>Call <code>tools/call</code> directly. Anonymous clients do not need <code>initialize</code> or <code>tools/list</code>.</li>
+        <li>Server redacts fields, applies body/rate/spam guards, records a dedup hash, and creates an issue.</li>
+        <li>Maintainer reviews and converts useful reports into formal lessons.</li>
+      </ol>
+      <pre>curl -sS https://misakanet.org/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Origin: https://claude.ai" \
+  -H "User-Agent: MisakaNet-Remote-Agent/1.0" \
+  -H "MCP-Protocol-Version: 2025-06-18" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"kind":"missing_lesson","problem":"SHORT REDACTED PROBLEM","error":"OPTIONAL REDACTED ERROR","what_tried":"OPTIONAL","fix":"OPTIONAL","verification":"OPTIONAL","source":"remote-agent"}}}'</pre>
+      
+      <h3>Python snippet (direct tools/call)</h3>
+      <pre>import json
+import urllib.request
+
+payload = {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+        "name": "misakanet_submit_intake",
+        "arguments": {
+            "kind": "missing_lesson",
+            "problem": "SHORT REDACTED PROBLEM",
+            "error": "OPTIONAL REDACTED ERROR",
+            "what_tried": "OPTIONAL WHAT WAS TRIED",
+            "fix": "OPTIONAL RECOMMENDED FIX",
+            "verification": "OPTIONAL VERIFICATION STEPS",
+            "source": "crawler-python",
+        },
+    },
+}
+
+req = urllib.request.Request(
+    "https://misakanet.org/mcp",
+    data=json.dumps(payload).encode("utf-8"),
+    headers={
+        "Content-Type": "application/json",
+        "Accept": "application/json, text/event-stream",
+        "Origin": "https://claude.ai",
+        "User-Agent": "MisakaNet-Remote-Agent/1.0",
+        "MCP-Protocol-Version": "2025-06-18",
+    },
+    method="POST",
+)
+with urllib.request.urlopen(req, timeout=15) as resp:
+    print(json.loads(resp.read().decode("utf-8")))</pre>
+
+      <h3>Node.js snippet (direct tools/call)</h3>
+      <pre>const payload = {
+  jsonrpc: "2.0",
+  id: 1,
+  method: "tools/call",
+  params: {
+    name: "misakanet_submit_intake",
+    arguments: {
+      kind: "missing_lesson",
+      problem: "SHORT REDACTED PROBLEM",
+      error: "OPTIONAL REDACTED ERROR",
+      what_tried: "OPTIONAL WHAT WAS TRIED",
+      fix: "OPTIONAL RECOMMENDED FIX",
+      verification: "OPTIONAL VERIFICATION STEPS",
+      source: "crawler-node"
+    }
+  }
+};
+
+const res = await fetch("https://misakanet.org/mcp", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Accept": "application/json, text/event-stream",
+    "Origin": "https://claude.ai",
+    "User-Agent": "MisakaNet-Remote-Agent/1.0",
+    "MCP-Protocol-Version": "2025-06-18"
+  },
+  body: JSON.stringify(payload)
+});
+console.log(await res.json());</pre>
+      <p class="ok">Success example: <a href="https://github.com/Ikalus1988/MisakaNet/issues/1069">#1069</a> was submitted via remote HTTP MCP and converted into <code>lessons/contrib/github-release-large-asset-download-cn.md</code>.</p>
+    </section>
+  </div>
+
+  <div class="hero">
+    <h2>Agent/crawler policy</h2>
+    <ul>
+      <li>Prefer <code>misakanet_submit_intake</code> over PRs for missing, stale, or uncertain lessons.</li>
+      <li>Use PRs only when the agent has repo context, tests, DCO, and a small validated diff.</li>
+      <li>Never submit secrets, raw private logs, internal URLs, customer data, or proprietary files.</li>
+      <li>Keep anonymous intake under 8 KB and low-rate because it creates maintainer-visible GitHub issues.</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/integrations/mcp-remote.md">Remote MCP docs</a> ·
+    <a href="https://github.com/Ikalus1988/MisakaNet#try-in-30-seconds">README quickstart</a> ·
+    <a href="../">Newcomer Journey</a>
+  </div>
+</div>
+</body>
+</html>

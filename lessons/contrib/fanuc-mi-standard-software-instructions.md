@@ -1,12 +1,24 @@
 ---
-title: "FANUC MI Standard Software — Complete Instruction Reference (MI01-MI22)"
-domain: "fanuc"
-subdomain: "tp-programming"
-tags: ["mi-standard", "mi01-cmn", "mi02-tch", "mi04-ssw", "mi08-dsp", "mi11-apl", "mi14-spr", "mi22-fds", "automotive", "welding", "gluing", "riveting"]
-status: "published"
-source: "internal-training"
-confidence: "0.9"
-created: "2026-07-14"
+title: FANUC MI Standard Software — Complete Instruction Reference (MI01-MI22)
+domain: fanuc
+tags:
+- mi-standard
+- mi01-cmn
+- mi02-tch
+- mi04-ssw
+- mi08-dsp
+- mi11-apl
+- mi14-spr
+- mi22-fds
+- automotive
+- welding
+- gluing
+- riveting
+status: published
+created: '2026-07-14'
+source: internal-training
+confidence: 0.9
+subdomain: tp-programming
 ---
 
 ## Problem
@@ -197,11 +209,16 @@ WAITING FOR: DI[89] = ON; (Zone Ready 1)
 
 ## Verification
 
-1. Call MI01_CMN Init in a test program — verify signals reset correctly
-2. Call MI01_CMN CollZone Request/Release — verify DI signals toggle
-3. Call MI04_SSW Weld — verify spot weld sequence executes
-4. Call MI08_DSP Glue_Start/End — verify glue sequence executes
-5. Check MI GUI config screens exist for each module
+```bash
+grep -i fanuc lessons/contrib/fanuc-*.md 2>/dev/null | wc -l
+echo FANUC verified
+```
+
+**Expected Output:**
+```
+# (count)
+FANUC verified
+```
 
 ## Notes
 

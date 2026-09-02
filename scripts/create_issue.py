@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Create Issue for content translation using hex-encoded PAT."""
-import subprocess, json
+"""Create Issue for content translation using a PAT from the environment."""
+import subprocess, json, os
 
-HEX = "6769746875625f7061745f31314241554c425959306d66366d503079676f516a775f307563314d57537a4b76487a474d685754584e3757775553734f4e574b4c6a4c385376716f7664717a4b4c585050454e4d464e6c7a4f6b6d4d4248"
-TOKEN = ''.join(chr(int(HEX[i:i+2],16)) for i in range(0,len(HEX),2))
+# Security: token must come from the environment, never be hardcoded.
+TOKEN = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN", "")
 
 data = {
     "title": "refactor: translate remaining Chinese lesson content to English",

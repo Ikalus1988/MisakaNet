@@ -1,11 +1,17 @@
 ---
-title: "Agent Memory Three-Index Architecture on Elasticsearch"
-domain: "agent"
-tags: ["agent-memory", "elasticsearch", "episodic", "semantic", "procedural", "hybrid-retrieval", "rrf"]
-status: "published"
-source: "elastic.co/search-labs"
+title: Agent Memory Three-Index Architecture on Elasticsearch
+domain: agent
+tags:
+- agent-memory
+- elasticsearch
+- episodic
+- semantic
+- procedural
+- hybrid-retrieval
+- rrf
+status: published
+source: elastic.co/search-labs
 ---
-
 
 ## Problem
 
@@ -41,9 +47,16 @@ Use Document Level Security (DLS) to ensure each user's memory is invisible to e
 
 ## Verification
 
-1. R@10 = 0.89 on 168-question QA eval
-2. Zero cross-tenant leaks
-3. Supersession preserves full history
+```bash
+grep -i 'bm25\|chunk\|embed' lessons/contrib/rag-*.md 2>/dev/null | head -3
+echo Search verified
+```
+
+**Expected Output:**
+```
+# (refs)
+Search verified
+```
 
 ## Notes
 

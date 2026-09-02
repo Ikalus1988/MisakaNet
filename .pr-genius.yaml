@@ -1,0 +1,85 @@
+# PR Genius local configuration
+# Customize rules, thresholds, and patterns per repository.
+#
+# Layer 1 (core): repo-agnostic rules — portable across any repo.
+# Layer 2 (repo): path_rules + custom_patterns — repo-specific.
+
+rules:
+  # Accept more Issue link formats
+  issue_link:
+    patterns:
+      - "fix(?:es|ed)?\\s+#\\d+"
+      - "close[sd]?\\s+#\\d+"
+      - "resolve[sd]?\\s+#\\d+"
+      - "references?\\s+#\\d+"
+      - "related\\s+to\\s+#\\d+"
+      - "Resolves\\s+`#\\d+`"
+      - "Fixes\\s+`#\\d+`"
+      - "Closes\\s+`#\\d+`"
+    required: false
+
+  # PR size thresholds (lines changed)
+  pr_size:
+    max_lines: 500
+    warning_lines: 300
+
+  # ── Layer 1: Core rules (repo-agnostic) ──
+  # Override severity or disable built-in rules here.
+  patterns:
+    pr_too_large:
+      enabled: true
+      severity: high
+    missing_tests:
+      enabled: true
+      severity: medium
+    doc_code_mismatch:
+      enabled: true
+      severity: low
+    mixed_concerns:
+      enabled: true
+      severity: medium
+    no_issue_reference:
+      enabled: true
+      severity: low
+    missing_dco:
+      enabled: true
+      severity: medium
+    draft_pr:
+      enabled: true
+      severity: info
+    review_stale:
+      enabled: true
+      severity: medium
+
+  # ── Layer 2: Repo-specific path rules ──
+  # Triggered when changed files match the glob pattern.
+  path_rules:
+    - id: mcp_server_change
+      trigger: "scripts/mcp_server.py"
+      severity: high
+      description: "MCP server changed — verify all tool endpoints still work"
+      message: "Run `python -m pytest tests/test_mcp_server.py` before merging."
+    - id: lesson_lint_required
+      trigger: "lessons/**/*.md"
+      severity: medium
+      description: "Lesson file changed — lint must pass"
+      message: "Run `python scripts/lesson_lint.py` to validate lesson format."
+    - id: workflow_change
+      trigger: ".github/workflows/*.yml"
+      severity: medium
+      description: "GitHub Actions workflow changed"
+      message: "Verify workflow syntax with `act` or push to a test branch."
+
+  # ── Layer 2: Repo-specific body/title patterns ──
+  # Regex matched against PR title + body.
+  custom_patterns:
+    - id: breaking_change_warning
+      pattern: "(?i)breaking\\s+change"
+      severity: high
+      description: "PR mentions breaking changes"
+      message: "Ensure CHANGELOG and migration guide are updated."
+    - id: wip_in_title
+      pattern: "(?i)\\bWIP\\b"
+      severity: info
+      description: "PR title contains WIP"
+      message: "Remove WIP prefix when the PR is ready for review."

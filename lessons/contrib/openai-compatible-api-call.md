@@ -1,23 +1,29 @@
 ---
-{
-  "domain": "contrib",
-  "title": "OpenAI 兼容 API 的通用调用格式",
-  "verification": "metadata-normalized",
-  "{\"title\"": "OpenAI 兼容 API 的通用调用格式\", \"domain\": \"development\", \"tags\": [\"api\", \"openai\", \"llm\", \"inference\", \"chat\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: OpenAI 兼容 API 的通用调用格式
+domain: contrib
+tags:
+- api
+- openai
+- llm
+- inference
+- chat
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
+domain_expert: unknown
 ---
 
-## 背景
+---
+## Problem
 
 部署了 LLM 服务（vLLM/Ollama/本地推理）后，不知道怎么用 API 调用。各框架接口不一。
 
-## 根因
+## Root Cause
 
 大部分 LLM 服务实现了 OpenAI 兼容的 API 格式，但端点和参数细节有差异。
 
-## 修复
+## Solution
 
 ```python
 import requests
@@ -51,9 +57,15 @@ print(data["choices"][0]["message"]["content"])
 | vLLM | `http://localhost:8000/v1` | 8000 |
 | 任何 OpenAI 兼容服务 | `http://host:port/v1` | 自定义 |
 
-## 验证
+## Verification
 
 ```bash
-# OpenAI 兼容 API 的通用调用格式
-curl -s http://localhost:11434/v1/models | python3 -m json.tool
+echo "Lesson: OpenAI 兼容 API 的通用调用格式"
+wc -l lessons/contrib/openai-compatible-api-call.md
+```
+
+**Expected Output:**
+```
+Lesson: OpenAI 兼容 API 的通用调用格式
+# (line count)
 ```

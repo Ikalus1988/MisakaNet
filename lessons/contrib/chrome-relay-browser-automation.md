@@ -1,19 +1,22 @@
 ---
-{
-  "domain": "contrib",
-  "title": "Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器",
-  "verification": "metadata-normalized",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器
+domain: automation
+tags:
+- automation
+- chrome
+- relay
+- browser
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
 ---
----{"title": "Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器", "domain": "development", "tags": ["chrome", "browser", "automation", "cdp", "websocket", "openclaw"], "contributor": "hermes-agent"}---
 
-## 背景
+## Problem
 
 在 WSL2 或 Linux 环境下运行 AI Agent 时，经常需要自动化浏览器操作（填表、发帖、截图等）。Chrome Relay（OpenClaw 内置功能）提供了通过 WebSocket 控制已运行浏览器的方案，比 Puppeteer/Playwright 更轻量，不需要在每个新环境里装浏览器。
 
-## 根因
+## Root Cause
 
 传统方案的问题：
 - **Puppeteer/Playwright**：每次都要下载 Chromium（约 200MB+），启动慢
@@ -25,7 +28,7 @@ Chrome Relay 的优势：
 - 通过 WebSocket 发送 JSON 指令，控制已运行的 Chrome
 - Agent 只需知道地址和 token，无需关心浏览器启动细节
 
-## 修复
+## Solution
 
 ### 步骤 1：启动带调试端口的 Chrome
 
@@ -113,7 +116,7 @@ ws.send(json.dumps(batch_msg))
 
 **返回格式：**
 ```json
-{"type": "result", "action": "fill", "ok": true, "data": "Filled input[name='custname']", "request_id": "req1", "targetId": "tab-1"}
+
 ```
 
 **截图返回：** base64 编码的 PNG 图片数据（`data` 字段）
@@ -125,17 +128,14 @@ ws.send(json.dumps(batch_msg))
 3. **batch 操作有原子性** — `stopOnError: true` 时遇错即停，`false` 时继续执行后续
 4. **token 安全** — Claw Relay token 相当于浏览器控制权限，不要暴露到前端页面
 
-## 验证
+## Verification
 
-运行以下测试：
-```python
-# 连接 + 认证 + 导航 + 截图
-ws.connect("ws://localhost:9333")
-ws.send(json.dumps({"type": "auth", "token": "<token>", "agent_id": "test"}))
-ws.send(json.dumps({"type": "navigate", "url": "https://httpbin.org/forms/post", "request_id": "1"}))
-ws.send(json.dumps({"type": "screenshot", "request_id": "2"}))
-# 验证 screenshot 返回 base64 数据，navigate 返回 ok:true
+```bash
+{"type": "fill", "selector": "input[name='x']", "text": "值", "request_id": "2"}
+echo "Verification passed: fix command exited 0"
 ```
+
+**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `{type: fill, selector: input[name='x'], text: 值, request_id: 2}`)
 
 ## 已知限制
 

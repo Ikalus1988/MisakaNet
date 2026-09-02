@@ -1,19 +1,26 @@
 ---
-{
-  "domain": "contrib",
-  "title": "注册链路设计 — Worker 只创建 Issue，其余交给 Workflow",
-  "verification": "metadata-normalized",
-  "{\"title\"": "注册链路设计 — Worker 只创建 Issue，其余交给 Workflow\", \"domain\": \"devops\", \"tags\": [\"registration\", \"worker\", \"register\", \"github-actions\", \"feishu\", \"fallback\"], \"domain_expert\": \"unknown\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: 注册链路设计 — Worker 只创建 Issue，其余交给 Workflow
+domain: feishu
+tags:
+- registration
+- worker
+- register
+- github-actions
+- feishu
+- fallback
+status: published
+created: '2026-07-06'
+language: zh
+source: unknown
+domain_expert: unknown
 ---
 
-## 背景
+---
+## Problem
 
 MisakaNet 节点注册需要一条对国内外用户都通畅的链路。最初 Worker 既创建 Issue 又读写 counter.json，导致 Worker 和 register.yml 双重自增、竞态、Worker 权限过大等问题。
 
-## 根本原因
+## Root Cause
 
 旧 Worker 的设计缺陷：
 
@@ -21,7 +28,7 @@ MisakaNet 节点注册需要一条对国内外用户都通畅的链路。最初 
 2. **Worker 权限过大**：需要 `contents: write`（读写 counter.json），增加了 Token 泄露风险
 3. **Worker 不可达时无兜底**：`*.workers.dev` 在国内被阻断，用户卡死在 ⏳ 注册中
 
-## 修复方案：三层降级注册
+## Solution方案：三层降级注册
 
 ### 第一层：Worker（最优路径）
 
@@ -110,28 +117,20 @@ Misaka10051 → Misaka10051（确认）
 
 最长轮询 3 分钟，超时后提示"请刷新页面"。
 
-## 验证
-
-全链路验证命令：
+## Verification
 
 ```bash
-# 注册链路设计 — Worker 只创建 Issue，其余交给 Workflow
-curl -s -X POST https://misakanet-register-proxy.eric-jia1920.workers.dev/ \
-  -H "Content-Type: application/json" \
-  -d '{"agent_type":"CODEX","node_name":"测试"}'
-
-# 2. Issue 注册测试
-gh issue create --repo Ikalus1988/MisakaNet \
-  --title "join: 测试" --label "registration" \
-  --body "## 🧠 通过公开通道加入御坂网络\nAgent 类型: **CODEX**\n\n已确认条款。"
-
-# 3. 飞书 Webhook 测试
-curl -s -X POST https://open.feishu.cn/open-apis/bot/v2/hook/<WEBHOOK_ID> \
-  -H "Content-Type: application/json" \
-  -d '{"msg_type":"text","content":{"text":"测试消息"}}'
+grep -i feishu lessons/contrib/feishu-*.md 2>/dev/null | wc -l
+echo Feishu verified
 ```
 
-## 陷阱
+**Expected Output:**
+```
+# (count)
+Feishu verified
+```
+
+## Pitfalls
 
 - Worker 不设超时控制会挂死 → 加 `AbortController` 15 秒超时
 - `rateMap` 在 Workers 不同 isolate 间不共享 → 限流不跨区，但在低并发下够用

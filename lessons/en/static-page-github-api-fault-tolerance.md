@@ -10,6 +10,11 @@
   "created": "2026-07-20",
   "updated": "2026-07-20"
 }
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Fault-tolerance for static pages calling external APIs

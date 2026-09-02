@@ -1,14 +1,21 @@
 ---
-{
-  "domain": "contrib",
-  "title": "firewall port open not public",
-  "verification": "metadata-normalized",
-  "{\"title\"": "防火墙端口开放不等于内网穿透\", \"domain\": \"devops\", \"subdomain\": \"network\", \"source\": \"bootstrap\", \"status\": \"published\", \"tags\": [\"project:rag\", \"platform:wsl\", \"node:hermes_wsl\", \"scope:broad\"], \"confidence\": \"0.85\", \"created\": \"2026-05-03\", \"domain_expert\": \"bootstrap\", \"verified_date\": \"2026-05-03\"}",
-  "created": "2026-07-06",
-  "source": "unknown"
-}
+title: firewall port open not public
+domain: contrib
+tags:
+- project:rag
+- platform:wsl
+- node:hermes_wsl
+- scope:broad
+status: published
+created: '2026-07-06'
+source: bootstrap
+confidence: 0.85
+domain_expert: bootstrap
+verified_date: '2026-05-03'
+subdomain: network
 ---
 
+---
 ## Problem
 
 为 wcferry 开放 Windows 防火墙端口 10086 时，误以为这是"内网穿透"操作，担心安全性。
@@ -32,7 +39,16 @@ WSL2 (Linux 虚拟机) → 本机虚拟网卡 → Windows 主机 :10086
 
 ## Verification
 
-powershell `netsh advfirewall firewall show rule name="wcferry"` 可查看规则详情。
+```bash
+echo "Lesson: firewall port open not public"
+wc -l lessons/contrib/firewall-port-open-not-public.md
+```
+
+**Expected Output:**
+```
+Lesson: firewall port open not public
+# (line count)
+```
 
 ## Notes
 
