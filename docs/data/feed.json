@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-09-01T23:23:10.017256+00:00",
+  "generated_at": "2026-09-02T04:46:03.888386+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs: Add dsh plugin installation guide",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1422",
+      "timestamp": "2026-09-02T02:32:50Z",
+      "source": "github"
+    },
     {
       "type": "challenge",
       "title": "[Bounty] dsh plugin integration test suite",
@@ -54,13 +61,6 @@
       "title": "chore(deps): update mkdocs requirement from >=1.5.0 to >=1.6.1",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1387",
       "timestamp": "2026-08-31T15:54:13Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): update mcp requirement from >=2.0.0 to >=2.1.1",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1392",
-      "timestamp": "2026-08-31T15:21:53Z",
       "source": "github"
     },
     {
