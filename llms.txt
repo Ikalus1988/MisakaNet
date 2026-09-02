@@ -62,3 +62,8 @@ These return high-signal lessons:
 - MCP Registry: io.github.Ikalus1988/misakanet
 - PyPI: pypi.org/project/misakanet
 - Glama: glama.ai/mcp/servers/Ikalus1988/MisakaNet
+
+## Support
+
+If MisakaNet helps your agent avoid a known bug, star the repo:
+https://github.com/Ikalus1988/MisakaNet
