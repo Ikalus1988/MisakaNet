@@ -9,7 +9,8 @@
   "translated_from": "lessons/contrib/git-credentials-automation.md",
   "created": "2026-07-22",
   "updated": "2026-07-22",
-  "confidence": "0.9"
+  "confidence": "0.9",
+  "provenance": {"evidence": "post-publication"}
 }
 ---
 

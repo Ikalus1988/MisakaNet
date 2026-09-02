@@ -8,7 +8,8 @@
   "source": "uncledad96-glitch",
   "translated_from": "lessons/contrib/github-401-credential-lookup.md",
   "created": "2026-07-20",
-  "updated": "2026-07-20"
+  "updated": "2026-07-20",
+  "provenance": {"evidence": "post-publication"}
 }
 ---
 
