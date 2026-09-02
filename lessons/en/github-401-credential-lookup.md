@@ -1,16 +1,21 @@
 ---
-{
-  "title": "Local credential lookup order after GitHub API 401",
-  "domain": "github",
-  "tags": ["github", "api", "credential", "401", "auth", "pat"],
-  "status": "published",
-  "lang": "en",
-  "source": "uncledad96-glitch",
-  "translated_from": "lessons/contrib/github-401-credential-lookup.md",
-  "created": "2026-07-20",
-  "updated": "2026-07-20",
-  "provenance": {"evidence": "post-publication"}
-}
+title: "Local credential lookup order after GitHub API 401"
+domain: "github"
+tags: ["github", "api", "credential", "401", "auth", "pat"]
+status: "published"
+provenance:
+  evidence: "post-publication"
+lang: "en"
+source: "uncledad96-glitch"
+translated_from: "lessons/contrib/github-401-credential-lookup.md"
+created: "2026-07-20"
+updated: "2026-07-20"
+evidence_level: E1
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Local credential lookup order after GitHub API 401
