@@ -121,7 +121,7 @@ function addDebugContext(env, errorObj, context) {
 const MCP_TOOLS = [
   {
     name: "misakanet_register",
-    description: "Register a new agent node and get a token for authenticated access. No GitHub account or email needed.\nReturns: object {node_id: string, token: string} — the node id and its Bearer token for authenticated MCP calls.\nExample: misakanet_register(agent_type='claude-code')",
+    description: "[ONBOARDING] Register a new agent node and get a token for authenticated access. Call this first when you have no token; the returned Bearer token unlocks misakanet_write_lesson and higher rate limits on other tools. No GitHub account or email needed.\nReturns: object {node_id: string, token: string} — the node id and its Bearer token for authenticated MCP calls.\nExample: misakanet_register(agent_type='claude-code')",
     inputSchema: {
       type: "object",
       properties: {
@@ -132,7 +132,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_search",
-    description: "Search MisakaNet's public failure-lesson index by error text, keyword, or topic. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nReturns: object {results: [{id, title, domain, tags, path, description, score}], source, detail, query}; on no match: {no_match: true, suggestion, intake}.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
+    description: "[RETRIEVAL / READ] Search MisakaNet's public failure-lesson index by error text, keyword, or topic. This is the primary read path — run it first when you hit an error, before deciding to submit anything. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nReturns: object {results: [{id, title, domain, tags, path, description, score}], source, detail, query}; on no match: {no_match: true, suggestion, intake}.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
     inputSchema: {
       type: "object",
       properties: {
@@ -149,7 +149,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_get_lesson",
-    description: "Fetch one public MisakaNet lesson by repository path or lesson ID. Use after misakanet_search returns a promising result.\nReturns: object {path: string, content: string} — lesson markdown body (≤5000 chars); or {error}.\nExample: misakanet_get_lesson(id='auto-merge-ci-pipeline')",
+    description: "[RETRIEVAL / READ] Fetch one public MisakaNet lesson by repository path or lesson ID. Use after misakanet_search returns a promising result to pull the full fix content.\nReturns: object {path: string, content: string} — lesson markdown body (≤5000 chars); or {error}.\nExample: misakanet_get_lesson(id='auto-merge-ci-pipeline')",
     inputSchema: {
       type: "object",
       properties: {
@@ -160,7 +160,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_submit_intake",
-    description: "Submit a failure-case intake when no matching lesson exists, or ask a question about a knowledge gap. No Bearer auth required — open but rate-limited. Creates a GitHub issue labeled intake,mcp-intake,pending-review (question kind adds needs-human-review).\nReturns: object {submitted: boolean, intake_id, status, redactions_applied, quality_score, receipt}; duplicates: {submitted: false, duplicate: true, previous_issue}.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code')",
+    description: "[OPEN TRIAGE / INTAKE] Submit a failure-case intake (a lightweight, semi-structured report) when no matching lesson exists, or ask a question about a knowledge gap. Low-friction entry point: No Bearer auth required — open but rate-limited; output is a GitHub issue (intake,mcp-intake,pending-review) for maintainer triage, NOT a merged lesson. For a complete, pre-structured lesson that goes straight to review, prefer misakanet_write_lesson (requires Bearer).\nReturns: object {submitted: boolean, intake_id, status, redactions_applied, quality_score, receipt}; duplicates: {submitted: false, duplicate: true, previous_issue}.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code')",
     inputSchema: {
       type: "object",
       properties: {
@@ -178,7 +178,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_write_lesson",
-    description: "Submit a complete, structured failure lesson. Requires authentication (Bearer token in header). Input: title, domain, problem, root_cause, fix (all required); verification, tags, source (optional).\nReturns: object {lesson_id: string, status: 'pending_review', quality_score: number}; or {submitted: false, error}.\nExample: misakanet_write_lesson(title='pip timeout behind proxy', domain='python', problem='...', root_cause='...', fix='...')",
+    description: "[STRUCTURED COMMIT / VALIDATED SUBMISSION] Submit a complete, structured failure lesson (title/domain/problem/root_cause/fix) as a formal submission. Requires authentication (Bearer token in header) — this is the 'validated author' path, not open triage. Output goes through lesson-gate/lint/review and becomes a versioned lesson in the git repo. For quick open reports when you only have a partial failure description, use misakanet_submit_intake instead (no Bearer). Lessons are immutable once merged — corrections go through a new intake/PR, so there is intentionally no misakanet_update_lesson/misakanet_delete_lesson.\nReturns: object {lesson_id: string, status: 'pending_review', quality_score: number}; or {submitted: false, error}.\nExample: misakanet_write_lesson(title='pip timeout behind proxy', domain='python', problem='...', root_cause='...', fix='...')",
     inputSchema: {
       type: "object",
       properties: {
@@ -196,7 +196,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_preflight",
-    description: "Check risk level before executing high-risk operations. Matches agent intent against lesson triggers to provide proactive warnings. Use before RAG builds, WSL/GPU tasks, bulk imports, or any operation that might fail.\nReturns: object {risk_level: 'low'|'medium'|'high', intent, matched_lessons: [{id, title, domain, relevance}], guards: [string]}.\nExample: misakanet_preflight(intent='build RAG pipeline with ChromaDB')",
+    description: "[GUARD / RISK CHECK] Check risk level before executing high-risk operations. Matches agent intent against lesson triggers to provide proactive warnings. Use before RAG builds, WSL/GPU tasks, bulk imports, or any operation that might fail.\nReturns: object {risk_level: 'low'|'medium'|'high', intent, matched_lessons: [{id, title, domain, relevance}], guards: [string]}.\nExample: misakanet_preflight(intent='build RAG pipeline with ChromaDB')",
     inputSchema: {
       type: "object",
       properties: {
@@ -208,7 +208,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_me_events",
-    description: "Return evidence of a lesson being reused (E4 signals): helpful votes, regression-benchmark citations, and cross-node confirmation. Use to check whether a lesson is proven by real usage, not just self-reported. No auth required (read-only, rate-limited).\nReturns: object {lesson_id, events: [{type, count|queries|sources, evidence_level}], evidence: 'E0'|'E3'|'E4', note}.\nExample: misakanet_me_events(lesson_id='dco-auto-fix-workflow')",
+    description: "[READ-ONLY EVIDENCE] Return evidence of a lesson being reused (E4 signals): helpful votes, regression-benchmark citations, and cross-node confirmation. Use to check whether a lesson is proven by real usage, not just self-reported. Semantically 'misakanet_get_my_events' (evidence for the lessons your node submitted/used); kept as me_events for backward compatibility. No auth required (read-only, rate-limited).\nReturns: object {lesson_id, events: [{type, count|queries|sources, evidence_level}], evidence: 'E0'|'E3'|'E4', note}.\nExample: misakanet_me_events(lesson_id='dco-auto-fix-workflow')",
     inputSchema: {
       type: "object",
       properties: {
