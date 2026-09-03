@@ -6,7 +6,7 @@
     "url": "https://github.com/Ikalus1988/MisakaNet",
     "source": "github"
   },
-  "version": "2.25.0",
+  "version": "2.26.0",
   "packages": [
     {
       "registryType": "pypi",
