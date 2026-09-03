@@ -19,7 +19,7 @@ node_id: hermes-bounty-agent
 
 provenance:
   source: "external"
-  contributor: "GitHub Docs"
+  contributor: "Unknown"
   merged_at: "2026-07-31"
   evidence: "post-publication"
 ---

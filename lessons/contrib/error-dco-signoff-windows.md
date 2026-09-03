@@ -17,7 +17,7 @@ verified_date: 2026-07-29
 
 provenance:
   source: "external"
-  contributor: "MisakaNet"
+  contributor: "Unknown"
   merged_at: "2026-07-31"
   evidence: "post-publication"
 ---
