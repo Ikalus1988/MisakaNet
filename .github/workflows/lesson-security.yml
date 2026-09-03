@@ -43,11 +43,17 @@ jobs:
           # Recursive scan: lessons/*.md misses lessons/contrib, lessons/core,
           # lessons/en etc. (the bulk of the corpus). Use find + rglob.
           # Exclude _archive/ directory (historical content, not active lessons)
+          #
+          # Strip fenced code blocks (``` ... ```) before scanning so that
+          # dangerous patterns inside code examples don't trigger false positives.
           while IFS= read -r file; do
+            # Remove fenced code blocks (both ``` and ~~~ variants)
+            # and inline code (`...`) to avoid false positives
+            stripped=$(sed '/^```/,/^```/d; /^~~~/, /^~~~/d; s/`[^`]*`//g' "$file")
             for pattern in "${PATTERNS[@]}"; do
-              if grep -Eq "$pattern" "$file" 2>/dev/null; then
-                echo "⚠️  WARNING: Suspicious pattern found in $file: $pattern"
-                grep -En "$pattern" "$file" || true
+              if echo "$stripped" | grep -Eq "$pattern" 2>/dev/null; then
+                echo "⚠️  WARNING: Suspicious pattern found in $file (outside code block): $pattern"
+                echo "$stripped" | grep -nE "$pattern" || true
                 EXIT_CODE=1
               fi
             done
