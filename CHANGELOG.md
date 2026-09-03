@@ -7,6 +7,13 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.26.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.25.0...v2.26.0) (2026-09-03)
+
+
+### Features
+
+* **lesson:** evidence_refs frontmatter support ([#1439](https://github.com/Ikalus1988/MisakaNet/issues/1439)) ([#1456](https://github.com/Ikalus1988/MisakaNet/issues/1456)) ([7139cff](https://github.com/Ikalus1988/MisakaNet/commit/7139cff229445169083880e1fd916c4c2231b9da))
+
 ## [2.25.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.24.0...v2.25.0) (2026-09-03)
 
 
