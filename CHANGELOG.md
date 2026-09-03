@@ -7,6 +7,48 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.24.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.23.1...v2.24.0) (2026-09-03)
+
+
+### Features
+
+* **intake:** weekly kind-audit workflow + question-answer-loop PRD ([#1396](https://github.com/Ikalus1988/MisakaNet/issues/1396)) ([9475852](https://github.com/Ikalus1988/MisakaNet/commit/9475852587af95983ee110858255c0cde2540568))
+* **mcp:** question routing at intake entries — kind auto-detect + no-match split ([#1396](https://github.com/Ikalus1988/MisakaNet/issues/1396)) ([27f65f6](https://github.com/Ikalus1988/MisakaNet/commit/27f65f6bf3c24c26d08992a12207d26bfa42e953))
+* **mcp:** TDQS pass — annotations + outputSchema on all 7 tools, requiredness clarity ([#1396](https://github.com/Ikalus1988/MisakaNet/issues/1396)/Glama review) ([bd241b1](https://github.com/Ikalus1988/MisakaNet/commit/bd241b1e4444884b76502be8dc6c397f7d1a0f20))
+* **prd5:** pull-based answer delivery — D1 questions store + FAQ search hits ([#1396](https://github.com/Ikalus1988/MisakaNet/issues/1396)) ([1c92a3b](https://github.com/Ikalus1988/MisakaNet/commit/1c92a3b3beedba29be90a8ed1d6434d48d32fb9b))
+
+
+### Bug Fixes
+
+* **ci:** route question-kind intakes away from lesson auto-review ([#1396](https://github.com/Ikalus1988/MisakaNet/issues/1396)) ([0e6e4f3](https://github.com/Ikalus1988/MisakaNet/commit/0e6e4f3f735529a1cc2435a7b668533616837a29))
+* **intake:** question kind never mints a lesson draft ([#1396](https://github.com/Ikalus1988/MisakaNet/issues/1396)) ([6bd9c1c](https://github.com/Ikalus1988/MisakaNet/commit/6bd9c1c67e6883e083cd97a0ae1f2b3f697ae5e4))
+* **review:** P0 dedup trim parity + P1 FAQ progressive disclosure; dual-axis review doc ([ed96887](https://github.com/Ikalus1988/MisakaNet/commit/ed9688769a2cc8cde29184e4efddd28590156294))
+
+
+### Documentation
+
+* **maintainer:** add 2026-09-03 handoff for dsh.so L5 fix + push ([f4f53ed](https://github.com/Ikalus1988/MisakaNet/commit/f4f53ed1503fe73afd45c8d3d3dca1237f2050eb))
+* **maintainer:** handoff-2026-09-03 §10 — pull-based answer delivery live-verified ([98fc23e](https://github.com/Ikalus1988/MisakaNet/commit/98fc23e1b71d9abb3dbb319deb491c8b4493fbf4))
+* **maintainer:** handoff-2026-09-03 §11 — full-chain smoke (question→answer→lesson) + HOL badge ([1f6ce8b](https://github.com/Ikalus1988/MisakaNet/commit/1f6ce8b8accdd60c55202830a0b55d241d08a313))
+* **maintainer:** handoff-2026-09-03 §12 — Glama TDQS pass (annotations/outputSchema/requiredness) deployed + live-verified ([200ab80](https://github.com/Ikalus1988/MisakaNet/commit/200ab8029ddd639f5bd422c8bd31a5023d00f3dd))
+* **maintainer:** handoff-2026-09-03 §2 — intake question routing fix (remote 0e6e4f3f) + [#1396](https://github.com/Ikalus1988/MisakaNet/issues/1396) reclassified as question ([64073f4](https://github.com/Ikalus1988/MisakaNet/commit/64073f4feb42a650a88d88df243356bdd9c766d9))
+* **maintainer:** handoff-2026-09-03 §2 — intake question routing fix (remote 0e6e4f3f) + [#1396](https://github.com/Ikalus1988/MisakaNet/issues/1396) reclassified as question ([8d96c6d](https://github.com/Ikalus1988/MisakaNet/commit/8d96c6de5f86cce701cdf4b8ef6ab34ae935f36e))
+* **maintainer:** handoff-2026-09-03 §4 — historical question-vs-lesson audit + regression tests ([ae53383](https://github.com/Ikalus1988/MisakaNet/commit/ae53383162477acc7498bda008393ec13c230ffa))
+* **maintainer:** handoff-2026-09-03 §5 — intake_pipeline question fix + queue hygiene ([41f042a](https://github.com/Ikalus1988/MisakaNet/commit/41f042a3df9d7f77af9335c8245d0474a95b39fe))
+* **maintainer:** handoff-2026-09-03 §6 — cron kind audit + PRD ⑤ question-answer loop ([ef0f4e8](https://github.com/Ikalus1988/MisakaNet/commit/ef0f4e88883f3e1dea13c36bd2a1a1dfbdcdfcca))
+* **maintainer:** handoff-2026-09-03 §7 — end-to-end test pass (live MCP auto-routing verified via issue-1450) ([3df83b6](https://github.com/Ikalus1988/MisakaNet/commit/3df83b6ed072ef95d9f67325bcb64d48a69d45f3))
+* **maintainer:** handoff-2026-09-03 §8 — PRD ⑤ pilot + release-please two-layer diagnosis ([6dd85e6](https://github.com/Ikalus1988/MisakaNet/commit/6dd85e6a7b3653668d3e5c982a36f08711130780))
+* **maintainer:** handoff-2026-09-03 §9 — release-please verified working; release PR [#1453](https://github.com/Ikalus1988/MisakaNet/issues/1453) (v2.24.0) open ([1a8fa50](https://github.com/Ikalus1988/MisakaNet/commit/1a8fa5041ded0e1e2cdfe215090a7c4800f849c8))
+* **prd:** PRD ⑤ §9 — competitor research on answer delivery (casebook/claimidx/unstuck/knoten/sentinela/kira/hitl) ([d388d91](https://github.com/Ikalus1988/MisakaNet/commit/d388d91e89c4a94ba948fc049e6c96620db350cf))
+* **prd:** PRD ⑤ path A pilot — [#1362](https://github.com/Ikalus1988/MisakaNet/issues/1362)/[#1364](https://github.com/Ikalus1988/MisakaNet/issues/1364) answered + closed with 'answered' label ([618feca](https://github.com/Ikalus1988/MisakaNet/commit/618fecae2c6f86965f0f9116aa3c116b65640501))
+* **readme:** add HOL Registry badge to Ecosystem group ([09c57f1](https://github.com/Ikalus1988/MisakaNet/commit/09c57f1990b5ea12ee4bdabf2991116acdf1bd8f))
+
+
+### Tests
+
+* **audit:** historical question-vs-lesson discrimination regression ([#1396](https://github.com/Ikalus1988/MisakaNet/issues/1396)) ([c7f1575](https://github.com/Ikalus1988/MisakaNet/commit/c7f15754b6d9feca899103c1a528107f243510a6))
+* **audit:** historical question-vs-lesson discrimination regression ([#1396](https://github.com/Ikalus1988/MisakaNet/issues/1396)) ([1ab0434](https://github.com/Ikalus1988/MisakaNet/commit/1ab043441af6bdc52de2b424d80b2102d67d8a61))
+
 ## [2.23.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.22.0...v2.23.0) (2026-08-28)
 
 
