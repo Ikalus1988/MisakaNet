@@ -19,7 +19,7 @@ node_id: hermes-bounty-agent
 
 provenance:
   source: "external"
-  contributor: "https://docs.github.com/en/get-started/using-git/about-git-rebase"
+  contributor: "GitHub Docs"
   merged_at: "2026-07-31"
   evidence: "post-publication"
 ---

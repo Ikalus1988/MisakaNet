@@ -17,7 +17,7 @@ verified_date: 2026-07-29
 
 provenance:
   source: "external"
-  contributor: "https://docs.docker.com/engine/install/linux-postinstall/"
+  contributor: "Docker Docs"
   merged_at: "2026-07-31"
   evidence: "post-publication"
 ---

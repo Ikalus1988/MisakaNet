@@ -19,7 +19,7 @@ node_id: hermes-bounty-agent
 
 provenance:
   source: "external"
-  contributor: "https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api"
+  contributor: "GitHub Docs"
   merged_at: "2026-07-31"
   evidence: "post-publication"
 ---

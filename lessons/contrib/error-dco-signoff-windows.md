@@ -17,7 +17,7 @@ verified_date: 2026-07-29
 
 provenance:
   source: "external"
-  contributor: "https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/dco-auto-fix-workflow.md"
+  contributor: "MisakaNet"
   merged_at: "2026-07-31"
   evidence: "post-publication"
 ---
