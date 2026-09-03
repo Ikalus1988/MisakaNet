@@ -13,7 +13,13 @@ TOOLS = [
             " relevant lessons and do not already know a lesson ID."
             " Input semantics: query is required; domain optionally"
             " filters by lesson domain; top limits ranked results and"
-            " defaults to 5. Set explain=true to return matched terms,"
+            " defaults to 5. kind filters by result type: 'lessons'"
+            " (lesson files only), 'evidence' (results with"
+            " evidence_refs or verification), 'related'"
+            " (cross-referenced/tag-overlap), 'all' (default)."
+            " kind is auto-detected from query intent when omitted"
+            " (e.g. 'lesson about X' → lessons, 'evidence for X'"
+            " → evidence). Set explain=true to return matched terms,"
             " TF-IDF, entity matches, vector similarity, and hybrid"
             " score components. detail controls progressive disclosure:"
             " compact (default, ~80 tok/lesson) for broad scans,"
@@ -72,6 +78,21 @@ TOOLS = [
                         "tags/fix; full returns complete lesson"
                         " markdown. Use compact for broad scans,"
                         " full only after narrowing results."
+                    ),
+                },
+                "kind": {
+                    "type": "string",
+                    "enum": ["all", "lessons", "evidence", "related"],
+                    "description": (
+                        "Filter results by kind: 'lessons' returns"
+                        " only lesson files, 'evidence' returns"
+                        " results with evidence_refs or high"
+                        " evidence_level, 'related' returns"
+                        " cross-referenced/tag-overlap results."
+                        " Default 'all' returns everything."
+                        " Auto-detected from query intent when"
+                        " omitted (e.g. 'lesson about X' → lessons,"
+                        " 'evidence for X' → evidence)."
                     ),
                 },
                 "bm25_weight": {
