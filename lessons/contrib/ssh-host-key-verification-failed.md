@@ -17,7 +17,7 @@ verified_date: 2026-07-29
 
 provenance:
   source: "external"
-  contributor: "https://docs.github.com/en/authentication/troubleshooting-ssh/error-host-key-verification-failed"
+  contributor: "GitHub Docs"
   merged_at: "2026-07-31"
   evidence: "post-publication"
 ---
