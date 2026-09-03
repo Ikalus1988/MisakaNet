@@ -10,7 +10,7 @@ const {
   CORS_HEADERS, timingSafeEqual, sanitizeIdentifier,
   parseTimestamp, roundPoints, REPUTATION_PERIODS,
   normalizeReputationPeriod, RATE_LIMIT_WINDOW, rateMap,
-  cleanRateMap,
+  cleanRateMap, INTAKE_KINDS, inferIntakeKind,
 } = _utils;
 
 // GitHub API configuration from handlers.js
@@ -160,7 +160,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_submit_intake",
-    description: "[OPEN TRIAGE / INTAKE] Submit a failure-case intake (a lightweight, semi-structured report) when no matching lesson exists, or ask a question about a knowledge gap. Low-friction entry point: No Bearer auth required — open but rate-limited; output is a GitHub issue (intake,mcp-intake,pending-review) for maintainer triage, NOT a merged lesson. For a complete, pre-structured lesson that goes straight to review, prefer misakanet_write_lesson (requires Bearer).\nReturns: object {submitted: boolean, intake_id, status, redactions_applied, quality_score, receipt}; duplicates: {submitted: false, duplicate: true, previous_issue}.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code')",
+    description: "[OPEN TRIAGE / INTAKE] Submit a failure-case intake (a lightweight, semi-structured report) when no matching lesson exists, or ask a question about a knowledge gap. Low-friction entry point: No Bearer auth required — open but rate-limited; output is a GitHub issue (intake,mcp-intake,pending-review) for maintainer triage, NOT a merged lesson. For a complete, pre-structured lesson that goes straight to review, prefer misakanet_write_lesson (requires Bearer).\nRouting: if you are ASKING a how-to / knowledge question (not reporting a failure), set kind=\"question\" — it opens a [Question] issue that maintainers answer/FAQ instead of scoring it as a lesson. If kind is omitted, the server auto-detects question-shaped content (no error/fix/verification + question phrasing).\nReturns: object {submitted: boolean, intake_id, status, redactions_applied, quality_score, receipt, routing:{kind, auto_detected}}; duplicates: {submitted: false, duplicate: true, previous_issue}.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code'); misakanet_submit_intake(kind='question', problem='How do I configure MCP auth in production?', source='claude-code')",
     inputSchema: {
       type: "object",
       properties: {
@@ -650,29 +650,41 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
 
     // PRD ①: no-match closed loop — embed intake guidance so the agent can
     // submit the gap in the same request chain instead of dropping it.
+    // How-to / knowledge-gap queries route to kind="question"; error-like
+    // queries keep routing to kind="missing_lesson" (see #1396 — questions
+    // forced into missing_lesson were auto-rejected as malformed lessons).
     const aura = await getIdentityAura(env, authToken);
     if (!results || results.length === 0) {
+      const noMatchKind = inferIntakeKind({ problem: args.query || "" }).kind;
+      const questionLike = noMatchKind === "question";
+      const suggestion = questionLike
+        ? `No MisakaNet lesson matched "${args.query}". This looks like a how-to / knowledge question. ` +
+          `Call misakanet_submit_intake with kind="question", ` +
+          `problem="<your question>", source="<your client>". ` +
+          `No account or email required; a maintainer can answer it or fold it into an FAQ entry.`
+        : `No MisakaNet lesson matched "${args.query}". ` +
+          `This is a knowledge gap. If this is a real failure you need documented, ` +
+          `call misakanet_submit_intake with kind="missing_lesson", ` +
+          `problem="<short description of the failure>", ` +
+          `error="<the error text>", source="<your client>". ` +
+          `No account or email required; a maintainer will review and cover it.`;
       return {
         results: [],
         no_match: true,
         query: args.query,
         source,
         detail,
-        suggestion:
-          `No MisakaNet lesson matched "${args.query}". ` +
-          `This is a knowledge gap. If this is a real failure you need documented, ` +
-          `call misakanet_submit_intake with kind="missing_lesson", ` +
-          `problem="<short description of the failure>", ` +
-          `error="<the error text>", source="<your client>". ` +
-          `No account or email required; a maintainer will review and cover it.`,
+        suggestion,
         intake: {
           tool: "misakanet_submit_intake",
-          args: {
-            kind: "missing_lesson",
-            problem: "<short description of the failure>",
-            error: args.query,
-            source: "mcp",
-          },
+          args: questionLike
+            ? { kind: "question", problem: "<your question>", source: "mcp" }
+            : {
+                kind: "missing_lesson",
+                problem: "<short description of the failure>",
+                error: args.query,
+                source: "mcp",
+              },
         },
         identity: aura,
       };
@@ -802,11 +814,19 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     if (intent && ctx) ctx.waitUntil(trackUsage(env, ctx, "intent", { query: intent }));
 
     // Kind whitelist — question is for asking help about a knowledge gap.
-    const INTAKE_KINDS = ["missing_lesson", "stale_lesson", "new_lesson_candidate", "question"];
-    const kind = INTAKE_KINDS.includes(args.kind) ? args.kind : "missing_lesson";
     if (args.kind && !INTAKE_KINDS.includes(args.kind)) {
       return { error: `Invalid kind: "${args.kind}". Supported: ${INTAKE_KINDS.join(", ")}.` };
     }
+    // Auto-route how-to / knowledge-gap content that arrives without an
+    // explicit kind (or still as kind=missing_lesson from older guidance) to
+    // `question`. See #1396: a PT-BR how-to arrived as missing_lesson, was
+    // scored 16.9/100 by the lesson auto-review and auto-rejected to badcase —
+    // a dead end for question-shaped content. Only clear question phrasing
+    // with zero failure evidence (error/fix/verification or failure keywords)
+    // flips the kind; real failure intakes are never touched.
+    const inferredKind = inferIntakeKind(args);
+    const kind = inferredKind.kind;
+    const kindAutoDetected = inferredKind.autoDetected;
 
     const SPAM_KEYWORDS = ["buy now", "click here", "free money", "casino", "viagra", "crypto pump"];
     const textLower = ((args.problem || "") + " " + (args.error || "")).toLowerCase();
@@ -917,6 +937,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         status: "pending_review",
         issue_url: data.html_url,
         dedup_hash: dedupHash,
+        routing: {
+          kind,
+          auto_detected: kindAutoDetected,
+          note: kindAutoDetected
+            ? 'No explicit kind and content reads as a how-to/knowledge question with no failure evidence — routed as kind="question" instead of missing_lesson.'
+            : undefined,
+        },
         receipt: `GitHub issue ${data.number} created. No account or email required.`,
       };
     } catch (e) {

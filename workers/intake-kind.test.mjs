@@ -165,3 +165,90 @@ test('sanitizeReasonKey strips unsafe chars for KV keys', async () => {
   assert.equal(hashString('pip timeout'), hashString('pip timeout'));
   assert.notEqual(hashString('pip timeout'), hashString('pip timeout x'));
 });
+
+// ── Kind auto-detection (#1396): how-to content must route to question ──
+
+async function submitAndCapture(args, env) {
+  let captured = null;
+  const restore = captureGitHubFetch(env, (p) => { captured = p; });
+  try {
+    const resp = await submitIntake(args, env);
+    const result = JSON.parse((await resp.json()).result.content[0].text);
+    return { result, captured };
+  } finally {
+    restore();
+  }
+}
+
+test('omitted kind + EN question phrasing auto-routes to question', async () => {
+  const env = createEnv();
+  const { result, captured } = await submitAndCapture(
+    { problem: 'How do I set up the MCP server on Windows?' }, env);
+  assert.equal(result.submitted, true);
+  assert.equal(result.routing.kind, 'question');
+  assert.equal(result.routing.auto_detected, true);
+  assert.ok(captured);
+  assert.match(captured.title, /^\[Question\]/);
+  assert.ok(captured.labels.includes('needs-human-review'));
+  assert.match(captured.body, /\*\*Kind:\*\* question/);
+});
+
+test('omitted kind + PT-BR question phrasing auto-routes to question', async () => {
+  const env = createEnv();
+  const { result, captured } = await submitAndCapture(
+    { problem: 'Como faço para guiar os personagens para fora de um loop narrativo?' }, env);
+  assert.equal(result.routing.kind, 'question');
+  assert.equal(result.routing.auto_detected, true);
+  assert.match(captured.title, /^\[Question\]/);
+});
+
+test('omitted kind + ZH question phrasing auto-routes to question', async () => {
+  const env = createEnv();
+  const { result, captured } = await submitAndCapture(
+    { problem: '怎么配置 MCP 服务器认证？' }, env);
+  assert.equal(result.routing.kind, 'question');
+  assert.equal(result.routing.auto_detected, true);
+  assert.match(captured.title, /^\[Question\]/);
+});
+
+test('explicit missing_lesson with question content but no failure evidence is re-routed', async () => {
+  const env = createEnv();
+  const { result, captured } = await submitAndCapture(
+    { kind: 'missing_lesson', problem: 'How do I guide characters out of a narrative loop?' }, env);
+  assert.equal(result.routing.kind, 'question');
+  assert.equal(result.routing.auto_detected, true);
+  assert.match(captured.title, /^\[Question\]/);
+});
+
+test('failure submissions are never re-routed to question', async () => {
+  const env = createEnv();
+  // Structured error field present → missing_lesson kept.
+  let { result, captured } = await submitAndCapture(
+    { kind: 'missing_lesson', problem: 'How do I fix the timeout?', error: 'ReadTimeoutError' }, env);
+  assert.equal(result.routing.kind, 'missing_lesson');
+  assert.equal(result.routing.auto_detected, false);
+  assert.match(captured.title, /^\[Intake\]/);
+
+  // Failure keyword in problem text (no structured fields) → missing_lesson kept.
+  ({ result, captured } = await submitAndCapture(
+    { problem: 'pip install timed out on corporate proxy' }, env));
+  assert.equal(result.routing.kind, 'missing_lesson');
+  assert.equal(result.routing.auto_detected, false);
+  assert.match(captured.title, /^\[Intake\]/);
+  assert.ok(!captured.labels.includes('needs-human-review'));
+});
+
+test('non-missing_lesson explicit kinds are never overridden', async () => {
+  const env = createEnv();
+  let { result, captured } = await submitAndCapture(
+    { kind: 'stale_lesson', problem: 'How do I update the outdated lesson?' }, env);
+  assert.equal(result.routing.kind, 'stale_lesson');
+  assert.equal(result.routing.auto_detected, false);
+  assert.match(captured.title, /^\[Intake\]/);
+
+  ({ result, captured } = await submitAndCapture(
+    { kind: 'question', problem: 'anything at all' }, env));
+  assert.equal(result.routing.kind, 'question');
+  assert.equal(result.routing.auto_detected, false);
+  assert.match(captured.title, /^\[Question\]/);
+});

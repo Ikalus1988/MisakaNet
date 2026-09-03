@@ -91,6 +91,99 @@ function validateMcpOrigin(request) {
   return MCP_ALLOWED_ORIGINS.includes(origin);
 }
 
+// ── Intake kind inference (question vs failure) ──
+// Used by misakanet_submit_intake and the search no-match suggestion so that
+// how-to / knowledge-gap submissions are routed as `question` instead of being
+// treated as malformed failure lessons (see #1396: a PT-BR how-to arrived as
+// kind=missing_lesson, got scored 16.9/100 by the lesson auto-review and was
+// auto-rejected to badcase). Conservative on purpose: only clear question
+// phrasing with NO failure evidence flips the kind.
+
+const INTAKE_KINDS = ["missing_lesson", "stale_lesson", "new_lesson_candidate", "question"];
+
+const QUESTION_HINTS = [
+  // English
+  /\bhow (do|can|should|could|would|to|i|we|you|does|did)\b/i,
+  /\bhow to\b/i,
+  /\bwhat (is|are|does|should|can|could|would)\b/i,
+  /\bwhy (does|is|do|are|can|would|did)\b/i,
+  /\bcan (i|you|we|someone)\b/i,
+  /\b(is|are) there a (way|better|method)\b/i,
+  /\btips?\b/i,
+  /\bguid(e|ance|elines?)\b/i,
+  /\brecommend\b/i,
+  /\bhelp (me|with)?\b/i,
+  // Portuguese
+  /\bcomo (fazer|resolver|configurar|usar|evitar|sair|sigo|guio|posso|fa[çc]o|devo)\b/i,
+  /\bpor que\b/i,
+  /\bpor qu[eê]\b/i,
+  /\bo que (é|e|fazer|devo|posso)\b/i,
+  /\bqual (é|e) (a|o|melhor)\b/i,
+  /\bajuda\b/i,
+  /\bdicas?\b/i,
+  /\bconselho\b/i,
+  /\bmaneira de\b/i,
+  /\bforma de\b/i,
+  // Spanish
+  /\bc[oó]mo (hago|puedo|configuro|resuelvo|evito|salgo|debo)\b/i,
+  /\bpor qu[ée]\b/i,
+  /\bqu[ée] (es|hago|puedo|debo)\b/i,
+  /\bayuda\b/i,
+  /\bconsejo\b/i,
+  // Chinese
+  /怎么|如何|为什么|请问|怎样|该(怎么|如何)|能不能/,
+  // Generic trailing question mark
+  /\?\s*$/,
+];
+
+// Inline *error evidence* in the problem text — narrow on purpose. Broad
+// failure words ("failed", "timeout", "failure") are too topic-y ("how do I
+// structure a failure lesson?" is a question, not an error report), while a
+// pasted traceback / error code / "Error:" prefix means real failure content
+// that must keep the missing_lesson route even if phrased as a question.
+const FAILURE_HINTS = [
+  /\b(traceback|segfault|stack ?trace)\b/i,
+  /\bexception\b/i,
+  /\b(enoent|econnrefused|eacces|eperm|econnreset|econnaborted)\b/i,
+  /(?:^|\n)\s*(?:error|fatal|critical|panic|failed to)[:\s]/i,
+  /报错|异常|崩溃|堆栈/,
+];
+
+function looksLikeQuestion(text) {
+  return QUESTION_HINTS.some((re) => re.test(String(text || "")));
+}
+
+function hasFailureEvidence(text) {
+  return FAILURE_HINTS.some((re) => re.test(String(text || "")));
+}
+
+/**
+ * Resolve the intake kind for a submission.
+ *
+ * - An explicit, valid kind (stale_lesson / new_lesson_candidate / question /
+ *   missing_lesson) is honored as-is, EXCEPT kind="missing_lesson": callers
+ *   are still guided toward it by older copy, so a clear question with zero
+ *   failure evidence is re-routed to "question".
+ * - An absent kind defaults to "missing_lesson", upgraded to "question" under
+ *   the same rule.
+ *
+ * Returns { kind, autoDetected }.
+ */
+function inferIntakeKind({ kind, problem, error, what_tried, fix, verification } = {}) {
+  const explicit = String(kind || "").trim();
+  if (explicit && !INTAKE_KINDS.includes(explicit)) {
+    return { kind: "missing_lesson", autoDetected: false, invalid: explicit };
+  }
+  const problemText = `${problem || ""} ${what_tried || ""}`;
+  const structuredFailure = Boolean(error || fix || verification);
+  const isQuestion = looksLikeQuestion(problemText) && !structuredFailure && !hasFailureEvidence(problemText);
+  if (explicit === "missing_lesson" || !explicit) {
+    if (isQuestion) return { kind: "question", autoDetected: true };
+    return { kind: "missing_lesson", autoDetected: false };
+  }
+  return { kind: explicit, autoDetected: false };
+}
+
 export {
   CORS_HEADERS,
   jsonResponse,
@@ -105,4 +198,10 @@ export {
   rateMap,
   cleanRateMap,
   validateMcpOrigin,
+  INTAKE_KINDS,
+  QUESTION_HINTS,
+  FAILURE_HINTS,
+  looksLikeQuestion,
+  hasFailureEvidence,
+  inferIntakeKind,
 };

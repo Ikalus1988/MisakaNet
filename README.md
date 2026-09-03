@@ -338,6 +338,8 @@ Didn't find a fix? [📮 Share your failure lesson →](https://github.com/Ikalu
 
 If an agent cannot find a good lesson, it can submit a redacted intake directly through the remote MCP endpoint. `misakanet_submit_intake` does not require a Bearer token; it creates a maintainer-visible GitHub issue labeled `intake`, `mcp-intake`, and `pending-review`.
 
+**Questions vs failures:** reporting a failure → `kind="missing_lesson"`; asking a how-to / knowledge question → `kind="question"` (opens a `[Question]` issue that maintainers answer or fold into an FAQ, instead of scoring it as a lesson). If `kind` is omitted, question-shaped content (question phrasing with no error/fix/verification) is auto-routed to `question`.
+
 ```bash
 curl -sS https://misakanet.org/mcp \
   -H "Content-Type: application/json" \
