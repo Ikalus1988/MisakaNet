@@ -132,7 +132,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_search",
-    description: "[RETRIEVAL / READ] Search MisakaNet's public failure-lesson index by error text, keyword, or topic. This is the primary read path — run it first when you hit an error, before deciding to submit anything. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nReturns: object {results: [{id, title, domain, tags, path, description, score}], source, detail, query}; on no match: {no_match: true, suggestion, intake}.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
+    description: "[RETRIEVAL / READ] Search MisakaNet's public failure-lesson index by error text, keyword, or topic. This is the primary read path — run it first when you hit an error, before deciding to submit anything. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nFAQ: results may also include answered questions (type=\"faq\", issue_url + answer) — if a maintainer already answered the same question, the answer surfaces here.\nReturns: object {results: [{id, title, domain, tags, path, description, score}], source, detail, query}; on no match: {no_match: true, suggestion, intake}.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
     inputSchema: {
       type: "object",
       properties: {
@@ -160,7 +160,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_submit_intake",
-    description: "[OPEN TRIAGE / INTAKE] Submit a failure-case intake (a lightweight, semi-structured report) when no matching lesson exists, or ask a question about a knowledge gap. Low-friction entry point: No Bearer auth required — open but rate-limited; output is a GitHub issue (intake,mcp-intake,pending-review) for maintainer triage, NOT a merged lesson. For a complete, pre-structured lesson that goes straight to review, prefer misakanet_write_lesson (requires Bearer).\nRouting: if you are ASKING a how-to / knowledge question (not reporting a failure), set kind=\"question\" — it opens a [Question] issue that maintainers answer/FAQ instead of scoring it as a lesson. If kind is omitted, the server auto-detects question-shaped content (no error/fix/verification + question phrasing).\nReturns: object {submitted: boolean, intake_id, status, redactions_applied, quality_score, receipt, routing:{kind, auto_detected}}; duplicates: {submitted: false, duplicate: true, previous_issue}.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code'); misakanet_submit_intake(kind='question', problem='How do I configure MCP auth in production?', source='claude-code')",
+    description: "[OPEN TRIAGE / INTAKE] Submit a failure-case intake (a lightweight, semi-structured report) when no matching lesson exists, or ask a question about a knowledge gap. Low-friction entry point: No Bearer auth required — open but rate-limited; output is a GitHub issue (intake,mcp-intake,pending-review) for maintainer triage, NOT a merged lesson. For a complete, pre-structured lesson that goes straight to review, prefer misakanet_write_lesson (requires Bearer).\nRouting: if you are ASKING a how-to / knowledge question (not reporting a failure), set kind=\"question\" — it opens a [Question] issue that maintainers answer/FAQ instead of scoring it as a lesson. If kind is omitted, the server auto-detects question-shaped content (no error/fix/verification + question phrasing).\nPull answers later: questions are answered asynchronously (hours to days). Re-call this tool with the SAME problem text later — the dedup response returns the maintainer's answer once it exists ({answered:true, answer}); or re-run misakanet_search on the topic for FAQ hits.\nReturns: object {submitted: boolean, intake_id, status, redactions_applied, quality_score, receipt, routing:{kind, auto_detected}, follow_up?}; duplicates: {submitted: false, duplicate: true, previous_issue} or {answered: true, answer} for answered questions.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code'); misakanet_submit_intake(kind='question', problem='How do I configure MCP auth in production?', source='claude-code')",
     inputSchema: {
       type: "object",
       properties: {
@@ -648,6 +648,18 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       results = applyDetailLevel(results, detail);
     }
 
+    // PRD ⑤ §9: FAQ corpus — answered questions surface as search hits, so a
+    // question "arrives answered" whenever anyone (including the original
+    // asker, later) searches the topic. Appended after lesson results; also
+    // suppresses no_match when an answered FAQ covers the query.
+    if (d1Binding(env)) {
+      const faq = await fetchAnsweredQuestions(env);
+      if (faq.length) {
+        const faqHits = matchAnsweredQuestions(faq, args.query || "");
+        if (faqHits.length) results = results.concat(faqHits);
+      }
+    }
+
     // PRD ①: no-match closed loop — embed intake guidance so the agent can
     // submit the gap in the same request chain instead of dropping it.
     // How-to / knowledge-gap queries route to kind="question"; error-like
@@ -857,11 +869,38 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // review P1-4). The short random tag is kept for issue-body traceability.
     const dedupSource = `${kind}:${safeProblem}:${safeError}`.trim();
     const dedupHash = crypto.randomUUID().slice(0, 12);
-    const dedupKey = `intake_dedup:${hashString(dedupSource)}`;
+    const dedupContentHash = hashString(dedupSource);
+    const dedupKey = `intake_dedup:${dedupContentHash}`;
 
-    // Reject duplicate submissions (same kind + problem within 7 days).
-    if (env.MISAKANET_KV) {
-      const existingDedup = await env.MISAKANET_KV.get(dedupKey, "text");
+    // Reject duplicate submissions (same kind + problem). For questions the
+    // D1 questions row is the durable dedup + answer store (PRD ⑤ §9): a
+    // re-submission pulls the answer once a maintainer has answered, instead
+    // of a bare "duplicate" — pull-based delivery (no push channel exists).
+    const existingDedup = env.MISAKANET_KV ? await env.MISAKANET_KV.get(dedupKey, "text") : null;
+    if (existingDedup || (kind === "question" && d1Binding(env))) {
+      const dupRow = kind === "question" ? await lookupQuestionByDedup(env, dedupContentHash) : null;
+      if (dupRow) {
+        if (dupRow.status === "answered" && dupRow.answer) {
+          return {
+            submitted: false,
+            duplicate: true,
+            answered: true,
+            intake_id: `issue-${dupRow.issue_number}`,
+            answer: dupRow.answer,
+            answer_url: dupRow.issue_url || existingDedup,
+            issue_url: dupRow.issue_url || existingDedup,
+            note: "This question was already answered — the maintainer's answer is returned above (PRD ⑤ pull-based delivery).",
+          };
+        }
+        return {
+          submitted: false,
+          duplicate: true,
+          pending: true,
+          previous_issue: dupRow.issue_url || existingDedup,
+          intake_id: `issue-${dupRow.issue_number}`,
+          note: "This question is already open and pending a maintainer answer. Re-submit the same problem later to pull the answer once it is answered.",
+        };
+      }
       if (existingDedup) {
         return {
           submitted: false,
@@ -931,6 +970,18 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
           await env.MISAKANET_KV.put(dedupKey, data.html_url, { expirationTtl: 86400 * 7 });
         } catch (_) {}
       }
+      // PRD ⑤ §9: persist the question row — durable state + answer delivery
+      // (best-effort: recordQuestion swallows D1 errors; the issue is already
+      // created, so a D1 miss never fails the intake).
+      if (kind === "question" && d1Binding(env)) {
+        await recordQuestion(env, {
+          issueNumber: data.number,
+          dedupHash: dedupContentHash,
+          problem: safeProblem || args.problem || "",
+          source: args.source || "mcp",
+          issueUrl: data.html_url,
+        });
+      }
       return {
         submitted: true,
         intake_id: `issue-${data.number}`,
@@ -944,6 +995,11 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
             ? 'No explicit kind and content reads as a how-to/knowledge question with no failure evidence — routed as kind="question" instead of missing_lesson.'
             : undefined,
         },
+        follow_up: kind === "question" ? {
+          how: "A maintainer will answer on the issue — this can take hours to days. To pull the answer later: (1) call misakanet_submit_intake again with the same problem text — once answered, the dedup response returns the answer; (2) or re-run misakanet_search on the topic — answered questions are surfaced as FAQ hits.",
+          intake_id: `issue-${data.number}`,
+          issue_url: data.html_url,
+        } : undefined,
         receipt: `GitHub issue ${data.number} created. No account or email required.`,
       };
     } catch (e) {
@@ -1468,6 +1524,96 @@ async function loadLessons(env, filters = {}) {
   const fromD1 = await fetchLessonsFromD1(env);
   if (fromD1 && fromD1.length > 0) return fromD1;
   return getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
+}
+
+// ── D1 question service (PRD ⑤ §9: pull-based answer delivery) ──
+// One row per question-kind intake issue. The worker records 'pending' on
+// submit; scripts/sync_answered_questions.py flips answered rows with the
+// maintainer's answer. Re-submitting the same question (dedup hit) returns
+// the answer once present, and misakanet_search surfaces answered rows as
+// FAQ hits. All helpers are best-effort: D1 absence must never fail the
+// intake/search path (KV/GitHub behavior stays the fallback).
+
+// Record a freshly created question issue as pending.
+async function recordQuestion(env, { issueNumber, dedupHash, problem, source, issueUrl }) {
+  const d1 = d1Binding(env);
+  if (!d1) return false;
+  try {
+    await d1.prepare(
+      `INSERT INTO questions (issue_number, dedup_hash, problem, source, status, issue_url, created, updated)
+       VALUES (?1, ?2, ?3, ?4, 'pending', ?5, datetime('now'), datetime('now'))
+       ON CONFLICT(issue_number) DO UPDATE SET problem=?3, dedup_hash=?2, updated=datetime('now')`
+    ).bind(issueNumber, dedupHash, String(problem || "").slice(0, 2000), source || "mcp", issueUrl || "").run();
+    return true;
+  } catch (e) {
+    debugLog(env, 1, "recordQuestion failed", String(e && e.message || e));
+    return false;
+  }
+}
+
+// Look up one question row by dedup hash (re-submission pull path).
+async function lookupQuestionByDedup(env, dedupHash) {
+  const d1 = d1Binding(env);
+  if (!d1 || !dedupHash) return null;
+  try {
+    const res = await d1.prepare(
+      "SELECT issue_number, dedup_hash, problem, status, answer, issue_url, answered_at FROM questions WHERE dedup_hash = ?1 LIMIT 1"
+    ).bind(dedupHash).all();
+    const rows = (res && res.results) || [];
+    return rows.length ? rows[0] : null;
+  } catch (e) {
+    debugLog(env, 1, "lookupQuestionByDedup failed", String(e && e.message || e));
+    return null;
+  }
+}
+
+// All answered questions (FAQ corpus for search merge). Best-effort.
+async function fetchAnsweredQuestions(env) {
+  const d1 = d1Binding(env);
+  if (!d1) return [];
+  try {
+    const res = await d1.prepare(
+      "SELECT issue_number, dedup_hash, problem, answer, issue_url, answered_at FROM questions WHERE status = 'answered'"
+    ).all();
+    return (res && res.results) || [];
+  } catch (e) {
+    debugLog(env, 1, "fetchAnsweredQuestions failed", String(e && e.message || e));
+    return [];
+  }
+}
+
+// FAQ hits from answered questions (PRD ⑤ §9): token-overlap match over
+// problem + answer text. Returns result-shaped entries the search handler
+// can append to lesson results (id/title/domain/tags/description/score).
+function matchAnsweredQuestions(rows, query, top = 3) {
+  const tokens = String(query || "").toLowerCase().split(/[^a-z0-9\u4e00-\u9fff]+/).filter((t) => t.length > 1);
+  if (!tokens.length) return [];
+  const scored = [];
+  for (const row of rows) {
+    const hay = `${row.problem || ""} ${row.answer || ""}`.toLowerCase();
+    let overlap = 0;
+    for (const t of tokens) if (hay.includes(t)) overlap += 1;
+    if (overlap > 0) {
+      scored.push({
+        row,
+        score: overlap / tokens.length,
+        desc: String(row.answer || "").replace(/\s+/g, " ").trim().slice(0, 300),
+      });
+    }
+  }
+  scored.sort((a, b) => b.score - a.score || (b.row.answered_at || "").localeCompare(a.row.answered_at || ""));
+  return scored.slice(0, top).map(({ row, score, desc }) => ({
+    id: `faq-issue-${row.issue_number}`,
+    title: String(row.problem || `FAQ #${row.issue_number}`).slice(0, 120),
+    domain: "faq",
+    tags: ["faq"],
+    path: row.issue_url || "",
+    description: desc,
+    score: Math.round(score * 100),
+    type: "faq",
+    answer: row.answer || "",
+    issue_url: row.issue_url || "",
+  }));
 }
 
 // ── KV cache wrapper ──
