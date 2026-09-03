@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-09-02T23:22:36.218444+00:00",
+  "generated_at": "2026-09-03T04:41:52.262305+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 8,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "tests: Add comprehensive installation method tests",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1424",
+      "timestamp": "2026-09-03T01:21:53Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: star CTA + i18n audit + search blind test (#1346, #1345, #429)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1438",
+      "timestamp": "2026-09-03T01:21:42Z",
+      "source": "github"
+    },
     {
       "type": "challenge",
       "title": "[Bounty] dsh plugin integration test suite",
@@ -18,41 +32,6 @@
         "status:competition"
       ],
       "timestamp": "2026-09-01T08:41:03Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Bounty] Test dsh plugin installation methods",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1401",
-      "labels": [
-        "good first issue",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "has-test",
-        "status:competition"
-      ],
-      "timestamp": "2026-09-01T08:39:06Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Bounty][$0][agent competition] Blind test homepage SAG-Lite lesson search",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/429",
-      "labels": [
-        "good first issue",
-        "area:tests",
-        "needs-ac",
-        "ready",
-        "agent-friendly",
-        "no-credentials",
-        "zero-bounty",
-        "has-test",
-        "status:competition",
-        "pool:quick",
-        "priority:later"
-      ],
-      "timestamp": "2026-07-09T07:03:41Z",
       "source": "github"
     },
     {
