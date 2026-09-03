@@ -74,59 +74,80 @@ def load_config() -> dict[str, Any]:
 
 
 def _parse_yaml_minimal(text: str) -> dict:
-    """Minimal YAML parser for .pr-genius.yaml (no dependency)."""
+    """Minimal YAML parser for .pr-genius.yaml (no dependency).
+
+    Handles arbitrary nesting depth using indent tracking instead of
+    hardcoded indent thresholds.  Falls back gracefully on malformed input.
+    """
     import re as _re
-    result: dict[str, Any] = {}
-    current_section = None
-    current_subsection = None
-    current_list_key = None
+
+    def _coerce(value: str):
+        """Try to parse a YAML scalar into int/bool/str."""
+        if not value:
+            return None
+        stripped = value.strip().strip('"').strip("'")
+        if stripped.lower() in ("true", "false"):
+            return stripped.lower() == "true"
+        try:
+            return int(stripped)
+        except ValueError:
+            pass
+        try:
+            return float(stripped)
+        except ValueError:
+            pass
+        return stripped
+
+    # Stack tracks (indent_level, dict_ref) for nesting
+    root: dict[str, Any] = {}
+    stack: list[tuple[int, dict[str, Any]]] = [(-1, root)]
+    current_list_key: str | None = None
+
     for line in text.splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
         indent = len(line) - len(line.lstrip())
+
+        # Pop stack to find parent at lower indent
+        while len(stack) > 1 and stack[-1][0] >= indent:
+            stack.pop()
+            current_list_key = None
+
+        parent = stack[-1][1]
+
         # List item
         if stripped.startswith("- "):
-            value = stripped[2:].strip().strip('"').strip("'")
-            if current_list_key and current_subsection and current_section:
-                result.setdefault(current_section, {}).setdefault(current_subsection, {}).setdefault(current_list_key, []).append(value)
+            value = _coerce(stripped[2:])
+            if current_list_key and isinstance(parent.get(current_list_key), list):
+                parent[current_list_key].append(value)
             continue
-        # Key: value
+
+        # Key: value or Key: (nested)
         match = _re.match(r'^(\w[\w_]*)\s*:\s*(.*)', stripped)
         if not match:
             continue
-        key, value = match.group(1), match.group(2).strip().strip('"').strip("'")
-        if indent == 0:
-            current_section = key
-            current_subsection = None
+        key, raw_value = match.group(1), match.group(2).strip()
+        coerced = _coerce(raw_value)
+
+        if coerced is not None:
+            # Leaf key-value pair
+            parent[key] = coerced
             current_list_key = None
-            result.setdefault(current_section, {})
-        elif indent <= 4:
-            current_subsection = key
-            current_list_key = None
-            if value:
-                # Try to parse as number
-                try:
-                    value = int(value)
-                except ValueError:
-                    if value.lower() in ("true", "false"):
-                        value = value.lower() == "true"
-                result.setdefault(current_section, {})[current_subsection] = value
-            else:
-                result.setdefault(current_section, {}).setdefault(current_subsection, {})
         else:
-            # Deeper nesting (patterns config)
-            if value:
-                try:
-                    value = int(value)
-                except ValueError:
-                    if value.lower() in ("true", "false"):
-                        value = value.lower() == "true"
-                result.setdefault(current_section, {}).setdefault(current_subsection, {})[key] = value
+            # Nested dict — push onto stack
+            child = parent.setdefault(key, {})
+            if isinstance(child, dict):
+                stack.append((indent, child))
+                current_list_key = None
             else:
-                current_list_key = key
-                result.setdefault(current_section, {}).setdefault(current_subsection, {}).setdefault(key, [])
-    return result
+                # Key already exists as a scalar — overwrite with dict
+                child = {}
+                parent[key] = child
+                stack.append((indent, child))
+                current_list_key = None
+
+    return root
 
 
 def _deep_merge(base: dict, override: dict) -> dict:
