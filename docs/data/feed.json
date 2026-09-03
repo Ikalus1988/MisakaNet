@@ -1,21 +1,42 @@
 {
-  "generated_at": "2026-09-03T16:48:25.587937+00:00",
+  "generated_at": "2026-09-03T21:08:00.217901+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 9,
+  "item_count": 12,
   "items": [
     {
       "type": "merged_pr",
-      "title": "tests: Add comprehensive installation method tests",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1424",
-      "timestamp": "2026-09-03T01:21:53Z",
+      "title": "chore(main): release 2.26.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1466",
+      "timestamp": "2026-09-03T17:24:44Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs: star CTA + i18n audit + search blind test (#1346, #1345, #429)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1438",
-      "timestamp": "2026-09-03T01:21:42Z",
+      "title": "[Lesson] Add evidence_refs to lesson frontmatter (#1439)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1456",
+      "timestamp": "2026-09-03T17:23:17Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(main): release 2.25.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1465",
+      "timestamp": "2026-09-03T17:22:19Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(mcp): crawler-friendly MCP intake guide (Issue #1071)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1449",
+      "timestamp": "2026-09-03T17:21:01Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(main): release 2.24.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1453",
+      "timestamp": "2026-09-03T17:13:15Z",
       "source": "github"
     },
     {
