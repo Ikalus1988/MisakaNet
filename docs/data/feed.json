@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-09-03T11:25:53.339343+00:00",
+  "generated_at": "2026-09-03T16:32:37.715338+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 8,
+  "item_count": 9,
   "items": [
     {
       "type": "merged_pr",
@@ -32,6 +32,21 @@
         "status:competition"
       ],
       "timestamp": "2026-09-01T08:41:03Z",
+      "source": "github"
+    },
+    {
+      "type": "challenge",
+      "title": "[Bounty] Test dsh plugin installation methods",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1401",
+      "labels": [
+        "good first issue",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "has-test",
+        "status:competition"
+      ],
+      "timestamp": "2026-09-01T08:39:06Z",
       "source": "github"
     },
     {
