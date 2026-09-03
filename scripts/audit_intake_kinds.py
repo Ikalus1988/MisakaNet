@@ -139,6 +139,54 @@ def parse_intake(issue: dict) -> dict:
     return {"title": title, "kind_body": kind_body, "problem": problem[:2000]}
 
 
+def find_flagged(rows: list[dict]) -> list[tuple[dict, str]]:
+    """Return open recovery candidates as (row, reason) pairs.
+
+    - question-content-auto-rejected: content reads as a question but the
+      pre-fix pipeline auto-rejected it as a lesson (dead end → salvage)
+    - explicit-question-auto-rejected: kind=question issue auto-rejected
+      before the #1396 routing fix
+    - explicit-question-unlabeled: kind=question issue missing question labels
+    """
+    flagged = []
+    for r in rows:
+        ln = set(r["labels"])
+        rejected = "auto-rejected" in ln
+        if r["auto_detected"] and rejected:
+            flagged.append((r, "question-content-auto-rejected"))
+        elif r["kind_body"] == "question" and rejected:
+            flagged.append((r, "explicit-question-auto-rejected"))
+        elif r["kind_body"] == "question" and not ({"question"} & ln):
+            flagged.append((r, "explicit-question-unlabeled"))
+    return flagged
+
+
+def render_digest(flagged: list[tuple[dict, str]]) -> str:
+    """Markdown digest of flagged recovery candidates (for the cron issue)."""
+    if not flagged:
+        return "No flagged question/lesson misfiles found. ✅"
+    lines = [
+        "# 🧭 Intake Kind Audit",
+        "",
+        "Open intake issues whose content reads as a **question** but were routed/",
+        "rejected as **lessons** (see #1396). Reconcile each like #1396/#1397:",
+        "`Kind: question`, `[Question]` title, drop `auto-rejected`/`needs-salvage`,",
+        "add `question`/`type:question`.",
+        "",
+        "| Issue | Reason | Title |",
+        "|-------|--------|-------|",
+    ]
+    for r, why in flagged:
+        lines.append(f"| [#{r['number']}](https://github.com/Ikalus1988/MisakaNet/issues/{r['number']}) "
+                     f"| {why} | {r['title'][:70]} |")
+    lines += [
+        "",
+        "---",
+        "_Automated weekly audit (read-only). No labels/issues were changed._",
+    ]
+    return "\n".join(lines)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--labels", default="mcp-intake",
@@ -147,6 +195,8 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--out", default="", help="JSONL output path (default: stdout)")
     ap.add_argument("--summary", action="store_true", help="print summary table only")
+    ap.add_argument("--digest", action="store_true",
+                    help="print markdown digest of open flagged candidates (cron mode)")
     args = ap.parse_args()
 
     from scripts.intake_kind import infer_intake_kind  # local import: repo path
@@ -180,27 +230,21 @@ def main() -> int:
                 f.write(json.dumps(r, ensure_ascii=False) + "\n")
         print(f"wrote {len(rows)} rows -> {args.out}")
 
-    if args.summary or not args.out:
+    if (args.summary or not args.out) and not args.digest:
         print(f"\n{'#':>4} {'state':<6} {'kind_body':<20} {'detected':<14} {'auto':<5} labels")
         for r in rows:
             auto = "Y" if r["auto_detected"] else ""
             print(f"{r['number']:>4} {r['state']:<6} {r['kind_body']:<20} "
                   f"{r['kind_detected']:<14} {auto:<5} {','.join(x for x in r['labels'] if x in ('auto-rejected','needs-salvage','question','type:question','test','needs-human-review','pending-review'))}")
 
-    # ── flagged recovery candidates ──
-    flagged = []
-    for r in rows:
-        ln = set(r["labels"])
-        rejected = "auto-rejected" in ln
-        # 1) content reads as a question but was rejected as a lesson
-        if r["auto_detected"] and rejected:
-            flagged.append((r, "question-content-auto-rejected"))
-        # 2) explicit kind=question that was auto-rejected pre-fix
-        elif r["kind_body"] == "question" and rejected:
-            flagged.append((r, "explicit-question-auto-rejected"))
-        # 3) explicit kind=question missing question labels (never routed)
-        elif r["kind_body"] == "question" and not ({"question"} & ln):
-            flagged.append((r, "explicit-question-unlabeled"))
+    # ── cron digest mode: open recovery candidates only ──
+    if args.digest:
+        open_rows = [r for r in rows if r["state"] == "open"]
+        print(render_digest(find_flagged(open_rows)))
+        return 0
+
+    # ── flagged recovery candidates (interactive) ──
+    flagged = find_flagged(rows)
     if flagged:
         print(f"\n== {len(flagged)} flagged recovery candidates ==")
         for r, why in flagged:

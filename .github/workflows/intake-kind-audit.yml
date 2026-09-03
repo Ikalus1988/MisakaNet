@@ -1,0 +1,61 @@
+name: Intake Kind Audit
+
+# Weekly audit (#1396): surfaces intake issues whose content reads as a
+# question but were routed/rejected as lessons (question-content-auto-rejected,
+# explicit-question-auto-rejected, explicit-question-unlabeled). Read-only —
+# creates/updates one digest issue per flagged week; it never edits the
+# flagged issues themselves (that is a maintainer decision, see #1396/#1397).
+# Script: scripts/audit_intake_kinds.py
+
+on:
+  schedule:
+    - cron: '30 6 * * 1'  # Weekly Monday 06:30 UTC
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.10"
+
+      - name: Run intake kind audit
+        id: audit
+        run: |
+          python3 scripts/audit_intake_kinds.py \
+            --labels mcp-intake --state open --digest > /tmp/audit_digest.md
+
+          if grep -q "No flagged question/lesson misfiles found" /tmp/audit_digest.md; then
+            echo "Audit clean — no misfiled question intakes."
+            echo "clean=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "clean=false" >> "$GITHUB_OUTPUT"
+
+      - name: Post digest issue
+        if: steps.audit.outputs.clean == 'false'
+        run: |
+          # Find-or-update the open audit digest issue (label intake-kind-audit).
+          DIGEST_ISSUE=$(gh issue list --repo ${{ github.repository }} \
+            --label "intake-kind-audit" \
+            --state open \
+            --json number \
+            --limit 1 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['number'] if json.load(sys.stdin) else '')")
+
+          if [ -n "$DIGEST_ISSUE" ]; then
+            gh issue comment $DIGEST_ISSUE --repo ${{ github.repository }} \
+              --body-file /tmp/audit_digest.md
+          else
+            gh issue create --repo ${{ github.repository }} \
+              --title "🧭 Intake Kind Audit - $(date -u +%Y-%m-%d)" \
+              --body-file /tmp/audit_digest.md \
+              --label "intake-kind-audit,needs-human-review"
+          fi
