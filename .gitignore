@@ -90,3 +90,6 @@ bench_results/
 .aider*
 coverage.xml
 data/lessons.db
+
+# Federation secrets (P0 security)
+hub/federation/secrets/
