@@ -19,7 +19,7 @@ subdomain: network
 
 provenance:
   source: "external"
-  contributor: "<user>"
+  contributor: "Unknown"
   merged_at: "2026-07-31"
   evidence: "post-publication"
 ---

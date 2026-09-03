@@ -18,7 +18,7 @@ subdomain: git
 
 provenance:
   source: "external"
-  contributor: "hermes-agent"
+  contributor: "Unknown"
   merged_at: "2026-07-31"
   evidence: "post-publication"
 ---
