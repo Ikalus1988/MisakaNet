@@ -2,7 +2,12 @@ name: MCP Intake Triage
 
 on:
   issues:
-    types: [opened, edited, labeled, reopened]
+    # 'labeled' is deliberately excluded: triage itself applies labels, and an
+    # issue created with pre-set labels fired 'opened' + N×'labeled'
+    # concurrently, racing the alreadyCommented guard and posting duplicate
+    # triage comments (observed on #1396, 2026-08-30). Re-triage stays
+    # available via workflow_dispatch and the 'edited'/'reopened' events.
+    types: [opened, edited, reopened]
   workflow_dispatch:
     inputs:
       issue_number:
@@ -59,7 +64,12 @@ jobs:
             const source = (body.match(/\*\*Source:\*\*\s*([^\n]+)/i)?.[1] || '').trim();
             const kind = (body.match(/\*\*Kind:\*\*\s*([^\n]+)/i)?.[1] || '').trim();
             const dedup = (body.match(/\*\*Dedup:\*\*\s*`?([^`\n]+)`?/i)?.[1] || '').trim();
-            const text = `${title}\n${body}`;
+            // GitHub/Opire append boilerplate (rewards footer, etc.) full of
+            // English words ("add", "documentation", "what") that corrupt the
+            // keyword type detection below (observed on #1396 → spurious
+            // type:feature). Scan only the submitter-authored text.
+            const text = `${title}\n${body}`.replace(/<details>[\s\S]*?<\/details>/gi, ' ');
+            const kindLower = kind.toLowerCase();
 
             const isTest = /heartbeat-verify|heartbeat verify|session-test/i.test(text) || /heartbeat|session-test/i.test(source);
             const isHarvestedAgentSkill = /harvested from local lesson skill-|Hermes Agent/i.test(text);
@@ -70,12 +80,16 @@ jobs:
             const hasCoreStructure = hasProblem && hasVerification && (hasFix || hasTried);
 
             // ── Issue type detection ──
+            // The structured Kind field (from MCP submit_intake / pipeline)
+            // wins: a kind=question intake must never be re-labeled
+            // feature/bug by keyword noise.
             const isBug = /\b(error|crash|fail|bug|broken|exception|traceback|segfault)\b/i.test(text);
             const isFeature = /\b(feature|enhancement|add|support|implement|improve|new)\b/i.test(text);
-            const isQuestion = /\b(how|why|what|question|help|docs|documentation)\b/i.test(text) && !isBug;
+            const isQuestion = (/\b(how|why|what|question|help|docs|documentation)\b/i.test(text) && !isBug) || kindLower === 'question';
 
             let issueType = 'unknown';
-            if (isBug) issueType = 'bug';
+            if (kindLower === 'question') issueType = 'question';
+            else if (isBug) issueType = 'bug';
             else if (isFeature) issueType = 'feature';
             else if (isQuestion) issueType = 'question';
 
@@ -111,7 +125,15 @@ jobs:
             let suggestedAction = 'Review manually. Convert to a formal lesson if the failure, fix, and verification are concrete; otherwise ask for details or close.';
             const labelsToAdd = ['intake', 'mcp-intake', 'pending-review', 'needs-human-review'];
 
-            if (isTest) {
+            if (kindLower === 'question') {
+              // Question / knowledge-gap intake — NOT a lesson candidate.
+              // Route to question handling: ask the submitter for the concrete
+              // error, what was tried, and the expected outcome; keep open as a
+              // question/FAQ until it gains a failure+fix+verification shape.
+              classification = 'question';
+              suggestedAction = 'Question / knowledge-gap intake (not a lesson candidate). Ask the submitter for the concrete error, what was tried, and the expected outcome. Convert to a lesson only if it gains a failure + fix + verification shape; otherwise answer, keep as an open question, or close as a duplicate.';
+              labelsToAdd.push('question');
+            } else if (isTest) {
               classification = 'intake-test';
               suggestedAction = 'Verify the transport path, then close as a test intake. Do not convert to a lesson unless it captures a reusable failure pattern.';
               labelsToAdd.push('test');
@@ -137,6 +159,20 @@ jobs:
               core.info(`Added labels: ${missingLabels.join(', ')}`);
             } else {
               core.info('No labels to add.');
+            }
+
+            // Reconcile labels that contradict the fresh classification.
+            // A question intake is neither a lesson failure case (auto-rejected/
+            // needs-salvage) nor a feature/bug (spurious keyword hits), so any
+            // such labels left over from earlier runs are removed.
+            if (issueType === 'question') {
+              const stale = ['auto-rejected', 'needs-salvage', 'type:feature', 'type:bug'];
+              for (const label of stale) {
+                if (labelNames.has(label)) {
+                  await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label });
+                  core.info(`Removed stale label: ${label}`);
+                }
+              }
             }
 
             const marker = '<!-- misakanet-intake-triage -->';
@@ -172,7 +208,7 @@ jobs:
               '',
               '- [ ] Confirm no secrets, internal URLs, or personal data remain.',
               '- [ ] Search existing lessons for duplicates using the dedup hash and topic.',
-              '- [ ] Decide: convert to lesson / ask for more detail / close as duplicate, test, or vague intake.',
+              '- [ ] Decide: convert to lesson / answer as a question / ask for more detail / close as duplicate, test, or vague intake.',
               '',
               '_Automated triage only. This does not publish lessons or close issues._',
             ].join('\n');
