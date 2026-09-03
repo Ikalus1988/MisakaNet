@@ -43,6 +43,7 @@
   <a href="https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/score"><img src="https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/badges/score.svg" alt="Glama score"></a>
   <a href="https://mcptoplist.com/server/io.github.Ikalus1988%2Fmisakanet"><img src="https://mcptoplist.com/badge/io.github.Ikalus1988%2Fmisakanet.svg" alt="MCP Toplist"></a>
   <a href="https://smithery.ai/servers/misakanet/misakanet"><img src="https://smithery.ai/badge/misakanet/misakanet" alt="Smithery"></a>
+  <a href="https://hol.org/registry/plugins/Ikalus1988%2FMisakaNet"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fhol.org%2Fapi%2Fregistry%2Fbadges%2Fplugin%3Fslug%3DIkalus1988%252FMisakaNet%26metric%3Dtrust%26style%3Dfor-the-badge%26label%3DMisakaNet" alt="MisakaNet on HOL Registry"></a>
   <a href="https://github.com/Ikalus1988/MisakaNet/tree/main/docs/benchmarks"><img src="https://img.shields.io/badge/Benchmark-Weekly%20Workers%20AI-blue" alt="Benchmark"></a>
 </p>
 
