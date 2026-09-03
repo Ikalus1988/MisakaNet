@@ -3,6 +3,8 @@ title: "Local credential lookup order after GitHub API 401"
 domain: "github"
 tags: ["github", "api", "credential", "401", "auth", "pat"]
 status: "published"
+provenance:
+  evidence: "post-publication"
 lang: "en"
 source: "uncledad96-glitch"
 translated_from: "lessons/contrib/github-401-credential-lookup.md"
