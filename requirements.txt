@@ -3,6 +3,7 @@
 misakanet-core>=2.7.0
 jsonschema>=4.26.0
 mcp>=2.1.1
+pyyaml>=6.0
 # 
 # Hub 依赖（federation, 飞书通知等）
 # 如需完整安装：pip install -r requirements.txt -r hub/requirements.txt

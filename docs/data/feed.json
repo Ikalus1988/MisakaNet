@@ -1,14 +1,21 @@
 {
-  "generated_at": "2026-09-02T13:17:53.359821+00:00",
+  "generated_at": "2026-09-03T04:41:52.262305+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 13,
+  "item_count": 8,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs: Add dsh plugin installation guide",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1422",
-      "timestamp": "2026-09-02T02:32:50Z",
+      "title": "tests: Add comprehensive installation method tests",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1424",
+      "timestamp": "2026-09-03T01:21:53Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: star CTA + i18n audit + search blind test (#1346, #1345, #429)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1438",
+      "timestamp": "2026-09-03T01:21:42Z",
       "source": "github"
     },
     {
@@ -25,69 +32,6 @@
         "status:competition"
       ],
       "timestamp": "2026-09-01T08:41:03Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Bounty] Test dsh plugin installation methods",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1401",
-      "labels": [
-        "good first issue",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "has-test",
-        "status:competition"
-      ],
-      "timestamp": "2026-09-01T08:39:06Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(workers): ensure crypto fallback and verify agent onboarding (#1258)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1383",
-      "timestamp": "2026-09-01T03:10:10Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): update mkdocs-git-revision-date-localized-plugin requirement from >=1.2.0 to >=1.5.4",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1389",
-      "timestamp": "2026-08-31T15:54:16Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(deps): update mkdocs requirement from >=1.5.0 to >=1.6.1",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1387",
-      "timestamp": "2026-08-31T15:54:13Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 2.23.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1344",
-      "timestamp": "2026-08-28T02:14:23Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Bounty][$0][agent competition] Blind test homepage SAG-Lite lesson search",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/429",
-      "labels": [
-        "good first issue",
-        "area:tests",
-        "needs-ac",
-        "ready",
-        "agent-friendly",
-        "no-credentials",
-        "zero-bounty",
-        "has-test",
-        "status:competition",
-        "pool:quick",
-        "priority:later"
-      ],
-      "timestamp": "2026-07-09T07:03:41Z",
       "source": "github"
     },
     {
