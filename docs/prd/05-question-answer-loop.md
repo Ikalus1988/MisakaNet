@@ -1,6 +1,6 @@
 # PRD ⑤ Question Answer Loop —— question intake 的回答 → 知识闭环
 
-- **状态**: 📋 提案（2026-09-03）· 优先级: 🟢 低（等触发条件）· 工作量: 设计已定，实施 1-2 天
+- **状态**: 🟢 方案 A 试点中（2026-09-03：2 条已答）· 优先级: 🟢 低 · 工作量: 设计已定，实施 1-2 天
 - **前置**: #1396 链路已修复——question 不再被当 lesson auto-reject（workflow 路由 + MCP 入口自动识别 + `intake_pipeline` 不再为 question 铸 lesson 草稿）。当前 question intake 会安全地留 open 等人工。
 
 ## 1. 背景与问题
@@ -59,3 +59,16 @@ question intake（`kind=question`，`[Question]` issue）现在的终点是「�
 
 - 维护者回答任意 open `[Question]`（#1362/#1364/#1396/#1397）→ 加 `answered` 标签并关闭——先积累样本，同时验证方案 A 流程。
 - 本 PRD 保持 open，作为方案 B/C 的决策入口。
+
+## 8. 试点记录（2026-09-03）
+
+方案 A 首次执行（`answered` 标签已建，color `0e8a16`）：
+
+| Issue | 问题 | 处置 |
+|---|---|---|
+| #1362 | How should agents handle GitHub rate limits on shared runners? | ✅ 已回答（引用 `github-rate-limit-auth.md` E2 lesson + 403/Retry-After lesson）→ `answered` + closed |
+| #1364 | How do I configure MCP server authentication for production? | ✅ 已回答（引用 `docs/integrations/mcp-remote.md` auth 表 + register/oauth lessons）→ `answered` + closed |
+| #1365 | （#1364 重复） | 已 close（dup of #1364） |
+| #1396/#1397 | PT，缺细节 | 留 open 等提交方补充（今日已发澄清评论） |
+
+样本数：answered = 2/4。按 §4 触发条件：≥10 answered 或季度 → 编译 FAQ 条目进搜索语料；「无答案 >14 天 ≥5」→ 升级方案 B。
