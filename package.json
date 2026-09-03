@@ -1,23 +1,14 @@
 {
   "name": "misakanet",
-  "version": "2.23.0",
+  "version": "2.23.1",
   "license": "Apache-2.0",
-  "description": "MisakaNet DSH plugin + deployment scripts — shared failure-memory skill and Workers deployment",
+  "description": "MisakaNet failure-memory skill — verified debugging lessons for AI agents, discoverable by any DSH profile (CLI/MCP, not a Cordis entry)",
   "files": [
     "SKILL.md",
     "skills/",
-    "cordis.patch.yml",
     "index.js",
     "index.d.ts"
   ],
-  "dsh": {
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    },
-    "client": {
-      "platform": "web"
-    }
-  },
   "scripts": {
     "deploy:web": "cd web && npx wrangler deploy",
     "deploy:api": "cd workers && npx wrangler deploy --config wrangler.api.jsonc",
