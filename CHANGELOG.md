@@ -7,6 +7,29 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.25.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.24.0...v2.25.0) (2026-09-03)
+
+
+### Features
+
+* **faithfulness:** RAGAS-style lesson usage evaluator ([#1162](https://github.com/Ikalus1988/MisakaNet/issues/1162)) ([#1448](https://github.com/Ikalus1988/MisakaNet/issues/1448)) ([9b49840](https://github.com/Ikalus1988/MisakaNet/commit/9b498401ad60b97821182cd7f3a460279fb1318b))
+
+
+### Bug Fixes
+
+* **ci:** strip code blocks in lesson security scan + pr-genius sys import ([#1445](https://github.com/Ikalus1988/MisakaNet/issues/1445)) ([75b90fb](https://github.com/Ikalus1988/MisakaNet/commit/75b90fb5340875fb01d463fc1468077460eea18a))
+
+
+### Documentation
+
+* **maintainer:** handoff-2026-09-03 §13 — goal round: review-fix, release v2.24.0, rotation issues, PR triage ([711870f](https://github.com/Ikalus1988/MisakaNet/commit/711870f124f3066aa327b8ebb7fdd8afe638e189))
+* **mcp:** crawler-friendly MCP intake guide ([#1071](https://github.com/Ikalus1988/MisakaNet/issues/1071)) ([#1449](https://github.com/Ikalus1988/MisakaNet/issues/1449)) ([2a442e6](https://github.com/Ikalus1988/MisakaNet/commit/2a442e6596fce9adb0ea61ac155cce0038064c84))
+
+
+### Tests
+
+* **intake:** intake pipeline backfill tests ([#1370](https://github.com/Ikalus1988/MisakaNet/issues/1370)) ([#1447](https://github.com/Ikalus1988/MisakaNet/issues/1447)) ([e657b9a](https://github.com/Ikalus1988/MisakaNet/commit/e657b9ab8ff961feb1a9b7c9a8b9aedae6abf16e))
+
 ## [2.24.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.23.1...v2.24.0) (2026-09-03)
 
 
