@@ -2,9 +2,34 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 
 from .._config import REPO_ROOT, _init_search
+
+# ── Query-intent routing (Issue #1441) ──
+_LESSON_INTENT_RE = re.compile(
+    r"(lesson|lessons|learned|踩坑|记录|经验|memory|remember|preference)",
+    re.IGNORECASE,
+)
+_EVIDENCE_INTENT_RE = re.compile(
+    r"(evidence|被用过|多少人|E4|验证|verification|引用次数|usage)",
+    re.IGNORECASE,
+)
+
+
+def _detect_kind(query: str, explicit_kind: str | None = None) -> str:
+    """Detect search kind from query intent or explicit parameter.
+
+    Priority: explicit > auto-detected > 'all'.
+    """
+    if explicit_kind and explicit_kind != "all":
+        return explicit_kind
+    if _LESSON_INTENT_RE.search(query):
+        return "lessons"
+    if _EVIDENCE_INTENT_RE.search(query):
+        return "evidence"
+    return "all"
 
 # Gap analysis: log zero-result queries (Issue #1164)
 _GAPS_FILE = REPO_ROOT / "data" / "search_gaps.jsonl"
@@ -228,6 +253,59 @@ def _apply_detail_level(results: list[dict], detail: str) -> list[dict]:
     return compact
 
 
+def _filter_by_kind(results: list[dict], kind: str) -> list[dict]:
+    """Filter search results by kind.
+
+    - lessons: results that are lesson files (have id/title, not pure evidence)
+    - evidence: results with evidence_refs, high evidence_level, or verification
+    - related: results with tag overlap or cross-references
+    """
+    if kind == "lessons":
+        return [r for r in results if _is_lesson_result(r)]
+    if kind == "evidence":
+        return [r for r in results if _is_evidence_result(r)]
+    if kind == "related":
+        return [r for r in results if _is_related_result(r)]
+    return results
+
+
+def _is_lesson_result(r: dict) -> bool:
+    """A result is a lesson if it has a title and path (standard lesson file)."""
+    return bool(r.get("title") and r.get("path"))
+
+
+def _is_evidence_result(r: dict) -> bool:
+    """A result is evidence if it has evidence_refs, high evidence_level, or verification."""
+    if r.get("evidence_refs"):
+        return True
+    ev = (r.get("evidence_level") or "").lower()
+    if ev in ("verified", "confirmed", "high"):
+        return True
+    # Check for verification section in content
+    content = (r.get("content") or r.get("summary") or "").lower()
+    if "## verification" in content or "## verify" in content:
+        return True
+    return False
+
+
+def _is_related_result(r: dict) -> bool:
+    """A result is related if it has tags or cross-references."""
+    if r.get("tags"):
+        return True
+    if r.get("related_lessons"):
+        return True
+    return False
+
+
+def _classify_result_kind(r: dict) -> str:
+    """Classify a result's kind when kind='all'."""
+    if _is_evidence_result(r):
+        return "evidence"
+    if _is_related_result(r):
+        return "related"
+    return "lessons"
+
+
 def handle_search(args: dict, search_state=None) -> dict:
     """Search MisakaNet lessons."""
     if search_state is None:
@@ -239,6 +317,7 @@ def handle_search(args: dict, search_state=None) -> dict:
     top = args.get("top", 5)
     explain = bool(args.get("explain", False))
     detail = args.get("detail", "compact")  # compact | summary | full
+    kind = _detect_kind(query, args.get("kind"))
 
     # Per-request weight overrides (Issue #1001)
     weights = {}
@@ -318,6 +397,10 @@ def handle_search(args: dict, search_state=None) -> dict:
             }
         source = "fallback"
 
+    # ── Kind filtering (Issue #1441) ──
+    if results and kind != "all":
+        results = _filter_by_kind(results, kind)
+
     # ── Progressive disclosure: transform by detail level ──
 
     if results and detail in ("compact", "summary"):
@@ -327,11 +410,17 @@ def handle_search(args: dict, search_state=None) -> dict:
     if not results:
         _log_search_gap(query, source)
 
+    # Tag each result with its kind
+    for r in results:
+        if "kind" not in r:
+            r["kind"] = kind if kind != "all" else _classify_result_kind(r)
+
     voice = "lesson-found" if results else "failure-warning"
     response = {
         "results": results,
         "source": source,
         "detail": detail,
+        "kind": kind,
         "voice": voice,
     }
     if not results:

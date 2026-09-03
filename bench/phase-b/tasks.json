@@ -16,5 +16,32 @@
     "name": "MCP Server Crash",
     "category": "mcp",
     "fixture": "raise RuntimeError(\"MCP server crashed during startup\")\n"
+  },
+  {
+    "task_id": "kind-lessons-intent",
+    "name": "Kind=lessons intent detection",
+    "category": "search",
+    "kind": "lessons",
+    "query": "lesson about DCO signoff failure",
+    "expect_kind": "lessons",
+    "fixture": null
+  },
+  {
+    "task_id": "kind-evidence-intent",
+    "name": "Kind=evidence intent detection",
+    "category": "search",
+    "kind": "evidence",
+    "query": "evidence for pip timeout fix",
+    "expect_kind": "evidence",
+    "fixture": null
+  },
+  {
+    "task_id": "kind-all-default",
+    "name": "Kind=all default behavior",
+    "category": "search",
+    "kind": "all",
+    "query": "python async error",
+    "expect_kind": "all",
+    "fixture": null
   }
 ]
