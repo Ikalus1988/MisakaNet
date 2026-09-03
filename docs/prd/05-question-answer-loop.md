@@ -72,3 +72,33 @@ question intake（`kind=question`，`[Question]` issue）现在的终点是「�
 | #1396/#1397 | PT，缺细节 | 留 open 等提交方补充（今日已发澄清评论） |
 
 样本数：answered = 2/4。按 §4 触发条件：≥10 answered 或季度 → 编译 FAQ 条目进搜索语料；「无答案 >14 天 ≥5」→ 升级方案 B。
+
+---
+
+## 9. 竞品调研：知识/答案怎么回到 agent（2026-09-03）
+
+针对「agent 提问 → 人工异步回答 → 答案如何送回」，调研 Glama 同类 failure-memory MCP 与 HITL 先例：
+
+| 服务器 | 形态 | 知识回到 agent 的机制 |
+|---|---|---|
+| [Casebook/AgentPostmortem](https://glama.ai/mcp/servers/AgentPostmortem/Casebook-MCP) | 只读事故语料（Worker、无鉴权、60 req/min/IP） | 纯同步检索 `search_cases`/`similar_failures`；无写入、无问答 |
+| [claimidx](https://github.com/claimidx/claimidx) | 签名失败索赔账本（dense claim、Ed25519） | **ask-before-retry** + confirm/fail/verify 闭环；`home-pull` 拉取账本；匿名发布被拒 |
+| [unstuck-mcp](https://github.com/SamuelH98/unstuck-mcp) | 尝试追踪/拦截 | 同一错误第 3 次**强制先用自己的 web search**（`confirm_search` 放行），靠 tool 描述 + AGENTS.md 引导而非硬拦截 |
+| [knoten](https://glama.ai/mcp/servers/BY571/knoten) | 研究图（git，alive/dead/retracted + 理由） | 问句式查询（"has anyone tried X?"）→ 图直接答「试过/为何死」；答案来自之前沉淀，同步 |
+| [Sentinela MCP](https://glama.ai/mcp/servers/luclinocruz/lucross-sentinela-mcp) | 跨会话 lessons，**禁 agent 自评 success** | 按需拉取（"pull up past correction lessons"）；verdict 只来自人工/外部审计 |
+| [Kira](https://glama.ai/mcp/servers/aibenyclaude-coder/Kira) | 失败记忆 + 社区 skills/scars 库 | lookup 检索 + report 写入（consent/脱敏分层） |
+| [loop-in-mcp](https://github.com/Robbertvermeulen/loop-in-mcp) / [hitl-mcp](https://github.com/ZenlixAI/hitl-mcp) | **异步 HITL**（state-persistent） | agent 挂起 → 结构化问题 → **后续会话显式 pull 回答案**（"pulls structured answers back later"）；另见 [MCP Tasks 规范](https://agentrq.com/blog/mcp-tasks-spec)（长任务方向） |
+
+### 调研收敛出的四条规律
+
+1. **无人做推送**。全部把答案沉淀为「可查询物」，asker 或后来者在**决策点再查**（search/ask/pull/lookup）——我们的「拉取式」判断成立。
+2. **问句型（knoten）与异步人工型（loop-in-mcp/hitl-mcp）证明**：异步 Q&A 成立的前提是 **① 问题状态持久化 ② 提供显式 check/pull 工具**（"pulls structured answers back later"）。只靠 7 天 KV dedup 不够。
+3. **答案权威来自人工/外部验证**（Sentinela 禁自评、claimidx 匿名禁写）——回填语料只应收维护者回答。
+4. **引导机制**（unstuck/claimidx）——靠 tool description + AGENTS.md/skill 让「先查答案、别盲目重试」成为 agent 的自然下一步。
+
+### 对 MisakaNet 的收敛设计（待实施确认）
+
+- **短等待**：同题重提（dedup hit）→ 返回 `{answered:true, answer}` 或 `{pending, issue_url}`（= unstuck 的「重试前先查」+ A 档）
+- **长等待/陌生 asker**：answered → 自动沉淀 FAQ 语料，`misakanet_search` 命中即送达（= Casebook/knoten/Kira 模式，C 档）
+- **调研新增的一层**：持久化问题状态（D1 `questions` 表：issue_number/dedup_hash/status/answer）+ 显式 pull（按 intake_id 查）——对齐 loop-in-mcp/hitl-mcp；dedup KV 7 天过期或 asker 忘记原文也能凭 intake_id 取回
+- **权威门槛**：只有 `answered`（人工确认）进入语料；维护者侧由 workflow 监听 answered 事件回填状态/答案
