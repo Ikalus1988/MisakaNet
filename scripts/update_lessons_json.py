@@ -193,6 +193,7 @@ def main():
             "confidence": confidence,
             "status": status,
             "evidence_refs": meta.get("evidence_refs", []),
+                "supersedes": meta.get("supersedes", ""),
             "verified": verified,
             "evidence_level": evidence_level,
             "evidence_source": evidence_source,
