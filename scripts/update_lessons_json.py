@@ -138,6 +138,10 @@ def main():
             confidence = meta.get("confidence", 0.5)
             if not isinstance(confidence, (int, float)):
                 confidence = 0.5
+            evidence_refs = meta.get("evidence_refs", [])
+            if not isinstance(evidence_refs, list):
+                evidence_refs = [evidence_refs] if evidence_refs else []
+
             entries.append({
                 "id": f.stem,
                 "title": title,
@@ -156,6 +160,7 @@ def main():
                 "verified": verified,
                 "evidence_level": evidence_level,
                 "evidence_source": evidence_source,
+                "evidence_refs": evidence_refs,
                 # trust = quality(confidence) scaled by evidence (E0 keeps 70%,
                 # E4 keeps 100%) — shown on search pages instead of a composite.
                 "trust_score": trust_score(confidence, evidence_level),

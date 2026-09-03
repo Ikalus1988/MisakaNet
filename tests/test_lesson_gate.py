@@ -23,6 +23,7 @@ from scripts.lesson_gate import (  # noqa: E402
     parse_frontmatter,
     validate_content_len,
     validate_evidence,
+    validate_evidence_refs,
     validate_file,
     validate_required,
     validate_status,
@@ -137,6 +138,34 @@ class TestStatusAndEvidence:
 
     def test_valid_evidence_passes(self):
         assert not validate_evidence("E0")
+
+    @pytest.mark.parametrize("good_ref", [
+        "repro:https://gist.github.com/abc/123",
+        "ci:https://github.com/org/repo/actions/runs/12345",
+        "issue:#1234",
+        "commit:a1b2c3d",
+        "commit:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+        "https://example.com/logs/run.txt"
+    ])
+    def test_valid_evidence_refs_pass(self, good_ref):
+        assert not validate_evidence_refs([good_ref])
+
+    @pytest.mark.parametrize("bad_ref", [
+        "not_a_valid_ref",
+        "issue:1234",
+        "commit:invalidsha!",
+        "repro:ftp://something",
+        "",
+        123
+    ])
+    def test_invalid_evidence_refs_fail(self, bad_ref):
+        assert validate_evidence_refs([bad_ref])
+
+    def test_evidence_refs_none_passes(self):
+        assert not validate_evidence_refs(None)
+
+    def test_evidence_refs_not_list_fails(self):
+        assert validate_evidence_refs("issue:#123")
 
 
 # ── content length ──────────────────────────────────────────────────
