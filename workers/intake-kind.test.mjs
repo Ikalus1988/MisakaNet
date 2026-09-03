@@ -380,3 +380,56 @@ test('search surfaces answered questions as FAQ hits', async () => {
   assert.equal(faq.id, 'faq-issue-1362');
   assert.match(faq.answer, /5000\/hour/);
 });
+
+// ── Review fixes (2026-09-03 dual-axis): dedup trim parity + FAQ disclosure ──
+
+test('padded problem text still dedups (per-field trim parity)', async () => {
+  const env = createEnv();
+  let captured = null;
+  const restore = captureGitHubFetch(env, (p) => { captured = p; });
+  try {
+    const padded = '  How do I rotate an expired token?  ';
+    const first = await submitIntake({ kind: 'question', problem: padded }, env);
+    assert.equal(JSON.parse((await first.json()).result.content[0].text).submitted, true);
+    // Same padded text again → KV dedup hit (trimmed content hash), no new issue.
+    const second = await submitIntake({ kind: 'question', problem: padded }, env);
+    const r2 = JSON.parse((await second.json()).result.content[0].text);
+    assert.equal(r2.submitted, false);
+    assert.equal(r2.duplicate, true);
+  } finally {
+    restore();
+  }
+});
+
+test('FAQ search answer is capped unless detail=full', async () => {
+  const { hashString: hs } = await import('./register-proxy-sw.js');
+  const problem = 'A very long answered question about cap testing?';
+  const longAnswer = 'start ' + 'x'.repeat(3000) + ' end';
+  const env = createEnv();
+  env.MISAKANET_KV.put('proxy:lessons', JSON.stringify({ ts: Date.now(), data: [] }));
+  env.MISAKANET_D1 = createQuestionD1([{
+    issue_number: 7777, dedup_hash: hs(`question:${problem}:`),
+    problem, status: 'answered', answer: longAnswer, issue_url: 'https://github.com/x/issues/7777',
+  }]);
+  const search = async (detail) => {
+    const resp = await worker.fetch(new Request('https://misakanet.org/mcp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', 'MCP-Protocol-Version': '2025-06-18',
+        Authorization: `Bearer ${TOKEN}`, 'CF-Connecting-IP': '203.0.113.88',
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call',
+        params: { name: 'misakanet_search', arguments: { query: 'long answered question cap testing', detail } } }),
+    }), env);
+    const body = await resp.json();
+    return JSON.parse(body.result.content[0].text);
+  };
+  const compact = await search('compact');
+  const faqC = (compact.results || []).find((r) => r.type === 'faq');
+  assert.ok(faqC, 'expected faq hit in compact');
+  assert.ok(faqC.answer.length <= 900, `compact answer should be capped, got ${faqC.answer.length}`);
+  const full = await search('full');
+  const faqF = (full.results || []).find((r) => r.type === 'faq');
+  assert.ok(faqF, 'expected faq hit in full');
+  assert.ok(faqF.answer.length > 3000, 'full answer should not be capped');
+});
