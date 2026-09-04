@@ -17,6 +17,14 @@ Search 317 indexed debugging lessons before re-debugging known problems.
 - Local: `python3 scripts/mcp_server.py` (stdio)
 - Install: `pip install misakanet-core`
 
+## DSH Plugin (DeepSeek Harness)
+
+- npm: `dsh plugin add misakanet`
+- Git: `dsh plugin add github:Ikalus1988/MisakaNet`
+- Manual: `mkdir -p ~/.dsh/skills && cp -r skills/misakanet ~/.dsh/skills/`
+- Verify: `dsh plugin list`
+- Full guide: see docs/dsh-installation.md
+
 ## Tools
 
 - `misakanet_search` — search lessons by query
