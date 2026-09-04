@@ -73,7 +73,9 @@ describe('MisakaNet dsh Plugin Installation Methods', function() {
         fs.mkdirSync(skillsDir, { recursive: true });
       }
       const sourceDir = path.join(__dirname, '..', 'skills', 'misakanet');
-      execSync(`cp -r ${sourceDir} ${pluginDir}`);
+      // fs.cpSync (Node >=16.7) — no shell string, so no command injection
+      // from env-derived paths (CodeQL js/shell-command-injection-from-environment).
+      fs.cpSync(sourceDir, pluginDir, { recursive: true });
     });
 
     it('should appear in plugin list', function() {
