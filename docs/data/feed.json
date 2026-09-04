@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-09-04T04:43:45.911538+00:00",
+  "generated_at": "2026-09-04T11:28:31.883682+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 12,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(ops): trigger sync_answered_questions.py on answered label/close (#1462)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1471",
+      "timestamp": "2026-09-04T06:15:06Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(main): release 2.26.0",
@@ -30,13 +37,6 @@
       "title": "docs(mcp): crawler-friendly MCP intake guide (Issue #1071)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1449",
       "timestamp": "2026-09-03T17:21:01Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 2.24.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1453",
-      "timestamp": "2026-09-03T17:13:15Z",
       "source": "github"
     },
     {
