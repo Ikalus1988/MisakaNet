@@ -65,7 +65,9 @@ Run this roughly every 10 sessions (or weekly):
 
 1. **Re-run your last failure queries.** If any returned no match, submit
    them via `misakanet_submit_intake` with `kind="missing_lesson"` — an empty
-   result is a knowledge gap, not a dead end.
+   result is a knowledge gap, not a dead end. If the gap is a how-to /
+   knowledge question rather than a failure, use `kind="question"` instead
+   (it opens a `[Question]` issue that can be answered / folded into an FAQ).
 2. **Check your lessons' evidence.** For lessons you rely on, call
    `misakanet_me_events(lesson_id=...)`. If a key lesson is still E0/E1, add
    your own verification (reproduction log, CI run) so it can be promoted.

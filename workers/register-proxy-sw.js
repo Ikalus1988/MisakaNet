@@ -10,7 +10,7 @@ const {
   CORS_HEADERS, timingSafeEqual, sanitizeIdentifier,
   parseTimestamp, roundPoints, REPUTATION_PERIODS,
   normalizeReputationPeriod, RATE_LIMIT_WINDOW, rateMap,
-  cleanRateMap,
+  cleanRateMap, INTAKE_KINDS, inferIntakeKind,
 } = _utils;
 
 // GitHub API configuration from handlers.js
@@ -121,7 +121,7 @@ function addDebugContext(env, errorObj, context) {
 const MCP_TOOLS = [
   {
     name: "misakanet_register",
-    description: "Register a new agent node and get a token for authenticated access. No GitHub account or email needed.\nReturns: object {node_id: string, token: string} — the node id and its Bearer token for authenticated MCP calls.\nExample: misakanet_register(agent_type='claude-code')",
+    description: "[ONBOARDING] Register a new agent node and get a token for authenticated access. Call this first when you have no token; the returned Bearer token unlocks misakanet_write_lesson and higher rate limits on other tools. No GitHub account or email needed.\nToken lifetime: valid ~30 days (no auto-renew) — call misakanet_register again to rotate or refresh. Each call creates a new node, so register once per agent.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string} — the node id and its Bearer token.\nExample: misakanet_register(agent_type='claude-code')",
     inputSchema: {
       type: "object",
       properties: {
@@ -129,10 +129,26 @@ const MCP_TOOLS = [
       },
       required: ["agent_type"],
     },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        node_id: { type: "string" },
+        token: { type: "string" },
+        registered_at: { type: "string" },
+        agent_type: { type: "string" },
+        error: { type: "string" },
+      },
+    },
   },
   {
     name: "misakanet_search",
-    description: "Search MisakaNet's public failure-lesson index by error text, keyword, or topic. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nReturns: object {results: [{id, title, domain, tags, path, description, score}], source, detail, query}; on no match: {no_match: true, suggestion, intake}.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
+    description: "[RETRIEVAL / READ] Search MisakaNet's public failure-lesson index by error text, keyword, or topic. This is the primary read path — run it first when you hit an error, before deciding to submit anything. For a known lesson ID or path, prefer misakanet_get_lesson — it skips ranking and returns the full content. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nFAQ: results may also include answered questions (type=\"faq\", issue_url + answer) — if a maintainer already answered the same question, the answer surfaces here.\nReturns: object {results: [{id, title, domain, tags, path, description, score}], source, detail, query}; on no match: {no_match: true, suggestion, intake}.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
     inputSchema: {
       type: "object",
       properties: {
@@ -146,21 +162,62 @@ const MCP_TOOLS = [
       },
       required: ["query"],
     },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        results: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" }, title: { type: "string" }, domain: { type: "string" },
+              tags: { type: "array", items: { type: "string" } }, path: { type: "string" },
+              description: { type: "string" }, score: { type: "number" },
+              type: { type: "string" }, issue_url: { type: "string" }, answer: { type: "string" },
+            },
+          },
+        },
+        source: { type: "string" }, detail: { type: "string" }, query: { type: "string" },
+        no_match: { type: "boolean" }, suggestion: { type: "string" },
+        intake: { type: "object", properties: { tool: { type: "string" }, args: { type: "object" } } },
+      },
+    },
   },
   {
     name: "misakanet_get_lesson",
-    description: "Fetch one public MisakaNet lesson by repository path or lesson ID. Use after misakanet_search returns a promising result.\nReturns: object {path: string, content: string} — lesson markdown body (≤5000 chars); or {error}.\nExample: misakanet_get_lesson(id='auto-merge-ci-pipeline')",
+    description: "[RETRIEVAL / READ] Fetch one public MisakaNet lesson by repository path or lesson ID. Use after misakanet_search returns a promising result to pull the full fix content. Provide exactly one of id or path (path takes precedence if both are supplied); if neither is supplied the tool returns {error}.\nReturns: object {path: string, content: string} — lesson markdown body (≤5000 chars); or {error: string}.\nExample: misakanet_get_lesson(id='auto-merge-ci-pipeline')",
     inputSchema: {
       type: "object",
       properties: {
-        path: { type: "string", description: "Lesson path relative to the repository, e.g. lessons/core/auto-merge-ci-pipeline.md." },
-        id: { type: "string", description: "Lesson ID, usually the filename without .md, e.g. auto-merge-ci-pipeline." },
+        path: { type: "string", description: "Lesson path relative to the repository, e.g. lessons/core/auto-merge-ci-pipeline.md. Either path or id is required." },
+        id: { type: "string", description: "Lesson ID, usually the filename without .md, e.g. auto-merge-ci-pipeline. Either id or path is required." },
+      },
+      minProperties: 1,
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string" },
+        content: { type: "string" },
+        error: { type: "string" },
       },
     },
   },
   {
     name: "misakanet_submit_intake",
-    description: "Submit a failure-case intake when no matching lesson exists, or ask a question about a knowledge gap. No Bearer auth required — open but rate-limited. Creates a GitHub issue labeled intake,mcp-intake,pending-review (question kind adds needs-human-review).\nReturns: object {submitted: boolean, intake_id, status, redactions_applied, quality_score, receipt}; duplicates: {submitted: false, duplicate: true, previous_issue}.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code')",
+    description: "[OPEN TRIAGE / INTAKE] Use misakanet_submit_intake when you only have a partial failure description or want to ask a question; use misakanet_write_lesson (Bearer required) once you already have structured title/domain/problem/root_cause/fix. submit_intake is open, rate-limited, no Bearer — output is a GitHub issue (intake,mcp-intake,pending-review) for maintainer triage, NOT a merged lesson.\nRouting: if you are ASKING a how-to / knowledge question (not reporting a failure), set kind=\"question\" — it opens a [Question] issue that maintainers answer/FAQ instead of scoring it as a lesson. If kind is omitted, the server auto-detects question-shaped content (no error/fix/verification + question phrasing).\nPull answers later: questions are answered asynchronously (hours to days). Re-call this tool with the SAME problem text later — the dedup response returns the maintainer's answer once it exists ({answered:true, answer}); or re-run misakanet_search on the topic for FAQ hits.\nReturns: object {submitted: boolean, intake_id, status, redactions_applied, quality_score, receipt, routing:{kind, auto_detected}, follow_up?}; duplicates: {submitted: false, duplicate: true, previous_issue} or {answered: true, answer} for answered questions.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code'); misakanet_submit_intake(kind='question', problem='How do I configure MCP auth in production?', source='claude-code')",
     inputSchema: {
       type: "object",
       properties: {
@@ -175,10 +232,37 @@ const MCP_TOOLS = [
       },
       required: ["problem"],
     },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        submitted: { type: "boolean" },
+        duplicate: { type: "boolean" },
+        answered: { type: "boolean" },
+        pending: { type: "boolean" },
+        intake_id: { type: "string" },
+        status: { type: "string" },
+        issue_url: { type: "string" },
+        previous_issue: { type: "string" },
+        answer: { type: "string" },
+        answer_url: { type: "string" },
+        dedup_hash: { type: "string" },
+        error: { type: "string" },
+        note: { type: "string" },
+        receipt: { type: "string" },
+        routing: { type: "object", properties: { kind: { type: "string" }, auto_detected: { type: "boolean" }, note: { type: "string" } } },
+        follow_up: { type: "object", properties: { how: { type: "string" }, intake_id: { type: "string" }, issue_url: { type: "string" } } },
+      },
+    },
   },
   {
     name: "misakanet_write_lesson",
-    description: "Submit a complete, structured failure lesson. Requires authentication (Bearer token in header). Input: title, domain, problem, root_cause, fix (all required); verification, tags, source (optional).\nReturns: object {lesson_id: string, status: 'pending_review', quality_score: number}; or {submitted: false, error}.\nExample: misakanet_write_lesson(title='pip timeout behind proxy', domain='python', problem='...', root_cause='...', fix='...')",
+    description: "[STRUCTURED COMMIT / VALIDATED SUBMISSION] Submit a complete, structured failure lesson (title/domain/problem/root_cause/fix) as a formal submission. Requires authentication (Bearer token in header) — this is the 'validated author' path, not open triage. Output goes through lesson-gate/lint/review and becomes a versioned lesson in the git repo. For quick open reports when you only have a partial failure description, use misakanet_submit_intake instead (no Bearer). Lessons are immutable once merged — corrections go through a new intake/PR, so there is intentionally no misakanet_update_lesson/misakanet_delete_lesson.\nReturns: object {lesson_id: string, status: 'pending_review', quality_score: number}; or {submitted: false, error}.\nExample: misakanet_write_lesson(title='pip timeout behind proxy', domain='python', problem='...', root_cause='...', fix='...')",
     inputSchema: {
       type: "object",
       properties: {
@@ -193,10 +277,26 @@ const MCP_TOOLS = [
       },
       required: ["title", "domain", "problem", "root_cause", "fix"],
     },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        lesson_id: { type: "string" },
+        status: { type: "string" },
+        quality_score: { type: "number" },
+        submitted: { type: "boolean" },
+        error: { type: "string" },
+      },
+    },
   },
   {
     name: "misakanet_preflight",
-    description: "Check risk level before executing high-risk operations. Matches agent intent against lesson triggers to provide proactive warnings. Use before RAG builds, WSL/GPU tasks, bulk imports, or any operation that might fail.\nReturns: object {risk_level: 'low'|'medium'|'high', intent, matched_lessons: [{id, title, domain, relevance}], guards: [string]}.\nExample: misakanet_preflight(intent='build RAG pipeline with ChromaDB')",
+    description: "[GUARD / RISK CHECK] Check risk level before executing high-risk operations. Matches agent intent against lesson triggers to provide proactive warnings. Use before RAG builds, WSL/GPU tasks, bulk imports, or any operation that might fail. No side effects — safe to call multiple times before acting.\nReturns: object {risk_level: 'low'|'medium'|'high', intent, matched_lessons: [{id, title, domain, relevance}], guards: [string]}.\nExample: misakanet_preflight(intent='build RAG pipeline with ChromaDB')",
     inputSchema: {
       type: "object",
       properties: {
@@ -205,15 +305,54 @@ const MCP_TOOLS = [
       },
       required: ["intent"],
     },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        risk_level: { type: "string", enum: ["low", "medium", "high"] },
+        intent: { type: "string" },
+        matched_lessons: {
+          type: "array",
+          items: { type: "object", properties: { id: { type: "string" }, title: { type: "string" }, domain: { type: "string" }, relevance: { type: "number" } } },
+        },
+        guards: { type: "array", items: { type: "string" } },
+        error: { type: "string" },
+      },
+    },
   },
   {
     name: "misakanet_me_events",
-    description: "Return evidence of a lesson being reused (E4 signals): helpful votes, regression-benchmark citations, and cross-node confirmation. Use to check whether a lesson is proven by real usage, not just self-reported. No auth required (read-only, rate-limited).\nReturns: object {lesson_id, events: [{type, count|queries|sources, evidence_level}], evidence: 'E0'|'E3'|'E4', note}.\nExample: misakanet_me_events(lesson_id='dco-auto-fix-workflow')",
+    description: "[READ-ONLY EVIDENCE] Return evidence of a lesson being reused (E4 signals): helpful votes, regression-benchmark citations, and cross-node confirmation. Use to check whether a lesson is proven by real usage, not just self-reported. Provide lesson_id or lesson_path — if neither is supplied the tool returns {error}. Semantically 'misakanet_get_my_events' (evidence for the lessons your node submitted/used); kept as me_events for backward compatibility. No auth required (read-only, rate-limited).\nReturns: object {lesson_id, events: [{type, count|queries|sources, evidence_level}], evidence: 'E0'|'E3'|'E4', note}.\nExample: misakanet_me_events(lesson_id='dco-auto-fix-workflow')",
     inputSchema: {
       type: "object",
       properties: {
-        lesson_id: { type: "string", description: "Lesson ID (filename stem), e.g. dco-auto-fix-workflow." },
-        lesson_path: { type: "string", description: "Optional full path, e.g. lessons/core/dco-auto-fix-workflow.md." },
+        lesson_id: { type: "string", description: "Lesson ID (filename stem), e.g. dco-auto-fix-workflow. Either lesson_id or lesson_path is required." },
+        lesson_path: { type: "string", description: "Optional full path, e.g. lessons/core/dco-auto-fix-workflow.md. Either lesson_id or lesson_path is required." },
+      },
+      minProperties: 1,
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        lesson_id: { type: "string" },
+        events: {
+          type: "array",
+          items: { type: "object", properties: { type: { type: "string" }, count: { type: "number" }, queries: { type: "array", items: { type: "string" } }, sources: { type: "array", items: { type: "string" } }, evidence_level: { type: "string" } } },
+        },
+        evidence: { type: "string", enum: ["E0", "E3", "E4"] },
+        note: { type: "string" },
+        error: { type: "string" },
       },
     },
   },
@@ -227,7 +366,7 @@ function getMcpServerInfo(env) {
   return {
     name: "misakanet",
     // Keep in sync with pyproject.toml (single source of truth for version).
-    version: env.MCP_VERSION || "2.23.0",
+    version: env.MCP_VERSION || "2.26.0",
   };
 }
 
@@ -648,31 +787,55 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       results = applyDetailLevel(results, detail);
     }
 
+    // PRD ⑤ §9: FAQ corpus — answered questions surface as search hits, so a
+    // question "arrives answered" whenever anyone (including the original
+    // asker, later) searches the topic. Appended after lesson results; also
+    // suppresses no_match when an answered FAQ covers the query.
+    if (d1Binding(env)) {
+      const faq = await fetchAnsweredQuestions(env);
+      if (faq.length) {
+        const faqHits = matchAnsweredQuestions(faq, args.query || "", args.detail || "compact");
+        if (faqHits.length) results = results.concat(faqHits);
+      }
+    }
+
     // PRD ①: no-match closed loop — embed intake guidance so the agent can
     // submit the gap in the same request chain instead of dropping it.
+    // How-to / knowledge-gap queries route to kind="question"; error-like
+    // queries keep routing to kind="missing_lesson" (see #1396 — questions
+    // forced into missing_lesson were auto-rejected as malformed lessons).
     const aura = await getIdentityAura(env, authToken);
     if (!results || results.length === 0) {
+      const noMatchKind = inferIntakeKind({ problem: args.query || "" }).kind;
+      const questionLike = noMatchKind === "question";
+      const suggestion = questionLike
+        ? `No MisakaNet lesson matched "${args.query}". This looks like a how-to / knowledge question. ` +
+          `Call misakanet_submit_intake with kind="question", ` +
+          `problem="<your question>", source="<your client>". ` +
+          `No account or email required; a maintainer can answer it or fold it into an FAQ entry.`
+        : `No MisakaNet lesson matched "${args.query}". ` +
+          `This is a knowledge gap. If this is a real failure you need documented, ` +
+          `call misakanet_submit_intake with kind="missing_lesson", ` +
+          `problem="<short description of the failure>", ` +
+          `error="<the error text>", source="<your client>". ` +
+          `No account or email required; a maintainer will review and cover it.`;
       return {
         results: [],
         no_match: true,
         query: args.query,
         source,
         detail,
-        suggestion:
-          `No MisakaNet lesson matched "${args.query}". ` +
-          `This is a knowledge gap. If this is a real failure you need documented, ` +
-          `call misakanet_submit_intake with kind="missing_lesson", ` +
-          `problem="<short description of the failure>", ` +
-          `error="<the error text>", source="<your client>". ` +
-          `No account or email required; a maintainer will review and cover it.`,
+        suggestion,
         intake: {
           tool: "misakanet_submit_intake",
-          args: {
-            kind: "missing_lesson",
-            problem: "<short description of the failure>",
-            error: args.query,
-            source: "mcp",
-          },
+          args: questionLike
+            ? { kind: "question", problem: "<your question>", source: "mcp" }
+            : {
+                kind: "missing_lesson",
+                problem: "<short description of the failure>",
+                error: args.query,
+                source: "mcp",
+              },
         },
         identity: aura,
       };
@@ -802,11 +965,19 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     if (intent && ctx) ctx.waitUntil(trackUsage(env, ctx, "intent", { query: intent }));
 
     // Kind whitelist — question is for asking help about a knowledge gap.
-    const INTAKE_KINDS = ["missing_lesson", "stale_lesson", "new_lesson_candidate", "question"];
-    const kind = INTAKE_KINDS.includes(args.kind) ? args.kind : "missing_lesson";
     if (args.kind && !INTAKE_KINDS.includes(args.kind)) {
       return { error: `Invalid kind: "${args.kind}". Supported: ${INTAKE_KINDS.join(", ")}.` };
     }
+    // Auto-route how-to / knowledge-gap content that arrives without an
+    // explicit kind (or still as kind=missing_lesson from older guidance) to
+    // `question`. See #1396: a PT-BR how-to arrived as missing_lesson, was
+    // scored 16.9/100 by the lesson auto-review and auto-rejected to badcase —
+    // a dead end for question-shaped content. Only clear question phrasing
+    // with zero failure evidence (error/fix/verification or failure keywords)
+    // flips the kind; real failure intakes are never touched.
+    const inferredKind = inferIntakeKind(args);
+    const kind = inferredKind.kind;
+    const kindAutoDetected = inferredKind.autoDetected;
 
     const SPAM_KEYWORDS = ["buy now", "click here", "free money", "casino", "viagra", "crypto pump"];
     const textLower = ((args.problem || "") + " " + (args.error || "")).toLowerCase();
@@ -835,13 +1006,44 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // Content-based dedup hash (not random) — same problem text submitted
     // twice maps to the same hash, so repeat submissions are caught (aider
     // review P1-4). The short random tag is kept for issue-body traceability.
-    const dedupSource = `${kind}:${safeProblem}:${safeError}`.trim();
+    // Per-field trim keeps the hash identical to scripts/sync_answered_
+    // questions.py (which parses the issue body with .strip()) — otherwise a
+    // padded problem would hash differently after the answer sync rewrites
+    // the row's dedup_hash.
+    const dedupSource = `${kind}:${String(safeProblem).trim()}:${String(safeError || "").trim()}`;
     const dedupHash = crypto.randomUUID().slice(0, 12);
-    const dedupKey = `intake_dedup:${hashString(dedupSource)}`;
+    const dedupContentHash = hashString(dedupSource);
+    const dedupKey = `intake_dedup:${dedupContentHash}`;
 
-    // Reject duplicate submissions (same kind + problem within 7 days).
-    if (env.MISAKANET_KV) {
-      const existingDedup = await env.MISAKANET_KV.get(dedupKey, "text");
+    // Reject duplicate submissions (same kind + problem). For questions the
+    // D1 questions row is the durable dedup + answer store (PRD ⑤ §9): a
+    // re-submission pulls the answer once a maintainer has answered, instead
+    // of a bare "duplicate" — pull-based delivery (no push channel exists).
+    const existingDedup = env.MISAKANET_KV ? await env.MISAKANET_KV.get(dedupKey, "text") : null;
+    if (existingDedup || (kind === "question" && d1Binding(env))) {
+      const dupRow = kind === "question" ? await lookupQuestionByDedup(env, dedupContentHash) : null;
+      if (dupRow) {
+        if (dupRow.status === "answered" && dupRow.answer) {
+          return {
+            submitted: false,
+            duplicate: true,
+            answered: true,
+            intake_id: `issue-${dupRow.issue_number}`,
+            answer: dupRow.answer,
+            answer_url: dupRow.issue_url || existingDedup,
+            issue_url: dupRow.issue_url || existingDedup,
+            note: "This question was already answered — the maintainer's answer is returned above (PRD ⑤ pull-based delivery).",
+          };
+        }
+        return {
+          submitted: false,
+          duplicate: true,
+          pending: true,
+          previous_issue: dupRow.issue_url || existingDedup,
+          intake_id: `issue-${dupRow.issue_number}`,
+          note: "This question is already open and pending a maintainer answer. Re-submit the same problem later to pull the answer once it is answered.",
+        };
+      }
       if (existingDedup) {
         return {
           submitted: false,
@@ -911,12 +1113,36 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
           await env.MISAKANET_KV.put(dedupKey, data.html_url, { expirationTtl: 86400 * 7 });
         } catch (_) {}
       }
+      // PRD ⑤ §9: persist the question row — durable state + answer delivery
+      // (best-effort: recordQuestion swallows D1 errors; the issue is already
+      // created, so a D1 miss never fails the intake).
+      if (kind === "question" && d1Binding(env)) {
+        await recordQuestion(env, {
+          issueNumber: data.number,
+          dedupHash: dedupContentHash,
+          problem: safeProblem || args.problem || "",
+          source: args.source || "mcp",
+          issueUrl: data.html_url,
+        });
+      }
       return {
         submitted: true,
         intake_id: `issue-${data.number}`,
         status: "pending_review",
         issue_url: data.html_url,
         dedup_hash: dedupHash,
+        routing: {
+          kind,
+          auto_detected: kindAutoDetected,
+          note: kindAutoDetected
+            ? 'No explicit kind and content reads as a how-to/knowledge question with no failure evidence — routed as kind="question" instead of missing_lesson.'
+            : undefined,
+        },
+        follow_up: kind === "question" ? {
+          how: "A maintainer will answer on the issue — this can take hours to days. To pull the answer later: (1) call misakanet_submit_intake again with the same problem text — once answered, the dedup response returns the answer; (2) or re-run misakanet_search on the topic — answered questions are surfaced as FAQ hits.",
+          intake_id: `issue-${data.number}`,
+          issue_url: data.html_url,
+        } : undefined,
         receipt: `GitHub issue ${data.number} created. No account or email required.`,
       };
     } catch (e) {
@@ -1441,6 +1667,103 @@ async function loadLessons(env, filters = {}) {
   const fromD1 = await fetchLessonsFromD1(env);
   if (fromD1 && fromD1.length > 0) return fromD1;
   return getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
+}
+
+// ── D1 question service (PRD ⑤ §9: pull-based answer delivery) ──
+// One row per question-kind intake issue. The worker records 'pending' on
+// submit; scripts/sync_answered_questions.py flips answered rows with the
+// maintainer's answer. Re-submitting the same question (dedup hit) returns
+// the answer once present, and misakanet_search surfaces answered rows as
+// FAQ hits. All helpers are best-effort: D1 absence must never fail the
+// intake/search path (KV/GitHub behavior stays the fallback).
+
+// Record a freshly created question issue as pending.
+async function recordQuestion(env, { issueNumber, dedupHash, problem, source, issueUrl }) {
+  const d1 = d1Binding(env);
+  if (!d1) return false;
+  try {
+    await d1.prepare(
+      `INSERT INTO questions (issue_number, dedup_hash, problem, source, status, issue_url, created, updated)
+       VALUES (?1, ?2, ?3, ?4, 'pending', ?5, datetime('now'), datetime('now'))
+       ON CONFLICT(issue_number) DO UPDATE SET problem=?3, dedup_hash=?2, updated=datetime('now')`
+    ).bind(issueNumber, dedupHash, String(problem || "").slice(0, 2000), source || "mcp", issueUrl || "").run();
+    return true;
+  } catch (e) {
+    debugLog(env, 1, "recordQuestion failed", String(e && e.message || e));
+    return false;
+  }
+}
+
+// Look up one question row by dedup hash (re-submission pull path).
+async function lookupQuestionByDedup(env, dedupHash) {
+  const d1 = d1Binding(env);
+  if (!d1 || !dedupHash) return null;
+  try {
+    const res = await d1.prepare(
+      "SELECT issue_number, dedup_hash, problem, status, answer, issue_url, answered_at FROM questions WHERE dedup_hash = ?1 LIMIT 1"
+    ).bind(dedupHash).all();
+    const rows = (res && res.results) || [];
+    return rows.length ? rows[0] : null;
+  } catch (e) {
+    debugLog(env, 1, "lookupQuestionByDedup failed", String(e && e.message || e));
+    return null;
+  }
+}
+
+// All answered questions (FAQ corpus for search merge). Best-effort.
+async function fetchAnsweredQuestions(env) {
+  const d1 = d1Binding(env);
+  if (!d1) return [];
+  try {
+    const res = await d1.prepare(
+      "SELECT issue_number, dedup_hash, problem, answer, issue_url, answered_at FROM questions WHERE status = 'answered'"
+    ).all();
+    return (res && res.results) || [];
+  } catch (e) {
+    debugLog(env, 1, "fetchAnsweredQuestions failed", String(e && e.message || e));
+    return [];
+  }
+}
+
+// FAQ hits from answered questions (PRD ⑤ §9): token-overlap match over
+// problem + answer text. Returns result-shaped entries the search handler
+// can append to lesson results (id/title/domain/tags/description/score).
+// Progressive disclosure: the full answer is attached only at detail='full';
+// compact/summary get a capped snippet + issue_url so results stay token-cheap
+// (answers can be up to 20k chars — carrying them in every hit would blow the
+// compact budget).
+function matchAnsweredQuestions(rows, query, detail = "compact", top = 3) {
+  const tokens = String(query || "").toLowerCase().split(/[^a-z0-9\u4e00-\u9fff]+/).filter((t) => t.length > 1);
+  if (!tokens.length) return [];
+  const fullDetail = detail === "full";
+  const scored = [];
+  for (const row of rows) {
+    const hay = `${row.problem || ""} ${row.answer || ""}`.toLowerCase();
+    let overlap = 0;
+    for (const t of tokens) if (hay.includes(t)) overlap += 1;
+    if (overlap > 0) {
+      const answer = String(row.answer || "");
+      scored.push({
+        row,
+        score: overlap / tokens.length,
+        desc: answer.replace(/\s+/g, " ").trim().slice(0, 300),
+        answerShown: fullDetail ? answer : `${answer.slice(0, 800)}${answer.length > 800 ? "\n… (full answer: see issue_url or re-run with detail='full')" : ""}`,
+      });
+    }
+  }
+  scored.sort((a, b) => b.score - a.score || (b.row.answered_at || "").localeCompare(a.row.answered_at || ""));
+  return scored.slice(0, top).map(({ row, score, desc, answerShown }) => ({
+    id: `faq-issue-${row.issue_number}`,
+    title: String(row.problem || `FAQ #${row.issue_number}`).slice(0, 120),
+    domain: "faq",
+    tags: ["faq"],
+    path: row.issue_url || "",
+    description: desc,
+    score: Math.round(score * 100),
+    type: "faq",
+    answer: answerShown,
+    issue_url: row.issue_url || "",
+  }));
 }
 
 // ── KV cache wrapper ──

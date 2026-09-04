@@ -1,0 +1,32 @@
+name: Sync Question Answers
+
+# PRD ⑤ §9: close the answer-delivery loop — copies answered/pending question
+# intakes from GitHub issues into the D1 `questions` table (durable state that
+# the worker's re-submission pull and search FAQ merge read from).
+# Script: scripts/sync_answered_questions.py
+
+on:
+  schedule:
+    - cron: '20 7 * * *'  # Daily 07:20 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Sync question answers to D1
+        run: python3 scripts/sync_answered_questions.py

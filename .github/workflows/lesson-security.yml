@@ -23,6 +23,12 @@ jobs:
         run: |
           echo "🔍 Scanning lessons for suspicious content..."
           EXIT_CODE=0
+          # True-danger patterns only. \beval\b and \bexec\b were removed —
+          # too high a false-positive rate: they have legitimate uses in
+          # security-education content (shell fd locks `exec 9>...`, JS
+          # `eval()`, Python `eval()`). rm -rf / curl|sh etc. have almost no
+          # legitimate use in lessons. Fenced-code stripping (PR #1400) and
+          # _archive/ exclusion already reduce remaining noise.
           PATTERNS=(
             'rm\s+-rf'
             'rm\s+-fr'
@@ -31,46 +37,35 @@ jobs:
             'wget.+pipe.+sh'
             'curl.+bash'
             'bash.+dev/tcp'
-            # Note: \beval\b and \bexec\b removed — too broad, flags
-            # legitimate educational content (bundle exec, kubectl exec,
-            # eval() in JavaScript, etc.)
+            # '`[^`]*`'  — removed: too noisy, flags all inline code
           )
 
-          # Strip markdown code blocks (``` ... ```) and inline code (`...`)
-          # before scanning. This prevents false positives from security
-          # education content that legitimately discusses dangerous patterns.
-          strip_code_blocks() {
-            # Remove fenced code blocks, then remove inline code backticks
-            awk 'BEGIN{in_block=0} /^```/{in_block=!in_block; next} !in_block{print}' "$1" \
-              | sed 's/`[^`]*`//g'
-          }
-
+          # Recursive scan: lessons/*.md misses lessons/contrib, lessons/core,
+          # lessons/en etc. (the bulk of the corpus). Use find + rglob.
+          # Exclude _archive/ directory (historical content, not active lessons)
+          #
+          # Strip fenced code blocks (``` ... ```) before scanning so that
+          # dangerous patterns inside code examples don't trigger false positives.
           while IFS= read -r file; do
-            # Skip archived lessons — they are historical and not executed
-            if echo "$file" | grep -q "lessons/_archive/"; then
-              continue
-            fi
-            # Extract prose-only content (outside code blocks)
-            PROSE=$(strip_code_blocks "$file")
-            if [ -z "$PROSE" ]; then
-              continue
-            fi
+            # Remove fenced code blocks (both ``` and ~~~ variants)
+            # and inline code (`...`) to avoid false positives
+            stripped=$(sed '/^```/,/^```/d; /^~~~/, /^~~~/d; s/`[^`]*`//g' "$file")
             for pattern in "${PATTERNS[@]}"; do
-              if echo "$PROSE" | grep -Eq "$pattern" 2>/dev/null; then
-                echo "⚠️  WARNING: Suspicious pattern found in $file: $pattern"
-                echo "$PROSE" | grep -nE "$pattern" || true
+              if echo "$stripped" | grep -Eq "$pattern" 2>/dev/null; then
+                echo "⚠️  WARNING: Suspicious pattern found in $file (outside code block): $pattern"
+                echo "$stripped" | grep -nE "$pattern" || true
                 EXIT_CODE=1
               fi
             done
-          done < <(find lessons -name "*.md" -type f | sort)
+          done < <(find lessons -name "*.md" -type f -not -path "*/_archive/*" | sort)
 
           if [ "$EXIT_CODE" -eq 0 ]; then
             echo "✅ All lessons passed security scan."
           else
-            echo "❌ Some lessons contain potentially dangerous patterns outside code blocks."
+            echo "❌ Some lessons contain potentially dangerous patterns."
             echo ""
-            echo "Patterns inside fenced code blocks (\\\`\\\`\\\`) are ignored."
-            echo "Move dangerous commands into code blocks if they are educational content."
+            echo "These may be legitimate (e.g., explaining a fix)."
+            echo "Please review and ensure commands are wrapped in code blocks."
           fi
           exit $EXIT_CODE
 
@@ -88,5 +83,5 @@ jobs:
                 echo "ℹ️  Review: $file → $line"
               fi
             done < "$file"
-          done < <(find lessons -name "*.md" -type f | sort)
+          done < <(find lessons -name "*.md" -type f -not -path "*/_archive/*" | sort)
           echo "✅ Scan complete."

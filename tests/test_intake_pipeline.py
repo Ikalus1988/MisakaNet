@@ -101,5 +101,51 @@ class TestRun(unittest.TestCase):
         self.assertIn("draft_preview", result)
 
 
+class TestQuestionRouting(unittest.TestCase):
+    """#1396: question intakes must never mint a lesson-shaped draft into
+    lesson_drafts — they route straight to a [Question] issue."""
+
+    def test_question_kind_skips_persist_and_lesson_notify(self):
+        calls = {"persist": 0, "notify": 0, "notify_q": 0}
+        orig = (ip.persist_draft, ip.notify, ip.notify_question)
+
+        def fake_persist(*a, **k):
+            calls["persist"] += 1
+            return True
+
+        def fake_notify(*a, **k):
+            calls["notify"] += 1
+            return {"issue_number": 1}
+
+        def fake_notify_question(intake):
+            calls["notify_q"] += 1
+            return {"issue_number": 99, "issue_url": "https://github.com/x/issues/99"}
+
+        ip.persist_draft, ip.notify, ip.notify_question = fake_persist, fake_notify, fake_notify_question
+        try:
+            res = ip.run({"kind": "question", "problem": "How do I set up MCP auth?", "source": "mcp"})
+            self.assertEqual(calls["persist"], 0, "question must not persist a lesson draft")
+            self.assertEqual(calls["notify"], 0, "lesson notify must not run for questions")
+            self.assertEqual(calls["notify_q"], 1)
+            self.assertEqual(res["routed_as"], "question")
+            self.assertEqual(res["issue"]["issue_number"], 99)
+        finally:
+            ip.persist_draft, ip.notify, ip.notify_question = orig
+
+    def test_question_issue_payload_is_question_shaped(self):
+        title, labels, body = ip._question_issue_payload(
+            ip.parse_intake({"kind": "question", "problem": "How do I configure MCP auth?", "source": "mcp"})
+        )
+        self.assertTrue(title.startswith("[Question]"))
+        self.assertIn("question", labels)
+        self.assertIn("needs-human-review", labels)
+        self.assertNotIn("new-lesson", labels)
+        self.assertIn("**Kind:** question", body)
+        self.assertIn("NOT a lesson candidate", body)
+        # No lesson-shaped filler sections for questions.
+        self.assertNotIn("## Solution", body)
+        self.assertNotIn("pending review — no fix recorded", body)
+
+
 if __name__ == "__main__":
     unittest.main()

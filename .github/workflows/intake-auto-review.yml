@@ -49,6 +49,25 @@ jobs:
           # Save body to temp file
           echo "$ISSUE_BODY" > /tmp/issue_body.txt
 
+          # Structured Kind wins: question/knowledge-gap intakes are NOT lesson
+          # candidates — skip lesson scoring + badcase archiving entirely and
+          # route them as questions. (Observed on #1396: a Portuguese question
+          # got scored 16.9/100, auto-rejected and archived as if it were a
+          # malformed lesson, with no answer channel.)
+          KIND=$(sed -n 's/^\*\*Kind:\*\*[[:space:]]*//p' /tmp/issue_body.txt | head -1 | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
+          echo "kind=$KIND" >> "$GITHUB_OUTPUT"
+
+          if [ "$KIND" = "question" ]; then
+            echo "Question intake (#$ISSUE_NUMBER) — skipping lesson auto-review."
+            echo "decision=question" >> "$GITHUB_OUTPUT"
+            echo "final_score=-1" >> "$GITHUB_OUTPUT"
+            echo "lesson_title=" >> "$GITHUB_OUTPUT"
+            echo "lesson_domain=" >> "$GITHUB_OUTPUT"
+            echo "lesson_tags=" >> "$GITHUB_OUTPUT"
+            echo "archive_path=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           # Run auto-review with archiving (exit code 1 = reject, not an error)
           RESULT=$(python3 scripts/intake_auto_review.py \
             --issue $ISSUE_NUMBER \
@@ -82,7 +101,40 @@ jobs:
           echo "$COMMENT" > /tmp/review_comment.txt
 
       - name: Post review comment
+        env:
+          # Static markdown for the question-routing comment (no heredoc:
+          # column-0 content would break the YAML block scalar).
+          QUESTION_COMMENT: |
+            <!-- misakanet-intake-question -->
+            ## [QUESTION] Treated as a Question, Not a Lesson
+
+            This intake carries Kind: `question` (knowledge gap / how-to), so it was **not** run through the lesson auto-review and **not** archived as a badcase.
+
+            To turn it into an actionable lesson — or to get a precise answer — please reply with:
+
+            - `## Error` — the concrete error/symptom, or a short snippet of the failing interaction
+            - `## What was tried` — approaches already attempted
+            - `## Expected` — the outcome you were hoping for
+            - Context — which agent/tool/harness produced the problem
+
+            If it is not a failure case, it stays an open question for maintainer / FAQ handling.
+
+            _Automated routing only — no lesson was published or closed._
         run: |
+          DECISION="${{ steps.review.outputs.decision }}"
+          ARCHIVE_PATH="${{ steps.review.outputs.archive_path }}"
+
+          # Question intakes get a routing comment instead of a review verdict.
+          if [ "$DECISION" = "question" ]; then
+            if gh issue view $ISSUE_NUMBER --repo ${{ github.repository }} --json comments --jq '.comments[].body' \
+              | grep -q "## \[QUESTION\]"; then
+              echo "Question comment already exists — skipping."
+              exit 0
+            fi
+            gh issue comment $ISSUE_NUMBER --repo ${{ github.repository }} --body "$QUESTION_COMMENT"
+            exit 0
+          fi
+
           COMMENT=$(cat /tmp/review_comment.txt)
           ARCHIVE_PATH="${{ steps.review.outputs.archive_path }}"
 
@@ -108,6 +160,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           DECISION="${{ steps.review.outputs.decision }}"
+
+          # Question routing labels — never auto-approved/auto-rejected/salvage.
+          if [ "$DECISION" = "question" ]; then
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
+              --remove-label "auto-approved" \
+              --remove-label "auto-rejected" \
+              --remove-label "needs-salvage" \
+              --remove-label "type:feature" \
+              --remove-label "type:bug" 2>/dev/null || true
+            gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \
+              --add-label "question" \
+              --add-label "type:question" \
+              --add-label "needs-human-review"
+            exit 0
+          fi
 
           # Remove existing review labels
           gh issue edit $ISSUE_NUMBER --repo ${{ github.repository }} \

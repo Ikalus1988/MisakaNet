@@ -43,6 +43,8 @@ try:
 except ImportError:
     HAS_BM25 = False
 
+from scripts.intake_kind import INTAKE_KINDS, infer_intake_kind  # noqa: E402
+
 # ── Create FastMCP server ──
 mcp = FastMCP("misakanet")
 
@@ -60,13 +62,36 @@ INTAKE_IP_LIMIT = 3          # per IP per hour
 
 
 def _no_match_feedback(query: str) -> dict:
-    """Return an actionable continuation for a query with no lesson match."""
+    """Return an actionable continuation for a query with no lesson match.
+
+    How-to / knowledge-gap queries route to kind="question"; error-like queries
+    keep routing to kind="missing_lesson" (see #1396 — questions forced into
+    missing_lesson were auto-rejected as malformed lessons).
+    """
+    kind, _ = infer_intake_kind(problem=query)
+    question_like = kind == "question"
+    if question_like:
+        return {
+            "no_match": True,
+            "query": query,
+            "suggestion": (
+                "No MisakaNet lesson matched this query. This looks like a "
+                "how-to / knowledge question. Call misakanet_submit_intake "
+                'with kind="question", problem="<your question>". No account '
+                "or email required; a maintainer can answer it or fold it "
+                "into an FAQ entry."
+            ),
+            "intake": {
+                "tool": "misakanet_submit_intake",
+                "args": {"kind": "question", "problem": "<your question>", "source": "mcp"},
+            },
+        }
     return {
         "no_match": True,
         "query": query,
         "suggestion": (
             "No MisakaNet lesson matched this query. Call "
-            "misakanet_submit_intake with kind=\"missing_lesson\" to report "
+            'misakanet_submit_intake with kind="missing_lesson" to report '
             "the knowledge gap."
         ),
         "intake": {
@@ -183,9 +208,31 @@ def misakanet_submit_intake(
     Rate limits: global 5/hour + per-IP 3/hour (in-memory).
     Dedup hash recorded in issue body for maintainer-side duplicate detection.
     Requires gh CLI with repo write access. If gh fails, returns error (no silent fallback).
+
+    Routing (kind): missing_lesson (knowledge gap), stale_lesson (outdated
+    lesson), new_lesson_candidate (new failure mode), question (ask for help —
+    opens a [Question] issue with needs-human-review instead of being scored
+    as a lesson). Question-shaped content submitted as the default
+    missing_lesson with no error/fix/verification is auto-routed to question.
     """
     if not problem or not str(problem).strip():
         return {"error": "problem is required", "voice": "failure-warning"}
+
+    # ── Kind validation + auto-routing (#1396) ──
+    # Explicit kind must be on the whitelist. How-to / knowledge-gap content
+    # that arrives as the default missing_lesson (older guidance still points
+    # there) is re-routed to "question" when it has clear question phrasing
+    # and zero failure evidence — otherwise it was scored as a malformed
+    # lesson and auto-rejected to badcase.
+    if kind and kind not in INTAKE_KINDS:
+        return {
+            "error": f'Invalid kind: "{kind}". Supported: {", ".join(INTAKE_KINDS)}.',
+            "voice": "failure-warning",
+        }
+    kind, kind_auto_detected = infer_intake_kind(
+        kind=kind, problem=problem, error=error,
+        what_tried=what_tried, fix=fix, verification=verification,
+    )
 
     # ── Token check (if configured) ──
     # P1-5 fix (2026-08-30): when the shared token is used as `source`, it must
@@ -285,12 +332,20 @@ def misakanet_submit_intake(
         raw_title = _re.sub(r"https?://\S+", "", raw_title)
         raw_title = _re.sub(r"\n+", " ", raw_title)
         raw_title = _re.sub(r"\s+", " ", raw_title).strip()[:80]
-        title = f"[Intake] {raw_title or 'failure case'}"
+        prefix = "[Question]" if kind == "question" else "[Intake]"
+        fallback = "help request" if kind == "question" else "failure case"
+        title = f"{prefix} {raw_title or fallback}"
         body = "\n".join(body_parts)
 
         # Enforce 8k body limit
         if len(body.encode("utf-8")) > 8000:
             body = body[:7900] + "\n\n... [truncated to 8k limit]"
+
+        # question kind gets a needs-human-review label so maintainers triage
+        # help requests distinctly from failure intakes.
+        labels = "intake,mcp-intake,pending-review"
+        if kind == "question":
+            labels += ",needs-human-review"
 
         # Create GitHub issue
         import subprocess
@@ -298,7 +353,7 @@ def misakanet_submit_intake(
             ["gh", "issue", "create",
              "--title", title,
              "--body", body,
-             "--label", "intake,mcp-intake,pending-review"],
+             "--label", labels],
             capture_output=True, text=True, timeout=30,
         )
 
@@ -311,6 +366,16 @@ def misakanet_submit_intake(
                 "status": "pending_review",
                 "issue_url": issue_url,
                 "dedup_hash": dedup_hash,
+                "routing": {
+                    "kind": kind,
+                    "auto_detected": kind_auto_detected,
+                    "note": (
+                        "No explicit kind and content reads as a how-to/knowledge "
+                        'question with no failure evidence — routed as kind="question" '
+                        "instead of missing_lesson."
+                        if kind_auto_detected else None
+                    ),
+                },
                 "redactions_applied": sum(1 for x in [safe_problem, safe_error, safe_fix] if "[REDACTED" in x),
                 "receipt": f"GitHub issue {issue_number} created. No account or email required.",
                 "voice": "pair-success",
