@@ -101,8 +101,14 @@ function runHandler(reason, error, customPayload) {
     // bin/fatal-guard.js). Without this, the handler dies with `process.exit()`
     // and never writes the tombstone (#1373 problem 4).
     if (process.platform === 'win32') {
-      const payloadTmp = path.join(os.tmpdir(), `fatal-guard-${process.pid}.json`);
-      try { fs.writeFileSync(payloadTmp, payload); } catch (_) {}
+      // mkdtemp (not a fixed-name tmp file) — CodeQL js/insecure-temporary-file.
+      let payloadTmp = path.join(os.tmpdir(), `fatal-guard-${process.pid}.json`);
+      let payloadDir = "";
+      try {
+        payloadDir = fs.mkdtempSync(path.join(os.tmpdir(), "fatal-guard-"));
+        payloadTmp = path.join(payloadDir, "payload.json");
+        fs.writeFileSync(payloadTmp, payload);
+      } catch (_) {}
       // sanitizeCommand rejects shell metacharacters before any spawn, so the
       // env-derived FATAL_HANDLER can never smuggle a shell command. shell:
       // false is a literal at the call site (CodeQL sees a non-shell spawn).

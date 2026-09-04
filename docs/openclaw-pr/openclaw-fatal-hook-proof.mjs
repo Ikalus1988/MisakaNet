@@ -6,10 +6,14 @@
  */
 
 import { spawn, execSync } from "node:child_process";
-import { appendFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, writeFileSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { hostname, platform, release } from "node:os";
 
-const LOG = "/tmp/oc-handler-proof.log";
+// mkdtemp (not a fixed /tmp path) — CodeQL js/insecure-temporary-file.
+const LOG_DIR = mkdtempSync(join(tmpdir(), "oc-handler-proof-"));
+const LOG = join(LOG_DIR, "proof.log");
 const PID = process.pid;
 
 function log(msg) {

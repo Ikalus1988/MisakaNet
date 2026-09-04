@@ -16,6 +16,12 @@ queries:
 # query-filters exclude, scoped narrowly to this one file.
 # See docs/reviews/2026-08-30-dual-axis-review.md (audit tool, prints
 # metadata only).
+# Analysis-scope ignore (top-level): the audit tool prints discovery
+# metadata only — its whole purpose is scanning secrets, so it is excluded
+# from CodeQL analysis entirely. (query-filters exclude alone was observed
+# not to filter this interprocedural taint rule.)
+paths-ignore:
+  - scripts/check_worker_secrets.py
 query-filters:
   - exclude:
       id: py/clear-text-logging-sensitive-data
