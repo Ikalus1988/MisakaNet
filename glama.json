@@ -2,7 +2,7 @@
   "$schema": "https://glama.ai/mcp/schemas/server.json",
   "name": "io.github.Ikalus1988/misakanet",
   "description": "Failure-memory layer for coding agents: search evidence-rated failure lessons, submit failure intakes or questions without an account, pull answers by re-query.",
-  "version": "2.26.0",
+  "version": "2.27.0",
   "maintainers": [
     "Ikalus1988"
   ],
