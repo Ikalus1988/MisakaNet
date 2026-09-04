@@ -7,6 +7,31 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.27.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.26.0...v2.27.0) (2026-09-04)
+
+
+### Features
+
+* **ops:** add event-driven sync for answered questions ([#1462](https://github.com/Ikalus1988/MisakaNet/issues/1462)) ([c92e146](https://github.com/Ikalus1988/MisakaNet/commit/c92e146a5135d71b26a374793f4da9a29ca10bb4))
+* **ops:** trigger sync_answered_questions.py on answered label/close ([ecc68ff](https://github.com/Ikalus1988/MisakaNet/commit/ecc68ffadd67e312b3e4846e19036c2bbce63549))
+
+
+### Bug Fixes
+
+* **codeql #69:** dsh install test — replace shell cp -r with fs.cpSync ([dcb9e0b](https://github.com/Ikalus1988/MisakaNet/commit/dcb9e0b80c21302ec09ea3d9b5714dbc88314f8b))
+* **codeql:** [#68](https://github.com/Ikalus1988/MisakaNet/issues/68) paths-ignore + tmp-file fixes ([#70](https://github.com/Ikalus1988/MisakaNet/issues/70)/[#77](https://github.com/Ikalus1988/MisakaNet/issues/77)-79) ([c2928e7](https://github.com/Ikalus1988/MisakaNet/commit/c2928e714ce6fe7986761350cc07a04085669ae1))
+
+
+### Documentation
+
+* **codeql:** refresh config comments — advanced setup + paths-ignore rationale ([#68](https://github.com/Ikalus1988/MisakaNet/issues/68)) ([945e06e](https://github.com/Ikalus1988/MisakaNet/commit/945e06e712eb1c31ce916e35dc2ce450ac2f414c))
+* **maintainer:** handoff-2026-09-03 §14 — goal round 2: v2.25.0/v2.26.0, PR audit terminal ([52af252](https://github.com/Ikalus1988/MisakaNet/commit/52af252e649ed845401bfefaebd1b23a6a6fd323))
+
+
+### CI/CD
+
+* **codeql:** advanced setup with custom config (route B for [#68](https://github.com/Ikalus1988/MisakaNet/issues/68)) ([4cdd704](https://github.com/Ikalus1988/MisakaNet/commit/4cdd704a3ac62bb54f9482dcc414268f1516289a))
+
 ## [2.26.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.25.0...v2.26.0) (2026-09-03)
 
 
