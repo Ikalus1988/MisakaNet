@@ -2,7 +2,10 @@
 """Intake kind inference — question vs failure routing for MCP intake entries.
 
 Mirror of ``workers/lib/utils.js`` ``inferIntakeKind`` (same tables, same
-rules). Used by :mod:`scripts.mcp_http_server` so that how-to / knowledge-gap
+rules). Both consume ``workers/lib/intake-hints.json`` as the single source
+of truth for ``INTAKE_KINDS``, ``QUESTION_HINTS``, and ``FAILURE_HINTS``.
+
+Used by :mod:`scripts.mcp_http_server` so that how-to / knowledge-gap
 submissions are routed as ``kind="question"`` instead of being treated as
 malformed failure lessons (see #1396: a PT-BR how-to arrived as
 ``kind=missing_lesson``, was scored 16.9/100 by the lesson auto-review and
@@ -14,57 +17,24 @@ failure intakes are never touched.
 """
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
 
-INTAKE_KINDS = ("missing_lesson", "stale_lesson", "new_lesson_candidate", "question")
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_HINTS_FILE = _REPO_ROOT / "workers" / "lib" / "intake-hints.json"
 
-QUESTION_HINTS = [
-    # English
-    r"\bhow (do|can|should|could|would|to|i|we|you|does|did)\b",
-    r"\bhow to\b",
-    r"\bwhat (is|are|does|should|can|could|would)\b",
-    r"\bwhy (does|is|do|are|can|would|did)\b",
-    r"\bcan (i|you|we|someone)\b",
-    r"\b(is|are) there a (way|better|method)\b",
-    r"\btips?\b",
-    r"\bguid(e|ance|elines?)\b",
-    r"\brecommend\b",
-    r"\bhelp (me|with)?\b",
-    # Portuguese
-    r"\bcomo (fazer|resolver|configurar|usar|evitar|sair|sigo|guio|posso|fa[çc]o|devo)\b",
-    r"\bpor que\b",
-    r"\bpor qu[eê]\b",
-    r"\bo que (é|e|fazer|devo|posso)\b",
-    r"\bqual (é|e) (a|o|melhor)\b",
-    r"\bajuda\b",
-    r"\bdicas?\b",
-    r"\bconselho\b",
-    r"\bmaneira de\b",
-    r"\bforma de\b",
-    # Spanish
-    r"\bc[oó]mo (hago|puedo|configuro|resuelvo|evito|salgo|debo)\b",
-    r"\bpor qu[ée]\b",
-    r"\bqu[ée] (es|hago|puedo|debo)\b",
-    r"\bayuda\b",
-    r"\bconsejo\b",
-    # Chinese
-    r"怎么|如何|为什么|请问|怎样|该(怎么|如何)|能不能",
-    # Generic trailing question mark
-    r"\?\s*$",
-]
 
-# Inline *error evidence* in the problem text — narrow on purpose. Broad
-# failure words ("failed", "timeout", "failure") are too topic-y ("how do I
-# structure a failure lesson?" is a question, not an error report), while a
-# pasted traceback / error code / "Error:" prefix means real failure content
-# that must keep the missing_lesson route even if phrased as a question.
-FAILURE_HINTS = [
-    r"\b(traceback|segfault|stack ?trace)\b",
-    r"\bexception\b",
-    r"\b(enoent|econnrefused|eacces|eperm|econnreset|econnaborted)\b",
-    r"(?:^|\n)\s*(?:error|fatal|critical|panic|failed to)[:\s]",
-    r"报错|异常|崩溃|堆栈",
-]
+def _load_hints() -> tuple[tuple[str, ...], list[str], list[str]]:
+    data = json.loads(_HINTS_FILE.read_text(encoding="utf-8"))
+    return (
+        tuple(data["intake_kinds"]),
+        list(data["question_hints"]),
+        list(data["failure_hints"]),
+    )
+
+
+INTAKE_KINDS, QUESTION_HINTS, FAILURE_HINTS = _load_hints()
 
 _QUESTION_RE = [re.compile(p, re.IGNORECASE) for p in QUESTION_HINTS]
 _FAILURE_RE = [re.compile(p, re.IGNORECASE) for p in FAILURE_HINTS]
@@ -104,7 +74,7 @@ def infer_intake_kind(
     explicit = str(kind or "").strip()
     if explicit and explicit not in INTAKE_KINDS:
         return "missing_lesson", False
-    problem_text = f"{problem or ''} {what_tried or ''}"
+    problem_text = (problem or "") + " " + (what_tried or "")
     structured_failure = bool(error or fix or verification)
     is_question = looks_like_question(problem_text) and not structured_failure and not has_failure_evidence(problem_text)
     if explicit in ("", "missing_lesson"):
