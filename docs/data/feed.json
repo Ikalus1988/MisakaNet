@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-09-04T16:28:38.891180+00:00",
+  "generated_at": "2026-09-04T20:50:34.430972+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 12,
+  "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(main): release 2.27.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1467",
+      "timestamp": "2026-09-04T17:10:57Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(ops): trigger sync_answered_questions.py on answered label/close (#1462)",
@@ -33,13 +40,6 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "docs(mcp): crawler-friendly MCP intake guide (Issue #1071)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1449",
-      "timestamp": "2026-09-03T17:21:01Z",
-      "source": "github"
-    },
-    {
       "type": "challenge",
       "title": "[Bounty] dsh plugin integration test suite",
       "url": "https://github.com/Ikalus1988/MisakaNet/issues/1403",
@@ -53,21 +53,6 @@
         "status:competition"
       ],
       "timestamp": "2026-09-01T08:41:03Z",
-      "source": "github"
-    },
-    {
-      "type": "challenge",
-      "title": "[Bounty] Test dsh plugin installation methods",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1401",
-      "labels": [
-        "good first issue",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "has-test",
-        "status:competition"
-      ],
-      "timestamp": "2026-09-01T08:39:06Z",
       "source": "github"
     },
     {
