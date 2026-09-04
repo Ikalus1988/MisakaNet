@@ -8,13 +8,34 @@ name: Sync Question Answers
 on:
   schedule:
     - cron: '20 7 * * *'  # Daily 07:20 UTC
+  issues:
+    types: [labeled, closed]
   workflow_dispatch:
+    inputs:
+      issue:
+        description: "Specific issue number to sync"
+        required: false
+        type: string
+
+concurrency:
+  group: sync-question-answers-${{ github.event.issue.number || 'all' }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
   sync:
+    # Trigger on:
+    # 1. Scheduled daily cron
+    # 2. Manual workflow_dispatch
+    # 3. 'labeled' event when label is 'answered'
+    # 4. 'closed' event when issue has 'answered' label
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'answered') ||
+      (github.event_name == 'issues' && github.event.action == 'closed' && contains(github.event.issue.labels.*.name, 'answered'))
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -28,5 +49,12 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Sync question answers to D1
+      - name: Sync single question answer to D1
+        if: github.event_name == 'issues' || (github.event_name == 'workflow_dispatch' && inputs.issue != '')
+        run: |
+          ISSUE_NUM="${{ github.event.issue.number || inputs.issue }}"
+          python3 scripts/sync_answered_questions.py --issue "$ISSUE_NUM"
+
+      - name: Sync all question answers to D1 (batch/cron)
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.issue == '' || inputs.issue == null))
         run: python3 scripts/sync_answered_questions.py
