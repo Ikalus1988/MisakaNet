@@ -1123,7 +1123,12 @@ class MisakaNetSearchEngine:
 
         ``domain`` filters before truncation (mirrors the SAG SQL path);
         ``rerank``/``weights`` are passed through to the internal ranker.
+
+        The corpus is refreshed on every call through the L2 mtime cache
+        (cheap when nothing changed), so long-running HTTP/MCP servers pick
+        up newly submitted lessons without a restart (review fix, PR #1482).
         """
+        self._docs = _load_docs_cached(self.lessons_dir, is_lesson=True)
         ranked = _search_cached(query, self._docs, rerank=rerank, weights=weights)
         results: list[dict] = []
         for score, doc in ranked:

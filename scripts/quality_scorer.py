@@ -432,11 +432,11 @@ def score_lesson(
 
     meta_pts, meta_notes = score_metadata(fm, content)
     struct_pts, struct_notes = score_structure(body)
-    # Audit T3.3: draft/template lessons intentionally contain TODO fill-ins
-    # (harvester drafts, lessons/templates placeholders) — don't flag them.
+    # Audit T3.3: only genuine template/harvester OUTPUT tolerates TODO
+    # fill-ins (source marker or templates/ dir) — a plain draft lesson with
+    # placeholders is still flagged (see test_placeholder_detected).
     tolerate_todo = bool(
-        (fm or {}).get("status") in ("draft", "template")
-        or str((fm or {}).get("source", "")) in ("harvester", "template")
+        str((fm or {}).get("source", "")) in ("harvester", "template")
         or "templates" in Path(rel_path).parts
     )
     content_pts, content_notes = score_content(body, tolerate_todo=tolerate_todo)

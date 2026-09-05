@@ -132,15 +132,25 @@ def _log_zero_result(query: str):
 
     try:
         with open(log_file, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry) + "\n")
+            # ensure_ascii=False keeps non-ASCII queries readable on disk
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     except Exception:
         pass  # Non-critical, don't fail search
 
-    # Check if same query failed >3 times → suggest creating issue
+    # Check if same query failed >3 times → suggest creating issue.
+    # Parse each line as JSON and compare the query field, so quotes/backslashes/
+    # non-ASCII in the query match reliably (review fix, PR #1482).
     try:
         if log_file.exists():
-            lines = log_file.read_text(encoding="utf-8").strip().split("\n")
-            count = sum(1 for ln in lines if f'"query": "{query}"' in ln)
+            count = 0
+            for ln in log_file.read_text(encoding="utf-8").strip().split("\n"):
+                if not ln.strip():
+                    continue
+                try:
+                    if json.loads(ln).get("query") == query:
+                        count += 1
+                except (json.JSONDecodeError, TypeError):
+                    continue
             if count >= 3:
                 print(f"  ⚠️  This query has returned 0 results {count} times.")
                 print("     Consider creating an issue for a missing lesson:")
