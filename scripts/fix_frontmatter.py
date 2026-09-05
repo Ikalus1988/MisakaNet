@@ -24,6 +24,7 @@ import yaml
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO))  # audit T2.5: import misakanet.lesson_index
 LESSONS = REPO / "lessons"
 
 # Fields to keep in the rewritten frontmatter (in this order)
@@ -259,18 +260,15 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Fix corrupted lesson frontmatter")
     ap.add_argument("--dry-run", action="store_true", help="preview only")
     ap.add_argument("--fix", action="store_true", help="apply fixes")
-    ap.add_argument("--files", nargs="*", help="specific files (else all core+contrib)")
+    ap.add_argument("--files", nargs="*", help="specific files (else all canonical lessons)")
     args = ap.parse_args()
 
     files = []
     if args.files:
         files = [LESSONS / f for f in args.files]
     else:
-        for sub in ("core", "contrib"):
-            for f in sorted((LESSONS / sub).glob("*.md")):
-                if f.name.startswith(("README", "index", "TEMPLATE")):
-                    continue
-                files.append(f)
+        from misakanet.lesson_index import canonical_lessons
+        files = list(canonical_lessons(LESSONS))
 
     fixed = []
     for f in files:
@@ -290,3 +288,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

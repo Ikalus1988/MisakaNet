@@ -26,6 +26,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO))  # audit T2.5: import misakanet.lesson_index
 LESSONS_DIR = REPO / "lessons"
 USAGE_FILE = REPO / "data" / "usage_reports.json"
 OUTPUT = REPO / "data" / "reputation.json"
@@ -133,16 +134,12 @@ def parse_lesson(filepath: Path) -> dict:
 
 
 def scan_lessons() -> list[dict]:
-    """Scan all lessons and extract metadata."""
+    """Scan canonical lessons (deduped, audit T2.5) and extract metadata."""
+    from misakanet.lesson_index import canonical_lessons
+
     lessons = []
-    for subdir in ["core", "contrib"]:
-        dir_path = LESSONS_DIR / subdir
-        if not dir_path.exists():
-            continue
-        for f in sorted(dir_path.glob("*.md")):
-            if f.name == "README.md":
-                continue
-            lessons.append(parse_lesson(f))
+    for f in canonical_lessons(LESSONS_DIR):
+        lessons.append(parse_lesson(f))
     return lessons
 
 
@@ -297,3 +294,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

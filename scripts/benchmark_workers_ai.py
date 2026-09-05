@@ -41,6 +41,7 @@ ACCOUNT = "6b92325b505f2b76aec49e9fe4195d31"
 MC = str(Path(__file__).resolve().parents[1] / ".tools" / "bin" / "mcporter")
 CFG = str(Path(__file__).resolve().parents[1] / ".tools" / "mcporter.json")
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO))  # audit T2.5: import misakanet.lesson_index
 
 DEFAULT_FULL_MODEL = "@cf/meta/llama-3.2-3b-instruct"
 # Strong model must stay within the Workers Free daily neuron allocation
@@ -235,43 +236,43 @@ def _lesson_has_commands(md: Path) -> bool:
 
 
 def load_all_scenarios() -> list[str]:
-    """Load ALL lessons as scenarios; command-bearing first, then the rest."""
-    lessons_dir = REPO / "lessons"
+    """Load ALL canonical lessons as scenarios (deduped, audit T2.5);
+    command-bearing first, then the rest."""
+    from misakanet.lesson_index import canonical_lessons
+
     with_cmds, without_cmds = [], []
-    for sub in ("core", "contrib"):
-        d = lessons_dir / sub
-        if not d.is_dir():
-            continue
-        for md in sorted(d.glob("*.md")):
-            if md.name in ("README.md", "index.md", "TEMPLATE.md"):
-                continue
-            text = md.read_text(encoding="utf-8", errors="ignore")
-            title = ""
-            fm = re.search(r"^---\n(.*?)\n---", text, re.S)
-            if fm:
-                t = re.search(r"title:\s*(.+)", fm.group(1))
-                if t:
-                    title = t.group(1).strip().strip("'\"")
-            problem_match = re.search(r"## (?:Problem|问题)\s*\n(.*?)(?:\n##|\Z)", text, re.S)
-            problem = problem_match.group(1).strip() if problem_match else ""
-            scene = (title or problem)
-            if scene and len(scene) > 20:
-                entry = f"{scene} ({md.stem})"
-                (with_cmds if _lesson_has_commands(md) else without_cmds).append(entry)
+    for md in canonical_lessons(REPO / "lessons"):
+        text = md.read_text(encoding="utf-8", errors="ignore")
+        title = ""
+        fm = re.search(r"^---\n(.*?)\n---", text, re.S)
+        if fm:
+            t = re.search(r"title:\s*(.+)", fm.group(1))
+            if t:
+                title = t.group(1).strip().strip("'\"")
+        problem_match = re.search(r"## (?:Problem|问题)\s*\n(.*?)(?:\n##|\Z)", text, re.S)
+        problem = problem_match.group(1).strip() if problem_match else ""
+        scene = (title or problem)
+        if scene and len(scene) > 20:
+            entry = f"{scene} ({md.stem})"
+            (with_cmds if _lesson_has_commands(md) else without_cmds).append(entry)
     return with_cmds + without_cmds
 
 
 def load_lesson_context(scene: str, max_chars: int = 1500) -> tuple:
     stem = scene.rsplit("(", 1)[-1].rstrip(")") if scene.endswith(")") else ""
     if stem:
-        for sub in ("core", "contrib"):
-            p = REPO / "lessons" / sub / f"{stem}.md"
-            if p.exists():
-                text = p.read_text(encoding="utf-8", errors="ignore")
-                body = re.sub(r"^---\n.*?\n---", "", text, flags=re.S)
-                clean = re.sub(r"[#*`>]", "", body)
-                cmds = _extract_commands(p)
-                return clean.strip()[:max_chars], cmds
+        # Scenarios come from canonical_lessons, so lookups only need to walk
+        # that same canonical set (audit T2.5).
+        from misakanet.lesson_index import canonical_lessons
+
+        for p in canonical_lessons(REPO / "lessons"):
+            if p.stem != stem:
+                continue
+            text = p.read_text(encoding="utf-8", errors="ignore")
+            body = re.sub(r"^---\n.*?\n---", "", text, flags=re.S)
+            clean = re.sub(r"[#*`>]", "", body)
+            cmds = _extract_commands(p)
+            return clean.strip()[:max_chars], cmds
     return "", []
 
 
@@ -421,3 +422,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

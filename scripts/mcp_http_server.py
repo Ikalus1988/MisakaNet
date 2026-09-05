@@ -157,10 +157,12 @@ def misakanet_get_lesson(path: str = "", id: str = "") -> dict:
                 "voice": "connect-success",
             }
 
-    # Fallback: try searching by ID in lessons/core|contrib/
-    for subdir in ["core", "contrib"]:
-        candidate = REPO_ROOT / "lessons" / subdir / f"{path_or_id}.md"
-        if candidate.exists() and _is_allowed_lesson_path(candidate):
+    # Fallback: try searching by ID across the canonical (deduped) lesson set
+    # (audit T2.5) — mirrors/translations are reachable via explicit path above.
+    from misakanet.lesson_index import canonical_lessons
+
+    for candidate in canonical_lessons(REPO_ROOT / "lessons"):
+        if candidate.stem == path_or_id and _is_allowed_lesson_path(candidate):
             lesson_path = candidate
             break
 
@@ -455,17 +457,16 @@ def misakanet_register(agent_type: str = "unknown") -> dict:
 # ── Resources ──
 @mcp.resource("misaka://lessons/index")
 def lessons_index() -> str:
-    """Browse all published lessons with metadata."""
+    """Browse all canonical (deduped) lessons with metadata (audit T2.5)."""
+    from misakanet.lesson_index import canonical_lessons
+
     lessons = []
-    for subdir in ["core", "contrib"]:
-        d = REPO_ROOT / "lessons" / subdir
-        if d.exists():
-            for f in sorted(d.glob("*.md")):
-                lessons.append({
-                    "id": f.stem,
-                    "path": str(f.relative_to(REPO_ROOT)),
-                    "category": subdir,
-                })
+    for f in canonical_lessons(REPO_ROOT / "lessons"):
+        lessons.append({
+            "id": f.stem,
+            "path": str(f.relative_to(REPO_ROOT)),
+            "category": f.parent.name,
+        })
     return json.dumps({"lessons": lessons, "count": len(lessons)}, ensure_ascii=False)
 
 
