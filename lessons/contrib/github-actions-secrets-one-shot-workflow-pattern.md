@@ -1,6 +1,7 @@
 ---
 title: 用一次性 GitHub Actions workflow 借 secrets 做运维操作（不落地凭据）
 domain: devops
+evidence_level: E1
 tags:
 - github-actions
 - secrets
@@ -13,6 +14,12 @@ status: published
 created: '2026-08-29'
 language: zh
 source: intake-issue-1376
+
+provenance:
+  source: "external"
+  contributor: "intake-issue-1376"
+  merged_at: "2026-08-30"
+  evidence: "post-publication"
 ---
 
 ## Problem

@@ -6,6 +6,12 @@ tags:
 - misakanet
 status: published
 evidence_level: E1
+
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 # Testimonio: MisakaNet me ayudo a resolver ModuleNotFoundError

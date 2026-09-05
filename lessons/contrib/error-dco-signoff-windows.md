@@ -1,6 +1,7 @@
 ---
 title: Error de DCO sign-off en commits de Git en Windows
 domain: devops
+evidence_level: E1
 tags:
 - git
 - dco
@@ -13,6 +14,12 @@ language: es
 source: https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/dco-auto-fix-workflow.md
 confidence: 0.9
 verified_date: 2026-07-29
+
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Problem

@@ -1,6 +1,7 @@
 ---
 title: GFW TLS SNI 阻断：工具层全部无效，只有代理能解
 domain: devops
+evidence_level: E1
 tags:
 - gfw
 - tls-sni
@@ -15,6 +16,12 @@ confidence: 1.0
 domain_expert: <user>
 verified_date: '2026-07-06'
 subdomain: network
+
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Problem

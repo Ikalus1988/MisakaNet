@@ -1,6 +1,7 @@
 ---
 title: Agent 手动Update步骤（update Timeout Handling）
 domain: devops
+evidence_level: E1
 tags:
 - agent
 - manual
@@ -11,6 +12,12 @@ created: 2026-05-03
 language: zh
 source: bootstrap
 confidence: 0.8
+
+provenance:
+  source: "external"
+  contributor: "bootstrap"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Verification

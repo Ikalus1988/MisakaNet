@@ -1,6 +1,7 @@
 ---
 title: 'Erreur de permission Docker: permission denied sur /var/run/docker.sock'
 domain: devops
+evidence_level: E1
 tags:
 - docker
 - linux
@@ -13,6 +14,12 @@ language: fr
 source: https://docs.docker.com/engine/install/linux-postinstall/
 confidence: 0.9
 verified_date: 2026-07-29
+
+provenance:
+  source: "external"
+  contributor: "Unknown"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Problem

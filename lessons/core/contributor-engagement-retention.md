@@ -1,6 +1,7 @@
 ---
 title: AI Agent Contributor Engagement — Lightweight Retention Strategy
 domain: devops
+evidence_level: E1
 tags:
 - open-source
 - community
@@ -14,6 +15,12 @@ updated: 2026-06-10 00:00:00 UTC
 source: codewhale
 domain_expert: codewhale
 verified_date: '2026-06-10'
+
+provenance:
+  source: "external"
+  contributor: "codewhale"
+  merged_at: "2026-07-31"
+  evidence: "post-publication"
 ---
 
 ## Root Cause

@@ -16,6 +16,12 @@ metadata:
   type: feedback
   originSessionId: c8d99950-7aef-46ad-b4ce-4d0f910c86e9
   modified: '2026-08-04T09:43:52.372Z'
+
+provenance:
+  source: "external"
+  contributor: "session-feedback"
+  merged_at: "2026-08-26"
+  evidence: "post-publication"
 ---
 
 ## Problem
