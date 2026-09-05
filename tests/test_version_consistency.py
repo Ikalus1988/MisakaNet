@@ -131,7 +131,7 @@ def test_pypi_line_lockstep():
 
 def test_manifest_not_older_than_pypi_line():
     """release-please manifest must never record a release older than the
-    declared PyPI version on main (catches uncoordinated manual bumps)."""
+    declared source version on main (catches uncoordinated manual bumps)."""
     manifest = LOCATIONS['.release-please-manifest.json (".")']
     pyproject = LOCATIONS[PYPI_LINE]
     if _ver(manifest) < _ver(pyproject):
@@ -141,14 +141,27 @@ def test_manifest_not_older_than_pypi_line():
         )
 
 
+def test_npm_bundle_line_never_ahead_of_manifest():
+    """package.json (npm bundle line) may lag the repo release line but must
+    never claim a version newer than the release-please manifest (R2)."""
+    package = LOCATIONS["package.json version"]
+    manifest = LOCATIONS['.release-please-manifest.json (".")']
+    if _ver(package) > _ver(manifest):
+        _test_fail(
+            "package.json npm-bundle line is ahead of the repo release line",
+            [("package.json version", package), ('.release-please-manifest.json (".")', manifest)],
+        )
+
+
 def test_docs_never_claim_newer_than_authoritative_lines():
-    """Informational doc claims must not exceed max(registry, pypi) version.
+    """Informational doc claims must not exceed max(registry, manifest).
 
     Guards against forward-typos (e.g. a doc claiming v2.28.0 before it
     exists). Deliberately allows *older* claims — making docs exactly equal
     is the Milestone-2 unification task.
     """
-    ceiling = max(_ver(LOCATIONS[REGISTRY_LINE]), _ver(LOCATIONS[PYPI_LINE]))
+    manifest = LOCATIONS['.release-please-manifest.json (".")']
+    ceiling = max(_ver(LOCATIONS[REGISTRY_LINE]), _ver(manifest))
     ceiling_str = ".".join(str(p) for p in ceiling)
     for label in ("API.md header", "JOIN.md version info", "docs/index.html badge(s)",
                   "README.md misakanet@/== claims"):

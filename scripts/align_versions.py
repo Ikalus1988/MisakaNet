@@ -20,17 +20,19 @@ Usage:
       Print every declared version + pass/fail against the policy below.
       Exit 1 when a policy invariant breaks (CI / release gate).
   python3 scripts/align_versions.py --source 2.24.0
-      Bump the source line: pyproject.toml, package.json,
+      Bump the repo release line: pyproject.toml, package.json,
       .release-please-manifest.json ("."), README npm claims.
   python3 scripts/align_versions.py --registry 2.28.0
       Bump the registry line: server.json + glama.json + API.md + JOIN.md.
 
 Policy invariants (mirrored by tests/test_version_consistency.py):
   R1 registry pair equal:        server.json.version == glama.json.version
-  R2 source line:                package.json == manifest "."
-  R3 pypi-source:                server.json pypi-package.version == pyproject
-  R4 lag allowed:                pyproject <= manifest  (pypi publish lags)
-  R5 docs never ahead:           API.md / JOIN.md / README claims <= max(registry, source)
+  R2 npm-bundle never ahead:     package.json <= manifest "."  (npm bundle
+                                 line lags the repo release line)
+  R3 pypi-source equal:          server.json pypi-package.version == pyproject
+  R4 lag allowed:                pyproject <= manifest
+  R5 docs never ahead:           API.md / JOIN.md / README claims
+                                 <= max(registry, manifest)
 """
 from __future__ import annotations
 
@@ -92,7 +94,8 @@ def check() -> int:
     manifest = loc['.release-please-manifest.json (".")']
     pyproject = loc["pyproject.toml"]
     pypi_entry = loc["server.json pypi-package"]
-    ceiling = max(_ver(registry), _ver(source))
+    manifest_v = _ver(manifest)
+    ceiling = max(_ver(registry), manifest_v)
 
     print("— version lines —")
     for label, value in loc.items():
@@ -102,19 +105,22 @@ def check() -> int:
     glama = loc["glama.json (registry)"]
     if registry != glama:
         problems.append(f"R1 registry pair drifted: server={registry} glama={glama}")
-    if source != manifest:
-        problems.append(f"R2 source line drifted: package.json={source} manifest={manifest}")
+    if _ver(source) > manifest_v:
+        problems.append(
+            f"R2 npm-bundle ahead of release line: package.json={source} > "
+            f"manifest={manifest}"
+        )
     if pyproject != pypi_entry:
         problems.append(f"R3 pypi-source drifted: pyproject={pyproject} pypi-entry={pypi_entry}")
-    if _ver(pyproject) > _ver(manifest):
-        problems.append(f"R4 pyproject ahead of manifest (pypi lag): {pyproject} > {manifest}")
+    if _ver(pyproject) > manifest_v:
+        problems.append(f"R4 pyproject ahead of manifest: {pyproject} > {manifest}")
     for label in ("API.md header", "JOIN.md version"):
         if loc[label] and _ver(loc[label]) > ceiling:
-            problems.append(f"R5 {label} claims {loc[label]} newer than max({registry},{source})")
+            problems.append(f"R5 {label} claims {loc[label]} newer than max({registry},{manifest})")
     for claim in loc["README misakanet@ claims"].split(","):
         c = claim.strip()
-        if c and _ver(c) > _ver(source):
-            problems.append(f"R5 README claims {c} newer than source {source}")
+        if c and _ver(c) > manifest_v:
+            problems.append(f"R5 README claims {c} newer than release line {manifest}")
 
     for p in problems:
         print(f"  ❌ {p}")

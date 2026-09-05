@@ -70,8 +70,9 @@ MisakaNet 有**三条刻意分开、节奏独立的版本通道**（不要试图
 | 通道 | 载体 | 现状(2026-09-05) | 何时 bump |
 |---|---|---|---|
 | **registry 线** | `server.json`/`glama.json` `version` + API.md/JOIN.md 声明 | 2.27.1 | 每次发版 tag 后“对齐”（随 handoff 流程） |
-| **source 线** | `package.json` + `.release-please-manifest.json` + README `misakanet@` 声明 | 2.23.1 | release-please/npm bundle 发布节奏 |
-| **pypi 源线** | `pyproject.toml` + server.json pypi entry | 2.23.0（PyPI 实际仅 2.18.0，上传已滞后） | 真正发布 PyPI 时 |
+| **repo release 线** | `pyproject.toml` + `.release-please-manifest.json`（release-please python 型随发版 bump）+ README `misakanet@` 声明 | 2.27.1 | 每次发版（release-please/tag） |
+| **npm bundle 线** | `package.json` | 2.23.1（npm 已发布 2.23.0） | 仅 DSH skill bundle 实际发布 npm 时（允许滞后于 release 线） |
+| **pypi 通道** | server.json pypi entry == pyproject；PyPI 实况 2.18.0（上传已滞后） | 2.27.1 | 真正发布 PyPI 时 |
 
 统一方式 = **单一工具 + 不变量门禁**，不再手改多处：
 
