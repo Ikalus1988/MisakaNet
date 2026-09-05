@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-09-05T10:44:46.495373+00:00",
+  "generated_at": "2026-09-05T15:20:40.091084+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "docs(maintenance): release-prep checklist + MCP registry/dsh.so runbo…",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1491",
+      "timestamp": "2026-09-05T15:18:22Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(dsh): npm vs git+ guidance + remote MCP example patch (B2-doc)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1486",
+      "timestamp": "2026-09-05T13:50:47Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(dsh): declare dsh.bundle — register stdio MCP server as mcp__mis…",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1484",
+      "timestamp": "2026-09-05T11:32:40Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "Audit/2026 09 05 qw m0m2",
@@ -16,27 +37,6 @@
       "title": "chore(main): release 2.27.1",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1479",
       "timestamp": "2026-09-05T03:52:23Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test(mcp): cover registered Bearer-token lesson submissions",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1293",
-      "timestamp": "2026-09-05T03:51:16Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(mcp): migrate HTTP server to SDK v2",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1478",
-      "timestamp": "2026-09-05T03:51:14Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 2.27.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1467",
-      "timestamp": "2026-09-04T17:10:57Z",
       "source": "github"
     },
     {
