@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-09-05T04:40:05.597105+00:00",
+  "generated_at": "2026-09-05T10:30:17.691446+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "Audit/2026 09 05 qw m0m2",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1482",
+      "timestamp": "2026-09-05T10:30:06Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(main): release 2.27.1",
@@ -33,11 +40,44 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "feat(ops): trigger sync_answered_questions.py on answered label/close (#1462)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1471",
-      "timestamp": "2026-09-04T06:15:06Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "DSH Plugin dsh.so L5 web-smoke — duplicate Loader entry id crashes plugin tree",
+      "url": "lessons/contrib/dsh-plugin-l5-web-smoke-cordis-duplicate-entry.md",
+      "timestamp": "2026-09-03",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Async question answers are pulled, not pushed (stateless MCP)",
+      "url": "lessons/contrib/mcp-question-answer-pull-delivery.md",
+      "timestamp": "2026-09-03",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "DeepWiki Architecture Review: Fair Hits, Stale-Snapshot Misses, and the Right Trajectory",
+      "url": "lessons/contrib/deepwiki-review-fair-hits-stale-misses-trajectory.md",
+      "timestamp": "2026-09-02",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "DSH Plugin Installation Troubleshooting — Common Failures and Fixes",
+      "url": "lessons/contrib/dsh-plugin-installation-troubleshooting.md",
+      "timestamp": "2026-09-02",
+      "domain": "tooling",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "mcporter Cloudflare OAuth: Correct Endpoint, No Scope, and WSL Callback Trap",
+      "url": "lessons/contrib/mcporter-cloudflare-oauth-endpoint-scope-wsl-callback.md",
+      "timestamp": "2026-09-02",
+      "domain": "devops",
+      "source": "lessons"
     },
     {
       "type": "challenge",
@@ -54,46 +94,6 @@
       ],
       "timestamp": "2026-09-01T08:41:03Z",
       "source": "github"
-    },
-    {
-      "type": "lesson",
-      "title": "auto-merge-ci-pipeline",
-      "url": "lessons/core/auto-merge-ci-pipeline.md",
-      "timestamp": "",
-      "domain": "core",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "contributor-engagement-retention",
-      "url": "lessons/core/contributor-engagement-retention.md",
-      "timestamp": "",
-      "domain": "core",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "cronjob-one-shot-race-condition-duplicate-execution",
-      "url": "lessons/core/cronjob-one-shot-race-condition-duplicate-execution.md",
-      "timestamp": "",
-      "domain": "core",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "dco-auto-fix-workflow",
-      "url": "lessons/core/dco-auto-fix-workflow.md",
-      "timestamp": "",
-      "domain": "core",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "freellmapi-session-context-mixing-cross-thread-delivery",
-      "url": "lessons/core/freellmapi-session-context-mixing-cross-thread-delivery.md",
-      "timestamp": "",
-      "domain": "core",
-      "source": "lessons"
     }
   ]
 }
