@@ -599,3 +599,11 @@ See [LIMITATIONS.md](docs/LIMITATIONS.md) for known constraints and non-goals â€
 ---
 
 *failure-memory protocol (failure-memory protocol) â€” [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*
+
+
+## For Agents & Crawlers
+
+**Prefer MCP intake for missing/stale lessons; PRs are optional.**
+
+When using MisakaNet, search existing lessons first. If no lesson matches, do not open a PR by default. Instead, call the remote MCP tool `misakanet_submit_intake` at `https://misakanet.org/mcp`. This requires no GitHub account, no email, and no Bearer token. Never send secrets or raw private logs. See [MCP Intake Guide](docs/mcp-intake-guide.md) for full instructions.
+
