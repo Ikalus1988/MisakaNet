@@ -182,8 +182,13 @@ def _extract_all_signatures(log_text: str) -> list[str]:
     return [s for s in sigs if not (s in seen or seen.add(s))]
 
 
-def heal(raw_log: str):
-    """Diagnose error log: extract signatures → search lessons → coverage report."""
+def heal(raw_log: str, write_fixtures: bool = False):
+    """Diagnose error log: extract signatures → search lessons → coverage report.
+
+    Unmatched signatures are only written to tests/fixtures/openclaw when
+    ``write_fixtures=True`` (opt-in via ``--heal --write``) — audit 2026-09-05,
+    QW5: raw logs may contain credentials/PII and must never be auto-saved.
+    """
     # Step 1: Extract all error signatures
     signatures = _extract_all_signatures(raw_log)
     if not signatures or all(len(s.strip()) < 3 for s in signatures):
@@ -226,13 +231,17 @@ def heal(raw_log: str):
             unmatched_count += 1
             print(f"  ❌ [uncovered] {sig[:80]}")
 
-            # ⑥ Auto-generate fixture for unmatched signatures
+            # ⑥ Auto-generate fixture for unmatched signatures (opt-in: --heal --write)
             sig_hash = hashlib.md5(sig.encode()).hexdigest()[:8]
-            os.makedirs(fixture_dir, exist_ok=True)
-            fixture_path = os.path.join(fixture_dir, f"unmatched_{sig_hash}.log")
-            with open(fixture_path, "w") as f:
-                f.write(raw_log)
-            print(f"      → fixture: {fixture_path}")
+            fixture_name = f"unmatched_{sig_hash}.log"
+            if write_fixtures:
+                os.makedirs(fixture_dir, exist_ok=True)
+                fixture_path = os.path.join(fixture_dir, fixture_name)
+                with open(fixture_path, "w") as f:
+                    f.write(raw_log)
+                print(f"      → fixture: {fixture_path}")
+            else:
+                print(f"      → fixture (dry-run, not written): {fixture_dir}/{fixture_name}")
 
     # Coverage summary
     total = matched_count + unmatched_count
@@ -253,9 +262,26 @@ def heal(raw_log: str):
     _show_timing(time.time() - t0, len(all_docs))
 
     if unmatched_count > 0:
-        print(f"\n  📝 {unmatched_count} unmatched signature(s) — auto-generated fixtures in {fixture_dir}/")
-        print(f"     Submit a lesson to improve coverage:")
-        print(f"     python3 scripts/queue_lesson.py -t 'your title' -d openclaw -f {fixture_dir}/unmatched_*.log")
+        if write_fixtures:
+            print(
+                f"\n  📝 {unmatched_count} unmatched signature(s) — "
+                f"auto-generated fixtures in {fixture_dir}/"
+            )
+            print("     Submit a lesson to improve coverage:")
+            print(
+                f"     python3 scripts/queue_lesson.py -t 'your title' -d openclaw "
+                f"-f {fixture_dir}/unmatched_*.log"
+            )
+        else:
+            print(
+                f"\n  📝 {unmatched_count} unmatched signature(s) — "
+                "dry-run, no fixtures written."
+            )
+            print("     Re-run with --heal --write to save fixtures, then submit a lesson:")
+            print(
+                f"     python3 scripts/queue_lesson.py -t 'your title' -d openclaw "
+                f"-f {fixture_dir}/unmatched_*.log"
+            )
     elif found:
         print(f"\n  ✅ All signatures covered by swarm knowledge.")
         print(f"     💡 Contribute back if you applied a new fix:")
@@ -638,8 +664,9 @@ def main():
             heal_source = args[i + 1]
 
     if use_heal:
+        write_fixtures = "--write" in args  # audit 2026-09-05 QW5: fixtures opt-in
         log = _read_log(heal_source)
-        heal(log)
+        heal(log, write_fixtures=write_fixtures)
         return
 
     if "--score" in args:
