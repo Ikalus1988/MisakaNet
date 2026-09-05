@@ -142,3 +142,48 @@ MisakaNet 现已声明 `dsh.bundle`（`package.json` + `cordis.patch.yml`），�
 > 命名空间提示：`serverName` 唯一（`misakanet` 已被默认本地行占用，远端用
 > `misakanet-remote`），工具名会以 `mcp__misakanet-remote__*` 出现。
 > 契约测试：`tests/test_dsh_bundle.py`（随 PR #1484 合入 main；patch 声明/单行/字段/全局唯一 id）。
+
+## 8. 发布准备 checklist（下一个 tag：2.28.x 线，示例以 2.28.0 为准）
+
+1. **前置**：目标 PR 全部合入 main（本会话：#1482/#1484/#1486）；本地 `git pull --ff-only`。
+2. **门禁**：`make check-versions`、`make doctor`（KV 占位符若仍未填需处理或记录）、
+   `python3 -m pytest tests/test_version_consistency.py tests/test_dsh_bundle.py tests/test_lesson_index_discovery.py -q`。
+3. **发版（release-please 流程）**：合 release-please 升版 PR（python 型会把 pyproject + manifest
+   推到 2.28.0）→ tag → 发布说明。
+4. **对齐**：`python3 scripts/align_versions.py --registry 2.28.0`
+   （一次更新 server.json/glama.json/API.md/JOIN.md；README `misakanet@` 声明如需同步跑
+   `--source`）。
+5. **数据/远端**：跑 `update-lessons.yml`（workflow_dispatch）刷新索引；`sync-d1.yml`
+   同步 D1（canonical 359+）。
+6. **发布渠道**：npm bundle（若需出新版本号则 bump package.json 后 publish）、PyPI（如恢复，
+   注意当前 pypi 实况 2.18.0 滞后）、**MCP registry**（见 §9）。
+7. **收尾**：跑一遍 `make check-versions` 确认对齐无漂移；把 CHANGELOG 顶部数字与
+   docs/maintenance 数据行同步。
+
+## 9. MCP registry / dsh.so 重验 runbook
+
+**官方机制**：registry.modelcontextprotocol.io 的条目通过
+[modelcontextprotocol/registry](https://github.com/modelcontextprotocol/registry) 的
+`mcp-publisher` CLI 发布/更新；mcptoplist 等目录镜像 registry，registry 更新后自然同步
+（无需逐站提交）。仓库 `server.json` 就是发布源（本仓库已是最新 2.27.1，发布时随 §8 对齐到
+2.28.0）。
+
+```bash
+# 1) 安装 CLI（macOS/linux）：brew install mcp-publisher
+#    或下载 release 二进制：https://github.com/modelcontextprotocol/registry/releases
+# 2) 在仓库根（含 server.json）初始化/校验
+mcp-publisher init          # 首次；已有 server.json 可跳过或用它校验
+mcp-publisher validate server.json   # 校验 schema（发布前必做）
+# 3) 登录（交互式，维护者账号）→ 发布当前 server.json
+mcp-publisher login
+mcp-publisher publish server.json
+# 4) 验证：https://registry.modelcontextprotocol.io/?q=io.github.Ikalus1988%2Fmisakanet
+#    应显示 server.json 的 version（2.27.1 → 下版 2.28.0）
+```
+
+**dsh.so L5 验证**：验证按 **spec tag**（如 `#v2.26.0`）运行——本仓库发布新 tag 后，
+在验证方把 spec 指到新 tag 重跑；L5.4（Plugin Inventory Active）预期转绿：仓库已声明
+`dsh.bundle`（PR #1484）且 bundle 契约测试 `tests/test_dsh_bundle.py` 已入 main。
+若验证方暂不支持自选 spec，则在 registry 重发布后等其按新 tag 重爬。
+
+> 提交文案备份：`.audit-reports-20260905/registry-refresh-copy.md`（若需人工渠道）。
