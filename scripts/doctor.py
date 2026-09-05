@@ -9,6 +9,9 @@ Checks:
   2. the `misakanet_core` BM25 dependency is importable
   3. the remote MCP endpoint is reachable (skipped when curl is missing)
 
+CI deploy gates run only check 1, scoped to the configs the deploy reads:
+  python3 scripts/doctor.py --kv-only workers/wrangler.toml
+
 Exit code: 0 = all checks passed, 1 = at least one check failed.
 """
 from __future__ import annotations
@@ -32,12 +35,17 @@ WRANGLER_CONFIGS = [
 REMOTE_MCP_ENDPOINT = "https://misakanet.org/mcp"
 
 
-def check_wrangler_placeholders() -> tuple[bool, str]:
-    """Fail when any wrangler config still carries a YOUR_* placeholder id."""
+def check_wrangler_placeholders(configs: list[Path] | None = None) -> tuple[bool, str]:
+    """Fail when a wrangler config still carries a YOUR_* placeholder id.
+
+    ``configs`` overrides the default scan list (used by CI deploy gates so
+    they only scan the configs the deploy actually reads).
+    """
+    targets = configs if configs is not None else WRANGLER_CONFIGS
     found: list[str] = []
-    for cfg in WRANGLER_CONFIGS:
+    for cfg in targets:
         if not cfg.exists():
-            continue
+            continue  # optional config (e.g. web/ variants) — nothing to scan
         try:
             text = cfg.read_text(encoding="utf-8", errors="replace")
         except OSError as e:
@@ -87,7 +95,17 @@ def check_remote_endpoint(url: str = REMOTE_MCP_ENDPOINT) -> tuple[bool, str]:
 CHECKS = [check_wrangler_placeholders, check_misakanet_core, check_remote_endpoint]
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    args = sys.argv[1:] if argv is None else argv
+    # CI deploy gates run only the placeholder scan, scoped to the config(s)
+    # that deploy actually reads: python3 scripts/doctor.py --kv-only <path...>
+    if "--kv-only" in args:
+        paths = [Path(p) for p in args if not p.startswith("--")]
+        ok, msg = check_wrangler_placeholders(paths or None)
+        print(f"  {'✅' if ok else '❌'} {msg}")
+        print(f"\n{'1/1' if ok else '0/1'} checks passed")
+        return 0 if ok else 1
+
     failed = 0
     for check in CHECKS:
         ok, msg = check()
