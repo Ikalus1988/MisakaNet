@@ -101,8 +101,8 @@ function validateMcpOrigin(request) {
 
 const INTAKE_KINDS = ["missing_lesson", "stale_lesson", "new_lesson_candidate", "question"];
 
+// -- intake-kind-hints:start (auto-generated, do not edit) --
 const QUESTION_HINTS = [
-  // English
   /\bhow (do|can|should|could|would|to|i|we|you|does|did)\b/i,
   /\bhow to\b/i,
   /\bwhat (is|are|does|should|can|could|would)\b/i,
@@ -113,7 +113,6 @@ const QUESTION_HINTS = [
   /\bguid(e|ance|elines?)\b/i,
   /\brecommend\b/i,
   /\bhelp (me|with)?\b/i,
-  // Portuguese
   /\bcomo (fazer|resolver|configurar|usar|evitar|sair|sigo|guio|posso|fa[çc]o|devo)\b/i,
   /\bpor que\b/i,
   /\bpor qu[eê]\b/i,
@@ -124,30 +123,24 @@ const QUESTION_HINTS = [
   /\bconselho\b/i,
   /\bmaneira de\b/i,
   /\bforma de\b/i,
-  // Spanish
   /\bc[oó]mo (hago|puedo|configuro|resuelvo|evito|salgo|debo)\b/i,
   /\bpor qu[ée]\b/i,
   /\bqu[ée] (es|hago|puedo|debo)\b/i,
   /\bayuda\b/i,
   /\bconsejo\b/i,
-  // Chinese
-  /怎么|如何|为什么|请问|怎样|该(怎么|如何)|能不能/,
-  // Generic trailing question mark
-  /\?\s*$/,
+  /怎么|如何|为什么|请问|怎样|该(怎么|如何)|能不能/i,
+  /\?\s*$/i,
 ];
 
-// Inline *error evidence* in the problem text — narrow on purpose. Broad
-// failure words ("failed", "timeout", "failure") are too topic-y ("how do I
-// structure a failure lesson?" is a question, not an error report), while a
-// pasted traceback / error code / "Error:" prefix means real failure content
-// that must keep the missing_lesson route even if phrased as a question.
 const FAILURE_HINTS = [
   /\b(traceback|segfault|stack ?trace)\b/i,
   /\bexception\b/i,
   /\b(enoent|econnrefused|eacces|eperm|econnreset|econnaborted)\b/i,
   /(?:^|\n)\s*(?:error|fatal|critical|panic|failed to)[:\s]/i,
-  /报错|异常|崩溃|堆栈/,
+  /报错|异常|崩溃|堆栈/i,
 ];
+// -- intake-kind-hints:end --
+// -- intake-kind-hints:end --
 
 function looksLikeQuestion(text) {
   return QUESTION_HINTS.some((re) => re.test(String(text || "")));
