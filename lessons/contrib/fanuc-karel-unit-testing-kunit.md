@@ -19,6 +19,11 @@ quality_score: 80
 root_cause: KAREL 是类 Pascal 的编译语言，运行在 FANUC 控制器上，没有原生的测试框架。KUnit 通过 KAREL 程序实现测试运行器，利用控制器的
   HTTP 服务提供 Web 浏览器访问的测试结果输出。
 solution: 使用 KUnit 框架编写 KAREL 单元测试：编写返回 BOOLEAN 的测试函数，通过 HTTP 端点运行测试并在浏览器查看结果。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Unit Testing FANUC KAREL Programs with KUnit Framework

@@ -15,6 +15,11 @@ source: unknown
 confidence: 0.85
 domain_expert: ''
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead

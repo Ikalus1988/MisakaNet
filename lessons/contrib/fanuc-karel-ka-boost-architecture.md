@@ -22,6 +22,11 @@ root_cause: KAREL 是类 Pascal 的编译语言，运行在 FANUC 控制器上�
   类等高级特性，并建立 8 层模块依赖体系填补标准库空白。
 solution: 采用 Ka-Boost 的分层模块架构：从底层预处理器宏（Layer 0）到高层系统（Layer 7），每层只依赖下层。使用 rossum 包管理器
   + ninja 构建系统管理依赖和编译。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Ka-Boost: 8-Layer KAREL Module Architecture and Build System

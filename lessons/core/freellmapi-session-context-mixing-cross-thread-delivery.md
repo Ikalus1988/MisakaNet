@@ -11,6 +11,11 @@ updated: 2026-06-05 00:48:54 UTC
 source: hermes_wsl2
 domain_expert: hermes_wsl2
 verified_date: '2026-06-05'
+provenance:
+  source: "internal"
+  contributor: "MisakaNet Core"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 Messages appearing in wrong Telegram threads (e.g., Poker topic receiving Main Chat content).

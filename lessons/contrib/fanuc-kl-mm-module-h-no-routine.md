@@ -13,6 +13,11 @@ confidence: 0.7
 domain_expert: bootstrap
 verified_date: 2026-05-03
 subdomain: kl-modules
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明

@@ -27,6 +27,11 @@ solution: '1. 清洁检查快换耦合器触点，排除磨损或污染
   4. 若无法定位具体故障线，更换整条线束
 
   5. 检查信号线焊接质量，排除虚焊问题'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## FANUC 搬运机器人掉自动模式诊断

@@ -20,6 +20,11 @@ problem: FANUC KAREL lacks built-in高级运动学函数，如逆运动学、四
 quality_score: 85
 root_cause: KAREL原生仅提供基础PR读写和简单的位姿操作，缺少IK/FK求解器、万向锁安全的旋转表示、以及多坐标系之间的转换工具
 solution: Ka-Boost pose库提供完整的运动学工具链：solveIK/solveK做IK/FK、quaternion子模块避免万向锁、matpose做4x4矩阵变换、cylindrical_to_cartesian做圆柱坐标转换、correctFrame用四元数对齐工具坐标系到工件表面
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ### Problem描述

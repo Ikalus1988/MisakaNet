@@ -13,6 +13,11 @@ updated: 2026-05-16 00:00:00 UTC
 source: hermes_wsl2
 domain_expert: hermes_wsl2
 verified_date: 2026-05-16
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Verification

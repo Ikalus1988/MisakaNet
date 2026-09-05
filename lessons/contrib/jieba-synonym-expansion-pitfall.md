@@ -15,6 +15,11 @@ source: mcp-intake-1114
 domain_expert: ''
 verified_date: ''
 evidence_level: E2
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

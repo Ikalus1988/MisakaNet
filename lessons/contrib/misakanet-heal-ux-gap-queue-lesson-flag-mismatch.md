@@ -11,6 +11,11 @@ tags:
 status: published
 created: '2026-07-06'
 source: unknown
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # MisakaNet --heal UX Gap — Suggested queue_lesson.py Command Uses Wrong Flag

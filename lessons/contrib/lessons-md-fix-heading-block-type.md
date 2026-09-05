@@ -12,6 +12,11 @@ source: bootstrap
 confidence: 0.7
 domain_expert: bootstrap
 verified_date: '2026-04-01'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ---
