@@ -28,16 +28,11 @@
 ## 2. 归档与数据治理
 
 ### lessons/_archive（退役区，不入索引）
-现有 4 个半导入损坏条目（标题残缺、`CONTEXT COMPACTION` 等），**未删除**——是否清理属产品决策
-（审计开放问题）。删除前请逐个人工确认无历史引用：
-
-- `context-compaction-earlier-turns-in-this-convers.md`
-- `context-compaction-reference-only-earlier-turn.md`
-- `feishu-bot-setup-complete.md`（内容自述 ARCHIVED/被取代）
-- `system-note-your-previous-turn-was-interrupted-b.md`
-
-处理建议：确认后执行
-`git rm lessons/_archive/<file>.md && python3 scripts/update_lessons_json.py`（每日 workflow 会自动提交索引刷新）。
+- **2026-09-05 已清理**（git rm）：4 个损坏半导入顶层条目（`context-compaction-*` ×2、
+  `feishu-bot-setup-complete`（旧版，contrib 有活跃同名）、`system-note-...`）。
+- 保留：`_archive/conversation-dumps/`、`hook-raw/`、`skill-harvest/`（~50 篇**有意归档**的
+  子目录内容）——是否整理/删除属产品决策，另行评估（始终不入索引，按路径可取）。
+- 新增文件请勿放入 `_archive/`（该目录由脚手架排除，见 `misakanet/lesson_index.py`）。
 
 ### 可再生成数据（不要手改，改源后跑脚本）
 | 文件 | 生成方式 |
