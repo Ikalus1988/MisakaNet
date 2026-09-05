@@ -83,3 +83,20 @@ make check-versions                                       # 等价的 Makefile �
 不变量（R1-R5，与 tests/test_version_consistency.py 一致）：registry 对等；
 source 线 package==manifest；pypi 源线 pyproject==server pypi entry；pyproject 允许滞后于 manifest；
 文档声明不得超过当前上限。PyPI 实况可用 `scripts/align_versions.py --check` 输出对照 pypi.org 人工核对。
+
+## 6. Dependabot 排查记录（2026-09-05）
+
+GitHub 提示默认分支 4 条开放告警（2 critical + 2 high）。沙箱无法读 API（git 凭据无 REST 权限，401），
+以下为本机可验证的排查结论：
+
+- **npm（root）**：`npm audit` → 0 漏洞；devDependency `wrangler ^4.127.0` 干净（overrides: sharp 0.35.3）。
+- **npm（packages/fatal-guard）**：`npm audit` → 0 漏洞。
+- **pip 顶层直接依赖**（requirements.txt / pyproject，含可选 hub extras）：OSV batch 查询
+  mcp/jsonschema/pyyaml/misakanet-core/chromadb/aiohttp/websocket-client/networkx/numpy/keyring/
+  requests/scrapling/sentence-transformers → **无 critical/high**。
+- **GitHub Actions**：inventory 显示均用较新版本（checkout@v7、setup-python@v7、github-script@v9、
+  codeql-action@v4、stale@v11 等）；`tj-actions/changed-files@v47.0.6`、`release-please-action@v5`、
+  `pypa/gh-action-pypi-publish@release/v1` 为 tag 引用（建议 SHA pin，但非安全告警本身）。
+- 推断剩余告警来源：`uv.lock` 传递依赖（dependabot 现支持 uv）或某个未覆盖的 Actions。
+  待维护者在 GitHub Security → Dependabot 页粘贴 4 条明细后逐条修复；修复路径模板：
+  pip/uv → 升级对应约束 + `uv lock`；npm → `npm audit fix` 后提交 lock；actions → 升到已修复版本或 SHA pin。
