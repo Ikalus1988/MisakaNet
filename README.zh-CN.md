@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://github.com/Ikalus1988/MisakaNet/stargazers"><img src="https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social" alt="Stars"/></a>
   <a href="https://img.shields.io/badge/nodes-59-green"><img src="https://img.shields.io/badge/nodes-59-green?label=节点" alt="节点"/></a>
-  <a href="https://img.shields.io/badge/lessons-289-blue"><img src="https://img.shields.io/badge/lessons-289-blue?label=知识" alt="知识"/></a>
+  <a href="https://img.shields.io/badge/lessons-358-blue"><img src="https://img.shields.io/badge/lessons-358-blue?label=知识" alt="知识"/></a>
   <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Ikalus1988/MisakaNet?style=flat&color=blueviolet" alt="License"/></a>
 </p>
 
@@ -50,7 +50,7 @@
 
 ### 这是什么？
 
-MisakaNet 是面向 AI 编码 Agent 的失败经验层。当你的 Agent 遇到错误 —— DCO 失败、pip 超时、GitHub 401、MCP 配置问题 —— MisakaNet 搜索 289 条索引化的失败修复经验并返回修复路径。无 prompt 泄漏，无原始日志存储。
+MisakaNet 是面向 AI 编码 Agent 的失败经验层。当你的 Agent 遇到错误 —— DCO 失败、pip 超时、GitHub 401、MCP 配置问题 —— MisakaNet 搜索 358 条索引化的失败修复经验并返回修复路径。无 prompt 泄漏，无原始日志存储。
 
 ### 什么时候使用？
 
@@ -87,6 +87,31 @@ python3 search_knowledge.py "GitHub token 401"
 **方式 C：Web**
 
 [搜索失败经验 →](https://ikalus1988.github.io/MisakaNet/search/)
+
+**方式 D：DeepSeek Harness（dsh 插件）与 Python 库**
+
+```bash
+# npm 安装（推荐 — 发布为 misakanet@2.23.0）
+dsh plugin add misakanet
+# 或直接从 git 安装（同一 bundle）
+# dsh plugin add git+https://github.com/Ikalus1988/MisakaNet.git
+
+# 让 failure-memory SKILL 可被发现（DSH 扫描 ~/.dsh/skills 与项目 .dsh/skills）
+mkdir -p ~/.dsh/skills
+cp -r skills/misakanet ~/.dsh/skills/
+```
+
+> **DSH bundle 工具（`mcp__misakanet__*`）** 由仓库自带 python MCP 服务器提供，
+> 仅在 **git+ 安装**时随包存在（npm 包只含 skill/CLI 面）。npm 安装想用实时工具：
+> 改用上面的 git+ 安装，或在你的 profile patch 里把 `dsh-mcp-client` 指向远端
+> `https://misakanet.org/mcp`（示例见 `docs/maintenance.md` → dsh bundle 章节）。
+
+```python
+# Python 库方式
+from misakanet.search import search_lessons
+for r in search_lessons("pip install timeout"):
+    print(r["title"], r["score"])
+```
 
 ---
 
@@ -225,7 +250,7 @@ python3 search_knowledge.py "database locked"
 
 | 指标 | 数值 |
 |------|------|
-| 📚 Lessons | 289 (indexed) |
+| 📚 Lessons | 358 (canonical, 去重后) |
 | 🌐 Nodes | 59 |
 | 🎤 Network Voices | 5 条 |
 | 📡 Feed Items | 11 条 |

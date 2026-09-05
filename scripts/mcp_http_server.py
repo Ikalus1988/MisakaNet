@@ -27,7 +27,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 # ── Import search engines ──
 try:
@@ -43,8 +43,10 @@ try:
 except ImportError:
     HAS_BM25 = False
 
-# ── Create FastMCP server ──
-mcp = FastMCP("misakanet")
+from scripts.intake_kind import INTAKE_KINDS, infer_intake_kind  # noqa: E402
+
+# ── Create MCP server ──
+mcp = MCPServer("misakanet")
 
 # ── Intake auth / rate limit config ──
 # Set MISAKANET_INTAKE_TOKEN env var to require a shared token for submit_intake.
@@ -60,13 +62,36 @@ INTAKE_IP_LIMIT = 3          # per IP per hour
 
 
 def _no_match_feedback(query: str) -> dict:
-    """Return an actionable continuation for a query with no lesson match."""
+    """Return an actionable continuation for a query with no lesson match.
+
+    How-to / knowledge-gap queries route to kind="question"; error-like queries
+    keep routing to kind="missing_lesson" (see #1396 — questions forced into
+    missing_lesson were auto-rejected as malformed lessons).
+    """
+    kind, _ = infer_intake_kind(problem=query)
+    question_like = kind == "question"
+    if question_like:
+        return {
+            "no_match": True,
+            "query": query,
+            "suggestion": (
+                "No MisakaNet lesson matched this query. This looks like a "
+                "how-to / knowledge question. Call misakanet_submit_intake "
+                'with kind="question", problem="<your question>". No account '
+                "or email required; a maintainer can answer it or fold it "
+                "into an FAQ entry."
+            ),
+            "intake": {
+                "tool": "misakanet_submit_intake",
+                "args": {"kind": "question", "problem": "<your question>", "source": "mcp"},
+            },
+        }
     return {
         "no_match": True,
         "query": query,
         "suggestion": (
             "No MisakaNet lesson matched this query. Call "
-            "misakanet_submit_intake with kind=\"missing_lesson\" to report "
+            'misakanet_submit_intake with kind="missing_lesson" to report '
             "the knowledge gap."
         ),
         "intake": {
@@ -132,10 +157,12 @@ def misakanet_get_lesson(path: str = "", id: str = "") -> dict:
                 "voice": "connect-success",
             }
 
-    # Fallback: try searching by ID in lessons/core|contrib/
-    for subdir in ["core", "contrib"]:
-        candidate = REPO_ROOT / "lessons" / subdir / f"{path_or_id}.md"
-        if candidate.exists() and _is_allowed_lesson_path(candidate):
+    # Fallback: try searching by ID across the canonical (deduped) lesson set
+    # (audit T2.5) — mirrors/translations are reachable via explicit path above.
+    from misakanet.lesson_index import canonical_lessons
+
+    for candidate in canonical_lessons(REPO_ROOT / "lessons"):
+        if candidate.stem == path_or_id and _is_allowed_lesson_path(candidate):
             lesson_path = candidate
             break
 
@@ -183,9 +210,31 @@ def misakanet_submit_intake(
     Rate limits: global 5/hour + per-IP 3/hour (in-memory).
     Dedup hash recorded in issue body for maintainer-side duplicate detection.
     Requires gh CLI with repo write access. If gh fails, returns error (no silent fallback).
+
+    Routing (kind): missing_lesson (knowledge gap), stale_lesson (outdated
+    lesson), new_lesson_candidate (new failure mode), question (ask for help —
+    opens a [Question] issue with needs-human-review instead of being scored
+    as a lesson). Question-shaped content submitted as the default
+    missing_lesson with no error/fix/verification is auto-routed to question.
     """
     if not problem or not str(problem).strip():
         return {"error": "problem is required", "voice": "failure-warning"}
+
+    # ── Kind validation + auto-routing (#1396) ──
+    # Explicit kind must be on the whitelist. How-to / knowledge-gap content
+    # that arrives as the default missing_lesson (older guidance still points
+    # there) is re-routed to "question" when it has clear question phrasing
+    # and zero failure evidence — otherwise it was scored as a malformed
+    # lesson and auto-rejected to badcase.
+    if kind and kind not in INTAKE_KINDS:
+        return {
+            "error": f'Invalid kind: "{kind}". Supported: {", ".join(INTAKE_KINDS)}.',
+            "voice": "failure-warning",
+        }
+    kind, kind_auto_detected = infer_intake_kind(
+        kind=kind, problem=problem, error=error,
+        what_tried=what_tried, fix=fix, verification=verification,
+    )
 
     # ── Token check (if configured) ──
     # P1-5 fix (2026-08-30): when the shared token is used as `source`, it must
@@ -285,12 +334,20 @@ def misakanet_submit_intake(
         raw_title = _re.sub(r"https?://\S+", "", raw_title)
         raw_title = _re.sub(r"\n+", " ", raw_title)
         raw_title = _re.sub(r"\s+", " ", raw_title).strip()[:80]
-        title = f"[Intake] {raw_title or 'failure case'}"
+        prefix = "[Question]" if kind == "question" else "[Intake]"
+        fallback = "help request" if kind == "question" else "failure case"
+        title = f"{prefix} {raw_title or fallback}"
         body = "\n".join(body_parts)
 
         # Enforce 8k body limit
         if len(body.encode("utf-8")) > 8000:
             body = body[:7900] + "\n\n... [truncated to 8k limit]"
+
+        # question kind gets a needs-human-review label so maintainers triage
+        # help requests distinctly from failure intakes.
+        labels = "intake,mcp-intake,pending-review"
+        if kind == "question":
+            labels += ",needs-human-review"
 
         # Create GitHub issue
         import subprocess
@@ -298,7 +355,7 @@ def misakanet_submit_intake(
             ["gh", "issue", "create",
              "--title", title,
              "--body", body,
-             "--label", "intake,mcp-intake,pending-review"],
+             "--label", labels],
             capture_output=True, text=True, timeout=30,
         )
 
@@ -311,6 +368,16 @@ def misakanet_submit_intake(
                 "status": "pending_review",
                 "issue_url": issue_url,
                 "dedup_hash": dedup_hash,
+                "routing": {
+                    "kind": kind,
+                    "auto_detected": kind_auto_detected,
+                    "note": (
+                        "No explicit kind and content reads as a how-to/knowledge "
+                        'question with no failure evidence — routed as kind="question" '
+                        "instead of missing_lesson."
+                        if kind_auto_detected else None
+                    ),
+                },
                 "redactions_applied": sum(1 for x in [safe_problem, safe_error, safe_fix] if "[REDACTED" in x),
                 "receipt": f"GitHub issue {issue_number} created. No account or email required.",
                 "voice": "pair-success",
@@ -390,17 +457,16 @@ def misakanet_register(agent_type: str = "unknown") -> dict:
 # ── Resources ──
 @mcp.resource("misaka://lessons/index")
 def lessons_index() -> str:
-    """Browse all published lessons with metadata."""
+    """Browse all canonical (deduped) lessons with metadata (audit T2.5)."""
+    from misakanet.lesson_index import canonical_lessons
+
     lessons = []
-    for subdir in ["core", "contrib"]:
-        d = REPO_ROOT / "lessons" / subdir
-        if d.exists():
-            for f in sorted(d.glob("*.md")):
-                lessons.append({
-                    "id": f.stem,
-                    "path": str(f.relative_to(REPO_ROOT)),
-                    "category": subdir,
-                })
+    for f in canonical_lessons(REPO_ROOT / "lessons"):
+        lessons.append({
+            "id": f.stem,
+            "path": str(f.relative_to(REPO_ROOT)),
+            "category": f.parent.name,
+        })
     return json.dumps({"lessons": lessons, "count": len(lessons)}, ensure_ascii=False)
 
 
@@ -459,6 +525,4 @@ if __name__ == "__main__":
     print(f"BM25: {'available' if HAS_BM25 else 'not available'}")
     print(f"Endpoint: http://{args.host}:{args.port}/mcp")
 
-    mcp.settings.host = args.host
-    mcp.settings.port = args.port
-    mcp.run(transport="streamable-http")
+    mcp.run(transport="streamable-http", host=args.host, port=args.port)

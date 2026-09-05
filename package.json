@@ -1,21 +1,18 @@
 {
   "name": "misakanet",
-  "version": "2.23.0",
+  "version": "2.23.1",
   "license": "Apache-2.0",
-  "description": "MisakaNet DSH plugin + deployment scripts — shared failure-memory skill and Workers deployment",
+  "description": "MisakaNet failure-memory skill — verified debugging lessons for AI agents. DSH bundle: registers the stdio MCP server as mcp__misakanet__* tools (misakanet_search/get_lesson/…). Live bundle tools require a git+ install (the npm skill-only bundle ships no python server); skill/CLI surfaces work in any profile.",
   "files": [
     "SKILL.md",
     "skills/",
-    "cordis.patch.yml",
     "index.js",
-    "index.d.ts"
+    "index.d.ts",
+    "cordis.patch.yml"
   ],
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
-    },
-    "client": {
-      "platform": "web"
     }
   },
   "scripts": {

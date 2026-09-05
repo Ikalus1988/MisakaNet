@@ -49,10 +49,12 @@ def handle_get_lesson(args: dict) -> dict:
                 "voice": "connect-success",
             }
 
-    # Fallback: try searching by ID in lessons/core|contrib/
-    for subdir in ["core", "contrib"]:
-        candidate = REPO_ROOT / "lessons" / subdir / f"{path_or_id}.md"
-        if candidate.exists() and _is_allowed_lesson_path(candidate):
+    # Fallback: try searching by ID across the canonical (deduped) lesson set
+    # (audit T2.5) — mirrors/translations are reachable via explicit path above.
+    from misakanet.lesson_index import canonical_lessons
+
+    for candidate in canonical_lessons(REPO_ROOT / "lessons"):
+        if candidate.stem == path_or_id and _is_allowed_lesson_path(candidate):
             lesson_path = candidate
             break
 

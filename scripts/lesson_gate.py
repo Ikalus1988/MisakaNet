@@ -123,6 +123,49 @@ def validate_evidence(evidence_level) -> list[str]:
     return []
 
 
+# Evidence refs format: repro:URL, ci:URL, issue:#NNNN, commit:SHA
+_EVIDENCE_REF_RE = re.compile(
+    r"^(repro|ci|issue|commit):(.+)$",
+    re.IGNORECASE,
+)
+
+
+def validate_evidence_refs(refs) -> list[str]:
+    """Validate evidence_refs format.
+
+    Supported formats:
+    - repro:https://... (reproduction log)
+    - ci:https://.../actions/runs/... (CI run)
+    - issue:#1234 (GitHub issue)
+    - commit:<sha> (git commit)
+    """
+    if not isinstance(refs, list):
+        return ["evidence_refs must be a list"]
+    errors = []
+    for ref in refs:
+        if not isinstance(ref, str):
+            errors.append(f"evidence_ref must be a string, got {type(ref).__name__}")
+            continue
+        ref = ref.strip()
+        if not ref:
+            continue
+        m = _EVIDENCE_REF_RE.match(ref)
+        if not m:
+            errors.append(
+                f"evidence_ref format invalid: {ref!r}"
+                f" (expected repro:URL, ci:URL, issue:#NNNN, or commit:SHA)"
+            )
+            continue
+        kind, value = m.group(1).lower(), m.group(2).strip()
+        if kind == "issue" and not re.match(r"^#\d+$", value):
+            errors.append(f"issue ref must be #NNNN, got {value!r}")
+        elif kind == "commit" and not re.match(r"^[0-9a-f]{7,40}$", value, re.IGNORECASE):
+            errors.append(f"commit ref must be 7-40 hex chars, got {value!r}")
+        elif kind in ("repro", "ci") and not value.startswith(("http://", "https://")):
+            errors.append(f"{kind} ref must be a URL, got {value!r}")
+    return errors
+
+
 def validate_content_len(content: str) -> bool:
     return len(content.strip()) >= MIN_CONTENT_CHARS
 
@@ -395,6 +438,10 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
         fake = detect_fake_verification(text)
         if fake:
             errors.append(f"[warn] {fake}")
+
+    # Evidence refs validation (Issue #1439)
+    if fm and fm.get("evidence_refs"):
+        errors += validate_evidence_refs(fm["evidence_refs"])
 
     return errors
 

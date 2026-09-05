@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import re
+import sys
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
@@ -74,59 +75,80 @@ def load_config() -> dict[str, Any]:
 
 
 def _parse_yaml_minimal(text: str) -> dict:
-    """Minimal YAML parser for .pr-genius.yaml (no dependency)."""
+    """Minimal YAML parser for .pr-genius.yaml (no dependency).
+
+    Handles arbitrary nesting depth using indent tracking instead of
+    hardcoded indent thresholds.  Falls back gracefully on malformed input.
+    """
     import re as _re
-    result: dict[str, Any] = {}
-    current_section = None
-    current_subsection = None
-    current_list_key = None
+
+    def _coerce(value: str):
+        """Try to parse a YAML scalar into int/bool/str."""
+        if not value:
+            return None
+        stripped = value.strip().strip('"').strip("'")
+        if stripped.lower() in ("true", "false"):
+            return stripped.lower() == "true"
+        try:
+            return int(stripped)
+        except ValueError:
+            pass
+        try:
+            return float(stripped)
+        except ValueError:
+            pass
+        return stripped
+
+    # Stack tracks (indent_level, dict_ref) for nesting
+    root: dict[str, Any] = {}
+    stack: list[tuple[int, dict[str, Any]]] = [(-1, root)]
+    current_list_key: str | None = None
+
     for line in text.splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
         indent = len(line) - len(line.lstrip())
+
+        # Pop stack to find parent at lower indent
+        while len(stack) > 1 and stack[-1][0] >= indent:
+            stack.pop()
+            current_list_key = None
+
+        parent = stack[-1][1]
+
         # List item
         if stripped.startswith("- "):
-            value = stripped[2:].strip().strip('"').strip("'")
-            if current_list_key and current_subsection and current_section:
-                result.setdefault(current_section, {}).setdefault(current_subsection, {}).setdefault(current_list_key, []).append(value)
+            value = _coerce(stripped[2:])
+            if current_list_key and isinstance(parent.get(current_list_key), list):
+                parent[current_list_key].append(value)
             continue
-        # Key: value
+
+        # Key: value or Key: (nested)
         match = _re.match(r'^(\w[\w_]*)\s*:\s*(.*)', stripped)
         if not match:
             continue
-        key, value = match.group(1), match.group(2).strip().strip('"').strip("'")
-        if indent == 0:
-            current_section = key
-            current_subsection = None
+        key, raw_value = match.group(1), match.group(2).strip()
+        coerced = _coerce(raw_value)
+
+        if coerced is not None:
+            # Leaf key-value pair
+            parent[key] = coerced
             current_list_key = None
-            result.setdefault(current_section, {})
-        elif indent <= 4:
-            current_subsection = key
-            current_list_key = None
-            if value:
-                # Try to parse as number
-                try:
-                    value = int(value)
-                except ValueError:
-                    if value.lower() in ("true", "false"):
-                        value = value.lower() == "true"
-                result.setdefault(current_section, {})[current_subsection] = value
-            else:
-                result.setdefault(current_section, {}).setdefault(current_subsection, {})
         else:
-            # Deeper nesting (patterns config)
-            if value:
-                try:
-                    value = int(value)
-                except ValueError:
-                    if value.lower() in ("true", "false"):
-                        value = value.lower() == "true"
-                result.setdefault(current_section, {}).setdefault(current_subsection, {})[key] = value
+            # Nested dict — push onto stack
+            child = parent.setdefault(key, {})
+            if isinstance(child, dict):
+                stack.append((indent, child))
+                current_list_key = None
             else:
-                current_list_key = key
-                result.setdefault(current_section, {}).setdefault(current_subsection, {}).setdefault(key, [])
-    return result
+                # Key already exists as a scalar — overwrite with dict
+                child = {}
+                parent[key] = child
+                stack.append((indent, child))
+                current_list_key = None
+
+    return root
 
 
 def _deep_merge(base: dict, override: dict) -> dict:
@@ -451,6 +473,57 @@ def github_get_check_runs(url: str, token: str) -> list[dict[str, Any]]:
         page += 1
 
 
+def github_post_issue_comment(
+    repository: str, number: int, body: str, token: str
+) -> None:
+    """Post (or update) a PR Genius analysis as an issue comment so it is
+    visible on the PR page — mirroring pr-agent's /review behavior. Existing
+    comments from the same bot with the marker are updated in place to avoid
+    comment spam on repeated syncs."""
+    marker = "<!-- pr-genius:report -->"
+    url = f"https://api.github.com/repos/{repository}/issues/{number}/comments"
+    list_req = urllib.request.Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+    )
+    try:
+        with urllib.request.urlopen(list_req, timeout=30) as response:
+            existing = json.load(response)
+    except urllib.error.HTTPError:
+        existing = []
+    for comment in existing or []:
+        if marker in (comment.get("body") or ""):
+            patch = urllib.request.Request(
+                comment["url"],
+                data=json.dumps({"body": body + "\n" + marker}).encode(),
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/vnd.github+json",
+                    "X-GitHub-Api-Version": "2022-11-28",
+                    "Content-Type": "application/json",
+                },
+                method="PATCH",
+            )
+            urllib.request.urlopen(patch, timeout=30)
+            return
+    post = urllib.request.Request(
+        url,
+        data=json.dumps({"body": body + "\n" + marker}).encode(),
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    urllib.request.urlopen(post, timeout=30)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", required=True, help="GitHub pull_request event JSON")
@@ -477,6 +550,12 @@ def main() -> int:
     report = analyze(pr, files, commits, checks, config=config)
     output = json.dumps(report, indent=2) if args.json else render(report, args.risk)
     print(output)
+    # Post a visible PR comment (mirrors pr-agent /review) unless --json.
+    if not args.json:
+        try:
+            github_post_issue_comment(repository, number, output, token)
+        except Exception as exc:  # advisory only — never fail the workflow
+            print(f"  ⚠️  Could not post PR Genius comment: {exc}", file=sys.stderr)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary and not args.json:
         with open(summary, "a", encoding="utf-8") as handle:

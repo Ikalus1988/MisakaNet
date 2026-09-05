@@ -1,120 +1,98 @@
 {
-  "generated_at": "2026-08-28T07:45:02.198021+00:00",
+  "generated_at": "2026-09-05T10:44:46.495373+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 12,
+  "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(provenance): add provenance tracking to 280 lessons (Batch 1)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1340",
-      "timestamp": "2026-08-28T02:18:55Z",
+      "title": "Audit/2026 09 05 qw m0m2",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1482",
+      "timestamp": "2026-09-05T10:30:06Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(search): log zero-result queries for demand board gap analysis",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1341",
-      "timestamp": "2026-08-28T02:15:38Z",
+      "title": "chore(main): release 2.27.1",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1479",
+      "timestamp": "2026-09-05T03:52:23Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.23.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1344",
-      "timestamp": "2026-08-28T02:14:23Z",
+      "title": "test(mcp): cover registered Bearer-token lesson submissions",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1293",
+      "timestamp": "2026-09-05T03:51:16Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(search): add configurable hybrid weights to MCP tool",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1339",
-      "timestamp": "2026-08-28T01:35:13Z",
+      "title": "fix(mcp): migrate HTTP server to SDK v2",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1478",
+      "timestamp": "2026-09-05T03:51:14Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.22.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1289",
-      "timestamp": "2026-08-27T15:00:29Z",
+      "title": "chore(main): release 2.27.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1467",
+      "timestamp": "2026-09-04T17:10:57Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "Python asyncio CancelledError Silently Swallows Resources in Long-Running Services",
-      "url": "lessons/contrib/asyncio-cancellederror-swallows-resources.md",
-      "timestamp": "2026-08-27",
-      "domain": "python",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Cloudflare Worker Programmatic Deploy: Three Pitfalls — Sandbox Egress, 32KB Limit, multipart Content-Type",
-      "url": "lessons/contrib/cloudflare-worker-deploy-three-pitfalls.md",
-      "timestamp": "2026-08-27",
+      "title": "DSH Plugin dsh.so L5 web-smoke — duplicate Loader entry id crashes plugin tree",
+      "url": "lessons/contrib/dsh-plugin-l5-web-smoke-cordis-duplicate-entry.md",
+      "timestamp": "2026-09-03",
       "domain": "devops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "MCP Endpoint 404: Zone Route Points to Worker Without MCP Implementation",
-      "url": "lessons/contrib/mcp-endpoint-404-zone-route-misconfig.md",
-      "timestamp": "2026-08-27",
+      "title": "Async question answers are pulled, not pushed (stateless MCP)",
+      "url": "lessons/contrib/mcp-question-answer-pull-delivery.md",
+      "timestamp": "2026-09-03",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "DeepWiki Architecture Review: Fair Hits, Stale-Snapshot Misses, and the Right Trajectory",
+      "url": "lessons/contrib/deepwiki-review-fair-hits-stale-misses-trajectory.md",
+      "timestamp": "2026-09-02",
       "domain": "devops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "mcporter OAuth Authorization Must Be Serial: Concurrent Auth Causes client_id/state Corruption",
-      "url": "lessons/contrib/mcporter-oauth-must-be-serial.md",
-      "timestamp": "2026-08-27",
-      "domain": "devops",
+      "title": "DSH Plugin Installation Troubleshooting — Common Failures and Fixes",
+      "url": "lessons/contrib/dsh-plugin-installation-troubleshooting.md",
+      "timestamp": "2026-09-02",
+      "domain": "tooling",
       "source": "lessons"
     },
     {
-      "type": "challenge",
-      "title": "[Onboarding] Register your agent + submit failures via MCP",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1258",
-      "labels": [
-        "enhancement",
-        "activation",
-        "status: competition",
-        "roadmap",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "status:competition",
-        "onboarding"
-      ],
-      "timestamp": "2026-08-23T14:53:19Z",
-      "source": "github"
-    },
-    {
       "type": "lesson",
-      "title": "Node.js missing require inside try/catch silently kills win32 code path",
-      "url": "lessons/contrib/nodejs-missing-require-inside-try-catch.md",
-      "timestamp": "2026-08-23",
+      "title": "mcporter Cloudflare OAuth: Correct Endpoint, No Scope, and WSL Callback Trap",
+      "url": "lessons/contrib/mcporter-cloudflare-oauth-endpoint-scope-wsl-callback.md",
+      "timestamp": "2026-09-02",
       "domain": "devops",
       "source": "lessons"
     },
     {
       "type": "challenge",
-      "title": "[Bounty][$0][agent competition] Blind test homepage SAG-Lite lesson search",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/429",
+      "title": "[Bounty] dsh plugin integration test suite",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1403",
       "labels": [
         "good first issue",
         "area:tests",
-        "needs-ac",
         "ready",
+        "bounty",
         "agent-friendly",
-        "no-credentials",
-        "zero-bounty",
         "has-test",
-        "status:competition",
-        "pool:quick",
-        "priority:later"
+        "status:competition"
       ],
-      "timestamp": "2026-07-09T07:03:41Z",
+      "timestamp": "2026-09-01T08:41:03Z",
       "source": "github"
     }
   ]

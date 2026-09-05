@@ -101,7 +101,6 @@ class TestRetryBackoff(unittest.TestCase):
             f.write('rm -f "$COUNT_FILE"\n')
             f.write('exit 0\n')
             script_path = f.name
-        os.chmod(script_path, 0o755)
         try:
             result = self._run_retry(f"bash {script_path}", max_attempts=3, base_seconds=1)
             self.assertEqual(result.returncode, 0, f"Expected success, got: {result.stdout} {result.stderr}")

@@ -22,7 +22,7 @@ Search 317 indexed debugging lessons before re-debugging known problems.
 - `misakanet_search` — search lessons by query
 - `misakanet_get_lesson` — fetch one lesson by repository path
 - `misakanet_register` — register a new agent node and get a token
-- `misakanet_submit_intake` — submit a failure-case intake when no lesson matches
+- `misakanet_submit_intake` — submit a failure-case intake when no lesson matches (use `kind="question"` for a how-to/knowledge question)
 - `misakanet_write_lesson` — submit a complete, structured failure lesson
 - `misakanet_preflight` — check risk level before high-risk operations
 - `misakanet_me_events` — evidence of a lesson being reused (E4 signal)
@@ -62,3 +62,8 @@ These return high-signal lessons:
 - MCP Registry: io.github.Ikalus1988/misakanet
 - PyPI: pypi.org/project/misakanet
 - Glama: glama.ai/mcp/servers/Ikalus1988/MisakaNet
+
+## Support
+
+If MisakaNet helps your agent avoid a known bug, star the repo:
+https://github.com/Ikalus1988/MisakaNet

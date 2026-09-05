@@ -96,3 +96,26 @@ CREATE VIRTUAL TABLE IF NOT EXISTS lessons_fts USING fts5(
   verification,
   content_md
 );
+
+-- PRD ⑤ #1396: async question intakes — durable state + answer delivery.
+-- One row per question-kind intake issue. The worker records 'pending' on
+-- submit; a sync (scripts/sync_answered_questions.py / cron) flips answered
+-- rows and stores the maintainer's answer; re-submitting the same question
+-- returns the answer, and misakanet_search surfaces answered rows as FAQ
+-- hits — pull-based delivery, no push channel (see docs/prd/05 §9).
+CREATE TABLE IF NOT EXISTS questions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  issue_number INTEGER UNIQUE NOT NULL,
+  dedup_hash TEXT,               -- content hash, same scheme as intake_dedup KV key
+  problem TEXT NOT NULL,
+  source TEXT DEFAULT 'mcp',
+  status TEXT DEFAULT 'pending', -- pending | answered
+  answer TEXT,                   -- maintainer answer markdown (answered only)
+  answer_comment_id INTEGER,     -- GitHub comment id that carries the answer
+  issue_url TEXT,
+  created TEXT DEFAULT (datetime('now')),
+  answered_at TEXT,
+  updated TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_questions_status ON questions(status);
+CREATE INDEX IF NOT EXISTS idx_questions_dedup ON questions(dedup_hash);

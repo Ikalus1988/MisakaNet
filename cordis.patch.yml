@@ -1,3 +1,32 @@
+# MisakaNet dsh bundle patch (2026-09-05, B1)
+#
+# Registers MisakaNet's stdio MCP server into any dsh profile that lists
+# `misakanet` in `dsh.profile.bundles`. Tools are published on ctx.tools as
+# `mcp__misakanet__<tool>` (misakanet_search / misakanet_get_lesson / …),
+# served by the repo's own python server (scripts/mcp_server.py), which
+# self-locates the repo root from __file__ — no other wiring needed.
+#
+# Requirements & behavior:
+# * The python MCP server exists only in repo/git+ installs
+#   (git+https://github.com/Ikalus1988/MisakaNet.git). The npm skill-only
+#   bundle ships no python, so on such installs this row stays disconnected
+#   instead of failing boot (failOnStartupError: false).
+# * The profile must resolve '@deepseek-ai/dsh-mcp-client' (web/code presets
+#   include it). Boot cwd is inherited; run dsh from the repo root for the
+#   stdio server to start (the plugin-spec sandbox boots at the repo clone).
+# * One row, one id — no double-insert: later patches override by id, and
+#   this id (misakanet-mcp) is unique to this bundle.
+
 - insert:
-    - id: misakanet
-      name: misakanet
+    - id: misakanet-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        transport: stdio
+        serverName: misakanet
+        command: python3
+        args:
+          - scripts/mcp_server.py
+        env: {}
+        cwd: ''
+        toolCallTimeoutMs: 60000
+        failOnStartupError: false

@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))  # audit T2.5: import misakanet.lesson_index
 LESSONS_DIR = REPO_ROOT / "lessons"
 DEFAULT_OUTPUT = REPO_ROOT / "data" / "okf"
 
@@ -204,12 +205,11 @@ def main():
         print(f"Domains: {len(set(r['domain'] for r in okf_records))}")
         return
 
-    # Collect all lesson files
-    lesson_files = []
-    for subdir in ["core", "contrib"]:
-        d = LESSONS_DIR / subdir
-        if d.exists():
-            lesson_files.extend(sorted(d.glob("*.md")))
+    # Collect canonical (deduped) lesson files — audit T2.5 parity with the
+    # local search corpus and public index.
+    from misakanet.lesson_index import canonical_lessons
+
+    lesson_files = list(canonical_lessons(LESSONS_DIR))
 
     # Convert to OKF
     okf_records = []
@@ -257,3 +257,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

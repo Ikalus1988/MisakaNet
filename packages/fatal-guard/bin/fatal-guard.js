@@ -207,8 +207,14 @@ function reportCrash(reason, error, stderrBuffer, exitCode) {
   if (process.platform === 'win32') {
     // On Windows, detached processes die when the parent exits via process.exit().
     // Use spawnSync which blocks until the handler completes.
-    const payloadTmp = path.join(os.tmpdir(), `fatal-guard-${process.pid}.json`);
-    try { fs.writeFileSync(payloadTmp, payload); } catch (_) {}
+    // mkdtemp (not a fixed-name tmp file) — CodeQL js/insecure-temporary-file.
+    let payloadTmp = path.join(os.tmpdir(), `fatal-guard-${process.pid}.json`);
+    let payloadDir = "";
+    try {
+      payloadDir = fs.mkdtempSync(path.join(os.tmpdir(), "fatal-guard-"));
+      payloadTmp = path.join(payloadDir, "payload.json");
+      fs.writeFileSync(payloadTmp, payload);
+    } catch (_) {}
     // FATAL_HANDLER is developer-configured, not user input. shell: false prevents injection.
     // lgtm[js/shell-command-injection-from-environment]
     const invocation = buildSpawnSpec(command[0], [...command.slice(1), ...handlerArgs]);

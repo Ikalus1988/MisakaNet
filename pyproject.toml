@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "misakanet"
-version = "2.23.0"
+version = "2.27.1"
 description = "AI Agent 分布式经验知识共享系统 — 踩坑一次，全网受益"
 readme = "README.md"
 license = "Apache-2.0"
@@ -34,10 +34,14 @@ misakanet = "search_knowledge:main"
 misaka-harvest = "scripts.misaka_harvest:main"
 
 [project.optional-dependencies]
+# NOTE (2026-09-05): chromadb was removed from hub extras — this repo has no
+# chromadb imports (external hub package owns its own deps), and every
+# published chromadb (<=1.5.9, the latest) is affected by 4 unfixed GHSAs
+# (pre-auth code injection x2 critical, tenant/RBAC authz bypass x2 high).
+# Re-add ONLY if the hub code returns to this repo and upstream ships a fix.
 hub = [
     "aiohttp>=3.9",
     "websocket-client>=1.6",
-    "chromadb>=0.4",  # Note: CVE-2026-45829 pending fix upstream
     "networkx>=3.2",
     "PyYAML>=6.0",
     "numpy>=1.24",

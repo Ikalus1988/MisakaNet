@@ -27,7 +27,17 @@ except ImportError as e:
         print("Error: 'misakanet-core' is required. Run: pip install misakanet-core", file=sys.stderr)
         sys.exit(1)
     raise
+from misakanet.cli.heal import _read_log, heal
 from misakanet.tools.lesson_scorer import DEFAULT_TELEMETRY, format_lesson_scores, score_lessons
+from misakanet.cli.remote import _load_docs_anywhere, _load_remote_docs
+from misakanet.cli.typo import (
+    _edit_distance,
+    _find_closest_matches,
+    _log_zero_result,
+    _smart_fallback,
+    _suggest_relaxed_query,
+    _typo_retry_search,
+)
 
 
 def _json_result(score, doc, query: str = "", verbose: bool = False) -> dict:
@@ -100,411 +110,6 @@ def _ensure_utf8_stdout():
         pass
 
 
-# ── Heal mode: parse error logs, search lessons, return diagnosis ──
-# 4-level cascading fallback: traceback → error signature → exit code → last N lines
-
-# ANSI escape sequence pattern
-_ANSI_RE = re.compile(r'\x1b\[[0-9;]*m')
-
-
-def _strip_ansi(text: str) -> str:
-    """Remove ANSI color codes from log text."""
-    return _ANSI_RE.sub('', text)
-
-
-def _parse_error_signature(log_text: str) -> str:
-    """
-    4-level cascading error signature extractor.
-    Returns the most specific error signature found.
-    """
-    text = _strip_ansi(log_text)
-
-    # Level 1: Traceback — find the last exception line
-    tb_matches = re.findall(r'(?:[a-zA-Z0-9_]+Error|Exception|RuntimeError|Warning|Fault):\s*.+', text)
-    if tb_matches:
-        return tb_matches[-1]
-
-    # Level 2: ERROR / Error: <message>
-    err_match = re.search(r'(?:Error|ERROR|FATAL|CRITICAL):\s*(.+)', text)
-    if err_match:
-        return err_match.group(0)
-
-    # Level 3: exit code / status
-    exit_match = re.search(r'(?:exit code\s*|status\s*|returned\s*)(-?\d+)', text, re.IGNORECASE)
-    if exit_match:
-        return f"Process failed with exit code {exit_match.group(1)}"
-
-    # Level 4: last 5 non-empty lines as raw keyword block
-    lines = [l.strip() for l in text.splitlines() if l.strip()]
-    return " ".join(lines[-5:]) if lines else text[:500]
-
-
-def _read_log(source: str = "") -> str:
-    """Read log from file or stdin. Caps at last 200 lines for safety."""
-    if source:
-        with open(source, 'r', errors='replace') as f:
-            lines = f.readlines()
-    else:
-        print("[MisakaNet] 📡 Reading error log from stdin (pipe your agent's stderr)...", file=sys.stderr)
-        lines = sys.stdin.readlines()
-
-    if len(lines) > 200:
-        lines = lines[-200:]
-
-    return "".join(lines)
-
-
-def _extract_all_signatures(log_text: str) -> list[str]:
-    """Extract ALL error signatures from log (not just the last one)."""
-    text = _strip_ansi(log_text)
-    sigs = []
-
-    # Level 1: all traceback exceptions
-    tb_matches = re.findall(r'(?:[a-zA-Z0-9_]+Error|Exception|RuntimeError|Fault):\s*.+', text)
-    sigs.extend(tb_matches)
-
-    # Level 2: ERROR / FATAL / CRITICAL markers
-    err_matches = re.findall(r'(?:^|\n)(?:\[?\s*(?:Error|ERROR|FATAL|CRITICAL)\s*\]?):\s*(.+)', text)
-    sigs.extend([f"ERROR: {m.strip()}" for m in err_matches])
-
-    # Level 3: exit codes
-    exit_match = re.search(r'(?:exit code\s*|status\s*|returned\s*)(-?\d+)', text, re.IGNORECASE)
-    if exit_match:
-        sigs.append(f"Process failed with exit code {exit_match.group(1)}")
-
-    # Fallback: if nothing found, use raw last lines
-    if not sigs:
-        lines = [l.strip() for l in text.splitlines() if l.strip()]
-        sigs.append(" ".join(lines[-5:]) if lines else text[:500])
-
-    # Deduplicate while preserving order
-    seen = set()
-    return [s for s in sigs if not (s in seen or seen.add(s))]
-
-
-def heal(raw_log: str):
-    """Diagnose error log: extract signatures → search lessons → coverage report."""
-    # Step 1: Extract all error signatures
-    signatures = _extract_all_signatures(raw_log)
-    if not signatures or all(len(s.strip()) < 3 for s in signatures):
-        print("[MisakaNet] ❌ No valid error patterns captured from input.")
-        return
-
-    print(f"\n[MisakaNet] 🔍 Extracted {len(signatures)} error signature(s)")
-    print("-" * 50)
-
-    # Step 2: Search lessons using existing BM25 engine
-    from misakanet.search.engine import (
-        _load_docs, _rank_docs, _format_output, _show_timing,
-        LESSONS, REFERENCES,
-    )
-
-    t0 = time.time()
-    lessons_docs = _load_docs(LESSONS, is_lesson=True)
-    ref_docs = _load_docs(REFERENCES, is_lesson=False)
-    all_docs = lessons_docs + ref_docs
-
-    # ⑤ Coverage dashboard: track matched vs unmatched signatures
-    import os
-    import hashlib
-
-    matched_count = 0
-    unmatched_count = 0
-    fixture_dir = "tests/fixtures/openclaw"
-
-    for sig in signatures:
-        ranked = _rank_docs(sig, all_docs, titles_only=False, broad_only=True)
-        has_match = ranked and ranked[0][0] > 0.15  # meaningful match threshold
-
-        if has_match:
-            matched_count += 1
-            top_score = ranked[0][0]
-            top_title = ranked[0][1].title
-            print(f"  ✅ [{top_score:.0%}] {sig[:80]}")
-            print(f"      → matched: {top_title}")
-        else:
-            unmatched_count += 1
-            print(f"  ❌ [uncovered] {sig[:80]}")
-
-            # ⑥ Auto-generate fixture for unmatched signatures
-            sig_hash = hashlib.md5(sig.encode()).hexdigest()[:8]
-            os.makedirs(fixture_dir, exist_ok=True)
-            fixture_path = os.path.join(fixture_dir, f"unmatched_{sig_hash}.log")
-            with open(fixture_path, "w") as f:
-                f.write(raw_log)
-            print(f"      → fixture: {fixture_path}")
-
-    # Coverage summary
-    total = matched_count + unmatched_count
-    coverage = (matched_count / total * 100) if total > 0 else 0
-    print()
-    print(f"  📊 Coverage: {matched_count}/{total} signatures matched ({coverage:.1f}%)")
-    if coverage < 50:
-        print(f"     ⚠️  Low coverage — consider submitting lessons for the unmatched signatures")
-    print("-" * 50)
-
-    # Show top results for primary signature
-    primary_sig = signatures[0]
-    ranked = _rank_docs(primary_sig, all_docs, titles_only=False, broad_only=True)
-    found = _format_output(ranked, titles_only=False, top_k=5,
-                           mode_label=f"lessons+reference  (All {len(all_docs)} items)",
-                           query=primary_sig, explain=False,
-                           all_docs=all_docs)
-    _show_timing(time.time() - t0, len(all_docs))
-
-    if unmatched_count > 0:
-        print(f"\n  📝 {unmatched_count} unmatched signature(s) — auto-generated fixtures in {fixture_dir}/")
-        print(f"     Submit a lesson to improve coverage:")
-        print(f"     python3 scripts/queue_lesson.py -t 'your title' -d openclaw -f {fixture_dir}/unmatched_*.log")
-    elif found:
-        print(f"\n  ✅ All signatures covered by swarm knowledge.")
-        print(f"     💡 Contribute back if you applied a new fix:")
-        print(f"        python3 scripts/queue_lesson.py -t 'your title' -d <domain> 'content...'")
-
-    print()
-
-
-# ── Remote mode (PRD ④): search the D1 service instead of local files ──
-# `python3 search_knowledge.py "query" --remote` pulls lessons from
-# https://misakanet.org/api/lessons (D1-backed, no clone needed) and runs the
-# same BM25 pipeline over them. `--local` (default) keeps the old behavior.
-
-_REMOTE_API = "https://misakanet.org/api/lessons"
-_REMOTE_CACHE_TTL = 300  # seconds
-
-
-def _load_remote_docs(timeout: int = 30) -> list:
-    """Fetch lesson index from the D1 service and build CachedDoc objects."""
-    import urllib.request
-
-    from misakanet.search.engine import CachedDoc
-    repo_root = Path(__file__).resolve().parent
-
-    # Use the structured filters endpoint when we can cache per-query; for a
-    # plain corpus load, grab a large page and let BM25 rank locally.
-    url = f"{_REMOTE_API}?limit=5000"
-    req = urllib.request.Request(url, headers={"User-Agent": "misakanet-cli/remote", "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        data = json.loads(r.read().decode("utf-8"))
-    if not isinstance(data, list):
-        raise RuntimeError(f"Unexpected /api/lessons response: {str(data)[:200]}")
-
-    docs = []
-    for item in data:
-        body = item.get("description") or item.get("problem") or ""
-        # Use an absolute path under the repo root so _doc_cache_id's
-        # relative_to(REPO) works for remote docs too.
-        rel = item.get("path") or f"lessons/remote/{item.get('id', 'remote.md')}.md"
-        docs.append(CachedDoc(
-            filename=item.get("id", ""),
-            filepath=repo_root / rel,
-            content=body,
-            title=item.get("title", item.get("id", "")),
-            domain=item.get("domain", ""),
-            status=item.get("status", ""),
-            tags=item.get("tags") or [],
-            language=item.get("language", ""),
-            is_lesson=True,
-        ))
-    return docs
-
-
-def _load_docs_anywhere(mode: str, remote: bool, domain: str | None = None,
-                        status_filter: str | None = None, tags_filter: list[str] | None = None) -> list:
-    """Load docs from remote D1 (--remote) or local repo (default)."""
-    if remote:
-        try:
-            return _load_remote_docs()
-        except Exception as e:
-            print(f"  ⚠️ Remote search failed ({e}); falling back to local", file=sys.stderr)
-    from misakanet.search.engine import _load_docs, LESSONS
-    return _load_docs(LESSONS, is_lesson=True)
-
-
-def _edit_distance(s1: str, s2: str) -> int:
-    """Levenshtein edit distance — O(len(s1)*len(s2))."""
-    if len(s1) < len(s2):
-        return _edit_distance(s2, s1)
-    if not s2:
-        return len(s1)
-    prev = list(range(len(s2) + 1))
-    for i, c1 in enumerate(s1):
-        curr = [i + 1]
-        for j, c2 in enumerate(s2):
-            cost = 0 if c1 == c2 else 1
-            curr.append(min(curr[j] + 1, prev[j + 1] + 1, prev[j] + cost))
-        prev = curr
-    return prev[len(s2)]
-
-
-def _typo_retry_search(
-    query: str, docs: list, titles_only: bool, broad_only: bool, top_k: int
-) -> tuple[list[tuple[float, object]], str]:
-    """Retry search with edit-distance fuzzy matching on title keywords.
-
-    For each query token, find title tokens within edit distance ≤2.
-    Build a corrected query from the best matches, then re-rank.
-    Returns (ranked_results, corrected_query) or ([], original_query).
-    """
-    query_tokens = query.lower().split()
-    if not query_tokens:
-        return [], query
-
-    # Build vocabulary from all doc titles
-    title_vocab: dict[str, list[str]] = {}  # token -> [original forms]
-    for doc in docs:
-        for tok in re.findall(r'\w+', doc.title.lower()):
-            if len(tok) >= 2:
-                title_vocab.setdefault(tok, []).append(tok)
-
-    # For each query token, find best fuzzy match in title vocab
-    corrected_tokens = []
-    has_correction = False
-    for qt in query_tokens:
-        if qt in title_vocab:
-            corrected_tokens.append(qt)
-            continue
-        best_dist = 999
-        best_match = qt
-        for vocab_tok in title_vocab:
-            # Skip if length difference > 2 (pruning for speed)
-            if abs(len(vocab_tok) - len(qt)) > 2:
-                continue
-            dist = _edit_distance(qt, vocab_tok)
-            if dist <= 2 and dist < best_dist:
-                best_dist = dist
-                best_match = vocab_tok
-        corrected_tokens.append(best_match)
-        if best_match != qt:
-            has_correction = True
-
-    if not has_correction:
-        return [], query
-
-    corrected_query = " ".join(corrected_tokens)
-    from misakanet.search.engine import _rank_docs_impl
-    ranked = _rank_docs_impl(corrected_query, docs, titles_only, broad_only)
-    filtered = [(s, d) for s, d in ranked if s >= 0.1]
-    if not filtered:
-        return [], query
-    return filtered[:top_k], corrected_query
-
-
-def _find_closest_matches(query: str, docs: list, top_n: int = 3) -> list:
-    """Find closest matches by keyword overlap scoring."""
-    query_words = set(re.findall(r'\w+', query.lower()))
-    if not query_words:
-        return []
-
-    scored = []
-    for doc in docs:
-        doc_words = set(re.findall(r'\w+', (doc.title + " " + doc.content[:500]).lower()))
-        if not doc_words:
-            continue
-        overlap = len(query_words & doc_words)
-        if overlap > 0:
-            score = overlap / len(query_words)
-            scored.append((score, doc))
-
-    scored.sort(key=lambda x: -x[0])
-    return scored[:top_n]
-
-
-def _suggest_relaxed_query(query: str) -> list:
-    """Suggest relaxed queries by dropping stop words."""
-    stop_words = {"the", "a", "an", "is", "are", "was", "were", "be", "been",
-                  "being", "have", "has", "had", "do", "does", "did", "will",
-                  "would", "could", "should", "may", "might", "can", "shall",
-                  "of", "in", "on", "at", "to", "for", "with", "by", "from",
-                  "as", "into", "through", "during", "before", "after", "and",
-                  "but", "or", "not", "so", "very", "just", "than", "too"}
-    words = query.lower().split()
-    meaningful = [w for w in words if w not in stop_words]
-    if len(meaningful) >= 2:
-        # Suggest dropping last word
-        return [" ".join(meaningful[:-1])]
-    if len(meaningful) == 1:
-        return [meaningful[0]]
-    return []
-
-
-def _log_zero_result(query: str):
-    """Log zero-result query for gap analysis."""
-    import datetime
-    log_dir = Path.home() / ".misakanet"
-    log_dir.mkdir(exist_ok=True)
-    log_file = log_dir / "search_telemetry.jsonl"
-
-    entry = {
-        "query": query,
-        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "result": "zero",
-    }
-
-    try:
-        with open(log_file, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry) + "\n")
-    except Exception:
-        pass  # Non-critical, don't fail search
-
-    # Check if same query failed >3 times → suggest creating issue
-    try:
-        if log_file.exists():
-            lines = log_file.read_text(encoding="utf-8").strip().split("\n")
-            count = sum(1 for l in lines if f'"query": "{query}"' in l)
-            if count >= 3:
-                print(f"  ⚠️  This query has returned 0 results {count} times.")
-                print(f"     Consider creating an issue for a missing lesson:")
-                print(f"     https://github.com/Ikalus1988/MisakaNet/issues/new?title=Missing+lesson:+{query.replace(' ', '+')}")
-                print()
-    except Exception:
-        pass
-
-
-def _smart_fallback(query: str, docs: list):
-    """Smart fallback when search returns 0 results."""
-    print(f"\n  ❌ No exact match for '{query}'")
-    print()
-
-    # 1. Top-3 closest matches by keyword overlap
-    closest = _find_closest_matches(query, docs, top_n=3)
-    if closest:
-        print(f"  📋 Closest matches:")
-        for score, doc in closest:
-            title = doc.title[:60] or doc.filename
-            print(f"     [{score:.0%}] {title}")
-        print()
-
-    # 2. "Did you mean: ..." with relaxed query
-    suggestions = _suggest_relaxed_query(query)
-    if suggestions:
-        print(f"  💡 Did you mean: \"{suggestions[0]}\"?")
-        print()
-
-    # 3. Domain suggestions
-    all_domains = {d.domain.lower() for d in docs if d.domain}
-    q = query.lower()
-    domain_matches = [d for d in all_domains if d in q or q in d]
-    if domain_matches:
-        print(f"  💡 Try domain filter:")
-        for dm in domain_matches[:3]:
-            print(f"     --domain {dm}")
-
-    # 4. Broad mode hint
-    print(f"  💡 Try broader search: --broad or --ref")
-
-    # 5. Contribution link
-    print(f"  💡 Add new knowledge:")
-    print(f"     python3 scripts/queue_lesson.py -t \"{query}\" ...")
-
-    # 6. Available domains
-    if all_domains:
-        top_domains = sorted(all_domains)[:8]
-        print(f"  💡 Available domains: {', '.join(top_domains)}")
-
-    print()
-
-
 def _feedback_log_path() -> Path:
     """Path for durable local search feedback (no PII; query + result ids only)."""
     return Path(__file__).resolve().parent / "data" / "search-feedback.jsonl"
@@ -567,64 +172,15 @@ def _collect_feedback(query: str, result_ids: list) -> None:
 def main():
     _ensure_utf8_stdout()
     args = sys.argv[1:]
+    # ── Harvest mode: log → lesson draft prototype ──
     if "--harvest" in args or args[:1] == ["harvest"]:
-        # Parse --from-file
-        harvest_file = ""
-        for i, arg in enumerate(args):
-            if arg.startswith("--from-file="):
-                harvest_file = arg.split("=", 1)[1]
-            elif arg == "--from-file" and i + 1 < len(args):
-                harvest_file = args[i + 1]
-
-        if harvest_file:
-            _harvest_from_file(harvest_file)
-        else:
-            print("🌾 misaka harvest: Knowledge Harvester")
-            print()
-            print("  Usage:")
-            print("    python3 search_knowledge.py --harvest --from-file <path>")
-            print()
-            print("  Planned interfaces:")
-            print("    misaka harvest --bash-history    Scan $HISTFILE")
-            print("    misaka harvest --pipe             Accept stdin")
-            print()
-            print("  See misaka-protocol.json → ecosystem.tools.harvester for spec.")
+        from misakanet.cli.harvest import run_harvest
+        run_harvest(args)
         return
     # ── GraphQL mode: interactive query playground ──
     if "--graphql" in args:
-        query = ""
-        for i, arg in enumerate(args):
-            if arg == "--graphql" and i + 1 < len(args) and not args[i + 1].startswith("--"):
-                query = args[i + 1]
-                break
-        if not query:
-            # Interactive mode
-            print("MisakaNet GraphQL API (Issue #316)")
-            print("Type queries or 'quit' to exit.\n")
-            print("Example queries:")
-            print('  { lessons(limit: 3) { title domain } }')
-            print('  { search(q: "pip timeout") { score lesson { title } } }')
-            print('  { lesson(id: "dco-auto-fix-workflow.md") { title tags } }')
-            print()
-            while True:
-                try:
-                    query = input("graphql> ").strip()
-                    if query in ("quit", "exit", "q"):
-                        break
-                    if not query:
-                        continue
-                    from misakanet.graphql.schema import execute_query
-                    result = execute_query(query)
-                    print(json.dumps(result, indent=2, ensure_ascii=False))
-                except (EOFError, KeyboardInterrupt):
-                    break
-                except Exception as e:
-                    print(f"Error: {e}")
-        else:
-            # Single query mode
-            from misakanet.graphql.schema import execute_query
-            result = execute_query(query)
-            print(json.dumps(result, indent=2, ensure_ascii=False))
+        from misakanet.cli.graphql_repl import run_graphql_repl
+        run_graphql_repl(args)
         return
     # ── Heal mode: diagnose error logs ──
     use_heal = "--heal" in args
@@ -638,8 +194,9 @@ def main():
             heal_source = args[i + 1]
 
     if use_heal:
+        write_fixtures = "--write" in args  # audit 2026-09-05 QW5: fixtures opt-in
         log = _read_log(heal_source)
-        heal(log)
+        heal(log, write_fixtures=write_fixtures)
         return
 
     if "--score" in args:
@@ -949,93 +506,6 @@ def main():
         print()
 
 
-def _harvest_from_file(filepath: str):
-    """Log Harvester prototype — parse error log and generate lesson draft."""
-    from pathlib import Path
-    import datetime as _dt
-    path = Path(filepath)
-    if not path.exists():
-        print(f"❌ File not found: {filepath}")
-        return
-    text = path.read_text(encoding="utf-8", errors="replace")
-    lines = text.split("\n")
-
-    # Extract lines that look like errors
-    error_patterns = [
-        r"(error|exception|traceback|failed|failure|fatal|crash|timeout|denied|not\s+found)",
-        r"(killed|segfault|oom|out\s+of\s+memory|disk\s+full|permission\s+denied)",
-        r"(exit\s+code\s+[1-9]|returned\s+non-zero|signal\s+\d+)",
-        r"(traceback|most recent call last)",
-    ]
-    combined = re.compile("|".join(error_patterns), re.IGNORECASE)
-    
-    error_lines = []
-    for i, line in enumerate(lines, 1):
-        if combined.search(line):
-            # Include a few lines of context
-            start = max(0, i - 2)
-            context = lines[start:i]
-            error_lines.append((i, line.strip(), context))
-    
-    if not error_lines:
-        print(f"⚠️  No error patterns found in {filepath}")
-        print("   Try with a log file, error output, or stack trace.")
-        return
-    
-    # Generate lesson draft
-    query = path.stem.replace("-", " ").replace("_", " ")
-    print("🌾 Harvest complete!")
-    print()
-    
-    # Show first 10 errors
-    print(f"📋 Found {len(error_lines)} error lines (showing first 10):")
-    for lineno, line, _ in error_lines[:10]:
-        print(f"  L{lineno}: {line[:120]}")
-    print()
-    
-    # Generate failure-memory protocol-compliant lesson draft
-    print("=" * 50)
-    print("📝 Generated Lesson Draft")
-    print("=" * 50)
-    print(f"""---
-{{"title": "Fix: {query[:80]}", "domain": "general", "tags": ["harvester", "auto-generated"], "status": "draft", "created": "{_dt.datetime.now(_dt.timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", "source": "harvester"}}
----
-
-## Problem
-
-Error encountered during `{query[:60]}`.
-
-## Root Cause
-
-"""
-    )
-    
-    # Show first error as context
-    first_line = error_lines[0][1]
-    print(f"```text")
-    for ctx_line in error_lines[0][2]:
-        print(ctx_line[:200])
-    print(error_lines[0][1][:200])
-    print(f"```")
-    print()
-    print("## Solution")
-    print()
-    print("<!-- TODO: describe the fix -->")
-    print()
-    print("## Verification")
-    print()
-    print("<!-- TODO: add verification steps -->")
-    print()
-    print("## Notes")
-    print()
-    print(f"Auto-harvested from: {filepath}")
-    print()
-    print("=" * 50)
-    print("💡 Save to lessons/ with:")
-    print(f'   mv <this-output> lessons/contrib/{path.stem}.md')
-    print("   Then run: python3 scripts/contribute.py lessons/contrib/<file>.md")
-
-
 if __name__ == "__main__":
     try:
         main()
@@ -1046,3 +516,4 @@ if __name__ == "__main__":
             _print_json_error(str(exc))
             raise SystemExit(1)
         raise
+

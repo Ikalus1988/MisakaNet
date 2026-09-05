@@ -133,3 +133,27 @@ test('no-match response is identical across detail levels', async () => {
     assert.equal(result.detail, detail);
   }
 });
+
+// #1396: how-to no-match queries must suggest kind="question", not route the
+// question into the failure-lesson funnel (missing_lesson → auto-reject).
+test('no-match how-to query suggests kind=question intake', async () => {
+  const env = createEnv(SAMPLE_LESSONS);
+  const resp = await worker.fetch(searchRequest('how do i configure mcp auth in production'), env);
+  const result = await toolResultText(resp);
+  assert.equal(result.no_match, true);
+  assert.match(result.suggestion, /kind="question"/);
+  assert.equal(result.intake.tool, 'misakanet_submit_intake');
+  assert.equal(result.intake.args.kind, 'question');
+  assert.equal(result.intake.args.error, undefined);
+});
+
+test('no-match error-like query still suggests kind=missing_lesson', async () => {
+  const env = createEnv(SAMPLE_LESSONS);
+  const query = 'zzz-econnrefused-on-corporate-proxy-404';
+  const resp = await worker.fetch(searchRequest(query), env);
+  const result = await toolResultText(resp);
+  assert.equal(result.no_match, true);
+  assert.match(result.suggestion, /kind="missing_lesson"/);
+  assert.equal(result.intake.args.kind, 'missing_lesson');
+  assert.equal(result.intake.args.error, query);
+});

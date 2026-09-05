@@ -1,4 +1,28 @@
 {
   "$schema": "https://glama.ai/mcp/schemas/connector.json",
-  "maintainers": [{ "email": "eric_jia1920@msn.cn" }]
+  "maintainers": [
+    {
+      "email": "eric_jia1920@msn.cn"
+    }
+  ],
+  "name": "io.github.Ikalus1988/misakanet",
+  "description": "Failure-memory layer for coding agents: search 320+ indexed failure-recovery lessons (evidence-rated E0-E4), submit failure intakes or how-to questions without an account, and get answers back via re-query. Deterministic pre-fix lookup before you retry.",
+  "version": "2.27.1",
+  "repository": "https://github.com/Ikalus1988/MisakaNet",
+  "homepage": "https://misakanet.org",
+  "license": "MIT",
+  "tags": [
+    "failure-memory",
+    "debugging",
+    "agent-runtime",
+    "knowledge-base",
+    "mcp",
+    "lessons",
+    "intake"
+  ],
+  "categories": [
+    "developer-tools",
+    "knowledge-and-memory",
+    "search"
+  ]
 }
