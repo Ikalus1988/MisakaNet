@@ -41,3 +41,10 @@ repos:
         language: system
         always_run: true
         pass_filenames: false
+      # root-hygiene (audit 2026-09-05 T0.3): 拒绝 "N. <name>" / 含反引号的根目录条目
+      - id: root-hygiene
+        name: root hygiene (no "N. name" / backtick junk entries)
+        entry: bash scripts/hygiene_check.sh
+        language: system
+        always_run: true
+        pass_filenames: false
