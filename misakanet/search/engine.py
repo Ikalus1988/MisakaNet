@@ -171,10 +171,11 @@ def _parse_yaml_frontmatter(text: str) -> dict:
 def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc]:
     """L2缓存加载 — 只重新解析有变动的文件。
 
-    如果 is_lesson=True，扫描 lessons/ 下所有包含真实课文的子目录
-    （misakanet.lesson_index 自动发现 — audit T2.2 "图书馆" 策略：核心 +
-    contrib + 语言副本 + 生命周期目录全部可见，仅排除 templates/_archive
-    脚手架与 README/index 类文件）。为 reference 时扫描单个目录。
+    如果 is_lesson=True，扫描 misakanet.lesson_index.canonical_lessons 给出
+    的无重复课程集（audit T2.2/T2.5 "图书馆" 策略：所有含真实课文的子目录
+    可见，但镜像/翻译副本按 stem 去重，core/contrib 原版优先，避免用户看
+    到重复结果；templates/_archive 与 README/index 类文件永不索引）。
+    为 reference 时扫描单个目录。
     """
     docs = []
     conn = _l2()
@@ -183,91 +184,90 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
         for row in conn.execute("SELECT path, mtime, size FROM file_cache").fetchall()
     }
     changed = 0
-    from misakanet.lesson_index import EXCLUDED_LESSON_FILES, discover_lesson_dirs
+    from misakanet.lesson_index import EXCLUDED_LESSON_FILES, canonical_lessons
 
     if is_lesson:
-        search_dirs = discover_lesson_dirs(LESSONS)
+        files = canonical_lessons(LESSONS)
     else:
-        search_dirs = [directory]
-    for dir_path in search_dirs:
-        if not dir_path.exists():
+        files = sorted(directory.glob("**/*.md"))
+    for f in files:
+        if f.name.startswith(".") or f.name in EXCLUDED_LESSON_FILES:
             continue
-        for f in sorted(dir_path.glob("**/*.md")):
-            if f.name.startswith(".") or f.name in EXCLUDED_LESSON_FILES:
+        if not f.exists():
+            continue
+        try:
+            st = f.stat()
+        except OSError:
+            continue
+        rel = str(f.relative_to(REPO))
+        cached = known.get(rel)
+        if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
+            row = conn.execute(
+                "SELECT title,domain,status,reference,scope,source,tags,language "
+                "FROM file_cache WHERE path=?",
+                (rel,),
+            ).fetchone()
+            if row:
+                tags = json.loads(row[6]) if row[6] else []
+                doc = CachedDoc(
+                    filename=f.name,
+                    filepath=f,
+                    content="",
+                    mtime=st.st_mtime,
+                    is_lesson=is_lesson,
+                    title=row[0] or f.stem,
+                    domain=row[1] or "",
+                    status=row[2] or "",
+                    reference=row[3] or "",
+                    scope=row[4] or "",
+                    source=row[5] or "",
+                    tags=tags,
+                    language=row[7] or "",
+                )
+                doc.content = f.read_text(encoding="utf-8", errors="replace")
+                docs.append(doc)
                 continue
-            try:
-                st = f.stat()
-            except OSError:
-                continue
-            rel = str(f.relative_to(REPO))
-            cached = known.get(rel)
-            if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
-                row = conn.execute(
-                    "SELECT title,domain,status,reference,scope,source,tags,language "
-                    "FROM file_cache WHERE path=?",
-                    (rel,),
-                ).fetchone()
-                if row:
-                    tags = json.loads(row[6]) if row[6] else []
-                    doc = CachedDoc(
-                        filename=f.name,
-                        filepath=f,
-                        content="",
-                        mtime=st.st_mtime,
-                        is_lesson=is_lesson,
-                        title=row[0] or f.stem,
-                        domain=row[1] or "",
-                        status=row[2] or "",
-                        reference=row[3] or "",
-                        scope=row[4] or "",
-                        source=row[5] or "",
-                        tags=tags,
-                        language=row[7] or "",
-                    )
-                    doc.content = f.read_text(encoding="utf-8", errors="replace")
-                    docs.append(doc)
-                    continue
-            try:
-                content = f.read_text(encoding="utf-8", errors="replace")
-            except (OSError, UnicodeDecodeError):
-                continue
-            if not content.strip():
-                continue
-            doc = CachedDoc(
-                filename=f.name, filepath=f, content=content, mtime=st.st_mtime, is_lesson=is_lesson
-            )
-            meta = _parse_json_frontmatter(content) or _parse_yaml_frontmatter(content)
-            doc.title = meta.get("title", f.stem)
-            doc.domain = meta.get("domain", "")
-            if isinstance(doc.domain, list):
-                doc.domain = doc.domain[0] if doc.domain else ""
-            doc.status = meta.get("status", "")
-            doc.reference = meta.get("reference", "")
-            doc.scope = meta.get("scope", "")
-            doc.source = meta.get("source", "")
-            doc.language = meta.get("language", "")
-            raw_tags = meta.get("tags", "")
-            doc.tags = raw_tags if isinstance(raw_tags, list) else []
-            docs.append(doc)
-            conn.execute(
-                "INSERT OR REPLACE INTO file_cache "
-                "(path,mtime,size,title,domain,status,reference,scope,source,tags,language) "
-                "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                (
-                    rel,
-                    st.st_mtime,
-                    st.st_size,
-                    doc.title,
-                    doc.domain,
-                    doc.status,
-                    doc.reference,
-                    doc.scope,
-                    doc.source,
-                    json.dumps(doc.tags, ensure_ascii=False),
-                    doc.language,
-                ),
-            )
-            changed += 1
+        try:
+            content = f.read_text(encoding="utf-8", errors="replace")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if not content.strip():
+            continue
+        doc = CachedDoc(
+            filename=f.name, filepath=f, content=content, mtime=st.st_mtime, is_lesson=is_lesson
+        )
+        meta = _parse_json_frontmatter(content) or _parse_yaml_frontmatter(content)
+        doc.title = meta.get("title", f.stem)
+        doc.domain = meta.get("domain", "")
+        if isinstance(doc.domain, list):
+            doc.domain = doc.domain[0] if doc.domain else ""
+        doc.status = meta.get("status", "")
+        doc.reference = meta.get("reference", "")
+        doc.scope = meta.get("scope", "")
+        doc.source = meta.get("source", "")
+        doc.language = meta.get("language", "")
+        raw_tags = meta.get("tags", "")
+        doc.tags = raw_tags if isinstance(raw_tags, list) else []
+        docs.append(doc)
+        conn.execute(
+            "INSERT OR REPLACE INTO file_cache "
+            "(path,mtime,size,title,domain,status,reference,scope,source,tags,language) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                rel,
+                st.st_mtime,
+                st.st_size,
+                doc.title,
+                doc.domain,
+                doc.status,
+                doc.reference,
+                doc.scope,
+                doc.source,
+                json.dumps(doc.tags, ensure_ascii=False),
+                doc.language,
+            ),
+        )
+        changed += 1
     conn.commit()
     if changed:
         print(f"  📦 L2缓存: {changed} 篇变动")
@@ -1156,3 +1156,4 @@ class MisakaNetSearchEngine:
             if end != -1:
                 body = body[end + 4:]
         return " ".join(body.split())[:max_chars]
+

@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Audit 2026-09-05 T2.2: lesson-directory auto-discovery ("library" policy).
+"""Audit 2026-09-05 T2.2/T2.5: lesson-directory auto-discovery + dedup.
 
-Maintainer decision: the index is a library — every lessons/ subdirectory
-with real lesson content is visible (core/contrib + locale dirs like en/ +
-lifecycle dirs), only scaffolding (templates/, _archive/) and per-directory
-index/README files are excluded. Adding a new published directory must need
-no engine code change.
+Maintainer decisions:
+- The index is a LIBRARY: every lessons/ subdirectory with real lesson
+  content is discoverable (core/contrib + locale dirs like en/ + lifecycle
+  dirs); only scaffolding (templates/, _archive/) and per-directory
+  index/README files are excluded. Adding a new published directory must
+  need no engine code change.
+- No duplicate results: mirror/translation copies that share a stem with a
+  canonical lesson (e.g. en/ vs contrib/) are dropped from the visible index
+  — core/ > contrib/ > other dirs. Files stay in the repo, fetchable by path.
 """
 import sys
 from pathlib import Path
@@ -15,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from misakanet.lesson_index import (  # noqa: E402
     EXCLUDED_LESSON_DIRS,
     EXCLUDED_LESSON_FILES,
+    canonical_lessons,
     discover_lesson_dirs,
 )
 
@@ -70,3 +75,27 @@ def test_engine_loader_uses_discovery(tmp_path):
     assert not any(p.startswith("lessons/templates/") for p in paths), "templates leaked"
     assert not any(p.startswith("lessons/_archive/") for p in paths), "_archive leaked"
     assert not any(p.endswith("/README.md") for p in paths), "README.md leaked"
+    # No duplicate stems in the loaded corpus
+    stems = [Path(p).stem for p in paths]
+    assert len(stems) == len(set(stems)), "duplicate stems loaded"
+    # Known mirror pair: only the contrib original is loaded, not the en copy
+    mirror_contrib = [p for p in paths if p == "lessons/contrib/agent-manual-update-timeout.md"]
+    mirror_en = [p for p in paths if p == "lessons/en/agent-manual-update-timeout.md"]
+    assert mirror_contrib and not mirror_en, (mirror_contrib, mirror_en)
+
+
+def test_canonical_dedupes_mirror_copies(tmp_path):
+    """Same stem in core/contrib beats a mirror dir; unique files stay."""
+    root = tmp_path / "lessons"
+    (root / "core").mkdir(parents=True)
+    (root / "contrib").mkdir()
+    (root / "en").mkdir()
+    for d, stem in (("contrib", "topic-a"), ("en", "topic-a"),
+                    ("core", "topic-b"), ("en", "topic-b"), ("en", "unique-c")):
+        (root / d / f"{stem}.md").write_text("---\ntitle: x\n---\nbody\n")
+
+    canon = {f.parent.name + "/" + f.name for f in canonical_lessons(root)}
+    assert canon == {"contrib/topic-a.md", "core/topic-b.md", "en/unique-c.md"}
+    # order: core first, then contrib, then other dirs alphabetically
+    order = [str(f.relative_to(root)) for f in canonical_lessons(root)]
+    assert order == ["core/topic-b.md", "contrib/topic-a.md", "en/unique-c.md"]

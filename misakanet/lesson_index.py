@@ -25,6 +25,10 @@ EXCLUDED_LESSON_DIRS = frozenset({"templates", "_archive"})
 # Non-lesson markdown that must never be indexed, regardless of directory.
 EXCLUDED_LESSON_FILES = frozenset({"README.md", "index.md", "TEMPLATE.md", "CONTRIBUTING.md"})
 
+# Canonical-precedence for duplicate stems (see canonical_lessons): reviewed
+# core/contrib originals win over mirror/translation dirs.
+_DIR_PRIORITY = {"core": 0, "contrib": 1}
+
 
 def discover_lesson_dirs(lessons_root: Path) -> list[Path]:
     """Sorted subdirectories of ``lessons_root`` that contain real lessons.
@@ -46,3 +50,29 @@ def discover_lesson_dirs(lessons_root: Path) -> list[Path]:
         ):
             dirs.append(child)
     return dirs
+
+
+def canonical_lessons(lessons_root: Path) -> list[Path]:
+    """One lesson per stem across all discovered dirs (duplicate-free index).
+
+    Community mirror/translation dirs (e.g. ``en/``) carry copies of the same
+    lesson under the same stem; indexing both would return duplicates to
+    users. Resolution: keep the highest-precedence copy — ``core/`` then
+    ``contrib/`` then every other dir alphabetically — and drop the rest.
+    The dropped files stay in the repo and remain fetchable by path; they are
+    simply not part of the visible index/search corpus.
+
+    Returns files in canonical (dir-major, insertion) order, which keeps the
+    historic core/contrib prefix ordering stable.
+    """
+    seen: dict[str, Path] = {}
+    dirs = sorted(
+        discover_lesson_dirs(lessons_root),
+        key=lambda d: (_DIR_PRIORITY.get(d.name, 2), d.name),
+    )
+    for d in dirs:
+        for f in sorted(d.rglob("*.md")):
+            if f.name.startswith(".") or f.name in EXCLUDED_LESSON_FILES:
+                continue
+            seen.setdefault(f.stem, f)
+    return list(seen.values())
