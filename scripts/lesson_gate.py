@@ -28,7 +28,7 @@ REPO = Path(__file__).resolve().parent.parent
 LESSONS_DIR = REPO / "lessons"
 DOCS_DOMAINS = REPO / "docs" / "domains"
 
-VALID_STATUS = {"published", "draft", "archived"}
+VALID_STATUS = {"published", "draft", "archived", "active", "stale", "superseded"}
 VALID_EVIDENCE = {"E0", "E1", "E2", "E3", "E4"}
 MIN_CONTENT_CHARS = 100
 MIN_TITLE_CHARS = 4
@@ -368,6 +368,28 @@ def detect_fake_verification(text: str) -> str | None:
 
 
 # ── File validation ─────────────────────────────────────────────────
+def _find_lesson_by_id(lesson_id: str, repo: Path = REPO) -> Path | None:
+    """Find a lesson file by its ID (filename without .md)."""
+    for f in _iter_active_lessons(repo):
+        if f.stem == lesson_id:
+            return f
+    return None
+
+
+def _has_superseding_lesson(lesson_id: str, repo: Path = REPO, exclude_file: Path | None = None) -> bool:
+    """Check if any active lesson has supersedes=<lesson_id>."""
+    for f in _iter_active_lessons(repo):
+        if exclude_file is not None and f.resolve() == Path(exclude_file).resolve():
+            continue
+        try:
+            fm, _ = parse_frontmatter(f.read_text(encoding="utf-8", errors="ignore"))
+        except Exception:
+            continue
+        if fm.get("supersedes") == lesson_id:
+            return True
+    return False
+
+
 def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = None) -> list[str]:
     """Return error strings. Warnings are prefixed with '[warn]' and do not
     fail the gate (they surface for maintainer review only). `dirs` overrides
@@ -417,6 +439,32 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
     # Evidence refs validation (Issue #1439)
     if fm and fm.get("evidence_refs"):
         errors += validate_evidence_refs(fm["evidence_refs"])
+
+    # Supersedes chain validation (Issue #1440)
+    if fm and fm.get("supersedes"):
+        supersedes_id = fm["supersedes"]
+        if not isinstance(supersedes_id, str) or not supersedes_id.strip():
+            errors.append("supersedes must be a non-empty lesson ID string")
+        else:
+            # Check that the superseded lesson exists
+            superseded_path = _find_lesson_by_id(supersedes_id.strip(), repo)
+            if not superseded_path:
+                errors.append(
+                    f"supersedes target '{supersedes_id}' not found in active lessons"
+                )
+            # Warn if status is not superseded (inconsistent)
+            if fm.get("status") != "superseded":
+                pass  # OK: new lesson declares what it supersedes
+
+    # If status is superseded, warn if no lesson references it via supersedes
+    if fm and fm.get("status") == "superseded":
+        lesson_id = path.stem
+        if not _has_superseding_lesson(lesson_id, repo, exclude_file=path):
+            errors.append(
+                f"[warn] status=superseded but no active lesson has"
+                f" supersedes='{lesson_id}' — add supersedes to the"
+                f" replacement lesson or revert to active/stale"
+            )
 
     return errors
 

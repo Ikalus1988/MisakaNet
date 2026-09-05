@@ -119,6 +119,15 @@ TOOLS = [
                         " Default: 0.15."
                     ),
                 },
+                "include_stale": {
+                    "type": "boolean",
+                    "description": (
+                        "Include stale and superseded lessons in"
+                        " results. Default false — these are"
+                        " filtered out to avoid误导 agents"
+                        " with outdated information."
+                    ),
+                },
             },
             "required": ["query"],
         },

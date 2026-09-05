@@ -318,6 +318,7 @@ def handle_search(args: dict, search_state=None) -> dict:
     explain = bool(args.get("explain", False))
     detail = args.get("detail", "compact")  # compact | summary | full
     kind = _detect_kind(query, args.get("kind"))
+    include_stale = bool(args.get("include_stale", False))
 
     # Per-request weight overrides (Issue #1001)
     weights = {}
@@ -360,7 +361,7 @@ def handle_search(args: dict, search_state=None) -> dict:
         )
 
         docs = _load_docs_cached(LESSONS, is_lesson=True)
-        scored = _search_cached(query, docs, weights=weights or None)
+        scored = _search_cached(query, docs, weights=weights or None, include_stale=include_stale)
         for score, doc in scored[:top]:
             result = {
                 "title": doc.title,
