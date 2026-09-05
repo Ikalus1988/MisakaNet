@@ -237,8 +237,13 @@ def score_structure(body: str) -> tuple[int, list[str]]:
     return min(pts, 25), notes
 
 
-def score_content(body: str) -> tuple[int, list[str]]:
-    """Score content quality (max 35)."""
+def score_content(body: str, *, tolerate_todo: bool = False) -> tuple[int, list[str]]:
+    """Score content quality (max 35).
+
+    ``tolerate_todo`` (audit 2026-09-05 T3.3): draft/template lessons carry
+    ``<!-- TODO: ... -->`` placeholders by design (harvester output, lesson
+    templates) — they should not be flagged as placeholder-laden.
+    """
     pts = 0
     notes = []
 
@@ -304,8 +309,9 @@ def score_content(body: str) -> tuple[int, list[str]]:
     else:
         notes.append(f"Word count too low: {wc} (need >=300)")
 
-    # TODO/FIXME penalty (already handled in validate, but flag here too)
-    if TODO_RE.search(body):
+    # TODO/FIXME penalty (already handled in validate, but flag here too).
+    # Draft/template lessons legitimately keep TODO fill-in markers (T3.3).
+    if not tolerate_todo and TODO_RE.search(body):
         notes.append("Contains TODO/FIXME placeholders")
 
     return min(pts, 35), notes
@@ -426,7 +432,14 @@ def score_lesson(
 
     meta_pts, meta_notes = score_metadata(fm, content)
     struct_pts, struct_notes = score_structure(body)
-    content_pts, content_notes = score_content(body)
+    # Audit T3.3: draft/template lessons intentionally contain TODO fill-ins
+    # (harvester drafts, lessons/templates placeholders) — don't flag them.
+    tolerate_todo = bool(
+        (fm or {}).get("status") in ("draft", "template")
+        or str((fm or {}).get("source", "")) in ("harvester", "template")
+        or "templates" in Path(rel_path).parts
+    )
+    content_pts, content_notes = score_content(body, tolerate_todo=tolerate_todo)
     dedup_pts, dedup_notes = score_dedup(content, all_docs, current_file=rel_path)
     trust_pts, trust_notes = score_source_trust(fm, content)
 
