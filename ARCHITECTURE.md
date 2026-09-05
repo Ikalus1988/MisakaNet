@@ -52,7 +52,7 @@ reference/                # Reference documents (6 .md files)
 
 ## CI Pipeline Architecture
 
-MisakaNet uses a multi-layered CI architecture powered by GitHub Actions with 30+ workflow files under `.github/workflows/`. Each workflow is a self-contained quality gate or automation task.
+MisakaNet uses a multi-layered CI architecture powered by GitHub Actions with **53 workflow files** under `.github/workflows/` (audit 2026-09-05 T2.3). Each workflow is a self-contained quality gate or automation task. Full inventory (names, triggers, failure paths): see `docs/CI.md`.
 
 ### CI Layer Model
 
