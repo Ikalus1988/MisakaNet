@@ -65,6 +65,14 @@ class FakeDoc:
         return self.status == "draft"
 
     @property
+    def is_stale(self):
+        return self.status == "stale"
+
+    @property
+    def is_superseded(self):
+        return self.status == "superseded"
+
+    @property
     def score_baseline(self):
         return 0.0 if self.is_draft else 0.1
 
