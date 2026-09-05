@@ -366,7 +366,7 @@ function getMcpServerInfo(env) {
   return {
     name: "misakanet",
     // Keep in sync with pyproject.toml (single source of truth for version).
-    version: env.MCP_VERSION || "2.27.0",
+    version: env.MCP_VERSION || "2.27.1",
   };
 }
 

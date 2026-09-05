@@ -7,7 +7,7 @@
   ],
   "name": "io.github.Ikalus1988/misakanet",
   "description": "Failure-memory layer for coding agents: search 320+ indexed failure-recovery lessons (evidence-rated E0-E4), submit failure intakes or how-to questions without an account, and get answers back via re-query. Deterministic pre-fix lookup before you retry.",
-  "version": "2.27.0",
+  "version": "2.27.1",
   "repository": "https://github.com/Ikalus1988/MisakaNet",
   "homepage": "https://misakanet.org",
   "license": "MIT",
