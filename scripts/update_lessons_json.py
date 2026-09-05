@@ -98,6 +98,38 @@ def get_summary(content: str, max_chars: int = 160) -> str:
     return ''
 
 
+# Docs that carry a {{LESSONS_COUNT}} marker refreshed from the canonical
+# index (audit 2026-09-05, QW6). Keep this list in sync with .github/workflows/update-lessons.yml.
+COUNT_MARKER_DOCS = ("ARCHITECTURE.md", "README.md")
+COUNT_MARKER_FILE = REPO / "docs" / "_lessons_count.txt"
+
+
+def refresh_lesson_count_markers(count: int) -> None:
+    """Keep documented lesson counts derived from the canonical index.
+
+    Replaces {{LESSONS_COUNT}} placeholders in COUNT_MARKER_DOCS with the
+    indexed count and writes a machine-readable docs/_lessons_count.txt.
+    Mirrors the public-metric SSOT convention: docs carry a generated marker
+    instead of hand-edited numbers, so counts cannot silently drift.
+    """
+    try:
+        COUNT_MARKER_FILE.write_text(f"{count}\n", encoding="utf-8")
+    except OSError as e:
+        print(f"⚠️  could not write {COUNT_MARKER_FILE}: {e}")
+    for name in COUNT_MARKER_DOCS:
+        path = REPO / name
+        if not path.exists():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if "{{LESSONS_COUNT}}" not in text:
+            continue
+        path.write_text(text.replace("{{LESSONS_COUNT}}", str(count)), encoding="utf-8")
+        print(f"OK {name}: {{{{LESSONS_COUNT}}}} -> {count}")
+
+
 def main():
     entries = []
     for lesson_dir in INDEXED_DIRS:
@@ -164,6 +196,7 @@ def main():
 
     OUTPUT.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"OK lessons.json updated: {len(entries)} entries")
+    refresh_lesson_count_markers(len(entries))
 
 
 if __name__ == "__main__":

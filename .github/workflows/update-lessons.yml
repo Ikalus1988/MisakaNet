@@ -30,7 +30,9 @@ jobs:
       - name: Check for changes
         id: check
         run: |
-          if git diff --quiet data/lessons.json; then
+          # data/lessons.json plus the {{LESSONS_COUNT}} marker docs refreshed
+          # by update_lessons_json.py (audit 2026-09-05, QW6).
+          if git diff --quiet data/lessons.json ARCHITECTURE.md README.md docs/_lessons_count.txt; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -41,6 +43,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add data/lessons.json
-          git commit -m "chore: auto-update lessons.json"
+          git add data/lessons.json ARCHITECTURE.md README.md docs/_lessons_count.txt
+          git commit -m "chore: auto-update lessons.json + lesson count markers"
           git push
