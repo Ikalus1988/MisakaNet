@@ -27,7 +27,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 # ── Import search engines ──
 try:
@@ -45,8 +45,8 @@ except ImportError:
 
 from scripts.intake_kind import INTAKE_KINDS, infer_intake_kind  # noqa: E402
 
-# ── Create FastMCP server ──
-mcp = FastMCP("misakanet")
+# ── Create MCP server ──
+mcp = MCPServer("misakanet")
 
 # ── Intake auth / rate limit config ──
 # Set MISAKANET_INTAKE_TOKEN env var to require a shared token for submit_intake.
@@ -157,10 +157,12 @@ def misakanet_get_lesson(path: str = "", id: str = "") -> dict:
                 "voice": "connect-success",
             }
 
-    # Fallback: try searching by ID in lessons/core|contrib/
-    for subdir in ["core", "contrib"]:
-        candidate = REPO_ROOT / "lessons" / subdir / f"{path_or_id}.md"
-        if candidate.exists() and _is_allowed_lesson_path(candidate):
+    # Fallback: try searching by ID across the canonical (deduped) lesson set
+    # (audit T2.5) — mirrors/translations are reachable via explicit path above.
+    from misakanet.lesson_index import canonical_lessons
+
+    for candidate in canonical_lessons(REPO_ROOT / "lessons"):
+        if candidate.stem == path_or_id and _is_allowed_lesson_path(candidate):
             lesson_path = candidate
             break
 
@@ -455,17 +457,16 @@ def misakanet_register(agent_type: str = "unknown") -> dict:
 # ── Resources ──
 @mcp.resource("misaka://lessons/index")
 def lessons_index() -> str:
-    """Browse all published lessons with metadata."""
+    """Browse all canonical (deduped) lessons with metadata (audit T2.5)."""
+    from misakanet.lesson_index import canonical_lessons
+
     lessons = []
-    for subdir in ["core", "contrib"]:
-        d = REPO_ROOT / "lessons" / subdir
-        if d.exists():
-            for f in sorted(d.glob("*.md")):
-                lessons.append({
-                    "id": f.stem,
-                    "path": str(f.relative_to(REPO_ROOT)),
-                    "category": subdir,
-                })
+    for f in canonical_lessons(REPO_ROOT / "lessons"):
+        lessons.append({
+            "id": f.stem,
+            "path": str(f.relative_to(REPO_ROOT)),
+            "category": f.parent.name,
+        })
     return json.dumps({"lessons": lessons, "count": len(lessons)}, ensure_ascii=False)
 
 
@@ -524,6 +525,4 @@ if __name__ == "__main__":
     print(f"BM25: {'available' if HAS_BM25 else 'not available'}")
     print(f"Endpoint: http://{args.host}:{args.port}/mcp")
 
-    mcp.settings.host = args.host
-    mcp.settings.port = args.port
-    mcp.run(transport="streamable-http")
+    mcp.run(transport="streamable-http", host=args.host, port=args.port)

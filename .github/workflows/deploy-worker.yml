@@ -18,6 +18,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Pre-flight — no placeholder ids in deployed config (audit T1.5)
+        run: |
+          set -euo pipefail
+          python3 scripts/doctor.py --kv-only workers/wrangler.toml
+
       - name: Deploy Worker with Wrangler
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}

@@ -32,7 +32,7 @@ scripts/
 ├── update_status.py      # Regenerate STATUS.md
 └── demo.tape             # VHS demo recording script
 
-lessons/                  # Shared knowledge (185+ .md files)
+lessons/                  # Shared knowledge (358+ .md files)  — count auto-refreshed by scripts/update_lessons_json.py
 reference/                # Reference documents (6 .md files)
 ```
 
@@ -52,7 +52,7 @@ reference/                # Reference documents (6 .md files)
 
 ## CI Pipeline Architecture
 
-MisakaNet uses a multi-layered CI architecture powered by GitHub Actions with 30+ workflow files under `.github/workflows/`. Each workflow is a self-contained quality gate or automation task.
+MisakaNet uses a multi-layered CI architecture powered by GitHub Actions with **53 workflow files** under `.github/workflows/` (audit 2026-09-05 T2.3). Each workflow is a self-contained quality gate or automation task. Full inventory (names, triggers, failure paths): see `docs/CI.md`.
 
 ### CI Layer Model
 

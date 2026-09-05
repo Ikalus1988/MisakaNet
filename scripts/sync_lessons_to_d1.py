@@ -39,6 +39,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO))  # audit T2.5: import misakanet.lesson_index
 LESSONS_DIR = REPO / "lessons"
 INDEXED_DIRS = ("core", "contrib")
 EXCLUDED = {"README.md", "index.md", "TEMPLATE.md", "CONTRIBUTING.md"}
@@ -143,17 +144,18 @@ def parse_lesson(path: Path) -> dict | None:
 
 
 def collect_lessons() -> list[dict]:
+    # Audit T2.5: sync the same canonical (deduped) set the local search and
+    # public index use, so D1 matches the repo (core + contrib + unique en +
+    # user-rescue …), mirrors/translations excluded.
+    from misakanet.lesson_index import canonical_lessons
+
     lessons = []
-    for sub in INDEXED_DIRS:
-        d = LESSONS_DIR / sub
-        if not d.is_dir():
+    for f in canonical_lessons(LESSONS_DIR):
+        if f.name.startswith(".") or f.name in EXCLUDED:
             continue
-        for f in sorted(d.glob("*.md")):
-            if f.name in EXCLUDED or f.name.startswith("."):
-                continue
-            lesson = parse_lesson(f)
-            if lesson:
-                lessons.append(lesson)
+        lesson = parse_lesson(f)
+        if lesson:
+            lessons.append(lesson)
     return lessons
 
 
@@ -356,3 +358,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

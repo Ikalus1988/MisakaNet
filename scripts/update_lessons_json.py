@@ -98,71 +98,112 @@ def get_summary(content: str, max_chars: int = 160) -> str:
     return ''
 
 
+# Docs that carry a {{LESSONS_COUNT}} marker refreshed from the canonical
+# index (audit 2026-09-05, QW6). Keep this list in sync with .github/workflows/update-lessons.yml.
+COUNT_MARKER_DOCS = ("ARCHITECTURE.md", "README.md")
+COUNT_MARKER_FILE = REPO / "docs" / "_lessons_count.txt"
+
+
+def refresh_lesson_count_markers(count: int) -> None:
+    """Keep documented lesson counts derived from the canonical index.
+
+    Replaces {{LESSONS_COUNT}} placeholders in COUNT_MARKER_DOCS with the
+    indexed count and writes a machine-readable docs/_lessons_count.txt.
+    Mirrors the public-metric SSOT convention: docs carry a generated marker
+    instead of hand-edited numbers, so counts cannot silently drift.
+    """
+    try:
+        COUNT_MARKER_FILE.write_text(f"{count}\n", encoding="utf-8")
+    except OSError as e:
+        print(f"⚠️  could not write {COUNT_MARKER_FILE}: {e}")
+    for name in COUNT_MARKER_DOCS:
+        path = REPO / name
+        if not path.exists():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if "{{LESSONS_COUNT}}" not in text:
+            continue
+        path.write_text(text.replace("{{LESSONS_COUNT}}", str(count)), encoding="utf-8")
+        print(f"OK {name}: {{{{LESSONS_COUNT}}}} -> {count}")
+
+
 def main():
+    # Audit T2.2/T2.5 "图书馆" policy: index every lessons/ subdir with real
+    # content, deduplicated by stem (canonical_lessons: core > contrib >
+    # other dirs), so mirror/translation copies (e.g. en/) don't show up
+    # twice. INDEXED_DIRS stays as the historical fallback/legacy reference.
+    from misakanet.lesson_index import EXCLUDED_LESSON_FILES, canonical_lessons
+
     entries = []
-    for lesson_dir in INDEXED_DIRS:
-        files = sorted((LESSONS_DIR / lesson_dir).glob("*.md"))
-        for f in files:
-            if f.name.startswith(".") or f.name in EXCLUDED:
-                continue
-            content = f.read_text(encoding="utf-8", errors="replace")
-            meta = parse_frontmatter(content)
-            # YAML frontmatter may yield non-JSON types (date, etc.) — normalize
-            meta = {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in meta.items()}
-            title = meta.get("title", f.stem)
-            domain = meta.get("domain", lesson_dir)
-            if isinstance(domain, list):
-                domain = domain[0] if domain else lesson_dir
-            tags = meta.get("tags", [])
-            if not isinstance(tags, list):
-                tags = [tags] if tags else []
-            status = meta.get("status", "active")
-            summary = meta.get("summary", "") or get_summary(content)
-            preview = get_preview(content)
-            rel_path = f.relative_to(LESSONS_DIR).as_posix()
-            # Check for Verification section (badge-only verified semantics)
-            verified = bool(re.search(r"##\s*(Verify|Verification)", content, re.IGNORECASE))
-            # Evidence level (#786): frontmatter wins when present; legacy
-            # lessons that predate the field get a content-inferred level
-            # (same inference the intake pipeline uses — queue_lesson.py).
-            # The public index carries it so search pages can show E3+/E4
-            # counts instead of composite averages.
-            raw_level = meta.get("evidence_level")
-            if raw_level is not None:
-                evidence_level = evidence_of(meta)
-                evidence_source = "frontmatter"
-            else:
-                from scripts.infer_evidence_level import infer_evidence_level
-                evidence_level, _ = infer_evidence_level(content)
-                evidence_source = "inferred"
-            confidence = meta.get("confidence", 0.5)
-            if not isinstance(confidence, (int, float)):
-                confidence = 0.5
-            entries.append({
-                "id": f.stem,
-                "title": title,
-                "domain": domain,
-                "tags": tags,
-                "summary": summary,
-                "preview": preview,
-                "url": f"lessons/{rel_path}",
-                "created": meta.get("created", ""),
-                "updated": meta.get("updated", ""),
-                "triggers": meta.get("triggers", None),
-                "validity_period_days": 365,
-                "environment_version": "",
-                "confidence": confidence,
-                "status": status,
-                "verified": verified,
-                "evidence_level": evidence_level,
-                "evidence_source": evidence_source,
-                # trust = quality(confidence) scaled by evidence (E0 keeps 70%,
-                # E4 keeps 100%) — shown on search pages instead of a composite.
-                "trust_score": trust_score(confidence, evidence_level),
-            })
+    # canonical_lessons returns dir-major canonical order (core, contrib,
+    # then the rest alphabetically) — keeps the historic prefix stable.
+    for f in canonical_lessons(LESSONS_DIR):
+        dir_name = f.parent.name
+        if f.name.startswith(".") or f.name in EXCLUDED_LESSON_FILES:
+            continue
+        content = f.read_text(encoding="utf-8", errors="replace")
+        meta = parse_frontmatter(content)
+        # YAML frontmatter may yield non-JSON types (date, etc.) — normalize
+        meta = {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in meta.items()}
+        title = meta.get("title", f.stem)
+        domain = meta.get("domain", dir_name)
+        if isinstance(domain, list):
+            domain = domain[0] if domain else dir_name
+        tags = meta.get("tags", [])
+        if not isinstance(tags, list):
+            tags = [tags] if tags else []
+        status = meta.get("status", "active")
+        summary = meta.get("summary", "") or get_summary(content)
+        preview = get_preview(content)
+        rel_path = f.relative_to(LESSONS_DIR).as_posix()
+        # Check for Verification section (badge-only verified semantics)
+        verified = bool(re.search(r"##\s*(Verify|Verification)", content, re.IGNORECASE))
+        # Evidence level (#786): frontmatter wins when present; legacy
+        # lessons that predate the field get a content-inferred level
+        # (same inference the intake pipeline uses — queue_lesson.py).
+        # The public index carries it so search pages can show E3+/E4
+        # counts instead of composite averages.
+        raw_level = meta.get("evidence_level")
+        if raw_level is not None:
+            evidence_level = evidence_of(meta)
+            evidence_source = "frontmatter"
+        else:
+            from scripts.infer_evidence_level import infer_evidence_level
+            evidence_level, _ = infer_evidence_level(content)
+            evidence_source = "inferred"
+        confidence = meta.get("confidence", 0.5)
+        if not isinstance(confidence, (int, float)):
+            confidence = 0.5
+        entries.append({
+            "id": f.stem,
+            "title": title,
+            "domain": domain,
+            "tags": tags,
+            "summary": summary,
+            "preview": preview,
+            "url": f"lessons/{rel_path}",
+            "created": meta.get("created", ""),
+            "updated": meta.get("updated", ""),
+            "triggers": meta.get("triggers", None),
+            "validity_period_days": 365,
+            "environment_version": "",
+            "confidence": confidence,
+            "status": status,
+            "evidence_refs": meta.get("evidence_refs", []),
+            "verified": verified,
+            "evidence_level": evidence_level,
+            "evidence_source": evidence_source,
+            # trust = quality(confidence) scaled by evidence (E0 keeps 70%,
+            # E4 keeps 100%) — shown on search pages instead of a composite.
+            "trust_score": trust_score(confidence, evidence_level),
+        })
 
     OUTPUT.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"OK lessons.json updated: {len(entries)} entries")
+    refresh_lesson_count_markers(len(entries))
 
 
 if __name__ == "__main__":

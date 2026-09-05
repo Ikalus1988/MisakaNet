@@ -2,14 +2,26 @@
   "$schema": "https://glama.ai/mcp/schemas/server.json",
   "name": "io.github.Ikalus1988/misakanet",
   "description": "Failure-memory layer for coding agents: search evidence-rated failure lessons, submit failure intakes or questions without an account, pull answers by re-query.",
-  "version": "2.23.0",
-  "maintainers": ["Ikalus1988"],
+  "version": "2.27.1",
+  "maintainers": [
+    "Ikalus1988"
+  ],
   "remote": {
     "url": "https://misakanet.org/mcp",
     "transport": "streamable-http"
   },
   "repository": "https://github.com/Ikalus1988/MisakaNet",
   "license": "MIT",
-  "tags": ["failure-memory", "debugging", "agent-runtime", "knowledge-base", "mcp"],
-  "categories": ["developer-tools", "knowledge-and-memory", "search"]
+  "tags": [
+    "failure-memory",
+    "debugging",
+    "agent-runtime",
+    "knowledge-base",
+    "mcp"
+  ],
+  "categories": [
+    "developer-tools",
+    "knowledge-and-memory",
+    "search"
+  ]
 }

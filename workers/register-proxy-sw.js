@@ -366,7 +366,7 @@ function getMcpServerInfo(env) {
   return {
     name: "misakanet",
     // Keep in sync with pyproject.toml (single source of truth for version).
-    version: env.MCP_VERSION || "2.23.0",
+    version: env.MCP_VERSION || "2.27.1",
   };
 }
 
@@ -794,7 +794,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     if (d1Binding(env)) {
       const faq = await fetchAnsweredQuestions(env);
       if (faq.length) {
-        const faqHits = matchAnsweredQuestions(faq, args.query || "");
+        const faqHits = matchAnsweredQuestions(faq, args.query || "", args.detail || "compact");
         if (faqHits.length) results = results.concat(faqHits);
       }
     }
@@ -1006,7 +1006,11 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // Content-based dedup hash (not random) — same problem text submitted
     // twice maps to the same hash, so repeat submissions are caught (aider
     // review P1-4). The short random tag is kept for issue-body traceability.
-    const dedupSource = `${kind}:${safeProblem}:${safeError}`.trim();
+    // Per-field trim keeps the hash identical to scripts/sync_answered_
+    // questions.py (which parses the issue body with .strip()) — otherwise a
+    // padded problem would hash differently after the answer sync rewrites
+    // the row's dedup_hash.
+    const dedupSource = `${kind}:${String(safeProblem).trim()}:${String(safeError || "").trim()}`;
     const dedupHash = crypto.randomUUID().slice(0, 12);
     const dedupContentHash = hashString(dedupSource);
     const dedupKey = `intake_dedup:${dedupContentHash}`;
@@ -1724,24 +1728,31 @@ async function fetchAnsweredQuestions(env) {
 // FAQ hits from answered questions (PRD ⑤ §9): token-overlap match over
 // problem + answer text. Returns result-shaped entries the search handler
 // can append to lesson results (id/title/domain/tags/description/score).
-function matchAnsweredQuestions(rows, query, top = 3) {
+// Progressive disclosure: the full answer is attached only at detail='full';
+// compact/summary get a capped snippet + issue_url so results stay token-cheap
+// (answers can be up to 20k chars — carrying them in every hit would blow the
+// compact budget).
+function matchAnsweredQuestions(rows, query, detail = "compact", top = 3) {
   const tokens = String(query || "").toLowerCase().split(/[^a-z0-9\u4e00-\u9fff]+/).filter((t) => t.length > 1);
   if (!tokens.length) return [];
+  const fullDetail = detail === "full";
   const scored = [];
   for (const row of rows) {
     const hay = `${row.problem || ""} ${row.answer || ""}`.toLowerCase();
     let overlap = 0;
     for (const t of tokens) if (hay.includes(t)) overlap += 1;
     if (overlap > 0) {
+      const answer = String(row.answer || "");
       scored.push({
         row,
         score: overlap / tokens.length,
-        desc: String(row.answer || "").replace(/\s+/g, " ").trim().slice(0, 300),
+        desc: answer.replace(/\s+/g, " ").trim().slice(0, 300),
+        answerShown: fullDetail ? answer : `${answer.slice(0, 800)}${answer.length > 800 ? "\n… (full answer: see issue_url or re-run with detail='full')" : ""}`,
       });
     }
   }
   scored.sort((a, b) => b.score - a.score || (b.row.answered_at || "").localeCompare(a.row.answered_at || ""));
-  return scored.slice(0, top).map(({ row, score, desc }) => ({
+  return scored.slice(0, top).map(({ row, score, desc, answerShown }) => ({
     id: `faq-issue-${row.issue_number}`,
     title: String(row.problem || `FAQ #${row.issue_number}`).slice(0, 120),
     domain: "faq",
@@ -1750,7 +1761,7 @@ function matchAnsweredQuestions(rows, query, top = 3) {
     description: desc,
     score: Math.round(score * 100),
     type: "faq",
-    answer: row.answer || "",
+    answer: answerShown,
     issue_url: row.issue_url || "",
   }));
 }

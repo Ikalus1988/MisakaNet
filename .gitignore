@@ -90,3 +90,12 @@ bench_results/
 .aider*
 coverage.xml
 data/lessons.db
+
+# Accidentally-created root junk dirs (audit 2026-09-05, QW1/QW2): a failed
+# multi-step shell command once created empty dirs named "1. scripts",
+# "12. scripts/workers", and a full error string. Keep them out forever.
+/[0-9]*. */
+/The `*/
+
+# Local audit working artifacts (multi-repo audit reports, execution logs)
+.audit-reports-*/

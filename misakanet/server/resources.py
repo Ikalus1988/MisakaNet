@@ -61,16 +61,16 @@ def handle_resources_list() -> list:
 def handle_resources_read(uri: str) -> dict:
     """Read a resource by URI."""
     if uri == "misaka://lessons/index":
+        # Audit T2.5: canonical (deduped) lesson set — mirrors excluded.
+        from misakanet.lesson_index import canonical_lessons
+
         lessons = []
-        for subdir in ["core", "contrib"]:
-            d = REPO_ROOT / "lessons" / subdir
-            if d.exists():
-                for f in sorted(d.glob("*.md")):
-                    lessons.append({
-                        "id": f.stem,
-                        "path": str(f.relative_to(REPO_ROOT)),
-                        "category": subdir,
-                    })
+        for f in canonical_lessons(REPO_ROOT / "lessons"):
+            lessons.append({
+                "id": f.stem,
+                "path": str(f.relative_to(REPO_ROOT)),
+                "category": f.parent.name,
+            })
         return {"lessons": lessons, "count": len(lessons)}
 
     elif uri == "misaka://protocol/overview":
