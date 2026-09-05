@@ -160,6 +160,12 @@ def bump_registry(version: str) -> None:
     assert SEMVER.match(version), version
     server = _read_json("server.json")
     server["version"] = version
+    # The pypi packages[] entry advertises the repo's release line as the
+    # installable pypi version; release-please moves pyproject/manifest to the
+    # same number, so keep R3 (entry == pyproject) satisfied in one step.
+    for pkg in server.get("packages", []):
+        if pkg.get("registryType") == "pypi":
+            pkg["version"] = version
     _write_json("server.json", server)
     glama = _read_json("glama.json")
     glama["version"] = version
@@ -172,7 +178,7 @@ def bump_registry(version: str) -> None:
     text = re.sub(r"(MisakaNet v?)[0-9.]+", rf"\g<1>{version}",
                   join.read_text(encoding="utf-8"))
     join.write_text(text, encoding="utf-8")
-    print(f"registry line bumped to {version}: server.json, glama.json, API.md, JOIN.md")
+    print(f"registry line bumped to {version}: server.json(+pypi entry), glama.json, API.md, JOIN.md")
 
 
 def main(argv: list[str] | None = None) -> int:
