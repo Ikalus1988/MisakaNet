@@ -2,7 +2,7 @@
   "name": "misakanet",
   "version": "2.23.1",
   "license": "Apache-2.0",
-  "description": "MisakaNet failure-memory skill — verified debugging lessons for AI agents. DSH bundle: registers the stdio MCP server (misakanet_search/get_lesson) as mcp__misakanet__* tools; skill/CLI surfaces stay available in any profile.",
+  "description": "MisakaNet failure-memory skill — verified debugging lessons for AI agents. DSH bundle: registers the stdio MCP server as mcp__misakanet__* tools (misakanet_search/get_lesson/…). Live bundle tools require a git+ install (the npm skill-only bundle ships no python server); skill/CLI surfaces work in any profile.",
   "files": [
     "SKILL.md",
     "skills/",
