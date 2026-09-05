@@ -2325,12 +2325,50 @@ async function runKeepaliveSweep(cron = "manual") {
   return { ok: true, failures: [] };
 }
 
+// ── Request classification (Issue #1347) ──
+
+const CRAWLER_UA = /bot|crawl|spider|slurp|mediapartners|adsbot|googlebot|bingbot|baiduspider|yandexbot|duckduckbot|facebookexternalhit|twitterbot|linkedinbot|pinterestbot|discordbot|telegrambot|whatsapp|applebot|semrushbot|ahrefsbot|mj12bot|dotbot|petalbot|bytespider|gptbot|chatgpt-user|ccbot|anthropic|claudebot|cohere-ai|perplexitybot|deepseek|meta-externalagent|meta-externalfetcher/i;
+const AGENT_UA = /claude|cursor|copilot|openai|anthropic|misakanet|postman|insomnia|httpie|curl|wget|python-requests|python-httpx|node-fetch|undici|deno|bun/i;
+
+function classifyRequest(request, url) {
+  const ua = request.headers.get("User-Agent") || "";
+  const pathname = url.pathname;
+
+  // MCP protocol requests are always agent traffic
+  if (pathname === "/mcp" || pathname === "/mcp/connect" || pathname === "/mcp/pair") return "mcp";
+  // LLMs.txt and related are agent-facing docs
+  if (pathname.startsWith("/llms") || pathname === "/robots.txt") return "agent";
+
+  // Crawler detection (check before agent — bots often have generic UAs)
+  if (CRAWLER_UA.test(ua)) return "crawler";
+
+  // Agent detection
+  if (AGENT_UA.test(ua)) return "agent";
+
+  // HTML page views (everything else)
+  return "pageview";
+}
+
+// ── end classification ──
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: CORS_HEADERS });
+    }
+
+    // Classify and log request (Issue #1347)
+    const _ua = request.headers.get("User-Agent") || "";
+    const _cls = classifyRequest(request, url);
+    console.log(JSON.stringify({ cls: _cls, ua: _ua.slice(0, 120), path: url.pathname }));
+    // Fire-and-forget KV counter (non-blocking)
+    if (env.MISAKANET_KV) {
+      const counterKey = `traffic:${_cls}:${new Date().toISOString().slice(0, 10)}`;
+      env.MISAKANET_KV.get(counterKey, "text").then(v => {
+        env.MISAKANET_KV.put(counterKey, String(parseInt(v || "0") + 1));
+      }).catch(() => {});
     }
 
     if (request.method === "GET" && url.pathname === "/api/health") {
@@ -2459,6 +2497,27 @@ export default {
           knowledge_gaps: (topGaps.results || []).map(r => ({ query: r.query, count: r.n })),
           intents: (topIntents.results || []).map(r => ({ intent: r.intent, count: r.n })),
           daily_requests: (daily.results || []).map(r => ({ day: r.day, count: r.n })),
+        });
+      } catch (e) { return jsonResponse({ error: e.message }, 502); }
+    }
+
+    // GET /api/analytics/traffic — traffic classification breakdown (Issue #1347)
+    if (request.method === "GET" && url.pathname === "/api/analytics/traffic") {
+      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const classes = ["agent", "mcp", "crawler", "pageview"];
+        const entries = await Promise.all(
+          classes.map(async cls => {
+            const key = `traffic:${cls}:${today}`;
+            const count = parseInt(await env.MISAKANET_KV.get(key, "text") || "0");
+            return [cls, count];
+          })
+        );
+        return jsonResponse({
+          date: today,
+          breakdown: Object.fromEntries(entries),
+          total: entries.reduce((s, [, n]) => s + n, 0),
         });
       } catch (e) { return jsonResponse({ error: e.message }, 502); }
     }
@@ -3188,6 +3247,7 @@ export {
   buildUnsolvedMap,
   buildLessonCoverage,
   classifyTaskFamily,
+  classifyRequest,
   buildReputationLeaderboard,
   getIdentityAura,
   handleSearchSignal,
