@@ -1040,6 +1040,7 @@ __all__ = [
     "_get_related_lessons",
     "_expand_query",
     "_SYNONYM_MAP",
+    "MisakaNetSearchEngine",
 ]
 
 
@@ -1084,3 +1085,67 @@ def _relative_time(mtime: float) -> str:
         return f"{int(diff/86400)}d ago"
     else:
         return f"{int(diff/2592000)}mo ago"
+
+
+class MisakaNetSearchEngine:
+    """Public search facade for HTTP/MCP servers (audit 2026-09-05, QW4).
+
+    scripts/mcp_http_server.py and scripts/ai_agent_api.py import this class
+    (``HAS_BM25``) as the BM25 fallback behind SAG-Lite. Before this facade
+    existed the name was never defined, so the import failed and every BM25
+    request silently degraded to the no-engine error path.
+
+    Wraps the internal cached-load + BM25 rank pipeline and returns
+    SAG-Lite-compatible result dicts, so callers can treat the ``bm25`` and
+    ``sag-lite`` sources interchangeably.
+    """
+
+    def __init__(self, lessons_dir: Path = LESSONS):
+        self.lessons_dir = lessons_dir
+        self._docs = _load_docs_cached(lessons_dir, is_lesson=True)
+
+    def search(
+        self,
+        query: str,
+        top: int = 5,
+        domain: str | None = None,
+        rerank: bool = False,
+        weights: dict | None = None,
+    ) -> list[dict]:
+        """Rank lessons by BM25 + metadata weights, SAG-compatible dict shape.
+
+        ``domain`` filters before truncation (mirrors the SAG SQL path);
+        ``rerank``/``weights`` are passed through to the internal ranker.
+        """
+        ranked = _search_cached(query, self._docs, rerank=rerank, weights=weights)
+        results: list[dict] = []
+        for score, doc in ranked:
+            if domain and doc.domain != domain:
+                continue
+            try:
+                rel = doc.filepath.relative_to(REPO).as_posix()
+            except ValueError:  # filepath outside REPO — keep absolute
+                rel = str(doc.filepath)
+            results.append({
+                "title": doc.title,
+                "description": self._plain_snippet(doc.content),
+                "domain": doc.domain,
+                "tags": list(doc.tags),
+                "source": doc.source or "lesson",
+                "path": rel,
+                "status": doc.status,
+                "score": round(float(score), 4),
+            })
+            if len(results) >= top:
+                break
+        return results
+
+    @staticmethod
+    def _plain_snippet(content: str, max_chars: int = 240) -> str:
+        """First meaningful text after frontmatter, flattened for JSON."""
+        body = content or ""
+        if body.startswith("---"):
+            end = body.find("\n---", 3)
+            if end != -1:
+                body = body[end + 4:]
+        return " ".join(body.split())[:max_chars]
