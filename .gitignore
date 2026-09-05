@@ -91,6 +91,10 @@ bench_results/
 coverage.xml
 data/lessons.db
 
+<<<<<<< HEAD
+# Federation secrets (P0 security)
+hub/federation/secrets/
+=======
 # Accidentally-created root junk dirs (audit 2026-09-05, QW1/QW2): a failed
 # multi-step shell command once created empty dirs named "1. scripts",
 # "12. scripts/workers", and a full error string. Keep them out forever.
@@ -99,3 +103,4 @@ data/lessons.db
 
 # Local audit working artifacts (multi-repo audit reports, execution logs)
 .audit-reports-*/
+>>>>>>> upstream/main

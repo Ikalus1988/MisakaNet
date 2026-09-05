@@ -13,6 +13,11 @@ updated: 2026-06-13 00:00:00 UTC
 source: codewhale
 domain_expert: codewhale
 verified_date: '2026-06-13'
+provenance:
+  source: "internal"
+  contributor: "MisakaNet Core"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Root Cause

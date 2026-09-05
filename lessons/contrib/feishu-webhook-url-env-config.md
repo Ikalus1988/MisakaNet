@@ -12,6 +12,11 @@ confidence: 0.8
 domain_expert: bootstrap
 verified_date: '2026-05-03'
 subdomain: feishu
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ---

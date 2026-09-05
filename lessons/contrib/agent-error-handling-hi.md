@@ -12,6 +12,11 @@ created: 2026-08-01
 source: practical-experience
 confidence: 0.85
 lang: hi
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## समस्या

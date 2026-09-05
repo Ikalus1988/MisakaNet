@@ -16,6 +16,11 @@ confidence: 0.9
 domain_expert: <user>
 verified_date: '2026-07-06'
 subdomain: block-api
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Feishu Block API returns code=0 but creates zero blocks under rate limiting

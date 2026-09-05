@@ -20,6 +20,11 @@ problem: 5轴DLP 3D打印切片器需要将2D切片几何(SVG/DXF)转换为机�
 quality_score: 80
 root_cause: 切片器管线跨越多个模块(draw→pathplan→pathmake→pathmotion→pathlayer)，每个模块负责不同阶段的转换，缺乏统一的端到端参考文档
 solution: Ka-Boost Layer7实现完整的UV→XYZWPR管线：draw模块做2D光栅化和轮廓提取，pathplan用图算法排序路径段，pathmake做插值和坐标转换，pathmotion发TP运动指令，pathlayer做逐层迭代和硬件控制
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ### Problem描述

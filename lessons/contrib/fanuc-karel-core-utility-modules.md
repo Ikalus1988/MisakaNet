@@ -22,6 +22,11 @@ root_cause: KAREL 语言没有标准库，连基本的字符串分割、类型�
   system, Strings）作为所有上层模块的基础。
 solution: 使用 Ka-Boost Layer 1 的三个基础模块：errors（错误处理+变量初始化）、system（系统类型+时间+坐标系）、Strings（字符串全操作），作为
   KAREL 项目的基础设施。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## KAREL Core Utility Modules: errors, system, Strings API Reference

@@ -13,6 +13,11 @@ updated: '2026-08-06'
 source: b2-robot-utilization project
 verified_date: '2026-08-06'
 evidence_level: E2
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # WSL NTFS SQLite UPDATE 100x slower than ext4

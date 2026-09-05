@@ -1,6 +1,11 @@
 ---
-title: GitHub API 401 后本地凭证查找顺序
+created: '2026-07-06'
 domain: git
+language: zh
+source: unknown
+status: published
+provenance:
+  evidence: "post-publication"
 tags:
 - github
 - api
@@ -8,12 +13,9 @@ tags:
 - '401'
 - auth
 - pat
-status: published
-created: '2026-07-06'
-language: zh
-source: unknown
+title: GitHub API 401 后本地凭证查找顺序
+verification: metadata-normalized
 ---
-
 ## Problem
 
 调用 GitHub API 时收到 `{"message": "Bad credentials"}` 或 HTTP 401/403，第一反应是 token 无效要去问用户要新的。但本地往往已经有可用凭证，跳过检查会让用户白跑一趟。
@@ -54,11 +56,15 @@ grep -oP 'https://[^:]+:([^@]+)@' ~/.git-credentials | sed 's/https:\/\/[^:]\+:/
 ## Verification
 
 ```bash
-cat ~/.git-credentials
-echo "Verification passed: fix command exited 0"
+git status --short | head -5
+git log --oneline -3
 ```
 
-**Expected Output:** command completes without error, then `Verification passed` is printed. (Checks: `cat ~/.git-credentials`)
+**Expected Output:**
+```
+# (status)
+# (recent)
+```
 
 ## Related经验
 

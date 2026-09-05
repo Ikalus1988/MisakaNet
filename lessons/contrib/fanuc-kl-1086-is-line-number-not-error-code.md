@@ -23,6 +23,11 @@ solution: '1. 报错信息中的数字需区分：行号 vs 错误码
   2. ERR_ABORT=2 是真正导致''所有任务中止''的根因（而非 1086）
 
   3. IPC 通信超时导致 ERR_ABORT 触发 → 根因是 Mech-Vision 12:00 文件夹切换竞争'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## FANUC KL: 1086 是代码行号而非错误码

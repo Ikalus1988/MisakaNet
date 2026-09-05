@@ -15,6 +15,11 @@ source: unknown
 confidence: 0.88
 domain_expert: ''
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login
