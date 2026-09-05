@@ -156,6 +156,7 @@ const MCP_TOOLS = [
         domain: { type: "string", description: "Optional domain filter such as devops, python, network, feishu, rag, fanuc, or mcp." },
         top: { type: "integer", description: "Maximum ranked results to return. Defaults to 5; keep small for MCP context and latency." },
         detail: { type: "string", enum: ["compact", "summary", "full"], description: "Progressive disclosure: compact (default, ~80 tok) includes id/title/problem/freshness; summary (~200 tok) adds domain/tags/fix; full returns complete lesson data with path." },
+        kind: { type: "string", enum: ["all", "lessons", "evidence", "related"], description: "Filter by kind: 'lessons' (lesson files only), 'evidence' (results with evidence_refs or verification), 'related' (cross-referenced/tag-overlap), 'all' (default). Auto-detected from query intent when omitted." },
         bm25_weight: { type: "number", description: "Override BM25 keyword weight (0-1). Higher favors exact keyword match. Default: 0.65. All weights must sum to 1.0." },
         metadata_weight: { type: "number", description: "Override metadata bonus weight (0-1). Higher favors matching domain/tags. Default: 0.20." },
         baseline_weight: { type: "number", description: "Override baseline score weight (0-1). Higher favors proven/popular lessons. Default: 0.15." },
@@ -425,6 +426,47 @@ function applyDetailLevel(results, detail) {
   if (detail === "summary") return results.map(summaryResult);
   if (detail === "compact") return results.map(compactResult);
   return results; // full — keep as-is
+}
+
+// ── Kind filter + query-intent routing (Issue #1441) ──
+
+const LESSON_INTENT_RE = /(lesson|lessons|learned|踩坑|记录|经验|memory|remember|preference)/i;
+const EVIDENCE_INTENT_RE = /(evidence|被用过|多少人|E4|验证|verification|引用次数|usage)/i;
+
+function detectKind(query, explicitKind) {
+  if (explicitKind && explicitKind !== "all") return explicitKind;
+  if (LESSON_INTENT_RE.test(query)) return "lessons";
+  if (EVIDENCE_INTENT_RE.test(query)) return "evidence";
+  return "all";
+}
+
+function isLessonResult(r) {
+  return !!(r.title && (r.path || r.id));
+}
+
+function isEvidenceResult(r) {
+  if (r.evidence_refs) return true;
+  const ev = (r.evidence_level || "").toLowerCase();
+  if (["verified", "confirmed", "high"].includes(ev)) return true;
+  const content = (r.content || r.description || r.summary || "").toLowerCase();
+  return content.includes("## verification") || content.includes("## verify");
+}
+
+function isRelatedResult(r) {
+  return !!(r.tags?.length || r.related_lessons?.length);
+}
+
+function classifyResultKind(r) {
+  if (isEvidenceResult(r)) return "evidence";
+  if (isRelatedResult(r)) return "related";
+  return "lessons";
+}
+
+function filterByKind(results, kind) {
+  if (kind === "lessons") return results.filter(isLessonResult);
+  if (kind === "evidence") return results.filter(isEvidenceResult);
+  if (kind === "related") return results.filter(isRelatedResult);
+  return results;
 }
 
 // Simple keyword-based lesson search (runs in Worker, no BM25)
@@ -799,6 +841,16 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       }
     }
 
+    // Kind filtering (Issue #1441)
+    const kind = detectKind(args.query, args.kind);
+    if (results.length > 0 && kind !== "all") {
+      results = filterByKind(results, kind);
+    }
+    // Tag each result with its kind
+    for (const r of results) {
+      if (!r.kind) r.kind = kind !== "all" ? kind : classifyResultKind(r);
+    }
+
     // PRD ①: no-match closed loop — embed intake guidance so the agent can
     // submit the gap in the same request chain instead of dropping it.
     // How-to / knowledge-gap queries route to kind="question"; error-like
@@ -840,7 +892,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         identity: aura,
       };
     }
-    return { results, source, detail, query: args.query, identity: aura };
+    return { results, source, detail, kind, query: args.query, identity: aura };
   }
 
   if (toolName === "misakanet_get_lesson") {
