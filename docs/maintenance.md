@@ -100,3 +100,9 @@ GitHub 提示默认分支 4 条开放告警（2 critical + 2 high）。沙箱无
 - 推断剩余告警来源：`uv.lock` 传递依赖（dependabot 现支持 uv）或某个未覆盖的 Actions。
   待维护者在 GitHub Security → Dependabot 页粘贴 4 条明细后逐条修复；修复路径模板：
   pip/uv → 升级对应约束 + `uv lock`；npm → `npm audit fix` 后提交 lock；actions → 升到已修复版本或 SHA pin。
+
+**2026-09-05 修复（告警明细确认后）：4 条告警全部为 `chromadb`（pip · uv.lock）——
+GHSA-2wm9（高, 租户越权）、GHSA-36p7（严重, 代码注入）、GHSA-f4j7（严重, 预认证代码注入）、
+GHSA-xph7（高, RBAC 范围）。`last_affected = 1.5.9` 即 PyPI 最新版，上游无修复。
+本仓库零 chromadb import（仅 pyproject hub extras 遗留声明）→ 已从 `hub` extras 移除并 `uv lock`
+（lock -1806/+37 行），4 条告警在推送后自动关闭；外部 hub 包如确需 chromadb 由其自身清单声明。
