@@ -1374,6 +1374,34 @@
     "trust_score": 0.35
   },
   {
+    "id": "corporate-proxy-curl-timeout",
+    "title": "curl Timeout Behind Corporate Proxy: SSL Inspection Breaks Certificate Validation",
+    "domain": "devops",
+    "tags": [
+      "proxy",
+      "curl",
+      "corporate-network",
+      "ssl",
+      "tls",
+      "mitm"
+    ],
+    "summary": "`curl` requests to external APIs timeout behind corporate proxy with SSL inspection enabled. Common in enterprise environments where all outbound traffic goes t…",
+    "preview": "# curl Timeout Behind Corporate Proxy\n\n## Problem\n\n`curl` requests to external APIs timeout behind corporate proxy with SSL inspection enabled. Common in enterprise environments where all outbound traffic goes through a proxy that performs TLS man-in-the-middle inspection.\n\nSymptoms:\n- `curl: (60) SSL certificate problem: unable to get local issuer certificate`\n- `curl: (35) OpenSSL SSL_connect: Connection reset by peer`\n- Requests hang for 30-60 seconds then timeout\n\n## Root Cause\n\nCorporate proxy performs SSL man-in-the-middle inspection by:\n1. Intercepting TLS handshake with its own CA certificate\n2. Re-signing server certificates with corporate CA\n3. curl validates against system CA store which doesn't include corporate CA\n\n## Fix\n\n**Option 1: Skip certificate verification (quick, less secure)**\n```bash\ncurl --proxy-insecure https://api.example.com\n# Or set permanently\nexport CURL_INSECURE=1\n```\n\n**Option 2: Add corporate CA to curl's trust store (recommended)**\n```bash\n# Find corporate CA (ask IT or check browser)\ncp corporate-ca.crt /etc/ssl/certs/\n# Or set per-request\ncurl --cacert /path/to/corporate-ca.crt https://api.example.com\n# Or set permanently\nexport CURL_CA_BUNDLE=/path/to/corporate-ca.crt\n```\n\n**Option 3: Use system proxy settings**\n```bash\ncurl --proxy http://proxy.corp:8080 https://api.example.com\n# Or set permanently\nexport http_proxy=http://proxy.corp:8080\nexport https_proxy=http://proxy.corp:8080\n```\n\n## Verification\n\n```bash\ncurl -sS -o /dev/null -w '%{http_code}' https://api.example.com\n# Should return 200\n```\n\n## References\n\n- [curl documentation: SSL CERTS](https://curl.se/docs/sslcerts.html)\n- [Stack Overflow: curl behind corporate proxy](https://stackoverflow.com/questions/29822686)",
+    "url": "lessons/contrib/corporate-proxy-curl-timeout.md",
+    "created": "2026-09-05",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "verified": true,
+    "evidence_level": "E2",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.425
+  },
+  {
     "id": "cron-job-not-running",
     "title": "Cron 作业不执行 / 不生效排障",
     "domain": "contrib",
