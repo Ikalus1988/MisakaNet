@@ -109,3 +109,36 @@ GHSA-2wm9（高, 租户越权）、GHSA-36p7（严重, 代码注入）、GHSA-f4
 GHSA-xph7（高, RBAC 范围）。`last_affected = 1.5.9` 即 PyPI 最新版，上游无修复。
 本仓库零 chromadb import（仅 pyproject hub extras 遗留声明）→ 已从 `hub` extras 移除并 `uv lock`
 （lock -1806/+37 行），4 条告警在推送后自动关闭；外部 hub 包如确需 chromadb 由其自身清单声明。
+
+## 7. dsh bundle（插件/工具集成，2026-09-05）
+
+MisakaNet 现已声明 `dsh.bundle`（`package.json` + `cordis.patch.yml`），作为 dsh 插件的
+默认行为：
+
+- **git+ 安装**（`dsh plugin add git+https://github.com/Ikalus1988/MisakaNet.git`）：
+  patch 行 `misakanet-mcp` 以 stdio 启动仓库自带 `scripts/mcp_server.py`，向 profile 提供
+  `mcp__misakanet__misakanet_search / get_lesson / …` 工具（本地、无限额）。
+- **npm 安装**（skill-only，不含 python）：该行 `failOnStartupError: false` 静默断开，
+  仅提供 skill/CLI 面——要实时工具请改用 git+ 安装。
+
+### 远端接入示例（npm 用户可选）
+
+把下面行追加到你 profile 的用户 patch（如 `~/.dsh/profiles/web/cordis.patch.yml`），
+让 `dsh-mcp-client` 直连远端（无需本地 python；token 需在 https://misakanet.org 注册）：
+
+```yaml
+- insert:
+    - id: misakanet-remote
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        transport: streamable-http
+        serverName: misakanet-remote
+        url: https://misakanet.org/mcp
+        headers:
+          Authorization: 'Bearer YOUR_MISAKANET_TOKEN'
+        failOnStartupError: false
+```
+
+> 命名空间提示：`serverName` 唯一（`misakanet` 已被默认本地行占用，远端用
+> `misakanet-remote`），工具名会以 `mcp__misakanet-remote__*` 出现。
+> 契约测试：`tests/test_dsh_bundle.py`（patch 声明/单行/字段/全局唯一 id）。

@@ -101,6 +101,11 @@ mkdir -p ~/.dsh/skills
 cp -r skills/misakanet ~/.dsh/skills/
 ```
 
+> **DSH bundle 工具（`mcp__misakanet__*`）** 由仓库自带 python MCP 服务器提供，
+> 仅在 **git+ 安装**时随包存在（npm 包只含 skill/CLI 面）。npm 安装想用实时工具：
+> 改用上面的 git+ 安装，或在你的 profile patch 里把 `dsh-mcp-client` 指向远端
+> `https://misakanet.org/mcp`（示例见 `docs/maintenance.md` → dsh bundle 章节）。
+
 ```python
 # Python 库方式
 from misakanet.search import search_lessons
