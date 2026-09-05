@@ -6503,6 +6503,34 @@
     "trust_score": 0.35
   },
   {
+    "id": "pip-install-proxy-timeout",
+    "title": "pip install ReadTimeoutError Behind Corporate Proxy: Certificate Validation and Timeout Configuration",
+    "domain": "python",
+    "tags": [
+      "pip",
+      "proxy",
+      "corporate-network",
+      "ssl",
+      "timeout",
+      "pypi"
+    ],
+    "summary": "`pip install` fails with `ReadTimeoutError` or `ConnectionResetError` when behind corporate proxy with SSL inspection. Common errors:",
+    "preview": "# pip install Fails Behind Corporate Proxy\n\n## Problem\n\n`pip install` fails with `ReadTimeoutError` or `ConnectionResetError` when behind corporate proxy with SSL inspection. Common errors:\n\n```\npip._vendor.urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='pypi.org', port=443): Read timed out.\nERROR: Could not install packages due to an EnvironmentError: [SSL: CERTIFICATE_VERIFY_FAILED]\n```\n\n## Root Cause\n\n1. Corporate proxy performs TLS MITM inspection\n2. pip validates certificates against system CA store (missing corporate CA)\n3. Default timeout (15s) too short for proxy inspection overhead\n\n## Fix\n\n**Option 1: Increase timeout + trust PyPI host (quick)**\n```bash\npip install --timeout 120 --trusted-host pypi.org --trusted-host files.pythonhosted.org package-name\n```\n\n**Option 2: Set corporate CA globally (recommended)**\n```bash\n# Find corporate CA\ncp corporate-ca.crt ~/.local/share/ca-certificates/\nupdate-ca-certificates  # Linux\n# Or set via pip config\npip config set global.cert /path/to/corporate-ca.crt\n```\n\n**Option 3: Use system proxy settings**\n```bash\npip install --proxy http://proxy.corp:8080 package-name\n# Or set permanently\nexport HTTP_PROXY=http://proxy.corp:8080\nexport HTTPS_PROXY=http://proxy.corp:8080\n```\n\n**Option 4: pip config for persistent fix**\n```bash\npip config set global.timeout 120\npip config set global.trusted-host pypi.org\npip config set global.trusted-host files.pythonhosted.org\n```\n\n## Verification\n\n```bash\npip install --dry-run requests\n# Should show \"Would install requests-2.x.x\"\n```\n\n## References\n\n- [pip documentation: SSL/TLS](https://pip.pypa.io/en/stable/topics/https-certificates/)\n- [pip documentation: timeouts](https://pip.pypa.io/en/stable/user_guide/#timeout)",
+    "url": "lessons/contrib/pip-install-proxy-timeout.md",
+    "created": "2026-09-05",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "verified": true,
+    "evidence_level": "E2",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.425
+  },
+  {
     "id": "pip-install-timeout-ssl",
     "title": "pip install Network Timeout / SSL ErrorFix",
     "domain": "contrib",
