@@ -1923,6 +1923,34 @@
     "trust_score": 0.63
   },
   {
+    "id": "proxy-corporativo-curl-timeout",
+    "title": "Timeout de curl detrás de proxy corporativo: inspección SSL rompe validación de certificados",
+    "domain": "devops",
+    "tags": [
+      "proxy",
+      "curl",
+      "red-corporativa",
+      "ssl",
+      "tls",
+      "mitm"
+    ],
+    "summary": "Las peticiones `curl` a APIs externas fallan con timeout detrás de un proxy corporativo con inspección SSL habilitada. Común en entornos empresariales donde tod…",
+    "preview": "# Timeout de curl detrás de proxy corporativo\n\n## Problema\n\nLas peticiones `curl` a APIs externas fallan con timeout detrás de un proxy corporativo con inspección SSL habilitada. Común en entornos empresariales donde todo el tráfico pasa por un proxy que realiza inspección TLS man-in-the-middle.\n\nSíntomas:\n- `curl: (60) SSL certificate problem: unable to get local issuer certificate`\n- `curl: (35) OpenSSL SSL_connect: Connection reset by peer`\n- Las peticiones se cuelgan30-60 segundos y luego fallan\n\n## Causa raíz\n\nEl proxy corporativo realiza inspección SSL man-in-the-middle:\n1. Intercepta el handshake TLS con su propio certificado CA\n2. Re-firma certificados del servidor con la CA corporativa\n3. curl valida contra el almacén CA del sistema que no incluye la CA corporativa\n\n## Solución\n\n**Opción 1: Saltar verificación de certificado (rápido, menos seguro)**\n```bash\ncurl --proxy-insecure https://api.example.com\n# O configurar permanentemente\nexport CURL_INSECURE=1\n```\n\n**Opción 2: Agregar CA corporativa al almacén de confianza (recomendado)**\n```bash\n# Encontrar CA corporativa (preguntar a IT o revisar navegador)\ncp corporate-ca.crt /etc/ssl/certs/\n# O establecer por petición\ncurl --cacert /path/to/corporate-ca.crt https://api.example.com\n# O configurar permanentemente\nexport CURL_CA_BUNDLE=/path/to/corporate-ca.crt\n```\n\n**Opción 3: Usar configuración de proxy del sistema**\n```bash\ncurl --proxy http://proxy.corp:8080 https://api.example.com\n# O configurar permanentemente\nexport http_proxy=http://proxy.corp:8080\nexport https_proxy=http://proxy.corp:8080\n```\n\n## Verificación\n\n```bash\ncurl -sS -o /dev/null -w '%{http_code}' https://api.example.com\n# Debería retornar 200\n```\n\n## Referencias\n\n- [Documentación curl: SSL CERTS](https://curl.se/docs/sslcerts.html)\n- [Stack Overflow: curl detrás de proxy corporativo](https://stackoverflow.com/questions/29822686)",
+    "url": "lessons/contrib/es/proxy-corporativo-curl-timeout.md",
+    "created": "2026-09-05",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "verified": false,
+    "evidence_level": "E2",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.425
+  },
+  {
     "id": "escrow-fee-rounding-per-provider",
     "title": "Banking-style escrow fee estimate has a per-provider rounding disparity",
     "domain": "development",
@@ -6744,6 +6772,34 @@
     "evidence_level": "E0",
     "evidence_source": "inferred",
     "trust_score": 0.595
+  },
+  {
+    "id": "instalacao-pip-timeout-proxy",
+    "title": "pip install falha com ReadTimeoutError atrás de proxy corporativo",
+    "domain": "python",
+    "tags": [
+      "pip",
+      "proxy",
+      "rede-corporativa",
+      "ssl",
+      "timeout",
+      "pypi"
+    ],
+    "summary": "O `pip install` falha com `ReadTimeoutError` ou `ConnectionResetError` atrás de um proxy corporativo com inspeção SSL habilitada. Erros comuns:",
+    "preview": "# pip install falha atrás de proxy corporativo\n\n## Problema\n\nO `pip install` falha com `ReadTimeoutError` ou `ConnectionResetError` atrás de um proxy corporativo com inspeção SSL habilitada. Erros comuns:\n\n```\npip._vendor.urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='pypi.org', port=443): Read timed out.\nERROR: Could not install packages due to an EnvironmentError: [SSL: CERTIFICATE_VERIFY_FAILED]\n```\n\n## Causa raíz\n\n1. O proxy corporativo realiza inspeção TLS MITM\n2. O pip valida certificados contra o armazenamento CA do sistema (falta a CA corporativa)\n3. Timeout padrão (15s) muito curto para o overhead da inspeção do proxy\n\n## Solução\n\n**Opção 1: Aumentar timeout + confiar no host PyPI (rápido)**\n```bash\npip install --timeout 120 --trusted-host pypi.org --trusted-host files.pythonhosted.org nome-do-pacote\n```\n\n**Opção 2: Configurar CA corporativa globalmente (recomendado)**\n```bash\n# Encontrar CA corporativa\ncp corporate-ca.crt ~/.local/share/ca-certificates/\nupdate-ca-certificates  # Linux\n# Ou configurar via pip config\npip config set global.cert /path/to/corporate-ca.crt\n```\n\n**Opção 3: Usar configurações de proxy do sistema**\n```bash\npip install --proxy http://proxy.corp:8080 nome-do-pacote\n# Ou configurar permanentemente\nexport HTTP_PROXY=http://proxy.corp:8080\nexport HTTPS_PROXY=http://proxy.corp:8080\n```\n\n**Opção 4: Configuração pip persistente**\n```bash\npip config set global.timeout 120\npip config set global.trusted-host pypi.org\npip config set global.trusted-host files.pythonhosted.org\n```\n\n## Verificação\n\n```bash\npip install --dry-run requests\n# Deve mostrar \"Would install requests-2.x.x\"\n```\n\n## Referências\n\n- [Documentação pip: SSL/TLS](https://pip.pypa.io/en/stable/topics/https-certificates/)\n- [Documentação pip: timeouts](https://pip.pypa.io/en/stable/user_guide/#timeout)",
+    "url": "lessons/contrib/pt-br/instalacao-pip-timeout-proxy.md",
+    "created": "2026-09-05",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "verified": false,
+    "evidence_level": "E2",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.425
   },
   {
     "id": "python-gbk-encoding-error",
