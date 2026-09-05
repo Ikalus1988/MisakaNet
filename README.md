@@ -120,6 +120,12 @@ cp -r skills/misakanet ~/.dsh/skills/
 python3 scripts/mcp_deepseek_adapter.py
 ```
 
+> **DSH bundle tools (`mcp__misakanet__*`)** are served by the repo's python MCP
+> server, which ships only with a **git+ install** (the npm bundle provides the
+> skill/CLI surfaces only). For live tools from an npm install, either switch to
+> git+ (above) or point a `dsh-mcp-client` row at the remote endpoint
+> `https://misakanet.org/mcp` — example patch: `docs/maintenance.md` → dsh bundle.
+
 ### Try it now
 
 | Method | Command | Time |
