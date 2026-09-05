@@ -7,6 +7,61 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.28.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.27.1...v2.28.0) (2026-09-05)
+
+
+### Features
+
+* **dsh:** declare dsh.bundle — register stdio MCP server as mcp__mis… ([51e3da7](https://github.com/Ikalus1988/MisakaNet/commit/51e3da7755f9512bf65fe20d6296e18a4b322ef3))
+* **dsh:** declare dsh.bundle — register stdio MCP server as mcp__misakanet__* (B1) ([51cf15a](https://github.com/Ikalus1988/MisakaNet/commit/51cf15a1fbbd30211ce28c8b7e938767e86b25ad))
+* **ops:** --registry also bumps server.json pypi entry (R3 stays satisfied post-release) ([2c4e2d4](https://github.com/Ikalus1988/MisakaNet/commit/2c4e2d4df9b3e2dca5cc35b0874d0ac023455350))
+* **ops:** add make doctor pre-flight checks for deploy readiness (audit QW3/T0.2) ([42c9c9a](https://github.com/Ikalus1988/MisakaNet/commit/42c9c9a3b8206bb8e310df38c779b533003504e5))
+* **ops:** single version-alignment tool + explicit channel policy (audit T2.1) ([8089018](https://github.com/Ikalus1988/MisakaNet/commit/80890185ec32f425fbf5b0ff3d1c9259677e6b01))
+* **search:** align D1 and all index consumers with canonical_lessons (T2.5) ([5bf023f](https://github.com/Ikalus1988/MisakaNet/commit/5bf023f759192abb6773101b36109d20ee021b7e))
+* **search:** auto-discover all lesson directories (audit T2.2, library policy) ([3dc4c59](https://github.com/Ikalus1988/MisakaNet/commit/3dc4c5993f34fbaaba2736b05bb878fe022773e5))
+* **search:** dedupe visible index by stem — mirrors dropped (audit T2.5) ([23eb4ef](https://github.com/Ikalus1988/MisakaNet/commit/23eb4ef038cc9b06dad53d760701ff71e50db6ca))
+
+
+### Bug Fixes
+
+* **cli:** make search_knowledge --heal dry-run by default (audit QW5) ([cd9bf44](https://github.com/Ikalus1988/MisakaNet/commit/cd9bf4476a01a20aadb30880a36cf295276863bd))
+* **deps:** remove vulnerable chromadb from hub extras (closes 4 dependabot alerts) ([cdae753](https://github.com/Ikalus1988/MisakaNet/commit/cdae7533dd07f95d18774077799de9be6c16931f))
+* **ops:** align pypi entry to release line; npm-bundle lag policy (merged-main reality) ([89c35ac](https://github.com/Ikalus1988/MisakaNet/commit/89c35ac8d78f293d47077ba51c03a185321150af))
+* **quality:** don't flag TODO fill-ins in draft/template lessons (audit T3.3) ([aeb5c50](https://github.com/Ikalus1988/MisakaNet/commit/aeb5c500eaf5616e210558d767cd2a6b35233bba))
+* **registry:** server.json description within official schema maxLength 100 ([c432564](https://github.com/Ikalus1988/MisakaNet/commit/c432564367e1a8bd054026c540cda5de3c31c7b3))
+* **search:** address PR [#1482](https://github.com/Ikalus1988/MisakaNet/issues/1482) review — facade corpus refresh, robust telemetry, narrowed TODO tolerance ([7cf63ec](https://github.com/Ikalus1988/MisakaNet/commit/7cf63eca56986a173b5b7763995c2c50dfe74ab7))
+* **search:** restore working BM25 facade for MCP/HTTP servers (audit QW4) ([0d26c9a](https://github.com/Ikalus1988/MisakaNet/commit/0d26c9a7c2592841177a5751e61c7e55f153ee0b))
+
+
+### Documentation
+
+* **ci:** add full workflow inventory docs/CI.md (audit T2.3) ([7ce5022](https://github.com/Ikalus1988/MisakaNet/commit/7ce5022394149debb173a63c98fdd1eb58e0e1f8))
+* **dsh:** clarify git+ requirement in description; add bundle contract tests (PR [#1484](https://github.com/Ikalus1988/MisakaNet/issues/1484) review) ([c007ac4](https://github.com/Ikalus1988/MisakaNet/commit/c007ac44fe3a8006442ff3e19fe734026fcaa5ad))
+* **dsh:** npm vs git+ guidance + remote MCP example patch (B2-doc) ([049040c](https://github.com/Ikalus1988/MisakaNet/commit/049040c17689d0a073d418aa046a5fd43657497e))
+* **dsh:** npm vs git+ guidance + remote MCP example patch (B2-doc) ([65bea53](https://github.com/Ikalus1988/MisakaNet/commit/65bea53a74bce85b59022ba3e5b11378f5451a19))
+* **maintainer:** add handoff-2026-09-05 (CodeQL zero, releases 2.27.x, bounty audit, rotation proof) ([10629da](https://github.com/Ikalus1988/MisakaNet/commit/10629da32e01f3c2e5c56f2b39baf8534b108d38))
+* **maintainer:** handoff 2026-09-05 audit-improvement round (PR [#1482](https://github.com/Ikalus1988/MisakaNet/issues/1482)) ([b1cdefe](https://github.com/Ikalus1988/MisakaNet/commit/b1cdefee70e055556a77e3e27119d36d5db79db4))
+* **maintenance:** dependabot local-audit findings + fix playbook (2 crit / 2 high pending details) ([aceca4d](https://github.com/Ikalus1988/MisakaNet/commit/aceca4d3272c5abb665a17f1f32a61f55e892aeb))
+* **maintenance:** note test_dsh_bundle.py provenance (PR [#1484](https://github.com/Ikalus1988/MisakaNet/issues/1484)) — review clarification ([f91bf9a](https://github.com/Ikalus1988/MisakaNet/commit/f91bf9a994eee23bf551069dab1a9fc06b5de03d))
+* **maintenance:** release-prep checklist + MCP registry/dsh.so runbook (§8-9) ([ba77cdb](https://github.com/Ikalus1988/MisakaNet/commit/ba77cdb66db39a53d879644052f41624b780dfcb))
+* **maintenance:** scripts naming policy, archive triage, regenerable-data guide (audit T3.1/3.2/3.4) ([998aaca](https://github.com/Ikalus1988/MisakaNet/commit/998aacaf873e40f66bd4dafe99c14ae682e42137))
+
+
+### Refactoring
+
+* **cli:** extract heal/diagnose mode into misakanet/cli/heal.py (audit T1.1 stage 1) ([4dff6a3](https://github.com/Ikalus1988/MisakaNet/commit/4dff6a324b5b23d58e4210dc1f2ae2479000b14a))
+* **cli:** extract remote/typo/graphql/harvest modes into misakanet/cli (audit T1.1 stage 2-4) ([5b2accd](https://github.com/Ikalus1988/MisakaNet/commit/5b2accdc83eec81dc2b4415b5133ccae582fa849))
+
+
+### Tests
+
+* **ci:** add version-consistency safety net (audit T0.1) ([320db69](https://github.com/Ikalus1988/MisakaNet/commit/320db69605dee4c9e50723a04704d993d3dcb32d))
+
+
+### CI/CD
+
+* **deploy:** gate worker deploys on placeholder-free config (audit T1.5) ([230822f](https://github.com/Ikalus1988/MisakaNet/commit/230822fc1e1b2453ed45f02a42d89212f0f5981c))
+
 ## [2.27.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.27.0...v2.27.1) (2026-09-05)
 
 
