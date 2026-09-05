@@ -1,4 +1,7 @@
-.PHONY: deploy deploy-web deploy-api deploy-email
+.PHONY: deploy deploy-web deploy-api deploy-email doctor
+
+doctor:
+	python3 scripts/doctor.py
 
 deploy-email:
 	cd workers/email-register && npx wrangler deploy
