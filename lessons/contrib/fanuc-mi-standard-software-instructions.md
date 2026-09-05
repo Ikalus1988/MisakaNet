@@ -12,13 +12,16 @@ tags:
 - mi22-fds
 - automotive
 - welding
-- gluing
-- riveting
 status: published
 created: '2026-07-14'
 source: internal-training
 confidence: 0.9
 subdomain: tp-programming
+provenance:
+  source: "internal"
+  contributor: "MisakaNet Core"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem
