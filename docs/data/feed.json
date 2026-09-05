@@ -1,43 +1,67 @@
 {
-  "generated_at": "2026-09-05T15:20:40.091084+00:00",
+  "generated_at": "2026-09-05T16:52:26.328539+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(maintenance): release-prep checklist + MCP registry/dsh.so runbo…",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1491",
-      "timestamp": "2026-09-05T15:18:22Z",
+      "title": "feat(i18n): add Spanish and Portuguese lessons for LatAm market (#1349)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1496",
+      "timestamp": "2026-09-05T16:52:17Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(dsh): npm vs git+ guidance + remote MCP example patch (B2-doc)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1486",
-      "timestamp": "2026-09-05T13:50:47Z",
+      "title": "feat: publish rhythm tracker and calendar (#1348)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1495",
+      "timestamp": "2026-09-05T16:47:47Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(dsh): declare dsh.bundle — register stdio MCP server as mcp__mis…",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1484",
-      "timestamp": "2026-09-05T11:32:40Z",
+      "title": "feat: request classification logging (#1347)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1490",
+      "timestamp": "2026-09-05T16:47:41Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "Audit/2026 09 05 qw m0m2",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1482",
-      "timestamp": "2026-09-05T10:30:06Z",
+      "title": "lesson: AI Gateway auth pitfalls (#1354)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1489",
+      "timestamp": "2026-09-05T16:47:35Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.27.1",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1479",
-      "timestamp": "2026-09-05T03:52:23Z",
+      "title": "[Search] Add kind filter + query-intent routing (#1441)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1454",
+      "timestamp": "2026-09-05T16:47:26Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "Cloudflare AI Gateway: gateway token ≠ account token, /workers-ai/run/ path required",
+      "url": "lessons/contrib/cloudflare-ai-gateway-auth-pitfalls.md",
+      "timestamp": "2026-09-05 00:00:00 UTC",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Timeout de curl detrás de proxy corporativo: inspección SSL rompe validación de certificados",
+      "url": "lessons/contrib/es/proxy-corporativo-curl-timeout.md",
+      "timestamp": "2026-09-05",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "pip install falha com ReadTimeoutError atrás de proxy corporativo",
+      "url": "lessons/contrib/pt-br/instalacao-pip-timeout-proxy.md",
+      "timestamp": "2026-09-05",
+      "domain": "python",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -53,30 +77,6 @@
       "url": "lessons/contrib/mcp-question-answer-pull-delivery.md",
       "timestamp": "2026-09-03",
       "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "DeepWiki Architecture Review: Fair Hits, Stale-Snapshot Misses, and the Right Trajectory",
-      "url": "lessons/contrib/deepwiki-review-fair-hits-stale-misses-trajectory.md",
-      "timestamp": "2026-09-02",
-      "domain": "devops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "DSH Plugin Installation Troubleshooting — Common Failures and Fixes",
-      "url": "lessons/contrib/dsh-plugin-installation-troubleshooting.md",
-      "timestamp": "2026-09-02",
-      "domain": "tooling",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "mcporter Cloudflare OAuth: Correct Endpoint, No Scope, and WSL Callback Trap",
-      "url": "lessons/contrib/mcporter-cloudflare-oauth-endpoint-scope-wsl-callback.md",
-      "timestamp": "2026-09-02",
-      "domain": "devops",
       "source": "lessons"
     },
     {
