@@ -71,7 +71,11 @@ If tools are not appearing:
 The repository includes a Node built-in test suite for the dsh plugin contract:
 
 ```bash
-node --test tests/dsh/*.test.mjs
+node --test --test-concurrency=1 \
+  tests/dsh/compatibility.test.mjs \
+  tests/dsh/functionality.test.mjs \
+  tests/dsh/install.test.mjs \
+  tests/dsh/performance.test.mjs
 ```
 
 The suite covers:
