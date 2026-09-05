@@ -131,20 +131,32 @@ def refresh_lesson_count_markers(count: int) -> None:
 
 
 def main():
+    # Audit T2.2 "图书馆" policy: index every lessons/ subdir with real
+    # content (discovery shared with misakanet.search.engine), not just
+    # core/contrib. INDEXED_DIRS stays as the historical fallback/legacy
+    # reference for docs that still mention the two-dir model.
+    from misakanet.lesson_index import EXCLUDED_LESSON_FILES, discover_lesson_dirs
+
     entries = []
-    for lesson_dir in INDEXED_DIRS:
-        files = sorted((LESSONS_DIR / lesson_dir).glob("*.md"))
+    # Stable output order: curated core/, then contrib/, then every other
+    # discovered dir alphabetically — keeps the historic prefix byte-identical.
+    def _dir_key(d: Path):
+        return (0 if d.name == "core" else 1 if d.name == "contrib" else 2, d.name)
+
+    for lesson_dir in sorted(discover_lesson_dirs(LESSONS_DIR), key=_dir_key):
+        files = sorted(lesson_dir.glob("*.md"))
+        dir_name = lesson_dir.name
         for f in files:
-            if f.name.startswith(".") or f.name in EXCLUDED:
+            if f.name.startswith(".") or f.name in EXCLUDED_LESSON_FILES:
                 continue
             content = f.read_text(encoding="utf-8", errors="replace")
             meta = parse_frontmatter(content)
             # YAML frontmatter may yield non-JSON types (date, etc.) — normalize
             meta = {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in meta.items()}
             title = meta.get("title", f.stem)
-            domain = meta.get("domain", lesson_dir)
+            domain = meta.get("domain", dir_name)
             if isinstance(domain, list):
-                domain = domain[0] if domain else lesson_dir
+                domain = domain[0] if domain else dir_name
             tags = meta.get("tags", [])
             if not isinstance(tags, list):
                 tags = [tags] if tags else []

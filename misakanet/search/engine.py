@@ -170,7 +170,12 @@ def _parse_yaml_frontmatter(text: str) -> dict:
 
 def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc]:
     """L2缓存加载 — 只重新解析有变动的文件。
-    如果 is_lesson=True，同时扫描 core/ 和 contrib/ 子目录。"""
+
+    如果 is_lesson=True，扫描 lessons/ 下所有包含真实课文的子目录
+    （misakanet.lesson_index 自动发现 — audit T2.2 "图书馆" 策略：核心 +
+    contrib + 语言副本 + 生命周期目录全部可见，仅排除 templates/_archive
+    脚手架与 README/index 类文件）。为 reference 时扫描单个目录。
+    """
     docs = []
     conn = _l2()
     known = {
@@ -178,15 +183,17 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
         for row in conn.execute("SELECT path, mtime, size FROM file_cache").fetchall()
     }
     changed = 0
-    # For lessons, scan both core/ and contrib/; for references, scan single directory
-    search_dirs = [directory]
+    from misakanet.lesson_index import EXCLUDED_LESSON_FILES, discover_lesson_dirs
+
     if is_lesson:
-        search_dirs = [LESSONS_CORE, LESSONS_CONTRIB]
+        search_dirs = discover_lesson_dirs(LESSONS)
+    else:
+        search_dirs = [directory]
     for dir_path in search_dirs:
         if not dir_path.exists():
             continue
         for f in sorted(dir_path.glob("**/*.md")):
-            if f.name == "index.md" or f.name.startswith("."):
+            if f.name.startswith(".") or f.name in EXCLUDED_LESSON_FILES:
                 continue
             try:
                 st = f.stat()
