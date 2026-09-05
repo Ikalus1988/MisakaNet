@@ -30,6 +30,44 @@ function initialize(id) {
   });
 }
 
+function toolCall(id, name, args, token) {
+  return new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id,
+      method: 'tools/call',
+      params: { name, arguments: args },
+    }),
+  });
+}
+
+function toolResult(body) {
+  return JSON.parse(body.result.content[0].text);
+}
+
+class MemoryKv {
+  constructor() {
+    this.values = new Map();
+    this.readKeys = [];
+  }
+
+  async get(key, type) {
+    this.readKeys.push(key);
+    const value = this.values.get(key);
+    if (value === undefined) return null;
+    return type === 'json' ? JSON.parse(value) : value;
+  }
+
+  async put(key, value) {
+    this.values.set(key, String(value));
+  }
+}
+
 async function runBatch(count) {
   const started = performance.now();
   const responses = await Promise.all(
@@ -68,19 +106,68 @@ test('rejects oversized payloads with and without a Content-Length hint', async 
 test('returns stable errors under mixed invalid load', async () => {
   const requests = Array.from({ length: 100 }, (_, id) => {
     if (id % 2 === 0) return mcpRequest('{not-json');
-    // tools/list is a public method (registry scanners need it unauthenticated,
-    // see e3796f13), so these return 200 — not 401.
+    // Read tools allow anonymous access; write_lesson still requires a token.
     return new Request('https://misakanet.org/mcp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id, method: 'tools/list' }),
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id,
+        method: 'tools/call',
+        params: { name: 'misakanet_write_lesson', arguments: {} },
+      }),
     });
   });
   const responses = await Promise.all(requests.map((request) => worker.fetch(request, env)));
 
   assert.equal(responses.filter((response) => response.status === 400).length, 50);
-  // tools/list without auth is allowed (public) → all 50 succeed
-  assert.equal(responses.filter((response) => response.status === 200).length, 50);
+  assert.equal(responses.filter((response) => response.status === 401).length, 50);
+});
+
+test('accepts a newly registered KV token from the write_lesson Bearer header', async (t) => {
+  t.after(() => t.mock.restoreAll());
+  const kv = new MemoryKv();
+  const testEnv = { MISAKANET_KV: kv, REGISTER_TOKEN: 'github-test-token' };
+  const registerResponse = await worker.fetch(toolCall(
+    1,
+    'misakanet_register',
+    { agent_type: 'node-test' },
+  ), testEnv);
+  const registration = toolResult(await registerResponse.json());
+
+  t.mock.method(globalThis, 'fetch', async (input, init) => {
+    assert.equal(String(input), 'https://api.github.com/repos/Ikalus1988/MisakaNet/issues');
+    assert.equal(init.headers.Authorization, 'Bearer github-test-token');
+    return new Response(JSON.stringify({
+      number: 1240,
+      html_url: 'https://github.com/Ikalus1988/MisakaNet/issues/1240',
+    }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  });
+
+  const writeResponse = await worker.fetch(toolCall(
+    2,
+    'misakanet_write_lesson',
+    {
+      title: 'KV token verification regression',
+      domain: 'mcp',
+      problem: 'A newly registered token was rejected by the remote MCP endpoint.',
+      root_cause: 'The write path did not complete after validating the KV token record.',
+      fix: 'Verify the stored token and submit the reviewed lesson through the GitHub API.',
+      verification: 'Register, write with the same token, and observe a pending-review receipt.',
+      source: 'node-test',
+    },
+    registration.token,
+  ), testEnv);
+  const result = toolResult(await writeResponse.json());
+
+  assert.equal(writeResponse.status, 200);
+  assert.equal(result.submitted, true);
+  assert.equal(result.lesson_id, 'issue-1240');
+  assert.ok(kv.readKeys.includes(`mcp_token:${registration.token}`));
+  assert.equal(globalThis.fetch.mock.callCount(), 1);
 });
 
 test('repeated concurrent batches retain no unbounded heap', { skip: !global.gc }, async () => {
