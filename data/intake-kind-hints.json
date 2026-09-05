@@ -1,0 +1,38 @@
+{
+  "question_hints": [
+    "\\bhow (do|can|should|could|would|to|i|we|you|does|did)\\b",
+    "\\bhow to\\b",
+    "\\bwhat (is|are|does|should|can|could|would)\\b",
+    "\\bwhy (does|is|do|are|can|would|did)\\b",
+    "\\bcan (i|you|we|someone)\\b",
+    "\\b(is|are) there a (way|better|method)\\b",
+    "\\btips?\\b",
+    "\\bguid(e|ance|elines?)\\b",
+    "\\brecommend\\b",
+    "\\bhelp (me|with)?\\b",
+    "\\bcomo (fazer|resolver|configurar|usar|evitar|sair|sigo|guio|posso|fa[çc]o|devo)\\b",
+    "\\bpor que\\b",
+    "\\bpor qu[eê]\\b",
+    "\\bo que (é|e|fazer|devo|posso)\\b",
+    "\\bqual (é|e) (a|o|melhor)\\b",
+    "\\bajuda\\b",
+    "\\bdicas?\\b",
+    "\\bconselho\\b",
+    "\\bmaneira de\\b",
+    "\\bforma de\\b",
+    "\\bc[oó]mo (hago|puedo|configuro|resuelvo|evito|salgo|debo)\\b",
+    "\\bpor qu[ée]\\b",
+    "\\bqu[ée] (es|hago|puedo|debo)\\b",
+    "\\bayuda\\b",
+    "\\bconsejo\\b",
+    "怎么|如何|为什么|请问|怎样|该(怎么|如何)|能不能",
+    "\\?\\s*$"
+  ],
+  "failure_hints": [
+    "\\b(traceback|segfault|stack ?trace)\\b",
+    "\\bexception\\b",
+    "\\b(enoent|econnrefused|eacces|eperm|econnreset|econnaborted)\\b",
+    "(?:^|\\n)\\s*(?:error|fatal|critical|panic|failed to)[:\\s]",
+    "报错|异常|崩溃|堆栈"
+  ]
+}
