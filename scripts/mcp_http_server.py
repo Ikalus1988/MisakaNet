@@ -27,7 +27,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 # ── Import search engines ──
 try:
@@ -45,8 +45,8 @@ except ImportError:
 
 from scripts.intake_kind import INTAKE_KINDS, infer_intake_kind  # noqa: E402
 
-# ── Create FastMCP server ──
-mcp = FastMCP("misakanet")
+# ── Create MCP server ──
+mcp = MCPServer("misakanet")
 
 # ── Intake auth / rate limit config ──
 # Set MISAKANET_INTAKE_TOKEN env var to require a shared token for submit_intake.
@@ -524,6 +524,4 @@ if __name__ == "__main__":
     print(f"BM25: {'available' if HAS_BM25 else 'not available'}")
     print(f"Endpoint: http://{args.host}:{args.port}/mcp")
 
-    mcp.settings.host = args.host
-    mcp.settings.port = args.port
-    mcp.run(transport="streamable-http")
+    mcp.run(transport="streamable-http", host=args.host, port=args.port)
