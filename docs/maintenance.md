@@ -141,4 +141,4 @@ MisakaNet 现已声明 `dsh.bundle`（`package.json` + `cordis.patch.yml`），�
 
 > 命名空间提示：`serverName` 唯一（`misakanet` 已被默认本地行占用，远端用
 > `misakanet-remote`），工具名会以 `mcp__misakanet-remote__*` 出现。
-> 契约测试：`tests/test_dsh_bundle.py`（patch 声明/单行/字段/全局唯一 id）。
+> 契约测试：`tests/test_dsh_bundle.py`（随 PR #1484 合入 main；patch 声明/单行/字段/全局唯一 id）。
