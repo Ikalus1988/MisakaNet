@@ -7,6 +7,18 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.27.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.27.0...v2.27.1) (2026-09-05)
+
+
+### Bug Fixes
+
+* **mcp:** migrate HTTP server to SDK v2 ([#1478](https://github.com/Ikalus1988/MisakaNet/issues/1478)) ([019ad73](https://github.com/Ikalus1988/MisakaNet/commit/019ad733a769330577e7a3319bc07bb96035805e))
+
+
+### Tests
+
+* **mcp:** cover registered Bearer-token lesson submissions ([#1293](https://github.com/Ikalus1988/MisakaNet/issues/1293)) ([2b71b47](https://github.com/Ikalus1988/MisakaNet/commit/2b71b4726d6379313a93b0d631ae2aeec1752df4))
+
 ## [2.27.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.26.0...v2.27.0) (2026-09-04)
 
 
