@@ -65,3 +65,22 @@ If tools are not appearing:
 1. Verify plugin installation: `dsh plugin list`
 2. Restart your agent
 3. Check dsh version compatibility
+
+## Integration Test Coverage
+
+The repository includes a Node built-in test suite for the dsh plugin contract:
+
+```bash
+node --test tests/dsh/*.test.mjs
+```
+
+The suite covers:
+
+- npm, git checkout, and manual file-copy installation paths
+- MCP tool discovery and execution for `misakanet_search` and `misakanet_get_lesson`
+- resource discovery/read access for `misaka://lessons/index`
+- explicit error handling for unknown tools, missing lessons, and unknown resources
+- Claude Code, Cursor, and generic MCP agent configuration compatibility
+- startup latency and multiple in-flight JSON-RPC requests
+
+CI runs these tests across Linux, macOS, and Windows with Node.js 18, 20, and 22.
