@@ -170,7 +170,13 @@ def _parse_yaml_frontmatter(text: str) -> dict:
 
 def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc]:
     """L2缓存加载 — 只重新解析有变动的文件。
-    如果 is_lesson=True，同时扫描 core/ 和 contrib/ 子目录。"""
+
+    如果 is_lesson=True，扫描 misakanet.lesson_index.canonical_lessons 给出
+    的无重复课程集（audit T2.2/T2.5 "图书馆" 策略：所有含真实课文的子目录
+    可见，但镜像/翻译副本按 stem 去重，core/contrib 原版优先，避免用户看
+    到重复结果；templates/_archive 与 README/index 类文件永不索引）。
+    为 reference 时扫描单个目录。
+    """
     docs = []
     conn = _l2()
     known = {
@@ -178,89 +184,90 @@ def _load_docs_cached(directory: Path, is_lesson: bool = True) -> list[CachedDoc
         for row in conn.execute("SELECT path, mtime, size FROM file_cache").fetchall()
     }
     changed = 0
-    # For lessons, scan both core/ and contrib/; for references, scan single directory
-    search_dirs = [directory]
+    from misakanet.lesson_index import EXCLUDED_LESSON_FILES, canonical_lessons
+
     if is_lesson:
-        search_dirs = [LESSONS_CORE, LESSONS_CONTRIB]
-    for dir_path in search_dirs:
-        if not dir_path.exists():
+        files = canonical_lessons(LESSONS)
+    else:
+        files = sorted(directory.glob("**/*.md"))
+    for f in files:
+        if f.name.startswith(".") or f.name in EXCLUDED_LESSON_FILES:
             continue
-        for f in sorted(dir_path.glob("**/*.md")):
-            if f.name == "index.md" or f.name.startswith("."):
+        if not f.exists():
+            continue
+        try:
+            st = f.stat()
+        except OSError:
+            continue
+        rel = str(f.relative_to(REPO))
+        cached = known.get(rel)
+        if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
+            row = conn.execute(
+                "SELECT title,domain,status,reference,scope,source,tags,language "
+                "FROM file_cache WHERE path=?",
+                (rel,),
+            ).fetchone()
+            if row:
+                tags = json.loads(row[6]) if row[6] else []
+                doc = CachedDoc(
+                    filename=f.name,
+                    filepath=f,
+                    content="",
+                    mtime=st.st_mtime,
+                    is_lesson=is_lesson,
+                    title=row[0] or f.stem,
+                    domain=row[1] or "",
+                    status=row[2] or "",
+                    reference=row[3] or "",
+                    scope=row[4] or "",
+                    source=row[5] or "",
+                    tags=tags,
+                    language=row[7] or "",
+                )
+                doc.content = f.read_text(encoding="utf-8", errors="replace")
+                docs.append(doc)
                 continue
-            try:
-                st = f.stat()
-            except OSError:
-                continue
-            rel = str(f.relative_to(REPO))
-            cached = known.get(rel)
-            if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
-                row = conn.execute(
-                    "SELECT title,domain,status,reference,scope,source,tags,language "
-                    "FROM file_cache WHERE path=?",
-                    (rel,),
-                ).fetchone()
-                if row:
-                    tags = json.loads(row[6]) if row[6] else []
-                    doc = CachedDoc(
-                        filename=f.name,
-                        filepath=f,
-                        content="",
-                        mtime=st.st_mtime,
-                        is_lesson=is_lesson,
-                        title=row[0] or f.stem,
-                        domain=row[1] or "",
-                        status=row[2] or "",
-                        reference=row[3] or "",
-                        scope=row[4] or "",
-                        source=row[5] or "",
-                        tags=tags,
-                        language=row[7] or "",
-                    )
-                    doc.content = f.read_text(encoding="utf-8", errors="replace")
-                    docs.append(doc)
-                    continue
-            try:
-                content = f.read_text(encoding="utf-8", errors="replace")
-            except (OSError, UnicodeDecodeError):
-                continue
-            if not content.strip():
-                continue
-            doc = CachedDoc(
-                filename=f.name, filepath=f, content=content, mtime=st.st_mtime, is_lesson=is_lesson
-            )
-            meta = _parse_json_frontmatter(content) or _parse_yaml_frontmatter(content)
-            doc.title = meta.get("title", f.stem)
-            doc.domain = meta.get("domain", "")
-            if isinstance(doc.domain, list):
-                doc.domain = doc.domain[0] if doc.domain else ""
-            doc.status = meta.get("status", "")
-            doc.reference = meta.get("reference", "")
-            doc.scope = meta.get("scope", "")
-            doc.source = meta.get("source", "")
-            doc.language = meta.get("language", "")
-            raw_tags = meta.get("tags", "")
-            doc.tags = raw_tags if isinstance(raw_tags, list) else []
-            docs.append(doc)
-            conn.execute(
-                "INSERT OR REPLACE INTO file_cache "
-                "(path,mtime,size,title,domain,status,reference,scope,source,tags,language) "
-                "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                (
-                    rel,
-                    st.st_mtime,
-                    st.st_size,
-                    doc.title,
-                    doc.domain,
-                    doc.status,
-                    doc.reference,
-                    doc.scope,
-                    doc.source,
-                    json.dumps(doc.tags, ensure_ascii=False),
-                    doc.language,
-                ),
-            )
-            changed += 1
+        try:
+            content = f.read_text(encoding="utf-8", errors="replace")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if not content.strip():
+            continue
+        doc = CachedDoc(
+            filename=f.name, filepath=f, content=content, mtime=st.st_mtime, is_lesson=is_lesson
+        )
+        meta = _parse_json_frontmatter(content) or _parse_yaml_frontmatter(content)
+        doc.title = meta.get("title", f.stem)
+        doc.domain = meta.get("domain", "")
+        if isinstance(doc.domain, list):
+            doc.domain = doc.domain[0] if doc.domain else ""
+        doc.status = meta.get("status", "")
+        doc.reference = meta.get("reference", "")
+        doc.scope = meta.get("scope", "")
+        doc.source = meta.get("source", "")
+        doc.language = meta.get("language", "")
+        raw_tags = meta.get("tags", "")
+        doc.tags = raw_tags if isinstance(raw_tags, list) else []
+        docs.append(doc)
+        conn.execute(
+            "INSERT OR REPLACE INTO file_cache "
+            "(path,mtime,size,title,domain,status,reference,scope,source,tags,language) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                rel,
+                st.st_mtime,
+                st.st_size,
+                doc.title,
+                doc.domain,
+                doc.status,
+                doc.reference,
+                doc.scope,
+                doc.source,
+                json.dumps(doc.tags, ensure_ascii=False),
+                doc.language,
+            ),
+        )
+        changed += 1
     conn.commit()
     if changed:
         print(f"  📦 L2缓存: {changed} 篇变动")
@@ -1040,6 +1047,7 @@ __all__ = [
     "_get_related_lessons",
     "_expand_query",
     "_SYNONYM_MAP",
+    "MisakaNetSearchEngine",
 ]
 
 
@@ -1084,3 +1092,73 @@ def _relative_time(mtime: float) -> str:
         return f"{int(diff/86400)}d ago"
     else:
         return f"{int(diff/2592000)}mo ago"
+
+
+class MisakaNetSearchEngine:
+    """Public search facade for HTTP/MCP servers (audit 2026-09-05, QW4).
+
+    scripts/mcp_http_server.py and scripts/ai_agent_api.py import this class
+    (``HAS_BM25``) as the BM25 fallback behind SAG-Lite. Before this facade
+    existed the name was never defined, so the import failed and every BM25
+    request silently degraded to the no-engine error path.
+
+    Wraps the internal cached-load + BM25 rank pipeline and returns
+    SAG-Lite-compatible result dicts, so callers can treat the ``bm25`` and
+    ``sag-lite`` sources interchangeably.
+    """
+
+    def __init__(self, lessons_dir: Path = LESSONS):
+        self.lessons_dir = lessons_dir
+        self._docs = _load_docs_cached(lessons_dir, is_lesson=True)
+
+    def search(
+        self,
+        query: str,
+        top: int = 5,
+        domain: str | None = None,
+        rerank: bool = False,
+        weights: dict | None = None,
+    ) -> list[dict]:
+        """Rank lessons by BM25 + metadata weights, SAG-compatible dict shape.
+
+        ``domain`` filters before truncation (mirrors the SAG SQL path);
+        ``rerank``/``weights`` are passed through to the internal ranker.
+
+        The corpus is refreshed on every call through the L2 mtime cache
+        (cheap when nothing changed), so long-running HTTP/MCP servers pick
+        up newly submitted lessons without a restart (review fix, PR #1482).
+        """
+        self._docs = _load_docs_cached(self.lessons_dir, is_lesson=True)
+        ranked = _search_cached(query, self._docs, rerank=rerank, weights=weights)
+        results: list[dict] = []
+        for score, doc in ranked:
+            if domain and doc.domain != domain:
+                continue
+            try:
+                rel = doc.filepath.relative_to(REPO).as_posix()
+            except ValueError:  # filepath outside REPO — keep absolute
+                rel = str(doc.filepath)
+            results.append({
+                "title": doc.title,
+                "description": self._plain_snippet(doc.content),
+                "domain": doc.domain,
+                "tags": list(doc.tags),
+                "source": doc.source or "lesson",
+                "path": rel,
+                "status": doc.status,
+                "score": round(float(score), 4),
+            })
+            if len(results) >= top:
+                break
+        return results
+
+    @staticmethod
+    def _plain_snippet(content: str, max_chars: int = 240) -> str:
+        """First meaningful text after frontmatter, flattened for JSON."""
+        body = content or ""
+        if body.startswith("---"):
+            end = body.find("\n---", 3)
+            if end != -1:
+                body = body[end + 4:]
+        return " ".join(body.split())[:max_chars]
+
