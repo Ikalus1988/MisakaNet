@@ -65,3 +65,26 @@
 - 版本双线（registry 2.27.x vs PyPI 2.23.x）为刻意设计，见 `docs/maintainer/handoff-2026-09-05.md`；
   `tests/test_version_consistency.py` 锁两条线内部不变量
 - 每日 `update-lessons.yml` 提交 `data/lessons.json` + 计数标记文档；`sync-d1.yml` 每日同步 D1（canonical 358）
+
+## 5. 版本通道（audit T2.1 统一后的策略）
+
+MisakaNet 有**三条刻意分开、节奏独立的版本通道**（不要试图合并成单个数）：
+
+| 通道 | 载体 | 现状(2026-09-05) | 何时 bump |
+|---|---|---|---|
+| **registry 线** | `server.json`/`glama.json` `version` + API.md/JOIN.md 声明 | 2.27.1 | 每次发版 tag 后“对齐”（随 handoff 流程） |
+| **source 线** | `package.json` + `.release-please-manifest.json` + README `misakanet@` 声明 | 2.23.1 | release-please/npm bundle 发布节奏 |
+| **pypi 源线** | `pyproject.toml` + server.json pypi entry | 2.23.0（PyPI 实际仅 2.18.0，上传已滞后） | 真正发布 PyPI 时 |
+
+统一方式 = **单一工具 + 不变量门禁**，不再手改多处：
+
+```bash
+python3 scripts/align_versions.py --check                 # 门禁：R1-R5 不变量
+python3 scripts/align_versions.py --registry 2.28.0       # 升 registry 线（server/glama/API/JOIN 一次完成）
+python3 scripts/align_versions.py --source 2.24.0         # 升 source 线（pyproject/package/manifest/README）
+make check-versions                                       # 等价的 Makefile 入口（建议 CI 用）
+```
+
+不变量（R1-R5，与 tests/test_version_consistency.py 一致）：registry 对等；
+source 线 package==manifest；pypi 源线 pyproject==server pypi entry；pyproject 允许滞后于 manifest；
+文档声明不得超过当前上限。PyPI 实况可用 `scripts/align_versions.py --check` 输出对照 pypi.org 人工核对。
