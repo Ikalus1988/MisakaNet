@@ -1,0 +1,76 @@
+{
+  "tools_list": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "tools": [
+        {
+          "name": "misakanet_search",
+          "description": "Search MisakaNet failure lessons by keyword or error message",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "Error message or search terms" },
+              "domain": { "type": "string", "description": "Optional domain filter" },
+              "top_k": { "type": "number", "description": "Max results to return", "default": 5 }
+            },
+            "required": ["query"]
+          }
+        },
+        {
+          "name": "misakanet_get_lesson",
+          "description": "Retrieve full lesson content by lesson ID",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "lesson_id": { "type": "string", "description": "The unique ID of the lesson" }
+            },
+            "required": ["lesson_id"]
+          }
+        },
+        {
+          "name": "misakanet_submit_intake",
+          "description": "Submit a newly discovered failure for intake triage",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "problem": { "type": "string" },
+              "source": { "type": "string" }
+            },
+            "required": ["problem"]
+          }
+        }
+      ]
+    }
+  },
+  "search_result": {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "[E3] ChromaDB crash on NTFS WSL mounts (ID: py-001)\nFix: Move DB to ext4 filesystem: mv ~/.chromadb /mnt/ext4/\nVerify: python3 -c \"import chromadb; c=chromadb.Client(); print(c.heartbeat())\""
+        }
+      ]
+    }
+  },
+  "resource_index": {
+    "jsonrpc": "2.0",
+    "id": 3,
+    "result": {
+      "resources": [
+        {
+          "uri": "misaka://lessons/index",
+          "name": "MisakaNet Failure Lessons Index",
+          "mimeType": "application/json"
+        },
+        {
+          "uri": "misaka://lessons/domains",
+          "name": "Supported Failure Domains",
+          "mimeType": "application/json"
+        }
+      ]
+    }
+  }
+}

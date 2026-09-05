@@ -1,0 +1,32 @@
+{
+  "claude_code": {
+    "mcpServers": {
+      "misakanet": {
+        "command": "python3",
+        "args": ["scripts/mcp_server.py"]
+      }
+    },
+    "skills": ["skills/misakanet/SKILL.md"]
+  },
+  "cursor": {
+    "mcp": {
+      "servers": {
+        "misakanet-local": {
+          "command": "python3",
+          "args": ["scripts/mcp_server.py"],
+          "env": {
+            "MISAKA_DEBUG": "0"
+          }
+        }
+      }
+    }
+  },
+  "dsh_harness": {
+    "mcpServers": {
+      "misakanet-recovery": {
+        "command": "python3",
+        "args": ["scripts/mcp_deepseek_adapter.py"]
+      }
+    }
+  }
+}

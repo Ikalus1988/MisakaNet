@@ -10,6 +10,8 @@
     "index.d.ts"
   ],
   "scripts": {
+    "test:dsh": "node --test tests/dsh/install.test.js tests/dsh/functionality.test.js tests/dsh/compatibility.test.js tests/dsh/performance.test.js",
+    "test": "npm run test:dsh",
     "deploy:web": "cd web && npx wrangler deploy",
     "deploy:api": "cd workers && npx wrangler deploy --config wrangler.api.jsonc",
     "deploy:email": "cd workers/email-register && npx wrangler deploy",

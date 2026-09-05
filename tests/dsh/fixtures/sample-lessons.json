@@ -1,0 +1,32 @@
+[
+  {
+    "id": "py-001",
+    "title": "ChromaDB crash on NTFS WSL mounts",
+    "domain": "rag",
+    "evidence_level": "E3",
+    "problem": "ChromaDB SQLite backend fails on NTFS-mounted WSL paths.",
+    "fix": "Move DB to ext4 filesystem: mv ~/.chromadb /mnt/ext4/",
+    "verify": "python3 -c \"import chromadb; c=chromadb.Client(); print(c.heartbeat())\"",
+    "keywords": ["chromadb", "sqlite", "ntfs", "wsl", "lock"]
+  },
+  {
+    "id": "dev-002",
+    "title": "WSL terminal underscore corruption under high load",
+    "domain": "devops",
+    "evidence_level": "E2",
+    "problem": "WSL terminal paste swallows underscores under high load.",
+    "fix": "Use tmux or pipe stdin via temp script files.",
+    "verify": "echo \"test_underscore_command\" shows correct output.",
+    "keywords": ["wsl", "terminal", "underscore", "paste", "tmux"]
+  },
+  {
+    "id": "mcp-003",
+    "title": "MCP stdio pipe timeout with large payloads",
+    "domain": "mcp",
+    "evidence_level": "E4",
+    "problem": "MCP client times out waiting for stdio responses >64KB.",
+    "fix": "Stream responses or increase buffer size in adapter.",
+    "verify": "mcp_client.call_tool('misakanet_search', {'query': 'all'}) succeeds within 200ms.",
+    "keywords": ["mcp", "stdio", "buffer", "timeout", "jsonrpc"]
+  }
+]

@@ -1,0 +1,21 @@
+{
+  "profile": "l5-agent-smoke",
+  "version": "1.0.0",
+  "plugins": [
+    {
+      "name": "misakanet",
+      "version": "^2.23.0",
+      "source": "npm",
+      "type": "skill"
+    }
+  ],
+  "runtime": {
+    "node": ">=18.0.0",
+    "isolation": "process",
+    "mcp_support": true
+  },
+  "settings": {
+    "auto_retry": true,
+    "recovery_search": true
+  }
+}
