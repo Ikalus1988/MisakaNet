@@ -28,11 +28,13 @@
 ## 2. 归档与数据治理
 
 ### lessons/_archive（退役区，不入索引）
-- **2026-09-05 已清理**（git rm）：4 个损坏半导入顶层条目（`context-compaction-*` ×2、
-  `feishu-bot-setup-complete`（旧版，contrib 有活跃同名）、`system-note-...`）。
-- 保留：`_archive/conversation-dumps/`、`hook-raw/`、`skill-harvest/`（~50 篇**有意归档**的
-  子目录内容）——是否整理/删除属产品决策，另行评估（始终不入索引，按路径可取）。
-- 新增文件请勿放入 `_archive/`（该目录由脚手架排除，见 `misakanet/lesson_index.py`）。
+- **2026-09-05 已全部清理**（产品决策，git rm 共 50 篇）：
+  - 4 个损坏半导入顶层条目（`context-compaction-*` ×2、旧版 `feishu-bot-setup-complete`、`system-note-...`）
+  - 3 个归档子目录 46 篇（`conversation-dumps/` 1、`hook-raw/` 2、`skill-harvest/` 43）——
+    均为 2026-08-23 批量导入的自动化产物（`contributor: Unknown`、`metadata-normalized`、
+    draft/archive domain、skill-pipeline/bootstrap 来源），不入索引、非人工策展；git 历史可回溯，
+    源内容仍在本地 openclaw/cc-haha/skills 源中。
+- 今后请勿向 `_archive/` 新增文件（该目录在 `misakanet/lesson_index.py` 中作为脚手架排除）。
 
 ### 可再生成数据（不要手改，改源后跑脚本）
 | 文件 | 生成方式 |
