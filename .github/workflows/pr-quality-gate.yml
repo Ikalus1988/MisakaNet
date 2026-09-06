@@ -96,6 +96,9 @@ jobs:
             // Apply — label writes can 403 on fork-PR check_run events where
             // the token is read-only (issue "quality-labels 403"); treat as
             // best-effort noise like removeLabel below, never fail the job.
+            const uniqueAdd = toAdd.filter(l => !existing.includes(l));
+            const uniqueRemove = toRemove.filter(l => existing.includes(l));
+
             if (uniqueAdd.length > 0) {
               try {
                 await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: uniqueAdd });
