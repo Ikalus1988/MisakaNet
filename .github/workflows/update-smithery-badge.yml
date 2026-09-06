@@ -1,0 +1,40 @@
+name: Update Smithery Badge (daily)
+
+on:
+  schedule:
+    # Daily: 06:00 UTC — catches Kin score updates within ~24h
+    - cron: '0 6 * * *'
+  workflow_dispatch:          # manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  update-badge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: data
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Fetch Smithery Kin score and write badge JSON
+        run: |
+          python3 scripts/update-smithery-badge.py --output badges/smithery.json
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.org"
+          git add badges/smithery.json
+          if git diff --cached --quiet; then
+            echo "No change — score is the same"
+          else
+            git commit -m "chore(badge): update Smithery Kin score [skip ci]"
+            git pull --rebase origin data 2>&1 || true
+            git push || { echo "push conflict, retrying..."; sleep 5; git pull --rebase origin data 2>&1 || true; git push || echo "push skipped"; }
+          fi
