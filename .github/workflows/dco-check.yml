@@ -67,7 +67,9 @@ jobs:
           bad=0
           FAILED_LOG=""
           BASE="${{ github.base_ref || 'main' }}"
-          for commit in $(git log --format='%H' "upstream/${BASE}..HEAD" 2>/dev/null); do
+          # --no-merges: merge commits don't require sign-off (aligned with
+          # dco-audit and pr-shape-guard Gate 4 — issue #1498)
+          for commit in $(git log --no-merges --format='%H' "upstream/${BASE}..HEAD" 2>/dev/null); do
             msg=$(git log --format='%B' -1 "$commit")
             if ! echo "$msg" | grep -qi 'Signed-off-by:'; then
               echo "❌ Commit $commit is missing Signed-off-by:"

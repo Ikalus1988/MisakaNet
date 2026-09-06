@@ -134,6 +134,21 @@ jobs:
           echo "DCO check failed: ${{ steps.dco.outputs.failed-count }} commit(s) without sign-off."
           exit 1
 
+      # Clean stale REGULATORY BLOCK comments once DCO passes so the PR thread
+      # no longer contradicts the green checks (issue #1498).
+      - name: Remove stale DCO block comments
+        if: steps.dco.outputs.dco-passed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUM="${{ github.event.pull_request.number || '' }}"
+          [ -z "$PR_NUM" ] && exit 0
+          for cid in $(gh api "repos/Ikalus1988/MisakaNet/issues/$PR_NUM/comments?per_page=100" \
+            --jq '.[] | select(.body | contains("AUTOMATED AUDIT SYSTEM: REGULATORY BLOCK")) | .id' 2>/dev/null); do
+            gh api -X DELETE "repos/Ikalus1988/MisakaNet/issues/comments/$cid" >/dev/null 2>&1 || true
+          done
+          echo "Stale DCO block comments cleaned."
+
       # ── PR Size Check (full scope only) ──
       - name: Check PR Size
         if: steps.scope.outputs.scope == 'full'
@@ -581,11 +596,24 @@ jobs:
           REPORT+=$'\n\n---\n'
           REPORT+="_Scope: \`${SCOPE}\` | Triggered by \`${SHA_SHORT}\` | [View run](https://github.com/Ikalus1988/MisakaNet/actions/runs/${{ github.run_id }})_"
 
-          # ── Post comment ──
+          # ── Post comment (upsert: update the previous report in place
+          #    instead of stacking a new comment per run — issue #1498) ──
           if [ -n "$PR_NUM" ]; then
-            gh pr comment "$PR_NUM" --repo Ikalus1988/MisakaNet --body "$REPORT" 2>/dev/null || \
-              gh issue comment "$PR_NUM" --repo Ikalus1988/MisakaNet --body "$REPORT" 2>/dev/null || \
-              echo "::warning::Could not post comment to PR #$PR_NUM"
+            MARKER='<!-- misakanet-audit-report -->'
+            REPORT_FILE=$(mktemp)
+            printf '%s\n%s\n' "$MARKER" "$REPORT" > "$REPORT_FILE"
+            EXISTING_ID=$(gh api "repos/Ikalus1988/MisakaNet/issues/$PR_NUM/comments?per_page=100" \
+              --jq ".[] | select(.body | contains(\"$MARKER\")) | .id" 2>/dev/null | tail -n1)
+            if [ -n "$EXISTING_ID" ]; then
+              gh api -X PATCH "repos/Ikalus1988/MisakaNet/issues/comments/$EXISTING_ID" \
+                -f "body=@$REPORT_FILE" >/dev/null 2>&1 || \
+                gh issue comment "$PR_NUM" --repo Ikalus1988/MisakaNet --body-file "$REPORT_FILE" 2>/dev/null || \
+                echo "::warning::Could not update report comment on PR #$PR_NUM"
+            else
+              gh issue comment "$PR_NUM" --repo Ikalus1988/MisakaNet --body-file "$REPORT_FILE" 2>/dev/null || \
+                echo "::warning::Could not post report comment to PR #$PR_NUM"
+            fi
+            rm -f "$REPORT_FILE"
           fi
 
           # ── Exit with failure if any hard gate fails ──

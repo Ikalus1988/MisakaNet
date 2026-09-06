@@ -74,7 +74,7 @@ How MisakaNet organizes issues and PRs.
 
 | Label | Meaning | Condition |
 |-------|---------|-----------|
-| `needs-dco` | Missing Signed-off-by | Author must amend commit |
+| `needs-dco` | Missing Signed-off-by | Author must amend commit. **Auto-clears on the next push once all commits are signed** |
 | `needs-rebase` | Has merge conflicts | Author must rebase |
 | `ready-to-merge` | All gates passed | Maintainer can merge |
 

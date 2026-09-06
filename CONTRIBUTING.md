@@ -247,7 +247,25 @@ By signing off, you certify that:
 
 ### CI enforcement
 
-A `dco-check.yml` workflow runs on every PR. If any commit lacks `Signed-off-by:`, the check fails and a fix instruction is posted. PRs with DCO failures will not be merged.
+A `dco-check.yml` workflow runs on every PR and re-checks on **every push, including force-pushes**. If any commit lacks `Signed-off-by:`, the check fails and the `needs-dco` label is applied. Once you amend the offending commit with `--signoff` and force-push, the next scan clears the label **automatically — do NOT push an empty/new commit** to "re-trigger"; just wait a few minutes for CI to finish. Merge commits are exempt from sign-off.
+
+## Node.js Test Conventions (dsh integration suite)
+
+The `tests/dsh/` suite uses **mocha + chai** (`execSync`-style integration tests). When adding a test file:
+
+- **Fixtures** go in `tests/dsh/fixtures/` (see its `README.md`). Reference them with:
+  ```javascript
+  const path = require('path');
+  const fixturesDir = path.join(__dirname, 'fixtures');
+  ```
+- **Optional CLI dependencies**: if a test needs a CLI that may not be installed on the runner (e.g. `dsh`), skip gracefully instead of failing:
+  ```javascript
+  it('performance smoke', function () {
+    if (!process.env.DSH_CLI) this.skip(); // or detect via `which dsh`
+    ...
+  });
+  ```
+  This keeps the suite green on machines without the optional tool while still exercising it in CI.
 
 ### Local DCO Check (Optional)
 

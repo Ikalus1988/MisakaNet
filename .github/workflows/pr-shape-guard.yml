@@ -204,14 +204,21 @@ jobs:
             }
 
             // ── Gate 4: DCO / rebase (based on commit metadata) ──
+            // Merge commits (2+ parents) don't require sign-off — aligned with
+            // dco-audit (--no-merges). Re-evaluated on every push so the label
+            // auto-clears once all commits are signed (issue #1498).
             const commits = await github.paginate(
               github.rest.pulls.listCommits,
               { owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number, per_page: 100 }
             );
-            const hasDCO = commits.every(c =>
-              c.commit.message.includes('Signed-off-by:')
-            );
-            if (!hasDCO) toAdd.push('needs-dco');
+            const hasDCO = commits
+              .filter(c => (c.parents || []).length <= 1)
+              .every(c => c.commit.message.includes('Signed-off-by:'));
+            if (!hasDCO) {
+              toAdd.push('needs-dco');
+            } else {
+              toRemove.push('needs-dco');
+            }
 
             // ── Apply labels ──
             const existing = pr.labels.map(l => l.name);

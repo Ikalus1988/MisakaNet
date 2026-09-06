@@ -50,6 +50,15 @@ jobs:
             const anyFailed = checkRuns.some(cr => cr.conclusion === 'failure');
             const allComplete = checkRuns.every(cr => cr.status === 'completed');
 
+            // DCO truth comes from the check run, not the (sometimes stale)
+            // needs-dco label. The label is cleared on pass (issue #1498);
+            // it only acts as a guard when no DCO run exists yet.
+            const dcoRun = checkRuns.find(cr =>
+              cr.name === 'DCO / Signed-off-by' || cr.name === 'dco'
+            );
+            const dcoOk = dcoRun &&
+              ['success', 'skipped', 'neutral'].includes(dcoRun.conclusion);
+
             const existing = pr.data.labels.map(l => l.name);
             const toAdd = [];
             const toRemove = [];
@@ -68,12 +77,20 @@ jobs:
               existing.includes('shape-risk') ||               // shape
               existing.includes('destructive-rewrite') ||      // destructive
               existing.includes('generated-file') ||           // needs confirm
-              existing.includes('needs-dco');                  // missing signoff
+              (dcoRun ? !dcoOk : existing.includes('needs-dco')); // DCO missing signoff
 
             if (!gateBlocked && pr.data.mergeable === true) {
               toAdd.push('ready-to-merge');
             } else {
               toRemove.push('ready-to-merge');
+            }
+
+            // needs-dco lifecycle driven by the DCO check run: clear on pass,
+            // (re)apply on fail — never left stale (issue #1498).
+            if (dcoOk) {
+              toRemove.push('needs-dco');
+            } else if (dcoRun) {
+              toAdd.push('needs-dco');
             }
 
             // Apply
