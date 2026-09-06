@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (e.g. 2.28.0). Builds from current main."
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -27,6 +33,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           CURRENT_TAG="${{ github.ref_name }}"
+          # workflow_dispatch carries the version as input; tag pushes use the tag name
+          VERSION_INPUT="${{ github.event.inputs.version || '' }}"
+          if [ -n "$VERSION_INPUT" ]; then
+            CURRENT_TAG="v$VERSION_INPUT"
+          fi
           PREV_TAG=$(git describe --tags --abbrev=0 "${CURRENT_TAG}^" 2>/dev/null || echo "")
           if [ -n "$PREV_TAG" ]; then
             SINCE=$(echo "$PREV_TAG" | sed 's/v//')
