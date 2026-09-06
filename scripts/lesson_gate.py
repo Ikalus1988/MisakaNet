@@ -10,12 +10,15 @@ Validates lesson Markdown files against the quality gate checklist:
   - status ∈ {published, draft, archived}; evidence_level ∈ {E0..E4}
 
 Usage:
-    python3 scripts/lesson_gate.py lessons/contrib/foo.md          # validate one
+    python3 scripts/lesson_gate.py lessons/contrib/foo.md          # validate one (new lesson: strict)
     python3 scripts/lesson_gate.py lessons/a.md lessons/b.md       # validate many
+    python3 scripts/lesson_gate.py --existing lessons/x.md         # existing file touched by PR (advisory)
     python3 scripts/lesson_gate.py --all                           # validate all lessons
     python3 scripts/lesson_gate.py --json <file>                   # JSON report
 
 Exit code: 0 = all pass, 1 = any file failed.
+Existing files (--existing) are advisory: legacy gaps surface as warnings,
+only NEW files are hard-gated against the current schema (#1506).
 """
 from __future__ import annotations
 
@@ -215,27 +218,16 @@ def find_duplicate_title(title: str, repo: Path = REPO, exclude_file: Path | Non
     if not title:
         return False
     norm = title.strip().lower()
-    # Determine which lesson subdirectory the file being checked belongs to,
-    # so translations (en/) don't flag originals (core/contrib) as duplicates.
-    exclude_dir = None
-    if exclude_file is not None:
-        try:
-            rel = Path(exclude_file).resolve().relative_to(repo / "lessons")
-            exclude_dir = rel.parts[0]  # e.g. "core", "contrib", "en"
-        except (ValueError, IndexError):
-            pass
+    # Mirror copies share the same stem across dirs (core/x.md ↔ en/x.md,
+    # i18n mirrors). lesson_index canonicalization treats stem as the lesson
+    # identity, so mirrors are not duplicates — skip same-stem files. Any
+    # other same-title file (different stem, any dir) is a real duplicate.
+    exclude_stem = Path(exclude_file).stem if exclude_file is not None else None
     for f in _iter_active_lessons(repo):
         if exclude_file is not None and f.resolve() == Path(exclude_file).resolve():
             continue
-        # Skip files in a different lesson subdirectory (avoids cross-language
-        # false positives between core/contrib and en translations).
-        if exclude_dir is not None:
-            try:
-                f_rel = f.resolve().relative_to(repo / "lessons")
-                if f_rel.parts[0] != exclude_dir:
-                    continue
-            except (ValueError, IndexError):
-                pass
+        if exclude_stem and f.stem == exclude_stem:
+            continue  # same-stem mirror (original/translation pair)
         try:
             fm, _ = parse_frontmatter(f.read_text(encoding="utf-8", errors="ignore"))
         except Exception:
@@ -415,15 +407,25 @@ def _has_superseding_lesson(lesson_id: str, repo: Path = REPO, exclude_file: Pat
     return False
 
 
-def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = None) -> list[str]:
+def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = None,
+                  existing: bool = False) -> list[str]:
     """Return error strings. Warnings are prefixed with '[warn]' and do not
     fail the gate (they surface for maintainer review only). `dirs` overrides
-    the scanned subdirectories (used by tests with custom layouts)."""
+    the scanned subdirectories (used by tests with custom layouts).
+
+    `existing=True` marks a file that already exists on the base branch and is
+    being touched by this PR (metadata/provenance batches, retags, ...). Such
+    files must NOT be retro-fitted to the current new-lesson schema — legacy
+    gaps (missing evidence_level, >10 tags, short bodies, title mirror pairs,
+    stale supersedes targets) predate the PR. All structural findings are
+    demoted to warnings so metadata batches aren't blocked by historical debt;
+    NEW files (existing=False) keep the strict hard gate (#1506).
+    """
     errors = []
     try:
         text = Path(path).read_text(encoding="utf-8", errors="ignore")
     except OSError as e:
-        return [f"cannot read {path}: {e}"]
+        return [f"[warn] cannot read {path}: {e}"] if existing else [f"cannot read {path}: {e}"]
 
     fm, content = parse_frontmatter(text)
     errors += validate_required(fm)
@@ -491,6 +493,13 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
                 f" replacement lesson or revert to active/stale"
             )
 
+    # Existing (pre-base) files are advisory: demote structural findings to
+    # warnings so metadata-only touches aren't blocked by legacy debt (#1506).
+    if existing:
+        errors = [
+            e if e.startswith("[warn]") else f"[warn] (existing file, legacy) {e}"
+            for e in errors
+        ]
     return errors
 
 
@@ -504,6 +513,9 @@ def main(argv: list[str] | None = None) -> int:
     json_mode = "--json" in argv
     argv = [a for a in argv if a != "--json"]
 
+    existing_mode = "--existing" in argv
+    argv = [a for a in argv if a != "--existing"]
+
     if "--all" in argv:
         files = sorted(_iter_active_lessons())
     else:
@@ -513,7 +525,7 @@ def main(argv: list[str] | None = None) -> int:
     warnings = 0
     report = {}
     for f in files:
-        all_issues = validate_file(f)
+        all_issues = validate_file(f, existing=existing_mode)
         errors = [e for e in all_issues if not e.startswith("[warn]")]
         warns = [e for e in all_issues if e.startswith("[warn]")]
         report[str(f)] = all_issues
