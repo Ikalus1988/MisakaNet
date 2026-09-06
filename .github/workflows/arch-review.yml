@@ -40,7 +40,7 @@ jobs:
           python scripts/arch_review.py --questions >> report.md
 
       - name: Create issue
-        uses: peter-evans/create-issue-from-file@v5
+        uses: peter-evans/create-issue-from-file@v6
         with:
           title: "Monthly Architecture Review — ${{ github.run_id }}"
           content-filepath: report.md
