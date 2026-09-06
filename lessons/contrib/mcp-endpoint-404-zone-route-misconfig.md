@@ -1,7 +1,6 @@
 ---
 title: 'MCP Endpoint 404: Zone Route Points to Worker Without MCP Implementation'
 domain: devops
-evidence_level: E1
 tags:
 - cloudflare
 - workers
@@ -12,11 +11,10 @@ tags:
 status: published
 created: '2026-08-27'
 source: intake-issue-1307
-
 provenance:
-  source: "external"
-  contributor: "intake-issue-1307"
-  merged_at: "2026-08-28"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

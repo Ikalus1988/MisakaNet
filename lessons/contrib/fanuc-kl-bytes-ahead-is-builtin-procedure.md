@@ -21,6 +21,11 @@ root_cause: BYTES_AHEAD 是 Karel 语言的内置系统调用（Built-in Procedu
   不在其中。
 solution: 恢复 MM_RCV_NTFY.kl 中所有 BYTES_AHEAD 调用，不应删除。禁用标识符列表：SECONDS、ENDDO、ELSEIF 等（详见
   fanuc-kl-compile SKILL.md）。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure

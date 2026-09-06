@@ -14,6 +14,11 @@ confidence: 1.0
 domain_expert: <user>
 verified_date: '2026-07-06'
 subdomain: data-quality
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

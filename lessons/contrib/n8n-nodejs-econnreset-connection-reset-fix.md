@@ -15,6 +15,11 @@ source: https://github.com/agente-gaudi/n8n-automation-workflows
 confidence: 0.95
 domain_expert: n8n-node
 verified_date: '2026-07-30'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Fix Node.js ECONNRESET Connection Reset Error in n8n Webhook HTTP Requests

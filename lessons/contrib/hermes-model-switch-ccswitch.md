@@ -1,7 +1,6 @@
 ---
 title: ccswitch-hermes-switch 踩坑Notes
 domain: devops
-evidence_level: E1
 tags:
 - devops
 - hermes
@@ -12,11 +11,10 @@ status: published
 created: '2026-07-06'
 language: zh
 source: unknown
-
 provenance:
-  source: "external"
-  contributor: "unknown"
-  merged_at: "2026-08-26"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

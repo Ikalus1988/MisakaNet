@@ -17,6 +17,11 @@ source: <user>
 confidence: 0.8
 verified_date: 2026-07-06
 subdomain: browser-automation
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # CSP blocks JavaScript injection in browser automation of authenticated pages

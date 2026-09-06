@@ -1,7 +1,6 @@
 ---
 title: 'Search SSOT: Fixing Data Source Pollution in Static-Deployed Sites'
 domain: devops
-evidence_level: E1
 tags:
 - search
 - ssot
@@ -14,11 +13,10 @@ status: published
 created: 2026-07-10
 updated: 2026-07-10
 source: misakanet
-
 provenance:
-  source: "external"
-  contributor: "misakanet"
-  merged_at: "2026-07-31"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

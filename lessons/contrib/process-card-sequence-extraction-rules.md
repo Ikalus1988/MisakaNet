@@ -15,6 +15,11 @@ confidence: 0.95
 domain_expert: <user>
 verified_date: '2026-07-06'
 subdomain: process-analysis
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

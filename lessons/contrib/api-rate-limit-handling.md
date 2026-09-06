@@ -1,7 +1,6 @@
 ---
 title: API 请求限流 (Rate Limit) 处理方案
 domain: devops
-evidence_level: E1
 tags:
 - api
 - rate-limit
@@ -10,11 +9,10 @@ tags:
 status: published
 created: '2026-05-21'
 language: zh
-
 provenance:
-  source: "external"
-  contributor: "Unknown"
-  merged_at: "2026-07-31"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

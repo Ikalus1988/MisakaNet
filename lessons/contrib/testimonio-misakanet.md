@@ -6,11 +6,10 @@ tags:
 - misakanet
 status: published
 evidence_level: E1
-
 provenance:
-  source: "external"
-  contributor: "Unknown"
-  merged_at: "2026-07-31"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

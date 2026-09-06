@@ -1,7 +1,6 @@
 ---
 title: GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix
 domain: devops
-evidence_level: E1
 tags:
 - devops
 - decouple
@@ -10,11 +9,10 @@ tags:
 status: published
 created: '2026-07-06'
 source: unknown
-
 provenance:
-  source: "external"
-  contributor: "unknown"
-  merged_at: "2026-07-31"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

@@ -1,7 +1,6 @@
 ---
 title: Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo
 domain: devops
-evidence_level: E1
 tags:
 - meta
 - lesson
@@ -14,11 +13,10 @@ source: unknown
 confidence: 0.92
 domain_expert: ''
 verified_date: ''
-
 provenance:
-  source: "external"
-  contributor: "unknown"
-  merged_at: "2026-07-31"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

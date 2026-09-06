@@ -1,7 +1,6 @@
 ---
 title: SSH host key verification failed when connecting to a remote server
 domain: devops
-evidence_level: E1
 tags:
 - ssh
 - host-key
@@ -14,11 +13,10 @@ language: ja
 source: https://docs.github.com/en/authentication/troubleshooting-ssh/error-host-key-verification-failed
 confidence: 0.9
 verified_date: 2026-07-29
-
 provenance:
-  source: "external"
-  contributor: "Unknown"
-  merged_at: "2026-07-31"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

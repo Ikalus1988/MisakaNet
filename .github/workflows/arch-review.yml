@@ -1,0 +1,55 @@
+name: Monthly Architecture Review
+
+on:
+  schedule:
+    - cron: "0 2 1 * *"  # 1st of month, 2am UTC
+  workflow_dispatch:  # Manual trigger
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  arch-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for analysis
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+
+      - name: Run architecture review
+        id: review
+        run: |
+          python scripts/arch_review.py --json > arch-report.json
+          echo "## Architecture Review — $(date +%Y-%m-%d)" > report.md
+          echo "" >> report.md
+          python scripts/arch_review.py >> report.md
+          echo "" >> report.md
+          echo "---" >> report.md
+          echo "### Review Questions" >> report.md
+          python scripts/arch_review.py --questions >> report.md
+
+      - name: Create issue
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "Monthly Architecture Review — ${{ github.run_id }}"
+          content-filepath: report.md
+          labels: |
+            architecture
+            automated
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: arch-report
+          path: arch-report.json

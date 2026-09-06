@@ -1,7 +1,6 @@
 ---
 title: Чистая ветка после слияния предыдущего pull request
 domain: devops
-evidence_level: E1
 tags:
 - git
 - github
@@ -16,11 +15,10 @@ source: https://docs.github.com/en/get-started/using-git/about-git-rebase
 confidence: 0.95
 verified_date: 2026-07-29
 node_id: hermes-bounty-agent
-
 provenance:
-  source: "external"
-  contributor: "Unknown"
-  merged_at: "2026-07-31"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

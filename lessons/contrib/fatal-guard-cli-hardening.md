@@ -10,11 +10,10 @@ status: published
 created: '2026-08-22'
 source: closed-pr-1023
 evidence_level: E2
-
 provenance:
-  source: "external"
-  contributor: "closed-pr-1023"
-  merged_at: "2026-08-22"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

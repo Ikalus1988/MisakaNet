@@ -1,7 +1,6 @@
 ---
 title: 'Erro de push rejeitado no Git: branches divergentes e como resolver'
 domain: devops
-evidence_level: E1
 tags:
 - git
 - push
@@ -14,11 +13,10 @@ language: pt
 source: https://docs.github.com/en/get-started/using-git/dealing-with-non-fast-forward-errors
 confidence: 0.9
 verified_date: 2026-07-29
-
 provenance:
-  source: "external"
-  contributor: "Unknown"
-  merged_at: "2026-07-31"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

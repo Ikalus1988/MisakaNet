@@ -1,7 +1,6 @@
 ---
 title: Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF
 domain: devops
-evidence_level: E1
 tags:
 - cloudflare
 - email-worker
@@ -13,11 +12,10 @@ status: published
 created: '2026-07-06'
 language: zh
 source: unknown
-
 provenance:
-  source: "external"
-  contributor: "unknown"
-  merged_at: "2026-07-31"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

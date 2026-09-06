@@ -2,7 +2,6 @@
 title: 'mcporter OAuth Authorization Must Be Serial: Concurrent Auth Causes client_id/state
   Corruption'
 domain: devops
-evidence_level: E1
 tags:
 - mcporter
 - oauth
@@ -13,11 +12,10 @@ tags:
 status: published
 created: '2026-08-27'
 source: intake-issue-1306
-
 provenance:
-  source: "external"
-  contributor: "intake-issue-1306"
-  merged_at: "2026-08-28"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

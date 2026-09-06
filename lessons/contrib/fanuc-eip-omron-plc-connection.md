@@ -29,6 +29,11 @@ solution: '1. 确认 FANUC 机器人固件版本支持 EtherNet/IP
   5. 映射 I/O 信号（DI/DO 与 PLC 地址对应）
 
   6. 测试通讯连接并验证信号收发'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## FANUC 机器人与 OMRON PLC 的 EtherNet/IP 连接

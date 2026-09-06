@@ -1,7 +1,6 @@
 ---
 title: PR Cleanup SOP — Stale/Duplicate/Resolved PR Disposition
 domain: devops
-evidence_level: E1
 tags:
 - github-actions
 - pr-management
@@ -14,11 +13,10 @@ updated: 2026-06-13 00:00:00 UTC
 source: codewhale
 domain_expert: codewhale
 verified_date: '2026-06-13'
-
 provenance:
-  source: "external"
-  contributor: "codewhale"
-  merged_at: "2026-07-31"
+  source: "internal"
+  contributor: "MisakaNet Core"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

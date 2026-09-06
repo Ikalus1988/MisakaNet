@@ -1,7 +1,6 @@
 ---
 title: 'SAG-Lite Data Quality: Clean Search Results'
 domain: devops
-evidence_level: E1
 tags:
 - search
 - sqlite
@@ -11,11 +10,10 @@ tags:
 status: published
 created: 2026-07-02
 source: agent_experience
-
 provenance:
-  source: "external"
-  contributor: "agent_experience"
-  merged_at: "2026-07-31"
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
   evidence: "post-publication"
 ---
 

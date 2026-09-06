@@ -12,6 +12,11 @@ created: '2026-07-28'
 language: en
 source: https://mitchellh.com/writing/ghostty-memory-leak-fix
 confidence: 0.85
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem
