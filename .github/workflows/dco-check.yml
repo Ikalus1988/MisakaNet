@@ -105,6 +105,9 @@ jobs:
                 ? '✅ **DCO Check Passed** — All commits include `Signed-off-by:`. Thank you for respecting code origin!'
                 : '❌ **DCO Check Failed** — Some commits are missing `Signed-off-by:`. Please amend with `--signoff`.';
               const conclusion = dcoPass ? 'success' : 'action_required';
+              const detail = dcoPass
+                ? 'All commits include a Signed-off-by trailer. This certifies that the contributor has the right to submit the code under the project license.'
+                : 'One or more commits are missing the Signed-off-by trailer (merge commits are exempt). Fix:\n\n```bash\n# latest commit\ngit commit --amend --signoff --no-edit\ngit push --force-with-lease\n\n# last N commits\ngit rebase --signoff HEAD~N\ngit push --force-with-lease\n```\n\nCI re-scans on every push (including force-pushes) and the `needs-dco` label **auto-clears** once all commits are signed — do not push an empty commit. Same-repo PRs can also comment `/fix-dco` to auto-apply.';
 
               await github.rest.checks.create({
                 owner: context.repo.owner,
@@ -116,9 +119,7 @@ jobs:
                 output: {
                   title: 'Developer Certificate of Origin',
                   summary: body,
-                  text: dcoPass
-                    ? 'All commits include a Signed-off-by trailer. This certifies that the contributor has the right to submit the code under the project license.'
-                    : 'One or more commits are missing the Signed-off-by trailer. Use `git commit --amend --signoff` or `git rebase --signoff` to fix.'
+                  text: detail
                 }
               });
             } catch (e) {

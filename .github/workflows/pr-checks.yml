@@ -118,9 +118,11 @@ jobs:
           exit 1
 
       # ── DCO Audit Gate (all PRs) ──
+      # Uses the local copy of the dco-audit action so the comment wording is
+      # versioned in-repo (issue #1498). Scan semantics: --no-merges.
       - name: DCO Audit
         id: dco
-        uses: Ikalus1988/dco-audit@v1
+        uses: ./.github/actions/dco-audit
         with:
           base-sha: ${{ github.event.pull_request.base.sha }}
           head-sha: ${{ github.event.pull_request.head.sha }}
@@ -134,8 +136,9 @@ jobs:
           echo "DCO check failed: ${{ steps.dco.outputs.failed-count }} commit(s) without sign-off."
           exit 1
 
-      # Clean stale REGULATORY BLOCK comments once DCO passes so the PR thread
-      # no longer contradicts the green checks (issue #1498).
+      # Clean stale DCO block comments once DCO passes so the PR thread
+      # no longer contradicts the green checks (issue #1498). Matches both
+      # the current marker and legacy REGULATORY BLOCK comments.
       - name: Remove stale DCO block comments
         if: steps.dco.outputs.dco-passed == 'true'
         env:
@@ -144,7 +147,7 @@ jobs:
           PR_NUM="${{ github.event.pull_request.number || '' }}"
           [ -z "$PR_NUM" ] && exit 0
           for cid in $(gh api "repos/Ikalus1988/MisakaNet/issues/$PR_NUM/comments?per_page=100" \
-            --jq '.[] | select(.body | contains("AUTOMATED AUDIT SYSTEM: REGULATORY BLOCK")) | .id' 2>/dev/null); do
+            --jq '.[] | select((.body | contains("misakanet-dco-block")) or (.body | contains("AUTOMATED AUDIT SYSTEM: REGULATORY BLOCK"))) | .id' 2>/dev/null); do
             gh api -X DELETE "repos/Ikalus1988/MisakaNet/issues/comments/$cid" >/dev/null 2>&1 || true
           done
           echo "Stale DCO block comments cleaned."
@@ -244,6 +247,14 @@ jobs:
           # Only audit ecosystems whose dependency files changed
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
           HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          # workflow_dispatch runs have no base/head PR SHAs — nothing to diff
+          if [ -z "$BASE_SHA" ] || [ -z "$HEAD_SHA" ]; then
+            echo "Manual (workflow_dispatch) run — no PR diff; dependency audit skipped"
+            echo "depaudit_result=skipped" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
           PY_DEPS_CHANGED=false
           JS_DEPS_CHANGED=false
@@ -522,11 +533,13 @@ jobs:
             REPORT+=$'\n\n'
             if [ "$OUTCOME" = "success" ]; then
               REPORT+="✅ **PASS** — ${COVERAGE}% coverage"
-            else
+            elif [ -n "$OUTCOME" ]; then
               REPORT+="❌ **FAIL** — tests have failures"
               if [ -n "$COVERAGE" ]; then
                 REPORT+=" (${COVERAGE}% coverage)"
               fi
+            else
+              REPORT+="⏭️ Skipped (manual run without PR context)."
             fi
             REPORT+=$'\n\n'
           fi
@@ -571,7 +584,7 @@ jobs:
               REPORT+="❌ Dependency audit found vulnerabilities."$'\n'
               VERDICT_PASS=false
             fi
-            if [ "$OUTCOME" != "success" ]; then
+            if [ -n "$OUTCOME" ] && [ "$OUTCOME" != "success" ]; then
               REPORT+="❌ Test suite failed."$'\n'
               VERDICT_PASS=false
             fi
@@ -623,7 +636,7 @@ jobs:
           fi
           # Note: dep audit blocking is handled in the dep audit step itself
           # (only blocks when dependency files actually changed)
-          if [ "$SCOPE" = "full" ] && [ "$OUTCOME" != "success" ]; then
+          if [ "$SCOPE" = "full" ] && [ -n "$OUTCOME" ] && [ "$OUTCOME" != "success" ]; then
             echo "Audit failed: test suite has issues."
             exit 1
           fi

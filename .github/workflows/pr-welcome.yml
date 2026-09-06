@@ -16,18 +16,43 @@ jobs:
       - uses: actions/github-script@v9
         with:
           script: |
-            const body = [
-              "## Welcome to MisakaNet!",
-              "",
-              "Thanks for your first PR!",
-              "",
-              "### Fix DCO First",
-              "",
-              "Every commit needs `Signed-off-by:`. If DCO fails:",
-              "```bash",
-              "git commit --amend --signoff --no-edit",
-              "git push --force-with-lease",
-              "```",
+            const body = [];
+            body.push("## Welcome to MisakaNet!");
+            body.push("");
+            body.push("Thanks for your first PR!");
+
+            // Only show DCO remediation when it is actually needed — don't nag
+            // contributors whose commits are already signed (issue #1498).
+            const commits = await github.paginate(
+              github.rest.pulls.listCommits,
+              { owner: context.repo.owner, repo: context.repo.repo,
+                pull_number: context.issue.number, per_page: 100 }
+            );
+            const unsigned = commits
+              .filter(c => (c.parents || []).length <= 1) // merge commits exempt
+              .filter(c => !(c.commit.message || '').includes('Signed-off-by:'));
+
+            if (unsigned.length > 0) {
+              body.push(
+                "",
+                "### 🔏 Fix DCO First",
+                "",
+                "Some commits are missing `Signed-off-by:`. Fix and force-push:",
+                "",
+                "```bash",
+                "git commit --amend --signoff --no-edit   # latest commit",
+                "git push --force-with-lease",
+                "```",
+                "",
+                "For several commits: `git rebase --signoff HEAD~N && git push --force-with-lease`",
+                "",
+                "> CI re-scans on **every push** (including force-pushes). Once all commits are signed, the `needs-dco` label **auto-clears** — do NOT push an empty commit."
+              );
+            } else {
+              body.push("", "### 🔏 DCO: all commits signed ✅");
+            }
+
+            body.push(
               "",
               "### Quick Links",
               "",
@@ -53,12 +78,12 @@ jobs:
               "  -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"misakanet_submit_intake\",\"arguments\":{\"problem\":\"YOUR PROBLEM\",\"source\":\"your-agent\"}}}'",
               "```",
               "",
-              "CI runs automatically once DCO passes."
-            ].join("\n");
+              "CI checks run automatically on every push."
+            );
 
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: body
+              body: body.join("\n")
             });
