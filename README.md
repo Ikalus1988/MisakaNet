@@ -6,6 +6,8 @@
 
 # MisakaNet
 
+mcp-name: io.github.Ikalus1988/misakanet
+
 > **Stop debugging the same error twice.**
 >
 > MisakaNet searches 310+ failure lessons so your agent skips known bugs.
@@ -105,7 +107,7 @@ for r in results:
 
 **Option 5 — DeepSeek Harness (DSH plugin):**
 ```bash
-# Install from npm (recommended — published as misakanet@2.23.0)
+# Install from npm (recommended — published as misakanet@2.28.1)
 dsh plugin add misakanet
 
 # Or install directly from git (same bundle)
@@ -382,7 +384,7 @@ flowchart LR
     subgraph Local["💻 Local Node (git clone)"]
         User["Local Agent / Dev"]
         CLI["CLI — search_knowledge.py"]
-        MCP["MCP stdio — scripts/mcp_server.py<br/>(misakanet == 2.23.0)"]
+        MCP["MCP stdio — scripts/mcp_server.py<br/>(misakanet == 2.28.1)"]
         Engine["BM25 Engine — engine.py"]
         Lessons[("lessons/ — git source of truth")]
         Profile[("profile.json — node profile")]
