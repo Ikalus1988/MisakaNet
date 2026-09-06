@@ -82,8 +82,9 @@ jobs:
           echo "modified-files findings reported above (advisory)."
           cat gate_report_existing.txt >> gate_report.txt 2>/dev/null || true
 
+      # Run whenever this job fires (lessons/** or lesson_gate.py or its
+      # tests changed — workflow path filter guarantees at least one).
       - name: Run unit tests for the gate
-        if: steps.changed.outputs.any_changed == 'true'
         run: |
           pip install -q pytest
           python3 -m pytest tests/test_lesson_gate.py -q
