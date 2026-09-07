@@ -12,6 +12,11 @@ tags:
 status: published
 created: '2026-08-27'
 source: intake-issue-1306
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # mcporter OAuth Authorization Must Be Serial

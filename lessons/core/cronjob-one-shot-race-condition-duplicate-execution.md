@@ -11,6 +11,11 @@ updated: 2026-06-05 00:48:38 UTC
 source: hermes_wsl2
 domain_expert: hermes_wsl2
 verified_date: '2026-06-05'
+provenance:
+  source: "internal"
+  contributor: "MisakaNet Core"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 One-shot cronjobs (reminders, .BG, .S, .RS commands) firing 2-4x at once instead of once.

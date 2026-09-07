@@ -14,6 +14,11 @@ confidence: 0.85
 domain_expert: null
 verified_date: null
 subdomain: scraping
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

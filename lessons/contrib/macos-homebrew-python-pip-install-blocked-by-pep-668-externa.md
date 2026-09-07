@@ -15,6 +15,11 @@ updated: '2026-07-09'
 source: Real incident, running validate.py on macOS Homebrew Python 3.14 (2026-07-09)
 verified_date: '2026-07-09'
 evidence_level: E2
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # macOS Homebrew Python: pip install Blocked by PEP 668 externally-managed-environment

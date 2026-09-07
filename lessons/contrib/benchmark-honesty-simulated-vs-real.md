@@ -14,7 +14,7 @@ confidence: 0.95
 ---
 
 <!-- provenance:
-  contributor: "<user>"
+  contributor: "Unknown"
   merged_at: "2026-07-15"
   evidence: "post-publication"
 -->

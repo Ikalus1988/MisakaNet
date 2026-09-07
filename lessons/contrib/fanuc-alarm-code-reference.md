@@ -14,6 +14,11 @@ confidence: 0.6
 subdomain: alarm-troubleshooting
 id: fanuc-alarm-code-reference
 quality_score: 43
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

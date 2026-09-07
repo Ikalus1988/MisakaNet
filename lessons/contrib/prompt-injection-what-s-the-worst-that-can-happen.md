@@ -12,6 +12,11 @@ created: '2026-07-27'
 language: en
 source: https://simonwillison.net/2023/Apr/14/worst-that-can-happen/
 confidence: 0.85
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

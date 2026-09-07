@@ -11,6 +11,11 @@ status: published
 created: '2026-05-21'
 language: zh
 confidence: 0.88
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

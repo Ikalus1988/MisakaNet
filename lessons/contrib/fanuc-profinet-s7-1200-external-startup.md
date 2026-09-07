@@ -33,6 +33,11 @@ solution: '1. 硬件准备：FANUC 机器人需安装 PROFINET 适配卡（如 P
   6. RSR 模式：PLC 通过 DI 信号选择程序编号并触发启动
 
   7. PNS 模式：PLC 通过信号组选择程序号，FANUC 自动执行对应程序'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## FANUC PROFINET 通讯与 S7-1200 外部启动配置

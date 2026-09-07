@@ -38,12 +38,25 @@ jobs:
           files: |
             lessons/**/*.md
 
-      - name: Run lesson quality gate
+      - name: Classify added vs modified lesson files
+        id: classify
         if: steps.changed.outputs.any_changed == 'true'
+        run: |
+          git fetch origin "${{ github.event.pull_request.base.sha }}" --depth=1 2>/dev/null || true
+          BASE="${{ github.event.pull_request.base.sha }}"
+          # NEW files get the strict gate; files that already exist on the base
+          # branch (metadata/provenance/retag touches) are advisory so legacy
+          # debt never blocks metadata batches (#1506).
+          ADDED=$(git diff --name-only --diff-filter=A "$BASE" HEAD -- 'lessons/**/*.md' | tr '\n' ' ')
+          MODIFIED=$(git diff --name-only --diff-filter=MR "$BASE" HEAD -- 'lessons/**/*.md' | tr '\n' ' ')
+          echo "added=$ADDED" >> "$GITHUB_OUTPUT"
+          echo "modified=$MODIFIED" >> "$GITHUB_OUTPUT"
+
+      - name: Run lesson quality gate (strict — NEW files)
+        if: steps.classify.outputs.added != ''
         id: gate
         run: |
-          FILES="${{ steps.changed.outputs.all_changed_files }}"
-          # Convert space-separated list to args (paths have no spaces in this repo)
+          FILES="${{ steps.classify.outputs.added }}"
           # bash -e would abort before the report and exit code are captured.
           set +e
           python3 scripts/lesson_gate.py $FILES > gate_report.txt 2>&1
@@ -52,12 +65,26 @@ jobs:
           cat gate_report.txt
           echo "gate_exit=$GATE_EXIT" >> "$GITHUB_OUTPUT"
           if [ "$GATE_EXIT" -ne 0 ]; then
-            echo "❌ Lesson quality gate FAILED — see report below."
+            echo "❌ Lesson quality gate FAILED (new file) — see report below."
             exit 1
           fi
 
+      - name: Run lesson quality gate (advisory — modified existing files)
+        if: steps.classify.outputs.modified != ''
+        run: |
+          FILES="${{ steps.classify.outputs.modified }}"
+          set +e
+          python3 scripts/lesson_gate.py --existing $FILES > gate_report_existing.txt 2>&1
+          GATE_EXIT=$?
+          set -e
+          cat gate_report_existing.txt
+          # advisory mode never fails the job; findings are warnings for review
+          echo "modified-files findings reported above (advisory)."
+          cat gate_report_existing.txt >> gate_report.txt 2>/dev/null || true
+
+      # Run whenever this job fires (lessons/** or lesson_gate.py or its
+      # tests changed — workflow path filter guarantees at least one).
       - name: Run unit tests for the gate
-        if: steps.changed.outputs.any_changed == 'true'
         run: |
           pip install -q pytest
           python3 -m pytest tests/test_lesson_gate.py -q

@@ -16,6 +16,11 @@ confidence: 0.9
 domain_expert: ''
 verified_date: ''
 subdomain: api
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

@@ -69,10 +69,10 @@ MisakaNet 有**三条刻意分开、节奏独立的版本通道**（不要试图
 
 | 通道 | 载体 | 现状(2026-09-05) | 何时 bump |
 |---|---|---|---|
-| **registry 线** | `server.json`/`glama.json` `version` + API.md/JOIN.md 声明 | 2.27.1 | 每次发版 tag 后“对齐”（随 handoff 流程） |
-| **repo release 线** | `pyproject.toml` + `.release-please-manifest.json`（release-please python 型随发版 bump）+ README `misakanet@` 声明 | 2.27.1 | 每次发版（release-please/tag） |
+| **registry 线** | `server.json`/`glama.json` `version` + API.md/JOIN.md 声明 | 2.28.1 | 每次发版 tag 后“对齐”（随 handoff 流程） |
+| **repo release 线** | `pyproject.toml` + `.release-please-manifest.json`（release-please python 型随发版 bump）+ README `misakanet@` 声明 | 2.28.1 | 每次发版（release-please/tag） |
 | **npm bundle 线** | `package.json` | 2.23.1（npm 已发布 2.23.0） | 仅 DSH skill bundle 实际发布 npm 时（允许滞后于 release 线） |
-| **pypi 通道** | server.json pypi entry == pyproject；PyPI 实况 2.18.0（上传已滞后） | 2.27.1 | 真正发布 PyPI 时 |
+| **pypi 通道** | server.json pypi entry == pyproject；PyPI 实况 2.28.1（2026-09-06 恢复发布：建 `pypi` environment + Trusted Publisher + workflow_dispatch） | 2.28.1 | 发布即同步（release-pypi workflow_dispatch） |
 
 统一方式 = **单一工具 + 不变量门禁**，不再手改多处：
 
@@ -156,7 +156,7 @@ MisakaNet 现已声明 `dsh.bundle`（`package.json` + `cordis.patch.yml`），�
 5. **数据/远端**：跑 `update-lessons.yml`（workflow_dispatch）刷新索引；`sync-d1.yml`
    同步 D1（canonical 359+）。
 6. **发布渠道**：npm bundle（若需出新版本号则 bump package.json 后 publish）、PyPI（如恢复，
-   注意当前 pypi 实况 2.18.0 滞后）、**MCP registry**（见 §9）。
+   PyPI 已恢复发布（2.28.1，见 §9 附注））、**MCP registry**（见 §9）。
 7. **收尾**：跑一遍 `make check-versions` 确认对齐无漂移；把 CHANGELOG 顶部数字与
    docs/maintenance 数据行同步。
 
@@ -165,8 +165,16 @@ MisakaNet 现已声明 `dsh.bundle`（`package.json` + `cordis.patch.yml`），�
 **官方机制**：registry.modelcontextprotocol.io 的条目通过
 [modelcontextprotocol/registry](https://github.com/modelcontextprotocol/registry) 的
 `mcp-publisher` CLI 发布/更新；mcptoplist 等目录镜像 registry，registry 更新后自然同步
-（无需逐站提交）。仓库 `server.json` 就是发布源（本仓库已是最新 2.27.1，发布时随 §8 对齐到
-2.28.0）。
+（无需逐站提交）。仓库 `server.json` 就是发布源（当前 2.28.1，发布时随 §8 对齐）。
+
+> **2026-09-06 发布链路打通**：
+> - 前置：`server.json` description ≤100（registry 422）；README 需含 `mcp-name: io.github.Ikalus1988/misakanet`
+>   所有权标记（registry 400）；PyPI 版本须真实存在（registry 400）。
+> - PyPI 通道修复：`environment: pypi` 从未存在 → release-pypi 从未成功（PyPI 停在 2.18.0）。
+>   已建 environment + PyPI Trusted Publisher（owner Ikalus1988/repo MisakaNet/workflow release-pypi.yml/env pypi）
+>   + release-pypi 加 `workflow_dispatch`（#1511）→ misakanet 2.28.1 上线。
+> - 发布：`mcp-publisher login github`（本机，凭证 ~/.config/mcp-publisher）→
+>   `mcp-publisher publish server.json` → registry 2.28.1 ✓；mcptoplist 镜像自动同步。
 
 ```bash
 # 1) 安装 CLI（macOS/linux）：brew install mcp-publisher
@@ -178,7 +186,7 @@ mcp-publisher validate server.json   # 校验 schema（发布前必做）
 mcp-publisher login
 mcp-publisher publish server.json
 # 4) 验证：https://registry.modelcontextprotocol.io/?q=io.github.Ikalus1988%2Fmisakanet
-#    应显示 server.json 的 version（2.27.1 → 下版 2.28.0）
+#    应显示 server.json 的 version（当前 2.28.1）
 ```
 
 **dsh.so L5 验证**：验证按 **spec tag**（如 `#v2.26.0`）运行——本仓库发布新 tag 后，
@@ -192,8 +200,8 @@ mcp-publisher publish server.json
 
 | 目录 | 条目状态(2026-09-05) | 认领/刷新方式 | 备注 |
 |---|---|---|---|
-| registry.modelcontextprotocol.io（官方） | 陈旧曾为 2.12.2；随 server.json 发布 | `mcp-publisher validate/login/publish`（§9） | 权威源；mcptoplist 等镜像它 |
-| mcptoplist.com | 同 registry | registry 更新后自动同步 | 无独立自助入口 |
+| registry.modelcontextprotocol.io（官方） | **2.28.1（2026-09-06 发布成功）** | `mcp-publisher validate/login/publish`（§9） | 权威源；mcptoplist 等镜像它 |
+| mcptoplist.com | 同 registry（镜像同步有延迟） | registry 更新后自动同步 | 无独立自助入口 |
 | mcpvault.io/servers/misakanet | 已自动收录（2026-09-03 邮件） | 站点 GitHub 登录认领（~1 分钟，免费）→ 请求验证（早期免费，对 https://misakanet.org/mcp 做真实 MCP 握手）→ 得 Verified 徽章（可嵌入 README） | 推广邮件来自 Henrik <hello@trymcpvault.com>；不感兴趣可回复 unsubscribe |
 
 > 决策记录（2026-09-05）：MCPVault 认领属可选营销项；若做，验证对象为远端

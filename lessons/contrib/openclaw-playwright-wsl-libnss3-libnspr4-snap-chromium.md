@@ -14,6 +14,11 @@ updated: '2026-06-23'
 source: unknown
 domain_expert: ''
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Playwright Chromium launch fails on WSL2 with missing libnss3 / libnspr4

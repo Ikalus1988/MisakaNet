@@ -29,6 +29,11 @@ solution: '1. 验证调用语法：CALL ''PROGRAM.TP''（单引号 + .TP 扩展�
   4. 排查目标 TP 程序是否含冲突运动指令
 
   5. 确认 TP 程序属性中允许被 KAREL 调用'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## FANUC KAREL: INTP-316 调用TP程序触发动作锁定

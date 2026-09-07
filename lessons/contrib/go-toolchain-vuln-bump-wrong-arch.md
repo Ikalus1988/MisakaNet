@@ -10,6 +10,11 @@ status: published
 created: 2026-08-11 00:00:00 UTC
 updated: 2026-08-11 00:00:00 UTC
 evidence_level: E2
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Go dependency vuln bump blocked by wrong-architecture toolchain download

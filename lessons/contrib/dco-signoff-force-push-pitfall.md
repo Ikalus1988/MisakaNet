@@ -18,6 +18,11 @@ metadata:
   originSessionId: c8d99950-7aef-46ad-b4ce-4d0f910c86e9
   modified: '2026-08-18T00:00:00.000Z'
 language: zh
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

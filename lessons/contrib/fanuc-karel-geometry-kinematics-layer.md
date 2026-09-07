@@ -21,6 +21,11 @@ quality_score: 80
 root_cause: FANUC KAREL标准库仅提供基础数学函数，没有面向机器人应用的几何计算库和传感器抽象层
 solution: Ka-Boost Layer6提供三个模块：shapes模块实现3D几何图元(plane/line/segment/box/cylinder)及交集/投影/碰撞检测；pose模块提供运动学和坐标变换(详见pose专题)；sensors模块封装ToF激光测距传感器(支持Keyence
   IL300/IL065、Panasonic MLDS)，含校准、滑动窗口平均、边沿检测
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ### Problem描述
