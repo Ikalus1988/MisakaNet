@@ -98,6 +98,7 @@ def convert_to_draft(contrib_id: str, draft_type: str = "lesson", domain: str = 
     fix = contrib.get("fix", "")
     verification = contrib.get("verification", "")
     source = contrib.get("source", "")
+    intake_issue = contrib.get("intake_issue") or contrib.get("issue_number") or ""
 
     draft_content = f"""---
 title: "{title}"
@@ -106,6 +107,7 @@ tags: [contributed, {draft_type}]
 language: en
 status: draft
 source: "{source}"
+intake_issue: "{intake_issue}"
 contrib_id: "{contrib_id}"
 created: "{now.strftime('%Y-%m-%d')}"
 confidence: 0.70

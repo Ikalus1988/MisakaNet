@@ -295,6 +295,37 @@ TOOLS = [
         },
     },
     {
+        "name": "misakanet_intake_receipt",
+        "description": (
+            "Query conversion receipt and quality outcome for an"
+            " intake issue. External crawlers and agents use this to"
+            " verify if an intake has been converted/promoted to a"
+            " published lesson, inspect its assigned evidence level,"
+            " and tune their collection strategy."
+            " Input semantics: intake_id is required (e.g. 'issue-1530'"
+            " or '1530'). Output schema: JSON with found, intake_id,"
+            " status, lesson (id, title, url, evidence_level),"
+            " evidence_level, and receipt_id."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "intake_id": {
+                    "type": "string",
+                    "description": (
+                        "Required: Intake identifier (e.g. 'issue-1530'"
+                        " or '1530')."
+                    ),
+                },
+                "source": {
+                    "type": "string",
+                    "description": "Optional: source identifier for verification.",
+                },
+            },
+            "required": ["intake_id"],
+        },
+    },
+    {
         "name": "misakanet_write_lesson",
         "description": (
             "Submit a complete, structured failure lesson. Use after"

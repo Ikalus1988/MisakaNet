@@ -151,6 +151,12 @@ def handle_submit_intake(args: dict) -> dict:
             "existing_id": result.get("existing_id", ""),
         }
 
+    try:
+        from scripts.source_ledger import record_submission
+        record_submission(source=source, issue_number=result["id"])
+    except Exception:
+        pass
+
     return {
         "submitted": True,
         "intake_id": result["id"],
@@ -162,3 +168,77 @@ def handle_submit_intake(args: dict) -> dict:
             " no account or email is required."
         ),
     }
+
+
+def handle_intake_receipt(args: dict) -> dict:
+    """Query conversion receipt and quality outcome for an intake issue."""
+    intake_id_raw = str(args.get("intake_id", "")).strip()
+    if not intake_id_raw:
+        return {"error": "intake_id is required"}
+
+    import json
+    import re
+    from pathlib import Path
+
+    digits = re.findall(r"\d+", intake_id_raw)
+    issue_num = int(digits[0]) if digits else None
+    intake_id = f"issue-{issue_num}" if issue_num else intake_id_raw
+
+    try:
+        from scripts.source_ledger import load_ledger
+        ledger = load_ledger()
+        for s_name, s_data in ledger.get("sources", {}).items():
+            for receipt in s_data.get("receipts", []):
+                r_issue = receipt.get("intake_issue")
+                if (issue_num and r_issue == issue_num) or (r_issue and str(r_issue) == str(intake_id_raw)):
+                    lesson_id = receipt.get("lesson_id")
+                    lesson_obj = next((l for l in s_data.get("lessons", []) if l.get("lesson_id") == lesson_id), {})
+                    return {
+                        "found": True,
+                        "intake_id": intake_id,
+                        "status": "promoted",
+                        "lesson": {
+                            "id": lesson_id,
+                            "title": lesson_obj.get("title", lesson_id),
+                            "url": lesson_obj.get("url", f"https://misakanet.org/lessons/{lesson_id}/"),
+                            "evidence_level": lesson_obj.get("evidence_level", "E0"),
+                        },
+                        "evidence_level": lesson_obj.get("evidence_level", "E0"),
+                        "receipt_id": receipt.get("receipt_id"),
+                        "note": "Intake successfully converted to published lesson.",
+                    }
+    except Exception:
+        pass
+
+    lessons_path = Path(__file__).resolve().parent.parent.parent / "data" / "lessons.json"
+    if lessons_path.exists():
+        try:
+            lessons = json.loads(lessons_path.read_text(encoding="utf-8"))
+            for l in lessons:
+                l_issue = l.get("intake_issue")
+                l_id = l.get("id")
+                if issue_num and l_issue == issue_num:
+                    return {
+                        "found": True,
+                        "intake_id": intake_id,
+                        "status": "promoted",
+                        "lesson": {
+                            "id": l_id,
+                            "title": l.get("title", l_id),
+                            "url": f"https://misakanet.org/lessons/{l_id}/",
+                            "evidence_level": l.get("evidence_level", "E0"),
+                        },
+                        "evidence_level": l.get("evidence_level", "E0"),
+                        "receipt_id": f"rcpt-{issue_num}-{l_id}",
+                        "note": "Intake successfully converted to published lesson.",
+                    }
+        except Exception:
+            pass
+
+    return {
+        "found": True,
+        "intake_id": intake_id,
+        "status": "pending_review",
+        "note": "Intake has not yet been promoted to a published lesson.",
+    }
+

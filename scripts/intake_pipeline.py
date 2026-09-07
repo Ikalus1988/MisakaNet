@@ -104,6 +104,13 @@ def generate_draft(intake: dict, cls: dict) -> dict:
         "tags": tags[:8],
         "created": time.strftime("%Y-%m-%d"),
     }
+    if intake.get("source_id"):
+        fm["source_id"] = intake["source_id"]
+        digits = re.findall(r"\d+", str(intake["source_id"]))
+        if digits:
+            fm["intake_issue"] = int(digits[0])
+    if intake.get("issue_number"):
+        fm["intake_issue"] = int(intake["issue_number"])
     sections = [f"## Problem\n\n{intake['problem']}"]
     if intake["error"]:
         sections.append(f"## Error\n\n```\n{intake['error'][:2000]}\n```")

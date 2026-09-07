@@ -7,6 +7,7 @@ import sys
 from ._config import get_server_version
 from .handlers import (
     handle_get_lesson,
+    handle_intake_receipt,
     handle_memory_context,
     handle_preflight,
     handle_register,
@@ -26,6 +27,7 @@ _HANDLERS = {
     "misakanet_get_lesson": handle_get_lesson,
     "misakanet_submit_usage": handle_submit_usage,
     "misakanet_submit_intake": handle_submit_intake,
+    "misakanet_intake_receipt": handle_intake_receipt,
     "misakanet_write_lesson": handle_write_lesson,
     "misakanet_preflight": handle_preflight,
     "misakanet_usage_status": handle_usage_status,

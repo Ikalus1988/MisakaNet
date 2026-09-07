@@ -82,7 +82,10 @@ jobs:
             lines = [f"📚 **引用追踪 — {node}**", '', f"**贡献者:** @{user}", f"**日期:** {date}", '', '## 引用的知识', '']
             for c in cited:
                 lines.append(f"- **{c.get('id', '?')}**: {c.get('title', '?')}")
-                lines.append(f"  Domain: {c.get('domain', '?')} | Tags: {', '.join(c.get('tags', []))}")
+                tags_str = ', '.join(c.get('tags', []))
+                lines.append(f"  Domain: {c.get('domain', '?')} | Tags: {tags_str}")
+                if c.get('intake_issue'):
+                    lines.append(f"  Source Intake: #{c.get('intake_issue')} ({c.get('source', 'unknown')}) | Evidence: {c.get('evidence_level', 'E0')}")
 
             lines.extend(['', '---', '> 自动引用追踪 by ci-self-heal'])
             print('\n'.join(lines))
