@@ -247,6 +247,29 @@ async function getWithCache(env, cacheKey, fetchFn) {
   return data;
 }
 
+// ── Lessons 搜索过滤 ──
+function filterLessons(lessons, query, limit) {
+  if (!query) return lessons.slice(0, limit);
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const scored = [];
+  for (const lesson of lessons) {
+    const haystack = [
+      lesson.title || "",
+      lesson.summary || "",
+      lesson.domain || "",
+      ...(lesson.tags || []),
+    ]
+      .join(" ")
+      .toLowerCase();
+    let matched = true;
+    for (const t of terms) {
+      if (!haystack.includes(t)) { matched = false; break; }
+    }
+    if (matched) scored.push(lesson);
+  }
+  return scored.slice(0, limit);
+}
+
 // ── API 路由处理 ──
 async function handleApiRequest(pathWithQuery, env, request) {
   // 分离路径与查询参数
@@ -291,7 +314,11 @@ async function handleApiRequest(pathWithQuery, env, request) {
       const data = await getWithCache(env, "proxy:lessons", () =>
         fetchFromGitHub(token, "lessons.json", "data")
       );
-      return jsonResponse(data);
+      const params = new URLSearchParams(search);
+      const q = (params.get("search") || "").trim();
+      const limit = Math.min(parseInt(params.get("limit") || "50", 10) || 50, 500);
+      const results = filterLessons(data, q, limit);
+      return jsonResponse(results);
     }
 
     case "/api/health":
@@ -368,7 +395,7 @@ function serveLandingPage() {
       <dt>GET /api/counter</dt>
       <dd>获取节点计数器 (GitHub Token 代理 + KV 缓存 30s)</dd>
       <dt>GET /api/lessons</dt>
-      <dd>获取 lessons 索引 (GitHub Token 代理 + KV 缓存 30s)</dd>
+      <dd>获取 lessons 索引 (支持 <code>?search=&lt;q&gt;&limit=N</code> 过滤)</dd>
       <dt>GET /api/health</dt>
       <dd>健康检查 (返回 Token / KV 配置状态)</dd>
     </dl>
@@ -627,4 +654,5 @@ export {
   handleDemandBoard,
   handleDemandMap,
   handlePrGeniusStats,
+  filterLessons,
 };
