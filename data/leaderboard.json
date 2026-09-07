@@ -1,7 +1,11 @@
 [
   {
     "login": "zsxh1990",
-    "score": 119.2
+    "score": 120.1
+  },
+  {
+    "login": "github-actions[bot]",
+    "score": 4.12
   },
   {
     "login": "2lll5",
@@ -16,12 +20,8 @@
     "score": 3.15
   },
   {
-    "login": "github-actions[bot]",
-    "score": 2.82
-  },
-  {
     "login": "yunaremaia",
-    "score": 2.35
+    "score": 2.34
   },
   {
     "login": "techlogiadg-spec",
@@ -41,7 +41,7 @@
   },
   {
     "login": "uncledad96-glitch",
-    "score": 1.76
+    "score": 1.59
   },
   {
     "login": "brok-best",
@@ -96,10 +96,6 @@
     "score": 0.53
   },
   {
-    "login": "lb1192176991-lab",
-    "score": 0.52
-  },
-  {
     "login": "harshadkhetpal",
     "score": 0.5
   },
@@ -126,6 +122,10 @@
   {
     "login": "agente-gaudi",
     "score": 0.42
+  },
+  {
+    "login": "lb1192176991-lab",
+    "score": 0.35
   },
   {
     "login": "lincai505011-ops",
