@@ -23,5 +23,6 @@ jobs:
           python-version: '3.12'
       - name: Run intake-bot decision benchmark (offline)
         run: |
+          pip install -q pytest
           python3 scripts/intake_benchmark.py --check
           python3 -m pytest tests/test_intake_bot_50.py -q
