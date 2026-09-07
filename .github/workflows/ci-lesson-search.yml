@@ -69,10 +69,15 @@ jobs:
             core.setOutput('error_signatures', errorSignatures.join('\n').slice(0, 2000));
             core.setOutput('run_url', run.html_url);
             core.setOutput('run_name', run.name || 'CI');
+            // same-repo failures may surface "novel intake" notes; fork PRs stay quiet
+            const headRepo = (run.head_repository || {}).full_name || '';
+            core.setOutput('is_same_repo', headRepo === context.repo.full_name ? 'true' : 'false');
 
-      # v1.0 (PR #1539): 决策交给 intake-bot（stack-aware + noise gate +
-      # suggest-only）。hit → 评论建议；intake 候选 / ignore → 静默（避免 CI
-      # 失败刷屏；候选可通过本地跑 intake_bot 查看）。
+      # v1.0 (PR #1539) + v1.0.1: 决策交给 intake-bot。
+      # 评论策略（真实提效 + 低打扰）：
+      #   hit    → 帮助式建议（@作者 + 修复线索 + 反馈入口）——所有人可见的"帮忙"
+      #   intake → 仅当失败属于**本仓库**且为新颖高信号时，提示可收录（维护者侧提效）
+      #   ignore → 静默；fork PR 的 intake 候选也静默（避免打扰外部贡献者）
       - name: Run intake-bot v1.0 decision
         if: steps.context.outputs.error_signatures != ''
         id: intake
@@ -81,6 +86,7 @@ jobs:
           RESULT=$(python3 scripts/intake_bot.py --log /tmp/ci_error.log --json \
             --source ci-lesson-search 2>/dev/null || echo '{"decision":"error","reason":"bot failed"}')
           DECISION=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('decision','unknown'))")
+          echo "decision=$DECISION"          # observable in run logs (dogfood)
           echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
           echo "result<<EOF" >> "$GITHUB_OUTPUT"
           echo "$RESULT" >> "$GITHUB_OUTPUT"
@@ -88,9 +94,10 @@ jobs:
         env:
           ERROR_SIGNATURES: ${{ steps.context.outputs.error_signatures }}
 
-      # 只在 hit 时评论（dogfood：观察 v1.0 建议质量；ignore/intake 静默防噪音）
       - name: Comment lesson suggestion on PR
-        if: steps.context.outputs.pr_number != '' && steps.intake.outputs.decision == 'hit'
+        if: steps.context.outputs.pr_number != '' &&
+            (steps.intake.outputs.decision == 'hit' ||
+             (steps.intake.outputs.decision == 'intake' && steps.context.outputs.is_same_repo == 'true'))
         uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ steps.context.outputs.pr_number }}
@@ -103,22 +110,38 @@ jobs:
             const prNumber = parseInt(process.env.PR_NUMBER);
             const lesson = res.lesson || {};
 
-            if (res.decision !== 'hit' || !lesson.id) return;
-
-            const body = [
-              `## 💡 MisakaNet: possible related lesson (suggest-only)`,
-              ``,
-              `CI failed in [${process.env.RUN_NAME}](${process.env.RUN_URL}). A MisakaNet lesson may match this error:`,
-              ``,
-              `### ${lesson.title || lesson.id}`,
-              `- **Similarity**: ${lesson.sim || '?'}`,
-              `- **Lesson**: [${lesson.id}](${lesson.url || '#'})`,
-              ``,
-              `> ⚠️ 仅供参考（suggest-only）——请人工核对后决定是否采用该修复思路。`,
-              ``,
-              `---`,
-              `_Powered by intake-bot v1.0 (stack-aware hit gate). To disable, remove ci-lesson-search.yml._`
-            ].join('\n');
+            let body = '';
+            if (res.decision === 'hit' && lesson.id) {
+              body = [
+                `## 💡 MisakaNet: this failure may already be solved`,
+                ``,
+                `CI failed in [${process.env.RUN_NAME}](${process.env.RUN_URL}). A MisakaNet lesson matches this error:`,
+                ``,
+                `### ${lesson.title || lesson.id}`,
+                `- **Similarity**: ${lesson.sim || '?'}`,
+                `- **Lesson**: [${lesson.id}](${lesson.url || '#'})`,
+                ``,
+                `> ⚠️ suggest-only（仅供参考）——请人工核对后再采用修复思路。`,
+                ``,
+                `如果这条建议帮到了你，点个 👍 让我们知道；没帮到请回复，我们会改进。`,
+              ].join('\n');
+            } else if (res.decision === 'intake') {
+              body = [
+                `## 📥 MisakaNet: novel failure detected (maintainer note)`,
+                ``,
+                `CI failed in [${process.env.RUN_NAME}](${process.env.RUN_URL}). intake-bot 未找到对应课程——`,
+                `这是一个**新颖且高信号**的失败（已通过去重/噪音闸）。`,
+                ``,
+                `如需沉淀为课程，可：`,
+                `- 本地 dry-run 预览：\`python3 scripts/intake_bot.py --error "<该错误>" --json\``,
+                `- 或由维护者手动收录（本 bot 默认不自动提交，避免噪音）`,
+                ``,
+                `> 本条只出现在**本仓库**失败上，不会打扰 fork 贡献者。`,
+              ].join('\n');
+            } else {
+              return;
+            }
+            body += '\n\n---\n_Powered by intake-bot v1.0.1. To disable, remove ci-lesson-search.yml._';
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
