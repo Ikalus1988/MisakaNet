@@ -36,6 +36,7 @@ mcp-name: io.github.Ikalus1988/misakanet
   <a href="https://pypi.org/project/misakanet/"><img src="https://img.shields.io/pypi/v/misakanet" alt="PyPI"></a>
   <a href="https://www.npmjs.com/package/misakanet"><img src="https://img.shields.io/npm/v/misakanet" alt="npm"></a>
   <a href="https://dsh-plugin.org/plugins/ikalus1988/misakanet"><img src="https://dsh-plugin.org/badges/listed.svg" alt="Listed on dsh-plugin.org"></a>
+  <a href="https://dsh.directory/plugins/ikalus1988/misakanet"><img src="https://dsh.directory/badges/listed.svg" alt="Listed on DSH Directory"></a>
   <a href="https://www.dsh.so/artifact/misakanet/"><img src="https://www.dsh.so/badge/install/misakanet.svg" alt="dsh.so install"></a>
 </p>
 
@@ -467,25 +468,34 @@ Use skills when you want an agent to do something. Use MisakaNet when you want a
 
 ## How is this different?
 
-| Project | ⭐ | Active | Sharing model | Infrastructure | Entry cost |
-|---------|-----|--------|---------------|----------------|------------|
-| **MisakaNet** | ![stars](https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social) | ✅ Active | Public Git-backed failure-memory | `git` + `python3` *(zero-dep)* | `git clone` (5s) |
-| [agentmemory](https://github.com/rohitg00/agentmemory) | ![stars](https://img.shields.io/github/stars/rohitg00/agentmemory?style=social) | ✅ Active | Local/team memory depending on backend | Python + SQLite | `pip install` |
-| [Memorix](https://github.com/AVIDS2/memorix) | ![stars](https://img.shields.io/github/stars/AVIDS2/memorix?style=social) | ✅ Active | MCP shared memory | Python | `pip install` |
-| [Memoria](https://github.com/matrixorigin/Memoria) | ![stars](https://img.shields.io/github/stars/matrixorigin/Memoria?style=social) | ✅ Active | Cloud / app-level shared memory | Infra-backed | Docker |
-| [claude-memory-compiler](https://github.com/coleam00/claude-memory-compiler) | ![stars](https://img.shields.io/github/stars/coleam00/claude-memory-compiler?style=social) | 🟡 Warm | Personal memory | Python | `pip install` |
-| [SwarmClaw](https://github.com/swarmclawai/swarmclaw) | ![stars](https://img.shields.io/github/stars/swarmclawai/swarmclaw?style=social) | 🟡 Warm | Runtime federation | Python | `pip install` |
-| [Agent-KB](https://github.com/OPPO-PersonalAI/Agent-KB) | ![stars](https://img.shields.io/github/stars/OPPO-PersonalAI/Agent-KB?style=social) | 🔬 Research | Shared experience pool / research prototype | Docker + PostgreSQL | Docker (~15min) |
-| [MemoryCustodian](https://github.com/waittim/MemoryCustodian) | ![stars](https://img.shields.io/github/stars/waittim/MemoryCustodian?style=social) | 🟡 Warm | Personal memory | Python | `pip install` |
-| [GoodMemory](https://github.com/hjqcan/GoodMemory) | ![stars](https://img.shields.io/github/stars/hjqcan/GoodMemory?style=social) | ✅ Active | Local / app-level memory | TypeScript + Bun/SQLite | `npm install` |
+MisakaNet is **not** a general memory system (Mem0 / agentmemory / Memorix etc. are
+a different category — see [What this is NOT](#what-this-is-not) above). The closest
+relatives are *failure/experience knowledge* MCP servers for AI agents (Glama-listed):
 
-> **MisakaNet is not the only shared memory system.** Its edge is:
+| Project | ⭐ | 定位（shared model） | 与 MisakaNet 差异 |
+|---------|-----|---------------------|-------------------|
+| **MisakaNet** | ![stars](https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social) | Public Git-backed failure memory — verified debugging lessons, searchable by agents & humans | — |
+| [deadends.dev](https://github.com/dbwls99706/deadends.dev) | ![stars](https://img.shields.io/github/stars/dbwls99706/deadends.dev?style=social) | Structured failure knowledge — dead ends, workarounds, error chains | 同类最接近：同样存"失败→解法"；差异：我们的 lesson 走 DCO 审校 + 证据分级 + 可全文搜索/基准护栏，且零依赖本地可查 |
+| [Prior](https://github.com/cg3inc/prior_mcp) (io.cg3) | ![stars](https://img.shields.io/github/stars/cg3inc/prior_mcp?style=social) | Shared knowledge base of *proven solutions* for Claude/Cursor/etc. | 偏"已验证方案"经验交换，非专门失败记忆；我们按失败原语组织、命中可量化 |
+| [Kira](https://github.com/aibenyclaude-coder/Kira) | ![stars](https://img.shields.io/github/stars/aibenyclaude-coder/Kira?style=social) | Auto-manages Skills & Scars (persistent failure warnings) for agents | Scars 偏"本次会话/项目级警告"；我们是跨项目、公开、可审计的失败课程库 |
+| [Casebook-MCP](https://github.com/AgentPostmortem/Casebook-MCP) | ![stars](https://img.shields.io/github/stars/AgentPostmortem/Casebook-MCP?style=social) | Remote MCP over AgentPostmortem — registry of documented AI-agent failures | 同为 agent 故障复盘库；差异：我们带 intake 闭环 + 证据分级 + 课程可升格 contrib |
+| [knownissue](https://github.com/gong8/knownissue) | ![stars](https://img.shields.io/github/stars/gong8/knownissue?style=social) | Shared debugging memory — search/report/patch/verify issues | 同为调试记忆共享；我们侧重"已审校 lesson 可检索复用"，非 issue 工单闭环 |
+| [fix-memory-mcp](https://github.com/l111403717-cloud/fix-memory-mcp) | ![stars](https://img.shields.io/github/stars/l111403717-cloud/fix-memory-mcp?style=social) | Local-first coding fix memory for agents | 本地私有 fix 记忆；我们是公开共享 + 网络化检索 |
+| [cogmem](https://github.com/dcondrey/cogmem) | ![stars](https://img.shields.io/github/stars/dcondrey/cogmem?style=social) | Self-improving, verifiable memory layer for coding agents | 通用 agent 记忆层；我们是失败知识专库，非会话/状态记忆 |
+
+> Glama 目录上还可见 AskAgent（错误原文→根因→修复档案）、Civis（结构化方案/构建日志检索）、
+> FixFlow 等条目，但未发现公开 GitHub 仓库，未列入上表（避免引用无法核验的链接）。
+> 上表仅收录可核验仓库；⭐ 为写时快照。
+
+> **MisakaNet is not the only shared failure-memory system.** Its edge is:
 > - **Git-backed** — every lesson is a Markdown file, fully auditable, version-controlled
 > - **Zero-dependency** — pure Python stdlib, no vector DB, no embedding model, no server
 > - **Purpose-built** — failure-recovery knowledge, not general memory
 > - **Public by default** — lessons are open, contributions are DCO-gated
 >
-> Other systems (Mem0, Agent-KB, agentmemory) offer stronger semantic recall / state management, but require heavier deployment. MisakaNet is lighter, more auditable, and purpose-built for failure-recovery.
+> General-memory systems (Mem0, Agent-KB, agentmemory) offer stronger semantic recall /
+> state management, but require heavier deployment. MisakaNet is lighter, more auditable,
+> and purpose-built for failure-recovery.
 
 > 📦 Core engine is **zero-dep** (pure Python stdlib). Optional extras: `pip install misakanet[semantic|hub|feishu]`.
 > → [Architecture details](ARCHITECTURE.md) · [Benchmark: LessonReuseBench](docs/lesson-reuse-benchmark.md)
