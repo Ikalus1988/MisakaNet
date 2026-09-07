@@ -1100,10 +1100,40 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         return {
           submitted: false,
           duplicate: true,
-          previous_issue: existingDedup,
-          error: "Duplicate intake — this problem was already submitted. See the linked issue.",
+          previous_issue: existingDedup,          error: "Duplicate intake — this problem was already submitted. See the linked issue.",
         };
       }
+    }
+
+    // #1526 backstop: failure intakes already covered near-verbatim by an
+    // active lesson return already_have instead of opening a triage issue
+    // (client-side gates are best-effort; this guards every source). Best-effort:
+    // corpus failure falls through to the normal intake path.
+    if (kind === "missing_lesson") {
+      try {
+        const lessons = await loadLessons(env, {});
+        const cover = findCoveringLesson(safeProblem, safeError || "", lessons || []);
+        if (cover) {
+          if (args.source && env.MISAKANET_KV) {
+            try {
+              const ck = `intake_source_count:${String(args.source).slice(0, 40)}`;
+              const cn = parseInt((await env.MISAKANET_KV.get(ck, "text")) || "0", 10) || 0;
+              await env.MISAKANET_KV.put(ck, String(cn + 1), { expirationTtl: 86400 * 30 });
+            } catch (_) { /* best-effort ledger (feeds #1528) */ }
+          }
+          return {
+            submitted: false,
+            already_have: true,
+            lesson: {
+              id: cover.lesson.id,
+              url: `https://misakanet.org/lessons/${cover.lesson.id}/`,
+              title: cover.lesson.title || cover.lesson.id,
+              similarity: Number(cover.ratio.toFixed(2)),
+            },
+            note: "This failure appears already covered by an existing lesson — no new intake issue was created. If that lesson does not solve your case, re-submit with what_tried.",
+          };
+        }
+      } catch (_) { /* corpus unavailable → normal intake */ }
     }
 
     const bodyParts = [
@@ -3246,6 +3276,41 @@ async function handlePrGeniusStats(env) {
     return jsonResponse({ error: "Failed to load PR Genius statistics: " + err.message }, 502);
   }
 }
+// #1526 server backstop — canonical "already have a lesson" gate for failure
+// intakes. Conservative: only near-verbatim coverage suppresses the issue;
+// anything ambiguous still opens a triage issue (never silently swallow a
+// novel failure). Pure function so it is unit-testable without an env.
+const _GENERIC_TOKENS = new Set(["error", "errors", "failed", "fail", "failure", "fatal",
+  "issue", "issues", "problem", "problems", "not", "found", "cannot", "unable", "when",
+  "with", "after", "this", "the", "and", "module", "modules", "command", "during",
+  "line", "file", "files"]);
+
+function _tok(text) {
+  return new Set((String(text || "").toLowerCase()
+    .match(/[a-z][a-z0-9_]{2,}|[\u4e00-\u9fff]{2,}/g) || []));
+}
+
+function findCoveringLesson(problemText, errorText, lessons) {
+  const qReal = new Set([..._tok(`${problemText} ${errorText}`)].filter(w => !_GENERIC_TOKENS.has(w)));
+  if (qReal.size < 3) return null;
+  let best = null;
+  let bestRatio = 0;
+  for (const doc of lessons || []) {
+    const hay = `${doc.title || ""} ${doc.description || doc.summary || ""} ${doc.domain || ""} ${(doc.tags || []).join(" ")}`;
+    const dTok = _tok(hay);
+    if (dTok.size === 0) continue;
+    let hit = 0;
+    for (const w of qReal) if (dTok.has(w)) hit += 1;
+    const ratio = hit / qReal.size;
+    if (ratio > bestRatio) { bestRatio = ratio; best = doc; }
+  }
+  if (best && bestRatio >= 0.5) {
+    return { lesson: best, ratio: bestRatio };
+  }
+  return null;
+}
+
+
 
 export {
   IDENTITY_AURA,
@@ -3268,4 +3333,5 @@ export {
   recordUnsolvedSearch,
   sanitizeReasonKey,
   hashString,
+  findCoveringLesson,
 };

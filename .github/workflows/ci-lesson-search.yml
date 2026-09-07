@@ -70,69 +70,59 @@ jobs:
             core.setOutput('run_url', run.html_url);
             core.setOutput('run_name', run.name || 'CI');
 
-      - name: Search MisakaNet
+      # v1.0 (PR #1539): 决策交给 intake-bot（stack-aware + noise gate +
+      # suggest-only）。hit → 评论建议；intake 候选 / ignore → 静默（避免 CI
+      # 失败刷屏；候选可通过本地跑 intake_bot 查看）。
+      - name: Run intake-bot v1.0 decision
         if: steps.context.outputs.error_signatures != ''
-        id: search
+        id: intake
         run: |
-          # Use environment variable to avoid shell escaping issues
-          export ERROR_SIG="$ERROR_SIGNATURES"
-          # Take first 3 error lines, strip special chars, use as search query
-          QUERY=$(echo "$ERROR_SIG" | head -3 | tr -cd '[:alnum:][:space:].,-' | tr '\n' ' ' | head -c 200)
-
-          if [ -z "$QUERY" ]; then
-            echo "count=0" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "Searching MisakaNet for: $QUERY"
-
-          # Use search_knowledge.py
-          RESULT=$(python3 search_knowledge.py "$QUERY" --json --top 3 2>/dev/null || echo "[]")
-
-          # Check if we got results
-          COUNT=$(echo "$RESULT" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
-
-          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
-          echo "results<<EOF" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$ERROR_SIG" > /tmp/ci_error.log
+          RESULT=$(python3 scripts/intake_bot.py --log /tmp/ci_error.log --json \
+            --source ci-lesson-search 2>/dev/null || echo '{"decision":"error","reason":"bot failed"}')
+          DECISION=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('decision','unknown'))")
+          echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
+          echo "result<<EOF" >> "$GITHUB_OUTPUT"
           echo "$RESULT" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
         env:
           ERROR_SIGNATURES: ${{ steps.context.outputs.error_signatures }}
 
-      - name: Comment on PR
-        if: steps.context.outputs.pr_number != '' && steps.search.outputs.count != '0'
+      # 只在 hit 时评论（dogfood：观察 v1.0 建议质量；ignore/intake 静默防噪音）
+      - name: Comment lesson suggestion on PR
+        if: steps.context.outputs.pr_number != '' && steps.intake.outputs.decision == 'hit'
         uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ steps.context.outputs.pr_number }}
-          RESULTS: ${{ steps.search.outputs.results }}
+          INTAKE_RESULT: ${{ steps.intake.outputs.result }}
           RUN_URL: ${{ steps.context.outputs.run_url }}
           RUN_NAME: ${{ steps.context.outputs.run_name }}
         with:
           script: |
-            const results = JSON.parse(process.env.RESULTS || '[]');
+            const res = JSON.parse(process.env.INTAKE_RESULT || '{}');
             const prNumber = parseInt(process.env.PR_NUMBER);
+            const lesson = res.lesson || {};
 
-            if (!results.length) return;
+            if (res.decision !== 'hit' || !lesson.id) return;
 
-            let body = `## 💡 MisakaNet: Related lessons found\n\n`;
-            body += `CI failed in [${process.env.RUN_NAME}](${process.env.RUN_URL}). `;
-            body += `Here are potentially relevant lessons:\n\n`;
-
-            for (const r of results.slice(0, 3)) {
-              body += `### ${r.title}\n`;
-              body += `> ${r.preview || 'No preview'}\n\n`;
-              body += `- **Domain**: ${r.domain || 'general'}\n`;
-              body += `- **Score**: ${(r.score * 100).toFixed(0)}%\n`;
-              body += `- **Path**: \`${r.path}\`\n\n`;
-            }
-
-            body += `---\n`;
-            body += `_To search manually: \`python3 search_knowledge.py "your error"\`_\n`;
-            body += `_To disable: remove or comment out ci-lesson-search.yml_\n`;
+            const body = [
+              `## 💡 MisakaNet: possible related lesson (suggest-only)`,
+              ``,
+              `CI failed in [${process.env.RUN_NAME}](${process.env.RUN_URL}). A MisakaNet lesson may match this error:`,
+              ``,
+              `### ${lesson.title || lesson.id}`,
+              `- **Similarity**: ${lesson.sim || '?'}`,
+              `- **Lesson**: [${lesson.id}](${lesson.url || '#'})`,
+              ``,
+              `> ⚠️ 仅供参考（suggest-only）——请人工核对后决定是否采用该修复思路。`,
+              ``,
+              `---`,
+              `_Powered by intake-bot v1.0 (stack-aware hit gate). To disable, remove ci-lesson-search.yml._`
+            ].join('\n');
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              body: body
+              body
             });
