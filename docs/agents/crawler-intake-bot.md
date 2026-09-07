@@ -149,3 +149,27 @@ canonical 近重复复检 + kind 路由（question→FAQ）后才 lesson 化。�
 ---
 *构思人视角：2026-09-06 维护会话；落地前建议先用 M0 在内部把"相关性阈值 + 建议质量"验证到位，
 再开放 intake，避免把噪音问题外溢给合作仓库。*
+
+---
+
+## 10. MVP 已实现（2026-09-06）——`scripts/intake_bot.py`（零依赖，供 zsxh 实测）
+
+实现范围：设计中"五闸"的 2/3/4 最小版 + 三态决策；**默认 dry-run**（防噪音），
+`--auto-intake` 才真实调用 `misakanet_submit_intake`（匿名通道，无需账号）。
+
+```bash
+python3 scripts/intake_bot.py --demo                      # 四态演示（hit/intake/ignore/去重）
+python3 scripts/intake_bot.py --error "curl: (35) SSL connect error proxy"   # 预查建议
+python3 scripts/intake_bot.py --log ci.log --source myrepo --auto-intake     # CI 日志→真实 intake
+cat err.log | python3 scripts/intake_bot.py --json        # 管道 + JSON（Action 集成用）
+```
+
+测试要点（zsxh 侧）：
+- **命中**：输出课程 id/链接/sim → 验证建议是否对症（`--sim` 调灵敏度，默认 0.30）。
+- **intake 候选**：dry-run 只打印将提交内容；确认无误再加 `--auto-intake`（指纹去重防重复灌）。
+- **忽略**：无证据/重复签名静默 —— 预期行为，非故障。
+- 缓存/去重目录：`MISAKA_CACHE_DIR`（默认 ~/.cache/misaka-intake-bot，300s 语料缓存）。
+
+评审中发现的**服务端问题（待修）**：`GET /api/lessons?search=<q>` 的过滤器**未生效**
+（任何查询都返回同一批默认条目），MVP 已绕道"拉全量 + 本地打分"（与 `search_knowledge --remote`
+同源）。修复后预查可轻量化。
