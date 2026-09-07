@@ -1,28 +1,35 @@
 {
-  "generated_at": "2026-09-07T04:48:33.306940+00:00",
+  "generated_at": "2026-09-07T12:46:19.674342+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(deps): bump actions/upload-artifact from 4 to 7",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1520",
-      "timestamp": "2026-09-07T02:01:31Z",
+      "title": "Fix: [Bounty] Social media promotion post (needs human review)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1522",
+      "timestamp": "2026-09-07T11:11:47Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps): bump actions/checkout from 4 to 7",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1519",
-      "timestamp": "2026-09-07T02:01:27Z",
+      "title": "docs: add lesson on curl SSL errors behind corporate proxies (rebased)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1532",
+      "timestamp": "2026-09-07T11:11:43Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps): bump Codium-ai/pr-agent from 0.43.0 to 0.44.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1518",
-      "timestamp": "2026-09-07T02:01:04Z",
+      "title": "docs: add lesson on curl SSL errors behind corporate proxies (rebased #1532)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1533",
+      "timestamp": "2026-09-07T11:11:39Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs: add lesson on pip SSL timeout behind corporate proxies (rebased)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1531",
+      "timestamp": "2026-09-07T05:43:37Z",
       "source": "github"
     },
     {
@@ -33,11 +40,20 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "[Lesson] Add status lifecycle + supersedes chain (#1440)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1455",
-      "timestamp": "2026-09-06T01:23:32Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "curl Timeout Behind Corporate Proxy: SSL Inspection Breaks Certificate Validation",
+      "url": "lessons/contrib/corporate-proxy-curl-timeout.md",
+      "timestamp": "2026-09-05",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "pip install ReadTimeoutError Behind Corporate Proxy: Certificate Validation and Timeout Configuration",
+      "url": "lessons/contrib/pip-install-proxy-timeout.md",
+      "timestamp": "2026-09-05",
+      "domain": "python",
+      "source": "lessons"
     },
     {
       "type": "challenge",
@@ -57,42 +73,26 @@
     },
     {
       "type": "lesson",
-      "title": "auto-merge-ci-pipeline",
-      "url": "lessons/core/auto-merge-ci-pipeline.md",
-      "timestamp": "",
-      "domain": "core",
+      "title": "Report $0 cash honestly while pending is non-zero",
+      "url": "lessons/en/honest-zero-cash-reporting.md",
+      "timestamp": "2026-07-24",
+      "domain": "ops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "contributor-engagement-retention",
-      "url": "lessons/core/contributor-engagement-retention.md",
-      "timestamp": "",
-      "domain": "core",
+      "title": "Normalize mixed types in links.json pack manifests",
+      "url": "lessons/en/links-json-mixed-types.md",
+      "timestamp": "2026-07-24",
+      "domain": "ops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "cronjob-one-shot-race-condition-duplicate-execution",
-      "url": "lessons/core/cronjob-one-shot-race-condition-duplicate-execution.md",
-      "timestamp": "",
-      "domain": "core",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "dco-auto-fix-workflow",
-      "url": "lessons/core/dco-auto-fix-workflow.md",
-      "timestamp": "",
-      "domain": "core",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "freellmapi-session-context-mixing-cross-thread-delivery",
-      "url": "lessons/core/freellmapi-session-context-mixing-cross-thread-delivery.md",
-      "timestamp": "",
-      "domain": "core",
+      "title": "Restart long-lived earn loops after code fixes",
+      "url": "lessons/en/restart-earn-loop-after-code-fix.md",
+      "timestamp": "2026-07-24",
+      "domain": "ops",
       "source": "lessons"
     }
   ]
