@@ -2409,7 +2409,7 @@ export default {
         const qTag = url.searchParams.get("tag");
         const qId = url.searchParams.get("id");
         const qLimit = url.searchParams.get("limit");
-        const qSearch = url.searchParams.get("q");
+        const qSearch = url.searchParams.get("q") || url.searchParams.get("search");
         if (qDomain) filters.domain = qDomain.slice(0, 50);
         if (qStatus) filters.status = qStatus.slice(0, 20);
         if (qTag) filters.tag = qTag.slice(0, 50);
@@ -2420,8 +2420,17 @@ export default {
         // PRD ④ #1356: FTS5 full-text search via ?q=term (ranked).
         if (qSearch) {
           const d1 = d1Binding(env);
-          if (!d1) return jsonResponse({ error: "Full-text search requires the D1 service", filtered: true, filters });
           const limit = Math.min(Math.max(parseInt(qLimit, 10) || 20, 1), 50);
+          if (!d1) {
+            // Client-side fallback when D1 is not bound
+            const allLessons = await loadLessons(env, {});
+            const terms = qSearch.toLowerCase().split(/\s+/).filter(Boolean);
+            const filtered = allLessons.filter(l => {
+              const haystack = [l.title || "", l.summary || "", l.domain || "", ...(l.tags || [])].join(" ").toLowerCase();
+              return terms.every(t => haystack.includes(t));
+            }).slice(0, limit);
+            return jsonResponse({ query: qSearch, results: filtered, source: "client-side" });
+          }
           // FTS5 MATCH with sanitized query; join lessons for full metadata.
           const safeQ = qSearch.replace(/["']/g, " ").trim().slice(0, 100);
           let sql =

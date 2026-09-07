@@ -9,6 +9,7 @@ import {
   buildDemandMapBuckets,
   handleDemandBoard,
   handleDemandMap,
+  filterLessons,
 } from './register-proxy.js';
 
 function createFakeKV(seed = {}) {
@@ -159,4 +160,64 @@ test('handleDemandMap requires a maintainer key and rejects mismatches', async (
   assert.equal(body.buckets[0].unsolvedReason, 'too_basic');
   assert.equal(body.buckets[0].unsolvedCount, 1);
   assert.equal(body.buckets[0].distinctSourceCount, 1);
+});
+
+// ── filterLessons tests ──
+
+const SAMPLE_LESSONS = [
+  { id: 'pip-proxy', title: 'pip proxy timeout', domain: 'devops', tags: ['pip', 'proxy'], summary: 'pip install fails behind corporate proxy' },
+  { id: 'docker-build', title: 'docker build cache', domain: 'devops', tags: ['docker'], summary: 'Docker layer caching strategies' },
+  { id: 'github-auth', title: 'GitHub token 401', domain: 'devops', tags: ['github', 'token'], summary: 'GitHub PAT authentication failure' },
+  { id: 'python-import', title: 'Python import error', domain: 'python', tags: ['import'], summary: 'ModuleNotFoundError resolution' },
+];
+
+test('filterLessons returns all when query is empty', () => {
+  const result = filterLessons(SAMPLE_LESSONS, '', 50);
+  assert.equal(result.length, 4);
+});
+
+test('filterLessons matches single term in title', () => {
+  const result = filterLessons(SAMPLE_LESSONS, 'docker', 50);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'docker-build');
+});
+
+test('filterLessons matches single term in summary', () => {
+  const result = filterLessons(SAMPLE_LESSONS, 'corporate', 50);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'pip-proxy');
+});
+
+test('filterLessons matches single term in tags', () => {
+  const result = filterLessons(SAMPLE_LESSONS, 'token', 50);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'github-auth');
+});
+
+test('filterLessons matches multiple terms (AND logic)', () => {
+  const result = filterLessons(SAMPLE_LESSONS, 'pip proxy', 50);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'pip-proxy');
+});
+
+test('filterLessons returns empty when no match', () => {
+  const result = filterLessons(SAMPLE_LESSONS, 'kubernetes', 50);
+  assert.equal(result.length, 0);
+});
+
+test('filterLessons applies limit', () => {
+  const result = filterLessons(SAMPLE_LESSONS, '', 2);
+  assert.equal(result.length, 2);
+});
+
+test('filterLessons is case-insensitive', () => {
+  const result = filterLessons(SAMPLE_LESSONS, 'Docker', 50);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'docker-build');
+});
+
+test('filterLessons matches domain field', () => {
+  const result = filterLessons(SAMPLE_LESSONS, 'python', 50);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'python-import');
 });

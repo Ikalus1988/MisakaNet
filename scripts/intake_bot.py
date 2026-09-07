@@ -78,8 +78,7 @@ _CORPUS_TTL = 300  # seconds
 
 
 def _load_corpus(timeout: int = 60) -> list[dict]:
-    """拉全量语料（limit=5000，~360 lessons）本地打分——服务端 ?search= 过滤器当前
-    未生效（2026-09-06 探明，待修）。缓存 300s 吸收冷启动延迟。失败返回 []（降级）。"""
+    """拉全量语料（limit=5000，~360 lessons）本地打分。缓存 300s 吸收冷启动延迟。失败返回 []（降级）。"""
     if CORPUS_FILE.exists() and time.time() - CORPUS_FILE.stat().st_mtime < _CORPUS_TTL:
         try:
             return json.loads(CORPUS_FILE.read_text(encoding="utf-8"))
