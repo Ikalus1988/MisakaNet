@@ -1,0 +1,854 @@
+{
+ "_meta": {
+  "purpose": "intake_bot decision benchmark (offline, deterministic)",
+  "generator": "scripts/gen_intake_benchmark.py",
+  "note": "hit samples are lesson-derived — benchmarks decision logic, not retrieval (#1527)"
+ },
+ "corpus": [
+  {
+   "id": "auto-merge-ci-pipeline",
+   "title": "Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge",
+   "domain": "devops",
+   "tags": [
+    "- github-actions"
+   ],
+   "description": "## Root Cause Manual merge is the bottleneck in zero-bounty open-source workflows. Maintainers must review every PR, click merge, post thank-you comments — repetitive work that doesn't scale when A"
+  },
+  {
+   "id": "contributor-engagement-retention",
+   "title": "AI Agent Contributor Engagement — Lightweight Retention Strategy",
+   "domain": "devops",
+   "tags": [
+    "- open-source"
+   ],
+   "description": "## Root Cause AI Agent 贡献者（尤其是零赏金模式下的）比人类贡献者更容易流失。Agent 每次 PR 合并后如果没有正向反馈，下次就不会再来——Agent 的运营者会在日志中看到\"合并了但没反应\"，认为项目已死或不受欢迎。 ## Solution ### 1. 每次合并后发感谢评论（不重复） 自动化或手动在 PR 评论区发一条感谢，要点： - **具体到细节**："
+  },
+  {
+   "id": "dco-auto-fix-workflow",
+   "title": "DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation",
+   "domain": "devops",
+   "tags": [
+    "- github-actions"
+   ],
+   "description": "## Root Cause 贡献者提交 PR 后 DCO（Signed-off-by）检查失败是最常见的阻塞原因之一。尤其是 AI Agent 自动提交的 PR，经常缺签。需要在 PR 评论区提供一键自动修复能力。 **Error message** from DCO check: ``` Commit sha: abc1234, Author: user, Committer: user"
+  },
+  {
+   "id": "pr-cleanup-sop",
+   "title": "PR Cleanup SOP — Stale/Duplicate/Resolved PR Disposition",
+   "domain": "devops",
+   "tags": [
+    "- github-actions"
+   ],
+   "description": "## Root Cause 开放 PR 堆积会消耗维护者心力。AI Agent 提交 PR 的高频场景下，重复/过时/已解决 PR 尤其常见。需要一套系统化的处置策略。 **Config** issue: GitHub 默认不自动关闭已合入的 PR（需要 `Closes #N` 关键字或 bot 配置）。当仓库有多个 AI Agent 同时贡献时，会出现以下问题： - 同一 Issue 被"
+  },
+  {
+   "id": "agent-manual-update-timeout",
+   "title": "",
+   "domain": "",
+   "tags": [],
+   "description": "Built-in agent update commands hang or time out (slow mirror, flaky network, large download). Automatic self-update never finishes; the agent stays on a broken version."
+  },
+  {
+   "id": "agent-pid-lockfile",
+   "title": "",
+   "domain": "",
+   "tags": [],
+   "description": "Cron and a desktop starter both launch `earn_all.py`, fighting for the same lock, double-submitting, or skipping forever."
+  },
+  {
+   "id": "api-rate-limit-handling",
+   "title": "",
+   "domain": "",
+   "tags": [],
+   "description": "Third-party API calls return **HTTP 429** (Too Many Requests) or **403** under quota. Automation dies on the first rejection."
+  },
+  {
+   "id": "atomic-write-replace",
+   "title": "",
+   "domain": "",
+   "tags": [],
+   "description": "Readers see half-written `data.json` while the dashboard refreshes and parse errors flash."
+  },
+  {
+   "id": "anthropic-proxy-internal-gateway",
+   "title": "Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy",
+   "domain": "contrib",
+   "tags": [
+    "- anthropic"
+   ],
+   "description": "internal-gateway.local API 端点 (`https://api.internal-gateway.local/v1`) 只接受 OpenAI 格式 (`/v1/chat/compositions`)，不支持 Anthropic 原生格式 (`/v1/messages`)。 这意味着： - Hermes Agent → 直接连，因为 Hermes 用 OpenAI 格式 ✅"
+  },
+  {
+   "id": "api-gateway-anthropic-incompatibility",
+   "title": "api gateway anthropic incompatibility",
+   "domain": "contrib",
+   "tags": [
+    "- project:rag"
+   ],
+   "description": "Hermes Agent 配置 Anthropic provider 使用 internal-gateway.local API 时失败， API 返回 400 错误。"
+  },
+  {
+   "id": "api-rate-limit-handling-best-practices",
+   "title": "api rate limit handling best practices",
+   "domain": "contrib",
+   "tags": [
+    "- rate"
+   ],
+   "description": "大批量API任务没有提前测试限流，任务中途被截断，无法续命。例如：向某第三方API批量发送10000条请求，跑到第3000条时触发429错误，整个任务崩溃，已处理数据全部丢失，只能从头重跑，浪费大量时间和资源。 常见触发场景： - 短时间内并发请求数超过API提供方的QPS（每秒请求数）上限 - 单个账号在滑动时间窗口内累计请求数超过配额 - 批量任务未做任何节流，直接全速打满接口"
+  },
+  {
+   "id": "chroma-rebuild-no-checkpoint-cn",
+   "title": "Chroma 建库无 Checkpoint — 进程一死全部丢失",
+   "domain": "contrib",
+   "tags": [
+    "- chroma"
+   ],
+   "description": "Agent 内跑 BGE-large-zh 建库（约30分钟），Gateway 重启后整个数据库为空，0条向量入库。"
+  },
+  {
+   "id": "fanuc-alarm-code-reference",
+   "title": "FANUC Robot Alarm Code Reference Table",
+   "domain": "fanuc",
+   "tags": [
+    "- fanuc"
+   ],
+   "description": "FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。"
+  },
+  {
+   "id": "fanuc-alarm-severity-guide",
+   "title": "FANUC Alarm Severity Levels — Handling and Color Codes",
+   "domain": "fanuc",
+   "tags": [
+    "- alarm"
+   ],
+   "description": "FANUC controllers display alarms with different severity levels, but engineers don't always understand the implications of each level — which ones stop the robot, which cut servo power, and which requ"
+  },
+  {
+   "id": "fanuc-auto-abort-on-fault-restart",
+   "title": "FANUC Auto Abort on Fault — Restart $SHELL_WRK Program",
+   "domain": "fanuc",
+   "tags": [
+    "- abort"
+   ],
+   "description": "When enabling the teach pendant during auto mode, the robot faults and pauses the program. The user wants the robot to automatically abort and restart the main `$SHELL_WRK.$CUST_NAME` program without"
+  },
+  {
+   "id": "fanuc-backup-payload-extraction",
+   "title": "FANUC Backup Payload Extraction — .VR/.SV Binary Parsing and .LS Text Fallback",
+   "domain": "fanuc",
+   "tags": [
+    "- backup"
+   ],
+   "description": "Given a FANUC robot backup directory, extract the payload (load mass, center of gravity, inertia) configuration. The backup contains 300+ files in proprietary binary formats (`.vr`, `.sv`) that cannot"
+  },
+  {
+   "id": "gfw-tls-sni-block-pattern",
+   "title": "GFW TLS SNI Block Pattern — Why Tool-Layer Solutions Fail",
+   "domain": "ops",
+   "tags": [
+    "- gfw"
+   ],
+   "description": "Web scraping tools (curl, Playwright, scrapling, Safari MCP) all fail to connect to certain domains (e.g., reddit.com, stackoverflow.com) from networks behind the GFW, even though DNS resolves correct"
+  },
+  {
+   "id": "lesson-10-microservices-latency-math",
+   "title": "微服务延迟成本分析 — 何时不该用微服务",
+   "domain": "ops",
+   "tags": [
+    "- microservices"
+   ],
+   "description": "微服务的承诺：可扩展、可维护、快速。现实：对大多数系统，微服务只增加了延迟、复杂度和故障点。"
+  },
+  {
+   "id": "lesson-11-github-commit-signing",
+   "title": "GitHub Commit Signing — GPG 防止提交伪造",
+   "domain": "ops",
+   "tags": [
+    "- git"
+   ],
+   "description": "任何人都可以用你的名字和邮箱设置 git config，推送提交，在 GitHub 上显示为你的作品。唯一的区别：没有 \"Verified\" 徽章。"
+  },
+  {
+   "id": "lesson-13-aws-lambda-microvms",
+   "title": "AWS Lambda MicroVMs — 隔离沙箱与 Firecracker",
+   "domain": "ops",
+   "tags": [
+    "- aws"
+   ],
+   "description": "AI 编码助手、交互式代码环境、漏洞扫描器等需要为每个用户提供隔离的执行环境。VM 隔离强但启动慢（分钟级），容器快但共享内核需要大量加固。"
+  },
+  {
+   "id": "agent-first-node-registration-via-mcp",
+   "title": "Agent-first node registration via MCP",
+   "domain": "mcp",
+   "tags": [
+    "- mcp"
+   ],
+   "description": "Current node registration requires GitHub account and opening an issue, which is too slow for autonomous agents."
+  },
+  {
+   "id": "browser-automation-csp-bypass",
+   "title": "CSP blocks JavaScript injection in browser automation of authenticated pages",
+   "domain": "mcp",
+   "tags": [
+    "- browser-automation"
+   ],
+   "description": "Browser automation tools (Puppeteer, Playwright, CDP-based tools) fail silently when injecting JavaScript into pages with strict Content Security Policy headers. Symptoms: - `page.evaluate()` returns"
+  },
+  {
+   "id": "dsh-plugin-install-github-codeload-timeout",
+   "title": "DSH Plugin Install Failures — GitHub codeload Timeout vs npm Channel",
+   "domain": "mcp",
+   "tags": [
+    "- dsh"
+   ],
+   "description": "Installing a DSH (DeepSeek Harness) plugin from the [dsh-plugin.org](https://dsh-plugin.org) marketplace failed with `安装失败 — 请求超时：无法访问 GitHub 或网络不稳定` (request timeout: cannot reach GitHub or network u"
+  },
+  {
+   "id": "game-mcp-end-turn-conflict-409",
+   "title": "Game MCP: End Turn Returns 409 Conflict",
+   "domain": "mcp",
+   "tags": [
+    "- mcp"
+   ],
+   "description": "When sending an end_turn command via MCP, the game returns a 409 Conflict HTTP status. However, the game state still progresses normally."
+  },
+  {
+   "id": "aily-feishu-mcp-pull-only",
+   "title": "aily feishu mcp pull only",
+   "domain": "feishu",
+   "tags": [
+    "- aily"
+   ],
+   "description": "虫群架构设计时，误以为 aily 飞书侧支持 MCP Server 暴露给 Hub 调用。"
+  },
+  {
+   "id": "feishu-block-api-false-success",
+   "title": "Feishu Block API returns code=0 but creates zero blocks under rate limiting",
+   "domain": "feishu",
+   "tags": [
+    "- feishu"
+   ],
+   "description": "When batch-writing blocks to a Feishu document via `POST /open-apis/docx/v1/documents/{document_id}/blocks/{block_id}/children`, the API returns HTTP 200 with `code=0` (success) but `data.children` is"
+  },
+  {
+   "id": "feishu-block-batch-limit",
+   "title": "feishu block batch limit",
+   "domain": "feishu",
+   "tags": [
+    "- feishu"
+   ],
+   "description": "调用飞书文档 `document.blocks.children.create` API 批量创建 block 时，每次请求超过约 20 个 block 会触发限流（HTTP 429）或发生静默截断（请求成功但部分 block 未写入）。"
+  },
+  {
+   "id": "feishu-block-type-values-limits",
+   "title": "feishu block type values limits",
+   "domain": "feishu",
+   "tags": [
+    "- feishu"
+   ],
+   "description": "飞书 block API 的 type 字段使用数字 ID，错误值导致静默失败或 400 错误。开发者在参考官方文档或社区资料时，常遇到文档值与实际可用值不一致的问题，导致调试困难、时间浪费。 典型症状包括： - 请求返回 HTTP 200，但 block 内容为空或未渲染 - 请求返回 HTTP 400，错误信息模糊，无法定位具体字段 - 图片 token 被静默清空，页面显示占位符而非图片"
+  },
+  {
+   "id": "search-first-roadmap-loop",
+   "title": "Search-first roadmap loop for agent knowledge projects",
+   "domain": "development",
+   "tags": [
+    "- roadmap"
+   ],
+   "description": "A growing agent-knowledge project can accumulate many valid directions at once: reusable experience substrate, lightweight MCP or tool adapters, OKF-compatible export, SQLite or SAG-style search, publ"
+  },
+  {
+   "id": "accidental-pycache-commit",
+   "title": "Accidental __pycache__ artifacts committed to a data repository",
+   "domain": "development",
+   "tags": [
+    "- git"
+   ],
+   "description": "A pull request intended to change CSV data rows also shipped `__pycache__/csv_to_json.cpython-314.pyc` (and similar bytecode files). The reviewer flagged it as a MEDIUM issue: repository bloat, non-de"
+  },
+  {
+   "id": "escrow-fee-rounding-per-provider",
+   "title": "Banking-style escrow fee estimate has a per-provider rounding disparity",
+   "domain": "development",
+   "tags": [
+    "- payments"
+   ],
+   "description": "A payout/reward schema recorded a fee estimate computed with floating-point math, while the escrow engine (and the human maintainers) expected per-provider integer-percent rounding. Invoices, reward c"
+  },
+  {
+   "id": "git-worktree-dangling-commit-recovery",
+   "title": "git worktree commit lost after pushing from the wrong directory",
+   "domain": "development",
+   "tags": [
+    "- git"
+   ],
+   "description": "A commit made inside a `git worktree add <path> <branch>` appeared to vanish: the remote branch did not move, and the local branch was suddenly empty. The work had taken hours and seemed unrecoverable"
+  },
+  {
+   "id": "audit-sampling-stratified-sampling-for-kb-inspection",
+   "title": "巡检题库分层抽样策略",
+   "domain": "rag",
+   "tags": [
+    "- rag"
+   ],
+   "description": "RAG 知识库质量巡检需要每天抽取少量题目进行自动测试。如果随机抽样，容易连续抽到同一类型的问题（如连续三天都是报警代码题），漏掉其他分类的质量退化。"
+  },
+  {
+   "id": "bge-embedding-fallback-crash",
+   "title": "BGE Embedding Fallback Crash",
+   "domain": "rag",
+   "tags": [
+    "- project:agent-medici"
+   ],
+   "description": "When HermesHub starts, if the BGE-m3 model has not been downloaded to the local path, SkillIndexer crashes immediately. The local path is hard-coded as `~/.cache/huggingface/...`, which does not exist"
+  },
+  {
+   "id": "fanuc-r-2000ic-retrieval-fix",
+   "title": "FANUC R-2000iC 检索混淆Fix — 关键词强制召回",
+   "domain": "rag",
+   "tags": [
+    "- fanuc"
+   ],
+   "description": "访问者问\"fanuc r-2000ic 系列所有机器人的最大速度\"，RAG 返回了 KUKA Series 2000 的数据。 根因：语义检索模型 bge-base-zh-v1.5 将查询中的 \"2000\" 字符串匹配到 KUKA 文档中的 \"Series 2000\"， 未区分车品牌。跨品牌的数字型号字符串是语义检索的常见陷阱。"
+  },
+  {
+   "id": "kb-4sigma-quality-audit-pipeline",
+   "title": "Knowledge Base 4-Sigma Quality Audit Pipeline",
+   "domain": "rag",
+   "tags": [
+    "- project:self-grow-wiki"
+   ],
+   "description": "After continuous document imports, the RAG knowledge base developed data contamination, version confusion, inconsistent sources, and other issues that affected retrieval quality."
+  },
+  {
+   "id": "corporate-proxy-curl-timeout",
+   "title": "curl Timeout Behind Corporate Proxy: SSL Inspection Breaks Certificate Validation",
+   "domain": "devops",
+   "tags": [
+    "- proxy"
+   ],
+   "description": "`curl` requests to external APIs timeout behind corporate proxy with SSL inspection enabled. Common in enterprise environments where all outbound traffic goes through a proxy that performs TLS man-in-"
+  },
+  {
+   "id": "git-credential-helper-gh-path-mismatch",
+   "title": "gh credential helper 路径Error导致 git push 静默失败",
+   "domain": "git",
+   "tags": [
+    "- git"
+   ],
+   "description": "执行 `git push` 时卡住或报错： ``` /home/hp/.local/bin/gh auth git-credential get: 1: /home/hp/.local/bin/gh: not found ``` 或： ``` remote: Repository not found. fatal: repository 'https://github.com/...' no"
+  },
+  {
+   "id": "pip-install-proxy-timeout",
+   "title": "pip install ReadTimeoutError Behind Corporate Proxy: Certificate Validation and Timeout Configuration",
+   "domain": "python",
+   "tags": [
+    "- pip"
+   ],
+   "description": "`pip install` fails with `ReadTimeoutError` or `ConnectionResetError` when behind corporate proxy with SSL inspection. Common errors: ``` pip._vendor.urllib3.exceptions.ReadTimeoutError: HTTPSConnect"
+  },
+  {
+   "id": "python-smtplib-ssl-certificate-verify-failed-fix",
+   "title": "Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails",
+   "domain": "automation",
+   "tags": [
+    "- python"
+   ],
+   "description": "При выполнении скрипта на Python для автоматической отправки электронных писем через SMTP-сервер Gmail (`smtp.gmail.com`) с использованием стандартной библиотеки `smtplib` и `ssl` возникает ошибка про"
+  }
+ ],
+ "samples": [
+  {
+   "id": "hit-auto-merge-ci-pipeline",
+   "kind": "hit",
+   "expect": [
+    "auto-merge-ci-pipeline"
+   ],
+   "error": "devops: Auto Merge Pipeline DCO Quality Score Shadow Branch Dynamic Deps failed — ## Root Cause Manual merge is the bottleneck in zero-bounty open-source workflows. Maintainers must review every PR, cli",
+   "source_lesson": "auto-merge-ci-pipeline"
+  },
+  {
+   "id": "hit-contributor-engagement-retention",
+   "kind": "hit",
+   "expect": [
+    "contributor-engagement-retention"
+   ],
+   "error": "devops: Agent Contributor Engagement Lightweight Retention Strategy failed — ## Root Cause AI Agent 贡献者（尤其是零赏金模式下的）比人类贡献者更容易流失。Agent 每次 PR 合并后如果没有正向反馈，下次就不会再来——Agent 的运营者会在日志中看到\"合并了但没反应\"，认为项目已死或不受欢",
+   "source_lesson": "contributor-engagement-retention"
+  },
+  {
+   "id": "hit-dco-auto-fix-workflow",
+   "kind": "hit",
+   "expect": [
+    "dco-auto-fix-workflow"
+   ],
+   "error": "devops: DCO Auto Fix Workflow fix dco Command Design Implementation failed — ## Root Cause 贡献者提交 PR 后 DCO（Signed-off-by）检查失败是最常见的阻塞原因之一。尤其是 AI Agent 自动提交的 PR，经常缺签。需要在 PR 评论区提供一键自动修复能力。 **Error mess",
+   "source_lesson": "dco-auto-fix-workflow"
+  },
+  {
+   "id": "hit-pr-cleanup-sop",
+   "kind": "hit",
+   "expect": [
+    "pr-cleanup-sop"
+   ],
+   "error": "devops: Cleanup SOP Stale Duplicate Resolved Disposition failed — ## Root Cause 开放 PR 堆积会消耗维护者心力。AI Agent 提交 PR 的高频场景下，重复/过时/已解决 PR 尤其常见。需要一套系统化的处置策略。 **Config** issue: GitHub 默认不自动关闭已合入",
+   "source_lesson": "pr-cleanup-sop"
+  },
+  {
+   "id": "hit-agent-manual-update-timeout",
+   "kind": "hit",
+   "expect": [
+    "agent-manual-update-timeout"
+   ],
+   "error": "error: agent manual update timeout failed — Built-in agent update commands hang or time out (slow mirror, flaky network, large download). Automatic self-update neve",
+   "source_lesson": "agent-manual-update-timeout"
+  },
+  {
+   "id": "hit-agent-pid-lockfile",
+   "kind": "hit",
+   "expect": [
+    "agent-pid-lockfile"
+   ],
+   "error": "error: agent pid lockfile failed — Cron and a desktop starter both launch `earn_all.py`, fighting for the same lock, double-submitting, or skipping forever",
+   "source_lesson": "agent-pid-lockfile"
+  },
+  {
+   "id": "hit-api-rate-limit-handling",
+   "kind": "hit",
+   "expect": [
+    "api-rate-limit-handling"
+   ],
+   "error": "error: api rate limit handling failed — Third-party API calls return **HTTP 429** (Too Many Requests) or **403** under quota. Automation dies on the first rejec",
+   "source_lesson": "api-rate-limit-handling"
+  },
+  {
+   "id": "hit-atomic-write-replace",
+   "kind": "hit",
+   "expect": [
+    "atomic-write-replace"
+   ],
+   "error": "error: atomic write replace failed — Readers see half-written `data.json` while the dashboard refreshes and parse errors flash.",
+   "source_lesson": "atomic-write-replace"
+  },
+  {
+   "id": "hit-anthropic-proxy-internal-gateway",
+   "kind": "hit",
+   "expect": [
+    "anthropic-proxy-internal-gateway"
+   ],
+   "error": "contrib: Internal Gateway Incompatible with Anthropic Format Requires OpenAI Proxy failed — internal-gateway.local API 端点 (`https://api.internal-gateway.local/v1`) 只接受 OpenAI 格式 (`/v1/chat/compositions`)，不支持 Anth",
+   "source_lesson": "anthropic-proxy-internal-gateway"
+  },
+  {
+   "id": "hit-api-gateway-anthropic-incompatibility",
+   "kind": "hit",
+   "expect": [
+    "api-gateway-anthropic-incompatibility"
+   ],
+   "error": "contrib: api gateway anthropic incompatibility failed — Hermes Agent 配置 Anthropic provider 使用 internal-gateway.local API 时失败， API 返回 400 错误。",
+   "source_lesson": "api-gateway-anthropic-incompatibility"
+  },
+  {
+   "id": "hit-api-rate-limit-handling-best-practices",
+   "kind": "hit",
+   "expect": [
+    "api-rate-limit-handling-best-practices"
+   ],
+   "error": "contrib: api rate limit handling best practices failed — 大批量API任务没有提前测试限流，任务中途被截断，无法续命。例如：向某第三方API批量发送10000条请求，跑到第3000条时触发429错误，整个任务崩溃，已处理数据全部丢失，只能从头重跑，浪费大量时间和资源。 常见触发场景： - 短时间内",
+   "source_lesson": "api-rate-limit-handling-best-practices"
+  },
+  {
+   "id": "hit-chroma-rebuild-no-checkpoint-cn",
+   "kind": "hit",
+   "expect": [
+    "chroma-rebuild-no-checkpoint-cn"
+   ],
+   "error": "contrib: chroma rebuild no checkpoint cn failed — Agent 内跑 BGE-large-zh 建库（约30分钟），Gateway 重启后整个数据库为空，0条向量入库。",
+   "source_lesson": "chroma-rebuild-no-checkpoint-cn"
+  },
+  {
+   "id": "hit-fanuc-alarm-code-reference",
+   "kind": "hit",
+   "expect": [
+    "fanuc-alarm-code-reference"
+   ],
+   "error": "fanuc: FANUC Robot Alarm Code Reference Table failed — FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。",
+   "source_lesson": "fanuc-alarm-code-reference"
+  },
+  {
+   "id": "hit-fanuc-alarm-severity-guide",
+   "kind": "hit",
+   "expect": [
+    "fanuc-alarm-severity-guide"
+   ],
+   "error": "fanuc: FANUC Alarm Severity Levels Handling and Color Codes failed — FANUC controllers display alarms with different severity levels, but engineers don't always understand the implications ",
+   "source_lesson": "fanuc-alarm-severity-guide"
+  },
+  {
+   "id": "hit-fanuc-auto-abort-on-fault-restart",
+   "kind": "hit",
+   "expect": [
+    "fanuc-auto-abort-on-fault-restart"
+   ],
+   "error": "fanuc: FANUC Auto Abort Fault Restart SHELL_WRK Program failed — When enabling the teach pendant during auto mode, the robot faults and pauses the program. The user wants the robot to a",
+   "source_lesson": "fanuc-auto-abort-on-fault-restart"
+  },
+  {
+   "id": "hit-fanuc-backup-payload-extraction",
+   "kind": "hit",
+   "expect": [
+    "fanuc-backup-payload-extraction"
+   ],
+   "error": "fanuc: FANUC Backup Payload Extraction Binary Parsing and Text Fallback failed — Given a FANUC robot backup directory, extract the payload (load mass, center of gravity, inertia) configuration. The bac",
+   "source_lesson": "fanuc-backup-payload-extraction"
+  },
+  {
+   "id": "hit-gfw-tls-sni-block-pattern",
+   "kind": "hit",
+   "expect": [
+    "gfw-tls-sni-block-pattern"
+   ],
+   "error": "ops: GFW TLS SNI Block Pattern Why Tool Layer Solutions Fail failed — Web scraping tools (curl, Playwright, scrapling, Safari MCP) all fail to connect to certain domains (e.g., reddit.com, s",
+   "source_lesson": "gfw-tls-sni-block-pattern"
+  },
+  {
+   "id": "hit-lesson-10-microservices-latency-math",
+   "kind": "hit",
+   "expect": [
+    "lesson-10-microservices-latency-math"
+   ],
+   "error": "ops: lesson 10 microservices latency math failed — 微服务的承诺：可扩展、可维护、快速。现实：对大多数系统，微服务只增加了延迟、复杂度和故障点。",
+   "source_lesson": "lesson-10-microservices-latency-math"
+  },
+  {
+   "id": "hit-lesson-11-github-commit-signing",
+   "kind": "hit",
+   "expect": [
+    "lesson-11-github-commit-signing"
+   ],
+   "error": "ops: GitHub Commit Signing GPG failed — 任何人都可以用你的名字和邮箱设置 git config，推送提交，在 GitHub 上显示为你的作品。唯一的区别：没有 \"Verified\" 徽章。",
+   "source_lesson": "lesson-11-github-commit-signing"
+  },
+  {
+   "id": "hit-lesson-13-aws-lambda-microvms",
+   "kind": "hit",
+   "expect": [
+    "lesson-13-aws-lambda-microvms"
+   ],
+   "error": "ops: AWS Lambda MicroVMs Firecracker failed — AI 编码助手、交互式代码环境、漏洞扫描器等需要为每个用户提供隔离的执行环境。VM 隔离强但启动慢（分钟级），容器快但共享内核需要大量加固。",
+   "source_lesson": "lesson-13-aws-lambda-microvms"
+  },
+  {
+   "id": "hit-agent-first-node-registration-via-mcp",
+   "kind": "hit",
+   "expect": [
+    "agent-first-node-registration-via-mcp"
+   ],
+   "error": "mcp: Agent first node registration via MCP failed — Current node registration requires GitHub account and opening an issue, which is too slow for autonomous agents.",
+   "source_lesson": "agent-first-node-registration-via-mcp"
+  },
+  {
+   "id": "hit-browser-automation-csp-bypass",
+   "kind": "hit",
+   "expect": [
+    "browser-automation-csp-bypass"
+   ],
+   "error": "mcp: CSP blocks JavaScript injection browser automation authenticated pages failed — Browser automation tools (Puppeteer, Playwright, CDP-based tools) fail silently when injecting JavaScript into pages wit",
+   "source_lesson": "browser-automation-csp-bypass"
+  },
+  {
+   "id": "hit-dsh-plugin-install-github-codeload-timeout",
+   "kind": "hit",
+   "expect": [
+    "dsh-plugin-install-github-codeload-timeout"
+   ],
+   "error": "mcp: DSH Plugin Install Failures GitHub codeload Timeout npm Channel failed — Installing a DSH (DeepSeek Harness) plugin from the [dsh-plugin.org](https://dsh-plugin.org) marketplace failed with `安装",
+   "source_lesson": "dsh-plugin-install-github-codeload-timeout"
+  },
+  {
+   "id": "hit-game-mcp-end-turn-conflict-409",
+   "kind": "hit",
+   "expect": [
+    "game-mcp-end-turn-conflict-409"
+   ],
+   "error": "mcp: Game MCP End Turn Returns Conflict failed — When sending an end_turn command via MCP, the game returns a 409 Conflict HTTP status. However, the game state still pro",
+   "source_lesson": "game-mcp-end-turn-conflict-409"
+  },
+  {
+   "id": "hit-aily-feishu-mcp-pull-only",
+   "kind": "hit",
+   "expect": [
+    "aily-feishu-mcp-pull-only"
+   ],
+   "error": "feishu: aily feishu mcp pull only failed — 虫群架构设计时，误以为 aily 飞书侧支持 MCP Server 暴露给 Hub 调用。",
+   "source_lesson": "aily-feishu-mcp-pull-only"
+  },
+  {
+   "id": "hit-feishu-block-api-false-success",
+   "kind": "hit",
+   "expect": [
+    "feishu-block-api-false-success"
+   ],
+   "error": "feishu: Feishu Block API returns code but creates zero blocks under failed — When batch-writing blocks to a Feishu document via `POST /open-apis/docx/v1/documents/{document_id}/blocks/{block_id}/ch",
+   "source_lesson": "feishu-block-api-false-success"
+  },
+  {
+   "id": "hit-feishu-block-batch-limit",
+   "kind": "hit",
+   "expect": [
+    "feishu-block-batch-limit"
+   ],
+   "error": "feishu: feishu block batch limit failed — 调用飞书文档 `document.blocks.children.create` API 批量创建 block 时，每次请求超过约 20 个 block 会触发限流（HTTP 429）或发生静默截断（请求成功但部分 block 未写入）。",
+   "source_lesson": "feishu-block-batch-limit"
+  },
+  {
+   "id": "hit-feishu-block-type-values-limits",
+   "kind": "hit",
+   "expect": [
+    "feishu-block-type-values-limits"
+   ],
+   "error": "feishu: feishu block type values limits failed — 飞书 block API 的 type 字段使用数字 ID，错误值导致静默失败或 400 错误。开发者在参考官方文档或社区资料时，常遇到文档值与实际可用值不一致的问题，导致调试困难、时间浪费。 典型症状包括： - 请求返回 HTTP 200",
+   "source_lesson": "feishu-block-type-values-limits"
+  },
+  {
+   "id": "hit-search-first-roadmap-loop",
+   "kind": "hit",
+   "expect": [
+    "search-first-roadmap-loop"
+   ],
+   "error": "development: Search first roadmap loop for agent knowledge projects failed — A growing agent-knowledge project can accumulate many valid directions at once: reusable experience substrate, lightweig",
+   "source_lesson": "search-first-roadmap-loop"
+  },
+  {
+   "id": "hit-accidental-pycache-commit",
+   "kind": "hit",
+   "expect": [
+    "accidental-pycache-commit"
+   ],
+   "error": "development: Accidental pycache__ artifacts committed data repository failed — A pull request intended to change CSV data rows also shipped `__pycache__/csv_to_json.cpython-314.pyc` (and similar byte",
+   "source_lesson": "accidental-pycache-commit"
+  },
+  {
+   "id": "hit-escrow-fee-rounding-per-provider",
+   "kind": "hit",
+   "expect": [
+    "escrow-fee-rounding-per-provider"
+   ],
+   "error": "development: Banking style escrow fee estimate has per provider rounding disparity failed — A payout/reward schema recorded a fee estimate computed with floating-point math, while the escrow engine (and the human",
+   "source_lesson": "escrow-fee-rounding-per-provider"
+  },
+  {
+   "id": "hit-git-worktree-dangling-commit-recovery",
+   "kind": "hit",
+   "expect": [
+    "git-worktree-dangling-commit-recovery"
+   ],
+   "error": "development: git worktree commit lost after pushing from the wrong directory failed — A commit made inside a `git worktree add <path> <branch>` appeared to vanish: the remote branch did not move, and the lo",
+   "source_lesson": "git-worktree-dangling-commit-recovery"
+  },
+  {
+   "id": "hit-audit-sampling-stratified-sampling-for-kb-in",
+   "kind": "hit",
+   "expect": [
+    "audit-sampling-stratified-sampling-for-kb-inspection"
+   ],
+   "error": "rag: audit sampling stratified sampling for kb inspection failed — RAG 知识库质量巡检需要每天抽取少量题目进行自动测试。如果随机抽样，容易连续抽到同一类型的问题（如连续三天都是报警代码题），漏掉其他分类的质量退化。",
+   "source_lesson": "audit-sampling-stratified-sampling-for-kb-inspection"
+  },
+  {
+   "id": "hit-bge-embedding-fallback-crash",
+   "kind": "hit",
+   "expect": [
+    "bge-embedding-fallback-crash"
+   ],
+   "error": "rag: BGE Embedding Fallback Crash failed — When HermesHub starts, if the BGE-m3 model has not been downloaded to the local path, SkillIndexer crashes immediately. ",
+   "source_lesson": "bge-embedding-fallback-crash"
+  },
+  {
+   "id": "hit-fanuc-r-2000ic-retrieval-fix",
+   "kind": "hit",
+   "expect": [
+    "fanuc-r-2000ic-retrieval-fix"
+   ],
+   "error": "rag: fanuc r 2000ic retrieval fix failed — 访问者问\"fanuc r-2000ic 系列所有机器人的最大速度\"，RAG 返回了 KUKA Series 2000 的数据。 根因：语义检索模型 bge-base-zh-v1.5 将查询中的 \"2000\" 字符串匹配到 KUKA 文档中的",
+   "source_lesson": "fanuc-r-2000ic-retrieval-fix"
+  },
+  {
+   "id": "hit-kb-4sigma-quality-audit-pipeline",
+   "kind": "hit",
+   "expect": [
+    "kb-4sigma-quality-audit-pipeline"
+   ],
+   "error": "rag: Knowledge Base Sigma Quality Audit Pipeline failed — After continuous document imports, the RAG knowledge base developed data contamination, version confusion, inconsistent ",
+   "source_lesson": "kb-4sigma-quality-audit-pipeline"
+  },
+  {
+   "id": "hit-corporate-proxy-curl-timeout",
+   "kind": "hit",
+   "expect": [
+    "corporate-proxy-curl-timeout"
+   ],
+   "error": "devops: curl Timeout Behind Corporate Proxy SSL Inspection Breaks Certificate Validation failed — `curl` requests to external APIs timeout behind corporate proxy with SSL inspection enabled. Common in enterprise enviro",
+   "source_lesson": "corporate-proxy-curl-timeout"
+  },
+  {
+   "id": "hit-git-credential-helper-gh-path-mismatch",
+   "kind": "hit",
+   "expect": [
+    "git-credential-helper-gh-path-mismatch"
+   ],
+   "error": "git: credential helper Error git push failed — 执行 `git push` 时卡住或报错： ``` /home/hp/.local/bin/gh auth git-credential get: 1: /home/hp/.local/bin/gh: not found ``` 或： ``",
+   "source_lesson": "git-credential-helper-gh-path-mismatch"
+  },
+  {
+   "id": "hit-pip-install-proxy-timeout",
+   "kind": "hit",
+   "expect": [
+    "pip-install-proxy-timeout"
+   ],
+   "error": "python: pip install ReadTimeoutError Behind Corporate Proxy Certificate Validation and Timeout failed — `pip install` fails with `ReadTimeoutError` or `ConnectionResetError` when behind corporate proxy with SSL inspection. C",
+   "source_lesson": "pip-install-proxy-timeout"
+  },
+  {
+   "id": "hit-python-smtplib-ssl-certificate-verify-failed",
+   "kind": "hit",
+   "expect": [
+    "python-smtplib-ssl-certificate-verify-failed-fix"
+   ],
+   "error": "automation: Fix Python Smtplib SSL Certificate Verify Failed Error When Sending failed — При выполнении скрипта на Python для автоматической отправки электронных писем через SMTP-сервер Gmail (`smtp.gmail.com`",
+   "source_lesson": "python-smtplib-ssl-certificate-verify-failed-fix"
+  },
+  {
+   "id": "real-corporate-proxy-curl-timeout",
+   "kind": "hit",
+   "expect": [
+    "corporate-proxy-curl-timeout"
+   ],
+   "error": "curl: (35) SSL connect error behind corporate proxy — read timeout when fetching over the proxy",
+   "source_lesson": "corporate-proxy-curl-timeout"
+  },
+  {
+   "id": "real-git-credential-helper-gh-path-mismatch",
+   "kind": "hit",
+   "expect": [
+    "git-credential-helper-gh-path-mismatch"
+   ],
+   "error": "git credential helper 401 credential lookup failed github helper path mismatch",
+   "source_lesson": "git-credential-helper-gh-path-mismatch"
+  },
+  {
+   "id": "real-pip-install-proxy-timeout",
+   "kind": "hit",
+   "expect": [
+    "pip-install-proxy-timeout"
+   ],
+   "error": "pip install ReadTimeoutError behind corporate proxy while reading from pypi",
+   "source_lesson": "pip-install-proxy-timeout"
+  },
+  {
+   "id": "real-python-smtplib-ssl-certificate-verify-fa",
+   "kind": "hit",
+   "expect": [
+    "python-smtplib-ssl-certificate-verify-failed-fix"
+   ],
+   "error": "ssl.SSLCertVerificationError certificate verify failed while sending mail via smtplib",
+   "source_lesson": "python-smtplib-ssl-certificate-verify-failed-fix"
+  },
+  {
+   "id": "nohit-00",
+   "kind": "no-hit",
+   "error": "error[E0308]: mismatched types in borrow checker rust cargo build"
+  },
+  {
+   "id": "nohit-01",
+   "kind": "no-hit",
+   "error": "FAILURE: Build failed with an exception. gradle task :app:assemble"
+  },
+  {
+   "id": "nohit-02",
+   "kind": "no-hit",
+   "error": "Swift fatal error: unexpectedly found nil while unwrapping an Optional"
+  },
+  {
+   "id": "nohit-03",
+   "kind": "no-hit",
+   "error": "linker command failed with exit code 1 undefined symbols clang c++"
+  },
+  {
+   "id": "nohit-04",
+   "kind": "no-hit",
+   "error": "Error from server: namespaces not found kubernetes kubectl get ns"
+  },
+  {
+   "id": "nohit-05",
+   "kind": "no-hit",
+   "error": "error: cannot find module 'foo' lua require luarocks"
+  },
+  {
+   "id": "nohit-06",
+   "kind": "no-hit",
+   "error": "ERROR: LoadError: could not load package Foo julia pkg add"
+  },
+  {
+   "id": "nohit-07",
+   "kind": "no-hit",
+   "error": "MongoServerError: Authentication failed mongodb credentials"
+  },
+  {
+   "id": "nohit-08",
+   "kind": "no-hit",
+   "error": "Terraform init failed backend state lock tfstate"
+  },
+  {
+   "id": "nohit-09",
+   "kind": "no-hit",
+   "error": "Error: something went wrong with the database connection pool"
+  },
+  {
+   "id": "nohit-10",
+   "kind": "no-hit",
+   "error": "npm ERR! code ELIFECYCLE in unrelated js project webpack bundle"
+  },
+  {
+   "id": "ignore-00",
+   "kind": "ignore",
+   "error": "https://example.com/foo"
+  },
+  {
+   "id": "ignore-01",
+   "kind": "ignore",
+   "error": "{\"error\":\"boom\",\"code\":500}"
+  },
+  {
+   "id": "ignore-02",
+   "kind": "ignore",
+   "error": "it broke"
+  },
+  {
+   "id": "ignore-03",
+   "kind": "ignore",
+   "error": "0x7f8a2b3c4d5e"
+  },
+  {
+   "id": "ignore-04",
+   "kind": "ignore",
+   "error": "!!! ???"
+  },
+  {
+   "id": "ignore-05",
+   "kind": "ignore",
+   "error": "asdf"
+  },
+  {
+   "id": "ignore-06",
+   "kind": "ignore",
+   "error": "[Errno 2]"
+  },
+  {
+   "id": "ignore-07",
+   "kind": "ignore",
+   "error": "429"
+  }
+ ]
+}
