@@ -11,7 +11,7 @@
     echo "Error: boom" | python3 scripts/intake_bot.py    # stdin
 
 决策三态:
-    hit     预查命中已有课程 → 打印建议（链接+修复摘录），不 intake（建议可宽）
+    hit     预查命中已有课程 → 打印建议（链接+修复摘录），不 intake；命中仅为 suggest-only，请人工核对
     intake  指纹新颖 + 证据达标 → 打印将提交内容（--auto-intake 才真实调用 submit_intake）
     ignore  重复 / 无证据 / 纯噪音 → 一行原因，静默
 
@@ -35,13 +35,15 @@ from pathlib import Path
 
 REMOTE_LESSONS = "https://misakanet.org/api/lessons"          # ?search=<q>&limit=N 服务端检索
 INTAKE_URL = "https://misakanet.org/mcp"
-UA = "MisakaNet-IntakeBot-MVP/0.1"
+UA = "MisakaNet-IntakeBot-v1.0"
 _CACHE_ROOT = os.environ.get("MISAKA_CACHE_DIR") or os.environ.get("XDG_CACHE_HOME")
 CACHE_DIR = Path(_CACHE_ROOT or (Path.home() / ".cache")) / "misaka-intake-bot"
 SIG_FILE = CACHE_DIR / "sigs.json"
 CORPUS_FILE = CACHE_DIR / "corpus.json"
-DEFAULT_HIT_SIM = 0.30  # 命中确认阈值：title 重叠 ×2 / body 重叠，取 max；--sim 可调
-PRECHECK_LIMIT = 5      # 服务端返回 top-N 供本地确认
+DEFAULT_HIT_SIM = 0.45  # v1.0：命中确认阈值（title 重叠 ×2 / body 重叠，取 max）。0.30 曾致 38% 跨语言假阳性（#1529 反馈）
+HIGH_BAR_SIM = 0.55    # 无技术栈特征（泛化错误）时要求更高相似度才给 hit
+PRECHECK_LIMIT = 5
+
 
 PLACEHOLDER_RE = re.compile(
     r"todo|fixme|coming soon|placeholder|echo\s+.*verified|(grep|wc)\s+.*\|\s*wc",
@@ -60,7 +62,77 @@ ERROR_LINE_RE = re.compile(
 _STOP = {"error", "errors", "exception", "exceptions", "failed", "fail", "fails",
          "failure", "fatal", "issue", "issues", "problem", "problems", "boom",
          "generic", "occurred", "something", "went", "wrong", "the", "and",
-         "with", "after", "when", "while", "from", "this"}
+         "with", "after", "when", "while", "from", "this", "not", "found",
+         "module", "modules", "cannot", "unable", "could", "undefined", "null",
+         "command", "install", "package", "line", "file", "files", "unexpected",
+         "expected", "during", "processing"}
+
+# 技术栈/语言特征词（用于命中门：避免"module not found"这类泛化词跨语言误配）
+_STACK_HINTS = {
+    "python": {"python", "pip", "venv", "uv", "pytest", "import", "module", "numpy", "pandas", "django", "flask", "werkzeug", "tiktoken", "asyncio", "traceback", "syntaxerror", "indentation", "none"},
+    "node": {"node", "npm", "npx", "js", "javascript", "typescript", "ts", "react", "webpack", "metro", "babel", "pnpm", "yarn", "angular", "vue", "expo"},
+    "rust": {"rust", "cargo", "borrow", "lifetime", "unwrap", "crate", "rustc"},
+    "go": {"golang", "go build", "go test", "go: ", "goroutine", "gopath"},
+    "java": {"java", "gradle", "maven", "jvm", "kotlin", "android", "spring", "classnotfound"},
+    "c": {"c++", "cpp", "gcc", "clang", "cmake", "linker", "compiler", "cxx", "segfault", "makefile"},
+    "swift": {"swift", "xcode", "unwrap", "swiftui"},
+    "dart": {"dart", "flutter", "null safety"},
+    "php": {"php", "composer", "laravel"},
+    "lua": {"lua", "luarocks"},
+    "julia": {"julia", "pkg"},
+    "r": {"r ", "rlang", "rscript"},
+    "ruby": {"ruby", "gem", "bundler", "rails"},
+    "shell": {"bash", "sh ", "zsh", "shell", "chmod", "permission denied", "env:", "exit code", "make["},
+    "docker": {"docker", "container", "image", "dockerfile", "compose", "registry", "kubectl", "pod"},
+    "k8s": {"kubernetes", "k8s", "namespace", "helm", "deployment", "pod"},
+    "terraform": {"terraform", "tfstate", "plan", "apply"},
+    "aws": {"aws", "s3", "ec2", "lambda", "cloudfront", "iam", "secret access key"},
+    "cloudflare": {"cloudflare", "workers", "cf-", "kv", "d1"},
+    "git": {"git", "github", "merge", "rebase", "pull", "push", "credential helper", "sign-off", "signed-off"},
+    "db": {"postgres", "postgresql", "mysql", "mongodb", "redis", "sql", "connection pool"},
+    "web": {"http", "https", "url", "curl", "ssl", "tls", "proxy", "403", "404", "429", "500", "502", "504", "rate limit", "timeout", "dns"},
+    "network": {"socket", "connection refused", "econnreset", "timeout", "dns", "proxy", "tls", "ssl"},
+    "windows": {"windows", "wsl", "winerror", "cmd.exe", "powershell", "pycharm"},
+    "fanuc": {"fanuc", "robot", "karel", "tp ", "r-2000", "r-30ia", "alarm", "welding"},
+    "feishu": {"feishu", "lark", "webhook", "bot"},
+}
+
+_NOISE_RE = re.compile(
+    r"^https?://\S+|^[\w./-]+\.(json|yaml|yml|log|txt)$|^\[?[0-9a-f-]{8,}\]?$"
+    r"|^[\[{].{0,80}[}\]]$|^[\w@.:/\\-]{0,40}$|^[^a-zA-Z\u4e00-\u9fff]{2,}$",
+    re.I,
+)
+
+
+def _detect_stack(text: str) -> set[str]:
+    """返回 text 命中的技术栈族。"""
+    low = (text or "").lower()
+    hits = set()
+    for family, words in _STACK_HINTS.items():
+        if any(w in low for w in words):
+            hits.add(family)
+    return hits
+
+
+def _doc_stack(doc: dict) -> set[str]:
+    """课程侧技术栈：title + tags + domain 联合判定。"""
+    hay = " ".join([
+        doc.get("title") or "",
+        doc.get("domain") or "",
+        " ".join(doc.get("tags") or []),
+    ])
+    return _detect_stack(hay)
+
+
+def _is_noise(error: str) -> bool:
+    """纯 URL / 路径 / JSON 片段 / 符号串 / 无实义词 → 噪音（不 intake、不 hit）。"""
+    err = (error or "").strip()
+    if len(err) < 10:
+        return True
+    letters = re.sub(r"[^a-zA-Z\u4e00-\u9fff]", "", err)
+    if len(letters) < 4:
+        return True
+    return bool(_NOISE_RE.match(err))
 
 
 def _tokens(text: str) -> set[str]:
@@ -102,21 +174,34 @@ def _load_corpus(timeout: int = 60) -> list[dict]:
         return []
 
 
-def precheck(error: str, sim_threshold: float) -> dict | None:
-    """全量语料本地打分（title 重叠 ×2 / body 重叠，与 search_knowledge --remote
-    同一数据源）。命中返回最佳课程 dict；无命中/网络失败返回 None。"""
+def precheck(error: str, sim_threshold: float, corpus: list | None = None) -> dict | None:
+    """全量语料本地打分（title 重叠 ×2 / body 重叠）。命中返回最佳课程 dict；无命中返回 None。
+
+    v1.0 结构性防假阳性（#1529 反馈：0.30 阈值跨语言 FP 38%）：
+    - 查询含明确技术栈特征 → 最佳课程必须同栈（跨栈即使词面相似也不 hit）
+    - 查询无技术栈特征（泛化错误）→ 需过 HIGH_BAR_SIM 才 hit
+    `corpus` 供测试注入固定语料；缺省走远端（_load_corpus）。
+    """
     q = _tokens(error)
-    if not q:
+    if not q or _is_noise(error):
         return None
+    docs = _load_corpus() if corpus is None else corpus
+    q_stack = _detect_stack(error)
+    bar = sim_threshold if q_stack else max(sim_threshold, HIGH_BAR_SIM)
     best, best_score = None, 0.0
-    for doc in _load_corpus():
+    for doc in docs:
         title = _tokens(doc.get("title") or "")
         body = _tokens((doc.get("description") or "")[:500])
         score = max(_sim(q, title) * 2.0, _sim(q, body))
-        if score > best_score:
-            best, best_score = doc, score
-    if best and best_score >= sim_threshold:
+        if score <= best_score:
+            continue
+        # 技术栈一致性：query 有栈特征时必须与课程共享至少一族
+        if q_stack and not (q_stack & _doc_stack(doc)):
+            continue
+        best, best_score = doc, score
+    if best and best_score >= bar:
         best["_sim"] = best_score
+        best["_suggest_only"] = True  # v1.0：命中仅为建议，供人工核对
         return best
     return None
 
@@ -150,6 +235,8 @@ def quality_gate(error: str, what_tried: str) -> tuple[bool, str]:
         return False, "错误签名过短（<10 字符），缺证据"
     if PLACEHOLDER_RE.search(err + " " + what_tried):
         return False, "疑似占位/回声内容"
+    if _is_noise(err):
+        return False, "纯噪音（URL/JSON/路径/符号串），无失败语义"
     return True, "ok"
 
 
@@ -179,12 +266,14 @@ def submit_intake(payload: dict) -> str:
 
 
 def decide(error: str, *, source: str, what_tried: str, auto_intake: bool,
-           sim_threshold: float, force: bool, offline: bool = False) -> dict:
+           sim_threshold: float, force: bool, offline: bool = False,
+           corpus: list | None = None) -> dict:
     sig = fingerprint(error)
     sigs = load_sigs()
-    hit = None if offline else precheck(error, sim_threshold)
+    hit = None if offline else precheck(error, sim_threshold, corpus=corpus)
     if hit:
         return {"decision": "hit", "fingerprint": sig,
+                "suggest_only": True,  # v1.0：命中仅为建议，请人工核对后再采用
                 "lesson": {"id": hit.get("id"), "title": hit.get("title"),
                            "url": f"https://misakanet.org/lessons/{hit.get('id') or ''}/",
                            "sim": round(hit.get("_sim", 0), 2)}}
@@ -275,8 +364,9 @@ def main(argv: list[str] | None = None) -> int:
     else:
         if res["decision"] == "hit":
             l = res["lesson"]
-            print(f"💡 命中课程（sim={l['sim']}）：{l['title']}\n   {l['url']}")
-            print("   已存在课程 → 不 intake；按该课程修复后再试仍失败请补 what_tried 重跑。")
+            print(f"💡 命中课程（sim={l['sim']}，仅供参考）：{l['title']}\n   {l['url']}")
+            print("   ⚠️ suggest-only：AI 建议，请人工核对后再采用。已存在课程 → 不 intake；")
+            print("   按该课程修复后再试仍失败，请补 what_tried 重跑。")
         elif res["decision"] == "intake":
             if res.get("dry_run"):
                 print(f"🧪 新颖失败，intake 候选（dry-run，未提交）。fingerprint={res['fingerprint']}")

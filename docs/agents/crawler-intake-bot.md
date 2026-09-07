@@ -154,6 +154,17 @@ canonical 近重复复检 + kind 路由（question→FAQ）后才 lesson 化。�
 
 ---
 
+## 10b. v1.0 完成（2026-09-07）——补全 zsxh #1529 反馈的质量缺口
+
+承接 #1529（Action 封装 merged 89770da484）+ zsxh 合并后自测报告（FP 38% @0.30 阈值 / 原 50 样例内容偏差）：
+- **默认阈值 0.30 → 0.45**（`scripts/intake_bot.py` + action `sim` 默认同步）；无栈特征的泛化错误需 ≥0.55 才 hit
+- **技术栈感知命中门**：`_STACK_HINTS`（24 族语言/框架词表）——查询有栈特征时要求与课程同栈，跨语言不再因 `module/not found/credentials` 等泛化词误配；裸 `credential(s)` 移出 git/aws 族（真实报错自带显式栈词）
+- **噪音过滤**：URL/JSON/路径/纯符号串 → ignore
+- **语义诚实**：hit 输出带 `suggest_only: true` + CLI/action 评论"仅供参考，请人工核对"
+- **测试重写为确定性离线套件**（`tests/test_intake_bot_50.py`，30 passed）：固定语料注入（不触网）+ 同栈命中 / 跨语言 FP 回归（zsxh 的 Rust/Gradle/Swift/K8s/Lua/Julia… 样例）/ 噪音 / 阈值逻辑；消除原内容偏差（依赖 MisakaNet 覆盖）
+- **实测**：zsxh 跨语言样例 9 例误配 **19/50 → 0-1/9**；同栈真命中不受影响（git 401→git 课、curl proxy→proxy 课、AWS creds→aws 课）
+- 局限（v1.0 已知）：词表驱动、非语言检测器；`suggest-only` 语义请消费方遵守
+
 ## 10. MVP 已实现（2026-09-06）——`scripts/intake_bot.py`（零依赖，供 zsxh 实测）
 
 实现范围：设计中"五闸"的 2/3/4 最小版 + 三态决策；**默认 dry-run**（防噪音），

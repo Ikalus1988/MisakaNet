@@ -24,7 +24,7 @@ inputs:
   sim:
     description: 'Hit similarity threshold (0.0-1.0)'
     required: false
-    default: '0.30'
+    default: '0.45'  # v1.0: 0.30 曾致跨语言 FP 38%（#1529）
   what-tried:
     description: 'What was tried before the error'
     required: false
@@ -155,7 +155,7 @@ runs:
             body = `## 💡 MisakaNet: Lesson Found\n\n` +
                    `**Similarity:** ${l.sim || '?'}\n` +
                    `**Lesson:** [${l.title || l.id}](${l.url || '#'})\n\n` +
-                   `> This error matches an existing lesson. Check the lesson for fix guidance.`;
+                   `> This error matches an existing lesson — **suggest-only (仅供参考)**; please verify before applying.`;
           } else if (decision === 'intake') {
             if (result.dry_run) {
               body = `## 🧪 MisakaNet: Intake Candidate (Dry Run)\n\n` +
