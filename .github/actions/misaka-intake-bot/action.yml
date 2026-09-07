@@ -1,0 +1,196 @@
+name: 'MisakaNet Intake Bot'
+description: 'CI failure → lesson suggestion / gated auto-intake (composite action)'
+branding:
+  icon: 'search'
+  color: 'blue'
+
+inputs:
+  mode:
+    description: 'Operation mode: suggest-only or suggest-and-intake'
+    required: false
+    default: 'suggest-only'
+  error:
+    description: 'Error text (alternative to log-file)'
+    required: false
+    default: ''
+  log-file:
+    description: 'Path to CI log file for error extraction'
+    required: false
+    default: ''
+  source:
+    description: 'Intake source identifier'
+    required: false
+    default: 'github-action'
+  sim:
+    description: 'Hit similarity threshold (0.0-1.0)'
+    required: false
+    default: '0.30'
+  what-tried:
+    description: 'What was tried before the error'
+    required: false
+    default: ''
+  comment-on-pr:
+    description: 'Post results as PR comment'
+    required: false
+    default: 'true'
+
+outputs:
+  decision:
+    description: 'Decision: hit, intake, or ignore'
+    value: ${{ steps.intake.outputs.decision }}
+  fingerprint:
+    description: 'Error fingerprint hash'
+    value: ${{ steps.intake.outputs.fingerprint }}
+  lesson-url:
+    description: 'URL of matched lesson (if hit)'
+    value: ${{ steps.intake.outputs.lesson-url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.10'
+
+    - name: Get failure context
+      id: context
+      if: ${{ inputs.error == '' && inputs.log-file == '' }}
+      uses: actions/github-script@v9
+      with:
+        script: |
+          const run = context.payload.workflow_run;
+          if (!run || run.conclusion !== 'failure') {
+            core.setOutput('error', '');
+            return;
+          }
+
+          // Get failed jobs
+          const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            run_id: run.id,
+            filter: 'failed'
+          });
+
+          let errorLines = [];
+          for (const job of jobs.jobs.slice(0, 3)) {
+            try {
+              const { data: logs } = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                job_id: job.id
+              });
+              const lines = logs.split('\n');
+              const errors = lines
+                .filter(l => /error|fail|exception|traceback/i.test(l))
+                .slice(-10);
+              errorLines.push(...errors);
+            } catch (e) {
+              core.warning(`Could not fetch logs for job ${job.name}: ${e.message}`);
+            }
+          }
+
+          const errorText = errorLines.join('\n').slice(0, 2000);
+          core.setOutput('error', errorText);
+
+    - name: Run intake bot
+      id: intake
+      shell: bash
+      env:
+        INPUT_ERROR: ${{ inputs.error || steps.context.outputs.error }}
+        INPUT_LOG_FILE: ${{ inputs.log-file }}
+        INPUT_SOURCE: ${{ inputs.source }}
+        INPUT_SIM: ${{ inputs.sim }}
+        INPUT_WHAT_TRIED: ${{ inputs.what-tried }}
+        INPUT_MODE: ${{ inputs.mode }}
+      run: |
+        set -e
+        REPO_ROOT="${GITHUB_WORKSPACE:-.}"
+        SCRIPT="$REPO_ROOT/scripts/intake_bot.py"
+
+        if [ ! -f "$SCRIPT" ]; then
+          echo "::warning::intake_bot.py not found at $SCRIPT, skipping"
+          echo "decision=skip" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        ARGS="--json --source $INPUT_SOURCE --sim $INPUT_SIM"
+        [ -n "$INPUT_WHAT_TRIED" ] && ARGS="$ARGS --what-tried $INPUT_WHAT_TRIED"
+        [ "$INPUT_MODE" = "suggest-and-intake" ] && ARGS="$ARGS --auto-intake"
+
+        if [ -n "$INPUT_LOG_FILE" ] && [ -f "$INPUT_LOG_FILE" ]; then
+          ARGS="$ARGS --log $INPUT_LOG_FILE"
+        elif [ -n "$INPUT_ERROR" ]; then
+          ARGS="$ARGS --error $INPUT_ERROR"
+        else
+          echo "::warning::No error input provided, skipping"
+          echo "decision=skip" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        RESULT=$(python3 $SCRIPT $ARGS 2>/dev/null || echo '{"decision":"error","reason":"script failed"}')
+        echo "result=$RESULT" >> "$GITHUB_OUTPUT"
+
+        # Parse outputs
+        DECISION=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('decision','unknown'))")
+        FINGERPRINT=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('fingerprint',''))")
+        LESSON_URL=$(echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin).get('lesson',{}); print(d.get('url',''))")
+
+        echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
+        echo "fingerprint=$FINGERPRINT" >> "$GITHUB_OUTPUT"
+        echo "lesson-url=$LESSON_URL" >> "$GITHUB_OUTPUT"
+
+    - name: Comment on PR
+      if: ${{ inputs.comment-on-pr == 'true' && steps.intake.outputs.result != '' }}
+      uses: actions/github-script@v9
+      with:
+        script: |
+          const result = JSON.parse(process.env.RESULT || '{}');
+          const decision = result.decision || 'unknown';
+
+          let body = '';
+          if (decision === 'hit') {
+            const l = result.lesson || {};
+            body = `## 💡 MisakaNet: Lesson Found\n\n` +
+                   `**Similarity:** ${l.sim || '?'}\n` +
+                   `**Lesson:** [${l.title || l.id}](${l.url || '#'})\n\n` +
+                   `> This error matches an existing lesson. Check the lesson for fix guidance.`;
+          } else if (decision === 'intake') {
+            if (result.dry_run) {
+              body = `## 🧪 MisakaNet: Intake Candidate (Dry Run)\n\n` +
+                     `**Fingerprint:** \`${result.fingerprint || '?'}\`\n\n` +
+                     `<details><summary>Payload</summary>\n\n` +
+                     `\`\`\`json\n${JSON.stringify(result.payload || {}, null, 2).slice(0, 1500)}\n\`\`\`\n` +
+                     `</details>\n\n` +
+                     `> To actually submit, use \`mode: suggest-and-intake\`.`;
+            } else {
+              body = `## 📥 MisakaNet: Intake Submitted\n\n` +
+                     `**Fingerprint:** \`${result.fingerprint || '?'}\`\n` +
+                     `**Receipt:** \`${(result.receipt || '').slice(0, 120)}\`\n\n` +
+                     `> Error pattern submitted to MisakaNet for lesson creation.`;
+            }
+          } else if (decision === 'ignore') {
+            body = `## 🚫 MisakaNet: Skipped\n\n` +
+                   `**Reason:** ${result.reason || 'unknown'}\n` +
+                   `**Fingerprint:** \`${result.fingerprint || '?'}\``;
+          } else {
+            return; // skip unknown decisions
+          }
+
+          // Find associated PR
+          const prs = context.payload.workflow_run?.pull_requests || [];
+          if (prs.length === 0) {
+            core.info('No associated PR found, skipping comment');
+            return;
+          }
+
+          const prNumber = prs[0].number;
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: prNumber,
+            body: body.slice(0, 65000)
+          });
+        env:
+          RESULT: ${{ steps.intake.outputs.result }}
