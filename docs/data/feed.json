@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-06T04:49:49.704345+00:00",
+  "generated_at": "2026-09-06T22:55:19.460434+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "[Lesson] Add status lifecycle + supersedes chain (#1440)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1455",
-      "timestamp": "2026-09-06T01:23:32Z",
+      "title": "chore(release): bump 2.28.1 + mcp-name ownership marker in PyPI README",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1512",
+      "timestamp": "2026-09-06T16:24:04Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(i18n): add Spanish and Portuguese lessons for LatAm market (#1349)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1496",
-      "timestamp": "2026-09-05T16:52:17Z",
+      "title": "ci(pypi): add workflow_dispatch to release-pypi (unblocks 2.28.0 publish)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1511",
+      "timestamp": "2026-09-06T16:12:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat: publish rhythm tracker and calendar (#1348)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1495",
-      "timestamp": "2026-09-05T16:47:47Z",
+      "title": "fix(lessons): gate new-vs-existing differentiation + same-stem mirror dedupe (#1506)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1509",
+      "timestamp": "2026-09-06T13:35:07Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat: request classification logging (#1347)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1490",
-      "timestamp": "2026-09-05T16:47:41Z",
+      "title": "fix(ci): restore uniqueAdd/uniqueRemove declarations in quality-gate",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1510",
+      "timestamp": "2026-09-06T13:29:30Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "Add dsh plugin integration test suite (bounty #1403)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1487",
-      "timestamp": "2026-09-05T16:47:07Z",
+      "title": "discuss: gate evidence_level relaxation + security scan rewrite",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1505",
+      "timestamp": "2026-09-06T13:11:52Z",
       "source": "github"
     },
     {

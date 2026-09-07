@@ -20,6 +20,11 @@ quality_score: 60
 root_cause: FANUC 机器人作为 PROFINET IO 从站时，需要使用专用的 PFN-CT（PROFINET Configuration Tool）软件在
   PC 端配置 GSD 文件、IO 模块映射等参数，然后下载到控制器。该软件不随控制器出厂提供，需要单独获取。
 solution: 使用 PFN-CT V1.0.14 软件配置 FANUC 机器人的 PROFINET IO 通信参数。该软件为 PC 端工具，用于配置从站设备参数并生成配置文件。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## FANUC Robot PROFINET IO Configuration with PFN-CT Software

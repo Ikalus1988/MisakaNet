@@ -13,6 +13,11 @@ source: unknown
 confidence: 0.92
 domain_expert: ''
 verified_date: ''
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo

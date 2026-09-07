@@ -11,6 +11,11 @@ status: published
 created: '2026-08-19'
 source: mcp-intake-93ea9844b4
 evidence_level: E2
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

@@ -10,6 +10,11 @@ created: 2026-04-30 08:50 UTC
 updated: 2026-04-30 08:50 UTC
 language: zh
 source: hermes_wsl
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

@@ -76,7 +76,7 @@ runs:
         printf 'failed_commits_log<<DCO_EOF\n%s\nDCO_EOF\n' "$FAILED_LOG" >> "$GITHUB_OUTPUT"
         echo "failed_count=$FAILED_COUNT" >> "$GITHUB_OUTPUT"
 
-    - name: Post DCO Failure Comment
+    - name: Post DCO Failure Comment (marker upsert)
       if: steps.scan.outputs.dco_passed == 'false' && inputs.pr-number != ''
       shell: bash
       env:
@@ -88,20 +88,12 @@ runs:
         ${{ steps.scan.outputs.failed-commits-log }}
         DCO_EOF
         )
-        BASE_REF="${{ inputs.base-sha }}"
-        HEAD_REF="${{ inputs.head-sha }}"
 
         cat > /tmp/dco_comment.md << 'CMTEOF'
-        ### 🤖 AUTOMATED AUDIT SYSTEM: REGULATORY BLOCK
+        <!-- misakanet-dco-block -->
+        ### 🔏 DCO Check — some commits need sign-off
 
-        **[STATUS]** AUTO-MERGE: PINNED (BLOCKED)
-        **[REASON]** Developer Certificate of Origin (DCO) validation failed.
-
-        ---
-
-        #### 1. COMMIT SIGN-OFF SNAPSHOT
-
-        The following commits in this Pull Request are missing the required `Signed-off-by` line:
+        The following commits in this Pull Request are missing the required `Signed-off-by:` trailer (Developer Certificate of Origin):
 
         ```text
         CMTEOF
@@ -109,24 +101,36 @@ runs:
         cat >> /tmp/dco_comment.md << 'CMTEOF'
         ```
 
-        #### 2. REMEDIATION PROTOCOL FOR AGENT / CONTRIBUTOR
-
-        Execute the following commands locally within your repository to re-sign and update the branch:
+        **How to fix (about 2 minutes):**
 
         ```bash
-        # Step 1: Rebase to add sign-off to all commits in this PR
-        git rebase -i origin/$BASE_REF --exec "git commit --amend --no-edit --signoff"
+        # sign the latest commit
+        git commit --amend --signoff --no-edit
+        git push --force-with-lease
 
-        # Step 2: Force-push the corrected history back to the remote branch
-        git push --force origin $HEAD_REF
+        # or sign the last N commits
+        git rebase --signoff HEAD~N
+        git push --force-with-lease
         ```
 
-        *Note: This is an automated gate. Once all commits conform to the DCO specification, the Auto-Merge controller will resume execution immediately.*
+        Same-repo PRs can also comment `/fix-dco` to auto-apply the sign-off.
+
+        > Merge commits are exempt from sign-off. CI re-scans on **every push**
+        > (including force-pushes): once all commits are signed, the `needs-dco`
+        > label **auto-clears** and this comment is removed — do NOT push an empty
+        > commit. Full guide: CONTRIBUTING.md → *Developer Certificate of Origin*.
         CMTEOF
 
-        # Replace variables inside the comment body
-        sed -i "s/\$BASE_REF/${{ inputs.base-sha }}/g" /tmp/dco_comment.md
-        sed -i "s/\$HEAD_REF/${{ inputs.head-sha }}/g" /tmp/dco_comment.md
-
-        gh pr comment "$PR" --repo "$REPO" --body-file /tmp/dco_comment.md
-        echo "Posted DCO failure comment to PR #$PR"
+        # Upsert: update an existing block comment instead of stacking (issue #1498)
+        EXISTING_ID=$(gh api "repos/$REPO/issues/$PR/comments?per_page=100" \
+          --jq '.[] | select(.body | contains("misakanet-dco-block")) | .id' 2>/dev/null | tail -n1)
+        if [ -n "$EXISTING_ID" ]; then
+          gh api -X PATCH "repos/$REPO/issues/comments/$EXISTING_ID" \
+            -f "body=@/tmp/dco_comment.md" >/dev/null 2>&1 \
+            && echo "Updated DCO block comment on PR #$PR" \
+            || gh pr comment "$PR" --repo "$REPO" --body-file /tmp/dco_comment.md 2>/dev/null \
+            || echo "::warning::Could not update/post DCO comment on PR #$PR (read-only fork run?)"
+        else
+          gh pr comment "$PR" --repo "$REPO" --body-file /tmp/dco_comment.md 2>/dev/null \
+            || echo "::warning::Could not post DCO comment on PR #$PR (read-only fork run?)"
+        fi

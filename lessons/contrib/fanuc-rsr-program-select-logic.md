@@ -32,6 +32,11 @@ solution: '1. 使用 RSR 编号命名程序（如 RSR0112）
   5. 用 DO/DI 信号与 PLC 交互（如通知完成、等待许可）
 
   6. 循环逻辑：寄存器递增遍历位置，达到上限时通知 PLC'
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## FANUC RSR 程序的 OFFSET 与 SELECT 逻辑

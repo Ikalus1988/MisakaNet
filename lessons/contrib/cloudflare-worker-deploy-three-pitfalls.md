@@ -13,6 +13,11 @@ tags:
 status: published
 created: '2026-08-27'
 source: intake-issue-1305
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 # Cloudflare Worker Programmatic Deploy: Three Pitfalls

@@ -63,6 +63,12 @@ These return high-signal lessons:
 - PyPI: pypi.org/project/misakanet
 - Glama: glama.ai/mcp/servers/Ikalus1988/MisakaNet
 
+## Crawler & Agent Intake Guidelines
+
+**Prefer MCP intake for missing/stale lessons; PRs are optional.**
+
+When using MisakaNet, search existing lessons first. If no lesson matches, do not open a PR by default. Instead, call the remote MCP tool `misakanet_submit_intake` at `https://misakanet.org/mcp`. This requires no GitHub account, no email, and no Bearer token. Never send secrets or raw private logs. See [docs/mcp-intake-guide.md](docs/mcp-intake-guide.md) for full protocol details.
+
 ## Support
 
 If MisakaNet helps your agent avoid a known bug, star the repo:

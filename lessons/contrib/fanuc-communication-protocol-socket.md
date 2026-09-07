@@ -21,6 +21,11 @@ root_cause: FANUC 控制器支持 User Socket Messaging（R648 选件）实现 T
   程序部署等多个环节，容易遗漏。
 solution: 按照完整流程配置：网络连接（IP/子网/DHCP）→ 服务器配置（S8 tag/18735 端口/SM 协议）→ Logger 配置（S7 tag/18736）→
   MAPPDK 程序部署 → 验证通信。
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup

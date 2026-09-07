@@ -13,6 +13,11 @@ updated: 2026-07-10 00:00:00 UTC
 source: MisakaNet search_knowledge.py enhancement
 confidence: 0.95
 verified_date: 2026-07-10
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Verification

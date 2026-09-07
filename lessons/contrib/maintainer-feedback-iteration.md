@@ -11,6 +11,11 @@ status: draft
 created: '2026-07-15'
 source: Multiple PR review cycles
 confidence: 0.95
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem

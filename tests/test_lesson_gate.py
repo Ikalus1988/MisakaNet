@@ -311,3 +311,62 @@ class TestFakeVerification:
         p = make_lesson(tmp_path, valid_fm(), content)
         errors = validate_file(p, REPO)
         assert not any("placeholder" in e.lower() for e in errors)
+
+
+# ── Existing-file advisory mode + mirror dedupe (#1506) ─────────────
+class TestExistingMode:
+    def test_existing_mode_demotes_legacy_gaps_to_warnings(self, tmp_path):
+        """A legacy file (missing evidence_level/tags, short body) fails the
+        strict gate but only warns in --existing mode."""
+        fm = valid_fm()
+        del fm["evidence_level"]
+        del fm["tags"]
+        content = "tiny body"
+        p = make_lesson(tmp_path, fm, content)
+        strict = validate_file(p, REPO)
+        assert any("evidence_level" in e for e in strict)
+        assert any("tags" in e for e in strict)
+        assert not all(e.startswith("[warn]") for e in strict)
+        relaxed = validate_file(p, REPO, existing=True)
+        assert relaxed, "findings still surface for review"
+        assert all(e.startswith("[warn]") for e in relaxed)
+        assert not [e for e in relaxed if "evidence_level" in e and not e.startswith("[warn]")]
+
+    def test_cli_existing_mode_exits_zero(self, tmp_path):
+        fm = valid_fm()
+        del fm["evidence_level"]
+        p = make_lesson(tmp_path, fm, long_content())
+        r = subprocess.run(
+            [sys.executable, str(REPO / "scripts" / "lesson_gate.py"), "--existing", str(p)],
+            capture_output=True, text=True,
+        )
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert "legacy" in r.stdout or "WARN" in r.stdout
+
+    def test_cli_strict_mode_still_exits_one(self, tmp_path):
+        fm = valid_fm()
+        del fm["evidence_level"]
+        p = make_lesson(tmp_path, fm, long_content())
+        r = subprocess.run(
+            [sys.executable, str(REPO / "scripts" / "lesson_gate.py"), str(p)],
+            capture_output=True, text=True,
+        )
+        assert r.returncode == 1, r.stdout + r.stderr
+
+
+class TestMirrorDuplicateTitles:
+    DCO_TITLE = "DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation"
+    DCO_STEM = "dco-auto-fix-workflow"  # core/ + en/ mirror pair on main
+
+    def test_same_stem_mirror_not_duplicate(self):
+        """core/dco-auto-fix-workflow.md vs en/dco-auto-fix-workflow.md is an
+        i18n mirror pair (same stem) — canonical dedupe handles it."""
+        core = REPO / "lessons" / "core" / f"{self.DCO_STEM}.md"
+        assert core.exists()
+        assert not find_duplicate_title(self.DCO_TITLE, REPO, exclude_file=core)
+
+    def test_different_stem_same_title_cross_dir_still_duplicate(self):
+        """A NEW lesson with the DCO title but a different stem must still be
+        flagged as a duplicate even if it lives in a different subdir."""
+        other = REPO / "lessons" / "contrib" / "zzz-unrelated-stem-gate-test.md"
+        assert find_duplicate_title(self.DCO_TITLE, REPO, exclude_file=other)

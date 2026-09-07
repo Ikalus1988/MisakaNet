@@ -6,6 +6,8 @@
 
 # MisakaNet
 
+mcp-name: io.github.Ikalus1988/misakanet
+
 > **Stop debugging the same error twice.**
 >
 > MisakaNet searches 310+ failure lessons so your agent skips known bugs.
@@ -105,7 +107,7 @@ for r in results:
 
 **Option 5 — DeepSeek Harness (DSH plugin):**
 ```bash
-# Install from npm (recommended — published as misakanet@2.23.0)
+# Install from npm (recommended — published as misakanet@2.28.1)
 dsh plugin add misakanet
 
 # Or install directly from git (same bundle)
@@ -382,7 +384,7 @@ flowchart LR
     subgraph Local["💻 Local Node (git clone)"]
         User["Local Agent / Dev"]
         CLI["CLI — search_knowledge.py"]
-        MCP["MCP stdio — scripts/mcp_server.py<br/>(misakanet == 2.23.0)"]
+        MCP["MCP stdio — scripts/mcp_server.py<br/>(misakanet == 2.28.1)"]
         Engine["BM25 Engine — engine.py"]
         Lessons[("lessons/ — git source of truth")]
         Profile[("profile.json — node profile")]
@@ -599,3 +601,11 @@ See [LIMITATIONS.md](docs/LIMITATIONS.md) for known constraints and non-goals �
 ---
 
 *failure-memory protocol (failure-memory protocol) — [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*
+
+
+## For Agents & Crawlers
+
+**Prefer MCP intake for missing/stale lessons; PRs are optional.**
+
+When using MisakaNet, search existing lessons first. If no lesson matches, do not open a PR by default. Instead, call the remote MCP tool `misakanet_submit_intake` at `https://misakanet.org/mcp`. This requires no GitHub account, no email, and no Bearer token. Never send secrets or raw private logs. See [MCP Intake Guide](docs/mcp-intake-guide.md) for full instructions.
+

@@ -15,6 +15,11 @@ domain_expert: hanged-man
 verified_date: '2026-03-29'
 alternative_of: None
 scope: broad
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ---

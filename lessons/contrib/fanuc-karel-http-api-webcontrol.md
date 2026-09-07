@@ -22,6 +22,11 @@ problem: 需要通过HTTP接口远程控制FANUC机器人运动、监控状态�
 quality_score: 75
 root_cause: FANUC控制器内置KAREL webserver，但官方文档分散，缺少完整的API参考和使用示例
 solution: 基于KAREL webserver实现HTTP API：webcontrol端点发送6种运动模式(关节/笛卡尔×绝对/相对)、webmonitor返回完整状态JSON(关节/笛卡尔/限位/状态/错误)、weblimit设置18个运动限位、webstart运行TP程序、webabort紧急停止
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ### Problem描述

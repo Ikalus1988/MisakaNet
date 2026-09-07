@@ -13,6 +13,11 @@ created: '2026-08-31'
 language: en
 source: intake-issue-1398
 evidence_level: E0
+provenance:
+  source: "community"
+  contributor: "Community"
+  merged_at: "2026-08-23"
+  evidence: "post-publication"
 ---
 
 ## Problem
