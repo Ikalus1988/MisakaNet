@@ -103,8 +103,42 @@ def _load_corpus(timeout: int = 60) -> list[dict]:
 
 
 def precheck(error: str, sim_threshold: float) -> dict | None:
-    """全量语料本地打分（title 重叠 ×2 / body 重叠，与 search_knowledge --remote
-    同一数据源）。命中返回最佳课程 dict；无命中/网络失败返回 None。"""
+    """Evaluate error string against failure_patterns and corpus.
+
+    Attempts error-signature lookup via failure_patterns first. If matched,
+    returns the matching lesson with high similarity. Falls back to token
+    overlap scoring if no pattern matches.
+    """
+    try:
+        from misakanet.search.patterns import find_best_pattern_match
+        pat_id, pat_score, pat_desc = find_best_pattern_match(error)
+        if pat_id and pat_score >= 0.70:
+            corpus = _load_corpus()
+            for doc in corpus:
+                doc_id = doc.get("id") or doc.get("slug") or Path(doc.get("path", "")).stem
+                if doc_id == pat_id:
+                    res = dict(doc)
+                    res["_sim"] = max(pat_score, sim_threshold)
+                    res["_matched_pattern"] = pat_desc
+                    return res
+            local_lessons_file = Path(__file__).resolve().parent.parent / "data" / "lessons.json"
+            if local_lessons_file.exists():
+                try:
+                    local_data = json.loads(local_lessons_file.read_text(encoding="utf-8"))
+                    lessons_list = local_data.get("lessons", []) if isinstance(local_data, dict) else local_data
+                    for doc in lessons_list:
+                        doc_id = doc.get("id") or doc.get("slug") or Path(doc.get("path", "")).stem
+                        if doc_id == pat_id:
+                            res = dict(doc)
+                            res["_sim"] = max(pat_score, sim_threshold)
+                            res["_matched_pattern"] = pat_desc
+                            return res
+                except Exception:
+                    pass
+            return {"id": pat_id, "title": pat_id, "_sim": pat_score, "_matched_pattern": pat_desc}
+    except Exception:
+        pass
+
     q = _tokens(error)
     if not q:
         return None

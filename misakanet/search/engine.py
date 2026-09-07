@@ -494,12 +494,15 @@ def _rank_docs_impl(
     bm25_w = weights.get("bm25_weight", cfg.bm25_weight) if weights else cfg.bm25_weight
     meta_w = weights.get("metadata_weight", cfg.metadata_weight) if weights else cfg.metadata_weight
     base_w = weights.get("baseline_weight", cfg.baseline_weight) if weights else cfg.baseline_weight
+    from misakanet.search.patterns import get_pattern_bonus, load_failure_patterns
+    patterns_index = load_failure_patterns()
     scored = [
         (
             bm25_w * bm25_norm[i]
             + meta_w * _metadata_bonus(query, d)
             + base_w * d.score_baseline
-            + _compute_boost(d),
+            + _compute_boost(d)
+            + (1.5 * get_pattern_bonus(query, d.filepath.stem, patterns_index, d.content)[0]),
             d,
         )
         for i, d in enumerate(docs)
@@ -624,6 +627,11 @@ def _get_match_reason(query: str, doc: CachedDoc, score: float | None = None) ->
     """Show why this result was matched, including field names and terms."""
     reasons = []
 
+    from misakanet.search.patterns import get_pattern_bonus
+    pat_score, pat_desc = get_pattern_bonus(query, doc.filepath.stem, content=doc.content)
+    if pat_score >= 0.70 and pat_desc:
+        reasons.append(f"failure_pattern '{pat_desc}'")
+
     for term in _matching_terms(doc.title, query):
         reasons.append(f"title keyword '{term}'")
 
@@ -696,6 +704,8 @@ def _classify_confidence(
     reasons_lower = match_reasons.lower()
 
     # High confidence signals
+    if "failure_pattern" in reasons_lower:
+        return "high"
     has_error_code = bool(_ERROR_CODE_PATTERN.search(doc.title + " " + doc.content[:500]))
     has_actionable = bool(_ACTIONABLE_SIGNALS.search(content_lower))
     has_verification = "## verification" in content_lower or "## verify" in content_lower
@@ -812,6 +822,8 @@ def _get_why_matched(match_reasons: str) -> dict:
             match_fields.append("tags")
         elif part.startswith("content"):
             match_fields.append("content")
+        elif part.startswith("failure_pattern"):
+            match_fields.append("failure_pattern")
         elif part == "broad":
             match_fields.append("broad")
 
