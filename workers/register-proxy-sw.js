@@ -218,7 +218,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_submit_intake",
-    description: "[OPEN TRIAGE / INTAKE] Use misakanet_submit_intake when you only have a partial failure description or want to ask a question; use misakanet_write_lesson (Bearer required) once you already have structured title/domain/problem/root_cause/fix. submit_intake is open, rate-limited, no Bearer — output is a GitHub issue (intake,mcp-intake,pending-review) for maintainer triage, NOT a merged lesson.\nRouting: if you are ASKING a how-to / knowledge question (not reporting a failure), set kind=\"question\" — it opens a [Question] issue that maintainers answer/FAQ instead of scoring it as a lesson. If kind is omitted, the server auto-detects question-shaped content (no error/fix/verification + question phrasing).\nPull answers later: questions are answered asynchronously (hours to days). Re-call this tool with the SAME problem text later — the dedup response returns the maintainer's answer once it exists ({answered:true, answer}); or re-run misakanet_search on the topic for FAQ hits.\nReturns: object {submitted: boolean, intake_id, status, redactions_applied, quality_score, receipt, routing:{kind, auto_detected}, follow_up?}; duplicates: {submitted: false, duplicate: true, previous_issue} or {answered: true, answer} for answered questions.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code'); misakanet_submit_intake(kind='question', problem='How do I configure MCP auth in production?', source='claude-code')",
+    description: "[OPEN TRIAGE / INTAKE] Use misakanet_submit_intake when you only have a partial failure description or want to ask a question; use misakanet_write_lesson (Bearer required) once you already have structured title/domain/problem/root_cause/fix. submit_intake is open, rate-limited, no Bearer — output is a GitHub issue (intake,mcp-intake,pending-review) for maintainer triage, NOT a merged lesson.\nRouting: if you are ASKING a how-to / knowledge question (not reporting a failure), set kind=\"question\" — it opens a [Question] issue that maintainers answer/FAQ instead of scoring it as a lesson. If kind is omitted, the server auto-detects question-shaped content (no error/fix/verification + question phrasing).\nPull answers later: questions are answered asynchronously (hours to days). Re-call this tool with the SAME problem text later — the dedup response returns the maintainer's answer once it exists ({answered:true, answer}); or re-run misakanet_search on the topic for FAQ hits.\nReturns: object {submitted: boolean, intake_id, status, redactions_applied, quality_score, receipt, routing:{kind, auto_detected}, follow_up?}; duplicates: {submitted: false, duplicate: true, already_have: {lesson_id, url}} for canonical near-duplicates of existing lessons, {submitted: false, duplicate: true, previous_issue} for duplicate issues, or {answered: true, answer} for answered questions.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code'); misakanet_submit_intake(kind='question', problem='How do I configure MCP auth in production?', source='claude-code')",
     inputSchema: {
       type: "object",
       properties: {
@@ -244,6 +244,15 @@ const MCP_TOOLS = [
       properties: {
         submitted: { type: "boolean" },
         duplicate: { type: "boolean" },
+        already_have: {
+          type: "object",
+          properties: {
+            lesson_id: { type: "string" },
+            url: { type: "string" },
+            title: { type: "string" },
+            sim: { type: "number" },
+          },
+        },
         answered: { type: "boolean" },
         pending: { type: "boolean" },
         intake_id: { type: "string" },
@@ -600,6 +609,170 @@ async function loadBM25Index(env) {
     debugLog(env, 1, "Failed to load BM25 index", { error: e.message });
   }
   return null;
+}
+
+const CANONICAL_DEDUP_STOPWORDS = new Set([
+  "error", "errors", "exception", "exceptions", "failed", "fail", "fails",
+  "failure", "fatal", "issue", "issues", "problem", "problems", "boom",
+  "generic", "occurred", "something", "went", "wrong", "the", "and",
+  "with", "after", "when", "while", "from", "this",
+]);
+
+/**
+ * Extracts normalized tokens for canonical near-duplicate detection.
+ * Matches words with length >= 3 or CJK sequences with length >= 2, excluding stop words.
+ *
+ * @param {string} text
+ * @returns {Set<string>}
+ */
+function extractCanonicalTokens(text) {
+  if (!text) return new Set();
+  const lower = String(text).toLowerCase();
+  const matches = lower.match(/[a-zA-Z][a-zA-Z0-9_]{2,}|[\u4e00-\u9fff]{2,}/g) || [];
+  const tokens = new Set();
+  for (const match of matches) {
+    if (!CANONICAL_DEDUP_STOPWORDS.has(match)) {
+      tokens.add(match);
+    }
+  }
+  return tokens;
+}
+
+/**
+ * Calculates Jaccard token overlap similarity between two token sets.
+ *
+ * @param {Set<string>} setA
+ * @param {Set<string>} setB
+ * @returns {number}
+ */
+function calculateTokenSimilarity(setA, setB) {
+  if (!setA || !setB || !setA.size || !setB.size) return 0.0;
+  let intersection = 0;
+  for (const token of setA) {
+    if (setB.has(token)) intersection++;
+  }
+  return intersection / Math.max(setA.size, setB.size);
+}
+
+/**
+ * Scores a lesson against query tokens using title overlap (weighted 2x) and body overlap.
+ *
+ * @param {Set<string>} queryTokens
+ * @param {object} lesson
+ * @returns {number}
+ */
+function scoreLessonSimilarity(queryTokens, lesson) {
+  if (!lesson || lesson.status === "archived") return 0.0;
+  if (lesson.path && lesson.path.includes("_archive/")) return 0.0;
+
+  const titleText = lesson.title || lesson.name || lesson.id || "";
+  const titleTokens = extractCanonicalTokens(titleText);
+  const bodyText = (lesson.description || lesson.summary || lesson.problem || "").slice(0, 500);
+  const bodyTokens = extractCanonicalTokens(bodyText);
+
+  const titleScore = calculateTokenSimilarity(queryTokens, titleTokens) * 2.0;
+  const bodyScore = calculateTokenSimilarity(queryTokens, bodyTokens);
+  return Math.max(titleScore, bodyScore);
+}
+
+/**
+ * Identifies whether a problem or error matches an existing canonical lesson.
+ *
+ * @param {Array<object>} lessons
+ * @param {string} problem
+ * @param {string} error
+ * @param {number} [threshold=0.30]
+ * @returns {object|null}
+ */
+function findCanonicalDuplicate(lessons, problem, error, threshold = 0.30) {
+  if (!Array.isArray(lessons) || lessons.length === 0) return null;
+  const candidates = [problem, error, [problem, error].filter(Boolean).join(" ")].filter(Boolean);
+  let bestLesson = null;
+  let bestScore = 0.0;
+
+  for (const text of candidates) {
+    const queryTokens = extractCanonicalTokens(text);
+    if (!queryTokens.size) continue;
+    for (const lesson of lessons) {
+      const score = scoreLessonSimilarity(queryTokens, lesson);
+      if (score > bestScore) {
+        bestScore = score;
+        bestLesson = lesson;
+      }
+    }
+  }
+
+  if (bestLesson && bestScore >= threshold) {
+    const lessonId = bestLesson.id || "";
+    const lessonUrl = (bestLesson.url && bestLesson.url.startsWith("http"))
+      ? bestLesson.url
+      : `https://misakanet.org/lessons/${lessonId}/`;
+    return {
+      id: lessonId,
+      title: bestLesson.title || lessonId,
+      url: lessonUrl,
+      sim: Math.round(bestScore * 100) / 100,
+    };
+  }
+  return null;
+}
+
+/**
+ * Increments quota and rate tracking counters per intake source in KV.
+ *
+ * @param {object} env
+ * @param {string} source
+ * @param {string} [status="submitted"]
+ * @returns {Promise<void>}
+ */
+async function recordSourceCount(env, source, status = "submitted") {
+  if (!env?.MISAKANET_KV) return;
+  const safeSource = String(source || "mcp").trim().slice(0, 64) || "mcp";
+  const today = new Date().toISOString().slice(0, 10);
+  const dailyKey = `intake_source:${safeSource}:${today}`;
+  const totalKey = `intake_source:${safeSource}:total`;
+  const statusKey = `intake_source:${safeSource}:${today}:${status}`;
+  try {
+    const [dailyVal, totalVal, statusVal] = await Promise.all([
+      env.MISAKANET_KV.get(dailyKey, "text"),
+      env.MISAKANET_KV.get(totalKey, "text"),
+      env.MISAKANET_KV.get(statusKey, "text"),
+    ]);
+    const dailyCount = (parseInt(dailyVal, 10) || 0) + 1;
+    const totalCount = (parseInt(totalVal, 10) || 0) + 1;
+    const statusCount = (parseInt(statusVal, 10) || 0) + 1;
+    await Promise.all([
+      env.MISAKANET_KV.put(dailyKey, String(dailyCount), { expirationTtl: 86400 * 30 }),
+      env.MISAKANET_KV.put(totalKey, String(totalCount)),
+      env.MISAKANET_KV.put(statusKey, String(statusCount), { expirationTtl: 86400 * 30 }),
+    ]);
+  } catch (_) {}
+}
+
+/**
+ * Retrieves the recorded daily and total intake count for a source.
+ *
+ * @param {object} env
+ * @param {string} source
+ * @param {string} [date]
+ * @returns {Promise<{daily: number, total: number}>}
+ */
+async function getSourceCount(env, source, date) {
+  if (!env?.MISAKANET_KV) return { daily: 0, total: 0 };
+  const safeSource = String(source || "mcp").trim().slice(0, 64) || "mcp";
+  const day = date || new Date().toISOString().slice(0, 10);
+  try {
+    const [daily, total] = await Promise.all([
+      env.MISAKANET_KV.get(`intake_source:${safeSource}:${day}`, "text"),
+      env.MISAKANET_KV.get(`intake_source:${safeSource}:total`, "text"),
+    ]);
+    return {
+      daily: parseInt(daily, 10) || 0,
+      total: parseInt(total, 10) || 0,
+    };
+  } catch (_) {
+    return { daily: 0, total: 0 };
+  }
 }
 
 // Fetch a single lesson markdown from GitHub
@@ -1106,6 +1279,36 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       }
     }
 
+    if (kind !== "question") {
+      let lessons = null;
+      try {
+        lessons = await loadLessons(env);
+      } catch (_) {
+        lessons = null;
+      }
+      if (Array.isArray(lessons) && lessons.length > 0) {
+        const canonicalDup = findCanonicalDuplicate(lessons, safeProblem, safeError);
+        if (canonicalDup) {
+          await recordSourceCount(env, args.source, "duplicate");
+          if (ctx) ctx.waitUntil(trackUsage(env, ctx, "intake_duplicate", {
+            query: String(args.source || "mcp").slice(0, 64),
+            lesson_id: canonicalDup.id,
+          }));
+          return {
+            submitted: false,
+            duplicate: true,
+            already_have: {
+              lesson_id: canonicalDup.id,
+              url: canonicalDup.url,
+              title: canonicalDup.title,
+              sim: canonicalDup.sim,
+            },
+            note: `A canonical lesson (${canonicalDup.id}) already covers this topic. See: ${canonicalDup.url}`,
+          };
+        }
+      }
+    }
+
     const bodyParts = [
       `**Kind:** ${kind}`,
       `**Source:** ${args.source || "mcp"}`,
@@ -1165,6 +1368,11 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
           await env.MISAKANET_KV.put(dedupKey, data.html_url, { expirationTtl: 86400 * 7 });
         } catch (_) {}
       }
+      await recordSourceCount(env, args.source, "submitted");
+      if (ctx) ctx.waitUntil(trackUsage(env, ctx, "intake_submit", {
+        query: String(args.source || "mcp").slice(0, 64),
+        domain: kind,
+      }));
       // PRD ⑤ §9: persist the question row — durable state + answer delivery
       // (best-effort: recordQuestion swallows D1 errors; the issue is already
       // created, so a D1 miss never fails the intake).
@@ -1701,6 +1909,7 @@ async function fetchLessonFromD1(env, lessonPath, lessonId) {
 
 // Unified lesson source: D1 first (real-time, PRD ④), GitHub via KV cache fallback.
 async function loadLessons(env, filters = {}) {
+  if (Array.isArray(env?.LESSONS)) return env.LESSONS;
   // Filtered queries must go to D1 (GitHub proxy can't filter). Unfiltered
   // keeps the D1-first / GitHub fallback behavior, with a KV cache over the
   // D1 read (PRD ④ #1358) to keep the hot path cheap — D1 data changes only
@@ -3268,4 +3477,11 @@ export {
   recordUnsolvedSearch,
   sanitizeReasonKey,
   hashString,
+  CANONICAL_DEDUP_STOPWORDS,
+  extractCanonicalTokens,
+  calculateTokenSimilarity,
+  scoreLessonSimilarity,
+  findCanonicalDuplicate,
+  recordSourceCount,
+  getSourceCount,
 };
