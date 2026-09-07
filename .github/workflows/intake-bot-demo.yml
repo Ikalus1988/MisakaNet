@@ -1,0 +1,40 @@
+name: Intake Bot Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      error:
+        description: 'Test error text'
+        required: false
+        default: 'ModuleNotFoundError: No module named requests'
+      mode:
+        description: 'Operation mode'
+        required: false
+        default: 'suggest-only'
+        type: choice
+        options:
+          - suggest-only
+          - suggest-and-intake
+
+  workflow_run:
+    workflows: ["*"]
+    types: [completed]
+
+jobs:
+  intake-demo:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Run intake bot
+        uses: ./.github/actions/misaka-intake-bot
+        id: intake
+        with:
+          mode: ${{ inputs.mode || 'suggest-only' }}
+          error: ${{ inputs.error || '' }}
+          comment-on-pr: 'true'
