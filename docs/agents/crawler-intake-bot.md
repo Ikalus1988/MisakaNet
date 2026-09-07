@@ -1,6 +1,8 @@
 # 设计：把"报错→课程建议→intake"机器人做成可被爬虫仓库复用的 intake bot
 
-> 状态：**设计草案（构思）**，待拍板后按 MVP 落地。
+> 状态：**已批准并拆分落地（2026-09-06）**。MVP：`scripts/intake_bot.py`（merged 255cb557c，
+> 供 zsxh 试点）；分拆 issue：#1524（服务端 search 过滤修复）/ #1525（Action 封装，zsxh 试点）/
+> #1526（intake 服务端去重）/ #1527（error-signature 索引，提命中率）/ #1528（转换回执）。
 > 相关：`.github/workflows/ci-lesson-search.yml`（现内部 CI 失败搜索）、`fatal-guard`（崩溃采集）、
 > MCP `misakanet_search`/`misakanet_submit_intake`、`docs/agents/retrieval-and-contribution.md`、
 > maintenance §11（intake 闭环复核）、`docs/benchmarks/latest.json`（lesson_hit_rate 0.489）。
