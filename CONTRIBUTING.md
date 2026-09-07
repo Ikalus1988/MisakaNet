@@ -89,6 +89,8 @@ When you open a PR, several automated checks run. **These are quality gates, not
 
 > **"auto-merge: fail"** → This is expected for first-time contributors. The maintainer will merge manually after review.
 
+> **First PR checks look grey / "waiting"** → This is GitHub's one-time approval gate for fork PRs: a maintainer must approve workflow runs before CI starts (usually within a day). It is not a problem with your PR — checks will run automatically once approved, and on every push after that.
+
 > **"DCO: fail"** → The ONLY blocker you must fix. Run:
 > ```bash
 > git commit -s --amend --no-edit
