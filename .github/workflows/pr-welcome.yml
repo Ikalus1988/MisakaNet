@@ -54,6 +54,21 @@ jobs:
 
             body.push(
               "",
+              "### ⏳ First PR: CI waits for one-time maintainer approval",
+              "",
+              "On your **first PR from a fork**, GitHub requires a maintainer to approve",
+              "workflow runs before CI can start (a safety gate). Until then checks may show",
+              "as *waiting / grey* — **that is expected, not a problem with your PR**.",
+              "A maintainer usually approves within a day; after that, CI runs automatically",
+              "on every push (including force-pushes).",
+              "",
+              "If you see a red `needs-dco` label or DCO check, fix it now so your PR is",
+              "already green once CI is approved (see above — the label auto-clears after",
+              "you amend + force-push; no empty commit needed)."
+            );
+
+            body.push(
+              "",
               "### Quick Links",
               "",
               "- [Register your node](https://github.com/Ikalus1988/MisakaNet/issues/new?template=register.yml) - get a Misaka ID",
@@ -78,7 +93,7 @@ jobs:
               "  -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"misakanet_submit_intake\",\"arguments\":{\"problem\":\"YOUR PROBLEM\",\"source\":\"your-agent\"}}}'",
               "```",
               "",
-              "CI checks run automatically on every push."
+              "After the one-time approval, CI checks run automatically on every push."
             );
 
             await github.rest.issues.createComment({
