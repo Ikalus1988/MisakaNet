@@ -11,9 +11,10 @@ verification: "metadata-normalized"
 ## 生命周期
 
 ```
-崩溃 → fatal-guard 截获墓碑 JSON
+来源 A：崩溃 → fatal-guard 截获墓碑 JSON
+来源 B：批量失败事件（intake/CI/agent 日志）→ failure_harvest.py 聚簇
            ↓
-    tombstone_to_draft.py 自动生成 draft lesson
+    tombstone_to_draft.py / failure_harvest.py 自动生成 draft lesson
            ↓
     lessons/drafts/lesson-XXXX.md（draft 标签）
            ↓
@@ -34,15 +35,21 @@ verification: "metadata-normalized"
 
 ```yaml
 ---
-title: "Fix: <错误摘要>"
+title: "Fix: <错误摘要>"        # failure_harvest 用 "Harvest: <类名> (<栈>)"
 domain: "<领域>"
 tags: ["draft", "auto-generated", "bounty"]
 status: "draft"
-source: "fatal-guard"
-tombstone_ref: "<原始墓碑 JSON 的 SHA256 或文件路径>"
+source: "fatal-guard | failure-harvest"   # 来源 A / 来源 B
 created: "2026-06-22T00:00:00Z"
 ---
 ```
+
+按来源追加溯源字段：
+
+| source | 溯源字段 | 说明 |
+|---|---|---|
+| `fatal-guard` | `tombstone_ref` + `tombstone_hash` | 原始墓碑 JSON 的 SHA256/路径 |
+| `failure-harvest` | `harvest_ref` + `failure_patterns` + `evidence_level` | 失败簇 id；错误类名/弱信号/栈词（供 #1527 签名索引）；E0=未验证 |
 
 ## 与正式 lesson 的区别
 
