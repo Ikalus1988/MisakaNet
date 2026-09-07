@@ -13,9 +13,10 @@ jobs:
   update-badge:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout main (for script)
+        uses: actions/checkout@v7
         with:
-          ref: data
+          ref: main
           fetch-depth: 1
 
       - uses: actions/setup-python@v7
@@ -24,7 +25,13 @@ jobs:
 
       - name: Fetch Smithery Kin score and write badge JSON
         run: |
-          python3 scripts/update-smithery-badge.py --output badges/smithery.json
+          python3 scripts/update-smithery-badge.py --output /tmp/smithery.json
+
+      - name: Checkout data branch for commit
+        run: |
+          git checkout data
+          mkdir -p badges
+          cp /tmp/smithery.json badges/smithery.json
 
       - name: Commit and push if changed
         run: |
