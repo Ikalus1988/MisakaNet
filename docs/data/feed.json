@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-07T12:46:19.674342+00:00",
+  "generated_at": "2026-09-07T19:14:45.363687+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 11,
+  "item_count": 10,
   "items": [
     {
       "type": "merged_pr",
-      "title": "Fix: [Bounty] Social media promotion post (needs human review)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1522",
-      "timestamp": "2026-09-07T11:11:47Z",
+      "title": "docs: DSH Directory badge + failure-knowledge benchmark swap + failure_harvest smoke guide",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1546",
+      "timestamp": "2026-09-07T17:34:22Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs: add lesson on curl SSL errors behind corporate proxies (rebased)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1532",
-      "timestamp": "2026-09-07T11:11:43Z",
+      "title": "feat(agents): failure_harvest P0 — batch failure clustering to lesson drafts",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1545",
+      "timestamp": "2026-09-07T17:21:15Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs: add lesson on curl SSL errors behind corporate proxies (rebased #1532)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1533",
-      "timestamp": "2026-09-07T11:11:39Z",
+      "title": "feat(agents): intake-bot decision benchmark — offline, CI-gated (replaces external pilot)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1543",
+      "timestamp": "2026-09-07T16:20:23Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs: add lesson on pip SSL timeout behind corporate proxies (rebased)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1531",
-      "timestamp": "2026-09-07T05:43:37Z",
+      "title": "feat(agents): internal dogfood (ci-lesson-search→v1.0) + server intake dedupe gate (#1526)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1540",
+      "timestamp": "2026-09-07T15:56:19Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat: package intake-bot as reusable GitHub Action (closes #1525)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1529",
-      "timestamp": "2026-09-07T02:01:01Z",
+      "title": "feat(agents): intake-bot v1.0 — stack-aware hits, noise gate, suggest-only, offline tests (#1525)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1539",
+      "timestamp": "2026-09-07T15:32:25Z",
       "source": "github"
     },
     {
@@ -54,22 +54,6 @@
       "timestamp": "2026-09-05",
       "domain": "python",
       "source": "lessons"
-    },
-    {
-      "type": "challenge",
-      "title": "[Bounty] dsh plugin integration test suite",
-      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1403",
-      "labels": [
-        "good first issue",
-        "area:tests",
-        "ready",
-        "bounty",
-        "agent-friendly",
-        "has-test",
-        "status:competition"
-      ],
-      "timestamp": "2026-09-01T08:41:03Z",
-      "source": "github"
     },
     {
       "type": "lesson",
