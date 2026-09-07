@@ -1,0 +1,68 @@
+name: Intake Conversion Receipt
+
+on:
+  issues:
+    types: [closed, labeled]
+  push:
+    branches: [main]
+    paths:
+      - 'lessons/**'
+      - 'data/lessons.json'
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Intake issue number (optional, for manual run)'
+        required: false
+        type: string
+      lesson_id:
+        description: 'Lesson ID (optional)'
+        required: false
+        type: string
+      source:
+        description: 'Source identifier (optional)'
+        required: false
+        type: string
+      evidence_level:
+        description: 'Evidence level (default E2)'
+        required: false
+        default: 'E2'
+        type: string
+
+jobs:
+  emit-receipt:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Emit Intake Receipts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INTAKE_RECEIPT_WEBHOOK_URL: ${{ secrets.INTAKE_RECEIPT_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.issue_number }}" ] && [ -n "${{ github.event.inputs.lesson_id }}" ]; then
+            python3 scripts/intake_receipt.py --manual \
+              --issue "${{ github.event.inputs.issue_number }}" \
+              --lesson "${{ github.event.inputs.lesson_id }}" \
+              --source "${{ github.event.inputs.source || 'manual' }}" \
+              --evidence "${{ github.event.inputs.evidence_level || 'E2' }}"
+          else
+            python3 scripts/intake_receipt.py --emit
+          fi
+
+      - name: Commit Updated Source Ledger
+        run: |
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.dev"
+          git add data/source_ledger.json
+          git diff --cached --quiet || git commit -s -m "chore(receipt): update intake source ledger [skip ci]"
+          git push || true

@@ -177,6 +177,15 @@ def main():
         confidence = meta.get("confidence", 0.5)
         if not isinstance(confidence, (int, float)):
             confidence = 0.5
+        source = meta.get("source", "")
+        intake_issue = meta.get("intake_issue")
+        if intake_issue is not None:
+            digits = re.findall(r"\d+", str(intake_issue))
+            intake_issue = int(digits[0]) if digits else str(intake_issue)
+        elif isinstance(source, str) and re.match(r"^(?:mcp-intake|issue)-(\d+)$", source):
+            intake_issue = int(re.findall(r"\d+", source)[0])
+        intake_id = meta.get("intake_id") or meta.get("source_id", "") or (f"issue-{intake_issue}" if intake_issue else "")
+
         entries.append({
             "id": f.stem,
             "title": title,
@@ -192,8 +201,11 @@ def main():
             "environment_version": "",
             "confidence": confidence,
             "status": status,
+            "source": source,
+            "intake_issue": intake_issue,
+            "intake_id": intake_id,
             "evidence_refs": meta.get("evidence_refs", []),
-                "supersedes": meta.get("supersedes", ""),
+            "supersedes": meta.get("supersedes", ""),
             "verified": verified,
             "evidence_level": evidence_level,
             "evidence_source": evidence_source,

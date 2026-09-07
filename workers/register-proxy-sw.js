@@ -357,6 +357,45 @@ const MCP_TOOLS = [
       },
     },
   },
+  {
+    name: "misakanet_intake_receipt",
+    description: "[READ-ONLY RECEIPT] Query conversion receipt and quality outcome for an intake issue. External crawlers and agents use this to verify if an intake has been converted/promoted to a published lesson, inspect its assigned evidence level, and tune their collection strategy. No auth required (read-only, rate-limited).\nReturns: object {found: boolean, intake_id: string, status: 'promoted'|'pending_review'|'not_found', lesson?: {id, title, url, evidence_level}, evidence_level?: string, receipt_id?: string, note?: string}.\nExample: misakanet_intake_receipt(intake_id='issue-1530')",
+    inputSchema: {
+      type: "object",
+      properties: {
+        intake_id: { type: "string", description: "Required: Intake identifier (e.g. 'issue-1530' or '1530')." },
+        source: { type: "string", description: "Optional: source identifier for verification." },
+      },
+      required: ["intake_id"],
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        found: { type: "boolean" },
+        intake_id: { type: "string" },
+        status: { type: "string", enum: ["promoted", "pending_review", "not_found"] },
+        lesson: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            title: { type: "string" },
+            url: { type: "string" },
+            evidence_level: { type: "string" },
+          },
+        },
+        evidence_level: { type: "string" },
+        receipt_id: { type: "string" },
+        note: { type: "string" },
+        error: { type: "string" },
+      },
+    },
+  },
 ];
 
 const MCP_PROTOCOL_VERSION = "2025-06-18";
@@ -1207,6 +1246,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
           issueUrl: data.html_url,
         });
       }
+      if (args.source && env.MISAKANET_KV) {
+        try {
+          const sk = `intake_source_submitted:${String(args.source).slice(0, 40)}`;
+          const sn = parseInt((await env.MISAKANET_KV.get(sk, "text")) || "0", 10) || 0;
+          await env.MISAKANET_KV.put(sk, String(sn + 1), { expirationTtl: 86400 * 30 });
+        } catch (_) {}
+      }
       return {
         submitted: true,
         intake_id: `issue-${data.number}`,
@@ -1230,6 +1276,72 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     } catch (e) {
       clearTimeout(timeoutId);
       return { error: `Submit failed: ${e.message}` };
+    }
+  }
+
+  if (toolName === "misakanet_intake_receipt") {
+    const intakeIdRaw = String(args.intake_id || "").trim();
+    if (!intakeIdRaw) {
+      return { error: "intake_id is required" };
+    }
+    const issueMatch = intakeIdRaw.match(/\d+/);
+    const issueNum = issueMatch ? parseInt(issueMatch[0], 10) : null;
+    const intakeId = issueNum ? `issue-${issueNum}` : intakeIdRaw;
+
+    if (env.MISAKANET_KV) {
+      try {
+        const cached = await env.MISAKANET_KV.get(`intake_receipt:${intakeId}`, "json");
+        if (cached) return cached;
+      } catch (_) {}
+    }
+
+    try {
+      const lessons = await loadLessons(env, {});
+      let matchedLesson = null;
+      for (const l of (lessons || [])) {
+        const lIntake = l.intake_issue || (l.intake_id ? String(l.intake_id).match(/\d+/) : null);
+        const lIntakeNum = lIntake ? (typeof lIntake === "number" ? lIntake : parseInt(String(lIntake).match(/\d+/)?.[0] || "0", 10)) : null;
+        if (issueNum && lIntakeNum === issueNum) {
+          matchedLesson = l;
+          break;
+        }
+        if (l.intake_id && l.intake_id === intakeId) {
+          matchedLesson = l;
+          break;
+        }
+      }
+
+      if (matchedLesson) {
+        const receipt = {
+          found: true,
+          intake_id: intakeId,
+          status: "promoted",
+          lesson: {
+            id: matchedLesson.id,
+            title: matchedLesson.title || matchedLesson.id,
+            url: `https://misakanet.org/lessons/${matchedLesson.id}/`,
+            evidence_level: matchedLesson.evidence_level || "E0",
+          },
+          evidence_level: matchedLesson.evidence_level || "E0",
+          receipt_id: `rcpt-${issueNum || intakeIdRaw}-${matchedLesson.id}`,
+          note: "Intake successfully converted to published lesson.",
+        };
+        if (env.MISAKANET_KV) {
+          try {
+            await env.MISAKANET_KV.put(`intake_receipt:${intakeId}`, JSON.stringify(receipt), { expirationTtl: 86400 * 30 });
+          } catch (_) {}
+        }
+        return receipt;
+      }
+
+      return {
+        found: true,
+        intake_id: intakeId,
+        status: "pending_review",
+        note: "Intake has not yet been promoted to a published lesson.",
+      };
+    } catch (e) {
+      return { error: `Receipt lookup failed: ${e.message}` };
     }
   }
 

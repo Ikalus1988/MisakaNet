@@ -1,0 +1,615 @@
+{
+  "_schema": "1.0",
+  "_description": "MisakaNet intake source ledger — tracks submissions, deduplications, promotions, and receipts per source.",
+  "_last_updated": "2026-09-07T16:25:52.054626+00:00",
+  "sources": {
+    "mcp-intake-1190": {
+      "source": "mcp-intake-1190",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1190
+      ],
+      "lessons": [
+        {
+          "lesson_id": "aider-api-key-leak",
+          "title": "Aider CLI --api-key parameter leaks API key to history files",
+          "url": "https://misakanet.org/lessons/contrib/aider-api-key-leak.md",
+          "intake_issue": 1190,
+          "evidence_level": "E2",
+          "promoted_at": "2026-09-07T16:19:33.043683+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1190-aider-api-key-leak",
+          "intake_issue": 1190,
+          "lesson_id": "aider-api-key-leak",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.044160+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.043677+00:00",
+      "updated_at": "2026-09-07T16:19:33.044162+00:00"
+    },
+    "mcp-intake-1193": {
+      "source": "mcp-intake-1193",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1193
+      ],
+      "lessons": [
+        {
+          "lesson_id": "aider-litellm-model-name-rejection",
+          "title": "Aider via LiteLLM rejects standard Anthropic model names",
+          "url": "https://misakanet.org/lessons/contrib/aider-litellm-model-name-rejection.md",
+          "intake_issue": 1193,
+          "evidence_level": "E2",
+          "promoted_at": "2026-09-07T16:19:33.044446+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1193-aider-litellm-model-name-rejection",
+          "intake_issue": 1193,
+          "lesson_id": "aider-litellm-model-name-rejection",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.044677+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.044441+00:00",
+      "updated_at": "2026-09-07T16:19:33.044678+00:00"
+    },
+    "mcp-intake-1192": {
+      "source": "mcp-intake-1192",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1192
+      ],
+      "lessons": [
+        {
+          "lesson_id": "aider-windows-unicode-error",
+          "title": "Aider --show-repo-map crashes on Windows with UnicodeEncodeError",
+          "url": "https://misakanet.org/lessons/contrib/aider-windows-unicode-error.md",
+          "intake_issue": 1192,
+          "evidence_level": "E2",
+          "promoted_at": "2026-09-07T16:19:33.044898+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1192-aider-windows-unicode-error",
+          "intake_issue": 1192,
+          "lesson_id": "aider-windows-unicode-error",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.045133+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.044895+00:00",
+      "updated_at": "2026-09-07T16:19:33.045134+00:00"
+    },
+    "mcp-intake-1112": {
+      "source": "mcp-intake-1112",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1112
+      ],
+      "lessons": [
+        {
+          "lesson_id": "bm25-chinese-sliding-window-tuning",
+          "title": "中文 BM25 搜索：滑动窗口子串加分与唯一候选加分",
+          "url": "https://misakanet.org/lessons/contrib/bm25-chinese-sliding-window-tuning.md",
+          "intake_issue": 1112,
+          "evidence_level": "E2",
+          "promoted_at": "2026-09-07T16:19:33.045348+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1112-bm25-chinese-sliding-window-tuning",
+          "intake_issue": 1112,
+          "lesson_id": "bm25-chinese-sliding-window-tuning",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.045556+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.045344+00:00",
+      "updated_at": "2026-09-07T16:19:33.045557+00:00"
+    },
+    "issue-1418": {
+      "source": "issue-1418",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1418
+      ],
+      "lessons": [
+        {
+          "lesson_id": "dsh-plugin-install-github-codeload-timeout",
+          "title": "DSH Plugin Install Failures — GitHub codeload Timeout vs npm Channel",
+          "url": "https://misakanet.org/lessons/contrib/dsh-plugin-install-github-codeload-timeout.md",
+          "intake_issue": 1418,
+          "evidence_level": "E0",
+          "promoted_at": "2026-09-07T16:19:33.045857+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1418-dsh-plugin-install-github-codeload-timeout",
+          "intake_issue": 1418,
+          "lesson_id": "dsh-plugin-install-github-codeload-timeout",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.046152+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.045853+00:00",
+      "updated_at": "2026-09-07T16:19:33.046153+00:00"
+    },
+    "issue-1421": {
+      "source": "issue-1421",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1421
+      ],
+      "lessons": [
+        {
+          "lesson_id": "dsh-plugin-installation-troubleshooting",
+          "title": "DSH Plugin Installation Troubleshooting — Common Failures and Fixes",
+          "url": "https://misakanet.org/lessons/contrib/dsh-plugin-installation-troubleshooting.md",
+          "intake_issue": 1421,
+          "evidence_level": "E1",
+          "promoted_at": "2026-09-07T16:19:33.046451+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1421-dsh-plugin-installation-troubleshooting",
+          "intake_issue": 1421,
+          "lesson_id": "dsh-plugin-installation-troubleshooting",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.046750+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.046448+00:00",
+      "updated_at": "2026-09-07T16:19:33.046751+00:00"
+    },
+    "mcp-intake-1102": {
+      "source": "mcp-intake-1102",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1102
+      ],
+      "lessons": [
+        {
+          "lesson_id": "github-actions-composite-pitfalls",
+          "title": "GitHub Actions composite action 3 个常见陷阱",
+          "url": "https://misakanet.org/lessons/contrib/github-actions-composite-pitfalls.md",
+          "intake_issue": 1102,
+          "evidence_level": "E2",
+          "promoted_at": "2026-09-07T16:19:33.047051+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1102-github-actions-composite-pitfalls",
+          "intake_issue": 1102,
+          "lesson_id": "github-actions-composite-pitfalls",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.047364+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.047047+00:00",
+      "updated_at": "2026-09-07T16:19:33.047365+00:00"
+    },
+    "mcp-intake-1101": {
+      "source": "mcp-intake-1101",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1101
+      ],
+      "lessons": [
+        {
+          "lesson_id": "github-contents-api-pr-pitfalls",
+          "title": "GitHub Contents API PR 提交的 4 个陷阱",
+          "url": "https://misakanet.org/lessons/contrib/github-contents-api-pr-pitfalls.md",
+          "intake_issue": 1101,
+          "evidence_level": "E2",
+          "promoted_at": "2026-09-07T16:19:33.047682+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1101-github-contents-api-pr-pitfalls",
+          "intake_issue": 1101,
+          "lesson_id": "github-contents-api-pr-pitfalls",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.047999+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.047679+00:00",
+      "updated_at": "2026-09-07T16:19:33.048000+00:00"
+    },
+    "mcp-intake-1069": {
+      "source": "mcp-intake-1069",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1069
+      ],
+      "lessons": [
+        {
+          "lesson_id": "github-release-large-asset-download-cn",
+          "title": "GitHub Release 大文件下载在 CN 网络超时：分段并行下载方案",
+          "url": "https://misakanet.org/lessons/contrib/github-release-large-asset-download-cn.md",
+          "intake_issue": 1069,
+          "evidence_level": "E2",
+          "promoted_at": "2026-09-07T16:19:33.048270+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1069-github-release-large-asset-download-cn",
+          "intake_issue": 1069,
+          "lesson_id": "github-release-large-asset-download-cn",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.048543+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.048267+00:00",
+      "updated_at": "2026-09-07T16:19:33.048545+00:00"
+    },
+    "mcp-intake-1114": {
+      "source": "mcp-intake-1114",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1114
+      ],
+      "lessons": [
+        {
+          "lesson_id": "jieba-synonym-expansion-pitfall",
+          "title": "同义词扩展陷阱：jieba.add_word() 改变全局分词行为导致回归",
+          "url": "https://misakanet.org/lessons/contrib/jieba-synonym-expansion-pitfall.md",
+          "intake_issue": 1114,
+          "evidence_level": "E2",
+          "promoted_at": "2026-09-07T16:19:33.048817+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1114-jieba-synonym-expansion-pitfall",
+          "intake_issue": 1114,
+          "lesson_id": "jieba-synonym-expansion-pitfall",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.049093+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.048814+00:00",
+      "updated_at": "2026-09-07T16:19:33.049094+00:00"
+    },
+    "issue-1457": {
+      "source": "issue-1457",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1457
+      ],
+      "lessons": [
+        {
+          "lesson_id": "mcp-question-answer-pull-delivery",
+          "title": "Async question answers are pulled, not pushed (stateless MCP)",
+          "url": "https://misakanet.org/lessons/contrib/mcp-question-answer-pull-delivery.md",
+          "intake_issue": 1457,
+          "evidence_level": "E2",
+          "promoted_at": "2026-09-07T16:19:33.049371+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1457-mcp-question-answer-pull-delivery",
+          "intake_issue": 1457,
+          "lesson_id": "mcp-question-answer-pull-delivery",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.049665+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.049368+00:00",
+      "updated_at": "2026-09-07T16:19:33.049666+00:00"
+    },
+    "issue-1222": {
+      "source": "issue-1222",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1222
+      ],
+      "lessons": [
+        {
+          "lesson_id": "nodejs-missing-require-inside-try-catch",
+          "title": "Node.js missing require inside try/catch silently kills win32 code path",
+          "url": "https://misakanet.org/lessons/contrib/nodejs-missing-require-inside-try-catch.md",
+          "intake_issue": 1222,
+          "evidence_level": "E0",
+          "promoted_at": "2026-09-07T16:19:33.049958+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1222-nodejs-missing-require-inside-try-catch",
+          "intake_issue": 1222,
+          "lesson_id": "nodejs-missing-require-inside-try-catch",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.050259+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.049954+00:00",
+      "updated_at": "2026-09-07T16:19:33.050260+00:00"
+    },
+    "mcp-intake-1113": {
+      "source": "mcp-intake-1113",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1113
+      ],
+      "lessons": [
+        {
+          "lesson_id": "search-evaluation-rank-tracking-bias",
+          "title": "搜索评估陷阱：评估函数先检查标题再检查内容导致 rank 偏差",
+          "url": "https://misakanet.org/lessons/contrib/search-evaluation-rank-tracking-bias.md",
+          "intake_issue": 1113,
+          "evidence_level": "E2",
+          "promoted_at": "2026-09-07T16:19:33.050546+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1113-search-evaluation-rank-tracking-bias",
+          "intake_issue": 1113,
+          "lesson_id": "search-evaluation-rank-tracking-bias",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.050846+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.050542+00:00",
+      "updated_at": "2026-09-07T16:19:33.050847+00:00"
+    },
+    "issue-1223": {
+      "source": "issue-1223",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1223
+      ],
+      "lessons": [
+        {
+          "lesson_id": "windows-ci-splitcommand-backslash-unicode-detached",
+          "title": "Windows CI: splitCommand backslash stripping, UnicodeEncodeError, and detached process failure",
+          "url": "https://misakanet.org/lessons/contrib/windows-ci-splitcommand-backslash-unicode-detached.md",
+          "intake_issue": 1223,
+          "evidence_level": "E3",
+          "promoted_at": "2026-09-07T16:19:33.051144+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1223-windows-ci-splitcommand-backslash-unicode-detached",
+          "intake_issue": 1223,
+          "lesson_id": "windows-ci-splitcommand-backslash-unicode-detached",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.051439+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.051141+00:00",
+      "updated_at": "2026-09-07T16:19:33.051440+00:00"
+    },
+    "mcp-intake-1100": {
+      "source": "mcp-intake-1100",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1100
+      ],
+      "lessons": [
+        {
+          "lesson_id": "yaml-inline-comment-type-coercion",
+          "title": "YAML 内联注释导致类型强制转换失败",
+          "url": "https://misakanet.org/lessons/contrib/yaml-inline-comment-type-coercion.md",
+          "intake_issue": 1100,
+          "evidence_level": "E2",
+          "promoted_at": "2026-09-07T16:19:33.051741+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1100-yaml-inline-comment-type-coercion",
+          "intake_issue": 1100,
+          "lesson_id": "yaml-inline-comment-type-coercion",
+          "channel": "",
+          "emitted_at": "2026-09-07T16:19:33.052045+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:19:33.051737+00:00",
+      "updated_at": "2026-09-07T16:19:33.052046+00:00"
+    },
+    "crawler-a": {
+      "source": "crawler-a",
+      "submitted": 3,
+      "deduped": 0,
+      "promoted": 0,
+      "conversion_rate": 0.0,
+      "intake_issues": [
+        1001,
+        1002
+      ],
+      "lessons": [],
+      "receipts": [],
+      "created_at": "2026-09-07T16:23:31.582392+00:00",
+      "updated_at": "2026-09-07T16:23:31.583747+00:00"
+    },
+    "crawler-b": {
+      "source": "crawler-b",
+      "submitted": 1,
+      "deduped": 3,
+      "promoted": 0,
+      "conversion_rate": 0.0,
+      "intake_issues": [
+        2001
+      ],
+      "lessons": [],
+      "receipts": [],
+      "created_at": "2026-09-07T16:23:31.586668+00:00",
+      "updated_at": "2026-09-07T16:23:31.587100+00:00"
+    },
+    "agent-c": {
+      "source": "agent-c",
+      "submitted": 1,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        3001
+      ],
+      "lessons": [
+        {
+          "lesson_id": "py-async-lock-deadlock",
+          "title": "Async Lock Deadlock",
+          "url": "https://misakanet.org/lessons/py-async-lock-deadlock/",
+          "intake_issue": 3001,
+          "evidence_level": "E3",
+          "promoted_at": "2026-09-07T16:23:31.589710+00:00"
+        }
+      ],
+      "receipts": [],
+      "created_at": "2026-09-07T16:23:31.588762+00:00",
+      "updated_at": "2026-09-07T16:23:31.589710+00:00"
+    },
+    "agent-d": {
+      "source": "agent-d",
+      "submitted": 1,
+      "deduped": 0,
+      "promoted": 0,
+      "conversion_rate": 0.0,
+      "intake_issues": [
+        4001
+      ],
+      "lessons": [],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-4001-py-test-lesson",
+          "intake_issue": 4001,
+          "lesson_id": "py-test-lesson",
+          "channel": "comment",
+          "emitted_at": "2026-09-07T16:23:31.591667+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:23:31.591144+00:00",
+      "updated_at": "2026-09-07T16:23:31.591668+00:00"
+    },
+    "s1": {
+      "source": "s1",
+      "submitted": 2,
+      "deduped": 1,
+      "promoted": 1,
+      "conversion_rate": 0.5,
+      "intake_issues": [
+        101,
+        102
+      ],
+      "lessons": [
+        {
+          "lesson_id": "l1",
+          "title": "l1",
+          "url": "https://misakanet.org/lessons/l1/",
+          "intake_issue": 101,
+          "evidence_level": "E2",
+          "promoted_at": "2026-09-07T16:23:31.595746+00:00"
+        }
+      ],
+      "receipts": [],
+      "created_at": "2026-09-07T16:23:31.594390+00:00",
+      "updated_at": "2026-09-07T16:23:31.595746+00:00"
+    },
+    "s2": {
+      "source": "s2",
+      "submitted": 1,
+      "deduped": 0,
+      "promoted": 0,
+      "conversion_rate": 0.0,
+      "intake_issues": [
+        201
+      ],
+      "lessons": [],
+      "receipts": [],
+      "created_at": "2026-09-07T16:23:31.596564+00:00",
+      "updated_at": "2026-09-07T16:23:31.596568+00:00"
+    },
+    "crawler-gemini": {
+      "source": "crawler-gemini",
+      "submitted": 0,
+      "deduped": 0,
+      "promoted": 1,
+      "conversion_rate": 1.0,
+      "intake_issues": [
+        1528
+      ],
+      "lessons": [
+        {
+          "lesson_id": "py-async-lock-deadlock",
+          "title": "py-async-lock-deadlock",
+          "url": "https://misakanet.org/lessons/py-async-lock-deadlock/",
+          "intake_issue": 1528,
+          "evidence_level": "E3",
+          "promoted_at": "2026-09-07T16:25:52.053893+00:00"
+        }
+      ],
+      "receipts": [
+        {
+          "receipt_id": "rcpt-1528-py-async-lock-deadlock",
+          "intake_issue": 1528,
+          "lesson_id": "py-async-lock-deadlock",
+          "channel": "comment,webhook",
+          "emitted_at": "2026-09-07T16:25:52.054616+00:00"
+        }
+      ],
+      "created_at": "2026-09-07T16:25:52.053888+00:00",
+      "updated_at": "2026-09-07T16:25:52.054617+00:00"
+    }
+  }
+}

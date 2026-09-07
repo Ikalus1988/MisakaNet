@@ -6,7 +6,7 @@ from .memory_context import handle_memory_context
 from .preflight import handle_preflight
 from .search import handle_search
 from .status import handle_register, handle_usage_status
-from .submit import handle_submit_intake, handle_submit_usage
+from .submit import handle_intake_receipt, handle_submit_intake, handle_submit_usage
 from .write import handle_write_lesson
 
 __all__ = [
@@ -14,6 +14,7 @@ __all__ = [
     "handle_get_lesson",
     "handle_submit_usage",
     "handle_submit_intake",
+    "handle_intake_receipt",
     "handle_write_lesson",
     "handle_preflight",
     "handle_usage_status",
