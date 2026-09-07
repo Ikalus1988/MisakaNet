@@ -195,8 +195,11 @@ def precheck(error: str, sim_threshold: float, corpus: list | None = None) -> di
         score = max(_sim(q, title) * 2.0, _sim(q, body))
         if score <= best_score:
             continue
-        # 技术栈一致性：query 有栈特征时必须与课程共享至少一族
-        if q_stack and not (q_stack & _doc_stack(doc)):
+        # 技术栈一致性：query 有栈特征时，仅排除"明确属于不同栈"的课程；
+        # 无栈特征的通用课程（agent/ops/dco 类）仍可凭词面命中（否则会被误滤）。
+        # 跨栈误配仍被挡：python 课 vs rust 查询、git 课 vs mongodb 查询等。
+        d_stack = _doc_stack(doc)
+        if q_stack and d_stack and not (q_stack & d_stack):
             continue
         best, best_score = doc, score
     if best and best_score >= bar:

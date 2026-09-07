@@ -1,0 +1,28 @@
+name: Intake Bot Benchmark
+
+on:
+  push:
+    paths:
+      - 'scripts/intake_bot.py'
+      - 'scripts/intake_benchmark.py'
+      - 'scripts/gen_intake_benchmark.py'
+      - 'tests/benchmarks/**'
+      - 'tests/test_intake_bot_50.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Run intake-bot decision benchmark (offline)
+        run: |
+          pip install -q pytest
+          python3 scripts/intake_benchmark.py --check
+          python3 -m pytest tests/test_intake_bot_50.py -q
