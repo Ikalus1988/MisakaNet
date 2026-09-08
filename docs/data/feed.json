@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-09-08T11:28:49.988044+00:00",
+  "generated_at": "2026-09-08T21:15:21.470381+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
-  "item_count": 10,
+  "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix(ci): register workflow skips [Onboarding] issues — stop auto-close loop",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1561",
+      "timestamp": "2026-09-08T16:48:37Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(agents): ci-lesson-search v1.0.1 — visible help + same-repo novel-intake notes",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1558",
+      "timestamp": "2026-09-08T14:31:17Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(pilots): external pilot report for roof4u (#1550)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1554",
+      "timestamp": "2026-09-08T14:19:54Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(agents): misaka-intake-bot externally reusable — flywheel prerequisites (research + G1-G4)",
@@ -19,24 +40,22 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "feat(agents): failure_harvest P0 — batch failure clustering to lesson drafts",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1545",
-      "timestamp": "2026-09-07T17:21:15Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(agents): intake-bot decision benchmark — offline, CI-gated (replaces external pilot)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1543",
-      "timestamp": "2026-09-07T16:20:23Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(agents): internal dogfood (ci-lesson-search→v1.0) + server intake dedupe gate (#1526)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1540",
-      "timestamp": "2026-09-07T15:56:19Z",
+      "type": "challenge",
+      "title": "[Onboarding] Connect your agent & submit failures via MCP",
+      "url": "https://github.com/Ikalus1988/MisakaNet/issues/1258",
+      "labels": [
+        "enhancement",
+        "activation",
+        "status: competition",
+        "registered",
+        "roadmap",
+        "ready",
+        "bounty",
+        "agent-friendly",
+        "status:competition",
+        "onboarding"
+      ],
+      "timestamp": "2026-08-23T14:53:19Z",
       "source": "github"
     },
     {
