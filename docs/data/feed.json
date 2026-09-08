@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-09-07T23:35:11.476837+00:00",
+  "generated_at": "2026-09-08T04:50:47.625036+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 10,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(agents): misaka-intake-bot externally reusable — flywheel prerequisites (research + G1-G4)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1549",
+      "timestamp": "2026-09-08T00:43:14Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs: DSH Directory badge + failure-knowledge benchmark swap + failure_harvest smoke guide",
@@ -33,29 +40,6 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "feat(agents): intake-bot v1.0 — stack-aware hits, noise gate, suggest-only, offline tests (#1525)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1539",
-      "timestamp": "2026-09-07T15:32:25Z",
-      "source": "github"
-    },
-    {
-      "type": "lesson",
-      "title": "curl Timeout Behind Corporate Proxy: SSL Inspection Breaks Certificate Validation",
-      "url": "lessons/contrib/corporate-proxy-curl-timeout.md",
-      "timestamp": "2026-09-05",
-      "domain": "devops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "pip install ReadTimeoutError Behind Corporate Proxy: Certificate Validation and Timeout Configuration",
-      "url": "lessons/contrib/pip-install-proxy-timeout.md",
-      "timestamp": "2026-09-05",
-      "domain": "python",
-      "source": "lessons"
-    },
-    {
       "type": "lesson",
       "title": "Report $0 cash honestly while pending is non-zero",
       "url": "lessons/en/honest-zero-cash-reporting.md",
@@ -76,6 +60,22 @@
       "title": "Restart long-lived earn loops after code fixes",
       "url": "lessons/en/restart-earn-loop-after-code-fix.md",
       "timestamp": "2026-07-24",
+      "domain": "ops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Atomic file replace for agent status JSON",
+      "url": "lessons/en/atomic-write-replace.md",
+      "timestamp": "2026-07-23",
+      "domain": "ops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Copy Firefox cookies.sqlite for authenticated API calls",
+      "url": "lessons/en/browser-cookie-export-for-apis.md",
+      "timestamp": "2026-07-23",
       "domain": "ops",
       "source": "lessons"
     }
