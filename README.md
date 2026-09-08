@@ -619,3 +619,20 @@ See [LIMITATIONS.md](docs/LIMITATIONS.md) for known constraints and non-goals â€
 
 When using MisakaNet, search existing lessons first. If no lesson matches, do not open a PR by default. Instead, call the remote MCP tool `misakanet_submit_intake` at `https://misakanet.org/mcp`. This requires no GitHub account, no email, and no Bearer token. Never send secrets or raw private logs. See [MCP Intake Guide](docs/mcp-intake-guide.md) for full instructions.
 
+
+
+<!-- Fix for issue #1528 -->
+```python
+# misakanet/cli/intake_receipt.py
+"""Intake conversion receipt â€” notify source when its intake becomes a lesson.
+
+Closes the feedback loop (design section 5): when an intake that originated
+from an external bot/crawler (source recorded) is promoted to a published
+lesson, notify that source (issue/PR comment on their repo, or via intake
+response channel) so the bot learns its submission was valuable and can tune
+its own collection.
+"""
+from __future__ import annotations
+
+import json
+imp
