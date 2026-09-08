@@ -3,6 +3,19 @@
 > 适用对象：想让自己的 CI 失败**自动获得修复建议**、并把**新颖失败自动上报**给
 > MisakaNet（形成 lesson 语料）的仓库/开发者。零账号：intake 走匿名 MCP 通道。
 
+> ### 🎯 长期试点计划（#1550）——持续征集外部接入报告
+>
+> 接入本 action（见下）后，在**你自己的真实仓库**跑一段时间，交付一份 **≥20 样本**
+> 反馈报告，即可加入长期试点：
+> [github.com/Ikalus1988/MisakaNet/issues/1550](https://github.com/Ikalus1988/MisakaNet/issues/1550)
+>
+> - 报告提交：PR 至 `docs/external-pilots/<你的仓库>-<日期>.md`（含样本 NDJSON）
+> - 回报：zero-bounty（merge credit + leaderboard）；CI 失败自动获课程建议；上报的
+>   新颖失败转正后你被记为来源（#1528 回执机制）
+> - 进度：**Pilot 1/20**（roof4u，2026-09-08，25 样本）——长期开放，欢迎持续接入
+> - 样例报告：[roof4u-2026-09-08](https://github.com/Ikalus1988/MisakaNet/blob/main/docs/external-pilots/roof4u-2026-09-08.md)
+
+
 ## 1. 它做什么
 
 你的 CI 失败时，本 action 会：
@@ -118,4 +131,6 @@ decision/fingerprint/lesson_id/sim/receipt），并写入该步的 Job Summary�
 
 - 建议不准 / 误配：附错误原文到 [intake](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml)
   （提"课程建议质量"），我们会调阈值/词表。
-- 想参与试点报告（≥50 样本）换取 bounty：见仓库 bounty issue 模板。
+- 想参与长期试点（≥20 样本反馈报告，zero-bounty）：见
+  [#1550](https://github.com/Ikalus1988/MisakaNet/issues/1550)（长期开放，进度
+  Pilot 1/20）；任何接入/报告问题可直接在该 issue 提问。
