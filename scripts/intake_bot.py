@@ -261,7 +261,7 @@ def submit_intake(payload: dict) -> str:
         INTAKE_URL, data=body.encode("utf-8"),
         headers={"Content-Type": "application/json",
                  "Accept": "application/json, text/event-stream",
-                 "Origin": "https://github.com", "User-Agent": UA,
+                 "Origin": "https://misakanet.org", "User-Agent": UA,
                  "MCP-Protocol-Version": "2025-06-18"},
     )
     with urllib.request.urlopen(req, timeout=30) as r:
