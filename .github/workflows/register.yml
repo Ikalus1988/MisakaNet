@@ -21,16 +21,20 @@ jobs:
     # 处理 "join"、"register" 相关 Issue 或 workflow_dispatch 手动触发
     # 支持中英文：join / Join / register / Register / 加入 / 注册 / Registration
     # 还处理邮件注册 Worker 创建的 Issue（email-register: 前缀）
+    # 排除 "[Onboarding]" 聚合入口（如 #1258 "always open" 指引 issue）——
+    # 此类 issue 标题历史含 "Register"，reopen 会误触发注册-关闭循环（2026-09-08 复现）。
     if: |
       github.event_name == 'workflow_dispatch' ||
-      contains(github.event.issue.title, 'join') ||
-      contains(github.event.issue.title, 'Join') ||
-      contains(github.event.issue.title, 'register') ||
-      contains(github.event.issue.title, 'Register') ||
-      contains(github.event.issue.title, '加入') ||
-      contains(github.event.issue.title, '注册') ||
-      contains(github.event.issue.title, 'Registration') ||
-      contains(github.event.issue.title, 'email-register')
+      (github.event.issue.title != null &&
+       !startsWith(github.event.issue.title, '[Onboarding]') &&
+       (contains(github.event.issue.title, 'join') ||
+        contains(github.event.issue.title, 'Join') ||
+        contains(github.event.issue.title, 'register') ||
+        contains(github.event.issue.title, 'Register') ||
+        contains(github.event.issue.title, '加入') ||
+        contains(github.event.issue.title, '注册') ||
+        contains(github.event.issue.title, 'Registration') ||
+        contains(github.event.issue.title, 'email-register')))
     runs-on: ubuntu-latest
     permissions:
       issues: write
