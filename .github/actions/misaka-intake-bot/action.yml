@@ -175,6 +175,8 @@ runs:
     - name: Comment on PR
       if: ${{ inputs.comment-on-pr == 'true' && steps.intake.outputs.result != '' }}
       uses: actions/github-script@v9
+      env:
+        RESULT: ${{ steps.intake.outputs.result }}
       with:
         script: |
           const result = JSON.parse(process.env.RESULT || '{}');
@@ -223,5 +225,3 @@ runs:
             issue_number: prNumber,
             body: body.slice(0, 65000)
           });
-        env:
-          RESULT: ${{ steps.intake.outputs.result }}
