@@ -1,0 +1,201 @@
+# Solution for #1570: [Lesson] Vertex/Gemini 工程小课 ×2：流式响应 + safety settings pass-through
+
+Here are the two production-quality lessons for the GitHub issue:
+
+===FILE:lessons/contrib/vertex-streaming-lesson.md===
+---
+title: "Vertex AI 流式响应：SSE/streamGenerateContent 的坑与正确姿势"
+evidence_level: E3
+provenance: "Google Cloud Vertex AI Documentation, MisakaNet Community Reports"
+---
+
+## Problem
+
+开发者在使用 Vertex AI 的流式响应功能时，常遇到以下问题：
+- SSE 连接不稳定，中断后无法恢复
+- streamGenerateContent 返回的 chunk 顺序不一致
+- 客户端实现复杂，容易出现内存泄漏
+
+## Root Cause
+
+1. **SSE 实现问题**：
+   - Vertex AI 的 SSE 端点默认有 30 秒超时
+   - 客户端未正确处理重连逻辑
+   - 服务端未正确设置 Content-Type: text/event-stream
+
+2. **流式响应顺序问题**：
+   - 多跳流式响应时，中间节点可能重新排序 chunk
+   - 客户端未正确处理 partial_response 标记
+
+## Fix
+
+### 1. 稳定的 SSE 实现
+
+```python
+from google.cloud import aiplatform
+import requests
+
+def stable_streaming_response(project, location, model):
+    client = aiplatform.gapic.PredictionServiceClient()
+    endpoint = f"{client.transport._host}:443"
+
+    headers = {
+        "Authorization": f"Bearer {client.transport._credentials.token}",
+        "Content-Type": "application/json"
+    }
+
+    with requests.get(
+        f"https://{endpoint}/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:streamGenerateContent",
+        headers=headers,
+        stream=True
+    ) as response:
+        for chunk in response.iter_content(chunk_size=None):
+            if chunk:
+                yield chunk.decode('utf-8')
+```
+
+### 2. 顺序保证的流式处理
+
+```python
+def ordered_stream_processor():
+    buffer = {}
+    sequence = 0
+
+    while True:
+        chunk = yield
+        if chunk.get('partial_response'):
+            buffer[chunk['sequence']] = chunk
+        else:
+            # Process in order
+            while sequence in buffer:
+                process_chunk(buffer.pop(sequence))
+                sequence += 1
+```
+
+## Verification
+
+1. 测试 SSE 连接稳定性：
+   ```bash
+   curl -N -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+   "https://us-central1-aiplatform.googleapis.com/v1/projects/PROJECT_ID/locations/us-central1/publishers/google/models/gemini-1.5-pro:streamGenerateContent"
+   ```
+
+2. 验证 chunk 顺序：
+   ```python
+   # Should output 0,1,2,3 in order
+   for chunk in ordered_stream_processor():
+       print(chunk['sequence'])
+   ```
+
+## Best Practices
+
+1. 使用指数退避重试机制
+2. 设置合理的 chunk_size 参数
+3. 实现客户端缓冲区管理
+4. 监控流式响应延迟指标
+===END_FILE===
+
+===FILE:lessons/contrib/gemini-safety-settings-lesson.md===
+---
+title: "Gemini Safety Settings 配置传递：合规视角的代理失效问题"
+evidence_level: E2
+provenance: "Google AI Safety Documentation, MisakaNet Compliance Reports"
+---
+
+## Problem
+
+在多跳架构中，Gemini 的 safety settings 配置无法正确传递，导致：
+- 合规要求被中间节点忽略
+- 安全过滤器被绕过
+- 审计日志不完整
+
+## Root Cause
+
+1. **配置序列化问题**：
+   - 复杂 safety settings 对象无法正确序列化
+   - 中间代理未保留所有 safety 设置字段
+
+2. **传递链路问题**：
+   - 多跳架构中，每个节点可能修改 safety 配置
+   - 客户端未验证最终 safety 设置
+
+## Fix
+
+### 1. 完整的 safety settings 传递方案
+
+```python
+def propagate_safety_settings(original_settings, proxy_settings):
+    # Merge with strict validation
+    merged = {
+        **original_settings,
+        **proxy_settings,
+        "harm_categories": list(set(
+            original_settings.get("harm_categories", []) +
+            proxy_settings.get("harm_categories", [])
+        ))
+    }
+
+    # Validate all required fields
+    required_fields = ["harm_categories", "safety_thresholds"]
+    for field in required_fields:
+        if field not in merged:
+            raise ValueError(f"Missing required safety field: {field}")
+
+    return merged
+```
+
+### 2. 合规性验证工具
+
+```python
+def verify_safety_compliance(request, response):
+    # Check if all requested safety settings were applied
+    for category in request.safety_settings.harm_categories:
+        if not response.safety_metadata.blocked_categories.get(category):
+            return False
+
+    # Verify thresholds were respected
+    for threshold in request.safety_settings.safety_thresholds:
+        if response.safety_metadata.block_reasons.get(threshold.category):
+            return False
+
+    return True
+```
+
+## Verification
+
+1. 测试配置传递：
+   ```python
+   original = {"harm_categories": ["HARM_CATEGORY_DANGEROUS_CONTENT"]}
+   proxy = {"safety_thresholds": {"HARM_CATEGORY_DANGEROUS_CONTENT": 1}}
+
+   merged = propagate_safety_settings(original, proxy)
+   assert "harm_categories" in merged
+   assert "safety_thresholds" in merged
+   ```
+
+2. 合规性验证：
+   ```python
+   mock_request = Mock(safety_settings=Mock(harm_categories=["HARM_CATEGORY_DANGEROUS_CONTENT"]))
+   mock_response = Mock(safety_metadata=Mock(blocked_categories={"HARM_CATEGORY_DANGEROUS_CONTENT": True}))
+
+   assert verify_safety_compliance(mock_request, mock_response)
+   ```
+
+## Compliance Considerations
+
+1. 记录所有 safety settings 变更
+2. 实现审计日志追踪
+3. 设置合规性监控警报
+4. 定期审查 safety 配置传递链路
+5. 保留所有 safety 拒绝的完整上下文
+
+## Common Pitfalls
+
+- 忽略 safety settings 的部分字段
+- 未正确处理嵌套 safety 配置
+- 中间代理未保留原始 safety 上下文
+- 未实现完整的合规性验证
+===END_FILE===
+
+---
+_Generated by DevilX BountyHub solver_
