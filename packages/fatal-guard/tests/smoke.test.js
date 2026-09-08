@@ -10,6 +10,44 @@ const WRAPPER = path.join(PACKAGE_ROOT, 'bin', 'fatal-guard.js');
 const CONVERTER = path.join(PACKAGE_ROOT, '..', '..', 'scripts', 'tombstone_to_draft.py');
 const PYTHON = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
 
+test('register crash handler receives UTF-8 environment before shutdown', async () => {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), 'fatal-guard-register-'));
+  try {
+    const marker = path.join(tmp, 'encoding.txt');
+    const handler = path.join(tmp, 'handler.js');
+    await writeFile(handler, `
+      const payload = JSON.parse(process.argv.at(-1));
+      if (payload.reason === 'uncaught_exception') {
+        require('node:fs').writeFileSync(${JSON.stringify(marker)}, process.env.PYTHONIOENCODING);
+      }
+    `);
+    const result = await run(process.execPath, [
+      '-r', path.join(PACKAGE_ROOT, 'register.js'), '-e', "throw new Error('register crash');",
+    ], {
+      env: {
+        ...process.env,
+        FATAL_HANDLER: process.execPath,
+        FATAL_HANDLER_ARGS: JSON.stringify([handler]),
+        PYTHONIOENCODING: 'ascii',
+      },
+    });
+    assert.equal(result.code, 1, result.stderr);
+    let encoding;
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      try {
+        encoding = await readFile(marker, 'utf8');
+        break;
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+    }
+    assert.equal(encoding, 'utf-8');
+  } finally {
+    await rm(tmp, { recursive: true, force: true });
+  }
+});
+
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { ...options, stdio: ['ignore', 'pipe', 'pipe'] });
