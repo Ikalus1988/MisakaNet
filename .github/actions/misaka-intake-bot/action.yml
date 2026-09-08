@@ -21,6 +21,10 @@ inputs:
     description: 'Intake source identifier'
     required: false
     default: 'github-action'
+  source-ref:
+    description: 'Git ref of MisakaNet to fetch intake_bot.py from (only used when caller has no local checkout)'
+    required: false
+    default: 'main'
   sim:
     description: 'Hit similarity threshold (0.0-1.0)'
     required: false
@@ -44,6 +48,9 @@ outputs:
   lesson-url:
     description: 'URL of matched lesson (if hit)'
     value: ${{ steps.intake.outputs.lesson-url }}
+  sample:
+    description: 'NDJSON sample line (repo/workflow/decision/lesson/intake) for external pilot reports'
+    value: ${{ steps.intake.outputs.sample }}
 
 runs:
   using: 'composite'
@@ -107,12 +114,25 @@ runs:
       run: |
         set -e
         REPO_ROOT="${GITHUB_WORKSPACE:-.}"
-        SCRIPT="$REPO_ROOT/scripts/intake_bot.py"
 
+        # Self-contained: prefer the caller's own checkout of MisakaNet
+        # (same-repo dogfood), otherwise fetch scripts/intake_bot.py from
+        # the canonical repo so external repos need NO MisakaNet checkout
+        # (intake_bot.py is pure stdlib + fully remote: corpus via
+        # GET /api/lessons, submit via misakanet.org/mcp).
+        SCRIPT="$REPO_ROOT/scripts/intake_bot.py"
         if [ ! -f "$SCRIPT" ]; then
-          echo "::warning::intake_bot.py not found at $SCRIPT, skipping"
-          echo "decision=skip" >> "$GITHUB_OUTPUT"
-          exit 0
+          FETCH_REF="${INPUT_SOURCE_REF:-main}"
+          mkdir -p "$RUNNER_TEMP/misaka-intake-bot"
+          SCRIPT="$RUNNER_TEMP/misaka-intake-bot/intake_bot.py"
+          curl -fsSL --retry 3 \
+            "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/$FETCH_REF/scripts/intake_bot.py" \
+            -o "$SCRIPT" || {
+              echo "::warning::could not fetch intake_bot.py from MisakaNet@$FETCH_REF, skipping"
+              echo "decision=skip" >> "$GITHUB_OUTPUT"
+              exit 0
+            }
+          echo "::notice::fetched MisakaNet intake_bot.py@$FETCH_REF (self-contained mode)"
         fi
 
         ARGS="--json --source $INPUT_SOURCE --sim $INPUT_SIM"
@@ -140,6 +160,17 @@ runs:
         echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
         echo "fingerprint=$FINGERPRINT" >> "$GITHUB_OUTPUT"
         echo "lesson-url=$LESSON_URL" >> "$GITHUB_OUTPUT"
+
+        # ── G2: sample report line (NDJSON, one per decision) ──────────────
+        # External pilots collect these into a ≥N-sample report; every line is
+        # redaction-safe (error text already capped by intake_bot) and carries
+        # the source + decision + lesson/intake references for the flywheel.
+        SAMPLE=$(python3 "${GITHUB_ACTION_PATH:-.}/sample_report.py" "$RESULT")
+        echo "sample=$SAMPLE" >> "$GITHUB_OUTPUT"
+        echo "### MisakaNet intake-bot sample" >> "$GITHUB_STEP_SUMMARY"
+        echo "\`\`\`json" >> "$GITHUB_STEP_SUMMARY"
+        echo "$SAMPLE" >> "$GITHUB_STEP_SUMMARY"
+        echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
 
     - name: Comment on PR
       if: ${{ inputs.comment-on-pr == 'true' && steps.intake.outputs.result != '' }}
