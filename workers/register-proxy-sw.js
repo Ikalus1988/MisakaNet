@@ -745,6 +745,16 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         lastSeen: new Date().toISOString(),
       };
       await env.MISAKANET_KV.put(key, JSON.stringify(entry), { expirationTtl: 86400 * 90 });
+
+      // Track gap key in index for lifecycle management (Issue #1567)
+      if (!existing) {
+        const indexRaw = await env.MISAKANET_KV.get("gap:index", { type: "json" });
+        const index = Array.isArray(indexRaw) ? indexRaw : [];
+        if (!index.includes(key)) {
+          index.push(key);
+          await env.MISAKANET_KV.put("gap:index", JSON.stringify(index));
+        }
+      }
     } catch (_) {}
   }
 
@@ -2398,6 +2408,41 @@ async function aggregateDailyTraffic(env) {
   return { aggregated: totalAggregated, month, date: today };
 }
 
+// ── Gap Lifecycle (Issue #1567) ──
+async function cleanupCoveredGaps(env) {
+  const indexRaw = await env.MISAKANET_KV.get("gap:index", { type: "json" });
+  const index = Array.isArray(indexRaw) ? indexRaw : [];
+  if (index.length === 0) return { cleaned: 0 };
+
+  // Load BM25 index to check if lessons now cover gap queries
+  const bm25Index = await loadBM25Index(env);
+  if (!bm25Index) return { cleaned: 0, reason: "no BM25 index" };
+
+  const cleaned = [];
+  const remaining = [];
+
+  for (const gapKey of index) {
+    const query = gapKey.replace(/^gap:/, "");
+    // Search lessons for the gap query
+    const results = searchLessonsBM25(bm25Index, query, null, 3);
+    if (results.length > 0) {
+      // Lesson now covers this gap — delete the gap key
+      await env.MISAKANET_KV.delete(gapKey);
+      cleaned.push({ query, matchedLesson: results[0]?.title });
+    } else {
+      remaining.push(gapKey);
+    }
+  }
+
+  // Update index with remaining gaps
+  if (cleaned.length > 0) {
+    await env.MISAKANET_KV.put("gap:index", JSON.stringify(remaining));
+  }
+
+  console.log(`[gap-lifecycle] cleaned ${cleaned.length} covered gaps, ${remaining.length} remaining`);
+  return { cleaned: cleaned.length, remaining: remaining.length, details: cleaned };
+}
+
 async function runKeepaliveSweep(cron = "manual", env = null) {
   const results = await Promise.allSettled(KEEPALIVE_ENDPOINTS.map(probeKeepaliveEndpoint));
   const failures = results
@@ -3337,6 +3382,12 @@ async function getCode() {
         console.error("[traffic-aggregation] failed", e.message)
       ));
     }
+    // Gap lifecycle: clean up gap keys that now have covering lessons (Issue #1567)
+    if (env.MISAKANET_KV) {
+      ctx.waitUntil(cleanupCoveredGaps(env).catch(e =>
+        console.error("[gap-lifecycle] failed", e.message)
+      ));
+    }
   },
 };
 
@@ -3420,4 +3471,5 @@ export {
   findCoveringLesson,
   aggregateDailyTraffic,
   runKeepaliveSweep,
+  cleanupCoveredGaps,
 };
