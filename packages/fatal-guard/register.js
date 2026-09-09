@@ -22,65 +22,7 @@
  *   - Fire-and-forget: detached child, no wait
  */
 
-const { spawn } = require('node:child_process');
-const { redact } = require('./src/lib/redact');
-const { buildSpawnSpec } = require('./src/lib/spawn-command');
-
-/** Payload builder with diagnostic fields */
-function buildPayload(reason, error) {
-  const payload = {
-    schemaVersion: 1,
-    reason,
-    timestamp: new Date().toISOString(),
-    pid: process.pid,
-  };
-  if (error) {
-    const err = typeof error === 'string' ? { message: error } : error;
-    payload.errorName = err.name || 'Error';
-    payload.message = redact(String(err.message || '')).slice(0, 500);
-    if (err.stack) {
-      payload.stackSnippet = redact(String(err.stack)).slice(0, 1000);
-    }
-  }
-  return JSON.stringify(payload);
-}
-
-/** Fire-and-forget external handler invocation (supports env var fallback chain) */
-function runHandler(reason, error) {
-  const handler = (
-    process.env.FATAL_HANDLER ||
-    process.env.MISAKANET_ERROR_HANDLER ||
-    process.env.VITE_ERROR_HANDLER ||
-    process.env.E2B_ERROR_HANDLER ||
-    process.env.OPENCLAW_ERROR_HANDLER ||
-    ''
-  ).trim();
-  if (!handler) return;
-
-  try {
-    const payload = buildPayload(reason, error);
-    let handlerArgs = [];
-    if (process.env.FATAL_HANDLER_ARGS) {
-      try {
-        const parsed = JSON.parse(process.env.FATAL_HANDLER_ARGS);
-        if (Array.isArray(parsed) && parsed.every((arg) => typeof arg === 'string')) {
-          handlerArgs = parsed;
-        }
-      } catch (_) {}
-    }
-    const invocation = buildSpawnSpec(handler, [...handlerArgs, payload]);
-    const child = spawn(invocation.command, invocation.args, {
-      stdio: 'ignore',
-      detached: true,
-      shell: false,
-      ...invocation.options,
-    });
-    child.on('error', () => { /* swallow — handler failure must not block */ });
-    child.unref();
-  } catch (_) {
-    /* swallow all */
-  }
-}
+const { runHandler } = require('./index.js');
 
 // ── Register hooks ──────────────────────────────────────────────
 
