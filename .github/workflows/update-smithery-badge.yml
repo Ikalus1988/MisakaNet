@@ -7,6 +7,11 @@ on:
   workflow_dispatch:          # manual trigger
 
 permissions:
+  # GITHUB_TOKEN (auto-provisioned by GitHub Actions): granted 'contents: write'
+  # scope so this job can commit the updated badge JSON to the 'data' branch
+  # and push it. No other scopes are required — the token is scoped to this
+  # repository only and expires when the workflow run ends. Do not add broader
+  # permissions (e.g. packages, issues) unless a future step needs them.
   contents: write
 
 jobs:
