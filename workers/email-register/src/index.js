@@ -48,12 +48,14 @@ export default {
       return;
     }
 
-    const lastReg = await env.MISAKANET_KV.get(`rate:email:${sender}`, 'text');
-    if (lastReg && (Date.now() - parseInt(lastReg)) < 86400000) {
-      console.log(`Rate limited email: ${sender}`);
+    const MAX_EMAILS_PER_DAY = 5;
+    const rateCount = await env.MISAKANET_KV.get(`rate:email:${sender}`, 'text');
+    const currentCount = parseInt(rateCount) || 0;
+    if (currentCount >= MAX_EMAILS_PER_DAY) {
+      console.log(`Rate limited email (${currentCount}/${MAX_EMAILS_PER_DAY}): ${sender}`);
       return;
     }
-    await env.MISAKANET_KV.put(`rate:email:${sender}`, String(Date.now()), { expirationTtl: 86400 });
+    await env.MISAKANET_KV.put(`rate:email:${sender}`, String(currentCount + 1), { expirationTtl: 86400 });
 
     // Consume the raw stream before forwarding and retain only bounded, plain text.
     const rawEmail = await new Response(message.raw).text();
