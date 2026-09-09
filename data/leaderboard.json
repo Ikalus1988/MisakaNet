@@ -1,11 +1,15 @@
 [
   {
     "login": "zsxh1990",
-    "score": 115.59
+    "score": 115.38
   },
   {
     "login": "github-actions[bot]",
     "score": 7.72
+  },
+  {
+    "login": "s6pa1rta3n-lab",
+    "score": 3.9
   },
   {
     "login": "2lll5",
@@ -36,8 +40,8 @@
     "score": 2.11
   },
   {
-    "login": "s6pa1rta3n-lab",
-    "score": 1.9
+    "login": "mr-neutr0n",
+    "score": 2.0
   },
   {
     "login": "tomasbogado203-bit",
@@ -158,9 +162,5 @@
   {
     "login": "nordikdata bounty bot",
     "score": 0.19
-  },
-  {
-    "login": "mochigem",
-    "score": 0.18
   }
 ]
