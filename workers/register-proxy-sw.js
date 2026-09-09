@@ -2348,6 +2348,47 @@ async function probeKeepaliveEndpoint(endpoint) {
   };
 }
 
+// ── Traffic Aggregation (Issue #1565) ──
+const TRAFFIC_TYPES = ["mcp", "agent", "crawler", "pageview"];
+
+async function aggregateDailyTraffic(env) {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const month = today.slice(0, 7); // YYYY-MM
+
+  // Idempotency: skip if already aggregated today
+  const markerKey = `traffic-agg-marker:${today}`;
+  const alreadyDone = await env.MISAKANET_KV.get(markerKey, "text");
+  if (alreadyDone) {
+    console.log(`[traffic-aggregation] already done for ${today}, skipping`);
+    return { skipped: true, date: today };
+  }
+
+  let totalAggregated = 0;
+
+  for (const type of TRAFFIC_TYPES) {
+    const dailyKey = `traffic:${type}:${today}`;
+    const monthlyKey = `traffic-month:${type}:${month}`;
+
+    const [dailyVal, monthlyVal] = await Promise.all([
+      env.MISAKANET_KV.get(dailyKey, "text"),
+      env.MISAKANET_KV.get(monthlyKey, "text"),
+    ]);
+
+    const dailyCount = parseInt(dailyVal) || 0;
+    const monthlyCount = parseInt(monthlyVal) || 0;
+
+    if (dailyCount > 0) {
+      await env.MISAKANET_KV.put(monthlyKey, String(monthlyCount + dailyCount));
+      totalAggregated += dailyCount;
+    }
+  }
+
+  // Mark today as done (TTL 48h to auto-cleanup)
+  await env.MISAKANET_KV.put(markerKey, "1", { expirationTtl: 172800 });
+  console.log(`[traffic-aggregation] aggregated ${totalAggregated} counts for ${month}`);
+  return { aggregated: totalAggregated, month, date: today };
+}
+
 async function runKeepaliveSweep(cron = "manual") {
   const results = await Promise.allSettled(KEEPALIVE_ENDPOINTS.map(probeKeepaliveEndpoint));
   const failures = results
@@ -3261,6 +3302,12 @@ async function getCode() {
 
   async scheduled(controller, env, ctx) {
     ctx.waitUntil(runKeepaliveSweep(controller.cron));
+    // Daily traffic aggregation: accumulate daily traffic:* into monthly traffic-month:*
+    if (env.MISAKANET_KV) {
+      ctx.waitUntil(aggregateDailyTraffic(env).catch(e =>
+        console.error("[traffic-aggregation] failed", e.message)
+      ));
+    }
   },
 };
 
@@ -3342,4 +3389,5 @@ export {
   sanitizeReasonKey,
   hashString,
   findCoveringLesson,
+  aggregateDailyTraffic,
 };
