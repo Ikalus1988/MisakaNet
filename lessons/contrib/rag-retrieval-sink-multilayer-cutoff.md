@@ -1,19 +1,5 @@
 ---
-title: RAG 检索沉底多层机制：同章节措辞差异 + 截断/降权拦截短文本精确答案
-domain: rag
-tags:
-- rag
-- retrieval
-- silent-degradation
-- bm25
-- overlap-guard
-- fanuc
-- anchor
-status: published
-created: '2026-08-24'
-language: zh
-source: intake-issue-1196
-evidence_level: E2
+{"title":"RAG 检索沉底多层机制：同章节措辞差异 + 截断/降权拦截短文本精确答案","domain":"rag","tags":["rag","retrieval","silent-degradation","bm25","overlap-guard","fanuc","anchor"],"status":"published","created":"2026-08-24","language":"zh","source":"intake-issue-1196","evidence_level":"E2"}
 ---
 
 ## Problem
@@ -66,11 +52,13 @@ for chunk in candidates:
 ## Verification
 
 ```bash
-python3 search_knowledge.py "R-2000iC 换油周期 B-82334" --lessons
-grep -c "B-82334" lessons/contrib/rag-retrieval-sink-multilayer-cutoff.md
+set -o pipefail
+python3 search_knowledge.py "R-2000iC 换油周期 B-82334" --lessons --tags=fanuc --top=50 --strict --json |
+  python3 -c 'import json,sys; hits=json.load(sys.stdin); assert any(hit["path"] == "lessons/contrib/rag-retrieval-sink-multilayer-cutoff.md" for hit in hits)'
+python3 -c 'import json; entry=next(item for item in json.load(open("data/lessons.json", encoding="utf-8")) if item["id"] == "rag-retrieval-sink-multilayer-cutoff"); assert entry["tags"] == ["rag", "retrieval", "silent-degradation", "bm25", "overlap-guard", "fanuc", "anchor"]; assert entry["evidence_level"] == "E2"'
 ```
 
-**Expected:** lesson 可被检索到；grep 返回 ≥1。
+**Expected:** search returns this lesson through the `fanuc` tag filter and the index assertions exit 0.
 
 ## Key Points
 
