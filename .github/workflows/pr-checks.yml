@@ -413,6 +413,25 @@ jobs:
           fi
           echo "✅ Lesson count: $ACTUAL files, $JSON_COUNT indexed"
 
+      - name: Validate lessons.json schema
+        run: |
+          echo "=== lessons.json Schema Validation (Issue #1374) ==="
+          python3 -c "
+          import json, sys
+          REQUIRED = {'id','title','domain','tags','summary','preview','url','triggers','verified','evidence_level','trust_score'}
+          data = json.load(open('data/lessons.json', encoding='utf-8'))
+          missing = set()
+          for entry in data:
+              for field in REQUIRED:
+                  if field not in entry:
+                      missing.add(field)
+          if missing:
+              print(f'::error::lessons.json missing required fields: {sorted(missing)}')
+              print('This likely means misakanet-index.py was used instead of update_lessons_json.py (Issue #1374)')
+              sys.exit(1)
+          print(f'Schema OK: {len(data)} entries, all required fields present')
+          "
+
       # ── Audit Report (all PRs) ──
       - name: Post Audit Report
         if: always()

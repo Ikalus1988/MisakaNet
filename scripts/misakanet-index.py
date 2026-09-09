@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
-misakanet-index.py — 御坂网络知识索引生成器
+misakanet-index.py — 御坂网络知识索引生成器（非规范版本）
 
-从 lessons/ 目录读取所有 lesson 文件，提取 frontmatter + 摘要，
-生成 lessons.json 供 CDN 分发。
+⚠️  WARNING: 此脚本 **不是** data/lessons.json 的规范生成器。
+    规范生成器是 scripts/update_lessons_json.py（由 update-lessons.yml 每日运行）。
+
+    本脚本输出缺少 preview/triggers/verified/evidence_refs/supersedes 字段，
+    若误用会静默回滚线上搜索页的 evidence 统计。参见 Issue #1374。
+
+    仅用于本地调试或独立索引场景，不要提交其输出到 data/lessons.json。
 
 用法:
   python3 misakanet-index.py                     # 输出到 stdout
   python3 misakanet-index.py --output lessons.json  # 写入文件
-
-发布:
-  GitHub Actions 或 cron 定时运行，将 lessons.json 推送到 CDN。
-  也可直接用 raw.githubusercontent.com 从 GitHub 读取。
 """
 
 import json
@@ -128,6 +129,13 @@ def build_index(lessons_dir: str | Path) -> list[dict]:
 
 def main():
     import argparse
+
+    print(
+        "⚠️  WARNING: misakanet-index.py is NOT the canonical lessons.json generator.\n"
+        "   Use scripts/update_lessons_json.py instead (Issue #1374).\n"
+        "   This script omits preview/triggers/verified/evidence_refs/supersedes fields.\n",
+        file=sys.stderr,
+    )
 
     parser = argparse.ArgumentParser(description="御坂网络知识索引生成器")
     parser.add_argument(
