@@ -2,6 +2,12 @@ name = "misakanet-register-proxy"
 main = "register-proxy-sw.js"
 compatibility_date = "2024-01-01"
 
+# Self-monitoring keepalive probe cadence (was */5 — every 5 min; HTTP 522 on
+# the public loopback probe was generating error noise. */15 keeps watch with
+# 1/3 the noise; failures are debounced in code before they escalate).
+[triggers]
+crons = ["*/15 * * * *"]
+
 [[kv_namespaces]]
 binding = "MISAKANET_KV"
 id = "d5fb6b0797b84d17b0586fb982231ffe"

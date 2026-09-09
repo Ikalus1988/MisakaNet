@@ -25,6 +25,11 @@ const KEEPALIVE_ENDPOINTS = [
   { name: "journey", url: "https://misakanet.org/journey/", json: false, metadataOnly: true },
 ];
 
+// Keepalive debounce: transient probe failures (CF edge HTTP 522 on loopback)
+// are warnings; only escalate after this many consecutive failures.
+const KEEPALIVE_FAIL_KEY = "keepalive:fail-count";
+const KEEPALIVE_FAIL_ALERT_AFTER = 3;
+
 // 输入校验
 const MAX_AGENT_TYPE = 30;
 const MAX_NODE_NAME = 50;
@@ -2389,17 +2394,37 @@ async function aggregateDailyTraffic(env) {
   return { aggregated: totalAggregated, month, date: today };
 }
 
-async function runKeepaliveSweep(cron = "manual") {
+async function runKeepaliveSweep(cron = "manual", env = null) {
   const results = await Promise.allSettled(KEEPALIVE_ENDPOINTS.map(probeKeepaliveEndpoint));
   const failures = results
     .filter((item) => item.status === "rejected")
     .map((item) => item.reason?.message || String(item.reason));
 
   if (failures.length) {
-    console.error("[keepalive] failed", JSON.stringify({ cron, failures }));
-    throw new Error(`[keepalive] failed: ${failures.join("; ")}`);
+    // Debounce: transient probe failures (e.g. CF edge HTTP 522 on the public
+    // loopback keepalive to misakanet.org) are monitoring noise, not service
+    // outages. Escalate to an error only after KEEPALIVE_FAIL_ALERT_AFTER
+    // consecutive failures; reset on any healthy sweep.
+    const kv = env?.MISAKANET_KV;
+    let count = 1;
+    if (kv) {
+      const raw = await kv.get(KEEPALIVE_FAIL_KEY, "text").catch(() => null);
+      count = (parseInt(raw || "0", 10) || 0) + 1;
+      await kv.put(KEEPALIVE_FAIL_KEY, String(count), { expirationTtl: 3600 }).catch(() => {});
+    }
+    if (count >= KEEPALIVE_FAIL_ALERT_AFTER) {
+      console.error("[keepalive] failed", JSON.stringify({ cron, failures, consecutive: count }));
+      if (kv) await kv.delete(KEEPALIVE_FAIL_KEY).catch(() => {});
+      throw new Error(`[keepalive] failed: ${failures.join("; ")}`);
+    }
+    console.warn("[keepalive] degraded (transient)", JSON.stringify({ cron, failures, consecutive: count }));
+    return { ok: false, failures, consecutive: count };
   }
 
+  // Healthy — reset the consecutive-failure counter.
+  if (env?.MISAKANET_KV) {
+    await env.MISAKANET_KV.delete(KEEPALIVE_FAIL_KEY).catch(() => {});
+  }
   console.log("[keepalive] ok", JSON.stringify({ cron, endpoints: KEEPALIVE_ENDPOINTS.length }));
   return { ok: true, failures: [] };
 }
@@ -3301,7 +3326,7 @@ async function getCode() {
   },
 
   async scheduled(controller, env, ctx) {
-    ctx.waitUntil(runKeepaliveSweep(controller.cron));
+    ctx.waitUntil(runKeepaliveSweep(controller.cron, env));
     // Daily traffic aggregation: accumulate daily traffic:* into monthly traffic-month:*
     if (env.MISAKANET_KV) {
       ctx.waitUntil(aggregateDailyTraffic(env).catch(e =>
@@ -3390,4 +3415,5 @@ export {
   hashString,
   findCoveringLesson,
   aggregateDailyTraffic,
+  runKeepaliveSweep,
 };
