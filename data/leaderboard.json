@@ -1,59 +1,59 @@
 [
   {
     "login": "zsxh1990",
-    "score": 115.43
+    "score": 115.1
   },
   {
     "login": "github-actions[bot]",
-    "score": 7.89
+    "score": 7.72
   },
   {
     "login": "2lll5",
-    "score": 3.65
+    "score": 3.58
   },
   {
     "login": "liona can",
-    "score": 3.29
+    "score": 3.22
   },
   {
     "login": "laurentketterle-hub",
-    "score": 2.82
+    "score": 2.77
   },
   {
     "login": "yunaremaia",
-    "score": 2.27
+    "score": 2.23
   },
   {
     "login": "techlogiadg-spec",
-    "score": 2.22
+    "score": 2.2
   },
   {
     "login": "hjqcan",
-    "score": 2.19
-  },
-  {
-    "login": "ghzhost",
     "score": 2.15
   },
   {
+    "login": "ghzhost",
+    "score": 2.11
+  },
+  {
     "login": "tomasbogado203-bit",
-    "score": 1.71
+    "score": 1.67
   },
   {
     "login": "knowaguy4u-cell",
-    "score": 1.48
+    "score": 1.45
   },
   {
     "login": "s6pa1rta3n-lab",
-    "score": 1.43
+    "score": 1.4
   },
   {
     "login": "brok-best",
-    "score": 1.41
+    "score": 1.38
   },
   {
     "login": "misakanet agent",
-    "score": 1.39
+    "score": 1.37
   },
   {
     "login": "tarotoads-debug",
@@ -61,23 +61,23 @@
   },
   {
     "login": "elevasyncsolutions-jpg",
-    "score": 1.25
+    "score": 1.22
   },
   {
     "login": "wasim-builds",
-    "score": 1.06
-  },
-  {
-    "login": "kilo",
     "score": 1.04
   },
   {
+    "login": "kilo",
+    "score": 1.02
+  },
+  {
     "login": "tmtproductions",
-    "score": 0.99
+    "score": 0.98
   },
   {
     "login": "simultech369",
-    "score": 0.98
+    "score": 0.97
   },
   {
     "login": "hummern",
@@ -89,11 +89,11 @@
   },
   {
     "login": "waterwang",
-    "score": 0.67
+    "score": 0.66
   },
   {
     "login": "misakanet-agent",
-    "score": 0.61
+    "score": 0.6
   },
   {
     "login": "pnpn1212",
@@ -113,19 +113,19 @@
   },
   {
     "login": "jamboriu",
-    "score": 0.46
+    "score": 0.45
   },
   {
     "login": "chfr19820610-cell",
-    "score": 0.43
+    "score": 0.42
   },
   {
     "login": "agente-gaudi",
-    "score": 0.4
+    "score": 0.39
   },
   {
     "login": "samarth1306w",
-    "score": 0.24
+    "score": 0.23
   },
   {
     "login": "lincai505011-ops",
@@ -149,7 +149,7 @@
   },
   {
     "login": "rerzx",
-    "score": 0.21
+    "score": 0.2
   },
   {
     "login": "skull0716",
@@ -161,6 +161,6 @@
   },
   {
     "login": "mochigem",
-    "score": 0.19
+    "score": 0.18
   }
 ]
