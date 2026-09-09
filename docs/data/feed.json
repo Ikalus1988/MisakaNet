@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-09T17:00:32.333036+00:00",
+  "generated_at": "2026-09-09T20:58:13.072345+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix: [Intake] 背景 2026-08-21/22 R-2000iC 换油周期案例：hermes 回答\"数值对（碰巧）但",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1415",
-      "timestamp": "2026-09-09T16:11:23Z",
+      "title": "feat(intake): add contributor tracking to intake pipeline #1342",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1599",
+      "timestamp": "2026-09-09T17:47:05Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix: [Intake] Windows CI: three bugs in one session. (1) splitCom",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1413",
-      "timestamp": "2026-09-09T16:11:19Z",
+      "title": "feat(watcher): memory dump watcher — auto-extract failure lessons #1166",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1597",
+      "timestamp": "2026-09-09T17:47:02Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix: [Intake] Node.js: missing `require(\"node:os\")` inside `try/c",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1412",
-      "timestamp": "2026-09-09T16:11:15Z",
+      "title": "feat(verify): add DSH plugin listing verification script",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1596",
+      "timestamp": "2026-09-09T17:46:59Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): add 5 agent and engineering lessons (#1571)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1588",
-      "timestamp": "2026-09-09T16:06:24Z",
+      "title": "feat(verify): add Glama listing verification script with stale tool detection",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1595",
+      "timestamp": "2026-09-09T17:46:07Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "lesson(contrib): Vertex AI Embedding migration for Python and Go with Qwen (#1569)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1581",
-      "timestamp": "2026-09-09T16:06:03Z",
+      "title": "fix(guard): add deprecation warning + CI schema check for lessons.json generator",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1594",
+      "timestamp": "2026-09-09T17:46:04Z",
       "source": "github"
     },
     {
