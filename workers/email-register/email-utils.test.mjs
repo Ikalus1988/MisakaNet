@@ -204,6 +204,26 @@ test('returns unknown for empty subject and empty body', () => {
   assert.equal(detectIntakeType('', ''), 'unknown');
 });
 
+test('detects recruitment emails', () => {
+  assert.equal(detectIntakeType('Job Opening', 'We are looking for a senior engineer'), 'recruitment');
+  assert.equal(detectIntakeType('', '招聘：高级开发工程师'), 'recruitment');
+});
+
+test('detects product pitch emails', () => {
+  assert.equal(detectIntakeType('Our Product', 'We built a tool for developers'), 'pitch');
+  assert.equal(detectIntakeType('', 'Our platform helps teams collaborate'), 'pitch');
+});
+
+test('detects directory claim emails', () => {
+  assert.equal(detectIntakeType('Claim Your Listing', 'Add your company to our directory'), 'directory-claim');
+  assert.equal(detectIntakeType('', 'Your listing has been claimed'), 'directory-claim');
+});
+
+test('detects question emails', () => {
+  assert.equal(detectIntakeType('How do I configure?', 'How do I set up the auth?'), 'question');
+  assert.equal(detectIntakeType('?', 'What is the best approach?'), 'question');
+});
+
 test('truncates very long body to MAX_BODY_LENGTH without crashing', () => {
   const longBody = 'Lesson: ' + 'x'.repeat(25000);
   const raw = [
