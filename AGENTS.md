@@ -74,3 +74,6 @@ cd ~/MisakaNet && git pull --ff-only
 - **intuitive-layout**: 改善仓库/文件夹组织，在深层的架构工作前先解决布局摩擦
 - **intuitive-tests**: 测试套件组织、标记、剪枝、夹具管理
 - **intuitive-squash**: 将嘈杂的 agent 提交历史压缩为干净的 PR 故事
+
+## 最新贡献指南
+- **Vertex AI Embedding 迁移**: 请查阅 `lessons/contrib/vertex-ai-embedding-migration.md` 获取完整的 Python 与 Go 客户端差异、Qwen 嵌入模型接入、维度/配额/鉴权最佳实践。
