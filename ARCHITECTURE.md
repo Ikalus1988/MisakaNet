@@ -33,6 +33,7 @@ scripts/
 └── demo.tape             # VHS demo recording script
 
 lessons/                  # Shared knowledge (358+ .md files)  — count auto-refreshed by scripts/update_lessons_json.py
+                          # Includes lessons/contrib/vertex-streaming.md and lessons/contrib/gemini-safety-pass-through.md
 reference/                # Reference documents (6 .md files)
 ```
 
