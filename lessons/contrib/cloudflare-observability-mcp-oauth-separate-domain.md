@@ -119,3 +119,25 @@ failed repeatedly:
 - When mcporter's own auth flow misbehaves (invalid client_id), skip it: manual DCR +
   authorize + token exchange over curl is ~30s and fully debuggable.
 - mcporter `state.txt` must be a JSON string literal (`"uuid"`), not a bare uuid.
+
+---
+
+## Update (2026-09-10): one-shot tool — STOP doing this manually
+
+This manual flow was painful to get right (5 failed rounds: wrong endpoint, invalid
+client_id, wrong-domain token, WSL callback, state format). It is now encapsulated in
+**`scripts/cf_mcp_auth.py`** — one command, all lessons baked in:
+
+```bash
+# authorize a CF MCP server (prints URL → click Allow → paste address-bar URL back)
+python3 scripts/cf_mcp_auth.py --server cloudflare-observability
+# token expired (30 min)? refresh without a browser:
+python3 scripts/cf_mcp_auth.py --server cloudflare-observability --refresh
+# check current token:
+python3 scripts/cf_mcp_auth.py --server cloudflare-observability --verify
+```
+
+The script: discovers the correct OAuth domain per server (never assumes
+mcp.cloudflare.com), does explicit DCR, omits scope, uses a browser UA for token
+exchange (WAF 1010), stores `state.txt` as a JSON literal, and verifies with an MCP
+`initialize` round-trip before exiting 0.
