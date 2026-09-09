@@ -200,6 +200,7 @@ def main():
             # trust = quality(confidence) scaled by evidence (E0 keeps 70%,
             # E4 keeps 100%) — shown on search pages instead of a composite.
             "trust_score": trust_score(confidence, evidence_level),
+            "contributor": meta.get("contributor", ""),  # Issue #1342
         })
 
     OUTPUT.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

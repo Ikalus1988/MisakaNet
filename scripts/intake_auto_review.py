@@ -75,6 +75,7 @@ class AutoReviewResult:
     lesson_title: str = ""
     lesson_domain: str = "general"
     lesson_tags: list[str] = field(default_factory=list)
+    contributor: str = ""  # Issue #1342: contributor attribution
 
     def __post_init__(self):
         self.confidence = max(0.0, min(1.0, self.confidence))
@@ -678,6 +679,10 @@ def auto_review_issue(
     if current_section:
         sections[current_section.lower()] = "\n".join(current_content).strip()
 
+    # Step 2b: Extract contributor from metadata line (Issue #1342)
+    contributor_match = re.search(r"^\*\*Contributor:\*\*\s*(.+)$", body, re.MULTILINE | re.IGNORECASE)
+    result.contributor = contributor_match.group(1).strip() if contributor_match else ""
+
     # Step 3: Count words
     word_count = len(re.findall(r"\b\w+\b", body))
 
@@ -742,6 +747,7 @@ def format_result_json(result: AutoReviewResult) -> str:
         "lesson_title": result.lesson_title,
         "lesson_domain": result.lesson_domain,
         "lesson_tags": result.lesson_tags,
+        "contributor": result.contributor,
     }, indent=2)
 
 
@@ -848,11 +854,13 @@ def create_archive_files(
 
     # Create intake.md
     intake_path = archive_dir / paths["intake_md"]
+    contributor_line = f'contributor: "{result.contributor}"' if result.contributor else ""
     intake_content = f"""---
 issue_number: {result.issue_number}
 title: "{title}"
 score: {result.final_score}
 decision: {result.decision}
+{contributor_line}
 created_at: "{__import__('datetime').datetime.utcnow().isoformat()}Z"
 ---
 
@@ -887,6 +895,7 @@ created_at: "{__import__('datetime').datetime.utcnow().isoformat()}Z"
         "lesson_title": result.lesson_title,
         "lesson_domain": result.lesson_domain,
         "lesson_tags": result.lesson_tags,
+        "contributor": result.contributor,  # Issue #1342
         "created_at": __import__('datetime').datetime.utcnow().isoformat() + "Z",
     }
     metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
