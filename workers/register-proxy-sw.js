@@ -523,10 +523,18 @@ const BM25_STOPWORDS = new Set([
 ]);
 
 function bm25Tokenize(text) {
-  return text.toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .split(/\s+/)
+  const lower = text.toLowerCase();
+  // Split on non-alphanumeric, get base tokens
+  const baseTokens = lower.replace(/[^a-z0-9]+/g, " ").split(/\s+/)
     .filter(t => t.length >= 2 && !BM25_STOPWORDS.has(t));
+  // Also extract compound tokens from hyphenated words (e.g. "dco-signoff" → "dco-signoff")
+  const compoundTokens = lower.match(/[a-z0-9]+-[a-z0-9]+/g) || [];
+  const expanded = [];
+  for (const compound of compoundTokens) {
+    const joined = compound.replace(/-/g, "");
+    if (joined.length >= 2) expanded.push(joined);
+  }
+  return [...new Set([...baseTokens, ...expanded])];
 }
 
 function searchLessonsBM25(index, query, domain, top = 5) {
