@@ -98,6 +98,7 @@ def interactive():
     root_cause = _input_or_default("  2. 根因是什么")
     fix = _input_or_default("  3. 怎么修复的")
     verify = _input_or_default("  4. 怎么验证修复结果")
+    contributor = _input_or_default("  5. 贡献者 (GitHub用户名/Agent名, 可选)", default="")
 
     source = os.environ.get("MISAKANET_NODE_ID", "manual")
     now = datetime.now(timezone.utc)
@@ -111,6 +112,8 @@ def interactive():
         "created": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
         "updated": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
     }
+    if contributor:
+        frontmatter["contributor"] = contributor
 
     body = f"""---
 {json.dumps(frontmatter, ensure_ascii=False)}
