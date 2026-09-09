@@ -8,6 +8,7 @@ Commands:
     python3 scripts/setup.py --check Environment check
     python3 scripts/score_lessons.py Quality score for all Lessons
     python3 scripts/referral.py      Referral code (Node invites)
+    python3 -m misakanet extract     Extract failure lessons from logs
 """
 import sys
 
@@ -20,12 +21,17 @@ Commands:
     python3 scripts/setup.py --check       Environment check
     python3 scripts/score_lessons.py       Quality score
     python3 scripts/referral.py            Referral code
+    python3 -m misakanet extract [args]    Extract failure lessons from logs
 
 Docs: https://github.com/Ikalus1988/MisakaNet
 """
 
 def main():
-    print(USAGE)
+    if len(sys.argv) > 1 and sys.argv[1] == "extract":
+        from misakanet.watcher import run_extract
+        run_extract(sys.argv[2:])
+    else:
+        print(USAGE)
 
 if __name__ == "__main__":
     main()
