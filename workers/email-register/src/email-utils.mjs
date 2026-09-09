@@ -204,9 +204,14 @@ export function extractLessonContent(body) {
 
 export function detectIntakeType(subject, body) {
   const searchable = `${subject}\n${body.slice(0, 2000)}`.toLowerCase();
+  // Priority order: most specific patterns first
   if (/\b(register|registration|join)\b|注册/.test(searchable)) return 'registration';
   if (/\b(lesson|learning|postmortem)\b|投稿|教训|課程/.test(searchable)) return 'lesson-submission';
-  if (/\b(bug|issue|defect)\b/.test(searchable)) return 'bug-report';
+  if (/\b(recruit|hiring|job opening|we are looking for|join our team)\b|招聘|职位/.test(searchable)) return 'recruitment';
+  if (/\b(directory|listing|claim your|claimed|add your)\b|目录|收录/.test(searchable)) return 'directory-claim';
+  if (/\b(pitch|we built|our product|our platform|our tool|our service)\b|产品介绍/.test(searchable)) return 'pitch';
+  if (/\b(bug|issue|defect|error|crash|fail)\b/.test(searchable)) return 'bug-report';
+  if (/\?(.*\n){0,3}|^(how|what|when|where|why|can you|could you|is there)\b/.test(searchable)) return 'question';
   return 'unknown';
 }
 
