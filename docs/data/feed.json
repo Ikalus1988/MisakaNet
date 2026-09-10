@@ -1,9 +1,17 @@
 {
-  "generated_at": "2026-09-09T23:20:48.122036+00:00",
+  "generated_at": "2026-09-10T04:54:24.274739+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "lesson",
+      "title": "OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit",
+      "url": "lessons/contrib/openclaw-session-row-entry-updatedat-mismatch.md",
+      "timestamp": "2026-09-10",
+      "domain": "openclaw",
+      "source": "lessons"
+    },
     {
       "type": "merged_pr",
       "title": "feat(intake): add contributor tracking to intake pipeline #1342",
@@ -87,14 +95,6 @@
       "title": "Restart long-lived earn loops after code fixes",
       "url": "lessons/en/restart-earn-loop-after-code-fix.md",
       "timestamp": "2026-07-24",
-      "domain": "ops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Atomic file replace for agent status JSON",
-      "url": "lessons/en/atomic-write-replace.md",
-      "timestamp": "2026-07-23",
       "domain": "ops",
       "source": "lessons"
     }
