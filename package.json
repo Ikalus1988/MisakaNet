@@ -27,7 +27,7 @@
     "wrangler": "^4.129.0"
   },
   "overrides": {
-    "sharp": "0.35.3"
+    "sharp": "0.35.4"
   },
   "main": "index.js",
   "types": "index.d.ts",
