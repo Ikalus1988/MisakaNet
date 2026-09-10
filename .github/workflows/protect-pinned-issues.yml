@@ -1,0 +1,65 @@
+name: Protect long-running issues
+
+# Guard for curated "always open" issues. GitHub auto-closes an issue whenever a
+# merged PR/commit says "Closes #N" — which has now bitten #1550 twice:
+#   * 2026-09-08  PR #1554 ("Closes #1550") auto-closed it
+#   * 2026-09-09  PR #1560 merge closed it again (workflow #1560 referenced it)
+# #1258 (onboarding entry, "always open" by design) was hit by the same class of
+# accident through register.yml before that.
+#
+# This workflow reopens the protected issues and leaves a short note so the
+# closing cause is visible. To intentionally close one (e.g. #1550 when it
+# reaches 20 pilot reports), remove its number from PROTECTED below first.
+
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  issues: write
+
+jobs:
+  reopen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reopen protected long-running issue
+        uses: actions/github-script@v9
+        env:
+          PROTECTED: "1550,1258"
+        with:
+          script: |
+            const protectedNumbers = (process.env.PROTECTED || '')
+              .split(',').map(s => parseInt(s.trim(), 10)).filter(Boolean);
+            const number = context.payload.issue.number;
+            if (!protectedNumbers.includes(number)) {
+              core.info(`#${number} is not a protected long-running issue — nothing to do`);
+              return;
+            }
+            if (context.payload.issue.state === 'open') {
+              core.info(`#${number} is already open`);
+              return;
+            }
+
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: number,
+              state: 'open',
+            });
+
+            const actor = context.payload.sender?.login || 'unknown';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: number,
+              body: [
+                `♻️ **自动重开**（长期开放 issue 守护）`,
+                ``,
+                `本 issue 被 \`${actor}\` 的提交/合并自动关闭了（通常是某个 PR 正文写了 \`Closes #${number}\`）。`,
+                `它是**长期开放**的策展 issue，已由 \`.github/workflows/protect-pinned-issues.yml\` 自动重开。`,
+                ``,
+                `> 贡献者请注意：涉及本 issue 的 PR **不要写 \`Closes #${number}\`**——交付报告用 "Refs #${number}" 即可。`,
+                `> 维护者如需真正关闭（例如 #1550 收满 20 份试点报告），先把编号从 workflow 的 \`PROTECTED\` 列表移除。`,
+              ].join('\n'),
+            });
+            core.info(`Reopened protected issue #${number}`);
