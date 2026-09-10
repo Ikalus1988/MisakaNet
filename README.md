@@ -50,7 +50,11 @@ mcp-name: io.github.Ikalus1988/misakanet
        score from data/badges/smithery.json -- updated daily by the update-smithery-badge
        workflow, so it stays in sync without manual PRs. -->
   <a href="https://smithery.ai/servers/misakanet/misakanet"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/smithery.json" alt="Smithery"></a>
-  <a href="https://hol.org/registry/plugins/Ikalus1988%2FMisakaNet"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fhol.org%2Fapi%2Fregistry%2Fbadges%2Fplugin%3Fslug%3DIkalus1988%252FMisakaNet%26metric%3Dtrust%26style%3Dfor-the-badge%26label%3DMisakaNet" alt="MisakaNet on HOL Registry"></a>
+  <!-- HOL badge: the link still points at hol.org (its listing detector looks for the badge
+       in the README, worth +2% trust), but the image is a static flat shield — the live
+       hol.org/api/... endpoint is slow/unstable through shields.io and rendered as
+       "inaccessible" / a mismatched for-the-badge style. -->
+  <a href="https://hol.org/registry/plugins/Ikalus1988%2FMisakaNet"><img src="https://img.shields.io/badge/HOL%20Registry-listed-5599FE?style=flat" alt="MisakaNet on HOL Registry"></a>
   <a href="https://github.com/Ikalus1988/MisakaNet/tree/main/docs/benchmarks"><img src="https://img.shields.io/badge/Benchmark-Weekly%20Workers%20AI-blue" alt="Benchmark"></a>
 </p>
 
