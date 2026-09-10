@@ -1635,9 +1635,21 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
         resultKeys: Object.keys(result || {}),
       });
 
+      // MCP 2025-06-18: tools/call results SHOULD carry structuredContent so
+      // clients that validate tool output (e.g. DSH / cordis patch harness)
+      // accept the response. The spec requires it to be a JSON object, so wrap
+      // non-object results (arrays/primitives) under `value`.
+      const structuredContent =
+        result && typeof result === "object" && !Array.isArray(result)
+          ? result
+          : { value: result };
+
       return respond({
         jsonrpc: "2.0", id: reqId,
-        result: { content: [{ type: "text", text: JSON.stringify(result) }] },
+        result: {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+          structuredContent,
+        },
       });
     }
 
