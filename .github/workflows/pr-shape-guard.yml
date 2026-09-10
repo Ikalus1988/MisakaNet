@@ -58,7 +58,9 @@ jobs:
               }
 
               // Rule 3: source file contains pasted markdown/diff
-              if (/\.(py|js|ts|go)$/.test(name) && f.patch) {
+              // Skip test files — they legitimately contain markdown test data
+              const isTestFile = /^tests?\//.test(name) || /test[_]?/.test(name.split('/').pop());
+              if (/\.(py|js|ts|go)$/.test(name) && f.patch && !isTestFile) {
                 const added = f.patch
                   .split('\n')
                   .filter(line => line.startsWith('+') && !line.startsWith('+++'))
