@@ -33,10 +33,17 @@ jobs:
           python3 scripts/update-smithery-badge.py --output /tmp/smithery.json
 
       - name: Checkout data branch for commit
+        # NOTE: the previous `git checkout data` silently did nothing (the job only
+        # fetched main with fetch-depth: 1, so no local 'data' branch existed) — the
+        # commit then landed on main, the rebase rewrote the branch, and the push was
+        # rejected, so data/badges/smithery.json was never created and the README badge
+        # rendered "resource not found". Fetch and branch explicitly instead.
         run: |
-          git checkout data
+          git fetch origin data --depth=1
+          git checkout -B data origin/data
           mkdir -p badges
           cp /tmp/smithery.json badges/smithery.json
+          git status --short badges/
 
       - name: Commit and push if changed
         run: |
@@ -48,5 +55,12 @@ jobs:
           else
             git commit -m "chore(badge): update Smithery Kin score [skip ci]"
             git pull --rebase origin data 2>&1 || true
-            git push || { echo "push conflict, retrying..."; sleep 5; git pull --rebase origin data 2>&1 || true; git push || echo "push skipped"; }
+            # Push explicitly to the data branch (never HEAD:main).
+            git push origin HEAD:data || { echo "push conflict, retrying..."; sleep 5; git pull --rebase origin data 2>&1 || true; git push origin HEAD:data || { echo "::error::push to data failed"; exit 1; }; }
           fi
+
+      - name: Verify badge JSON is on the data branch
+        run: |
+          git fetch origin data --depth=1
+          git show origin/data:badges/smithery.json >/dev/null
+          echo "data/badges/smithery.json present ✓"
