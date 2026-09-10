@@ -90,3 +90,15 @@ jobs:
             done < "$file"
           done < <(find lessons -name "*.md" -type f | sort)
           echo "✅ Scan complete."
+
+      # Lessons are read by agents (via misakanet_search / misakanet_get_lesson), so
+      # instruction-shaped text in a lesson is aimed at the *reading agent*, not at the
+      # human. This catches prompt-injection shapes and pasted agent-transcript fragments
+      # ("[assistant] …", zero-width smuggling, hidden HTML-comment instructions).
+      # Fenced code blocks are exempt (security lessons legitimately quote attacks).
+      # Exit code 1 = at least one high-severity finding → the job fails for review.
+      - name: Scan lessons for prompt-injection / transcript pollution
+        run: |
+          echo "🔍 Injection & pollution scan (high severity fails this job)..."
+          python3 scripts/injection_scan.py --dir lessons
+
