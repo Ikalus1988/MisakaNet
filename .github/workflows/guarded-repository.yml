@@ -1,0 +1,48 @@
+name: Guarded Repository
+
+# HOL Guard "Guarded Repository" scan — the provenance workflow that HOL's registry
+# verifier recognises as a *continuous scanner CI*. Without it, the HOL plugin listing
+# reports "Continuous scanner CI not detected" and reduces its trust score by 10%.
+#
+# It does more than satisfy a dashboard:
+#   * runs the open-source HOL Guard scanner (prompt-injection, risky-tool, secret-access
+#     and publishability findings) over lessons/ + scripts/ + workers/, uploading SARIF to
+#     GitHub code scanning, and
+#   * asks GitHub to sign a provenance attestation for the scan evidence, so the scan is
+#     verifiable rather than self-asserted.
+#
+# Evidence sent to the HOL verifier is coarse metadata only (repo, commit SHA, run id,
+# scanner version/profile, score/grade, max severity, finding count, SARIF digest) — no
+# source, prompts, paths or credentials.
+#
+# Policy notes:
+#   * profile: default (not strict-security) until we have seen a first scan result.
+#   * fail_on_severity: critical — a critical finding should fail the run.
+#   * Triggered on main pushes, weekly, and manually — NOT on every PR, so contributor
+#     PRs are not gated on a third-party scanner.
+#
+# The reusable workflow is HOL-owned and version-pinned; the verifier validates
+# job_workflow_ref/job_workflow_sha before counting the scan as continuous.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 7 * * 1'   # Mondays 07:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+  security-events: write
+
+jobs:
+  guarded-repository:
+    uses: hashgraph-online/hol-guard/.github/workflows/guarded-repository.yml@v3.0.148
+    with:
+      profile: default
+      fail_on_severity: critical
+      upload_sarif: true
+      visibility: public
