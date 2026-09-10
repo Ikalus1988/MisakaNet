@@ -1,35 +1,42 @@
 {
-  "generated_at": "2026-09-10T16:31:42.099864+00:00",
+  "generated_at": "2026-09-10T20:58:17.803872+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(badges): repair Smithery badge pipeline + normalize HOL badge style",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1609",
-      "timestamp": "2026-09-10T16:25:48Z",
+      "title": "feat(mcp): L3 read-path trust notice on search/get_lesson responses",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1614",
+      "timestamp": "2026-09-10T17:35:56Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ci: auto-reopen protected long-running issues (#1550/#1258)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1607",
-      "timestamp": "2026-09-10T15:47:45Z",
+      "title": "feat(security): prompt-injection defense for agent-facing content surfaces",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1613",
+      "timestamp": "2026-09-10T17:24:01Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(mcp): include structuredContent in tools/call results (#1605)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1606",
-      "timestamp": "2026-09-10T14:56:31Z",
+      "title": "feat(plugin): add Codex plugin manifest + privacy/terms pages",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1612",
+      "timestamp": "2026-09-10T17:23:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "test(intake): statistical evaluation with100 stratified samples",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1603",
-      "timestamp": "2026-09-10T14:56:11Z",
+      "title": "ci: add HOL Guard Guarded Repository scan (prompt-injection findings + provenance attestation)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1611",
+      "timestamp": "2026-09-10T16:51:44Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(deps): bump sharp override to 0.35.4 (libheif advisories)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1610",
+      "timestamp": "2026-09-10T16:51:41Z",
       "source": "github"
     },
     {
@@ -39,13 +46,6 @@
       "timestamp": "2026-09-10",
       "domain": "openclaw",
       "source": "lessons"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 2.28.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1480",
-      "timestamp": "2026-09-05T16:11:52Z",
-      "source": "github"
     },
     {
       "type": "lesson",
