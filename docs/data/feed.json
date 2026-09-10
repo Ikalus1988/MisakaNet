@@ -1,9 +1,37 @@
 {
-  "generated_at": "2026-09-10T11:31:10.271074+00:00",
+  "generated_at": "2026-09-10T16:31:42.099864+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix(badges): repair Smithery badge pipeline + normalize HOL badge style",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1609",
+      "timestamp": "2026-09-10T16:25:48Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "ci: auto-reopen protected long-running issues (#1550/#1258)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1607",
+      "timestamp": "2026-09-10T15:47:45Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(mcp): include structuredContent in tools/call results (#1605)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1606",
+      "timestamp": "2026-09-10T14:56:31Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "test(intake): statistical evaluation with100 stratified samples",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1603",
+      "timestamp": "2026-09-10T14:56:11Z",
+      "source": "github"
+    },
     {
       "type": "lesson",
       "title": "OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit",
@@ -14,37 +42,9 @@
     },
     {
       "type": "merged_pr",
-      "title": "feat(intake): add contributor tracking to intake pipeline #1342",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1599",
-      "timestamp": "2026-09-09T17:47:05Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(watcher): memory dump watcher — auto-extract failure lessons #1166",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1597",
-      "timestamp": "2026-09-09T17:47:02Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(verify): add DSH plugin listing verification script",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1596",
-      "timestamp": "2026-09-09T17:46:59Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(verify): add Glama listing verification script with stale tool detection",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1595",
-      "timestamp": "2026-09-09T17:46:07Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(guard): add deprecation warning + CI schema check for lessons.json generator",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1594",
-      "timestamp": "2026-09-09T17:46:04Z",
+      "title": "chore(main): release 2.28.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1480",
+      "timestamp": "2026-09-05T16:11:52Z",
       "source": "github"
     },
     {
