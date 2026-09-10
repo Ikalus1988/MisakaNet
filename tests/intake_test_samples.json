@@ -1,0 +1,54 @@
+{
+  "errors": [
+    {"name": "Permission denied", "body": "remote: Permission to user/repo.git denied to user2.\nfatal: unable to access 'https://github.com/user/repo.git/': The requested URL returned error: 403"},
+    {"name": "Timeout", "body": "ERROR: Could not install packages due to an OSError: HTTPSConnectionPool(host='pypi.org', port=443): Read timed out"},
+    {"name": "Module not found", "body": "ModuleNotFoundError: No module named 'pandas'\n    import pandas as pd"},
+    {"name": "Type error", "body": "TypeError: expected str, bytes or os.PathLike object, not NoneType\n    at /app/config.py:42"},
+    {"name": "Connection refused", "body": "ConnectionRefusedError: [Errno 111] Connection refused\n  File \"/app/main.py\", line 15\n    requests.get('http://localhost:8080')"},
+    {"name": "Assertion error", "body": "AssertionError: assert response.status_code == 200\n  assert 500 == 200"},
+    {"name": "JSON decode", "body": "json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)\n  File \"/app/parser.py\", line 30"},
+    {"name": "Key error", "body": "KeyError: 'user_id'\n  File \"/app/models.py\", line 88\n    return data['user_id']"},
+    {"name": "Import error", "body": "ImportError: cannot import name 'Config' from 'app.settings'\n  File \"/app/main.py\", line 3"},
+    {"name": "Attribute error", "body": "AttributeError: 'NoneType' object has no attribute 'close'\n  File \"/app/db.py\", line 55"},
+    {"name": "OS error", "body": "OSError: [Errno 28] No space left on device\n  File \"/app/cache.py\", line 12"},
+    {"name": "Value error", "body": "ValueError: invalid literal for int() with base 10: 'abc'\n  File \"/app/utils.py\", line 45"}
+  ],
+  "fixes": [
+    {"name": "credential fix", "body": "1. Run `gh auth login`\n2. Verify SSH key: `ssh -T git@github.com`\n3. Check token expiration in GitHub Settings"},
+    {"name": "mirror fix", "body": "Configure pip mirror:\n```bash\npip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple\n```"},
+    {"name": "install fix", "body": "Install the missing package:\n```bash\npip install pandas\n```"},
+    {"name": "config fix", "body": "Set the environment variable:\n```bash\nexport APP_CONFIG=/etc/app/config.yaml\n```"},
+    {"name": "restart fix", "body": "Restart the service:\n```bash\nsudo systemctl restart myapp\n```"},
+    {"name": "permission fix", "body": "Fix file permissions:\n```bash\nchmod 600 ~/.ssh/id_rsa\n```"},
+    {"name": "upgrade fix", "body": "Upgrade the package:\n```bash\npip install --upgrade requests\n```"},
+    {"name": "clean fix", "body": "Clear the cache:\n```bash\nrm -rf ~/.cache/pip\npip install requests\n```"}
+  ],
+  "verifications": [
+    {"name": "bash verify", "body": "## Verification\n```bash\n$ git push origin main\nEnumerating objects: 5, done.\nWriting objects: 100% (3/3), done.\nTo https://github.com/user/repo.git\n   a1b2c3d..e4f5g6h  main -> main\n```"},
+    {"name": "test verify", "body": "## Verification\n```bash\n$ pytest tests/ -v\n===== 10 passed in 0.5s =====\n```\nAll tests pass after fix."},
+    {"name": "output verify", "body": "## Verification\n```bash\n$ python main.py\nServer started on port 8080\n[INFO] Connected to database\n```\nApplication starts successfully."},
+    {"name": "log verify", "body": "## Verification\n```\n$ tail -f /var/log/app.log\n[2024-01-15 10:30:00] INFO: Service healthy\n[2024-01-15 10:30:05] INFO: Request processed in 45ms\n```\nNo errors in logs after fix."},
+    {"name": "curl verify", "body": "## Verification\n```bash\n$ curl -s http://localhost:8080/health\n{\"status\":\"ok\",\"uptime\":3600}\n```\nHealth check returns200."}
+  ],
+  "low_quality_variants": [
+    {"name": "vague", "body": "## Problem\nSomething is broken.\n"},
+    {"name": "one-liner", "body": "## Problem\nMy code doesn't work.\n"},
+    {"name": "test", "body": "## Problem\nThis is a test issue for heartbeat verification.\n\nSubmitted via remote MCP (test). No account required.\n"},
+    {"name": "empty-fix", "body": "## Problem\nEncountering an error.\n\n## Fix\nNot sure.\n"},
+    {"name": "spam-like", "body": "## Problem\nBuy cheap shoes at https://spam.example.com\n"},
+    {"name": "no-content", "body": "## Problem\n\n\n"},
+    {"name": "question", "body": "## Problem\nHow do I configure the server?\n\nWhat settings should I use for production?\n"},
+    {"name": "duplicate-hint", "body": "## Problem\nDCO signoff fails on force push.\n\nThis is the same as the known issue.\n"},
+    {"name": "env-dump", "body": "## Problem\nApp fails to start.\n\n```\nHOME=/Users/test\nPATH=/usr/bin:/bin\n```\n"},
+    {"name": "just-title", "body": "## Problem\nError occurred.\n"}
+  ],
+  "templates": {
+    "high": "## Problem\n\nWhen performing operation, encountering {error_lower}.\n\n## Error\n\n```\n{error_body}\n```\n\n## Fix\n\n{fix_body}\n\n{verification_body}\n",
+    "medium_with_fix": "## Problem\n\nEncountering {error_lower} during development.\n\n## Error\n\n```\n{error_body}\n```\n\n## Fix\n\n{fix_body}\n",
+    "medium_without_fix": "## Problem\n\n{error_name} occurs when running the application.\n\n## Error\n\n```\n{error_body}\n```\n\nTried restarting but issue persists.\n",
+    "boundary_approve": "## Problem\n\n{error_name} occurs.\n\n## Error\n\n```\n{error_body}\n```\n\n## Fix\n\n{fix_body}\n\n## Verification\n\nVerified manually.\n",
+    "boundary_reject": "## Problem\n\n{error_name} during operation.\n\n## Error\n\n```\n{error_body}\n```\n\n## Fix\n\nTry updating the config.\n",
+    "monotonicity_base": "## Problem\nError occurs.\n\n## Error\n```\nTypeError: expected str\n```\n\n## Fix\nFix the config.\n",
+    "monotonicity_enhanced": "\n## Verification\n```bash\n$ python main.py\nOK\n```\n"
+  }
+}
