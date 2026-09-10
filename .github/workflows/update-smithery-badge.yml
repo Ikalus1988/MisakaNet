@@ -1,0 +1,52 @@
+name: Update Smithery Badge (daily)
+
+on:
+  schedule:
+    # Daily: 06:00 UTC — catches Kin score updates within ~24h
+    - cron: '0 6 * * *'
+  workflow_dispatch:          # manual trigger
+
+permissions:
+  # GITHUB_TOKEN (auto-provisioned by GitHub Actions): granted 'contents: write'
+  # scope so this job can commit the updated badge JSON to the 'data' branch
+  # and push it. No other scopes are required — the token is scoped to this
+  # repository only and expires when the workflow run ends. Do not add broader
+  # permissions (e.g. packages, issues) unless a future step needs them.
+  contents: write
+
+jobs:
+  update-badge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main (for script)
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Fetch Smithery Kin score and write badge JSON
+        run: |
+          python3 scripts/update-smithery-badge.py --output /tmp/smithery.json
+
+      - name: Checkout data branch for commit
+        run: |
+          git checkout data
+          mkdir -p badges
+          cp /tmp/smithery.json badges/smithery.json
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.org"
+          git add badges/smithery.json
+          if git diff --cached --quiet; then
+            echo "No change — score is the same"
+          else
+            git commit -m "chore(badge): update Smithery Kin score [skip ci]"
+            git pull --rebase origin data 2>&1 || true
+            git push || { echo "push conflict, retrying..."; sleep 5; git pull --rebase origin data 2>&1 || true; git push || echo "push skipped"; }
+          fi
