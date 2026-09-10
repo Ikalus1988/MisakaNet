@@ -19,7 +19,8 @@
     "verified": true,
     "evidence_level": "E1",
     "evidence_source": "inferred",
-    "trust_score": 0.387
+    "trust_score": 0.387,
+    "contributor": ""
   },
   {
     "id": "contributor-engagement-retention",
@@ -41,7 +42,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "cronjob-one-shot-race-condition-duplicate-execution",
@@ -63,7 +65,8 @@
     "verified": true,
     "evidence_level": "E2",
     "evidence_source": "inferred",
-    "trust_score": 0.425
+    "trust_score": 0.425,
+    "contributor": ""
   },
   {
     "id": "dco-auto-fix-workflow",
@@ -85,7 +88,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "freellmapi-session-context-mixing-cross-thread-delivery",
@@ -107,7 +111,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "github-actions-code-injection",
@@ -129,7 +134,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "hermes-state-database-lock-issues-cleanup-protocol",
@@ -151,7 +157,8 @@
     "verified": true,
     "evidence_level": "E2",
     "evidence_source": "inferred",
-    "trust_score": 0.425
+    "trust_score": 0.425,
+    "contributor": ""
   },
   {
     "id": "pr-cleanup-sop",
@@ -173,7 +180,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "pull-request-welcome-trigger-trap",
@@ -195,7 +203,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "search-first-roadmap-loop",
@@ -217,7 +226,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "accidental-pycache-commit",
@@ -239,7 +249,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "agent-error-handling-hi",
@@ -261,7 +272,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "agent-first-node-registration-via-mcp",
@@ -283,7 +295,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "agent-manual-update-timeout",
@@ -305,7 +318,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "agent-memory-extractor-timing",
@@ -327,7 +341,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "agent-memory-three-index-architecture",
@@ -349,7 +364,31 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "agent-prompt-preset-template-governance",
+    "title": "agent-prompt-preset-template-governance",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "In enterprise agent systems and multi-model routing pipelines, teams maintain extensive catalogs of prompt presets defining system instructions, conversational …",
+    "preview": "# Prompt Preset Governance: Schema Validation and Immutable Versioning\n\n## Problem\n\nIn enterprise agent systems and multi-model routing pipelines, teams maintain extensive catalogs of prompt presets defining system instructions, conversational personalities, output format schemas, and model generation hyperparameters (such as temperature, top_p, and max_tokens). When these presets are stored as unvalidated dictionary blobs, arbitrary YAML documents, or raw database rows without explicit schema contracts, system updates introduce critical production bugs.\n\nA common failure occurs when an engineer updates a system prompt template to reference a new contextual variable (such as `{retrieved_context}` or `{agent_role}`) without updating all caller sites. When the agent attempts interpolation, Python raises an unhandled `KeyError` during customer interactions. Similarly, setting invalid hyperparameters (such as a negative temperature or a context window exceeding model boundaries) crashes the inference engine mid-turn. In-place mutation of preset dictionaries during dynamic experimentation also introduces thread contamination across concurrent user sessions.\n\n## Root Cause\n\n1. **Unchecked Template Interpolation**: Using standard `str.format()` or f-strings without static verification of declared placeholders versus supplied parameters leaves missing variable bugs undetected until runtime execution.\n2. **Untyped Hyperparameter Bundling**: Model inference hyperparameters are coupled directly with prompt text without numerical range validation, type checking, or model compatibility verification.\n3. **Absence of Semantic Immutability**: Modifying preset configurations in-place during runtime experimentation corrupts baseline templates across parallel threads and prevents reliable rollback mechanisms.\n\n## Solution\n\nImplement an immutable prompt preset architecture (`PromptPreset` and `PresetRegistry`) backed by structural validation. The registry statically inspects template placeholders upon registration, enforces hyperparameter boundaries, and freezes configurations against runtime mutation.\n\n| Governance Dimension | Raw Dictionary Presets | Validated Preset Governance |\n| --- | --- | --- |\n| Placeholder Verification | Late runtime failure (`KeyError`) | Static check on registration and rendering |\n| Hyperparameter Safety | Untyped; accepts out-of-range values | Stri\n\n[clipped]",
+    "url": "lessons/contrib/agent-prompt-preset-template-governance.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "agent-reach-multi-platform-scraper",
@@ -371,7 +410,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "agent-readfile-silent-truncation",
@@ -393,7 +433,31 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "agent-roleplay-time-consistency-hallucination",
+    "title": "agent-roleplay-time-consistency-hallucination",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "In persistent roleplay agents, virtual companions, and multi-session narrative game loops, dialogues frequently span multiple calendar days or encounter unpredi…",
+    "preview": "# Mitigating Time Consistency Hallucinations in Conversational Roleplay Agents\n\n## Problem\n\nIn persistent roleplay agents, virtual companions, and multi-session narrative game loops, dialogues frequently span multiple calendar days or encounter unpredictable pauses between user sessions. When conversation logs are concatenated and fed into large language models without structured temporal envelopes, agents exhibit severe time consistency hallucinations. For example, an agent might greet a returning user with \"See you in an hour!\" after a two-week absence, reference events from three months prior as having occurred \"earlier this afternoon\", or assume midday conditions when the client interaction occurs at midnight.\n\nThese chronological hallucinations destroy narrative immersion, corrupt episodic memory indexing, and introduce state desynchronization into downstream agent planning graphs. Attempting to fix this by simply including raw UTC timestamps in conversation logs fails because neural attention mechanisms struggle to compute relative elapsed durations across long context windows without explicit temporal normalization.\n\n## Root Cause\n\n1. **Absence of Ground-Truth Temporal Anchors**: Static prompt templates set the system prompt date once at application startup or omit current time entirely. The model assumes dialogue turns occur in immediate chronological succession.\n2. **Implicit and Ambiguous Relative Phrases**: Natural language relies on relative temporal markers such as \"yesterday\", \"later\", \"this morning\", or \"last night\". When a session resumes after an extended hiatus, the model interprets historical relative phrases as referring to the immediate present rather than the original historical turn.\n3. **World Clock vs Wall-Clock Desynchronization**: Narrative environments and game worlds often operate on compressed or dilated time scales (such as 1 real hour representing 1 in-universe day). Without a dedicated temporal conversion layer, agents confuse real-world elapsed seconds with in-universe simulation epochs.\n\n## Solution\n\nDeploy a dedicated temporal context governor (`TemporalContextGovernor`) that tracks real-world elapsed intervals, maps intervals to in-universe chronological epochs, and prepends a structured, immutable temporal envelope to each dialogue turn.\n\n| Architectural Dimension | Naive Chat Log Concatenation | Static Prompt Date | Str\n\n[clipped]",
+    "url": "lessons/contrib/agent-roleplay-time-consistency-hallucination.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "agent-state-database-lock-cleanup",
@@ -415,7 +479,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "agent-web-access-toolchain-selection",
@@ -437,7 +502,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "ai-agent-project-outreach-guide",
@@ -459,7 +525,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "aider-api-key-leak",
@@ -481,7 +548,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "aider-litellm-model-name-rejection",
@@ -503,7 +571,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "aider-windows-unicode-error",
@@ -525,7 +594,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "aily-feishu-mcp-pull-only",
@@ -547,7 +617,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "an-unlikely-database-migration",
@@ -569,7 +640,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "anthropic-proxy-internal-gateway",
@@ -591,7 +663,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "api-gateway-anthropic-incompatibility",
@@ -613,7 +686,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "api-rate-limit-handling-best-practices",
@@ -635,7 +709,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "api-rate-limit-handling",
@@ -657,7 +732,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "asyncio-cancellederror-swallows-resources",
@@ -679,7 +755,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "audit-sampling-stratified-sampling-for-kb-inspection",
@@ -701,7 +778,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "auth-header-bug",
@@ -723,7 +801,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "benchmark-honesty-simulated-vs-real",
@@ -745,7 +824,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "bge-embedding-fallback-crash",
@@ -767,7 +847,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "bm25-chinese-sliding-window-tuning",
@@ -789,7 +870,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "bm25-vector-hybrid-search-weights",
@@ -811,7 +893,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "bounty-contributors-are-not-always-users",
@@ -833,7 +916,8 @@
     "verified": true,
     "evidence_level": "E1",
     "evidence_source": "inferred",
-    "trust_score": 0.387
+    "trust_score": 0.387,
+    "contributor": ""
   },
   {
     "id": "browser-automation-csp-bypass",
@@ -855,7 +939,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "browser-harness-cdp-browser-automation",
@@ -877,7 +962,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "cdn-edge-cache-stale-after-deploy",
@@ -899,7 +985,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "chroma-rebuild-no-checkpoint-cn",
@@ -921,7 +1008,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "chrome-relay-browser-automation",
@@ -943,7 +1031,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "ci-dco-decouple-pythonpath-fork-pr",
@@ -965,7 +1054,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "ci-key-rotation-silent-failure",
@@ -987,7 +1077,8 @@
     "verified": false,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "ci-lambda-module-level-side-effects",
@@ -1009,7 +1100,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "ci-security-advisory-checks",
@@ -1031,7 +1123,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "claude-code-debugging-ml-dsa-cryptography",
@@ -1053,7 +1146,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "cloudflare-ai-gateway-auth-pitfalls",
@@ -1075,7 +1169,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "cloudflare-email-worker-registration-trap",
@@ -1097,7 +1192,31 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "cloudflare-observability-mcp-oauth-separate-domain",
+    "title": "cloudflare-observability-mcp-oauth-separate-domain",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "Authorizing `cloudflare-observability` MCP (`https://observability.mcp.cloudflare.com/mcp`)",
+    "preview": "# Cloudflare Observability MCP OAuth: Separate Authorization Domain + mcporter Client Trap\n\n## Problem\n\nAuthorizing `cloudflare-observability` MCP (`https://observability.mcp.cloudflare.com/mcp`)\nto diagnose Workers errors (e.g. \"misakanet-register-proxy: 225 errors\" in the dashboard)\nfailed repeatedly:\n\n1. Reusing the known-good `mcp.cloudflare.com` OAuth client for the observability endpoint\n   returns `invalid_token: Access token appears malformed` — the two MCP servers do **not**\n   share an OAuth audience.\n2. mcporter's own auth flow (`mcporter auth cloudflare-observability`) produced a client_id\n   that `mcp.cloudflare.com/authorize` rejected with `invalid_request / 无效的 client_id`\n   (its dynamic registration targets the wrong domain or silently falls back to a\n   locally-generated id).\n\n## Root Cause\n\n- `observability.mcp.cloudflare.com` runs a **separate OAuth authorization server**\n  (issuer `https://observability.mcp.cloudflare.com`). Discovery:\n  `https://observability.mcp.cloudflare.com/.well-known/oauth-authorization-server`\n  → `authorization_endpoint: .../oauth/authorize`, `token_endpoint: .../token`,\n  `registration_endpoint: .../register`. It is NOT the same as\n  `https://mcp.cloudflare.com/.well-known/oauth-authorization-server`\n  (`.../authorize`, `.../token`, `.../register`).\n- Access tokens are audience-bound: a token from `mcp.cloudflare.com/token` is rejected by\n  the observability MCP with `invalid_token` even though the scope list looks identical.\n- mcporter's PKCE state files must contain **JSON string literals** (`state.txt` content is\n  read with `JSON.parse`, e.g. `\"<uuid>\"`), otherwise the client errors with\n  `Unexpected token ... is not valid JSON`.\n- WSL callback trap (see mcporter-cloudflare-oauth-endpoint-scope-wsl-callback): the\n  callback on `127.0.0.1` inside WSL never arrives from a Windows browser — capture the\n  `code=` from the address bar and exchange it manually.\n\n## Fix (fully manual, no mcporter needed)\n\n1. **DCR on the observability domain** (not mcp.cloudflare.com):\n\n   ```bash\n   curl -sS -X POST https://observability.mcp.cloudflare.com/register \\\n     -H \"Content-Type: application/json\" \\\n     -d '{\"redirect_uris\":[\"http://127.0.0.1:40399/callback\"],\"token_endpoint_auth_method\":\"none\",\n          \"grant_types\":[\"authorization_code\",\"refresh_token\"],\"response_types\":[\"code\"],\n          \"client_name\":\"misakanet-\n\n[clipped]",
+    "url": "lessons/contrib/cloudflare-observability-mcp-oauth-separate-domain.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "cloudflare-worker-deploy-three-pitfalls",
@@ -1119,7 +1238,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "codeql-alert-dismissal-false-positive",
@@ -1141,7 +1261,8 @@
     "verified": false,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "corporate-proxy-curl-timeout",
@@ -1163,7 +1284,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "cron-job-not-running",
@@ -1185,7 +1307,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "cross-repo-contribution-strategy",
@@ -1207,7 +1330,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "cross-sheet-name-merge-data-chaos",
@@ -1229,7 +1353,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "css-z-index-stacking-context-modal",
@@ -1251,7 +1376,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "cubic-ai-vs-pr-genius",
@@ -1273,7 +1399,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "curl-request-troubleshoot",
@@ -1295,7 +1422,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "data-capping-equals-forging-data",
@@ -1317,7 +1445,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "data-pipeline-lessons-json-canonical-generator",
@@ -1339,7 +1468,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "data-quality-three-layer-fix-pattern",
@@ -1361,7 +1491,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "dco-signoff-force-push-pitfall",
@@ -1383,7 +1514,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "debugging-memory-leaks-in-ruby",
@@ -1405,7 +1537,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "deepwiki-review-fair-hits-stale-misses-trajectory",
@@ -1427,7 +1560,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "disk-space-cleanup",
@@ -1449,7 +1583,31 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "docker-compose-basics",
+    "title": "docker-compose-basics",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "When managing multi-service topologies (such as a web application, background worker, relational database, and cache) via individual `docker run` commands, deve…",
+    "preview": "## Problem\n\nWhen managing multi-service topologies (such as a web application, background worker, relational database, and cache) via individual `docker run` commands, developers encounter common deployment failures:\n\n1. Application containers crash immediately upon startup because dependent databases have initialized the container process but are not yet accepting incoming TCP socket connections.\n2. Inter-service hostname resolution fails because containers started separately on the default bridge network lack automatic DNS resolution.\n3. Inconsistent volume mounts and uncoordinated environment variables cause drift between local development and staging environments.\n\n## Root Cause\n\n1. **Default Network DNS Absence**: The default Docker bridge network (`bridge`) does not support automatic container name DNS resolution. Inter-container communication requires either custom user-defined bridge networks or legacy `--link` parameters.\n\n2. **Process Start vs Service Readiness (`depends_on`)**: By default, Docker Compose's `depends_on` directive only checks that the dependency container has started (`RUNNING` status), not that the internal daemon (such as PostgreSQL, MySQL, or Redis) has finished initialization and is ready to process queries.\n\n3. **Uncoordinated Port Collisions and Lifecycle Drift**: Manually running containers across separate terminal sessions causes host port binding collisions, orphan volumes, and unmanaged shutdown sequences.\n\n## Fix\n\n### 1. Define Declarative Multi-Service Specification (`compose.yaml`)\n\nCreate a standardized Compose file using explicit custom networks, named volumes, and healthcheck-gated dependencies:\n\n```yaml\nservices:\n  database:\n    image: postgres:16-alpine\n    restart: unless-stopped\n    environment:\n      POSTGRES_DB: ${DB_NAME:-app_db}\n      POSTGRES_USER: ${DB_USER:-postgres}\n      POSTGRES_HOST_AUTH_METHOD: trust\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n    networks:\n      - internal_net\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-app_db}\"]\n      interval: 5s\n      timeout: 5s\n      retries: 5\n      start_period: 10s\n\n  cache:\n    image: redis:7-alpine\n    restart: unless-stopped\n    command: [\"redis-server\", \"--appendonly\", \"yes\"]\n    volumes:\n      - redis_data:/data\n    networks:\n      - internal_net\n    healthcheck:\n      test: [\"CMD\", \"redis-\n\n[clipped]",
+    "url": "lessons/contrib/docker-compose-basics.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "dsh-plugin-install-github-codeload-timeout",
@@ -1471,7 +1629,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "dsh-plugin-installation-troubleshooting",
@@ -1493,7 +1652,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "dsh-plugin-l5-web-smoke-cordis-duplicate-entry",
@@ -1515,7 +1675,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "erreur-permission-docker-linux",
@@ -1537,7 +1698,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "erro-push-git-rejeitado-divergente",
@@ -1559,7 +1721,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "error-dco-signoff-windows",
@@ -1581,7 +1744,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "proxy-corporativo-curl-timeout",
@@ -1603,7 +1767,8 @@
     "verified": false,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "escrow-fee-rounding-per-provider",
@@ -1625,7 +1790,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-alarm-code-reference",
@@ -1647,7 +1813,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-alarm-severity-guide",
@@ -1669,7 +1836,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-auto-abort-on-fault-restart",
@@ -1691,7 +1859,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-backup-payload-extraction",
@@ -1713,7 +1882,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-backup-restore-guide",
@@ -1735,7 +1905,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-communication-protocol-socket",
@@ -1757,7 +1928,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-dcs-safety-configuration",
@@ -1779,7 +1951,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-do-not-found-in-program-reference-position",
@@ -1801,7 +1974,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-eip-omron-plc-connection",
@@ -1823,7 +1997,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-handling-robot-auto-drop-diagnosis",
@@ -1845,7 +2020,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-intp-102-detect-joint-olp-whitespace",
@@ -1867,7 +2043,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-io-marker-m-instruction",
@@ -1889,7 +2066,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-karel-core-utility-modules",
@@ -1911,7 +2089,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-karel-geometry-kinematics-layer",
@@ -1933,7 +2112,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-karel-http-api-webcontrol",
@@ -1955,7 +2135,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-karel-ik-fk-quaternion-guide",
@@ -1977,7 +2158,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-karel-intp-316-call-error-motion-lock",
@@ -1999,7 +2181,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-karel-ka-boost-architecture",
@@ -2021,7 +2204,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-karel-kl-pose-api-reference",
@@ -2043,7 +2227,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-karel-unit-testing-kunit",
@@ -2065,7 +2250,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-karel-uv-to-xyzwpr-pipeline",
@@ -2087,7 +2273,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-kl-1086-is-line-number-not-error-code",
@@ -2109,7 +2296,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-kl-bytes-ahead-is-builtin-procedure",
@@ -2131,7 +2319,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-kl-err-abort-vs-err-pause",
@@ -2153,7 +2342,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-kl-mm-module-h-no-routine",
@@ -2175,7 +2365,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-mi-standard-software-instructions",
@@ -2197,7 +2388,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-payload-estimation",
@@ -2219,7 +2411,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-profinet-32bit-real-value-transfer",
@@ -2241,7 +2434,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-profinet-io-software-config",
@@ -2263,7 +2457,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-profinet-s7-1200-external-startup",
@@ -2285,7 +2480,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-program-inspection-methodology",
@@ -2307,7 +2503,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-python-interface-fanucpy",
@@ -2329,7 +2526,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-r-2000ic-retrieval-fix",
@@ -2351,7 +2549,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-rsr-program-select-logic",
@@ -2373,7 +2572,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-spot-wear-max-lookup",
@@ -2395,7 +2595,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-tcp-tool-configuration-standards",
@@ -2417,7 +2618,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fatal-guard-cli-hardening",
@@ -2439,7 +2641,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fehler-python-modul-nicht-gefunden",
@@ -2461,7 +2664,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-block-api-false-success",
@@ -2483,7 +2687,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-block-batch-limit",
@@ -2505,7 +2710,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-block-type-values-limits",
@@ -2527,7 +2733,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-bot-setup-complete",
@@ -2549,7 +2756,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-display-optimization-cc-connect",
@@ -2571,7 +2779,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-doc-delete-blocks-by-range-pitfall",
@@ -2593,7 +2802,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-doc-url-use-api-return",
@@ -2615,7 +2825,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-gateway-group-policy-silently-drops-messages",
@@ -2637,7 +2848,8 @@
     "verified": false,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-markdown-table-not-rendered",
@@ -2659,7 +2871,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-mcp-server-deepseek-tui-setup",
@@ -2681,7 +2894,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-setup-complete-cc-connect",
@@ -2703,7 +2917,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-upload-file-type-opus",
@@ -2725,7 +2940,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-webhook-url-env-config",
@@ -2747,7 +2963,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-websocket-404-error-http-webhook-required",
@@ -2769,7 +2986,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "feishu-wiki-batch-download",
@@ -2791,7 +3009,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "ffmpeg-audio-libopus-not-ogg",
@@ -2813,7 +3032,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "finding-and-fixing-ghostty-s-largest-memory-leak",
@@ -2835,7 +3055,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "firewall-port-open-not-public",
@@ -2857,7 +3078,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fiverr-perimeterx-blocks-seller-automation",
@@ -2879,7 +3101,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "frontmatter-parsing-edge-cases",
@@ -2901,7 +3124,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "game-mcp-end-turn-conflict-409",
@@ -2923,7 +3147,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "game-mcp-game-over-restart-flow",
@@ -2945,7 +3170,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "game-mcp-rare-relic-freeze",
@@ -2967,7 +3193,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "gateway-hang-watchdog-recovery",
@@ -2989,7 +3216,31 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "gemini-safety-settings-multi-hop-passthrough",
+    "title": "gemini-safety-settings-multi-hop-passthrough",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "In multi-tier enterprise environments where model traffic flows through API gateways, rate-limiting proxies, or security forwarders before reaching Gemini endpo…",
+    "preview": "# Gemini Safety Settings: Multi-Hop Gateway Passthrough and Compliance Preservation\n\n## Problem\n\nIn multi-tier enterprise environments where model traffic flows through API gateways, rate-limiting proxies, or security forwarders before reaching Gemini endpoints, custom safety settings configurations frequently fail to take effect. Downstream calls revert silently to provider default thresholds (such as BLOCK_MEDIUM_AND_ABOVE), bypassing fine-grained enterprise compliance mandates or inadvertently dropping required safety audit metadata (safetyRatings and finishReason: SAFETY).\n\n## Root Cause\n\n1. **Serialization and Naming Mismatch**: Client SDKs format requests using camelCase (safetySettings, harmCategory, threshold), whereas internal REST endpoints or intermediate proxies often deserialize into snake_case models (safety_settings). Strict schema validators discard unrecognized keys, stripping the safety array.\n2. **Missing Guardrail Clamping**: Forwarding layers treat caller-supplied safety parameters as unverified overrides. When downstream services omit safety thresholds, or when client applications submit permissive thresholds, multi-hop proxies without explicit policy enforcement fail to enforce organizational safety floors.\n3. **Response Context Truncation**: When a prompt triggers safety blocks, Gemini returns promptFeedback.blockReason or candidate items containing safetyRatings. Reverse proxies that project responses down to raw content parts drop these metadata fields, causing downstream logging and compliance services to record empty completions rather than explicit safety refusals.\n\n## Fix\n\nImplement gateway middleware that normalizes naming conventions, clamps safety thresholds against organizational compliance floors, and preserves safety metadata in responses:\n\n```python\nfrom typing import Any, Dict, List\n\nSTANDARD_CATEGORIES: List[str] = [\n    \"HARM_CATEGORY_HARASSMENT\",\n    \"HARM_CATEGORY_HATE_SPEECH\",\n    \"HARM_CATEGORY_SEXUALLY_EXPLICIT\",\n    \"HARM_CATEGORY_DANGEROUS_CONTENT\",\n]\n\nTHRESHOLD_SEVERITY: Dict[str, int] = {\n    \"BLOCK_LOW_AND_ABOVE\": 3,\n    \"BLOCK_MEDIUM_AND_ABOVE\": 2,\n    \"BLOCK_ONLY_HIGH\": 1,\n    \"BLOCK_NONE\": 0,\n}\n\n\ndef normalize_safety_settings(\n    incoming_settings: List[Dict[str, str]],\n    organization_baseline_threshold: str = \"BLOCK_LOW_AND_ABOVE\",\n) -> List[Dict[str, str]]:\n    \"\"\"Enforces strict safety thresholds by \n\n[clipped]",
+    "url": "lessons/contrib/gemini-safety-settings-multi-hop-passthrough.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "gfw-tls-sni-block-pattern",
@@ -3011,7 +3262,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "gfw-tls-sni-blocking-tool-layer-ineffective",
@@ -3033,7 +3285,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "ghidra-mcp-server-reverse-engineering",
@@ -3055,7 +3308,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "git-clean-branch-after-merged-pr-ru",
@@ -3077,7 +3331,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "git-credential-helper-gh-path-mismatch",
@@ -3099,7 +3354,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "git-credentials-and-node-id-setup",
@@ -3121,7 +3377,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "git-credentials-automation",
@@ -3143,7 +3400,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "git-force-with-lease-detached-head",
@@ -3165,7 +3423,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "git-merge-conflict-resolution",
@@ -3187,7 +3446,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "git-push-without-shell-agent",
@@ -3209,7 +3469,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "git-tls-handshake-failure",
@@ -3231,7 +3492,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "git-worktree-dangling-commit-recovery",
@@ -3253,7 +3515,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "gitguardian-placeholder-url-credential-safe-form",
@@ -3275,7 +3538,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "github-401-credential-lookup",
@@ -3297,7 +3561,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "github-actions-audit-scope-detection",
@@ -3319,7 +3584,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "github-actions-composite-pitfalls",
@@ -3341,7 +3607,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "github-actions-secrets-one-shot-workflow-pattern",
@@ -3363,7 +3630,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "github-api-pr-issue-management",
@@ -3385,7 +3653,8 @@
     "verified": false,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "github-api-pr-submission-pitfalls",
@@ -3407,7 +3676,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "github-automation-without-gh-cli-pt",
@@ -3429,7 +3699,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "github-contents-api-pr-pitfalls",
@@ -3451,7 +3722,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "github-contents-api-sha-required",
@@ -3473,7 +3745,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "github-dns-443-block-hosts-workaround",
@@ -3495,7 +3768,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "github-rate-limit-auth",
@@ -3517,7 +3791,8 @@
     "verified": false,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "github-release-large-asset-download-cn",
@@ -3539,7 +3814,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "github-sudo-email-otp-wrong-input-field",
@@ -3561,7 +3837,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "glama-mcp-server-deploy-lessons",
@@ -3583,7 +3860,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "go-scheduler-deadlock-lock-order",
@@ -3605,7 +3883,31 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "go-strings-contains-case-sensitivity-pitfalls",
+    "title": "go-strings-contains-case-sensitivity-pitfalls",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "In Go microservices processing HTTP protocol headers, API routing tags, query parameters, or agent tool arguments, developers frequently invoke `strings.Contain…",
+    "preview": "# Go strings.Contains Case Sensitivity Pitfalls and Zero-Allocation Matching\n\n## Problem\n\nIn Go microservices processing HTTP protocol headers, API routing tags, query parameters, or agent tool arguments, developers frequently invoke `strings.Contains(haystack, needle)` under the incorrect assumption that substring matching is case-insensitive. Alternatively, developers attempt ad-hoc case normalization on only one operand, for example `strings.Contains(headerValue, strings.ToLower(expectedMime))` or `strings.Contains(strings.ToLower(userInput), constantPrefix)`.\n\nWhen incoming headers or tokens arrive with mixed or uppercase casing (such as `Authorization: Bearer <token>` or `Content-Type: Application/JSON; charset=utf-8`), these asymmetric checks fail silently. Critical security policies, content-type routing filters, and authentication guards fail to match valid requests. When developers attempt to fix this by lowercasing both arguments (`strings.Contains(strings.ToLower(haystack), strings.ToLower(needle))`), every check creates two heap allocations. In high-throughput network proxies and streaming gateways processing tens of thousands of requests per second, this causes severe memory allocation churn, CPU cache degradation, and prolonged garbage collection stop-the-world pauses.\n\n## Root Cause\n\n1. **Exact Byte Matching Semantics**: The standard library `strings.Contains` delegates to byte-level substring matching. It does not perform Unicode case-folding or ASCII case equivalence.\n2. **Asymmetric Operand Normalization**: Calling `strings.ToLower` on only the pattern parameter leaves uppercase characters in the target haystack unmatched. Calling it on only the haystack fails whenever the search needle contains capital letters.\n3. **Heap Allocation Pressure**: `strings.ToLower` allocates a new byte slice and returns a newly constructed string. Calling it inside hot request loops or per-token streaming processors incurs O(N) allocation overhead per evaluation.\n4. **Unicode Transformation Nuances**: Naive ASCII bit-masking (`c | 0x20`) corrupts non-ASCII multibyte runes (such as accented characters or Unicode casing variants), requiring proper rune boundary handling when processing international text.\n\n## Solution\n\nDeploy dedicated case-folding substring matchers. Use `ContainsFoldASCII` for high-throughput network protocol headers and ASCII identifiers, and\n\n[clipped]",
+    "url": "lessons/contrib/go-strings-contains-case-sensitivity-pitfalls.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "go-toolchain-vuln-bump-wrong-arch",
@@ -3627,7 +3929,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "gpt-sovits-hubert-16khz",
@@ -3649,7 +3952,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "gpt-sovits-name2text-arpabet",
@@ -3671,7 +3975,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "gpt-sovits-ref-free-bug",
@@ -3693,7 +3998,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "heartbeat-scan-improvement",
@@ -3715,7 +4021,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "hermes-model-switch-ccswitch",
@@ -3737,7 +4044,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "hub-credential-gateway-vs-hub",
@@ -3759,7 +4067,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "hub-feishu-wsclient-start-never-called",
@@ -3781,7 +4090,31 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "iap-tcp-forwarding-numpy-bandwidth",
+    "title": "iap-tcp-forwarding-numpy-bandwidth",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "When uploading large NumPy array datasets (such as model weights, embeddings, or serialized tensors) to Google Cloud Compute Engine instances over Identity-Awar…",
+    "preview": "## Problem\n\nWhen uploading large NumPy array datasets (such as model weights, embeddings, or serialized tensors) to Google Cloud Compute Engine instances over Identity-Aware Proxy (IAP) TCP forwarding tunnels (`gcloud compute start-iap-tunnel`), throughput drops by 40% to 85% compared to direct internal VPC connections. Transfers of multi-hundred megabyte arrays stall, encounter high latency variance, or fail with socket timeout errors (`BrokenPipeError`, `ConnectionResetError`).\n\n## Root Cause\n\n1. **Proxy Tunnel Encapsulation and Socket Buffer Limits**: Google Cloud IAP tunnels wrap raw TCP streams within WebSocket and TLS framing. Default OS socket send buffer sizes (`SO_SNDBUF`, typically 128KB to 256KB) quickly saturate under high-throughput NumPy binary streams. When the local buffer fills before the IAP gateway acknowledges packets across the WebSocket hop, TCP window collapses occur, throttling stream rate.\n\n2. **Unbuffered Serialization and Memory Copying**: Standard unbuffered transfers or naive `np.save()` serialization create intermediate byte copies in user-space memory, triggering CPU stalls and uneven transmission burst rates that destabilize the IAP proxy rate limiter.\n\n3. **Suboptimal MTU Negotiation**: IAP encapsulation reduces the effective path MTU below standard 1500 bytes. Large uncompressed array chunks without proper socket MSS negotiation lead to IP packet fragmentation and retransmission penalties across the proxy boundary.\n\n## Fix\n\n### 1. Tune OS Kernel TCP Buffers and Socket Options\n\nConfigure Linux kernel buffer parameters on both client and VM endpoints to allow dynamic window scaling up to 16MB:\n\n```bash\nsudo sysctl -w net.core.rmem_max=16777216\nsudo sysctl -w net.core.wmem_max=16777216\nsudo sysctl -w net.ipv4.tcp_rmem=\"4096 87380 16777216\"\nsudo sysctl -w net.ipv4.tcp_wmem=\"4096 65536 16777216\"\nsudo sysctl -w net.ipv4.tcp_window_scaling=1\nsudo sysctl -w net.ipv4.tcp_slow_start_after_idle=0\n```\n\n### 2. Configure Python Socket Buffer and Disable Nagle Algorithm\n\nSet explicit socket options before sending array bytes:\n\n```python\nimport socket\nimport numpy as np\nimport io\n\ndef create_tuned_socket(host: str, port: int) -> socket.socket:\n    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)\n    sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 4 * 1024 * 1024)\n  \n\n[clipped]",
+    "url": "lessons/contrib/iap-tcp-forwarding-numpy-bandwidth.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "issue-comment-newbie-welcome",
@@ -3803,7 +4136,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "jieba-synonym-expansion-pitfall",
@@ -3825,7 +4159,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "js-dead-code-chain-break",
@@ -3847,7 +4182,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "json-parse-failure-handling",
@@ -3869,7 +4205,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "kb-4sigma-quality-audit-pipeline",
@@ -3891,7 +4228,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "knowledge-graph-ux-patterns-from-high-star-projects",
@@ -3913,7 +4251,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "kubernetes-crashloopbackoff-debugging",
@@ -3935,7 +4274,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "lesson-06-git-push-credential-helper-403",
@@ -3957,7 +4297,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-07-uv-venv-seed-fix-no-pip",
@@ -3979,7 +4320,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-08-pip-https-proxy-clash",
@@ -4001,7 +4343,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-09-v2ex-api-show-endpoint-unstable",
@@ -4023,7 +4366,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-10-agent-reach-doctor-baseline",
@@ -4045,7 +4389,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-10-microservices-latency-math",
@@ -4067,7 +4412,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-11-github-commit-signing",
@@ -4089,7 +4435,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-13-aws-lambda-microvms",
@@ -4111,7 +4458,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-14-api-pagination-design",
@@ -4133,7 +4481,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-15-cloudflare-workflows-durable",
@@ -4155,7 +4504,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-16-aws-ecs-high-resolution-metrics",
@@ -4177,7 +4527,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-17-segmentfault-mcp-standardization",
@@ -4199,7 +4550,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-18-database-performance-indexing",
@@ -4221,7 +4573,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-19-grpc-openapi-rest-comparison",
@@ -4243,7 +4596,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-20-api-design-principles",
@@ -4265,7 +4619,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-9-redis-postgresql-replacement",
@@ -4287,7 +4642,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-file-line-number-corruption",
@@ -4309,7 +4665,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-management-standardization",
@@ -4331,7 +4688,8 @@
     "verified": false,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-provenance-tracking",
@@ -4353,7 +4711,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-quality-requirements",
@@ -4375,7 +4734,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-review-3-devops-platform-engineering",
@@ -4397,7 +4757,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "lesson-review-4-mcp-bedrock-integration",
@@ -4419,7 +4780,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-review-5-eks-version-rollback",
@@ -4441,7 +4803,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-review-6-cloudflare-x402-monetization",
@@ -4463,7 +4826,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-review-7-cloudflare-saga-rollbacks",
@@ -4485,7 +4849,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-review-8-cloudflare-ai-traffic-options",
@@ -4507,7 +4872,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lesson-template-network",
@@ -4529,7 +4895,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "lessons-md-fix-heading-block-type",
@@ -4551,7 +4918,54 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "llm-sdk-client-centralization-architecture",
+    "title": "llm-sdk-client-centralization-architecture",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "In modular multi-agent architectures, independent subagents, planning loops, and dynamically dispatched tool handlers frequently instantiate client SDKs on dema…",
+    "preview": "# Centralized SDK Client Architecture for High-Concurrency Multi-Agent Runtimes\n\n## Problem\n\nIn modular multi-agent architectures, independent subagents, planning loops, and dynamically dispatched tool handlers frequently instantiate client SDKs on demand. For example, a web search tool, a code execution sandbox, and a reflection evaluator might each call `client = OpenAI()` or `genai.Client()` within local function scopes. Under high concurrency across parallel worker swarms, this pattern causes rapid operating system file descriptor exhaustion (`OSError: [Errno 24] Too many open files`).\n\nFurthermore, ephemeral client instances establish new TCP connections and renegotiate TLS handshakes for every request, multiplying network latency. Rate limiting also breaks: each client instance maintains an isolated retry state, preventing unified backoff coordination and causing parallel workers to trigger thundering-herd HTTP 429 rate limit exceptions.\n\n## Root Cause\n\n1. **Unpooled Transport Allocations**: Client SDKs wrap underlying HTTP transport engines (such as `httpx.Client` or `urllib3.PoolManager`) containing connection pools. Creating clients within per-call functions discards the transport pool after each invocation, preventing HTTP keep-alive socket reuse.\n2. **Socket Retention in TIME_WAIT**: Sockets released without explicit closure linger in the kernel `TIME_WAIT` state for minutes. High-throughput agent pipelines rapidly exceed default OS socket limits.\n3. **Decentralized Rate-Limiter State**: Upstream rate-limiting and circuit-breaking require global visibility. When 50 worker coroutines each instantiate independent SDK clients, rate-limit backoff calculations operate in isolation, exacerbating provider quota penalties.\n\n## Solution\n\nDeploy a centralized, thread-safe client registry (`SDKClientRegistry`) that pools and manages long-lived client instances keyed by a deterministic hash of provider configurations. The registry enforces global connection bounds and provides unified lifecycle hooks for graceful shutdown.\n\n| Architectural Metric | Ad-Hoc Per-Call Instantiation | Centralized Client Registry |\n| --- | --- | --- |\n| TCP / TLS Handshakes | 1 per API call | 1 per unique endpoint worker pool |\n| Socket Lifecycle | High churn; accumulated `TIME_WAIT` sockets | Bounded, persistent keep-alive connections |\n| File Descriptor Overhead | O(N) where N is\n\n[clipped]",
+    "url": "lessons/contrib/llm-sdk-client-centralization-architecture.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "llm-streaming-thought-tags-stripping",
+    "title": "llm-streaming-thought-tags-stripping",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "Reasoning models such as DeepSeek-R1, Qwen-QwQ, and OpenAI-compatible reasoning variants emit internal chain-of-thought traces wrapped within structural markup …",
+    "preview": "# Streaming Thought Tags Stripping: State-Machine Buffer for Reasoning Models\n\n## Problem\n\nReasoning models such as DeepSeek-R1, Qwen-QwQ, and OpenAI-compatible reasoning variants emit internal chain-of-thought traces wrapped within structural markup tags such as `<think>...</think>` or `<thought>...</thought>`. In streaming agent pipelines and gateway proxies, passing these raw tokens directly to client interfaces or tool call executors causes severe degradation. End-user chat interfaces display internal model monologues, downstream structured output parsers encounter schema validation crashes, and automated function calling agents ingest internal reasoning tokens as tool arguments, triggering unexpected execution errors.\n\nNaive post-processing methods such as single-pass regular expressions (`re.sub(r\"<think>.*?</think>\", \"\", text, flags=re.DOTALL)`) work only on complete, non-streaming completions. When applied to streaming chunks, regular expressions fail because tag boundaries fragment across network read buffers. Attempting to suppress chunks until closing tags arrive introduces unacceptable Time-To-First-Token (TTFT) latency spikes or leaks partial markers when tag tokens are split.\n\n## Root Cause\n\n1. **Arbitrary Chunk Boundary Splitting**: Stream chunks emitted over HTTP Server-Sent Events (SSE) or WebSockets slice token strings arbitrarily. An opening tag like `<think>` often arrives partitioned across multiple chunks (for example chunk N ends with `<th`, and chunk N+1 begins with `ink>`). Per-chunk string searching misses these boundary-straddling patterns.\n2. **Greedy Flushing and False Positives**: Naive buffering layers that pause emission upon seeing any `<` character stall standard markdown or HTML output (such as `x < y` or `<div>`). Without lookahead prefix matching, parsers either emit incomplete tag fragments prematurely or hold non-tag content indefinitely.\n3. **Premature Termination on Truncated Streams**: If a model reaches its maximum generation token limit (`finish_reason: length`) while still inside a thinking block, the closing `</think>` tag is never emitted. Parsers lacking explicit stream termination handlers leak incomplete buffers or fail to finalize internal state cleanly.\n\n## Solution\n\nImplement a stateful streaming processor with bounded prefix lookahead. The processor manages explicit transitions between content emission, s\n\n[clipped]",
+    "url": "lessons/contrib/llm-streaming-thought-tags-stripping.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "macos-homebrew-python-pip-install-blocked-by-pep-668-externa",
@@ -4573,7 +4987,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "maintainer-feedback-iteration",
@@ -4595,7 +5010,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "mcp-context-mode-98-reduction",
@@ -4617,7 +5033,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "mcp-endpoint-404-zone-route-misconfig",
@@ -4639,7 +5056,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "mcp-intake-no-account-submission",
@@ -4661,7 +5079,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "mcp-question-answer-pull-delivery",
@@ -4683,7 +5102,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "mcp-registry-readiness-requires-qa-before-promotion",
@@ -4705,7 +5125,8 @@
     "verified": true,
     "evidence_level": "E2",
     "evidence_source": "inferred",
-    "trust_score": 0.425
+    "trust_score": 0.425,
+    "contributor": ""
   },
   {
     "id": "mcp-server-direct-handler-testing",
@@ -4727,7 +5148,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "mcp-server-testing-patterns-ru",
@@ -4749,7 +5171,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "mcp-server-that-reduces-claude-code-context-consumption-by-9",
@@ -4771,7 +5194,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "mcp-tool-error-convention-inconsistency",
@@ -4793,7 +5217,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "mcporter-cloudflare-oauth-endpoint-scope-wsl-callback",
@@ -4815,7 +5240,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "mcporter-oauth-must-be-serial",
@@ -4837,7 +5263,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "mergeable-state-blocked-not-red-ci",
@@ -4859,7 +5286,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "misakanet-heal-engine-bootstrap-workflow",
@@ -4881,7 +5309,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "misakanet-heal-ux-gap-queue-lesson-flag-mismatch",
@@ -4903,7 +5332,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "misakanet-refactor-v2-review",
@@ -4925,7 +5355,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "model-output-fix",
@@ -4947,7 +5378,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "model-switch-script-pattern",
@@ -4969,7 +5401,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "multi-forum-scraping-architecture",
@@ -4991,7 +5424,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "n8n-nodejs-econnreset-connection-reset-fix",
@@ -5013,7 +5447,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "nodejs-missing-require-inside-try-catch",
@@ -5035,7 +5470,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "npm-eacces-permission-error-linux",
@@ -5057,7 +5493,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "npm-native-build-arch-mismatch",
@@ -5079,7 +5516,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "openai-compatible-api-call",
@@ -5101,7 +5539,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "openclaw-fatal-error-hook-protocol",
@@ -5123,7 +5562,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "openclaw-gateway-dynamic-module-missing",
@@ -5145,7 +5585,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium",
@@ -5167,7 +5608,8 @@
     "verified": true,
     "evidence_level": "E2",
     "evidence_source": "inferred",
-    "trust_score": 0.425
+    "trust_score": 0.425,
+    "contributor": ""
   },
   {
     "id": "openclaw-prefer-cli-and-policy-over-direct-edit",
@@ -5189,7 +5631,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "openclaw-reinstall-lesson",
@@ -5211,7 +5654,38 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "openclaw-session-row-entry-updatedat-mismatch",
+    "title": "OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit",
+    "domain": "openclaw",
+    "tags": [
+      "openclaw",
+      "sqlite",
+      "session_nodes",
+      "canonical-key",
+      "repair",
+      "entry_valid"
+    ],
+    "summary": "On OpenClaw 8.2.x, manually editing `session_nodes.entry_json` (e.g. to clear",
+    "preview": "# OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit\n\n## Problem\n\nOn OpenClaw 8.2.x, manually editing `session_nodes.entry_json` (e.g. to clear\n`mainRestartRecovery` fields) leaves `entry_valid=0` permanently, even after\nrestarting the gateway. Every subsequent `openclaw agent --agent main` call\nreturns:\n\n```\nSessionCanonicalKeyMigrationRequiredError: invalid persisted session row\nrequires repair for agent:main:main; stop the Gateway and run\nopenclaw doctor --fix: code=SESSION_CANONICAL_KEY_MIGRATION_REQUIRED\n```\n\nFeishu DM inbound messages hit the same error during `feishu[default]:\ndispatching to agent`, so the bot stops replying. The reported symptom is\n\"channel connected, works, but no reply arrives.\"\n\nManual `UPDATE session_nodes SET entry_valid=1` does NOT stick — three\n`AFTER INSERT/UPDATE` triggers on the table re-set it back to 0:\n\n- `session_nodes_entry_valid_after_insert`\n- `session_nodes_entry_valid_after_entry_update`\n- `session_nodes_entry_valid_after_identity_update`\n\nThe triggers fire because `entry_valid=1` is only ever set as a side effect\nof OpenClaw's own internal re-validation pass, which the gateway runs once\nat startup and which checks two invariant conditions on the row.\n\n## Root Cause\n\nThe OpenClaw 8.2 validator function\n`scanCanonicalSqliteSessionEntries` (in\n`session-accessor.sqlite-transcript-state-*.js`) inspects every `session_nodes`\nrow and throws `SessionCanonicalKeyMigrationRequiredError` when any of:\n\n1. `row.entry_valid !== 1`, OR\n2. `parseSqliteSessionEntryRecord(row)` returns `null`, OR\n3. lineage columns drift from `entry.parentSessionKey` / `spawnedBy`.\n\n`parseSqliteSessionEntryRecord` returns `null` when:\n\n```js\n(row.current_session_id !== record.sessionId)\n|| (row.updated_at !== record.updatedAt)\n```\n\nIn other words `entry_json.sessionId === session_nodes.current_session_id`\nAND `entry_json.updatedAt === session_nodes.updated_at` must BOTH be exact\nintegers. Naive manual edits that touch only `entry_json` (or only\n`updated_at`) break this invariant and the next validator pass refuses to\nmark `entry_valid=1`.\n\nThe skill `openclaw-gateway-troubleshooting` section C.3 mentions\n`SessionCanonicalKeyMigrationRequired` and prescribes \"DELETE then INSERT\nminimal row\" — but a blanket delete also drops `transcript_events`,\n`conversations`, `session_windows`, and `session_pending_inputs` linked by\nsession_\n\n[clipped]",
+    "url": "lessons/contrib/openclaw-session-row-entry-updatedat-mismatch.md",
+    "created": "2026-09-10",
+    "updated": "2026-09-10",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "draft",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E2",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.425,
+    "contributor": ""
   },
   {
     "id": "opire-bounty-hunting",
@@ -5233,7 +5707,8 @@
     "verified": true,
     "evidence_level": "E1",
     "evidence_source": "inferred",
-    "trust_score": 0.387
+    "trust_score": 0.387,
+    "contributor": ""
   },
   {
     "id": "oss-refactor-lessons",
@@ -5255,7 +5730,8 @@
     "verified": false,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "permission-denied-fix",
@@ -5277,7 +5753,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "phase-0-output-gate",
@@ -5299,7 +5776,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "pip-install-proxy-timeout",
@@ -5321,7 +5799,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "pip-install-timeout-ssl",
@@ -5343,7 +5822,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "playwright-snap-chromium-libnss3-sandbox-launch",
@@ -5365,7 +5845,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "postgresql-connection-pool-exhaustion-ar",
@@ -5387,7 +5868,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "pr-genius-issue-evaluator-for-intake",
@@ -5409,7 +5891,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "pr-strategy",
@@ -5431,7 +5914,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "private-agent-memory-fallacy",
@@ -5453,7 +5937,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "process-card-sequence-extraction-rules",
@@ -5475,7 +5960,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "prompt-injection-what-s-the-worst-that-can-happen",
@@ -5497,7 +5983,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "instalacao-pip-timeout-proxy",
@@ -5519,7 +6006,8 @@
     "verified": false,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "python-gbk-encoding-error",
@@ -5541,7 +6029,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "python-pycache-stale",
@@ -5563,7 +6052,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "python-sandbox-path-isolation",
@@ -5585,7 +6075,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "python-smtplib-ssl-certificate-verify-failed-fix",
@@ -5607,7 +6098,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "python-venv-tiktoken-module-not-found",
@@ -5629,7 +6121,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "python-venv-troubleshoot",
@@ -5651,7 +6144,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "rag-alarm-code-mandatory-recall",
@@ -5673,7 +6167,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "rag-brand-contamination-detection-and-fix",
@@ -5695,7 +6190,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "rag-brand-filter-three-pitfalls",
@@ -5717,7 +6213,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "rag-build-strategy-batch",
@@ -5739,7 +6236,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "rag-chinese-encoding-pymupdf",
@@ -5761,7 +6259,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "rag-chunk-params-800-100",
@@ -5783,7 +6282,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "rag-cross-encoder-cpu-bottleneck",
@@ -5805,7 +6305,8 @@
     "verified": true,
     "evidence_level": "E4",
     "evidence_source": "inferred",
-    "trust_score": 0.5
+    "trust_score": 0.5,
+    "contributor": ""
   },
   {
     "id": "rag-injection-benchmark-small-models-gain-large-distracted",
@@ -5827,7 +6328,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "rag-kb-quality-flywheel-self-loop",
@@ -5849,7 +6351,8 @@
     "verified": true,
     "evidence_level": "E1",
     "evidence_source": "inferred",
-    "trust_score": 0.387
+    "trust_score": 0.387,
+    "contributor": ""
   },
   {
     "id": "rag-retrieval-sink-multilayer-cutoff",
@@ -5865,7 +6368,7 @@
       "anchor"
     ],
     "summary": "2026-08-21/22 R-2000iC 换油周期案例：hermes 回答\"数值对（碰巧）但来源错位\"，④ 误判\"KB 蒸馏覆盖缺口\"——实际 **B-82334CM/05 §7.3 数据完整在库**（3年/11520h + 指定润滑脂 Alvania S2 + 各轴供脂量 8370ml 等），是**检索漏召回**…",
-    "preview": "## Problem\n\n2026-08-21/22 R-2000iC 换油周期案例：hermes 回答\"数值对（碰巧）但来源错位\"，④ 误判\"KB 蒸馏覆盖缺口\"——实际 **B-82334CM/05 §7.3 数据完整在库**（3年/11520h + 指定润滑脂 Alvania S2 + 各轴供脂量 8370ml 等），是**检索漏召回**。同类案例：M-900iB 换油（数据在库但 hermes 答\"未覆盖\"）。两次都被 LLM 误判为\"数据缺失\"，根因都在检索层。\n\n## Root Cause\n\n多层检索管道各自丢弃精确答案 chunk，无单一修复足够：\n\n1. **查询措辞差异** — 用户问\"换油周期\"，手册用\"润滑脂更换/定期检修\"，BM25 与向量均未命中手册号\n2. **RRF 截断过紧** — `top_k*2` 在 RRF 排名 15–20 的精确 chunk 被截掉\n3. **overlap-guard 降权** — 短文本精确答案因与查询词重叠低被降权沉底\n4. **diversity 提前截断** — diversity 在 overlap-guard 之前截断，锚点命中 chunk 未获优先保留\n\n## Solution\n\n四层配合修复（`self-grow-wiki` 的 `rag_core.py`）：\n\n### 1. `_augment_query`：机型保养锚点\n\n查询含 `R-?2000\\s*iC` + 换油/润滑/保养词时，追加手册号锚点：\n\n```python\nif re.search(r'R-?2000\\s*iC', query, re.I) and re.search(r'换油|润滑|保养', query):\n    query += \" B-82334CM B-82334EN 润滑脂 更换 定期检修 11520\"\n```\n\nBM25 直接命中手册号，绕过措辞差异。\n\n### 2. RRF 截断放宽\n\n`top_k*2` → `top_k*3`，保留 RRF 排名 15–20 的精确答案进入候选池。\n\n### 3. overlap-guard：手册号锚点豁免\n\n手册号锚点命中的 chunk 豁免降权并加分 0.3：\n\n```python\nanchors = re.findall(r'B-\\d{5}[A-Z]{2}', expanded_query)\nfor chunk in candidates:\n    if any(a in chunk.text for a in anchors):\n        chunk.score += 0.3  # 锚点 = 强匹配信号，豁免降权\n```\n\n### 4. diversity：锚点 chunk 优先保留\n\n锚点命中的 chunk 加入 `_exempt` 集合，在 diversity 截断时优先保留（diversity 在 overlap-guard 之前执行，只改 overlap 不够）。\n\n## Verification\n\n```bash\npython3 search_knowledge.py \"R-2000iC 换油周期 B-82334\" --lessons\ngrep -c \"B-82334\" lessons/contrib/rag-retrieval-sink-multilayer-cutoff.md\n```\n\n**Expected:** lesson 可被检索到；grep 返回 ≥1。\n\n## Key Points\n\n- 数据在库但检索漏召回时，LLM 会误判为\"KB 覆盖缺口\"——先查检索层再查蒸馏层\n- 手册号（如 `B-82334CM`）是强锚点，应贯穿 query 扩展、RRF 截断、overlap-guard、diversity 四层\n- 与 [rag-retrieval-six-layer-silent-degradation](rag-retrieval-six-layer-silent-degradation.md) 互补：该 lesson 覆盖 M-900iB 六层退化，本 lesson 聚焦 FANUC 保养手册号的四层锚点修复\n\n## Related Lessons\n\n- rag-retrieval-six-layer-silent-degradation: M-900iB 六层静默退化\n- fanuc-r-2000ic-retrieval-fix: R-2000iC 跨品牌型号混淆的关键词强制召回",
+    "preview": "## Problem\n\n2026-08-21/22 R-2000iC 换油周期案例：hermes 回答\"数值对（碰巧）但来源错位\"，④ 误判\"KB 蒸馏覆盖缺口\"——实际 **B-82334CM/05 §7.3 数据完整在库**（3年/11520h + 指定润滑脂 Alvania S2 + 各轴供脂量 8370ml 等），是**检索漏召回**。同类案例：M-900iB 换油（数据在库但 hermes 答\"未覆盖\"）。两次都被 LLM 误判为\"数据缺失\"，根因都在检索层。\n\n## Root Cause\n\n多层检索管道各自丢弃精确答案 chunk，无单一修复足够：\n\n1. **查询措辞差异** — 用户问\"换油周期\"，手册用\"润滑脂更换/定期检修\"，BM25 与向量均未命中手册号\n2. **RRF 截断过紧** — `top_k*2` 在 RRF 排名 15–20 的精确 chunk 被截掉\n3. **overlap-guard 降权** — 短文本精确答案因与查询词重叠低被降权沉底\n4. **diversity 提前截断** — diversity 在 overlap-guard 之前截断，锚点命中 chunk 未获优先保留\n\n## Solution\n\n四层配合修复（`self-grow-wiki` 的 `rag_core.py`）：\n\n### 1. `_augment_query`：机型保养锚点\n\n查询含 `R-?2000\\s*iC` + 换油/润滑/保养词时，追加手册号锚点：\n\n```python\nif re.search(r'R-?2000\\s*iC', query, re.I) and re.search(r'换油|润滑|保养', query):\n    query += \" B-82334CM B-82334EN 润滑脂 更换 定期检修 11520\"\n```\n\nBM25 直接命中手册号，绕过措辞差异。\n\n### 2. RRF 截断放宽\n\n`top_k*2` → `top_k*3`，保留 RRF 排名 15–20 的精确答案进入候选池。\n\n### 3. overlap-guard：手册号锚点豁免\n\n手册号锚点命中的 chunk 豁免降权并加分 0.3：\n\n```python\nanchors = re.findall(r'B-\\d{5}[A-Z]{2}', expanded_query)\nfor chunk in candidates:\n    if any(a in chunk.text for a in anchors):\n        chunk.score += 0.3  # 锚点 = 强匹配信号，豁免降权\n```\n\n### 4. diversity：锚点 chunk 优先保留\n\n锚点命中的 chunk 加入 `_exempt` 集合，在 diversity 截断时优先保留（diversity 在 overlap-guard 之前执行，只改 overlap 不够）。\n\n## Verification\n\n```bash\nset -o pipefail\npython3 search_knowledge.py \"R-2000iC 换油周期 B-82334\" --lessons --tags=fanuc --top=50 --strict --json |\n  python3 -c 'import json,sys; hits=json.load(sys.stdin); assert any(hit[\"path\"] == \"lessons/contrib/rag-retrieval-sink-multilayer-cutoff.md\" for hit in hits)'\npython3 -c 'import json; entry=next(item for item in json.load(open(\"data/lessons.json\", encoding=\"utf-8\")) if item[\"id\"] == \"rag-retrieval-sink-multilayer-cutoff\"); assert entry[\"tags\"] == [\"rag\", \"retrieval\", \"silent-degradation\", \"bm25\", \"overlap-guard\", \"fanuc\", \"anchor\"]; assert entry[\"evidence_level\"] == \"E2\"'\n```\n\n**Expected:** search returns this lesson through the `fanuc` tag filter and the index assertions exit 0.\n\n## Key Points\n\n- 数据在库但检索漏召回时，LLM 会误判为\"KB 覆盖缺口\"——先查检索层再查蒸馏层\n- 手册号（如 `B-82334CM`）是强锚点，应贯穿 query 扩展、RRF 截断、overlap-guard、diversity 四层\n- 与 [rag-retrieval-six-layer-silent-degradation](rag-retrieval-six-layer-silent-degradation.md) 互补：该 lesson 覆盖 M-900iB 六层退化，本 lesson 聚焦 FANUC 保养手册号的四层锚点修复\n\n## Related Lessons\n\n- rag-retrieval-six-layer-silent-degradation: M-900iB 六层静默退化\n- fanuc-r-2000ic-retrieval-fix: R-20\n\n[clipped]",
     "url": "lessons/contrib/rag-retrieval-sink-multilayer-cutoff.md",
     "created": "2026-08-24",
     "updated": "",
@@ -5879,7 +6382,8 @@
     "verified": true,
     "evidence_level": "E2",
     "evidence_source": "frontmatter",
-    "trust_score": 0.425
+    "trust_score": 0.425,
+    "contributor": ""
   },
   {
     "id": "rag-retrieval-six-layer-silent-degradation",
@@ -5901,7 +6405,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "rag-three-channel-llm-disaster-recovery",
@@ -5923,7 +6428,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "rdt-cli-reddit-terminal",
@@ -5945,7 +6451,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "readme-seven-traps-fix-checklist",
@@ -5967,7 +6474,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "regex-escaped-quotes-source-parsing",
@@ -5989,7 +6497,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "regex-greedy-matching",
@@ -6011,7 +6520,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "registration-chain-worker-fallback",
@@ -6033,7 +6543,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "remote-search-rate-limiting",
@@ -6055,7 +6566,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "repository-traffic-is-not-lesson-use",
@@ -6077,7 +6589,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "rescue-cards-for-non-github-users",
@@ -6099,7 +6612,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "sag-lite-data-quality-cleaning",
@@ -6121,7 +6635,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "schema-coupled-cross-repo-ci",
@@ -6143,7 +6658,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "scrapling-installation-and-usage",
@@ -6165,7 +6681,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "search-evaluation-rank-tracking-bias",
@@ -6187,7 +6704,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "search-quota-exhaustion-false-zero",
@@ -6209,7 +6727,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "search-smart-fallback-implementation",
@@ -6231,7 +6750,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "search-ssot-data-source-pollution-fix",
@@ -6253,7 +6773,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "session-lesson-1-content-quality-scoring",
@@ -6275,7 +6796,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "session-lesson-2-forum-accessibility-testing",
@@ -6297,7 +6819,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "session-lesson-3-lobsters-json-api",
@@ -6319,7 +6842,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "session-lesson-4-playwright-forum-selectors",
@@ -6341,7 +6865,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "shared-json-needs-atomic-write",
@@ -6363,7 +6888,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "shell-script-debugging",
@@ -6385,7 +6911,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "slugify-path-traversal-deep-coverage",
@@ -6407,7 +6934,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "slugify-windows-path-sanitation",
@@ -6429,7 +6957,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "squash-rebase-force-push-lease",
@@ -6451,7 +6980,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "ssh-host-key-verification-failed",
@@ -6473,7 +7003,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "static-page-github-api-403-rate-limit",
@@ -6495,7 +7026,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "static-page-width-consistency",
@@ -6517,7 +7049,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "supabase-capacity-constraints-project-operations",
@@ -6539,7 +7072,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "superteam-earn-api-insufficient-credits",
@@ -6561,7 +7095,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "swarm-pr-battle-playbook",
@@ -6583,7 +7118,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "taskbounty-payout-api-ok-readiness-still-fail",
@@ -6605,7 +7141,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "testimonio-misakanet",
@@ -6627,7 +7164,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "tmux-session-management",
@@ -6649,7 +7187,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "tor-orbot-privacy-in-react-native-tr",
@@ -6671,7 +7210,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "tts-chinese-encoding-powershell",
@@ -6693,7 +7233,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "two-evidence-loops-for-failure-lessons",
@@ -6715,7 +7256,8 @@
     "verified": true,
     "evidence_level": "E4",
     "evidence_source": "inferred",
-    "trust_score": 0.5
+    "trust_score": 0.5,
+    "contributor": ""
   },
   {
     "id": "typescript-solution-tsconfig-silent-nocheck",
@@ -6737,7 +7279,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "usdc-base-units-vs-human-amounts-agent-marketplaces-ru",
@@ -6759,7 +7302,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "usdc-ethereum-instead-of-base-zero-eth-gas",
@@ -6781,7 +7325,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "version-management-multiple-files",
@@ -6803,7 +7348,77 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "vertex-ai-cost-attribution-bigquery-billing-gemma",
+    "title": "vertex-ai-cost-attribution-bigquery-billing-gemma",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "在 Google Cloud 上混合部署 Vertex AI 原生模型（如 Gemini API 按 Token 计费）与 Gemma 开源大模型（部署在 Vertex AI Endpoint 或托管 GPU 算力上）时，团队常面临严重的成本失控与归因困难：",
+    "preview": "# Vertex AI 成本归因：BigQuery billing exports + traces + Gemma 混合计费\n\n## Problem\n\n在 Google Cloud 上混合部署 Vertex AI 原生模型（如 Gemini API 按 Token 计费）与 Gemma 开源大模型（部署在 Vertex AI Endpoint 或托管 GPU 算力上）时，团队常面临严重的成本失控与归因困难：\n\n1. **维度缺失与聚合粗糙**：Google Cloud Console 计费页面仅提供服务级别（`Vertex AI`）或项目级别的宏观账单，无法精确下钻到具体业务线、微服务、模型版本（如 `gemma-2-9b-it` vs `gemini-1.5-flash`）以及单个推理 Endpoint。\n2. **混合计费模型混淆**：Gemini 等 API 采用按输入/输出 Token 计费的 Serverless 模式；而 Gemma 托管在 Vertex AI Prediction Endpoint 时，计费依据为底层 GPU/CPU 节点规格与持续运行小时数。由于计费度量单位截然不同，粗放统计导致无法评估单个业务请求的真实单位成本（Unit Economics）。\n3. **调用链路与计费断层**：前端应用虽然通过 Cloud Trace 和 OpenTelemetry 采集了请求链路与延迟，但在财务账单导出中找不到关联键，无法将异常高昂的时段账单与具体的慢请求、突发并发或异常重试请求相对应。\n4. **GPU 闲置暗扣**：Gemma 模型端点为了规避冷启动延迟，通常配置 `minReplicaCount >= 1`。低峰期（如夜间或周末）无推理流量时，昂贵的加速器（如 NVIDIA L4 或 A100）仍然全额产生每小时数百美元的累积消耗，财务分析却难以直接定位闲置浪费源头。\n\n## Root Cause\n\n1. **BigQuery Export 导出类型不当**：仅启用了标准计费导出（`gcp_billing_export_v1_*`），而未开启包含资源层级元数据的详细费用导出（`gcp_billing_export_resource_v1_*`）。标准导出缺失 `resource.name` 字段，无法提取 Vertex AI Endpoint 唯一资源标识符。\n2. **Endpoint 与模型标签规范缺失**：在通过 SDK 或 Terraform 创建 Vertex AI Endpoint 与部署 DeployedModel 时，未注入符合组织标准的标签（如 `team`, `service`, `model_name`, `environment`）。Google Cloud Billing 仅在资源具备有效 label 时才将其写入 `labels` 数组。\n3. **请求日志与计费数据缺乏统一关联键**：客户端向 Vertex AI 发起预测时，未将全局唯一的 `trace_id` 记录到应用结构化日志并回填到请求元数据，导致 Cloud Logging 导出到 BigQuery 的推理日志与计费账单处于相互割裂的数据孤岛。\n4. **混合架构下的成本核算口径差异**：未建立混合计费折算模型。Gemma 托管端点计费属于固定算力租赁模型（Capacity-based），单位成本取决于并发利用率；Gemini 计费属于纯可变消耗模型（Usage-based）。两者直接混合在同一项目下未作切分，造成成本分摊失真。\n\n## Fix\n\n### 步骤 1：启用并解析 BigQuery Detailed Billing Export 表结构\n\n确保在 Google Cloud Billing Console 启用 **Detailed cost data export**，导出表结构为 `project_id.billing_dataset.gcp_billing_export_resource_v1_<BILLING_ACCOUNT_ID>`。\n\n关键表字段如下：\n- `service.description`: 服务名称，Vertex AI 记录为 `'Vertex AI'`。\n- `sku.description`: 计费项名称，区分 GPU 实例、CPU 节点及 Token 服务。\n- `resource.name`: 格式形如 `//aiplatform.googleapis.com/projects/<PROJECT_NUM>/locations/<REGION>/endpoints/<ENDPOINT_ID>`。\n- `labels`: `ARRAY<STRUCT<key STRING, value STRING>>`，承载自定义模型与环境标签。\n- `cost`: 原始费用。\n- `credits`: 扣减的赠金或折扣项数组。\n\n### 步骤 2：对 Vertex AI Gemma 端点强制实施标签管理\n\n创建或更新 Vertex AI Endpoint 时，注入规范化的业务与模型标签，确保计费导出自动捕获标签。\n\n```bash\ngcloud ai endpoints create \\\n  --region=us-central1 \\\n  --display-name=\"gemma-2-9b-production\" \\\n  --labels=env=production,team=algo-platform,model_family=gemma,model_name=gemma-2-9b-it,cost_center=ai-infradev\n```\n\n对于已部署的模型\n\n[clipped]",
+    "url": "lessons/contrib/vertex-ai-cost-attribution-bigquery-billing-gemma.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "vertex-ai-embedding-qwen-go-migration",
+    "title": "vertex-ai-embedding-qwen-go-migration",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "在将微服务知识检索（RAG）管道从本地 HuggingFace/BGE 模型或 OpenAI 嵌入服务迁移至 Google Cloud Vertex AI 及 Vertex Model Garden 托管的 Qwen 嵌入模型时，生产环境常集中爆发以下阻断性故障：",
+    "preview": "# Vertex AI Embedding 迁移实战（Python + Go + Qwen）\n\n## Problem\n\n在将微服务知识检索（RAG）管道从本地 HuggingFace/BGE 模型或 OpenAI 嵌入服务迁移至 Google Cloud Vertex AI 及 Vertex Model Garden 托管的 Qwen 嵌入模型时，生产环境常集中爆发以下阻断性故障：\n\n1. **Go 语言客户端序列化报错**：\n   在 Go 服务端直接调用 Vertex AI gRPC 接口时，频繁抛出错误：\n   ```text\n   rpc error: code = InvalidArgument desc = The input content is missing or in an invalid format.\n   ```\n   或 HTTP REST 调用返回 `400 Bad Request: Request payload size or structure mismatch`。\n\n2. **Model Garden Qwen 嵌入接口协议不匹配**：\n   调用部署在 Vertex AI Model Garden 上的 Qwen 嵌入模型自定义端点时，发送原生 Vertex AI 预测请求体导致端点崩溃或返回：\n   ```json\n   {\"detail\": [{\"loc\": [\"body\", \"instances\"], \"msg\": \"field required\", \"type\": \"value_error.missing\"}]}\n   ```\n   或底层 vLLM/TEI 容器报 `KeyError: 'input'`。\n\n3. **向量数据库维度不兼容引发存储崩溃**：\n   原有下游向量数据库（如 pgvector、Qdrant、Milvus）表结构固定为 1536 维（OpenAI）或 1024 维（BGE-M3），而 Vertex 原生 `text-embedding-004` 默认输出 768 维，Qwen2-Embedding-7B 默认输出 3584 维。数据入库时直接报错：\n   ```text\n   ERROR: column \"embedding\" is of type vector(1536) but expression is of type vector(768)\n   ```\n\n4. **并发摄取配额耗尽与静默截断**：\n   批量同步文档向量时短时间内遭遇 `429 ResourceExhausted: Quota exceeded for Online prediction requests`，或单篇文档超出单批次 20480 token 限制被服务端截断导致语义检索准确率严重劣化。\n\n5. **容器环境认证缺失与证书错误**：\n   Go 语言微服务打包到 scratch 或 distroless 极简容器镜像后，启动即崩溃：\n   ```text\n   oauth2/google: unable to find default credentials\n   x509: certificate signed by unknown authority\n   ```\n\n## Root Cause\n\n上述故障源于客户端 SDK 抽象差异、服务端容器协议不一致、向量维度演进及容器运行时配置不足：\n\n1. **SDK 抽象层差异**：\n   Python 的 `vertexai.language_models.TextEmbeddingModel` 封装了内部复杂的 protobuf 嵌套构造，开发者传入字符串列表即可自动序列化。而 Go 官方 SDK (`cloud.google.com/go/aiplatform/apiv1/aiplatformpb`) 是对 gRPC 接口的直接映射，`PredictRequest.Instances` 要求必须是 `*structpb.Value` 类型的结构体包装切片，`Parameters` 同样必须为 protobuf Value，缺少任何一层结构包装都会导致反序列化失败。\n\n2. **模型服务容器规范差异**：\n   Google 自研的 `text-embedding-004` 遵循 Google 专有的 Prediction Service 契约：\n   `{\"instances\": [{\"content\": \"...\", \"task_type\": \"RETRIEVAL_DOCUMENT\"}], \"parameters\": {\"outputDimensionality\": 768}}`。\n   而 Model Garden 中的开源 Qwen 模型若通过 Text Embeddings Inference (TEI) 或 vLLM 容器镜像部署，其开放的是兼容 OpenAI 的 REST 端点，要求输入字段为 `{\"input\": [\"...\"], \"model\": \"Qwen/Qwen2-Embedding\"}`。两者请求协议无法直接通用。\n\n3. **向量维度未配置 Matryoshka 缩放**：\n   Vertex AI `text-embedding-004` 具备 MRL (Matryoshka Representation Learning) 降维特性，支持通过 `outputDimensionality` 参数输出 256、512 或 768 维。未显式声明时采用模型默认全维度，破坏了数据库模式既定约束。\n\n4. **批处理阈值与配额约束**：\n   Vertex AI 原生在线预测单\n\n[clipped]",
+    "url": "lessons/contrib/vertex-ai-embedding-qwen-go-migration.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
+    "id": "vertex-ai-streaming-response-sse",
+    "title": "vertex-ai-streaming-response-sse",
+    "domain": "contrib",
+    "tags": [],
+    "summary": "When consuming the Vertex AI `streamGenerateContent` API over HTTP or via custom middleware, client applications frequently encounter stream truncation, deseria…",
+    "preview": "# Vertex AI Streaming: Robust SSE Chunk Assembly and Buffer Handling\n\n## Problem\n\nWhen consuming the Vertex AI `streamGenerateContent` API over HTTP or via custom middleware, client applications frequently encounter stream truncation, deserialization failures (`json.JSONDecodeError: Unterminated string`), and multi-byte encoding corruption (`UnicodeDecodeError: 'utf-8' codec can't decode byte`). These errors trigger abruptly during large payload transfers or when streaming non-ASCII multi-byte tokens (such as CJK characters or technical Unicode symbols).\n\n## Root Cause\n\nTCP packet fragmentation does not respect application-layer boundaries:\n1. **Multi-byte Boundary Splits**: UTF-8 characters span between 1 and 4 bytes. Network read operations return arbitrary chunk boundaries that split a multi-byte sequence across two consecutive read buffers. Calling `chunk.decode('utf-8')` immediately on arbitrary chunks fails with `UnicodeDecodeError`.\n2. **Incomplete JSON Frames**: Server-Sent Events (SSE) delineate messages with double newlines (`\\n\\n`) and prefix payloads with `data: `. When payload chunks contain complex JSON objects (such as nested function call arguments), single lines can exceed socket buffer sizes. Attempting to parse lines before the full event delimiter arrives leads to syntax errors.\n3. **Control Frames and Ping Keep-Alives**: Upstream reverse proxies and Google Cloud load balancers transmit empty lines (`\\r\\n`) and comment frames (`: ping`) to prevent HTTP idle timeouts. Parsers without state validation crash when encountering these control frames.\n\n## Fix\n\nImplement a streaming processor using an incremental decoder (`codecs.getincrementaldecoder`) combined with an event boundary accumulator.\n\n```python\nimport codecs\nimport json\nfrom typing import Any, Dict, Generator, Iterator\n\n\ndef process_vertex_sse_stream(\n    byte_chunks: Iterator[bytes],\n) -> Generator[Dict[str, Any], None, None]:\n    \"\"\"Decodes raw SSE byte stream from Vertex AI into parsed JSON payloads.\n\n    Args:\n        byte_chunks: An iterator yielding raw byte chunks from the HTTP response.\n\n    Yields:\n        Parsed dictionary corresponding to each complete SSE data payload.\n\n    Raises:\n        ValueError: If an event line fails JSON parsing after boundary assembly.\n    \"\"\"\n    decoder = codecs.getincrementaldecoder(\"utf-8\")(errors=\"strict\")\n    line_buffer = \"\"\n\n    for chun\n\n[clipped]",
+    "url": "lessons/contrib/vertex-ai-streaming-response-sse.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "active",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "inferred",
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "vertical-kb-question-bank-strategy",
@@ -6825,7 +7440,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "vitest-v8-ast-coverage-threshold-shift",
@@ -6847,7 +7463,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "wcferry-wechat-version-lock",
@@ -6869,7 +7486,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "webcrypto-fallback-consistency-node-worker",
@@ -6891,7 +7509,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "webhook-duplicate-delivery-dedupe-scope",
@@ -6913,7 +7532,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "webmcp-chrome-ai-agent-protocol",
@@ -6935,7 +7555,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "wechat-pubacct-fetch-separate-search-from-retrieval",
@@ -6957,7 +7578,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "wecom-robot-long-connect-no-ngrok",
@@ -6979,7 +7601,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "welcome-bot-mcp-intake-path",
@@ -7001,7 +7624,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "windows-ci-splitcommand-backslash-unicode-detached",
@@ -7023,7 +7647,8 @@
     "verified": true,
     "evidence_level": "E3",
     "evidence_source": "inferred",
-    "trust_score": 0.463
+    "trust_score": 0.463,
+    "contributor": ""
   },
   {
     "id": "worktree-git-path-deepseek-tui",
@@ -7045,7 +7670,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "wsl-ntfs-sqlite-update-100x-slower",
@@ -7067,7 +7693,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "wsl-pip-gbk-hub-poller-crash",
@@ -7089,7 +7716,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "wsl-proxy-huggingface-external",
@@ -7111,7 +7739,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "wsl-proxy-setup",
@@ -7133,7 +7762,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "wsl-terminal-underscore-corruption",
@@ -7155,7 +7785,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "wsl2-memory-leak-fix",
@@ -7177,7 +7808,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "wxauto-im-feedback-collection-jsonl-queue",
@@ -7199,7 +7831,8 @@
     "verified": true,
     "evidence_level": "E1",
     "evidence_source": "inferred",
-    "trust_score": 0.387
+    "trust_score": 0.387,
+    "contributor": ""
   },
   {
     "id": "wxauto-windows-python-not-wsl",
@@ -7221,7 +7854,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "yaml-inline-comment-type-coercion",
@@ -7243,7 +7877,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "zero-bounty-agent-competition-flywheel",
@@ -7265,7 +7900,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "자바-버전-불일치-빌드-오류",
@@ -7287,7 +7923,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "agent-pid-lockfile",
@@ -7316,7 +7953,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "atomic-write-replace",
@@ -7344,7 +7982,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "browser-cookie-export-for-apis",
@@ -7372,7 +8011,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "ci-dco-fork-pr-signoff",
@@ -7402,7 +8042,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "content-pack-ready-before-credits",
@@ -7431,7 +8072,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "curl-fail-fast-flags",
@@ -7458,7 +8100,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "date-sast-logging",
@@ -7486,7 +8129,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "disk-full-agent-tmp-gc",
@@ -7515,7 +8159,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "empty-board-idle-exit",
@@ -7544,7 +8189,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "env-file-mode-600",
@@ -7573,7 +8219,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "exponential-backoff-cap",
@@ -7601,7 +8248,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "gh-pr-ready-checklist",
@@ -7630,7 +8278,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "github-pat-scopes-minimum",
@@ -7659,7 +8308,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "healthcheck-endpoint-pattern",
@@ -7687,7 +8337,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "honest-zero-cash-reporting",
@@ -7715,7 +8366,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "http-timeout-retry-pattern",
@@ -7744,7 +8396,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "idempotent-task-claim",
@@ -7772,7 +8425,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "json-schema-validate-input",
@@ -7801,7 +8455,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "jsonl-activity-ledger",
@@ -7829,7 +8484,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "links-json-mixed-types",
@@ -7857,7 +8513,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "log-redaction-secrets",
@@ -7885,7 +8542,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "mkdir-p-race-safe",
@@ -7912,7 +8570,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "multi-lane-rotate-on-block",
@@ -7941,7 +8600,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "proof-folder-for-paid-jobs",
@@ -7970,7 +8630,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "rate-limit-jitter-sleep",
@@ -7998,7 +8659,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "restart-earn-loop-after-code-fix",
@@ -8026,7 +8688,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "separate-scout-and-worker-modes",
@@ -8055,7 +8718,8 @@
     "verified": true,
     "evidence_level": "E1",
     "evidence_source": "inferred",
-    "trust_score": 0.387
+    "trust_score": 0.387,
+    "contributor": ""
   },
   {
     "id": "signal-timeout-wrapper",
@@ -8082,7 +8746,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "single-instance-flock",
@@ -8111,7 +8776,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "static-page-github-api-fault-tolerance",
@@ -8140,7 +8806,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "stdout-stderr-split-cron",
@@ -8168,7 +8835,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "user-agent-identify-bots",
@@ -8196,7 +8864,8 @@
     "verified": true,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "archive-open-failure",
@@ -8218,7 +8887,8 @@
     "verified": false,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   },
   {
     "id": "fanuc-backup-extract-guide",
@@ -8240,6 +8910,7 @@
     "verified": false,
     "evidence_level": "E0",
     "evidence_source": "inferred",
-    "trust_score": 0.35
+    "trust_score": 0.35,
+    "contributor": ""
   }
 ]
