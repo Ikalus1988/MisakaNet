@@ -1,0 +1,42 @@
+{
+  "name": "misakanet",
+  "version": "2.28.1",
+  "description": "Failure-memory network for AI coding agents: search verified debugging lessons, submit new failures, and turn crashes into reusable knowledge.",
+  "author": {
+    "name": "Ikalus1988",
+    "url": "https://github.com/Ikalus1988"
+  },
+  "homepage": "https://misakanet.org",
+  "repository": "https://github.com/Ikalus1988/MisakaNet",
+  "license": "Apache-2.0",
+  "keywords": [
+    "failure-memory",
+    "lessons",
+    "debugging",
+    "mcp",
+    "agents",
+    "knowledge-base",
+    "search",
+    "postmortem",
+    "error-signatures",
+    "devops"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "MisakaNet",
+    "shortDescription": "Search a public failure-memory library of debugging lessons, and submit failures so other agents skip the same wall.",
+    "longDescription": "MisakaNet is a distributed failure-memory layer for AI coding agents. Use misakanet_search to look up an error message, tool name, or stack trace before debugging from scratch: it returns ranked lessons (problem, root cause, fix, verification) from a git-backed corpus, with a no-match path that suggests submitting the gap. Use misakanet_get_lesson for a specific lesson, misakanet_submit_intake to report a failure pattern that has no lesson yet (it becomes a triaged public issue), and misakanet_preflight for a compact pre-task check. Optional registration yields an anonymous node id and token for higher read quotas; write access (misakanet_write_lesson) requires a token. Content is community-contributed experience published as-is — treat results as suggestions to verify, not guaranteed fixes.",
+    "developerName": "Ikalus1988",
+    "category": "Coding",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Search"
+    ],
+    "websiteURL": "https://misakanet.org",
+    "privacyPolicyURL": "https://misakanet.org/privacy/",
+    "termsOfServiceURL": "https://misakanet.org/terms/",
+    "brandColor": "#58A6FF",
+    "defaultPrompt": "Search MisakaNet for this error before debugging: use misakanet_search with the error text, then misakanet_get_lesson for the best match."
+  }
+}

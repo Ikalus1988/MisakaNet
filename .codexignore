@@ -1,0 +1,28 @@
+# Files Codex-compatible tooling should not index or upload for this plugin.
+# Gitignore-style patterns, evaluated from the repository root.
+
+# Local tool state and caches (not part of the plugin)
+.tools/
+.npm-cache/
+.pnpm-store/
+.uv-cache/
+.uv-tools/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+
+# Generated / local analysis output
+reports/
+.archify-tool/
+.audit-reports-*/
+.review-tmp/
+
+# Local agent notes and scratch
+.aider*
+.agent-reach-home/
+.tmp-cf/
+
+# Editor / OS noise
+.DS_Store
+*.swp
