@@ -30,7 +30,7 @@ jobs:
 
       - name: Handle fork PR — manual instructions only
         if: steps.pr.outputs.isFork == 'true'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         with:
           script: |
             await github.rest.issues.createComment({
@@ -57,7 +57,7 @@ jobs:
 
       - name: Validate this is a PR issue
         if: steps.pr.outputs.isFork != 'true'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         with:
           script: |
             const issue = await github.rest.issues.get({
@@ -71,7 +71,7 @@ jobs:
 
       - name: Checkout PR branch (same-repo only, with path isolation)
         if: steps.pr.outputs.isFork != 'true'
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           repository: ${{ github.repository }}
           ref: refs/pull/${{ github.event.issue.number }}/head
@@ -128,7 +128,7 @@ jobs:
 
       - name: Post success comment (same-repo only)
         if: steps.pr.outputs.isFork != 'true'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         with:
           script: |
             await github.rest.issues.createComment({

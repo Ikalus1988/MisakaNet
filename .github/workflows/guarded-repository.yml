@@ -40,7 +40,7 @@ permissions:
 
 jobs:
   guarded-repository:
-    uses: hashgraph-online/hol-guard/.github/workflows/guarded-repository.yml@v3.0.148
+    uses: hashgraph-online/hol-guard/.github/workflows/guarded-repository.yml@fb171864f83e5226a26a11908a45553d83808a48  # v3.0.148
     with:
       profile: default
       fail_on_severity: critical

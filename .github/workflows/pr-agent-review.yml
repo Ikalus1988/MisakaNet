@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: PR-Agent Review
-        uses: Codium-ai/pr-agent@v0.44.0  # upgrade to fix AttributeError bug
+        uses: Codium-ai/pr-agent@ab6ec54bfeb37933ddb74259338752e9272016c6  # upgrade to fix AttributeError bug
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           OPENAI_API_BASE: "https://api.minimax.chat/v1"

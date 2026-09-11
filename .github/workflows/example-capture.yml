@@ -2,7 +2,7 @@
 # This workflow does NOT auto-publish — it only generates redacted artifacts.
 #
 # Usage:
-#   - uses: Ikalus1988/MisakaNet/.github/actions/misaka-capture@main
+#   - uses: Ikalus1988/MisakaNet/.github/actions/misaka-capture@02a52f51543b852c5a2c6e784ff9dc16318fa28e  # main
 #     if: failure()
 #     with:
 #       summary: "CI failed"
@@ -20,7 +20,7 @@ jobs:
   example:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
       - name: Run tests (example)
         run: python -m pytest || true

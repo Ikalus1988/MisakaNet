@@ -15,11 +15,11 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           fetch-depth: 0  # Full history for analysis
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
         with:
           python-version: "3.11"
 
@@ -40,7 +40,7 @@ jobs:
           python scripts/arch_review.py --questions >> report.md
 
       - name: Create issue
-        uses: peter-evans/create-issue-from-file@v6
+        uses: peter-evans/create-issue-from-file@fca9117c27cdc29c6c4db3b86c48e4115a786710  # v6
         with:
           title: "Monthly Architecture Review — ${{ github.run_id }}"
           content-filepath: report.md
@@ -49,7 +49,7 @@ jobs:
             automated
 
       - name: Upload report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           name: arch-report
           path: arch-report.json

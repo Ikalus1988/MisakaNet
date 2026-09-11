@@ -41,12 +41,12 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
         with:
           python-version: '3.12'
 
@@ -112,7 +112,7 @@ jobs:
           fi
 
       - name: Post welcome message with entry test
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         env:
           NODE_ALREADY_ASSIGNED: ${{ steps.assign.outputs.NODE_ALREADY_ASSIGNED }}
           NEXT: ${{ steps.assign.outputs.NEXT }}
@@ -171,7 +171,7 @@ jobs:
             });
 
       - name: Close issue + mark registered
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         with:
           script: |
             await github.rest.issues.addLabels({
