@@ -118,6 +118,27 @@ def test_registry_line_lockstep():
         )
 
 
+def test_registry_line_covers_agent_discovery_cards():
+    """R6: docs/.well-known cards advertise the *server* version.
+
+    They declared 2.16.0 while the registry listing reached 2.29.0 — nothing
+    wrote them, the same "one fact, no writer" defect as the lesson counts
+    (handoff-2026-09-12). `align_versions.py --registry` now bumps them
+    (surgically: `supportedInterfaces.protocolVersion` is a different fact and
+    must not move).
+    """
+    registry = _read_json("server.json")["version"]
+    stale = []
+    for rel in ("docs/.well-known/agent.json",
+                "docs/.well-known/agent-card.json",
+                "docs/.well-known/mcp.json"):
+        card = _read_json(rel)
+        if card.get("version") != registry:
+            stale.append((rel, str(card.get("version"))))
+    if stale:
+        _test_fail(f"agent-discovery cards must declare the registry version {registry}", stale)
+
+
 def test_pypi_line_lockstep():
     """pyproject.toml and the server.json pypi package entry must agree."""
     a = LOCATIONS[PYPI_LINE]

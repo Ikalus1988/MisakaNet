@@ -5,8 +5,10 @@ MisakaNet deliberately runs THREE version channels with independent cadence
 (see docs/maintenance.md → 版本通道):
 
 * registry line  — server.json/glama.json ``version`` (MCP-registry listing
-  version; currently 2.27.x). Bumped together with the repo release tags and
-  the docs that advertise them (API.md header, JOIN.md).
+  version; currently 2.29.x). Bumped together with the repo release tags, the
+  docs that advertise them (API.md header, JOIN.md) and the agent-discovery
+  cards under docs/.well-known/ (they declare the *server* version; their
+  ``supportedInterfaces.protocolVersion`` is a different fact and is left alone).
 * source line    — pyproject.toml + package.json + .release-please-manifest
   (the repo's own "next release" line, currently 2.23.x). package.json and
   the manifest must match; pyproject may lag it by design (bumped when the
@@ -23,7 +25,8 @@ Usage:
       Bump the repo release line: pyproject.toml, package.json,
       .release-please-manifest.json ("."), README npm claims.
   python3 scripts/align_versions.py --registry 2.28.0
-      Bump the registry line: server.json + glama.json + API.md + JOIN.md.
+      Bump the registry line: server.json + glama.json + API.md + JOIN.md
+      + the docs/.well-known cards' server version.
 
 Policy invariants (mirrored by tests/test_version_consistency.py):
   R1 registry pair equal:        server.json.version == glama.json.version
@@ -32,6 +35,7 @@ Policy invariants (mirrored by tests/test_version_consistency.py):
   R3 pypi-source equal:          server.json pypi-package.version == pyproject
   R4 lag allowed:                pyproject <= manifest
   R5 docs never ahead:           API.md / JOIN.md / README claims
+  R6 cards equal registry:       docs/.well-known/*.json server version
                                  <= max(registry, manifest)
 """
 from __future__ import annotations
@@ -45,12 +49,50 @@ REPO = Path(__file__).resolve().parent.parent
 SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
 
 
+# Agent-discovery documents: what crawlers and MCP clients read before the site.
+# Nothing wrote their top-level ``version``, so it sat at 2.16.0 while the
+# registry listing reached 2.29.0 — the same "one fact, no writer" defect as the
+# lesson counts (handoff-2026-09-12). They belong to the registry line.
+WELL_KNOWN_CARDS = (
+    "docs/.well-known/agent.json",
+    "docs/.well-known/agent-card.json",
+    "docs/.well-known/mcp.json",
+)
+
+
 def _read_json(rel: str) -> dict:
     return json.loads((REPO / rel).read_text(encoding="utf-8"))
 
 
 def _write_json(rel: str, data: dict) -> None:
     (REPO / rel).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+
+def _bump_card_version(rel: str, version: str) -> None:
+    """Set a well-known card's top-level ``version`` without reformatting it.
+
+    ``_write_json`` re-serialises the whole document, which turns a one-character
+    version bump into a 46-line diff. Try a surgical edit first and accept it only
+    if the result parses to exactly the intended document; otherwise fall back.
+    """
+    path = REPO / rel
+    before = _read_json(rel)
+    if "version" not in before:
+        return
+    expected = dict(before)
+    expected["version"] = version
+    text = path.read_text(encoding="utf-8")
+    edited, hits = re.subn(r'(?m)^(\s*"version"\s*:\s*")[^"]*(")',
+                           rf"\g<1>{version}\g<2>", text, count=1)
+    if hits:
+        try:
+            if json.loads(edited) == expected:
+                path.write_text(edited, encoding="utf-8")
+                return
+        except json.JSONDecodeError:
+            pass
+    _write_json(rel, expected)
 
 
 def _ver(raw: str) -> tuple[int, int, int]:
@@ -84,6 +126,8 @@ def locations() -> dict[str, str]:
         "API.md header": api_v.group(1) if api_v else "",
         "JOIN.md version": join_v.group(1) if join_v else "",
         "README misakanet@ claims": ", ".join(readme_claims),
+        "docs/.well-known cards": ", ".join(
+            sorted({str(_read_json(rel).get("version", "")) for rel in WELL_KNOWN_CARDS})),
     }
 
 
@@ -117,6 +161,10 @@ def check() -> int:
     for label in ("API.md header", "JOIN.md version"):
         if loc[label] and _ver(loc[label]) > ceiling:
             problems.append(f"R5 {label} claims {loc[label]} newer than max({registry},{manifest})")
+    for rel in WELL_KNOWN_CARDS:
+        card = str(_read_json(rel).get("version", ""))
+        if card != registry:
+            problems.append(f"R6 {rel} declares server version {card or '(none)'} != registry {registry}")
     for claim in loc["README misakanet@ claims"].split(","):
         c = claim.strip()
         if c and _ver(c) > manifest_v:
@@ -178,7 +226,10 @@ def bump_registry(version: str) -> None:
     text = re.sub(r"(MisakaNet v?)[0-9.]+", rf"\g<1>{version}",
                   join.read_text(encoding="utf-8"))
     join.write_text(text, encoding="utf-8")
-    print(f"registry line bumped to {version}: server.json(+pypi entry), glama.json, API.md, JOIN.md")
+    for rel in WELL_KNOWN_CARDS:
+        _bump_card_version(rel, version)
+    print(f"registry line bumped to {version}: server.json(+pypi entry), glama.json, API.md, JOIN.md, "
+          f"{len(WELL_KNOWN_CARDS)} well-known cards")
 
 
 def main(argv: list[str] | None = None) -> int:
