@@ -104,10 +104,6 @@
     "score": 0.58
   },
   {
-    "login": "tarotoads-debug",
-    "score": 0.56
-  },
-  {
     "login": "pnpn1212",
     "score": 0.49
   },
@@ -165,6 +161,10 @@
   },
   {
     "login": "skull0716",
+    "score": 0.19
+  },
+  {
+    "login": "tarotoads-debug",
     "score": 0.19
   }
 ]
