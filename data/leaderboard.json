@@ -1,11 +1,11 @@
 [
   {
     "login": "zsxh1990",
-    "score": 112.98
+    "score": 112.86
   },
   {
     "login": "github-actions[bot]",
-    "score": 7.41
+    "score": 7.91
   },
   {
     "login": "s6pa1rta3n-lab",
@@ -33,7 +33,7 @@
   },
   {
     "login": "ghzhost",
-    "score": 2.05
+    "score": 2.04
   },
   {
     "login": "mr-neutr0n",
@@ -52,12 +52,12 @@
     "score": 1.41
   },
   {
-    "login": "misakanet agent",
-    "score": 1.34
-  },
-  {
     "login": "brok-best",
     "score": 1.32
+  },
+  {
+    "login": "misakanet agent",
+    "score": 1.03
   },
   {
     "login": "yashraj4",
@@ -116,16 +116,16 @@
     "score": 0.46
   },
   {
-    "login": "noreply",
-    "score": 0.45
-  },
-  {
     "login": "chfr19820610-cell",
     "score": 0.4
   },
   {
     "login": "agente-gaudi",
     "score": 0.37
+  },
+  {
+    "login": "noreply",
+    "score": 0.24
   },
   {
     "login": "jamboriu",
