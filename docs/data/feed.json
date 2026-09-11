@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-09-10T23:14:52.591966+00:00",
+  "generated_at": "2026-09-11T04:51:24.461090+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(security): L4 scan anonymous intake payloads before they become issues",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1620",
+      "timestamp": "2026-09-11T01:17:22Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(mcp): L3 read-path trust notice on search/get_lesson responses",
@@ -30,13 +37,6 @@
       "title": "ci: add HOL Guard Guarded Repository scan (prompt-injection findings + provenance attestation)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1611",
       "timestamp": "2026-09-10T16:51:44Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(deps): bump sharp override to 0.35.4 (libheif advisories)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1610",
-      "timestamp": "2026-09-10T16:51:41Z",
       "source": "github"
     },
     {
