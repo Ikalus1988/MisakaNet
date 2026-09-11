@@ -158,8 +158,9 @@ python3 scripts/doctor.py                        # 仓库自检
 ```
 
 - **每个提交都要 `Signed-off-by:`**（`git commit --signoff`）——DCO 是硬门禁
-- **改 worker → push main 自动部署**；**改 `docs/`（站点）→ 需手动 `npx wrangler deploy`**，
-  否则线上不更新
+- **push main 即自动部署**：改 worker → `deploy-worker.yml`；改 `docs/`（站点）→ Cloudflare
+  **Workers Builds**（Git 集成，任何 push 都触发，结果看 commit 上的同名 check-run）。
+  两者都不用手工 `wrangler deploy`，但**部署是异步的，改完要验证**线上结果
 - `data/lessons.json` **只能**由 `update_lessons_json.py` 生成（用 `misakanet-index.py` 会静默
   回滚线上统计，#1374）
 - 不要手改 `.release-please-manifest.json`（release 账本由 release-please 维护）

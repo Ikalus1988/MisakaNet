@@ -84,7 +84,7 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 | 对象 | 方式 | 备注 |
 |---|---|---|
 | `misakanet-register-proxy`（主 worker，含 `/mcp`）| **push main 自动部署** | `deploy-worker.yml`：wrangler + `workers/wrangler.toml`（含 `[triggers]` cron 定义） |
-| `misakanet-web`（站点，assets = `docs/`）| **手动**：`npx wrangler deploy`（根 `wrangler.jsonc`） | 没有自动 workflow——**新页面/合规页必须记得手动部署**，否则线上 404 |
+| `misakanet-web`（站点，assets = `docs/`）| **自动**：Cloudflare **Workers Builds**（Git 集成，**任何 push main 都触发**，不是 GitHub Actions） | 结果看 commit 上的 `Workers Builds: misakanet-web` check-run（由 Cloudflare app 发出，含 Version ID）；配置在 CF 控制台，不在仓库里。手工 `npx wrangler deploy`（根 `wrangler.jsonc`）只当应急/本地预览用 |
 | `email-register` worker | `npm run deploy:email` | 独立 worker |
 | `data/lessons.json` | `python3 scripts/update_lessons_json.py` | **不要**用 `scripts/misakanet-index.py`：它缺 `preview/triggers/verified` 等字段，会静默回滚线上统计（#1374；CI 已有 schema 校验） |
 | `data/badges/*.json` | 由各 badge workflow 生成到 `data` 分支 | 例如 smithery 徽章由 `update-smithery-badge.yml` 产出 |
@@ -95,6 +95,10 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 
 - 主 worker：改完可 `curl https://misakanet.org/api/health`；MCP 改动直接发一次 JSON-RPC 探针
 - 站点：`curl -sI https://misakanet.org/<新页面>/` 应 200
+  - **注意尾斜杠**：目录式路径 `curl .../privacy` 会返回 **307**（跳 `/privacy/`），这不是 404。
+    判断"页面没上线"前先加 `-L` 或补上尾斜杠，否则会得出错误结论（本仓真实踩过）
+  - 静态 md（如 `docs/agents/repo-operations.md`）会直接以 `/agents/repo-operations.md` 提供，
+    是检验"push 后站点是否真的重新部署了"的最快探针
 - 涉及 intake 的改动：提交一个明确标注的测试 intake，确认 issue 行为（创建后关闭）——参考
   issue #1621 的探针做法
 
@@ -114,6 +118,8 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 | badge 显示 `resource not found` | shields.io endpoint badge 读的 JSON 不存在（例如 workflow 从未成功产出）。先手工补数据文件，再修 workflow |
 | lesson PR 被 shape-guard 拦"markdown/diff 泄露" | 测试文件里粘了 markdown/patch。把示例移入**代码围栏**，或参考 #1604 的测试文件豁免规则 |
 | issue 被莫名关闭 | 某个合并的 PR 正文/提交写了 `Closes #N`。长期开放 issue（#1550/#1258）有守护 workflow 会自动 reopen；交付报告类 PR 用 `Refs #N` |
+| "站点没更新/新页面 404" | 先排除**尾斜杠误判**（无尾斜杠 → 307 不是 404）；再看 commit 上有没有 `Workers Builds: misakanet-web` check-run 及其结论/Version ID。CF Workers Builds 是**异步**的，push 完立刻 curl 可能还是旧版本 |
+| `leaderboard-watch` 失败：`fatal: You are not currently on a branch` + 日志里有 `CONFLICT ... data/leaderboard_meta.json` | 两次 push 间隔太近 → 两个 watch run 并发，各自提交同一份**生成物**并互相 rebase 冲突；脚本里的 `git pull --rebase ... \|\| true` 把冲突吞掉，仓库停在 detached HEAD，随即 `git push` 报上面那句。已在 workflow 加 `concurrency`（串行化）+ `-X theirs`（生成物以本次快照为准）+ 显式 `git rebase --abort` 并对失败返回非零 |
 | 需要看某个脚本的用途 | `ls scripts/` + `<script> --help`；`scripts/doctor.py` 做整体自检 |
 | 需要看 worker 线上错误 | 用 `cf_mcp_auth.py` 拿 CF 凭证 → Cloudflare observability MCP 查（worker 的 `[observability]` 需启用） |
 
