@@ -1,11 +1,11 @@
 [
   {
     "login": "zsxh1990",
-    "score": 112.58
+    "score": 112.52
   },
   {
     "login": "github-actions[bot]",
-    "score": 7.9
+    "score": 7.89
   },
   {
     "login": "s6pa1rta3n-lab",
@@ -60,11 +60,11 @@
     "score": 1.0
   },
   {
-    "login": "kveita",
-    "score": 1.0
+    "login": "wasim-builds",
+    "score": 0.99
   },
   {
-    "login": "wasim-builds",
+    "login": "kveita",
     "score": 0.99
   },
   {
@@ -97,10 +97,6 @@
   },
   {
     "login": "misakanet-agent",
-    "score": 0.58
-  },
-  {
-    "login": "brok-best",
     "score": 0.58
   },
   {
@@ -145,6 +141,10 @@
   },
   {
     "login": "astraembody",
+    "score": 0.21
+  },
+  {
+    "login": "brok-best",
     "score": 0.21
   },
   {
