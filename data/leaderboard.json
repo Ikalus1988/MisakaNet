@@ -1,7 +1,7 @@
 [
   {
     "login": "zsxh1990",
-    "score": 113.01
+    "score": 113.0
   },
   {
     "login": "github-actions[bot]",
@@ -161,10 +161,6 @@
   },
   {
     "login": "skull0716",
-    "score": 0.19
-  },
-  {
-    "login": "tarotoads-debug",
     "score": 0.19
   }
 ]
