@@ -65,6 +65,7 @@
 - [MCP 标准化协议](contrib/lesson-17-segmentfault-mcp-standardization.md) | mcp | "mcp", "agent", "tool-calling" | segmentfault.com
 - [Model Switch Script Pattern — 多 Agent 模型管理](contrib/model-switch-script-pattern.md) | devops | "model-switching", "proxy", "config-management" | bootstrap
 - [Multi-Forum Scraping Architecture](contrib/multi-forum-scraping-architecture.md) | ops | "scraping", "playwright", "api", "forum" | practical-experience
+- [OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit](contrib/openclaw-session-row-entry-updatedat-mismatch.md) | devops | "openclaw", "sqlite", "session_nodes", "canonical-key", "repair", "entry_valid" | incident-2026-09-09
 - [OpenClaw Gateway 动态模块缺失 — 飞书消息分发失败](contrib/openclaw-gateway-dynamic-module-missing.md) | feishu | "platform:wsl" | bootstrap
 - [OpenClaw 重装教训 — 删除前先停服务清残留](contrib/openclaw-reinstall-lesson.md) | devops | | bootstrap
 - [PR Welcome 未触发排查 — author_association NONE vs FIRST_TIMER 陷阱](core/pull-request-welcome-trigger-trap.md) | devops | "github-actions", "pull_request_target", "author_association", "first-time-contributor", "welcome", "debug" | 2026-06-13
