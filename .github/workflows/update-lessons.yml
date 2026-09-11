@@ -5,6 +5,12 @@ on:
     - cron: "0 0 * * *"  # Daily at 08:00 Beijing time
   workflow_dispatch:  # Manual trigger for release prep
 
+# Serialize runs: two overlapping runs regenerate and commit the same artifacts.
+# That exact race is what left leaderboard-watch in a detached HEAD (#1625).
+concurrency:
+  group: update-lessons
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -60,4 +66,8 @@ jobs:
           # new page) and deletes them (a retitled lesson orphans the old URL).
           git add -A
           git commit -m "chore: auto-update lessons.json, public counts and generated pages"
-          git push
+          # main moves under this job (leaderboard snapshots, releases, maintainer
+          # pushes), and a rejected push throws away a full regeneration. Retry once
+          # through a rebase — but let a real conflict fail loudly: #1625 was a
+          # `|| true` that swallowed exactly this and left the repo in a bad state.
+          git push || { git pull --rebase origin main && git push; }

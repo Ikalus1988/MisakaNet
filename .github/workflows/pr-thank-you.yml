@@ -4,6 +4,7 @@ on:
     types: [closed]
 
 permissions:
+  contents: read   # read docs/_lessons_count.txt for the count in the comment
   issues: write
   pull-requests: write
 
@@ -20,6 +21,26 @@ jobs:
             const title = pr.title;
             const number = pr.number;
 
+            // Read the canonical lesson count at runtime instead of hardcoding it.
+            // This is a workflow file, and GITHUB_TOKEN is refused any push that
+            // touches .github/workflows/** — so a number kept in step by the daily
+            // update job would make that job fail at push time (found 2026-09-12,
+            // when the first count change broke update-lessons.yml). The count is
+            // decorative here: never fail the comment over it.
+            let lessons = "";
+            try {
+              const file = await github.rest.repos.getContent({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: "docs/_lessons_count.txt",
+                ref: context.payload.repository.default_branch,
+              });
+              const count = Buffer.from(file.data.content, "base64").toString("utf8").trim();
+              if (/^\d+$/.test(count)) lessons = " (now " + count + " lessons)";
+            } catch (e) {
+              lessons = "";
+            }
+
             // Skip bots
             if (pr.user.type === "Bot" || author.includes("[bot]")) {
               return;
@@ -33,7 +54,7 @@ jobs:
               "**PR:** #" + number + " — " + title,
               "",
               "**What's next:**",
-              "- Your code is now part of MisakaNet's 378+ lessons / core codebase",
+              "- Your code is now part of MisakaNet's failure-lesson corpus" + lessons,
               "- Feel free to pick up another issue labeled `good first issue` or `status: competition`",
               "- Questions? Ask in this thread or open a Discussion",
               "",

@@ -155,8 +155,13 @@ def _build_sites() -> tuple[Site, ...]:
         "issue-template chooser description")
     add(".github/ISSUE_TEMPLATE/ai-bounty-template.md", _META, _META_REPL,
         "AI-bounty issue preamble")
-    add(".github/workflows/pr-thank-you.yml", rf"MisakaNet's {_COUNT}\+ lessons",
-        "MisakaNet's {n}+ lessons", "bot comment posted on every merged PR")
+    # NOT managed: .github/workflows/pr-thank-you.yml. It used to hardcode
+    # "MisakaNet's 298+ lessons", but GITHUB_TOKEN is refused any push that touches
+    # .github/workflows/** ("refusing to allow a GitHub App to create or update
+    # workflow ... without `workflows` permission") — so managing it made the daily
+    # update job fail at push time the first time a count actually changed (caught
+    # 2026-09-12 by dispatching that job). It now reads docs/_lessons_count.txt at
+    # runtime, which this script writes.
 
     # ── docs that quote tool output ─────────────────────────────────────────
     add("docs/worker-bm25-search.md", rf"Loaded {_COUNT} lessons", "Loaded {n} lessons",
