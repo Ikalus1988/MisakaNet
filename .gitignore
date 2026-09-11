@@ -99,3 +99,14 @@ data/lessons.db
 
 # Local audit working artifacts (multi-repo audit reports, execution logs)
 .audit-reports-*/
+
+# Local working artifacts — .codexignore has always listed these as local, but
+# .gitignore did not, so a `git add -A` in a working tree that contained them
+# committed 210 files (incl. an 8 MB vendored tool with its package-lock, which
+# then produced Dependabot alerts for a tool this repo does not ship).
+# Commit 29b098961 (2026-09-12); untracked again here.
+.archify-tool/
+reports/
+scripts/mhs_watch.py
+scripts/mhs_watch_config.json
+docs/agents/mhs-watch.md
