@@ -37,6 +37,16 @@
     "privacyPolicyURL": "https://misakanet.org/privacy/",
     "termsOfServiceURL": "https://misakanet.org/terms/",
     "brandColor": "#58A6FF",
-    "defaultPrompt": "Search MisakaNet for this error before debugging: use misakanet_search with the error text, then misakanet_get_lesson for the best match."
+    "logo": "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/promotional/og-card.png",
+    "composerIcon": "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/docs/assets/misaka-avatar-crop.png",
+    "screenshots": [
+      "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/promotional/search%20lesson.gif",
+      "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/promotional/og-card.png"
+    ],
+    "defaultPrompt": [
+      "Search MisakaNet for this error before debugging it from scratch.",
+      "misakanet_get_lesson for the best match; misakanet_submit_intake when nothing fits.",
+      "misakanet_preflight before a risky operation."
+    ]
   }
 }

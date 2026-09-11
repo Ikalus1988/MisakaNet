@@ -126,6 +126,7 @@ def locations() -> dict[str, str]:
         "API.md header": api_v.group(1) if api_v else "",
         "JOIN.md version": join_v.group(1) if join_v else "",
         "README misakanet@ claims": ", ".join(readme_claims),
+        ".codex-plugin/plugin.json": str(_read_json(".codex-plugin/plugin.json").get("version", "")),
         "docs/.well-known cards": ", ".join(
             sorted({str(_read_json(rel).get("version", "")) for rel in WELL_KNOWN_CARDS})),
     }
@@ -149,6 +150,11 @@ def check() -> int:
     glama = loc["glama.json (registry)"]
     if registry != glama:
         problems.append(f"R1 registry pair drifted: server={registry} glama={glama}")
+    plugin_version = loc[".codex-plugin/plugin.json"]
+    if plugin_version and plugin_version != source:
+        problems.append(
+            f"R7 codex plugin manifest drifted: .codex-plugin/plugin.json={plugin_version} "
+            f"package.json={source}")
     if _ver(source) > manifest_v:
         problems.append(
             f"R2 npm-bundle ahead of release line: package.json={source} > "
@@ -188,6 +194,10 @@ def bump_source(version: str) -> None:
     pkg = _read_json("package.json")
     pkg["version"] = version
     _write_json("package.json", pkg)
+    # The Codex plugin manifest ships with the npm bundle, so it belongs to this
+    # line; nothing wrote it before, which is how it reached 2.28.1 independently
+    # (2026-09-12).
+    _bump_card_version(".codex-plugin/plugin.json", version)
     man = _read_json(".release-please-manifest.json")
     man["."] = version
     _write_json(".release-please-manifest.json", man)
