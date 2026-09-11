@@ -116,10 +116,6 @@
     "score": 0.4
   },
   {
-    "login": "agente-gaudi",
-    "score": 0.37
-  },
-  {
     "login": "noreply",
     "score": 0.24
   },
@@ -157,6 +153,10 @@
   },
   {
     "login": "rerzx",
+    "score": 0.19
+  },
+  {
+    "login": "agente-gaudi",
     "score": 0.19
   }
 ]
