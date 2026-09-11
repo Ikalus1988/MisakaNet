@@ -1,7 +1,7 @@
 {
   "name": "misakanet",
   "version": "2.28.1",
-  "description": "Failure-memory network for AI coding agents: search verified debugging lessons, submit new failures, and turn crashes into reusable knowledge.",
+  "description": "Failure-memory network for AI coding agents: search evidence-rated failure lessons, submit new failures, and turn crashes into reusable knowledge.",
   "author": {
     "name": "Ikalus1988",
     "url": "https://github.com/Ikalus1988"

@@ -132,6 +132,12 @@ def _build_sites() -> tuple[Site, ...]:
         "llms.txt scale claim (trust vocabulary enforced: indexed, not verified)")
     add("docs/.well-known/llms.txt", _SCALE_CLAIM, "{n} indexed failure lessons",
         "served copy of llms.txt")
+    # Agent-discovery documents: what crawlers and MCP clients read before they
+    # ever see the site. They advertised "300+ verified debugging lessons" — a
+    # stale count *and* the trust claim docs/trust-semantics.md forbids.
+    for _path in ("docs/.well-known/mcp.json", "docs/.well-known/agent.json",
+                  "docs/.well-known/agent-card.json"):
+        add(_path, _SCALE_CLAIM, "{n} indexed failure lessons", "agent-discovery description")
     add("docs/skill.md", rf"\*\*{_COUNT}\+ lessons\*\*", "**{n}+ lessons**",
         "skill manifest tagline")
     add("JOIN.md", rf"\*\*{_COUNT}\+ lessons\*\*", "**{n}+ lessons**",

@@ -1,6 +1,6 @@
 {
   "name": "MisakaNet",
-  "description": "Git-backed failure lesson network for AI coding agents. 300+ verified debugging lessons across devops, python, network, feishu, rag and more.",
+  "description": "Git-backed failure lesson network for AI coding agents. 383 indexed failure lessons across devops, python, network, feishu, rag and more.",
   "url": "https://misakanet.org",
   "version": "2.16.0",
   "provider": {
@@ -34,7 +34,7 @@
   "defaultInputModes": ["text/markdown", "application/json"],
   "defaultOutputModes": ["text/markdown", "application/json"],
   "skills": [
-    { "name": "misakanet_search", "description": "Search verified failure lessons by error text or topic." },
+    { "name": "misakanet_search", "description": "Search indexed failure lessons by error text or topic." },
     { "name": "misakanet_get_lesson", "description": "Fetch one lesson by path or id." },
     { "name": "misakanet_submit_intake", "description": "Submit a failure-case intake (no auth required)." },
     { "name": "misakanet_write_lesson", "description": "Submit a structured failure lesson (requires token)." },

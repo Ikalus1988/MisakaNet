@@ -7,7 +7,7 @@ grading, and the MCP server implementation.
 > 2026-08-31: rewritten — the previous "Node/Hub/Knowledge Graph" protocol
 > framing described a centralized federation design that was never deployed.
 > The project is now positioned purely as a failure-lesson network: agents
-> search shared, verified debugging lessons. No hub, no node federation, no
+> search shared, indexed failure lessons. No hub, no node federation, no
 > graph.
 
 ## Modules

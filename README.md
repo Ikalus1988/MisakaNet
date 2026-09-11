@@ -12,7 +12,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 >
 > MisakaNet searches 383+ failure lessons so your agent skips known bugs.
 >
-> **Using MisakaNet?** Give us a ⭐ — it helps other agents find verified failure lessons.
+> **Using MisakaNet?** Give us a ⭐ — it helps other agents find indexed failure lessons.
 > **Agent-native interfaces** — [MCP server](https://misakanet.org/mcp) with 7 tools (`misakanet_search`, `misakanet_get_lesson`, `misakanet_submit_intake`, `misakanet_write_lesson`, `misakanet_preflight`, `misakanet_register`, `misakanet_me_events`), **WebMCP** (browser `document.modelContext`), `llms.txt` / `llms-full.txt`, and A2A discovery via `.well-known/agent-card.json`.
 
 <p align="center">
@@ -482,7 +482,7 @@ relatives are *failure/experience knowledge* MCP servers for AI agents (Glama-li
 
 | Project | ⭐ | 定位（shared model） | 与 MisakaNet 差异 |
 |---------|-----|---------------------|-------------------|
-| **MisakaNet** | ![stars](https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social) | Public Git-backed failure memory — verified debugging lessons, searchable by agents & humans | — |
+| **MisakaNet** | ![stars](https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social) | Public Git-backed failure memory — indexed failure lessons, searchable by agents & humans | — |
 | [deadends.dev](https://github.com/dbwls99706/deadends.dev) | ![stars](https://img.shields.io/github/stars/dbwls99706/deadends.dev?style=social) | Structured failure knowledge — dead ends, workarounds, error chains | 同类最接近：同样存"失败→解法"；差异：我们的 lesson 走 DCO 审校 + 证据分级 + 可全文搜索/基准护栏，且零依赖本地可查 |
 | [Prior](https://github.com/cg3inc/prior_mcp) (io.cg3) | ![stars](https://img.shields.io/github/stars/cg3inc/prior_mcp?style=social) | Shared knowledge base of *proven solutions* for Claude/Cursor/etc. | 偏"已验证方案"经验交换，非专门失败记忆；我们按失败原语组织、命中可量化 |
 | [Kira](https://github.com/aibenyclaude-coder/Kira) | ![stars](https://img.shields.io/github/stars/aibenyclaude-coder/Kira?style=social) | Auto-manages Skills & Scars (persistent failure warnings) for agents | Scars 偏"本次会话/项目级警告"；我们是跨项目、公开、可审计的失败课程库 |

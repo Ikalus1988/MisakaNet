@@ -21,7 +21,9 @@ while building it are pinned here as well: a pattern that cannot match its own
 output (so the second run reports "reworded"), and per-row writes onto a file
 clobbering the earlier rows (only the last row survived on disk).
 """
+import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -126,3 +128,47 @@ def test_cli_check_passes_on_this_repo():
     proc = subprocess.run([sys.executable, str(SCRIPT), "--check"],
                           cwd=REPO, capture_output=True, text=True, env=env)
     assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+# ── trust vocabulary on public surfaces ─────────────────────────────────────
+# docs/trust-semantics.md: "indexed" for scale claims, "verified" only for lessons
+# fact-checked against source material. The registry listing (server.json), the
+# agent-discovery documents, the npm/codex manifests and the README had all drifted
+# into "N verified failure lessons" — the registry would have republished that
+# claim with 2.29.0 (found 2026-09-12, minutes before the publish).
+PUBLIC_SURFACES = (
+    "server.json",
+    "glama.json",
+    "README.md",
+    "package.json",
+    ".codex-plugin/plugin.json",
+    "docs/index.html",
+    "docs/llms.txt",
+    "docs/.well-known/llms.txt",
+    "docs/.well-known/mcp.json",
+    "docs/.well-known/agent.json",
+    "docs/.well-known/agent-card.json",
+)
+FORBIDDEN_TRUST_CLAIM = re.compile(r"verified (failure|debugging) lessons?", re.IGNORECASE)
+
+
+def test_public_surfaces_do_not_claim_verified_lessons():
+    offenders = []
+    for rel in PUBLIC_SURFACES:
+        text = (REPO / rel).read_text(encoding="utf-8")
+        for match in FORBIDDEN_TRUST_CLAIM.finditer(text):
+            offenders.append(f"{rel}: {match.group(0)!r}")
+    assert offenders == [], (
+        "these surfaces claim lessons are 'verified' without fact-checking them "
+        "(use 'indexed' / 'evidence-rated'):\n  - " + "\n  - ".join(offenders)
+    )
+
+
+def test_registry_listing_stays_publishable():
+    """The MCP registry rejects a >100-char description (HTTP 422)."""
+    server = json.loads((REPO / "server.json").read_text(encoding="utf-8"))
+    assert len(server["description"]) <= 100, len(server["description"])
+    assert "verified" not in server["description"].lower()
+    assert server["version"] == server["packages"][0]["version"], (
+        "server.json registry version and its pypi package entry must agree (R3)"
+    )
