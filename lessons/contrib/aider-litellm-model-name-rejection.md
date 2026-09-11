@@ -19,7 +19,6 @@ evidence_level: E2
   evidence: "post-publication"
 -->
 
-<!-- 
 ## Problem
 
 Aider via LiteLLM rejects standard Anthropic model names (claude-sonnet-4-6, claude-3-5-sonnet-20241022) when using a custom API base URL.

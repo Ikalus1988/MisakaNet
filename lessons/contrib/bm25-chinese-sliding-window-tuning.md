@@ -23,7 +23,6 @@ evidence_level: E2
   evidence: "post-publication"
 -->
 
-<!-- 
 ## Problem
 
 中文 BM25 搜索长查询召回率低，标准 BM25 对中文分词后的短 token 敏感度不足。

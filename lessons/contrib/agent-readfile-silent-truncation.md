@@ -16,7 +16,6 @@ source: ninghuagui-debug
   evidence: "post-publication"
 -->
 
-<!-- 
 ## Problem
 
 A three-brain AI meeting system (大乔 proposals → 小乔 review → main fusion) writes meeting

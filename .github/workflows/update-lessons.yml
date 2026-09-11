@@ -27,6 +27,15 @@ jobs:
       - name: Regenerate lessons.json
         run: python3 scripts/update_lessons_json.py
 
+      # Static lesson/topic pages and the sitemap are derived from lessons.json.
+      # Nothing ran this until 2026-09-12, so the site served 205 lesson pages for
+      # 378 lessons and topic pages with counts frozen at generation time
+      # (docs/topics/contrib said "176" while the index held 330). It owns its
+      # output: pages it no longer generates are pruned (marker-checked), and
+      # docs/.generated-pages.json records the set.
+      - name: Regenerate lesson/topic pages
+        run: python3 scripts/build_lesson_pages.py
+
       - name: Check for changes
         id: check
         run: |
@@ -47,7 +56,8 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          # -u stages the tracked files the generator + count sync touched.
-          git add -u
-          git commit -m "chore: auto-update lessons.json + public lesson counts"
+          # -A (not -u): the page generator both creates files (new lessons get a
+          # new page) and deletes them (a retitled lesson orphans the old URL).
+          git add -A
+          git commit -m "chore: auto-update lessons.json, public counts and generated pages"
           git push

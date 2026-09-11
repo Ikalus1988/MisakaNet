@@ -23,7 +23,6 @@ provenance:
 -->
 
 ---
-<!-- 
 ## Problem
 
 Hermes Agent 配置 Anthropic provider 使用 internal-gateway.local API 时失败，

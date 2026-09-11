@@ -19,7 +19,6 @@ evidence_level: E2
   evidence: "post-publication"
 -->
 
-<!-- 
 ## Problem
 
 Aider CLI `--api-key` parameter leaks API key to `.aider.chat.history.md`, bash history, and `/proc/pid/cmdline`.

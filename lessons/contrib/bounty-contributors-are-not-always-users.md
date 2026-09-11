@@ -19,7 +19,6 @@ confidence: 0.88
   evidence: "post-publication"
 -->
 
-<!-- 
 ## Problem
 
 Bounty or task labels can attract contributors who submit valid pull requests but never become users of the product, readers of the knowledge base, or members of the community.

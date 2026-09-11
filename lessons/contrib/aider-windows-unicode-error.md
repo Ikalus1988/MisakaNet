@@ -19,7 +19,6 @@ evidence_level: E2
   evidence: "post-publication"
 -->
 
-<!-- 
 ## Problem
 
 Aider --show-repo-map crashes on Windows with UnicodeEncodeError (gbk codec) when repo contains unicode characters in file paths.

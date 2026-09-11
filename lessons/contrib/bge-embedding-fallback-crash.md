@@ -20,7 +20,6 @@ subdomain: embedding
   evidence: "post-publication"
 -->
 
-<!-- 
 ## Problem
 
 When HermesHub starts, if the BGE-m3 model has not been downloaded to the local path, SkillIndexer crashes immediately.

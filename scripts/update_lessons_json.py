@@ -68,9 +68,14 @@ def get_preview(content: str, max_chars: int = 2400) -> str:
     return body
 
 
+def strip_html_comments(text: str) -> str:
+    """Drop well-formed ``<!-- ... -->`` blocks before any prose extraction."""
+    return re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
+
+
 def get_summary(content: str, max_chars: int = 160) -> str:
     """Extract first meaningful sentence after frontmatter."""
-    lines = content.split('\n')
+    lines = strip_html_comments(content).split('\n')
     start = 0
     if lines and lines[0].strip() == '---':
         for i in range(1, len(lines)):
@@ -80,6 +85,14 @@ def get_summary(content: str, max_chars: int = 160) -> str:
     for line in lines[start:]:
         line = line.strip()
         if not line:
+            continue
+        # Comment fragments. The well-formed `<!-- provenance: ... -->` block is
+        # removed above, but 19 imported lessons also carry a *stray* `<!--`
+        # opener with no closing `-->`, which comments out their entire body when
+        # rendered — get_summary() returned the literal `<!--` as the public
+        # summary, and the site/generated pages showed it (found 2026-09-12 while
+        # regenerating the lesson pages; the stray lines are removed too).
+        if line.startswith("<!--") or line.endswith("-->"):
             continue
         if line == "---":
             continue

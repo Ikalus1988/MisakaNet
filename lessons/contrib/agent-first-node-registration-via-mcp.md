@@ -19,7 +19,6 @@ evidence_level: E2
   evidence: "post-publication"
 -->
 
-<!-- 
 ## Problem
 
 Current node registration requires GitHub account and opening an issue, which is too slow for autonomous agents.

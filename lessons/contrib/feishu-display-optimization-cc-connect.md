@@ -20,7 +20,6 @@ evidence_level: E1
   evidence: "post-publication"
 -->
 
-<!-- 
 ## cc-connect 飞书显示优化：禁用工具调用和上下文提示
 
 ### Problem描述

@@ -2,31 +2,77 @@
 """Generate static lesson and topic pages from lessons.json for SEO.
 
 Usage:
-    python3 scripts/build_lesson_pages.py
+    python3 scripts/build_lesson_pages.py            # write/refresh every page
+    python3 scripts/build_lesson_pages.py --check    # report drift, write nothing (exit 1 if stale)
 
 Output:
-    docs/lessons/<slug>/index.html  — one page per lesson
-    docs/topics/<domain>/index.html — one page per domain
-"""
+    docs/lessons/<slug>/index.html   — one page per lesson
+    docs/topics/<slug>/index.html    — one page per topic (see TOPIC policy below)
+    docs/topics/index.html           — the topic directory (the search page links to /topics/)
+    docs/sitemap.xml                 — every generated URL + the static pages
+    docs/.generated-pages.json       — manifest of what this generator owns
 
+Why this file changed (2026-09-12, handoff-2026-09-12 §5.3)
+----------------------------------------------------------
+The generator existed but **nothing ran it**: it had been executed once by hand,
+so the site had 205 lesson pages for 378 lessons, 88 pages for titles that no
+longer exist, and topic pages advertising counts frozen at generation time
+(`docs/topics/contrib/` said "176 verified failure lessons" while the index held
+330). Three defects made running it in a loop unsafe:
+
+1. it never removed what it stopped generating (stale pages would accumulate
+   forever), so it could not own its output;
+2. it wrote ``N verified failure lessons`` into every ``<meta description>``,
+   which docs/trust-semantics.md explicitly forbids ("indexed" is the word for
+   scale claims; "verified" is reserved for fact-checked lessons);
+3. the ``domain`` field falls back to the directory name, so translation dirs
+   leak in as "domains" (``es``, ``pt-br``) and would each get a topic page.
+
+It is now wired into the daily ``update-lessons.yml`` (after
+``update_lessons_json.py``, which it reads) and owns exactly what its manifest
+lists: generated pages are pruned when they stop being generated, and pruning
+only touches directories that carry this generator's marker.
+
+TOPIC policy
+------------
+A topic page is generated for:
+
+* every non-locale ``domain`` value in the index (the raw domain is
+  directory-based today, so ``contrib``/``core``/``ops`` are topics too), plus
+* every entry of ``INTENT_TOPICS`` (curated keyword topics), plus
+* ``LEGACY_TOPICS``: slugs that are live URLs today because an older version of
+  this script generated them, kept alive and refreshed instead of being deleted
+  behind the user's back. Each one is matched by its slug tokens, the same
+  generic rule the generator would use for a domain page.
+
+``TOP_DOMAINS`` is gone: it was config that ``main()`` never read.
+"""
+from __future__ import annotations
+
+import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO))
 from misakanet.evidence import describe  # noqa: E402
 
-LESSONS_JSON = Path("data/lessons.json")
-LESSONS_DIR = Path("docs/lessons")
-TOPICS_DIR = Path("docs/topics")
+LESSONS_JSON = Path("data") / "lessons.json"
+LESSONS_DIR = Path("docs") / "lessons"
+TOPICS_DIR = Path("docs") / "topics"
+TOPICS_INDEX = TOPICS_DIR / "index.html"
+SITEMAP = Path("docs") / "sitemap.xml"
+MANIFEST = Path("docs") / ".generated-pages.json"
 SITE_URL = "https://misakanet.org"
 
-# Top domains to generate topic pages for
-TOP_DOMAINS = [
-    "devops", "feishu", "fanuc", "development", "rag",
-    "agent-network", "general", "uncategorized"
-]
+# Prune guard: a directory is only deleted if its page carries this marker, so a
+# hand-written page that happens to live under the generated tree is never lost.
+GENERATOR_MARK = "Back to MisakaNet"
+
+# Translation directories show up as `domain` values (the field falls back to the
+# directory name) — they are not topics.
+LOCALE_DIRS = frozenset({"en", "es", "hi", "id", "pt-br", "ru", "tr", "vi"})
 
 # User-intent topic pages: map topic slug to matching keywords
 INTENT_TOPICS = {
@@ -37,6 +83,17 @@ INTENT_TOPICS = {
     "fanuc": {"title": "FANUC Industrial Robot", "keywords": ["fanuc", "karel", "profinet"], "description": "Fix FANUC robot programming, Karel, and PROFINET communication issues."},
     "wsl": {"title": "WSL & Windows Issues", "keywords": ["wsl", "windows", "ntfs", "gbk", "unicode", "encoding"], "description": "Fix WSL, Windows terminal, encoding, and permission issues."},
     "feishu-mcp": {"title": "Feishu MCP Integration", "keywords": ["feishu mcp", "feishu-mcp"], "description": "Fix Feishu MCP server setup and configuration."},
+}
+
+# Live slugs from the previous generation that no current domain/intent entry
+# covers. Matched by their slug tokens; a slug matching nothing is simply not
+# regenerated (and its stale page is pruned).
+LEGACY_TOPICS = {
+    "agent-network": "Lessons about agents, nodes and the network",
+    "database": "Lessons about databases and locked/unavailable data stores",
+    "mcp-setup": "Lessons about setting up MCP servers",
+    "scraping": "Lessons about scraping and crawlers",
+    "windows-encoding": "Lessons about Windows, encodings and terminal output",
 }
 
 HTML_TEMPLATE = """\
@@ -104,6 +161,39 @@ TOPIC_TEMPLATE = """\
 </body>
 </html>"""
 
+TOPICS_INDEX_TEMPLATE = """\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Browse failure lessons by topic — MisakaNet</title>
+<meta name="description" content="Browse {total} indexed failure-recovery lessons by topic: {topics}.">
+<link rel="canonical" href="{canonical}">
+<meta property="og:title" content="Browse failure lessons by topic — MisakaNet">
+<meta property="og:description" content="Browse {total} indexed failure-recovery lessons by topic.">
+<meta property="og:url" content="{canonical}">
+<style>
+  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0a0f1d; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }}
+  a {{ color: #58a6ff; }}
+  h1 {{ font-size: 24px; margin-bottom: 8px; }}
+  .count {{ color: #8b949e; font-size: 14px; margin-bottom: 24px; }}
+  ul {{ list-style: none; padding: 0; }}
+  li {{ padding: 8px 0; border-bottom: 1px solid rgba(88,166,255,0.1); display: flex; justify-content: space-between; gap: 12px; }}
+  li .n {{ color: #8b949e; font-size: 13px; white-space: nowrap; }}
+  .back {{ margin-top: 32px; font-size: 13px; }}
+</style>
+</head>
+<body>
+<h1>Browse by topic</h1>
+<div class="count">{total} indexed failure-recovery lessons across {topic_count} topics</div>
+<ul>
+{items}
+</ul>
+<div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
+</body>
+</html>"""
+
 
 def slugify(text: str) -> str:
     """Convert text to URL-friendly slug."""
@@ -140,7 +230,9 @@ def build_lesson_page(lesson: dict) -> str:
 
     description = f"{summary[:150]}..." if len(summary) > 150 else summary
     if not description:
-        description = f"Verified failure lesson: {title}. From MisakaNet — Git-backed failure lesson network."
+        # "indexed", not "verified": docs/trust-semantics.md reserves "verified"
+        # for lessons fact-checked against source material.
+        description = f"Indexed failure lesson: {title}. From MisakaNet — Git-backed failure lesson network."
 
     tags_html = "".join(f'<span class="tag">{t}</span>' for t in tags[:6])
 
@@ -171,7 +263,8 @@ def build_topic_page(domain: str, lessons: list, description: str = "") -> str:
     """Generate HTML for a topic/domain page."""
     title = domain if " " in domain else f"{domain.title()} Lessons"
     if not description:
-        description = f"{len(lessons)} verified failure lessons about {domain}. From MisakaNet — Git-backed failure lesson network."
+        # "indexed" (see build_lesson_page) — a scale claim, not a trust claim.
+        description = f"{len(lessons)} indexed failure lessons about {domain}. From MisakaNet — Git-backed failure lesson network."
     slug = domain.lower().replace(" ", "-").replace("/", "-")
     canonical = f"{SITE_URL}/topics/{slug}/"
 
@@ -195,6 +288,26 @@ def build_topic_page(domain: str, lessons: list, description: str = "") -> str:
     )
 
 
+def build_topics_index(entries: list[tuple[str, str, int]], total: int) -> str:
+    """The topic directory the search page's "browse by topic" link points at.
+
+    ``entries`` is a list of (slug, title, lesson_count). Before this existed
+    /topics/ was a 404 that the search page linked to on every empty result set.
+    """
+    items = "\n".join(
+        f'  <li><a href="/topics/{slug}/">{title}</a><span class="n">{count} lessons</span></li>'
+        for slug, title, count in sorted(entries, key=lambda e: (-e[2], e[0]))
+    )
+    topics = ", ".join(title for _, title, _ in entries[:6])
+    return TOPICS_INDEX_TEMPLATE.format(
+        total=total,
+        topic_count=len(entries),
+        items=items,
+        topics=topics,
+        canonical=f"{SITE_URL}/topics/",
+    )
+
+
 def generate_sitemap(lesson_slugs: list, domains: list) -> str:
     """Generate sitemap.xml with all pages."""
     lines = ['<?xml version="1.0" encoding="UTF-8"?>',
@@ -209,7 +322,8 @@ def generate_sitemap(lesson_slugs: list, domains: list) -> str:
     for url, freq, prio in static:
         lines.append(f"  <url><loc>{url}</loc><changefreq>{freq}</changefreq><priority>{prio}</priority></url>")
 
-    # Topic pages
+    # Topic pages (including the /topics/ index itself)
+    lines.append(f"  <url><loc>{SITE_URL}/topics/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>")
     for domain in domains:
         lines.append(f"  <url><loc>{SITE_URL}/topics/{domain}/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>")
 
@@ -221,15 +335,49 @@ def generate_sitemap(lesson_slugs: list, domains: list) -> str:
     return '\n'.join(lines) + '\n'
 
 
-def main():
-    lessons = json.loads(LESSONS_JSON.read_text(encoding="utf-8"))
-    print(f"Loaded {len(lessons)} lessons")
+def _haystack(lesson: dict) -> str:
+    return (lesson.get("title", "") + " " + lesson.get("summary", "") + " "
+            + " ".join(lesson.get("tags", []))).lower()
 
-    # Build lesson pages with unique slugs
-    LESSONS_DIR.mkdir(parents=True, exist_ok=True)
-    seen_slugs = {}
-    lesson_slugs = []
-    count = 0
+
+def topic_plan(lessons: list) -> dict[str, tuple[str, int]]:
+    """Map topic slug -> (generated HTML, lesson count) for every topic page."""
+    pages: dict[str, tuple[str, int]] = {}
+
+    by_domain: dict[str, list] = {}
+    for lesson in lessons:
+        domain = lesson.get("domain", "general")
+        if domain in LOCALE_DIRS:
+            continue  # translation dir leaked in as a domain
+        by_domain.setdefault(domain, []).append(lesson)
+    for domain, group in by_domain.items():
+        slug = domain.lower().replace(" ", "-").replace("/", "-")
+        pages[slug] = (build_topic_page(domain, group), len(group))
+
+    for topic_slug, config in INTENT_TOPICS.items():
+        matched = [l for l in lessons if any(kw in _haystack(l) for kw in config["keywords"])]
+        if matched:
+            pages[topic_slug] = (
+                build_topic_page(config["title"], matched, description=config["description"]),
+                len(matched))
+
+    for topic_slug, blurb in LEGACY_TOPICS.items():
+        if topic_slug in pages:
+            continue
+        tokens = [w for w in topic_slug.split("-") if len(w) >= 4]
+        matched = [l for l in lessons if any(w in _haystack(l) for w in tokens)]
+        if matched:
+            pages[topic_slug] = (
+                build_topic_page(topic_slug.title(), matched, description=blurb), len(matched))
+
+    return pages
+
+
+def plan(lessons: list) -> dict[str, dict]:
+    """Everything this generator would write, as {relative path: text}."""
+    seen_slugs: dict[str, str] = {}
+    lesson_pages: dict[str, str] = {}
+    lesson_slugs: list[str] = []
     for lesson in lessons:
         title = lesson.get("title", "")
         if not title:
@@ -237,53 +385,134 @@ def main():
         slug = unique_slug(title, seen_slugs)
         lesson["_slug"] = slug
         lesson_slugs.append(slug)
-        out_dir = LESSONS_DIR / slug
-        out_dir.mkdir(parents=True, exist_ok=True)
-        html = build_lesson_page(lesson)
-        (out_dir / "index.html").write_text(html, encoding="utf-8")
-        count += 1
-    print(f"Generated {count} lesson pages ({len(seen_slugs)} unique slugs)")
+        lesson_pages[slug] = build_lesson_page(lesson)
 
-    # Build topic pages
-    TOPICS_DIR.mkdir(parents=True, exist_ok=True)
-    by_domain = {}
-    for l in lessons:
-        domain = l.get("domain", "general")
-        by_domain.setdefault(domain, []).append(l)
+    topics = topic_plan(lessons)
+    index_entries = []
+    for slug, (_html, count) in topics.items():
+        title = INTENT_TOPICS[slug]["title"] if slug in INTENT_TOPICS else slug.title()
+        index_entries.append((slug, title, count))
 
-    generated_domains = []
-    for domain in by_domain:
-        out_dir = TOPICS_DIR / domain
-        out_dir.mkdir(parents=True, exist_ok=True)
-        html = build_topic_page(domain, by_domain[domain])
-        (out_dir / "index.html").write_text(html, encoding="utf-8")
-        generated_domains.append(domain)
+    files: dict[str, str] = {}
+    for slug, html in lesson_pages.items():
+        files[f"docs/lessons/{slug}/index.html"] = html
+    for slug, (html, _count) in topics.items():
+        files[f"docs/topics/{slug}/index.html"] = html
+    files["docs/topics/index.html"] = build_topics_index(index_entries, len(lessons))
+    files[str(SITEMAP)] = generate_sitemap(lesson_slugs, list(topics))
+    return files
 
-    # Build user-intent topic pages
-    intent_slugs = []
-    for topic_slug, config in INTENT_TOPICS.items():
-        keywords = config["keywords"]
-        matched = [l for l in lessons if any(
-            kw in (l.get("title", "") + " " + l.get("summary", "") + " " + " ".join(l.get("tags", []))).lower()
-            for kw in keywords
-        )]
-        if not matched:
+
+def discover_generated(root: Path) -> set[str]:
+    """Paths this generator owns today: manifest ∪ marker-bearing pages on disk."""
+    owned: set[str] = set()
+    manifest = root / MANIFEST
+    try:
+        owned |= set(json.loads(manifest.read_text(encoding="utf-8")).get("pages", []))
+    except (OSError, ValueError):
+        pass
+    for base in (LESSONS_DIR, TOPICS_DIR):
+        for page in sorted((root / base).glob("*/index.html")):
+            try:
+                if GENERATOR_MARK in page.read_text(encoding="utf-8"):
+                    owned.add(str(page.relative_to(root).as_posix()))
+            except OSError:
+                continue
+    return owned
+
+
+def sync(files: dict[str, str], *, root: Path = REPO) -> dict[str, list[str]]:
+    """Write planned pages, prune pages this generator no longer produces."""
+    result = {"written": [], "pruned": [], "kept": []}
+    for rel, text in files.items():
+        path = root / rel
+        try:
+            current = path.read_text(encoding="utf-8")
+        except OSError:
+            current = None
+        if current != text:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+            result["written"].append(rel)
+
+    for rel in sorted(discover_generated(root) - set(files)):
+        path = root / rel
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
             continue
-        out_dir = TOPICS_DIR / topic_slug
-        out_dir.mkdir(parents=True, exist_ok=True)
-        html = build_topic_page(config["title"], matched, description=config["description"])
-        (out_dir / "index.html").write_text(html, encoding="utf-8")
-        intent_slugs.append(topic_slug)
+        if GENERATOR_MARK not in text:
+            result["kept"].append(rel)   # not ours — never delete
+            continue
+        path.unlink()
+        result["pruned"].append(rel)
+        try:
+            path.parent.rmdir()          # only succeeds when empty
+        except OSError:
+            pass
 
-    all_topics = generated_domains + intent_slugs
-    print(f"Generated {len(generated_domains)} domain + {len(intent_slugs)} intent topic pages")
+    (root / MANIFEST).write_text(
+        json.dumps({"generator": "scripts/build_lesson_pages.py",
+                    "pages": sorted(files)}, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8")
+    return result
 
-    # Generate sitemap
-    sitemap = generate_sitemap(lesson_slugs, all_topics)
-    sitemap_path = Path("docs") / "sitemap.xml"
-    sitemap_path.write_text(sitemap, encoding="utf-8")
-    print(f"Generated sitemap: {len(lesson_slugs)} lessons + {len(generated_domains)} topics + 2 static = {len(lesson_slugs) + len(generated_domains) + 2} URLs")
+
+def check(files: dict[str, str], *, root: Path = REPO) -> list[str]:
+    """Report drift between disk and what this generator would write."""
+    problems = []
+    for rel, text in files.items():
+        path = root / rel
+        try:
+            current = path.read_text(encoding="utf-8")
+        except OSError:
+            problems.append(f"{rel}: missing (would be created)")
+            continue
+        if current != text:
+            problems.append(f"{rel}: out of date")
+    for rel in sorted(discover_generated(root) - set(files)):
+        problems.append(f"{rel}: no longer generated (would be pruned)")
+    return problems
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--check", action="store_true",
+                        help="report drift without writing; exit 1 if stale")
+    parser.add_argument("--root", type=Path, default=REPO, help=argparse.SUPPRESS)
+    args = parser.parse_args(argv)
+
+    lessons = json.loads((args.root / LESSONS_JSON).read_text(encoding="utf-8"))
+    print(f"Loaded {len(lessons)} lessons")
+    files = plan(lessons)
+    lesson_count = sum(1 for p in files if p.startswith("docs/lessons/"))
+    topic_count = sum(1 for p in files if p.startswith("docs/topics/"))
+    print(f"Planned {lesson_count} lesson pages + {topic_count} topic pages + sitemap")
+
+    if args.check:
+        problems = check(files, root=args.root)
+        if problems:
+            print(f"❌ generated pages are stale ({len(problems)} path(s)):", file=sys.stderr)
+            for problem in problems[:20]:
+                print(f"  - {problem}", file=sys.stderr)
+            if len(problems) > 20:
+                print(f"  … and {len(problems) - 20} more", file=sys.stderr)
+            print("\nFix: python3 scripts/build_lesson_pages.py", file=sys.stderr)
+            return 1
+        print("✅ every generated page matches the index")
+        return 0
+
+    result = sync(files, root=args.root)
+    print(f"Wrote/updated {len(result['written'])} pages, pruned {len(result['pruned'])} stale pages")
+    for rel in result["pruned"][:10]:
+        print(f"  pruned {rel}")
+    if len(result["pruned"]) > 10:
+        print(f"  … and {len(result['pruned']) - 10} more")
+    if result["kept"]:
+        print(f"Kept {len(result['kept'])} unmanaged page(s) (no generator marker): "
+              + ", ".join(result["kept"][:5]))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

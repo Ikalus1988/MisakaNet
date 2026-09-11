@@ -22,7 +22,6 @@ confidence: 0.95
   evidence: "post-publication"
 -->
 
-<!-- 
 ## Problem
 
 Agents need a complete, copy-pasteable path to connect coding agents to Feishu (Lark) via **cc-connect**. Incomplete or placeholder (`<bridge-tool>`) docs cause failed installs and duplicate lessons.

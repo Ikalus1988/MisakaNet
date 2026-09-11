@@ -19,7 +19,6 @@ confidence: 0.95
   evidence: "post-publication"
 -->
 
-<!-- 
 ## Problem
 
 When contributing benchmark results to open-source projects, presenting simulated or partial results as real evidence leads to maintainer rejection and lost trust.

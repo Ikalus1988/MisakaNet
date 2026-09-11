@@ -18,7 +18,6 @@ confidence: 0.6
   evidence: "post-publication"
 -->
 
-<!-- 
 ## Background
 
 browser-harness 是 browser-use 团队的开源项目，定位是「给 AI 用的浏览器控制层」。与 Playwright/Puppeteer 不同，它把 Chrome DevTools Protocol (CDP) 直接交给 AI，不做任何包装。

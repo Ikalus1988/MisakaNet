@@ -19,7 +19,6 @@ evidence_level: E2
   evidence: "post-publication"
 -->
 
-<!-- 
 ## Problem
 
 Search uses only BM25, missing semantic similarity from vector embeddings. Pure keyword search fails on paraphrased queries, synonyms, and conceptually related content that doesn't share exact terms.

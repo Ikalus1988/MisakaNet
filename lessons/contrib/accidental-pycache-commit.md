@@ -18,7 +18,6 @@ evidence_level: E2
   evidence: "post-publication"
 -->
 
-<!-- 
 ## Problem
 
 A pull request intended to change CSV data rows also shipped `__pycache__/csv_to_json.cpython-314.pyc` (and similar bytecode files). The reviewer flagged it as a MEDIUM issue: repository bloat, non-deterministic artifacts, and potential noise that obscures the real diff. The branch could not merge until the artifacts were removed.
