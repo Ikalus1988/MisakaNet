@@ -1,5 +1,5 @@
 ---
-{"title": "OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit", "domain": "openclaw", "tags": ["openclaw", "sqlite", "session_nodes", "canonical-key", "repair", "entry_valid"], "language": "en", "status": "draft", "evidence_level": "E2", "created": "2026-09-10", "updated": "2026-09-10", "source": "incident-2026-09-09", "provenance": {"source": "self", "contributor": "Community", "evidence": "locally reproduced + fixed + smoke-tested"}}
+{"title": "OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit", "domain": "devops", "tags": ["openclaw", "sqlite", "session_nodes", "canonical-key", "repair", "entry_valid"], "language": "en", "status": "published", "evidence_level": "E2", "created": "2026-09-10", "updated": "2026-09-10", "source": "incident-2026-09-09", "provenance": {"source": "self", "contributor": "Community", "evidence": "locally reproduced + fixed + smoke-tested"}}
 ---
 # OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit
 
