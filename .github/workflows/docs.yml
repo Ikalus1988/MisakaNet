@@ -48,6 +48,15 @@ jobs:
         run: |
           pip install -r requirements-docs.txt
 
+      # Every public lesson count (README/ARCHITECTURE/<meta description>/…)
+      # must equal data/lessons.json. PRs are covered by
+      # tests/test_lesson_count_ssot.py under pytest; direct pushes to main are
+      # not, and that is exactly how the site's <meta description> sat at "435"
+      # while the corpus held 378 (handoff 2026-09-12). Zero-dependency check.
+      - name: Verify public lesson counts
+        if: github.event_name == 'push'
+        run: python3 scripts/sync_lesson_count.py --check --quiet
+
       - name: Build documentation
         run: mkdocs build
 

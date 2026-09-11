@@ -57,17 +57,29 @@ jobs:
             echo "Updated docs/index.html"
           fi
 
-          # Update lesson count in docs/index.html
-          LESSON_COUNT=$(find lessons/ -name "*.md" ! -name "README*" ! -name "LESSON_QUALITY*" | wc -l)
-          sed -i "s/[0-9]* indexed lessons/$LESSON_COUNT indexed lessons/g" docs/index.html
-          sed -i "s/[0-9]* indexed failure-recovery lessons/$LESSON_COUNT indexed failure-recovery lessons/g" docs/index.html
-          echo "Updated lesson count to $LESSON_COUNT"
+          # Lesson counts: never hand-roll the number here. This step used to
+          # count every lessons/**/*.md file (`find lessons/ -name '*.md'` = 422
+          # today, ~435 when this was written) — mirrors, locale copies, drafts
+          # and templates included — and sed that inflated figure into the site's
+          # <meta description>, silently overwriting the canonical count. The
+          # canonical figure is the indexed count from data/lessons.json, and
+          # scripts/sync_lesson_count.py owns every public surface.
+          python3 scripts/sync_lesson_count.py
+          python3 scripts/sync_lesson_count.py --check
 
       - name: Commit version sync
         if: steps.release.outputs.release_created
         run: |
           git config user.name "misakanet-bot"
           git config user.email "bot@misakanet.dev"
+          # NOTE: stage first, then ask about the *index*. `git diff --quiet`
+          # ignores the index, so the previous `git add -A; git diff --quiet ||
+          # git commit` form could never commit anything — the step looked alive
+          # and did nothing (found 2026-09-12 while wiring the count SSOT).
           git add -A
-          git diff --quiet || git commit -m "docs: sync version to ${{ steps.release.outputs.tag_name }}"
-          git push
+          if git diff --cached --quiet; then
+            echo "No version/count sync changes to commit"
+          else
+            git commit -m "docs: sync version to ${{ steps.release.outputs.tag_name }}"
+            git push
+          fi
