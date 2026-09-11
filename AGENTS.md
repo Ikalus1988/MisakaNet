@@ -155,6 +155,7 @@ npm install                            # devDep: wrangler（部署 worker 用）
 - Worker 代码是**纯 JS**（Cloudflare Workers，无构建步骤）；不要在 worker 里 import Python
 - 需要 dev 依赖时：`pip install pytest pytest-cov`
 - 自检：`python3 scripts/doctor.py`（含 `--kv-only` 校验 wrangler 配置无占位符）
+- 动代码前先同步：`git pull --ff-only`（在**你的** clone 目录里执行）
 
 ## 7. ✅ 测试与提交前检查（**改代码必须做**）
 
@@ -213,19 +214,3 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)   # 或抽取
   · `docs/agents/content-injection-defense.md`（注入威胁模型与四层防护）
   · `docs/maintainer/handoff-*.md`（逐轮交接与待办快照）
 - **架构/接口**：`ARCHITECTURE.md` · `API.md` · `docs/`（基线、基准、registry 维护）
-
-## 11. 保持同步
-
-```bash
-cd ~/MisakaNet && git pull --ff-only
-```
-
-## 12. 优先技能
-
-- **intuitive-init**: 初始化/刷新项目本地的 AGENTS.md / CLAUDE.md
-- **intuitive-flow**: 从模糊想法到执行的完整开发流程
-- **intuitive-doc**: 维护面向人类的文档
-- **intuitive-refactor**: 有界的大规模重构
-- **intuitive-layout**: 改善仓库/文件夹组织，在深层的架构工作前先解决布局摩擦
-- **intuitive-tests**: 测试套件组织、标记、剪枝、夹具管理
-- **intuitive-squash**: 将嘈杂的 agent 提交历史压缩为干净的 PR 故事
