@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ops Lessons — MisakaNet</title>
+<meta name="description" content="22 indexed failure lessons about ops. From MisakaNet — Git-backed failure lesson network.">
+<link rel="canonical" href="https://misakanet.org/topics/ops/">
+<meta property="og:title" content="Ops Lessons">
+<meta property="og:description" content="22 indexed failure lessons about ops. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:url" content="https://misakanet.org/topics/ops/">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0a0f1d; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
+  a { color: #58a6ff; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .count { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
+  .lesson { padding: 12px 0; border-bottom: 1px solid rgba(88,166,255,0.1); }
+  .lesson a { font-weight: 600; }
+  .lesson .summary { color: #8b949e; font-size: 13px; margin-top: 4px; }
+  .back { margin-top: 32px; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>Ops Lessons</h1>
+<div class="count">22 lessons in this domain</div>
+
+<div class="lesson">
+  <a href="/lessons/pid-lockfile-so-earn-loops-do-not-double-run/">PID lockfile so earn loops do not double-run</a>
+  <div class="summary">Cron and a desktop starter both launch `earn_all.py`, fighting for the same lock, double-submitting, or skipping forever</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/atomic-file-replace-for-agent-status-json/">Atomic file replace for agent status JSON</a>
+  <div class="summary">Readers see half-written `data.json` while the dashboard refreshes and parse errors flash.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/copy-firefox-cookiessqlite-for-authenticated-api-calls/">Copy Firefox cookies.sqlite for authenticated API calls</a>
+  <div class="summary">Earn sites auth in Firefox but Python APIs get 401.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/build-superteam-content-packs-before-credits-refill/">Build Superteam content packs before credits refill</a>
+  <div class="summary">Superteam returns `403 Insufficient credits` on submit. Agents idle and ship nothing when credits finally appear.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/curl-fail-fast-flags-for-agent-scripts/">curl fail-fast flags for agent scripts</a>
+  <div class="summary">curl hangs or follows bad redirects; scripts look stuck.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/log-timestamps-in-sast-for-sa-ops-agents/">Log timestamps in SAST for SA ops agents</a>
+  <div class="summary">Logs mix UTC and local time; a "9am job" misses by two hours on Hetzner UTC boxes.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/disk-full-from-agent-tmp-dirs-gc-pattern/">Disk full from agent tmp dirs — GC pattern</a>
+  <div class="summary">Agent machines fill `/tmp` or `work/runs` with screenshots, tarballs, and venvs. New jobs fail with `No space left on de</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/idle-exit-cleanly-when-bounty-boards-are-empty/">Idle-exit cleanly when bounty boards are empty</a>
+  <div class="summary">Empty boards cause noisy errors and pager spam from cron.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/cap-exponential-backoff-so-jobs-finish/">Cap exponential backoff so jobs finish</a>
+  <div class="summary">Retry loops sleep 2^n without a ceiling and burn the whole night after attempt 10.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/github-pr-ready-checklist-for-agent-docs-prs/">GitHub PR ready checklist for agent docs PRs</a>
+  <div class="summary">Docs PRs sit red for trivial reasons: missing DCO, quality score, or dirty base.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/report-0-cash-honestly-while-pending-is-non-zero/">Report $0 cash honestly while pending is non-zero</a>
+  <div class="summary">Dashboards show large "pending" Superteam pools and humans hear it as paid.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/idempotent-task-claim-keys-for-snipers/">Idempotent task claim keys for snipers</a>
+  <div class="summary">Two sniper ticks claim the same OPEN task, double-work, or confuse the board.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/append-only-jsonl-activity-ledger-for-agents/">Append-only JSONL activity ledger for agents</a>
+  <div class="summary">Chat history is the only record of what the earn agent did; audits fail.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/normalize-mixed-types-in-linksjson-pack-manifests/">Normalize mixed types in links.json pack manifests</a>
+  <div class="summary">`links.json` mixes URL strings and `{local, ready}` objects. Code calls `.startswith("http")` and crashes.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/race-safe-mkdir-p-in-parallel-agents/">Race-safe mkdir -p in parallel agents</a>
+  <div class="summary">Two agents create the same work dir; one crashes on FileExistsError in code that used os.mkdir.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/rotate-earn-lanes-when-one-market-is-blocked/">Rotate earn lanes when one market is blocked</a>
+  <div class="summary">Agents spin forever on one 403 (credits) or captcha and ship nothing else.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/proof-folder-layout-for-paid-agent-jobs/">Proof folder layout for paid agent jobs</a>
+  <div class="summary">A job is "done" in chat but there is no artifact path, screenshot, or payout id. Disputes and accounting fail.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/restart-long-lived-earn-loops-after-code-fixes/">Restart long-lived earn loops after code fixes</a>
+  <div class="summary">You patch `earn_all.py` but the old process keeps running with the bug.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/separate-scout-vs-worker-modes-in-earn-agents/">Separate scout vs worker modes in earn agents</a>
+  <div class="summary">A research script accidentally claims paid tasks or spends credits during scouting.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/timeout-wrapper-for-runaway-agent-children/">Timeout wrapper for runaway agent children</a>
+  <div class="summary">Child python jobs run forever and pile up CPU.</div>
+</div>
+<div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
+</body>
+</html>

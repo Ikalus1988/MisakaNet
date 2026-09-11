@@ -22,15 +22,47 @@
 </head>
 <body>
 <h1>FANUC Industrial Robot</h1>
-<div class="count">15 lessons in this domain</div>
+<div class="count">44 lessons in this domain</div>
 
+<div class="lesson">
+  <a href="/lessons/fanuc-alarm-code-reference/">fanuc-alarm-code-reference</a>
+  <div class="summary">FANUC 机器人运行过程中出现各类报警代码，现场工程师需要快速查询报警含义和处理方法，但缺乏系统性的报警代码速查资料。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/fanuc-alarm-severity-guide/">fanuc-alarm-severity-guide</a>
+  <div class="summary">FANUC controllers display alarms with different severity levels, but engineers don't always understand the implications </div>
+</div>
 <div class="lesson">
   <a href="/lessons/fanuc-auto-abort-on-fault-restart/">fanuc-auto-abort-on-fault-restart</a>
   <div class="summary">When enabling the teach pendant during auto mode, the robot faults and pauses the program. The user wants the robot to a</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/fanuc-backup-payload-extraction/">fanuc-backup-payload-extraction</a>
+  <div class="summary">Given a FANUC robot backup directory, extract the payload (load mass, center of gravity, inertia) configuration. The bac</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/fanuc-backup-restore-guide/">fanuc-backup-restore-guide</a>
+  <div class="summary">FANUC robot controllers support multiple backup types (full backup, mirror/image backup, auto backup) with different con</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/fanuc-communication-protocol-socket/">fanuc-communication-protocol-socket</a>
+  <div class="summary">需要从外部 PC（Python/C++/其他）通过 TCP/IP 网络与 FANUC 机器人控制器建立 socket 通信，实现远程运动控制、变量读写、程序调用等功能。FANUC 控制器的通信配置涉及多个菜单层级和系统变量，初学者容易遗漏关</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/fanuc-dcs-safety-configuration/">fanuc-dcs-safety-configuration</a>
+  <div class="summary">FANUC DCS (Dual Check Safety) is a critical safety system that uses independent dual CPUs to monitor robot position and </div>
+</div>
+<div class="lesson">
   <a href="/lessons/fanuc-do-not-found-in-program-reference-position/">fanuc-do-not-found-in-program-reference-position</a>
   <div class="summary">A digital output (e.g., DO[66]) is confirmed active on the robot, but searching all TP programs for "DO[66]" or "DO[" re</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/fanuc-eip-omron-plc-connection/">fanuc-eip-omron-plc-connection</a>
+  <div class="summary">在工业自动化项目中，需要将 **OMRON PLC** 与 **FANUC 机器人** 建立通讯连接。常见通讯方案（PROFINET、DeviceNet）通常需要为 FANUC 机器人额外购买专用通讯硬件卡，增加了系统成本。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/fanuc-handling-robot-auto-drop-diagnosis/">fanuc-handling-robot-auto-drop-diagnosis</a>
+  <div class="summary">FANUC 搬运机器人负责搬运车顶零件。零件到位后，销式快换耦合器（pin-type quick-change coupler）断开；点焊完成后重新连接。在此过程中，机器人**偶尔掉出自动模式**，需要手动按下电气控制面板上的复位和启动按钮</div>
 </div>
 <div class="lesson">
   <a href="/lessons/fanuc-intp-102-detect-joint-olp-whitespace/">fanuc-intp-102-detect-joint-olp-whitespace</a>
@@ -41,48 +73,36 @@
   <div class="summary">The M[] option appears in the I/O replace menu but is undocumented in standard TP programming guides. Users don't know w</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/fanuc-kl-1086-is-line-number-not-error-code/">fanuc-kl-1086-is-line-number-not-error-code</a>
-  <div class="summary">"id": "fanuc-kl-1086-is-line-number-not-error-code",</div>
+  <a href="/lessons/fanuc-karel-core-utility-modules/">fanuc-karel-core-utility-modules</a>
+  <div class="summary">KAREL 是 FANUC 控制器上的类 Pascal 编译语言，没有标准库。开发者在每个项目中都要重复实现错误处理、字符串操作、类型转换等基础功能，导致代码冗余且质量参差不齐。</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/fanuc-kl-bytes-ahead-is-builtin-procedure/">fanuc-kl-bytes-ahead-is-builtin-procedure</a>
-  <div class="summary">KL 编译报错时，误认为 BYTES_AHEAD 是禁用标识符或非法调用，将其从 MM_RCV_NTFY.kl 中删除。</div>
+  <a href="/lessons/fanuc-karel-geometry-kinematics-layer/">fanuc-karel-geometry-kinematics-layer</a>
+  <div class="summary">FANUC KAREL标准库缺少面向机器人应用的3D几何计算能力：</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/fanuc-kl-err-abort-vs-err-pause/">fanuc-kl-err-abort-vs-err-pause</a>
-  <div class="summary">IPC 通信错误时未区分 ERR_ABORT 和 ERR_PAUSE，导致程序号丢失。</div>
+  <a href="/lessons/fanuc-karel-http-api-webcontrol/">fanuc-karel-http-api-webcontrol</a>
+  <div class="summary">需要通过HTTP接口远程控制FANUC机器人：</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/fanuc-kl-mm-module-h-no-routine/">fanuc-kl-mm-module-h-no-routine</a>
-  <div class="summary">mm_module_h.kl（头文件）末尾有 `ROUTINE Check_Status(params) FROM MM_MODULE`（带参数版），导致 MM_MODULE.kl 中同名 routine 报"already defined</div>
+  <a href="/lessons/fanuc-karel-ik-fk-quaternion-guide/">fanuc-karel-ik-fk-quaternion-guide</a>
+  <div class="summary">FANUC KAREL机器人编程中，运动学和坐标变换操作容易出现以下问题：</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/fanuc-profinet-32bit-real-value-transfer/">fanuc-profinet-32bit-real-value-transfer</a>
-  <div class="summary">SCARA 12iA + R-30iB Compact Plus needs to send/receive 32-bit real values via Profinet, but GI/GO are limited to 16-bit </div>
+  <a href="/lessons/fanuc-karel-intp-316-call-error-motion-lock/">fanuc-karel-intp-316-call-error-motion-lock</a>
+  <div class="summary">从 KAREL 调用 TP 程序时触发 **INTP-316**（呼叫错误 / Call Error），同时动作锁定被激活。KAREL 程序本身可正常运行，仅在调用 TP 程序时出错。</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/fanuc-r-2000ic-retrieval-fix/">fanuc-r-2000ic-retrieval-fix</a>
-  <div class="summary">访问者问"fanuc r-2000ic 系列所有机器人的最大速度"，RAG 返回了 KUKA Series 2000 的数据。</div>
+  <a href="/lessons/fanuc-karel-ka-boost-architecture/">fanuc-karel-ka-boost-architecture</a>
+  <div class="summary">KAREL 是 FANUC 机器人控制器上的类 Pascal 编译语言，缺乏泛型、关联数组、原生字符串操作、标准库等现代编程基础设施。开发大型项目（如 5 轴 DLP 3D 打印切片器）时，代码复用困难，模块化程度低，构建和部署流程复杂。</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/rag-alarm-code-retrieval-needs-mandatory-keyword-recall/">RAG Alarm Code Retrieval Needs Mandatory Keyword Recall</a>
-  <div class="summary">When querying "SRVO-023 robot alarm", RAG returned unrelated results instead of the correct FANUC alarm documentation.</div>
+  <a href="/lessons/fanuc-karel-kl-pose-api-reference/">fanuc-karel-kl-pose-api-reference</a>
+  <div class="summary">FANUC KAREL标准库仅提供基础的PR读写和简单位姿操作，缺少以下关键能力：</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/rag-brand-filter-three-pitfalls/">RAG Brand Filter Three Pitfalls</a>
-  <div class="summary">During a quality inspection of a FANUC robot RAG knowledge base, the team found three design flaws in the brand-filterin</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/rag-chinese-encoding-with-pymupdf/">RAG Chinese Encoding with PyMuPDF</a>
-  <div class="summary">When building a FANUC knowledge-base RAG system, retrieved Chinese alarm codes appeared garbled.</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/rag-chunk-parameters-800-characters-and-100-overlap/">RAG Chunk Parameters 800 Characters and 100 Overlap</a>
-  <div class="summary">After importing FANUC PDF documents into RAG, retrieval quality was unstable and recall was low for long documents.</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/vertical-kb-question-bank-strategy-fanuc-robot-kb-case-study/">Vertical KB Question Bank Strategy — FANUC Robot KB Case Study</a>
-  <div class="summary">在飞书云文档中维护一个 FANUC 机器人垂直知识库的题库，经历了从第一批到第三批的迭代，发现了一些关键管理策略。</div>
+  <a href="/lessons/fanuc-karel-unit-testing-kunit/">fanuc-karel-unit-testing-kunit</a>
+  <div class="summary">FANUC KAREL 程序没有原生的单元测试支持。开发者通常需要将程序部署到控制器或 ROBOGUIDE 上运行才能验证逻辑，调试效率低且风险高。需要一种在部署前就能系统性验证 KAREL 程序逻辑的方法。</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 </body>
