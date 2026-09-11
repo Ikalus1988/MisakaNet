@@ -81,6 +81,10 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 
 ## 3. 部署与数据生成
 
+> 推 main 的固定动作：**先 commit**（有未提交改动时 `git rebase` 会被直接拒绝）→
+> `git fetch origin main` → `git rebase origin/main` → `git push`。远端有 bot 提交
+> （leaderboard 快照等）时几乎必然需要 rebase，别直接 push。
+
 | 对象 | 方式 | 备注 |
 |---|---|---|
 | `misakanet-register-proxy`（主 worker，含 `/mcp`）| **push main 自动部署** | `deploy-worker.yml`：wrangler + `workers/wrangler.toml`（含 `[triggers]` cron 定义） |
@@ -119,6 +123,9 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 | lesson PR 被 shape-guard 拦"markdown/diff 泄露" | 测试文件里粘了 markdown/patch。把示例移入**代码围栏**，或参考 #1604 的测试文件豁免规则 |
 | issue 被莫名关闭 | 某个合并的 PR 正文/提交写了 `Closes #N`。长期开放 issue（#1550/#1258）有守护 workflow 会自动 reopen；交付报告类 PR 用 `Refs #N` |
 | "站点没更新/新页面 404" | 先排除**尾斜杠误判**（无尾斜杠 → 307 不是 404）；再看 commit 上有没有 `Workers Builds: misakanet-web` check-run 及其结论/Version ID。CF Workers Builds 是**异步**的，push 完立刻 curl 可能还是旧版本 |
+| git 协议连不上 github.com | 不只是慢：实测 `Failed to connect to github.com port 443 after 134359 ms`。别手搓四步 curl 了，用 `scripts/gh_push_via_api.py --branch <br> --message-file <msg> <files>`（同一套 Git Data API，带"分支不在 base 上就拒绝"的保护）；细节见上一行 |
+| PR 的 CI 全卡在 `action_required`（"awaiting approval"） | 该 PR 分支最近被 **bot 推过**（`Auto-Merge Docs PRs` 把 main 合进分支、`/fix-dco` 的 force-push 等）——这类 run 会挂起等人工批准。批准：Actions 页点 "Review pending deployments"，或 `POST /repos/{owner}/{repo}/actions/runs/{run_id}/approve`（owner 权限即可，本仓实测返回 201）。**注意**：bot 每再推一次都会重新挂起，批完要再确认一次 |
+| release PR 的 DCO / audit 永远红 | release-please 生成的提交默认**不带 `Signed-off-by:`**，而 DCO 是硬门禁 → 每个 release PR 必红。已在 `release-please-config.json` 顶层加 `"signoff": true`（PR #1628）。临时救急可在 PR 里评论 `/fix-dco`（同仓 PR 会 rebase --signoff 后 force-push） |
 | `leaderboard-watch` 失败：`fatal: You are not currently on a branch` + 日志里有 `CONFLICT ... data/leaderboard_meta.json` | 两次 push 间隔太近 → 两个 watch run 并发，各自提交同一份**生成物**并互相 rebase 冲突；脚本里的 `git pull --rebase ... \|\| true` 把冲突吞掉，仓库停在 detached HEAD，随即 `git push` 报上面那句。已在 workflow 加 `concurrency`（串行化）+ `-X theirs`（生成物以本次快照为准）+ 显式 `git rebase --abort` 并对失败返回非零 |
 | 需要看某个脚本的用途 | `ls scripts/` + `<script> --help`；`scripts/doctor.py` 做整体自检 |
 | 需要看 worker 线上错误 | 用 `cf_mcp_auth.py` 拿 CF 凭证 → Cloudflare observability MCP 查（worker 的 `[observability]` 需启用） |
