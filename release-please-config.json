@@ -14,7 +14,12 @@
       ],
       "extra-files": [
         "docs/index.html",
-        "README.md"
+        "README.md",
+        {
+          "type": "json",
+          "path": "server.json",
+          "jsonpath": "$.packages[?(@.registryType=='pypi')].version"
+        }
       ]
     }
   }
