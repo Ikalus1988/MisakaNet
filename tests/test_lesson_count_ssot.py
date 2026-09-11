@@ -21,6 +21,7 @@ while building it are pinned here as well: a pattern that cannot match its own
 output (so the second run reports "reworded"), and per-row writes onto a file
 clobbering the earlier rows (only the last row survived on disk).
 """
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -118,6 +119,10 @@ def test_stale_value_is_reported_with_its_line(tmp_path):
 
 
 def test_cli_check_passes_on_this_repo():
+    # PYTHONIOENCODING: the CLI prints ✅/❌, and on Windows a pipe defaults to the
+    # locale codec (cp1252) — the child would die with UnicodeEncodeError and this
+    # gate would look red for a reason that has nothing to do with counts.
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     proc = subprocess.run([sys.executable, str(SCRIPT), "--check"],
-                          cwd=REPO, capture_output=True, text=True)
+                          cwd=REPO, capture_output=True, text=True, env=env)
     assert proc.returncode == 0, proc.stdout + proc.stderr
