@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "signoff": true,
+  "signoff": "misakanet-bot <bot@misakanet.dev>",
   "packages": {
     ".": {
       "release-type": "python",
