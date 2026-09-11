@@ -34,5 +34,38 @@ if [ "$suspicious" -ne 0 ]; then
     exit 1
 fi
 
-echo "✅ root hygiene: no suspicious root entries"
+# ── local-only paths must never be tracked ───────────────────────────────────
+# Same failure family, second door: .codexignore lists these as LOCAL working
+# artifacts, but .gitignore did not, so a bare `git add -A` committed 210 files of
+# them (an 8.2 MB vendored tool with its package-lock — which then produced
+# Dependabot alerts for a tool this repo does not ship — plus raw KV/email dumps
+# and session watch scripts). See docs/maintainer/handoff-2026-09-12.md §8.
+# Checked with `git ls-files`, so it runs before the commit exists.
+LOCAL_ONLY_PATHS=(
+    ".archify-tool"
+    "reports"
+    "scripts/mhs_watch.py"
+    "scripts/mhs_watch_config.json"
+    "docs/agents/mhs-watch.md"
+)
+tracked_leak=0
+for path in "${LOCAL_ONLY_PATHS[@]}"; do
+    hits="$(git ls-files -- "$path" 2>/dev/null | head -3)"
+    if [ -n "$hits" ]; then
+        echo "❌ local-only path is tracked: $path"
+        echo "$hits" | sed 's/^/     /'
+        tracked_leak=1
+    fi
+done
+
+if [ "$tracked_leak" -ne 0 ]; then
+    echo
+    echo "   These are local working artifacts (.codexignore lists them); they must"
+    echo "   not be in git. Untrack them (files stay on disk) and let .gitignore hold:"
+    echo "     git rm -r --cached .archify-tool reports scripts/mhs_watch.py"
+    echo "   If one is genuinely meant to be published, move it out of this list."
+    exit 1
+fi
+
+echo "✅ root hygiene: no suspicious root entries, no tracked local-only paths"
 exit 0
