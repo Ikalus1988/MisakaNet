@@ -9,6 +9,14 @@ permissions:
   contents: write
   issues: write
 
+# Two pushes within ~a minute start two runs that both commit the same generated
+# snapshot; rebasing one onto the other conflicts in data/leaderboard_meta.json.
+# Serialize instead of racing (cancel-in-progress: false so a queued run still runs
+# and picks up the newest main).
+concurrency:
+  group: leaderboard-watch
+  cancel-in-progress: false
+
 jobs:
   watch:
     runs-on: ubuntu-latest
@@ -30,13 +38,27 @@ jobs:
 
       - name: Commit updated leaderboard snapshot
         run: |
-          if [ -f data/leaderboard.json ]; then
-            git config user.name "misakanet-bot"
-            git config user.email "bot@misakanet.org"
-            # leaderboard_watch.py also writes leaderboard_meta.json; stage both
-            # so `git pull --rebase` never trips on unstaged changes.
-            git add data/leaderboard.json data/leaderboard_meta.json
-            git diff --cached --quiet || git commit -s -m "chore: update leaderboard snapshot [skip ci]"
-            git pull --rebase origin main || true
-            git push
+          if [ ! -f data/leaderboard.json ]; then
+            echo "no snapshot produced; nothing to commit"
+            exit 0
           fi
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.org"
+          # leaderboard_watch.py also writes leaderboard_meta.json; stage both
+          # so `git pull --rebase` never trips on unstaged changes.
+          git add data/leaderboard.json data/leaderboard_meta.json
+          if git diff --cached --quiet; then
+            echo "snapshot unchanged; nothing to commit"
+            exit 0
+          fi
+          git commit -s -m "chore: update leaderboard snapshot [skip ci]"
+          # main can still move between checkout and push (other workflows, manual
+          # pushes). The snapshot is a generated artifact, so on conflict the freshly
+          # computed one wins: during a rebase, -X theirs means the commit being
+          # replayed, i.e. ours.
+          if ! git pull --rebase -X theirs origin main; then
+            echo "::error::rebase onto origin/main failed; leaving a clean tree"
+            git rebase --abort || true
+            exit 1
+          fi
+          git push
