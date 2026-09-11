@@ -7,55 +7,88 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write        # `gh workflow run release-pypi.yml` (dispatch needs actions:write)
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v5
-        id: release
+      # Deliberately GITHUB_TOKEN, not the PAT: a GITHUB_TOKEN push never triggers
+      # another workflow, so the tag created below cannot fire release-pypi.yml
+      # behind our back. PyPI publishing is dispatched explicitly, once.
+      - uses: actions/checkout@v7
         with:
-          # GITHUB_TOKEN and the repo PATs lack permission to create GitHub
-          # Releases via release-please v5 ("Resource not accessible by
-          # integration/personal access token"). Skip automatic Release
-          # creation — tags and release PRs still work; the Release itself
-          # is created from the tag (see the Create GitHub Release step below).
-          token: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
-          skip-github-release: true
+          fetch-depth: 0                        # tags, to see whether the release is tagged
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      # release-please with skip-github-release only pushes the tag; create
-      # the GitHub Release from that tag via gh (GITHUB_TOKEN handles this
-      # path fine — the failure was specific to release-please v5's own
-      # release-creation code).
-      - name: Create GitHub Release from tag
-        if: steps.release.outputs.tag_name != ''
+      # release-please is invoked with skip-github-release: true below, and that
+      # flag skips `manifest.createReleases()` entirely
+      # (googleapis/release-please-action src/index.ts:141) — the only code path
+      # that creates tags/releases AND the only one that sets tag_name /
+      # release_created. So the steps that used to follow the action were dead
+      # code, and every merged release PR left release-please aborting with
+      # "There are untagged, merged release PRs outstanding - aborting" until a
+      # human tagged it by hand (v2.29.0 was tagged by hand — handoff 2026-09-12).
+      # Tagging before the action removes that deadlock: the manifest only moves
+      # when a release PR merges, so "manifest version without a tag" means
+      # exactly "a merged release needs tagging".
+      - name: Tag the merged release (release-please cannot tag here)
+        id: release_tag
         env:
           GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ steps.release.outputs.tag_name }}"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists — skipping"
-          else
-            gh release create "$TAG" --generate-notes || echo "::warning::gh release create failed for $TAG (may need PAT with releases scope)"
+          set -euo pipefail
+          VERSION=$(python3 -c "import json;print(json.load(open('.release-please-manifest.json'))['.'])")
+          TAG="v$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "tag $TAG already exists — nothing to release"
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          echo "manifest says $VERSION and no tag exists yet — tagging"
+          git tag "$TAG"
+          git push origin "$TAG"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists"
+          else
+            gh release create "$TAG" --generate-notes
+          fi
+          echo "created=true" >> "$GITHUB_OUTPUT"
 
-      # Sync version to docs after release
-      - name: Checkout
-        if: steps.release.outputs.release_created
-        uses: actions/checkout@v7
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          # The PAT (or GITHUB_TOKEN) here only maintains the release PR; Release
+          # creation is skipped because release-please v5's own release-creation
+          # code is refused for these tokens ("Resource not accessible by
+          # integration/personal access token"). Tags are created by the step
+          # above, GitHub Releases by `gh release create` in the same step.
+          token: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          skip-github-release: true
 
+      # Publish only when this run tagged a release: `gh workflow run` is one of
+      # the two events a GITHUB_TOKEN push *can* still create, so this is the
+      # single, explicit publish path.
+      - name: Dispatch the PyPI publish
+        if: steps.release_tag.outputs.created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+        run: gh workflow run release-pypi.yml --ref main -f "version=${{ steps.release_tag.outputs.version }}"
+
+      # Idempotent and *unconditional*: it rewrites docs/index.html only when the
+      # badge drifted from the manifest, and the commit below only fires when the
+      # index actually changed. So a stale badge self-heals on the next push to
+      # main instead of waiting for the next release (this is how v2.23.0 sat there
+      # for six releases while the step was dead).
       - name: Sync version to docs
-        if: steps.release.outputs.release_created
         run: |
-          VERSION="${{ steps.release.outputs.tag_name }}"
-          VERSION="${VERSION#v}"
+          set -euo pipefail
+          VERSION="${{ steps.release_tag.outputs.version }}"
           echo "Syncing version $VERSION to docs..."
 
-          # Update docs/index.html version references
-          if [ -f docs/index.html ]; then
-            sed -i "s/v[0-9]*\.[0-9]*\.[0-9]*/v$VERSION/g" docs/index.html
-            echo "Updated docs/index.html"
-          fi
+          # docs/index.html carries exactly one version string (the badge).
+          sed -i "s/v[0-9]*\.[0-9]*\.[0-9]*/v$VERSION/g" docs/index.html
 
           # Lesson counts: never hand-roll the number here. This step used to
           # count every lessons/**/*.md file (`find lessons/ -name '*.md'` = 422
@@ -68,8 +101,8 @@ jobs:
           python3 scripts/sync_lesson_count.py --check
 
       - name: Commit version sync
-        if: steps.release.outputs.release_created
         run: |
+          set -euo pipefail
           git config user.name "misakanet-bot"
           git config user.email "bot@misakanet.dev"
           # NOTE: stage first, then ask about the *index*. `git diff --quiet`
@@ -80,6 +113,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No version/count sync changes to commit"
           else
-            git commit -m "docs: sync version to ${{ steps.release.outputs.tag_name }}"
-            git push
+            git commit -m "docs: sync version to v${{ steps.release_tag.outputs.version }}"
+            git push || { git pull --rebase origin main && git push; }
           fi
