@@ -154,10 +154,14 @@ pytest tests/ -v --tb=short                      # Python 测试（与 CI 同命
 node --test workers/*.test.mjs                   # worker 测试（纯 node:test）
 python3 scripts/lesson_gate.py <lesson.md>       # 改 lesson 时：结构门禁
 python3 scripts/injection_scan.py --dir lessons  # 改 lesson 时：注入/污染扫描（high 级失败）
+python3 scripts/sync_lesson_count.py --check     # 改公开计数/meta 描述时：计数 SSOT 门禁
 python3 scripts/doctor.py                        # 仓库自检
 ```
 
 - **每个提交都要 `Signed-off-by:`**（`git commit --signoff`）——DCO 是硬门禁
+- **public 里的课程数不要手写**：README / ARCHITECTURE / 站点 `<meta description>` 等处的
+  "N lessons" 由 `scripts/sync_lesson_count.py` 统一维护（每日 `update-lessons.yml` 会跑）；
+  `--check` 不一致即失败，改了受管句子的措辞要同步更新脚本里的 `SITES` 注册表
 - **push main 即自动部署**：改 worker → `deploy-worker.yml`；改 `docs/`（站点）→ Cloudflare
   **Workers Builds**（Git 集成，任何 push 都触发，结果看 commit 上的同名 check-run）。
   两者都不用手工 `wrangler deploy`，但**部署是异步的，改完要验证**线上结果

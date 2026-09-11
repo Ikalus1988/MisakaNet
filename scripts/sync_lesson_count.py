@@ -1,164 +1,320 @@
 #!/usr/bin/env python3
-"""
-Sync lesson count across all project files using data/lessons.json as the single source of truth.
+"""Lesson-count SSOT: keep every public "N lessons" claim equal to data/lessons.json.
 
-Usage:
-    python3 scripts/sync_lesson_count.py              # sync all files
-    python3 scripts/sync_lesson_count.py --check      # check only, exit 1 if mismatch
-    python3 scripts/sync_lesson_count.py --quiet      # sync silently
+Why this exists (2026-09-12)
+----------------------------
+The previous mechanism (``update_lessons_json.refresh_lesson_count_markers``,
+audit QW6) substituted the literal number for each ``{{LESSONS_COUNT}}``
+placeholder. Substitution *consumes* the placeholder, so the second run found
+nothing left to replace and every managed count froze at its first
+materialization:
+
+    ARCHITECTURE.md  "358+ .md files"        (placeholder gone since 2026-09-05)
+    README.md        "310+ failure lessons"
+    docs/index.html  "435 indexed failure-recovery lessons"  (<meta description>
+                      + og:description — the copy that appears in search results
+                      and social cards)
+    docs/search/…    "249 indexed failure-recovery lessons"
+
+An SSOT that silently stops refreshing is worse than no SSOT: the tooling
+advertises "counts cannot silently drift" while they drift by +15%.
+
+This module is idempotent **by construction**: every managed site is a regex
+whose numeric ``n`` group is re-matched on every run, so the tenth run is as
+correct as the first. Two properties are pinned by
+``tests/test_lesson_count_ssot.py``:
+
+1. re-running with a *different* count rewrites the site again (no write-once);
+2. a site whose wording changed is a **hard error**, never a silent skip —
+   drift can throttle loudly instead of hiding.
+
+Managed surfaces also normalise the trust vocabulary: ``verified failure
+lessons`` is rewritten to ``indexed failure lessons`` because
+``docs/trust-semantics.md`` reserves "verified" for manually fact-checked
+lessons (✅ "N indexed failure-recovery lessons" / ❌ "N verified failure
+lessons").
+
+Deliberately NOT managed
+------------------------
+Historical snapshots keep the number they were written with: ``docs/blog/**``,
+``docs/releases/**``, ``docs/reviews/**``, ``docs/prd/**``,
+``docs/maintainer/handoff-*.md``, course bodies (``lessons/**``) and dated audit
+reports. So does *testimony* (``docs/community/voices.json`` quotes a user
+saying "200+ lessons") and any metric that is not the lesson total
+(``18 domains``, ``52+ registered nodes``, per-domain topic pages).
+
+Usage
+-----
+    python3 scripts/sync_lesson_count.py            # rewrite every managed site
+    python3 scripts/sync_lesson_count.py --check     # CI gate: exit 1 on drift
+    python3 scripts/sync_lesson_count.py --quiet
 """
+from __future__ import annotations
+
 import argparse
 import json
 import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-LESSONS_JSON = REPO / "data" / "lessons.json"
-README_MD = REPO / "README.md"
-FRONTEND_HTML = REPO / "docs" / "index.html"
+LESSONS_JSON = Path("data") / "lessons.json"
+COUNT_FILE = Path("docs") / "_lessons_count.txt"
 
 
-def get_lesson_count() -> int:
-    """Read lesson count from the single source of truth: data/lessons.json."""
-    with open(LESSONS_JSON, "r", encoding="utf-8") as f:
-        lessons = json.load(f)
-    return len(lessons)
+@dataclass(frozen=True)
+class Site:
+    """One managed count occurrence (or one family of identical occurrences).
 
-
-def sync_readme_md(count: int, dry_run: bool = False) -> list[str]:
-    """Sync lesson count in README.md (badges, descriptions, tables)."""
-    changes = []
-    text = README_MD.read_text(encoding="utf-8")
-    old_text = text
-
-    # Replace standalone digit counts followed by + or space or end-of-word
-    # Match patterns like "205+", "205 ", "205 lessons"
-    replacements = [
-        (r"\b\d{2,3}\+", f"{count}+"),
-        (r"(\|\s*\*\*Data\*\*\s*\|\s*)\d{2,3}\s+lessons", rf"\g<1>{count} lessons"),
-        (r"(Give Cursor / Claude access to )\d{2,3}\+ verified", rf"\g<1>{count}+ verified"),
-    ]
-
-    for pattern, replacement in replacements:
-        new_text = re.sub(pattern, replacement, text)
-        if new_text != text:
-            changes.append(f"README.md: matched pattern '{pattern}'")
-            text = new_text
-
-    if text != old_text:
-        if not dry_run:
-            README_MD.write_text(text, encoding="utf-8")
-    return changes
-
-
-def sync_frontend_html(count: int, dry_run: bool = False) -> list[str]:
-    """Sync hardcoded lesson count fallbacks in docs/index.html.
-
-    Note: The JS dynamically fetches from /data/lessons.json at runtime,
-    so runtime values are always correct. This syncs the static HTML fallbacks
-    for when JS is disabled or hasn't loaded yet.
+    ``pattern`` must contain a named group ``n`` holding the count currently
+    written in the file; ``replace`` is the re.Stemplate that writes the
+    canonical count (may use ``\\g<k>`` backreferences and ``{n}``).
+    ``min_matches`` guards against a partial loss of the surface (a meta tag
+    quietly deleted) — it is a minimum, so adding another occurrence is fine.
     """
-    changes = []
-    text = FRONTEND_HTML.read_text(encoding="utf-8")
-    old_text = text
 
-    # Search panel fallback: "198 curated lessons"
-    text = re.sub(
-        r'(\b\d{2,3}\s+curated lessons)',
-        f'{count} curated lessons',
-        text,
-    )
+    path: str
+    pattern: str
+    replace: str
+    note: str
+    min_matches: int = 1
 
-    # Hero section span: "<span id="lesson-count-hero">200+</span>"
-    text = re.sub(
-        r'(<span id="lesson-count-hero">)\d{2,3}\+(</span>)',
-        rf'\g<1>{count}+\g<2>',
-        text,
-    )
+    def compiled(self) -> re.Pattern[str]:
+        return re.compile(self.pattern, re.MULTILINE)
 
-    # Product section span: "<span id="lesson-count-product">200+</span>"
-    text = re.sub(
-        r'(<span id="lesson-count-product">)\d{2,3}\+(</span>)',
-        rf'\g<1>{count}+\g<2>',
-        text,
-    )
 
-    # Meta description: "205+ curated lessons"
-    text = re.sub(
-        r'(\b\d{2,3}\+\s+curated lessons)',
-        f'{count}+ curated lessons',
-        text,
-    )
+_COUNT = r"(?P<n>\d{2,4})"
+# meta / og / JSON-LD / issue-template scale claim: "435 indexed failure-recovery
+# lessons" (index.html, search page), "310+ indexed …" (mcp-quickstart), "249
+# indexed …" (issue templates). The optional "+" is normalised away: the number
+# is exact, and "N+" made two files disagree about the same claim.
+_META = rf"{_COUNT}\+? indexed failure-recovery lessons"
+_META_REPL = "{n} indexed failure-recovery lessons"
+# "205+ verified failure lessons": the `\+?`/`(?:…)?` groups make the pattern
+# match its own output ("378 indexed failure lessons"), which is what keeps the
+# refresh idempotent. `tests/test_lesson_count_ssot.py` asserts that property for
+# every row, so a row that cannot match its replacement fails before it ships.
+_SCALE_CLAIM = rf"{_COUNT}\+? (?:verified |indexed )?failure lessons"
 
-    if text != old_text:
-        changes.append(f"docs/index.html: hardcoded fallbacks updated to {count}")
+
+def _build_sites() -> tuple[Site, ...]:
+    sites: list[Site] = []
+
+    def add(path: str, pattern: str, replace: str, note: str, min_matches: int = 1) -> None:
+        sites.append(Site(path, pattern, replace, note, min_matches))
+
+    # ── repo-facing prose ───────────────────────────────────────────────────
+    add("README.md", rf"{_COUNT}\+ failure lessons", "{n}+ failure lessons",
+        "README tagline — quoted by GitHub search and social cards")
+    add("ARCHITECTURE.md", rf"Shared knowledge \({_COUNT}\+ indexed lessons\)",
+        "Shared knowledge ({n}+ indexed lessons)",
+        "architecture tree comment; reports the index metric, not raw .md count")
+
+    # ── public website metadata (static: no JS can fix these) ───────────────
+    add("docs/index.html", _META, _META_REPL,
+        "<meta description> + og:description + JSON-LD (search/social copy)", 3)
+    add("docs/search/index.html", _META, _META_REPL,
+        "search page <meta description> + og:description", 2)
+    add("docs/mcp-quickstart.md", _META, _META_REPL, "MCP quickstart first paragraph")
+
+    # ── website body fallbacks (JS overwrites them once data/lessons.json loads,
+    #    but crawlers and no-JS readers only ever see the static text) ────────
+    add("docs/index.html", rf'(<span id="lesson-count-(?:hero|product)">){_COUNT}\+?(</span>)',
+        r"\g<1>{n}\g<3>", "hero + product count spans", 2)
+    add("docs/index.html", rf'(id="lesson-count-search"[^>]*>){_COUNT} indexed lessons',
+        r"\g<1>{n} indexed lessons", "search-panel fallback line")
+    add("docs/index.html", rf"(_allLessons\.length : ){_COUNT}",
+        r"\g<1>{n}", "JS fallback count shown before the index finishes loading")
+
+    # ── agent-facing entry points ───────────────────────────────────────────
+    add("docs/llms.txt", _SCALE_CLAIM, "{n} indexed failure lessons",
+        "llms.txt scale claim (trust vocabulary enforced: indexed, not verified)")
+    add("docs/.well-known/llms.txt", _SCALE_CLAIM, "{n} indexed failure lessons",
+        "served copy of llms.txt")
+    add("docs/skill.md", rf"\*\*{_COUNT}\+ lessons\*\*", "**{n}+ lessons**",
+        "skill manifest tagline")
+    add("JOIN.md", rf"\*\*{_COUNT}\+ lessons\*\*", "**{n}+ lessons**",
+        "contributor onboarding tagline")
+    add("JOIN.md", rf"^{_COUNT}\+ lessons \|", "{n}+ lessons |",
+        "version-info block (stars/forks in that block are hand-maintained)")
+
+    # ── integration guides ──────────────────────────────────────────────────
+    for _path in ("docs/integrations/cursor.md", "docs/integrations/continue.md",
+                  "docs/integrations/claude-code.md"):
+        add(_path, _SCALE_CLAIM, "{n} indexed failure lessons",
+            "integration landing line")
+    add("docs/integrations/README.md",
+        rf"(Search ){_COUNT}\+? (?:indexed )?failure-recovery lessons",
+        r"\g<1>{n} indexed failure-recovery lessons", "integrations index intro")
+    add("docs/install/index.html", rf"{_COUNT}\+ lessons across 18 domains",
+        "{n}+ lessons across 18 domains", "install page feature list")
+
+    # ── GitHub-facing automation ────────────────────────────────────────────
+    add(".github/ISSUE_TEMPLATE/config.yml", _META, _META_REPL,
+        "issue-template chooser description")
+    add(".github/ISSUE_TEMPLATE/ai-bounty-template.md", _META, _META_REPL,
+        "AI-bounty issue preamble")
+    add(".github/workflows/pr-thank-you.yml", rf"MisakaNet's {_COUNT}\+ lessons",
+        "MisakaNet's {n}+ lessons", "bot comment posted on every merged PR")
+
+    # ── docs that quote tool output ─────────────────────────────────────────
+    add("docs/worker-bm25-search.md", rf"Loaded {_COUNT} lessons", "Loaded {n} lessons",
+        "sample `doctor` output in the BM25 doc")
+
+    return tuple(sites)
+
+
+SITES: tuple[Site, ...] = _build_sites()
+
+
+def canonical_count(root: Path = REPO) -> int:
+    """Lesson count from the single source of truth: data/lessons.json."""
+    data = json.loads((root / LESSONS_JSON).read_text(encoding="utf-8"))
+    if not isinstance(data, list):
+        raise TypeError("data/lessons.json root must be a list")
+    return len(data)
+
+
+def _line_of(text: str, pos: int) -> int:
+    return text.count("\n", 0, pos) + 1
+
+
+@dataclass
+class _Scan:
+    site: Site
+    text: str
+    hits: list[re.Match[str]]
+
+
+def _scan(root: Path, sites: tuple[Site, ...]) -> tuple[list[_Scan], list[str]]:
+    """Collect every match; report missing files and non-matching patterns."""
+    scans: list[_Scan] = []
+    errors: list[str] = []
+    for site in sites:
+        path = root / site.path
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"{site.path}: unreadable ({exc}) — {site.note}")
+            continue
+        hits = list(site.compiled().finditer(text))
+        if len(hits) < site.min_matches:
+            errors.append(
+                f"{site.path}: pattern {site.pattern!r} matched {len(hits)}×, "
+                f"expected ≥{site.min_matches} — {site.note}. "
+                "The sentence was reworded: fix the file or update SITES."
+            )
+            continue
+        scans.append(_Scan(site, text, hits))
+    return scans, errors
+
+
+def stale_entries(count: int, *, root: Path = REPO,
+                  sites: tuple[Site, ...] = SITES) -> list[str]:
+    """Every health problem with the count surface; empty list == healthy."""
+    scans, errors = _scan(root, sites)
+    for scan in scans:
+        for hit in scan.hits:
+            if hit.group("n") != str(count):
+                found = " ".join(hit.group(0).split())
+                if len(found) > 60:
+                    found = f"…{found[-60:]}"
+                errors.append(
+                    f"{scan.site.path}:{_line_of(scan.text, hit.start())}: "
+                    f"{found!r} should be {count} — {scan.site.note}"
+                )
+    count_file = root / COUNT_FILE
+    try:
+        disk = count_file.read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        errors.append(f"{COUNT_FILE}: unreadable ({exc})")
+    else:
+        if disk != str(count):
+            errors.append(f"{COUNT_FILE}: says {disk!r}, data/lessons.json says {count}")
+    return errors
+
+
+def sync_all(count: int, *, root: Path = REPO, sites: tuple[Site, ...] = SITES,
+             dry_run: bool = False) -> tuple[list[str], list[str]]:
+    """Rewrite every managed site to ``count``. Returns (changes, errors).
+
+    Rows are applied **per file, onto one accumulating text**: several rows can
+    target the same file (docs/index.html has four), and writing each row from
+    the text captured at scan time made every write clobber the previous row's
+    (found the hard way — only the last row survived on disk).
+    """
+    scans, errors = _scan(root, sites)
+    changes: list[str] = []
+    by_path: dict[str, list[_Scan]] = {}
+    for scan in scans:
+        by_path.setdefault(scan.site.path, []).append(scan)
+
+    for path, path_scans in by_path.items():
+        original = path_scans[0].text
+        text = original
+        total = 0
+        for scan in path_scans:
+            text, replaced = scan.site.compiled().subn(
+                scan.site.replace.format(n=count), text)
+            total += replaced
+        if total and text != original:
+            if not dry_run:
+                (root / path).write_text(text, encoding="utf-8")
+            changes.append(f"{path}: {total} site(s) → {count}")
+
+    count_file = root / COUNT_FILE
+    try:
+        current = count_file.read_text(encoding="utf-8").strip()
+    except OSError:
+        current = None
+    if current != str(count):
         if not dry_run:
-            FRONTEND_HTML.write_text(text, encoding="utf-8")
-    return changes
+            count_file.parent.mkdir(parents=True, exist_ok=True)
+            count_file.write_text(f"{count}\n", encoding="utf-8")
+        changes.append(f"{COUNT_FILE}: {current or 'missing'} → {count}")
+    return changes, errors
 
 
-def check_count_in_files(count: int) -> tuple[list[str], bool]:
-    """Check all files for stale lesson counts. Returns (issues, is_clean)."""
-    issues = []
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Sync public lesson counts with data/lessons.json (idempotent).")
+    parser.add_argument("--check", action="store_true",
+                        help="verify only; exit 1 on stale or unmatched counts")
+    parser.add_argument("--quiet", action="store_true", help="silent on success")
+    parser.add_argument("--root", type=Path, default=REPO, help=argparse.SUPPRESS)
+    args = parser.parse_args(argv)
 
-    # README.md — look for lesson-count-specific patterns, not PR numbers
-    text = README_MD.read_text(encoding="utf-8")
-    # Match patterns like "205+", "200+", "205 lessons" — but ignore "#NNN" (PR refs)
-    lesson_ref_patterns = [
-        r"\b\d{2,3}\+\s*(?:verified)?\s*lessons?",
-        r"\b\d{2,3}\+\s*curated",
-        r"\|\s*\*\*Data\*\*\s*\|\s*\d{2,3}\s+lessons",
-        r"\|\s*Shared Lessons\s*\|\s*\d{2,3}\+",
-    ]
-    for pattern in lesson_ref_patterns:
-        m = re.search(pattern, text, re.IGNORECASE)
-        if m:
-            digits = re.findall(r"\d+", m.group())
-            for d in digits:
-                if int(d) < count:
-                    issues.append(f"README.md has stale lesson count reference: '{m.group()}'")
-
-    # Frontend HTML
-    text = FRONTEND_HTML.read_text(encoding="utf-8")
-    m = re.search(r'(\d{2,3})\s+curated lessons', text)
-    if m and int(m.group(1)) != count:
-        issues.append(f"docs/index.html search panel has {m.group(1)}, expected {count}")
-
-    return issues, len(issues) == 0
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Sync lesson count across project files")
-    parser.add_argument("--check", action="store_true", help="Check only, exit 1 if mismatch")
-    parser.add_argument("--quiet", action="store_true", help="Silent mode (no output on success)")
-    args = parser.parse_args()
-
-    count = get_lesson_count()
-    all_changes = []
+    count = canonical_count(args.root)
 
     if args.check:
-        issues, is_clean = check_count_in_files(count)
-        if is_clean:
-            if not args.quiet:
-                print(f"✅ All files consistent: lesson count = {count}")
-            sys.exit(0)
-        else:
-            print(f"❌ Mismatch detected (expected {count}):", file=sys.stderr)
-            for issue in issues:
-                print(f"  - {issue}", file=sys.stderr)
-            sys.exit(1)
+        problems = stale_entries(count, root=args.root)
+        if problems:
+            print(f"❌ lesson-count SSOT drift (canonical = {count}):", file=sys.stderr)
+            for problem in problems:
+                print(f"  - {problem}", file=sys.stderr)
+            print("\nFix: python3 scripts/sync_lesson_count.py   "
+                  "(or update SITES if a sentence was intentionally reworded)",
+                  file=sys.stderr)
+            return 1
+        if not args.quiet:
+            print(f"✅ every managed lesson count == {count}")
+        return 0
 
-    all_changes += sync_readme_md(count)
-    all_changes += sync_frontend_html(count)
-
-    if all_changes:
-        print(f"✅ Synced lesson count to {count}:")
-        for change in all_changes:
+    changes, errors = sync_all(count, root=args.root)
+    if changes:
+        print(f"✅ lesson counts synced to {count}:")
+        for change in changes:
             print(f"  - {change}")
     elif not args.quiet:
-        print(f"✅ Already consistent: lesson count = {count}")
+        print(f"✅ already consistent: every managed lesson count == {count}")
+    if errors:
+        print("❌ some managed sites could not be refreshed:", file=sys.stderr)
+        for error in errors:
+            print(f"  - {error}", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

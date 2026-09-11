@@ -39,8 +39,9 @@
 ### 可再生成数据（不要手改，改源后跑脚本）
 | 文件 | 生成方式 |
 |---|---|
-| `data/lessons.json` | `python3 scripts/update_lessons_json.py`（canonical 358 条，唯一 id） |
-| `docs/_lessons_count.txt` | 同上（`{{LESSONS_COUNT}}` 占位符替换） |
+| `data/lessons.json` | `python3 scripts/update_lessons_json.py`（canonical 378 条，唯一 id） |
+| `docs/_lessons_count.txt` | 同上，经 `scripts/sync_lesson_count.py` |
+| 全站公开计数（README/ARCHITECTURE/index.html meta/主题模板…） | `python3 scripts/sync_lesson_count.py`（幂等；`--check` 是门禁，`tests/test_lesson_count_ssot.py` 锁不变量） |
 | `data/okf/lessons.jsonl` | `python3 scripts/export_okf.py`（SAG/OKF 数据源） |
 | `data/sag.db` | `python3 scripts/build_sag_index.py`（构建模式） |
 | `docs/data/lessons.json` 等站点镜像 | 由 `sync-data.yml` 推送数据分支后刷新 |

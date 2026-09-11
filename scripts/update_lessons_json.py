@@ -98,36 +98,38 @@ def get_summary(content: str, max_chars: int = 160) -> str:
     return ''
 
 
-# Docs that carry a {{LESSONS_COUNT}} marker refreshed from the canonical
-# index (audit 2026-09-05, QW6). Keep this list in sync with .github/workflows/update-lessons.yml.
-COUNT_MARKER_DOCS = ("ARCHITECTURE.md", "README.md")
-COUNT_MARKER_FILE = REPO / "docs" / "_lessons_count.txt"
+# Public lesson counts are kept in lockstep by scripts/sync_lesson_count.py,
+# which owns the registry of managed surfaces (README, ARCHITECTURE, the
+# website metadata, issue templates, …) and the docs/_lessons_count.txt mirror.
+# Do not hand-edit a count there.
 
 
 def refresh_lesson_count_markers(count: int) -> None:
-    """Keep documented lesson counts derived from the canonical index.
+    """Keep every documented lesson count derived from the canonical index.
 
-    Replaces {{LESSONS_COUNT}} placeholders in COUNT_MARKER_DOCS with the
-    indexed count and writes a machine-readable docs/_lessons_count.txt.
-    Mirrors the public-metric SSOT convention: docs carry a generated marker
-    instead of hand-edited numbers, so counts cannot silently drift.
+    (2026-09-12) This used to substitute a literal for each
+    ``{{LESSONS_COUNT}}`` placeholder — which *consumed* the placeholder, so the
+    second run matched nothing and every count froze at its first
+    materialization (README stayed at 310+, ARCHITECTURE at 358+, the site's
+    ``<meta description>`` at 435, …). The registry in
+    ``scripts/sync_lesson_count.py`` re-matches a numeric group on every run
+    (idempotent) and treats a reworded sentence as a hard error instead of a
+    silent skip. It also writes docs/_lessons_count.txt and normalises the trust
+    vocabulary ("verified" → "indexed", see docs/trust-semantics.md).
+
+    Raises SystemExit(1) when a managed surface can no longer be refreshed, so
+    the daily workflow fails loudly rather than committing a half-synced tree.
     """
-    try:
-        COUNT_MARKER_FILE.write_text(f"{count}\n", encoding="utf-8")
-    except OSError as e:
-        print(f"⚠️  could not write {COUNT_MARKER_FILE}: {e}")
-    for name in COUNT_MARKER_DOCS:
-        path = REPO / name
-        if not path.exists():
-            continue
-        try:
-            text = path.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        if "{{LESSONS_COUNT}}" not in text:
-            continue
-        path.write_text(text.replace("{{LESSONS_COUNT}}", str(count)), encoding="utf-8")
-        print(f"OK {name}: {{{{LESSONS_COUNT}}}} -> {count}")
+    from scripts.sync_lesson_count import sync_all
+
+    changes, errors = sync_all(count)
+    for change in changes:
+        print(f"OK count: {change}")
+    if errors:
+        print("lesson-count SSOT could not be refreshed:", file=sys.stderr)
+        for error in errors:
+            print(f"  - {error}", file=sys.stderr)
+        raise SystemExit(1)
 
 
 def main():

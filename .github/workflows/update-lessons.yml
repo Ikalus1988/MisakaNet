@@ -30,11 +30,15 @@ jobs:
       - name: Check for changes
         id: check
         run: |
-          # data/lessons.json plus the {{LESSONS_COUNT}} marker docs refreshed
-          # by update_lessons_json.py (audit 2026-09-05, QW6).
-          if git diff --quiet data/lessons.json ARCHITECTURE.md README.md docs/_lessons_count.txt; then
+          # update_lessons_json.py rewrites data/lessons.json and then refreshes
+          # every managed public lesson count via scripts/sync_lesson_count.py
+          # (README, ARCHITECTURE, website metadata, issue templates, …). Ask git
+          # what changed instead of hardcoding that file list: the registry grows,
+          # and a stale list here is how counts drifted before (handoff 2026-09-11).
+          if [ -z "$(git status --porcelain)" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
+            git status --porcelain
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -43,6 +47,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add data/lessons.json ARCHITECTURE.md README.md docs/_lessons_count.txt
-          git commit -m "chore: auto-update lessons.json + lesson count markers"
+          # -u stages the tracked files the generator + count sync touched.
+          git add -u
+          git commit -m "chore: auto-update lessons.json + public lesson counts"
           git push

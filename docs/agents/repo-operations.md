@@ -49,6 +49,9 @@ node --test packages/fatal-guard/tests/*.js
 python3 scripts/lesson_gate.py lessons/contrib/your-lesson.md
 python3 scripts/injection_scan.py --dir lessons        # high 级发现 → 退出码 1
 
+# 改了任何公开计数 / 站点文案：计数 SSOT 门禁（快，无依赖）
+python3 scripts/sync_lesson_count.py --check
+
 # 改 workflow：YAML 解析 + 内嵌 JS 语法
 python3 -c "import yaml; yaml.safe_load(open('.github/workflows/x.yml'))"
 node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
@@ -91,6 +94,7 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 | `misakanet-web`（站点，assets = `docs/`）| **自动**：Cloudflare **Workers Builds**（Git 集成，**任何 push main 都触发**，不是 GitHub Actions） | 结果看 commit 上的 `Workers Builds: misakanet-web` check-run（由 Cloudflare app 发出，含 Version ID）；配置在 CF 控制台，不在仓库里。手工 `npx wrangler deploy`（根 `wrangler.jsonc`）只当应急/本地预览用 |
 | `email-register` worker | `npm run deploy:email` | 独立 worker |
 | `data/lessons.json` | `python3 scripts/update_lessons_json.py` | **不要**用 `scripts/misakanet-index.py`：它缺 `preview/triggers/verified` 等字段，会静默回滚线上统计（#1374；CI 已有 schema 校验） |
+| 全站公开计数（README / ARCHITECTURE / 站点 meta / issue 模板 …） | `python3 scripts/sync_lesson_count.py`（幂等）· 门禁 `--check` | 由 `update_lessons_json.py` 在每日 `update-lessons.yml` 里自动跑；新增/改写受管句子后要同步更新脚本里的 `SITES` 注册表，`tests/test_lesson_count_ssot.py` 会锁住"能重复刷新"与"改写就报错"两条不变量 |
 | `data/badges/*.json` | 由各 badge workflow 生成到 `data` 分支 | 例如 smithery 徽章由 `update-smithery-badge.yml` 产出 |
 | 版本发布 | release-please 自动开 release PR | **不要手改** `.release-please-manifest.json`；PyPI 另走 `release-pypi.yml` 的 workflow_dispatch |
 | CF MCP 凭证（查 worker 日志等）| `python3 scripts/cf_mcp_auth.py --server cloudflare-observability [--refresh\|--verify]` | 一键完成 discovery/DCR/PKCE/换 token/验证 |
@@ -125,9 +129,10 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 | "站点没更新/新页面 404" | 先排除**尾斜杠误判**（无尾斜杠 → 307 不是 404）；再看 commit 上有没有 `Workers Builds: misakanet-web` check-run 及其结论/Version ID。CF Workers Builds 是**异步**的，push 完立刻 curl 可能还是旧版本 |
 | git 协议连不上 github.com | 不只是慢：实测 `Failed to connect to github.com port 443 after 134359 ms`。别手搓四步 curl 了，用 `scripts/gh_push_via_api.py --branch <br> --message-file <msg> <files>`（同一套 Git Data API，带"分支不在 base 上就拒绝"的保护）；细节见上一行 |
 | PR 的 CI 全卡在 `action_required`（"awaiting approval"） | 该 PR 分支最近被 **bot 推过**（`Auto-Merge Docs PRs` 把 main 合进分支、`/fix-dco` 的 force-push 等）——这类 run 会挂起等人工批准。批准：Actions 页点 "Review pending deployments"，或 `POST /repos/{owner}/{repo}/actions/runs/{run_id}/approve`（owner 权限即可，本仓实测返回 201）。**注意**：bot 每再推一次都会重新挂起，批完要再确认一次 |
-| release PR 的 DCO / audit 永远红 | release-please 生成的提交默认**不带 `Signed-off-by:`**，而 DCO 是硬门禁 → 每个 release PR 必红。已在 `release-please-config.json` 顶层加 `"signoff": true`（PR #1628）。临时救急可在 PR 里评论 `/fix-dco`（同仓 PR 会 rebase --signoff 后 force-push） |
+| release PR 的 DCO / audit 永远红 | release-please 生成的提交默认**不带 `Signed-off-by:`**，而 DCO 是硬门禁 → 每个 release PR 必红。`release-please-config.json` 顶层的 `signoff` 必须是**字符串** `"misakanet-bot <bot@misakanet.dev>"`（PR #1628 + `03f66f86d`）。⚠️ **不要**写成 `true`：schema 里那个 `"signoff": true` 是 JSON Schema 的**布尔子模式**（"任意值合法"），不是推荐值；填 `true` 会让 main 上每次 push 都 `release-please failed: The format of 'true' is not a valid email address with display name`（连挂四次）。改完这个文件**立刻看它自己的下一次运行**。临时救急可在 PR 里评论 `/fix-dco`（同仓 PR 会 rebase --signoff 后 force-push） |
 | `leaderboard-watch` 失败：`fatal: You are not currently on a branch` + 日志里有 `CONFLICT ... data/leaderboard_meta.json` | 两次 push 间隔太近 → 两个 watch run 并发，各自提交同一份**生成物**并互相 rebase 冲突；脚本里的 `git pull --rebase ... \|\| true` 把冲突吞掉，仓库停在 detached HEAD，随即 `git push` 报上面那句。已在 workflow 加 `concurrency`（串行化）+ `-X theirs`（生成物以本次快照为准）+ 显式 `git rebase --abort` 并对失败返回非零 |
 | 需要看某个脚本的用途 | `ls scripts/` + `<script> --help`；`scripts/doctor.py` 做整体自检 |
+| 站点/README 上的课程数对不上（例如 meta description 写 435、实际 378） | 跑 `python3 scripts/sync_lesson_count.py --check` 看漂移清单，再跑不带 `--check` 的同一命令修好。若某条报 `matched 0× ... The sentence was reworded`，说明受管句子被改写：改文件或更新脚本里的 `SITES` 注册表——**不要**把该行删掉当成"没事"（旧机制就是这么静默失效的，见脚本 docstring） |
 | 需要看 worker 线上错误 | 用 `cf_mcp_auth.py` 拿 CF 凭证 → Cloudflare observability MCP 查（worker 的 `[observability]` 需启用） |
 
 ## 5. 相关文档

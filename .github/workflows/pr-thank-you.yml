@@ -33,7 +33,7 @@ jobs:
               "**PR:** #" + number + " — " + title,
               "",
               "**What's next:**",
-              "- Your code is now part of MisakaNet's 298+ lessons / core codebase",
+              "- Your code is now part of MisakaNet's 378+ lessons / core codebase",
               "- Feel free to pick up another issue labeled `good first issue` or `status: competition`",
               "- Questions? Ask in this thread or open a Discussion",
               "",

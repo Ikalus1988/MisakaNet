@@ -1,6 +1,6 @@
 # Continue Integration
 
-Give Continue access to 205+ verified failure lessons from MisakaNet.
+Give Continue access to 378 indexed failure lessons from MisakaNet.
 
 ## Setup
 

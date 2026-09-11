@@ -1,6 +1,6 @@
 # Claude Code Integration
 
-Give Claude Code access to 205+ verified failure lessons from MisakaNet.
+Give Claude Code access to 378 indexed failure lessons from MisakaNet.
 
 ## Setup
 
