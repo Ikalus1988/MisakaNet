@@ -1,7 +1,7 @@
 [
   {
     "login": "zsxh1990",
-    "score": 113.02
+    "score": 113.01
   },
   {
     "login": "github-actions[bot]",
@@ -92,10 +92,6 @@
     "score": 0.95
   },
   {
-    "login": "tarotoads-debug",
-    "score": 0.93
-  },
-  {
     "login": "aj0070",
     "score": 0.65
   },
@@ -106,6 +102,10 @@
   {
     "login": "misakanet-agent",
     "score": 0.58
+  },
+  {
+    "login": "tarotoads-debug",
+    "score": 0.56
   },
   {
     "login": "pnpn1212",
