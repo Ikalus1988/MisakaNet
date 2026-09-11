@@ -479,15 +479,16 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true",
                         help="report drift without writing; exit 1 if stale")
+    parser.add_argument("--quiet", action="store_true", help="silent on success")
     parser.add_argument("--root", type=Path, default=REPO, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
 
     lessons = json.loads((args.root / LESSONS_JSON).read_text(encoding="utf-8"))
-    print(f"Loaded {len(lessons)} lessons")
     files = plan(lessons)
-    lesson_count = sum(1 for p in files if p.startswith("docs/lessons/"))
-    topic_count = sum(1 for p in files if p.startswith("docs/topics/"))
-    print(f"Planned {lesson_count} lesson pages + {topic_count} topic pages + sitemap")
+    if not args.quiet:
+        print(f"Loaded {len(lessons)} lessons")
+        print(f"Planned {sum(1 for p in files if p.startswith('docs/lessons/'))} lesson pages "
+              f"+ {sum(1 for p in files if p.startswith('docs/topics/'))} topic pages + sitemap")
 
     if args.check:
         problems = check(files, root=args.root)
@@ -499,18 +500,20 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  … and {len(problems) - 20} more", file=sys.stderr)
             print("\nFix: python3 scripts/build_lesson_pages.py", file=sys.stderr)
             return 1
-        print("✅ every generated page matches the index")
+        if not args.quiet:
+            print("✅ every generated page matches the index")
         return 0
 
     result = sync(files, root=args.root)
-    print(f"Wrote/updated {len(result['written'])} pages, pruned {len(result['pruned'])} stale pages")
-    for rel in result["pruned"][:10]:
-        print(f"  pruned {rel}")
-    if len(result["pruned"]) > 10:
-        print(f"  … and {len(result['pruned']) - 10} more")
-    if result["kept"]:
-        print(f"Kept {len(result['kept'])} unmanaged page(s) (no generator marker): "
-              + ", ".join(result["kept"][:5]))
+    if not args.quiet:
+        print(f"Wrote/updated {len(result['written'])} pages, pruned {len(result['pruned'])} stale pages")
+        for rel in result["pruned"][:10]:
+            print(f"  pruned {rel}")
+        if len(result["pruned"]) > 10:
+            print(f"  … and {len(result['pruned']) - 10} more")
+        if result["kept"]:
+            print(f"Kept {len(result['kept'])} unmanaged page(s) (no generator marker): "
+                  + ", ".join(result["kept"][:5]))
     return 0
 
 

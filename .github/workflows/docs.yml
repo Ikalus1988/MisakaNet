@@ -57,6 +57,13 @@ jobs:
         if: github.event_name == 'push'
         run: python3 scripts/sync_lesson_count.py --check --quiet
 
+      # Same idea for the generated lesson/topic pages: they are derived from
+      # data/lessons.json, so a hand-edit (or a lesson whose page was never
+      # regenerated) fails here instead of living on the site.
+      - name: Verify generated pages
+        if: github.event_name == 'push'
+        run: python3 scripts/build_lesson_pages.py --check --quiet
+
       - name: Build documentation
         run: mkdocs build
 

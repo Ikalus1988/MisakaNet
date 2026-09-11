@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "MisakaNet — Failure-Memory Knowledge Base",
+    "output": "misakanet-architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "remote-http-mcp",
+        "label": "Remote HTTP MCP path",
+        "focus": ["remote-agent", "worker", "d1", "kv", "intake", "lessons"],
+        "note": "Anonymous agent/crawler hits misakanet.org/mcp; Worker redacts + rate-limits; intake creates a maintainer-visible GitHub issue."
+      },
+      {
+        "id": "local-stdio-mcp",
+        "label": "Local stdio MCP path",
+        "focus": ["users", "cli", "mcp", "preflight", "memory-ctx", "lessons"],
+        "note": "scripts/mcp_server.py (v2.23.0) routes tools via misakanet/server/handlers/* (search / preflight / write / memory_context)."
+      },
+      {
+        "id": "search-tier-fallback",
+        "label": "Search 3-tier fallback",
+        "focus": ["memory-ctx", "sag-search", "engine", "fallback-search", "lessons"],
+        "note": "memory_context: SAG-Lite (sag.db) → MisakaNetSearchEngine (BM25) → _fallback_search (lessons.json)."
+      },
+      {
+        "id": "lesson-contribution-flow",
+        "label": "Lesson contribution flow",
+        "focus": ["users", "ci", "lessons", "worker", "intake"],
+        "note": "PRs go through 50 GitHub workflows; intake issues become lessons after maintainer review; CI deploys Worker on release."
+      }
+    ]
+  },
+  "components": [
+    { "id": "remote-agent", "type": "external", "label": "Remote Agent", "sublabel": "anonymous crawler", "pos": [40, 80], "size": [150, 64], "tag": "no Bearer required" },
+    { "id": "worker", "type": "cloud", "label": "Cloudflare Worker", "sublabel": "misakanet-register-proxy", "pos": [250, 80], "size": [180, 64], "tag": "https://misakanet.org/mcp" },
+    { "id": "d1", "type": "database", "label": "D1 (SQLite)", "sublabel": "lessons + redaction", "pos": [490, 30], "size": [150, 50], "tag": "misakanet-db" },
+    { "id": "kv", "type": "database", "label": "KV Namespace", "sublabel": "rate-limit counters", "pos": [490, 130], "size": [150, 50], "tag": "MISAKANET_KV" },
+    { "id": "intake", "type": "messagebus", "label": "Intake → Issue", "sublabel": "GitHub Issues API", "pos": [690, 80], "size": [160, 60], "tag": "intake, mcp-intake, pending-review" },
+
+    { "id": "users", "type": "external", "label": "Local Agent / Dev", "sublabel": "Node runtime", "pos": [40, 320], "size": [150, 64] },
+    { "id": "cli", "type": "frontend", "label": "CLI Frontend", "sublabel": "search_knowledge.py", "pos": [230, 320], "size": [140, 60], "tag": "python3 -m misakanet" },
+    { "id": "mcp", "type": "cloud", "label": "MCP stdio", "sublabel": "scripts/mcp_server.py", "pos": [230, 430], "size": [140, 40], "tag": "misakanet==2.23.0" },
+    { "id": "preflight", "type": "backend", "label": "Preflight", "sublabel": "handlers/preflight.py", "pos": [430, 470], "size": [130, 50], "tag": "env check" },
+
+    { "id": "memory-ctx", "type": "backend", "label": "memory_context", "sublabel": "handlers/memory_context.py", "pos": [580, 320], "size": [160, 50], "tag": "3-tier search router" },
+
+    { "id": "sag-search", "type": "database", "label": "SAG-Lite (FTS5)", "sublabel": "data/sag.db", "pos": [820, 220], "size": [140, 50], "tag": "tier 1 (lazy build)" },
+    { "id": "engine", "type": "backend", "label": "BM25 Engine", "sublabel": "misakanet.search.engine", "pos": [820, 320], "size": [160, 64], "tag": "L1/L2 cache + RRF" },
+    { "id": "fallback-search", "type": "database", "label": "_fallback_search", "sublabel": "lessons.json keywords", "pos": [820, 430], "size": [140, 50], "tag": "tier 3 (no SQLite)" },
+
+    { "id": "lessons", "type": "database", "label": "lessons/", "sublabel": "git source of truth", "pos": [1080, 320], "size": [140, 64], "tag": "289+ markdown" },
+    { "id": "profile", "type": "database", "label": "Node Profile", "sublabel": "profile.json", "pos": [40, 240], "size": [150, 50], "tag": "stage + referral" },
+
+    { "id": "ci", "type": "security", "label": "GitHub CI", "sublabel": "50 workflows", "pos": [1080, 540], "size": [150, 50], "tag": "pr-shape-guard, lesson-gate, dco" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Local Node (git clone)", "wraps": ["users", "cli", "mcp", "preflight", "memory-ctx", "sag-search", "engine", "fallback-search", "lessons", "profile"] },
+    { "kind": "region", "label": "Cloudflare Edge", "wraps": ["worker", "d1", "kv", "intake"] },
+    { "kind": "security-group", "label": "Trust boundary: lessons/contributions", "wraps": ["lessons", "ci"] }
+  ],
+  "connections": [
+    { "id": "remote-worker", "from": "remote-agent", "to": "worker", "label": "POST /mcp", "variant": "emphasis" },
+    { "id": "worker-d1", "from": "worker", "to": "d1", "label": "lessons" },
+    { "id": "worker-kv", "from": "worker", "to": "kv", "label": "rate-limit" },
+    { "id": "worker-intake", "from": "worker", "to": "intake", "label": "submit_intake", "labelAt": [560, 200] },
+    { "id": "intake-lessons", "from": "intake", "to": "lessons", "label": "review → lesson", "variant": "dashed", "fromSide": "bottom", "toSide": "top" },
+
+    { "id": "users-cli", "from": "users", "to": "cli", "label": "shell", "variant": "emphasis" },
+    { "id": "users-mcp", "from": "users", "to": "mcp", "label": "JSON-RPC", "variant": "emphasis" },
+    { "id": "cli-memory", "from": "cli", "to": "memory-ctx", "label": "search", "fromSide": "right", "toSide": "left", "labelDy": -28 },
+    { "id": "users-profile", "from": "users", "to": "profile", "label": "stage lookup", "fromSide": "top", "toSide": "right", "labelAt": [230, 310] },
+    { "id": "mcp-preflight", "from": "mcp", "to": "preflight", "label": "check", "fromSide": "right", "toSide": "left" },
+    { "id": "mcp-memory", "from": "mcp", "to": "memory-ctx", "label": "memory_context", "fromSide": "right", "toSide": "left", "labelDy": 16 },
+
+    { "id": "memory-sag", "from": "memory-ctx", "to": "sag-search", "label": "tier 1", "fromSide": "top", "toSide": "bottom", "labelDy": -28 },
+    { "id": "memory-engine", "from": "memory-ctx", "to": "engine", "label": "tier 2", "labelDy": -16 },
+    { "id": "memory-fallback", "from": "memory-ctx", "to": "fallback-search", "label": "tier 3", "labelDy": 28 },
+    { "id": "sag-lessons", "from": "sag-search", "to": "lessons", "label": "FTS scan", "variant": "dashed", "fromSide": "right", "toSide": "top", "labelAt": [970, 280] },
+    { "id": "engine-lessons", "from": "engine", "to": "lessons", "label": "BM25 scan" },
+    { "id": "fallback-lessons", "from": "fallback-search", "to": "lessons", "label": "keyword match", "variant": "dashed", "fromSide": "right", "toSide": "bottom", "labelAt": [970, 410] },
+
+    { "id": "ci-lessons", "from": "ci", "to": "lessons", "label": "PR gate", "variant": "security", "fromSide": "top", "toSide": "bottom" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Knowledge core", "items": ["BM25 over lessons/ in pure Python stdlib", "L1/L2 cache + RRF reranking", "Optional --semantic flag via sentence-transformers"] },
+    { "dot": "emerald", "title": "Two MCP surfaces", "items": ["Local stdio: scripts/mcp_server.py (misakanet==2.23.0, unlimited)", "Remote HTTP: misakanet.org/mcp (D1-backed, 5 reads/day/IP)", "submit_intake open but rate-limited; other tools need Bearer"] },
+    { "dot": "amber", "title": "3-tier search fallback", "items": ["tier 1: SAG-Lite (data/sag.db, SQLite FTS5) — fastest", "tier 2: MisakaNetSearchEngine (BM25, stdlib) — when sag.db missing", "tier 3: _fallback_search (data/lessons.json keyword) — sandbox fallback"] },
+    { "dot": "rose", "title": "Quality + contribution", "items": ["50 GitHub workflows: shape, lesson, DCO, secret scan", "Maintainer review turns intake issues into formal lessons", "CI deploys Worker on release; lessons are git-tracked"] }
+  ]
+}

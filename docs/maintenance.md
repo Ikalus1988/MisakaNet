@@ -41,6 +41,7 @@
 |---|---|
 | `data/lessons.json` | `python3 scripts/update_lessons_json.py`（canonical 378 条，唯一 id） |
 | `docs/_lessons_count.txt` | 同上，经 `scripts/sync_lesson_count.py` |
+| `docs/lessons/**`、`docs/topics/**`（含 `/topics/` 索引）、`docs/sitemap.xml` | `python3 scripts/build_lesson_pages.py`（幂等，`--check` 是门禁；清单在 `docs/.generated-pages.json`）——由每日 `update-lessons.yml` 在刷新索引后自动跑 |
 | 全站公开计数（README/ARCHITECTURE/index.html meta/主题模板…） | `python3 scripts/sync_lesson_count.py`（幂等；`--check` 是门禁，`tests/test_lesson_count_ssot.py` 锁不变量） |
 | `data/okf/lessons.jsonl` | `python3 scripts/export_okf.py`（SAG/OKF 数据源） |
 | `data/sag.db` | `python3 scripts/build_sag_index.py`（构建模式） |
@@ -174,6 +175,12 @@ MisakaNet 现已声明 `dsh.bundle`（`package.json` + `cordis.patch.yml`），�
 > - PyPI 通道修复：`environment: pypi` 从未存在 → release-pypi 从未成功（PyPI 停在 2.18.0）。
 >   已建 environment + PyPI Trusted Publisher（owner Ikalus1988/repo MisakaNet/workflow release-pypi.yml/env pypi）
 >   + release-pypi 加 `workflow_dispatch`（#1511）→ misakanet 2.28.1 上线。
+> - **2026-09-12（v2.29.0）**：tag + GitHub Release 由维护者用 API 建（#1608 已合并但 release-please 因
+>   `untagged, merged release PRs outstanding` 而 abort；把 #1608 的标签从 `autorelease: pending` 改成
+>   `autorelease: tagged` 后，release-please 立刻恢复并为下一版开出 release PR）。PyPI 2.29.0 由 tag push
+>   自动触发 `release-pypi` 并成功；registry 线已 `align_versions.py --registry 2.29.0`；
+>   `mcp-publisher validate server.json` → ✅ valid。**registry 的 `publish` 仍待本机执行**（沙箱到
+>   github.com 的 device-flow 出口不通，与 2026-09-05 记录的一致）。
 > - 发布：`mcp-publisher login github`（本机，凭证 ~/.config/mcp-publisher）→
 >   `mcp-publisher publish server.json` → registry 2.28.1 ✓；mcptoplist 镜像自动同步。
 
