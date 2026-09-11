@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-09-11T04:51:24.461090+00:00",
+  "generated_at": "2026-09-11T11:32:46.422540+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(mcp): content-level suspicion flag on retrieved lessons (L3+)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1624",
+      "timestamp": "2026-09-11T10:36:54Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix: publish openclaw session_nodes lesson (#1600)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1623",
+      "timestamp": "2026-09-11T10:25:34Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(security): L4 scan anonymous intake payloads before they become issues",
@@ -23,20 +37,6 @@
       "title": "feat(security): prompt-injection defense for agent-facing content surfaces",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1613",
       "timestamp": "2026-09-10T17:24:01Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(plugin): add Codex plugin manifest + privacy/terms pages",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1612",
-      "timestamp": "2026-09-10T17:23:58Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "ci: add HOL Guard Guarded Repository scan (prompt-injection findings + provenance attestation)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1611",
-      "timestamp": "2026-09-10T16:51:44Z",
       "source": "github"
     },
     {
