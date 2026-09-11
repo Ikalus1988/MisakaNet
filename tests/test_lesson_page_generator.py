@@ -27,9 +27,9 @@ from scripts import build_lesson_pages as blp  # noqa: E402
 REPO = Path(__file__).resolve().parent.parent
 
 LESSONS = [
-    {"title": "Bravo lesson", "domain": "contrib", "summary": "b", "tags": ["x"], "url": "lessons/contrib/b.md"},
-    {"title": "Alpha lesson", "domain": "contrib", "summary": "a", "tags": ["x"], "url": "lessons/contrib/a.md"},
-    {"title": "Ops lesson", "domain": "ops", "summary": "o", "tags": ["y"], "url": "lessons/ops/o.md"},
+    {"id": "bravo", "title": "Bravo lesson", "domain": "contrib", "summary": "b", "tags": ["x"], "url": "lessons/contrib/b.md"},
+    {"id": "alpha", "title": "Alpha lesson", "domain": "contrib", "summary": "a", "tags": ["x"], "url": "lessons/contrib/a.md"},
+    {"id": "ops-one", "title": "Ops lesson", "domain": "ops", "summary": "o", "tags": ["y"], "url": "lessons/ops/o.md"},
 ]
 
 
@@ -122,3 +122,40 @@ def test_topics_index_exists_for_the_search_page_link():
     assert 'href="/topics/ops/"' in files["docs/topics/index.html"]
     search = (REPO / "docs" / "search" / "index.html").read_text(encoding="utf-8")
     assert 'href="/topics/"' in search, "search page no longer links /topics/ — keep them in sync"
+
+
+def test_retitling_a_lesson_keeps_its_url(tmp_path):
+    """Sticky slugs: editing a title must not orphan a live URL.
+
+    Deriving the slug from the title on every run is what pruned 88 live pages on
+    the first wired run, leaving Google with 404s.
+    """
+    files, slugs = blp.plan_with_slugs(json.loads(json.dumps(LESSONS)))
+    blp.sync(files, root=tmp_path, slugs=slugs)
+    assert slugs["bravo"] == "bravo-lesson"
+
+    retitled = json.loads(json.dumps(LESSONS))
+    retitled[0]["title"] = "Bravo lesson, renamed at last"
+    files2, slugs2 = blp.plan_with_slugs(retitled, known_slugs=slugs)
+    blp.sync(files2, root=tmp_path, slugs=slugs2)
+
+    assert slugs2["bravo"] == "bravo-lesson", "the URL must survive a retitle"
+    page = tmp_path / "docs/lessons/bravo-lesson/index.html"
+    assert page.exists(), "the retitled lesson lost its page"
+    assert "renamed at last" in page.read_text(encoding="utf-8"), "content must follow the title"
+    assert not (tmp_path / "docs/lessons/bravo-lesson-renamed-at-last").exists()
+
+
+def test_fresh_lessons_get_a_title_slug():
+    new = json.loads(json.dumps(LESSONS)) + [
+        {"id": "newcomer", "title": "Brand New Lesson", "domain": "ops",
+         "summary": "n", "tags": [], "url": "lessons/ops/n.md"}]
+    _files, slugs = blp.plan_with_slugs(new)
+    assert slugs["newcomer"] == "brand-new-lesson"
+
+
+def test_slug_map_is_recorded_in_the_manifest(tmp_path):
+    files, slugs = blp.plan_with_slugs(json.loads(json.dumps(LESSONS)))
+    blp.sync(files, root=tmp_path, slugs=slugs)
+    manifest = json.loads((tmp_path / blp.MANIFEST).read_text(encoding="utf-8"))
+    assert manifest["slugs"] == dict(sorted(slugs.items()))

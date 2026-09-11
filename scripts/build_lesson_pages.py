@@ -373,16 +373,44 @@ def topic_plan(lessons: list) -> dict[str, tuple[str, int]]:
     return pages
 
 
-def plan(lessons: list) -> dict[str, dict]:
-    """Everything this generator would write, as {relative path: text}."""
+def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None
+                    ) -> tuple[dict[str, dict], dict[str, str]]:
+    """Plan every page, and return the lesson-id -> slug map that produced it.
+
+    Slugs are **sticky**: a lesson keeps the URL it already has and only a new
+    lesson gets one derived from its title. Deriving the slug from the title on
+    every run meant that editing a title silently orphaned a live URL (the first
+    wired run pruned 88 pages for exactly that reason) and left Google pointing at
+    a 404. Sticky slugs are what a CMS does; the page content follows the title.
+    """
+    known = dict(known_slugs or {})
+    titles = {lesson.get("id", ""): lesson.get("title", "") for lesson in lessons}
+
     seen_slugs: dict[str, str] = {}
-    lesson_pages: dict[str, str] = {}
-    lesson_slugs: list[str] = []
-    for lesson in lessons:
+    assigned: dict[str, str] = {}
+    for lesson in lessons:                      # pass 1: keep the existing URL
+        lesson_id = lesson.get("id", "")
         title = lesson.get("title", "")
         if not title:
             continue
-        slug = unique_slug(title, seen_slugs)
+        keep = known.get(lesson_id)
+        if keep and keep not in seen_slugs:
+            seen_slugs[keep] = title
+            assigned[lesson_id] = keep
+    for lesson in lessons:                      # pass 2: fresh lessons
+        lesson_id = lesson.get("id", "")
+        title = lesson.get("title", "")
+        if not title or lesson_id in assigned:
+            continue
+        assigned[lesson_id] = unique_slug(title, seen_slugs)
+
+    lesson_pages: dict[str, str] = {}
+    lesson_slugs: list[str] = []
+    for lesson in lessons:
+        lesson_id = lesson.get("id", "")
+        slug = assigned.get(lesson_id)
+        if not slug or not lesson.get("title"):
+            continue
         lesson["_slug"] = slug
         lesson_slugs.append(slug)
         lesson_pages[slug] = build_lesson_page(lesson)
@@ -400,7 +428,22 @@ def plan(lessons: list) -> dict[str, dict]:
         files[f"docs/topics/{slug}/index.html"] = html
     files["docs/topics/index.html"] = build_topics_index(index_entries, len(lessons))
     files[str(SITEMAP)] = generate_sitemap(lesson_slugs, list(topics))
-    return files
+    return files, assigned
+
+
+def plan(lessons: list, known_slugs: dict[str, str] | None = None) -> dict[str, dict]:
+    """Everything this generator would write, as {relative path: text}."""
+    return plan_with_slugs(lessons, known_slugs)[0]
+
+
+def load_slug_map(root: Path = REPO) -> dict[str, str]:
+    """The lesson-id -> slug map recorded by the previous run (may be empty)."""
+    try:
+        manifest = json.loads((root / MANIFEST).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    slugs = manifest.get("slugs")
+    return slugs if isinstance(slugs, dict) else {}
 
 
 def discover_generated(root: Path) -> set[str]:
@@ -421,7 +464,8 @@ def discover_generated(root: Path) -> set[str]:
     return owned
 
 
-def sync(files: dict[str, str], *, root: Path = REPO) -> dict[str, list[str]]:
+def sync(files: dict[str, str], *, root: Path = REPO,
+         slugs: dict[str, str] | None = None) -> dict[str, list[str]]:
     """Write planned pages, prune pages this generator no longer produces."""
     result = {"written": [], "pruned": [], "kept": []}
     for rel, text in files.items():
@@ -451,9 +495,14 @@ def sync(files: dict[str, str], *, root: Path = REPO) -> dict[str, list[str]]:
         except OSError:
             pass
 
+    # The lesson-id -> slug map is what makes URLs sticky across title edits; keep
+    # the previous map when the caller does not supply one.
+    slug_map = slugs if slugs is not None else load_slug_map(root)
     (root / MANIFEST).write_text(
         json.dumps({"generator": "scripts/build_lesson_pages.py",
-                    "pages": sorted(files)}, indent=2, ensure_ascii=False) + "\n",
+                    "pages": sorted(files),
+                    "slugs": dict(sorted(slug_map.items()))},
+                   indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8")
     return result
 
@@ -484,7 +533,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     lessons = json.loads((args.root / LESSONS_JSON).read_text(encoding="utf-8"))
-    files = plan(lessons)
+    known_slugs = load_slug_map(args.root)
+    files, slug_map = plan_with_slugs(lessons, known_slugs)
     if not args.quiet:
         print(f"Loaded {len(lessons)} lessons")
         print(f"Planned {sum(1 for p in files if p.startswith('docs/lessons/'))} lesson pages "
@@ -504,9 +554,12 @@ def main(argv: list[str] | None = None) -> int:
             print("✅ every generated page matches the index")
         return 0
 
-    result = sync(files, root=args.root)
+    result = sync(files, root=args.root, slugs=slug_map)
     if not args.quiet:
-        print(f"Wrote/updated {len(result['written'])} pages, pruned {len(result['pruned'])} stale pages")
+        sticky = sum(1 for lesson_id, slug in slug_map.items()
+                     if known_slugs.get(lesson_id) == slug)
+        print(f"Wrote/updated {len(result['written'])} pages, pruned {len(result['pruned'])} stale pages "
+              f"({sticky} URL(s) kept sticky)")
         for rel in result["pruned"][:10]:
             print(f"  pruned {rel}")
         if len(result["pruned"]) > 10:
