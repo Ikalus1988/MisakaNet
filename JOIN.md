@@ -163,7 +163,7 @@ Each bounty is a chance to contribute and get recognized. Fork the repo, complet
 ## Version Info
 
 ```
-MisakaNet v2.28.1
+MisakaNet v2.29.0
 Protocol: Apache 2.0
 378+ lessons | 263 stars | 75 forks
 IO: https://misakanet.org
