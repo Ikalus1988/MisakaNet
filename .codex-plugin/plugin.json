@@ -37,10 +37,10 @@
     "privacyPolicyURL": "https://misakanet.org/privacy/",
     "termsOfServiceURL": "https://misakanet.org/terms/",
     "brandColor": "#58A6FF",
-    "logo": "./assets/logo.png",
-    "composerIcon": "./assets/composer-icon.png",
+    "logo": "./.codex-plugin/assets/logo.png",
+    "composerIcon": "./.codex-plugin/assets/composer-icon.png",
     "screenshots": [
-      "./assets/screenshot-search.png"
+      "./.codex-plugin/assets/screenshot-search.png"
     ],
     "defaultPrompt": [
       "Search MisakaNet for this error before debugging it from scratch.",
