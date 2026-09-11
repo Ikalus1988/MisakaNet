@@ -195,6 +195,7 @@
   <url><loc>https://misakanet.org/lessons/github-rate-limit-auth/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/github-release-large-asset-download-cn/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/github-sudo-email-otp-wrong-input-field/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/github-token-cannot-push-workflow-files/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/glama-mcp-server-deploy-lessons/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/go-scheduler-deadlock-lock-order/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/go-strings-contains-case-sensitivity-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -346,6 +347,7 @@
   <url><loc>https://misakanet.org/lessons/tts-chinese-encoding-powershell/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/two-evidence-loops-for-failure-lessons/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/typescript-solution-tsconfig-silent-nocheck/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/unclosed-html-comment-hides-markdown-body/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/usdc-base-units-vs-human-amounts-agent-marketplaces-ru/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/usdc-ethereum-instead-of-base-zero-eth-gas/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/version-management-multiple-files/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
