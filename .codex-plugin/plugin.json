@@ -37,11 +37,10 @@
     "privacyPolicyURL": "https://misakanet.org/privacy/",
     "termsOfServiceURL": "https://misakanet.org/terms/",
     "brandColor": "#58A6FF",
-    "logo": "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/promotional/og-card.png",
-    "composerIcon": "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/docs/assets/misaka-avatar-crop.png",
+    "logo": "./assets/logo.png",
+    "composerIcon": "./assets/composer-icon.png",
     "screenshots": [
-      "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/promotional/search%20lesson.gif",
-      "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/promotional/og-card.png"
+      "./assets/screenshot-search.png"
     ],
     "defaultPrompt": [
       "Search MisakaNet for this error before debugging it from scratch.",

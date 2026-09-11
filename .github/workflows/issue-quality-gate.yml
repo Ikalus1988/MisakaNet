@@ -41,8 +41,9 @@ jobs:
             }
 
             let labels = [];
-            if (!HAS_AC || !HAS_CHECKBOX) labels.push('needs-ac');
-            if (HAS_AC && HAS_CHECKBOX) labels.push('ready');
+            const satisfied = HAS_AC && HAS_CHECKBOX;
+            if (!satisfied) labels.push('needs-ac');
+            if (satisfied) labels.push('ready');
 
             if (labels.length > 0) {
               await github.rest.issues.addLabels({
@@ -52,4 +53,22 @@ jobs:
                 labels: labels,
               });
               console.log(`Labels applied: ${labels.join(', ')}`);
+            }
+
+            // `ready` and `needs-ac` are mutually exclusive by definition, but this
+            // gate only ever *added* labels — so an issue that gained an acceptance
+            // criteria section kept `needs-ac` sitting next to `ready` forever
+            // (found 2026-09-12 after writing AC into 22 intake issues: the tracker
+            // kept showing them as "missing AC" work). Clear the stale one.
+            const stale = satisfied ? 'needs-ac' : 'ready';
+            try {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNum,
+                name: stale,
+              });
+              console.log(`Removed stale label: ${stale}`);
+            } catch (e) {
+              if (e.status !== 404) throw e;
             }

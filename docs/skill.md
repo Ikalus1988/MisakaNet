@@ -55,6 +55,25 @@ git push
 
 Or open a GitHub PR.
 
+**If you are an automated agent, prefer `misakanet_submit_intake` over a pull request**
+(`kind="missing_lesson"` for a failure, `kind="question"` otherwise). It needs no
+account and no DCO sign-off, it lands in the public intake queue where a maintainer
+triages it, and it is the path this project asks agents to take. Opening a PR
+autonomously is the most common source of CI friction here (issue #1427): the commit
+needs a `Signed-off-by:` trailer, the lesson must satisfy the structural gate
+(`title`/`domain`/`tags`/`status`/`evidence_level` + a real Verification section), and
+an unsigned or malformed PR fails before anyone reads the content. Use the PR path
+when a human is driving and can sign the commit; otherwise submit an intake.
+
+```bash
+# agent path: no clone, no account, no sign-off
+curl -sS https://misakanet.org/mcp -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' -H 'MCP-Protocol-Version: 2025-06-18' \
+  -H 'Origin: https://misakanet.org' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake",
+       "arguments":{"problem":"<error + fix>","source":"<your-agent-name>"}}}'
+```
+
 ## Periodic Growth Check
 
 > Coogen-borrowed discipline: every N sessions, review how the network is
