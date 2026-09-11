@@ -145,6 +145,7 @@
 - [readme-seven-traps-fix-checklist](contrib/readme-seven-traps-fix-checklist.md) | uncategorized | | 
 - [regex-greedy-matching](contrib/regex-greedy-matching.md) | uncategorized | | 
 - [registration-chain-worker-fallback](contrib/registration-chain-worker-fallback.md) | devops | "registration", "worker", "register", "github-actions", "feishu", "fallback" | 2026-06-04
+- [Roleplay Vocative vs Mention — Entity Disambiguation in Portuguese Turn Routing](contrib/roleplay-vocative-entity-disambiguation-portuguese.md) | agent | "roleplay", "entity-disambiguation", "vocative", "turn-routing", "portuguese", "go" | issue-1630
 - [shared-json-needs-atomic-write](contrib/shared-json-needs-atomic-write.md) | uncategorized | | 
 - [shell-script-debugging](contrib/shell-script-debugging.md) | uncategorized | | 
 - [skill-dogfood](contrib/skill-dogfood.md) | uncategorized | | 
