@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-11T11:32:46.422540+00:00",
+  "generated_at": "2026-09-11T16:36:16.798173+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(mcp): content-level suspicion flag on retrieved lessons (L3+)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1624",
-      "timestamp": "2026-09-11T10:36:54Z",
+      "title": "chore(main): release 2.29.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1608",
+      "timestamp": "2026-09-11T13:29:27Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix: publish openclaw session_nodes lesson (#1600)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1623",
-      "timestamp": "2026-09-11T10:25:34Z",
+      "title": "lesson(contrib): JSON Schema 的布尔子模式 `true` 不是推荐值（附归因混淆的自我复盘）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1629",
+      "timestamp": "2026-09-11T12:47:40Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(security): L4 scan anonymous intake payloads before they become issues",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1620",
-      "timestamp": "2026-09-11T01:17:22Z",
+      "title": "tool(scripts): gh_push_via_api.py — 用 Git Data API 提交文件（git 线协议不可用时的逃生通道）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1627",
+      "timestamp": "2026-09-11T12:22:16Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(mcp): L3 read-path trust notice on search/get_lesson responses",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1614",
-      "timestamp": "2026-09-10T17:35:56Z",
+      "title": "fix(release): release-please 提交自带 sign-off，release PR 才能过 DCO",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1628",
+      "timestamp": "2026-09-11T12:18:34Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(security): prompt-injection defense for agent-facing content surfaces",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1613",
-      "timestamp": "2026-09-10T17:24:01Z",
+      "title": "fix(ci): leaderboard-watch 并发快照冲突（`|| true` 掩盖 → detached HEAD）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1625",
+      "timestamp": "2026-09-11T12:17:42Z",
       "source": "github"
     },
     {
@@ -44,7 +44,7 @@
       "title": "OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit",
       "url": "lessons/contrib/openclaw-session-row-entry-updatedat-mismatch.md",
       "timestamp": "2026-09-10",
-      "domain": "openclaw",
+      "domain": "devops",
       "source": "lessons"
     },
     {
