@@ -884,6 +884,18 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     const intent = normalizeIntent(args.intent);
     if (intent && ctx) ctx.waitUntil(trackUsage(env, ctx, "intent", { query: intent }));
 
+    // Content-level suspicion scan — computed on the FULL result objects, before
+    // progressive disclosure trims fields (compact drops description/body, which is
+    // exactly where an injection shape would live). Keyed by lesson id/path so the
+    // flag can be re-attached to the trimmed objects below.
+    const suspicionByKey = new Map();
+    for (const r of results) {
+      const flags = detectIntakeInjection(
+        [r.title, r.description, r.content].filter(Boolean).join("\n"),
+      );
+      if (flags.length) suspicionByKey.set(r.id || r.path, flags);
+    }
+
     // Progressive disclosure: transform by detail level
     const detail = args.detail || "compact";
     if (results.length > 0 && detail !== "full") {
@@ -907,9 +919,19 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     if (results.length > 0 && kind !== "all") {
       results = filterByKind(results, kind);
     }
-    // Tag each result with its kind
+    // Tag each result with its kind + the content-level suspicion flag computed above.
+    // Lessons are contributed text, so a lesson's own title/description/body can carry
+    // injection shapes (this is how the polluted lesson we found in 2026-09 looked —
+    // a pasted agent transcript in the Problem section). Advisory: it flags, it does
+    // not filter, so the caller decides what to trust. Corpus baseline: high-severity
+    // hits are ~0 across ~380 lessons, so the flag stays meaningful when it appears.
     for (const r of results) {
       if (!r.kind) r.kind = kind !== "all" ? kind : classifyResultKind(r);
+      const flags = suspicionByKey.get(r.id || r.path);
+      if (flags) {
+        r.suspicious = true;
+        r.suspicious_rules = flags;
+      }
     }
 
     // PRD ①: no-match closed loop — embed intake guidance so the agent can
@@ -982,7 +1004,16 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         domain: lesson?.domain || "",
       }));
       const aura = await getIdentityAura(env, authToken);
-      return { ...lesson, identity: aura, trust_notice: TRUST_NOTICE };
+      // Content-level check on the fetched body (see the search path above): the
+      // response already carries the generic trust_notice, but when *this* lesson
+      // matches an injection shape the caller should know which rule fired.
+      const bodyFlags = detectIntakeInjection(lesson?.content || "");
+      return {
+        ...lesson,
+        identity: aura,
+        trust_notice: TRUST_NOTICE,
+        ...(bodyFlags.length ? { suspicious: true, suspicious_rules: bodyFlags } : {}),
+      };
     } catch (e) {
       return { error: e.message };
     }
