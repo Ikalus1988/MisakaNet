@@ -7,6 +7,63 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.30.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.29.0...v2.30.0) (2026-09-12)
+
+
+### Features
+
+* **pages:** sticky URLs — a retitled lesson keeps its slug ([43f9405](https://github.com/Ikalus1988/MisakaNet/commit/43f940598c586e7c1956a419c497d4c2ea957b96))
+* **pages:** wire the lesson-page generator in, and fix what it would have published ([b01e585](https://github.com/Ikalus1988/MisakaNet/commit/b01e585d43fffc49d5a7d0377542f40a57e3150e))
+
+
+### Bug Fixes
+
+* **ci:** quote the digest timestamp — the second failure hidden behind the auth one ([37e4772](https://github.com/Ikalus1988/MisakaNet/commit/37e4772b36e4c7c467057ceccb57e399967f9480))
+* **ci:** repair the digest step's indentation (my previous commit broke the YAML) ([a0dddca](https://github.com/Ikalus1988/MisakaNet/commit/a0dddca94b6d557a2371003d411d3e0d6e1dc2ed))
+* **ci:** the salvage digest has been failing silently since at least 09-09 ([8c2d625](https://github.com/Ikalus1988/MisakaNet/commit/8c2d62525172a1e999d497e5e450a539b5226f8c))
+* **codeql+intake:** bundle the plugin assets, guide agents to intakes, and close the needs-ac queue ([2c876ab](https://github.com/Ikalus1988/MisakaNet/commit/2c876ab1adbaa90f20396d0f3eddaee776f879c6))
+* **codeql:** give the codex plugin manifest the assets its schema requires ([8c81993](https://github.com/Ikalus1988/MisakaNet/commit/8c819935443c8379c33da0ef55a9d06013e87fe3))
+* **counts:** make the public lesson-count SSOT idempotent, refresh 25 stale sites ([462bb96](https://github.com/Ikalus1988/MisakaNet/commit/462bb965aaa32a80502a0a1f79c14dc166285113))
+* **counts:** never manage a count inside .github/workflows/** — GITHUB_TOKEN can't push it ([bccc899](https://github.com/Ikalus1988/MisakaNet/commit/bccc899f1d2415afd7d4408403c5ac5b82882cfc))
+* **dsh:** stop naming the protected [@deepseek-ai](https://github.com/deepseek-ai) component in the bundle patch ([#1636](https://github.com/Ikalus1988/MisakaNet/issues/1636)) ([ca20c65](https://github.com/Ikalus1988/MisakaNet/commit/ca20c659da48fdec613038a192e3fca664ea6bde))
+* **intake:** stop scoring the pipeline's own boilerplate, and read inline evidence ([e40247b](https://github.com/Ikalus1988/MisakaNet/commit/e40247be6278e138c5027f574778126d91e6b713))
+* **onboarding:** the join welcome now leads with the remote MCP, not a 1.1 MB download ([227f78f](https://github.com/Ikalus1988/MisakaNet/commit/227f78fcc21607a4b4abcaa378ebc732cce1cc4d))
+* **plugin:** point interface assets at paths the scan's require_prefix+require_exists rule accepts ([07a1b9c](https://github.com/Ikalus1988/MisakaNet/commit/07a1b9c7f20d9bdad659495bf5da1cbeabab69e6))
+* **release:** the release workflow could never tag — tag it from the manifest instead ([0787f3d](https://github.com/Ikalus1988/MisakaNet/commit/0787f3da8600a9c2e1a44e5b1f95fd130d34efe6))
+* **release:** the release workflow held a second, wrong-metric lesson-count writer ([2604436](https://github.com/Ikalus1988/MisakaNet/commit/260443675d653fbfd3f9518c755cf05e8dfdb7df))
+* **release:** wire the release bot to every version the invariants require ([334f274](https://github.com/Ikalus1988/MisakaNet/commit/334f27479774ed5e187c4b3e7f918e74e48c15dc))
+* **search:** a relevance floor — "no lesson matches" must be reachable, and honest ([440324c](https://github.com/Ikalus1988/MisakaNet/commit/440324cf2bd3e25d15a4817c9f790d8d60ae485f))
+* **search:** count pairable terms, not present ones, for the two-term bar ([cac0f78](https://github.com/Ikalus1988/MisakaNet/commit/cac0f78bd1be7c8d45a1d6a5afb3959d483ed369))
+* **search:** let the worker build its own BM25 index — the one that never existed ([e7856da](https://github.com/Ikalus1988/MisakaNet/commit/e7856daf6e3ced8577ec15005a198031b39e27a2))
+* **search:** match on tokens, not substrings — that is what the floor needed ([7bcf3cb](https://github.com/Ikalus1988/MisakaNet/commit/7bcf3cbd213e257d55e7e6255cb40edfddb3f875))
+* **trust:** the registry listing claimed "verified debugging lessons" — fix it before 2.29.0 ships ([44c80ac](https://github.com/Ikalus1988/MisakaNet/commit/44c80ac1290268db1bb641a89ad478419f2d0156))
+* **versions:** the agent-discovery cards sat at 2.16.0 — give them a writer (R6) ([ce74743](https://github.com/Ikalus1988/MisakaNet/commit/ce74743d0181fb21ccd5d080e074b066c7633e48))
+* **worker:** index the lesson body, not just its summary ([209a6de](https://github.com/Ikalus1988/MisakaNet/commit/209a6dec107a007c27837852f1a42e055e7e252a))
+* **workers:** do not quote the flagged literal in the helper's own comment ([7911c35](https://github.com/Ikalus1988/MisakaNet/commit/7911c3506eb4a4bf194d91cc0f7a483eec43b8c1))
+* **worker:** search only ever saw 100 of 384 lessons ([7e2cc72](https://github.com/Ikalus1988/MisakaNet/commit/7e2cc720c3d5435d37bcb227d092930efc0e8865))
+
+
+### Documentation
+
+* **handoff:** record the residue incident, correct my dismissal of those alerts ([5d8eb16](https://github.com/Ikalus1988/MisakaNet/commit/5d8eb16f67b8cb89a45843982bba5dc6b77a0e48))
+* **handoff:** record the second half of the day (§10) ([eaf5c8d](https://github.com/Ikalus1988/MisakaNet/commit/eaf5c8d98e313dc7932618d0c1a043d6e8b5db7c))
+* **lessons:** merge three accepted submissions ([#1500](https://github.com/Ikalus1988/MisakaNet/issues/1500), [#1547](https://github.com/Ikalus1988/MisakaNet/issues/1547), [#1601](https://github.com/Ikalus1988/MisakaNet/issues/1601)) and record §11 ([dd30970](https://github.com/Ikalus1988/MisakaNet/commit/dd30970b763c09ae6337db7fb0b5e349451a6508))
+* **lessons:** the two truncations that capped search recall; regenerate the corpus ([d4d4a50](https://github.com/Ikalus1988/MisakaNet/commit/d4d4a505e9571c894976aa85dabbc3bf1688d3a8))
+* **maintainer:** handoff §11.7 — three submissions merged, the auto-reject root cause ([385d570](https://github.com/Ikalus1988/MisakaNet/commit/385d570cfe327c5a17243027ae37279a0f01d3b9))
+* **maintainer:** handoff §12 — the consolidated backlog, ordered by what blocks whom ([48569a0](https://github.com/Ikalus1988/MisakaNet/commit/48569a0a670c99bd90de166720773b651127d2b7))
+* **maintainer:** handoff §6.11 — the plugin-scanner secret-alert round trip ([c8c3307](https://github.com/Ikalus1988/MisakaNet/commit/c8c330750b7092211dc2f99d32aaa1e8984b18d7))
+* **maintainer:** handoff-2026-09-12 — 计数 SSOT 真修 + 两个未接线的生成器 ([2d04869](https://github.com/Ikalus1988/MisakaNet/commit/2d048693eea52dc5fd28b739c94b7caeee2febe4))
+* **maintainer:** review assessment — what needs review, the strategy, and the bounty question ([2cbf859](https://github.com/Ikalus1988/MisakaNet/commit/2cbf85914f49121aff5c0c1df272f83b6524a6f0))
+* **registry:** record the 2.29.0 registry publish, and what publishing actually uploads ([33f1726](https://github.com/Ikalus1988/MisakaNet/commit/33f172652a3dd67cac5a8864404e57c318082668))
+* sync version to v2.29.0 ([914e4c1](https://github.com/Ikalus1988/MisakaNet/commit/914e4c132b2e36d55c71adbe522e69f2dd3c8e11))
+
+
+### Tests
+
+* **ci:** run the salvage digest step locally, and fix its third stacked bug ([8287079](https://github.com/Ikalus1988/MisakaNet/commit/82870796210179b0e1f818d80b2bcef27935b267))
+* **counts:** don't let Windows console encoding fail the CLI gate ([ccc56e1](https://github.com/Ikalus1988/MisakaNet/commit/ccc56e11b1497a8cdf9922a5973c1af95025f177))
+* **workers:** derive fixture tokens at runtime instead of hardcoding them ([099c2da](https://github.com/Ikalus1988/MisakaNet/commit/099c2daa83bff5c056844936df0981d2e94566fe))
+
 ## [2.29.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.28.1...v2.29.0) (2026-09-11)
 
 
