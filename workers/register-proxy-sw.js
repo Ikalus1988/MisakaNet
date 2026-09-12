@@ -813,6 +813,12 @@ const LEAN_DESCRIPTION_CAP = 400;
 // Searchable text per lesson. Long enough to cover a whole lesson body (the longest
 // here is ~3.5k chars), bounded so the index stays small.
 const INDEX_TEXT_MAX_CHARS = 6000;
+// Bump when the *searchable text* changes shape (not just its size). Without this the
+// freshness gate cannot see a projection change: docCount and textMode stay equal, so
+// the cron keeps serving an index built from the old text for up to 20h — the same
+// "the rebuild input changed but the gate did not notice" trap this file already
+// documents twice (2026-09-12).
+const INDEX_TEXT_VERSION = 2;
 // The public listing must not ship the internal searchable body: `indexText` feeds
 // the index and the matcher, and it is dropped from every response the worker
 // builds from loadLessons().
@@ -874,6 +880,7 @@ function buildBM25Index(lessons, { k1 = 1.5, b = 0.75, textMode } = {}) {
     k1,
     b,
     textMode: textMode || detectTextMode(lessons),
+    textVersion: INDEX_TEXT_VERSION,
     terms,
     docs,
   };
@@ -896,8 +903,9 @@ async function refreshSearchIndex(env) {
       // A textMode mismatch means the stored index was built before the richer D1
       // projection existed; same reasoning, or the fix would idle for 20h.
       const modeChanged = (existing.textMode || "lean") !== textMode;
+      const textChanged = (existing.textVersion || 0) !== INDEX_TEXT_VERSION;
       if (Number.isFinite(age) && age < BM25_INDEX_MAX_AGE_MS &&
-          existing.docCount === lessons.length && !modeChanged) {
+          existing.docCount === lessons.length && !modeChanged && !textChanged) {
         return { refreshed: false, reason: "fresh" };
       }
     }
@@ -3382,6 +3390,7 @@ export default {
           avgDocLen: index.avgDocLen,
           builtAt: index.built_at,
           textMode: index.textMode || "lean",
+          textVersion: index.textVersion || 0,
           // The cron can only renew this index if KV accepts the write. When writes
           // fail, `builtAt` freezes and new lessons silently never enter search —
           // report that state instead of serving a stale index that looks fine.

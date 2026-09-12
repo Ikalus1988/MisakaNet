@@ -390,3 +390,21 @@ test('the searchable text keeps a term that sits late in a section', async () =>
   assert.ok(hit.results.some(r => r.id === 'late-term-lesson'),
     `a term past the old per-section cap must still be searchable: ${JSON.stringify(hit.results)}`);
 });
+
+test('a stored index built from older searchable text is rebuilt, not trusted', async () => {
+  // docCount and textMode describe *how much* and *which projection kind* — not the
+  // shape of the text. When the projection rule changed (four per-section caps → one
+  // budget for the body) both stayed equal, so without a text version the gate would
+  // have served the old text for up to 20h.
+  const env = createEnv();
+  const stale = buildBM25Index(LESSONS);
+  await env.MISAKANET_KV.put(BM25_INDEX_KEY, JSON.stringify({
+    ...stale, built_at: new Date().toISOString(), textVersion: 1,
+  }));
+
+  const result = await refreshSearchIndex(env);
+  assert.equal(result.refreshed, true,
+    `a text-version change must force a rebuild: ${JSON.stringify(result)}`);
+  const stored = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
+  assert.notEqual(stored.textVersion, 1, 'the rebuilt index must carry the current text version');
+});
