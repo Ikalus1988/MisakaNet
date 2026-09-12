@@ -275,3 +275,19 @@ def _is_semver(value: str) -> bool:
         return True
     except Exception:
         return False
+
+def test_site_badge_matches_the_manifest():
+    """R8: docs/index.html carries exactly one `vX.Y.Z` badge == the manifest.
+
+    Nothing checked this until 2026-09-12, and it showed: the 2.30.0 release step
+    interpolates `$(...)`-style VERSION into a sed expression, so an empty value
+    rewrites the badge to a bare `v` — which is precisely what happened when that
+    step was run by hand while fixing the release, and every gate stayed green.
+    """
+    manifest = _read_json(".release-please-manifest.json")["."]
+    text = (REPO / "docs/index.html").read_text(encoding="utf-8")
+    found = re.findall(r">v(\d+\.\d+\.\d+)<", text)
+    assert len(found) == 1, (
+        f"expected exactly one `>vX.Y.Z<` badge in docs/index.html, found {found} — "
+        "a malformed badge means a release step interpolated an empty version")
+    assert found[0] == manifest, f"site badge v{found[0]} != manifest {manifest}"

@@ -127,9 +127,27 @@ def locations() -> dict[str, str]:
         "JOIN.md version": join_v.group(1) if join_v else "",
         "README misakanet@ claims": ", ".join(readme_claims),
         ".codex-plugin/plugin.json": str(_read_json(".codex-plugin/plugin.json").get("version", "")),
+        # The site badge. Nothing checked it before 2026-09-12, which is exactly
+        # how a release step whose `sed` interpolates an empty VERSION can rewrite
+        # it to a bare "v" and still pass every gate.
+        "docs/index.html (badge)": _docs_badge(),
         "docs/.well-known cards": ", ".join(
             sorted({str(_read_json(rel).get("version", "")) for rel in WELL_KNOWN_CARDS})),
     }
+
+
+
+DOCS_BADGE = "docs/index.html"
+
+
+def _docs_badge() -> str:
+    """The single `>vX.Y.Z<` string in the site page, or "" when it is malformed."""
+    try:
+        text = (REPO / DOCS_BADGE).read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    found = re.findall(r">v(\d+\.\d+\.\d+)<", text)
+    return found[0] if len(found) == 1 else ""
 
 
 def check() -> int:
@@ -147,6 +165,13 @@ def check() -> int:
         print(f"  {label}: {value}")
 
     problems = []
+    badge = loc["docs/index.html (badge)"]
+    if not badge:
+        problems.append(
+            f"R8 {DOCS_BADGE} must carry exactly one `vX.Y.Z` badge (found none or several) — "
+            "a release step that interpolates an empty version rewrites it to a bare `v`")
+    elif badge != manifest:
+        problems.append(f"R8 site badge drifted: {DOCS_BADGE}=v{badge} manifest={manifest}")
     glama = loc["glama.json (registry)"]
     if registry != glama:
         problems.append(f"R1 registry pair drifted: server={registry} glama={glama}")
