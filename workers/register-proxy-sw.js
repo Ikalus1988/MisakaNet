@@ -539,17 +539,31 @@ function relevanceFloor(termDf, docCount) {
   const denominator = Math.max(docCount, RELEVANCE_MIN_CORPUS);
   const informative = new Set();
   let present = 0;
+  let pairable = 0;      // terms that occur in ≥2 documents (see `required`)
   for (const [term, df] of termDf) {
     if (!df) continue;
     present += 1;
+    if (df >= 2) pairable += 1;
     if (df / denominator <= RELEVANCE_MAX_DF_RATIO) informative.add(term);
   }
   return {
-    // 1 for a single-word query (or one the corpus knows one word of), else 2.
-    required: Math.min(2, present),
+    // Two distinct matched terms, when the corpus offers two terms that could
+    // plausibly co-occur; otherwise one. Counting *present* terms instead made
+    // "kubectl crashloopbackoff" return no_match even though the corpus has the
+    // lesson: "kubectl" occurs elsewhere, "crashloopbackoff" in exactly one
+    // document, and no document has to contain both (2026-09-12, caught live).
+    required: Math.max(1, Math.min(2, pairable)),   // 1 when nothing can pair
     informative,
   };
 }
+
+// Tried and reverted (2026-09-12): requiring a short query to match its *rarest*
+// term. It did not remove the remaining junk ("user-agent-identify-bots" still
+// matched "env"+"set" for a VISION_API_KEY query) while it did kill a good query —
+// "git push failed" stopped finding the git-push lessons, because they say
+// "rejected"/"403", not "failed". A rule that costs recall without buying
+// precision is not a floor, it is a coin flip; the rank-level fix belongs with the
+// BM25 index that production never syncs.
 
 
 // Tokens for *matching* (not for the BM25 index): lowercase, stopwords dropped,
