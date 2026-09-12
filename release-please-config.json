@@ -5,12 +5,30 @@
     ".": {
       "release-type": "python",
       "changelog-sections": [
-        { "type": "feat", "section": "Features" },
-        { "type": "fix", "section": "Bug Fixes" },
-        { "type": "docs", "section": "Documentation" },
-        { "type": "refactor", "section": "Refactoring" },
-        { "type": "test", "section": "Tests" },
-        { "type": "ci", "section": "CI/CD" }
+        {
+          "type": "feat",
+          "section": "Features"
+        },
+        {
+          "type": "fix",
+          "section": "Bug Fixes"
+        },
+        {
+          "type": "docs",
+          "section": "Documentation"
+        },
+        {
+          "type": "refactor",
+          "section": "Refactoring"
+        },
+        {
+          "type": "test",
+          "section": "Tests"
+        },
+        {
+          "type": "ci",
+          "section": "CI/CD"
+        }
       ],
       "extra-files": [
         "docs/index.html",
@@ -18,7 +36,27 @@
         {
           "type": "json",
           "path": "server.json",
-          "jsonpath": "$.packages[?(@.registryType=='pypi')].version"
+          "jsonpath": "$..version"
+        },
+        {
+          "type": "json",
+          "path": "glama.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "docs/.well-known/agent.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "docs/.well-known/agent-card.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "docs/.well-known/mcp.json",
+          "jsonpath": "$.version"
         }
       ]
     }

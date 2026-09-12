@@ -193,3 +193,85 @@ def test_docs_never_claim_newer_than_authoritative_lines():
                         f"{label} claims a version newer than {ceiling_str}",
                         [(label, LOCATIONS[label]), ("current ceiling", ceiling_str)],
                     )
+
+def test_release_tool_is_wired_to_write_every_version_it_must_bump():
+    """Every file the registry line owns must be declared in release-please.
+
+    The release PR for 2.30.0 could not merge (2026-09-12): its bump moved
+    `server.json` while `glama.json` and the three `docs/.well-known` cards stayed
+    behind, so `test_registry_line_lockstep` and
+    `test_registry_line_covers_agent_discovery_cards` failed, pytest came out
+    red, and the audit job reported "test suite has issues" — with
+    `continue-on-error: true` on the pytest step, the check-run still shows ✓,
+    which is why it looked like a reporting bug.
+
+    An invariant is only as good as the tool that maintains it: a fact that must
+    track the release has to be listed here, or the release red-flags itself. This
+    asserts the wiring, and that each declared jsonpath really resolves to the
+    version field it claims to update.
+    """
+    config = _read_json("release-please-config.json")
+    extra = config["packages"]["."]["extra-files"]
+    declared = {}
+    for entry in extra:
+        if isinstance(entry, str):
+            declared[entry] = None
+        else:
+            declared[entry["path"]] = entry.get("jsonpath")
+
+    required = ["server.json", "glama.json", "docs/.well-known/agent.json",
+                "docs/.well-known/agent-card.json", "docs/.well-known/mcp.json"]
+    missing = [path for path in required if path not in declared]
+    if missing:
+        _test_fail("the release tool does not bump every file the registry line owns "
+                   "(their invariants will fail on the release PR)", [(m, "not in extra-files") for m in missing])
+
+    # A path listed with a jsonpath that does not point at a version field is worse
+    # than a missing entry: it looks wired and writes nothing. Plain `$.a.b` paths
+    # are resolved and checked; `server.json` uses a JSONPath *filter*
+    # (`$.packages[?(@.registryType=='pypi')].version`), which this helper does not
+    # pretend to evaluate — for those, require that the file really carries a
+    # version field, and leave the exact target to the lockstep tests above.
+    broken = []
+    for path, jsonpath in declared.items():
+        if not jsonpath or not jsonpath.endswith("version"):
+            continue
+        if "[?(" in jsonpath:
+            if '"version"' not in (REPO / path).read_text(encoding="utf-8"):
+                broken.append((path, f"{jsonpath}: file declares no version field"))
+            continue
+        if jsonpath.startswith("$.."):
+            # Recursive descent (server.json uses `$..version`: the registry listing
+            # version *and* the package entry version — R3 requires they agree).
+            key = jsonpath[3:]
+            found = [v for v in _walk_key(_read_json(path), key) if isinstance(v, str)]
+            if not found or not all(_is_semver(v) for v in found):
+                broken.append((path, f"{jsonpath} -> {found!r}"))
+            continue
+        node = _read_json(path)
+        for part in jsonpath.lstrip("$.").split("."):
+            node = node.get(part) if isinstance(node, dict) else None
+        if not isinstance(node, str) or not _is_semver(node):
+            broken.append((path, f"{jsonpath} -> {node!r}"))
+    if broken:
+        _test_fail("declared version jsonpaths do not resolve to a semantic version", broken)
+
+
+def _walk_key(node, key: str):
+    """Every value stored under `key` anywhere in the document."""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if k == key:
+                yield v
+            yield from _walk_key(v, key)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _walk_key(item, key)
+
+
+def _is_semver(value: str) -> bool:
+    try:
+        _ver(value)
+        return True
+    except Exception:
+        return False
