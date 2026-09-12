@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from intake_auto_review import (
     auto_review_issue,
+    strip_pipeline_boilerplate,
     score_completeness,
     score_generalization,
     score_verification,
@@ -293,3 +294,94 @@ def test_json_output():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+# === Pipeline boilerplate and inline evidence (2026-09-12) ===
+#
+# Issue #1637 was a complete, specific failure report — symptom, root cause and fix
+# in one paragraph — and it was auto-rejected as a "malformed lesson" (37/100). Two
+# of the reasons were the scorer judging text the pipeline wrote:
+#   * "✗ Contains specific project names" fired on the pipeline's own footer
+#     `_Submitted via remote MCP (misakanet-crush-demo)._`
+# and one was the report's shape rather than its content:
+#   * verification (30% of the weight) scored 0 because the report had no
+#     `## Verification` heading, even though the evidence was inline.
+
+PIPELINE_FOOTER = "_Submitted via remote MCP (misakanet-crush-demo). No account required._"
+
+INLINE_EVIDENCE_REPORT = """
+**Kind:** missing_lesson
+**Source:** misakanet-crush-demo
+**Dedup:** `31391c03-570`
+
+
+## Problem
+The UserPromptSubmit hook silently returns {} on every failure path, so a
+misconfigured hook (missing VISION_API_KEY, wrong python path) is indistinguishable
+from "no new images" — and the checks all pass. Root cause: the top-level except
+swallows every error and prints {}. Fix pattern: on the swallow path, write the
+traceback to a sidecar log the user can find; add a CI step that asserts a failed
+hook produces a discoverable signal.
+
+---
+""" + PIPELINE_FOOTER + """
+<br/>
+<hr/>
+"""
+
+
+def test_boilerplate_is_not_scored_as_content():
+    """The pipeline's own header/footer must not count for or against a report."""
+    with_footer = score_generalization(INLINE_EVIDENCE_REPORT, {})
+    without = score_generalization(
+        INLINE_EVIDENCE_REPORT.replace(PIPELINE_FOOTER, "").replace("**Kind:** missing_lesson", ""), {})
+    assert with_footer.score == without.score, (
+        f"pipeline boilerplate changed the generalization score "
+        f"({with_footer.score} vs {without.score}): {with_footer.reasons}")
+    assert not any("project names" in reason for reason in with_footer.reasons), with_footer.reasons
+
+
+def test_strip_pipeline_boilerplate_keeps_the_reporter_text():
+    stripped = strip_pipeline_boilerplate(INLINE_EVIDENCE_REPORT)
+    assert "UserPromptSubmit" in stripped, "the report body must survive"
+    assert "Kind:" not in stripped and "Dedup:" not in stripped
+    assert "Submitted via remote MCP" not in stripped
+    assert "misakanet-crush-demo" not in stripped
+
+
+def test_inline_evidence_scores_the_verification_dimension():
+    """No heading is not the same as no evidence."""
+    dimension = score_verification(INLINE_EVIDENCE_REPORT, {})
+    assert dimension.score > 0, (
+        "a report with commands, a root cause and a fix scored 0 on the heaviest "
+        f"dimension: {dimension.reasons}")
+    assert any("inline" in reason for reason in dimension.reasons), dimension.reasons
+
+
+def test_inline_fix_and_root_cause_count_for_completeness():
+    dimension = score_completeness(INLINE_EVIDENCE_REPORT, {})
+    joined = " ".join(dimension.reasons)
+    assert "✓ fix present" in joined, joined
+    assert "✓ root_cause present" in joined, joined
+
+
+def test_a_report_with_inline_evidence_is_reviewed_not_rejected():
+    """The end-to-end outcome: #1637 must reach a human, not the badcase pile."""
+    result = auto_review_issue(1637, "[Intake] hook silently returns {}", INLINE_EVIDENCE_REPORT)
+    assert result.decision == "review", (
+        f"a complete report ended as {result.decision} ({result.final_score:.1f}/100): "
+        + "; ".join(reason for dim in result.dimensions for reason in dim.reasons))
+
+
+def test_an_empty_report_is_still_rejected():
+    """The guard against the opposite failure: honest scoring must not pass junk."""
+    result = auto_review_issue(9999, "[Intake] broken", "## Problem\nit broke\n")
+    assert result.decision == "reject"
+
+
+def test_a_report_that_is_only_pipeline_boilerplate_is_still_rejected():
+    """Stripping the pipeline's text must not turn 'no content' into 'some content'."""
+    body = ("**Kind:** missing_lesson\n**Source:** mcp\n\n## Problem\n\n---\n"
+            + PIPELINE_FOOTER + "\n")
+    result = auto_review_issue(9998, "[Intake] x", body)
+    assert result.decision == "reject"

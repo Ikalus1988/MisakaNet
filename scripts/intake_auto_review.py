@@ -36,6 +36,33 @@ sys.path.insert(0, str(Path(__file__).parent))
 from validate_intake import validate_intake, ValidationResult
 
 
+# === Pipeline boilerplate ===
+# The intake pipeline writes the metadata header, the backlink and the footer into
+# every issue it opens. Scoring that text scores the pipeline, not the report — and
+# it fired for real: a well-formed report (#1637) lost the generalization penalty
+# "✗ Contains specific project names" only because the pipeline's own footer says
+# `_Submitted via remote MCP (misakanet-crush-demo)._`, and the same footer inflates
+# every detail/format signal. Strip it before judging content.
+PIPELINE_BOILERPLATE_PATTERNS = [
+    r"^\*\*(?:Kind|Source|Dedup|Contributor|Node|Matched lesson[^*]*):\*\*.*$",
+    r"^_Submitted via remote MCP.*$",
+    r"^<br/?>\s*$",
+    r"^<hr/?>\s*$",
+]
+
+
+def strip_pipeline_boilerplate(body: str) -> str:
+    """Drop the lines the intake pipeline adds, keeping the reporter's text."""
+    if not body:
+        return ""
+    lines = [
+        line for line in body.splitlines()
+        if not any(re.match(pattern, line.strip(), re.IGNORECASE)
+                   for pattern in PIPELINE_BOILERPLATE_PATTERNS)
+    ]
+    return "\n".join(lines)
+
+
 # === Scoring Weights ===
 DIMENSION_WEIGHTS = {
     "completeness": 0.20,   # Required sections present
@@ -85,6 +112,7 @@ class AutoReviewResult:
 
 def score_completeness(body: str, sections: dict[str, str]) -> DimensionScore:
     """Score field completeness (0-100)."""
+    body = strip_pipeline_boilerplate(body)
     score = 0
     reasons = []
 
@@ -105,7 +133,11 @@ def score_completeness(body: str, sections: dict[str, str]) -> DimensionScore:
             "## Fix" in body or "## Solution" in body or
             "## 修复" in body or "## What was tried" in body or
             "harvested from" in body.lower() or
-            "## Fix (if known)" in body
+            "## Fix (if known)" in body or
+            # Inline, which is how a one-paragraph report usually states it.
+            bool(re.search(r"\b(?:fix(?:ed)?(?: pattern| is)?|workaround|solution)\s*[:：]", body,
+                           re.IGNORECASE)) or
+            "修复" in body
         ),
     }
 
@@ -126,7 +158,8 @@ def score_completeness(body: str, sections: dict[str, str]) -> DimensionScore:
             "## Background" in body or "## 背景" in body
         ),
         "root_cause": (
-            "## Root Cause" in body or "## 根因" in body
+            "## Root Cause" in body or "## 根因" in body or
+            bool(re.search(r"\broot cause\s*[:：]|根因\s*[:：]", body, re.IGNORECASE))
         ),
     }
 
@@ -147,6 +180,7 @@ def score_completeness(body: str, sections: dict[str, str]) -> DimensionScore:
 
 def score_generalization(body: str, sections: dict[str, str]) -> DimensionScore:
     """Score how generalizable the lesson is (0-100)."""
+    body = strip_pipeline_boilerplate(body)
     score = 30  # Start lower - need to earn points
     reasons = []
 
@@ -235,6 +269,7 @@ def score_generalization(body: str, sections: dict[str, str]) -> DimensionScore:
 
 def score_verification(body: str, sections: dict[str, str]) -> DimensionScore:
     """Score verification quality (0-100)."""
+    body = strip_pipeline_boilerplate(body)
     score = 0
     reasons = []
 
@@ -286,12 +321,21 @@ def score_verification(body: str, sections: dict[str, str]) -> DimensionScore:
             score += 15
         reasons.append("✓ Has verification steps (list)")
     else:
-        # Check if verification is mentioned anywhere in body
-        if re.search(r"verified|验证|确认|测试通过", body, re.IGNORECASE):
-            score += 15
-            reasons.append("✓ Verification mentioned (no dedicated section)")
+        # An anonymous intake is a *report*, not a lesson draft: the reporter often
+        # has the failure text, the root cause and the fix in one paragraph, with no
+        # `## Verification` heading to give them. Requiring the heading zeroed the
+        # heaviest dimension (30%) for exactly those reports — #1637 spelled out its
+        # root cause and fix inline, scored 0 here, landed at 37/100 and was
+        # auto-rejected as a malformed lesson (fixed 2026-09-12). Score the evidence
+        # that is actually present instead of the heading that is not.
+        evidence = [label for pattern, label in REPRODUCTION_EVIDENCE_PATTERNS
+                    if re.search(pattern, body, re.IGNORECASE | re.MULTILINE)]
+        if evidence:
+            score += min(40, 12 * len(evidence))
+            reasons.append("✓ Reproduction evidence inline (no dedicated section): "
+                           + ", ".join(evidence))
         else:
-            reasons.append("✗ No verification section")
+            reasons.append("✗ No verification section and no reproduction evidence")
 
     # Check for verification mentions anywhere in body (not just section)
     if re.search(r"验证通过|verified|确认.*落地|确认.*成功|no leaks found", body, re.IGNORECASE):
@@ -308,6 +352,7 @@ def score_verification(body: str, sections: dict[str, str]) -> DimensionScore:
 
 def score_uniqueness(body: str, sections: dict[str, str], lesson_title: str = "") -> DimensionScore:
     """Score content uniqueness and novelty (0-100)."""
+    body = strip_pipeline_boilerplate(body)
     score = 50  # Start at neutral
     reasons = []
 
@@ -531,6 +576,20 @@ def score_format(body: str, sections: dict[str, str]) -> DimensionScore:
         weight=DIMENSION_WEIGHTS["format"],
         reasons=reasons,
     )
+
+
+# What counts as evidence that a reporter actually saw the failure (and can check a
+# fix). Deliberately mechanical so it can be reviewed: any three of these reach the
+# 40-point ceiling of the inline path.
+REPRODUCTION_EVIDENCE_PATTERNS = [
+    (r"^\s*```", "code block"),
+    (r"^\s*\$\s+\S", "shell command"),
+    (r"\b(?:exit code|traceback|exception|errno|enoent|eacces|stack ?trace)\b", "failure output"),
+    (r"\b(?:reproduc\w+|on failure|observed|before/after|regressed)\b", "reproduction wording"),
+    (r"\b(?:root cause|the fix is|fix pattern|workaround|solution:)\b", "root cause / fix stated"),
+    (r"\b(?:verified|confirm\w*|no longer|passed|验证)\b", "verification wording"),
+    (r"\b\d+\.\d+(?:\.\d+)?\b", "version numbers"),
+]
 
 
 # === Confidence Calculator ===
