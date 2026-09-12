@@ -78,6 +78,7 @@
   <url><loc>https://misakanet.org/lessons/ci-push-triggered-bot-races-generated-artifact/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ci-security-advisory-checks/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/claude-code-debugging-ml-dsa-cryptography/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/claude-code-hook-silent-failure/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-ai-gateway-auth-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-email-worker-registration-trap/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-observability-mcp-oauth-separate-domain/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
