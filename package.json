@@ -15,6 +15,17 @@
       "patch": "./cordis.patch.yml"
     }
   },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-mcp-client": ">=0.1.0-rc.8 <0.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-mcp-client": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "deploy:web": "cd web && npx wrangler deploy",
     "deploy:api": "cd workers && npx wrangler deploy --config wrangler.api.jsonc",

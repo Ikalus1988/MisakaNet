@@ -1,25 +1,52 @@
-# MisakaNet dsh bundle patch (2026-09-05, B1)
+# MisakaNet dsh bundle patch (2026-09-12, DSH STORE compliance)
 #
-# Registers MisakaNet's stdio MCP server into any dsh profile that lists
-# `misakanet` in `dsh.profile.bundles`. Tools are published on ctx.tools as
-# `mcp__misakanet__<tool>` (misakanet_search / misakanet_get_lesson / …),
-# served by the repo's own python server (scripts/mcp_server.py), which
-# self-locates the repo root from __file__ — no other wiring needed.
+# Inserts *this* package (an insert row pointing at our own `misakanet` package,
+# i.e. index.js) as a profile layer. The row's `config` is the stdio declaration
+# for the repo's own python MCP server; index.js reads it and mounts the official
+# client at runtime.
 #
-# Requirements & behavior:
+# Why the wiring is no longer in the patch
+# ----------------------------------------
+# It used to insert a row that instantiated the official DSH MCP client
+# component directly. That is a valid cordis patch, but DSH STORE hard-blocks it:
+# its precheck tests the whole patch text (comments included) for an insert row
+# declaring a component in the protected @deepseek-ai namespace, and rejects the
+# submission as `SUBMISSION_PATCH_PROTECTED: Bundle Patch impersonates the
+# protected @deepseek-ai namespace` — rated `route: blocked`, the strictest
+# outcome, below "candidate". See AI-Scarlett/DSH-Store#747 and that repo's
+# registry/candidates.json (id `ikalus1988-misakanet`); the rule lives in
+# scripts/check-plugin-submission.mjs.
+#
+# Note for future edits: that check is a regex over this file, so even *quoting*
+# the forbidden pattern in a comment trips it. Describe the rule, never paste it.
+# tests/test_dsh_bundle.py reproduces the same two rules so we cannot re-break
+# them silently — an earlier version of our own test asserted the very pattern
+# DSH STORE rejects, which is how the violation survived two weeks.
+#
+# Every accepted plugin in that catalog inserts its own component
+# (unscoped package names like `dsh-vision`, or an author's own scope); none of
+# them instantiates a @deepseek-ai/* component from a patch. So this patch names
+# only our own package, and index.js mounts the official client itself
+# (peer-resolved at runtime, degrading when it is absent).
+#
+# Behaviour notes (unchanged):
+# * Registers MisakaNet's stdio MCP server into any dsh profile that lists
+#   `misakanet` in `dsh.profile.bundles`. Tools are published on ctx.tools as
+#   `mcp__misakanet__<tool>` (misakanet_search / misakanet_get_lesson / …),
+#   served by the repo's own python server (scripts/mcp_server.py), which
+#   self-locates the repo root from __file__.
 # * The python MCP server exists only in repo/git+ installs
-#   (git+https://github.com/Ikalus1988/MisakaNet.git). The npm skill-only
-#   bundle ships no python, so on such installs this row stays disconnected
-#   instead of failing boot (failOnStartupError: false).
-# * The profile must resolve '@deepseek-ai/dsh-mcp-client' (web/code presets
-#   include it). Boot cwd is inherited; run dsh from the repo root for the
-#   stdio server to start (the plugin-spec sandbox boots at the repo clone).
-# * One row, one id — no double-insert: later patches override by id, and
-#   this id (misakanet-mcp) is unique to this bundle.
+#   (git+https://github.com/Ikalus1988/MisakaNet.git). The npm skill-only bundle
+#   ships no python, so on such installs the row stays disconnected instead of
+#   failing boot (failOnStartupError: false).
+# * Boot cwd is inherited; run dsh from the repo root for the stdio server to
+#   start (the plugin-spec sandbox boots at the repo clone).
+# * One row, one id — no double-insert: later patches override by id, and this
+#   id (misakanet-mcp) is unique to this bundle.
 
 - insert:
     - id: misakanet-mcp
-      name: '@deepseek-ai/dsh-mcp-client'
+      name: 'misakanet'
       config:
         transport: stdio
         serverName: misakanet
