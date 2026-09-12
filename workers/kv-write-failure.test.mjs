@@ -20,6 +20,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker, { refreshSearchIndex, BM25_INDEX_KEY } from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
+
+// Synthetic token for the fixtures below (workers/_test-token.mjs explains why these
+// are never written as literals: the plugin-scanner flags that shape).
+const TOKEN = testToken('kv-failure');
 
 const LESSONS = [
   { id: 'pip-timeout-mirror', title: 'pip install timeout', domain: 'python', tags: ['pip'],
@@ -30,7 +35,7 @@ const LESSONS = [
 function createEnv({ failWrites = true, seed = {} } = {}) {
   const store = new Map(Object.entries(seed));
   return {
-    MCP_TOKEN: 'kv-failure-test-token',
+    MCP_TOKEN: TOKEN,
     MISAKANET_KV: {
       async get(key, type) {
         if (!store.has(key)) return null;
@@ -55,7 +60,7 @@ function mcpCall(name, args = {}) {
   return new Request('https://misakanet.org/mcp', {
     method: 'POST',
     headers: {
-      Authorization: 'Bearer kv-failure-test-token',
+      Authorization: `Bearer ${TOKEN}`,
       'Content-Type': 'application/json',
       'MCP-Protocol-Version': '2025-06-18',
       'Origin': 'https://misakanet.org',

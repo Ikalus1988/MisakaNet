@@ -17,7 +17,11 @@ const {
 const _handlers = await import("./lib/handlers.js");
 const { GITHUB_API, REPO, PUBLIC_DATA_BASE } = _handlers;
 
-const PROXY_CACHE_TTL = 30_000;
+// 30s meant the corpus cache expired every half minute of traffic and each expiry
+// cost a KV write of the whole lesson list. The corpus changes at most daily (the
+// daily sync), so five minutes is both fresher than the data and ~10x cheaper in
+// writes against the 1,000/day budget.
+const PROXY_CACHE_TTL = 300_000;
 const KEEPALIVE_ENDPOINTS = [
   { name: "health", url: "https://misakanet.org/api/health", json: true },
   { name: "counter", url: "https://misakanet.org/api/counter", json: true },
@@ -1002,6 +1006,40 @@ async function getIdentityAura(env, token) {
 // records the failure for /api/health, and returns whether the value was stored so
 // callers that must not lie (register hands out tokens) can say so.
 const kvWriteStats = { attempts: 0, failures: 0, last_error: "", last_failure_at: "", last_ok_at: "" };
+
+// ── Traffic counter batching (KV write budget) ───────────────────────────────
+// Counts are buffered per (class, day) and flushed when a batch accumulates or the
+// buffer turns stale. Worst case a few counts are lost when an isolate is evicted;
+// the alternative was spending the day's KV write budget on analytics and losing
+// registration entirely (2026-09-12).
+const TRAFFIC_FLUSH_BATCH = 10;
+const TRAFFIC_FLUSH_MS = 60_000;
+const trafficBuffer = new Map();
+let trafficFlushedAt = 0;
+
+function bufferTraffic(env, ctx, cls) {
+  if (!env || !env.MISAKANET_KV) return;
+  const key = `traffic:${cls}:${new Date().toISOString().slice(0, 10)}`;
+  const pending = (trafficBuffer.get(key) || 0) + 1;
+  trafficBuffer.set(key, pending);
+  const due = pending >= TRAFFIC_FLUSH_BATCH || Date.now() - trafficFlushedAt > TRAFFIC_FLUSH_MS;
+  if (!due) return;
+  flushTraffic(env, ctx);
+}
+
+function flushTraffic(env, ctx) {
+  if (!env || !env.MISAKANET_KV || trafficBuffer.size === 0) return;
+  trafficFlushedAt = Date.now();
+  const batch = [...trafficBuffer.entries()].filter(([, n]) => n > 0);
+  trafficBuffer.clear();
+  const work = (async () => {
+    for (const [key, delta] of batch) {
+      const current = parseInt((await env.MISAKANET_KV.get(key, "text")) || "0");
+      await kvPut(env, key, String(current + delta));
+    }
+  })();
+  if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(work);
+}
 
 async function kvPut(env, key, value, options) {
   if (!env || !env.MISAKANET_KV) return false;
@@ -2981,13 +3019,16 @@ export default {
     const _ua = request.headers.get("User-Agent") || "";
     const _cls = classifyRequest(request, url);
     console.log(JSON.stringify({ cls: _cls, ua: _ua.slice(0, 120), path: url.pathname }));
-    // Fire-and-forget KV counter (non-blocking)
-    if (env.MISAKANET_KV) {
-      const counterKey = `traffic:${_cls}:${new Date().toISOString().slice(0, 10)}`;
-      env.MISAKANET_KV.get(counterKey, "text").then(v => {
-        void kvPut(env, counterKey, String(parseInt(v || "0") + 1));
-      }).catch(() => {});
-    }
+    // Traffic counter — batched, not one write per request.
+    //
+    // This used to `get` + `put` on *every* request, which made the free tier's
+    // 1,000 KV writes/day the real ceiling on the whole worker: an anonymous search
+    // already costs a read-quota write and often a gap record, so the counter could
+    // be a quarter of the day's budget. On 2026-09-12 the account hit the cap and
+    // every write path started failing (register, /mcp/connect, /api/search-signal
+    // all answered 1101). Traffic analytics tolerate lag, so they now accumulate
+    // in memory and flush in batches; the counters are approximate by design.
+    bufferTraffic(env, typeof ctx !== "undefined" ? ctx : null, _cls);
 
     if (request.method === "GET" && url.pathname === "/api/health") {
       return jsonResponse({
