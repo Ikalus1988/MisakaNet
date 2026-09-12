@@ -41,7 +41,10 @@ jobs:
 
           # Generate markdown digest
           DIGEST="# 📋 Intake Salvage Digest\n\n"
-          DIGEST+="**Generated:** $(date -u +%Y-%m-%d %H:%M UTC)\n\n"
+          # Quoted: `%H:%M UTC` contains a space, so unquoted `$(date -u +%Y-%m-%d %H:%M UTC)`
+# passes `%H:%M` as an extra operand, date exits 1, and `bash -e` kills the step.
+# This was the second failure under the auth one — the digest had two bugs stacked.
+DIGEST+="**Generated:** $(date -u '+%Y-%m-%d %H:%M UTC')\n\n"
           DIGEST+="## Auto-Rejected Issues\n\n"
           DIGEST+="These issues were auto-rejected but may have salvageable content.\n\n"
           DIGEST+="| Issue | Title | Created | Action |\n"
