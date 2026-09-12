@@ -255,8 +255,9 @@ config too:
 > therefore the exact runnable procedure, in order, with the expected shape of each result and the
 > failure/threshold that decides pass or fail. Nothing here is a quoted transcript: no before/after
 > counts, no `ok` lines, no issue list. The procedure is the contributor's reported sequence (issue
-> #1500); the run results are theirs to produce. `evidence_level: E1` records that status:
-> contributor-reported, not independently reproduced.
+> #1500); the run results are theirs to produce. `evidence_level: E0` (self-reported, per
+> `scripts/infer_evidence_level.py`) records that status: the write-up was reviewed, the
+> behaviour it describes was not reproduced.
 
 **Step 0 — record the toolchain, because the measurement depends on it.**
 
@@ -409,7 +410,7 @@ moved the problem, and the next person inherits it with less information than be
 **What this procedure does not establish:** that the specific before/after counts in issue #1500 are
 reproducible on your tree. Rule names, enabled check categories and issue caps differ per version and
 config, and the contributor's raw output was not available in the environment where this lesson was
-written. The procedure makes their claim checkable; the claim itself remains contributor-reported (E1)
+written. The procedure makes their claim checkable; the claim itself remains contributor-reported (E0)
 until somebody runs it.
 
 ## Detection Heuristics
