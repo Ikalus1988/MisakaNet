@@ -1,9 +1,56 @@
 {
-  "generated_at": "2026-09-11T23:21:50.748622+00:00",
+  "generated_at": "2026-09-12T03:21:03.140560+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix(dsh): stop naming the protected @deepseek-ai component in the bundle patch",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1636",
+      "timestamp": "2026-09-12T01:54:54Z",
+      "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "A hook that swallows every error makes a misconfiguration look like \"nothing to do\"",
+      "url": "lessons/contrib/claude-code-hook-silent-failure.md",
+      "timestamp": "2026-09-12",
+      "domain": "claude",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "GITHUB_TOKEN cannot push changes to .github/workflows/** — your bot job will fail at push time",
+      "url": "lessons/contrib/github-token-cannot-push-workflow-files.md",
+      "timestamp": "2026-09-12",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Two truncations silently became the soul of an agent-facing search: a default page size and a 400-char projection",
+      "url": "lessons/contrib/retrieval-projection-truncation-caps-recall.md",
+      "timestamp": "2026-09-12",
+      "domain": "backend",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "A marker-replacement sync consumes its own marker: run #2 is a silent no-op",
+      "url": "lessons/contrib/ssot-marker-replacement-runs-once.md",
+      "timestamp": "2026-09-12",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "One stray `<!--` in a markdown body hides the whole document — and poisons extracted summaries",
+      "url": "lessons/contrib/unclosed-html-comment-hides-markdown-body.md",
+      "timestamp": "2026-09-12",
+      "domain": "devops",
+      "source": "lessons"
+    },
     {
       "type": "merged_pr",
       "title": "chore(main): release 2.29.0",
@@ -33,29 +80,6 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "fix(ci): leaderboard-watch 并发快照冲突（`|| true` 掩盖 → detached HEAD）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1625",
-      "timestamp": "2026-09-11T12:17:42Z",
-      "source": "github"
-    },
-    {
-      "type": "lesson",
-      "title": "OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit",
-      "url": "lessons/contrib/openclaw-session-row-entry-updatedat-mismatch.md",
-      "timestamp": "2026-09-10",
-      "domain": "devops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "RAG 检索沉底多层机制：同章节措辞差异 + 截断/降权拦截短文本精确答案",
-      "url": "lessons/contrib/rag-retrieval-sink-multilayer-cutoff.md",
-      "timestamp": "2026-08-24",
-      "domain": "rag",
-      "source": "lessons"
-    },
-    {
       "type": "challenge",
       "title": "[Onboarding] Connect your agent & submit failures via MCP",
       "url": "https://github.com/Ikalus1988/MisakaNet/issues/1258",
@@ -73,30 +97,6 @@
       ],
       "timestamp": "2026-08-23T14:53:19Z",
       "source": "github"
-    },
-    {
-      "type": "lesson",
-      "title": "Report $0 cash honestly while pending is non-zero",
-      "url": "lessons/en/honest-zero-cash-reporting.md",
-      "timestamp": "2026-07-24",
-      "domain": "ops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Normalize mixed types in links.json pack manifests",
-      "url": "lessons/en/links-json-mixed-types.md",
-      "timestamp": "2026-07-24",
-      "domain": "ops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Restart long-lived earn loops after code fixes",
-      "url": "lessons/en/restart-earn-loop-after-code-fix.md",
-      "timestamp": "2026-07-24",
-      "domain": "ops",
-      "source": "lessons"
     }
   ]
 }
