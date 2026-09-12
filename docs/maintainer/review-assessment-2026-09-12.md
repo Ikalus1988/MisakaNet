@@ -223,3 +223,50 @@ CI 脚本）各给出：**一个假阴性、一个假阳性、一条"修了但�
 
 1. **只看 CI 状态无法识别刷单**：占位 PR 的 CI 只是 `dco` 红，看起来和"忘了签核的正常 PR"一样；**必须打开 diff 看内容**。
 2. **"有门禁"与"跑了门禁"是两件事**：徽章那条我 push 前没跑测试，而门禁本来会拦住它。
+
+---
+
+## 6. 独立对抗式复核的结果（2026-09-12，复核者无本会话上下文）
+
+复核者被要求对四块各交"一个假阴性 / 一个假阳性 / 一条修了但没生效的路径"，结论很硬，**九条 finding 里我逐条复核后确认全部成立**。
+下面按处置状态分类，而不是按它给的编号。
+
+### 6.1 已修（并证明）
+
+| # | 结论 | 处置 |
+|---|---|---|
+| **F1/F2** | **生产 KV 写入全线失败**：`misakanet_register` / `/mcp/connect` / `/api/search-signal` / `/api/helpful` 均返回 CF `error code: 1101`；索引无法续期；匿名配额耗尽后既搜不了也注册不了 | 根因在**环境侧**（下面 6.2），但**"一次写失败就打掉整个端点"是我们自己的缺陷**：33 处 KV 写里 28 处是裸 `await ...put()`。已引入唯一写入器 `kvPut()`（不抛、记录、返回是否写入成功），限流计数器改为**失败放行**，register 不再发出"存不进去的 token"而是给出明确的临时失败 + 还能用什么，`refreshSearchIndex` 在写失败时返回 `{refreshed:false, reason:"kv write failed"}` 而不是谎报成功。新增 `workers/kv-write-failure.test.mjs`（6 例）钉住这个契约 |
+| **F4** | 我在同一天合入的课程**自证失效**：它把 `npm ERESOLVE peer dependency conflict → no_match` 写进 Verification，而这段文字本身进了索引 → 该查询现在返回**这篇课程**（线上第 1 条，我已复现） | 已更正课程：保留"当时确实 no_match"，并把这个**自证失效机制**写成课程里最有价值的一节（写进索引的验证样例就不再是"语料外的对照"；合入前的验证描述的是合入前的语料）。另加"楼层仍然漏水"的诚实声明（见 F3） |
+| **F5** | R8 的徽章**没有写入者**：`docs/index.html` 是纯字符串 extra-file，而 release-please 的 Generic updater 只改带 `x-release-please-version` 注解的行——本仓库一个注解都没有。模拟提示：**1 failed / 17 passed**，下一个发布 PR 会因 R8 变红（正是 R8 想防的症状） | 徽章行加注解 + 新增测试断言"恰好一行带注解且该行含版本"。**模拟 release 后 10 passed、`align_versions --check` 干净**（此前 R8 报错） |
+| **F6** | `docs/.well-known/glama.json` **线上公开且陈旧**：版本 2.27.1（落后三个版本）、"320+ lessons"（实际 389），未纳入任何清单 | 修正版本与计数，纳入 release-please extra-files、`align_versions` 卡片清单（R6）、接线测试，并把该句式注册进**计数 SSOT**（写它的人） |
+| **F9** | `/api/lessons` 泄露内部字段 `textMode`；fire-and-forget 的 `KV.put` 无 catch（未处理的 rejection） | `publicLessonRow()` 现在同时剔除 `indexText` 与 `textMode`；`kvPut()` 覆盖了那处未处理的调用。（"文档写 384 而语料 389"属历史叙述与提交信息，不追改） |
+
+### 6.2 需要你（账号侧）决定的一件事
+
+**KV 写入目前仍在失败**：修好我们的降级之后，`misakanet_register` 会诚实地报告 `storage: {node:false, token:false}` ——
+也就是说**任何人现在都无法注册**（匿名 5/天仍可用）。我无法从本机查账号用量：`wrangler` 的登录态已过期
+（`Not logged in. Your auth token has expired`），环境里也没有 `CLOUDFLARE_API_TOKEN`。
+
+两个候选原因，需要你在 Cloudflare 控制台确认：
+1. **KV 写入配额**（免费计划 1,000 写/天）：今天的流量（每日 cron + 每请求限流计数 + 我的验证 + 复核者的探测）足以打满；
+2. KV 服务侧异常。
+
+无论哪种，**"绿"的教训再次成立**：`/api/health` 之前一直回 `ok`，而每个需要存储的调用都在 500。现在它会报告
+`kv_writes`（内存统计，零额外写入——用写来做健康检查本身就可能打满配额），`/api/search-index` 也会在 20 小时窗口外报 `stale`。
+
+若确认是配额：可选的减写入手段是把"每请求一次限流计数"改成批量/内存聚合（限流本就是尽力而为），或升计划。这属产品决策，我没有擅自改。
+
+### 6.3 仍然开着（下一轮按此顺序）
+
+| # | 严重度 | 结论（我已线上复现） | 计划 |
+|---|---|---|---|
+| **F3** | 高 | **相关性下限对自然语言基本无效**：`how do I bake sourdough bread` 返回 5 条无关课程（只因 `how` 在语料里 df=5），`VISION_API_KEY env var not set` 的前 5 条全不相关、真正提到它的课程排第 9。机制：`required = max(1, min(2, pairable))` 在无法配对时退化为 1，且"有信息量"的门槛（df ≤ 30%）对常见英文词过于宽松 | 实现 **IDF 加权覆盖率下限**（匹配词要覆盖查询信息量的一部分，而不是"命中一个词就算命中"）。**必须用真实查询集标定**：正例（`docker exit code 137`、`kubectl crashloopbackoff`、`git push rejected non-fast-forward`）与负例（sourdough、VISION_API_KEY、随机串）各跑一遍，并写进测试 |
+| **F7** | 中 | 新的内联证据规则**可刷分**：空话 + 装饰性证据（代码块、版本号、`fix:`、"verified"）得 51.0–69.5，**高于**它本来要救的那份真实报料（51.7）；同样文本**加上** `## Verification` 标题反而更低（64.5 vs 69.5）——结构更好的报料被惩罚 | 让分数取决于**可核验的内容**而不是形态：例如要求证据里出现具体标识（命令 + 输出/错误码）、对"关键词堆砌"降权、修掉"有标题反而更低"的倒挂 |
+| **F8** | 中 | `gh` 鉴权 guard **既不灵又过敏**：漏掉 `if ! gh workflow run`、缩进的 `gh pr comment`、`env X=1 gh …`（本仓库 3 处真实漏检），在另一个仓库里**放行**了 3 处未鉴权的 gh 调用，却**误报**一个从不调用 gh、只是在 heredoc 里写了 gh 命令行的 step | 复刻复核者的两组 fixture 作为回归测试；把"提取 gh 调用"从正则升级为更结构化的判定（至少避开 heredoc/注释，并覆盖 `if`/`env`/间接调用），同时**明确其边界**：guard 是启发式，真正的保证来自 `tests/test_salvage_digest_script.py` 那种真跑 step 的测试 |
+
+### 6.4 复核者明确**没能**推翻的部分（值得记下）
+
+- 语料截断修复、rich `indexText` 投影、`docCount`/`textMode` 重建门条件、isolate memo 失效——**机制正确、测试充分**（15 例 + 它自己的独立探针）；
+- `$..version` 在 `server.json` 上恰好解析到两个版本字段；2.30.0 的 bot 提交**真的**提升了 registry/卡片那一组；
+- salvage digest 的三层 bug 诊断准确，且现在由**真跑 step** 的测试覆盖；运行历史与"每天失败"一致（实际自 ≥09-03）；
+- PyPI dispatch 的重试配置正确（`actions: write` 在，重试没有被 `set -e` 吃掉）——但它指出**该路径尚未在真实发布中跑过**（14:17Z 那次因 tag 已存在而跳过）。
