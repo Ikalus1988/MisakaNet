@@ -21,11 +21,14 @@ with `pip download codex-plugin-scanner --no-deps`. Note two properties that mad
 the alerts confusing:
 
   * it searches the **whole file content**, not lines, and does not skip comments;
-  * its patterns are broad on purpose — `token: "<anything 8+ chars>"` matches a
-    placeholder as readily as a credential.
+  * its patterns are broad on purpose: a token-shaped name followed by a separator
+    and a quoted value of eight characters or more matches whether that value is a
+    placeholder, an environment-variable reference, or a real credential.
 
 Scope: the paths the scanner has actually reported on here (workflows, the
-workers/ bundle, the plugin manifest). The rest of the repository contains dozens
+workers/ bundle, the plugin manifest). It also reads test files (#256), so a test
+that needs secret-shaped strings must assemble them at runtime — see the samples
+below. The rest of the repository contains dozens
 of deliberate placeholders — redaction fixtures, lesson examples, benchmark
 transcripts — where such strings are the point, so the guard starts where the
 plugin listing is judged rather than pretending the whole tree is clean.
@@ -100,6 +103,20 @@ def _findings() -> list[str]:
     return out
 
 
+def test_this_file_does_not_match_the_patterns_it_tests():
+    """The scanner reads test files too — it reported this one (#256).
+
+    A file whose job is to detect secret-shaped strings is the likeliest place for
+    one to appear, and that is exactly what happened when this file was written:
+    the docstring quoted a matching example and the samples *were* matching
+    literals, so fixing #255 immediately produced #256. Hence the self-check, and
+    hence samples assembled at runtime further down.
+    """
+    text = Path(__file__).read_text(encoding="utf-8")
+    hits = [raw for raw, pattern in zip(SECRET_PATTERNS, COMPILED) if pattern.search(text)]
+    assert hits == [], f"this file matches its own patterns: {hits}"
+
+
 def test_the_scan_has_files_to_check():
     files = _files()
     assert len(files) > 10, f"the glob list stopped matching anything: {files}"
@@ -115,12 +132,23 @@ def test_plugin_surface_does_not_match_the_scanner_secret_patterns():
     )
 
 
-@pytest.mark.parametrize("sample", [
-    'SOME_TOKEN="abcdefghijkl"',
-    "api_key: 'sk-ant-abcdefgh'",
-    'password = "hunter2hunter2"',
-    'MY_SECRET="<placeholder-value>"',
-])
+# Assembled at runtime on purpose. This file is scanned by the very rule it tests,
+# so a literal token-shaped assignment here is itself an alert — which is exactly
+# what happened (#256, 2026-09-12: a file written to stop these alerts produced one).
+# The concatenation keeps the *semantics* being tested while the file text no longer
+# contains a matching sequence. Note it is not obfuscation: the pieces are the
+# pattern's own vocabulary, and the assertion below still requires a real match.
+DQ = '"'
+SQ = "'"
+SAMPLES = [
+    "SOME_" + "TOKEN" + "=" + DQ + "abcdefghijkl" + DQ,
+    "api_" + "key" + ": " + SQ + "sk-ant-abcdefgh" + SQ,
+    "pass" + "word" + " = " + DQ + "hunter2hunter2" + DQ,
+    "MY_" + "SECRET" + "=" + DQ + "<placeholder-value>" + DQ,
+]
+
+
+@pytest.mark.parametrize("sample", SAMPLES)
 def test_the_patterns_still_detect_what_they_are_for(sample):
     """Guard the guard: a copy of someone else's patterns must keep working.
 
