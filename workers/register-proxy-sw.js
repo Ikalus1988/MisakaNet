@@ -1150,6 +1150,11 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       return {
         error: "Registration storage is temporarily unavailable (token could not be saved). Retry shortly.",
         storage: { node: nodeStored, token: tokenStored },
+        // Bounded, non-sensitive diagnostic: the storage layer's own message (e.g.
+        // "KV PUT failed: 429 ..."). Without it a failing write is undebuggable from
+        // outside — there is no log access from a browser, and this is the only
+        // channel the operator has.
+        storage_error: String(kvWriteStats.last_error || "").slice(0, 120),
         hint: "Anonymous misakanet_search / misakanet_get_lesson still work (5/day per IP).",
       };
     }
