@@ -73,8 +73,21 @@ jobs:
       - name: Dispatch the PyPI publish
         if: steps.release_tag.outputs.created == 'true'
         env:
+          # `||` falls back only when a secret is *empty*, not when the token is
+          # insufficient. The PAT in this repo carries no `actions: write`, so the
+          # dispatch failed with "HTTP 403: Resource not accessible by personal
+          # access token" on the 2.30.0 release (2026-09-12) while the built-in
+          # token — which does have `actions: write` here — was never tried.
+          # So retry explicitly instead of relying on `||`.
           GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
-        run: gh workflow run release-pypi.yml --ref main -f "version=${{ steps.release_tag.outputs.version }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.release_tag.outputs.version }}"
+          if ! gh workflow run release-pypi.yml --ref main -f "version=$VERSION"; then
+            echo "::warning::dispatch with SHELDON_PAT failed; retrying with the built-in GITHUB_TOKEN"
+            GH_TOKEN="$GITHUB_TOKEN" gh workflow run release-pypi.yml --ref main -f "version=$VERSION"
+          fi
 
       # Idempotent and *unconditional*: it rewrites docs/index.html only when the
       # badge drifted from the manifest, and the commit below only fires when the
