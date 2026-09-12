@@ -107,11 +107,116 @@ test('once built, search uses the BM25 path', async () => {
     `body-only text must be findable: ${JSON.stringify(bodyQuery.results)}`);
 });
 
+// Regression (2026-09-12): the internal lesson load called fetchLessonsFromD1()
+// with no filters, so its `parseInt(filters.limit, 10) || 100` fallback applied
+// and search only ever saw the 100 most recently updated lessons. Production's
+// own index reported docCount 100 against a 384-lesson corpus, and lessons
+// outside that window were unfindable over MCP while a local search over the
+// full corpus found them. These two tests fail if the limit comes back.
+function createLimitedD1(rows) {
+  const ordered = [...rows].sort((a, b) => String(b.updated).localeCompare(String(a.updated)));
+  return {
+    prepare(sql) {
+      const limit = Number(/LIMIT (\d+)/.exec(sql)?.[1] || 100);
+      const stmt = {
+        bind() { return stmt; },
+        async all() {
+          return {
+            results: ordered.slice(0, limit).map(r => ({ ...r, tags: JSON.stringify(r.tags || []) })),
+          };
+        },
+        async run() { return { success: true }; },
+      };
+      return stmt;
+    },
+  };
+}
+
+// 150 lessons: the newest 100 are filler, the 3 oldest carry unique vocabulary
+// that only exists below the old 100-row cut.
+const NEWEST = 'zulu';
+const OLDEST = 'quokka';
+const MANY = [
+  ...Array.from({ length: 147 }, (_, i) => ({
+    id: `filler-${i}`, title: `filler lesson ${i}`, domain: 'python', status: 'published',
+    tags: ['filler'], path: `lessons/core/filler-${i}.md`,
+    summary: `filler body ${NEWEST}`, updated: `2026-08-${String((i % 28) + 1).padStart(2, '0')}`,
+    created: 'c',
+  })),
+  {
+    id: 'old-quokka-lesson', title: 'obscure quokka failure', domain: 'ops', status: 'published',
+    tags: ['obscure'], path: 'lessons/contrib/old-quokka-lesson.md',
+    summary: `the ${OLDEST} symptom only appears in this ancient note`,
+    updated: '2024-01-01', created: 'c',
+  },
+];
+
+function createD1Env(rows) {
+  const env = createEnv([]);
+  env.MISAKANET_D1 = createLimitedD1(rows);
+  env._store.clear(); // start with a cold proxy cache so the D1 path is exercised
+  return env;
+}
+
+test('the internal lesson load asks D1 for the whole corpus, not one page', async () => {
+  const env = createD1Env(MANY);
+  const result = await refreshSearchIndex(env);
+  assert.equal(result.refreshed, true, JSON.stringify(result));
+  assert.equal(result.docCount, MANY.length,
+    'a 100-row limit silently shrank the index to the newest 100 lessons');
+
+  const stored = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
+  assert.equal(stored.docCount, MANY.length);
+  assert.equal(stored.docs.length, MANY.length);
+});
+
+test('a lesson outside the newest-100 window is still findable', async () => {
+  const env = createD1Env(MANY);
+  await refreshSearchIndex(env);
+
+  const hit = await search(env, `${OLDEST} symptom ancient lesson`);
+  assert.equal(hit.source, 'worker-bm25');
+  assert.ok(hit.results.some(r => r.id === 'old-quokka-lesson'),
+    `the oldest lesson must be indexed too: ${JSON.stringify(hit.results)}`);
+});
+
+test('a stored index built from a truncated corpus is rebuilt, not trusted', async () => {
+  const env = createD1Env(MANY);
+  // Simulate the state production was in: a "fresh" index whose docCount does
+  // not match the corpus, which the age check alone would have kept for 20h.
+  const stale = buildBM25Index(MANY.slice(0, 100));
+  await env.MISAKANET_KV.put(BM25_INDEX_KEY, JSON.stringify({
+    ...stale, built_at: new Date().toISOString(),
+  }));
+
+  const result = await refreshSearchIndex(env);
+  assert.equal(result.refreshed, true, `docCount mismatch must force a rebuild: ${JSON.stringify(result)}`);
+  assert.equal(result.docCount, MANY.length);
+});
+
 test('a fresh index is not rebuilt', async () => {
   const env = createEnv();
   await refreshSearchIndex(env);
   const again = await refreshSearchIndex(env);
   assert.deepEqual(again, { refreshed: false, reason: 'fresh' });
+});
+
+test('a rebuild drops the isolate-level index memo', async () => {
+  // loadBM25Index memoizes the index for 5 minutes in the isolate. That memo
+  // made this file's own tests disagree with each other (a search after a
+  // rebuild kept seeing the previous corpus), which is exactly what a
+  // docCount-triggered rebuild would do to production.
+  const envA = createEnv();
+  await refreshSearchIndex(envA);
+  const before = await search(envA, 'pip install timeout');
+  assert.ok(before.results.some(r => r.id === 'pip-timeout-mirror'), 'sanity: corpus A');
+
+  const envB = createEnv([LESSONS[1]]); // a different corpus, same isolate
+  await refreshSearchIndex(envB);
+  const after = await search(envB, 'pip install timeout');
+  const ids = (after.results || []).map(r => r.id);
+  assert.ok(!ids.includes('pip-timeout-mirror'),
+    `the rebuilt index must replace the memoized one: ${JSON.stringify(ids)}`);
 });
 
 test('an empty corpus is not turned into an empty index', async () => {

@@ -813,30 +813,45 @@ function buildBM25Index(lessons, { k1 = 1.5, b = 0.75 } = {}) {
 async function refreshSearchIndex(env) {
   if (!env || !env.MISAKANET_KV) return { refreshed: false, reason: "no KV" };
   try {
-    const existing = await env.MISAKANET_KV.get(BM25_INDEX_KEY, "json");
-    if (existing && existing.version === 1 && existing.built_at) {
-      const age = Date.now() - Date.parse(existing.built_at);
-      if (Number.isFinite(age) && age < BM25_INDEX_MAX_AGE_MS) {
-        return { refreshed: false, reason: "fresh" };
-      }
-    }
     const lessons = await loadLessons(env);
     if (!Array.isArray(lessons) || lessons.length === 0) {
       return { refreshed: false, reason: "no lessons" };
+    }
+    const existing = await env.MISAKANET_KV.get(BM25_INDEX_KEY, "json");
+    if (existing && existing.version === 1 && existing.built_at) {
+      const age = Date.now() - Date.parse(existing.built_at);
+      // docCount mismatch means the corpus changed (or the previous build ran
+      // against a truncated lesson list) — rebuild instead of waiting out the age.
+      if (Number.isFinite(age) && age < BM25_INDEX_MAX_AGE_MS &&
+          existing.docCount === lessons.length) {
+        return { refreshed: false, reason: "fresh" };
+      }
     }
     const index = buildBM25Index(lessons);
     await env.MISAKANET_KV.put(BM25_INDEX_KEY, JSON.stringify(index), {
       expirationTtl: BM25_INDEX_TTL_SECONDS,
     });
+    // Drop the in-isolate memo: without this, the isolate that just rebuilt the
+    // index keeps answering from the previous one for up to _BM25_MEMO_TTL_MS.
+    // Invisible while rebuilds only happened at a >20h age, but wrong as soon as
+    // a corpus-size change forces a rebuild mid-life (2026-09-12).
+    invalidateBM25Memo();
     return { refreshed: true, docCount: index.docCount, termCount: Object.keys(index.terms).length };
   } catch (error) {
     return { refreshed: false, reason: `error: ${error.message}` };
   }
 }
 
-// Load BM25 index from KV or cache
+// Load BM25 index from KV or cache. The memo is per isolate, so it only saves
+// the KV round trip; refreshSearchIndex() clears it after a rebuild.
+const _BM25_MEMO_TTL_MS = 300_000;
 let _bm25Index = null;
 let _bm25IndexExpiry = 0;
+
+function invalidateBM25Memo() {
+  _bm25Index = null;
+  _bm25IndexExpiry = 0;
+}
 
 async function loadBM25Index(env) {
   const now = Date.now();
@@ -845,10 +860,10 @@ async function loadBM25Index(env) {
   if (!env.MISAKANET_KV) return null;
 
   try {
-    const index = await env.MISAKANET_KV.get("worker_search_index", "json");
+    const index = await env.MISAKANET_KV.get(BM25_INDEX_KEY, "json");
     if (index && index.version === 1) {
       _bm25Index = index;
-      _bm25IndexExpiry = now + 300_000; // Cache for 5 minutes
+      _bm25IndexExpiry = now + _BM25_MEMO_TTL_MS;
       return index;
     }
   } catch (e) {
@@ -2070,13 +2085,22 @@ async function loadLessons(env, filters = {}) {
     if (fromD1) return fromD1;
     return [];
   }
+  // Internal callers need the WHOLE corpus, not a page of it. Without an explicit
+  // limit, fetchLessonsFromD1 falls back to `|| 100`, so search only ever saw the
+  // 100 most recently updated lessons — measured 2026-09-12: the worker's own BM25
+  // build reported docCount 100 while the repo index has 384, and lessons outside
+  // that window were unfindable over MCP (a local search over the full corpus found
+  // kubernetes-crashloopbackoff-debugging for "kubectl crashloopbackoff" while
+  // production answered no_match). The KV cache below keeps this cheap.
+  const INTERNAL_LESSON_LIMIT = 5000;
   if (d1Binding(env)) {
-    const fromD1 = await getWithCache(env, "proxy:lessons:d1", () => fetchLessonsFromD1(env));
+    const fromD1 = await getWithCache(env, "proxy:lessons:d1", () =>
+      fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT }));
     if (fromD1 && fromD1.length > 0) return fromD1;
     // D1 empty/absent — fall back to the GitHub snapshot.
     return getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
   }
-  const fromD1 = await fetchLessonsFromD1(env);
+  const fromD1 = await fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT });
   if (fromD1 && fromD1.length > 0) return fromD1;
   return getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
 }
