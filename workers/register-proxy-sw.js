@@ -887,6 +887,25 @@ function buildBM25Index(lessons, { k1 = 1.5, b = 0.75, textMode } = {}) {
 }
 
 /** Rebuild the KV index when it is missing or older than BM25_INDEX_MAX_AGE_MS. */
+// ── Corpus fingerprint from D1 ───────────────────────────────────────────────
+// The gate below could see a lesson *count* change, a projection-shape change and a
+// 20h age — but not an edit to an existing lesson. So a corrected lesson could stay
+// unsearchable (or keep being served with its old text) for up to 20 hours: found
+// 2026-09-12 when a lesson edit refused to appear in search. `synced_at` is written by
+// the D1 sync for every row, so MAX(synced_at) changes whenever the corpus is synced —
+// a cheap, exact "the corpus content changed" signal.
+async function fetchD1SyncStamp(env) {
+  const d1 = d1Binding(env);
+  if (!d1) return "";
+  try {
+    const { results } = await d1.prepare("SELECT MAX(synced_at) AS last FROM lessons").all();
+    return (results && results[0] && results[0].last) || "";
+  } catch (error) {
+    debugLog(env, 1, "sync stamp unavailable", { error: error.message });
+    return "";
+  }
+}
+
 async function refreshSearchIndex(env) {
   if (!env || !env.MISAKANET_KV) return { refreshed: false, reason: "no KV" };
   try {
@@ -895,6 +914,7 @@ async function refreshSearchIndex(env) {
       return { refreshed: false, reason: "no lessons" };
     }
     const textMode = detectTextMode(lessons);
+    const syncStamp = await fetchD1SyncStamp(env);
     const existing = await env.MISAKANET_KV.get(BM25_INDEX_KEY, "json");
     if (existing && existing.version === 1 && existing.built_at) {
       const age = Date.now() - Date.parse(existing.built_at);
@@ -904,12 +924,17 @@ async function refreshSearchIndex(env) {
       // projection existed; same reasoning, or the fix would idle for 20h.
       const modeChanged = (existing.textMode || "lean") !== textMode;
       const textChanged = (existing.textVersion || 0) !== INDEX_TEXT_VERSION;
+      // A sync that rewrote rows (a lesson edit, a correction) must reindex even when
+      // the count is unchanged.
+      const corpusChanged = !!syncStamp && existing.syncStamp !== syncStamp;
       if (Number.isFinite(age) && age < BM25_INDEX_MAX_AGE_MS &&
-          existing.docCount === lessons.length && !modeChanged && !textChanged) {
+          existing.docCount === lessons.length && !modeChanged && !textChanged &&
+          !corpusChanged) {
         return { refreshed: false, reason: "fresh" };
       }
     }
     const index = buildBM25Index(lessons, { textMode });
+    index.syncStamp = syncStamp;
     const written = await kvPut(env, BM25_INDEX_KEY, JSON.stringify(index), {
       expirationTtl: BM25_INDEX_TTL_SECONDS,
     });
@@ -3430,6 +3455,7 @@ export default {
           builtAt: index.built_at,
           textMode: index.textMode || "lean",
           textVersion: index.textVersion || 0,
+          syncStamp: index.syncStamp || "", 
           // The cron can only renew this index if KV accepts the write. When writes
           // fail, `builtAt` freezes and new lessons silently never enter search —
           // report that state instead of serving a stale index that looks fine.

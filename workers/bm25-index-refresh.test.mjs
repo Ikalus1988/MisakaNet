@@ -146,13 +146,13 @@ const MANY = [
     id: `filler-${i}`, title: `filler lesson ${i}`, domain: 'python', status: 'published',
     tags: ['filler'], path: `lessons/core/filler-${i}.md`,
     summary: `filler body ${NEWEST}`, updated: `2026-08-${String((i % 28) + 1).padStart(2, '0')}`,
-    created: 'c',
+    created: 'c', synced_at: '2026-09-12 15:38:00',
   })),
   {
     id: 'old-quokka-lesson', title: 'obscure quokka failure', domain: 'ops', status: 'published',
     tags: ['obscure'], path: 'lessons/contrib/old-quokka-lesson.md',
     summary: `the ${OLDEST} symptom only appears in this ancient note`,
-    updated: '2024-01-01', created: 'c',
+    updated: '2024-01-01', created: 'c', synced_at: '2026-09-12 15:38:00',
   },
 ];
 
@@ -175,9 +175,14 @@ function createColumnAwareD1(rows, { columns = D1_COLUMNS } = {}) {
       const selected = (/^SELECT (.+?)\s+FROM/s.exec(sql)?.[1] || '')
         .split(',').map(c => c.trim()).filter(Boolean);
       const missing = selected.filter(c => !columns.includes(c));
+      const isSyncStamp = /MAX\(synced_at\)/i.test(sql);
       const stmt = {
         bind() { return stmt; },
         async all() {
+          if (isSyncStamp) {
+            const stamps = ordered.map(r => r.synced_at).filter(Boolean).sort();
+            return { results: [{ last: stamps[stamps.length - 1] || null }] };
+          }
           if (missing.length) throw new Error(`D1_ERROR: no such column: ${missing[0]}`);
           const limit = Number(/LIMIT (\d+)/.exec(sql)?.[1] || 100);
           return {
@@ -407,4 +412,26 @@ test('a stored index built from older searchable text is rebuilt, not trusted', 
     `a text-version change must force a rebuild: ${JSON.stringify(result)}`);
   const stored = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
   assert.notEqual(stored.textVersion, 1, 'the rebuilt index must carry the current text version');
+});
+
+test('a sync that rewrote rows triggers a reindex even without a count change', async () => {
+  // An edit to an existing lesson changes neither docCount nor the projection shape,
+  // so before this the corrected text could stay out of search for up to 20h (found
+  // 2026-09-12 when a lesson correction refused to appear). The D1 sync writes
+  // `synced_at` on every row, so MAX(synced_at) is an exact "content changed" signal.
+  const rows = [...MANY];
+  const d1 = createColumnAwareD1(rows);
+  const env = createD1Env(rows, d1);
+  await refreshSearchIndex(env);
+  const first = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
+  assert.ok(first.syncStamp, 'the index must record the sync stamp it was built from');
+
+  // Same rows, same count — only the sync stamp moved (a re-sync after an edit).
+  const env2 = createD1Env(rows, createColumnAwareD1(rows));
+  await env2.MISAKANET_KV.put(BM25_INDEX_KEY, JSON.stringify({
+    ...first, built_at: new Date().toISOString(), syncStamp: '2026-09-11 03:00:00',
+  }));
+  const result = await refreshSearchIndex(env2);
+  assert.equal(result.refreshed, true,
+    `a content re-sync must force a rebuild: ${JSON.stringify(result)}`);
 });
