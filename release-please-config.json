@@ -57,6 +57,11 @@
           "type": "json",
           "path": "docs/.well-known/mcp.json",
           "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "docs/.well-known/glama.json",
+          "jsonpath": "$.version"
         }
       ]
     }

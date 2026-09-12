@@ -127,9 +127,23 @@ Three more things were needed to make the fix *stick*, each a distinct failure m
   `kubectl crashloopbackoff` → `kubernetes-crashloopbackoff-debugging`,
   `exit code 137 OOMKilled` → the same lesson (body-only text),
   `git push rejected non-fast-forward` → `erro-push-git-rejeitado-divergente`.
-- A query with no corresponding lesson still answered honestly (`npm ERESOLVE peer dependency
-  conflict` → `no_match`), which is the check that the new recall did not turn into indiscriminate
-  matching.
+- A query with no corresponding lesson answered honestly at the time of writing: `no_match` for an
+  npm peer-dependency failure. **That example invalidated itself, and the way it did is the most
+  useful thing in this section.** The lesson shipped with that query written into this very
+  paragraph, the corpus was re-indexed, and the query now returns *this lesson* as its top hit —
+  the text that documented the honest miss became the thing that matched. Two consequences worth
+  keeping: (1) a verification example that lands in the indexed text is part of the corpus, so any
+  query quoted in a lesson stops being an "absent from the corpus" control the moment the lesson is
+  merged; (2) verification done before a merge describes the corpus *before* the merge. Use a
+  synthetic token for absence checks (something no reader would ever type), and re-check control
+  queries after publishing, not only before.
+- **Still standing, and worse than the honest-miss claim suggested**: natural-language queries are
+  not rejected by the relevance floor. At the time of writing, `how do I bake sourdough bread`
+  returned five lessons (only the word `how` exists in the corpus) and `VISION_API_KEY env var not
+  set` returned five unrelated lessons with the lesson that actually mentions that variable ranked
+  ninth. A floor that admits a document matching one corpus-wide word is not a floor. This is the
+  open defect this lesson does **not** claim to have fixed; the ranking fix belongs with an
+  IDF-weighted coverage rule, calibrated on a real query set rather than on synthetic indexes.
 - The regression tests use a D1 stand-in that **only returns the columns a query asked for** and
   throws on a column it does not have (`D1_ERROR: no such column: x`). Without that, a lean query
   would still hand the test the body text and the test would pass while production stayed broken.

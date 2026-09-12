@@ -138,6 +138,12 @@ def _build_sites() -> tuple[Site, ...]:
     for _path in ("docs/.well-known/mcp.json", "docs/.well-known/agent.json",
                   "docs/.well-known/agent-card.json"):
         add(_path, _SCALE_CLAIM, "{n} indexed failure lessons", "agent-discovery description")
+    # The glama connector document uses its own phrasing. It was served live at
+    # https://misakanet.org/.well-known/glama.json while claiming "320+ … lessons"
+    # at 380+ lessons and a version three releases behind (found 2026-09-12) — so it
+    # is registered here as well as in the version line.
+    add("docs/.well-known/glama.json", rf"{_COUNT}\+ indexed failure-recovery lessons",
+        "{n}+ indexed failure-recovery lessons", "glama connector description")
     add("docs/skill.md", rf"\*\*{_COUNT}\+ lessons\*\*", "**{n}+ lessons**",
         "skill manifest tagline")
     add("JOIN.md", rf"\*\*{_COUNT}\+ lessons\*\*", "**{n}+ lessons**",

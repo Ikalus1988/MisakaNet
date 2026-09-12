@@ -57,6 +57,10 @@ WELL_KNOWN_CARDS = (
     "docs/.well-known/agent.json",
     "docs/.well-known/agent-card.json",
     "docs/.well-known/mcp.json",
+    # Served live at https://misakanet.org/.well-known/glama.json and found on
+    # 2026-09-12 three releases behind (2.27.1) with a stale lesson count: it was
+    # declared nowhere, so nothing maintained it.
+    "docs/.well-known/glama.json",
 )
 
 

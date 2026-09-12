@@ -220,7 +220,8 @@ def test_release_tool_is_wired_to_write_every_version_it_must_bump():
             declared[entry["path"]] = entry.get("jsonpath")
 
     required = ["server.json", "glama.json", "docs/.well-known/agent.json",
-                "docs/.well-known/agent-card.json", "docs/.well-known/mcp.json"]
+                "docs/.well-known/agent-card.json", "docs/.well-known/mcp.json",
+                "docs/.well-known/glama.json"]
     missing = [path for path in required if path not in declared]
     if missing:
         _test_fail("the release tool does not bump every file the registry line owns "
@@ -291,3 +292,24 @@ def test_site_badge_matches_the_manifest():
         f"expected exactly one `>vX.Y.Z<` badge in docs/index.html, found {found} — "
         "a malformed badge means a release step interpolated an empty version")
     assert found[0] == manifest, f"site badge v{found[0]} != manifest {manifest}"
+
+def test_the_site_badge_has_a_writer_in_the_release_path():
+    """R8's file must be reachable by the tool that bumps versions.
+
+    The first version of R8 checked the value but not the writer, and the gap was
+    real: `docs/index.html` is declared as a plain-string extra-file, and
+    release-please's Generic updater only touches a line carrying an
+    `x-release-please-version` annotation — the repository had none, so the 2.30.0
+    bot commit bumped glama.json, three cards, both server.json versions, pyproject
+    and the manifest while leaving the badge behind. The next release PR would then
+    have been red on R8 (1 failed / 17 passed in a simulated bump) and needed a
+    manual fix after the merge — the same "release PR cannot merge" symptom R8 was
+    written to prevent.
+    """
+    text = (REPO / "docs/index.html").read_text(encoding="utf-8")
+    annotated = [line for line in text.splitlines() if "x-release-please-version" in line]
+    assert len(annotated) == 1, (
+        "docs/index.html must carry exactly one release-please version annotation, "
+        f"otherwise the release bot cannot update the badge; found {len(annotated)}")
+    assert re.search(r">v\d+\.\d+\.\d+<", annotated[0]), (
+        f"the annotation must sit on the line carrying the version: {annotated[0][:120]}")

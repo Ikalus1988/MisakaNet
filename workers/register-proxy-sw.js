@@ -772,7 +772,10 @@ const LEAN_DESCRIPTION_CAP = 400;
 // The public listing must not ship the internal searchable body: `indexText` feeds
 // the index and the matcher, and it is dropped from every response the worker
 // builds from loadLessons().
-function publicLessonRow({ indexText, ...rest }) {
+function publicLessonRow({ indexText, textMode, ...rest }) {
+  // Both fields exist only to describe which projection produced the row; neither
+  // is part of the listing's contract (an adversarial review found `textMode`
+  // leaking here on 2026-09-12 while `indexText` was already stripped).
   return rest;
 }
 
