@@ -49,7 +49,7 @@ mcp-name: io.github.Ikalus1988/misakanet
   <!-- Smithery badge uses a shields.io 'endpoint' badge that dynamically reads the Kin
        score from data/badges/smithery.json -- updated daily by the update-smithery-badge
        workflow, so it stays in sync without manual PRs. -->
-  <a href="https://smithery.ai/servers/misakanet/misakanet"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/smithery.json" alt="Smithery"></a>
+  <a href="https://smithery.ai/servers/misakanet/misakanet"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/refs/heads/data/badges/smithery.json" alt="Smithery"></a>
   <!-- HOL badge: the link still points at hol.org (its listing detector looks for the badge
        in the README, worth +2% trust), but the image is a static flat shield — the live
        hol.org/api/... endpoint is slow/unstable through shields.io and rendered as
