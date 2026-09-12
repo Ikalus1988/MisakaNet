@@ -527,8 +527,12 @@ function filterByKind(results, kind) {
 // Everything else falls through to the existing no_match → intake path.
 //
 // The df ratio is measured against max(docCount, 20) so a tiny index (tests,
-// a young deployment) does not turn every term into a stopword.
-const RELEVANCE_MAX_DF_RATIO = 0.15;
+// a young deployment) does not turn every term into a stopword. The ratio is
+// deliberately loose (30%): token matching below already rejects the substring
+// false positives, and the ratio only has to rule out words that are everywhere
+// ("error", "fail"). A tighter 15% would drop queries like "git push failed",
+// whose terms are common but genuinely meaningful here.
+const RELEVANCE_MAX_DF_RATIO = 0.3;
 const RELEVANCE_MIN_CORPUS = 20;
 
 function relevanceFloor(termDf, docCount) {
@@ -547,11 +551,30 @@ function relevanceFloor(termDf, docCount) {
   };
 }
 
+
+// Tokens for *matching* (not for the BM25 index): lowercase, stopwords dropped,
+// short tokens dropped, hyphenated compounds expanded, and CJK runs kept whole.
+// Shared by the fallback search and the FAQ matcher so the two agree.
+//
+// Why tokens instead of `text.includes(token)`: substring matching made every
+// short query word match most of the corpus — "env" matched "environment", "set"
+// matched "setting(s)" — so an unrelated lesson (user-agent-identify-bots) kept
+// answering a VISION_API_KEY query even after the relevance floor landed. Fixing
+// the floor without fixing the matching would have been fixing the wrong layer.
+function matchTokens(text) {
+  const lower = String(text || "").toLowerCase();
+  const latin = lower.replace(/[^a-z0-9]+/g, " ").split(/\s+/)
+    .filter(t => t.length >= 2 && !BM25_STOPWORDS.has(t));
+  const cjk = lower.match(/[\u4e00-\u9fff]{2,}/g) || [];
+  return [...new Set([...latin, ...cjk])];
+}
+
 // Simple keyword-based lesson search (runs in Worker, no BM25)
 function searchLessons(lessons, query, domain, top = 5) {
   if (!Array.isArray(lessons) || !query) return [];
   const q = query.toLowerCase();
-  const qWords = [...new Set(q.split(/\s+/).filter(w => w.length > 2))];
+  const qWords = matchTokens(query);
+  if (!qWords.length) return [];
   const termDf = new Map(qWords.map(w => [w, 0]));
   const scored = [];
 
@@ -562,17 +585,19 @@ function searchLessons(lessons, query, domain, top = 5) {
     const lessonDomain = (lesson.domain || "").toLowerCase();
     const tags = Array.isArray(lesson.tags) ? lesson.tags.join(" ").toLowerCase() : "";
     const text = `${title} ${desc} ${lessonDomain} ${tags}`;
+    const docTokens = new Set(matchTokens(text));
+    const titleTokens = new Set(matchTokens(title));
 
     let score = 0;
-    if (text.includes(q)) score += 10;
+    if (q && text.includes(q)) score += 10;   // exact phrase, when the caller gives one
     const matchedTerms = [];
     for (const w of qWords) {
-      if (text.includes(w)) {
+      if (docTokens.has(w)) {
         score += 2;
         matchedTerms.push(w);
         termDf.set(w, termDf.get(w) + 1);
       }
-      if (title.includes(w)) score += 1;
+      if (titleTokens.has(w)) score += 1;
     }
     if (domain && lessonDomain === domain.toLowerCase()) score += 1;
 
@@ -2002,15 +2027,19 @@ async function fetchAnsweredQuestions(env) {
 // (answers can be up to 20k chars — carrying them in every hit would blow the
 // compact budget).
 function matchAnsweredQuestions(rows, query, detail = "compact", top = 3) {
-  const tokens = String(query || "").toLowerCase().split(/[^a-z0-9\u4e00-\u9fff]+/).filter((t) => t.length > 1);
+  const tokens = matchTokens(query);
   if (!tokens.length) return [];
+  // Same bar as the lesson search: one overlapping word is not a match. A single
+  // shared token ("code", "error") used to pull any FAQ in — "docker exit code 137"
+  // returned faq-issue-1364 for that reason (2026-09-12).
+  const requiredOverlap = Math.min(2, tokens.length);
   const fullDetail = detail === "full";
   const scored = [];
   for (const row of rows) {
-    const hay = `${row.problem || ""} ${row.answer || ""}`.toLowerCase();
+    const hayTokens = new Set(matchTokens(`${row.problem || ""} ${row.answer || ""}`));
     let overlap = 0;
-    for (const t of tokens) if (hay.includes(t)) overlap += 1;
-    if (overlap > 0) {
+    for (const t of tokens) if (hayTokens.has(t)) overlap += 1;
+    if (overlap >= requiredOverlap) {
       const answer = String(row.answer || "");
       scored.push({
         row,
