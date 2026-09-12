@@ -124,9 +124,15 @@ Three more things were needed to make the fix *stick*, each a distinct failure m
 
 - `GET /api/search-index` went from `docCount 100` to `docCount 384, textMode: rich` after the next
   cron tick, then queries that had failed returned the right lessons:
-  `kubectl crashloopbackoff` → `kubernetes-crashloopbackoff-debugging`,
-  `exit code 137 OOMKilled` → the same lesson (body-only text),
-  `git push rejected non-fast-forward` → `erro-push-git-rejeitado-divergente`.
+  a two-word Kubernetes symptom query → `kubernetes-crashloopbackoff-debugging`,
+  an OOM-kill exit code that only appears in that lesson's body → the same lesson,
+  a rejected-push phrase → `erro-push-git-rejeitado-divergente`. The queries are
+  described rather than quoted on purpose — see the note on self-defeating examples
+  below, which this section originally demonstrated by accident: the two Kubernetes
+  words were written out here, the lesson was indexed, and it then outranked
+  `kubernetes-crashloopbackoff-debugging` for its own symptom (caught 2026-09-12 while
+  calibrating the coverage floor). A lesson that quotes a query becomes a document
+  matching that query; if the query belongs to another lesson, quoting it steals it.
 - A query with no corresponding lesson answered honestly at the time of writing: `no_match` for an
   npm peer-dependency failure. **That example invalidated itself, and the way it did is the most
   useful thing in this section.** The lesson shipped with that query written into this very

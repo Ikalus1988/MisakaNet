@@ -1089,6 +1089,31 @@ function flushTraffic(env, ctx) {
   if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(work);
 }
 
+// ── Telemetry must not starve the paths that create new keys ─────────────────
+// Diagnosed 2026-09-12 from production: `misakanet_register` failed with
+//
+//     KV put() limit exceeded for the day.
+//
+// while the cron's own index write kept succeeding. That asymmetry is the tell: the
+// free tier's daily cap counts *distinct keys* — a same-key rewrite is exempt, subject
+// to one write per second — so the paths that always need a **new** key die first.
+// Registration writes `node:<id>` and `mcp_token:<token>`, both new on every call.
+//
+// Gap records create a new key per distinct unanswered query, so a day of heavy
+// searching (ours included: calibration and review traffic) can exhaust the budget
+// registration depends on. Gaps are capped per day; existing gap keys keep being
+// updated, and the cap itself is one key per day, so it consumes no extra budget.
+const TELEMETRY_NEW_KEYS_PER_DAY = 400;
+
+async function mayCreateTelemetryKey(env, dateKey) {
+  if (!env || !env.MISAKANET_KV) return false;
+  const counterKey = `telemetry:newkeys:${dateKey}`;
+  const used = parseInt((await env.MISAKANET_KV.get(counterKey, "text")) || "0", 10) || 0;
+  if (used >= TELEMETRY_NEW_KEYS_PER_DAY) return false;
+  await kvPut(env, counterKey, String(used + 1), { expirationTtl: 86400 * 3 });
+  return true;
+}
+
 async function kvPut(env, key, value, options) {
   if (!env || !env.MISAKANET_KV) return false;
   kvWriteStats.attempts += 1;
@@ -1173,6 +1198,9 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       if (!env.MISAKANET_KV) return;
       const key = `gap:${query.toLowerCase().trim()}`;
       const existing = await env.MISAKANET_KV.get(key, { type: "json" });
+      // A brand-new gap key costs a unit of the day's distinct-key budget; past the
+      // telemetry cap only existing gaps are updated, so registration keeps headroom.
+      if (!existing && !(await mayCreateTelemetryKey(env, new Date().toISOString().slice(0, 10)))) return;
       const entry = {
         query,
         count: (existing?.count || 0) + 1,
@@ -1270,7 +1298,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
 
     // Gap analysis: log zero-result queries (Issue #1164)
     if ((!results || results.length === 0) && args.query) {
-      logSearchGap(env, args.query, source).catch(() => {});
+      // Track the gap write with the runtime instead of letting it float: a
+      // fire-and-forget promise can be dropped when the isolate finishes the
+      // response (today's gap records were only "eventually" written by luck), and
+      // `waitUntil` also makes the work awaitable in tests, which is how a latent
+      // race in the gap test surfaced on 2026-09-12.
+      const gapWork = logSearchGap(env, args.query, source).catch(() => {});
+      if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(gapWork);
       // PRD ④ #1357: record knowledge-gap events for analytics.
       if (ctx) ctx.waitUntil(trackUsage(env, ctx, "no_match", { query: args.query }));
     } else if (results && results.length > 0) {

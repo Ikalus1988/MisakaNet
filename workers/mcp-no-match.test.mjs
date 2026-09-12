@@ -114,7 +114,12 @@ test('misakanet_search keeps working when results exist (no no_match)', async ()
 test('no-match search still logs the gap to KV', async () => {
   const env = createEnv(SAMPLE_LESSONS);
   const query = 'kwfzzz-unique-gap-42';
-  await worker.fetch(searchRequest(query), env);
+  // Telemetry runs in the background by design, so give the worker a ctx and wait for
+  // it. Asserting straight after `fetch` was a race that happened to win until the gap
+  // path gained an extra KV round trip (2026-09-12).
+  const pending = [];
+  await worker.fetch(searchRequest(query), env, { waitUntil: (p) => pending.push(p) });
+  await Promise.all(pending);
   const gap = await env.MISAKANET_KV.get(`gap:${query.toLowerCase().trim()}`, 'json');
   assert.ok(gap, 'gap entry should be recorded');
   assert.equal(gap.count, 1);
