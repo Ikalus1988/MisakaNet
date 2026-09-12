@@ -151,12 +151,128 @@ const MANY = [
   },
 ];
 
-function createD1Env(rows) {
+function createD1Env(rows, d1 = createLimitedD1(rows)) {
   const env = createEnv([]);
-  env.MISAKANET_D1 = createLimitedD1(rows);
+  env.MISAKANET_D1 = d1;
   env._store.clear(); // start with a cold proxy cache so the D1 path is exercised
   return env;
 }
+
+// D1 stand-in that only accepts the columns it really has and only returns the
+// columns a query asked for — the same way the deployed table behaves, so a lean
+// SELECT cannot accidentally leak the body text a rich test depends on.
+const D1_COLUMNS = ['id', 'title', 'domain', 'status', 'tags', 'path', 'summary',
+                    'problem', 'root_cause', 'solution', 'verification', 'updated', 'created'];
+function createColumnAwareD1(rows, { columns = D1_COLUMNS } = {}) {
+  const ordered = [...rows].sort((a, b) => String(b.updated || '').localeCompare(String(a.updated || '')));
+  return {
+    prepare(sql) {
+      const selected = (/^SELECT (.+?)\s+FROM/s.exec(sql)?.[1] || '')
+        .split(',').map(c => c.trim()).filter(Boolean);
+      const missing = selected.filter(c => !columns.includes(c));
+      const stmt = {
+        bind() { return stmt; },
+        async all() {
+          if (missing.length) throw new Error(`D1_ERROR: no such column: ${missing[0]}`);
+          const limit = Number(/LIMIT (\d+)/.exec(sql)?.[1] || 100);
+          return {
+            results: ordered.slice(0, limit).map(r => {
+              const out = {};
+              for (const c of selected) {
+                out[c] = c === 'tags' ? JSON.stringify(r.tags || []) : (r[c] ?? '');
+              }
+              return out;
+            }),
+          };
+        },
+        async run() { return { success: true }; },
+      };
+      return stmt;
+    },
+  };
+}
+
+// The body text lives in the D1 sections the lean projection never selected.
+const BODY_ONLY = 'OOMKilled';
+const RICH = [
+  { id: 'rich-k8s', title: 'pod keeps restarting', domain: 'ops', status: 'published',
+    tags: ['k8s'], path: 'lessons/contrib/rich-k8s.md', summary: 'a container restarts over and over',
+    problem: 'the pod shows CrashLoopBackOff within a minute of starting',
+    root_cause: `the container is killed as ${BODY_ONLY}; the limit is too low`,
+    solution: 'raise resources.limits.memory or fix the leak', verification: 'watch the pod for an hour',
+    updated: '2026-09-01', created: 'c' },
+  { id: 'rich-other', title: 'unrelated lesson', domain: 'git', status: 'published',
+    tags: ['git'], path: 'lessons/core/rich-other.md', summary: 'about rebasing',
+    problem: 'rebase conflicts', root_cause: 'diverged branches', solution: 'rebase onto the upstream',
+    verification: 'push again', updated: '2026-09-02', created: 'c' },
+];
+
+test('the internal load asks D1 for the lesson body, not just the summary', async () => {
+  const env = createD1Env(RICH, createColumnAwareD1(RICH));
+  const result = await refreshSearchIndex(env);
+  assert.equal(result.refreshed, true, JSON.stringify(result));
+  assert.equal(result.textMode, 'rich',
+    'the index is built from summary-only text without the rich projection');
+
+  const stored = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
+  assert.equal(stored.textMode, 'rich');
+
+  const hit = await search(env, `${BODY_ONLY} memory limit too low`);
+  assert.ok(hit.results.some(r => r.id === 'rich-k8s'),
+    `root_cause text must be searchable: ${JSON.stringify(hit.results)}`);
+});
+
+test('the public lesson list keeps the lean projection', async () => {
+  const env = createD1Env(RICH, createColumnAwareD1(RICH));
+  const resp = await worker.fetch(new Request('https://misakanet.org/api/lessons'), env);
+  assert.equal(resp.status, 200);
+  const payload = await resp.json();
+  const body = JSON.stringify(payload);
+  assert.ok(!body.includes(BODY_ONLY),
+    'the public API must not start shipping whole lesson bodies to anonymous callers');
+  assert.ok(!body.includes('indexText'),
+    'indexText is internal: it feeds the index and the matcher, not responses');
+  const row = payload.find(r => r.id === 'rich-k8s');
+  assert.equal(row.description, String(RICH[0].summary).slice(0, 400),
+    'the listing keeps the summary even when the body is loaded for search');
+});
+
+test('a lean index is rebuilt once body text is available', async () => {
+  const env = createD1Env(RICH, createColumnAwareD1(RICH));
+  const leanIndex = buildBM25Index(RICH.map(l => ({
+    id: l.id, title: l.title, domain: l.domain, tags: l.tags,
+    description: String(l.summary || '').slice(0, 400),
+  })), { textMode: 'lean' });
+  await env.MISAKANET_KV.put(BM25_INDEX_KEY, JSON.stringify({
+    ...leanIndex, built_at: new Date().toISOString(),
+  }));
+
+  const result = await refreshSearchIndex(env);
+  assert.equal(result.refreshed, true,
+    `a lean-text index must not be trusted once the body is available: ${JSON.stringify(result)}`);
+  assert.equal(result.textMode, 'rich');
+});
+
+test('a D1 deployment without the body columns still builds an index', async () => {
+  const leanColumns = D1_COLUMNS.filter(c => !['root_cause', 'solution', 'verification'].includes(c));
+  const env = createD1Env(RICH, createColumnAwareD1(RICH, { columns: leanColumns }));
+  const result = await refreshSearchIndex(env);
+  assert.equal(result.refreshed, true,
+    `the rich query must degrade instead of failing the build: ${JSON.stringify(result)}`);
+  assert.equal(result.docCount, RICH.length);
+  assert.equal(result.textMode, 'lean');
+});
+
+test('GET /api/search-index reports the text mode it built with', async () => {
+  const env = createD1Env(RICH, createColumnAwareD1(RICH));
+  await refreshSearchIndex(env);
+  const resp = await worker.fetch(new Request('https://misakanet.org/api/search-index'), env);
+  const data = await resp.json();
+  assert.equal(data.available, true);
+  assert.equal(data.textMode, 'rich');
+  assert.equal(data.docCount, RICH.length);
+});
+
 
 test('the internal lesson load asks D1 for the whole corpus, not one page', async () => {
   const env = createD1Env(MANY);

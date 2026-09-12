@@ -598,7 +598,9 @@ function searchLessons(lessons, query, domain, top = 5) {
     const desc = (lesson.description || "").toLowerCase();
     const lessonDomain = (lesson.domain || "").toLowerCase();
     const tags = Array.isArray(lesson.tags) ? lesson.tags.join(" ").toLowerCase() : "";
-    const text = `${title} ${desc} ${lessonDomain} ${tags}`;
+    // indexText carries the lesson body (D1 rich projection); without it the
+    // naive fallback only ever saw the summary and missed body-only queries.
+    const text = `${title} ${lesson.indexText || ""} ${desc} ${lessonDomain} ${tags}`;
     const docTokens = new Set(matchTokens(text));
     const titleTokens = new Set(matchTokens(title));
 
@@ -743,15 +745,16 @@ function searchLessonsBM25(index, query, domain, top = 5) {
 // Shape is the contract workers/*.test.mjs and searchLessonsBM25 expect:
 //   {version, built_at, docCount, avgDocLen, k1, b, terms:{t:{df,idf,docs:[{doc,tf,len}]}}, docs:[{id,title,domain,path,len}]}
 // Text fields mirror scripts/build_worker_index.py, plus `summary`/`preview` — the
-// worker's copy of a lesson carries the body in `preview`, which is what makes
-// body-only queries (e.g. "docker exit code 137") findable at all.
+// GitHub snapshot carries the body in `preview`. The D1 path has no `preview`, so
+// loadLessons() asks for the rich projection (problem/root_cause/solution) instead;
+// without it, body-only queries such as "exit code 137" match nothing.
 const BM25_INDEX_KEY = "worker_search_index";
 const BM25_INDEX_TTL_SECONDS = 86400 * 30;
 const BM25_INDEX_MAX_AGE_MS = 20 * 60 * 60 * 1000;   // refresh at most daily
 
 function lessonIndexText(lesson) {
   const parts = [];
-  for (const field of ["title", "name", "description", "summary", "problem",
+  for (const field of ["title", "name", "indexText", "description", "summary", "problem",
                        "root_cause", "solution", "preview"]) {
     if (lesson[field]) parts.push(String(lesson[field]));
   }
@@ -760,7 +763,26 @@ function lessonIndexText(lesson) {
   return parts.join(" ");
 }
 
-function buildBM25Index(lessons, { k1 = 1.5, b = 0.75 } = {}) {
+// "Rich" means the indexed text includes the lesson body, not just its summary.
+// D1 rows say so explicitly (fetchLessonsFromD1's rich projection marks them); the
+// GitHub snapshot proves it with a `preview` that carries the body. The distinction
+// is recorded on the index so a build made from summary-only text is rebuilt once
+// the body is available, instead of being trusted for another 20h.
+const LEAN_DESCRIPTION_CAP = 400;
+// The public listing must not ship the internal searchable body: `indexText` feeds
+// the index and the matcher, and it is dropped from every response the worker
+// builds from loadLessons().
+function publicLessonRow({ indexText, ...rest }) {
+  return rest;
+}
+
+function detectTextMode(lessons) {
+  return (Array.isArray(lessons) ? lessons : []).some((l) =>
+    l?.textMode === "rich" || String(l?.preview || "").length > LEAN_DESCRIPTION_CAP)
+    ? "rich" : "lean";
+}
+
+function buildBM25Index(lessons, { k1 = 1.5, b = 0.75, textMode } = {}) {
   const docs = [];
   const lengths = [];
   const termDocs = new Map();
@@ -804,6 +826,7 @@ function buildBM25Index(lessons, { k1 = 1.5, b = 0.75 } = {}) {
     avgDocLen,
     k1,
     b,
+    textMode: textMode || detectTextMode(lessons),
     terms,
     docs,
   };
@@ -817,17 +840,21 @@ async function refreshSearchIndex(env) {
     if (!Array.isArray(lessons) || lessons.length === 0) {
       return { refreshed: false, reason: "no lessons" };
     }
+    const textMode = detectTextMode(lessons);
     const existing = await env.MISAKANET_KV.get(BM25_INDEX_KEY, "json");
     if (existing && existing.version === 1 && existing.built_at) {
       const age = Date.now() - Date.parse(existing.built_at);
       // docCount mismatch means the corpus changed (or the previous build ran
       // against a truncated lesson list) — rebuild instead of waiting out the age.
+      // A textMode mismatch means the stored index was built before the richer D1
+      // projection existed; same reasoning, or the fix would idle for 20h.
+      const modeChanged = (existing.textMode || "lean") !== textMode;
       if (Number.isFinite(age) && age < BM25_INDEX_MAX_AGE_MS &&
-          existing.docCount === lessons.length) {
+          existing.docCount === lessons.length && !modeChanged) {
         return { refreshed: false, reason: "fresh" };
       }
     }
-    const index = buildBM25Index(lessons);
+    const index = buildBM25Index(lessons, { textMode });
     await env.MISAKANET_KV.put(BM25_INDEX_KEY, JSON.stringify(index), {
       expirationTtl: BM25_INDEX_TTL_SECONDS,
     });
@@ -836,7 +863,10 @@ async function refreshSearchIndex(env) {
     // Invisible while rebuilds only happened at a >20h age, but wrong as soon as
     // a corpus-size change forces a rebuild mid-life (2026-09-12).
     invalidateBM25Memo();
-    return { refreshed: true, docCount: index.docCount, termCount: Object.keys(index.terms).length };
+    return { refreshed: true, docCount: index.docCount, termCount: Object.keys(index.terms).length,
+             // Reported so the rich-text path can be verified from outside: a lean
+             // build means the extra D1 columns were unavailable (see the catch above).
+             textMode: index.textMode || "lean" };
   } catch (error) {
     return { refreshed: false, reason: `error: ${error.message}` };
   }
@@ -2026,26 +2056,71 @@ async function fetchLessonsFromD1(env, filters = {}) {
     bind.push(filters.id);
   }
   const limit = Math.min(Math.max(parseInt(filters.limit, 10) || 100, 1), 5000);
-  const sql =
-    `SELECT id, title, domain, status, tags, path, summary, problem, updated, created
-     FROM lessons` +
-    (where.length ? " WHERE " + where.join(" AND ") : "") +
-    ` ORDER BY updated DESC LIMIT ${limit}`;
-  let stmt = d1.prepare(sql);
-  if (bind.length) stmt = stmt.bind(...bind);
-  const { results } = await stmt.all();
+  // `rich` is for internal callers that index or rank the corpus (loadLessons →
+  // BM25 build, naive matcher). The lean projection truncated the lesson text to
+  // the first 400 chars of `summary`, and D1's `summary` is non-empty for almost
+  // every lesson, so the whole problem/root_cause/solution body never reached the
+  // index: "exit code 137" and "OOMKilled" (both present in
+  // kubernetes-crashloopbackoff-debugging.md) were unfindable, while the same
+  // query over data/lessons.json — whose `preview` carries the body — matched
+  // (2026-09-12). Measured cost of the rich projection over 384 lessons: index
+  // 0.35 → 1.57 MB, cached payload 0.89 MB.
+  const leanCols = "id, title, domain, status, tags, path, summary, problem, updated, created";
+  const richCols = leanCols + ", root_cause, solution, verification";
+  const run = async (cols) => {
+    let stmt = d1.prepare(
+      `SELECT ${cols}
+       FROM lessons` +
+      (where.length ? " WHERE " + where.join(" AND ") : "") +
+      ` ORDER BY updated DESC LIMIT ${limit}`);
+    if (bind.length) stmt = stmt.bind(...bind);
+    const { results } = await stmt.all();
+    return results || null;
+  };
+  let results;
+  let richApplied = false;
+  if (filters.rich) {
+    try {
+      results = await run(richCols);
+      richApplied = true;
+    } catch (error) {
+      // A D1 deployment that predates the extra columns must not break search.
+      debugLog(env, 1, "rich lesson projection unavailable, using lean", { error: error.message });
+      results = await run(leanCols);
+    }
+  } else {
+    results = await run(leanCols);
+  }
   if (!results) return null;
-  return results.map((r) => ({
-    id: r.id,
-    title: r.title,
-    domain: r.domain,
-    status: r.status,
-    path: r.path,
-    tags: safeParseTags(r.tags),
-    description: (r.summary || r.problem || "").slice(0, 400),
-    updated: r.updated,
-    created: r.created,
-  }));
+  const slice = (value, max) => (value ? String(value).slice(0, max) : "");
+  return results.map((r) => {
+    const summary = slice(r.summary, 400);
+    const row = {
+      id: r.id,
+      title: r.title,
+      domain: r.domain,
+      status: r.status,
+      path: r.path,
+      tags: safeParseTags(r.tags),
+      // `description` stays the public summary on every path: it is what
+      // /api/lessons and the search snippets show.
+      description: summary || slice(r.problem, 400),
+      updated: r.updated,
+      created: r.created,
+      // Provenance for detectTextMode(); proves which projection produced this row.
+      textMode: richApplied ? "rich" : "lean",
+    };
+    if (richApplied) {
+      // `indexText` is the searchable body and never leaves the worker: the
+      // index and the naive matcher read it, responses do not carry it.
+      // Order matters — problem (the error text) first, then the fix sections,
+      // so a cap can never truncate the symptom out of the searchable text.
+      row.indexText = [summary, slice(r.problem, 2000), slice(r.root_cause, 1200),
+                       slice(r.solution, 1200), slice(r.verification, 600)]
+        .filter(Boolean).join(" ");
+    }
+    return row;
+  });
 }
 
 function safeParseTags(raw) {
@@ -2095,12 +2170,12 @@ async function loadLessons(env, filters = {}) {
   const INTERNAL_LESSON_LIMIT = 5000;
   if (d1Binding(env)) {
     const fromD1 = await getWithCache(env, "proxy:lessons:d1", () =>
-      fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT }));
+      fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true }));
     if (fromD1 && fromD1.length > 0) return fromD1;
     // D1 empty/absent — fall back to the GitHub snapshot.
     return getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
   }
-  const fromD1 = await fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT });
+  const fromD1 = await fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true });
   if (fromD1 && fromD1.length > 0) return fromD1;
   return getWithCache(env, "proxy:lessons", () => fetchFromGitHub(env.REGISTER_TOKEN, "lessons.json", "data"));
 }
@@ -2957,7 +3032,7 @@ export default {
         }
         const token = env.REGISTER_TOKEN;
         if (!token && !d1Binding(env)) return jsonResponse({ error: "REGISTER_TOKEN not configured" }, 500);
-        const data = await loadLessons(env, hasFilters ? filters : {});
+        const data = (await loadLessons(env, hasFilters ? filters : {})).map(publicLessonRow);
         return jsonResponse(data);
       } catch (e) { return jsonResponse({ error: e.message }, 502); }
     }
@@ -3154,6 +3229,7 @@ export default {
           termCount: Object.keys(index.terms).length,
           avgDocLen: index.avgDocLen,
           builtAt: index.built_at,
+          textMode: index.textMode || "lean",
         });
       } catch {
         return jsonResponse({ available: false });
