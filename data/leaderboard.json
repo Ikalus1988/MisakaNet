@@ -1,7 +1,7 @@
 [
   {
     "login": "zsxh1990",
-    "score": 111.15
+    "score": 111.13
   },
   {
     "login": "github-actions[bot]",
@@ -84,10 +84,6 @@
     "score": 0.94
   },
   {
-    "login": "kilo",
-    "score": 0.78
-  },
-  {
     "login": "aj0070",
     "score": 0.64
   },
@@ -149,6 +145,10 @@
   },
   {
     "login": "th3slack3r",
+    "score": 0.19
+  },
+  {
+    "login": "kilo",
     "score": 0.19
   }
 ]
