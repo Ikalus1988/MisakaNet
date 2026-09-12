@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-12T03:21:03.140560+00:00",
+  "generated_at": "2026-09-12T03:30:25.115150+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
@@ -29,6 +29,14 @@
     },
     {
       "type": "lesson",
+      "title": "Clearing a Go linter backlog to zero: revive doc comments, De Morgan predicates, cascading unused deletions",
+      "url": "lessons/contrib/go-linter-cleanup-go-fix.md",
+      "timestamp": "2026-09-12",
+      "domain": "go",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
       "title": "Two truncations silently became the soul of an agent-facing search: a default page size and a 400-char projection",
       "url": "lessons/contrib/retrieval-projection-truncation-caps-recall.md",
       "timestamp": "2026-09-12",
@@ -37,18 +45,10 @@
     },
     {
       "type": "lesson",
-      "title": "A marker-replacement sync consumes its own marker: run #2 is a silent no-op",
-      "url": "lessons/contrib/ssot-marker-replacement-runs-once.md",
+      "title": "A cloned confirmation line poisons the context: loop detection must compare dialogue, not whole messages",
+      "url": "lessons/contrib/roleplay-dialogue-loop-context-poisoning.md",
       "timestamp": "2026-09-12",
-      "domain": "devops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "One stray `<!--` in a markdown body hides the whole document — and poisons extracted summaries",
-      "url": "lessons/contrib/unclosed-html-comment-hides-markdown-body.md",
-      "timestamp": "2026-09-12",
-      "domain": "devops",
+      "domain": "roleplay-engine",
       "source": "lessons"
     },
     {
