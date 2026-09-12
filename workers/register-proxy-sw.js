@@ -855,7 +855,7 @@ async function refreshSearchIndex(env) {
       }
     }
     const index = buildBM25Index(lessons, { textMode });
-    await env.MISAKANET_KV.put(BM25_INDEX_KEY, JSON.stringify(index), {
+    const written = await kvPut(env, BM25_INDEX_KEY, JSON.stringify(index), {
       expirationTtl: BM25_INDEX_TTL_SECONDS,
     });
     // Drop the in-isolate memo: without this, the isolate that just rebuilt the
@@ -863,6 +863,15 @@ async function refreshSearchIndex(env) {
     // Invisible while rebuilds only happened at a >20h age, but wrong as soon as
     // a corpus-size change forces a rebuild mid-life (2026-09-12).
     invalidateBM25Memo();
+    if (!written) {
+      // The build succeeded but the index is NOT in effect. Without this the cron
+      // reports a successful refresh while search keeps serving the previous index —
+      // which is exactly how the 2026-09-12 KV write outage froze the index at
+      // 03:30Z unnoticed, with new lessons silently unable to enter search.
+      return { refreshed: false, reason: "kv write failed",
+               docCount: index.docCount, termCount: Object.keys(index.terms).length,
+               textMode: index.textMode || "lean" };
+    }
     return { refreshed: true, docCount: index.docCount, termCount: Object.keys(index.terms).length,
              // Reported so the rich-text path can be verified from outside: a lean
              // build means the extra D1 columns were unavailable (see the catch above).
@@ -976,6 +985,40 @@ async function getIdentityAura(env, token) {
   return IDENTITY_AURA.basic;
 }
 
+// ── KV writes that cannot take the endpoint down ────────────────────────────
+// 28 of the 33 KV writes in this file were bare `await kvPut(env, ...)`.
+// On 2026-09-12 the account's KV writes began failing (every write path answered
+// CF `error code: 1101` / HTTP 500 — misakanet_register, /mcp/connect,
+// /api/search-signal, /api/helpful), and because those awaits were unguarded the
+// exception escaped `worker.fetch`: the endpoints did not degrade, they died with a
+// generic 1101. Anonymous search died on its own rate-limit counter, so an agent
+// with a fresh IP could neither search nor register — the documented escape hatch
+// was gone exactly when it was needed.
+//
+// kvPut() turns a storage failure into a reported condition: it never throws,
+// records the failure for /api/health, and returns whether the value was stored so
+// callers that must not lie (register hands out tokens) can say so.
+const kvWriteStats = { attempts: 0, failures: 0, last_error: "", last_failure_at: "", last_ok_at: "" };
+
+async function kvPut(env, key, value, options) {
+  if (!env || !env.MISAKANET_KV) return false;
+  kvWriteStats.attempts += 1;
+  try {
+    // The only place in this file that touches KV.put directly (the helper must not
+    // call itself — an earlier bulk rename of every `env.MISAKANET_KV.put(` call
+    // rewrote this line too, making kvPut infinitely recursive: RangeError, no write).
+    await env.MISAKANET_KV.put(key, value, options);
+    kvWriteStats.last_ok_at = new Date().toISOString();
+    return true;
+  } catch (error) {
+    kvWriteStats.failures += 1;
+    kvWriteStats.last_error = String(error && error.message ? error.message : error).slice(0, 200);
+    kvWriteStats.last_failure_at = new Date().toISOString();
+    debugLog(env, 1, "KV write failed", { key: String(key).slice(0, 60), error: kvWriteStats.last_error });
+    return false;
+  }
+}
+
 async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) {
   if (toolName === "misakanet_register") {
     const agentType = args.agent_type || "unknown";
@@ -985,7 +1028,9 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     const counterKey = "node_counter";
     const current = parseInt(await env.MISAKANET_KV.get(counterKey, "text") || "0");
     const nodeId = `Misaka${current + 1}`;
-    await env.MISAKANET_KV.put(counterKey, String(current + 1));
+    // The counter is best-effort: a duplicate node id is recoverable, losing the
+    // registration is not (see the check below).
+    await kvPut(env, counterKey, String(current + 1));
 
     // Generate token (cryptographically secure)
     const tokenChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
@@ -995,19 +1040,30 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     for (let i = 0; i < 32; i++) token += tokenChars[randBytes[i] % tokenChars.length];
 
     // Store registration (node data)
-    await env.MISAKANET_KV.put(`node:${nodeId}`, JSON.stringify({
+    const nodeStored = await kvPut(env, `node:${nodeId}`, JSON.stringify({
       agent_type: agentType,
       registered_at: new Date().toISOString(),
       token: token,
     }), { expirationTtl: 86400 * 30 });
 
     // Store token lookup (for auth verification)
-    await env.MISAKANET_KV.put(`mcp_token:${token}`, JSON.stringify({
+    const tokenStored = await kvPut(env, `mcp_token:${token}`, JSON.stringify({
       node_id: nodeId,
       agent_type: agentType,
       registered_at: new Date().toISOString(),
       expires: new Date(Date.now() + 86400 * 30 * 1000).toISOString(),
     }), { expirationTtl: 86400 * 30 });
+
+    // Never hand out a token that was not stored: the caller would fail on its very
+    // next authenticated call with no way to tell why. Storage trouble is temporary,
+    // so say so and let it retry, instead of returning a token and a 200.
+    if (!tokenStored || !nodeStored) {
+      return {
+        error: "Registration storage is temporarily unavailable (token could not be saved). Retry shortly.",
+        storage: { node: nodeStored, token: tokenStored },
+        hint: "Anonymous misakanet_search / misakanet_get_lesson still work (5/day per IP).",
+      };
+    }
 
     return {
       node_id: nodeId,
@@ -1029,7 +1085,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         source,
         lastSeen: new Date().toISOString(),
       };
-      await env.MISAKANET_KV.put(key, JSON.stringify(entry), { expirationTtl: 86400 * 90 });
+      await kvPut(env, key, JSON.stringify(entry), { expirationTtl: 86400 * 90 });
 
       // Track gap key in index for lifecycle management (Issue #1567)
       if (!existing) {
@@ -1037,7 +1093,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         const index = Array.isArray(indexRaw) ? indexRaw : [];
         if (!index.includes(key)) {
           index.push(key);
-          await env.MISAKANET_KV.put("gap:index", JSON.stringify(index));
+          await kvPut(env, "gap:index", JSON.stringify(index));
         }
       }
     } catch (_) {}
@@ -1094,7 +1150,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
             voice: "failure-warning",
           };
         }
-        await env.MISAKANET_KV.put(rateKey, String(count + 1), { expirationTtl: 86400 });
+        await kvPut(env, rateKey, String(count + 1), { expirationTtl: 86400 });
       }
     }
 
@@ -1242,7 +1298,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
             hint: "Register to get unlimited access: misakanet_register",
           };
         }
-        await env.MISAKANET_KV.put(rateKey, String(count + 1), { expirationTtl: 86400 });
+        await kvPut(env, rateKey, String(count + 1), { expirationTtl: 86400 });
       }
     }
     try {
@@ -1285,7 +1341,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
             hint: "Register to get unlimited access: misakanet_register",
           };
         }
-        await env.MISAKANET_KV.put(rateKey, String(count + 1), { expirationTtl: 86400 });
+        await kvPut(env, rateKey, String(count + 1), { expirationTtl: 86400 });
       }
     }
     const lessonId = args.lesson_id || (args.lesson_path || "").split("/").pop().replace(/\.md$/, "");
@@ -1460,7 +1516,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
             try {
               const ck = `intake_source_count:${String(args.source).slice(0, 40)}`;
               const cn = parseInt((await env.MISAKANET_KV.get(ck, "text")) || "0", 10) || 0;
-              await env.MISAKANET_KV.put(ck, String(cn + 1), { expirationTtl: 86400 * 30 });
+              await kvPut(env, ck, String(cn + 1), { expirationTtl: 86400 * 30 });
             } catch (_) { /* best-effort ledger (feeds #1528) */ }
           }
           return {
@@ -1554,7 +1610,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       // Remember this dedup hash → future identical submissions are rejected.
       if (env.MISAKANET_KV) {
         try {
-          await env.MISAKANET_KV.put(dedupKey, data.html_url, { expirationTtl: 86400 * 7 });
+          await kvPut(env, dedupKey, data.html_url, { expirationTtl: 86400 * 7 });
         } catch (_) {}
       }
       // PRD ⑤ §9: persist the question row — durable state + answer delivery
@@ -2294,7 +2350,7 @@ async function getWithCache(env, cacheKey, fetchFn, opts = {}) {
   // empty read must not pin a stale empty state for the TTL window.
   if (data && (!Array.isArray(data) || data.length > 0)) {
     if (env.MISAKANET_KV) {
-      try { await env.MISAKANET_KV.put(cacheKey, JSON.stringify({ ts: Date.now(), data }), { expirationTtl: Math.ceil(PROXY_CACHE_TTL / 1000) + 30 }); } catch {}
+      try { await kvPut(env, cacheKey, JSON.stringify({ ts: Date.now(), data }), { expirationTtl: Math.ceil(PROXY_CACHE_TTL / 1000) + 30 }); } catch {}
     }
   }
   return data;
@@ -2507,7 +2563,7 @@ async function recordUnsolvedSearch(env, { taskFamily, reason, day, intent } = {
     record.intents[normalizedIntent] = (record.intents[normalizedIntent] || 0) + 1;
   }
 
-  await env.MISAKANET_KV.put(kvKey, JSON.stringify(record), { expirationTtl: (UNSOLVED_WINDOW_DAYS + 7) * 86_400 });
+  await kvPut(env, kvKey, JSON.stringify(record), { expirationTtl: (UNSOLVED_WINDOW_DAYS + 7) * 86_400 });
   return { taskFamily: family, reason: normalizedReason, day: bucketDay, intent: normalizedIntent };
 }
 
@@ -2521,7 +2577,7 @@ async function recordStaleLesson(env, lessonId, day) {
   pruneUnsolvedDays(record.days);
   const bucketDay = day || unsolvedDay();
   record.days[bucketDay] = (record.days[bucketDay] || 0) + 1;
-  await env.MISAKANET_KV.put(kvKey, JSON.stringify(record), { expirationTtl: (UNSOLVED_WINDOW_DAYS + 7) * 86_400 });
+  await kvPut(env, kvKey, JSON.stringify(record), { expirationTtl: (UNSOLVED_WINDOW_DAYS + 7) * 86_400 });
 }
 
 function sumUnsolvedDays(days, windowDays) {
@@ -2707,7 +2763,7 @@ async function handleSearchSignal(request, env) {
   const rateKey = `rate:signal:${ip}`;
   const rateCount = parseInt((await env.MISAKANET_KV.get(rateKey, "text")) || "0", 10) || 0;
   if (rateCount >= 30) return jsonResponse({ error: "Rate limited. Try again later." }, 429);
-  await env.MISAKANET_KV.put(rateKey, String(rateCount + 1), { expirationTtl: 60 });
+  await kvPut(env, rateKey, String(rateCount + 1), { expirationTtl: 60 });
 
   let body;
   try { body = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
@@ -2803,13 +2859,13 @@ async function aggregateDailyTraffic(env) {
     const monthlyCount = parseInt(monthlyVal) || 0;
 
     if (dailyCount > 0) {
-      await env.MISAKANET_KV.put(monthlyKey, String(monthlyCount + dailyCount));
+      await kvPut(env, monthlyKey, String(monthlyCount + dailyCount));
       totalAggregated += dailyCount;
     }
   }
 
   // Mark today as done (TTL 48h to auto-cleanup)
-  await env.MISAKANET_KV.put(markerKey, "1", { expirationTtl: 172800 });
+  await kvPut(env, markerKey, "1", { expirationTtl: 172800 });
   console.log(`[traffic-aggregation] aggregated ${totalAggregated} counts for ${month}`);
   return { aggregated: totalAggregated, month, date: today };
 }
@@ -2842,7 +2898,7 @@ async function cleanupCoveredGaps(env) {
 
   // Update index with remaining gaps
   if (cleaned.length > 0) {
-    await env.MISAKANET_KV.put("gap:index", JSON.stringify(remaining));
+    await kvPut(env, "gap:index", JSON.stringify(remaining));
   }
 
   console.log(`[gap-lifecycle] cleaned ${cleaned.length} covered gaps, ${remaining.length} remaining`);
@@ -2926,7 +2982,7 @@ export default {
     if (env.MISAKANET_KV) {
       const counterKey = `traffic:${_cls}:${new Date().toISOString().slice(0, 10)}`;
       env.MISAKANET_KV.get(counterKey, "text").then(v => {
-        env.MISAKANET_KV.put(counterKey, String(parseInt(v || "0") + 1));
+        void kvPut(env, counterKey, String(parseInt(v || "0") + 1));
       }).catch(() => {});
     }
 
@@ -2938,6 +2994,12 @@ export default {
         hasToken: !!env.REGISTER_TOKEN,
         hasMcpToken: !!env.MCP_TOKEN,
         hasKV: !!env.MISAKANET_KV,
+        // KV write health, from this isolate's own history (no extra writes, so the
+        // probe cannot itself exhaust a quota). Added 2026-09-12 after every KV
+        // write path began failing while /api/health kept answering "ok": the
+        // service looked healthy from outside and was returning 1101 to every
+        // caller that needed storage.
+        kv_writes: kvWriteStats,
         timestamp: new Date().toISOString(),
       });
     }
@@ -3130,7 +3192,7 @@ export default {
       const kvKey = `helpful:${lessonId}`;
       const cur = parseInt(await env.MISAKANET_KV.get(kvKey, "text") || "0", 10) || 0;
       const newCount = cur + 1;
-      await env.MISAKANET_KV.put(kvKey, String(newCount));
+      await kvPut(env, kvKey, String(newCount));
       return jsonResponse({ lesson_id: lessonId, count: newCount });
     }
 
@@ -3144,7 +3206,7 @@ export default {
       const fbRateRaw = await env.MISAKANET_KV.get(fbRateKey, "text");
       const fbRateCount = fbRateRaw ? parseInt(fbRateRaw, 10) || 0 : 0;
       if (fbRateCount >= 10) return jsonResponse({ error: "Rate limited. Try again later." }, 429);
-      await env.MISAKANET_KV.put(fbRateKey, String(fbRateCount + 1), { expirationTtl: 60 });
+      await kvPut(env, fbRateKey, String(fbRateCount + 1), { expirationTtl: 60 });
 
       let fbBody;
       try { fbBody = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
@@ -3166,7 +3228,7 @@ export default {
           ip: fbIp,
         };
 
-        await env.MISAKANET_KV.put(
+        await kvPut(env, 
           `feedback:${feedbackId}`,
           JSON.stringify(record),
           { expirationTtl: 7776000 }, // 90 days
@@ -3204,7 +3266,7 @@ export default {
         if (!body.version || !body.terms || !body.docs) {
           return jsonResponse({ error: "Invalid index format" }, 400);
         }
-        await env.MISAKANET_KV.put("worker_search_index", JSON.stringify(body), {
+        await kvPut(env, "worker_search_index", JSON.stringify(body), {
           expirationTtl: 86400 * 7, // 7 days
         });
         return jsonResponse({
@@ -3230,6 +3292,12 @@ export default {
           avgDocLen: index.avgDocLen,
           builtAt: index.built_at,
           textMode: index.textMode || "lean",
+          // The cron can only renew this index if KV accepts the write. When writes
+          // fail, `builtAt` freezes and new lessons silently never enter search —
+          // report that state instead of serving a stale index that looks fine.
+          stale: !Number.isFinite(Date.parse(index.built_at)) ||
+                 Date.now() - Date.parse(index.built_at) > BM25_INDEX_MAX_AGE_MS,
+          corpusHint: "compare docCount against data/lessons.json; a frozen builtAt means the write failed",
         });
       } catch {
         return jsonResponse({ available: false });
@@ -3251,7 +3319,7 @@ export default {
       const intakeRateRaw = await env.MISAKANET_KV.get(intakeRateKey, "text");
       const intakeRateCount = intakeRateRaw ? parseInt(intakeRateRaw, 10) || 0 : 0;
       if (intakeRateCount >= 10) return jsonResponse({ error: "Rate limited (10/hour). Try again later." }, 429);
-      await env.MISAKANET_KV.put(intakeRateKey, String(intakeRateCount + 1), { expirationTtl: 3600 });
+      await kvPut(env, intakeRateKey, String(intakeRateCount + 1), { expirationTtl: 3600 });
 
       let intakeBody;
       try { intakeBody = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
@@ -3300,7 +3368,7 @@ export default {
       };
 
       // Store intake record
-      await env.MISAKANET_KV.put(`intake:${intakeId}`, JSON.stringify(record), { expirationTtl: 7776000 });
+      await kvPut(env, `intake:${intakeId}`, JSON.stringify(record), { expirationTtl: 7776000 });
 
       // Record demand signal for the task family (maps type to family)
       const FAMILY_MAP = { diagnostic: "unclassified", lesson_candidate: "lesson-feedback", friction: "unclassified", bug: "bug-report", node_join: "unclassified" };
@@ -3313,7 +3381,7 @@ export default {
       demand.days[day].count++;
       const reasonKey = sanitizeReasonKey(message);
       demand.days[day].reasons[reasonKey] = (demand.days[day].reasons[reasonKey] || 0) + 1;
-      await env.MISAKANET_KV.put(demandKey, JSON.stringify(demand), { expirationTtl: 2592000 });
+      await kvPut(env, demandKey, JSON.stringify(demand), { expirationTtl: 2592000 });
 
       console.log(`Intake ${intakeId}: type=${type} source=${source} family=${family}`);
       return jsonResponse({ accepted: true, intake_id: intakeId, consent: record.consent });
@@ -3418,7 +3486,7 @@ export default {
       const connRateRaw = await env.MISAKANET_KV.get(connRateKey, "text");
       const connRateCount = connRateRaw ? parseInt(connRateRaw, 10) || 0 : 0;
       if (connRateCount >= 3) return jsonResponse({ error: "Rate limited. Try again later." }, 429);
-      await env.MISAKANET_KV.put(connRateKey, String(connRateCount + 1), { expirationTtl: 600 });
+      await kvPut(env, connRateKey, String(connRateCount + 1), { expirationTtl: 600 });
 
       // Generate 6-char alphanumeric code (cryptographically secure)
       const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I/O/0/1 for readability
@@ -3428,7 +3496,7 @@ export default {
       for (let i = 0; i < 6; i++) code += chars[codeBytes[i] % chars.length];
 
       // Store in KV: pending, 10 min TTL
-      await env.MISAKANET_KV.put(`pair:${code}`, JSON.stringify({
+      await kvPut(env, `pair:${code}`, JSON.stringify({
         status: "pending",
         created: new Date().toISOString(),
         ip: connIp,
@@ -3456,7 +3524,7 @@ export default {
       pairData.status = "used";
       pairData.used_at = new Date().toISOString();
       pairData.used_ip = request.headers.get("CF-Connecting-IP") || "unknown";
-      await env.MISAKANET_KV.put(pairKey, JSON.stringify(pairData), { expirationTtl: 86400 });
+      await kvPut(env, pairKey, JSON.stringify(pairData), { expirationTtl: 86400 });
 
       // Generate short-lived token (24h, cryptographically secure)
       const tokenChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
@@ -3466,7 +3534,7 @@ export default {
       for (let i = 0; i < 32; i++) token += tokenChars[pairTokenBytes[i] % tokenChars.length];
 
       // Store token in KV for validation
-      await env.MISAKANET_KV.put(`mcp_token:${token}`, JSON.stringify({
+      await kvPut(env, `mcp_token:${token}`, JSON.stringify({
         created: new Date().toISOString(),
         expires: new Date(Date.now() + 86400000).toISOString(),
         ip: pairData.ip,
