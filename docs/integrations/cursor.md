@@ -1,6 +1,6 @@
 # Cursor Integration
 
-Give Cursor access to 384 indexed failure lessons from MisakaNet.
+Give Cursor access to 385 indexed failure lessons from MisakaNet.
 
 ## Setup
 

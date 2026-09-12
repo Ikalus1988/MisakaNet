@@ -34,14 +34,33 @@ LESSONS = [
 
 
 def test_repo_pages_match_the_index():
-    """The gate: every generated page equals what the current index produces."""
+    """The gate: every generated page equals what the CLI would write.
+
+    This used to call `plan(lessons)` — no slug map — while the CLI runs
+    `plan_with_slugs(lessons, load_slug_map(root))`. The two only agree while every
+    lesson's slug still equals its title-derived slug, so the moment the index
+    gained real titles (instead of slug-as-title) this gate reported 653 "missing"
+    pages that the CLI had deliberately not created: sticky URLs. A gate that
+    exercises a different entry point than the tool it guards is not a gate
+    (2026-09-12).
+    """
     lessons = json.loads((REPO / "data" / "lessons.json").read_text(encoding="utf-8"))
-    problems = blp.check(blp.plan(json.loads(json.dumps(lessons))), root=REPO)
+    known_slugs = blp.load_slug_map(REPO)
+    files, slug_map = blp.plan_with_slugs(json.loads(json.dumps(lessons)), known_slugs)
+    problems = blp.check(files, root=REPO)
     assert problems == [], (
         "generated pages drifted from data/lessons.json:\n  - "
         + "\n  - ".join(problems[:15])
         + f"\n({len(problems)} path(s)) — fix: python3 scripts/build_lesson_pages.py"
     )
+
+    # The manifest is what keeps live URLs sticky; a slug whose page vanished is a
+    # 404 that no page-level comparison would notice.
+    dead = [f"{lesson_id} -> {slug}" for lesson_id, slug in slug_map.items()
+            if f"docs/lessons/{slug}/index.html" not in files]
+    assert dead == [], f"recorded slugs with no generated page (dead URLs): {dead[:5]}"
+    manifest = json.loads((REPO / blp.MANIFEST).read_text(encoding="utf-8"))
+    assert manifest["pages"] == sorted(files), "the manifest lists a different page set"
 
 
 def test_generation_is_idempotent(tmp_path):

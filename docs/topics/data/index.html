@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Lessons — MisakaNet</title>
+<meta name="description" content="2 indexed failure lessons about data. From MisakaNet — Git-backed failure lesson network.">
+<link rel="canonical" href="https://misakanet.org/topics/data/">
+<meta property="og:title" content="Data Lessons">
+<meta property="og:description" content="2 indexed failure lessons about data. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:url" content="https://misakanet.org/topics/data/">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0a0f1d; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
+  a { color: #58a6ff; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .count { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
+  .lesson { padding: 12px 0; border-bottom: 1px solid rgba(88,166,255,0.1); }
+  .lesson a { font-weight: 600; }
+  .lesson .summary { color: #8b949e; font-size: 13px; margin-top: 4px; }
+  .back { margin-top: 32px; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>Data Lessons</h1>
+<div class="count">2 lessons in this domain</div>
+
+<div class="lesson">
+  <a href="/lessons/cross-sheet-name-merge-data-chaos/">跨 Sheet 同名合并导致数据混乱：机器人唯一标识必须带前缀</a>
+  <div class="summary">不同 Excel Sheet（如区域A/区域B）都有同名机器人（如 `R01`），直接按 `robotName` 字段聚合会把不同工位的机器人合并成一台，导致工序序列混乱、统计数据错误。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/data-capping-equals-forging-data/">数据封顶=伪造数据：超出阈值应剔除而非截断</a>
+  <div class="summary">数据分析中，当数据超出阈值（如实际节拍超过工位节拍），把超出部分"封顶"到阈值值（如写成 100%），本质上是伪造满负荷数据。后续计算基于伪造数据得出错误结论。</div>
+</div>
+<div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
+</body>
+</html>

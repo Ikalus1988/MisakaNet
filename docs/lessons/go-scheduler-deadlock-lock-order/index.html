@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>go-scheduler-deadlock-lock-order — MisakaNet</title>
+<title>Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1 — MisakaNet</title>
 <meta name="description" content="A Go application using the `go-co-op/gocron` v1 scheduler would hang indefinitely when a scheduled job tried to remove itself and schedule a new repla...">
 <link rel="canonical" href="https://misakanet.org/lessons/go-scheduler-deadlock-lock-order/">
-<meta property="og:title" content="go-scheduler-deadlock-lock-order">
+<meta property="og:title" content="Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1">
 <meta property="og:description" content="A Go application using the `go-co-op/gocron` v1 scheduler would hang indefinitely when a scheduled job tried to remove itself and schedule a new repla...">
 <meta property="og:url" content="https://misakanet.org/lessons/go-scheduler-deadlock-lock-order/">
 <style>
@@ -26,15 +26,15 @@
 </style>
 </head>
 <body>
-<h1>go-scheduler-deadlock-lock-order</h1>
-<div class="meta">Domain: <a href="/topics/contrib/">contrib</a> · <span class="evidence" title="Default on intake">Evidence E0 — Contributor self-reported</span></div>
-<div class="tags"></div>
+<h1>Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1</h1>
+<div class="meta">Domain: <a href="/topics/go/">go</a> · <span class="evidence" title="Default on intake">Evidence E0 — Contributor self-reported</span></div>
+<div class="tags"><span class="tag">deadlock</span><span class="tag">mutex</span><span class="tag">sync</span><span class="tag">scheduler</span><span class="tag">gocron</span></div>
 <div class="section">
   <h2>Summary</h2>
   <p>A Go application using the `go-co-op/gocron` v1 scheduler would hang indefinitely when a scheduled job tried to remove itself and schedule a new replacement job…</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/go-scheduler-deadlock-lock-order.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=go-scheduler-deadlock-lock-order">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 </body>
 </html>

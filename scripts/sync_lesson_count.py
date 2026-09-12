@@ -142,8 +142,6 @@ def _build_sites() -> tuple[Site, ...]:
         "skill manifest tagline")
     add("JOIN.md", rf"\*\*{_COUNT}\+ lessons\*\*", "**{n}+ lessons**",
         "contributor onboarding tagline")
-    add("JOIN.md", rf"^{_COUNT}\+ lessons \|", "{n}+ lessons |",
-        "version-info block (stars/forks in that block are hand-maintained)")
 
     # ── integration guides ──────────────────────────────────────────────────
     for _path in ("docs/integrations/cursor.md", "docs/integrations/continue.md",

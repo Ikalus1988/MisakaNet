@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>github-actions-code-injection — MisakaNet</title>
+<title>GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation — MisakaNet</title>
 <meta name="description" content="当 GitHub Actions 的 `run:` 脚本中直接使用 `${{ github.event.issue.body }}` 或 `${{ github.event.pull_request.title }}` 等用户可控变量时，攻击者可以通过构造包含 shell 元字符（如 `` ` ``...">
 <link rel="canonical" href="https://misakanet.org/lessons/github-actions-code-injection/">
-<meta property="og:title" content="github-actions-code-injection">
+<meta property="og:title" content="GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation">
 <meta property="og:description" content="当 GitHub Actions 的 `run:` 脚本中直接使用 `${{ github.event.issue.body }}` 或 `${{ github.event.pull_request.title }}` 等用户可控变量时，攻击者可以通过构造包含 shell 元字符（如 `` ` ``...">
 <meta property="og:url" content="https://misakanet.org/lessons/github-actions-code-injection/">
 <style>
@@ -26,15 +26,15 @@
 </style>
 </head>
 <body>
-<h1>github-actions-code-injection</h1>
-<div class="meta">Domain: <a href="/topics/core/">core</a> · <span class="evidence" title="Automated verification in CI">Evidence E3 — Sandbox / CI verified recovery</span></div>
-<div class="tags"></div>
+<h1>GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation</h1>
+<div class="meta">Domain: <a href="/topics/security/">security</a> · <span class="evidence" title="Automated verification in CI">Evidence E3 — Sandbox / CI verified recovery</span></div>
+<div class="tags"><span class="tag">github-actions</span><span class="tag">security</span><span class="tag">code-injection</span><span class="tag">codeql</span><span class="tag">ci</span></div>
 <div class="section">
   <h2>Summary</h2>
   <p>当 GitHub Actions 的 `run:` 脚本中直接使用 `${{ github.event.issue.body }}` 或 `${{ github.event.pull_request.title }}` 等用户可控变量时，攻击者可以通过构造包含 shell 元字符（如 `` ` ``, `$(...)`…</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/github-actions-code-injection.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=github-actions-code-injection">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 </body>
 </html>

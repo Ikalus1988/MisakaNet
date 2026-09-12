@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>fanuc-kl-err-abort-vs-err-pause — MisakaNet</title>
+<title>FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异 — MisakaNet</title>
 <meta name="description" content="在 FANUC KAREL 程序中处理 IPC（进程间通信）错误时，若未正确区分 `ERR_ABORT` 和 `ERR_PAUSE`，会导致所有运行中的任务被强制中止，进而造成程序号（Program Number）丢失、生产状态数据清空，以及需要人工干预才能恢复正常运行等严重后果。">
 <link rel="canonical" href="https://misakanet.org/lessons/fanuc-kl-err-abort-vs-err-pause/">
-<meta property="og:title" content="fanuc-kl-err-abort-vs-err-pause">
+<meta property="og:title" content="FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异">
 <meta property="og:description" content="在 FANUC KAREL 程序中处理 IPC（进程间通信）错误时，若未正确区分 `ERR_ABORT` 和 `ERR_PAUSE`，会导致所有运行中的任务被强制中止，进而造成程序号（Program Number）丢失、生产状态数据清空，以及需要人工干预才能恢复正常运行等严重后果。">
 <meta property="og:url" content="https://misakanet.org/lessons/fanuc-kl-err-abort-vs-err-pause/">
 <style>
@@ -26,15 +26,15 @@
 </style>
 </head>
 <body>
-<h1>fanuc-kl-err-abort-vs-err-pause</h1>
-<div class="meta">Domain: <a href="/topics/contrib/">contrib</a> · <span class="evidence" title="Default on intake">Evidence E0 — Contributor self-reported</span></div>
-<div class="tags"></div>
+<h1>FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异</h1>
+<div class="meta">Domain: <a href="/topics/fanuc/">fanuc</a> · <span class="evidence" title="Default on intake">Evidence E0 — Contributor self-reported</span></div>
+<div class="tags"><span class="tag">fanuc</span><span class="tag">abort</span><span class="tag">pause</span></div>
 <div class="section">
   <h2>Summary</h2>
   <p>在 FANUC KAREL 程序中处理 IPC（进程间通信）错误时，若未正确区分 `ERR_ABORT` 和 `ERR_PAUSE`，会导致所有运行中的任务被强制中止，进而造成程序号（Program Number）丢失、生产状态数据清空，以及需要人工干预才能恢复正常运行等严重后果。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/fanuc-kl-err-abort-vs-err-pause.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=fanuc-kl-err-abort-vs-err-pause">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 </body>
 </html>
