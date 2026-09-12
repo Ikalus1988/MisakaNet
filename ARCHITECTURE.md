@@ -32,7 +32,7 @@ scripts/
 ├── update_status.py      # Regenerate STATUS.md
 └── demo.tape             # VHS demo recording script
 
-lessons/                  # Shared knowledge (388+ indexed lessons)  — count auto-refreshed by scripts/sync_lesson_count.py
+lessons/                  # Shared knowledge (389+ indexed lessons)  — count auto-refreshed by scripts/sync_lesson_count.py
 reference/                # Reference documents (6 .md files)
 ```
 
