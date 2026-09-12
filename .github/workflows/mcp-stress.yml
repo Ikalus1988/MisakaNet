@@ -40,6 +40,13 @@ jobs:
       - name: Run MCP no-match tests (PRD ① intake loop)
         run: |
           node --test workers/mcp-no-match.test.mjs
+      # The whole worker suite, not a hand-picked list: this file used to name four
+      # test files, and `d1-fts-search.test.mjs` sat red on main unnoticed because it
+      # was not one of them (found 2026-09-12 — the same "a check nothing runs"
+      # pattern as the lesson counts and the page generator). The suite runs in ~4s.
+      - name: Run the full worker test suite
+        run: |
+          node --test workers/*.test.mjs
       - name: Run D1 lesson service tests (PRD ④)
         run: |
           node --test workers/d1-lesson-service.test.mjs

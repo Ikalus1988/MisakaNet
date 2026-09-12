@@ -512,11 +512,47 @@ function filterByKind(results, kind) {
   return results;
 }
 
+// ── Relevance floor (#1527 orientation, 2026-09-12) ────────────────────────
+// Ranking alone gives every query "the least bad" N lessons: asked about
+// something the corpus has never seen (a Claude Code hook crash), the search
+// answered with `user-agent-identify-bots` for a VISION_API_KEY error, and
+// `no_match` — the honest answer, with the intake guidance attached — was
+// unreachable unless the index had literally zero token hits. A false positive
+// is worse than a clean miss: the agent believes it found an answer.
+//
+// A hit now has to clear both bars:
+//   * at least one *informative* term — a query term the corpus does not use
+//     almost everywhere (document frequency ≤ RELEVANCE_MAX_DF_RATIO), and
+//   * at least min(2, terms the corpus knows at all) distinct query terms.
+// Everything else falls through to the existing no_match → intake path.
+//
+// The df ratio is measured against max(docCount, 20) so a tiny index (tests,
+// a young deployment) does not turn every term into a stopword.
+const RELEVANCE_MAX_DF_RATIO = 0.15;
+const RELEVANCE_MIN_CORPUS = 20;
+
+function relevanceFloor(termDf, docCount) {
+  const denominator = Math.max(docCount, RELEVANCE_MIN_CORPUS);
+  const informative = new Set();
+  let present = 0;
+  for (const [term, df] of termDf) {
+    if (!df) continue;
+    present += 1;
+    if (df / denominator <= RELEVANCE_MAX_DF_RATIO) informative.add(term);
+  }
+  return {
+    // 1 for a single-word query (or one the corpus knows one word of), else 2.
+    required: Math.min(2, present),
+    informative,
+  };
+}
+
 // Simple keyword-based lesson search (runs in Worker, no BM25)
 function searchLessons(lessons, query, domain, top = 5) {
   if (!Array.isArray(lessons) || !query) return [];
   const q = query.toLowerCase();
-  const qWords = q.split(/\s+/).filter(w => w.length > 2);
+  const qWords = [...new Set(q.split(/\s+/).filter(w => w.length > 2))];
+  const termDf = new Map(qWords.map(w => [w, 0]));
   const scored = [];
 
   for (const lesson of lessons) {
@@ -529,17 +565,27 @@ function searchLessons(lessons, query, domain, top = 5) {
 
     let score = 0;
     if (text.includes(q)) score += 10;
+    const matchedTerms = [];
     for (const w of qWords) {
-      if (text.includes(w)) score += 2;
+      if (text.includes(w)) {
+        score += 2;
+        matchedTerms.push(w);
+        termDf.set(w, termDf.get(w) + 1);
+      }
       if (title.includes(w)) score += 1;
     }
     if (domain && lessonDomain === domain.toLowerCase()) score += 1;
 
-    if (score > 0) scored.push({ lesson, score });
+    if (score > 0) scored.push({ lesson, score, matchedTerms });
   }
 
-  scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, top).map(({ lesson, score }) => ({
+  const floor = relevanceFloor(termDf, lessons.length);
+  const relevant = scored.filter(({ matchedTerms }) =>
+    matchedTerms.length >= floor.required &&
+    matchedTerms.some(w => floor.informative.has(w)));
+
+  relevant.sort((a, b) => b.score - a.score);
+  return relevant.slice(0, top).map(({ lesson, score }) => ({
     id: lesson.id || lesson.name || "",
     title: lesson.title || lesson.name || "",
     domain: lesson.domain || "",
@@ -589,6 +635,9 @@ function searchLessonsBM25(index, query, domain, top = 5) {
   const { docCount, avgDocLen, k1 = 1.5, b = 0.75, terms, docs } = index;
   const scores = new Float64Array(docCount);
   const matched = new Uint8Array(docCount);
+  const coverage = new Uint8Array(docCount);       // distinct query terms per doc
+  const informative = new Uint8Array(docCount);    // … that are discriminating
+  const termDf = new Map();
 
   // Score each document using BM25
   for (const term of queryTerms) {
@@ -596,6 +645,7 @@ function searchLessonsBM25(index, query, domain, top = 5) {
     if (!termData) continue;
 
     const { idf, docs: termDocs } = termData;
+    termDf.set(term, termDocs.length);
     for (const entry of termDocs) {
       const { doc, tf, len } = entry;
       // BM25 scoring formula
@@ -603,13 +653,24 @@ function searchLessonsBM25(index, query, domain, top = 5) {
       const score = idf * ((tf * (k1 + 1)) / (tf + k1 * norm));
       scores[doc] += score;
       matched[doc] = 1;
+      coverage[doc] += 1;
     }
+  }
+
+  // Relevance floor — see the note above searchLessons().
+  const floor = relevanceFloor(termDf, docCount);
+  for (const term of floor.informative) {
+    const termData = terms[term];
+    if (!termData) continue;
+    for (const entry of termData.docs) informative[entry.doc] = 1;
   }
 
   // Collect and sort results
   const results = [];
   for (let i = 0; i < docCount; i++) {
     if (!matched[i]) continue;
+    if (coverage[i] < floor.required) continue;
+    if (!informative[i]) continue;
     const doc = docs[i];
 
     // Apply domain filter
@@ -2675,7 +2736,21 @@ export default {
           const limit = Math.min(Math.max(parseInt(qLimit, 10) || 20, 1), 50);
           if (!d1) {
             // Client-side fallback when D1 is not bound
-            const allLessons = await loadLessons(env, {});
+            let allLessons;
+            try {
+              allLessons = await loadLessons(env, {});
+            } catch (e) {
+              // Neither D1, nor a warm lesson cache, nor the network: answer with an
+              // explicit hint instead of a 5xx. A bare 502 told the caller nothing.
+              // (workers/d1-fts-search.test.mjs asserts this hint and had been red on
+              // main because that file is not in the CI list — found 2026-09-12.)
+              return jsonResponse({
+                query: qSearch,
+                results: [],
+                source: "unavailable",
+                hint: "Full-text ?q= search requires the D1 service; no D1 binding, lesson cache or network is available in this environment.",
+              });
+            }
             const terms = qSearch.toLowerCase().split(/\s+/).filter(Boolean);
             const filtered = allLessons.filter(l => {
               const haystack = [l.title || "", l.summary || "", l.domain || "", ...(l.tags || [])].join(" ").toLowerCase();
