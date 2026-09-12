@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Sync BM25 search index to Worker KV.
+"""Sync BM25 search index to Worker KV (manual / forced sync).
+
+NOTE (2026-09-12): the worker now builds and stores this index by itself in its
+cron (`refreshSearchIndex` in workers/register-proxy-sw.js), which is why
+production search no longer depends on this script — and no longer silently
+degrades to the naive matcher when nobody runs it. Keep this for a forced
+rebuild; it needs the worker's SYNC_TOKEN (and the same value in the repo
+secrets to be usable from CI).
 
 This script reads the pre-computed index from a JSON file and
 uploads it to the Cloudflare Worker's KV store.
@@ -9,7 +16,7 @@ Usage:
 
 Environment variables:
     SYNC_TOKEN: Authentication token for the sync endpoint
-    WORKER_URL: Worker URL (default: https://misakanet.dev)
+    WORKER_URL: Worker URL (default: https://misakanet.org)
 """
 
 import argparse
@@ -61,8 +68,8 @@ def main():
     )
     parser.add_argument(
         "--worker-url",
-        default=os.environ.get("WORKER_URL", "https://misakanet.dev"),
-        help="Worker URL (default: WORKER_URL env or https://misakanet.dev)",
+        default=os.environ.get("WORKER_URL", "https://misakanet.org"),
+        help="Worker URL (default: WORKER_URL env or https://misakanet.org)",
     )
     parser.add_argument(
         "--sync-token",

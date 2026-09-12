@@ -730,6 +730,110 @@ function searchLessonsBM25(index, query, domain, top = 5) {
   }));
 }
 
+// ── BM25 index, built by the worker itself ─────────────────────────────────
+// The index used to be produced by scripts/build_worker_index.py and pushed to KV
+// through POST /api/search-index with an X-Sync-Token. Nothing ever ran either
+// script: no workflow called them, the KV entry carries a 7-day TTL, and the repo
+// has no SYNC_TOKEN secret — so production reported {"available": false} and every
+// search silently fell back to the naive matcher (found 2026-09-12 while auditing
+// why external queries returned unrelated lessons). The cron rebuilds it in place
+// instead: no secret to configure, no external runner to forget, and a TTL that
+// something actually renews.
+//
+// Shape is the contract workers/*.test.mjs and searchLessonsBM25 expect:
+//   {version, built_at, docCount, avgDocLen, k1, b, terms:{t:{df,idf,docs:[{doc,tf,len}]}}, docs:[{id,title,domain,path,len}]}
+// Text fields mirror scripts/build_worker_index.py, plus `summary`/`preview` — the
+// worker's copy of a lesson carries the body in `preview`, which is what makes
+// body-only queries (e.g. "docker exit code 137") findable at all.
+const BM25_INDEX_KEY = "worker_search_index";
+const BM25_INDEX_TTL_SECONDS = 86400 * 30;
+const BM25_INDEX_MAX_AGE_MS = 20 * 60 * 60 * 1000;   // refresh at most daily
+
+function lessonIndexText(lesson) {
+  const parts = [];
+  for (const field of ["title", "name", "description", "summary", "problem",
+                       "root_cause", "solution", "preview"]) {
+    if (lesson[field]) parts.push(String(lesson[field]));
+  }
+  if (Array.isArray(lesson.tags)) parts.push(...lesson.tags.map(String));
+  if (lesson.domain) parts.push(String(lesson.domain));
+  return parts.join(" ");
+}
+
+function buildBM25Index(lessons, { k1 = 1.5, b = 0.75 } = {}) {
+  const docs = [];
+  const lengths = [];
+  const termDocs = new Map();
+  lessons.forEach((lesson, i) => {
+    const tokens = bm25Tokenize(lessonIndexText(lesson));
+    const len = tokens.length;
+    lengths.push(len);
+    docs.push({
+      id: lesson.id || `doc_${i}`,
+      title: lesson.title || lesson.name || "",
+      domain: lesson.domain || "",
+      path: lesson.url || lesson.path || "",
+      len,
+    });
+    const tf = new Map();
+    for (const token of tokens) tf.set(token, (tf.get(token) || 0) + 1);
+    for (const [term, count] of tf) {
+      if (!termDocs.has(term)) termDocs.set(term, []);
+      termDocs.get(term).push({ doc: i, tf: count, len });
+    }
+  });
+
+  const docCount = lessons.length;
+  const avgDocLen = docCount
+    ? Math.round((lengths.reduce((sum, n) => sum + n, 0) / docCount) * 10) / 10
+    : 0;
+  const terms = {};
+  for (const [term, entries] of termDocs) {
+    const df = entries.length;
+    // BM25 IDF: log((N - df + 0.5) / (df + 0.5) + 1)
+    terms[term] = {
+      df,
+      idf: Math.round(Math.log((docCount - df + 0.5) / (df + 0.5) + 1) * 10000) / 10000,
+      docs: entries,
+    };
+  }
+  return {
+    version: 1,
+    built_at: new Date().toISOString(),
+    docCount,
+    avgDocLen,
+    k1,
+    b,
+    terms,
+    docs,
+  };
+}
+
+/** Rebuild the KV index when it is missing or older than BM25_INDEX_MAX_AGE_MS. */
+async function refreshSearchIndex(env) {
+  if (!env || !env.MISAKANET_KV) return { refreshed: false, reason: "no KV" };
+  try {
+    const existing = await env.MISAKANET_KV.get(BM25_INDEX_KEY, "json");
+    if (existing && existing.version === 1 && existing.built_at) {
+      const age = Date.now() - Date.parse(existing.built_at);
+      if (Number.isFinite(age) && age < BM25_INDEX_MAX_AGE_MS) {
+        return { refreshed: false, reason: "fresh" };
+      }
+    }
+    const lessons = await loadLessons(env);
+    if (!Array.isArray(lessons) || lessons.length === 0) {
+      return { refreshed: false, reason: "no lessons" };
+    }
+    const index = buildBM25Index(lessons);
+    await env.MISAKANET_KV.put(BM25_INDEX_KEY, JSON.stringify(index), {
+      expirationTtl: BM25_INDEX_TTL_SECONDS,
+    });
+    return { refreshed: true, docCount: index.docCount, termCount: Object.keys(index.terms).length };
+  } catch (error) {
+    return { refreshed: false, reason: `error: ${error.message}` };
+  }
+}
+
 // Load BM25 index from KV or cache
 let _bm25Index = null;
 let _bm25IndexExpiry = 0;
@@ -3605,6 +3709,14 @@ async function getCode() {
         console.error("[gap-lifecycle] failed", e.message)
       ));
     }
+    // BM25 search index: without this the worker's only search is the naive
+    // fallback (see the note above BM25_INDEX_KEY). Reported in logs either way so
+    // "did the index ever get built?" is answerable from the cron history.
+    if (env.MISAKANET_KV) {
+      ctx.waitUntil(refreshSearchIndex(env).then(r =>
+        console.log("[bm25-index]", JSON.stringify(r))
+      ).catch(e => console.error("[bm25-index] failed", e.message)));
+    }
   },
 };
 
@@ -3681,6 +3793,9 @@ export {
   handleReputationLeaderboard,
   handleUnsolvedMap,
   handlePrGeniusStats,
+  buildBM25Index,
+  refreshSearchIndex,
+  BM25_INDEX_KEY,
   recordStaleLesson,
   recordUnsolvedSearch,
   sanitizeReasonKey,
