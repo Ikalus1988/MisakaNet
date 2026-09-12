@@ -10,6 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
+    # Every other workflow that shells out to `gh` exports GH_TOKEN; this one did
+    # not, so `gh` ran unauthenticated and exited 4. The step runs under `bash -e`
+    # and the first call had `2>/dev/null`, so the failure was silent: the digest
+    # failed every day from at least 2026-09-09 without a readable reason, and the
+    # salvage queue it exists to surface was never surfaced.
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
@@ -25,7 +32,7 @@ jobs:
             --label "auto-rejected" \
             --state open \
             --json number,title,labels,createdAt \
-            --limit 50 2>/dev/null)
+            --limit 50)
 
           if [ "$ISSUES" = "[]" ] || [ -z "$ISSUES" ]; then
             echo "No rejected issues found."
@@ -71,11 +78,14 @@ jobs:
           echo -e "$DIGEST" > /tmp/salvage_digest.md
 
           # Post as issue comment or create new issue
+          # `--jq` instead of piping through python3: the previous one-liner called
+          # json.load(sys.stdin) twice, and the second call reads an exhausted
+          # stream (JSONDecodeError on any non-empty result).
           DIGEST_ISSUE=$(gh issue list --repo ${{ github.repository }} \
             --label "salvage-digest" \
             --state open \
             --json number \
-            --limit 1 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['number'] if json.load(sys.stdin) else '')")
+            --limit 1 --jq '.[0].number // ""')
 
           if [ -n "$DIGEST_ISSUE" ]; then
             # Update existing issue
@@ -96,7 +106,7 @@ jobs:
             --label "auto-rejected" \
             --state open \
             --json number,createdAt \
-            --limit 100 2>/dev/null)
+            --limit 100)
 
           echo "$ISSUES" | python3 -c "
           import sys, json
@@ -112,5 +122,5 @@ jobs:
           " | while read ISSUE_NUM; do
             gh issue close $ISSUE_NUM --repo ${{ github.repository }} \
               --comment "Auto-closed after 30 days. This issue was auto-rejected and not salvaged." \
-              --reason "not-planned" 2>/dev/null || true
+              --reason "not-planned" || true
           done
