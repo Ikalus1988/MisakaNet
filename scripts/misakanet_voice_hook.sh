@@ -10,11 +10,13 @@
 #   }]
 #
 # The hook reads JSON from stdin (MCP tool result) and plays the
-# corresponding MP3 from docs/assets/voice/ via afplay (macOS).
+# corresponding MP3 from docs/assets/voice/.
 
 set -euo pipefail
 
-VOICE_DIR="$(cd "$(dirname "$0")/../docs/assets/voice" && pwd)"
+[ "${MISAKANET_VOICE:-1}" = "0" ] && exit 0
+
+VOICE_DIR="${MISAKANET_VOICE_DIR:-$(cd "$(dirname "$0")/../docs/assets/voice" && pwd)}"
 
 # Read stdin (tool result JSON)
 INPUT=$(cat)
@@ -42,6 +44,8 @@ esac
 
 [ -f "$FILE" ] || exit 0
 
+[ "${MISAKANET_VOICE_DRY_RUN:-0}" = "1" ] && printf '%s\n' "$VOICE" && exit 0
+
 # Play audio (non-blocking, suppress errors from headless environments)
 if command -v afplay &>/dev/null; then
     # macOS
@@ -52,10 +56,12 @@ elif command -v aplay &>/dev/null; then
 elif command -v paplay &>/dev/null; then
     # Linux (PulseAudio)
     paplay "$FILE" &>/dev/null &
-elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+elif [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* || "$OSTYPE" == win32* ]]; then
     # Windows (Git Bash / MSYS2)
-    powershell -Command "\$wmp = New-Object -ComObject WMPlayer.OCX; \$wmp.URL = '$FILE'; \$wmp.controls.play(); Start-Sleep -Milliseconds 200" &>/dev/null &
+    WINDOWS_FILE=$(cygpath -w "$FILE" 2>/dev/null || printf '%s' "$FILE")
+    powershell -NoProfile -Command "Start-Process -FilePath \"\$env:ProgramFiles\\Windows Media Player\\wmplayer.exe\" -ArgumentList @('/play', '$WINDOWS_FILE')" &>/dev/null &
 elif command -v powershell.exe &>/dev/null; then
     # Windows (WSL)
-    powershell.exe -Command "\$wmp = New-Object -ComObject WMPlayer.OCX; \$wmp.URL = '$(wslpath -w "$FILE")'; \$wmp.controls.play(); Start-Sleep -Milliseconds 200" &>/dev/null &
+    WINDOWS_FILE=$(wslpath -w "$FILE")
+    powershell.exe -NoProfile -Command "Start-Process -FilePath \"\$env:ProgramFiles\\Windows Media Player\\wmplayer.exe\" -ArgumentList @('/play', '$WINDOWS_FILE')" &>/dev/null &
 fi

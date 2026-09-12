@@ -50,8 +50,37 @@ Located at `docs/assets/voice/`:
 
 - macOS: `afplay` (built-in)
 - Linux: `aplay` or `paplay` (ALSA/PulseAudio)
+- Windows: Windows Media Player (included with standard Windows installations)
 - Python 3 (for JSON parsing in hook)
+
+## Windows setup and verification
+
+Use either native Windows hook in Claude Code settings:
+
+```json
+"command": "powershell -File C:\\path\\to\\MisakaNet\\scripts\\misakanet_voice_hook.ps1"
+```
+
+or the batch wrapper:
+
+```json
+"command": "C:\\path\\to\\MisakaNet\\scripts\\misakanet_voice_hook.bat"
+```
+
+The Bash hook also detects Git Bash, MSYS2, Cygwin, and WSL, converts the MP3
+path when necessary, and starts Windows Media Player.
+
+To verify a valid mapping without playing sound, set `MISAKANET_VOICE_DRY_RUN=1`.
+For example, in PowerShell:
+
+```powershell
+$env:MISAKANET_VOICE_DRY_RUN = '1'
+'{"voice":"connect-success"}' | .\scripts\misakanet_voice_hook.ps1
+```
+
+It prints `connect-success` and exits with status 0. Unknown voices, malformed
+JSON, and payloads without a `voice` field exit successfully without output.
 
 ## Disabling
 
-Remove the hook from `settings.json` or set `MISAKANET_VOICE=0` in environment.
+Remove the hook from `settings.json` or set `MISAKANET_VOICE=0` in the environment.
