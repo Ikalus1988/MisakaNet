@@ -1,27 +1,27 @@
 [
   {
     "login": "zsxh1990",
-    "score": 111.12
+    "score": 110.62
   },
   {
     "login": "github-actions[bot]",
-    "score": 7.78
+    "score": 7.77
   },
   {
     "login": "s6pa1rta3n-lab",
     "score": 3.74
   },
   {
-    "login": "2lll5",
-    "score": 3.05
-  },
-  {
     "login": "liona can",
     "score": 3.03
   },
   {
+    "login": "2lll5",
+    "score": 3.03
+  },
+  {
     "login": "laurentketterle-hub",
-    "score": 2.62
+    "score": 2.6
   },
   {
     "login": "yunaremaia",
@@ -29,11 +29,7 @@
   },
   {
     "login": "hjqcan",
-    "score": 2.07
-  },
-  {
-    "login": "ghzhost",
-    "score": 2.04
+    "score": 2.05
   },
   {
     "login": "mr-neutr0n",
@@ -44,12 +40,16 @@
     "score": 1.79
   },
   {
+    "login": "ghzhost",
+    "score": 1.73
+  },
+  {
     "login": "tomasbogado203-bit",
-    "score": 1.61
+    "score": 1.58
   },
   {
     "login": "knowaguy4u-cell",
-    "score": 1.4
+    "score": 1.39
   },
   {
     "login": "misakanet agent",
@@ -60,16 +60,16 @@
     "score": 1.0
   },
   {
-    "login": "wasim-builds",
-    "score": 0.99
-  },
-  {
     "login": "kveita",
     "score": 0.99
   },
   {
+    "login": "wasim-builds",
+    "score": 0.97
+  },
+  {
     "login": "elevasyncsolutions-jpg",
-    "score": 0.96
+    "score": 0.95
   },
   {
     "login": "tmtproductions",
@@ -77,7 +77,7 @@
   },
   {
     "login": "simultech369",
-    "score": 0.95
+    "score": 0.94
   },
   {
     "login": "hummern",
@@ -89,7 +89,7 @@
   },
   {
     "login": "misakanet-agent",
-    "score": 0.58
+    "score": 0.57
   },
   {
     "login": "pnpn1212",
@@ -125,7 +125,7 @@
   },
   {
     "login": "lincai505011-ops",
-    "score": 0.22
+    "score": 0.21
   },
   {
     "login": "bilaldeveloper4312",
@@ -141,14 +141,10 @@
   },
   {
     "login": "ankitaadvitot",
-    "score": 0.2
-  },
-  {
-    "login": "th3slack3r",
     "score": 0.19
   },
   {
-    "login": "kilo",
+    "login": "th3slack3r",
     "score": 0.19
   }
 ]
