@@ -5,8 +5,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
 
-const TOKEN = 'content-suspicion-test-token';
+const TOKEN = testToken('content-suspicion');
 
 const CLEAN_LESSONS = [
   {
@@ -101,7 +102,7 @@ test('get_lesson flags a suspicious body and still returns the content', async (
   try {
     const result = await toolResult(await worker.fetch(
       mcpRequest('misakanet_get_lesson', { id: 'polluted-lesson' }),
-      createEnv(CLEAN_LESSONS, { REGISTER_TOKEN: 'gh-test-token' }),
+      createEnv(CLEAN_LESSONS, { REGISTER_TOKEN: TOKEN }),
     ));
     assert.ok(result.content, 'content must still be returned');
     assert.equal(result.suspicious, true);
@@ -121,7 +122,7 @@ test('clean get_lesson bodies carry no suspicion flag', async () => {
   try {
     const result = await toolResult(await worker.fetch(
       mcpRequest('misakanet_get_lesson', { id: 'pip-timeout-mirror' }),
-      createEnv(CLEAN_LESSONS, { REGISTER_TOKEN: 'gh-test-token' }),
+      createEnv(CLEAN_LESSONS, { REGISTER_TOKEN: TOKEN }),
     ));
     assert.equal(result.suspicious, undefined);
     assert.ok(result.trust_notice);

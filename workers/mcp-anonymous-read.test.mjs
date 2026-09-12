@@ -5,8 +5,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
 
-const TOKEN = 'anon-test-token';
+const TOKEN = testToken('anon');
 
 // KV store with a seedable counter map so tests can simulate quota exhaustion.
 function createEnv(seed = {}) {

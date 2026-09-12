@@ -4,8 +4,9 @@ import assert from 'node:assert/strict';
 import { performance } from 'node:perf_hooks';
 import test from 'node:test';
 import worker, { MAX_MCP_REQUEST_BYTES } from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
 
-const TOKEN = 'stress-test-token';
+const TOKEN = testToken('stress');
 const env = { MCP_TOKEN: TOKEN, MCP_VERSION: 'stress-test' };
 const metrics = [];
 
@@ -127,7 +128,7 @@ test('returns stable errors under mixed invalid load', async () => {
 test('accepts a newly registered KV token from the write_lesson Bearer header', async (t) => {
   t.after(() => t.mock.restoreAll());
   const kv = new MemoryKv();
-  const testEnv = { MISAKANET_KV: kv, REGISTER_TOKEN: 'github-test-token' };
+  const testEnv = { MISAKANET_KV: kv, REGISTER_TOKEN: TOKEN };
   const registerResponse = await worker.fetch(toolCall(
     1,
     'misakanet_register',
@@ -137,7 +138,7 @@ test('accepts a newly registered KV token from the write_lesson Bearer header', 
 
   t.mock.method(globalThis, 'fetch', async (input, init) => {
     assert.equal(String(input), 'https://api.github.com/repos/Ikalus1988/MisakaNet/issues');
-    assert.equal(init.headers.Authorization, 'Bearer github-test-token');
+    assert.equal(init.headers.Authorization, `Bearer ${TOKEN}`);
     return new Response(JSON.stringify({
       number: 1240,
       html_url: 'https://github.com/Ikalus1988/MisakaNet/issues/1240',

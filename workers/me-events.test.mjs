@@ -3,8 +3,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
 
-const TOKEN = 'me-events-token';
+const TOKEN = testToken('me-events');
 
 // Global fetch mock: regression_queries.json returns configurable data;
 // lesson-content fetches return 404 (no cross-node confirmation in tests).

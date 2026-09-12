@@ -8,10 +8,11 @@ import test from 'node:test';
 import worker, {
   handlePrGeniusStats,
 } from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
 
 test('handlePrGeniusStats returns statistics from mock GitHub data', async () => {
   const mockEnv = {
-    REGISTER_TOKEN: 'fake-token',
+    REGISTER_TOKEN: testToken('pr-genius'),
     MISAKANET_KV: null,
   };
 

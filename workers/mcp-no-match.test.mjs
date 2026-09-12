@@ -4,8 +4,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
 
-const TOKEN = 'no-match-test-token';
+const TOKEN = testToken('no-match');
 const TODAY = new Date().toISOString().slice(0, 10);
 
 // Seed KV so search never hits GitHub: a proxy:lessons cache entry (fresh TTL)

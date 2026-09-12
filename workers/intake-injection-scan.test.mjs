@@ -6,15 +6,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
 
-const TOKEN = 'intake-injection-test-token';
+const TOKEN = testToken('intake-injection');
 
 function createEnv() {
   const store = new Map();
   return {
     MCP_TOKEN: TOKEN,
     MCP_VERSION: 'intake-injection-test',
-    REGISTER_TOKEN: 'gh-test-token',
+    REGISTER_TOKEN: TOKEN,
     MISAKANET_KV: {
       async get(key, type) {
         if (!store.has(key)) return null;

@@ -4,8 +4,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
 
-const TOKEN = 'd1-test-token';
+const TOKEN = testToken('d1');
 
 // D1 stub: prepare(sql).bind(...).all() filters the in-memory rows for the
 // query shapes used by the worker: full scan, WHERE path=, WHERE id=,

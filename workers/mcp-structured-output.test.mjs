@@ -6,8 +6,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
 
-const TOKEN = 'structured-output-test-token';
+const TOKEN = testToken('structured-output');
 
 const SAMPLE_LESSONS = [
   {

@@ -4,6 +4,10 @@ import {
   IDENTITY_AURA,
   getIdentityAura,
 } from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
+
+// One token for the whole file: the helpers below build requests from it.
+const TOKEN = testToken('identity-aura');
 
 function createFakeKV(seed = {}) {
   const store = new Map(Object.entries(seed));
@@ -34,25 +38,25 @@ test('IDENTITY_AURA defines all three badge types', () => {
 // ── getIdentityAura: static token ──
 
 test('static MCP_TOKEN yields the public read-only badge', async () => {
-  const env = { MCP_TOKEN: 'static-secret-token', MISAKANET_KV: createFakeKV() };
-  const aura = await getIdentityAura(env, 'static-secret-token');
+  const env = { MCP_TOKEN: TOKEN, MISAKANET_KV: createFakeKV() };
+  const aura = await getIdentityAura(env, TOKEN);
   assert.equal(aura, IDENTITY_AURA.static_token);
 });
 
 test('missing token falls back to the static badge (no KV needed)', async () => {
-  const env = { MCP_TOKEN: 'static-secret-token' };
+  const env = { MCP_TOKEN: TOKEN };
   const aura = await getIdentityAura(env, null);
   assert.equal(aura, IDENTITY_AURA.static_token);
 });
 
 test('no KV namespace falls back to the static badge', async () => {
-  const env = { MCP_TOKEN: 'static-secret-token' };
-  const aura = await getIdentityAura(env, 'static-secret-token');
+  const env = { MCP_TOKEN: TOKEN };
+  const aura = await getIdentityAura(env, TOKEN);
   assert.equal(aura, IDENTITY_AURA.static_token);
 });
 
 test('wrong static token without pairing identity falls back to basic badge', async () => {
-  const env = { MCP_TOKEN: 'static-secret-token', MISAKANET_KV: createFakeKV() };
+  const env = { MCP_TOKEN: TOKEN, MISAKANET_KV: createFakeKV() };
   const aura = await getIdentityAura(env, 'wrong-token');
   assert.equal(aura, IDENTITY_AURA.basic);
 });
@@ -64,7 +68,7 @@ test('pairing token with registered identity yields the failure-memory badge', a
     'mcp_token:mcp_test123': JSON.stringify({ ip: '203.0.113.7' }),
     'identity:203.0.113.7': JSON.stringify({ status: 'basic' }),
   });
-  const env = { MCP_TOKEN: 'static-secret-token', MISAKANET_KV: kv };
+  const env = { MCP_TOKEN: TOKEN, MISAKANET_KV: kv };
   const aura = await getIdentityAura(env, 'mcp_test123');
   assert.equal(aura, IDENTITY_AURA.basic);
 });
@@ -73,7 +77,7 @@ test('pairing token without identity record falls back to the basic badge', asyn
   const kv = createFakeKV({
     'mcp_token:mcp_test123': JSON.stringify({ ip: '203.0.113.7' }),
   });
-  const env = { MCP_TOKEN: 'static-secret-token', MISAKANET_KV: kv };
+  const env = { MCP_TOKEN: TOKEN, MISAKANET_KV: kv };
   const aura = await getIdentityAura(env, 'mcp_test123');
   assert.equal(aura, IDENTITY_AURA.basic);
 });
@@ -85,14 +89,14 @@ test('upgraded identity yields the Japanese AIM拡散力場 badge', async () => 
     'mcp_token:mcp_test123': JSON.stringify({ ip: '203.0.113.7' }),
     'identity:203.0.113.7': JSON.stringify({ status: 'upgraded' }),
   });
-  const env = { MCP_TOKEN: 'static-secret-token', MISAKANET_KV: kv };
+  const env = { MCP_TOKEN: TOKEN, MISAKANET_KV: kv };
   const aura = await getIdentityAura(env, 'mcp_test123');
   assert.equal(aura, IDENTITY_AURA.upgraded);
   assert.ok(aura.includes('AIM拡散力場'));
 });
 
 test('unknown pairing token falls back to the basic badge', async () => {
-  const env = { MCP_TOKEN: 'static-secret-token', MISAKANET_KV: createFakeKV() };
+  const env = { MCP_TOKEN: TOKEN, MISAKANET_KV: createFakeKV() };
   const aura = await getIdentityAura(env, 'mcp_unknown');
   assert.equal(aura, IDENTITY_AURA.basic);
 });

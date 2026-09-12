@@ -4,8 +4,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
 
-const TOKEN = 'intent-test-token';
+const TOKEN = testToken('intent');
 
 // D1 stub: captures INSERT INTO lesson_usage into _usage; returns seeded
 // lessons for the full-scan SELECT; empty for everything else.
@@ -39,7 +40,7 @@ function createEnv(opts = {}) {
   return {
     MCP_TOKEN: TOKEN,
     MCP_VERSION: 'intent-test',
-    REGISTER_TOKEN: 'gh-test-token',
+    REGISTER_TOKEN: TOKEN,
     MISAKANET_KV: {
       async get(key, type) {
         if (!store.has(key)) return null;

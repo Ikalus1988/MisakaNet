@@ -14,8 +14,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
 
-const TOKEN = 'relevance-floor-test-token';
+const TOKEN = testToken('relevance-floor');
 
 // 24 synthetic docs. "hook"/"api" are corpus-ubiquitous (df 24 and 20 → not
 // discriminating); "pip"/"timeout"/"dco"/"signoff" are distinctive (df ≤ 3).

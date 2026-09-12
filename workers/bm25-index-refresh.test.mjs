@@ -13,6 +13,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import worker, { buildBM25Index, refreshSearchIndex, BM25_INDEX_KEY } from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
+
+// One token for the file: createEnv() hands it to the worker, the requests below
+// send it back in the Authorization header.
+const TOKEN = testToken('bm25-refresh');
 
 const LESSONS = [
   { id: 'pip-timeout-mirror', title: 'pip install timeout', domain: 'python', tags: ['pip', 'network'],
@@ -34,7 +39,7 @@ function createEnv(lessons = LESSONS) {
     ['proxy:lessons', JSON.stringify({ ts: Date.now(), data: lessons })],
   ]);
   return {
-    MCP_TOKEN: 'bm25-refresh-test-token',
+    MCP_TOKEN: TOKEN,
     MISAKANET_KV: {
       async get(key, type) {
         if (!store.has(key)) return null;
@@ -52,7 +57,7 @@ function searchRequest(query) {
   return new Request('https://misakanet.org/mcp', {
     method: 'POST',
     headers: {
-      Authorization: 'Bearer bm25-refresh-test-token',
+      Authorization: `Bearer ${TOKEN}`,
       'Content-Type': 'application/json',
       'MCP-Protocol-Version': '2025-06-18',
       'CF-Connecting-IP': '198.51.100.' + (Math.floor(Math.random() * 200) + 1),

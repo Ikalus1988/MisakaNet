@@ -6,8 +6,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from './register-proxy-sw.js';
+import { testToken } from './_test-token.mjs';
 
-const TOKEN = 'trust-notice-test-token';
+const TOKEN = testToken('trust-notice');
 
 const SAMPLE_LESSONS = [
   {
@@ -103,7 +104,7 @@ test('fetched lesson content carries the trust notice', async () => {
   try {
     const resp = await worker.fetch(
       mcpRequest('misakanet_get_lesson', { id: 'pip-timeout-mirror' }),
-      createEnv(SAMPLE_LESSONS, { REGISTER_TOKEN: 'gh-test-token' }),
+      createEnv(SAMPLE_LESSONS, { REGISTER_TOKEN: TOKEN }),
     );
     const result = await toolResult(resp);
     assert.ok(result.content, 'lesson content missing');
