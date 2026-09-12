@@ -63,10 +63,45 @@ def test_join_welcome_covers_read_contribute_and_the_quota_escape():
         assert tool in text, f"join welcome must mention {tool}"
 
 
-def test_worker_welcome_comment_points_at_the_endpoint():
-    text = _read("workers/register-proxy.js")
-    assert ENDPOINT in text, "the MCP-side welcome comment must give the endpoint"
-    assert "misakanet_register" in text, "…and the quota escape hatch"
+# Live *usages* of the deleted legacy worker — not the historical mentions in
+# comments and handoffs, which are what document why it is gone.
+LEGACY_USAGE_PATTERNS = (
+    re.compile(r'href="[^"]*register-proxy\.js"'),          # site source link
+    re.compile(r"""from\s+['"]\./register-proxy\.js['"]"""),  # node test import
+    re.compile(r"(read_text|Path)\([^)]*register-proxy\.js"),  # pytest source read
+    re.compile(r'^\s*-\s*"workers/register-proxy\.js"', re.M),  # workflow path filter
+)
+
+SKIP_DIRS = {".git", ".pnpm-store", "node_modules", ".archify-tool", ".tools", "reports"}
+
+
+def test_the_deleted_legacy_worker_has_no_live_references():
+    """`workers/register-proxy.js` was a 658-line copy nothing deploys (2026-09-12).
+
+    Docs presented it as "the worker", tests imported it, and the site linked to it as
+    the source — so it was misleading *and* green-while-untested. It is deleted; these
+    patterns would bring it back.
+    """
+    offenders = []
+    for path in REPO.rglob("*"):
+        if not path.is_file() or path.suffix not in (".md", ".html", ".yml", ".yaml", ".js", ".mjs", ".py", ".json", ".jsonc"):
+            continue
+        if SKIP_DIRS & set(path.parts):
+            continue
+        if path.name.startswith("handoff-") or path.name == "hardening-field-report.md":
+            continue  # dated snapshots keep their own history
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for pattern in LEGACY_USAGE_PATTERNS:
+            for match in pattern.finditer(text):
+                line = text.count("\n", 0, match.start()) + 1
+                offenders.append(f"{path.relative_to(REPO)}:{line}: {match.group(0)[:60]}")
+    assert offenders == [], (
+        "live references to the deleted legacy worker (use workers/register-proxy-sw.js, "
+        "the wrangler entry):\n  - " + "\n  - ".join(offenders)
+    )
 
 
 def test_docs_describe_the_origin_header_accurately():

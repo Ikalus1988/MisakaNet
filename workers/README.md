@@ -12,12 +12,21 @@
 - Cloudflare 账号（免费版即可）
 - GitHub Personal Access Token（classic，scope: `public_repo` 或 `repo` + `issues:write`）
 
-### 1. 创建 Worker
+### 1. 部署（本仓是自动的，不要手工粘贴）
 
-1. 打开 https://dash.cloudflare.com/ → Workers & Pages
-2. 点 "Create Worker"，选 "Hello World" 模板，命名（如 `misakanet`）
-3. 将 `register-proxy.js` 的内容全量粘贴到编辑器，点 "Save and Deploy"
-4. 记下 Worker 的 URL（如 `https://misakanet.your-name.workers.dev`）
+**线上 worker 由 CI 部署**：`workers/wrangler.toml` 的 `main = register-proxy-sw.js`，
+push 到 main 且改动命中 `workers/register-proxy-sw.js` 时，`.github/workflows/deploy-worker.yml`
+自动 `wrangler deploy`（提交上的 check-run 名字即 `deploy`）。
+
+本地预览/调试：
+
+```bash
+cd workers && npx wrangler dev        # 用 workers/wrangler.toml 的绑定
+```
+
+> 历史坑（2026-09-12）：这里原本写的是「把 `register-proxy.js` 全量粘贴到 dashboard 点 Save and Deploy」，
+> 而那个 658 行文件**没有任何 workflow 部署**（线上是 3692 行的 `register-proxy-sw.js`）。
+> 它已被删除——照旧文档操作会改出一个和线上毫无关系的 worker。
 
 ### 2. 设置环境变量
 
@@ -58,7 +67,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "workers/register-proxy.js"
+      - "workers/register-proxy-sw.js"
       - "wrangler.jsonc"
 
 jobs:

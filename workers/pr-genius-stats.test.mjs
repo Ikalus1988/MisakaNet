@@ -1,10 +1,13 @@
 // Unit tests for the PR Genius statistics endpoint (Issue #1035).
+// Points at the *deployed* worker (wrangler.toml main = register-proxy-sw.js).
+// It used to import the legacy register-proxy.js, which no workflow deploys
+// (2026-09-12).
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import worker, {
   handlePrGeniusStats,
-} from './register-proxy.js';
+} from './register-proxy-sw.js';
 
 test('handlePrGeniusStats returns statistics from mock GitHub data', async () => {
   const mockEnv = {

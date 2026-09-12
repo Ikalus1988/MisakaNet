@@ -64,34 +64,36 @@ class TestHelpfulButtonFrontend(unittest.TestCase):
 
 
 class TestHelpfulButtonWorker(unittest.TestCase):
-    """Verify workers/register-proxy.js contains the helpful API endpoint."""
+    """The helpful endpoint as *deployed* (`wrangler.toml` main = register-proxy-sw.js).
+
+    These assertions used to read `workers/register-proxy.js`, a 658-line legacy copy
+    that no workflow deploys; they therefore guarded code that never ran (2026-09-12).
+    The file is gone and the assertions below describe the live handler.
+    """
 
     def setUp(self):
-        self.js = (REPO_ROOT / "workers" / "register-proxy.js").read_text(encoding="utf-8")
+        self.js = (REPO_ROOT / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
 
     def test_get_helpful_endpoint_exists(self):
-        """GET /api/helpful returns count for a lesson_id."""
-        self.assertIn('case "/api/helpful"', self.js)
+        """GET /api/helpful returns the count for a lesson_id."""
+        self.assertIn('request.method === "GET" && url.pathname === "/api/helpful"', self.js)
 
     def test_post_helpful_endpoint_exists(self):
-        """POST /api/helpful increments count for a lesson_id."""
-        self.assertIn('url.pathname === "/api/helpful"', self.js)
-
-    def test_handle_helpful_vote_function_exists(self):
-        """handleHelpfulVote function processes POST requests."""
-        self.assertIn("async function handleHelpfulVote(", self.js)
+        """POST /api/helpful increments the count for a lesson_id."""
+        self.assertIn('request.method === "POST" && url.pathname === "/api/helpful"', self.js)
 
     def test_kv_key_format(self):
-        """Votes are stored in KV with 'helpful:{lesson_id}' key format."""
-        self.assertIn("helpful:${lessonId}", self.js)
+        """Votes are stored in KV with the 'helpful:{lesson_id}' key format."""
+        self.assertIn("const kvKey = `helpful:${lessonId}`", self.js)
 
     def test_kv_count_increment(self):
-        """POST handler reads current count and increments by 1."""
-        self.assertIn("current + 1", self.js)
+        """The POST handler reads the current count and increments by one."""
+        self.assertIn("const newCount = cur + 1", self.js)
 
     def test_input_sanitization(self):
-        """lesson_id is sanitized to prevent injection."""
-        self.assertIn("sanitizeIdentifier(body.lesson_id", self.js)
+        """lesson_id is sanitized on both read and write."""
+        self.assertIn('sanitizeIdentifier(url.searchParams.get("lesson_id"), 100)', self.js)
+        self.assertIn("sanitizeIdentifier(voteBody.lesson_id, 100)", self.js)
 
     def test_error_handling_for_missing_kv(self):
         """Returns 503 when KV is not configured."""
@@ -99,7 +101,6 @@ class TestHelpfulButtonWorker(unittest.TestCase):
 
     def test_cors_headers_on_helpful(self):
         """Helpful endpoint responses include CORS headers."""
-        # jsonResponse already includes CORS_HEADERS, verify it's used
         self.assertIn("CORS_HEADERS", self.js)
 
 

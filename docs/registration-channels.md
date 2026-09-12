@@ -44,7 +44,7 @@ Ring-1（Core Architecture）竞赛只对 `github-verified` 节点开放。
 |------|------|
 | 邮件/Web Worker | `workers/email-register/src/index.js` |
 | 邮件 Worker 配置 | `workers/email-register/wrangler.jsonc` |
-| API 代理 Worker | `workers/register-proxy.js` |
+| API 代理 Worker | `workers/register-proxy-sw.js`（`wrangler.toml` 的 `main`；push main 自动部署） |
 | API Worker 配置 | `workers/wrangler.api.jsonc` |
 | Issue 注册 Workflow | `.github/workflows/register.yml` |
 | 节点计数器 | `data/counter.json`（GitHub） + KV `node_counter`（实时） |
