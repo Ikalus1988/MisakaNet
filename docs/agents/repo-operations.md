@@ -118,7 +118,7 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 
 | 症状 | 原因 / 处理 |
 |---|---|
-| MCP 请求 `403 Forbidden: invalid Origin` | 缺 `Origin` 头或值不被接受（MCP 规范要求，防 DNS rebinding）。加 `-H 'Origin: https://misakanet.org'` |
+| MCP 请求 `403 Forbidden: invalid Origin` | **值不被接受**（MCP 规范要求，防 DNS rebinding）。实测 2026-09-12：**缺席=200 放行**，只有带**非法值**（如 `https://evil.example.com`）才 403——别把「没带」当成故障在查；照标准写法带 `-H 'Origin: https://misakanet.org'` 即可 |
 | MCP 请求 `405` | 方法用错：写操作用 `POST`；SSE 长连接用 `GET` + `Accept: text/event-stream`（响应会提示正确用法） |
 | 工具输出被客户端拒绝 `missing required property "value.structuredContent"` | 客户端（如 DSH/cordis harness）校验结构化输出。worker 已按 MCP 2025-06-18 同时返回 `structuredContent`；若复现，检查是否走了旧的部署版本 |
 | `ImportError: cannot import name 'Client' from 'mcp'` / `No module named 'mcp.server.mcpserver'` | 本地依赖漂移（本地 mcp 版本 ≠ `requirements.txt`）。以 CI 为准；本地要复现就先按 requirements 装 |

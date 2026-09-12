@@ -525,7 +525,7 @@ async function handleRegistration(request, env) {
           "User-Agent": "MisakaNet-Worker",
         },
         body: JSON.stringify({
-          body: `🎉 欢迎加入御坂网络！\n\n你的节点编号是 **${nodeNameDisplay}**\n\n请在 Agent 中完成准入测试。\n\n---\n_🤖 This is an automated message from MisakaNet._`,
+          body: `🎉 欢迎加入御坂网络！\n\n你的节点编号是 **${nodeNameDisplay}**\n\n**接入测试（无需 clone / 无需下载）**：让 Agent 调一次远程 MCP 的 \`misakanet_search\` 检索 \`pip install timeout\`，把命中结果给你看。\n\n- 端点 \`https://misakanet.org/mcp\`（MCP Streamable HTTP，无需账号；匿名 5 次读取/天。共享出口 IP —— 公司 NAT、CI runner —— 容易一上来就用满：\`misakanet_register\` 一次调用即可拿 token 解除）\n- 必需头：\`Content-Type: application/json\` + \`MCP-Protocol-Version: 2025-06-18\`（\`Origin\` 可省略；带错值会 403 \`invalid Origin\`）\n- 检索无果就是盲区：\`misakanet_submit_intake\` 匿名报料，自动开 issue 进人工 triage\n\n---\n_🤖 This is an automated message from MisakaNet._`,
         }),
       });
     } catch (err) {

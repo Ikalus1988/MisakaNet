@@ -47,11 +47,11 @@ Agent 侧更常用 MCP：`misakanet_search` → `misakanet_get_lesson` → （�
 | **Streaming（SSE）** | `POST` + `Accept: application/json, text/event-stream` | 服务端以 `event: message` 分块返回；长任务/逐块消费用，`curl` 加 `-N` |
 | SSE 长连接 | `GET` + `Accept: text/event-stream` | 保持打开的流（健康检查/持续事件）；方法用错会返回 405 并提示正确用法 |
 
-**两个必备请求头**（缺了会失败，且报错不总是直观）：
+**两个要带的请求头**（第二个是「带错值才失败」——实测 2026-09-12：**缺席放行**，非法值 403）：
 
 ```bash
 -H 'MCP-Protocol-Version: 2025-06-18'   # 协议版本
--H 'Origin: https://misakanet.org'      # MCP 规范要求：防 DNS rebinding；非法 Origin → 403 invalid Origin
+-H 'Origin: https://misakanet.org'      # MCP 规范要求：防 DNS rebinding；实测缺席=200、非法值（如 https://evil.example.com）→ 403 invalid Origin
 ```
 
 ### 3.2 工具清单（7 个）
