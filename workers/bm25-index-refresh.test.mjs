@@ -360,3 +360,33 @@ test('the real corpus builds an index that fits KV', async () => {
   console.log(`# BM25 index over the real corpus: ${index.docCount} docs, ` +
               `${Object.keys(index.terms).length} terms, ${(bytes / 1048576).toFixed(1)} MB`);
 });
+
+test('the searchable text keeps a term that sits late in a section', async () => {
+  // The rich projection used to slice four sections separately (problem 2000,
+  // root_cause 1200, solution 1200, verification 600). The caps compounded into a
+  // coverage hole: kubernetes-crashloopbackoff-debugging.md says "kubectl" four
+  // times, all of them in the tail of its 1849-char Solution section, so every one
+  // of them was dropped and "kubectl crashloopbackoff" could only ever match half
+  // the query — the lesson lost to unrelated documents that happened to contain both
+  // words (found 2026-09-12 while calibrating the coverage floor). One budget for the
+  // whole body fixes it.
+  const late = {
+    id: 'late-term-lesson', title: 'pod keeps restarting', domain: 'ops', status: 'published',
+    tags: ['ops'], path: 'lessons/contrib/late-term-lesson.md',
+    summary: 'a container restarts in a loop',
+    problem: 'the pod never becomes ready',
+    root_cause: 'the container is killed by the runtime',
+    solution: `${'filler '.repeat(300)}kubectl describe pod shows the reason`,
+    verification: 'watch the pod',
+    updated: '2026-09-01', created: 'c',
+  };
+  const env = createD1Env([late, LESSONS[1]], createColumnAwareD1([late, LESSONS[1]]));
+  await refreshSearchIndex(env);
+
+  const stored = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
+  assert.ok(stored.terms.kubectl, 'the late term never reached the index');
+
+  const hit = await search(env, 'kubectl describe pod');
+  assert.ok(hit.results.some(r => r.id === 'late-term-lesson'),
+    `a term past the old per-section cap must still be searchable: ${JSON.stringify(hit.results)}`);
+});

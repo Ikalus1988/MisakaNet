@@ -561,6 +561,37 @@ function relevanceFloor(termDf, docCount) {
   };
 }
 
+// ── IDF-weighted coverage floor (2026-09-12) ────────────────────────────────
+// The previous floor asked only "does this document match at least one informative
+// term?", which natural-language queries defeat: `how do I bake sourdough bread`
+// matched five lessons because `how` occurs in five documents, and
+// `VISION_API_KEY env var not set` returned five unrelated secrets/env lessons with
+// the lesson that actually mentions that variable ranked ninth (both reproduced in
+// production; an adversarial review found them).
+//
+// A query is answered when the matched terms carry a meaningful share of the query's
+// *information*, measured in IDF. Terms the corpus has never seen count as maximally
+// rare, so a query whose words are unknown cannot be satisfied by matching one common
+// word out of five. Calibrated against the real corpus (14 positive queries that must
+// keep finding their lesson, 10 negative ones that must not): 0.55 separates them
+// cleanly — 14/14 and 10/10 — where 0.45 already admits three negatives and 0.65
+// starts dropping positives.
+const RELEVANCE_MIN_COVERAGE = 0.55;
+
+/** IDF of a term, counting an unseen term as if it occurred in zero documents. */
+function idfOfTerm(term, terms, docCount) {
+  const data = terms && terms[term];
+  if (data && typeof data.idf === "number") return data.idf;
+  return Math.log((docCount + 0.5) / 0.5 + 1);
+}
+
+/** Total IDF mass of a query: the denominator of the coverage ratio. */
+function queryIdfTotal(queryTerms, terms, docCount) {
+  let total = 0;
+  for (const term of new Set(queryTerms)) total += idfOfTerm(term, terms, docCount);
+  return total || 1;
+}
+
 // Tried and reverted (2026-09-12): requiring a short query to match its *rarest*
 // term. It did not remove the remaining junk ("user-agent-identify-bots" still
 // matched "env"+"set" for a VISION_API_KEY query) while it did kill a good query —
@@ -682,6 +713,7 @@ function searchLessonsBM25(index, query, domain, top = 5) {
   const matched = new Uint8Array(docCount);
   const coverage = new Uint8Array(docCount);       // distinct query terms per doc
   const informative = new Uint8Array(docCount);    // … that are discriminating
+  const matchedIdf = new Float64Array(docCount);   // IDF mass matched, per doc
   const termDf = new Map();
 
   // Score each document using BM25
@@ -699,11 +731,13 @@ function searchLessonsBM25(index, query, domain, top = 5) {
       scores[doc] += score;
       matched[doc] = 1;
       coverage[doc] += 1;
+      matchedIdf[doc] += idf;
     }
   }
 
   // Relevance floor — see the note above searchLessons().
   const floor = relevanceFloor(termDf, docCount);
+  const idfTotal = queryIdfTotal(queryTerms, terms, docCount);
   for (const term of floor.informative) {
     const termData = terms[term];
     if (!termData) continue;
@@ -716,6 +750,9 @@ function searchLessonsBM25(index, query, domain, top = 5) {
     if (!matched[i]) continue;
     if (coverage[i] < floor.required) continue;
     if (!informative[i]) continue;
+    // IDF-weighted coverage: the guard that makes "no lesson matches" reachable for
+    // natural language (see RELEVANCE_MIN_COVERAGE).
+    if (matchedIdf[i] / idfTotal < RELEVANCE_MIN_COVERAGE) continue;
     const doc = docs[i];
 
     // Apply domain filter
@@ -773,6 +810,9 @@ function lessonIndexText(lesson) {
 // is recorded on the index so a build made from summary-only text is rebuilt once
 // the body is available, instead of being trusted for another 20h.
 const LEAN_DESCRIPTION_CAP = 400;
+// Searchable text per lesson. Long enough to cover a whole lesson body (the longest
+// here is ~3.5k chars), bounded so the index stays small.
+const INDEX_TEXT_MAX_CHARS = 6000;
 // The public listing must not ship the internal searchable body: `indexText` feeds
 // the index and the matcher, and it is dropped from every response the worker
 // builds from loadLessons().
@@ -2208,13 +2248,19 @@ async function fetchLessonsFromD1(env, filters = {}) {
       textMode: richApplied ? "rich" : "lean",
     };
     if (richApplied) {
-      // `indexText` is the searchable body and never leaves the worker: the
-      // index and the naive matcher read it, responses do not carry it.
-      // Order matters — problem (the error text) first, then the fix sections,
-      // so a cap can never truncate the symptom out of the searchable text.
-      row.indexText = [summary, slice(r.problem, 2000), slice(r.root_cause, 1200),
-                       slice(r.solution, 1200), slice(r.verification, 600)]
-        .filter(Boolean).join(" ");
+      // `indexText` is the searchable body and never leaves the worker: the index and
+      // the naive matcher read it, responses do not carry it.
+      //
+      // One budget for the whole body, not four per-section caps. The caps compounded
+      // into a coverage hole: kubernetes-crashloopbackoff-debugging.md says "kubectl"
+      // four times, all of them in the *tail* of its 1849-char Solution section, so
+      // `solution[:1200]` dropped every one of them and the query
+      // "kubectl crashloopbackoff" could only ever match half the query — the lesson
+      // lost to unrelated documents that happened to contain both words (found
+      // 2026-09-12 while calibrating the coverage floor). Total indexed text grows
+      // 0.63 MB → 0.70 MB for the whole corpus.
+      row.indexText = [summary, r.problem, r.root_cause, r.solution, r.verification]
+        .filter(Boolean).join(" ").slice(0, INDEX_TEXT_MAX_CHARS);
     }
     return row;
   });
@@ -4006,6 +4052,9 @@ export {
   handleUnsolvedMap,
   handlePrGeniusStats,
   buildBM25Index,
+  bm25Tokenize,
+  matchTokens,
+  relevanceFloor,
   refreshSearchIndex,
   BM25_INDEX_KEY,
   recordStaleLesson,
