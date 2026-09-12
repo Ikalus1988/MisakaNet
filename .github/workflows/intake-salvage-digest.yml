@@ -69,13 +69,15 @@ jobs:
           DIGEST+="3. **Close** — Reject permanently if not useful\n\n"
           DIGEST+="## How to Improve\n\n"
           DIGEST+="To improve a rejected issue:\n"
-          DIGEST+="1. Add a `## Error` section with error messages\n"
+          DIGEST+='1. Add a `## Error` section with error messages\n'
           DIGEST+="2. Add code blocks with examples\n"
-          DIGEST+="3. Add verification steps in `## Verification`\n"
+          DIGEST+='3. Add verification steps in `## Verification`\n'
           DIGEST+="4. Remove user-specific paths\n"
           DIGEST+="5. Add more technical detail\n\n"
           DIGEST+="---\n"
-          DIGEST+="_This is an automated digest. Run `/salvage-review` to manually review issues._"
+          # Single quotes: inside double quotes the backticks would be command
+          # substitution, so the shell tried to execute `/salvage-review` (exit 127).
+          DIGEST+='_This is an automated digest. Run `/salvage-review` to manually review issues._'
 
           # Save digest
           echo -e "$DIGEST" > /tmp/salvage_digest.md
