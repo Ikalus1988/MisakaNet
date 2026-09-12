@@ -5049,6 +5049,39 @@
     "contributor": ""
   },
   {
+    "id": "go-linter-cleanup-go-fix",
+    "title": "Clearing a Go linter backlog to zero: revive doc comments, De Morgan predicates, cascading unused deletions",
+    "domain": "go",
+    "tags": [
+      "go",
+      "golangci-lint",
+      "revive",
+      "staticcheck",
+      "dead-code",
+      "refactoring",
+      "verification"
+    ],
+    "summary": "This lesson comes from issue **#1500** (node `Misaka10099`, submitted domain `go-tooling`): a Go module",
+    "preview": "# Clearing a Go linter backlog to zero: revive doc comments, De Morgan predicates, cascading unused deletions\n\n## Problem\n\nThis lesson comes from issue **#1500** (node `Misaka10099`, submitted domain `go-tooling`): a Go module\nthat had been refactored several times had accumulated linter warnings from three different families —\n`revive`, `staticcheck` and `unused` — and `golangci-lint run` no longer exited 0. Nothing was broken:\nthe service built, the tests passed, and every individual refactor had been behavior-preserving. The\ndebt was entirely in *documentation and the reference graph*, which is exactly the kind of debt that no\ntest suite and no compiler will ever complain about.\n\nThe reported root cause is one sentence that deserves unpacking: **refactorings left orphaned comments\non structs, boolean predicates with outer negation, and unreferenced utility methods.** Each of those is\nthe shadow of a specific edit:\n\n| Diagnostic family | Message shape (wording varies by version) | What the refactor left behind |\n|---|---|---|\n| `revive` rule `exported` | `exported type RequestData should have comment or be unexported` | The type was extracted or renamed, and the doc comment above it did not move with it (or moved but no longer begins with the new name). |\n| `revive` rule `exported` (form check) | `comment on exported type RequestData should be of the form \"RequestData ...\" (with optional leading article)` | A comment is present, but its first word is the *pre-rename* identifier. |\n| `staticcheck` (De Morgan / quickfix family) | `should apply De Morgan's law` | A predicate was inverted by wrapping an existing condition in `!(...)` instead of inverting the operands. |\n| `unused` (staticcheck `U1000`) | `func normalizeLegacyStatus is unused` / `type legacyEnvelope is unused` | Helpers, adapters and envelope structs kept \"just in case\" after their only caller was rewritten or deleted. |\n\nTreat the messages as *shapes*: `revive` and `staticcheck` wording changes between versions, and whether\nthe De Morgan check is reported at all depends on which check categories your `staticcheck` settings\nenable. Read the rule names out of your own output instead of trusting a fixed list.\n\n## Root Cause\n\nThree independent mechanisms, and they are the reason the backlog appears \"all at once\" long after the\nrefactors that created it.\n\n**1. A Go doc comment is positional, and no\n\n[clipped]",
+    "url": "lessons/contrib/go-linter-cleanup-go-fix.md",
+    "created": "2026-09-12",
+    "updated": "2026-09-12",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [
+      "issue:#1500"
+    ],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E0",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.35,
+    "contributor": ""
+  },
+  {
     "id": "go-scheduler-deadlock-lock-order",
     "title": "Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1",
     "domain": "go",
@@ -8584,6 +8617,40 @@
     "contributor": ""
   },
   {
+    "id": "roleplay-dialogue-loop-context-poisoning",
+    "title": "A cloned confirmation line poisons the context: loop detection must compare dialogue, not whole messages",
+    "domain": "roleplay-engine",
+    "tags": [
+      "roleplay",
+      "llm",
+      "dialogue-loop",
+      "context-poisoning",
+      "repetition-penalty",
+      "llama",
+      "firestore",
+      "verification"
+    ],
+    "summary": "A persistent roleplay engine (Llama 3.3, history persisted in Firestore) entered an infinite",
+    "preview": "# A cloned confirmation line poisons the context: loop detection must compare dialogue, not whole messages\n\n## Problem\n\nA persistent roleplay engine (Llama 3.3, history persisted in Firestore) entered an infinite\nconfirmation loop. Reported in Portuguese, the transcript shape was:\n\n| turn | assistant reply (abridged) | user reply |\n|---|---|---|\n| 1 | *crosses her arms* \"Shall we start then?\" | \"Yes, let's go.\" |\n| 2 | *nods slowly* \"Shall we start then?\" | \"Yeah, go ahead.\" |\n| 3 | *taps a boot* \"Shall we start then?\" | \"I already said yes.\" |\n| 4 | *sighs* \"Shall we start then?\" | \"Yes!\" |\n| 5 | *shifts her weight* \"Shall we start then?\" | — (scene never advanced) |\n\nThe model asked *\"vamos começar então?\"* / \"Shall we start then?\" and **ignored three consecutive\naffirmatives**. The action text changed every turn — so the turns looked different to a human skimming\nthe log — while the spoken line was a byte-identical clone, five times in a row.\n\nThe engine had an echo detector and a retry loop. Neither fired, and the looped replies were persisted to\nthe store, which is what made the failure permanent rather than a bad sample.\n\n## Root Cause\n\nThree layers, all required for the loop to be infinite. Removing any one of them breaks it.\n\n### 1. The sampling layer: a repeated prefix is self-conditioning\n\nDecoding is conditioned on the token sequence in the context, and the model's own previous replies *are*\npart of that sequence. The next-token distribution is a function of what is already there. When the same\n14-token line appears `k` times in the recent window, that line stops being \"one of the things the\ncharacter said\" and becomes the highest-evidence continuation for the position where it would be\nregenerated: every copy of it is another observation of the same continuation. The model then emits\ncopy `k+1`, which makes the next turn's prefix *more* repetitive than this one. The loop is not a failure\nto decide; the context now asserts that the loop is the pattern. Each iteration raises the evidence for\nthe next iteration — a positive feedback loop that converges on determinism.\n\nA count-based probe over the transcript above (bigram counts taken **only from the model's own dialogue\nin this conversation**, i.e. the self-conditioning component) shows the direction of that convergence:\nafter the trigger token `then`, the history contains 5 observations and all 5 \n\n[clipped]",
+    "url": "lessons/contrib/roleplay-dialogue-loop-context-poisoning.md",
+    "created": "2026-09-12",
+    "updated": "2026-09-12",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [
+      "issue:#1547"
+    ],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "sag-lite-data-quality-cleaning",
     "title": "SAG-Lite Data Quality: Clean Search Results",
     "domain": "devops",
@@ -9962,6 +10029,36 @@
     "evidence_level": "E3",
     "evidence_source": "inferred",
     "trust_score": 0.463,
+    "contributor": ""
+  },
+  {
+    "id": "windows-node-sandbox-hardcoded-root",
+    "title": "Windows Node sandbox: a hardcoded /root silently confined the agent to the wrong directory",
+    "domain": "mcp",
+    "tags": [
+      "windows",
+      "nodejs",
+      "sandbox",
+      "path-resolution",
+      "cross-platform",
+      "confinement"
+    ],
+    "summary": "An agent tool harness confined its file writes by hardcoding the sandbox root:",
+    "preview": "# Windows Node sandbox: a hardcoded /root silently confined the agent to the wrong directory\n\n## Problem\n\nAn agent tool harness confined its file writes by hardcoding the sandbox root:\n\n```ts\nconst SANDBOX_HOME = \"/root/automaton_zero\";\n```\n\nand checking containment with a string prefix:\n\n```ts\nfunction inSandbox(p: string) { return p.startsWith(\"/root\"); }\n```\n\nOn Linux this appeared to work. On Windows (git-bash / MSYS) every `write_file` and `exec` that\nshould have landed in the declared workspace went missing or landed somewhere else, and the\nconfinement check stopped recognising the workspace at all. The harness reported no error of its\nown; the writes simply did not appear where the caller had asked for them.\n\nThe two platforms fail *differently*, which is why nobody noticed:\n\n| Platform | What the hardcoded `/root` does | Result |\n|---|---|---|\n| Linux, running as root (containers, most CI) | the directory exists and is writable | **files are written outside the declared workspace, silently** |\n| Linux, running as a normal user | the directory exists, not writable | `EACCES` |\n| Windows | `/root` is *rooted but drive-relative* → resolves to `<current-drive>:\\root` | `ENOENT` (nothing creates `C:\\root`) |\n\n## Root Cause\n\nThree separate assumptions, each individually plausible:\n\n**1. `/root` is a POSIX-only path, and on Windows it is not even a directory.** `path.win32.resolve`\nturns a rooted path without a drive into a path on the *current* drive, so `/root` became `C:\\root`\n(or `D:\\root`, depending on where the process was started):\n\n```\nposix.resolve('/root')                                     /root\nwin32.resolve('/root')  <- drive-relative                  \\root\nwin32.isAbsolute('/root')  <- rooted but partial           true\nwin32.join('/root','notes.txt')                            \\root\\notes.txt\n```\n\n`isAbsolute(\"/root\")` is `true` on Windows, which is exactly the trap: the value passes a naive\nsanity check while naming a location that does not exist and that the process does not control.\n\n**2. A prefix check written with `/` matches nothing that Windows produces.** Windows workspace\npaths are backslash-separated, so `\"C:\\Users\\shubh\\automaton_zero\\server.js\".startsWith(\"/root\")`\nis `false` — the sandbox root is unrecognised even after the path is corrected.\n\n**3. `startsWith(root)` is not a containment check on either platform.** It is a *prefi\n\n[clipped]",
+    "url": "lessons/contrib/windows-node-sandbox-hardcoded-root.md",
+    "created": "2026-09-12",
+    "updated": "2026-09-12",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E2",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.425,
     "contributor": ""
   },
   {
