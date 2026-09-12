@@ -13,16 +13,20 @@ param()
 
 $ErrorActionPreference = "SilentlyContinue"
 
+# Set MISAKANET_VOICE=0 to disable prompts without removing the hook.
+if ($env:MISAKANET_VOICE -eq "0") { exit 0 }
+
 # Get script directory
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$VoiceDir = Join-Path (Split-Path -Parent $ScriptDir) "docs\assets\voice"
+$DefaultVoiceDir = Join-Path (Split-Path -Parent $ScriptDir) "docs\assets\voice"
+$VoiceDir = if ($env:MISAKANET_VOICE_DIR) { $env:MISAKANET_VOICE_DIR } else { $DefaultVoiceDir }
 
 # Read stdin (tool result JSON)
-$Input = [Console]::In.ReadToEnd()
+$Payload = [Console]::In.ReadToEnd()
 
 # Extract voice field
 try {
-    $Data = $Input | ConvertFrom-Json
+    $Data = $Payload | ConvertFrom-Json
     $Voice = $Data.voice
 } catch {
     exit 0
@@ -45,25 +49,22 @@ $FilePath = Join-Path $VoiceDir $FileName
 
 if (-not (Test-Path $FilePath)) { exit 0 }
 
-# Play audio using Windows Media Player COM / MediaPlayer (non-blocking)
+# Permit CI and users to verify the mapping without opening an audio player.
+if ($env:MISAKANET_VOICE_DRY_RUN -eq "1") {
+    Write-Output $Voice
+    exit 0
+}
+
+# Launch Windows Media Player as a separate process.  Keeping a COM object alive
+# for a few milliseconds and then closing it cuts off MP3 playback when the hook
+# exits; the player process continues independently instead.
+$PlayerPath = Join-Path ${env:ProgramFiles} "Windows Media Player\wmplayer.exe"
+if (-not (Test-Path $PlayerPath)) { exit 0 }
+
 try {
-    $wmp = New-Object -ComObject WMPlayer.OCX
-    $wmp.URL = $FilePath
-    $wmp.controls.play()
-    Start-Sleep -Milliseconds 250
-    $wmp.close()
-    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($wmp) | Out-Null
+    Start-Process -FilePath $PlayerPath -ArgumentList @("/play", $FilePath) -ErrorAction Stop | Out-Null
 } catch {
-    try {
-        Add-Type -AssemblyName presentationCore
-        $Player = New-Object System.Windows.Media.MediaPlayer
-        $Player.Open([System.Uri]::new($FilePath))
-        $Player.Play()
-        Start-Sleep -Milliseconds 250
-        $Player.Close()
-    } catch {
-        # Graceful fallback
-    }
+    # Audio is optional: never make a hook failure fail its parent tool call.
 }
 
 exit 0
