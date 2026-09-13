@@ -79,7 +79,10 @@ test('anonymous misakanet_get_lesson succeeds without auth (no 401)', async () =
   const text = body.result.content[0].text;
   // If auth had blocked it, we'd get {"error":{"message":"Unauthorized"}}.
   assert.doesNotMatch(text, /"message":"Unauthorized"/);
-  assert.match(text, /REGISTER_TOKEN|not found|GitHub API/);
+  // A failure is reported without internal detail (CodeQL alert #258, 2026-09-12):
+  // no token name, no upstream status, no stack.
+  assert.match(text, /Retry shortly|internal_error|error/);
+  assert.doesNotMatch(text, /REGISTER_TOKEN|GitHub API|at Object\.|runner/);
 });
 
 test('anonymous reads share a 5/day/IP quota across search and get_lesson', async () => {

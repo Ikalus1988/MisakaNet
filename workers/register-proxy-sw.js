@@ -74,6 +74,34 @@ function detectIntakeInjection(text) {
 const MAX_AGENT_TYPE = 30;
 const MAX_NODE_NAME = 50;
 
+// ── Public errors must not carry internals ──────────────────────────────────
+// CodeQL flagged js/stack-trace-exposure on this file (alert #258, 2026-09-12) at the
+// shared `jsonResponse` sink: exception messages were flowing to callers. Six paths did
+// that — five pre-existing `jsonResponse({ error: e.message }, 5xx)` handlers plus a
+// diagnostic I had added to the registration failure. A D1/parse/GitHub error message
+// names tables, columns, URLs, file paths and sometimes credentials; the caller needs to
+// know *that* it failed and whether retrying helps, not why internally.
+//
+// So: the detail goes to Workers Logs (console), the caller gets a stable message plus a
+// code it can quote. `documentation_url`-style hints stay, internals do not.
+const ERROR_CODES = {
+  lessons_unavailable: "The lesson corpus could not be read. Retry shortly.",
+  invalid_request: "The request could not be processed as sent.",
+  internal_error: "Temporary service error. Retry shortly.",
+  storage_unavailable: "Registration storage is temporarily unavailable (token could not be saved). Retry shortly.",
+};
+
+function logInternal(context, error) {
+  // console (Workers Logs) rather than the response: operators read logs, callers must not.
+  const detail = error && error.message ? error.message : String(error || "");
+  console.error(`[MISAKA_INTERNAL] ${context}: ${String(detail).slice(0, 400)}`);
+}
+
+function errorResponse(context, code = "internal_error", status = 500, error = null, extra = {}) {
+  logInternal(context, error);
+  return jsonResponse({ error: ERROR_CODES[code] || ERROR_CODES.internal_error, code, ...extra }, status);
+}
+
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -1197,14 +1225,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // next authenticated call with no way to tell why. Storage trouble is temporary,
     // so say so and let it retry, instead of returning a token and a 200.
     if (!tokenStored || !nodeStored) {
+      // The message is logged, not returned: it names storage internals (see the note on
+      // errorResponse). `storage` stays because it only reports which write failed.
+      logInternal("register: token storage failed", kvWriteStats.last_error);
       return {
-        error: "Registration storage is temporarily unavailable (token could not be saved). Retry shortly.",
+        error: ERROR_CODES.storage_unavailable,
+        code: "storage_unavailable",
         storage: { node: nodeStored, token: tokenStored },
-        // Bounded, non-sensitive diagnostic: the storage layer's own message (e.g.
-        // "KV PUT failed: 429 ..."). Without it a failing write is undebuggable from
-        // outside — there is no log access from a browser, and this is the only
-        // channel the operator has.
-        storage_error: String(kvWriteStats.last_error || "").slice(0, 120),
         hint: "Anonymous misakanet_search / misakanet_get_lesson still work (5/day per IP).",
       };
     }
@@ -1473,7 +1500,8 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         ...(bodyFlags.length ? { suspicious: true, suspicious_rules: bodyFlags } : {}),
       };
     } catch (e) {
-      return { error: e.message };
+      logInternal("tool call failed", e);
+      return { error: ERROR_CODES.internal_error, code: "internal_error" };
     }
   }
 
@@ -3161,7 +3189,11 @@ export default {
         // write path began failing while /api/health kept answering "ok": the
         // service looked healthy from outside and was returning 1101 to every
         // caller that needed storage.
-        kv_writes: kvWriteStats,
+        // Counters and timestamps only: the raw message is in the logs, not on an
+        // anonymous endpoint (same reasoning as errorResponse).
+        kv_writes: { attempts: kvWriteStats.attempts, failures: kvWriteStats.failures,
+                     last_failure_at: kvWriteStats.last_failure_at,
+                     last_ok_at: kvWriteStats.last_ok_at },
         timestamp: new Date().toISOString(),
       });
     }
@@ -3179,7 +3211,7 @@ export default {
           return fetchFromGitHub(token, "data/counter.json");
         });
         return jsonResponse(data);
-      } catch (e) { return jsonResponse({ error: e.message }, 502); }
+      } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }
 
     // GET /api/lessons — lessons index (D1 first when bound, else GitHub w/ KV cache)
@@ -3258,7 +3290,7 @@ export default {
         if (!token && !d1Binding(env)) return jsonResponse({ error: "REGISTER_TOKEN not configured" }, 500);
         const data = (await loadLessons(env, hasFilters ? filters : {})).map(publicLessonRow);
         return jsonResponse(data);
-      } catch (e) { return jsonResponse({ error: e.message }, 502); }
+      } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }
 
     // GET /api/analytics — usage analytics (PRD ④ #1357)
@@ -3304,7 +3336,7 @@ export default {
           intents: (topIntents.results || []).map(r => ({ intent: r.intent, count: r.n })),
           daily_requests: (daily.results || []).map(r => ({ day: r.day, count: r.n })),
         });
-      } catch (e) { return jsonResponse({ error: e.message }, 502); }
+      } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }
 
     // GET /api/analytics/traffic — traffic classification breakdown (Issue #1347)
@@ -3325,7 +3357,7 @@ export default {
           breakdown: Object.fromEntries(entries),
           total: entries.reduce((s, [, n]) => s + n, 0),
         });
-      } catch (e) { return jsonResponse({ error: e.message }, 502); }
+      } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }
 
     if (request.method === "GET" && url.pathname === "/ping") {
@@ -3437,7 +3469,7 @@ export default {
           termCount: Object.keys(body.terms).length,
         });
       } catch (e) {
-        return jsonResponse({ error: e.message }, 400);
+        return errorResponse("bad request body", "invalid_request", 400, e);
       }
     }
 

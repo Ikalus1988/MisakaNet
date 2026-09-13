@@ -114,7 +114,12 @@ test('health reports KV write failures instead of answering a bare ok', async ()
   assert.equal(body.status, 'ok');
   assert.ok(body.kv_writes.failures >= 1,
     `health must surface the failing writes it just observed: ${JSON.stringify(body.kv_writes)}`);
-  assert.match(body.kv_writes.last_error, /429|failed/i);
+  assert.ok(body.kv_writes.last_failure_at, 'and when they started failing');
+  // ...but not the storage layer own message: /api/health is anonymous. The detail goes
+  // to Workers Logs; a diagnostic I had put in the response is what CodeQL flagged.
+  assert.equal(body.kv_writes.last_error, undefined,
+    'an anonymous endpoint must not echo internal error text');
+  assert.doesNotMatch(JSON.stringify(body), /429|KV PUT failed/);
 });
 
 test('search-index reports a stale index rather than serving it as fresh', async () => {

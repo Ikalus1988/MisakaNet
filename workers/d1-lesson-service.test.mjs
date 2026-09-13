@@ -250,7 +250,12 @@ test('misakanet_get_lesson falls back to GitHub when D1 has no row', async () =>
   const resp = await mcpGetLesson({ id: 'no-such-lesson' }, env);
   const body = await resp.json();
   const text = body.result.content[0].text;
-  assert.match(text, /not found|REGISTER_TOKEN|GitHub API 401/);
+  // The tool reports a failure, and reports it *without* internals: this assertion used
+  // to require the internal message (REGISTER_TOKEN / GitHub API 401) to be echoed back,
+  // which is exactly the exposure CodeQL flagged (js/stack-trace-exposure, alert #258,
+  // 2026-09-12). What a caller needs is that it failed and whether retrying helps.
+  assert.match(text, /Retry shortly|internal_error|error/);
+  assert.doesNotMatch(text, /REGISTER_TOKEN|GitHub API 401|Bearer /);
 });
 
 // ── Structured /api/lessons filters (PRD ④ §3.3) ──
