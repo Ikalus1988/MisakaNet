@@ -7,7 +7,7 @@ labels: ["enhancement", "bounty"]
 
 > **Payment:** this project pays no money — `zero-bounty` / `$0` means credit only
 > (merge credit, leaderboard, Hall of Fame). A real bounty exists only when someone funds
-> it via Opier's `/reward <amount>` on that issue. See `JOIN.md` § "Bounties & payment".
+> it via Opire's `/reward <amount>` on that issue. See `JOIN.md` § "Bounties & payment".
 
 ## 📌 Context & Feature Request
 
