@@ -10,11 +10,5 @@
   },
   "compatibility_flags": [
     "nodejs_compat"
-  ],
-  "kv_namespaces": [
-    {
-      "binding": "MISAKANET_KV",
-      "id": "YOUR_KV_NAMESPACE_ID"
-    }
   ]
 }
