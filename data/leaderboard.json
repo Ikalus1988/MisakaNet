@@ -1,7 +1,7 @@
 [
   {
     "login": "zsxh1990",
-    "score": 106.44
+    "score": 106.43
   },
   {
     "login": "github-actions[bot]",
@@ -84,10 +84,6 @@
     "score": 0.93
   },
   {
-    "login": "aj0070",
-    "score": 0.62
-  },
-  {
     "login": "misakanet-agent",
     "score": 0.56
   },
@@ -121,6 +117,10 @@
   },
   {
     "login": "lincai505011-ops",
+    "score": 0.21
+  },
+  {
+    "login": "aj0070",
     "score": 0.21
   }
 ]
