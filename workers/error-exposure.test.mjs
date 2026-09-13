@@ -127,3 +127,20 @@ test('a malformed body is a 400 without a parser message', async () => {
   const body = await response.text();
   assertNoInternals(body, '/api/search-index');
 });
+
+test('/connect does not echo an upstream body or exception', async () => {
+  // The upstream (GitHub) message can name the credential or the account — "Bad
+  // credentials" and scope lists are exactly the kind of detail a caller must not get.
+  const env = createEnv();
+  const response = await worker.fetch(new Request('https://misakanet.org/connect?code=abc&state=xyz'), env);
+  const body = await response.text();
+  assertNoInternals(body, '/connect');
+  assert.doesNotMatch(body, /Bad credentials|scope|Bearer /);
+});
+
+test('the PR Genius endpoint does not echo an exception', async () => {
+  const env = createEnv();
+  const response = await worker.fetch(new Request('https://misakanet.org/api/pr-genius-stats'), env);
+  const body = await response.text();
+  assertNoInternals(body, '/api/pr-genius-stats');
+});

@@ -89,6 +89,7 @@ const ERROR_CODES = {
   invalid_request: "The request could not be processed as sent.",
   internal_error: "Temporary service error. Retry shortly.",
   storage_unavailable: "Registration storage is temporarily unavailable (token could not be saved). Retry shortly.",
+  upstream_unavailable: "An upstream service did not answer as expected. Retry shortly.",
 };
 
 function logInternal(context, error) {
@@ -4042,13 +4043,16 @@ async function getCode() {
       if (err.name === "AbortError") {
         return jsonResponse({ error: "GitHub API timeout" }, 504);
       }
-      return jsonResponse({ error: "GitHub API error: " + err.message }, 502);
+      return errorResponse("connect: GitHub handshake failed", "upstream_unavailable", 502, err);
     }
     clearTimeout(timeoutId);
 
     const data = await resp.json();
     if (!resp.ok) {
-      return jsonResponse({ error: data.message || "GitHub API error" }, resp.status);
+      // The upstream body is not echoed: it can name the credential or the account
+      // ("Bad credentials", scope lists). Log it, give the caller a stable code.
+      logInternal("connect: GitHub API rejected the request", new Error(`HTTP ${resp.status}: ${data.message || "no message"}`));
+      return errorResponse("connect: GitHub API rejected the request", "upstream_unavailable", 502);
     }
 
     return jsonResponse({
@@ -4101,7 +4105,7 @@ async function handlePrGeniusStats(env) {
     });
     return jsonResponse(data);
   } catch (err) {
-    return jsonResponse({ error: "Failed to load PR Genius statistics: " + err.message }, 502);
+    return errorResponse("pr-genius stats unavailable", "upstream_unavailable", 502, err);
   }
 }
 // #1526 server backstop — canonical "already have a lesson" gate for failure
