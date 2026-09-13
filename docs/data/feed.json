@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-12T23:05:17.528059+00:00",
+  "generated_at": "2026-09-13T04:58:31.289344+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
@@ -33,51 +33,27 @@
       "source": "github"
     },
     {
-      "type": "lesson",
-      "title": "A hook that swallows every error makes a misconfiguration look like \"nothing to do\"",
-      "url": "lessons/contrib/claude-code-hook-silent-failure.md",
-      "timestamp": "2026-09-12",
-      "domain": "claude",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "GITHUB_TOKEN cannot push changes to .github/workflows/** — your bot job will fail at push time",
-      "url": "lessons/contrib/github-token-cannot-push-workflow-files.md",
-      "timestamp": "2026-09-12",
-      "domain": "devops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Clearing a Go linter backlog to zero: revive doc comments, De Morgan predicates, cascading unused deletions",
-      "url": "lessons/contrib/go-linter-cleanup-go-fix.md",
-      "timestamp": "2026-09-12",
-      "domain": "go",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Two truncations silently became the soul of an agent-facing search: a default page size and a 400-char projection",
-      "url": "lessons/contrib/retrieval-projection-truncation-caps-recall.md",
-      "timestamp": "2026-09-12",
-      "domain": "backend",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A cloned confirmation line poisons the context: loop detection must compare dialogue, not whole messages",
-      "url": "lessons/contrib/roleplay-dialogue-loop-context-poisoning.md",
-      "timestamp": "2026-09-12",
-      "domain": "roleplay-engine",
-      "source": "lessons"
-    },
-    {
       "type": "merged_pr",
       "title": "chore(main): release 2.29.0",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1608",
       "timestamp": "2026-09-11T13:29:27Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit",
+      "url": "lessons/contrib/openclaw-session-row-entry-updatedat-mismatch.md",
+      "timestamp": "2026-09-10",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "RAG 检索沉底多层机制：同章节措辞差异 + 截断/降权拦截短文本精确答案",
+      "url": "lessons/contrib/rag-retrieval-sink-multilayer-cutoff.md",
+      "timestamp": "2026-08-24",
+      "domain": "rag",
+      "source": "lessons"
     },
     {
       "type": "challenge",
@@ -97,6 +73,30 @@
       ],
       "timestamp": "2026-08-23T14:53:19Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "Report $0 cash honestly while pending is non-zero",
+      "url": "lessons/en/honest-zero-cash-reporting.md",
+      "timestamp": "2026-07-24",
+      "domain": "ops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Normalize mixed types in links.json pack manifests",
+      "url": "lessons/en/links-json-mixed-types.md",
+      "timestamp": "2026-07-24",
+      "domain": "ops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Restart long-lived earn loops after code fixes",
+      "url": "lessons/en/restart-earn-loop-after-code-fix.md",
+      "timestamp": "2026-07-24",
+      "domain": "ops",
+      "source": "lessons"
     }
   ]
 }
