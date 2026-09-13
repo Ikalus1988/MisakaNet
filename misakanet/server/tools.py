@@ -449,15 +449,21 @@ TOOLS = [
         "name": "misakanet_register",
         "description": (
             "Register an agent and receive a node_id and token"
-            " for unlimited remote MCP access. Local stdio MCP"
+            " for unlimited remote MCP access. Reading needs no"
+            " registration; only write tools do. Local stdio MCP"
             " is unlimited and does not need registration."
             " For remote HTTP MCP, call this tool first to get"
             " a token, then pass it as the user parameter in"
             " subsequent calls. Input semantics: agent_type is"
-            " optional (defaults to 'unknown'). Output schema:"
-            " JSON with node_id, token, registered_at, and"
-            " agent_type. Error cases: none. Side effects:"
-            " persists registration record. Auth: none."
+            " optional (defaults to 'unknown'); client_id is an"
+            " optional stable identifier you generate once —"
+            " with it, later calls return the same node_id and"
+            " token and renew them, without it each call mints a"
+            " new node. Output schema: JSON with node_id, token,"
+            " registered_at, agent_type, and reused=true when an"
+            " existing node was found for client_id. Error cases:"
+            " invalid_client_id. Side effects: persists"
+            " registration record. Auth: none."
             " Rate limits: one registration per session."
         ),
         "inputSchema": {
@@ -469,6 +475,16 @@ TOOLS = [
                         "Optional agent type identifier (e.g."
                         " 'claude-code', 'cursor', 'aider')."
                         " Defaults to 'unknown'."
+                    ),
+                },
+                "client_id": {
+                    "type": "string",
+                    "description": (
+                        "Optional stable identifier for this client"
+                        " (8-64 chars of A-Z a-z 0-9 . _ : -)."
+                        " Generate it once and reuse it so later"
+                        " calls return the same node instead of a"
+                        " new one."
                     ),
                 },
             },
