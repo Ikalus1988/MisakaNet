@@ -1,0 +1,50 @@
+name: Apply D1 schema
+
+# Idempotent schema application, on demand (issues #1647-#1649).
+#
+# Why not the full bootstrap: `d1-bootstrap.yml` creates the database, writes the
+# database_id back into wrangler.toml, syncs every lesson and deploys the worker. Adding a
+# table needs none of that, and running it from a PR or by hand should not redeploy the
+# service. This workflow applies the schema file alone — every statement in it is
+# `IF NOT EXISTS`, so re-running is safe.
+#
+# Credentials: the same CF_API_TOKEN secret the bootstrap uses; local OAuth is not
+# available (it expires hourly and needs a browser).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Install wrangler
+        run: npm install -g wrangler
+
+      - name: Apply schema (idempotent)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+        run: |
+          set -euo pipefail
+          cd workers
+          wrangler d1 execute misakanet-db --remote --file=d1/schema.sql
+
+      - name: Verify the counters table exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+        run: |
+          set -euo pipefail
+          cd workers
+          # Read it back: an "applied" that did not create the table must fail the run.
+          out=$(wrangler d1 execute misakanet-db --remote --json \
+            --command "SELECT name FROM sqlite_master WHERE type='table' AND name='counters';")
+          echo "$out"
+          echo "$out" | grep -q '"name": *"counters"' || { echo "counters table missing"; exit 1; }
