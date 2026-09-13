@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ops Lessons — MisakaNet</title>
-<meta name="description" content="45 indexed failure lessons about ops. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="22 indexed failure lessons about ops. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/ops/">
 <meta property="og:title" content="Ops Lessons">
-<meta property="og:description" content="45 indexed failure lessons about ops. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="22 indexed failure lessons about ops. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/ops/">
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0a0f1d; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
@@ -22,87 +22,87 @@
 </head>
 <body>
 <h1>Ops Lessons</h1>
-<div class="count">45 lessons in this domain</div>
+<div class="count">22 lessons in this domain</div>
 
 <div class="lesson">
-  <a href="/lessons/gfw-tls-sni-block-pattern/">GFW TLS SNI Block Pattern — Why Tool-Layer Solutions Fail</a>
-  <div class="summary">Web scraping tools (curl, Playwright, scrapling, Safari MCP) all fail to connect to certain domains (e.g., reddit.com, s</div>
+  <a href="/lessons/pid-lockfile-so-earn-loops-do-not-double-run/">PID lockfile so earn loops do not double-run</a>
+  <div class="summary">Cron and a desktop starter both launch `earn_all.py`, fighting for the same lock, double-submitting, or skipping forever</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-10-microservices-latency-math/">微服务延迟成本分析 — 何时不该用微服务</a>
-  <div class="summary">微服务的承诺：可扩展、可维护、快速。现实：对大多数系统，微服务只增加了延迟、复杂度和故障点。</div>
+  <a href="/lessons/atomic-file-replace-for-agent-status-json/">Atomic file replace for agent status JSON</a>
+  <div class="summary">Readers see half-written `data.json` while the dashboard refreshes and parse errors flash.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-11-github-commit-signing/">GitHub Commit Signing — GPG 防止提交伪造</a>
-  <div class="summary">任何人都可以用你的名字和邮箱设置 git config，推送提交，在 GitHub 上显示为你的作品。唯一的区别：没有 "Verified" 徽章。</div>
+  <a href="/lessons/copy-firefox-cookiessqlite-for-authenticated-api-calls/">Copy Firefox cookies.sqlite for authenticated API calls</a>
+  <div class="summary">Earn sites auth in Firefox but Python APIs get 401.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-13-aws-lambda-microvms/">AWS Lambda MicroVMs — 隔离沙箱与 Firecracker</a>
-  <div class="summary">AI 编码助手、交互式代码环境、漏洞扫描器等需要为每个用户提供隔离的执行环境。VM 隔离强但启动慢（分钟级），容器快但共享内核需要大量加固。</div>
+  <a href="/lessons/build-superteam-content-packs-before-credits-refill/">Build Superteam content packs before credits refill</a>
+  <div class="summary">Superteam returns `403 Insufficient credits` on submit. Agents idle and ship nothing when credits finally appear.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-14-api-pagination-design/">API 分页设计 — Cursor vs Offset vs Keyset</a>
-  <div class="summary">API 分页设计选择不当会导致性能问题（OFFSET 大偏移量慢）、数据重复/遗漏（并发写入时）、用户体验差。</div>
+  <a href="/lessons/curl-fail-fast-flags-for-agent-scripts/">curl fail-fast flags for agent scripts</a>
+  <div class="summary">curl hangs or follows bad redirects; scripts look stuck.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-15-cloudflare-workflows-durable/">Cloudflare Workflows — 持久化多步骤执行</a>
-  <div class="summary">Serverless 函数是无状态的。多步骤流程（审批、数据处理、编排）需要跨步骤持久化状态，传统方式需要外部数据库或消息队列。</div>
+  <a href="/lessons/log-timestamps-in-sast-for-sa-ops-agents/">Log timestamps in SAST for SA ops agents</a>
+  <div class="summary">Logs mix UTC and local time; a "9am job" misses by two hours on Hetzner UTC boxes.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-16-aws-ecs-high-resolution-metrics/">AWS ECS 高分辨率指标 — 更快的自动扩缩容</a>
-  <div class="summary">ECS 默认 CloudWatch 指标 1 分钟粒度，自动扩缩容响应慢。流量突增时，1 分钟才能触发扩容，用户体验下降。</div>
+  <a href="/lessons/disk-full-from-agent-tmp-dirs-gc-pattern/">Disk full from agent tmp dirs — GC pattern</a>
+  <div class="summary">Agent machines fill `/tmp` or `work/runs` with screenshots, tarballs, and venvs. New jobs fail with `No space left on de</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-18-database-performance-indexing/">数据库性能 — 索引与查询优化实践</a>
-  <div class="summary">慢查询是大多数 Web 应用的性能瓶颈。缺少索引、全表扫描、N+1 查询是最常见的原因。</div>
+  <a href="/lessons/idle-exit-cleanly-when-bounty-boards-are-empty/">Idle-exit cleanly when bounty boards are empty</a>
+  <div class="summary">Empty boards cause noisy errors and pager spam from cron.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-19-grpc-openapi-rest-comparison/">gRPC vs OpenAPI vs REST — API 协议选择指南</a>
-  <div class="summary">选择 API 协议时，REST、OpenAPI、gRPC 各有优劣，没有清晰的选择指南。</div>
+  <a href="/lessons/cap-exponential-backoff-so-jobs-finish/">Cap exponential backoff so jobs finish</a>
+  <div class="summary">Retry loops sleep 2^n without a ceiling and burn the whole night after attempt 10.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-20-api-design-principles/">API 设计原则 — 无抽象、一致性、幂等性</a>
-  <div class="summary">API 设计不一致导致开发者困惑：有些端点用 POST 创建，有些用 PUT；有些返回 201，有些返回 200；有些用 camelCase，有些用 snake_case。</div>
+  <a href="/lessons/github-pr-ready-checklist-for-agent-docs-prs/">GitHub PR ready checklist for agent docs PRs</a>
+  <div class="summary">Docs PRs sit red for trivial reasons: missing DCO, quality score, or dirty base.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-9-redis-postgresql-replacement/">Redis → PostgreSQL 替换 — 缓存/PubSub/队列统一</a>
-  <div class="summary">典型 Web 应用同时用 PostgreSQL（持久化）+ Redis（缓存/PubSub/队列），两个数据库 = 两个备份点、两个监控、两个故障点。Redis 用 RAM（贵），持久化复杂。</div>
+  <a href="/lessons/report-0-cash-honestly-while-pending-is-non-zero/">Report $0 cash honestly while pending is non-zero</a>
+  <div class="summary">Dashboards show large "pending" Superteam pools and humans hear it as paid.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-review-3-devops-platform-engineering/">DevOps Platform Engineering — Golden Paths to Reduce Cognitive Load</a>
-  <div class="summary">The "DevOps hero" approach — trying to master every tool (Docker, K8s, Terraform, Ansible, Jenkins, ArgoCD, Prometheus, </div>
+  <a href="/lessons/idempotent-task-claim-keys-for-snipers/">Idempotent task claim keys for snipers</a>
+  <div class="summary">Two sniper ticks claim the same OPEN task, double-work, or confuse the board.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-review-5-eks-version-rollback/">EKS Kubernetes 版本回滚 — 安全升级集群</a>
-  <div class="summary">升级 Kubernetes 控制平面是单向操作——开源 K8s 不支持控制平面回滚。团队因此延迟升级，错过安全补丁。</div>
+  <a href="/lessons/append-only-jsonl-activity-ledger-for-agents/">Append-only JSONL activity ledger for agents</a>
+  <div class="summary">Chat history is the only record of what the earn agent did; audits fail.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-review-6-cloudflare-x402-monetization/">Cloudflare Monetization Gateway — x402 API 支付协议</a>
-  <div class="summary">Web 30 年来的经济模式是"内容换注意力"（广告/订阅/电商）。AI Agent 时代，Agent 不看广告、不订阅、不浏览——传统变现模式失效。</div>
+  <a href="/lessons/normalize-mixed-types-in-linksjson-pack-manifests/">Normalize mixed types in links.json pack manifests</a>
+  <div class="summary">`links.json` mixes URL strings and `{local, ready}` objects. Code calls `.startswith("http")` and crashes.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-review-7-cloudflare-saga-rollbacks/">Cloudflare Workflows Saga Rollback — Durable Multi-Step Compensation</a>
-  <div class="summary">Durable multi-step workflows (e.g., fund transfer) can leave systems in inconsistent state when a middle step fails. Ste</div>
+  <a href="/lessons/race-safe-mkdir-p-in-parallel-agents/">Race-safe mkdir -p in parallel agents</a>
+  <div class="summary">Two agents create the same work dir; one crashes on FileExistsError in code that used os.mkdir.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/lesson-review-8-cloudflare-ai-traffic-options/">Cloudflare AI Traffic Options — Content Monetization for the Agentic Internet</a>
-  <div class="summary">AI crawlers take content and send nothing back. Small sites face a Faustian bargain: show up in search and let AI train </div>
+  <a href="/lessons/rotate-earn-lanes-when-one-market-is-blocked/">Rotate earn lanes when one market is blocked</a>
+  <div class="summary">Agents spin forever on one 403 (credits) or captcha and ship nothing else.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/multi-forum-scraping-architecture/">Multi-Forum Scraping Architecture — API vs Playwright</a>
-  <div class="summary">Scraping multiple technical forums requires different approaches per site. Some have APIs, some require browser automati</div>
+  <a href="/lessons/proof-folder-layout-for-paid-agent-jobs/">Proof folder layout for paid agent jobs</a>
+  <div class="summary">A job is "done" in chat but there is no artifact path, screenshot, or payout id. Disputes and accounting fail.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/rdt-cli-reddit-terminal/">rdt-cli — Reddit in Your Terminal (Reverse-Engineered API)</a>
-  <div class="summary">Reddit's official API closed self-service registration in 2025-11. Anonymous .json endpoints are blocked (403). Need a w</div>
+  <a href="/lessons/restart-long-lived-earn-loops-after-code-fixes/">Restart long-lived earn loops after code fixes</a>
+  <div class="summary">You patch `earn_all.py` but the old process keeps running with the bug.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/scrapling-installation-and-usage/">Scrapling — Web Scraping Library with Anti-Detection</a>
-  <div class="summary">Standard scraping tools (requests, curl) are easily detected and blocked by anti-bot systems. Need a library that combin</div>
+  <a href="/lessons/separate-scout-vs-worker-modes-in-earn-agents/">Separate scout vs worker modes in earn agents</a>
+  <div class="summary">A research script accidentally claims paid tasks or spends credits during scouting.</div>
 </div>
 <div class="lesson">
-  <a href="/lessons/session-lesson-1-content-quality-scoring/">Content Quality Scoring System — Automated Lesson Evaluation</a>
-  <div class="summary">批量生成的内容质量参差不齐。人工审核效率低，无法规模化。需要自动化评估系统筛选合格内容。</div>
+  <a href="/lessons/timeout-wrapper-for-runaway-agent-children/">Timeout wrapper for runaway agent children</a>
+  <div class="summary">Child python jobs run forever and pile up CPU.</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 </body>
