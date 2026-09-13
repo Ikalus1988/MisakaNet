@@ -1,0 +1,58 @@
+name: D1 counters report
+
+# Read-only ops view for the KV -> D1 counter migration (#1647-#1649).
+#
+# Why it exists: the worker's own /api/health reports counters per *isolate* (an in-memory
+# cache), so it can answer "is this isolate writing counters to D1?" but not "did the
+# migration happen?". This prints what is actually in the table, on demand, using the same
+# CF_API_TOKEN secret the bootstrap uses. Read-only: SELECTs only.
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'How many days back to summarise'
+        type: number
+        default: 2
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Install wrangler
+        run: npm install -g wrangler
+
+      - name: Counters by scope
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+        run: |
+          set -euo pipefail
+          cd workers
+          echo "== totals by scope =="
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT scope, COUNT(*) AS buckets, SUM(count) AS total, MAX(updated_at) AS last_update FROM counters GROUP BY scope ORDER BY total DESC;"
+          echo "== last ${{ inputs.days }} day(s) by scope =="
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT period, scope, COUNT(*) AS buckets, SUM(count) AS total FROM counters WHERE period >= date('now', '-${{ inputs.days }} day') GROUP BY period, scope ORDER BY period DESC, total DESC LIMIT 40;"
+
+      - name: Confirm the KV-era keys are no longer being created
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+        run: |
+          set -euo pipefail
+          cd workers
+          # rate_read and gap must be served by D1 now; if either has zero rows while the
+          # worker is live, the migration is not taking effect and this should be visible.
+          for scope in rate_read gap signal_rate; do
+            n=$(wrangler d1 execute misakanet-db --remote --json --command \
+              "SELECT COUNT(*) AS n FROM counters WHERE scope='${scope}';" | grep -o '"n": *[0-9]*' | head -1 | grep -o '[0-9]*')
+            echo "${scope}: ${n:-0} row(s)"
+          done
