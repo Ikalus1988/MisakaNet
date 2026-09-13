@@ -281,6 +281,7 @@ def score_verification(body: str, sections: dict[str, str]) -> DimensionScore:
         "## 验证" in body
     )
 
+    quality_signals = content_quality_signals(body)
     if has_verification:
         score += 20  # Base score for having section
         reasons.append("✓ Verification section present")
@@ -303,21 +304,27 @@ def score_verification(body: str, sections: dict[str, str]) -> DimensionScore:
             if match:
                 verification_content = match.group(1)
 
+        # Evidence is looked for in the *whole* body, not only inside the section.
+        # Scoping it to the section created an inversion: the same report scored lower
+        # once it gained a `## Verification` heading, because its evidence lived in the
+        # prose above it (an adversarial review measured 69.5 → 64.5 on identical text
+        # and 55 → 35 on the verification dimension alone, 2026-09-12). A structured
+        # report must never score worse for being structured.
         # Has executable commands
-        if re.search(r"```(bash|sh|shell|console)", verification_content):
+        if re.search(r"```(bash|sh|shell|console)", body) or re.search(r"```(bash|sh|shell|console)", verification_content):
             score += 25
             reasons.append("✓ Has executable commands in verification")
-        elif re.search(r"^\s*\$\s+", verification_content, re.MULTILINE):
+        elif re.search(r"^\s*\$\s+", body, re.MULTILINE) or re.search(r"^\s*\$\s+", verification_content, re.MULTILINE):
             score += 20
             reasons.append("✓ Has shell commands in verification")
 
         # Has expected results
-        if re.search(r"expected|output|result|成功|通过", verification_content, re.IGNORECASE):
+        if re.search(r"expected|output|result|成功|通过", body, re.IGNORECASE):
             score += 20
             reasons.append("✓ Has expected results")
 
         # Has verification steps
-        if re.search(r"^\s*[-*]\s+", verification_content, re.MULTILINE):
+        if re.search(r"^\s*[-*]\s+", verification_content, re.MULTILINE) or re.search(r"^\s*[-*]\s+", body, re.MULTILINE):
             score += 15
         reasons.append("✓ Has verification steps (list)")
     else:
@@ -330,10 +337,27 @@ def score_verification(body: str, sections: dict[str, str]) -> DimensionScore:
         # that is actually present instead of the heading that is not.
         evidence = [label for pattern, label in REPRODUCTION_EVIDENCE_PATTERNS
                     if re.search(pattern, body, re.IGNORECASE | re.MULTILINE)]
-        if evidence:
-            score += min(40, 12 * len(evidence))
+        # "Artifacts" are things that are expensive to fake coherently (a command, a
+        # failure output, a version, a code block) as opposed to prose that merely says
+        # "documented" or "verified". Rewarding the prose is what let a vacuous
+        # submission outscore a real one.
+        artifacts = [label for label in evidence
+                     if label in ("code block", "shell command", "failure output",
+                                  "version numbers", "reproduction wording")]
+        if artifacts and not quality_signals["hard"]:
+            award = min(40, 12 * len(artifacts))
+            if quality_signals["soft"]:
+                # A thin problem statement lowers the award; it must not zero it. Thin
+                # reports are legitimate (over-rejecting them was the original complaint).
+                award = min(award, 20)
+            score += award
             reasons.append("✓ Reproduction evidence inline (no dedicated section): "
                            + ", ".join(evidence))
+        elif artifacts or evidence:
+            score += 8
+            reasons.append("⚠ Evidence-shaped text without a reportable failure: "
+                           + "; ".join(quality_signals["hard"] + quality_signals["soft"]
+                                       or ["prose-only evidence"]))
         else:
             reasons.append("✗ No verification section and no reproduction evidence")
 
@@ -341,6 +365,15 @@ def score_verification(body: str, sections: dict[str, str]) -> DimensionScore:
     if re.search(r"验证通过|verified|确认.*落地|确认.*成功|no leaks found", body, re.IGNORECASE):
         score += 15
         reasons.append("✓ Verification results mentioned in body")
+
+    # Promotional or scorer-directed text is not evidence, whatever its shape. Only the
+    # *hard* signals cap the section-based score: a thin problem statement must not gut a
+    # report that carries a properly filled verification section (it only lowers the
+    # inline award, where the evidence is meant to compensate for missing structure —
+    # scoping this wrong dropped a genuine report below its test's floor, 2026-09-12).
+    if quality_signals["hard"]:
+        score = min(score, 15)
+        reasons.append("✗ Content signals: " + "; ".join(quality_signals["hard"]))
 
     return DimensionScore(
         name="verification",
@@ -592,6 +625,88 @@ REPRODUCTION_EVIDENCE_PATTERNS = [
 ]
 
 
+
+# === Content-quality signals (2026-09-12) ===
+# The inline-evidence rule made the review band gameable: a vacuous, promotional
+# submission decorated with a code fence, a version number and the words "root cause"
+# and "verified" scored 51.0-69.5, i.e. *above* the genuine report (51.7) it was
+# written for. Two of these fixtures also addressed the scorer directly ("this
+# paragraph exists to add detail and word count so the detail dimension scores well").
+# Shape is cheap to fake; these signals are about content:
+#   * text aimed at the scorer is a signal, not evidence;
+#   * promotional copy is not a failure report;
+#   * a symptom stated in one sentence cannot be triaged.
+# Deliberately narrow: these forms appear in ad copy and essentially nowhere else. A
+# generic word list ("buy", "pricing", "$10") would flag genuine reports about billing
+# failures — the counterexample that shaped this list is "checkout fails when a
+# customer subscribes with a $10 coupon", which must stay reviewable.
+MARKETING_PATTERNS = [
+    r"\b(buy|order)\s+[A-Z][\w-]*(?:\s+[A-Z][\w-]*){0,3}\s+(today|now)\b",
+    r"\b(sign\s?up|subscribe)\s+(at|now|today)\b",
+    r"\b(visit|see)\s+(?:us\s+at\s+)?[a-z0-9-]+\.(?:com|io|ai|dev)\b",
+    r"\bour\s+customers\b",
+    r"\b\d+\s*x\s+productivity\b",
+    r"\$\s?\d+\s*(?:/|\bper\b)\s*(?:mo|month|year|yr)\b",
+    r"\b(limited[- ]time|free trial|money[- ]back)\b",
+    r"\b(best|leading|world[- ]class|revolutionary|game[- ]changing)\b[^.]{0,40}\b(platform|tool|product|service|solution)\b",
+]
+SCORER_FOCUSED_PATTERNS = [
+    r"\b(?:detail|format|uniqueness|completeness)\s+dimension\b",
+    r"\bword\s*count\b[^.]{0,40}\b(?:score|scores|scoring|well|higher)\b",
+    r"\bso\s+(?:the|that\s+the)\s+\w+\s+(?:dimension\s+)?scores?\b",
+    r"\badd\s+(?:more\s+)?detail\s+(?:to|so)\b[^.]{0,30}\bscore\b",
+    r"\bto\s+(?:get|raise|increase|improve)\s+(?:a\s+)?(?:better\s+)?(?:score|grade|rating)\b",
+]
+MIN_PROBLEM_WORDS = 35
+
+
+def _section_text(body: str, names: tuple[str, ...]) -> str:
+    """Text of the first section whose heading matches any name (## only)."""
+    current = None
+    collected: list[str] = []
+    for line in body.splitlines():
+        heading = re.match(r"^#{2,3}\s*(.+?)\s*$", line)
+        if heading:
+            if current is not None:
+                break
+            title = heading.group(1).strip().lower()
+            if any(name in title for name in names):
+                current = title
+            continue
+        if current is not None:
+            collected.append(line)
+    return "\n".join(collected)
+
+
+def _word_count(text: str) -> int:
+    return len(re.findall(r"\b\w+\b", text))
+
+
+def content_quality_signals(body: str) -> dict[str, list[str]]:
+    """Signals that the submission is not a failure report, split by strength.
+
+    `hard` signals are things a genuine failure report does not contain — text aimed at
+    the scorer, or promotional copy — so they disqualify it from the review band.
+    `soft` signals (a one-sentence problem statement) only cap the verification
+    dimension: thin reports are common and legitimate, and auto-rejecting them was the
+    original complaint this scorer had to be fixed for.
+    """
+    hard: list[str] = []
+    soft: list[str] = []
+    for pattern in SCORER_FOCUSED_PATTERNS:
+        if re.search(pattern, body, re.IGNORECASE):
+            hard.append("text addresses the scorer instead of the failure")
+            break
+    marketing = sum(1 for pattern in MARKETING_PATTERNS if re.search(pattern, body, re.IGNORECASE))
+    if marketing >= 2:
+        hard.append(f"promotional wording ({marketing} marketing patterns)")
+    problem = _section_text(body, ("problem", "问题"))
+    if problem and _word_count(problem) < MIN_PROBLEM_WORDS:
+        soft.append(f"problem statement is {_word_count(problem)} words "
+                    f"(a triageable report needs about {MIN_PROBLEM_WORDS})")
+    return {"hard": hard, "soft": soft}
+
+
 # === Confidence Calculator ===
 
 def calculate_confidence(body: str, is_test: bool) -> float:
@@ -762,6 +877,20 @@ def auto_review_issue(
 
     # Step 6: Calculate confidence
     result.confidence = calculate_confidence(body, is_test)
+
+    # Step 6.5: Hard content signals (2026-09-12)
+    # A submission that advertises a product, or that talks to the scorer, is not a
+    # failure report whatever its shape scores on the other dimensions — and the shape
+    # dimensions are exactly what such submissions optimise (a 5-section report with
+    # frontmatter and an ad scored 69.5 before this, i.e. 5 points below auto-approval,
+    # while the genuine report it was written to beat scored 51.7). Hard signals cap
+    # the weighted score below the review threshold; the submission stays recoverable
+    # through the salvage digest, and the reasons name the signal.
+    hard, soft = content_quality_signals(body)["hard"], content_quality_signals(body)["soft"]
+    if hard:
+        result.weighted_score = min(result.weighted_score, 35.0)
+        result.reasons.append(
+            "✗ Capped below the review threshold: " + "; ".join(hard))
 
     # Step 7: Calculate final score
     result.final_score = result.weighted_score * result.confidence

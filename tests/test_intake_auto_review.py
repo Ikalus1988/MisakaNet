@@ -385,3 +385,125 @@ def test_a_report_that_is_only_pipeline_boilerplate_is_still_rejected():
             + PIPELINE_FOOTER + "\n")
     result = auto_review_issue(9998, "[Intake] x", body)
     assert result.decision == "reject"
+
+# === Gaming vectors and the inversion (2026-09-12) ===
+#
+# An adversarial review falsified the anti-junk claim: a vacuous, promotional
+# submission decorated with evidence-shaped text scored 51.0-69.5 — *above* the
+# genuine report (51.7) the inline-evidence rule was written for. Shape is cheap:
+# a code fence, a version number and the words "root cause" and "verified" cost
+# nothing to produce. It also found an inversion: identical text scored *lower* once
+# it gained a `## Verification` heading, because the structured branch looked for
+# evidence only inside that section.
+
+GAMING_FIXTURES = {
+    "promotional": """## Problem
+The tool does not work and we see an error. Root cause: the configuration is wrong.
+Fix: update the configuration.
+
+```
+$ tool --fix
+```
+
+Version 2.0.1 — verified, it works now.
+
+### Buy Acme Toolkit Pro today — the best AI agent platform on the market. Visit acme.example.com.
+""",
+    "scorer-directed": """## Problem
+Error: our platform fails. Root cause: the version is old.
+## Fix
+We fixed it. Fix pattern: try again.
+
+```
+$ npm install
+Exit code 1
+Traceback (most recent call last): ENOENT
+```
+
+Before/after: 1.2.0 -> 2.0.1. Verified and confirmed, no longer failing.
+
+### Why Acme Toolkit Pro is the best agent platform
+This paragraph exists to add detail and word count so the detail dimension scores well.
+Purchase now.
+""",
+    "keyword-stuffed": """---
+title: npm install fails
+domain: node
+tags: [npm, install, error, node, docker, kubernetes, github-actions, python, ci, webpack]
+---
+
+## Problem
+Error: npm install fails. Our team hit this on Linux with version 2.0.1 and python 3.11
+and docker 24.0.7 and node 18.17.1 and kubernetes 1.29 and github-actions runners.
+
+## Root Cause
+Root cause: the dependency tree is old. It is a configuration issue.
+
+## Fix
+Fix: update the dependency tree. Sign up at acme.example.com for $99/mo.
+""",
+}
+
+GENUINE_REPORT = """## Problem
+
+The UserPromptSubmit hook silently returns {} on every failure path, so a misconfigured
+hook (missing VISION_API_KEY, wrong python path, no image-cache dir) is indistinguishable
+from "no new images" — the user sees the model never acknowledge an image and the checks
+(--help, exit code 2, empty stdin) all pass. Root cause: the top-level except in hooks
+swallows every error and prints {} to keep the turn alive. Fix pattern: on the swallow
+path, write the traceback to a sidecar log the user can find; add a CI step that asserts
+a failed hook produces a discoverable signal rather than a bare {}.
+"""
+
+
+def test_evidence_shaped_promotional_intake_cannot_reach_the_review_band():
+    """Reported as 51.0-69.5 before; the band must not be reachable by decoration."""
+    for name, body in GAMING_FIXTURES.items():
+        result = auto_review_issue(4242, f"[Intake] {name}", body)
+        assert result.decision == "reject", (
+            f"{name}: scored {result.final_score:.1f} and decided {result.decision}; "
+            "shape is not evidence")
+        assert any("scorer" in reason or "promotional" in reason for reason in result.reasons), (
+            f"{name}: the cap must name what it saw: {result.reasons}")
+
+
+def test_the_genuine_report_it_was_meant_to_protect_stays_in_the_band():
+    result = auto_review_issue(1637, "[Intake] hook swallows errors", GENUINE_REPORT)
+    assert result.decision == "review", f"{result.final_score:.1f}: {result.reasons}"
+
+
+def test_a_billing_failure_report_is_not_treated_as_marketing():
+    """The counterexample that shaped the marketing list: a real payment failure."""
+    body = """## Problem
+Checkout fails for EU customers when a subscription is created with a coupon: the POST
+to /api/checkout returns 500 and the order row is written with a null total. Reproduced on
+staging: `curl -X POST https://staging.example.com/api/checkout -d coupon=SAVE10`.
+The pod logs show a NullPointerException in PriceCalculator when discount percent is set.
+
+## Root Cause
+The coupon path resolves the discount before the base price, so percent is applied to an
+unset amount and the arithmetic throws.
+
+## Fix
+Resolve the base price first, then apply the discount; add a guard that rejects a coupon
+without a resolved price.
+
+## Verification
+`curl` above returns 200 and the order row has the correct total (after the fix).
+"""
+    result = auto_review_issue(4243, "[Intake] checkout 500 with coupon", body)
+    assert result.decision == "review", (
+        f"a genuine billing failure must stay reviewable: {result.final_score:.1f} / {result.reasons}")
+
+
+def test_adding_a_verification_heading_never_lowers_the_score():
+    """The inversion: identical text must not score worse for being better structured."""
+    inline = auto_review_issue(4244, "[Intake] inline evidence", GENUINE_REPORT)
+    structured = auto_review_issue(4245, "[Intake] structured evidence",
+                                   GENUINE_REPORT + "\n## Verification\n\nSee above; the evidence is inline.\n")
+    assert structured.weighted_score >= inline.weighted_score, (
+        f"structured {structured.weighted_score:.1f} < inline {inline.weighted_score:.1f}")
+
+
+def test_an_empty_or_boilerplate_intake_is_still_rejected():
+    assert auto_review_issue(4246, "[Intake] empty", "## Problem\nit broke\n").decision == "reject"
