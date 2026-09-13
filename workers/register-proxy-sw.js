@@ -1314,15 +1314,27 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     };
   }
 
-  // Gap analysis: log zero-result search queries to KV (Issue #1164)
+  // Gap analysis: log zero-result search queries (Issue #1164, migrated in #1649).
+  //
+  // This was the last *unbounded* KV key creator: one new `gap:<query>` key per distinct
+  // unanswered query, plus maintenance of the `gap:index` list — so a day of heavy
+  // searching could spend the day's distinct-key budget that registration needs. With D1
+  // it is a row (scope='gap', bucket=query, period=day) and the increment is atomic.
+  // The KV path stays for a deployment without the binding, cap included.
   async function logSearchGap(env, query, source) {
     try {
       if (!env.MISAKANET_KV) return;
-      const key = `gap:${query.toLowerCase().trim()}`;
+      const normalized = query.toLowerCase().trim();
+      const day = new Date().toISOString().slice(0, 10);
+      if (d1Binding(env)) {
+        await bumpCounter(env, "gap", normalized, day, 1);
+        return;
+      }
+      const key = `gap:${normalized}`;
       const existing = await env.MISAKANET_KV.get(key, { type: "json" });
-      // A brand-new gap key costs a unit of the day's distinct-key budget; past the
-      // telemetry cap only existing gaps are updated, so registration keeps headroom.
-      if (!existing && !(await mayCreateTelemetryKey(env, new Date().toISOString().slice(0, 10)))) return;
+      // On the KV path a brand-new gap key costs a unit of the day's distinct-key budget;
+      // past the telemetry cap only existing gaps are updated (see #1648 for why).
+      if (!existing && !(await mayCreateTelemetryKey(env, day))) return;
       const entry = {
         query,
         count: (existing?.count || 0) + 1,
@@ -3117,9 +3129,28 @@ async function aggregateDailyTraffic(env) {
 
 // ── Gap Lifecycle (Issue #1567) ──
 async function cleanupCoveredGaps(env) {
-  const indexRaw = await env.MISAKANET_KV.get("gap:index", { type: "json" });
-  const index = Array.isArray(indexRaw) ? indexRaw : [];
-  if (index.length === 0) return { cleaned: 0 };
+  // Gap rows live in D1 when it is bound (#1649); the KV list is the fallback. Both are
+  // reduced to the same list of {query, delete} so the matching logic below is shared.
+  const d1 = d1Binding(env);
+  let gaps = [];
+  let useD1 = false;
+  if (d1) {
+    try {
+      const { results } = await d1.prepare(
+        `SELECT bucket, period FROM counters WHERE scope = 'gap' ORDER BY updated_at DESC LIMIT 500`,
+      ).all();
+      gaps = (results || []).map((row) => ({ query: String(row.bucket || ""), period: row.period }));
+      useD1 = true;
+    } catch (error) {
+      logInternal("gap cleanup: D1 read failed, falling back to KV", error);
+    }
+  }
+  if (!useD1) {
+    const indexRaw = await env.MISAKANET_KV.get("gap:index", { type: "json" });
+    const index = Array.isArray(indexRaw) ? indexRaw : [];
+    gaps = index.map((gapKey) => ({ query: gapKey.replace(/^gap:/, ""), gapKey }));
+  }
+  if (gaps.length === 0) return { cleaned: 0 };
 
   // Load BM25 index to check if lessons now cover gap queries
   const bm25Index = await loadBM25Index(env);
@@ -3128,21 +3159,31 @@ async function cleanupCoveredGaps(env) {
   const cleaned = [];
   const remaining = [];
 
-  for (const gapKey of index) {
-    const query = gapKey.replace(/^gap:/, "");
+  for (const gap of gaps) {
+    const { query } = gap;
     // Search lessons for the gap query
     const results = searchLessonsBM25(bm25Index, query, null, 3);
     if (results.length > 0) {
-      // Lesson now covers this gap — delete the gap key
-      await env.MISAKANET_KV.delete(gapKey);
+      // Lesson now covers this gap — drop the record
+      if (useD1) {
+        try {
+          await d1.prepare(
+            `DELETE FROM counters WHERE scope = 'gap' AND bucket = ?1`,
+          ).bind(query).run();
+        } catch (error) {
+          logInternal("gap cleanup: delete failed", error);
+        }
+      } else {
+        await env.MISAKANET_KV.delete(gap.gapKey);
+      }
       cleaned.push({ query, matchedLesson: results[0]?.title });
-    } else {
-      remaining.push(gapKey);
+    } else if (!useD1) {
+      remaining.push(gap.gapKey);
     }
   }
 
-  // Update index with remaining gaps
-  if (cleaned.length > 0) {
+  // Update index with remaining gaps (KV path only — D1 rows are their own index)
+  if (!useD1 && cleaned.length > 0) {
     await kvPut(env, "gap:index", JSON.stringify(remaining));
   }
 

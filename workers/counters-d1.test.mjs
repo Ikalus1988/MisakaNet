@@ -170,3 +170,41 @@ test('the signal limiter also counts in D1', async () => {
   const minute = new Date().toISOString().slice(0, 16);
   assert.ok(env.MISAKANET_D1.rows.get(`signal_rate|203.0.113.50|${minute}`) >= 1);
 });
+
+test('a no-match search records a gap row instead of a KV key (#1649)', async () => {
+  const env = createEnv({ d1: createCountersD1() });
+  const day = new Date().toISOString().slice(0, 10);
+  const pending = [];
+  await worker.fetch(new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'MCP-Protocol-Version': '2025-06-18',
+               'Origin': 'https://misakanet.org', 'CF-Connecting-IP': '203.0.113.60' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'misakanet_search',
+                arguments: { query: 'zzz nothing matches this query zzz', top: 1 } } }),
+  }), env, { waitUntil: (promise) => pending.push(promise) });
+  await Promise.all(pending);
+
+  assert.equal(env.MISAKANET_D1.rows.get(`gap|zzz nothing matches this query zzz|${day}`), 1,
+    `the gap must be a counter row: ${JSON.stringify([...env.MISAKANET_D1.rows.keys()])}`);
+  assert.equal(env.kvWrites.filter((key) => key.startsWith('gap:')).length, 0,
+    `no gap:* KV key may be created on the D1 path: ${env.kvWrites.join(', ')}`);
+});
+
+test('the gap counter accumulates per query and day', async () => {
+  const env = createEnv({ d1: createCountersD1() });
+  const day = new Date().toISOString().slice(0, 10);
+  for (let i = 0; i < 3; i++) {
+    const pending = [];
+    await worker.fetch(new Request('https://misakanet.org/mcp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'MCP-Protocol-Version': '2025-06-18',
+                 'Origin': 'https://misakanet.org', 'CF-Connecting-IP': '203.0.113.61' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call',
+        params: { name: 'misakanet_search',
+                  arguments: { query: 'another unmatched query qqq', top: 1 } } }),
+    }), env, { waitUntil: (promise) => pending.push(promise) });
+    await Promise.all(pending);
+  }
+  assert.equal(env.MISAKANET_D1.rows.get(`gap|another unmatched query qqq|${day}`), 3);
+});
