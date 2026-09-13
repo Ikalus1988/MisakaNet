@@ -26,6 +26,7 @@ assertions can also check that the digest still asks for the right things.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -37,7 +38,15 @@ WORKFLOW = REPO / ".github" / "workflows" / "intake-salvage-digest.yml"
 STEP_NAME = "Generate salvage digest"
 
 STUB_GH = """#!/bin/bash
-# Stub gh for tests/test_salvage_digest_script.py
+# Stub gh for tests/test_salvage_digest_script.py.
+# It enforces authentication the way the real `gh` does — exit 4 when no token is in
+# the environment — because a stub that accepts anything made the executable test pass
+# even after the workflow's job-level GH_TOKEN was deleted (an adversarial review
+# demonstrated exactly that, 2026-09-12). With this, removing the token fails here too.
+if [ -z "${GH_TOKEN:-}" ] && [ -z "${GITHUB_TOKEN:-}" ]; then
+  echo "gh: authentication required (no GH_TOKEN in environment)" >&2
+  exit 4
+fi
 echo "gh $*" >> "$GH_CALLS"
 case "$*" in
   *"issue list"*"auto-rejected"*)
@@ -49,6 +58,11 @@ case "$*" in
 esac
 """
 
+
+def workflow_env() -> dict:
+    """The digest job's own `env:` block, so the harness reproduces the runner."""
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    return (workflow.get("jobs", {}).get("salvage-digest", {}) or {}).get("env") or {}
 
 def _step_script() -> str:
     workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
@@ -77,7 +91,16 @@ def digest_run(tmp_path):
     script = tmp_path / "step.sh"
     script.write_text("set -e\n" + script_body, encoding="utf-8")
 
-    env = {**os.environ, "PATH": f"{bindir}:{os.environ['PATH']}", "GH_CALLS": str(calls)}
+    # The step only works if the workflow actually exports a token to `gh`. Feed the
+    # harness the job's own `env:` so deleting it there breaks this test as well (the
+    # secret expression is substituted with a dummy: the point is presence, not value).
+    job_env = (workflow_env() or {})
+    resolved_env = {
+        str(key): re.sub(r"\$\{\{.*?\}\}", "test-token-placeholder", str(value))
+        for key, value in job_env.items()
+    }
+    env = {**os.environ, **resolved_env, "PATH": f"{bindir}:{os.environ['PATH']}",
+           "GH_CALLS": str(calls)}
     result = subprocess.run(["bash", "-e", str(script)], capture_output=True,
                             text=True, env=env, cwd=tmp_path)
     result.calls = calls.read_text(encoding="utf-8") if calls.exists() else ""
@@ -120,3 +143,16 @@ def test_the_timestamp_is_a_timestamp(digest_run):
     generated = text.split("**Generated:**", 1)[1].splitlines()[0].strip()
     assert generated.endswith("UTC") and len(generated) == len("2026-09-12 12:39 UTC"), generated
     assert "extra operand" not in digest_run.stderr
+
+def test_the_step_fails_without_a_token_in_the_environment(digest_run):
+    """The runner's own behaviour: a stub that ignores auth hides a missing GH_TOKEN.
+
+    Deleting the job-level `env: GH_TOKEN` used to leave this file green while the real
+    workflow failed with `exit code 4` — the failure that hid for ten days. The stub now
+    exits 4 without a token, and the harness passes the workflow's job env, so removing
+    it fails both this file and tests/test_workflow_gh_auth.py.
+    """
+    assert workflow_env().get("GH_TOKEN"), (
+        "the digest job must export GH_TOKEN — permissions: alone does not put a token "
+        "in the environment")
+    assert digest_run.returncode == 0, digest_run.stderr
