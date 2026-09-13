@@ -41,9 +41,21 @@ jobs:
             }
 
             let labels = [];
+            // Intakes are *reports*, not specs: requiring acceptance criteria from a
+            // reporter marks every report as incomplete work and fills the tracker with
+            // phantom "missing AC" (found 2026-09-13: five of six needs-ac issues were
+            // intakes, including a salvage digest the workflow itself opened). The AC
+            // requirement stays for tasks and bounties, where someone will implement.
+            const isIntake = (issue.labels || []).some((l) =>
+              ['intake', 'mcp-intake', 'salvage-digest'].includes(typeof l === 'string' ? l : l.name));
             const satisfied = HAS_AC && HAS_CHECKBOX;
-            if (!satisfied) labels.push('needs-ac');
-            if (satisfied) labels.push('ready');
+            if (isIntake) {
+              console.log('  intake: AC not required for reports');
+            } else if (!satisfied) {
+              labels.push('needs-ac');
+            } else {
+              labels.push('ready');
+            }
 
             if (labels.length > 0) {
               await github.rest.issues.addLabels({
