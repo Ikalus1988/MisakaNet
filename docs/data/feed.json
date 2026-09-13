@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-09-13T12:04:23.893342+00:00",
+  "generated_at": "2026-09-13T16:27:33.629035+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "ci: add nightly lessons mirror consistency check",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1657",
+      "timestamp": "2026-09-13T12:53:44Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "Windows voice hook verification",
@@ -30,13 +37,6 @@
       "title": "fix: correct shields.io endpoint badge URL for Smithery badge",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1615",
       "timestamp": "2026-09-12T14:28:15Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 2.30.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1631",
-      "timestamp": "2026-09-12T14:12:26Z",
       "source": "github"
     },
     {
