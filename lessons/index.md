@@ -21,6 +21,7 @@
 - [Agent 手动更新步骤（update 超时处理）](contrib/agent-manual-update-timeout.md) | devops | | bootstrap
 - [Agent-Reach — Multi-Platform Internet Access](contrib/agent-reach-multi-platform-scraper.md) | agent | "agent-reach", "scraping", "reddit", "twitter" | github.com/Panniantong/Agent-Reach
 - [BGE embedding 模型需要降级 fallback 避免启动崩溃](contrib/bge-embedding-fallback-crash.md) | rag | | bootstrap
+- [Character Creator Assistants — Repetitive Name and Archetype Loop from Prompt Anchors](contrib/character-assistant-repetition-loop.md) | agent | "roleplay", "character-creation", "repetition", "prompt-engineering", "sampling-params" | issue-1477
 - [Chroma 建库无 Checkpoint — 进程一死全部丢失](contrib/chroma-rebuild-no-checkpoint-cn.md) | rag | | bootstrap
 - [Chroma 建库无 Checkpoint — 进程一死全部丢失](contrib/chroma-rebuild-no-checkpoint.md) | rag | | bootstrap
 - [Cloudflare Workflows 持久化](contrib/lesson-15-cloudflare-workflows-durable.md) | ops | "cloudflare", "workflows", "durable" | blog.cloudflare.com
