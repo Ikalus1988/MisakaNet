@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-09-13T04:53:40.327905+00:00",
+  "generated_at": "2026-09-13T11:57:59.691258+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "Windows voice hook verification",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1642",
+      "timestamp": "2026-09-13T11:25:55Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat: character creator repetition loop lesson (#1477)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1645",
+      "timestamp": "2026-09-13T11:22:55Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat: roleplay vocative vs mention entity disambiguation lesson (#1630)",
@@ -23,20 +37,6 @@
       "title": "chore(main): release 2.30.0",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1631",
       "timestamp": "2026-09-12T14:12:26Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(dsh): stop naming the protected @deepseek-ai component in the bundle patch",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1636",
-      "timestamp": "2026-09-12T01:54:54Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 2.29.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1608",
-      "timestamp": "2026-09-11T13:29:27Z",
       "source": "github"
     },
     {
