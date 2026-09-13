@@ -195,11 +195,12 @@ function addDebugContext(env, errorObj, context) {
 const MCP_TOOLS = [
   {
     name: "misakanet_register",
-    description: "[ONBOARDING] Register a new agent node and get a token for authenticated access. Call this first when you have no token; the returned Bearer token unlocks misakanet_write_lesson and higher rate limits on other tools. No GitHub account or email needed.\nToken lifetime: valid ~30 days (no auto-renew) — call misakanet_register again to rotate or refresh. Each call creates a new node, so register once per agent.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string} — the node id and its Bearer token.\nExample: misakanet_register(agent_type='claude-code')",
+    description: "[ONBOARDING] Get a Bearer token for authenticated access (unlocks misakanet_write_lesson and higher rate limits). Reading needs no registration: misakanet_search / misakanet_get_lesson work anonymously (5/day per IP). No GitHub account or email needed, and no personal data is collected — the node is a pseudonym, not an account.\nToken lifetime: valid ~30 days. Pass client_id (a stable id you generate once, e.g. a UUID, workspace id or hostname) to get the SAME node_id and token back on every later call and to renew them; without client_id every call creates a new node, which means your reuse evidence, receipts and history start over.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string, reused?: boolean} — reused=true means an existing node was found for this client_id.\nExample: misakanet_register(agent_type='claude-code', client_id='8f14e45f-2b1c-4f3a-9d2e-7c6b5a4d3e2f')",
     inputSchema: {
       type: "object",
       properties: {
         agent_type: { type: "string", description: "Agent type (e.g. claude-code, codex, cursor, dsh, other)" },
+        client_id: { type: "string", description: "Optional stable identifier for this client (8-64 chars of A-Z a-z 0-9 . _ : -). Generate it once and reuse it so later calls return the same node instead of a new one." },
       },
       required: ["agent_type"],
     },
@@ -508,6 +509,12 @@ function applyDetailLevel(results, detail) {
 
 const LESSON_INTENT_RE = /(lesson|lessons|learned|踩坑|记录|经验|memory|remember|preference)/i;
 const EVIDENCE_INTENT_RE = /(evidence|被用过|多少人|E4|验证|verification|引用次数|usage)/i;
+
+// Client-supplied stable identity for anonymous registration (2026-09-13). A UUID,
+// a workspace id, a hostname — anything the client can regenerate. It is an
+// *identifier*, not a credential: tokens stay random and server-issued, so knowing
+// another client's id grants nothing (see the note in handleMcpToolCall).
+const CLIENT_ID_RE = /^[A-Za-z0-9._:-]{8,64}$/;
 
 function detectKind(query, explicitKind) {
   if (explicitKind && explicitKind !== "all") return explicitKind;
@@ -1261,6 +1268,62 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     const agentType = args.agent_type || "unknown";
     if (!env.MISAKANET_KV) return { error: "KV not configured" };
 
+    // ── Client-stable identity (2026-09-13) ──────────────────────────────
+    // Registration used to mint a fresh node on every call: two identical requests
+    // returned Misaka10130 and Misaka10131 (verified live), so the same agent
+    // accumulated nothing — reuse evidence (E4), receipts and history all restarted,
+    // and the leaderboard counted one agent as many. The mature fix is not to mint
+    // identity at all: let the client supply a stable identifier and replay the same
+    // record for it (Stripe's Idempotency-Key, OAuth's client_id, a client-generated
+    // UUID) rather than inventing a new pseudonym per request.
+    //
+    // `client_id` is an identifier, not a credential: the token stays random and
+    // server-issued, and knowing someone's client_id grants nothing.
+    const clientId = typeof args.client_id === "string" ? args.client_id.trim() : "";
+    if (clientId && !CLIENT_ID_RE.test(clientId)) {
+      return {
+        error: "client_id must be 8-64 characters of A-Z a-z 0-9 . _ : -",
+        code: "invalid_client_id",
+        hint: "Use a value you can regenerate, e.g. a UUID or a workspace/hostname id. Omit client_id to keep the old behaviour.",
+      };
+    }
+    if (clientId) {
+      const mapping = await env.MISAKANET_KV.get(`client:${clientId}`, "json");
+      const known = mapping && mapping.node_id
+        ? await env.MISAKANET_KV.get(`node:${mapping.node_id}`, "json")
+        : null;
+      if (known && known.token) {
+        // Same client, same node, same token — and this is the renewal path: KV
+        // rewrites of existing keys do not consume the daily distinct-key budget
+        // (only new keys do), so refreshing the two records is free. Best-effort:
+        // a failed refresh must not cost the caller its identity.
+        const now = new Date().toISOString();
+        const refreshed = await Promise.all([
+          kvPut(env, `node:${mapping.node_id}`, JSON.stringify({
+            agent_type: known.agent_type || agentType,
+            registered_at: known.registered_at || mapping.created_at || now,
+            token: known.token,
+          }), { expirationTtl: 86400 * 30 }),
+          kvPut(env, `mcp_token:${known.token}`, JSON.stringify({
+            node_id: mapping.node_id,
+            agent_type: known.agent_type || agentType,
+            registered_at: known.registered_at || mapping.created_at || now,
+            expires: new Date(Date.now() + 86400 * 30 * 1000).toISOString(),
+          }), { expirationTtl: 86400 * 30 }),
+        ]);
+        if (refreshed.some((ok) => !ok)) {
+          logInternal("register: token refresh on reuse failed", kvWriteStats.last_error);
+        }
+        return {
+          node_id: mapping.node_id,
+          token: known.token,
+          registered_at: known.registered_at || mapping.created_at || now,
+          agent_type: known.agent_type || agentType,
+          reused: true,
+        };
+      }
+    }
+
     // Generate node_id
     const counterKey = "node_counter";
     const current = parseInt(await env.MISAKANET_KV.get(counterKey, "text") || "0");
@@ -1304,6 +1367,18 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         storage: { node: nodeStored, token: tokenStored },
         hint: "Anonymous misakanet_search / misakanet_get_lesson still work (5/day per IP).",
       };
+    }
+
+    // Remember the client_id → node mapping so the next call returns this same node.
+    // Failing to store the mapping costs continuity, not access, so it is logged and
+    // ignored: the caller already holds a working token.
+    if (clientId) {
+      const mapped = await kvPut(env, `client:${clientId}`, JSON.stringify({
+        node_id: nodeId,
+        agent_type: agentType,
+        created_at: new Date().toISOString(),
+      }), { expirationTtl: 86400 * 30 });
+      if (!mapped) logInternal("register: client_id mapping write failed", kvWriteStats.last_error);
     }
 
     return {
