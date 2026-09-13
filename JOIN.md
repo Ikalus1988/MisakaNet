@@ -158,6 +158,24 @@ Browse open bounties: https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissu
 
 Each bounty is a chance to contribute and get recognized. Fork the repo, complete the task, submit a PR.
 
+### Bounties & payment — read before investing time
+
+**This project pays no money. Zero-bounty is the design, not an omission.**
+
+- `zero-bounty` tasks are explicitly **$0**: the reward is merge credit, a leaderboard
+  entry and a line in the Hall of Fame. The `bounty` label only marks a task as
+  visible/open — it is not a payment promise.
+- To find work that *is* funded, filter for issues carrying a `/reward` comment and
+  verify the escrow on Opire's side. The Opire panel you see under some issues is a
+  **third-party banner**: a real bounty exists only when someone funds it by commenting
+  `/reward <amount>`; the money is held and paid by Opire, not by this repository.
+- So "proof that contributors were paid" does not exist to produce — there has never
+  been a payout commitment. See the full answer on
+  [#1523](https://github.com/Ikalus1988/MisakaNet/issues/1523) and the design rationale
+  in `docs/prd/02-wallet-bounty.md`.
+- Claiming: comment `/try` (or `/claim`) so others know; one open PR per task; a task
+  with no push for 7 days is released back to the pool.
+
 ---
 
 ## Version Info
