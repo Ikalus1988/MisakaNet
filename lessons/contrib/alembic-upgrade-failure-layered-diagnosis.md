@@ -20,4 +20,4 @@ evidence_refs:
 
 ## Problem
 
-在 CI 自动化流水线或本地开发环境中，运行 Python 数据库迁移命令时触发 `subprocess.CalledProcessError` 异常：
+在 CI/CD 自动化流水线或本地开发环境中，运行 Python 数据库迁移命令（如 `alembic upgrade head` 或在测试框架中触发 `subprocess.CalledProcessError`）时出现迁移失败异常：
