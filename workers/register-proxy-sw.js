@@ -1168,6 +1168,75 @@ async function mayCreateTelemetryKey(env, dateKey) {
   return true;
 }
 
+// ── Counters: D1 first, KV as the fallback (issue #1648) ───────────────────
+// KV charges the free tier per *distinct key written per day* (1,000), and a same-key
+// rewrite is exempt — so the paths that need a new key per request or per entity die
+// first. Live proof, 2026-09-12: `misakanet_register` failed with
+// `KV put() limit exceeded for the day.` while the cron's index rewrite kept succeeding,
+// because registration writes `node:<id>` and `mcp_token:<token>` (new every call) while
+// the index key already existed. The anonymous read quota had the same shape: one new
+// `rate:read:<ip>:<date>` key per visitor per day, on the request path.
+//
+// Counters are rows, not keys. D1 also makes the increment atomic, which the KV
+// read-modify-write never was (two concurrent requests from one IP could both read 4).
+//
+// The KV fallback keeps the *legacy key shapes*, so a deployment without the D1 binding —
+// or a rollback — sees the same counters it did before.
+const COUNTERS_BACKEND_STATS = { d1: 0, kv: 0, failures: 0, last_failure_at: "" };
+
+function legacyCounterKey(scope, bucket, period) {
+  if (scope === "rate_read") return `rate:read:${bucket}:${period}`;
+  if (scope === "signal_rate") return `rate:signal:${bucket}`;
+  return `counters:${scope}:${bucket}:${period}`;
+}
+
+/** Increment a counter and return its new value (D1 atomic upsert, else KV). */
+async function bumpCounter(env, scope, bucket, period, delta = 1) {
+  const d1 = d1Binding(env);
+  if (d1) {
+    try {
+      const { results } = await d1.prepare(
+        `INSERT INTO counters (scope, bucket, period, count, updated_at)
+         VALUES (?1, ?2, ?3, ?4, datetime('now'))
+         ON CONFLICT(scope, bucket, period)
+         DO UPDATE SET count = count + ?4, updated_at = datetime('now')
+         RETURNING count`,
+      ).bind(scope, String(bucket).slice(0, 200), String(period).slice(0, 32), delta).all();
+      const row = results && results[0];
+      if (row && Number.isFinite(Number(row.count))) {
+        COUNTERS_BACKEND_STATS.d1 += 1;
+        return Number(row.count);
+      }
+    } catch (error) {
+      COUNTERS_BACKEND_STATS.failures += 1;
+      COUNTERS_BACKEND_STATS.last_failure_at = new Date().toISOString();
+      logInternal("counter increment failed, falling back to KV", error);
+    }
+  }
+  if (!env.MISAKANET_KV) return null;
+  const key = legacyCounterKey(scope, bucket, period);
+  const current = parseInt((await env.MISAKANET_KV.get(key, "text")) || "0", 10) || 0;
+  await kvPut(env, key, String(current + delta), { expirationTtl: 86400 });
+  COUNTERS_BACKEND_STATS.kv += 1;
+  return current + delta;
+}
+
+/**
+ * Consume one unit of a quota: returns the refusal object when the quota is exhausted,
+ * or null to proceed. The D1 path increments *then* compares — one round trip, no race,
+ * and the boundary is unchanged (the 5th read succeeds, the 6th is refused). A storage
+ * failure returns null (fail open): a counter problem must not block reads.
+ */
+async function consumeQuota(env, { scope, bucket, period, limit, message, hint }) {
+  const count = await bumpCounter(env, scope, bucket, period, 1);
+  if (count !== null && count > limit) {
+    const refusal = { error: message };
+    if (hint) refusal.hint = hint;
+    return refusal;
+  }
+  return null;
+}
+
 async function kvPut(env, key, value, options) {
   if (!env || !env.MISAKANET_KV) return false;
   kvWriteStats.attempts += 1;
@@ -1315,18 +1384,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     if (!authToken) {
       const ip = clientIp || "unknown";
       const today = new Date().toISOString().slice(0, 10);
-      const rateKey = `rate:read:${ip}:${today}`;
-      if (env.MISAKANET_KV) {
-        const count = parseInt(await env.MISAKANET_KV.get(rateKey, "text") || "0");
-        if (count >= 5) {
-          return {
-            error: "Rate limit: 5 free searches per day exceeded",
-            hint: "Register to get unlimited access: misakanet_register",
-            voice: "failure-warning",
-          };
-        }
-        await kvPut(env, rateKey, String(count + 1), { expirationTtl: 86400 });
-      }
+      // D1 counter when bound (see consumeQuota): no per-IP KV key, atomic increment.
+      const refusal = await consumeQuota(env, {
+        scope: "rate_read", bucket: ip, period: today, limit: 5,
+        message: "Rate limit: 5 free searches per day exceeded",
+        hint: "Register to get unlimited access: misakanet_register",
+      });
+      if (refusal) return { ...refusal, voice: "failure-warning" };
     }
 
     let lessons;
@@ -1470,17 +1534,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     if (!authToken) {
       const ip = clientIp || "unknown";
       const today = new Date().toISOString().slice(0, 10);
-      const rateKey = `rate:read:${ip}:${today}`;
-      if (env.MISAKANET_KV) {
-        const count = parseInt(await env.MISAKANET_KV.get(rateKey, "text") || "0");
-        if (count >= 5) {
-          return {
-            error: "Rate limit: 5 free reads per day exceeded",
-            hint: "Register to get unlimited access: misakanet_register",
-          };
-        }
-        await kvPut(env, rateKey, String(count + 1), { expirationTtl: 86400 });
-      }
+      const refusal = await consumeQuota(env, {
+        scope: "rate_read", bucket: ip, period: today, limit: 5,
+        message: "Rate limit: 5 free reads per day exceeded",
+        hint: "Register to get unlimited access: misakanet_register",
+      });
+      if (refusal) return refusal;
     }
     try {
       const lesson = await fetchLessonContent(env, args.path, args.id);
@@ -1514,17 +1573,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     if (!authToken) {
       const ip = clientIp || "unknown";
       const today = new Date().toISOString().slice(0, 10);
-      const rateKey = `rate:read:${ip}:${today}`;
-      if (env.MISAKANET_KV) {
-        const count = parseInt(await env.MISAKANET_KV.get(rateKey, "text") || "0");
-        if (count >= 5) {
-          return {
-            error: "Rate limit: 5 free reads per day exceeded",
-            hint: "Register to get unlimited access: misakanet_register",
-          };
-        }
-        await kvPut(env, rateKey, String(count + 1), { expirationTtl: 86400 });
-      }
+      const refusal = await consumeQuota(env, {
+        scope: "rate_read", bucket: ip, period: today, limit: 5,
+        message: "Rate limit: 5 free reads per day exceeded",
+        hint: "Register to get unlimited access: misakanet_register",
+      });
+      if (refusal) return refusal;
     }
     const lessonId = args.lesson_id || (args.lesson_path || "").split("/").pop().replace(/\.md$/, "");
     if (!lessonId) return { error: "lesson_id or lesson_path is required" };
@@ -2948,10 +3002,13 @@ async function handleSearchSignal(request, env) {
 
   // IP rate limit: 30 signals per IP per minute.
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const rateKey = `rate:signal:${ip}`;
-  const rateCount = parseInt((await env.MISAKANET_KV.get(rateKey, "text")) || "0", 10) || 0;
-  if (rateCount >= 30) return jsonResponse({ error: "Rate limited. Try again later." }, 429);
-  await kvPut(env, rateKey, String(rateCount + 1), { expirationTtl: 60 });
+  // 30 signals per IP per minute as a window counter: the D1 path creates no KV key at all.
+  const minute = new Date().toISOString().slice(0, 16);
+  const signalRefusal = await consumeQuota(env, {
+    scope: "signal_rate", bucket: ip, period: minute, limit: 30,
+    message: "Rate limited. Try again later.",
+  });
+  if (signalRefusal) return jsonResponse({ error: signalRefusal.error }, 429);
 
   let body;
   try { body = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
@@ -3192,6 +3249,9 @@ export default {
         // caller that needed storage.
         // Counters and timestamps only: the raw message is in the logs, not on an
         // anonymous endpoint (same reasoning as errorResponse).
+        counters: { d1: COUNTERS_BACKEND_STATS.d1, kv: COUNTERS_BACKEND_STATS.kv,
+                    failures: COUNTERS_BACKEND_STATS.failures,
+                    last_failure_at: COUNTERS_BACKEND_STATS.last_failure_at },
         kv_writes: { attempts: kvWriteStats.attempts, failures: kvWriteStats.failures,
                      last_failure_at: kvWriteStats.last_failure_at,
                      last_ok_at: kvWriteStats.last_ok_at },
