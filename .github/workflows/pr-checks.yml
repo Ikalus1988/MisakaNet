@@ -647,8 +647,10 @@ jobs:
           # on main, and the explanation never reached them). The step summary is
           # readable by anyone who opens the run, and an annotation turns up on
           # the PR's Checks page without needing write access.
+          # `paste -sd '; '` would cycle the delimiters ('a;b c'); use one delimiter
+          # and space it, so the annotation reads "A; B" for any number of gates.
           FAILED_GATES=$(printf '%s\n' "$REPORT" | sed -n '/### ⚖️ Verdict/,$p' | grep '^❌' \
-            | sed 's/^❌ //; s/\.$//' | paste -sd '; ' -)
+            | sed 's/^❌ //; s/\.$//' | paste -sd ';' - | sed 's/;/; /g')
           {
             echo "## 🧾 Audit Report — PR #${PR_NUM:-manual} (${SHA_SHORT})"
             echo
