@@ -169,8 +169,33 @@ def validate_evidence_refs(refs) -> list[str]:
     return errors
 
 
-def validate_content_len(content: str) -> bool:
-    return len(content.strip()) >= MIN_CONTENT_CHARS
+# ── Required sections for *new* lessons (2026-09-13) ────────────────
+# A file that stopped after "## Problem" (23 lines, ending mid-sentence) passed this
+# gate into review (PR #1656, from one of the zero-bounty tasks), because the only
+# structural rule was a 100-character floor. New lessons must now carry the four
+# sections the corpus is built on; files that already exist on the base branch keep the
+# advisory path, since legacy gaps are not this PR's debt (see validate_file's docstring).
+REQUIRED_SECTIONS = (
+    ("Problem", ("problem", "问题", "描述")),
+    ("Root Cause", ("root cause", "根因", "原因", "why")),
+    ("Solution", ("solution", "fix", "修复", "解法", "方案", "resolution", "workaround")),
+    ("Verification", ("verification", "verify", "验证")),
+)
+MIN_NEW_LESSON_CHARS = 400
+
+
+def validate_sections(content: str) -> list[str]:
+    """Names of the standard lesson sections missing from `content`."""
+    headings = [h.strip().lower() for h in re.findall(r"^#{2,3}\s*(.+?)\s*$", content, re.M)]
+    missing = []
+    for label, aliases in REQUIRED_SECTIONS:
+        if not any(alias in heading for heading in headings for alias in aliases):
+            missing.append(label)
+    return missing
+
+
+def validate_content_len(content: str, minimum: int = MIN_CONTENT_CHARS) -> bool:
+    return len(content.strip()) >= minimum
 
 
 # ── Repo-level checks ───────────────────────────────────────────────
@@ -437,6 +462,22 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
 
     if not validate_content_len(content):
         errors.append(f"content too short (< {MIN_CONTENT_CHARS} chars excluding frontmatter)")
+
+    if not existing:
+        # Strict rules apply to *new* lessons only.
+        if not validate_content_len(content, MIN_NEW_LESSON_CHARS):
+            errors.append(
+                f"new lesson body too short (< {MIN_NEW_LESSON_CHARS} chars): a lesson that "
+                "cannot be acted on is not a lesson")
+        missing = validate_sections(content)
+        if missing:
+            errors.append(
+                "missing required section(s): " + ", ".join(missing)
+                + " — see lessons/TEMPLATE.md (Problem / Root Cause / Solution / Verification)")
+    else:
+        missing = validate_sections(content)
+        if missing:
+            errors.append("[warn] missing section(s) (legacy): " + ", ".join(missing))
 
     if fm and fm.get("title"):
         domain = fm.get("domain")

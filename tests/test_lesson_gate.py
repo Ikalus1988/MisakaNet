@@ -25,6 +25,7 @@ from scripts.lesson_gate import (  # noqa: E402
     validate_evidence,
     validate_file,
     validate_required,
+    validate_sections,
     validate_status,
     validate_tags,
     validate_title,
@@ -51,7 +52,25 @@ def valid_fm() -> dict:
 
 
 def long_content() -> str:
-    return "# Problem\n\n" + ("x" * 200)
+    """A minimal body that clears every *new-lesson* rule (sections + 400 chars).
+
+    Kept deliberately generic: tests that exercise one field shouldn't fail on
+    structure. Use STUB_LESSON below when the structure is what's under test.
+    """
+    return (
+        "## Problem\n\n"
+        "A CI job that runs database migrations exits non-zero while the identical command\n"
+        "succeeds on a developer machine, and the log stops at the exit code.\n\n"
+        "## Root Cause\n\n"
+        "The recorded migration revision and the migration directory disagreed, so the tool\n"
+        "refused to pick a head. Nothing in the traceback names that state mismatch.\n\n"
+        "## Solution\n\n"
+        "Compare what the database believes with what the directory offers, then reconcile with\n"
+        "a merge revision rather than editing an already-applied migration.\n\n"
+        "## Verification\n\n"
+        "Run the migration from a database restored from the previous release; it must finish\n"
+        "without manual steps and report a single head afterwards.\n"
+    )
 
 
 # ── parse_frontmatter ────────────────────────────────────────────────
@@ -60,7 +79,7 @@ class TestParseFrontmatter:
         p = make_lesson(tmp_path, valid_fm(), long_content())
         fm, content = parse_frontmatter(p.read_text(encoding="utf-8"))
         assert fm["title"] == valid_fm()["title"]
-        assert "x" * 200 in content
+        assert "## Root Cause" in content  # body kept, frontmatter stripped
 
     def test_missing_frontmatter(self, tmp_path):
         p = tmp_path / "no-fm.md"
@@ -370,3 +389,48 @@ class TestMirrorDuplicateTitles:
         flagged as a duplicate even if it lives in a different subdir."""
         other = REPO / "lessons" / "contrib" / "zzz-unrelated-stem-gate-test.md"
         assert find_duplicate_title(self.DCO_TITLE, REPO, exclude_file=other)
+
+# ── Required sections + minimum body (2026-09-13, PR #1656) ──────────
+# A file that stopped after "## Problem" passed the old gate (100-char floor
+# only) and reached review as a lesson. New lessons now need the four corpus
+# sections and a 400-char body; pre-existing files stay advisory.
+
+STUB_LESSON = """## Problem
+
+在 CI 流水线里运行 Python 数据库迁移命令时触发 subprocess.CalledProcessError 异常，
+本地同样命令成功，日志里只有一句非零退出码，没有更具体的失败位置，需要人工排查到底
+是环境差异还是迁移脚本本身的问题，这一行只是为了把正文撑过一百字符的下限。
+"""
+
+
+def test_stub_lesson_is_rejected_and_names_what_is_missing(tmp_path):
+    p = make_lesson(tmp_path, valid_fm(), STUB_LESSON)
+    errors = validate_file(p, REPO)
+    joined = " ".join(errors)
+    assert "missing required section(s)" in joined, errors
+    for label in ("Root Cause", "Solution", "Verification"):
+        assert label in joined, errors
+    assert any("too short" in e for e in errors), errors
+
+
+def test_complete_lesson_passes_the_strict_rules(tmp_path):
+    p = make_lesson(tmp_path, valid_fm(), long_content())
+    errors = validate_file(p, REPO)
+    assert not [e for e in errors if "missing required section" in e], errors
+    assert not [e for e in errors if "too short" in e], errors
+
+
+def test_legacy_file_gets_a_warning_not_a_failure(tmp_path):
+    """Pre-existing files are touched by metadata PRs; legacy gaps are advisory."""
+    p = make_lesson(tmp_path, valid_fm(), STUB_LESSON)
+    issues = validate_file(p, REPO, existing=True)
+    hard = [e for e in issues if not e.startswith("[warn]")]
+    assert not hard, hard
+    assert any(e.startswith("[warn]") and "section" in e for e in issues), issues
+
+
+def test_section_aliases_cover_chinese_headings():
+    """Half the corpus writes 问题/根因/修复/验证 — aliases must match those."""
+    zh = "## 问题\n\n## 根因\n\n## 修复\n\n## 验证\n"
+    assert validate_sections(zh) == []
+    assert validate_sections("## Problem\n\n## Notes\n") == ["Root Cause", "Solution", "Verification"]
