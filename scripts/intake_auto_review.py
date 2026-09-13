@@ -928,6 +928,9 @@ def format_result_json(result: AutoReviewResult) -> str:
         },
         "weighted_score": result.weighted_score,
         "confidence": result.confidence,
+        # `decision_score` is the number the verdict was made on (= weighted_score);
+        # `final_score` stays as the confidence-scaled figure for ranking/dashboards.
+        "decision_score": result.weighted_score,
         "final_score": result.final_score,
         "decision": result.decision,
         "reasons": result.reasons,
@@ -951,13 +954,28 @@ def format_result_comment(result: AutoReviewResult) -> str:
         lines.append("## [REJECTED] Auto-Rejected\n")
 
     # Score summary
+    #
+    # `make_decision` compares `final_score >= THRESHOLD * confidence`, and
+    # `final_score = weighted_score * confidence` — the confidence factor appears on
+    # both sides, so the decision is made on `weighted_score` alone. Reporting only
+    # the confidence-scaled number made the report contradict its own verdict (#1635
+    # showed 38.5/100 and "needs review (40 <= score < 75)"), which readers reasonably
+    # took for a bug. Show the decision score first, and label the scaled one as
+    # informational — it is not the number to compare against the thresholds.
     lines.append("### Score Summary\n")
     lines.append(f"| Metric | Score |")
     lines.append(f"|--------|-------|")
     lines.append(f"| Intake Validation | {result.intake_score}/100 |")
-    lines.append(f"| Weighted Score | {result.weighted_score:.1f}/100 |")
+    lines.append(f"| **Weighted Score (decision)** | **{result.weighted_score:.1f}/100** |")
     lines.append(f"| Confidence | {result.confidence:.0%} |")
-    lines.append(f"| **Final Score** | **{result.final_score:.1f}/100** |")
+    lines.append(f"| Confidence-scaled (informational) | {result.final_score:.1f}/100 |")
+    lines.append("")
+    lines.append(
+        f"> The verdict uses the **weighted score**: `make_decision` multiplies both sides "
+        f"of the comparison by confidence, so confidence does not change the outcome. "
+        f"Compare the weighted score against {THRESHOLD_REVIEW}/{THRESHOLD_APPROVE}; the "
+        f"confidence-scaled value above is informational only."
+    )
     lines.append("")
 
     # Dimension breakdown
@@ -971,16 +989,19 @@ def format_result_comment(result: AutoReviewResult) -> str:
 
     # Decision
     if result.decision == "approve":
-        lines.append(f"**Decision:** Auto-approved (score >= {THRESHOLD_APPROVE})")
+        lines.append(f"**Decision:** Auto-approved (weighted score >= {THRESHOLD_APPROVE})")
         lines.append(f"\nLesson will be created in `lessons/contrib/` directory.")
     elif result.decision == "review":
-        lines.append(f"**Decision:** Needs review ({THRESHOLD_REVIEW} <= score < {THRESHOLD_APPROVE})")
+        lines.append(
+            f"**Decision:** Needs review "
+            f"({THRESHOLD_REVIEW} <= weighted score < {THRESHOLD_APPROVE})"
+        )
         lines.append(f"\nMaintainer please review and decide:")
         lines.append(f"- Approve: convert to lesson")
         lines.append(f"- Improve: request changes")
         lines.append(f"- Reject: close issue")
     else:
-        lines.append(f"**Decision:** Auto-rejected (score < {THRESHOLD_REVIEW})")
+        lines.append(f"**Decision:** Auto-rejected (weighted score < {THRESHOLD_REVIEW})")
         lines.append(f"\n**Rejection Reasons:**")
         for reason in [r for r in result.reasons if r.startswith("✗")]:
             lines.append(f"- {reason}")
@@ -1076,6 +1097,9 @@ created_at: "{__import__('datetime').datetime.utcnow().isoformat()}Z"
         },
         "weighted_score": result.weighted_score,
         "confidence": result.confidence,
+        # `decision_score` is the number the verdict was made on (= weighted_score);
+        # `final_score` stays as the confidence-scaled figure for ranking/dashboards.
+        "decision_score": result.weighted_score,
         "final_score": result.final_score,
         "decision": result.decision,
         "reasons": result.reasons,
@@ -1096,7 +1120,8 @@ created_at: "{__import__('datetime').datetime.utcnow().isoformat()}Z"
 
 ## Issue #{result.issue_number}: {title}
 
-**Score:** {result.final_score}/100
+**Weighted score (decision):** {result.weighted_score:.1f}/100
+**Confidence-scaled (informational):** {result.final_score:.1f}/100 (`make_decision` cancels confidence out)
 **Decision:** Auto-rejected
 
 ## Reasons
@@ -1122,7 +1147,8 @@ created_at: "{__import__('datetime').datetime.utcnow().isoformat()}Z"
 
 ## Issue #{result.issue_number}: {title}
 
-**Score:** {result.final_score}/100
+**Weighted score (decision):** {result.weighted_score:.1f}/100
+**Confidence-scaled (informational):** {result.final_score:.1f}/100 (`make_decision` cancels confidence out)
 **Status:** Pending review
 
 ## Feedback Log
@@ -1234,7 +1260,8 @@ def main():
     parser.add_argument("--archive", "-a", action="store_true",
                        help="Create archive files for review/reject decisions")
     parser.add_argument("--min-score", "-m", type=int, default=0,
-                       help="Exit with error if score below threshold")
+                       help="Exit with error if the weighted (decision) score is below "
+                            "threshold — the same number the verdict uses")
 
     args = parser.parse_args()
 
@@ -1273,7 +1300,10 @@ def main():
         print(format_result_comment(result))
 
     # Exit code based on decision
-    if args.min_score > 0 and result.final_score < args.min_score:
+    # The weighted score, not the confidence-scaled one: the verdict itself is made on
+    # this number (confidence cancels in make_decision), so a gate on the scaled value
+    # would disagree with the decision printed right next to it.
+    if args.min_score > 0 and result.weighted_score < args.min_score:
         sys.exit(1)
     elif result.decision == "reject":
         sys.exit(1)
