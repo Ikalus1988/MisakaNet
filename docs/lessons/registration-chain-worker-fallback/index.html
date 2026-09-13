@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>registration-chain-worker-fallback — MisakaNet</title>
+<title>注册链路设计 — Worker 只创建 Issue，其余交给 Workflow — MisakaNet</title>
 <meta name="description" content="MisakaNet 节点注册需要一条对国内外用户都通畅的链路。最初 Worker 既创建 Issue 又读写 counter.json，导致 Worker 和 register.yml 双重自增、竞态、Worker 权限过大等问题。">
 <link rel="canonical" href="https://misakanet.org/lessons/registration-chain-worker-fallback/">
-<meta property="og:title" content="registration-chain-worker-fallback">
+<meta property="og:title" content="注册链路设计 — Worker 只创建 Issue，其余交给 Workflow">
 <meta property="og:description" content="MisakaNet 节点注册需要一条对国内外用户都通畅的链路。最初 Worker 既创建 Issue 又读写 counter.json，导致 Worker 和 register.yml 双重自增、竞态、Worker 权限过大等问题。">
 <meta property="og:url" content="https://misakanet.org/lessons/registration-chain-worker-fallback/">
 <style>
@@ -26,15 +26,15 @@
 </style>
 </head>
 <body>
-<h1>registration-chain-worker-fallback</h1>
-<div class="meta">Domain: <a href="/topics/contrib/">contrib</a> · <span class="evidence" title="Default on intake">Evidence E0 — Contributor self-reported</span></div>
-<div class="tags"></div>
+<h1>注册链路设计 — Worker 只创建 Issue，其余交给 Workflow</h1>
+<div class="meta">Domain: <a href="/topics/feishu/">feishu</a> · <span class="evidence" title="Default on intake">Evidence E0 — Contributor self-reported</span></div>
+<div class="tags"><span class="tag">registration</span><span class="tag">worker</span><span class="tag">register</span><span class="tag">github-actions</span><span class="tag">feishu</span><span class="tag">fallback</span></div>
 <div class="section">
   <h2>Summary</h2>
   <p>MisakaNet 节点注册需要一条对国内外用户都通畅的链路。最初 Worker 既创建 Issue 又读写 counter.json，导致 Worker 和 register.yml 双重自增、竞态、Worker 权限过大等问题。</p>
 </div>
 <div class="section"><h2>Source</h2><p><a href="https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/registration-chain-worker-fallback.md">View on GitHub →</a></p></div>
-<div class="section"><h2>Search</h2><p><a href="/search/?q=registration-chain-worker-fallback">Find related lessons →</a></p></div>
+<div class="section"><h2>Search</h2><p><a href="/search/?q=注册链路设计 — Worker 只创建 Issue，其余交给 Workflow">Find related lessons →</a></p></div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 </body>
 </html>
