@@ -308,15 +308,15 @@ jobs:
         id: pytest
         run: |
           set +e
+          # These files were ignored for years while passing: a test that exists but
+          # never runs is worse than no test, because it reads as coverage (this
+          # repository has already been bitten twice — workers/d1-fts-search.test.mjs sat
+          # red on main because it was missing from the CI list). Audited 2026-09-13:
+          # every file here passes locally on Linux with no network or clock dependence
+          # (voice_hooks 16, voice_prompts 12, benchmark_fixtures 3, phase_b_orchestrator
+          # 4, queue_lesson_dry_run 3, ci_self_heal 8, evidence_levels 34,
+          # intake_spam_guard needs mcp>=2.1.1 which this job installs).
           pytest --cov=scripts --cov=misakanet --cov-report=term --cov-report=xml --cov-fail-under=20 \
-            --ignore=tests/test_voice_hooks.py \
-            --ignore=tests/test_voice_prompts.py \
-            --ignore=tests/test_benchmark_fixtures.py \
-            --ignore=tests/test_phase_b_orchestrator.py \
-            --ignore=tests/test_queue_lesson_dry_run.py \
-            --ignore=tests/test_ci_self_heal.py \
-            --ignore=tests/test_evidence_levels.py \
-            --ignore=tests/test_intake_spam_guard.py \
             tests/ 2>&1 | tee pytest_report.txt
           PYTEST_EXIT=${PIPESTATUS[0]}
           echo "pytest_exit=$PYTEST_EXIT"
