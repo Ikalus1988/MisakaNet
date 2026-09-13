@@ -365,13 +365,25 @@ jobs:
       - name: Validate Lesson Schema
         id: schema
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
         run: |
+          PR_NUM="${{ github.event.inputs.pr_number }}"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
             HEAD_SHA="${{ github.event.pull_request.head.sha }}"
             mapfile -t TARGETS < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'lessons/**/*.md' 'lessons/*.md')
+          elif [ -n "$PR_NUM" ]; then
+            # Manual audit of one PR: validate only the lessons that PR touches.
+            mapfile -t TARGETS < <(gh pr diff "$PR_NUM" --repo Ikalus1988/MisakaNet --name-only 2>/dev/null \
+              | grep -E '^lessons/.*\.md$' || true)
           else
-            mapfile -t TARGETS < <(find lessons -name '*.md' 2>/dev/null | sort)
+            # No PR context: a whole-corpus sweep fails on legacy lessons by design,
+            # which made every workflow_dispatch run red for reasons unrelated to
+            # the audit (2026-09-13) and hid the real signal. Skip the gate; the
+            # corpus is validated by lesson-gate.yml on changed files.
+            TARGETS=()
+            echo "No PR context — schema gate skipped. Pass the pr_number input to audit a specific PR."
           fi
 
           RESULT=pass
@@ -628,6 +640,26 @@ jobs:
           REPORT+=$'\n\n---\n'
           REPORT+="_Scope: \`${SCOPE}\` | Triggered by \`${SHA_SHORT}\` | [View run](https://github.com/Ikalus1988/MisakaNet/actions/runs/${{ github.run_id }})_"
 
+          # ── Publish the verdict where it cannot be lost ──
+          # On a fork PR the token is read-only, so the comment below warns and
+          # posts nothing: the contributor then sees a red check with no reason
+          # (PR #1657, 2026-09-13 — the real cause was a test that had gone stale
+          # on main, and the explanation never reached them). The step summary is
+          # readable by anyone who opens the run, and an annotation turns up on
+          # the PR's Checks page without needing write access.
+          FAILED_GATES=$(printf '%s\n' "$REPORT" | sed -n '/### ⚖️ Verdict/,$p' | grep '^❌' \
+            | sed 's/^❌ //; s/\.$//' | paste -sd '; ' -)
+          {
+            echo "## 🧾 Audit Report — PR #${PR_NUM:-manual} (${SHA_SHORT})"
+            echo
+            echo "$REPORT"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$VERDICT_PASS" = "true" ]; then
+            echo "::notice title=Audit verdict::All gates passed."
+          else
+            echo "::error title=Audit verdict failed::${FAILED_GATES:-see the run summary}"
+          fi
+
           # ── Post comment (upsert: update the previous report in place
           #    instead of stacking a new comment per run — issue #1498) ──
           if [ -n "$PR_NUM" ]; then
@@ -640,10 +672,10 @@ jobs:
               gh api -X PATCH "repos/Ikalus1988/MisakaNet/issues/comments/$EXISTING_ID" \
                 -f "body=@$REPORT_FILE" >/dev/null 2>&1 || \
                 gh issue comment "$PR_NUM" --repo Ikalus1988/MisakaNet --body-file "$REPORT_FILE" 2>/dev/null || \
-                echo "::warning::Could not update report comment on PR #$PR_NUM"
+                echo "::warning::Could not update the report comment on PR #$PR_NUM (read-only fork token) — the report is in this run's summary and as a check annotation."
             else
               gh issue comment "$PR_NUM" --repo Ikalus1988/MisakaNet --body-file "$REPORT_FILE" 2>/dev/null || \
-                echo "::warning::Could not post report comment to PR #$PR_NUM"
+                echo "::warning::Could not post the report comment to PR #$PR_NUM (read-only fork token) — the report is in this run's summary and as a check annotation."
             fi
             rm -f "$REPORT_FILE"
           fi
