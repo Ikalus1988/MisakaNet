@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-13T20:53:38.911701+00:00",
+  "generated_at": "2026-09-13T23:11:55.188000+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "ci: add nightly lessons mirror consistency check",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1657",
-      "timestamp": "2026-09-13T12:53:44Z",
+      "title": "chore(deps): bump hashgraph-online/hol-guard/.github/workflows/guarded-repository.yml from 3.0.148 to 3.0.153",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1671",
+      "timestamp": "2026-09-13T22:41:02Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "Windows voice hook verification",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1642",
-      "timestamp": "2026-09-13T11:25:55Z",
+      "title": "chore(deps): bump zsxh1990/pr-genius/.github/actions/pr-genius-check from 1.7.2 to 1.8.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1670",
+      "timestamp": "2026-09-13T22:40:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat: character creator repetition loop lesson (#1477)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1645",
-      "timestamp": "2026-09-13T11:22:55Z",
+      "title": "chore(deps): bump Codium-ai/pr-agent from 0.44.0 to 0.45.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1669",
+      "timestamp": "2026-09-13T22:40:54Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat: roleplay vocative vs mention entity disambiguation lesson (#1630)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1633",
-      "timestamp": "2026-09-12T14:28:26Z",
+      "title": "chore(deps-dev): bump wrangler from 4.129.0 to 4.131.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1668",
+      "timestamp": "2026-09-13T22:40:50Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix: correct shields.io endpoint badge URL for Smithery badge",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1615",
-      "timestamp": "2026-09-12T14:28:15Z",
+      "title": "chore(deps): update mcp requirement from >=2.1.1 to >=2.2.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1667",
+      "timestamp": "2026-09-13T22:40:46Z",
       "source": "github"
     },
     {
