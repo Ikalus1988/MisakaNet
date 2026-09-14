@@ -147,7 +147,7 @@ for r in results:
 
 **Option 5 — DeepSeek Harness (DSH plugin):**
 ```bash
-# Install from npm (recommended — published as misakanet@2.28.1)
+# Install from npm (recommended — published as misakanet@2.30.0)
 dsh plugin add misakanet
 
 # Or install directly from git (same bundle)
@@ -424,7 +424,7 @@ flowchart LR
     subgraph Local["💻 Local Node (git clone)"]
         User["Local Agent / Dev"]
         CLI["CLI — search_knowledge.py"]
-        MCP["MCP stdio — scripts/mcp_server.py<br/>(misakanet == 2.28.1)"]
+        MCP["MCP stdio — scripts/mcp_server.py<br/>(misakanet == 2.30.0)"]
         Engine["BM25 Engine — engine.py"]
         Lessons[("lessons/ — git source of truth")]
         Profile[("profile.json — node profile")]
