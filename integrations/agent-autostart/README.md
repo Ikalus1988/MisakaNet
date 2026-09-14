@@ -1,5 +1,18 @@
 # MisakaNet 自启动接入
 
+## 👉 不想碰命令行的（推荐给不会技术的人）
+
+**复制这一句，粘贴到 Claude Code / Codex 的对话框里，回车，然后回一句「好」**：
+
+```
+帮我接入 MisakaNet 失败记忆库：请读取 https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/integrations/agent-autostart/INSTALL_FOR_ME.md ，按里面的「第 2 部分：给你的要求」执行，做完用中文简单告诉我结果。
+```
+
+助手会自己改配置、自己验证、自己解释。想关掉就说「把 MisakaNet 关掉」。
+完整说明（含网络受限时的备用网址）在 **[INSTALL_FOR_ME.md](INSTALL_FOR_ME.md)**。
+
+---
+
 **一行命令安装**（不需要 clone、不需要读文档）：
 
 ```powershell

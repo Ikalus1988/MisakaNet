@@ -16,7 +16,7 @@ set -euo pipefail
 
 BASE="${MISAKANET_RAW_BASE:-https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main}"
 DIR="${MISAKANET_SETUP_DIR:-$HOME/.misakanet-agent}"
-FILES="install_misakanet_agent.py checkpoint_reminder.py prompt.md"
+FILES="install_misakanet_agent.py checkpoint_reminder.py checkpoint_reminder.mjs prompt.md"
 PREFIX="integrations/agent-autostart"
 
 # Mirror chain. raw.githubusercontent.com is unreachable or stalls on plenty of networks

@@ -25,7 +25,7 @@ if ($args) { $SetupArgs = $args }
 Write-Host "MisakaNet setup -> $Dir"
 New-Item -ItemType Directory -Force -Path $Dir | Out-Null
 
-$Files = @('install_misakanet_agent.py', 'checkpoint_reminder.py', 'prompt.md')
+$Files = @('install_misakanet_agent.py', 'checkpoint_reminder.py', 'checkpoint_reminder.mjs', 'prompt.md')
 $Prefix = 'integrations/agent-autostart'
 
 # Mirror chain: raw.githubusercontent.com stalls or is blocked on many networks, and a

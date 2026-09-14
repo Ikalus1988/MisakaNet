@@ -322,9 +322,18 @@ def test_identity_is_provisioned_so_write_tools_need_no_setup(tmp_path):
         assert token.read_text(encoding="utf-8").strip() == "mcp_testtoken"
         assert (home / ".misakanet-agent" / "client_id").exists(), "client_id must be reused, not regenerated"
         assert (token.stat().st_mode & 0o777) == 0o600, "a token file must not be world-readable"
-        # and it must not leak into any agent config
-        for cfg in (".claude.json", ".claude/settings.json", ".codex/config.toml"):
-            assert "mcp_testtoken" not in (home / cfg).read_text(encoding="utf-8"), cfg
+
+        # The token DOES belong in the local agent config - that is what lifts the anonymous
+        # 5-reads/day limit for a user who will never run `misakanet_register` by hand. What
+        # it must not do is show up anywhere else (stdout of the installer, the report URL).
+        claude = json.loads((home / ".claude.json").read_text(encoding="utf-8"))
+        assert claude["mcpServers"]["misakanet"]["headers"]["Authorization"] == "Bearer mcp_testtoken"
+        assert "mcp_testtoken" not in result.stdout, "the installer must not echo the token"
+        report = subprocess.run(
+            [sys.executable, str(INSTALLER), "--home", str(home), "--report", "x"],
+            capture_output=True, text=True, env=env,
+        )
+        assert "mcp_testtoken" not in report.stdout
 
         second = subprocess.run(
             [sys.executable, str(INSTALLER), "--home", str(home), "--only", "claude"],
@@ -409,4 +418,74 @@ def test_bootstrap_downloads_and_hands_over(tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
     for name in ("install_misakanet_agent.py", "checkpoint_reminder.py", "prompt.md"):
         assert (setup_dir / name).exists(), name
+    # the Node hook travels with the bootstrap: CC/Codex users have node, not python
+    assert (setup_dir / "checkpoint_reminder.mjs").exists()
     assert "misakanet" in (home / ".claude.json").read_text(encoding="utf-8")
+
+def test_the_hook_prefers_node_because_that_runtime_always_exists(tmp_path):
+    """Claude Code and Codex are Node programs; Python may not be installed at all.
+
+    A hook whose command cannot be resolved fails *silently* - the reminder never appears
+    and nothing logs an error - so the runtime choice has to be the one that is present.
+    """
+    import shutil as _shutil
+
+    if not _shutil.which("node"):
+        pytest.skip("node unavailable")
+    home = make_home(tmp_path)
+    run_installer(home, "--only", "claude", "--no-register")
+    settings = json.loads((home / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    commands = [
+        hook["command"]
+        for entries in settings["hooks"].values()
+        for entry in entries
+        for hook in entry.get("hooks", [])
+        if "checkpoint_reminder" in hook.get("command", "")
+    ]
+    assert len(commands) == 2, commands
+    for command in commands:
+        executable = command.split('"')[1] if command.startswith('"') else command.split()[0]
+        assert Path(executable).name.startswith("node"), f"expected node, got {command}"
+        script = command.split('"')[3]
+        assert script.endswith(".mjs") and Path(script).exists(), command
+
+
+def test_verify_reports_a_hook_whose_interpreter_is_gone(tmp_path):
+    """The silent-failure mode this check exists for: command present, binary missing."""
+    home = make_home(tmp_path)
+    run_installer(home, "--only", "claude", "--no-register")
+    settings_path = home / ".claude" / "settings.json"
+    settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    for entries in settings["hooks"].values():
+        for entry in entries:
+            for hook in entry.get("hooks", []):
+                if "checkpoint_reminder" in hook.get("command", ""):
+                    hook["command"] = hook["command"].replace("node", "definitely-not-here", 1)
+    settings_path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
+
+    result = run_installer(home, "--verify")
+    assert result.returncode == 1
+    assert "解释器不存在" in result.stdout
+
+def test_a_run_without_a_token_still_configures_reads(tmp_path):
+    """Offline first run: no token, so the config must still be valid and read-only usable."""
+    home = make_home(tmp_path)
+    result = run_installer(home, "--only", "claude,codex")
+    assert result.returncode == 0
+    claude = json.loads((home / ".claude.json").read_text(encoding="utf-8"))
+    assert claude["mcpServers"]["misakanet"]["url"] == "https://misakanet.org/mcp"
+    assert "headers" not in claude["mcpServers"]["misakanet"], "no token, no header"
+
+
+def test_codex_config_carries_the_token_as_http_headers(tmp_path, monkeypatch):
+    """`bearer_token_env_var` needs the user to export a variable; this user never will."""
+    tomllib = pytest.importorskip("tomllib")
+    home = make_home(tmp_path)
+    (home / ".misakanet-agent").mkdir(exist_ok=True)
+    (home / ".misakanet-agent" / "token").write_text("mcp_codex_token", encoding="utf-8")
+    run_installer(home, "--only", "codex", "--no-register")
+
+    data = tomllib.loads((home / ".codex" / "config.toml").read_text(encoding="utf-8"))
+    table = data["mcp_servers"]["misakanet"]
+    assert table["http_headers"]["Authorization"] == "Bearer mcp_codex_token"
+    assert "bearer_token_env_var" not in table

@@ -48,7 +48,8 @@ START = "misakanet:start"
 END = "misakanet:end"
 HERE = Path(__file__).resolve().parent
 PROMPT_FILE = HERE / "prompt.md"
-HOOK_FILE = HERE / "checkpoint_reminder.py"
+HOOK_FILE = HERE / "checkpoint_reminder.py"      # the Python implementation (fallback)
+HOOK_FILE_MJS = HERE / "checkpoint_reminder.mjs"  # the Node implementation (preferred)
 
 # The agents this knows how to configure. `detect` is a path that only exists when the
 # agent is actually installed here; everything else hangs off HOME.
@@ -68,6 +69,22 @@ def _force_utf8_io() -> None:
             stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
         except Exception:
             pass
+
+
+def hook_command(mode: str) -> str:
+    """Command line for the checkpoint hook, using the runtime that certainly exists.
+
+    Claude Code and Codex *are* Node programs, so `node` is present wherever they run;
+    Python is not. A hook whose command cannot be found fails silently - the reminder just
+    never appears, with no error anywhere - so this picks Node when available and falls
+    back to the Python implementation only when it is not.
+    """
+    if HOOK_FILE_MJS.exists():
+        node = shutil.which("node")
+        if node:
+            return f'"{node}" "{HOOK_FILE_MJS}" {mode}'
+    interpreter = shutil.which("python3") or shutil.which("python") or sys.executable
+    return f'"{interpreter}" "{HOOK_FILE}" {mode}'
 
 
 def _stamp() -> str:
@@ -216,9 +233,25 @@ def detect(home: Path, agent: str) -> bool:
     return any(p.exists() for p in checks[agent])
 
 
-def mcp_server_entry() -> dict:
-    """Claude Code / generic JSON shape for a streamable-HTTP MCP server."""
-    return {"type": "http", "url": ENDPOINT}
+def mcp_server_entry(token: str = "") -> dict:
+    """Claude Code / generic JSON shape for a streamable-HTTP MCP server.
+
+    With a token the reads are no longer metered (5/day/IP anonymised), which matters for
+    exactly the user who will never run `misakanet_register` by hand: without this they hit
+    "quota exceeded" on their first busy day and conclude the thing is broken.
+    """
+    entry: dict = {"type": "http", "url": ENDPOINT}
+    if token:
+        entry["headers"] = {"Authorization": f"Bearer {token}"}
+    return entry
+
+
+def _read_token(home: Path) -> str:
+    path = _state_dir(home) / "token"
+    try:
+        return path.read_text(encoding="utf-8").strip() if path.exists() else ""
+    except Exception:
+        return ""
 
 
 def install_claude(home: Path, dry: bool, rep: Report) -> None:
@@ -230,11 +263,12 @@ def install_claude(home: Path, dry: bool, rep: Report) -> None:
         except Exception as exc:
             rep.needs_manual(f"{cfg} 不是合法 JSON（{exc}）→ 请手动加入 mcpServers.misakanet")
             data = {}
+    entry = mcp_server_entry(_read_token(home))
     servers = data.setdefault("mcpServers", {})
-    if servers.get("misakanet") == mcp_server_entry():
+    if servers.get("misakanet") == entry:
         rep.ok("Claude Code: MCP 已注册（无改动）")
     else:
-        servers["misakanet"] = mcp_server_entry()
+        servers["misakanet"] = entry
         backup(cfg, dry)
         write_text(cfg, json.dumps(data, indent=2, ensure_ascii=False) + "\n", dry)
         rep.ok(f"Claude Code: 注册 MCP `misakanet` → {cfg}")
@@ -252,12 +286,8 @@ def install_claude(home: Path, dry: bool, rep: Report) -> None:
             rep.needs_manual(f"{settings_path} 不是合法 JSON（{exc}）→ hooks 未安装")
             settings = {}
     hooks = settings.setdefault("hooks", {})
-    # sys.executable, not "python3": on Windows the interpreter is `python`/`py`, and a
-    # hook whose command does not exist fails silently (the session just never gets the
-    # reminder, with no error anywhere).
-    interpreter = sys.executable or "python3"
-    hook_cmd = {"type": "command", "command": f'"{interpreter}" "{HOOK_FILE}" prompt'}
-    fail_cmd = {"type": "command", "command": f'"{interpreter}" "{HOOK_FILE}" failure'}
+    hook_cmd = {"type": "command", "command": hook_command("prompt")}
+    fail_cmd = {"type": "command", "command": hook_command("failure")}
     changed = False
     for event, entry in (("UserPromptSubmit", hook_cmd), ("PostToolUseFailure", fail_cmd)):
         bucket = hooks.setdefault(event, [])
@@ -274,12 +304,20 @@ def install_claude(home: Path, dry: bool, rep: Report) -> None:
         rep.ok("Claude Code: 钩子已存在（无改动）")
 
 
-CODEX_TABLE = f"""[mcp_servers.misakanet]
-type = "streamable-http"
-url = "{ENDPOINT}"
-# 写入类工具（write_lesson/preflight）需要 token；把它放进环境变量而不是写进本文件
-bearer_token_env_var = "MISAKANET_TOKEN"
-"""
+def codex_table(token: str = "") -> str:
+    """Codex MCP table. Token goes in `http_headers` rather than `bearer_token_env_var`:
+    an env var has to be exported by the user's shell (which this user will not do), while
+    the header is written once and used by Codex itself."""
+    lines = [
+        "[mcp_servers.misakanet]",
+        'type = "streamable-http"',
+        f'url = "{ENDPOINT}"',
+    ]
+    if token:
+        lines.append('http_headers = { Authorization = "Bearer ' + token + '" }')
+    else:
+        lines.append('# 没有 token：读走匿名通道（5/天/IP）。注册后可写入此文件的 http_headers。')
+    return "\n".join(lines) + "\n"
 
 
 TOP_START = "misakanet-top:start"
@@ -312,7 +350,7 @@ def _insert_before_first_table(text: str, block: str) -> str:
 def install_codex(home: Path, dry: bool, rep: Report) -> None:
     cfg = home / ".codex" / "config.toml"
     existing = cfg.read_text(encoding="utf-8") if cfg.exists() else ""
-    table_block = f"# {START}\n{CODEX_TABLE}# {END}\n"
+    table_block = f"# {START}\n{codex_table(_read_token(home))}# {END}\n"
     top_block = (f"# {TOP_START}\n"
                  "# streamable-http MCP 需要这一行（顶级），否则 Codex 不会用 rmcp client\n"
                  "experimental_use_rmcp_client = true\n"
@@ -523,10 +561,33 @@ def verify(home: Path, endpoint: str, rep: Report) -> bool:
             (rep.ok if has_mcp else rep.needs_manual)(
                 f"{agent}: MCP 注册 {'✓' if has_mcp else '✗ 缺失'} （{cfg}）")
             settings = home / ".claude" / "settings.json"
-            hooks_ok = settings.exists() and "checkpoint_reminder" in settings.read_text(encoding="utf-8")
-            ok &= hooks_ok
-            (rep.ok if hooks_ok else rep.needs_manual)(
-                f"{agent}: 检查点钩子 {'✓' if hooks_ok else '✗ 缺失'}")
+            # Parse the JSON - a regex cannot see `\"` inside the command string, which is
+            # how the first version of this check reported a working hook as missing.
+            commands: list[str] = []
+            if settings.exists():
+                try:
+                    data = json.loads(settings.read_text(encoding="utf-8"))
+                    for entries in (data.get("hooks") or {}).values():
+                        for entry in entries:
+                            for hook in (entry or {}).get("hooks", []):
+                                cmd = hook.get("command", "")
+                                if "checkpoint_reminder" in cmd:
+                                    commands.append(cmd)
+                except Exception:
+                    commands = []
+            hooks_ok = bool(commands)
+            interpreter_ok = True
+            if commands:
+                exe = commands[0].split('"')[1] if commands[0].startswith('"') else commands[0].split()[0]
+                interpreter_ok = bool(shutil.which(exe) or Path(exe).exists())
+            ok &= hooks_ok and interpreter_ok
+            if hooks_ok and interpreter_ok:
+                rep.ok(f"{agent}: 检查点钩子 ✓（{commands[0][:60]}…）")
+            elif hooks_ok and not interpreter_ok:
+                rep.needs_manual(
+                    f"{agent}: 钩子命令里的解释器不存在 → 钩子会静默不触发，重跑安装器即可修（{commands[0]}）")
+            else:
+                rep.needs_manual(f"{agent}: 检查点钩子 ✗ 缺失")
         rules = {"codex": home / ".codex" / "AGENTS.md", "hermes": home / ".hermes" / "SOUL.md",
                  "dsh": home / ".agents" / "skills" / "misakanet" / "SKILL.md"}.get(agent)
         if rules is not None:
@@ -662,25 +723,28 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     wanted = [a.strip() for a in args.only.split(",") if a.strip()] or list(AGENTS)
-    installed_any = False
+    targets: list[str] = []
     for agent in wanted:
         if agent not in INSTALLERS:
             rep.skip(f"未知 agent: {agent}")
-            continue
-        if not detect(home, agent):
+        elif not detect(home, agent):
             rep.skip(f"{agent}: 本机未检测到（{home}/.{agent}* 不存在）")
-            continue
-        INSTALLERS[agent](home, args.dry_run, rep)
-        installed_any = True
+        else:
+            targets.append(agent)
 
-    # Only provision an identity when something was actually configured: an installer that
-    # writes files into a HOME with no agents is just litter (and the test suite says so).
+    # Identity FIRST, then the agents: the token has to exist before the MCP entries are
+    # written, or the config lands without the Authorization header and the user hits the
+    # anonymous 5-reads/day wall on their first busy day. A HOME with no agents gets no
+    # identity at all (an installer that litters is worse than one that does nothing).
     if args.no_register:
         rep.skip("匿名身份：--no-register，跳过（只读使用不需要）")
-    elif not installed_any:
+    elif not targets:
         rep.skip("匿名身份：未配置任何 agent，跳过")
     else:
         ensure_identity(home, endpoint, args.dry_run, rep)
+
+    for agent in targets:
+        INSTALLERS[agent](home, args.dry_run, rep)
 
     print(rep.render())
     print("\n自检：python3 install_misakanet_agent.py --verify（一条命令告诉你到底通不通）")
