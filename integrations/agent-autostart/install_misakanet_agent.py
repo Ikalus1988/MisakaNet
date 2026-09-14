@@ -53,7 +53,7 @@ HOOK_FILE_MJS = HERE / "checkpoint_reminder.mjs"  # the Node implementation (pre
 
 # The agents this knows how to configure. `detect` is a path that only exists when the
 # agent is actually installed here; everything else hangs off HOME.
-AGENTS = ("claude", "codex", "hermes", "dsh")
+AGENTS = ("claude", "codex", "hermes", "openclaw", "dsh")
 
 
 def _force_utf8_io() -> None:
@@ -225,9 +225,13 @@ def prompt_block() -> str:
 # ── per-agent actions ───────────────────────────────────────────────
 def detect(home: Path, agent: str) -> bool:
     checks = {
-        "claude": [home / ".claude", home / ".claude.json"],
+        # cc-haha / claude-haha is a Claude Code fork that reads ~/.claude (its adapters
+        # README points at ~/.claude/adapters.json and it honours CLAUDE_CONFIG_DIR), so a
+        # ~/cc-haha checkout counts as evidence that the claude target applies to it too.
+        "claude": [home / ".claude", home / ".claude.json", home / "cc-haha"],
         "codex": [home / ".codex"],
         "hermes": [home / ".hermes"],
+        "openclaw": [home / ".openclaw"],
         "dsh": [home / ".dsh", home / ".agents"],
     }
     return any(p.exists() for p in checks[agent])
@@ -403,17 +407,32 @@ def install_hermes(home: Path, dry: bool, rep: Report) -> None:
                          f"再执行 `hermes mcp add misakanet --url {ENDPOINT}`")
     else:
         text = cfg.read_text(encoding="utf-8")
+        cli = shutil.which("hermes")
         if "misakanet" in text:
             rep.ok("Hermes: 配置里已有 misakanet（无改动）")
+        elif cli and not dry:
+            rc, out = _run_cli([cli, "mcp", "add", "misakanet", "--url", ENDPOINT])
+            if rc == 0:
+                rep.ok("Hermes: 已注册 MCP `misakanet`（hermes mcp add）")
+            else:
+                rep.needs_manual(f"Hermes: `hermes mcp add` 失败：{out.strip()[:200]}")
+        elif cli and dry:
+            rep.ok(f"Hermes: 会执行 `hermes mcp add misakanet --url {ENDPOINT}`")
         else:
-            rep.needs_manual(f"Hermes: 请执行 `hermes mcp add misakanet --url {ENDPOINT}`"
-                             "（Hermes 自己管理 YAML 与首次使用同意，脚本不代写）")
+            rep.needs_manual(f"Hermes: 没找到 hermes CLI → 手动执行 "
+                             f"`hermes mcp add misakanet --url {ENDPOINT}`")
     rules = home / ".hermes" / "SOUL.md"
     status = inject_block(rules, prompt_block(), dry)
     rep.ok(f"Hermes: 规则块 {status} → {rules}")
     rep.needs_manual(
-        "Hermes: 钩子写在 ~/.hermes/config.yaml 且需要首次同意（allowlist）→ 想启用检查点，"
-        f"把命令 `python3 {HOOK_FILE} prompt` 加到它的 prompt 钩子，再跑 `hermes hooks doctor` 确认")
+        "Hermes: 钩子需要它自己的 consent/allowlist，脚本不代写。想启用「首轮自报 + 检查点沉淀」，"
+        f"把这段加到 ~/.hermes/config.yaml（事件名取自 hermes 的 VALID_HOOKS）：\n"
+        "      hooks:\n"
+        f"        on_session_start:\n          - command: \"node {HOOK_FILE_MJS} prompt\"\n"
+        f"        post_tool_call:\n          - command: \"node {HOOK_FILE_MJS} failure\"\n"
+        f"        on_session_end:\n          - command: \"node {HOOK_FILE_MJS} prompt\"\n"
+        "      然后 `hermes hooks doctor` 验证（首次会要求同意；hermes 的 payload 形状与 CC 不同，"
+        "若钩子收不到 session_id，可用 MISAKANET_HOOK_DEBUG=1 看实际输入再适配）")
 
 
 def install_dsh(home: Path, dry: bool, rep: Report) -> None:
@@ -643,10 +662,65 @@ def report_url(home: Path, note: str) -> str:
             "&body=" + urllib.parse.quote(body))
 
 
+def _run_cli(cmd: list[str], timeout: float = 60.0) -> tuple[int, str]:
+    """Run an agent's own CLI. Returns (returncode, combined output)."""
+    import subprocess
+
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
+    except FileNotFoundError:
+        return 127, f"{cmd[0]}: not found"
+    except Exception as exc:                                  # pragma: no cover - env specific
+        return 1, str(exc)
+
+
+def install_openclaw(home: Path, dry: bool, rep: Report) -> None:
+    """OpenClaw: rules live in ~/.openclaw/workspace, MCP servers in `openclaw mcp.servers`.
+
+    It has its own MCP client (`openclaw mcp add`), so unlike DSH it can call MisakaNet
+    natively. The CLI keeps its own cache under $XDG_CACHE_HOME, which may be read-only in
+    sandboxes - that surfaces as "Could not start the CLI", hence the env hint below.
+    """
+    rules = home / ".openclaw" / "workspace" / "AGENTS.md"
+    if not rules.parent.is_dir():
+        rep.needs_manual(f"OpenClaw: 找不到 {rules.parent} → 先运行一次 openclaw 生成 workspace")
+    else:
+        status = inject_block(rules, prompt_block(), dry)
+        rep.ok(f"OpenClaw: 规则块 {status} → {rules}")
+
+    cli = shutil.which("openclaw")
+    if not cli:
+        rep.needs_manual("OpenClaw: 没找到 openclaw CLI → 手动执行 "
+                         f"`openclaw mcp add misakanet --url {ENDPOINT} --transport streamable-http`")
+        return
+    if dry:
+        rep.ok(f"OpenClaw: 会执行 `openclaw mcp add misakanet --url {ENDPOINT} "
+               "--transport streamable-http --no-probe`")
+        return
+
+    token = _read_token(home)
+    cmd = [cli, "mcp", "add", "misakanet", "--url", ENDPOINT,
+           "--transport", "streamable-http", "--no-probe"]
+    if token:
+        cmd += ["--header", f"Authorization=Bearer {token}"]
+    rc, out = _run_cli(cmd)
+    if rc == 0:
+        rep.ok("OpenClaw: 已注册 MCP `misakanet`（openclaw mcp add）")
+        return
+    if "Could not start the CLI" in out:
+        rep.needs_manual(
+            "OpenClaw: CLI 起不动（缓存目录不可写）→ 设 XDG_CACHE_HOME 到可写目录后重跑，"
+            f"或手动执行：openclaw mcp add misakanet --url {ENDPOINT} --transport streamable-http")
+    else:
+        rep.needs_manual(f"OpenClaw: `openclaw mcp add` 失败：{out.strip()[:200]}")
+
+
 INSTALLERS = {
     "claude": install_claude,
     "codex": install_codex,
     "hermes": install_hermes,
+    "openclaw": install_openclaw,
     "dsh": install_dsh,
 }
 
