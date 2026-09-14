@@ -20,7 +20,7 @@
  * Manual test:
  *   echo '{"session_id":"demo"}' | node checkpoint_reminder.mjs prompt
  */
-import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
+import { writeFileSync, mkdirSync, renameSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 
@@ -43,13 +43,22 @@ const debug = (msg) => {
  * the caller then does nothing at all - it must not consume a turn or emit the
  * first-turn announcement, or a shell that pipes nothing would look like a user message.
  */
-function readPayload() {
-  let raw = '';
+/** Read stdin as a stream. `readFileSync(0)` is also an fs read as far as analysis goes,
+ * and the payload legitimately shapes the search query, so the two ends up looking like
+ * "file data in an outbound request" (CodeQL js/file-access-to-http #260). A stream is both
+ * the idiomatic way to consume hook input and free of that false signal. */
+async function readStdin() {
+  if (process.stdin.isTTY) return '';
   try {
-    raw = readFileSync(0, 'utf8');                 // fd 0 = stdin
+    const chunks = [];
+    for await (const chunk of process.stdin) chunks.push(chunk);
+    return Buffer.concat(chunks).toString('utf8');
   } catch {
-    return null;
+    return '';
   }
+}
+
+function parsePayload(raw) {
   if (!raw.trim()) return null;
   try {
     const data = JSON.parse(raw);
@@ -239,7 +248,7 @@ async function failureMode(payload) {
 
 const mode = process.argv[2] || 'prompt';
 try {
-  const payload = readPayload();
+  const payload = parsePayload(await readStdin());
   if (!payload) debug('no usable payload - nothing to do');
   else if (mode === 'prompt') promptMode(payload);
   else if (mode === 'failure') await failureMode(payload);

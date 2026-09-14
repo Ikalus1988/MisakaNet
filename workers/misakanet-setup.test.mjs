@@ -20,6 +20,9 @@ const CLI = resolve(import.meta.dirname, '..', 'packages', 'misakanet-setup', 'b
 const STUB_TOKEN = testToken('setup');
 const FILE_TOKEN = testToken('file');
 const EXPORTED_TOKEN = testToken('exported');
+// The CLI validates the shape before persisting (mcp_ + >=20 chars), so the stub must
+// answer like the real server does.
+const TOKEN_SHAPE_OK = `mcp_${testToken('node')}`;
 const OFFLINE = 'http://127.0.0.1:9/mcp';
 
 function makeHome({ codex = true, claude = true } = {}) {
@@ -170,7 +173,7 @@ test('verify passes once installed, against a reachable endpoint', async () => {
       const payload = JSON.parse(body || '{}');
       const tool = payload.params?.name;
       const result = tool === 'misakanet_register'
-        ? { node_id: 'MisakaTEST', token: STUB_TOKEN }
+        ? { node_id: 'MisakaTEST', token: TOKEN_SHAPE_OK }
         : { results: [{ id: 'stub', type: 'lesson' }] };
       const reply = JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
         content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } });
@@ -189,9 +192,9 @@ test('verify passes once installed, against a reachable endpoint', async () => {
     // the token must reach the config, or the user hits the 5-reads/day wall
     const claude = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
     assert.equal(claude.mcpServers.misakanet.url, url, 'the CLI honours MISAKANET_ENDPOINT');
-    assert.equal(claude.mcpServers.misakanet.headers.Authorization, `Bearer ${STUB_TOKEN}`);
+    assert.equal(claude.mcpServers.misakanet.headers.Authorization, `Bearer ${TOKEN_SHAPE_OK}`);
     const toml = readFileSync(join(home, '.codex', 'config.toml'), 'utf8');
-    assert.ok(toml.includes(`http_headers = { Authorization = "Bearer ${STUB_TOKEN}" }`), toml);
+    assert.ok(toml.includes(`http_headers = { Authorization = "Bearer ${TOKEN_SHAPE_OK}" }`), toml);
 
     const verify = await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url }, '--verify');
     assert.equal(verify.status, 0, verify.stdout + verify.stderr);

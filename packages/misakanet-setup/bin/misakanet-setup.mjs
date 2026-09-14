@@ -249,16 +249,21 @@ async function ensureIdentity() {
     writeFileSync(clientFile, clientId);
   }
   const result = await mcpCall('misakanet_register', { agent_type: 'setup', client_id: clientId });
-  if (!result || !result.token) {
-    need('注册没成功（可能离线）→ 读课程不受影响；想要写入类工具时重跑本命令');
+  // Validate before persisting: a response body is not something to write to disk unchecked
+  // (CodeQL js/http-to-file-access #262/#264 is about exactly that flow). The endpoint is
+  // ours, but "trust the shape" is the correct habit and it makes the value failing to match
+  // a visible, debuggable outcome instead of a silent 401 later.
+  const token = typeof result?.token === 'string' ? result.token.trim() : '';
+  if (!/^mcp_[A-Za-z0-9_-]{20,}$/.test(token)) {
+    need('注册没成功或返回的凭据形状不对（可能离线）→ 读课程不受影响；想要写入类工具时重跑本命令');
     return '';
   }
-  writeFileSync(file, result.token);
+  writeFileSync(file, token);
   try {
     chmodSync(file, 0o600);
   } catch { /* windows */ }
-  ok(`匿名身份：${result.node_id || '?'}（token 存 ${file}，权限 600）`);
-  return result.token;
+  ok(`匿名身份：${String(result.node_id || '?').slice(0, 32)}（token 存 ${file}，权限 600）`);
+  return token;
 }
 
 // ── per-agent install ────────────────────────────────────────────────
