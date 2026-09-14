@@ -83,3 +83,18 @@ rules:
       severity: info
       description: "PR title contains WIP"
       message: "Remove WIP prefix when the PR is ready for review."
+    # ── Badcase-derived rules (2026-08-21) ──
+    # From mcp-memory-service PRs #1168/#1182/#1193/#1194 closed due to
+    # missing tests, edge cases, and competitive pressure.
+    - id: missing_test_for_bugfix
+      pattern: "(?i)\\bfix\\b"
+      severity: high
+      condition: "no_test_files_changed"
+      description: "Bug fix PR without test — maintainer preference for PRs with tests"
+      message: "Add at least one test covering the fix. Maintainers consistently pick PRs with tests over those without."
+    - id: competitive_issue_risk
+      pattern: "(?i)#\\d+"
+      severity: medium
+      condition: "multiple_open_prs_on_same_issue"
+      description: "Multiple PRs may target the same issue"
+      message: "Check for competing PRs: gh pr list --state open --search 'fixes #NNN'. Ensure yours has tests + edge case coverage."
