@@ -48,8 +48,21 @@ jobs:
       # the token itself.
       - name: Check npm identity and publish rights
         run: |
-          echo "account: $(npm whoami || echo '(whoami failed)')"
-          echo "packages this token can access:"
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::NPM_TOKEN is empty - set it to a token that can publish this package."
+            exit 1
+          fi
+          if ! ACCOUNT=$(npm whoami 2>/tmp/whoami.err); then
+            echo "::error::npm rejected NPM_TOKEN (npm whoami failed)."
+            sed 's/^/    /' /tmp/whoami.err | head -5
+            echo "::error::A rejected token is usually expired (npm tokens default to 90 days;"
+            echo "::error::a 401 here is not a permissions problem) or belongs to another registry."
+            echo "::error::Fix: create a new automation token on npmjs.com and update the"
+            echo "::error::NPM_TOKEN repository secret, then re-run this workflow."
+            exit 1
+          fi
+          echo "account: $ACCOUNT"
+          echo "packages this token can reach:"
           npm access list packages --json 2>/dev/null || echo "  (npm access not permitted by this token)"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
