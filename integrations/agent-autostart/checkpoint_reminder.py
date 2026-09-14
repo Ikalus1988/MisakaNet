@@ -45,6 +45,21 @@ DEFAULT_STATE = Path.home() / ".misakanet-agent" / "state"
 ENDPOINT = os.environ.get("MISAKANET_ENDPOINT", "https://misakanet.org/mcp")
 
 
+def _force_utf8_io() -> None:
+    """Make stdout/stderr UTF-8 regardless of the console code page.
+
+    On Windows the default is the OEM code page (GBK on zh-CN), so printing the
+    summary's tick marks raised UnicodeEncodeError and the installer died *after*
+    doing its work - the worst place to fail, because the files were already
+    changed. `errors="replace"` guarantees no character can ever crash output.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+        except Exception:
+            pass
+
+
 def _debug(msg: str) -> None:
     if os.environ.get("MISAKANET_HOOK_DEBUG") == "1":
         print(f"[misakanet-hook] {msg}", file=sys.stderr)
@@ -204,6 +219,7 @@ def run_failure_mode(payload: dict) -> int:
 
 
 def main(argv: list[str]) -> int:
+    _force_utf8_io()
     mode = argv[1] if len(argv) > 1 else "prompt"
     payload = _read_payload()
     try:

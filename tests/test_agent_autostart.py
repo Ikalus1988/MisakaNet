@@ -219,3 +219,33 @@ def test_hook_survives_junk_input(tmp_path):
     for payload in ("", "not json", "{}", "[1,2,3]"):
         assert run_hook(payload, "prompt", tmp_path / "state") == ""
         assert run_hook(payload, "failure", tmp_path / "state") == ""
+
+def test_installer_survives_a_non_utf8_console(tmp_path):
+    """Windows zh-CN consoles default to GBK; printing the summary used to crash there.
+
+    Verified the hard way: run through cmd.exe on Windows, the installer did all its work
+    and then died with UnicodeEncodeError on the tick mark - the worst possible moment,
+    because the files were already rewritten.
+    """
+    home = make_home(tmp_path)
+    env = dict(os.environ, PYTHONIOENCODING="gbk")
+    result = subprocess.run(
+        [sys.executable, str(INSTALLER), "--home", str(home)],
+        capture_output=True, text=True, env=env,
+    )
+    assert result.returncode == 0, f"installer crashed under a GBK console: {result.stderr}"
+    assert (home / ".claude" / "CLAUDE.md").exists()
+
+
+def test_hook_emits_utf8_even_when_the_console_is_gbk(tmp_path):
+    """The injected reminder is read as UTF-8 by the agent; wrong bytes = garbled context."""
+    state = tmp_path / "state"
+    env = {"MISAKANET_CHECKPOINT_AT": "1", "MISAKANET_HOOK_STATE": str(state),
+           "PYTHONIOENCODING": "gbk"}
+    proc = subprocess.run(
+        [sys.executable, str(HOOK), "prompt"],
+        input=json.dumps({"session_id": "gbk"}).encode("utf-8"), capture_output=True, env=env,
+    )
+    assert proc.returncode == 0
+    proc.stdout.decode("utf-8")   # must be valid UTF-8, not GBK bytes
+    assert "检查点" in proc.stdout.decode("utf-8")

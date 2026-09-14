@@ -55,6 +55,21 @@ HOOK_FILE = HERE / "checkpoint_reminder.py"
 AGENTS = ("claude", "codex", "hermes", "dsh")
 
 
+def _force_utf8_io() -> None:
+    """Make stdout/stderr UTF-8 regardless of the console code page.
+
+    On Windows the default is the OEM code page (GBK on zh-CN), so printing the
+    summary's tick marks raised UnicodeEncodeError and the installer died *after*
+    doing its work - the worst place to fail, because the files were already
+    changed. `errors="replace"` guarantees no character can ever crash output.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+        except Exception:
+            pass
+
+
 def _stamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -428,6 +443,7 @@ def uninstall(home: Path, dry: bool, rep: Report) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _force_utf8_io()
     parser = argparse.ArgumentParser(description="Install MisakaNet auto-start behaviour")
     parser.add_argument("--home", default=str(Path.home()), help="target HOME (for tests)")
     parser.add_argument("--only", default="", help=f"comma list of {','.join(AGENTS)}")

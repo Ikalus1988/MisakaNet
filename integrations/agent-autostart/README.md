@@ -58,6 +58,20 @@ python3 integrations/agent-autostart/install_misakanet_agent.py
 - **可回滚**：改过的文件都留 `<file>.misakanet.bak`；`--uninstall` 只删自己加的东西（标记块 + 自己注册的条目），
   你原有的 hooks / mcpServers / TOML 键都保留（有测试覆盖）。
 
+
+## Windows 实测记录（两个只有真跑才会暴露的坑）
+
+这两个都是**在 cmd.exe 里实跑发现的**，不是读代码看出来的，所以留在这里省下一次重踩：
+
+1. **`.bat` 里不能写非 ASCII 注释**。cmd.exe 按 OEM 代码页解析 `.bat`，UTF-8 中文注释会被解码错乱，
+   碎片被当成命令执行（报一堆 `'…' 不是内部或外部命令`）。所以这个 .bat **刻意全英文**；
+   中文输出交给 Python 侧（脚本里已 `chcp 65001` + `sys.stdout.reconfigure(utf-8)`）。
+2. **从 WSL/网络路径运行要先 `pushd "%~dp0"`**。`\\wsl.localhost\...` 这类 UNC 路径不能作为 cmd 的当前目录，
+   不 pushd 会直接失败；pushd 会自动映射一个盘符（实测映射为 `Z:`）。
+3. **Python 在中文 Windows 上默认用 GBK 输出**，打印 `✓` 会抛 `UnicodeEncodeError`——
+   最糟的是它发生在**文件已经改完之后**。现在两个脚本都在入口强制 stdout/stderr 走 UTF-8 +
+   `errors="replace"`，并有回归测试（`test_installer_survives_a_non_utf8_console`）。
+
 ## 验证装好了
 
 ```bash

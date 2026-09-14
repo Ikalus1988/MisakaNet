@@ -1,70 +1,92 @@
 @echo off
 REM ============================================================================
-REM  MisakaNet 自启动安装器（Windows 包装器）
+REM  MisakaNet auto-start installer - Windows wrapper
 REM
-REM  作用：让新会话里的 agent（Claude Code / Codex / Hermes / DSH）自动——
-REM    1) 遇到报错、重复踩坑、高风险操作前先检索 MisakaNet 课程；
-REM    2) 查不到就用 misakanet_submit_intake(kind="question") 提问；
-REM    3) 会话约 20 轮（或问题解决）后自动把脱敏的高价值经验走 intake 上传。
+REM  Makes a fresh agent session (Claude Code / Codex / Hermes / DSH) do three
+REM  things on its own:
+REM    1. search MisakaNet lessons before repeating a failure, or before a risky
+REM       operation;
+REM    2. ask a question via misakanet_submit_intake when nothing matches;
+REM    3. distil the session's reusable, desensitised lessons into intake at a
+REM       checkpoint (~20 turns) - no user prompt needed.
 REM
-REM  真正的逻辑在 install_misakanet_agent.py（同目录），本文件只负责找到 Python、
-REM  转交参数、并把结果留在窗口里给你看。
+REM  The real logic lives in install_misakanet_agent.py (same directory). This
+REM  file only finds Python, hands the arguments over, and keeps the output on
+REM  screen.
 REM
-REM  用法：
-REM    install-misakanet-agent.bat                 安装（自动检测已装的 agent）
-REM    install-misakanet-agent.bat --dry-run       只显示会改什么，不落盘
-REM    install-misakanet-agent.bat --only claude   只配置某一个
-REM    install-misakanet-agent.bat --uninstall     卸载（保留 .misakanet.bak 备份）
+REM  Usage:
+REM    install-misakanet-agent.bat                 install for detected agents
+REM    install-misakanet-agent.bat --dry-run       show changes, write nothing
+REM    install-misakanet-agent.bat --only claude   configure one agent
+REM    install-misakanet-agent.bat --uninstall     remove what it added
+REM
+REM  NOTE: keep this file ASCII-only. cmd.exe reads .bat files in the OEM code
+REM  page, so UTF-8 comments are mis-decoded and fragments of them get executed
+REM  as commands - which is exactly how the first version of this file failed
+REM  (verified by running it through cmd.exe, not by reading it).
+REM
+REM  The Python side still prints UTF-8 fine because of the chcp below.
 REM ============================================================================
 
-setlocal enabledelayedexpansion
+setlocal enableextensions
 chcp 65001 >nul 2>nul
 
-set "HERE=%~dp0"
+REM Work from the script directory. `pushd` maps a drive letter for UNC paths
+REM (\\wsl.localhost\..., \\server\share) that cmd.exe cannot use as the current
+REM directory - without this, running from a network/WSL path fails outright.
+pushd "%~dp0" || (
+  echo [x] Cannot enter the script directory: %~dp0
+  exit /b 1
+)
+
 set "PY="
 
-REM 1) 优先 py launcher（Windows 官方入口，能自动选中已装版本）
+REM 1) prefer the py launcher, then python, then python3
 where py >nul 2>nul && set "PY=py -3"
-if not defined PY (
-  where python >nul 2>nul && set "PY=python"
-)
-if not defined PY (
-  where python3 >nul 2>nul && set "PY=python3"
-)
+if not defined PY where python >nul 2>nul && set "PY=python"
+if not defined PY where python3 >nul 2>nul && set "PY=python3"
 
 if not defined PY (
   echo.
-  echo [x] 没有找到 Python。安装器需要 Python 3.9+ ^(只用到标准库^)。
+  echo [x] Python was not found. The installer needs Python 3.9+ ^(stdlib only^).
   echo.
-  echo     装好之后重新运行本文件即可，或者手动做这三件事：
-  echo       1. 注册 MCP 服务器：
+  echo     Install Python, then run this file again. Or do the three steps by hand:
+  echo.
+  echo     1^) register the MCP server:
   echo          claude mcp add --transport http misakanet https://misakanet.org/mcp
-  echo          codex  ^(config.toml^): [mcp_servers.misakanet] / type="streamable-http" / url="https://misakanet.org/mcp"
+  echo          codex, config.toml: [mcp_servers.misakanet] type=streamable-http url=https://misakanet.org/mcp
   echo          hermes mcp add misakanet --url https://misakanet.org/mcp
-  echo       2. 把 prompt.md 里的规则整段粘进该 agent 的规则文件
-  echo          ^(Claude Code: ~/.claude/CLAUDE.md，Codex: ~/.codex/AGENTS.md，Hermes: ~/.hermes/SOUL.md^)
-  echo       3. 把 checkpoint_reminder.py 挂到 prompt/失败 钩子上（见 README.md）
   echo.
-  pause
+  echo     2^) paste the rules from prompt.md into the agent rules file:
+  echo          Claude Code: ~/.claude/CLAUDE.md
+  echo          Codex:       ~/.codex/AGENTS.md
+  echo          Hermes:      ~/.hermes/SOUL.md
+  echo.
+  echo     3^) attach checkpoint_reminder.py to the prompt/failure hooks - see README.md
+  echo.
+  popd
+  if not defined MISAKANET_NO_PAUSE pause
   exit /b 1
 )
 
 echo.
-echo === MisakaNet 自启动安装器 ^(Python: %PY%^) ===
+echo === MisakaNet auto-start installer ===
 echo.
 
-%PY% "%HERE%install_misakanet_agent.py" %*
+%PY% install_misakanet_agent.py %*
 set "RC=%ERRORLEVEL%"
 
 echo.
 if "%RC%"=="0" (
-  echo [OK] 安装器已结束。上面「需要你手动一步」的条目是它无法代劳的部分，请照做。
-  echo      新开一个会话说「docker exit code 137 是什么原因」，看它是否自动调用 misakanet_search。
+  echo [OK] Done. The "manual step" items above are the parts it cannot do for you.
+  echo      Verify: open a new session and ask "why does docker exit with code 137?" -
+  echo      it should call misakanet_search on its own.
 ) else (
-  echo [x] 安装器返回 %RC%，请把上面的输出贴到 issue：
+  echo [x] Installer returned %RC%. Paste the output above into an issue:
   echo     https://github.com/Ikalus1988/MisakaNet/issues
 )
 
 echo.
-pause
+popd
+if not defined MISAKANET_NO_PAUSE pause
 exit /b %RC%
