@@ -1,11 +1,11 @@
 [
   {
     "login": "zsxh1990",
-    "score": 104.26
+    "score": 104.22
   },
   {
     "login": "github-actions[bot]",
-    "score": 7.43
+    "score": 7.42
   },
   {
     "login": "2lll5",
@@ -40,10 +40,6 @@
     "score": 1.67
   },
   {
-    "login": "laurentketterle-hub",
-    "score": 1.67
-  },
-  {
     "login": "ghzhost",
     "score": 1.65
   },
@@ -62,6 +58,10 @@
   {
     "login": "knowaguy4u-cell",
     "score": 1.35
+  },
+  {
+    "login": "laurentketterle-hub",
+    "score": 1.25
   },
   {
     "login": "misakanet agent",
