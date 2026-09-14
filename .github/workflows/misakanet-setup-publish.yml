@@ -40,7 +40,31 @@ jobs:
       - name: Check what would be published
         run: npm pack --dry-run
 
+      # Fail-fast diagnostics. The first attempt at this publish failed with a bare
+      # `PUT ... 404`, which npm also returns when the token simply is not allowed to
+      # *create* a new package (an existing package in the same scope publishes fine with a
+      # package-scoped granular token) - so the message says nothing actionable. These two
+      # commands name the account and list what the token can actually touch. Neither prints
+      # the token itself.
+      - name: Check npm identity and publish rights
+        run: |
+          echo "account: $(npm whoami || echo '(whoami failed)')"
+          echo "packages this token can access:"
+          npm access list packages --json 2>/dev/null || echo "  (npm access not permitted by this token)"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Publish to npm
-        run: npm publish --access public
+        run: |
+          set +e
+          npm publish --access public
+          RC=$?
+          if [ "$RC" -ne 0 ]; then
+            echo "::error::npm publish failed (exit $RC). If the output was 'PUT ... 404 Not found',"
+            echo "::error::the token cannot create a new package in this scope. Fix: use an npm"
+            echo "::error::automation token from the org owner, or a granular token with"
+            echo "::error::'All packages' write access, then update the NPM_TOKEN secret."
+          fi
+          exit $RC
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
