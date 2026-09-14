@@ -8,7 +8,8 @@
     "skills/",
     "index.js",
     "index.d.ts",
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    ".codex-plugin/**"
   ],
   "dsh": {
     "bundle": {
