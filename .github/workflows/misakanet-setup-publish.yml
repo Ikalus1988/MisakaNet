@@ -1,0 +1,46 @@
+name: Publish @misaka-net/misakanet-setup
+
+on:
+  push:
+    tags:
+      - "misakanet-setup-v*"
+  workflow_dispatch:      # allow a manual publish of the current version
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/misakanet-setup
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Verify zero dependencies
+        run: |
+          DEPS=$(node -e "const p=require('./package.json');console.log(p.dependencies?Object.keys(p.dependencies).length:0)")
+          echo "dependencies: $DEPS"
+          [ "$DEPS" = "0" ] || { echo "FAIL: expected 0 dependencies"; exit 1; }
+
+      - name: Copy the canonical hook into the package
+        run: node scripts/copy-hook.mjs
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check what would be published
+        run: npm pack --dry-run
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

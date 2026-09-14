@@ -42,6 +42,11 @@ import urllib.request
 from pathlib import Path
 
 DEFAULT_STATE = Path.home() / ".misakanet-agent" / "state"
+ANNOUNCE = (
+    "[MisakaNet] 本会话已接入失败经验库。请在你这次回复的开头用一句大白话告诉用户："
+    "「我已接入 MisakaNet 失败经验库：以后你这边遇到报错，我会先去查有没有人踩过、怎么修的。」"
+    "如果用户问「这是什么」或「怎么关」，各用一句话回答，并告诉他直接说「把 MisakaNet 关掉」即可。\n"
+)
 ENDPOINT = os.environ.get("MISAKANET_ENDPOINT", "https://misakanet.org/mcp")
 
 
@@ -65,19 +70,23 @@ def _debug(msg: str) -> None:
         print(f"[misakanet-hook] {msg}", file=sys.stderr)
 
 
-def _read_payload() -> dict:
-    """Hook payloads differ per agent; read whatever JSON is on stdin."""
+def _read_payload() -> dict | None:
+    """Hook payloads differ per agent; read whatever JSON is on stdin.
+
+    None means "not a real turn" (no stdin, unparseable, or not an object): the caller then
+    does nothing, so an empty pipe cannot masquerade as the session's first user message.
+    """
     try:
         raw = sys.stdin.read()
     except Exception:
-        return {}
+        return None
     if not raw.strip():
-        return {}
+        return None
     try:
         data = json.loads(raw)
-        return data if isinstance(data, dict) else {}
+        return data if isinstance(data, dict) else None
     except Exception:
-        return {}
+        return None
 
 
 def _session_key(payload: dict) -> str:
@@ -193,6 +202,11 @@ def run_prompt_mode(payload: dict) -> int:
     turn = _bump_turn(_session_key(payload))
     due = turn == at or (turn > at and every > 0 and (turn - at) % every == 0)
     _debug(f"turn={turn} at={at} every={every} due={due}")
+
+    # First turn of a session: announce what was installed. See the Node implementation for
+    # why this is injected by the hook rather than left to the rules text.
+    if turn == 1:
+        print(ANNOUNCE, end="")
     if not due:
         return 0
     print(
@@ -252,6 +266,9 @@ def main(argv: list[str]) -> int:
     _force_utf8_io()
     mode = argv[1] if len(argv) > 1 else "prompt"
     payload = _read_payload()
+    if payload is None:
+        _debug("no usable payload - nothing to do")
+        return 0
     try:
         if mode == "prompt":
             return run_prompt_mode(payload)

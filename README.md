@@ -15,6 +15,37 @@ mcp-name: io.github.Ikalus1988/misakanet
 > **Using MisakaNet?** Give us a ⭐ — it helps other agents find indexed failure lessons.
 > **Agent-native interfaces** — [MCP server](https://misakanet.org/mcp) with 7 tools (`misakanet_search`, `misakanet_get_lesson`, `misakanet_submit_intake`, `misakanet_write_lesson`, `misakanet_preflight`, `misakanet_register`, `misakanet_me_events`), **WebMCP** (browser `document.modelContext`), `llms.txt` / `llms-full.txt`, and A2A discovery via `.well-known/agent-card.json`.
 
+## 装到你自己的助手（Claude Code / Codex）
+
+**一行命令**（需要 Node，Claude Code / Codex 本身就依赖它）：
+
+```bash
+npx @misaka-net/misakanet-setup
+```
+
+装完**把助手窗口关掉再打开一次**，然后随便问一句带报错的（例如「docker exit code 137 是什么原因」），
+它应该先去查经验库再回答。状态自检 `npx @misaka-net/misakanet-setup --verify`，卸载 `--uninstall`。
+
+**不想用命令行、不知道配置文件在哪？** 把下面这句话**复制粘贴给助手**，它会自己装好、自己验证、用大白话回报：
+
+```text
+帮我接入 MisakaNet 失败记忆库：请读取 https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/integrations/agent-autostart/INSTALL_FOR_ME.md ，按里面的「第 2 部分：给你的要求」执行，做完用中文简单告诉我结果。
+```
+
+网络打不开上面那条网址时（部分网络会拦 `raw.githubusercontent.com`），把开头换 CDN 镜像：
+
+```text
+帮我接入 MisakaNet 失败记忆库：请读取 https://cdn.jsdelivr.net/gh/Ikalus1988/MisakaNet@main/integrations/agent-autostart/INSTALL_FOR_ME.md ，按里面的「第 2 部分：给你的要求」执行，做完用中文简单告诉我结果。
+```
+
+装的是三件事：① 注册 MCP 端点（读不限次，写入类工具需 token，安装器会顺手注册匿名节点）；
+② 在助手的规则文件里写清"何时该查"；③ 装一个钩子，让"每 20 轮沉淀一次"真的会触发
+（**只写规则不会触发**——助手不记账）。细节与支持度矩阵见
+[integrations/agent-autostart/README.md](integrations/agent-autostart/README.md)，
+非技术用户看 [INSTALL_FOR_ME.md](integrations/agent-autostart/INSTALL_FOR_ME.md)。
+
+---
+
 <p align="center">
   <img src="promotional/misaka-compare.jpg" width="720" alt="MisakaNet — Before: 30+ min manual debugging vs After: 0.02s with MCP"/>
 </p>

@@ -25,18 +25,38 @@ import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 
 const ENDPOINT = process.env.MISAKANET_ENDPOINT || 'https://misakanet.org/mcp';
+// NOTE: JavaScript does not concatenate adjacent string literals the way Python does.
+// Writing these as three consecutive strings silently keeps only the first one, so the
+// announcement lost its explanation and the undo hint (caught by the turn-1 test).
+const ANNOUNCE =
+  '[MisakaNet] 本会话已接入失败经验库。请在你这次回复的开头用一句大白话告诉用户：' +
+  '「我已接入 MisakaNet 失败经验库：以后你这边遇到报错，我会先去查有没有人踩过、怎么修的。」' +
+  '如果用户问「这是什么」或「怎么关」，各用一句话回答，并告诉他直接说「把 MisakaNet 关掉」即可。\n';
+
 const debug = (msg) => {
   if (process.env.MISAKANET_HOOK_DEBUG === '1') process.stderr.write(`[misakanet-hook] ${msg}\n`);
 };
 
+/**
+ * Parse the hook payload, or return null when there is nothing usable.
+ *
+ * null means "this was not a real turn" (no stdin, unparseable JSON, or not an object), and
+ * the caller then does nothing at all - it must not consume a turn or emit the
+ * first-turn announcement, or a shell that pipes nothing would look like a user message.
+ */
 function readPayload() {
+  let raw = '';
   try {
-    const raw = readFileSync(0, 'utf8');           // fd 0 = stdin
-    if (!raw.trim()) return {};
-    const data = JSON.parse(raw);
-    return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+    raw = readFileSync(0, 'utf8');                 // fd 0 = stdin
   } catch {
-    return {};
+    return null;
+  }
+  if (!raw.trim()) return null;
+  try {
+    const data = JSON.parse(raw);
+    return data && typeof data === 'object' && !Array.isArray(data) ? data : null;
+  } catch {
+    return null;
   }
 }
 
@@ -141,6 +161,14 @@ function promptMode(payload) {
   const turn = bumpTurn(sessionKey(payload));
   const due = turn === at || (turn > at && every > 0 && (turn - at) % every === 0);
   debug(`turn=${turn} at=${at} every=${every} due=${due}`);
+
+  // First turn of a session: say what was installed. A user who cannot inspect any config
+  // has exactly one channel for knowing this works - what the assistant tells them - and
+  // the instruction has to come from the hook, because "remember to announce yourself" is
+  // the kind of rule an agent drops under load.
+  if (turn === 1) {
+    process.stdout.write(ANNOUNCE);
+  }
   if (!due) return;
   process.stdout.write(
     `[MisakaNet 检查点 · 第 ${turn} 轮] 现在做一次会话沉淀（不需要用户提醒，也不要打断当前任务）：\n` +
@@ -185,7 +213,8 @@ async function failureMode(payload) {
 const mode = process.argv[2] || 'prompt';
 try {
   const payload = readPayload();
-  if (mode === 'prompt') promptMode(payload);
+  if (!payload) debug('no usable payload - nothing to do');
+  else if (mode === 'prompt') promptMode(payload);
   else if (mode === 'failure') await failureMode(payload);
   else debug(`unknown mode ${mode}`);
 } catch (err) {

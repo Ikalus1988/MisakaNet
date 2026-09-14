@@ -184,7 +184,9 @@ def run_hook(payload: str, mode: str, state: Path, env_extra: dict | None = None
 def test_checkpoint_fires_at_the_threshold_and_every_interval(tmp_path):
     state = tmp_path / "state"
     payload = json.dumps({"session_id": "s1"})
-    for turn in range(1, 20):
+    first = run_hook(payload, "prompt", state)
+    assert "已接入失败经验库" in first, "turn 1 announces the install to a user who cannot inspect config"
+    for turn in range(2, 20):
         assert run_hook(payload, "prompt", state) == "", f"turn {turn} should be silent"
     at_20 = run_hook(payload, "prompt", state)
     assert "检查点" in at_20 and "20" in at_20
@@ -195,8 +197,10 @@ def test_checkpoint_fires_at_the_threshold_and_every_interval(tmp_path):
 
 def test_sessions_are_counted_independently(tmp_path):
     state = tmp_path / "state"
-    assert run_hook(json.dumps({"session_id": "a"}), "prompt", state) == ""
-    assert run_hook(json.dumps({"session_id": "b"}), "prompt", state) == ""
+    first_a = run_hook(json.dumps({"session_id": "a"}), "prompt", state)
+    run_hook(json.dumps({"session_id": "b"}), "prompt", state)
+    # Both are turn 1, so both announce; what matters is that each session has its own count.
+    assert "已接入失败经验库" in first_a
     assert json.loads((state / "a.json").read_text())["turn"] == 1
     assert json.loads((state / "b.json").read_text())["turn"] == 1
 
@@ -205,7 +209,7 @@ def test_threshold_is_configurable(tmp_path):
     state = tmp_path / "state"
     payload = json.dumps({"session_id": "s"})
     env = {"MISAKANET_CHECKPOINT_AT": "2", "MISAKANET_CHECKPOINT_EVERY": "0"}
-    assert run_hook(payload, "prompt", state, env) == ""
+    assert "检查点" not in run_hook(payload, "prompt", state, env)
     assert "检查点" in run_hook(payload, "prompt", state, env)
 
 
@@ -226,9 +230,13 @@ def test_failure_mode_falls_back_to_the_command(tmp_path):
 
 
 def test_hook_survives_junk_input(tmp_path):
-    for payload in ("", "not json", "{}", "[1,2,3]"):
+    for payload in ("", "not json", "[1,2,3]"):
         assert run_hook(payload, "prompt", tmp_path / "state") == ""
         assert run_hook(payload, "failure", tmp_path / "state") == ""
+    # '{}' = valid empty payload on the default session → turn 1 announces (and must not
+    # contain a traceback, because run_hook already asserts exit code 0).
+    out = run_hook("{}", "prompt", tmp_path / "state-fresh")
+    assert "Traceback" not in out and "已接入" in out
 
 def test_installer_survives_a_non_utf8_console(tmp_path):
     """Windows zh-CN consoles default to GBK; printing the summary used to crash there.

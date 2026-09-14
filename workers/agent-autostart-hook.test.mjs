@@ -26,10 +26,15 @@ function runHook(payload, mode = 'prompt', env = {}) {
   return { stdout: result.stdout, state };
 }
 
-test('stays silent until the checkpoint turn, then fires on the interval', () => {
+test('announces itself on the first turn, then stays silent until the checkpoint', () => {
   const state = mkdtempSync(join(tmpdir(), 'mn-hook-'));
   const env = { MISAKANET_HOOK_STATE: state };
-  for (let turn = 1; turn < 20; turn += 1) {
+  // Turn 1 carries the self-announcement: a user who cannot inspect any config file learns
+  // the install worked only if the assistant says so.
+  const first = runHook({ session_id: 's' }, 'prompt', env).stdout;
+  assert.match(first, /已接入失败经验库/, 'the first turn must carry the announcement');
+  assert.match(first, /把 MisakaNet 关掉/, 'and how to undo it, in plain words');
+  for (let turn = 2; turn < 20; turn += 1) {
     assert.equal(runHook({ session_id: 's' }, 'prompt', env).stdout, '', `turn ${turn} should be silent`);
   }
   const at20 = runHook({ session_id: 's' }, 'prompt', env).stdout;
@@ -55,7 +60,7 @@ test('the threshold is configurable', () => {
   // checkpoint could never be reached (that is how this test failed the first time).
   const state = mkdtempSync(join(tmpdir(), 'mn-hook-'));
   const env = { MISAKANET_HOOK_STATE: state, MISAKANET_CHECKPOINT_AT: '2', MISAKANET_CHECKPOINT_EVERY: '0' };
-  assert.equal(runHook({ session_id: 's' }, 'prompt', env).stdout, '', 'turn 1 is before the threshold');
+  assert.doesNotMatch(runHook({ session_id: 's' }, 'prompt', env).stdout, /检查点/, 'turn 1 is below the threshold');
   assert.match(runHook({ session_id: 's' }, 'prompt', env).stdout, /检查点/);
 });
 
@@ -73,12 +78,16 @@ test('failure mode falls back to the command when there is no error text', () =>
   assert.match(stdout, /npm run build/);
 });
 
-test('junk input is a silent no-op', () => {
-  for (const payload of ['', 'not json', '{}', '[1,2,3]']) {
+test('junk input never crashes, and garbage produces nothing', () => {
+  for (const payload of ['', 'not json', '[1,2,3]']) {
     for (const mode of ['prompt', 'failure']) {
       assert.equal(runHook(payload, mode).stdout, '', `${mode} must ignore ${JSON.stringify(payload)}`);
     }
   }
+  // '{}' is a valid empty payload on the default session, so turn 1 legitimately announces;
+  // the property under test is "no crash, nothing but our own text".
+  const empty = runHook('{}', 'prompt').stdout;
+  assert.doesNotMatch(empty, /Error|Traceback|undefined/, empty);
 });
 
 test('an unknown mode does not crash', () => {
