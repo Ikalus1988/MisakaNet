@@ -76,7 +76,7 @@ To claim the reward and get your PR merged, your Agent/submission **MUST** satis
 
 2. **Quickstart:** [docs/quickstart.md](../../docs/quickstart.md) · [MCP setup](../../docs/mcp-quickstart.md)
 
-3. **What is MisakaNet?** A failure-memory layer for AI coding agents. When you hit an error, search 390 indexed failure-recovery lessons before debugging from scratch. [Learn more →](../../README.md)
+3. **What is MisakaNet?** A failure-memory layer for AI coding agents. When you hit an error, search 393 indexed failure-recovery lessons before debugging from scratch. [Learn more →](../../README.md)
 
 ### 📌 How to Claim
 
