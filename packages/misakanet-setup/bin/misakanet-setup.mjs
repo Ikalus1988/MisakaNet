@@ -69,8 +69,16 @@ function readJson(path, fallback) {
   }
 }
 
+function readText(path) {
+  try {
+    return readFileSync(path, 'utf8');       // one syscall: no existsSync-then-read race
+  } catch {
+    return '';
+  }
+}
+
 function backup(path) {
-  if (DRY || !existsSync(path)) return;
+  if (DRY || !readText(path)) return;
   try {
     copyFileSync(path, `${path}.misakanet.bak`);
   } catch { /* best effort */ }
@@ -84,7 +92,7 @@ function writeText(path, text) {
 
 /** Insert or refresh a marker-delimited block. Uses a function replacement (no $-escapes). */
 function injectBlock(path, block) {
-  const existing = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  const existing = readText(path);
   const pattern = new RegExp(`[ \\t]*<!--\\s*${START}\\s*-->[\\s\\S]*?<!--\\s*${END}\\s*-->\\n?`);
   const body = `<!-- ${START} -->\n${block.trim()}\n<!-- ${END} -->\n`;
   if (pattern.test(existing)) {
@@ -101,8 +109,8 @@ function injectBlock(path, block) {
 }
 
 function stripBlock(path) {
-  if (!existsSync(path)) return false;
-  const text = readFileSync(path, 'utf8');
+  const text = readText(path);
+  if (!text) return false;
   const pattern = new RegExp(`[ \\t]*<!--\\s*${START}\\s*-->[\\s\\S]*?<!--\\s*${END}\\s*-->\\n?`);
   if (!pattern.test(text)) return false;
   backup(path);
@@ -117,18 +125,36 @@ function stripBlock(path) {
 
 const stateDir = () => join(HOME, '.misakanet-agent');
 
-function token() {
-  const env = (process.env.MISAKANET_TOKEN || '').trim();
-  if (env) return env;
-  const file = join(stateDir(), 'token');
+const CANONICAL_ENDPOINT = 'https://misakanet.org/mcp';
+
+/**
+ * (url, token) for an authenticated call, under the same policy as the hook.
+ *
+ * A token found in a file is a machine-local secret, so it only goes to the canonical
+ * endpoint; a token the user exported is explicit intent and is honoured anywhere. CodeQL's
+ * js/file-access-to-http (#268) flagged the unguarded version, and it is the shape of an
+ * exfiltration bug even when the intent is benign.
+ */
+function target() {
+  const configured = (process.env.MISAKANET_ENDPOINT || CANONICAL_ENDPOINT).trim();
+  const envToken = (process.env.MISAKANET_TOKEN || '').trim();
+  if (envToken) return { url: configured, token: envToken };
+  let fileToken = '';
   try {
-    return existsSync(file) ? readFileSync(file, 'utf8').trim() : '';
+    fileToken = readFileSync(join(stateDir(), 'token'), 'utf8').trim();
   } catch {
-    return '';
+    fileToken = '';
   }
+  if (!fileToken) return { url: configured, token: '' };
+  try {
+    if (new URL(configured).origin !== new URL(CANONICAL_ENDPOINT).origin) return { url: configured, token: '' };
+  } catch {
+    return { url: configured, token: '' };
+  }
+  return { url: CANONICAL_ENDPOINT, token: fileToken };
 }
 
-async function mcpCall(tool, toolArgs, bearer = '', timeoutMs = 6000) {
+async function mcpCall(tool, toolArgs, bearer = '', timeoutMs = 6000, urlOverride = '') {
   const headers = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -140,7 +166,7 @@ async function mcpCall(tool, toolArgs, bearer = '', timeoutMs = 6000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(ENDPOINT, {
+    const response = await fetch(urlOverride || ENDPOINT, {
       method: 'POST',
       headers,
       signal: controller.signal,
@@ -165,41 +191,45 @@ const PROMPT_BLOCK = `遇到报错、要重试一个刚失败的修法、或要�
 脱敏：密钥/凭据→<REDACTED>，人名/邮箱/真实域名/绝对家目录→泛化。全程不要打断用户任务。`;
 
 // ── the hook file: shipped in the package, downloaded only if missing ─
-async function fetchHook() {
+/**
+ * Locate the hook. It is bundled in the npm tarball, so there is no network path here.
+ *
+ * The first version downloaded it as a fallback and wrote it to disk. CodeQL flagged that
+ * correctly (js/http-to-file-access #262/#264): "fetch executable content, write it, run it
+ * on every prompt" is a supply-chain hole, and it buys nothing - `prepack` already puts the
+ * canonical hook inside the package. If it is somehow missing, say so instead of fetching.
+ */
+function locateHook() {
   const candidates = [
-    join(PKG_ROOT, 'hook', 'checkpoint_reminder.mjs'),           // shipped in the tarball
-    join(PKG_ROOT, '..', '..', HOOK_REL),                        // running from the repo
+    join(PKG_ROOT, 'hook', 'checkpoint_reminder.mjs'),      // shipped in the tarball
+    join(PKG_ROOT, '..', '..', HOOK_REL),                   // running from a repo checkout
   ];
   for (const candidate of candidates) {
-    if (existsSync(candidate)) return { source: candidate, text: readFileSync(candidate, 'utf8') };
-  }
-  for (const base of [RAW.jsdelivr, RAW.raw]) {
     try {
-      const response = await fetch(`${base}/${HOOK_REL}`, { signal: AbortSignal.timeout(20000) });
-      if (response.ok) {
-        const text = await response.text();
-        if (text.includes('MisakaNet')) return { source: `${base}/${HOOK_REL}`, text };
-      }
-    } catch { /* try the next mirror */ }
+      const text = readFileSync(candidate, 'utf8');
+      if (text.includes('MisakaNet')) return text;
+    } catch { /* try the next location */ }
   }
   return null;
 }
 
 async function installHook() {
   const hookPath = join(stateDir(), 'hook.mjs');
-  if (existsSync(hookPath) && readFileSync(hookPath, 'utf8').includes('MisakaNet')) {
-    ok(`自动沉淀的钩子已存在：${hookPath}`);
-    return hookPath;
-  }
-  const fetched = await fetchHook();
-  if (!fetched) {
-    need('自动沉淀那部分暂时装不上（取不到钩子文件，网络受限）→ 其它功能不受影响；'
-      + '稍后重跑本命令即可补上');
+  try {
+    if (readFileSync(hookPath, 'utf8').includes('MisakaNet')) {
+      ok(`自动沉淀的钩子已存在：${hookPath}`);
+      return hookPath;
+    }
+  } catch { /* not installed yet */ }
+  const bundled = locateHook();
+  if (!bundled) {
+    need('自动沉淀那部分装不上：这个 npm 包里没有带钩子文件（安装不完整）→ '
+      + '重新执行 npx 安装即可；其它功能不受影响');
     return null;
   }
   if (!DRY) {
     mkdirSync(stateDir(), { recursive: true });
-    writeFileSync(hookPath, fetched.text);
+    writeFileSync(hookPath, bundled);
   }
   ok(`安装自动沉淀钩子 → ${hookPath}`);
   return hookPath;
@@ -207,16 +237,27 @@ async function installHook() {
 
 async function ensureIdentity() {
   const file = join(stateDir(), 'token');
-  if (existsSync(file) && readFileSync(file, 'utf8').trim()) {
+  let existing = '';
+  try {
+    existing = readFileSync(file, 'utf8').trim();
+  } catch {
+    existing = '';
+  }
+  if (existing) {
     ok('已有匿名身份（token 已存在）');
-    return readFileSync(file, 'utf8').trim();
+    return existing;
   }
   if (DRY) {
     ok(`会注册匿名身份并把 token 写到 ${file}`);
     return '';
   }
   const clientFile = join(stateDir(), 'client_id');
-  let clientId = existsSync(clientFile) ? readFileSync(clientFile, 'utf8').trim() : '';
+  let clientId = '';
+  try {
+    clientId = readFileSync(clientFile, 'utf8').trim();
+  } catch {
+    clientId = '';
+  }
   if (!clientId) {
     clientId = `setup-${crypto.randomUUID()}`;
     mkdirSync(stateDir(), { recursive: true });
@@ -244,7 +285,7 @@ function detect(agent) {
 async function installClaude(hookPath, bearer) {
   const cfg = join(HOME, '.claude.json');
   const data = readJson(cfg, null);
-  if (data === null && existsSync(cfg)) {
+  if (data === null && readText(cfg)) {
     need(`Claude Code：${cfg} 不是合法 JSON → 请手动加入 mcpServers.misakanet`);
     return;
   }
@@ -317,7 +358,7 @@ function hasTopLevelKey(text, key) {
 
 async function installCodex(hookPath, bearer) {
   const cfg = join(HOME, '.codex', 'config.toml');
-  let text = existsSync(cfg) ? readFileSync(cfg, 'utf8') : '';
+  let text = readText(cfg);
   let changed = false;
 
   const topPattern = new RegExp(`^[ \\t]*#\\s*${TOP_START}\\s*$\\n?[\\s\\S]*?^[ \\t]*#\\s*${TOP_END}\\s*$\\n?`, 'm');
@@ -359,7 +400,7 @@ async function installCodex(hookPath, bearer) {
 
 async function installHermes(hookPath) {
   const rules = join(HOME, '.hermes', 'SOUL.md');
-  if (existsSync(join(HOME, '.hermes', 'config.yaml'))) {
+  if (readText(join(HOME, '.hermes', 'config.yaml'))) {
     ok(`Hermes：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
     need(`Hermes：MCP 由它自己管 → 执行 hermes mcp add misakanet --url ${ENDPOINT}；`
       + '钩子要过它的 allowlist（hermes hooks doctor 查看）');
@@ -370,7 +411,8 @@ async function installHermes(hookPath) {
 
 async function verify() {
   let allOk = true;
-  const probe = await mcpCall('misakanet_search', { query: 'docker exit code 137', top: 1 }, token());
+  const { url, token: bearer } = target();
+  const probe = await mcpCall('misakanet_search', { query: 'docker exit code 137', top: 1 }, bearer, 6000, url);
   if (probe && (probe.results || probe.no_match !== undefined)) {
     ok(`端点可达：${ENDPOINT}`);
   } else {
@@ -378,13 +420,25 @@ async function verify() {
     need(`端点不可达：${ENDPOINT}（网络受限？读课程会静默失败）`);
   }
   const tokenFile = join(stateDir(), 'token');
-  if (existsSync(tokenFile) && readFileSync(tokenFile, 'utf8').trim()) {
+  let tokenPresent = '';
+  try {
+    tokenPresent = readFileSync(tokenFile, 'utf8').trim();
+  } catch {
+    tokenPresent = '';
+  }
+  if (tokenPresent) {
     ok('写入通道：token 已就绪（解除每天 5 次读限额，write_lesson 可用）');
   } else {
     skip('写入通道：无 token（只读也完全可用，但读有 5/天/IP 限额）');
   }
   const hookPath = join(stateDir(), 'hook.mjs');
-  if (!existsSync(hookPath)) {
+  let hookPresent = false;
+  try {
+    hookPresent = readFileSync(hookPath, 'utf8').length > 0;
+  } catch {
+    hookPresent = false;
+  }
+  if (!hookPresent) {
     allOk = false;
     need('自动沉淀钩子：缺失 → 重跑安装命令');
   } else {
@@ -444,19 +498,19 @@ function uninstall() {
     }
   }
   const toml = join(HOME, '.codex', 'config.toml');
-  if (existsSync(toml)) {
-    let text = readFileSync(toml, 'utf8');
+  {
+    let text = readText(toml);
     const before = text;
     for (const [s, e] of [[START, END], [TOP_START, TOP_END]]) {
       text = text.replace(new RegExp(`^[ \\t]*#\\s*${s}\\s*$\\n?[\\s\\S]*?^[ \\t]*#\\s*${e}\\s*$\\n?`, 'm'), '');
     }
-    if (text !== before) {
+    if (text && text !== before) {
       backup(toml);
       writeText(toml, text);
       ok(`移除 MCP 表 → ${toml}`);
     }
   }
-  if (existsSync(stateDir())) {
+  if (readText(join(stateDir(), 'token')) || readText(join(stateDir(), 'hook.mjs')) || readText(join(stateDir(), 'client_id'))) {
     if (!DRY) rmSync(stateDir(), { recursive: true, force: true });
     ok(`删除状态目录 → ${stateDir()}`);
   }

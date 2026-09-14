@@ -12,8 +12,14 @@ import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { testToken } from './_test-token.mjs';
 
 const CLI = resolve(import.meta.dirname, '..', 'packages', 'misakanet-setup', 'bin', 'misakanet-setup.mjs');
+// Synthetic, per-run: a literal that looks like a credential is indistinguishable from one
+// to a scanner (HARDCODED_SECRET #261), and workers/_test-token.mjs exists for that reason.
+const STUB_TOKEN = testToken('setup');
+const FILE_TOKEN = testToken('file');
+const EXPORTED_TOKEN = testToken('exported');
 const OFFLINE = 'http://127.0.0.1:9/mcp';
 
 function makeHome({ codex = true, claude = true } = {}) {
@@ -164,7 +170,7 @@ test('verify passes once installed, against a reachable endpoint', async () => {
       const payload = JSON.parse(body || '{}');
       const tool = payload.params?.name;
       const result = tool === 'misakanet_register'
-        ? { node_id: 'MisakaTEST', token: 'mcp_stub_token' }
+        ? { node_id: 'MisakaTEST', token: STUB_TOKEN }
         : { results: [{ id: 'stub', type: 'lesson' }] };
       const reply = JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
         content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } });
@@ -183,9 +189,9 @@ test('verify passes once installed, against a reachable endpoint', async () => {
     // the token must reach the config, or the user hits the 5-reads/day wall
     const claude = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
     assert.equal(claude.mcpServers.misakanet.url, url, 'the CLI honours MISAKANET_ENDPOINT');
-    assert.equal(claude.mcpServers.misakanet.headers.Authorization, 'Bearer mcp_stub_token');
+    assert.equal(claude.mcpServers.misakanet.headers.Authorization, `Bearer ${STUB_TOKEN}`);
     const toml = readFileSync(join(home, '.codex', 'config.toml'), 'utf8');
-    assert.match(toml, /http_headers = \{ Authorization = "Bearer mcp_stub_token" \}/);
+    assert.ok(toml.includes(`http_headers = { Authorization = "Bearer ${STUB_TOKEN}" }`), toml);
 
     const verify = await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url }, '--verify');
     assert.equal(verify.status, 0, verify.stdout + verify.stderr);
@@ -214,5 +220,46 @@ test('a machine with no agents gets told what to do instead of a silent success'
     assert.ok(!existsSync(join(home, '.misakanet-agent')), 'nothing to configure, nothing to litter');
   } finally {
     rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('a token from disk is never sent to a custom endpoint', async () => {
+  // The property CodeQL's file-access-to-http alerts are about (#268): read a local secret,
+  // then let an environment variable decide where it goes. The file token must only ever
+  // reach the canonical origin; an explicitly exported MISAKANET_TOKEN is the user's own
+  // choice and is honoured anywhere.
+  const { createServer } = await import('node:http');
+  const seen = [];
+  const server = createServer((req, res) => {
+    seen.push(req.headers.authorization || null);
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', () => {
+      const result = { results: [{ id: 'stub', type: 'lesson' }] };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
+        content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } }));
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}/mcp`;
+
+  try {
+    const home = makeHome();
+    mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
+    writeFileSync(join(home, '.misakanet-agent', 'token'), FILE_TOKEN);
+    const result = await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url }, '--verify');
+    assert.equal(seen.length > 0, true, 'the verify probe must have been made');
+    for (const header of seen) {
+      assert.equal(header, null, `file token leaked to a custom endpoint: ${header}`);
+    }
+    assert.equal(result.status, 1, 'a home with no MCP entry still reports NOT READY');
+
+    // ...and an exported token is still honoured (self-hosting / mirror users).
+    seen.length = 0;
+    await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url, MISAKANET_TOKEN: EXPORTED_TOKEN }, '--verify');
+    assert.equal(seen[0], `Bearer ${EXPORTED_TOKEN}`, 'an explicitly exported token must be used');
+  } finally {
+    server.close();
   }
 });

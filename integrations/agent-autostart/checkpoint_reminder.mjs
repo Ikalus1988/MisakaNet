@@ -20,11 +20,10 @@
  * Manual test:
  *   echo '{"session_id":"demo"}' | node checkpoint_reminder.mjs prompt
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync, renameSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 
-const ENDPOINT = process.env.MISAKANET_ENDPOINT || 'https://misakanet.org/mcp';
 // NOTE: JavaScript does not concatenate adjacent string literals the way Python does.
 // Writing these as three consecutive strings silently keeps only the first one, so the
 // announcement lost its explanation and the undo hint (caught by the turn-1 test).
@@ -77,9 +76,9 @@ function bumpTurn(session) {
   const path = statePath(session);
   let turn = 0;
   try {
-    if (existsSync(path)) turn = Number(JSON.parse(readFileSync(path, 'utf8')).turn) || 0;
+    turn = Number(JSON.parse(readFileSync(path, 'utf8')).turn) || 0;
   } catch {
-    turn = 0;
+    turn = 0;                                // missing or unreadable: start counting from 1
   }
   turn += 1;
   try {
@@ -93,16 +92,42 @@ function bumpTurn(session) {
   return turn;
 }
 
-function token() {
-  const env = (process.env.MISAKANET_TOKEN || '').trim();
-  if (env) return env;
+/**
+ * Where the token may go, and which token may go there.
+ *
+ * A token read from a *file* is a machine-local secret this hook found on its own, so it is
+ * only ever sent to the canonical endpoint - never to whatever MISAKANET_ENDPOINT happens
+ * to contain, because a stray environment variable would then be enough to exfiltrate it.
+ * A token the user exported themselves is their explicit intent and is honoured against a
+ * custom endpoint (self-hosting, a mirror).
+ *
+ * CodeQL's js/file-access-to-http flagged the unguarded version of this (alerts #259/#260),
+ * and it was right to: "read a secret from disk, POST it to an env-controlled URL" is the
+ * shape of an exfiltration bug regardless of our intent.
+ */
+const CANONICAL_ENDPOINT = 'https://misakanet.org/mcp';
+
+function target() {
+  const configured = (process.env.MISAKANET_ENDPOINT || CANONICAL_ENDPOINT).trim();
+  const envToken = (process.env.MISAKANET_TOKEN || '').trim();
+  if (envToken) return { url: configured, token: envToken };
+  const file = process.env.MISAKANET_TOKEN_FILE || join(homedir(), '.misakanet-agent', 'token');
+  let fileToken = '';
   try {
-    const file = process.env.MISAKANET_TOKEN_FILE || join(homedir(), '.misakanet-agent', 'token');
-    if (existsSync(file)) return readFileSync(file, 'utf8').trim();
+    fileToken = readFileSync(file, 'utf8').trim();     // no existsSync first: one syscall, no race
   } catch {
-    /* fall through */
+    fileToken = '';
   }
-  return '';
+  if (!fileToken) return { url: configured, token: '' };
+  try {
+    if (new URL(configured).origin !== new URL(CANONICAL_ENDPOINT).origin) {
+      debug('file token withheld: endpoint is not the canonical MisakaNet origin');
+      return { url: configured, token: '' };
+    }
+  } catch {
+    return { url: configured, token: '' };
+  }
+  return { url: CANONICAL_ENDPOINT, token: fileToken };
 }
 
 /** Error text first, command second: a query made of the command retrieves nothing. */
@@ -130,12 +155,12 @@ async function search(query) {
     Origin: 'https://misakanet.org',
     'User-Agent': 'misakanet-checkpoint-hook/1.0',
   };
-  const bearer = token();
+  const { url, token: bearer } = target();
   if (bearer) headers.Authorization = `Bearer ${bearer}`;
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 4000);   // hooks must not stall
-    const response = await fetch(ENDPOINT, {
+    const response = await fetch(url, {
       method: 'POST',
       headers,
       signal: controller.signal,

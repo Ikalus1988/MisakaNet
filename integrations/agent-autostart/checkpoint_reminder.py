@@ -108,10 +108,9 @@ def _bump_turn(session: str) -> int:
     path = _state_path(session)
     turn = 0
     try:
-        if path.exists():
-            turn = int(json.loads(path.read_text(encoding="utf-8")).get("turn", 0))
+        turn = int(json.loads(path.read_text(encoding="utf-8")).get("turn", 0))
     except Exception:
-        turn = 0
+        turn = 0                      # missing or unreadable: start counting from 1
     turn += 1
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -123,25 +122,39 @@ def _bump_turn(session: str) -> int:
     return turn
 
 
-def _token() -> str:
-    """Token from the environment, else from the file the installer provisions.
+CANONICAL_ENDPOINT = "https://misakanet.org/mcp"
 
-    A new user should not have to export MISAKANET_TOKEN before the write path works;
-    the installer already registered a node and stored the token at
-    ~/.misakanet-agent/token. Env still wins, so power users can override.
+
+def _target() -> tuple[str, str]:
+    """(url, token) for the outbound request, under the same policy as the Node hook.
+
+    A token read from a file is a machine-local secret this hook found on its own, so it
+    only ever goes to the canonical endpoint - never to whatever MISAKANET_ENDPOINT
+    contains, because one stray environment variable would otherwise exfiltrate it. A token
+    the user exported is explicit intent and is honoured against a custom endpoint.
     """
-    env = os.environ.get("MISAKANET_TOKEN", "").strip()
-    if env:
-        return env
+    configured = os.environ.get("MISAKANET_ENDPOINT", CANONICAL_ENDPOINT).strip()
+    env_token = os.environ.get("MISAKANET_TOKEN", "").strip()
+    if env_token:
+        return configured, env_token
+
+    path = Path(os.environ.get(
+        "MISAKANET_TOKEN_FILE", str(Path.home() / ".misakanet-agent" / "token")))
     try:
-        path = Path(os.environ.get(
-            "MISAKANET_TOKEN_FILE",
-            str(Path.home() / ".misakanet-agent" / "token")))
-        if path.exists():
-            return path.read_text(encoding="utf-8").strip()
+        file_token = path.read_text(encoding="utf-8").strip()
+    except OSError:
+        file_token = ""
+    if not file_token:
+        return configured, ""
+
+    from urllib.parse import urlparse
+    try:
+        if urlparse(configured).netloc != urlparse(CANONICAL_ENDPOINT).netloc:
+            _debug("file token withheld: endpoint is not the canonical MisakaNet origin")
+            return configured, ""
     except Exception:
-        pass
-    return ""
+        return configured, ""
+    return CANONICAL_ENDPOINT, file_token
 
 
 def _mcp_search(query: str, top: int = 1) -> dict:
@@ -158,13 +171,13 @@ def _mcp_search(query: str, top: int = 1) -> dict:
         "Origin": "https://misakanet.org",
         "User-Agent": "misakanet-checkpoint-hook/1.0",
     }
-    token = _token()
+    url, token = _target()
     if token:
         headers["Authorization"] = f"Bearer {token}"
     try:
         # Hooks must not stall the agent: 4s is generous for one search.
         with urllib.request.urlopen(
-            urllib.request.Request(ENDPOINT, data=body, headers=headers), timeout=4
+            urllib.request.Request(url, data=body, headers=headers), timeout=4
         ) as response:
             payload = json.loads(response.read().decode("utf-8"))
         result = payload.get("result", {})

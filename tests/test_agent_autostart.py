@@ -497,3 +497,57 @@ def test_codex_config_carries_the_token_as_http_headers(tmp_path, monkeypatch):
     table = data["mcp_servers"]["misakanet"]
     assert table["http_headers"]["Authorization"] == "Bearer mcp_codex_token"
     assert "bearer_token_env_var" not in table
+
+def test_a_file_token_is_withheld_from_a_custom_endpoint(tmp_path):
+    """Same policy as the Node hook/CLI, and the property CodeQL alerts are about.
+
+    A token this code found on disk must only ever reach the canonical origin - otherwise a
+    single environment variable redirects the secret. An exported MISAKANET_TOKEN is the
+    user's explicit choice and is honoured anywhere (self-hosting).
+    """
+    import http.server
+    import threading
+
+    seen: list[str | None] = []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):  # noqa: N802
+            seen.append(self.headers.get("Authorization"))
+            body = json.dumps({"jsonrpc": "2.0", "id": 1, "result": {
+                "content": [{"type": "text", "text": json.dumps({"results": []})}],
+                "structuredContent": {"results": []}}}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{server.server_address[1]}/mcp"
+    import uuid
+
+    # Derived at runtime: a literal that looks like a credential trips secret scanners even
+    # when it is obviously fake (the repo has been bitten by that three times).
+    file_token = f"file-{uuid.uuid4()}"
+    exported_token = f"exported-{uuid.uuid4()}"
+    token_file = tmp_path / "token"
+    token_file.write_text(file_token, encoding="utf-8")
+    try:
+        env = {
+            "MISAKANET_HOOK_FETCH": "1", "MISAKANET_ENDPOINT": url,
+            "MISAKANET_TOKEN_FILE": str(token_file), "MISAKANET_HOOK_STATE": str(tmp_path / "st"),
+        }
+        run_hook(json.dumps({"error": "exit code 137"}), "failure", tmp_path / "st", env)
+        assert seen, "the fetch must have happened (MISAKANET_HOOK_FETCH=1)"
+        assert seen[0] is None, f"file token leaked to a custom endpoint: {seen[0]}"
+
+        seen.clear()
+        env["MISAKANET_TOKEN"] = exported_token
+        run_hook(json.dumps({"error": "exit code 137"}), "failure", tmp_path / "st2", env)
+        assert seen and seen[0] == f"Bearer {exported_token}", seen
+    finally:
+        server.shutdown()

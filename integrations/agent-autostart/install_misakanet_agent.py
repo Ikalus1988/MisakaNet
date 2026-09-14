@@ -460,8 +460,32 @@ def _state_dir(home: Path) -> Path:
     return home / ".misakanet-agent"
 
 
+CANONICAL_ENDPOINT = "https://misakanet.org/mcp"
+
+
+def _trusted_target(endpoint: str, token: str) -> tuple[str, str]:
+    """(url, token) under the same policy as the hooks: a token that came from a file is a
+    machine-local secret and only goes to the canonical origin; an exported MISAKANET_TOKEN
+    is the user's explicit intent and is honoured against a custom endpoint.
+
+    Without this, one environment variable would be enough to redirect a local secret.
+    """
+    import urllib.parse
+
+    env_token = os.environ.get("MISAKANET_TOKEN", "").strip()
+    if env_token or not token:
+        return endpoint, env_token or token
+    try:
+        if urllib.parse.urlparse(endpoint).netloc != urllib.parse.urlparse(CANONICAL_ENDPOINT).netloc:
+            return endpoint, ""
+    except Exception:
+        return endpoint, ""
+    return CANONICAL_ENDPOINT, token
+
+
 def _post(endpoint: str, tool: str, arguments: dict, token: str = "", timeout: float = 6.0) -> dict:
     """One MCP tools/call over streamable HTTP. Returns {} on any failure (offline is fine)."""
+    endpoint, token = _trusted_target(endpoint, token)
     import urllib.error
     import urllib.request
 
@@ -532,7 +556,8 @@ def ensure_identity(home: Path, endpoint: str, dry: bool, rep: Report) -> None:
 def verify(home: Path, endpoint: str, rep: Report) -> bool:
     """Post-install self-check: the difference between "installed" and "known to work"."""
     ok = True
-    identity = _post(endpoint, "misakanet_search", {"query": "docker exit code 137", "top": 1})
+    identity = _post(endpoint, "misakanet_search", {"query": "docker exit code 137", "top": 1},
+                     token=os.environ.get("MISAKANET_TOKEN", "") or "")
     if identity:
         rep.ok(f"端点可达：{endpoint} 返回了检索结果")
     else:
