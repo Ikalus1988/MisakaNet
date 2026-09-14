@@ -107,30 +107,26 @@ function bumpTurn(session) {
  */
 const CANONICAL_ENDPOINT = 'https://misakanet.org/mcp';
 
-function target() {
-  const configured = (process.env.MISAKANET_ENDPOINT || CANONICAL_ENDPOINT).trim();
-  const envToken = (process.env.MISAKANET_TOKEN || '').trim();
-  if (envToken) return { url: configured, token: envToken };
-  const file = process.env.MISAKANET_TOKEN_FILE || join(homedir(), '.misakanet-agent', 'token');
-  let fileToken = '';
-  try {
-    fileToken = readFileSync(file, 'utf8').trim();     // no existsSync first: one syscall, no race
-  } catch {
-    fileToken = '';
-  }
-  if (!fileToken) return { url: configured, token: '' };
-  try {
-    if (new URL(configured).origin !== new URL(CANONICAL_ENDPOINT).origin) {
-      debug('file token withheld: endpoint is not the canonical MisakaNet origin');
-      return { url: configured, token: '' };
-    }
-  } catch {
-    return { url: configured, token: '' };
-  }
-  return { url: CANONICAL_ENDPOINT, token: fileToken };
-}
-
-/** Error text first, command second: a query made of the command retrieves nothing. */
+/**
+ * (url, token) for the optional lesson fetch.
+ *
+ * The token comes from the environment only. An earlier version also read the file the
+ * installer provisions (~/.misakanet-agent/token) and forwarded it in a header, with the
+ * destination pinned to the canonical origin - defensible, but static analysis is right
+ * that "read a local secret, POST it" is the shape of an exfiltration bug (CodeQL
+ * js/file-access-to-http #259/#260 called this code out twice), and the file read buys
+ * nothing here: the *default* behaviour needs no network at all, and this fetch is opt-in
+ * via MISAKANET_HOOK_FETCH=1.
+ *
+ * So the file stays where it belongs - the installers write it into the agent's own MCP
+ * config to lift the anonymous read limit - and the hook uses a token only when the user
+ * exported one themselves, which is explicit intent.
+ */
+/**
+ * Error text first, command second: a query made of the command ("docker compose up")
+ * retrieves nothing, while the error fragment ("exit code 137") is exactly what the corpus
+ * is indexed by. Ordering here is the difference between a useful hook and a noisy one.
+ */
 function failureText(payload) {
   const errorKeys = ['error', 'output', 'stderr', 'stdout', 'message', 'result'];
   const commandKeys = ['command', 'cmd', 'tool_input', 'toolInput', 'input'];
@@ -145,6 +141,12 @@ function failureText(payload) {
     }
   }
   return '';
+}
+
+function target() {
+  const configured = (process.env.MISAKANET_ENDPOINT || CANONICAL_ENDPOINT).trim();
+  const envToken = (process.env.MISAKANET_TOKEN || '').trim();
+  return { url: configured, token: envToken };
 }
 
 async function search(query) {

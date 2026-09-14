@@ -498,12 +498,13 @@ def test_codex_config_carries_the_token_as_http_headers(tmp_path, monkeypatch):
     assert table["http_headers"]["Authorization"] == "Bearer mcp_codex_token"
     assert "bearer_token_env_var" not in table
 
-def test_a_file_token_is_withheld_from_a_custom_endpoint(tmp_path):
-    """Same policy as the Node hook/CLI, and the property CodeQL alerts are about.
+def test_the_hook_never_forwards_a_stored_token(tmp_path):
+    """The property CodeQL flagged (js/file-access-to-http #259/#260 in the Node twin).
 
-    A token this code found on disk must only ever reach the canonical origin - otherwise a
-    single environment variable redirects the secret. An exported MISAKANET_TOKEN is the
-    user's explicit choice and is honoured anywhere (self-hosting).
+    An earlier version read the installer-provisioned token file and attached it to the
+    lesson fetch, with the destination pinned to the canonical origin. Both are gone: this
+    fetch is opt-in and needs no credential, while the token file's job is to be written
+    into the agent's own MCP config.
     """
     import http.server
     import threading
@@ -548,6 +549,7 @@ def test_a_file_token_is_withheld_from_a_custom_endpoint(tmp_path):
         seen.clear()
         env["MISAKANET_TOKEN"] = exported_token
         run_hook(json.dumps({"error": "exit code 137"}), "failure", tmp_path / "st2", env)
-        assert seen and seen[0] == f"Bearer {exported_token}", seen
+        assert seen and seen[0] == f"Bearer {exported_token}", (
+            "an explicitly exported token is the user's own choice and is still used")
     finally:
         server.shutdown()

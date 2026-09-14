@@ -128,30 +128,15 @@ const stateDir = () => join(HOME, '.misakanet-agent');
 const CANONICAL_ENDPOINT = 'https://misakanet.org/mcp';
 
 /**
- * (url, token) for an authenticated call, under the same policy as the hook.
+ * Endpoint for the verification probe. No credential is attached.
  *
- * A token found in a file is a machine-local secret, so it only goes to the canonical
- * endpoint; a token the user exported is explicit intent and is honoured anywhere. CodeQL's
- * js/file-access-to-http (#268) flagged the unguarded version, and it is the shape of an
- * exfiltration bug even when the intent is benign.
+ * An earlier version sent the stored token here, which is the "read a local file, POST it"
+ * pattern CodeQL flags (js/file-access-to-http #268) - and pointless: the probe only needs
+ * to know the endpoint answers. The token's actual job is to be written into the agent's MCP
+ * config, and that stays a file-to-file operation.
  */
-function target() {
-  const configured = (process.env.MISAKANET_ENDPOINT || CANONICAL_ENDPOINT).trim();
-  const envToken = (process.env.MISAKANET_TOKEN || '').trim();
-  if (envToken) return { url: configured, token: envToken };
-  let fileToken = '';
-  try {
-    fileToken = readFileSync(join(stateDir(), 'token'), 'utf8').trim();
-  } catch {
-    fileToken = '';
-  }
-  if (!fileToken) return { url: configured, token: '' };
-  try {
-    if (new URL(configured).origin !== new URL(CANONICAL_ENDPOINT).origin) return { url: configured, token: '' };
-  } catch {
-    return { url: configured, token: '' };
-  }
-  return { url: CANONICAL_ENDPOINT, token: fileToken };
+function probeEndpoint() {
+  return (process.env.MISAKANET_ENDPOINT || CANONICAL_ENDPOINT).trim();
 }
 
 async function mcpCall(tool, toolArgs, bearer = '', timeoutMs = 6000, urlOverride = '') {
@@ -411,8 +396,7 @@ async function installHermes(hookPath) {
 
 async function verify() {
   let allOk = true;
-  const { url, token: bearer } = target();
-  const probe = await mcpCall('misakanet_search', { query: 'docker exit code 137', top: 1 }, bearer, 6000, url);
+  const probe = await mcpCall('misakanet_search', { query: 'docker exit code 137', top: 1 }, '', 6000, probeEndpoint());
   if (probe && (probe.results || probe.no_match !== undefined)) {
     ok(`端点可达：${ENDPOINT}`);
   } else {

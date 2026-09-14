@@ -223,11 +223,10 @@ test('a machine with no agents gets told what to do instead of a silent success'
   }
 });
 
-test('a token from disk is never sent to a custom endpoint', async () => {
-  // The property CodeQL's file-access-to-http alerts are about (#268): read a local secret,
-  // then let an environment variable decide where it goes. The file token must only ever
-  // reach the canonical origin; an explicitly exported MISAKANET_TOKEN is the user's own
-  // choice and is honoured anywhere.
+test('the verification probe never forwards the stored token', async () => {
+  // CodeQL js/file-access-to-http #268 was exactly this: read the token file, attach it to
+  // a request. The probe does not need a credential, so it sends none - the token's job is
+  // to be written into the agent's MCP config, which is file-to-file.
   const { createServer } = await import('node:http');
   const seen = [];
   const server = createServer((req, res) => {
@@ -255,10 +254,11 @@ test('a token from disk is never sent to a custom endpoint', async () => {
     }
     assert.equal(result.status, 1, 'a home with no MCP entry still reports NOT READY');
 
-    // ...and an exported token is still honoured (self-hosting / mirror users).
+    // ...and an exported token is not forwarded by the probe either (it is the agent's
+    // MCP config that carries it, not this process).
     seen.length = 0;
     await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url, MISAKANET_TOKEN: EXPORTED_TOKEN }, '--verify');
-    assert.equal(seen[0], `Bearer ${EXPORTED_TOKEN}`, 'an explicitly exported token must be used');
+    assert.equal(seen[0], null, `probe must stay anonymous, saw ${seen[0]}`);
   } finally {
     server.close();
   }

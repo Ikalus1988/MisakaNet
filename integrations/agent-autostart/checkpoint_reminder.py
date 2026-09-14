@@ -126,35 +126,16 @@ CANONICAL_ENDPOINT = "https://misakanet.org/mcp"
 
 
 def _target() -> tuple[str, str]:
-    """(url, token) for the outbound request, under the same policy as the Node hook.
+    """(url, token) for the optional lesson fetch - environment only, see the Node hook.
 
-    A token read from a file is a machine-local secret this hook found on its own, so it
-    only ever goes to the canonical endpoint - never to whatever MISAKANET_ENDPOINT
-    contains, because one stray environment variable would otherwise exfiltrate it. A token
-    the user exported is explicit intent and is honoured against a custom endpoint.
+    Reading the installer-provisioned token file here would mean forwarding a machine-local
+    secret into a request; CodeQL flagged exactly that (js/file-access-to-http #259/#260 in
+    the Node twin). The file still exists and still matters - the installers put it in the
+    agent's own MCP config to lift the anonymous read limit - it is just not this hook's job
+    to ship it anywhere.
     """
     configured = os.environ.get("MISAKANET_ENDPOINT", CANONICAL_ENDPOINT).strip()
-    env_token = os.environ.get("MISAKANET_TOKEN", "").strip()
-    if env_token:
-        return configured, env_token
-
-    path = Path(os.environ.get(
-        "MISAKANET_TOKEN_FILE", str(Path.home() / ".misakanet-agent" / "token")))
-    try:
-        file_token = path.read_text(encoding="utf-8").strip()
-    except OSError:
-        file_token = ""
-    if not file_token:
-        return configured, ""
-
-    from urllib.parse import urlparse
-    try:
-        if urlparse(configured).netloc != urlparse(CANONICAL_ENDPOINT).netloc:
-            _debug("file token withheld: endpoint is not the canonical MisakaNet origin")
-            return configured, ""
-    except Exception:
-        return configured, ""
-    return CANONICAL_ENDPOINT, file_token
+    return configured, os.environ.get("MISAKANET_TOKEN", "").strip()
 
 
 def _mcp_search(query: str, top: int = 1) -> dict:
