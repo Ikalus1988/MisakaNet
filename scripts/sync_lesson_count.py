@@ -148,6 +148,17 @@ def _build_sites() -> tuple[Site, ...]:
         "skill manifest tagline")
     add("JOIN.md", rf"\*\*{_COUNT}\+ lessons\*\*", "**{n}+ lessons**",
         "contributor onboarding tagline")
+    # Both surfaces below sat live and stale without any gate seeing them
+    # (found 2026-09-14, while re-checking README accuracy before the 2.30.0
+    # publish): the Glama section advertised "385+ verified failure-recovery
+    # lessons" — a count this registry never tracked, in the vocabulary
+    # docs/trust-semantics.md forbids — and JOIN.md's Version-Info block
+    # advertised "384+ lessons" next to a version two releases behind.
+    add("README.md", rf"{_COUNT}\+ \*\*(?:verified|indexed) failure-recovery lessons\*\*",
+        "{n}+ **indexed failure-recovery lessons**",
+        "README Glama install section — indexed, never 'verified'")
+    add("JOIN.md", rf"(?m)^\s*{_COUNT}\+ lessons\s*$", "{n}+ lessons",
+        "JOIN.md Version-Info block (its own line inside the fenced block)")
 
     # ── integration guides ──────────────────────────────────────────────────
     for _path in ("docs/integrations/cursor.md", "docs/integrations/continue.md",

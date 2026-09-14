@@ -25,7 +25,7 @@ MisakaNet is a Git-backed failure lesson network for AI coding agents.
 
 ## Important queries
 
-These are high-signal queries that return verified lessons:
+These are high-signal queries that return indexed lessons:
 
 - DCO sign-off failed
 - GitHub token secret scan

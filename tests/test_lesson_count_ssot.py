@@ -149,7 +149,14 @@ PUBLIC_SURFACES = (
     "docs/.well-known/agent.json",
     "docs/.well-known/agent-card.json",
 )
-FORBIDDEN_TRUST_CLAIM = re.compile(r"verified (failure|debugging) lessons?", re.IGNORECASE)
+FORBIDDEN_TRUST_CLAIM = re.compile(
+    # The hyphenated "failure-recovery" form slipped past the original
+    # alternation: README.md advertised "385+ **verified failure-recovery
+    # lessons**" — stale count *and* forbidden vocabulary — while this test
+    # stayed green (found 2026-09-14, in the very publish path it guards).
+    r"verified (?:failure|debugging)(?:-recovery)? lessons?",
+    re.IGNORECASE,
+)
 
 
 def test_public_surfaces_do_not_claim_verified_lessons():
