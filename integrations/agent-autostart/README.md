@@ -123,6 +123,18 @@ python3 integrations/agent-autostart/install_misakanet_agent.py
 - 想固定用某个源：`MISAKANET_RAW_BASE=https://cdn.jsdelivr.net/gh/Ikalus1988/MisakaNet@main`；
 - 想固定只用主源（离线/内网镜像）：`MISAKANET_RAW_ONLY=1`。
 
+**镜像的代价（实测）**：jsDelivr 缓存 `@main`，最长约 12 小时。本仓库实测过一次：
+用 `raw` 源发布的修复，30 分钟后通过 jsDelivr 的 URL 取到的仍是旧文件（下载耗时 91s 且没有新版才有的进度行）。
+所以镜像只负责"**能装上**"，不保证"立刻最新"；要立刻拿最新版就固定主源：
+
+```bash
+MISAKANET_RAW_BASE=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main ...
+```
+
+失败回退顺序会打印在输出里（`· 文件 ← 主机 … OK/失败`），第一次成功的源会被记住并优先用于后续文件——
+主源"能连上但不传数据"时只付一次超时代价（实测：换源后三个文件共 **4s**）。
+
+
 > jsDelivr 会缓存 `@main`（最长约 12 小时），所以刚发布的修复可能晚一点才通过镜像可见——这是"能装上"与"立刻最新"的取舍。
 
 ## Windows 实测记录（两个只有真跑才会暴露的坑）

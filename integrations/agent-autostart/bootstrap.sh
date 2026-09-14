@@ -33,7 +33,12 @@ fi
 say() { printf '%s\n' "$*"; }
 
 say "MisakaNet setup → $DIR"
-mkdir -p "$DIR"
+if ! mkdir -p "$DIR" 2>/dev/null || [ ! -w "$DIR" ]; then
+  say "[x] 无法写入 $DIR（权限或只读 HOME）。"
+  say "    换一个可写目录再试："
+  say "      MISAKANET_SETUP_DIR=~/misakanet-setup curl -fsSL <bootstrap.sh> | MISAKANET_SETUP_DIR=~/misakanet-setup bash"
+  exit 1
+fi
 
 if command -v curl >/dev/null 2>&1; then
   fetch() { curl -fsSL "$1" -o "$2"; }
@@ -45,13 +50,26 @@ else
 fi
 
 USED=""
+PREFERRED=""
 for f in $FILES; do
   got=""
-  for base in "${SOURCES[@]}"; do
-    if timeout 40 curl -fsSL --connect-timeout 8 "$base/$PREFIX/$f" -o "$DIR/$f" 2>/dev/null && [ -s "$DIR/$f" ]; then
-      got="$base"; [ -z "$USED" ] && USED="$base"
+  # Try the mirror that worked for the previous file first: on a blocked network the
+  # primary stalls (connect succeeds, transfer never does), and re-paying that cost for
+  # every file turns a 5-second install into a minute of silence.
+  ORDER=()
+  [ -n "$PREFERRED" ] && ORDER+=("$PREFERRED")
+  for base in "${SOURCES[@]}"; do [ "$base" != "$PREFERRED" ] && ORDER+=("$base"); done
+
+  for base in "${ORDER[@]}"; do
+    host="$(printf '%s' "$base" | sed -E 's#https?://([^/]+).*#\1#')"
+    printf '  · %s ← %s ... ' "$f" "$host"
+    # --max-time matters as much as --connect-timeout: a stalled transfer never errors.
+    if timeout 40 curl -fsSL --connect-timeout 8 --max-time 25 "$base/$PREFIX/$f" -o "$DIR/$f" 2>/dev/null && [ -s "$DIR/$f" ]; then
+      say "OK"
+      got="$base"; PREFERRED="$base"; [ -z "$USED" ] && USED="$base"
       break
     fi
+    say "失败"
   done
   if [ -z "$got" ]; then
     say "[x] 下载失败：$f"
