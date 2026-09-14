@@ -17,6 +17,18 @@ set -euo pipefail
 BASE="${MISAKANET_RAW_BASE:-https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main}"
 DIR="${MISAKANET_SETUP_DIR:-$HOME/.misakanet-agent}"
 FILES="install_misakanet_agent.py checkpoint_reminder.py prompt.md"
+PREFIX="integrations/agent-autostart"
+
+# Mirror chain. raw.githubusercontent.com is unreachable or stalls on plenty of networks
+# (verified from this repo's own dev box: TCP connects to 185.199.108.133 hung while
+# api.github.com and codeload answered instantly), and a one-liner that fails there takes
+# the whole onboarding with it. Each source is tried in order; MISAKANET_RAW_ONLY=1 pins
+# the first one (tests rely on that).
+SOURCES=("$BASE")
+if [ -z "${MISAKANET_RAW_ONLY:-}" ]; then
+  SOURCES+=("https://cdn.jsdelivr.net/gh/Ikalus1988/MisakaNet@main")
+  SOURCES+=("https://ghproxy.net/https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main")
+fi
 
 say() { printf '%s\n' "$*"; }
 
@@ -32,14 +44,23 @@ else
   exit 1
 fi
 
+USED=""
 for f in $FILES; do
-  fetch "$BASE/integrations/agent-autostart/$f" "$DIR/$f" || {
-    say "[x] 下载失败：$BASE/integrations/agent-autostart/$f"
-    say "    网络/代理问题？也可以手动下载这三个文件到 $DIR 再运行安装器。"
+  got=""
+  for base in "${SOURCES[@]}"; do
+    if timeout 40 curl -fsSL --connect-timeout 8 "$base/$PREFIX/$f" -o "$DIR/$f" 2>/dev/null && [ -s "$DIR/$f" ]; then
+      got="$base"; [ -z "$USED" ] && USED="$base"
+      break
+    fi
+  done
+  if [ -z "$got" ]; then
+    say "[x] 下载失败：$f"
+    for base in "${SOURCES[@]}"; do say "    试过：$base/$PREFIX/$f"; done
+    say "    仍然不通的话：手动下载这三个文件到 $DIR，再执行 python3 $DIR/install_misakanet_agent.py"
     exit 1
-  }
+  fi
 done
-say "✓ 已下载：$(echo $FILES | tr ' ' ', ')"
+say "✓ 已下载：$(echo $FILES | tr ' ' ', ')（来源：$USED）"
 
 PY=""
 for candidate in python3 python; do

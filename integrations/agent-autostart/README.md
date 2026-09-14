@@ -104,6 +104,27 @@ python3 integrations/agent-autostart/install_misakanet_agent.py
   你原有的 hooks / mcpServers / TOML 键都保留（有测试覆盖）。
 
 
+
+### 网络受限时（raw.githubusercontent 被墙/超时）
+
+一行安装默认走 `raw.githubusercontent.com`，但它在不少网络下会**卡住而不是报错**（本仓库开发机上实测：
+到 `185.199.108.133` 的 TCP 连接挂死，而 `api.github.com`、`codeload` 秒回）。所以两个 bootstrap 都内置了
+**多源回退**，按顺序尝试并打印实际来源：
+
+1. `$MISAKANET_RAW_BASE`（默认 raw.githubusercontent）
+2. `https://cdn.jsdelivr.net/gh/Ikalus1988/MisakaNet@main`（jsDelivr，实测 1.6s）
+3. `https://ghproxy.net/https://raw.githubusercontent.com/...`（实测 1.0s）
+
+现象与对策：
+
+- 输出里出现 `（来源：https://cdn.jsdelivr.net/...）` → 说明主源不通，回退生效了，**不用管**；
+- 三个源都试过仍失败 → 手动下载 `install_misakanet_agent.py`、`checkpoint_reminder.py`、`prompt.md`
+  到 `~/.misakanet-agent/`，再跑 `python3 ~/.misakanet-agent/install_misakanet_agent.py`；
+- 想固定用某个源：`MISAKANET_RAW_BASE=https://cdn.jsdelivr.net/gh/Ikalus1988/MisakaNet@main`；
+- 想固定只用主源（离线/内网镜像）：`MISAKANET_RAW_ONLY=1`。
+
+> jsDelivr 会缓存 `@main`（最长约 12 小时），所以刚发布的修复可能晚一点才通过镜像可见——这是"能装上"与"立刻最新"的取舍。
+
 ## Windows 实测记录（两个只有真跑才会暴露的坑）
 
 这两个都是**在 cmd.exe 里实跑发现的**，不是读代码看出来的，所以留在这里省下一次重踩：

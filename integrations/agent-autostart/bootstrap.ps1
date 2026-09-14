@@ -26,19 +26,36 @@ Write-Host "MisakaNet setup -> $Dir"
 New-Item -ItemType Directory -Force -Path $Dir | Out-Null
 
 $Files = @('install_misakanet_agent.py', 'checkpoint_reminder.py', 'prompt.md')
+$Prefix = 'integrations/agent-autostart'
+
+# Mirror chain: raw.githubusercontent.com stalls or is blocked on many networks, and a
+# one-liner that fails there takes the whole onboarding with it. MISAKANET_RAW_ONLY=1
+# pins the primary (tests rely on that).
+$Sources = @($Base)
+if (-not $env:MISAKANET_RAW_ONLY) {
+  $Sources += 'https://cdn.jsdelivr.net/gh/Ikalus1988/MisakaNet@main'
+  $Sources += 'https://ghproxy.net/https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main'
+}
+
+$Used = $null
 foreach ($f in $Files) {
-  $url = "$Base/integrations/agent-autostart/$f"
   $out = Join-Path $Dir $f
-  try {
-    Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $out
-  } catch {
-    Write-Host "[x] Download failed: $url"
-    Write-Host "    Network/proxy problem? You can fetch these three files manually into $Dir"
-    Write-Host "    and then run: python install_misakanet_agent.py"
+  $ok = $false
+  foreach ($src in $Sources) {
+    try {
+      Invoke-WebRequest -UseBasicParsing -TimeoutSec 40 -Uri "$src/$Prefix/$f" -OutFile $out
+      if ((Get-Item $out).Length -gt 0) { $ok = $true; if (-not $Used) { $Used = $src }; break }
+    } catch { }
+  }
+  if (-not $ok) {
+    Write-Host "[x] Download failed: $f"
+    foreach ($src in $Sources) { Write-Host "    tried: $src/$Prefix/$f" }
+    Write-Host "    Still blocked? Fetch these three files manually into $Dir and run:"
+    Write-Host "      python $Dir\install_misakanet_agent.py"
     exit 1
   }
 }
-Write-Host "[ok] Downloaded: $($Files -join ', ')"
+Write-Host "[ok] Downloaded: $($Files -join ', ') (source: $Used)"
 
 # Find an interpreter: py launcher first, then python, then python3.
 $Py = $null

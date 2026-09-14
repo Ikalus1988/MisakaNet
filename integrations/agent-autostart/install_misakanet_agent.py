@@ -163,6 +163,12 @@ def marker_pattern(start: str, end: str) -> re.Pattern:
 
 
 RAW_BASE_DEFAULT = "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main"
+# raw.githubusercontent stalls on blocked networks; these two answered instantly from the
+# same box where raw hung (jsDelivr 1.6s, ghproxy 1.0s). Keep the order: primary first.
+MIRRORS = {
+    "jsdelivr": "https://cdn.jsdelivr.net/gh/Ikalus1988/MisakaNet@main",
+    "ghproxy": "https://ghproxy.net/https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main",
+}
 
 
 def _fetch_raw(rel_path: str, timeout: float = 10.0) -> str:
@@ -174,12 +180,17 @@ def _fetch_raw(rel_path: str, timeout: float = 10.0) -> str:
     """
     import urllib.request
 
-    base = os.environ.get("MISAKANET_RAW_BASE", RAW_BASE_DEFAULT).rstrip("/")
-    try:
-        with urllib.request.urlopen(f"{base}/{rel_path}", timeout=timeout) as response:
-            return response.read().decode("utf-8")
-    except Exception:
-        return ""
+    primary = os.environ.get("MISAKANET_RAW_BASE", RAW_BASE_DEFAULT).rstrip("/")
+    bases = [primary]
+    if not os.environ.get("MISAKANET_RAW_ONLY"):
+        bases += [MIRRORS["jsdelivr"], MIRRORS["ghproxy"]]
+    for base in bases:
+        try:
+            with urllib.request.urlopen(f"{base}/{rel_path}", timeout=timeout) as response:
+                return response.read().decode("utf-8")
+        except Exception:
+            continue
+    return ""
 
 
 def prompt_block() -> str:
