@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -49,10 +50,19 @@ def make_home(tmp_path: Path) -> Path:
     return home
 
 
-def run_installer(home: Path, *args: str) -> subprocess.CompletedProcess:
+# An unroutable endpoint by default: unit tests must never register a real anonymous node
+# on misakanet.org (that is why `test_installing_twice_changes_nothing` was flaky - the
+# first run failed to register while the second one succeeded). Tests that DO want the
+# network path point at the local stub instead.
+OFFLINE_ENDPOINT = "http://127.0.0.1:9/mcp"
+
+
+def run_installer(home: Path, *args: str, env_extra: dict | None = None) -> subprocess.CompletedProcess:
+    env = dict(os.environ, MISAKANET_ENDPOINT=OFFLINE_ENDPOINT)
+    env.update(env_extra or {})
     return subprocess.run(
         [sys.executable, str(INSTALLER), "--home", str(home), *args],
-        capture_output=True, text=True,
+        capture_output=True, text=True, env=env,
     )
 
 
@@ -249,3 +259,154 @@ def test_hook_emits_utf8_even_when_the_console_is_gbk(tmp_path):
     assert proc.returncode == 0
     proc.stdout.decode("utf-8")   # must be valid UTF-8, not GBK bytes
     assert "检查点" in proc.stdout.decode("utf-8")
+
+# ── one-click surfaces: --verify, identity provisioning, bootstrap ────
+class _McpStub:
+    """A local MCP endpoint so the installer's network paths are testable offline.
+
+    Returns a canned tool result: a search hit for misakanet_search, a token for
+    misakanet_register. No real network, no real node registrations in tests.
+    """
+
+    def __init__(self) -> None:
+        import http.server
+        import threading
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):  # noqa: N802
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length) or b"{}")
+                tool = payload.get("params", {}).get("name", "")
+                if tool == "misakanet_register":
+                    result = {"node_id": "MisakaTEST", "token": "mcp_testtoken",
+                              "registered_at": "2026-09-13T00:00:00Z", "agent_type": "setup"}
+                else:
+                    result = {"results": [{"id": "stub-lesson", "type": "lesson"}], "query": "q"}
+                body = json.dumps({"jsonrpc": "2.0", "id": 1, "result": {
+                    "content": [{"type": "text", "text": json.dumps(result)}],
+                    "structuredContent": result}}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args):   # keep pytest output clean
+                pass
+
+        self.server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+        self.port = self.server.server_address[1]
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+
+    @property
+    def url(self) -> str:
+        return f"http://127.0.0.1:{self.port}/mcp"
+
+    def stop(self) -> None:
+        self.server.shutdown()
+
+
+def test_identity_is_provisioned_so_write_tools_need_no_setup(tmp_path):
+    """The step that turns "installed" into "never used" is manual token plumbing."""
+    stub = _McpStub()
+    try:
+        home = make_home(tmp_path)
+        env = dict(os.environ, MISAKANET_ENDPOINT=stub.url)
+        result = subprocess.run(
+            [sys.executable, str(INSTALLER), "--home", str(home), "--only", "claude"],
+            capture_output=True, text=True, env=env,
+        )
+        assert result.returncode == 0, result.stderr
+        token = home / ".misakanet-agent" / "token"
+        assert token.read_text(encoding="utf-8").strip() == "mcp_testtoken"
+        assert (home / ".misakanet-agent" / "client_id").exists(), "client_id must be reused, not regenerated"
+        assert (token.stat().st_mode & 0o777) == 0o600, "a token file must not be world-readable"
+        # and it must not leak into any agent config
+        for cfg in (".claude.json", ".claude/settings.json", ".codex/config.toml"):
+            assert "mcp_testtoken" not in (home / cfg).read_text(encoding="utf-8"), cfg
+
+        second = subprocess.run(
+            [sys.executable, str(INSTALLER), "--home", str(home), "--only", "claude"],
+            capture_output=True, text=True, env=env,
+        )
+        assert "已有 token" in second.stdout, "re-running must not re-register"
+    finally:
+        stub.stop()
+
+
+def test_no_register_skips_identity(tmp_path):
+    home = make_home(tmp_path)
+    result = run_installer(home, "--only", "claude", "--no-register")
+    assert result.returncode == 0
+    assert not (home / ".misakanet-agent" / "token").exists()
+
+
+def test_verify_is_ready_only_when_the_wiring_and_endpoint_both_work(tmp_path):
+    stub = _McpStub()
+    try:
+        home = make_home(tmp_path)
+        env = dict(os.environ, MISAKANET_ENDPOINT=stub.url,
+                   MISAKANET_ENDPOINT_REAL=stub.url)
+        before = subprocess.run(
+            [sys.executable, str(INSTALLER), "--home", str(home), "--verify"],
+            capture_output=True, text=True, env=env,
+        )
+        assert before.returncode == 1, "an unconfigured home must not report READY"
+        assert "NOT READY" in before.stdout
+        assert "✗ 缺失" in before.stdout
+
+        subprocess.run([sys.executable, str(INSTALLER), "--home", str(home)],
+                       capture_output=True, text=True, env=env, check=True)
+        after = subprocess.run(
+            [sys.executable, str(INSTALLER), "--home", str(home), "--verify"],
+            capture_output=True, text=True, env=env,
+        )
+        assert after.returncode == 0, after.stdout + after.stderr
+        assert "READY" in after.stdout and "端点可达" in after.stdout
+    finally:
+        stub.stop()
+
+
+def test_verify_reports_an_unreachable_endpoint_without_crashing(tmp_path):
+    home = make_home(tmp_path)
+    env = dict(os.environ, MISAKANET_ENDPOINT="http://127.0.0.1:9/mcp")
+    result = subprocess.run(
+        [sys.executable, str(INSTALLER), "--home", str(home), "--verify"],
+        capture_output=True, text=True, env=env,
+    )
+    assert result.returncode == 1
+    assert "端点不可达" in result.stdout
+
+
+def test_report_url_carries_no_identifying_paths(tmp_path):
+    home = make_home(tmp_path)
+    result = run_installer(home, "--report", "install failed")
+    assert result.returncode == 0
+    url = result.stdout.strip().splitlines()[-1]
+    assert "issues/new" in url
+    assert "install%20failed" in url or "install+failed" in url
+    assert str(home) not in url and str(Path.home()) not in url
+
+
+def test_bootstrap_downloads_and_hands_over(tmp_path):
+    """The one-liner must work without a clone: fetch the three files, then run them."""
+    bash = shutil.which("bash")
+    if not bash:
+        pytest.skip("bash unavailable")
+    setup_dir = tmp_path / "setup"
+    home = make_home(tmp_path)
+    env = dict(
+        os.environ,
+        MISAKANET_RAW_BASE=f"file://{INTEGRATION.parent.parent}",   # repo root
+        MISAKANET_SETUP_DIR=str(setup_dir),
+        MISAKANET_ENDPOINT="http://127.0.0.1:9/mcp",
+    )
+    result = subprocess.run(
+        [bash, str(INTEGRATION / "bootstrap.sh"), "--home", str(home), "--only", "claude", "--no-register"],
+        capture_output=True, text=True, env=env, cwd=str(tmp_path),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    for name in ("install_misakanet_agent.py", "checkpoint_reminder.py", "prompt.md"):
+        assert (setup_dir / name).exists(), name
+    assert "misakanet" in (home / ".claude.json").read_text(encoding="utf-8")

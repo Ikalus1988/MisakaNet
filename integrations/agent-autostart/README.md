@@ -1,7 +1,37 @@
-# MisakaNet 自启动接入（让 agent 自己想起这个记忆库）
+# MisakaNet 自启动接入
 
-一句话：装上之后，agent 在**新会话里自动**做三件事——遇到失败先查课程、查不到就提问、到检查点自动脱敏上传——
-**不需要用户提醒**。
+**一行命令安装**（不需要 clone、不需要读文档）：
+
+```powershell
+# Windows（PowerShell）
+powershell -NoProfile -Command "iwr -useb https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/integrations/agent-autostart/bootstrap.ps1 | iex"
+```
+```bash
+# macOS / Linux / WSL
+curl -fsSL https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/integrations/agent-autostart/bootstrap.sh | bash
+```
+
+装完**只做一件事**：开一个新会话，问一句「docker exit code 137 是什么原因」——
+它应该自己调 `misakanet_search`，而不是凭记忆回答。
+
+想知道到底通没通，一条命令：
+
+```bash
+python3 ~/.misakanet-agent/install_misakanet_agent.py --verify
+# ✓ 端点可达 · ✓ 写入通道 · ✓ MCP 注册 · ✓ 检查点钩子 → 结论：READY
+```
+
+装错了/不想要了：`--uninstall`（只删它自己加的东西，改过的文件都有 `.misakanet.bak`）。
+
+| 我想…… | 命令 |
+|---|---|
+| 先看它会改什么 | `... bootstrap.sh | bash -s -- --dry-run` |
+| 只配一个 agent | `--only claude` / `--only codex,hermes` |
+| 不要匿名 token（纯只读） | `--no-register` |
+| 出问题了给我个 issue 链接 | `--report "错误描述"` |
+
+---
+
 
 ```
 integrations/agent-autostart/
@@ -24,6 +54,21 @@ python3 integrations/agent-autostart/install_misakanet_agent.py
 ```
 
 先看不落盘的预览：`--dry-run`；只配一个：`--only claude`；卸载：`--uninstall`。
+
+
+## 新用户安装漏斗（产品视角：每多一步就掉一批人）
+
+| 步骤 | 旧状态 | 现在 | 还剩什么 |
+|---|---|---|---|
+| 发现 → 拿到安装器 | clone 仓库 / 找到文件 | **一行 curl/iwr**（bootstrap）| 需要知道这条命令（README 顶部 / 发布说明）|
+| 前置依赖 | 需要 Python | 仍需要 Python 3.9+ | **下一步**：`npx @misaka-net/misakanet-setup`（复用现有 npm 发布通道）|
+| 选 agent | 自己判断用哪个 | 自动检测，逐个报告 | — |
+| 改配置的恐惧 | 不知道会动什么 | `--dry-run` 预览 + `.bak` 备份 + `--uninstall` | — |
+| 写工具要 token | 手动 register + 导出环境变量 | **自动注册匿名节点并写入 token 文件**（0600，不进任何 agent 配置）| — |
+| 是否装好了 | 自己猜 | **`--verify` 一条命令给 READY / NOT READY + 每条修复动作** | — |
+| 出问题找谁 | 无渠道 | `--report` 生成预填 issue（不含主机名/路径）| — |
+| 第一个价值 | 下个会话才知道 | 下个会话问一句带错误码的问题即可 | **MCP 首次信任提示**（客户端会弹一次，脚本无法代点）|
+
 
 ## 它到底装了什么（三件事缺一不可）
 

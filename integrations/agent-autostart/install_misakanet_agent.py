@@ -162,6 +162,26 @@ def marker_pattern(start: str, end: str) -> re.Pattern:
     return re.compile(rf"(?m)^[ \t]*#\s*{re.escape(start)}\s*$\n?.*?^[ \t]*#\s*{re.escape(end)}\s*$\n?", re.S)
 
 
+RAW_BASE_DEFAULT = "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main"
+
+
+def _fetch_raw(rel_path: str, timeout: float = 10.0) -> str:
+    """Fetch a repo file over HTTP. Returns "" when offline.
+
+    Needed when the installer runs outside a clone (the one-line bootstrap), where
+    `skills/misakanet/SKILL.md` is not on disk. MISAKANET_RAW_BASE makes this testable
+    (point it at a file:// or localhost URL).
+    """
+    import urllib.request
+
+    base = os.environ.get("MISAKANET_RAW_BASE", RAW_BASE_DEFAULT).rstrip("/")
+    try:
+        with urllib.request.urlopen(f"{base}/{rel_path}", timeout=timeout) as response:
+            return response.read().decode("utf-8")
+    except Exception:
+        return ""
+
+
 def prompt_block() -> str:
     """The behavioural contract, trimmed to the parts that must live in a rules file."""
     if PROMPT_FILE.exists():
@@ -370,10 +390,160 @@ def install_dsh(home: Path, dry: bool, rep: Report) -> None:
                 skill_dst.write_text(writable, encoding="utf-8")
                 rep.ok(f"DSH: 安装 skill（含自启动规则）→ {skill_dst}")
     else:
-        rep.needs_manual(f"DSH: 找不到仓库内的 skill 源（{skill_src}）→ 手动复制 skills/misakanet/")
+        downloaded = _fetch_raw("skills/misakanet/SKILL.md")
+        if downloaded:
+            if not dry:
+                skill_dst_dir.mkdir(parents=True, exist_ok=True)
+                skill_dst.write_text(downloaded + f"\n\n---\n\n{prompt_block()}\n", encoding="utf-8")
+            rep.ok(f"DSH: 从远端取回 skill 并安装 → {skill_dst}")
+        else:
+            rep.needs_manual("DSH: 既不在仓库内、也取不回 skill 源 → 手动复制 skills/misakanet/")
     rep.needs_manual(
         "DSH: 没有 MCP 客户端 → 让 agent 用 shell 调 curl 访问 "
         f"{ENDPOINT}（prompt.md §0 有可直接粘的命令）")
+
+
+STATE_DIR = Path.home() / ".misakanet-agent"
+
+
+def _state_dir(home: Path) -> Path:
+    """Where identity/token live. `home` is honoured so tests never touch the real one."""
+    return home / ".misakanet-agent"
+
+
+def _post(endpoint: str, tool: str, arguments: dict, token: str = "", timeout: float = 6.0) -> dict:
+    """One MCP tools/call over streamable HTTP. Returns {} on any failure (offline is fine)."""
+    import urllib.error
+    import urllib.request
+
+    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                       "params": {"name": tool, "arguments": arguments}}).encode("utf-8")
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "MCP-Protocol-Version": "2025-06-18",
+        "Origin": "https://misakanet.org",
+        "User-Agent": "misakanet-setup/1.0",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    try:
+        with urllib.request.urlopen(
+            urllib.request.Request(endpoint, data=body, headers=headers), timeout=timeout
+        ) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        result = payload.get("result", {})
+        return result.get("structuredContent") or json.loads(result["content"][0]["text"])
+    except Exception:
+        return {}
+
+
+def ensure_identity(home: Path, endpoint: str, dry: bool, rep: Report) -> None:
+    """Register an anonymous node once and store its token, so write tools need no setup.
+
+    A new user should not have to discover `misakanet_register`, copy a token and export a
+    variable before the write path works - that is the step that turns "installed" into
+    "never used". The client_id is generated locally and stored, so re-running returns the
+    same node (identity drift was the defect fixed in e41e469eb).
+    """
+    token_path = _state_dir(home) / "token"
+    client_path = _state_dir(home) / "client_id"
+    if token_path.exists() and token_path.read_text(encoding="utf-8").strip():
+        rep.ok(f"匿名身份：已有 token（{token_path}）")
+        return
+    if dry:
+        rep.ok(f"匿名身份：会注册并把 token 写入 {token_path}")
+        return
+
+    client_id = ""
+    if client_path.exists():
+        client_id = client_path.read_text(encoding="utf-8").strip()
+    if not client_id:
+        import uuid
+        client_id = f"setup-{uuid.uuid4()}"
+        client_path.parent.mkdir(parents=True, exist_ok=True)
+        client_path.write_text(client_id, encoding="utf-8")
+
+    result = _post(endpoint, "misakanet_register", {"agent_type": "setup", "client_id": client_id})
+    token = str(result.get("token") or "")
+    if not token:
+        rep.needs_manual(
+            "匿名身份：注册没成功（可能离线/被限流）→ 读课程不受影响；要用写入类工具时手动执行 "
+            "misakanet_register，并把 token 写入 " + str(token_path))
+        return
+    token_path.parent.mkdir(parents=True, exist_ok=True)
+    token_path.write_text(token, encoding="utf-8")
+    try:
+        token_path.chmod(0o600)
+    except Exception:
+        pass
+    rep.ok(f"匿名身份：node {result.get('node_id', '?')} → token 已存 {token_path}（0600，未写入任何 agent 配置）")
+
+
+def verify(home: Path, endpoint: str, rep: Report) -> bool:
+    """Post-install self-check: the difference between "installed" and "known to work"."""
+    ok = True
+    identity = _post(endpoint, "misakanet_search", {"query": "docker exit code 137", "top": 1})
+    if identity:
+        rep.ok(f"端点可达：{endpoint} 返回了检索结果")
+    else:
+        ok = False
+        rep.needs_manual(f"端点不可达或无响应：{endpoint}（网络/代理问题？读课程会静默失败）")
+
+    token_file = _state_dir(home) / "token"
+    if token_file.exists() and token_file.read_text(encoding="utf-8").strip():
+        rep.ok("写入通道：token 已就绪（write_lesson / preflight 可用）")
+    else:
+        rep.skip("写入通道：无 token（只读也完全可用）")
+
+    for agent in AGENTS:
+        if not detect(home, agent):
+            continue
+        if agent == "claude":
+            cfg = home / ".claude.json"
+            data = {}
+            if cfg.exists():
+                try:
+                    data = json.loads(cfg.read_text(encoding="utf-8"))
+                except Exception:
+                    data = {}
+            has_mcp = "misakanet" in (data.get("mcpServers") or {})
+            ok &= has_mcp
+            (rep.ok if has_mcp else rep.needs_manual)(
+                f"{agent}: MCP 注册 {'✓' if has_mcp else '✗ 缺失'} （{cfg}）")
+            settings = home / ".claude" / "settings.json"
+            hooks_ok = settings.exists() and "checkpoint_reminder" in settings.read_text(encoding="utf-8")
+            ok &= hooks_ok
+            (rep.ok if hooks_ok else rep.needs_manual)(
+                f"{agent}: 检查点钩子 {'✓' if hooks_ok else '✗ 缺失'}")
+        rules = {"codex": home / ".codex" / "AGENTS.md", "hermes": home / ".hermes" / "SOUL.md",
+                 "dsh": home / ".agents" / "skills" / "misakanet" / "SKILL.md"}.get(agent)
+        if rules is not None:
+            present = rules.exists() and "misakanet" in rules.read_text(encoding="utf-8")
+            ok &= present
+            (rep.ok if present else rep.needs_manual)(
+                f"{agent}: 规则/skill {'✓' if present else '✗ 缺失'}（{rules}）")
+    return ok
+
+
+def report_url(home: Path, note: str) -> str:
+    """A prefilled issue URL — the only support channel for an anonymous installer."""
+    import platform
+    import urllib.parse
+
+    detected = ",".join(a for a in AGENTS if detect(home, a)) or "none"
+    # No hostname, no username, no paths in the payload: this goes to a public tracker.
+    body = "\n".join([
+        "### 安装器自检",
+        "",
+        f"- OS: {platform.platform()}",
+        f"- Python: {platform.python_version()}",
+        f"- 检测到的 agent: {detected}",
+        f"- 备注: {note}",
+    ])
+    return ("https://github.com/Ikalus1988/MisakaNet/issues/new"
+            "?title=" + urllib.parse.quote("[setup] 安装器问题") +
+            "&body=" + urllib.parse.quote(body))
 
 
 INSTALLERS = {
@@ -449,6 +619,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--only", default="", help=f"comma list of {','.join(AGENTS)}")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--uninstall", action="store_true")
+    parser.add_argument("--verify", action="store_true",
+                        help="self-check: endpoint, MCP registration, hooks, token")
+    parser.add_argument("--no-register", action="store_true",
+                        help="do not provision an anonymous token (read-only usage)")
+    parser.add_argument("--report", metavar="NOTE", default="",
+                        help="print a prefilled issue URL with this note")
     args = parser.parse_args(argv)
 
     home = Path(args.home).expanduser()
@@ -456,12 +632,26 @@ def main(argv: list[str] | None = None) -> int:
     print(f"MisakaNet 自启动安装器 — HOME={home}{'（dry-run）' if args.dry_run else ''} "
           f"@ {_stamp()}")
 
+    endpoint = os.environ.get("MISAKANET_ENDPOINT", ENDPOINT)
+
+    if args.report:
+        print(report_url(home, args.report))
+        return 0
+
+    if args.verify:
+        ok = verify(home, endpoint, rep)
+        print(rep.render())
+        print("\n结论：" + ("READY —— 直接开一个新会话测试即可（问它 docker exit code 137）"
+                          if ok else "NOT READY —— 上面每一条 ✗ 都给了修复动作"))
+        return 0 if ok else 1
+
     if args.uninstall:
         uninstall(home, args.dry_run, rep)
         print(rep.render())
         return 0
 
     wanted = [a.strip() for a in args.only.split(",") if a.strip()] or list(AGENTS)
+    installed_any = False
     for agent in wanted:
         if agent not in INSTALLERS:
             rep.skip(f"未知 agent: {agent}")
@@ -470,8 +660,19 @@ def main(argv: list[str] | None = None) -> int:
             rep.skip(f"{agent}: 本机未检测到（{home}/.{agent}* 不存在）")
             continue
         INSTALLERS[agent](home, args.dry_run, rep)
+        installed_any = True
+
+    # Only provision an identity when something was actually configured: an installer that
+    # writes files into a HOME with no agents is just litter (and the test suite says so).
+    if args.no_register:
+        rep.skip("匿名身份：--no-register，跳过（只读使用不需要）")
+    elif not installed_any:
+        rep.skip("匿名身份：未配置任何 agent，跳过")
+    else:
+        ensure_identity(home, endpoint, args.dry_run, rep)
 
     print(rep.render())
+    print("\n自检：python3 install_misakanet_agent.py --verify（一条命令告诉你到底通不通）")
     print(
         "\n验证（对新开的会话说一句即可）：\n"
         "  「docker exit code 137 是什么原因」→ 看它是否调用 misakanet_search\n"
