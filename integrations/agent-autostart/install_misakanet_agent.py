@@ -506,14 +506,21 @@ def _trusted_target(endpoint: str, token: str) -> tuple[str, str]:
     return CANONICAL_ENDPOINT, token
 
 
-def _post(endpoint: str, tool: str, arguments: dict, token: str = "", timeout: float = 6.0) -> dict:
-    """One MCP tools/call over streamable HTTP. Returns {} on any failure (offline is fine)."""
+def _mcp_request(endpoint: str, method: str, params: dict, token: str = "",
+                 timeout: float = 6.0) -> dict:
+    """One MCP request over streamable HTTP. Returns {} on any failure (offline is fine).
+
+    Three response shapes are in play: `structuredContent` (this worker's tools/call),
+    `content[0].text` (the MCP spec's text block), and plain fields (initialize, tools/list).
+    The first version assumed the second and raised on the third, and the blanket `except`
+    turned that into `{}` — a working endpoint reported as unreachable (fixed 2026-09-15,
+    same defect the JS installer had).
+    """
     endpoint, token = _trusted_target(endpoint, token)
     import urllib.error
     import urllib.request
 
-    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
-                       "params": {"name": tool, "arguments": arguments}}).encode("utf-8")
+    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode("utf-8")
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
@@ -529,9 +536,24 @@ def _post(endpoint: str, tool: str, arguments: dict, token: str = "", timeout: f
         ) as response:
             payload = json.loads(response.read().decode("utf-8"))
         result = payload.get("result", {})
-        return result.get("structuredContent") or json.loads(result["content"][0]["text"])
+        if "structuredContent" in result:
+            return result["structuredContent"]
+        content = result.get("content")
+        if isinstance(content, list) and content and isinstance(content[0], dict) \
+                and isinstance(content[0].get("text"), str):
+            try:
+                return json.loads(content[0]["text"])
+            except ValueError:
+                return result
+        return result
     except Exception:
         return {}
+
+
+def _post(endpoint: str, tool: str, arguments: dict, token: str = "", timeout: float = 6.0) -> dict:
+    """One tools/call (registration is the only one this installer makes; it is not a read)."""
+    return _mcp_request(endpoint, "tools/call", {"name": tool, "arguments": arguments},
+                        token=token, timeout=timeout)
 
 
 def ensure_identity(home: Path, endpoint: str, dry: bool, rep: Report) -> None:
@@ -579,10 +601,17 @@ def ensure_identity(home: Path, endpoint: str, dry: bool, rep: Report) -> None:
 def verify(home: Path, endpoint: str, rep: Report) -> bool:
     """Post-install self-check: the difference between "installed" and "known to work"."""
     ok = True
-    identity = _post(endpoint, "misakanet_search", {"query": ONBOARDING_QUERY, "top": 1},
-                     token=os.environ.get("MISAKANET_TOKEN", "") or "")
-    if identity:
-        rep.ok(f"端点可达：{endpoint} 返回了检索结果")
+    # Handshake, not a search: `tools/list` proves the endpoint speaks MCP and answers, and it
+    # spends none of the anonymous read quota. The search used to be the probe, which cost one of
+    # the five free reads per run and — because the endpoint answers a spent quota with HTTP 200
+    # and an error *inside* the result — made a working install look broken (2026-09-15).
+    probe = _mcp_request(endpoint, "tools/list", {}, timeout=6.0)
+    tools = probe.get("tools") if isinstance(probe, dict) else None
+    if isinstance(tools, list) and tools:
+        rep.ok(f"端点可达：{endpoint}（MCP 握手成功，{len(tools)} 个工具）")
+    elif probe:
+        ok = False
+        rep.needs_manual(f"端点可达但握手异常：{json.dumps(probe, ensure_ascii=False)[:120]}")
     else:
         ok = False
         rep.needs_manual(f"端点不可达或无响应：{endpoint}（网络/代理问题？读课程会静默失败）")
@@ -679,45 +708,68 @@ def _run_cli(cmd: list[str], timeout: float = 60.0) -> tuple[int, str]:
         return 1, str(exc)
 
 
-def install_openclaw(home: Path, dry: bool, rep: Report) -> None:
-    """OpenClaw: rules live in ~/.openclaw/workspace, MCP servers in `openclaw mcp.servers`.
+def openclaw_workspaces(home: Path) -> list[Path]:
+    """Where OpenClaw keeps its rules file — decided by its own config, not by a path we assumed.
 
-    It has its own MCP client (`openclaw mcp add`), so unlike DSH it can call MisakaNet
-    natively. The CLI keeps its own cache under $XDG_CACHE_HOME, which may be read-only in
-    sandboxes - that surfaces as "Could not start the CLI", hence the env hint below.
+    `~/.openclaw/workspace` is only right when nothing else is configured: the real answer is
+    `agents.defaults.workspace` in ~/.openclaw/openclaw.json. Writing to the guessed path still
+    looked like success while the agent never read it: the tools were registered and nothing told
+    the model to use them (measured on this machine 2026-09-15, issue #1719). Both candidates are
+    returned, configured first, so install writes where the agent reads and uninstall can take
+    back a block written by either version.
     """
-    rules = home / ".openclaw" / "workspace" / "AGENTS.md"
-    if not rules.parent.is_dir():
-        rep.needs_manual(f"OpenClaw: 找不到 {rules.parent} → 先运行一次 openclaw 生成 workspace")
+    paths: list[Path] = []
+    cfg = home / ".openclaw" / "openclaw.json"
+    try:
+        configured = (json.loads(cfg.read_text(encoding="utf-8"))
+                      .get("agents", {}).get("defaults", {}).get("workspace"))
+    except Exception:
+        configured = None
+    if isinstance(configured, str) and configured.strip():
+        candidate = Path(configured.strip())
+        if candidate.is_dir():
+            paths.append(candidate)
+    paths.append(home / ".openclaw" / "workspace")
+    return paths
+
+
+def install_openclaw(home: Path, dry: bool, rep: Report) -> None:
+    """OpenClaw: rules in the workspace its config names, MCP servers in `mcp.servers`.
+
+    Written file-to-file rather than through `openclaw mcp add`: the CLI puts the token in argv,
+    which every process on the machine can read (the shape the plugin scanner reports as shell
+    injection), and it needs its own database writable. The manual CLI line is still printed for
+    whoever prefers it — as text, never executed.
+    """
+    workspace = openclaw_workspaces(home)[0]
+    rules = workspace / "AGENTS.md"
+    if not workspace.is_dir():
+        rep.needs_manual(f"OpenClaw: 找不到 workspace（{workspace}）→ 先运行一次 openclaw 生成它")
     else:
         status = inject_block(rules, prompt_block(), dry)
         rep.ok(f"OpenClaw: 规则块 {status} → {rules}")
 
-    cli = shutil.which("openclaw")
-    if not cli:
-        rep.needs_manual("OpenClaw: 没找到 openclaw CLI → 手动执行 "
-                         f"`openclaw mcp add misakanet --url {ENDPOINT} --transport streamable-http`")
-        return
-    if dry:
-        rep.ok(f"OpenClaw: 会执行 `openclaw mcp add misakanet --url {ENDPOINT} "
-               "--transport streamable-http --no-probe`")
+    cfg = home / ".openclaw" / "openclaw.json"
+    try:
+        data = json.loads(cfg.read_text(encoding="utf-8"))
+        servers = data.setdefault("mcp", {}).setdefault("servers", {})
+    except Exception:
+        rep.needs_manual(f"OpenClaw: 读不到或解析不了 {cfg} → 先运行一次 openclaw 生成配置，"
+                         f"或手动执行 `openclaw mcp add misakanet --url {ENDPOINT} "
+                         "--transport streamable-http`")
         return
 
     token = _read_token(home)
-    cmd = [cli, "mcp", "add", "misakanet", "--url", ENDPOINT,
-           "--transport", "streamable-http", "--no-probe"]
+    entry: dict = {"url": ENDPOINT, "transport": "streamable-http"}
     if token:
-        cmd += ["--header", f"Authorization=Bearer {token}"]
-    rc, out = _run_cli(cmd)
-    if rc == 0:
-        rep.ok("OpenClaw: 已注册 MCP `misakanet`（openclaw mcp add）")
+        entry["headers"] = {"Authorization": f"Bearer {token}"}
+    if servers.get("misakanet") == entry:
+        rep.ok("OpenClaw: MCP 已注册（无改动）")
         return
-    if "Could not start the CLI" in out:
-        rep.needs_manual(
-            "OpenClaw: CLI 起不动（缓存目录不可写）→ 设 XDG_CACHE_HOME 到可写目录后重跑，"
-            f"或手动执行：openclaw mcp add misakanet --url {ENDPOINT} --transport streamable-http")
-    else:
-        rep.needs_manual(f"OpenClaw: `openclaw mcp add` 失败：{out.strip()[:200]}")
+    servers["misakanet"] = entry
+    backup(cfg, dry)
+    write_text(cfg, json.dumps(data, indent=2, ensure_ascii=False) + "\n", dry)
+    rep.ok(f"OpenClaw: {'会写入 MCP 条目' if dry else '注册 MCP（streamable-http）'} → {cfg}")
 
 
 INSTALLERS = {
@@ -784,6 +836,28 @@ def uninstall(home: Path, dry: bool, rep: Report) -> None:
             backup(toml, dry)
             write_text(toml, stripped, dry)
             rep.ok(f"移除 MCP 表与顶级开关 → {toml}")
+    # OpenClaw: the rules may sit in the workspace its config names, and the MCP entry is one we
+    # wrote ourselves, so both can be taken back (issue #1719).
+    for workspace in openclaw_workspaces(home):
+        rules = workspace / "AGENTS.md"
+        if strip_block(rules, dry):
+            rep.ok(f"移除规则块 → {rules}")
+        # Same rule as the targets above: a file that existed only for our block should go.
+        if rules.exists() and not rules.read_text(encoding="utf-8").strip():
+            if not dry:
+                rules.unlink()
+            rep.ok(f"删除只剩空白的规则文件 → {rules}")
+    oc_cfg = home / ".openclaw" / "openclaw.json"
+    if oc_cfg.exists():
+        try:
+            data = json.loads(oc_cfg.read_text(encoding="utf-8"))
+            servers = data.get("mcp", {}).get("servers", {}) or {}
+            if servers.pop("misakanet", None) is not None:
+                backup(oc_cfg, dry)
+                write_text(oc_cfg, json.dumps(data, indent=2, ensure_ascii=False) + "\n", dry)
+                rep.ok(f"移除 MCP 注册 → {oc_cfg}")
+        except Exception:
+            rep.needs_manual(f"{oc_cfg} 解析失败 → 手动删除 mcp.servers.misakanet")
     rep.needs_manual("Hermes 的 MCP 条目由它自己管理 → 需要时执行 `hermes mcp remove misakanet`")
 
 
