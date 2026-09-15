@@ -22,6 +22,15 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
         with:
           python-version: '3.12'
+          cache: pip
+
+      # PyYAML is required: most lesson files carry YAML frontmatter and
+      # sync_lessons_to_d1.py now refuses to fall back to slug/dir metadata
+      # without it. This job installed only wrangler, so `import yaml` raised
+      # ImportError and every YAML lesson was upserted into D1 with its file
+      # stem as the title, the parent directory as the domain and empty tags.
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
       - name: Install wrangler
         run: npm install -g wrangler

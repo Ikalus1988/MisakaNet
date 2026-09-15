@@ -62,6 +62,12 @@ def parse_frontmatter(text: str) -> dict:
     inside the same frontmatter delimiters; raw_decode extracts only the
     leading JSON object. Newer lessons use plain YAML frontmatter — fall back
     to yaml.safe_load for those (mirrors update_lessons_json.py).
+
+    A non-JSON frontmatter block with no PyYAML available is a hard error, not
+    a fallback: returning {} here silently wrote every YAML lesson to D1 with
+    its file stem as the title, the parent directory name as the domain and
+    empty tags (CI installed no dependencies, so `import yaml` raised
+    ImportError and `except Exception: pass` swallowed it).
     """
     if not text.startswith("---"):
         return {}
@@ -74,8 +80,16 @@ def parse_frontmatter(text: str) -> dict:
             return json.JSONDecoder().raw_decode(raw)[0]
         except (json.JSONDecodeError, ValueError):
             pass
+    # YAML fallback — import lazily so JSON-frontmatter lessons still parse
+    # without pyyaml, but fail loudly when YAML is what we actually need.
     try:
         import yaml
+    except ImportError:
+        raise RuntimeError(
+            "PyYAML is required to parse YAML frontmatter (pip install -r requirements.txt); "
+            "refusing to fall back to slug/dir metadata"
+        ) from None
+    try:
         fm = yaml.safe_load(raw)
         if isinstance(fm, dict):
             return fm

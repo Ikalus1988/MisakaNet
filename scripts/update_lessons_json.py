@@ -29,7 +29,14 @@ def parse_frontmatter(text: str) -> dict:
     `provenance:` block (081e64d5) — raw_decode extracts only the leading JSON
     object. Newer lessons (2026-08+) use YAML frontmatter, which the public
     index now trusts too (build_worker_index.py already does). Falls back to
-    {} when neither parses.
+    {} when there is no frontmatter block, or when the block parses as neither
+    format.
+
+    A non-JSON frontmatter block with no PyYAML available is a hard error, not
+    a fallback: returning {} here silently rewrote every YAML lesson's title to
+    its file stem and its domain to the parent directory name in
+    data/lessons.json (CI installed no dependencies, so `import yaml` raised
+    ImportError and `except Exception: pass` swallowed it).
     """
     if not text.startswith("---\n") and not text.startswith("---"):
         return {}
@@ -42,9 +49,16 @@ def parse_frontmatter(text: str) -> dict:
             return json.JSONDecoder().raw_decode(raw)[0]
         except (json.JSONDecodeError, ValueError):
             pass
-    # YAML fallback — import lazily so the script works without pyyaml
+    # YAML fallback — import lazily so JSON-frontmatter lessons still parse
+    # without pyyaml, but fail loudly when YAML is what we actually need.
     try:
         import yaml
+    except ImportError:
+        raise RuntimeError(
+            "PyYAML is required to parse YAML frontmatter (pip install -r requirements.txt); "
+            "refusing to fall back to slug/dir metadata"
+        ) from None
+    try:
         fm = yaml.safe_load(raw)
         if isinstance(fm, dict):
             return fm

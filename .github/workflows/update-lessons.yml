@@ -29,6 +29,16 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
         with:
           python-version: "3.12"
+          cache: pip
+
+      # PyYAML is required: most lesson files carry YAML frontmatter and
+      # update_lessons_json.py now refuses to fall back to slug/dir metadata
+      # without it. This job installed no dependencies at all, so `import yaml`
+      # raised ImportError and every YAML lesson was written to
+      # data/lessons.json with its file stem as the title and the parent
+      # directory as the domain.
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
       - name: Regenerate lessons.json
         run: python3 scripts/update_lessons_json.py
