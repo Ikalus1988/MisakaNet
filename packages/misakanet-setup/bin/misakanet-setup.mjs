@@ -2,7 +2,7 @@
 /**
  * misakanet-setup — one command, no Python, for people who do not read docs.
  *
- *   npx @misaka-net/misakanet-setup            install (detects Claude Code / Codex / Hermes)
+ *   npx @misaka-net/misakanet-setup            install (Claude Code / Codex / Hermes / OpenClaw)
  *   npx @misaka-net/misakanet-setup --dry-run  show what would change, write nothing
  *   npx @misaka-net/misakanet-setup --verify   is it actually working?
  *   npx @misaka-net/misakanet-setup --uninstall
@@ -23,7 +23,8 @@
  * Everything is idempotent, every rewritten file is backed up to *.misakanet.bak, and
  * --uninstall removes exactly what was added (same markers), leaving user config intact.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, rmSync, chmodSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, rmSync, chmodSync, accessSync, constants } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -52,7 +53,7 @@ const valueOf = (flag, dflt) => {
 const only = valueOf('--only', '').split(',').map((s) => s.trim()).filter(Boolean);
 const DRY = has('--dry-run');
 const HOME = resolve(valueOf('--home', homedir()));
-const AGENTS = ['claude', 'codex', 'hermes'];
+const AGENTS = ['claude', 'codex', 'hermes', 'openclaw'];
 
 const done = [];
 const manual = [];
@@ -76,6 +77,16 @@ function readText(path) {
     return '';
   }
 }
+
+/**
+ * Own version, read from the manifest rather than typed twice.
+ *
+ * It rode along as a literal `misakanet-setup/0.1.0` while the package moved on - the same
+ * hardcoded-version drift this repository has had to fix on the site badge and in JOIN.md.
+ * The tarball always carries package.json (npm cannot publish without it), so the fallback
+ * only covers a hand-copied file.
+ */
+const PKG_VERSION = readJson(join(PKG_ROOT, 'package.json'), {}).version || '0.0.0';
 
 function backup(path) {
   if (DRY || !readText(path)) return;
@@ -145,7 +156,7 @@ async function mcpCall(tool, toolArgs, bearer = '', timeoutMs = 6000, urlOverrid
     Accept: 'application/json',
     'MCP-Protocol-Version': '2025-06-18',
     Origin: 'https://misakanet.org',
-    'User-Agent': 'misakanet-setup/0.1.0',
+    'User-Agent': `misakanet-setup/${PKG_VERSION}`,
   };
   if (bearer) headers.Authorization = `Bearer ${bearer}`;
   const controller = new AbortController();
@@ -268,8 +279,37 @@ async function ensureIdentity() {
 
 // ── per-agent install ────────────────────────────────────────────────
 function detect(agent) {
-  const paths = { claude: ['.claude.json', '.claude'], codex: ['.codex'], hermes: ['.hermes'] }[agent] || [];
+  const paths = {
+    claude: ['.claude.json', '.claude'],
+    codex: ['.codex'],
+    hermes: ['.hermes'],
+    openclaw: ['.openclaw'],
+  }[agent] || [];
   return paths.some((p) => existsSync(join(HOME, p)));
+}
+
+/**
+ * Locate an executable on PATH.
+ *
+ * The CLI must not assume a shell helper exists (`which` is not on every Windows box), and
+ * the openclaw registration below is the one step this installer hands to another program.
+ * Executability is checked rather than mere existence: a non-executable file with the right
+ * name would otherwise turn a clear "install the CLI" message into an opaque spawn failure.
+ */
+function findOnPath(bin) {
+  const sep = process.platform === 'win32' ? ';' : ':';
+  const exts = process.platform === 'win32' ? ['.cmd', '.exe', '.bat', ''] : [''];
+  for (const dir of (process.env.PATH || '').split(sep)) {
+    if (!dir) continue;
+    for (const ext of exts) {
+      const candidate = join(dir, bin + ext);
+      try {
+        accessSync(candidate, constants.X_OK);
+        return candidate;
+      } catch { /* not here (or not executable): keep looking */ }
+    }
+  }
+  return '';
 }
 
 async function installClaude(hookPath, bearer) {
@@ -399,6 +439,51 @@ async function installHermes(hookPath) {
   }
 }
 
+/**
+ * OpenClaw: rules live in ~/.openclaw/workspace, and the agent has its own MCP client
+ * (`openclaw mcp add`), so this target registers through that CLI instead of editing a
+ * config file we do not own. Mirrors install_openclaw in the Python installer - the two
+ * must teach the same behaviour, because which one a user ran is an accident of which
+ * command they found first.
+ *
+ * The CLI keeps its cache under $XDG_CACHE_HOME, which may be read-only in a sandbox; that
+ * surfaces as "Could not start the CLI", hence the explicit hint rather than a raw stderr.
+ */
+async function installOpenclaw(bearer) {
+  const rules = join(HOME, '.openclaw', 'workspace', 'AGENTS.md');
+  const manual = `openclaw mcp add misakanet --url ${ENDPOINT} --transport streamable-http`;
+  if (!existsSync(dirname(rules))) {
+    need(`OpenClaw：找不到 ${dirname(rules)} → 先运行一次 openclaw 生成 workspace`);
+  } else {
+    ok(`OpenClaw：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  }
+
+  const cli = findOnPath('openclaw');
+  if (!cli) {
+    need(`OpenClaw：没找到 openclaw CLI → 手动执行 \`${manual}\``);
+    return;
+  }
+  if (DRY) {
+    ok(`OpenClaw：会执行 \`${manual} --no-probe\``);
+    return;
+  }
+  const cmd = [cli, 'mcp', 'add', 'misakanet', '--url', ENDPOINT,
+    '--transport', 'streamable-http', '--no-probe'];
+  if (bearer) cmd.push('--header', `Authorization=Bearer ${bearer}`);
+  const result = spawnSync(cmd[0], cmd.slice(1), { encoding: 'utf8', timeout: 20000 });
+  const out = `${result.stdout || ''}${result.stderr || ''}`;
+  if (result.status === 0) {
+    ok('OpenClaw：已注册 MCP `misakanet`（openclaw mcp add）');
+    return;
+  }
+  if (out.includes('Could not start the CLI')) {
+    need('OpenClaw：CLI 起不动（缓存目录不可写）→ 设 XDG_CACHE_HOME 到可写目录后重跑，'
+      + `或手动执行：${manual}`);
+  } else {
+    need(`OpenClaw：\`openclaw mcp add\` 失败：${out.trim().slice(0, 200) || `退出码 ${result.status}`}`);
+  }
+}
+
 async function verify() {
   let allOk = true;
   const probe = await mcpCall('misakanet_search', { query: 'docker exit code 137', top: 1 }, '', 6000, probeEndpoint());
@@ -454,11 +539,44 @@ async function verify() {
     if (!entry) { allOk = false; need(`Claude Code：MCP 未注册（${cfg}）`); }
     else ok(`Claude Code：MCP 已注册（${entry.url}）`);
   }
+  // OpenClaw is only reported when the user actually has it: telling a machine without
+  // OpenClaw that it is "not ready" would be a lie about a target that was never selected.
+  // The MCP state is asked of the CLI that owns it rather than guessed from its config.
+  if (detect('openclaw')) {
+    const rules = join(HOME, '.openclaw', 'workspace', 'AGENTS.md');
+    if (!readText(rules).includes(`<!-- ${START} -->`)) {
+      allOk = false;
+      need(`OpenClaw：规则块没装（${rules}）→ 重跑安装命令`);
+    } else {
+      ok('OpenClaw：规则块已装');
+    }
+    const cli = findOnPath('openclaw');
+    if (!cli) {
+      allOk = false;
+      need(`OpenClaw：没找到 openclaw CLI → 无法确证 MCP 是否注册；手动执行 `
+        + `openclaw mcp add misakanet --url ${ENDPOINT} --transport streamable-http`);
+    } else {
+      const listed = spawnSync(cli, ['mcp', 'list'], { encoding: 'utf8', timeout: 15000 });
+      const out = `${listed.stdout || ''}${listed.stderr || ''}`;
+      if (listed.status === 0 && /misakanet/.test(out)) {
+        ok('OpenClaw：MCP 已注册（openclaw mcp list）');
+      } else if (listed.status === 0) {
+        allOk = false;
+        need(`OpenClaw：MCP 未注册 → 重跑安装命令，或手动执行 `
+          + `openclaw mcp add misakanet --url ${ENDPOINT} --transport streamable-http`);
+      } else {
+        allOk = false;
+        need(`OpenClaw：\`openclaw mcp list\` 没跑通 → 无法确证 MCP 状态`
+          + `${out.trim() ? `（${out.trim().slice(0, 120)}）` : ''}；可先手工确认一次`);
+      }
+    }
+  }
   return allOk;
 }
 
 function uninstall() {
-  for (const rel of ['.claude/CLAUDE.md', '.codex/AGENTS.md', '.hermes/SOUL.md']) {
+  for (const rel of ['.claude/CLAUDE.md', '.codex/AGENTS.md', '.hermes/SOUL.md',
+    '.openclaw/workspace/AGENTS.md']) {
     if (stripBlock(join(HOME, rel))) ok(`移除规则块 → ${rel}`);
   }
   const cfg = join(HOME, '.claude.json');
@@ -504,6 +622,7 @@ function uninstall() {
     ok(`删除状态目录 → ${stateDir()}`);
   }
   need('Hermes 的 MCP 条目由它自己管 → 需要时执行 hermes mcp remove misakanet');
+  need('OpenClaw 的 MCP 条目由它自己管 → 需要时执行 openclaw mcp remove misakanet');
 }
 
 // ── main ─────────────────────────────────────────────────────────────
@@ -548,6 +667,7 @@ if (!targets.length) {
     if (agent === 'claude') await installClaude(hookPath, bearer);
     else if (agent === 'codex') await installCodex(hookPath, bearer);
     else if (agent === 'hermes') await installHermes(hookPath);
+    else if (agent === 'openclaw') await installOpenclaw(bearer);
   }
 }
 
