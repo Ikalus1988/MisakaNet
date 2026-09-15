@@ -1,7 +1,7 @@
 ---
 {
   "title": "Single-instance flock for shell snipers",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["flock","lock","cron","shell","agent","ops"],
   "status": "published",
   "lang": "en",

@@ -1,6 +1,6 @@
 ---
 title: slugify path traversal deep coverage
-domain: contrib
+domain: security
 tags:
 - slugify
 - path-traversal

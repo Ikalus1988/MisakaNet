@@ -1,6 +1,6 @@
 ---
 title: knowledge graph ux patterns from high star projects
-domain: contrib
+domain: frontend
 tags:
 - knowledge-graph
 - d3js

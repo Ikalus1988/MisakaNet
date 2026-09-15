@@ -1,6 +1,6 @@
 ---
 title: Debugging memory leaks in Ruby
-domain: Ruby/Performance
+domain: ruby
 tags:
 - memory-leaks
 - debugging

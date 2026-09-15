@@ -1,6 +1,6 @@
 ---
 title: api gateway anthropic incompatibility
-domain: contrib
+domain: llm
 tags:
 - project:rag
 - severity:medium

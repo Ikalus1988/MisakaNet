@@ -1,6 +1,6 @@
 ---
 title: Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy
-domain: contrib
+domain: llm
 tags:
 - anthropic
 - proxy

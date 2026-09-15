@@ -1,6 +1,6 @@
 ---
 title: phase 0 output gate
-domain: contrib
+domain: meta
 tags:
 - output-gate
 - knowledge-reuse

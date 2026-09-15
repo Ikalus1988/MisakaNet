@@ -1,7 +1,7 @@
 ---
 title: Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed
   upstreams
-domain: contrib
+domain: meta
 tags:
 - swarm
 - battle

@@ -1,7 +1,7 @@
 ---
 {
   "title": "Disk full from agent tmp dirs — GC pattern",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["disk", "tmp", "gc", "agent", "ops", "cleanup"],
   "status": "published",
   "lang": "en",

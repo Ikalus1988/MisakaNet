@@ -1,6 +1,6 @@
 ---
 title: AWS ECS 高分辨率指标 — 更快的自动扩缩容
-domain: ops
+domain: devops
 tags:
 - aws
 - ecs

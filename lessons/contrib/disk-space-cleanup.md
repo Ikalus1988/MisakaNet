@@ -1,6 +1,6 @@
 ---
 title: 磁盘空间不足 / chroma_db_v4 CacheCleanup
-domain: contrib
+domain: devops
 tags:
 - disk
 - space

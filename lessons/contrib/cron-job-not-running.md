@@ -1,6 +1,6 @@
 ---
 title: Cron 作业不执行 / 不生效排障
-domain: contrib
+domain: devops
 tags:
 - cron
 - scheduler

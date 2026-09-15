@@ -1,7 +1,7 @@
 ---
 {
   "title": "Idempotent task claim keys for snipers",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["idempotency", "claim", "sniper", "taskbounty", "agent"],
   "status": "published",
   "lang": "en",

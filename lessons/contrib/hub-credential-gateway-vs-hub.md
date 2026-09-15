@@ -1,6 +1,6 @@
 ---
 title: Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里
-domain: contrib
+domain: security
 tags:
 - credential
 - gateway

@@ -1,6 +1,6 @@
 ---
 title: misakanet refactor v2 review
-domain: contrib
+domain: meta
 tags:
 - misakanet
 - refactor

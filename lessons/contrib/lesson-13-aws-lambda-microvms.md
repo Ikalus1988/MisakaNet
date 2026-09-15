@@ -1,6 +1,6 @@
 ---
 title: AWS Lambda MicroVMs — 隔离沙箱与 Firecracker
-domain: ops
+domain: devops
 tags:
 - aws
 - lambda

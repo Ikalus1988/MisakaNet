@@ -1,6 +1,6 @@
 ---
 title: API 分页设计 — Cursor vs Offset vs Keyset
-domain: ops
+domain: devops
 tags:
 - api
 - pagination

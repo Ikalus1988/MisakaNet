@@ -1,7 +1,7 @@
 ---
 {
   "title": "Restart long-lived earn loops after code fixes",
-  "domain": "ops",
+  "domain": "devops",
   "tags": [
     "ops",
     "restart",
