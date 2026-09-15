@@ -77,8 +77,72 @@ function sessionKey(payload) {
 }
 
 function statePath(session) {
-  const root = process.env.MISAKANET_HOOK_STATE || join(homedir(), '.misakanet-agent', 'state');
+  const root = process.env.MISAKANET_HOOK_STATE || join(AGENT_DIR, 'state');
   return join(root, `${session.replace(/[^A-Za-z0-9_-]/g, '_')}.json`);
+}
+
+/**
+ * Where the installer keeps its state, and how often to mention an upgrade.
+ *
+ * Overridable so tests never read a developer's own ~/.misakanet-agent (an old version stamp
+ * there would make the nudge below appear in unrelated tests).
+ */
+const AGENT_DIR = process.env.MISAKANET_AGENT_DIR || join(homedir(), '.misakanet-agent');
+const UPDATE_AFTER_DAYS = Number(process.env.MISAKANET_UPDATE_AFTER_DAYS || 14);
+
+/**
+ * The upgrade nudge: at most one prompt every UPDATE_AFTER_DAYS days, and only when the
+ * installer left a version stamp to compare against.
+ *
+ * Why the timer lives in this hook: it already runs on every prompt and already writes
+ * per-session state, so a date comparison costs one small file read — no network, no new write
+ * path that could touch a response body, and no risk to the session. The registry question ("is
+ * there anything newer?") is deliberately left to the agent: this process must not read a
+ * network response and write it to disk, which is the flow CodeQL js/http-to-file-access
+ * #262/#264 flagged and the reason the installer no longer downloads anything.
+ *
+ * Cadence is the whole point: asking on every session is how a helpful reminder becomes
+ * something users mute, and asking never is how they forget the tool is installed at all.
+ * 14 days was chosen for exactly that reason (the user's own words: too long and people forget
+ * they even have this).
+ */
+function updateNudge() {
+  if (process.env.MISAKANET_NO_UPDATE_NOTICE === '1') return '';
+  let stamp;
+  try {
+    stamp = JSON.parse(readFileSync(join(AGENT_DIR, 'version'), 'utf8'));
+  } catch {
+    return '';                      // installed before version stamping: nothing to compare
+  }
+  const version = String(stamp?.version || '').trim();
+  if (!/^\d+\.\d+\.\d+/.test(version)) return '';
+
+  const stateFile = join(process.env.MISAKANET_HOOK_STATE || join(AGENT_DIR, 'state'),
+    'update-check.json');
+  let asked = 0;
+  try {
+    asked = Date.parse(JSON.parse(readFileSync(stateFile, 'utf8')).last_asked) || 0;
+  } catch {
+    asked = 0;
+  }
+  // Whichever is later: a fresh install waits its first interval, and upgrading resets it, so
+  // nobody is nagged right after they just updated.
+  const installed = Date.parse(stamp?.installed_at) || 0;
+  const since = Math.max(asked, installed);
+  const intervalMs = Math.max(1, UPDATE_AFTER_DAYS) * 24 * 60 * 60 * 1000;
+  if (since && Date.now() - since < intervalMs) return '';
+
+  try {
+    mkdirSync(dirname(stateFile), { recursive: true });
+    writeFileSync(stateFile, JSON.stringify({ last_asked: new Date().toISOString() }));
+  } catch (err) {
+    debug(`update-check state write failed: ${err}`);
+  }
+  return `[MisakaNet] 本机安装的是 ${version}，距上次确认已超过 ${UPDATE_AFTER_DAYS} 天。` +
+    '做一件事就够：跑一次 `npm view @misaka-net/misakanet-setup version` 看有没有更新——' +
+    '有新版本就用一句话告诉用户「MisakaNet 可以更新了，想更新就跑 ' +
+    'npx @misaka-net/misakanet-setup@latest」（只提这一句，不要重复、不要打断当前任务）；' +
+    '没有新版本就什么都不要说。\n';
 }
 
 function bumpTurn(session) {
@@ -205,6 +269,8 @@ function promptMode(payload) {
   if (turn === 1) {
     process.stdout.write(ANNOUNCE);
   }
+  const nudge = updateNudge();
+  if (nudge) process.stdout.write(nudge);
   if (!due) return;
   process.stdout.write(
     `[MisakaNet 检查点 · 第 ${turn} 轮] 现在做一次会话沉淀（不需要用户提醒，也不要打断当前任务）：\n` +

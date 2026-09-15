@@ -27,11 +27,32 @@ counters. Without (1)/(2) the hook has nothing to call.
 
 ```bash
 npx @misaka-net/misakanet-setup --dry-run     # show what would change, write nothing
-npx @misaka-net/misakanet-setup --verify      # READY / NOT READY + the fix for each gap
+npx @misaka-net/misakanet-setup --verify      # READY / NOT READY, installed version, and the fix for each gap
 npx @misaka-net/misakanet-setup --only claude # one agent only
 npx @misaka-net/misakanet-setup --no-register # read-only, no anonymous token
+npx @misaka-net/misakanet-setup --upgrade     # same as installing the latest (the command is idempotent)
 npx @misaka-net/misakanet-setup --uninstall   # remove exactly what it added
 ```
+
+## Keeping it current
+
+The installer records what it installed in `~/.misakanet-agent/version`. From then on the hook
+mentions an upgrade **at most once every 14 days**, and only by asking the assistant to check the
+registry first — so nothing is said when you are already current, and nothing is said for the
+first 14 days after installing or upgrading.
+
+Nothing is ever downloaded or replaced behind your back: updating is you (or your assistant)
+running one command.
+
+```bash
+npx @misaka-net/misakanet-setup@latest
+```
+
+| Want | How |
+|---|---|
+| a different cadence | `MISAKANET_UPDATE_AFTER_DAYS=30` (in the environment your assistant runs in) |
+| no reminders at all | `MISAKANET_NO_UPDATE_NOTICE=1` |
+| ask right now | `npx @misaka-net/misakanet-setup --verify` — it prints the installed version and the latest published one |
 
 ## Safety
 

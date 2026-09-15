@@ -103,7 +103,7 @@ function readText(path) {
  * meant to prevent is now caught in CI instead, by a test that binds this literal to the
  * manifest — a failing test is a better place for that than a request header.
  */
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 
 function backup(path) {
   if (DRY || !readText(path)) return;
@@ -434,6 +434,71 @@ async function installCodex(hookPath, bearer) {
     + '要硬保证就用 --verify 看状态，或把本会话放在 CC 里跑');
 }
 
+const STATE_VERSION_FILE = 'version';
+const REGISTRY_LATEST = process.env.MISAKANET_REGISTRY_URL
+  || 'https://registry.npmjs.org/@misaka-net%2fmisakanet-setup/latest';
+
+/**
+ * Record what is installed, and when — the fact every upgrade path needs and none had.
+ *
+ * The hook reads this file to decide whether to mention an upgrade (it never asks the
+ * registry itself: that would be "read a network response, write it to disk", the flow
+ * CodeQL js/http-to-file-access flagged and the reason this installer downloads nothing).
+ *
+ * `installed_at` is only refreshed when the version actually changes, so a re-run of the same
+ * version does not reset the 14-day timer the user is relying on for peace and quiet.
+ */
+function stampVersion() {
+  const file = join(stateDir(), STATE_VERSION_FILE);
+  const existing = readJson(file, null);
+  if (existing?.version === VERSION) {
+    ok(`版本戳已存在（${VERSION}）`);
+    return;
+  }
+  if (DRY) {
+    ok(`会写入版本戳 → ${file}（${VERSION}）`);
+    return;
+  }
+  const stamp = {
+    package: '@misaka-net/misakanet-setup',
+    version: VERSION,
+    installed_at: new Date().toISOString(),
+  };
+  mkdirSync(stateDir(), { recursive: true });
+  writeFileSync(file, `${JSON.stringify(stamp, null, 2)}\n`);
+  ok(`版本戳 → ${file}（${VERSION}${existing?.version ? `，原 ${existing.version}` : ''}）`);
+}
+
+/** Numeric comparison of dotted versions (pre-release suffixes ignored): -1, 0 or 1. */
+function compareVersions(a, b) {
+  const left = String(a).split('-')[0].split('.').map((part) => Number(part) || 0);
+  const right = String(b).split('-')[0].split('.').map((part) => Number(part) || 0);
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    const x = left[index] || 0;
+    const y = right[index] || 0;
+    if (x !== y) return x < y ? -1 : 1;
+  }
+  return 0;
+}
+
+/** Latest published version, or '' when the registry is unreachable. Used by --verify only. */
+async function latestPublishedVersion() {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6000);
+  try {
+    const response = await fetch(REGISTRY_LATEST, {
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+    });
+    const data = await response.json();
+    return typeof data?.version === 'string' ? data.version.trim() : '';
+  } catch {
+    return '';
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * Hermes MCP: `mcp_servers.<name>` in ~/.hermes/config.yaml, with the token in
  * ~/.hermes/.env under `MCP_<NAME>_API_KEY`.
@@ -656,6 +721,28 @@ async function verify() {
       skip('Hermes：本进程只能确认"配置已写"，无法确认 Hermes 是否已加载 → 可用 hermes mcp list 复核');
     }
   }
+  // Version: what is installed, and whether the registry has moved on. Read-only here — the
+  // hook owns the periodic nudge (it cannot be a network call in this process's hot path), and
+  // `--verify` is an explicit user action, so one lookup is both cheap and expected.
+  const stamp = readJson(join(stateDir(), STATE_VERSION_FILE), null);
+  if (!stamp?.version) {
+    skip('版本：这次安装还没有版本戳（重跑安装命令即可写入，之后每 14 天会提醒一次升级）');
+  } else {
+    const latest = await latestPublishedVersion();
+    const installedOn = String(stamp.installed_at || '').slice(0, 10);
+    if (!latest) {
+      skip(`版本：装机版本 ${stamp.version}（${installedOn}）；查不到最新版本（离线？）`);
+    } else if (compareVersions(stamp.version, latest) === 0) {
+      ok(`版本：${stamp.version}（${installedOn}）—— 已是最新`);
+    } else if (compareVersions(stamp.version, latest) > 0) {
+      // Running from a checkout, or a stamp the registry has not caught up with. Telling this
+      // user to "update" to an older version is worse than saying nothing useful.
+      skip(`版本：装机 ${stamp.version} 领先于已发布的最新 ${latest}（本地构建或预发布）`);
+    } else {
+      ok(`版本：装机 ${stamp.version}（${installedOn}）→ 最新 ${latest}；想更新就跑 `
+        + 'npx @misaka-net/misakanet-setup@latest');
+    }
+  }
   return allOk;
 }
 
@@ -702,7 +789,8 @@ function uninstall() {
       ok(`移除 MCP 表 → ${toml}`);
     }
   }
-  if (readText(join(stateDir(), 'token')) || readText(join(stateDir(), 'hook.mjs')) || readText(join(stateDir(), 'client_id'))) {
+  if (readText(join(stateDir(), 'token')) || readText(join(stateDir(), 'hook.mjs'))
+    || readText(join(stateDir(), 'client_id')) || readText(join(stateDir(), STATE_VERSION_FILE))) {
     if (!DRY) rmSync(stateDir(), { recursive: true, force: true });
     ok(`删除状态目录 → ${stateDir()}`);
   }
@@ -753,7 +841,7 @@ function render() {
 }
 
 const mode = has('--uninstall') ? 'uninstall' : (has('--verify') ? 'verify' : 'install');
-console.log(`MisakaNet 安装程序（npx 版）${DRY ? '（--dry-run，不会写任何文件）' : ''}`);
+console.log(`MisakaNet 安装程序（npx 版）${DRY ? '（--dry-run，不会写任何文件）' : ''}${has('--upgrade') ? '（--upgrade：与安装等价，覆盖安装即升级）' : ''}`);
 console.log(`家目录：${HOME}\n`);
 
 if (mode === 'uninstall') {
@@ -780,6 +868,7 @@ if (!targets.length) {
   need('没检测到 Claude Code / Codex / Hermes 的配置目录 → 请先打开一次你要用的那个助手，再回来运行本命令');
 } else {
   const hookPath = await installHook();
+  stampVersion();
   const bearer = has('--no-register') ? '' : await ensureIdentity();
   for (const agent of targets) {
     if (agent === 'claude') await installClaude(hookPath, bearer);
