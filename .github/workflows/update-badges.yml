@@ -52,20 +52,32 @@ jobs:
           TOOL_COUNT=$(grep -cE 'name: "misakanet_' workers/register-proxy-sw.js | awk '{print $1+0}')
           echo "tools=$TOOL_COUNT" >> "$GITHUB_OUTPUT"
 
+      - name: Count registered nodes
+        id: nodes
+        run: |
+          # Through the SSOT reader instead of a second copy of the offset. README.zh-CN.md's
+          # badge now points at this JSON rather than carrying a number nobody refreshed — it
+          # said 59 while data/counter.json said 73 (issue #1683).
+          NODE_COUNT=$(python3 -c "from scripts.sync_lesson_count import canonical_nodes; print(canonical_nodes())")
+          echo "nodes=$NODE_COUNT" >> "$GITHUB_OUTPUT"
+
       - name: Generate badge JSONs
         run: |
           mkdir -p /tmp/badges
           LESSON_COUNT="${{ steps.count.outputs.lessons }}"
           TOOL_COUNT="${{ steps.tools.outputs.tools }}"
+          NODE_COUNT="${{ steps.nodes.outputs.nodes }}"
           DOMAIN_COUNT=$(grep -rh "^domain:" lessons/ --include="*.md" 2>/dev/null \
             | sed 's/domain: *//' | sort -u | wc -l)
           echo "{\"schemaVersion\":1,\"label\":\"lessons\",\"message\":\"$LESSON_COUNT\",\"color\":\"brightgreen\"}" > /tmp/badges/lessons.json
           echo "{\"schemaVersion\":1,\"label\":\"MCP tools\",\"message\":\"$TOOL_COUNT\",\"color\":\"purple\"}" > /tmp/badges/tools.json
           echo "{\"schemaVersion\":1,\"label\":\"domains\",\"message\":\"$DOMAIN_COUNT\",\"color\":\"blue\"}" > /tmp/badges/domains.json
-          echo "Generated badges: lessons=$LESSON_COUNT, tools=$TOOL_COUNT, domains=$DOMAIN_COUNT"
+          echo "{\"schemaVersion\":1,\"label\":\"nodes\",\"message\":\"$NODE_COUNT\",\"color\":\"green\"}" > /tmp/badges/nodes.json
+          echo "Generated badges: lessons=$LESSON_COUNT, tools=$TOOL_COUNT, domains=$DOMAIN_COUNT, nodes=$NODE_COUNT"
           cat /tmp/badges/lessons.json
           cat /tmp/badges/tools.json
           cat /tmp/badges/domains.json
+          cat /tmp/badges/nodes.json
 
       - name: Push to data branch
         env:

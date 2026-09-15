@@ -52,23 +52,115 @@ def test_repo_count_surface_is_consistent():
     )
 
 
+def test_repo_node_surface_is_consistent():
+    """The same gate for the node count (issue #1683).
+
+    `check_count_file=False`: docs/_lessons_count.txt is the *lesson* count's
+    machine-readable copy. Comparing it against the node count is exactly the kind
+    of crossed wire this registry exists to prevent, so the flag is asserted here
+    rather than assumed.
+    """
+    problems = slc.stale_entries(slc.canonical_nodes(REPO), root=REPO,
+                                sites=slc.NODE_SITES, check_count_file=False)
+    assert problems == [], (
+        "node counts drifted from data/counter.json:\n  - "
+        + "\n  - ".join(problems)
+        + "\nFix: python3 scripts/sync_lesson_count.py"
+    )
+
+
+def _registries():
+    """(sites, canonical value, owns-count-file) for every managed metric."""
+    return (
+        (slc.SITES, slc.canonical_count(REPO), True),
+        (slc.NODE_SITES, slc.canonical_nodes(REPO), False),
+    )
+
+
 def test_registry_patterns_are_idempotent_fixed_points():
-    """Every registered row must still match the text it just wrote."""
-    count = slc.canonical_count(REPO)
-    for site in slc.SITES:
-        text = (REPO / site.path).read_text(encoding="utf-8")
-        once, first = site.compiled().subn(site.replace.format(n=count), text)
-        assert first >= site.min_matches, f"{site.path}: row matched nothing"
+    """Every registered row must still match the text it just wrote.
 
-        twice, _ = site.compiled().subn(site.replace.format(n=count), once)
-        assert twice == once, f"{site.path}: rewriting is not a fixed point"
+    Runs over both metrics: the node rows are newer and carry a `\\+?` and a full-width
+    unit ("73 个"), which is where a pattern that cannot match its own output would hide.
+    """
+    for sites, count, _ in _registries():
+        for site in sites:
+            text = (REPO / site.path).read_text(encoding="utf-8")
+            once, first = site.compiled().subn(site.replace.format(n=count), text)
+            assert first >= site.min_matches, f"{site.path}: row matched nothing"
 
-        mutated, again = site.compiled().subn(site.replace.format(n=count + 1), once)
-        assert again >= site.min_matches, (
-            f"{site.path}: a /newer/ count no longer matches the pattern — this "
-            "is the write-once bug all over again"
-        )
-        assert str(count + 1) in mutated, f"{site.path}: newer count not written"
+            twice, _ = site.compiled().subn(site.replace.format(n=count), once)
+            assert twice == once, f"{site.path}: rewriting is not a fixed point"
+
+            mutated, again = site.compiled().subn(site.replace.format(n=count + 1), once)
+            assert again >= site.min_matches, (
+                f"{site.path}: a /newer/ count no longer matches the pattern — this "
+                "is the write-once bug all over again"
+            )
+            assert str(count + 1) in mutated, f"{site.path}: newer count not written"
+
+
+def test_node_count_never_writes_the_lesson_count_file():
+    """Guarding the `write_count_file` flag both ways (found by the gate, 2026-09-15).
+
+    The first version of the node sync reused `sync_all` unchanged, which overwrote
+    docs/_lessons_count.txt with the node count — a lesson-count surface silently
+    holding a node count. The flag exists for that, and the lesson metric must keep
+    writing the file.
+    """
+    changes, errors = slc.sync_all(42, root=REPO, sites=slc.NODE_SITES,
+                                   dry_run=True, write_count_file=False)
+    assert errors == []
+    assert not any("_lessons_count.txt" in change for change in changes), changes
+
+    lesson_changes, _ = slc.sync_all(slc.canonical_count(REPO), root=REPO,
+                                     dry_run=True, write_count_file=True)
+    # already consistent: the file matches, so no change is reported — the point is
+    # only that the lesson metric is still the one that owns that path.
+    assert not any("_lessons_count.txt" in change for change in lesson_changes), lesson_changes
+
+
+def test_canonical_nodes_reads_the_counter_minus_the_offset(tmp_path):
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "counter.json").write_text(
+        json.dumps({"current": 10073, "updated": "2026-09-15T01:53:11Z"}), encoding="utf-8")
+    assert slc.canonical_nodes(tmp_path) == 73
+
+
+def test_canonical_nodes_refuses_a_counter_it_cannot_trust(tmp_path):
+    (tmp_path / "data").mkdir()
+    counter = tmp_path / "data" / "counter.json"
+    for broken in ('{"current": "10073"}', "{}", '{"current": 9}', "not json"):
+        counter.write_text(broken, encoding="utf-8")
+        try:
+            slc.canonical_nodes(tmp_path)
+        except ValueError:
+            continue
+        raise AssertionError(f"counter {broken!r} should have been refused")
+
+
+def test_cli_checks_the_node_metric_too(tmp_path):
+    """`--check` must fail on a stale node surface, not only on a stale lesson surface."""
+    (tmp_path / "data").mkdir()
+    (tmp_path / "docs" / ".well-known").mkdir(parents=True)
+    (tmp_path / "data" / "counter.json").write_text(
+        json.dumps({"current": 10042}), encoding="utf-8")
+    (tmp_path / "docs" / "llms.txt").write_text("- 999 registered nodes\n", encoding="utf-8")
+    (tmp_path / "docs" / ".well-known" / "llms.txt").write_text(
+        "- 42 registered nodes\n", encoding="utf-8")
+
+    stale = subprocess.run([sys.executable, str(SCRIPT), "--check", "--metric", "nodes",
+                            "--root", str(tmp_path)],
+                           capture_output=True, text=True)
+    assert stale.returncode == 1, stale.stdout + stale.stderr
+    assert "node-count SSOT drift" in stale.stderr
+    assert "docs/llms.txt:1" in stale.stderr, stale.stderr
+
+    (tmp_path / "docs" / "llms.txt").write_text("- 42 registered nodes\n", encoding="utf-8")
+    healthy = subprocess.run([sys.executable, str(SCRIPT), "--check", "--metric", "nodes",
+                              "--quiet", "--root", str(tmp_path)],
+                             capture_output=True, text=True)
+    assert healthy.returncode == 0, healthy.stdout + healthy.stderr
 
 
 def test_sync_reruns_with_a_new_count(tmp_path):
