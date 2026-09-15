@@ -16,7 +16,14 @@ jobs:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         with:
           script: |
-            const pr = github.event.pull_request;
+            // `context.payload.pull_request`, NOT `github.event.pull_request`: the object
+            // github-script hands the body is the @actions/github module (context, getOctokit,
+            // GitHub), which has no `event` property — reading one threw
+            // "Cannot read properties of undefined (reading 'pull_request')" on every merged
+            // PR, so this workflow had never posted its comment (issue #1685, 2026-09-15).
+            // The `if:` above is a workflow expression, a different language, where the event
+            // payload is spelled `github.event` — that one is correct.
+            const pr = context.payload.pull_request;
             const author = pr.user.login;
             const title = pr.title;
             const number = pr.number;
