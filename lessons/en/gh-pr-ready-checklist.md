@@ -1,7 +1,7 @@
 ---
 {
   "title": "GitHub PR ready checklist for agent docs PRs",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["github", "pr", "dco", "ci", "agent", "checklist"],
   "status": "published",
   "lang": "en",

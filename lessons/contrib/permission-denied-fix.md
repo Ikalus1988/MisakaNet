@@ -1,6 +1,6 @@
 ---
 title: Permission Denied / WSL NTFS 跨文件系统PermissionFix
-domain: contrib
+domain: wsl
 tags:
 - permission
 - denied

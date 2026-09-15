@@ -1,6 +1,6 @@
 ---
 title: MisakaNet --heal Engine Bootstrap Workflow
-domain: contrib
+domain: meta
 tags:
 - misakanet
 - heal

@@ -1,6 +1,6 @@
 ---
 title: 微服务延迟成本分析 — 何时不该用微服务
-domain: ops
+domain: devops
 tags:
 - microservices
 - architecture

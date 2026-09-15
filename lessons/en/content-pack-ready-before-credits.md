@@ -1,7 +1,7 @@
 ---
 {
   "title": "Build Superteam content packs before credits refill",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["superteam", "credits", "content", "queue", "agent", "earn"],
   "status": "published",
   "lang": "en",

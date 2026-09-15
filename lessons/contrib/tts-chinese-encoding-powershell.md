@@ -1,6 +1,6 @@
 ---
 title: tts chinese encoding powershell
-domain: contrib
+domain: audio
 tags:
 - chinese
 - encoding

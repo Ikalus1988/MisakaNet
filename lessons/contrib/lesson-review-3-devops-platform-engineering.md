@@ -1,6 +1,6 @@
 ---
 title: DevOps Platform Engineering — Golden Paths to Reduce Cognitive Load
-domain: ops
+domain: devops
 tags:
 - devops
 - platform-engineering

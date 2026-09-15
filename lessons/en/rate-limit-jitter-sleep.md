@@ -1,7 +1,7 @@
 ---
 {
   "title": "Add jitter to retry sleeps (avoid thundering herd)",
-  "domain": "networking",
+  "domain": "network",
   "tags": ["retry", "jitter", "rate-limit", "backoff", "agent"],
   "status": "published",
   "lang": "en",

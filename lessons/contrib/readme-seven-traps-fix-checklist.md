@@ -1,6 +1,6 @@
 ---
 title: 开源项目 README Optimization — 7 个常见Pitfalls与Fix Checklist
-domain: contrib
+domain: meta
 tags:
 - readme
 - seven

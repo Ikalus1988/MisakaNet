@@ -1,6 +1,6 @@
 ---
 title: Maintainer Feedback Iteration — Address Blockers, Not Just Comments
-domain: contrib
+domain: meta
 tags:
 - contrib
 - maintainer

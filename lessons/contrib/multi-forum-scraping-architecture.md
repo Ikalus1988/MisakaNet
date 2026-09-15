@@ -1,6 +1,6 @@
 ---
 title: Multi-Forum Scraping Architecture — API vs Playwright
-domain: ops
+domain: devops
 tags:
 - scraping
 - playwright

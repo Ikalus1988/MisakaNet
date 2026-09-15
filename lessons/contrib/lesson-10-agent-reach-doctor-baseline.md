@@ -1,6 +1,6 @@
 ---
 title: 'Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login'
-domain: tooling
+domain: development
 tags:
 - meta
 - lesson

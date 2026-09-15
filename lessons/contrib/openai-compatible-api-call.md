@@ -1,6 +1,6 @@
 ---
 title: OpenAI 兼容 API 的通用调用格式
-domain: contrib
+domain: llm
 tags:
 - api
 - openai

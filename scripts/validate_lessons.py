@@ -56,11 +56,20 @@ def extract_frontmatter(path: Path) -> tuple[dict | None, str | None]:
     if not m:
         return None, "No frontmatter block found (must start with ---)"
     raw = m.group(1).strip()
-    # Try JSON first, fall back to YAML-like
+    # Try JSON first, fall back to YAML-like.
+    #
+    # `raw_decode`, not `loads`: many lessons append a YAML-ish `provenance:` tail
+    # inside the same frontmatter delimiters after the JSON object (the D1 sync and
+    # update_lessons_json parse them the same way). With `loads` those files raised
+    # "Extra data", fell through to the line-based YAML reader below — which cannot
+    # read a JSON object — and lost `title`/`domain`, so the schema reported
+    # "'title' is a required property" for 25+ `lessons/en/*` files that were always
+    # fine (found 2026-09-15 while a domain rewrite made CI validate them).
     try:
-        fm = json.loads(raw)
-        return fm, None
-    except json.JSONDecodeError:
+        fm = json.JSONDecoder().raw_decode(raw)[0]
+        if isinstance(fm, dict):
+            return fm, None
+    except (json.JSONDecodeError, ValueError):
         pass
     # Simple YAML-like parser for common patterns
     try:
