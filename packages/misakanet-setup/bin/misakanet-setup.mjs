@@ -82,14 +82,15 @@ function readText(path) {
 }
 
 /**
- * Own version, read from the manifest rather than typed twice.
+ * Own version — a literal, deliberately.
  *
- * It rode along as a literal `misakanet-setup/0.1.0` while the package moved on - the same
- * hardcoded-version drift this repository has had to fix on the site badge and in JOIN.md.
- * The tarball always carries package.json (npm cannot publish without it), so the fallback
- * only covers a hand-copied file.
+ * Reading it from package.json looks tidier and is what this line did for a few hours on
+ * 2026-09-15, until CodeQL pointed out that it turned the manifest into a file-to-network flow
+ * (the value goes into the User-Agent header): js/file-access-to-http #268. The drift it was
+ * meant to prevent is now caught in CI instead, by a test that binds this literal to the
+ * manifest — a failing test is a better place for that than a request header.
  */
-const PKG_VERSION = readJson(join(PKG_ROOT, 'package.json'), {}).version || '0.0.0';
+const VERSION = '0.2.1';
 
 function backup(path) {
   if (DRY || !readText(path)) return;
@@ -167,7 +168,7 @@ async function mcpCall(tool, toolArgs, timeoutMs = 6000, urlOverride = '') {
     Accept: 'application/json',
     'MCP-Protocol-Version': '2025-06-18',
     Origin: 'https://misakanet.org',
-    'User-Agent': `misakanet-setup/${PKG_VERSION}`,
+    'User-Agent': `misakanet-setup/${VERSION}`,
   };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
