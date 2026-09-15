@@ -1,7 +1,7 @@
 {
   "name": "@misaka-net/misakanet-setup",
-  "version": "0.1.0",
-  "description": "One-command setup: teach your Claude Code / Codex to search MisakaNet failure lessons before repeating a mistake, and to distil the session at a checkpoint.",
+  "version": "0.2.0",
+  "description": "One-command setup: teach your Claude Code / Codex / Hermes / OpenClaw to search MisakaNet failure lessons before repeating a mistake, and to distil the session at a checkpoint.",
   "bin": {
     "misakanet-setup": "bin/misakanet-setup.mjs"
   },

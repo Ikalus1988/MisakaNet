@@ -9,7 +9,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { testToken } from './_test-token.mjs';
@@ -264,5 +264,160 @@ test('the verification probe never forwards the stored token', async () => {
     assert.equal(seen[0], null, `probe must stay anonymous, saw ${seen[0]}`);
   } finally {
     server.close();
+  }
+});
+
+// ── OpenClaw (issue #1680) ──────────────────────────────────────────────────
+// OpenClaw is the one target whose MCP registration is handed to another program
+// (`openclaw mcp add`), so its tests own PATH: "the CLI is there" and "the CLI is missing"
+// are both real user states, and neither is reachable from the developer's own PATH.
+
+function makeOpenclawHome() {
+  const home = mkdtempSync(join(tmpdir(), 'mn-openclaw-'));
+  mkdirSync(join(home, '.openclaw', 'workspace'), { recursive: true });
+  return home;
+}
+
+/** A stand-in CLI that records how it was called, and answers `mcp list` when asked. */
+function fakeOpenclaw(dir, { listLine = '', fail = '' } = {}) {
+  mkdirSync(dir, { recursive: true });
+  const argsFile = join(dir, 'args.txt');
+  const lines = ['#!/bin/sh', `echo "$@" >> "${argsFile}"`];
+  if (fail) lines.push(`echo "${fail}" >&2`, 'exit 1');
+  else if (listLine) lines.push(`if [ "$1" = "mcp" ] && [ "$2" = "list" ]; then echo "${listLine}"; fi`, 'exit 0');
+  else lines.push('exit 0');
+  writeFileSync(join(dir, 'openclaw'), `${lines.join('\n')}\n`);
+  chmodSync(join(dir, 'openclaw'), 0o755);
+  return { bin: dir, argsFile };
+}
+
+/** Minimal PATH so the child finds sh and nothing else - never the real openclaw. */
+const BARE_PATH = ['/usr/bin', '/bin'];
+
+/**
+ * Structural run with a controlled PATH: no endpoint override, so the assertions can pin the
+ * real production URL that a user's install would carry.
+ */
+function runWithPath(home, pathDirs, ...flags) {
+  const env = { ...process.env, PATH: pathDirs.join(':') };
+  delete env.MISAKANET_ENDPOINT;
+  return spawnSync(process.execPath, [CLI, '--home', home, ...flags], { encoding: 'utf8', env });
+}
+
+/** Same, but pointed at a dead port: for `--verify`, which probes the endpoint itself. */
+function verifyWithPath(home, pathDirs) {
+  const env = { ...process.env, PATH: pathDirs.join(':'), MISAKANET_ENDPOINT: OFFLINE };
+  return spawnSync(process.execPath, [CLI, '--home', home, '--verify'], { encoding: 'utf8', env });
+}
+
+test('openclaw: dry-run reports the rules block and the exact CLI command it would run', () => {
+  const home = makeOpenclawHome();
+  const args = fakeOpenclaw(join(home, 'fakebin'));
+  const before = snapshot(home);
+  try {
+    const result = runWithPath(home, [args.bin, ...BARE_PATH], '--only', 'openclaw', '--no-register', '--dry-run');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /OpenClaw：规则块 added/, result.stdout);
+    assert.match(result.stdout,
+      /openclaw mcp add misakanet --url https:\/\/misakanet\.org\/mcp --transport streamable-http --no-probe/);
+    assert.deepEqual(snapshot(home), before, 'dry-run must write nothing');
+    assert.ok(!existsSync(args.argsFile), 'dry-run must not run the CLI either');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('openclaw: a machine without the CLI is told the exact command instead of a silent pass', () => {
+  const home = makeOpenclawHome();
+  try {
+    // PATH holds an empty directory: whatever the developer has installed, this run cannot
+    // see an `openclaw`, which is exactly the state the message is for.
+    const empty = join(home, 'empty-bin');
+    mkdirSync(empty, { recursive: true });
+    const result = runWithPath(home, [empty, ...BARE_PATH], '--only', 'openclaw', '--no-register');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /没找到 openclaw CLI/, result.stdout);
+    assert.match(result.stdout,
+      /openclaw mcp add misakanet --url https:\/\/misakanet\.org\/mcp --transport streamable-http/);
+    // the rules block is still written: the half that does not need the CLI must not be lost
+    assert.match(readFileSync(join(home, '.openclaw', 'workspace', 'AGENTS.md'), 'utf8'), /misakanet:start/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('openclaw: registers through the CLI, and the token travels as a header', () => {
+  const home = makeOpenclawHome();
+  const args = fakeOpenclaw(join(home, 'fakebin'));
+  try {
+    // A stored token means ensureIdentity() returns it without any network call, so this
+    // test can assert the header without a stub server.
+    mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
+    writeFileSync(join(home, '.misakanet-agent', 'token'), TOKEN_SHAPE_OK);
+    const result = runWithPath(home, [args.bin, ...BARE_PATH], '--only', 'openclaw');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /OpenClaw：已注册 MCP/, result.stdout);
+    const called = readFileSync(args.argsFile, 'utf8').trim();
+    assert.equal(called,
+      `mcp add misakanet --url https://misakanet.org/mcp --transport streamable-http --no-probe `
+      + `--header Authorization=Bearer ${TOKEN_SHAPE_OK}`);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('openclaw: a CLI that cannot start gets the cache hint, not a raw stderr', () => {
+  const home = makeOpenclawHome();
+  const args = fakeOpenclaw(join(home, 'fakebin'), { fail: 'Could not start the CLI EACCES' });
+  try {
+    const result = runWithPath(home, [args.bin, ...BARE_PATH], '--only', 'openclaw', '--no-register');
+    assert.match(result.stdout, /XDG_CACHE_HOME/, result.stdout);
+    assert.match(result.stdout, /openclaw mcp add misakanet --url/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('openclaw: verify distinguishes installed, not-registered and unverifiable', () => {
+  const home = makeOpenclawHome();
+  const home2 = home;
+  try {
+    // 1) registered
+    const good = fakeOpenclaw(join(home2, 'bin-ok'), { listLine: 'misakanet  streamable-http' });
+    runWithPath(home2, [good.bin, ...BARE_PATH], '--only', 'openclaw', '--no-register');
+    let verify = verifyWithPath(home2, [good.bin, ...BARE_PATH]);
+    assert.match(verify.stdout, /OpenClaw：MCP 已注册/, verify.stdout);
+
+    // 2) the CLI answers, but has no such entry
+    const bare = fakeOpenclaw(join(home2, 'bin-bare'));
+    verify = verifyWithPath(home2, [bare.bin, ...BARE_PATH]);
+    assert.match(verify.stdout, /OpenClaw：MCP 未注册/, verify.stdout);
+    assert.equal(verify.status, 1, 'not-registered must not report READY');
+
+    // 3) no CLI at all: honest "cannot confirm", never a silent pass
+    const empty = join(home2, 'bin-empty');
+    mkdirSync(empty, { recursive: true });
+    verify = verifyWithPath(home2, [empty, ...BARE_PATH]);
+    assert.match(verify.stdout, /无法确证 MCP 是否注册/, verify.stdout);
+    assert.equal(verify.status, 1);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('openclaw: uninstall removes the block it added and says who owns the MCP entry', () => {
+  const home = makeOpenclawHome();
+  const args = fakeOpenclaw(join(home, 'fakebin'));
+  try {
+    runWithPath(home, [args.bin, ...BARE_PATH], '--only', 'openclaw', '--no-register');
+    assert.ok(existsSync(join(home, '.openclaw', 'workspace', 'AGENTS.md')));
+    const result = runWithPath(home, [args.bin, ...BARE_PATH], '--uninstall');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /移除规则块 → \.openclaw\/workspace\/AGENTS\.md/, result.stdout);
+    assert.match(result.stdout, /openclaw mcp remove misakanet/);
+    assert.ok(!existsSync(join(home, '.openclaw', 'workspace', 'AGENTS.md')),
+      'a file created only for our block should go');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
   }
 });
