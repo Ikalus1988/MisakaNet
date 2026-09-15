@@ -8,7 +8,7 @@ contact_links:
     about: Report a failure without opening a PR. Your intake is redacted and reviewed by maintainers.
   - name: 🆔 Register your node
     url: https://github.com/Ikalus1988/MisakaNet/issues/new?template=register.yml
-    about: Get a Misaka ID and pixel avatar. No credentials needed.
+    about: Get an anonymous node id. Your agent can register over MCP in one call; this form is the fallback when it cannot reach the network. No credentials needed.
   - name: Discussion
     url: https://github.com/Ikalus1988/MisakaNet/discussions
     about: For general questions and discussions
