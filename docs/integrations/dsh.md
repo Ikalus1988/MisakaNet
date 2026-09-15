@@ -62,6 +62,6 @@ No additional configuration required. Install the plugin and tools are automatic
 
 If tools are not appearing:
 
-1. Verify plugin installation: `dsh plugin list`
+1. Verify plugin installation: `dsh plugin --profile web list`
 2. Restart your agent
 3. Check dsh version compatibility
