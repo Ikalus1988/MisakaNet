@@ -1007,7 +1007,8 @@ async function fetchD1SyncStamp(env) {
 async function refreshSearchIndex(env) {
   if (!env || !env.MISAKANET_KV) return { refreshed: false, reason: "no KV" };
   try {
-    const lessons = await loadLessons(env);
+    // From D1, not from the cached lessons payload — see loadLessonsFresh (#1731).
+    const lessons = (await loadLessonsFresh(env)) || (await loadLessons(env));
     if (!Array.isArray(lessons) || lessons.length === 0) {
       return { refreshed: false, reason: "no lessons" };
     }
@@ -2626,6 +2627,29 @@ async function fetchLessonFromD1(env, lessonPath, lessonId) {
 }
 
 // Unified lesson source: D1 first (real-time, PRD ④), GitHub via KV cache fallback.
+// Internal callers need the WHOLE corpus, not a page of it (see the note in
+// loadLessons): without an explicit limit fetchLessonsFromD1 falls back to `|| 100`.
+const INTERNAL_LESSON_LIMIT = 5000;
+
+// Uncached D1 read, for callers that must observe the corpus as of *now*.
+//
+// The BM25 rebuild decides from a sync stamp read straight out of D1, so it has to
+// read the rows the same way: loadLessons() answers from a 300s KV cache, and a
+// rebuild that pairs a fresh stamp with the previous corpus produces an index that
+// looks current to the gate and stays wrong for up to 20h (issue #1731 — observed
+// live on 2026-09-15: the rebuild right after a data re-sync kept serving the
+// pre-sync rows, and only a second re-sync moved the stamp enough to fix it).
+async function loadLessonsFresh(env) {
+  if (!d1Binding(env)) return null;
+  try {
+    const rows = await fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true });
+    return rows && rows.length > 0 ? rows : null;
+  } catch (error) {
+    debugLog(env, 1, "uncached lesson read failed", { error: error.message });
+    return null;
+  }
+}
+
 async function loadLessons(env, filters = {}) {
   // Filtered queries must go to D1 (GitHub proxy can't filter). Unfiltered
   // keeps the D1-first / GitHub fallback behavior, with a KV cache over the
@@ -2643,7 +2667,6 @@ async function loadLessons(env, filters = {}) {
   // that window were unfindable over MCP (a local search over the full corpus found
   // kubernetes-crashloopbackoff-debugging for "kubectl crashloopbackoff" while
   // production answered no_match). The KV cache below keeps this cheap.
-  const INTERNAL_LESSON_LIMIT = 5000;
   if (d1Binding(env)) {
     const fromD1 = await getWithCache(env, "proxy:lessons:d1", () =>
       fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true }));
