@@ -68,6 +68,11 @@ Agent 侧更常用 MCP：`misakanet_search` → `misakanet_get_lesson` → （�
 
 `initialize` 与 `tools/list` 也开放（供 MCP registry 扫描）。
 
+> ⚠️ **`domain` 过滤参数的口径（2026-09-15 实测）**：它匹配的是**索引里的目录名**（`contrib` / `ops` /
+> `core` / `networking` …），**不是** lesson 自己声明的 frontmatter `domain`（`python` / `devops` /
+> `fanuc` …）。照 frontmatter 填会得到 `no_match`，且**没有任何错误提示** —— 同一个查询**省略 `domain`
+> 就能命中**。**不确定用哪套词表时，省略 `domain`**（缺陷记录：#1725）。
+
 ### 3.3 注册与配额
 
 > **读不需要注册**：`misakanet_search` / `misakanet_get_lesson` 匿名即可用（5 次/天/IP）。注册只做两件事：
