@@ -273,7 +273,9 @@ class _McpStub:
     """A local MCP endpoint so the installer's network paths are testable offline.
 
     Returns a canned tool result: a search hit for misakanet_search, a token for
-    misakanet_register. No real network, no real node registrations in tests.
+    misakanet_register, and the tool inventory for the `tools/list` handshake the verify probe
+    uses (it must not spend one of the five anonymous reads per run). No real network, no real
+    node registrations in tests.
     """
 
     def __init__(self) -> None:
@@ -285,7 +287,10 @@ class _McpStub:
                 length = int(self.headers.get("Content-Length", "0"))
                 payload = json.loads(self.rfile.read(length) or b"{}")
                 tool = payload.get("params", {}).get("name", "")
-                if tool == "misakanet_register":
+                if payload.get("method") == "tools/list":
+                    result = {"tools": [{"name": "misakanet_search"},
+                                        {"name": "misakanet_get_lesson"}]}
+                elif tool == "misakanet_register":
                     result = {"node_id": "MisakaTEST", "token": "mcp_testtoken",
                               "registered_at": "2026-09-13T00:00:00Z", "agent_type": "setup"}
                 else:
@@ -553,3 +558,102 @@ def test_the_hook_never_forwards_a_stored_token(tmp_path):
             "an explicitly exported token is the user's own choice and is still used")
     finally:
         server.shutdown()
+
+
+# ── OpenClaw: the workspace its config names, and a handshake probe (issue #1719) ──
+# The JS installer had two defects the agent chain test found on a real machine; this file
+# covers the same two on the Python side, because the two installers exist precisely so that a
+# user can run either one.
+
+def make_openclaw_home(tmp_path: Path, configured: Path | None = None) -> Path:
+    home = make_home(tmp_path)
+    (home / ".openclaw" / "workspace").mkdir(parents=True, exist_ok=True)
+    cfg: dict = {"mcp": {"servers": {"other": {"url": "https://x"}}}}
+    if configured is not None:
+        # Deliberately NOT created: the caller decides whether that path exists (a configured
+        # workspace that is gone is one of the cases under test).
+        cfg["agents"] = {"defaults": {"workspace": str(configured)}}
+    (home / ".openclaw" / "openclaw.json").write_text(json.dumps(cfg), encoding="utf-8")
+    return home
+
+
+def read_openclaw(home: Path) -> dict:
+    return json.loads((home / ".openclaw" / "openclaw.json").read_text(encoding="utf-8"))
+
+
+def test_openclaw_writes_rules_where_its_config_says_the_workspace_is(tmp_path):
+    real = tmp_path / "windows-home"
+    real.mkdir()
+    home = make_openclaw_home(tmp_path, configured=real)
+
+    proc = run_installer(home, "--only", "openclaw")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "misakanet:start" in (real / "AGENTS.md").read_text(encoding="utf-8"), (
+        "the workspace OpenClaw actually reads must carry the rules — writing to "
+        "~/.openclaw/workspace looked like success while the model never saw them"
+    )
+    assert not (home / ".openclaw" / "workspace" / "AGENTS.md").exists(), (
+        "the guessed path must not be written when the config names another workspace"
+    )
+
+    entry = read_openclaw(home)["mcp"]["servers"]["misakanet"]
+    assert entry["url"].endswith("/mcp")
+    assert entry["transport"] == "streamable-http"
+    assert read_openclaw(home)["mcp"]["servers"]["other"], "the user's own servers stay"
+
+    run_installer(home, "--uninstall")
+    assert not (real / "AGENTS.md").exists(), "uninstall must take it from the same place"
+    assert "misakanet" not in read_openclaw(home)["mcp"]["servers"]
+
+
+def test_openclaw_falls_back_to_the_default_path_when_the_configured_one_is_gone(tmp_path):
+    home = make_openclaw_home(tmp_path, configured=tmp_path / "gone")
+    proc = run_installer(home, "--only", "openclaw")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "misakanet:start" in (
+        home / ".openclaw" / "workspace" / "AGENTS.md").read_text(encoding="utf-8")
+
+
+def test_verify_probes_with_a_handshake_and_never_spends_a_read(tmp_path):
+    """`--verify` must not pay for its check out of the anonymous read quota."""
+    import http.server
+    import threading
+
+    seen: list[str] = []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):  # noqa: N802 (http.server's spelling)
+            length = int(self.headers.get("Content-Length", 0))
+            payload = json.loads(self.rfile.read(length) or b"{}")
+            seen.append(payload.get("method", ""))
+            result = ({"tools": [{"name": "misakanet_search"}]} if payload.get("method") == "tools/list"
+                      else {"error": "Rate limit: 5 free searches per day exceeded"})
+            body = json.dumps({"jsonrpc": "2.0", "id": 1, "result": {
+                "content": [{"type": "text", "text": json.dumps(result)}],
+                "structuredContent": result}}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):  # keep pytest output clean
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        endpoint = f"http://127.0.0.1:{server.server_address[1]}/mcp"
+        home = make_home(tmp_path)
+        proc = run_installer(home, "--verify", env_extra={"MISAKANET_ENDPOINT": endpoint})
+        assert "tools/list" in seen, f"the probe must be a handshake, not a search: {seen}"
+        assert "tools/call" not in seen, (
+            "a reachability probe must not spend the anonymous read quota — the point of the "
+            "handshake, and what the rate-limited answer used to break (it reported a working "
+            "endpoint as unreachable)")
+        assert "端点可达" in proc.stdout, proc.stdout
+        assert "端点不可达" not in proc.stdout, proc.stdout
+    finally:
+        server.shutdown()
+        server.server_close()
