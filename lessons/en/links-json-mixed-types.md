@@ -1,7 +1,7 @@
 ---
 {
   "title": "Normalize mixed types in links.json pack manifests",
-  "domain": "ops",
+  "domain": "devops",
   "tags": [
     "json",
     "packs",

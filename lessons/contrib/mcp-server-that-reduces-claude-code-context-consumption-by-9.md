@@ -1,6 +1,6 @@
 ---
 title: 'Context Mode: Reducing Claude Code Context Consumption by 98%'
-domain: ai-agents
+domain: agent
 tags:
 - mcp
 - claude

@@ -1,6 +1,6 @@
 ---
 title: gpt sovits hubert 16khz
-domain: contrib
+domain: audio
 tags:
 - sovits
 - hubert

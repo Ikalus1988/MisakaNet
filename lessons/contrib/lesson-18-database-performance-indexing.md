@@ -1,6 +1,6 @@
 ---
 title: 数据库性能 — 索引与查询优化实践
-domain: ops
+domain: devops
 tags:
 - database
 - postgresql

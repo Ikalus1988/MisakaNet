@@ -1,7 +1,7 @@
 ---
 {
   "title": "Idle-exit cleanly when bounty boards are empty",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["idle", "sniper", "taskbounty", "cron", "agent", "ops"],
   "status": "published",
   "lang": "en",

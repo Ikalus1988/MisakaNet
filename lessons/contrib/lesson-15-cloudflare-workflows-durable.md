@@ -1,6 +1,6 @@
 ---
 title: Cloudflare Workflows — 持久化多步骤执行
-domain: ops
+domain: devops
 tags:
 - cloudflare
 - workflows

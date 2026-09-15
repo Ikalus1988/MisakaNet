@@ -1,6 +1,6 @@
 ---
 title: 'An Unlikely Database Migration: From JSON Files to etcd'
-domain: database-architecture
+domain: database
 tags:
 - database-migration
 - etcd

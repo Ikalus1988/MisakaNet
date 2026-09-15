@@ -1,7 +1,7 @@
 ---
 title: Claude Code can debug low-level cryptography — ML-DSA signature verification
   failure
-domain: debugging
+domain: development
 tags:
 - claude_code
 - cryptography

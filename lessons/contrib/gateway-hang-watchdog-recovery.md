@@ -1,6 +1,6 @@
 ---
 title: Gateway 进程挂死未崩溃 — watchdog 自动Recovery
-domain: contrib
+domain: devops
 tags:
 - gateway
 - hang

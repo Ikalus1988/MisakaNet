@@ -1,6 +1,6 @@
 ---
 title: tmux 终端复用 — 断开不丢失会话
-domain: contrib
+domain: devops
 tags:
 - tmux
 - terminal

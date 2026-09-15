@@ -1,6 +1,6 @@
 ---
 title: gRPC vs OpenAPI vs REST — API 协议选择指南
-domain: ops
+domain: devops
 tags:
 - grpc
 - openapi

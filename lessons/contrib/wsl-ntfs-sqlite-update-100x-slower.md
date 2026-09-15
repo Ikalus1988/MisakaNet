@@ -1,6 +1,6 @@
 ---
 title: WSL NTFS SQLite UPDATE 100x slower than ext4
-domain: data-engineering
+domain: data
 tags:
 - wsl
 - sqlite

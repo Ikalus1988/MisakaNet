@@ -1,6 +1,6 @@
 ---
 title: एजेंट त्रुटि हैंडलिंग — पुनर्प्रयास और फॉलबैक पैटर्न
-domain: agents
+domain: agent
 tags:
 - agent
 - error-handling

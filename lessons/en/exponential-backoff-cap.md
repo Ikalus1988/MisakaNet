@@ -1,7 +1,7 @@
 ---
 {
   "title": "Cap exponential backoff so jobs finish",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["backoff","retry","timeout","agent","networking"],
   "status": "published",
   "lang": "en",

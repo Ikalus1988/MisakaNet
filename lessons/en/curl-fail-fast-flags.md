@@ -1,7 +1,7 @@
 ---
 {
   "title": "curl fail-fast flags for agent scripts",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["ops", "agent", "shell", "reliability"],
   "status": "published",
   "lang": "en",

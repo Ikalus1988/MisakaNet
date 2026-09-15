@@ -1,7 +1,7 @@
 ---
 {
   "title": "Split stdout/stderr in cron earn jobs",
-  "domain": "ops",
+  "domain": "devops",
   "tags": [
     "cron",
     "logging",

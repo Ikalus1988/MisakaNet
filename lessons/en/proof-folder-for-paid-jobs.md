@@ -1,7 +1,7 @@
 ---
 {
   "title": "Proof folder layout for paid agent jobs",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["proof", "ledger", "payout", "ops", "agent", "earn"],
   "status": "published",
   "lang": "en",
