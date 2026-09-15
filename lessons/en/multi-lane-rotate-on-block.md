@@ -1,7 +1,7 @@
 ---
 {
   "title": "Rotate earn lanes when one market is blocked",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["multi-lane", "earn", "blocked", "agent", "ops", "strategy"],
   "status": "published",
   "lang": "en",

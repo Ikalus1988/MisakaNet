@@ -1,6 +1,6 @@
 ---
 title: Content Quality Scoring System — Automated Lesson Evaluation
-domain: ops
+domain: devops
 tags:
 - quality
 - scoring

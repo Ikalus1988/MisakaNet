@@ -1,6 +1,6 @@
 ---
 title: Scrapling — Web Scraping Library with Anti-Detection
-domain: ops
+domain: devops
 tags:
 - scrapling
 - scraping

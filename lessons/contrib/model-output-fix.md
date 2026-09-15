@@ -1,6 +1,6 @@
 ---
 title: 模型输出截断 / JSON 解析失败Handling
-domain: contrib
+domain: llm
 tags:
 - model
 - output

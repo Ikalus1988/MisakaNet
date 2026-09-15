@@ -1,6 +1,6 @@
 ---
 title: 正则表达式 debugging — 贪婪匹配造成的意外结果
-domain: contrib
+domain: development
 tags:
 - regex
 - debug

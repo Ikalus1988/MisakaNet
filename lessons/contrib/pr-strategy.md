@@ -1,6 +1,6 @@
 ---
 title: External PR Strategy via pr-genius
-domain: contrib
+domain: meta
 tags:
 - github-pr
 - external-pr

@@ -1,7 +1,7 @@
 ---
 {
   "title": "HTTP client timeout + retry pattern for agents",
-  "domain": "networking",
+  "domain": "network",
   "tags": ["http", "timeout", "retry", "urllib", "agent", "resilience"],
   "status": "published",
   "lang": "en",

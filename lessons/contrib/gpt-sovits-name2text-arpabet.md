@@ -1,6 +1,6 @@
 ---
 title: gpt sovits name2text arpabet
-domain: contrib
+domain: audio
 tags:
 - sovits
 - name2text

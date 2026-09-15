@@ -1,6 +1,6 @@
 ---
 title: static page width consistency
-domain: contrib
+domain: frontend
 tags:
 - css
 - layout

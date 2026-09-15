@@ -1,6 +1,6 @@
 ---
 title: MisakaNet --heal UX Gap — Suggested queue_lesson.py Command Uses Wrong Flag
-domain: contrib
+domain: meta
 tags:
 - misakanet
 - heal

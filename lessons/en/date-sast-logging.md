@@ -1,7 +1,7 @@
 ---
 {
   "title": "Log timestamps in SAST for SA ops agents",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["ops", "timezone", "sast", "logging", "agent"],
   "status": "published",
   "lang": "en",

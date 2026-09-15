@@ -1,6 +1,6 @@
 ---
 title: "IAP TCP Forwarding: Numpy Upload Bandwidth Optimization and Buffer Tuning"
-domain: networking
+domain: network
 tags:
   - iap
   - gcp

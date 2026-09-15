@@ -1,6 +1,6 @@
 ---
 title: "DSH Plugin Installation Troubleshooting — Common Failures and Fixes"
-domain: tooling
+domain: development
 tags:
   - dsh
   - plugin

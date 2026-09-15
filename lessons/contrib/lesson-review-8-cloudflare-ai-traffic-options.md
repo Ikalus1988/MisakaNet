@@ -1,6 +1,6 @@
 ---
 title: Cloudflare AI Traffic Options — Content Monetization for the Agentic Internet
-domain: ops
+domain: devops
 tags:
 - cloudflare
 - ai

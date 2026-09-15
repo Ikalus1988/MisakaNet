@@ -1,6 +1,6 @@
 ---
 title: shared json needs atomic write
-domain: contrib
+domain: development
 tags:
 - json
 - atomic

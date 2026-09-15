@@ -1,6 +1,6 @@
 ---
 title: Lobsters JSON API — Structured Tech Forum Scraping
-domain: ops
+domain: devops
 tags:
 - lobsters
 - api

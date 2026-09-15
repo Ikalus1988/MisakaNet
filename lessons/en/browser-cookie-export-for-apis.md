@@ -1,7 +1,7 @@
 ---
 {
   "title": "Copy Firefox cookies.sqlite for authenticated API calls",
-  "domain": "ops",
+  "domain": "devops",
   "tags": [
     "firefox",
     "cookies",
