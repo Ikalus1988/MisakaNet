@@ -1,0 +1,57 @@
+name: Mirror Node Counter
+
+# data/counter.json is the offline-checkable copy of the node counter that
+# https://misakanet.org/api/counter serves from the worker's KV.
+#
+# Why this exists (issue #1683, 2026-09-15): only the issue-based registration workflow ever
+# wrote that file, while every MCP registration — the path the npx installer takes — only
+# incremented KV. Two independent sequences then described one fact: the file said 10073 and
+# KV said 10178, so the site showed 178 nodes while the file implied 73, and the surfaces that
+# quoted it said "52+" and "59". Nothing watched it.
+#
+# The mirror and the surface refresh land in ONE commit on purpose: a commit that moved only
+# the counter would leave `sync_lesson_count.py --check` (PRs, and pushes under docs/**)
+# failing for however long it took the daily job to catch up.
+
+on:
+  schedule:
+    - cron: "41 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Serialised: the commit below rebases onto main, and two runs racing on the same file is how
+# this repository previously landed a conflicted data commit.
+concurrency:
+  group: mirror-node-counter
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Read the live counter into data/counter.json
+        # Fails loudly instead of writing a bad number: the script refuses a payload that is
+        # behind the file (a KV read failure makes the endpoint fall back to its GitHub copy)
+        # and refuses a malformed one.
+        run: python3 scripts/node_status.py --mirror
+
+      - name: Refresh every surface that quotes it
+        run: python3 scripts/sync_lesson_count.py
+
+      - name: Commit when it moved
+        run: |
+          if git diff --quiet; then
+            echo "No change — the file and its surfaces already match the live counter."
+            exit 0
+          fi
+          git status --porcelain
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.dev"
+          git add data/counter.json docs/llms.txt docs/.well-known/llms.txt
+          git commit -m "chore(data): mirror the live node counter and its surfaces"
+          # main moves under this job; retry once on a rejected push rather than losing the read.
+          git push || { git pull --rebase --autostash && git push; }

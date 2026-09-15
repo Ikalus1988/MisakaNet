@@ -15,7 +15,7 @@
 
 | # | 评审的说法 | 实测（HEAD `245bf6a73`） | 判定 |
 |---|---|---|---|
-| 1 | "README 明确说 searches **249** indexed failure-recovery lessons"，而实测 398 个 `.md`，差距 60% | README 全文**没有 249**。README:13 写 `393+ failure lessons`，`data/lessons.json` = **393** 条，`sync_lesson_count.py --check` 绿。249 来自**别处**：`docs/trust-semantics.md:52`（词表示例 ✅/❌）与 `lessons/contrib/ssot-marker-replacement-runs-once.md:47`（历史漂移事件的对照表），两者都被 `data/lessons.json` 的 `preview` 复制了一份。398 是 `lessons/**/*.md` 全量（含 templates、根目录散落文件、未索引的翻译），与"indexed"不是同一个量 | **不成立**（对象错、数字错） |
+| 1 | "README 明确说 searches **249** indexed failure-recovery lessons"，而实测 398 个 `.md`，差距 60% | README 全文**没有 249**。README:13 写 `393+ failure lessons`，`data/lessons.json` = **393** 条，`sync_lesson_count.py --check` 绿。249 确实存在于**别处**：gitignored、停在 2026-07-14 的生成物 `STATUS.md`（`\| 📚 Lessons \| 249 篇 \|`）、`docs/trust-semantics.md:52`（词表示例 ✅/❌）、`lessons/contrib/ssot-marker-replacement-runs-once.md:47`（历史漂移对照表，其副本进了 `data/lessons.json` 的 `preview`）。398 是 `lessons/**/*.md` 全量（含 templates、根目录散落文件、未索引的翻译），与"indexed"不是同一个量 | **不成立**（对象错；但 249 曾是某个文件里的真数） |
 | 2 | "Zero-dependency 是误导：必须 `pip install misakanet-core`；`misakanet` 在 PyPI 上根本不存在" | 依赖为真（`requirements.txt:3`、`pyproject.toml:13` 硬钉 `misakanet-core>=2.7.0`）。但：`misakanet-core` 在 PyPI 上 `requires_dist = None`——**它自己就是零依赖**，summary 原文 *"The zero-dependency core protocol engine"*；`misakanet` 在 PyPI 上**存在**且已到 2.30.0 | **部分成立**（"零依赖"需限定词，但两条事实断言都错） |
 | 3 | domain 体系混乱：43 "archive"、16 "ops"、9/10 个加不加引号的 devops；`_SYNONYM_MAP` 是硬编码补丁 | 混乱为真：376 篇有 `domain:`，**68 种原始写法 / 61 种归一写法**（devops 75、contrib 40、fanuc 36、ops 24…），24 篇给 domain 加了引号；`lesson_gate.py:202-220` 的白名单是**自放宽**的（把 `core/contrib/en` 里已用过的域名全并进来），`queue_lesson.py:350` 的 `--domain` 是自由文本（`--status` 反而有 choices）。但评审的数字逐字来自 **gitignored 的 `.pnpm-store/v11/tmp/_tmp_*/lessons` 快照**（2026-08-26）；`_SYNONYM_MAP` 不在 `search/engine.py`（无此路径），而在 `misakanet/search/engine.py:32`，且它是**检索词扩展**、没有一条是 domain 标签 | **部分成立**（结论对、证据错位） |
 | 4 | `mcp_server.py` 有工具无实现：`handle_submit_usage` 永远返回 `logged` | 仓库根**从来没有** `mcp_server.py`（`git log --all --diff-filter=A` 为空）。部署面是 `workers/register-proxy-sw.js`（实测 `tools/list` = **7** 个工具，**不含** `submit_usage`）；本地 stdio 是 **9** 个工具。`handle_submit_usage` 现在真的 POST 到 `/api/helpful` 与 `/api/feedback`（抓到实际出站请求），返回值有 `submitted` / `error` / `logged` 三种可区分状态；`scripts/usage_meter.py` 真实存在（8863 B）并被 `status.py` 调用；工具描述自带 `[Experimental]`。评审引用的是 **2026-08-29 修复前**的代码与 **2026-07-29** 的 4 工具状态 | **不成立**（引用了历史代码） |
@@ -31,7 +31,7 @@
 
 | 评审的结论 | 它实际读到的东西 |
 |---|---|
-| "README 说 249" | `docs/trust-semantics.md:52` 的✅示例 + 一条讲历史漂移的 lesson（`ssot-marker-replacement-runs-once.md:47`），以及 `data/lessons.json` 对它的复制 |
+| "README 说 249" | 最可能是 `STATUS.md`（gitignored 生成物，停在 2026-07-14，`\| 📚 Lessons \| 249 篇 \|`）；同一数字也在 `docs/trust-semantics.md:52` 的✅示例、讲历史漂移的 lesson（`ssot-marker-replacement-runs-once.md:47`）以及 `data/lessons.json` 对它俩的复制里 |
 | "398 个 .md 没有统一质量门槛" | 文件数包含 `lessons/templates/`、根目录散落文件、`hi/id/ru/tr/vi` 五个翻译目录、29 篇未索引的 `en/`。**索引口径**是 393 = contrib 349 + en 32 + core 10 + user-rescue 2；README 用的正是 "indexed" 这个词 |
 | "根目录 mcp_server.py 是 stub" | 2026-08-29 之前的 `misakanet/server/handlers/submit.py`（`cee58141f^`），以及 2026-07-29 的 `scripts/mcp_server.py`（4 工具）。**根目录那个文件从未存在** |
 | "43 archive / 16 ops / 12 fanuc / 6 development" | gitignored 的 `.pnpm-store/v11/tmp/_tmp_*/lessons`（2026-08-26）：`lessons/_archive/` 已于 `91c8ae379`（2026-09-05）删除 |
