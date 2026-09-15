@@ -2212,9 +2212,18 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
   }
 
   // 3. Protocol version check (header-based, per 2025-06-18 spec)
+  //
+  // The header carries what the *client* proposes on `initialize` (and the negotiated value
+  // afterwards), so a revision this server does not implement is a negotiation, not a bad
+  // request: the answer belongs in the initialize result, which already reports the version
+  // this server speaks (`negotiatedVersion` below). Rejecting it here ended the session before
+  // that could happen — Hermes' MCP client (mcp 0.1.0) opens with "2025-11-25" and could not
+  // connect to MisakaNet at all, reporting only "Client error '400 Bad Request'" (found
+  // 2026-09-15 while wiring Hermes up). Only a value that is not a date-shaped revision is
+  // refused, because that one is a malformed header rather than a version.
   const protocolVersion = request.headers.get("MCP-Protocol-Version") || MCP_PROTOCOL_VERSION;
-  if (!SUPPORTED_PROTOCOL_VERSIONS.includes(protocolVersion)) {
-    debugLog(env, 1, "Protocol version mismatch", {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(protocolVersion)) {
+    debugLog(env, 1, "Protocol version header malformed", {
       provided: protocolVersion,
       supported: SUPPORTED_PROTOCOL_VERSIONS,
     });
@@ -2227,6 +2236,12 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
       }) },
       400,
     );
+  }
+  if (!SUPPORTED_PROTOCOL_VERSIONS.includes(protocolVersion)) {
+    debugLog(env, 1, "Client proposed an unimplemented protocol version; negotiating down", {
+      provided: protocolVersion,
+      supported: SUPPORTED_PROTOCOL_VERSIONS,
+    });
   }
 
   // 4. Bound and parse the JSON-RPC body. Do not trust Content-Length alone:
