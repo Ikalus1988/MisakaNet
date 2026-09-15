@@ -188,8 +188,14 @@ def _build_sites() -> tuple[Site, ...]:
     add("docs/integrations/README.md",
         rf"(Search ){_COUNT}\+? (?:indexed )?failure-recovery lessons",
         r"\g<1>{n} indexed failure-recovery lessons", "integrations index intro")
-    add("docs/install/index.html", rf"{_COUNT}\+ lessons across 18 domains",
-        "{n}+ lessons across 18 domains", "install page feature list")
+    # The domain count in this sentence is owned by DOMAIN_SITES (which runs after this one);
+    # hardcoding 18 here would rewrite it back on every lesson sync and, once the domain pass
+    # had moved it, stop matching its own output — the write-once failure this registry exists
+    # to prevent.
+    # No capture around the lesson number: `\g<1>` used to carry the OLD number, and writing it
+    # next to {n} produced "393393" and ate " domains" (caught by --check, 2026-09-15).
+    add("docs/install/index.html", rf"{_COUNT}\+ lessons across (\d{{2,4}}) domains",
+        r"{n}+ lessons across \g<1> domains", "install page feature list")
 
     # ── GitHub-facing automation ────────────────────────────────────────────
     add(".github/ISSUE_TEMPLATE/config.yml", _META, _META_REPL,
@@ -233,6 +239,66 @@ def _build_node_sites() -> tuple[Site, ...]:
 
 
 NODE_SITES: tuple[Site, ...] = _build_node_sites()
+
+
+def _lesson_domain(path: Path) -> str:
+    """The frontmatter `domain:` of one lesson, normalised (unquoted, lowercased)."""
+    head = path.read_text(encoding="utf-8", errors="ignore")[:2000]
+    as_json = re.match(r'\s*\{\s*"domain"\s*:\s*"([^"]+)"', head)
+    if as_json:
+        return as_json.group(1).strip().lower()
+    found = re.search(r"(?m)^domain\s*:\s*(.+)$", head)
+    if not found:
+        return ""
+    return found.group(1).strip().strip('"').strip("'").lower()
+
+
+def canonical_domains(root: Path = REPO) -> int:
+    """Distinct domains in the published corpus — and the definition, which is the point.
+
+    Issue #1687: the same claim read 18 (``docs/install/index.html``, ``docs/skill.md``,
+    ``JOIN.md``), 69 (the badge, which counted raw strings, so ``devops`` and ``"devops"``
+    were two) and 61 (the same strings normalised). None was derivable from anything a reader
+    could check.
+
+    The definition now: the frontmatter ``domain`` values of the lessons we publish
+    (``core``/``contrib``/``en``, READMEs excluded), unquoted and lowercased, counted once
+    each. Whatever that number is, it is a fact about the corpus rather than a slogan, and the
+    surfaces that quote it are gated on it. The taxonomy itself (an allowlist, synonyms, the
+    dead ``data/synonyms.json`` copy) is separate work, tracked in the issue.
+    """
+    values: set[str] = set()
+    for sub_dir in ("core", "contrib", "en"):
+        for path in sorted((root / "lessons" / sub_dir).rglob("*.md")):
+            if path.name == "README.md":
+                continue
+            value = _lesson_domain(path)
+            if value:
+                values.add(value)
+    return len(values)
+
+
+def _build_domain_sites() -> tuple[Site, ...]:
+    """Surfaces that advertise how many domains the corpus covers (issue #1687)."""
+    sites: list[Site] = []
+
+    def add(path: str, pattern: str, replace: str, note: str, min_matches: int = 1) -> None:
+        sites.append(Site(path, pattern, replace, note, min_matches))
+
+    add("docs/llms.txt", rf"(?m)^- {_COUNT} domains:", "- {n} domains:",
+        "llms.txt domain line (agent-facing)")
+    add("docs/.well-known/llms.txt", rf"(?m)^- {_COUNT} domains:", "- {n} domains:",
+        "served copy of llms.txt")
+    add("docs/skill.md", rf"across {_COUNT} domains", "across {n} domains",
+        "skill manifest tagline")
+    add("JOIN.md", rf"across {_COUNT} domains", "across {n} domains",
+        "contributor onboarding tagline")
+    add("docs/install/index.html", rf"(across ){_COUNT}( domains)",
+        r"\g<1>{n} domains", "install page feature list")
+    return tuple(sites)
+
+
+DOMAIN_SITES: tuple[Site, ...] = _build_domain_sites()
 
 
 def canonical_count(root: Path = REPO) -> int:
@@ -419,7 +485,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--check", action="store_true",
                         help="verify only; exit 1 on stale or unmatched counts")
     parser.add_argument("--quiet", action="store_true", help="silent on success")
-    parser.add_argument("--metric", choices=("all", "lessons", "nodes"), default="all",
+    parser.add_argument("--metric", choices=("all", "lessons", "nodes", "domains"), default="all",
                         help="narrow to one metric (default: both)")
     parser.add_argument("--root", type=Path, default=REPO, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
@@ -428,8 +494,12 @@ def main(argv: list[str] | None = None) -> int:
     metrics = [
         ("lesson", canonical_count, SITES, True),
         ("node", canonical_nodes, NODE_SITES, False),
+        # Last: the install page carries both counts in one sentence, and this pass owns the
+        # domain half of it.
+        ("domain", canonical_domains, DOMAIN_SITES, False),
     ]
-    wanted = {"all": {"lesson", "node"}, "lessons": {"lesson"}, "nodes": {"node"}}[args.metric]
+    wanted = {"all": {"lesson", "node", "domain"},
+              "lessons": {"lesson"}, "nodes": {"node"}, "domains": {"domain"}}[args.metric]
 
     status = 0
     for label, canonical, sites, owns_count_file in metrics:

@@ -37,9 +37,12 @@ jobs:
           echo "lessons=$LESSON_COUNT" >> "$GITHUB_OUTPUT"
 
       - name: Count domains
+        id: domains
         run: |
-          DOMAIN_COUNT=$(grep -rh "^domain:" lessons/ --include="*.md" 2>/dev/null \
-            | sed 's/domain: *//' | sort -u | wc -l)
+          # Through the SSOT reader, so the badge and every surface that quotes the number agree
+          # (issue #1687: the badge counted raw strings — `devops` and `"devops"` were two — so it
+          # said 69 while the same values normalised to 61 and the copy claimed 18).
+          DOMAIN_COUNT=$(python3 -c "from scripts.sync_lesson_count import canonical_domains; print(canonical_domains())")
           echo "domains=$DOMAIN_COUNT" >> "$GITHUB_OUTPUT"
 
       - name: Count MCP tools
@@ -67,8 +70,7 @@ jobs:
           LESSON_COUNT="${{ steps.count.outputs.lessons }}"
           TOOL_COUNT="${{ steps.tools.outputs.tools }}"
           NODE_COUNT="${{ steps.nodes.outputs.nodes }}"
-          DOMAIN_COUNT=$(grep -rh "^domain:" lessons/ --include="*.md" 2>/dev/null \
-            | sed 's/domain: *//' | sort -u | wc -l)
+          DOMAIN_COUNT="${{ steps.domains.outputs.domains }}"
           echo "{\"schemaVersion\":1,\"label\":\"lessons\",\"message\":\"$LESSON_COUNT\",\"color\":\"brightgreen\"}" > /tmp/badges/lessons.json
           echo "{\"schemaVersion\":1,\"label\":\"MCP tools\",\"message\":\"$TOOL_COUNT\",\"color\":\"purple\"}" > /tmp/badges/tools.json
           echo "{\"schemaVersion\":1,\"label\":\"domains\",\"message\":\"$DOMAIN_COUNT\",\"color\":\"blue\"}" > /tmp/badges/domains.json
