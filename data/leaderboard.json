@@ -1,162 +1,110 @@
 [
   {
     "login": "zsxh1990",
-    "score": 115.14
+    "score": 102.7
   },
   {
     "login": "github-actions[bot]",
-    "score": 7.72
-  },
-  {
-    "login": "s6pa1rta3n-lab",
-    "score": 3.9
+    "score": 7.29
   },
   {
     "login": "2lll5",
-    "score": 3.57
+    "score": 3.64
+  },
+  {
+    "login": "s6pa1rta3n-lab",
+    "score": 3.52
   },
   {
     "login": "liona can",
-    "score": 3.22
+    "score": 2.84
   },
   {
-    "login": "laurentketterle-hub",
-    "score": 2.75
-  },
-  {
-    "login": "yunaremaia",
-    "score": 2.23
-  },
-  {
-    "login": "techlogiadg-spec",
-    "score": 2.2
-  },
-  {
-    "login": "hjqcan",
-    "score": 2.15
-  },
-  {
-    "login": "ghzhost",
-    "score": 2.11
+    "login": "yashraj4",
+    "score": 1.92
   },
   {
     "login": "mr-neutr0n",
-    "score": 2.0
+    "score": 1.84
+  },
+  {
+    "login": "yunaremaia",
+    "score": 1.78
+  },
+  {
+    "login": "techlogiadg-spec",
+    "score": 1.68
+  },
+  {
+    "login": "hjqcan",
+    "score": 1.65
+  },
+  {
+    "login": "ghzhost",
+    "score": 1.62
   },
   {
     "login": "tomasbogado203-bit",
-    "score": 1.67
+    "score": 1.49
   },
   {
-    "login": "knowaguy4u-cell",
+    "login": "gloskull",
     "score": 1.45
   },
   {
-    "login": "brok-best",
-    "score": 1.38
+    "login": "kveita",
+    "score": 1.41
+  },
+  {
+    "login": "knowaguy4u-cell",
+    "score": 1.03
   },
   {
     "login": "misakanet agent",
-    "score": 1.37
-  },
-  {
-    "login": "tarotoads-debug",
-    "score": 1.33
-  },
-  {
-    "login": "elevasyncsolutions-jpg",
-    "score": 1.22
-  },
-  {
-    "login": "wasim-builds",
-    "score": 1.04
-  },
-  {
-    "login": "kilo",
-    "score": 1.02
-  },
-  {
-    "login": "tmtproductions",
     "score": 0.98
   },
   {
+    "login": "elevasyncsolutions-jpg",
+    "score": 0.89
+  },
+  {
+    "login": "tmtproductions",
+    "score": 0.62
+  },
+  {
     "login": "simultech369",
-    "score": 0.97
+    "score": 0.62
   },
   {
     "login": "hummern",
-    "score": 0.96
-  },
-  {
-    "login": "aj0070",
-    "score": 0.68
-  },
-  {
-    "login": "waterwang",
-    "score": 0.66
+    "score": 0.61
   },
   {
     "login": "misakanet-agent",
-    "score": 0.6
+    "score": 0.55
   },
   {
     "login": "pnpn1212",
-    "score": 0.51
-  },
-  {
-    "login": "harshadkhetpal",
-    "score": 0.48
-  },
-  {
-    "login": "misterio070",
     "score": 0.47
   },
   {
-    "login": "noreply",
-    "score": 0.46
-  },
-  {
-    "login": "jamboriu",
+    "login": "harshadkhetpal",
     "score": 0.45
   },
   {
-    "login": "chfr19820610-cell",
-    "score": 0.42
-  },
-  {
-    "login": "agente-gaudi",
-    "score": 0.39
-  },
-  {
-    "login": "samarth1306w",
+    "login": "misterio070",
     "score": 0.23
   },
   {
-    "login": "lincai505011-ops",
+    "login": "waterwang",
     "score": 0.23
   },
   {
-    "login": "bilaldeveloper4312",
+    "login": "noreply",
+    "score": 0.23
+  },
+  {
+    "login": "jamboriu",
     "score": 0.22
-  },
-  {
-    "login": "astraembody",
-    "score": 0.22
-  },
-  {
-    "login": "ankitaadvitot",
-    "score": 0.21
-  },
-  {
-    "login": "th3slack3r",
-    "score": 0.21
-  },
-  {
-    "login": "rerzx",
-    "score": 0.2
-  },
-  {
-    "login": "skull0716",
-    "score": 0.19
   }
 ]
