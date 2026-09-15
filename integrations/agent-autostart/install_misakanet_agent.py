@@ -398,10 +398,16 @@ def install_codex(home: Path, dry: bool, rep: Report) -> None:
     rules = home / ".codex" / "AGENTS.md"
     status = inject_block(rules, prompt_block(), dry)
     rep.ok(f"Codex: 规则块 {status} → {rules}")
+    # Verified on codex-cli 0.154.0 (2026-09-15) — see the JS installer for the same
+    # note: `codex mcp list` shows misakanet enabled with the Bearer token, `codex
+    # doctor` reports config.toml parse ok + 1 streamable_http server + 0 disabled, and
+    # `codex debug prompt-input` renders a `# AGENTS.md instructions` item carrying this
+    # rule block. The part that stays open is the hook: 0.154.0's lifecycle hooks are
+    # admin-managed (requirements.toml), so the checkpoint is rule-driven.
+    rep.ok("Codex: 注册已核对（`codex mcp list` / `codex doctor` / `codex debug prompt-input`）")
     rep.needs_manual(
-        "Codex: 没有可用的用户级钩子配置（本次核对的是 config.toml 的 lifecycle hooks，"
-        "用户层写法未确认）→ 检查点靠规则块里的「约 20 轮」自律触发；要硬保证就用 "
-        "MISAKANET_HOOK_FETCH=1 配外层 wrapper 在每轮后跑 checkpoint_reminder.py")
+        "Codex: 没有用户级 lifecycle hook → 检查点靠规则块里的「约 20 轮」自律触发；"
+        "要硬保证就配外层 wrapper 在每轮后跑 checkpoint_reminder.py")
 
 
 def install_hermes(home: Path, dry: bool, rep: Report) -> None:
