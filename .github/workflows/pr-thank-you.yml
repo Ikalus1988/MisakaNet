@@ -15,7 +15,7 @@ jobs:
       - uses: actions/github-script@v9
         with:
           script: |
-            const pr = github.event.pull_request;
+            const pr = context.payload.pull_request;
             const author = pr.user.login;
             const title = pr.title;
             const number = pr.number;
