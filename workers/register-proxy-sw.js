@@ -223,7 +223,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_search",
-    description: "[RETRIEVAL / READ] Search MisakaNet's public failure-lesson index by error text, keyword, or topic. This is the primary read path — run it first when you hit an error, before deciding to submit anything. For a known lesson ID or path, prefer misakanet_get_lesson — it skips ranking and returns the full content. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nFAQ: results may also include answered questions (type=\"faq\", issue_url + answer) — if a maintainer already answered the same question, the answer surfaces here.\nReturns: object {results: [{id, title, domain, tags, path, description, score}], source, detail, query}; on no match: {no_match: true, suggestion, intake}.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
+    description: "[RETRIEVAL / READ] Search MisakaNet's public failure-lesson index by error text, keyword, or topic. This is the primary read path — run it first when you hit an error, before deciding to submit anything. For a known lesson ID or path, prefer misakanet_get_lesson — it skips ranking and returns the full content. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nFAQ: results may also include answered questions (type=\"faq\", issue_url + answer) — if a maintainer already answered the same question, the answer surfaces here.\nReturns: object {results: [compact: {id, title, problem, freshness, evidence_level} | summary: + {domain, tags, fix} | full: the record, each with score], source, detail, query}; on no match: {no_match: true, suggestion, intake}.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
     inputSchema: {
       type: "object",
       properties: {
@@ -483,7 +483,12 @@ function compactResult(lesson) {
   return {
     id: lesson.id || "",
     title: lesson.title || "",
-    problem: (lesson.description || lesson.summary || "").slice(0, 120),
+    // `problem` first: D1 carries the real Problem section in that column, while the
+    // GitHub snapshot only has `description`/`summary`/`preview`. Reading only
+    // description/summary is why lesson hits came back with an empty problem even
+    // when the record was rich (issue #1675).
+    problem: String(lesson.problem || lesson.description || lesson.summary || lesson.preview || "")
+      .slice(0, 120),
     freshness: freshness(lesson.updated || lesson.created),
     evidence_level: lesson.evidence_level || "",
   };
@@ -494,9 +499,27 @@ function summaryResult(lesson) {
   return {
     ...compact,
     domain: lesson.domain || "",
-    tags: lesson.tags || [],
-    fix: lesson.fix || "",
+    tags: lessonTags(lesson.tags),
+    // `solution` is D1's column for the Fix section; `fix` is the shape the naive
+    // matcher used. Truncated like `problem` so `detail=summary` keeps its
+    // advertised size.
+    fix: String(lesson.fix || lesson.solution || "").slice(0, 200),
   };
+}
+
+// D1 stores tags as a JSON array *string* (sqlite has no array type), the GitHub
+// snapshot as a real array. Results must not depend on which source answered.
+function lessonTags(tags) {
+  if (Array.isArray(tags)) return tags;
+  if (typeof tags === "string" && tags.trim()) {
+    try {
+      const parsed = JSON.parse(tags);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
 }
 
 function applyDetailLevel(results, detail) {
@@ -874,6 +897,34 @@ function publicLessonRow({ indexText, textMode, ...rest }) {
   // is part of the listing's contract (an adversarial review found `textMode`
   // leaking here on 2026-09-12 while `indexText` was already stripped).
   return rest;
+}
+
+// BM25 hits are projected from the index, which stores only
+// {id, title, domain, path, len} — so `problem`, `fix`, `tags`, `evidence_level`
+// and `freshness` had nothing to read and every lesson hit came back as little
+// more than an id and a title. Measured on 2026-09-13: 35 of 35 sampled lesson
+// hits had an empty `problem` (issue #1675), which meant an agent could not judge
+// relevance without a second `misakanet_get_lesson` call per hit — exactly the
+// cost the progressive-disclosure levels exist to avoid.
+//
+// Re-attach the loaded record by id (path as the fallback) and keep the ranking
+// score. `publicLessonRow` strips the internal searchable body, so enriching
+// cannot leak `indexText`/`textMode` into a response.
+function enrichSearchHits(results, lessons) {
+  if (!Array.isArray(results) || results.length === 0) return results;
+  const byId = new Map();
+  const byPath = new Map();
+  for (const lesson of Array.isArray(lessons) ? lessons : []) {
+    if (!lesson) continue;
+    if (lesson.id) byId.set(String(lesson.id), lesson);
+    const key = lesson.path || lesson.url;
+    if (key) byPath.set(String(key), lesson);
+  }
+  return results.map((hit) => {
+    const record = byId.get(String(hit.id || "")) || byPath.get(String(hit.path || ""));
+    if (!record) return hit; // unknown id — keep whatever the matcher produced
+    return { ...publicLessonRow(record), score: hit.score };
+  });
 }
 
 function detectTextMode(lessons) {
@@ -1510,6 +1561,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       results = searchLessons(lessons, args.query, args.domain, args.top || 5);
       debugLog(env, 2, "Fallback search", { query: args.query, results: results.length });
     }
+
+    // Both matchers project a narrow shape (BM25 from the index, the naive one from
+    // the record), so re-attach the loaded records once here: the injection scan
+    // below then sees real bodies instead of a title, and the progressive-disclosure
+    // formatters get `problem`/`fix`/`tags`/`freshness` instead of empty strings
+    // (issue #1675).
+    results = enrichSearchHits(results, lessons);
 
     // Gap analysis: log zero-result queries (Issue #1164)
     if ((!results || results.length === 0) && args.query) {
