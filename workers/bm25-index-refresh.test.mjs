@@ -435,3 +435,42 @@ test('a sync that rewrote rows triggers a reindex even without a count change', 
   assert.equal(result.refreshed, true,
     `a content re-sync must force a rebuild: ${JSON.stringify(result)}`);
 });
+
+test('a rebuild reads D1, not the lessons cache it may be racing (#1731)', async () => {
+  // The freshness gate decides from MAX(synced_at), read straight out of D1, while the
+  // corpus used to come from loadLessons() — which answers from a 300s KV cache. A
+  // rebuild that lands within that window therefore paired a *new* stamp with the
+  // *previous* corpus, and since the stamp was then stored, the gate saw nothing left
+  // to change: the index stayed wrong until the 20h age rule fired. Observed live on
+  // 2026-09-15 — the rebuild right after the metadata repair kept answering with the
+  // pre-repair rows, and only re-running the sync moved the stamp enough to fix it.
+  const POST_SYNC = [{
+    id: 'post-sync-row', title: 'post-sync lesson', domain: 'ops', status: 'published',
+    tags: ['fresh'], path: 'lessons/core/post-sync-row.md', summary: 'the wombat symptom',
+    problem: 'wombat problem', root_cause: '', solution: '', verification: '',
+    updated: '2026-09-15', created: 'c', synced_at: '2026-09-15 12:29:20',
+  }];
+  // The cache payload is shaped the way fetchLessonsFromD1 shapes rows, because that is
+  // what the search path writes into it.
+  const PRE_SYNC_CACHE = [{
+    id: 'pre-sync-row', title: 'pre-sync lesson', domain: 'ops', status: 'published',
+    path: 'lessons/core/pre-sync-row.md', tags: [], description: 'the quokka symptom',
+    updated: '2026-09-14', created: 'c', textMode: 'rich',
+    indexText: 'the quokka symptom quokka',
+  }];
+
+  const env = createD1Env(POST_SYNC, createColumnAwareD1(POST_SYNC));
+  // Written after createD1Env()'s cold-cache reset: this is the race, a cache entry
+  // that is still inside its TTL when the rebuild runs.
+  await env.MISAKANET_KV.put('proxy:lessons:d1',
+    JSON.stringify({ ts: Date.now(), data: PRE_SYNC_CACHE }));
+
+  const result = await refreshSearchIndex(env);
+  assert.equal(result.refreshed, true, JSON.stringify(result));
+  assert.equal(result.docCount, 1, 'the index must describe the D1 corpus, not the cache');
+
+  const stored = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
+  assert.equal(stored.syncStamp, '2026-09-15 12:29:20');
+  assert.deepEqual(stored.docs.map(d => d.id), ['post-sync-row'],
+    'the rebuild must be built from D1, not from the cached pre-sync corpus');
+});
