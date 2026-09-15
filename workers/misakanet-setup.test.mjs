@@ -419,7 +419,7 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // file into a request header, which is CodeQL js/file-access-to-http #268 all over again.
   const declared = JSON.parse(
     readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
-  assert.equal(declared, '0.2.1', 'bump this test when the package version moves');
+  assert.equal(declared, '0.3.0', 'bump this test when the package version moves');
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.
@@ -427,4 +427,137 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
     `the installer's VERSION literal must equal package.json's ${declared}`);
   assert.ok(!readFileSync(CLI, 'utf8').includes("join(PKG_ROOT, 'package.json')"),
     'the manifest must not be read at runtime');
+});
+
+// ── Hermes (issue #1681) ────────────────────────────────────────────────────
+// Hermes keeps its MCP registry in ~/.hermes/config.yaml and the token in ~/.hermes/.env,
+// which is exactly what `hermes mcp add --auth header` writes. The installer does it by file
+// (no subprocess), so these tests own the two files that must stay valid from a plain text
+// edit: a YAML mapping and a dotenv file.
+
+const HERMES_CONFIG = [
+  'model:',
+  '  default: MiniMax-M3',
+  'mcp_servers:',
+  '  rag:',
+  '    command: /usr/local/bin/rag',
+  '    args: []',
+  'toolsets:',
+  '  - hermes-cli',
+  '',
+].join('\n');
+
+function makeHermesHome(config = HERMES_CONFIG) {
+  const home = mkdtempSync(join(tmpdir(), 'mn-hermes-'));
+  mkdirSync(join(home, '.hermes'), { recursive: true });
+  writeFileSync(join(home, '.hermes', 'config.yaml'), config);
+  return home;
+}
+
+const readHermes = (home) => readFileSync(join(home, '.hermes', 'config.yaml'), 'utf8');
+
+test('hermes: registers under mcp_servers and keeps the servers already there', () => {
+  const home = makeHermesHome();
+  try {
+    const result = runOffline(home, '--only', 'hermes');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /Hermes：注册 MCP/, result.stdout);
+    const cfg = readHermes(home);
+    assert.match(cfg, /^mcp_servers:\n  misakanet:  # misakanet:start\n    url: https:\/\/misakanet\.org\/mcp\n  # misakanet:end\n  rag:/m,
+      'the entry must be a child of mcp_servers and sit before the existing server, with no\n'
+      + 'blank line invented between them:\n' + cfg);
+    assert.match(readFileSync(join(home, '.hermes', 'SOUL.md'), 'utf8'), /misakanet:start/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('hermes: the token goes to .env, and only a template goes in the config', () => {
+  const home = makeHermesHome();
+  try {
+    mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
+    writeFileSync(join(home, '.misakanet-agent', 'token'), TOKEN_SHAPE_OK);
+    const env = { ...process.env };
+    delete env.MISAKANET_ENDPOINT;
+    const result = spawnSync(process.execPath,
+      [CLI, '--home', home, '--only', 'hermes'], { encoding: 'utf8', env });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+
+    const cfg = readHermes(home);
+    assert.match(cfg, /Authorization: Bearer \$\{MCP_MISAKANET_API_KEY\}/, cfg);
+    assert.ok(!cfg.includes(TOKEN_SHAPE_OK), 'the token must not be written into the YAML');
+    assert.match(readFileSync(join(home, '.hermes', '.env'), 'utf8'),
+      new RegExp(`^MCP_MISAKANET_API_KEY=${TOKEN_SHAPE_OK}$`, 'm'));
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('hermes: an entry the CLI wrote earlier is replaced, not duplicated', () => {
+  const home = makeHermesHome(HERMES_CONFIG.replace('  rag:',
+    '  misakanet:\n    url: https://misakanet.org/mcp\n    enabled: true\n  rag:'));
+  try {
+    const result = runOffline(home, '--only', 'hermes');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const cfg = readHermes(home);
+    assert.equal((cfg.match(/^[ \t]*misakanet:/gm) || []).length, 1,
+      'a duplicate YAML key would be a config corruption:\n' + cfg);
+    assert.match(cfg, /misakanet:  # misakanet:start/);
+    assert.ok(!cfg.includes('enabled: true'), 'the old entry is gone, replaced by ours');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('hermes: a config with no mcp_servers key gets a new section', () => {
+  const home = makeHermesHome('model:\n  default: MiniMax-M3\n');
+  try {
+    runOffline(home, '--only', 'hermes');
+    assert.match(readHermes(home), /^mcp_servers:\n  misakanet:  # misakanet:start/m);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('hermes: verify reports the registration, and uninstall restores the file exactly', () => {
+  const home = makeHermesHome();
+  try {
+    let verify = run(home, '--verify');
+    assert.match(verify.stdout, /Hermes：MCP 未注册/, verify.stdout);
+    assert.equal(verify.status, 1, 'a detected Hermes without our entry must not report READY');
+
+    // With a stored token the install also writes ~/.hermes/.env, which is the branch that
+    // claims "written, but whether Hermes loaded it cannot be confirmed from here".
+    mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
+    writeFileSync(join(home, '.misakanet-agent', 'token'), TOKEN_SHAPE_OK);
+    const env = { ...process.env };
+    delete env.MISAKANET_ENDPOINT;
+    spawnSync(process.execPath, [CLI, '--home', home, '--only', 'hermes'],
+      { encoding: 'utf8', env });
+    verify = run(home, '--verify');
+    assert.match(verify.stdout, /Hermes：MCP 条目与 token 都在/, verify.stdout);
+    assert.match(verify.stdout, /无法确认 Hermes 是否已加载/, verify.stdout);
+
+    runOffline(home, '--uninstall');
+    assert.equal(readHermes(home), HERMES_CONFIG,
+      'uninstall must leave the config byte-for-byte as it was');
+    assert.ok(!readFileSync(join(home, '.hermes', '.env'), 'utf8').includes(TOKEN_SHAPE_OK),
+      'the token line goes with the entry');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('hermes: the unmarked-entry pattern cannot eat the next server', () => {
+  // HERMES_BARE matches an entry plus its indented children. Written too loosely it would
+  // swallow whatever follows, so the replacement is pinned against a neighbour.
+  const home = makeHermesHome('mcp_servers:\n  misakanet:\n    url: https://x/mcp\n  rag:\n    command: rag\n');
+  try {
+    runOffline(home, '--only', 'hermes');
+    const cfg = readHermes(home);
+    assert.match(cfg, /  rag:\n    command: rag\n/, cfg);
+    assert.equal((cfg.match(/^[ \t]*misakanet:/gm) || []).length, 1, cfg);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
 });

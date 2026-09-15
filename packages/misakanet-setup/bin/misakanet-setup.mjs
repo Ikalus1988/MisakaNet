@@ -46,6 +46,19 @@ const END = 'misakanet:end';
 const TOP_START = 'misakanet-top:start';
 const TOP_END = 'misakanet-top:end';
 
+// Hermes keeps its MCP registry in a YAML file, so its block is delimited with YAML comments
+// rather than the HTML comments the markdown rules files use.
+const YAML_START = `# ${START}`;
+const YAML_END = `# ${END}`;
+// Derivation copied from hermes_cli/mcp_config.py: f"MCP_{name.upper().replace('-', '_')}_API_KEY".
+const HERMES_ENV_KEY = 'MCP_MISAKANET_API_KEY';
+/** The entry this installer wrote, delimited by its markers. */
+const HERMES_MARKED = new RegExp(
+  `[ \\t]*misakanet:[ \\t]*#\\s*${START}\\s*\\n[\\s\\S]*?^[ \\t]*#\\s*${END}\\s*$\\n?`, 'm');
+/** An unmarked entry (added by `hermes mcp add`) together with its indented children. */
+const HERMES_BARE = new RegExp(
+  `^[ \\t]*misakanet:[ \\t]*\\n(?:[ \\t]{4,}.*\\n|[ \\t]*\\n)*`, 'm');
+
 // ── small helpers ────────────────────────────────────────────────────
 const args = process.argv.slice(2);
 const has = (flag) => args.includes(flag);
@@ -90,7 +103,7 @@ function readText(path) {
  * meant to prevent is now caught in CI instead, by a test that binds this literal to the
  * manifest — a failing test is a better place for that than a request header.
  */
-const VERSION = '0.2.1';
+const VERSION = '0.3.0';
 
 function backup(path) {
   if (DRY || !readText(path)) return;
@@ -421,14 +434,75 @@ async function installCodex(hookPath, bearer) {
     + '要硬保证就用 --verify 看状态，或把本会话放在 CC 里跑');
 }
 
-async function installHermes(hookPath) {
+/**
+ * Hermes MCP: `mcp_servers.<name>` in ~/.hermes/config.yaml, with the token in
+ * ~/.hermes/.env under `MCP_<NAME>_API_KEY`.
+ *
+ * This is exactly what `hermes mcp add <name> --url <url> --auth header` writes (its own code
+ * derives the key with `f"MCP_{name.upper().replace('-', '_')}_API_KEY"` and stores the value
+ * in the dotenv file, leaving `Authorization: Bearer ${…}` as the config template) — minus the
+ * subprocess, which is what keeps the token out of argv (alert #269) and lets the install work
+ * where that CLI cannot start.
+ *
+ * The block is marker-delimited: re-running replaces it, and --uninstall takes back exactly
+ * the entry this installer added.
+ */
+async function installHermes(hookPath, bearer) {
+  const cfg = join(HOME, '.hermes', 'config.yaml');
+  const text = readText(cfg);
   const rules = join(HOME, '.hermes', 'SOUL.md');
-  if (readText(join(HOME, '.hermes', 'config.yaml'))) {
-    ok(`Hermes：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
-    need(`Hermes：MCP 由它自己管 → 执行 hermes mcp add misakanet --url ${ENDPOINT}；`
-      + '钩子要过它的 allowlist（hermes hooks doctor 查看）');
-  } else {
+  if (!text) {
     need('Hermes：找不到 ~/.hermes/config.yaml → 先运行一次 hermes 再回来装');
+    return;
+  }
+  ok(`Hermes：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+
+  const envKey = HERMES_ENV_KEY;
+  const lines = [`  misakanet:  ${YAML_START}`, `    url: ${ENDPOINT}`];
+  if (bearer) lines.push('    headers:', `      Authorization: Bearer \${${envKey}}`);
+  lines.push(`  ${YAML_END}`);
+  // No trailing newline: the three call sites below each own the one they need, and the
+  // "insert after mcp_servers:" case must NOT add one (the line it replaces already ends with
+  // the newline that separates it from the next key — adding another wrote a blank line into
+  // the user's YAML).
+  const block = lines.join('\n');
+
+  let updated;
+  if (HERMES_MARKED.test(text)) {
+    updated = text.replace(HERMES_MARKED, () => `${block}\n`);
+  } else if (HERMES_BARE.test(text)) {
+    // An entry the user added through the CLI: replace it rather than write a duplicate key.
+    updated = text.replace(HERMES_BARE, () => `${block}\n`);
+  } else if (/^mcp_servers:[ \t]*$/m.test(text)) {
+    updated = text.replace(/^(mcp_servers:[ \t]*)$/m, (line) => `${line}\n${block}`);
+  } else {
+    updated = `${text}${text.endsWith('\n') ? '' : '\n'}mcp_servers:\n${block}\n`;
+  }
+  if (updated === text) {
+    ok('Hermes：MCP 已注册（无改动）');
+  } else {
+    backup(cfg);
+    writeText(cfg, updated);
+    ok(`Hermes：注册 MCP（streamable-http）→ ${cfg}`);
+  }
+
+  if (!bearer) {
+    skip('Hermes：这次没有 token → 走匿名通道（5/天/IP），写入类工具不可用');
+    return;
+  }
+  const envPath = join(HOME, '.hermes', '.env');
+  const envText = readText(envPath);
+  const assignment = `${envKey}=${bearer}`;
+  const current = new RegExp(`^${envKey}=.*$`, 'm');
+  const next = current.test(envText)
+    ? envText.replace(current, () => assignment)
+    : `${envText}${envText && !envText.endsWith('\n') ? '\n' : ''}${assignment}\n`;
+  if (next !== envText) {
+    backup(envPath);
+    writeText(envPath, next);
+    ok(`Hermes：token 写入 ${envPath}（${envKey}，配置里只留 \${${envKey}} 模板）`);
+  } else {
+    ok('Hermes：token 已就绪（无改动）');
   }
 }
 
@@ -557,6 +631,31 @@ async function verify() {
       ok(`OpenClaw：MCP 已注册（${entry.url || '?'}）`);
     }
   }
+  // Hermes: same rule — reported only when the user has it. Its config file *is* the registry,
+  // so the state is readable without running anything. What cannot be confirmed from here is
+  // whether Hermes has loaded that file, and the output says so rather than implying it.
+  if (readText(join(HOME, '.hermes', 'config.yaml'))) {
+    const rules = join(HOME, '.hermes', 'SOUL.md');
+    if (!readText(rules).includes(`<!-- ${START} -->`)) {
+      allOk = false;
+      need(`Hermes：规则块没装（${rules}）→ 重跑安装命令`);
+    } else {
+      ok('Hermes：规则块已装');
+    }
+    const cfg = join(HOME, '.hermes', 'config.yaml');
+    const text = readText(cfg);
+    if (!HERMES_MARKED.test(text) && !HERMES_BARE.test(text)) {
+      allOk = false;
+      need(`Hermes：MCP 未注册（${cfg}）→ 重跑安装命令，或执行 `
+        + `hermes mcp add misakanet --url ${ENDPOINT} --auth header`);
+    } else if (!new RegExp(`^${HERMES_ENV_KEY}=`, 'm').test(readText(join(HOME, '.hermes', '.env')))) {
+      ok('Hermes：MCP 条目已写入配置（无 token → 匿名 5 次/天/IP）');
+      skip(`Hermes：想让检索不计匿名额度，重跑安装命令即可写入 ${HERMES_ENV_KEY}`);
+    } else {
+      ok(`Hermes：MCP 条目与 token 都在（${HERMES_ENV_KEY}）`);
+      skip('Hermes：本进程只能确认"配置已写"，无法确认 Hermes 是否已加载 → 可用 hermes mcp list 复核');
+    }
+  }
   return allOk;
 }
 
@@ -607,7 +706,31 @@ function uninstall() {
     if (!DRY) rmSync(stateDir(), { recursive: true, force: true });
     ok(`删除状态目录 → ${stateDir()}`);
   }
-  need('Hermes 的 MCP 条目由它自己管 → 需要时执行 hermes mcp remove misakanet');
+  // Hermes' entry is one we wrote ourselves (config block + the token line it reads from .env),
+  // so we can take both back — same rule as OpenClaw and Claude Code.
+  const hermesCfg = join(HOME, '.hermes', 'config.yaml');
+  {
+    const text = readText(hermesCfg);
+    // The bare form is included so an entry added by `hermes mcp add` on our behalf goes too.
+    const stripped = text.replace(HERMES_MARKED, '').replace(HERMES_BARE, '');
+    if (stripped !== text) {
+      backup(hermesCfg);
+      writeText(hermesCfg, stripped);
+      ok(`移除 MCP 条目 → ${hermesCfg}`);
+    }
+  }
+  const hermesEnv = join(HOME, '.hermes', '.env');
+  {
+    const text = readText(hermesEnv);
+    const stripped = text.replace(new RegExp(`^${HERMES_ENV_KEY}=.*\\n?`, 'm'), '');
+    if (stripped !== text) {
+      backup(hermesEnv);
+      writeText(hermesEnv, stripped);
+      ok(`移除 token 行 → ${hermesEnv}（${HERMES_ENV_KEY}）`);
+    }
+  }
+  need('Hermes 的钩子不归本安装器管 → 需要时看 hermes hooks doctor；'
+    + `规则块已在 ~/.hermes/SOUL.md 移除`);
 
   // OpenClaw's MCP entry is one we wrote ourselves, so we can take it back ourselves.
   const ocCfg = join(HOME, '.openclaw', 'openclaw.json');
@@ -661,7 +784,7 @@ if (!targets.length) {
   for (const agent of targets) {
     if (agent === 'claude') await installClaude(hookPath, bearer);
     else if (agent === 'codex') await installCodex(hookPath, bearer);
-    else if (agent === 'hermes') await installHermes(hookPath);
+    else if (agent === 'hermes') await installHermes(hookPath, bearer);
     else if (agent === 'openclaw') await installOpenclaw(bearer);
   }
 }
