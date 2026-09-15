@@ -74,6 +74,7 @@ def _registries():
     return (
         (slc.SITES, slc.canonical_count(REPO), True),
         (slc.NODE_SITES, slc.canonical_nodes(REPO), False),
+        (slc.DOMAIN_SITES, slc.canonical_domains(REPO), False),
     )
 
 
@@ -271,3 +272,20 @@ def test_registry_listing_stays_publishable():
     assert server["version"] == server["packages"][0]["version"], (
         "server.json registry version and its pypi package entry must agree (R3)"
     )
+
+
+def test_domain_count_normalises_quotes_and_case(tmp_path):
+    """Issue #1687: `devops`, `"devops"` and `DevOps` are one domain, not three.
+
+    The badge counted raw strings, so it reported 69 for a corpus whose normalised vocabulary
+    is 61 — and neither number was derivable from anything a reader could check. The definition
+    is now the normalised frontmatter value, and this pins the normalisation.
+    """
+    contrib = tmp_path / "lessons" / "contrib"
+    contrib.mkdir(parents=True)
+    for index, domain in enumerate(["devops", '"devops"', "DevOps", "  ops  "]):
+        (contrib / f"lesson-{index}.md").write_text(
+            f"---\ndomain: {domain}\n---\n\n# t\n", encoding="utf-8")
+    (contrib / "README.md").write_text("---\ndomain: not-a-lesson\n---\n", encoding="utf-8")
+
+    assert slc.canonical_domains(tmp_path) == 2, "devops×3 collapses to one; ops is a second"
