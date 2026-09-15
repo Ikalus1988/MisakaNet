@@ -854,7 +854,18 @@ const INDEX_TEXT_MAX_CHARS = 6000;
 // the cron keeps serving an index built from the old text for up to 20h — the same
 // "the rebuild input changed but the gate did not notice" trap this file already
 // documents twice (2026-09-12).
-const INDEX_TEXT_VERSION = 2;
+//
+// v3 (2026-09-15): the *source* of the indexed metadata changed, not its shape.
+// The corpus had been projected with slug titles and parent-directory domains for
+// 91% of lessons (CI parsed frontmatter without PyYAML and the parser swallowed it
+// — issue #1726). Fixing that writes the real title/domain/tags into D1 and into
+// data/lessons.json, but an index built from the old projection is exactly as
+// searchable as the data it was built from, and only this constant can tell the
+// gate that its input's meaning changed: docCount, textMode and the D1 sync stamp
+// can all be unchanged (the stamp did not move here) while every indexed document
+// still carries slug/dir metadata. Without the bump, deployed workers keep
+// answering with slug titles — and keep failing a `domain` filter — for up to 20h.
+const INDEX_TEXT_VERSION = 3;
 // The public listing must not ship the internal searchable body: `indexText` feeds
 // the index and the matcher, and it is dropped from every response the worker
 // builds from loadLessons().
