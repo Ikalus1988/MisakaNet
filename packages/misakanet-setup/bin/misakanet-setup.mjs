@@ -23,7 +23,7 @@
  * Everything is idempotent, every rewritten file is backed up to *.misakanet.bak, and
  * --uninstall removes exactly what was added (same markers), leaving user config intact.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, rmSync, chmodSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, rmSync, chmodSync, statSync } from 'node:fs';
 // No child_process import on purpose: this installer must never hand a file-derived value to
 // another program (the plugin scanner's SHELL_INJECTION_PATTERN, alert #269, and argv secrets
 // are visible to every process on the box). Every target is configured by writing its own
@@ -175,7 +175,7 @@ function probeEndpoint() {
  * the "read a local secret, put it in a request" shape CodeQL flags — js/file-access-to-http
  * #268 — and `tests/…`/`workers/Misakanet-setup.test.mjs` pins that the probe stays anonymous).
  */
-async function mcpCall(tool, toolArgs, timeoutMs = 6000, urlOverride = '') {
+async function mcpRequest(method, params, timeoutMs = 6000, urlOverride = '') {
   const headers = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -190,16 +190,33 @@ async function mcpCall(tool, toolArgs, timeoutMs = 6000, urlOverride = '') {
       method: 'POST',
       headers,
       signal: controller.signal,
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: tool, arguments: toolArgs } }),
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     });
     const payload = await response.json();
     const result = payload.result || {};
-    return result.structuredContent || JSON.parse(result.content[0].text);
+    // Three response shapes are in play: `structuredContent` (this worker's tools/call),
+    // `content[0].text` (the MCP spec's text block), and plain fields (initialize, tools/list).
+    // The old unwrapping assumed the second and threw on the third, and the outer catch turned
+    // that into `{}` — a working endpoint reported as unreachable (found 2026-09-15).
+    if (result.structuredContent !== undefined) return result.structuredContent;
+    if (Array.isArray(result.content) && typeof result.content[0]?.text === 'string') {
+      try {
+        return JSON.parse(result.content[0].text);
+      } catch {
+        return result;
+      }
+    }
+    return result;
   } catch {
     return {};
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** One tools/call. (Registration is the only one this process makes; it is not a read.) */
+function mcpCall(tool, toolArgs, timeoutMs = 6000, urlOverride = '') {
+  return mcpRequest('tools/call', { name: tool, arguments: toolArgs }, timeoutMs, urlOverride);
 }
 
 const PROMPT_BLOCK = `遇到报错、要重试一个刚失败的修法、或要做有副作用的操作（删文件/迁移/改 CI）之前，先调 misakanet_search
@@ -500,6 +517,33 @@ async function latestPublishedVersion() {
 }
 
 /**
+ * Where OpenClaw keeps its rules file — decided by its own config, not by a path we assumed.
+ *
+ * `~/.openclaw/workspace/AGENTS.md` is only right when nothing else is configured: the real
+ * answer is `agents.defaults.workspace` in ~/.openclaw/openclaw.json (on this machine
+ * `/mnt/c/Users/Eric Jia`). Writing to the wrong directory still looked like success — the file
+ * was there and `--verify` found its own marker — while the agent never read it: the MCP tools
+ * were registered and nothing told the model to use them, so the chain test's question was
+ * answered from memory with `toolSummary: {calls: 2, tools: ["exec"]}` (found 2026-09-15).
+ *
+ * Both candidates are returned, configured first, so install writes where the agent reads and
+ * `--uninstall` can take back a block written by either version.
+ */
+function openclawWorkspaces() {
+  const configured = readJson(join(HOME, '.openclaw', 'openclaw.json'), null)
+    ?.agents?.defaults?.workspace;
+  const paths = [];
+  if (typeof configured === 'string' && configured.trim()) {
+    const candidate = configured.trim();
+    try {
+      if (statSync(candidate).isDirectory()) paths.push(candidate);
+    } catch { /* configured but gone: fall through to the default */ }
+  }
+  paths.push(dirname(join(HOME, '.openclaw', 'workspace', 'AGENTS.md')));
+  return paths;
+}
+
+/**
  * Hermes MCP: `mcp_servers.<name>` in ~/.hermes/config.yaml, with the token in
  * ~/.hermes/.env under `MCP_<NAME>_API_KEY`.
  *
@@ -590,10 +634,11 @@ async function installHermes(hookPath, bearer) {
  * text, never executed.
  */
 async function installOpenclaw(bearer) {
-  const rules = join(HOME, '.openclaw', 'workspace', 'AGENTS.md');
+  const workspace = openclawWorkspaces()[0];
+  const rules = join(workspace, 'AGENTS.md');
   const manual = `openclaw mcp add misakanet --url ${ENDPOINT} --transport streamable-http`;
-  if (!existsSync(dirname(rules))) {
-    need(`OpenClaw：找不到 ${dirname(rules)} → 先运行一次 openclaw 生成 workspace`);
+  if (!existsSync(workspace)) {
+    need(`OpenClaw：找不到 workspace（${workspace}）→ 先运行一次 openclaw 生成它`);
   } else {
     ok(`OpenClaw：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
   }
@@ -621,9 +666,19 @@ async function installOpenclaw(bearer) {
 
 async function verify() {
   let allOk = true;
-  const probe = await mcpCall('misakanet_search', { query: 'docker exit code 137', top: 1 }, 6000, probeEndpoint());
-  if (probe && (probe.results || probe.no_match !== undefined)) {
-    ok(`端点可达：${ENDPOINT}`);
+  // Handshake, not a search. `tools/list` proves the endpoint speaks MCP and answers, and it
+  // consumes no anonymous read quota — so `--verify` can be run as often as the user likes. The
+  // search used to be the probe, which spent one of the five free reads per run and, worse,
+  // reported the rate-limit answer as "endpoint unreachable": the endpoint returns HTTP 200
+  // with the error inside the JSON-RPC result, so a user who had used their quota was told their
+  // network was broken (found 2026-09-15 by running the agent chain test on this machine).
+  const probe = await mcpRequest('tools/list', {}, 6000, probeEndpoint());
+  const tools = Array.isArray(probe?.tools) ? probe.tools : [];
+  if (tools.length) {
+    ok(`端点可达：${ENDPOINT}（MCP 握手成功，${tools.length} 个工具）`);
+  } else if (probe && (probe.error || probe.protocolVersion || probe.serverInfo)) {
+    allOk = false;
+    need(`端点可达但握手异常：${JSON.stringify(probe).slice(0, 120)}`);
   } else {
     allOk = false;
     need(`端点不可达：${ENDPOINT}（网络受限？读课程会静默失败）`);
@@ -679,7 +734,7 @@ async function verify() {
   // The state is read from the same file `openclaw mcp list` reports from, which keeps this
   // check working where the CLI itself cannot start (its database may be unwritable).
   if (detect('openclaw')) {
-    const rules = join(HOME, '.openclaw', 'workspace', 'AGENTS.md');
+    const rules = join(openclawWorkspaces()[0], 'AGENTS.md');
     if (!readText(rules).includes(`<!-- ${START} -->`)) {
       allOk = false;
       need(`OpenClaw：规则块没装（${rules}）→ 重跑安装命令`);
@@ -747,9 +802,13 @@ async function verify() {
 }
 
 function uninstall() {
-  for (const rel of ['.claude/CLAUDE.md', '.codex/AGENTS.md', '.hermes/SOUL.md',
-    '.openclaw/workspace/AGENTS.md']) {
+  for (const rel of ['.claude/CLAUDE.md', '.codex/AGENTS.md', '.hermes/SOUL.md']) {
     if (stripBlock(join(HOME, rel))) ok(`移除规则块 → ${rel}`);
+  }
+  // Both candidates: a block may have been written before the workspace was read from config.
+  for (const workspace of openclawWorkspaces()) {
+    const rules = join(workspace, 'AGENTS.md');
+    if (stripBlock(rules)) ok(`移除规则块 → ${rules}`);
   }
   const cfg = join(HOME, '.claude.json');
   const data = readJson(cfg, null);

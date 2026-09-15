@@ -171,10 +171,13 @@ test('verify passes once installed, against a reachable endpoint', async () => {
     req.on('data', (chunk) => { body += chunk; });
     req.on('end', () => {
       const payload = JSON.parse(body || '{}');
-      const tool = payload.params?.name;
-      const result = tool === 'misakanet_register'
-        ? { node_id: 'MisakaTEST', token: TOKEN_SHAPE_OK }
-        : { results: [{ id: 'stub', type: 'lesson' }] };
+      // tools/list is the handshake the verify probe uses now; it answers with plain fields and
+      // no content array, which is the shape the old unwrapping threw on.
+      const result = payload.method === 'tools/list'
+        ? { tools: [{ name: 'misakanet_search' }, { name: 'misakanet_get_lesson' }] }
+        : payload.params?.name === 'misakanet_register'
+          ? { node_id: 'MisakaTEST', token: TOKEN_SHAPE_OK }
+          : { results: [{ id: 'stub', type: 'lesson' }] };
       const reply = JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
         content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } });
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -237,7 +240,10 @@ test('the verification probe never forwards the stored token', async () => {
     let body = '';
     req.on('data', (c) => { body += c; });
     req.on('end', () => {
-      const result = { results: [{ id: 'stub', type: 'lesson' }] };
+      const payload = JSON.parse(body || '{}');
+      const result = payload.method === 'tools/list'
+        ? { tools: [{ name: 'misakanet_search' }] }
+        : { results: [{ id: 'stub', type: 'lesson' }] };
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
         content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } }));
@@ -390,7 +396,9 @@ test('openclaw: uninstall removes both the entry we wrote and the rules block', 
     runOffline(home, '--only', 'openclaw');
     const result = runOffline(home, '--uninstall');
     assert.equal(result.status, 0, result.stdout + result.stderr);
-    assert.match(result.stdout, /移除规则块 → \.openclaw\/workspace\/AGENTS\.md/, result.stdout);
+    // The path is absolute now: OpenClaw's rules file is located through its config, which may
+    // name a workspace anywhere on the machine.
+    assert.match(result.stdout, /移除规则块 → .*openclaw\/workspace\/AGENTS\.md/, result.stdout);
     assert.equal(readOpenclaw(home).mcp.servers.misakanet, undefined);
     assert.ok(readOpenclaw(home).mcp.servers.other, "the user's own servers stay");
     assert.ok(!existsSync(join(home, '.openclaw', 'workspace', 'AGENTS.md')),
@@ -691,5 +699,105 @@ test('verify compares versions properly, including an install ahead of the regis
     }
   } finally {
     server.close();
+  }
+});
+
+test('a rate-limited search answer is not reported as an unreachable endpoint', async () => {
+  // The production shape that started this (2026-09-15): the endpoint answers HTTP 200 with the
+  // error *inside* the JSON-RPC result, so the old probe — a search, which spends one of the five
+  // free anonymous reads per run — told a user whose quota was spent that their network was down,
+  // and made --verify report NOT READY for a working install.
+  const { createServer } = await import('node:http');
+  const seen = [];
+  const server = createServer((req, res) => {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', () => {
+      const payload = JSON.parse(body || '{}');
+      seen.push(payload.method);
+      const result = payload.method === 'tools/list'
+        ? { tools: [{ name: 'misakanet_search' }] }
+        : { error: 'Rate limit: 5 free searches per day exceeded', hint: 'misakanet_register' };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
+        content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } }));
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}/mcp`;
+
+  try {
+    const home = makeHome();
+    try {
+      await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url });
+      // Only the verify phase is under test: installing legitimately makes one tools/call
+      // (misakanet_register), which is not a read and does not spend the read quota.
+      seen.length = 0;
+      const verify = await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url }, '--verify');
+      assert.ok(seen.includes('tools/list'),
+        `the probe must be a handshake, not a search: saw ${JSON.stringify(seen)}`);
+      assert.ok(!seen.includes('tools/call'),
+        `a reachability probe must not spend the anonymous read quota: saw ${JSON.stringify(seen)}`);
+      assert.doesNotMatch(verify.stdout, /端点不可达/, verify.stdout);
+      assert.match(verify.stdout, /端点可达.*握手成功/, verify.stdout);
+      assert.equal(verify.status, 0, verify.stdout + verify.stderr);
+      assert.match(verify.stdout, /READY/);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  } finally {
+    server.close();
+  }
+});
+
+// ── OpenClaw's real workspace (chain test, 2026-09-15) ──────────────────────
+// `~/.openclaw/workspace` is a guess. The agent reads its rules from
+// `agents.defaults.workspace` in ~/.openclaw/openclaw.json, and on this machine that is
+// /mnt/c/Users/Eric Jia. Writing to the guessed path looked like success — the file existed
+// and --verify found its own marker — while the model never saw the rules, so the chain test's
+// question came back answered from memory with toolSummary {calls: 2, tools: ["exec"]}.
+
+test('openclaw: rules go to the workspace its config names', () => {
+  const home = mkdtempSync(join(tmpdir(), 'mn-oc-ws-'));
+  try {
+    const real = join(home, 'windows-home');
+    const guessed = join(home, '.openclaw', 'workspace');
+    mkdirSync(real, { recursive: true });
+    mkdirSync(guessed, { recursive: true });
+    writeFileSync(join(home, '.openclaw', 'openclaw.json'), JSON.stringify({
+      agents: { defaults: { workspace: real } }, mcp: { servers: {} },
+    }, null, 2));
+
+    const result = runOffline(home, '--only', 'openclaw');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, new RegExp(`OpenClaw：规则块 added → .*windows-home`), result.stdout);
+    assert.match(readFileSync(join(real, 'AGENTS.md'), 'utf8'), /misakanet:start/,
+      'the workspace the agent actually reads must carry the rules');
+    assert.ok(!existsSync(join(guessed, 'AGENTS.md')),
+      'the guessed path must not be written when the config names another workspace');
+
+    const verify = run(home, '--verify');
+    assert.match(verify.stdout, /OpenClaw：规则块已装/, verify.stdout);
+
+    runOffline(home, '--uninstall');
+    assert.ok(!existsSync(join(real, 'AGENTS.md')), 'uninstall must take it from the same place');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('openclaw: a configured workspace that no longer exists falls back to the default path', () => {
+  const home = mkdtempSync(join(tmpdir(), 'mn-oc-ws-'));
+  try {
+    mkdirSync(join(home, '.openclaw', 'workspace'), { recursive: true });
+    writeFileSync(join(home, '.openclaw', 'openclaw.json'), JSON.stringify({
+      agents: { defaults: { workspace: join(home, 'gone') } }, mcp: { servers: {} },
+    }, null, 2));
+    const result = runOffline(home, '--only', 'openclaw');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(readFileSync(join(home, '.openclaw', 'workspace', 'AGENTS.md'), 'utf8'),
+      /misakanet:start/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
   }
 });
