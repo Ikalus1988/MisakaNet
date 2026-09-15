@@ -412,3 +412,19 @@ test('the installer never hands a value to another program', () => {
     assert.ok(!source.includes(forbidden), `the installer must not use ${forbidden}`);
   }
 });
+
+test('the User-Agent version is bound to the manifest by a test, not by a file read', () => {
+  // Both halves matter. The literal must match package.json (otherwise a release ships a stale
+  // UA), and it must stay a literal: reading the manifest at runtime made the value flow from a
+  // file into a request header, which is CodeQL js/file-access-to-http #268 all over again.
+  const declared = JSON.parse(
+    readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
+  assert.equal(declared, '0.2.1', 'bump this test when the package version moves');
+  // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
+  // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
+  // (js/incomplete-sanitization, high) on the first version of this test.
+  assert.ok(readFileSync(CLI, 'utf8').includes(`const VERSION = '${declared}'`),
+    `the installer's VERSION literal must equal package.json's ${declared}`);
+  assert.ok(!readFileSync(CLI, 'utf8').includes("join(PKG_ROOT, 'package.json')"),
+    'the manifest must not be read at runtime');
+});
