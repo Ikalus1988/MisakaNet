@@ -9,7 +9,7 @@ npx @misaka-net/misakanet-setup
 ```
 
 Then **close and reopen the assistant window** (the new MCP server loads on restart) and ask
-something with an error in it, e.g. "docker exit code 137 是什么原因" — it should search the
+something with an error in it, e.g. "pip install timeout 是什么原因" — it should search the
 knowledge base on its own instead of guessing.
 
 ## What it installs, and why all three
