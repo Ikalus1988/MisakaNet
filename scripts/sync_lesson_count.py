@@ -194,8 +194,15 @@ def _build_sites() -> tuple[Site, ...]:
     # to prevent.
     # No capture around the lesson number: `\g<1>` used to carry the OLD number, and writing it
     # next to {n} produced "393393" and ate " domains" (caught by --check, 2026-09-15).
-    add("docs/install/index.html", rf"{_COUNT}\+ lessons across (\d{{2,4}}) domains",
-        r"{n}+ lessons across \g<1> domains", "install page feature list")
+    #
+    # The domain number is referenced BY NAME, not by number. `_COUNT` is `(?P<n>\d{2,4})`, and a
+    # named group is *also* a numbered one, so the group that used to be written as `\g<1>` was
+    # the lesson count, not the domain count: on 2026-09-15 the daily update-lessons run turned
+    # this sentence into "393+ lessons across 393 domains" (both numbers correct-looking, the
+    # domain one silently wrong) and left main failing test_lesson_count_ssot. A name cannot be
+    # renumbered by a later edit to the pattern.
+    add("docs/install/index.html", rf"{_COUNT}\+ lessons across (?P<domains>\d{{2,4}}) domains",
+        r"{n}+ lessons across \g<domains> domains", "install page feature list")
 
     # ── GitHub-facing automation ────────────────────────────────────────────
     add(".github/ISSUE_TEMPLATE/config.yml", _META, _META_REPL,

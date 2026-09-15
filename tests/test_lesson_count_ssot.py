@@ -289,3 +289,61 @@ def test_domain_count_normalises_quotes_and_case(tmp_path):
     (contrib / "README.md").write_text("---\ndomain: not-a-lesson\n---\n", encoding="utf-8")
 
     assert slc.canonical_domains(tmp_path) == 2, "devops×3 collapses to one; ops is a second"
+
+
+# ── the two numbers in one sentence must not be confused ─────────────────────
+# 2026-09-15: the install page carries both counts in a single line —
+# "393+ lessons across 55 domains". The lesson-count row referenced the domain
+# number as `\g<1>`, but `_COUNT` is `(?P<n>\d{2,4})` and a *named* group is also
+# a numbered one, so `\g<1>` was the lesson count: the daily `update-lessons`
+# run rewrote the sentence to "393+ lessons across 393 domains", committed it,
+# and left `main` failing test_cli_check_passes_on_this_repo. Both numbers looked
+# plausible, which is why nothing else noticed.
+_INSTALL_PAGE = "docs/install/index.html"
+_TWO_NUMBERS = re.compile(r"(\d{2,4})\+ lessons across (\d{2,4}) domains")
+
+
+def test_lesson_count_row_preserves_the_domain_count():
+    """A lesson-count rewrite must leave the domain number alone."""
+    rows = [site for site in slc.SITES if site.path == _INSTALL_PAGE]
+    assert rows, f"no lesson-count row manages {_INSTALL_PAGE}"
+
+    text = (REPO / _INSTALL_PAGE).read_text(encoding="utf-8")
+    before = _TWO_NUMBERS.search(text)
+    assert before, f"{_INSTALL_PAGE} no longer carries the two-number sentence"
+
+    # A count that differs from the domain count, so a mixed-up backreference is
+    # visible rather than coincidentally equal (393 vs 393 is what shipped).
+    rewritten = text
+    for row in rows:
+        rewritten, _ = row.compiled().subn(row.replace.format(n=1234), rewritten)
+
+    after = _TWO_NUMBERS.search(rewritten)
+    assert after, f"the sentence stopped matching its own output:\n{rewritten}"
+    assert after.group(1) == "1234", "the lesson number was not rewritten"
+    assert after.group(2) == before.group(2), (
+        f"the domain number was rewritten by a lesson-count row: "
+        f"{before.group(2)} -> {after.group(2)}"
+    )
+
+
+def test_domain_count_row_preserves_the_lesson_count():
+    """And the mirror case: the domain row must not touch the lesson number."""
+    rows = [site for site in slc.DOMAIN_SITES if site.path == _INSTALL_PAGE]
+    assert rows, f"no domain-count row manages {_INSTALL_PAGE}"
+
+    text = (REPO / _INSTALL_PAGE).read_text(encoding="utf-8")
+    before = _TWO_NUMBERS.search(text)
+    assert before, f"{_INSTALL_PAGE} no longer carries the two-number sentence"
+
+    rewritten = text
+    for row in rows:
+        rewritten, _ = row.compiled().subn(row.replace.format(n=777), rewritten)
+
+    after = _TWO_NUMBERS.search(rewritten)
+    assert after, f"the sentence stopped matching its own output:\n{rewritten}"
+    assert after.group(2) == "777", "the domain number was not rewritten"
+    assert after.group(1) == before.group(1), (
+        f"the lesson number was rewritten by a domain-count row: "
+        f"{before.group(1)} -> {after.group(1)}"
+    )
