@@ -103,7 +103,7 @@ function readText(path) {
  * meant to prevent is now caught in CI instead, by a test that binds this literal to the
  * manifest — a failing test is a better place for that than a request header.
  */
-const VERSION = '0.4.0';
+const VERSION = '0.4.1';
 
 function backup(path) {
   if (DRY || !readText(path)) return;
@@ -252,23 +252,44 @@ function locateHook() {
 
 async function installHook() {
   const hookPath = join(stateDir(), 'hook.mjs');
+  const bundled = locateHook();
+  let existing = null;
   try {
-    if (readFileSync(hookPath, 'utf8').includes('MisakaNet')) {
+    existing = readFileSync(hookPath, 'utf8');
+  } catch { /* not installed yet */ }
+  const isOurs = existing !== null && existing.includes('MisakaNet');
+
+  if (!bundled) {
+    if (isOurs) {
       ok(`自动沉淀的钩子已存在：${hookPath}`);
       return hookPath;
     }
-  } catch { /* not installed yet */ }
-  const bundled = locateHook();
-  if (!bundled) {
     need('自动沉淀那部分装不上：这个 npm 包里没有带钩子文件（安装不完整）→ '
       + '重新执行 npx 安装即可；其它功能不受影响');
     return null;
   }
+
+  if (isOurs && existing.trim() === bundled.trim()) {
+    ok(`自动沉淀的钩子已是最新：${hookPath}`);
+    return hookPath;
+  }
+
+  // Refresh a hook that is *ours* (marker) but older than the bundled copy, keeping the
+  // previous file beside it.
+  //
+  // This used to return early for any hook containing "MisakaNet", which made a hook fix
+  // unable to reach an existing install: the 14-day upgrade nudge (#1712) could not
+  // arrive, and re-running the installer — the very thing the nudge asks the user to do —
+  // changed nothing (found 2026-09-15: the machine's installed hook predated the nudge
+  // while `npx …@latest` reported success).
   if (!DRY) {
     mkdirSync(stateDir(), { recursive: true });
+    if (existing !== null) backup(hookPath);
     writeFileSync(hookPath, bundled);
   }
-  ok(`安装自动沉淀钩子 → ${hookPath}`);
+  ok(isOurs
+    ? `自动沉淀的钩子已更新（旧版备份为 ${hookPath}.misakanet.bak）→ ${hookPath}`
+    : `安装自动沉淀钩子 → ${hookPath}`);
   return hookPath;
 }
 

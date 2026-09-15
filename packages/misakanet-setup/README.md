@@ -31,6 +31,8 @@ npx @misaka-net/misakanet-setup --verify      # READY / NOT READY, installed ver
 npx @misaka-net/misakanet-setup --only claude # one agent only
 npx @misaka-net/misakanet-setup --no-register # read-only, no anonymous token
 npx @misaka-net/misakanet-setup --upgrade     # same as installing the latest (the command is idempotent)
+                                             # re-running also *refreshes* an older hook (the previous copy
+                                             # is kept as ~/.misakanet-agent/hook.mjs.misakanet.bak)
 npx @misaka-net/misakanet-setup --uninstall   # remove exactly what it added
 ```
 
