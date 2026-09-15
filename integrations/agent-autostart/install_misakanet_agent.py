@@ -44,6 +44,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ENDPOINT = "https://misakanet.org/mcp"
+# The question the onboarding text tells a user to ask. See the JS installer for why this is a
+# constant, and why it is not "docker exit code 137": tests/test_onboarding_example.py checks
+# offline that the corpus answers it with a lesson about that very failure.
+ONBOARDING_QUERY = "pip install timeout"
 START = "misakanet:start"
 END = "misakanet:end"
 HERE = Path(__file__).resolve().parent
@@ -575,7 +579,7 @@ def ensure_identity(home: Path, endpoint: str, dry: bool, rep: Report) -> None:
 def verify(home: Path, endpoint: str, rep: Report) -> bool:
     """Post-install self-check: the difference between "installed" and "known to work"."""
     ok = True
-    identity = _post(endpoint, "misakanet_search", {"query": "docker exit code 137", "top": 1},
+    identity = _post(endpoint, "misakanet_search", {"query": ONBOARDING_QUERY, "top": 1},
                      token=os.environ.get("MISAKANET_TOKEN", "") or "")
     if identity:
         rep.ok(f"端点可达：{endpoint} 返回了检索结果")
@@ -812,7 +816,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.verify:
         ok = verify(home, endpoint, rep)
         print(rep.render())
-        print("\n结论：" + ("READY —— 直接开一个新会话测试即可（问它 docker exit code 137）"
+        print("\n结论：" + (f"READY —— 直接开一个新会话测试即可（问它 {ONBOARDING_QUERY}）"
                           if ok else "NOT READY —— 上面每一条 ✗ 都给了修复动作"))
         return 0 if ok else 1
 
@@ -849,7 +853,7 @@ def main(argv: list[str] | None = None) -> int:
     print("\n自检：python3 install_misakanet_agent.py --verify（一条命令告诉你到底通不通）")
     print(
         "\n验证（对新开的会话说一句即可）：\n"
-        "  「docker exit code 137 是什么原因」→ 看它是否调用 misakanet_search\n"
+        f"  「{ONBOARDING_QUERY} 是什么原因」→ 看它是否调用 misakanet_search\n"
         f"  手动跑一次检查点：echo '{{\"session_id\":\"t\"}}' | python3 \"{HOOK_FILE}\" prompt\n"
         f"  手动跑一次失败提醒：echo '{{\"error\":\"exit code 137\"}}' | python3 \"{HOOK_FILE}\" failure\n"
         "回滚：python3 install_misakanet_agent.py --uninstall（或从 *.misakanet.bak 恢复）"

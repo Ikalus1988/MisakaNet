@@ -8,7 +8,7 @@
 npx @misaka-net/misakanet-setup
 ```
 
-装完**把这个助手窗口关掉再打开一次**，然后随便问一句带报错的（例如「docker exit code 137 是什么原因」）——
+装完**把这个助手窗口关掉再打开一次**，然后随便问一句带报错的（例如「pip install timeout 是什么原因」）——
 它应该先去查经验库再回答。想确认状态 `npx @misaka-net/misakanet-setup --verify`，想关掉 `--uninstall`。
 
 **不想碰命令行 / 不知道 assistant 的配置文件在哪：** 把下面这句话**复制粘贴给助手**，它会自己装好、自己验证、用大白话告诉你结果：

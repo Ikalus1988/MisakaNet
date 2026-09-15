@@ -23,7 +23,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 npx @misaka-net/misakanet-setup
 ```
 
-装完**把助手窗口关掉再打开一次**，然后随便问一句带报错的（例如「docker exit code 137 是什么原因」），
+装完**把助手窗口关掉再打开一次**，然后随便问一句带报错的（例如「pip install timeout 是什么原因」），
 它应该先去查经验库再回答。状态自检 `npx @misaka-net/misakanet-setup --verify`，卸载 `--uninstall`。
 
 **不想用命令行、不知道配置文件在哪？** 把下面这句话**复制粘贴给助手**，它会自己装好、自己验证、用大白话回报：

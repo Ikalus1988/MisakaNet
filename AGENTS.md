@@ -113,7 +113,7 @@ curl -sSN https://misakanet.org/mcp \
   -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
   -H 'MCP-Protocol-Version: 2025-06-18' -H 'Origin: https://misakanet.org' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
-       "params":{"name":"misakanet_search","arguments":{"query":"docker exit code 137"}}}'
+       "params":{"name":"misakanet_search","arguments":{"query":"pip install timeout"}}}'
 # → 逐块到达：event: message / data: {"result":{…}}
 
 # ③ 需要 token 的工具（写入类）

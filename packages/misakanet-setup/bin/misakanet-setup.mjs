@@ -452,6 +452,17 @@ async function installCodex(hookPath, bearer) {
 }
 
 const STATE_VERSION_FILE = 'version';
+
+/**
+ * The question the onboarding text tells a user to ask — and the reason it is a constant.
+ *
+ * It used to be "docker exit code 137 是什么原因", which the corpus answers with three only
+ * loosely-related lessons (top hit: kubernetes-crashloopbackoff-debugging) — so a new user's
+ * first question, the one we chose for them, landed on a near-miss. It is now a query whose top
+ * hit is a lesson about that very failure, and tests/test_onboarding_example.py keeps it that
+ * way offline (plus a check that this literal is not duplicated back into the messages).
+ */
+const ONBOARDING_QUERY = 'pip install timeout';
 const REGISTRY_LATEST = process.env.MISAKANET_REGISTRY_URL
   || 'https://registry.npmjs.org/@misaka-net%2fmisakanet-setup/latest';
 
@@ -913,7 +924,7 @@ if (mode === 'uninstall') {
 if (mode === 'verify') {
   const allOk = await verify();
   console.log(render());
-  console.log(`\n结论：${allOk ? 'READY —— 打开一个新会话，问它「docker exit code 137 是什么原因」' : 'NOT READY —— 上面每条 ! 都给了修复动作'}`);
+  console.log(`\n结论：${allOk ? `READY —— 打开一个新会话，问它「${ONBOARDING_QUERY} 是什么原因」` : 'NOT READY —— 上面每条 ! 都给了修复动作'}`);
   process.exit(allOk ? 0 : 1);
 }
 
@@ -941,6 +952,6 @@ console.log(render());
 console.log(`
 接下来：
   1) **把这个助手窗口关掉再打开一次**（新功能要重开会话才生效）
-  2) 随便问一句带报错的：「docker exit code 137 是什么原因」——它应该先去查经验库
+  2) 随便问一句带报错的：「${ONBOARDING_QUERY} 是什么原因」——它应该先去查经验库
   3) 想确认状态：npx @misaka-net/misakanet-setup --verify
   4) 想关掉：npx @misaka-net/misakanet-setup --uninstall`);
