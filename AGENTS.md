@@ -68,10 +68,15 @@ Agent 侧更常用 MCP：`misakanet_search` → `misakanet_get_lesson` → （�
 
 `initialize` 与 `tools/list` 也开放（供 MCP registry 扫描）。
 
-> ⚠️ **`domain` 过滤参数的口径（2026-09-15 实测）**：它匹配的是**索引里的目录名**（`contrib` / `ops` /
-> `core` / `networking` …），**不是** lesson 自己声明的 frontmatter `domain`（`python` / `devops` /
-> `fanuc` …）。照 frontmatter 填会得到 `no_match`，且**没有任何错误提示** —— 同一个查询**省略 `domain`
-> 就能命中**。**不确定用哪套词表时，省略 `domain`**（缺陷记录：#1725）。
+> ⚠️ **`domain` 过滤参数的口径（2026-09-15 修正）**：它匹配的是**课程 frontmatter 里的 `domain`**
+> （`python` / `devops` / `fanuc` …）—— 也就是你写 lesson 时填的那个值。少数没有声明 `domain` 的老课程
+> 会退化成**所在目录名**（`contrib` / `pt-br`），这也是为什么 39 篇课程的 domain 恰好是 `contrib`
+> （目录名被当成主题，词表问题记在 #1687，修好后计数与检索都会跟上）。
+>
+> **历史提醒**：2026-09-15 之前，这里写的是"过滤参数用的是目录名、照 frontmatter 填会 no_match"——
+> 那其实是一个**数据缺陷**（CI 缺 PyYAML，解析器静默降级成 "标题=文件名、domain=目录名"，
+> 影响 91% 的语料，见 #1726）。修好并重新同步后行为已恢复正常，所以这条说明被改写了；
+> 如果你的调用一直带 `domain` 却查不到东西，请确认 agent 侧传的是 frontmatter 值。
 
 ### 3.3 注册与配额
 
