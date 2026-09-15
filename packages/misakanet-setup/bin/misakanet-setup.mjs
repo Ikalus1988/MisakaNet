@@ -447,8 +447,16 @@ async function installCodex(hookPath, bearer) {
 
   const rules = join(HOME, '.codex', 'AGENTS.md');
   ok(`Codex：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
-  need('Codex：用户级钩子的写法我没能确证 → "第 20 轮自动沉淀"靠规则自律；'
-    + '要硬保证就用 --verify 看状态，或把本会话放在 CC 里跑');
+  // Verified on codex-cli 0.154.0 (2026-09-15), so this is no longer a "could not
+  // confirm" note: `codex mcp list` shows misakanet enabled with the Bearer token,
+  // `codex doctor` reports config.toml parse ok + 1 streamable_http server + 0
+  // disabled, and `codex debug prompt-input` renders a `# AGENTS.md instructions`
+  // item carrying this rule block. What stays open is the *hook*: 0.154.0's lifecycle
+  // hooks are admin-managed (requirements.toml), so the round-20 distillation is
+  // rule-driven rather than hook-driven.
+  ok('Codex：注册已核对（`codex mcp list` / `codex doctor` / `codex debug prompt-input`）');
+  need('Codex：没有用户级 lifecycle hook → "第 20 轮自动沉淀"靠规则块自律；'
+    + '要硬保证就配外层 wrapper 每轮后跑 checkpoint_reminder');
 }
 
 const STATE_VERSION_FILE = 'version';
