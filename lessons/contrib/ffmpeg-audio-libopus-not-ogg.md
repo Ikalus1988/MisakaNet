@@ -1,6 +1,6 @@
 ---
 title: ffmpeg audio libopus not ogg
-domain: contrib
+domain: audio
 tags:
 - ffmpeg
 - audio

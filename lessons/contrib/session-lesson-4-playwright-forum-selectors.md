@@ -1,6 +1,6 @@
 ---
 title: Playwright Forum Selectors — WoltLab/IPS/Common Patterns
-domain: ops
+domain: devops
 tags:
 - playwright
 - scraping

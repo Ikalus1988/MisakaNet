@@ -1,6 +1,6 @@
 ---
 title: rdt-cli — Reddit in Your Terminal (Reverse-Engineered API)
-domain: ops
+domain: devops
 tags:
 - rdt-cli
 - reddit

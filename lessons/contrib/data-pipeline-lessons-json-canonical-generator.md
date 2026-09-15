@@ -1,6 +1,6 @@
 ---
 title: 数据管道 lessons.json 必须用规范生成器 update_lessons_json.py
-domain: data-pipeline
+domain: data
 tags:
 - lessons.json
 - data-pipeline

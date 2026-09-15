@@ -1,6 +1,6 @@
 ---
 title: Finding and fixing Ghostty's largest memory leak
-domain: memory_management
+domain: memory
 tags:
 - memory_leak
 - memory_management

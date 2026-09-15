@@ -1,7 +1,7 @@
 ---
 {
   "title": "Set a clear User-Agent on earn HTTP clients",
-  "domain": "networking",
+  "domain": "network",
   "tags": ["http", "user-agent", "api", "agent", "ops"],
   "status": "published",
   "lang": "en",

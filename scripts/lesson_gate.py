@@ -199,25 +199,28 @@ def validate_content_len(content: str, minimum: int = MIN_CONTENT_CHARS) -> bool
 
 
 # ── Repo-level checks ───────────────────────────────────────────────
+# The reviewed vocabulary (issue #1687). `normalize_domains.py --check` holds the
+# corpus to the same list, so the two cannot disagree.
+DOMAIN_VOCAB = REPO / "data" / "domains.json"
+
+
 def allowed_domains(repo: Path = REPO) -> set[str]:
-    """Allowed domains = docs/domains/* + domains used in active lesson dirs."""
-    domains = set()
-    if DOCS_DOMAINS.is_dir():
-        for f in DOCS_DOMAINS.glob("*.md"):
-            domains.add(f.stem.lower())
-    for sub in ACTIVE_LESSON_SUBDIRS:
-        d = repo / "lessons" / sub
-        if not d.is_dir():
-            continue
-        for f in d.rglob("*.md"):
-            try:
-                fm, _ = parse_frontmatter(f.read_text(encoding="utf-8", errors="ignore"))
-            except Exception:
-                continue
-            dom = fm.get("domain")
-            if isinstance(dom, str) and dom:
-                domains.add(dom.lower())
-    return domains
+    """Allowed domains = the vocabulary in ``data/domains.json``.
+
+    This used to be "docs/domains/* plus every domain any lesson already used", which
+    made the vocabulary self-perpetuating: the first lesson to spell a domain a new way
+    legalized that spelling for every later lesson, and no value could ever be
+    reviewed or retired (the corpus had accumulated 56 of them, including ``contrib`` —
+    the directory a lesson lives in, used as if it were a topic). The file is the
+    review surface now; ``docs/domains/*.md`` stays as long-form documentation.
+    """
+    path = repo / DOMAIN_VOCAB.relative_to(REPO)
+    if not path.exists():
+        # Throwaway fixture trees (tests build them) have no vocabulary of their own;
+        # the checked-in file is repo-global data, not per-tree state.
+        path = DOMAIN_VOCAB
+    vocab = json.loads(path.read_text(encoding="utf-8"))
+    return {str(d).lower() for d in vocab["canonical"]}
 
 
 def _iter_active_lessons(repo: Path = REPO):

@@ -1,6 +1,6 @@
 ---
 title: 'Data Quality Fix: Always Keep Three Layers (DB + ETL + Query)'
-domain: data-engineering
+domain: data
 tags:
 - data-quality
 - etl

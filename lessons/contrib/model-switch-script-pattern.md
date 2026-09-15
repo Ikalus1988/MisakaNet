@@ -1,6 +1,6 @@
 ---
 title: 多模型Switch脚本模式 — 双 Agent 模型管理
-domain: contrib
+domain: llm
 tags:
 - model
 - switch

@@ -1,6 +1,6 @@
 ---
 title: pip install Network Timeout / SSL ErrorFix
-domain: contrib
+domain: python
 tags:
 - install
 - timeout

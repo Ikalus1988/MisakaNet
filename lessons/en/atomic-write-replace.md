@@ -1,7 +1,7 @@
 ---
 {
   "title": "Atomic file replace for agent status JSON",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["ops", "json", "atomic", "dashboard", "agent"],
   "status": "published",
   "lang": "en",

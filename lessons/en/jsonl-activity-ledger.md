@@ -1,7 +1,7 @@
 ---
 {
   "title": "Append-only JSONL activity ledger for agents",
-  "domain": "ops",
+  "domain": "devops",
   "tags": [
     "ledger",
     "jsonl",

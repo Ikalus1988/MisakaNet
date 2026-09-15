@@ -1,6 +1,6 @@
 ---
 title: Fiverr PerimeterX captcha blocks headless seller gig creation
-domain: web
+domain: frontend
 tags:
 - fiverr
 - captcha

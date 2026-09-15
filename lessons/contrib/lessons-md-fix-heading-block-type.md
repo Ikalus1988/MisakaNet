@@ -1,6 +1,6 @@
 ---
 title: lessons md fix heading block type
-domain: contrib
+domain: meta
 tags:
 - lessons
 - heading

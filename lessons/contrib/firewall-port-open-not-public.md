@@ -1,6 +1,6 @@
 ---
 title: firewall port open not public
-domain: contrib
+domain: network
 tags:
 - project:rag
 - platform:wsl

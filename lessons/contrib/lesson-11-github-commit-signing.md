@@ -1,6 +1,6 @@
 ---
 title: GitHub Commit Signing — GPG 防止提交伪造
-domain: ops
+domain: devops
 tags:
 - git
 - github
