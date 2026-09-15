@@ -23,8 +23,11 @@
  * Everything is idempotent, every rewritten file is backed up to *.misakanet.bak, and
  * --uninstall removes exactly what was added (same markers), leaving user config intact.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, rmSync, chmodSync, accessSync, constants } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, rmSync, chmodSync } from 'node:fs';
+// No child_process import on purpose: this installer must never hand a file-derived value to
+// another program (the plugin scanner's SHELL_INJECTION_PATTERN, alert #269, and argv secrets
+// are visible to every process on the box). Every target is configured by writing its own
+// config file; commands aimed at the user are printed, never executed.
 import { homedir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -150,7 +153,15 @@ function probeEndpoint() {
   return (process.env.MISAKANET_ENDPOINT || CANONICAL_ENDPOINT).trim();
 }
 
-async function mcpCall(tool, toolArgs, bearer = '', timeoutMs = 6000, urlOverride = '') {
+/**
+ * One unauthenticated MCP call.
+ *
+ * Deliberately has no credential parameter: this process writes tokens into the agent's config
+ * and never sends one anywhere (a `bearer` argument used to sit here unused, which is exactly
+ * the "read a local secret, put it in a request" shape CodeQL flags — js/file-access-to-http
+ * #268 — and `tests/…`/`workers/Misakanet-setup.test.mjs` pins that the probe stays anonymous).
+ */
+async function mcpCall(tool, toolArgs, timeoutMs = 6000, urlOverride = '') {
   const headers = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -158,7 +169,6 @@ async function mcpCall(tool, toolArgs, bearer = '', timeoutMs = 6000, urlOverrid
     Origin: 'https://misakanet.org',
     'User-Agent': `misakanet-setup/${PKG_VERSION}`,
   };
-  if (bearer) headers.Authorization = `Bearer ${bearer}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -247,18 +257,19 @@ async function ensureIdentity() {
     ok(`会注册匿名身份并把 token 写到 ${file}`);
     return '';
   }
-  const clientFile = join(stateDir(), 'client_id');
-  let clientId = '';
-  try {
-    clientId = readFileSync(clientFile, 'utf8').trim();
-  } catch {
-    clientId = '';
+  // The client id is what makes a re-registration return the *same* node, so it has to come
+  // from somewhere the user owns rather than from a file this process found on disk: CodeQL
+  // js/file-access-to-http (#268) reads "read a local file, put it in an outbound request" as
+  // what it looks like, and it is right — the value may be ours, but the shape is the bug.
+  // An exported MISAKANET_CLIENT_ID is explicit intent (the same standard the hook applies to
+  // its token); otherwise this run mints one and prints it so the user can keep it.
+  const exported = (process.env.MISAKANET_CLIENT_ID || '').trim();
+  if (exported && !/^[A-Za-z0-9._-]{8,64}$/.test(exported)) {
+    need('ignored MISAKANET_CLIENT_ID：只接受 8–64 位的 [A-Za-z0-9._-]（这次会新生成一个）');
   }
-  if (!clientId) {
-    clientId = `setup-${crypto.randomUUID()}`;
-    mkdirSync(stateDir(), { recursive: true });
-    writeFileSync(clientFile, clientId);
-  }
+  const clientId = (exported && /^[A-Za-z0-9._-]{8,64}$/.test(exported))
+    ? exported
+    : `setup-${crypto.randomUUID()}`;
   const result = await mcpCall('misakanet_register', { agent_type: 'setup', client_id: clientId });
   // Validate before persisting: a response body is not something to write to disk unchecked
   // (CodeQL js/http-to-file-access #262/#264 is about exactly that flow). The endpoint is
@@ -274,6 +285,11 @@ async function ensureIdentity() {
     chmodSync(file, 0o600);
   } catch { /* windows */ }
   ok(`匿名身份：${String(result.node_id || '?').slice(0, 32)}（token 存 ${file}，权限 600）`);
+  if (!exported) {
+    // Printed, not stored: this process must not turn a file it found into request data
+    // (CodeQL js/file-access-to-http #268), and the value is the user's to keep anyway.
+    ok(`想在这个节点上继续累积（重装/换机后仍是同一个）：export MISAKANET_CLIENT_ID=${clientId}`);
+  }
   return token;
 }
 
@@ -286,30 +302,6 @@ function detect(agent) {
     openclaw: ['.openclaw'],
   }[agent] || [];
   return paths.some((p) => existsSync(join(HOME, p)));
-}
-
-/**
- * Locate an executable on PATH.
- *
- * The CLI must not assume a shell helper exists (`which` is not on every Windows box), and
- * the openclaw registration below is the one step this installer hands to another program.
- * Executability is checked rather than mere existence: a non-executable file with the right
- * name would otherwise turn a clear "install the CLI" message into an opaque spawn failure.
- */
-function findOnPath(bin) {
-  const sep = process.platform === 'win32' ? ';' : ':';
-  const exts = process.platform === 'win32' ? ['.cmd', '.exe', '.bat', ''] : [''];
-  for (const dir of (process.env.PATH || '').split(sep)) {
-    if (!dir) continue;
-    for (const ext of exts) {
-      const candidate = join(dir, bin + ext);
-      try {
-        accessSync(candidate, constants.X_OK);
-        return candidate;
-      } catch { /* not here (or not executable): keep looking */ }
-    }
-  }
-  return '';
 }
 
 async function installClaude(hookPath, bearer) {
@@ -440,14 +432,22 @@ async function installHermes(hookPath) {
 }
 
 /**
- * OpenClaw: rules live in ~/.openclaw/workspace, and the agent has its own MCP client
- * (`openclaw mcp add`), so this target registers through that CLI instead of editing a
- * config file we do not own. Mirrors install_openclaw in the Python installer - the two
- * must teach the same behaviour, because which one a user ran is an accident of which
- * command they found first.
+ * OpenClaw: rules live in ~/.openclaw/workspace, MCP servers in `mcp.servers` of
+ * ~/.openclaw/openclaw.json — which is exactly the file `openclaw mcp list` reports from.
  *
- * The CLI keeps its cache under $XDG_CACHE_HOME, which may be read-only in a sandbox; that
- * surfaces as "Could not start the CLI", hence the explicit hint rather than a raw stderr.
+ * This target edits that file instead of shelling out to `openclaw mcp add`, for two reasons
+ * that both showed up as scanner findings on 2026-09-15 (alerts #268/#269):
+ *
+ *  1. The token would be an argv element. Anything on a command line is visible to every
+ *     process on the box (`ps`), and the scanner reads "file-derived value interpolated into a
+ *     spawn call" as shell injection. Writing the same entry the CLI writes is file-to-file,
+ *     which is what this installer already does for ~/.claude.json and ~/.codex/config.toml.
+ *  2. Spawning the CLI meant depending on its local database being writable; in a sandbox it
+ *     answers "Could not start the CLI / attempt to write a readonly database" and the install
+ *     silently needed a human. Reading and writing the config does not.
+ *
+ * The manual `openclaw mcp add …` line is still printed for the user to run themselves — as
+ * text, never executed.
  */
 async function installOpenclaw(bearer) {
   const rules = join(HOME, '.openclaw', 'workspace', 'AGENTS.md');
@@ -458,35 +458,30 @@ async function installOpenclaw(bearer) {
     ok(`OpenClaw：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
   }
 
-  const cli = findOnPath('openclaw');
-  if (!cli) {
-    need(`OpenClaw：没找到 openclaw CLI → 手动执行 \`${manual}\``);
+  const cfg = join(HOME, '.openclaw', 'openclaw.json');
+  const data = readJson(cfg, null);
+  if (data === null) {
+    need(`OpenClaw：读不到或解析不了 ${cfg} → 先运行一次 openclaw 生成配置，`
+      + `或手动执行 \`${manual}\``);
     return;
   }
-  if (DRY) {
-    ok(`OpenClaw：会执行 \`${manual} --no-probe\``);
+  const entry = { url: ENDPOINT, transport: 'streamable-http' };
+  if (bearer) entry.headers = { Authorization: `Bearer ${bearer}` };
+  data.mcp = data.mcp || {};
+  data.mcp.servers = data.mcp.servers || {};
+  if (JSON.stringify(data.mcp.servers.misakanet) === JSON.stringify(entry)) {
+    ok('OpenClaw：MCP 已注册（无改动）');
     return;
   }
-  const cmd = [cli, 'mcp', 'add', 'misakanet', '--url', ENDPOINT,
-    '--transport', 'streamable-http', '--no-probe'];
-  if (bearer) cmd.push('--header', `Authorization=Bearer ${bearer}`);
-  const result = spawnSync(cmd[0], cmd.slice(1), { encoding: 'utf8', timeout: 20000 });
-  const out = `${result.stdout || ''}${result.stderr || ''}`;
-  if (result.status === 0) {
-    ok('OpenClaw：已注册 MCP `misakanet`（openclaw mcp add）');
-    return;
-  }
-  if (out.includes('Could not start the CLI')) {
-    need('OpenClaw：CLI 起不动（缓存目录不可写）→ 设 XDG_CACHE_HOME 到可写目录后重跑，'
-      + `或手动执行：${manual}`);
-  } else {
-    need(`OpenClaw：\`openclaw mcp add\` 失败：${out.trim().slice(0, 200) || `退出码 ${result.status}`}`);
-  }
+  data.mcp.servers.misakanet = entry;
+  backup(cfg);
+  writeText(cfg, `${JSON.stringify(data, null, 2)}\n`);
+  ok(`OpenClaw：注册 MCP（streamable-http）→ ${cfg}`);
 }
 
 async function verify() {
   let allOk = true;
-  const probe = await mcpCall('misakanet_search', { query: 'docker exit code 137', top: 1 }, '', 6000, probeEndpoint());
+  const probe = await mcpCall('misakanet_search', { query: 'docker exit code 137', top: 1 }, 6000, probeEndpoint());
   if (probe && (probe.results || probe.no_match !== undefined)) {
     ok(`端点可达：${ENDPOINT}`);
   } else {
@@ -541,7 +536,8 @@ async function verify() {
   }
   // OpenClaw is only reported when the user actually has it: telling a machine without
   // OpenClaw that it is "not ready" would be a lie about a target that was never selected.
-  // The MCP state is asked of the CLI that owns it rather than guessed from its config.
+  // The state is read from the same file `openclaw mcp list` reports from, which keeps this
+  // check working where the CLI itself cannot start (its database may be unwritable).
   if (detect('openclaw')) {
     const rules = join(HOME, '.openclaw', 'workspace', 'AGENTS.md');
     if (!readText(rules).includes(`<!-- ${START} -->`)) {
@@ -550,25 +546,14 @@ async function verify() {
     } else {
       ok('OpenClaw：规则块已装');
     }
-    const cli = findOnPath('openclaw');
-    if (!cli) {
+    const cfg = join(HOME, '.openclaw', 'openclaw.json');
+    const entry = (readJson(cfg, null) || {}).mcp?.servers?.misakanet;
+    if (!entry) {
       allOk = false;
-      need(`OpenClaw：没找到 openclaw CLI → 无法确证 MCP 是否注册；手动执行 `
+      need(`OpenClaw：MCP 未注册（${cfg}）→ 重跑安装命令，或手动执行 `
         + `openclaw mcp add misakanet --url ${ENDPOINT} --transport streamable-http`);
     } else {
-      const listed = spawnSync(cli, ['mcp', 'list'], { encoding: 'utf8', timeout: 15000 });
-      const out = `${listed.stdout || ''}${listed.stderr || ''}`;
-      if (listed.status === 0 && /misakanet/.test(out)) {
-        ok('OpenClaw：MCP 已注册（openclaw mcp list）');
-      } else if (listed.status === 0) {
-        allOk = false;
-        need(`OpenClaw：MCP 未注册 → 重跑安装命令，或手动执行 `
-          + `openclaw mcp add misakanet --url ${ENDPOINT} --transport streamable-http`);
-      } else {
-        allOk = false;
-        need(`OpenClaw：\`openclaw mcp list\` 没跑通 → 无法确证 MCP 状态`
-          + `${out.trim() ? `（${out.trim().slice(0, 120)}）` : ''}；可先手工确认一次`);
-      }
+      ok(`OpenClaw：MCP 已注册（${entry.url || '?'}）`);
     }
   }
   return allOk;
@@ -622,7 +607,16 @@ function uninstall() {
     ok(`删除状态目录 → ${stateDir()}`);
   }
   need('Hermes 的 MCP 条目由它自己管 → 需要时执行 hermes mcp remove misakanet');
-  need('OpenClaw 的 MCP 条目由它自己管 → 需要时执行 openclaw mcp remove misakanet');
+
+  // OpenClaw's MCP entry is one we wrote ourselves, so we can take it back ourselves.
+  const ocCfg = join(HOME, '.openclaw', 'openclaw.json');
+  const ocData = readJson(ocCfg, null);
+  if (ocData?.mcp?.servers?.misakanet) {
+    delete ocData.mcp.servers.misakanet;
+    backup(ocCfg);
+    writeText(ocCfg, `${JSON.stringify(ocData, null, 2)}\n`);
+    ok(`移除 MCP 注册 → ${ocCfg}`);
+  }
 }
 
 // ── main ─────────────────────────────────────────────────────────────
