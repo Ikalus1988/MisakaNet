@@ -173,6 +173,22 @@ python3 scripts/mcp_deepseek_adapter.py
 > lockfile predates the release will silently keep an older copy — pin the version
 > (`@2.30.1`) if no `mcp__misakanet__*` tools appear.
 
+### Already installed? One command brings you current
+
+```bash
+npx @misaka-net/misakanet-setup@latest
+```
+
+Worth doing **once by hand** if you installed before **0.4.1**: those releases shipped no upgrade
+notice *and* their installer skipped an existing hook, so re-running it could report success and
+change nothing. Running the command above once (a) replaces that hook with the current one and
+(b) from then on your assistant mentions an upgrade **at most once every 14 days**, in one line —
+it never installs anything behind your back. Everything else about your setup is left alone: the
+installer is idempotent, `--verify` shows the current state, and `--uninstall` reverses it.
+
+> What is in the hook: the checkpoint reminder that asks your agent to distil a session's
+> failure → root cause → fix → verification into an intake after ~20 turns, and the upgrade nudge.
+
 ### Try it now
 
 | Method | Command | Time |

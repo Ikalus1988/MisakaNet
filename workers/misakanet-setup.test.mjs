@@ -427,7 +427,7 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // file into a request header, which is CodeQL js/file-access-to-http #268 all over again.
   const declared = JSON.parse(
     readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
-  assert.equal(declared, '0.4.0', 'bump this test when the package version moves');
+  assert.equal(declared, '0.4.1', 'bump this test when the package version moves');
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.
@@ -820,4 +820,31 @@ test('the Codex checkout note names the commands that verify it', () => {
   assert.ok(!src.includes('我没能确证'), 'the old "could not confirm" note must stay gone');
   assert.ok(src.includes('没有用户级 lifecycle hook'),
     'the limitation that does remain (no user-level hook → rule-driven checkpoint) must stay stated');
+});
+
+// ── a stale hook must be refreshed, not skipped ───────────────────────────────
+// The installer returned early for any hook.mjs containing "MisakaNet", so a hook fix
+// could never reach an existing install: the 14-day upgrade nudge shipped in 0.4.0, but
+// a machine installed before it kept a hook without it, and re-running the installer —
+// exactly what the nudge asks the user to do — reported success and changed nothing
+// (found 2026-09-15 on a real install: the hook predated the nudge while `npx @latest`
+// said "已存在"). Now a hook of ours that differs from the bundled copy is refreshed,
+// with the previous file kept beside it.
+test('a stale hook of ours is refreshed and backed up, not skipped', () => {
+  const home = makeHome();
+  mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
+  const hookPath = join(home, '.misakanet-agent', 'hook.mjs');
+  const stale = '// MisakaNet checkpoint hook — an older build, from before the upgrade nudge\n';
+  writeFileSync(hookPath, stale);
+
+  const result = runOffline(home);
+  assert.equal(result.status, 0, result.stderr);
+
+  const refreshed = readFileSync(hookPath, 'utf8');
+  assert.notEqual(refreshed, stale, 'a stale hook of ours must be refreshed');
+  assert.match(refreshed, /UPDATE_AFTER_DAYS/,
+    'the refreshed hook must carry the current logic (the upgrade nudge)');
+  assert.equal(readFileSync(`${hookPath}.misakanet.bak`, 'utf8'), stale,
+    'the previous hook must be kept next to the new one');
+  assert.match(result.stdout, /已更新/, result.stdout);
 });
