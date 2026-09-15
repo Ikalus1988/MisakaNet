@@ -2568,6 +2568,13 @@ async function fetchLessonsFromD1(env, filters = {}) {
       // `description` stays the public summary on every path: it is what
       // /api/lessons and the search snippets show.
       description: summary || slice(r.problem, 400),
+      // The two sections an agent actually judges a hit by, as bounded public
+      // snippets. `indexText` (the whole body) still never leaves the worker, but a
+      // hit carrying neither of these is useless — issue #1675: this shaping exposed
+      // only `description`, so search hits arrived with an empty `problem` and `fix`
+      // and every hit cost a second get_lesson call.
+      problem: slice(r.problem, 400),
+      fix: slice(r.solution, 200),
       updated: r.updated,
       created: r.created,
       // Provenance for detectTextMode(); proves which projection produced this row.
