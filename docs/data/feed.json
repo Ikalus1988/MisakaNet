@@ -1,58 +1,82 @@
 {
-  "generated_at": "2026-09-15T05:02:32.993533+00:00",
+  "generated_at": "2026-09-15T17:08:07.771624+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(ssot): gate the node count, and mirror it from the KV that owns it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1686",
-      "timestamp": "2026-09-15T04:48:08Z",
+      "title": "fix(mcp): expose the Problem/Fix snippets in the row shaping, so hits have something to read",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1737",
+      "timestamp": "2026-09-15T16:57:39Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(setup): give the npx installer the OpenClaw target it was missing",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1684",
-      "timestamp": "2026-09-15T02:08:23Z",
+      "title": "fix(mcp): lesson hits carry their content, not just an id and a title",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1736",
+      "timestamp": "2026-09-15T16:45:37Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps): bump hashgraph-online/hol-guard/.github/workflows/guarded-repository.yml from 3.0.148 to 3.0.153",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1671",
-      "timestamp": "2026-09-13T22:41:02Z",
+      "title": "feat(dsh): the bundle row points at the public endpoint, so an npm install gets live tools",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1735",
+      "timestamp": "2026-09-15T16:20:50Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps): bump zsxh1990/pr-genius/.github/actions/pr-genius-check from 1.7.2 to 1.8.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1670",
-      "timestamp": "2026-09-13T22:40:58Z",
+      "title": "fix(dsh): give the plugin package a repository field — the hub was installing the setup CLI instead",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1733",
+      "timestamp": "2026-09-15T13:42:30Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps): bump Codium-ai/pr-agent from 0.44.0 to 0.45.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1669",
-      "timestamp": "2026-09-13T22:40:54Z",
+      "title": "fix(worker): bump the search index text version so repaired metadata reaches search",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1730",
+      "timestamp": "2026-09-15T13:02:26Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit",
-      "url": "lessons/contrib/openclaw-session-row-entry-updatedat-mismatch.md",
-      "timestamp": "2026-09-10",
+      "title": "GitHub Actions: a fork PR can never receive the comment that explains its red check",
+      "url": "lessons/contrib/ci-fork-pr-no-comment-token.md",
+      "timestamp": "2026-09-13",
       "domain": "devops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "RAG 检索沉底多层机制：同章节措辞差异 + 截断/降权拦截短文本精确答案",
-      "url": "lessons/contrib/rag-retrieval-sink-multilayer-cutoff.md",
-      "timestamp": "2026-08-24",
-      "domain": "rag",
+      "title": "A manual CI run that sweeps the whole corpus always fails, so nobody trusts the red",
+      "url": "lessons/contrib/ci-manual-dispatch-whole-corpus-false-red.md",
+      "timestamp": "2026-09-13",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Uncommitted work has no undo: `git checkout -- .` and reset --hard during branch juggling",
+      "url": "lessons/contrib/git-checkout-discards-uncommitted-work.md",
+      "timestamp": "2026-09-13",
+      "domain": "git",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "A hook that swallows every error makes a misconfiguration look like \"nothing to do\"",
+      "url": "lessons/contrib/claude-code-hook-silent-failure.md",
+      "timestamp": "2026-09-12",
+      "domain": "claude",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "GITHUB_TOKEN cannot push changes to .github/workflows/** — your bot job will fail at push time",
+      "url": "lessons/contrib/github-token-cannot-push-workflow-files.md",
+      "timestamp": "2026-09-12",
+      "domain": "devops",
       "source": "lessons"
     },
     {
@@ -73,30 +97,6 @@
       ],
       "timestamp": "2026-08-23T14:53:19Z",
       "source": "github"
-    },
-    {
-      "type": "lesson",
-      "title": "Report $0 cash honestly while pending is non-zero",
-      "url": "lessons/en/honest-zero-cash-reporting.md",
-      "timestamp": "2026-07-24",
-      "domain": "ops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Normalize mixed types in links.json pack manifests",
-      "url": "lessons/en/links-json-mixed-types.md",
-      "timestamp": "2026-07-24",
-      "domain": "ops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Restart long-lived earn loops after code fixes",
-      "url": "lessons/en/restart-earn-loop-after-code-fix.md",
-      "timestamp": "2026-07-24",
-      "domain": "ops",
-      "source": "lessons"
     }
   ]
 }
