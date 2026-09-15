@@ -419,7 +419,7 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // file into a request header, which is CodeQL js/file-access-to-http #268 all over again.
   const declared = JSON.parse(
     readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
-  assert.equal(declared, '0.3.0', 'bump this test when the package version moves');
+  assert.equal(declared, '0.4.0', 'bump this test when the package version moves');
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.
@@ -559,5 +559,137 @@ test('hermes: the unmarked-entry pattern cannot eat the next server', () => {
     assert.equal((cfg.match(/^[ \t]*misakanet:/gm) || []).length, 1, cfg);
   } finally {
     rmSync(home, { recursive: true, force: true });
+  }
+});
+
+// ── version stamp (issue #1682) ─────────────────────────────────────────────
+// The stamp is what makes an upgrade path possible at all: the hook reads it to decide whether
+// to mention an upgrade, and `--verify` reads it to say how old the install is. `installed_at`
+// must survive a re-run, or the 14-day cadence the user was promised never arrives.
+
+const VERSION_FILE = (home) => join(home, '.misakanet-agent', 'version');
+
+test('install records the version and the moment it was installed', () => {
+  const home = makeHome();
+  try {
+    runOffline(home);
+    const stamp = JSON.parse(readFileSync(VERSION_FILE(home), 'utf8'));
+    const declared = JSON.parse(
+      readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
+    assert.equal(stamp.version, declared, 'the stamp must name the version that wrote it');
+    assert.equal(stamp.package, '@misaka-net/misakanet-setup');
+    assert.match(stamp.installed_at, /^\d{4}-\d{2}-\d{2}T/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('re-running the same version does not restart the upgrade clock', () => {
+  const home = makeHome();
+  try {
+    runOffline(home);
+    const first = JSON.parse(readFileSync(VERSION_FILE(home), 'utf8'));
+    const second = runOffline(home);
+    assert.match(second.stdout, /版本戳已存在/);
+    const after = JSON.parse(readFileSync(VERSION_FILE(home), 'utf8'));
+    assert.equal(after.installed_at, first.installed_at,
+      'a re-run that moved installed_at would postpone the nudge forever');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('a newer version moves the stamp forward', () => {
+  const home = makeHome();
+  try {
+    mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
+    writeFileSync(VERSION_FILE(home), JSON.stringify({
+      package: '@misaka-net/misakanet-setup', version: '0.0.1', installed_at: '2020-01-01T00:00:00Z',
+    }));
+    const result = runOffline(home);
+    assert.match(result.stdout, /版本戳 → .*原 0\.0\.1/, result.stdout);
+    const stamp = JSON.parse(readFileSync(VERSION_FILE(home), 'utf8'));
+    assert.notEqual(stamp.installed_at, '2020-01-01T00:00:00Z');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('verify reports the version, and stays quiet when the registry is unreachable', () => {
+  const home = makeHome();
+  try {
+    runOffline(home);
+    const env = {
+      ...process.env,
+      MISAKANET_ENDPOINT: OFFLINE,
+      MISAKANET_REGISTRY_URL: 'http://127.0.0.1:9/latest',
+    };
+    const verify = spawnSync(process.execPath, [CLI, '--home', home, '--verify'],
+      { encoding: 'utf8', env });
+    assert.match(verify.stdout, /版本：装机版本 \d+\.\d+\.\d+/,
+      `an offline registry check must not hide the installed version:\n${verify.stdout}`);
+    assert.match(verify.stdout, /查不到最新版本/, verify.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('uninstall takes the version stamp with it', () => {
+  const home = makeHome();
+  try {
+    runOffline(home);
+    assert.ok(existsSync(VERSION_FILE(home)));
+    runOffline(home, '--uninstall');
+    assert.ok(!existsSync(join(home, '.misakanet-agent')),
+      'leaving a stamp behind would let the hook nudge a machine that no longer has MisakaNet');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('verify compares versions properly, including an install ahead of the registry', async () => {
+  // Three cases share one stub: behind, current, and ahead. The last one matters because a
+  // checkout stamps a version the registry has not caught up with, and "update to 0.0.1" is
+  // advice to downgrade.
+  //
+  // runAsync, not spawnSync: the stub lives in this process, and spawnSync blocks the event
+  // loop, so the child would time out waiting for an answer that can never arrive (the trap
+  // this file's harness comment already documents).
+  const { createServer } = await import('node:http');
+  let published = '';
+  const server = createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ name: '@misaka-net/misakanet-setup', version: published }));
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const registry = `http://127.0.0.1:${server.address().port}/latest`;
+
+  try {
+    const home = makeHome();
+    try {
+      await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: OFFLINE });
+      const installed = JSON.parse(
+        readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
+      const env = {
+        ...process.env, MISAKANET_ENDPOINT: OFFLINE, MISAKANET_REGISTRY_URL: registry,
+      };
+      const check = async () => (await runAsync(home, env, '--verify')).stdout;
+
+      published = '0.0.1';                       // older than what is installed
+      const ahead = await check();
+      assert.match(ahead, /领先于已发布的最新 0\.0\.1/, ahead);
+
+      published = installed;                     // exactly current
+      assert.match(await check(), /已是最新/);
+
+      published = '99.0.0';                      // newer
+      const behind = await check();
+      assert.match(behind, /装机 \d+\.\d+\.\d+.*→ 最新 99\.0\.0/, behind);
+      assert.match(behind, /npx @misaka-net\/misakanet-setup@latest/, behind);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  } finally {
+    server.close();
   }
 });
