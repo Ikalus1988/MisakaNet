@@ -117,16 +117,21 @@ GHSA-xph7（高, RBAC 范围）。`last_affected = 1.5.9` 即 PyPI 最新版，�
 MisakaNet 现已声明 `dsh.bundle`（`package.json` + `cordis.patch.yml`），作为 dsh 插件的
 默认行为：
 
-- **git+ 安装**（`dsh plugin add git+https://github.com/Ikalus1988/MisakaNet.git`）：
-  patch 行 `misakanet-mcp` 以 stdio 启动仓库自带 `scripts/mcp_server.py`，向 profile 提供
-  `mcp__misakanet__misakanet_search / get_lesson / …` 工具（本地、无限额）。
-- **npm 安装**（skill-only，不含 python）：该行 `failOnStartupError: false` 静默断开，
-  仅提供 skill/CLI 面——要实时工具请改用 git+ 安装。
+- **任何安装方式都有工具（2026-09-15 起）**：patch 行 `misakanet-mcp` 声明
+  `transport: streamable-http` + `url: https://misakanet.org/mcp`，向 profile 提供
+  `mcp__misakanet__misakanet_search / get_lesson / …`（匿名 5 次/天/IP）。npm 安装即可用，
+  **不再需要本地 python** —— 旧版本默认以 stdio 启动 `scripts/mcp_server.py`，而它只存在于
+  repo/git+ 检出里，于是 npm 装的 profile 挂上一个断开的空行（#1734）。
+- **本地 stdio（可选覆盖）**：想用仓库自带 server 的 profile，把该行 config 覆盖为
+  `transport: stdio` / `command: python3` / `args: [scripts/mcp_server.py]` / `cwd: 仓库根`
+  （本地、无额度限制）。`index.js` 会把行 config 合并到默认值之上。
+- **安装命令**：`dsh plugin --profile web add misakanet@<版本>`（`dsh plugin` 转发给 pnpm，
+  `--profile` 是必填）；profile 的 lockfile 落后时会静默留在旧版本，工具不出现时先确认装到的版本。
 
 ### 远端接入示例（npm 用户可选）
 
-把下面行追加到你 profile 的用户 patch（如 `~/.dsh/profiles/web/cordis.patch.yml`），
-让 `dsh-mcp-client` 直连远端（无需本地 python；token 需在 https://misakanet.org 注册）：
+默认行本来就直连远端（匿名）。**只有**你要带 token 解除读配额、或想同时保留一个独立命名空间时，
+才需要下面的用户 patch（token 在 https://misakanet.org 注册）：
 
 ```yaml
 - insert:
@@ -141,9 +146,12 @@ MisakaNet 现已声明 `dsh.bundle`（`package.json` + `cordis.patch.yml`），�
         failOnStartupError: false
 ```
 
-> 命名空间提示：`serverName` 唯一（`misakanet` 已被默认本地行占用，远端用
+> 命名空间提示：`serverName` 唯一（`misakanet` 已被默认远端行占用，这里用
 > `misakanet-remote`），工具名会以 `mcp__misakanet-remote__*` 出现。
-> 契约测试：`tests/test_dsh_bundle.py`（随 PR #1484 合入 main；patch 声明/单行/字段/全局唯一 id）。
+> 这是**用户自己的** patch，不受 DSH STORE 对 *bundle* patch 的命名限制（我们仓库里的
+> `cordis.patch.yml` 仍然只能命名自己的组件）。
+> 契约测试：`tests/test_dsh_bundle.py`（patch 声明 / 单行 / 字段 / 全局唯一 id / 行 config 与
+> `index.js` 默认值一致）。
 
 ## 8. 发布准备 checklist（下一个 tag：2.28.x 线，示例以 2.28.0 为准）
 

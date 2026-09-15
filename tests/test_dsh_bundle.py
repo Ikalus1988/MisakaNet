@@ -7,9 +7,13 @@ Guards the packaging contract that the dsh.so / MCP-registry verification and
 * package.json declares ``dsh.bundle.patch`` pointing at ``cordis.patch.yml``
   and ships the patch in its npm ``files`` whitelist;
 * the patch contains exactly one insert row (id ``misakanet-mcp``) whose
-  config is a valid stdio declaration (serverName matching
-  ^[A-Za-z0-9_-]{1,32}$, command python3, args pointing at the repo's
-  scripts/mcp_server.py, failOnStartupError false);
+  config is a valid Streamable HTTP declaration (serverName matching
+  ^[A-Za-z0-9_-]{1,32}$, url https://misakanet.org/mcp, failOnStartupError
+  false). It used to be a stdio declaration for the repo's python server, which
+  only exists in git+ checkouts: every npm install therefore mounted a
+  disconnected row with no tools (issue #1734);
+* the patch row and index.js's ``DEFAULT_MCP_CONFIG`` agree, so a profile gets
+  the same declaration whether or not the row's config is applied;
 * the row id is unique across the repo (no double-insert drift);
 * **the patch never names a protected ``@deepseek-ai/*`` component** — DSH STORE
   hard-blocks that as ``SUBMISSION_PATCH_PROTECTED`` and rates the listing
@@ -40,21 +44,59 @@ def test_bundle_patch_declared_and_shipped():
     assert "cordis.patch.yml" in pkg.get("files", []), "patch must ship in npm files"
 
 
-def test_patch_single_insert_row_with_mcp_client_stdio_config():
+def _patch_row_config() -> dict:
     patch = yaml.safe_load((REPO / "cordis.patch.yml").read_text(encoding="utf-8"))
     inserts = [row for op in patch for row in op.get("insert", [])]
     assert len(inserts) == 1, f"expected exactly one insert row, got {len(inserts)}"
     row = inserts[0]
     assert row["id"] == "misakanet-mcp"
     assert row["name"] == "misakanet", "the patch may only name our own component"
-    cfg = row["config"]
-    assert cfg["transport"] == "stdio"
+    return row["config"]
+
+
+def test_patch_single_insert_row_with_streamable_http_config():
+    """The declared endpoint must work from *every* install channel.
+
+    A stdio row naming ``scripts/mcp_server.py`` only works in a repo/git+
+    checkout; npm installs have no python server, so the row mounted nothing and
+    users saw a plugin with no ``mcp__misakanet__*`` tools (#1734).
+    """
+    cfg = _patch_row_config()
+    assert cfg["transport"] == "streamable-http"
     assert cfg["serverName"] == "misakanet"
     assert SERVER_NAME_RE.match(cfg["serverName"]), cfg["serverName"]
-    assert cfg["command"] == "python3"
-    assert cfg["args"] == ["scripts/mcp_server.py"]
-    assert (REPO / "scripts" / "mcp_server.py").exists()
+    assert cfg["url"] == "https://misakanet.org/mcp"
     assert cfg.get("failOnStartupError") is False
+    assert isinstance(cfg.get("toolCallTimeoutMs"), int) and cfg["toolCallTimeoutMs"] > 0
+    # The endpoint's DNS-rebinding guard expects this Origin (absent is allowed,
+    # a foreign value is a 403), so the declared row should carry our own.
+    assert (cfg.get("headers") or {}).get("Origin") == "https://misakanet.org"
+
+
+def test_local_stdlib_server_still_ships_for_profiles_that_prefer_it():
+    """The stdio option is documented as an override, so the server must exist."""
+    assert (REPO / "scripts" / "mcp_server.py").exists()
+
+
+def test_patch_row_matches_the_entry_defaults():
+    """Row and DEFAULT_MCP_CONFIG must not drift.
+
+    index.js merges the row's config over its own defaults, so the two describe
+    the same upstream server; a change to one without the other silently splits
+    the declaration between "listed as a bundle" and "mounted with a row".
+    """
+    import subprocess
+
+    out = subprocess.run(
+        ["node", "-e", "import('./index.js').then(m => process.stdout.write(JSON.stringify(m.DEFAULT_MCP_CONFIG)))"],
+        cwd=REPO, capture_output=True, text=True, timeout=60,
+    )
+    assert out.returncode == 0, f"node could not import index.js: {out.stderr[-400:]}"
+    default = json.loads(out.stdout)
+    assert default == _patch_row_config(), (
+        "cordis.patch.yml's row config and index.js DEFAULT_MCP_CONFIG disagree:\n"
+        f"  patch:   {_patch_row_config()}\n  default: {default}"
+    )
 
 
 def test_row_id_unique_across_repo():

@@ -147,11 +147,12 @@ for r in results:
 
 **Option 5 — DeepSeek Harness (DSH plugin):**
 ```bash
-# Install from npm (recommended — published as misakanet@2.30.1)
-dsh plugin add misakanet
+# Install from npm (recommended — published as misakanet@2.30.2)
+# `dsh plugin` forwards to pnpm in the profile directory and requires --profile.
+dsh plugin --profile web add misakanet@2.30.2
 
-# Or install directly from git (same bundle)
-# dsh plugin add git+https://github.com/Ikalus1988/MisakaNet.git
+# Or install directly from git (same bundle, plus the repo's own python MCP server)
+# dsh plugin --profile web add git+https://github.com/Ikalus1988/MisakaNet.git
 
 # Make the failure-memory SKILL discoverable by agents
 # (DSH scans ~/.dsh/skills and project .dsh/skills)
@@ -162,11 +163,15 @@ cp -r skills/misakanet ~/.dsh/skills/
 python3 scripts/mcp_deepseek_adapter.py
 ```
 
-> **DSH bundle tools (`mcp__misakanet__*`)** are served by the repo's python MCP
-> server, which ships only with a **git+ install** (the npm bundle provides the
-> skill/CLI surfaces only). For live tools from an npm install, either switch to
-> git+ (above) or point a `dsh-mcp-client` row at the remote endpoint
-> `https://misakanet.org/mcp` — example patch: `docs/maintenance.md` → dsh bundle.
+> **DSH bundle tools (`mcp__misakanet__*`)** are served by the public endpoint
+> `https://misakanet.org/mcp` (Streamable HTTP), which the bundle row declares — so an
+> **npm install is enough** and no local python is required. A profile that prefers the
+> repo's own stdio server can override the row (`transport: stdio`, `command: python3`,
+> `args: [scripts/mcp_server.py]`).
+>
+> Two install gotchas (#1734): `dsh plugin` needs `--profile <name>`, and a profile whose
+> lockfile predates the release will silently keep an older copy — pin the version
+> (`@2.30.1`) if no `mcp__misakanet__*` tools appear.
 
 ### Try it now
 
@@ -424,7 +429,7 @@ flowchart LR
     subgraph Local["💻 Local Node (git clone)"]
         User["Local Agent / Dev"]
         CLI["CLI — search_knowledge.py"]
-        MCP["MCP stdio — scripts/mcp_server.py<br/>(misakanet == 2.30.1)"]
+        MCP["MCP stdio — scripts/mcp_server.py<br/>(misakanet == 2.30.2)"]
         Engine["BM25 Engine — engine.py"]
         Lessons[("lessons/ — git source of truth")]
         Profile[("profile.json — node profile")]
