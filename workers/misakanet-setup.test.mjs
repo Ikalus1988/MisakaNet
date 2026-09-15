@@ -801,3 +801,23 @@ test('openclaw: a configured workspace that no longer exists falls back to the d
     rmSync(home, { recursive: true, force: true });
   }
 });
+
+// ── the Codex copy must state what was verified, and how to re-check it ───────
+// Until 2026-09-15 the installer told the user that Codex's user-level hook "could not
+// be confirmed". That was checked against codex-cli 0.154.0 and both halves hold:
+//   $ codex mcp list            → misakanet | https://misakanet.org/mcp | enabled | Bearer token
+//   $ codex doctor             → config.toml parse ok · MCP servers 1 · 1 streamable_http · 0 disabled
+//   $ codex debug prompt-input → a `# AGENTS.md instructions` item carrying the rule block
+// What remains open is the *hook* (0.154.0's lifecycle hooks are admin-managed via
+// requirements.toml), so the checkpoint is rule-driven. This test keeps both halves in
+// the copy — and keeps the commands there, so the claim can be re-checked rather than
+// believed.
+test('the Codex checkout note names the commands that verify it', () => {
+  const src = readFileSync(CLI, 'utf8');
+  for (const cmd of ['codex mcp list', 'codex doctor', 'codex debug prompt-input']) {
+    assert.ok(src.includes(cmd), `the installer should tell the user to run \`${cmd}\``);
+  }
+  assert.ok(!src.includes('我没能确证'), 'the old "could not confirm" note must stay gone');
+  assert.ok(src.includes('没有用户级 lifecycle hook'),
+    'the limitation that does remain (no user-level hook → rule-driven checkpoint) must stay stated');
+});

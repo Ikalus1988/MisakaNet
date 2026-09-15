@@ -657,3 +657,27 @@ def test_verify_probes_with_a_handshake_and_never_spends_a_read(tmp_path):
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_codex_copy_states_what_was_verified_and_how_to_recheck():
+    """The installer used to say Codex's user-level hook "could not be confirmed".
+
+    Checked against codex-cli 0.154.0 on 2026-09-15, and both halves hold:
+    `codex mcp list` shows misakanet enabled with the Bearer token, `codex doctor`
+    reports `config.toml parse ok` + 1 streamable_http server + 0 disabled, and
+    `codex debug prompt-input` renders a `# AGENTS.md instructions` item carrying the
+    rule block. What stays open is the hook — 0.154.0's lifecycle hooks are
+    admin-managed via requirements.toml — so the checkpoint is rule-driven.
+
+    Both halves stay in the copy, and the commands stay there so the claim can be
+    re-run instead of believed.
+    """
+    src = (REPO / "integrations" / "agent-autostart" / "install_misakanet_agent.py").read_text(
+        encoding="utf-8")
+    for cmd in ("codex mcp list", "codex doctor", "codex debug prompt-input"):
+        assert cmd in src, f"the installer should tell the user to run `{cmd}`"
+    assert "用户层写法未确认" not in src, "the old 'unconfirmed' note must stay gone"
+    assert "没有用户级 lifecycle hook" in src, (
+        "the limitation that does remain (no user-level hook → rule-driven checkpoint) "
+        "must stay stated"
+    )
