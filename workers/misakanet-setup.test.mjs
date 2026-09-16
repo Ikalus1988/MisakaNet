@@ -946,3 +946,20 @@ test('uninstall removes the voice hook entry and its files', () => {
   assert.ok(!leftovers.includes('voice-hook'), leftovers);
   assert.ok(!existsSync(join(home, '.misakanet-agent', 'voice')), 'the player and cues must go too');
 });
+
+test('a voice entry left by 0.4.2 (no matcher) is upgraded, not kept', () => {
+  // 0.4.2 wrote the PostToolUse entry without `matcher`, and such an entry never fires. A
+  // re-run must fix it rather than conclude "voice hook already present" and leave it mute.
+  const home = makeHome();
+  const settingsPath = join(home, '.claude', 'settings.json');
+  const seeded = JSON.parse(readFileSync(settingsPath, 'utf8'));
+  seeded.hooks.PostToolUse = [{ hooks: [{ type: 'command', command: '"/usr/bin/node" "/home/u/.misakanet-agent/voice/voice-hook.mjs"' }] }];
+  writeFileSync(settingsPath, JSON.stringify(seeded));
+
+  const result = runOffline(home, '--voice');
+  assert.equal(result.status, 0, result.stderr);
+  const after = JSON.parse(readFileSync(settingsPath, 'utf8'));
+  const entries = after.hooks.PostToolUse.filter((e) => JSON.stringify(e).includes('voice-hook'));
+  assert.equal(entries.length, 1, `expected exactly one entry: ${JSON.stringify(after.hooks.PostToolUse)}`);
+  assert.equal(entries[0].matcher, '*', 'the stale entry must gain the matcher');
+});
