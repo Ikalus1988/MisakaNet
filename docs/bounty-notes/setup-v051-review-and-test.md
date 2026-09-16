@@ -1,7 +1,7 @@
 # misakanet-setup v0.5.1→0.5.3 — Architecture Review & macOS Test Report
 
 > Reviewer: zsxh1990 (macOS Sequoia 15.6, Apple Silicon M4, Node 26.0.0)
-> Date: 2026-09-21 (initial) / 2026-09-21 (re-test after upgrade to 0.5.3)
+> Date: 2026-09-16 (initial) / 2026-09-16 (re-test after upgrade to 0.5.3)
 > Package: `@misaka-net/misakanet-setup@0.5.1` → `@0.5.3`
 > Scope: full code review of `bin/misakanet-setup.mjs`, `hook/checkpoint_reminder.mjs`, `voice/voice-hook.mjs`, `README.md`
 
@@ -164,9 +164,27 @@ This is correct (don't write in dry-run), but the `--dry-run` output doesn't men
 files *would* be backed up. Adding "would back up X" lines would make dry-run more useful
 for auditing.
 
+#### L. `codex` interactive mode crashes when MCP tools produce XML-like output
+
+**Severity**: Medium — operational trap for new users following the README
+
+When a user runs `codex` interactively (the default mode, not `codex exec`) and the model
+invokes `misakanet_search`, the lesson text is returned inside a `<lesson>` XML tag. Codex
+renders this as an `<error>Process exited with code 130` and the session terminates
+abruptly. The same query via `codex exec` works fine because the exec pathway handles the
+output differently.
+
+The README Step ③ currently suggests `codex exec` as the smoke-test command, which
+works correctly. However, users who skip ahead and use `codex` interactively (the more
+natural flow) will hit this crash. Two possible mitigations:
+1. Add a note in Step ③ warning that interactive `codex` has known issues with XML-tagged
+   tool output; use `codex exec` for smoke testing.
+2. File upstream with Codex — the `<lesson>` tag wrapping is the MCP server's choice;
+   Codex should not parse tool output as process-level XML.
+
 ---
 
-## 3. macOS Test Report (2026-09-21, two rounds)
+## 3. macOS Test Report (2026-09-16, two rounds)
 
 ### Environment
 - **OS**: macOS Sequoia 15.6 (Darwin 24.6.0), Apple Silicon M4
@@ -183,7 +201,7 @@ for auditing.
 写入通道：token 已就绪（解除每天 5 次读限额，write_lesson 可用）
 Claude Code：钩子已装且解释器存在
 Claude Code：MCP 已注册（https://misakanet.org/mcp）
-版本：0.5.1（2026-09-21）—— 已是最新
+版本：0.5.1（2026-09-16）—— 已是最新
 结论：READY
 ```
 
@@ -309,8 +327,9 @@ live-call-evidence: "claude: 我参考了别人的一条经验：pip在国内网
 | Idempotent re-install | — | ✅ 10/10 no-op |
 
 **Overall**: v0.5.3 passes all checks on macOS Sequoia / Apple Silicon / Node 26.
-Round 2 confirms that re-running the installer after an upgrade is necessary to refresh
-permissions — the upgrade alone does not re-write the permission entries.
+Round 2 confirms that the package release changes nothing on a machine by itself — the older
+install keeps its old behaviour until `npx @misaka-net/misakanet-setup@latest` is run, which
+is what writes the grants.
 
 ---
 
@@ -324,6 +343,7 @@ implementations.
 
 ---
 
-*Updated 2026-09-21: added Round 2 re-test results after `npx @misaka-net/misakanet-setup@latest`
-(upgraded to v0.5.3). Key finding: re-running the installer is required to refresh permissions —
-upgrading alone does not re-write the permission entries in `settings.json`.*
+*Updated 2026-09-16: added Round 2 re-test results after `npx @misaka-net/misakanet-setup@latest`
+(upgraded to v0.5.3). Key finding: the package release changes nothing on a machine by itself — a
+machine still running the older install keeps the old behaviour (including the permission refusal)
+until `npx @misaka-net/misakanet-setup@latest` is run again, which is what writes the grants.*
