@@ -1506,14 +1506,15 @@
         "canonical_term": "encoding",
         "canonical_df": 19,
         "alias_evidence": {
-          "file": ".nodes/staging/node2/bootstrap-rag-chinese-encoding-pymupdf4llm.md",
-          "quote": "title: RAG 检索中文乱码 — pymupdf4llm 默认编码问题"
+          "file": "lessons/index.md",
+          "quote": "[RAG 检索中文乱码 — pymupdf4llm 默认编码问题]"
         },
         "canonical_evidence": {
           "file": "lessons/contrib/python-gbk-encoding-error.md",
           "quote": "title: Python GBK Encoding Error — Windows/WSL 跨平台"
         },
-        "canonical_match": "phrase"
+        "canonical_match": "phrase",
+        "notes": ""
       }
     },
     {

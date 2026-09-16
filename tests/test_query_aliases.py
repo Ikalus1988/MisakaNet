@@ -102,6 +102,16 @@ def test_aliases_are_grounded_in_the_repository(table):
             assert ev, f"{e['alias']!r} has no {label}"
             path = REPO / ev["file"]
             assert path.is_file(), ev
+            # …and git must actually track it. A file that only exists on the author's machine
+            # (a gitignored scratch directory, say) is not evidence a reviewer can check: this
+            # test passed locally and failed in CI for exactly that reason, which is why the
+            # assertion below is a subprocess and not a `Path.exists()`.
+            tracked = subprocess.run(
+                ["git", "ls-files", "--error-unmatch", "--", ev["file"]],
+                cwd=REPO, capture_output=True, text=True)
+            assert tracked.returncode == 0, (
+                f"{e['alias']!r}: {label} cites {ev['file']!r}, which git does not track — "
+                "evidence has to be reproducible from a clean checkout")
             if ev.get("quote"):
                 haystack = path.read_text(encoding="utf-8", errors="replace").lower()
                 assert ev["quote"].lower() in haystack, f"{e['alias']!r}: {label} quote is stale"
