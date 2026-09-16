@@ -91,13 +91,17 @@ def frontmatter(text: str) -> str:
 def citations(fm: str) -> list[str]:
     """Every URL cited in the frontmatter, in order, de-duplicated.
 
-    Handles both `source: "https://..."` and block-list forms (`evidence_refs:` followed by
-    `  - "https://..."`), because the corpus uses both.
+    Handles the three shapes this corpus actually uses: `source: "https://..."`, block lists
+    (`evidence_refs:` followed by `  - "https://..."`), and **JSON-style frontmatter**
+    (`"source": "https://..."`, which 64 lessons use). The last one matters: a quoted key was
+    invisible to the first version of this regex, so a fabricated source could have been hidden
+    inside a JSON block and the gate would have reported nothing at all. Found by the red-team
+    probe, not by review.
     """
     found: list[str] = []
     for line in fm.splitlines():
         stripped = line.strip()
-        match = re.match(r"\s*([A-Za-z_]+)\s*:\s*(.*)$", line)
+        match = re.match(r'\s*"?([A-Za-z_]+)"?\s*:\s*(.*)$', line)
         if match:
             key, value = match.group(1), match.group(2)
             if key == LEVEL_KEY or (key not in CITATION_KEYS and value):
@@ -114,7 +118,7 @@ def citations(fm: str) -> list[str]:
 
 
 def evidence_level(fm: str) -> str:
-    match = re.search(rf"^{LEVEL_KEY}\s*:\s*[\"']?([A-Za-z0-9]+)", fm, re.M)
+    match = re.search(rf'^\s*"?{LEVEL_KEY}"?\s*:\s*["\']?([A-Za-z0-9]+)', fm, re.M)
     return match.group(1).upper() if match else ""
 
 
