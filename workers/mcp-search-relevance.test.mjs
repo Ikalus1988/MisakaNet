@@ -48,7 +48,10 @@ function buildIndex() {
   return { version: 1, docCount: docs.length, avgDocLen: 20, terms: termObject, docs };
 }
 
-function createEnv() {
+// `plainFields` (#1783) is optional and defaults to null: with it, the D1-shaped
+// `pip-timeout-mirror` record additionally carries the three optional structured
+// fields, so a run with them differs from a run without them by exactly those keys.
+function createEnv(plainFields = null) {
   const index = buildIndex();
   // The handler loads lessons before it ranks (FAQ, gap logging, fallback), so the
   // cache has to exist too — otherwise it returns "Failed to load lessons" and the
@@ -70,6 +73,7 @@ function createEnv() {
     updated: new Date().toISOString(),
     indexText: 'pip install timeout internal searchable body used to build the index',
     textMode: 'rich',
+    ...(plainFields || {}),
   });
   const store = new Map([
     ['worker_search_index', JSON.stringify(index)],
@@ -217,7 +221,10 @@ test('every returned lesson hit has a non-empty problem (the AC of #1675)', asyn
 // worker. The Problem/Fix sections therefore need their own bounded snippets — the
 // shaping exposed neither, which is how lesson hits ended up with nothing to read
 // (#1675) even though the columns were populated all along.
-function createD1Env() {
+// `plainFields` (#1783): the raw `frontmatter` column (see workers/d1/schema.sql and
+// scripts/sync_lessons_to_d1.py) is where the three optional structured fields come
+// from on the D1 path, so the parameter seeds it on the one row the query hits.
+function createD1Env(plainFields = null) {
   const index = buildIndex();
   const rows = index.docs.map((doc) => ({
     ...doc,
@@ -232,6 +239,9 @@ function createD1Env() {
       ? 'pip install times out behind a corporate proxy before the package is fetched'
       : 'unrelated problem text',
     solution: doc.id === 'pip-timeout-mirror' ? 'Raise --default-timeout or use a mirror' : '',
+    ...(plainFields && doc.id === 'pip-timeout-mirror'
+      ? { frontmatter: JSON.stringify(plainFields) }
+      : {}),
   }));
   const d1 = {
     prepare() {
@@ -275,3 +285,97 @@ test('the D1 row shaping exposes problem and fix and still hides the searchable 
   assert.equal(hit.indexText, undefined, 'indexText must never leave the worker');
   assert.notEqual(hit.title, hit.id, 'title must be the human title');
 });
+
+// ── optional structured fields: summary_plain / trigger / verify (#1783) ──────
+// Three optional frontmatter fields (docs/maintainer/lesson-fields.md):
+// `summary_plain` (one plain-language sentence a model can repeat verbatim),
+// `trigger` (the short fragment an agent should search with) and `verify` (a
+// checkable pass/fail criterion). Two properties matter, and both are about the
+// projection this file already guards (`compactResult` / `summaryResult` /
+// `applyDetailLevel`, reached through the BM25 path production uses):
+//
+//   1. a lesson that carries none of them must serialize *exactly* as before — same
+//      keys, same order, same compact string: byte-identical, not merely compatible;
+//   2. a lesson that carries them gets them back, from both corpus sources — the KV
+//      snapshot and the D1 row shaping, where they come out of the raw `frontmatter`
+//      column.
+
+const PLAIN_FIELDS = {
+  summary_plain: '公司网络里装不上 Python 包，是因为下载源要先换成公司内部的镜像。',
+  trigger: 'pip install timeout behind proxy',
+  verify: 'pip install -v httpie 退出码为 0',
+};
+
+async function searchIn(env, query, args = {}) {
+  const resp = await worker.fetch(searchRequest(query, args), env);
+  assert.equal(resp.status, 200);
+  const body = await resp.json();
+  assert.equal(body.error, undefined, JSON.stringify(body.error));
+  return JSON.parse(body.result.content[0].text);
+}
+
+test('a lesson without the structured fields keeps the exact legacy search shape (#1783)', async () => {
+  // Key order first: "additive" means appended when present, never reordered.
+  const compact = await searchIn(createEnv(), 'pip install timeout', { detail: 'compact' });
+  assert.deepEqual(Object.keys(compact.results[0]),
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'kind']);
+  const summary = await searchIn(createEnv(), 'pip install timeout', { detail: 'summary' });
+  assert.deepEqual(Object.keys(summary.results[0]),
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'domain', 'tags', 'fix', 'kind']);
+
+  // Then bytes: this record's `updated` is "now", so `freshness` is stable and the
+  // whole compact hit can be compared as the exact string it produced pre-#1783.
+  assert.equal(
+    JSON.stringify(compact.results[0]),
+    '{"id":"pip-timeout-mirror","title":"pip install timeout",'
+    + '"problem":"pip install times out behind a corporate proxy before the package is fetched",'
+    + '"freshness":"recent","evidence_level":"","kind":"lessons"}',
+  );
+
+  // Same property on the D1 path (the shaping production actually serves), and for
+  // every detail level: no key appears that was not there before.
+  for (const detail of ['compact', 'summary', 'full']) {
+    const result = await searchIn(createD1Env(), 'pip install timeout', { detail });
+    const hit = result.results.find(r => r.id === 'pip-timeout-mirror');
+    assert.ok(hit, `pip lesson missing at detail=${detail}`);
+    for (const field of Object.keys(PLAIN_FIELDS)) {
+      assert.equal(hit[field], undefined,
+        `detail=${detail} grew a ${field} key on a lesson that does not carry it`);
+    }
+  }
+});
+
+test('a lesson with the structured fields carries them through the projection (#1783)', async () => {
+  // KV snapshot: compact is the ~80-token tier, so it carries `summary_plain` only —
+  // the one field the rules block tells the model to repeat to the user verbatim.
+  const compact = await searchIn(createEnv(PLAIN_FIELDS), 'pip install timeout', { detail: 'compact' });
+  assert.equal(compact.results[0].summary_plain, PLAIN_FIELDS.summary_plain);
+  assert.equal(compact.results[0].trigger, undefined, 'compact must stay the small tier');
+  assert.deepEqual(Object.keys(compact.results[0]),
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'summary_plain', 'kind']);
+
+  const summary = await searchIn(createEnv(PLAIN_FIELDS), 'pip install timeout', { detail: 'summary' });
+  const summaryHit = summary.results[0];
+  assert.equal(summaryHit.summary_plain, PLAIN_FIELDS.summary_plain);
+  assert.equal(summaryHit.trigger, PLAIN_FIELDS.trigger);
+  assert.equal(summaryHit.verify, PLAIN_FIELDS.verify);
+  assert.deepEqual(Object.keys(summaryHit),
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'summary_plain',
+      'domain', 'tags', 'fix', 'trigger', 'verify', 'kind']);
+
+  const full = await searchIn(createEnv(PLAIN_FIELDS), 'pip install timeout', { detail: 'full' });
+  const fullHit = full.results[0];
+  for (const [field, value] of Object.entries(PLAIN_FIELDS)) {
+    assert.equal(fullHit[field], value, `detail=full lost ${field}`);
+  }
+
+  // D1 path: the fields come out of the raw `frontmatter` column.
+  const d1 = await searchIn(createD1Env(PLAIN_FIELDS), 'pip install timeout', { detail: 'summary' });
+  const d1Hit = d1.results.find(r => r.id === 'pip-timeout-mirror');
+  assert.equal(d1Hit.summary_plain, PLAIN_FIELDS.summary_plain);
+  assert.equal(d1Hit.trigger, PLAIN_FIELDS.trigger);
+  assert.equal(d1Hit.verify, PLAIN_FIELDS.verify);
+  // …and the internal blob those fields are extracted from still never leaves.
+  assert.equal(d1Hit.frontmatter, undefined, 'the raw frontmatter column must not be echoed');
+});
+
