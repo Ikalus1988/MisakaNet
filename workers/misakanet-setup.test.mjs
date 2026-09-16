@@ -427,7 +427,7 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // file into a request header, which is CodeQL js/file-access-to-http #268 all over again.
   const declared = JSON.parse(
     readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
-  assert.equal(declared, '0.4.1', 'bump this test when the package version moves');
+  assert.equal(declared, '0.4.2', 'bump this test when the package version moves');
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.
@@ -847,4 +847,63 @@ test('a stale hook of ours is refreshed and backed up, not skipped', () => {
   assert.equal(readFileSync(`${hookPath}.misakanet.bak`, 'utf8'), stale,
     'the previous hook must be kept next to the new one');
   assert.match(result.stdout, /已更新/, result.stdout);
+});
+
+// ── codewhale: a fifth target, wired the way its own CLI writes it ─────────────
+// Verified live on codewhale 0.9.7 (docs/field-reports/agent-integration-matrix-2026-09-16.md):
+// MCP servers live in ~/.codewhale/mcp.json, workspace rules are a plain AGENTS.md that only
+// applies to a *trusted* project, and the token can only be handed over through an environment
+// variable. So this target writes both surfaces file-to-file and then says the one thing the
+// user still has to do (`export MISAKANET_TOKEN`), instead of reporting a clean install that
+// cannot connect.
+test('the codewhale target writes mcp.json and the rules of trusted projects', () => {
+  const home = makeHome({ claude: false, codex: false });
+  const project = join(home, 'work', 'proj');
+  mkdirSync(project, { recursive: true });
+  mkdirSync(join(home, '.codewhale'), { recursive: true });
+  writeFileSync(join(home, '.codewhale', 'config.toml'),
+    `api_key = "seed"\n\n[projects."${project}"]\ntrust_level = "trusted"\n`);
+
+  const result = runOffline(home, '--only', 'codewhale');
+  assert.equal(result.status, 0, result.stderr);
+
+  const mcp = JSON.parse(readFileSync(join(home, '.codewhale', 'mcp.json'), 'utf8'));
+  const entry = mcp.servers.misakanet;
+  assert.equal(entry.url, 'https://misakanet.org/mcp');
+  assert.equal(entry.enabled, true);
+  assert.equal(entry.disabled, false);
+  assert.equal(entry.bearer_token_env_var, 'MISAKANET_TOKEN');
+  assert.deepEqual(entry.enabled_tools, []);
+
+  const rules = readFileSync(join(project, 'AGENTS.md'), 'utf8');
+  assert.match(rules, /misakanet:start/);
+  assert.match(rules, /misakanet_search/);
+  assert.match(result.stdout, /MISAKANET_TOKEN/, 'the env-var step must be stated, not hidden');
+});
+
+test('codewhale without a trusted project says so instead of writing nowhere', () => {
+  const home = makeHome({ claude: false, codex: false });
+  mkdirSync(join(home, '.codewhale'), { recursive: true });
+  writeFileSync(join(home, '.codewhale', 'config.toml'), 'api_key = "seed"\n');
+
+  const result = runOffline(home, '--only', 'codewhale');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /没有受信任的项目目录/, result.stdout);
+  assert.ok(existsSync(join(home, '.codewhale', 'mcp.json')), 'MCP registration still lands');
+});
+
+test('uninstall removes the codewhale registration and rules block', () => {
+  const home = makeHome({ claude: false, codex: false });
+  const project = join(home, 'work', 'proj');
+  mkdirSync(project, { recursive: true });
+  mkdirSync(join(home, '.codewhale'), { recursive: true });
+  writeFileSync(join(home, '.codewhale', 'config.toml'),
+    `[projects."${project}"]\ntrust_level = "trusted"\n`);
+  runOffline(home, '--only', 'codewhale');
+  assert.ok(existsSync(join(project, 'AGENTS.md')));
+
+  const removed = runOffline(home, '--uninstall');
+  assert.equal(removed.status, 0, removed.stderr);
+  const mcp = JSON.parse(readFileSync(join(home, '.codewhale', 'mcp.json'), 'utf8'));
+  assert.equal(mcp.servers.misakanet, undefined);
 });
