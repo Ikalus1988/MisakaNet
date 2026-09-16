@@ -712,3 +712,53 @@ def test_codewhale_gets_mcp_json_and_rules_in_trusted_projects(tmp_path):
     rules = (project / "AGENTS.md").read_text(encoding="utf-8")
     assert "misakanet:start" in rules and "misakanet_search" in rules
     assert "MISAKANET_TOKEN" in result.stdout, "the env-var step must be stated, not hidden"
+
+
+def test_claude_read_tools_are_pre_allowed(tmp_path):
+    """The installer must grant the read-only MCP tools, or the first search is denied.
+
+    Reported from a macOS field test and reproduced here on 2026-09-16: with only the built-in
+    tools allowed, the host answers the first `misakanet_search` with "you haven't granted it
+    yet" — so a new user's first experience of the product was a permission refusal. The
+    read-only tools are pre-allowed; `write_lesson` deliberately is not (it is the Bearer-gated
+    authoring path, and silently allowing a write tool is a different decision).
+    """
+    home = make_home(tmp_path)
+    settings_path = home / ".claude" / "settings.json"
+    settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    settings["permissions"] = {"defaultMode": "acceptEdits", "allow": ["Bash"]}
+    settings_path.write_text(json.dumps(settings), encoding="utf-8")
+
+    result = run_installer(home)
+    assert result.returncode == 0, result.stderr
+
+    after = json.loads(settings_path.read_text(encoding="utf-8"))
+    allow = after["permissions"]["allow"]
+    for tool in ("mcp__misakanet__misakanet_search", "mcp__misakanet__misakanet_get_lesson"):
+        assert tool in allow, allow
+    assert "mcp__misakanet__misakanet_write_lesson" not in allow, "writes must still ask"
+    assert "Bash" in allow and after["permissions"]["defaultMode"] == "acceptEdits", (
+        "the user's own permissions must survive"
+    )
+
+
+def test_uninstall_gives_back_the_read_tool_grants(tmp_path):
+    """Uninstall must leave `permissions.allow` as it found it, not merely stop adding to it.
+
+    The JS installer and its test cover this direction too (`--uninstall` drops what it granted);
+    this is the parity half, so the two installers cannot drift the way the prompt literals once did.
+    """
+    home = make_home(tmp_path)
+    settings_path = home / ".claude" / "settings.json"
+    settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    settings["permissions"] = {"allow": ["Bash"]}
+    settings_path.write_text(json.dumps(settings), encoding="utf-8")
+
+    assert run_installer(home).returncode == 0
+    granted = json.loads(settings_path.read_text(encoding="utf-8"))["permissions"]["allow"]
+    assert any(tool.startswith("mcp__misakanet__") for tool in granted), granted
+
+    result = run_installer(home, "--uninstall")
+    assert result.returncode == 0, result.stderr
+    after = json.loads(settings_path.read_text(encoding="utf-8"))["permissions"]["allow"]
+    assert after == ["Bash"], f"uninstall must restore the user's own list, got {after}"
