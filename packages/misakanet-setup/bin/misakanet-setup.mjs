@@ -69,7 +69,7 @@ const valueOf = (flag, dflt) => {
 const only = valueOf('--only', '').split(',').map((s) => s.trim()).filter(Boolean);
 const DRY = has('--dry-run');
 const HOME = resolve(valueOf('--home', homedir()));
-const AGENTS = ['claude', 'codex', 'hermes', 'openclaw'];
+const AGENTS = ['claude', 'codex', 'hermes', 'openclaw', 'codewhale'];
 
 const done = [];
 const manual = [];
@@ -103,7 +103,7 @@ function readText(path) {
  * meant to prevent is now caught in CI instead, by a test that binds this literal to the
  * manifest — a failing test is a better place for that than a request header.
  */
-const VERSION = '0.4.1';
+const VERSION = '0.4.2';
 
 function backup(path) {
   if (DRY || !readText(path)) return;
@@ -352,6 +352,7 @@ function detect(agent) {
     codex: ['.codex'],
     hermes: ['.hermes'],
     openclaw: ['.openclaw'],
+    codewhale: ['.codewhale'],
   }[agent] || [];
   return paths.some((p) => existsSync(join(HOME, p)));
 }
@@ -673,6 +674,75 @@ async function installHermes(hookPath, bearer) {
  * The manual `openclaw mcp add …` line is still printed for the user to run themselves — as
  * text, never executed.
  */
+/**
+ * codewhale keeps MCP servers in its own JSON file, and reads workspace rules from a
+ * plain `AGENTS.md` — but only in a *trusted* project (`config.toml`'s
+ * `[projects."<dir>"] trust_level = "trusted"`). So the block goes into the trusted
+ * project directories, which are also where the user actually works, rather than into a
+ * guessed user-level path (checked on 0.9.7: no user-level AGENTS.md is read).
+ *
+ * The token is the one thing codewhale will not take inline: `bearer_token_env_var` names
+ * an environment variable, so "install once" for this agent ends with the user exporting
+ * `MISAKANET_TOKEN` once. That is stated rather than silently half-installed.
+ */
+function codewhaleProjects() {
+  const text = readText(join(HOME, '.codewhale', 'config.toml'));
+  if (!text) return [];
+  const out = [];
+  let current = null;
+  for (const line of text.split('\n')) {
+    const header = line.match(/^\s*\[projects\.(.+?)\]\s*$/);
+    if (header) { current = header[1].trim().replace(/^"|"$/g, ''); continue; }
+    if (/^\s*\[/.test(line)) { current = null; continue; }
+    if (current && /^\s*trust_level\s*=\s*"trusted"/.test(line)) out.push(current);
+  }
+  return out;
+}
+
+async function installCodewhale(bearer) {
+  const cfg = join(HOME, '.codewhale', 'mcp.json');
+  const data = readJson(cfg, null) || {
+    timeouts: { connect_timeout: 10, execute_timeout: 60, read_timeout: 120 },
+    servers: {},
+  };
+  const servers = { ...(data.servers || {}) };
+  const entry = {
+    command: null,
+    args: [],
+    env: {},
+    url: ENDPOINT,
+    connect_timeout: null,
+    execute_timeout: null,
+    read_timeout: null,
+    disabled: false,
+    enabled: true,
+    required: false,
+    enabled_tools: [],
+    disabled_tools: [],
+    bearer_token_env_var: 'MISAKANET_TOKEN',
+  };
+  if (JSON.stringify(servers.misakanet || null) !== JSON.stringify(entry)) {
+    servers.misakanet = entry;
+    backup(cfg);
+    writeText(cfg, `${JSON.stringify({ ...data, servers }, null, 2)}\n`);
+    ok(`codewhale：注册 MCP（streamable-http）→ ${cfg}`);
+  } else {
+    ok('codewhale：MCP 已注册（无改动）');
+  }
+
+  const projects = codewhaleProjects();
+  for (const project of projects) {
+    if (!existsSync(project)) continue;
+    ok(`codewhale：规则块 ${injectBlock(join(project, 'AGENTS.md'), PROMPT_BLOCK)} → ${join(project, 'AGENTS.md')}`);
+  }
+  if (!projects.length) {
+    need('codewhale：没有受信任的项目目录（config.toml 里没有 trust_level = "trusted"）→ '
+      + '先在 codewhale 里打开一次你的项目并信任它，再运行本命令，规则块才会写进去');
+  }
+  need('codewhale：token 只能通过环境变量给 → 在你的 shell 配置里加 `export MISAKANET_TOKEN=<你的 token>`'
+    + '（本机状态：npx @misaka-net/misakanet-setup --verify 会告诉你 token 在哪）');
+}
+
 async function installOpenclaw(bearer) {
   const workspace = openclawWorkspaces()[0];
   const rules = join(workspace, 'AGENTS.md');
@@ -850,6 +920,20 @@ function uninstall() {
     const rules = join(workspace, 'AGENTS.md');
     if (stripBlock(rules)) ok(`移除规则块 → ${rules}`);
   }
+
+  // codewhale: same two surfaces as the install (its own mcp.json + trusted projects).
+  for (const project of codewhaleProjects()) {
+    const rules = join(project, 'AGENTS.md');
+    if (stripBlock(rules)) ok(`移除规则块 → ${rules}`);
+  }
+  const whaleCfg = join(HOME, '.codewhale', 'mcp.json');
+  const whale = readJson(whaleCfg, null);
+  if (whale?.servers?.misakanet) {
+    delete whale.servers.misakanet;
+    backup(whaleCfg);
+    writeText(whaleCfg, `${JSON.stringify(whale, null, 2)}\n`);
+    ok(`移除 MCP 注册 → ${whaleCfg}`);
+  }
   const cfg = join(HOME, '.claude.json');
   const data = readJson(cfg, null);
   if (data && data.mcpServers?.misakanet) {
@@ -974,6 +1058,7 @@ if (!targets.length) {
     else if (agent === 'codex') await installCodex(hookPath, bearer);
     else if (agent === 'hermes') await installHermes(hookPath, bearer);
     else if (agent === 'openclaw') await installOpenclaw(bearer);
+    else if (agent === 'codewhale') await installCodewhale(bearer);
   }
 }
 

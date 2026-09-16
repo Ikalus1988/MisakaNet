@@ -1,7 +1,7 @@
 # @misaka-net/misakanet-setup
 
-One command to teach your **Claude Code**, **Codex**, **Hermes** or **OpenClaw** to check
-MisakaNet's failure lessons before repeating a mistake — and to distil the session's reusable
+One command to teach your **Claude Code**, **Codex**, **Hermes**, **OpenClaw** or **codewhale** to
+check MisakaNet's failure lessons before repeating a mistake — and to distil the session's reusable
 lessons at a checkpoint.
 
 ```bash
