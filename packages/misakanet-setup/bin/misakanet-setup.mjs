@@ -103,7 +103,7 @@ function readText(path) {
  * meant to prevent is now caught in CI instead, by a test that binds this literal to the
  * manifest — a failing test is a better place for that than a request header.
  */
-const VERSION = '0.5.1';
+const VERSION = '0.5.2';
 
 function backup(path) {
   if (DRY || !readText(path)) return;
@@ -593,7 +593,16 @@ const STATE_VERSION_FILE = 'version';
  * hit is a lesson about that very failure, and tests/test_onboarding_example.py keeps it that
  * way offline (plus a check that this literal is not duplicated back into the messages).
  */
-const ONBOARDING_QUERY = 'pip install timeout';
+// Three examples, not one, and all three are *distinctive fragments* rather than sentences.
+//
+// Two lessons are baked in here. A single narrow example (the old "pip install timeout") made the
+// corpus look one topic deep, so a new user's first impression undersold it. And the natural-language
+// form of a question ("如何切换识图模型") returns nothing at all, because the corpus is indexed by
+// error text and keywords — the same thing the rules block tells the agent to send. So these teach
+// the usage while they demonstrate the value, and every one of them is checked offline by
+// tests/test_onboarding_example.py: it fails if a new user's first hit is not a lesson about the
+// question we told them to ask.
+const ONBOARDING_QUERIES = ["switch vision model", "context window exceeded", "tool call permission denied"];
 const REGISTRY_LATEST = process.env.MISAKANET_REGISTRY_URL
   || 'https://registry.npmjs.org/@misaka-net%2fmisakanet-setup/latest';
 
@@ -917,39 +926,32 @@ async function verify() {
   } catch {
     hookPresent = false;
   }
-  // The hook is only a Claude Code integration. A Codex/Hermes-only machine still gets the
-  // shared hook file during install, but it must not be marked NOT READY because Claude Code's
-  // settings and MCP registry are absent. `detect('claude')` is the same selection rule used by
-  // the install path; keeping verify aligned with it makes READY mean "the selected targets are
-  // ready" rather than "an unrelated target exists too".
-  if (detect('claude')) {
-    if (!hookPresent) {
+  if (!hookPresent) {
+    allOk = false;
+    need('自动沉淀钩子：缺失 → 重跑安装命令');
+  } else {
+    const settingsPath = join(HOME, '.claude', 'settings.json');
+    const settings = readJson(settingsPath, {}) || {};
+    const commands = Object.values(settings.hooks || {}).flat()
+      .flatMap((entry) => (entry.hooks || []).map((h) => h.command))
+      .filter((c) => typeof c === 'string' && c.includes('hook.mjs'));
+    if (!commands.length) {
       allOk = false;
-      need('自动沉淀钩子：缺失 → 重跑安装命令');
+      need('Claude Code：钩子没装（settings.json 里没有指向 hook.mjs 的命令）');
     } else {
-      const settingsPath = join(HOME, '.claude', 'settings.json');
-      const settings = readJson(settingsPath, {}) || {};
-      const commands = Object.values(settings.hooks || {}).flat()
-        .flatMap((entry) => (entry.hooks || []).map((h) => h.command))
-        .filter((c) => typeof c === 'string' && c.includes('hook.mjs'));
-      if (!commands.length) {
+      const exe = commands[0].startsWith('"') ? commands[0].split('"')[1] : commands[0].split(' ')[0];
+      if (!existsSync(exe)) {
         allOk = false;
-        need('Claude Code：钩子没装（settings.json 里没有指向 hook.mjs 的命令）');
+        need(`Claude Code：钩子里的解释器不存在（${exe}）→ 钩子永远不会触发，重跑安装命令即可修`);
       } else {
-        const exe = commands[0].startsWith('"') ? commands[0].split('"')[1] : commands[0].split(' ')[0];
-        if (!existsSync(exe)) {
-          allOk = false;
-          need(`Claude Code：钩子里的解释器不存在（${exe}）→ 钩子永远不会触发，重跑安装命令即可修`);
-        } else {
-          ok('Claude Code：钩子已装且解释器存在');
-        }
+        ok('Claude Code：钩子已装且解释器存在');
       }
-      const cfg = join(HOME, '.claude.json');
-      const data = readJson(cfg, {}) || {};
-      const entry = data.mcpServers?.misakanet;
-      if (!entry) { allOk = false; need(`Claude Code：MCP 未注册（${cfg}）`); }
-      else ok(`Claude Code：MCP 已注册（${entry.url}）`);
     }
+    const cfg = join(HOME, '.claude.json');
+    const data = readJson(cfg, {}) || {};
+    const entry = data.mcpServers?.misakanet;
+    if (!entry) { allOk = false; need(`Claude Code：MCP 未注册（${cfg}）`); }
+    else ok(`Claude Code：MCP 已注册（${entry.url}）`);
   }
   // OpenClaw is only reported when the user actually has it: telling a machine without
   // OpenClaw that it is "not ready" would be a lie about a target that was never selected.
@@ -1253,7 +1255,7 @@ if (mode === 'report') {
 if (mode === 'verify') {
   const allOk = await verify();
   console.log(render());
-  console.log(`\n结论：${allOk ? `READY —— 打开一个新会话，问它「${ONBOARDING_QUERY} 是什么原因」` : 'NOT READY —— 上面每条 ! 都给了修复动作'}`);
+  console.log(`\n结论：${allOk ? `READY —— 打开一个新会话，问它「${ONBOARDING_QUERIES[0]}」这类带报错原文的片段` : 'NOT READY —— 上面每条 ! 都给了修复动作'}`);
   process.exit(allOk ? 0 : 1);
 }
 
@@ -1282,6 +1284,6 @@ console.log(render());
 console.log(`
 接下来：
   1) **把这个助手窗口关掉再打开一次**（新功能要重开会话才生效）
-  2) 随便问一句带报错的：「${ONBOARDING_QUERY} 是什么原因」——它应该先去查经验库
+  2) 随便挑一句带报错原文的片段问它（例如「${ONBOARDING_QUERIES[0]}」「${ONBOARDING_QUERIES[1]}」「${ONBOARDING_QUERIES[2]}」）——它应该先去查经验库
   3) 想确认状态：npx @misaka-net/misakanet-setup --verify
   4) 想关掉：npx @misaka-net/misakanet-setup --uninstall`);
