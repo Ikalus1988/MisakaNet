@@ -41,6 +41,11 @@ concurrency:
 jobs:
   auto-merge-lessons:
     runs-on: ubuntu-latest
+    # Not a gate. If this job fails, the pull request is simply not merged and the reason is
+    # in the log; painting a red check on an unrelated PR (which is what the first version
+    # did, via a 403 on `gh api user`) costs every contributor attention and teaches them to
+    # ignore checks. Signals reach humans as a PR comment — see docs/maintainer/auto-merge-lessons.md.
+    continue-on-error: true
     # Cheap early exit for check suites that cannot concern a pull request. It cannot be
     # the only test: `check_suite.pull_requests` is empty for fork PRs, so the run step
     # resolves the PR from the head SHA as well.
@@ -88,10 +93,27 @@ jobs:
           fi
           echo "=== auto-merge-lessons: PR #$PR ==="
 
-          gh api "repos/$REPO/pulls/$PR" > "$TMP/pr.json"
-          # Our own login, so the comment upsert only ever touches a comment this token
-          # wrote (a marker in someone else's comment must not let it be edited).
-          ME="$(gh api user --jq '.login')"
+          # ── infrastructure failures must never paint an unrelated PR red ─────────────
+          # This channel is opt-in and auxiliary: a 403/5xx/network blip here is not a verdict
+          # on the pull request, so it is reported as a warning and the run stops quietly.
+          gh_read() {   # gh_read <output-file> <args...>
+            local out="$1"; shift
+            if ! gh api "$@" > "$out" 2> "$TMP/gh.err"; then
+              echo "::warning::cannot read the GitHub API ($(tr '\n' ' ' < "$TMP/gh.err" | head -c 200)) — no action taken on PR #$PR."
+              return 1
+            fi
+            return 0
+          }
+
+          gh_read "$TMP/pr.json" "repos/$REPO/pulls/$PR" || exit 0
+
+          # The comment upsert must only ever touch a comment this token wrote. `gh api user`
+          # cannot be used to learn that login: the token is an App installation token and
+          # answers 403 "Resource not accessible by integration" — which is exactly how this
+          # workflow went red on every pull request the first time it ran. Comments created
+          # with this token are authored by the bot below, and the marker is checked as well,
+          # so a human's comment still cannot be edited even if the login ever changes.
+          ME="github-actions[bot]"
 
           # ── the opt-in guard ────────────────────────────────────────────────────────
           # The label is the only entry condition of this channel. It is checked here *and*
@@ -114,9 +136,9 @@ jobs:
           # the payload is then assembled in Python (stdlib) instead of in jq, so the exact
           # same assembly can be replayed offline against fixtures.
           SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["head"]["sha"])' "$TMP/pr.json")"
-          gh api --paginate "repos/$REPO/pulls/$PR/files?per_page=100" --jq '.[]' > "$TMP/files.ndjson"
-          gh api --paginate "repos/$REPO/commits/$SHA/check-runs?per_page=100" --jq '.check_runs[]' > "$TMP/checks.ndjson"
-          gh api --paginate "repos/$REPO/pulls/$PR/reviews?per_page=100" --jq '.[]' > "$TMP/reviews.ndjson"
+          gh_read "$TMP/files.ndjson"   --paginate "repos/$REPO/pulls/$PR/files?per_page=100" --jq '.[]' || exit 0
+          gh_read "$TMP/checks.ndjson"  --paginate "repos/$REPO/commits/$SHA/check-runs?per_page=100" --jq '.check_runs[]' || exit 0
+          gh_read "$TMP/reviews.ndjson" --paginate "repos/$REPO/pulls/$PR/reviews?per_page=100" --jq '.[]' || exit 0
 
           python3 - "$TMP" <<'PY'
           import json, pathlib, sys
