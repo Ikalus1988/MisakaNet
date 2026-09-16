@@ -316,7 +316,16 @@ def install_claude(home: Path, dry: bool, rep: Report) -> None:
         except Exception as exc:
             rep.needs_manual(f"{settings_path} 不是合法 JSON（{exc}）→ hooks 未安装")
             settings = {}
-    allow = settings.setdefault("permissions", {}).setdefault("allow", [])
+    permissions = settings.setdefault("permissions", {})
+    allow = permissions.get("allow")
+    if not isinstance(allow, list):
+        # A hand-written settings.json can hold `"allow": "all"` (or any non-list). `.append` on
+        # that raised AttributeError *after* the MCP entry had already been written, leaving a
+        # half-configured install; the JS installer already guards with Array.isArray, so this is
+        # the Python half of the same guard. The odd value is preserved as an entry rather than
+        # dropped, so nothing the user wrote disappears (open-code-review finding 22).
+        allow = [allow] if isinstance(allow, str) and allow else []
+        permissions["allow"] = allow
     for tool in CLAUDE_ALLOWED_TOOLS:
         if tool not in allow:
             allow.append(tool)

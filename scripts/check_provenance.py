@@ -37,10 +37,12 @@ dependencies.
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import os
 import pathlib
 import re
+import socket
 import sys
 import urllib.error
 import urllib.request
@@ -54,11 +56,57 @@ TIMEOUT = 12
 # able to say `http://172.19.128.1:7890`, and a lesson about a webhook cannot be asked to
 # host a real endpoint. These are exempt from resolution, not from being honest.
 EXEMPT_HOSTS = {"localhost", "example.com", "example.org", "example.net", "test.invalid"}
-EXEMPT_PATTERNS = (
-    re.compile(r"^https?://(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)"),
-    re.compile(r"^https?://[^/]*\.(local|internal|lan)(:\d+)?(/|$)"),
-    re.compile(r"^https?://[^/]*(localhost|127\.0\.0\.1)"),
-)
+
+
+def _host_of(url: str) -> str:
+    """The hostname (or bracketed IPv6 literal) of a URL, lower-cased, without the port."""
+    rest = re.sub(r"^https?://", "", url, flags=re.I)
+    rest = rest.split("/")[0].split("?")[0]
+    if rest.startswith("["):                       # [fe80::1]:8080
+        return rest[1:rest.find("]")].lower()
+    return rest.split(":")[0].lower()
+
+
+def is_non_public_host(host: str) -> bool:
+    """True when the host is not a public internet address.
+
+    This is an SSRF guard, not a stylistic choice: a pull request can put any URL in a lesson's
+    frontmatter, and CI would fetch it. The first version only exempted RFC1918 literals, so
+    `http://169.254.169.254/latest/meta-data/` (cloud metadata), CGNAT (`100.64.0.0/10`),
+    `0.0.0.0`, and every IPv6 literal were all "checked" — i.e. requested from inside the runner.
+    Found by an open-code-review scan (2026-09-16).
+    """
+    host = host.strip("[]").lower()
+    if host in EXEMPT_HOSTS or host.endswith((".local", ".internal", ".lan")):
+        return True
+    if host in ("0.0.0.0", "::", "::1"):
+        return True
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return False          # a name: resolution is checked separately, see resolves_non_public()
+    return not address.is_global
+
+
+def resolves_non_public(host: str) -> bool:
+    """True when a hostname resolves to a non-public address (DNS-based SSRF).
+
+    A name that resolves to 169.254.169.254 is the same threat as writing the literal, so the
+    gate refuses to follow it. Unresolvable names are *not* non-public — they are handled as
+    `unknown`, because a lesson may legitimately cite a site that is down.
+    """
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except Exception:
+        return False
+    for info in infos:
+        address = info[4][0].split("%")[0]
+        try:
+            if not ipaddress.ip_address(address).is_global:
+                return True
+        except ValueError:
+            continue
+    return False
 
 # A URL-shaped thing that cannot be resolved by anyone: `<owner>`, `TODO`, `...`, `/xxx/`,
 # or the shouted upper-case placeholders people leave in templates. Keep this list narrow —
@@ -88,6 +136,40 @@ def frontmatter(text: str) -> str:
     return text[3:end] if end != -1 else ""
 
 
+def _json_citations(fm: str) -> list[str] | None:
+    """Citations from a JSON-style frontmatter block, or None when it is not JSON.
+
+    Sixty-four lessons use JSON frontmatter. The line-oriented parser reads the pretty-printed
+    form, but a single-line block (`{"source": "https://…"}`) has no line to key off — so a
+    contributor could hide a source from the gate by minifying it. Returns None (not []) when the
+    block simply is not JSON, so the caller keeps the YAML path for malformed-but-close blocks.
+    """
+    text = fm.strip()
+    if not text.startswith("{"):
+        return None
+    try:
+        data = json.loads(text)
+    except Exception:
+        return None
+    found: list[str] = []
+
+    def walk(node, key=""):
+        if isinstance(node, dict):
+            for k, value in node.items():
+                walk(value, k)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item, key)
+        elif isinstance(node, str) and key in CITATION_KEYS:
+            for url in re.findall(r"https?://[^\s\"'\]\)>,]+", node):
+                url = url.rstrip(".,;")
+                if url not in found:
+                    found.append(url)
+
+    walk(data)
+    return found
+
+
 def citations(fm: str) -> list[str]:
     """Every URL cited in the frontmatter, in order, de-duplicated.
 
@@ -98,16 +180,35 @@ def citations(fm: str) -> list[str]:
     inside a JSON block and the gate would have reported nothing at all. Found by the red-team
     probe, not by review.
     """
+    json_urls = _json_citations(fm)
+    if json_urls is not None:
+        return json_urls
     found: list[str] = []
+    parent = ""                     # the key a list item or block scalar belongs to
     for line in fm.splitlines():
         stripped = line.strip()
+        if not stripped:
+            parent = ""
+            continue
         match = re.match(r'\s*"?([A-Za-z_]+)"?\s*:\s*(.*)$', line)
+        if match and match.group(1).lower() in ("http", "https", "ftp", "file") \
+                and match.group(2).startswith("/"):
+            # A bare URL on its own line (`https://…`, e.g. a block scalar) is not `key: value`;
+            # the key pattern would otherwise read the scheme as the key and drop the citation.
+            match = None
         if match:
             key, value = match.group(1), match.group(2)
-            if key == LEVEL_KEY or (key not in CITATION_KEYS and value):
-                continue          # an unrelated key with a value; list items carry no key
+            parent = key
+            if key == LEVEL_KEY or (key not in CITATION_KEYS and value not in ("", "|", ">")):
+                continue
         elif stripped.startswith("-"):
-            value = stripped.lstrip("-").strip()      # a list item under a citation key
+            # A list item is only a citation when the list belongs to a citation key: a URL in
+            # `tags:` or `authors:` is metadata, not a source (open-code-review finding 14).
+            if parent not in CITATION_KEYS:
+                continue
+            value = stripped.lstrip("-").strip()
+        elif parent in CITATION_KEYS and line[:1] in (" ", "\t"):
+            value = stripped      # block scalar (`source: |` then an indented URL) — finding 15
         else:
             continue
         for url in re.findall(r"https?://[^\s\"'\]\)>,]+", value):
@@ -118,16 +219,21 @@ def citations(fm: str) -> list[str]:
 
 
 def evidence_level(fm: str) -> str:
+    text = fm.strip()
+    if text.startswith("{"):
+        try:
+            value = json.loads(text).get(LEVEL_KEY)
+            if isinstance(value, str):
+                return value.upper()
+        except Exception:
+            pass                     # fall through to the line-oriented read
     match = re.search(rf'^\s*"?{LEVEL_KEY}"?\s*:\s*["\']?([A-Za-z0-9]+)', fm, re.M)
     return match.group(1).upper() if match else ""
 
 
 def classify(url: str) -> str:
     """`exempt` | `placeholder` — decided without any network call."""
-    if any(p.search(url) for p in EXEMPT_PATTERNS):
-        return "exempt"
-    host = re.sub(r"^https?://", "", url).split("/")[0].split(":")[0].lower()
-    if host in EXEMPT_HOSTS:
+    if is_non_public_host(_host_of(url)):
         return "exempt"
     if any(p.search(url) for p in PLACEHOLDER_PATTERNS):
         return "placeholder"
@@ -147,14 +253,43 @@ def github_api_url(url: str) -> str | None:
     return "https://api.github.com" + path
 
 
+def auth_headers(url: str, token: str) -> dict:
+    """Attach the CI token to the GitHub API only — never to a URL a lesson cites.
+
+    The first version passed the token to every fetch, so any URL in any lesson frontmatter
+    (i.e. anything a contributor can write) received the workflow's `GITHUB_TOKEN`. Found by an
+    open-code-review scan (2026-09-16).
+    """
+    if token and _host_of(url) == "api.github.com":
+        return {"Authorization": f"Bearer {token}"}
+    return {}
+
+
+class _PublicRedirectsOnly(urllib.request.HTTPRedirectHandler):
+    """Follow redirects, but never into a non-public address.
+
+    `urlopen` follows 3xx by default, so `https://public.example/redir` could 302 the CI runner
+    at `http://169.254.169.254/...` and the previous behaviour would have gone there, bearer
+    token included. Same scan.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D102
+        host = _host_of(newurl)
+        if is_non_public_host(host) or resolves_non_public(host):
+            raise urllib.error.HTTPError(newurl, code, "refusing redirect to a non-public address",
+                                         headers, fp)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_OPENER = urllib.request.build_opener(_PublicRedirectsOnly)
+
+
 def _http(url: str, token: str = "") -> tuple[int | str, str]:
-    headers = {"User-Agent": "misakanet-provenance-gate"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    headers = {"User-Agent": "misakanet-provenance-gate", **auth_headers(url, token)}
     for method in ("HEAD", "GET"):
         request = urllib.request.Request(url, method=method, headers=headers)
         try:
-            with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+            with _OPENER.open(request, timeout=TIMEOUT) as response:
                 return response.status, ""
         except urllib.error.HTTPError as exc:
             if method == "HEAD" and exc.code in (403, 405, 501):
@@ -174,6 +309,9 @@ def resolve(url: str, fetcher=None) -> tuple[str, str]:
         return verdict, ""
     if fetcher is None:
         return "unknown", "offline"
+    host = _host_of(url)
+    if resolves_non_public(host):
+        return "exempt", "resolves to a non-public address"
     api = github_api_url(url)
     code, detail = fetcher(api or url, os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN") or "")
     if code in (200, 301, 302, 304):
