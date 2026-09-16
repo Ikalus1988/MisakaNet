@@ -133,6 +133,9 @@ dry run 的输出按顺序给出（`--json` 是同一份计划的机器可读版
   提醒你 `git log` 看一遍再开 PR。
 - **fork 已移动**：fetch 到的 SHA 与计划里的 PR head SHA 不一致 → 中止，重新 `/adopt` 拿新计划。
 - **push 被拒**：远端分支在检查之后出现了 → 报错并提示 `git push origin --delete adopted/<n>` 后重试。
+- **`origin` 不是本仓**（例如 checkout 的 `origin` 被指到了 fork）→ 直接失败：脚本只往 `origin` 推，
+  而 `origin` 必须是被收养 PR 的**目标仓库**。fork 对 `/adopt` 而言永远只读（只用匿名 `git fetch` 读，
+  从不 push），这条守护就是防止"把分支推进贡献者的 fork"这类事故。
 - **补签核失败**：重放后仍有 commit 没有 `Signed-off-by` → 拒绝推送（宁可不做，也不混进一个假签核）。
 
 ---
