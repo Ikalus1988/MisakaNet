@@ -16,8 +16,8 @@ knowledge base on its own instead of guessing.
 
 | # | Goal | Mechanism |
 |---|---|---|
-| 1 | the agent **can** call it | MCP server `https://misakanet.org/mcp` (streamable HTTP) in `~/.claude.json`, `~/.codex/config.toml` and `~/.openclaw/openclaw.json` (`mcp.servers.misakanet`), with the Bearer token so reads are not metered by the anonymous 5/day/IP limit. Hermes is the same thing in its own files: `mcp_servers.misakanet` in `~/.hermes/config.yaml` plus the token in `~/.hermes/.env` under `MCP_MISAKANET_API_KEY`. All four are config files written file-to-file — no subprocess is spawned, so **no token ever appears in a command line** |
-| 2 | the agent **knows when** | rules block appended to `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` / `~/.hermes/SOUL.md` / `~/.openclaw/workspace/AGENTS.md` (issue, retry, risky-operation triggers; desensitisation rules) |
+| 1 | the agent **can** call it | MCP server `https://misakanet.org/mcp` (streamable HTTP) in `~/.claude.json`, `~/.codex/config.toml` and `~/.openclaw/openclaw.json` (`mcp.servers.misakanet`), with the Bearer token so reads are not metered by the anonymous 5/day/IP limit. Hermes is the same thing in its own files: `mcp_servers.misakanet` in `~/.hermes/config.yaml` plus the token in `~/.hermes/.env` under `MCP_MISAKANET_API_KEY`. All four are config files written file-to-file — no subprocess is spawned, so **no token ever appears in a command line**. For Claude Code only, the five **read-only** tools are also added to `permissions.allow` — "can call it" otherwise still means a permission prompt on the very first search, so `0.5.3` pre-allows them (`--verify` reports it, `--report` prints `permissions:`); `write_lesson` is deliberately **not** pre-allowed, because a tool that writes should ask |
+| 2 | the agent **knows when** | rules block appended to `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` / `~/.hermes/SOUL.md` / `~/.openclaw/workspace/AGENTS.md` (issue, retry, risky-operation triggers; desensitisation rules). Wording is **imperative first** ("必须先调 misakanet_search") rather than descriptive, because a field test showed a weaker model reads a descriptive block as background and never calls the tool |
 | 4 | *(opt-in)* you **hear** it | `--voice` adds a `PostToolUse` hook that plays the cue the server asked for (`lesson-found` / `failure-warning` / `connect-success` / `pair-success`). Off by default; mute with `MISAKANET_VOICE=0`; see `docs/integrations/mcp-voice-hooks.md` |
 | 3 | the checkpoint **fires** | a hook that counts user turns: turn 1 announces the install to the user, turn 20 (and every 10 after) injects the "distil and submit" reminder; a failed tool call injects a "search before you retry" reminder built from the error text. Claude Code only today — Codex's user-level hook shape is unconfirmed and OpenClaw's events are unverified, so those two work from the rules block, and `--verify` says so per target instead of implying otherwise |
 
@@ -36,7 +36,8 @@ npx @misaka-net/misakanet-setup --upgrade     # same as installing the latest (t
                                              # is kept as ~/.misakanet-agent/hook.mjs.misakanet.bak)
 npx @misaka-net/misakanet-setup --report      # this machine's state as YAML, safe to paste in public
                                              # (token value never printed, home paths written as ~;
-                                             #  two blank fields are yours to fill — see the bounty)
+                                             #  `permissions: ok|incomplete` shows whether the read-only
+                                             #  tools are allowed; two blank fields are yours to fill — see the bounty)
 npx @misaka-net/misakanet-setup --voice       # opt-in: a cue when a search hits, another when it misses
                                              # (Claude Code: a PostToolUse hook; mute later with MISAKANET_VOICE=0)
 npx @misaka-net/misakanet-setup --uninstall   # remove exactly what it added
