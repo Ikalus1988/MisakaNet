@@ -9,11 +9,16 @@ W4-backtick  : backtick command substitution in run:
 W5-date-quote: $(date ...) with unquoted %H:%M etc.
 
 Output format: file:line: RULE message
-Exit 0 = no findings, 1 = findings. <10s, no secrets.
+Exit 0 = no findings, 1 = findings, 2 = cannot run (missing PyYAML). <10s, no secrets.
 """
 import sys
 import re
 from pathlib import Path
+
+try:
+    import yaml
+except ImportError:      # reported once, in main() - see the comment there
+    yaml = None
 
 REPO = Path(__file__).resolve().parent.parent
 WORKFLOWS_DIR = REPO / ".github" / "workflows"
@@ -32,13 +37,16 @@ def check_file(path: Path):
     text = path.read_text(encoding="utf-8", errors="replace")
     lines = text.splitlines()
 
-    # W1: yaml safe_load
-    try:
-        import yaml
-        yaml.safe_load(text)
-    except Exception as e:
-        findings.append((1, "W1-yaml", f"YAML parse error: {e}"))
-        # still continue to check other rules on raw lines
+    # W1: yaml safe_load. PyYAML missing is *not* a finding about this file: without this guard the
+    # ImportError was caught by the `except` below and every workflow in the repo was reported as
+    # "YAML parse error: No module named 'yaml'", i.e. a missing dependency looked like a repo-wide
+    # breakage. main() refuses to run in that case instead (exit 2).
+    if yaml is not None:
+        try:
+            yaml.safe_load(text)
+        except Exception as e:
+            findings.append((1, "W1-yaml", f"YAML parse error: {e}"))
+            # still continue to check other rules on raw lines
 
     # Determine file-level permissions and env presence for W2 heuristic
     has_gh_token_env = bool(re.search(r'\b(GH_TOKEN|GITHUB_TOKEN)\b', text))
@@ -95,6 +103,11 @@ def check_file(path: Path):
 
 def main(argv=None):
     argv = argv or sys.argv[1:]
+    if yaml is None:
+        print("check_workflow_scripts: PyYAML is required for W1 "
+              "(pip install -r requirements.txt); refusing to report every workflow as broken",
+              file=sys.stderr)
+        return 2
     files = []
     if argv:
         for a in argv:
