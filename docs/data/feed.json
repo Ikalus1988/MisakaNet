@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-16T11:48:55.518114+00:00",
+  "generated_at": "2026-09-16T17:07:53.522299+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(setup): `--report` prints this machine's state as paste-safe YAML",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1759",
-      "timestamp": "2026-09-16T10:28:04Z",
+      "title": "feat(ci): an opt-in auto-merge channel for lesson pull requests",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1781",
+      "timestamp": "2026-09-16T16:59:27Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(setup): upgrade a matcher-less voice entry instead of treating it as installed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1758",
-      "timestamp": "2026-09-16T09:50:10Z",
+      "title": "fix(setup): keep the first backup, tighten the Hermes token file, and stop two silent failures",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1774",
+      "timestamp": "2026-09-16T16:42:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(voice): the voice hook becomes an installer switch, opt-in, and it actually makes a sound",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1755",
-      "timestamp": "2026-09-16T09:40:07Z",
+      "title": "fix: security and parsing holes found by an open-code-review scan",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1773",
+      "timestamp": "2026-09-16T16:42:30Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(setup): codewhale becomes the fifth target — wired file-to-file, with its two real caveats stated",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1752",
-      "timestamp": "2026-09-16T08:13:23Z",
+      "title": "fix(test): alias evidence must be a file git tracks, not one that only exists locally",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1776",
+      "timestamp": "2026-09-16T16:40:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(setup): a re-run now refreshes a stale hook — the upgrade nudge could never reach anyone",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1745",
-      "timestamp": "2026-09-15T18:04:02Z",
+      "title": "feat(retrieval): a grounded query-alias table, and the measurement that justifies it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1770",
+      "timestamp": "2026-09-16T15:54:41Z",
       "source": "github"
     },
     {
