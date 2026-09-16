@@ -358,3 +358,217 @@ test('trackUsage anonymizes IP to /16 prefix', async () => {
   // IP anonymized to first 2 octets: 203.0.113.42 → 203.0.0.0
   assert.ok(d1._usage.some(u => u.ip === '203.0.0.0'));
 });
+
+// ── Optional structured fields: summary_plain / trigger / verify (#1783) ──
+//
+// Two properties, both demanded by the issue:
+//
+//   1. a lesson that carries NONE of the three fields must produce exactly today's
+//      response — same keys, same order, no new nulls: byte-identical, not merely
+//      "compatible";
+//   2. a lesson that carries them gets them back, through both `misakanet_search`
+//      (compact / summary / full) and `misakanet_get_lesson`.
+//
+// The projection is additive by construction (`{...(x ? {k: x} : {})}` — an empty
+// spread adds nothing), so these tests pin the *observable* consequence rather than
+// the mechanism.
+
+function mcpTool(name, args, env) {
+  return worker.fetch(new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${TOKEN}`,
+      'Content-Type': 'application/json',
+      'MCP-Protocol-Version': '2025-06-18',
+      'CF-Connecting-IP': '203.0.113.91',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name, arguments: args },
+    }),
+  }), env);
+}
+
+async function toolPayload(name, args, env) {
+  const resp = await mcpTool(name, args, env);
+  assert.equal(resp.status, 200);
+  return await resp.json();
+}
+
+// A lesson body whose `updated` is always "5 days ago", so `freshness` is "recent"
+// no matter when the suite runs — an exact-string assertion below depends on it.
+const FIVE_DAYS_AGO = new Date(Date.now() - 5 * 86400000).toISOString();
+
+const LEGACY_ROW = {
+  id: 'legacy-shape',
+  title: 'pip install timeout behind corporate proxy',
+  domain: 'python',
+  status: 'published',
+  tags: '["pip","network"]',
+  path: 'lessons/contrib/legacy-shape.md',
+  summary: 'Use an internal mirror.',
+  problem: 'pip install times out behind the proxy.',
+  updated: FIVE_DAYS_AGO,
+  created: FIVE_DAYS_AGO,
+};
+
+const PLAIN_FIELDS = {
+  summary_plain: '公司网络里装不上 Python 包，是因为下载源要先换成公司内部的镜像。',
+  trigger: 'pip install timeout behind proxy',
+  verify: 'pip install -v httpie 退出码为 0',
+};
+
+// The same lesson's body, with frontmatter that predates the three fields — the
+// content `misakanet_get_lesson` returns for a legacy lesson.
+const LEGACY_BODY = [
+  '---',
+  'title: "pip install timeout behind corporate proxy"',
+  'domain: "python"',
+  'status: "published"',
+  'tags: ["pip", "network"]',
+  'evidence_level: "E2"',
+  '---',
+  '',
+  '## Problem',
+  '',
+  'pip install times out behind the proxy.',
+  '',
+].join('\n');
+
+const FIELDS_BODY = [  '---',
+  'title: "pip install timeout behind corporate proxy"',
+  'domain: "python"',
+  'status: "published"',
+  'tags: ["pip", "network"]',
+  `summary_plain: "${PLAIN_FIELDS.summary_plain}"`,
+  `trigger: "${PLAIN_FIELDS.trigger}"`,
+  `verify: "${PLAIN_FIELDS.verify}"`,
+  '---',
+  '',
+  '## Problem',
+  '',
+  'pip install times out behind the proxy.',
+  '',
+  '## Root Cause',
+  '',
+  'The corporate index is unreachable.',
+  '',
+  '## Solution',
+  '',
+  'Use an internal mirror.',
+  '',
+  '## Verification',
+  '',
+  'pip install -v httpie succeeds.',
+  '',
+].join('\n');
+
+test('a lesson without the structured fields keeps the exact legacy shape (#1783)', async () => {
+  // D1 row without a `frontmatter` column at all — the shape every legacy lesson has.
+  const env = {
+    MCP_TOKEN: TOKEN,
+    MISAKANET_D1: createD1([{ ...LEGACY_ROW, content_md: LEGACY_BODY }]),
+    MISAKANET_KV: createKV(),
+  };
+
+  for (const detail of ['compact', 'summary', 'full']) {
+    const resp = await mcpTool('misakanet_search', { query: 'pip install timeout', detail }, env);
+    const parsed = await resultText(resp);
+    const hit = parsed.results[0];
+    assert.equal(hit.id, 'legacy-shape');
+    for (const field of Object.keys(PLAIN_FIELDS)) {
+      assert.ok(!(field in hit), `detail=${detail} grew a ${field} key on a legacy lesson`);
+    }
+  }
+
+  // Key *order* is part of the contract too: additive means appended-when-present,
+  // never reordered.
+  const compact = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail: 'compact' }, env));
+  assert.deepEqual(Object.keys(compact.results[0]),
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'kind']);
+
+  const summary = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail: 'summary' }, env));
+  assert.deepEqual(Object.keys(summary.results[0]),
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'domain', 'tags', 'fix', 'kind']);
+
+  // Byte level, not just key level: the compact hit serializes to exactly the string
+  // it produced before #1783 touched the projection.
+  assert.equal(
+    JSON.stringify(compact.results[0]),
+    '{"id":"legacy-shape","title":"pip install timeout behind corporate proxy",'
+    + '"problem":"pip install times out behind the proxy.","freshness":"recent",'
+    + '"evidence_level":"","kind":"lessons"}',
+  );
+
+  // And the same for get_lesson: no key, no empty value.
+  const lessonResp = await mcpTool('misakanet_get_lesson', { id: 'legacy-shape' }, env);
+  const lesson = await resultText(lessonResp);
+  assert.deepEqual(Object.keys(lesson), ['path', 'content', 'identity', 'trust_notice', 'voice']);
+  for (const field of Object.keys(PLAIN_FIELDS)) {
+    assert.ok(!(field in lesson), `get_lesson grew a ${field} key on a legacy lesson`);
+  }
+});
+
+test('a lesson with the structured fields carries them through search and get_lesson (#1783)', async () => {
+  // Corpus row as D1 serves it: the three fields live inside the raw `frontmatter`
+  // column, which the rich projection now reads.
+  const row = { ...LEGACY_ROW, frontmatter: JSON.stringify({ ...PLAIN_FIELDS, title: LEGACY_ROW.title }) };
+  const env = {
+    MCP_TOKEN: TOKEN,
+    MISAKANET_D1: createD1([{ ...row, content_md: FIELDS_BODY }]),
+    MISAKANET_KV: createKV(),
+  };
+
+  const compact = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail: 'compact' }, env));
+  assert.equal(compact.results[0].summary_plain, PLAIN_FIELDS.summary_plain);
+  assert.ok(!('trigger' in compact.results[0]), 'compact is the ~80-token tier: summary_plain only');
+  assert.deepEqual(Object.keys(compact.results[0]),
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'summary_plain', 'kind']);
+
+  const summary = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail: 'summary' }, env));
+  assert.equal(summary.results[0].summary_plain, PLAIN_FIELDS.summary_plain);
+  assert.equal(summary.results[0].trigger, PLAIN_FIELDS.trigger);
+  assert.equal(summary.results[0].verify, PLAIN_FIELDS.verify);
+  assert.deepEqual(Object.keys(summary.results[0]),
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'summary_plain', 'domain', 'tags', 'fix', 'trigger', 'verify', 'kind']);
+
+  const full = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail: 'full' }, env));
+  for (const [field, value] of Object.entries(PLAIN_FIELDS)) {
+    assert.equal(full.results[0][field], value, `detail=full lost ${field}`);
+  }
+
+  // get_lesson reads them out of the returned body's frontmatter — the one path that
+  // needs no ingest change, so it has to work for both frontmatter dialects.
+  const lesson = await resultText(await mcpTool('misakanet_get_lesson', { id: 'legacy-shape' }, env));
+  for (const [field, value] of Object.entries(PLAIN_FIELDS)) {
+    assert.equal(lesson[field], value, `get_lesson lost ${field}`);
+  }
+  assert.deepEqual(Object.keys(lesson),
+    ['path', 'content', 'summary_plain', 'trigger', 'verify', 'identity', 'trust_notice', 'voice']);
+
+  // Legacy JSON frontmatter (the older convention) is parsed the same way.
+  const jsonBody = `---\n${JSON.stringify({ ...PLAIN_FIELDS, title: 'JSON frontmatter lesson' })}\n---\n\n## Problem\n\nx\n`;
+  const jsonEnv = {
+    MCP_TOKEN: TOKEN,
+    MISAKANET_D1: createD1([{ ...LEGACY_ROW, id: 'json-fm', content_md: jsonBody }]),
+    MISAKANET_KV: createKV(),
+  };
+  const jsonLesson = await resultText(await mcpTool('misakanet_get_lesson', { id: 'json-fm' }, jsonEnv));
+  assert.equal(jsonLesson.trigger, PLAIN_FIELDS.trigger);
+  assert.equal(jsonLesson.verify, PLAIN_FIELDS.verify);
+});
+
+test('the index/KV fallback carries the structured fields when the row has them (#1783)', async () => {
+  // data/lessons.json is another corpus source; the projection must not depend on
+  // which one answered.
+  const lessons = [{ ...LEGACY_ROW, tags: ['pip'], ...PLAIN_FIELDS }];
+  const env = {
+    MCP_TOKEN: TOKEN,
+    MISAKANET_KV: createKV({ 'proxy:lessons': JSON.stringify({ ts: Date.now(), data: lessons }) }),
+  };
+  const summary = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail: 'summary' }, env));
+  assert.equal(summary.results[0].summary_plain, PLAIN_FIELDS.summary_plain);
+  assert.equal(summary.results[0].trigger, PLAIN_FIELDS.trigger);
+  assert.equal(summary.results[0].verify, PLAIN_FIELDS.verify);
+});
+

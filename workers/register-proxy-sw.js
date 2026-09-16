@@ -479,7 +479,87 @@ function freshness(dateStr) {
   return "legacy";
 }
 
+// ── Optional structured lesson fields (#1783) ───────────────────────────────
+// Three *optional* frontmatter fields, added so an agent can answer a
+// non-technical user in the user's own language and so retrieval has a short,
+// matchable string to index:
+//
+//   summary_plain  one plain-language sentence for a non-technical reader (≤120 chars)
+//   trigger        the short, matchable condition that should make an agent search
+//                  (e.g. "pip install timeout behind proxy")
+//   verify         a checkable pass/fail criterion
+//
+// They are additive *everywhere*: a lesson that does not carry them must produce a
+// byte-identical response — no nulls, no "", no reordered keys. `plainFields()`
+// returns an **empty object** for such a lesson, and spreading an empty object adds
+// no key at all, which is what makes that guarantee structural rather than a promise
+// (the shape is pinned by "keeps the exact legacy shape" in
+// workers/d1-lesson-service.test.mjs).
+const PLAIN_FIELD_KEYS = ["summary_plain", "trigger", "verify"];
+
+/** A usable value is a non-empty string; anything else (null, "", numbers, the
+ *  nested objects legacy frontmatter sometimes carries) is treated as absent. */
+function plainField(value) {
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+/** The three fields a record actually carries, or `{}` when it carries none. */
+function plainFields(lesson) {
+  const out = {};
+  if (!lesson) return out;
+  for (const key of PLAIN_FIELD_KEYS) {
+    const value = plainField(lesson[key]);
+    if (value) out[key] = value;
+  }
+  return out;
+}
+
+// The same three fields, read out of a lesson's markdown frontmatter (the source of
+// truth for `misakanet_get_lesson`, whose D1 row carries only path + content_md).
+// YAML is the current convention, JSON is the legacy one, and a few legacy files
+// append a YAML-ish object after the JSON — so JSON is tried first and a line-based
+// scalar scan covers the rest. Deliberately tiny: no YAML engine in the worker.
+function plainFieldsFromMarkdown(markdown) {
+  const match = /^---\s*\r?\n([\s\S]*?)\r?\n---/.exec(String(markdown || ""));
+  if (!match) return {};
+  const block = match[1];
+  let fm = null;
+  try {
+    fm = JSON.parse(block);
+  } catch {
+    fm = null;
+  }
+  if (!fm || typeof fm !== "object" || Array.isArray(fm)) fm = yamlScalars(block);
+  return plainFields(fm);
+}
+
+/** Top-level `key: value` scalars of a YAML block, quotes stripped. */
+function yamlScalars(block) {
+  const out = {};
+  for (const line of String(block).split(/\r?\n/)) {
+    const m = /^([A-Za-z_][A-Za-z0-9_]*)[ \t]*:[ \t]*(.+)$/.exec(line);
+    if (!m) continue;
+    const value = m[2].trim().replace(/^(["'])(.*)\1$/, "$2").trim();
+    if (value) out[m[1]] = value;
+  }
+  return out;
+}
+
+/** The three fields out of D1's raw `frontmatter` JSON column, or `{}`. */
+function frontmatterFields(raw) {
+  if (!raw) return {};
+  try {
+    const fm = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return fm && typeof fm === "object" && !Array.isArray(fm) ? plainFields(fm) : {};
+  } catch {
+    return {}; // legacy/hand-edited frontmatter is not worth failing a search over
+  }
+}
+
 function compactResult(lesson) {
+  // `summary_plain` rides along with compact on purpose: it is the one field the
+  // model is told to repeat to the user verbatim, and compact is the default detail.
+  const summaryPlain = plainField(lesson.summary_plain);
   return {
     id: lesson.id || "",
     title: lesson.title || "",
@@ -491,11 +571,15 @@ function compactResult(lesson) {
       .slice(0, 120),
     freshness: freshness(lesson.updated || lesson.created),
     evidence_level: lesson.evidence_level || "",
+    ...(summaryPlain ? { summary_plain: summaryPlain } : {}),
   };
 }
 
 function summaryResult(lesson) {
   const compact = compactResult(lesson);
+  // trigger/verify only: `summary_plain` already came through `compact`, and
+  // re-spreading an existing key would neither duplicate nor reorder it.
+  const { trigger, verify } = plainFields(lesson);
   return {
     ...compact,
     domain: lesson.domain || "",
@@ -504,6 +588,8 @@ function summaryResult(lesson) {
     // matcher used. Truncated like `problem` so `detail=summary` keeps its
     // advertised size.
     fix: String(lesson.fix || lesson.solution || "").slice(0, 200),
+    ...(trigger ? { trigger } : {}),
+    ...(verify ? { verify } : {}),
   };
 }
 
@@ -1735,8 +1821,16 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       // response already carries the generic trust_notice, but when *this* lesson
       // matches an injection shape the caller should know which rule fired.
       const bodyFlags = detectIntakeInjection(lesson?.content || "");
+      // #1783: the optional structured fields, read from the frontmatter of the very
+      // body this call returns. They are the *content* side of the schema, so here —
+      // unlike search, which reads the corpus row — the body is the only source (D1's
+      // row for this path selects path + content_md only). `summary_plain` is what the
+      // rules block tells the model to repeat to the user verbatim. Empty for a lesson
+      // that does not carry them: no key, no shape change.
+      const plain = plainFieldsFromMarkdown(lesson?.content || "");
       return {
         ...lesson,
+        ...plain,
         identity: aura,
         trust_notice: TRUST_NOTICE,
         voice: "connect-success",
@@ -2557,6 +2651,14 @@ async function fetchLessonsFromD1(env, filters = {}) {
   // 0.35 → 1.57 MB, cached payload 0.89 MB.
   const leanCols = "id, title, domain, status, tags, path, summary, problem, updated, created";
   const richCols = leanCols + ", root_cause, solution, verification";
+  // `frontmatter` (#1783) carries the optional structured fields (summary_plain /
+  // trigger / verify) and is the only source for them that needs no schema change:
+  // every row already stores its raw frontmatter JSON (see workers/d1/schema.sql and
+  // scripts/sync_lessons_to_d1.py). It is requested as a third tier so a deployment
+  // whose `lessons` table predates one of these column sets degrades one step at a
+  // time (rich+frontmatter → rich → lean) instead of losing the rich projection —
+  // and therefore search relevance — wholesale.
+  const richColsWithFrontmatter = richCols + ", frontmatter";
   const run = async (cols) => {
     let stmt = d1.prepare(
       `SELECT ${cols}
@@ -2571,12 +2673,20 @@ async function fetchLessonsFromD1(env, filters = {}) {
   let richApplied = false;
   if (filters.rich) {
     try {
-      results = await run(richCols);
+      results = await run(richColsWithFrontmatter);
       richApplied = true;
     } catch (error) {
-      // A D1 deployment that predates the extra columns must not break search.
-      debugLog(env, 1, "rich lesson projection unavailable, using lean", { error: error.message });
-      results = await run(leanCols);
+      // A D1 deployment that predates the extra columns must not break search: drop
+      // the `frontmatter` column first (the rich projection and therefore relevance
+      // survive), and only then the rich projection itself.
+      debugLog(env, 1, "frontmatter column unavailable, using the rich projection", { error: error.message });
+      try {
+        results = await run(richCols);
+        richApplied = true;
+      } catch (richError) {
+        debugLog(env, 1, "rich lesson projection unavailable, using lean", { error: richError.message });
+        results = await run(leanCols);
+      }
     }
   } else {
     results = await run(leanCols);
@@ -2622,6 +2732,11 @@ async function fetchLessonsFromD1(env, filters = {}) {
       row.indexText = [summary, r.problem, r.root_cause, r.solution, r.verification]
         .filter(Boolean).join(" ").slice(0, INDEX_TEXT_MAX_CHARS);
     }
+    // #1783: the optional structured fields, appended (never inserted) and only when
+    // non-empty — a lesson that does not carry them contributes no key at all, which
+    // is what keeps its response byte-identical. `frontmatter` itself is not copied
+    // onto the row: it is a blob, and only these three fields are public.
+    Object.assign(row, frontmatterFields(r.frontmatter));
     return row;
   });
 }
