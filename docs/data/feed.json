@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-16T04:58:01.592539+00:00",
+  "generated_at": "2026-09-16T11:48:55.518114+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "feat(setup): `--report` prints this machine's state as paste-safe YAML",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1759",
+      "timestamp": "2026-09-16T10:28:04Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(setup): upgrade a matcher-less voice entry instead of treating it as installed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1758",
+      "timestamp": "2026-09-16T09:50:10Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(voice): the voice hook becomes an installer switch, opt-in, and it actually makes a sound",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1755",
+      "timestamp": "2026-09-16T09:40:07Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(setup): codewhale becomes the fifth target — wired file-to-file, with its two real caveats stated",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1752",
+      "timestamp": "2026-09-16T08:13:23Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "fix(setup): a re-run now refreshes a stale hook — the upgrade nudge could never reach anyone",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1745",
       "timestamp": "2026-09-15T18:04:02Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(codex): the installer said the Codex hook could not be confirmed — it can be, and it was",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1744",
-      "timestamp": "2026-09-15T17:57:06Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "refactor(domains): make the domain vocabulary a reviewable file instead of whatever lessons already said",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1742",
-      "timestamp": "2026-09-15T17:44:35Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(worker): rebuild the search index from D1, not from the corpus cache it may be racing",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1739",
-      "timestamp": "2026-09-15T17:08:59Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(mcp): expose the Problem/Fix snippets in the row shaping, so hits have something to read",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1737",
-      "timestamp": "2026-09-15T16:57:39Z",
       "source": "github"
     },
     {
