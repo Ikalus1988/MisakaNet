@@ -1664,6 +1664,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       return {
         results: [],
         no_match: true,
+        voice: "failure-warning",
         query: args.query,
         source,
         detail,
@@ -1683,7 +1684,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         trust_notice: TRUST_NOTICE,
       };
     }
-    return { results, source, detail, kind, query: args.query, identity: aura, trust_notice: TRUST_NOTICE };
+    // `voice` is the MCP voice-hook cue (see docs/integrations/mcp-voice-hooks.md): the local
+    // stdio server has always sent it, the rate-limit refusal below sends it, and the
+    // streamable-http endpoint now does too so the opt-in PostToolUse hook works from an
+    // npm/plugin install rather than only from a clone.
+    return { results, source, detail, kind, query: args.query, identity: aura, trust_notice: TRUST_NOTICE,
+             voice: results.length ? "lesson-found" : "failure-warning" };
   }
 
   if (toolName === "misakanet_get_lesson") {
@@ -1714,6 +1720,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         ...lesson,
         identity: aura,
         trust_notice: TRUST_NOTICE,
+        voice: "connect-success",
         ...(bodyFlags.length ? { suspicious: true, suspicious_rules: bodyFlags } : {}),
       };
     } catch (e) {

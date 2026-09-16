@@ -23,13 +23,13 @@
  * Everything is idempotent, every rewritten file is backed up to *.misakanet.bak, and
  * --uninstall removes exactly what was added (same markers), leaving user config intact.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, rmSync, chmodSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFileSync, rmSync, chmodSync, statSync } from 'node:fs';
 // No child_process import on purpose: this installer must never hand a file-derived value to
 // another program (the plugin scanner's SHELL_INJECTION_PATTERN, alert #269, and argv secrets
 // are visible to every process on the box). Every target is configured by writing its own
 // config file; commands aimed at the user are printed, never executed.
 import { homedir } from 'node:os';
-import { join, dirname, resolve } from 'node:path';
+import { delimiter, join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -103,7 +103,7 @@ function readText(path) {
  * meant to prevent is now caught in CI instead, by a test that binds this literal to the
  * manifest — a failing test is a better place for that than a request header.
  */
-const VERSION = '0.4.2';
+const VERSION = '0.5.0';
 
 function backup(path) {
   if (DRY || !readText(path)) return;
@@ -236,6 +236,51 @@ const PROMPT_BLOCK = `遇到报错、要重试一个刚失败的修法、或要�
  * on every prompt" is a supply-chain hole, and it buys nothing - `prepack` already puts the
  * canonical hook inside the package. If it is somehow missing, say so instead of fetching.
  */
+/** Is `cmd` on PATH? Presence, not a spawn: this installer deliberately has no
+ *  child_process import (a value derived from a file must never reach a shell — that was the
+ *  shape behind the plugin scanner's shell-injection report). */
+function onPath(cmd) {
+  for (const dir of String(process.env.PATH || '').split(delimiter)) {
+    if (!dir) continue;
+    try {
+      if (statSync(join(dir, cmd)).isFile()) return join(dir, cmd);
+    } catch { /* not here */ }
+  }
+  return '';
+}
+
+/** The first player the voice hook will actually use on this machine. */
+function detectPlayer() {
+  for (const cmd of ['afplay', 'paplay', 'ffplay', 'mpv', 'mpg123', 'cvlc', 'powershell.exe']) {
+    if (onPath(cmd)) return cmd;
+  }
+  return '';
+}
+
+/**
+ * Where the player and the cues come from. Two layouts, and they do **not** share a name:
+ * the shipped copy is `voice/voice-hook.mjs` with the MP3s beside it, while the canonical file
+ * in a repo checkout is `integrations/agent-autostart/voice_hook.mjs` (underscore, like
+ * `checkpoint_reminder.mjs`) with the cues under `docs/assets/voice/`.
+ *
+ * Getting this wrong is invisible locally — a pack step leaves the shipped copy behind — and
+ * only CI caught it: the repo layout was rejected, so `--voice` silently added nothing.
+ */
+function locateVoice() {
+  const shipped = join(PKG_ROOT, 'voice');
+  if (existsSync(join(shipped, 'voice-hook.mjs'))) {
+    return { player: join(shipped, 'voice-hook.mjs'), cues: shipped };
+  }
+  const repo = join(PKG_ROOT, '..', '..', 'integrations', 'agent-autostart');
+  if (existsSync(join(repo, 'voice_hook.mjs'))) {
+    return {
+      player: join(repo, 'voice_hook.mjs'),
+      cues: join(PKG_ROOT, '..', '..', 'docs', 'assets', 'voice'),
+    };
+  }
+  return null;
+}
+
 function locateHook() {
   const candidates = [
     join(PKG_ROOT, 'hook', 'checkpoint_reminder.mjs'),      // shipped in the tarball
@@ -400,6 +445,52 @@ async function installClaude(hookPath, bearer) {
     settings.hooks[event] = bucket;
     changed = true;
   }
+  // Voice cues are opt-in (`--voice`): the server answers with a `voice` field, and this
+  // turns it into a sound through a PostToolUse hook. Default off on purpose — an assistant
+  // that starts talking on its own is exactly the kind of surprise this installer exists to
+  // avoid. `MISAKANET_VOICE=0` mutes it later without uninstalling anything.
+  if (has('--voice')) {
+    const voice = locateVoice();
+    if (!voice) {
+      need('语音钩子：这个 npm 包里没有带播放器（安装不完整）→ 重新执行 npx 安装即可；其它功能不受影响');
+    } else {
+      const destDir = join(stateDir(), 'voice');
+      if (!DRY) {
+        mkdirSync(destDir, { recursive: true });
+        copyFileSync(voice.player, join(destDir, 'voice-hook.mjs'));
+        const cues = existsSync(voice.cues) ? readdirSync(voice.cues).filter((f) => f.endsWith('.mp3')) : [];
+        for (const cue of cues) {
+          copyFileSync(join(voice.cues, cue), join(destDir, cue));
+        }
+        if (!cues.length) {
+          need('语音钩子：找到了播放器但没有找到音频文件 → 重装一次 npx 包即可（其它功能不受影响）');
+        }
+      }
+      const post = settings.hooks.PostToolUse || [];
+      if (!JSON.stringify(post).includes('voice-hook')) {
+        // `matcher: '*'` is load-bearing, not cosmetic: measured on 2026-09-16, a PostToolUse
+        // entry **without** a matcher never fired in this host, while the same command with
+        // `matcher: '*'` fired on every tool call. The hook itself filters by the `voice`
+        // field, so matching everything costs nothing.
+        post.push({
+          matcher: '*',
+          hooks: [{ type: 'command', command: `"${node}" "${join(destDir, 'voice-hook.mjs')}"` }],
+        });
+        settings.hooks.PostToolUse = post;
+        changed = true;
+      }
+      const player = detectPlayer();
+      if (player) {
+        ok(`语音钩子：已开启（PostToolUse → ${player}）；想静音设 MISAKANET_VOICE=0`);
+      } else {
+        need('语音钩子：装上了，但这台机器上没有找到播放器 → 不会有声音'
+          + '（macOS 自带 afplay；Linux 装 paplay 或 ffplay；WSL 会走 Windows 的 PowerShell）');
+      }
+    }
+  } else {
+    ok('语音钩子：未开启（想让命中/未命中时出声：重跑安装器并加 --voice）');
+  }
+
   if (changed) {
     backup(settingsPath);
     writeText(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
@@ -942,12 +1033,20 @@ function uninstall() {
     writeText(cfg, `${JSON.stringify(data, null, 2)}\n`);
     ok(`移除 MCP 注册 → ${cfg}`);
   }
+  const voiceDir = join(stateDir(), 'voice');
+  if (existsSync(voiceDir)) {
+    try {
+      rmSync(voiceDir, { recursive: true, force: true });
+      ok(`移除语音钩子文件 → ${voiceDir}`);
+    } catch { /* best effort */ }
+  }
   const settingsPath = join(HOME, '.claude', 'settings.json');
   const settings = readJson(settingsPath, null);
   if (settings?.hooks) {
     let changed = false;
     for (const event of Object.keys(settings.hooks)) {
-      const kept = (settings.hooks[event] || []).filter((entry) => !JSON.stringify(entry).includes('hook.mjs'));
+      const kept = (settings.hooks[event] || []).filter((entry) =>
+        !JSON.stringify(entry).includes('hook.mjs') && !JSON.stringify(entry).includes('voice-hook'));
       if (kept.length !== settings.hooks[event].length) {
         changed = true;
         if (kept.length) settings.hooks[event] = kept; else delete settings.hooks[event];
