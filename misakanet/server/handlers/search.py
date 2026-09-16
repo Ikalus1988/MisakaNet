@@ -340,7 +340,7 @@ def handle_search(args: dict, search_state=None) -> dict:
                 '{"query": "tutorial", "domain": "core"}',
             ],
             "guidance": (
-                "Provide a search term (e.g. 'pip install timeout'). "
+                "Provide a search term (e.g. 'tool call permission denied'). "
                 "For broader results, try shorter keywords."
             ),
             "voice": "failure-warning",
