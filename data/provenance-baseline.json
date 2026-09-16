@@ -1,0 +1,6 @@
+{
+  "schema": "misakanet-provenance-baseline/1",
+  "note": "Sources that are known to be unresolvable and must not fail every PR. An entry here means 'we know, and we chose not to fix it yet' — it is a debt register, not a permission. Keep it short, and say why in each entry. Placeholders are never accepted here: rewrite them instead. The semantics of the check are in docs/maintainer/provenance-gate-2026-09-16.md.",
+  "known_dead": [],
+  "exempt_urls": []
+}
