@@ -28,6 +28,32 @@ npx @misaka-net/misakanet-setup
 （支持 Claude Code / Codex / Hermes / OpenClaw / codewhale；codewhale 额外两步：token 走环境变量
 `export MISAKANET_TOKEN=…`、规则块只对受信任的项目生效。）
 
+### 三层结构：能力 / 接入 / 触发（读一遍就懂它到底做了什么）
+
+| 层 | 是什么 | 缺了它会怎样 |
+|---|---|---|
+| **① 服务** | `https://misakanet.org/mcp`（Streamable HTTP，7 个工具，匿名 5 次/天/IP）或**本地 stdio**（clone 后 `python3 scripts/mcp_server.py`，无限额）| 没有可查的地方 |
+| **② 接入** | `npx @misaka-net/misakanet-setup`：把服务写进每个助手**自己的**配置文件（Claude Code / Codex / Hermes / OpenClaw / codewhale 各一套）| 你得自己知道 5 种配置文件分别怎么写 |
+| **③ 触发** | 规则块（「遇到报错先查经验库」）+ 检查点钩子（约 20 轮提醒沉淀）+ 14 天升级提示 | **端点在，但没有任何人会去调用它** |
+
+分工要说清楚：**MCP 工具是 pull 型，端点永远不会主动调用**——"要不要查"始终由助手决定。
+setup 保证的是"工具确实在"和"该查的时刻更容易被抓住"，不是"自动查询"。
+
+> 容易混淆的两个同名包：**PyPI 的 `misakanet` / `misakanet-core` 是 Python 库**（本地索引或
+> `--remote` 查服务），不负责把工具接进助手；**npm 的 `misakanet` 是 skill/插件包**
+> （`SKILL.md` + DSH 插件入口），早期它只有说明书、没有工具——工具来自第 ① 层的服务。
+
+### 装完你得到什么（逐条可自检）
+
+1. **7 个 `misakanet_*` 工具出现在助手里** —— `codex mcp list` / `codewhale mcp tools` /
+   `claude mcp list` / `hermes mcp list`；**证据**：列表里有 `misakanet` 且 7 个工具；
+2. **助手被要求「遇错先查」** —— 问一句「pip install timeout 是什么原因」，它应该先说查过经验库；
+   **证据**：事件流里出现 `misakanet_search`（claude/codewhale 用 `--output-format stream-json`，codex 用 `--json`）；
+3. **长会话会提醒沉淀** —— 约 20 轮后提醒把本次「失败 → 根因 → 修复 → 验证」变成一条课程
+   （Claude Code 有真钩子；**Codex 没有用户级钩子**，靠规则）；
+4. **每 14 天最多一行升级提示** —— 只提示，绝不在背后安装任何东西；
+5. **随时可撤** —— `--verify` 看状态，`--uninstall` 还原（改写前会留 `.misakanet.bak` 备份）。
+
 **不想用命令行、不知道配置文件在哪？** 把下面这句话**复制粘贴给助手**，它会自己装好、自己验证、用大白话回报：
 
 ```text
