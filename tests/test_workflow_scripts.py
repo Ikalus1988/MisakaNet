@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Tests for scripts/check_workflow_scripts.py (W1-W5) - Bounty #1640"""
+import os
 import subprocess
 import sys
 import tempfile
@@ -178,3 +179,22 @@ def test_performance():
     for _ in range(5):
         run_checker(content)
     assert time.time() - start < 10
+
+def test_missing_pyyaml_is_reported_instead_of_misread_as_w1():
+    """A missing PyYAML must not look like "every workflow is broken".
+
+    The first version imported yaml inside the same try as safe_load, so an ImportError became a
+    W1-yaml finding on every file — a dependency problem disguised as repo-wide breakage.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        # A `yaml.py` that fails to import shadows the real PyYAML for the child process.
+        (Path(tmp) / "yaml.py").write_text("raise ImportError('blocked for this test')\n", encoding="utf-8")
+        wf = Path(tmp) / "good.yml"
+        wf.write_text("name: test\non: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n"
+                      "    steps:\n      - run: echo hi\n", encoding="utf-8")
+        env = dict(os.environ, PYTHONPATH=tmp)
+        result = subprocess.run([sys.executable, str(SCRIPT), str(wf)],
+                                capture_output=True, text=True, timeout=10, env=env)
+    assert result.returncode == 2, result.stdout + result.stderr
+    assert "PyYAML is required" in result.stderr
+    assert "W1-yaml" not in result.stdout, "a missing dependency must not be reported as a finding"
