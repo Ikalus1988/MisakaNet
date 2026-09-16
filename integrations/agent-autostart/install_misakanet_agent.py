@@ -218,8 +218,26 @@ def _fetch_raw(rel_path: str, timeout: float = 10.0) -> str:
     return ""
 
 
+# 只读类 MCP 工具预先放行：否则用户触发的**第一次**检索会被 Claude Code 权限系统拒绝
+# （"you haven't granted it yet"），整个产品的第一印象变成被拦下。2026-09-16 本机复现 +
+# macOS 现场测试同样报告。write_lesson 故意不在其中：那是有 Bearer 的写入路径，
+# 静默放行一个写工具与放行读工具是两种决定。
+CLAUDE_ALLOWED_TOOLS = [
+    "mcp__misakanet__misakanet_search",
+    "mcp__misakanet__misakanet_get_lesson",
+    "mcp__misakanet__misakanet_me_events",
+    "mcp__misakanet__misakanet_preflight",
+    "mcp__misakanet__misakanet_submit_intake",
+]
+
+
 def prompt_block() -> str:
-    """The behavioural contract, trimmed to the parts that must live in a rules file."""
+    """调用规则（按顺序照做）—— 与 JS 安装包里的 PROMPT_BLOCK 同义。
+
+    实际的块内容优先取同目录 `prompt.md`（§0 起），这份 docstring 只是速览。
+    第 ② 步的示例刻意**不写死**在这里：它从 ONBOARDING_QUERIES 取，样例文本只允许有一个出处
+    （tests/test_onboarding_example.py 会数重复）。
+"""
     if PROMPT_FILE.exists():
         text = PROMPT_FILE.read_text(encoding="utf-8")
         # Everything after the front matter comment block; keeps rules files readable.
@@ -298,6 +316,10 @@ def install_claude(home: Path, dry: bool, rep: Report) -> None:
         except Exception as exc:
             rep.needs_manual(f"{settings_path} 不是合法 JSON（{exc}）→ hooks 未安装")
             settings = {}
+    allow = settings.setdefault("permissions", {}).setdefault("allow", [])
+    for tool in CLAUDE_ALLOWED_TOOLS:
+        if tool not in allow:
+            allow.append(tool)
     hooks = settings.setdefault("hooks", {})
     hook_cmd = {"type": "command", "command": hook_command("prompt")}
     fail_cmd = {"type": "command", "command": hook_command("failure")}
@@ -915,6 +937,16 @@ def uninstall(home: Path, dry: bool, rep: Report) -> None:
                         hooks[event] = kept
                     else:
                         del hooks[event]      # do not leave an empty event behind
+            # Give back the read-tool grants too, so uninstall leaves the file as it was (the JS
+            # installer does the same; a parity test asserts both directions).
+            permissions = settings.get("permissions") or {}
+            allow = permissions.get("allow")
+            if isinstance(allow, list):
+                pruned = [tool for tool in allow if tool not in CLAUDE_ALLOWED_TOOLS]
+                if len(pruned) != len(allow):
+                    permissions["allow"] = pruned
+                    settings["permissions"] = permissions
+                    changed = True
             if changed:
                 backup(settings_path, dry)
                 write_text(settings_path, json.dumps(settings, indent=2, ensure_ascii=False) + "\n", dry)
