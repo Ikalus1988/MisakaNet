@@ -57,3 +57,10 @@
 | Integration | Status | Notes |
 |---|---|---|
 | Smithery | ⏸ Paused | Pending upstream changes |
+
+## Field reports
+
+- [Agent integration matrix — 2026-09-15/16](agent-integration-matrix-2026-09-16.md) — one row per
+  agent (Claude Code, hermes, openclaw, codex, codewhale, DSH), the command that produced the
+  evidence, and what each agent actually did with MisakaNet. Re-run the commands in it rather than
+  trusting this table.
