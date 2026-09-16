@@ -108,8 +108,27 @@ const VERSION = '0.5.3';
 function backup(path) {
   if (DRY || !readText(path)) return;
   try {
-    copyFileSync(path, `${path}.misakanet.bak`);
+    const dest = `${path}.misakanet.bak`;
+    // Keep the FIRST backup. It holds the user's pre-install state; overwriting it on every run
+    // means "regression, then re-run the installer" destroys the only known-good copy — exactly
+    // when it is needed. Found by an open-code-review scan of this file (2026-09-16).
+    if (!existsSync(dest)) copyFileSync(path, dest);
   } catch { /* best effort */ }
+}
+
+/**
+ * Key-order-insensitive JSON equality.
+ *
+ * A user-edited config with the same fields in a different order is not a change: comparing
+ * `JSON.stringify` of both sides rewrote the file (and took a fresh backup) purely because an
+ * editor reordered keys. Only the fields and their values matter here.
+ */
+function sameJson(a, b) {
+  const canonical = (value) => JSON.stringify(value, (_key, v) =>
+    (v && typeof v === 'object' && !Array.isArray(v))
+      ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]]))
+      : v);
+  return canonical(a) === canonical(b);
 }
 
 function writeText(path, text) {
@@ -175,6 +194,10 @@ function probeEndpoint() {
  * the "read a local secret, put it in a request" shape CodeQL flags — js/file-access-to-http
  * #268 — and `tests/…`/`workers/Misakanet-setup.test.mjs` pins that the probe stays anonymous).
  */
+// Records why the last request failed, so `--verify` can tell a timeout from a 404 from an
+// empty-but-successful answer instead of collapsing all three into "unreachable".
+let lastRequestError = '';
+
 async function mcpRequest(method, params, timeoutMs = 6000, urlOverride = '') {
   const headers = {
     'Content-Type': 'application/json',
@@ -207,7 +230,14 @@ async function mcpRequest(method, params, timeoutMs = 6000, urlOverride = '') {
       }
     }
     return result;
-  } catch {
+  } catch (err) {
+    // Returning bare `{}` made a timeout, a TLS failure, a rate-limit answer and an empty-but-fine
+    // result indistinguishable to every caller — `--verify` then reported a working endpoint as
+    // unreachable, which is the exact bug its own comment above describes. The shape of the return
+    // value is unchanged (callers depend on it); the reason is now recorded for the report.
+    lastRequestError = (err && err.name === 'AbortError')
+      ? `timeout after ${timeoutMs}ms`
+      : ((err && err.message) || String(err));
     return {};
   } finally {
     clearTimeout(timer);
@@ -461,7 +491,7 @@ async function installClaude(hookPath, bearer) {
   doc.mcpServers = doc.mcpServers || {};
   const entry = { type: 'http', url: ENDPOINT };
   if (bearer) entry.headers = { Authorization: `Bearer ${bearer}` };
-  if (JSON.stringify(doc.mcpServers.misakanet) === JSON.stringify(entry)) {
+  if (sameJson(doc.mcpServers.misakanet, entry)) {
     ok('Claude Code：MCP 已注册（无改动）');
   } else {
     doc.mcpServers.misakanet = entry;
@@ -798,6 +828,9 @@ async function installHermes(hookPath, bearer) {
   if (next !== envText) {
     backup(envPath);
     writeText(envPath, next);
+    // The standalone token file is chmod 600 two hundred lines up; leaving the token in a
+    // world-readable .env (default umask is usually 0644) is the same leak through another door.
+    try { chmodSync(envPath, 0o600); } catch { /* windows */ }
     ok(`Hermes：token 写入 ${envPath}（${envKey}，配置里只留 \${${envKey}} 模板）`);
   } else {
     ok('Hermes：token 已就绪（无改动）');
@@ -869,7 +902,7 @@ async function installCodewhale(bearer) {
     disabled_tools: [],
     bearer_token_env_var: 'MISAKANET_TOKEN',
   };
-  if (JSON.stringify(servers.misakanet || null) !== JSON.stringify(entry)) {
+  if (!servers.misakanet || !sameJson(servers.misakanet, entry)) {
     servers.misakanet = entry;
     backup(cfg);
     writeText(cfg, `${JSON.stringify({ ...data, servers }, null, 2)}\n`);
@@ -912,7 +945,7 @@ async function installOpenclaw(bearer) {
   if (bearer) entry.headers = { Authorization: `Bearer ${bearer}` };
   data.mcp = data.mcp || {};
   data.mcp.servers = data.mcp.servers || {};
-  if (JSON.stringify(data.mcp.servers.misakanet) === JSON.stringify(entry)) {
+  if (sameJson(data.mcp.servers.misakanet, entry)) {
     ok('OpenClaw：MCP 已注册（无改动）');
     return;
   }
@@ -955,7 +988,8 @@ async function verify() {
     need(`端点可达但握手异常：${JSON.stringify(probe).slice(0, 120)}`);
   } else {
     allOk = false;
-    need(`端点不可达：${ENDPOINT}（网络受限？读课程会静默失败）`);
+    need(`端点不可达：${ENDPOINT}（网络受限？读课程会静默失败）`
+      + (lastRequestError ? ` —— 最近一次失败原因：${lastRequestError}` : ''));
   }
   const tokenFile = join(stateDir(), 'token');
   let tokenPresent = '';
