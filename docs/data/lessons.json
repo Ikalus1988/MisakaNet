@@ -321,7 +321,7 @@
   {
     "id": "agent-error-handling-hi",
     "title": "एजेंट त्रुटि हैंडलिंग — पुनर्प्रयास और फॉलबैक पैटर्न",
-    "domain": "agents",
+    "domain": "agent",
     "tags": [
       "agent",
       "error-handling",
@@ -792,7 +792,7 @@
   {
     "id": "an-unlikely-database-migration",
     "title": "An Unlikely Database Migration: From JSON Files to etcd",
-    "domain": "database-architecture",
+    "domain": "database",
     "tags": [
       "database-migration",
       "etcd",
@@ -822,7 +822,7 @@
   {
     "id": "anthropic-proxy-internal-gateway",
     "title": "Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy",
-    "domain": "contrib",
+    "domain": "llm",
     "tags": [
       "anthropic",
       "proxy",
@@ -850,7 +850,7 @@
   {
     "id": "api-gateway-anthropic-incompatibility",
     "title": "api gateway anthropic incompatibility",
-    "domain": "contrib",
+    "domain": "llm",
     "tags": [
       "project:rag",
       "severity:medium",
@@ -877,7 +877,7 @@
   {
     "id": "api-rate-limit-handling-best-practices",
     "title": "api rate limit handling best practices",
-    "domain": "contrib",
+    "domain": "api",
     "tags": [
       "rate",
       "limit",
@@ -1279,7 +1279,7 @@
   {
     "id": "chroma-rebuild-no-checkpoint-cn",
     "title": "Chroma 建库无 Checkpoint — 进程一死全部丢失",
-    "domain": "contrib",
+    "domain": "rag",
     "tags": [
       "chroma",
       "rebuild",
@@ -1538,7 +1538,7 @@
   {
     "id": "claude-code-debugging-ml-dsa-cryptography",
     "title": "Claude Code can debug low-level cryptography — ML-DSA signature verification failure",
-    "domain": "debugging",
+    "domain": "development",
     "tags": [
       "claude_code",
       "cryptography",
@@ -1778,7 +1778,7 @@
   {
     "id": "cron-job-not-running",
     "title": "Cron 作业不执行 / 不生效排障",
-    "domain": "contrib",
+    "domain": "devops",
     "tags": [
       "cron",
       "scheduler",
@@ -1978,7 +1978,7 @@
   {
     "id": "data-pipeline-lessons-json-canonical-generator",
     "title": "数据管道 lessons.json 必须用规范生成器 update_lessons_json.py",
-    "domain": "data-pipeline",
+    "domain": "data",
     "tags": [
       "lessons.json",
       "data-pipeline",
@@ -2009,7 +2009,7 @@
   {
     "id": "data-quality-three-layer-fix-pattern",
     "title": "Data Quality Fix: Always Keep Three Layers (DB + ETL + Query)",
-    "domain": "data-engineering",
+    "domain": "data",
     "tags": [
       "data-quality",
       "etl",
@@ -2068,7 +2068,7 @@
   {
     "id": "debugging-memory-leaks-in-ruby",
     "title": "Debugging memory leaks in Ruby",
-    "domain": "Ruby/Performance",
+    "domain": "ruby",
     "tags": [
       "memory-leaks",
       "debugging",
@@ -2128,7 +2128,7 @@
   {
     "id": "disk-space-cleanup",
     "title": "磁盘空间不足 / chroma_db_v4 CacheCleanup",
-    "domain": "contrib",
+    "domain": "devops",
     "tags": [
       "disk",
       "space",
@@ -2218,7 +2218,7 @@
   {
     "id": "dsh-plugin-installation-troubleshooting",
     "title": "DSH Plugin Installation Troubleshooting — Common Failures and Fixes",
-    "domain": "tooling",
+    "domain": "development",
     "tags": [
       "dsh",
       "plugin",
@@ -4030,7 +4030,7 @@
   {
     "id": "ffmpeg-audio-libopus-not-ogg",
     "title": "ffmpeg audio libopus not ogg",
-    "domain": "contrib",
+    "domain": "audio",
     "tags": [
       "ffmpeg",
       "audio",
@@ -4057,7 +4057,7 @@
   {
     "id": "finding-and-fixing-ghostty-s-largest-memory-leak",
     "title": "Finding and fixing Ghostty's largest memory leak",
-    "domain": "memory_management",
+    "domain": "memory",
     "tags": [
       "memory_leak",
       "memory_management",
@@ -4086,7 +4086,7 @@
   {
     "id": "firewall-port-open-not-public",
     "title": "firewall port open not public",
-    "domain": "contrib",
+    "domain": "network",
     "tags": [
       "project:rag",
       "platform:wsl",
@@ -4114,7 +4114,7 @@
   {
     "id": "fiverr-perimeterx-blocks-seller-automation",
     "title": "Fiverr PerimeterX captcha blocks headless seller gig creation",
-    "domain": "web",
+    "domain": "frontend",
     "tags": [
       "fiverr",
       "captcha",
@@ -4259,7 +4259,7 @@
   {
     "id": "gateway-hang-watchdog-recovery",
     "title": "Gateway 进程挂死未崩溃 — watchdog 自动Recovery",
-    "domain": "contrib",
+    "domain": "devops",
     "tags": [
       "gateway",
       "hang",
@@ -4317,7 +4317,7 @@
   {
     "id": "gfw-tls-sni-block-pattern",
     "title": "GFW TLS SNI Block Pattern — Why Tool-Layer Solutions Fail",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "gfw",
       "tls",
@@ -5288,7 +5288,7 @@
   {
     "id": "gpt-sovits-hubert-16khz",
     "title": "gpt sovits hubert 16khz",
-    "domain": "contrib",
+    "domain": "audio",
     "tags": [
       "sovits",
       "hubert",
@@ -5315,7 +5315,7 @@
   {
     "id": "gpt-sovits-name2text-arpabet",
     "title": "gpt sovits name2text arpabet",
-    "domain": "contrib",
+    "domain": "audio",
     "tags": [
       "sovits",
       "name2text",
@@ -5342,7 +5342,7 @@
   {
     "id": "gpt-sovits-ref-free-bug",
     "title": "gpt sovits ref free bug",
-    "domain": "contrib",
+    "domain": "audio",
     "tags": [
       "sovits",
       "free"
@@ -5426,7 +5426,7 @@
   {
     "id": "hub-credential-gateway-vs-hub",
     "title": "Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里",
-    "domain": "contrib",
+    "domain": "security",
     "tags": [
       "credential",
       "gateway"
@@ -5481,7 +5481,7 @@
   {
     "id": "iap-tcp-forwarding-numpy-bandwidth",
     "title": "IAP TCP Forwarding: Numpy Upload Bandwidth Optimization and Buffer Tuning",
-    "domain": "networking",
+    "domain": "network",
     "tags": [
       "iap",
       "gcp",
@@ -5600,7 +5600,7 @@
   {
     "id": "json-parse-failure-handling",
     "title": "JSON 解析失败Handling — 截断 / 格式Error",
-    "domain": "contrib",
+    "domain": "python",
     "tags": [
       "json",
       "parse",
@@ -5685,7 +5685,7 @@
   {
     "id": "knowledge-graph-ux-patterns-from-high-star-projects",
     "title": "knowledge graph ux patterns from high star projects",
-    "domain": "contrib",
+    "domain": "frontend",
     "tags": [
       "knowledge-graph",
       "d3js",
@@ -5859,7 +5859,7 @@
   {
     "id": "lesson-10-agent-reach-doctor-baseline",
     "title": "Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login",
-    "domain": "tooling",
+    "domain": "development",
     "tags": [
       "meta",
       "lesson",
@@ -5889,7 +5889,7 @@
   {
     "id": "lesson-10-microservices-latency-math",
     "title": "微服务延迟成本分析 — 何时不该用微服务",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "microservices",
       "architecture",
@@ -5918,7 +5918,7 @@
   {
     "id": "lesson-11-github-commit-signing",
     "title": "GitHub Commit Signing — GPG 防止提交伪造",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "git",
       "github",
@@ -5948,7 +5948,7 @@
   {
     "id": "lesson-13-aws-lambda-microvms",
     "title": "AWS Lambda MicroVMs — 隔离沙箱与 Firecracker",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "aws",
       "lambda",
@@ -5978,7 +5978,7 @@
   {
     "id": "lesson-14-api-pagination-design",
     "title": "API 分页设计 — Cursor vs Offset vs Keyset",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "api",
       "pagination",
@@ -6008,7 +6008,7 @@
   {
     "id": "lesson-15-cloudflare-workflows-durable",
     "title": "Cloudflare Workflows — 持久化多步骤执行",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "cloudflare",
       "workflows",
@@ -6037,7 +6037,7 @@
   {
     "id": "lesson-16-aws-ecs-high-resolution-metrics",
     "title": "AWS ECS 高分辨率指标 — 更快的自动扩缩容",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "aws",
       "ecs",
@@ -6095,7 +6095,7 @@
   {
     "id": "lesson-18-database-performance-indexing",
     "title": "数据库性能 — 索引与查询优化实践",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "database",
       "postgresql",
@@ -6124,7 +6124,7 @@
   {
     "id": "lesson-19-grpc-openapi-rest-comparison",
     "title": "gRPC vs OpenAPI vs REST — API 协议选择指南",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "grpc",
       "openapi",
@@ -6154,7 +6154,7 @@
   {
     "id": "lesson-20-api-design-principles",
     "title": "API 设计原则 — 无抽象、一致性、幂等性",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "api",
       "design",
@@ -6183,7 +6183,7 @@
   {
     "id": "lesson-9-redis-postgresql-replacement",
     "title": "Redis → PostgreSQL 替换 — 缓存/PubSub/队列统一",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "redis",
       "postgresql",
@@ -6330,7 +6330,7 @@
   {
     "id": "lesson-review-3-devops-platform-engineering",
     "title": "DevOps Platform Engineering — Golden Paths to Reduce Cognitive Load",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "devops",
       "platform-engineering",
@@ -6389,7 +6389,7 @@
   {
     "id": "lesson-review-5-eks-version-rollback",
     "title": "EKS Kubernetes 版本回滚 — 安全升级集群",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "kubernetes",
       "eks",
@@ -6419,7 +6419,7 @@
   {
     "id": "lesson-review-6-cloudflare-x402-monetization",
     "title": "Cloudflare Monetization Gateway — x402 API 支付协议",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "cloudflare",
       "x402",
@@ -6449,7 +6449,7 @@
   {
     "id": "lesson-review-7-cloudflare-saga-rollbacks",
     "title": "Cloudflare Workflows Saga Rollback — Durable Multi-Step Compensation",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "cloudflare",
       "workflows",
@@ -6479,7 +6479,7 @@
   {
     "id": "lesson-review-8-cloudflare-ai-traffic-options",
     "title": "Cloudflare AI Traffic Options — Content Monetization for the Agentic Internet",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "cloudflare",
       "ai",
@@ -6540,7 +6540,7 @@
   {
     "id": "lessons-md-fix-heading-block-type",
     "title": "lessons md fix heading block type",
-    "domain": "contrib",
+    "domain": "meta",
     "tags": [
       "lessons",
       "heading",
@@ -6659,7 +6659,7 @@
   {
     "id": "maintainer-feedback-iteration",
     "title": "Maintainer Feedback Iteration — Address Blockers, Not Just Comments",
-    "domain": "contrib",
+    "domain": "meta",
     "tags": [
       "contrib",
       "maintainer",
@@ -6895,7 +6895,7 @@
   {
     "id": "mcp-server-that-reduces-claude-code-context-consumption-by-9",
     "title": "Context Mode: Reducing Claude Code Context Consumption by 98%",
-    "domain": "ai-agents",
+    "domain": "agent",
     "tags": [
       "mcp",
       "claude",
@@ -7043,7 +7043,7 @@
   {
     "id": "misakanet-heal-engine-bootstrap-workflow",
     "title": "MisakaNet --heal Engine Bootstrap Workflow",
-    "domain": "contrib",
+    "domain": "meta",
     "tags": [
       "misakanet",
       "heal",
@@ -7072,7 +7072,7 @@
   {
     "id": "misakanet-heal-ux-gap-queue-lesson-flag-mismatch",
     "title": "MisakaNet --heal UX Gap — Suggested queue_lesson.py Command Uses Wrong Flag",
-    "domain": "contrib",
+    "domain": "meta",
     "tags": [
       "misakanet",
       "heal",
@@ -7102,7 +7102,7 @@
   {
     "id": "misakanet-refactor-v2-review",
     "title": "misakanet refactor v2 review",
-    "domain": "contrib",
+    "domain": "meta",
     "tags": [
       "misakanet",
       "refactor",
@@ -7129,7 +7129,7 @@
   {
     "id": "model-output-fix",
     "title": "模型输出截断 / JSON 解析失败Handling",
-    "domain": "contrib",
+    "domain": "llm",
     "tags": [
       "model",
       "output"
@@ -7155,7 +7155,7 @@
   {
     "id": "model-switch-script-pattern",
     "title": "多模型Switch脚本模式 — 双 Agent 模型管理",
-    "domain": "contrib",
+    "domain": "llm",
     "tags": [
       "model",
       "switch",
@@ -7183,7 +7183,7 @@
   {
     "id": "multi-forum-scraping-architecture",
     "title": "Multi-Forum Scraping Architecture — API vs Playwright",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "scraping",
       "playwright",
@@ -7330,7 +7330,7 @@
   {
     "id": "openai-compatible-api-call",
     "title": "OpenAI 兼容 API 的通用调用格式",
-    "domain": "contrib",
+    "domain": "llm",
     "tags": [
       "api",
       "openai",
@@ -7562,7 +7562,7 @@
   {
     "id": "oss-refactor-lessons",
     "title": "oss refactor lessons",
-    "domain": "contrib",
+    "domain": "meta",
     "tags": [
       "refactor",
       "lessons"
@@ -7588,7 +7588,7 @@
   {
     "id": "permission-denied-fix",
     "title": "Permission Denied / WSL NTFS 跨文件系统PermissionFix",
-    "domain": "contrib",
+    "domain": "wsl",
     "tags": [
       "permission",
       "denied"
@@ -7614,7 +7614,7 @@
   {
     "id": "phase-0-output-gate",
     "title": "phase 0 output gate",
-    "domain": "contrib",
+    "domain": "meta",
     "tags": [
       "output-gate",
       "knowledge-reuse",
@@ -7672,7 +7672,7 @@
   {
     "id": "pip-install-timeout-ssl",
     "title": "pip install Network Timeout / SSL ErrorFix",
-    "domain": "contrib",
+    "domain": "python",
     "tags": [
       "install",
       "timeout"
@@ -7788,7 +7788,7 @@
   {
     "id": "pr-strategy",
     "title": "External PR Strategy via pr-genius",
-    "domain": "contrib",
+    "domain": "meta",
     "tags": [
       "github-pr",
       "external-pr",
@@ -7845,7 +7845,7 @@
   {
     "id": "process-card-sequence-extraction-rules",
     "title": "工艺卡步序提取：辅助动作不算独立步序，按工艺动作分界",
-    "domain": "engineering",
+    "domain": "development",
     "tags": [
       "process-card",
       "time-chart",
@@ -7874,7 +7874,7 @@
   {
     "id": "prompt-injection-what-s-the-worst-that-can-happen",
     "title": "Prompt Injection: What's the Worst That Can Happen?",
-    "domain": "AI Security",
+    "domain": "security",
     "tags": [
       "prompt injection",
       "LLM security",
@@ -8473,7 +8473,7 @@
   {
     "id": "rdt-cli-reddit-terminal",
     "title": "rdt-cli — Reddit in Your Terminal (Reverse-Engineered API)",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "rdt-cli",
       "reddit",
@@ -8502,7 +8502,7 @@
   {
     "id": "readme-seven-traps-fix-checklist",
     "title": "开源项目 README Optimization — 7 个常见Pitfalls与Fix Checklist",
-    "domain": "contrib",
+    "domain": "meta",
     "tags": [
       "readme",
       "seven",
@@ -8559,7 +8559,7 @@
   {
     "id": "regex-greedy-matching",
     "title": "正则表达式 debugging — 贪婪匹配造成的意外结果",
-    "domain": "contrib",
+    "domain": "development",
     "tags": [
       "regex",
       "debug",
@@ -8859,7 +8859,7 @@
   {
     "id": "scrapling-installation-and-usage",
     "title": "Scrapling — Web Scraping Library with Anti-Detection",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "scrapling",
       "scraping",
@@ -9006,7 +9006,7 @@
   {
     "id": "session-lesson-1-content-quality-scoring",
     "title": "Content Quality Scoring System — Automated Lesson Evaluation",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "quality",
       "scoring",
@@ -9036,7 +9036,7 @@
   {
     "id": "session-lesson-2-forum-accessibility-testing",
     "title": "Forum Accessibility Testing — Systematic Reachability Check",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "scraping",
       "accessibility",
@@ -9066,7 +9066,7 @@
   {
     "id": "session-lesson-3-lobsters-json-api",
     "title": "Lobsters JSON API — Structured Tech Forum Scraping",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "lobsters",
       "api",
@@ -9096,7 +9096,7 @@
   {
     "id": "session-lesson-4-playwright-forum-selectors",
     "title": "Playwright Forum Selectors — WoltLab/IPS/Common Patterns",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "playwright",
       "scraping",
@@ -9125,7 +9125,7 @@
   {
     "id": "shared-json-needs-atomic-write",
     "title": "shared json needs atomic write",
-    "domain": "contrib",
+    "domain": "development",
     "tags": [
       "json",
       "atomic",
@@ -9153,7 +9153,7 @@
   {
     "id": "shell-script-debugging",
     "title": "Shell Debugging — set -x 与常见Pitfalls",
-    "domain": "contrib",
+    "domain": "development",
     "tags": [
       "shell",
       "script",
@@ -9180,7 +9180,7 @@
   {
     "id": "slugify-path-traversal-deep-coverage",
     "title": "slugify path traversal deep coverage",
-    "domain": "contrib",
+    "domain": "security",
     "tags": [
       "slugify",
       "path-traversal",
@@ -9327,7 +9327,7 @@
   {
     "id": "static-page-github-api-403-rate-limit",
     "title": "static page github api 403 rate limit",
-    "domain": "contrib",
+    "domain": "api",
     "tags": [
       "api",
       "rate-limit",
@@ -9356,7 +9356,7 @@
   {
     "id": "static-page-width-consistency",
     "title": "static page width consistency",
-    "domain": "contrib",
+    "domain": "frontend",
     "tags": [
       "css",
       "layout",
@@ -9444,7 +9444,7 @@
   {
     "id": "swarm-pr-battle-playbook",
     "title": "Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams",
-    "domain": "contrib",
+    "domain": "meta",
     "tags": [
       "swarm",
       "battle",
@@ -9527,7 +9527,7 @@
   {
     "id": "tmux-session-management",
     "title": "tmux 终端复用 — 断开不丢失会话",
-    "domain": "contrib",
+    "domain": "devops",
     "tags": [
       "tmux",
       "terminal",
@@ -9586,7 +9586,7 @@
   {
     "id": "tts-chinese-encoding-powershell",
     "title": "tts chinese encoding powershell",
-    "domain": "contrib",
+    "domain": "audio",
     "tags": [
       "chinese",
       "encoding",
@@ -10093,7 +10093,7 @@
   {
     "id": "wecom-robot-long-connect-no-ngrok",
     "title": "wecom robot long connect no ngrok",
-    "domain": "contrib",
+    "domain": "wechat",
     "tags": [
       "project:rag",
       "platform:windows",
@@ -10243,7 +10243,7 @@
   {
     "id": "wsl-ntfs-sqlite-update-100x-slower",
     "title": "WSL NTFS SQLite UPDATE 100x slower than ext4",
-    "domain": "data-engineering",
+    "domain": "data",
     "tags": [
       "wsl",
       "sqlite",
@@ -10557,7 +10557,7 @@
   {
     "id": "agent-pid-lockfile",
     "title": "PID lockfile so earn loops do not double-run",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "lock",
       "pid",
@@ -10587,7 +10587,7 @@
   {
     "id": "atomic-write-replace",
     "title": "Atomic file replace for agent status JSON",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "ops",
       "json",
@@ -10616,7 +10616,7 @@
   {
     "id": "browser-cookie-export-for-apis",
     "title": "Copy Firefox cookies.sqlite for authenticated API calls",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "firefox",
       "cookies",
@@ -10676,7 +10676,7 @@
   {
     "id": "content-pack-ready-before-credits",
     "title": "Build Superteam content packs before credits refill",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "superteam",
       "credits",
@@ -10706,7 +10706,7 @@
   {
     "id": "curl-fail-fast-flags",
     "title": "curl fail-fast flags for agent scripts",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "ops",
       "agent",
@@ -10734,7 +10734,7 @@
   {
     "id": "date-sast-logging",
     "title": "Log timestamps in SAST for SA ops agents",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "ops",
       "timezone",
@@ -10763,7 +10763,7 @@
   {
     "id": "disk-full-agent-tmp-gc",
     "title": "Disk full from agent tmp dirs — GC pattern",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "disk",
       "tmp",
@@ -10793,7 +10793,7 @@
   {
     "id": "empty-board-idle-exit",
     "title": "Idle-exit cleanly when bounty boards are empty",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "idle",
       "sniper",
@@ -10853,7 +10853,7 @@
   {
     "id": "exponential-backoff-cap",
     "title": "Cap exponential backoff so jobs finish",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "backoff",
       "retry",
@@ -10882,7 +10882,7 @@
   {
     "id": "gh-pr-ready-checklist",
     "title": "GitHub PR ready checklist for agent docs PRs",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "github",
       "pr",
@@ -10971,7 +10971,7 @@
   {
     "id": "honest-zero-cash-reporting",
     "title": "Report $0 cash honestly while pending is non-zero",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "money",
       "ledger",
@@ -11000,7 +11000,7 @@
   {
     "id": "http-timeout-retry-pattern",
     "title": "HTTP client timeout + retry pattern for agents",
-    "domain": "networking",
+    "domain": "network",
     "tags": [
       "http",
       "timeout",
@@ -11030,7 +11030,7 @@
   {
     "id": "idempotent-task-claim",
     "title": "Idempotent task claim keys for snipers",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "idempotency",
       "claim",
@@ -11089,7 +11089,7 @@
   {
     "id": "jsonl-activity-ledger",
     "title": "Append-only JSONL activity ledger for agents",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "ledger",
       "jsonl",
@@ -11118,7 +11118,7 @@
   {
     "id": "links-json-mixed-types",
     "title": "Normalize mixed types in links.json pack manifests",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "json",
       "packs",
@@ -11176,7 +11176,7 @@
   {
     "id": "mkdir-p-race-safe",
     "title": "Race-safe mkdir -p in parallel agents",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "ops",
       "agent",
@@ -11204,7 +11204,7 @@
   {
     "id": "multi-lane-rotate-on-block",
     "title": "Rotate earn lanes when one market is blocked",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "multi-lane",
       "earn",
@@ -11234,7 +11234,7 @@
   {
     "id": "proof-folder-for-paid-jobs",
     "title": "Proof folder layout for paid agent jobs",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "proof",
       "ledger",
@@ -11264,7 +11264,7 @@
   {
     "id": "rate-limit-jitter-sleep",
     "title": "Add jitter to retry sleeps (avoid thundering herd)",
-    "domain": "networking",
+    "domain": "network",
     "tags": [
       "retry",
       "jitter",
@@ -11293,7 +11293,7 @@
   {
     "id": "restart-earn-loop-after-code-fix",
     "title": "Restart long-lived earn loops after code fixes",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "ops",
       "restart",
@@ -11322,7 +11322,7 @@
   {
     "id": "separate-scout-and-worker-modes",
     "title": "Separate scout vs worker modes in earn agents",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "mode",
       "scout",
@@ -11352,7 +11352,7 @@
   {
     "id": "signal-timeout-wrapper",
     "title": "Timeout wrapper for runaway agent children",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "ops",
       "agent",
@@ -11380,7 +11380,7 @@
   {
     "id": "single-instance-flock",
     "title": "Single-instance flock for shell snipers",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "flock",
       "lock",
@@ -11440,7 +11440,7 @@
   {
     "id": "stdout-stderr-split-cron",
     "title": "Split stdout/stderr in cron earn jobs",
-    "domain": "ops",
+    "domain": "devops",
     "tags": [
       "cron",
       "logging",
@@ -11469,7 +11469,7 @@
   {
     "id": "user-agent-identify-bots",
     "title": "Set a clear User-Agent on earn HTTP clients",
-    "domain": "networking",
+    "domain": "network",
     "tags": [
       "http",
       "user-agent",

@@ -32,6 +32,20 @@
 > existing on disk. Codex has no user-level lifecycle hook (0.154.0 hooks are admin-managed
 > through `requirements.toml`), so the round-20 checkpoint reminder is rule-driven there,
 > not hook-driven.
+>
+> **A live session calls the tool** (2026-09-15, codex-cli 0.154.0 driven by MiniMax-M3):
+>
+> ```bash
+> MINIMAX_API_KEY=… codex exec --json >   -c model_provider="minimax" >   -c 'model_providers.minimax={name="MiniMax",base_url="https://api.minimax.chat/v1",
+>        env_key="MINIMAX_API_KEY",wire_api="responses"}' >   -m MiniMax-M3 --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox >   "pip install 一直 timeout，帮我看看是什么原因？"
+> ```
+>
+> → the JSONL event stream contains `server=misakanet tool=misakanet_search` with
+> `{"query":"pip install timeout","detail":"summary","top":5}`, and the returned results carry
+> the lesson text. So the chain works end to end: config → prompt instructions → tool call →
+> answer. Two notes for anyone re-running it: Codex 0.154.0 **rejects `wire_api = "chat"`**
+> (Responses API only — MiniMax serves `/v1/responses`, so `"responses"` is the working value),
+> and `--json` is what makes the tool call visible (plain `exec` output does not name it).
 | DeepSeek Harness | MCP adapter | ✅ Supported |
 | Gemini CLI | MCP | ✅ Supported |
 | Windsurf | MCP | ✅ Supported |
