@@ -1,5 +1,19 @@
 # RFC: MisakaNet 90-Day Roadmap Evaluation
 
+> **历史文档 · 2026-09-16 标注**
+>
+> 本文是 2026-07-29 的一次 RFC 提案（issue #280），**不是当前路线图**，其中的
+> Vision 1–4、指标数字与 90 天计划均未随仓库演进更新。
+>
+> **唯一对外路线图是 [`ROADMAP.md`](../ROADMAP.md)**（仓库根目录），当前计划看其中的
+> 「2026-09-16 更新 — 五层拼图与优先事项」一节。
+>
+> 本文仅保留为决策记录：Vision 1（经验复用底座）与 Vision 2（薄 MCP 网关）已被采纳并超出原计划
+> （远端 MCP 现有 7 个工具）；Vision 3（agent 能力测试平台）未作为独立产品线启动；
+> Vision 4 里的 Federated / Enterprise 至今**没有 PRD、没有实现**（见
+> `docs/maintainer/blueprint-and-strategy-review-2026-09-16.md` §2.4）。
+> 文中的 363 篇课程是当时口径，现为 393（`python3 scripts/sync_lesson_count.py --check`）。
+
 **Author:** [zsxh1990](https://github.com/zsxh1990)
 **Date:** 2026-07-29
 **Issue:** [#280](https://github.com/Ikalus1988/MisakaNet/issues/280)
