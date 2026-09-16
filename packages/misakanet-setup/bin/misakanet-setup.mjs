@@ -103,7 +103,7 @@ function readText(path) {
  * meant to prevent is now caught in CI instead, by a test that binds this literal to the
  * manifest — a failing test is a better place for that than a request header.
  */
-const VERSION = '0.5.0';
+const VERSION = '0.5.1';
 
 function backup(path) {
   if (DRY || !readText(path)) return;
@@ -875,6 +875,9 @@ async function installOpenclaw(bearer) {
   ok(`OpenClaw：注册 MCP（streamable-http）→ ${cfg}`);
 }
 
+// The last endpoint probe, recorded so `--report` can print it without probing twice.
+let lastProbe = { reachable: false, tools: 0 };
+
 async function verify() {
   let allOk = true;
   // Handshake, not a search. `tools/list` proves the endpoint speaks MCP and answers, and it
@@ -885,6 +888,7 @@ async function verify() {
   // network was broken (found 2026-09-15 by running the agent chain test on this machine).
   const probe = await mcpRequest('tools/list', {}, 6000, probeEndpoint());
   const tools = Array.isArray(probe?.tools) ? probe.tools : [];
+  lastProbe = { reachable: tools.length > 0, tools: tools.length };
   if (tools.length) {
     ok(`端点可达：${ENDPOINT}（MCP 握手成功，${tools.length} 个工具）`);
   } else if (probe && (probe.error || probe.protocolVersion || probe.serverInfo)) {
@@ -1123,6 +1127,88 @@ function uninstall() {
   }
 }
 
+/**
+ * `--report`: this machine's state as YAML, safe to paste into a public issue.
+ *
+ * Why it exists: the bounty that asks strangers' machines to run the installer also asks them to
+ * report back — and a report that a human has to assemble by hand is (a) rarely sent and (b)
+ * usually containing their token. So the tool prints its own evidence, redacted by construction,
+ * and leaves only the two things it cannot know (which tools the *agent* sees, and a line of
+ * live-call evidence) as empty fields for the reporter to fill.
+ *
+ * Invariants: the token value never appears (only present/absent); every home path is written as
+ * `~`; no hostname, no IP, no user name. `redact()` is deliberately blunt and applied to every
+ * string, including the messages assembled by the checks.
+ */
+function redact(value) {
+  return String(value)
+    .split(HOME).join('~')
+    .replace(/mcp_[A-Za-z0-9_-]{8,}/g, '<REDACTED>')
+    .replace(/sk-[A-Za-z0-9_-]{8,}/g, '<REDACTED>')
+    .replace(/Bearer [A-Za-z0-9_.-]{8,}/gi, 'Bearer <REDACTED>');
+}
+
+function voiceStatus() {
+  try {
+    const settings = readJson(join(HOME, '.claude', 'settings.json'), null);
+    const buckets = settings?.hooks?.PostToolUse;
+    if (!Array.isArray(buckets)) return 'absent';
+    const ours = buckets.filter((entry) => JSON.stringify(entry).includes('voice-hook'));
+    if (!ours.length) return 'absent';
+    return ours.some((entry) => entry.matcher === '*') ? 'on' : 'stale';
+  } catch {
+    return 'unknown';
+  }
+}
+
+function platformName() {
+  if (process.platform === 'win32') return 'windows';
+  if (process.platform === 'darwin') return 'macos';
+  if (process.env.WSL_DISTRO_NAME || process.env.WSL_INTEROP) return 'wsl2';
+  return process.platform; // linux
+}
+
+function distroName() {
+  try {
+    const release = readFileSync('/etc/os-release', 'utf8');
+    const id = release.match(/^ID="?([a-z0-9._-]+)"?$/m);
+    return id ? id[1] : 'unknown';
+  } catch {
+    return 'n/a';
+  }
+}
+
+async function report() {
+  const allOk = await verify();
+  const agents = AGENTS.filter((agent) => detect(agent));
+  const token = existsSync(join(stateDir(), 'token'));
+  const lines = [
+    '# MisakaNet setup report — safe to paste in public; the two empty fields at the end are',
+    '# for you to fill (they are the only parts this tool cannot know).',
+    'schema: misakanet-setup-report/1',
+    `setup-version: ${VERSION}`,
+    `os: ${platformName()}`,
+    `distro: ${distroName()}`,
+    `arch: ${process.arch}`,
+    `node: ${process.version}`,
+    `detected-agents: [${agents.join(', ')}]`,
+    `verify: ${allOk ? 'READY' : 'NOT READY'}`,
+    `endpoint-reachable: ${lastProbe.reachable}`,
+    `endpoint-tools: ${lastProbe.tools}`,
+    `token: ${token ? 'present' : 'absent'}`,
+    `hook: ${existsSync(join(stateDir(), 'hook.mjs')) ? 'present' : 'absent'}`,
+    `voice: ${voiceStatus()}`,
+    `open-items: ${manual.length}`,
+    ...(manual.length
+      ? ['open-items-detail:', ...manual.map((m) => `  - ${redact(m)}`)]
+      : []),
+    '# Fill these two in (see the bounty for how):',
+    'tools-visible: {}          # e.g. {codex: 7} — from `codex mcp list` / `codewhale mcp tools`',
+    'live-call-evidence: ""     # one line your agent printed when it called misakanet_search',
+  ];
+  console.log(lines.join('\n'));
+}
+
 // ── main ─────────────────────────────────────────────────────────────
 function render() {
   const out = [];
@@ -1132,14 +1218,28 @@ function render() {
   return out.join('\n');
 }
 
-const mode = has('--uninstall') ? 'uninstall' : (has('--verify') ? 'verify' : 'install');
-console.log(`MisakaNet 安装程序（npx 版）${DRY ? '（--dry-run，不会写任何文件）' : ''}${has('--upgrade') ? '（--upgrade：与安装等价，覆盖安装即升级）' : ''}`);
-console.log(`家目录：${HOME}\n`);
+const mode = has('--uninstall') ? 'uninstall'
+  : (has('--report') ? 'report'
+  : (has('--verify') ? 'verify' : 'install'));
+if (mode !== 'report') {
+  // The banner names the home directory, which is exactly the kind of thing that gets pasted
+  // along with a report — so `--report` prints only the report.
+  console.log(`MisakaNet 安装程序（npx 版）${DRY ? '（--dry-run，不会写任何文件）' : ''}${has('--upgrade') ? '（--upgrade：与安装等价，覆盖安装即升级）' : ''}`);
+  console.log(`家目录：${HOME}\n`);
+}
 
 if (mode === 'uninstall') {
   uninstall();
   console.log(render());
   console.log('\n已恢复原状（每个改过的文件都有 .misakanet.bak 备份）。');
+  process.exit(0);
+}
+
+if (mode === 'report') {
+  // Reporting must work before an install too: a bot's first useful data point is often "this
+  // machine has no agent config at all". Exit 0 even when NOT READY — the report is evidence,
+  // not a gate.
+  await report();
   process.exit(0);
 }
 
