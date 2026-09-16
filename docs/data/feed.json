@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-16T17:07:53.522299+00:00",
+  "generated_at": "2026-09-16T21:25:38.833597+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(ci): an opt-in auto-merge channel for lesson pull requests",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1781",
-      "timestamp": "2026-09-16T16:59:27Z",
+      "title": "feat(voice): turn the cue player into an attention router, with desktop notifications",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1787",
+      "timestamp": "2026-09-16T17:42:00Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(setup): keep the first backup, tighten the Hermes token file, and stop two silent failures",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1774",
-      "timestamp": "2026-09-16T16:42:36Z",
+      "title": "feat(ci): an `/adopt` flow so a fork PR blocked on sign-off is not blocked at all",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1786",
+      "timestamp": "2026-09-16T17:41:54Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix: security and parsing holes found by an open-code-review scan",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1773",
-      "timestamp": "2026-09-16T16:42:30Z",
+      "title": "feat(setup): `--report --strict`, so the health report can gate CI",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1791",
+      "timestamp": "2026-09-16T17:39:21Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(test): alias evidence must be a file git tracks, not one that only exists locally",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1776",
-      "timestamp": "2026-09-16T16:40:36Z",
+      "title": "feat(lessons): optional structured fields — summary_plain, trigger, verify",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1792",
+      "timestamp": "2026-09-16T17:36:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(retrieval): a grounded query-alias table, and the measurement that justifies it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1770",
-      "timestamp": "2026-09-16T15:54:41Z",
+      "title": "docs(maintainer): handoff for 2026-09-16",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1789",
+      "timestamp": "2026-09-16T17:34:35Z",
       "source": "github"
     },
     {
