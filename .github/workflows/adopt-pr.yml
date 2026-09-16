@@ -1,0 +1,210 @@
+name: Adopt Fork PR
+
+# issue #1778 — the `/adopt` short path for a fork PR that is blocked on DCO alone.
+#
+# fix-dco.yml cannot help here: the default GITHUB_TOKEN has no write access to a fork, so it
+# stops at "Handle fork PR — manual instructions only". /adopt instead lands the fork's work
+# through a same-repo branch (adopted/<n>) with no new secret:
+#
+#   phase 1  a maintainer comments `/adopt`          -> a dry-run plan is posted, nothing is written
+#   phase 2  a maintainer comments `/adopt --apply`  -> fetch -> rebase --signoff -> push -> PR
+#
+# The fork is never written to, main is never force-pushed, and the only change the bot makes
+# is the Signed-off-by trailer: the contributor keeps the authorship and is credited with a
+# Co-authored-by trailer in the new PR. See docs/maintainer/adopt-fork-pr.md.
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: adopt-pr-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  adopt:
+    # A pull-request comment, starting with /adopt, written by someone who can land code here.
+    if: |
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/adopt') &&
+      contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # gh must be authenticated in every step that runs it (tests/test_workflow_gh_auth.py):
+    # `permissions:` alone does not export a token.
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout the base repository (main, full history)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Persisted credentials are what lets the Phase 2 `git push origin` write the
+          # adopted/<n> branch; the fork is only ever fetched, never pushed to.
+          persist-credentials: true
+
+      - name: Configure git identity
+        run: |
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.dev"
+
+      - name: Resolve the command, the fork head and the original PR payload
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+        run: |
+          set -euo pipefail
+          PR="${{ github.event.issue.number }}"
+          REPO="${{ github.repository }}"
+
+          FIRST_LINE="$(printf '%s' "$COMMENT_BODY" | head -n 1 | tr -d '\r')"
+          MODE="dry-run"
+          case "$FIRST_LINE" in
+            *--apply*) MODE="apply" ;;
+          esac
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+
+          gh api "repos/$REPO/pulls/$PR" > "$RUNNER_TEMP/adopt-pr.json"
+          gh api "repos/$REPO/pulls/$PR/commits?per_page=100" > "$RUNNER_TEMP/adopt-commits.json"
+
+          HEAD_REPO="$(jq -r '.head.repo.clone_url // ""' "$RUNNER_TEMP/adopt-pr.json")"
+          HEAD_FULL="$(jq -r '(.head.repo.full_name) // ((.head.label | split(":")[0]) + "/" + .base.repo.name)' "$RUNNER_TEMP/adopt-pr.json")"
+          HEAD_BRANCH="$(jq -r '.head.ref' "$RUNNER_TEMP/adopt-pr.json")"
+          HEAD_SHA="$(jq -r '.head.sha' "$RUNNER_TEMP/adopt-pr.json")"
+          HEAD_LABEL="$(jq -r '.head.label' "$RUNNER_TEMP/adopt-pr.json")"
+          BASE_REF="$(jq -r '.base.ref' "$RUNNER_TEMP/adopt-pr.json")"
+          AUTHOR_LOGIN="$(jq -r '.user.login' "$RUNNER_TEMP/adopt-pr.json")"
+          AUTHOR="$(jq -r 'if (.[0] // null) then "\(.[0].commit.author.name) <\(.[0].commit.author.email)>" else "" end' "$RUNNER_TEMP/adopt-commits.json")"
+
+          # /adopt lands onto main only: if a PR targets anything else, say so and stop.
+          if [ "$BASE_REF" != "main" ]; then
+            printf '### /adopt refused — PR #%s\n\nThis PR targets the base branch "%s", and /adopt only lands a fork adoption onto main. Ask the author to retarget the PR at main, or handle this one by hand.\n' "$PR" "$BASE_REF" > "$RUNNER_TEMP/adopt-guard.md"
+            gh pr comment "$PR" --body-file "$RUNNER_TEMP/adopt-guard.md"
+            echo "::notice::PR #$PR targets $BASE_REF, not main — refusing to adopt."
+            exit 0
+          fi
+
+          {
+            echo "ADOPT_PR=$PR"
+            echo "ADOPT_MODE=$MODE"
+            echo "ADOPT_ADOPTER=$COMMENT_AUTHOR"
+            echo "ADOPT_HEAD_REPO=$HEAD_REPO"
+            echo "ADOPT_HEAD_FULL=$HEAD_FULL"
+            echo "ADOPT_HEAD_BRANCH=$HEAD_BRANCH"
+            echo "ADOPT_HEAD_SHA=$HEAD_SHA"
+            echo "ADOPT_HEAD_LABEL=$HEAD_LABEL"
+            echo "ADOPT_AUTHOR=$AUTHOR"
+            echo "ADOPT_AUTHOR_LOGIN=$AUTHOR_LOGIN"
+            echo "ADOPT_BASE_REF=$BASE_REF"
+            echo "ADOPT_COMMITS_FILE=$RUNNER_TEMP/adopt-commits.json"
+            echo "ADOPT_TITLE<<ADOPT_TITLE_EOF"
+            jq -r '.title // ""' "$RUNNER_TEMP/adopt-pr.json"
+            echo "ADOPT_TITLE_EOF"
+            echo "ADOPT_BODY<<ADOPT_BODY_EOF"
+            jq -r '.body // ""' "$RUNNER_TEMP/adopt-pr.json"
+            echo "ADOPT_BODY_EOF"
+          } >> "$GITHUB_ENV"
+
+          echo "PR #$PR — mode=$MODE, head=$HEAD_FULL $HEAD_BRANCH@$HEAD_SHA, author=$AUTHOR, adopter=$COMMENT_AUTHOR"
+
+      - name: Phase 1 — dry run, post the plan
+        if: steps.resolve.outputs.mode == 'dry-run'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set +e
+          python3 scripts/adopt_pr.py "$ADOPT_PR" \
+            --head-repo "$ADOPT_HEAD_REPO" \
+            --head-repo-full-name "$ADOPT_HEAD_FULL" \
+            --head-branch "$ADOPT_HEAD_BRANCH" \
+            --head-sha "$ADOPT_HEAD_SHA" \
+            --head-label "$ADOPT_HEAD_LABEL" \
+            --author "$ADOPT_AUTHOR" \
+            --author-login "$ADOPT_AUTHOR_LOGIN" \
+            --title "$ADOPT_TITLE" \
+            --body "$ADOPT_BODY" \
+            --commits-file "$ADOPT_COMMITS_FILE" \
+            --repo "$REPO" \
+            --base main \
+            --workdir . \
+            --adopter "$ADOPT_ADOPTER" \
+            --comment-out "$RUNNER_TEMP/adopt-comment.md"
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; then
+            # rc=0 is the plan, rc=2 is a refusal: both are written to the same comment file.
+            gh pr comment "$ADOPT_PR" --body-file "$RUNNER_TEMP/adopt-comment.md"
+          else
+            echo "::error::adopt_pr.py exited $rc — no plan was produced"
+            exit "$rc"
+          fi
+
+      - name: Phase 2 — fetch, rebase with --signoff, push adopted/<n>
+        id: apply
+        if: steps.resolve.outputs.mode == 'apply'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set +e
+          python3 scripts/adopt_pr.py "$ADOPT_PR" --apply \
+            --head-repo "$ADOPT_HEAD_REPO" \
+            --head-repo-full-name "$ADOPT_HEAD_FULL" \
+            --head-branch "$ADOPT_HEAD_BRANCH" \
+            --head-sha "$ADOPT_HEAD_SHA" \
+            --head-label "$ADOPT_HEAD_LABEL" \
+            --author "$ADOPT_AUTHOR" \
+            --author-login "$ADOPT_AUTHOR_LOGIN" \
+            --title "$ADOPT_TITLE" \
+            --body "$ADOPT_BODY" \
+            --commits-file "$ADOPT_COMMITS_FILE" \
+            --repo "$REPO" \
+            --base main \
+            --workdir . \
+            --adopter "$ADOPT_ADOPTER" \
+            --body-out "$RUNNER_TEMP/adopt-body.md" \
+            --comment-out "$RUNNER_TEMP/adopt-notice.md" \
+            --summary-out "$RUNNER_TEMP/adopt-summary.json"
+          rc=$?
+          set -e
+          if [ "$rc" -ne 0 ]; then
+            # rc=2 is a refusal; anything else is a conflict, a moved fork or a rejected push.
+            if [ -f "$RUNNER_TEMP/adopt-notice.md" ]; then
+              gh pr comment "$ADOPT_PR" --body-file "$RUNNER_TEMP/adopt-notice.md"
+            else
+              printf '### /adopt --apply failed (exit %s)\n\nNothing was pushed. The workflow log has the exact step and reason; re-run /adopt to see a fresh plan.\n' "$rc" > "$RUNNER_TEMP/adopt-failure.md"
+              gh pr comment "$ADOPT_PR" --body-file "$RUNNER_TEMP/adopt-failure.md"
+            fi
+            echo "::error::adopt_pr.py --apply exited $rc"
+            exit "$rc"
+          fi
+
+      - name: Open the adopted PR
+        id: create
+        if: steps.resolve.outputs.mode == 'apply'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          URL="$(gh pr create --base main --head "adopted/$ADOPT_PR" --title "$ADOPT_TITLE" --body-file "$RUNNER_TEMP/adopt-body.md")"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Opened $URL"
+
+      - name: Credit the original author and close the original PR
+        if: steps.resolve.outputs.mode == 'apply'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_PR_URL: ${{ steps.create.outputs.url }}
+        run: |
+          sed "s|{{NEW_PR_URL}}|$NEW_PR_URL|g" "$RUNNER_TEMP/adopt-notice.md" > "$RUNNER_TEMP/adopt-notice-final.md"
+          gh pr comment "$ADOPT_PR" --body-file "$RUNNER_TEMP/adopt-notice-final.md"
+          gh pr close "$ADOPT_PR" --delete-branch=false
