@@ -1279,6 +1279,15 @@ function distroName() {
   }
 }
 
+/**
+ * Returns the verdict it printed, so the caller can turn the *same* two fields into an exit code
+ * without re-running the checks or re-parsing its own YAML (issue #1782):
+ *   { allOk }      ← the `verify:` line
+ *   { openItems }  ← the `open-items:` line (`manual.length`)
+ * Nothing else participates in the gate. In particular `tools-visible` and `live-call-evidence` are
+ * printed blank for the reporter to fill in *afterwards*: they are never read back here, and a gate
+ * that depended on the reporter's diligence would not be a gate.
+ */
 async function report() {
   const allOk = await verify();
   const agents = AGENTS.filter((agent) => detect(agent));
@@ -1316,6 +1325,7 @@ async function report() {
     'live-call-evidence: ""     # one line your agent printed when it called misakanet_search',
   ];
   console.log(lines.join('\n'));
+  return { allOk, openItems: manual.length };
 }
 
 // ── main ─────────────────────────────────────────────────────────────
@@ -1327,8 +1337,12 @@ function render() {
   return out.join('\n');
 }
 
+// `--ci` is shorthand for `--report --strict` (issue #1782), so it selects report mode on its own —
+// but it must not hijack an explicit mode flag: `--verify --ci` still verifies, and
+// `--uninstall --ci` still undoes.
+const STRICT = has('--strict') || has('--ci');
 const mode = has('--uninstall') ? 'uninstall'
-  : (has('--report') ? 'report'
+  : ((has('--report') || (has('--ci') && !has('--verify'))) ? 'report'
   : (has('--verify') ? 'verify' : 'install'));
 if (mode !== 'report') {
   // The banner names the home directory, which is exactly the kind of thing that gets pasted
@@ -1345,11 +1359,44 @@ if (mode === 'uninstall') {
 }
 
 if (mode === 'report') {
-  // Reporting must work before an install too: a bot's first useful data point is often "this
-  // machine has no agent config at all". Exit 0 even when NOT READY — the report is evidence,
-  // not a gate.
-  await report();
-  process.exit(0);
+  // Two exit-code contracts live in this one mode, and the difference IS the feature (#1782):
+  //
+  //   --report                  → ALWAYS exit 0 when the report is produced. The report is
+  //                               evidence, not a gate: people pipe it into a chat window, into
+  //                               CI logs, and into public issues, and a nonzero exit there turns
+  //                               "collect evidence" into a failing step. **Do not "fix" this to
+  //                               follow the verdict** — that breaks every existing use, and the
+  //                               gated form below already exists for CI.
+  //   --report --strict (--ci)  → 0 READY · 1 NOT READY (including `open-items > 0`) ·
+  //                               2 the report could not be produced at all.
+  //
+  // The verdict comes from the report's own `verify:` and `open-items:` fields and from nothing
+  // else — see report() for why the two human-filled fields must never enter this decision.
+  // `--report --strict` on a machine that is not ready still prints the full YAML first, so CI
+  // can paste the evidence into the job summary and still fail the step.
+  // Reporting also has to work *before* an install (a bot's first useful data point is often
+  // "this machine has no agent config at all") — which is why "not ready" is 1, not 2, and why
+  // the default mode stays 0.
+  let verdict;
+  try {
+    verdict = await report();
+  } catch (err) {
+    // A crash is not a health verdict. 2 follows the "0 = fine, 1 = found problems, 2 = could not
+    // run" convention used by scripts/check_workflow_scripts.py, and it matters that this is not
+    // 1: claiming NOT READY from a stack trace would assert something about the machine that was
+    // never actually checked. (Before #1782 an unexpected throw here exited 1 with a stack trace,
+    // i.e. indistinguishable from a real verdict.)
+    console.error(`报告生成失败 —— 退出码 2（跑不起来，与「环境不健康」是两回事）：${redact((err && err.message) || err)}`);
+    console.error('请把上面这一行连同 `--verify` 的输出贴到 issue（那才是可修的信息）。');
+    process.exit(2);
+  }
+  if (!STRICT) process.exit(0);
+  const ready = verdict.allOk && verdict.openItems === 0;
+  if (!ready) {
+    console.error(`--strict：NOT READY（verify: ${verdict.allOk ? 'READY' : 'NOT READY'}，`
+      + `open-items: ${verdict.openItems}）→ 退出码 1；上面的 YAML 就是证据。`);
+  }
+  process.exit(ready ? 0 : 1);
 }
 
 if (mode === 'verify') {

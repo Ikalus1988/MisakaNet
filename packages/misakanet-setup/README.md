@@ -38,10 +38,45 @@ npx @misaka-net/misakanet-setup --report      # this machine's state as YAML, sa
                                              # (token value never printed, home paths written as ~;
                                              #  `permissions: ok|incomplete` shows whether the read-only
                                              #  tools are allowed; two blank fields are yours to fill — see the bounty)
+                                             # always exits 0 when it prints a report — see "Exit codes" below
+npx @misaka-net/misakanet-setup --report --strict   # CI in one line: same YAML, but the exit code is the verdict
+                                             # (or the shorthand `--ci`; ready-to-copy Actions job in the repo:
+                                             #  docs/maintainer/setup-health-ci.md)
 npx @misaka-net/misakanet-setup --voice       # opt-in: a cue when a search hits, another when it misses
                                              # (Claude Code: a PostToolUse hook; mute later with MISAKANET_VOICE=0)
 npx @misaka-net/misakanet-setup --uninstall   # remove exactly what it added
 ```
+
+## Exit codes
+
+`--report` alone **always exits 0** when it prints a report, and that is deliberate: the report is
+evidence meant to be pasted into an issue or a CI log, and a nonzero exit there turns "collect the
+evidence" into a failing step. The gate is the opt-in `--strict` form (alias: `--ci`), which prints
+the *same* YAML and then judges it:
+
+| code | `--report --strict` | meaning |
+|---|---|---|
+| `0` | READY | the report says `verify: READY` **and** `open-items: 0` |
+| `1` | NOT READY | `verify: NOT READY` — including when `open-items > 0`; the YAML lists one line per open item, each with its fix |
+| `2` | could not run | the report could not be produced at all (the tool failed instead of judging). This is **not** a verdict about your machine: on `2` there is no YAML, only a one-line reason on stderr |
+
+The convention is the repository-wide one (`0 = fine, 1 = found problems, 2 = could not run`, same as
+`scripts/check_workflow_scripts.py`), so a CI step can tell "the environment is unhealthy" (fix the
+machine) from "the checker broke" (fix the checker).
+
+The last two fields of the report, `tools-visible` and `live-call-evidence`, are **blank fields a
+human fills in afterwards** — they are never read back by the tool and **never influence the exit
+code**. A gate that depended on the reporter remembering to fill them in would not be a gate.
+
+CI usage (details and a copy-pasteable job:
+[`docs/maintainer/setup-health-ci.md`](https://github.com/Ikalus1988/MisakaNet/blob/main/docs/maintainer/setup-health-ci.md)):
+
+```bash
+npx -y @misaka-net/misakanet-setup --report --strict > setup-health.yaml   # 0 / 1 / 2 is the verdict
+```
+
+Don't pipe it into `tee` and then read `$?` — the pipeline's exit code is `tee`'s, not the gate's
+(that trap has its own write-up in `docs/maintainer/handoff-2026-09-15.md`).
 
 ## Keeping it current
 
