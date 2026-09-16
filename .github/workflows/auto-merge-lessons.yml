@@ -1,0 +1,295 @@
+name: Auto-Merge Lessons
+
+# Issue #1777 — 课程 PR 自动合并通道.
+#
+# A lessons-only pull request that carries the `auto-merge-lesson` label is squash-merged
+# automatically once every *mechanical* condition holds; when one fails this workflow
+# leaves exactly one comment naming the blocker, and when one is merely unfinished it does
+# nothing at all (the next `synchronize` / check event re-evaluates).
+#
+# Two design rules are worth stating up front, because both are load-bearing:
+#
+# 1. The decision itself is not made here. It lives in scripts/lesson_pr_mergeable.py so it
+#    can be unit-tested offline (tests/test_lesson_pr_mergeable.py); this workflow only
+#    fetches facts with `gh api` and acts on the verdict (exit 0 merge / 1 refuse / 2 wait).
+# 2. This job holds `contents: write` and runs `gh pr merge`, so it checks out the *default
+#    branch* and never the pull request head: a PR that could rewrite its own gate could
+#    approve itself. The facts come from the API, so nothing from the PR is executed.
+#
+# Honest note on the `check_suite` trigger: check suite events created by GitHub Actions
+# are widely reported not to trigger workflows (only check suites from other GitHub Apps
+# do) — see community discussions 26169 / 26236. It is declared here because it is free
+# and it does cover third-party check suites, but the load-bearing triggers are
+# `synchronize` and `ready_for_review`. Full decision table, risks and rollback:
+# docs/maintainer/auto-merge-lessons.md.
+on:
+  pull_request:
+    types: [labeled, synchronize, ready_for_review]
+  check_suite:
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+# One run per pull request, and never cancel one that may be mid-merge.
+concurrency:
+  group: auto-merge-lessons-${{ github.event.pull_request.number || github.event.check_suite.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  auto-merge-lessons:
+    runs-on: ubuntu-latest
+    # Cheap early exit for check suites that cannot concern a pull request. It cannot be
+    # the only test: `check_suite.pull_requests` is empty for fork PRs, so the run step
+    # resolves the PR from the head SHA as well.
+    if: >
+      github.event_name == 'pull_request'
+      || github.event.check_suite.pull_requests[0].number != null
+      || github.event.check_suite.head_branch != github.event.repository.default_branch
+    steps:
+      - name: Checkout the trusted decision script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Decide and act
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SUITE_PR: ${{ github.event.check_suite.pull_requests[0].number }}
+          SUITE_SHA: ${{ github.event.check_suite.head_sha }}
+          OPT_IN_LABEL: auto-merge-lesson
+        run: |
+          set -euo pipefail
+
+          TMP="$(mktemp -d)"
+          trap 'rm -rf "$TMP"' EXIT
+
+          if [ ! -f scripts/lesson_pr_mergeable.py ]; then
+            echo "::warning::scripts/lesson_pr_mergeable.py is not on this branch yet — nothing to decide with. No action taken."
+            exit 0
+          fi
+
+          # ── resolve the pull request ────────────────────────────────────────────────
+          # check_suite payloads carry no pull_request, and for fork PRs their
+          # `pull_requests` array is empty, so fall back to the head SHA.
+          PR="${PR_NUMBER:-${SUITE_PR:-}}"
+          if [ -z "$PR" ] && [ -n "${SUITE_SHA:-}" ]; then
+            PR="$(gh api "repos/$REPO/commits/$SUITE_SHA/pulls" \
+                  --jq '[.[] | select(.state == "open")][0].number // empty' || true)"
+          fi
+          if [ -z "$PR" ]; then
+            echo "No open pull request in this event — nothing to do."
+            exit 0
+          fi
+          echo "=== auto-merge-lessons: PR #$PR ==="
+
+          gh api "repos/$REPO/pulls/$PR" > "$TMP/pr.json"
+          # Our own login, so the comment upsert only ever touches a comment this token
+          # wrote (a marker in someone else's comment must not let it be edited).
+          ME="$(gh api user --jq '.login')"
+
+          # ── the opt-in guard ────────────────────────────────────────────────────────
+          # The label is the only entry condition of this channel. It is checked here *and*
+          # again by the script and once more immediately before merging, because it is the
+          # one condition whose violation would be a merge nobody asked for.
+          HAS_OPT_IN="$(python3 - "$TMP/pr.json" "$OPT_IN_LABEL" <<'PY'
+          import json, sys
+          pr = json.load(open(sys.argv[1], encoding="utf-8"))
+          names = {l["name"].strip().lower() for l in pr.get("labels") or []}
+          print("yes" if sys.argv[2].lower() in names else "no")
+          PY
+          )"
+          if [ "$HAS_OPT_IN" != "yes" ]; then
+            echo "PR #$PR does not carry '$OPT_IN_LABEL' — this channel is opt-in; no comment, no merge."
+            exit 0
+          fi
+
+          # ── fetch the facts ─────────────────────────────────────────────────────────
+          # `--jq '.[]'` emits one object per line so the pages can simply be concatenated;
+          # the payload is then assembled in Python (stdlib) instead of in jq, so the exact
+          # same assembly can be replayed offline against fixtures.
+          SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["head"]["sha"])' "$TMP/pr.json")"
+          gh api --paginate "repos/$REPO/pulls/$PR/files?per_page=100" --jq '.[]' > "$TMP/files.ndjson"
+          gh api --paginate "repos/$REPO/commits/$SHA/check-runs?per_page=100" --jq '.check_runs[]' > "$TMP/checks.ndjson"
+          gh api --paginate "repos/$REPO/pulls/$PR/reviews?per_page=100" --jq '.[]' > "$TMP/reviews.ndjson"
+
+          python3 - "$TMP" <<'PY'
+          import json, pathlib, sys
+
+          tmp = pathlib.Path(sys.argv[1])
+
+
+          def ndjson(name):
+              path = tmp / name
+              if not path.exists():
+                  return []
+              return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+          pr = json.loads((tmp / "pr.json").read_text(encoding="utf-8"))
+          files = ndjson("files.ndjson")
+          check_runs = ndjson("checks.ndjson")
+          reviews = ndjson("reviews.ndjson")
+
+          # Latest conclusion per check name: a re-run adds a second run under the same name,
+          # and an older failed run must not outvote the newer one.
+          checks = {}
+          for run in sorted(check_runs, key=lambda r: str(r.get("started_at") or "")):
+              checks[run["name"]] = run.get("conclusion")
+
+          # Latest review per author, counting only APPROVED / CHANGES_REQUESTED, which is
+          # also what drops DISMISSED reviews. Staleness is approximated: a review is never
+          # dropped for being older than the latest commit, so a stale CHANGES_REQUESTED
+          # keeps blocking — refusing is the safe direction, merging is not.
+          latest = {}
+          for review in sorted(reviews, key=lambda r: str(r.get("submitted_at") or "")):
+              if review.get("state") in ("APPROVED", "CHANGES_REQUESTED"):
+                  latest[(review.get("user") or {}).get("login", "")] = review["state"]
+          if any(state == "CHANGES_REQUESTED" for state in latest.values()):
+              review_state = "CHANGES_REQUESTED"
+          elif latest:
+              review_state = "APPROVED"
+          else:
+              review_state = "NONE"
+
+          payload = {
+              "files": [f["filename"] for f in files],
+              "file_stats": {f["filename"]: [f.get("additions", 0), f.get("deletions", 0)] for f in files},
+              "checks": checks,
+              "labels": [l["name"] for l in pr.get("labels") or []],
+              "draft": bool(pr.get("draft")),
+              "review_state": review_state,
+              "body": pr.get("body") or "",
+          }
+          (tmp / "payload.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+          print("payload: " + json.dumps(payload, sort_keys=True))
+          PY
+
+          # ── decide ──────────────────────────────────────────────────────────────────
+          set +e
+          VERDICT="$(python3 scripts/lesson_pr_mergeable.py --json "$(cat "$TMP/payload.json")")"
+          RC=$?
+          set -e
+          echo "verdict (exit $RC): $VERDICT"
+
+          # ── act on the verdict ──────────────────────────────────────────────────────
+          # Finds our own previous comment by its marker, so the channel updates one
+          # comment instead of appending one per push.
+          upsert_comment() {  # $1 = file holding the body, $2 = "create" to post when absent
+            local body_file="$1" create_if_missing="$2" json_file cid
+            json_file="$TMP/comment-payload.json"
+            python3 - "$body_file" > "$json_file" <<'PY'
+          import json, sys
+          print(json.dumps({"body": open(sys.argv[1], encoding="utf-8").read()}))
+          PY
+            gh api --paginate "repos/$REPO/issues/$PR/comments?per_page=100" --jq '.[]' > "$TMP/comments.ndjson"
+            cid="$(python3 - "$TMP/comments.ndjson" "$ME" <<'PY'
+          import json, sys
+
+          marker = "<!-- auto-merge-lessons -->"
+          for line in reversed(open(sys.argv[1], encoding="utf-8").read().splitlines()):
+              if not line.strip():
+                  continue
+              comment = json.loads(line)
+              author = (comment.get("user") or {}).get("login", "")
+              if author == sys.argv[2] and marker in (comment.get("body") or ""):
+                  print(comment["id"])
+                  break
+          PY
+            )"
+            if [ -n "$cid" ]; then
+              gh api -X PATCH "repos/$REPO/issues/comments/$cid" --input "$json_file" > /dev/null
+              echo "Updated our previous comment ($cid)."
+            elif [ "$create_if_missing" = "create" ]; then
+              gh api -X POST "repos/$REPO/issues/$PR/comments" --input "$json_file" > /dev/null
+              echo "Posted one comment on PR #$PR."
+            else
+              echo "No previous comment of ours to update."
+            fi
+          }
+
+          case "$RC" in
+            0)
+              # Every fact the decision rested on is re-read from the API right before the
+              # merge: `mergeable` is computed lazily (it can be null right after a push),
+              # and the label, the draft flag or the PR state can have changed since.
+              # The defaults are the refusing ones, so a failed read skips the merge.
+              MERGEABLE="null"
+              PR_STATE=""
+              PR_DRAFT="true"
+              HAS_LABEL="false"
+              for _ in 1 2 3 4 5; do
+                gh api "repos/$REPO/pulls/$PR" > "$TMP/pr-now.json"
+                read -r MERGEABLE PR_STATE PR_DRAFT HAS_LABEL < <(python3 - "$TMP/pr-now.json" "$OPT_IN_LABEL" <<'PY'
+          import json, sys
+
+          pr = json.load(open(sys.argv[1], encoding="utf-8"))
+          names = {l["name"].strip().lower() for l in pr.get("labels") or []}
+          print(json.dumps(pr.get("mergeable")), pr.get("state"),
+                str(bool(pr.get("draft"))).lower(),
+                str(sys.argv[2].lower() in names).lower())
+          PY
+                )
+                MERGEABLE="${MERGEABLE//\"/}"
+                [ "$MERGEABLE" != "null" ] && break
+                sleep 3
+              done
+
+              if [ "$MERGEABLE" != "MERGEABLE" ] || [ "$PR_STATE" != "open" ] \
+                 || [ "$PR_DRAFT" != "false" ] || [ "$HAS_LABEL" != "true" ]; then
+                echo "::warning::PR #$PR is no longer a clean candidate (mergeable=$MERGEABLE state=$PR_STATE draft=$PR_DRAFT label=$HAS_LABEL) — leaving it to a human."
+                exit 0
+              fi
+
+              # A merge that fails is not a PR defect a contributor can act on (branch
+              # protection, a fork, a race) — warn instead of painting a red check. The
+              # comment is rewritten *after* the merge, never before: a "merged" comment on
+              # a PR that did not merge would be a lie a human then has to notice.
+              if gh pr merge "$PR" --repo "$REPO" --squash; then
+                echo "Merged PR #$PR (squash)."
+                {
+                  echo '<!-- auto-merge-lessons -->'
+                  echo '### ✅ auto-merge-lessons merged this PR'
+                  echo
+                  echo 'Squash-merged automatically: the diff is lessons-only and every required check was green.'
+                  echo
+                  echo 'Decision table: [docs/maintainer/auto-merge-lessons.md](../blob/main/docs/maintainer/auto-merge-lessons.md)'
+                } > "$TMP/merge.md"
+                # Rewrites a stale refusal comment if there is one; never posts a new one.
+                upsert_comment "$TMP/merge.md" update-only
+              else
+                echo "::warning::Could not squash-merge PR #$PR — a maintainer will need to merge it by hand."
+              fi
+              ;;
+            1)
+              {
+                echo '<!-- auto-merge-lessons -->'
+                echo '### ⛔ auto-merge-lessons refused to merge this PR'
+                echo
+                echo 'A mechanical condition does not hold:'
+                echo
+                echo '```'
+                echo "$VERDICT"
+                echo '```'
+                echo
+                echo 'Fix the blocker above and push again — or remove the `auto-merge-lesson` label to switch this channel off for this PR.'
+                echo
+                echo 'Decision table: [docs/maintainer/auto-merge-lessons.md](../blob/main/docs/maintainer/auto-merge-lessons.md)'
+              } > "$TMP/refuse.md"
+              upsert_comment "$TMP/refuse.md" create
+              ;;
+            2)
+              # Unfinished, not wrong: a check is still running, a required check has not
+              # reported, or the opt-in label is absent. Say nothing, wait for the next event.
+              echo "Not ready yet — doing nothing. ($VERDICT)"
+              ;;
+            *)
+              echo "::error::unexpected verdict (exit $RC): $VERDICT — refusing to act. Expected 0 (merge), 1 (refuse) or 2 (wait)."
+              exit 1
+              ;;
+          esac
