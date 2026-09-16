@@ -24,7 +24,7 @@ powershell -NoProfile -Command "iwr -useb https://raw.githubusercontent.com/Ikal
 curl -fsSL https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/integrations/agent-autostart/bootstrap.sh | bash
 ```
 
-装完**只做一件事**：开一个新会话，问一句「pip install timeout 是什么原因」——
+装完**只做一件事**：开一个新会话，问一句带报错原文的片段（如「switch vision model」）——
 它应该自己调 `misakanet_search`，而不是凭记忆回答。
 
 想知道到底通没通，一条命令：
@@ -173,7 +173,7 @@ for i in $(seq 2 20); do MISAKANET_HOOK_STATE=/tmp/mn python3 integrations/agent
 # 2) 失败提醒
 python3 integrations/agent-autostart/checkpoint_reminder.py failure <<< '{"error":"exit code 137"}'
 
-# 3) 真会话：新开一个，说「pip install timeout 是什么原因」，看它是否调 misakanet_search
+# 3) 真会话：新开一个，说「switch vision model」这类片段，看它是否调 misakanet_search
 ```
 
 可调环境变量：`MISAKANET_CHECKPOINT_AT`（默认 20）· `MISAKANET_CHECKPOINT_EVERY`（默认 10）·

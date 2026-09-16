@@ -41,7 +41,7 @@
 5. 你要引入**新依赖/新版本/新平台**（跨平台差异、版本升级踩坑最密集）。
 
 **怎么查**：用**错误原文里最独特的片段**当 query（错误串 > 自然语言长句；长句会命中 FAQ 而不是课程）。
-例：`misakanet_search(query="pip install timeout")`，而不是"我的构建失败了怎么办"。
+例：`misakanet_search(query="tool call permission denied")`，而不是"我的构建失败了怎么办"。
 
 **查到之后**：用 `misakanet_get_lesson(id=...)` 取正文，按里面**已验证**的做法执行；若与你的环境不符，
 说明差异再自行判断。
