@@ -1661,6 +1661,14 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
           `problem="<short description of the failure>", ` +
           `error="<the error text>", source="<your client>". ` +
           `No account or email required; a maintainer will review and cover it.`;
+      // #1779: the miss half of the hit rate. Recorded only here — the response
+      // below is final at this point — so a rate-limited or failed search (which
+      // returns earlier) never enters the denominator. Fire-and-forget through
+      // waitUntil, and `recordSearchSignal` swallows its own errors: telemetry
+      // must not be able to change or break the answer.
+      if (ctx) ctx.waitUntil(recordSearchSignal(env, {
+        solved: false, query: args.query, topId: null, resultCount: 0, domain: args.domain,
+      }));
       return {
         results: [],
         no_match: true,
@@ -1684,6 +1692,17 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         trust_notice: TRUST_NOTICE,
       };
     }
+    // #1779: the hit half of the same table. Exactly one of these two calls runs
+    // per completed search (`results` is non-empty here — the empty case returned
+    // above), so the hit rate has a per-search numerator and denominator written
+    // by the same code path.
+    if (ctx) ctx.waitUntil(recordSearchSignal(env, {
+      solved: true,
+      query: args.query,
+      topId: String((results[0] && (results[0].id || results[0].path)) || "") || null,
+      resultCount: results.length,
+      domain: args.domain,
+    }));
     // `voice` is the MCP voice-hook cue (see docs/integrations/mcp-voice-hooks.md): the local
     // stdio server has always sent it, the rate-limit refusal below sends it, and the
     // streamable-http endpoint now does too so the opt-in PostToolUse hook works from an
@@ -3199,6 +3218,124 @@ async function handleLessonCoverage(env) {
   }
 }
 
+// ── Search hit-rate signals (Issue #1779) ───────────────────────────────────
+// Why this exists: every completed search used to leave a trace only when it
+// *missed* (the gap counter + the unsolved failure map above), so the hit rate —
+// total hits over total searches — could not be computed at all: there was no
+// denominator. This records one row per completed search, hits included.
+//
+// Store: D1. Telemetry moved to D1 in #1647-#1649 precisely because KV's
+// per-day distinct-key budget cannot take one write per search; a row can.
+//
+// Row shape (one row per completed search):
+//   solved       INTEGER NOT NULL, 1 = the caller got ≥1 result, 0 = no_match
+//   query        the query text, truncated to 200 like lesson_usage.query — the
+//                same posture the existing miss path already has (counters.bucket
+//                and lesson_usage.query both carry the raw query)
+//   top_id       first hit's id (its path if it has no id), NULL on a miss
+//   result_count results the response carried
+//   domain       the caller's `domain` argument, "" when it passed none
+//   created_at   DB default `datetime('now')`, like the other telemetry tables
+//
+// Read cap for the stats endpoint: keeps one anonymous GET bounded. The Python
+// aggregator reports `truncated` instead of quietly computing a fraction of the
+// window (see docs/maintainer/search-metrics.md).
+const SEARCH_SIGNAL_MAX_ROWS = 10000;
+
+// The table is created by the worker on first write rather than only by
+// `workers/d1/schema.sql` (applied by .github/workflows/apply-d1-schema.yml):
+// this change is deliberately additive and deployable by pushing the worker
+// alone, and a deployment whose schema has not been re-applied yet would
+// otherwise fail every insert. Idempotent, one statement per isolate (the flag
+// is per-isolate module state, so a cold start re-runs a no-op).
+let searchSignalsTableReady = false;
+
+async function ensureSearchSignalsTable(d1) {
+  if (searchSignalsTableReady) return;
+  await d1.prepare(
+    `CREATE TABLE IF NOT EXISTS search_signals (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       solved INTEGER NOT NULL,
+       query TEXT,
+       top_id TEXT,
+       result_count INTEGER NOT NULL DEFAULT 0,
+       domain TEXT,
+       created_at TEXT DEFAULT (datetime('now'))
+     )`
+  ).run();
+  searchSignalsTableReady = true;
+}
+
+// One signal row per completed search. Never throws and never returns a rejected
+// promise (the callers hand it to `ctx.waitUntil`, where an unhandled rejection
+// would surface as a worker error): a telemetry failure must leave the search
+// answer exactly as it was.
+async function recordSearchSignal(env, { solved, query, topId, resultCount, domain } = {}) {
+  try {
+    // Kill switch: `MISAKANET_SEARCH_SIGNALS=0` stops recording without a
+    // redeploy (the search path itself is unaffected — see the rollback section
+    // of docs/maintainer/search-metrics.md).
+    if (String(env.MISAKANET_SEARCH_SIGNALS ?? "") === "0") return null;
+    const d1 = d1Binding(env);
+    // No D1 binding → no row store. Deliberately no KV fallback: a per-search KV
+    // key is the failure mode #1647 documented, and the stats endpoint reads D1.
+    if (!d1) return null;
+    await ensureSearchSignalsTable(d1);
+    await d1.prepare(
+      `INSERT INTO search_signals (solved, query, top_id, result_count, domain)
+       VALUES (?1, ?2, ?3, ?4, ?5)`
+    ).bind(
+      solved ? 1 : 0,
+      String(query || "").slice(0, 200),
+      topId ? String(topId).slice(0, 120) : null,
+      Number.isFinite(Number(resultCount)) ? Number(resultCount) : 0,
+      String(domain || "").slice(0, 50),
+    ).run();
+    return { solved: !!solved };
+  } catch (e) {
+    debugLog(env, 1, "recordSearchSignal failed", String((e && e.message) || e));
+    return null;
+  }
+}
+
+// GET /api/search-signals/stats?days=7 — read-only signal rows for the hit rate
+// (#1779). Returns per-row `solved` flags and timestamps only: no query text and
+// no lesson ids leave the worker here, which is why this keeps the open posture
+// of POST /api/search-signal instead of asking for a token. Aggregation lives in
+// scripts/search_hit_rate.py; legacy rows without a `solved` field are returned
+// with `solved: null` and counted as misses there.
+async function handleSearchSignalStats(env, url) {
+  const d1 = d1Binding(env);
+  if (!d1) return jsonResponse({ error: "D1 not configured" }, 503);
+
+  const requested = parseInt(url.searchParams.get("days") || "", 10);
+  const days = Number.isFinite(requested) ? Math.min(Math.max(requested, 1), 365) : 7;
+  const base = { days, source: "d1:search_signals", limit: SEARCH_SIGNAL_MAX_ROWS };
+
+  try {
+    const { results } = await d1.prepare(
+      `SELECT solved, created_at FROM search_signals
+       WHERE created_at >= datetime('now', ?1)
+       ORDER BY id LIMIT ?2`
+    ).bind(`-${days} days`, SEARCH_SIGNAL_MAX_ROWS + 1).all();
+    const rows = (results || []).map((r) => ({ solved: r.solved ?? null, created_at: r.created_at || "" }));
+    return jsonResponse({
+      ...base,
+      rows: rows.slice(0, SEARCH_SIGNAL_MAX_ROWS),
+      truncated: rows.length > SEARCH_SIGNAL_MAX_ROWS,
+      generated_at: new Date().toISOString(),
+    });
+  } catch (e) {
+    // Before the first recorded search the table does not exist yet. That is the
+    // honest "no samples" state, not a server error: answer with an empty window
+    // so the aggregator can print "sample too small" instead of a 502.
+    if (/no such table/i.test(String((e && e.message) || e))) {
+      return jsonResponse({ ...base, rows: [], truncated: false, generated_at: new Date().toISOString() });
+    }
+    return errorResponse("api handler failed", "internal_error", 502, e);
+  }
+}
+
 // POST /api/search-signal — records that a search went unsolved. The query is
 // classified here and dropped; only the derived family + reason are persisted.
 async function handleSearchSignal(request, env) {
@@ -3743,6 +3880,11 @@ export default {
     // POST /api/search-signal — unsolved-search intake for the failure map (#788)
     if (request.method === "POST" && url.pathname === "/api/search-signal") {
       return handleSearchSignal(request, env);
+    }
+
+    // GET /api/search-signals/stats — read-only hit/miss rows for the hit rate (#1779)
+    if (request.method === "GET" && url.pathname === "/api/search-signals/stats") {
+      return handleSearchSignalStats(env, url);
     }
 
     // POST /api/search-index — sync BM25 search index to KV
