@@ -47,7 +47,11 @@ ENDPOINT = "https://misakanet.org/mcp"
 # The question the onboarding text tells a user to ask. See the JS installer for why this is a
 # constant, and why it is not "docker exit code 137": tests/test_onboarding_example.py checks
 # offline that the corpus answers it with a lesson about that very failure.
-ONBOARDING_QUERY = "pip install timeout"
+# 三个示例而不是一个，且都是"错误原文里的独特片段"，不是整句自然语言。
+# 单一样例会把语料显得只有一个主题；而整句提问（"如何切换识图模型"）在这个按错误文本/关键词
+# 建索引的语料上命中为 0 —— 规则块也是这样要求 agent 的。三个都由
+# tests/test_onboarding_example.py 离线校验：新用户第一条命中必须是关于该问题的课程。
+ONBOARDING_QUERIES = ["switch vision model", "context window exceeded", "tool call permission denied"]
 START = "misakanet:start"
 END = "misakanet:end"
 HERE = Path(__file__).resolve().parent
@@ -981,7 +985,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.verify:
         ok = verify(home, endpoint, rep)
         print(rep.render())
-        print("\n结论：" + (f"READY —— 直接开一个新会话测试即可（问它 {ONBOARDING_QUERY}）"
+        print("\n结论：" + (f"READY —— 直接开一个新会话测试即可（问它 {ONBOARDING_QUERIES[0]}）"
                           if ok else "NOT READY —— 上面每一条 ✗ 都给了修复动作"))
         return 0 if ok else 1
 
@@ -1018,7 +1022,7 @@ def main(argv: list[str] | None = None) -> int:
     print("\n自检：python3 install_misakanet_agent.py --verify（一条命令告诉你到底通不通）")
     print(
         "\n验证（对新开的会话说一句即可）：\n"
-        f"  「{ONBOARDING_QUERY} 是什么原因」→ 看它是否调用 misakanet_search\n"
+        f"  「{ONBOARDING_QUERIES[0]}」/「{ONBOARDING_QUERIES[1]}」/「{ONBOARDING_QUERIES[2]}」→ 看它是否调用 misakanet_search\n"
         f"  手动跑一次检查点：echo '{{\"session_id\":\"t\"}}' | python3 \"{HOOK_FILE}\" prompt\n"
         f"  手动跑一次失败提醒：echo '{{\"error\":\"exit code 137\"}}' | python3 \"{HOOK_FILE}\" failure\n"
         "回滚：python3 install_misakanet_agent.py --uninstall（或从 *.misakanet.bak 恢复）"
