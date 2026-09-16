@@ -195,11 +195,12 @@ function addDebugContext(env, errorObj, context) {
 const MCP_TOOLS = [
   {
     name: "misakanet_register",
-    description: "[ONBOARDING] Register a new agent node and get a token for authenticated access. Call this first when you have no token; the returned Bearer token unlocks misakanet_write_lesson and higher rate limits on other tools. No GitHub account or email needed.\nToken lifetime: valid ~30 days (no auto-renew) — call misakanet_register again to rotate or refresh. Each call creates a new node, so register once per agent.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string} — the node id and its Bearer token.\nExample: misakanet_register(agent_type='claude-code')",
+    description: "[ONBOARDING] Get a Bearer token for authenticated access (unlocks misakanet_write_lesson and higher rate limits). Reading needs no registration: misakanet_search / misakanet_get_lesson work anonymously (5/day per IP). No GitHub account or email needed, and no personal data is collected — the node is a pseudonym, not an account.\nToken lifetime: valid ~30 days. Pass client_id (a stable id you generate once, e.g. a UUID, workspace id or hostname) to get the SAME node_id and token back on every later call and to renew them; without client_id every call creates a new node, which means your reuse evidence, receipts and history start over.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string, reused?: boolean} — reused=true means an existing node was found for this client_id.\nExample: misakanet_register(agent_type='claude-code', client_id='8f14e45f-2b1c-4f3a-9d2e-7c6b5a4d3e2f')",
     inputSchema: {
       type: "object",
       properties: {
         agent_type: { type: "string", description: "Agent type (e.g. claude-code, codex, cursor, dsh, other)" },
+        client_id: { type: "string", description: "Optional stable identifier for this client (8-64 chars of A-Z a-z 0-9 . _ : -). Generate it once and reuse it so later calls return the same node instead of a new one." },
       },
       required: ["agent_type"],
     },
@@ -222,7 +223,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_search",
-    description: "[RETRIEVAL / READ] Search MisakaNet's public failure-lesson index by error text, keyword, or topic. This is the primary read path — run it first when you hit an error, before deciding to submit anything. For a known lesson ID or path, prefer misakanet_get_lesson — it skips ranking and returns the full content. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nFAQ: results may also include answered questions (type=\"faq\", issue_url + answer) — if a maintainer already answered the same question, the answer surfaces here.\nReturns: object {results: [{id, title, domain, tags, path, description, score}], source, detail, query}; on no match: {no_match: true, suggestion, intake}.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
+    description: "[RETRIEVAL / READ] Search MisakaNet's public failure-lesson index by error text, keyword, or topic. This is the primary read path — run it first when you hit an error, before deciding to submit anything. For a known lesson ID or path, prefer misakanet_get_lesson — it skips ranking and returns the full content. detail controls progressive disclosure: compact (default, ~80 tok/lesson) for broad scans, summary (~200 tok) adds domain/tags/fix, full returns complete lesson data.\nFAQ: results may also include answered questions (type=\"faq\", issue_url + answer) — if a maintainer already answered the same question, the answer surfaces here.\nReturns: object {results: [compact: {id, title, problem, freshness, evidence_level} | summary: + {domain, tags, fix} | full: the record, each with score], source, detail, query}; on no match: {no_match: true, suggestion, intake}.\nExample: misakanet_search(query='pip install timeout', domain='python', top=3)",
     inputSchema: {
       type: "object",
       properties: {
@@ -482,7 +483,12 @@ function compactResult(lesson) {
   return {
     id: lesson.id || "",
     title: lesson.title || "",
-    problem: (lesson.description || lesson.summary || "").slice(0, 120),
+    // `problem` first: D1 carries the real Problem section in that column, while the
+    // GitHub snapshot only has `description`/`summary`/`preview`. Reading only
+    // description/summary is why lesson hits came back with an empty problem even
+    // when the record was rich (issue #1675).
+    problem: String(lesson.problem || lesson.description || lesson.summary || lesson.preview || "")
+      .slice(0, 120),
     freshness: freshness(lesson.updated || lesson.created),
     evidence_level: lesson.evidence_level || "",
   };
@@ -493,9 +499,27 @@ function summaryResult(lesson) {
   return {
     ...compact,
     domain: lesson.domain || "",
-    tags: lesson.tags || [],
-    fix: lesson.fix || "",
+    tags: lessonTags(lesson.tags),
+    // `solution` is D1's column for the Fix section; `fix` is the shape the naive
+    // matcher used. Truncated like `problem` so `detail=summary` keeps its
+    // advertised size.
+    fix: String(lesson.fix || lesson.solution || "").slice(0, 200),
   };
+}
+
+// D1 stores tags as a JSON array *string* (sqlite has no array type), the GitHub
+// snapshot as a real array. Results must not depend on which source answered.
+function lessonTags(tags) {
+  if (Array.isArray(tags)) return tags;
+  if (typeof tags === "string" && tags.trim()) {
+    try {
+      const parsed = JSON.parse(tags);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
 }
 
 function applyDetailLevel(results, detail) {
@@ -508,6 +532,12 @@ function applyDetailLevel(results, detail) {
 
 const LESSON_INTENT_RE = /(lesson|lessons|learned|踩坑|记录|经验|memory|remember|preference)/i;
 const EVIDENCE_INTENT_RE = /(evidence|被用过|多少人|E4|验证|verification|引用次数|usage)/i;
+
+// Client-supplied stable identity for anonymous registration (2026-09-13). A UUID,
+// a workspace id, a hostname — anything the client can regenerate. It is an
+// *identifier*, not a credential: tokens stay random and server-issued, so knowing
+// another client's id grants nothing (see the note in handleMcpToolCall).
+const CLIENT_ID_RE = /^[A-Za-z0-9._:-]{8,64}$/;
 
 function detectKind(query, explicitKind) {
   if (explicitKind && explicitKind !== "all") return explicitKind;
@@ -847,7 +877,18 @@ const INDEX_TEXT_MAX_CHARS = 6000;
 // the cron keeps serving an index built from the old text for up to 20h — the same
 // "the rebuild input changed but the gate did not notice" trap this file already
 // documents twice (2026-09-12).
-const INDEX_TEXT_VERSION = 2;
+//
+// v3 (2026-09-15): the *source* of the indexed metadata changed, not its shape.
+// The corpus had been projected with slug titles and parent-directory domains for
+// 91% of lessons (CI parsed frontmatter without PyYAML and the parser swallowed it
+// — issue #1726). Fixing that writes the real title/domain/tags into D1 and into
+// data/lessons.json, but an index built from the old projection is exactly as
+// searchable as the data it was built from, and only this constant can tell the
+// gate that its input's meaning changed: docCount, textMode and the D1 sync stamp
+// can all be unchanged (the stamp did not move here) while every indexed document
+// still carries slug/dir metadata. Without the bump, deployed workers keep
+// answering with slug titles — and keep failing a `domain` filter — for up to 20h.
+const INDEX_TEXT_VERSION = 3;
 // The public listing must not ship the internal searchable body: `indexText` feeds
 // the index and the matcher, and it is dropped from every response the worker
 // builds from loadLessons().
@@ -856,6 +897,34 @@ function publicLessonRow({ indexText, textMode, ...rest }) {
   // is part of the listing's contract (an adversarial review found `textMode`
   // leaking here on 2026-09-12 while `indexText` was already stripped).
   return rest;
+}
+
+// BM25 hits are projected from the index, which stores only
+// {id, title, domain, path, len} — so `problem`, `fix`, `tags`, `evidence_level`
+// and `freshness` had nothing to read and every lesson hit came back as little
+// more than an id and a title. Measured on 2026-09-13: 35 of 35 sampled lesson
+// hits had an empty `problem` (issue #1675), which meant an agent could not judge
+// relevance without a second `misakanet_get_lesson` call per hit — exactly the
+// cost the progressive-disclosure levels exist to avoid.
+//
+// Re-attach the loaded record by id (path as the fallback) and keep the ranking
+// score. `publicLessonRow` strips the internal searchable body, so enriching
+// cannot leak `indexText`/`textMode` into a response.
+function enrichSearchHits(results, lessons) {
+  if (!Array.isArray(results) || results.length === 0) return results;
+  const byId = new Map();
+  const byPath = new Map();
+  for (const lesson of Array.isArray(lessons) ? lessons : []) {
+    if (!lesson) continue;
+    if (lesson.id) byId.set(String(lesson.id), lesson);
+    const key = lesson.path || lesson.url;
+    if (key) byPath.set(String(key), lesson);
+  }
+  return results.map((hit) => {
+    const record = byId.get(String(hit.id || "")) || byPath.get(String(hit.path || ""));
+    if (!record) return hit; // unknown id — keep whatever the matcher produced
+    return { ...publicLessonRow(record), score: hit.score };
+  });
 }
 
 function detectTextMode(lessons) {
@@ -938,7 +1007,8 @@ async function fetchD1SyncStamp(env) {
 async function refreshSearchIndex(env) {
   if (!env || !env.MISAKANET_KV) return { refreshed: false, reason: "no KV" };
   try {
-    const lessons = await loadLessons(env);
+    // From D1, not from the cached lessons payload — see loadLessonsFresh (#1731).
+    const lessons = (await loadLessonsFresh(env)) || (await loadLessons(env));
     if (!Array.isArray(lessons) || lessons.length === 0) {
       return { refreshed: false, reason: "no lessons" };
     }
@@ -1168,6 +1238,75 @@ async function mayCreateTelemetryKey(env, dateKey) {
   return true;
 }
 
+// ── Counters: D1 first, KV as the fallback (issue #1648) ───────────────────
+// KV charges the free tier per *distinct key written per day* (1,000), and a same-key
+// rewrite is exempt — so the paths that need a new key per request or per entity die
+// first. Live proof, 2026-09-12: `misakanet_register` failed with
+// `KV put() limit exceeded for the day.` while the cron's index rewrite kept succeeding,
+// because registration writes `node:<id>` and `mcp_token:<token>` (new every call) while
+// the index key already existed. The anonymous read quota had the same shape: one new
+// `rate:read:<ip>:<date>` key per visitor per day, on the request path.
+//
+// Counters are rows, not keys. D1 also makes the increment atomic, which the KV
+// read-modify-write never was (two concurrent requests from one IP could both read 4).
+//
+// The KV fallback keeps the *legacy key shapes*, so a deployment without the D1 binding —
+// or a rollback — sees the same counters it did before.
+const COUNTERS_BACKEND_STATS = { d1: 0, kv: 0, failures: 0, last_failure_at: "" };
+
+function legacyCounterKey(scope, bucket, period) {
+  if (scope === "rate_read") return `rate:read:${bucket}:${period}`;
+  if (scope === "signal_rate") return `rate:signal:${bucket}`;
+  return `counters:${scope}:${bucket}:${period}`;
+}
+
+/** Increment a counter and return its new value (D1 atomic upsert, else KV). */
+async function bumpCounter(env, scope, bucket, period, delta = 1) {
+  const d1 = d1Binding(env);
+  if (d1) {
+    try {
+      const { results } = await d1.prepare(
+        `INSERT INTO counters (scope, bucket, period, count, updated_at)
+         VALUES (?1, ?2, ?3, ?4, datetime('now'))
+         ON CONFLICT(scope, bucket, period)
+         DO UPDATE SET count = count + ?4, updated_at = datetime('now')
+         RETURNING count`,
+      ).bind(scope, String(bucket).slice(0, 200), String(period).slice(0, 32), delta).all();
+      const row = results && results[0];
+      if (row && Number.isFinite(Number(row.count))) {
+        COUNTERS_BACKEND_STATS.d1 += 1;
+        return Number(row.count);
+      }
+    } catch (error) {
+      COUNTERS_BACKEND_STATS.failures += 1;
+      COUNTERS_BACKEND_STATS.last_failure_at = new Date().toISOString();
+      logInternal("counter increment failed, falling back to KV", error);
+    }
+  }
+  if (!env.MISAKANET_KV) return null;
+  const key = legacyCounterKey(scope, bucket, period);
+  const current = parseInt((await env.MISAKANET_KV.get(key, "text")) || "0", 10) || 0;
+  await kvPut(env, key, String(current + delta), { expirationTtl: 86400 });
+  COUNTERS_BACKEND_STATS.kv += 1;
+  return current + delta;
+}
+
+/**
+ * Consume one unit of a quota: returns the refusal object when the quota is exhausted,
+ * or null to proceed. The D1 path increments *then* compares — one round trip, no race,
+ * and the boundary is unchanged (the 5th read succeeds, the 6th is refused). A storage
+ * failure returns null (fail open): a counter problem must not block reads.
+ */
+async function consumeQuota(env, { scope, bucket, period, limit, message, hint }) {
+  const count = await bumpCounter(env, scope, bucket, period, 1);
+  if (count !== null && count > limit) {
+    const refusal = { error: message };
+    if (hint) refusal.hint = hint;
+    return refusal;
+  }
+  return null;
+}
+
 async function kvPut(env, key, value, options) {
   if (!env || !env.MISAKANET_KV) return false;
   kvWriteStats.attempts += 1;
@@ -1191,6 +1330,62 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
   if (toolName === "misakanet_register") {
     const agentType = args.agent_type || "unknown";
     if (!env.MISAKANET_KV) return { error: "KV not configured" };
+
+    // ── Client-stable identity (2026-09-13) ──────────────────────────────
+    // Registration used to mint a fresh node on every call: two identical requests
+    // returned Misaka10130 and Misaka10131 (verified live), so the same agent
+    // accumulated nothing — reuse evidence (E4), receipts and history all restarted,
+    // and the leaderboard counted one agent as many. The mature fix is not to mint
+    // identity at all: let the client supply a stable identifier and replay the same
+    // record for it (Stripe's Idempotency-Key, OAuth's client_id, a client-generated
+    // UUID) rather than inventing a new pseudonym per request.
+    //
+    // `client_id` is an identifier, not a credential: the token stays random and
+    // server-issued, and knowing someone's client_id grants nothing.
+    const clientId = typeof args.client_id === "string" ? args.client_id.trim() : "";
+    if (clientId && !CLIENT_ID_RE.test(clientId)) {
+      return {
+        error: "client_id must be 8-64 characters of A-Z a-z 0-9 . _ : -",
+        code: "invalid_client_id",
+        hint: "Use a value you can regenerate, e.g. a UUID or a workspace/hostname id. Omit client_id to keep the old behaviour.",
+      };
+    }
+    if (clientId) {
+      const mapping = await env.MISAKANET_KV.get(`client:${clientId}`, "json");
+      const known = mapping && mapping.node_id
+        ? await env.MISAKANET_KV.get(`node:${mapping.node_id}`, "json")
+        : null;
+      if (known && known.token) {
+        // Same client, same node, same token — and this is the renewal path: KV
+        // rewrites of existing keys do not consume the daily distinct-key budget
+        // (only new keys do), so refreshing the two records is free. Best-effort:
+        // a failed refresh must not cost the caller its identity.
+        const now = new Date().toISOString();
+        const refreshed = await Promise.all([
+          kvPut(env, `node:${mapping.node_id}`, JSON.stringify({
+            agent_type: known.agent_type || agentType,
+            registered_at: known.registered_at || mapping.created_at || now,
+            token: known.token,
+          }), { expirationTtl: 86400 * 30 }),
+          kvPut(env, `mcp_token:${known.token}`, JSON.stringify({
+            node_id: mapping.node_id,
+            agent_type: known.agent_type || agentType,
+            registered_at: known.registered_at || mapping.created_at || now,
+            expires: new Date(Date.now() + 86400 * 30 * 1000).toISOString(),
+          }), { expirationTtl: 86400 * 30 }),
+        ]);
+        if (refreshed.some((ok) => !ok)) {
+          logInternal("register: token refresh on reuse failed", kvWriteStats.last_error);
+        }
+        return {
+          node_id: mapping.node_id,
+          token: known.token,
+          registered_at: known.registered_at || mapping.created_at || now,
+          agent_type: known.agent_type || agentType,
+          reused: true,
+        };
+      }
+    }
 
     // Generate node_id
     const counterKey = "node_counter";
@@ -1237,6 +1432,18 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       };
     }
 
+    // Remember the client_id → node mapping so the next call returns this same node.
+    // Failing to store the mapping costs continuity, not access, so it is logged and
+    // ignored: the caller already holds a working token.
+    if (clientId) {
+      const mapped = await kvPut(env, `client:${clientId}`, JSON.stringify({
+        node_id: nodeId,
+        agent_type: agentType,
+        created_at: new Date().toISOString(),
+      }), { expirationTtl: 86400 * 30 });
+      if (!mapped) logInternal("register: client_id mapping write failed", kvWriteStats.last_error);
+    }
+
     return {
       node_id: nodeId,
       token: token,
@@ -1245,15 +1452,27 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     };
   }
 
-  // Gap analysis: log zero-result search queries to KV (Issue #1164)
+  // Gap analysis: log zero-result search queries (Issue #1164, migrated in #1649).
+  //
+  // This was the last *unbounded* KV key creator: one new `gap:<query>` key per distinct
+  // unanswered query, plus maintenance of the `gap:index` list — so a day of heavy
+  // searching could spend the day's distinct-key budget that registration needs. With D1
+  // it is a row (scope='gap', bucket=query, period=day) and the increment is atomic.
+  // The KV path stays for a deployment without the binding, cap included.
   async function logSearchGap(env, query, source) {
     try {
       if (!env.MISAKANET_KV) return;
-      const key = `gap:${query.toLowerCase().trim()}`;
+      const normalized = query.toLowerCase().trim();
+      const day = new Date().toISOString().slice(0, 10);
+      if (d1Binding(env)) {
+        await bumpCounter(env, "gap", normalized, day, 1);
+        return;
+      }
+      const key = `gap:${normalized}`;
       const existing = await env.MISAKANET_KV.get(key, { type: "json" });
-      // A brand-new gap key costs a unit of the day's distinct-key budget; past the
-      // telemetry cap only existing gaps are updated, so registration keeps headroom.
-      if (!existing && !(await mayCreateTelemetryKey(env, new Date().toISOString().slice(0, 10)))) return;
+      // On the KV path a brand-new gap key costs a unit of the day's distinct-key budget;
+      // past the telemetry cap only existing gaps are updated (see #1648 for why).
+      if (!existing && !(await mayCreateTelemetryKey(env, day))) return;
       const entry = {
         query,
         count: (existing?.count || 0) + 1,
@@ -1315,18 +1534,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     if (!authToken) {
       const ip = clientIp || "unknown";
       const today = new Date().toISOString().slice(0, 10);
-      const rateKey = `rate:read:${ip}:${today}`;
-      if (env.MISAKANET_KV) {
-        const count = parseInt(await env.MISAKANET_KV.get(rateKey, "text") || "0");
-        if (count >= 5) {
-          return {
-            error: "Rate limit: 5 free searches per day exceeded",
-            hint: "Register to get unlimited access: misakanet_register",
-            voice: "failure-warning",
-          };
-        }
-        await kvPut(env, rateKey, String(count + 1), { expirationTtl: 86400 });
-      }
+      // D1 counter when bound (see consumeQuota): no per-IP KV key, atomic increment.
+      const refusal = await consumeQuota(env, {
+        scope: "rate_read", bucket: ip, period: today, limit: 5,
+        message: "Rate limit: 5 free searches per day exceeded",
+        hint: "Register to get unlimited access: misakanet_register",
+      });
+      if (refusal) return { ...refusal, voice: "failure-warning" };
     }
 
     let lessons;
@@ -1348,6 +1562,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       results = searchLessons(lessons, args.query, args.domain, args.top || 5);
       debugLog(env, 2, "Fallback search", { query: args.query, results: results.length });
     }
+
+    // Both matchers project a narrow shape (BM25 from the index, the naive one from
+    // the record), so re-attach the loaded records once here: the injection scan
+    // below then sees real bodies instead of a title, and the progressive-disclosure
+    // formatters get `problem`/`fix`/`tags`/`freshness` instead of empty strings
+    // (issue #1675).
+    results = enrichSearchHits(results, lessons);
 
     // Gap analysis: log zero-result queries (Issue #1164)
     if ((!results || results.length === 0) && args.query) {
@@ -1443,6 +1664,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       return {
         results: [],
         no_match: true,
+        voice: "failure-warning",
         query: args.query,
         source,
         detail,
@@ -1462,7 +1684,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         trust_notice: TRUST_NOTICE,
       };
     }
-    return { results, source, detail, kind, query: args.query, identity: aura, trust_notice: TRUST_NOTICE };
+    // `voice` is the MCP voice-hook cue (see docs/integrations/mcp-voice-hooks.md): the local
+    // stdio server has always sent it, the rate-limit refusal below sends it, and the
+    // streamable-http endpoint now does too so the opt-in PostToolUse hook works from an
+    // npm/plugin install rather than only from a clone.
+    return { results, source, detail, kind, query: args.query, identity: aura, trust_notice: TRUST_NOTICE,
+             voice: results.length ? "lesson-found" : "failure-warning" };
   }
 
   if (toolName === "misakanet_get_lesson") {
@@ -1470,17 +1697,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     if (!authToken) {
       const ip = clientIp || "unknown";
       const today = new Date().toISOString().slice(0, 10);
-      const rateKey = `rate:read:${ip}:${today}`;
-      if (env.MISAKANET_KV) {
-        const count = parseInt(await env.MISAKANET_KV.get(rateKey, "text") || "0");
-        if (count >= 5) {
-          return {
-            error: "Rate limit: 5 free reads per day exceeded",
-            hint: "Register to get unlimited access: misakanet_register",
-          };
-        }
-        await kvPut(env, rateKey, String(count + 1), { expirationTtl: 86400 });
-      }
+      const refusal = await consumeQuota(env, {
+        scope: "rate_read", bucket: ip, period: today, limit: 5,
+        message: "Rate limit: 5 free reads per day exceeded",
+        hint: "Register to get unlimited access: misakanet_register",
+      });
+      if (refusal) return refusal;
     }
     try {
       const lesson = await fetchLessonContent(env, args.path, args.id);
@@ -1498,6 +1720,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         ...lesson,
         identity: aura,
         trust_notice: TRUST_NOTICE,
+        voice: "connect-success",
         ...(bodyFlags.length ? { suspicious: true, suspicious_rules: bodyFlags } : {}),
       };
     } catch (e) {
@@ -1514,17 +1737,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     if (!authToken) {
       const ip = clientIp || "unknown";
       const today = new Date().toISOString().slice(0, 10);
-      const rateKey = `rate:read:${ip}:${today}`;
-      if (env.MISAKANET_KV) {
-        const count = parseInt(await env.MISAKANET_KV.get(rateKey, "text") || "0");
-        if (count >= 5) {
-          return {
-            error: "Rate limit: 5 free reads per day exceeded",
-            hint: "Register to get unlimited access: misakanet_register",
-          };
-        }
-        await kvPut(env, rateKey, String(count + 1), { expirationTtl: 86400 });
-      }
+      const refusal = await consumeQuota(env, {
+        scope: "rate_read", bucket: ip, period: today, limit: 5,
+        message: "Rate limit: 5 free reads per day exceeded",
+        hint: "Register to get unlimited access: misakanet_register",
+      });
+      if (refusal) return refusal;
     }
     const lessonId = args.lesson_id || (args.lesson_path || "").split("/").pop().replace(/\.md$/, "");
     if (!lessonId) return { error: "lesson_id or lesson_path is required" };
@@ -2071,9 +2289,18 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
   }
 
   // 3. Protocol version check (header-based, per 2025-06-18 spec)
+  //
+  // The header carries what the *client* proposes on `initialize` (and the negotiated value
+  // afterwards), so a revision this server does not implement is a negotiation, not a bad
+  // request: the answer belongs in the initialize result, which already reports the version
+  // this server speaks (`negotiatedVersion` below). Rejecting it here ended the session before
+  // that could happen — Hermes' MCP client (mcp 0.1.0) opens with "2025-11-25" and could not
+  // connect to MisakaNet at all, reporting only "Client error '400 Bad Request'" (found
+  // 2026-09-15 while wiring Hermes up). Only a value that is not a date-shaped revision is
+  // refused, because that one is a malformed header rather than a version.
   const protocolVersion = request.headers.get("MCP-Protocol-Version") || MCP_PROTOCOL_VERSION;
-  if (!SUPPORTED_PROTOCOL_VERSIONS.includes(protocolVersion)) {
-    debugLog(env, 1, "Protocol version mismatch", {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(protocolVersion)) {
+    debugLog(env, 1, "Protocol version header malformed", {
       provided: protocolVersion,
       supported: SUPPORTED_PROTOCOL_VERSIONS,
     });
@@ -2086,6 +2313,12 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
       }) },
       400,
     );
+  }
+  if (!SUPPORTED_PROTOCOL_VERSIONS.includes(protocolVersion)) {
+    debugLog(env, 1, "Client proposed an unimplemented protocol version; negotiating down", {
+      provided: protocolVersion,
+      supported: SUPPORTED_PROTOCOL_VERSIONS,
+    });
   }
 
   // 4. Bound and parse the JSON-RPC body. Do not trust Content-Length alone:
@@ -2343,6 +2576,13 @@ async function fetchLessonsFromD1(env, filters = {}) {
       // `description` stays the public summary on every path: it is what
       // /api/lessons and the search snippets show.
       description: summary || slice(r.problem, 400),
+      // The two sections an agent actually judges a hit by, as bounded public
+      // snippets. `indexText` (the whole body) still never leaves the worker, but a
+      // hit carrying neither of these is useless — issue #1675: this shaping exposed
+      // only `description`, so search hits arrived with an empty `problem` and `fix`
+      // and every hit cost a second get_lesson call.
+      problem: slice(r.problem, 400),
+      fix: slice(r.solution, 200),
       updated: r.updated,
       created: r.created,
       // Provenance for detectTextMode(); proves which projection produced this row.
@@ -2394,6 +2634,29 @@ async function fetchLessonFromD1(env, lessonPath, lessonId) {
 }
 
 // Unified lesson source: D1 first (real-time, PRD ④), GitHub via KV cache fallback.
+// Internal callers need the WHOLE corpus, not a page of it (see the note in
+// loadLessons): without an explicit limit fetchLessonsFromD1 falls back to `|| 100`.
+const INTERNAL_LESSON_LIMIT = 5000;
+
+// Uncached D1 read, for callers that must observe the corpus as of *now*.
+//
+// The BM25 rebuild decides from a sync stamp read straight out of D1, so it has to
+// read the rows the same way: loadLessons() answers from a 300s KV cache, and a
+// rebuild that pairs a fresh stamp with the previous corpus produces an index that
+// looks current to the gate and stays wrong for up to 20h (issue #1731 — observed
+// live on 2026-09-15: the rebuild right after a data re-sync kept serving the
+// pre-sync rows, and only a second re-sync moved the stamp enough to fix it).
+async function loadLessonsFresh(env) {
+  if (!d1Binding(env)) return null;
+  try {
+    const rows = await fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true });
+    return rows && rows.length > 0 ? rows : null;
+  } catch (error) {
+    debugLog(env, 1, "uncached lesson read failed", { error: error.message });
+    return null;
+  }
+}
+
 async function loadLessons(env, filters = {}) {
   // Filtered queries must go to D1 (GitHub proxy can't filter). Unfiltered
   // keeps the D1-first / GitHub fallback behavior, with a KV cache over the
@@ -2411,7 +2674,6 @@ async function loadLessons(env, filters = {}) {
   // that window were unfindable over MCP (a local search over the full corpus found
   // kubernetes-crashloopbackoff-debugging for "kubectl crashloopbackoff" while
   // production answered no_match). The KV cache below keeps this cheap.
-  const INTERNAL_LESSON_LIMIT = 5000;
   if (d1Binding(env)) {
     const fromD1 = await getWithCache(env, "proxy:lessons:d1", () =>
       fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true }));
@@ -2948,10 +3210,13 @@ async function handleSearchSignal(request, env) {
 
   // IP rate limit: 30 signals per IP per minute.
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const rateKey = `rate:signal:${ip}`;
-  const rateCount = parseInt((await env.MISAKANET_KV.get(rateKey, "text")) || "0", 10) || 0;
-  if (rateCount >= 30) return jsonResponse({ error: "Rate limited. Try again later." }, 429);
-  await kvPut(env, rateKey, String(rateCount + 1), { expirationTtl: 60 });
+  // 30 signals per IP per minute as a window counter: the D1 path creates no KV key at all.
+  const minute = new Date().toISOString().slice(0, 16);
+  const signalRefusal = await consumeQuota(env, {
+    scope: "signal_rate", bucket: ip, period: minute, limit: 30,
+    message: "Rate limited. Try again later.",
+  });
+  if (signalRefusal) return jsonResponse({ error: signalRefusal.error }, 429);
 
   let body;
   try { body = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
@@ -3060,9 +3325,28 @@ async function aggregateDailyTraffic(env) {
 
 // ── Gap Lifecycle (Issue #1567) ──
 async function cleanupCoveredGaps(env) {
-  const indexRaw = await env.MISAKANET_KV.get("gap:index", { type: "json" });
-  const index = Array.isArray(indexRaw) ? indexRaw : [];
-  if (index.length === 0) return { cleaned: 0 };
+  // Gap rows live in D1 when it is bound (#1649); the KV list is the fallback. Both are
+  // reduced to the same list of {query, delete} so the matching logic below is shared.
+  const d1 = d1Binding(env);
+  let gaps = [];
+  let useD1 = false;
+  if (d1) {
+    try {
+      const { results } = await d1.prepare(
+        `SELECT bucket, period FROM counters WHERE scope = 'gap' ORDER BY updated_at DESC LIMIT 500`,
+      ).all();
+      gaps = (results || []).map((row) => ({ query: String(row.bucket || ""), period: row.period }));
+      useD1 = true;
+    } catch (error) {
+      logInternal("gap cleanup: D1 read failed, falling back to KV", error);
+    }
+  }
+  if (!useD1) {
+    const indexRaw = await env.MISAKANET_KV.get("gap:index", { type: "json" });
+    const index = Array.isArray(indexRaw) ? indexRaw : [];
+    gaps = index.map((gapKey) => ({ query: gapKey.replace(/^gap:/, ""), gapKey }));
+  }
+  if (gaps.length === 0) return { cleaned: 0 };
 
   // Load BM25 index to check if lessons now cover gap queries
   const bm25Index = await loadBM25Index(env);
@@ -3071,21 +3355,31 @@ async function cleanupCoveredGaps(env) {
   const cleaned = [];
   const remaining = [];
 
-  for (const gapKey of index) {
-    const query = gapKey.replace(/^gap:/, "");
+  for (const gap of gaps) {
+    const { query } = gap;
     // Search lessons for the gap query
     const results = searchLessonsBM25(bm25Index, query, null, 3);
     if (results.length > 0) {
-      // Lesson now covers this gap — delete the gap key
-      await env.MISAKANET_KV.delete(gapKey);
+      // Lesson now covers this gap — drop the record
+      if (useD1) {
+        try {
+          await d1.prepare(
+            `DELETE FROM counters WHERE scope = 'gap' AND bucket = ?1`,
+          ).bind(query).run();
+        } catch (error) {
+          logInternal("gap cleanup: delete failed", error);
+        }
+      } else {
+        await env.MISAKANET_KV.delete(gap.gapKey);
+      }
       cleaned.push({ query, matchedLesson: results[0]?.title });
-    } else {
-      remaining.push(gapKey);
+    } else if (!useD1) {
+      remaining.push(gap.gapKey);
     }
   }
 
-  // Update index with remaining gaps
-  if (cleaned.length > 0) {
+  // Update index with remaining gaps (KV path only — D1 rows are their own index)
+  if (!useD1 && cleaned.length > 0) {
     await kvPut(env, "gap:index", JSON.stringify(remaining));
   }
 
@@ -3192,6 +3486,9 @@ export default {
         // caller that needed storage.
         // Counters and timestamps only: the raw message is in the logs, not on an
         // anonymous endpoint (same reasoning as errorResponse).
+        counters: { d1: COUNTERS_BACKEND_STATS.d1, kv: COUNTERS_BACKEND_STATS.kv,
+                    failures: COUNTERS_BACKEND_STATS.failures,
+                    last_failure_at: COUNTERS_BACKEND_STATS.last_failure_at },
         kv_writes: { attempts: kvWriteStats.attempts, failures: kvWriteStats.failures,
                      last_failure_at: kvWriteStats.last_failure_at,
                      last_ok_at: kvWriteStats.last_ok_at },

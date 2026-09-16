@@ -1,6 +1,6 @@
 ---
 title: 工艺卡步序提取：辅助动作不算独立步序，按工艺动作分界
-domain: engineering
+domain: development
 tags:
 - process-card
 - time-chart

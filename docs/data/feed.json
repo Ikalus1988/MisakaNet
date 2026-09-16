@@ -1,58 +1,82 @@
 {
-  "generated_at": "2026-09-13T04:58:31.289344+00:00",
+  "generated_at": "2026-09-16T11:48:55.518114+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat: roleplay vocative vs mention entity disambiguation lesson (#1630)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1633",
-      "timestamp": "2026-09-12T14:28:26Z",
+      "title": "feat(setup): `--report` prints this machine's state as paste-safe YAML",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1759",
+      "timestamp": "2026-09-16T10:28:04Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix: correct shields.io endpoint badge URL for Smithery badge",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1615",
-      "timestamp": "2026-09-12T14:28:15Z",
+      "title": "fix(setup): upgrade a matcher-less voice entry instead of treating it as installed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1758",
+      "timestamp": "2026-09-16T09:50:10Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.30.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1631",
-      "timestamp": "2026-09-12T14:12:26Z",
+      "title": "feat(voice): the voice hook becomes an installer switch, opt-in, and it actually makes a sound",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1755",
+      "timestamp": "2026-09-16T09:40:07Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(dsh): stop naming the protected @deepseek-ai component in the bundle patch",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1636",
-      "timestamp": "2026-09-12T01:54:54Z",
+      "title": "feat(setup): codewhale becomes the fifth target — wired file-to-file, with its two real caveats stated",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1752",
+      "timestamp": "2026-09-16T08:13:23Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.29.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1608",
-      "timestamp": "2026-09-11T13:29:27Z",
+      "title": "fix(setup): a re-run now refreshes a stale hook — the upgrade nudge could never reach anyone",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1745",
+      "timestamp": "2026-09-15T18:04:02Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit",
-      "url": "lessons/contrib/openclaw-session-row-entry-updatedat-mismatch.md",
-      "timestamp": "2026-09-10",
+      "title": "GitHub Actions: a fork PR can never receive the comment that explains its red check",
+      "url": "lessons/contrib/ci-fork-pr-no-comment-token.md",
+      "timestamp": "2026-09-13",
       "domain": "devops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "RAG 检索沉底多层机制：同章节措辞差异 + 截断/降权拦截短文本精确答案",
-      "url": "lessons/contrib/rag-retrieval-sink-multilayer-cutoff.md",
-      "timestamp": "2026-08-24",
-      "domain": "rag",
+      "title": "A manual CI run that sweeps the whole corpus always fails, so nobody trusts the red",
+      "url": "lessons/contrib/ci-manual-dispatch-whole-corpus-false-red.md",
+      "timestamp": "2026-09-13",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Uncommitted work has no undo: `git checkout -- .` and reset --hard during branch juggling",
+      "url": "lessons/contrib/git-checkout-discards-uncommitted-work.md",
+      "timestamp": "2026-09-13",
+      "domain": "git",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "A hook that swallows every error makes a misconfiguration look like \"nothing to do\"",
+      "url": "lessons/contrib/claude-code-hook-silent-failure.md",
+      "timestamp": "2026-09-12",
+      "domain": "claude",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "GITHUB_TOKEN cannot push changes to .github/workflows/** — your bot job will fail at push time",
+      "url": "lessons/contrib/github-token-cannot-push-workflow-files.md",
+      "timestamp": "2026-09-12",
+      "domain": "devops",
       "source": "lessons"
     },
     {
@@ -73,30 +97,6 @@
       ],
       "timestamp": "2026-08-23T14:53:19Z",
       "source": "github"
-    },
-    {
-      "type": "lesson",
-      "title": "Report $0 cash honestly while pending is non-zero",
-      "url": "lessons/en/honest-zero-cash-reporting.md",
-      "timestamp": "2026-07-24",
-      "domain": "ops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Normalize mixed types in links.json pack manifests",
-      "url": "lessons/en/links-json-mixed-types.md",
-      "timestamp": "2026-07-24",
-      "domain": "ops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Restart long-lived earn loops after code fixes",
-      "url": "lessons/en/restart-earn-loop-after-code-fix.md",
-      "timestamp": "2026-07-24",
-      "domain": "ops",
-      "source": "lessons"
     }
   ]
 }

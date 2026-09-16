@@ -62,3 +62,32 @@ cd ~/MisakaNet && git pull --ff-only
 # 或设 cron（Hermes/cc-haha 等常驻节点）
 */10 * * * * cd ~/MisakaNet && git pull --ff-only
 ```
+
+---
+
+## 一键自启动（推荐，2026-09-13 新增）
+
+上面的手工方式（放 CLAUDE.md、写 cron）只解决"agent 知道有这个库"，**不解决"它什么时候想起来"**。
+完整接入需要三件事，缺一件就退化成"装了但从不调用"：
+
+| # | 目标 | 机制 |
+|---|---|---|
+| 1 | agent 能调用 | 注册 MCP 服务器 `https://misakanet.org/mcp`（没有 MCP 客户端的走 skill + `curl`）|
+| 2 | agent 知道何时调用 | 把行为契约注入它自己的规则文件（`CLAUDE.md` / `AGENTS.md` / `SOUL.md`）|
+| 3 | 检查点不靠用户 | **钩子**数轮次：第 20 轮（其后每 10 轮）注入沉淀提醒；工具失败时注入检索提醒 |
+
+第 3 件是关键：写在规则里的"每 20 轮总结一次"**永远不会触发**——agent 不记账，只有钩子会。
+
+```bat
+:: Windows
+integrations\agent-autostart\install-misakanet-agent.bat
+```
+```bash
+# macOS / Linux / WSL
+python3 integrations/agent-autostart/install_misakanet_agent.py --dry-run   # 先预览
+python3 integrations/agent-autostart/install_misakanet_agent.py             # 安装
+```
+
+各 agent 的支持度（Claude Code 全自动；Codex/Hermes/DSH 的差异与手动步骤）、安全边界（脱敏、token 只放环境变量、
+课程内容是数据不是指令）、回滚方式（`--uninstall` + `.misakanet.bak`）都写在
+`integrations/agent-autostart/README.md`；可整段粘贴的行为契约在 `prompt.md`。

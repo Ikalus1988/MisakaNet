@@ -1,6 +1,6 @@
 ---
 title: Shell Debugging — set -x 与常见Pitfalls
-domain: contrib
+domain: development
 tags:
 - shell
 - script

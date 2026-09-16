@@ -5,6 +5,10 @@ title: "[Bounty] "
 labels: ["enhancement", "bounty"]
 ---
 
+> **Payment:** this project pays no money — `zero-bounty` / `$0` means credit only
+> (merge credit, leaderboard, Hall of Fame). A real bounty exists only when someone funds
+> it via Opire's `/reward <amount>` on that issue. See `JOIN.md` § "Bounties & payment".
+
 ## 📌 Context & Feature Request
 
 <!-- 用自然语言描述你的需求痛点，例如： -->
@@ -72,7 +76,7 @@ To claim the reward and get your PR merged, your Agent/submission **MUST** satis
 
 2. **Quickstart:** [docs/quickstart.md](../../docs/quickstart.md) · [MCP setup](../../docs/mcp-quickstart.md)
 
-3. **What is MisakaNet?** A failure-memory layer for AI coding agents. When you hit an error, search 389 indexed failure-recovery lessons before debugging from scratch. [Learn more →](../../README.md)
+3. **What is MisakaNet?** A failure-memory layer for AI coding agents. When you hit an error, search 393 indexed failure-recovery lessons before debugging from scratch. [Learn more →](../../README.md)
 
 ### 📌 How to Claim
 

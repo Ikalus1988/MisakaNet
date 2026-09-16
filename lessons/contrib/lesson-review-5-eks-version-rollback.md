@@ -1,6 +1,6 @@
 ---
 title: EKS Kubernetes 版本回滚 — 安全升级集群
-domain: ops
+domain: devops
 tags:
 - kubernetes
 - eks

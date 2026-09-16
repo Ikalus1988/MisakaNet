@@ -1,6 +1,6 @@
 ---
 title: Redis → PostgreSQL 替换 — 缓存/PubSub/队列统一
-domain: ops
+domain: devops
 tags:
 - redis
 - postgresql

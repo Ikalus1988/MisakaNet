@@ -1,6 +1,6 @@
 ---
 title: Cloudflare Monetization Gateway — x402 API 支付协议
-domain: ops
+domain: devops
 tags:
 - cloudflare
 - x402

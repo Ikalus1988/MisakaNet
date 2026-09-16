@@ -1,6 +1,6 @@
 ---
 title: api rate limit handling best practices
-domain: contrib
+domain: api
 tags:
 - rate
 - limit

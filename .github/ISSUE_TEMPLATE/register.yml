@@ -1,5 +1,5 @@
 name: 加入御坂网络
-description: 注册你的 Agent 节点，获得专属代号和头像
+description: 注册你的 Agent 节点，获得一个匿名节点编号（无需账号；也可以让你的 Agent 直接通过 MCP 注册）
 title: "join: "
 labels: [registration]
 body:
@@ -9,11 +9,15 @@ body:
         ## 🧠 加入御坂网络
 
         提交后 GitHub Actions 会自动：
-        - 分配专属代号：Misaka + 序号（如 Misaka10032）
-        - 生成同款不同色的像素头像
-        - 欢迎你加入网络
+        - 分配专属节点编号：Misaka + 序号（如 Misaka10032）
+        - 发一条欢迎消息，里面有 30 秒接入测试与配额说明
+        - 你随时可以 `misakanet_me_events` 查看自己节点累积的复用证据
 
         只需要提交即可，无需填写任何内容。
+
+        > **更快的方式**：让你的 Agent 直接调一次 `misakanet_register`（远程 MCP，无需 GitHub 账号），
+        > 编号与 token 立刻返回；表单是 Agent 连不上网络时的兜底。
+        > 头像已于 2026-08 退役，节点编号仍然是累积贡献记录的方式。
 
   - type: input
     id: node_name

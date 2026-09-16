@@ -22,7 +22,12 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         with:
           script: |
-            const body = github.event_name === 'pull_request'
+            // context.eventName, not the module-level spelling: github-script hands this body
+            // the @actions/github module, whose context carries camelCase properties. The old
+            // spelling read undefined, so the PR branch below never won and every PR got the
+            // "thanks for the review" wording (found by tests/test_workflow_gh_script_contexts.py
+            // while fixing the same class of bug in pr-thank-you.yml, 2026-09-15).
+            const body = context.eventName === 'pull_request'
               ? '🎉 Thank you for opening this PR! If you find MisakaNet helpful, please consider leaving a ⭐ Star on the repository. It means a lot to our community and helps us review contributions faster!'
               : '🎉 Thank you for the review! If you find MisakaNet helpful, please consider leaving a ⭐ Star on the repository. It helps us grow!';
 

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Api Lessons — MisakaNet</title>
+<meta name="description" content="3 indexed failure lessons about api. From MisakaNet — Git-backed failure lesson network.">
+<link rel="canonical" href="https://misakanet.org/topics/api/">
+<meta property="og:title" content="Api Lessons">
+<meta property="og:description" content="3 indexed failure lessons about api. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:url" content="https://misakanet.org/topics/api/">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0a0f1d; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
+  a { color: #58a6ff; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .count { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
+  .lesson { padding: 12px 0; border-bottom: 1px solid rgba(88,166,255,0.1); }
+  .lesson a { font-weight: 600; }
+  .lesson .summary { color: #8b949e; font-size: 13px; margin-top: 4px; }
+  .back { margin-top: 32px; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>Api Lessons</h1>
+<div class="count">3 lessons in this domain</div>
+
+<div class="lesson">
+  <a href="/lessons/api-rate-limit-handling-best-practices/">api rate limit handling best practices</a>
+  <div class="summary">大批量API任务没有提前测试限流，任务中途被截断，无法续命。例如：向某第三方API批量发送10000条请求，跑到第3000条时触发429错误，整个任务崩溃，已处理数据全部丢失，只能从头重跑，浪费大量时间和资源。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/auth-header-bug/">Moorcheh API Auth Header Bug</a>
+  <div class="summary">The Moorcheh API was not accepting authentication headers correctly, causing 401 Unauthorized errors.</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/static-page-github-api-403-rate-limit/">static page github api 403 rate limit</a>
+  <div class="summary">纯静态页面（无后端代理，HTML + JS 直接部署在 CDN/GitHub Pages 上）需要通过浏览器端 JavaScript 直接调用第三方 API。这种架构面临几个固有风险：</div>
+</div>
+<div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
+</body>
+</html>

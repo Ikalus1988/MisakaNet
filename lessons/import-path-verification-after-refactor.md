@@ -1,9 +1,20 @@
 ---
-domain: "python"
-title: "Verify Import Paths After Refactoring Python Modules"
-status: "published"
-verification: "metadata-normalized"
-{"title": "Verify Import Paths After Refactoring Python Modules", "domain": "python", "tags": ["refactoring", "imports", "python", "testing"], "status": "published", "confidence": "0.9", "created": "2026-09-08", "updated": "2026-09-08", "source": "mcp-memory-service PRs #1167, #1184, #1185", "verified_date": "2026-09-08", "domain_expert": ""}
+evidence_level: E3
+title: Verify Import Paths After Refactoring Python Modules
+domain: python
+tags:
+- refactoring
+- imports
+- python
+- testing
+status: published
+confidence: '0.9'
+created: '2026-09-08'
+updated: '2026-09-08'
+source: 'mcp-memory-service PRs #1167, #1184, #1185'
+verified_date: '2026-09-08'
+domain_expert: ''
+verification: metadata-normalized
 ---
 
 # Verify Import Paths After Refactoring Python Modules

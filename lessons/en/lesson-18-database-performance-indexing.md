@@ -1,6 +1,6 @@
 ---
 title: "Database Performance — Indexing and Query Optimization"
-domain: "ops"
+domain: "devops"
 subdomain: "database"
 tags: ["database", "postgresql", "indexing", "performance", "query-optimization"]
 source: "practical-experience"

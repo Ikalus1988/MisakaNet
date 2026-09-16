@@ -59,7 +59,12 @@ class TestUnsolvedMapWorker(unittest.TestCase):
 
     def test_signal_endpoint_is_rate_limited_and_size_capped(self):
         handler = self.section[self.section.index("async function handleSearchSignal("):]
-        self.assertIn("rate:signal:", handler)
+        # The limiter moved from a KV window key (`rate:signal:<ip>:<minute>`) to a D1
+        # counter (#1648) — one KV key per IP per minute was the single largest source
+        # of new keys per day. The invariant under test is a windowed limiter, not the
+        # storage backend: assert the counter call, not the old key format.
+        self.assertIn("consumeQuota(env, {", handler)
+        self.assertIn('scope: "signal_rate"', handler)
         self.assertIn("429", handler)
         self.assertIn("413", handler)
 

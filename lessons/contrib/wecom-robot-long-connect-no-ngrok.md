@@ -1,6 +1,6 @@
 ---
 title: wecom robot long connect no ngrok
-domain: contrib
+domain: wechat
 tags:
 - project:rag
 - platform:windows

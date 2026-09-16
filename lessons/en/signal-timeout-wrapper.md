@@ -1,7 +1,7 @@
 ---
 {
   "title": "Timeout wrapper for runaway agent children",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["ops", "agent", "shell", "reliability"],
   "status": "published",
   "lang": "en",

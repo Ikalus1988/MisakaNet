@@ -54,6 +54,21 @@ jobs:
           else
             gh release create "$TAG" --generate-notes
           fi
+          # Append the onboarding footer (install one-liner + the copy-paste sentence for
+          # people who do not use a terminal + both download links). Release notes are the
+          # one page a user is most likely to land on from a "new version" notification, so
+          # they must answer "how do I actually get this" without a second click.
+          FOOTER=".github/release-notes-footer.md"
+          if [ -f "$FOOTER" ]; then
+            BODY=$(gh release view "$TAG" --json body --jq .body 2>/dev/null || echo "")
+            if printf '%s' "$BODY" | grep -q "misakanet-setup"; then
+              echo "footer already present on $TAG"
+            else
+              { printf '%s\n\n' "$BODY"; cat "$FOOTER"; } > /tmp/release-notes.md
+              gh release edit "$TAG" --notes-file /tmp/release-notes.md
+              echo "footer appended to $TAG"
+            fi
+          fi
           echo "created=true" >> "$GITHUB_OUTPUT"
 
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7  # v5

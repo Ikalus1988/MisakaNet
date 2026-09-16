@@ -11,19 +11,20 @@ tags:
   - verification
 status: published
 created: '2026-09-12'
-updated: '2026-09-12'
+updated: '2026-09-13'
 source: issue-1500-go-linter-cleanup-go-fix-2026-09-12
-# E0 = self-reported (scripts/infer_evidence_level.py). Nothing here was reproduced:
-# the merging environment has no Go toolchain, so the maintainer reviewed the write-up
-# but did not verify the compiler/linter behaviour it describes.
-evidence_level: E0
+# E2 = reproduced locally (scripts/infer_evidence_level.py). The mechanism below was
+# reproduced on 2026-09-13 with go1.23.4 + golangci-lint 2.13.2; the transcript is in
+# the Verification section. The contributor's original module and counts are still not
+# available, so the *procedure* is measured and the *reported numbers* are not.
+evidence_level: E2
 evidence_refs:
   - "issue:#1500"
 provenance:
   source: "external"
   contributor: "Misaka10099"
   merged_at: "2026-09-12"
-  evidence: "self-reported via issue #1500 (E0); maintainer reviewed the write-up, but the linter/compiler output was not reproduced — see the Verification section"
+  evidence: "mechanism reproduced 2026-09-13 (E2) with go1.23.4 + golangci-lint 2.13.2; contributor's own counts remain unavailable — see the Verification section"
 ---
 
 # Clearing a Go linter backlog to zero: revive doc comments, De Morgan predicates, cascading unused deletions
@@ -249,15 +250,66 @@ config too:
 
 ## Verification
 
-> **The verification output was not reproduced in the environment where this lesson was written.** The
-> machine that authored this lesson has no Go toolchain — `go` and `golangci-lint` are not installed there
-> and cannot be installed — so no compiler, linter or test output could be captured. What follows is
-> therefore the exact runnable procedure, in order, with the expected shape of each result and the
-> failure/threshold that decides pass or fail. Nothing here is a quoted transcript: no before/after
-> counts, no `ok` lines, no issue list. The procedure is the contributor's reported sequence (issue
-> #1500); the run results are theirs to produce. `evidence_level: E0` (self-reported, per
-> `scripts/infer_evidence_level.py`) records that status: the write-up was reviewed, the
-> behaviour it describes was not reproduced.
+### Reproduced run — 2026-09-13
+
+Reproduced on Linux with `go1.23.4 linux/amd64` and `golangci-lint 2.13.2` (built with go1.27.0), against a
+minimal stdlib-only module (`example.com/linterdemo`) whose files deliberately carry one finding per
+family. The whole reproduction is a package plus one test file — not a service.
+
+```
+$ golangci-lint run                      # before
+access.go:1:1: package-comments: should have a package comment (revive)
+access.go:3:1: exported: comment on exported type Account should be of the form "Account ..." (with optional leading article) (revive)
+access.go:12:2: S1008: should use 'return (!a.Admin && !a.Owner)' instead of 'if !(!a.Admin && !a.Owner) { return false }; return true' (staticcheck)
+access.go:18:6: func unusedHelper is unused (unused)
+demorgan.go:1:1: ST1000: at least one file in a package should have a package comment (staticcheck)
+demorgan.go:5:2: S1008: should use 'return !(readOnly || locked)' instead of 'if !(readOnly || locked) { return true }; return false' (staticcheck)
+demorgan.go:4:6: func canEdit is unused (unused)
+7 issues:
+* revive: 2
+* staticcheck: 3
+* unused: 2
+
+$ golangci-lint run --fix                # automated rewriters first
+# 7 issues -> 5 issues: both S1008 findings were rewritten
+
+$ golangci-lint run                      # after the two manual passes (doc comments, delete unused helpers)
+0 issues.
+
+$ go build ./... && go vet ./...         # both silent, exit 0
+$ go test ./...                          # ← lint-clean and still WRONG
+--- FAIL: TestAllowedFollowsAdminAndOwner
+    access_test.go:19: owner: got false want true
+    access_test.go:19: neither: got true want false
+FAIL    example.com/linterdemo  0.002s
+
+$ golangci-lint run                      # after fixing the truth table to match intent
+0 issues.
+$ go fix ./...                           # no output: nothing to rewrite on this toolchain
+$ go test ./...
+ok      example.com/linterdemo  0.001s
+```
+
+Two results from this run matter, and one of them corrects the write-up above:
+
+1. **The finding did not arrive under the name this lesson predicted.** With
+   `staticcheck: checks: [all]`, an outer negation over a compound predicate was reported as **`S1008`**
+   both times (`should use 'return (...)' instead of 'if ... { return false }; return true'`), never as
+   an "apply De Morgan's law" quickfix (`QF1001`). The rule-shape table above is right to insist on
+   reading rule names out of your own output.
+2. **`--fix` is faithful to the code, including the bug.** The original predicate
+   `if !(!admin && !owner) { return false }; return true` computes `!admin && !owner` — the *opposite* of
+   the intent "admin or owner". staticcheck's suggestion, `return (!a.Admin && !a.Owner)`, is an exactly
+   equivalent rewrite; after `--fix` the tree was lint-clean while still denying both the admin and the
+   owner. Only the test — written against intent, not against the code — caught it. That is what
+   "a fixer is not a verification method" means in practice: the fixer preserves what the code *says*,
+   and the test is the only artefact that knows what it was supposed to *mean*.
+
+### The procedure, in order
+
+> The run above is reproduced (E2). What is still unavailable is the **contributor's own** module and
+> before/after counts from issue #1500, so the numbered procedure below is the general form: it makes
+> their claim checkable, and their specific numbers stay contributor-reported.
 
 **Step 0 — record the toolchain, because the measurement depends on it.**
 
@@ -409,9 +461,9 @@ moved the problem, and the next person inherits it with less information than be
 
 **What this procedure does not establish:** that the specific before/after counts in issue #1500 are
 reproducible on your tree. Rule names, enabled check categories and issue caps differ per version and
-config, and the contributor's raw output was not available in the environment where this lesson was
-written. The procedure makes their claim checkable; the claim itself remains contributor-reported (E0)
-until somebody runs it.
+config, and the contributor's raw output is still not available. The mechanism and the ordering are
+reproduced (E2, transcript above); *their* numbers remain contributor-reported until somebody re-runs it
+on their module.
 
 ## Detection Heuristics
 
@@ -449,6 +501,6 @@ until somebody runs it.
 - `go fix`'s registered fixes are the toolchain's, not the linter's: see `go help fix`
   (<https://pkg.go.dev/cmd/go>). If you cannot point at the lines it changed in your diff, it changed
   nothing worth reporting.
-- Evidence scope: the mechanism and the runnable procedure above are generalized from a single
-  contributor report (issue #1500) and were not reproduced by the environment that merged this lesson.
-  Treat the procedure as checkable and the specific counts as unverified until your own run produces them.
+- Evidence scope: the mechanism, the ordering and the "lint-clean but wrong" failure were reproduced on
+  2026-09-13 (go1.23.4 + golangci-lint 2.13.2, transcript in Verification); the underlying report is a
+  single contributor submission (issue #1500) whose own module and counts remain unavailable.

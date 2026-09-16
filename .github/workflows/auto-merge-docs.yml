@@ -41,12 +41,19 @@ jobs:
               f.filename.endsWith('.md') ||
               f.filename.endsWith('.txt') ||
               f.filename.startsWith('docs/') ||
-              f.filename.startsWith('lessons/') ||
               f.filename === 'CONTRIBUTING.md' ||
               f.filename === 'README.md' ||
               f.filename === 'JOIN.md' ||
               f.filename === 'CHANGELOG.md'
             );
+
+            // `lessons/` is deliberately NOT docs-only. Lesson content is read and
+            // acted on by agents, so auto-merging an unreviewed lesson is a
+            // poisoning vector — the same reason pr-checks.yml refuses to
+            // auto-merge any PR that touches lessons/. A lesson PR must wait for a
+            // human, so it must not take this path (2026-09-13: this list used to
+            // include lessons/, and the Enable auto-merge step then failed on
+            // every external lesson PR, adding a red check nobody could act on).
 
             core.setOutput('docs-only', docsOnly);
             core.info(`Docs-only: ${docsOnly} (${files.data.length} files)`);
@@ -58,11 +65,16 @@ jobs:
         run: |
           PR_NUM="${{ github.event.pull_request.number }}"
 
-          # Enable auto-merge with squash
-          gh pr merge "$PR_NUM" \
+          # Enabling auto-merge is a convenience, not a gate: if it cannot be
+          # enabled (fork PR, branch protection, pending required checks) the run
+          # must say so and stay green, otherwise every such PR carries a red
+          # check that no contributor can act on.
+          if gh pr merge "$PR_NUM" \
             --repo "${{ github.repository }}" \
             --squash \
             --auto \
-            --delete-branch
-
-          echo "Auto-merge enabled for PR #$PR_NUM (docs-only)"
+            --delete-branch; then
+            echo "Auto-merge enabled for PR #$PR_NUM (docs-only)"
+          else
+            echo "::warning::Could not enable auto-merge for PR #$PR_NUM — a maintainer will merge it manually once the required checks pass."
+          fi

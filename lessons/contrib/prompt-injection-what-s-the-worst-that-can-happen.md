@@ -1,6 +1,6 @@
 ---
 title: 'Prompt Injection: What''s the Worst That Can Happen?'
-domain: AI Security
+domain: security
 tags:
 - prompt injection
 - LLM security

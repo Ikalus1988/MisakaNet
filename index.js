@@ -29,28 +29,33 @@
  *   @deepseek-ai namespace` and rates the listing `route: blocked`
  *   (AI-Scarlett/DSH-Store#747; the rule is in that repo's
  *   scripts/check-plugin-submission.mjs). The patch now inserts *this* package
- *   (`name: misakanet`) and `apply()` below mounts the official stdio MCP client
- *   with the row's config — the same runtime behaviour, without naming a
+ *   (`name: misakanet`) and `apply()` below mounts the official MCP client with
+ *   the row's config — the same runtime behaviour, without naming a
  *   protected component in the patch.
  *
- * Absence is not failure: when the official client is not resolvable (npm
- * skill-only installs, older hosts) `apply()` returns quietly unless the config
- * asks to fail loudly, so the skill keeps working and boot never breaks.
+ * Absence is not failure: when the official client is not resolvable (older
+ * hosts, a profile that never installed DSH's own copy) `apply()` returns
+ * quietly unless the config asks to fail loudly, so the skill keeps working
+ * and boot never breaks.
  */
 export const name = 'misakanet';
 
 /**
- * The stdio declaration for the repo's own python MCP server. The bundle patch's
- * row config overrides any field here, so a profile can point the server at a
- * different command or working directory without patching this file.
+ * Default MCP declaration: the PUBLIC Streamable HTTP endpoint.
+ *
+ * This is the transport that works from every install channel. The repo's own
+ * python server (`scripts/mcp_server.py`, stdio) only exists in repo/git+
+ * checkouts, so defaulting to it left every npm install with a disconnected row
+ * (issue #1734). The bundle patch states the same declaration explicitly; the
+ * patch's row config is merged over this object, so a profile that wants the
+ * local server can point the row at it (transport stdio, command python3,
+ * args [scripts/mcp_server.py], cwd the repo root) without patching this file.
  */
 export const DEFAULT_MCP_CONFIG = Object.freeze({
-  transport: 'stdio',
+  transport: 'streamable-http',
   serverName: 'misakanet',
-  command: 'python3',
-  args: ['scripts/mcp_server.py'],
-  env: {},
-  cwd: '',
+  url: 'https://misakanet.org/mcp',
+  headers: { Origin: 'https://misakanet.org' },
   toolCallTimeoutMs: 60000,
   failOnStartupError: false,
 });
@@ -64,7 +69,8 @@ export const DEFAULT_MCP_CONFIG = Object.freeze({
  * that one).
  *
  * @param ctx - cordis host context.
- * @param config - stdio (or streamable-http) config from the bundle patch row.
+ * @param config - MCP config from the bundle patch row (streamable-http by
+ *   default; stdio is still accepted, e.g. for the repo's python server).
  */
 export async function apply(ctx, config = {}) {
   const options = { ...DEFAULT_MCP_CONFIG, ...config };

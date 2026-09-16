@@ -1,7 +1,7 @@
 ---
 {
   "title": "Separate scout vs worker modes in earn agents",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["mode","scout","worker","safety","agent","ops"],
   "status": "published",
   "lang": "en",

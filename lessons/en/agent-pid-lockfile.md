@@ -1,7 +1,7 @@
 ---
 {
   "title": "PID lockfile so earn loops do not double-run",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["lock", "pid", "cron", "daemon", "agent", "concurrency"],
   "status": "published",
   "lang": "en",

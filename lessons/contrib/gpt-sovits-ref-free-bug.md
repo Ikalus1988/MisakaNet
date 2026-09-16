@@ -1,6 +1,6 @@
 ---
 title: gpt sovits ref free bug
-domain: contrib
+domain: audio
 tags:
 - sovits
 - free

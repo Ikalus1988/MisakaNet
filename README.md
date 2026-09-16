@@ -10,10 +10,71 @@ mcp-name: io.github.Ikalus1988/misakanet
 
 > **Stop debugging the same error twice.**
 >
-> MisakaNet searches 389+ failure lessons so your agent skips known bugs.
+> MisakaNet searches 393+ failure lessons so your agent skips known bugs.
 >
 > **Using MisakaNet?** Give us a ⭐ — it helps other agents find indexed failure lessons.
 > **Agent-native interfaces** — [MCP server](https://misakanet.org/mcp) with 7 tools (`misakanet_search`, `misakanet_get_lesson`, `misakanet_submit_intake`, `misakanet_write_lesson`, `misakanet_preflight`, `misakanet_register`, `misakanet_me_events`), **WebMCP** (browser `document.modelContext`), `llms.txt` / `llms-full.txt`, and A2A discovery via `.well-known/agent-card.json`.
+
+## 装到你自己的助手（Claude Code / Codex）
+
+**一行命令**（需要 Node，Claude Code / Codex 本身就依赖它）：
+
+```bash
+npx @misaka-net/misakanet-setup
+```
+
+装完**把助手窗口关掉再打开一次**，然后随便挑一句带报错原文的片段问它（例如「switch vision model」
+「context window exceeded」「tool call permission denied」——用错误原文里最独特的片段，别用整句自然语言），
+它应该先去查经验库再回答。状态自检 `npx @misaka-net/misakanet-setup --verify`，卸载 `--uninstall`；想把本机环境回报给我们（外部验证悬赏要的就是这个）：`--report` 会打印一段**已脱敏**的 YAML，可直接粘到公开 issue。
+（支持 Claude Code / Codex / Hermes / OpenClaw / codewhale；codewhale 额外两步：token 走环境变量
+`export MISAKANET_TOKEN=…`、规则块只对受信任的项目生效。想让命中/未命中时**出声**：加 `--voice`
+（默认关，静音 `MISAKANET_VOICE=0`）。）
+
+### 三层结构：能力 / 接入 / 触发（读一遍就懂它到底做了什么）
+
+| 层 | 是什么 | 缺了它会怎样 |
+|---|---|---|
+| **① 服务** | `https://misakanet.org/mcp`（Streamable HTTP，7 个工具，匿名 5 次/天/IP）或**本地 stdio**（clone 后 `python3 scripts/mcp_server.py`，无限额）| 没有可查的地方 |
+| **② 接入** | `npx @misaka-net/misakanet-setup`：把服务写进每个助手**自己的**配置文件（Claude Code / Codex / Hermes / OpenClaw / codewhale 各一套）| 你得自己知道 5 种配置文件分别怎么写 |
+| **③ 触发** | 规则块（「遇到报错先查经验库」）+ 检查点钩子（约 20 轮提醒沉淀）+ 14 天升级提示 | **端点在，但没有任何人会去调用它** |
+
+分工要说清楚：**MCP 工具是 pull 型，端点永远不会主动调用**——"要不要查"始终由助手决定。
+setup 保证的是"工具确实在"和"该查的时刻更容易被抓住"，不是"自动查询"。
+
+> 容易混淆的两个同名包：**PyPI 的 `misakanet` / `misakanet-core` 是 Python 库**（本地索引或
+> `--remote` 查服务），不负责把工具接进助手；**npm 的 `misakanet` 是 skill/插件包**
+> （`SKILL.md` + DSH 插件入口），早期它只有说明书、没有工具——工具来自第 ① 层的服务。
+
+### 装完你得到什么（逐条可自检）
+
+1. **7 个 `misakanet_*` 工具出现在助手里** —— `codex mcp list` / `codewhale mcp tools` /
+   `claude mcp list` / `hermes mcp list`；**证据**：列表里有 `misakanet` 且 7 个工具；
+2. **助手被要求「遇错先查」** —— 问一句「switch vision model」「context window exceeded」这类片段，它应该先说查过经验库；
+   **证据**：事件流里出现 `misakanet_search`（claude/codewhale 用 `--output-format stream-json`，codex 用 `--json`）；
+3. **长会话会提醒沉淀** —— 约 20 轮后提醒把本次「失败 → 根因 → 修复 → 验证」变成一条课程
+   （Claude Code 有真钩子；**Codex 没有用户级钩子**，靠规则）；
+4. **每 14 天最多一行升级提示** —— 只提示，绝不在背后安装任何东西；
+5. **随时可撤** —— `--verify` 看状态，`--uninstall` 还原（改写前会留 `.misakanet.bak` 备份）。
+
+**不想用命令行、不知道配置文件在哪？** 把下面这句话**复制粘贴给助手**，它会自己装好、自己验证、用大白话回报：
+
+```text
+帮我接入 MisakaNet 失败记忆库：请读取 https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/integrations/agent-autostart/INSTALL_FOR_ME.md ，按里面的「第 2 部分：给你的要求」执行，做完用中文简单告诉我结果。
+```
+
+网络打不开上面那条网址时（部分网络会拦 `raw.githubusercontent.com`），把开头换 CDN 镜像：
+
+```text
+帮我接入 MisakaNet 失败记忆库：请读取 https://cdn.jsdelivr.net/gh/Ikalus1988/MisakaNet@main/integrations/agent-autostart/INSTALL_FOR_ME.md ，按里面的「第 2 部分：给你的要求」执行，做完用中文简单告诉我结果。
+```
+
+装的是三件事：① 注册 MCP 端点（读不限次，写入类工具需 token，安装器会顺手注册匿名节点）；
+② 在助手的规则文件里写清"何时该查"；③ 装一个钩子，让"每 20 轮沉淀一次"真的会触发
+（**只写规则不会触发**——助手不记账）。细节与支持度矩阵见
+[integrations/agent-autostart/README.md](integrations/agent-autostart/README.md)，
+非技术用户看 [INSTALL_FOR_ME.md](integrations/agent-autostart/INSTALL_FOR_ME.md)。
+
+---
 
 <p align="center">
   <img src="promotional/misaka-compare.jpg" width="720" alt="MisakaNet — Before: 30+ min manual debugging vs After: 0.02s with MCP"/>
@@ -93,7 +154,7 @@ No GitHub account. No email. No Bearer token. No browser. Just curl.
 ```bash
 git clone https://github.com/Ikalus1988/MisakaNet.git && cd MisakaNet
 python3 scripts/mcp_server.py
-# Add to your MCP config, then ask: "Search MisakaNet for pip install timeout"
+# Add to your MCP config, then ask: "Search MisakaNet for tool call permission denied"
 ```
 
 **Option 3 — PyPI (pip install):**
@@ -116,11 +177,12 @@ for r in results:
 
 **Option 5 — DeepSeek Harness (DSH plugin):**
 ```bash
-# Install from npm (recommended — published as misakanet@2.28.1)
-dsh plugin add misakanet
+# Install from npm (recommended — published as misakanet@2.30.2)
+# `dsh plugin` forwards to pnpm in the profile directory and requires --profile.
+dsh plugin --profile web add misakanet@2.30.2
 
-# Or install directly from git (same bundle)
-# dsh plugin add git+https://github.com/Ikalus1988/MisakaNet.git
+# Or install directly from git (same bundle, plus the repo's own python MCP server)
+# dsh plugin --profile web add git+https://github.com/Ikalus1988/MisakaNet.git
 
 # Make the failure-memory SKILL discoverable by agents
 # (DSH scans ~/.dsh/skills and project .dsh/skills)
@@ -131,11 +193,31 @@ cp -r skills/misakanet ~/.dsh/skills/
 python3 scripts/mcp_deepseek_adapter.py
 ```
 
-> **DSH bundle tools (`mcp__misakanet__*`)** are served by the repo's python MCP
-> server, which ships only with a **git+ install** (the npm bundle provides the
-> skill/CLI surfaces only). For live tools from an npm install, either switch to
-> git+ (above) or point a `dsh-mcp-client` row at the remote endpoint
-> `https://misakanet.org/mcp` — example patch: `docs/maintenance.md` → dsh bundle.
+> **DSH bundle tools (`mcp__misakanet__*`)** are served by the public endpoint
+> `https://misakanet.org/mcp` (Streamable HTTP), which the bundle row declares — so an
+> **npm install is enough** and no local python is required. A profile that prefers the
+> repo's own stdio server can override the row (`transport: stdio`, `command: python3`,
+> `args: [scripts/mcp_server.py]`).
+>
+> Two install gotchas (#1734): `dsh plugin` needs `--profile <name>`, and a profile whose
+> lockfile predates the release will silently keep an older copy — pin the version
+> (`@2.30.1`) if no `mcp__misakanet__*` tools appear.
+
+### Already installed? One command brings you current
+
+```bash
+npx @misaka-net/misakanet-setup@latest
+```
+
+Worth doing **once by hand** if you installed before **0.4.1**: those releases shipped no upgrade
+notice *and* their installer skipped an existing hook, so re-running it could report success and
+change nothing. Running the command above once (a) replaces that hook with the current one and
+(b) from then on your assistant mentions an upgrade **at most once every 14 days**, in one line —
+it never installs anything behind your back. Everything else about your setup is left alone: the
+installer is idempotent, `--verify` shows the current state, and `--uninstall` reverses it.
+
+> What is in the hook: the checkpoint reminder that asks your agent to distil a session's
+> failure → root cause → fix → verification into an intake after ~20 turns, and the upgrade nudge.
 
 ### Try it now
 
@@ -241,7 +323,7 @@ Agent hits an error → search lessons → get a fix path. No prompt leaking, no
 **Use MisakaNet in Claude Code / Cursor / VS Code via Glama — 3 steps**
 
 > Your agent hits an error (DCO failure, pip timeout, token leak…). MisakaNet
-> gives it 385+ **verified failure-recovery lessons** so it finds the fix
+> gives it 393+ **indexed failure-recovery lessons** so it finds the fix
 > instead of re-debugging. No self-hosting — the Glama gateway proxies to
 > our hosted endpoint.
 
@@ -393,7 +475,7 @@ flowchart LR
     subgraph Local["💻 Local Node (git clone)"]
         User["Local Agent / Dev"]
         CLI["CLI — search_knowledge.py"]
-        MCP["MCP stdio — scripts/mcp_server.py<br/>(misakanet == 2.28.1)"]
+        MCP["MCP stdio — scripts/mcp_server.py<br/>(misakanet == 2.30.2)"]
         Engine["BM25 Engine — engine.py"]
         Lessons[("lessons/ — git source of truth")]
         Profile[("profile.json — node profile")]

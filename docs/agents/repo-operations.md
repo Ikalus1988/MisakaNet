@@ -141,6 +141,40 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 | 站点/README 上的课程数对不上（例如 meta description 写 435、实际 378） | 跑 `python3 scripts/sync_lesson_count.py --check` 看漂移清单，再跑不带 `--check` 的同一命令修好。若某条报 `matched 0× ... The sentence was reworded`，说明受管句子被改写：改文件或更新脚本里的 `SITES` 注册表——**不要**把该行删掉当成"没事"（旧机制就是这么静默失效的，见脚本 docstring） |
 | 需要看 worker 线上错误 | 用 `cf_mcp_auth.py` 拿 CF 凭证 → Cloudflare observability MCP 查（worker 的 `[observability]` 需启用） |
 
+### 计数器：KV → D1（2026-09-13，#1647–#1649）
+
+**为什么迁**：Cloudflare KV 免费档的限额按「每天写入的**不同 key** 数」计（1,000），而**同一 key 重写是豁免的**。
+所以"每次调用都要新 key"的路径最先死——2026-09-12 线上实测：`misakanet_register` 报
+`KV put() limit exceeded for the day.`，而同一时刻 cron 的索引重写却成功（索引 key 当天已存在）。
+注册每次要写两个新 key（`node:<id>`、`mcp_token:<token>`），而**计数器在抢同一份额度**。
+
+**现在的分工**
+
+| 数据 | 去哪 | 说明 |
+|---|---|---|
+| 匿名读配额（5/天/IP）、signal 限流 | **D1** `counters`（`scope='rate_read'` / `'signal_rate'`） | 单条原子 upsert，取代 KV 的 read-modify-write（旧实现存在并发下双读同一值） |
+| 未命中查询（gap 遥测） | **D1** `counters`（`scope='gap'`） | 原来每个不同查询一个新 key，是**最后一个无界来源** |
+| 流量计数 | **KV**（`traffic:<class>:<date>`） | **有界**（每天每类几个 key），迁移无收益，刻意不动 |
+| 注册节点/token、intake、pair 等 | **KV** | 这些是要**保护**的对象，不是要迁的计数器 |
+| 代理缓存 | KV（TTL 300s） | 同一 key 重写，不吃新 key 额度 |
+
+**回退**：D1 未绑定或出错时，`bumpCounter()` 回退到 KV，并**保留旧键名**（`rate:read:<ip>:<date>`、
+`rate:signal:<ip>`）——回滚或未绑定部署看到的是同一批计数器。计数器失败一律 **fail open**（存储问题不该阻断读取），
+并把失败计入 `/api/health` 的 `counters.failures`。
+
+**怎么查（无需推理）**
+```bash
+# 只读、dispatch-only：打印各 scope 的桶数/总量/最后更新，并检查 rate_read/gap 是否有行
+gh workflow run d1-counters-report.yml
+# 应用 schema（幂等，只应用 workers/d1/schema.sql，不部署 worker）
+gh workflow run apply-d1-schema.yml
+```
+`/api/health` 的 `counters` 是**每 isolate 的内存统计**：它能回答"这个 isolate 在用 D1 吗"，
+不能回答"迁移生效了吗"——后者用上面那个 report。
+
+**改 schema 时要记得**：`workers/d1/schema.sql` 与 worker 的 SQL 由不同机制改动（一个 workflow 应用、一个随代码部署），
+`tests/test_d1_counters_schema.py` 会解析 schema 并断言 worker 用到的列都已声明——否则会以"请求路径上的运行期 SQL 错误"暴露。
+
 ## 5. 相关文档
 
 - 使用方规则：`AGENTS.md`（§1–§5）+ `docs/agents/retrieval-and-contribution.md`

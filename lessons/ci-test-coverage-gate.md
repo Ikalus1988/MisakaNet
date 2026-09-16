@@ -1,9 +1,20 @@
 ---
-domain: "ci"
-title: "Always Add Tests with Code Changes to Pass CI Coverage Gates"
-status: "published"
-verification: "metadata-normalized"
-{"title": "Always Add Tests with Code Changes to Pass CI Coverage Gates", "domain": "ci", "tags": ["testing", "github-actions", "ci-gate", "pull-request"], "status": "published", "confidence": "0.95", "created": "2026-09-08", "updated": "2026-09-08", "source": "mcp-memory-service PRs #1167, #1184, #1185", "verified_date": "2026-09-08", "domain_expert": ""}
+evidence_level: E0
+title: Always Add Tests with Code Changes to Pass CI Coverage Gates
+domain: ci
+tags:
+- testing
+- github-actions
+- ci-gate
+- pull-request
+status: published
+confidence: '0.95'
+created: '2026-09-08'
+updated: '2026-09-08'
+source: 'mcp-memory-service PRs #1167, #1184, #1185'
+verified_date: '2026-09-08'
+domain_expert: ''
+verification: metadata-normalized
 ---
 
 # Always Add Tests with Code Changes to Pass CI Coverage Gates

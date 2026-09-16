@@ -119,3 +119,30 @@ CREATE TABLE IF NOT EXISTS questions (
 );
 CREATE INDEX IF NOT EXISTS idx_questions_status ON questions(status);
 CREATE INDEX IF NOT EXISTS idx_questions_dedup ON questions(dedup_hash);
+
+-- ── Counters & telemetry (KV → D1, issues #1647-#1649, 2026-09-12) ──────────
+-- Why this exists: KV's free tier caps *distinct keys written per day* (1,000), and a
+-- same-key rewrite is exempt. So the paths that need a new key per request or per entity
+-- are the ones that die first — proven live on 2026-09-12, when `misakanet_register`
+-- (which writes `node:<id>` and `mcp_token:<token>`, both new every call) failed with
+-- `KV put() limit exceeded for the day.` while the cron's index rewrite kept succeeding.
+-- Counters are rows, not keys, and D1 allows ~100k row writes/day on the free tier.
+--
+-- One table serves them all: `scope` names the counter family, `bucket` the subject
+-- (ip, ip:minute, traffic class, query) and `period` the window. A single
+-- `INSERT … ON CONFLICT … RETURNING count` increments atomically, which the KV
+-- read-modify-write never did.
+--
+-- Retention: rows are small and periodic. `scripts/prune_counters.py` (issue #1649)
+-- is not required for correctness; anything older than the longest window (30 days for
+-- traffic monthly) can be deleted at leisure.
+CREATE TABLE IF NOT EXISTS counters (
+  scope      TEXT NOT NULL,   -- rate_read | signal_rate | traffic | traffic_monthly | gap
+  bucket     TEXT NOT NULL,   -- ip | ip:minute | class | query
+  period     TEXT NOT NULL,   -- YYYY-MM-DD | YYYY-MM-DDTHH:MM | YYYY-MM
+  count      INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (scope, bucket, period)
+);
+
+CREATE INDEX IF NOT EXISTS idx_counters_scope_period ON counters(scope, period);

@@ -1,0 +1,99 @@
+name: Publish misakanet
+
+# The root package is the *plugin / skill* channel (DSH plugin, Codex plugin manifest,
+# skills/misakanet/SKILL.md). The MCP installer for Claude Code / Codex is a separate
+# package: @misaka-net/misakanet-setup, published by misakanet-setup-publish.yml.
+#
+# Until now nothing published this package at all - the registry copy sat at 2.23.0 while the
+# repo moved to 2.30.x, because the only publish path was a human running npm by hand.
+
+on:
+  push:
+    tags:
+      - "misakanet-v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run every check and show the tarball, but do not publish"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      # A tag that disagrees with package.json would publish a version nobody intended, and
+      # npm does not let you take it back.
+      - name: Version must match the tag
+        run: |
+          PKG_VERSION=$(node -e "console.log(require('./package.json').version)")
+          echo "package.json: $PKG_VERSION"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            TAG_VERSION="${GITHUB_REF_NAME#misakanet-v}"
+            echo "tag: $TAG_VERSION"
+            [ "$PKG_VERSION" = "$TAG_VERSION" ] || {
+              echo "::error::tag $GITHUB_REF_NAME says $TAG_VERSION but package.json says $PKG_VERSION"
+              echo "::error::fix with: python3 scripts/align_versions.py --source $TAG_VERSION"
+              exit 1
+            }
+          fi
+
+      - name: Verify zero runtime dependencies
+        run: |
+          DEPS=$(node -e "const p=require('./package.json');console.log(p.dependencies?Object.keys(p.dependencies).length:0)")
+          echo "runtime dependencies: $DEPS"
+          [ "$DEPS" = "0" ] || { echo "FAIL: this package must stay dependency-free"; exit 1; }
+
+      - name: Show the tarball that would be published
+        run: npm pack --dry-run
+
+      # Same diagnostics as the setup package: a 401 here means the token is expired (npm
+      # tokens default to 90 days), not that it lacks permissions - say so instead of leaving
+      # a bare "PUT 404".
+      - name: Check npm identity
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::NPM_TOKEN is empty - set it to a token that can publish this package."
+            exit 1
+          fi
+          if ! ACCOUNT=$(npm whoami 2>/tmp/whoami.err); then
+            echo "::error::npm rejected NPM_TOKEN (npm whoami failed)."
+            sed 's/^/    /' /tmp/whoami.err | head -5
+            echo "::error::A rejected token is usually expired; create a new automation token and"
+            echo "::error::update the NPM_TOKEN repository secret."
+            exit 1
+          fi
+          echo "account: $ACCOUNT"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm
+        if: github.event_name == 'push' || inputs.dry_run == false
+        run: |
+          set +e
+          npm publish --access public
+          RC=$?
+          if [ "$RC" -ne 0 ]; then
+            echo "::error::npm publish failed (exit $RC)."
+          fi
+          exit $RC
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Dry run summary
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+        run: |
+          echo "dry_run: all checks passed, nothing was published." >> "$GITHUB_STEP_SUMMARY"
+          echo "To publish: push a tag (git tag misakanet-v\$(node -p \"require('./package.json').version\")), or re-run this workflow with dry_run=false." >> "$GITHUB_STEP_SUMMARY"

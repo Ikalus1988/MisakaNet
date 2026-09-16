@@ -40,8 +40,24 @@ Historical snapshots keep the number they were written with: ``docs/blog/**``,
 ``docs/releases/**``, ``docs/reviews/**``, ``docs/prd/**``,
 ``docs/maintainer/handoff-*.md``, course bodies (``lessons/**``) and dated audit
 reports. So does *testimony* (``docs/community/voices.json`` quotes a user
-saying "200+ lessons") and any metric that is not the lesson total
-(``18 domains``, ``52+ registered nodes``, per-domain topic pages).
+saying "200+ lessons") and any metric that is not the lesson total or the node
+total (per-domain topic pages).
+
+The **domain** count stays unmanaged on purpose (2026-09-15): three different
+numbers are in play and none of them is wrong about the thing it measures —
+``docs/install/index.html`` says "18 domains" (the curated ``docs/domains/``
+list), the ``domains`` badge counts raw frontmatter strings, and a normalised
+count sits between them. Picking one is a product decision, not a sync job, so
+it is tracked separately and no gate pretends otherwise.
+
+Registered nodes *are* managed here as of 2026-09-15 (issue #1683): the same
+fact read 52+ (``docs/llms.txt``), 59 (a hardcoded shields badge in
+``README.zh-CN.md``) and 73 (``data/counter.json``) at once, and nothing watched
+it. The canonical value comes from the counter the site itself reads —
+``data/counter.json`` ``current`` minus ``NODE_OFFSET`` — with one caveat stated
+in the docstring of :func:`canonical_nodes`. ``STATUS.md`` also showed 52+, but
+it is generated and gitignored, so the fix for it belongs in
+``scripts/update_status.py`` (a gate on an untracked file can only fail).
 
 Usage
 -----
@@ -61,6 +77,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 LESSONS_JSON = Path("data") / "lessons.json"
 COUNT_FILE = Path("docs") / "_lessons_count.txt"
+COUNTER_JSON = Path("data") / "counter.json"
+# Node ids are the counter offset by a fixed base, which is how the site reads the
+# same fact: docs/index.html does `const totalNodes = current - 10000`.
+NODE_OFFSET = 10000
 
 
 @dataclass(frozen=True)
@@ -148,6 +168,17 @@ def _build_sites() -> tuple[Site, ...]:
         "skill manifest tagline")
     add("JOIN.md", rf"\*\*{_COUNT}\+ lessons\*\*", "**{n}+ lessons**",
         "contributor onboarding tagline")
+    # Both surfaces below sat live and stale without any gate seeing them
+    # (found 2026-09-14, while re-checking README accuracy before the 2.30.0
+    # publish): the Glama section advertised "385+ verified failure-recovery
+    # lessons" — a count this registry never tracked, in the vocabulary
+    # docs/trust-semantics.md forbids — and JOIN.md's Version-Info block
+    # advertised "384+ lessons" next to a version two releases behind.
+    add("README.md", rf"{_COUNT}\+ \*\*(?:verified|indexed) failure-recovery lessons\*\*",
+        "{n}+ **indexed failure-recovery lessons**",
+        "README Glama install section — indexed, never 'verified'")
+    add("JOIN.md", rf"(?m)^\s*{_COUNT}\+ lessons\s*$", "{n}+ lessons",
+        "JOIN.md Version-Info block (its own line inside the fenced block)")
 
     # ── integration guides ──────────────────────────────────────────────────
     for _path in ("docs/integrations/cursor.md", "docs/integrations/continue.md",
@@ -157,8 +188,21 @@ def _build_sites() -> tuple[Site, ...]:
     add("docs/integrations/README.md",
         rf"(Search ){_COUNT}\+? (?:indexed )?failure-recovery lessons",
         r"\g<1>{n} indexed failure-recovery lessons", "integrations index intro")
-    add("docs/install/index.html", rf"{_COUNT}\+ lessons across 18 domains",
-        "{n}+ lessons across 18 domains", "install page feature list")
+    # The domain count in this sentence is owned by DOMAIN_SITES (which runs after this one);
+    # hardcoding 18 here would rewrite it back on every lesson sync and, once the domain pass
+    # had moved it, stop matching its own output — the write-once failure this registry exists
+    # to prevent.
+    # No capture around the lesson number: `\g<1>` used to carry the OLD number, and writing it
+    # next to {n} produced "393393" and ate " domains" (caught by --check, 2026-09-15).
+    #
+    # The domain number is referenced BY NAME, not by number. `_COUNT` is `(?P<n>\d{2,4})`, and a
+    # named group is *also* a numbered one, so the group that used to be written as `\g<1>` was
+    # the lesson count, not the domain count: on 2026-09-15 the daily update-lessons run turned
+    # this sentence into "393+ lessons across 393 domains" (both numbers correct-looking, the
+    # domain one silently wrong) and left main failing test_lesson_count_ssot. A name cannot be
+    # renumbered by a later edit to the pattern.
+    add("docs/install/index.html", rf"{_COUNT}\+ lessons across (?P<domains>\d{{2,4}}) domains",
+        r"{n}+ lessons across \g<domains> domains", "install page feature list")
 
     # ── GitHub-facing automation ────────────────────────────────────────────
     add(".github/ISSUE_TEMPLATE/config.yml", _META, _META_REPL,
@@ -183,12 +227,116 @@ def _build_sites() -> tuple[Site, ...]:
 SITES: tuple[Site, ...] = _build_sites()
 
 
+def _build_node_sites() -> tuple[Site, ...]:
+    """Surfaces that advertise how many nodes have registered (issue #1683)."""
+    sites: list[Site] = []
+
+    def add(path: str, pattern: str, replace: str, note: str, min_matches: int = 1) -> None:
+        sites.append(Site(path, pattern, replace, note, min_matches))
+
+    add("docs/llms.txt", rf"{_COUNT}\+? registered nodes", "{n} registered nodes",
+        "llms.txt data section (agent-facing)")
+    add("docs/.well-known/llms.txt", rf"{_COUNT}\+? registered nodes", "{n} registered nodes",
+        "served copy of llms.txt")
+    # NOT managed: STATUS.md. It is in .gitignore and generated by
+    # scripts/update_status.py, so a gate on it would fail forever in CI (where the file
+    # does not exist) and could only ever be satisfied on one machine. Its stale "52+" is
+    # fixed in the generator, not here.
+    return tuple(sites)
+
+
+NODE_SITES: tuple[Site, ...] = _build_node_sites()
+
+
+def _lesson_domain(path: Path) -> str:
+    """The frontmatter `domain:` of one lesson, normalised (unquoted, lowercased)."""
+    head = path.read_text(encoding="utf-8", errors="ignore")[:2000]
+    as_json = re.match(r'\s*\{\s*"domain"\s*:\s*"([^"]+)"', head)
+    if as_json:
+        return as_json.group(1).strip().lower()
+    found = re.search(r"(?m)^domain\s*:\s*(.+)$", head)
+    if not found:
+        return ""
+    return found.group(1).strip().strip('"').strip("'").lower()
+
+
+def canonical_domains(root: Path = REPO) -> int:
+    """Distinct domains in the published corpus — and the definition, which is the point.
+
+    Issue #1687: the same claim read 18 (``docs/install/index.html``, ``docs/skill.md``,
+    ``JOIN.md``), 69 (the badge, which counted raw strings, so ``devops`` and ``"devops"``
+    were two) and 61 (the same strings normalised). None was derivable from anything a reader
+    could check.
+
+    The definition now: the frontmatter ``domain`` values of the lessons we publish
+    (``core``/``contrib``/``en``, READMEs excluded), unquoted and lowercased, counted once
+    each. Whatever that number is, it is a fact about the corpus rather than a slogan, and the
+    surfaces that quote it are gated on it. The taxonomy itself (an allowlist, synonyms, the
+    dead ``data/synonyms.json`` copy) is separate work, tracked in the issue.
+    """
+    values: set[str] = set()
+    for sub_dir in ("core", "contrib", "en"):
+        for path in sorted((root / "lessons" / sub_dir).rglob("*.md")):
+            if path.name == "README.md":
+                continue
+            value = _lesson_domain(path)
+            if value:
+                values.add(value)
+    return len(values)
+
+
+def _build_domain_sites() -> tuple[Site, ...]:
+    """Surfaces that advertise how many domains the corpus covers (issue #1687)."""
+    sites: list[Site] = []
+
+    def add(path: str, pattern: str, replace: str, note: str, min_matches: int = 1) -> None:
+        sites.append(Site(path, pattern, replace, note, min_matches))
+
+    add("docs/llms.txt", rf"(?m)^- {_COUNT} domains:", "- {n} domains:",
+        "llms.txt domain line (agent-facing)")
+    add("docs/.well-known/llms.txt", rf"(?m)^- {_COUNT} domains:", "- {n} domains:",
+        "served copy of llms.txt")
+    add("docs/skill.md", rf"across {_COUNT} domains", "across {n} domains",
+        "skill manifest tagline")
+    add("JOIN.md", rf"across {_COUNT} domains", "across {n} domains",
+        "contributor onboarding tagline")
+    add("docs/install/index.html", rf"(across ){_COUNT}( domains)",
+        r"\g<1>{n} domains", "install page feature list")
+    return tuple(sites)
+
+
+DOMAIN_SITES: tuple[Site, ...] = _build_domain_sites()
+
+
 def canonical_count(root: Path = REPO) -> int:
     """Lesson count from the single source of truth: data/lessons.json."""
     data = json.loads((root / LESSONS_JSON).read_text(encoding="utf-8"))
     if not isinstance(data, list):
         raise TypeError("data/lessons.json root must be a list")
     return len(data)
+
+
+def canonical_nodes(root: Path = REPO) -> int:
+    """Registered-node count: ``data/counter.json`` current, offset by NODE_OFFSET.
+
+    ``data/counter.json`` is the repository's declared source of truth (see
+    ``scripts/node_status.py``), committed by the registration workflow, and the same
+    offset the site applies in ``docs/index.html`` (``current - 10000``).
+
+    It is a **mirror**: the authoritative value is the worker's KV counter, and
+    ``scripts/node_status.py --mirror`` (daily workflow ``sync-node-counter.yml``) copies it
+    into this file, which is the offline-checkable copy these surfaces and this gate read.
+    The two can differ by a day's registrations — that is the point: a number anybody can
+    check out, rather than one that changes between two reads of the same page.
+    """
+    try:
+        data = json.loads((root / COUNTER_JSON).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"{COUNTER_JSON}: unreadable ({exc})") from exc
+    current = data.get("current")
+    if not isinstance(current, int) or isinstance(current, bool) or current < NODE_OFFSET:
+        raise ValueError(f"{COUNTER_JSON}: current={current!r} is not an int >= {NODE_OFFSET}")
+    return current - NODE_OFFSET
 
 
 def _line_of(text: str, pos: int) -> int:
@@ -226,8 +374,14 @@ def _scan(root: Path, sites: tuple[Site, ...]) -> tuple[list[_Scan], list[str]]:
 
 
 def stale_entries(count: int, *, root: Path = REPO,
-                  sites: tuple[Site, ...] = SITES) -> list[str]:
-    """Every health problem with the count surface; empty list == healthy."""
+                  sites: tuple[Site, ...] = SITES,
+                  check_count_file: bool = True) -> list[str]:
+    """Every health problem with the count surface; empty list == healthy.
+
+    ``check_count_file`` is off for a metric that has no ``COUNT_FILE`` of its own
+    (the node count lives in ``data/counter.json`` already); leaving it on would
+    compare the lesson count's copy against a node count.
+    """
     scans, errors = _scan(root, sites)
     for scan in scans:
         for hit in scan.hits:
@@ -239,6 +393,8 @@ def stale_entries(count: int, *, root: Path = REPO,
                     f"{scan.site.path}:{_line_of(scan.text, hit.start())}: "
                     f"{found!r} should be {count} — {scan.site.note}"
                 )
+    if not check_count_file:
+        return errors
     count_file = root / COUNT_FILE
     try:
         disk = count_file.read_text(encoding="utf-8").strip()
@@ -251,13 +407,18 @@ def stale_entries(count: int, *, root: Path = REPO,
 
 
 def sync_all(count: int, *, root: Path = REPO, sites: tuple[Site, ...] = SITES,
-             dry_run: bool = False) -> tuple[list[str], list[str]]:
+             dry_run: bool = False, write_count_file: bool = True) -> tuple[list[str], list[str]]:
     """Rewrite every managed site to ``count``. Returns (changes, errors).
 
     Rows are applied **per file, onto one accumulating text**: several rows can
     target the same file (docs/index.html has four), and writing each row from
     the text captured at scan time made every write clobber the previous row's
     (found the hard way — only the last row survived on disk).
+
+    ``write_count_file`` is off for metrics whose source of truth is already a file
+    in the tree (the node count reads ``data/counter.json``); ``COUNT_FILE`` is the
+    lesson count's machine-readable copy and would otherwise be overwritten with a
+    node count.
     """
     scans, errors = _scan(root, sites)
     changes: list[str] = []
@@ -278,6 +439,8 @@ def sync_all(count: int, *, root: Path = REPO, sites: tuple[Site, ...] = SITES,
                 (root / path).write_text(text, encoding="utf-8")
             changes.append(f"{path}: {total} site(s) → {count}")
 
+    if not write_count_file:
+        return changes, errors
     count_file = root / COUNT_FILE
     try:
         current = count_file.read_text(encoding="utf-8").strip()
@@ -291,44 +454,77 @@ def sync_all(count: int, *, root: Path = REPO, sites: tuple[Site, ...] = SITES,
     return changes, errors
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="Sync public lesson counts with data/lessons.json (idempotent).")
-    parser.add_argument("--check", action="store_true",
-                        help="verify only; exit 1 on stale or unmatched counts")
-    parser.add_argument("--quiet", action="store_true", help="silent on success")
-    parser.add_argument("--root", type=Path, default=REPO, help=argparse.SUPPRESS)
-    args = parser.parse_args(argv)
-
-    count = canonical_count(args.root)
-
-    if args.check:
-        problems = stale_entries(count, root=args.root)
+def _run_metric(label: str, count: int, sites: tuple[Site, ...], *, root: Path,
+                check: bool, quiet: bool, write_count_file: bool) -> int:
+    """Check or sync one metric. Returns 0 on health, 1 on drift."""
+    if check:
+        problems = stale_entries(count, root=root, sites=sites,
+                                 check_count_file=write_count_file)
         if problems:
-            print(f"❌ lesson-count SSOT drift (canonical = {count}):", file=sys.stderr)
+            print(f"❌ {label}-count SSOT drift (canonical = {count}):", file=sys.stderr)
             for problem in problems:
                 print(f"  - {problem}", file=sys.stderr)
-            print("\nFix: python3 scripts/sync_lesson_count.py   "
-                  "(or update SITES if a sentence was intentionally reworded)",
-                  file=sys.stderr)
             return 1
-        if not args.quiet:
-            print(f"✅ every managed lesson count == {count}")
+        if not quiet:
+            print(f"✅ every managed {label} count == {count}")
         return 0
 
-    changes, errors = sync_all(count, root=args.root)
+    changes, errors = sync_all(count, root=root, sites=sites,
+                               write_count_file=write_count_file)
     if changes:
-        print(f"✅ lesson counts synced to {count}:")
+        print(f"✅ {label} counts synced to {count}:")
         for change in changes:
             print(f"  - {change}")
-    elif not args.quiet:
-        print(f"✅ already consistent: every managed lesson count == {count}")
+    elif not quiet:
+        print(f"✅ already consistent: every managed {label} count == {count}")
     if errors:
-        print("❌ some managed sites could not be refreshed:", file=sys.stderr)
+        print(f"❌ some managed {label} sites could not be refreshed:", file=sys.stderr)
         for error in errors:
             print(f"  - {error}", file=sys.stderr)
         return 1
     return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Sync public lesson and node counts with their sources of truth "
+                    "(idempotent).")
+    parser.add_argument("--check", action="store_true",
+                        help="verify only; exit 1 on stale or unmatched counts")
+    parser.add_argument("--quiet", action="store_true", help="silent on success")
+    parser.add_argument("--metric", choices=("all", "lessons", "nodes", "domains"), default="all",
+                        help="narrow to one metric (default: both)")
+    parser.add_argument("--root", type=Path, default=REPO, help=argparse.SUPPRESS)
+    args = parser.parse_args(argv)
+
+    # Each metric: (label, canonical reader, managed sites, owns a COUNT_FILE copy).
+    metrics = [
+        ("lesson", canonical_count, SITES, True),
+        ("node", canonical_nodes, NODE_SITES, False),
+        # Last: the install page carries both counts in one sentence, and this pass owns the
+        # domain half of it.
+        ("domain", canonical_domains, DOMAIN_SITES, False),
+    ]
+    wanted = {"all": {"lesson", "node", "domain"},
+              "lessons": {"lesson"}, "nodes": {"node"}, "domains": {"domain"}}[args.metric]
+
+    status = 0
+    for label, canonical, sites, owns_count_file in metrics:
+        if label not in wanted:
+            continue
+        try:
+            count = canonical(args.root)
+        except ValueError as exc:
+            print(f"❌ {label} count unavailable: {exc}", file=sys.stderr)
+            status = 1
+            continue
+        status |= _run_metric(label, count, sites, root=args.root, check=args.check,
+                              quiet=args.quiet, write_count_file=owns_count_file)
+
+    if args.check and status:
+        print("\nFix: python3 scripts/sync_lesson_count.py   "
+              "(or update SITES if a sentence was intentionally reworded)", file=sys.stderr)
+    return status
 
 
 if __name__ == "__main__":

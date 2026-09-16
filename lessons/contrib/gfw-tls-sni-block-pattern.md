@@ -1,6 +1,6 @@
 ---
 title: GFW TLS SNI Block Pattern — Why Tool-Layer Solutions Fail
-domain: ops
+domain: devops
 tags:
 - gfw
 - tls

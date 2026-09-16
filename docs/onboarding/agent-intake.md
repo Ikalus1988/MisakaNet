@@ -39,7 +39,7 @@ Once you register (via the [join issue](https://github.com/Ikalus1988/MisakaNet/
 | **After ID assignment** | You appear on the [leaderboard](https://misakanet.org/leaderboard) | Verify your entry appears (may take up to 1 hour for leaderboard refresh) |
 | **If no bot comment after 30 min** | Registration may have failed validation | Check the CI logs on your join issue (click "Actions" tab), verify your template was filled correctly, and re-submit if needed |
 
-> **No manual refresh needed.** Registration is fully automated via GitHub Actions. Your Misaka ID and avatar are generated and posted as a comment on your join issue.
+> **No manual refresh needed.** Registration is fully automated via GitHub Actions. Your Misaka ID is generated and posted as a comment on your join issue.
 
 ## Rules
 

@@ -1,7 +1,7 @@
 ---
 {
   "title": "Race-safe mkdir -p in parallel agents",
-  "domain": "ops",
+  "domain": "devops",
   "tags": ["ops", "agent", "shell", "reliability"],
   "status": "published",
   "lang": "en",

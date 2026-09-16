@@ -1,7 +1,7 @@
 ---
 {
   "title": "Report $0 cash honestly while pending is non-zero",
-  "domain": "ops",
+  "domain": "devops",
   "tags": [
     "money",
     "ledger",

@@ -1,9 +1,8 @@
-# MisakaNet dsh bundle patch (2026-09-12, DSH STORE compliance)
+# MisakaNet dsh bundle patch (2026-09-12, DSH STORE compliance; transport 2026-09-15)
 #
 # Inserts *this* package (an insert row pointing at our own `misakanet` package,
-# i.e. index.js) as a profile layer. The row's `config` is the stdio declaration
-# for the repo's own python MCP server; index.js reads it and mounts the official
-# client at runtime.
+# i.e. index.js) as a profile layer. The row's `config` is the MCP declaration
+# index.js reads when it mounts the official client at runtime.
 #
 # Why the wiring is no longer in the patch
 # ----------------------------------------
@@ -29,18 +28,24 @@
 # only our own package, and index.js mounts the official client itself
 # (peer-resolved at runtime, degrading when it is absent).
 #
-# Behaviour notes (unchanged):
-# * Registers MisakaNet's stdio MCP server into any dsh profile that lists
-#   `misakanet` in `dsh.profile.bundles`. Tools are published on ctx.tools as
-#   `mcp__misakanet__<tool>` (misakanet_search / misakanet_get_lesson / …),
-#   served by the repo's own python server (scripts/mcp_server.py), which
-#   self-locates the repo root from __file__.
-# * The python MCP server exists only in repo/git+ installs
-#   (git+https://github.com/Ikalus1988/MisakaNet.git). The npm skill-only bundle
-#   ships no python, so on such installs the row stays disconnected instead of
-#   failing boot (failOnStartupError: false).
-# * Boot cwd is inherited; run dsh from the repo root for the stdio server to
-#   start (the plugin-spec sandbox boots at the repo clone).
+# Behaviour notes:
+# * Registers MisakaNet's MCP server into any dsh profile that lists
+#   `misakanet` in `dsh.profile.bundles`. Tools appear as
+#   `mcp__misakanet__<tool>` (misakanet_search / misakanet_get_lesson / …).
+# * The row points at the PUBLIC Streamable HTTP endpoint, so an **npm install is
+#   enough**: tools no longer depend on the repo's python server
+#   (scripts/mcp_server.py), which exists only in repo/git+ installs. That was the
+#   previous arrangement, and it left every npm install with a disconnected row
+#   (issue #1734 — the git+ channel is fragile here: codeload timeouts, and pnpm
+#   now blocks git-dependency build scripts until the key is allowed).
+# * `headers.Origin` is what the endpoint's DNS-rebinding guard expects: the
+#   worker answers 200 when the header is absent, and 403 for a foreign Origin.
+# * A profile that prefers the local python server can override this row's config
+#   (transport stdio, command python3, args [scripts/mcp_server.py], cwd the repo
+#   root); index.js merges the row's config over its own defaults.
+# * `failOnStartupError: false` + 60s tool timeout: an unreachable endpoint
+#   degrades to a disconnected row instead of failing profile boot, so the skill
+#   keeps working offline.
 # * One row, one id — no double-insert: later patches override by id, and this
 #   id (misakanet-mcp) is unique to this bundle.
 
@@ -48,12 +53,10 @@
     - id: misakanet-mcp
       name: 'misakanet'
       config:
-        transport: stdio
+        transport: streamable-http
         serverName: misakanet
-        command: python3
-        args:
-          - scripts/mcp_server.py
-        env: {}
-        cwd: ''
+        url: https://misakanet.org/mcp
+        headers:
+          Origin: https://misakanet.org
         toolCallTimeoutMs: 60000
         failOnStartupError: false

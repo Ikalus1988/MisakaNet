@@ -1,6 +1,6 @@
 ---
 title: oss refactor lessons
-domain: contrib
+domain: meta
 tags:
 - refactor
 - lessons

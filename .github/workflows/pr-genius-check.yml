@@ -17,7 +17,7 @@ jobs:
       !contains(github.event.pull_request.labels.*.name, 'docs-only')
     runs-on: ubuntu-latest
     steps:
-      - uses: zsxh1990/pr-genius/.github/actions/pr-genius-check@a0d171d19fc9cf9ff841d8952e4b8db6e2a73412  # v1.7.2
+      - uses: zsxh1990/pr-genius/.github/actions/pr-genius-check@0222fbd23f71ea945be022ac921211c6429912cb  # v1.8.0
         id: pr-genius
         continue-on-error: true  # advisory only: never block merge on tool failure
         with:
@@ -26,6 +26,20 @@ jobs:
           body: ${{ github.event.pull_request.body }}
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: '3.12'
+
+      # pr_genius_report.py imports yaml and treats it as an optional
+      # dependency: without it, `.pr-genius.yaml` falls back to a hand-rolled
+      # parser that drops every list (rules.path_rules, rules.custom_patterns
+      # and rules.issue_link.patterns are lost), so CI ran with a degraded
+      # rule set that no one could see. setup-python is required before this
+      # install — ubuntu-latest's system python is externally managed.
+      - name: Install dependencies
+        run: python3 -m pip install -q pyyaml
 
       - name: Output enhanced PR Genius result
         if: always()

@@ -59,6 +59,31 @@ class TestHookScript:
             for voice in ["connect-success", "pair-success", "lesson-found", "failure-warning"]:
                 assert voice in content, f"{script.name} missing case for: {voice}"
 
+    def test_hooks_support_non_playback_verification(self):
+        """Every platform can verify its mapping without requiring audio hardware."""
+        for script in [HOOK_SCRIPT_SH, HOOK_SCRIPT_PS1, HOOK_SCRIPT_BAT]:
+            content = script.read_text(encoding="utf-8", errors="ignore")
+            assert "MISAKANET_VOICE_DRY_RUN" in content
+            assert "MISAKANET_VOICE" in content
+
+    def test_bash_dry_run_maps_valid_voices_and_ignores_bad_input(self):
+        env = {**os.environ, "MISAKANET_VOICE_DRY_RUN": "1"}
+        for voice in ["connect-success", "pair-success", "lesson-found", "failure-warning"]:
+            result = subprocess.run(
+                [str(HOOK_SCRIPT_SH)], input=json.dumps({"voice": voice}), text=True,
+                capture_output=True, env=env, timeout=15,
+            )
+            assert result.returncode == 0
+            assert result.stdout.strip() == voice
+
+        for payload in [{"voice": "unknown-voice-type"}, {"other": "field"}]:
+            result = subprocess.run(
+                [str(HOOK_SCRIPT_SH)], input=json.dumps(payload), text=True,
+                capture_output=True, env=env, timeout=15,
+            )
+            assert result.returncode == 0
+            assert result.stdout == ""
+
 
 class TestMCPServerVoiceField:
     """MCP server responses must include voice field."""
@@ -99,14 +124,17 @@ class TestWindowsVoiceHookExecution:
 
     def test_ps1_valid_voice_execution(self):
         if os.name == "nt":
-            res = subprocess.run(
-                ["powershell", "-File", str(HOOK_SCRIPT_PS1)],
-                input=json.dumps({"voice": "connect-success"}),
-                text=True,
-                capture_output=True,
-                timeout=15,
-            )
-            assert res.returncode == 0, f"PS1 failed on valid voice: {res.stderr}"
+            for voice in ["connect-success", "pair-success", "lesson-found", "failure-warning"]:
+                res = subprocess.run(
+                    ["powershell", "-File", str(HOOK_SCRIPT_PS1)],
+                    input=json.dumps({"voice": voice}),
+                    text=True,
+                    capture_output=True,
+                    timeout=15,
+                    env={**os.environ, "MISAKANET_VOICE_DRY_RUN": "1"},
+                )
+                assert res.returncode == 0, f"PS1 failed on {voice}: {res.stderr}"
+                assert res.stdout.strip() == voice
 
     def test_ps1_invalid_voice_graceful(self):
         if os.name == "nt":
@@ -132,15 +160,18 @@ class TestWindowsVoiceHookExecution:
 
     def test_bat_valid_voice_execution(self):
         if os.name == "nt":
-            res = subprocess.run(
-                [str(HOOK_SCRIPT_BAT)],
-                input=json.dumps({"voice": "connect-success"}),
-                text=True,
-                capture_output=True,
-                shell=True,
-                timeout=15,
-            )
-            assert res.returncode == 0, f"BAT failed on valid voice: {res.stderr}"
+            for voice in ["connect-success", "pair-success", "lesson-found", "failure-warning"]:
+                res = subprocess.run(
+                    [str(HOOK_SCRIPT_BAT)],
+                    input=json.dumps({"voice": voice}),
+                    text=True,
+                    capture_output=True,
+                    shell=True,
+                    timeout=15,
+                    env={**os.environ, "MISAKANET_VOICE_DRY_RUN": "1"},
+                )
+                assert res.returncode == 0, f"BAT failed on {voice}: {res.stderr}"
+                assert res.stdout.strip() == voice
 
     def test_bat_invalid_voice_graceful(self):
         if os.name == "nt":
@@ -153,6 +184,18 @@ class TestWindowsVoiceHookExecution:
                 timeout=15,
             )
             assert res.returncode == 0, f"BAT failed on invalid voice: {res.stderr}"
+
+    def test_bat_missing_voice_graceful(self):
+        if os.name == "nt":
+            res = subprocess.run(
+                [str(HOOK_SCRIPT_BAT)],
+                input=json.dumps({"other": "field"}),
+                text=True,
+                capture_output=True,
+                shell=True,
+                timeout=15,
+            )
+            assert res.returncode == 0, f"BAT failed on missing voice: {res.stderr}"
 
 
 class TestDocumentation:
@@ -196,4 +239,3 @@ if __name__ == "__main__":
                 failed += 1
     print(f"\n{passed}/{total} passed, {failed} failed")
     sys.exit(1 if failed else 0)
-

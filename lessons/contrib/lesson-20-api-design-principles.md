@@ -1,6 +1,6 @@
 ---
 title: API 设计原则 — 无抽象、一致性、幂等性
-domain: ops
+domain: devops
 tags:
 - api
 - design

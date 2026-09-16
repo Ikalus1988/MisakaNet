@@ -1,0 +1,83 @@
+name: Publish @misaka-net/misakanet-setup
+
+on:
+  push:
+    tags:
+      - "misakanet-setup-v*"
+  workflow_dispatch:      # allow a manual publish of the current version
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/misakanet-setup
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Verify zero dependencies
+        run: |
+          DEPS=$(node -e "const p=require('./package.json');console.log(p.dependencies?Object.keys(p.dependencies).length:0)")
+          echo "dependencies: $DEPS"
+          [ "$DEPS" = "0" ] || { echo "FAIL: expected 0 dependencies"; exit 1; }
+
+      - name: Copy the canonical hook into the package
+        run: node scripts/copy-hook.mjs
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check what would be published
+        run: npm pack --dry-run
+
+      # Fail-fast diagnostics. The first attempt at this publish failed with a bare
+      # `PUT ... 404`, which npm also returns when the token simply is not allowed to
+      # *create* a new package (an existing package in the same scope publishes fine with a
+      # package-scoped granular token) - so the message says nothing actionable. These two
+      # commands name the account and list what the token can actually touch. Neither prints
+      # the token itself.
+      - name: Check npm identity and publish rights
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::NPM_TOKEN is empty - set it to a token that can publish this package."
+            exit 1
+          fi
+          if ! ACCOUNT=$(npm whoami 2>/tmp/whoami.err); then
+            echo "::error::npm rejected NPM_TOKEN (npm whoami failed)."
+            sed 's/^/    /' /tmp/whoami.err | head -5
+            echo "::error::A rejected token is usually expired (npm tokens default to 90 days;"
+            echo "::error::a 401 here is not a permissions problem) or belongs to another registry."
+            echo "::error::Fix: create a new automation token on npmjs.com and update the"
+            echo "::error::NPM_TOKEN repository secret, then re-run this workflow."
+            exit 1
+          fi
+          echo "account: $ACCOUNT"
+          echo "packages this token can reach:"
+          npm access list packages --json 2>/dev/null || echo "  (npm access not permitted by this token)"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm
+        run: |
+          set +e
+          npm publish --access public
+          RC=$?
+          if [ "$RC" -ne 0 ]; then
+            echo "::error::npm publish failed (exit $RC). If the output was 'PUT ... 404 Not found',"
+            echo "::error::the token cannot create a new package in this scope. Fix: use an npm"
+            echo "::error::automation token from the org owner, or a granular token with"
+            echo "::error::'All packages' write access, then update the NPM_TOKEN secret."
+          fi
+          exit $RC
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -59,6 +59,18 @@ function createEnv() {
     tags: doc.domain === 'python' ? ['pip', 'network'] : ['git'],
     status: 'published',
   }));
+  // The `pip-timeout-mirror` record is D1-shaped on purpose (issue #1675): D1 carries
+  // the real Problem/Fix sections in `problem`/`solution`, stores `tags` as a JSON
+  // *string*, has `updated` for freshness, and its rows carry the internal
+  // `indexText`/`textMode` fields that must never reach a response.
+  Object.assign(lessons.find(l => l.id === 'pip-timeout-mirror'), {
+    problem: 'pip install times out behind a corporate proxy before the package is fetched',
+    solution: 'Raise --default-timeout or use a mirror',
+    tags: JSON.stringify(['pip', 'network']),
+    updated: new Date().toISOString(),
+    indexText: 'pip install timeout internal searchable body used to build the index',
+    textMode: 'rich',
+  });
   const store = new Map([
     ['worker_search_index', JSON.stringify(index)],
     ['proxy:lessons', JSON.stringify({ ts: Date.now(), data: lessons })],
@@ -151,4 +163,115 @@ test('a single distinctive word is enough for a one-word query', async () => {
 test('a single ubiquitous word is not', async () => {
   const result = await search('hook');
   assert.equal(result.no_match, true, JSON.stringify(result.results));
+});
+
+// ── lesson hits must carry content, not just an id (issue #1675) ──────────────
+// The BM25 branch projects hits from the index, which stores only
+// {id, title, domain, path, len}. Before the enrichment step every lesson hit
+// therefore arrived with an empty `problem`, `fix`, `tags`, `evidence_level` and
+// `freshness` — 35 of 35 sampled hits on 2026-09-13 — so an agent could not tell
+// whether a hit was relevant without calling misakanet_get_lesson for each one.
+
+test('a lesson hit carries a non-empty problem at the default detail', async () => {
+  const result = await search('pip install timeout');
+  const hit = result.results[0];
+  assert.equal(hit.id, 'pip-timeout-mirror');
+  assert.ok(hit.problem && hit.problem.length > 0, `problem was empty: ${JSON.stringify(hit)}`);
+  assert.match(hit.problem, /times out behind a corporate proxy/);
+  assert.notEqual(hit.title, hit.id, 'title must be the human title, not the slug');
+  assert.notEqual(hit.freshness, 'unknown', 'the record has `updated`, so freshness must resolve');
+});
+
+test('detail=summary carries fix and array tags from a D1-shaped record', async () => {
+  const result = await search('pip install timeout', { detail: 'summary' });
+  const hit = result.results[0];
+  assert.equal(hit.domain, 'python');
+  assert.equal(hit.fix, 'Raise --default-timeout or use a mirror', 'fix must come from D1 `solution`');
+  assert.deepEqual(hit.tags, ['pip', 'network'], 'sqlite stores tags as a JSON string; results must not');
+});
+
+test('enrichment never leaks the internal searchable body', async () => {
+  for (const detail of ['compact', 'summary', 'full']) {
+    const result = await search('pip install timeout', { detail });
+    const hit = result.results[0];
+    assert.equal(hit.indexText, undefined, `indexText leaked at detail=${detail}`);
+    assert.equal(hit.textMode, undefined, `textMode leaked at detail=${detail}`);
+  }
+});
+
+test('every returned lesson hit has a non-empty problem (the AC of #1675)', async () => {
+  const queries = ['pip install timeout', 'hook api dco signoff', 'timeout'];
+  for (const query of queries) {
+    const result = await search(query, { detail: 'summary' });
+    for (const hit of result.results) {
+      assert.ok(hit.problem && hit.problem.length > 0,
+        `empty problem for ${hit.id} on ${JSON.stringify(query)}: ${JSON.stringify(hit)}`);
+    }
+  }
+});
+
+// ── the D1 path, through the real row shaping ─────────────────────────────────
+// Production reads D1 (the GitHub snapshot is only the fallback), and
+// `fetchLessonsFromD1` deliberately builds a *public* row: `description` is the
+// summary and `indexText` is the internal searchable body that must never leave the
+// worker. The Problem/Fix sections therefore need their own bounded snippets — the
+// shaping exposed neither, which is how lesson hits ended up with nothing to read
+// (#1675) even though the columns were populated all along.
+function createD1Env() {
+  const index = buildIndex();
+  const rows = index.docs.map((doc) => ({
+    ...doc,
+    status: 'published',
+    tags: JSON.stringify(['pip', 'network']), // sqlite: tags are a JSON *string*
+    updated: '2026-09-15',
+    created: '2026-09-01',
+    summary: '',
+    root_cause: '',
+    verification: '',
+    problem: doc.id === 'pip-timeout-mirror'
+      ? 'pip install times out behind a corporate proxy before the package is fetched'
+      : 'unrelated problem text',
+    solution: doc.id === 'pip-timeout-mirror' ? 'Raise --default-timeout or use a mirror' : '',
+  }));
+  const d1 = {
+    prepare() {
+      const stmt = {
+        _bound: null,
+        bind(...args) { stmt._bound = args; return stmt; },
+        async all() { return { results: rows }; },
+        async run() { return { success: true }; },
+      };
+      return stmt;
+    },
+  };
+  const store = new Map([['worker_search_index', JSON.stringify(index)]]);
+  return {
+    MCP_TOKEN: TOKEN,
+    MISAKANET_D1: d1,
+    MISAKANET_KV: {
+      async get(key, type) {
+        if (!store.has(key)) return null;
+        const raw = store.get(key);
+        return type === 'json' ? JSON.parse(raw) : raw;
+      },
+      async put(key, value) { store.set(key, value); },
+      async delete(key) { store.delete(key); },
+    },
+  };
+}
+
+test('the D1 row shaping exposes problem and fix and still hides the searchable body', async () => {
+  const resp = await worker.fetch(
+    searchRequest('pip install timeout', { detail: 'summary' }), createD1Env());
+  assert.equal(resp.status, 200);
+  const body = await resp.json();
+  const result = JSON.parse(body.result.content[0].text);
+  const hit = result.results.find(r => r.id === 'pip-timeout-mirror');
+  assert.ok(hit, `pip lesson missing from ${JSON.stringify(result.results.map(r => r.id))}`);
+  assert.match(hit.problem, /times out behind a corporate proxy/,
+    'the Problem section must reach the hit, not the summary prefix');
+  assert.equal(hit.fix, 'Raise --default-timeout or use a mirror');
+  assert.deepEqual(hit.tags, ['pip', 'network'], 'tags must be parsed from the sqlite JSON string');
+  assert.equal(hit.indexText, undefined, 'indexText must never leave the worker');
+  assert.notEqual(hit.title, hit.id, 'title must be the human title');
 });

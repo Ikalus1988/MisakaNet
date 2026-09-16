@@ -22,7 +22,7 @@
   "agree": "I understand my node experience may optionally be shared with the network",
   "registerBtn": "⚡ Register Node",
   "registering": "⏳ Registering...",
-  "regSuccess": "✅ Registered! Node number & avatar being assigned...",
+  "regSuccess": "✅ Registered! Your node number is being assigned...",
   "regWait": "⏳ Auto-assigning (no review needed). Your node number appears in ~30s.",
   "viewIssue": "View welcome message (includes entry test)",
   "regFail": "❌ Registration failed",

@@ -169,30 +169,58 @@ def validate_evidence_refs(refs) -> list[str]:
     return errors
 
 
-def validate_content_len(content: str) -> bool:
-    return len(content.strip()) >= MIN_CONTENT_CHARS
+# ── Required sections for *new* lessons (2026-09-13) ────────────────
+# A file that stopped after "## Problem" (23 lines, ending mid-sentence) passed this
+# gate into review (PR #1656, from one of the zero-bounty tasks), because the only
+# structural rule was a 100-character floor. New lessons must now carry the four
+# sections the corpus is built on; files that already exist on the base branch keep the
+# advisory path, since legacy gaps are not this PR's debt (see validate_file's docstring).
+REQUIRED_SECTIONS = (
+    ("Problem", ("problem", "问题", "描述")),
+    ("Root Cause", ("root cause", "根因", "原因", "why")),
+    ("Solution", ("solution", "fix", "修复", "解法", "方案", "resolution", "workaround")),
+    ("Verification", ("verification", "verify", "验证")),
+)
+MIN_NEW_LESSON_CHARS = 400
+
+
+def validate_sections(content: str) -> list[str]:
+    """Names of the standard lesson sections missing from `content`."""
+    headings = [h.strip().lower() for h in re.findall(r"^#{2,3}\s*(.+?)\s*$", content, re.M)]
+    missing = []
+    for label, aliases in REQUIRED_SECTIONS:
+        if not any(alias in heading for heading in headings for alias in aliases):
+            missing.append(label)
+    return missing
+
+
+def validate_content_len(content: str, minimum: int = MIN_CONTENT_CHARS) -> bool:
+    return len(content.strip()) >= minimum
 
 
 # ── Repo-level checks ───────────────────────────────────────────────
+# The reviewed vocabulary (issue #1687). `normalize_domains.py --check` holds the
+# corpus to the same list, so the two cannot disagree.
+DOMAIN_VOCAB = REPO / "data" / "domains.json"
+
+
 def allowed_domains(repo: Path = REPO) -> set[str]:
-    """Allowed domains = docs/domains/* + domains used in active lesson dirs."""
-    domains = set()
-    if DOCS_DOMAINS.is_dir():
-        for f in DOCS_DOMAINS.glob("*.md"):
-            domains.add(f.stem.lower())
-    for sub in ACTIVE_LESSON_SUBDIRS:
-        d = repo / "lessons" / sub
-        if not d.is_dir():
-            continue
-        for f in d.rglob("*.md"):
-            try:
-                fm, _ = parse_frontmatter(f.read_text(encoding="utf-8", errors="ignore"))
-            except Exception:
-                continue
-            dom = fm.get("domain")
-            if isinstance(dom, str) and dom:
-                domains.add(dom.lower())
-    return domains
+    """Allowed domains = the vocabulary in ``data/domains.json``.
+
+    This used to be "docs/domains/* plus every domain any lesson already used", which
+    made the vocabulary self-perpetuating: the first lesson to spell a domain a new way
+    legalized that spelling for every later lesson, and no value could ever be
+    reviewed or retired (the corpus had accumulated 56 of them, including ``contrib`` —
+    the directory a lesson lives in, used as if it were a topic). The file is the
+    review surface now; ``docs/domains/*.md`` stays as long-form documentation.
+    """
+    path = repo / DOMAIN_VOCAB.relative_to(REPO)
+    if not path.exists():
+        # Throwaway fixture trees (tests build them) have no vocabulary of their own;
+        # the checked-in file is repo-global data, not per-tree state.
+        path = DOMAIN_VOCAB
+    vocab = json.loads(path.read_text(encoding="utf-8"))
+    return {str(d).lower() for d in vocab["canonical"]}
 
 
 def _iter_active_lessons(repo: Path = REPO):
@@ -437,6 +465,22 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
 
     if not validate_content_len(content):
         errors.append(f"content too short (< {MIN_CONTENT_CHARS} chars excluding frontmatter)")
+
+    if not existing:
+        # Strict rules apply to *new* lessons only.
+        if not validate_content_len(content, MIN_NEW_LESSON_CHARS):
+            errors.append(
+                f"new lesson body too short (< {MIN_NEW_LESSON_CHARS} chars): a lesson that "
+                "cannot be acted on is not a lesson")
+        missing = validate_sections(content)
+        if missing:
+            errors.append(
+                "missing required section(s): " + ", ".join(missing)
+                + " — see lessons/TEMPLATE.md (Problem / Root Cause / Solution / Verification)")
+    else:
+        missing = validate_sections(content)
+        if missing:
+            errors.append("[warn] missing section(s) (legacy): " + ", ".join(missing))
 
     if fm and fm.get("title"):
         domain = fm.get("domain")

@@ -1,6 +1,6 @@
 ---
 title: static page github api 403 rate limit
-domain: contrib
+domain: api
 tags:
 - api
 - rate-limit

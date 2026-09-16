@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from intake_auto_review import (
     auto_review_issue,
+    format_result_comment,
     strip_pipeline_boilerplate,
     score_completeness,
     score_generalization,
@@ -507,3 +508,80 @@ def test_adding_a_verification_heading_never_lowers_the_score():
 
 def test_an_empty_or_boilerplate_intake_is_still_rejected():
     assert auto_review_issue(4246, "[Intake] empty", "## Problem\nit broke\n").decision == "reject"
+
+# ── Score display must match the verdict (P4.13, 2026-09-13) ─────────
+# `make_decision` compares `final_score >= THRESHOLD * confidence` and
+# `final_score = weighted_score * confidence`, so confidence cancels and the verdict
+# is made on the weighted score. The report used to headline the scaled number, so
+# #1635 displayed 38.5/100 next to "needs review (40 <= score < 75)" and read like a
+# bug. These tests pin the report to the number the decision actually used.
+
+REPORT = """## Problem
+
+The nightly job fails with `subprocess.CalledProcessError` when it runs the migration
+step, and the log ends at the exit code.
+
+## Root Cause
+
+The recorded migration revision and the migration directory disagreed, so the tool
+refused to pick a head.
+
+## Solution
+
+Run it from a database restored from the previous release and reconcile with a merge
+revision.
+
+## Verification
+
+Run the command from a clean database and check the reported head is a single one.
+"""
+
+
+def test_report_headlines_the_score_the_verdict_used():
+    result = auto_review_issue(1635, "[Intake] migration failure", REPORT)
+    comment = format_result_comment(result)
+
+    assert f"{result.weighted_score:.1f}/100" in comment, comment
+    assert "**Weighted Score (decision)**" in comment, (
+        "the report must name the decision score, not just print a number: " + comment)
+    assert "Confidence-scaled (informational)" in comment, comment
+    assert "confidence does not change the outcome" in comment, (
+        "a reader who sees two different scores needs the reason in the report itself")
+
+
+def test_the_verdict_matches_the_weighted_score_against_the_thresholds():
+    """Whatever the confidence, the band printed must describe the weighted score."""
+    from intake_auto_review import THRESHOLD_APPROVE, THRESHOLD_REVIEW
+
+    result = auto_review_issue(1635, "[Intake] migration failure", REPORT)
+    expected = (
+        "approve" if result.weighted_score >= THRESHOLD_APPROVE
+        else "review" if result.weighted_score >= THRESHOLD_REVIEW
+        else "reject"
+    )
+    assert result.decision == expected, (
+        f"weighted {result.weighted_score:.1f} conf {result.confidence:.0%} "
+        f"→ {result.decision}, expected {expected}")
+
+
+def test_confidence_cancels_so_the_weighted_score_is_the_verdict():
+    """The algebra, stated once so nobody "fixes" the display back (#1635).
+
+    `make_decision` scales both thresholds by confidence while the score it receives
+    already carries that factor, so the confidence terms cancel: for any confidence
+    in (0, 1], deciding on `weighted * confidence` against the scaled thresholds is
+    the same as deciding on `weighted` against the raw thresholds.
+    """
+    from intake_auto_review import THRESHOLD_APPROVE, THRESHOLD_REVIEW
+
+    def band(weighted: float) -> str:
+        if weighted >= THRESHOLD_APPROVE:
+            return "approve"
+        if weighted >= THRESHOLD_REVIEW:
+            return "review"
+        return "reject"
+
+    for weighted in (10.0, 39.9, 40.0, 60.0, 74.9, 75.0, 95.0):
+        for confidence in (0.2, 0.5, 0.7, 1.0):
+            assert make_decision(weighted * confidence, confidence) == band(weighted), (
+                f"weighted {weighted} at confidence {confidence} disagreed with the band")

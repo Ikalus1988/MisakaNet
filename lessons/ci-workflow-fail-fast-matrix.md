@@ -1,9 +1,20 @@
 ---
-domain: "ci"
-title: "Set fail-fast: false for Matrix Builds to See All Failures"
-status: "published"
-verification: "metadata-normalized"
-{"title": "Set fail-fast: false for Matrix Builds to See All Failures", "domain": "ci", "tags": ["github-actions", "matrix", "workflow-design", "ci-optimization"], "status": "published", "confidence": "0.9", "created": "2026-09-08", "updated": "2026-09-08", "source": "upgraded-docs-framework CI", "verified_date": "2026-09-08", "domain_expert": ""}
+evidence_level: E3
+title: 'Set fail-fast: false for Matrix Builds to See All Failures'
+domain: ci
+tags:
+- github-actions
+- matrix
+- workflow-design
+- ci-optimization
+status: published
+confidence: '0.9'
+created: '2026-09-08'
+updated: '2026-09-08'
+source: upgraded-docs-framework CI
+verified_date: '2026-09-08'
+domain_expert: ''
+verification: metadata-normalized
 ---
 
 # Set fail-fast: false for Matrix Builds to See All Failures
