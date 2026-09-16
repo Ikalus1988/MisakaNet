@@ -34,6 +34,9 @@ npx @misaka-net/misakanet-setup --no-register # read-only, no anonymous token
 npx @misaka-net/misakanet-setup --upgrade     # same as installing the latest (the command is idempotent)
                                              # re-running also *refreshes* an older hook (the previous copy
                                              # is kept as ~/.misakanet-agent/hook.mjs.misakanet.bak)
+npx @misaka-net/misakanet-setup --report      # this machine's state as YAML, safe to paste in public
+                                             # (token value never printed, home paths written as ~;
+                                             #  two blank fields are yours to fill — see the bounty)
 npx @misaka-net/misakanet-setup --voice       # opt-in: a cue when a search hits, another when it misses
                                              # (Claude Code: a PostToolUse hook; mute later with MISAKANET_VOICE=0)
 npx @misaka-net/misakanet-setup --uninstall   # remove exactly what it added

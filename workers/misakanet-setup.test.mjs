@@ -427,7 +427,7 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // file into a request header, which is CodeQL js/file-access-to-http #268 all over again.
   const declared = JSON.parse(
     readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
-  assert.equal(declared, '0.5.0', 'bump this test when the package version moves');
+  assert.equal(declared, '0.5.1', 'bump this test when the package version moves');
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.
@@ -962,4 +962,54 @@ test('a voice entry left by 0.4.2 (no matcher) is upgraded, not kept', () => {
   const entries = after.hooks.PostToolUse.filter((e) => JSON.stringify(e).includes('voice-hook'));
   assert.equal(entries.length, 1, `expected exactly one entry: ${JSON.stringify(after.hooks.PostToolUse)}`);
   assert.equal(entries[0].matcher, '*', 'the stale entry must gain the matcher');
+});
+
+// ── --report: evidence a stranger can paste in public ─────────────────────────
+// The bounty asks other machines to install and report back. A report assembled by hand arrives
+// rarely and usually contains a token, so the installer prints its own — redacted by
+// construction: the token value never appears (only present/absent), home paths are written as
+// `~`, and the banner (which names the home directory) is suppressed in this mode.
+function reportLines(out) {
+  const fields = {};
+  for (const line of out.split('\n')) {
+    const m = /^([a-z-]+):\s*(.*)$/.exec(line.trim());
+    if (m) fields[m[1]] = m[2];
+  }
+  return fields;
+}
+
+test('--report prints a redacted, machine-parsable report', () => {
+  const home = makeHome();
+  runOffline(home);
+  const result = runOffline(home, '--report');
+  assert.equal(result.status, 0, result.stderr);
+
+  const fields = reportLines(result.stdout);
+  assert.equal(fields.schema, 'misakanet-setup-report/1');
+  assert.match(fields['setup-version'], /^\d+\.\d+\.\d+$/);
+  assert.match(fields.os, /^(linux|macos|windows|wsl2)$/);
+  assert.match(fields.node, /^v\d+\./);
+  assert.ok(fields['detected-agents'].includes('claude'), fields['detected-agents']);
+  assert.match(fields.verify, /^(READY|NOT READY)$/);
+  assert.match(fields.token, /^(present|absent)$/);
+  assert.match(fields.voice, /^(on|off|absent|stale|unknown)$/);
+  assert.ok('tools-visible' in fields && 'live-call-evidence' in fields,
+    'the two fields only the reporter can fill must be present as blanks');
+});
+
+test('--report leaks neither the token nor the home path', () => {
+  const home = makeHome();
+  runOffline(home);                       // installs the config surfaces
+  // runOffline passes --no-register, so no token is minted: seed one, because a report that
+  // leaks it is the failure this test exists for.
+  mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
+  writeFileSync(join(home, '.misakanet-agent', 'token'), `${STUB_TOKEN}\n`);
+  const token = STUB_TOKEN;
+  assert.ok(token.length > 8, 'the fixture should have a token to leak');
+
+  const result = runOffline(home, '--report');
+  assert.ok(!result.stdout.includes(token), 'the token value must never be printed');
+  assert.ok(!result.stdout.includes(home), `the home path must not appear: ${result.stdout}`);
+  assert.ok(!/Bearer [A-Za-z0-9_.-]{8,}/.test(result.stdout), result.stdout);
+  assert.equal(reportLines(result.stdout).token, 'present', 'presence is reported, not the value');
 });
