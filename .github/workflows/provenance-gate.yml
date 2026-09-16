@@ -1,0 +1,131 @@
+name: Provenance Gate
+
+# Does the source a lesson cites actually exist?
+#
+# Why this is separate from the lesson gate: `lesson_gate.py` checks structure, DCO checks
+# signatures, `injection_scan.py` checks for injection shapes — none of them can tell
+# whether a `source:` URL is real. On 2026-09-16 four PRs (#1713–#1716) passed 24/24
+# checks while citing `https://github.com/modelcontextprotocol/mcp-memory-service/issues/1652`,
+# a repository that returns 404. An invented source is worse than an absent one in a corpus
+# whose value is *verifiable* failure memory, so this is the cheapest way to stop it
+# automatically instead of by reading every PR by hand.
+#
+# Rules and their rationale: docs/maintainer/provenance-gate-2026-09-16.md
+on:
+  pull_request:
+    paths:
+      - 'lessons/**'
+      - 'scripts/check_provenance.py'
+      - 'tests/test_check_provenance.py'
+      - 'data/provenance-baseline.json'
+  schedule:
+    # Link rot: a source that was alive when it was cited can die quietly. Report-only.
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    # The scheduled sweep is a report: it prints what rotted instead of failing the build.
+    continue-on-error: ${{ github.event_name == 'schedule' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: '3.12'
+
+      - name: Run unit tests for the gate
+        run: |
+          python3 -m pip install -q pytest
+          python3 -m pytest tests/test_check_provenance.py -q
+
+      # PR runs are scoped to the files the PR touches, so a large legacy corpus cannot turn
+      # an unrelated PR red. The scheduled/dispatch runs sweep everything.
+      - name: Get changed lesson files
+        id: changed
+        if: github.event_name == 'pull_request'
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
+        with:
+          files: |
+            lessons/**/*.md
+
+      - name: Classify added vs modified lesson files
+        id: classify
+        if: github.event_name == 'pull_request' && steps.changed.outputs.any_changed == 'true'
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          git fetch origin "$BASE" --depth=1 2>/dev/null || true
+          ADDED=$(git diff --name-only --diff-filter=A "$BASE" HEAD -- 'lessons/**/*.md' | tr '\n' ' ')
+          MODIFIED=$(git diff --name-only --diff-filter=MR "$BASE" HEAD -- 'lessons/**/*.md' | tr '\n' ' ')
+          echo "added=$ADDED" >> "$GITHUB_OUTPUT"
+          echo "modified=$MODIFIED" >> "$GITHUB_OUTPUT"
+
+      - name: Check provenance (tier 1 — every changed lesson)
+        if: github.event_name == 'pull_request' && (steps.classify.outputs.added != '' || steps.classify.outputs.modified != '')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FILES="${{ steps.classify.outputs.added }} ${{ steps.classify.outputs.modified }}"
+          set +e
+          python3 scripts/check_provenance.py --check $FILES | tee provenance_report.txt
+          RC=${PIPESTATUS[0]}
+          set -e
+          if [ "$RC" -ne 0 ]; then
+            echo "❌ Provenance gate FAILED — a cited source is a placeholder or does not resolve."
+            echo "   Fix: correct the URL, cite the real origin (e.g. provenance.issue: \"#1553\"),"
+            echo "   or explain in the PR why the source cannot be public."
+            exit 1
+          fi
+
+      - name: Check provenance (tier 2 — newly added lessons must justify a high evidence level)
+        if: github.event_name == 'pull_request' && steps.classify.outputs.added != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/check_provenance.py --strict-new ${{ steps.classify.outputs.added }} | tee -a provenance_report.txt
+
+      - name: Sweep the whole corpus (scheduled / manual)
+        if: github.event_name != 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          python3 scripts/check_provenance.py --check --list | tee provenance_report.txt
+          echo "exit=$?" >> provenance_report.txt
+          set -e
+          {
+            echo "## Provenance sweep (report-only)"
+            echo ''
+            echo '```'
+            tail -40 provenance_report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment the result on the PR
+        if: github.event_name == 'pull_request' && steps.changed.outputs.any_changed == 'true'
+        continue-on-error: true
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        with:
+          script: |
+            const fs = require('fs');
+            let report = '✅ **Provenance gate passed** — every cited source resolves.';
+            try {
+              const text = fs.readFileSync('provenance_report.txt', 'utf8');
+              if (text.includes('❌')) report = '❌ **Provenance gate failed.** See the report below.';
+              report += '\n\n```\n' + text.trim() + '\n```\n\n'
+                + 'Rules: [docs/maintainer/provenance-gate-2026-09-16.md](../blob/main/docs/maintainer/provenance-gate-2026-09-16.md)';
+            } catch (e) {}
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report,
+            });
