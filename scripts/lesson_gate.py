@@ -8,6 +8,7 @@ Validates lesson Markdown files against the quality gate checklist:
   - Domain must be in the allowed list (docs/domains/ + lessons/core|contrib|en)
   - Tags validated for format (1-10 unique strings, min 2 chars)
   - status ∈ {published, draft, archived}; evidence_level ∈ {E0..E4}
+  - Structured fields for NEW lessons (issue #1783): summary_plain, trigger, verify
 
 Usage:
     python3 scripts/lesson_gate.py lessons/contrib/foo.md          # validate one (new lesson: strict)
@@ -24,6 +25,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -196,6 +198,148 @@ def validate_sections(content: str) -> list[str]:
 
 def validate_content_len(content: str, minimum: int = MIN_CONTENT_CHARS) -> bool:
     return len(content.strip()) >= minimum
+
+
+# ── Structured fields for *new* lessons (issue #1783) ───────────────
+# Three optional frontmatter fields with three different jobs:
+#
+#   summary_plain  one plain-language sentence for a non-technical reader (≤120 chars)
+#   trigger        the short, matchable condition that should make an agent search
+#                  ("pip install timeout behind proxy", not a whole-sentence question)
+#   verify         a checkable pass/fail criterion
+#
+# Optional in the schema, required of a lesson that *enters* the corpus: the corpus is
+# indexed by error text and keywords, so a whole-sentence Chinese question retrieves
+# nothing, and a field that is optional for everybody is a field nobody fills in.
+#
+# Which tier a file gets is #1506's split — strict for added files, advisory for files
+# that already exist — with one addition: a maintainer running the CLI by hand has
+# nobody to tell it which files are new, so `structured_field_tier` asks git whether
+# the path is already on the base branch (the same question CI answers with
+# `git diff --diff-filter=A`, see .github/workflows/lesson-gate.yml). Every other rule
+# keeps the caller's `existing` verdict exactly as before: only this rule is tiered
+# here, so a lesson that passes today and is modified still passes.
+STRUCTURED_FIELDS = ("summary_plain", "trigger", "verify")
+STRUCTURED_FIELD_LIMITS = {"summary_plain": 120, "trigger": 160, "verify": 200}
+STRUCTURED_HINT = "see lessons/TEMPLATE.md (可选结构化字段)"
+
+# Base branches a standalone CLI run is classified against, most likely first. CI
+# checks out the full history (`fetch-depth: 0`), so origin/main resolves there too.
+BASE_BRANCH_REFS = ("origin/main", "origin/master", "main", "master", "origin/HEAD")
+
+
+def missing_structured_fields(fm: dict) -> list[str]:
+    """Names of the structured fields the frontmatter does not carry."""
+    return [
+        field for field in STRUCTURED_FIELDS
+        if not (isinstance(fm.get(field), str) and fm[field].strip())
+    ]
+
+
+def malformed_structured_fields(fm: dict) -> list[str]:
+    """Findings for fields that *are* set but unusable (wrong type, too long, multi-line)."""
+    findings = []
+    for field in STRUCTURED_FIELDS:
+        value = fm.get(field)
+        if not isinstance(value, str) or not value.strip():
+            continue  # absent — reported by missing_structured_fields instead
+        value = value.strip()
+        limit = STRUCTURED_FIELD_LIMITS[field]
+        if len(value) > limit:
+            findings.append(
+                f"structured field {field} too long ({len(value)} > {limit} chars) — {STRUCTURED_HINT}")
+        if "\n" in value:
+            findings.append(f"structured field {field} must be a single line — {STRUCTURED_HINT}")
+    return findings
+
+
+def validate_structured_fields(fm: dict) -> list[str]:
+    """Strict findings: every unset field is named, so the message is actionable."""
+    return (
+        [f"missing structured field: {field} — {STRUCTURED_HINT}" for field in missing_structured_fields(fm)]
+        + malformed_structured_fields(fm)
+    )
+
+
+def _git_relative(path: Path, repo: Path = REPO) -> str | None:
+    """`path` relative to `repo` in git's POSIX form, or None when it is outside."""
+    try:
+        return Path(path).resolve().relative_to(Path(repo).resolve()).as_posix()
+    except ValueError:
+        return None
+
+
+_BASE_REF_CACHE: dict[Path, str | None] = {}
+
+
+def _base_ref(repo: Path = REPO) -> str | None:
+    """First base-branch ref that resolves in `repo` (cached), or None."""
+    key = Path(repo).resolve()
+    if key not in _BASE_REF_CACHE:
+        found = None
+        for ref in BASE_BRANCH_REFS:
+            try:
+                proc = subprocess.run(
+                    ["git", "-C", str(key), "rev-parse", "--verify", "--quiet", ref],
+                    capture_output=True, text=True, timeout=15,
+                )
+            except (OSError, subprocess.SubprocessError):
+                break  # no git binary / unusable repo: "cannot tell", cached as such
+            if proc.returncode == 0:
+                found = ref
+                break
+        _BASE_REF_CACHE[key] = found
+    return _BASE_REF_CACHE[key]
+
+
+def exists_on_base_branch(path: Path, repo: Path = REPO) -> bool | None:
+    """Is `path` already on the base branch?
+
+    True / False when git answers, None when it cannot (no git, no base ref, or a path
+    outside the checkout — which is what a test fixture under /tmp is).
+    """
+    rel = _git_relative(path, repo)
+    if rel is None:
+        return None
+    ref = _base_ref(repo)
+    if not ref:
+        return None
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(Path(repo).resolve()), "cat-file", "-e", f"{ref}:{rel}"],
+            capture_output=True, text=True, timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return proc.returncode == 0
+
+
+def is_corpus_path(path: Path) -> bool:
+    """Is `path` inside a lesson tree (`…/lessons/<sub>/…`)?
+
+    Lesson files live under a `lessons/` directory by definition (see
+    ACTIVE_LESSON_SUBDIRS). A markdown file somewhere else is not a lesson entering
+    the corpus, and the *new-lesson* structured-field rule is about corpus entries.
+    """
+    return "lessons" in Path(path).resolve().parts[:-1]
+
+
+def structured_field_tier(path: Path, repo: Path = REPO, existing: bool = False) -> str:
+    """Which tier the #1783 fields get for `path`: 'strict' | 'advisory' | 'skip'.
+
+    * `existing=True` (--existing, or CI's modified list) → advisory, like every other
+      legacy gap: backfilling the corpus is optional and must never block a PR.
+    * a path that is not in a lesson tree → skip: not a lesson entering the corpus, so
+      nothing to tier (and no git call to make).
+    * a lesson git can place on the base branch → advisory (it existed before).
+    * a lesson git can see is not there yet, or cannot classify at all → strict (never
+      fail open on a real lesson).
+    """
+    if existing:
+        return "advisory"
+    if not is_corpus_path(path):
+        return "skip"
+    return "advisory" if exists_on_base_branch(path, repo) is True else "strict"
 
 
 # ── Repo-level checks ───────────────────────────────────────────────
@@ -481,6 +625,22 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
         missing = validate_sections(content)
         if missing:
             errors.append("[warn] missing section(s) (legacy): " + ", ".join(missing))
+
+    # Structured fields (#1783) — tiered independently of the rules above, so no
+    # existing rule changes behaviour: strict for a lesson entering the corpus,
+    # advisory for one that already exists, not applicable outside a lesson tree.
+    tier = structured_field_tier(path, repo, existing)
+    if tier == "strict":
+        errors += validate_structured_fields(fm)
+    elif tier == "advisory":
+        absent = missing_structured_fields(fm)
+        if absent:
+            # One line for the common case: the corpus has not been backfilled yet,
+            # and backfilling is optional (docs/maintainer/lesson-fields.md).
+            errors.append(
+                "[warn] structured field(s) not set (existing lesson; backfill is optional): "
+                + ", ".join(absent) + f" — {STRUCTURED_HINT}")
+        errors += [f"[warn] {e}" for e in malformed_structured_fields(fm)]
 
     if fm and fm.get("title"):
         domain = fm.get("domain")
