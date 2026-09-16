@@ -247,8 +247,10 @@ cue=lesson-found player=afplay file=~/.misakanet-agent/voice/lesson-found.mp3
 
 ### Round 2 — Re-test after `npx @misaka-net/misakanet-setup@latest` (v0.5.3)
 
-Re-running the installer is required to write updated permissions; upgrading alone is not
-enough. The `@latest` resolved to v0.5.3 (one minor version bump). The re-install confirmed
+The package release changes nothing on a machine by itself — a machine still running the
+older install keeps the old behaviour (including the permission refusal) until
+`npx @misaka-net/misakanet-setup@latest` is run again, which is what writes the grants.
+The `@latest` resolved to v0.5.3 (one minor version bump). The re-install confirmed
 idempotency: all 10 items reported "无改动" or "已是最新", and the version stamp was refreshed
 from 0.5.1 to 0.5.3.
 
