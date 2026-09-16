@@ -1014,6 +1014,115 @@ test('--report leaks neither the token nor the home path', () => {
   assert.equal(reportLines(result.stdout).token, 'present', 'presence is reported, not the value');
 });
 
+// ── --report --strict: the same YAML as a CI gate (issue #1782) ───────────────
+// One report, two contracts. The default form must stay exit-0 (people paste it into issues and
+// pipe it into logs); the strict form is the gate: 0 = READY, 1 = NOT READY (including
+// `open-items > 0`), 2 = the report could not be produced at all. That is deliberately the same
+// 0/1/2 convention as scripts/check_workflow_scripts.py ("0 = fine, 1 = found problems,
+// 2 = could not run"). `run()` points the endpoint at a dead port, so NOT READY here is a
+// property of the fixture, not of the network.
+test('--report exits 0 even when the machine is NOT READY (the paste-safe default)', () => {
+  const home = makeHome();
+  // The same home, judged the two ways: --verify is already a gate (exit 1) and must stay one,
+  // while --report prints the identical verdict as evidence and still exits 0.
+  const verdict = run(home, '--verify');
+  assert.equal(verdict.status, 1, verdict.stdout + verdict.stderr);
+
+  const result = run(home, '--report');
+  assert.equal(result.status, 0,
+    `the default report must stay exit-0 or every existing use breaks: ${result.stderr}`);
+  assert.equal(reportLines(result.stdout).verify, 'NOT READY',
+    'exit 0 must not be achieved by pretending the machine is ready');
+  assert.ok(Number(reportLines(result.stdout)['open-items']) > 0, result.stdout);
+});
+
+test('--report --strict exits 1 when the report says NOT READY', () => {
+  const home = makeHome();
+  const result = run(home, '--report', '--strict');
+  assert.equal(result.status, 1, result.stdout + result.stderr);
+
+  const fields = reportLines(result.stdout);
+  assert.equal(fields.verify, 'NOT READY');
+  assert.ok(Number(fields['open-items']) > 0, `open-items must be positive: ${result.stdout}`);
+  // The evidence still has to come out: CI appends this YAML to the job summary *and* fails the
+  // step, so a gate that printed nothing would be unusable.
+  assert.equal(fields.schema, 'misakanet-setup-report/1');
+  assert.match(result.stderr, /退出码 1/, result.stderr);
+});
+
+test('--ci is the same gate as --report --strict', () => {
+  const home = makeHome();
+  const ci = run(home, '--ci');
+  const explicit = run(home, '--report', '--strict');
+  assert.equal(ci.status, explicit.status, `--ci and --report --strict must agree: ${ci.stdout}`);
+  assert.equal(ci.status, 1, ci.stdout + ci.stderr);
+  assert.equal(reportLines(ci.stdout).schema, 'misakanet-setup-report/1',
+    '--ci alone must select report mode (not install mode)');
+});
+
+test('--report --strict exits 2 when the report cannot be produced at all', () => {
+  // "Could not run" needs a real construction, not a mock: verify() reads the Claude hooks to
+  // find the hook command, and an event entry whose `hooks` is not an array (a hand-edited
+  // settings.json shape this tool cannot interpret) throws before any verdict exists. Before
+  // #1782 that exit code was 1 with a stack trace — indistinguishable from a genuine NOT READY.
+  const home = makeHome();
+  run(home);                              // offline install, so ~/.misakanet-agent/hook.mjs exists
+  assert.ok(existsSync(join(home, '.misakanet-agent', 'hook.mjs')), 'fixture: hook must be installed');
+  writeFileSync(join(home, '.claude', 'settings.json'),
+    JSON.stringify({ hooks: { Stop: [{ hooks: 5 }] } }));
+
+  const result = run(home, '--report', '--strict');
+  assert.equal(result.status, 2, result.stdout + result.stderr);
+  assert.equal(result.stdout.trim(), '',
+    'nothing may be printed as a report when there is no report: a half YAML would be pasted');
+  assert.match(result.stderr, /退出码 2/, result.stderr);
+  assert.match(result.stderr, /退出码 2[\s\S]*map is not a function/, result.stderr);
+  // and the crash must not be dressed up as a verdict
+  assert.ok(!/NOT READY/.test(result.stderr), result.stderr);
+});
+
+test('--report --strict exits 0 on a READY machine, and the human fields never gate it', async () => {
+  // The two blank fields (`tools-visible`, `live-call-evidence`) are filled in by a person after
+  // the fact. A gate that depends on the reporter remembering to do that is not a gate, so a
+  // READY machine with both fields still empty must pass.
+  const { createServer } = await import('node:http');
+  const server = createServer((req, res) => {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', () => {
+      const payload = JSON.parse(body || '{}');
+      const result = payload.method === 'tools/list'
+        ? { tools: [{ name: 'misakanet_search' }, { name: 'misakanet_get_lesson' }] }
+        : payload.params?.name === 'misakanet_register'
+          ? { node_id: 'MisakaTEST', token: TOKEN_SHAPE_OK }
+          : { results: [{ id: 'stub', type: 'lesson' }] };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
+        content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } }));
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}/mcp`;
+  // The registry lookup stays inside the stub too, so the test never needs the real network.
+  const env = { ...process.env, MISAKANET_ENDPOINT: url, MISAKANET_REGISTRY_URL: url };
+
+  try {
+    const home = makeHome();
+    const install = await runAsync(home, env);
+    assert.equal(install.status, 0, install.stdout + install.stderr);
+
+    const result = await runAsync(home, env, '--report', '--strict');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const fields = reportLines(result.stdout);
+    assert.equal(fields.verify, 'READY');
+    assert.equal(fields['open-items'], '0');
+    assert.match(fields['tools-visible'], /^\{\}/, fields['tools-visible']);
+    assert.match(fields['live-call-evidence'], /^""/, fields['live-call-evidence']);
+  } finally {
+    server.close();
+  }
+});
+
 // ── pre-allowed read tools: the first search must not be denied ───────────────
 // Reported from a macOS field test and reproduced here: with only the built-in tools allowed,
 // Claude Code answers the first `misakanet_search` with "you haven't granted it yet", and the new
