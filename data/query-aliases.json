@@ -1,0 +1,2957 @@
+{
+  "schema": {
+    "version": 1,
+    "file": "data/query-aliases.json",
+    "sibling_of": "data/domains.json",
+    "purpose": "检索用「查询别名 / 近义词」词表：把用户真的会打出来的写法，映射到语料里真的存在的写法。它不是领域词表（data/domains.json 管 frontmatter 的 domain），也不是同义词库——每一条都必须能被本仓语料证明。",
+    "validated_by": [
+      "python3 scripts/expand_query.py --check",
+      "python3 -m pytest tests/test_query_aliases.py -q"
+    ],
+    "entry": {
+      "alias": "查询侧写法（用户可能输入的形态）",
+      "canonical": "语料侧写法：扩充时注入查询的词。必须是语料里真实存在的 token 组合",
+      "kind": "见 kinds；决定 direction / weight / replace 的默认值",
+      "direction": "one-way = 只从 alias 查 canonical；two-way = 双向（当两边都是语料的正式写法时）。缺省取 kind 的默认值",
+      "justification.scope": "证据强度：lessons = 别名本身就在课程语料里（最强）；repo = 别名只在仓库其它文本（README/ROADMAP/AGENTS.md/scripts 等）里出现",
+      "justification.canonical_term": "canonical 里 df 最小的那个 token（信息量最大，也是取证用的那个）",
+      "justification.canonical_df": "该 token 在 lessons/ 里出现的文档数（含 index.md 之外的课程）",
+      "justification.alias_evidence": "别名出现的文件 + 原文片段（可被 --check 逐条复核）",
+      "justification.canonical_evidence": "canonical 出现的课程 + 原文片段"
+    },
+    "invariants": [
+      "alias 唯一（大小写不敏感），且 alias != canonical",
+      "canonical 的每个 token 都必须在 lessons/ 里 df>=1（否则映射到的是不存在的写法）",
+      "kind=typo 之外的 alias 必须在仓库文本里有出处（lessons/ 优先）",
+      "alias 与 canonical 的 token 集合不能完全相同：那种条目是 no-op，没有资格进表",
+      "canonical 不许成环：跟随 canonical 必须终止在一个不再是别名 sink 上"
+    ]
+  },
+  "kinds": {
+    "zh-en": {
+      "desc": "中文用户词 → 语料里真实出现的英文错误片段（本地 BM25 按单字切分，Worker 的 bm25Tokenize 把 CJK 整体丢弃，因此这类别必须 replace）",
+      "direction": "one-way",
+      "weight": 0.9,
+      "replace": true
+    },
+    "error-variant": {
+      "desc": "同一个错误的多种写法：内核/容器/库/语言各自的措辞",
+      "direction": "one-way",
+      "weight": 0.7,
+      "replace": false
+    },
+    "tool-variant": {
+      "desc": "工具调用名与写法变体",
+      "direction": "one-way",
+      "weight": 0.7,
+      "replace": false
+    },
+    "product-variant": {
+      "desc": "产品 / 服务 / API 名变体",
+      "direction": "one-way",
+      "weight": 0.6,
+      "replace": false
+    },
+    "abbrev": {
+      "desc": "缩写 ↔ 全称（默认双向：两边都是语料里的正式写法）",
+      "direction": "two-way",
+      "weight": 0.8,
+      "replace": false
+    },
+    "typo": {
+      "desc": "常见错拼。语料里按定义不存在；命中后整词替换为正确写法，避免垃圾 token 污染 BM25",
+      "direction": "one-way",
+      "weight": 1.0,
+      "replace": true
+    }
+  },
+  "stopwords": {
+    "zh": [
+      "如何",
+      "怎么",
+      "怎样",
+      "为什么",
+      "是什么原因",
+      "什么原因",
+      "怎么办",
+      "请问",
+      "求助",
+      "报错",
+      "错误",
+      "失败",
+      "无法",
+      "不能",
+      "不行",
+      "问题",
+      "原因",
+      "方法",
+      "方案",
+      "教程",
+      "一下",
+      "我的",
+      "出现",
+      "提示",
+      "解决",
+      "处理",
+      "时候",
+      "还是",
+      "没有",
+      "可以",
+      "需要",
+      "现在",
+      "已经",
+      "就是",
+      "这个",
+      "那个",
+      "哪些",
+      "什么",
+      "哪里"
+    ],
+    "note": "中文意图词：只表达「我在问一个问题」，在英文索引里没有任何检索价值。扩充时直接删除（不是加词）。英文停用词不在这里——Worker 的 bm25Tokenize 已经丢掉它们。"
+  },
+  "aliases": [
+    {
+      "alias": "内存泄漏",
+      "canonical": "memory leak",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "leak",
+        "canonical_df": 13,
+        "alias_evidence": {
+          "file": "lessons/contrib/wsl2-memory-leak-fix.md",
+          "quote": "title: WSL2 内存泄漏 / 内存占用过高"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/debugging-memory-leaks-in-ruby.md",
+          "quote": "title: Debugging memory leaks in Ruby"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "内存不足",
+      "canonical": "oom",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "oom",
+        "canonical_df": 3,
+        "alias_evidence": {
+          "file": "lessons/contrib/fanuc-alarm-code-reference.md",
+          "quote": "| **SYST** | 系统 | 控制器系统报警 | 内存不足、硬件故障 |"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-state-database-lock-cleanup.md",
+          "quote": "SQLite locking mechanism does not handle forced termination well. When the agent process is killed (SIGKILL, WSL shutdown, OOM), in-progress write tra"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "内存占用过高",
+      "canonical": "memory leak",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "leak",
+        "canonical_df": 13,
+        "alias_evidence": {
+          "file": "lessons/contrib/wsl2-memory-leak-fix.md",
+          "quote": "title: WSL2 内存泄漏 / 内存占用过高"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/debugging-memory-leaks-in-ruby.md",
+          "quote": "title: Debugging memory leaks in Ruby"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "磁盘空间不足",
+      "canonical": "disk full",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "disk",
+        "canonical_df": 11,
+        "alias_evidence": {
+          "file": "lessons/contrib/disk-space-cleanup.md",
+          "quote": "title: 磁盘空间不足 / chroma_db_v4 CacheCleanup"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/disk-full-agent-tmp-gc.md",
+          "quote": "\"title\": \"Disk full from agent tmp dirs — GC pattern\","
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "超时",
+      "canonical": "timeout",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "timeout",
+        "canonical_df": 62,
+        "alias_evidence": {
+          "file": "lessons/contrib/github-release-large-asset-download-cn.md",
+          "quote": "title: GitHub Release 大文件下载在 CN 网络超时：分段并行下载方案"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "title: Agent 手动Update步骤（update Timeout Handling）"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "连接超时",
+      "canonical": "timeout",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "timeout",
+        "canonical_df": 62,
+        "alias_evidence": {
+          "file": "archive/README.md",
+          "quote": "| `cc-haha-network-timeout.md` | 网络连接超时 |"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "title: Agent 手动Update步骤（update Timeout Handling）"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "代理",
+      "canonical": "proxy",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "proxy",
+        "canonical_df": 39,
+        "alias_evidence": {
+          "file": "lessons/contrib/gfw-tls-sni-blocking-tool-layer-ineffective.md",
+          "quote": "title: GFW TLS SNI 阻断：工具层全部无效，只有代理能解"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/anthropic-proxy-internal-gateway.md",
+          "quote": "title: Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "证书",
+      "canonical": "certificate",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "certificate",
+        "canonical_df": 12,
+        "alias_evidence": {
+          "file": "lessons/contrib/curl-request-troubleshoot.md",
+          "quote": "`curl https://example.com` 返回空、报错或超时。不知道是 DNS、代理、证书还是目标服务的问题。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
+          "quote": "title: Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "握手失败",
+      "canonical": "tls handshake failed",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "handshake",
+        "canonical_df": 7,
+        "alias_evidence": {
+          "file": "lessons/contrib/git-tls-handshake-failure.md",
+          "quote": "title: GitHub TLS 握手失败 — gnutls_handshake() Error"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/git-tls-handshake-failure.md",
+          "quote": "title: GitHub TLS 握手失败 — gnutls_handshake() Error"
+        },
+        "canonical_match": "term"
+      }
+    },
+    {
+      "alias": "限流",
+      "canonical": "rate limit",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "rate",
+        "canonical_df": 40,
+        "alias_evidence": {
+          "file": "lessons/contrib/api-rate-limit-handling.md",
+          "quote": "title: API 请求限流 (Rate Limit) 处理方案"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/api-rate-limit-handling-best-practices.md",
+          "quote": "title: api rate limit handling best practices"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "缓存",
+      "canonical": "cache",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "cache",
+        "canonical_df": 38,
+        "alias_evidence": {
+          "file": "lessons/contrib/lesson-9-redis-postgresql-replacement.md",
+          "quote": "title: Redis → PostgreSQL 替换 — 缓存/PubSub/队列统一"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/accidental-pycache-commit.md",
+          "quote": "title: Accidental __pycache__ artifacts committed to a data repository"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "崩溃",
+      "canonical": "crash",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "crash",
+        "canonical_df": 19,
+        "alias_evidence": {
+          "file": "lessons/contrib/gateway-hang-watchdog-recovery.md",
+          "quote": "title: Gateway 进程挂死未崩溃 — watchdog 自动Recovery"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/bge-embedding-fallback-crash.md",
+          "quote": "title: BGE Embedding Fallback Crash"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "截断",
+      "canonical": "truncation",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "truncation",
+        "canonical_df": 10,
+        "alias_evidence": {
+          "file": "lessons/contrib/data-capping-equals-forging-data.md",
+          "quote": "title: 数据封顶=伪造数据：超出阈值应剔除而非截断"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-readfile-silent-truncation.md",
+          "quote": "title: Agent read_file Silent Truncation in Multi-Brain Meeting Recovery"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "编码",
+      "canonical": "encoding",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "encoding",
+        "canonical_df": 19,
+        "alias_evidence": {
+          "file": "lessons/contrib/ai-agent-project-outreach-guide.md",
+          "quote": "- GitHub Discussion API 需 GraphQL mutation，且 repositoryId 是 base64 编码的 Node ID（非数字 ID）"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/python-gbk-encoding-error.md",
+          "quote": "title: Python GBK Encoding Error — Windows/WSL 跨平台"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "乱码",
+      "canonical": "encoding",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "encoding",
+        "canonical_df": 19,
+        "alias_evidence": {
+          "file": "lessons/contrib/python-gbk-encoding-error.md",
+          "quote": "或 Cron 日志中出现乱码。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/python-gbk-encoding-error.md",
+          "quote": "title: Python GBK Encoding Error — Windows/WSL 跨平台"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "权限",
+      "canonical": "permission",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "permission",
+        "canonical_df": 16,
+        "alias_evidence": {
+          "file": "lessons/contrib/browser-harness-cdp-browser-automation.md",
+          "quote": "核心哲学来自博客文章 *The Bitter Lesson of Agent Harnesses*：不要包装 LLM 的工具，也不要包装它的工具层。给模型完整的 CDP 访问权限 + 允许它编辑自己的辅助代码，它会自己解决复杂情况。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/erreur-permission-docker-linux.md",
+          "quote": "title: 'Erreur de permission Docker: permission denied sur /var/run/docker.sock'"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "端口",
+      "canonical": "port",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "port",
+        "canonical_df": 22,
+        "alias_evidence": {
+          "file": "lessons/contrib/github-dns-443-block-hosts-workaround.md",
+          "quote": "title: GitHub DNS 污染/443端口不通 — hosts 备用 IP 方案"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/firewall-port-open-not-public.md",
+          "quote": "title: firewall port open not public"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "防火墙",
+      "canonical": "firewall",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "firewall",
+        "canonical_df": 4,
+        "alias_evidence": {
+          "file": "lessons/contrib/curl-request-troubleshoot.md",
+          "quote": "# 能连接但超时 → 防火墙/代理问题"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/firewall-port-open-not-public.md",
+          "quote": "title: firewall port open not public"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "飞书",
+      "canonical": "feishu",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "feishu",
+        "canonical_df": 26,
+        "alias_evidence": {
+          "file": "lessons/contrib/feishu-doc-delete-blocks-by-range-pitfall.md",
+          "quote": "title: 飞书 doc_delete_blocks_by_range 不传 end 会删到文档末尾"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/aily-feishu-mcp-pull-only.md",
+          "quote": "title: aily feishu mcp pull only"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "报警代码",
+      "canonical": "alarm",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "alarm",
+        "canonical_df": 9,
+        "alias_evidence": {
+          "file": "lessons/contrib/audit-sampling-stratified-sampling-for-kb-inspection.md",
+          "quote": "RAG 知识库质量巡检需要每天抽取少量题目进行自动测试。如果随机抽样，容易连续抽到同一类型的问题（如连续三天都是报警代码题），漏掉其他分类的质量退化。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fanuc-alarm-code-reference.md",
+          "quote": "title: FANUC Robot Alarm Code Reference Table"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "报警",
+      "canonical": "alarm",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "alarm",
+        "canonical_df": 9,
+        "alias_evidence": {
+          "file": "lessons/contrib/audit-sampling-stratified-sampling-for-kb-inspection.md",
+          "quote": "RAG 知识库质量巡检需要每天抽取少量题目进行自动测试。如果随机抽样，容易连续抽到同一类型的问题（如连续三天都是报警代码题），漏掉其他分类的质量退化。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fanuc-alarm-code-reference.md",
+          "quote": "title: FANUC Robot Alarm Code Reference Table"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "备份",
+      "canonical": "backup",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "backup",
+        "canonical_df": 7,
+        "alias_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "- 更新前备份配置文件"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fanuc-backup-payload-extraction.md",
+          "quote": "title: FANUC Backup Payload Extraction — .VR/.SV Binary Parsing and .LS Text Fallback"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "关节",
+      "canonical": "joint",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "joint",
+        "canonical_df": 9,
+        "alias_evidence": {
+          "file": "lessons/contrib/fanuc-communication-protocol-socket.md",
+          "quote": "| PR[81] | 位置/关节值存储 |"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fanuc-intp-102-detect-joint-olp-whitespace.md",
+          "quote": "title: FANUC INTP-102 DETECT JOINT — OLP Whitespace Bug"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "部署",
+      "canonical": "deploy",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "deploy",
+        "canonical_df": 17,
+        "alias_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "此方案适用于大多数基于 GitHub Release 分发的 Agent 框架。如使用 Docker 部署，建议直接拉取新镜像。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/cdn-edge-cache-stale-after-deploy.md",
+          "quote": "title: CDN edge cache serves stale responses for minutes after deploy"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "依赖",
+      "canonical": "dependency",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "dependency",
+        "canonical_df": 17,
+        "alias_evidence": {
+          "file": "lessons/contrib/browser-harness-cdp-browser-automation.md",
+          "quote": "| 权限控制 | 无，依赖 Chrome remote debugging 端口权限 | 内置 auth token、rate limit、site blocklist |"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/go-toolchain-vuln-bump-wrong-arch.md",
+          "quote": "title: Go dependency vuln bump blocked by wrong-architecture toolchain download"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "虚拟环境",
+      "canonical": "venv",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "venv",
+        "canonical_df": 20,
+        "alias_evidence": {
+          "file": "archive/_merged/pip-install-failure-fix.md",
+          "quote": "# 用虚拟环境隔离"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/lesson-07-uv-venv-seed-fix-no-pip.md",
+          "quote": "title: Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "环境变量",
+      "canonical": "environment variable",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "variable",
+        "canonical_df": 17,
+        "alias_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "- 手动更新后可能需要重新配置环境变量"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/aider-api-key-leak.md",
+          "quote": "Unlike environment variables (which can be restricted), command-line arguments are world-readable by default on most Unix systems. Additionally, inter"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "签名",
+      "canonical": "signoff",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "signoff",
+        "canonical_df": 7,
+        "alias_evidence": {
+          "file": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
+          "quote": "在 DCO 扫描 step 中，将缺失签名的 commit 以结构化格式输出："
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/dco-signoff-force-push-pitfall.md",
+          "quote": "title: DCO Signoff Lost During Force Push"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "合并冲突",
+      "canonical": "merge conflict",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "conflict",
+        "canonical_df": 12,
+        "alias_evidence": {
+          "file": "archive/dead/scripts/batch_lesson_upgrade.py",
+          "quote": "Handles mixed Chinese/English titles like \"Git 合并冲突解决方案\" → \"Git Merge Conflict Resolution\""
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/git-merge-conflict-resolution.md",
+          "quote": "CONFLICT (content): Merge conflict in src/config.py"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "索引",
+      "canonical": "index",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "index",
+        "canonical_df": 35,
+        "alias_evidence": {
+          "file": "lessons/contrib/lesson-18-database-performance-indexing.md",
+          "quote": "title: 数据库性能 — 索引与查询优化实践"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-memory-three-index-architecture.md",
+          "quote": "title: Agent Memory Three-Index Architecture on Elasticsearch"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "向量",
+      "canonical": "vector index",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "vector",
+        "canonical_df": 13,
+        "alias_evidence": {
+          "file": "lessons/contrib/chroma-rebuild-no-checkpoint-cn.md",
+          "quote": "Agent 内跑 BGE-large-zh 建库（约30分钟），Gateway 重启后整个数据库为空，0条向量入库。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/bm25-vector-hybrid-search-weights.md",
+          "quote": "title: 'BM25 + Vector Hybrid Search: configurable blending weights'"
+        },
+        "canonical_match": "term"
+      }
+    },
+    {
+      "alias": "检索",
+      "canonical": "retrieval",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "retrieval",
+        "canonical_df": 21,
+        "alias_evidence": {
+          "file": "lessons/contrib/fanuc-r-2000ic-retrieval-fix.md",
+          "quote": "title: FANUC R-2000iC 检索混淆Fix — 关键词强制召回"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/wechat-pubacct-fetch-separate-search-from-retrieval.md",
+          "quote": "title: wechat pubacct fetch separate search from retrieval"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "召回",
+      "canonical": "recall",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "recall",
+        "canonical_df": 8,
+        "alias_evidence": {
+          "file": "lessons/contrib/fanuc-r-2000ic-retrieval-fix.md",
+          "quote": "title: FANUC R-2000iC 检索混淆Fix — 关键词强制召回"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/rag-alarm-code-mandatory-recall.md",
+          "quote": "title: RAG Alarm Code Retrieval Needs Mandatory Keyword Recall"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "知识库",
+      "canonical": "knowledge base",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "knowledge",
+        "canonical_df": 31,
+        "alias_evidence": {
+          "file": "lessons/contrib/rag-brand-contamination-detection-and-fix.md",
+          "quote": "title: RAG 知识库品牌污染Detection与治理"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/kb-4sigma-quality-audit-pipeline.md",
+          "quote": "title: Knowledge Base 4-Sigma Quality Audit Pipeline"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "切片",
+      "canonical": "chunk",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "chunk",
+        "canonical_df": 29,
+        "alias_evidence": {
+          "file": "lessons/contrib/fanuc-karel-ka-boost-architecture.md",
+          "quote": "problem: KAREL 语言缺乏标准库、泛型、关联数组、字符串操作等现代编程基础设施，大型项目（如 5 轴 DLP 3D 打印切片器）难以模块化开发和维护。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/rag-chunk-params-800-100.md",
+          "quote": "title: RAG Chunk Parameters 800 Characters and 100 Overlap"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "嵌入",
+      "canonical": "embedding",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "embedding",
+        "canonical_df": 10,
+        "alias_evidence": {
+          "file": "lessons/contrib/feishu-block-type-values-limits.md",
+          "quote": "不使用 type=27，改用 paragraph block 嵌入图片 URL 的方式，或先通过飞书图片上传接口获取合法 token 后再使用："
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/bge-embedding-fallback-crash.md",
+          "quote": "title: BGE Embedding Fallback Crash"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "正则",
+      "canonical": "regex",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "regex",
+        "canonical_df": 12,
+        "alias_evidence": {
+          "file": "lessons/contrib/regex-escaped-quotes-source-parsing.md",
+          "quote": "title: 正则陷阱 — 源码中转义引号导致非贪婪匹配提前终止"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/regex-escaped-quotes-source-parsing.md",
+          "quote": "- regex"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "解析失败",
+      "canonical": "json parse",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "parse",
+        "canonical_df": 20,
+        "alias_evidence": {
+          "file": "lessons/contrib/json-parse-failure-handling.md",
+          "quote": "title: JSON 解析失败Handling — 截断 / 格式Error"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/json-parse-failure-handling.md",
+          "quote": "\"title\": \"JSON parse failure handling — truncated / malformed output\","
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "沙箱",
+      "canonical": "sandbox",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "sandbox",
+        "canonical_df": 14,
+        "alias_evidence": {
+          "file": "lessons/contrib/lesson-13-aws-lambda-microvms.md",
+          "quote": "title: AWS Lambda MicroVMs — 隔离沙箱与 Firecracker"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/playwright-snap-chromium-libnss3-sandbox-launch.md",
+          "quote": "title: Playwright 在受限容器/sandbox 启动 snap chromium：用 chrome-headless-shell + LD_LIBRARY_PATH 绕开 snap-confine"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "隔离",
+      "canonical": "isolation",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "isolation",
+        "canonical_df": 10,
+        "alias_evidence": {
+          "file": "lessons/contrib/lesson-13-aws-lambda-microvms.md",
+          "quote": "title: AWS Lambda MicroVMs — 隔离沙箱与 Firecracker"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/python-sandbox-path-isolation.md",
+          "quote": "\"title\": \"Python sandbox path isolation for agent worktrees\","
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "死锁",
+      "canonical": "deadlock",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "deadlock",
+        "canonical_df": 1,
+        "alias_evidence": {
+          "file": "docs/zero-day-drill.md",
+          "quote": "- ChromaDB 在特定版本下的 SQLite 死锁"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/go-scheduler-deadlock-lock-order.md",
+          "quote": "title: Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "竞态",
+      "canonical": "race condition",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "race",
+        "canonical_df": 10,
+        "alias_evidence": {
+          "file": "lessons/contrib/openclaw-prefer-cli-and-policy-over-direct-edit.md",
+          "quote": "直接修改配置文件（临时hack）容易变成默认模型，导致官方路径退化。当多个开发者或自动化流程同时操作同一配置文件时，直接编辑会引发竞态条件、格式损坏以及版本冲突，最终使系统处于不可预期的状态。此外，直接修改绕过了官方工具内置的校验逻辑，错误配置可能在运行时才被发现，排查成本极高。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/core/cronjob-one-shot-race-condition-duplicate-execution.md",
+          "quote": "title: Cronjob One-Shot Race Condition - Duplicate Execution"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "幂等",
+      "canonical": "idempotent",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "idempotent",
+        "canonical_df": 3,
+        "alias_evidence": {
+          "file": "lessons/contrib/lesson-20-api-design-principles.md",
+          "quote": "title: API 设计原则 — 无抽象、一致性、幂等性"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/idempotent-task-claim.md",
+          "quote": "\"title\": \"Idempotent task claim keys for snipers\","
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "重试",
+      "canonical": "retry",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "retry",
+        "canonical_df": 29,
+        "alias_evidence": {
+          "file": "lessons/contrib/api-rate-limit-handling-best-practices.md",
+          "quote": "### 2. 未实现错误重试与指数退避"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/http-timeout-retry-pattern.md",
+          "quote": "\"title\": \"HTTP client timeout + retry pattern for agents\","
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "心跳",
+      "canonical": "heartbeat",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "heartbeat",
+        "canonical_df": 3,
+        "alias_evidence": {
+          "file": "lessons/contrib/heartbeat-scan-improvement.md",
+          "quote": "心跳只用 `gh search prs --author` 扫描，漏掉了："
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/heartbeat-scan-improvement.md",
+          "quote": "title: GitHub Contribution Heartbeat Scan"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "看门狗",
+      "canonical": "watchdog",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "watchdog",
+        "canonical_df": 4,
+        "alias_evidence": {
+          "file": "lessons/contrib/fanuc-kl-err-abort-vs-err-pause.md",
+          "quote": "| 看门狗超时 | ERR_ABORT | 系统状态不可信 |"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/gateway-hang-watchdog-recovery.md",
+          "quote": "title: Gateway 进程挂死未崩溃 — watchdog 自动Recovery"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "覆盖率",
+      "canonical": "coverage",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "coverage",
+        "canonical_df": 9,
+        "alias_evidence": {
+          "file": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
+          "quote": "设置 `--cov-fail-under=20` 而非 70，避免小改动 PR（如单文件修复）被覆盖率门禁卡住。大改动 PR 自然会有更高覆盖率。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/slugify-path-traversal-deep-coverage.md",
+          "quote": "title: slugify path traversal deep coverage"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "滑动窗口",
+      "canonical": "sliding window",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "sliding",
+        "canonical_df": 1,
+        "alias_evidence": {
+          "file": "lessons/contrib/bm25-chinese-sliding-window-tuning.md",
+          "quote": "title: 中文 BM25 搜索：滑动窗口子串加分与唯一候选加分"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/bm25-chinese-sliding-window-tuning.md",
+          "quote": "- sliding-window"
+        },
+        "canonical_match": "term"
+      }
+    },
+    {
+      "alias": "同义词",
+      "canonical": "synonym",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "synonym",
+        "canonical_df": 3,
+        "alias_evidence": {
+          "file": "lessons/contrib/jieba-synonym-expansion-pitfall.md",
+          "quote": "title: 同义词扩展陷阱：jieba.add_word() 改变全局分词行为导致回归"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/jieba-synonym-expansion-pitfall.md",
+          "quote": "- synonym"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "分词",
+      "canonical": "tokenization",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "tokenization",
+        "canonical_df": 1,
+        "alias_evidence": {
+          "file": "lessons/contrib/jieba-synonym-expansion-pitfall.md",
+          "quote": "title: 同义词扩展陷阱：jieba.add_word() 改变全局分词行为导致回归"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/rag-retrieval-six-layer-silent-degradation.md",
+          "quote": "3. **Variant tokenization** — `$contains` 分词变体导致查询不匹配"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "模型",
+      "canonical": "model",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "model",
+        "canonical_df": 46,
+        "alias_evidence": {
+          "file": "lessons/contrib/model-output-fix.md",
+          "quote": "title: 模型输出截断 / JSON 解析失败Handling"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/aider-litellm-model-name-rejection.md",
+          "quote": "title: Aider via LiteLLM rejects standard Anthropic model names"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "切换",
+      "canonical": "switch",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "switch",
+        "canonical_df": 14,
+        "alias_evidence": {
+          "file": "lessons/contrib/fanuc-karel-uv-to-xyzwpr-pipeline.md",
+          "quote": "接口模板`motion.interface.klt`支持在不同运动后端之间切换，无需修改调用代码。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/hermes-model-switch-ccswitch.md",
+          "quote": "title: ccswitch-hermes-switch 踩坑Notes"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "识图模型",
+      "canonical": "vision model",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "vision",
+        "canonical_df": 6,
+        "alias_evidence": {
+          "file": "ROADMAP.md",
+          "quote": "- 现状：语料按错误文本 / 关键词索引；中文整句问句（如\"如何切换识图模型\"）命中≈0"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/cdn-edge-cache-stale-after-deploy.md",
+          "quote": "3. Confirm the routed response carries the new revision before moving on."
+        },
+        "canonical_match": "term"
+      }
+    },
+    {
+      "alias": "排查",
+      "canonical": "troubleshoot",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "troubleshoot",
+        "canonical_df": 4,
+        "alias_evidence": {
+          "file": "lessons/contrib/curl-request-troubleshoot.md",
+          "quote": "网络请求的故障链路有多层，每一层都会产生不同错误。需要逐层排查。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/dsh-plugin-installation-troubleshooting.md",
+          "quote": "title: \"DSH Plugin Installation Troubleshooting — Common Failures and Fixes\""
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "不生效",
+      "canonical": "stale cache",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "stale",
+        "canonical_df": 27,
+        "alias_evidence": {
+          "file": "lessons/contrib/cron-job-not-running.md",
+          "quote": "title: Cron 作业不执行 / 不生效排障"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/rag-brand-filter-three-pitfalls.md",
+          "quote": "# scores[i] corresponds to self.metas[i] — stale cached data!"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "卡住",
+      "canonical": "timeout",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "timeout",
+        "canonical_df": 62,
+        "alias_evidence": {
+          "file": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
+          "quote": "设置 `--cov-fail-under=20` 而非 70，避免小改动 PR（如单文件修复）被覆盖率门禁卡住。大改动 PR 自然会有更高覆盖率。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "title: Agent 手动Update步骤（update Timeout Handling）"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "打不开",
+      "canonical": "corrupt",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "corrupt",
+        "canonical_df": 1,
+        "alias_evidence": {
+          "file": "lessons/user-rescue/archive-open-failure.md",
+          "quote": "title: \"压缩包打不开？先别急，试这 3 步\""
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/lesson-file-line-number-corruption.md",
+          "quote": "- file-corruption"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "连不上",
+      "canonical": "connection reset",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "reset",
+        "canonical_df": 15,
+        "alias_evidence": {
+          "file": "lessons/contrib/anthropic-proxy-internal-gateway.md",
+          "quote": "- Claude Code / cc-haha 原生 → 连不上，因为发的是 `/v1/messages` ❌"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/n8n-nodejs-econnreset-connection-reset-fix.md",
+          "quote": "title: Fix Node.js ECONNRESET Connection Reset Error in n8n Webhook HTTP Requests"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "路径穿越",
+      "canonical": "path traversal",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "traversal",
+        "canonical_df": 5,
+        "alias_evidence": {
+          "file": "docs/reviews/2026-08-24-repo-and-30-lessons.md",
+          "quote": "2. `mcp_server.py:215-238` 的 lesson 路径穿越防护是教科书实现；build_sag_index.py 全参数化 SQL。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/slugify-path-traversal-deep-coverage.md",
+          "quote": "title: slugify path traversal deep coverage"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "权限不足",
+      "canonical": "permission denied",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "denied",
+        "canonical_df": 6,
+        "alias_evidence": {
+          "file": "misakanet/guard.py",
+          "quote": "print(f\"misakanet.guard: 权限不足: {args.cmd[0]}\", file=sys.stderr)"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/erreur-permission-docker-linux.md",
+          "quote": "title: 'Erreur de permission Docker: permission denied sur /var/run/docker.sock'"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "文件打不开",
+      "canonical": "corrupt",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "corrupt",
+        "canonical_df": 1,
+        "alias_evidence": {
+          "file": "lessons/user-rescue/fanuc-backup-extract-guide.md",
+          "quote": "我遇到的问题：FANUC 备份文件打不开 / 提取不到参数"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-prompt-preset-template-governance.md",
+          "quote": "3. **Absence of Semantic Immutability**: Modifying preset configurations in-place during runtime experimentation corrupts baseline templates across pa"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "请求超时",
+      "canonical": "timeout",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "timeout",
+        "canonical_df": 62,
+        "alias_evidence": {
+          "file": "lessons/contrib/dsh-plugin-install-github-codeload-timeout.md",
+          "quote": "Installing a DSH (DeepSeek Harness) plugin from the [dsh-plugin.org](https://dsh-plugin.org) marketplace failed with `安装失败 — 请求超时：无法访问 GitHub 或网络不稳定` "
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "title: Agent 手动Update步骤（update Timeout Handling）"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "证书过期",
+      "canonical": "certificate",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "certificate",
+        "canonical_df": 12,
+        "alias_evidence": {
+          "file": "lessons/contrib/curl-request-troubleshoot.md",
+          "quote": "| `SSL certificate problem` | 证书过期/自签 | `-k` 临时跳过 |"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/corporate-proxy-curl-timeout.md",
+          "quote": "title: 'curl Timeout Behind Corporate Proxy: SSL Inspection Breaks Certificate Validation'"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "端口占用",
+      "canonical": "port",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "port",
+        "canonical_df": 22,
+        "alias_evidence": {
+          "file": "scripts/tombstone_to_draft.py",
+          "quote": "hints.append(\"Vite 开发服务器崩溃 —— 检查端口占用 或 node_modules/.vite 缓存目录\")"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/ci-lambda-module-level-side-effects.md",
+          "quote": "title: CI 测试陷阱 — 模块级副作用导致 import 失败"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "模块找不到",
+      "canonical": "modulenotfounderror",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "modulenotfounderror",
+        "canonical_df": 10,
+        "alias_evidence": {
+          "file": "lessons/contrib/python-venv-tiktoken-module-not-found.md",
+          "quote": "在已有 venv 中 `pip install tiktoken`，安装成功但运行时报 `ModuleNotFoundError: cannot import name '_namespace'` 或其他模块找不到的错误。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fehler-python-modul-nicht-gefunden.md",
+          "quote": "title: ModuleNotFoundError in Python trotz pip install"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "内存溢出",
+      "canonical": "oom",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "oom",
+        "canonical_df": 3,
+        "alias_evidence": {
+          "file": "scripts/tombstone_to_draft.py",
+          "quote": "hints.append(\"内存溢出（OOM）—— 尝试限制容器内存 或 增大 Node.js --max-old-space-size\")"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-state-database-lock-cleanup.md",
+          "quote": "SQLite locking mechanism does not handle forced termination well. When the agent process is killed (SIGKILL, WSL shutdown, OOM), in-progress write tra"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "下载失败",
+      "canonical": "download",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "download",
+        "canonical_df": 11,
+        "alias_evidence": {
+          "file": "lessons/contrib/github-release-large-asset-download-cn.md",
+          "quote": "GitHub Release 大文件（60MB）在 CN 网络下载失败：直连 GitHub 速度极慢（~107KB/s）然后不可达；gh-proxy 镜像大多失效或 429；单连接断点续传通过代理会损坏文件（重试后文件大小缩小）。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/feishu-wiki-batch-download.md",
+          "quote": "title: Feishu WikiBatch Download：文件类型Handling策略"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "上传失败",
+      "canonical": "upload",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "upload",
+        "canonical_df": 5,
+        "alias_evidence": {
+          "file": "integrations/agent-autostart/README.md",
+          "quote": "- **不打断用户任务**：钩子出任何问题都 `exit 0` 且无输出；上传失败只记一句，不阻塞。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/feishu-upload-file-type-opus.md",
+          "quote": "title: feishu upload file type opus"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "登录失败",
+      "canonical": "authentication",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "authentication",
+        "canonical_df": 13,
+        "alias_evidence": {
+          "file": "lessons/contrib/wcferry-wechat-version-lock.md",
+          "quote": "微信 3.9.12.51 可能被腾讯服务端封锁无法登录。如果降级后登录失败，需切回 wxauto 方案（不限版本）。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-reach-multi-platform-scraper.md",
+          "quote": "AI agents need to read/search across multiple internet platforms (Twitter, Reddit, YouTube, Bilibili, etc.) but each has its own authentication, anti-"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "配置错误",
+      "canonical": "configuration",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "configuration",
+        "canonical_df": 35,
+        "alias_evidence": {
+          "file": "lessons/contrib/fanuc-alarm-code-reference.md",
+          "quote": "| **IOGEN** | I/O | 通用 I/O 报警 | 信号配置错误 |"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/claude-code-hook-silent-failure.md",
+          "quote": "title: 'A hook that swallows every error makes a misconfiguration look like \"nothing to do\"'"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "路径错误",
+      "canonical": "path",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "path",
+        "canonical_df": 133,
+        "alias_evidence": {
+          "file": "lessons/contrib/git-credential-helper-gh-path-mismatch.md",
+          "quote": "### 2. 移除路径错误的 gh credential helper"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
+          "quote": "title: GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "数据库连接",
+      "canonical": "database",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "database",
+        "canonical_df": 22,
+        "alias_evidence": {
+          "file": "docs/benchmarks/benchmark-2026-08-30.json",
+          "quote": "\"content\": \"以下是解决 RAG 知识库品牌污染的具体操作：\\n\\n**步骤 1: 全量元数据打标**\\n\\n```bash\\n# 确保 ChromaDB 的数据库连接\\npython\\nimport chromadb\\nfrom chromadb import collection\\n\\"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-state-database-lock-cleanup.md",
+          "quote": "title: Agent State Database Lock Issues — Cleanup Protocol"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "编译失败",
+      "canonical": "compile",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "compile",
+        "canonical_df": 11,
+        "alias_evidence": {
+          "file": "lessons/contrib/python-venv-tiktoken-module-not-found.md",
+          "quote": "tiktoken 依赖 `setuptools`，但部分 venv 没有包含 setuptools（尤其是用 `python -m venv --without-pip` 创建的环境）。另一个常见原因：tiktoken 的 C 扩展模块编译失败但 pip 未报错。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/claude-code-hook-silent-failure.md",
+          "quote": "python -m py_compile image-vision.py "
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "中文乱码",
+      "canonical": "encoding",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "encoding",
+        "canonical_df": 19,
+        "alias_evidence": {
+          "file": ".nodes/staging/node2/bootstrap-rag-chinese-encoding-pymupdf4llm.md",
+          "quote": "title: RAG 检索中文乱码 — pymupdf4llm 默认编码问题"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/python-gbk-encoding-error.md",
+          "quote": "title: Python GBK Encoding Error — Windows/WSL 跨平台"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "容器",
+      "canonical": "container",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "container",
+        "canonical_df": 7,
+        "alias_evidence": {
+          "file": "lessons/contrib/playwright-snap-chromium-libnss3-sandbox-launch.md",
+          "quote": "title: Playwright 在受限容器/sandbox 启动 snap chromium：用 chrome-headless-shell + LD_LIBRARY_PATH 绕开 snap-confine"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/docker-compose-basics.md",
+          "quote": "title: \"Docker Compose Basics: Multi-Container Networking and Service Healthcheck Orchestration\""
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "镜像",
+      "canonical": "image",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "image",
+        "canonical_df": 9,
+        "alias_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "Agent 框架在通过内置更新命令更新时，因网络原因或镜像源问题，可能出现 update 超时，导致无法自动完成更新。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/claude-code-hook-silent-failure.md",
+          "quote": "user pasted an image, sent a message, and nothing happened — no description, no error, no warning. The"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "集群",
+      "canonical": "kubernetes",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "kubernetes",
+        "canonical_df": 6,
+        "alias_evidence": {
+          "file": "lessons/contrib/lesson-review-5-eks-version-rollback.md",
+          "quote": "title: EKS Kubernetes 版本回滚 — 安全升级集群"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/kubernetes-crashloopbackoff-debugging.md",
+          "quote": "title: Tips for Debugging Kubernetes CrashLoopBackOff in a Container"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "定时任务",
+      "canonical": "cron",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "cron",
+        "canonical_df": 32,
+        "alias_evidence": {
+          "file": "docs/agents/external-usage.md",
+          "quote": "> 无 PR 的失败（如 main 分支定时任务）不会评论（无关联 PR），但 intake 上报照常。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/cron-job-not-running.md",
+          "quote": "title: Cron 作业不执行 / 不生效排障"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "浏览器",
+      "canonical": "browser",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "browser",
+        "canonical_df": 32,
+        "alias_evidence": {
+          "file": "lessons/contrib/browser-harness-cdp-browser-automation.md",
+          "quote": "title: browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/browser-automation-csp-bypass.md",
+          "quote": "title: CSP blocks JavaScript injection in browser automation of authenticated pages"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "自动化",
+      "canonical": "automation",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "automation",
+        "canonical_df": 37,
+        "alias_evidence": {
+          "file": "lessons/contrib/api-rate-limit-handling.md",
+          "quote": "调用第三方 API 时返回 HTTP 429（Too Many Requests）或 403（被限流）。自动化脚本因未处理限流而中断。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/browser-automation-csp-bypass.md",
+          "quote": "title: CSP blocks JavaScript injection in browser automation of authenticated pages"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "拦截",
+      "canonical": "block",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "block",
+        "canonical_df": 37,
+        "alias_evidence": {
+          "file": "lessons/contrib/chrome-relay-browser-automation.md",
+          "quote": "1. **V2EX 等站点有 Cloudflare 防护** — 自动化浏览器会被拦截，必须人工完成验证"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/browser-automation-csp-bypass.md",
+          "quote": "title: CSP blocks JavaScript injection in browser automation of authenticated pages"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "连接",
+      "canonical": "connection",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "connection",
+        "canonical_df": 23,
+        "alias_evidence": {
+          "file": "lessons/contrib/browser-harness-cdp-browser-automation.md",
+          "quote": "### 2. 连接 Chrome"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fanuc-eip-omron-plc-connection.md",
+          "quote": "title: FANUC Robot EtherNet/IP Connection with OMRON PLC"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "重置",
+      "canonical": "reset",
+      "kind": "zh-en",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "reset",
+        "canonical_df": 15,
+        "alias_evidence": {
+          "file": "lessons/contrib/api-rate-limit-handling-best-practices.md",
+          "quote": "- `X-RateLimit-Reset`: 配额重置时间戳"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-prompt-preset-template-governance.md",
+          "quote": "title: \"Prompt Preset Governance: Schema Validation and Immutable Versioning\""
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "oomkilled",
+      "canonical": "oom",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "oom",
+        "canonical_df": 3,
+        "alias_evidence": {
+          "file": "docs/agents/dogfood-baseline-2026-09-07.md",
+          "quote": "| 18 | Docker build failed exit 137 oomkilled | intake | novel |"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-state-database-lock-cleanup.md",
+          "quote": "SQLite locking mechanism does not handle forced termination well. When the agent process is killed (SIGKILL, WSL shutdown, OOM), in-progress write tra"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "out of memory",
+      "canonical": "oom",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "oom",
+        "canonical_df": 3,
+        "alias_evidence": {
+          "file": "integrations/langchain/misakanet_tool.py",
+          "quote": "\"'CUDA out of memory', 'Docker build fails with permission denied'\""
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-state-database-lock-cleanup.md",
+          "quote": "SQLite locking mechanism does not handle forced termination well. When the agent process is killed (SIGKILL, WSL shutdown, OOM), in-progress write tra"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "sigkill",
+      "canonical": "oom",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "oom",
+        "canonical_df": 3,
+        "alias_evidence": {
+          "file": "lessons/contrib/agent-state-database-lock-cleanup.md",
+          "quote": "SQLite locking mechanism does not handle forced termination well. When the agent process is killed (SIGKILL, WSL shutdown, OOM), in-progress write tra"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-state-database-lock-cleanup.md",
+          "quote": "SQLite locking mechanism does not handle forced termination well. When the agent process is killed (SIGKILL, WSL shutdown, OOM), in-progress write tra"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "memory limit",
+      "canonical": "oom",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "oom",
+        "canonical_df": 3,
+        "alias_evidence": {
+          "file": "lessons/contrib/kubernetes-crashloopbackoff-debugging.md",
+          "quote": "Exit code 137 (128 + SIGKILL 9) indicates Kubernetes hit the memory limit for the pod and killed the container."
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-state-database-lock-cleanup.md",
+          "quote": "SQLite locking mechanism does not handle forced termination well. When the agent process is killed (SIGKILL, WSL shutdown, OOM), in-progress write tra"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "exit code 137",
+      "canonical": "oom",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "oom",
+        "canonical_df": 3,
+        "alias_evidence": {
+          "file": "lessons/contrib/kubernetes-crashloopbackoff-debugging.md",
+          "quote": "Exit code 137 (128 + SIGKILL 9) indicates Kubernetes hit the memory limit for the pod and killed the container."
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-state-database-lock-cleanup.md",
+          "quote": "SQLite locking mechanism does not handle forced termination well. When the agent process is killed (SIGKILL, WSL shutdown, OOM), in-progress write tra"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "crashloop",
+      "canonical": "crashloopbackoff",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "crashloopbackoff",
+        "canonical_df": 2,
+        "alias_evidence": {
+          "file": "lessons/contrib/kubernetes-crashloopbackoff-debugging.md",
+          "quote": "title: Tips for Debugging Kubernetes CrashLoopBackOff in a Container"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/kubernetes-crashloopbackoff-debugging.md",
+          "quote": "title: Tips for Debugging Kubernetes CrashLoopBackOff in a Container"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "econnreset",
+      "canonical": "connection reset",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "reset",
+        "canonical_df": 15,
+        "alias_evidence": {
+          "file": "lessons/contrib/n8n-nodejs-econnreset-connection-reset-fix.md",
+          "quote": "title: Fix Node.js ECONNRESET Connection Reset Error in n8n Webhook HTTP Requests"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/n8n-nodejs-econnreset-connection-reset-fix.md",
+          "quote": "title: Fix Node.js ECONNRESET Connection Reset Error in n8n Webhook HTTP Requests"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "read timed out",
+      "canonical": "timeout",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "timeout",
+        "canonical_df": 62,
+        "alias_evidence": {
+          "file": "lessons/contrib/pip-install-proxy-timeout.md",
+          "quote": "pip._vendor.urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='pypi.org', port=443): Read timed out."
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "title: Agent 手动Update步骤（update Timeout Handling）"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "readtimeouterror",
+      "canonical": "timeout",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "timeout",
+        "canonical_df": 62,
+        "alias_evidence": {
+          "file": "lessons/contrib/pip-install-proxy-timeout.md",
+          "quote": "title: 'pip install ReadTimeoutError Behind Corporate Proxy: Certificate Validation and Timeout Configuration'"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "title: Agent 手动Update步骤（update Timeout Handling）"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "etimedout",
+      "canonical": "timeout",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "timeout",
+        "canonical_df": 62,
+        "alias_evidence": {
+          "file": ".github/actions/classify-failure/action.yml",
+          "quote": "\"ssl\", \"tls\", \"network\", \"dns\", \"errno\", \"etimedout\","
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "title: Agent 手动Update步骤（update Timeout Handling）"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "timed out",
+      "canonical": "timeout",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "timeout",
+        "canonical_df": 62,
+        "alias_evidence": {
+          "file": "lessons/contrib/curl-request-troubleshoot.md",
+          "quote": "| `Connection timed out` | 防火墙/网络不通 | 检查代理或换源 |"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "title: Agent 手动Update步骤（update Timeout Handling）"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "context deadline exceeded",
+      "canonical": "timeout",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "timeout",
+        "canonical_df": 62,
+        "alias_evidence": {
+          "file": "lessons/contrib/glama-mcp-server-deploy-lessons.md",
+          "quote": "Error:** `debian:trixie-slim: failed to resolve source metadata: context deadline exceeded`"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "title: Agent 手动Update步骤（update Timeout Handling）"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "enospc",
+      "canonical": "disk full",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "disk",
+        "canonical_df": 11,
+        "alias_evidence": {
+          "file": "lessons/contrib/disk-space-cleanup.md",
+          "quote": "写入文件或构建向量库时报 `No space left on device` / `ENOSPC`，hermes-hub 进程崩溃。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/disk-full-agent-tmp-gc.md",
+          "quote": "\"title\": \"Disk full from agent tmp dirs — GC pattern\","
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "no space left on device",
+      "canonical": "disk full",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "disk",
+        "canonical_df": 11,
+        "alias_evidence": {
+          "file": "lessons/contrib/disk-space-cleanup.md",
+          "quote": "写入文件或构建向量库时报 `No space left on device` / `ENOSPC`，hermes-hub 进程崩溃。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/disk-full-agent-tmp-gc.md",
+          "quote": "\"title\": \"Disk full from agent tmp dirs — GC pattern\","
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "eacces",
+      "canonical": "permission denied",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "denied",
+        "canonical_df": 6,
+        "alias_evidence": {
+          "file": "lessons/contrib/npm-eacces-permission-error-linux.md",
+          "quote": "title: npm install EACCES permission error on Linux and macOS"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/permission-denied-fix.md",
+          "quote": "title: Permission Denied / WSL NTFS 跨文件系统PermissionFix"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "certificate verify failed",
+      "canonical": "ssl certificate",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "certificate",
+        "canonical_df": 12,
+        "alias_evidence": {
+          "file": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
+          "quote": "title: Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
+          "quote": "title: Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "too many requests",
+      "canonical": "rate limit",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "rate",
+        "canonical_df": 40,
+        "alias_evidence": {
+          "file": "lessons/contrib/api-rate-limit-handling.md",
+          "quote": "调用第三方 API 时返回 HTTP 429（Too Many Requests）或 403（被限流）。自动化脚本因未处理限流而中断。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/api-rate-limit-handling-best-practices.md",
+          "quote": "title: api rate limit handling best practices"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "no module named",
+      "canonical": "modulenotfounderror",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "modulenotfounderror",
+        "canonical_df": 10,
+        "alias_evidence": {
+          "file": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
+          "quote": "AI Agent 从 fork 仓库提交 PR 后，GitHub Actions CI 频繁报 `ModuleNotFoundError: No module named 'misakanet'`，且 DCO（Signed-off-by）门禁锁死整个测试管线。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fehler-python-modul-nicht-gefunden.md",
+          "quote": "title: ModuleNotFoundError in Python trotz pip install"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "module not found",
+      "canonical": "modulenotfounderror",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "modulenotfounderror",
+        "canonical_df": 10,
+        "alias_evidence": {
+          "file": "lessons/contrib/misakanet-heal-engine-bootstrap-workflow.md",
+          "quote": "The CLI requires a non-empty log. The 4-level cascading signature extractor in `_extract_all_signatures()` (line 89) pulls **all** error signatures, n"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fehler-python-modul-nicht-gefunden.md",
+          "quote": "title: ModuleNotFoundError in Python trotz pip install"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "importerror",
+      "canonical": "modulenotfounderror",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "modulenotfounderror",
+        "canonical_df": 10,
+        "alias_evidence": {
+          "file": "lessons/import-path-verification-after-refactor.md",
+          "quote": "After refactoring Python modules (moving functions between files, renaming modules), import statements in test files and other modules become stale, c"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fehler-python-modul-nicht-gefunden.md",
+          "quote": "title: ModuleNotFoundError in Python trotz pip install"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "gbk codec",
+      "canonical": "encoding",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "encoding",
+        "canonical_df": 19,
+        "alias_evidence": {
+          "file": "lessons/contrib/aider-windows-unicode-error.md",
+          "quote": "Aider --show-repo-map crashes on Windows with UnicodeEncodeError (gbk codec) when repo contains unicode characters in file paths."
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/python-gbk-encoding-error.md",
+          "quote": "title: Python GBK Encoding Error — Windows/WSL 跨平台"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "mojibake",
+      "canonical": "encoding",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "encoding",
+        "canonical_df": 19,
+        "alias_evidence": {
+          "file": "lessons/contrib/search-ssot-data-source-pollution-fix.md",
+          "quote": "4. **Quality filter**: Add `isSearchableLesson()` to exclude garbage entries (CONTEXT COMPACTION, mojibake)"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/python-gbk-encoding-error.md",
+          "quote": "title: Python GBK Encoding Error — Windows/WSL 跨平台"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "push rejected",
+      "canonical": "git push",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "push",
+        "canonical_df": 47,
+        "alias_evidence": {
+          "file": "docs/external-pilots/roof4u-2026-09-08.md",
+          "quote": "| 10 | `CI` | `git push rejected non-fast-forward need rebase` | `hit` | Lesson: `squash-rebase-force-push-lease`, Sim: 0.5, On-Target: Yes |"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/git-push-without-shell-agent.md",
+          "quote": "title: Git Push 的正确方式 — 在受限 Agent 环境中推送代码"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "conflict marker",
+      "canonical": "merge conflict",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "conflict",
+        "canonical_df": 12,
+        "alias_evidence": {
+          "file": "lessons/en/git-merge-conflict-resolution.md",
+          "quote": "`git pull` / `git merge` / `git rebase` stops with CONFLICT. Files contain standard conflict markers. Unclear which side to keep."
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/git-merge-conflict-resolution.md",
+          "quote": "CONFLICT (content): Merge conflict in src/config.py"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "busy timeout",
+      "canonical": "lock",
+      "kind": "error-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "lock",
+        "canonical_df": 20,
+        "alias_evidence": {
+          "file": "lessons/contrib/agent-state-database-lock-cleanup.md",
+          "quote": "3. Increase SQLite busy timeout in config"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-state-database-lock-cleanup.md",
+          "quote": "title: Agent State Database Lock Issues — Cleanup Protocol"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "pip3",
+      "canonical": "pip",
+      "kind": "tool-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "pip",
+        "canonical_df": 36,
+        "alias_evidence": {
+          "file": "lessons/contrib/fehler-python-modul-nicht-gefunden.md",
+          "quote": "Or use `pip3`:"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fanuc-karel-uv-to-xyzwpr-pipeline.md",
+          "quote": "title: UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "pipx",
+      "canonical": "pip",
+      "kind": "tool-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "pip",
+        "canonical_df": 36,
+        "alias_evidence": {
+          "file": "lessons/contrib/lesson-07-uv-venv-seed-fix-no-pip.md",
+          "quote": "- For projects that prefer pipx: `pipx install <package>` works similarly but requires `pipx` to be installed first (often needs sudo on Ubuntu)."
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fanuc-karel-uv-to-xyzwpr-pipeline.md",
+          "quote": "title: UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "nodejs",
+      "canonical": "node",
+      "kind": "tool-variant",
+      "direction": "two-way",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "node",
+        "canonical_df": 59,
+        "alias_evidence": {
+          "file": "lessons/contrib/n8n-nodejs-econnreset-connection-reset-fix.md",
+          "quote": "- nodejs"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-first-node-registration-via-mcp.md",
+          "quote": "title: Agent-first node registration via MCP"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "yarn",
+      "canonical": "npm",
+      "kind": "tool-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "npm",
+        "canonical_df": 16,
+        "alias_evidence": {
+          "file": "lessons/contrib/npm-eacces-permission-error-linux.md",
+          "quote": "npm install -g yarn"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/npm-eacces-permission-error-linux.md",
+          "quote": "title: npm install EACCES permission error on Linux and macOS"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "k8s",
+      "canonical": "kubernetes",
+      "kind": "tool-variant",
+      "direction": "two-way",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "kubernetes",
+        "canonical_df": 6,
+        "alias_evidence": {
+          "file": "lessons/contrib/lesson-review-3-devops-platform-engineering.md",
+          "quote": "The \"DevOps hero\" approach — trying to master every tool (Docker, K8s, Terraform, Ansible, Jenkins, ArgoCD, Prometheus, Grafana) — leads to burnout. 8"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/kubernetes-crashloopbackoff-debugging.md",
+          "quote": "title: Tips for Debugging Kubernetes CrashLoopBackOff in a Container"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "virtualenv",
+      "canonical": "venv",
+      "kind": "tool-variant",
+      "direction": "two-way",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "venv",
+        "canonical_df": 20,
+        "alias_evidence": {
+          "file": "lessons/contrib/fehler-python-modul-nicht-gefunden.md",
+          "quote": "- virtualenv"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/lesson-07-uv-venv-seed-fix-no-pip.md",
+          "quote": "title: Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "headless chrome",
+      "canonical": "chromium",
+      "kind": "tool-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "chromium",
+        "canonical_df": 11,
+        "alias_evidence": {
+          "file": "lessons/contrib/browser-automation-csp-bypass.md",
+          "quote": "- `addScriptToEvaluateOnNewDocument` is the most reliable bypass because it runs before CSP parsing. It works in headless Chrome, Chromium, and all Pl"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium.md",
+          "quote": "title: Playwright Chromium launch fails on WSL2 with missing libnss3 / libnspr4"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "lark",
+      "canonical": "feishu",
+      "kind": "product-variant",
+      "direction": "two-way",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "feishu",
+        "canonical_df": 26,
+        "alias_evidence": {
+          "file": "lessons/contrib/feishu-block-api-false-success.md",
+          "quote": "- SDK: `lark-oapi` Python SDK v1.x"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/aily-feishu-mcp-pull-only.md",
+          "quote": "title: aily feishu mcp pull only"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "cf worker",
+      "canonical": "cloudflare worker",
+      "kind": "product-variant",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "worker",
+        "canonical_df": 23,
+        "alias_evidence": {
+          "file": "docs/agents/repo-operations.md",
+          "quote": "| \"站点没更新/新页面 404\" | 先排除**尾斜杠误判**（无尾斜杠 → 307 不是 404）；再看 commit 上有没有 `Workers Builds: misakanet-web` check-run 及其结论/Version ID。CF Workers Builds 是**异步**"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/cloudflare-worker-deploy-three-pitfalls.md",
+          "quote": "title: 'Cloudflare Worker Programmatic Deploy: Three Pitfalls — Sandbox Egress, 32KB"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "cloudflare workers",
+      "canonical": "cloudflare worker",
+      "kind": "product-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "worker",
+        "canonical_df": 23,
+        "alias_evidence": {
+          "file": "lessons/contrib/lesson-15-cloudflare-workflows-durable.md",
+          "quote": "Lambda/Cloudflare Workers 每次调用都是独立的，没有内置的状态持久化机制。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/cloudflare-worker-deploy-three-pitfalls.md",
+          "quote": "title: 'Cloudflare Worker Programmatic Deploy: Three Pitfalls — Sandbox Egress, 32KB"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "wcferry",
+      "canonical": "wechat",
+      "kind": "product-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "wechat",
+        "canonical_df": 7,
+        "alias_evidence": {
+          "file": "lessons/contrib/wcferry-wechat-version-lock.md",
+          "quote": "title: wcferry wechat version lock"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/wcferry-wechat-version-lock.md",
+          "quote": "title: wcferry wechat version lock"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "wecom",
+      "canonical": "wechat",
+      "kind": "product-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "wechat",
+        "canonical_df": 7,
+        "alias_evidence": {
+          "file": "lessons/contrib/wecom-robot-long-connect-no-ngrok.md",
+          "quote": "title: wecom robot long connect no ngrok"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/wcferry-wechat-version-lock.md",
+          "quote": "title: wcferry wechat version lock"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "fanucpy",
+      "canonical": "fanuc",
+      "kind": "product-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "fanuc",
+        "canonical_df": 48,
+        "alias_evidence": {
+          "file": "lessons/contrib/fanuc-python-interface-fanucpy.md",
+          "quote": "title: FANUC Robot Python Control via fanucpy Library"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fanuc-alarm-code-reference.md",
+          "quote": "title: FANUC Robot Alarm Code Reference Table"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "karel",
+      "canonical": "fanuc",
+      "kind": "product-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "fanuc",
+        "canonical_df": 48,
+        "alias_evidence": {
+          "file": "lessons/contrib/fanuc-karel-core-utility-modules.md",
+          "quote": "title: 'KAREL Core Utility Modules: errors, system, Strings API Reference'"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fanuc-alarm-code-reference.md",
+          "quote": "title: FANUC Robot Alarm Code Reference Table"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "ccswitch",
+      "canonical": "switch",
+      "kind": "product-variant",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "switch",
+        "canonical_df": 14,
+        "alias_evidence": {
+          "file": "lessons/contrib/hermes-model-switch-ccswitch.md",
+          "quote": "title: ccswitch-hermes-switch 踩坑Notes"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/hermes-model-switch-ccswitch.md",
+          "quote": "title: ccswitch-hermes-switch 踩坑Notes"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "dco",
+      "canonical": "signoff",
+      "kind": "abbrev",
+      "direction": "two-way",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "signoff",
+        "canonical_df": 7,
+        "alias_evidence": {
+          "file": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
+          "quote": "title: GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/dco-signoff-force-push-pitfall.md",
+          "quote": "title: DCO Signoff Lost During Force Push"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "pat",
+      "canonical": "personal access token",
+      "kind": "abbrev",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "personal",
+        "canonical_df": 7,
+        "alias_evidence": {
+          "file": "lessons/contrib/api-gateway-anthropic-incompatibility.md",
+          "quote": "title: api gateway anthropic incompatibility"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/ci-key-rotation-silent-failure.md",
+          "quote": "The personal access token (or long-lived secret) backing the automation was rotated/re-generated on the platform side. Automation was reading the old "
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "pr",
+      "canonical": "pull request",
+      "kind": "abbrev",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "pull",
+        "canonical_df": 36,
+        "alias_evidence": {
+          "file": "lessons/contrib/agent-prompt-preset-template-governance.md",
+          "quote": "title: \"Prompt Preset Governance: Schema Validation and Immutable Versioning\""
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/git-clean-branch-after-merged-pr-ru.md",
+          "quote": "title: Чистая ветка после слияния предыдущего pull request"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "gha",
+      "canonical": "github actions",
+      "kind": "abbrev",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "actions",
+        "canonical_df": 37,
+        "alias_evidence": {
+          "file": "lessons/contrib/ai-agent-project-outreach-guide.md",
+          "quote": "避坑：** 学术论文列表（如 Awesome-AI-Memory/IAAR-Shanghai、AgentMemoryWorld）只收 paper 不收工具，不要浪费 PR。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/github-actions-audit-scope-detection.md",
+          "quote": "title: 'GitHub Actions audit: scope detection for bot PRs'"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "ci",
+      "canonical": "continuous integration",
+      "kind": "abbrev",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "continuous",
+        "canonical_df": 2,
+        "alias_evidence": {
+          "file": "lessons/contrib/accidental-pycache-commit.md",
+          "quote": "title: Accidental __pycache__ artifacts committed to a data repository"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/fanuc-do-not-found-in-program-reference-position.md",
+          "quote": "Look for DO assignments in BG Logic programs that run continuously."
+        },
+        "canonical_match": "term"
+      }
+    },
+    {
+      "alias": "sse",
+      "canonical": "server sent events",
+      "kind": "abbrev",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "events",
+        "canonical_df": 9,
+        "alias_evidence": {
+          "file": "lessons/contrib/deepwiki-review-fair-hits-stale-misses-trajectory.md",
+          "quote": "title: 'DeepWiki Architecture Review: Fair Hits, Stale-Snapshot Misses, and the Right Trajectory'"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-memory-three-index-architecture.md",
+          "quote": "Agent memory systems that store everything in one bucket fail to model different lifecycles. Episodic events (high write, time-decay), semantic facts "
+        },
+        "canonical_match": "term"
+      }
+    },
+    {
+      "alias": "cdp",
+      "canonical": "devtools protocol",
+      "kind": "abbrev",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "devtools",
+        "canonical_df": 4,
+        "alias_evidence": {
+          "file": "lessons/contrib/browser-harness-cdp-browser-automation.md",
+          "quote": "title: browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/browser-automation-csp-bypass.md",
+          "quote": "Even CDP (Chrome DevTools Protocol) respects CSP for `Runtime.evaluate`."
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "rag",
+      "canonical": "retrieval",
+      "kind": "abbrev",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "retrieval",
+        "canonical_df": 21,
+        "alias_evidence": {
+          "file": "lessons/contrib/rag-alarm-code-mandatory-recall.md",
+          "quote": "title: RAG Alarm Code Retrieval Needs Mandatory Keyword Recall"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/wechat-pubacct-fetch-separate-search-from-retrieval.md",
+          "quote": "title: wechat pubacct fetch separate search from retrieval"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "llm",
+      "canonical": "language model",
+      "kind": "abbrev",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "model",
+        "canonical_df": 46,
+        "alias_evidence": {
+          "file": "lessons/contrib/aider-litellm-model-name-rejection.md",
+          "quote": "title: Aider via LiteLLM rejects standard Anthropic model names"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-roleplay-time-consistency-hallucination.md",
+          "quote": "In persistent roleplay agents, virtual companions, and multi-session narrative game loops, dialogues frequently span multiple calendar days or encount"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "tls",
+      "canonical": "ssl",
+      "kind": "abbrev",
+      "direction": "two-way",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "ssl",
+        "canonical_df": 15,
+        "alias_evidence": {
+          "file": "lessons/contrib/gfw-tls-sni-block-pattern.md",
+          "quote": "title: GFW TLS SNI Block Pattern — Why Tool-Layer Solutions Fail"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/pip-install-timeout-ssl.md",
+          "quote": "title: pip install Network Timeout / SSL ErrorFix"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "e2e",
+      "canonical": "end to end",
+      "kind": "abbrev",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "end",
+        "canonical_df": 34,
+        "alias_evidence": {
+          "file": "lessons/ci-workflow-fail-fast-matrix.md",
+          "quote": "test-group: [\"unit\", \"integration\", \"e2e\", \"smoke\", \"regression\"]"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/feishu-markdown-table-not-rendered.md",
+          "quote": "title: feishu markdown table not rendered"
+        },
+        "canonical_match": "term"
+      }
+    },
+    {
+      "alias": "env",
+      "canonical": "environment variable",
+      "kind": "abbrev",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "variable",
+        "canonical_df": 17,
+        "alias_evidence": {
+          "file": "lessons/contrib/feishu-webhook-url-env-config.md",
+          "quote": "title: feishu webhook url env config"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/aider-api-key-leak.md",
+          "quote": "Unlike environment variables (which can be restricted), command-line arguments are world-readable by default on most Unix systems. Additionally, inter"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "pyc",
+      "canonical": "pycache",
+      "kind": "abbrev",
+      "direction": "two-way",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "pycache",
+        "canonical_df": 4,
+        "alias_evidence": {
+          "file": "lessons/contrib/accidental-pycache-commit.md",
+          "quote": "title: Accidental __pycache__ artifacts committed to a data repository"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/accidental-pycache-commit.md",
+          "quote": "title: Accidental __pycache__ artifacts committed to a data repository"
+        },
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "powerhsell",
+      "canonical": "powershell",
+      "kind": "typo",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "powershell",
+        "canonical_df": 10,
+        "alias_evidence": {
+          "file": "data/quality_scores.json",
+          "quote": "\"path\": \"lessons/contrib/tts中文编码-powerhsell传参必须用txt文件.md\","
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/tts-chinese-encoding-powershell.md",
+          "quote": "title: tts chinese encoding powershell"
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "powershel",
+      "canonical": "powershell",
+      "kind": "typo",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "powershell",
+        "canonical_df": 10,
+        "alias_evidence": {
+          "file": "lessons/contrib/tts-chinese-encoding-powershell.md",
+          "quote": "title: tts chinese encoding powershell"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/tts-chinese-encoding-powershell.md",
+          "quote": "title: tts chinese encoding powershell"
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "kuberneties",
+      "canonical": "kubernetes",
+      "kind": "typo",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "kubernetes",
+        "canonical_df": 6,
+        "alias_evidence": null,
+        "canonical_evidence": {
+          "file": "lessons/contrib/kubernetes-crashloopbackoff-debugging.md",
+          "quote": "title: Tips for Debugging Kubernetes CrashLoopBackOff in a Container"
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "javascrpt",
+      "canonical": "javascript",
+      "kind": "typo",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "javascript",
+        "canonical_df": 25,
+        "alias_evidence": null,
+        "canonical_evidence": {
+          "file": "lessons/contrib/browser-automation-csp-bypass.md",
+          "quote": "title: CSP blocks JavaScript injection in browser automation of authenticated pages"
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "timout",
+      "canonical": "timeout",
+      "kind": "typo",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "timeout",
+        "canonical_df": 62,
+        "alias_evidence": {
+          "file": "tests/test_typo_tolerance.py",
+          "quote": "assert _edit_distance(\"timout\", \"timeout\") == 1"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-manual-update-timeout.md",
+          "quote": "title: Agent 手动Update步骤（update Timeout Handling）"
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "permision",
+      "canonical": "permission",
+      "kind": "typo",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "permission",
+        "canonical_df": 16,
+        "alias_evidence": null,
+        "canonical_evidence": {
+          "file": "lessons/contrib/erreur-permission-docker-linux.md",
+          "quote": "title: 'Erreur de permission Docker: permission denied sur /var/run/docker.sock'"
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "enviroment",
+      "canonical": "environment",
+      "kind": "typo",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "environment",
+        "canonical_df": 36,
+        "alias_evidence": null,
+        "canonical_evidence": {
+          "file": "lessons/contrib/macos-homebrew-python-pip-install-blocked-by-pep-668-externa.md",
+          "quote": "title: 'macOS Homebrew Python: pip install Blocked by PEP 668 externally-managed-environment'"
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "dependancy",
+      "canonical": "dependency",
+      "kind": "typo",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "dependency",
+        "canonical_df": 17,
+        "alias_evidence": null,
+        "canonical_evidence": {
+          "file": "lessons/contrib/go-toolchain-vuln-bump-wrong-arch.md",
+          "quote": "title: Go dependency vuln bump blocked by wrong-architecture toolchain download"
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "commited",
+      "canonical": "committed",
+      "kind": "typo",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "committed",
+        "canonical_df": 8,
+        "alias_evidence": null,
+        "canonical_evidence": {
+          "file": "lessons/contrib/git-checkout-discards-uncommitted-work.md",
+          "quote": "title: \"Uncommitted work has no undo: `git checkout -- .` and reset --hard during branch juggling\""
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "paramter",
+      "canonical": "parameter",
+      "kind": "typo",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "parameter",
+        "canonical_df": 15,
+        "alias_evidence": null,
+        "canonical_evidence": {
+          "file": "lessons/contrib/aider-api-key-leak.md",
+          "quote": "title: Aider CLI --api-key parameter leaks API key to history files"
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "certficate",
+      "canonical": "certificate",
+      "kind": "typo",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "certificate",
+        "canonical_df": 12,
+        "alias_evidence": null,
+        "canonical_evidence": {
+          "file": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
+          "quote": "title: Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails"
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "configuraton",
+      "canonical": "configuration",
+      "kind": "typo",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "configuration",
+        "canonical_df": 35,
+        "alias_evidence": null,
+        "canonical_evidence": {
+          "file": "lessons/contrib/fanuc-dcs-safety-configuration.md",
+          "quote": "title: FANUC DCS Safety System — Configuration and Stop Modes"
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "authetication",
+      "canonical": "authentication",
+      "kind": "typo",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "authentication",
+        "canonical_df": 13,
+        "alias_evidence": null,
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-reach-multi-platform-scraper.md",
+          "quote": "AI agents need to read/search across multiple internet platforms (Twitter, Reddit, YouTube, Bilibili, etc.) but each has its own authentication, anti-"
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "respository",
+      "canonical": "repository",
+      "kind": "typo",
+      "justification": {
+        "scope": "repo",
+        "canonical_term": "repository",
+        "canonical_df": 27,
+        "alias_evidence": null,
+        "canonical_evidence": {
+          "file": "lessons/contrib/repository-traffic-is-not-lesson-use.md",
+          "quote": "title: Repository Traffic Is Not Lesson Use"
+        },
+        "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
+        "canonical_match": "phrase"
+      }
+    }
+  ],
+  "notes": {
+    "why": "用户拿自然语言中文提问时，Worker 的 bm25Tokenize 会把 CJK 整体丢掉（[^a-z0-9]+ 全变空格），查询词数变成 0，searchLessonsBM25 直接 return []；本地 BM25 虽然按单字切分，但单字是高 df 噪声，top-1 基本靠运气。",
+    "how_to_review": "改动本文件后跑 python3 scripts/expand_query.py --check（会逐条验证 evidence 的文件存在且引文可命中），再跑 python3 scripts/eval_query_aliases.py 看 top-1/top-3 是否退化。",
+    "growth_rule": "只加能被 grep 到的映射。宁可少而准：一条错的别名会同时污染所有包含该词的查询，而缺一条只是少一次召回。"
+  }
+}
