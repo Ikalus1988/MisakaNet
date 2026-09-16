@@ -1,7 +1,7 @@
 [
   {
     "login": "zsxh1990",
-    "score": 99.51
+    "score": 99.49
   },
   {
     "login": "github-actions[bot]",
@@ -37,7 +37,7 @@
   },
   {
     "login": "ghzhost",
-    "score": 1.59
+    "score": 1.58
   },
   {
     "login": "tomasbogado203-bit",
@@ -102,9 +102,5 @@
   {
     "login": "noreply",
     "score": 0.22
-  },
-  {
-    "login": "jamboriu",
-    "score": 0.21
   }
 ]
