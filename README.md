@@ -23,7 +23,8 @@ mcp-name: io.github.Ikalus1988/misakanet
 npx @misaka-net/misakanet-setup
 ```
 
-装完**把助手窗口关掉再打开一次**，然后随便问一句带报错的（例如「pip install timeout 是什么原因」），
+装完**把助手窗口关掉再打开一次**，然后随便挑一句带报错原文的片段问它（例如「switch vision model」
+「context window exceeded」「tool call permission denied」——用错误原文里最独特的片段，别用整句自然语言），
 它应该先去查经验库再回答。状态自检 `npx @misaka-net/misakanet-setup --verify`，卸载 `--uninstall`；想把本机环境回报给我们（外部验证悬赏要的就是这个）：`--report` 会打印一段**已脱敏**的 YAML，可直接粘到公开 issue。
 （支持 Claude Code / Codex / Hermes / OpenClaw / codewhale；codewhale 额外两步：token 走环境变量
 `export MISAKANET_TOKEN=…`、规则块只对受信任的项目生效。想让命中/未命中时**出声**：加 `--voice`
@@ -48,7 +49,7 @@ setup 保证的是"工具确实在"和"该查的时刻更容易被抓住"，不�
 
 1. **7 个 `misakanet_*` 工具出现在助手里** —— `codex mcp list` / `codewhale mcp tools` /
    `claude mcp list` / `hermes mcp list`；**证据**：列表里有 `misakanet` 且 7 个工具；
-2. **助手被要求「遇错先查」** —— 问一句「pip install timeout 是什么原因」，它应该先说查过经验库；
+2. **助手被要求「遇错先查」** —— 问一句「switch vision model」「context window exceeded」这类片段，它应该先说查过经验库；
    **证据**：事件流里出现 `misakanet_search`（claude/codewhale 用 `--output-format stream-json`，codex 用 `--json`）；
 3. **长会话会提醒沉淀** —— 约 20 轮后提醒把本次「失败 → 根因 → 修复 → 验证」变成一条课程
    （Claude Code 有真钩子；**Codex 没有用户级钩子**，靠规则）；
@@ -153,7 +154,7 @@ No GitHub account. No email. No Bearer token. No browser. Just curl.
 ```bash
 git clone https://github.com/Ikalus1988/MisakaNet.git && cd MisakaNet
 python3 scripts/mcp_server.py
-# Add to your MCP config, then ask: "Search MisakaNet for pip install timeout"
+# Add to your MCP config, then ask: "Search MisakaNet for tool call permission denied"
 ```
 
 **Option 3 — PyPI (pip install):**
