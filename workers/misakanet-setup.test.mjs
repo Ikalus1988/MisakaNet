@@ -1062,3 +1062,81 @@ test('a second run does not duplicate the grants, and uninstall removes them', (
     `uninstall must drop our grants: ${JSON.stringify(after)}`);
   assert.ok(after.includes('Bash'), "the user's own entries must stay");
 });
+
+// ── findings from the open-code-review scan of this installer (2026-09-16) ────
+test('the first backup is never overwritten by a later run', () => {
+  // Keep-the-first semantics: after a regression the user re-runs the installer, and that second
+  // run used to overwrite the only known-good copy of their config.
+  const home = makeHome();
+  const bak = join(home, '.claude', 'CLAUDE.md.misakanet.bak');
+  mkdirSync(join(home, '.claude'), { recursive: true });
+  writeFileSync(bak, 'SENTINEL: the user\'s original config\n');
+  writeFileSync(join(home, '.claude', 'CLAUDE.md'), 'user rules\n');
+
+  const first = runOffline(home);
+  assert.equal(first.status, 0, first.stdout + first.stderr);
+  assert.match(readFileSync(bak, 'utf8'), /SENTINEL/, 'the pre-existing backup must survive run 1');
+
+  const second = runOffline(home);
+  assert.equal(second.status, 0, second.stdout + second.stderr);
+  assert.match(readFileSync(bak, 'utf8'), /SENTINEL/, 'and run 2 must not clobber it either');
+});
+
+test('a config whose keys are reordered is not rewritten', () => {
+  // `JSON.stringify(a) === JSON.stringify(b)` is key-order-sensitive, so an editor that reordered
+  // keys made the installer rewrite an unchanged file and take a pointless backup.
+  const home = makeHome();
+  const cfg = join(home, '.claude.json');
+  const seeded = `{"mcpServers":{"existing":{"type":"http","url":"https://x"},"misakanet":{"url":"https://misakanet.org/mcp","type":"http"}}}`;
+  writeFileSync(cfg, seeded);
+
+  const result = runOffline(home);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal(readFileSync(cfg, 'utf8'), seeded,
+    'same fields in another key order must count as "no change"');
+});
+
+test('the Hermes token file is not world-readable', { skip: process.platform === 'win32' }, async () => {
+  const { createServer } = await import('node:http');
+  const { statSync } = await import('node:fs');
+  const server = createServer((req, res) => {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', () => {
+      const payload = JSON.parse(body || '{}');
+      const result = payload.params?.name === 'misakanet_register'
+        ? { node_id: 'MisakaTEST', token: TOKEN_SHAPE_OK }
+        : { tools: [{ name: 'misakanet_search' }] };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
+        content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } }));
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}/mcp`;
+  try {
+    const home = makeHome();
+    mkdirSync(join(home, '.hermes'), { recursive: true });
+    writeFileSync(join(home, '.hermes', 'config.yaml'), 'model:\n  default: MiniMax-M3\n');
+    const install = await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url });
+    assert.equal(install.status, 0, install.stdout + install.stderr);
+
+    const envPath = join(home, '.hermes', '.env');
+    assert.ok(existsSync(envPath), 'the token should reach the Hermes env file');
+    assert.match(readFileSync(envPath, 'utf8'), /MCP_MISAKANET_API_KEY/);
+    assert.equal(statSync(envPath).mode & 0o777, 0o600,
+      'the standalone token file is 600; the copy pasted into .env must not be world-readable');
+  } finally {
+    server.close();
+  }
+});
+
+test('verify names the reason the endpoint probe failed', () => {
+  // Returning bare {} made a timeout, a TLS failure and an empty result identical, so the user was
+  // told "endpoint unreachable" whatever actually happened.
+  const home = makeHome();
+  const result = run(home, '--verify');
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /端点不可达/);
+  assert.match(result.stdout, /最近一次失败原因/, 'the failure reason must reach the user');
+});
