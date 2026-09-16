@@ -220,3 +220,41 @@ def test_cli_fails_on_a_placeholder_source(tmp_path, capsys):
     code = cp.main(["--check", "--offline", str(bad)])
     out = capsys.readouterr().out
     assert code == 1 and "placeholder" in out
+
+
+# ── JSON-style frontmatter (64 lessons use it) ────────────────────────────────
+JSON_LESSON = """---
+{
+  "title": "Probe",
+  "domain": "devops",
+  "status": "published",
+  "evidence_level": "E3",
+  "source": "https://github.com/modelcontextprotocol/mcp-memory-service/issues/1652"
+}
+---
+
+## Problem
+
+body
+"""
+
+
+def test_quoted_keys_in_json_frontmatter_are_read(tmp_path):
+    """A fabricated source hidden in a JSON block must not be invisible to the gate.
+
+    Sixty-four lessons use JSON-style frontmatter. The first regex only matched unquoted
+    `key:` lines, so `"source": "https://…"` produced no citation at all — the gate reported
+    nothing while the file cited whatever it liked. The red-team probe caught it.
+    """
+    path = lesson(tmp_path, JSON_LESSON, name="json-lesson.md")
+    rows = cp.scan([path], fetcher=lambda u, token="": (404, ""))
+    assert [r["url"] for r in rows] == ["https://github.com/modelcontextprotocol/mcp-memory-service/issues/1652"]
+    assert rows[0]["status"] == "dead"
+    failures, _ = cp.evaluate(rows, {"known_dead": [], "exempt_urls": []}, set())
+    assert len(failures) == 1
+
+
+def test_evidence_level_is_read_from_json_frontmatter():
+    """JSON keys are indented, so the level regex has to tolerate leading whitespace."""
+    assert cp.evidence_level('  "evidence_level": "E3",\n  "source": "x"\n') == "E3"
+    assert cp.evidence_level('{"title": "t"}\n  "evidence_level": E2\n') == "E2"
