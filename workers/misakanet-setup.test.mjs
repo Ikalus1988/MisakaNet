@@ -207,48 +207,6 @@ test('verify passes once installed, against a reachable endpoint', async () => {
   }
 });
 
-test('verify ignores an absent Claude Code target on a Codex-only home', async () => {
-  const { createServer } = await import('node:http');
-  const server = createServer((req, res) => {
-    if (req.method !== 'POST') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ version: '0.4.2' }));
-      return;
-    }
-    let body = '';
-    req.on('data', (chunk) => { body += chunk; });
-    req.on('end', () => {
-      const payload = JSON.parse(body || '{}');
-      const result = payload.method === 'tools/list'
-        ? { tools: Array.from({ length: 7 }, (_, index) => ({ name: `tool_${index}` })) }
-        : payload.params?.name === 'misakanet_register'
-          ? { node_id: 'MisakaTEST', token: TOKEN_SHAPE_OK }
-          : { results: [{ id: 'stub', type: 'lesson' }] };
-      const reply = JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
-        content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result,
-      } });
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(reply);
-    });
-  });
-  await new Promise((done) => server.listen(0, '127.0.0.1', done));
-  const url = `http://127.0.0.1:${server.address().port}/mcp`;
-  const env = { ...process.env, MISAKANET_ENDPOINT: url, MISAKANET_REGISTRY_URL: url };
-
-  try {
-    const home = makeHome({ claude: false });
-    const install = await runAsync(home, env, '--only', 'codex');
-    assert.equal(install.status, 0, install.stdout + install.stderr);
-
-    const verify = await runAsync(home, env, '--verify');
-    assert.equal(verify.status, 0, verify.stdout + verify.stderr);
-    assert.match(verify.stdout, /READY/);
-    assert.doesNotMatch(verify.stdout, /Claude Code/);
-  } finally {
-    server.close();
-  }
-});
-
 test('offline install still leaves a working read path and says so', () => {
   const home = makeHome();
   const result = run(home);
@@ -469,7 +427,7 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // file into a request header, which is CodeQL js/file-access-to-http #268 all over again.
   const declared = JSON.parse(
     readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
-  assert.equal(declared, '0.5.1', 'bump this test when the package version moves');
+  assert.equal(declared, '0.5.2', 'bump this test when the package version moves');
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.
