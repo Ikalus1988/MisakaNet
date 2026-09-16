@@ -1,7 +1,7 @@
 [
   {
     "login": "zsxh1990",
-    "score": 100.2
+    "score": 100.13
   },
   {
     "login": "github-actions[bot]",
@@ -28,10 +28,6 @@
     "score": 1.81
   },
   {
-    "login": "yunaremaia",
-    "score": 1.74
-  },
-  {
     "login": "techlogiadg-spec",
     "score": 1.65
   },
@@ -42,6 +38,10 @@
   {
     "login": "ghzhost",
     "score": 1.59
+  },
+  {
+    "login": "yunaremaia",
+    "score": 1.53
   },
   {
     "login": "tomasbogado203-bit",

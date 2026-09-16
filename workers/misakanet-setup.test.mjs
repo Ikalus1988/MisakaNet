@@ -427,7 +427,7 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // file into a request header, which is CodeQL js/file-access-to-http #268 all over again.
   const declared = JSON.parse(
     readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
-  assert.equal(declared, '0.4.2', 'bump this test when the package version moves');
+  assert.equal(declared, '0.5.0', 'bump this test when the package version moves');
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.
@@ -906,4 +906,43 @@ test('uninstall removes the codewhale registration and rules block', () => {
   assert.equal(removed.status, 0, removed.stderr);
   const mcp = JSON.parse(readFileSync(join(home, '.codewhale', 'mcp.json'), 'utf8'));
   assert.equal(mcp.servers.misakanet, undefined);
+});
+
+// ── the voice hook is opt-in (and needs a matcher to fire at all) ─────────────
+// Two things were measured on a real machine rather than assumed (2026-09-16):
+//  * a PostToolUse entry **without** `matcher` never fired, while `matcher: '*'` did — so the
+//    installer must write the matcher, or it ships a hook that silently never runs;
+//  * the host passes the MCP result as `tool_response`, and for MCP tools that value is a JSON
+//    *string* — hence the player parses nested JSON (covered in agent-autostart-hook.test.mjs).
+test('the voice hook is off by default and switched on with --voice', () => {
+  const home = makeHome();
+  const off = runOffline(home);
+  assert.equal(off.status, 0, off.stderr);
+  const settingsOff = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8'));
+  assert.equal(settingsOff.hooks.PostToolUse, undefined, 'default install must stay silent');
+  assert.match(off.stdout, /语音钩子：未开启/, off.stdout);
+
+  const on = runOffline(home, '--voice');
+  assert.equal(on.status, 0, on.stderr);
+  const settings = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8'));
+  const entry = (settings.hooks.PostToolUse || []).find((e) => JSON.stringify(e).includes('voice-hook'));
+  assert.ok(entry, `PostToolUse missing the voice hook: ${JSON.stringify(settings.hooks)}`);
+  assert.equal(entry.matcher, '*', 'without a matcher the host never fires the hook');
+  assert.ok(existsSync(join(home, '.misakanet-agent', 'voice', 'voice-hook.mjs')),
+    'the player must be copied into the state dir (an npx cache is not a home for a hook)');
+  const cues = readdirSync(join(home, '.misakanet-agent', 'voice')).filter((f) => f.endsWith('.mp3'));
+  assert.ok(cues.length >= 4, `expected the cues to be copied, got ${cues.join(',')}`);
+});
+
+test('uninstall removes the voice hook entry and its files', () => {
+  const home = makeHome();
+  runOffline(home, '--voice');
+  assert.ok(existsSync(join(home, '.misakanet-agent', 'voice')));
+
+  const removed = runOffline(home, '--uninstall');
+  assert.equal(removed.status, 0, removed.stderr);
+  const settings = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8'));
+  const leftovers = JSON.stringify(settings.hooks.PostToolUse || []);
+  assert.ok(!leftovers.includes('voice-hook'), leftovers);
+  assert.ok(!existsSync(join(home, '.misakanet-agent', 'voice')), 'the player and cues must go too');
 });

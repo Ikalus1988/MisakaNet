@@ -26,7 +26,8 @@ npx @misaka-net/misakanet-setup
 装完**把助手窗口关掉再打开一次**，然后随便问一句带报错的（例如「pip install timeout 是什么原因」），
 它应该先去查经验库再回答。状态自检 `npx @misaka-net/misakanet-setup --verify`，卸载 `--uninstall`。
 （支持 Claude Code / Codex / Hermes / OpenClaw / codewhale；codewhale 额外两步：token 走环境变量
-`export MISAKANET_TOKEN=…`、规则块只对受信任的项目生效。）
+`export MISAKANET_TOKEN=…`、规则块只对受信任的项目生效。想让命中/未命中时**出声**：加 `--voice`
+（默认关，静音 `MISAKANET_VOICE=0`）。）
 
 ### 三层结构：能力 / 接入 / 触发（读一遍就懂它到底做了什么）
 
