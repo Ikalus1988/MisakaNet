@@ -427,7 +427,7 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // file into a request header, which is CodeQL js/file-access-to-http #268 all over again.
   const declared = JSON.parse(
     readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
-  assert.equal(declared, '0.5.2', 'bump this test when the package version moves');
+  assert.equal(declared, '0.5.3', 'bump this test when the package version moves');
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.
@@ -1012,4 +1012,53 @@ test('--report leaks neither the token nor the home path', () => {
   assert.ok(!result.stdout.includes(home), `the home path must not appear: ${result.stdout}`);
   assert.ok(!/Bearer [A-Za-z0-9_.-]{8,}/.test(result.stdout), result.stdout);
   assert.equal(reportLines(result.stdout).token, 'present', 'presence is reported, not the value');
+});
+
+// ── pre-allowed read tools: the first search must not be denied ───────────────
+// Reported from a macOS field test and reproduced here: with only the built-in tools allowed,
+// Claude Code answers the first `misakanet_search` with "you haven't granted it yet", and the new
+// user's first experience of the product is a permission refusal. The installer now grants the
+// read-only tools (search/get_lesson/me_events/preflight/submit_intake) and deliberately not
+// write_lesson, which is the Bearer-gated authoring path.
+test('the installer pre-allows the read-only MCP tools, and only those', () => {
+  const home = makeHome();
+  // The fixture gets the shape a real user has (the macOS field report showed exactly this:
+  // defaultMode + a hand-kept list of built-ins), so "merge, never overwrite" is actually tested.
+  const seeded = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8'));
+  seeded.permissions = { defaultMode: 'acceptEdits', allow: ['Bash', 'Read'] };
+  writeFileSync(join(home, '.claude', 'settings.json'), JSON.stringify(seeded));
+  const result = runOffline(home);
+  assert.equal(result.status, 0, result.stderr);
+
+  const settings = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8'));
+  const allow = settings.permissions.allow;
+  for (const tool of ['mcp__misakanet__misakanet_search', 'mcp__misakanet__misakanet_get_lesson',
+    'mcp__misakanet__misakanet_me_events', 'mcp__misakanet__misakanet_preflight',
+    'mcp__misakanet__misakanet_submit_intake']) {
+    assert.ok(allow.includes(tool), `${tool} must be allowed: ${JSON.stringify(allow)}`);
+  }
+  assert.ok(!allow.includes('mcp__misakanet__misakanet_write_lesson'),
+    'a tool that writes must still ask');
+  assert.ok(allow.includes('Bash') && allow.includes('Read'),
+    `the user's own allow-list must survive: ${JSON.stringify(allow)}`);
+  const after = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8'));
+  assert.equal(after.permissions.defaultMode, 'acceptEdits', 'the user permission mode must survive');
+});
+
+test('a second run does not duplicate the grants, and uninstall removes them', () => {
+  const home = makeHome();
+  const seeded = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8'));
+  seeded.permissions = { allow: ['Bash'] };
+  writeFileSync(join(home, '.claude', 'settings.json'), JSON.stringify(seeded));
+  runOffline(home);
+  const first = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8')).permissions.allow;
+  runOffline(home);
+  const second = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8')).permissions.allow;
+  assert.deepEqual(second, first, 're-running must not append duplicates');
+
+  runOffline(home, '--uninstall');
+  const after = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8')).permissions.allow;
+  assert.ok(!after.some((tool) => tool.startsWith('mcp__misakanet__')),
+    `uninstall must drop our grants: ${JSON.stringify(after)}`);
+  assert.ok(after.includes('Bash'), "the user's own entries must stay");
 });
