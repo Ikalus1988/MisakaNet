@@ -258,3 +258,59 @@ def test_evidence_level_is_read_from_json_frontmatter():
     """JSON keys are indented, so the level regex has to tolerate leading whitespace."""
     assert cp.evidence_level('  "evidence_level": "E3",\n  "source": "x"\n') == "E3"
     assert cp.evidence_level('{"title": "t"}\n  "evidence_level": E2\n') == "E2"
+
+
+# ── minified JSON frontmatter: a source must not be hideable by removing newlines ──
+def test_minified_json_frontmatter_citations_are_found(tmp_path):
+    """Two lessons already use single-line JSON frontmatter; minifying must not hide a source."""
+    fm = '{"title":"t","domain":"devops","evidence_level":"E3","source":"https://github.com/mcp-memory/issues/1"}'
+    assert cp.citations(fm) == ["https://github.com/mcp-memory/issues/1"]
+    assert cp.evidence_level(fm) == "E3"
+
+
+def test_json_frontmatter_ignores_urls_outside_citation_keys():
+    fm = '{"title":"t","homepage":"https://example.com","tags":["https://example.com/tag"]}'
+    assert cp.citations(fm) == []
+
+
+def test_a_dead_link_in_minified_json_fails(tmp_path):
+    path = lesson(tmp_path,
+                  '---\n{"title":"t","source":"https://github.com/mcp-memory/issues/1"}\n---\n\n## Problem\n\nbody\n',
+                  name="min.json.md")
+    rows = cp.scan([path], fetcher=lambda u, token="": (404, ""))
+    failures, _ = cp.evaluate(rows, {"known_dead": [], "exempt_urls": []}, set())
+    assert len(failures) == 1
+
+
+def test_block_scalar_and_list_parent_keys(tmp_path):
+    """Quote-less block scalars and non-citation lists both have to be handled (scan 14/15)."""
+    assert cp.citations("source: |\n  https://github.com/a/b/issues/1\n") == \
+        ["https://github.com/a/b/issues/1"]
+    assert cp.citations("tags:\n  - \"https://not-a-source.example/x\"\n") == []
+
+
+# ── SSRF and credential-leak guards (open-code-review findings 11-13) ──────────
+@pytest.mark.parametrize("url", [
+    "http://169.254.169.254/latest/meta-data/",
+    "http://100.64.0.1/x",
+    "http://0.0.0.0:8080/x",
+    "http://[::1]/x",
+    "http://[fe80::1]:80/x",
+    "http://[fc00::1]/x",
+])
+def test_non_public_addresses_are_never_fetched(url):
+    assert cp.classify(url) == "exempt", "CI must not request cloud metadata / CGNAT / IPv6 locals"
+
+
+def test_the_ci_token_is_only_sent_to_the_github_api():
+    assert cp.auth_headers("https://api.github.com/repos/a/b", "tok") == {"Authorization": "Bearer tok"}
+    assert cp.auth_headers("https://github.com/a/b", "tok") == {}
+    assert cp.auth_headers("https://attacker.example/x", "tok") == {}
+
+
+def test_redirects_into_non_public_addresses_are_refused():
+    import urllib.error
+    handler = cp._PublicRedirectsOnly()
+    with pytest.raises(urllib.error.HTTPError):
+        handler.redirect_request(None, None, 302, "Found", {},
+                                 "http://169.254.169.254/latest/meta-data/")

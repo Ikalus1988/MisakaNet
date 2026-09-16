@@ -762,3 +762,23 @@ def test_uninstall_gives_back_the_read_tool_grants(tmp_path):
     assert result.returncode == 0, result.stderr
     after = json.loads(settings_path.read_text(encoding="utf-8"))["permissions"]["allow"]
     assert after == ["Bash"], f"uninstall must restore the user's own list, got {after}"
+
+
+def test_a_non_list_permissions_allow_does_not_break_the_install(tmp_path):
+    """`"allow": "all"` used to raise AttributeError after the MCP entry was already written.
+
+    Found by an open-code-review scan of the installer (2026-09-16). Nothing about the user's own
+    value may be lost, and the run must finish so no half-configured state is left behind.
+    """
+    home = make_home(tmp_path)
+    settings_path = home / ".claude" / "settings.json"
+    settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    settings["permissions"] = {"allow": "all"}
+    settings_path.write_text(json.dumps(settings), encoding="utf-8")
+
+    result = run_installer(home)
+    assert result.returncode == 0, result.stderr
+    allow = json.loads(settings_path.read_text(encoding="utf-8"))["permissions"]["allow"]
+    assert isinstance(allow, list), allow
+    assert allow[0] == "all", f"the user's own value must survive: {allow}"
+    assert "mcp__misakanet__misakanet_search" in allow, allow
