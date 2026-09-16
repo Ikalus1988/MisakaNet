@@ -466,7 +466,17 @@ async function installClaude(hookPath, bearer) {
           need('语音钩子：找到了播放器但没有找到音频文件 → 重装一次 npx 包即可（其它功能不受影响）');
         }
       }
-      const post = settings.hooks.PostToolUse || [];
+      let post = settings.hooks.PostToolUse || [];
+      // Upgrade path: 0.4.2 shipped this entry *without* a matcher, which never fires. Treat a
+      // matcher-less entry of ours as stale rather than "already installed", or re-running the
+      // installer would leave a hook that stays silent forever (the exact failure this release
+      // is about).
+      const stale = post.filter((e) => JSON.stringify(e).includes('voice-hook') && e.matcher !== '*');
+      if (stale.length) {
+        post = post.filter((e) => !stale.includes(e));
+        settings.hooks.PostToolUse = post;
+        changed = true;
+      }
       if (!JSON.stringify(post).includes('voice-hook')) {
         // `matcher: '*'` is load-bearing, not cosmetic: measured on 2026-09-16, a PostToolUse
         // entry **without** a matcher never fired in this host, while the same command with
