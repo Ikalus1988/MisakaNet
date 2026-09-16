@@ -9,7 +9,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -177,4 +177,59 @@ test('the interval is configurable, and upgrading resets the clock', () => {
   const reset = runHook({ session_id: 's' }, 'prompt',
     { MISAKANET_AGENT_DIR: fresh, MISAKANET_UPDATE_AFTER_DAYS: '1' }).stdout;
   assert.doesNotMatch(reset, /距上次确认/, reset);
+});
+
+// ── voice hook (opt-in `--voice`) ─────────────────────────────────────────────
+// The cue arrives from the server as a `voice` field and has to survive two nests that were
+// both observed with a real Claude Code session on 2026-09-16: the MCP result sits under
+// `tool_response`, and for an MCP tool that value is a JSON *string* (the whole response is
+// escaped inside it). The first version of the hook only walked objects and therefore stayed
+// silent even when the server had sent the cue.
+const VOICE_HOOK = resolve(import.meta.dirname, '..', 'integrations', 'agent-autostart', 'voice_hook.mjs');
+
+function voiceDir() {
+  const dir = mkdtempSync(join(tmpdir(), 'mn-voice-'));
+  for (const cue of ['lesson-found', 'failure-warning', 'connect-success', 'pair-success']) {
+    writeFileSync(join(dir, `${cue}.mp3`), 'not really audio');
+  }
+  return dir;
+}
+
+function runVoice(payload, env = {}) {
+  const dir = voiceDir();
+  const result = spawnSync(process.execPath, [VOICE_HOOK], {
+    input: typeof payload === 'string' ? payload : JSON.stringify(payload),
+    encoding: 'utf8',
+    env: { ...process.env, MISAKANET_VOICE_DRY_RUN: '1', MISAKANET_VOICE_DIR: dir, ...env },
+  });
+  rmSync(dir, { recursive: true, force: true });
+  return result;
+}
+
+test('a flat voice field plays its cue', () => {
+  assert.equal(runVoice({ voice: 'lesson-found' }).stdout.trim(), 'lesson-found');
+});
+
+test('the cue survives tool_response and an escaped JSON string', () => {
+  const inner = JSON.stringify({ results: [{ id: 'x' }], voice: 'failure-warning' });
+  const payload = { hook_event_name: 'PostToolUse', tool_name: 'mcp__misakanet__misakanet_search', tool_response: inner };
+  assert.equal(runVoice(payload).stdout.trim(), 'failure-warning');
+});
+
+test('an unknown cue is ignored, and the hook always exits 0', () => {
+  const result = runVoice({ voice: 'not-a-cue' });
+  assert.equal(result.stdout.trim(), '');
+  assert.equal(result.status, 0);
+});
+
+test('MISAKANET_VOICE=0 mutes an installed hook', () => {
+  const result = runVoice({ voice: 'lesson-found' }, { MISAKANET_VOICE: '0' });
+  assert.equal(result.stdout.trim(), '');
+  assert.equal(result.status, 0);
+});
+
+test('unparsable stdin is not an error', () => {
+  const result = runVoice('not json at all');
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout.trim(), '');
 });
