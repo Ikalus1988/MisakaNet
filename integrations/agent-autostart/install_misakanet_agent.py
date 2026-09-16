@@ -57,7 +57,7 @@ HOOK_FILE_MJS = HERE / "checkpoint_reminder.mjs"  # the Node implementation (pre
 
 # The agents this knows how to configure. `detect` is a path that only exists when the
 # agent is actually installed here; everything else hangs off HOME.
-AGENTS = ("claude", "codex", "hermes", "openclaw", "dsh")
+AGENTS = ("claude", "codex", "hermes", "openclaw", "codewhale", "dsh")
 
 
 def _force_utf8_io() -> None:
@@ -236,6 +236,7 @@ def detect(home: Path, agent: str) -> bool:
         "codex": [home / ".codex"],
         "hermes": [home / ".hermes"],
         "openclaw": [home / ".openclaw"],
+        "codewhale": [home / ".codewhale"],
         "dsh": [home / ".dsh", home / ".agents"],
     }
     return any(p.exists() for p in checks[agent])
@@ -408,6 +409,75 @@ def install_codex(home: Path, dry: bool, rep: Report) -> None:
     rep.needs_manual(
         "Codex: 没有用户级 lifecycle hook → 检查点靠规则块里的「约 20 轮」自律触发；"
         "要硬保证就配外层 wrapper 在每轮后跑 checkpoint_reminder.py")
+
+
+def codewhale_projects(home: Path) -> list[Path]:
+    """Trusted project directories, read from codewhale's own config.toml.
+
+    codewhale reads a workspace ``AGENTS.md`` only for a *trusted* project, and it has no
+    user-level rules file we could confirm on 0.9.7 — so the block goes into the directories
+    the user actually works in. The parse is deliberately tiny: ``[projects."<dir>"]``
+    followed by ``trust_level = "trusted"``.
+    """
+    cfg = home / ".codewhale" / "config.toml"
+    try:
+        text = cfg.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    out: list[Path] = []
+    current = None
+    for line in text.splitlines():
+        header = re.match(r'^\s*\[projects\.(.+?)\]\s*$', line)
+        if header:
+            current = header.group(1).strip().strip('"')
+            continue
+        if re.match(r'^\s*\[', line):
+            current = None
+            continue
+        if current and re.match(r'^\s*trust_level\s*=\s*"trusted"', line):
+            out.append(Path(current))
+    return out
+
+
+def install_codewhale(home: Path, dry: bool, rep: Report) -> None:
+    """codewhale: MCP in `~/.codewhale/mcp.json`, rules in its trusted project dirs.
+
+    Written file-to-file like the other targets (no subprocess), and the token is the one
+    thing codewhale will not take inline: ``bearer_token_env_var`` names an environment
+    variable, so this target ends with one action for the user rather than pretending to be
+    fully automatic.
+    """
+    cfg = home / ".codewhale" / "mcp.json"
+    try:
+        data = json.loads(cfg.read_text(encoding="utf-8"))
+    except Exception:
+        data = {"timeouts": {"connect_timeout": 10, "execute_timeout": 60, "read_timeout": 120},
+                "servers": {}}
+    servers = data.setdefault("servers", {})
+    entry = {
+        "command": None, "args": [], "env": {}, "url": ENDPOINT,
+        "connect_timeout": None, "execute_timeout": None, "read_timeout": None,
+        "disabled": False, "enabled": True, "required": False,
+        "enabled_tools": [], "disabled_tools": [],
+        "bearer_token_env_var": "MISAKANET_TOKEN",
+    }
+    if servers.get("misakanet") == entry:
+        rep.ok("codewhale: MCP 已注册（无改动）")
+    else:
+        servers["misakanet"] = entry
+        backup(cfg, dry)
+        write_text(cfg, json.dumps(data, indent=2, ensure_ascii=False) + "\n", dry)
+        rep.ok(f"codewhale: {'会写入 MCP 条目' if dry else '注册 MCP（streamable-http）'} → {cfg}")
+
+    projects = [d for d in codewhale_projects(home) if d.is_dir()]
+    for project in projects:
+        status = inject_block(project / "AGENTS.md", prompt_block(), dry)
+        rep.ok(f"codewhale: 规则块 {status} → {project / 'AGENTS.md'}")
+    if not projects:
+        rep.needs_manual("codewhale: 没有受信任的项目目录（config.toml 里没有 trust_level = \"trusted\"）"
+                         "→ 先在 codewhale 里打开并信任一次你的项目，再运行本命令")
+    rep.needs_manual("codewhale: token 只能通过环境变量给 → 在 shell 配置里加 "
+                     "`export MISAKANET_TOKEN=<你的 token>`，否则工具会连不上")
 
 
 def install_hermes(home: Path, dry: bool, rep: Report) -> None:
@@ -673,6 +743,9 @@ def verify(home: Path, endpoint: str, rep: Report) -> bool:
                 rep.needs_manual(f"{agent}: 检查点钩子 ✗ 缺失")
         rules = {"codex": home / ".codex" / "AGENTS.md", "hermes": home / ".hermes" / "SOUL.md",
                  "dsh": home / ".agents" / "skills" / "misakanet" / "SKILL.md"}.get(agent)
+        if agent == "codewhale":
+            whale_dirs = [d for d in codewhale_projects(home) if d.is_dir()]
+            rules = (whale_dirs[0] / "AGENTS.md") if whale_dirs else None
         if rules is not None:
             present = rules.exists() and "misakanet" in rules.read_text(encoding="utf-8")
             ok &= present
@@ -783,12 +856,14 @@ INSTALLERS = {
     "codex": install_codex,
     "hermes": install_hermes,
     "openclaw": install_openclaw,
+    "codewhale": install_codewhale,
     "dsh": install_dsh,
 }
 
 
 def uninstall(home: Path, dry: bool, rep: Report) -> None:
     targets = [
+        *[d / "AGENTS.md" for d in codewhale_projects(home) if d.is_dir()],
         home / ".claude" / "CLAUDE.md",
         home / ".codex" / "AGENTS.md",
         home / ".hermes" / "SOUL.md",
@@ -802,6 +877,16 @@ def uninstall(home: Path, dry: bool, rep: Report) -> None:
             if not dry:
                 path.unlink()
             rep.ok(f"删除只剩空白的规则文件 → {path}")
+    whale_cfg = home / ".codewhale" / "mcp.json"
+    if whale_cfg.exists():
+        try:
+            whale = json.loads(whale_cfg.read_text(encoding="utf-8"))
+            if whale.get("servers", {}).pop("misakanet", None) is not None:
+                backup(whale_cfg, dry)
+                write_text(whale_cfg, json.dumps(whale, indent=2, ensure_ascii=False) + "\n", dry)
+                rep.ok(f"移除 MCP 注册 → {whale_cfg}")
+        except Exception:
+            rep.needs_manual(f"{whale_cfg} 解析失败 → 手动删除 servers.misakanet")
     cfg = home / ".claude.json"
     if cfg.exists():
         try:

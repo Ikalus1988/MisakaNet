@@ -681,3 +681,34 @@ def test_codex_copy_states_what_was_verified_and_how_to_recheck():
         "the limitation that does remain (no user-level hook → rule-driven checkpoint) "
         "must stay stated"
     )
+
+
+def test_codewhale_gets_mcp_json_and_rules_in_trusted_projects(tmp_path):
+    """The Python twin of the codewhale target, matching the JS installer.
+
+    Verified live on 0.9.7 (`docs/field-reports/agent-integration-matrix-2026-09-16.md`): MCP
+    lives in `~/.codewhale/mcp.json`, a workspace `AGENTS.md` only applies to a *trusted*
+    project, and the token can only be passed through an environment variable — so the
+    installer writes both surfaces and then states that one remaining user action.
+    """
+    home = tmp_path / "home"
+    (home / ".codewhale").mkdir(parents=True)
+    project = home / "work" / "proj"
+    project.mkdir(parents=True)
+    (home / ".codewhale" / "config.toml").write_text(
+        f'api_key = "seed"\n\n[projects."{project.as_posix()}"]\ntrust_level = "trusted"\n',
+        encoding="utf-8",
+    )
+
+    result = run_installer(home, "--only", "codewhale")
+    assert result.returncode == 0, result.stderr
+
+    mcp = json.loads((home / ".codewhale" / "mcp.json").read_text(encoding="utf-8"))
+    entry = mcp["servers"]["misakanet"]
+    assert entry["url"].endswith("/mcp")
+    assert entry["enabled"] is True and entry["disabled"] is False
+    assert entry["bearer_token_env_var"] == "MISAKANET_TOKEN"
+
+    rules = (project / "AGENTS.md").read_text(encoding="utf-8")
+    assert "misakanet:start" in rules and "misakanet_search" in rules
+    assert "MISAKANET_TOKEN" in result.stdout, "the env-var step must be stated, not hidden"
