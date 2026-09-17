@@ -11,9 +11,13 @@ import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const HOOK = resolve(import.meta.dirname, '..', 'integrations', 'agent-autostart', 'checkpoint_reminder.mjs');
+// `fileURLToPath(import.meta.url)`, not `import.meta.dirname`: this suite runs on the Node 18 leg of
+// the setup matrix (the hook ships inside the npm tarball, and `engines` promises >=18), and a test
+// file that needs Node 20.11 just to *load* would hide an 18-incompatibility instead of reporting it.
+const HOOK = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'integrations', 'agent-autostart', 'checkpoint_reminder.mjs');
 
 function runHook(payload, mode = 'prompt', env = {}) {
   const state = env.MISAKANET_HOOK_STATE || mkdtempSync(join(tmpdir(), 'mn-hook-'));
@@ -189,7 +193,7 @@ test('the interval is configurable, and upgrading resets the clock', () => {
 // Since issue #1785 the hook routes a cue to a *sound and/or a desktop notification*, so the
 // dry-run output is no longer just the cue name: line 1 is still the cue (that is what the
 // first two tests pin), lines 2-3 report the sound and the notification.
-const VOICE_HOOK = resolve(import.meta.dirname, '..', 'integrations', 'agent-autostart', 'voice_hook.mjs');
+const VOICE_HOOK = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'integrations', 'agent-autostart', 'voice_hook.mjs');
 
 function voiceDir() {
   const dir = mkdtempSync(join(tmpdir(), 'mn-voice-'));
@@ -300,6 +304,18 @@ const isNotifierCall = (line) =>
  *  toast from a sound: the argv has to. Everything that is not a toast is the sound. */
 const isPlayerCall = (line) => !isNotifierCall(line);
 
+/**
+ * The notification/voice assertions observe the hook by putting stub *shell scripts* on PATH
+ * (`stubBin()` writes `#!/bin/sh` files). On Windows the hook reaches for `powershell.exe`, and
+ * Windows cannot execute a `#!/bin/sh` file named `powershell.exe` — CreateProcess needs a real PE
+ * image — so those assertions have nothing to observe and fail on their counters (`0 !== 1`), not
+ * on a product error. Found 2026-09-18, the first time this suite ran on Windows
+ * (misakanet-setup-ci.yml); the coverage gap is recorded in the capability inventory.
+ */
+const POSIX_STUB_ONLY = process.platform === 'win32'
+  ? 'needs a shell-script stub on PATH, which Windows cannot execute (the hook uses powershell.exe)'
+  : false;
+
 /** Spawned children are detached and outlive the hook, so nothing is observable the very
  *  instant `spawnSync` returns. Give the stubs a moment before asserting on the log. */
 const settle = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -395,7 +411,7 @@ test('a hostile cue reaches no binary at all (the cue is only ever a table key)'
   assert.deepEqual(readdirSync(state), [], 'and no state file may be written either');
 });
 
-test('MISAKANET_NOTIFY=0 turns off the notification only', async () => {
+test('MISAKANET_NOTIFY=0 turns off the notification only', { skip: POSIX_STUB_ONLY }, async () => {
   const bin = stubBin();
   const state = mkdtempSync(join(tmpdir(), 'mn-voice-state-'));
   const env = {
@@ -465,7 +481,7 @@ test('a dry run reports both kinds of action and executes neither', () => {
   assert.ok(!existsSync(join(state, 'voice-notified.json')), 'a dry run writes no state');
 });
 
-test('connect-success and pair-success notify once per install, sound every time', async () => {
+test('connect-success and pair-success notify once per install, sound every time', { skip: POSIX_STUB_ONLY }, async () => {
   const bin = stubBin();
   const state = mkdtempSync(join(tmpdir(), 'mn-voice-state-'));
   const env = { ...stubPath(bin), MISAKANET_HOOK_STATE: state };
@@ -502,7 +518,7 @@ test('connect-success and pair-success notify once per install, sound every time
   assert.match(after, /^notify=already sent at \d{4}-\d{2}-\d{2}T.*\(first time only\)$/m);
 });
 
-test('an unwritable state directory breaks nothing', async () => {
+test('an unwritable state directory breaks nothing', { skip: POSIX_STUB_ONLY }, async () => {
   const bin = stubBin();
   // A *file* where the state directory should be: mkdir/rename both fail, and the hook must
   // go on and notify anyway (worse case: one repeated toast, never a broken session).

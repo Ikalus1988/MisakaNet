@@ -9,12 +9,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync, chmodSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync, chmodSync, openSync, fstatSync, closeSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { testToken } from './_test-token.mjs';
 
-const CLI = resolve(import.meta.dirname, '..', 'packages', 'misakanet-setup', 'bin', 'misakanet-setup.mjs');
+// `fileURLToPath(import.meta.url)`, not `import.meta.dirname`: the shipped code must run on Node 18
+// (package.json engines says >=18), and this suite is what proves it — a test file that needs
+// Node 20.11 to *load* would hide an 18-incompatibility instead of reporting it.
+const CLI = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'packages', 'misakanet-setup', 'bin', 'misakanet-setup.mjs');
 // Synthetic, per-run: a literal that looks like a credential is indistinguishable from one
 // to a scanner (HARDCODED_SECRET #261), and workers/_test-token.mjs exists for that reason.
 const STUB_TOKEN = testToken('setup');
@@ -154,6 +158,90 @@ test('uninstall restores the original config', () => {
   assert.ok(!readFileSync(join(home, '.codex', 'config.toml'), 'utf8').includes('misakanet'));
   assert.ok(!existsSync(join(home, '.claude', 'CLAUDE.md')), 'a file created only for our block should go');
   assert.ok(!existsSync(join(home, '.misakanet-agent')), 'state directory removed');
+});
+
+// ── uninstall on a *bare* home: the case every earlier test missed ────────────────────────
+// `makeHome()` above gives the user their own `mcpServers` and `hooks.Stop`, so the containers our
+// install writes into already existed and removing only our leaves looked like a full restore.
+// On a bare home the leaves left containers behind: `{}` came back as `{"mcpServers": {}}`,
+// `{"hooks": {}, "permissions": {"allow": []}}`, `{"mcp": {"servers": {}}}`, `{"servers": {}}`, and
+// `model: x` grew a dangling `mcp_servers:` key. Found 2026-09-18 by the packaged-tarball e2e.
+// The table below is per agent, and asserts the whole tree — the generic version of that finding.
+const BARE_HOMES = {
+  claude: (home) => {
+    mkdirSync(join(home, '.claude'), { recursive: true });
+    writeFileSync(join(home, '.claude.json'), '{}\n');
+    writeFileSync(join(home, '.claude', 'settings.json'), '{}\n');
+    writeFileSync(join(home, '.claude', 'CLAUDE.md'), '# mine\n');
+  },
+  codex: (home) => {
+    mkdirSync(join(home, '.codex'), { recursive: true });
+    writeFileSync(join(home, '.codex', 'config.toml'), 'model = "gpt-5"\n');
+  },
+  hermes: (home) => {
+    mkdirSync(join(home, '.hermes'), { recursive: true });
+    writeFileSync(join(home, '.hermes', 'config.yaml'), 'model: x\n');
+  },
+  openclaw: (home) => {
+    mkdirSync(join(home, '.openclaw', 'workspace'), { recursive: true });
+    writeFileSync(join(home, '.openclaw', 'openclaw.json'), '{}\n');
+  },
+  codewhale: (home) => {
+    mkdirSync(join(home, '.codewhale'), { recursive: true });
+    writeFileSync(join(home, '.codewhale', 'mcp.json'), '{}\n');
+  },
+};
+
+/** The tree without the documented `.misakanet.bak` safety copies (`--uninstall` keeps them). */
+const withoutBackups = (tree) => Object.fromEntries(
+  Object.entries(tree).filter(([rel]) => !rel.includes('.misakanet.bak')));
+
+for (const [agent, build] of Object.entries(BARE_HOMES)) {
+  test(`uninstall: a bare ${agent} home comes back as it was`, () => {
+    const home = mkdtempSync(join(tmpdir(), `mn-bare-${agent}-`));
+    try {
+      build(home);
+      const before = snapshot(home);
+      const install = runOffline(home, '--only', agent);
+      assert.equal(install.status, 0, install.stdout + install.stderr);
+      const removed = runOffline(home, '--only', agent, '--uninstall');
+      assert.equal(removed.status, 0, removed.stdout + removed.stderr);
+
+      const after = withoutBackups(snapshot(home));
+      assert.deepEqual(after, before,
+        `--uninstall must hand a bare home back exactly; left: ${JSON.stringify(after)}`);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+}
+
+// The counter-proof for the pruning above: it must not eat a container the user filled themselves.
+test('uninstall: a home with the user\'s own servers and keys keeps all of them', () => {
+  const home = makeHome();
+  const json = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
+  json.myOwnKey = { keep: true };
+  writeFileSync(join(home, '.claude.json'), `${JSON.stringify(json, null, 2)}\n`);
+  const settings = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8'));
+  settings.permissions = { allow: ['Bash(git status)'] };
+  writeFileSync(join(home, '.claude', 'settings.json'), `${JSON.stringify(settings, null, 2)}\n`);
+
+  try {
+    assert.equal(runOffline(home).status, 0);
+    assert.equal(runOffline(home, '--uninstall').status, 0);
+
+    const after = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
+    assert.deepEqual(after.myOwnKey, { keep: true }, 'a top-level key of theirs must survive');
+    assert.deepEqual(after.mcpServers, { existing: { type: 'http', url: 'https://x' } },
+      'their own MCP server must survive, and the container must stay because it is not empty');
+    const afterSettings = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8'));
+    assert.deepEqual(afterSettings.permissions.allow, ['Bash(git status)'],
+      'their own permission grants must survive');
+    assert.ok(JSON.stringify(afterSettings).includes('my-hook.mjs') || afterSettings.hooks.Stop,
+      'their own hook must survive');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
 });
 
 test('verify fails clearly when nothing is installed, and says what to do', () => {
@@ -309,6 +397,63 @@ test('openclaw: dry-run says what it would write, and writes nothing', () => {
   }
 });
 
+// The precheck ("may I write here?") used to ask about `dirname(path)` exactly once, so a target
+// whose *parent* did not exist yet — the normal state on a first install, because the installer is
+// about to create that parent — came back ENOENT and was reported to the user as "这些文件改不了
+// （只读或权限不足）". The agent was then skipped entirely (`continue`), so the MCP registration —
+// which needs no workspace at all — never happened either, and the message blamed the user's
+// permissions. `makeOpenclawHome()` always pre-creates `workspace/`, which is why no test caught it.
+// Reproduced 2026-09-18 against the published 0.5.4 tarball.
+test('openclaw: a home without a workspace directory is not reported as a permissions problem', () => {
+  const home = mkdtempSync(join(tmpdir(), 'mn-openclaw-fresh-'));
+  try {
+    mkdirSync(join(home, '.openclaw'), { recursive: true });
+    writeFileSync(join(home, '.openclaw', 'openclaw.json'),
+      JSON.stringify({ mcp: { servers: {} } }, null, 2));
+
+    const result = runOffline(home, '--only', 'openclaw');
+    assert.doesNotMatch(result.stdout, /改不了/,
+      'a directory the installer is about to create is not a permission problem');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+
+    // The truth about the missing workspace, and no invented one: the MCP entry lands, the rules
+    // block waits for openclaw to create its own workspace.
+    assert.match(result.stdout, /找不到 workspace/, result.stdout);
+    const cfg = JSON.parse(readFileSync(join(home, '.openclaw', 'openclaw.json'), 'utf8'));
+    assert.equal(cfg.mcp.servers.misakanet.url, 'https://misakanet.org/mcp');
+    assert.ok(!existsSync(join(home, '.openclaw', 'workspace')),
+      'the installer must not fabricate a workspace it did not find');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+// The counter-proof for the test above: the walk-up must not turn the precheck into a rubber stamp.
+// A genuinely unwritable directory is still reported, and the file it protects is untouched.
+test('openclaw: an unwritable config directory is still refused, and left untouched',
+  { skip: process.platform === 'win32' || process.getuid?.() === 0 }, () => {
+    const home = mkdtempSync(join(tmpdir(), 'mn-openclaw-ro-'));
+    const cfg = join(home, '.openclaw', 'openclaw.json');
+    try {
+      mkdirSync(join(home, '.openclaw'), { recursive: true });
+      writeFileSync(cfg, JSON.stringify({ mcp: { servers: {} } }, null, 2));
+      const before = readFileSync(cfg, 'utf8');
+      chmodSync(join(home, '.openclaw'), 0o500);
+      try {
+        const result = runOffline(home, '--only', 'openclaw');
+        assert.match(result.stdout, /这些文件改不了/, result.stdout);
+        assert.equal(result.status, 1, 'nothing was installed, so this is not success');
+        assert.equal(readFileSync(cfg, 'utf8'), before, 'the refusal must come before any write');
+        assert.ok(!existsSync(join(home, '.openclaw', 'openclaw.json.misakanet-tmp')),
+          'and it must not leave a temp file behind');
+      } finally {
+        chmodSync(join(home, '.openclaw'), 0o700);
+      }
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
 test('openclaw: writes the MCP entry beside the servers the user already has', () => {
   const home = makeOpenclawHome();
   try {
@@ -403,7 +548,10 @@ test('openclaw: uninstall removes both the entry we wrote and the rules block', 
     assert.equal(result.status, 0, result.stdout + result.stderr);
     // The path is absolute now: OpenClaw's rules file is located through its config, which may
     // name a workspace anywhere on the machine.
-    assert.match(result.stdout, /移除规则块 → .*openclaw\/workspace\/AGENTS\.md/, result.stdout);
+    // Flatten separators first: the line prints an OS path, so it is `openclaw\workspace\AGENTS.md`
+    // on Windows. This assertion was POSIX-only until the suite first ran on Windows (2026-09-18).
+    assert.match(result.stdout.replace(/\\/g, '/'),
+      /移除规则块 → .*openclaw\/workspace\/AGENTS\.md/, result.stdout);
     assert.equal(readOpenclaw(home).mcp.servers.misakanet, undefined);
     assert.ok(readOpenclaw(home).mcp.servers.other, "the user's own servers stay");
     assert.ok(!existsSync(join(home, '.openclaw', 'workspace', 'AGENTS.md')),
@@ -554,8 +702,12 @@ test('hermes: verify reports the registration, and uninstall restores the file e
     runOffline(home, '--uninstall');
     assert.equal(readHermes(home), HERMES_CONFIG,
       'uninstall must leave the config byte-for-byte as it was');
-    assert.ok(!readFileSync(join(home, '.hermes', '.env'), 'utf8').includes(TOKEN_SHAPE_OK),
-      'the token line goes with the entry');
+    // The `.env` did not exist before the install and held nothing but our token line, so the
+    // honest restore is to take the file with it (an empty file carries no user state, and the
+    // token must not stay behind — deleting the line and keeping a blank file is the halfway
+    // version this used to do).
+    assert.ok(!existsSync(join(home, '.hermes', '.env')),
+      'a .env that held only our token line must go with the entry');
   } finally {
     rmSync(home, { recursive: true, force: true });
   }
@@ -909,8 +1061,12 @@ test('uninstall removes the codewhale registration and rules block', () => {
 
   const removed = runOffline(home, '--uninstall');
   assert.equal(removed.status, 0, removed.stderr);
-  const mcp = JSON.parse(readFileSync(join(home, '.codewhale', 'mcp.json'), 'utf8'));
-  assert.equal(mcp.servers.misakanet, undefined);
+  const mcpText = readFileSync(join(home, '.codewhale', 'mcp.json'), 'utf8');
+  assert.ok(!mcpText.includes('misakanet'), `no trace of ours may remain: ${mcpText}`);
+  // This home had no `mcp.json` at all, so the install created it with its own defaults. The file
+  // stays (it may hold settings the user added since), but nothing of ours does: the entry is gone
+  // and the container it lived in is pruned once it is empty.
+  assert.equal(JSON.parse(mcpText).servers, undefined, 'the emptied servers container goes too');
 });
 
 // ── the voice hook is opt-in (and needs a matcher to fire at all) ─────────────
@@ -1611,7 +1767,7 @@ test('--version prints the version and writes nothing', () => {
   const before = snapshot(home);
   const result = runOffline(home, '--version');
   assert.equal(result.status, 0, result.stdout + result.stderr);
-  const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, '..', 'packages', 'misakanet-setup', 'package.json'), 'utf8'));
+  const pkg = JSON.parse(readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..', 'packages', 'misakanet-setup', 'package.json'), 'utf8'));
   assert.equal(result.stdout.trim(), pkg.version, 'the printed version must match the manifest');
   assert.deepEqual(snapshot(home), before);
 });
@@ -1634,4 +1790,147 @@ test('a value flag with no value stops instead of installing into a directory na
   assert.match(result.stderr, /--home 需要一个值/);
   assert.ok(!existsSync(join(process.cwd(), '--voice')), 'no directory named after the flag');
   assert.deepEqual(snapshot(home), before);
+});
+
+// ── config writes: atomic, permission-checked, and honest about consequences ──────────────
+// A direct `writeFileSync` is not atomic, and the files here are the user's assistant config: a
+// half-written ~/.claude.json or settings.json can stop the assistant from starting. The inode
+// test below is the mechanism proof — a rename changes the inode, an in-place write does not.
+/**
+ * The inode of `path`, read from a descriptor this process opened.
+ *
+ * `statSync(path)` and then writing the same path is a check-then-use pair — the file can be
+ * replaced in between, so the number might not belong to the file that gets written, and CodeQL
+ * reports the shape as `js/file-system-race` (alert #273, 2026-09-18). A descriptor cannot be
+ * swapped underneath us, so this is both the quiet and the stronger way to ask.
+ */
+function inodeOf(path) {
+  const fd = openSync(path, 'r');
+  try {
+    return fstatSync(fd).ino;
+  } finally {
+    closeSync(fd);
+  }
+}
+
+test('a config write is atomic (the file is replaced, not rewritten in place)', () => {
+  const home = makeHome();
+  const rulePath = join(home, '.claude', 'CLAUDE.md');
+  writeFileSync(rulePath, '# mine\n');
+  runOffline(home);
+  const first = inodeOf(rulePath);
+
+  writeFileSync(rulePath, '# mine\n\nand a line\n');
+  runOffline(home);
+  const second = inodeOf(rulePath);
+
+  assert.notEqual(
+    first, second,
+    'the inode is unchanged, so the file was written in place — an interrupted run can truncate it',
+  );
+  assert.ok(!existsSync(`${rulePath}.misakanet-tmp`), 'the temp file must not be left behind');
+});
+
+test('a read-only config file is refused with a readable message, and left untouched', () => {
+  const home = makeHome();
+  const rulePath = join(home, '.claude', 'CLAUDE.md');
+  writeFileSync(rulePath, '# mine\n');
+  chmodSync(rulePath, 0o400);
+  try {
+    // `--only claude`: makeHome() also fabricates a codex config, and installing *that* would
+    // legitimately be a success. The claim here is about claude alone.
+    const result = runOffline(home, '--only', 'claude');
+    assert.equal(result.status, 1, 'nothing was installed, so this is not success');
+    assert.match(result.stdout, /这些文件改不了/, result.stdout);
+    assert.match(result.stdout, /CLAUDE\.md/, result.stdout);
+    assert.equal(readFileSync(rulePath, 'utf8'), '# mine\n', 'the original must not be touched');
+  } finally {
+    chmodSync(rulePath, 0o600);
+  }
+});
+
+test('--dry-run reports a path it could not write (it used to report nothing)', () => {
+  const home = makeHome();
+  const rulePath = join(home, '.claude', 'CLAUDE.md');
+  writeFileSync(rulePath, '# mine\n');
+  chmodSync(rulePath, 0o400);
+  try {
+    const result = runOffline(home, '--dry-run');
+    assert.match(result.stdout, /这些文件改不了/, result.stdout);
+  } finally {
+    chmodSync(rulePath, 0o600);
+  }
+});
+
+test('--client-id is a real flag, and a missing value is refused', () => {
+  const home = makeHome();
+  // The closing guidance tells users to keep an identity; before this flag the only way to supply
+  // one was a shell export — an instruction a non-technical user cannot follow.
+  const withFlag = run(home, '--client-id', 'stable-identity-0123');
+  assert.notEqual(withFlag.status, 2, `--client-id must be a known flag: ${withFlag.stderr}`);
+  assert.doesNotMatch(withFlag.stderr, /无法识别的选项/);
+
+  const missing = spawnSync(process.execPath, [CLI, '--client-id'], { encoding: 'utf8' });
+  assert.equal(missing.status, 2);
+  assert.match(missing.stderr, /--client-id 需要一个值/);
+
+  const invalid = run(home, '--client-id', 'x');
+  assert.match(invalid.stdout, /ignored --client-id/, invalid.stdout);
+});
+
+// Node 18 has no global `crypto` (Web Crypto became a bare global in Node 19), so minting a
+// client id with `crypto.randomUUID()` made every registration on Node 18 die with
+// `crypto is not defined` and "安装没能跑完 —— 退出码 2". The matrix leg found it on 2026-09-18;
+// this test finds it on *any* Node, by preloading a module that deletes the global before the
+// installer's first line runs — the same world a Node 18 user is in.
+test('registration works without the global crypto object (Node 18 has none)', async () => {
+  const home = makeHome();
+  const preload = join(home, 'no-global-crypto.mjs');
+  writeFileSync(preload, "delete globalThis.crypto;\nif (globalThis.crypto !== undefined) throw new Error('crypto is still here');\n");
+  const { pathToFileURL } = await import('node:url');
+
+  const { createServer } = await import('node:http');
+  const server = createServer((req, res) => {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => {
+      const payload = JSON.parse(body || '{}');
+      const result = payload.method === 'tools/list'
+        ? { tools: [{ name: 'misakanet_search' }] }
+        : { node_id: 'MisakaTEST', token: TOKEN_SHAPE_OK };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
+        content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } }));
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+
+  try {
+    const result = await new Promise((done) => {
+      const child = spawn(process.execPath,
+        ['--import', pathToFileURL(preload).href, CLI, '--home', home],
+        { env: { ...process.env, MISAKANET_ENDPOINT: `http://127.0.0.1:${server.address().port}/mcp` } });
+      let stdout = '';
+      let stderr = '';
+      child.stdout.on('data', (c) => { stdout += c; });
+      child.stderr.on('data', (c) => { stderr += c; });
+      child.on('close', (status) => done({ status, stdout, stderr }));
+    });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.doesNotMatch(result.stdout, /crypto is not defined/, result.stdout);
+    assert.equal(readFileSync(join(home, '.misakanet-agent', 'token'), 'utf8').trim(), TOKEN_SHAPE_OK,
+      'the token must still be persisted without the global crypto object');
+  } finally {
+    server.close();
+  }
+});
+
+test('a failed registration says what it costs, not just that it failed', () => {
+  const home = makeHome();
+  // run(): registration is *attempted* against a dead endpoint, which is the case whose wording
+  // matters. runOffline() passes --no-register and never reaches that branch.
+  const result = run(home);
+  // "读课程不受影响" was misleading: without a token the read path is the anonymous quota.
+  assert.match(result.stdout, /5 次/, result.stdout);
+  assert.doesNotMatch(result.stdout, /凭据形状不对/, 'that phrase is jargon');
 });

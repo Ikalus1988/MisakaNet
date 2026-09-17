@@ -14,5 +14,16 @@ queries:
 # code itself only ever prints discovery metadata (file/line/static kind),
 # never the matched secret text (finder discards it via bool()).
 # See docs/reviews/2026-08-30-dual-axis-review.md.
+#
+# packages/misakanet-setup/scripts/e2e-packaged-install.mjs is a TEST whose subject is the
+# installed npm artifact, and the two js/file-access-to-http hits (#274/#275) are its central
+# assertion: read the MCP config the installer just wrote for ~/.claude.json, then call the
+# endpoint that config names, with the token that config carries. "Do not read a file and send
+# it to a server" is the right rule for the installer (#268) and the wrong one here — without
+# this flow the check could only assert that the file *looks* right, which is exactly the
+# self-asserted evidence this repo is trying to get away from. The token is never printed
+# (a separate check asserts that), the URL comes from the same file the installer wrote, and
+# the script is not shipped in the tarball (`files` in package.json).
 paths-ignore:
   - scripts/check_worker_secrets.py
+  - packages/misakanet-setup/scripts/e2e-packaged-install.mjs

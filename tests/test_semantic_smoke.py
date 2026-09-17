@@ -74,10 +74,14 @@ class TestHealthCheckDegraded(unittest.TestCase):
             from misakanet.search.embeddings import embedding_service_health
 
             health = embedding_service_health()
-            # In test env without proper backend, expect degraded
+            # The contract is `ok | degraded | down` (misakanet/search/embeddings.py:93): `degraded`
+            # when the model cannot be loaded at all, `down` when loading *raises*. This tuple used
+            # to say `unavailable`, a value the function never returns, and omitted `down` — so the
+            # assertion failed exactly in the case the code documents, whenever the load raised
+            # instead of returning None (seen 2026-09-18 on a machine whose torch/CUDA init raises).
             status = health.get("status", "unknown")
-            self.assertIn(status, ("ok", "degraded", "unavailable"),
-                         f"Unexpected health status: {status}")
+            self.assertIn(status, ("ok", "degraded", "down"),
+                          f"Unexpected health status: {status}")
         except ImportError:
             self.skipTest("misakanet.search.embeddings not importable")
 
