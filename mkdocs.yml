@@ -1,5 +1,9 @@
 site_name: MisakaNet Docs
-site_url: https://docs.misakanet.dev
+# site_url feeds every page's <link rel="canonical"> and every sitemap URL. It pointed at
+# docs.misakanet.dev, which does not resolve (DNS), so search engines were told the real pages
+# live on a dead host — 233 of 233 sitemap entries and every canonical tag. Corrected
+# 2026-09-17 to the address GitHub Pages actually serves (Pages build_type: workflow).
+site_url: https://ikalus1988.github.io/MisakaNet/
 site_description: Documentation for MisakaNet - distributed failure-lesson knowledge network
 site_author: MisakaNet Contributors
 
