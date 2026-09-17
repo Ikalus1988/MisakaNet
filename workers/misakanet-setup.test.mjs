@@ -1490,3 +1490,74 @@ test('verify names the reason the endpoint probe failed', () => {
   assert.match(result.stdout, /端点不可达/);
   assert.match(result.stdout, /最近一次失败原因/, 'the failure reason must reach the user');
 });
+
+// ── hook ownership ───────────────────────────────────────────────────────────
+// Until 2026-09-17 install/uninstall/verify decided "is this our hook?" by searching the
+// entry for the substring `hook.mjs`. A user's own `my-hook.mjs` therefore looked like ours:
+// `--uninstall` deleted it (reproduced on a real HOME) while
+// packages/misakanet-setup/README.md promised "leaves your own hooks alone (covered by
+// tests)" — the fixture above only ever used a hook named `echo hi`, so the case was never
+// exercised. Ownership is now the state directory every command of ours points into.
+test("uninstall keeps the user's own hook when its command mentions a *-hook.mjs file", () => {
+  const home = makeHome();
+  const settingsPath = join(home, '.claude', 'settings.json');
+  const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+  settings.hooks.UserPromptSubmit = [
+    { hooks: [{ type: 'command', command: 'node /home/me/.my-tools/my-hook.mjs prompt' }] },
+  ];
+  writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+
+  runOffline(home);
+  const afterInstall = JSON.parse(readFileSync(settingsPath, 'utf8'));
+  const installed = Object.values(afterInstall.hooks).flat()
+    .flatMap((e) => (e.hooks || []).map((h) => h.command));
+  assert.ok(
+    installed.some((c) => c.includes('.misakanet-agent')),
+    'a foreign hook must not make install believe ours is already there',
+  );
+  assert.ok(installed.some((c) => c.includes('my-hook.mjs')), 'the foreign hook stays');
+
+  runOffline(home, '--uninstall');
+  const afterUninstall = JSON.parse(readFileSync(settingsPath, 'utf8'));
+  const commands = Object.values(afterUninstall.hooks || {}).flat()
+    .flatMap((e) => (e.hooks || []).map((h) => h.command));
+  assert.ok(
+    commands.some((c) => c.includes('my-hook.mjs')),
+    "uninstall deleted the user's own hook — ownership must be the state dir, not the file name",
+  );
+  assert.ok(!commands.some((c) => c.includes('.misakanet-agent')), 'our own hooks are removed');
+});
+
+test('uninstall restores a user rule file byte for byte (no stray newline)', () => {
+  const home = makeHome();
+  const rulePath = join(home, '.claude', 'CLAUDE.md');
+  const original = '# 我的配置\n\n我自己的规则。\n';
+  writeFileSync(rulePath, original);
+
+  runOffline(home);
+  assert.ok(readFileSync(rulePath, 'utf8').includes('misakanet:start'), 'install adds our block');
+
+  runOffline(home, '--uninstall');
+  assert.equal(
+    readFileSync(rulePath, 'utf8'),
+    original,
+    'uninstall left the file longer than it was: the claim "已恢复原状" must hold',
+  );
+});
+
+test('verify does not credit a foreign hook that merely mentions hook.mjs', () => {
+  const home = makeHome();
+  runOffline(home);
+  // Our state hook exists, but settings.json now holds only somebody else's hook.
+  writeFileSync(
+    join(home, '.claude', 'settings.json'),
+    JSON.stringify({ hooks: { UserPromptSubmit: [{ hooks: [{ type: 'command', command: 'node /home/me/my-hook.mjs' }] }] } }),
+  );
+  const result = runOffline(home, '--verify');
+  assert.match(
+    result.stdout,
+    /钩子没装|没有本安装器写入的命令/,
+    'a foreign hook must not make --verify report our hook as installed',
+  );
+  assert.doesNotMatch(result.stdout, /钩子已装且解释器存在/);
+});
