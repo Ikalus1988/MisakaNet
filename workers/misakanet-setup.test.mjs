@@ -217,12 +217,17 @@ test('offline install still leaves a working read path and says so', () => {
   assert.equal(claude.mcpServers.misakanet.headers, undefined, 'no token, no header');
 });
 
-test('a machine with no agents gets told what to do instead of a silent success', () => {
+test('a machine with no agents gets told what to do, and reports failure', () => {
+  // The name was right and the assertion was wrong: this test pinned `status === 0`, i.e. exactly
+  // the silent success it claims to prevent. Install mode had no `process.exit` at all, so
+  // "nothing to install", "registration failed" and a clean install were indistinguishable, and
+  // `npx … && echo ok` asserted a success that had not happened (reproduced 2026-09-17).
   const home = mkdtempSync(join(tmpdir(), 'mn-empty-'));
   try {
     const result = runOffline(home);
-    assert.equal(result.status, 0);
+    assert.equal(result.status, 1, 'installing nothing must not report success');
     assert.match(result.stdout, /没检测到/, result.stdout);
+    assert.match(result.stderr, /没有装上任何助手/, result.stderr);
     assert.ok(!existsSync(join(home, '.misakanet-agent')), 'nothing to configure, nothing to litter');
   } finally {
     rmSync(home, { recursive: true, force: true });
@@ -1560,4 +1565,73 @@ test('verify does not credit a foreign hook that merely mentions hook.mjs', () =
     'a foreign hook must not make --verify report our hook as installed',
   );
   assert.doesNotMatch(result.stdout, /钩子已装且解释器存在/);
+});
+
+// ── exit codes and the argument surface ──────────────────────────────────────
+// Install mode used to end without any `process.exit`: every outcome returned 0. A script
+// (`npx … && echo ok`, a GPO/MDM wrapper, CI) therefore could not tell a real install from a
+// run that changed nothing. The contract is now 0 = at least one agent configured,
+// 1 = nothing installed, 2 = the installer could not run.
+test('a successful install exits 0', () => {
+  const home = makeHome();
+  const result = runOffline(home);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+});
+
+test('a target that cannot be written is reported and does not skip the others', () => {
+  const home = makeHome();
+  // Claude's settings.json is made unwritable by turning it into a directory, so that target
+  // must fail while codex still gets configured. Before, an uncaught throw aborted the loop.
+  const settingsPath = join(home, '.claude', 'settings.json');
+  rmSync(settingsPath, { force: true });
+  mkdirSync(settingsPath);
+
+  const result = runOffline(home);
+  assert.match(result.stdout, /写入配置失败/, result.stdout);
+  assert.match(result.stdout, /claude/, result.stdout);
+  assert.ok(
+    readFileSync(join(home, '.codex', 'config.toml'), 'utf8').includes('misakanet'),
+    'the remaining targets must still be installed',
+  );
+  assert.equal(result.status, 0, 'one target failing is not a failed install');
+});
+
+test('--help prints usage and writes nothing', () => {
+  const home = makeHome();
+  const before = snapshot(home);
+  const result = runOffline(home, '--help');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /用法：npx @misaka-net\/misakanet-setup/);
+  assert.match(result.stdout, /--version/);
+  assert.deepEqual(snapshot(home), before, '--help must not install anything');
+});
+
+test('--version prints the version and writes nothing', () => {
+  const home = makeHome();
+  const before = snapshot(home);
+  const result = runOffline(home, '--version');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, '..', 'packages', 'misakanet-setup', 'package.json'), 'utf8'));
+  assert.equal(result.stdout.trim(), pkg.version, 'the printed version must match the manifest');
+  assert.deepEqual(snapshot(home), before);
+});
+
+test('an unknown flag stops with exit 2 and writes nothing', () => {
+  const home = makeHome();
+  const before = snapshot(home);
+  const result = runOffline(home, '--bogus');
+  assert.equal(result.status, 2, 'an unrecognised flag must not be silently ignored');
+  assert.match(result.stderr, /无法识别的选项/);
+  assert.deepEqual(snapshot(home), before);
+});
+
+test('a value flag with no value stops instead of installing into a directory named like the flag', () => {
+  const home = makeHome();
+  const before = snapshot(home);
+  // Not runOffline(): this one deliberately omits the standard `--home <home>` prefix.
+  const result = spawnSync(process.execPath, [CLI, '--home', '--voice'], { encoding: 'utf8' });
+  assert.equal(result.status, 2, '--home must not fall back to the real HOME');
+  assert.match(result.stderr, /--home 需要一个值/);
+  assert.ok(!existsSync(join(process.cwd(), '--voice')), 'no directory named after the flag');
+  assert.deepEqual(snapshot(home), before);
 });
