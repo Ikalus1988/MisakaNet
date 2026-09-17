@@ -1,31 +1,27 @@
 [
   {
     "login": "zsxh1990",
-    "score": 96.53
+    "score": 95.4
   },
   {
     "login": "github-actions[bot]",
-    "score": 6.97
+    "score": 6.94
   },
   {
     "login": "2lll5",
-    "score": 3.78
+    "score": 3.72
   },
   {
     "login": "s6pa1rta3n-lab",
-    "score": 3.39
+    "score": 3.03
   },
   {
     "login": "liona can",
-    "score": 2.52
+    "score": 2.51
   },
   {
     "login": "yashraj4",
     "score": 1.84
-  },
-  {
-    "login": "mr-neutr0n",
-    "score": 1.78
   },
   {
     "login": "techlogiadg-spec",
@@ -33,39 +29,43 @@
   },
   {
     "login": "hjqcan",
-    "score": 1.58
+    "score": 1.57
   },
   {
     "login": "ghzhost",
-    "score": 1.56
+    "score": 1.54
+  },
+  {
+    "login": "mr-neutr0n",
+    "score": 1.45
   },
   {
     "login": "tomasbogado203-bit",
-    "score": 1.43
+    "score": 1.42
   },
   {
     "login": "gloskull",
-    "score": 1.41
+    "score": 1.4
   },
   {
     "login": "kveita",
-    "score": 1.37
-  },
-  {
-    "login": "canburakyol",
-    "score": 1.0
+    "score": 1.36
   },
   {
     "login": "knowaguy4u-cell",
     "score": 0.99
   },
   {
+    "login": "canburakyol",
+    "score": 0.99
+  },
+  {
     "login": "misakanet agent",
-    "score": 0.94
+    "score": 0.92
   },
   {
     "login": "yunaremaia",
-    "score": 0.88
+    "score": 0.87
   },
   {
     "login": "elevasyncsolutions-jpg",
@@ -101,10 +101,10 @@
   },
   {
     "login": "waterwang",
-    "score": 0.22
+    "score": 0.21
   },
   {
     "login": "noreply",
-    "score": 0.22
+    "score": 0.21
   }
 ]
