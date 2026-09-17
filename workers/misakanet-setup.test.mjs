@@ -548,7 +548,10 @@ test('openclaw: uninstall removes both the entry we wrote and the rules block', 
     assert.equal(result.status, 0, result.stdout + result.stderr);
     // The path is absolute now: OpenClaw's rules file is located through its config, which may
     // name a workspace anywhere on the machine.
-    assert.match(result.stdout, /移除规则块 → .*openclaw\/workspace\/AGENTS\.md/, result.stdout);
+    // Flatten separators first: the line prints an OS path, so it is `openclaw\workspace\AGENTS.md`
+    // on Windows. This assertion was POSIX-only until the suite first ran on Windows (2026-09-18).
+    assert.match(result.stdout.replace(/\\/g, '/'),
+      /移除规则块 → .*openclaw\/workspace\/AGENTS\.md/, result.stdout);
     assert.equal(readOpenclaw(home).mcp.servers.misakanet, undefined);
     assert.ok(readOpenclaw(home).mcp.servers.other, "the user's own servers stay");
     assert.ok(!existsSync(join(home, '.openclaw', 'workspace', 'AGENTS.md')),
@@ -1873,6 +1876,53 @@ test('--client-id is a real flag, and a missing value is refused', () => {
 
   const invalid = run(home, '--client-id', 'x');
   assert.match(invalid.stdout, /ignored --client-id/, invalid.stdout);
+});
+
+// Node 18 has no global `crypto` (Web Crypto became a bare global in Node 19), so minting a
+// client id with `crypto.randomUUID()` made every registration on Node 18 die with
+// `crypto is not defined` and "安装没能跑完 —— 退出码 2". The matrix leg found it on 2026-09-18;
+// this test finds it on *any* Node, by preloading a module that deletes the global before the
+// installer's first line runs — the same world a Node 18 user is in.
+test('registration works without the global crypto object (Node 18 has none)', async () => {
+  const home = makeHome();
+  const preload = join(home, 'no-global-crypto.mjs');
+  writeFileSync(preload, "delete globalThis.crypto;\nif (globalThis.crypto !== undefined) throw new Error('crypto is still here');\n");
+  const { pathToFileURL } = await import('node:url');
+
+  const { createServer } = await import('node:http');
+  const server = createServer((req, res) => {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => {
+      const payload = JSON.parse(body || '{}');
+      const result = payload.method === 'tools/list'
+        ? { tools: [{ name: 'misakanet_search' }] }
+        : { node_id: 'MisakaTEST', token: TOKEN_SHAPE_OK };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
+        content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } }));
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+
+  try {
+    const result = await new Promise((done) => {
+      const child = spawn(process.execPath,
+        ['--import', pathToFileURL(preload).href, CLI, '--home', home],
+        { env: { ...process.env, MISAKANET_ENDPOINT: `http://127.0.0.1:${server.address().port}/mcp` } });
+      let stdout = '';
+      let stderr = '';
+      child.stdout.on('data', (c) => { stdout += c; });
+      child.stderr.on('data', (c) => { stderr += c; });
+      child.on('close', (status) => done({ status, stdout, stderr }));
+    });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.doesNotMatch(result.stdout, /crypto is not defined/, result.stdout);
+    assert.equal(readFileSync(join(home, '.misakanet-agent', 'token'), 'utf8').trim(), TOKEN_SHAPE_OK,
+      'the token must still be persisted without the global crypto object');
+  } finally {
+    server.close();
+  }
 });
 
 test('a failed registration says what it costs, not just that it failed', () => {

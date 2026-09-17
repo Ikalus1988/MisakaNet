@@ -107,10 +107,12 @@ jobs:
           # file, the published installer would write an older hook than the one this repo tests.
           mkdir -p "$RUNNER_TEMP/unpacked"
           tar -xzf "$TGZ" -C "$RUNNER_TEMP/unpacked"
+          # $GITHUB_WORKSPACE, not a relative path: this step runs with working-directory
+          # packages/misakanet-setup (first CI run failed with "No such file or directory").
           diff -u "$RUNNER_TEMP/unpacked/package/hook/checkpoint_reminder.mjs" \
-                  integrations/agent-autostart/checkpoint_reminder.mjs
+                  "$GITHUB_WORKSPACE/integrations/agent-autostart/checkpoint_reminder.mjs"
           diff -u "$RUNNER_TEMP/unpacked/package/voice/voice-hook.mjs" \
-                  integrations/agent-autostart/voice_hook.mjs
+                  "$GITHUB_WORKSPACE/integrations/agent-autostart/voice_hook.mjs"
           echo "sha256 $(sha256sum "$TGZ" | cut -d' ' -f1)"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7

@@ -32,6 +32,12 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFi
 // another program (the plugin scanner's SHELL_INJECTION_PATTERN, alert #269, and argv secrets
 // are visible to every process on the box). Every target is configured by writing its own
 // config file; commands aimed at the user are printed, never executed.
+// `randomUUID` from `node:crypto`, not the global `crypto`: the global Web Crypto object only
+// became available without a flag in Node 19, so on Node 18 (which `engines` supports) any
+// registration crashed the whole run with `crypto is not defined` and exit code 2. Found
+// 2026-09-18 by the first Node 18 leg of misakanet-setup-ci.yml — the promise was in
+// package.json since 0.4 and had never been executed on the version it names.
+import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import { delimiter, join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -677,7 +683,7 @@ async function ensureIdentity() {
   }
   const clientId = (exported && /^[A-Za-z0-9._-]{8,64}$/.test(exported))
     ? exported
-    : `setup-${crypto.randomUUID()}`;
+    : `setup-${randomUUID()}`;
   const result = await mcpCall('misakanet_register', { agent_type: 'setup', client_id: clientId });
   // Validate before persisting: a response body is not something to write to disk unchecked
   // (CodeQL js/http-to-file-access #262/#264 is about exactly that flow). The endpoint is
