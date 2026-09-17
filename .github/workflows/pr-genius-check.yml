@@ -7,8 +7,14 @@ on:
 permissions:
   checks: read
   contents: read
-  pull-requests: read
-  issues: write  # post/update PR Genius analysis as a visible PR comment
+  # `write`, not `read`: the last step posts the analysis as a PR comment through
+  # `POST /repos/{owner}/{repo}/issues/{n}/comments`, and on a pull request that requires
+  # `pull-requests: write`. With `read`, every run answered `HTTP Error 403: Forbidden` — measured
+  # in 11 of 11 job logs (e.g. run 35205310232) — while the check stayed green, because
+  # scripts/pr_genius_report.py treated delivery as advisory and only wrote to stderr. The four
+  # workflows in this repo that do post PR comments all grant `pull-requests: write`.
+  pull-requests: write
+  issues: write  # same endpoint for repository issues
 
 jobs:
   pr-genius:

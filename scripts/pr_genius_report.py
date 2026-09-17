@@ -524,6 +524,33 @@ def github_post_issue_comment(
     urllib.request.urlopen(post, timeout=30)
 
 
+def report_delivery_failure(exc, summary_path: str | None = None) -> str:
+    """Make a comment-delivery failure *visible* instead of swallowing it.
+
+    Why this exists (2026-09-17): the report itself was computed correctly on every run, and the
+    only step that failed was posting it — `HTTP Error 403: Forbidden`, because the workflow
+    granted `pull-requests: read` while commenting on a PR needs `pull-requests: write`. The
+    failure was written to stderr and nothing else, so **11 of 11 job logs carried it while the
+    check stayed green**, and the tool shipped zero visible output for months. The permission is
+    fixed in the workflow; this function is what makes the next such regression findable.
+
+    Still advisory by design: a third-party analysis tool must not paint every PR red. It returns
+    the message, emits an annotation, and appends a line to the job summary a human reads.
+    """
+    message = f"PR Genius comment was not delivered: {exc}"
+    print(f"  ⚠️  {message}", file=sys.stderr)
+    print(f"::warning title=PR Genius comment not delivered::{message} "
+          "— commenting on a PR needs `pull-requests: write` in pr-genius-check.yml")
+    if summary_path:
+        try:
+            with open(summary_path, "a", encoding="utf-8") as handle:
+                handle.write(f"\n> ⚠️ **{message}** — the analysis above was computed but never "
+                             "posted; check the workflow's `pull-requests` permission.\n")
+        except OSError:
+            pass
+    return message
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", required=True, help="GitHub pull_request event JSON")
@@ -555,7 +582,9 @@ def main() -> int:
         try:
             github_post_issue_comment(repository, number, output, token)
         except Exception as exc:  # advisory only — never fail the workflow
-            print(f"  ⚠️  Could not post PR Genius comment: {exc}", file=sys.stderr)
+            # The analysis itself succeeded; keep the exit code at 0 (a third-party tool must not
+            # paint every PR red) but make the delivery failure visible — see the docstring.
+            report_delivery_failure(exc, os.environ.get("GITHUB_STEP_SUMMARY"))
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary and not args.json:
         with open(summary, "a", encoding="utf-8") as handle:

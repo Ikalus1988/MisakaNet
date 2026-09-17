@@ -90,3 +90,58 @@ def test_detects_documentation_only_and_mixed_concerns():
         [commit()],
     )
     assert [item["rule"] for item in mixed["anti_patterns"]] == ["mixed_concerns"]
+
+
+# ── delivery (added 2026-09-17: the publish path had zero coverage) ───────────────────
+#
+# The analysis worked on every run; posting it did not. `pr-genius-check.yml` granted
+# `pull-requests: read` while commenting on a pull request needs `pull-requests: write`, so the
+# comment request answered `HTTP Error 403: Forbidden` — visible in 11 of 11 job logs, invisible
+# to everyone else, because the failure was written to stderr only and the check stayed green.
+# PR-Genius therefore shipped zero visible output for months and nothing noticed.
+import pathlib
+import re
+
+REPO = pathlib.Path(__file__).resolve().parent.parent
+WORKFLOW = REPO / ".github" / "workflows" / "pr-genius-check.yml"
+
+
+def test_delivery_failure_is_reported_in_three_places(capsys, tmp_path):
+    """A failed comment must be loud: stderr, an annotation, and the job summary."""
+    from scripts.pr_genius_report import report_delivery_failure
+
+    summary = tmp_path / "summary.md"
+    summary.write_text("## PR Genius Analysis\n", encoding="utf-8")
+
+    message = report_delivery_failure(
+        Exception("HTTP Error 403: Forbidden"), str(summary))
+
+    assert "403" in message
+    captured = capsys.readouterr()
+    assert "::warning" in captured.out, "an annotation is what makes it visible on the run page"
+    assert "pull-requests: write" in captured.out, "name the permission that fixes it"
+    assert "not delivered" in captured.err
+    assert "never posted" in summary.read_text(encoding="utf-8")
+
+
+def test_delivery_failure_survives_a_missing_summary_file(capsys):
+    """A failure to report the failure must not become the new crash."""
+    from scripts.pr_genius_report import report_delivery_failure
+
+    message = report_delivery_failure(Exception("HTTP Error 403: Forbidden"), "/nonexistent/dir/s.md")
+    assert "403" in message
+    capsys.readouterr()
+
+
+def test_the_workflow_grants_pull_requests_write():
+    """Pin the shipped permission: commenting on a PR needs `pull-requests: write`."""
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    assert re.search(r"^\s*pull-requests:\s*write\s*$", workflow, re.MULTILINE), (
+        "pr-genius-check.yml must grant `pull-requests: write`; with `read`, the comment request "
+        "returns 403 and the tool produces nothing visible (11/11 job logs, run 35205310232)")
+
+
+def test_the_report_step_still_reads_the_token_from_the_environment():
+    """The posting step passes GITHUB_TOKEN; the script must keep using it, not a literal."""
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    assert "GITHUB_TOKEN: ${{ github.token }}" in workflow
