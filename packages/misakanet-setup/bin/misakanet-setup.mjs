@@ -154,6 +154,40 @@ function writeText(path, text) {
   writeFileSync(path, text);
 }
 
+/**
+ * Is this settings.json hook entry one *this installer* wrote?
+ *
+ * Every command we install points into our own namespace directory
+ * (`<home>/.misakanet-agent/hook.mjs`, and `.../voice/voice-hook.mjs`), so that directory name
+ * is the identity marker. Matching the *filename* instead (`…includes('hook.mjs')`) treated a
+ * user's own `my-hook.mjs` as ours: `--uninstall` deleted the user's hook — reproduced
+ * 2026-09-17 — while `packages/misakanet-setup/README.md` promises "leaves your own hooks
+ * alone". The same loose test also made install skip adding our hook (believing it was
+ * already there) and made `--verify` report a foreign hook as ours.
+ *
+ * `checkpoint_reminder.mjs` is the legacy 0.4.x shape, from before the hook was copied into
+ * the state dir — our file name, not a generic one.
+ */
+function isOurHookEntry(entry) {
+  const commands = (entry?.hooks || [])
+    .map((h) => h?.command)
+    .filter((c) => typeof c === 'string');
+  // Namespace, not the absolute path: an entry written by an older install under a
+  // *different* HOME still points at `<something>/.misakanet-agent/hook.mjs`, and the 0.4.2
+  // upgrade path has to recognise exactly that (a fixture with /home/u covers it). Matching
+  // the directory name also survives Windows separators. `checkpoint_reminder.mjs` is the
+  // legacy shape from before the hook was copied into the state dir — our file name, not a
+  // generic one.
+  return commands.some(
+    (c) => c.includes('.misakanet-agent') || c.includes('checkpoint_reminder.mjs'),
+  );
+}
+
+/** Hook entries we wrote, across every event in a settings.json `hooks` object. */
+function ourHookEntries(hooks) {
+  return Object.values(hooks || {}).flat().filter(isOurHookEntry);
+}
+
 /** Insert or refresh a marker-delimited block. Uses a function replacement (no $-escapes). */
 function injectBlock(path, block) {
   const existing = readText(path);
@@ -175,7 +209,10 @@ function injectBlock(path, block) {
 function stripBlock(path) {
   const text = readText(path);
   if (!text) return false;
-  const pattern = new RegExp(`[ \\t]*<!--\\s*${START}\\s*-->[\\s\\S]*?<!--\\s*${END}\\s*-->\\n?`);
+  // `\n?` on both sides: install writes a blank line, then the block, so consuming only the
+  // block left the file one newline longer than it started (uninstall claimed "已恢复原状"
+  // while `diff` showed an extra empty line).
+  const pattern = new RegExp(`\\n?[ \\t]*<!--\\s*${START}\\s*-->[\\s\\S]*?<!--\\s*${END}\\s*-->\\n?`);
   if (!pattern.test(text)) return false;
   backup(path);
   const stripped = text.replace(pattern, '');
@@ -545,7 +582,7 @@ async function installClaude(hookPath, bearer) {
 
   for (const [event, command] of Object.entries(wanted)) {
     const bucket = settings.hooks[event] || [];
-    if (JSON.stringify(bucket).includes('hook.mjs') || JSON.stringify(bucket).includes('checkpoint_reminder')) continue;
+    if (bucket.some(isOurHookEntry)) continue;
     bucket.push({ hooks: [{ type: 'command', command }] });
     settings.hooks[event] = bucket;
     changed = true;
@@ -576,13 +613,13 @@ async function installClaude(hookPath, bearer) {
       // matcher-less entry of ours as stale rather than "already installed", or re-running the
       // installer would leave a hook that stays silent forever (the exact failure this release
       // is about).
-      const stale = post.filter((e) => JSON.stringify(e).includes('voice-hook') && e.matcher !== '*');
+      const stale = post.filter((e) => isOurHookEntry(e) && e.matcher !== '*');
       if (stale.length) {
         post = post.filter((e) => !stale.includes(e));
         settings.hooks.PostToolUse = post;
         changed = true;
       }
-      if (!JSON.stringify(post).includes('voice-hook')) {
+      if (!post.some(isOurHookEntry)) {
         // `matcher: '*'` is load-bearing, not cosmetic: measured on 2026-09-16, a PostToolUse
         // entry **without** a matcher never fired in this host, while the same command with
         // `matcher: '*'` fired on every tool call. The hook itself filters by the `voice`
@@ -1034,12 +1071,14 @@ async function verify() {
   } else {
     const settingsPath = join(HOME, '.claude', 'settings.json');
     const settings = readJson(settingsPath, {}) || {};
-    const commands = Object.values(settings.hooks || {}).flat()
+    // Only our own entries: a foreign hook that merely mentions "hook.mjs" is not evidence
+    // that this machine is installed (and its interpreter may not even be ours).
+    const commands = ourHookEntries(settings.hooks)
       .flatMap((entry) => (entry.hooks || []).map((h) => h.command))
-      .filter((c) => typeof c === 'string' && c.includes('hook.mjs'));
+      .filter((c) => typeof c === 'string');
     if (!commands.length) {
       allOk = false;
-      need('Claude Code：钩子没装（settings.json 里没有指向 hook.mjs 的命令）');
+      need('Claude Code：钩子没装（settings.json 里没有本安装器写入的命令）');
     } else {
       const exe = commands[0].startsWith('"') ? commands[0].split('"')[1] : commands[0].split(' ')[0];
       if (!existsSync(exe)) {
@@ -1170,8 +1209,8 @@ function uninstall() {
   if (settings?.hooks) {
     let changed = false;
     for (const event of Object.keys(settings.hooks)) {
-      const kept = (settings.hooks[event] || []).filter((entry) =>
-        !JSON.stringify(entry).includes('hook.mjs') && !JSON.stringify(entry).includes('voice-hook'));
+      // Only entries we wrote: a user's own hook that happens to be named *-hook.mjs stays.
+      const kept = (settings.hooks[event] || []).filter((entry) => !isOurHookEntry(entry));
       // Drop our permission grants too, so uninstall leaves the file as it was.
       if (Array.isArray(settings.permissions?.allow)) {
         const pruned = settings.permissions.allow.filter((tool) => !CLAUDE_ALLOWED_TOOLS.includes(tool));
@@ -1272,7 +1311,7 @@ function voiceStatus() {
     const settings = readJson(join(HOME, '.claude', 'settings.json'), null);
     const buckets = settings?.hooks?.PostToolUse;
     if (!Array.isArray(buckets)) return 'absent';
-    const ours = buckets.filter((entry) => JSON.stringify(entry).includes('voice-hook'));
+    const ours = buckets.filter(isOurHookEntry);
     if (!ours.length) return 'absent';
     return ours.some((entry) => entry.matcher === '*') ? 'on' : 'stale';
   } catch {
@@ -1451,7 +1490,11 @@ if (mode !== 'report' && !SILENT) {
 if (mode === 'uninstall') {
   uninstall();
   say(render());
-  if (!SILENT) console.log('\n已恢复原状（每个改过的文件都有 .misakanet.bak 备份）。');
+  if (!SILENT) {
+    console.log('\n已移除本安装器写入的内容（规则块、MCP 注册、钩子、状态目录）。');
+    console.log(`备份保留在 <被改过的文件>.misakanet.bak（例如 ${join(HOME, '.claude', 'CLAUDE.md')}.misakanet.bak）`
+      + '，确认无误后可自行删除。');
+  }
   process.exit(0);
 }
 
