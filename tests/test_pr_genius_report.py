@@ -145,3 +145,31 @@ def test_the_report_step_still_reads_the_token_from_the_environment():
     """The posting step passes GITHUB_TOKEN; the script must keep using it, not a literal."""
     workflow = WORKFLOW.read_text(encoding="utf-8")
     assert "GITHUB_TOKEN: ${{ github.token }}" in workflow
+
+
+def test_a_degraded_rule_set_is_reported_not_silent(capsys, tmp_path):
+    """Without PyYAML the fallback parser loses every list, and that used to be invisible.
+
+    pr-genius-check.yml installs PyYAML before running, so this is the *guard*: if that stops
+    being true, the run says which rules it lost instead of quietly analysing with fewer of them.
+    """
+    from scripts.pr_genius_report import report_degraded_config
+
+    summary = tmp_path / "summary.md"
+    summary.write_text("", encoding="utf-8")
+
+    lost = report_degraded_config({"rules": {"path_rules": [], "custom_patterns": []}})
+
+    assert "rules.path_rules" in lost and "rules.issue_link.patterns" in lost
+    captured = capsys.readouterr()
+    assert "::warning" in captured.err and "degraded" in captured.err
+
+
+def test_a_healthy_config_reports_no_degradation():
+    from scripts.pr_genius_report import report_degraded_config
+
+    lost = report_degraded_config({
+        "rules": {"path_rules": [{"path": "x", "note": "y"}], "custom_patterns": [{"pattern": "z"}]},
+        "issue_link": {"patterns": ["Fixes #"]},
+    })
+    assert [] == lost
