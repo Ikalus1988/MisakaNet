@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-09-16T21:25:38.833597+00:00",
+  "generated_at": "2026-09-17T05:00:34.868478+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(retrieval): wire the alias table into both search paths, and unify two expansion layers",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1794",
+      "timestamp": "2026-09-17T01:30:16Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(setup): `--silent` and `--report-json`, and how an IT department deploys this",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1793",
+      "timestamp": "2026-09-17T01:07:43Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(voice): turn the cue player into an attention router, with desktop notifications",
@@ -16,20 +30,6 @@
       "title": "feat(ci): an `/adopt` flow so a fork PR blocked on sign-off is not blocked at all",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1786",
       "timestamp": "2026-09-16T17:41:54Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(setup): `--report --strict`, so the health report can gate CI",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1791",
-      "timestamp": "2026-09-16T17:39:21Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(lessons): optional structured fields — summary_plain, trigger, verify",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1792",
-      "timestamp": "2026-09-16T17:36:36Z",
       "source": "github"
     },
     {
