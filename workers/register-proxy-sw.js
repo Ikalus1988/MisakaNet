@@ -1504,7 +1504,7 @@ async function getIdentityAura(env, token) {
 
   // Check if token is a pairing token with identity
   if (token.startsWith("mcp_")) {
-    const tokenData = await env.MISAKANET_KV.get(`mcp_token:${token}`, "json");
+    const tokenData = await storeGet(env, `mcp_token:${token}`, "json");
     if (tokenData) {
       const identity = await env.MISAKANET_KV.get(`identity:${tokenData.ip}`, "json");
       if (identity?.status === "upgraded") return IDENTITY_AURA.upgraded;
@@ -1682,6 +1682,134 @@ async function kvPut(env, key, value, options) {
   }
 }
 
+// ── Durable store for the registration keys (2026-09-17) ─────────────────────
+//
+// `kv_store` in workers/d1/schema.sql explains why. In short: registration needs two keys
+// that are *new on every call*, the free tier caps KV at 1,000 new keys/day, and that is
+// exactly the shape that dies first — #1647 measured it on 2026-09-12, and on 2026-09-17
+// every `misakanet_register` answered `storage_unavailable` while KV reads still worked.
+// Counters moved to D1 then; these keys were the part left behind.
+//
+// The helpers below keep the KV key shapes verbatim, so this is a storage swap rather than a
+// rewrite: D1 is written first, KV stays as the fallback (for a deployment without the D1
+// binding, and for tokens issued before the table existed). A read checks D1, then KV.
+const STORE_STATS = { d1: 0, kv: 0, failures: 0, last_failure_at: "" };
+
+// Created by the worker on first use, not only by `workers/d1/schema.sql` (applied by
+// .github/workflows/apply-d1-schema.yml, which is manual): registration has to be deployable by
+// pushing the worker alone, and a deployment whose schema was not re-applied would otherwise
+// fail every write — putting us straight back into the outage this table exists to end.
+// Idempotent, one statement per isolate (the flag is per-isolate module state, so a cold start
+// re-runs a no-op). Same pattern as ensureSearchSignalsTable below.
+let kvStoreTableReady = false;
+
+async function ensureKvStoreTable(d1) {
+  if (kvStoreTableReady) return;
+  await d1.prepare(
+    `CREATE TABLE IF NOT EXISTS kv_store (
+       key        TEXT PRIMARY KEY,
+       value      TEXT NOT NULL,
+       expires_at TEXT,
+       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+     )`,
+  ).run();
+  kvStoreTableReady = true;
+}
+
+async function storePut(env, key, value, options = {}) {
+  const expiresAt = options.expirationTtl
+    ? new Date(Date.now() + options.expirationTtl * 1000).toISOString()
+    : null;
+  const d1 = d1Binding(env);
+  if (d1) {
+    try {
+      await ensureKvStoreTable(d1);
+      await d1.prepare(
+        `INSERT INTO kv_store (key, value, expires_at, updated_at)
+         VALUES (?1, ?2, ?3, datetime('now'))
+         ON CONFLICT(key) DO UPDATE SET value = ?2, expires_at = ?3, updated_at = datetime('now')`,
+      ).bind(String(key), String(value), expiresAt).run();
+      STORE_STATS.d1 += 1;
+      return true;
+    } catch (error) {
+      STORE_STATS.failures += 1;
+      STORE_STATS.last_failure_at = new Date().toISOString();
+      logInternal("store put failed, falling back to KV", error);
+    }
+  }
+  const written = await kvPut(env, key, value, options);
+  if (written) STORE_STATS.kv += 1;
+  return written;
+}
+
+async function storeGet(env, key, type) {
+  const d1 = d1Binding(env);
+  if (d1) {
+    try {
+      await ensureKvStoreTable(d1);
+      const { results } = await d1.prepare(
+        `SELECT value FROM kv_store
+          WHERE key = ?1 AND (expires_at IS NULL OR expires_at > datetime('now'))`,
+      ).bind(String(key)).all();
+      const row = results && results[0];
+      if (row && typeof row.value === "string") {
+        STORE_STATS.d1 += 1;
+        return type === "json" ? JSON.parse(row.value) : row.value;
+      }
+    } catch (error) {
+      STORE_STATS.failures += 1;
+      STORE_STATS.last_failure_at = new Date().toISOString();
+      logInternal("store get failed, falling back to KV", error);
+    }
+  }
+  if (!env || !env.MISAKANET_KV) return null;
+  STORE_STATS.kv += 1;
+  return env.MISAKANET_KV.get(key, type);
+}
+
+/**
+ * Next node number, atomically, without spending the KV new-key budget.
+ *
+ * The KV counter this replaces could not survive a write outage — and, worse, it failed
+ * *silently*: the increment is best-effort, so every registration during a KV write outage read
+ * the same stale value and minted the **same node id**. Two agents would then share a pseudonym,
+ * and the public `/api/counter` would freeze at the last successful write (measured: 6.5 hours
+ * of no movement on 2026-09-17 while every registration answered `storage_unavailable`).
+ *
+ * D1 gives one atomic increment. The first insert seeds from the KV value, so numbering
+ * continues where the old counter stopped (Misaka10264, …) instead of restarting at 1 and
+ * colliding with ids that already exist.
+ */
+async function nextNodeCounter(env) {
+  const d1 = d1Binding(env);
+  if (d1) {
+    try {
+      const seed = parseInt((await env.MISAKANET_KV.get("node_counter", "text")) || "0", 10) || 0;
+      const { results } = await d1.prepare(
+        `INSERT INTO counters (scope, bucket, period, count, updated_at)
+         VALUES ('node', 'all', 'all-time', ?1, datetime('now'))
+         ON CONFLICT(scope, bucket, period)
+         DO UPDATE SET count = count + 1, updated_at = datetime('now')
+         RETURNING count`,
+      ).bind(seed + 1).all();
+      const row = results && results[0];
+      if (row && Number.isFinite(Number(row.count))) {
+        COUNTERS_BACKEND_STATS.d1 += 1;
+        return Number(row.count);
+      }
+    } catch (error) {
+      COUNTERS_BACKEND_STATS.failures += 1;
+      COUNTERS_BACKEND_STATS.last_failure_at = new Date().toISOString();
+      logInternal("node counter failed, falling back to KV", error);
+    }
+  }
+  if (!env || !env.MISAKANET_KV) return 0;
+  const current = parseInt((await env.MISAKANET_KV.get("node_counter", "text")) || "0", 10) || 0;
+  await kvPut(env, "node_counter", String(current + 1));
+  COUNTERS_BACKEND_STATS.kv += 1;
+  return current + 1;
+}
+
 async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) {
   if (toolName === "misakanet_register") {
     const agentType = args.agent_type || "unknown";
@@ -1707,9 +1835,9 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       };
     }
     if (clientId) {
-      const mapping = await env.MISAKANET_KV.get(`client:${clientId}`, "json");
+      const mapping = await storeGet(env, `client:${clientId}`, "json");
       const known = mapping && mapping.node_id
-        ? await env.MISAKANET_KV.get(`node:${mapping.node_id}`, "json")
+        ? await storeGet(env, `node:${mapping.node_id}`, "json")
         : null;
       if (known && known.token) {
         // Same client, same node, same token — and this is the renewal path: KV
@@ -1718,12 +1846,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         // a failed refresh must not cost the caller its identity.
         const now = new Date().toISOString();
         const refreshed = await Promise.all([
-          kvPut(env, `node:${mapping.node_id}`, JSON.stringify({
+          storePut(env, `node:${mapping.node_id}`, JSON.stringify({
             agent_type: known.agent_type || agentType,
             registered_at: known.registered_at || mapping.created_at || now,
             token: known.token,
           }), { expirationTtl: 86400 * 30 }),
-          kvPut(env, `mcp_token:${known.token}`, JSON.stringify({
+          storePut(env, `mcp_token:${known.token}`, JSON.stringify({
             node_id: mapping.node_id,
             agent_type: known.agent_type || agentType,
             registered_at: known.registered_at || mapping.created_at || now,
@@ -1744,12 +1872,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     }
 
     // Generate node_id
-    const counterKey = "node_counter";
-    const current = parseInt(await env.MISAKANET_KV.get(counterKey, "text") || "0");
-    const nodeId = `Misaka${current + 1}`;
-    // The counter is best-effort: a duplicate node id is recoverable, losing the
-    // registration is not (see the check below).
-    await kvPut(env, counterKey, String(current + 1));
+    const nodeId = `Misaka${await nextNodeCounter(env)}`;
 
     // Generate token (cryptographically secure)
     const tokenChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
@@ -1759,14 +1882,14 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     for (let i = 0; i < 32; i++) token += tokenChars[randBytes[i] % tokenChars.length];
 
     // Store registration (node data)
-    const nodeStored = await kvPut(env, `node:${nodeId}`, JSON.stringify({
+    const nodeStored = await storePut(env, `node:${nodeId}`, JSON.stringify({
       agent_type: agentType,
       registered_at: new Date().toISOString(),
       token: token,
     }), { expirationTtl: 86400 * 30 });
 
     // Store token lookup (for auth verification)
-    const tokenStored = await kvPut(env, `mcp_token:${token}`, JSON.stringify({
+    const tokenStored = await storePut(env, `mcp_token:${token}`, JSON.stringify({
       node_id: nodeId,
       agent_type: agentType,
       registered_at: new Date().toISOString(),
@@ -1792,7 +1915,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // Failing to store the mapping costs continuity, not access, so it is logged and
     // ignored: the caller already holds a working token.
     if (clientId) {
-      const mapped = await kvPut(env, `client:${clientId}`, JSON.stringify({
+      const mapped = await storePut(env, `client:${clientId}`, JSON.stringify({
         node_id: nodeId,
         agent_type: agentType,
         created_at: new Date().toISOString(),
@@ -2464,7 +2587,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     if (!env.MISAKANET_KV) {
       return { submitted: false, error: "KV not configured — cannot verify agent token" };
     }
-    const tokenData = await env.MISAKANET_KV.get(`mcp_token:${agentToken}`, "json");
+    const tokenData = await storeGet(env, `mcp_token:${agentToken}`, "json");
     if (!tokenData || new Date(tokenData.expires) < new Date()) {
       return { submitted: false, error: "Invalid or expired token. Use misakanet_register to get a new one." };
     }
@@ -2660,8 +2783,10 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
     authed = true;
   } else if (expectedToken && token && timingSafeEqual(token, expectedToken)) {
     authed = true;
-  } else if (token && token.startsWith("mcp_") && env.MISAKANET_KV) {
-    const tokenData = await env.MISAKANET_KV.get(`mcp_token:${token}`, "json");
+  } else if (token && token.startsWith("mcp_")) {
+    // No `&& env.MISAKANET_KV` guard: tokens live in the durable store now, so requiring a KV
+    // binding here would lock a D1-only deployment out of every token it issued.
+    const tokenData = await storeGet(env, `mcp_token:${token}`, "json");
     if (tokenData && new Date(tokenData.expires) > new Date()) {
       authed = true;
     }
@@ -4037,6 +4162,24 @@ export default {
       if (!token) return jsonResponse({ error: "REGISTER_TOKEN not configured" }, 500);
       try {
         const data = await getWithCache(env, "proxy:counter", async () => {
+          // D1 first: registrations increment the counter there since 2026-09-17 (the KV counter
+          // is only as reliable as the KV daily write budget, and it froze for 6.5 hours during
+          // that day's outage). KV and the mirrored file stay as fallbacks, in that order.
+          const d1 = d1Binding(env);
+          if (d1) {
+            try {
+              const { results } = await d1.prepare(
+                `SELECT count FROM counters
+                  WHERE scope = 'node' AND bucket = 'all' AND period = 'all-time'`,
+              ).all();
+              const row = results && results[0];
+              if (row && Number.isFinite(Number(row.count))) {
+                return { current: Number(row.count), updated: new Date().toISOString().slice(0, 10) };
+              }
+            } catch (error) {
+              logInternal("counter read from D1 failed, falling back to KV", error);
+            }
+          }
           if (env.MISAKANET_KV) {
             const kvCounter = await env.MISAKANET_KV.get("node_counter", "text");
             if (kvCounter) return { current: parseInt(kvCounter), updated: new Date().toISOString().slice(0, 10) };
@@ -4568,7 +4711,7 @@ export default {
       for (let i = 0; i < 32; i++) token += tokenChars[pairTokenBytes[i] % tokenChars.length];
 
       // Store token in KV for validation
-      await kvPut(env, `mcp_token:${token}`, JSON.stringify({
+      await storePut(env, `mcp_token:${token}`, JSON.stringify({
         created: new Date().toISOString(),
         expires: new Date(Date.now() + 86400000).toISOString(),
         ip: pairData.ip,
