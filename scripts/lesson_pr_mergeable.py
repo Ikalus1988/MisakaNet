@@ -99,6 +99,27 @@ def _norm(value: Any) -> str:
     return "" if value is None else str(value).strip().lower()
 
 
+def mergeable_is_clean(value: Any) -> bool:
+    """Is this `mergeable` field the "no conflicts" answer, in either API's spelling?
+
+    ``GET /repos/{owner}/{repo}/pulls/{n}`` (REST) reports ``mergeable`` as a JSON
+    **boolean** — ``true``, ``false``, or ``null`` while GitHub is still computing it.
+    GraphQL reports the *enum string* ``MERGEABLE``. The pre-merge re-check in
+    ``.github/workflows/auto-merge-lessons.yml`` read the REST endpoint but compared the
+    value to the GraphQL spelling, so it refused every candidate and the channel could
+    never merge anything: on the first real run the decision was *merge* and the re-check
+    still said "no longer a clean candidate (mergeable=true …)". Accept both shapes —
+    the cost of accepting the enum form from a REST read is zero, and reading the wrong
+    shape silently disables the whole channel.
+
+    ``null``/``None`` is *not* clean: GitHub computes this field lazily, and the caller
+    is expected to retry.
+    """
+    if value is True:
+        return True
+    return _norm(value) == "mergeable"
+
+
 def _required_check_names(checks: Mapping[str, Any]) -> list[str]:
     """The names this PR is required to have green: the fixed four plus every `test (`."""
     fixed = list(REQUIRED_CHECKS)

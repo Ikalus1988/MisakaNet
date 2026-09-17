@@ -46,7 +46,7 @@
 | 标签 | `GET /pulls/{n}` 的 `labels` |
 | draft | `GET /pulls/{n}` 的 `draft` |
 | 评审状态 | `GET /pulls/{n}/reviews?per_page=100`：**按作者取最后一次** `APPROVED`/`CHANGES_REQUESTED`（`DISMISSED` 自动被排除）；任一位作者最后一次是 `CHANGES_REQUESTED` → 视为"被请求修改" |
-| 合并前复核 | 合并**之前**重新 `GET /pulls/{n}`，要求 `mergeable == MERGEABLE`、`state == open`、`draft == false`、标签仍在 |
+| 合并前复核 | 合并**之前**重新 `GET /pulls/{n}`，要求 `mergeable` 为真、`state == open`、`draft == false`、标签仍在。⚠️ REST 的 `mergeable` 是**布尔** `true`/`false`/`null`，枚举串 `MERGEABLE` 是 **GraphQL** 的形状——`scripts/lesson_pr_mergeable.py:mergeable_is_clean()` 把两种形状归一化成 `clean`/`unclean`，shell 只比较归一化结果，不再拿一个 API 的拼写去比另一个 API 的读法（这正是 2026-09-17 首次真实运行时"判定 merge、复核却自拒"的原因） |
 
 ---
 
@@ -155,6 +155,7 @@ python3 scripts/lesson_pr_mergeable.py --json '{
 | **标签被误加** | 一次误加 = 一次无人复核的自动合并；`wip`/`do-not-merge` 是唯一的对冲手段 | 无 |
 | **必需检查从未上报** | 永远停在 `wait`（不合并、不评论），需要人工合并；反过来，`test (…)` 分片**整个没跑**时判定看不见 | 无 |
 | **`CHANGES_REQUESTED` 的"过期"近似** | 我们只按"作者最后一次评审状态"算，不比对提交时间：**force-push 之前的旧 `CHANGES_REQUESTED` 依然阻塞**（偏严，安全的一侧）；`DISMISSED` 会被排除 | 偏保守 |
+| **两个 API 的字段形状不一致** | 复核读的是 REST（`mergeable` 是**布尔**），却按 GraphQL 的枚举串比较 → **每个候选都被自拒**：判定说 merge、复核说"no longer a clean candidate"，通道静默失效。2026-09-17 这条通道**第一次真实运行**时就是这样（PR #1796 未被合并），已由 `mergeable_is_clean()` 修掉；教训是这类"读了 A 的形状、比了 B 的拼写"的缺陷，桩回放看不出来，只有真跑一次才知道 | 现在有单测同时钉住两种形状，以及"shell 不得再拿原始拼写比较" |
 
 **信任边界（实现层面的三条硬规矩）**：
 
