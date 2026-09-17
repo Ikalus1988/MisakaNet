@@ -264,13 +264,21 @@ function writeText(path, text, { mode } = {}) {
     }
     renameSync(tmp, path);
   } catch (err) {
-    try { rmSync(tmp, { force: true }); } catch { /* best effort */ }
-    // Windows can refuse to replace an existing file with `rename`; fall back rather than fail an
-    // install on a platform detail. The temp file is already gone by here.
+    // Windows can refuse to replace an existing file with `rename` (EPERM when another process has
+    // the file open, EEXIST in some states). The old fallback was a direct `writeFileSync(path, …)`
+    // — which is the non-atomic write this function exists to avoid, and which truncates the user's
+    // config if the same lock is still held. Clearing the destination and retrying the rename keeps
+    // the replacement atomic, and when the file really is locked both attempts fail, so the caller
+    // reports "写入配置失败" instead of quietly writing half a config.
+    //
+    // (`writeFileSync` here also read as "write after a check on the same path" to CodeQL
+    // js/file-system-race — alert #272, the shape the fix above is about.)
     if (err && (err.code === 'EPERM' || err.code === 'EEXIST')) {
-      writeFileSync(path, text, mode ? { mode } : undefined);
+      rmSync(path, { force: true });
+      renameSync(tmp, path);
       return;
     }
+    try { rmSync(tmp, { force: true }); } catch { /* best effort */ }
     throw err;
   }
 }
