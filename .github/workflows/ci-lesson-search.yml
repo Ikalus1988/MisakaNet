@@ -2,7 +2,13 @@ name: Search MisakaNet on CI Failure
 
 on:
   workflow_run:
-    workflows: ["*"]
+    # NOT `["*"]`. A wildcard starts this workflow on the completion of every other workflow —
+    # 33,317 runs by 2026-09-17, and the recent ones are all `skipped` (the job-level `if` below
+    # can only filter *after* the run has been created, so it saves nothing). The feature is "our
+    # CI failed, so surface the lessons that match": that is the Cross-Platform Tests workflow.
+    # Add another name here if a failure elsewhere should also be searched — see
+    # tests/test_workflow_triggers.py, which keeps the wildcard out.
+    workflows: ["Cross-Platform Tests"]
     types: [completed]
 
 jobs:
