@@ -245,16 +245,24 @@ jobs:
               PR_STATE=""
               PR_DRAFT="true"
               HAS_LABEL="false"
+              MERGEABLE_CLEAN="unclean"
               for _ in 1 2 3 4 5; do
                 gh api "repos/$REPO/pulls/$PR" > "$TMP/pr-now.json"
-                read -r MERGEABLE PR_STATE PR_DRAFT HAS_LABEL < <(python3 - "$TMP/pr-now.json" "$OPT_IN_LABEL" <<'PY'
+                read -r MERGEABLE PR_STATE PR_DRAFT HAS_LABEL MERGEABLE_CLEAN < <(python3 - "$TMP/pr-now.json" "$OPT_IN_LABEL" <<'PY'
           import json, sys
+
+          sys.path.insert(0, "scripts")
+          from lesson_pr_mergeable import mergeable_is_clean
 
           pr = json.load(open(sys.argv[1], encoding="utf-8"))
           names = {l["name"].strip().lower() for l in pr.get("labels") or []}
+          # `mergeable` is a JSON boolean over REST (null while GitHub computes it) and an
+          # enum string over GraphQL — normalise here, so the shell never compares against
+          # one API's spelling while reading the other (see mergeable_is_clean).
           print(json.dumps(pr.get("mergeable")), pr.get("state"),
                 str(bool(pr.get("draft"))).lower(),
-                str(sys.argv[2].lower() in names).lower())
+                str(sys.argv[2].lower() in names).lower(),
+                "clean" if mergeable_is_clean(pr.get("mergeable")) else "unclean")
           PY
                 )
                 MERGEABLE="${MERGEABLE//\"/}"
@@ -262,7 +270,7 @@ jobs:
                 sleep 3
               done
 
-              if [ "$MERGEABLE" != "MERGEABLE" ] || [ "$PR_STATE" != "open" ] \
+              if [ "$MERGEABLE_CLEAN" != "clean" ] || [ "$PR_STATE" != "open" ] \
                  || [ "$PR_DRAFT" != "false" ] || [ "$HAS_LABEL" != "true" ]; then
                 echo "::warning::PR #$PR is no longer a clean candidate (mergeable=$MERGEABLE state=$PR_STATE draft=$PR_DRAFT label=$HAS_LABEL) — leaving it to a human."
                 exit 0
