@@ -46,7 +46,8 @@ def fake_fetch(window_runs: dict[str, int], output_counts: dict[str, int], ever_
                     return {"total_count": count}
             for workflow, count in ever_runs.items():
                 if f"workflows/{workflow}/runs" in url:
-                    return {"total_count": count}
+                    runs = [{"created_at": "2026-06-22T00:00:00Z"}] if count else []
+                    return {"total_count": count, "workflow_runs": runs}
             return {"total_count": 0}
         raise AssertionError(f"unexpected URL: {url}")
 
@@ -104,8 +105,9 @@ def test_a_new_workflow_is_not_called_dead_before_its_first_scheduled_slot():
                             created={"arch-review.yml": "2026-09-06T00:00:00Z"})
     failures = [f for f in findings if f.severity == "fail"]
     assert failures == [], findings
-    notes = [f for f in findings if f.severity == "note"]
-    assert notes and notes[0].rule == "never-ran" and "grace" in notes[0].detail, findings
+    arch = [f for f in findings if f.workflow == "arch-review.yml"]
+    assert arch and arch[0].severity == "note" and arch[0].rule == "never-ran", findings
+    assert "grace" in arch[0].detail, arch[0].detail
 
 
 # ── the fixed state: the audit must pass ──────────────────────────────────────────────
@@ -171,3 +173,21 @@ def test_the_manifest_probes_are_scoped_to_the_repo_at_call_time():
     query = audit_mod.AUTOMATIONS[0].probe
     assert query.startswith("in:comments") or query.startswith("is:"), query
     assert "repo:" not in query, "the repo is added by output_count(); a literal here would double it"
+
+
+def test_manual_only_workflows_are_listed_and_never_fail_the_run():
+    """The objective named these two as "dead and unreconciled"; now their state is on the screen.
+
+    They are dispatch-only, so zero runs in a window is normal — the audit lists the last run and
+    says it is worth a decision, but never fails the run for it. A note is the right severity for
+    "nothing is wrong, yet".
+    """
+    findings, table = run_audit({}, {}, ever_runs={"arch-review.yml": 3, "auto-draft.yml": 1,
+                                                  "intake-pipeline-test.yml": 0})
+    listed = {row["workflow"] for row in table}
+    assert {"auto-draft.yml", "intake-pipeline-test.yml"} <= listed, listed
+    assert [f for f in findings if f.severity == "fail"] == [], findings
+    notes = {f.workflow: f for f in findings if f.severity == "note"}
+    assert notes["auto-draft.yml"].rule == "manual-only"
+    assert "last run 2026-06-22" in notes["auto-draft.yml"].detail
+    assert "never run" in notes["intake-pipeline-test.yml"].detail

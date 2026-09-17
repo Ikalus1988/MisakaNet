@@ -51,6 +51,12 @@ MIN_RUNS_WITHOUT_OUTPUT = 20
 # purpose: "never ran" is their normal state until a human asks.
 MUST_HAVE_RUN = ("arch-review.yml",)
 
+# Manual-only automations: they are *supposed* to be quiet, so zero runs in the window is not a
+# defect — but their state should still be visible, because "configured but nobody has run it in
+# three months" is a decision waiting to be made (delete it, or give it a trigger). Listed here
+# rather than in AUTOMATIONS: they have no artifact to reconcile, only a last-run date.
+MANUAL_ONLY = ("auto-draft.yml", "intake-pipeline-test.yml")
+
 # A new automation has to reach its first scheduled slot before "never ran" means anything. This
 # repository's longest schedule is monthly (`arch-review.yml`: `0 2 1 * *`), so anything younger
 # than this is reported as *too new to judge* rather than broken — the first draft of this rule
@@ -145,6 +151,17 @@ def workflow_created_at(repo: str, workflow: str, token: str, fetch=api_get) -> 
         return None
 
 
+def last_run_at(repo: str, workflow: str, token: str, fetch=api_get) -> str | None:
+    """The most recent run's timestamp, or None if there has never been one."""
+    query = urllib.parse.urlencode({"per_page": 1})
+    try:
+        data = fetch(f"{API}/repos/{repo}/actions/workflows/{workflow}/runs?{query}", token)
+    except RuntimeError:
+        return None
+    runs = data.get("workflow_runs") or []
+    return (runs[0].get("created_at") if runs else None)
+
+
 def output_count(repo: str, probe: str, token: str, fetch=api_get) -> int:
     """How many artifacts the probe can find, ever (the artifact is what persists)."""
     query = urllib.parse.urlencode({"q": f"repo:{repo} {probe}", "per_page": 1})
@@ -174,6 +191,26 @@ def audit(repo: str, days: int, token: str, fetch=api_get, now: datetime | None 
                 f"{runs} runs in {days} days and no {automation.produces} "
                 f"(probe: {automation.probe!r})",
                 "fail",
+            ))
+
+    for workflow in MANUAL_ONLY:
+        ever = runs_ever(repo, workflow, token, fetch)
+        last = last_run_at(repo, workflow, token, fetch)
+        table.append({"workflow": workflow, "runs_in_window": None, "outputs_ever": None,
+                      "produces": "nothing on its own — manual dispatch only"})
+        if ever == 0:
+            findings.append(Finding(
+                workflow, "manual-only",
+                "dispatch-only and never run: either wire a trigger or delete it, so the file does "
+                "not read as a working automation",
+                "note",
+            ))
+        elif last:
+            findings.append(Finding(
+                workflow, "manual-only",
+                f"manual dispatch only; last run {last[:10]} — fine if that is intended, worth a "
+                "decision otherwise",
+                "note",
             ))
 
     for workflow in MUST_HAVE_RUN:
