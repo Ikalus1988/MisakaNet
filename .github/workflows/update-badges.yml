@@ -27,13 +27,12 @@ jobs:
       - name: Count lessons
         id: count
         run: |
-          LESSON_COUNT=$(find lessons/ -name "*.md" \
-            ! -name "README.md" \
-            ! -name "LESSON_QUALITY*" \
-            ! -name "CONCEPTS*" \
-            ! -name "DUPLICATE*" \
-            ! -path "lessons/_archive/*" \
-            | wc -l)
+          # Through the SSOT reader, not `find lessons/ -name '*.md'`. The raw file count (434)
+          # includes lessons/templates, per-language copies and the repo's own describing files,
+          # while every managed surface — including the "393+" two lines above this badge in the
+          # same README — reports the published index (`canonical_count()`, from
+          # data/lessons.json). The two numbers contradicted each other in one file.
+          LESSON_COUNT=$(python3 -c "from scripts.sync_lesson_count import canonical_count; print(canonical_count())")
           echo "lessons=$LESSON_COUNT" >> "$GITHUB_OUTPUT"
 
       - name: Count domains

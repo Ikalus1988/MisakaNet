@@ -149,6 +149,10 @@ def test_cli_checks_the_node_metric_too(tmp_path):
     (tmp_path / "docs" / "llms.txt").write_text("- 999 registered nodes\n", encoding="utf-8")
     (tmp_path / "docs" / ".well-known" / "llms.txt").write_text(
         "- 42 registered nodes\n", encoding="utf-8")
+    # The localized READMEs are managed node surfaces too (2026-09-17). An unreadable managed file
+    # is a hard error by design, so this fixture has to carry every surface the registry names.
+    (tmp_path / "README.zh-CN.md").write_text("| 🌐 Nodes | 59 |\n", encoding="utf-8")
+    (tmp_path / "README.ja.md").write_text("| 登録ノード | 59個の割り当てID |\n", encoding="utf-8")
 
     stale = subprocess.run([sys.executable, str(SCRIPT), "--check", "--metric", "nodes",
                             "--root", str(tmp_path)],
@@ -158,6 +162,8 @@ def test_cli_checks_the_node_metric_too(tmp_path):
     assert "docs/llms.txt:1" in stale.stderr, stale.stderr
 
     (tmp_path / "docs" / "llms.txt").write_text("- 42 registered nodes\n", encoding="utf-8")
+    (tmp_path / "README.zh-CN.md").write_text("| 🌐 Nodes | 42 |\n", encoding="utf-8")
+    (tmp_path / "README.ja.md").write_text("| 登録ノード | 42個の割り当てID |\n", encoding="utf-8")
     healthy = subprocess.run([sys.executable, str(SCRIPT), "--check", "--metric", "nodes",
                               "--quiet", "--root", str(tmp_path)],
                              capture_output=True, text=True)
