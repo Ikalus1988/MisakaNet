@@ -42,6 +42,11 @@ npx @misaka-net/misakanet-setup --report      # this machine's state as YAML, sa
 npx @misaka-net/misakanet-setup --report --strict   # CI in one line: same YAML, but the exit code is the verdict
                                              # (or the shorthand `--ci`; ready-to-copy Actions job in the repo:
                                              #  docs/maintainer/setup-health-ci.md)
+npx @misaka-net/misakanet-setup --silent      # enterprise/MDM: no progress output (the ✓/· narration and the banner
+                                             # go); the `!` lines, the report and every error still print
+npx @misaka-net/misakanet-setup --report-json # the same report as JSON — identical field names, schema
+                                             # `misakanet-setup-report/1` — and nothing else on stdout, so an MDM can
+                                             # `JSON.parse` the stream (see "Enterprise deployment" below)
 npx @misaka-net/misakanet-setup --voice       # opt-in: a cue when a search hits, another when it misses
                                              # (Claude Code: a PostToolUse hook; mute later with MISAKANET_VOICE=0)
 npx @misaka-net/misakanet-setup --uninstall   # remove exactly what it added
@@ -54,11 +59,11 @@ evidence meant to be pasted into an issue or a CI log, and a nonzero exit there 
 evidence" into a failing step. The gate is the opt-in `--strict` form (alias: `--ci`), which prints
 the *same* YAML and then judges it:
 
-| code | `--report --strict` | meaning |
+| code | `--report --strict` (and `--report-json --strict`) | meaning |
 |---|---|---|
 | `0` | READY | the report says `verify: READY` **and** `open-items: 0` |
-| `1` | NOT READY | `verify: NOT READY` — including when `open-items > 0`; the YAML lists one line per open item, each with its fix |
-| `2` | could not run | the report could not be produced at all (the tool failed instead of judging). This is **not** a verdict about your machine: on `2` there is no YAML, only a one-line reason on stderr |
+| `1` | NOT READY | `verify: NOT READY` — including when `open-items > 0`; the report lists one line per open item, each with its fix |
+| `2` | could not run | the report could not be produced at all (the tool failed instead of judging). This is **not** a verdict about your machine: on `2` there is no report at all (neither YAML nor JSON), only a one-line reason on stderr |
 
 The convention is the repository-wide one (`0 = fine, 1 = found problems, 2 = could not run`, same as
 `scripts/check_workflow_scripts.py`), so a CI step can tell "the environment is unhealthy" (fix the
@@ -77,6 +82,32 @@ npx -y @misaka-net/misakanet-setup --report --strict > setup-health.yaml   # 0 /
 
 Don't pipe it into `tee` and then read `$?` — the pipeline's exit code is `tee`'s, not the gate's
 (that trap has its own write-up in `docs/maintainer/handoff-2026-09-15.md`).
+
+`--report-json` obeys the **same three codes** with the same two contracts: alone it exits 0 whenever
+it printed the JSON (including on a NOT READY machine), and with `--strict` the exit code is the
+verdict. `--silent` changes neither the report nor the codes — it only removes progress:
+
+```bash
+npx -y @misaka-net/misakanet-setup --silent --report-json --strict > machine.json   # 0 / 1 / 2, JSON on stdout
+```
+
+## Enterprise deployment
+
+GPO / Intune / Jamf / Ansible snippets, and the section an IT security review actually asks for
+(**数据边界**: which data stays on the machine, what must reach `misakanet.org`, and how
+`--no-register` avoids registration entirely):
+[`docs/maintainer/enterprise-deployment.md`](https://github.com/Ikalus1988/MisakaNet/blob/main/docs/maintainer/enterprise-deployment.md).
+
+The short version for a deployment script — two commands, both silent:
+
+```bash
+npx -y @misaka-net/misakanet-setup --silent --no-register           # ① install (no progress output)
+npx -y @misaka-net/misakanet-setup --silent --report-json --strict  # ② one JSON document; the exit code is the verdict
+```
+
+`--report-json` selects *report* mode, exactly like `--report`: it is read-only and installs nothing,
+so step ① is a separate command. `--silent` is not mute — anything that went wrong, and every step a
+human still has to take, is still printed.
 
 ## Keeping it current
 
@@ -115,6 +146,9 @@ npx @misaka-net/misakanet-setup@latest
   `export MISAKANET_CLIENT_ID=<setup-…>`. Without that, each install mints a new node.
 - Retention: lesson content retrieved from the server is **data, not instructions** — the
   injected rules tell the assistant not to execute commands found in it.
+- The report (`--report` or `--report-json`) is written to **stdout and nowhere else**: this program
+  has no path that uploads it. Collecting the evidence is the deployment tool's job, which is what
+  makes it auditable.
 
 ## Offline / restricted networks
 

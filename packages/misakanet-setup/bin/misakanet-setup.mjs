@@ -6,6 +6,8 @@
  *   npx @misaka-net/misakanet-setup --dry-run  show what would change, write nothing
  *   npx @misaka-net/misakanet-setup --verify   is it actually working?
  *   npx @misaka-net/misakanet-setup --uninstall
+ *   npx @misaka-net/misakanet-setup --silent --report-json   the enterprise/MDM form (#1784):
+ *     no progress output, one JSON report on stdout, and 0/1/2 as the exit code.
  *
  * Why this exists separately from integrations/agent-autostart/install_misakanet_agent.py:
  * the audience is Claude Code / Codex users, both of which *are* Node programs - so `node`
@@ -68,6 +70,21 @@ const valueOf = (flag, dflt) => {
 };
 const only = valueOf('--only', '').split(',').map((s) => s.trim()).filter(Boolean);
 const DRY = has('--dry-run');
+/**
+ * `--silent` (issue #1784): the enterprise/MDM form. A GPO or Intune script pipes this program's
+ * stdout into a log file, where the ✓/· narration is noise (and names local paths).
+ *
+ * What it suppresses is exactly this: the banner, the `done`/`skipped` lists, the closing
+ * "接下来" guidance, and uninstall's "已恢复原状" line — i.e. progress.
+ *
+ * What it never suppresses: the `!` lines (the manual/error list — anything that went wrong or
+ * needs a human), the report (`--report` YAML / `--report-json`), and the `--strict` verdict on
+ * stderr. Silent is not mute: an installer that fails quietly is worse than a loud one, and a
+ * deployment that swallowed its own errors would be undebuggable in the field.
+ */
+const SILENT = has('--silent');
+/** `--report-json`: the same report as JSON, and nothing else on stdout (#1784). */
+const REPORT_JSON = has('--report-json');
 const HOME = resolve(valueOf('--home', homedir()));
 const AGENTS = ['claude', 'codex', 'hermes', 'openclaw', 'codewhale'];
 
@@ -103,7 +120,7 @@ function readText(path) {
  * meant to prevent is now caught in CI instead, by a test that binds this literal to the
  * manifest — a failing test is a better place for that than a request header.
  */
-const VERSION = '0.5.3';
+const VERSION = '0.5.4'
 
 function backup(path) {
   if (DRY || !readText(path)) return;
@@ -1281,81 +1298,160 @@ function distroName() {
 }
 
 /**
- * Returns the verdict it printed, so the caller can turn the *same* two fields into an exit code
- * without re-running the checks or re-parsing its own YAML (issue #1782):
- *   { allOk }      ← the `verify:` line
- *   { openItems }  ← the `open-items:` line (`manual.length`)
- * Nothing else participates in the gate. In particular `tools-visible` and `live-call-evidence` are
- * printed blank for the reporter to fill in *afterwards*: they are never read back here, and a gate
- * that depended on the reporter's diligence would not be a gate.
+ * The report as *data* — one schema (`misakanet-setup-report/1`), two encodings (#1784).
+ *
+ * Why it stopped being an array of YAML strings: an MDM/GPO cannot parse prose. `--report-json`
+ * has to hand the same facts to `JSON.parse`, and "the same facts" only stays true if both
+ * encodings are printed from this one object rather than assembled twice. So the YAML printer
+ * below is a *renderer*, not the report, and a test asserts the two agree field by field.
+ *
+ * Field names are identical in both encodings (kebab-case, as `misakanet-setup-report/1` has
+ * always spelled them) — one schema means one set of names. The YAML encodes the values as
+ * scalars (`true`, `[claude, codex]`, `""`); the JSON keeps their real types (boolean, array,
+ * string), which is the whole point of a machine-readable form.
  */
-async function report() {
-  const allOk = await verify();
+function reportValues(allOk) {
   const agents = AGENTS.filter((agent) => detect(agent));
   const token = existsSync(join(stateDir(), 'token'));
+  const permissions = (() => {
+    // `n/a` when Claude Code is not a target on this machine: an absent settings file is not a
+    // gap, and reporting one would send a Codex-only user chasing a fix they do not need.
+    if (!detect('claude')) return 'n/a';
+    const granted = readJson(join(HOME, '.claude', 'settings.json'), null)?.permissions?.allow || [];
+    const missing = CLAUDE_ALLOWED_TOOLS.filter((tool) => !granted.includes(tool));
+    return missing.length ? 'incomplete' : 'ok';
+  })();
+  return [
+    ['schema', 'misakanet-setup-report/1'],
+    ['setup-version', VERSION],
+    ['os', platformName()],
+    ['distro', distroName()],
+    ['arch', process.arch],
+    ['node', process.version],
+    ['detected-agents', agents],
+    ['verify', allOk ? 'READY' : 'NOT READY'],
+    ['endpoint-reachable', lastProbe.reachable],
+    ['endpoint-tools', lastProbe.tools],
+    ['token', token ? 'present' : 'absent'],
+    ['permissions', permissions],
+    ['hook', existsSync(join(stateDir(), 'hook.mjs')) ? 'present' : 'absent'],
+    ['voice', voiceStatus()],
+    ['open-items', manual.length],
+    // Redacted here, once, so neither encoder can print an unredacted message by accident.
+    ['open-items-detail', manual.map((m) => redact(m))],
+    ...HUMAN_REPORT_FIELDS.map(([key, value, note]) => [key, value, note]),
+  ];
+}
+
+/**
+ * The two fields only a human can fill in, blank in every run.
+ *
+ * They are `tools-visible` (what the *agent* sees, which only the agent's own CLI can answer) and
+ * `live-call-evidence` (one line the agent printed when it actually called the tool). Never read
+ * back by this process and never part of the exit code: a gate that depended on the reporter
+ * remembering to fill them in would not be a gate (issue #1782).
+ *
+ * The third element is the YAML comment that teaches the field; JSON needs no comment.
+ */
+const HUMAN_REPORT_FIELDS = [
+  ['tools-visible', {}, 'e.g. {codex: 7} — from `codex mcp list` / `codewhale mcp tools`'],
+  ['live-call-evidence', '', 'one line your agent printed when it called misakanet_search'],
+];
+
+/** Column the `#` of the YAML comments lines up at (both keys are shorter than this). */
+const REPORT_COMMENT_COLUMN = 27;
+
+function yamlScalar(value) {
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (Array.isArray(value)) return `[${value.join(', ')}]`;
+  if (value && typeof value === 'object') return '{}';
+  if (value === '') return '""';
+  return String(value);
+}
+
+function reportYaml(values) {
   const lines = [
     '# MisakaNet setup report — safe to paste in public; the two empty fields at the end are',
     '# for you to fill (they are the only parts this tool cannot know).',
-    'schema: misakanet-setup-report/1',
-    `setup-version: ${VERSION}`,
-    `os: ${platformName()}`,
-    `distro: ${distroName()}`,
-    `arch: ${process.arch}`,
-    `node: ${process.version}`,
-    `detected-agents: [${agents.join(', ')}]`,
-    `verify: ${allOk ? 'READY' : 'NOT READY'}`,
-    `endpoint-reachable: ${lastProbe.reachable}`,
-    `endpoint-tools: ${lastProbe.tools}`,
-    `token: ${token ? 'present' : 'absent'}`,
-    `permissions: ${(() => {
-      // `n/a` when Claude Code is not a target on this machine: an absent settings file is not a
-      // gap, and reporting one would send a Codex-only user chasing a fix they do not need.
-      if (!detect('claude')) return 'n/a';
-      const granted = readJson(join(HOME, '.claude', 'settings.json'), null)?.permissions?.allow || [];
-      const missing = CLAUDE_ALLOWED_TOOLS.filter((tool) => !granted.includes(tool));
-      return missing.length ? 'incomplete' : 'ok';
-    })()}`,
-    `hook: ${existsSync(join(stateDir(), 'hook.mjs')) ? 'present' : 'absent'}`,
-    `voice: ${voiceStatus()}`,
-    `open-items: ${manual.length}`,
-    ...(manual.length
-      ? ['open-items-detail:', ...manual.map((m) => `  - ${redact(m)}`)]
-      : []),
-    '# Fill these two in (see the bounty for how):',
-    'tools-visible: {}          # e.g. {codex: 7} — from `codex mcp list` / `codewhale mcp tools`',
-    'live-call-evidence: ""     # one line your agent printed when it called misakanet_search',
   ];
-  console.log(lines.join('\n'));
+  for (const [key, value, note] of values) {
+    if (key === 'open-items-detail') {
+      // Emitted as a block list, and omitted entirely when there is nothing open — the shape this
+      // report has always had. (JSON carries the array unconditionally; see the class doc.)
+      if (value.length) lines.push('open-items-detail:', ...value.map((m) => `  - ${m}`));
+      continue;
+    }
+    if (key === HUMAN_REPORT_FIELDS[0][0]) lines.push('# Fill these two in (see the bounty for how):');
+    const head = `${key}: ${yamlScalar(value)}`;
+    if (!note) { lines.push(head); continue; }
+    lines.push(head.length >= REPORT_COMMENT_COLUMN
+      ? `${head}  # ${note}`
+      : `${head.padEnd(REPORT_COMMENT_COLUMN)}# ${note}`);
+  }
+  return lines.join('\n');
+}
+
+function reportJson(values) {
+  const payload = {};
+  for (const [key, value] of values) payload[key] = value;
+  return JSON.stringify(payload, null, 2);
+}
+
+/**
+ * Returns the verdict it printed, so the caller can turn the *same* two fields into an exit code
+ * without re-running the checks or re-parsing its own output (issue #1782):
+ *   { allOk }      ← the `verify:` line
+ *   { openItems }  ← the `open-items:` line (`manual.length`)
+ * Nothing else participates in the gate — `tools-visible` and `live-call-evidence` least of all.
+ *
+ * `asJson` switches the encoding only. Same checks, same fields, same exit codes: a machine that
+ * is NOT READY still gets its JSON (that is the case an MDM is collecting data for), so the
+ * encoding never changes the verdict.
+ */
+async function report(asJson) {
+  const allOk = await verify();
+  const values = reportValues(allOk);
+  console.log(asJson ? reportJson(values) : reportYaml(values));
   return { allOk, openItems: manual.length };
 }
 
 // ── main ─────────────────────────────────────────────────────────────
 function render() {
   const out = [];
-  if (done.length) out.push(`\n已完成（${done.length}）:`, ...done.map((l) => `  ✓ ${l}`));
+  // `--silent` drops the narration, never the errors: `done` is progress, `manual` is what a human
+  // (or a GPO log reader) has to act on, and a run that failed silently would be worse than a loud
+  // one. See SILENT at the top for the full contract.
+  if (done.length && !SILENT) out.push(`\n已完成（${done.length}）:`, ...done.map((l) => `  ✓ ${l}`));
   if (manual.length) out.push(`\n需要你手动一步（${manual.length}）:`, ...manual.map((l) => `  ! ${l}`));
-  if (skipped.length) out.push(`\n跳过（${skipped.length}）:`, ...skipped.map((l) => `  · ${l}`));
+  if (skipped.length && !SILENT) out.push(`\n跳过（${skipped.length}）:`, ...skipped.map((l) => `  · ${l}`));
   return out.join('\n');
+}
+
+/** `console.log('')` would still be a line of noise in a silent run's log; print only if there is text. */
+function say(text) {
+  if (text.trim()) console.log(text);
 }
 
 // `--ci` is shorthand for `--report --strict` (issue #1782), so it selects report mode on its own —
 // but it must not hijack an explicit mode flag: `--verify --ci` still verifies, and
-// `--uninstall --ci` still undoes.
+// `--uninstall --ci` still undoes. `--report-json` is `--report` with the other encoder, so it
+// selects the same mode and obeys the same precedence (#1784).
 const STRICT = has('--strict') || has('--ci');
 const mode = has('--uninstall') ? 'uninstall'
-  : ((has('--report') || (has('--ci') && !has('--verify'))) ? 'report'
+  : ((has('--report') || REPORT_JSON || (has('--ci') && !has('--verify'))) ? 'report'
   : (has('--verify') ? 'verify' : 'install'));
-if (mode !== 'report') {
+if (mode !== 'report' && !SILENT) {
   // The banner names the home directory, which is exactly the kind of thing that gets pasted
-  // along with a report — so `--report` prints only the report.
+  // along with a report — so `--report` prints only the report. `--silent` drops it for the other
+  // reason a deployment needs: it is progress, and the log does not want it.
   console.log(`MisakaNet 安装程序（npx 版）${DRY ? '（--dry-run，不会写任何文件）' : ''}${has('--upgrade') ? '（--upgrade：与安装等价，覆盖安装即升级）' : ''}`);
   console.log(`家目录：${HOME}\n`);
 }
 
 if (mode === 'uninstall') {
   uninstall();
-  console.log(render());
-  console.log('\n已恢复原状（每个改过的文件都有 .misakanet.bak 备份）。');
+  say(render());
+  if (!SILENT) console.log('\n已恢复原状（每个改过的文件都有 .misakanet.bak 备份）。');
   process.exit(0);
 }
 
@@ -1371,16 +1467,20 @@ if (mode === 'report') {
   //   --report --strict (--ci)  → 0 READY · 1 NOT READY (including `open-items > 0`) ·
   //                               2 the report could not be produced at all.
   //
+  // `--report-json` is the same mode, same contracts, same codes, other encoding: the JSON is
+  // printed even when the machine is NOT READY — that is precisely the state an MDM is collecting
+  // data about — and `--silent` changes nothing about any of this (#1784).
+  //
   // The verdict comes from the report's own `verify:` and `open-items:` fields and from nothing
   // else — see report() for why the two human-filled fields must never enter this decision.
-  // `--report --strict` on a machine that is not ready still prints the full YAML first, so CI
+  // `--report --strict` on a machine that is not ready still prints the full report first, so CI
   // can paste the evidence into the job summary and still fail the step.
   // Reporting also has to work *before* an install (a bot's first useful data point is often
   // "this machine has no agent config at all") — which is why "not ready" is 1, not 2, and why
   // the default mode stays 0.
   let verdict;
   try {
-    verdict = await report();
+    verdict = await report(REPORT_JSON);
   } catch (err) {
     // A crash is not a health verdict. 2 follows the "0 = fine, 1 = found problems, 2 = could not
     // run" convention used by scripts/check_workflow_scripts.py, and it matters that this is not
@@ -1395,14 +1495,17 @@ if (mode === 'report') {
   const ready = verdict.allOk && verdict.openItems === 0;
   if (!ready) {
     console.error(`--strict：NOT READY（verify: ${verdict.allOk ? 'READY' : 'NOT READY'}，`
-      + `open-items: ${verdict.openItems}）→ 退出码 1；上面的 YAML 就是证据。`);
+      + `open-items: ${verdict.openItems}）→ 退出码 1；上面的 ${REPORT_JSON ? 'JSON' : 'YAML'} 就是证据。`);
   }
   process.exit(ready ? 0 : 1);
 }
 
 if (mode === 'verify') {
   const allOk = await verify();
-  console.log(render());
+  say(render());
+  // Kept under `--silent`: this line is the verdict, not progress. (It is also the only thing a
+  // silent `--verify` prints when the machine is healthy, which is what makes it usable in a
+  // deployment log.)
   console.log(`\n结论：${allOk ? `READY —— 打开一个新会话，问它「${ONBOARDING_QUERIES[0]}」这类带报错原文的片段` : 'NOT READY —— 上面每条 ! 都给了修复动作'}`);
   process.exit(allOk ? 0 : 1);
 }
@@ -1428,10 +1531,16 @@ if (!targets.length) {
   }
 }
 
-console.log(render());
-console.log(`
+// Under `--silent` this is the whole install-mode output: only the `!` lines survive render(), and
+// the closing guidance is skipped. A deployment script ends up with an empty log on a clean run and
+// the exact failures in it on a dirty one — which is the point (#1784). The machine-readable form
+// of the same run is `--report-json`, not this text.
+say(render());
+if (!SILENT) {
+  console.log(`
 接下来：
   1) **把这个助手窗口关掉再打开一次**（新功能要重开会话才生效）
   2) 随便挑一句带报错原文的片段问它（例如「${ONBOARDING_QUERIES[0]}」「${ONBOARDING_QUERIES[1]}」「${ONBOARDING_QUERIES[2]}」）——它应该先去查经验库
   3) 想确认状态：npx @misaka-net/misakanet-setup --verify
   4) 想关掉：npx @misaka-net/misakanet-setup --uninstall`);
+}

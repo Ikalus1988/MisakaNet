@@ -427,7 +427,7 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // file into a request header, which is CodeQL js/file-access-to-http #268 all over again.
   const declared = JSON.parse(
     readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
-  assert.equal(declared, '0.5.3', 'bump this test when the package version moves');
+  assert.equal(declared, '0.5.4', 'bump this test when the package version moves');
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.
@@ -1121,6 +1121,247 @@ test('--report --strict exits 0 on a READY machine, and the human fields never g
   } finally {
     server.close();
   }
+});
+
+// ── --silent + --report-json: the enterprise/MDM form (issue #1784) ───────────
+// The audience here is not the person who reads the docs, it is the IT department that pushes the
+// installer through GPO / Intune / Jamf / Ansible (docs/maintainer/enterprise-deployment.md). Two
+// things follow, and both are pinned below:
+//
+//   * `--silent` removes *progress*, not information. The ✓/· narration, the banner (which names
+//     the local home directory) and the closing guidance go; the `!` lines, the report and the
+//     exit codes stay. An installer that failed quietly would be undebuggable in the field.
+//   * `--report-json` is the *same* report in the other encoding, and it is the entire stdout —
+//     an MDM does JSON.parse on that stream, so one stray banner line breaks it. It is printed
+//     even when the machine is NOT READY, because that is the machine they are collecting data
+//     about.
+
+/** How the YAML encoder writes a value — used to prove the two encodings carry the same data. */
+function yamlEncoded(value) {
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (Array.isArray(value)) return `[${value.join(', ')}]`;
+  if (value && typeof value === 'object') return '{}';
+  if (value === '') return '""';
+  return String(value);
+}
+
+/** `reportLines` keeps the trailing `# comment` of the two human fields; the value is what precedes it. */
+function yamlValue(raw) {
+  return String(raw).replace(/\s+#.*$/, '').trim();
+}
+
+test('--silent drops the progress narration, and keeps the exit code working', () => {
+  const home = makeHome();
+  const loud = runOffline(home, '--dry-run');
+  assert.equal(loud.status, 0, loud.stdout + loud.stderr);
+  // The baseline really does narrate, or the assertions below would prove nothing.
+  assert.match(loud.stdout, /已完成/);
+  assert.match(loud.stdout, /接下来：/);
+  assert.match(loud.stdout, /家目录：/);
+
+  const home2 = makeHome();
+  const quiet = runOffline(home2, '--dry-run', '--silent');
+  assert.equal(quiet.status, 0, quiet.stdout + quiet.stderr);
+  assert.ok(!/已完成/.test(quiet.stdout), quiet.stdout);
+  assert.ok(!/接下来：/.test(quiet.stdout), quiet.stdout);
+  assert.ok(!/✓|·/.test(quiet.stdout), `no ✓/· narration may survive: ${quiet.stdout}`);
+  assert.ok(!/家目录：/.test(quiet.stdout),
+    `the banner names the local home path, which a GPO log should not collect: ${quiet.stdout}`);
+});
+
+test('--silent is not mute: the errors and the "a human must do this" lines still print', () => {
+  // A config the installer itself cannot parse: the run cannot fix it, so it has to say so. This is
+  // the line a deployment log exists for, and it must survive --silent.
+  const home = makeHome();
+  writeFileSync(join(home, '.claude.json'), '{ this is not json');
+  const quiet = run(home, '--silent');
+  assert.equal(quiet.status, 0, quiet.stdout + quiet.stderr);
+  assert.match(quiet.stdout, /! /, `an error must survive --silent: ${quiet.stdout}`);
+  assert.match(quiet.stdout, /不是合法 JSON/);
+  assert.ok(!/✓/.test(quiet.stdout), `but the narration must not come back with it: ${quiet.stdout}`);
+});
+
+test('--silent still prints the report — that is the one thing it must never mute', () => {
+  // Both encodings, because a deployment picks one and has to be able to trust the other.
+  const home = makeHome();
+  runOffline(home);
+  const yaml = run(home, '--silent', '--report');
+  assert.equal(yaml.status, 0, yaml.stdout + yaml.stderr);
+  assert.match(yaml.stdout, /schema: misakanet-setup-report\/1/, yaml.stdout);
+  assert.ok(!/已完成|接下来：|家目录：/.test(yaml.stdout), yaml.stdout);
+
+  const json = run(home, '--silent', '--report-json');
+  assert.equal(json.status, 0, json.stdout + json.stderr);
+  assert.equal(JSON.parse(json.stdout).schema, 'misakanet-setup-report/1');
+});
+
+test('--silent --report-json leaves exactly one JSON document on stdout', () => {
+  const home = makeHome();
+  runOffline(home);                       // a real install, so the report has facts to carry
+  const result = run(home, '--silent', '--report-json');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  // JSON.parse over the WHOLE stdout is the assertion: a banner line or a second document would
+  // throw here, which is exactly what it would do in an MDM's parser.
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.schema, 'misakanet-setup-report/1');
+  assert.equal(payload.verify, 'NOT READY', 'a NOT READY machine still gets its JSON (#1784)');
+  assert.ok(payload['open-items'] > 0, result.stdout);
+  assert.ok(Array.isArray(payload['open-items-detail']), result.stdout);
+  assert.deepEqual(payload['detected-agents'], ['claude', 'codex'], JSON.stringify(payload));
+});
+
+test('--report-json is valid JSON to a non-JS parser too (json.load)', (t) => {
+  // The issue's wording is "an MDM can parse it", and an MDM may well be Python. `JSON.parse` and
+  // `json.load` agree on everything this report can contain, but that is an argument, not a test —
+  // the repo runs both runtimes, so the cheap thing is to actually hand it to Python.
+  const python = spawnSync('python3', ['-c', 'import sys'], { encoding: 'utf8' });
+  if (python.error || python.status !== 0) return t.skip('no python3 on this machine');
+
+  const home = makeHome();
+  runOffline(home);
+  const result = run(home, '--silent', '--report-json');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+
+  const loaded = spawnSync('python3', ['-c',
+    'import json,sys; d=json.load(sys.stdin); print(d["schema"], d["open-items"])',
+  ], { input: result.stdout, encoding: 'utf8' });
+  assert.equal(loaded.status, 0, `python could not load the report: ${loaded.stderr}`);
+  const [schema, openItems] = loaded.stdout.trim().split(' ');
+  assert.equal(schema, 'misakanet-setup-report/1');
+  assert.equal(Number(openItems), Number(JSON.parse(result.stdout)['open-items']),
+    'the two parsers must read the same report');
+  return undefined;
+});
+
+test('--report-json is the same data as --report, field by field', () => {
+  // "The JSON encoding of the same report" is only true if both encodings are printed from one
+  // object. This compares every field of the JSON against the YAML line of the same name.
+  const home = makeHome();
+  runOffline(home);
+  const yaml = run(home, '--report');
+  const json = run(home, '--report-json');
+  assert.equal(yaml.status, json.status, yaml.stdout + json.stdout);
+  assert.equal(yaml.status, 0);
+
+  const fields = reportLines(yaml.stdout);
+  const payload = JSON.parse(json.stdout);
+  for (const [key, value] of Object.entries(payload)) {
+    if (key === 'open-items-detail') continue;
+    assert.ok(key in fields, `${key} is in the JSON but has no YAML line`);
+    assert.equal(yamlValue(fields[key]), yamlEncoded(value),
+      `${key} disagrees between the two encodings: YAML "${fields[key]}" / JSON ${JSON.stringify(value)}`);
+  }
+  for (const key of Object.keys(fields)) {
+    assert.ok(key in payload, `${key} is in the YAML but missing from the JSON`);
+  }
+  // The open items are the one field with a different shape (YAML block list, JSON array), so they
+  // get their own check — including the count, which is what the strict gate reads.
+  const blocks = yaml.stdout.split('\n').filter((l) => /^ {2}- /.test(l)).map((l) => l.slice(4));
+  assert.deepEqual(blocks, payload['open-items-detail']);
+  assert.equal(blocks.length, payload['open-items']);
+  assert.ok(blocks.length > 0, 'the fixture must have open items, or this proves nothing');
+});
+
+test('--silent --report-json --strict returns 1 on a NOT READY home, JSON and all', () => {
+  const home = makeHome();
+  const result = run(home, '--silent', '--report-json', '--strict');
+  assert.equal(result.status, 1, result.stdout + result.stderr);
+  // The gate prints its evidence before it fails: an MDM that only kept the exit code would have
+  // nothing to show, which is why the JSON is not replaced by the stderr line.
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.verify, 'NOT READY');
+  assert.ok(payload['open-items'] > 0);
+  assert.match(result.stderr, /退出码 1/, result.stderr);
+  assert.match(result.stderr, /JSON 就是证据/, 'the verdict line must name the encoding it printed');
+});
+
+test('--silent --report-json --strict returns 0 on a READY machine, silently', async () => {
+  const { createServer } = await import('node:http');
+  const server = createServer((req, res) => {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', () => {
+      const payload = JSON.parse(body || '{}');
+      const result = payload.method === 'tools/list'
+        ? { tools: [{ name: 'misakanet_search' }, { name: 'misakanet_get_lesson' }] }
+        : payload.params?.name === 'misakanet_register'
+          ? { node_id: 'MisakaTEST', token: TOKEN_SHAPE_OK }
+          : { results: [] };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
+        content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } }));
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}/mcp`;
+  const env = { ...process.env, MISAKANET_ENDPOINT: url, MISAKANET_REGISTRY_URL: url };
+
+  try {
+    const home = makeHome();
+    const install = await runAsync(home, env);
+    assert.equal(install.status, 0, install.stdout + install.stderr);
+
+    const result = await runAsync(home, env, '--silent', '--report-json', '--strict');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.verify, 'READY');
+    assert.equal(payload['open-items'], 0);
+    assert.deepEqual(payload['open-items-detail'], []);
+    assert.equal(result.stderr, '', 'a healthy silent run must say nothing at all on stderr');
+  } finally {
+    server.close();
+  }
+});
+
+test('--silent --report-json --strict returns 2, and prints no half a JSON document', () => {
+  // Same construction as the YAML case: a settings.json shape this tool cannot interpret makes the
+  // report impossible. 2 is "could not run", and an MDM must not be handed `{}` for it — that would
+  // parse, and would be read as a clean machine.
+  const home = makeHome();
+  run(home);
+  writeFileSync(join(home, '.claude', 'settings.json'),
+    JSON.stringify({ hooks: { Stop: [{ hooks: 5 }] } }));
+
+  const result = run(home, '--silent', '--report-json', '--strict');
+  assert.equal(result.status, 2, result.stdout + result.stderr);
+  assert.equal(result.stdout.trim(), '', `no partial JSON may be printed: ${result.stdout}`);
+  assert.match(result.stderr, /退出码 2/, result.stderr);
+});
+
+test('--silent composes with --only: one agent, and nothing to say on success', () => {
+  const home = makeHome();
+  const result = runOffline(home, '--silent', '--only', 'claude');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal(result.stdout.trim(), '',
+    `a clean silent run is an empty log: ${result.stdout}`);
+  const claude = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
+  assert.equal(claude.mcpServers.misakanet.url, 'https://misakanet.org/mcp');
+  assert.ok(!existsSync(join(home, '.codex', 'AGENTS.md')), '--only claude must not touch codex');
+});
+
+test('--silent + --report-json + --only do not conflict (and --only does not narrow the report)', () => {
+  // `--only` is an install-time selector; the report describes the *machine*. Asserting the
+  // distinction keeps a future "let --only filter the report" change from silently making a
+  // Codex-only machine look like a Claude-only one.
+  const home = makeHome();
+  const result = run(home, '--silent', '--report-json', '--only', 'claude', '--strict');
+  assert.equal(result.status, 1, result.stdout + result.stderr);
+  const payload = JSON.parse(result.stdout);
+  assert.deepEqual(payload['detected-agents'], ['claude', 'codex'], JSON.stringify(payload));
+});
+
+test('--silent composes with --uninstall, which still removes everything', () => {
+  const home = makeHome();
+  runOffline(home);
+  const result = runOffline(home, '--silent', '--uninstall');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.ok(!/✓/.test(result.stdout), `uninstall's narration must be hidden: ${result.stdout}`);
+  assert.ok(!/已恢复原状/.test(result.stdout), result.stdout);
+  // Hermes' hook is not ours to remove, so that one `!` line is information, not progress.
+  assert.match(result.stdout, /! /, `the manual note must survive: ${result.stdout}`);
+  assert.ok(!existsSync(join(home, '.claude', 'CLAUDE.md'))
+    || !readFileSync(join(home, '.claude', 'CLAUDE.md'), 'utf8').includes('misakanet:start'),
+  'the rules block must still be gone under --silent');
 });
 
 // ── pre-allowed read tools: the first search must not be denied ───────────────
