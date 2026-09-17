@@ -17,7 +17,11 @@ on:
           - suggest-and-intake
 
   workflow_run:
-    workflows: ["*"]
+    # NOT `["*"]`. A wildcard here creates a run of *this* workflow whenever any other workflow
+    # completes: 21,126 runs by 2026-09-17, of which 98.1% were skipped by the job-level `if`
+    # below. The demo exists to react to a *failing CI run*, so it names the workflow that is this
+    # repository's CI; widening it later is a one-line change.
+    workflows: ["Cross-Platform Tests"]
     types: [completed]
 
 jobs:
