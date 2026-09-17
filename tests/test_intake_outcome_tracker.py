@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.intake_outcome_tracker import compute_outcomes, load_queue
+from scripts.intake_outcome_tracker import REPO_ROOT, compute_outcomes, load_queue
 
 
 class TestIntakeOutcomeTracker(unittest.TestCase):
@@ -93,6 +93,53 @@ class TestIntakeOutcomeTracker(unittest.TestCase):
         records = load_queue(path)
         self.assertEqual(records, [])
         path.unlink()
+
+
+class TestConversionRateIsHonest(unittest.TestCase):
+    """`conversion_rate: 0.0` was quoted as a fact while the corpus proved conversions happened.
+
+    The queue records submissions and nothing updates their status, so `reviewed` is always 0 and
+    the rate is always 0.0 — *not observed*, not *measured*. On 2026-09-17 that number was read as
+    "no intake ever became a lesson" while 17 lessons carried a `source: mcp-intake-…` marker.
+    """
+
+    def test_an_unmaintained_queue_says_so_instead_of_reporting_a_rate(self):
+        records = [{"type": "intake", "status": "pending", "source": "mcp-agent"}] * 3
+        outcomes = compute_outcomes(records)
+        self.assertEqual(outcomes["conversion_rate"], 0.0)
+        self.assertFalse(outcomes["conversion_rate_is_observable"])
+        self.assertIn("NOT OBSERVABLE", outcomes["conversion_rate_note"])
+
+    def test_a_reviewed_queue_reports_a_measured_rate(self):
+        records = [
+            {"type": "intake", "status": "converted", "source": "mcp-agent"},
+            {"type": "intake", "status": "pending", "source": "mcp-agent"},
+        ]
+        outcomes = compute_outcomes(records)
+        self.assertTrue(outcomes["conversion_rate_is_observable"])
+        self.assertEqual(outcomes["conversion_rate"], 1.0)
+        self.assertEqual(outcomes["conversion_rate_note"], "measured from the queue")
+
+    def test_the_corpus_side_count_matches_what_the_lessons_say(self):
+        """The number that *is* checkable — derived from the corpus, not from a ledger."""
+        from scripts.intake_outcome_tracker import corpus_conversions
+
+        corpus = corpus_conversions()
+        self.assertGreaterEqual(corpus["lessons"], 10, corpus)
+        self.assertEqual(corpus["intakes"], len(set(corpus["intake_ids"])), "ids must be deduped")
+        # A four-digit issue number is a real shape here: a `{6,}` bound on the pattern dropped
+        # every one of them and undercounted (7 instead of 17, found while writing this).
+        self.assertIn("1069", corpus["intake_ids"], corpus["intake_ids"])
+
+    def test_the_queue_and_the_corpus_disagree_by_design(self):
+        """If these ever agree, either the ledger got maintained or the corpus stopped converting."""
+        outcomes = compute_outcomes(load_queue(Path(REPO_ROOT) / "data" / "contribution_queue.jsonl"))
+        if not outcomes["conversion_rate_is_observable"]:
+            self.assertGreater(
+                outcomes["converted_lessons_in_corpus"], 0,
+                "an unobservable rate plus zero corpus conversions would mean the number is right "
+                "for the wrong reason",
+            )
 
 
 if __name__ == "__main__":
