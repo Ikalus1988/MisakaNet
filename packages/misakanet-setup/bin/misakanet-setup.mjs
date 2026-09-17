@@ -122,6 +122,69 @@ function readText(path) {
  */
 const VERSION = '0.5.4'
 
+// ── argument surface ─────────────────────────────────────────────────
+// Until 2026-09-17 no flag was validated at all: `--help` fell through to a *real install*
+// (reproduced on a clean HOME — it rewrote the user's CLAUDE.md and settings.json), and an
+// unknown flag was silently ignored. `--help` is the first thing a cautious person types, so
+// "looking before you leap" was the action with the worst consequences.
+const FLAGS = [
+  ['--home <dir>', '把配置写到这个目录，而不是真实家目录（测试/沙箱用）'],
+  ['--only <a,b>', `只处理列出的助手（${AGENTS.join(' / ')}）`],
+  ['--dry-run', '只说不做：打印会改哪些文件，不写任何东西'],
+  ['--silent', '只压掉进度叙述，绝不压掉 ! 行与报告（MDM/GPO 用）'],
+  ['--report', '打印一段可公开粘贴的脱敏状态报告（人读 YAML）'],
+  ['--report-json', '同一份报告的 JSON 编码'],
+  ['--strict', '配合 --report：NOT READY 时退出码 1（默认仍退 0）'],
+  ['--ci', '= --report --strict'],
+  ['--verify', '自检：端点可达、钩子、MCP 注册、版本新旧'],
+  ['--uninstall', '移除本安装器写入的内容（保留 .misakanet.bak 备份）'],
+  ['--upgrade', '与安装等价（覆盖安装即升级）'],
+  ['--no-register', '不注册匿名节点（不写 token，检索仍是 5 次/天/IP）'],
+  ['--voice', '打开语音/桌面通知（默认关）'],
+  ['--help, -h', '打印这份帮助并退出'],
+  ['--version', '打印版本并退出'],
+];
+const VALUE_FLAGS = ['--home', '--only'];
+
+function printHelp() {
+  console.log(`MisakaNet 安装程序 ${VERSION}
+用法：npx @misaka-net/misakanet-setup [选项]
+
+${FLAGS.map(([flag, desc]) => `  ${flag.padEnd(16)} ${desc}`).join('\n')}
+
+退出码（安装模式）：0 至少装上了一个助手 / 1 什么都没装上 / 2 自己跑不起来。
+健康检查用 --verify 或 --report --strict，不要看安装模式的退出码。`);
+}
+
+if (has('--help') || has('-h')) {
+  printHelp();
+  process.exit(0);
+}
+if (has('--version')) {
+  console.log(VERSION);
+  process.exit(0);
+}
+
+const KNOWN = new Set(FLAGS.flatMap(([flag]) => flag.split(/[,\s]/).filter((f) => f.startsWith('-'))));
+{
+  const unknown = args.filter((a) => a.startsWith('-') && !KNOWN.has(a));
+  if (unknown.length) {
+    console.error(`无法识别的选项：${unknown.join(' ')}`
+      + `\n（本安装器不认识它，为避免误解你的意图，这里直接停下、什么都没写。--help 看全部选项。）`);
+    process.exit(2);
+  }
+  // A value flag whose value is missing or is itself a flag used to be accepted: `--home --voice`
+  // resolved HOME to `$(pwd)/--voice` and installed for real into a directory named `--voice`.
+  for (const flag of VALUE_FLAGS) {
+    const i = args.indexOf(flag);
+    if (i >= 0 && (!args[i + 1] || args[i + 1].startsWith('-'))) {
+      console.error(`${flag} 需要一个值（例如 ${flag} /tmp/home），现在后面跟的是 `
+        + `“${args[i + 1] ?? '空'}”——已停下，什么都没写。`);
+      process.exit(2);
+    }
+  }
+}
+
 function backup(path) {
   if (DRY || !readText(path)) return;
   try {
@@ -1559,19 +1622,48 @@ const targets = (only.length ? only : AGENTS).filter((a) => {
   return true;
 });
 
-if (!targets.length) {
-  need('没检测到 Claude Code / Codex / Hermes 的配置目录 → 请先打开一次你要用的那个助手，再回来运行本命令');
-} else {
-  const hookPath = await installHook();
-  stampVersion();
-  const bearer = has('--no-register') ? '' : await ensureIdentity();
-  for (const agent of targets) {
-    if (agent === 'claude') await installClaude(hookPath, bearer);
-    else if (agent === 'codex') await installCodex(hookPath, bearer);
-    else if (agent === 'hermes') await installHermes(hookPath, bearer);
-    else if (agent === 'openclaw') await installOpenclaw(bearer);
-    else if (agent === 'codewhale') await installCodewhale(bearer);
+// Install mode used to end without any `process.exit`, so it returned **0 no matter what**:
+// "no agent detected", "registration failed", "a target could not be written" and a clean
+// install were indistinguishable, and `npx … && echo ok` asserted success for a run that
+// changed nothing (reproduced 2026-09-17 on a machine with no agent config at all).
+//
+// The contract now matches the other modes (0 fine / 1 ran but not ready / 2 could not run):
+//   * 0 - at least one target's config was written (advisory items may still be listed in `!`)
+//   * 1 - nothing was installed: no target detected, or every target failed
+//   * 2 - the installer itself could not do its job (I/O, permissions, a blown-up config)
+//
+// The exit code deliberately answers "did the install happen", not "is everything green":
+// a run that leaves the user with working read access but no write token is a *success* with a
+// listed item. Use `--verify` / `--report --strict` for the health question — that separation
+// is what makes this signal usable in a script.
+let installed = 0;
+try {
+  if (!targets.length) {
+    need('没检测到 Claude Code / Codex / Hermes 的配置目录 → 请先打开一次你要用的那个助手，再回来运行本命令');
+  } else {
+    const hookPath = await installHook();
+    stampVersion();
+    const bearer = has('--no-register') ? '' : await ensureIdentity();
+    for (const agent of targets) {
+      // One target failing must not skip the rest: an uncaught throw used to abort the loop, so
+      // the remaining agents were never touched while the run still looked fine.
+      try {
+        if (agent === 'claude') await installClaude(hookPath, bearer);
+        else if (agent === 'codex') await installCodex(hookPath, bearer);
+        else if (agent === 'hermes') await installHermes(hookPath, bearer);
+        else if (agent === 'openclaw') await installOpenclaw(bearer);
+        else if (agent === 'codewhale') await installCodewhale(bearer);
+        installed += 1;
+      } catch (err) {
+        need(`${agent}：写入配置失败（${redact((err && err.message) || err)}）`
+          + '→ 修好这个文件或权限后重跑本命令，其它助手不受影响');
+      }
+    }
   }
+} catch (err) {
+  say(render());
+  console.error(`安装没能跑完 —— 退出码 2（跑不起来，与「装不上」是两回事）：${redact((err && err.message) || err)}`);
+  process.exit(2);
 }
 
 // Under `--silent` this is the whole install-mode output: only the `!` lines survive render(), and
@@ -1587,3 +1679,10 @@ if (!SILENT) {
   3) 想确认状态：npx @misaka-net/misakanet-setup --verify
   4) 想关掉：npx @misaka-net/misakanet-setup --uninstall`);
 }
+if (!installed) {
+  // Say it in one line on stderr as well: a script needs the reason next to the exit code, and
+  // "nothing was installed" is exactly the case that used to exit 0 in silence.
+  console.error('\n没有装上任何助手 —— 退出码 1。上面每条 ! 都给了下一步；装好助手再重跑即可。');
+  process.exit(1);
+}
+process.exit(0);
