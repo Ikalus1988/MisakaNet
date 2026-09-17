@@ -72,14 +72,20 @@ Two transports are available: **stdio** (local) and **HTTP/SSE** (remote).
 python3 scripts/mcp_server.py
 ```
 
-Exposes 4 tools via MCP stdio protocol:
+Exposes 9 tools via MCP stdio protocol (underscore-separated names, same as the remote
+endpoint; `python3 -c "from misakanet.server import TOOLS; print(len(TOOLS))"`):
 
 | Tool | Parameters | Returns |
 |------|-----------|---------|
-| `misakanet.search` | `query` (str), `domain?` (str), `top?` (int=5) | Ranked lesson results |
-| `misakanet.get_lesson` | `path_or_id` (str) | Full lesson markdown content |
-| `misakanet.submit_usage` | `lesson_id` (str), `tool` (str), `outcome` (str) | Confirmation |
-| `misakanet.usage_status` | `user?` (str) | Usage statistics |
+| `misakanet_search` | `query` (str), `domain?` (str), `top?` (int=5) | Ranked lesson results |
+| `misakanet_get_lesson` | `path_or_id` (str) | Full lesson markdown content |
+| `misakanet_submit_usage` | `lesson_id` (str), `tool` (str), `outcome` (str) | Confirmation |
+| `misakanet_usage_status` | `user?` (str) | Usage statistics |
+| `misakanet_submit_intake` | `problem` (str), `kind?`, `source?` | Intake id — opens a GitHub issue |
+| `misakanet_write_lesson` | `title`, `domain`, `problem`, `root_cause`, `fix` | Submission id (Bearer required) |
+| `misakanet_preflight` | `intent` (str), `context?` | Risk level, matched lessons, guards |
+| `misakanet_register` | `agent_type?`, `client_id?` | `node_id` + token |
+| `misakanet_memory_context` | `query?` | Session memory context |
 
 #### Claude Code Configuration
 
@@ -121,7 +127,7 @@ Server identity advertised at connection:
 ```json
 {
   "name": "misakanet",
-  "version": "2.16.0",
+  "version": "2.30.2",
   "description": "MisakaNet knowledge search and contribution"
 }
 ```
