@@ -6,7 +6,7 @@
 
 ## 1. 一句话结论
 
-**下表 30 项里，18 项有真实产出证据、6 项存在但查不到任何被使用的证据、5 项在文档里承诺了却根本跑不出东西、1 项（`claim-enforcer`）历史上真跑过但现在空转**；
+**下表 30 项里，18 项有真实产出证据、7 项存在但查不到任何被使用的证据、4 项在文档里承诺了却根本跑不出东西、1 项（`claim-enforcer`）历史上真跑过但现在空转**；
 其中最贵的一条是 `intake-bot-demo.yml`——21,732 次运行、0 条评论，因为复合 action 里未加引号的 `$ARGS` 让
 `intake_bot.py` 每次都以 exit 2 失败，而失败落到 `return; // skip unknown decisions` 分支（`.github/actions/misaka-intake-bot/action.yml:145,152,210-212`）；
 第二条是 `pr-checks.yml` 的 Auto-Merge Gate 把 REST 的布尔 `mergeable` 与 GraphQL 的枚举串 `"MERGEABLE"` 比较，
@@ -19,14 +19,14 @@
 | 自动化 | 触发 | 它替谁做了什么 | 真实运行证据（数字） | 已知缺陷 | 证据强度 |
 |---|---|---|---|---|---|
 | `intake-bot-demo.yml` | `workflow_run`(Cross-Platform Tests completed) + 手动 | 给失败 PR 贴检索命中/报料建议评论 | total=**21732**；我抽的最近 100 个 run **100% skipped**，再往前翻到第 3 页才见 1 个非 skipped（`35248089853`，手动），其日志 `RESULT: {"decision":"error","reason":"script failed"}`；marker 评论全仓 **0 条** | 参数未加引号 → argparse exit 2 → 落 `return` 分支不发评论；`pull_requests` 为空再挡一层 | 强 **(iii)** |
-| `intake-auto-review.yml` | `issues[opened,reopened]` + 手动 | 给 intake 打分、写 review 评论、贴标签 | total=**344**（success 86 / skipped 218 / failure 40） | 40 次 failure 无解释；评论无幂等 marker 复查 | 强 **(i)** |
+| `intake-auto-review.yml` | `issues[opened,reopened]` + 手动 | 给 intake 打分、写 review 评论、贴标签 | total=**344**（success 86 / skipped 218 / failure 40）；40 次 failure **全部落在 2026-08-25→08-27**，此后 86 次连续 success（至 2026-09-15） | 历史故障期已过；评论无幂等 marker 复查 | 强 **(i)** |
 | `issue-intake-triage.yml` | `issues[opened,reopened]` + 手动 | MCP 报料分诊 + 贴 checklist 评论 | total=**1233**（success 436 / failure 24）；#1368、#1619 各有 `<!-- misakanet-intake-triage -->` 评论 | — | 强 **(i)** |
 | `intake-salvage-digest.yml` | `schedule 0 8 * * *` + 手动 | 汇总 `auto-rejected` 报料、开/更新 digest issue、30 天自动关闭 | total=**30**：run 1–24 **连续失败**（2026-08-24→09-12），run 25–30 成功；issue #1639 + 5 条日更评论 | 曾连续 20 天静默失败（GH_TOKEN 缺失 + date 未加引号，见 `:13-19,44-47`）；`:128-130` 自动关闭与 SOP 冲突 | 强 **(i)** |
 | `intake-pipeline-test.yml` | 手动（唯一） | E2E 冒烟：建 D1 draft + 开 review issue | total=**1**（2026-08-28 手动） | 只跑过一次；依赖 `secrets.CF_API_TOKEN` | 中 **(ii)** |
 | `intake-benchmark.yml` | `push`(改 intake 脚本) + 手动 | 离线决策基准，不产出人可见物 | total=**7** | 无用户可见产物（纯 CI） | 中 **(i)** |
 | `intake-kind-audit.yml` | `schedule 30 6 * * 1` + 手动 | 每周找"问题被当课程处理"的错分 | total=**3**，3/3 success，但 `label:intake-kind-audit` issue **0 条** | `:36` 用 grep 判"clean"，三次都判 clean ⇒ 建 issue 分支从未走通 | 中 **(ii)** |
 | `auto-merge-lessons.yml` | `pull_request[labeled,synchronize,ready_for_review]` + `check_suite` | 打了 `auto-merge-lesson` 的纯课程 PR 自动 squash 合并 | total=**313**；该标签历史上只出现 **1 次**（PR #1796）；bot 于 2026-09-17T09:43:22Z 合并成功（handoff-2026-09-17.md:111-119） | 首次运行被 mergeable 形状 bug 卡住（同文件 :86-100）；仅 1 例、且是维护者自己的 PR | 强 **(i)** |
-| `auto-merge-docs.yml` | `pull_request[opened,synchronize,ready_for_review]` | 外部贡献者的纯文档 PR 开 auto-merge | total=**1815**：success 66 / failure 235 / action_required 209 / skipped 1305；抽取 **59 条 success 日志全部 `Docs-only: false`**，0 条 "Auto-merge enabled" | docs-only 判定把 `lessons/` 之外的改动也算"非文档"？实测 3 文件即 false；从未真正开过 auto-merge | 强 **(iii)** |
+| `auto-merge-docs.yml` | `pull_request[opened,synchronize,ready_for_review]` | 外部贡献者的纯文档 PR 开 auto-merge | total=**1815**：success 66 / failure 235 / action_required 209 / skipped 1305；抽取 **59 条 success 日志全部 `Docs-only: false`**，0 条 "Auto-merge enabled"、0 条 "Could not enable" | 通道是通的，但**从未有过合格输入**（外部作者 + `good first issue`/`area:docs` + 纯文档）；唯一带该标签的外部 PR #1756 有 2 个 `.mjs` 文件，判定 false 属正确；`ARCHITECTURE.md:75` 写触发是 "PR labeled"，与 `:4-5` 不符 | 强 **(ii)** |
 | `pr-checks.yml` → Auto-Merge Gate | 随 `pr-checks` 的 `pull_request` | 全绿 PR 自动合并 | 全仓 **0 条** `Auto-merge #N` 提交主题 | `:720` 读 REST `mergeable`、`:722` 比 `"MERGEABLE"` ⇒ 恒跳过；`:738` 的 `gh pr merge` 不可达 | 强 **(iii)** |
 | `adopt-pr.yml` | `issue_comment[created]`，评论以 `/adopt` 开头且作者是 MEMBER/OWNER/COLLABORATOR | 把只缺签核的 fork PR 用同仓分支收养落地 | total=**70**，**70/70 skipped**；`/adopt --apply` 在评论里 0 次真实使用 | 入口条件靠人打 `/adopt`，从未发生 | 强 **(ii)** |
 | `fatal-guard.yml` | `push`/`pull_request`(改 `packages/fatal-guard/**`) + 手动 | 包测试（零依赖、崩溃路径） | total=**614** | 纯 CI | 中 **(i)** |
@@ -111,7 +111,8 @@
 
 - 真的在更新的：`leaderboard-watch`（`data/leaderboard.json` 2026-09-17）、`update-badges`（`data` 分支 2026-09-17T17:11:36Z）、
   `intake-salvage-digest`（#1639 每日一条，2026-09-13→09-17 连续 5 条）。
-- 不是自动的：`STATUS.md` 的 "自动更新于 …" 由 `scripts/update_status.py` 生成，但全仓没有任何 workflow 调它（`grep -rn update_status .github/` 无命中）。
+- 不是自动的：`STATUS.md` 的 "自动更新于 …" 由 `scripts/update_status.py` 生成，但全仓没有任何 workflow 调它（实测 `grep -rn update_status .github/ Makefile` → exit 1）。
+- 计数类文案已漂移：README `:485`/`:504` 写 "68 workflows"，而实测 `ls .github/workflows/*.yml | wc -l` = **69**，`ARCHITECTURE.md:54` 也写 69——该数字不在 `sync_lesson_count.py` 的 SSOT 注册表里，没有门禁会拦住它（README 的两处在同一次改动里已改成 69）。
 - 自我校验缺口：唯一做"运行次数 vs 产物"对账的 `automation_output_audit.py`（`guarded-repository.yml:60-73`）
   自 2026-09-17 加入后**尚未跑过一次**（最近一次 schedule 是 2026-09-14，其 jobs 只有 scan）。
 
@@ -135,7 +136,8 @@
 2. **`pr-checks.yml` Auto-Merge Gate** — 见 3.2。反例：`auto-merge-lessons.yml` 用 `mergeable_is_clean()`
    同时接受 `True` 与 `"MERGEABLE"` 后成功合并过 #1796——同一 bug 类在此处有可工作的实现。
 3. **`auto-merge-docs.yml`** — 1815 次运行、66 次进 job、59 份日志全部 `Docs-only: false`，0 次启用 auto-merge。
-   反例：`auto-merge-lessons.yml` 的机器合并确实发生过一次，说明机器合并通道整体不是死的。
+   反例：`auto-merge-lessons.yml` 的机器合并确实发生过一次，说明机器合并通道整体不是死的；
+   此处的问题不是脚本坏了，而是**从未有合格输入**（外部作者 + 该标签 + 纯文档三者同时成立）。
 4. **`stale.yml`** — 97 次每日运行、0 次关闭、1 条 stale 标签。反例：仓库 issue 活跃度极高（105 条 intake 均有评论），
    阈值失效是"分母太活跃"而非"脚本坏了"。
 5. **`adopt-pr.yml`** — 70/70 skipped，零次 `/adopt`。反例：`fix-dco.yml` 的 fork 分支在同一场景下确实贴出了 5 次手工说明，
@@ -173,7 +175,7 @@
 1. **先跑一次 `automation_output_audit.py`（`gh workflow run guarded-repository.yml`）**，
    让仓库自己的运行数/产物对账器产生第一份外部可看的记录——现在它是对账链条上唯一没跑过的环节。
 2. **补 `pr-checks.yml:720-722` 的形状归一化**：直接复用 `scripts/lesson_pr_mergeable.py:102-120` 的 `mergeable_is_clean()`，
-   并加一条断言"shell 不得拿原始拼写比较"（该断言已存在于 lessons 通道的测试里）。这是唯一一处**已被同仓证伪却仍生效**的门。
+   并加一条断言"shell 不得拿原始拼写比较"（该断言已存在于 lessons 通道的测试里）。在本清单 30 项里，这是唯一一处**已被同仓证伪却仍生效**的门。
 3. **修 `intake-bot-demo` 的传参**（`action.yml:145,152` 加引号或改走 `--log` 文件），
    然后**手工 dispatch 一次**确认评论真的落到 PR 上——否则 21,732 次运行的"0 产物"会继续被当成"没触发"。
 4. **修 `auto-draft.yml:72` 的 `--create-bounty`**（改成 `--create-issue` 或补上该 flag），
