@@ -1,0 +1,16 @@
+schema: misakanet-setup-report/1
+setup-version: 0.5.1
+os: linux
+distro: ubuntu
+arch: x64
+node: v22.22.3
+detected-agents: [claude, codex, hermes, openclaw, codewhale]
+verify: READY
+endpoint-reachable: true
+endpoint-tools: 7
+token: present
+hook: present
+voice: on
+open-items: 0
+tools-visible: {codex: 7, codewhale: 7}
+live-call-evidence: "[mcp_tool_call] server=misakanet tool=misakanet_search status=completed"
