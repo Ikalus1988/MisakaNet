@@ -482,7 +482,7 @@ flowchart LR
     end
 
     Crawler["🤖 Remote Agent / Crawler<br/>(anonymous)"]
-    CI["⚙️ GitHub CI<br/>(68 workflows)"]
+    CI["⚙️ GitHub CI<br/>(69 workflows)"]
 
     Crawler -- "POST /mcp" --> Worker
     Worker -- "lessons" --> D1
@@ -501,7 +501,7 @@ flowchart LR
     Lessons -. "deploy Worker on release" .-> Worker
 ```
 
-> **Three paths:** ① **Remote HTTP MCP** — anonymous agent → `misakanet.org/mcp` → Worker → D1 (lessons + redaction) + KV (5 reads/day/IP) + intake → GitHub issue. ② **Local stdio MCP** — `scripts/mcp_server.py` → BM25 engine over `lessons/` (unlimited). ③ **Contribution** — PRs pass 68 workflows; intake issues become lessons after maintainer review.
+> **Three paths:** ① **Remote HTTP MCP** — anonymous agent → `misakanet.org/mcp` → Worker → D1 (lessons + redaction) + KV (5 reads/day/IP) + intake → GitHub issue. ② **Local stdio MCP** — `scripts/mcp_server.py` → BM25 engine over `lessons/` (unlimited). ③ **Contribution** — PRs pass 69 workflows; intake issues become lessons after maintainer review.
 
 ### Why?
 
