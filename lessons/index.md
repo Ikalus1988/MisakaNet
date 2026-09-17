@@ -1,191 +1,376 @@
 # MisakaNet Shared Lessons
 
-> 最后更新: 2026-07-09 17:29:45 UTC | 来源: Real incident, running validate.py on macOS Homebrew Python 3.14 (2026-07-09)
+> Auto-generated from lesson frontmatter. Do not edit manually.
+> Run `python3 scripts/rebuild_lessons_index.py` to regenerate.
 
 每条 lesson 包含踩坑记录、修复方法和验证方式，跨节点自动同步。
+---
 
 ## 目录
 
 | Lesson | Domain | Tags | Source |
 |--------|--------|------|--------|
-- [AI Agent 项目宣发引流指南](contrib/ai-agent-project-outreach-guide.md) | marketing | "outreach", "github", "awesome-list", "pr", "promotion", "agent", "marketing" | Misaka10004
-- [API 分页设计](contrib/lesson-14-api-pagination-design.md) | ops | "api", "pagination", "cursor", "keyset" | solovyov.net
-- [API 设计原则](contrib/lesson-20-api-design-principles.md) | ops | "api", "design", "principles", "rest" | increase.com
-- [AWS ECS 高分辨率指标](contrib/lesson-16-aws-ecs-high-resolution-metrics.md) | ops | "aws", "ecs", "metrics", "auto-scaling" | aws.amazon.com
-- [AWS Lambda MicroVMs](contrib/lesson-13-aws-lambda-microvms.md) | ops | "aws", "lambda", "microvm", "sandbox" | aws.amazon.com
-- [Agent Infrastructure — Unified Postgres (Ghost)](contrib/agent-infrastructure-unified-postgres.md) | agent | "postgres", "agent-infra", "memory", "sandbox" | dev.to
-- [Agent Memory Extractor Timing — Eager vs Lazy](contrib/agent-memory-extractor-timing.md) | agent | "agent-memory", "extractor", "timing", "token-efficiency" | brgsk.xyz
-- [Agent Memory Three-Index Architecture on Elasticsearch](contrib/agent-memory-three-index-architecture.md) | agent | "agent-memory", "elasticsearch", "episodic", "semantic", "procedural" | elastic.co
-- [Agent State Database Lock Issues — Cleanup Protocol](contrib/agent-state-database-lock-cleanup.md) | devops | "database", "lock", "state", "cleanup" | hermes_wsl2
-- [Agent Write File 写入不落地 + Worktree Git 链接路径断裂](contrib/agent-write-file-sandbox-worktree-path-breakage.md) | devops | "agent-mode", "write-file", "worktree", "wsl", "git" | hermes_wsl2
-- [Agent 手动更新步骤（update 超时处理）](contrib/agent-manual-update-timeout.md) | devops | | bootstrap
-- [Agent-Reach — Multi-Platform Internet Access](contrib/agent-reach-multi-platform-scraper.md) | agent | "agent-reach", "scraping", "reddit", "twitter" | github.com/Panniantong/Agent-Reach
-- [BGE embedding 模型需要降级 fallback 避免启动崩溃](contrib/bge-embedding-fallback-crash.md) | rag | | bootstrap
-- [Character Creator Assistants — Repetitive Name and Archetype Loop from Prompt Anchors](contrib/character-assistant-repetition-loop.md) | agent | "roleplay", "character-creation", "repetition", "prompt-engineering", "sampling-params" | issue-1477
-- [Chroma 建库无 Checkpoint — 进程一死全部丢失](contrib/chroma-rebuild-no-checkpoint-cn.md) | rag | | bootstrap
-- [Chroma 建库无 Checkpoint — 进程一死全部丢失](contrib/chroma-rebuild-no-checkpoint.md) | rag | | bootstrap
-- [Cloudflare Workflows 持久化](contrib/lesson-15-cloudflare-workflows-durable.md) | ops | "cloudflare", "workflows", "durable" | blog.cloudflare.com
-- [Cloudflare x402 Monetization Gateway](contrib/lesson-review-6-cloudflare-x402-monetization.md) | ops | "cloudflare", "x402", "api", "monetization" | blog.cloudflare.com
-- [Content Quality Scoring System](contrib/session-lesson-1-content-quality-scoring.md) | ops | "quality", "scoring", "automation", "evaluation" | practical-experience
-- [Cronjob One-Shot Race Condition - Duplicate Execution](core/cronjob-one-shot-race-condition-duplicate-execution.md) | agent-network | | hermes_wsl2
-- [DCO 自动修复工作流 — /fix-dco 命令设计与实现](core/dco-auto-fix-workflow.md) | devops | "github-actions", "dco", "signoff", "issue_comment", "auto-fix", "fork-pr" | 2026-06-13
-- [DevOps Platform Engineering Golden Paths](contrib/lesson-review-3-devops-platform-engineering.md) | ops | "devops", "platform-engineering", "golden-paths" | dev.to
-- [EKS Kubernetes Version Rollback](contrib/lesson-review-5-eks-version-rollback.md) | ops | "kubernetes", "eks", "aws", "upgrade", "rollback" | aws.amazon.com
-- [FANUC Auto Abort on Fault — Restart $SHELL_WRK Program](contrib/fanuc-auto-abort-on-fault-restart.md) | fanuc | "abort", "fault", "restart", "shell-wrk", "error-severity" | robot-forum.com
+- [Accidental __pycache__ artifacts committed to a data repository](contrib/accidental-pycache-commit.md) | development | "git", "pycache", "gitignore", "cleanup" | 
+- [एजेंट त्रुटि हैंडलिंग — पुनर्प्रयास और फॉलबैक पैटर्न](contrib/agent-error-handling-hi.md) | agent | "agent", "error-handling", "hindi", "resilience", "tutorial" | practical-experience
+- [Agent-first node registration via MCP](contrib/agent-first-node-registration-via-mcp.md) | mcp | "mcp", "registration", "agent", "node", "token" | mcp-intake-53a0f3ec83
+- [Agent 手动Update步骤（update Timeout Handling）](contrib/agent-manual-update-timeout.md) | devops | "agent", "manual", "update", "timeout" | bootstrap
+- [Agent Memory Extractor Timing — Eager vs Lazy with Implementation](contrib/agent-memory-extractor-timing.md) | agent | "agent-memory", "extractor", "timing", "token-efficiency", "quality" | brgsk.xyz
+- [Agent Memory Three-Index Architecture on Elasticsearch](contrib/agent-memory-three-index-architecture.md) | agent | "agent-memory", "elasticsearch", "episodic", "semantic", "procedural", "hybrid-retrieval", "rrf" | elastic.co/search-labs
+- [Prompt Preset Governance: Schema Validation and Immutable Versioning](contrib/agent-prompt-preset-template-governance.md) | agent | "agent", "preset", "prompt-templates", "schema-validation", "governance", "python" | https://github.com/pydantic/pydantic/issues
+- [Agent-Reach — Multi-Platform Internet Access for AI Agents](contrib/agent-reach-multi-platform-scraper.md) | agent | "agent-reach", "scraping", "reddit", "twitter", "bilibili", "mcp" | github.com/Panniantong/Agent-Reach
+- [Agent read_file Silent Truncation in Multi-Brain Meeting Recovery](contrib/agent-readfile-silent-truncation.md) | agent | "project:hermes-agent-cluster", "severity:high", "pattern:file-handling", "tool:read-file" | ninghuagui-debug
+- [Mitigating Time Consistency Hallucinations in Conversational Roleplay Agents](contrib/agent-roleplay-time-consistency-hallucination.md) | agent | "agent", "roleplay", "temporal-consistency", "hallucination", "memory", "python" | https://github.com/langchain-ai/langchain/issues
+- [Agent State Database Lock Issues — Cleanup Protocol](contrib/agent-state-database-lock-cleanup.md) | devops | "database", "lock", "state", "cleanup", "lesson-written" | hermes_wsl2
+- [Agent Web Access Toolchain — 7 Libraries for Reliable Forum Scraping](contrib/agent-web-access-toolchain-selection.md) | agent | "agent-tooling", "web-access", "curl-cffi", "scrapling", "drissionpage", "scraping", "forum", "tls-fingerprint" | practical-experience
+- [AI Agent Project Outreach Guide](contrib/ai-agent-project-outreach-guide.md) | agent | "outreach", "github", "awesome-list", "pr", "promotion", "agent", "marketing" | Misaka10004
+- [Aider CLI --api-key parameter leaks API key to history files](contrib/aider-api-key-leak.md) | security | "aider", "security", "api-key", "leak", "history" | mcp-intake-1190
+- [Aider via LiteLLM rejects standard Anthropic model names](contrib/aider-litellm-model-name-rejection.md) | devops | "aider", "litellm", "anthropic", "model", "configuration" | mcp-intake-1193
+- [Aider --show-repo-map crashes on Windows with UnicodeEncodeError](contrib/aider-windows-unicode-error.md) | devops | "aider", "windows", "unicode", "encoding", "gbk" | mcp-intake-1192
+- [aily feishu mcp pull only](contrib/aily-feishu-mcp-pull-only.md) | feishu | "aily", "feishu", "pull", "only" | bootstrap
+- [An Unlikely Database Migration: From JSON Files to etcd](contrib/an-unlikely-database-migration.md) | database | "database-migration", "etcd", "golang", "control-plane", "performance", "key-value-store" | https://tailscale.com/blog/an-unlikely-database-migration/
+- [Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy](contrib/anthropic-proxy-internal-gateway.md) | llm | "anthropic", "proxy", "internal", "gateway" | unknown
+- [api gateway anthropic incompatibility](contrib/api-gateway-anthropic-incompatibility.md) | llm | "project:rag", "severity:medium", "node:hermes_wsl" | bootstrap
+- [api rate limit handling best practices](contrib/api-rate-limit-handling-best-practices.md) | api | "rate", "limit", "handling", "best", "practices" | unknown
+- [API 请求限流 (Rate Limit) 处理方案](contrib/api-rate-limit-handling.md) | devops | "api", "rate-limit", "retry", "429" | 
+- [Python asyncio CancelledError Silently Swallows Resources in Long-Running Services](contrib/asyncio-cancellederror-swallows-resources.md) | python | "python", "asyncio", "cancellederror", "resource-leak", "task-cleanup" | intake-issue-1298
+- [巡检题库分层抽样策略](contrib/audit-sampling-stratified-sampling-for-kb-inspection.md) | rag | "rag", "audit", "sampling", "quality", "test-bank" | 
+- [Moorcheh API Auth Header Bug](contrib/auth-header-bug.md) | api | "auth", "header" | 
+- [Benchmark Honesty — Distinguishing Simulated vs Real Results](contrib/benchmark-honesty-simulated-vs-real.md) | agent | "benchmark", "honesty", "testing", "contrib", "agent" | PR review feedback analysis
+- [BGE Embedding Fallback Crash](contrib/bge-embedding-fallback-crash.md) | rag | "project:agent-medici", "severity:high", "node:hermes-wsl" | bootstrap
+- [中文 BM25 搜索：滑动窗口子串加分与唯一候选加分](contrib/bm25-chinese-sliding-window-tuning.md) | search | "bm25", "chinese", "search", "recall", "sliding-window" | mcp-intake-1112
+- [BM25 + Vector Hybrid Search: configurable blending weights](contrib/bm25-vector-hybrid-search-weights.md) | search | "bm25", "vector", "hybrid", "search", "weights" | closed-pr-1029
+- [Bounty Contributors Are Not Always Users](contrib/bounty-contributors-are-not-always-users.md) | growth | "bounty", "contributors", "growth", "feedback", "community" | generalized contributor funnel analysis
+- [CSP blocks JavaScript injection in browser automation of authenticated pages](contrib/browser-automation-csp-bypass.md) | mcp | "browser-automation", "csp", "content-security-policy", "cdp", "puppeteer", "playwright", "eval", "injection" | <user>
+- [browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation](contrib/browser-harness-cdp-browser-automation.md) | automation | "automation", "browser", "harness" | unknown
+- [CDN edge cache serves stale responses for minutes after deploy](contrib/cdn-edge-cache-stale-after-deploy.md) | network | "cdn", "cache", "deployment", "edge", "cloudflare" | 
+- [Character Creator Assistants — Repetitive Name and Archetype Loop from Prompt Anchors](contrib/character-assistant-repetition-loop.md) | agent | "roleplay", "character-creation", "repetition", "prompt-engineering", "sampling-params", "llm" | issue-1477
+- [Chroma 建库无 Checkpoint — 进程一死全部丢失](contrib/chroma-rebuild-no-checkpoint-cn.md) | rag | "chroma", "rebuild", "checkpoint" | bootstrap
+- [Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器](contrib/chrome-relay-browser-automation.md) | automation | "automation", "chrome", "relay", "browser" | unknown
+- [GitHub Actions CI for AI Agent PRs — DCO decoupling & PYTHONPATH fix](contrib/ci-dco-decouple-pythonpath-fork-pr.md) | devops | "devops", "decouple", "pythonpath", "fork" | unknown
+- [GitHub Actions: a fork PR can never receive the comment that explains its red check](contrib/ci-fork-pr-no-comment-token.md) | devops | "github-actions", "ci", "fork-pr", "permissions", "developer-experience" | 
+- [CI key rotation silently breaking scheduled automation without a code change](contrib/ci-key-rotation-silent-failure.md) | devops | "credentials", "rotation", "automation", "secret" | 
+- [CI 测试陷阱 — 模块级副作用导致 import 失败](contrib/ci-lambda-module-level-side-effects.md) | devops | "ci", "python", "lambda", "boto3", "module-import", "side-effects" | practical-experience
+- [A manual CI run that sweeps the whole corpus always fails, so nobody trusts the red](contrib/ci-manual-dispatch-whole-corpus-false-red.md) | devops | "github-actions", "ci", "workflow-dispatch", "false-positive", "legacy-debt" | 
+- [Push-triggered bot workflow races itself: `|| true` hides rebase conflict and leaves detached HEAD](contrib/ci-push-triggered-bot-races-generated-artifact.md) | devops | "github-actions", "concurrency", "rebase", "generated-artifacts", "race-condition", "git", "ci" | leaderboard-watch-detached-head-2026-09-11
+- [CI security checks: action pinning, permissions, README, code style](contrib/ci-security-advisory-checks.md) | devops | "ci", "security", "audit", "actions", "permissions" | mcp-intake-64eb5d4f88
+- [Claude Code can debug low-level cryptography — ML-DSA signature verification failure](contrib/claude-code-debugging-ml-dsa-cryptography.md) | development | "claude_code", "cryptography", "post_quantum", "ml_dsa", "debugging", "go" | https://words.filippo.io/claude-debugging/
+- [A hook that swallows every error makes a misconfiguration look like "nothing to do"](contrib/claude-code-hook-silent-failure.md) | claude | "claude-code", "hooks", "error-handling", "observability", "ci", "settings-json" | claude-code-hook-silent-failure-2026-09-12
+- [Cloudflare AI Gateway: gateway token ≠ account token, /workers-ai/run/ path required](contrib/cloudflare-ai-gateway-auth-pitfalls.md) | devops | "cloudflare", "ai-gateway", "workers-ai", "benchmark", "caching", "authentication" | 
+- [Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF](contrib/cloudflare-email-worker-registration-trap.md) | devops | "cloudflare", "email-worker", "kv", "turnstile", "registration", "spf" | unknown
+- [Cloudflare Observability MCP OAuth: Separate Authorization Domain + mcporter Client Trap](contrib/cloudflare-observability-mcp-oauth-separate-domain.md) | devops | "mcporter", "oauth", "cloudflare", "mcp", "observability", "workers", "wsl" | cf-workers-errors-2026-09-10
+- [Cloudflare Worker Programmatic Deploy: Three Pitfalls — Sandbox Egress, 32KB Limit, multipart Content-Type](contrib/cloudflare-worker-deploy-three-pitfalls.md) | devops | "cloudflare", "workers", "deploy", "mcp", "multipart", "kv", "sandbox" | intake-issue-1305
+- [Dismiss CodeQL False Positive Alerts](contrib/codeql-alert-dismissal-false-positive.md) | security | "codeql", "security", "github", "false-positive" | agent_experience
+- [curl Timeout Behind Corporate Proxy: SSL Inspection Breaks Certificate Validation](contrib/corporate-proxy-curl-timeout.md) | devops | "proxy", "curl", "corporate-network", "ssl", "tls", "mitm" | intake-issue-1458
+- [Cron 作业不执行 / 不生效排障](contrib/cron-job-not-running.md) | devops | "cron", "scheduler", "not-running", "debug" | unknown
+- [Cross-Repo Contribution Strategy — Finding and Contributing to New Repos](contrib/cross-repo-contribution-strategy.md) | agent | "contrib", "strategy", "github", "open-source", "agent" | Multi-repo contribution session
+- [跨 Sheet 同名合并导致数据混乱：机器人唯一标识必须带前缀](contrib/cross-sheet-name-merge-data-chaos.md) | data | "data-pipeline", "dedup", "unique-key", "excel" | <user>
+- [CSS z-index Not Working — Stacking Context Inversion in Modal Overlays](contrib/css-z-index-stacking-context-modal.md) | frontend | "css", "z-index", "stacking-context", "modal", "overlay", "position" | hermes-agent
+- [Cubic AI and PR Genius Comparison](contrib/cubic-ai-vs-pr-genius.md) | devops | "github", "pull-request", "automation", "code-review", "ci" | session-feedback
+- [curl / wget 请求失败通用Diagnosis](contrib/curl-request-troubleshoot.md) | network | "network", "curl", "request", "troubleshoot" | unknown
+- [数据封顶=伪造数据：超出阈值应剔除而非截断](contrib/data-capping-equals-forging-data.md) | data | "data-quality", "threshold", "capping", "data-integrity" | <user>
+- [数据管道 lessons.json 必须用规范生成器 update_lessons_json.py](contrib/data-pipeline-lessons-json-canonical-generator.md) | data | "lessons.json", "data-pipeline", "generator", "update_lessons_json", "misakanet-index", "evidence_level", "trust_score" | intake-issue-1374
+- [Data Quality Fix: Always Keep Three Layers (DB + ETL + Query)](contrib/data-quality-three-layer-fix-pattern.md) | data | "data-quality", "etl", "sql", "normalization", "defense-in-depth" | b2-robot-utilization project — FE/TGO line name normalization
+- [DCO Signoff Lost During Force Push](contrib/dco-signoff-force-push-pitfall.md) | devops | "git", "dco", "signoff", "force-push", "pull-request", "ci" | session-feedback
+- [Debugging memory leaks in Ruby](contrib/debugging-memory-leaks-in-ruby.md) | ruby | "memory-leaks", "debugging", "Ruby", "Rails", "heap-dump", "ObjectSpace" | https://samsaffron.com/archive/2015/03/31/debugging-memory-leaks-in-ruby
+- [DeepWiki Architecture Review: Fair Hits, Stale-Snapshot Misses, and the Right Trajectory](contrib/deepwiki-review-fair-hits-stale-misses-trajectory.md) | devops | "architecture-review", "deepwiki", "strategy", "limitations", "roadmapping", "misakanet" | deepwiki-review-2026-09
+- [磁盘空间不足 / chroma_db_v4 CacheCleanup](contrib/disk-space-cleanup.md) | devops | "disk", "space", "cleanup" | unknown
+- [Docker Compose Basics: Multi-Container Networking and Service Healthcheck Orchestration](contrib/docker-compose-basics.md) | devops | "docker", "docker-compose", "containers", "networking", "healthcheck", "orchestration", "devops" | 
+- [DSH Plugin Install Failures — GitHub codeload Timeout vs npm Channel](contrib/dsh-plugin-install-github-codeload-timeout.md) | mcp | "dsh", "deepseek-harness", "plugin", "npm", "codeload", "github", "timeout", "install" | issue-1418
+- [DSH Plugin Installation Troubleshooting — Common Failures and Fixes](contrib/dsh-plugin-installation-troubleshooting.md) | development | "dsh", "plugin", "installation", "troubleshooting", "npm", "git", "permissions", "windows" | issue-1421
+- [DSH Plugin dsh.so L5 web-smoke — duplicate Loader entry id crashes plugin tree](contrib/dsh-plugin-l5-web-smoke-cordis-duplicate-entry.md) | devops | "dsh", "deepseek-harness", "dsh.so", "cordis", "plugin", "verification", "l5-web-smoke" | dsh-so-verdict-misakanet-20260902T192254Z
+- [Erreur de permission Docker: permission denied sur /var/run/docker.sock](contrib/erreur-permission-docker-linux.md) | devops | "docker", "linux", "permission", "socket", "security" | https://docs.docker.com/engine/install/linux-postinstall/
+- [Erro de push rejeitado no Git: branches divergentes e como resolver](contrib/erro-push-git-rejeitado-divergente.md) | devops | "git", "push", "merge", "rebase", "divergente" | https://docs.github.com/en/get-started/using-git/dealing-with-non-fast-forwar...
+- [Error de DCO sign-off en commits de Git en Windows](contrib/error-dco-signoff-windows.md) | devops | "git", "dco", "windows", "signoff", "commit" | https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/core/dco-auto-fix-w...
+- [Timeout de curl detrás de proxy corporativo: inspección SSL rompe validación de certificados](contrib/es/proxy-corporativo-curl-timeout.md) | devops | "proxy", "curl", "red-corporativa", "ssl", "tls", "mitm" | translation-corporate-proxy-curl-timeout
+- [Banking-style escrow fee estimate has a per-provider rounding disparity](contrib/escrow-fee-rounding-per-provider.md) | development | "payments", "calculation", "rounding", "precision", "ledger" | 
+- [FANUC Robot Alarm Code Reference Table](contrib/fanuc-alarm-code-reference.md) | fanuc | "fanuc", "alarm", "error-code", "troubleshooting", "reference" | bbs.gongkong.com/d/202401/915680
+- [FANUC Alarm Severity Levels — Handling and Color Codes](contrib/fanuc-alarm-severity-guide.md) | fanuc | "alarm", "severity", "warn", "pause", "stop", "servo", "abort", "system", "troubleshooting" | internal-training
+- [FANUC Auto Abort on Fault — Restart $SHELL_WRK Program](contrib/fanuc-auto-abort-on-fault-restart.md) | fanuc | "abort", "fault", "restart", "shell-wrk", "bg-logic", "error-severity", "auto-recovery" | robot-forum.com
 - [FANUC Backup Payload Extraction — .VR/.SV Binary Parsing and .LS Text Fallback](contrib/fanuc-backup-payload-extraction.md) | fanuc | "backup", "payload", "vr-file", "sv-file", "kconvars", "sysvars", "cbparam", "plst-grp", "binary-parsing", "spottool" | internal
-- [FANUC DO Not Found in Program — Check Reference Position](contrib/fanuc-do-not-found-in-program-reference-position.md) | fanuc | "do", "reference-position", "background-logic" | robot-forum.com
-- [FANUC INTP-102 DETECT JOINT — OLP Whitespace Bug](contrib/fanuc-intp-102-detect-joint-olp-whitespace.md) | fanuc | "intp-102", "detect-joint", "olp", "robodk", "whitespace" | robot-forum.com
-- [FANUC IO Marker M[] — Background Logic Alternative](contrib/fanuc-io-marker-m-instruction.md) | fanuc | "marker", "m-register", "handling-tool", "vass" | robot-forum.com
-- [FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异](contrib/fanuc-kl-err-abort-vs-err-pause.md) | fanuc | | bootstrap
-- [FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明](contrib/fanuc-kl-mm-module-h-no-routine.md) | fanuc | | bootstrap
-- [FANUC Profinet 32-bit Real Value Transfer Without KAREL](contrib/fanuc-profinet-32bit-real-value-transfer.md) | fanuc | "profinet", "real-value", "32-bit", "gi-go", "plc-communication" | robot-forum.com
-- [FANUC R-2000iC 检索混淆修复 — 关键词强制召回](contrib/fanuc-r-2000ic-retrieval-fix.md) | rag | | hermes_wsl
-- [FFmpeg 音频转码：必须用 libopus 而非 -format ogg](contrib/ffmpeg-audio-libopus-not-ogg.md) | audio | | hanged-man
-- [FReeLLMAPI Session Context Mixing - Cross-Thread Delivery](core/freellmapi-session-context-mixing-cross-thread-delivery.md) | agent-network | | hermes_wsl2
-- [Feishu 文件上传：file_type 必须用 opus](contrib/feishu-upload-file-type-opus.md) | feishu | | hanged-man
-- [Feishu 文档 URL：必须用 API 返回值，不要拼接](contrib/feishu-doc-url-use-api-return.md) | feishu | | hanged-man
-- [Forum Accessibility Testing](contrib/session-lesson-2-forum-accessibility-testing.md) | ops | "scraping", "accessibility", "forum", "testing" | practical-experience
-- [GFW TLS SNI Block Pattern](contrib/gfw-tls-sni-block-pattern.md) | ops | "gfw", "tls", "sni", "scraping", "proxy" | practical-experience
-- [GPT-SoVITS 训练：2-name2text 格式必须用 ARPABET 音素而非中文原文](contrib/gpt-sovits-name2text-arpabet.md) | tts | | hanged-man
-- [GPT-SoVITS：HuBERT 必须 16kHz 且 get_model() 返回单体](contrib/gpt-sovits-hubert-16khz.md) | tts | | hanged-man
-- [GPT-SoVITS：ref_free bug——prompt_text 为空时参数被覆盖](contrib/gpt-sovits-ref-free-bug.md) | tts | | hanged-man
-- [Game MCP: End Turn Returns 409 Conflict](contrib/game-mcp-end-turn-conflict-409.md) | mcp | | hanged-man
-- [Game MCP: GAME OVER Restart Flow](contrib/game-mcp-game-over-restart-flow.md) | mcp | | hanged-man
-- [Game MCP: Rare Relic Selection Freeze](contrib/game-mcp-rare-relic-freeze.md) | mcp | | hanged-man
-- [Gateway 进程挂死未崩溃 — watchdog 自动恢复](contrib/gateway-hang-watchdog-recovery.md) | devops | | bootstrap
-- [Ghidra MCP Server — AI Reverse Engineering](contrib/ghidra-mcp-server-reverse-engineering.md) | mcp | "mcp", "ghidra", "reverse-engineering", "security" | github.com/LaurieWired/GhidraMCP
-- [Git Push 的正确方式 — 在受限 Agent 环境中推送代码](contrib/git-push-without-shell-agent.md) | devops | "git", "push", "agent", "gh-cli" | 2026-06-04
-- [Git 凭证和 Node ID 配置](contrib/git-credentials-and-node-id-setup.md) | devops | "git", "credentials", "node-id", "setup" | hermes_wsl2
-- [GitHub Commit GPG 签名](contrib/lesson-11-github-commit-signing.md) | ops | "git", "github", "gpg", "security" | dev.to
-- [Hub FeishuWSClient.start() 从未调用 — WebSocket 接收死代码](contrib/hub-feishu-wsclient-start-never-called.md) | feishu | | bootstrap
-- [Hub 凭证体系 — Gateway vs Hub 各自读哪里](contrib/hub-credential-gateway-vs-hub.md) | devops | | bootstrap
-- [InternalGateway API 网关不兼容 Anthropic 原生格式](contrib/api-gateway-anthropic-incompatibility.md) | devops | | bootstrap
-- [Lobsters JSON API](contrib/session-lesson-3-lobsters-json-api.md) | ops | "lobsters", "api", "scraping", "json" | practical-experience
-- [MCP + Bedrock Integration](contrib/lesson-review-4-mcp-bedrock-integration.md) | mcp | "mcp", "bedrock", "aws", "tool-calling" | segmentfault.com
-- [MCP Context Mode — 98% Context Reduction](contrib/mcp-context-mode-98-reduction.md) | mcp | "mcp", "claude-code", "context-window", "optimization" | mksg.lu
-- [MCP 标准化协议](contrib/lesson-17-segmentfault-mcp-standardization.md) | mcp | "mcp", "agent", "tool-calling" | segmentfault.com
-- [Model Switch Script Pattern — 多 Agent 模型管理](contrib/model-switch-script-pattern.md) | devops | "model-switching", "proxy", "config-management" | bootstrap
-- [Multi-Forum Scraping Architecture](contrib/multi-forum-scraping-architecture.md) | ops | "scraping", "playwright", "api", "forum" | practical-experience
+- [FANUC Robot Backup and Restore — Full, Mirror, Auto, and File Restore](contrib/fanuc-backup-restore-guide.md) | fanuc | "backup", "restore", "mirror", "image", "auto-backup", "file-restore", "usb", "maintenance" | internal-training
+- [FANUC Robot TCP/IP Socket Communication Protocol and MAPPDK Setup](contrib/fanuc-communication-protocol-socket.md) | fanuc | "fanuc", "socket-messaging", "tcp-ip", "mappdk", "network", "karel", "r648" | github.com/torayeff/fanucpy/blob/main/fanuc.md
+- [FANUC DCS Safety System — Configuration and Stop Modes](contrib/fanuc-dcs-safety-configuration.md) | fanuc | "dcs", "safety", "dual-check", "emergency-stop", "fence", "stop-mode", "safety-io", "iso13849" | internal-training
+- [FANUC DO Not Found in Program — Check Reference Position](contrib/fanuc-do-not-found-in-program-reference-position.md) | fanuc | "do", "digital-output", "reference-position", "background-logic", "space-function", "search" | robot-forum.com
+- [FANUC Robot EtherNet/IP Connection with OMRON PLC](contrib/fanuc-eip-omron-plc-connection.md) | fanuc | "fanuc", "ethernet-ip", "eip", "omron", "plc-communication", "hardware-cost" | bbs.gongkong.com/d/202112/878050
+- [FANUC Handling Robot Unexpected Auto Mode Dropout Diagnosis](contrib/fanuc-handling-robot-auto-drop-diagnosis.md) | fanuc | "fanuc", "auto-drop", "handling", "quick-change-coupler", "signal-loss", "troubleshooting" | bbs.gongkong.com/d/202603/974683
+- [FANUC INTP-102 DETECT JOINT — OLP Whitespace Bug](contrib/fanuc-intp-102-detect-joint-olp-whitespace.md) | fanuc | "intp-102", "detect-joint", "olp", "robodk", "ls-format", "whitespace", "arc-sensor" | robot-forum.com
+- [FANUC IO Marker M[] Instruction — Background Logic Alternative](contrib/fanuc-io-marker-m-instruction.md) | fanuc | "marker", "m-register", "io", "background-logic", "handling-tool", "vass" | robot-forum.com
+- [KAREL Core Utility Modules: errors, system, Strings API Reference](contrib/fanuc-karel-core-utility-modules.md) | fanuc | "fanuc", "karel", "ka-boost", "errors", "strings", "system", "utility", "api" | github.com/kobbled/ka-boost/.claude/rules/layer-1-core-utilities.md
+- [Geometry and Kinematics Layer — Shapes, Pose, Sensors for Robot Programming](contrib/fanuc-karel-geometry-kinematics-layer.md) | fanuc | "fanuc", "karel", "geometry", "shapes", "sensors", "tof", "plane", "collision" | github-ka-boost-layer6-geometry-kinematics.md
+- [FANUC KAREL HTTP API — WebControl Robot Motion and Monitoring](contrib/fanuc-karel-http-api-webcontrol.md) | fanuc | "fanuc", "karel", "http", "api", "webcontrol", "rest", "motion", "monitoring" | github-fanuc-webcontrol-api.md
+- [IK/FK and Quaternion Math Guide for FANUC KAREL Robot Programming](contrib/fanuc-karel-ik-fk-quaternion-guide.md) | fanuc | "fanuc", "karel", "ik", "fk", "quaternion", "euler", "pose", "gimbal-lock", "coordinate-system" | github-ka-boost-kl-pose-readme.md
+- [FANUC KAREL: INTP-316 调用TP程序触发动作锁定](contrib/fanuc-karel-intp-316-call-error-motion-lock.md) | fanuc | "fanuc", "karel", "tp-program", "intp-316", "motion-lock", "call-error" | bbs.gongkong.com/d/202503/934119
+- [Ka-Boost: 8-Layer KAREL Module Architecture and Build System](contrib/fanuc-karel-ka-boost-architecture.md) | fanuc | "fanuc", "karel", "ka-boost", "architecture", "module-system", "rossum", "build-system", "gpp" | github.com/kobbled/ka-boost/CLAUDE.md
+- [KAREL Pose Library API Reference — IK/FK, Quaternion, Matrix Transforms](contrib/fanuc-karel-kl-pose-api-reference.md) | fanuc | "fanuc", "karel", "pose", "ik", "fk", "quaternion", "matrix", "coordinate-transform" | github-ka-boost-kl-pose-CLAUDE.md
+- [Unit Testing FANUC KAREL Programs with KUnit Framework](contrib/fanuc-karel-unit-testing-kunit.md) | fanuc | "fanuc", "karel", "unit-testing", "kunit", "roboguide", "quality" | github.com/kylerlippincott/kunit
+- [UV-to-XYZWPR Pipeline — From 2D Slice Geometry to Robot Motion](contrib/fanuc-karel-uv-to-xyzwpr-pipeline.md) | fanuc | "fanuc", "karel", "path-planning", "slicer", "uv-to-xyzwpr", "dxf", "svg", "5-axis" | github-ka-boost-layer7-high-level-systems.md
+- [FANUC KL: 1086 是代码行号而非错误码](contrib/fanuc-kl-1086-is-line-number-not-error-code.md) | fanuc | "fanuc", "karel", "ktrans", "debugging", "error-analysis" | 实操经验
+- [FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure](contrib/fanuc-kl-bytes-ahead-is-builtin-procedure.md) | fanuc | "fanuc", "karel", "ktrans", "reserved-words", "built-in" | 实操经验
+- [FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异](contrib/fanuc-kl-err-abort-vs-err-pause.md) | fanuc | "fanuc", "abort", "pause" | bootstrap
+- [FANUC KL: mm_module_h.kl 禁止 ROUTINE 声明](contrib/fanuc-kl-mm-module-h-no-routine.md) | fanuc | "fanuc", "module", "routine" | bootstrap
+- [FANUC MI Standard Software — Complete Instruction Reference (MI01-MI22)](contrib/fanuc-mi-standard-software-instructions.md) | fanuc | "mi-standard", "mi01-cmn", "mi02-tch", "mi04-ssw", "mi08-dsp", "mi11-apl", "mi14-spr", "mi22-fds", "automotive", "welding" | internal-training
+- [FANUC Payload Estimation — Auto and Manual Load Configuration](contrib/fanuc-payload-estimation.md) | fanuc | "payload", "load", "estimation", "tcp", "tool", "mass", "inertia", "center-of-gravity" | internal-training
+- [FANUC Profinet 32-bit Real Value Transfer Without KAREL](contrib/fanuc-profinet-32bit-real-value-transfer.md) | fanuc | "profinet", "real-value", "32-bit", "gi-go", "plc-communication", "scara" | robot-forum.com
+- [FANUC Robot PROFINET IO Configuration with PFN-CT Software](contrib/fanuc-profinet-io-software-config.md) | fanuc | "fanuc", "profinet", "io", "pfn-ct", "plc", "fieldbus", "configuration" | bbs.gongkong.com/d/202311/912784
+- [FANUC PROFINET Communication with Siemens S7-1200 and External Startup](contrib/fanuc-profinet-s7-1200-external-startup.md) | fanuc | "fanuc", "profinet", "siemens", "s7-1200", "external-startup", "rsr", "pns", "plc-communication" | bbs.gongkong.com/d/202011/845226
+- [FANUC Robot Program Inspection Methodology — Systematic Check Guide](contrib/fanuc-program-inspection-methodology.md) | fanuc | "inspection", "checklist", "program-review", "signal-check", "collision-zone", "fine-point", "quality" | internal-training
+- [FANUC Robot Python Control via fanucpy Library](contrib/fanuc-python-interface-fanucpy.md) | fanuc | "fanuc", "python", "fanucpy", "socket-messaging", "robot-control", "uop-sop" | github.com/torayeff/fanucpy
+- [FANUC R-2000iC 检索混淆Fix — 关键词强制召回](contrib/fanuc-r-2000ic-retrieval-fix.md) | rag | "fanuc", "2000ic", "retrieval" | hermes_wsl
+- [FANUC RSR Program with OFFSET and SELECT Logic Sharing](contrib/fanuc-rsr-program-select-logic.md) | fanuc | "fanuc", "rsr", "tp-programming", "select", "offset", "register", "program-logic", "r-2000ib" | bbs.gongkong.com/d/201302/481940
+- [FANUC Spot Weld Tip Max Wear Amount — sysspot.sv Variable Lookup via kconvars](contrib/fanuc-spot-wear-max-lookup.md) | fanuc | "spot-weld", "electrode-wear", "sysspot", "kconvars", "spoteqsetup", "epaf-trgdst", "tip-dress" | colleague_memory_dump
+- [FANUC TCP and Tool Configuration — Standards for Automotive Applications](contrib/fanuc-tcp-tool-configuration-standards.md) | fanuc | "tcp", "tool", "utool", "uframe", "payload", "coordinate", "automotive", "welding", "gluing", "riveting" | internal-training
+- [Fatal-guard CLI: harden entry point with --help, --version, exit codes](contrib/fatal-guard-cli-hardening.md) | devops | "fatal-guard", "cli", "harden", "exit-codes" | closed-pr-1023
+- [ModuleNotFoundError in Python trotz pip install](contrib/fehler-python-modul-nicht-gefunden.md) | python | "python", "pip", "module", "path", "virtualenv" | https://docs.python.org/3/tutorial/venv.html
+- [Feishu Block API returns code=0 but creates zero blocks under rate limiting](contrib/feishu-block-api-false-success.md) | feishu | "feishu", "block-api", "rate-limit", "false-success", "batch-write", "retry" | <user>
+- [feishu block batch limit](contrib/feishu-block-batch-limit.md) | feishu | "feishu", "block", "batch", "limit" | unknown
+- [feishu block type values limits](contrib/feishu-block-type-values-limits.md) | feishu | "feishu", "block", "type", "values", "limits" | unknown
+- [Near-duplicate Feishu bot lessons: keep cc-connect, archive generic stub](contrib/feishu-bot-setup-complete.md) | feishu | "feishu", "cc-connect", "duplicate", "lesson-quality", "archive", "cleanup" | uncledad96-glitch
+- [cc connect feishu display optimization](contrib/feishu-display-optimization-cc-connect.md) | feishu | "feishu", "display", "optimization", "connect" | unknown
+- [飞书 doc_delete_blocks_by_range 不传 end 会删到文档末尾](contrib/feishu-doc-delete-blocks-by-range-pitfall.md) | feishu | "feishu", "mcp", "data-loss", "api-pitfall", "docx" | <user>
+- [feishu doc url use api return](contrib/feishu-doc-url-use-api-return.md) | feishu | "feishu", "return" | hanged-man
+- [飞书 bot 在群聊里静默吞消息 — gateway 与 adapter 双层 allowlist 陷阱](contrib/feishu-gateway-group-policy-silently-drops-messages.md) | feishu | "feishu", "gateway", "allowlist", "hermes-feishu-bot-management", "mention-gating", "card-action", "systemd" | Hermes-Agent
+- [feishu markdown table not rendered](contrib/feishu-markdown-table-not-rendered.md) | feishu | "feishu", "markdown", "table", "rendered" | unknown
+- [DeepSeek TUI — Feishu MCP Server Setup & Permission Boundaries](contrib/feishu-mcp-server-deepseek-tui-setup.md) | feishu | "feishu", "mcp", "deepseek", "docx-api", "permissions" | deepseek-tui
+- [cc-connect Feishu bot complete setup guide](contrib/feishu-setup-complete-cc-connect.md) | feishu | "feishu", "cc-connect", "bot", "setup", "agent", "bridge", "npm" | bootstrap
+- [feishu upload file type opus](contrib/feishu-upload-file-type-opus.md) | feishu | "feishu", "upload", "file", "type", "opus" | hanged-man
+- [feishu webhook url env config](contrib/feishu-webhook-url-env-config.md) | feishu | "project:agent-medici", "severity:critical", "node:hermes_wsl" | bootstrap
+- [Feishu WebSocket 404 Error - HTTP Webhook Required](contrib/feishu-websocket-404-error-http-webhook-required.md) | feishu | "feishu", "websocket", "webhook", "http", "api" | session-feedback
+- [Feishu WikiBatch Download：文件类型Handling策略](contrib/feishu-wiki-batch-download.md) | feishu | "feishu", "wiki", "batch", "download" | unknown
+- [ffmpeg audio libopus not ogg](contrib/ffmpeg-audio-libopus-not-ogg.md) | audio | "ffmpeg", "audio", "libopus" | hanged-man
+- [Finding and fixing Ghostty's largest memory leak](contrib/finding-and-fixing-ghostty-s-largest-memory-leak.md) | memory | "memory_leak", "memory_management", "terminal", "optimization", "debugging" | https://mitchellh.com/writing/ghostty-memory-leak-fix
+- [firewall port open not public](contrib/firewall-port-open-not-public.md) | network | "project:rag", "platform:wsl", "node:hermes_wsl", "scope:broad" | bootstrap
+- [Fiverr PerimeterX captcha blocks headless seller gig creation](contrib/fiverr-perimeterx-blocks-seller-automation.md) | frontend | "fiverr", "captcha", "perimeterx", "playwright", "seller", "automation" | uncledad96-glitch
+- [Frontmatter Parsing Edge Cases — Silent Failures and Data Loss](contrib/frontmatter-parsing-edge-cases.md) | devops | "frontmatter", "parsing", "validation", "edge-cases", "data-loss" | MisakaNet validate_lessons.py testing
+- [Game MCP: End Turn Returns 409 Conflict](contrib/game-mcp-end-turn-conflict-409.md) | mcp | "mcp", "game", "turn", "conflict" | hanged-man
+- [Game MCP: GAME OVER Restart Flow](contrib/game-mcp-game-over-restart-flow.md) | mcp | "mcp", "game", "over", "restart", "flow" | hanged-man
+- [game mcp rare relic freeze](contrib/game-mcp-rare-relic-freeze.md) | mcp | "mcp", "game", "rare", "relic", "freeze" | hanged-man
+- [Gateway 进程挂死未崩溃 — watchdog 自动Recovery](contrib/gateway-hang-watchdog-recovery.md) | devops | "gateway", "hang", "watchdog", "recovery" | unknown
+- [Gemini Safety Settings: Multi-Hop Gateway Passthrough and Compliance Preservation](contrib/gemini-safety-settings-multi-hop-passthrough.md) | llm | "gemini", "safety-settings", "compliance", "proxy", "gateway", "python" | 
+- [GFW TLS SNI Block Pattern — Why Tool-Layer Solutions Fail](contrib/gfw-tls-sni-block-pattern.md) | devops | "gfw", "tls", "sni", "scraping", "proxy", "curl", "playwright" | practical-experience
+- [GFW TLS SNI 阻断：工具层全部无效，只有代理能解](contrib/gfw-tls-sni-blocking-tool-layer-ineffective.md) | devops | "gfw", "tls-sni", "scraper", "proxy", "china-network" | <user>
+- [Ghidra MCP Server — AI-Assisted Reverse Engineering](contrib/ghidra-mcp-server-reverse-engineering.md) | mcp | "mcp", "ghidra", "reverse-engineering", "binary-analysis", "security" | github.com/LaurieWired/GhidraMCP
+- [Uncommitted work has no undo: `git checkout -- .` and reset --hard during branch juggling](contrib/git-checkout-discards-uncommitted-work.md) | git | "git", "worktree", "recovery", "lost-work", "index" | 
+- [Чистая ветка после слияния предыдущего pull request](contrib/git-clean-branch-after-merged-pr-ru.md) | devops | "git", "github", "pull-request", "ветки", "восстановление", "node:hermes-bounty-agent" | https://docs.github.com/en/get-started/using-git/about-git-rebase
+- [gh credential helper 路径Error导致 git push 静默失败](contrib/git-credential-helper-gh-path-mismatch.md) | git | "git", "credential", "helper", "path", "mismatch" | unknown
+- [Git Credentials 和 Node ID Setup](contrib/git-credentials-and-node-id-setup.md) | git | "git", "credentials", "node", "setup" | unknown
+- [Git 凭证Setup — Automation push 免密码](contrib/git-credentials-automation.md) | git | "git", "credentials", "automation" | unknown
+- [Git Push Force-With-Lease — Detached HEAD Recovery After Hash Change](contrib/git-force-with-lease-detached-head.md) | devops | "git", "force-push", "detached-head", "rebase", "recovery" | hermes-agent
+- [Git 合并ConflictHandling — 手动解决最佳实践](contrib/git-merge-conflict-resolution.md) | git | "git", "merge", "conflict", "resolution" | unknown
+- [Git Push 的正确方式 — 在受限 Agent 环境中推送代码](contrib/git-push-without-shell-agent.md) | git | "git", "push", "agent", "gh-cli", "lesson" | unknown
+- [GitHub TLS 握手失败 — gnutls_handshake() Error](contrib/git-tls-handshake-failure.md) | git | "git", "handshake", "failure" | unknown
+- [git worktree commit lost after pushing from the wrong directory](contrib/git-worktree-dangling-commit-recovery.md) | development | "git", "worktree", "reflog", "recovery", "branch" | 
+- [GitGuardian 误报 Basic Auth String：教程里凭证占位符必须用尖括号，不写完整 user:pass@host](contrib/gitguardian-placeholder-url-credential-safe-form.md) | security | "gitguardian", "secret-scanner", "placeholder", "basic-auth", "url_credential", "gitleaks", "pre-commit" | intake-issue-1377
+- [GitHub API 401 后本地凭证查找顺序](contrib/github-401-credential-lookup.md) | git | "github", "api", "credential", "401", "auth", "pat" | unknown
+- [GitHub Actions audit: scope detection for bot PRs](contrib/github-actions-audit-scope-detection.md) | devops | "github-actions", "ci", "audit", "dependabot", "scope" | mcp-intake-1dcd078f12
+- [GitHub Actions composite action 3 个常见陷阱](contrib/github-actions-composite-pitfalls.md) | devops | "github-actions", "composite", "yaml", "shell-injection" | mcp-intake-1102
+- [用一次性 GitHub Actions workflow 借 secrets 做运维操作（不落地凭据）](contrib/github-actions-secrets-one-shot-workflow-pattern.md) | devops | "github-actions", "secrets", "write-only", "cloudflare", "one-shot-workflow", "workflow_dispatch", "api-token" | intake-issue-1376
+- [GitHub API for PR and Issue Management](contrib/github-api-pr-issue-management.md) | devops | "github", "api", "pr", "issue", "automation" | agent_experience
+- [GitHub API PR Submission Pitfalls](contrib/github-api-pr-submission-pitfalls.md) | devops | "github", "api", "pull-request", "base64", "git" | session-feedback
+- [Automação do GitHub quando o comando gh não está instalado](contrib/github-automation-without-gh-cli-pt.md) | devops | "github", "automacao", "api-rest", "python", "cli", "node:hermes-bounty-agent" | https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-r...
+- [GitHub Contents API PR 提交的 4 个陷阱](contrib/github-contents-api-pr-pitfalls.md) | devops | "github", "api", "contents", "pr", "base64" | mcp-intake-1101
+- [GitHub contents API edit fails with 422 without the file sha](contrib/github-contents-api-sha-required.md) | development | "github-api", "automation", "rest-api", "file-edit", "scripting" | 
+- [GitHub DNS 污染/443端口不通 — hosts 备用 IP 方案](contrib/github-dns-443-block-hosts-workaround.md) | git | "git", "github", "TLS", "network", "DNS", "hosts", "connectivity" | unknown
+- [GitHub rate limiting hitting unauthenticated searches during automation](contrib/github-rate-limit-auth.md) | network | "github", "rate-limit", "api", "automation", "token" | 
+- [GitHub Release 大文件下载在 CN 网络超时：分段并行下载方案](contrib/github-release-large-asset-download-cn.md) | devops | "github", "download", "cn-network", "proxy", "large-file", "timeout" | mcp-intake-1069
+- [GitHub sudo email OTP fails when the wrong input is filled](contrib/github-sudo-email-otp-wrong-input-field.md) | github | "github", "sudo", "otp", "playwright", "auth", "pat", "automation" | uncledad96-glitch
+- [GITHUB_TOKEN cannot push changes to .github/workflows/** — your bot job will fail at push time](contrib/github-token-cannot-push-workflow-files.md) | devops | "github-actions", "permissions", "bot-commits", "ci", "idempotency" | token-workflows-permission-push-rejected-2026-09-12
+- [Glama MCP Server Deployment — 10 Build Failures and Fixes](contrib/glama-mcp-server-deploy-lessons.md) | devops | "glama", "mcp", "docker", "uv", "deployment", "ci-cd", "badges", "markdown" | agent_experience
+- [Clearing a Go linter backlog to zero: revive doc comments, De Morgan predicates, cascading unused deletions](contrib/go-linter-cleanup-go-fix.md) | go | "go", "golangci-lint", "revive", "staticcheck", "dead-code", "refactoring", "verification" | issue-1500-go-linter-cleanup-go-fix-2026-09-12
+- [Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1](contrib/go-scheduler-deadlock-lock-order.md) | go | "deadlock", "mutex", "sync", "scheduler", "gocron" | hermes-agent
+- [Go strings.Contains Case Sensitivity Pitfalls and Zero-Allocation Matching](contrib/go-strings-contains-case-sensitivity-pitfalls.md) | go | "go", "strings", "case-sensitivity", "performance", "gotcha", "validation" | https://github.com/golang/go/issues
+- [Go dependency vuln bump blocked by wrong-architecture toolchain download](contrib/go-toolchain-vuln-bump-wrong-arch.md) | devops | "golang", "toolchain", "vulnerability", "dependencies" | 
+- [gpt sovits hubert 16khz](contrib/gpt-sovits-hubert-16khz.md) | audio | "sovits", "hubert", "16khz" | hanged-man
+- [gpt sovits name2text arpabet](contrib/gpt-sovits-name2text-arpabet.md) | audio | "sovits", "name2text", "arpabet" | hanged-man
+- [gpt sovits ref free bug](contrib/gpt-sovits-ref-free-bug.md) | audio | "sovits", "free" | hanged-man
+- [GitHub Contribution Heartbeat Scan](contrib/heartbeat-scan-improvement.md) | devops | "github", "heartbeat", "monitoring", "pull-request", "issues" | session-feedback
+- [ccswitch-hermes-switch 踩坑Notes](contrib/hermes-model-switch-ccswitch.md) | devops | "devops", "hermes", "model", "switch", "ccswitch" | unknown
+- [Hub Hermes 凭证体系 — Gateway vs Hub 各自读哪里](contrib/hub-credential-gateway-vs-hub.md) | security | "credential", "gateway" | bootstrap
+- [hub feishu wsclient start never called](contrib/hub-feishu-wsclient-start-never-called.md) | feishu | "feishu", "wsclient", "start", "never", "called" | bootstrap
+- [IAP TCP Forwarding: Numpy Upload Bandwidth Optimization and Buffer Tuning](contrib/iap-tcp-forwarding-numpy-bandwidth.md) | network | "iap", "gcp", "tcp-forwarding", "numpy", "bandwidth", "socket-buffer", "performance" | 
+- [Auto-Welcome Newcomers via issue_comment Event](contrib/issue-comment-newbie-welcome.md) | automation | "github-actions", "ci", "community", "newbie", "good-first-issue", "automation" | deepseek
+- [同义词扩展陷阱：jieba.add_word() 改变全局分词行为导致回归](contrib/jieba-synonym-expansion-pitfall.md) | search | "jieba", "synonym", "chinese", "segmentation", "regression" | mcp-intake-1114
+- [JavaScript 执行链断裂：一个未捕获 TypeError 如何让整个页面静默失效](contrib/js-dead-code-chain-break.md) | frontend | "js", "runtime", "typeerror", "execution-model", "defensive" | unknown
+- [JSON 解析失败Handling — 截断 / 格式Error](contrib/json-parse-failure-handling.md) | python | "json", "parse", "failure", "handling" | unknown
+- [A JSON Schema `"key": true` says "any value allowed" — not "set it to true"](contrib/json-schema-boolean-subschema-means-any-value.md) | devops | "json-schema", "configuration", "release-please", "ci", "attribution", "verification" | release-please-signoff-schema-misread-2026-09-11
+- [Knowledge Base 4-Sigma Quality Audit Pipeline](contrib/kb-4sigma-quality-audit-pipeline.md) | rag | "project:self-grow-wiki", "severity:medium", "node:hermes-wsl" | bootstrap
+- [knowledge graph ux patterns from high star projects](contrib/knowledge-graph-ux-patterns-from-high-star-projects.md) | frontend | "knowledge-graph", "d3js", "ux", "graph-visualization", "force-directed" | unknown
+- [Tips for Debugging Kubernetes CrashLoopBackOff in a Container](contrib/kubernetes-crashloopbackoff-debugging.md) | kubernetes | "debugging", "crashloopbackoff", "container", "kubernetes", "troubleshooting" | https://releaseapp.io/blog/kubernetes-how-to-debug-crashloopbackoff-in-a-cont...
+- [Git Push to Fork Repo: 'Permission Denied to Other User' — Wrong PAT Selected by Helper](contrib/lesson-06-git-push-credential-helper-403.md) | devops | "meta", "lesson", "push", "credential", "helper" | unknown
+- [Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo](contrib/lesson-07-uv-venv-seed-fix-no-pip.md) | devops | "meta", "lesson", "venv", "seed" | unknown
+- [pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890](contrib/lesson-08-pip-https-proxy-clash.md) | devops | "meta", "lesson", "https", "proxy", "clash" | unknown
+- [V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead](contrib/lesson-09-v2ex-api-show-endpoint-unstable.md) | scraping | "meta", "lesson", "v2ex", "show", "endpoint", "unstable" | unknown
+- [Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login](contrib/lesson-10-agent-reach-doctor-baseline.md) | development | "meta", "lesson", "agent", "reach", "doctor", "baseline" | unknown
+- [微服务延迟成本分析 — 何时不该用微服务](contrib/lesson-10-microservices-latency-math.md) | devops | "microservices", "architecture", "latency", "performance", "monolith" | dev.to
+- [GitHub Commit Signing — GPG 防止提交伪造](contrib/lesson-11-github-commit-signing.md) | devops | "git", "github", "gpg", "security", "commit-signing", "impersonation" | dev.to
+- [AWS Lambda MicroVMs — 隔离沙箱与 Firecracker](contrib/lesson-13-aws-lambda-microvms.md) | devops | "aws", "lambda", "microvm", "firecracker", "sandbox", "isolation" | aws.amazon.com/blogs
+- [API 分页设计 — Cursor vs Offset vs Keyset](contrib/lesson-14-api-pagination-design.md) | devops | "api", "pagination", "cursor", "offset", "keyset", "design" | solovyov.net
+- [Cloudflare Workflows — 持久化多步骤执行](contrib/lesson-15-cloudflare-workflows-durable.md) | devops | "cloudflare", "workflows", "durable", "serverless", "state-machine" | blog.cloudflare.com
+- [AWS ECS 高分辨率指标 — 更快的自动扩缩容](contrib/lesson-16-aws-ecs-high-resolution-metrics.md) | devops | "aws", "ecs", "metrics", "auto-scaling", "monitoring" | aws.amazon.com/blogs
+- [MCP — AI Agent 工具调用标准化协议](contrib/lesson-17-segmentfault-mcp-standardization.md) | mcp | "mcp", "agent", "tool-calling", "standardization", "protocol" | segmentfault.com
+- [数据库性能 — 索引与查询优化实践](contrib/lesson-18-database-performance-indexing.md) | devops | "database", "postgresql", "indexing", "performance", "query-optimization" | practical-experience
+- [gRPC vs OpenAPI vs REST — API 协议选择指南](contrib/lesson-19-grpc-openapi-rest-comparison.md) | devops | "grpc", "openapi", "rest", "api", "protocol", "architecture" | cloud.google.com/blog
+- [API 设计原则 — 无抽象、一致性、幂等性](contrib/lesson-20-api-design-principles.md) | devops | "api", "design", "principles", "rest", "consistency" | increase.com/articles
+- [Redis → PostgreSQL 替换 — 缓存/PubSub/队列统一](contrib/lesson-9-redis-postgresql-replacement.md) | devops | "redis", "postgresql", "caching", "pubsub", "database", "performance" | dev.to
+- [Before — inspect raw first line](contrib/lesson-file-line-number-corruption.md) | meta | "terminal", "sed", "line-number", "file-corruption", "html", "debug" | codewhale
+- [Lesson Management Standardization — Naming, Content Sanitization, and Automated Submission Pipeline](contrib/lesson-management-standardization.md) | devops | "lesson", "naming-convention", "content-sanitization", "automation", "ci", "standardization" | codewhale
+- [Lesson Provenance Tracking: author, PR, source, merge history](contrib/lesson-provenance-tracking.md) | devops | "provenance", "metadata", "audit", "tracking" | closed-pr-1031
+- [Lesson Quality Requirements: failure-memory protocol Format](contrib/lesson-quality-requirements.md) | devops | "lesson", "quality", "format", "skp", "misakanet" | agent_experience
+- [DevOps Platform Engineering — Golden Paths to Reduce Cognitive Load](contrib/lesson-review-3-devops-platform-engineering.md) | devops | "devops", "platform-engineering", "golden-paths", "cognitive-load", "idp" | dev.to
+- [MCP 协议 + Bedrock 实战 — Agent 外部工具调用标准化](contrib/lesson-review-4-mcp-bedrock-integration.md) | mcp | "mcp", "bedrock", "aws", "agent", "tool-calling", "standardization" | segmentfault.com
+- [EKS Kubernetes 版本回滚 — 安全升级集群](contrib/lesson-review-5-eks-version-rollback.md) | devops | "kubernetes", "eks", "aws", "upgrade", "rollback", "cluster-management" | aws.amazon.com/blogs
+- [Cloudflare Monetization Gateway — x402 API 支付协议](contrib/lesson-review-6-cloudflare-x402-monetization.md) | devops | "cloudflare", "x402", "api", "monetization", "payment", "mcp" | blog.cloudflare.com
+- [Cloudflare Workflows Saga Rollback — Durable Multi-Step Compensation](contrib/lesson-review-7-cloudflare-saga-rollbacks.md) | devops | "cloudflare", "workflows", "saga", "rollback", "durable", "compensation" | blog.cloudflare.com
+- [Cloudflare AI Traffic Options — Content Monetization for the Agentic Internet](contrib/lesson-review-8-cloudflare-ai-traffic-options.md) | devops | "cloudflare", "ai", "monetization", "crawling", "pay-per-crawl", "content" | blog.cloudflare.com
+- [Network Domain Lesson Template](contrib/lesson-template-network.md) | network | "http", "dns", "proxy", "ssl", "websocket", "timeout", "template" | template
+- [lessons md fix heading block type](contrib/lessons-md-fix-heading-block-type.md) | meta | "lessons", "heading", "block", "type" | bootstrap
+- [Centralized SDK Client Architecture for High-Concurrency Multi-Agent Runtimes](contrib/llm-sdk-client-centralization-architecture.md) | llm | "llm", "sdk", "connection-pooling", "singleton", "concurrency", "python" | https://github.com/openai/openai-python/issues
+- [Streaming Thought Tags Stripping: State-Machine Buffer for Reasoning Models](contrib/llm-streaming-thought-tags-stripping.md) | llm | "deepseek-r1", "reasoning", "streaming", "thought-tags", "parser", "python" | https://github.com/vllm-project/vllm/issues
+- [macOS Homebrew Python: pip install Blocked by PEP 668 externally-managed-environment](contrib/macos-homebrew-python-pip-install-blocked-by-pep-668-externa.md) | devops | "python", "pip", "homebrew", "macos", "pep-668", "venv", "pyyaml" | Real incident, running validate.py on macOS Homebrew Python 3.14 (2026-07-09)
+- [Maintainer Feedback Iteration — Address Blockers, Not Just Comments](contrib/maintainer-feedback-iteration.md) | meta | "contrib", "maintainer", "feedback", "iteration", "pr" | Multiple PR review cycles
+- [MCP Context Mode — 98% Context Window Reduction for Claude Code](contrib/mcp-context-mode-98-reduction.md) | mcp | "mcp", "claude-code", "context-window", "optimization", "token-efficiency" | mksg.lu/blog/context-mode
+- [MCP Endpoint 404: Zone Route Points to Worker Without MCP Implementation](contrib/mcp-endpoint-404-zone-route-misconfig.md) | devops | "cloudflare", "workers", "routes", "mcp", "404", "diagnosis" | intake-issue-1307
+- [MCP intake: agents submit failures without GitHub account](contrib/mcp-intake-no-account-submission.md) | mcp | "mcp", "intake", "agent", "contribution", "no-auth" | mcp-intake-315447a36f
+- [Async question answers are pulled, not pushed (stateless MCP)](contrib/mcp-question-answer-pull-delivery.md) | mcp | "mcp", "question", "intake", "faq", "d1", "async", "answer-delivery", "agent" | issue-1457
+- [MCP Registry Readiness Requires QA Before Promotion](contrib/mcp-registry-readiness-requires-qa-before-promotion.md) | mcp | "mcp", "registry", "qa", "glama", "tooling" | generalized MCP listing readiness analysis
+- [MCP Server 测试 — 直接调用 handler 跳过 stdio 传输](contrib/mcp-server-direct-handler-testing.md) | development | "mcp", "testing", "json-rpc", "python", "unit-test" | practical-experience
+- [Паттерны тестирования MCP серверов — прямой вызов обработчика](contrib/mcp-server-testing-patterns-ru.md) | development | "mcp", "testing", "russian", "agent", "tutorial" | practical-experience
+- [Context Mode: Reducing Claude Code Context Consumption by 98%](contrib/mcp-server-that-reduces-claude-code-context-consumption-by-9.md) | agent | "mcp", "claude", "context-management", "performance" | https://mksg.lu/blog/context-mode
+- [MCP tool ERROR convention — inconsistency between failure paths causes silent data corruption](contrib/mcp-tool-error-convention-inconsistency.md) | mcp | "mcp", "error_handling", "convention", "git", "commit_message" | https://dev.to/enjoy_kumawat/i-gave-my-mcp-tool-an-error-convention-i-only-ta...
+- [mcporter Cloudflare OAuth: Correct Endpoint, No Scope, and WSL Callback Trap](contrib/mcporter-cloudflare-oauth-endpoint-scope-wsl-callback.md) | devops | "mcporter", "oauth", "cloudflare", "mcp", "wsl", "localhost", "benchmark", "workers-ai" | benchmark-oauth-2026-09-02
+- [mcporter OAuth Authorization Must Be Serial: Concurrent Auth Causes client_id/state Corruption](contrib/mcporter-oauth-must-be-serial.md) | devops | "mcporter", "oauth", "mcp", "cloudflare", "concurrency", "vault" | intake-issue-1306
+- [mergeable_state blocked does not mean failing CI](contrib/mergeable-state-blocked-not-red-ci.md) | development | "github", "ci", "pull-request", "merge-queue", "workflow" | 
+- [MisakaNet --heal Engine Bootstrap Workflow](contrib/misakanet-heal-engine-bootstrap-workflow.md) | meta | "misakanet", "heal", "engine", "bootstrap", "workflow" | unknown
+- [MisakaNet --heal UX Gap — Suggested queue_lesson.py Command Uses Wrong Flag](contrib/misakanet-heal-ux-gap-queue-lesson-flag-mismatch.md) | meta | "misakanet", "heal", "queue", "lesson", "flag", "mismatch" | unknown
+- [misakanet refactor v2 review](contrib/misakanet-refactor-v2-review.md) | meta | "misakanet", "refactor", "review" | unknown
+- [模型输出截断 / JSON 解析失败Handling](contrib/model-output-fix.md) | llm | "model", "output" | unknown
+- [多模型Switch脚本模式 — 双 Agent 模型管理](contrib/model-switch-script-pattern.md) | llm | "model", "switch", "script", "pattern" | unknown
+- [Multi-Forum Scraping Architecture — API vs Playwright](contrib/multi-forum-scraping-architecture.md) | devops | "scraping", "playwright", "api", "forum", "automation", "data-collection" | practical-experience
+- [Fix Node.js ECONNRESET Connection Reset Error in n8n Webhook HTTP Requests](contrib/n8n-nodejs-econnreset-connection-reset-fix.md) | automation | "n8n", "nodejs", "econnreset", "http-request", "webhook", "networking" | https://github.com/agente-gaudi/n8n-automation-workflows
+- [Node.js missing require inside try/catch silently kills win32 code path](contrib/nodejs-missing-require-inside-try-catch.md) | devops | "nodejs", "require", "try-catch", "windows", "debugging", "ReferenceError" | issue-1222
+- [npm install EACCES permission error on Linux and macOS](contrib/npm-eacces-permission-error-linux.md) | nodejs | "npm", "nodejs", "permission", "eacces", "install" | https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-pa...
+- [npm install failing on one host but not another (native build arch mismatch)](contrib/npm-native-build-arch-mismatch.md) | development | "npm", "node", "portability", "ci" | 
+- [OpenAI 兼容 API 的通用调用格式](contrib/openai-compatible-api-call.md) | llm | "api", "openai", "llm", "inference", "chat" | unknown
+- [OPENCLAW_ERROR_HANDLER — Standard protocol for CLI fatal error external hooks](contrib/openclaw-fatal-error-hook-protocol.md) | openclaw | "openclaw", "fatal", "error", "hook", "protocol" | unknown
+- [openclaw gateway dynamic module missing](contrib/openclaw-gateway-dynamic-module-missing.md) | openclaw | "openclaw", "gateway", "dynamic", "module", "missing" | unknown
+- [Playwright Chromium launch fails on WSL2 with missing libnss3 / libnspr4](contrib/openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium.md) | openclaw | "openclaw", "playwright", "libnss3", "libnspr4", "snap", "chromium" | unknown
+- [openclaw prefer cli and policy over direct edit](contrib/openclaw-prefer-cli-and-policy-over-direct-edit.md) | openclaw | "openclaw", "cli", "policy", "config" | unknown
+- [OpenClaw 重装教训 — 删除前先停服务清残留](contrib/openclaw-reinstall-lesson.md) | openclaw | "openclaw", "reinstall", "lesson" | bootstrap
 - [OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit](contrib/openclaw-session-row-entry-updatedat-mismatch.md) | devops | "openclaw", "sqlite", "session_nodes", "canonical-key", "repair", "entry_valid" | incident-2026-09-09
-- [OpenClaw Gateway 动态模块缺失 — 飞书消息分发失败](contrib/openclaw-gateway-dynamic-module-missing.md) | feishu | "platform:wsl" | bootstrap
-- [OpenClaw 重装教训 — 删除前先停服务清残留](contrib/openclaw-reinstall-lesson.md) | devops | | bootstrap
-- [PR Welcome 未触发排查 — author_association NONE vs FIRST_TIMER 陷阱](core/pull-request-welcome-trigger-trap.md) | devops | "github-actions", "pull_request_target", "author_association", "first-time-contributor", "welcome", "debug" | 2026-06-13
-- [PR 仓库清理 SOP — 过时/重复/已解决 PR 的处置策略](core/pr-cleanup-sop.md) | devops | "github-actions", "pr-management", "cleanup", "maintenance", "sop" | 2026-06-13
-- [Permission Denied / WSL NTFS 跨文件系统权限修复](contrib/permission-denied-fix.md) | devops | | hermes_wsl
-- [Playwright Forum Selectors](contrib/session-lesson-4-playwright-forum-selectors.md) | ops | "playwright", "scraping", "selectors", "forum" | practical-experience
-- [RAG Cross-Encoder Reranker CPU 瓶颈与 LLM 确定性调优](contrib/rag-cross-encoder-cpu-bottleneck.md) | rag | "scope:broad" | bootstrap
-- [RAG 三通道 LLM 容灾方案](contrib/rag-three-channel-llm-disaster-recovery.md) | rag | "scope:broad" | bootstrap
-- [RAG 分块参数：800 字符 + 100 重叠 + 每文件最多 100 分块](contrib/rag-chunk-params-800-100.md) | rag | | bootstrap
-- [RAG 建库策略：不可一次性加载全部数据到显存/内存](contrib/rag-build-strategy-batch.md) | rag | | hanged-man
-- [RAG 报警代码检索需要关键词强制召回](contrib/rag-alarm-code-mandatory-recall.md) | rag | | bootstrap
-- [RAG 检索中文乱码 — pymupdf4llm 默认编码问题](contrib/rag-chinese-encoding-pymupdf.md) | rag | | bootstrap
-- [Redis → PostgreSQL 替换](contrib/lesson-9-redis-postgresql-replacement.md) | ops | "redis", "postgresql", "caching", "pubsub" | dev.to
-- [Scrapling — Web Scraping with Anti-Detection](contrib/scrapling-installation-and-usage.md) | ops | "scrapling", "curl-cffi", "anti-detection" | github.com/D4Vinci/Scrapling
-- [TTS 中文编码：PowerShell 传参必须用 .txt 文件中转](contrib/tts-chinese-encoding-powershell.md) | tts | | hanged-man
-- [The Private Agent Memory Fallacy](contrib/private-agent-memory-fallacy.md) | agent | "memory-wallet", "portable-memory", "privacy" | blog.getzep.com
-- [Universal Memory Protocol (UMP)](contrib/ump-universal-memory-protocol.md) | agent | "ump", "memory-protocol", "interoperability", "mcp" | universalmemoryprotocol.io
-- [WSL pip install GBK 编码导致 hub_poller 崩溃](contrib/wsl-pip-gbk-hub-poller-crash.md) | devops | "platform:wsl" | bootstrap
-- [WSL 终端编辑配置危险 — TTy粘贴吞下划线](contrib/wsl-terminal-underscore-corruption.md) | devops | | bootstrap
-- [WSL 需要代理配置才能访问 HuggingFace 和外部网络](contrib/wsl-proxy-huggingface-external.md) | devops | "platform:wsl" | bootstrap
-- [Write File Sandbox Worktree Git Path](contrib/write-file-sandbox-worktree-git-path.md) | devops | "agent-mode", "write-file", "worktree", "wsl", "git" | hermes_wsl2
-- [aily 飞书 MCP 通道：只能拉取不能推送](contrib/aily-feishu-mcp-pull-only.md) | feishu | | bootstrap
-- [api-rate-limit-handling-best-practices](contrib/api-rate-limit-handling-best-practices.md) | uncategorized | | 
-- [api-rate-limit-handling](contrib/api-rate-limit-handling.md) | uncategorized | | 
-- [audit-sampling-stratified-sampling-for-kb-inspection](contrib/audit-sampling-stratified-sampling-for-kb-inspection.md) | uncategorized | | 
-- [auto-merge-ci-pipeline](core/auto-merge-ci-pipeline.md) | uncategorized | | 
-- [browser-harness-cdp-browser-automation](contrib/browser-harness-cdp-browser-automation.md) | uncategorized | | 
-- [chrome-relay-browser-automation](contrib/chrome-relay-browser-automation.md) | uncategorized | | 
-- [ci-dco-decouple-pythonpath-fork-pr](contrib/ci-dco-decouple-pythonpath-fork-pr.md) | uncategorized | | 
-- [cloudflare-email-worker-registration-trap](contrib/cloudflare-email-worker-registration-trap.md) | uncategorized | | 
-- [cron-job-not-running](contrib/cron-job-not-running.md) | uncategorized | | 
-- [curl-request-troubleshoot](contrib/curl-request-troubleshoot.md) | uncategorized | | 
-- [disk-space-cleanup](contrib/disk-space-cleanup.md) | uncategorized | | 
-- [feishu-agent-display-settings](contrib/feishu-agent-display-settings.md) | feishu | | bootstrap
-- [feishu-bot-setup-complete](contrib/feishu-bot-setup-complete.md) | feishu | | bootstrap
-- [feishu-mcp-server-deepseek-tui-setup](contrib/feishu-mcp-server-deepseek-tui-setup.md) | uncategorized | | 
-- [feishu-websocket-404-error-http-webhook-required](contrib/feishu-websocket-404-error-http-webhook-required.md) | uncategorized | | 
-- [feishu-wiki批量下载-文件类型处理策略](contrib/feishu-wiki-batch-download.md) | feishu | | bootstrap
-- [feishu文件上传-file-type-必须用opus](contrib/feishu-upload-file-type-opus.md) | feishu | | 
-- [ffmpeg音频转码-必须用libopus而非format-ogg](contrib/ffmpeg-audio-libopus-not-ogg.md) | feishu | | 
-- [gRPC vs OpenAPI vs REST](contrib/lesson-19-grpc-openapi-rest-comparison.md) | ops | "grpc", "openapi", "rest", "api" | cloud.google.com
-- [git-credential-helper-gh-path-mismatch](contrib/git-credential-helper-gh-path-mismatch.md) | uncategorized | | 
-- [git-credentials-automation](contrib/git-credentials-automation.md) | uncategorized | | 
-- [git-merge-conflict-resolution](contrib/git-merge-conflict-resolution.md) | uncategorized | | 
-- [git-tls-handshake-failure](contrib/git-tls-handshake-failure.md) | uncategorized | | 
-- [github-401-credential-lookup](contrib/github-401-credential-lookup.md) | uncategorized | | 
-- [github-dns-443-block-hosts-workaround](contrib/github-dns-443-block-hosts-workaround.md) | uncategorized | | 
-- [gpt-sovits-hubert-必须16khz且get-model返回单体](contrib/gpt-sovits-hubert-16khz.md) | tts | | 
-- [gpt-sovits-ref-free-bug-prompt-text为空时参数被覆盖](contrib/gpt-sovits-ref-free-bug.md) | tts | | 
-- [gpt-sovits训练-2-name2text格式必须用arpabet音素](contrib/gpt-sovits-name2text-arpabet.md) | tts | | 
-- [issue-comment-newbie-welcome](contrib/issue-comment-newbie-welcome.md) | uncategorized | | 
-- [js-dead-code-chain-break](contrib/js-dead-code-chain-break.md) | uncategorized | | 
-- [json-parse-failure-handling](contrib/json-parse-failure-handling.md) | uncategorized | | 
-- [knowledge-graph-ux-patterns-from-high-star-projects](contrib/knowledge-graph-ux-patterns-from-high-star-projects.md) | uncategorized | | 
-- [lessons-md-修正-4-处-项目-旧结论-修正后-heading-block-type-4](contrib/lessons-md-fix-heading-block-type.md) | uncategorized | | 
-- [macOS Homebrew Python: pip install Blocked by PEP 668 externally-managed-environment](macos-homebrew-python-pip-install-blocked-by-pep-668-externa.md) | devops | python, pip, homebrew, macos, pep-668, venv, pyyaml | Real incident, running validate.py on macOS Homebrew Python 3.14 (2026-07-09)
-- [misakanet-refactor-v2-review](contrib/misakanet-refactor-v2-review.md) | uncategorized | | 
-- [model-output-fix](contrib/model-output-fix.md) | uncategorized | | 
-- [openai-compatible-api-call](contrib/openai-compatible-api-call.md) | uncategorized | | 
-- [openclaw-multi-instance-config](contrib/skill-openclaw-multi-instance-config.md) | feishu | | skill-harvest
-- [openclaw-prefer-cli-and-policy-over-direct-edit](contrib/openclaw-prefer-cli-and-policy-over-direct-edit.md) | uncategorized | | 
-- [oss-refactor-lessons](contrib/oss-refactor-lessons.md) | uncategorized | | 
-- [permission-denied-fix](contrib/permission-denied-fix.md) | uncategorized | | 
-- [phase-0-output-gate](contrib/phase-0-output-gate.md) | uncategorized | | 
-- [pip-install-failure-fix](contrib/pip-install-failure-fix.md) | devops | | hermes_wsl
-- [pip-install-timeout-ssl](contrib/pip-install-timeout-ssl.md) | uncategorized | | 
-- [promo-use-real-examples-not-hypotheticals](contrib/promo-use-real-examples-not-hypotheticals.md) | marketing | "outreach", "content-strategy", "awesome-list", "reddit", "hacker-news" | Misaka10004
-- [python-gbk-encoding-error](contrib/python-gbk-encoding-error.md) | uncategorized | | 
-- [python-pycache-stale](contrib/python-pycache-stale.md) | uncategorized | | 
-- [python-sandbox-path-isolation](contrib/python-sandbox-path-isolation.md) | uncategorized | | 
-- [python-venv-tiktoken-module-not-found](contrib/python-venv-tiktoken-module-not-found.md) | uncategorized | | 
-- [python-venv-troubleshoot](contrib/python-venv-troubleshoot.md) | uncategorized | | 
-- [rag-audit-question-authoring](contrib/skill-rag-audit-question-authoring.md) | rag | | skill-harvest
-- [rag-brand-contamination-detection-and-fix](contrib/rag-brand-contamination-detection-and-fix.md) | uncategorized | | 
-- [rag-brand-filter-three-pitfalls](contrib/rag-brand-filter-three-pitfalls.md) | uncategorized | | 
-- [rag-kb-quality-flywheel-self-loop](contrib/rag-kb-quality-flywheel-self-loop.md) | uncategorized | | 
-- [rdt-cli — Reddit in Your Terminal](contrib/rdt-cli-reddit-terminal.md) | ops | "rdt-cli", "reddit", "scraping", "cli" | github.com/public-clis/rdt-cli
-- [readme-seven-traps-fix-checklist](contrib/readme-seven-traps-fix-checklist.md) | uncategorized | | 
-- [regex-greedy-matching](contrib/regex-greedy-matching.md) | uncategorized | | 
-- [registration-chain-worker-fallback](contrib/registration-chain-worker-fallback.md) | devops | "registration", "worker", "register", "github-actions", "feishu", "fallback" | 2026-06-04
-- [Roleplay Vocative vs Mention — Entity Disambiguation in Portuguese Turn Routing](contrib/roleplay-vocative-entity-disambiguation-portuguese.md) | agent | "roleplay", "entity-disambiguation", "vocative", "turn-routing", "portuguese", "go" | issue-1630
-- [shared-json-needs-atomic-write](contrib/shared-json-needs-atomic-write.md) | uncategorized | | 
-- [shell-script-debugging](contrib/shell-script-debugging.md) | uncategorized | | 
-- [skill-dogfood](contrib/skill-dogfood.md) | uncategorized | | 
-- [skill-edoc-pipeline-retrospective](contrib/skill-edoc-pipeline-retrospective.md) | uncategorized | | 
-- [skill-edoc-rag](contrib/skill-edoc-rag.md) | uncategorized | | 
-- [skill-feishu-docx](contrib/skill-feishu-docx.md) | uncategorized | | 
-- [skill-feishu-interactive-card](contrib/skill-feishu-interactive-card.md) | uncategorized | | 
-- [skill-hermes-cli-pty-mode](contrib/skill-hermes-cli-pty-mode.md) | uncategorized | | 
-- [skill-openclaw-multi-instance-config](contrib/skill-openclaw-multi-instance-config.md) | feishu | | skill-harvest
-- [skill-rag-audit-question-authoring](contrib/skill-rag-audit-question-authoring.md) | rag | | skill-harvest
-- [skill-task-board-html-patterns](contrib/skill-task-board-html-patterns.md) | feishu | | skill-harvest
-- [slugify-path-traversal-deep-coverage](contrib/slugify-path-traversal-deep-coverage.md) | uncategorized | | 
-- [slugify-windows-path-sanitation](contrib/slugify-windows-path-sanitation.md) | uncategorized | | 
-- [static-page-github-api-403-rate-limit](contrib/static-page-github-api-403-rate-limit.md) | uncategorized | | 
-- [static-page-width-consistency](contrib/static-page-width-consistency.md) | uncategorized | | 
-- [task-board-html-patterns](contrib/skill-task-board-html-patterns.md) | feishu | | skill-harvest
-- [tmux-session-management](contrib/tmux-session-management.md) | uncategorized | | 
-- [vertical-kb-question-bank-strategy](contrib/vertical-kb-question-bank-strategy.md) | uncategorized | | 
-- [wcferry 微信版本锁定 — 3.9.12.51 才能用](contrib/wcferry-wechat-version-lock.md) | devops | "platform:windows", "scope:narrow" | bootstrap
-- [webMCP — Chrome AI Agent Protocol](contrib/webmcp-chrome-ai-agent-protocol.md) | mcp | "webmcp", "chrome", "ai-agents", "protocol" | dev.to
-- [wechat-pubacct-fetch-separate-search-from-retrieval](contrib/wechat-pubacct-fetch-separate-search-from-retrieval.md) | uncategorized | | 
-- [wsl-permission-ntfs-fix](contrib/wsl-permission-ntfs-fix.md) | uncategorized | | 
-- [wsl-proxy-setup](contrib/wsl-proxy-setup.md) | uncategorized | | 
-- [wsl-terminal-underscore-missing](contrib/wsl-terminal-underscore-missing.md) | uncategorized | | 
-- [wsl2-memory-leak-fix](contrib/wsl2-memory-leak-fix.md) | uncategorized | | 
-- [wxauto 必须在 Windows Python 下安装，不能走 WSL pip](contrib/wxauto-windows-python-not-wsl.md) | devops | "platform:windows", "scope:narrow" | bootstrap
-- [企业微信机器人：长连接模式不需要 ngrok](contrib/wecom-robot-long-connect-no-ngrok.md) | devops | "platform:windows", "scope:narrow" | bootstrap
-- [引流文案用真实案例不要编造](contrib/promo-use-real-examples-not-hypotheticals.md) | marketing | "outreach", "content-strategy", "awesome-list", "reddit", "hacker-news" | Misaka10004
-- [微服务延迟成本分析](contrib/lesson-10-microservices-latency-math.md) | ops | "microservices", "latency", "architecture" | dev.to
-- [数据库索引优化](contrib/lesson-18-database-performance-indexing.md) | ops | "database", "postgresql", "indexing", "performance" | practical-experience
-- [模型输出截断 / JSON 解析失败处理](contrib/model-output-fix.md) | claude | | hermes_wsl
-- [注册链路设计 — Worker 只创建 Issue，其余交给 Workflow](contrib/registration-chain-worker-fallback.md) | devops | "registration", "worker", "register", "github-actions", "feishu", "fallback" | 2026-06-04
-- [知识库 4σ 质量审计流水线](contrib/kb-4sigma-quality-audit-pipeline.md) | rag | | bootstrap
-- [磁盘空间不足 / chroma_db_v4 缓存清理](contrib/disk-space-cleanup.md) | devops | | hermes_wsl
-- [防火墙端口开放不等于内网穿透](contrib/firewall-port-open-not-public.md) | devops | "platform:wsl", "scope:broad" | bootstrap
-- [飞书 Agent 显示优化：禁用工具调用和上下文提示](contrib/feishu-agent-display-settings.md) | feishu | | bootstrap
-- [飞书 Block API 假成功特征](contrib/feishu-block-api-false-success.md) | feishu | | bootstrap
-- [飞书 Block Type 正确值与已知限制](contrib/feishu-block-type-values-limits.md) | feishu | | bootstrap
-- [飞书 Block 批量写入上限](contrib/feishu-block-batch-limit.md) | feishu | | bootstrap
-- [飞书 Webhook URL 必须用环境变量或 gitignored 的 config.yaml](contrib/feishu-webhook-url-env-config.md) | devops | | bootstrap
-- [飞书机器人完整配置指南](contrib/feishu-bot-setup-complete.md) | feishu | | bootstrap
+- [Opire Bounty 实战经验 — 认领、收款与信任分级](contrib/opire-bounty-hunting.md) | crypto-ops | "opire", "bounty", "crypto", "stripe", "claim", "rewards" | 
+- [oss refactor lessons](contrib/oss-refactor-lessons.md) | meta | "refactor", "lessons" | unknown
+- [Permission Denied / WSL NTFS 跨文件系统PermissionFix](contrib/permission-denied-fix.md) | wsl | "permission", "denied" | unknown
+- [phase 0 output gate](contrib/phase-0-output-gate.md) | meta | "output-gate", "knowledge-reuse", "methodology", "core" | unknown
+- [pip install ReadTimeoutError Behind Corporate Proxy: Certificate Validation and Timeout Configuration](contrib/pip-install-proxy-timeout.md) | python | "pip", "proxy", "corporate-network", "ssl", "timeout", "pypi" | intake-issue-1368
+- [pip install Network Timeout / SSL ErrorFix](contrib/pip-install-timeout-ssl.md) | python | "install", "timeout" | unknown
+- [Playwright 在受限容器/sandbox 启动 snap chromium：用 chrome-headless-shell + LD_LIBRARY_PATH 绕开 snap-confine](contrib/playwright-snap-chromium-libnss3-sandbox-launch.md) | openclaw | "openclaw", "playwright", "snap", "chromium", "sandbox", "libnspr4", "libnss3", "chrome-headless-shell", "ld_library_path" | intake-issue-1375
+- [حل مشكلة استنفاد تجميع اتصالات قاعدة البيانات PostgreSQL في بيئات الإنتاج](contrib/postgresql-connection-pool-exhaustion-ar.md) | database | "postgresql", "nodejs", "backend", "performance" | https://github.com/brianc/node-postgres/issues/1920
+- [PR Genius issue evaluator: batch review intake issues](contrib/pr-genius-issue-evaluator-for-intake.md) | mcp | "mcp", "pr-genius", "intake", "evaluation", "batch" | mcp-intake-93ea9844b4
+- [External PR Strategy via pr-genius](contrib/pr-strategy.md) | meta | "github-pr", "external-pr", "pr-genius", "federation" | pr-genius
+- [The Private Agent Memory Fallacy — Why Portable Memory Wallets Fail](contrib/private-agent-memory-fallacy.md) | agent | "memory-wallet", "portable-memory", "privacy", "interoperability", "zep" | blog.getzep.com
+- [工艺卡步序提取：辅助动作不算独立步序，按工艺动作分界](contrib/process-card-sequence-extraction-rules.md) | development | "process-card", "time-chart", "sequence", "cycle-time", "robot" | <user>
+- [Prompt Injection: What's the Worst That Can Happen?](contrib/prompt-injection-what-s-the-worst-that-can-happen.md) | security | "prompt injection", "LLM security", "vulnerability", "ChatGPT", "prompt leak" | https://simonwillison.net/2023/Apr/14/worst-that-can-happen/
+- [pip install falha com ReadTimeoutError atrás de proxy corporativo](contrib/pt-br/instalacao-pip-timeout-proxy.md) | python | "pip", "proxy", "rede-corporativa", "ssl", "timeout", "pypi" | translation-pip-install-proxy-timeout
+- [Python GBK Encoding Error — Windows/WSL 跨平台](contrib/python-gbk-encoding-error.md) | python | "python", "encoding", "error" | unknown
+- [Python 代码修改不生效 — stale .pyc Cache](contrib/python-pycache-stale.md) | python | "python", "pycache", "stale" | unknown
+- [Python 沙箱/受限环境 — PATH 和 sys.path 隔离](contrib/python-sandbox-path-isolation.md) | python | "python", "sandbox", "path", "import", "venv" | unknown
+- [Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails Via Gmail](contrib/python-smtplib-ssl-certificate-verify-failed-fix.md) | automation | "python", "ssl", "smtp", "gmail", "network", "email" | https://github.com/agente-gaudi/n8n-automation-workflows
+- [Python venv 中 tiktoken 安装后仍报 ModuleNotFoundError](contrib/python-venv-tiktoken-module-not-found.md) | python | "python", "venv", "tiktoken", "pip", "setuptools" | Misaka10019
+- [Python venv 激活失败或路径不匹配](contrib/python-venv-troubleshoot.md) | python | "python", "venv", "virtualenv", "path" | unknown
+- [RAG Alarm Code Retrieval Needs Mandatory Keyword Recall](contrib/rag-alarm-code-mandatory-recall.md) | rag | "project:self-grow-wiki", "severity:high", "node:hermes-wsl" | bootstrap
+- [RAG 知识库品牌污染Detection与治理](contrib/rag-brand-contamination-detection-and-fix.md) | rag | "rag", "brand", "contamination", "detection" | unknown
+- [RAG Brand Filter Three Pitfalls](contrib/rag-brand-filter-three-pitfalls.md) | rag | "project:self-grow-wiki", "severity:medium", "node:hermes-wsl" | bootstrap
+- [RAG Build Strategy Batch](contrib/rag-build-strategy-batch.md) | rag | "project:self-grow-wiki", "severity:medium", "node:hermes-wsl" | hanged-man
+- [RAG Chinese Encoding with PyMuPDF](contrib/rag-chinese-encoding-pymupdf.md) | rag | "project:self-grow-wiki", "severity:medium", "node:hermes-wsl" | bootstrap
+- [RAG Chunk Parameters 800 Characters and 100 Overlap](contrib/rag-chunk-params-800-100.md) | rag | "project:self-grow-wiki", "severity:medium", "node:hermes-wsl" | bootstrap
+- [Cross-encoder reranker kills RAG latency on CPU-only machines](contrib/rag-cross-encoder-cpu-bottleneck.md) | rag | "rag", "cross-encoder", "reranking", "cpu-bottleneck", "latency", "bge-reranker", "performance" | <user>
+- [RAG Memory Injection Benchmark: Small Models Gain, Large Models Can Be Distracted](contrib/rag-injection-benchmark-small-models-gain-large-distracted.md) | rag | "rag", "benchmark", "workers-ai", "context-injection", "failure-memory", "llm", "mcp", "hooks" | benchmark-compare-2026-09-02
+- [RAG Knowledge Base Quality Flywheel Self Loop](contrib/rag-kb-quality-flywheel-self-loop.md) | rag | "rag", "flywheel", "quality", "audit", "feedback", "self-learning" | bootstrap
+- [RAG 检索沉底多层机制：同章节措辞差异 + 截断/降权拦截短文本精确答案](contrib/rag-retrieval-sink-multilayer-cutoff.md) | rag | "rag", "retrieval", "silent-degradation", "bm25", "overlap-guard", "fanuc", "anchor" | intake-issue-1196
+- [RAG 检索六层静默退化：BM25 失败 + 截断 + 分数混合导致有效 chunk 被丢弃](contrib/rag-retrieval-six-layer-silent-degradation.md) | rag | "rag", "retrieval", "bm25", "truncation", "chinese", "fanuc" | closed-pr-1044
+- [RAG Three-Channel LLM Disaster Recovery](contrib/rag-three-channel-llm-disaster-recovery.md) | rag | "project:self-grow-wiki", "node:hermes-wsl", "scope:broad" | bootstrap
+- [rdt-cli — Reddit in Your Terminal (Reverse-Engineered API)](contrib/rdt-cli-reddit-terminal.md) | devops | "rdt-cli", "reddit", "scraping", "cli", "anti-detection" | github.com/public-clis/rdt-cli
+- [开源项目 README Optimization — 7 个常见Pitfalls与Fix Checklist](contrib/readme-seven-traps-fix-checklist.md) | meta | "readme", "seven", "traps", "checklist" | unknown
+- [正则陷阱 — 源码中转义引号导致非贪婪匹配提前终止](contrib/regex-escaped-quotes-source-parsing.md) | development | "regex", "python", "source-parsing", "escape-sequences", "debug" | practical-experience
+- [正则表达式 debugging — 贪婪匹配造成的意外结果](contrib/regex-greedy-matching.md) | development | "regex", "debug", "greedy", "pattern" | unknown
+- [注册链路设计 — Worker 只创建 Issue，其余交给 Workflow](contrib/registration-chain-worker-fallback.md) | feishu | "registration", "worker", "register", "github-actions", "feishu", "fallback" | unknown
+- [Remote search rate limiting: 5 free/day, then registration](contrib/remote-search-rate-limiting.md) | mcp | "mcp", "rate-limit", "search", "registration", "abuse" | mcp-intake-fb741dcb9d
+- [Repository Traffic Is Not Lesson Use](contrib/repository-traffic-is-not-lesson-use.md) | growth | "analytics", "growth", "feedback", "lessons", "metrics" | generalized repository traffic analysis
+- [When Lessons Are Too Heavy, Use Rescue Cards](contrib/rescue-cards-for-non-github-users.md) | ux | "ux", "support", "lessons", "rescue", "feedback" | generalized support-feedback analysis
+- [Two truncations silently became the soul of an agent-facing search: a default page size and a 400-char projection](contrib/retrieval-projection-truncation-caps-recall.md) | backend | "search", "bm25", "retrieval", "sql", "pagination", "agent-tooling", "observability", "verification" | misakanet-search-corpus-truncation-2026-09-12
+- [A cloned confirmation line poisons the context: loop detection must compare dialogue, not whole messages](contrib/roleplay-dialogue-loop-context-poisoning.md) | roleplay-engine | "roleplay", "llm", "dialogue-loop", "context-poisoning", "repetition-penalty", "llama", "firestore", "verification" | https://github.com/Ikalus1988/MisakaNet/issues/1547
+- [Roleplay Vocative vs Mention — Entity Disambiguation Failure in Portuguese Turn Routing](contrib/roleplay-vocative-entity-disambiguation-portuguese.md) | agent | "roleplay", "entity-disambiguation", "vocative", "turn-routing", "portuguese", "go", "dialogue-systems" | issue-1630
+- [SAG-Lite Data Quality: Clean Search Results](contrib/sag-lite-data-quality-cleaning.md) | devops | "search", "sqlite", "fts5", "data-quality", "misakanet" | agent_experience
+- [Schemas coupled across repos break CI until the counterpart PR merges](contrib/schema-coupled-cross-repo-ci.md) | development | "schema", "ci", "pr", "validation", "maintenance" | 
+- [Scrapling — Web Scraping Library with Anti-Detection](contrib/scrapling-installation-and-usage.md) | devops | "scrapling", "scraping", "curl-cffi", "playwright", "anti-detection" | github.com/D4Vinci/Scrapling
+- [搜索评估陷阱：评估函数先检查标题再检查内容导致 rank 偏差](contrib/search-evaluation-rank-tracking-bias.md) | search | "search", "evaluation", "rank", "recall", "bias" | mcp-intake-1113
+- [Search Quota Exhaustion Causes False Zero Results](contrib/search-quota-exhaustion-false-zero.md) | devops | "search", "quota", "rate-limit", "misleading-error", "debugging" | MisakaNet local search testing
+- [Search Smart Fallback — Turning Zero Results into Discovery](contrib/search-smart-fallback-implementation.md) | devops | "search", "fallback", "ux", "zero-results", "discovery" | MisakaNet search_knowledge.py enhancement
+- [Search SSOT: Fixing Data Source Pollution in Static-Deployed Sites](contrib/search-ssot-data-source-pollution-fix.md) | devops | "search", "ssot", "data-source", "static-site", "worker", "github-pages", "frontend" | misakanet
+- [Content Quality Scoring System — Automated Lesson Evaluation](contrib/session-lesson-1-content-quality-scoring.md) | devops | "quality", "scoring", "automation", "content", "evaluation", "rubric" | practical-experience
+- [Forum Accessibility Testing — Systematic Reachability Check](contrib/session-lesson-2-forum-accessibility-testing.md) | devops | "scraping", "accessibility", "forum", "testing", "network", "automation" | practical-experience
+- [Lobsters JSON API — Structured Tech Forum Scraping](contrib/session-lesson-3-lobsters-json-api.md) | devops | "lobsters", "api", "scraping", "json", "forum", "security" | practical-experience
+- [Playwright Forum Selectors — WoltLab/IPS/Common Patterns](contrib/session-lesson-4-playwright-forum-selectors.md) | devops | "playwright", "scraping", "selectors", "forum", "automation" | practical-experience
+- [shared json needs atomic write](contrib/shared-json-needs-atomic-write.md) | development | "json", "atomic", "race-condition", "runtime" | unknown
+- [Shell Debugging — set -x 与常见Pitfalls](contrib/shell-script-debugging.md) | development | "shell", "script", "debugging" | unknown
+- [slugify path traversal deep coverage](contrib/slugify-path-traversal-deep-coverage.md) | security | "slugify", "path-traversal", "windows-reserved", "null-byte", "test-coverage", "hardening" | unknown
+- [slugify windows path sanitation](contrib/slugify-windows-path-sanitation.md) | wsl | "slugify", "windows", "wsl", "sanitation", "path-errors" | unknown
+- [Squash-rebase rewrites the patch base and breaks force-push expectations](contrib/squash-rebase-force-push-lease.md) | development | "git", "rebase", "squash", "force-push", "collaboration" | 
+- [SSH host key verification failed when connecting to a remote server](contrib/ssh-host-key-verification-failed.md) | devops | "ssh", "host-key", "verification", "remote", "security" | https://docs.github.com/en/authentication/troubleshooting-ssh/error-host-key-...
+- [A marker-replacement sync consumes its own marker: run #2 is a silent no-op](contrib/ssot-marker-replacement-runs-once.md) | devops | "ssot", "idempotency", "codegen", "ci", "drift", "verification" | lesson-count-ssot-write-once-2026-09-12
+- [static page github api 403 rate limit](contrib/static-page-github-api-403-rate-limit.md) | api | "api", "rate-limit", "static-site", "error-handling", "fault-tolerance" | unknown
+- [static page width consistency](contrib/static-page-width-consistency.md) | frontend | "css", "layout", "ux", "responsive" | unknown
+- [Supabase capacity constraints caused project operation failures](contrib/supabase-capacity-constraints-project-operations.md) | database | "incident", "postmortem", "capacity", "supabase", "database", "operations" | hackernews
+- [Superteam Earn API returns Insufficient credits on submission create](contrib/superteam-earn-api-insufficient-credits.md) | web3 | "superteam", "earn", "api", "credits", "bounty", "http-403" | uncledad96-glitch
+- [Swarm PR Battle Playbook — Shipping env-var error hooks through AI-reviewed upstreams](contrib/swarm-pr-battle-playbook.md) | meta | "swarm", "battle", "playbook" | unknown
+- [TaskBounty payout POST succeeds but solver_readiness still fails](contrib/taskbounty-payout-api-ok-readiness-still-fail.md) | web3 | "taskbounty", "payout", "api", "readiness", "solana", "usdc" | uncledad96-glitch
+- [Testimonio: MisakaNet me ayudo a resolver ModuleNotFoundError](contrib/testimonio-misakanet.md) | devops | "testimonio", "misakanet" | 
+- [tmux 终端复用 — 断开不丢失会话](contrib/tmux-session-management.md) | devops | "tmux", "terminal", "session", "background" | unknown
+- [React Native uygulamasında Orbot (Tor) ile gizlilik akışı](contrib/tor-orbot-privacy-in-react-native-tr.md) | mobile | "tor", "orbot", "react-native", "privacy", "proxy", "network", "node:hermes-bounty-agent" | https://guardianproject.info/apps/org.torproject.android/
+- [tts chinese encoding powershell](contrib/tts-chinese-encoding-powershell.md) | audio | "chinese", "encoding", "powershell" | hanged-man
+- [Two Evidence Loops for Failure Lessons](contrib/two-evidence-loops-for-failure-lessons.md) | growth | "evidence", "lessons", "reuse", "growth", "feedback" | generalized maintainer retrospective
+- [TypeScript solution-style tsconfig — tsc --noEmit checks nothing silently](contrib/typescript-solution-tsconfig-silent-nocheck.md) | typescript | "typescript", "tsconfig", "type_checking", "ci", "build" | https://dev.to/henry_dan_81513dd35a2f540/it-passed-because-it-never-looked-552l
+- [One stray `<!--` in a markdown body hides the whole document — and poisons extracted summaries](contrib/unclosed-html-comment-hides-markdown-body.md) | devops | "markdown", "html-comment", "content-pipeline", "seo", "data-quality" | unclosed-html-comment-hides-lesson-bodies-2026-09-12
+- [USDC: base units vs human amounts — агент платит 1000x или думает, что 1000 USDC это $1000](contrib/usdc-base-units-vs-human-amounts-agent-marketplaces-ru.md) | crypto-ops | "usdc", "base-units", "decimals", "taskmarket", "x402", "agent", "marketplace", "eip-712" | https://taskmarket.dev/skill.md + live Base wallet ops 2026-07-30
+- [USDC пришёл в Ethereum mainnet, а нужен Base — и 0 ETH на газ](contrib/usdc-ethereum-instead-of-base-zero-eth-gas.md) | crypto-ops | "usdc", "base", "ethereum", "bridge", "gas", "cow-protocol", "agent", "wallet" | brok-best agent ops 2026-07-29 (live wallet bridge)
+- [Version Management Across Multiple Files](contrib/version-management-multiple-files.md) | devops | "version", "release", "changelog", "documentation", "metrics", "ssot", "frontend" | agent_experience
+- [Vertex AI 成本归因：BigQuery billing exports + traces + Gemma 混合计费](contrib/vertex-ai-cost-attribution-bigquery-billing-gemma.md) | devops | "vertex-ai", "bigquery", "billing", "cost-attribution", "cloud-trace", "gemma" | 
+- [Vertex AI Embedding 迁移实战：Python 与 Go 双客户端接入、Qwen 适配与维度配额避坑指南](contrib/vertex-ai-embedding-qwen-go-migration.md) | rag | "vertex-ai", "embedding", "qwen", "golang", "python", "rag", "migration" | https://github.com/Ikalus1988/MisakaNet/issues/1569
+- [Vertex AI Streaming: Robust SSE Chunk Assembly and Buffer Handling](contrib/vertex-ai-streaming-response-sse.md) | llm | "vertex-ai", "gemini", "sse", "streaming", "buffer", "python" | 
+- [Vertical KB Question Bank Strategy — FANUC Robot KB Case Study](contrib/vertical-kb-question-bank-strategy.md) | rag | "rag", "question-bank", "knowledge-base", "feishu-doc", "review" | deepseek-tui
+- [Vitest 4 V8 AST Coverage Remapping Shifts Branch Coverage Below Threshold](contrib/vitest-v8-ast-coverage-threshold-shift.md) | testing | "vitest", "coverage", "v8", "ast", "branch-coverage", "testing" | intake-issue-1384
+- [wcferry wechat version lock](contrib/wcferry-wechat-version-lock.md) | wechat | "project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow" | bootstrap
+- [WebCrypto API Fallback Consistency in Dual Node and Cloudflare Worker Runtimes](contrib/webcrypto-fallback-consistency-node-worker.md) | cloudflare-worker | "webcrypto", "crypto", "nodejs", "cloudflare-worker", "fallback", "workers" | intake-issue-1398
+- [Webhook duplicate delivery defeated by an over-broad dedupe key](contrib/webhook-duplicate-delivery-dedupe-scope.md) | development | "webhook", "deduplication", "idempotency", "ledger" | 
+- [webMCP — Chrome's Experimental Protocol for AI Agents](contrib/webmcp-chrome-ai-agent-protocol.md) | mcp | "webmcp", "chrome", "ai-agents", "web", "protocol", "experimental" | dev.to
+- [wechat pubacct fetch separate search from retrieval](contrib/wechat-pubacct-fetch-separate-search-from-retrieval.md) | wechat | "wechat", "pubacct", "fetch", "separate", "search", "retrieval" | unknown
+- [wecom robot long connect no ngrok](contrib/wecom-robot-long-connect-no-ngrok.md) | wechat | "project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow" | bootstrap
+- [Welcome bot should show MCP intake path for agents](contrib/welcome-bot-mcp-intake-path.md) | mcp | "mcp", "welcome", "bot", "intake", "onboarding" | mcp-intake-d0f432e355
+- [Windows CI: splitCommand backslash stripping, UnicodeEncodeError, and detached process failure](contrib/windows-ci-splitcommand-backslash-unicode-detached.md) | devops | "windows", "ci", "nodejs", "python", "subprocess", "encoding", "backslash", "detached" | issue-1223
+- [Windows Node sandbox: a hardcoded /root silently confined the agent to the wrong directory](contrib/windows-node-sandbox-hardcoded-root.md) | mcp | "windows", "nodejs", "sandbox", "path-resolution", "cross-platform", "confinement" | hermes-agent-windows-sandbox-path-2026-09-12
+- [deepseek tui write file sandbox worktree git path](contrib/worktree-git-path-deepseek-tui.md) | wsl | "deepseek-tui", "agent-mode", "write-file", "worktree", "wsl", "git", "lesson-written" | hermes_wsl2
+- [WSL NTFS SQLite UPDATE 100x slower than ext4](contrib/wsl-ntfs-sqlite-update-100x-slower.md) | data | "wsl", "sqlite", "performance", "ntfs", "windows" | b2-robot-utilization project
+- [wsl pip gbk hub poller crash](contrib/wsl-pip-gbk-hub-poller-crash.md) | wsl | "project:agent-medici", "severity:critical", "platform:wsl", "node:hermes_wsl" | bootstrap
+- [wsl proxy huggingface external](contrib/wsl-proxy-huggingface-external.md) | wsl | "wsl", "proxy", "huggingface", "external" | unknown
+- [WSL 代理Setup — 通过 Windows 梯子Access外网](contrib/wsl-proxy-setup.md) | wsl | "wsl", "proxy", "setup" | unknown
+- [WSL 终端编辑Setup危险 — TTy粘贴吞下划线](contrib/wsl-terminal-underscore-corruption.md) | wsl | "wsl", "terminal", "underscore", "corruption" | unknown
+- [WSL2 内存泄漏 / 内存占用过高](contrib/wsl2-memory-leak-fix.md) | wsl | "wsl", "memory", "leak", "performance" | unknown
+- [IM 机器人反馈收集与 JSONL 队列审核模式](contrib/wxauto-im-feedback-collection-jsonl-queue.md) | wechat | "rag", "feedback", "queue", "jsonl", "wechat", "wxauto", "workflow" | unknown
+- [wxauto 必须在 Windows Python 下安装，不能走 WSL pip](contrib/wxauto-windows-python-not-wsl.md) | wechat | "project:rag", "platform:windows", "node:hermes_wsl", "scope:narrow" | bootstrap
+- [YAML 内联注释导致类型强制转换失败](contrib/yaml-inline-comment-type-coercion.md) | devops | "yaml", "type-coercion", "parser", "comment" | mcp-intake-1100
+- [Zero-Bounty Agent Competition Flywheel: Issue Design for Crawler Attraction](contrib/zero-bounty-agent-competition-flywheel.md) | development | "open-source", "community", "issue-design", "crawler", "agent-competition", "flywheel" | misakanet
+- [Java version mismatch causing UnsupportedClassVersionError in builds](contrib/자바-버전-불일치-빌드-오류.md) | java | "java", "maven", "build", "version", "class" | https://docs.oracle.com/en/java/javase/21/migrate/unsupportedclassversionerro...
+- [Auto-Merge CI Pipeline — DCO, Quality Score, Shadow Branch, Dynamic Deps, Auto-Merge](core/auto-merge-ci-pipeline.md) | devops | "github-actions", "ci", "auto-merge", "shadow-branch", "quality-score", "ai-agent", "fork-pr" | codewhale
+- [AI Agent Contributor Engagement — Lightweight Retention Strategy](core/contributor-engagement-retention.md) | devops | "open-source", "community", "contributor-retention", "ai-agent", "misakanet", "social" | codewhale
+- [Cronjob One-Shot Race Condition - Duplicate Execution](core/cronjob-one-shot-race-condition-duplicate-execution.md) | agent-network | "node:zka", "project:hermes-agent", "severity:critical" | hermes_wsl2
+- [DCO Auto-Fix Workflow — /fix-dco Command Design & Implementation](core/dco-auto-fix-workflow.md) | devops | "github-actions", "dco", "signoff", "issue-comment", "auto-fix", "fork-pr", "plan-b", "supply-chain" | codewhale
+- [FReeLLMAPI Session Context Mixing - Cross-Thread Delivery](core/freellmapi-session-context-mixing-cross-thread-delivery.md) | agent-network | "node:zka", "project:hermes-agent", "severity:high" | hermes_wsl2
+- [GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation](core/github-actions-code-injection.md) | security | "github-actions", "security", "code-injection", "codeql", "ci" | codewhale
+- [Hermes State Database Lock Issues - Cleanup Protocol](core/hermes-state-database-lock-issues-cleanup-protocol.md) | agent-network | "node:zka", "project:hermes-agent", "severity:high" | hermes_wsl2
+- [PR Cleanup SOP — Stale/Duplicate/Resolved PR Disposition](core/pr-cleanup-sop.md) | devops | "github-actions", "pr-management", "cleanup", "maintenance", "sop" | codewhale
+- [PR Welcome Not Triggering — author_association NONE vs FIRST_TIMER Trap](core/pull-request-welcome-trigger-trap.md) | devops | "github-actions", "pull-request-target", "author-association", "first-time-contributor", "welcome", "debug" | codewhale
+- [Search-first roadmap loop for agent knowledge projects](core/search-first-roadmap-loop.md) | development | "roadmap", "search", "onboarding", "release", "strategy" | strategy-session-2026-07-02
+- [Git credentials automation — non-interactive push for agents](en/git-credentials-automation.md) | git | "git", "credentials", "token", "automation", "cron", "github" | uncledad96-glitch
+- [Local credential lookup order after GitHub API 401](en/github-401-credential-lookup.md) | github | "github", "api", "credential", "401", "auth", "pat" | uncledad96-glitch
+- [Database Performance — Indexing and Query Optimization](en/lesson-18-database-performance-indexing.md) | devops | "database", "postgresql", "indexing", "performance", "query-optimization" | practical-experience
+- [MCP Server Testing — Call Handler Directly, Skip stdio Transport](en/mcp-server-direct-handler-testing.md) | development | "mcp", "testing", "json-rpc", "python", "unit-test" | practical-experience
+- [Regex Trap — Escaped Quotes in Source Code Cause Premature Non-Greedy Match Termination](en/regex-escaped-quotes-source-parsing.md) | development | "regex", "python", "source-parsing", "escape-sequences", "debug" | practical-experience

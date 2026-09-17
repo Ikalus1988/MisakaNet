@@ -52,6 +52,12 @@ jobs:
       - name: Regenerate lesson/topic pages
         run: python3 scripts/build_lesson_pages.py
 
+      - name: Rebuild lessons/index.md
+        run: python3 scripts/rebuild_lessons_index.py
+
+      - name: Check lessons/index.md consistency
+        run: python3 scripts/rebuild_lessons_index.py --check
+
       - name: Check for changes
         id: check
         run: |
