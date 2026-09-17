@@ -1,9 +1,18 @@
 ---
-domain: "general"
-title: "<English Title>"
-status: "draft"
-verification: "metadata-normalized"
-{"title": "<English Title: 4-120 chars>", "domain": "<domain>", "tags": ["tag1", "tag2", "tag3"], "status": "published", "confidence": "0.9", "created": "<YYYY-MM-DD>", "updated": "<YYYY-MM-DD>", "source": "<your-source>", "verified_date": "", "domain_expert": ""}
+# Copy this block and replace every value. It must parse as YAML — a JSON object
+# also works, because JSON is a subset of YAML. (Until 2026-09-17 this block glued a
+# legacy JSON line underneath these keys, so the whole block parsed as *nothing* and
+# the gate reported "missing required field: title" for a title that was right there.)
+domain: "meta"                                    # REQUIRED — a topic from data/domains.json
+title: "<English Title: 4-120 chars>"             # REQUIRED — 4-120 chars
+tags:                                             # REQUIRED — 1-10 tags, each >= 2 chars, unique
+  - "<tag1>"
+  - "<tag2>"
+status: "draft"                                   # REQUIRED — draft | published | archived | active | stale | superseded
+evidence_level: "E1"                              # REQUIRED — E0-E4 (or provenance.evidence); E2/E3 need a resolvable source
+summary_plain: "<plain-language sentence, <= 120 chars>"      # required for NEW lessons (#1783)
+trigger: "<error fragment or keyword phrase, <= 160 chars>"   # required for NEW lessons (#1783)
+verify: "<checkable pass/fail criterion, <= 200 chars>"       # required for NEW lessons (#1783)
 ---
 
 # <English Title>
@@ -41,8 +50,9 @@ verification: "metadata-normalized"
 | Rule | Standard | Reason |
 |------|----------|--------|
 | **Filename** | `kebab-case-english.md` | No Chinese, no project prefixes |
-| **Frontmatter** | JSON inside `---` | Must parse with `json.loads()` |
-| **Required fields** | `title`, `domain`, `status` | Schema enforcement |
+| **Frontmatter** | YAML inside `---` (JSON also accepted: it is a YAML subset) | A block that does not parse makes **every** required field read as missing |
+| **Required fields** | `title`, `domain`, `tags`, `status`, `evidence_level` (or `provenance.evidence`) | Schema enforcement |
+| **Domain** | One of the 46 topics in `data/domains.json` | The gate rejects a domain outside that vocabulary |
 | **Tags** | 1-10 tags, 2+ chars each | BM25 retrieval |
 | **Section order** | Problem → Root Cause → Solution → Verification | Consistency |
 | **Structured fields** | `summary_plain`, `trigger`, `verify` — required for **new** lessons (#1783) | Answerable in plain language + retrievable by fragment |
