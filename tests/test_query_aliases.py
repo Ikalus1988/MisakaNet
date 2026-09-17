@@ -52,8 +52,15 @@ def test_every_declared_kind_is_documented_and_used(table):
 
 def test_entry_count_is_within_the_reviewed_range(table):
     """A hand-reviewed table, not a generated one: big enough to matter, small
-    enough to read in one sitting."""
-    assert 60 <= len(table["aliases"]) <= 150
+    enough to read in one sitting.
+
+    The upper bound went 150 → 200 in #1780, when the Feature #532 `_SYNONYM_MAP` was
+    unified into this file: 30 of its 34 keys existed nowhere else and were migrated as
+    `kind: "related"` entries (each with fresh evidence), so the count is a consequence
+    of the migration rather than of new growth. The bound is a review-discipline guard,
+    not a measurement — raising it again needs the same kind of justification.
+    """
+    assert 60 <= len(table["aliases"]) <= 200
 
 
 def test_entries_have_the_required_fields(table):

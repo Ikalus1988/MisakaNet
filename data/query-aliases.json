@@ -1,6 +1,6 @@
 {
   "schema": {
-    "version": 1,
+    "version": 2,
     "file": "data/query-aliases.json",
     "sibling_of": "data/domains.json",
     "purpose": "检索用「查询别名 / 近义词」词表：把用户真的会打出来的写法，映射到语料里真的存在的写法。它不是领域词表（data/domains.json 管 frontmatter 的 domain），也不是同义词库——每一条都必须能被本仓语料证明。",
@@ -24,7 +24,8 @@
       "canonical 的每个 token 都必须在 lessons/ 里 df>=1（否则映射到的是不存在的写法）",
       "kind=typo 之外的 alias 必须在仓库文本里有出处（lessons/ 优先）",
       "alias 与 canonical 的 token 集合不能完全相同：那种条目是 no-op，没有资格进表",
-      "canonical 不许成环：跟随 canonical 必须终止在一个不再是别名 sink 上"
+      "canonical 不许成环：跟随 canonical 必须终止在一个不再是别名 sink 上",
+      "kind=related 的同现条目是降级层：只在没有任何其它 kind 命中时才注入（#1780 统一时的决定，见 --emit-worker-table 与 docs/maintainer/query-alias-design-2026-09-16.md §8）"
     ]
   },
   "kinds": {
@@ -63,6 +64,12 @@
       "direction": "one-way",
       "weight": 1.0,
       "replace": true
+    },
+    "related": {
+      "desc": "同现补充词（#532 遗留词表的迁移，见 docs/maintainer/query-alias-design-2026-09-16.md §8）：不是同义，只是「问这个场景的问题，答案往往写在含这些词的课程里」。它是**降级层**——只有在没有任何 zh-en/error-variant/tool-variant/product-variant/abbrev/typo 条目命中时才注入，否则会把已经定位准确的查询稀释掉（实测：与新表同时无条件生效时 engine top-1 14/20→12/20）",
+      "direction": "one-way",
+      "weight": 0.3,
+      "replace": false
     }
   },
   "stopwords": {
@@ -2948,11 +2955,612 @@
         "note": "错拼变体 —— 按定义不在语料里；证据取正确拼写在语料中的出现",
         "canonical_match": "phrase"
       }
+    },
+    {
+      "alias": "mcp",
+      "canonical": "setup tools/list",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "setup",
+        "canonical_df": 33,
+        "alias_evidence": {
+          "file": "lessons/contrib/mcporter-cloudflare-oauth-endpoint-scope-wsl-callback.md",
+          "quote": "# NO scope — Cloudflare MCP rejects mcp:tools"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/feishu-mcp-server-deepseek-tui-setup.md",
+          "quote": "# DeepSeek TUI — Feishu MCP Server Setup & Permission Boundaries"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "tool",
+      "canonical": "setup mcp",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "setup",
+        "canonical_df": 33,
+        "alias_evidence": {
+          "file": "lessons/contrib/glama-mcp-server-deploy-lessons.md",
+          "quote": "2. glama.json is minimal (maintainers only) — tool definitions come from MCP introspection"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/feishu-mcp-server-deepseek-tui-setup.md",
+          "quote": "# DeepSeek TUI — Feishu MCP Server Setup & Permission Boundaries"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "setup",
+      "canonical": "mcp install",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "install",
+        "canonical_df": 58,
+        "alias_evidence": {
+          "file": "lessons/index.md",
+          "quote": "- [feishu-mcp-server-deepseek-tui-setup](contrib/feishu-mcp-server-deepseek-tui-setup.md) | uncategorized | |"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/ghidra-mcp-server-reverse-engineering.md",
+          "quote": "# Install Ghidra plugin + MCP server"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "gbk",
+      "canonical": "unicode encoding",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "encoding",
+        "canonical_df": 20,
+        "alias_evidence": {
+          "file": "lessons/contrib/aider-windows-unicode-error.md",
+          "quote": "- Windows GBK encoding causes UnicodeEncodeError"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/aider-windows-unicode-error.md",
+          "quote": "- Windows GBK encoding causes UnicodeEncodeError"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "unicode",
+      "canonical": "gbk encoding",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "encoding",
+        "canonical_df": 20,
+        "alias_evidence": {
+          "file": "lessons/contrib/aider-windows-unicode-error.md",
+          "quote": "Windows default encoding is GBK, which can't handle all Unicode characters in file paths."
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/python-gbk-encoding-error.md",
+          "quote": "# Python GBK Encoding Error — Windows/WSL 跨平台"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "encoding",
+      "canonical": "gbk unicode",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "unicode",
+        "canonical_df": 7,
+        "alias_evidence": {
+          "file": "lessons/contrib/aider-windows-unicode-error.md",
+          "quote": "- Windows GBK encoding causes UnicodeEncodeError"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/aider-windows-unicode-error.md",
+          "quote": "Windows default encoding is GBK, which can't handle all Unicode characters in file paths."
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "signed-off-by",
+      "canonical": "dco signoff",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "signoff",
+        "canonical_df": 8,
+        "alias_evidence": {
+          "file": "lessons/contrib/dco-signoff-force-push-pitfall.md",
+          "quote": "Force push 后 DCO (Developer Certificate of Origin) check 持续失败，即使本地 commit 有 `Signed-off-by`。"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/dco-signoff-force-push-pitfall.md",
+          "quote": "title: DCO Signoff Lost During Force Push"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "pip",
+      "canonical": "ssl proxy",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "proxy",
+        "canonical_df": 42,
+        "alias_evidence": {
+          "file": "lessons/contrib/pip-install-proxy-timeout.md",
+          "quote": "`pip install` fails with `ReadTimeoutError` or `ConnectionResetError` when behind corporate proxy with SSL inspection. Common errors:"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/lesson-template-network.md",
+          "quote": "## Example: SSL Certificate Verification Failure Behind Corporate Proxy"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "timeout",
+      "canonical": "ssl proxy",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "proxy",
+        "canonical_df": 42,
+        "alias_evidence": {
+          "file": "lessons/contrib/corporate-proxy-curl-timeout.md",
+          "quote": "title: 'curl Timeout Behind Corporate Proxy: SSL Inspection Breaks Certificate Validation'"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/lesson-template-network.md",
+          "quote": "## Example: SSL Certificate Verification Failure Behind Corporate Proxy"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "proxy",
+      "canonical": "pip ssl timeout",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "timeout",
+        "canonical_df": 66,
+        "alias_evidence": {
+          "file": "lessons/contrib/pip-install-proxy-timeout.md",
+          "quote": "`pip install` fails with `ReadTimeoutError` or `ConnectionResetError` when behind corporate proxy with SSL inspection. Common errors:"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/pip-install-timeout-ssl.md",
+          "quote": "title: pip install Network Timeout / SSL ErrorFix"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "git",
+      "canonical": "credential push",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "credential",
+        "canonical_df": 15,
+        "alias_evidence": {
+          "file": "lessons/contrib/git-credential-helper-gh-path-mismatch.md",
+          "quote": "# gh credential helper 路径Error导致 git push 静默失败"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/git-credential-helper-gh-path-mismatch.md",
+          "quote": "# gh credential helper 路径Error导致 git push 静默失败"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "credential",
+      "canonical": "git auth",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "auth",
+        "canonical_df": 28,
+        "alias_evidence": {
+          "file": "lessons/contrib/git-credentials-automation.md",
+          "quote": "# 2. 或使用 git-credential-oauth（更安全）"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/github-401-credential-lookup.md",
+          "quote": "**Mandatory lookup order after GitHub API auth failure:**"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "auth",
+      "canonical": "credential token",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "credential",
+        "canonical_df": 15,
+        "alias_evidence": {
+          "file": "lessons/contrib/vertex-ai-embedding-qwen-go-migration.md",
+          "quote": "self.credentials.refresh(auth_req)"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/github-401-credential-lookup.md",
+          "quote": "# format: https://<username>:<token>@github.com (placeholder example, not a real credential)"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "token",
+      "canonical": "auth credential",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "credential",
+        "canonical_df": 15,
+        "alias_evidence": {
+          "file": "lessons/contrib/mcporter-oauth-must-be-serial.md",
+          "quote": "2. **If corrupted**: Delete vault entries for affected servers (credentials.json entries), clean token cache directory, then `--reset` to re-authorize"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/git-credentials-automation.md",
+          "quote": "# 2. 或使用 git-credential-oauth（更安全）"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "401",
+      "canonical": "auth credential",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "credential",
+        "canonical_df": 15,
+        "alias_evidence": {
+          "file": "lessons/en/github-401-credential-lookup.md",
+          "quote": "tags: [\"github\", \"api\", \"credential\", \"401\", \"auth\", \"pat\"]"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/git-credentials-automation.md",
+          "quote": "# 2. 或使用 git-credential-oauth（更安全）"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "403",
+      "canonical": "auth permission",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "permission",
+        "canonical_df": 17,
+        "alias_evidence": {
+          "file": "lessons/core/auto-merge-ci-pipeline.md",
+          "quote": "**Important:** `GITHUB_TOKEN` lacks git write permission on fork PRs. Use `secrets.GITHUB_TOKEN` and gracefully skip when 403:"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/cloudflare-ai-gateway-auth-pitfalls.md",
+          "quote": "1. In the AI Gateway Settings page, create an authentication token with \"Run\" permission. **Copy it immediately** — it cannot be retrieved later."
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "cron",
+      "canonical": "scheduler systemd",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "scheduler",
+        "canonical_df": 4,
+        "alias_evidence": {
+          "file": "lessons/en/cron-job-not-running.md",
+          "quote": "\"tags\": [\"cron\", \"crontab\", \"systemd\", \"linux\", \"scheduler\", \"ops\"],"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/cron-job-not-running.md",
+          "quote": "\"tags\": [\"cron\", \"crontab\", \"systemd\", \"linux\", \"scheduler\", \"ops\"],"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "scheduler",
+      "canonical": "cron systemd",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "systemd",
+        "canonical_df": 5,
+        "alias_evidence": {
+          "file": "lessons/en/cron-job-not-running.md",
+          "quote": "\"tags\": [\"cron\", \"crontab\", \"systemd\", \"linux\", \"scheduler\", \"ops\"],"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/python-venv-tiktoken-module-not-found.md",
+          "quote": "Pin the interpreter in systemd/cron:"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "wsl",
+      "canonical": "windows proxy",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "windows",
+        "canonical_df": 55,
+        "alias_evidence": {
+          "file": "lessons/en/wsl-proxy-setup.md",
+          "quote": "\"tags\": [\"wsl\", \"proxy\", \"git\", \"pip\", \"network\", \"windows\"],"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/ai-agent-project-outreach-guide.md",
+          "quote": "### 网络连通性（WSL2 + Windows 梯子 proxy）"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "windows",
+      "canonical": "wsl proxy",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "proxy",
+        "canonical_df": 42,
+        "alias_evidence": {
+          "file": "lessons/contrib/ai-agent-project-outreach-guide.md",
+          "quote": "### 网络连通性（WSL2 + Windows 梯子 proxy）"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/ai-agent-project-outreach-guide.md",
+          "quote": "### 网络连通性（WSL2 + Windows 梯子 proxy）"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "cloudflare",
+      "canonical": "worker deploy",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "worker",
+        "canonical_df": 24,
+        "alias_evidence": {
+          "file": "lessons/contrib/cloudflare-worker-deploy-three-pitfalls.md",
+          "quote": "# Cloudflare Worker Programmatic Deploy: Three Pitfalls"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/cloudflare-worker-deploy-three-pitfalls.md",
+          "quote": "# Cloudflare Worker Programmatic Deploy: Three Pitfalls"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "worker",
+      "canonical": "cloudflare deploy",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "cloudflare",
+        "canonical_df": 29,
+        "alias_evidence": {
+          "file": "lessons/contrib/cloudflare-worker-deploy-three-pitfalls.md",
+          "quote": "# Cloudflare Worker Programmatic Deploy: Three Pitfalls"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/cloudflare-worker-deploy-three-pitfalls.md",
+          "quote": "# Cloudflare Worker Programmatic Deploy: Three Pitfalls"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "deploy",
+      "canonical": "worker cloudflare",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "cloudflare",
+        "canonical_df": 29,
+        "alias_evidence": {
+          "file": "lessons/contrib/cloudflare-worker-deploy-three-pitfalls.md",
+          "quote": "# Cloudflare Worker Programmatic Deploy: Three Pitfalls"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/cloudflare-worker-deploy-three-pitfalls.md",
+          "quote": "# Cloudflare Worker Programmatic Deploy: Three Pitfalls"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "npm",
+      "canonical": "publish 403",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "publish",
+        "canonical_df": 5,
+        "alias_evidence": {
+          "file": "lessons/contrib/agent-web-access-toolchain-selection.md",
+          "quote": "npm install -g rebrowser-patches"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/zero-bounty-agent-competition-flywheel.md",
+          "quote": "1. Publish with `status:competition` label"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "publish",
+      "canonical": "npm 403",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "npm",
+        "canonical_df": 16,
+        "alias_evidence": {
+          "file": "lessons/contrib/swarm-pr-battle-playbook.md",
+          "quote": "1. Publish a hot-patch script (`npx project-patch-<tool>`) using patch-package to inject the hook into local `node_modules`"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/agent-web-access-toolchain-selection.md",
+          "quote": "npm install -g rebrowser-patches"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "json",
+      "canonical": "schema parse",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "schema",
+        "canonical_df": 25,
+        "alias_evidence": {
+          "file": "lessons/en/json-parse-failure-handling.md",
+          "quote": "# JSON parse failure handling — truncated / malformed output"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/json-parse-failure-handling.md",
+          "quote": "### 3. Validate schema after parse"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "schema",
+      "canonical": "json validate",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "validate",
+        "canonical_df": 12,
+        "alias_evidence": {
+          "file": "lessons/en/json-schema-validate-input.md",
+          "quote": "# Validate JSON agent inputs with a minimal schema check"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/json-schema-validate-input.md",
+          "quote": "# Validate JSON agent inputs with a minimal schema check"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "validate",
+      "canonical": "schema json",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "schema",
+        "canonical_df": 25,
+        "alias_evidence": {
+          "file": "lessons/en/json-schema-validate-input.md",
+          "quote": "# Validate JSON agent inputs with a minimal schema check"
+        },
+        "canonical_evidence": {
+          "file": "lessons/en/json-schema-validate-input.md",
+          "quote": "# Validate JSON agent inputs with a minimal schema check"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "stale",
+      "canonical": "cache pyc",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "cache",
+        "canonical_df": 38,
+        "alias_evidence": {
+          "file": "lessons/contrib/python-pycache-stale.md",
+          "quote": "title: Python 代码修改不生效 — stale .pyc Cache"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/python-pycache-stale.md",
+          "quote": "title: Python 代码修改不生效 — stale .pyc Cache"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
+    },
+    {
+      "alias": "cache",
+      "canonical": "stale pyc",
+      "kind": "related",
+      "justification": {
+        "scope": "lessons",
+        "canonical_term": "stale",
+        "canonical_df": 28,
+        "alias_evidence": {
+          "file": "lessons/contrib/python-pycache-stale.md",
+          "quote": "title: Python 代码修改不生效 — stale .pyc Cache"
+        },
+        "canonical_evidence": {
+          "file": "lessons/contrib/python-pycache-stale.md",
+          "quote": "title: Python 代码修改不生效 — stale .pyc Cache"
+        },
+        "note": "#532 遗留词表的迁移（同现补充词，不是同义）：仅在没有任何同义/等价条目命中时才注入",
+        "canonical_match": "phrase"
+      }
     }
   ],
   "notes": {
     "why": "用户拿自然语言中文提问时，Worker 的 bm25Tokenize 会把 CJK 整体丢掉（[^a-z0-9]+ 全变空格），查询词数变成 0，searchLessonsBM25 直接 return []；本地 BM25 虽然按单字切分，但单字是高 df 噪声，top-1 基本靠运气。",
     "how_to_review": "改动本文件后跑 python3 scripts/expand_query.py --check（会逐条验证 evidence 的文件存在且引文可命中），再跑 python3 scripts/eval_query_aliases.py 看 top-1/top-3 是否退化。",
-    "growth_rule": "只加能被 grep 到的映射。宁可少而准：一条错的别名会同时污染所有包含该词的查询，而缺一条只是少一次召回。"
+    "growth_rule": "只加能被 grep 到的映射。宁可少而准：一条错的别名会同时污染所有包含该词的查询，而缺一条只是少一次召回。",
+    "migration_1780": "本文件从 v1 升到 v2（issue #1780）：Feature #532 写死在 misakanet/search/engine.py 里的 _SYNONYM_MAP（34 个 key）被逐条核对后迁进来，其中 30 个 key 是这张表原本没有的，作为 kind=related 条目补了取证；dco/pyc 已有更强的等价条目，ssl/signoff 已是 two-way 条目的 canonical 侧（再以 alias 身份加会是永不生效的死条目）。related 是降级层——只有其它 kind 一条都没命中时才注入（无条件合并的实测代价：engine top-1 14/20 → 12/20）。Worker 读的是 --emit-worker-table 生成的同一份投影，漂移由 workers/query-alias-expansion.test.mjs 拦截。"
   }
 }

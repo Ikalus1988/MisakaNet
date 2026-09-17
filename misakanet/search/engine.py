@@ -447,22 +447,60 @@ def _compute_boost_breakdown(doc: CachedDoc) -> list[tuple[str, float]]:
     return parts
 
 
-def _expand_query(query: str) -> str:
-    """Feature #532: expand query with synonyms from _SYNONYM_MAP.
+def _synonym_view(table: dict | None = None) -> dict[str, list[str]]:
+    """`_SYNONYM_MAP`'s shape (alias -> list of canonical strings), projected from the
+    shared table.
 
-    Appends lower-cased synonyms to the original query so BM25 can match
-    documents containing related terms. Unmapped queries are returned
-    unchanged.
+    This exists so Feature #532's public surface keeps working for every caller that
+    introspects it, and so `tests/test_synonym_expansion.py` keeps asserting the same
+    terms. It is **not** a second word list: the values are read out of
+    data/query-aliases.json, and a test removes an entry from that file to prove the view
+    follows it (issue #1780).
     """
-    tokens = [t.lower() for t in _tokenize(query) if t]
-    expanded = list(tokens)
-    seen = set(tokens)
-    for token in tokens:
-        for syn in _SYNONYM_MAP.get(token, []):
-            if syn not in seen:
-                expanded.append(syn)
-                seen.add(syn)
-    return " ".join(expanded)
+    try:
+        from scripts import expand_query as eq
+        data = eq.cached_table() if table is None else table
+    except Exception:
+        # No repo-root `scripts/` on sys.path (an installed package) or a broken table:
+        # an empty view is the honest answer — expansion does nothing rather than making
+        # the engine unimportable. CI's `--check` is what rejects a malformed table.
+        return {}
+    view: dict[str, list[str]] = {}
+    for entry in data.get("aliases", []):
+        alias = str(entry.get("alias", "")).strip().lower()
+        canonical = str(entry.get("canonical", "")).strip()
+        if alias and canonical:
+            view.setdefault(alias, []).append(canonical)
+    return view
+
+
+# Feature #532 (unified in #1780): alias -> canonical strings, read from
+# data/query-aliases.json rather than hard-coded here. See `_synonym_view`.
+_SYNONYM_MAP: dict[str, list[str]] = _synonym_view()
+
+
+def _expand_query(query: str) -> str:
+    """Feature #532, unified in #1780: expand `query` from data/query-aliases.json.
+
+    Before #1780 this module expanded from a hard-coded `_SYNONYM_MAP` (34 tokens, no
+    evidence) while production expanded from nothing at all — two different ideas of
+    what a query means. Now both read the same file through the same implementation
+    (`scripts/expand_query.py`, ported 1:1 to the Worker), so "found locally but not in
+    production" cannot come from the word list.
+
+    Public behaviour is unchanged: a string in, a string out, and a query with no
+    matching entry comes back usable. `MISAKANET_QUERY_ALIASES=0` makes this the
+    identity — the rollback switch, same name in the Worker and the CLI.
+    """
+    if not query:
+        return query
+    try:
+        from scripts import expand_query as eq
+    except ImportError:      # installed package without the repo's scripts/ directory
+        return query
+    if not eq.query_aliases_enabled():
+        return query
+    return eq.expand_query_text(query)
 
 
 def _rank_docs_impl(
@@ -484,6 +522,10 @@ def _rank_docs_impl(
         active = [d for d in docs if not d.is_stale and not d.is_superseded]
         if active:
             docs = active
+    # Alias expansion (#1780) is applied here for every caller. The local CLI also
+    # expands at its query entry (search_knowledge._scoring_query), so its searches reach
+    # the layer twice; §8.6 of docs/maintainer/query-alias-design-2026-09-16.md records
+    # what that does to the numbers (it is the configuration the offline eval measures).
     expanded_query = _expand_query(query)
     bm25_raw = _compute_bm25_scores(expanded_query, docs)
     bm25_norm = _normalize(bm25_raw)

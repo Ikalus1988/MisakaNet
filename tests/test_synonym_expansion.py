@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Tests for domain synonym query expansion."""
+"""Tests for domain synonym query expansion.
+
+Feature #532's hard-coded `_SYNONYM_MAP` was unified into data/query-aliases.json in
+#1780: the map and `_expand_query` are now a *view of* that file, and the expansion
+itself is `scripts/expand_query.py::expand` (the same implementation the Worker runs).
+These tests are kept as the behaviour contract for the callers of `_expand_query` —
+they still pass unchanged except for `test_expand_mcp`, where the output is now a
+token string (BM25 tokens) rather than the raw canonical `tools/list`.
+"""
 import sys
 from pathlib import Path
 
@@ -11,7 +19,11 @@ class TestSynonymExpansion:
     def test_expand_mcp(self):
         result = _expand_query("mcp tool not showing")
         assert "setup" in result
-        assert "tools/list" in result
+        # `tools/list` is the canonical in the table; expansion emits its BM25 tokens
+        # (`expand_query.tokenize("tools/list") == ["tools", "list"]`), because what
+        # reaches the scorer is a token string — before #1780 this assertion only passed
+        # because the old map appended the raw string.
+        assert "tools" in result and "list" in result
 
     def test_expand_gbk(self):
         result = _expand_query("gbk error")
