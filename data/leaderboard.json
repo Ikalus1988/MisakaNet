@@ -1,7 +1,7 @@
 [
   {
     "login": "zsxh1990",
-    "score": 95.39
+    "score": 95.34
   },
   {
     "login": "github-actions[bot]",
@@ -64,10 +64,6 @@
     "score": 0.92
   },
   {
-    "login": "elevasyncsolutions-jpg",
-    "score": 0.85
-  },
-  {
     "login": "yunaremaia",
     "score": 0.65
   },
@@ -81,7 +77,7 @@
   },
   {
     "login": "hummern",
-    "score": 0.59
+    "score": 0.58
   },
   {
     "login": "misakanet-agent",
@@ -90,6 +86,10 @@
   {
     "login": "pnpn1212",
     "score": 0.46
+  },
+  {
+    "login": "elevasyncsolutions-jpg",
+    "score": 0.43
   },
   {
     "login": "harshadkhetpal",
