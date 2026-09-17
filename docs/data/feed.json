@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-09-17T05:00:34.868478+00:00",
+  "generated_at": "2026-09-17T11:52:27.165469+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "fix(lessons): give the template frontmatter that actually parses",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1796",
+      "timestamp": "2026-09-17T09:43:22Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(ci): the auto-merge channel compared a REST field to the GraphQL spelling",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1797",
+      "timestamp": "2026-09-17T09:28:12Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(maintainer): handoff updated to the final state, with the production record",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1795",
+      "timestamp": "2026-09-17T07:39:14Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "feat(retrieval): wire the alias table into both search paths, and unify two expansion layers",
@@ -16,27 +37,6 @@
       "title": "feat(setup): `--silent` and `--report-json`, and how an IT department deploys this",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1793",
       "timestamp": "2026-09-17T01:07:43Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(voice): turn the cue player into an attention router, with desktop notifications",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1787",
-      "timestamp": "2026-09-16T17:42:00Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(ci): an `/adopt` flow so a fork PR blocked on sign-off is not blocked at all",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1786",
-      "timestamp": "2026-09-16T17:41:54Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(maintainer): handoff for 2026-09-16",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1789",
-      "timestamp": "2026-09-16T17:34:35Z",
       "source": "github"
     },
     {
