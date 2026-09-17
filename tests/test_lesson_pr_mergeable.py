@@ -322,3 +322,43 @@ def test_checks_not_required_by_name_are_ignored():
 def test_labels_are_matched_case_insensitively():
     verdict, _ = verdict_of(payload(labels=["Auto-Merge-Lesson"]))
     assert verdict == lpm.MERGE
+
+
+# ── the pre-merge re-check's normalisation ──────────────────────────────────
+# The workflow re-reads `mergeable` from REST right before merging and normalises it with
+# this helper. It used to compare the raw value to "MERGEABLE" — the *GraphQL* spelling —
+# so on 2026-09-17 the very first real run decided "merge", then refused itself with
+# "no longer a clean candidate (mergeable=true …)" and the channel merged nothing.
+def test_rest_boolean_true_is_clean():
+    assert lpm.mergeable_is_clean(True) is True
+
+
+def test_graphql_enum_string_is_also_clean():
+    # Zero cost to accept it, and it keeps a future GraphQL read working.
+    assert lpm.mergeable_is_clean("MERGEABLE") is True
+    assert lpm.mergeable_is_clean("mergeable") is True
+
+
+def test_lazy_null_is_not_clean_and_must_be_retried():
+    assert lpm.mergeable_is_clean(None) is False
+    assert lpm.mergeable_is_clean("null") is False
+
+
+def test_conflicting_and_unknown_are_not_clean():
+    for value in (False, "CONFLICTING", "UNKNOWN", "", "true", "yes"):
+        assert lpm.mergeable_is_clean(value) is False, value
+
+
+def test_the_workflow_does_not_compare_mergeable_to_the_graphql_spelling():
+    """Pin the shipped shell: the re-check must not gate on the raw API spelling again."""
+    workflow = (
+        pathlib.Path(__file__).resolve().parent.parent
+        / ".github"
+        / "workflows"
+        / "auto-merge-lessons.yml"
+    ).read_text(encoding="utf-8")
+    assert 'if [ "$MERGEABLE" != "MERGEABLE" ]' not in workflow, (
+        "the pre-merge re-check compares `mergeable` to the GraphQL enum while reading the "
+        "REST endpoint — that refuses every candidate; normalise with mergeable_is_clean"
+    )
+    assert "mergeable_is_clean" in workflow
