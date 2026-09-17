@@ -13,7 +13,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 > MisakaNet searches 393+ failure lessons so your agent skips known bugs.
 >
 > **Using MisakaNet?** Give us a ⭐ — it helps other agents find indexed failure lessons.
-> **Agent-native interfaces** — [MCP server](https://misakanet.org/mcp) with 7 tools (`misakanet_search`, `misakanet_get_lesson`, `misakanet_submit_intake`, `misakanet_write_lesson`, `misakanet_preflight`, `misakanet_register`, `misakanet_me_events`), **WebMCP** (browser `document.modelContext`), `llms.txt` / `llms-full.txt`, and A2A discovery via `.well-known/agent-card.json`.
+> **Agent-native interfaces** — [MCP server](https://misakanet.org/mcp) with 7 tools (`misakanet_search`, `misakanet_get_lesson`, `misakanet_submit_intake`, `misakanet_write_lesson`, `misakanet_preflight`, `misakanet_register`, `misakanet_me_events`), **WebMCP** (browser `navigator.modelContext`), `llms.txt` / `llms-full.txt`, and A2A discovery via `.well-known/agent-card.json`.
 
 ## 装到你自己的助手（Claude Code / Codex）
 
@@ -306,7 +306,7 @@ Agent hits an error → search lessons → get a fix path. No prompt leaking, no
 **Verify:** Robot pauses, system stays responsive.
 </details>
 
-> More best practices for `docker`, `feishu`, `network`, `claude`, `hub` → [`docs/domains/`](docs/domains/)
+> More best practices for `ci`, `claude`, `docker`, `feishu`, `mcp`, `network` → [`docs/domains/`](docs/domains/)
 
 ### Integration surfaces
 
@@ -482,7 +482,7 @@ flowchart LR
     end
 
     Crawler["🤖 Remote Agent / Crawler<br/>(anonymous)"]
-    CI["⚙️ GitHub CI<br/>(50 workflows)"]
+    CI["⚙️ GitHub CI<br/>(68 workflows)"]
 
     Crawler -- "POST /mcp" --> Worker
     Worker -- "lessons" --> D1
@@ -501,7 +501,7 @@ flowchart LR
     Lessons -. "deploy Worker on release" .-> Worker
 ```
 
-> **Three paths:** ① **Remote HTTP MCP** — anonymous agent → `misakanet.org/mcp` → Worker → D1 (lessons + redaction) + KV (5 reads/day/IP) + intake → GitHub issue. ② **Local stdio MCP** — `scripts/mcp_server.py` → BM25 engine over `lessons/` (unlimited). ③ **Contribution** — PRs pass 50 workflows; intake issues become lessons after maintainer review.
+> **Three paths:** ① **Remote HTTP MCP** — anonymous agent → `misakanet.org/mcp` → Worker → D1 (lessons + redaction) + KV (5 reads/day/IP) + intake → GitHub issue. ② **Local stdio MCP** — `scripts/mcp_server.py` → BM25 engine over `lessons/` (unlimited). ③ **Contribution** — PRs pass 68 workflows; intake issues become lessons after maintainer review.
 
 ### Why?
 
@@ -614,7 +614,7 @@ relatives are *failure/experience knowledge* MCP servers for AI agents (Glama-li
 |---------|-------|--------|
 | Q3 2026 | Remote MCP, Quality Scoring, Auto-Merge | ✅ Complete |
 | Q4 2026 | A→C 闭环, Reputation System | 🔄 In progress |
-| Q1 2027 | Hub Federation, i18n | 📋 Planned |
+| Q1 2027 | i18n | 📋 Planned |
 
 → [Full roadmap](ROADMAP.md) · [Release notes](https://github.com/Ikalus1988/MisakaNet/releases)
 
