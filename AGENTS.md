@@ -132,7 +132,7 @@ curl -sS https://misakanet.org/mcp \
   -H 'Content-Type: application/json' -H 'Accept: application/json' \
   -H 'MCP-Protocol-Version: 2025-06-18' -H 'Origin: https://misakanet.org' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
-       "params":{"name":"misakanet_preflight","arguments":{"command":"rm -rf build/"}}}'
+       "params":{"name":"misakanet_preflight","arguments":{"intent":"rm -rf build/"}}}'
 ```
 
 ### 3.5 返回值里要注意的字段
