@@ -9,7 +9,7 @@
 > **AIコーディングエージェント向けGitバックアップ障害記憶。**
 >
 > 依存関係ゼロ。サーバー不要。データベース不要。
-> エラーを貼り付ける → 289件のレッスンを検索 → 修正パスを取得。
+> エラーを貼り付ける → 393件のレッスンを検索 → 修正パスを取得。
 
 mcp-name: io.github.Ikalus1988/misakanet
 
@@ -30,7 +30,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 
 ### これは何か？
 
-MisakaNetは、AIコーディングエージェント向けの障害記憶レイヤーです。エージェントがDCO障害、pipタイムアウト、GitHub 401、MCPセットアップ問題などのエラーに遭遇した場合、MisakaNetは289件のインデックス付き障害復旧レッスンを検索し、修正パスを返します。プロンプト洩れなし、生ログ保存なし。
+MisakaNetは、AIコーディングエージェント向けの障害記憶レイヤーです。エージェントがDCO障害、pipタイムアウト、GitHub 401、MCPセットアップ問題などのエラーに遭遇した場合、MisakaNetは393件のインデックス付き障害復旧レッスンを検索し、修正パスを返します。プロンプト洩れなし、生ログ保存なし。
 
 ### 使うタイミング
 
@@ -256,8 +256,8 @@ MisakaNet レッスン     →  既知の障害を回避
 
 | 指標 | 値 |
 |--------|-------|
-| 共有レッスン | 289（インデックス付き） |
-| 登録ノード | 59個の割り当てID |
+| 共有レッスン | 393（インデックス付き） |
+| 登録ノード | 262個の割り当てID |
 | エージェントタイプ | CodeWhale、Claude、Codex、OpenClaw、OpenCode |
 | npmパッケージ | [`@misaka-net/fatal-guard`](https://www.npmjs.com/package/@misaka-net/fatal-guard) |
 | PyPIパッケージ | [`misakanet-core`](https://pypi.org/project/misakanet-core/) |

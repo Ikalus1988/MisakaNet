@@ -33,7 +33,6 @@ scripts/
 └── demo.tape             # VHS demo recording script
 
 lessons/                  # Shared knowledge (393+ indexed lessons)  — count auto-refreshed by scripts/sync_lesson_count.py
-reference/                # Reference documents (6 .md files)
 ```
 
 ## Communication
@@ -52,7 +51,7 @@ reference/                # Reference documents (6 .md files)
 
 ## CI Pipeline Architecture
 
-MisakaNet uses a multi-layered CI architecture powered by GitHub Actions with **53 workflow files** under `.github/workflows/` (audit 2026-09-05 T2.3). Each workflow is a self-contained quality gate or automation task. Full inventory (names, triggers, failure paths): see `docs/CI.md`.
+MisakaNet uses a multi-layered CI architecture powered by GitHub Actions with **68 workflow files** under `.github/workflows/` (`ls .github/workflows/*.yml | wc -l`, 2026-09-17). Each workflow is a self-contained quality gate or automation task. Full inventory (names, triggers, failure paths): see `docs/CI.md`.
 
 ### CI Layer Model
 
@@ -109,7 +108,7 @@ scripts/mcp_http_server.py
 
 
 
-web/ (Cloudflare Workers)
+docs/ (Cloudflare Workers — see wrangler.jsonc `assets.directory`)
   └── docs/index.html (vanilla JS SPA, zero dependencies)
   └── Cloudflare KV (MISAKANET_KV namespace)
 ```
