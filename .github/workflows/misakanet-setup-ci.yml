@@ -1,0 +1,196 @@
+name: Setup Package CI
+
+# Why this workflow exists (added 2026-09-18)
+# ------------------------------------------
+# `workers/misakanet-setup.test.mjs` only ever ran from mcp-stress.yml, whose trigger is a
+# hand-picked path list that does not include `packages/misakanet-setup/**`. PRs #1802 and #1816
+# changed the installer (and added tests for it) and ran **no node test job at all** — the
+# check-runs for both head SHAs contain no test job, only CodeQL, Python tests and the web build.
+# That is the same "a check nothing runs" defect the stress workflow's own comment describes,
+# one level up: the suite existed, the trigger never fired it.
+#
+# Two jobs, because they answer different questions:
+#   unit — the source tree, on every OS and every Node version `engines` claims (>=18 had never
+#          been tested on any platform).
+#   e2e  — the *packaged artifact*: npm pack → upload → download → global install → full lifecycle,
+#          plus `--inject` runs that prove each assertion can actually go red. Benchmark: uv's
+#          `test-smoke.yml`, which tests a packaged artifact instead of the working tree.
+#
+# The installer's audience cannot debug anything and never sees a checkout, so "it works in the
+# repo" is not the claim that matters.
+
+on:
+  pull_request:
+    paths:
+      - "packages/misakanet-setup/**"
+      - "workers/misakanet-setup.test.mjs"
+      - "workers/_test-token.mjs"
+      - "integrations/agent-autostart/**"
+      - ".github/workflows/misakanet-setup-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "packages/misakanet-setup/**"
+      - "workers/misakanet-setup.test.mjs"
+      - "workers/_test-token.mjs"
+      - "integrations/agent-autostart/**"
+      - ".github/workflows/misakanet-setup-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: unit (${{ matrix.os }}, node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: ["18", "20", "22"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          node-version: ${{ matrix.node }}
+
+      # Printed, not assumed: `engines: >=18` is a promise, and this line is the evidence of which
+      # runtime actually ran the suite.
+      - name: Runtime
+        run: node --version
+
+      - name: Installer unit tests
+        run: node --test workers/misakanet-setup.test.mjs
+
+      # The hook test belongs in this job because the hook *is* part of the shipped artifact (the
+      # tarball carries a copy of `integrations/agent-autostart/checkpoint_reminder.mjs`, and the
+      # `pack` job diffs the two). How it behaves on each platform is what an installed user gets on
+      # every single turn.
+      - name: Hook unit tests
+        run: node --test workers/agent-autostart-hook.test.mjs
+
+  pack:
+    name: pack the tarball
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          node-version: "22"
+
+      - name: Pack exactly as the publish workflow does
+        working-directory: packages/misakanet-setup
+        run: npm pack --pack-destination "$RUNNER_TEMP"
+
+      # The tarball's contents are the product. A missing file here is an install that half-works
+      # for a user who has no way to tell what went wrong, so the list is asserted, not eyeballed.
+      - name: Assert what the tarball ships
+        working-directory: packages/misakanet-setup
+        run: |
+          set -euo pipefail
+          TGZ=$(ls "$RUNNER_TEMP"/misaka-net-misakanet-setup-*.tgz)
+          echo "tarball: $TGZ"
+          tar -tzf "$TGZ" | sort | tee "$RUNNER_TEMP/contents.txt"
+          for f in package/package.json package/README.md package/bin/misakanet-setup.mjs \
+                   package/hook/checkpoint_reminder.mjs package/voice/voice-hook.mjs; do
+            grep -qx "$f" "$RUNNER_TEMP/contents.txt" \
+              || { echo "::error::$f is missing from the tarball"; exit 1; }
+          done
+          grep -q 'package/voice/.*\.mp3' "$RUNNER_TEMP/contents.txt" \
+            || { echo "::error::no voice cues in the tarball (--voice would be silent)"; exit 1; }
+          # The shipped hook is a copy made by `prepack`; if it ever diverges from the canonical
+          # file, the published installer would write an older hook than the one this repo tests.
+          mkdir -p "$RUNNER_TEMP/unpacked"
+          tar -xzf "$TGZ" -C "$RUNNER_TEMP/unpacked"
+          diff -u "$RUNNER_TEMP/unpacked/package/hook/checkpoint_reminder.mjs" \
+                  integrations/agent-autostart/checkpoint_reminder.mjs
+          diff -u "$RUNNER_TEMP/unpacked/package/voice/voice-hook.mjs" \
+                  integrations/agent-autostart/voice_hook.mjs
+          echo "sha256 $(sha256sum "$TGZ" | cut -d' ' -f1)"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: misakanet-setup-tarball
+          path: ${{ runner.temp }}/misaka-net-misakanet-setup-*.tgz
+          if-no-files-found: error
+
+  e2e:
+    name: e2e (${{ matrix.os }}, node ${{ matrix.node }})
+    needs: pack
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: ["18", "20", "22"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          node-version: ${{ matrix.node }}
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
+        with:
+          name: misakanet-setup-tarball
+          path: ${{ runner.temp }}/tarball
+
+      - name: Install the tarball globally, the way a user does
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "PREFIX=$RUNNER_TEMP/prefix" >> "$GITHUB_ENV"
+          echo "EXPECT_VERSION=$(node -p "require('./packages/misakanet-setup/package.json').version")" >> "$GITHUB_ENV"
+          npm install -g --prefix "$RUNNER_TEMP/prefix" "$RUNNER_TEMP"/tarball/*.tgz
+          ls -la "$RUNNER_TEMP/prefix"
+
+      - name: Lifecycle e2e on the installed artifact
+        run: |
+          node packages/misakanet-setup/scripts/e2e-packaged-install.mjs \
+            --prefix "$PREFIX" --expect-version "$EXPECT_VERSION"
+
+      # Each injection breaks exactly one promise and requires the matching check to go red. Without
+      # this step, "all checks passed" could mean "the checks do nothing".
+      - name: Injections — the portable three
+        shell: bash
+        run: |
+          set -euo pipefail
+          for injection in inplace-write leftover-temp uninstall-leaves-ours; do
+            node packages/misakanet-setup/scripts/e2e-packaged-install.mjs \
+              --prefix "$PREFIX" --inject "$injection"
+          done
+
+      - name: Injection — secret mode (POSIX permission bits only)
+        if: runner.os != 'Windows'
+        run: |
+          node packages/misakanet-setup/scripts/e2e-packaged-install.mjs \
+            --prefix "$PREFIX" --inject loose-secret-mode
+
+      # Live checks touch production, so one leg only: they assert that the endpoint answers with the
+      # tools AGENTS.md documents, that the config the installer wrote actually connects, and that the
+      # token it obtained is accepted. A stable --client-id means repeated runs reuse one node instead
+      # of minting a new one each time.
+      - name: Live endpoint checks (ubuntu + node 22 only)
+        if: matrix.os == 'ubuntu-latest' && matrix.node == '22'
+        shell: bash
+        run: |
+          set -o pipefail
+          node packages/misakanet-setup/scripts/e2e-packaged-install.mjs \
+            --prefix "$PREFIX" --expect-version "$EXPECT_VERSION" --live 2>&1 | tee "$RUNNER_TEMP/live.log"
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### setup e2e (${{ matrix.os }}, node ${{ matrix.node }})"
+            echo '```'
+            grep -h 'SETUP_E2E_METRIC' "$RUNNER_TEMP"/live.log 2>/dev/null || echo "(no metric line in this leg)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

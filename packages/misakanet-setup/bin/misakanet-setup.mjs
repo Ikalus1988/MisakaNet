@@ -294,14 +294,39 @@ const AGENT_WRITE_PATHS = {
 function unwritableTargets(paths) {
   const blocked = [];
   for (const path of paths) {
-    const target = existsSync(path) ? path : dirname(path);
-    try {
-      accessSync(target, constants.W_OK);
-    } catch {
-      blocked.push(path);
-    }
+    if (!canCreateHere(path)) blocked.push(path);
   }
   return blocked;
+}
+
+/**
+ * May this process create or overwrite `path`?
+ *
+ * Asked by *attempting* the access and reading the error, never by `existsSync(path)` first: a
+ * check-then-use pair is a race — the file can appear or disappear between the two calls, so the
+ * answer can describe a world that is already gone — and CodeQL reports exactly that shape as
+ * `js/file-system-race` (alerts #272/#273 on this file and its test, 2026-09-18). The attempt
+ * itself is also the *only* question with one answer: `access(W_OK)` on a file that does not exist
+ * yet says ENOENT, which is not "unwritable".
+ *
+ * When the file does not exist yet the question belongs to the nearest ancestor that does, because
+ * the install creates the missing parents (`mkdirSync(..., {recursive: true})`). The walk-up is
+ * what makes `--dry-run` honest on a first install: an earlier version asked about `dirname(path)`
+ * exactly once, so a home whose `~/.hermes` did not exist yet was reported "改不了" even though the
+ * installer was about to create that directory.
+ */
+function canCreateHere(path) {
+  for (let target = path; ;) {
+    try {
+      accessSync(target, constants.W_OK);
+      return true;
+    } catch (err) {
+      if (!err || err.code !== 'ENOENT') return false;   // EACCES/EROFS/EPERM/…
+      const parent = dirname(target);
+      if (parent === target) return false;               // walked up to the root: nothing exists
+      target = parent;
+    }
+  }
 }
 
 /**
@@ -1324,6 +1349,96 @@ async function verify() {
   return allOk;
 }
 
+/**
+ * Hand the config back: drop containers that are empty now that our entries are gone, and delete
+ * files that held nothing but our own lines.
+ *
+ * `--uninstall` promises to remove exactly what this installer wrote, and removing only the
+ * *leaves* left the containers it had created behind. On a bare home (`{}` config, nothing else)
+ * that turned into: `~/.claude.json` came back as `{"mcpServers": {}}`, `~/.claude/settings.json`
+ * as `{"hooks": {}, "permissions": {"allow": []}}`, `~/.openclaw/openclaw.json` as
+ * `{"mcp": {"servers": {}}}`, `~/.codewhale/mcp.json` as `{"servers": {}}`, and
+ * `~/.hermes/config.yaml` gained a dangling `mcp_servers:` key. Found 2026-09-18 by the
+ * packaged-tarball e2e, which compares the whole tree before and after — four of five agents
+ * drifted, and only Codex (a line-based format) came back byte-exact.
+ *
+ * An empty object or array is semantically nothing in every format handled here, so pruning it
+ * restores the *meaning* of the user's file. The *formatting* of a JSON file is not restored (the
+ * install re-serialized it) — that is stated rather than pretended, and the e2e check asserts
+ * semantics plus "no trace of ours" for JSON, byte equality for the line-based formats.
+ */
+function pruneEmptyContainers(value) {
+  if (Array.isArray(value)) {
+    value.forEach(pruneEmptyContainers);
+  } else if (value && typeof value === 'object') {
+    for (const [key, child] of Object.entries(value)) {
+      pruneEmptyContainers(child);
+      if (child && typeof child === 'object' && Object.keys(child).length === 0) delete value[key];
+    }
+  }
+  return value;
+}
+
+/**
+ * The `mcp_servers:` line, when nothing is left under it.
+ *
+ * The install adds that key itself when the file has none (the last branch of `installHermes`), so
+ * removing only our block left the key dangling. Any indented key below it means the user has
+ * servers of their own, and then the line stays.
+ */
+function dropEmptyMcpServersKey(text) {
+  const lines = text.split('\n');
+  const kept = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const isBareKey = /^mcp_servers:[ \t]*$/.test(lines[i]);
+    const hasChild = lines.slice(i + 1).some((line) => /^[ \t]+\S/.test(line));
+    if (isBareKey && !hasChild) continue;
+    kept.push(lines[i]);
+  }
+  return kept.join('\n');
+}
+
+/** The tail of `--uninstall`: give emptiness back, and take blank files away. */
+function restoreEmptiedFiles() {
+  // JSON configs: prune containers that our own removal emptied. The file itself is never deleted —
+  // it may have existed before us (an empty `~/.claude.json` is a legitimate user state).
+  const jsonFiles = [join(HOME, '.claude.json'), join(HOME, '.claude', 'settings.json'),
+                     join(HOME, '.openclaw', 'openclaw.json'), join(HOME, '.codewhale', 'mcp.json')];
+  for (const file of jsonFiles) {
+    const data = readJson(file, null);
+    if (!data || typeof data !== 'object') continue;
+    const next = `${JSON.stringify(pruneEmptyContainers(data), null, 2)}\n`;
+    if (next === readText(file)) continue;
+    backup(file);
+    writeText(file, next);
+    ok(`移除空配置块 → ${file}`);
+  }
+
+  // Hermes' YAML: the key the install may have created.
+  const hermesCfg = join(HOME, '.hermes', 'config.yaml');
+  const hermesText = readText(hermesCfg);
+  if (hermesText) {
+    const tidied = dropEmptyMcpServersKey(hermesText);
+    if (tidied !== hermesText) {
+      backup(hermesCfg);
+      writeText(hermesCfg, tidied);
+      ok(`移除空的 mcp_servers 键 → ${hermesCfg}`);
+    }
+  }
+
+  // Files that only ever held our own lines: a blank rules file, an emptied `.env`. An empty file
+  // cannot carry user information, and `backup()` never copies an empty file, so removing it is the
+  // honest restore and leaves nothing dangling.
+  const textFiles = [join(HOME, '.claude', 'CLAUDE.md'), join(HOME, '.codex', 'AGENTS.md'),
+                     join(HOME, '.codex', 'config.toml'), join(HOME, '.hermes', 'SOUL.md'),
+                     hermesCfg, join(HOME, '.hermes', '.env')];
+  for (const file of textFiles) {
+    if (!existsSync(file) || readText(file).trim() !== '') continue;
+    rmSync(file, { force: true });
+    ok(`删除空文件 → ${redact(file)}`);
+  }
+}
+
 function uninstall() {
   for (const rel of ['.claude/CLAUDE.md', '.codex/AGENTS.md', '.hermes/SOUL.md']) {
     if (stripBlock(join(HOME, rel))) ok(`移除规则块 → ${rel}`);
@@ -1441,6 +1556,9 @@ function uninstall() {
     writeText(ocCfg, `${JSON.stringify(ocData, null, 2)}\n`);
     ok(`移除 MCP 注册 → ${ocCfg}`);
   }
+
+  // Last, not first: the containers only become empty *after* the entries above are out.
+  restoreEmptiedFiles();
 }
 
 /**

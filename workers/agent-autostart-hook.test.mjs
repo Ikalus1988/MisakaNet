@@ -11,9 +11,13 @@ import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const HOOK = resolve(import.meta.dirname, '..', 'integrations', 'agent-autostart', 'checkpoint_reminder.mjs');
+// `fileURLToPath(import.meta.url)`, not `import.meta.dirname`: this suite runs on the Node 18 leg of
+// the setup matrix (the hook ships inside the npm tarball, and `engines` promises >=18), and a test
+// file that needs Node 20.11 just to *load* would hide an 18-incompatibility instead of reporting it.
+const HOOK = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'integrations', 'agent-autostart', 'checkpoint_reminder.mjs');
 
 function runHook(payload, mode = 'prompt', env = {}) {
   const state = env.MISAKANET_HOOK_STATE || mkdtempSync(join(tmpdir(), 'mn-hook-'));
@@ -189,7 +193,7 @@ test('the interval is configurable, and upgrading resets the clock', () => {
 // Since issue #1785 the hook routes a cue to a *sound and/or a desktop notification*, so the
 // dry-run output is no longer just the cue name: line 1 is still the cue (that is what the
 // first two tests pin), lines 2-3 report the sound and the notification.
-const VOICE_HOOK = resolve(import.meta.dirname, '..', 'integrations', 'agent-autostart', 'voice_hook.mjs');
+const VOICE_HOOK = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'integrations', 'agent-autostart', 'voice_hook.mjs');
 
 function voiceDir() {
   const dir = mkdtempSync(join(tmpdir(), 'mn-voice-'));
