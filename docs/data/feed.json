@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-17T11:52:27.165469+00:00",
+  "generated_at": "2026-09-17T17:08:05.522937+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(lessons): give the template frontmatter that actually parses",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1796",
-      "timestamp": "2026-09-17T09:43:22Z",
+      "title": "fix(pr-genius): say when the config was read with a degraded rule set",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1812",
+      "timestamp": "2026-09-17T17:02:56Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): the auto-merge channel compared a REST field to the GraphQL spelling",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1797",
-      "timestamp": "2026-09-17T09:28:12Z",
+      "title": "fix(ci): reconcile automations against their output, weekly",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1811",
+      "timestamp": "2026-09-17T17:02:52Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(maintainer): handoff updated to the final state, with the production record",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1795",
-      "timestamp": "2026-09-17T07:39:14Z",
+      "title": "fix(ci): PR-Genius was computing its report and never delivering it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1807",
+      "timestamp": "2026-09-17T16:50:10Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(retrieval): wire the alias table into both search paths, and unify two expansion layers",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1794",
-      "timestamp": "2026-09-17T01:30:16Z",
+      "title": "fix(ci): the shape guard failed honest PRs for mentioning \"docs-only\" in prose",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1810",
+      "timestamp": "2026-09-17T16:48:20Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(setup): `--silent` and `--report-json`, and how an IT department deploys this",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1793",
-      "timestamp": "2026-09-17T01:07:43Z",
+      "title": "fix(metrics): the intake ledger stops reporting a conversion rate it cannot observe",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1808",
+      "timestamp": "2026-09-17T16:47:39Z",
       "source": "github"
     },
     {
