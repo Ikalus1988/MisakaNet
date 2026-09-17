@@ -318,7 +318,27 @@ const POSIX_STUB_ONLY = process.platform === 'win32'
 
 /** Spawned children are detached and outlive the hook, so nothing is observable the very
  *  instant `spawnSync` returns. Give the stubs a moment before asserting on the log. */
-const settle = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ * Wait for the detached player/notifier children to write the stub log — and then a short grace
+ * window so a *duplicate* still has time to appear before the count is asserted.
+ *
+ * A fixed 500 ms sleep was the whole wait, which made these assertions a race against the runner:
+ * `unit (macos-latest, node 22)` failed once with `0 !== 1` on 2026-09-18 while the other eight legs
+ * passed — the child had not started yet, not misbehaved. That is the expensive kind of gate: a red
+ * nobody can act on (see `docs/maintainer/architecture-cognition-defects-2026-09-18.md`, 模式 9).
+ * `until` is a predicate over the recorded calls: the wait ends when the calls the assertion is
+ * about have arrived, and the grace window afterwards is what keeps "exactly one notification"
+ * meaningful. Waiting on a *total* count would be worse than useless here — after the first run the
+ * total is already large, so a later step would not wait at all.
+ */
+const settle = async ({ until = null, log = '', timeoutMs = 15000, graceMs = 500 } = {}) => {
+  const ready = () => (until ? until(stubCalls(log)) : true);
+  const deadline = Date.now() + timeoutMs;
+  while (!ready() && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  await new Promise((resolve) => setTimeout(resolve, graceMs));
+};
 
 /**
  * PATH pointing at the stub directory and *nothing else*.
@@ -418,8 +438,9 @@ test('MISAKANET_NOTIFY=0 turns off the notification only', { skip: POSIX_STUB_ON
     ...stubPath(bin),
     MISAKANET_HOOK_STATE: state, MISAKANET_NOTIFY: '0',
   };
+  const mark = stubCalls(bin.log).length;
   assert.equal(runVoiceReal({ voice: 'lesson-found' }, env).status, 0);
-  await settle();
+  await settle({ until: (c) => c.length >= mark + 1, log: bin.log });
   const calls = stubCalls(bin.log);
   assert.equal(calls.filter(isPlayerCall).length, 1, 'the sound must still play');
   assert.equal(calls.filter(isNotifierCall).length, 0, 'but no notification may be sent');
@@ -455,7 +476,7 @@ test('a missing notification binary degrades silently', async () => {
   assert.equal(result.status, 0);
   assert.equal(result.stdout.trim(), '');
   assert.equal(result.stderr.trim(), '');
-  await settle();
+  await settle({ until: (c) => c.filter(isPlayerCall).length >= 1, log: bin.log });
   assert.equal(stubCalls(bin.log).filter(isNotifierCall).length, 0, 'nothing may try to notify');
 
   // Nothing at all on PATH: same silence, and still exit 0.
@@ -486,8 +507,12 @@ test('connect-success and pair-success notify once per install, sound every time
   const state = mkdtempSync(join(tmpdir(), 'mn-voice-state-'));
   const env = { ...stubPath(bin), MISAKANET_HOOK_STATE: state };
 
+  // Each step waits for the calls *it* is about to count, measured as new lines since the step
+  // began: the sound and the toast are spawned independently, so a wait keyed to one of them can
+  // return while the other is still in flight (that is what made this a race on macOS).
+  let mark = stubCalls(bin.log).length;
   assert.equal(runVoiceReal({ voice: 'connect-success' }, env).status, 0);
-  await settle();
+  await settle({ until: (c) => c.length >= mark + 2, log: bin.log });   // sound + toast
   let calls = stubCalls(bin.log);
   assert.equal(calls.filter(isPlayerCall).length, 1);
   const firstToasts = calls.filter(isNotifierCall);
@@ -496,15 +521,17 @@ test('connect-success and pair-success notify once per install, sound every time
     `the toast must carry the table's text, whatever the platform: ${firstToasts[0]}`);
 
   // Same cue again: the sound repeats, the notification does not.
+  mark = stubCalls(bin.log).length;
   assert.equal(runVoiceReal({ voice: 'connect-success' }, env).status, 0);
-  await settle();
+  await settle({ until: (c) => c.length >= mark + 1, log: bin.log });   // sound only
   calls = stubCalls(bin.log);
   assert.equal(calls.filter(isPlayerCall).length, 2, 'the sound is not deduped');
   assert.equal(calls.filter(isNotifierCall).length, 1, 'the notification is');
 
   // A different cue has its own first time.
+  mark = stubCalls(bin.log).length;
   assert.equal(runVoiceReal({ voice: 'pair-success' }, env).status, 0);
-  await settle();
+  await settle({ until: (c) => c.length >= mark + 2, log: bin.log });   // its own sound + toast
   assert.equal(stubCalls(bin.log).filter(isNotifierCall).length, 2);
 
   // The ledger is small, atomic (no leftover temp file) and honest about when it fired.
@@ -532,6 +559,7 @@ test('an unwritable state directory breaks nothing', { skip: POSIX_STUB_ONLY }, 
     assert.equal(result.stdout.trim(), '');
     assert.equal(result.stderr.trim(), '', `run ${run} must not complain about state`);
   }
-  await settle();
-  assert.equal(stubCalls(bin.log).filter(isNotifierCall).length, 2, 'both runs still notified');
+  await settle({ until: (c) => c.filter(isNotifierCall).length >= 2, log: bin.log });
+  assert.equal(stubCalls(bin.log).filter(isNotifierCall).length, 2,
+    `both runs still notified (log: ${JSON.stringify(stubCalls(bin.log))})`);
 });

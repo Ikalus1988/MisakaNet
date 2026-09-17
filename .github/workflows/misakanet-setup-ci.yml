@@ -162,11 +162,11 @@ jobs:
 
       # Each injection breaks exactly one promise and requires the matching check to go red. Without
       # this step, "all checks passed" could mean "the checks do nothing".
-      - name: Injections — the portable three
+      - name: Injections — the portable four
         shell: bash
         run: |
           set -euo pipefail
-          for injection in inplace-write leftover-temp uninstall-leaves-ours; do
+          for injection in inplace-write byte-drift leftover-temp uninstall-leaves-ours; do
             node packages/misakanet-setup/scripts/e2e-packaged-install.mjs \
               --prefix "$PREFIX" --inject "$injection"
           done

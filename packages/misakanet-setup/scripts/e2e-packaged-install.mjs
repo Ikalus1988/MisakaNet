@@ -476,6 +476,33 @@ const CHECKS = [
     return 're-running the installer leaves the config files untouched (mtime unchanged)';
   }],
 
+  // The byte-level version of the promise above, and the one that matters to a user whose editor or
+  // assistant has the file open: a second run must leave a *byte-identical* tree. mtime cannot see
+  // an in-place write that lands in the same clock tick, and it cannot see a file appearing either.
+  ['a-second-run-is-byte-identical', async () => {
+    const home = makeUserHome({ openclaw: true, hermes: true });
+    const first = await cli(['--home', home, '--no-register'], { home });
+    need(first.status === 0, `install must succeed: ${show(first)}`);
+    const afterFirst = snapshot(home);
+    need(Object.keys(afterFirst).length > 6, 'the first run must have written something to compare');
+
+    const second = await cli(['--home', home, '--no-register'], { home });
+    need(second.status === 0, `a second run must still exit 0: ${show(second)}`);
+    const afterSecond = snapshot(home);
+
+    const added = Object.keys(afterSecond).filter((rel) => !afterFirst[rel]);
+    const removed = Object.keys(afterFirst).filter((rel) => !afterSecond[rel]);
+    need(added.length === 0, `a second run created files: ${added.join(', ')}`);
+    need(removed.length === 0, `a second run deleted files: ${removed.join(', ')}`);
+    const changed = Object.keys(afterFirst).filter((rel) => afterFirst[rel].hash !== afterSecond[rel].hash);
+    need(changed.length === 0, `a second run changed the bytes of: ${changed.join(', ')}`);
+    // "It reported success" and "it changed nothing" are two separate claims, so the second one is
+    // read off the tree, not off the summary line — which is checked separately, as prose.
+    need(/无改动|已是最新|已存在/.test(second.stdout),
+      `a no-op run should say so: ${second.stdout.slice(-400)}`);
+    return `${Object.keys(afterFirst).length} files, byte-identical across two runs`;
+  }],
+
   ['no-temp-files-left-behind', async () => {
     const home = makeUserHome({ openclaw: true, hermes: true });
     await cli(['--home', home, '--no-register'], { home });
@@ -727,6 +754,17 @@ if (process.argv.slice(2).includes('--uninstall')) {
   mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
   writeFileSync(join(home, '.misakanet-agent', 'hook.mjs'), '// left behind');
 }
+`,
+  },
+  // Semantic-equality is what the config needs; byte-equality is what the *user's file* needs. A
+  // rewrite that produces the same JSON with a different trailing byte is invisible to every check
+  // except a hash — and it is exactly what an "idempotent" run must not do.
+  'byte-drift': {
+    breaks: 'a-second-run-is-byte-identical',
+    why: 'the shim appends one byte to a config after every run: same meaning, different bytes',
+    body: `
+const target = join(home, '.claude', 'settings.json');
+if (existsSync(target)) writeFileSync(target, readFileSync(target, 'utf8') + '\\n');
 `,
   },
 };
