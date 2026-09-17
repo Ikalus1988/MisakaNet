@@ -59,7 +59,15 @@ _DEFAULT_CONFIG = {
 
 
 def load_config() -> dict[str, Any]:
-    """Load .pr-genius.yaml, falling back to defaults."""
+    """Load .pr-genius.yaml, falling back to defaults.
+
+    The `yaml` import is optional, and the fallback parser drops every list it cannot read
+    (`rules.path_rules`, `rules.custom_patterns`, `rules.issue_link.patterns`) — so a run without
+    PyYAML silently analysed PRs with a degraded rule set. `pr-genius-check.yml` installs PyYAML
+    before this runs, and now says so out loud if that ever stops being true, because a rule set
+    that quietly shrinks is exactly the failure nobody notices (the same shape as the 403 that made
+    every comment fail invisibly for months).
+    """
     if not CONFIG_FILE.exists():
         return _DEFAULT_CONFIG
     try:
@@ -69,9 +77,32 @@ def load_config() -> dict[str, Any]:
     except ImportError:
         # Minimal YAML parser for flat key: value and lists
         user = _parse_yaml_minimal(CONFIG_FILE.read_text(encoding="utf-8"))
+        report_degraded_config(user)
     # Merge user config with defaults
     config = _deep_merge(_DEFAULT_CONFIG, user)
     return config
+
+
+def report_degraded_config(user: dict) -> list[str]:
+    """Say which repo-specific rules an unreadable config cost us. Returns the lost list names."""
+    rules = user.get("rules") or {}
+    lost = []
+    for name in ("path_rules", "custom_patterns"):
+        if not rules.get(name):
+            lost.append(f"rules.{name}")
+    if not (user.get("issue_link") or {}).get("patterns"):
+        lost.append("rules.issue_link.patterns")
+    message = ("PR Genius ran without PyYAML: .pr-genius.yaml was read by the fallback parser, "
+               f"which loses every list — missing from this run's rules: {', '.join(lost)}")
+    print(f"::warning title=PR Genius ran with a degraded rule set::{message}", file=sys.stderr)
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        try:
+            with open(summary, "a", encoding="utf-8") as handle:
+                handle.write(f"\n> ⚠️ **{message}**\n")
+        except OSError:
+            pass
+    return lost
 
 
 def _parse_yaml_minimal(text: str) -> dict:
