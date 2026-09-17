@@ -304,6 +304,18 @@ const isNotifierCall = (line) =>
  *  toast from a sound: the argv has to. Everything that is not a toast is the sound. */
 const isPlayerCall = (line) => !isNotifierCall(line);
 
+/**
+ * The notification/voice assertions observe the hook by putting stub *shell scripts* on PATH
+ * (`stubBin()` writes `#!/bin/sh` files). On Windows the hook reaches for `powershell.exe`, and
+ * Windows cannot execute a `#!/bin/sh` file named `powershell.exe` — CreateProcess needs a real PE
+ * image — so those assertions have nothing to observe and fail on their counters (`0 !== 1`), not
+ * on a product error. Found 2026-09-18, the first time this suite ran on Windows
+ * (misakanet-setup-ci.yml); the coverage gap is recorded in the capability inventory.
+ */
+const POSIX_STUB_ONLY = process.platform === 'win32'
+  ? 'needs a shell-script stub on PATH, which Windows cannot execute (the hook uses powershell.exe)'
+  : false;
+
 /** Spawned children are detached and outlive the hook, so nothing is observable the very
  *  instant `spawnSync` returns. Give the stubs a moment before asserting on the log. */
 const settle = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -399,7 +411,7 @@ test('a hostile cue reaches no binary at all (the cue is only ever a table key)'
   assert.deepEqual(readdirSync(state), [], 'and no state file may be written either');
 });
 
-test('MISAKANET_NOTIFY=0 turns off the notification only', async () => {
+test('MISAKANET_NOTIFY=0 turns off the notification only', { skip: POSIX_STUB_ONLY }, async () => {
   const bin = stubBin();
   const state = mkdtempSync(join(tmpdir(), 'mn-voice-state-'));
   const env = {
@@ -469,7 +481,7 @@ test('a dry run reports both kinds of action and executes neither', () => {
   assert.ok(!existsSync(join(state, 'voice-notified.json')), 'a dry run writes no state');
 });
 
-test('connect-success and pair-success notify once per install, sound every time', async () => {
+test('connect-success and pair-success notify once per install, sound every time', { skip: POSIX_STUB_ONLY }, async () => {
   const bin = stubBin();
   const state = mkdtempSync(join(tmpdir(), 'mn-voice-state-'));
   const env = { ...stubPath(bin), MISAKANET_HOOK_STATE: state };
@@ -506,7 +518,7 @@ test('connect-success and pair-success notify once per install, sound every time
   assert.match(after, /^notify=already sent at \d{4}-\d{2}-\d{2}T.*\(first time only\)$/m);
 });
 
-test('an unwritable state directory breaks nothing', async () => {
+test('an unwritable state directory breaks nothing', { skip: POSIX_STUB_ONLY }, async () => {
   const bin = stubBin();
   // A *file* where the state directory should be: mkdir/rename both fail, and the hook must
   // go on and notify anyway (worse case: one repeated toast, never a broken session).

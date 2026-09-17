@@ -152,7 +152,10 @@ jobs:
           npm install -g --prefix "$RUNNER_TEMP/prefix" "$RUNNER_TEMP"/tarball/*.tgz
           ls -la "$RUNNER_TEMP/prefix"
 
+      # shell: bash on every step that uses a `\` line continuation: Windows runners default to
+      # pwsh, which reads it as a unary operator ("Missing expression after unary operator '--'").
       - name: Lifecycle e2e on the installed artifact
+        shell: bash
         run: |
           node packages/misakanet-setup/scripts/e2e-packaged-install.mjs \
             --prefix "$PREFIX" --expect-version "$EXPECT_VERSION"
@@ -170,6 +173,7 @@ jobs:
 
       - name: Injection — secret mode (POSIX permission bits only)
         if: runner.os != 'Windows'
+        shell: bash
         run: |
           node packages/misakanet-setup/scripts/e2e-packaged-install.mjs \
             --prefix "$PREFIX" --inject loose-secret-mode
