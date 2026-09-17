@@ -46,3 +46,28 @@ jobs:
       fail_on_severity: critical
       upload_sarif: true
       visibility: public
+
+  # Reconcile every listed automation against the artifact it exists to produce
+  # (`scripts/automation_output_audit.py`). Three automations ran for months while producing
+  # nothing — PR-Genius posted no comment on any PR, the intake-bot demo ran 21k times for a
+  # handful of outputs, and `arch-review.yml` never ran at all — because no check ever looked at
+  # the ratio of runs to output.
+  #
+  # Weekly, not per-push: this is a nudge, and a nudge that fires on every commit is noise. It
+  # fails the run when an automation runs ≥20 times in the window and produces nothing, or when a
+  # scheduled workflow older than 45 days has never run once (45 > the longest schedule here, so a
+  # new monthly cron is not called dead before its first slot arrives).
+  automation-output-audit:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - name: Reconcile automations against their output
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/automation_output_audit.py --window-days 30
