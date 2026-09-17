@@ -146,3 +146,25 @@ CREATE TABLE IF NOT EXISTS counters (
 );
 
 CREATE INDEX IF NOT EXISTS idx_counters_scope_period ON counters(scope, period);
+
+--
+-- kv_store: the registration keys that were still KV-only (follow-up to #1647, 2026-09-17).
+--
+-- `misakanet_register` writes `node:<id>` and `mcp_token:<token>` — both *new* keys on every
+-- call — and auth reads `mcp_token:<token>` back. The free tier caps KV at 1,000 distinct keys
+-- written per day (a same-key rewrite is exempt), so registration is the first path to die
+-- when that budget is spent: measured live on 2026-09-12 (#1647), and again on 2026-09-17 when
+-- every registration answered `storage_unavailable` while KV *reads* kept working.
+--
+-- #1647-#1649 moved the counters to their own table and left the registration keys behind.
+-- Same medicine here: rows, not keys. Key shapes stay identical to the KV ones, so reads fall
+-- back to KV for tokens issued before this table existed and a rollback sees the same
+-- namespace.
+CREATE TABLE IF NOT EXISTS kv_store (
+  key        TEXT PRIMARY KEY,   -- verbatim KV key: node:<id> | mcp_token:<token> | client:<client_id>
+  value      TEXT NOT NULL,      -- the JSON text that used to be the KV value
+  expires_at TEXT,               -- ISO-8601, or NULL for none (mirrors expirationTtl)
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_kv_store_expires ON kv_store(expires_at);
