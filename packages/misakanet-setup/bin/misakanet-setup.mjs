@@ -25,7 +25,9 @@
  * Everything is idempotent, every rewritten file is backed up to *.misakanet.bak, and
  * --uninstall removes exactly what was added (same markers), leaving user config intact.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFileSync, rmSync, chmodSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFileSync, rmSync,
+         chmodSync, statSync, renameSync, accessSync, constants,
+         openSync, writeSync, fsyncSync, closeSync } from 'node:fs';
 // No child_process import on purpose: this installer must never hand a file-derived value to
 // another program (the plugin scanner's SHELL_INJECTION_PATTERN, alert #269, and argv secrets
 // are visible to every process on the box). Every target is configured by writing its own
@@ -128,7 +130,7 @@ const VERSION = '0.5.4'
 // unknown flag was silently ignored. `--help` is the first thing a cautious person types, so
 // "looking before you leap" was the action with the worst consequences.
 const FLAGS = [
-  ['--home <dir>', '把配置写到这个目录，而不是真实家目录（测试/沙箱用）'],
+  ['--home <dir>', '把配置写到这个目录，而不是真实家目录（不是沙箱：--uninstall 也认这个目录）'],
   ['--only <a,b>', `只处理列出的助手（${AGENTS.join(' / ')}）`],
   ['--dry-run', '只说不做：打印会改哪些文件，不写任何东西'],
   ['--silent', '只压掉进度叙述，绝不压掉 ! 行与报告（MDM/GPO 用）'],
@@ -139,12 +141,13 @@ const FLAGS = [
   ['--verify', '自检：端点可达、钩子、MCP 注册、版本新旧'],
   ['--uninstall', '移除本安装器写入的内容（保留 .misakanet.bak 备份）'],
   ['--upgrade', '与安装等价（覆盖安装即升级）'],
+  ['--client-id <id>', '固定本机身份：同一个 id 永远拿回同一个 node（重装/换机也能延续）'],
   ['--no-register', '不注册匿名节点（不写 token，检索仍是 5 次/天/IP）'],
   ['--voice', '打开语音/桌面通知（默认关）'],
   ['--help, -h', '打印这份帮助并退出'],
   ['--version', '打印版本并退出'],
 ];
-const VALUE_FLAGS = ['--home', '--only'];
+const VALUE_FLAGS = ['--home', '--only', '--client-id'];
 
 function printHelp() {
   console.log(`MisakaNet 安装程序 ${VERSION}
@@ -211,10 +214,94 @@ function sameJson(a, b) {
   return canonical(a) === canonical(b);
 }
 
-function writeText(path, text) {
+/**
+ * Write through a sibling temp file and rename it into place.
+ *
+ * A direct `writeFileSync` is not atomic: if the process dies (SIGINT, OOM, full disk) between
+ * truncating and finishing, the target is left half-written — and these targets are the user's
+ * `~/.claude.json`, `settings.json` and rule files, where "half-written" can mean an assistant that
+ * will not start. Proven, not assumed: after a direct write the file keeps its inode across a
+ * rewrite; after a `rename` it changes (pinned in workers/misakanet-setup.test.mjs).
+ *
+ * Two details that matter:
+ *   * `mode` is applied at creation, so a secret is never momentarily world-readable (the token and
+ *     the Hermes `.env` used to be written and then `chmod 600`-ed — a window on every run);
+ *   * an existing file that is not writable is still refused. `rename` would happily replace a
+ *     read-only file (it only needs write permission on the *directory*), so the previous EACCES
+ *     behaviour is kept explicitly rather than silently lost.
+ */
+function writeText(path, text, { mode } = {}) {
   if (DRY) return;
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, text);
+  if (existsSync(path)) {
+    try {
+      accessSync(path, constants.W_OK);
+    } catch {
+      const error = new Error(`EACCES: permission denied, open '${path}'`);
+      error.code = 'EACCES';
+      throw error;
+    }
+  }
+  const tmp = `${path}.misakanet-tmp`;
+  try {
+    // fsync, not just rename: `rename` guarantees the reader sees the old file or the new one, but
+    // it does not guarantee the *contents* reached the disk — a power loss after the rename can
+    // still leave an empty file. For an assistant config that is the difference between "the tool
+    // did not install" and "my assistant will not start". `writeFileSync` does not expose the
+    // descriptor, hence the explicit open/write/fsync/close.
+    const fd = openSync(tmp, 'w', mode ?? 0o666);
+    try {
+      writeSync(fd, text);
+      fsyncSync(fd);
+    } finally {
+      closeSync(fd);
+    }
+    renameSync(tmp, path);
+  } catch (err) {
+    try { rmSync(tmp, { force: true }); } catch { /* best effort */ }
+    // Windows can refuse to replace an existing file with `rename`; fall back rather than fail an
+    // install on a platform detail. The temp file is already gone by here.
+    if (err && (err.code === 'EPERM' || err.code === 'EEXIST')) {
+      writeFileSync(path, text, mode ? { mode } : undefined);
+      return;
+    }
+    throw err;
+  }
+}
+
+/**
+ * The files each assistant's install writes, so a permission problem can be reported *before*
+ * anything is touched (and so `--dry-run` can say "I cannot change that" as well as "I would change
+ * this"). It mirrors what the per-agent install functions write; those keep their own try/catch as
+ * the safety net, because a mirror can fall out of date and the real error is still the truth.
+ */
+const AGENT_WRITE_PATHS = {
+  claude: (home) => [join(home, '.claude.json'), join(home, '.claude', 'settings.json'),
+                     join(home, '.claude', 'CLAUDE.md')],
+  codex: (home) => [join(home, '.codex', 'config.toml'), join(home, '.codex', 'AGENTS.md')],
+  hermes: (home) => [join(home, '.hermes', 'config.yaml'), join(home, '.hermes', 'SOUL.md')],
+  codewhale: (home) => [join(home, '.codewhale', 'mcp.json')],
+  openclaw: () => openclawWorkspaces().map((workspace) => join(workspace, 'AGENTS.md')),
+};
+
+/**
+ * Which of these paths this process may not write.
+ *
+ * Reported *before* anything is written, so a user without permission gets one clear list instead
+ * of a half-finished install. `--dry-run` uses the same list, which is what makes a dry run honest:
+ * it says "I would change this" and "I cannot change that" in the same breath.
+ */
+function unwritableTargets(paths) {
+  const blocked = [];
+  for (const path of paths) {
+    const target = existsSync(path) ? path : dirname(path);
+    try {
+      accessSync(target, constants.W_OK);
+    } catch {
+      blocked.push(path);
+    }
+  }
+  return blocked;
 }
 
 /**
@@ -556,9 +643,12 @@ async function ensureIdentity() {
   // what it looks like, and it is right — the value may be ours, but the shape is the bug.
   // An exported MISAKANET_CLIENT_ID is explicit intent (the same standard the hook applies to
   // its token); otherwise this run mints one and prints it so the user can keep it.
-  const exported = (process.env.MISAKANET_CLIENT_ID || '').trim();
+  // `--client-id` and `MISAKANET_CLIENT_ID` are the same explicit intent. The flag exists because
+  // the closing guidance told users to keep an identity and the only way to supply one was a shell
+  // export — an instruction a non-technical user cannot follow, and on Windows a different one.
+  const exported = (valueOf('--client-id', '') || process.env.MISAKANET_CLIENT_ID || '').trim();
   if (exported && !/^[A-Za-z0-9._-]{8,64}$/.test(exported)) {
-    need('ignored MISAKANET_CLIENT_ID：只接受 8–64 位的 [A-Za-z0-9._-]（这次会新生成一个）');
+    need('ignored --client-id / MISAKANET_CLIENT_ID：只接受 8–64 位的 [A-Za-z0-9._-]（这次会新生成一个）');
   }
   const clientId = (exported && /^[A-Za-z0-9._-]{8,64}$/.test(exported))
     ? exported
@@ -570,18 +660,24 @@ async function ensureIdentity() {
   // a visible, debuggable outcome instead of a silent 401 later.
   const token = typeof result?.token === 'string' ? result.token.trim() : '';
   if (!/^mcp_[A-Za-z0-9_-]{20,}$/.test(token)) {
-    need('注册没成功或返回的凭据形状不对（可能离线）→ 读课程不受影响；想要写入类工具时重跑本命令');
+    // Say what it costs, not what went wrong internally: "凭据形状不对" is jargon, and
+    // "读课程不受影响" was misleading — without a token the read path is capped at the anonymous
+    // quota. Someone who does not know that will hit a wall five queries later and blame the tool.
+    need('匿名注册没成功（多半是网络）→ 现在检索限额是每天 5 次/IP，写入类工具也用不了；'
+      + '网络恢复后重跑本命令就能拿到 token，其它功能不受影响');
     return '';
   }
-  writeFileSync(file, token);
-  try {
-    chmodSync(file, 0o600);
-  } catch { /* windows */ }
+  // Created with mode 0600 rather than written and then chmodded: the old order left a window in
+  // which the token sat in a world-readable file on every single run.
+  writeText(file, token, { mode: 0o600 });
   ok(`匿名身份：${String(result.node_id || '?').slice(0, 32)}（token 存 ${file}，权限 600）`);
   if (!exported) {
     // Printed, not stored: this process must not turn a file it found into request data
     // (CodeQL js/file-access-to-http #268), and the value is the user's to keep anyway.
-    ok(`想在这个节点上继续累积（重装/换机后仍是同一个）：export MISAKANET_CLIENT_ID=${clientId}`);
+    // Kept out of the "done" list on purpose — it is something to *keep*, not something that
+    // happened, and a bare `export …` line reads as a chore to a non-technical user. It is shown
+    // with the closing guidance instead, in plain words.
+    clientIdHint = clientId;
   }
   return token;
 }
@@ -945,10 +1041,9 @@ async function installHermes(hookPath, bearer) {
     : `${envText}${envText && !envText.endsWith('\n') ? '\n' : ''}${assignment}\n`;
   if (next !== envText) {
     backup(envPath);
-    writeText(envPath, next);
-    // The standalone token file is chmod 600 two hundred lines up; leaving the token in a
-    // world-readable .env (default umask is usually 0644) is the same leak through another door.
-    try { chmodSync(envPath, 0o600); } catch { /* windows */ }
+    // The standalone token file is 0600; leaving the token in a world-readable .env (default umask
+    // is usually 0644) is the same leak through another door, so the mode is set at creation.
+    writeText(envPath, next, { mode: 0o600 });
     ok(`Hermes：token 写入 ${envPath}（${envKey}，配置里只留 \${${envKey}} 模板）`);
   } else {
     ok('Hermes：token 已就绪（无改动）');
@@ -1637,6 +1732,8 @@ const targets = (only.length ? only : AGENTS).filter((a) => {
 // listed item. Use `--verify` / `--report --strict` for the health question — that separation
 // is what makes this signal usable in a script.
 let installed = 0;
+// Set when a stable client id was minted: shown to the user at the end (see ensureIdentity).
+let clientIdHint = '';
 try {
   if (!targets.length) {
     need('没检测到 Claude Code / Codex / Hermes 的配置目录 → 请先打开一次你要用的那个助手，再回来运行本命令');
@@ -1647,6 +1744,15 @@ try {
     for (const agent of targets) {
       // One target failing must not skip the rest: an uncaught throw used to abort the loop, so
       // the remaining agents were never touched while the run still looked fine.
+      const blocked = unwritableTargets((AGENT_WRITE_PATHS[agent] || (() => []))(HOME));
+      if (blocked.length) {
+        // Reported before attempting, so the user gets "these files are read-only" instead of a raw
+        // EACCES from four call frames deep — and `--dry-run` says it too, which is the whole point
+        // of a dry run.
+        need(`${agent}：这些文件改不了（只读或权限不足）→ ${redact(blocked.join('、'))}`
+          + '；修好后重跑本命令，其它助手不受影响');
+        continue;
+      }
       try {
         if (agent === 'claude') await installClaude(hookPath, bearer);
         else if (agent === 'codex') await installCodex(hookPath, bearer);
@@ -1677,7 +1783,12 @@ if (!SILENT) {
   1) **把这个助手窗口关掉再打开一次**（新功能要重开会话才生效）
   2) 随便挑一句带报错原文的片段问它（例如「${ONBOARDING_QUERIES[0]}」「${ONBOARDING_QUERIES[1]}」「${ONBOARDING_QUERIES[2]}」）——它应该先去查经验库
   3) 想确认状态：npx @misaka-net/misakanet-setup --verify
-  4) 想关掉：npx @misaka-net/misakanet-setup --uninstall`);
+  4) 想关掉：npx @misaka-net/misakanet-setup --uninstall`
+    + (clientIdHint
+      ? `
+  5) 记不记都行：这台机器的身份编号是 ${clientIdHint}
+     想让它以后重装/换机还算同一个身份，再跑安装时加：--client-id ${clientIdHint}`
+      : ''));
 }
 if (!installed) {
   // Say it in one line on stderr as well: a script needs the reason next to the exit code, and

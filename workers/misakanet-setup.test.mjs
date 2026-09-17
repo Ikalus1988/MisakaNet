@@ -9,7 +9,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync, chmodSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync, chmodSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { testToken } from './_test-token.mjs';
@@ -1634,4 +1634,83 @@ test('a value flag with no value stops instead of installing into a directory na
   assert.match(result.stderr, /--home 需要一个值/);
   assert.ok(!existsSync(join(process.cwd(), '--voice')), 'no directory named after the flag');
   assert.deepEqual(snapshot(home), before);
+});
+
+// ── config writes: atomic, permission-checked, and honest about consequences ──────────────
+// A direct `writeFileSync` is not atomic, and the files here are the user's assistant config: a
+// half-written ~/.claude.json or settings.json can stop the assistant from starting. The inode
+// test below is the mechanism proof — a rename changes the inode, an in-place write does not.
+test('a config write is atomic (the file is replaced, not rewritten in place)', () => {
+  const home = makeHome();
+  const rulePath = join(home, '.claude', 'CLAUDE.md');
+  writeFileSync(rulePath, '# mine\n');
+  runOffline(home);
+  const first = statSync(rulePath).ino;
+
+  writeFileSync(rulePath, '# mine\n\nand a line\n');
+  runOffline(home);
+  const second = statSync(rulePath).ino;
+
+  assert.notEqual(
+    first, second,
+    'the inode is unchanged, so the file was written in place — an interrupted run can truncate it',
+  );
+  assert.ok(!existsSync(`${rulePath}.misakanet-tmp`), 'the temp file must not be left behind');
+});
+
+test('a read-only config file is refused with a readable message, and left untouched', () => {
+  const home = makeHome();
+  const rulePath = join(home, '.claude', 'CLAUDE.md');
+  writeFileSync(rulePath, '# mine\n');
+  chmodSync(rulePath, 0o400);
+  try {
+    // `--only claude`: makeHome() also fabricates a codex config, and installing *that* would
+    // legitimately be a success. The claim here is about claude alone.
+    const result = runOffline(home, '--only', 'claude');
+    assert.equal(result.status, 1, 'nothing was installed, so this is not success');
+    assert.match(result.stdout, /这些文件改不了/, result.stdout);
+    assert.match(result.stdout, /CLAUDE\.md/, result.stdout);
+    assert.equal(readFileSync(rulePath, 'utf8'), '# mine\n', 'the original must not be touched');
+  } finally {
+    chmodSync(rulePath, 0o600);
+  }
+});
+
+test('--dry-run reports a path it could not write (it used to report nothing)', () => {
+  const home = makeHome();
+  const rulePath = join(home, '.claude', 'CLAUDE.md');
+  writeFileSync(rulePath, '# mine\n');
+  chmodSync(rulePath, 0o400);
+  try {
+    const result = runOffline(home, '--dry-run');
+    assert.match(result.stdout, /这些文件改不了/, result.stdout);
+  } finally {
+    chmodSync(rulePath, 0o600);
+  }
+});
+
+test('--client-id is a real flag, and a missing value is refused', () => {
+  const home = makeHome();
+  // The closing guidance tells users to keep an identity; before this flag the only way to supply
+  // one was a shell export — an instruction a non-technical user cannot follow.
+  const withFlag = run(home, '--client-id', 'stable-identity-0123');
+  assert.notEqual(withFlag.status, 2, `--client-id must be a known flag: ${withFlag.stderr}`);
+  assert.doesNotMatch(withFlag.stderr, /无法识别的选项/);
+
+  const missing = spawnSync(process.execPath, [CLI, '--client-id'], { encoding: 'utf8' });
+  assert.equal(missing.status, 2);
+  assert.match(missing.stderr, /--client-id 需要一个值/);
+
+  const invalid = run(home, '--client-id', 'x');
+  assert.match(invalid.stdout, /ignored --client-id/, invalid.stdout);
+});
+
+test('a failed registration says what it costs, not just that it failed', () => {
+  const home = makeHome();
+  // run(): registration is *attempted* against a dead endpoint, which is the case whose wording
+  // matters. runOffline() passes --no-register and never reaches that branch.
+  const result = run(home);
+  // "读课程不受影响" was misleading: without a token the read path is the anonymous quota.
+  assert.match(result.stdout, /5 次/, result.stdout);
+  assert.doesNotMatch(result.stdout, /凭据形状不对/, 'that phrase is jargon');
 });
