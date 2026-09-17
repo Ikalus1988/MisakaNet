@@ -100,6 +100,31 @@ def _print_json_error(message: str) -> None:
     print(json.dumps({"error": message}, ensure_ascii=False))
 
 
+def _scoring_query(query: str) -> str:
+    """The string handed to the ranker (#1780).
+
+    Alias expansion is applied at the CLI's query entry so the local path and production
+    agree: `_expand_query` is the *shared* implementation (it reads
+    data/query-aliases.json — the same file the Worker's `expandQueryAliases` inlines),
+    and `MISAKANET_QUERY_ALIASES=0` disables it in both, so "found locally, not found in
+    production" cannot come from this layer.
+
+    `_rank_docs` also expands (`engine._expand_query`, the entry point for every other
+    caller), so a CLI search reaches the layer twice: the second entry is what picks up a
+    translation that landed on a word with its own co-occurrence entry (`超时` → `timeout`
+    → `ssl proxy`), the same two-step effect Feature #532's token-keyed map had. Applying
+    it twice only ever *adds* terms, and the offline eval measures exactly this string
+    (`scripts/eval_query_aliases.py`'s after column is the expanded query going through
+    `_rank_docs`), so the local CLI and the eval agree term for term.
+
+    The original `query` stays in the caller for display, highlighting, `match_reason` and
+    gap logging: the user asked their question, not our rewrite of it. `--remote` ranks
+    locally through the same path.
+    """
+    expanded = _expand_query(query)
+    return expanded or query
+
+
 def _ensure_utf8_stdout():
     reconfigure = getattr(sys.stdout, "reconfigure", None)
     if reconfigure is None:
@@ -230,6 +255,9 @@ def main():
             print(__doc__)
         sys.exit(1)
     query = positional_args[0]
+    # #1780: what the ranker scores (alias-expanded, switchable) vs what the user asked
+    # (`query`, kept for display/highlighting/gap logs). See `_scoring_query`.
+    scoring_query = _scoring_query(query)
     mode = "all"
     titles_only = False
     broad_only = False
@@ -392,7 +420,7 @@ def main():
     if json_output:
         all_docs = lessons_docs + ref_docs
         with contextlib.redirect_stdout(io.StringIO()):
-            ranked = _rank_docs(query, all_docs, titles_only, broad_only)
+            ranked = _rank_docs(scoring_query, all_docs, titles_only, broad_only)
         results = [
             _json_result(score, doc, query=query, verbose=verbose)
             for score, doc in ranked
@@ -401,7 +429,7 @@ def main():
         # Feature #314: Typo tolerance for JSON mode
         if not results and not strict:
             typo_results, corrected = _typo_retry_search(
-                query, all_docs, titles_only, broad_only, top_k
+                scoring_query, all_docs, titles_only, broad_only, top_k
             )
             if typo_results:
                 results = [
@@ -442,7 +470,7 @@ def main():
     
     all_docs = lessons_docs + ref_docs
     if lessons_docs:
-        ranked = _rank_docs(query, lessons_docs, titles_only, broad_only, rerank=use_rerank)
+        ranked = _rank_docs(scoring_query, lessons_docs, titles_only, broad_only, rerank=use_rerank)
         # Only show results above threshold
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
         for _score, doc in filtered[:top_k]:
@@ -455,7 +483,7 @@ def main():
                                all_docs=all_docs)
         found_any = found_any or found
     if ref_docs:
-        ranked = _rank_docs(query, ref_docs, titles_only, broad_only=False, rerank=use_rerank)
+        ranked = _rank_docs(scoring_query, ref_docs, titles_only, broad_only=False, rerank=use_rerank)
         # Only show results above threshold
         filtered = [(s, d) for s, d in ranked if s >= MIN_SCORE_THRESHOLD]
         for _score, doc in filtered[:top_k]:
@@ -472,7 +500,7 @@ def main():
         # Feature #314: Typo tolerance — retry with edit distance ≤2
         all_docs_for_typo = lessons_docs + ref_docs
         typo_results, corrected = _typo_retry_search(
-            query, all_docs_for_typo, titles_only, broad_only, top_k
+            scoring_query, all_docs_for_typo, titles_only, broad_only, top_k
         )
         if typo_results:
             print(f"\n  🔍 Showing results for '{corrected}' (searched: '{query}')\n")

@@ -8,6 +8,12 @@
 > 一句话结论：**中文自然语言问题在生产 Worker 上的「零查询词」状态从 11/20 降到 0/20；
 > 本地 BM25 的 top-1 命中率 40% → 70%，top-3 50% → 80%，没有一条退化。**
 > 但这不是万能药：仍查不到的 4 条、以及下面「什么修不了」一节，请一并读。
+>
+> ⚠️ **§0–§7 是接线前（2026-09-16 早）写的原型记录**，其中的"还没接线"、"老
+> `_SYNONYM_MAP` 待处置"等说法已经被同日晚间的 **#1780** 取代：
+> **Worker 与本地 CLI/引擎现在共用这一份词表，开关是 `MISAKANET_QUERY_ALIASES=0`，
+> `INDEX_TEXT_VERSION` 不 bump。** 接线做了什么、评测评数的读法变了多少、
+> 老词表怎么处置的，全部在 **§8**。
 
 ---
 
@@ -328,6 +334,7 @@ D1 的 sync stamp 都可能原地不动，而线上会继续服务最长 20 小�
 1. **别名层在查询侧，不改索引文本，所以不需要 bump `INDEX_TEXT_VERSION`。**
    这是它相对于「改投影 / 改索引」的最大优势：改表即时生效，不需要等索引重建、也没有
    20 小时的窗口期——因为每次查询都重新读表。
+   **#1780 已按此落地：`INDEX_TEXT_VERSION` 保持 3**，并在常量注释里写清理由（见 §8.5）。
 2. **但它必须有自己的版本纪律，否则会重演同一类事故。** 建议：
    - 表里已有 `schema.version`（现在 = 1）；worker 端加一个 `QUERY_ALIAS_VERSION` 常量，
      任何条目增删都 bump，并**在检索响应里回显**（和 `textVersion` 一样，便于事后归因
@@ -385,9 +392,10 @@ engine 后端 4 条、BM25 后端 3 条。逐条说明为什么——它们**不
    多轮对话里的指代（"那个报错怎么办"）需要的不是词表。
 7. **拼写之外的语义等价**。`container 被 kill 了` 和「OOM 杀进程」之间的等价关系要靠
    更多语料证据；同义句、缩写造词（`k8s` 这类我加了，但下一个 `cf-worker` 可能就没加）。
-8. **这一轮没有接线**：为了不改 `search_knowledge.py`（任务约束），本地 CLI 目前仍是
-   旧行为——原型是「库 + 评测」，`search_knowledge.py` 里加一行
-   `from scripts.expand_query import expand` 就会生效。**线上 worker 也还没有这张表。**
+8. **~~这一轮没有接线~~ → 已接线（#1780，2026-09-16）**：本地 CLI、`misakanet/search/engine.py`
+   与 Worker 检索入口都走同一份 `data/query-aliases.json`，`MISAKANET_QUERY_ALIASES=0` 一键回滚。
+   原来的说法（原型是「库 + 评测」，`search_knowledge.py` 里加一行就生效）在 §8 里被逐条落实，
+   连"老 `_SYNONYM_MAP` 怎么办"也在那里给了清单。
 
 ---
 
@@ -396,22 +404,31 @@ engine 后端 4 条、BM25 后端 3 条。逐条说明为什么——它们**不
 | 文件 | 作用 |
 |---|---|
 | `docs/maintainer/query-alias-design-2026-09-16.md` | 本文 |
-| `data/query-aliases.json` | 150 条别名，带 `schema` / `kinds` / `stopwords` / 逐条证据。手工维护，无代码生成 |
-| `scripts/expand_query.py` | stdlib CLI：`--query` / `--check` / `--list-kinds` / `--json` / `--max-expansions` / `--keep-original`（291 行，见下） |
+| `data/query-aliases.json` | 别名表：**180 条**（150 条原表 + 30 条 `related` 迁移），带 `schema` / `kinds` / `stopwords` / 逐条证据。手工维护，无代码生成。`schema.version` 现为 **2** |
+| `scripts/expand_query.py` | stdlib CLI：`--query` / `--check` / `--list-kinds` / `--json` / `--max-expansions` / `--keep-original` / **`--emit-worker-table`**（#1780）。也是运行期的共享实现（`expand_query_text` / `query_aliases_enabled` / `cached_table`） |
 | `tests/test_query_aliases.py` | 27 个测试：schema、去重、自映射、no-op、双向安全性、canonical 必须活在语料与 Worker tokenizer 里、`--check` 对坏文件必须失败、中文 NL 查询必须扩成语料里真实存在的词 |
 | `scripts/eval_query_aliases.py` | 离线评测：20 条中文问题 + 期望课程，before/after top-1/top-3、cap 扫描、`replace` 对照、CJK 残留探针。纯离线 |
+| `workers/register-proxy-sw.js` | #1780：内联表 `QUERY_ALIAS_TABLE` + JS 移植 `expandQueryAliases` / `scoringQueryFor` + `queryAliasEnabled`；检索入口接线；floor 只判原查询 |
+| `search_knowledge.py` | #1780：查询入口 `_scoring_query()`（开关随环境变量） |
+| `misakanet/search/engine.py` | #1780：`_expand_query` 读共享表，`_SYNONYM_MAP` 变成该表的视图 |
+| `workers/query-alias-expansion.test.mjs` | #1780：15 个测试——内联表不漂移、中文查询的中间词确实进入打分、端到端命中 + 开关回滚、floor 纪律、**JS 与 Python 展开逐条一致** |
+| `tests/test_query_alias_wiring.py` | #1780：23 个测试——内联表/常量/停用词与 Python 对齐、删条目即失败（证明在读表）、开关、CLI 与评测一致、回归夹具不退化 |
 
 ```bash
 python3 -m pytest tests/test_query_aliases.py -q     # 27 passed
-python3 scripts/expand_query.py --check              # ✅ 150 aliases, 6 kinds, schema v1
+python3 -m pytest tests/test_query_alias_wiring.py -q # 23 passed（#1780）
+node --test workers/query-alias-expansion.test.mjs    # 15 passed（#1780）
+python3 scripts/expand_query.py --check              # ✅ 180 aliases, 7 kinds, schema v2
+python3 scripts/expand_query.py --emit-worker-table   # Worker 内联的那份（改表后必须重新内联）
 python3 scripts/expand_query.py --query "如何切换识图模型"
 #   original : 如何切换识图模型
 #   stopwords: 如何
 #   expanded : vision switch model
 #   dropped  : 切换, 识图模型
 #   matched  : 识图模型 -> vision model [zh-en, replace, w=0.9], 切换 -> switch [zh-en, replace, w=0.9]
-python3 scripts/eval_query_aliases.py                # 见 §0.1
+python3 scripts/eval_query_aliases.py                # 见 §0.1（接线后：见 §8.6）
 python3 scripts/eval_query_aliases.py --backend bm25 # 见 §0.2
+MISAKANET_QUERY_ALIASES=0 python3 scripts/eval_query_aliases.py  # 复现接线前的基线（§8.6）
 python3 scripts/eval_query_aliases.py --max-expansions 1     # cap 扫描
 python3 scripts/eval_query_aliases.py --keep-original        # replace 对照
 python3 scripts/eval_query_aliases.py --drop-cjk-residue     # 负结果探针
@@ -427,8 +444,12 @@ tokenizer 下/canonical 链必须终止（65 行）。核心的 `expand()` 只�
 
 ## 7. 如果要上线（后续工作，按优先级）
 
+> ✅ **1 与 2 已在 #1780 落地**（2026-09-16），实现细节与实测见 §8：Worker 在
+> `misakanet_search` 的检索入口展开（默认开、`MISAKANET_QUERY_ALIASES=0` 关），本地 CLI/引擎
+> 走同一个 `scripts/expand_query.py`。下面保留当初的理由，方便对照当时与现在的判断。
+
 1. **Worker 侧接入**（收益最大）：把表内联成常量或放 KV，在 `searchLessonsBM25` 与
-   `matchAnsweredQuestions` 调用 `bm25Tokenize` / `matchTokens` **之前**展开；
+   `matchedAnsweredQuestions` 调用 `bm25Tokenize` / `matchTokens` **之前**展开；
    加 `QUERY_ALIAS_VERSION` 并在响应里回显。
 2. **本地一行接线**：`search_knowledge.py` 在 `_rank_docs` 之前调用 `expand()`；
    更彻底的做法是让 `engine._expand_query` 读这张表，替掉写死在代码里的 34 个 token 的
@@ -440,3 +461,189 @@ tokenizer 下/canonical 链必须终止（65 行）。核心的 `expand()` 只�
    而不是无脑加词。
 5. **扩张词表**：优先补「症状词」（`收不到`、`打不开`、`卡住`——目前只有部分条目）和
    多语言课程里的说法（`pt-br`/`ru`/`ja` 语料的用词），仍然坚持「能 grep 到才加」。
+
+---
+
+## 8. 接线：Worker + 本地 CLI + 引擎，一份词表（issue #1780，2026-09-16）
+
+> 一句话：**这张表从「库 + 评测」变成了线上与本地唯一的查询展开实现**。
+> Worker 在检索入口展开（默认开、`MISAKANET_QUERY_ALIASES=0` 关），本地 CLI 与
+> `misakanet/search/engine.py` 走同一个 `scripts/expand_query.py`，Feature #532 那份写死在
+> 代码里的 `_SYNONYM_MAP` 被**迁移进表**（`kind: "related"`）而不是删掉或并存。
+> `INDEX_TEXT_VERSION` **不 bump**。
+
+### 8.1 接线点：三处调用、一份数据、一份实现
+
+| 位置 | 做法 | 代码 |
+|---|---|---|
+| Worker 检索入口 | `misakanet_search` 里把 `args.query` 展开成 `scoringQuery`，只喂给打分器 | `workers/register-proxy-sw.js::scoringQueryFor` → `searchLessonsBM25` / `searchLessons` |
+| 本地 CLI | 查询入口展开一次，`_rank_docs` 再展开一次（见 §8.6 的说明） | `search_knowledge.py::_scoring_query` |
+| 本地引擎 | `_expand_query` 改为读共享表；`_SYNONYM_MAP` 变成该文件的**视图** | `misakanet/search/engine.py::_expand_query` / `_synonym_view` |
+
+**「同一份 JSON」是怎么被强制的**（不是靠自觉）：
+
+- Worker 读不到文件，所以表以常量形式内联：`QUERY_ALIAS_TABLE`
+  （`python3 scripts/expand_query.py --emit-worker-table` 生成）；
+- `workers/query-alias-expansion.test.mjs` 与 `tests/test_query_alias_wiring.py` 都会**从
+  `data/query-aliases.json` 重新算一遍投影**并与内联常量对比 —— 改表不改常量，CI 直接红；
+- `QUERY_ALIAS_VERSION` 必须等于表里的 `schema.version`（本 PR 顺手把表升到 **v2**：新增
+  `related` 类别与 30 条条目）；`QUERY_ALIAS_MAX_EXPANSIONS` 必须等于
+  `expand_query.MAX_EXPANSIONS`（=4）；Worker 的 `BM25_STOPWORDS` 必须等于
+  `expand_query._STOP_EN`（否则会把自家分词器会丢掉的词注入查询）；
+- 老入口 `engine._expand_query` 的测试改成**删表即失败**：`tests/test_query_alias_wiring.py`
+  用「去掉一条目」的临时表证明视图跟着文件走（硬编码的第二份词表不会动）。
+
+### 8.2 两套展开路径的统一：老 `_SYNONYM_MAP` 逐条处置
+
+老表（Feature #532）有 **34 个 key / 74 对映射**，与新表的差异是**逐条**核过的，不是「有重叠就算重叠」：
+
+| 处置 | 条数 | 说明 |
+|---|---|---|
+| 先确认 | 74 对 | 逐 key 与新表比对：`alias` 侧、以及 `two-way` 条目的 `canonical` 侧都算「表里已有」 |
+| **迁移进表** | 30 条 | 新表完全没覆盖的 key，作为 `kind: "related"` 条目写入，**每条补了取证**（`lessons/` 里的真实引文 + canonical 的 df），例如 `mcp → setup tools/list`、`pip → ssl proxy`、`cron → scheduler systemd`、`json → schema parse` |
+| 已覆盖、不重复加 | 2 条 | `dco`（新表 `dco ↔ signoff`，等价关系比同现更强）、`pyc`（新表 `pyc ↔ pycache`） |
+| 跳过（会变成死条目） | 2 条 | `ssl` / `signoff`：新表里它们是 `two-way` 条目的 canonical 侧，再以 alias 身份加一条会被"最长匹配 + 已占 span"规则吃掉，永远不生效 —— 它们原有的额外同义词由别处覆盖（`pip`/`timeout` 已在表里，`signed-off-by` 反向条已迁移） |
+
+**为什么不直接把 30 条当普通条目（无条件生效）**：实测代价是硬的。把老表的映射与新表**同时**
+注入，engine 的 top-1 从 **14/20 掉到 12/20**（丢掉 `WSL 内存占用过高` 与 `git TLS 握手失败`）——
+因为同现词（`wsl → windows proxy`、`ssl → pip timeout`）会把已经由精确别名定位到的那篇顶下去。
+
+所以新表引入了一个**降级层**：
+
+```python
+# expand_query.expand()：先跑「翻译层」，一个都没命中时才跑 related 层
+matched = _match(query, build_lookup(table, only_related=False), query_tokens)
+if not matched:                       # 同现词只在词表无话可说时才注入
+    matched = _match(query, build_lookup(table, only_related=True), query_tokens)
+```
+
+这条规则让「老表的记忆」和「新表的精度」同时成立：**迁移后 engine 的 top-1 回到 14/20**，
+而 `_expand_query("mcp tool not showing")` 仍给出 `setup tools/list`、`_expand_query("pip timeout")`
+仍给出 `ssl proxy` —— 也就是说 `tests/test_synonym_expansion.py` 覆盖的所有老行为都还在
+（唯一改动的那条断言见 §8.3，因为输出现在是 BM25 token 串而不是原样 canonical）。
+
+> `langchain_tool.py::_expand_query` 读了一遍，**不需要跟着改**：它不是词表，而是「同一查询的
+> 3 个变体 + RRF 融合」，每个变体都交给 `_rank_docs` 打分 —— 而 `_rank_docs` 已经在用共享表了，
+> 所以它自动跟着统一，且没有第二份词表可分叉。
+
+### 8.3 接线时顺带修掉的两个 bug（都是实测撞出来的）
+
+1. **子串匹配把无关别名注入了英文查询。** 匹配一开始是纯 `str.find`，于是 `pat` 命中
+   `path`/`patch`、`pr` 命中 `proxy`/`process`、`sse` 命中 `assets`、`rag` 命中 `storage`：
+   `python3 scripts/expand_query.py -q "path traversal"` 在**已合并的表上**会输出
+   `path traversal personal access token`。拉丁别名现在必须落在词边界上；CJK 与 `-`、`/`
+   保持子串匹配（`识图模型` 仍要赢过裸的 `模型`）。这一条不只是本地问题：接到 Worker 之后，
+   每个含 `proxy` 的查询都会被注入 `pull request`。
+2. **扩展词把 Worker 的覆盖率分母抬高了。** `RELEVANCE_MIN_COVERAGE = 0.55` 会把「加进去但没
+   匹配上」的词算进分母，于是 `pip install timeout`（原本能命中）在 `ssl proxy` 被追加后掉到
+   阈值以下、变成 `no_match`；`zzz-econnrefused-on-corporate-proxy-404` 反而从「诚实地说没有」
+   变成「给几条沾边的」。现在的规则是：**floor 只判用户自己打出来的词**
+   （`searchLessonsBM25(..., floorQuery = args.query)`），扩展词只能加分数、不能给文档"授权"；
+   只有当原查询对分词器完全不可见（中文）时，floor 才退回到扩展后的词——那正是本 issue 要修的
+   缺口，而不是被放行。
+
+   实测效果（`node --test workers/*.test.mjs`）：不加这条规则，Worker 套件 **9 条失败**
+   （命中变 no_match、no_match 变命中）；加上之后 **0 条失败**。
+
+### 8.4 开关与回滚（线上 precision 下降时）
+
+```bash
+# 关闭展开 = 恢复 #1780 之前的行为，无需改代码/发版
+MISAKANET_QUERY_ALIASES=0     # 也接受 false / off / no；空、未设、其它值 = 开
+```
+
+Worker 读 `env.MISAKANET_QUERY_ALIASES`（Cloudflare 面板改变量即可，秒级生效，不动代码）；
+本地 CLI 与引擎读同名环境变量。两侧接受的值集合是同一份（`queryAliasesEnabled` /
+`query_aliases_enabled`，有测试逐值对齐）。
+
+**「线上观测到 precision 下降」三步回滚：**
+
+1. **关开关**：Cloudflare 面板把 `MISAKANET_QUERY_ALIASES` 设为 `0`（或 `wrangler secret put` /
+   环境变量方式），下一个请求即恢复旧行为。**不要**先回滚代码——展开层是查询期的，关掉就能
+   隔离变量，而回滚代码会连别的东西一起带走。
+2. **定量确认**：拿被投诉的查询跑
+   `MISAKANET_QUERY_ALIASES=0 python3 search_knowledge.py "<query>" --json` 与不带开关的同一命令，
+   对比 `results[].path`；再跑 `python3 scripts/eval_query_aliases.py` 看 top-1/top-3 是否低于
+   §8.6 的下限（engine 14/20 · 16/20，bm25 15/20 · 17/20）。差异定位到具体条目后，用
+   `python3 scripts/expand_query.py -q "<query>"` 看是哪条 alias 注入的。
+3. **定点修表、再开**：在该条目上加/改 /删除（删一条 `related` 条目的代价只是少一次同现召回；
+   删 `zh-en` 条目要连带确认没有别的查询依赖它），跑
+   `python3 scripts/expand_query.py --check` + `python3 scripts/expand_query.py --emit-worker-table`
+   **重新内联常量**（漂移测试会强制这一步）+ `eval_query_aliases.py`，然后重新打开开关。
+   表是数据，回滚粒度是「一条别名」，不需要发版。
+
+### 8.5 `INDEX_TEXT_VERSION` 的决策：**不 bump**
+
+`INDEX_TEXT_VERSION = 3` 守的是 `bm25Tokenize(lessonIndexText(lesson))` 的**形状**；别名层改的是
+**查询**（`scoringQueryFor`），索引文本一个字节都没变，所以：
+
+- 不需要重建索引，也没有「gate 看不见变化、线上继续服务 20h 旧索引」的窗口；
+- 顺手 bump 的代价是真实的全量重建 + 20h 的拒绝窗口，而且会把「这个常量 = 检索行为变了」这个
+  错误含义教给后来人（它的含义是「重建输入变了」）；
+- 词表有自己的版本：`QUERY_ALIAS_VERSION`（= 表里 `schema.version`，本 PR 为 2），改表就 bump，
+  无需任何重建。
+
+**什么时候必须 bump**：把 CJK 写进 `lessonIndexText`（例如 bigram）——那时 indexed text 真的变了，
+`INDEX_TEXT_VERSION` → 4。本 PR 没有做这件事。
+
+### 8.6 接线后的评测怎么读（2026-09-16 实测，原始输出）
+
+接线后**评测的两个列都变了含义**，这是必须知道的：
+
+```bash
+python3 scripts/eval_query_aliases.py                    # 接线后的默认跑法
+python3 scripts/eval_query_aliases.py --backend bm25     # 纯 BM25（不含引擎，最能隔离词表）
+MISAKANET_QUERY_ALIASES=0 python3 scripts/eval_query_aliases.py   # 关掉展开 = 接线前的基线
+```
+
+```
+=== 默认（engine 后端）===
+HIT RATE                   13/20 17/20 14/20 16/20
+  as %                        65    85    70    80
+  lost top-1   (0): none
+  lost top-3   (1): pip install 卡住不动
+  still missing(4): pip install 卡住不动, 飞书机器人收不到消息, 向量检索召回率低, 机器人报警代码
+
+=== bm25 后端（与接线前逐位相同）===
+HIT RATE                   9/20 11/20 15/20 17/20
+  as %                        45    55    75    85
+  gained top-1 (6): 公司代理导致 SSL 证书校验失败, 定时任务不执行, 装了包还是提示模块找不到,
+                    DCO 签名失败怎么办, Node.js 连接被重置, 浏览器自动化被拦截
+  lost top-1   (0): none   lost top-3   (0): none
+
+=== MISAKANET_QUERY_ALIASES=0（基线复现）===
+HIT RATE                   8/20 10/20 13/20 17/20
+  as %                        40    50    65    85
+  lost top-1   (0): none   lost top-3   (0): none
+```
+
+怎么读：
+
+- **`after` 列（= 线上/本地的实际路径）保持在上线前的数字上**：engine **14/20 · 16/20**（70% · 80%），
+  bm25 **15/20 · 17/20**（75% · 85%），`still missing` 集合与 §0.1 完全一致。这两组就是「不得退化」
+  的下限。
+- **`before` 列不再是"未展开"**：引擎已接线，`_rank_docs(query)` 自己就展开了。要复现 §0.1 的
+  40% · 50% 基线，跑 `MISAKANET_QUERY_ALIASES=0`（上表第三段，`8/20 10/20` 与原文逐位相同）。
+- **本地 CLI 会经过两次展开**（CLI 入口一次 + `_rank_docs` 一次）：所以 CLI 的排序结果与评测的
+  `after` 列**逐条相同**（`tests/test_query_alias_wiring.py::test_the_cli_ranking_is_what_the_offline_eval_measures`
+  钉住了这一点）。第二次展开只在「第一次翻译出来的词本身又是一条同现别名」时才加东西
+  （`超时 → timeout`，而 `timeout` 在老表里就带同现词），这正是 #532 那种"按 token 展开"的两步效果。
+  它只会加词、不会删词（有测试）——单次展开的对照列是 `13/20 · 17/20`（65% · 85%）。
+- **Worker 是单次展开**，且 floor 用原查询的词（§8.3）：它的期望值对应 `13/20 · 17/20` 那一列。
+  两次展开在 Worker 上会重新引入覆盖率稀释（中文查询的 floor 只能退回扩展词），所以刻意不做。
+
+### 8.7 已知代价 / 还没做
+
+- **`top-3` 有一条查询在 `after` 列掉出**（`pip install 卡住不动`，§5.1 里本来就说明它不可解），
+  `top-1` 净 +6 —— 与上线前的 14/20 · 16/20 持平，没有净退化。
+- **Worker 的 FAQ 匹配器（`matchAnsweredQuestions`）没有跟着展开**：它的命中条件是
+  `overlap >= min(2, tokens)`，加词会直接改变这个阈值语义，而离线评测覆盖不到 FAQ 语料。
+  §1.3 说的"顺带做"因此被推迟到有 FAQ 评测之后。
+- **gap 清理 cron（`cleanupCoveredGaps`）仍然用原始 gap 查询打分**：它的输入是历史查询串，
+  不是用户实时输入；展开会让"已覆盖"的判定更宽松，属于另一个决定。
+- **权重仍未生效**（§3.4），**响应里也没有回显 `QUERY_ALIAS_VERSION`**：版本只进了 debug 日志
+  （`[MISAKA_DEBUG]`），因为给 MCP 响应加字段会动到既有响应形状测试；要归因时看日志或
+  `python3 scripts/expand_query.py --check` 输出的 schema 版本。
+- **`related` 层对纯英文查询是"记忆"而不是"改进"**：11 条回归夹具在统一前后的期望课程排名
+  **逐条相同**（`tests/test_query_alias_wiring.py` 用 `data/regression_queries.json` 跑真实语料），
+  结果数最多差 1 条；它的价值是别把 #532 已经能做到的事丢掉，而不是把英文查询变好。

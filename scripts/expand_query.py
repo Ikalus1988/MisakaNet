@@ -6,6 +6,14 @@ Design + measurements: docs/maintainer/query-alias-design-2026-09-16.md
 
     --query "如何切换识图模型"  expand a query   --check   CI gate (exit != 0)
     --list-kinds               kinds + counts   --json    machine output
+    --emit-worker-table        the Worker's inlined copy of this table (issue #1780)
+
+This module is the *single* expansion implementation for the local CLI
+(`search_knowledge.py`, `misakanet.search.engine._expand_query`) and it is ported 1:1
+to JavaScript in `workers/register-proxy-sw.js`; both read data/query-aliases.json, and
+workers/query-alias-expansion.test.mjs fails if the JS port ever disagrees with this
+file. Runtime callers use `expand_query_text()` and the shared off-switch
+`query_aliases_enabled()` (`MISAKANET_QUERY_ALIASES=0`).
 
 Does not import the misakanet package: `tokenize` mirrors engine._tokenize (Latin
 run = 1 token, CJK char = 1 token) and `worker_tokens` mirrors the Worker's
@@ -15,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from itertools import groupby, zip_longest
@@ -24,7 +33,18 @@ REPO = Path(__file__).resolve().parent.parent
 DEFAULT_TABLE = REPO / "data" / "query-aliases.json"
 LESSONS = REPO / "lessons"
 MAX_EXPANSIONS = 4      # default cap; sweep in the design doc (2..6 all within noise)
-REQUIRED_KINDS = {"zh-en", "error-variant", "tool-variant", "product-variant", "abbrev", "typo"}
+REQUIRED_KINDS = {"zh-en", "error-variant", "tool-variant", "product-variant", "abbrev", "typo",
+                  # #1780: the migrated Feature #532 word list. It is a *degradation* layer —
+                  # see `related` in the table's `kinds` — so it must be documented like the rest.
+                  "related"}
+RELATED_KIND = "related"
+
+# Rollback switch (issue #1780). Default ON; `MISAKANET_QUERY_ALIASES=0`, or
+# false/off/no, restores the pre-#1780 behaviour everywhere (Worker, CLI, engine)
+# without a redeploy. Keep this set in sync with `queryAliasEnabled` in
+# workers/register-proxy-sw.js.
+QUERY_ALIASES_ENV = "MISAKANET_QUERY_ALIASES"
+_OFF_VALUES = ("0", "false", "off", "no")
 _TOKEN_RE = re.compile(r"[a-zA-Z\u00c0-\u024f0-9_]+|[\u4e00-\u9fff]")
 # Same set as the worker's BM25_STOPWORDS; used only to reject useless expansions.
 _STOP_EN = set((
@@ -80,25 +100,55 @@ def entry_defaults(table: dict, entry: dict) -> dict:
     return out
 
 
-def build_lookup(table: dict) -> list[tuple[str, dict]]:
+def build_lookup(table: dict, only_related: bool | None = None) -> list[tuple[str, dict]]:
     """(needle, entry) pairs, longest first. Matching is raw text, not tokens: a CJK
-    term has no token boundary either tokenizer can see."""
+    term has no token boundary either tokenizer can see.
+
+    `only_related` selects the layer: None → every entry (the whole word list, what a
+    caller asking for "the table" expects), False → the translating kinds only, True →
+    only `related` entries (the degradation layer, see `expand`).
+    """
     pairs = []
     for raw in table["aliases"]:
         e = entry_defaults(table, raw)
+        if only_related is not None and (e["kind"] == RELATED_KIND) != only_related:
+            continue
         pairs += [(e["alias"], e)] + ([(e["canonical"], e)] if e["direction"] == "two-way" else [])
     return sorted(pairs, key=lambda p: (-len(p[0]), p[0]))
 
 
-def expand(query: str, table: dict, max_expansions: int = MAX_EXPANSIONS,
-           keep_original: bool = False) -> dict:
-    """Expand `query`; `expanded` is the string to hand to a BM25 search."""
-    # Match BEFORE removing stopwords: aliases may contain a stopword themselves
-    # (`握手失败` contains `失败`), and stripping first destroys the phrase.
-    matched, spans = [], []        # spans: text ranges already taken by a longer alias
-    query_tokens = set(tokenize(query))
-    for needle, e in build_lookup(table):
-        low, target, start = needle.lower(), query.lower(), 0
+# A "word character" for boundary purposes: the same alphabet the Worker's bm25Tokenize
+# splits on, so an alias edge that is Latin must not sit inside a longer token.
+_WORD_CHAR_RE = re.compile(r"[a-z0-9]")
+
+
+def _on_word_boundaries(text: str, start: int, needle: str) -> bool:
+    """True when a match of `needle` at `start` in the lower-cased `text` sits on word
+    boundaries at both ends — or when the needle's edge is not Latin at all.
+
+    CJK, `-`, `/` and spaces have no word boundary for either tokenizer, so those keep
+    substring matching (`识图模型` must still beat the bare `模型`, `tools/list` must still
+    match). Without this check `pat` matched inside `path`, `pr` inside `proxy` and `sse`
+    inside `assets`, each injecting an unrelated expansion.
+    """
+    end = start + len(needle)
+    def latin_edge(ch: str) -> bool:
+        return bool(_WORD_CHAR_RE.match(ch.lower()))
+    if latin_edge(needle[0]) and start > 0 and _WORD_CHAR_RE.match(text[start - 1].lower()):
+        return False
+    if latin_edge(needle[-1]) and end < len(text) and _WORD_CHAR_RE.match(text[end].lower()):
+        return False
+    return True
+
+
+def _match(query: str, lookup: list[tuple[str, dict]], query_tokens: set[str]) -> tuple[list[dict], list]:
+    """Entries of `lookup` that occur in `query`, plus the character spans they claimed."""
+    matched: list[dict] = []
+    spans: list[tuple[int, int]] = []
+    target = query.lower()
+    for needle, e in lookup:
+        low = needle.lower()
+        start = 0
         # A two-way entry matches from either side; inject the *other* side, so
         # `node` adds `nodejs` instead of repeating the word it already has.
         add_from = e["alias"] if low == e["canonical"].lower() else e["canonical"]
@@ -107,6 +157,14 @@ def expand(query: str, table: dict, max_expansions: int = MAX_EXPANSIONS,
             i = target.find(low, start)
             if i < 0:
                 break
+            if not _on_word_boundaries(target, i, needle):
+                # `pat` inside `path`, `pr` inside `proxy`, `sse` inside `assets`,
+                # `rag` inside `storage`: raw substring matching injected a completely
+                # unrelated expansion into those queries (found while wiring #1780 —
+                # `path traversal` added `personal access token`). CJK is exempt below
+                # because neither tokenizer has a word boundary to offer there.
+                start = i + 1
+                continue
             span = (i, i + len(needle))
             # A `replace` match that injects nothing new only deletes text: the typo
             # `powershel` sits inside the correct `powershell`.
@@ -118,6 +176,32 @@ def expand(query: str, table: dict, max_expansions: int = MAX_EXPANSIONS,
                 fields = ("alias", "canonical", "kind", "weight", "replace")
                 matched.append(dict({k: e[k] for k in fields}, span=span, add_from=add_from))
             start = i + len(needle)
+    return matched, spans
+
+
+def expand(query: str, table: dict, max_expansions: int = MAX_EXPANSIONS,
+           keep_original: bool = False) -> dict:
+    """Expand `query`; `expanded` is the string to hand to a BM25 search.
+
+    Two layers, in this order (#1780 unification):
+      1. the translating kinds (zh-en / error-variant / tool-variant / product-variant /
+         abbrev / typo) — each entry claims "the query writes X, the corpus writes Y for
+         the same thing", and each carries per-entry evidence;
+      2. `related` — the migrated Feature #532 word list, which claims only co-occurrence
+         ("questions about pip are usually answered by lessons mentioning ssl/proxy").
+    Layer 2 runs **only when layer 1 matches nothing**. Unconditionally combining them
+    measurably costs precision (engine top-1 14/20 → 12/20 on the eval set: broad
+    co-occurring terms outrank the lesson the precise alias had already located), while
+    as a fallback it adds behaviour where the alias table is silent and removes none.
+    """
+    # Match BEFORE removing stopwords: aliases may contain a stopword themselves
+    # (`握手失败` contains `失败`), and stripping first destroys the phrase.
+    query_tokens = set(tokenize(query))
+    matched, spans = _match(query, build_lookup(table, only_related=False), query_tokens)
+    related_fallback = False
+    if not matched:
+        matched, spans = _match(query, build_lookup(table, only_related=True), query_tokens)
+        related_fallback = bool(matched)
     stopped = sorted(table.get("stopwords", {}).get("zh", []), key=len, reverse=True)
     action = ["free"] * len(query)             # free | keep (alias matched) | drop
     for m in matched:
@@ -154,10 +238,88 @@ def expand(query: str, table: dict, max_expansions: int = MAX_EXPANSIONS,
         m.pop("span")
         m.pop("add_from")
     return {"query": query, "stopwords_removed": removed, "matched": matched,
+            "related_fallback": related_fallback,
             "dropped_terms": [] if keep_original else dropped, "added_terms": added,
             "added_terms_suppressed": max(0, total - len(added)), "expanded": expanded,
             "worker_tokens": worker_tokens(expanded),
             "changed": expanded != " ".join(tokenize(query))}
+
+
+def query_aliases_enabled(value: str | None = None) -> bool:
+    """Is query-side alias expansion on? Default ON (#1780).
+
+    `MISAKANET_QUERY_ALIASES=0` (also `false` / `off` / `no`) turns it off — the same
+    switch name and the same accepted values as `queryAliasEnabled` in
+    workers/register-proxy-sw.js, so one variable rolls back both paths. Anything else
+    (unset, empty, `1`, garbage) leaves expansion on: the switch exists for an
+    incident, not as a configuration surface.
+    """
+    raw = os.environ.get(QUERY_ALIASES_ENV) if value is None else value
+    if raw is None or not str(raw).strip():
+        return True
+    return str(raw).strip().lower() not in _OFF_VALUES
+
+
+_TABLE_CACHE: dict = {"key": None, "table": None}
+
+
+def cached_table(path: Path | str = DEFAULT_TABLE) -> dict:
+    """`load_table`, memoised on (path, mtime, size). The table is read on every search
+    (`engine._expand_query`), and re-parsing ~130 KB per query is not free; any edit to
+    the file changes mtime and is picked up on the next call, so there is no restart
+    window where the word list is stale."""
+    p = Path(path)
+    try:
+        st = p.stat()
+    except OSError as exc:
+        raise TableError(f"alias table not found: {path}") from exc
+    key = (str(p.resolve()), st.st_mtime_ns, st.st_size)
+    if _TABLE_CACHE["key"] != key:
+        _TABLE_CACHE.update(key=key, table=load_table(p))
+    return _TABLE_CACHE["table"]
+
+
+def expand_query_text(query: str, table: dict | None = None,
+                      max_expansions: int = MAX_EXPANSIONS,
+                      keep_original: bool = False) -> str:
+    """The string to score: `expand(...)["expanded"]`, or `query` unchanged.
+
+    This is the entry point runtime callers use (the local CLI and
+    `engine._expand_query`), and it never raises: a missing or unreadable table means
+    "no expansion", because a search must not fail over a word list. A malformed table
+    is caught in CI by `--check`, not at query time.
+    """
+    if not query:
+        return query
+    try:
+        t = cached_table() if table is None else table
+        return expand(query, t, max_expansions=max_expansions,
+                      keep_original=keep_original)["expanded"]
+    except (TableError, OSError):
+        return query
+
+
+def worker_table(table: dict) -> dict:
+    """The projection workers/register-proxy-sw.js inlines (`QUERY_ALIAS_TABLE`).
+
+    A Worker cannot read a file at runtime, so the shared word list travels as a
+    generated constant. `--emit-worker-table` prints exactly this object, and
+    workers/query-alias-expansion.test.mjs recomputes it from data/query-aliases.json
+    and fails if the inlined copy has drifted — the file stays the single source.
+    Evidence blocks and prose are dropped: the Worker needs matching behaviour, not the
+    review trail.
+    """
+    aliases = []
+    for raw in table["aliases"]:
+        e = entry_defaults(table, raw)
+        aliases.append({"alias": e["alias"], "canonical": e["canonical"], "kind": e["kind"],
+                        "direction": e["direction"], "weight": e["weight"],
+                        "replace": e["replace"]})
+    return {"version": table.get("schema", {}).get("version"),
+            "stopwords_zh": list(table.get("stopwords", {}).get("zh", [])),
+            "kinds": {k: {f: spec.get(f) for f in ("direction", "weight", "replace")}
+                      for k, spec in table["kinds"].items()},
+            "aliases": aliases}
 
 
 def check(table_path=DEFAULT_TABLE) -> list[str]:
@@ -232,8 +394,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--query", "-q", help="query to expand")
     ap.add_argument("--check", action="store_true", help="validate the alias table")
     ap.add_argument("--list-kinds", action="store_true", help="list alias kinds")
+    ap.add_argument("--emit-worker-table", action="store_true",
+                    help="print the projection workers/register-proxy-sw.js inlines "
+                         "(QUERY_ALIAS_TABLE); --pretty for a human-readable dump")
     ap.add_argument("--table", default=str(DEFAULT_TABLE), help="alias table path")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
+    ap.add_argument("--pretty", action="store_true", help="indent --emit-worker-table")
     ap.add_argument("--max-expansions", type=int, default=MAX_EXPANSIONS)
     ap.add_argument("--keep-original", action="store_true",
                     help="keep tokens that `replace` kinds would drop")
@@ -243,6 +409,12 @@ def main(argv: list[str] | None = None) -> int:
     except TableError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+    if args.emit_worker_table:
+        # No trailing newline surprises: this is pasted into a JS constant.
+        print(json.dumps(worker_table(table), ensure_ascii=False,
+                         indent=2 if args.pretty else None,
+                         separators=None if args.pretty else (",", ":")))
+        return 0
     if args.list_kinds:
         counts: dict[str, int] = {}
         for e in table["aliases"]:

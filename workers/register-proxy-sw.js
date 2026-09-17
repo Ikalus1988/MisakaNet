@@ -764,12 +764,20 @@ function matchTokens(text) {
 }
 
 // Simple keyword-based lesson search (runs in Worker, no BM25)
-function searchLessons(lessons, query, domain, top = 5) {
+function searchLessons(lessons, query, domain, top = 5, floorQuery = null) {
   if (!Array.isArray(lessons) || !query) return [];
   const q = query.toLowerCase();
   const qWords = matchTokens(query);
   if (!qWords.length) return [];
-  const termDf = new Map(qWords.map(w => [w, 0]));
+  // #1780: the same discipline as searchLessonsBM25 — when the user's own words are
+  // visible to the matcher (`floorQuery`), the relevance floor judges those, and the
+  // alias expansion may only add score. When they are not (a Chinese query, which
+  // `bm25Tokenize` erases and whose CJK runs match nothing here), the expansion supplies
+  // the terms *and* the floor, because otherwise there is nothing to judge.
+  const originalWords = floorQuery ? matchTokens(floorQuery) : [];
+  const floorWords = originalWords.length ? originalWords : qWords;
+  const floorSet = new Set(floorWords);
+  const termDf = new Map(floorWords.map(w => [w, 0]));
   const scored = [];
 
   for (const lesson of lessons) {
@@ -787,23 +795,29 @@ function searchLessons(lessons, query, domain, top = 5) {
     let score = 0;
     if (q && text.includes(q)) score += 10;   // exact phrase, when the caller gives one
     const matchedTerms = [];
+    const floorMatched = [];
     for (const w of qWords) {
       if (docTokens.has(w)) {
         score += 2;
         matchedTerms.push(w);
-        termDf.set(w, termDf.get(w) + 1);
+        if (floorSet.has(w)) {
+          floorMatched.push(w);
+          termDf.set(w, termDf.get(w) + 1);
+        }
       }
       if (titleTokens.has(w)) score += 1;
     }
     if (domain && lessonDomain === domain.toLowerCase()) score += 1;
 
-    if (score > 0) scored.push({ lesson, score, matchedTerms });
+    if (score > 0) scored.push({ lesson, score, matchedTerms, floorMatched });
   }
 
   const floor = relevanceFloor(termDf, lessons.length);
-  const relevant = scored.filter(({ matchedTerms }) =>
-    matchedTerms.length >= floor.required &&
-    matchedTerms.some(w => floor.informative.has(w)));
+  // Judged on the words the floor actually saw, so an expansion term can never be the
+  // only reason a document is admitted.
+  const relevant = scored.filter(({ floorMatched }) =>
+    floorMatched.length >= floor.required &&
+    floorMatched.some(w => floor.informative.has(w)));
 
   relevant.sort((a, b) => b.score - a.score);
   return relevant.slice(0, top).map(({ lesson, score }) => ({
@@ -847,11 +861,250 @@ function bm25Tokenize(text) {
   return [...new Set([...baseTokens, ...expanded])];
 }
 
-function searchLessonsBM25(index, query, domain, top = 5) {
+// ── Query alias expansion (issue #1780) ─────────────────────────────────────
+// data/query-aliases.json is the single word list behind retrieval: the local CLI
+// (`search_knowledge.py` → misakanet/search/engine.py), the offline eval and this Worker
+// all expand through the same algorithm. A Worker cannot read a file at runtime, so the
+// table travels as the constant below, generated with
+//
+//     python3 scripts/expand_query.py --emit-worker-table
+//
+// and re-derived from data/query-aliases.json by workers/query-alias-expansion.test.mjs,
+// which fails on any drift — the file stays the single source of truth for the words.
+//
+// WHY THIS EXISTS: `bm25Tokenize` drops CJK entirely (`[^a-z0-9]+` → space), so a Chinese
+// question arrived at `searchLessonsBM25` with ZERO query terms and returned `[]` before
+// scoring anything (11/20 of the offline eval set, `scripts/eval_query_aliases.py`).
+// That is a query-side bug with a query-side fix, which is also why the indexed text —
+// and therefore `INDEX_TEXT_VERSION` — does not move: see the note on that constant.
+//
+// Expansion is ON by default. `MISAKANET_QUERY_ALIASES=0` (also false/off/no) turns it
+// off — the production rollback switch, same name and values as
+// `scripts/expand_query.py::query_aliases_enabled`. Unset/empty/garbage keeps it on.
+// `QUERY_ALIAS_VERSION` mirrors `schema.version` in the table file, so a query can be
+// attributed to a revision of the word list.
+const QUERY_ALIAS_VERSION = 2;
+const QUERY_ALIAS_MAX_EXPANSIONS = 4;   // = scripts/expand_query.py MAX_EXPANSIONS
+const QUERY_ALIAS_TABLE = {"version":2,"stopwords_zh":["如何","怎么","怎样","为什么","是什么原因","什么原因","怎么办","请问","求助","报错","错误","失败","无法","不能","不行","问题","原因","方法","方案","教程","一下","我的","出现","提示","解决","处理","时候","还是","没有","可以","需要","现在","已经","就是","这个","那个","哪些","什么","哪里"],"kinds":{"zh-en":{"direction":"one-way","weight":0.9,"replace":true},"error-variant":{"direction":"one-way","weight":0.7,"replace":false},"tool-variant":{"direction":"one-way","weight":0.7,"replace":false},"product-variant":{"direction":"one-way","weight":0.6,"replace":false},"abbrev":{"direction":"two-way","weight":0.8,"replace":false},"typo":{"direction":"one-way","weight":1.0,"replace":true},"related":{"direction":"one-way","weight":0.3,"replace":false}},"aliases":[{"alias":"内存泄漏","canonical":"memory leak","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"内存不足","canonical":"oom","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"内存占用过高","canonical":"memory leak","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"磁盘空间不足","canonical":"disk full","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"超时","canonical":"timeout","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"连接超时","canonical":"timeout","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"代理","canonical":"proxy","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"证书","canonical":"certificate","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"握手失败","canonical":"tls handshake failed","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"限流","canonical":"rate limit","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"缓存","canonical":"cache","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"崩溃","canonical":"crash","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"截断","canonical":"truncation","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"编码","canonical":"encoding","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"乱码","canonical":"encoding","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"权限","canonical":"permission","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"端口","canonical":"port","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"防火墙","canonical":"firewall","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"飞书","canonical":"feishu","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"报警代码","canonical":"alarm","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"报警","canonical":"alarm","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"备份","canonical":"backup","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"关节","canonical":"joint","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"部署","canonical":"deploy","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"依赖","canonical":"dependency","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"虚拟环境","canonical":"venv","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"环境变量","canonical":"environment variable","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"签名","canonical":"signoff","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"合并冲突","canonical":"merge conflict","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"索引","canonical":"index","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"向量","canonical":"vector index","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"检索","canonical":"retrieval","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"召回","canonical":"recall","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"知识库","canonical":"knowledge base","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"切片","canonical":"chunk","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"嵌入","canonical":"embedding","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"正则","canonical":"regex","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"解析失败","canonical":"json parse","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"沙箱","canonical":"sandbox","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"隔离","canonical":"isolation","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"死锁","canonical":"deadlock","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"竞态","canonical":"race condition","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"幂等","canonical":"idempotent","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"重试","canonical":"retry","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"心跳","canonical":"heartbeat","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"看门狗","canonical":"watchdog","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"覆盖率","canonical":"coverage","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"滑动窗口","canonical":"sliding window","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"同义词","canonical":"synonym","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"分词","canonical":"tokenization","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"模型","canonical":"model","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"切换","canonical":"switch","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"识图模型","canonical":"vision model","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"排查","canonical":"troubleshoot","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"不生效","canonical":"stale cache","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"卡住","canonical":"timeout","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"打不开","canonical":"corrupt","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"连不上","canonical":"connection reset","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"路径穿越","canonical":"path traversal","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"权限不足","canonical":"permission denied","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"文件打不开","canonical":"corrupt","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"请求超时","canonical":"timeout","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"证书过期","canonical":"certificate","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"端口占用","canonical":"port","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"模块找不到","canonical":"modulenotfounderror","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"内存溢出","canonical":"oom","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"下载失败","canonical":"download","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"上传失败","canonical":"upload","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"登录失败","canonical":"authentication","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"配置错误","canonical":"configuration","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"路径错误","canonical":"path","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"数据库连接","canonical":"database","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"编译失败","canonical":"compile","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"中文乱码","canonical":"encoding","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"容器","canonical":"container","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"镜像","canonical":"image","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"集群","canonical":"kubernetes","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"定时任务","canonical":"cron","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"浏览器","canonical":"browser","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"自动化","canonical":"automation","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"拦截","canonical":"block","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"连接","canonical":"connection","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"重置","canonical":"reset","kind":"zh-en","direction":"one-way","weight":0.9,"replace":true},{"alias":"oomkilled","canonical":"oom","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"out of memory","canonical":"oom","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"sigkill","canonical":"oom","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"memory limit","canonical":"oom","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"exit code 137","canonical":"oom","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"crashloop","canonical":"crashloopbackoff","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"econnreset","canonical":"connection reset","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"read timed out","canonical":"timeout","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"readtimeouterror","canonical":"timeout","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"etimedout","canonical":"timeout","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"timed out","canonical":"timeout","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"context deadline exceeded","canonical":"timeout","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"enospc","canonical":"disk full","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"no space left on device","canonical":"disk full","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"eacces","canonical":"permission denied","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"certificate verify failed","canonical":"ssl certificate","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"too many requests","canonical":"rate limit","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"no module named","canonical":"modulenotfounderror","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"module not found","canonical":"modulenotfounderror","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"importerror","canonical":"modulenotfounderror","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"gbk codec","canonical":"encoding","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"mojibake","canonical":"encoding","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"push rejected","canonical":"git push","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"conflict marker","canonical":"merge conflict","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"busy timeout","canonical":"lock","kind":"error-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"pip3","canonical":"pip","kind":"tool-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"pipx","canonical":"pip","kind":"tool-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"nodejs","canonical":"node","kind":"tool-variant","direction":"two-way","weight":0.7,"replace":false},{"alias":"yarn","canonical":"npm","kind":"tool-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"k8s","canonical":"kubernetes","kind":"tool-variant","direction":"two-way","weight":0.7,"replace":false},{"alias":"virtualenv","canonical":"venv","kind":"tool-variant","direction":"two-way","weight":0.7,"replace":false},{"alias":"headless chrome","canonical":"chromium","kind":"tool-variant","direction":"one-way","weight":0.7,"replace":false},{"alias":"lark","canonical":"feishu","kind":"product-variant","direction":"two-way","weight":0.6,"replace":false},{"alias":"cf worker","canonical":"cloudflare worker","kind":"product-variant","direction":"one-way","weight":0.6,"replace":false},{"alias":"cloudflare workers","canonical":"cloudflare worker","kind":"product-variant","direction":"one-way","weight":0.6,"replace":false},{"alias":"wcferry","canonical":"wechat","kind":"product-variant","direction":"one-way","weight":0.6,"replace":false},{"alias":"wecom","canonical":"wechat","kind":"product-variant","direction":"one-way","weight":0.6,"replace":false},{"alias":"fanucpy","canonical":"fanuc","kind":"product-variant","direction":"one-way","weight":0.6,"replace":false},{"alias":"karel","canonical":"fanuc","kind":"product-variant","direction":"one-way","weight":0.6,"replace":false},{"alias":"ccswitch","canonical":"switch","kind":"product-variant","direction":"one-way","weight":0.6,"replace":false},{"alias":"dco","canonical":"signoff","kind":"abbrev","direction":"two-way","weight":0.8,"replace":false},{"alias":"pat","canonical":"personal access token","kind":"abbrev","direction":"two-way","weight":0.8,"replace":false},{"alias":"pr","canonical":"pull request","kind":"abbrev","direction":"two-way","weight":0.8,"replace":false},{"alias":"gha","canonical":"github actions","kind":"abbrev","direction":"two-way","weight":0.8,"replace":false},{"alias":"ci","canonical":"continuous integration","kind":"abbrev","direction":"two-way","weight":0.8,"replace":false},{"alias":"sse","canonical":"server sent events","kind":"abbrev","direction":"two-way","weight":0.8,"replace":false},{"alias":"cdp","canonical":"devtools protocol","kind":"abbrev","direction":"two-way","weight":0.8,"replace":false},{"alias":"rag","canonical":"retrieval","kind":"abbrev","direction":"two-way","weight":0.8,"replace":false},{"alias":"llm","canonical":"language model","kind":"abbrev","direction":"two-way","weight":0.8,"replace":false},{"alias":"tls","canonical":"ssl","kind":"abbrev","direction":"two-way","weight":0.8,"replace":false},{"alias":"e2e","canonical":"end to end","kind":"abbrev","direction":"two-way","weight":0.8,"replace":false},{"alias":"env","canonical":"environment variable","kind":"abbrev","direction":"two-way","weight":0.8,"replace":false},{"alias":"pyc","canonical":"pycache","kind":"abbrev","direction":"two-way","weight":0.8,"replace":false},{"alias":"powerhsell","canonical":"powershell","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"powershel","canonical":"powershell","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"kuberneties","canonical":"kubernetes","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"javascrpt","canonical":"javascript","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"timout","canonical":"timeout","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"permision","canonical":"permission","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"enviroment","canonical":"environment","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"dependancy","canonical":"dependency","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"commited","canonical":"committed","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"paramter","canonical":"parameter","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"certficate","canonical":"certificate","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"configuraton","canonical":"configuration","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"authetication","canonical":"authentication","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"respository","canonical":"repository","kind":"typo","direction":"one-way","weight":1.0,"replace":true},{"alias":"mcp","canonical":"setup tools/list","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"tool","canonical":"setup mcp","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"setup","canonical":"mcp install","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"gbk","canonical":"unicode encoding","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"unicode","canonical":"gbk encoding","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"encoding","canonical":"gbk unicode","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"signed-off-by","canonical":"dco signoff","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"pip","canonical":"ssl proxy","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"timeout","canonical":"ssl proxy","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"proxy","canonical":"pip ssl timeout","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"git","canonical":"credential push","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"credential","canonical":"git auth","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"auth","canonical":"credential token","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"token","canonical":"auth credential","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"401","canonical":"auth credential","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"403","canonical":"auth permission","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"cron","canonical":"scheduler systemd","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"scheduler","canonical":"cron systemd","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"wsl","canonical":"windows proxy","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"windows","canonical":"wsl proxy","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"cloudflare","canonical":"worker deploy","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"worker","canonical":"cloudflare deploy","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"deploy","canonical":"worker cloudflare","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"npm","canonical":"publish 403","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"publish","canonical":"npm 403","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"json","canonical":"schema parse","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"schema","canonical":"json validate","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"validate","canonical":"schema json","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"stale","canonical":"cache pyc","kind":"related","direction":"one-way","weight":0.3,"replace":false},{"alias":"cache","canonical":"stale pyc","kind":"related","direction":"one-way","weight":0.3,"replace":false}]};
+
+const QUERY_ALIAS_OFF_VALUES = new Set(["0", "false", "off", "no"]);
+
+/** Expansion switch: default ON, `MISAKANET_QUERY_ALIASES=0` off (no redeploy of code). */
+function queryAliasEnabled(env) {
+  const raw = env ? env.MISAKANET_QUERY_ALIASES : undefined;
+  if (raw === undefined || raw === null || String(raw).trim() === "") return true;
+  return !QUERY_ALIAS_OFF_VALUES.has(String(raw).trim().toLowerCase());
+}
+
+// Mirrors `expand_query.tokenize` (== engine._tokenize): one token per Latin run, one per
+// CJK character. Deliberately not `bm25Tokenize`: alias matching is raw-text matching,
+// and CJK has no word boundary for either tokenizer to offer.
+const QUERY_ALIAS_TOKEN_RE = /[a-zA-Z\u00c0-\u024f0-9_]+|[\u4e00-\u9fff]/g;
+
+function aliasTokenize(text) {
+  const spaced = String(text == null ? "" : text).toLowerCase().replace(/([\u4e00-\u9fff])/g, " $1 ");
+  const out = [];
+  for (const raw of spaced.match(QUERY_ALIAS_TOKEN_RE) || []) {
+    const token = raw.replace(/^_+|_+$/g, "");
+    if (token) out.push(token);
+  }
+  return out;
+}
+
+function aliasWordChar(ch) {
+  return ch !== undefined && /[a-z0-9]/.test(String(ch).toLowerCase());
+}
+
+/** Mirror of expand_query._on_word_boundaries. Latin needles must match whole words:
+ *  raw substring matching made `pat` match inside `path`/`patch`, `pr` inside
+ *  `proxy`/`process`, `sse` inside `assets` and `rag` inside `storage`, injecting an
+ *  unrelated expansion into those queries (found while wiring #1780). CJK, `-`, `/` and
+ *  spaces keep substring matching — `识图模型` must still beat the bare `模型`. */
+function aliasOnWordBoundaries(chars, start, needleChars) {
+  const end = start + needleChars.length;
+  if (aliasWordChar(needleChars[0]) && start > 0 && aliasWordChar(chars[start - 1])) return false;
+  if (aliasWordChar(needleChars[needleChars.length - 1]) && end < chars.length
+      && aliasWordChar(chars[end])) return false;
+  return true;
+}
+
+/** indexOf over a code-point array, so spans line up with Array.from(query) even when
+ *  the query carries astral characters (emoji) that UTF-16 would count twice. */
+function aliasIndexOf(chars, needleChars, from) {
+  outer: for (let i = from; i + needleChars.length <= chars.length; i++) {
+    for (let j = 0; j < needleChars.length; j++) {
+      if (chars[i + j] !== needleChars[j]) continue outer;
+    }
+    return i;
+  }
+  return -1;
+}
+
+function buildAliasLookup(onlyRelated) {
+  const pairs = [];
+  for (const entry of QUERY_ALIAS_TABLE.aliases) {
+    const isRelated = entry.kind === "related";
+    if (onlyRelated !== undefined && onlyRelated !== null && isRelated !== onlyRelated) continue;
+    pairs.push([entry.alias, entry]);
+    // A two-way entry matches from either side; the *other* side is what gets injected.
+    if (entry.direction === "two-way") pairs.push([entry.canonical, entry]);
+  }
+  // Longest needle first (a stable sort, like the Python `sorted(key=(-len, text))`).
+  pairs.sort((a, b) => (b[0].length - a[0].length) || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  return pairs;
+}
+
+const _aliasLookups = new Map();
+
+function aliasLookup(onlyRelated) {
+  const key = onlyRelated === undefined || onlyRelated === null ? "all" : String(onlyRelated);
+  if (!_aliasLookups.has(key)) _aliasLookups.set(key, buildAliasLookup(onlyRelated));
+  return _aliasLookups.get(key);
+}
+
+function matchAliasLayer(chars, lookup, queryTokens) {
+  const matched = [];
+  const spans = [];
+  for (const [needle, entry] of lookup) {
+    const low = needle.toLowerCase();
+    const needleChars = Array.from(low);
+    const addFrom = low === entry.canonical.toLowerCase() ? entry.alias : entry.canonical;
+    const newTerms = aliasTokenize(addFrom).filter((t) => !queryTokens.has(t));
+    let start = 0;
+    for (;;) {
+      const i = aliasIndexOf(chars, needleChars, start);
+      if (i < 0) break;
+      if (!aliasOnWordBoundaries(chars, i, needleChars)) { start = i + 1; continue; }
+      const span = [i, i + needleChars.length];
+      // A `replace` match that injects nothing new only deletes text (`powershel`
+      // inside the correct `powershell`), so it is not a match at all.
+      if (entry.replace && newTerms.length === 0) { start = i + needleChars.length; continue; }
+      if (!spans.some(([a, b]) => a < span[1] && span[0] < b)) {
+        spans.push(span);
+        matched.push({ alias: entry.alias, canonical: entry.canonical, kind: entry.kind,
+                       weight: entry.weight, replace: entry.replace, span, addFrom });
+      }
+      start = i + needleChars.length;
+    }
+  }
+  return { matched, spans };
+}
+
+/** 1:1 port of `scripts/expand_query.py::expand` — same matching, same `replace`
+ *  semantics, same cap and round-robin. `workers/query-alias-expansion.test.mjs`
+ *  compares the two implementations query by query. Returns the report the tests and
+ *  the debug log read; `expanded` is the string a scorer should use. */
+function expandQueryAliases(query, env, maxExpansions) {
+  const cap = maxExpansions === undefined ? QUERY_ALIAS_MAX_EXPANSIONS : maxExpansions;
+  const report = { query: query, expanded: query, changed: false, enabled: true,
+                   related_fallback: false, matched: [], added_terms: [],
+                   dropped_terms: [], stopwords_removed: [] };
+  if (!query || typeof query !== "string") return report;
+  if (!queryAliasEnabled(env)) { report.enabled = false; return report; }
+
+  const chars = Array.from(query.toLowerCase());
+  const queryTokens = new Set(aliasTokenize(query));
+  // Layer 1: the evidence-backed translations. Layer 2 (`related`, the migrated
+  // Feature #532 word list) only when layer 1 matched nothing — unconditionally
+  // combining them measurably costs precision (engine top-1 14/20 → 12/20 on the eval
+  // set), while as a fallback it adds behaviour where the aliases are silent.
+  let layer = matchAliasLayer(chars, aliasLookup(false), queryTokens);
+  let relatedFallback = false;
+  if (layer.matched.length === 0) {
+    layer = matchAliasLayer(chars, aliasLookup(true), queryTokens);
+    relatedFallback = layer.matched.length > 0;
+  }
+  const matched = layer.matched;
+
+  // Match before removing stopwords: `握手失败` contains the intent word `失败`.
+  const stopped = QUERY_ALIAS_TABLE.stopwords_zh.slice().sort((a, b) => b.length - a.length);
+  const action = new Array(chars.length).fill("free");   // free | keep | drop
+  for (const m of matched) {
+    const act = m.replace ? "drop" : "keep";
+    for (let i = m.span[0]; i < m.span[1]; i++) action[i] = act;
+  }
+  const removed = [];
+  let kept = "";
+  for (let i = 0; i < chars.length;) {
+    const act = action[i];
+    let segment = "";
+    while (i < chars.length && action[i] === act) { segment += chars[i]; i += 1; }
+    if (act === "free") {
+      for (const word of stopped) {
+        if (segment.includes(word)) { segment = segment.split(word).join(" "); removed.push(word); }
+      }
+    }
+    if (act !== "drop") kept += segment;
+  }
+
+  // Round-robin across the matched aliases (heaviest first) so one long canonical
+  // cannot eat the budget: `识图模型 切换` keeps both `vision` and `switch`.
+  const present = new Set(aliasTokenize(kept));
+  const queues = [];
+  const origin = new Map();
+  const ordered = matched.slice().sort((a, b) =>
+    (b.weight - a.weight) || (b.canonical.length - a.canonical.length));
+  for (const m of ordered) {
+    const terms = aliasTokenize(m.addFrom)
+      .filter((t) => !present.has(t) && !BM25_STOPWORDS.has(t) && t.length >= 2);
+    for (const t of terms) if (!origin.has(t)) origin.set(t, m);
+    if (terms.length) queues.push(terms);
+  }
+  const interleaved = [];
+  const longest = queues.reduce((n, q) => Math.max(n, q.length), 0);
+  for (let i = 0; i < longest; i += 1) {
+    for (const queue of queues) {
+      const term = queue[i];
+      if (term !== undefined && !interleaved.includes(term)) interleaved.push(term);
+    }
+  }
+  const added = interleaved.slice(0, cap).map((term) => ({
+    term: term, from: origin.get(term).alias, kind: origin.get(term).kind,
+    weight: origin.get(term).weight,
+  }));
+
+  report.expanded = (aliasTokenize(kept).join(" ") + " " + added.map((a) => a.term).join(" ")).trim();
+  report.changed = report.expanded !== aliasTokenize(query).join(" ");
+  report.matched = matched.map((m) => ({ alias: m.alias, canonical: m.canonical,
+                                         kind: m.kind, weight: m.weight, replace: m.replace }));
+  report.added_terms = added;
+  report.dropped_terms = [...new Set(matched.filter((m) => m.replace).map((m) => m.alias))].sort();
+  report.related_fallback = relatedFallback;
+  report.stopwords_removed = removed;
+  return report;
+}
+
+/** The string to hand a scorer for `query` (issue #1780).
+ *
+ *  Returns the caller's own string whenever expansion changes nothing, so the common
+ *  case is untouched — and so hyphenated queries keep their compound token:
+ *  `bm25Tokenize("dco-signoff")` yields `dcosignoff`, but an expansion re-joins tokens
+ *  with spaces and would drop it. Consequences documented in the design doc. */
+function scoringQueryFor(query, env) {
+  const report = expandQueryAliases(query, env);
+  if (!report.changed || !report.expanded) return query;
+  const compounds = (String(query).toLowerCase().match(/[a-z0-9]+-[a-z0-9]+/g) || [])
+    .filter((c) => !report.expanded.toLowerCase().includes(c));
+  return compounds.length ? `${report.expanded} ${compounds.join(" ")}` : report.expanded;
+}
+
+function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null) {
   if (!index || !index.terms || !index.docs || !query) return [];
 
   const queryTerms = bm25Tokenize(query);
   if (queryTerms.length === 0) return [];
+
+  // #1780 (query alias expansion): the relevance floor judges the words the *user*
+  // typed — `floorQuery`, the pre-expansion query — while the expanded terms may only
+  // add score. Measured: with the expanded terms in the denominator instead, "pip
+  // install timeout" (three real terms) stopped finding its lesson the moment
+  // `ssl`/`proxy` were appended, and `zzz-econnrefused-on-corporate-proxy-404` started
+  // answering with loosely related lessons instead of no_match. A query the tokenizer
+  // cannot see at all (Chinese) has no original terms to judge, so the floor falls back
+  // to the expanded ones: that gap is exactly what this issue fixes, and it stays
+  // judged rather than being waved through.
+  const originalTerms = floorQuery ? bm25Tokenize(floorQuery) : queryTerms;
+  const floorTerms = originalTerms.length ? originalTerms : queryTerms;
 
   const { docCount, avgDocLen, k1 = 1.5, b = 0.75, terms, docs } = index;
   const scores = new Float64Array(docCount);
@@ -881,8 +1134,13 @@ function searchLessonsBM25(index, query, domain, top = 5) {
   }
 
   // Relevance floor — see the note above searchLessons().
-  const floor = relevanceFloor(termDf, docCount);
-  const idfTotal = queryIdfTotal(queryTerms, terms, docCount);
+  const floorTermDf = new Map();
+  for (const term of floorTerms) {
+    if (termDf.has(term)) floorTermDf.set(term, termDf.get(term));
+    else if (terms[term]) floorTermDf.set(term, terms[term].docs.length);
+  }
+  const floor = relevanceFloor(floorTermDf, docCount);
+  const idfTotal = queryIdfTotal(floorTerms, terms, docCount);
   for (const term of floor.informative) {
     const termData = terms[term];
     if (!termData) continue;
@@ -974,6 +1232,18 @@ const INDEX_TEXT_MAX_CHARS = 6000;
 // can all be unchanged (the stamp did not move here) while every indexed document
 // still carries slug/dir metadata. Without the bump, deployed workers keep
 // answering with slug titles — and keep failing a `domain` filter — for up to 20h.
+//
+// NOT bumped for #1780 (query alias expansion, 2026-09-16) — deliberately. This
+// constant guards `bm25Tokenize(lessonIndexText(lesson))`, and expansion never touches
+// either side of that expression: it rewrites the *query* at request time
+// (`scoringQueryFor`, below), so the indexed text is byte-identical before and after.
+// Moving the constant anyway would cost a full rebuild plus the 20h window in which the
+// gate refuses an index whose text never changed, and it would teach the next reader
+// that this constant means "retrieval behaviour changed" — it does not; it means "the
+// rebuild input changed". The word list has its own, separate revision:
+// `QUERY_ALIAS_VERSION`, which moves with data/query-aliases.json and needs no rebuild.
+// (The one change that *would* force this to 4 is indexing CJK, e.g. bigrams in
+// lessonIndexText — not done here; see the design doc.)
 const INDEX_TEXT_VERSION = 3;
 // The public listing must not ship the internal searchable body: `indexText` feeds
 // the index and the matcher, and it is dropped from every response the worker
@@ -1639,14 +1909,27 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // Try BM25 search first (if index available), fall back to naive search
     let results;
     let source = "worker-search";
+    // Alias expansion (issue #1780) happens here — on the query, before any scoring —
+    // and only on this path: the gap-cleanup cron scores raw gap strings through
+    // `searchLessonsBM25` directly. `args.query` stays the query of record for the gap
+    // log, the analytics events, the kind detector, the no-match text and the FAQ
+    // matcher; only the scorer sees the expansion.
+    const scoringQuery = scoringQueryFor(args.query, env);
+    if (scoringQuery !== args.query) {
+      debugLog(env, 2, "query alias expansion", {
+        query: args.query, scored: scoringQuery, aliasVersion: QUERY_ALIAS_VERSION,
+      });
+    }
     const bm25Index = await loadBM25Index(env);
     if (bm25Index) {
-      results = searchLessonsBM25(bm25Index, args.query, args.domain, args.top || 5);
+      // `args.query` is also passed as the floor query: the expansion may add score, but
+      // the relevance floor keeps judging what the user typed (see searchLessonsBM25).
+      results = searchLessonsBM25(bm25Index, scoringQuery, args.domain, args.top || 5, args.query);
       source = "worker-bm25";
-      debugLog(env, 2, "BM25 search", { query: args.query, results: results.length });
+      debugLog(env, 2, "BM25 search", { query: scoringQuery, results: results.length });
     } else {
-      results = searchLessons(lessons, args.query, args.domain, args.top || 5);
-      debugLog(env, 2, "Fallback search", { query: args.query, results: results.length });
+      results = searchLessons(lessons, scoringQuery, args.domain, args.top || 5, args.query);
+      debugLog(env, 2, "Fallback search", { query: scoringQuery, results: results.length });
     }
 
     // Both matchers project a narrow shape (BM25 from the index, the naive one from
@@ -4718,6 +5001,15 @@ export {
   buildBM25Index,
   bm25Tokenize,
   matchTokens,
+  // Query alias expansion (#1780) — exported so workers/query-alias-expansion.test.mjs
+  // can assert the intermediate scoring query and compare it with the Python port.
+  QUERY_ALIAS_TABLE,
+  QUERY_ALIAS_VERSION,
+  QUERY_ALIAS_MAX_EXPANSIONS,
+  queryAliasEnabled,
+  aliasTokenize,
+  expandQueryAliases,
+  scoringQueryFor,
   relevanceFloor,
   refreshSearchIndex,
   BM25_INDEX_KEY,
