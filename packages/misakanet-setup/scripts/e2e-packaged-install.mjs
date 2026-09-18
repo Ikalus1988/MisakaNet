@@ -30,7 +30,7 @@
  * / 2 misuse (bad arguments, or an injection whose check is skipped on this platform).
  */
 import { spawn } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   closeSync, cpSync, existsSync, fstatSync, mkdirSync, mkdtempSync, openSync, readFileSync,
   readdirSync, realpathSync, rmSync, writeFileSync,
@@ -276,9 +276,17 @@ function makeUserHome({ claude = true, codex = true, openclaw = false, hermes = 
  * "the token reaches the config with mode 600" would mean registering real production nodes from
  * CI on every run. It also fails loudly if the installer stops calling the endpoint — the checks
  * below assert `registerCalls`, so a green token check cannot mean "nothing ever happened".
+ *
+ * The stub's token is derived at runtime, never written as a literal. A literal of the shape the
+ * installer itself accepts is indistinguishable from a real credential to a scanner that cannot know
+ * it is fake — HOL Guard's plugin scanner reported exactly that (error-severity `HARDCODED_SECRET`,
+ * #276 on 2026-09-18, the same class as #252/#253/#254 which produced `workers/_test-token.mjs`).
+ * Deriving it also means the fixture cannot accidentally match a real token, and the value stays
+ * valid for the installer's own shape check (`mcp_` followed by 20+ [A-Za-z0-9_-]).
  */
 async function stubEndpoint() {
-  const state = { registerCalls: 0, toolsCalls: 0, authSeen: [], token: 'mcp_e2e000000000000000000000000' };
+  const token = `mcp_e2e_${randomUUID().replace(/-/g, '')}`;
+  const state = { registerCalls: 0, toolsCalls: 0, authSeen: [], token };
   const server = createServer((req, res) => {
     let body = '';
     req.on('data', (chunk) => { body += chunk; });
