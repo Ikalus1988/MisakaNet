@@ -11,6 +11,9 @@ created: 2026-09-07
 updated: 2026-09-07
 source: "intake #1574 — LLM generates responses that speak or act for the user (godmoding) in roleplay"
 evidence_level: E3
+summary_plain: "LLM在角色扮演中替用户说话或行动（god-moding），需要三层防御。"
+trigger: "LLM speaking acting user godmoding roleplay"
+verify: "修复后50轮角色扮演中越权回合数为0"
 provenance:
   issue: "#1574"
   contributor: "Ikalus1988"
