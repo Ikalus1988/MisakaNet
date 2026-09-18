@@ -1,6 +1,6 @@
 ---
 title: "NPC dispatch causes spatial bilocation and active speaker loss"
-domain: roleplay
+domain: roleplay-engine
 tags:
   - "npc-dispatch"
   - "speaker-attribution"
@@ -11,6 +11,9 @@ created: 2026-09-07
 updated: 2026-09-07
 source: "intake #1643 — NPC ativo enviado a tarefa externa + citação indireta de terceiro ausente → bilocação espacial + active_speaker loss"
 evidence_level: E3
+summary_plain: "NPC外派到外部地点后，间接提及不在场的第三方会导致说话人和地点同时错位。"
+trigger: "NPC dispatched external location speaker dislocation bilocation"
+verify: "修复后同一输入下speaker和location与预期一致，不再出现bilocation"
 provenance:
   issue: "#1643"
   contributor: "Ikalus1988"
