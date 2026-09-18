@@ -108,14 +108,23 @@ def setup_wizard():
         print("  获取: GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens")
         token = input("  输入 Token (跳过直接回车): ").strip()
         if token:
-            # 写入 .env 文件
+            # 写入 .env 文件。
+            #
+            # 用标准 dotenv 写法（KEY=VALUE，不带 `export`）：python-dotenv、Node 的 dotenv 等
+            # 主流库都不认 `export` 前缀，写进去等于"文件里有 token，程序读不到"（2026-09-18 评审
+            # 意见 6）。而且 `source .env` 只对当前 shell 生效——IDE 启动的进程、服务、CI 都继承
+            # 不到，所以提示里必须说清楚这一层，而不是让用户以为配好了。
             env_path = REPO / ".env"
             existing = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
             if "GITHUB_TOKEN" not in existing:
                 with open(env_path, "a") as f:
-                    f.write(f"\n# MisakaNet setup\nexport GITHUB_TOKEN={token}\n")
-                print("  ✅ Token 已写入 .env")
-                print("  生效: source .env")
+                    f.write(f"\n# MisakaNet setup\nGITHUB_TOKEN={token}\n")
+                print("  ✅ Token 已写入 .env（标准 dotenv 格式：GITHUB_TOKEN=…）")
+                print("     本次 shell: set -a; . ./.env; set +a")
+                print("     想让它对 IDE / 服务 / CI 也生效：写进 ~/.bashrc、~/.zshrc，"
+                      "或系统环境变量（不要只靠 source）")
+                print("     ⚠️ .env 里是明文凭据：别提交它（.gitignore 已含 .env），"
+                      "也别贴进 issue")
 
     # 生成 config.yaml
     config_path = REPO / "config.yaml"

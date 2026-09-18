@@ -563,3 +563,59 @@ test('an unwritable state directory breaks nothing', { skip: POSIX_STUB_ONLY }, 
   assert.equal(stubCalls(bin.log).filter(isNotifierCall).length, 2,
     `both runs still notified (log: ${JSON.stringify(stubCalls(bin.log))})`);
 });
+
+// ── the reviewed defects of 2026-09-18, pinned ────────────────────────────────────────────
+// Review 意见 9: with no session id, every agent on the machine shared the single counter `default`,
+// so one agent's twentieth turn fired the checkpoint inside another agent's session. The key now
+// comes from the working directory (or MISAKANET_SESSION_KEY when someone states it), which keeps one
+// counter per project. The Python hook mirrors this — tests/test_agent_autostart_parity.py compares
+// the state file each implementation writes.
+test('without a session id, two different projects get two counters', () => {
+  const state = mkdtempSync(join(tmpdir(), 'mn-session-'));
+  const dirA = mkdtempSync(join(tmpdir(), 'mn-cwd-a-'));
+  const dirB = mkdtempSync(join(tmpdir(), 'mn-cwd-b-'));
+  for (const cwd of [dirA, dirB]) {
+    const result = spawnSync(process.execPath, [HOOK, 'prompt'],
+      { cwd, input: '{}', encoding: 'utf8', env: { ...process.env, MISAKANET_HOOK_STATE: state } });
+    assert.equal(result.status, 0, result.stderr);
+  }
+  const files = readdirSync(state).sort();
+  assert.equal(files.length, 2, `two projects must not share one counter: ${files.join(', ')}`);
+  assert.ok(files.every((f) => f.startsWith('default-')), files.join(', '));
+  assert.ok(!files.includes('default.json'), 'the shared default counter must be gone');
+});
+
+test('MISAKANET_SESSION_KEY decides the counter when an agent has no session id', () => {
+  const state = mkdtempSync(join(tmpdir(), 'mn-session-key-'));
+  const result = spawnSync(process.execPath, [HOOK, 'prompt'],
+    { input: '{}', encoding: 'utf8',
+      env: { ...process.env, MISAKANET_HOOK_STATE: state, MISAKANET_SESSION_KEY: 'agent-a' } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(readdirSync(state), ['agent-a.json']);
+});
+
+// Review 意见 4: the voice hook's "leave anyway after 3s" backstop was unreachable code —
+// `process.exit(0)` sat in the `finally` above it, so the timer line was never evaluated. Running
+// the hook cannot show that (exiting is the point), so the guard is on the shape; it also checks the
+// copy inside the npm tarball, because `prepack` regenerates it and a stale copy is what users run.
+test('the voice hook has a reachable exit backstop', () => {
+  const sources = {
+    canonical: VOICE_HOOK,
+    shipped: resolve(dirname(fileURLToPath(import.meta.url)), '..', 'packages', 'misakanet-setup',
+                     'voice', 'voice-hook.mjs'),
+  };
+  for (const [label, file] of Object.entries(sources)) {
+    if (!existsSync(file)) continue;                 // the tarball copy only exists after `prepack`
+    // Comments are stripped first: the fix documents the old shape it replaced, and a check that
+    // reads prose as code is how a false red is born (the same mistake `audit-shape`'s rule 6 made
+    // in #1807, where a PR was failed by its own description).
+    const source = readFileSync(file, 'utf8')
+      .split('\n').filter((line) => !line.trim().startsWith('//')).join('\n');
+    const backstop = source.indexOf('setTimeout(() => process.exit(0), 3000)');
+    assert.ok(backstop > 0, `${label}: the exit backstop is gone`);
+    const before = source.slice(0, backstop);
+    assert.ok(!/finally\s*\{[\s\S]*?process\.exit\(/.test(before),
+      `${label}: process.exit() before the backstop makes it dead code again`);
+    assert.match(source, /setImmediate\(/, `${label}: the exit must not be unconditional`);
+  }
+});
