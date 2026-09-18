@@ -647,6 +647,59 @@ const CHECKS = [
       `the reason must be in plain words on stderr: ${result.stderr.slice(-400)}`);
     return 'exit 1 with the reason on stderr';
   }],
+
+  // The permission tiers, on the artifact users actually install (2026-09-18).
+  //
+  // `--mcp-only` is the answer to "my operator will approve an MCP server, not a change to my agent's
+  // identity file" (#1753). Its boundary is the whole point of the flag, so it is checked where users
+  // get it, not only in the unit suite: tier ① must make the tool *usable* (endpoint + read-only
+  // grants) and must not touch anything that changes behaviour (rules block, hooks).
+  ['mcp-only-installs-tier-one-and-nothing-more', async () => {
+    const home = makeUserHome({ openclaw: false, hermes: true });
+    const rulesPath = join(home, '.claude', 'CLAUDE.md');
+    const rulesBefore = readFileSync(rulesPath, 'utf8');
+    const settingsBefore = readJson(join(home, '.claude', 'settings.json'));
+    const hermesBefore = readFileSync(join(home, '.hermes', 'config.yaml'), 'utf8');
+
+    const result = await cli(['--home', home, '--mcp-only', '--no-register', '--only', 'claude,hermes'], { home });
+    need(result.status === 0, `--mcp-only must succeed: ${show(result)}`);
+
+    // ① happened, and it is usable: the endpoint is registered and the read-only tools are granted —
+    // without the grants the first search is denied, which is what makes tier ① a working install.
+    const claude = readJson(join(home, '.claude.json'));
+    need(claude.mcpServers?.misakanet?.url === CANONICAL_ENDPOINT,
+      `tier ① must register the endpoint: ${JSON.stringify(claude.mcpServers)}`);
+    const settings = readJson(join(home, '.claude', 'settings.json'));
+    const allow = settings.permissions?.allow || [];
+    const readTools = ['misakanet_search', 'misakanet_get_lesson', 'misakanet_me_events',
+                       'misakanet_preflight', 'misakanet_submit_intake'];
+    const granted = readTools.filter((tool) => allow.some((entry) => String(entry).includes(tool)));
+    need(granted.length === readTools.length,
+      `tier ① must grant the read-only tools (got ${granted.length}/${readTools.length}): ${JSON.stringify(allow)}`);
+    need(readFileSync(join(home, '.hermes', 'config.yaml'), 'utf8').includes('misakanet'),
+      'the hermes MCP entry is tier ① and must be written');
+
+    // ② did not: no rules block anywhere, and the Hermes identity file was not created.
+    need(!readFileSync(rulesPath, 'utf8').includes('misakanet:start'), 'tier ② must not run');
+    need(readFileSync(rulesPath, 'utf8').includes('Do not touch the header'),
+      "tier ② not running must also mean the user's own rules are untouched");
+    need(!existsSync(join(home, '.hermes', 'SOUL.md')), 'tier ② must not create SOUL.md');
+
+    // ③ did not: no hooks, no state directory.
+    need(JSON.stringify(settings.hooks) === JSON.stringify(settingsBefore.hooks),
+      `tier ③ must not add hook entries: ${JSON.stringify(settings.hooks)}`);
+    need(!existsSync(join(home, '.misakanet-agent')), 'tier ③ must not create the state directory');
+
+    // And it says the cost out loud: tier ① is a capability install, not a behaviour install.
+    need(result.stdout.includes('不会自己想到去查'),
+      `--mcp-only must state that the agent will not search by itself: ${result.stdout.slice(-400)}`);
+
+    // The report distinguishes this from both "nothing installed" and a full install.
+    const report = await cli(['--home', home, '--report', '--only', 'claude'], { home });
+    need(/^install-scope: mcp-only$/m.test(report.stdout), report.stdout.slice(0, 400));
+    void hermesBefore;
+    return 'endpoint + read-only grants written; rules block, SOUL.md, hooks and state dir untouched';
+  }],
 ];
 
 /** Recursively drop empty objects/arrays, so "semantically the same config" is one comparison. */
