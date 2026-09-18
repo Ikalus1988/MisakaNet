@@ -23,45 +23,47 @@ CREDS_LINE = "https://" + "user" + ":" + "PW" + "@" + "github.com" + "\n"
 sys.path.insert(0, str(REPO / "scripts"))
 
 
-def test_doctor_rejects_a_404(tmp_path: Path):
+def _fake_curl(stdout: str):
+    class R:
+        returncode = 0
+        stderr = ""
+    r = R()
+    r.stdout = stdout
+    return lambda *a, **kw: r
+
+
+def test_doctor_rejects_a_404(monkeypatch):
     """`code != "000"` called a missing path reachable."""
     import doctor
-
-    real = subprocess.run
-
-    def fake(cmd, *a, **kw):
-        class R:
-            returncode = 0
-            stdout = "404"
-            stderr = ""
-        return R()
-
-    subprocess.run = fake
-    try:
-        ok, message = doctor.check_remote_endpoint("https://example.invalid/mcp")
-    finally:
-        subprocess.run = real
+    monkeypatch.setattr(doctor.subprocess, "run", _fake_curl('not found\n404'))
+    ok, message = doctor.check_remote_endpoint("https://example.invalid/mcp")
     assert ok is False, f"a 404 must not be reported as reachable: {message}"
     assert "404" in message
 
 
-def test_doctor_accepts_a_200():
+def test_doctor_rejects_a_200_that_is_not_mcp(monkeypatch):
+    """200 alone is not the claim: the body has to be an MCP handshake answer."""
     import doctor
+    monkeypatch.setattr(doctor.subprocess, "run", _fake_curl('{"hello":"world"}\n200'))
+    ok, message = doctor.check_remote_endpoint("https://example.invalid/mcp")
+    assert ok is False, message
+    assert "serverInfo" in message
 
-    real = subprocess.run
 
-    def fake(cmd, *a, **kw):
-        class R:
-            returncode = 0
-            stdout = "200"
-            stderr = ""
-        return R()
+def test_doctor_rejects_a_405_to_the_handshake(monkeypatch):
+    """405 is healthy for a bare GET, and a finding for an initialize POST."""
+    import doctor
+    monkeypatch.setattr(doctor.subprocess, "run", _fake_curl("Method Not Allowed\n405"))
+    ok, message = doctor.check_remote_endpoint("https://example.invalid/mcp")
+    assert ok is False, message
+    assert "405" in message
 
-    subprocess.run = fake
-    try:
-        ok, message = doctor.check_remote_endpoint("https://misakanet.org/mcp")
-    finally:
-        subprocess.run = real
+
+def test_doctor_accepts_an_answered_handshake(monkeypatch):
+    import doctor
+    monkeypatch.setattr(doctor.subprocess, "run",
+                        _fake_curl('{"result":{"serverInfo":{"name":"misakanet"}}}\n200'))
+    ok, message = doctor.check_remote_endpoint("https://misakanet.org/mcp")
     assert ok is True, message
 
 
