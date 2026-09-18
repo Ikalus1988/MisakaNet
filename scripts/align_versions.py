@@ -120,7 +120,15 @@ def locations() -> dict[str, str]:
         (REPO / "pyproject.toml").read_text(encoding="utf-8"),
         re.M,
     ).group(1)
+    worker = (REPO / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
+    mcp_serverinfo = re.search(
+        r'version:\s*env\.MCP_VERSION\s*\|\|\s*"([0-9.]+)"', worker)
     return {
+        # The version every MCP client reads in `initialize.serverInfo.version`. Nothing wrote it
+        # before 2026-09-18: it sat at 2.27.1 through six releases while this file's other targets
+        # moved, because a value with no writer is a value with no owner (see the defect register,
+        # 模式 2/模式 10, and issue #1820).
+        "workers/register-proxy-sw.js (serverInfo)": mcp_serverinfo.group(1) if mcp_serverinfo else "",
         "server.json (registry)": str(server["version"]),
         "glama.json (registry)": str(_read_json("glama.json")["version"]),
         "pyproject.toml": pyproject_v,
@@ -176,6 +184,13 @@ def check() -> int:
             "a release step that interpolates an empty version rewrites it to a bare `v`")
     elif badge != manifest:
         problems.append(f"R8 site badge drifted: {DOCS_BADGE}=v{badge} manifest={manifest}")
+    # R7: the value MCP clients read must equal the source of truth, like everything else here.
+    if loc["workers/register-proxy-sw.js (serverInfo)"] != loc["pyproject.toml"]:
+        problems.append(
+            "R7 MCP serverInfo drifted: "
+            f"worker={loc['workers/register-proxy-sw.js (serverInfo)'] or '(none)'} "
+            f"pyproject={loc['pyproject.toml']}")
+
     glama = loc["glama.json (registry)"]
     if registry != glama:
         problems.append(f"R1 registry pair drifted: server={registry} glama={glama}")
@@ -230,6 +245,13 @@ def bump_source(version: str) -> None:
     man = _read_json(".release-please-manifest.json")
     man["."] = version
     _write_json(".release-please-manifest.json", man)
+    worker = REPO / "workers" / "register-proxy-sw.js"
+    text = worker.read_text(encoding="utf-8")
+    updated = re.sub(r'(version:\s*env\.MCP_VERSION\s*\|\|\s*")[0-9.]+(")',
+                     rf"\g<1>{version}\g<2>", text)
+    if updated != text:
+        worker.write_text(updated, encoding="utf-8")
+        print(f"  workers/register-proxy-sw.js serverInfo -> {version}")
     for rel in ("README.md", "README.zh-CN.md"):
         p = REPO / rel
         if not p.exists():
