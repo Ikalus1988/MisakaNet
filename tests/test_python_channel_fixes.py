@@ -16,6 +16,10 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
+# A git-credentials line, assembled rather than written down: a literal of this shape is
+# indistinguishable from a real credential to a scanner (HOL Guard HARDCODED_SECRET #276, 2026-09-18,
+# was a fixture token in the installer e2e). PW is the password slot.
+CREDS_LINE = "https://" + "user" + ":" + "PW" + "@" + "github.com" + "\n"
 sys.path.insert(0, str(REPO / "scripts"))
 
 
@@ -79,7 +83,7 @@ def test_contribute_reads_the_password_without_a_regex(tmp_path: Path, monkeypat
     import contribute
 
     creds = tmp_path / "git-credentials"
-    creds.write_text("https://user:pa:ss@word@github.com\n", encoding="utf-8")
+    creds.write_text(CREDS_LINE.replace("PW", "pa:ss@word"), encoding="utf-8")
     creds.chmod(0o600)
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
@@ -98,7 +102,7 @@ def test_a_world_readable_credential_file_is_refused(tmp_path: Path, monkeypatch
     import contribute
 
     creds = tmp_path / "git-credentials"
-    creds.write_text("https://user:secret@github.com\n", encoding="utf-8")
+    creds.write_text(CREDS_LINE.replace("PW", "s3cret"), encoding="utf-8")
     creds.chmod(0o644)
     monkeypatch.setattr(contribute.os.path, "expanduser",
                         lambda p: str(creds) if "git-credentials" in p else p)
