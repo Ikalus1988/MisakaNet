@@ -67,7 +67,19 @@ def _load_config_from_yaml() -> Optional[dict]:
         if yaml is not None:
             data = yaml.safe_load(CONFIG_FILE.read_text(encoding="utf-8"))
             section = data.get("search") if isinstance(data, dict) else None
-            return section if isinstance(section, dict) and section else None
+            if not isinstance(section, dict) or not section:
+                return None
+            # Values stay strings and nesting stays flat: that is the shape the hand parser produced
+            # and the callers cast from it. The win is that quoting, comments and values containing
+            # ":" are now handled by a real parser instead of line surgery.
+            flattened = {}
+            for key, value in section.items():
+                if isinstance(value, dict):
+                    for inner_key, inner_value in value.items():
+                        flattened[f"{key}_{inner_key}"] = str(inner_value)
+                else:
+                    flattened[str(key)] = str(value)
+            return flattened
         # Fallback: simple YAML-like parser for the search section (no pyyaml available)
         text = CONFIG_FILE.read_text(encoding="utf-8")
         in_search = False

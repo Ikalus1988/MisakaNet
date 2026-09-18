@@ -75,8 +75,10 @@ def test_search_config_uses_pyyaml_when_it_is_installed(tmp_path: Path, monkeypa
     loaded = search_config._load_config_from_yaml()
     assert loaded is not None, "the search section must be found"
     assert loaded.get("lang") == "zh", loaded
-    # The nested key is the part the old parser dropped entirely.
-    assert "bm25" in loaded, loaded
+    # Nesting is the part the old parser dropped entirely; the loader flattens it to the flat
+    # `key_subkey` shape its callers already cast from (that contract is pinned in
+    # tests/test_search_config.py, which is why this asserts the flattened key and not `bm25`).
+    assert loaded.get("bm25_weight") == "0.5", loaded
 
 
 def test_contribute_reads_the_password_without_a_regex(tmp_path: Path, monkeypatch):
