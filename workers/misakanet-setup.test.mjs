@@ -1934,3 +1934,62 @@ test('a failed registration says what it costs, not just that it failed', () => 
   assert.match(result.stdout, /5 次/, result.stdout);
   assert.doesNotMatch(result.stdout, /凭据形状不对/, 'that phrase is jargon');
 });
+
+// ── permission tiers (2026-09-18) ─────────────────────────────────────────────────────────
+// Issue #1753 hit the real cost of one-command-installs-everything: a machine whose operator must
+// approve changes to `~/.hermes/SOUL.md` could only answer "no", so we got a T2 report and no T1.
+// The installer now says which tier each write belongs to, and can be asked for tier ① alone.
+test('--mcp-only registers the endpoint and touches nothing behavioural', () => {
+  const home = makeHome({
+    claude: true, codex: false,
+  });
+  mkdirSync(join(home, '.hermes'), { recursive: true });
+  writeFileSync(join(home, '.hermes', 'config.yaml'), 'model: x\n');
+  const settingsBefore = readFileSync(join(home, '.claude', 'settings.json'), 'utf8');
+
+  const result = runOffline(home, '--mcp-only', '--only', 'claude,hermes');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+
+  // ① happened: both agents have the endpoint.
+  const claude = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
+  assert.equal(claude.mcpServers.misakanet.url, 'https://misakanet.org/mcp');
+  assert.ok(readFileSync(join(home, '.hermes', 'config.yaml'), 'utf8').includes('misakanet'),
+    'the hermes MCP entry is tier ① and must still be written');
+
+  // ② did not: no rules block anywhere, and the identity file was not created.
+  assert.ok(!existsSync(join(home, '.claude', 'CLAUDE.md')), 'tier ② must not run');
+  assert.ok(!existsSync(join(home, '.hermes', 'SOUL.md')),
+    'tier ② must not touch the agent identity file');
+  assert.equal(readFileSync(join(home, '.claude', 'settings.json'), 'utf8'), settingsBefore,
+    'tier ③ (hooks + tool grants) lives here and must be untouched');
+
+  // ③ did not: no hook, no version stamp.
+  assert.ok(!existsSync(join(home, '.misakanet-agent', 'hook.mjs')), 'tier ③ must not run');
+  assert.ok(!existsSync(join(home, '.misakanet-agent', 'version')), 'tier ③ must not run');
+  assert.match(result.stdout, /--mcp-only/, 'the run must say what it did not do');
+});
+
+test('--list-writes shows every write with its tier and writes nothing', () => {
+  const home = makeHome();
+  const before = snapshot(home);
+  const result = runOffline(home, '--list-writes', '--only', 'claude');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.deepEqual(snapshot(home), before, '--list-writes must be a pure read');
+
+  const rows = result.stdout.split('\n').filter((l) => l.startsWith('tier'));
+  assert.ok(rows.length >= 3, `expected a manifest, got:\n${result.stdout}`);
+  const tiers = new Set(rows.map((r) => r.split('\t')[0]));
+  assert.deepEqual([...tiers].sort(), ['tier1', 'tier2', 'tier3'],
+    'a manifest that hides the tiers is not something an operator can approve');
+  assert.match(result.stdout, /① 注册 MCP 端点/);
+  assert.match(result.stdout, /--mcp-only/, 'it must name the way to request less');
+});
+
+test('--list-writes --mcp-only asks for tier ① only', () => {
+  const home = makeHome();
+  const result = runOffline(home, '--list-writes', '--mcp-only', '--only', 'claude');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  const rows = result.stdout.split('\n').filter((l) => l.startsWith('tier'));
+  assert.ok(rows.length, result.stdout);
+  assert.ok(rows.every((r) => r.startsWith('tier1')), `only tier ① may be requested:\n${rows.join('\n')}`);
+});
