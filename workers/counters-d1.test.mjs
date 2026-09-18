@@ -109,7 +109,7 @@ test('with D1 bound the 5/day quota holds and no KV key is written', async () =>
     assert.equal(result.error, undefined, `read ${i} must succeed: ${JSON.stringify(result)}`);
   }
   const sixth = await readResult(env, '203.0.113.7');
-  assert.match(String(sixth.error || ''), /Rate limit: 5 free searches per day exceeded/);
+  assert.match(String(sixth.error || ''), /5 free reads per day \(searches and lesson reads share one quota\)/);
   assert.match(String(sixth.hint || ''), /misakanet_register/);
   assert.equal(env.kvWrites.filter((key) => key.startsWith('rate:')).length, 0,
     `D1 counters must not create per-IP KV keys, saw: ${env.kvWrites.join(', ')}`);

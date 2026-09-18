@@ -95,7 +95,7 @@ test('anonymous reads share a 5/day/IP quota across search and get_lesson', asyn
   const resp = await mcpCall('misakanet_search', { query: 'pip timeout' }, {}, env);
   assert.equal(resp.status, 200);
   const result = await resultText(resp);
-  assert.match(result.error, /Rate limit: 5 free searches per day exceeded/);
+  assert.match(result.error, /5 free reads per day \(searches and lesson reads share one quota\)/);
   assert.match(result.hint, /misakanet_register/);
 });
 

@@ -580,7 +580,7 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // file into a request header, which is CodeQL js/file-access-to-http #268 all over again.
   const declared = JSON.parse(
     readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
-  assert.equal(declared, '0.5.4', 'bump this test when the package version moves');
+  assert.equal(declared, '0.5.5', 'bump this test when the package version moves');
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.
@@ -874,7 +874,7 @@ test('a rate-limited search answer is not reported as an unreachable endpoint', 
       seen.push(payload.method);
       const result = payload.method === 'tools/list'
         ? { tools: [{ name: 'misakanet_search' }] }
-        : { error: 'Rate limit: 5 free searches per day exceeded', hint: 'misakanet_register' };
+        : { error: 'Rate limit: 5 free reads per day (searches and lesson reads share one quota) exceeded', hint: 'misakanet_register' };
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
         content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } }));

@@ -128,7 +128,7 @@ function readText(path) {
  * meant to prevent is now caught in CI instead, by a test that binds this literal to the
  * manifest — a failing test is a better place for that than a request header.
  */
-const VERSION = '0.5.4'
+const VERSION = '0.5.5'
 
 // ── argument surface ─────────────────────────────────────────────────
 // Until 2026-09-17 no flag was validated at all: `--help` fell through to a *real install*
