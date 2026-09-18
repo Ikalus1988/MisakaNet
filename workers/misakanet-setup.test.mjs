@@ -1945,7 +1945,7 @@ test('--mcp-only registers the endpoint and touches nothing behavioural', () => 
   });
   mkdirSync(join(home, '.hermes'), { recursive: true });
   writeFileSync(join(home, '.hermes', 'config.yaml'), 'model: x\n');
-  const settingsBefore = readFileSync(join(home, '.claude', 'settings.json'), 'utf8');
+  const settingsBefore = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8'));
 
   const result = runOffline(home, '--mcp-only', '--only', 'claude,hermes');
   assert.equal(result.status, 0, result.stdout + result.stderr);
@@ -1960,8 +1960,12 @@ test('--mcp-only registers the endpoint and touches nothing behavioural', () => 
   assert.ok(!existsSync(join(home, '.claude', 'CLAUDE.md')), 'tier ② must not run');
   assert.ok(!existsSync(join(home, '.hermes', 'SOUL.md')),
     'tier ② must not touch the agent identity file');
-  assert.equal(readFileSync(join(home, '.claude', 'settings.json'), 'utf8'), settingsBefore,
-    'tier ③ (hooks + tool grants) lives here and must be untouched');
+  // `settings.json` holds both the read-only grants (tier ①, so the tool can actually be called)
+  // and the hooks (tier ③). Only the hooks must be missing here.
+  const settingsAfter = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8'));
+  assert.deepEqual(settingsAfter.hooks, settingsBefore.hooks, 'tier ③ hooks must not be written');
+  assert.equal(settingsAfter.permissions.allow.length, 5,
+    'the read-only grants belong to tier ①: without them the first search is denied');
 
   // ③ did not: no hook, no version stamp.
   assert.ok(!existsSync(join(home, '.misakanet-agent', 'hook.mjs')), 'tier ③ must not run');
@@ -1992,4 +1996,31 @@ test('--list-writes --mcp-only asks for tier ① only', () => {
   const rows = result.stdout.split('\n').filter((l) => l.startsWith('tier'));
   assert.ok(rows.length, result.stdout);
   assert.ok(rows.every((r) => r.startsWith('tier1')), `only tier ① may be requested:\n${rows.join('\n')}`);
+});
+
+test('--mcp-only says out loud that the agent will not search by itself', () => {
+  const home = makeHome();
+  const result = runOffline(home, '--mcp-only', '--only', 'claude');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  // Tier ① is a capability, not a behaviour: the rules block (②) and the hook-injected first-turn
+  // announcement (③) are what make an agent look things up on its own. Saying it only in the docs
+  // means the user who needs it most never reads it.
+  assert.match(result.stdout, /不会自己想到去查/, result.stdout);
+  assert.match(result.stdout, /去掉 --mcp-only/, 'it must name the way to get the full install');
+});
+
+test('--report tells "only tier ①" apart from "nothing installed"', () => {
+  const onlyMcp = makeHome();
+  runOffline(onlyMcp, '--mcp-only', '--only', 'claude');
+  const scoped = runOffline(onlyMcp, '--report', '--only', 'claude');
+  assert.match(scoped.stdout, /^install-scope: mcp-only$/m, scoped.stdout);
+
+  const untouched = makeHome();
+  const plain = runOffline(untouched, '--report', '--only', 'claude');
+  assert.match(plain.stdout, /^install-scope: none$/m, plain.stdout);
+
+  const full = makeHome();
+  runOffline(full, '--only', 'claude');
+  const fullReport = runOffline(full, '--report', '--only', 'claude');
+  assert.match(fullReport.stdout, /^install-scope: full$/m, fullReport.stdout);
 });
