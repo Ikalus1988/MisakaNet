@@ -21,6 +21,7 @@
  *   echo '{"session_id":"demo"}' | node checkpoint_reminder.mjs prompt
  */
 import { writeFileSync, mkdirSync, renameSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 
@@ -69,11 +70,20 @@ function parsePayload(raw) {
 }
 
 function sessionKey(payload) {
+  // An explicit key wins: the same value the strategy below would derive, but chosen by the user or
+  // by an agent that knows its own conversation boundaries.
+  const pinned = (process.env.MISAKANET_SESSION_KEY || '').trim();
+  if (pinned) return pinned.slice(0, 64);
   for (const key of ['session_id', 'sessionId', 'session', 'thread_id', 'conversation_id']) {
     const value = payload[key];
     if (typeof value === 'string' && value.trim()) return value.trim().slice(0, 64);
   }
-  return 'default';
+  // No session id at all used to fall back to the single name `default`, so every agent on the
+  // machine that does not report one shared *one* turn counter: agent A's twentieth turn fired the
+  // checkpoint in agent B's session and B never saw its own reminder (2026-09-18 review, 意见 9).
+  // Deriving the key from the working directory keeps one counter per project, which is the closest
+  // thing to "this conversation" that a hook can see without an id — and it is stable across turns.
+  return `default-${createHash('sha1').update(process.cwd()).digest('hex').slice(0, 8)}`;
 }
 
 function statePath(session) {
@@ -277,7 +287,11 @@ function promptMode(payload) {
     '1) 挑出本会话真正值得复用的「失败→根因→修复→验证」；门槛：可泛化、有可跑判据、且先 ' +
     'misakanet_search 确认语料里没有重复（有就引用其 id，不要另写一篇）。\n' +
     '2) 脱敏：密钥/token/凭据 → <REDACTED>；人名/邮箱/真实域名/绝对家目录 → 泛化成 ~/project、example.com；' +
-    '不要粘会话转录或整段工具输出。\n' +
+    // The "内部业务细节抽象成结构性描述" clause is the Python hook's wording, which is the one that
+    // carries it (added 2026-09-14, `2af7a41df`). The two hooks had drifted here and nothing
+    // compared them; `tests/test_agent_autostart_parity.py` now does, and this line was its first
+    // find. The stronger clause wins: it is a redaction rule, and the weaker copy was the Node one.
+    '不要粘会话转录或整段工具输出；内部业务细节抽象成结构性描述。\n' +
     '3) 提交（无需 token）：misakanet_submit_intake(kind="missing_lesson", problem="## Problem\\n…\\n\\n' +
     '## Root Cause\\n…\\n\\n## Solution\\n…\\n\\n## Verification\\n…")；若这条其实是「问题」而非经验，' +
     '用 kind="question"；若确实不够泛化/价值不高 → 不提交。\n' +

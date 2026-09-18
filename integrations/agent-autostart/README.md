@@ -188,3 +188,29 @@ python3 integrations/agent-autostart/install_misakanet_agent.py --home /tmp/fake
 ```
 
 测试全部跑在临时 HOME 上，**不会**碰你真实的 agent 配置。
+
+## 这个 Python 安装器现在的定位（2026-09-18）
+
+**面向用户的安装入口是 npm 包**：`npx @misaka-net/misakanet-setup`。原因不是偏好，而是第一性原理：
+Claude Code / Codex 本身就是 Node 程序，所以机器上一定有 node；Python 不一定有。`npx` 还省掉了
+clone / `curl | sh` 这一步，并且能把钩子与语音素材打进 tarball（GitHub raw 被墙的机器上也能装）。
+
+本目录的 `install_misakanet_agent.py`（配合 `bootstrap.sh` / `bootstrap.ps1` /
+`install-misakanet-agent.bat`）是**legacy 通道**：它在美国之外还继续工作，但对它**不再承诺与 npm
+版本行为一致**。两条腿当前已经分叉的地方（都有实证，见
+`docs/maintainer/capability-inventory-new-user-2026-09-18.md` 与 2026-09-18 的评审）：
+
+| 行为 | npm 包 | 本目录的 Python 安装器 |
+|---|---|---|
+| Hermes 注册 | 自己写/删 `~/.hermes/config.yaml`（可自动回滚） | 调 `hermes mcp add`，卸载只打印手动指令 |
+| 备份策略 | `backup()` **保留第一份**（09-16 修） | 每次覆盖同名 `.misakanet.bak` |
+| 规则块删除 | `stripBlock` 字节精确回退 | 标记之间整段删除（块内用户手写内容会被带走） |
+| 只注册 token | 无（未检测到 agent 就不注册） | 无（同上） |
+
+**已经做到一致、并有门禁的部分**：两个钩子的输出。`tests/test_agent_autostart_parity.py` 会用同一批
+payload 分别跑 `checkpoint_reminder.py` 与 `checkpoint_reminder.mjs`，要求 **stdout 逐字节相同**
+（首轮播报、第 N 轮检查点、失败提醒三种模式），并校验三份规则文本（`prompt.md` 完整版 / 最小可用版 /
+npm 安装器内联的 `PROMPT_BLOCK`）都保留同样的硬约束。写这个测试的当天它就抓到一处真实漂移：
+Node 钩子的脱敏条款少了一句「内部业务细节抽象成结构性描述」，Python 有而 Node 没有——现在两边一致。
+
+新增功能请只加到 npm 包；本目录的安装器只接受**修复**（并且请顺手判断是否该改的是 npm 那条腿）。

@@ -35,6 +35,7 @@ Manual test (no agent needed):
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
@@ -90,11 +91,22 @@ def _read_payload() -> dict | None:
 
 
 def _session_key(payload: dict) -> str:
+    """Which turn counter this payload belongs to.
+
+    See the Node implementation for the reasoning; the two must agree, because the same user can have
+    one installer's hook on one machine and the other's on the next, and because
+    `tests/test_agent_autostart_parity.py` compares the state file each one writes.
+    """
+    pinned = os.environ.get("MISAKANET_SESSION_KEY", "").strip()
+    if pinned:
+        return pinned[:64]
     for key in ("session_id", "sessionId", "session", "thread_id", "conversation_id"):
         value = payload.get(key)
         if isinstance(value, str) and value.strip():
             return value.strip()[:64]
-    return "default"
+    # No id: `default` used to be shared by every agent on the machine (2026-09-18 review, 意见 9).
+    digest = hashlib.sha1(os.getcwd().encode("utf-8")).hexdigest()[:8]
+    return f"default-{digest}"
 
 
 def _state_path(session: str) -> Path:
