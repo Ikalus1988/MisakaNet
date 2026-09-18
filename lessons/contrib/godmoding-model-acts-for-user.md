@@ -1,6 +1,6 @@
 ---
 title: "LLM god-moding: model speaks or acts for the user in roleplay"
-domain: roleplay
+domain: roleplay-engine
 tags:
   - "godmoding"
   - "speaker-attribution"
