@@ -46,10 +46,20 @@ def _get_token() -> str | None:
     except Exception:
         pass
     try:
+        from urllib.parse import urlparse  # noqa: PLC0415 — only needed on this path
+
         cred_path = os.path.expanduser("~/.git-credentials")
-        with open(cred_path) as f:
-            creds = f.read().strip()
-        return creds.split("://")[1].split("@")[0].split(":")[1]
+        # The file is a credential store: refuse to read it if anyone else can. urllib.parse does
+        # the parsing because `split("://")[1].split("@")[0].split(":")[1]` breaks on a password
+        # containing ":" or a username containing "@" (2026-09-18 review, 意见 6).
+        mode = os.stat(cred_path).st_mode & 0o077
+        if mode:
+            print("  ⚠️ ~/.git-credentials 的权限不是 600，已跳过（改用 GITHUB_TOKEN 环境变量）")
+            return None
+        with open(cred_path, encoding="utf-8") as f:
+            first_line = next((line for line in f if line.strip()), "")
+        parsed = urlparse(first_line.strip())
+        return parsed.password or None
     except Exception:
         return None
 

@@ -54,7 +54,21 @@ def _load_config_from_yaml() -> Optional[dict]:
     if not CONFIG_FILE.exists():
         return None
     try:
-        # Simple YAML-like parser for search section (avoid pyyaml dependency)
+        # pyyaml when it is importable, the hand parser below only as a fallback.
+        #
+        # The comment here used to say "avoid pyyaml dependency" while `requirements.txt` and the
+        # `hub` extra both declare PyYAML>=6.0 — so the file was avoiding a dependency it already
+        # had, with a parser that cannot read nesting or values containing ":". The core install
+        # stays dependency-free: this import is guarded, and the fallback keeps working without it.
+        try:
+            import yaml  # noqa: PLC0415 — optional by design
+        except ImportError:
+            yaml = None
+        if yaml is not None:
+            data = yaml.safe_load(CONFIG_FILE.read_text(encoding="utf-8"))
+            section = data.get("search") if isinstance(data, dict) else None
+            return section if isinstance(section, dict) and section else None
+        # Fallback: simple YAML-like parser for the search section (no pyyaml available)
         text = CONFIG_FILE.read_text(encoding="utf-8")
         in_search = False
         config = {}

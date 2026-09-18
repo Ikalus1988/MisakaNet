@@ -86,10 +86,14 @@ def check_remote_endpoint(url: str = REMOTE_MCP_ENDPOINT) -> tuple[bool, str]:
     except (subprocess.TimeoutExpired, OSError) as e:
         return False, f"{url} unreachable ({e})"
     code = result.stdout.strip()
-    if result.returncode == 0 and code and code != "000":
+    # "not 000" was the old bar, and it called a 404 or a 500 "reachable" — a health check that
+    # passes when the endpoint does not exist. A reachable MCP endpoint answers; 2xx/3xx means it
+    # did, anything else is a finding (2026-09-18 review, 意见 8).
+    if result.returncode == 0 and code.isdigit() and 200 <= int(code) < 400:
         return True, f"{url} reachable (HTTP {code})"
     detail = (result.stderr or result.stdout or "").strip().splitlines()
-    return False, f"{url} unreachable" + (f" — {detail[-1]}" if detail else "")
+    where = f"HTTP {code}" if code else "no response"
+    return False, f"{url} unreachable ({where})" + (f" — {detail[-1]}" if detail else "")
 
 
 CHECKS = [check_wrangler_placeholders, check_misakanet_core, check_remote_endpoint]
