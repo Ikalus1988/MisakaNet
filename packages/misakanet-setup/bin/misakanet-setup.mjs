@@ -746,6 +746,18 @@ async function ensureIdentity() {
 }
 
 // ── per-agent install ────────────────────────────────────────────────
+/** Is our MCP entry already in this agent's config? (read-only; used by the report's scope line) */
+function mcpEntryPresent(agent) {
+  const text = {
+    claude: () => JSON.stringify(readJson(join(HOME, '.claude.json'), {})?.mcpServers?.misakanet || null),
+    codex: () => readText(join(HOME, '.codex', 'config.toml')),
+    hermes: () => readText(join(HOME, '.hermes', 'config.yaml')),
+    openclaw: () => readText(join(HOME, '.openclaw', 'openclaw.json')),
+    codewhale: () => readText(join(HOME, '.codewhale', 'mcp.json')),
+  }[agent]?.() || '';
+  return text.includes('misakanet') && text !== 'null';
+}
+
 function detect(agent) {
   const paths = {
     claude: ['.claude.json', '.claude'],
@@ -782,11 +794,24 @@ async function installClaude(hookPath, bearer) {
   else skip('Claude Code：规则块未写（--mcp-only：只注册端点）');
 
   if (MCP_ONLY) {
-    // Tier ① only: the endpoint is registered (above), the behaviour changes are not requested.
-    // `settings.json` is where the hooks *and* the read-only tool grants live, so leaving it alone
-    // is the honest reading of "only register the server" — the grants come with tier ③, which the
-    // operator can approve later by re-running without --mcp-only.
-    skip('Claude Code：钩子与工具放行未写（--mcp-only：只注册端点）');
+    // Tier ① = "the tool can be called", and that includes the read-only grants: the comment below
+    // says it plainly — without them the first search is *denied*, so an operator who approved
+    // "add an MCP server" would be shipping a tool their users cannot use. The grants are therefore
+    // tier ①. What tier ③ adds is the hooks, and those are not written here.
+    const settingsPath = join(HOME, '.claude', 'settings.json');
+    const settings = readJson(settingsPath, {}) || {};
+    const allow = ((settings.permissions = settings.permissions || {}).allow =
+      Array.isArray(settings.permissions.allow) ? settings.permissions.allow : []);
+    let changed = false;
+    for (const tool of CLAUDE_ALLOWED_TOOLS) {
+      if (!allow.includes(tool)) { allow.push(tool); changed = true; }
+    }
+    if (changed) {
+      backup(settingsPath);
+      writeText(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+    }
+    ok(`Claude Code：只读工具已放行（${CLAUDE_ALLOWED_TOOLS.length} 个${changed ? '' : '，无改动'}）`);
+    skip('Claude Code：自动沉淀钩子未装（--mcp-only：只注册端点与工具放行）');
     return;
   }
   if (!hookPath) {
@@ -1702,6 +1727,11 @@ function reportValues(allOk) {
     ['token', token ? 'present' : 'absent'],
     ['permissions', permissions],
     ['hook', existsSync(join(stateDir(), 'hook.mjs')) ? 'present' : 'absent'],
+    // `mcp-only` = the endpoint is registered but the hooks are not, which is a different machine
+    // from "nothing installed" and must not be counted as one (#1753's T1-lite rows).
+    ['install-scope', existsSync(join(stateDir(), 'hook.mjs'))
+      ? 'full'
+      : (AGENTS.some((agent) => detect(agent) && mcpEntryPresent(agent)) ? 'mcp-only' : 'none')],
     ['voice', voiceStatus()],
     ['open-items', manual.length],
     // Redacted here, once, so neither encoder can print an unredacted message by accident.
@@ -1817,7 +1847,14 @@ if (mode !== 'report' && !SILENT) {
 
 if (mode === 'uninstall') {
   uninstall();
-  say(render());
+  if (MCP_ONLY) {
+  // The honest failure mode of tier ①: the tool is callable, but nothing tells the agent (or the
+  // user) to call it — the rules block and the first-turn announcement live in tiers ②/③. Printed
+  // as a "manual step" so it survives --silent (a deployment log keeps the `!` lines).
+  need('只注册了端点：你的 agent 不会自己想到去查 —— 需要你自己说「先查 MisakaNet」，'
+    + '或者请运营方批准 ②③ 后重跑同一条命令（去掉 --mcp-only）');
+}
+say(render());
   if (!SILENT) {
     console.log('\n已移除本安装器写入的内容（规则块、MCP 注册、钩子、状态目录）。');
     console.log(`备份保留在 <被改过的文件>.misakanet.bak（例如 ${join(HOME, '.claude', 'CLAUDE.md')}.misakanet.bak）`
@@ -1922,7 +1959,9 @@ if (LIST_WRITES) {
     const base = basename(path);
     if (base === 'CLAUDE.md' || base === 'AGENTS.md' || base === 'SOUL.md') return 2;
     if (path.includes('.misakanet-agent')) return 3;               // our own state dir
-    if (base === 'settings.json' && path.includes('.claude')) return 3;  // hooks + tool grants
+    // `settings.json` carries both the read-only grants (①) and the hooks (③); the caller adds the
+    // second row only when the hooks are in scope.
+    if (base === 'settings.json' && path.includes('.claude')) return 1;
     return 1;                                                     // an MCP entry in the agent's config
   };
   const rows = new Map();
@@ -1934,6 +1973,9 @@ if (LIST_WRITES) {
     if (!detect(agent)) continue;
     for (const path of (AGENT_WRITE_PATHS[agent] || (() => []))(HOME)) {
       add(path, existsSync(path) ? 'append-or-update' : 'create', tierOf(path));
+      if (!MCP_ONLY && basename(path) === 'settings.json' && path.includes('.claude')) {
+        add(path, 'append-or-update（钩子）', 3);
+      }
     }
   }
   add(join(stateDir(), 'token'), 'create (0600)', 1);
@@ -2000,6 +2042,13 @@ try {
 // the exact failures in it on a dirty one — which is the point (#1784). The machine-readable form
 // of the same run is `--report-json`, not this text.
 say(render());
+if (MCP_ONLY && !SILENT) {
+  // The honest failure mode of tier ①, said where the user will read it: they are not installing a
+  // behaviour. The rules block (②) and the first-turn announcement, which is injected by the hook
+  // (③), are exactly what makes an agent look things up on its own.
+  console.log('\n⚠️ --mcp-only：只注册了端点与只读工具放行 —— **你的 agent 不会自己想到去查**。'
+    + '\n   需要你自己说「先查 MisakaNet」，或请运营方批准 ②③ 后重跑同一条命令（去掉 --mcp-only）。');
+}
 if (!SILENT) {
   console.log(`
 接下来：
