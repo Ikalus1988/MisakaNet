@@ -25,7 +25,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
-VERSION = "2.17.0"
+# Version of the *repository* this CLI is running from, kept equal to pyproject.toml by
+# `scripts/align_versions.py --check` (rule R8). It sat at 2.17.0 while the package was 2.30.2
+# — thirteen minor versions — because nothing read it: the 2026-09-18 review found the drift,
+# and the reason no gate caught it is the same one written up as 模式 10 in
+# docs/maintainer/architecture-cognition-defects-2026-09-18.md (a value with no owner).
+VERSION = "2.30.2"
 
 
 # ── doctor ────────────────────────────────────────────────────────

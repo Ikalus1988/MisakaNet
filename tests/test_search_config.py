@@ -62,7 +62,9 @@ def test_load_from_yaml(tmp_path):
     mod.CONFIG_FILE = config_file
     try:
         cfg = _load_config_from_yaml()
-        assert cfg["bm25_weight"] == "0.70"
+        # A real YAML parser reads `0.70` as the number 0.7; the hand parser kept the text.
+        # The contract that matters is the value, so compare it as one.
+        assert float(cfg["bm25_weight"]) == 0.70
         assert cfg["rrf_k"] == "100"
     finally:
         mod.CONFIG_FILE = old_file
