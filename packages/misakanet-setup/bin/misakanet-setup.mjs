@@ -39,7 +39,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFi
 // package.json since 0.4 and had never been executed on the version it names.
 import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
-import { delimiter, join, dirname, resolve } from 'node:path';
+import { basename, delimiter, join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -78,6 +78,25 @@ const valueOf = (flag, dflt) => {
 };
 const only = valueOf('--only', '').split(',').map((s) => s.trim()).filter(Boolean);
 const DRY = has('--dry-run');
+/**
+ * Permission tiers (2026-09-18).
+ *
+ * The installer does three different kinds of thing, and they do not need the same permission:
+ *
+ *   ① register an MCP endpoint        — the user's own agent config; the same privilege as adding
+ *                                       any MCP server;
+ *   ② write a rules block             — changes the agent's behaviour ("search before retrying"),
+ *                                       and for Hermes that means editing `~/.hermes/SOUL.md`, its
+ *                                       *identity* file;
+ *   ③ install hooks + state           — acts automatically on every turn.
+ *
+ * Asking for all three in one command is why a machine with an approval process can only answer
+ * "no" (issue #1753, 2026-09-18): an operator willing to approve ① has no way to say it. `--mcp-only`
+ * is that way to say it — ① only, and the run says so in its own report instead of looking partial.
+ */
+const MCP_ONLY = has('--mcp-only');
+const LIST_WRITES = has('--list-writes');
+
 /**
  * `--silent` (issue #1784): the enterprise/MDM form. A GPO or Intune script pipes this program's
  * stdout into a log file, where the ✓/· narration is noise (and names local paths).
@@ -148,6 +167,8 @@ const FLAGS = [
   ['--uninstall', '移除本安装器写入的内容（保留 .misakanet.bak 备份）'],
   ['--upgrade', '与安装等价（覆盖安装即升级）'],
   ['--client-id <id>', '固定本机身份：同一个 id 永远拿回同一个 node（重装/换机也能延续）'],
+  ['--mcp-only', '只注册 MCP 端点，不改 agent 行为（不写规则块、不装钩子）——权限分级用'],
+  ['--list-writes', '只打印会改哪些文件（文件 | 动作 | 撤销方式），不写任何东西'],
   ['--no-register', '不注册匿名节点（不写 token，检索仍是 5 次/天/IP）'],
   ['--voice', '打开语音/桌面通知（默认关）'],
   ['--help, -h', '打印这份帮助并退出'],
@@ -173,6 +194,9 @@ if (has('--version')) {
   console.log(VERSION);
   process.exit(0);
 }
+
+/** What we would write, and how to take it back — printed by --list-writes, and used by the report. */
+const WRITE_MANIFEST = [];
 
 const KNOWN = new Set(FLAGS.flatMap(([flag]) => flag.split(/[,\s]/).filter((f) => f.startsWith('-'))));
 {
@@ -754,8 +778,17 @@ async function installClaude(hookPath, bearer) {
   }
 
   const rules = join(HOME, '.claude', 'CLAUDE.md');
-  ok(`Claude Code：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  if (!MCP_ONLY) ok(`Claude Code：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  else skip('Claude Code：规则块未写（--mcp-only：只注册端点）');
 
+  if (MCP_ONLY) {
+    // Tier ① only: the endpoint is registered (above), the behaviour changes are not requested.
+    // `settings.json` is where the hooks *and* the read-only tool grants live, so leaving it alone
+    // is the honest reading of "only register the server" — the grants come with tier ③, which the
+    // operator can approve later by re-running without --mcp-only.
+    skip('Claude Code：钩子与工具放行未写（--mcp-only：只注册端点）');
+    return;
+  }
   if (!hookPath) {
     need('Claude Code：跳过了"自动沉淀"钩子（钩子文件没取到）');
     return;
@@ -909,7 +942,8 @@ async function installCodex(hookPath, bearer) {
   }
 
   const rules = join(HOME, '.codex', 'AGENTS.md');
-  ok(`Codex：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  if (!MCP_ONLY) ok(`Codex：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  else skip('Codex：规则块未写（--mcp-only：只注册端点）');
   // Verified on codex-cli 0.154.0 (2026-09-15), so this is no longer a "could not
   // confirm" note: `codex mcp list` shows misakanet enabled with the Bearer token,
   // `codex doctor` reports config.toml parse ok + 1 streamable_http server + 0
@@ -1036,7 +1070,8 @@ async function installHermes(hookPath, bearer) {
     need('Hermes：找不到 ~/.hermes/config.yaml → 先运行一次 hermes 再回来装');
     return;
   }
-  ok(`Hermes：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  if (!MCP_ONLY) ok(`Hermes：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  else skip('Hermes：规则块未写（--mcp-only：只注册端点；SOUL.md 是它的人格文件）');
 
   const envKey = HERMES_ENV_KEY;
   const lines = [`  misakanet:  ${YAML_START}`, `    url: ${ENDPOINT}`];
@@ -1166,7 +1201,9 @@ async function installCodewhale(bearer) {
   const projects = codewhaleProjects();
   for (const project of projects) {
     if (!existsSync(project)) continue;
-    ok(`codewhale：规则块 ${injectBlock(join(project, 'AGENTS.md'), PROMPT_BLOCK)} → ${join(project, 'AGENTS.md')}`);
+    if (!MCP_ONLY) {
+      ok(`codewhale：规则块 ${injectBlock(join(project, 'AGENTS.md'), PROMPT_BLOCK)} → ${join(project, 'AGENTS.md')}`);
+    } else skip('codewhale：规则块未写（--mcp-only）');
   }
   if (!projects.length) {
     need('codewhale：没有受信任的项目目录（config.toml 里没有 trust_level = "trusted"）→ '
@@ -1183,7 +1220,8 @@ async function installOpenclaw(bearer) {
   if (!existsSync(workspace)) {
     need(`OpenClaw：找不到 workspace（${workspace}）→ 先运行一次 openclaw 生成它`);
   } else {
-    ok(`OpenClaw：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+    if (!MCP_ONLY) ok(`OpenClaw：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+    else skip('OpenClaw：规则块未写（--mcp-only）');
   }
 
   const cfg = join(HOME, '.openclaw', 'openclaw.json');
@@ -1866,12 +1904,65 @@ const targets = (only.length ? only : AGENTS).filter((a) => {
 let installed = 0;
 // Set when a stable client id was minted: shown to the user at the end (see ensureIdentity).
 let clientIdHint = '';
+/**
+ * `--list-writes`: the manifest an operator needs to approve, or to undo by hand.
+ *
+ * `--dry-run` already says which files it would touch; this adds the two things an approval process
+ * asks for — *what* each write does (new file / append a marked block / add a config key) and *how to
+ * take it back* — and it is machine-readable so a ticket can carry it.
+ */
+if (LIST_WRITES) {
+  // Every row carries its **tier**, which is the point: an operator approving "add an MCP server"
+  // (①) is not approving "change how the agent behaves" (② rules block, ③ automatic hooks). Files
+  // already exist → we append or update keys; missing → we create them.
+  // Compare base names, not separators: a `/settings.json$` regex silently classifies nothing on
+  // Windows (all three windows legs went red on the first CI run of this change), and a manifest
+  // that hides a tier is worse than no manifest.
+  const tierOf = (path) => {
+    const base = basename(path);
+    if (base === 'CLAUDE.md' || base === 'AGENTS.md' || base === 'SOUL.md') return 2;
+    if (path.includes('.misakanet-agent')) return 3;               // our own state dir
+    if (base === 'settings.json' && path.includes('.claude')) return 3;  // hooks + tool grants
+    return 1;                                                     // an MCP entry in the agent's config
+  };
+  const rows = new Map();
+  const add = (path, action, tier) => {
+    const key = `${tier}|${path}`;
+    if (!rows.has(key)) rows.set(key, { path: redact(path), action, tier });
+  };
+  for (const agent of AGENTS) {
+    if (!detect(agent)) continue;
+    for (const path of (AGENT_WRITE_PATHS[agent] || (() => []))(HOME)) {
+      add(path, existsSync(path) ? 'append-or-update' : 'create', tierOf(path));
+    }
+  }
+  add(join(stateDir(), 'token'), 'create (0600)', 1);
+  if (!MCP_ONLY) add(join(stateDir(), 'hook.mjs'), 'create', 3);
+
+  const tiers = { 1: '① 注册 MCP 端点', 2: '② 写规则块（改行为）', 3: '③ 装钩子（每轮自动执行）' };
+  const list = [...rows.values()].filter((row) => (MCP_ONLY ? row.tier === 1 : true))
+    .sort((a, b) => a.tier - b.tier || a.path.localeCompare(b.path));
+  for (const row of list) {
+    console.log(`tier${row.tier}\t${tiers[row.tier]}\t${row.path}\t${row.action}`);
+  }
+  const shown = new Set(list.map((row) => row.tier));
+  if (MCP_ONLY) {
+    console.log('# --mcp-only：只申请 ①。规则块（②）与钩子（③）不会写入，'
+      + '需要时由运营方另行批准后重跑不带 --mcp-only 的同一条命令。');
+  } else {
+    console.log(`# 本次申请 ${shown.size} 级权限（${[...shown].sort().map((t) => tiers[t]).join(' · ')}）；`
+      + '只想批 ① 就加 --mcp-only。');
+  }
+  console.log('# 这次没有写任何东西。撤销：npx @misaka-net/misakanet-setup --uninstall');
+  process.exit(0);
+}
+
 try {
   if (!targets.length) {
     need('没检测到 Claude Code / Codex / Hermes 的配置目录 → 请先打开一次你要用的那个助手，再回来运行本命令');
   } else {
-    const hookPath = await installHook();
-    stampVersion();
+    const hookPath = MCP_ONLY ? null : await installHook();
+    if (!MCP_ONLY) stampVersion();
     const bearer = has('--no-register') ? '' : await ensureIdentity();
     for (const agent of targets) {
       // One target failing must not skip the rest: an uncaught throw used to abort the loop, so
