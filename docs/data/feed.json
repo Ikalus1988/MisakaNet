@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-18T04:53:43.966801+00:00",
+  "generated_at": "2026-09-18T11:28:01.549168+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(setup): derive the e2e stub token at runtime, so it stops looking like a credential (#276)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1832",
-      "timestamp": "2026-09-18T04:36:31Z",
+      "title": "feat(setup): ask for permission in tiers, and show the manifest before writing anything",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1843",
+      "timestamp": "2026-09-18T10:06:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(autostart): the live findings of the 2026-09-18 review, plus a parity gate that found a fifth",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1831",
-      "timestamp": "2026-09-18T01:45:26Z",
+      "title": "fix(misaka-run): search for the error, not for the command line",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1837",
+      "timestamp": "2026-09-18T08:37:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ci(setup): make the packaged e2e compound at release time, and close the two gaps in its check list",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1828",
-      "timestamp": "2026-09-17T19:34:38Z",
+      "title": "fix(doctor): probe the MCP handshake, so the self-check is green on a healthy endpoint",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1836",
+      "timestamp": "2026-09-18T08:21:14Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(bounty): runnable, self-checking task fixtures for the #1819 measurement",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1824",
-      "timestamp": "2026-09-17T19:05:01Z",
+      "title": "fix(python): the four silent defects the 2026-09-18 Python-channel review found",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1834",
+      "timestamp": "2026-09-18T08:14:24Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(setup): give the config back on uninstall, and test the packaged tarball in CI",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1818",
-      "timestamp": "2026-09-17T18:39:16Z",
+      "title": "fix(service): make the endpoint's self-report true, and release the installer as 0.5.5",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1833",
+      "timestamp": "2026-09-18T05:01:49Z",
       "source": "github"
     },
     {
