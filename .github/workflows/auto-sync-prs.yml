@@ -88,7 +88,12 @@ jobs:
             # Attempt merge
             git fetch origin "$HEAD_REF"
             if git checkout "$HEAD_REF" 2>/dev/null; then
-              if git merge origin/main --no-edit 2>&1; then
+              # `--signoff`: the merge commit this job creates lands on someone else's branch, and
+              # this repository's DCO gate requires a `Signed-off-by:` on every commit — so a sync
+              # without it turns the contributor's PR red for a commit they did not write. Measured on
+              # #1879 (2026-09-19): the synced head's `DCO Check` failed, on a merge commit authored by
+              # this job.
+              if git merge --signoff origin/main --no-edit 2>&1; then
                 # `--force-with-lease`-free by design: this is a merge commit on top of the branch,
                 # so a fast-forward. With no persisted credentials in the checkout, this header is the
                 # only Authorization the push carries.
