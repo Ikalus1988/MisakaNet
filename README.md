@@ -49,7 +49,7 @@ npx @misaka-net/misakanet-setup
 
 | 层 | 是什么 | 缺了它会怎样 |
 |---|---|---|
-| **① 服务** | `https://misakanet.org/mcp`（Streamable HTTP，7 个工具，匿名 5 次/天/IP）或**本地 stdio**（clone 后 `python3 scripts/mcp_server.py`，无限额）| 没有可查的地方 |
+| **① 服务** | `https://misakanet.org/mcp`（Streamable HTTP，7 个工具，匿名**不限次数**，只有反爬突发保护）或**本地 stdio**（clone 后 `python3 scripts/mcp_server.py`，无限额）| 没有可查的地方 |
 | **② 接入** | `npx @misaka-net/misakanet-setup`：把服务写进每个助手**自己的**配置文件（Claude Code / Codex / Hermes / OpenClaw / codewhale 各一套）| 你得自己知道 5 种配置文件分别怎么写 |
 | **③ 触发** | 规则块（「遇到报错先查经验库」）+ 检查点钩子（约 20 轮提醒沉淀）+ 14 天升级提示 | **端点在，但没有任何人会去调用它** |
 

@@ -52,8 +52,22 @@ const TRUST_NOTICE =
  * at one site and "5 free reads" at the other two — so a user who read two of them could reasonably
  * conclude they had 10 (issue #1822; measurements in the 2026-09-18 capability inventory).
  */
-const ANON_QUOTA_MESSAGE =
-  "Rate limit: 5 free reads per day (searches and lesson reads share one quota) exceeded";
+/**
+ * Anti-crawler, not a paywall (2026-09-18 policy decision).
+ *
+ * Anonymous reads are **unlimited**: the daily cap was removed because it gated the product's core
+ * value on handing over an identity, and because a shared NAT (office, campus, carrier) burned the
+ * whole office's budget in minutes. What is left is burst protection — one client cannot hammer the
+ * index — which needs no account either.
+ *
+ * This message is deliberately about *speed*, not about a quota: "register to get more" would be a
+ * lie now, and a reader who is told they hit a limit they cannot see will go looking for one.
+ */
+const READ_BURST_WINDOW_SECONDS = 60;
+const READ_BURST_LIMIT = Number(globalThis.MISAKANET_READ_BURST_LIMIT || 20);
+const READ_BURST_MESSAGE =
+  `Too many requests: max ${READ_BURST_LIMIT} reads per ${READ_BURST_WINDOW_SECONDS}s from one address. `
+  + "Reads are unlimited — this is only a speed limit. Slow down and retry; no account needed.";
 
 // L4 (docs/agents/content-injection-defense.md): anonymous intake arrives from
 // strangers, and its text ends up in an issue that a maintainer agent will read —
@@ -210,7 +224,7 @@ function addDebugContext(env, errorObj, context) {
 const MCP_TOOLS = [
   {
     name: "misakanet_register",
-    description: "[ONBOARDING] Get a Bearer token for authenticated access (unlocks misakanet_write_lesson and higher rate limits). Reading needs no registration: misakanet_search / misakanet_get_lesson work anonymously (5/day per IP). No GitHub account or email needed, and no personal data is collected — the node is a pseudonym, not an account.\nToken lifetime: valid ~30 days. Pass client_id (a stable id you generate once, e.g. a UUID, workspace id or hostname) to get the SAME node_id and token back on every later call and to renew them; without client_id every call creates a new node, which means your reuse evidence, receipts and history start over.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string, reused?: boolean} — reused=true means an existing node was found for this client_id.\nExample: misakanet_register(agent_type='claude-code', client_id='8f14e45f-2b1c-4f3a-9d2e-7c6b5a4d3e2f')",
+    description: "[ONBOARDING] Get a Bearer token for authenticated access (unlocks misakanet_write_lesson and higher rate limits). Reading needs no registration and has no daily cap: misakanet_search / misakanet_get_lesson work anonymously (a per-address burst limit protects the index; it is a speed limit, not a quota). No GitHub account or email needed, and no personal data is collected — the node is a pseudonym, not an account.\nToken lifetime: valid ~30 days. Pass client_id (a stable id you generate once, e.g. a UUID, workspace id or hostname) to get the SAME node_id and token back on every later call and to renew them; without client_id every call creates a new node, which means your reuse evidence, receipts and history start over.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string, reused?: boolean} — reused=true means an existing node was found for this client_id.\nExample: misakanet_register(agent_type='claude-code', client_id='8f14e45f-2b1c-4f3a-9d2e-7c6b5a4d3e2f')",
     inputSchema: {
       type: "object",
       properties: {
@@ -1693,6 +1707,17 @@ async function bumpCounter(env, scope, bucket, period, delta = 1) {
  * and the boundary is unchanged (the 5th read succeeds, the 6th is refused). A storage
  * failure returns null (fail open): a counter problem must not block reads.
  */
+/**
+ * The burst window key: one bucket per address per minute.
+ *
+ * Colon-free on purpose: the KV fallback builds its key as `${scope}:${bucket}:${period}`, so a period
+ * containing `:` makes the key ambiguous to anything that parses it back (`counters-d1.test.mjs` caught
+ * exactly that — its rollback assertion could no longer read the key it had written).
+ */
+function readBurstPeriod(now = new Date()) {
+  return `burst-${now.toISOString().slice(0, 16).replace(':', '-')}`;
+}
+
 async function consumeQuota(env, { scope, bucket, period, limit, message, hint }) {
   const count = await bumpCounter(env, scope, bucket, period, 1);
   if (count !== null && count > limit) {
@@ -1950,7 +1975,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         error: ERROR_CODES.storage_unavailable,
         code: "storage_unavailable",
         storage: { node: nodeStored, token: tokenStored },
-        hint: "Anonymous misakanet_search / misakanet_get_lesson still work (5/day per IP).",
+        hint: "Anonymous misakanet_search / misakanet_get_lesson still work, with no daily cap.",
       };
     }
 
@@ -2055,12 +2080,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // callers have an empty token here (auth failures never reach this point).
     if (!authToken) {
       const ip = clientIp || "unknown";
-      const today = new Date().toISOString().slice(0, 10);
-      // D1 counter when bound (see consumeQuota): no per-IP KV key, atomic increment.
+      // Burst window, not a daily cap (2026-09-18): reuse the same D1 counter with a minute key, so
+      // this needs no new storage and stays atomic across isolates.
       const refusal = await consumeQuota(env, {
-        scope: "rate_read", bucket: ip, period: today, limit: 5,
-        message: ANON_QUOTA_MESSAGE,
-        hint: "Register to get unlimited access: misakanet_register",
+        scope: "rate_read", bucket: ip, period: readBurstPeriod(), limit: READ_BURST_LIMIT,
+        message: READ_BURST_MESSAGE,
+        hint: `retry after up to ${READ_BURST_WINDOW_SECONDS}s; no registration needed`,
       });
       if (refusal) return { ...refusal, voice: "failure-warning" };
     }
@@ -2247,14 +2272,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
   }
 
   if (toolName === "misakanet_get_lesson") {
-    // Same anonymous read quota as search (shared 5/day/IP counter).
+    // Same anonymous read burst window as search (one counter, per address per minute).
     if (!authToken) {
       const ip = clientIp || "unknown";
-      const today = new Date().toISOString().slice(0, 10);
       const refusal = await consumeQuota(env, {
-        scope: "rate_read", bucket: ip, period: today, limit: 5,
-        message: ANON_QUOTA_MESSAGE,
-        hint: "Register to get unlimited access: misakanet_register",
+        scope: "rate_read", bucket: ip, period: readBurstPeriod(), limit: READ_BURST_LIMIT,
+        message: READ_BURST_MESSAGE,
+        hint: `retry after up to ${READ_BURST_WINDOW_SECONDS}s; no registration needed`,
       });
       if (refusal) return refusal;
     }
@@ -2295,14 +2319,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
   // signals for a lesson: helpful votes, regression-benchmark citations,
   // cross-node confirmation. Turns "self-reported E4" into queryable facts.
   if (toolName === "misakanet_me_events") {
-    // Same anonymous read quota as search/get_lesson (shared 5/day/IP counter).
+    // Same anonymous read burst window as search/get_lesson (one counter per address per minute).
     if (!authToken) {
       const ip = clientIp || "unknown";
-      const today = new Date().toISOString().slice(0, 10);
       const refusal = await consumeQuota(env, {
-        scope: "rate_read", bucket: ip, period: today, limit: 5,
-        message: ANON_QUOTA_MESSAGE,
-        hint: "Register to get unlimited access: misakanet_register",
+        scope: "rate_read", bucket: ip, period: readBurstPeriod(), limit: READ_BURST_LIMIT,
+        message: READ_BURST_MESSAGE,
+        hint: `retry after up to ${READ_BURST_WINDOW_SECONDS}s; no registration needed`,
       });
       if (refusal) return refusal;
     }
