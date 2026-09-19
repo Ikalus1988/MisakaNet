@@ -53,16 +53,22 @@ Standard release process. Do not skip steps.
 
 9. **Wait for Glama auto-sync** — no manual action needed
 
-10. **MCP Registry — best-effort only**
-    - Requires `mcp-publisher.exe login github` (device code flow)
-    - Requires direct HTTPS to `registry.modelcontextprotocol.io:443`
-    - Unreliable in restricted networks (proxy, firewall)
-    - **Do not delay release for MCP Registry**
-    - Retry manually when network is available:
+10. **MCP Registry — automatic (since 2026-09-19, #1820)**
+    - `.github/workflows/publish-mcp-registry.yml` runs after every release: `release-please.yml`
+      dispatches it once it has tagged, passing the version it just tagged.
+    - Identity is the repository itself (`mcp-publisher login github-oidc`) — no stored secret, no
+      device code to babysit. The workflow validates `server.json`, refuses a version mismatch,
+      publishes, and then **reads the registry back**: it fails unless `isLatest` is the version it
+      published.
+    - Manual republish, for when the listing has drifted anyway (escape hatch, not the plan):
       ```bash
-      .\mcp-publisher.exe login github
-      .\mcp-publisher.exe publish
+      gh workflow run publish-mcp-registry.yml --ref main -f "version=2.31.0"
       ```
+    - **Why this is no longer a maintainer's manual step:** the listing had drifted to
+      `isLatest = 2.29.0` while the repo, PyPI and the GitHub release were all at 2.30.2. The device
+      flow also cannot be completed from a sandboxed agent environment at all: `github.com` is
+      unreachable there (measured 2026-09-19 — HTTP 000 after 15s) while the registry is reachable,
+      so "retry when the network is available" was never going to happen from inside one.
 
 ## Do NOT update for routine releases
 

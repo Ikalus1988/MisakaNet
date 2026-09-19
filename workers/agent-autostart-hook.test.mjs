@@ -11,9 +11,13 @@ import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const HOOK = resolve(import.meta.dirname, '..', 'integrations', 'agent-autostart', 'checkpoint_reminder.mjs');
+// `fileURLToPath(import.meta.url)`, not `import.meta.dirname`: this suite runs on the Node 18 leg of
+// the setup matrix (the hook ships inside the npm tarball, and `engines` promises >=18), and a test
+// file that needs Node 20.11 just to *load* would hide an 18-incompatibility instead of reporting it.
+const HOOK = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'integrations', 'agent-autostart', 'checkpoint_reminder.mjs');
 
 function runHook(payload, mode = 'prompt', env = {}) {
   const state = env.MISAKANET_HOOK_STATE || mkdtempSync(join(tmpdir(), 'mn-hook-'));
@@ -189,7 +193,7 @@ test('the interval is configurable, and upgrading resets the clock', () => {
 // Since issue #1785 the hook routes a cue to a *sound and/or a desktop notification*, so the
 // dry-run output is no longer just the cue name: line 1 is still the cue (that is what the
 // first two tests pin), lines 2-3 report the sound and the notification.
-const VOICE_HOOK = resolve(import.meta.dirname, '..', 'integrations', 'agent-autostart', 'voice_hook.mjs');
+const VOICE_HOOK = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'integrations', 'agent-autostart', 'voice_hook.mjs');
 
 function voiceDir() {
   const dir = mkdtempSync(join(tmpdir(), 'mn-voice-'));
@@ -300,9 +304,41 @@ const isNotifierCall = (line) =>
  *  toast from a sound: the argv has to. Everything that is not a toast is the sound. */
 const isPlayerCall = (line) => !isNotifierCall(line);
 
+/**
+ * The notification/voice assertions observe the hook by putting stub *shell scripts* on PATH
+ * (`stubBin()` writes `#!/bin/sh` files). On Windows the hook reaches for `powershell.exe`, and
+ * Windows cannot execute a `#!/bin/sh` file named `powershell.exe` — CreateProcess needs a real PE
+ * image — so those assertions have nothing to observe and fail on their counters (`0 !== 1`), not
+ * on a product error. Found 2026-09-18, the first time this suite ran on Windows
+ * (misakanet-setup-ci.yml); the coverage gap is recorded in the capability inventory.
+ */
+const POSIX_STUB_ONLY = process.platform === 'win32'
+  ? 'needs a shell-script stub on PATH, which Windows cannot execute (the hook uses powershell.exe)'
+  : false;
+
 /** Spawned children are detached and outlive the hook, so nothing is observable the very
  *  instant `spawnSync` returns. Give the stubs a moment before asserting on the log. */
-const settle = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ * Wait for the detached player/notifier children to write the stub log — and then a short grace
+ * window so a *duplicate* still has time to appear before the count is asserted.
+ *
+ * A fixed 500 ms sleep was the whole wait, which made these assertions a race against the runner:
+ * `unit (macos-latest, node 22)` failed once with `0 !== 1` on 2026-09-18 while the other eight legs
+ * passed — the child had not started yet, not misbehaved. That is the expensive kind of gate: a red
+ * nobody can act on (see `docs/maintainer/architecture-cognition-defects-2026-09-18.md`, 模式 9).
+ * `until` is a predicate over the recorded calls: the wait ends when the calls the assertion is
+ * about have arrived, and the grace window afterwards is what keeps "exactly one notification"
+ * meaningful. Waiting on a *total* count would be worse than useless here — after the first run the
+ * total is already large, so a later step would not wait at all.
+ */
+const settle = async ({ until = null, log = '', timeoutMs = 15000, graceMs = 500 } = {}) => {
+  const ready = () => (until ? until(stubCalls(log)) : true);
+  const deadline = Date.now() + timeoutMs;
+  while (!ready() && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  await new Promise((resolve) => setTimeout(resolve, graceMs));
+};
 
 /**
  * PATH pointing at the stub directory and *nothing else*.
@@ -395,15 +431,16 @@ test('a hostile cue reaches no binary at all (the cue is only ever a table key)'
   assert.deepEqual(readdirSync(state), [], 'and no state file may be written either');
 });
 
-test('MISAKANET_NOTIFY=0 turns off the notification only', async () => {
+test('MISAKANET_NOTIFY=0 turns off the notification only', { skip: POSIX_STUB_ONLY }, async () => {
   const bin = stubBin();
   const state = mkdtempSync(join(tmpdir(), 'mn-voice-state-'));
   const env = {
     ...stubPath(bin),
     MISAKANET_HOOK_STATE: state, MISAKANET_NOTIFY: '0',
   };
+  const mark = stubCalls(bin.log).length;
   assert.equal(runVoiceReal({ voice: 'lesson-found' }, env).status, 0);
-  await settle();
+  await settle({ until: (c) => c.length >= mark + 1, log: bin.log });
   const calls = stubCalls(bin.log);
   assert.equal(calls.filter(isPlayerCall).length, 1, 'the sound must still play');
   assert.equal(calls.filter(isNotifierCall).length, 0, 'but no notification may be sent');
@@ -439,7 +476,7 @@ test('a missing notification binary degrades silently', async () => {
   assert.equal(result.status, 0);
   assert.equal(result.stdout.trim(), '');
   assert.equal(result.stderr.trim(), '');
-  await settle();
+  await settle({ until: (c) => c.filter(isPlayerCall).length >= 1, log: bin.log });
   assert.equal(stubCalls(bin.log).filter(isNotifierCall).length, 0, 'nothing may try to notify');
 
   // Nothing at all on PATH: same silence, and still exit 0.
@@ -465,13 +502,17 @@ test('a dry run reports both kinds of action and executes neither', () => {
   assert.ok(!existsSync(join(state, 'voice-notified.json')), 'a dry run writes no state');
 });
 
-test('connect-success and pair-success notify once per install, sound every time', async () => {
+test('connect-success and pair-success notify once per install, sound every time', { skip: POSIX_STUB_ONLY }, async () => {
   const bin = stubBin();
   const state = mkdtempSync(join(tmpdir(), 'mn-voice-state-'));
   const env = { ...stubPath(bin), MISAKANET_HOOK_STATE: state };
 
+  // Each step waits for the calls *it* is about to count, measured as new lines since the step
+  // began: the sound and the toast are spawned independently, so a wait keyed to one of them can
+  // return while the other is still in flight (that is what made this a race on macOS).
+  let mark = stubCalls(bin.log).length;
   assert.equal(runVoiceReal({ voice: 'connect-success' }, env).status, 0);
-  await settle();
+  await settle({ until: (c) => c.length >= mark + 2, log: bin.log });   // sound + toast
   let calls = stubCalls(bin.log);
   assert.equal(calls.filter(isPlayerCall).length, 1);
   const firstToasts = calls.filter(isNotifierCall);
@@ -480,15 +521,17 @@ test('connect-success and pair-success notify once per install, sound every time
     `the toast must carry the table's text, whatever the platform: ${firstToasts[0]}`);
 
   // Same cue again: the sound repeats, the notification does not.
+  mark = stubCalls(bin.log).length;
   assert.equal(runVoiceReal({ voice: 'connect-success' }, env).status, 0);
-  await settle();
+  await settle({ until: (c) => c.length >= mark + 1, log: bin.log });   // sound only
   calls = stubCalls(bin.log);
   assert.equal(calls.filter(isPlayerCall).length, 2, 'the sound is not deduped');
   assert.equal(calls.filter(isNotifierCall).length, 1, 'the notification is');
 
   // A different cue has its own first time.
+  mark = stubCalls(bin.log).length;
   assert.equal(runVoiceReal({ voice: 'pair-success' }, env).status, 0);
-  await settle();
+  await settle({ until: (c) => c.length >= mark + 2, log: bin.log });   // its own sound + toast
   assert.equal(stubCalls(bin.log).filter(isNotifierCall).length, 2);
 
   // The ledger is small, atomic (no leftover temp file) and honest about when it fired.
@@ -502,7 +545,7 @@ test('connect-success and pair-success notify once per install, sound every time
   assert.match(after, /^notify=already sent at \d{4}-\d{2}-\d{2}T.*\(first time only\)$/m);
 });
 
-test('an unwritable state directory breaks nothing', async () => {
+test('an unwritable state directory breaks nothing', { skip: POSIX_STUB_ONLY }, async () => {
   const bin = stubBin();
   // A *file* where the state directory should be: mkdir/rename both fail, and the hook must
   // go on and notify anyway (worse case: one repeated toast, never a broken session).
@@ -516,6 +559,63 @@ test('an unwritable state directory breaks nothing', async () => {
     assert.equal(result.stdout.trim(), '');
     assert.equal(result.stderr.trim(), '', `run ${run} must not complain about state`);
   }
-  await settle();
-  assert.equal(stubCalls(bin.log).filter(isNotifierCall).length, 2, 'both runs still notified');
+  await settle({ until: (c) => c.filter(isNotifierCall).length >= 2, log: bin.log });
+  assert.equal(stubCalls(bin.log).filter(isNotifierCall).length, 2,
+    `both runs still notified (log: ${JSON.stringify(stubCalls(bin.log))})`);
+});
+
+// ── the reviewed defects of 2026-09-18, pinned ────────────────────────────────────────────
+// Review 意见 9: with no session id, every agent on the machine shared the single counter `default`,
+// so one agent's twentieth turn fired the checkpoint inside another agent's session. The key now
+// comes from the working directory (or MISAKANET_SESSION_KEY when someone states it), which keeps one
+// counter per project. The Python hook mirrors this — tests/test_agent_autostart_parity.py compares
+// the state file each implementation writes.
+test('without a session id, two different projects get two counters', () => {
+  const state = mkdtempSync(join(tmpdir(), 'mn-session-'));
+  const dirA = mkdtempSync(join(tmpdir(), 'mn-cwd-a-'));
+  const dirB = mkdtempSync(join(tmpdir(), 'mn-cwd-b-'));
+  for (const cwd of [dirA, dirB]) {
+    const result = spawnSync(process.execPath, [HOOK, 'prompt'],
+      { cwd, input: '{}', encoding: 'utf8', env: { ...process.env, MISAKANET_HOOK_STATE: state } });
+    assert.equal(result.status, 0, result.stderr);
+  }
+  const files = readdirSync(state).sort();
+  assert.equal(files.length, 2, `two projects must not share one counter: ${files.join(', ')}`);
+  assert.ok(files.every((f) => f.startsWith('default-')), files.join(', '));
+  assert.ok(!files.includes('default.json'), 'the shared default counter must be gone');
+});
+
+test('MISAKANET_SESSION_KEY decides the counter when an agent has no session id', () => {
+  const state = mkdtempSync(join(tmpdir(), 'mn-session-key-'));
+  const result = spawnSync(process.execPath, [HOOK, 'prompt'],
+    { input: '{}', encoding: 'utf8',
+      env: { ...process.env, MISAKANET_HOOK_STATE: state, MISAKANET_SESSION_KEY: 'agent-a' } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(readdirSync(state), ['agent-a.json']);
+});
+
+// Review 意见 4: the voice hook's "leave anyway after 3s" backstop was unreachable code —
+// `process.exit(0)` sat in the `finally` above it, so the timer line was never evaluated. Running
+// the hook cannot show that (exiting is the point), so the guard is on the shape; it also checks the
+// copy inside the npm tarball, because `prepack` regenerates it and a stale copy is what users run.
+test('the voice hook has a reachable exit backstop', () => {
+  const sources = {
+    canonical: VOICE_HOOK,
+    shipped: resolve(dirname(fileURLToPath(import.meta.url)), '..', 'packages', 'misakanet-setup',
+                     'voice', 'voice-hook.mjs'),
+  };
+  for (const [label, file] of Object.entries(sources)) {
+    if (!existsSync(file)) continue;                 // the tarball copy only exists after `prepack`
+    // Comments are stripped first: the fix documents the old shape it replaced, and a check that
+    // reads prose as code is how a false red is born (the same mistake `audit-shape`'s rule 6 made
+    // in #1807, where a PR was failed by its own description).
+    const source = readFileSync(file, 'utf8')
+      .split('\n').filter((line) => !line.trim().startsWith('//')).join('\n');
+    const backstop = source.indexOf('setTimeout(() => process.exit(0), 3000)');
+    assert.ok(backstop > 0, `${label}: the exit backstop is gone`);
+    const before = source.slice(0, backstop);
+    assert.ok(!/finally\s*\{[\s\S]*?process\.exit\(/.test(before),
+      `${label}: process.exit() before the backstop makes it dead code again`);
+    assert.match(source, /setImmediate\(/, `${label}: the exit must not be unconditional`);
+  }
 });

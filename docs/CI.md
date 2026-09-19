@@ -1,7 +1,9 @@
 # MisakaNet CI Workflow 清单（docs/CI.md）
 
-> 审计 2026-09-05（T2.3）：`.github/workflows/` 共 **53 个** workflow。本页为完整
-> 索引——名称、触发条件（机器提取）、类别与通用修复路径。触发条件建议以各
+> 审计 2026-09-05（T2.3）：`.github/workflows/` 当时共 **53 个** workflow，本页为其完整
+> 索引，之后新增的门禁按同一格式补录（最近一次：`misakanet-setup-ci.yml`，2026-09-18；
+> 目录现为 69 个文件，未逐条收录的以 `ARCHITECTURE.md` 的计数与目录本身为准）。
+> 触发条件建议以各
 > workflow 文件内的 `on:` 为准；分类是维护性归类，非强制。
 >
 > 定位问题：先看「失败的是哪个 job」→ 在本表找到 workflow → 点 GitHub Actions
@@ -9,7 +11,7 @@
 > 许多 workflow 是机器人/数据管道，失败常在外部依赖（D1、registry、配额）。
 
 
-## 质量门禁（16）
+## 质量门禁（17）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -23,6 +25,7 @@
 | `lesson-security.yml` | Lesson Security Scan | PR, push |  |
 | `manual-audit.yml` | Manual PR Audit | 手动 |  |
 | `mcp-stress.yml` | MCP Endpoint Stress Tests | PR, push, 手动 |  |
+| `misakanet-setup-ci.yml` | Setup Package CI（安装器：3 OS × Node 18/20/22 单测 + 打包产物 e2e）| PR, push, 手动 |  |
 | `pr-agent-review.yml` | PR-Agent Code Review | PR, 评论 |  |
 | `pr-checks.yml` | Misaka Network Agent Auditor | PR, 手动 |  |
 | `pr-genius-check.yml` | PR Genius Check | PR |  |

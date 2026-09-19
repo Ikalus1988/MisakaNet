@@ -44,14 +44,24 @@ jobs:
 
       - name: Commit when it moved
         run: |
-          if git diff --quiet; then
+          # `git status --porcelain`, not `git diff --quiet`: the latter ignores untracked files, so a
+          # file the refresh *created* would take this early exit and never be committed — the same
+          # "the fix ran and its result was dropped" shape as the discarded README tables below.
+          if [ -z "$(git status --porcelain)" ]; then
             echo "No change — the file and its surfaces already match the live counter."
             exit 0
           fi
           git status --porcelain
           git config user.name "misakanet-bot"
           git config user.email "bot@misakanet.dev"
-          git add data/counter.json docs/llms.txt docs/.well-known/llms.txt
+          # Everything the two scripts just changed, not a hand-written list of paths. The list used
+          # to be `data/counter.json docs/llms.txt docs/.well-known/llms.txt`, which silently threw
+          # away the README tables the refresh step had just corrected: the counter moved to 357
+          # while README.zh-CN.md and README.ja.md stayed at 333, so `sync_lesson_count.py --check`
+          # (and `test_lesson_count_ssot.py`) failed on main for every PR opened afterwards — found
+          # 2026-09-19 on PR #1859. The `git diff --quiet` guard above means this can only ever stage
+          # what the refresh actually produced.
+          git add -A
           git commit -m "chore(data): mirror the live node counter and its surfaces"
           # main moves under this job; retry once on a rejected push rather than losing the read.
           git push || { git pull --rebase --autostash && git push; }

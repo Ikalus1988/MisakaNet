@@ -7,7 +7,7 @@ Usage:
     misakanet run -- git commit -m "fix"
 
 On failure:
-1. Capture stderr tail
+1. Capture stderr tail (streamed to the terminal as it arrives, kept for this search)
 2. Redact secrets
 3. Search MisakaNet for matching lessons
 4. Print top 3 lessons
@@ -21,6 +21,7 @@ Does NOT:
 import argparse
 import json
 import subprocess
+from collections import deque
 import sys
 from pathlib import Path
 
@@ -45,6 +46,10 @@ def search_lessons(query: str, top: int = 3) -> list[dict]:
         pass
     return []
 
+
+# How much of the error text is kept for keyword extraction: enough for a traceback's tail,
+# bounded so a chatty command cannot grow this without limit.
+STDERR_TAIL_LINES = 60
 
 def extract_keywords(stderr: str, max_keywords: int = 5) -> str:
     """Extract error keywords from stderr for search."""
@@ -98,9 +103,25 @@ def main():
     print(f"Running: {' '.join(cmd)}")
     print("-" * 60)
 
+    # stdout is inherited (the user watches their own command run), stderr is piped so the *error
+    # text* survives, and every line is echoed as it arrives — real time is the point of a wrapper.
+    #
+    # This used to be `subprocess.run(cmd, capture_output=False)`, which threw the stderr away and
+    # then searched MisakaNet for the *command line* (`extract_keywords(" ".join(cmd))`) while the
+    # docstring promised "Capture stderr tail". The product's whole premise on this path — "the run
+    # failed, here is who already hit this error" — was therefore searching for "python -m pytest"
+    # instead of the traceback (2026-09-18 review, 意见 5).
+    stderr_tail: "deque[str]" = deque(maxlen=STDERR_TAIL_LINES)
+    stderr_text = ""
     try:
-        result = subprocess.run(cmd, capture_output=False)
-        exit_code = result.returncode
+        proc = subprocess.Popen(cmd, stderr=subprocess.PIPE, text=True, bufsize=1)
+        assert proc.stderr is not None
+        for line in proc.stderr:
+            sys.stderr.write(line)
+            sys.stderr.flush()
+            stderr_tail.append(line)
+        exit_code = proc.wait()
+        stderr_text = "".join(stderr_tail)
     except FileNotFoundError:
         print(f"Error: command not found: {cmd[0]}", file=sys.stderr)
         sys.exit(1)
@@ -118,10 +139,14 @@ def main():
     print(f"❌ Command failed (exit code {exit_code})")
     print()
 
-    # Get stderr from the last run (we didn't capture it, so use generic search)
-    # Try to extract keywords from the command itself
+    # Keywords come from what the command actually printed. The command line is only the fallback
+    # for a failure that said nothing (a silent non-zero exit), where it is the only signal there is.
     cmd_str = " ".join(cmd)
-    keywords = extract_keywords(cmd_str)
+    keywords = extract_keywords(stderr_text) if stderr_text.strip() else ""
+    if not keywords.strip():
+        keywords = extract_keywords(cmd_str)
+        if stderr_text.strip():
+            print("(stderr had no extractable keywords — falling back to the command line)")
 
     print(f"Searching MisakaNet for: {keywords[:80]}...")
     lessons = search_lessons(keywords, top=args.top)

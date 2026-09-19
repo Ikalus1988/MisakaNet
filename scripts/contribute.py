@@ -46,10 +46,20 @@ def _get_token() -> str | None:
     except Exception:
         pass
     try:
+        from urllib.parse import urlparse  # noqa: PLC0415 — only needed on this path
+
         cred_path = os.path.expanduser("~/.git-credentials")
-        with open(cred_path) as f:
-            creds = f.read().strip()
-        return creds.split("://")[1].split("@")[0].split(":")[1]
+        # The file is a credential store: refuse to read it if anyone else can. urllib.parse does
+        # the parsing because `split("://")[1].split("@")[0].split(":")[1]` breaks on a password
+        # containing ":" or a username containing "@" (2026-09-18 review, 意见 6).
+        mode = os.stat(cred_path).st_mode & 0o077
+        if mode:
+            print("  ⚠️ ~/.git-credentials 的权限不是 600，已跳过（改用 GITHUB_TOKEN 环境变量）")
+            return None
+        with open(cred_path, encoding="utf-8") as f:
+            first_line = next((line for line in f if line.strip()), "")
+        parsed = urlparse(first_line.strip())
+        return parsed.password or None
     except Exception:
         return None
 
@@ -144,6 +154,23 @@ def _read_lesson(path: str) -> dict | None:
     }
 
 
+def _rollback_branch(branch: str, created: bool) -> None:
+    """Delete a half-built `contribute/*` branch, best effort.
+
+    Best effort on purpose: the caller is already reporting a failure, and turning the rollback into a
+    second error would hide the first one. The message says which branch was removed, so a maintainer
+    who sees it in a log knows whether they still have cleanup to do.
+    """
+    if not created:
+        return
+    try:
+        _api(f"git/refs/heads/{branch}", method="DELETE")
+    except Exception:
+        pass
+    else:
+        print(f"  ↩️ 回滚分支: {branch}")
+
+
 def contribute(filepath: str):
     """提交一个 lesson 文件为 GitHub PR。"""
     lesson = _read_lesson(filepath)
@@ -153,6 +180,12 @@ def contribute(filepath: str):
     title = lesson["title"]
     filename = f"{_slugify(title)}.md"
     branch = f"contribute/{_slugify(title)[:40]}"
+    # Rollback scope: from the moment the branch exists, every later step either completes or the
+    # branch is deleted again. The old chain had seven calls and four `return False` exits after the
+    # branch was created, so a failed blob/tree/commit left `contribute/*` branches in the repository
+    # with nothing pointing at them — repository pollution that the maintainer had to clean by hand
+    # (2026-09-18 review, 意见 10).
+    branch_created = False
 
     # 1. 获取默认分支最新 SHA
     ref_info = _api(f"git/ref/heads/main", method="GET")
@@ -164,59 +197,77 @@ def contribute(filepath: str):
     branch_data = {"ref": f"refs/heads/{branch}", "sha": base_sha}
     if not _api("git/refs", data=branch_data):
         return False
+    branch_created = True
     print(f"  ✅ 分支创建: {branch}")
 
     # 3. 创建 blob（lesson 文件内容）
-    blob = _api("git/blobs", data={"content": lesson["content"], "encoding": "utf-8"})
-    if not blob:
+    try:
+        blob = _api("git/blobs", data={"content": lesson["content"], "encoding": "utf-8"})
+        if not blob:
+            _rollback_branch(branch, branch_created)
+            return False
+        blob_sha = blob["sha"]
+
+        # 4. 创建 tree
+        tree = _api("git/trees", data={
+            "base_tree": base_sha,
+            "tree": [{
+                "path": f"lessons/{filename}",
+                "mode": "100644",
+                "type": "blob",
+                "sha": blob_sha,
+            }],
+        })
+        if not tree:
+            _rollback_branch(branch, branch_created)
+            return False
+        tree_sha = tree["sha"]
+
+        # 5. 创建 commit
+        commit_msg = f"lessons: {title}\n\nContributed via API"
+        commit = _api("git/commits", data={
+            "message": commit_msg,
+            "tree": tree_sha,
+            "parents": [base_sha],
+        })
+        if not commit:
+            _rollback_branch(branch, branch_created)
+            return False
+        commit_sha = commit["sha"]
+
+        # 6. 更新分支引用
+        _api(f"git/refs/heads/{branch}", data={"sha": commit_sha}, method="PATCH")
+
+        # 7. 创建 PR
+        domain_tag = f"[{lesson['domain']}]" if lesson["domain"] else ""
+        pr_data = {
+            "title": f"{domain_tag} {title}".strip(),
+            "head": branch,
+            "base": "main",
+            "body": f"## 内容\n\n{lesson['body'][:500]}\n\n---\n*由 MisakaNet 贡献脚本自动创建*",
+        }
+        pr = _api("pulls", data=pr_data)
+        if not pr:
+            return False
+
+        # From here the branch is the head of an *open PR*: it is a durable object now, and deleting
+        # it would leave the PR pointing at nothing. That is why the rollback flag is cleared before
+        # anything else in this tail runs — a late error in the summary lines below must not try to
+        # undo work that has already landed. (My own test caught this: the first version of the
+        # rollback deleted the branch even after the PR was created, which is worse than the orphan
+        # branch it was fixing.)
+        branch_created = False
+
+        print(f"  ✅ PR 已创建: {pr['html_url']}")
+        print(f"  标题: {pr['title']}")
+        print(f"  分支: {branch}")
+        return True
+
+
+    except Exception as exc:                       # noqa: BLE001 — a failed contribution is not a crash
+        _rollback_branch(branch, branch_created)
+        print(f"  ⚠️ 中途失败，已回滚分支 {branch}：{exc}")
         return False
-    blob_sha = blob["sha"]
-
-    # 4. 创建 tree
-    tree = _api("git/trees", data={
-        "base_tree": base_sha,
-        "tree": [{
-            "path": f"lessons/{filename}",
-            "mode": "100644",
-            "type": "blob",
-            "sha": blob_sha,
-        }],
-    })
-    if not tree:
-        return False
-    tree_sha = tree["sha"]
-
-    # 5. 创建 commit
-    commit_msg = f"lessons: {title}\n\nContributed via API"
-    commit = _api("git/commits", data={
-        "message": commit_msg,
-        "tree": tree_sha,
-        "parents": [base_sha],
-    })
-    if not commit:
-        return False
-    commit_sha = commit["sha"]
-
-    # 6. 更新分支引用
-    _api(f"git/refs/heads/{branch}", data={"sha": commit_sha}, method="PATCH")
-
-    # 7. 创建 PR
-    domain_tag = f"[{lesson['domain']}]" if lesson["domain"] else ""
-    pr_data = {
-        "title": f"{domain_tag} {title}".strip(),
-        "head": branch,
-        "base": "main",
-        "body": f"## 内容\n\n{lesson['body'][:500]}\n\n---\n*由 MisakaNet 贡献脚本自动创建*",
-    }
-    pr = _api("pulls", data=pr_data)
-    if not pr:
-        return False
-
-    print(f"  ✅ PR 已创建: {pr['html_url']}")
-    print(f"  标题: {pr['title']}")
-    print(f"  分支: {branch}")
-    return True
-
 
 def _wizard():
     """交互式贡献向导 — 引导用户逐步填写 lesson 内容"""

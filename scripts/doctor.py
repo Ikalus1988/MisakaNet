@@ -78,18 +78,41 @@ def check_remote_endpoint(url: str = REMOTE_MCP_ENDPOINT) -> tuple[bool, str]:
     """Best-effort reachability probe; skipped when curl is unavailable."""
     if not shutil.which("curl"):
         return True, f"skipped reachability probe ({url}): curl not installed"
+    # Probe with the MCP handshake, not with a bare GET.
+    #
+    # Two findings meet here. The old bar was `code != "000"`, which called a 404 or a 500
+    # "reachable" (2026-09-18 review, 意见 8). Tightening it to 2xx alone is *also* wrong for this
+    # endpoint: a Streamable HTTP MCP server answers a plain `GET /mcp` with **405** — that is the
+    # documented, healthy answer, and `AGENTS.md §3.1` says so ("方法用错会返回 405 并提示正确用法").
+    # A health check that is red on a healthy service is the expensive kind of red.
+    #
+    # So the check asks the question it actually cares about: does the endpoint complete an
+    # `initialize` handshake? That is what every MCP client does first, and it is what makes
+    # `HTTP 200` meaningful instead of incidental.
+    payload = ('{"jsonrpc":"2.0","id":1,"method":"initialize",'
+               '"params":{"protocolVersion":"2025-06-18","capabilities":{},'
+               '"clientInfo":{"name":"misakanet-doctor","version":"1"}}}')
     try:
         result = subprocess.run(
-            ["curl", "-sS", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", url],
-            capture_output=True, text=True, timeout=10,
+            ["curl", "-sS", "-w", "\n%{http_code}", "--max-time", "8", url,
+             "-H", "Content-Type: application/json", "-H", "Accept: application/json",
+             "-H", "MCP-Protocol-Version: 2025-06-18", "-d", payload],
+            capture_output=True, text=True, timeout=15,
         )
     except (subprocess.TimeoutExpired, OSError) as e:
         return False, f"{url} unreachable ({e})"
-    code = result.stdout.strip()
-    if result.returncode == 0 and code and code != "000":
-        return True, f"{url} reachable (HTTP {code})"
+    body, _, last = result.stdout.rpartition("\n")
+    code = last.strip()
+    if result.returncode == 0 and code.isdigit() and 200 <= int(code) < 400:
+        if "serverInfo" in body:
+            return True, f"{url} reachable (HTTP {code}, MCP handshake answered)"
+        return False, f"{url} answered HTTP {code} but no MCP serverInfo in the body"
+    if result.returncode == 0 and code == "405":
+        return False, (f"{url} answered 405 to an initialize POST — the endpoint is up but not "
+                       "speaking MCP Streamable HTTP")
     detail = (result.stderr or result.stdout or "").strip().splitlines()
-    return False, f"{url} unreachable" + (f" — {detail[-1]}" if detail else "")
+    where = f"HTTP {code}" if code else "no response"
+    return False, f"{url} unreachable ({where})" + (f" — {detail[-1]}" if detail else "")
 
 
 CHECKS = [check_wrangler_placeholders, check_misakanet_core, check_remote_endpoint]

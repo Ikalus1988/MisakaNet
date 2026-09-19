@@ -37,8 +37,57 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Check what would be published
-        run: npm pack --dry-run
+      # Build the tarball ONCE, then test *that file* and publish *that file*.
+      #
+      # Before this, the release path ran `npm test` (the source tree) and `npm pack --dry-run`, and
+      # `npm publish` then packed the directory again — so the bytes that reached npm had been built
+      # by a command nothing had inspected, and the source tree was what every check had actually
+      # tested. That is the "test the checkout, ship the artifact" gap this repository already fixed
+      # for pull requests (misakanet-setup-ci.yml); on the release path it compounds with every
+      # version, which is why the e2e runs here too.
+      - name: Build the tarball once
+        id: pack
+        run: |
+          set -euo pipefail
+          npm pack --pack-destination "$RUNNER_TEMP"
+          TGZ=$(ls "$RUNNER_TEMP"/misaka-net-misakanet-setup-*.tgz)
+          SHA=$(sha256sum "$TGZ" | cut -d' ' -f1)
+          VERSION=$(tar -xzOf "$TGZ" package/package.json \
+            | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).version))")
+          {
+            echo "tgz=$TGZ"
+            echo "sha256=$SHA"
+            echo "version=$VERSION"
+          } >> "$GITHUB_OUTPUT"
+          echo "tarball: $TGZ"
+          echo "version: $VERSION"
+          echo "sha256:  $SHA"
+
+      # A release tag that does not match the packaged version publishes a version nobody asked for
+      # (or fails at npm with a 403 that reads like a permissions problem). Both are cheap to catch
+      # here, and `workflow_dispatch` runs have no tag to compare — only the tag path is checked.
+      - name: A release tag must match the packaged version
+        if: startsWith(github.ref, 'refs/tags/misakanet-setup-v')
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#misakanet-setup-v}"
+          if [ "$TAG" != "${{ steps.pack.outputs.version }}" ]; then
+            echo "::error::tag says $TAG but the tarball says ${{ steps.pack.outputs.version }}"
+            exit 1
+          fi
+          echo "tag and tarball agree on $TAG"
+
+      - name: Install the tarball and run the packaged lifecycle e2e
+        run: |
+          npm install -g --prefix "$RUNNER_TEMP/prefix" "${{ steps.pack.outputs.tgz }}"
+          node scripts/e2e-packaged-install.mjs \
+            --prefix "$RUNNER_TEMP/prefix" --expect-version "${{ steps.pack.outputs.version }}"
+
+      # One injection, so "the e2e passed" cannot mean "the e2e does nothing" at release time
+      # either. The full set (5) and the live endpoint checks run on every PR and push to main;
+      # this step exists to make the release path itself carry the proof, cheaply and offline.
+      - name: Prove one e2e check can fail (injection)
+        run: node scripts/e2e-packaged-install.mjs --prefix "$RUNNER_TEMP/prefix" --inject leftover-temp
 
       # Fail-fast diagnostics. The first attempt at this publish failed with a bare
       # `PUT ... 404`, which npm also returns when the token simply is not allowed to
@@ -70,7 +119,11 @@ jobs:
       - name: Publish to npm
         run: |
           set +e
-          npm publish --access public
+          # The exact file the e2e above installed and exercised — `npm publish <file>` publishes a
+          # tarball as-is, so there is no second pack between "tested" and "published". The sha256 is
+          # printed so the run log names the artifact, and the registry can be compared against it.
+          echo "publishing ${{ steps.pack.outputs.tgz }} (${{ steps.pack.outputs.sha256 }})"
+          npm publish "${{ steps.pack.outputs.tgz }}" --access public
           RC=$?
           if [ "$RC" -ne 0 ]; then
             echo "::error::npm publish failed (exit $RC). If the output was 'PUT ... 404 Not found',"

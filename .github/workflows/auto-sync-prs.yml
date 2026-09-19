@@ -29,10 +29,31 @@ jobs:
 
       - name: Merge main into each same-repo PR
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A PAT, not GITHUB_TOKEN, and that is the whole point of this step.
+          #
+          # GitHub deliberately suppresses workflow runs for pushes made with the built-in token, so a
+          # sync performed with it updates the branch and triggers **nothing**: the PR's new head has
+          # zero check runs, GitHub reports "unstable / expected — waiting for status", and no workflow
+          # will ever re-run on it. PR #1870 sat in exactly that state on 2026-09-19 until a human
+          # pushed an empty commit to shake CI loose.
+          #
+          # `SHELDON_PAT` (classic with `repo`, or fine-grained with Contents: read-and-write) makes the
+          # push an ordinary user push, so `pull_request: synchronize` fires and the checks run.
+          # `actions: write` is NOT needed: nothing here dispatches a workflow.
+          SYNC_TOKEN: ${{ secrets.SHELDON_PAT }}
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          set -euo pipefail
+          if [ -z "${SYNC_TOKEN:-}" ]; then
+            echo "::warning::SHELDON_PAT is empty — skipping the sync. Syncing with GITHUB_TOKEN would update these branches without triggering any CI, which is worse than not syncing: it leaves every synced PR 'unstable' with nothing to re-run. Fix the secret and re-run this workflow."
+            exit 0
+          fi
+          # The token travels in a git config header rather than in a remote URL: a token in a URL
+          # shows up in error output, and secret scanners (rightly) flag the pattern.
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$SYNC_TOKEN" | base64 -w0)"
+          git config user.name "misakanet-sync-bot"
+          git config user.email "bot@misakanet.dev"
+          : > "$RUNNER_TEMP/synced.txt"
           COUNT=$(jq length open_prs.json)
           for i in $(seq 0 $((COUNT - 1))); do
             PR=$(jq ".[$i]" open_prs.json)
@@ -61,7 +82,8 @@ jobs:
             git fetch origin "$HEAD_REF"
             if git checkout "$HEAD_REF" 2>/dev/null; then
               if git merge origin/main --no-edit 2>&1; then
-                git push origin "HEAD:$HEAD_REF"
+                git -c http.extraheader="$AUTH_HEADER" push origin "HEAD:$HEAD_REF"
+                echo "$NUM:$(git rev-parse HEAD)" >> "$RUNNER_TEMP/synced.txt"
                 echo "  ✅ Merged main into #$NUM"
               else
                 git merge --abort 2>/dev/null
@@ -75,4 +97,28 @@ jobs:
 
             # Return to main for next iteration
             git checkout main 2>/dev/null
+          done
+
+      # Read it back: "the push succeeded" is not the claim. The claim is "the PR's checks run again",
+      # and that is exactly what silently stopped happening. A sync whose head has no check runs after
+      # a minute is a broken sync, and saying so here is cheaper than the next person discovering it
+      # from an "unstable" PR.
+      - name: Verify the synced heads actually have CI
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          for entry in $(cat "$RUNNER_TEMP/synced.txt" 2>/dev/null || true); do
+            NUM="${entry%%:*}"; SHA="${entry##*:}"
+            for attempt in 1 2 3 4 5 6; do
+              COUNT=$(gh api "repos/$REPO/commits/$SHA/check-runs" --jq '.total_count' 2>/dev/null || echo 0)
+              if [ "$COUNT" -gt 0 ]; then
+                echo "PR #$NUM: $COUNT check run(s) on ${SHA:0:7} — CI is running"
+                break
+              fi
+              [ "$attempt" -eq 6 ] && echo "::warning::PR #$NUM has NO check runs on the synced head ${SHA:0:7} — the push did not trigger CI. If this happens with a PAT in place, the token is the wrong kind (a GITHUB_TOKEN-equivalent will not trigger workflows)."
+              sleep 10
+            done
           done

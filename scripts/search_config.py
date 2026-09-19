@@ -54,7 +54,33 @@ def _load_config_from_yaml() -> Optional[dict]:
     if not CONFIG_FILE.exists():
         return None
     try:
-        # Simple YAML-like parser for search section (avoid pyyaml dependency)
+        # pyyaml when it is importable, the hand parser below only as a fallback.
+        #
+        # The comment here used to say "avoid pyyaml dependency" while `requirements.txt` and the
+        # `hub` extra both declare PyYAML>=6.0 — so the file was avoiding a dependency it already
+        # had, with a parser that cannot read nesting or values containing ":". The core install
+        # stays dependency-free: this import is guarded, and the fallback keeps working without it.
+        try:
+            import yaml  # noqa: PLC0415 — optional by design
+        except ImportError:
+            yaml = None
+        if yaml is not None:
+            data = yaml.safe_load(CONFIG_FILE.read_text(encoding="utf-8"))
+            section = data.get("search") if isinstance(data, dict) else None
+            if not isinstance(section, dict) or not section:
+                return None
+            # Values stay strings and nesting stays flat: that is the shape the hand parser produced
+            # and the callers cast from it. The win is that quoting, comments and values containing
+            # ":" are now handled by a real parser instead of line surgery.
+            flattened = {}
+            for key, value in section.items():
+                if isinstance(value, dict):
+                    for inner_key, inner_value in value.items():
+                        flattened[f"{key}_{inner_key}"] = str(inner_value)
+                else:
+                    flattened[str(key)] = str(value)
+            return flattened
+        # Fallback: simple YAML-like parser for the search section (no pyyaml available)
         text = CONFIG_FILE.read_text(encoding="utf-8")
         in_search = False
         config = {}

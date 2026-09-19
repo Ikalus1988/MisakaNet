@@ -37,6 +37,14 @@ inputs:
     description: 'Post results as PR comment'
     required: false
     default: 'true'
+  pr-number:
+    description: >-
+      PR to comment on. Empty (the default) means "the PR GitHub associates with the failing run".
+      Set it to test the comment path by hand — a workflow_dispatch has no associated run, so
+      without this the bot has no PR to talk to and the only way to exercise the comment was to wait
+      for a real CI failure.
+    required: false
+    default: ''
 
 outputs:
   decision:
@@ -111,6 +119,11 @@ runs:
         INPUT_SIM: ${{ inputs.sim }}
         INPUT_WHAT_TRIED: ${{ inputs.what-tried }}
         INPUT_MODE: ${{ inputs.mode }}
+        INPUT_PR_NUMBER: ${{ inputs.pr-number }}
+        # `source-ref` reaches the shell as `INPUT_SOURCE-REF` (the dash survives), which is not a
+        # valid variable name, so `${INPUT_SOURCE_REF:-main}` below could never see it: the
+        # self-contained fetch silently always used main. Mapped explicitly.
+        INPUT_SOURCE_REF: ${{ inputs.source-ref }}
       run: |
         set -e
         REPO_ROOT="${GITHUB_WORKSPACE:-.}"
@@ -135,21 +148,37 @@ runs:
           echo "::notice::fetched MisakaNet intake_bot.py@$FETCH_REF (self-contained mode)"
         fi
 
-        ARGS="--json --source $INPUT_SOURCE --sim $INPUT_SIM"
-        [ -n "$INPUT_WHAT_TRIED" ] && ARGS="$ARGS --what-tried $INPUT_WHAT_TRIED"
-        [ "$INPUT_MODE" = "suggest-and-intake" ] && ARGS="$ARGS --auto-intake"
+        # A bash ARRAY, and every value quoted. This is the whole of #1825: `--error` carries a
+        # multi-line excerpt of the failing job's log, and `python3 $SCRIPT $ARGS` split it on
+        # whitespace — argparse got `--error` plus a pile of unrecognised positionals, exited 2, and
+        # `2>/dev/null ||` replaced the reason with a generic object, so the job went green and posted
+        # nothing. 21,732 runs, zero comments. `"${ARGS[@]}"` keeps one argv element per value.
+        ARGS=(--json --source "$INPUT_SOURCE" --sim "$INPUT_SIM")
+        if [ -n "$INPUT_WHAT_TRIED" ]; then ARGS+=(--what-tried "$INPUT_WHAT_TRIED"); fi
+        if [ "$INPUT_MODE" = "suggest-and-intake" ]; then ARGS+=(--auto-intake); fi
 
         if [ -n "$INPUT_LOG_FILE" ] && [ -f "$INPUT_LOG_FILE" ]; then
-          ARGS="$ARGS --log $INPUT_LOG_FILE"
+          ARGS+=(--log "$INPUT_LOG_FILE")
         elif [ -n "$INPUT_ERROR" ]; then
-          ARGS="$ARGS --error $INPUT_ERROR"
+          ARGS+=(--error "$INPUT_ERROR")
         else
           echo "::warning::No error input provided, skipping"
           echo "decision=skip" >> "$GITHUB_OUTPUT"
           exit 0
         fi
 
-        RESULT=$(python3 $SCRIPT $ARGS 2>/dev/null || echo '{"decision":"error","reason":"script failed"}')
+        # stderr is kept, not discarded: "script failed" with the reason thrown away is what made
+        # this failure invisible for a month. The exit code and the stderr tail become the decision's
+        # `reason`, so the annotation, the step summary and the PR comment all say what happened.
+        ERRLOG="$RUNNER_TEMP/intake-bot.err"
+        if python3 "$SCRIPT" "${ARGS[@]}" >"$RUNNER_TEMP/intake-bot.out" 2>"$ERRLOG"; then
+          RESULT=$(cat "$RUNNER_TEMP/intake-bot.out")
+        else
+          RC=$?
+          echo "::error::intake_bot.py exited $RC (this is the bot failing, not a CI finding)"
+          sed 's/^/    /' "$ERRLOG" | tail -20
+          RESULT=$(python3 -c 'import json,sys; print(json.dumps({"decision":"error","reason":f"intake bot exited {sys.argv[1]}","stderr":sys.argv[2][-400:]}, ensure_ascii=False))' "$RC" "$(cat "$ERRLOG")")
+        fi
         echo "result=$RESULT" >> "$GITHUB_OUTPUT"
 
         # Parse outputs
@@ -172,11 +201,21 @@ runs:
         echo "$SAMPLE" >> "$GITHUB_STEP_SUMMARY"
         echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
 
+        # A broken bot must not look like "CI failed and there was nothing to say". Until 2026-09-19
+        # the step exited 0 with `decision=error`, the comment step skipped it, and the run was green
+        # (#1825). A red run here is a maintainer-facing signal, not a PR gate: this workflow reacts
+        # to someone else's failure and is not a required check.
+        if [ "$DECISION" = "error" ]; then
+          echo "::error::the intake bot could not run (decision=error) — this run found nothing because it did not search, not because there was nothing to find"
+          exit 1
+        fi
+
     - name: Comment on PR
       if: ${{ inputs.comment-on-pr == 'true' && steps.intake.outputs.result != '' }}
       uses: actions/github-script@v9
       env:
         RESULT: ${{ steps.intake.outputs.result }}
+        INPUT_PR_NUMBER: ${{ inputs.pr-number }}
       with:
         script: |
           const result = JSON.parse(process.env.RESULT || '{}');
@@ -208,17 +247,44 @@ runs:
                    `**Reason:** ${result.reason || 'unknown'}\n` +
                    `**Fingerprint:** \`${result.fingerprint || '?'}\``;
           } else {
-            return; // skip unknown decisions
-          }
-
-          // Find associated PR
-          const prs = context.payload.workflow_run?.pull_requests || [];
-          if (prs.length === 0) {
-            core.info('No associated PR found, skipping comment');
+            // Loud on purpose: a decision with no template used to `return` silently, which is
+            // indistinguishable from "the bot had nothing to say" (#1825).
+            core.warning(`intake bot decision "${decision}" has no comment template — nothing posted`);
             return;
           }
 
-          const prNumber = prs[0].number;
+          // Which PR to comment on. Explicit input first (that is what makes this path testable by
+          // hand — see the `pr-number` input and `intake-bot-demo.yml`'s dispatch inputs), then the
+          // PR GitHub associates with the failing run, then a lookup by head branch: `pull_requests`
+          // is empty for a run GitHub did not associate (a push, or a fork association that failed),
+          // and the old code logged that at `info` and gave up — the second of the two ways this bot
+          // produced 21,732 runs without a single comment.
+          let prNumber = Number(process.env.INPUT_PR_NUMBER || 0) || 0;
+          if (!prNumber) {
+            prNumber = context.payload.workflow_run?.pull_requests?.[0]?.number || 0;
+          }
+          if (!prNumber) {
+            const head = context.payload.workflow_run?.head_branch;
+            if (head) {
+              const { data: open } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                per_page: 100
+              });
+              const match = open.find((p) => p.head.ref === head);
+              if (match) {
+                prNumber = match.number;
+                core.info(`resolved PR #${prNumber} from head branch "${head}"`);
+              }
+            }
+          }
+          if (!prNumber) {
+            core.warning('no PR to comment on (no input, no associated PR, no open PR for this branch)'
+              + ' — the decision above is in this run\'s summary');
+            return;
+          }
+
           await github.rest.issues.createComment({
             owner: context.repo.owner,
             repo: context.repo.repo,

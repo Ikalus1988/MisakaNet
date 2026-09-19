@@ -13,7 +13,7 @@
 // Run: node --test workers/mcp-search-relevance.test.mjs
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import worker from './register-proxy-sw.js';
+import worker, { matchAnsweredQuestions } from './register-proxy-sw.js';
 import { testToken } from './_test-token.mjs';
 
 const TOKEN = testToken('relevance-floor');
@@ -224,7 +224,7 @@ test('every returned lesson hit has a non-empty problem (the AC of #1675)', asyn
 // `plainFields` (#1783): the raw `frontmatter` column (see workers/d1/schema.sql and
 // scripts/sync_lessons_to_d1.py) is where the three optional structured fields come
 // from on the D1 path, so the parameter seeds it on the one row the query hits.
-function createD1Env(plainFields = null) {
+function createD1Env(plainFields = null, questionRows = []) {
   const index = buildIndex();
   const rows = index.docs.map((doc) => ({
     ...doc,
@@ -244,11 +244,14 @@ function createD1Env(plainFields = null) {
       : {}),
   }));
   const d1 = {
-    prepare() {
+    prepare(sql = '') {
       const stmt = {
         _bound: null,
         bind(...args) { stmt._bound = args; return stmt; },
-        async all() { return { results: rows }; },
+        async all() {
+          if (String(sql).includes('questions')) return { results: questionRows };
+          return { results: rows };
+        },
         async run() { return { success: true }; },
       };
       return stmt;
@@ -379,3 +382,66 @@ test('a lesson with the structured fields carries them through the projection (#
   assert.equal(d1Hit.frontmatter, undefined, 'the raw frontmatter column must not be echoed');
 });
 
+
+// ── FAQ domain filtering (#1743) ──────────────────────────────────────────────
+// Domain narrowing in misakanet_search must filter FAQ entries as well as lessons:
+// a query with domain=ops or domain=contrib (retired/absent domains) or domain=meta
+// must not return FAQ items whose domain is 'faq' (or an unrelated domain).
+
+test('matchAnsweredQuestions respects domain filtering (#1743)', () => {
+  const faqRows = [
+    { issue_number: 1362, problem: 'how to handle GitHub rate limits on runners', answer: 'Use auth tokens', domain: 'faq' },
+    { issue_number: 1364, problem: 'how to handle GitHub rate limits on runners in python', answer: 'Use tenacity', domain: 'python' },
+  ];
+
+  // No domain filter: both match
+  const all = matchAnsweredQuestions(faqRows, 'how to handle GitHub rate limits on runners', 'compact', 10);
+  assert.equal(all.length, 2);
+
+  // domain=faq: only the faq domain row matches
+  const faqOnly = matchAnsweredQuestions(faqRows, 'how to handle GitHub rate limits on runners', 'compact', 10, 'faq');
+  assert.equal(faqOnly.length, 1);
+  assert.equal(faqOnly[0].id, 'faq-issue-1362');
+
+  // domain=python: only the python domain row matches
+  const pythonOnly = matchAnsweredQuestions(faqRows, 'how to handle GitHub rate limits on runners', 'compact', 10, 'python');
+  assert.equal(pythonOnly.length, 1);
+  assert.equal(pythonOnly[0].id, 'faq-issue-1364');
+
+  // domain=ops or domain=contrib: neither row matches
+  const ops = matchAnsweredQuestions(faqRows, 'how to handle GitHub rate limits on runners', 'compact', 10, 'ops');
+  assert.equal(ops.length, 0);
+  const contrib = matchAnsweredQuestions(faqRows, 'how to handle GitHub rate limits on runners', 'compact', 10, 'contrib');
+  assert.equal(contrib.length, 0);
+});
+
+test('misakanet_search does not return domain-mismatched FAQ entries (#1743)', async () => {
+  const faqRows = [{
+    issue_number: 1362,
+    problem: 'docker exit code 137 out of memory container crash',
+    answer: 'Increase container memory limit or decrease heap allocation.',
+    issue_url: 'https://github.com/x/issues/1362',
+    domain: 'faq',
+  }];
+  const env = createD1Env(null, faqRows);
+
+  // Without domain filter, FAQ hit is present
+  const noDomain = await searchIn(env, 'docker exit code 137');
+  const foundInAll = (noDomain.results || []).find((r) => r.id === 'faq-issue-1362');
+  assert.ok(foundInAll, 'FAQ hit should be returned when no domain filter is provided');
+
+  // With domain=ops (retired domain, mismatched), FAQ hit is NOT returned
+  const withOps = await searchIn(env, 'docker exit code 137', { domain: 'ops' });
+  const foundInOps = (withOps.results || []).find((r) => r.id === 'faq-issue-1362');
+  assert.equal(foundInOps, undefined, 'FAQ entry must not be returned when query domain does not match');
+
+  // With domain=contrib (retired domain, mismatched), FAQ hit is NOT returned
+  const withContrib = await searchIn(env, 'docker exit code 137', { domain: 'contrib' });
+  const foundInContrib = (withContrib.results || []).find((r) => r.id === 'faq-issue-1362');
+  assert.equal(foundInContrib, undefined, 'FAQ entry must not be returned for domain=contrib');
+
+  // With domain=faq (matching), FAQ hit IS returned
+  const withFaq = await searchIn(env, 'docker exit code 137', { domain: 'faq' });
+  const foundInFaq = (withFaq.results || []).find((r) => r.id === 'faq-issue-1362');
+  assert.ok(foundInFaq, 'FAQ hit should be returned when domain=faq matches');
+});

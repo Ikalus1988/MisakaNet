@@ -102,18 +102,24 @@ async function readResult(env, ip) {
   return JSON.parse(body.result.content[0].text);
 }
 
-test('with D1 bound the 5/day quota holds and no KV key is written', async () => {
+test('with D1 bound the read burst limit holds and no KV key is written', async () => {
   const env = createEnv({ d1: createCountersD1() });
-  for (let i = 1; i <= 5; i++) {
+  // The burst limit is what refuses now (not a day): fill the window first.
+  const limit = 20;
+  for (let i = 1; i <= limit; i++) {
     const result = await readResult(env, '203.0.113.7');
     assert.equal(result.error, undefined, `read ${i} must succeed: ${JSON.stringify(result)}`);
   }
   const sixth = await readResult(env, '203.0.113.7');
-  assert.match(String(sixth.error || ''), /Rate limit: 5 free searches per day exceeded/);
-  assert.match(String(sixth.hint || ''), /misakanet_register/);
+  // The daily cap is gone (2026-09-18 policy): reads are unlimited, what is left is a speed
+  // limit — and the message says so, because "register to get more" would now be a lie.
+  assert.match(String(sixth.error || ''), /Too many requests: max \d+ reads per \d+s/);
+  assert.match(String(sixth.error || ''), /Reads are unlimited/, 'the refusal must not read as a quota');
+  assert.match(String(sixth.hint || ''), /retry after|no registration needed/,
+    'the hint must not send the reader to register — registration is no longer the way to read more');
   assert.equal(env.kvWrites.filter((key) => key.startsWith('rate:')).length, 0,
     `D1 counters must not create per-IP KV keys, saw: ${env.kvWrites.join(', ')}`);
-  assert.equal(env.MISAKANET_D1.rows.get(`rate_read|203.0.113.7|${new Date().toISOString().slice(0, 10)}`), 6);
+  assert.equal(env.MISAKANET_D1.rows.get(`rate_read|203.0.113.7|burst-${new Date().toISOString().slice(0, 16).replace(':', '-')}`), limit + 1);
 });
 
 test('reads do not share a quota across IPs on D1', async () => {
@@ -123,13 +129,16 @@ test('reads do not share a quota across IPs on D1', async () => {
   assert.equal(other.error, undefined, 'a different IP has its own quota');
 });
 
-test('without D1 the legacy KV counter is used, with its legacy key name', async () => {
+test('without D1 the fallback counter is used, with a parseable key', async () => {
   const env = createEnv();
-  const today = new Date().toISOString().slice(0, 10);
+  // The window is a minute now, and the key must stay unambiguous: `scope:bucket:period` is split on
+  // ":" by anything reading it back, so the period is colon-free (`burst-YYYY-MM-DDTHH-MM`). This test
+  // caught that when the first version used `burst:YYYY-MM-DDTHH:MM`.
+  const burst = `burst-${new Date().toISOString().slice(0, 16).replace(':', '-')}`;
   const result = await readResult(env, '203.0.113.20');
   assert.equal(result.error, undefined);
-  assert.ok(env.kvWrites.includes(`rate:read:203.0.113.20:${today}`),
-    `the fallback must keep the key a rollback would read: ${env.kvWrites.join(', ')}`);
+  assert.ok(env.kvWrites.includes(`rate:read:203.0.113.20:${burst}`),
+    `the fallback key must be the one a reader can parse: ${env.kvWrites.join(', ')}`);
 });
 
 test('a D1 counter failure fails open and is reported', async () => {

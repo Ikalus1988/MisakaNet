@@ -22,7 +22,7 @@ fatal-guard -- node app.js 2>&1 | python3 scripts/tombstone_to_draft.py --stdin
 
 ## 2. 核心工作流：遇到问题先检索
 
-> **新用户无需 clone**：加 `--remote` 直接查 D1 服务，免注册、每天 5 次免费（按 IP）。
+> **新用户无需 clone**：加 `--remote` 直接查 D1 服务，免注册、**不限次数**（只有反爬突发保护）。
 
 ```bash
 python3 search_knowledge.py "你的关键词" --remote   # 远程直查（推荐，无需 clone）
@@ -58,8 +58,8 @@ Agent 侧更常用 MCP：`misakanet_search` → `misakanet_get_lesson` → （�
 
 | 工具 | 用途 | 鉴权 |
 |---|---|---|
-| `misakanet_search` | 按错误文本/关键词检索课程；`detail` 三档（`compact` 默认 / `summary` / `full`）；FAQ 命中也会返回；**无命中时返回 `no_match` + 可直接调用的 intake 指引** | 开放（计入匿名读配额）|
-| `misakanet_get_lesson` | 按 `id` 或 `path` 取单篇课程正文（≤5000 字符）| 开放（同一读配额）|
+| `misakanet_search` | 按错误文本/关键词检索课程；`detail` 三档（`compact` 默认 / `summary` / `full`）；FAQ 命中也会返回；**无命中时返回 `no_match` + 可直接调用的 intake 指引** | 开放（匿名不限次数；同一地址有突发上限）|
+| `misakanet_get_lesson` | 按 `id` 或 `path` 取单篇课程正文（≤5000 字符）| 开放（同上，共用一个突发窗口）|
 | `misakanet_submit_intake` | 匿名报料/提问（`kind="missing_lesson"` 或 `kind="question"`，省略则自动判定）→ 服务端去重后开 GitHub issue | 开放（限流，无需账号）|
 | `misakanet_write_lesson` | 结构化提交完整课程（`title`/`domain`/`problem`/`root_cause`/`fix`）→ 走 lesson-gate | **需 `Authorization: Bearer mcp_...`** |
 | `misakanet_preflight` | 高风险操作前的风险检查 | **需 Bearer** |
@@ -80,8 +80,7 @@ Agent 侧更常用 MCP：`misakanet_search` → `misakanet_get_lesson` → （�
 
 ### 3.3 注册与配额
 
-> **读不需要注册**：`misakanet_search` / `misakanet_get_lesson` 匿名即可用（5 次/天/IP）。注册只做两件事：
-> 解除读配额、解锁写入类工具（`write_lesson` / `preflight`）。注册不收邮箱/账号等个人信息，
+> **读不需要注册、也不限次数**（2026-09-18 起）：`misakanet_search` / `misakanet_get_lesson` 匿名即可用，只有反爬突发保护。注册现在只做一件事：**解锁写入类工具**（`write_lesson` / `preflight`）。注册不收邮箱/账号等个人信息，
 > 它签发的 node 是**化名**，不是账号。
 >
 > **边界说清楚**：`agent_type` / `client_id` 都是**自声明**的，我们不验证、也不把它当作归属证据；
@@ -100,7 +99,7 @@ curl -sS https://misakanet.org/mcp -H 'Content-Type: application/json' \
 # → {"node_id":"Misaka100XX","token":"mcp_…","reused":true}   token 有效期 30 天
 ```
 
-- **匿名**：`misakanet_search` + `misakanet_get_lesson` 合计 **5 次/天/IP**
+- **匿名：不限次数**（2026-09-18 政策）。只保留**反爬突发保护**（同一地址每分钟的上限，三个入口共用同一个窗口）；被拒时的说明是「速度限制、不是配额」，并带 `trust_notice`。**注册不再是从「能读」到「读更多」的门票**，它只解锁写入类工具（`write_lesson` / `preflight`）
 - **带 token**：不再走匿名配额，并可调用 `write_lesson` / `preflight`
 - **带 `client_id`**：同一个标识永远拿回同一个 node（响应里 `reused: true`），这样"同一 agent 的
   复用证据 / 回执 / 历史"才会累积在一处。**不带 `client_id` 时每次调用仍新建一个 node**（历史行为，保持兼容）。

@@ -1,0 +1,158 @@
+name: Publish to MCP Registry
+
+# The official registry (registry.modelcontextprotocol.io) is the authoritative listing every other
+# directory mirrors, and its entry for this server had drifted: `isLatest` sat on 2.29.0 while the
+# repository, PyPI and the GitHub release were all at 2.30.2 (#1820).
+#
+# Why it drifted is the point of this workflow. Publishing used to be a manual step on a maintainer's
+# machine (`mcp-publisher login github` → `publish server.json`) because the registry validates the
+# OIDC/device-flow identity before accepting a version. That is a step nothing watches, so it is only
+# as current as someone's memory — and it cannot even be done from a sandboxed agent environment,
+# where `github.com` is unreachable while `registry.modelcontextprotocol.io` is not (measured
+# 2026-09-19: `github.com/login/device` HTTP 000 after 15s, the registry HTTP 200 in 1.6s).
+#
+# So the publish moves to CI, where the identity is the repository itself (`login github-oidc`,
+# the method the registry documents for GitHub Actions) and the bytes are the ones on the tag.
+#
+# Dispatch-only, deliberately: `release-please.yml` tags the release and calls this workflow, the same
+# shape as the PyPI publish. A `push: tags: v*` trigger would look tidier but never fire for
+# release-please's own tags (a GITHUB_TOKEN push cannot trigger workflows), so it would be a trigger
+# that quietly does nothing — the failure mode this repository keeps finding.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >-
+          Version expected in server.json. A mismatch fails instead of publishing whatever is in the
+          file; leave empty to publish the file as-is.
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  id-token: write        # OIDC: the registry ties the publish to this repository's identity
+
+# Two publishes racing would leave two entries for the same version.
+concurrency:
+  group: publish-mcp-registry
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      # Pinned tag AND verified checksum, because this step downloads a binary and runs it in a job
+      # that holds `id-token: write`. `releases/latest` plus an unverified pipe to `tar` means the
+      # publisher's release channel could change what executes here, and a compromised one would run
+      # with this repository's OIDC identity — the ability to publish under our namespace. The digests
+      # are the published per-platform ones for this tag (release API, 2026-09-19). Upgrading is a
+      # deliberate edit of two lines, which is the point.
+      - name: Install mcp-publisher (pinned, checksum verified)
+        env:
+          PUBLISHER_VERSION: v1.8.1
+          PUBLISHER_SHA256_AMD64: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
+          PUBLISHER_SHA256_ARM64: 8dd75a6cf6845688b5d4e46df58d3ca26d5c8d233bb0626606e1db82c5e883e4
+        run: |
+          set -euo pipefail
+          ARCH="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"
+          case "$ARCH" in
+            amd64) EXPECTED="$PUBLISHER_SHA256_AMD64" ;;
+            arm64) EXPECTED="$PUBLISHER_SHA256_ARM64" ;;
+            *) echo "::error::no pinned digest for architecture $ARCH — add one rather than running unverified"; exit 1 ;;
+          esac
+          ASSET="mcp-publisher_linux_${ARCH}.tar.gz"
+          curl -fsSL --retry 3 \
+            "https://github.com/modelcontextprotocol/registry/releases/download/${PUBLISHER_VERSION}/${ASSET}" \
+            -o "$RUNNER_TEMP/publisher.tgz"
+          echo "${EXPECTED}  ${RUNNER_TEMP}/publisher.tgz" | sha256sum -c -
+          tar xzf "$RUNNER_TEMP/publisher.tgz" mcp-publisher
+          ./mcp-publisher --help | head -3
+          echo "publisher: ${PUBLISHER_VERSION} (${ARCH}), checksum verified"
+
+      # The version we publish is the version in the repository, and it is checked BEFORE the
+      # identity step so a wrong checkout cannot publish an older description or runtime under a
+      # newer number. (2026-09-12: publishing from a stale local file left the registry carrying
+      # wording that docs/trust-semantics.md forbids — the reason that note exists.)
+      #
+      # `${{ inputs.version }}` goes through `env:` rather than into the script text: a shell script
+      # with an interpolated expression is a shell script whose *content* depends on the value, and
+      # any value that reaches it through a file (here: `server.json`) is worth treating as data.
+      - name: The version being published is the one on disk
+        id: version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          VERSION=$(python3 -c "import json;print(json.load(open('server.json'))['version'])")
+          RUNTIME=$(python3 -c "import json;print(json.load(open('server.json'))['packages'][0]['runtime']['args'][-1])")
+          echo "server.json: version=$VERSION runtime=$RUNTIME"
+          if [ -n "${REQUESTED_VERSION:-}" ] && [ "$REQUESTED_VERSION" != "$VERSION" ]; then
+            echo "::error::asked to publish $REQUESTED_VERSION but server.json says $VERSION"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # The registry VALIDATES the reference: an entry whose `packages[]` names a pypi version that
+      # does not exist yet is rejected with HTTP 400 — "registry validation failed for package 0
+      # (misakanet): PyPI package 'misakanet' exists, but version '2.31.0' does not". The release flow
+      # dispatches this workflow and the PyPI publish at the same moment, so this is a race, not an
+      # edge case: the first automatic run (2.31.0, 2026-09-19) hit it and failed at the publish step.
+      # Waiting for PyPI is the honest fix — the dependency is real, and the alternative is publishing
+      # a listing that points at a version nobody can install.
+      - name: Wait for the PyPI version this entry points at
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            if curl -fsS --max-time 20 "https://pypi.org/pypi/misakanet/$VERSION/json" >/dev/null 2>&1; then
+              echo "PyPI has misakanet $VERSION (attempt $attempt)"
+              exit 0
+            fi
+            echo "PyPI does not have $VERSION yet (attempt $attempt/30) — waiting 20s"
+            sleep 20
+          done
+          echo "::error::PyPI never published misakanet $VERSION within 10 minutes; this listing points at that exact version, so publishing now would be rejected (HTTP 400). If the PyPI publish failed, fix that first and re-run this workflow."
+          exit 1
+
+      - name: Validate server.json
+        run: ./mcp-publisher validate
+
+      - name: Authenticate to the registry (OIDC, no stored secret)
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish
+        run: ./mcp-publisher publish
+
+      # Read it back rather than trusting "publish exited 0": the whole point of #1820 is that a
+      # self-reported number nobody checks drifts. This step fails when the registry's `isLatest`
+      # is not the version we just published.
+      - name: The registry now says this version is latest
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          python3 - "$VERSION" <<'PY'
+          import json, sys, urllib.request
+          expected = sys.argv[1]
+          url = ("https://registry.modelcontextprotocol.io/v0/servers"
+                 "?search=io.github.Ikalus1988/misakanet")
+          with urllib.request.urlopen(url, timeout=30) as resp:
+              payload = json.load(resp)
+          official = "io.modelcontextprotocol.registry/official"
+          latest = [(s.get("server", s).get("version"),
+                     s.get("_meta", {}).get(official, {}).get("isLatest"))
+                    for s in payload.get("servers", [])]
+          print("registry versions:", latest)
+          winners = [v for v, is_latest in latest if is_latest]
+          if expected not in [v for v, _ in latest]:
+              sys.exit(f"the registry does not list {expected} at all (propagation can take a moment; "
+                       "re-run this job before assuming the publish failed)")
+          if winners != [expected]:
+              sys.exit(f"the registry's isLatest is {winners}, expected exactly ['{expected}']")
+          print(f"registry isLatest = {expected}")
+          PY

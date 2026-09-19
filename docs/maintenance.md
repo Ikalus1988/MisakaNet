@@ -221,7 +221,7 @@ mcp-publisher publish server.json
 
 | 目录 | 条目状态(2026-09-05) | 认领/刷新方式 | 备注 |
 |---|---|---|---|
-| registry.modelcontextprotocol.io（官方） | **2.29.0（2026-09-12 发布成功，isLatest）** | `mcp-publisher validate/login/publish`（§9） | 权威源；mcptoplist 等镜像它 |
+| registry.modelcontextprotocol.io（官方） | **2.30.2（2026-09-19 起由 CI 自动发布，见下）** | `.github/workflows/publish-mcp-registry.yml`（OIDC，随 release 自动跑；手工补发：`gh workflow run publish-mcp-registry.yml --ref main -f "version=X"`） | 权威源；mcptoplist 等镜像它 |
 | mcptoplist.com | 同 registry（镜像同步有延迟） | registry 更新后自动同步 | 无独立自助入口 |
 | mcpvault.io/servers/misakanet | 已自动收录（2026-09-03 邮件） | 站点 GitHub 登录认领（~1 分钟，免费）→ 请求验证（早期免费，对 https://misakanet.org/mcp 做真实 MCP 握手）→ 得 Verified 徽章（可嵌入 README） | 推广邮件来自 Henrik <hello@trymcpvault.com>；不感兴趣可回复 unsubscribe |
 

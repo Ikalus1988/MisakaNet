@@ -7,7 +7,7 @@
 
 ```bash
 git clone https://github.com/Ikalus1988/MisakaNet.git && cd MisakaNet
-pip install -r requirements.txt        # core: misakanet-core, jsonschema, mcp>=2.1.1, pyyaml
+pip install -r requirements.txt        # core deps **and this checkout** (`-e .`): misakanet-core, jsonschema, mcp, pyyaml
 npm install                            # devDep: wrangler（部署 worker 用）
 ```
 
@@ -45,6 +45,14 @@ pytest tests/ -v --tb=short
 node --test workers/*.test.mjs
 node --test packages/fatal-guard/tests/*.js
 
+# 改安装器（packages/misakanet-setup/**）：先跑单测，再跑**打包产物**的 e2e
+node --test workers/misakanet-setup.test.mjs
+npm pack --pack-destination /tmp --cache .npm-cache   # 在 packages/misakanet-setup 下
+npm install -g --prefix /tmp/mn-prefix /tmp/misaka-net-misakanet-setup-*.tgz
+node packages/misakanet-setup/scripts/e2e-packaged-install.mjs --prefix /tmp/mn-prefix --live
+# 每个断言都必须能变红：--inject 会故意破坏一条承诺并要求对应检查失败
+node packages/misakanet-setup/scripts/e2e-packaged-install.mjs --prefix /tmp/mn-prefix --inject leftover-temp
+
 # 改 lesson：结构与内容门禁
 python3 scripts/lesson_gate.py lessons/contrib/your-lesson.md
 python3 scripts/injection_scan.py --dir lessons        # high 级发现 → 退出码 1
@@ -73,6 +81,7 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 | **lesson-gate** | 变更 `lessons/**` | frontmatter 缺字段、标题重复、domain 不在白名单、正文 <100 字符 |
 | **lesson-security** | 变更 `lessons/**` | 代码块外的危险命令；注入/污染扫描 high 级命中 |
 | **tests** | 所有 PR | ubuntu/macos/windows × 3.11–3.13 任一失败 |
+| **unit / e2e**（`misakanet-setup-ci.yml`） | 变更 `packages/misakanet-setup/**`、`workers/misakanet-setup.test.mjs`、`integrations/agent-autostart/**` | 安装器单测或打包产物 e2e 任一失败；某个 `--inject` 没能让对应检查变红 |
 | **CodeQL** | push main + PR + 每周 | 安全查询命中 |
 | `pr-agent` / `pr-genius` | 所有 PR | **非阻断**（评审参考） |
 
