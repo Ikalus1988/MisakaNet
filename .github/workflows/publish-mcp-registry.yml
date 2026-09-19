@@ -72,6 +72,28 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      # The registry VALIDATES the reference: an entry whose `packages[]` names a pypi version that
+      # does not exist yet is rejected with HTTP 400 — "registry validation failed for package 0
+      # (misakanet): PyPI package 'misakanet' exists, but version '2.31.0' does not". The release flow
+      # dispatches this workflow and the PyPI publish at the same moment, so this is a race, not an
+      # edge case: the first automatic run (2.31.0, 2026-09-19) hit it and failed at the publish step.
+      # Waiting for PyPI is the honest fix — the dependency is real, and the alternative is publishing
+      # a listing that points at a version nobody can install.
+      - name: Wait for the PyPI version this entry points at
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          for attempt in $(seq 1 30); do
+            if curl -fsS --max-time 20 "https://pypi.org/pypi/misakanet/$VERSION/json" >/dev/null 2>&1; then
+              echo "PyPI has misakanet $VERSION (attempt $attempt)"
+              exit 0
+            fi
+            echo "PyPI does not have $VERSION yet (attempt $attempt/30) — waiting 20s"
+            sleep 20
+          done
+          echo "::error::PyPI never published misakanet $VERSION within 10 minutes; this listing points at that exact version, so publishing now would be rejected (HTTP 400). If the PyPI publish failed, fix that first and re-run this workflow."
+          exit 1
+
       - name: Validate server.json
         run: ./mcp-publisher validate
 

@@ -73,6 +73,19 @@ def test_the_publish_is_checked_before_and_read_back_after():
     assert version < login, "check server.json's version before authenticating"
     assert validate < login, "validate before authenticating"
     assert readback > login, "the publish must be read back from the registry, not assumed"
+    # The registry validates that the pypi version in packages[] exists. release-please dispatches this
+    # workflow and the PyPI publish at the same moment, so the first automatic run (2.31.0) failed at
+    # the publish step with HTTP 400 "PyPI package 'misakanet' exists, but version '2.31.0' does not".
+    wait = next(i for i, n in enumerate(names) if "Wait for the PyPI" in n)
+    assert wait < login < readback, (
+        "wait for the PyPI version before authenticating and publishing: the dependency is real "
+        "(the race that failed 2.31.0), and checking it first avoids spending an OIDC login on a run "
+        "that cannot succeed"
+    )
+    wait_run = _step(REGISTRY, "Wait for the PyPI")["run"]
+    assert "pypi.org/pypi/misakanet/" in wait_run and "sleep" in wait_run, (
+        "the wait must actually poll PyPI; a fixed sleep would pass locally and fail on a slow build"
+    )
     assert "isLatest" in _step(REGISTRY, "registry now says")["run"], (
         "the read-back must assert isLatest — 'the version is listed' is not the claim #1820 makes"
     )
