@@ -30,6 +30,8 @@ from pathlib import Path
 
 import pytest
 
+yaml = pytest.importorskip("yaml", reason="PyYAML reads the workflow's trigger block")
+
 REPO = Path(__file__).resolve().parent.parent
 WORKFLOW = REPO / ".github" / "workflows" / "auto-merge-docs.yml"
 START = "// ── docs-only rule"
@@ -37,14 +39,18 @@ END = "// ── end docs-only rule ──"
 
 # path -> is this a docs-only PR made of exactly this one file?
 CASES = {
-    # documentation: yes
+    # prose a human reads: yes
     "docs/field-reports/2026-09-18-report.md": True,
-    "docs/.well-known/mcp.json": True,
-    "docs/index.html": True,
+    "docs/setup-reports/x.yaml": True,
+    "docs/architecture.md": True,
     "README.md": True,
     "CONTRIBUTING.md": True,
     "CHANGELOG.md": True,
     "JOIN.md": True,
+    # machine input / the site frame: a person decides
+    "docs/.well-known/mcp.json": False,
+    "docs/.well-known/llms.txt": False,
+    "docs/index.html": False,
     # lessons are read and acted on by agents: a human merges them, always
     "lessons/contrib/some-lesson.md": False,
     "lessons/en/ci-dco-fork-pr-signoff.md": False,
@@ -71,18 +77,56 @@ def _rule_source() -> str:
     return "\n".join(lines[start + 1:end])
 
 
-def test_the_rule_exists_and_excludes_lessons_by_name():
-    """Structural half: the exclusion is present even where node cannot run it."""
+def test_the_rule_exists_and_excludes_the_non_prose_surfaces_by_name():
+    """Structural half: the exclusions are present even where node cannot run it."""
     rule = _rule_source()
-    assert "lessons/" in rule, "the rule must exclude lessons/ explicitly"
+    for exclusion in ("lessons/", "docs/.well-known/", "docs/index.html"):
+        assert exclusion in rule, f"the rule must exclude {exclusion} explicitly"
     assert "isDocsFile" in rule
-    job_if = WORKFLOW.read_text(encoding="utf-8").split("runs-on:")[0]
+
+
+def _job_condition() -> str:
+    """The job's `if:` expression, comments removed.
+
+    The comment above that condition *names* the automatically applied label it deliberately does not
+    key on, so an assertion against the raw block text fails on the documentation — the third time
+    today a rule was tripped by the prose explaining it.
+    """
+    lines = WORKFLOW.read_text(encoding="utf-8").splitlines()
+    start = next(i for i, line in enumerate(lines) if line.strip().startswith("if: >"))
+    indent = len(lines[start]) - len(lines[start].lstrip())
+    body = []
+    for line in lines[start + 1:]:
+        if line.strip() and (len(line) - len(line.lstrip())) <= indent:
+            break
+        body.append(line)
+    return "\n".join(line for line in body if not line.strip().startswith("#"))
+
+
+def test_a_person_has_to_let_a_pr_in_and_adding_the_label_is_what_triggers_the_check():
+    """The opt-in label is the entry condition, and `labeled` is what fires on it.
+
+    Keying on a label nobody applies automatically is only half a design: the job also has to *run*
+    when that label appears. Both halves are asserted here, because either one alone silently
+    disables the channel — which is exactly how it produced nothing for as long as it existed.
+    """
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    triggers = workflow.get("on") or workflow.get(True) or {}
+    types = triggers["pull_request"]["types"]
+    assert "labeled" in types, (
+        "the job must trigger when a label is added: every label it keys on (auto-merge-eligible, "
+        "lessons-only, needs-human-review) is applied after the PR opens"
+    )
+    job_if = _job_condition()
+    assert "auto-merge-eligible" in job_if, (
+        "the entry condition must be the maintainer's opt-in label, not one applied automatically "
+        "(`area:docs` comes from .github/labeler.yml for every *.md, lessons included)"
+    )
+    assert "area:docs" not in job_if, (
+        "an automatically applied label must not be able to let a PR in on its own"
+    )
     for refusal in ("lessons-only", "needs-human-review"):
-        assert refusal in job_if, (
-            f"the job condition must refuse PRs labelled '{refusal}': `area:docs` is applied "
-            "automatically to every *.md by .github/labeler.yml, so the label alone is not a "
-            "human checkpoint"
-        )
+        assert refusal in job_if, f"the job condition must refuse PRs labelled '{refusal}'"
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node runs the rule inside Actions")

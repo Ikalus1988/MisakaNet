@@ -2,7 +2,13 @@ name: Auto-Merge Docs PRs
 
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review]
+    # `labeled` is load-bearing, not decoration. Every other label this gate could key on arrives
+    # *after* the PR opens: `.github/labeler.yml` adds `area:docs` a few seconds later, and the shape
+    # guard adds `docs-only` on its own run. With only `opened`/`synchronize`/`ready_for_review`, a PR
+    # that became eligible later was never looked at again — which is why this channel produced
+    # nothing since it was written, while two legitimately docs-only external PRs (#1842, #1801) sat
+    # unmerged. The maintainer's own opt-in label arrives through this event too.
+    types: [opened, synchronize, ready_for_review, labeled]
 
 permissions:
   contents: write
@@ -12,24 +18,24 @@ jobs:
   auto-merge:
     # Only run on PRs that are:
     # 1. From external contributors (not from Ikalus1988 or zsxh1990)
-    # 2. Docs-only (no code changes)
-    # 3. Labeled 'good first issue' or 'area:docs'
-    # 4. Not draft
+    # 2. Docs-only by the rule below (no lessons, no machine-readable surfaces)
+    # 3. Carrying the maintainer's opt-in label `auto-merge-eligible`
+    # 4. Not draft, and not asking for a human (`needs-human-review`) or lesson review (`lessons-only`)
     #
-    # Note on 3: `area:docs` is applied **automatically** by `.github/labeler.yml`, whose pattern for
-    # it is `**/*.md` — so every lesson PR carries it too (#1746, #1750: `area:docs` + `area:lessons` +
-    # `lessons-only` + `needs-human-review`). The label is therefore not a human checkpoint, and the
-    # refusals below are what actually keep lesson content out of this path.
+    # On 3: the entry condition is a *human* action on purpose. The labels this used to key on are
+    # applied automatically — `.github/labeler.yml` gives `area:docs` to every `**/*.md`, so every
+    # lesson PR carries it (#1746, #1750: `area:docs` + `area:lessons` + `lessons-only` +
+    # `needs-human-review`) — and an automatic entry condition plus merging to `main` means external
+    # text reaching the published site with nobody having read it. `auto-merge-eligible`'s own
+    # description is "Docs-only PR, eligible for auto-merge when CI passes", it is applied by hand, and
+    # it mirrors the lesson channel's opt-in (`auto-merge-lesson`).
     if: >
       !github.event.pull_request.draft &&
       github.event.pull_request.user.login != 'Ikalus1988' &&
       github.event.pull_request.user.login != 'zsxh1990' &&
+      contains(github.event.pull_request.labels.*.name, 'auto-merge-eligible') &&
       !contains(github.event.pull_request.labels.*.name, 'lessons-only') &&
-      !contains(github.event.pull_request.labels.*.name, 'needs-human-review') &&
-      (
-        contains(github.event.pull_request.labels.*.name, 'good first issue') ||
-        contains(github.event.pull_request.labels.*.name, 'area:docs')
-      )
+      !contains(github.event.pull_request.labels.*.name, 'needs-human-review')
     runs-on: ubuntu-latest
     steps:
       - name: Check if docs-only
@@ -58,8 +64,15 @@ jobs:
             // (`synchronize`) or comes out of draft (`ready_for_review`) after the label lands reaches
             // the Enable auto-merge step with `docs-only: true`. The only thing that stopped them was
             // `needs-dco` — a check about commit trailers, not about review (found 2026-09-19).
+            //
+            // Two exclusions beyond "not a lesson", because "docs" here means *prose a human reads*:
+            // `docs/.well-known/**` are discovery cards other agents fetch and parse, and
+            // `docs/index.html` is the site itself (version badge, counts, claims). Both are machines'
+            // input or the page's frame; neither should change without a person deciding.
             const isDocsFile = (path) =>
               !path.startsWith('lessons/') &&
+              !path.startsWith('docs/.well-known/') &&
+              path !== 'docs/index.html' &&
               (path.startsWith('docs/') ||
                ['CONTRIBUTING.md', 'README.md', 'JOIN.md', 'CHANGELOG.md'].includes(path));
             // ── end docs-only rule ──
