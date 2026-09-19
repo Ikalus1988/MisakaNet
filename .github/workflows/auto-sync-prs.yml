@@ -100,9 +100,13 @@ jobs:
           done
 
       # Read it back: "the push succeeded" is not the claim. The claim is "the PR's checks run again",
-      # and that is exactly what silently stopped happening. A sync whose head has no check runs after
-      # a minute is a broken sync, and saying so here is cheaper than the next person discovering it
-      # from an "unstable" PR.
+      # and that is exactly what silently stopped happening.
+      #
+      # The first version of this check asked "are there any check runs on the new head?" and passed on
+      # a head whose fourteen Actions runs were **all held as `action_required`** — because Cloudflare
+      # Workers Builds publishes a check run for the site without using workflow events. One green check
+      # from an app is not CI. So this counts the two things the claim is actually about: runs that came
+      # from `github-actions`, and runs that are waiting for approval instead of running.
       - name: Verify the synced heads actually have CI
         if: always()
         env:
@@ -113,12 +117,18 @@ jobs:
           for entry in $(cat "$RUNNER_TEMP/synced.txt" 2>/dev/null || true); do
             NUM="${entry%%:*}"; SHA="${entry##*:}"
             for attempt in 1 2 3 4 5 6; do
-              COUNT=$(gh api "repos/$REPO/commits/$SHA/check-runs" --jq '.total_count' 2>/dev/null || echo 0)
-              if [ "$COUNT" -gt 0 ]; then
-                echo "PR #$NUM: $COUNT check run(s) on ${SHA:0:7} — CI is running"
+              ACTIONS=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
+                --jq '[.check_runs[] | select(.app.slug == "github-actions")] | length' 2>/dev/null || echo 0)
+              HELD=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&status=action_required" \
+                --jq '.total_count' 2>/dev/null || echo 0)
+              if [ "$ACTIONS" -gt 0 ]; then
+                echo "PR #$NUM: $ACTIONS GitHub Actions check run(s) on ${SHA:0:7} — CI is running"
+                [ "$HELD" -gt 0 ] && echo "::warning::PR #$NUM also has $HELD run(s) held as action_required — some workflows did not start (approve them: gh api repos/$REPO/actions/runs/<id>/approve -X POST)"
                 break
               fi
-              [ "$attempt" -eq 6 ] && echo "::warning::PR #$NUM has NO check runs on the synced head ${SHA:0:7} — the push did not trigger CI. If this happens with a PAT in place, the token is the wrong kind (a GITHUB_TOKEN-equivalent will not trigger workflows)."
+              if [ "$attempt" -eq 6 ]; then
+                echo "::warning::PR #$NUM has no GitHub Actions check runs on the synced head ${SHA:0:7} ($HELD run(s) held as action_required). The push did not produce working CI: either the token cannot trigger workflows (a GITHUB_TOKEN-equivalent never can) or its owner's pushes are held for approval. An app check run (Cloudflare/Codecov) does not count."
+              fi
               sleep 10
             done
           done
