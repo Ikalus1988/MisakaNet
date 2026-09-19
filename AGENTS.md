@@ -200,5 +200,6 @@ python3 scripts/doctor.py                        # 仓库自检
 - **维护者**：`docs/agents/repo-operations.md`（**仓库操作手册**：环境与构建、目录地图、测试与门禁全表、
   三条标准改动流程、部署与数据、排错手册）· `docs/maintainer/intake-triage.md`（intake 处置 SOP，
   **含"修复后必须给报料者回执"铁律**）· `docs/agents/content-injection-defense.md`（注入威胁模型与四层防护）
-  · `docs/maintainer/handoff-*.md`（逐轮交接与待办快照）
+  · `docs/maintainer/credentials-and-environments.md`（**凭据与环境**：哪个密钥放在哪个 environment、
+  谁能读、什么时候轮换）· `docs/maintainer/handoff-*.md`（逐轮交接与待办快照）
 - **架构/接口**：`ARCHITECTURE.md` · `API.md` · `docs/`（基线、基准、registry 维护）
