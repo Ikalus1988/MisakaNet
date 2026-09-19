@@ -85,18 +85,18 @@ test('anonymous misakanet_get_lesson succeeds without auth (no 401)', async () =
   assert.doesNotMatch(text, /REGISTER_TOKEN|GitHub API|at Object\.|runner/);
 });
 
-test('anonymous reads share a 5/day/IP quota across search and get_lesson', async () => {
+test('anonymous reads share one burst window across search and get_lesson', async () => {
   const env = withLessons(createEnv());
-  const today = new Date().toISOString().slice(0, 10);
+  const burst = `burst-${new Date().toISOString().slice(0, 16).replace(':', '-')}`;
   const ip = '203.0.113.99';
-  // Pre-fill quota at 5/5 for this IP.
-  env.MISAKANET_KV._store.set(`rate:read:${ip}:${today}`, '5');
+  // Pre-fill the burst window for this IP (the limit is per minute now, not per day).
+  env.MISAKANET_KV._store.set(`rate:read:${ip}:${burst}`, '20');
 
   const resp = await mcpCall('misakanet_search', { query: 'pip timeout' }, {}, env);
   assert.equal(resp.status, 200);
   const result = await resultText(resp);
-  assert.match(result.error, /5 free reads per day \(searches and lesson reads share one quota\)/);
-  assert.match(result.hint, /misakanet_register/);
+  assert.match(result.error, /Too many requests: max \d+ reads per \d+s/);
+  assert.match(result.hint, /retry after|no registration needed/);
 });
 
 test('authenticated callers are exempt from the anonymous quota', async () => {
