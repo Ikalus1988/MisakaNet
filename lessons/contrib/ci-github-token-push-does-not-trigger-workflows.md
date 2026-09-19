@@ -7,7 +7,7 @@ evidence_level: "E0"
 created: "2026-09-19"
 summary_plain: "A bot that pushes to a PR branch with the built-in token updates it but starts no CI, leaving the PR stuck."
 trigger: "PR unstable / waiting for status after a bot pushed to the branch; no check runs on the fresh head, or runs sitting in action_required"
-verify: "On the pushed head, `actions/runs?head_sha=<sha>&status=action_required` is 0 and at least one `github-actions` check run exists — counting any check run is not enough (an app check can be the only one)"
+verify: "On the pushed head, no run sits in action_required and at least one check run comes from github-actions — any check run is not enough (an app check can be the only one)"
 provenance:
   source: "MisakaNet repository, 2026-09-19: auto-sync-prs.yml froze PR #1870"
 ---
