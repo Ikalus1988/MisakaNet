@@ -2184,7 +2184,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     if (d1Binding(env)) {
       const faq = await fetchAnsweredQuestions(env);
       if (faq.length) {
-        const faqHits = matchAnsweredQuestions(faq, args.query || "", args.detail || "compact");
+        const faqHits = matchAnsweredQuestions(faq, args.query || "", args.detail || "compact", 3, args.domain);
         if (faqHits.length) results = results.concat(faqHits);
       }
     }
@@ -3402,7 +3402,7 @@ async function fetchAnsweredQuestions(env) {
 // compact/summary get a capped snippet + issue_url so results stay token-cheap
 // (answers can be up to 20k chars — carrying them in every hit would blow the
 // compact budget).
-function matchAnsweredQuestions(rows, query, detail = "compact", top = 3) {
+function matchAnsweredQuestions(rows, query, detail = "compact", top = 3, domain = null) {
   const tokens = matchTokens(query);
   if (!tokens.length) return [];
   // Same bar as the lesson search: one overlapping word is not a match. A single
@@ -3412,6 +3412,8 @@ function matchAnsweredQuestions(rows, query, detail = "compact", top = 3) {
   const fullDetail = detail === "full";
   const scored = [];
   for (const row of rows) {
+    const rowDomain = (row.domain || "faq").toLowerCase();
+    if (domain && rowDomain !== domain.toLowerCase()) continue;
     const hayTokens = new Set(matchTokens(`${row.problem || ""} ${row.answer || ""}`));
     let overlap = 0;
     for (const t of tokens) if (hayTokens.has(t)) overlap += 1;
@@ -3429,7 +3431,7 @@ function matchAnsweredQuestions(rows, query, detail = "compact", top = 3) {
   return scored.slice(0, top).map(({ row, score, desc, answerShown }) => ({
     id: `faq-issue-${row.issue_number}`,
     title: String(row.problem || `FAQ #${row.issue_number}`).slice(0, 120),
-    domain: "faq",
+    domain: row.domain || "faq",
     tags: ["faq"],
     path: row.issue_url || "",
     description: desc,
@@ -5331,4 +5333,5 @@ export {
   aggregateDailyTraffic,
   runKeepaliveSweep,
   cleanupCoveredGaps,
+  matchAnsweredQuestions,
 };
