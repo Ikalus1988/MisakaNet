@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-19T15:57:10.299415+00:00",
+  "generated_at": "2026-09-19T20:50:06.732198+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(lessons): the two ways today's CI automation was silently inert",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1873",
-      "timestamp": "2026-09-19T14:19:17Z",
+      "title": "docs: assess the README against alibaba/open-code-review, and un-orphan zh-CN",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1889",
+      "timestamp": "2026-09-19T18:50:23Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(aliases): evidence points at source files, and a gate keeps it there",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1877",
-      "timestamp": "2026-09-19T14:11:49Z",
+      "title": "docs: record that the D1-only token was proven sufficient, not assumed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1888",
+      "timestamp": "2026-09-19T18:40:59Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): the sync's read-back counts Actions runs, not any check run",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1875",
-      "timestamp": "2026-09-19T14:07:58Z",
+      "title": "ci: run the scheduled syncs unattended, with a D1-only credential",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1887",
+      "timestamp": "2026-09-19T18:33:45Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs: misakanet-setup v0.5.1 architecture review + macOS test report",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1761",
-      "timestamp": "2026-09-19T14:03:29Z",
+      "title": "fix(ci): the two scheduled syncs can read a credential again",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1885",
+      "timestamp": "2026-09-19T18:02:54Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(mcp): apply domain filter to matchAnsweredQuestions FAQ results (#1743)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1800",
-      "timestamp": "2026-09-19T14:03:25Z",
+      "title": "ci: publish and deploy credentials come from the protected environment",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1884",
+      "timestamp": "2026-09-19T17:38:30Z",
       "source": "github"
     },
     {
