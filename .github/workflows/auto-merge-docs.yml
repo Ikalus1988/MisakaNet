@@ -1,7 +1,21 @@
 name: Auto-Merge Docs PRs
 
 on:
-  pull_request:
+  # `pull_request_target`, not `pull_request`, and that is the difference between a channel that works
+  # for external contributors and one that does not.
+  #
+  # A `pull_request` run from a fork is created in the `action_required` state and **does not execute**
+  # until a maintainer approves it (first-time contributors). #1801's head commit carries exactly that
+  # for eight workflows, `Auto-Merge Docs PRs` among them: a suite that exists, reads
+  # `action_required`, and never ran a single step. The population this gate exists for — external
+  # contributors' docs PRs — is the population whose runs are held.
+  #
+  # Safety of `pull_request_target` here is a property of what the workflow does, so state it: it never
+  # checks out the PR, never runs any file from it, and its only writes are a label-driven merge of an
+  # already-reviewed PR. The `github-script` steps call the REST API with values GitHub supplies. If a
+  # future edit adds `actions/checkout` of the PR head or executes anything from the diff, this trigger
+  # becomes the classic vulnerability — that is the line not to cross.
+  pull_request_target:
     # `labeled` is load-bearing, not decoration. Every other label this gate could key on arrives
     # *after* the PR opens: `.github/labeler.yml` adds `area:docs` a few seconds later, and the shape
     # guard adds `docs-only` on its own run. With only `opened`/`synchronize`/`ready_for_review`, a PR
