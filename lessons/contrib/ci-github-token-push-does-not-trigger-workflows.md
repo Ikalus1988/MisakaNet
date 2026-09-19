@@ -6,8 +6,8 @@ status: "published"
 evidence_level: "E0"
 created: "2026-09-19"
 summary_plain: "A bot that pushes to a PR branch with the built-in token updates it but starts no CI, leaving the PR stuck."
-trigger: "PR shows unstable / expected waiting for status after a bot merged main into the branch; check-runs total_count is 0 on a fresh head"
-verify: "After the sync push, `gh api repos/{owner}/{repo}/commits/<sha>/check-runs --jq .total_count` is > 0 within a minute, and the PR leaves `unstable`"
+trigger: "PR unstable / waiting for status after a bot pushed to the branch; no check runs on the fresh head, or runs sitting in action_required"
+verify: "On the pushed head, `actions/runs?head_sha=<sha>&status=action_required` is 0 and at least one `github-actions` check run exists — counting any check run is not enough (an app check can be the only one)"
 provenance:
   source: "MisakaNet repository, 2026-09-19: auto-sync-prs.yml froze PR #1870"
 ---
@@ -80,6 +80,49 @@ Two details worth keeping, both learned the hard way:
    AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$SYNC_TOKEN" | base64 -w0)"
    git -c http.extraheader="$AUTH_HEADER" push origin "HEAD:$HEAD_REF"
    ```
+
+### And the second half: a PAT push can create runs that are *held*
+
+Fixing the token is necessary and not sufficient. The first sync performed with a PAT in place produced
+**fourteen `pull_request` runs on the new head, every one of them `action_required`** — created, held
+for approval, never executed. A different token moved the failure from "no run exists" to "the run
+exists and is waiting for a human":
+
+```
+2026-09-19T13:54:30Z  DCO Check           8843f61e4  pull_request  completed/action_required
+2026-09-19T13:54:30Z  Cross-Platform Tests 8843f61e4  pull_request  completed/action_required
+… twelve more, all with latest_check_runs_count = 0
+```
+
+Holding happens when GitHub does not trust the push's *actor* to run workflows on that ref — the
+repository's fork/outside-collaborator approval policy, applied to whoever the token belongs to. In this
+repository the accumulated backlog of such runs was **1,804** on 2026-09-19, so it is the normal state
+of bot-pushed branches, not an edge case.
+
+What to do about it:
+
+* push with a token owned by an account whose pushes are trusted on the repository (its owner or a
+  member) — the same PAT that can write to the API is not automatically one whose pushes trigger CI;
+* when a run is already held, a maintainer can release it:
+  `gh api repos/{owner}/{repo}/actions/runs/<run_id>/approve -X POST` (or *Approve and run* in the UI);
+* and prefer a push you make yourself when the automation is the thing being tested — a human push has
+  no approval step to lose.
+
+### Detection must count the right thing
+
+The read-back above was first written as "are there any check runs on the new head?", and it reported
+success on a head whose fourteen Actions runs were all held — because a **non-Actions** check run was
+present (Cloudflare Workers Builds publishes a check run for the site). One green check from an app that
+does not use workflow events is not CI. Count what the claim is about:
+
+```bash
+# how many check runs on this head came from GitHub Actions?
+gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
+  --jq '[.check_runs[] | select(.app.slug == "github-actions")] | length'
+
+# and how many *runs* on this head are held rather than running?
+gh api "repos/$REPO/actions/runs?head_sha=$SHA&status=action_required" --jq '.total_count'
+```
 
 ## Verification
 
