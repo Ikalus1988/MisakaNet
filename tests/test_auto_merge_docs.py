@@ -112,7 +112,22 @@ def test_a_person_has_to_let_a_pr_in_and_adding_the_label_is_what_triggers_the_c
     """
     workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     triggers = workflow.get("on") or workflow.get(True) or {}
-    types = triggers["pull_request"]["types"]
+    assert "pull_request_target" in triggers, (
+        "a fork PR's `pull_request` run is held as `action_required` until a maintainer approves it "
+        "(#1801: eight suites, including this workflow, that never executed) — and external "
+        "contributors are exactly who this gate is for"
+    )
+    # The trigger is only safe because the workflow never touches PR code. Pin that, or a later edit
+    # turns this into the classic `pull_request_target` vulnerability.
+    # Comments stripped: the workflow's own comment names `actions/checkout` while explaining why it
+    # must never appear here (the fourth time today a rule was tripped by the prose documenting it).
+    text = "\n".join(line for line in WORKFLOW.read_text(encoding="utf-8").splitlines()
+                     if not line.strip().startswith("#"))
+    assert "actions/checkout" not in text, (
+        "pull_request_target + checking out the PR head + a write token is the textbook exploit; this "
+        "workflow must stay API-only"
+    )
+    types = triggers["pull_request_target"]["types"]
     assert "labeled" in types, (
         "the job must trigger when a label is added: every label it keys on (auto-merge-eligible, "
         "lessons-only, needs-human-review) is applied after the PR opens"
