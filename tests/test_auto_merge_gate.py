@@ -29,6 +29,11 @@ REPO = Path(__file__).resolve().parent.parent
 PR_CHECKS = REPO / ".github" / "workflows" / "pr-checks.yml"
 
 
+def _code(script: str) -> str:
+    """Executable lines only — the comments name the constructs these tests forbid."""
+    return "\n".join(line for line in script.splitlines() if not line.strip().startswith("#"))
+
+
 def _gate_script() -> str:
     workflow = yaml.safe_load(PR_CHECKS.read_text(encoding="utf-8"))
     for job in workflow["jobs"].values():
@@ -53,6 +58,7 @@ def test_the_gate_reads_the_rest_boolean_not_the_graphql_enum():
 
 def test_the_gates_that_must_stay_between_mergeable_and_merging_stay():
     script = _gate_script()
+    code = _code(script)
     # Lesson content is executed by agents: an auto-merged attacker-authored lesson is a poisoning
     # vector (2026-08-30 security gate).
     assert "lessons/" in script, "the lessons/ human-merge gate must not be dropped"
@@ -61,6 +67,12 @@ def test_the_gates_that_must_stay_between_mergeable_and_merging_stay():
     assert "UNCHECKED" in script and r'\[ \]' in script
     assert "gh pr merge" in script and "--auto" in script, (
         "the gate must enable GitHub's auto-merge (which waits for required checks), not merge directly"
+    )
+    # A conventional-looking merge subject makes release-please list the merge commit *and* the
+    # branch commit it merged: every auto-merged PR showed up twice in the next release notes.
+    assert "--subject" not in code, (
+        "let GitHub write the default merge subject ('Merge pull request #N from …'): it is not a "
+        "conventional commit, so release-please skips it instead of duplicating the changelog entry"
     )
 
 
