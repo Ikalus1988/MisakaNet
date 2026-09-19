@@ -3025,6 +3025,19 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
         if (/^[A-Za-z0-9._:-]{8,64}$/.test(headerClientId)) args.client_id = headerClientId;
         else debugLog(env, 2, "ignored X-MisakaNet-Client: expected 8-64 chars of [A-Za-z0-9._:-]");
       }
+      // Self-declared context, same posture as `client_id`: a hint for the analytics row, never an
+      // authorization input, never trusted as identity (2026-09-18 policy — reads need no account, so
+      // the row has to be filled from the request). The installer writes these headers into each
+      // assistant's MCP config, which is where the OS and the assistant name are known for free.
+      // An argument always wins; a value that is too long is dropped rather than stored.
+      for (const [header, field, max] of [["X-MisakaNet-Agent", "agent", 40],
+                                          ["X-MisakaNet-Os", "os", 40],
+                                          ["X-MisakaNet-Version", "client_version", 40]]) {
+        const value = (request.headers.get(header) || "").trim();
+        if (!value || args[field]) continue;
+        if (value.length <= max) args[field] = value;
+        else debugLog(env, 2, `ignored ${header}: longer than ${max} characters`);
+      }
       if (!toolName) {
         const err = { code: -32602, message: "Missing tool name" };
         debugLog(env, 1, "MCP tool call: missing tool name");
