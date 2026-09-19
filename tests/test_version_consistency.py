@@ -313,3 +313,80 @@ def test_the_site_badge_has_a_writer_in_the_release_path():
         f"otherwise the release bot cannot update the badge; found {len(annotated)}")
     assert re.search(r">v\d+\.\d+\.\d+<", annotated[0]), (
         f"the annotation must sit on the line carrying the version: {annotated[0][:120]}")
+
+
+# Every file whose version a rule pins to pyproject.toml (or the registry line) must also be
+# reachable by release-please: the release-type python manifest bumps pyproject.toml, and it bumps
+# other files only when they are declared in `extra-files` AND carry the annotation on the
+# version-carrying line. A pinned value with no writer makes every release PR red.
+#
+# `docs/index.html` got its writer on 2026-09-12 (the test above). `scripts/misakanet_cli.py` and
+# `workers/register-proxy-sw.js` did not, and the 2.31.0 release PR arrived with
+# `AssertionError: misakanet_cli.py says 2.30.2, pyproject says 2.31.0` — a release that cannot merge
+# is a release that does not happen, and it is invisible until someone needs one (found 2026-09-19,
+# while unblocking release-please itself).
+PINNED_VERSION_FILES = {
+    "scripts/misakanet_cli.py": r'^VERSION\s*=\s*"\d+\.\d+\.\d+"',
+    "workers/register-proxy-sw.js": r'env\.MCP_VERSION\s*\|\|\s*"\d+\.\d+\.\d+"',
+    "docs/index.html": r">v\d+\.\d+\.\d+<",
+}
+
+
+def _writer_problems(root: Path) -> list[str]:
+    """Which pinned-version files release-please cannot update, given a repository root.
+
+    Takes the root so the same rule can be run against a scratch copy — a check that only ever reads
+    the real repository is a check whose failure mode nobody can demonstrate.
+    """
+    config = json.loads((root / "release-please-config.json").read_text(encoding="utf-8"))
+    declared = {entry if isinstance(entry, str) else entry["path"]
+                for entry in config["packages"]["."]["extra-files"]}
+    problems = []
+    for rel, pattern in PINNED_VERSION_FILES.items():
+        if rel not in declared:
+            problems.append(f"{rel} is not in release-please-config.json extra-files")
+            continue
+        text = (root / rel).read_text(encoding="utf-8")
+        # The annotation must sit on the line that carries the version — that is the line
+        # release-please's Generic updater rewrites. Prose that merely names the annotation (these
+        # files document the mechanism in comments) is not an annotation, and the first version of
+        # this rule counted it, so the rule failed on its own documentation.
+        annotated = [line for line in text.splitlines()
+                     if "x-release-please-version" in line and re.search(pattern, line)]
+        if len(annotated) != 1:
+            problems.append(
+                f"{rel} has {len(annotated)} lines carrying both a version and an "
+                "x-release-please-version annotation, expected exactly 1")
+    return problems
+
+
+def test_every_pinned_version_has_a_writer_in_the_release_path():
+    problems = _writer_problems(REPO)
+    assert not problems, (
+        "these files carry versions that tests pin to pyproject.toml/registry, but release-please "
+        "cannot update them, so the next release PR will be red:\n  - " + "\n  - ".join(problems))
+
+
+def test_the_writer_check_notices_a_file_that_loses_its_annotation(tmp_path):
+    """Guard the guard: a rule that cannot fail is not a rule.
+
+    The rule above reads the real repository, so its failure mode (someone drops the annotation while
+    editing the file) is not observable from CI. This runs the *same* function against a scratch copy
+    with the annotation removed, and against the copy as-is as a control.
+    """
+    import shutil
+
+    scratch = tmp_path / "repo"
+    (scratch / "scripts").mkdir(parents=True)
+    (scratch / "workers").mkdir(parents=True)
+    (scratch / "docs").mkdir(parents=True)
+    for rel in list(PINNED_VERSION_FILES) + ["release-please-config.json"]:
+        shutil.copy(REPO / rel, scratch / rel)
+    assert _writer_problems(scratch) == [], "the copied tree must start clean, or the control is empty"
+
+    victim = scratch / "scripts" / "misakanet_cli.py"
+    victim.write_text(victim.read_text(encoding="utf-8").replace("x-release-please", "not-an"),
+                      encoding="utf-8")
+    problems = _writer_problems(scratch)
+    assert any("misakanet_cli.py" in problem for problem in problems), (
+        f"removing the annotation must be reported, got: {problems}")
