@@ -45,29 +45,53 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
-      - name: Install mcp-publisher
+      # Pinned tag AND verified checksum, because this step downloads a binary and runs it in a job
+      # that holds `id-token: write`. `releases/latest` plus an unverified pipe to `tar` means the
+      # publisher's release channel could change what executes here, and a compromised one would run
+      # with this repository's OIDC identity — the ability to publish under our namespace. The digests
+      # are the published per-platform ones for this tag (release API, 2026-09-19). Upgrading is a
+      # deliberate edit of two lines, which is the point.
+      - name: Install mcp-publisher (pinned, checksum verified)
+        env:
+          PUBLISHER_VERSION: v1.8.1
+          PUBLISHER_SHA256_AMD64: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
+          PUBLISHER_SHA256_ARM64: 8dd75a6cf6845688b5d4e46df58d3ca26d5c8d233bb0626606e1db82c5e883e4
         run: |
           set -euo pipefail
-          ASSET="mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz"
+          ARCH="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"
+          case "$ARCH" in
+            amd64) EXPECTED="$PUBLISHER_SHA256_AMD64" ;;
+            arm64) EXPECTED="$PUBLISHER_SHA256_ARM64" ;;
+            *) echo "::error::no pinned digest for architecture $ARCH — add one rather than running unverified"; exit 1 ;;
+          esac
+          ASSET="mcp-publisher_linux_${ARCH}.tar.gz"
           curl -fsSL --retry 3 \
-            "https://github.com/modelcontextprotocol/registry/releases/latest/download/$ASSET" \
-            | tar xz mcp-publisher
+            "https://github.com/modelcontextprotocol/registry/releases/download/${PUBLISHER_VERSION}/${ASSET}" \
+            -o "$RUNNER_TEMP/publisher.tgz"
+          echo "${EXPECTED}  ${RUNNER_TEMP}/publisher.tgz" | sha256sum -c -
+          tar xzf "$RUNNER_TEMP/publisher.tgz" mcp-publisher
           ./mcp-publisher --help | head -3
-          echo "publisher sha256: $(sha256sum mcp-publisher | cut -d' ' -f1)"
+          echo "publisher: ${PUBLISHER_VERSION} (${ARCH}), checksum verified"
 
       # The version we publish is the version in the repository, and it is checked BEFORE the
       # identity step so a wrong checkout cannot publish an older description or runtime under a
       # newer number. (2026-09-12: publishing from a stale local file left the registry carrying
       # wording that docs/trust-semantics.md forbids — the reason that note exists.)
+      #
+      # `${{ inputs.version }}` goes through `env:` rather than into the script text: a shell script
+      # with an interpolated expression is a shell script whose *content* depends on the value, and
+      # any value that reaches it through a file (here: `server.json`) is worth treating as data.
       - name: The version being published is the one on disk
         id: version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           VERSION=$(python3 -c "import json;print(json.load(open('server.json'))['version'])")
           RUNTIME=$(python3 -c "import json;print(json.load(open('server.json'))['packages'][0]['runtime']['args'][-1])")
           echo "server.json: version=$VERSION runtime=$RUNTIME"
-          if [ -n "${{ inputs.version }}" ] && [ "${{ inputs.version }}" != "$VERSION" ]; then
-            echo "::error::asked to publish ${{ inputs.version }} but server.json says $VERSION"
+          if [ -n "${REQUESTED_VERSION:-}" ] && [ "$REQUESTED_VERSION" != "$VERSION" ]; then
+            echo "::error::asked to publish $REQUESTED_VERSION but server.json says $VERSION"
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -80,9 +104,10 @@ jobs:
       # Waiting for PyPI is the honest fix — the dependency is real, and the alternative is publishing
       # a listing that points at a version nobody can install.
       - name: Wait for the PyPI version this entry points at
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          VERSION="${{ steps.version.outputs.version }}"
           for attempt in $(seq 1 30); do
             if curl -fsS --max-time 20 "https://pypi.org/pypi/misakanet/$VERSION/json" >/dev/null 2>&1; then
               echo "PyPI has misakanet $VERSION (attempt $attempt)"
@@ -107,9 +132,10 @@ jobs:
       # self-reported number nobody checks drifts. This step fails when the registry's `isLatest`
       # is not the version we just published.
       - name: The registry now says this version is latest
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          VERSION="${{ steps.version.outputs.version }}"
           python3 - "$VERSION" <<'PY'
           import json, sys, urllib.request
           expected = sys.argv[1]

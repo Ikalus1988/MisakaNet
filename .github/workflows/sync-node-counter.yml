@@ -44,7 +44,10 @@ jobs:
 
       - name: Commit when it moved
         run: |
-          if git diff --quiet; then
+          # `git status --porcelain`, not `git diff --quiet`: the latter ignores untracked files, so a
+          # file the refresh *created* would take this early exit and never be committed — the same
+          # "the fix ran and its result was dropped" shape as the discarded README tables below.
+          if [ -z "$(git status --porcelain)" ]; then
             echo "No change — the file and its surfaces already match the live counter."
             exit 0
           fi

@@ -101,7 +101,8 @@ jobs:
           # This job declares `actions: write`, which is what `gh workflow run`
           # needs; dispatching is one of the events a GITHUB_TOKEN may still create.
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run release-pypi.yml --ref main -f "version=${{ steps.release_tag.outputs.version }}"
+          VERSION: ${{ steps.release_tag.outputs.version }}
+        run: gh workflow run release-pypi.yml --ref main -f "version=$VERSION"
 
       # The official MCP registry, published on every release instead of by hand. It used to be a
       # manual `mcp-publisher publish` on a maintainer's machine, and the entry drifted to
@@ -112,7 +113,20 @@ jobs:
         if: steps.release_tag.outputs.created == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run publish-mcp-registry.yml --ref main -f "version=${{ steps.release_tag.outputs.version }}"
+          VERSION: ${{ steps.release_tag.outputs.version }}
+        run: |
+          set -euo pipefail
+          # Dispatch at the TAG, not at main. The registry publish used to run on `main`, where the
+          # tag it describes may already be behind the branch — "the bytes are the ones on the tag"
+          # was a comment describing something the workflow did not do. The tag exists by now (the
+          # step above pushed it), and it contains this workflow because it was created from a commit
+          # that has it. The fallback keeps a first-release edge case (a tag GitHub has not indexed
+          # yet) from turning into a silent skip; the version guard inside still refuses a mismatch.
+          gh workflow run publish-mcp-registry.yml --ref "v$VERSION" -f "version=$VERSION" \
+            || {
+              echo "::warning::could not dispatch at tag v$VERSION; falling back to main (the version guard still applies)"
+              gh workflow run publish-mcp-registry.yml --ref main -f "version=$VERSION"
+            }
 
       # Idempotent and *unconditional*: it rewrites docs/index.html only when the
       # badge drifted from the manifest, and the commit below only fires when the
@@ -120,9 +134,10 @@ jobs:
       # main instead of waiting for the next release (this is how v2.23.0 sat there
       # for six releases while the step was dead).
       - name: Sync version to docs
+        env:
+          VERSION: ${{ steps.release_tag.outputs.version }}
         run: |
           set -euo pipefail
-          VERSION="${{ steps.release_tag.outputs.version }}"
           echo "Syncing version $VERSION to docs..."
 
           # docs/index.html carries exactly one version string (the badge).
