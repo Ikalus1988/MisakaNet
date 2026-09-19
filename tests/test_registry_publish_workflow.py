@@ -97,9 +97,17 @@ def test_the_release_flow_dispatches_it_and_only_when_it_tagged_a_release():
         "an unconditional dispatch would republish the same version on every push to main"
     )
     assert "gh workflow run publish-mcp-registry.yml" in dispatch["run"]
-    assert "version=${{ steps.release_tag.outputs.version }}" in dispatch["run"], (
+    # The version reaches the dispatch through `env:`, and the script text never contains an
+    # expression: `-f "version=${{ … }}"` rewrites the script's *content* with a value that comes out
+    # of the repository (the manifest), which is the shell-injection shape this session's review
+    # flagged — and this test caught the change, which is the point of pinning a contract.
+    assert dispatch["env"]["VERSION"] == "${{ steps.release_tag.outputs.version }}", (
         "the release flow knows the version it just tagged; pass it so the workflow can refuse a "
         "mismatch instead of publishing the file as-is"
+    )
+    assert '-f "version=$VERSION"' in dispatch["run"]
+    assert "${{" not in dispatch["run"], (
+        "no expression may be interpolated into the dispatched shell command"
     )
     # The PyPI dispatch is the precedent this follows — both tokens are the built-in one, which is
     # the only one carrying `actions: write` (see the comment there about the PAT's 403).

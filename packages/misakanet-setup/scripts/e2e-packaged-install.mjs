@@ -478,13 +478,16 @@ const CHECKS = [
       const forAgent = (agent) => expectedHints({ agent, clientId, version });
 
       // Claude Code: the hints sit in the same headers object as the credential.
-      const claude = readJson(join(home, '.claude.json')).mcpServers.misakanet.headers || {};
+      // `?.` all the way: if the installer stops writing an entry, this check must fail with the
+      // sentence it was written to say, not with `Cannot read properties of undefined`.
+      const claude = readJson(join(home, '.claude.json')).mcpServers?.misakanet?.headers || {};
       needHints('claude', claude, forAgent('claude-code'));
       need(claude.Authorization === `Bearer ${stub.state.token}`,
         'the hints must not have displaced the credential');
 
       // openclaw: the same promises in its own JSON.
-      const openclaw = readJson(join(home, '.openclaw', 'openclaw.json')).mcp.servers.misakanet.headers || {};
+      const openclaw = readJson(join(home, '.openclaw', 'openclaw.json'))
+        .mcp?.servers?.misakanet?.headers || {};
       needHints('openclaw', openclaw, forAgent('openclaw'));
 
       // codex keeps them in ONE inline TOML table — a second `http_headers` line is a duplicate key
@@ -511,7 +514,7 @@ const CHECKS = [
       const offline = makeUserHome();
       const off = await cli(['--home', offline, '--no-register'], { home: offline });
       need(off.status === 0, `offline install must succeed: ${show(off)}`);
-      const offHeaders = readJson(join(offline, '.claude.json')).mcpServers.misakanet.headers || {};
+      const offHeaders = readJson(join(offline, '.claude.json')).mcpServers?.misakanet?.headers || {};
       need(offHeaders.Authorization === undefined,
         'with no token there must be no Authorization header — that is the whole difference');
       for (const key of ['X-MisakaNet-Agent', 'X-MisakaNet-Os', 'X-MisakaNet-Version']) {
