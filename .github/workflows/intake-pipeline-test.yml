@@ -22,6 +22,8 @@ permissions:
 
 jobs:
   pipeline:
+    # `workflow_dispatch`-only: the environment's rules apply to runs a person started.
+    environment: release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
