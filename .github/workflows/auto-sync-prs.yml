@@ -15,6 +15,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           fetch-depth: 0
+          # No persisted credentials, because this job pushes with its own token and the two do not
+          # coexist: `actions/checkout` writes `http.https://github.com/.extraheader` into the local
+          # git config with `GITHUB_TOKEN`, and a later `git -c http.extraheader=…` *appends* a second
+          # Authorization header rather than replacing it — the server used the checkout's, so the
+          # push was authenticated by the bot while the workflow believed it was using the PAT
+          # (measured 2026-09-19: the runs created by the sync carried `actor=github-actions[bot]`).
+          persist-credentials: false
 
       - name: List open PRs targeting main
         id: prs
@@ -82,6 +89,9 @@ jobs:
             git fetch origin "$HEAD_REF"
             if git checkout "$HEAD_REF" 2>/dev/null; then
               if git merge origin/main --no-edit 2>&1; then
+                # `--force-with-lease`-free by design: this is a merge commit on top of the branch,
+                # so a fast-forward. With no persisted credentials in the checkout, this header is the
+                # only Authorization the push carries.
                 git -c http.extraheader="$AUTH_HEADER" push origin "HEAD:$HEAD_REF"
                 echo "$NUM:$(git rev-parse HEAD)" >> "$RUNNER_TEMP/synced.txt"
                 echo "  ✅ Merged main into #$NUM"
@@ -127,7 +137,8 @@ jobs:
                 break
               fi
               if [ "$attempt" -eq 6 ]; then
-                echo "::warning::PR #$NUM has no GitHub Actions check runs on the synced head ${SHA:0:7} ($HELD run(s) held as action_required). The push did not produce working CI: either the token cannot trigger workflows (a GITHUB_TOKEN-equivalent never can) or its owner's pushes are held for approval. An app check run (Cloudflare/Codecov) does not count."
+                ACTOR=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=1" --jq '.workflow_runs[0].triggering_actor.login' 2>/dev/null || echo unknown)
+                echo "::warning::PR #$NUM has no GitHub Actions check runs on the synced head ${SHA:0:7} ($HELD run(s) held as action_required; triggered by '$ACTOR'). If that actor is a bot, the push was authenticated by GITHUB_TOKEN rather than the PAT — check that the checkout does not persist credentials. An app check run (Cloudflare/Codecov) does not count."
               fi
               sleep 10
             done
