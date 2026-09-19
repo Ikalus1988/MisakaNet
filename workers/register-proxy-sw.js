@@ -2228,6 +2228,13 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       // must not be able to change or break the answer.
       if (ctx) ctx.waitUntil(recordSearchSignal(env, {
         solved: false, query: args.query, topId: null, resultCount: 0, domain: args.domain,
+        // The pseudonym, hashed here so the row store never holds it as sent. `args.client_id` now
+        // arrives from a header too (X-MisakaNet-Client), so this works for readers who never
+        // registered — which is the point of the 2026-09-18 read-policy change.
+        clientHint: args.client_id ? dedupKey(env, args.client_id) : "",
+        // Self-declared and optional (2026-09-18): the installer knows the OS and the
+        // assistant; a client that sends none of this is still served.
+        agent: args.agent || "", version: args.client_version || "", os: args.os || "",
       }));
       return {
         results: [],
@@ -2262,6 +2269,10 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       topId: String((results[0] && (results[0].id || results[0].path)) || "") || null,
       resultCount: results.length,
       domain: args.domain,
+      clientHint: args.client_id ? dedupKey(env, args.client_id) : "",
+      // Self-declared and optional (2026-09-18): the installer knows the OS and the
+      // assistant; a client that sends none of this is still served.
+      agent: args.agent || "", version: args.client_version || "", os: args.os || "",
     }));
     // `voice` is the MCP voice-hook cue (see docs/integrations/mcp-voice-hooks.md): the local
     // stdio server has always sent it, the rate-limit refusal below sends it, and the
@@ -3865,6 +3876,22 @@ async function ensureSearchSignalsTable(d1) {
        created_at TEXT DEFAULT (datetime('now'))
      )`
   ).run();
+  // Columns added 2026-09-18 with the read-policy change: reads need no registration, so the
+  // analytics that used to be tied to a node have to come from the request itself — all of it
+  // self-declared and optional. Guarded individually: `ADD COLUMN` on an existing column raises, and
+  // this runs on every cold start.
+  for (const ddl of [
+    "ALTER TABLE search_signals ADD COLUMN query_hash TEXT",
+    "ALTER TABLE search_signals ADD COLUMN client_hint TEXT",
+    "ALTER TABLE search_signals ADD COLUMN agent TEXT",
+    "ALTER TABLE search_signals ADD COLUMN version TEXT",
+    "ALTER TABLE search_signals ADD COLUMN os TEXT",
+    "ALTER TABLE search_signals ADD COLUMN latency_ms INTEGER",
+  ]) {
+    try {
+      await d1.prepare(ddl).run();
+    } catch { /* already there */ }
+  }
   searchSignalsTableReady = true;
 }
 
@@ -3872,7 +3899,29 @@ async function ensureSearchSignalsTable(d1) {
 // promise (the callers hand it to `ctx.waitUntil`, where an unhandled rejection
 // would surface as a worker error): a telemetry failure must leave the search
 // answer exactly as it was.
-async function recordSearchSignal(env, { solved, query, topId, resultCount, domain } = {}) {
+/**
+ * A salted **dedup key** for analytics rows — `hashString()` (FNV-1a, sync) with a salt prefix.
+ *
+ * Not a privacy hash, and it does not pretend to be one: FNV-1a is cheap and reversible by brute force,
+ * which is fine for "are these the same query?" and not fine for anonymising a secret. What it does buy
+ * is that the row store never holds the verbatim prompt or the identifier as sent — a caller who needs
+ * stronger separation should vary its `client_id` (that is what the identifier is for; it is not a
+ * credential). `MISAKANET_SIGNAL_SALT` makes the keys unusable across deployments without it.
+ *
+ * An earlier version used an async `crypto.subtle` digest and returned nothing usable in the test path;
+ * a second hashing path that fails silently is worse than reusing the one this file already has.
+ */
+function dedupKey(env, value) {
+  const text = String(value || "");
+  if (!text) return null;
+  const salt = String(env?.MISAKANET_SIGNAL_SALT || "misakanet-signal-v1");
+  return hashString(`${salt}:${text}`);
+}
+
+async function recordSearchSignal(env, {
+  solved, query, topId, resultCount, domain,
+  clientHint = "", agent = "", version = "", os = "", latencyMs = null,
+} = {}) {
   try {
     // Kill switch: `MISAKANET_SEARCH_SIGNALS=0` stops recording without a
     // redeploy (the search path itself is unaffected — see the rollback section
@@ -3883,15 +3932,28 @@ async function recordSearchSignal(env, { solved, query, topId, resultCount, doma
     // key is the failure mode #1647 documented, and the stats endpoint reads D1.
     if (!d1) return null;
     await ensureSearchSignalsTable(d1);
+    // Query policy (2026-09-18 decision): the first 80 characters **plus** a salted hash. Enough to
+    // see what people are asking and to dedupe the same question, without keeping a full prompt — a
+    // query is a user's words, and the whole point of dropping the registration gate was to stop
+    // asking people to hand over identity for a read.
+    const rawQuery = String(query || "");
     await d1.prepare(
-      `INSERT INTO search_signals (solved, query, top_id, result_count, domain)
-       VALUES (?1, ?2, ?3, ?4, ?5)`
+      `INSERT INTO search_signals
+         (solved, query, query_hash, top_id, result_count, domain,
+          client_hint, agent, version, os, latency_ms)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`
     ).bind(
       solved ? 1 : 0,
-      String(query || "").slice(0, 200),
+      rawQuery.slice(0, 80),
+      dedupKey(env, rawQuery),
       topId ? String(topId).slice(0, 120) : null,
       Number.isFinite(Number(resultCount)) ? Number(resultCount) : 0,
       String(domain || "").slice(0, 50),
+      clientHint ? String(clientHint).slice(0, 32) : null,
+      agent ? String(agent).slice(0, 40) : null,
+      version ? String(version).slice(0, 40) : null,
+      os ? String(os).slice(0, 40) : null,
+      Number.isFinite(Number(latencyMs)) ? Number(latencyMs) : null,
     ).run();
     return { solved: !!solved };
   } catch (e) {
