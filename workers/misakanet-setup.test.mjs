@@ -280,12 +280,28 @@ test('verify passes once installed, against a reachable endpoint', async () => {
     const install = await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url });
     assert.equal(install.status, 0, install.stdout + install.stderr);
 
-    // the token must reach the config, or the user hits the 5-reads/day wall
+    // the token must reach the config; a token is what unlocks the write path (reads are not
+    // metered since 2026-09-18)
     const claude = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
     assert.equal(claude.mcpServers.misakanet.url, url, 'the CLI honours MISAKANET_ENDPOINT');
     assert.equal(claude.mcpServers.misakanet.headers.Authorization, `Bearer ${TOKEN_SHAPE_OK}`);
     const toml = readFileSync(join(home, '.codex', 'config.toml'), 'utf8');
-    assert.ok(toml.includes(`http_headers = { Authorization = "Bearer ${TOKEN_SHAPE_OK}" }`), toml);
+    // One inline table, not "the line looks exactly like this": the entry grew the hint headers, and
+    // a second `http_headers` line would be a duplicate TOML key that kills the whole file.
+    const headerLines = toml.split('\n').filter((l) => /^\s*http_headers\s*=/.test(l));
+    assert.equal(headerLines.length, 1, 'exactly one http_headers line:\n' + toml);
+    assert.ok(headerLines[0].includes(`Authorization = "Bearer ${TOKEN_SHAPE_OK}"`),
+      'the token must be inside that one table:\n' + toml);
+    // The self-declared hints are the same story as the token: they reach the config, and the
+    // minted client id is the one this run registered with.
+    assert.equal(claude.mcpServers.misakanet.headers['X-MisakaNet-Agent'], 'claude-code');
+    assert.match(claude.mcpServers.misakanet.headers['X-MisakaNet-Client'], /^setup-/,
+      'the id this run minted must be the one the config declares');
+    assert.ok(headerLines[0].includes(`X-MisakaNet-Client = "${claude.mcpServers.misakanet.headers['X-MisakaNet-Client']}"`),
+      'codex must declare the same client id as Claude Code:\n' + toml);
+    // A run that HAS a token must not claim it has none. The no-token note used to be pushed
+    // unconditionally once the header list became one table (found 2026-09-19).
+    assert.doesNotMatch(toml, /没有 token/, 'this run has a token, so that note is false:\n' + toml);
 
     const verify = await runAsync(home, { ...process.env, MISAKANET_ENDPOINT: url }, '--verify');
     assert.equal(verify.status, 0, verify.stdout + verify.stderr);
@@ -302,7 +318,15 @@ test('offline install still leaves a working read path and says so', () => {
   assert.match(result.stdout, /注册没成功|离线/, 'the user must be told, in plain words');
   assert.ok(!existsSync(join(home, '.misakanet-agent', 'token')), 'no fake token');
   const claude = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
-  assert.equal(claude.mcpServers.misakanet.headers, undefined, 'no token, no header');
+  const headers = claude.mcpServers.misakanet.headers || {};
+  assert.equal(headers.Authorization, undefined, 'no token => no Authorization header');
+  assert.equal(headers['X-MisakaNet-Agent'], 'claude-code',
+    'the self-declared hints are not credentials and are written anyway (analytics, 2026-09-18)');
+  assert.equal(typeof headers['X-MisakaNet-Version'], 'string',
+    'the installer knows its own version and writes it as a hint');
+  assert.ok(headers['X-MisakaNet-Version'].length > 0, 'and it is not empty');
+  assert.match(headers['X-MisakaNet-Os'], /^[a-z0-9]+\/[a-z0-9]+$/,
+    'platform/arch, which is what the endpoint records');
 });
 
 test('a machine with no agents gets told what to do, and reports failure', () => {
@@ -580,7 +604,7 @@ test('the User-Agent version is bound to the manifest by a test, not by a file r
   // file into a request header, which is CodeQL js/file-access-to-http #268 all over again.
   const declared = JSON.parse(
     readFileSync(join(CLI, '..', '..', 'package.json'), 'utf8')).version;
-  assert.equal(declared, '0.5.5', 'bump this test when the package version moves');
+  assert.equal(declared, '0.5.6', 'bump this test when the package version moves');
   // A plain substring, not a RegExp: building a pattern from a value with `.replace(/\./g…)`
   // left backslashes unescaped, which CodeQL correctly reported as incomplete sanitization
   // (js/incomplete-sanitization, high) on the first version of this test.
@@ -624,7 +648,9 @@ test('hermes: registers under mcp_servers and keeps the servers already there', 
     assert.equal(result.status, 0, result.stdout + result.stderr);
     assert.match(result.stdout, /Hermes：注册 MCP/, result.stdout);
     const cfg = readHermes(home);
-    assert.match(cfg, /^mcp_servers:\n  misakanet:  # misakanet:start\n    url: https:\/\/misakanet\.org\/mcp\n  # misakanet:end\n  rag:/m,
+    // The block gained a `headers:` list with the self-declared hints (2026-09-18); the neighbouring
+    // `rag:` entry must still survive, which is what this regex is really about.
+    assert.match(cfg, /^mcp_servers:\n  misakanet:  # misakanet:start\n    url: https:\/\/misakanet\.org\/mcp\n    headers:\n(?:      \S+: .*\n)*  # misakanet:end\n  rag:/m,
       'the entry must be a child of mcp_servers and sit before the existing server, with no\n'
       + 'blank line invented between them:\n' + cfg);
     assert.match(readFileSync(join(home, '.hermes', 'SOUL.md'), 'utf8'), /misakanet:start/);
@@ -1598,7 +1624,12 @@ test('a config whose keys are reordered is not rewritten', () => {
   // keys made the installer rewrite an unchanged file and take a pointless backup.
   const home = makeHome();
   const cfg = join(home, '.claude.json');
-  const seeded = `{"mcpServers":{"existing":{"type":"http","url":"https://x"},"misakanet":{"url":"https://misakanet.org/mcp","type":"http"}}}`;
+  // Seed from what the installer itself writes, then reorder the entry's keys: hardcoding the entry
+  // shape made this test fail the moment the shape grew headers, which is not what it is about.
+  runOffline(home);
+  const doc = JSON.parse(readFileSync(cfg, 'utf8'));
+  const reorderedEntry = Object.fromEntries(Object.entries(doc.mcpServers.misakanet).reverse());
+  const seeded = JSON.stringify({ mcpServers: { misakanet: reorderedEntry, existing: doc.mcpServers.existing } });
   writeFileSync(cfg, seeded);
 
   const result = runOffline(home);
@@ -1878,6 +1909,67 @@ test('--client-id is a real flag, and a missing value is refused', () => {
   assert.match(invalid.stdout, /ignored --client-id/, invalid.stdout);
 });
 
+test('a corrupt client_id file cannot break the configs we write', () => {
+  // The id we declare can come from `~/.misakanet-agent/client_id`, which another installer (or
+  // anything else on the box) can write, and it is interpolated into a TOML inline table, a YAML
+  // mapping and JSON. A value carrying a quote and a newline is the interesting case: without the
+  // shape check it closes the TOML string and appends a table of its choosing.
+  const home = makeHome();
+  mkdirSync(join(home, '.misakanet-agent'), { recursive: true });
+  writeFileSync(join(home, '.misakanet-agent', 'client_id'),
+    'evil"\n[mcp_servers.pwned]\nurl = "http://example.invalid"\n#');
+  const result = runOffline(home);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+
+  const codex = readFileSync(join(home, '.codex', 'config.toml'), 'utf8');
+  assert.doesNotMatch(codex, /pwned/, 'a value from a file must not become TOML structure:\n' + codex);
+  assert.doesNotMatch(codex, /example\.invalid/, 'no injected content in the codex config:\n' + codex);
+  const headerLine = codex.split('\n').find((l) => /^\s*http_headers\s*=/.test(l)) || '';
+  assert.ok(headerLine.startsWith('http_headers = { ') && headerLine.trimEnd().endsWith(' }'),
+    'the inline table must still be one closed table:\n' + headerLine);
+  assert.doesNotMatch(headerLine, /X-MisakaNet-Client/, 'an id that is not id-shaped is not a hint');
+
+  const claude = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
+  assert.equal(claude.mcpServers.misakanet.headers['X-MisakaNet-Client'], undefined);
+  assert.equal(claude.mcpServers.misakanet.headers['X-MisakaNet-Agent'], 'claude-code',
+    'the other hints are unaffected');
+});
+
+test('an id the user supplies is the identity their config declares', async () => {
+  // The gap this closes: `X-MisakaNet-Client` was fed only by the id this run *minted*, so a user
+  // who passed `--client-id` — the very user who took the trouble to have a stable identity — got
+  // a config that declared no identity at all (found 2026-09-19, while writing the e2e check).
+  const { createServer } = await import('node:http');
+  const server = createServer((req, res) => {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => {
+      const payload = JSON.parse(body || '{}');
+      const result = payload.method === 'tools/list'
+        ? { tools: [{ name: 'misakanet_search' }] }
+        : { node_id: 'MisakaTEST', token: TOKEN_SHAPE_OK };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {
+        content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result } }));
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+
+  try {
+    const home = makeHome();
+    const result = await runAsync(home, {
+      ...process.env, MISAKANET_ENDPOINT: `http://127.0.0.1:${server.address().port}/mcp`,
+    }, '--client-id', 'stable-identity-0123');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const claude = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
+    assert.equal(claude.mcpServers.misakanet.headers['X-MisakaNet-Client'], 'stable-identity-0123');
+    // And the user is not told to "keep" a number they supplied themselves.
+    assert.doesNotMatch(result.stdout, /记不记都行/, result.stdout);
+  } finally {
+    server.close();
+  }
+});
+
 // Node 18 has no global `crypto` (Web Crypto became a bare global in Node 19), so minting a
 // client id with `crypto.randomUUID()` made every registration on Node 18 die with
 // `crypto is not defined` and "安装没能跑完 —— 退出码 2". The matrix leg found it on 2026-09-18;
@@ -1930,9 +2022,12 @@ test('a failed registration says what it costs, not just that it failed', () => 
   // run(): registration is *attempted* against a dead endpoint, which is the case whose wording
   // matters. runOffline() passes --no-register and never reaches that branch.
   const result = run(home);
-  // "读课程不受影响" was misleading: without a token the read path is the anonymous quota.
-  assert.match(result.stdout, /5 次/, result.stdout);
-  assert.doesNotMatch(result.stdout, /凭据形状不对/, 'that phrase is jargon');
+  // The cost is the write path now. Saying "读课程不受影响" used to be *false* (reads were capped at
+  // 5/day) and it is true again since 2026-09-18 (reads are unmetered), so the message must not
+  // resurrect the old quota to sound serious.
+  assert.match(result.stdout, /读课程不受影响/, result.stdout);
+  assert.match(result.stdout, /写入类工具/, result.stdout);
+  assert.doesNotMatch(result.stdout, /5 次|凭据形状不对/, 'no stale quota, no jargon');
 });
 
 // ── permission tiers (2026-09-18) ─────────────────────────────────────────────────────────

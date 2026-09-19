@@ -335,6 +335,32 @@ async function mcpCall(url, method, params, { token = '', origin = 'https://misa
 }
 
 // ── checks ───────────────────────────────────────────────────────────────────────────────
+/**
+ * The self-declared context hints every MCP entry we write should carry, for one agent.
+ *
+ * They are hints, not credentials: the endpoint records them on the read's analytics row, which is
+ * what makes "how did this read arrive?" answerable without asking anyone to register (2026-09-18).
+ * The reason this is asserted against the *packaged* artifact rather than in the source tree is that
+ * "the installer writes them" is a claim about what a user's disk ends up looking like — and the
+ * first version of this work wired exactly one of the four agents and passed every unit test.
+ */
+function expectedHints({ agent, clientId, version }) {
+  return {
+    'X-MisakaNet-Client': clientId,
+    'X-MisakaNet-Agent': agent,
+    'X-MisakaNet-Os': `${process.platform}/${process.arch}`,
+    'X-MisakaNet-Version': version,
+  };
+}
+
+/** Assert a `{header: value}` map carries every hint, naming the first one that is wrong. */
+function needHints(where, headers, hints) {
+  for (const [key, value] of Object.entries(hints)) {
+    need(headers[key] === value,
+      `${where}: headers[${key}] = ${JSON.stringify(headers[key])}, expected ${JSON.stringify(value)}`);
+  }
+}
+
 const CHECKS = [
   ['installed-artifact-is-the-tarball', async () => {
     need(existsSync(INSTALLED_BIN), `no installed bin at ${INSTALLED_BIN} — did the global install run?`);
@@ -439,6 +465,72 @@ const CHECKS = [
     return 'claude + codex + openclaw + hermes configured, every piece of user content preserved';
   }],
 
+  ['installed-configs-carry-the-context-hints', async () => {
+    // The shape a real user ends up with: one install against an endpoint that hands out a token.
+    const stub = await stubEndpoint();
+    try {
+      const home = makeUserHome({ openclaw: true, hermes: true });
+      const clientId = 'e2e-hints-client';
+      const result = await cli(['--home', home, '--client-id', clientId], { home, endpoint: stub.url });
+      need(result.status === 0, `install must succeed: ${show(result)}`);
+      need(stub.state.registerCalls >= 1, 'no token was issued, so this would not be the real shape');
+      const version = readJson(join(PKG_DIR, 'package.json')).version;
+      const forAgent = (agent) => expectedHints({ agent, clientId, version });
+
+      // Claude Code: the hints sit in the same headers object as the credential.
+      const claude = readJson(join(home, '.claude.json')).mcpServers.misakanet.headers || {};
+      needHints('claude', claude, forAgent('claude-code'));
+      need(claude.Authorization === `Bearer ${stub.state.token}`,
+        'the hints must not have displaced the credential');
+
+      // openclaw: the same promises in its own JSON.
+      const openclaw = readJson(join(home, '.openclaw', 'openclaw.json')).mcp.servers.misakanet.headers || {};
+      needHints('openclaw', openclaw, forAgent('openclaw'));
+
+      // codex keeps them in ONE inline TOML table — a second `http_headers` line is a duplicate key
+      // that invalidates the whole file, which is worse than any missing hint.
+      const codex = readFileSync(join(home, '.codex', 'config.toml'), 'utf8');
+      const headerLines = codex.split('\n').filter((l) => /^\s*http_headers\s*=/.test(l));
+      need(headerLines.length === 1,
+        `expected exactly one http_headers line, found ${headerLines.length}:\n${codex}`);
+      for (const [key, value] of Object.entries(forAgent('codex'))) {
+        need(headerLines[0].includes(`${key} = "${value}"`),
+          `codex is missing ${key} (or the file is not one inline table):\n${headerLines[0]}`);
+      }
+
+      // hermes reads its headers from YAML, so they are literal lines — the credential is the one
+      // thing that still goes through `.env` rather than into config.yaml.
+      const hermes = readFileSync(join(home, '.hermes', 'config.yaml'), 'utf8');
+      for (const [key, value] of Object.entries(forAgent('hermes'))) {
+        need(hermes.includes(`${key}: ${value}`), `hermes is missing ${key}:\n${hermes}`);
+      }
+      need(!hermes.includes(stub.state.token), 'hermes must not carry the token in config.yaml');
+
+      // And the no-token case, which is the one users hit offline: the hints are still there (they
+      // are not credentials) and the only thing missing is `Authorization`.
+      const offline = makeUserHome();
+      const off = await cli(['--home', offline, '--no-register'], { home: offline });
+      need(off.status === 0, `offline install must succeed: ${show(off)}`);
+      const offHeaders = readJson(join(offline, '.claude.json')).mcpServers.misakanet.headers || {};
+      need(offHeaders.Authorization === undefined,
+        'with no token there must be no Authorization header — that is the whole difference');
+      for (const key of ['X-MisakaNet-Agent', 'X-MisakaNet-Os', 'X-MisakaNet-Version']) {
+        need(typeof offHeaders[key] === 'string' && offHeaders[key].length > 0,
+          `no token must not cost us ${key}: ${JSON.stringify(offHeaders)}`);
+      }
+      // Nothing declared an identity here, so none may be invented: a made-up pseudonym would
+      // attribute this machine's reads to a node that does not exist.
+      need(offHeaders['X-MisakaNet-Client'] === undefined,
+        `nothing declared a client id, so none may be written, got ${JSON.stringify(offHeaders['X-MisakaNet-Client'])}`);
+
+      log(`hints verified in the packaged artifact: claude + codex + openclaw + hermes (v${version})`);
+      return 'all four agents carry client/agent/os/version; with a token also Authorization, '
+        + 'without it only the hints';
+    } finally {
+      stub.close();
+    }
+  }],
+
   ['the-hook-we-installed-actually-runs', async () => {
     const home = makeUserHome();
     await cli(['--home', home, '--no-register'], { home });
@@ -530,7 +622,7 @@ const CHECKS = [
       need(stub.state.registerCalls >= 1,
         'the installer never called misakanet_register, so this check would have been vacuous');
       const token = join(home, '.misakanet-agent', 'token');
-      need(existsSync(token), 'the returned token must be persisted (the read quota depends on it)');
+      need(existsSync(token), 'the returned token must be persisted — the write path depends on it');
       const mode = modeOf(token);
       need(mode === 0o600, `the token file must be 0600, found 0${mode.toString(8)}`);
       need(readFileSync(token, 'utf8').trim() === stub.state.token,
@@ -758,7 +850,7 @@ const LIVE_CHECKS = [
     need(install.status === 0, `live install must succeed: ${show(install)}`);
     const entry = readJson(join(home, '.claude.json')).mcpServers.misakanet;
     const token = (entry.headers?.Authorization || '').replace(/^Bearer /, '');
-    need(token.startsWith('mcp_'), 'a live install must obtain a token, otherwise the 5/day quota applies');
+    need(token.startsWith('mcp_'), 'a live install must obtain a token, or the write path stays closed');
     need(!install.stdout.includes(token), 'the installer must not print the token');
 
     const listed = await mcpCall(entry.url, 'tools/list', {}, { token });
@@ -826,6 +918,21 @@ if (process.argv.slice(2).includes('--uninstall')) {
     body: `
 const target = join(home, '.claude', 'settings.json');
 if (existsSync(target)) writeFileSync(target, readFileSync(target, 'utf8') + '\\n');
+`,
+  },
+  // The hint headers are the one part of the written config that nothing else would notice: a
+  // missing `X-MisakaNet-Client` still installs, still reads, still passes every other check.
+  'headers-dropped': {
+    breaks: 'installed-configs-carry-the-context-hints',
+    why: 'the shim strips the header object out of the Claude config after every run, which is what '
+      + 'a regression to "a token and nothing else" looks like',
+    body: `
+const target = join(home, '.claude.json');
+if (existsSync(target)) {
+  const doc = JSON.parse(readFileSync(target, 'utf8'));
+  if (doc.mcpServers && doc.mcpServers.misakanet) delete doc.mcpServers.misakanet.headers;
+  writeFileSync(target, JSON.stringify(doc, null, 2) + '\\n');
+}
 `,
   },
 };

@@ -166,7 +166,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for injection in inplace-write byte-drift leftover-temp uninstall-leaves-ours; do
+          for injection in inplace-write byte-drift leftover-temp uninstall-leaves-ours headers-dropped; do
             node packages/misakanet-setup/scripts/e2e-packaged-install.mjs \
               --prefix "$PREFIX" --inject "$injection"
           done
