@@ -23,6 +23,16 @@ import tempfile
 import venv
 from pathlib import Path
 
+# Windows consoles are not UTF-8 by default: printing the checkmark below raised UnicodeEncodeError
+# *after* the handshake had already succeeded, so both Windows legs failed for the decoration rather
+# than for the check (the same class of bug this repo already fixed in the installer). Force the two
+# streams rather than avoiding non-ASCII, because diagnostic output is where non-ASCII appears.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
 REPO = Path(__file__).resolve().parent.parent
 HANDSHAKE = json.dumps({
     "jsonrpc": "2.0", "id": 1, "method": "initialize",
@@ -84,7 +94,7 @@ def main() -> int:
             print("::error::`python -m misakanet.server` did not answer an MCP initialize handshake "
                   "after `pip install` — the wheel is not a working MCP server", file=sys.stderr)
             return 1
-        print(f"✅ installed wheel answered: {info}")
+        print(f"OK: installed wheel answered: {info}")
 
         # 5. The declared console scripts must at least resolve. They are the other half of
         #    "pip install misakanet gives you something that starts"; a missing module here is exactly
