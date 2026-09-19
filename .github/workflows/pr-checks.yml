@@ -717,9 +717,16 @@ jobs:
             exit 0
           fi
 
+          # `mergeable` from this REST endpoint is a JSON **boolean** — `true`, `false`, or `null`
+          # while GitHub is still computing it. The GraphQL enum spelling is `MERGEABLE`, and this
+          # line compared the two: always unequal, so the gate skipped every PR and "all green PRs
+          # auto-merge" was a branch that could never be reached — 0 `Auto-merge #N` commits in the
+          # whole history (#1826). `scripts/lesson_pr_mergeable.py::mergeable_is_clean` documents the
+          # same trap and is the canonical helper for Python callers; here the comparison is one line,
+          # so what matters is that only the boolean counts as mergeable (`null` must NOT).
           MERGEABLE=$(gh api repos/Ikalus1988/MisakaNet/pulls/$PR_NUM --jq '.mergeable')
           echo "Mergeable: $MERGEABLE"
-          [ "$MERGEABLE" != "MERGEABLE" ] && { echo "Not mergeable. Skipping."; exit 0; }
+          [ "$MERGEABLE" = "true" ] || { echo "Not mergeable ($MERGEABLE). Skipping."; exit 0; }
 
           # Security gate (2026-08-30): lessons/ changes must never auto-merge.
           # Lesson content is executed by agents; auto-merging attacker-authored
