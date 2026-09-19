@@ -15,6 +15,7 @@ import io
 import json
 import sys
 import urllib.error
+import uuid
 from pathlib import Path
 
 import pytest
@@ -53,6 +54,15 @@ def _capture(monkeypatch, payload: dict) -> dict:
     return seen
 
 
+# A synthetic token, derived per run.
+#
+# A literal of this shape is indistinguishable from a hardcoded credential to a scanner that cannot know
+# it is fake — hol-guard's plugin-scanner reported exactly that as `HARDCODED_SECRET` at error severity
+# (2026-09-19), and the worker tests had already solved the same false positive this way
+# (`workers/_test-token.mjs`, alerts #252/#253). Deriving it also means a fixture cannot accidentally
+# match a real credential.
+SYNTHETIC_TOKEN = f"mcp_{uuid.uuid4().hex}"
+
 def test_the_request_is_an_mcp_tools_call_with_the_documented_headers(monkeypatch):
     seen = _capture(monkeypatch, {"result": {"structuredContent": {"results": []}}})
     remote.search("boom", top=3)
@@ -67,9 +77,9 @@ def test_the_request_is_an_mcp_tools_call_with_the_documented_headers(monkeypatc
 
 def test_a_token_goes_in_the_header_and_never_in_the_body(monkeypatch):
     seen = _capture(monkeypatch, {"result": {"structuredContent": {"results": []}}})
-    remote.search("boom", token="mcp_secret_value_1234567890")
-    assert seen["headers"]["authorization"] == "Bearer mcp_secret_value_1234567890"
-    assert "mcp_secret_value_1234567890" not in json.dumps(seen["body"])
+    remote.search("boom", token=SYNTHETIC_TOKEN)
+    assert seen["headers"]["authorization"] == f"Bearer {SYNTHETIC_TOKEN}"
+    assert SYNTHETIC_TOKEN not in json.dumps(seen["body"])
 
 
 def test_client_id_is_a_pseudonym_passed_as_an_argument(monkeypatch):
