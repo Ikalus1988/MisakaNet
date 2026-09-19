@@ -33,6 +33,8 @@
       "extra-files": [
         "docs/index.html",
         "README.md",
+        "scripts/misakanet_cli.py",
+        "workers/register-proxy-sw.js",
         {
           "type": "json",
           "path": "server.json",
