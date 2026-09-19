@@ -15,6 +15,10 @@ on:
         options:
           - suggest-only
           - suggest-and-intake
+      pr-number:
+        description: 'PR to comment on (testing aid; empty = the PR associated with the failing run)'
+        required: false
+        default: ''
 
   workflow_run:
     # NOT `["*"]`. A wildcard here creates a run of *this* workflow whenever any other workflow
@@ -42,3 +46,4 @@ jobs:
           mode: ${{ inputs.mode || 'suggest-only' }}
           error: ${{ inputs.error || '' }}
           comment-on-pr: 'true'
+          pr-number: ${{ inputs.pr-number || '' }}
