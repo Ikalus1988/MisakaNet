@@ -44,10 +44,6 @@
     "score": 1.37
   },
   {
-    "login": "liona can",
-    "score": 1.11
-  },
-  {
     "login": "kveita",
     "score": 1.03
   },
@@ -72,10 +68,6 @@
     "score": 0.89
   },
   {
-    "login": "liona can",
-    "score": 0.67
-  },
-  {
     "login": "tmtproductions",
     "score": 0.58
   },
@@ -90,6 +82,10 @@
   {
     "login": "misakanet-agent",
     "score": 0.51
+  },
+  {
+    "login": "liona can",
+    "score": 0.45
   },
   {
     "login": "pnpn1212",
