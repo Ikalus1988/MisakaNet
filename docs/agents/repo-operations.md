@@ -7,7 +7,7 @@
 
 ```bash
 git clone https://github.com/Ikalus1988/MisakaNet.git && cd MisakaNet
-pip install -r requirements.txt        # core: misakanet-core, jsonschema, mcp>=2.1.1, pyyaml
+pip install -r requirements.txt        # core deps **and this checkout** (`-e .`): misakanet-core, jsonschema, mcp, pyyaml
 npm install                            # devDep: wrangler（部署 worker 用）
 ```
 

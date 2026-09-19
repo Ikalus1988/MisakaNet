@@ -66,7 +66,21 @@ jobs:
         if: steps.scope.outputs.scope == 'full'
         run: |
           echo "=== Installing core dependencies ==="
-          pip install -r requirements.txt || { echo "::error::Core dependency install failed"; exit 1; }
+          # requirements.txt ends with `-e .` (the repository's own package), which means a PEP 517
+          # build. A pull request that breaks pyproject.toml must not lose its whole test run to
+          # that: install everything else first, then try the editable install on its own and say so
+          # when it fails. `PYTHONPATH` below keeps the suite running against the checkout either
+          # way — which is the arrangement that made the repo drop `-e .` in the first place
+          # (lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md); this keeps the convenience
+          # without re-creating the all-or-nothing failure.
+          grep -v '^[[:space:]]*-e[[:space:]]*\.' requirements.txt > /tmp/requirements-external.txt
+          pip install -r /tmp/requirements-external.txt \
+            || { echo "::error::Core dependency install failed"; exit 1; }
+          if pip install --no-deps -e . ; then
+            echo "=== Editable install of this repository succeeded ==="
+          else
+            echo "::warning::Could not install this checkout in editable mode (pyproject build failed). The test suite still runs against PYTHONPATH=. The console script and \`import misakanet\` outside the repo will not work for this run."
+          fi
           echo "=== Installing optional dependencies ==="
           find . -path ./venv -prune -o -name "requirements.txt" -print | while IFS= read -r req; do
             dir=$(dirname "$req")
