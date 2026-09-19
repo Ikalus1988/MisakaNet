@@ -16,8 +16,8 @@
  * undone by the other.
  *
  * Three things, all required, or the install is theatre:
- *   1. the agent CAN call it        → MCP server entry (with the token, so reads are not
- *                                     metered by the anonymous 5/day limit)
+ *   1. the agent CAN call it        → MCP server entry (with the token when we have one, plus the
+ *                                     self-declared context hints; reads are unlimited either way)
  *   2. the agent KNOWS when to call → rules block in its own rules file
  *   3. the checkpoint FIRES         → a hook, because "summarise every 20 turns" is dead
  *                                     text: agents do not keep counters
@@ -39,7 +39,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFi
 // package.json since 0.4 and had never been executed on the version it names.
 import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
-import { delimiter, join, dirname, resolve } from 'node:path';
+import { basename, delimiter, join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -78,6 +78,25 @@ const valueOf = (flag, dflt) => {
 };
 const only = valueOf('--only', '').split(',').map((s) => s.trim()).filter(Boolean);
 const DRY = has('--dry-run');
+/**
+ * Permission tiers (2026-09-18).
+ *
+ * The installer does three different kinds of thing, and they do not need the same permission:
+ *
+ *   ① register an MCP endpoint        — the user's own agent config; the same privilege as adding
+ *                                       any MCP server;
+ *   ② write a rules block             — changes the agent's behaviour ("search before retrying"),
+ *                                       and for Hermes that means editing `~/.hermes/SOUL.md`, its
+ *                                       *identity* file;
+ *   ③ install hooks + state           — acts automatically on every turn.
+ *
+ * Asking for all three in one command is why a machine with an approval process can only answer
+ * "no" (issue #1753, 2026-09-18): an operator willing to approve ① has no way to say it. `--mcp-only`
+ * is that way to say it — ① only, and the run says so in its own report instead of looking partial.
+ */
+const MCP_ONLY = has('--mcp-only');
+const LIST_WRITES = has('--list-writes');
+
 /**
  * `--silent` (issue #1784): the enterprise/MDM form. A GPO or Intune script pipes this program's
  * stdout into a log file, where the ✓/· narration is noise (and names local paths).
@@ -128,7 +147,18 @@ function readText(path) {
  * meant to prevent is now caught in CI instead, by a test that binds this literal to the
  * manifest — a failing test is a better place for that than a request header.
  */
-const VERSION = '0.5.5'
+const VERSION = '0.5.6'
+
+/**
+ * The shape of a client id, in one place.
+ *
+ * It gates two different things: what the endpoint accepts as `client_id` on registration, and — since
+ * 2026-09-19 — what may be written into an assistant's config as `X-MisakaNet-Client`. The second use
+ * is why the shape matters here and not only at the endpoint: that value can come from a file we found
+ * on disk, and it is interpolated into a TOML inline table, a YAML mapping and JSON. A string matching
+ * this cannot contain a quote, a newline or a `:`, so it cannot break any of the three.
+ */
+const CLIENT_ID_SHAPE = /^[A-Za-z0-9._-]{8,64}$/
 
 // ── argument surface ─────────────────────────────────────────────────
 // Until 2026-09-17 no flag was validated at all: `--help` fell through to a *real install*
@@ -148,7 +178,9 @@ const FLAGS = [
   ['--uninstall', '移除本安装器写入的内容（保留 .misakanet.bak 备份）'],
   ['--upgrade', '与安装等价（覆盖安装即升级）'],
   ['--client-id <id>', '固定本机身份：同一个 id 永远拿回同一个 node（重装/换机也能延续）'],
-  ['--no-register', '不注册匿名节点（不写 token，检索仍是 5 次/天/IP）'],
+  ['--mcp-only', '只注册 MCP 端点，不改 agent 行为（不写规则块、不装钩子）——权限分级用'],
+  ['--list-writes', '只打印会改哪些文件（文件 | 动作 | 撤销方式），不写任何东西'],
+  ['--no-register', '不注册匿名节点（不写 token；读不受影响，写入类工具不可用）'],
   ['--voice', '打开语音/桌面通知（默认关）'],
   ['--help, -h', '打印这份帮助并退出'],
   ['--version', '打印版本并退出'],
@@ -173,6 +205,9 @@ if (has('--version')) {
   console.log(VERSION);
   process.exit(0);
 }
+
+/** What we would write, and how to take it back — printed by --list-writes, and used by the report. */
+const WRITE_MANIFEST = [];
 
 const KNOWN = new Set(FLAGS.flatMap(([flag]) => flag.split(/[,\s]/).filter((f) => f.startsWith('-'))));
 {
@@ -414,6 +449,45 @@ function stripBlock(path) {
 }
 
 const stateDir = () => join(HOME, '.misakanet-agent');
+
+/**
+ * The headers every MCP entry we write carries.
+ *
+ * Two kinds, and the difference matters: `Authorization` is a credential (only when we have a token),
+ * while the other four are **self-declared hints** the service records on its analytics row — the
+ * stable pseudonym `X-MisakaNet-Client` (so a caller's history stays together without an account), the
+ * assistant name, the platform, and the installer version that wrote this. The endpoint treats them as
+ * hints and never as identity, which is what makes it acceptable to write them automatically
+ * (see AGENTS.md §3.3).
+ *
+ * Written only for agents whose config format supports custom headers; `--mcp-only` gets them too,
+ * because "the tool is callable" is exactly what tier ① means.
+ */
+function mcpHeaders(bearer, agent) {
+  const headers = {};
+  if (bearer) headers.Authorization = `Bearer ${bearer}`;
+  const clientId = declaredClientId();
+  if (clientId) headers['X-MisakaNet-Client'] = clientId;
+  headers['X-MisakaNet-Agent'] = agent;
+  headers['X-MisakaNet-Os'] = `${process.platform}/${process.arch}`.slice(0, 40);
+  headers['X-MisakaNet-Version'] = VERSION;
+  return headers;
+}
+
+/**
+ * The pseudonym to declare, or `''` when this machine has not said.
+ *
+ * Explicit intent beats a file we merely found, the same rule the register path applies. The file is
+ * `integrations/agent-autostart`'s (it keeps one there for the Python channel), so picking it up is
+ * continuity worth having — but it is data from outside this process on its way into three config
+ * syntaxes, so it is checked against `CLIENT_ID_SHAPE` first. A `client_id` that is not id-shaped is
+ * not a hint worth writing; it is noise that could close a quote or a mapping.
+ */
+function declaredClientId() {
+  if (knownClientId) return knownClientId;
+  const found = readText(join(stateDir(), 'client_id')).trim();
+  return CLIENT_ID_SHAPE.test(found) ? found : '';
+}
 
 const CANONICAL_ENDPOINT = 'https://misakanet.org/mcp';
 
@@ -661,6 +735,16 @@ async function installHook() {
 }
 
 async function ensureIdentity() {
+  // The explicit intent is read first, because it decides the `X-MisakaNet-Client` hint on every run
+  // — including one that registers nothing (the token is already there) — so it cannot sit below the
+  // early returns. `--client-id` and `MISAKANET_CLIENT_ID` are the same intent.
+  const explicit = (valueOf('--client-id', '') || process.env.MISAKANET_CLIENT_ID || '').trim();
+  const usable = CLIENT_ID_SHAPE.test(explicit);
+  if (explicit && !usable) {
+    need('ignored --client-id / MISAKANET_CLIENT_ID：只接受 8–64 位的 [A-Za-z0-9._-]（这次会新生成一个）');
+  }
+  if (usable) knownClientId = explicit;
+
   const file = join(stateDir(), 'token');
   let existing = '';
   try {
@@ -685,13 +769,8 @@ async function ensureIdentity() {
   // `--client-id` and `MISAKANET_CLIENT_ID` are the same explicit intent. The flag exists because
   // the closing guidance told users to keep an identity and the only way to supply one was a shell
   // export — an instruction a non-technical user cannot follow, and on Windows a different one.
-  const exported = (valueOf('--client-id', '') || process.env.MISAKANET_CLIENT_ID || '').trim();
-  if (exported && !/^[A-Za-z0-9._-]{8,64}$/.test(exported)) {
-    need('ignored --client-id / MISAKANET_CLIENT_ID：只接受 8–64 位的 [A-Za-z0-9._-]（这次会新生成一个）');
-  }
-  const clientId = (exported && /^[A-Za-z0-9._-]{8,64}$/.test(exported))
-    ? exported
-    : `setup-${randomUUID()}`;
+  const clientId = usable ? explicit : `setup-${randomUUID()}`;
+  knownClientId = clientId;
   const result = await mcpCall('misakanet_register', { agent_type: 'setup', client_id: clientId });
   // Validate before persisting: a response body is not something to write to disk unchecked
   // (CodeQL js/http-to-file-access #262/#264 is about exactly that flow). The endpoint is
@@ -699,18 +778,18 @@ async function ensureIdentity() {
   // a visible, debuggable outcome instead of a silent 401 later.
   const token = typeof result?.token === 'string' ? result.token.trim() : '';
   if (!/^mcp_[A-Za-z0-9_-]{20,}$/.test(token)) {
-    // Say what it costs, not what went wrong internally: "凭据形状不对" is jargon, and
-    // "读课程不受影响" was misleading — without a token the read path is capped at the anonymous
-    // quota. Someone who does not know that will hit a wall five queries later and blame the tool.
-    need('匿名注册没成功（多半是网络）→ 现在检索限额是每天 5 次/IP，写入类工具也用不了；'
-      + '网络恢复后重跑本命令就能拿到 token，其它功能不受影响');
+    // Say what it costs, not what went wrong internally: "凭据形状不对" is jargon. Reading is not
+    // what is lost here (it needs no token and is not metered) — the write path is, and saying so
+    // plainly is the difference between a user retrying and a user concluding the tool is broken.
+    need('匿名注册没成功（多半是网络）→ 读课程不受影响，但写入类工具（write_lesson）现在用不了；'
+      + '网络恢复后重跑本命令就能拿到 token');
     return '';
   }
   // Created with mode 0600 rather than written and then chmodded: the old order left a window in
   // which the token sat in a world-readable file on every single run.
   writeText(file, token, { mode: 0o600 });
   ok(`匿名身份：${String(result.node_id || '?').slice(0, 32)}（token 存 ${file}，权限 600）`);
-  if (!exported) {
+  if (!usable) {
     // Printed, not stored: this process must not turn a file it found into request data
     // (CodeQL js/file-access-to-http #268), and the value is the user's to keep anyway.
     // Kept out of the "done" list on purpose — it is something to *keep*, not something that
@@ -722,6 +801,18 @@ async function ensureIdentity() {
 }
 
 // ── per-agent install ────────────────────────────────────────────────
+/** Is our MCP entry already in this agent's config? (read-only; used by the report's scope line) */
+function mcpEntryPresent(agent) {
+  const text = {
+    claude: () => JSON.stringify(readJson(join(HOME, '.claude.json'), {})?.mcpServers?.misakanet || null),
+    codex: () => readText(join(HOME, '.codex', 'config.toml')),
+    hermes: () => readText(join(HOME, '.hermes', 'config.yaml')),
+    openclaw: () => readText(join(HOME, '.openclaw', 'openclaw.json')),
+    codewhale: () => readText(join(HOME, '.codewhale', 'mcp.json')),
+  }[agent]?.() || '';
+  return text.includes('misakanet') && text !== 'null';
+}
+
 function detect(agent) {
   const paths = {
     claude: ['.claude.json', '.claude'],
@@ -742,8 +833,7 @@ async function installClaude(hookPath, bearer) {
   }
   const doc = data || {};
   doc.mcpServers = doc.mcpServers || {};
-  const entry = { type: 'http', url: ENDPOINT };
-  if (bearer) entry.headers = { Authorization: `Bearer ${bearer}` };
+  const entry = { type: 'http', url: ENDPOINT, headers: mcpHeaders(bearer, 'claude-code') };
   if (sameJson(doc.mcpServers.misakanet, entry)) {
     ok('Claude Code：MCP 已注册（无改动）');
   } else {
@@ -754,8 +844,30 @@ async function installClaude(hookPath, bearer) {
   }
 
   const rules = join(HOME, '.claude', 'CLAUDE.md');
-  ok(`Claude Code：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  if (!MCP_ONLY) ok(`Claude Code：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  else skip('Claude Code：规则块未写（--mcp-only：只注册端点）');
 
+  if (MCP_ONLY) {
+    // Tier ① = "the tool can be called", and that includes the read-only grants: the comment below
+    // says it plainly — without them the first search is *denied*, so an operator who approved
+    // "add an MCP server" would be shipping a tool their users cannot use. The grants are therefore
+    // tier ①. What tier ③ adds is the hooks, and those are not written here.
+    const settingsPath = join(HOME, '.claude', 'settings.json');
+    const settings = readJson(settingsPath, {}) || {};
+    const allow = ((settings.permissions = settings.permissions || {}).allow =
+      Array.isArray(settings.permissions.allow) ? settings.permissions.allow : []);
+    let changed = false;
+    for (const tool of CLAUDE_ALLOWED_TOOLS) {
+      if (!allow.includes(tool)) { allow.push(tool); changed = true; }
+    }
+    if (changed) {
+      backup(settingsPath);
+      writeText(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+    }
+    ok(`Claude Code：只读工具已放行（${CLAUDE_ALLOWED_TOOLS.length} 个${changed ? '' : '，无改动'}）`);
+    skip('Claude Code：自动沉淀钩子未装（--mcp-only：只注册端点与工具放行）');
+    return;
+  }
   if (!hookPath) {
     need('Claude Code：跳过了"自动沉淀"钩子（钩子文件没取到）');
     return;
@@ -852,12 +964,17 @@ async function installClaude(hookPath, bearer) {
 
 const codexTable = (bearer) => {
   const lines = ['[mcp_servers.misakanet]', 'type = "streamable-http"', `url = "${ENDPOINT}"`];
-  if (bearer) {
-    // http_headers, not bearer_token_env_var: the env var needs the user to export it, and
-    // this user will not.
-    lines.push(`http_headers = { Authorization = "Bearer ${bearer}" }`);
-  } else {
-    lines.push('# 没有 token：读走匿名通道（5/天/IP）');
+  // http_headers, not bearer_token_env_var: the env var needs the user to export it, and this user
+  // will not. All the headers go into the ONE inline table — a second `http_headers` line is a
+  // duplicate key, and TOML refuses the whole file for it. (Bare TOML keys may contain `-`, which is
+  // why the hint names need no quoting.)
+  const headers = Object.entries(mcpHeaders(bearer, 'codex'))
+    .map(([key, value]) => `${key} = "${value}"`).join(', ');
+  lines.push(`http_headers = { ${headers} }`);
+  if (!bearer) {
+    // Only worth saying when it is true. Since 2026-09-18 anonymous reads are not metered — what a
+    // token buys is the write path, not more reads.
+    lines.push('# 没有 token：读不限次数，写入类工具（write_lesson）不可用');
   }
   return `${lines.join('\n')}\n`;
 };
@@ -909,7 +1026,8 @@ async function installCodex(hookPath, bearer) {
   }
 
   const rules = join(HOME, '.codex', 'AGENTS.md');
-  ok(`Codex：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  if (!MCP_ONLY) ok(`Codex：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  else skip('Codex：规则块未写（--mcp-only：只注册端点）');
   // Verified on codex-cli 0.154.0 (2026-09-15), so this is no longer a "could not
   // confirm" note: `codex mcp list` shows misakanet enabled with the Bearer token,
   // `codex doctor` reports config.toml parse ok + 1 streamable_http server + 0
@@ -1036,11 +1154,18 @@ async function installHermes(hookPath, bearer) {
     need('Hermes：找不到 ~/.hermes/config.yaml → 先运行一次 hermes 再回来装');
     return;
   }
-  ok(`Hermes：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  if (!MCP_ONLY) ok(`Hermes：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+  else skip('Hermes：规则块未写（--mcp-only：只注册端点；SOUL.md 是它的人格文件）');
 
   const envKey = HERMES_ENV_KEY;
   const lines = [`  misakanet:  ${YAML_START}`, `    url: ${ENDPOINT}`];
-  if (bearer) lines.push('    headers:', `      Authorization: Bearer \${${envKey}}`);
+  lines.push('    headers:');
+  if (bearer) lines.push(`      Authorization: Bearer \${${envKey}}`);
+  // Hermes reads its headers from YAML, so these are literals rather than env templates: they are
+  // hints, not secrets (a token would have to go through `.env` like the Authorization line above).
+  for (const [key, value] of Object.entries(mcpHeaders('', 'hermes'))) {
+    lines.push(`      ${key}: ${value}`);
+  }
   lines.push(`  ${YAML_END}`);
   // No trailing newline: the three call sites below each own the one they need, and the
   // "insert after mcp_servers:" case must NOT add one (the line it replaces already ends with
@@ -1068,7 +1193,7 @@ async function installHermes(hookPath, bearer) {
   }
 
   if (!bearer) {
-    skip('Hermes：这次没有 token → 走匿名通道（5/天/IP），写入类工具不可用');
+    skip('Hermes：这次没有 token → 读仍然不限次数，写入类工具不可用');
     return;
   }
   const envPath = join(HOME, '.hermes', '.env');
@@ -1117,6 +1242,11 @@ async function installHermes(hookPath, bearer) {
  * The token is the one thing codewhale will not take inline: `bearer_token_env_var` names
  * an environment variable, so "install once" for this agent ends with the user exporting
  * `MISAKANET_TOKEN` once. That is stated rather than silently half-installed.
+ *
+ * This is also the one agent that gets no `X-MisakaNet-*` hints: its server entry has a fixed
+ * field set (`command`/`args`/`env`/`url`/timeouts/`bearer_token_env_var`) with no custom-header
+ * field, and inventing one would risk the file being rejected outright. Hints are optional by
+ * design — a call without them is still a normal anonymous read.
  */
 function codewhaleProjects() {
   const text = readText(join(HOME, '.codewhale', 'config.toml'));
@@ -1166,7 +1296,9 @@ async function installCodewhale(bearer) {
   const projects = codewhaleProjects();
   for (const project of projects) {
     if (!existsSync(project)) continue;
-    ok(`codewhale：规则块 ${injectBlock(join(project, 'AGENTS.md'), PROMPT_BLOCK)} → ${join(project, 'AGENTS.md')}`);
+    if (!MCP_ONLY) {
+      ok(`codewhale：规则块 ${injectBlock(join(project, 'AGENTS.md'), PROMPT_BLOCK)} → ${join(project, 'AGENTS.md')}`);
+    } else skip('codewhale：规则块未写（--mcp-only）');
   }
   if (!projects.length) {
     need('codewhale：没有受信任的项目目录（config.toml 里没有 trust_level = "trusted"）→ '
@@ -1183,7 +1315,8 @@ async function installOpenclaw(bearer) {
   if (!existsSync(workspace)) {
     need(`OpenClaw：找不到 workspace（${workspace}）→ 先运行一次 openclaw 生成它`);
   } else {
-    ok(`OpenClaw：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+    if (!MCP_ONLY) ok(`OpenClaw：规则块 ${injectBlock(rules, PROMPT_BLOCK)} → ${rules}`);
+    else skip('OpenClaw：规则块未写（--mcp-only）');
   }
 
   const cfg = join(HOME, '.openclaw', 'openclaw.json');
@@ -1193,8 +1326,8 @@ async function installOpenclaw(bearer) {
       + `或手动执行 \`${manual}\``);
     return;
   }
-  const entry = { url: ENDPOINT, transport: 'streamable-http' };
-  if (bearer) entry.headers = { Authorization: `Bearer ${bearer}` };
+  const entry = { url: ENDPOINT, transport: 'streamable-http',
+                  headers: mcpHeaders(bearer, 'openclaw') };
   data.mcp = data.mcp || {};
   data.mcp.servers = data.mcp.servers || {};
   if (sameJson(data.mcp.servers.misakanet, entry)) {
@@ -1251,9 +1384,9 @@ async function verify() {
     tokenPresent = '';
   }
   if (tokenPresent) {
-    ok('写入通道：token 已就绪（解除每天 5 次读限额，write_lesson 可用）');
+    ok('写入通道：token 已就绪（write_lesson / preflight 可用）');
   } else {
-    skip('写入通道：无 token（只读也完全可用，但读有 5/天/IP 限额）');
+    skip('写入通道：无 token（读不限次数、只读完全可用，写入类工具不可用）');
   }
   const hookPath = join(stateDir(), 'hook.mjs');
   let hookPresent = false;
@@ -1331,8 +1464,8 @@ async function verify() {
       need(`Hermes：MCP 未注册（${cfg}）→ 重跑安装命令，或执行 `
         + `hermes mcp add misakanet --url ${ENDPOINT} --auth header`);
     } else if (!new RegExp(`^${HERMES_ENV_KEY}=`, 'm').test(readText(join(HOME, '.hermes', '.env')))) {
-      ok('Hermes：MCP 条目已写入配置（无 token → 匿名 5 次/天/IP）');
-      skip(`Hermes：想让检索不计匿名额度，重跑安装命令即可写入 ${HERMES_ENV_KEY}`);
+      ok('Hermes：MCP 条目已写入配置（无 token → 读不限次数，写入类工具不可用）');
+      skip(`Hermes：想让写入类工具可用（write_lesson），重跑安装命令即可写入 ${HERMES_ENV_KEY}`);
     } else {
       ok(`Hermes：MCP 条目与 token 都在（${HERMES_ENV_KEY}）`);
       skip('Hermes：本进程只能确认"配置已写"，无法确认 Hermes 是否已加载 → 可用 hermes mcp list 复核');
@@ -1664,6 +1797,11 @@ function reportValues(allOk) {
     ['token', token ? 'present' : 'absent'],
     ['permissions', permissions],
     ['hook', existsSync(join(stateDir(), 'hook.mjs')) ? 'present' : 'absent'],
+    // `mcp-only` = the endpoint is registered but the hooks are not, which is a different machine
+    // from "nothing installed" and must not be counted as one (#1753's T1-lite rows).
+    ['install-scope', existsSync(join(stateDir(), 'hook.mjs'))
+      ? 'full'
+      : (AGENTS.some((agent) => detect(agent) && mcpEntryPresent(agent)) ? 'mcp-only' : 'none')],
     ['voice', voiceStatus()],
     ['open-items', manual.length],
     // Redacted here, once, so neither encoder can print an unredacted message by accident.
@@ -1779,7 +1917,14 @@ if (mode !== 'report' && !SILENT) {
 
 if (mode === 'uninstall') {
   uninstall();
-  say(render());
+  if (MCP_ONLY) {
+  // The honest failure mode of tier ①: the tool is callable, but nothing tells the agent (or the
+  // user) to call it — the rules block and the first-turn announcement live in tiers ②/③. Printed
+  // as a "manual step" so it survives --silent (a deployment log keeps the `!` lines).
+  need('只注册了端点：你的 agent 不会自己想到去查 —— 需要你自己说「先查 MisakaNet」，'
+    + '或者请运营方批准 ②③ 后重跑同一条命令（去掉 --mcp-only）');
+}
+say(render());
   if (!SILENT) {
     console.log('\n已移除本安装器写入的内容（规则块、MCP 注册、钩子、状态目录）。');
     console.log(`备份保留在 <被改过的文件>.misakanet.bak（例如 ${join(HOME, '.claude', 'CLAUDE.md')}.misakanet.bak）`
@@ -1866,12 +2011,80 @@ const targets = (only.length ? only : AGENTS).filter((a) => {
 let installed = 0;
 // Set when a stable client id was minted: shown to the user at the end (see ensureIdentity).
 let clientIdHint = '';
+/**
+ * The pseudonym this run knows the machine by — an explicit `--client-id` / `MISAKANET_CLIENT_ID`, or
+ * the one this run minted. This is what `X-MisakaNet-Client` carries.
+ *
+ * Deliberately separate from `clientIdHint`, which exists only for the closing "keep this number"
+ * guidance: a user who supplied an id must not be told to keep it, but their config still has to say
+ * who they are — otherwise the hint would be missing for exactly the users who took the trouble to
+ * have an identity at all.
+ */
+let knownClientId = '';
+/**
+ * `--list-writes`: the manifest an operator needs to approve, or to undo by hand.
+ *
+ * `--dry-run` already says which files it would touch; this adds the two things an approval process
+ * asks for — *what* each write does (new file / append a marked block / add a config key) and *how to
+ * take it back* — and it is machine-readable so a ticket can carry it.
+ */
+if (LIST_WRITES) {
+  // Every row carries its **tier**, which is the point: an operator approving "add an MCP server"
+  // (①) is not approving "change how the agent behaves" (② rules block, ③ automatic hooks). Files
+  // already exist → we append or update keys; missing → we create them.
+  // Compare base names, not separators: a `/settings.json$` regex silently classifies nothing on
+  // Windows (all three windows legs went red on the first CI run of this change), and a manifest
+  // that hides a tier is worse than no manifest.
+  const tierOf = (path) => {
+    const base = basename(path);
+    if (base === 'CLAUDE.md' || base === 'AGENTS.md' || base === 'SOUL.md') return 2;
+    if (path.includes('.misakanet-agent')) return 3;               // our own state dir
+    // `settings.json` carries both the read-only grants (①) and the hooks (③); the caller adds the
+    // second row only when the hooks are in scope.
+    if (base === 'settings.json' && path.includes('.claude')) return 1;
+    return 1;                                                     // an MCP entry in the agent's config
+  };
+  const rows = new Map();
+  const add = (path, action, tier) => {
+    const key = `${tier}|${path}`;
+    if (!rows.has(key)) rows.set(key, { path: redact(path), action, tier });
+  };
+  for (const agent of AGENTS) {
+    if (!detect(agent)) continue;
+    for (const path of (AGENT_WRITE_PATHS[agent] || (() => []))(HOME)) {
+      add(path, existsSync(path) ? 'append-or-update' : 'create', tierOf(path));
+      if (!MCP_ONLY && basename(path) === 'settings.json' && path.includes('.claude')) {
+        add(path, 'append-or-update（钩子）', 3);
+      }
+    }
+  }
+  add(join(stateDir(), 'token'), 'create (0600)', 1);
+  if (!MCP_ONLY) add(join(stateDir(), 'hook.mjs'), 'create', 3);
+
+  const tiers = { 1: '① 注册 MCP 端点', 2: '② 写规则块（改行为）', 3: '③ 装钩子（每轮自动执行）' };
+  const list = [...rows.values()].filter((row) => (MCP_ONLY ? row.tier === 1 : true))
+    .sort((a, b) => a.tier - b.tier || a.path.localeCompare(b.path));
+  for (const row of list) {
+    console.log(`tier${row.tier}\t${tiers[row.tier]}\t${row.path}\t${row.action}`);
+  }
+  const shown = new Set(list.map((row) => row.tier));
+  if (MCP_ONLY) {
+    console.log('# --mcp-only：只申请 ①。规则块（②）与钩子（③）不会写入，'
+      + '需要时由运营方另行批准后重跑不带 --mcp-only 的同一条命令。');
+  } else {
+    console.log(`# 本次申请 ${shown.size} 级权限（${[...shown].sort().map((t) => tiers[t]).join(' · ')}）；`
+      + '只想批 ① 就加 --mcp-only。');
+  }
+  console.log('# 这次没有写任何东西。撤销：npx @misaka-net/misakanet-setup --uninstall');
+  process.exit(0);
+}
+
 try {
   if (!targets.length) {
     need('没检测到 Claude Code / Codex / Hermes 的配置目录 → 请先打开一次你要用的那个助手，再回来运行本命令');
   } else {
-    const hookPath = await installHook();
-    stampVersion();
+    const hookPath = MCP_ONLY ? null : await installHook();
+    if (!MCP_ONLY) stampVersion();
     const bearer = has('--no-register') ? '' : await ensureIdentity();
     for (const agent of targets) {
       // One target failing must not skip the rest: an uncaught throw used to abort the loop, so
@@ -1909,6 +2122,13 @@ try {
 // the exact failures in it on a dirty one — which is the point (#1784). The machine-readable form
 // of the same run is `--report-json`, not this text.
 say(render());
+if (MCP_ONLY && !SILENT) {
+  // The honest failure mode of tier ①, said where the user will read it: they are not installing a
+  // behaviour. The rules block (②) and the first-turn announcement, which is injected by the hook
+  // (③), are exactly what makes an agent look things up on its own.
+  console.log('\n⚠️ --mcp-only：只注册了端点与只读工具放行 —— **你的 agent 不会自己想到去查**。'
+    + '\n   需要你自己说「先查 MisakaNet」，或请运营方批准 ②③ 后重跑同一条命令（去掉 --mcp-only）。');
+}
 if (!SILENT) {
   console.log(`
 接下来：

@@ -17,6 +17,21 @@ mcp-name: io.github.Ikalus1988/misakanet
 
 ## 装到你自己的助手（Claude Code / Codex）
 
+### 两个通道，别装错（这是一次真实的安装失败换来的）
+
+本仓库发布**两个 npm 包**，名字像、用途完全不同；第三方插件市场就曾把它们弄混并报"入口文件缺失"
+（#1849）：
+
+| 你想做的事 | 装什么 | 命令 | 它写什么 |
+|---|---|---|---|
+| **让助手会去查经验库**（Claude Code / Codex / Hermes / OpenClaw / codewhale） | `@misaka-net/misakanet-setup`（**npx 安装器**，有 `bin`、无插件入口） | `npx @misaka-net/misakanet-setup` | 把 MCP 端点写进**每个助手自己的**配置文件，并可选装规则块与钩子 |
+| **把 MisakaNet 装成 DSH / Codex 的插件**（带 SKILL、`index.js`、`cordis.patch.yml`） | **`misakanet`**（根包 = 插件与 CLI 通道，入口 `index.js` 已提交进仓库） | `dsh plugin --profile web add misakanet` | 给 DSH/Codex 提供插件与技能；**不动**任何助手的配置 |
+| Python 里当库用（搜索/索引） | `misakanet-core` | `pip install misakanet-core` | 装依赖，不写配置 |
+
+一句话：**`misakanet` 是插件/CLI；`@misaka-net/misakanet-setup` 是安装器**——前者给 DSH/Codex 用，
+后者给"让我的助手学会先查经验库"用，两者互不替代。插件市场报 `@misaka-net/misakanet-setup: entry file
+missing: index.js` 时，那是解析选错了包：安装器本来就没有 `index.js`。
+
 **一行命令**（需要 Node，Claude Code / Codex 本身就依赖它）：
 
 ```bash
@@ -34,7 +49,7 @@ npx @misaka-net/misakanet-setup
 
 | 层 | 是什么 | 缺了它会怎样 |
 |---|---|---|
-| **① 服务** | `https://misakanet.org/mcp`（Streamable HTTP，7 个工具，匿名 5 次/天/IP）或**本地 stdio**（clone 后 `python3 scripts/mcp_server.py`，无限额）| 没有可查的地方 |
+| **① 服务** | `https://misakanet.org/mcp`（Streamable HTTP，7 个工具，匿名**不限次数**，只有反爬突发保护）或**本地 stdio**（clone 后 `python3 scripts/mcp_server.py`，无限额）| 没有可查的地方 |
 | **② 接入** | `npx @misaka-net/misakanet-setup`：把服务写进每个助手**自己的**配置文件（Claude Code / Codex / Hermes / OpenClaw / codewhale 各一套）| 你得自己知道 5 种配置文件分别怎么写 |
 | **③ 触发** | 规则块（「遇到报错先查经验库」）+ 检查点钩子（约 20 轮提醒沉淀）+ 14 天升级提示 | **端点在，但没有任何人会去调用它** |
 
@@ -150,19 +165,32 @@ curl -sS https://misakanet.org/mcp \
 
 No GitHub account. No email. No Bearer token. No browser. Just curl.
 
-**Option 2 — Local MCP (for Claude Code / Cursor / Codex):**
+**Option 2 — Local stdio MCP (for Claude Code / Cursor / Codex):**
 ```bash
+# From a clone (uses the checkout):
 git clone https://github.com/Ikalus1988/MisakaNet.git && cd MisakaNet
 python3 scripts/mcp_server.py
-# Add to your MCP config, then ask: "Search MisakaNet for tool call permission denied"
+
+# Or from an install — the same server, as a package module:
+pip install misakanet
+python3 -m misakanet.server
+# Add that command to your MCP config, then ask: "Search MisakaNet for tool call permission denied"
 ```
 
-**Option 3 — PyPI (pip install):**
+**Option 3 — PyPI package:**
 ```bash
 pip install misakanet
-misakanet "database is locked"
-# Or: python3 -m search_knowledge "your error here"
+python3 -m misakanet.server     # the stdio MCP server, from the installed package
 ```
+
+> ⚠️ **What an installed package can do (#1821):** `misakanet "<error>"` (remote search),
+> `python -m misakanet.server` (stdio MCP) and `python -m misakanet` (help) all work, and the first two
+> are gated in CI by `.github/workflows/pypi-wheel-smoke.yml` — it builds the wheel, installs it into a
+> clean venv, runs the console script and asks the **installed** server for an MCP handshake.
+>
+> The `misaka-harvest` command is deliberately **not** shipped: harvesting needs a repo checkout. It is
+> also why the local (offline) search path is not what the CLI uses — `misakanet/search/engine.py`
+> reads `lessons/` relative to a checkout, which a wheel does not have.
 
 **Option 4 — Python library (for scripts/notebooks):**
 ```bash

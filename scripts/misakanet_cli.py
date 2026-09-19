@@ -30,7 +30,13 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 # — thirteen minor versions — because nothing read it: the 2026-09-18 review found the drift,
 # and the reason no gate caught it is the same one written up as 模式 10 in
 # docs/maintainer/architecture-cognition-defects-2026-09-18.md (a value with no owner).
-VERSION = "2.30.2"
+#
+# The annotation below is that owner: release-please's Generic updater rewrites the version on a
+# line carrying `x-release-please-version`, and this file is declared in release-please-config.json's
+# extra-files. Without it the bot bumped pyproject.toml but not this line, so the 2.31.0 release PR
+# arrived with R8 red ("misakanet_cli.py says 2.30.2, pyproject says 2.31.0") and could not be
+# merged — a release PR that cannot merge is how a project quietly stops releasing (2026-09-19).
+VERSION = "2.31.0"  # x-release-please-version
 
 
 # ── doctor ────────────────────────────────────────────────────────

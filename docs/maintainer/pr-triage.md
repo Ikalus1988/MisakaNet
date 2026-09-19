@@ -1,5 +1,31 @@
 # PR Triage Guide
 
+## Letting an external docs PR merge itself (2026-09-19)
+
+`.github/workflows/auto-merge-docs.yml` squash-merges an **external** contributor's prose-only docs PR
+once every required check is green — but only after a maintainer says so, by adding the label
+**`auto-merge-eligible`**. There is no automatic way in, on purpose: merging to `main` publishes
+(`docs.yml` → the site, Cloudflare Workers Builds → misakanet-web), and `docs/` is not covered by the
+injection scan (that runs on `lessons/` only).
+
+Before merging, the gate re-reads the diff and refuses:
+
+| Never eligible | Why |
+|---|---|
+| anything under `lessons/` | lesson content is read and acted on by agents; unreviewed lesson = poisoning vector |
+| `docs/.well-known/**` | discovery cards other agents fetch and parse |
+| `docs/index.html` | the site itself (version badge, counts, claims) |
+| a PR labelled `lessons-only` or `needs-human-review` | it is already asking for a person |
+
+Eligible: prose under `docs/` (reports, guides), plus `README.md`, `CONTRIBUTING.md`, `JOIN.md`,
+`CHANGELOG.md`. The job listens for `labeled`, so adding the label is what triggers the check — before
+2026-09-19 it only listened to `opened`/`synchronize`/`ready_for_review`, and because every label it
+keyed on was applied *after* the PR opened, the channel had never merged anything (two legitimately
+docs-only external PRs sat unmerged: #1842, #1801).
+
+Same shape as the lesson channel's opt-in (`auto-merge-lesson`), for the same reason: auto-merging
+contributed content is a decision a person makes once, per PR.
+
 ## Closed-DCO Absorption Batch (2026-08-02)
 
 Closed-DCO absorption batch completed: shell helper, CI hygiene, benchmark catalog, query expansion, intake digest, English translations, runtime smoke.

@@ -115,7 +115,7 @@ test('misakanet_me_events requires lesson_id', async () => {
   assert.match(result.error, /lesson_id or lesson_path is required/);
 });
 
-test('misakanet_me_events shares the anonymous 5-reads/day quota', async () => {
+test('misakanet_me_events shares the anonymous read burst window', async () => {
   regressionQueries.queries = [];
   const env = createEnv();
   const anonymous = (args) => worker.fetch(new Request('https://misakanet.org/mcp', {
@@ -130,14 +130,17 @@ test('misakanet_me_events shares the anonymous 5-reads/day quota', async () => {
       params: { name: 'misakanet_me_events', arguments: args },
     }),
   }), env);
-  for (let i = 0; i < 5; i++) {
+  // Reads are unlimited since 2026-09-18; what stops a crawler is the burst window, so this test
+  // fills it and asserts the refusal is a *speed* message rather than a quota one.
+  for (let i = 0; i < 20; i++) {
     const resp = await anonymous({ lesson_id: 'quota-lesson' });
     assert.equal(resp.status, 200);
     const result = await resultText(resp);
-    assert.equal(result.evidence, 'E0');
+    assert.equal(result.evidence, 'E0', `read ${i + 1} must succeed`);
   }
-  // 6th anonymous call → rate limited.
   const blocked = await anonymous({ lesson_id: 'quota-lesson' });
   const blockedResult = await resultText(blocked);
-  assert.match(blockedResult.error, /Rate limit/);
+  assert.match(blockedResult.error, /Too many requests: max \d+ reads per \d+s/);
+  assert.match(blockedResult.error, /Reads are unlimited/,
+    'a refusal must not read as a quota: registration is not the way to read more');
 });

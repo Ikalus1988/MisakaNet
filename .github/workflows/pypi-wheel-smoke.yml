@@ -1,0 +1,45 @@
+name: PyPI Wheel Smoke
+
+# The Python channel's equivalent of `misakanet-setup-ci.yml` (#1818): build the **wheel**, install it
+# into a clean virtualenv, and ask the installed server for an MCP handshake. Issue #1821 is the reason
+# — the declared console scripts pointed at modules that are not in the wheel and `server.json` told
+# clients to run a file that an install does not have, so "pip install misakanet works" was never
+# tested, only "the checkout works".
+on:
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "misakanet/**"
+      - "server.json"
+      - "scripts/check_wheel_starts.py"
+      - ".github/workflows/pypi-wheel-smoke.yml"
+  push:
+    branches: [main]
+    paths:
+      - "pyproject.toml"
+      - "misakanet/**"
+      - "server.json"
+      - "scripts/check_wheel_starts.py"
+      - ".github/workflows/pypi-wheel-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wheel:
+    name: wheel (${{ matrix.os }}, py ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: build the wheel, install it clean, and ask it to start
+        run: python scripts/check_wheel_starts.py

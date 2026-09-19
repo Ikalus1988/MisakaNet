@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-18T04:53:43.966801+00:00",
+  "generated_at": "2026-09-19T11:11:33.923474+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(setup): derive the e2e stub token at runtime, so it stops looking like a credential (#276)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1832",
-      "timestamp": "2026-09-18T04:36:31Z",
+      "title": "fix(ci): the Auto-Merge Gate can finally merge something (#1826)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1861",
+      "timestamp": "2026-09-19T09:51:08Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(autostart): the live findings of the 2026-09-18 review, plus a parity gate that found a fifth",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1831",
-      "timestamp": "2026-09-18T01:45:26Z",
+      "title": "fix(intake-bot): the comment it never posted, and the failure it swallowed (#1825)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1860",
+      "timestamp": "2026-09-19T09:48:13Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ci(setup): make the packaged e2e compound at release time, and close the two gaps in its check list",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1828",
-      "timestamp": "2026-09-17T19:34:38Z",
+      "title": "feat(setup): every config the installer writes says who is reading, and 0.5.6",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1859",
+      "timestamp": "2026-09-19T09:34:37Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(bounty): runnable, self-checking task fixtures for the #1819 measurement",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1824",
-      "timestamp": "2026-09-17T19:05:01Z",
+      "title": "feat(mcp): accept self-declared context headers, so a read can be attributed without an account",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1858",
+      "timestamp": "2026-09-19T08:08:54Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(setup): give the config back on uninstall, and test the packaged tarball in CI",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1818",
-      "timestamp": "2026-09-17T18:39:16Z",
+      "title": "feat(analytics): record what a read did, without asking anyone to register for it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1857",
+      "timestamp": "2026-09-19T07:53:31Z",
       "source": "github"
     },
     {

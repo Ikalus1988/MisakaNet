@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "misakanet"
-version = "2.30.2"
+version = "2.31.0"
 description = "AI Agent 分布式经验知识共享系统 — 踩坑一次，全网受益"
 readme = "README.md"
 license = "Apache-2.0"
@@ -30,8 +30,25 @@ Repository = "https://github.com/Ikalus1988/MisakaNet"
 include = ["misakanet*"]
 
 [project.scripts]
-misakanet = "search_knowledge:main"
-misaka-harvest = "scripts.misaka_harvest:main"
+# Remote-first CLI, in the package, zero dependencies (2026-09-18, #1821). It replaced
+# `misakanet = "search_knowledge:main"`, whose module is not in the wheel, so the command exited with
+# `ModuleNotFoundError` right after a pip install — the defect this entry point's own docstring names.
+# There is no `misaka-harvest`: that tool needs a repo checkout and is intentionally not shipped.
+misakanet = "misakanet.cli.search:main"
+
+# `misaka-harvest` is deliberately not declared (2026-09-18, #1821).
+#
+# The old declarations pointed at modules outside the wheel — `packages.find` ships `misakanet*` only —
+# so `pip install misakanet` installed two commands that exit with `ModuleNotFoundError`. A declared
+# entry point that cannot run is worse than none: it is a broken instruction the user has no way to
+# diagnose, and the README printed it as a Quick Start.
+#
+# The working entries after an install are the package modules: `python -m misakanet.server` (stdio
+# MCP, gated in CI by .github/workflows/pypi-wheel-smoke.yml) and `python -m misakanet` (help).
+#
+# Remember before re-adding one: an installed CLI cannot search today — `misakanet/search/engine.py`
+# reads `lessons/` relative to a repo checkout and there is no remote path in the package, so the
+# corpus question (ship it, or search misakanet.org/mcp) has to be answered first.
 
 [project.optional-dependencies]
 # NOTE (2026-09-05): chromadb was removed from hub extras — this repo has no

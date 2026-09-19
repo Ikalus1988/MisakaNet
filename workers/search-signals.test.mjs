@@ -80,7 +80,13 @@ function createEnv(opts = {}) {
           if (sql.trim().startsWith('INSERT INTO search_signals')) {
             if (opts.insertThrows) throw new Error('D1_ERROR: no such table: search_signals');
             const b = stmt._bound || [];
-            signals.push({ solved: b[0], query: b[1], top_id: b[2], result_count: b[3], domain: b[4] });
+            // Bound arguments are in INSERT order, not "old columns then new ones": the first
+            // version of this line appended the new fields, so `query_hash` read the domain and the
+            // assertion said `6 !== 32` (2026-09-19). Keep this list in the same order as the
+            // statement's column list.
+            signals.push({ solved: b[0], query: b[1], query_hash: b[2], top_id: b[3],
+              result_count: b[4], domain: b[5], client_hint: b[6], agent: b[7], version: b[8],
+              os: b[9], latency_ms: b[10] });
             return { success: true };
           }
           return { success: true };
@@ -149,7 +155,13 @@ test('a hit records one row with solved=1, the top id and the result count', asy
   const rows = env.MISAKANET_D1._signals;
   assert.equal(rows.length, 1, 'exactly one signal row per completed search');
   assert.equal(rows[0].solved, 1);
-  assert.equal(rows[0].query, 'pip install timeout');
+  assert.equal(rows[0].query, 'pip install timeout', 'short queries are stored as written');
+  assert.match(rows[0].query_hash || '', /^[0-9a-f]{8}$/,
+    'and always with a salted dedup key (2026-09-18 query policy)');
+  assert.notEqual(rows[0].query_hash, 'pip install timeout', 'the key is not the query itself');
+  assert.equal(rows[0].client_hint, null, 'no client_id was sent, so there is no hint to store');
+  assert.ok(!('client_hint' in rows[0]) || rows[0].client_hint === null || typeof rows[0].client_hint === 'string',
+    'the client hint is optional and pseudonymous');
   assert.equal(rows[0].top_id, 'pip-timeout-mirror');
   assert.equal(rows[0].result_count, result.results.length);
   assert.equal(rows[0].domain, 'python');
@@ -263,6 +275,12 @@ test('every column the insert names is declared in the worker-created table', ()
       .filter((line) => line && !line.startsWith('--'))
       .map((line) => line.split(/\s+/)[0]),
   );
+  // Fields added after the first release arrive as guarded `ALTER TABLE … ADD COLUMN` statements
+  // (2026-09-18), so they are part of the table's declaration for this guard's purpose. Reading only
+  // CREATE would let the insert name columns the table never gets.
+  for (const alter of WORKER_SOURCE.matchAll(/ALTER TABLE search_signals ADD COLUMN (\w+)/g)) {
+    columns.add(alter[1]);
+  }
   const insert = WORKER_SOURCE.match(/INSERT INTO search_signals\s*\(([^)]*)\)/);
   assert.ok(insert, 'the worker must insert into search_signals');
   for (const column of insert[1].split(',').map((c) => c.trim())) {
@@ -281,4 +299,23 @@ test('the read endpoint returns solved and created_at, which the aggregator need
   assert.ok(columns.includes('solved'));
   assert.ok(columns.includes('created_at'));
   assert.ok(!columns.includes('query'), 'the open endpoint must not serve query text');
+});
+
+test('a long query is truncated to 80 characters and hashed', async () => {
+  // The policy: enough to see what people ask and to dedupe it, without keeping a whole prompt.
+  const env = createEnv();
+  const long = 'x'.repeat(300);
+  await search(long, {}, env);
+  const row = env.MISAKANET_D1._signals[0];
+  assert.equal(row.query.length, 80, 'the stored query is the first 80 characters');
+  assert.match(row.query_hash, /^[0-9a-f]{8}$/, 'and it is fingerprinted for dedupe');
+});
+
+test('a client_id becomes a pseudonymous hint, never the raw value', async () => {
+  const env = createEnv();
+  await search('pip install timeout', { client_id: 'agent-alpha-1' }, env);
+  const row = env.MISAKANET_D1._signals[0];
+  assert.match(row.client_hint || '', /^[0-9a-f]{8}$/, 'the hint is a salted dedup key');
+  assert.notEqual(row.client_hint, 'agent-alpha-1',
+    'the row store must not hold the identifier as sent');
 });

@@ -191,6 +191,50 @@ def misakanet_submit_usage(lesson_id: str, tool: str = "unknown", outcome: str =
     }
 
 
+def _client_ip() -> str:
+    """The caller's address when the transport can tell us; "" when it cannot.
+
+    Read from the request the framework hands the tool (`CF-Connecting-IP` in front of Cloudflare,
+    then `X-Real-IP`, then the first hop of `X-Forwarded-For`, then the socket peer). Wrapped in a
+    bare except on purpose: this is a rate-limit hint, and a server that cannot resolve it must still
+    answer.
+    """
+    try:
+        from fastmcp.server.dependencies import get_http_request  # type: ignore[import-not-found]
+
+        request = get_http_request()
+        headers = getattr(request, "headers", None) or {}
+        for name in ("cf-connecting-ip", "x-real-ip"):
+            value = headers.get(name)
+            if value:
+                return str(value).strip()[:64]
+        forwarded = headers.get("x-forwarded-for") or ""
+        if forwarded:
+            return str(forwarded).split(",")[0].strip()[:64]
+        host = getattr(getattr(request, "client", None), "host", None)
+        if host:
+            return str(host)[:64]
+    except Exception:
+        pass
+    return ""
+
+
+def _rate_limit_key(source: str, client_ip: str) -> tuple[str, str]:
+    """Which bucket an intake belongs to, and what that bucket is: `(key, "ip" | "source")`.
+
+    `"source"` is the honest answer when no address is available — it is client-chosen, therefore
+    spoofable, and the refusal message says so instead of pretending the limit is per caller.
+
+    Scope (2026-09-18): the window lives in module memory, so it holds for **one process**. Under
+    several workers or replicas each keeps its own — which is why the public remote endpoint is the
+    Cloudflare Worker (D1 counters + `CF-Connecting-IP`) and this file is the local/self-hosted
+    variant.
+    """
+    if client_ip:
+        return client_ip, "ip"
+    return f"source:{source or 'anon'}", "source"
+
+
 @mcp.tool()
 def misakanet_submit_intake(
     kind: str = "missing_lesson",
@@ -271,14 +315,19 @@ def misakanet_submit_intake(
             "voice": "failure-warning",
         }
 
-    # Per-IP: 3/hour (keyed by source field as IP proxy)
-    ip_key = source or "anon"
+    # Per-IP: 3/hour. The key is the *client address* when the transport can see it, and the
+    # client-supplied `source` label only as a documented fallback: keying on `source` alone let a
+    # caller reset its own quota by sending a different label — a rate limit with a self-service key
+    # (2026-09-18 review, 意见 7). `source` stays what it is: a display label for the issue body.
+    ip_key, key_kind = _rate_limit_key(source, _client_ip())
     if ip_key not in INTAKE_IP_WINDOW:
         INTAKE_IP_WINDOW[ip_key] = []
     INTAKE_IP_WINDOW[ip_key] = [t for t in INTAKE_IP_WINDOW[ip_key] if now - t < INTAKE_RATE_WINDOW]
     if len(INTAKE_IP_WINDOW[ip_key]) >= INTAKE_IP_LIMIT:
         return {
-            "error": f"Per-source rate limit: max {INTAKE_IP_LIMIT} intakes per hour for '{ip_key}'.",
+            "error": f"Per-source rate limit: max {INTAKE_IP_LIMIT} intakes per hour for '{ip_key}'"
+                     + ("" if key_kind == "ip" else "（source 标签：本机取不到客户端地址，"
+                        "该键可被调用方自设，见 mcp_http_server.py 的说明）") + ".",
             "voice": "failure-warning",
         }
 
