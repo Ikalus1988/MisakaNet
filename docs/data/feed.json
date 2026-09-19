@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-19T04:45:27.718502+00:00",
+  "generated_at": "2026-09-19T11:11:33.923474+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(intake): stop keying the rate limit on a value the caller chooses",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1850",
-      "timestamp": "2026-09-19T04:16:44Z",
+      "title": "fix(ci): the Auto-Merge Gate can finally merge something (#1826)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1861",
+      "timestamp": "2026-09-19T09:51:08Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(contribute): a failed contribution takes its branch back",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1848",
-      "timestamp": "2026-09-18T19:23:33Z",
+      "title": "fix(intake-bot): the comment it never posted, and the failure it swallowed (#1825)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1860",
+      "timestamp": "2026-09-19T09:48:13Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "test(e2e): the permission tiers are checked on the artifact users install",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1847",
-      "timestamp": "2026-09-18T19:09:45Z",
+      "title": "feat(setup): every config the installer writes says who is reading, and 0.5.6",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1859",
+      "timestamp": "2026-09-19T09:34:37Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(setup): tier ① must include the read-only grants, or it ships a tool nobody can call",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1846",
-      "timestamp": "2026-09-18T18:52:25Z",
+      "title": "feat(mcp): accept self-declared context headers, so a read can be attributed without an account",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1858",
+      "timestamp": "2026-09-19T08:08:54Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(setup): ask for permission in tiers, and show the manifest before writing anything",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1843",
-      "timestamp": "2026-09-18T10:06:36Z",
+      "title": "feat(analytics): record what a read did, without asking anyone to register for it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1857",
+      "timestamp": "2026-09-19T07:53:31Z",
       "source": "github"
     },
     {
