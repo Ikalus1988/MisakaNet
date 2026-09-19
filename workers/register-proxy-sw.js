@@ -3000,7 +3000,20 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
 
     if (method === "tools/call") {
       const toolName = params?.name || hdrName;
-      const args = params?.arguments || {};
+      const args = { ...(params?.arguments || {}) };
+      // `client_id` may arrive as a header instead of an argument (2026-09-18 policy follow-up).
+      //
+      // It is the pseudonym the docs describe: a stable id the *client* generates, never a credential
+      // (the server still issues tokens itself, and knowing someone's client_id lets you impersonate
+      // nothing). Accepting it on every call is what makes registration unnecessary for anything except
+      // the write tools — a reader who wants their history and reuse evidence kept together no longer
+      // has to register to get it. An explicit argument wins over the header, so a client that sends
+      // both is not surprised.
+      const headerClientId = (request.headers.get("X-MisakaNet-Client") || "").trim();
+      if (headerClientId && !args.client_id) {
+        if (/^[A-Za-z0-9._:-]{8,64}$/.test(headerClientId)) args.client_id = headerClientId;
+        else debugLog(env, 2, "ignored X-MisakaNet-Client: expected 8-64 chars of [A-Za-z0-9._:-]");
+      }
       if (!toolName) {
         const err = { code: -32602, message: "Missing tool name" };
         debugLog(env, 1, "MCP tool call: missing tool name");
