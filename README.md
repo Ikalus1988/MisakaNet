@@ -183,18 +183,14 @@ pip install misakanet
 python3 -m misakanet.server     # the stdio MCP server, from the installed package
 ```
 
-> ⚠️ **What an installed package can do today (#1821):** `python -m misakanet.server` (stdio MCP) and
-> `python -m misakanet` (help) work — the first is gated in CI by
-> `.github/workflows/pypi-wheel-smoke.yml`, which builds the wheel, installs it into a clean venv and
-> asks the **installed** server for an MCP handshake.
+> ⚠️ **What an installed package can do (#1821):** `misakanet "<error>"` (remote search),
+> `python -m misakanet.server` (stdio MCP) and `python -m misakanet` (help) all work, and the first two
+> are gated in CI by `.github/workflows/pypi-wheel-smoke.yml` — it builds the wheel, installs it into a
+> clean venv, runs the console script and asks the **installed** server for an MCP handshake.
 >
-> **Searching is not available from an installed package yet.** `misakanet/search/engine.py` reads
-> `lessons/` relative to a repo checkout and there is no remote path inside the package, so a wheel
-> cannot search offline. The `misakanet "…"` console script that used to be documented here was worse
-> than missing — it was *declared* in `pyproject.toml` while its module is not in the wheel, so it
-> exited with `ModuleNotFoundError` and the reader blamed their own environment. Those declarations are
-> removed until the corpus question is answered (ship the lessons, or search `misakanet.org/mcp` from
-> the CLI). Use a clone, the remote endpoint, or `npx @misaka-net/misakanet-setup` meanwhile.
+> The `misaka-harvest` command is deliberately **not** shipped: harvesting needs a repo checkout. It is
+> also why the local (offline) search path is not what the CLI uses — `misakanet/search/engine.py`
+> reads `lessons/` relative to a checkout, which a wheel does not have.
 
 **Option 4 — Python library (for scripts/notebooks):**
 ```bash

@@ -29,10 +29,16 @@ Repository = "https://github.com/Ikalus1988/MisakaNet"
 [tool.setuptools.packages.find]
 include = ["misakanet*"]
 
-# No console scripts, on purpose (2026-09-18, #1821).
+[project.scripts]
+# Remote-first CLI, in the package, zero dependencies (2026-09-18, #1821). It replaced
+# `misakanet = "search_knowledge:main"`, whose module is not in the wheel, so the command exited with
+# `ModuleNotFoundError` right after a pip install — the defect this entry point's own docstring names.
+# There is no `misaka-harvest`: that tool needs a repo checkout and is intentionally not shipped.
+misakanet = "misakanet.cli.search:main"
+
+# `misaka-harvest` is deliberately not declared (2026-09-18, #1821).
 #
-# `misakanet = "search_knowledge:main"` and `misaka-harvest = "scripts.misaka_harvest:main"` were
-# declared here while neither module is inside the wheel — `packages.find` ships `misakanet*` only —
+# The old declarations pointed at modules outside the wheel — `packages.find` ships `misakanet*` only —
 # so `pip install misakanet` installed two commands that exit with `ModuleNotFoundError`. A declared
 # entry point that cannot run is worse than none: it is a broken instruction the user has no way to
 # diagnose, and the README printed it as a Quick Start.
