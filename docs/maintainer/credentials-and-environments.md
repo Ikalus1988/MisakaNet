@@ -61,6 +61,21 @@ change on `main` can still reach these secrets. It only means a *feature branch*
 The expiry is also tracked as issue **#1886**, labelled `keep` so the stale bot leaves it alone, because
 a date in a document is easy to miss.
 
+### 4.1 What was proven, and what can only be assumed
+
+The token's *sufficiency* was verified end-to-end on 2026-09-20 rather than assumed — a narrower token
+plausibly could have been too narrow, and `wrangler` sometimes needs account-level reads that the D1
+permission group does not obviously grant. Both jobs were dispatched on `main` and neither waited for an
+approval (`pending_deployments` empty), so `automation` really is reviewer-free:
+
+| run | result | evidence from the log |
+|---|---|---|
+| [35461711546](https://github.com/Ikalus1988/MisakaNet/actions/runs/35461711546) `sync-d1` | success | self-heal DB check, schema `21 queries`, upsert `805 queries / 1581 rows read / 2809 rows written`, FTS rebuilt for 401 lessons, count `401 rows read` |
+| [35461713086](https://github.com/Ikalus1988/MisakaNet/actions/runs/35461713086) `sync-question-answers` | success | `open question issues: 2, closed: 7`, no permission error |
+
+The token value itself is still unverifiable from here, and always will be: GitHub never reveals a secret,
+so a green run is the only proof that the right value is installed. That is why step 3 above exists.
+
 ## 5. What is deliberately still repository-level
 
 `SHELDON_PAT` is the token that lets the branch sync push to `main` as a user rather than as
