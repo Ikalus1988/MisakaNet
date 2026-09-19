@@ -1,3 +1,9 @@
+<div align="right">
+
+[English](README.md) | [日本語](README.ja.md) | [简体中文](README.zh-CN.md)
+
+</div>
+
 # failure-memory protocol（failure-memory protocol）
 
 > **MisakaNet** 是 failure-memory protocol 的参考实现：一个 Git 驱动、零依赖优先的 AI Agent 失败经验知识网络。
