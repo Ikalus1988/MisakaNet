@@ -191,7 +191,6 @@ def misakanet_submit_usage(lesson_id: str, tool: str = "unknown", outcome: str =
     }
 
 
-@mcp.tool()
 def _client_ip() -> str:
     """The caller's address when the transport can tell us; "" when it cannot.
 
@@ -236,6 +235,7 @@ def _rate_limit_key(source: str, client_ip: str) -> tuple[str, str]:
     return f"source:{source or 'anon'}", "source"
 
 
+@mcp.tool()
 def misakanet_submit_intake(
     kind: str = "missing_lesson",
     problem: str = "",
