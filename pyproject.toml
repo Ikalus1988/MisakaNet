@@ -29,9 +29,20 @@ Repository = "https://github.com/Ikalus1988/MisakaNet"
 [tool.setuptools.packages.find]
 include = ["misakanet*"]
 
-[project.scripts]
-misakanet = "search_knowledge:main"
-misaka-harvest = "scripts.misaka_harvest:main"
+# No console scripts, on purpose (2026-09-18, #1821).
+#
+# `misakanet = "search_knowledge:main"` and `misaka-harvest = "scripts.misaka_harvest:main"` were
+# declared here while neither module is inside the wheel — `packages.find` ships `misakanet*` only —
+# so `pip install misakanet` installed two commands that exit with `ModuleNotFoundError`. A declared
+# entry point that cannot run is worse than none: it is a broken instruction the user has no way to
+# diagnose, and the README printed it as a Quick Start.
+#
+# The working entries after an install are the package modules: `python -m misakanet.server` (stdio
+# MCP, gated in CI by .github/workflows/pypi-wheel-smoke.yml) and `python -m misakanet` (help).
+#
+# Remember before re-adding one: an installed CLI cannot search today — `misakanet/search/engine.py`
+# reads `lessons/` relative to a repo checkout and there is no remote path in the package, so the
+# corpus question (ship it, or search misakanet.org/mcp) has to be answered first.
 
 [project.optional-dependencies]
 # NOTE (2026-09-05): chromadb was removed from hub extras — this repo has no

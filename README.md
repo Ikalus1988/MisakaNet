@@ -183,12 +183,18 @@ pip install misakanet
 python3 -m misakanet.server     # the stdio MCP server, from the installed package
 ```
 
-> ⚠️ **Known, tracked (#1821):** the `misakanet` and `misaka-harvest` console scripts are declared in
-> `pyproject.toml` but point at modules that are **not inside the wheel**, so they exit with
-> `ModuleNotFoundError` right after a pip install. That instruction used to be printed here as if it
-> worked. The working invocations are the two `python -m …` forms above; the fix is being done as a
-> red gate that builds the wheel, installs it into a clean venv and asks the **installed** server for an
-> MCP handshake (`.github/workflows/pypi-wheel-smoke.yml`).
+> ⚠️ **What an installed package can do today (#1821):** `python -m misakanet.server` (stdio MCP) and
+> `python -m misakanet` (help) work — the first is gated in CI by
+> `.github/workflows/pypi-wheel-smoke.yml`, which builds the wheel, installs it into a clean venv and
+> asks the **installed** server for an MCP handshake.
+>
+> **Searching is not available from an installed package yet.** `misakanet/search/engine.py` reads
+> `lessons/` relative to a repo checkout and there is no remote path inside the package, so a wheel
+> cannot search offline. The `misakanet "…"` console script that used to be documented here was worse
+> than missing — it was *declared* in `pyproject.toml` while its module is not in the wheel, so it
+> exited with `ModuleNotFoundError` and the reader blamed their own environment. Those declarations are
+> removed until the corpus question is answered (ship the lessons, or search `misakanet.org/mcp` from
+> the CLI). Use a clone, the remote endpoint, or `npx @misaka-net/misakanet-setup` meanwhile.
 
 **Option 4 — Python library (for scripts/notebooks):**
 ```bash

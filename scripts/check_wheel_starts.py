@@ -96,27 +96,33 @@ def main() -> int:
             return 1
         print(f"OK: installed wheel answered: {info}")
 
-        # 5. The declared console scripts must at least resolve. They are the other half of
-        #    "pip install misakanet gives you something that starts"; a missing module here is exactly
-        #    what issue #1821 reported.
-        for name in ("misakanet", "misaka-harvest"):
-            script = env_dir / ("Scripts" if sys.platform == "win32" else "bin") / name
-            if not script.exists():
-                print(f"::warning::console script not installed: {name}")
-                continue
+        # 5. Whatever console scripts the wheel *declares* must resolve, and the wheel must contain
+        #    the module this repo documents as its entry. Both halves are falsifiable: declaring a
+        #    script whose module is not shipped fails here (that was #1821), and so does a wheel that
+        #    stops shipping `misakanet/server/__main__.py` while the docs tell people to run it.
+        scripts = sorted(p for p in (env_dir / ("Scripts" if sys.platform == "win32" else "bin")).glob("*")
+                         if p.name in {"misakanet", "misakanet.exe", "misakanet.cmd",
+                                       "misaka-harvest", "misaka-harvest.exe", "misaka-harvest.cmd"})
+        for script in scripts:
             checked = run([str(script), "--help"], cwd=tmp_path, timeout=120)
-            print(f"  {name} --help → exit {checked.returncode}")
+            print(f"  {script.name} --help → exit {checked.returncode}")
             if "ModuleNotFoundError" in (checked.stderr or "") or "No module named" in (checked.stderr or ""):
-                # Known defect, tracked as #1821: the console scripts name modules that live outside the
-                # package (`search_knowledge`, `scripts.misaka_harvest`), so they cannot work after a
-                # pip install. Reported as a warning **for now** so this gate can land and protect the
-                # half that is fixed (the installed server starts) without blocking everything else on a
-                # refactor that moves those entry points into the package.
-                #
-                # Flip this to `return 1` in the same PR that moves them; until then the log says it
-                # out loud rather than passing silently.
-                print(f"::warning::`{name}` is installed but its module is not in the wheel (#1821): "
-                      f"{checked.stderr.strip().splitlines()[-1] if checked.stderr.strip() else ''}")
+                print(f"::error::`{script.name}` is declared by the wheel but its module is not in it: "
+                      f"{checked.stderr.strip().splitlines()[-1] if checked.stderr.strip() else ''}",
+                      file=sys.stderr)
+                return 1
+        print(f"console scripts declared and resolved: {len(scripts)}")
+
+        shipped = run([str(py), "-c",
+                       "import importlib.util as u;"
+                       "print(bool(u.find_spec('misakanet.server.__main__') or "
+                       "u.find_spec('misakanet.server')))"], cwd=tmp_path)
+        if "True" not in shipped.stdout:
+            print("::error::the wheel does not ship `misakanet.server`, which the README and "
+                  "server.json both tell clients to run", file=sys.stderr)
+            return 1
+        print("OK: the wheel ships the documented entry module")
+
     print("wheel smoke: OK")
     return 0
 
