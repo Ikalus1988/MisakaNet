@@ -5,7 +5,7 @@ tags: ["github-actions", "github-token", "pat", "bot-push", "workflow-trigger", 
 status: "published"
 evidence_level: "E0"
 created: "2026-09-19"
-summary_plain: "A bot that pushes to a PR branch with the built-in token updates it but starts no CI, leaving the PR stuck."
+summary_plain: "A bot push to a PR branch can leave the PR with a workflow suite that is held instead of running, so CI never runs."
 trigger: "PR unstable / waiting for status after a bot pushed to the branch; no check runs on the fresh head, or runs sitting in action_required"
 verify: "On the pushed head, no run sits in action_required and at least one check run comes from github-actions — any check run is not enough (an app check can be the only one)"
 provenance:
@@ -31,32 +31,84 @@ sees a PR that cannot merge and a UI that says it is waiting for checks that wil
 
 ## Root Cause
 
-**GitHub suppresses workflow runs for events created by the automatic `GITHUB_TOKEN`.** This is
-deliberate: without it, any workflow that pushes would re-trigger itself recursively. The suppression
-applies to the push itself, which means:
+There are **two** distinct ways this goes wrong, and the first version of this lesson only described
+one of them — with the wrong mechanism. Both were measured on the same job on 2026-09-19, so read them
+in order.
+
+### 1. The push is attributed to the bot, and the suite is created *held*
 
 ```
-git push origin "HEAD:$HEAD_REF"      # with GH_TOKEN=secrets.GITHUB_TOKEN
+git push origin "HEAD:$HEAD_REF"      # authenticated by GITHUB_TOKEN
 ```
 
-updates the branch and emits **no `pull_request: synchronize` event**. No event, no run: the PR's new
-head has no checks and none are coming. Nothing in the log says so — the workflow reports success, and
-the branch really was synced.
+The branch is updated, and the `pull_request` runs for the new head are created in the
+**`action_required`** state and execute **not one step**:
 
-The trap is that the two halves of such a workflow want different tokens: reading PR data and
-commenting work fine with `GITHUB_TOKEN`, and only the *push* silently needs a user identity. A
-workflow can therefore be correct-looking for months and be quietly poisoning every PR it helps.
+```
+check suites on the synced head: 18 total, 14 of them github-actions / action_required / runs=0
+```
 
-The repository already knew the rule — `release-please.yml` documents that a `GITHUB_TOKEN` push cannot
-fire another workflow, which is why its PyPI publish is an explicit `gh workflow run` — but it was
-written down where it applied, not where it bit.
+No failed step, no log, nothing to read — and the PR sits at `unstable` / *"Expected — Waiting for
+status to be reported"* forever, because nothing new happens to that commit.
+
+Which identity pushed is visible on the run, and this is the field to look at:
+
+```bash
+gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=1" --jq '.workflow_runs[0].triggering_actor.login'
+# github-actions[bot] → bot-authenticated, the runs will be held
+# a human login      → the push came from a user token
+```
+
+An earlier version of this lesson said a `GITHUB_TOKEN` push produces **no run at all**. That came from
+a `head_sha` query that returned nothing; the same commit's check *suites* show the held runs. The
+distinction matters because the fix is not "get any token": it is "get a token whose identity is
+trusted to run workflows".
+
+### 2. A PAT is not enough while the checkout keeps its own credential
+
+`actions/checkout` writes `http.https://github.com/.extraheader` into the local git config with
+`GITHUB_TOKEN`. A later
+
+```bash
+git -c http.extraheader="$AUTH_HEADER" push origin "HEAD:$HEAD_REF"
+```
+
+**appends** a second Authorization header rather than replacing the first, and the server takes the
+checkout's. So the workflow logs "pushing with the PAT" while the run's `triggering_actor` is still
+`github-actions[bot]` — which is exactly how this was caught, after a PAT had already been installed and
+the symptom did not change.
+
+The fix is one line on the checkout:
+
+```yaml
+- uses: actions/checkout@<sha>
+  with:
+    fetch-depth: 0
+    persist-credentials: false      # the only Authorization header is then the one we set
+```
+
+### 3. And the merge commit it writes needs a sign-off
+
+A job that merges `main` into someone else's branch writes a commit **onto their PR**, and a DCO gate
+requires a `Signed-off-by:` trailer on every commit — so without `--signoff` the contributor gets a red
+check for a commit they did not write:
+
+```bash
+git merge --signoff origin/main --no-edit
+```
+
+Measured on #1879 (no signoff → `DCO Check` failure on the synced head) and on #1882 (signoff in place →
+`DCO Check` success, with the trailer naming the job: `misakanet-sync-bot <bot@misakanet.dev>`).
 
 ## Solution
 
-Push with a **personal access token** (or any non-`GITHUB_TOKEN` app token). Classic PAT: `repo`.
-Fine-grained PAT: **Contents: Read and write** — `actions: write` is *not* needed, because nothing here
-dispatches a workflow; the push itself is what triggers. A PAT push is an ordinary user push, so
-`synchronize` fires and the checks run.
+Push with a **personal access token** (or any non-`GITHUB_TOKEN` app token) — classic: `repo`;
+fine-grained: **Contents: Read and write**. `actions: write` is *not* needed: nothing here dispatches a
+workflow, the push itself is what triggers.
+
+Then make sure the PAT is the credential that is actually used (`persist-credentials: false`, above),
+sign the merge commit (`--signoff`, above), and **read the result back**: the runs' `triggering_actor`
+plus the count of `github-actions` check runs is the whole diagnosis, and it is one API call.
 
 Two details worth keeping, both learned the hard way:
 
