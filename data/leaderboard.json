@@ -1,7 +1,7 @@
 [
   {
     "login": "zsxh1990",
-    "score": 91.45
+    "score": 91.39
   },
   {
     "login": "github-actions[bot]",
@@ -80,10 +80,6 @@
     "score": 0.51
   },
   {
-    "login": "yunaremaia",
-    "score": 0.43
-  },
-  {
     "login": "pnpn1212",
     "score": 0.24
   },
@@ -93,6 +89,10 @@
   },
   {
     "login": "misterio070",
+    "score": 0.21
+  },
+  {
+    "login": "yunaremaia",
     "score": 0.21
   }
 ]
