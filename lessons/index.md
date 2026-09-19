@@ -189,3 +189,4 @@
 - [飞书 Block 批量写入上限](contrib/feishu-block-batch-limit.md) | feishu | | bootstrap
 - [飞书 Webhook URL 必须用环境变量或 gitignored 的 config.yaml](contrib/feishu-webhook-url-env-config.md) | devops | | bootstrap
 - [飞书机器人完整配置指南](contrib/feishu-bot-setup-complete.md) | feishu | | bootstrap
+- [Third-Party SDK SSE Streaming Breakage: Proxy Buffering vs Accept Mismatch](contrib/sse-streaming-thirdparty-sdk-breakage.md) | llm | "sse", "streaming", "openrouter", "sdk", "proxy", "timeout" | mcp-intake-1555
