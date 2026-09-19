@@ -4,6 +4,23 @@ misakanet-core>=2.7.0
 jsonschema>=4.26.0
 mcp>=2.2.0
 pyyaml>=6.0
+#
+# And the repository's own package, in editable mode.
+#
+# Without this line `pip install -r requirements.txt` installs everything *except* the thing the
+# command looks like it installs: `import misakanet` only worked because the current directory
+# happened to be on `sys.path`, and the `misakanet` console script did not exist at all — the same
+# gap #1821 is about, one layer down (the wheel could not run; the documented dev install did not
+# install the project either). With it, the documented one-liner produces a working install:
+# `misakanet "<error>"`, `python3 -c "import misakanet"` and the tests all resolve to this checkout.
+#
+# Cost, stated because it is not free: an editable install runs a PEP 517 build, so a pull request
+# that breaks `pyproject.toml` (a fork with an unusual build backend once did exactly that — see
+# lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md) makes this whole line fail. CI therefore
+# installs the external dependencies first and treats the editable step as its own, non-fatal step
+# (`.github/workflows/pr-checks.yml`), so one such PR loses the editable convenience rather than its
+# entire test suite.
+-e .
 # 
 # Hub 依赖（federation, 飞书通知等）
 # 如需完整安装：pip install -r requirements.txt -r hub/requirements.txt
