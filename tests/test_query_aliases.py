@@ -126,6 +126,42 @@ def test_aliases_are_grounded_in_the_repository(table):
 
 # ── expansion behaviour ─────────────────────────────────────────────────────
 
+# Files whose contents are *generated*, so they cannot serve as evidence: the thing that writes them
+# is free to reword, reorder or drop any line, and the citation silently rots.
+#
+# Found on 2026-09-19: three of 180 aliases cited one — two cited `lessons/index.md` and one cited
+# `data/quality_scores.json`. PR #1817 rebuilds the index, and its audit went red with
+# `'中文乱码': alias_evidence quote is stale` even though the alias and its canonical lesson had not
+# changed. Worse, the third citation was *already* stale in a way the test could not see: it quoted a
+# filename (`tts中文编码-powerhsell传参必须用txt文件.md`) that no longer exists, because the citation
+# pointed at a generated file that still carried the old name. Evidence has to come from a file a
+# reviewer can rely on, so it must be a source file.
+GENERATED_EVIDENCE_FILES = (
+    "lessons/index.md",
+    "data/lessons.json",
+    "data/quality_scores.json",
+    "data/counter.json",
+    "data/leaderboard.json",
+)
+
+
+def test_evidence_never_cites_a_generated_file(table):
+    """A citation into a generated file is a citation that will rot without anyone editing it."""
+    offenders = []
+    for e in table["aliases"]:
+        j = e["justification"]
+        for label in ("canonical_evidence", "alias_evidence"):
+            ev = j.get(label) or {}
+            if ev.get("file") in GENERATED_EVIDENCE_FILES:
+                offenders.append(f"{e['alias']!r} {label} -> {ev['file']}")
+    assert not offenders, (
+        "these aliases cite a generated file as evidence, so any regeneration of it can make the "
+        "citation stale without touching the alias (this is what turned PR #1817's audit red):\n  - "
+        + "\n  - ".join(offenders)
+        + "\nPoint the citation at the source file instead (the lesson itself, a script, or a doc)."
+    )
+
+
 def test_canonical_forms_exist_in_the_corpus(table, lesson_corpus):
     """The whole point: an expansion that is not in the corpus retrieves nothing."""
     corpus_tokens = set(expand_query.tokenize(lesson_corpus))
