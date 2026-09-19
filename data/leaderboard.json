@@ -32,10 +32,6 @@
     "score": 1.5
   },
   {
-    "login": "ghzhost",
-    "score": 1.48
-  },
-  {
     "login": "mr-neutr0n",
     "score": 1.39
   },
@@ -46,6 +42,10 @@
   {
     "login": "gloskull",
     "score": 1.35
+  },
+  {
+    "login": "ghzhost",
+    "score": 1.03
   },
   {
     "login": "kveita",
