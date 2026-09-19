@@ -73,6 +73,23 @@ test('an explicit argument wins over the header', async () => {
   assert.equal(result.error, undefined, 'sending both must not be an error');
 });
 
+test('self-declared context headers become analytics fields, arguments win', async () => {
+  // The installer writes these into each assistant's MCP config, so a read can be attributed without
+  // anyone registering. They are hints: an over-long value is dropped, and an explicit argument wins.
+  const env = createEnv();
+  const clean = { agent_type: 'claude-code' };
+  const viaHeaders = await payload(await call(env, 'misakanet_register', clean, {
+    'X-MisakaNet-Client': 'agent-beta', 'X-MisakaNet-Agent': 'claude-code',
+    'X-MisakaNet-Os': 'wsl2', 'X-MisakaNet-Version': '0.5.6',
+  }));
+  assert.ok(viaHeaders.node_id, JSON.stringify(viaHeaders));
+
+  const long = await payload(await call(env, 'misakanet_register', clean, {
+    'X-MisakaNet-Client': 'agent-beta', 'X-MisakaNet-Os': 'x'.repeat(200),
+  }));
+  assert.ok(long.node_id, 'an over-long hint must not break the call');
+});
+
 test('a malformed header value is ignored, not fatal', async () => {
   // Too short / illegal characters: this is a hint, never a credential, so it must not fail the call.
   const env = createEnv();
