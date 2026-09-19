@@ -15,10 +15,17 @@ jobs:
     # 2. Docs-only (no code changes)
     # 3. Labeled 'good first issue' or 'area:docs'
     # 4. Not draft
+    #
+    # Note on 3: `area:docs` is applied **automatically** by `.github/labeler.yml`, whose pattern for
+    # it is `**/*.md` — so every lesson PR carries it too (#1746, #1750: `area:docs` + `area:lessons` +
+    # `lessons-only` + `needs-human-review`). The label is therefore not a human checkpoint, and the
+    # refusals below are what actually keep lesson content out of this path.
     if: >
       !github.event.pull_request.draft &&
       github.event.pull_request.user.login != 'Ikalus1988' &&
       github.event.pull_request.user.login != 'zsxh1990' &&
+      !contains(github.event.pull_request.labels.*.name, 'lessons-only') &&
+      !contains(github.event.pull_request.labels.*.name, 'needs-human-review') &&
       (
         contains(github.event.pull_request.labels.*.name, 'good first issue') ||
         contains(github.event.pull_request.labels.*.name, 'area:docs')
@@ -37,23 +44,27 @@ jobs:
               pull_number: pr.number,
             });
 
-            const docsOnly = files.data.every(f =>
-              f.filename.endsWith('.md') ||
-              f.filename.endsWith('.txt') ||
-              f.filename.startsWith('docs/') ||
-              f.filename === 'CONTRIBUTING.md' ||
-              f.filename === 'README.md' ||
-              f.filename === 'JOIN.md' ||
-              f.filename === 'CHANGELOG.md'
-            );
+            // ── docs-only rule (kept in one place; see tests/test_auto_merge_docs.py) ──
+            //
+            // `lessons/` is deliberately NOT docs-only. Lesson content is read and acted on by
+            // agents, so auto-merging an unreviewed lesson is a poisoning vector — the same reason
+            // pr-checks.yml refuses to auto-merge any PR that touches lessons/.
+            //
+            // This used to be `f.filename.endsWith('.md') || f.filename.endsWith('.txt') || …`, which
+            // made **any** `.md` anywhere docs-only, lessons included — the exact opposite of the
+            // comment sitting under it. That hole was armed rather than theoretical: `.github/labeler.yml`
+            // gives `area:docs` to every `**/*.md`, so external lesson PRs satisfy the job's label
+            // condition (#1746, #1750, and the five around them), and any of them that pushes an update
+            // (`synchronize`) or comes out of draft (`ready_for_review`) after the label lands reaches
+            // the Enable auto-merge step with `docs-only: true`. The only thing that stopped them was
+            // `needs-dco` — a check about commit trailers, not about review (found 2026-09-19).
+            const isDocsFile = (path) =>
+              !path.startsWith('lessons/') &&
+              (path.startsWith('docs/') ||
+               ['CONTRIBUTING.md', 'README.md', 'JOIN.md', 'CHANGELOG.md'].includes(path));
+            // ── end docs-only rule ──
 
-            // `lessons/` is deliberately NOT docs-only. Lesson content is read and
-            // acted on by agents, so auto-merging an unreviewed lesson is a
-            // poisoning vector — the same reason pr-checks.yml refuses to
-            // auto-merge any PR that touches lessons/. A lesson PR must wait for a
-            // human, so it must not take this path (2026-09-13: this list used to
-            // include lessons/, and the Enable auto-merge step then failed on
-            // every external lesson PR, adding a red check nobody could act on).
+            const docsOnly = files.data.length > 0 && files.data.every(f => isDocsFile(f.filename));
 
             core.setOutput('docs-only', docsOnly);
             core.info(`Docs-only: ${docsOnly} (${files.data.length} files)`);
