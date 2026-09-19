@@ -103,6 +103,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run release-pypi.yml --ref main -f "version=${{ steps.release_tag.outputs.version }}"
 
+      # The official MCP registry, published on every release instead of by hand. It used to be a
+      # manual `mcp-publisher publish` on a maintainer's machine, and the entry drifted to
+      # `isLatest = 2.29.0` while this repository, PyPI and the GitHub release were all at 2.30.2
+      # (#1820) — a directory listing that no CI step watched, and one that cannot be updated from a
+      # sandboxed agent environment at all (github.com is unreachable there, the registry is not).
+      - name: Dispatch the MCP registry publish
+        if: steps.release_tag.outputs.created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run publish-mcp-registry.yml --ref main -f "version=${{ steps.release_tag.outputs.version }}"
+
       # Idempotent and *unconditional*: it rewrites docs/index.html only when the
       # badge drifted from the manifest, and the commit below only fires when the
       # index actually changed. So a stale badge self-heals on the next push to
