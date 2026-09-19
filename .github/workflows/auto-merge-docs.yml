@@ -22,7 +22,14 @@ on:
     # that became eligible later was never looked at again — which is why this channel produced
     # nothing since it was written, while two legitimately docs-only external PRs (#1842, #1801) sat
     # unmerged. The maintainer's own opt-in label arrives through this event too.
-    types: [opened, synchronize, ready_for_review, labeled]
+    # `edited` and `unlabeled` are here because eligibility can change without a push:
+    #   * `edited` — retargeting the base branch. On 2026-09-19 #1801 was opened against a stale
+    #     feature branch; retargeting it to `main` changed which workflow file it even evaluated,
+    #     and the gate would not look again until someone re-applied the label by hand.
+    #   * `unlabeled` — a maintainer removing `needs-human-review` (or `lessons-only`) is a decision
+    #     that the PR may proceed; without this the gate only ever sees the refusal, never its
+    #     withdrawal.
+    types: [opened, synchronize, ready_for_review, labeled, unlabeled, edited]
 
 permissions:
   contents: write

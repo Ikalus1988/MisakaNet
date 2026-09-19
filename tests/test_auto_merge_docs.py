@@ -128,10 +128,13 @@ def test_a_person_has_to_let_a_pr_in_and_adding_the_label_is_what_triggers_the_c
         "workflow must stay API-only"
     )
     types = triggers["pull_request_target"]["types"]
-    assert "labeled" in types, (
-        "the job must trigger when a label is added: every label it keys on (auto-merge-eligible, "
-        "lessons-only, needs-human-review) is applied after the PR opens"
-    )
+    for event in ("labeled", "unlabeled", "edited"):
+        assert event in types, (
+            f"the job must trigger on `{event}`: every label it keys on (auto-merge-eligible, "
+            "lessons-only, needs-human-review) is applied after the PR opens, a maintainer removing a "
+            "refusal label is a decision to re-evaluate, and retargeting the base branch changes which "
+            "workflow file the PR is even running (#1801, 2026-09-19)"
+        )
     job_if = _job_condition()
     assert "auto-merge-eligible" in job_if, (
         "the entry condition must be the maintainer's opt-in label, not one applied automatically "
