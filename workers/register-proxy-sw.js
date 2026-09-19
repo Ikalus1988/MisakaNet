@@ -215,11 +215,19 @@ function addDebugContext(env, errorObj, context) {
 // - Supports initialize handshake (2025-06-18) AND stateless direct calls (2026-07-28)
 // - Accepts Mcp-Method / Mcp-Name headers (2026-07-28) as fallback routing
 // - Origin validation required by spec (DNS rebinding protection)
-// - Version reported to clients: env.MCP_VERSION when set, otherwise the constant in
-//   `serverInfo` below. That constant is checked against pyproject.toml by
-//   scripts/align_versions.py (R7) — until 2026-09-18 the comment here claimed a
-//   package.json fallback that did not exist, nothing wrote the value, and every MCP
-//   client was told 2.27.1 while the repo was at 2.30.2.
+// - Version reported to clients: the constant in `serverInfo` below, which release-please bumps as
+//   part of every release (it carries an `x-release-please-version` annotation and is declared in
+//   release-please-config.json's extra-files), and which `scripts/align_versions.py` checks against
+//   pyproject.toml (rule R7). Until 2026-09-18 the comment here claimed a package.json fallback that
+//   did not exist, *nothing* wrote the value, and every MCP client was told 2.27.1 while the repo was
+//   at 2.30.2.
+//
+//   `env.MCP_VERSION` takes precedence when it is set, and that is an *ad-hoc* override rather than
+//   part of the release path: no `[vars]` entry and no deploy step has ever set it (verified
+//   2026-09-19), so nothing can go stale behind the constant's back. To override one deployment:
+//   `wrangler deploy --var MCP_VERSION=2.31.1`. Deliberately NOT wired into wrangler.toml — a second
+//   owner for this number would be the un-tested one at runtime (`env.MCP_VERSION || constant`), and
+//   a stale var would win over the constant that R7 and the release tests actually guard (#1820).
 
 const MCP_TOOLS = [
   {
