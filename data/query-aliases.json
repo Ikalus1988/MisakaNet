@@ -1513,8 +1513,8 @@
         "canonical_term": "encoding",
         "canonical_df": 19,
         "alias_evidence": {
-          "file": "lessons/index.md",
-          "quote": "[RAG 检索中文乱码 — pymupdf4llm 默认编码问题]"
+          "file": "lessons/contrib/python-gbk-encoding-error.md",
+          "quote": "乱码"
         },
         "canonical_evidence": {
           "file": "lessons/contrib/python-gbk-encoding-error.md",
@@ -2718,8 +2718,8 @@
         "canonical_term": "powershell",
         "canonical_df": 10,
         "alias_evidence": {
-          "file": "data/quality_scores.json",
-          "quote": "\"path\": \"lessons/contrib/tts中文编码-powerhsell传参必须用txt文件.md\","
+          "file": "docs/maintainer/query-alias-design-2026-09-16.md",
+          "quote": "`powerhsell → powershell`"
         },
         "canonical_evidence": {
           "file": "lessons/contrib/tts-chinese-encoding-powershell.md",
@@ -3005,8 +3005,8 @@
         "canonical_term": "install",
         "canonical_df": 58,
         "alias_evidence": {
-          "file": "lessons/index.md",
-          "quote": "- [feishu-mcp-server-deepseek-tui-setup](contrib/feishu-mcp-server-deepseek-tui-setup.md) | uncategorized | |"
+          "file": "lessons/contrib/feishu-mcp-server-deepseek-tui-setup.md",
+          "quote": "title: DeepSeek TUI — Feishu MCP Server Setup & Permission Boundaries"
         },
         "canonical_evidence": {
           "file": "lessons/contrib/ghidra-mcp-server-reverse-engineering.md",
