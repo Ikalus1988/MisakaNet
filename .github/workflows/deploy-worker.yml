@@ -13,6 +13,12 @@ permissions:
 
 jobs:
   deploy:
+    # Secrets live in the `release` environment, not at repository level: they are publish and
+    # deploy credentials, and environment secrets can carry protection rules. A branch policy is in
+    # place today; once "required reviewers" is switched on, **this job waits for an approval on every
+    # push to main that touches the worker**. That is deliberate — a Worker deploy is production
+    # infrastructure — but it is a change in pace, so it is stated here rather than discovered.
+    environment: release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

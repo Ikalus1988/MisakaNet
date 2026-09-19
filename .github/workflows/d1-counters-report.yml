@@ -20,6 +20,9 @@ permissions:
 
 jobs:
   report:
+    # `workflow_dispatch`-only, so the environment's protection rules only apply to runs a
+    # person started — which is what makes them safe to put on publish/deploy credentials.
+    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

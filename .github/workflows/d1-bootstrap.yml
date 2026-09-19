@@ -21,6 +21,8 @@ permissions:
 
 jobs:
   bootstrap:
+    # `workflow_dispatch`-only: the environment's rules apply to runs a person started.
+    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

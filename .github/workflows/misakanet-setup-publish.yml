@@ -11,6 +11,11 @@ permissions:
 
 jobs:
   publish:
+    # Secrets live in the `release` environment, not at repository level: they are publish and
+    # deploy credentials, and environment secrets can carry protection rules — a branch policy today,
+    # and "required reviewers" as soon as it is switched on, which is what stops a workflow that has
+    # been edited on a branch from using them without a person approving the run.
+    environment: release
     runs-on: ubuntu-latest
     defaults:
       run:
