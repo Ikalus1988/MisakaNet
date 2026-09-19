@@ -21,12 +21,18 @@ import os
 import shutil
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 INTEGRATION = REPO / "integrations" / "agent-autostart"
+# Synthetic token, derived per run: a literal is indistinguishable from a hardcoded credential
+# to a scanner (hol-guard reported one as HARDCODED_SECRET, 2026-09-19). See
+# workers/_test-token.mjs for the same fix in the JS suite.
+SYNTHETIC_TOKEN = f"mcp_{uuid.uuid4().hex}"
+
 INSTALLER = INTEGRATION / "install_misakanet_agent.py"
 HOOK = INTEGRATION / "checkpoint_reminder.py"
 
@@ -291,7 +297,7 @@ class _McpStub:
                     result = {"tools": [{"name": "misakanet_search"},
                                         {"name": "misakanet_get_lesson"}]}
                 elif tool == "misakanet_register":
-                    result = {"node_id": "MisakaTEST", "token": "mcp_testtoken",
+                    result = {"node_id": "MisakaTEST", "token": SYNTHETIC_TOKEN,
                               "registered_at": "2026-09-13T00:00:00Z", "agent_type": "setup"}
                 else:
                     result = {"results": [{"id": "stub-lesson", "type": "lesson"}], "query": "q"}
@@ -332,7 +338,7 @@ def test_identity_is_provisioned_so_write_tools_need_no_setup(tmp_path):
         )
         assert result.returncode == 0, result.stderr
         token = home / ".misakanet-agent" / "token"
-        assert token.read_text(encoding="utf-8").strip() == "mcp_testtoken"
+        assert token.read_text(encoding="utf-8").strip() == SYNTHETIC_TOKEN
         assert (home / ".misakanet-agent" / "client_id").exists(), "client_id must be reused, not regenerated"
         assert (token.stat().st_mode & 0o777) == 0o600, "a token file must not be world-readable"
 
@@ -340,13 +346,13 @@ def test_identity_is_provisioned_so_write_tools_need_no_setup(tmp_path):
         # 5-reads/day limit for a user who will never run `misakanet_register` by hand. What
         # it must not do is show up anywhere else (stdout of the installer, the report URL).
         claude = json.loads((home / ".claude.json").read_text(encoding="utf-8"))
-        assert claude["mcpServers"]["misakanet"]["headers"]["Authorization"] == "Bearer mcp_testtoken"
-        assert "mcp_testtoken" not in result.stdout, "the installer must not echo the token"
+        assert claude["mcpServers"]["misakanet"]["headers"]["Authorization"] == f"Bearer {SYNTHETIC_TOKEN}"
+        assert SYNTHETIC_TOKEN not in result.stdout, "the installer must not echo the token"
         report = subprocess.run(
             [sys.executable, str(INSTALLER), "--home", str(home), "--report", "x"],
             capture_output=True, text=True, env=env,
         )
-        assert "mcp_testtoken" not in report.stdout
+        assert SYNTHETIC_TOKEN not in report.stdout
 
         second = subprocess.run(
             [sys.executable, str(INSTALLER), "--home", str(home), "--only", "claude"],
@@ -495,12 +501,12 @@ def test_codex_config_carries_the_token_as_http_headers(tmp_path, monkeypatch):
     tomllib = pytest.importorskip("tomllib")
     home = make_home(tmp_path)
     (home / ".misakanet-agent").mkdir(exist_ok=True)
-    (home / ".misakanet-agent" / "token").write_text("mcp_codex_token", encoding="utf-8")
+    (home / ".misakanet-agent" / "token").write_text(SYNTHETIC_TOKEN, encoding="utf-8")
     run_installer(home, "--only", "codex", "--no-register")
 
     data = tomllib.loads((home / ".codex" / "config.toml").read_text(encoding="utf-8"))
     table = data["mcp_servers"]["misakanet"]
-    assert table["http_headers"]["Authorization"] == "Bearer mcp_codex_token"
+    assert table["http_headers"]["Authorization"] == f"Bearer {SYNTHETIC_TOKEN}"
     assert "bearer_token_env_var" not in table
 
 def test_the_hook_never_forwards_a_stored_token(tmp_path):

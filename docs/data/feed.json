@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-19T11:11:33.923474+00:00",
+  "generated_at": "2026-09-19T15:57:10.299415+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(ci): the Auto-Merge Gate can finally merge something (#1826)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1861",
-      "timestamp": "2026-09-19T09:51:08Z",
+      "title": "docs(lessons): the two ways today's CI automation was silently inert",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1873",
+      "timestamp": "2026-09-19T14:19:17Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(intake-bot): the comment it never posted, and the failure it swallowed (#1825)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1860",
-      "timestamp": "2026-09-19T09:48:13Z",
+      "title": "fix(aliases): evidence points at source files, and a gate keeps it there",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1877",
+      "timestamp": "2026-09-19T14:11:49Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(setup): every config the installer writes says who is reading, and 0.5.6",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1859",
-      "timestamp": "2026-09-19T09:34:37Z",
+      "title": "fix(ci): the sync's read-back counts Actions runs, not any check run",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1875",
+      "timestamp": "2026-09-19T14:07:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(mcp): accept self-declared context headers, so a read can be attributed without an account",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1858",
-      "timestamp": "2026-09-19T08:08:54Z",
+      "title": "docs: misakanet-setup v0.5.1 architecture review + macOS test report",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1761",
+      "timestamp": "2026-09-19T14:03:29Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(analytics): record what a read did, without asking anyone to register for it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1857",
-      "timestamp": "2026-09-19T07:53:31Z",
+      "title": "fix(mcp): apply domain filter to matchAnsweredQuestions FAQ results (#1743)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1800",
+      "timestamp": "2026-09-19T14:03:25Z",
       "source": "github"
     },
     {
