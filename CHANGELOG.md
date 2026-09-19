@@ -7,6 +7,122 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.31.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.30.2...v2.31.0) (2026-09-19)
+
+
+### Features
+
+* **analytics:** record what a read did, without asking anyone to register for it ([#1857](https://github.com/Ikalus1988/MisakaNet/issues/1857)) ([1ce80dd](https://github.com/Ikalus1988/MisakaNet/commit/1ce80dd311fc5d8ac8ff9c619d208abde4aacc90))
+* **bounty:** runnable, self-checking task fixtures for the [#1819](https://github.com/Ikalus1988/MisakaNet/issues/1819) measurement ([#1824](https://github.com/Ikalus1988/MisakaNet/issues/1824)) ([4bcead4](https://github.com/Ikalus1988/MisakaNet/commit/4bcead4ef37f8554ebfb7088c7dfd121ca9cc618))
+* **ci:** add the workflow shell checker (W1-W5) ([#1646](https://github.com/Ikalus1988/MisakaNet/issues/1646)) ([cd00be8](https://github.com/Ikalus1988/MisakaNet/commit/cd00be85b82804e9d91446fc13a27a40273c9961))
+* **ci:** an `/adopt` flow so a fork PR blocked on sign-off is not blocked at all ([#1786](https://github.com/Ikalus1988/MisakaNet/issues/1786)) ([19c6007](https://github.com/Ikalus1988/MisakaNet/commit/19c600718174d59365ca3de3a65f497ec0ecd777))
+* **ci:** an opt-in auto-merge channel for lesson pull requests ([#1781](https://github.com/Ikalus1988/MisakaNet/issues/1781)) ([11ac11c](https://github.com/Ikalus1988/MisakaNet/commit/11ac11c7a99573785fd0d3ce669cbf44a6f0b3a7))
+* **ci:** the MCP registry listing publishes itself, and is read back ([#1820](https://github.com/Ikalus1988/MisakaNet/issues/1820)) ([99119bd](https://github.com/Ikalus1988/MisakaNet/commit/99119bd752dbcacd1ad3e533cab33ad4becfbc60))
+* **ci:** the MCP registry listing publishes itself, and is read back ([#1820](https://github.com/Ikalus1988/MisakaNet/issues/1820)) ([9019eaf](https://github.com/Ikalus1988/MisakaNet/commit/9019eaf68cd66d60c3987c613249f82d9afb6a18))
+* **cli:** misakanet "&lt;error&gt;" works after a pip install — remote-first, in the package ([#1854](https://github.com/Ikalus1988/MisakaNet/issues/1854)) ([0082574](https://github.com/Ikalus1988/MisakaNet/commit/00825745e4d05838196e10a5c964c9ece6717911))
+* **gate:** check that a lesson's cited source actually exists ([#1768](https://github.com/Ikalus1988/MisakaNet/issues/1768)) ([152d0ff](https://github.com/Ikalus1988/MisakaNet/commit/152d0ff1608ef68a5ff33ca8bcdb9c0206761ac2))
+* **lessons:** optional structured fields — summary_plain, trigger, verify ([#1792](https://github.com/Ikalus1988/MisakaNet/issues/1792)) ([93cdabb](https://github.com/Ikalus1988/MisakaNet/commit/93cdabbf8ec8f4f10d1dc88adeeb74255bc15d87))
+* **mcp:** accept client_id as a header, so reads need no registration for continuity either ([#1856](https://github.com/Ikalus1988/MisakaNet/issues/1856)) ([f943786](https://github.com/Ikalus1988/MisakaNet/commit/f9437863754c6b6eab06c8baa7986f96497a418f))
+* **mcp:** accept self-declared context headers, so a read can be attributed without an account ([#1858](https://github.com/Ikalus1988/MisakaNet/issues/1858)) ([998d47f](https://github.com/Ikalus1988/MisakaNet/commit/998d47f4dd7c03bc88aa07465deb074d59a8b1d1))
+* **metrics:** give the hit rate a denominator ([#1790](https://github.com/Ikalus1988/MisakaNet/issues/1790)) ([d747dc1](https://github.com/Ikalus1988/MisakaNet/commit/d747dc1857b4b775365fbf1bdcbc3387945c9aa7))
+* **pypi:** an entry point that exists in the wheel, and a gate that proves it starts ([#1851](https://github.com/Ikalus1988/MisakaNet/issues/1851)) ([8f663af](https://github.com/Ikalus1988/MisakaNet/commit/8f663afc2aa67279f68a20461a35e50ded1435e7))
+* **read:** anonymous reads are unlimited — the burst window is what is left ([#1855](https://github.com/Ikalus1988/MisakaNet/issues/1855)) ([dc3db36](https://github.com/Ikalus1988/MisakaNet/commit/dc3db363b286f13a90675d47621a698e7c6c44df))
+* **retrieval:** a grounded query-alias table, and the measurement that justifies it ([#1770](https://github.com/Ikalus1988/MisakaNet/issues/1770)) ([c3e80e1](https://github.com/Ikalus1988/MisakaNet/commit/c3e80e198bb86631f850607e28cff258d785826f))
+* **setup:** `--report --strict`, so the health report can gate CI ([#1791](https://github.com/Ikalus1988/MisakaNet/issues/1791)) ([2836930](https://github.com/Ikalus1988/MisakaNet/commit/28369306cfe1c3fa58a53a7b0ddb3a7c034e3260))
+* **setup:** `--report` prints this machine's state as paste-safe YAML ([e3627b5](https://github.com/Ikalus1988/MisakaNet/commit/e3627b584ab02c4da621cd0ed82159992873235a))
+* **setup:** `--silent` and `--report-json`, and how an IT department deploys this ([#1793](https://github.com/Ikalus1988/MisakaNet/issues/1793)) ([9131c54](https://github.com/Ikalus1988/MisakaNet/commit/9131c5443d63920f28cfd37f60b8772c8ec18e9a))
+* **setup:** ask for permission in tiers, and show the manifest before writing ([#1843](https://github.com/Ikalus1988/MisakaNet/issues/1843)) ([d1a4573](https://github.com/Ikalus1988/MisakaNet/commit/d1a4573bbed247bcc0555c0638cbc5893c9edd7b))
+* **setup:** codewhale becomes the fifth target ([#1751](https://github.com/Ikalus1988/MisakaNet/issues/1751)) ([06ff207](https://github.com/Ikalus1988/MisakaNet/commit/06ff207fd6229fba4c3ec82f5b9f7b3ef7538383))
+* **setup:** every config the installer writes says who is reading, and 0.5.6 ([#1859](https://github.com/Ikalus1988/MisakaNet/issues/1859)) ([5ba85b5](https://github.com/Ikalus1988/MisakaNet/commit/5ba85b5bb300bd1230a1014fe07261b4af608e57))
+* **setup:** three onboarding examples instead of one ([#1760](https://github.com/Ikalus1988/MisakaNet/issues/1760)) ([7923ea3](https://github.com/Ikalus1988/MisakaNet/commit/7923ea35d1c6a292e5ff7c524046babcb4f08d58))
+* **voice:** the voice hook becomes an installer switch, opt-in, and it actually makes a sound ([#1755](https://github.com/Ikalus1988/MisakaNet/issues/1755)) ([2fc244b](https://github.com/Ikalus1988/MisakaNet/commit/2fc244b868cec0bb21f93452d6010cdef3759bb1))
+* **voice:** turn the cue player into an attention router, with desktop notifications ([#1787](https://github.com/Ikalus1988/MisakaNet/issues/1787)) ([a58fa25](https://github.com/Ikalus1988/MisakaNet/commit/a58fa256e06fdfc5d0b5a5d755e7125adab47298))
+
+
+### Bug Fixes
+
+* **autostart:** the live findings of the 2026-09-18 setup review, plus a hook parity gate ([#1831](https://github.com/Ikalus1988/MisakaNet/issues/1831)) ([69c9a36](https://github.com/Ikalus1988/MisakaNet/commit/69c9a36773926438681b3cbf31738f9d11cb52e5))
+* **ci:** do not report a missing PyYAML as a repo-wide YAML breakage ([#1764](https://github.com/Ikalus1988/MisakaNet/issues/1764)) ([837d2ae](https://github.com/Ikalus1988/MisakaNet/commit/837d2ae749a636f7e5affc401aa4cda414f714ac))
+* **ci:** PR-Genius was computing its report and never delivering it ([#1807](https://github.com/Ikalus1988/MisakaNet/issues/1807)) ([90eb367](https://github.com/Ikalus1988/MisakaNet/commit/90eb3679611cc0d0e32e506c6f59ed7a697dfefe))
+* **ci:** reconcile automations against their output, weekly ([#1811](https://github.com/Ikalus1988/MisakaNet/issues/1811)) ([68d68f3](https://github.com/Ikalus1988/MisakaNet/commit/68d68f35bf0f94b3541fdc32863aa018359cfa0a))
+* **ci:** reconcile the two manual-only automations as well ([#1813](https://github.com/Ikalus1988/MisakaNet/issues/1813)) ([4b93f5f](https://github.com/Ikalus1988/MisakaNet/commit/4b93f5fe5071dca937995940f55fb3c1e742c7a2))
+* **ci:** stop two workflows from starting on the completion of every other workflow ([#1809](https://github.com/Ikalus1988/MisakaNet/issues/1809)) ([be4b27c](https://github.com/Ikalus1988/MisakaNet/commit/be4b27cbe20419734098baaaa9eec247a8d37e3f))
+* **ci:** the auto-merge channel compared a REST field to the GraphQL spelling ([#1797](https://github.com/Ikalus1988/MisakaNet/issues/1797)) ([40a5ba6](https://github.com/Ikalus1988/MisakaNet/commit/40a5ba61ffd42ef10d41e6484c198e656ff67c42))
+* **ci:** the Auto-Merge Gate can finally merge something ([#1826](https://github.com/Ikalus1988/MisakaNet/issues/1826)) ([3087be1](https://github.com/Ikalus1988/MisakaNet/commit/3087be12690b914a97d1b08e22df09298625ecad))
+* **ci:** the Auto-Merge Gate can finally merge something ([#1826](https://github.com/Ikalus1988/MisakaNet/issues/1826)) ([b31a331](https://github.com/Ikalus1988/MisakaNet/commit/b31a331549d0d8b1f9ee852557b1a6be82e29625))
+* **ci:** the auto-merge stops writing its own changelog entry twice ([0fd40f1](https://github.com/Ikalus1988/MisakaNet/commit/0fd40f1ba94e4df99c620c542e9ef6a7c6aa479a))
+* **ci:** the auto-merge stops writing its own changelog entry twice ([9ec0124](https://github.com/Ikalus1988/MisakaNet/commit/9ec0124fc89a077a87b2070e90303114c25ca04f))
+* **ci:** the new lesson auto-merge channel was painting every PR red ([#1788](https://github.com/Ikalus1988/MisakaNet/issues/1788)) ([7c1d404](https://github.com/Ikalus1988/MisakaNet/commit/7c1d404f0097cbcd49c6626eb3a74db5b1de3dd5))
+* **ci:** the node-counter mirror stops discarding the surfaces it just refreshed ([1ef2a91](https://github.com/Ikalus1988/MisakaNet/commit/1ef2a91cb507bfd4df1e3d4342ef696f2c1d6995))
+* **ci:** the shape guard failed honest PRs for mentioning "docs-only" in prose ([#1810](https://github.com/Ikalus1988/MisakaNet/issues/1810)) ([23ac0a8](https://github.com/Ikalus1988/MisakaNet/commit/23ac0a8dabc1ca3986e157aacb95db0203ea2249))
+* **codex:** the installer said the Codex hook could not be confirmed — it can be, and it was ([#1744](https://github.com/Ikalus1988/MisakaNet/issues/1744)) ([af54bd9](https://github.com/Ikalus1988/MisakaNet/commit/af54bd9d195a51a9c8663b9d97c42620bbdb72a7))
+* **contribute:** a failed contribution takes its branch back ([#1848](https://github.com/Ikalus1988/MisakaNet/issues/1848)) ([6d71e46](https://github.com/Ikalus1988/MisakaNet/commit/6d71e462b2d50ac465b0335d823bad4d23c99865))
+* **docs:** point the site at a host that exists, and stop the install page selling the wrong product ([#1805](https://github.com/Ikalus1988/MisakaNet/issues/1805)) ([c6a900a](https://github.com/Ikalus1988/MisakaNet/commit/c6a900ac1fa1cea64d17b506c4ff7ebe8d3bc099))
+* **docs:** put the localized READMEs and the lessons badge under the count gate ([#1806](https://github.com/Ikalus1988/MisakaNet/issues/1806)) ([feef371](https://github.com/Ikalus1988/MisakaNet/commit/feef371ae43e6df6eff83444f1ef36696d2c4054))
+* **doctor:** probe the MCP handshake, so the self-check is green on a healthy endpoint ([#1836](https://github.com/Ikalus1988/MisakaNet/issues/1836)) ([87176ec](https://github.com/Ikalus1988/MisakaNet/commit/87176ec4f91c7f1f1072596aacb7ea4e6f2b6727))
+* **gate:** read quoted keys, so JSON frontmatter cannot hide a source ([#1771](https://github.com/Ikalus1988/MisakaNet/issues/1771)) ([280550b](https://github.com/Ikalus1988/MisakaNet/commit/280550b87f85699814070d13a1c457938d70fc1e))
+* **intake-bot:** the comment it never posted, and the failure it swallowed ([#1860](https://github.com/Ikalus1988/MisakaNet/issues/1860)) ([2a0bb44](https://github.com/Ikalus1988/MisakaNet/commit/2a0bb44615ba99cc8aafb5f77beb253ce0ef1f0e))
+* **intake:** stop keying the rate limit on a value the caller chooses ([#1850](https://github.com/Ikalus1988/MisakaNet/issues/1850)) ([71235b5](https://github.com/Ikalus1988/MisakaNet/commit/71235b52d8c1c918fec04825ead3ed6cf1f571f9))
+* **lessons:** give the template frontmatter that actually parses ([#1796](https://github.com/Ikalus1988/MisakaNet/issues/1796)) ([47da66d](https://github.com/Ikalus1988/MisakaNet/commit/47da66d132894f24068f49edc6174299abba61ba))
+* **mcp:** expose the Problem/Fix snippets in the row shaping, so hits have something to read ([#1737](https://github.com/Ikalus1988/MisakaNet/issues/1737)) ([986abcd](https://github.com/Ikalus1988/MisakaNet/commit/986abcd1ff3d7361b1ac0cd8c90b339a058cca47))
+* **mcp:** lesson hits carry their content, not just an id and a title ([#1736](https://github.com/Ikalus1988/MisakaNet/issues/1736)) ([8d4f4b7](https://github.com/Ikalus1988/MisakaNet/commit/8d4f4b7bd329ba57bf2380765216e7f0c2ca3245))
+* **metrics:** the intake ledger stops reporting a conversion rate it cannot observe ([#1808](https://github.com/Ikalus1988/MisakaNet/issues/1808)) ([039fb2c](https://github.com/Ikalus1988/MisakaNet/commit/039fb2c47c74d97c96db51c4e41bd7391081dfda))
+* **misaka-run:** search for the error, not for the command line ([#1837](https://github.com/Ikalus1988/MisakaNet/issues/1837)) ([92528a7](https://github.com/Ikalus1988/MisakaNet/commit/92528a7b58d23daeca2958a151e4afda8d3c0265))
+* **pr-genius:** say when the config was read with a degraded rule set ([#1812](https://github.com/Ikalus1988/MisakaNet/issues/1812)) ([8b8d820](https://github.com/Ikalus1988/MisakaNet/commit/8b8d820d1dba02489e627c1969e74c77e78d0a6e))
+* **pypi:** stop declaring console scripts the wheel cannot run, and gate the honest state ([#1853](https://github.com/Ikalus1988/MisakaNet/issues/1853)) ([1e67774](https://github.com/Ikalus1988/MisakaNet/commit/1e67774b6a9e755b0d1aa15936b89e3d76fc7ff4))
+* **python:** the four silent defects the 2026-09-18 Python-channel review found ([#1834](https://github.com/Ikalus1988/MisakaNet/issues/1834)) ([ff5b31e](https://github.com/Ikalus1988/MisakaNet/commit/ff5b31e059a6e6f7d7d9c4f53ea28c0da49e4177))
+* **release:** the release PR can pass again — every pinned version gets a writer ([b105a77](https://github.com/Ikalus1988/MisakaNet/commit/b105a770f9487bd1694d46ad874fe9bfb4305d71))
+* **release:** the release PR can pass again — every pinned version gets a writer ([854a64c](https://github.com/Ikalus1988/MisakaNet/commit/854a64c61d3182fab512dedc1526f0fce5978ba6))
+* security and parsing holes found by an open-code-review scan ([#1773](https://github.com/Ikalus1988/MisakaNet/issues/1773)) ([4751461](https://github.com/Ikalus1988/MisakaNet/commit/4751461fe3b1ea8113a14f385eb7835192bf98db))
+* **service:** make the endpoint self-report true, and release the installer as 0.5.5 ([#1833](https://github.com/Ikalus1988/MisakaNet/issues/1833)) ([445acaf](https://github.com/Ikalus1988/MisakaNet/commit/445acaf4bd086fadec5e1874d6fb6eda58e130c0))
+* **setup:** a re-run now refreshes a stale hook — the upgrade nudge could never reach anyone ([#1745](https://github.com/Ikalus1988/MisakaNet/issues/1745)) ([e46e499](https://github.com/Ikalus1988/MisakaNet/commit/e46e499726478367e995d10091af3c6282297435))
+* **setup:** derive the e2e stub token at runtime, so it stops looking like a credential ([#1832](https://github.com/Ikalus1988/MisakaNet/issues/1832)) ([2d0b5d5](https://github.com/Ikalus1988/MisakaNet/commit/2d0b5d584a3401f10150bf32fdb1ee9754ca1895))
+* **setup:** install mode can fail again, and --help stops installing ([#1803](https://github.com/Ikalus1988/MisakaNet/issues/1803)) ([ce9164e](https://github.com/Ikalus1988/MisakaNet/commit/ce9164e311d5a1c484ec1e7879036f02ef4b1022))
+* **setup:** keep the first backup, tighten the Hermes token file, and stop two silent failures ([#1774](https://github.com/Ikalus1988/MisakaNet/issues/1774)) ([87e19c1](https://github.com/Ikalus1988/MisakaNet/commit/87e19c16c5a5e587b2e3948c212fb3987c7ef797))
+* **setup:** pre-allow the read-only tools, and make the rules block imperative ([#1762](https://github.com/Ikalus1988/MisakaNet/issues/1762)) ([4f8383a](https://github.com/Ikalus1988/MisakaNet/commit/4f8383a0ec01210d96763ff8d860c7fea1937199))
+* **setup:** the packaged installer lifecycle, tested on 3 OSes x Node 18/20/22 ([#1818](https://github.com/Ikalus1988/MisakaNet/issues/1818)) ([b182013](https://github.com/Ikalus1988/MisakaNet/commit/b182013c668bfbfb6da87c79ee41a77029d3afb0))
+* **setup:** tier ① must include the read-only grants; say the cost of ① out loud ([#1846](https://github.com/Ikalus1988/MisakaNet/issues/1846)) ([850a595](https://github.com/Ikalus1988/MisakaNet/commit/850a595060feceded3d5664d63b4457bd5ecbe0b))
+* **setup:** uninstall must not delete hooks it did not write ([#1802](https://github.com/Ikalus1988/MisakaNet/issues/1802)) ([cd01a2a](https://github.com/Ikalus1988/MisakaNet/commit/cd01a2a3960911baaa2391599105fa84a55dcfa7))
+* **setup:** upgrade a matcher-less voice entry ([#1757](https://github.com/Ikalus1988/MisakaNet/issues/1757)) ([526ca8d](https://github.com/Ikalus1988/MisakaNet/commit/526ca8d5b29530d120bd28a9f523ae2160576f7f))
+* **setup:** verify only detected agent targets ([#1756](https://github.com/Ikalus1988/MisakaNet/issues/1756)) ([a509c94](https://github.com/Ikalus1988/MisakaNet/commit/a509c947b6ea8f4f62d0cf5a40a932ac5aa47b9f))
+* **test:** alias evidence must be a file git tracks, not one that only exists locally ([#1776](https://github.com/Ikalus1988/MisakaNet/issues/1776)) ([b2543dc](https://github.com/Ikalus1988/MisakaNet/commit/b2543dcab9f6813c8c3c7e4e0962413f1b8af157))
+* **worker:** rebuild the search index from D1, not from the corpus cache it may be racing ([#1739](https://github.com/Ikalus1988/MisakaNet/issues/1739)) ([e0ded51](https://github.com/Ikalus1988/MisakaNet/commit/e0ded5127e29dde1183360c58e9c4483cece8021))
+* **worker:** registration storage moves to D1, so the KV daily cap cannot strand new users ([#1804](https://github.com/Ikalus1988/MisakaNet/issues/1804)) ([3139529](https://github.com/Ikalus1988/MisakaNet/commit/3139529c2bc86ecc6be0cc78e2d24e0c8b7d589a))
+
+
+### Documentation
+
+* a live Codex session calls misakanet_search — the last unverified link, verified ([61496cd](https://github.com/Ikalus1988/MisakaNet/commit/61496cd52e6b5176eb12c3da2665a47760e1cc74))
+* bring the roadmap up to date, and report issue/PR state with numbers ([#1769](https://github.com/Ikalus1988/MisakaNet/issues/1769)) ([171698f](https://github.com/Ikalus1988/MisakaNet/commit/171698fef187512f134af2c9caeac23ef535b389))
+* **field-reports:** the agent integration matrix, with the commands that produced it ([3c8e8ae](https://github.com/Ikalus1988/MisakaNet/commit/3c8e8aea60e51357b158c3dd29c3cc8f52712c37))
+* **handoff:** [#1675](https://github.com/Ikalus1988/MisakaNet/issues/1675) and [#1731](https://github.com/Ikalus1988/MisakaNet/issues/1731) closed — both were "looks fixed" cases ([7bec8b2](https://github.com/Ikalus1988/MisakaNet/commit/7bec8b2c978f1630d104924f71a6783658deb32d))
+* **handoff:** the Codex verification round and the upgrade path that could not reach anyone ([210a43c](https://github.com/Ikalus1988/MisakaNet/commit/210a43cec13c1511ff6075156f3a988dd673d472))
+* **handoff:** the domain vocabulary round, and the third instance of the same mistake ([37d68cf](https://github.com/Ikalus1988/MisakaNet/commit/37d68cf84f2b8d874c89e5c054cdd491cd6306e2))
+* **handoff:** the DSH plugin distribution round, and where the queue stands ([4141eea](https://github.com/Ikalus1988/MisakaNet/commit/4141eeaddcee44bf028e85acdbda2506ba873e2c))
+* **maintainer:** blueprint completeness and strategy review ([#1766](https://github.com/Ikalus1988/MisakaNet/issues/1766)) ([e07844b](https://github.com/Ikalus1988/MisakaNet/commit/e07844b6d892d0aa76c3f42c5f269f9886f5fa20))
+* **maintainer:** capability inventory, defect register, and a strategic assessment ([#1823](https://github.com/Ikalus1988/MisakaNet/issues/1823)) ([b9f1b55](https://github.com/Ikalus1988/MisakaNet/commit/b9f1b554e6df7fe5456ab7b2c2fde605837c1a7b))
+* **maintainer:** handoff for 2026-09-16 ([#1789](https://github.com/Ikalus1988/MisakaNet/issues/1789)) ([9f422e0](https://github.com/Ikalus1988/MisakaNet/commit/9f422e01894a244e96aba25302391717722378f4))
+* **maintainer:** handoff updated to the final state, with the production record ([#1795](https://github.com/Ikalus1988/MisakaNet/issues/1795)) ([835b260](https://github.com/Ikalus1988/MisakaNet/commit/835b2605abfcde0bb04322770127443646f49241))
+* **maintainer:** the GitHub-side automation inventory, with run counts instead of impressions ([#1827](https://github.com/Ikalus1988/MisakaNet/issues/1827)) ([22b3f8b](https://github.com/Ikalus1988/MisakaNet/commit/22b3f8bb3d426a5cf81312ac91c3e500cdf2259b))
+* **maintainer:** what the setup package is worth, judged from first principles rather than from its own README ([e089cdb](https://github.com/Ikalus1988/MisakaNet/commit/e089cdbbfe927208b34ae962cccc9036b397b031))
+* **readme:** name the two channels, and stop printing an install command that cannot work ([#1852](https://github.com/Ikalus1988/MisakaNet/issues/1852)) ([75421a9](https://github.com/Ikalus1988/MisakaNet/commit/75421a91959b6a04b8cda18e54dc92e23dd6f1fe))
+* **readme:** say what the installer actually does, in three layers, and how to check each one ([92f43d7](https://github.com/Ikalus1988/MisakaNet/commit/92f43d7b86831a2592b5311d393a5f3aaacad73d))
+
+
+### Refactoring
+
+* **domains:** make the domain vocabulary a reviewable file instead of whatever lessons already said ([#1742](https://github.com/Ikalus1988/MisakaNet/issues/1742)) ([2a0cdb2](https://github.com/Ikalus1988/MisakaNet/commit/2a0cdb21b7116a10e678ed073af6cb4ec0b4ee6a))
+
+
+### Tests
+
+* **e2e:** the permission tiers are checked on the artifact users install ([#1847](https://github.com/Ikalus1988/MisakaNet/issues/1847)) ([68c5dd3](https://github.com/Ikalus1988/MisakaNet/commit/68c5dd353727ab1bb991bfee2395e85fc3adfaaf))
+
+
+### CI/CD
+
+* **setup:** compound the packaged e2e at release time, and fix the hook suite's timing race ([#1828](https://github.com/Ikalus1988/MisakaNet/issues/1828)) ([7a6d9e2](https://github.com/Ikalus1988/MisakaNet/commit/7a6d9e2caee8144be5db3fe4b14bcfee2719c208))
+
 ## [2.30.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.29.0...v2.30.0) (2026-09-12)
 
 
