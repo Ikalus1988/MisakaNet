@@ -63,7 +63,7 @@ jobs:
           if value is None:
               value = payload.get("tombstone_json")
           if isinstance(value, str):
-              if len(value) > 65536:
+              if len(value.encode("utf-8")) > 65536:
                   raise SystemExit("ERROR: repository_dispatch tombstone exceeds 64KB limit")
               try:
                   value = json.loads(value)
@@ -74,23 +74,37 @@ jobs:
                   "ERROR: repository_dispatch must provide client_payload.tombstone "
                   "or client_payload.tombstone_json"
               )
-          Path("/tmp/tombstone.json").write_text(
-              json.dumps(value, ensure_ascii=False), encoding="utf-8"
-          )
+          serialized = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+          if len(serialized.encode("utf-8")) > 65536:
+              raise SystemExit("ERROR: repository_dispatch tombstone exceeds 64KB limit")
+          Path("/tmp/tombstone.json").write_text(serialized, encoding="utf-8")
           PY
             INPUT_READY=1
           fi
 
           # Validate tombstone_json length (max 64KB)
-          if [ -z "$INPUT_READY" ] && [ -n "$TOMBSTONE" ] && [ "${#TOMBSTONE}" -gt 65536 ]; then
+          if [ -z "$INPUT_READY" ] && [ -n "$TOMBSTONE" ]; then
+            TOMBSTONE_BYTES=$(printf '%s' "$TOMBSTONE" | wc -c)
+          fi
+          if [ -z "$INPUT_READY" ] && [ -n "$TOMBSTONE" ] && [ "$TOMBSTONE_BYTES" -gt 65536 ]; then
             echo "ERROR: tombstone_json exceeds 64KB limit"
             exit 1
           fi
 
-          # Validate tombstone_file path (no traversal)
+          # Validate tombstone_file resolves to a regular path inside the checkout.
           if [ -z "$INPUT_READY" ] && [ -n "$TOMBSTONE_FILE" ]; then
-            case "$TOMBSTONE_FILE" in
-              ../*|*/../*|*/..) echo "ERROR: path traversal not allowed"; exit 1 ;;
+            if [ ! -f "$TOMBSTONE_FILE" ]; then
+              echo "ERROR: tombstone_file must point to an existing file"
+              exit 1
+            fi
+            WORKSPACE_PATH=$(realpath -- "$GITHUB_WORKSPACE")
+            if ! TOMBSTONE_PATH=$(realpath -- "$TOMBSTONE_FILE" 2>/dev/null); then
+              echo "ERROR: tombstone_file could not be resolved"
+              exit 1
+            fi
+            case "$TOMBSTONE_PATH" in
+              "$WORKSPACE_PATH"/*) ;;
+              *) echo "ERROR: tombstone_file must stay within GITHUB_WORKSPACE"; exit 1 ;;
             esac
           fi
 
