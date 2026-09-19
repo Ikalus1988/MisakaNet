@@ -1,7 +1,7 @@
 [
   {
     "login": "zsxh1990",
-    "score": 90.76
+    "score": 90.65
   },
   {
     "login": "github-actions[bot]",
@@ -48,6 +48,10 @@
     "score": 1.02
   },
   {
+    "login": "misakanet-sync-bot",
+    "score": 1.0
+  },
+  {
     "login": "saadat555",
     "score": 1.0
   },
@@ -77,7 +81,7 @@
   },
   {
     "login": "hummern",
-    "score": 0.57
+    "score": 0.56
   },
   {
     "login": "misakanet-agent",
@@ -93,6 +97,6 @@
   },
   {
     "login": "harshadkhetpal",
-    "score": 0.23
+    "score": 0.22
   }
 ]
