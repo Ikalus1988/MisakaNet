@@ -25,8 +25,9 @@ REPO = Path(__file__).resolve().parent.parent
 WORKFLOWS = REPO / ".github" / "workflows"
 
 # Guarded credentials: a workflow that reads one of these must either use the environment or be
-# justified here.
-GUARDED_SECRETS = ("NPM_TOKEN", "CLOUDFLARE_API_TOKEN")
+# justified here. The names are the ones the workflows actually read — and the `release` environment
+# must carry exactly these names, because environment secrets shadow repository secrets **by name**.
+GUARDED_SECRETS = ("NPM_TOKEN", "CF_API_TOKEN")
 ENVIRONMENT = "release"
 
 # Deliberately NOT behind the environment: scheduled or push-triggered automation, where an approval
@@ -87,4 +88,27 @@ def test_the_deliberate_exception_is_still_deliberate():
     )
     assert "CLOUDFLARE_API_TOKEN" in path.read_text(encoding="utf-8"), (
         "sync-d1.yml no longer uses the credential it is exempted for"
+    )
+
+
+def test_one_credential_has_exactly_one_name():
+    """A workflow reading a differently-named secret is not guarded by the environment at all.
+
+    Environment secrets shadow repository secrets **by name**. The first version of this migration put
+    the Cloudflare value into `release` as `CLOUDFLARE_API_TOKEN` while every workflow read
+    `secrets.CF_API_TOKEN`, so the environment would have been decoration: those jobs would have gone on
+    reading the repository secret, and the change would have looked like a security improvement while
+    changing nothing (found 2026-09-19, by checking the workflows' actual `secrets.*` references instead
+    of grepping for the credential's *value* name — a grep that matched the environment-variable name
+    rather than the secret name).
+    """
+    import re
+
+    names: set[str] = set()
+    for path in WORKFLOWS.glob("*.yml"):
+        names |= set(re.findall(r"secrets\.([A-Z_]*API_TOKEN)", path.read_text(encoding="utf-8")))
+    assert names == {"CF_API_TOKEN"}, (
+        f"the Cloudflare credential is referenced under more than one secret name: {sorted(names)}. "
+        "One credential, one name — otherwise whichever name the environment does not carry is read "
+        "from the repository, unprotected."
     )
