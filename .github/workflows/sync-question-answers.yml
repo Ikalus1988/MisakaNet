@@ -26,6 +26,16 @@ permissions:
 
 jobs:
   sync:
+    # INTERIM: the repository-level CF_API_TOKEN was deleted when the credential moved into the
+    # `release` environment, and this job cannot read that environment's secret without declaring it.
+    # Declaring it means the run waits for an approval — GitHub notifies the required reviewer, so it
+    # is visible rather than silent, but a scheduled job that needs a person is a scheduled job that
+    # stops on the day nobody is there.
+    #
+    # The fix is a second environment for unattended automation (`automation`: no required reviewers,
+    # branch-restricted to main) holding its own, narrowly scoped token; when it exists this line
+    # becomes `environment: automation` and the approval disappears.
+    environment: release
     # Trigger on:
     # 1. Scheduled daily cron
     # 2. Manual workflow_dispatch

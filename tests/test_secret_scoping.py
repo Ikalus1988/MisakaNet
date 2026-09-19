@@ -30,13 +30,12 @@ WORKFLOWS = REPO / ".github" / "workflows"
 GUARDED_SECRETS = ("NPM_TOKEN", "CF_API_TOKEN")
 ENVIRONMENT = "release"
 
-# Deliberately NOT behind the environment: scheduled or push-triggered automation, where an approval
-# prompt would replace "runs every day" with "runs whenever someone notices".
-UNGUARDED_BY_DESIGN = {
-    "sync-d1.yml": "scheduled daily (03:00) and on push — an approval gate would stall the corpus sync",
-    "sync-question-answers.yml": "scheduled daily (07:20) and on new issues — same reason: a stalled "
-                                 "cron is not a safer cron",
-}
+# Nothing is exempt any more. The two scheduled syncs used to keep the repository secret on the grounds
+# that an approval prompt stalls a cron; when the repository-level CF_API_TOKEN was deleted
+# (2026-09-19), that choice stopped being available — the job could no longer read a credential at all.
+# They now declare the environment like everything else, and the note in each file records the interim
+# (a reviewer-free `automation` environment is the way to get unattended operation back).
+EXEMPT: dict[str, str] = {}  # nothing is exempt today
 
 
 def _workflows_using(secret: str) -> list[Path]:
@@ -62,8 +61,6 @@ def test_the_split_has_files_to_check():
 def test_guarded_credentials_are_read_from_the_protected_environment(secret):
     offenders = []
     for path in _workflows_using(secret):
-        if path.name in UNGUARDED_BY_DESIGN:
-            continue
         jobs = _jobs_with_environment(path)
         unguarded = [name for name, env in jobs.items() if env != ENVIRONMENT]
         if unguarded:
@@ -76,19 +73,21 @@ def test_guarded_credentials_are_read_from_the_protected_environment(secret):
     )
 
 
-def test_the_deliberate_exception_is_still_deliberate():
-    """`sync-d1.yml` may keep the repository secret — but only while it is still scheduled."""
-    path = WORKFLOWS / "sync-d1.yml"
-    triggers = (yaml.safe_load(path.read_text(encoding="utf-8")).get("on")
-                or yaml.safe_load(path.read_text(encoding="utf-8")).get(True) or {})
-    assert "schedule" in triggers, (
-        "sync-d1.yml no longer runs on a schedule, so the reason it is exempt from the environment "
-        "(an approval gate would stall a daily job) no longer holds — move it to the environment, or "
-        "update UNGUARDED_BY_DESIGN with the new reason"
-    )
-    assert "CLOUDFLARE_API_TOKEN" in path.read_text(encoding="utf-8"), (
-        "sync-d1.yml no longer uses the credential it is exempted for"
-    )
+def test_the_scheduled_syncs_record_that_they_are_interim():
+    """They declare the environment, which means a person — that has to stay visible in the files.
+
+    The tradeoff is real: a scheduled job on a reviewed environment runs when somebody approves it, not
+    when the clock says so. Each file therefore carries the note, and the note names the way out (an
+    `automation` environment without reviewers). If someone deletes the note without changing the
+    arrangement, the reason for the arrangement disappears with it.
+    """
+    for name in ("sync-d1.yml", "sync-question-answers.yml"):
+        text = (WORKFLOWS / name).read_text(encoding="utf-8")
+        assert "environment: release" in text, f"{name} lost its credential source"
+        assert "INTERIM:" in text and "automation" in text, (
+            f"{name} declares a *reviewed* environment for a scheduled job without recording why, or "
+            "how to get unattended operation back"
+        )
 
 
 def test_one_credential_has_exactly_one_name():
