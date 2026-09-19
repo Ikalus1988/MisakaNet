@@ -15,16 +15,17 @@ permissions:
 
 jobs:
   sync:
-    # INTERIM: the repository-level CF_API_TOKEN was deleted when the credential moved into the
-    # `release` environment, and this job cannot read that environment's secret without declaring it.
-    # Declaring it means the run waits for an approval — GitHub notifies the required reviewer, so it
-    # is visible rather than silent, but a scheduled job that needs a person is a scheduled job that
-    # stops on the day nobody is there.
+    # Credential: the `automation` environment holds `CF_API_TOKEN` — a Cloudflare token scoped to
+    # D1:Edit only (`misakanet-automation-d1`, expires 2027-03-01), not the deployment token. The
+    # distinction is the point: this job runs unattended, so the credential it carries can touch the
+    # lessons table and nothing else, and a leak cannot replace the code served at misakanet.org.
     #
-    # The fix is a second environment for unattended automation (`automation`: no required reviewers,
-    # branch-restricted to main) holding its own, narrowly scoped token; when it exists this line
-    # becomes `environment: automation` and the approval disappears.
-    environment: release
+    # `automation` has no required reviewers on purpose. An approval gate on a cron does not add
+    # safety, it adds an outage: the run waits until a person notices, and the served corpus stops
+    # being current while it waits. It is branch-restricted to `main` instead, so only the reviewed
+    # default branch can reach the credential.
+    # See docs/maintainer/credentials-and-environments.md.
+    environment: automation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
