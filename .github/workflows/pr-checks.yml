@@ -742,6 +742,12 @@ jobs:
           echo "Unchecked AC items: $UNCHECKED"
           [ "$UNCHECKED" -gt 0 ] && { echo "AC not all checked. Skipping."; exit 0; }
 
-          gh pr merge "$PR_NUM" --repo Ikalus1988/MisakaNet --merge --auto \
-            --subject "Auto-merge #$PR_NUM: $PR_TITLE"
+          # No `--subject`. It used to write "Auto-merge #N: <the PR title>", and because that is a
+          # conventional-commit-shaped subject, release-please counted it as a *second* changelog
+          # entry next to the branch commit it merged — every auto-merged PR appeared twice in the
+          # next release's notes (#1820 was listed twice in the 2.31.0 PR; see
+          # googleapis/release-please#1016 for the general behaviour with merge commits). GitHub's
+          # default subject, "Merge pull request #N from <branch>", is not conventional, so it is
+          # skipped, and it still names the PR for anyone reading the log.
+          gh pr merge "$PR_NUM" --repo Ikalus1988/MisakaNet --merge --auto
           echo "Auto-merge enabled for PR #$PR_NUM"
