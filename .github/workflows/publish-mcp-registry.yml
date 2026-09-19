@@ -1,0 +1,110 @@
+name: Publish to MCP Registry
+
+# The official registry (registry.modelcontextprotocol.io) is the authoritative listing every other
+# directory mirrors, and its entry for this server had drifted: `isLatest` sat on 2.29.0 while the
+# repository, PyPI and the GitHub release were all at 2.30.2 (#1820).
+#
+# Why it drifted is the point of this workflow. Publishing used to be a manual step on a maintainer's
+# machine (`mcp-publisher login github` → `publish server.json`) because the registry validates the
+# OIDC/device-flow identity before accepting a version. That is a step nothing watches, so it is only
+# as current as someone's memory — and it cannot even be done from a sandboxed agent environment,
+# where `github.com` is unreachable while `registry.modelcontextprotocol.io` is not (measured
+# 2026-09-19: `github.com/login/device` HTTP 000 after 15s, the registry HTTP 200 in 1.6s).
+#
+# So the publish moves to CI, where the identity is the repository itself (`login github-oidc`,
+# the method the registry documents for GitHub Actions) and the bytes are the ones on the tag.
+#
+# Dispatch-only, deliberately: `release-please.yml` tags the release and calls this workflow, the same
+# shape as the PyPI publish. A `push: tags: v*` trigger would look tidier but never fire for
+# release-please's own tags (a GITHUB_TOKEN push cannot trigger workflows), so it would be a trigger
+# that quietly does nothing — the failure mode this repository keeps finding.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >-
+          Version expected in server.json. A mismatch fails instead of publishing whatever is in the
+          file; leave empty to publish the file as-is.
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  id-token: write        # OIDC: the registry ties the publish to this repository's identity
+
+# Two publishes racing would leave two entries for the same version.
+concurrency:
+  group: publish-mcp-registry
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Install mcp-publisher
+        run: |
+          set -euo pipefail
+          ASSET="mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz"
+          curl -fsSL --retry 3 \
+            "https://github.com/modelcontextprotocol/registry/releases/latest/download/$ASSET" \
+            | tar xz mcp-publisher
+          ./mcp-publisher --help | head -3
+          echo "publisher sha256: $(sha256sum mcp-publisher | cut -d' ' -f1)"
+
+      # The version we publish is the version in the repository, and it is checked BEFORE the
+      # identity step so a wrong checkout cannot publish an older description or runtime under a
+      # newer number. (2026-09-12: publishing from a stale local file left the registry carrying
+      # wording that docs/trust-semantics.md forbids — the reason that note exists.)
+      - name: The version being published is the one on disk
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION=$(python3 -c "import json;print(json.load(open('server.json'))['version'])")
+          RUNTIME=$(python3 -c "import json;print(json.load(open('server.json'))['packages'][0]['runtime']['args'][-1])")
+          echo "server.json: version=$VERSION runtime=$RUNTIME"
+          if [ -n "${{ inputs.version }}" ] && [ "${{ inputs.version }}" != "$VERSION" ]; then
+            echo "::error::asked to publish ${{ inputs.version }} but server.json says $VERSION"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Validate server.json
+        run: ./mcp-publisher validate
+
+      - name: Authenticate to the registry (OIDC, no stored secret)
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish
+        run: ./mcp-publisher publish
+
+      # Read it back rather than trusting "publish exited 0": the whole point of #1820 is that a
+      # self-reported number nobody checks drifts. This step fails when the registry's `isLatest`
+      # is not the version we just published.
+      - name: The registry now says this version is latest
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          python3 - "$VERSION" <<'PY'
+          import json, sys, urllib.request
+          expected = sys.argv[1]
+          url = ("https://registry.modelcontextprotocol.io/v0/servers"
+                 "?search=io.github.Ikalus1988/misakanet")
+          with urllib.request.urlopen(url, timeout=30) as resp:
+              payload = json.load(resp)
+          official = "io.modelcontextprotocol.registry/official"
+          latest = [(s.get("server", s).get("version"),
+                     s.get("_meta", {}).get(official, {}).get("isLatest"))
+                    for s in payload.get("servers", [])]
+          print("registry versions:", latest)
+          winners = [v for v, is_latest in latest if is_latest]
+          if expected not in [v for v, _ in latest]:
+              sys.exit(f"the registry does not list {expected} at all (propagation can take a moment; "
+                       "re-run this job before assuming the publish failed)")
+          if winners != [expected]:
+              sys.exit(f"the registry's isLatest is {winners}, expected exactly ['{expected}']")
+          print(f"registry isLatest = {expected}")
+          PY
