@@ -157,6 +157,27 @@ The hook ships inside the npm tarball, so installing needs no download beyond np
 Registration is best-effort: without it you keep the anonymous read path (unmetered since 2026-09-18; only a per-address burst window applies)
 and the installer says so in plain words.
 
+**Behind a corporate proxy, read the probe line before believing it.** `--verify` probes the
+endpoint with Node's `fetch`, and Node ignores `HTTP_PROXY` / `HTTPS_PROXY` unless the runtime is
+told to use them — `NODE_USE_ENV_PROXY=1` or `--use-env-proxy`, with `fetch` support in Node
+≥ 22.21.0 / 24.0.0 ([Node docs](https://nodejs.org/learn/http/enterprise-network-configuration)).
+On a proxy machine the probe can therefore fail while your agent reaches the endpoint fine. The
+report now says which of the two it is:
+
+```bash
+NODE_USE_ENV_PROXY=1 npx @misaka-net/misakanet-setup --verify   # let Node use the proxy
+curl -sS https://misakanet.org/mcp -H 'Accept: application/json' \
+  -H 'MCP-Protocol-Version: 2025-06-18' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+`endpoint-probe: inconclusive-proxy` in `--report` means exactly this: a proxy is configured, this
+process could not use it, so the `endpoint-reachable` boolean above it says nothing. `--strict` /
+`--ci` still fail in that case — a gate that cannot tell must not pass silently. If your proxy also
+intercepts TLS, add `NODE_USE_SYSTEM_CA=1`.
+
+The Python installer (`integrations/agent-autostart/install_misakanet_agent.py`) needs none of this:
+it uses `urllib`, which honours the proxy environment variables by default.
+
 ## Requires
 
 Node 18+ (the same runtime your assistant already uses). No dependencies, no Python.
