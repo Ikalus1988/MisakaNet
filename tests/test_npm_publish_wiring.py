@@ -143,3 +143,40 @@ def test_the_wiring_check_notices_a_lost_approval_gate(tmp_path):
         publish.read_text(encoding="utf-8").replace("    environment: release\n", ""),
         encoding="utf-8")
     assert any("without the protected environment" in problem for problem in _wiring_problems(scratch))
+
+
+def test_the_record_step_survives_main_moving_under_it():
+    """`main` moves every few minutes, and the publish job starts from a checkout of it.
+
+    On 2026-09-20 the record step pushed a non-fast-forward and was rejected — the leaderboard/node
+    snapshots had landed while `npm publish` ran. The result was the exact drift the step exists to
+    prevent (npm at 2.31.0, `package.json` at 2.30.2), so the step has to rebase and try again rather
+    than assume the branch it checked out still exists.
+    """
+    run = next((s.get("run") or "" for s in _steps(PUBLISH)
+                if "Record the published" in (s.get("name") or "")), "")
+    assert run, "no record step found in misakanet-publish.yml"
+    assert "git fetch origin main" in run and "git rebase origin/main" in run, (
+        "the record step pushes without rebasing, so a snapshot commit landing during the publish turns "
+        "a successful release into a stale package.json")
+    assert "for attempt in" in run, "no retry loop: a single rejected push is not retried"
+    # ...and the failure it produces must say which half succeeded: the package is already published and
+    # npm will not let anyone republish it, so "the run failed" alone is misleading.
+    assert "is published" in run and "GITHUB_STEP_SUMMARY" in run, (
+        "a failed record step must state that the publish itself succeeded")
+
+
+def test_the_record_step_assertion_notices_a_push_without_a_rebase(tmp_path):
+    import shutil
+
+    scratch = tmp_path / "repo"
+    (scratch / ".github" / "workflows").mkdir(parents=True)
+    for path in (PUBLISH, RELEASE_PLEASE):
+        shutil.copy(path, scratch / ".github" / "workflows" / path.name)
+    publish = scratch / ".github" / "workflows" / "misakanet-publish.yml"
+    publish.write_text(
+        publish.read_text(encoding="utf-8").replace("git rebase origin/main", "true # no rebase"),
+        encoding="utf-8")
+    steps = [s for s in _steps(publish) if "Record the published" in (s.get("name") or "")]
+    assert steps and "git rebase origin/main" not in (steps[0].get("run") or ""), (
+        "the mutation did not take, so the assertion above proves nothing")
