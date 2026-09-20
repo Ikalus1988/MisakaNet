@@ -522,6 +522,38 @@ function probeEndpoint() {
 }
 
 /**
+ * The proxy environment, and whether *this* Node will actually use it.
+ *
+ * Node's `fetch` ignores `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` unless the runtime is told to
+ * honour them — `NODE_USE_ENV_PROXY=1` or `--use-env-proxy`, with fetch support in v22.21.0 /
+ * v24.0.0+ (nodejs.org/learn/http/enterprise-network-configuration). So in an enterprise-proxy
+ * environment a failed probe is **not** evidence that the endpoint is down: `curl` and the user's
+ * agent may both be reaching it through a proxy this process never saw. Reporting that as
+ * "端点不可达（网络受限？）" sends a user whose install works off to debug a network that is fine —
+ * and the audience for this installer includes exactly the people whose proxies cause this.
+ *
+ * Returns `null` when no proxy is configured (the ordinary path), otherwise the variables in play
+ * and whether the runtime was told to use them.
+ */
+function proxyEnvironment() {
+  const vars = ['HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy', 'ALL_PROXY', 'all_proxy']
+    .filter((name) => (process.env[name] || '').trim());
+  if (!vars.length) return null;
+  const enabled = Boolean((process.env.NODE_USE_ENV_PROXY || '').trim())
+    || process.execArgv.some((arg) => arg.includes('use-env-proxy'))
+    || (process.env.NODE_OPTIONS || '').includes('use-env-proxy');
+  return { vars, enabled, noProxy: (process.env.NO_PROXY || process.env.no_proxy || '').trim() };
+}
+
+/** The one line that turns an inconclusive probe into a next action. */
+function proxyProbeAdvice(proxy) {
+  return `本机配了代理（${proxy.vars.join('、')}），而 Node 的 fetch 默认不读这些变量 → 探测结果不可信，`
+    + '不代表端点不可达。确认方式：先 `curl -sS https://misakanet.org/mcp` 手测，'
+    + '或让 Node 走代理重跑：`NODE_USE_ENV_PROXY=1 npx @misaka-net/misakanet-setup --verify`'
+    + '（fetch 需要 Node ≥ 22.21.0 / 24.0.0；公司代理做 TLS 拦截时再加 `NODE_USE_SYSTEM_CA=1`）';
+}
+
+/**
  * One unauthenticated MCP call.
  *
  * Deliberately has no credential parameter: this process writes tokens into the agent's config
@@ -1399,7 +1431,7 @@ async function installCursor(bearer) {
 }
 
 // The last endpoint probe, recorded so `--report` can print it without probing twice.
-let lastProbe = { reachable: false, tools: 0 };
+let lastProbe = { reachable: false, tools: 0, note: '' };
 
 async function verify() {
   let allOk = true;
@@ -1430,9 +1462,25 @@ async function verify() {
     allOk = false;
     need(`端点可达但握手异常：${JSON.stringify(probe).slice(0, 120)}`);
   } else {
-    allOk = false;
-    need(`端点不可达：${ENDPOINT}（网络受限？读课程会静默失败）`
-      + (lastRequestError ? ` —— 最近一次失败原因：${lastRequestError}` : ''));
+    const proxy = proxyEnvironment();
+    if (proxy && !proxy.enabled) {
+      // Inconclusive rather than unreachable. Interactive runs warn (a visible `!` that does not
+      // flip the verdict), because the install itself is fine and the user's agent may well be
+      // reaching the endpoint through that proxy. `--strict` / `--ci` keep a hard verdict: a gate
+      // that cannot tell must not pass silently, and CI machines are the ones actually configured
+      // to make the probe trustworthy.
+      lastProbe = { reachable: false, tools: 0, note: 'inconclusive-proxy' };
+      if (STRICT) {
+        allOk = false;
+        need(`端点探测不可信，且 --strict 不接受"说不清"：${proxyProbeAdvice(proxy)}`);
+      } else {
+        need(`端点探测不可信（不是"不可达"）：${proxyProbeAdvice(proxy)}`);
+      }
+    } else {
+      allOk = false;
+      need(`端点不可达：${ENDPOINT}（网络受限？读课程会静默失败）`
+        + (lastRequestError ? ` —— 最近一次失败原因：${lastRequestError}` : ''));
+    }
   }
   const tokenFile = join(stateDir(), 'token');
   let tokenPresent = '';
@@ -1887,6 +1935,10 @@ function reportValues(allOk) {
     ['verify', allOk ? 'READY' : 'NOT READY'],
     ['endpoint-reachable', lastProbe.reachable],
     ['endpoint-tools', lastProbe.tools],
+    // `ok` = the probe ran and its answer is meaningful; `inconclusive-proxy` = the machine has a
+    // proxy this process cannot use, so the boolean above says nothing. Without this field the YAML
+    // a user pastes into a public issue cannot tell a real outage from a false negative.
+    ['endpoint-probe', lastProbe.note || 'ok'],
     ['token', token ? 'present' : 'absent'],
     ['permissions', permissions],
     ['hook', existsSync(join(stateDir(), 'hook.mjs')) ? 'present' : 'absent'],
