@@ -1,6 +1,7 @@
 # @misaka-net/misakanet-setup
 
-One command to teach your **Claude Code**, **Codex**, **Hermes**, **OpenClaw** or **codewhale** to
+One command to teach your **Claude Code**, **Codex**, **Hermes**, **OpenClaw**, **codewhale** or
+**Cursor** to
 check MisakaNet's failure lessons before repeating a mistake — and to distil the session's reusable
 lessons at a checkpoint.
 
@@ -16,8 +17,8 @@ knowledge base on its own instead of guessing.
 
 | # | Goal | Mechanism |
 |---|---|---|
-| 1 | the agent **can** call it | MCP server `https://misakanet.org/mcp` (streamable HTTP) in `~/.claude.json`, `~/.codex/config.toml` and `~/.openclaw/openclaw.json` (`mcp.servers.misakanet`), with the Bearer token when registration succeeds — reads need no token (anonymous reads are unmetered since 2026-09-18); the token is what opens the **write** path. Every entry also carries the self-declared context hints `X-MisakaNet-Client` / `-Agent` / `-Os` / `-Version`, which the endpoint records on the read's analytics row and never treats as identity (`codewhale` is the one exception: its server entry has no custom-header field). Hermes is the same thing in its own files: `mcp_servers.misakanet` in `~/.hermes/config.yaml` plus the token in `~/.hermes/.env` under `MCP_MISAKANET_API_KEY`. All four are config files written file-to-file — no subprocess is spawned, so **no token ever appears in a command line**. For Claude Code only, the five **read-only** tools are also added to `permissions.allow` — "can call it" otherwise still means a permission prompt on the very first search, so `0.5.3` pre-allows them (`--verify` reports it, `--report` prints `permissions:`); `write_lesson` is deliberately **not** pre-allowed, because a tool that writes should ask |
-| 2 | the agent **knows when** | rules block appended to `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` / `~/.hermes/SOUL.md` / `~/.openclaw/workspace/AGENTS.md` (issue, retry, risky-operation triggers; desensitisation rules). Wording is **imperative first** ("必须先调 misakanet_search") rather than descriptive, because a field test showed a weaker model reads a descriptive block as background and never calls the tool |
+| 1 | the agent **can** call it | MCP server `https://misakanet.org/mcp` (streamable HTTP) in `~/.claude.json`, `~/.codex/config.toml` and `~/.openclaw/openclaw.json` (`mcp.servers.misakanet`), with the Bearer token when registration succeeds — reads need no token (anonymous reads are unmetered since 2026-09-18); the token is what opens the **write** path. Every entry also carries the self-declared context hints `X-MisakaNet-Client` / `-Agent` / `-Os` / `-Version`, which the endpoint records on the read's analytics row and never treats as identity (`codewhale` is the one exception: its server entry has no custom-header field). Hermes is the same thing in its own files: `mcp_servers.misakanet` in `~/.hermes/config.yaml` plus the token in `~/.hermes/.env` under `MCP_MISAKANET_API_KEY`. Cursor is the same idea in one file: `~/.cursor/mcp.json` (`mcpServers.misakanet`) — its documented remote shape is `{ "url": …, "headers": {…} }` with **no** `type`/`transport` key, which is why it gets its own writer rather than the Claude Code entry. All of them are config files written file-to-file — no subprocess is spawned, so **no token ever appears in a command line**. For Claude Code only, the five **read-only** tools are also added to `permissions.allow` — "can call it" otherwise still means a permission prompt on the very first search, so `0.5.3` pre-allows them (`--verify` reports it, `--report` prints `permissions:`); `write_lesson` is deliberately **not** pre-allowed, because a tool that writes should ask |
+| 2 | the agent **knows when** | rules block appended to `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` / `~/.hermes/SOUL.md` / `~/.openclaw/workspace/AGENTS.md`. **Cursor is the exception: it gets none**, because `.cursor/rules/*.mdc` is project-scoped and the installer cannot know where your projects live — copy `.cursor/rules/misakanet-failure-memory.mdc` into a project for that, and the install output says so instead of implying behaviour changed (issue, retry, risky-operation triggers; desensitisation rules). Wording is **imperative first** ("必须先调 misakanet_search") rather than descriptive, because a field test showed a weaker model reads a descriptive block as background and never calls the tool |
 | 4 | *(opt-in)* you **hear** it | `--voice` adds a `PostToolUse` hook that plays the cue the server asked for (`lesson-found` / `failure-warning` / `connect-success` / `pair-success`). Off by default; mute with `MISAKANET_VOICE=0`; see `docs/integrations/mcp-voice-hooks.md` |
 | 3 | the checkpoint **fires** | a hook that counts user turns: turn 1 announces the install to the user, turn 20 (and every 10 after) injects the "distil and submit" reminder; a failed tool call injects a "search before you retry" reminder built from the error text. Claude Code only today — Codex's user-level hook shape is unconfirmed and OpenClaw's events are unverified, so those two work from the rules block, and `--verify` says so per target instead of implying otherwise |
 
@@ -153,7 +154,7 @@ npx @misaka-net/misakanet-setup@latest
 ## Offline / restricted networks
 
 The hook ships inside the npm tarball, so installing needs no download beyond npm itself.
-Registration is best-effort: without it you keep the anonymous read path (5 reads/day/IP)
+Registration is best-effort: without it you keep the anonymous read path (unmetered since 2026-09-18; only a per-address burst window applies)
 and the installer says so in plain words.
 
 ## Requires

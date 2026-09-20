@@ -61,7 +61,7 @@ HOOK_FILE_MJS = HERE / "checkpoint_reminder.mjs"  # the Node implementation (pre
 
 # The agents this knows how to configure. `detect` is a path that only exists when the
 # agent is actually installed here; everything else hangs off HOME.
-AGENTS = ("claude", "codex", "hermes", "openclaw", "codewhale", "dsh")
+AGENTS = ("claude", "codex", "hermes", "openclaw", "codewhale", "cursor", "dsh")
 
 
 def _force_utf8_io() -> None:
@@ -259,6 +259,7 @@ def detect(home: Path, agent: str) -> bool:
         "hermes": [home / ".hermes"],
         "openclaw": [home / ".openclaw"],
         "codewhale": [home / ".codewhale"],
+        "cursor": [home / ".cursor"],
         "dsh": [home / ".dsh", home / ".agents"],
     }
     return any(p.exists() for p in checks[agent])
@@ -513,6 +514,45 @@ def install_codewhale(home: Path, dry: bool, rep: Report) -> None:
                          "→ 先在 codewhale 里打开并信任一次你的项目，再运行本命令")
     rep.needs_manual("codewhale: token 只能通过环境变量给 → 在 shell 配置里加 "
                      "`export MISAKANET_TOKEN=<你的 token>`，否则工具会连不上")
+
+
+def install_cursor(home: Path, dry: bool, rep: Report) -> None:
+    """Cursor: one file, one entry, no behaviour layer.
+
+    Cursor reads `~/.cursor/mcp.json` for every project (and `.cursor/mcp.json` for one, which
+    this installer cannot know the location of). The documented remote shape is
+    ``{"mcpServers": {"<name>": {"url": ..., "headers": {...}}}}`` — note there is no
+    ``type``/``transport`` key, unlike the Claude Code entry, so this writes its own entry rather
+    than reusing ``mcp_server_entry``.
+
+    No rules block and no hook, on purpose: `.cursor/rules/*.mdc` is project-scoped. Saying that
+    out loud is the point — an install that claims to have changed behaviour when it only
+    registered an endpoint is the kind of quiet lie `--verify` exists to prevent.
+    """
+    cfg = home / ".cursor" / "mcp.json"
+    data: dict = {}
+    if cfg.exists():
+        try:
+            data = json.loads(cfg.read_text(encoding="utf-8"))
+        except Exception:
+            rep.needs_manual(f"Cursor: {cfg} 不是合法 JSON → 手动加入 mcpServers.misakanet")
+            return
+    servers = data.setdefault("mcpServers", {})
+    entry: dict = {"url": ENDPOINT}
+    token = _read_token(home)
+    if token:
+        entry["headers"] = {"Authorization": f"Bearer {token}"}
+    if servers.get("misakanet") == entry:
+        rep.ok("Cursor: MCP 已注册（无改动）")
+    else:
+        servers["misakanet"] = entry
+        backup(cfg, dry)
+        write_text(cfg, json.dumps(data, indent=2, ensure_ascii=False) + "\n", dry)
+        rep.ok(f"Cursor: {'会写入 MCP 条目' if dry else '注册 MCP（streamable-http）'} → {cfg}")
+    rep.skip("Cursor: 没有规则块与钩子（.cursor/rules 是项目级的，本安装器不知道你的项目在哪）"
+             "→ 想让 Cursor 主动去查，把 .cursor/rules/misakanet-failure-memory.mdc 放进项目")
+    rep.needs_manual("Cursor: 重启 Cursor 后在 Settings → MCP 里确认看得见 misakanet"
+                     "（本安装器只写用户级 ~/.cursor/mcp.json，项目级归你自己管）")
 
 
 def install_hermes(home: Path, dry: bool, rep: Report) -> None:
@@ -776,6 +816,21 @@ def verify(home: Path, endpoint: str, rep: Report) -> bool:
                     f"{agent}: 钩子命令里的解释器不存在 → 钩子会静默不触发，重跑安装器即可修（{commands[0]}）")
             else:
                 rep.needs_manual(f"{agent}: 检查点钩子 ✗ 缺失")
+        if agent == "cursor":
+            # Same "report only what the user actually has" rule: Cursor's state is one file, so it
+            # is readable without starting it — but whether Cursor loaded that file is not knowable
+            # from here, and the line says so instead of implying it.
+            cfg = home / ".cursor" / "mcp.json"
+            data = {}
+            if cfg.exists():
+                try:
+                    data = json.loads(cfg.read_text(encoding="utf-8"))
+                except Exception:
+                    data = {}
+            entry = (data.get("mcpServers") or {}).get("misakanet")
+            ok &= bool(entry)
+            (rep.ok if entry else rep.needs_manual)(
+                f"{agent}: MCP 注册 {'✓' if entry else '✗ 缺失'}（{cfg}）")
         rules = {"codex": home / ".codex" / "AGENTS.md", "hermes": home / ".hermes" / "SOUL.md",
                  "dsh": home / ".agents" / "skills" / "misakanet" / "SKILL.md"}.get(agent)
         if agent == "codewhale":
@@ -892,6 +947,7 @@ INSTALLERS = {
     "hermes": install_hermes,
     "openclaw": install_openclaw,
     "codewhale": install_codewhale,
+    "cursor": install_cursor,
     "dsh": install_dsh,
 }
 
@@ -932,6 +988,16 @@ def uninstall(home: Path, dry: bool, rep: Report) -> None:
                 rep.ok(f"移除 MCP 注册 → {cfg}")
         except Exception:
             rep.needs_manual(f"{cfg} 解析失败 → 手动删除 mcpServers.misakanet")
+    cursor_cfg = home / ".cursor" / "mcp.json"
+    if cursor_cfg.exists():
+        try:
+            cursor = json.loads(cursor_cfg.read_text(encoding="utf-8"))
+            if cursor.get("mcpServers", {}).pop("misakanet", None) is not None:
+                backup(cursor_cfg, dry)
+                write_text(cursor_cfg, json.dumps(cursor, indent=2, ensure_ascii=False) + "\n", dry)
+                rep.ok(f"移除 MCP 注册 → {cursor_cfg}")
+        except Exception:
+            rep.needs_manual(f"{cursor_cfg} 解析失败 → 手动删除 mcpServers.misakanet")
     settings_path = home / ".claude" / "settings.json"
     if settings_path.exists():
         try:
