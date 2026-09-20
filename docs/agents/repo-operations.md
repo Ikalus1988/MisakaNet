@@ -161,7 +161,7 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 
 | 数据 | 去哪 | 说明 |
 |---|---|---|
-| 匿名读配额（5/天/IP）、signal 限流 | **D1** `counters`（`scope='rate_read'` / `'signal_rate'`） | 单条原子 upsert，取代 KV 的 read-modify-write（旧实现存在并发下双读同一值） |
+| 反爬突发窗口（每地址每分钟）、signal 限流 | **D1** `counters`（`scope='rate_read'` / `'signal_rate'`） | 单条原子 upsert，取代 KV 的 read-modify-write（旧实现存在并发下双读同一值）。**注意口径**：匿名读自 2026-09-18 起**不限次数**，这里限制的是突发、不是配额（旧文档写的「5 次/天/IP」已过期） |
 | 未命中查询（gap 遥测） | **D1** `counters`（`scope='gap'`） | 原来每个不同查询一个新 key，是**最后一个无界来源** |
 | 流量计数 | **KV**（`traffic:<class>:<date>`） | **有界**（每天每类几个 key），迁移无收益，刻意不动 |
 | 注册节点/token、intake、pair 等 | **KV** | 这些是要**保护**的对象，不是要迁的计数器 |

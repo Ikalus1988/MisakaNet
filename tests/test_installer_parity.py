@@ -104,3 +104,51 @@ def test_both_installers_agree_on_every_vendor_shape(agent, npm_marker, py_marke
     assert npm_marker in npm_src, f"npm: {agent} is missing {npm_marker!r}"
     assert f'"{agent}": {{' in py_src, f"python: no MCP_ONLY_TARGETS row for {agent}"
     assert py_marker in py_src, f"python: {agent} is missing {py_marker!r}"
+
+
+# ── the context hints, which only one of the two installers used to send ─────────────────────────
+#
+# The npm installer has written `X-MisakaNet-Client/-Agent/-Os/-Version` into every entry since 0.5.6
+# (#1859); the bootstrap installer sent none of them. Nothing compared the two, so the gap was
+# invisible — and its cost is a statistic: the D1 check that confirmed the columns were populated
+# (#1820) read a sample containing only npm users, which is the wrong sample for deciding which
+# clients to work on, because the bootstrap route exists precisely for the machines where npm is not
+# an option. The behaviour of each installer is asserted in its own suite
+# (`workers/misakanet-setup.test.mjs`, `tests/test_agent_autostart.py`); this is the cross-check that
+# keeps a fifth header from being added to one of them only.
+
+HINT_HEADER_RE = re.compile(r"X-MisakaNet-[A-Za-z]+")
+
+
+def _code_only(text: str) -> str:
+    """Executable lines only, in both languages.
+
+    Both installers name these headers in prose — the comments exist to explain why they are written
+    at all — so scanning the file as text would let a comment satisfy the rule after the code that
+    sends the header is gone. That is the same trap `align_versions.py` R5 fell into (#1864), and it
+    would make this test decorative.
+    """
+    out, in_docstring = [], False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.count('"""') % 2 == 1:
+            in_docstring = not in_docstring
+            continue
+        if in_docstring or stripped.startswith(("#", "//", "*", "/*")):
+            continue
+        out.append(line)
+    return "\n".join(out)
+
+
+def test_both_installers_declare_the_same_context_hint_headers():
+    npm = set(HINT_HEADER_RE.findall(_code_only(NPM.read_text(encoding="utf-8"))))
+    py = set(HINT_HEADER_RE.findall(_code_only(PY.read_text(encoding="utf-8"))))
+    assert npm, "the npm installer's code no longer sends any X-MisakaNet-* header"
+    assert npm == py, (
+        f"headers sent only by npm: {sorted(npm - py)}; only by the bootstrap installer: "
+        f"{sorted(py - npm)}. Both feed the same worker fields — a name in one route only is a "
+        f"column that silently excludes half the users"
+    )
+    # The worker truncates each of these to 40 characters, so a longer name never reaches a column.
+    for name in npm:
+        assert len(name) <= 40, name
