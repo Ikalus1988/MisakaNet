@@ -261,7 +261,7 @@ python3 search_knowledge.py "database locked"
 | 指标 | 数值 |
 |------|------|
 | 📚 Lessons | 402 (canonical, 去重后) |
-| 🌐 Nodes | 357 |
+| 🌐 Nodes | 424 |
 | 🎤 Network Voices | 5 条 |
 | 📡 Feed Items | 11 条 |
 | 🔍 领域覆盖 | RAG, DevOps, Feishu, Fanuc, Network, Claude, MCP |
