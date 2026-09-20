@@ -2,9 +2,11 @@ name: Auto-Draft from Crash Tombstone
 
 # 路线A闭环：崩溃墓碑 → draft lesson → 自动提 PR
 # 触发方式：
-#   - workflow_dispatch: 手动传入墓碑 JSON
-#   - repository_dispatch: fatal-guard 远程触发（通过 API）
-#   - 从 crash-reports/ 目录读取墓碑文件
+#   - workflow_dispatch: 手动传入墓碑 JSON 或仓库内文件路径
+#   - repository_dispatch: 由 fatal-guard 的 FATAL_HANDLER relay 通过 API
+#     传入 client_payload.tombstone（对象）或 client_payload.tombstone_json（字符串）
+# fatal-guard 本身只把墓碑交给 FATAL_HANDLER，不会写入本仓库的 crash-reports/；
+# 因此这里不再依赖一个没有写入者的 crash-reports/latest-tombstone.json 路径。
 
 on:
   workflow_dispatch:
@@ -40,36 +42,88 @@ jobs:
         env:
           TOMBSTONE: ${{ github.event.inputs.tombstone_json }}
           TOMBSTONE_FILE: ${{ github.event.inputs.tombstone_file }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
+          set -euo pipefail
+
+          INPUT_READY=""
+
+          # repository_dispatch is the remote fatal-guard path. Keep the JSON
+          # in a temporary file instead of interpolating untrusted payload data
+          # into shell source or a GitHub environment file.
+          if [ "$EVENT_NAME" = "repository_dispatch" ]; then
+            python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
+          payload = event.get("client_payload") or {}
+          value = payload.get("tombstone")
+          if value is None:
+              value = payload.get("tombstone_json")
+          if isinstance(value, str):
+              if len(value.encode("utf-8")) > 65536:
+                  raise SystemExit("ERROR: repository_dispatch tombstone exceeds 64KB limit")
+              try:
+                  value = json.loads(value)
+              except json.JSONDecodeError as exc:
+                  raise SystemExit(f"ERROR: invalid repository_dispatch tombstone JSON: {exc}")
+          if not isinstance(value, dict):
+              raise SystemExit(
+                  "ERROR: repository_dispatch must provide client_payload.tombstone "
+                  "or client_payload.tombstone_json"
+              )
+          serialized = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+          if len(serialized.encode("utf-8")) > 65536:
+              raise SystemExit("ERROR: repository_dispatch tombstone exceeds 64KB limit")
+          Path("/tmp/tombstone.json").write_text(serialized, encoding="utf-8")
+          PY
+            INPUT_READY=1
+          fi
+
           # Validate tombstone_json length (max 64KB)
-          if [ -n "$TOMBSTONE" ] && [ "${#TOMBSTONE}" -gt 65536 ]; then
+          if [ -z "$INPUT_READY" ] && [ -n "$TOMBSTONE" ]; then
+            TOMBSTONE_BYTES=$(printf '%s' "$TOMBSTONE" | wc -c)
+          fi
+          if [ -z "$INPUT_READY" ] && [ -n "$TOMBSTONE" ] && [ "$TOMBSTONE_BYTES" -gt 65536 ]; then
             echo "ERROR: tombstone_json exceeds 64KB limit"
             exit 1
           fi
 
-          # Validate tombstone_file path (no traversal)
-          if [ -n "$TOMBSTONE_FILE" ]; then
-            case "$TOMBSTONE_FILE" in
-              ../*|*/../*|*/..) echo "ERROR: path traversal not allowed"; exit 1 ;;
+          # Validate tombstone_file resolves to a regular path inside the checkout.
+          if [ -z "$INPUT_READY" ] && [ -n "$TOMBSTONE_FILE" ]; then
+            if [ ! -f "$TOMBSTONE_FILE" ]; then
+              echo "ERROR: tombstone_file must point to an existing file"
+              exit 1
+            fi
+            WORKSPACE_PATH=$(realpath -- "$GITHUB_WORKSPACE")
+            if ! TOMBSTONE_PATH=$(realpath -- "$TOMBSTONE_FILE" 2>/dev/null); then
+              echo "ERROR: tombstone_file could not be resolved"
+              exit 1
+            fi
+            case "$TOMBSTONE_PATH" in
+              "$WORKSPACE_PATH"/*) ;;
+              *) echo "ERROR: tombstone_file must stay within GITHUB_WORKSPACE"; exit 1 ;;
             esac
           fi
 
           # Determine input source
-          if [ -n "$TOMBSTONE" ]; then
+          if [ -n "$INPUT_READY" ]; then
+            : # repository_dispatch already wrote /tmp/tombstone.json
+          elif [ -n "$TOMBSTONE" ]; then
             # Validate JSON format
-            echo "$TOMBSTONE" | python3 -m json.tool > /dev/null 2>&1 || { echo "ERROR: invalid JSON"; exit 1; }
-            echo "$TOMBSTONE" > /tmp/tombstone.json
+            printf '%s\n' "$TOMBSTONE" | python3 -m json.tool > /dev/null 2>&1 || { echo "ERROR: invalid JSON"; exit 1; }
+            printf '%s\n' "$TOMBSTONE" > /tmp/tombstone.json
           elif [ -n "$TOMBSTONE_FILE" ] && [ -f "$TOMBSTONE_FILE" ]; then
             cp "$TOMBSTONE_FILE" /tmp/tombstone.json
-          elif [ -f "crash-reports/latest-tombstone.json" ]; then
-            cp "crash-reports/latest-tombstone.json" /tmp/tombstone.json
           else
-            echo "::warning::No tombstone input provided. Skipping."
+            echo "::warning::No tombstone input provided; use workflow_dispatch inputs or the repository_dispatch payload. Skipping."
             exit 0
           fi
 
-          # Generate draft lesson
-          python3 scripts/tombstone_to_draft.py --from-file /tmp/tombstone.json --create-bounty
+          # Generate draft lesson and the converter's supported issue metadata sidecar.
+          python3 scripts/tombstone_to_draft.py --from-file /tmp/tombstone.json --create-issue
 
           # Capture the generated filename
           DRAFT_FILE=$(ls -t lessons/drafts/draft-*.md 2>/dev/null | head -1)
@@ -120,6 +174,7 @@ jobs:
           - **Complete**: Fill in Root Cause, Solution, and Verification sections
           - **Bounty**: If the draft is valid but incomplete, mark it as a bounty for Agents
 
-          ### Auto-generated Bounty
-          A \`.bounty.json\` file was also created alongside the draft.
+          ### Auto-generated issue metadata
+          A \.issue.json\` file is created alongside the draft for maintainer review.
+          This metadata does not create a GitHub issue or a bounty by itself.
           "
