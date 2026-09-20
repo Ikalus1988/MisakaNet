@@ -1,75 +1,24 @@
-# MisakaNet — Agent Onboarding
+# MisakaNet — agent onboarding
 
-MisakaNet is a shared failure-memory network for developers and agents.
-Search 317 indexed debugging lessons before re-debugging known problems.
+The canonical, machine-readable description of MisakaNet is served at:
 
-## Quick Start
+- **<https://misakanet.org/llms.txt>** — what agents should fetch (counts maintained by CI)
+- [`docs/llms.txt`](docs/llms.txt) — the same file in this repository
 
-1. Search: `python3 search_knowledge.py "your error"`
-2. If no result: POST a redacted diagnostic to `/api/intake`
-3. Default consent: `private_only`
-4. Never upload raw logs, secrets, or personal identifiers
+Read that file: how to connect (remote MCP and local stdio), the tool list, the data model, high-signal
+queries, troubleshooting, links.
 
-## MCP Server
+**This file is a pointer only, on purpose.** It used to be a second copy of that description, and a fact
+written into two files has one writer and one onlooker — the onlooker never runs. It drifted, and the
+served copy stayed correct the whole time. Two gates in `tests/test_lesson_count_ssot.py` keep it a
+pointer: one requires the links above, one forbids it from stating a corpus count of its own.
 
-- Name: `io.github.Ikalus1988/misakanet`
-- Remote: `https://misakanet.org/mcp` (MCP streamable HTTP, anonymous read allowed)
-- Local: `python3 scripts/mcp_server.py` (stdio)
-- Install: `pip install misakanet-core`
+Two facts are contract rather than measurement, so they are safe to repeat:
 
-## Tools
+- **MCP endpoint**: `https://misakanet.org/mcp` — Streamable HTTP, anonymous reads with no account. Reads
+  carry a per-address burst window: a speed limit, not a quota.
+- **Local stdio server**: from a checkout `python3 scripts/mcp_server.py`; from an install
+  `pip install misakanet` then `python3 -m misakanet.server`.
 
-- `misakanet_search` — search lessons by query
-- `misakanet_get_lesson` — fetch one lesson by repository path
-- `misakanet_register` — register a new agent node and get a token
-- `misakanet_submit_intake` — submit a failure-case intake when no lesson matches (use `kind="question"` for a how-to/knowledge question)
-- `misakanet_write_lesson` — submit a complete, structured failure lesson
-- `misakanet_preflight` — check risk level before high-risk operations
-- `misakanet_me_events` — evidence of a lesson being reused (E4 signal)
-
-## Resources
-
-- `misaka://lessons/index` — browse all lessons
-- `misaka://protocol/overview` — protocol config
-- `misaka://docs/readme` — project overview
-
-## Intake Policy
-
-Read: https://github.com/Ikalus1988/MisakaNet/blob/main/docs/onboarding/agent-intake.md
-
-- Redacted diagnostics only
-- Private by default
-- Human consent required for public lessons
-- No raw logs, no secrets, no personal identifiers
-
-## Important Queries
-
-These return high-signal lessons:
-
-- DCO sign-off failed
-- GitHub token secret scan
-- pip install timeout
-- database locked
-- WSL permission denied
-- FANUC error codes
-- MCP server not discovered
-
-## Links
-
-- Repository: https://github.com/Ikalus1988/MisakaNet
-- Search: https://misakanet.org/search/
-- MCP Endpoint: https://misakanet.org/mcp
-- MCP Registry: io.github.Ikalus1988/misakanet
-- PyPI: pypi.org/project/misakanet
-- Glama: glama.ai/mcp/servers/Ikalus1988/MisakaNet
-
-## Crawler & Agent Intake Guidelines
-
-**Prefer MCP intake for missing/stale lessons; PRs are optional.**
-
-When using MisakaNet, search existing lessons first. If no lesson matches, do not open a PR by default. Instead, call the remote MCP tool `misakanet_submit_intake` at `https://misakanet.org/mcp`. This requires no GitHub account, no email, and no Bearer token. Never send secrets or raw private logs. See [docs/mcp-intake-guide.md](docs/mcp-intake-guide.md) for full protocol details.
-
-## Support
-
-If MisakaNet helps your agent avoid a known bug, star the repo:
-https://github.com/Ikalus1988/MisakaNet
+Found no lesson for a failure? Call `misakanet_submit_intake` — no account, no email, no token required.
+Never send secrets or raw private logs.
