@@ -151,7 +151,37 @@ jobs:
           git config user.email "bot@misakanet.dev"
           git add -u
           git commit --signoff -m "chore(npm): misakanet@$VERSION is published"
-          git push origin HEAD:main
+
+          # `main` moves under this job. The leaderboard and node snapshots commit every few minutes
+          # (`chore: update leaderboard snapshot [skip ci]`), so the checkout taken at the start of the
+          # run is already behind by the time the publish finishes: on 2026-09-20 this push was rejected
+          # as non-fast-forward, and the drift the step exists to prevent came straight back — npm at
+          # 2.31.0 while `package.json` still read 2.30.2. Rebase and retry instead of forcing: the
+          # commit is one line in two files, so a rebase cannot conflict in any interesting way.
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then
+              echo "recorded misakanet@$VERSION on main (attempt $attempt)"
+              exit 0
+            fi
+            echo "::warning::push rejected on attempt $attempt - main moved; rebasing and retrying"
+            git fetch origin main
+            git rebase origin/main
+            sleep $((attempt * 5))
+          done
+
+          # Deliberately a failure, not a warning: npm does not allow republishing a version, so the
+          # repository has to catch up, and a silent drift is the defect this whole step exists to stop.
+          # The summary says the part a human needs first — the package *is* published.
+          {
+            echo "### npm publish succeeded, but the version record did not land"
+            echo ""
+            echo "\`misakanet@$VERSION\` **is published** — npm does not allow republishing a version."
+            echo "\`package.json\` could not be updated on main after five attempts."
+            echo ""
+            echo "Fix by hand: \`python3 scripts/align_versions.py --source $VERSION\`, then commit."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::published misakanet@$VERSION, but recording it on main failed - see the job summary"
+          exit 1
 
       - name: Dry run summary
         if: github.event_name == 'workflow_dispatch' && inputs.dry_run && inputs.version == ''
