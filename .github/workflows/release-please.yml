@@ -71,6 +71,39 @@ jobs:
           fi
           echo "created=true" >> "$GITHUB_OUTPUT"
 
+      # release-please's own release-creation code is skipped in this workflow (see the note on the
+      # action below: v5 refuses it for these tokens), and that code is also what moves the release PR
+      # from `autorelease: pending` to `autorelease: tagged`. Tagging the commit — the step above — is
+      # only half of the bookkeeping, and the half that was missing: release-please decides whether a
+      # merged release PR is "outstanding" by its **label**, not by the tag, so every run since the
+      # 2.31.0 release aborted with
+      #
+      #   ⚠ There are untagged, merged release PRs outstanding - aborting
+      #
+      # and no new release PR was being proposed. The next release was blocked until a human relabelled
+      # #1862 by hand — exactly how the 2.30.0 deadlock (#1631) was cleared before it, i.e. the same
+      # manual step was needed two releases in a row.
+      #
+      # Unconditional on purpose, for two reasons: on the release run itself `created` is true and the
+      # label must move; and on a run where the tag already exists but the label is still pending (the
+      # state this repository was in on 2026-09-20) nothing else would ever repair it. Idempotent: no
+      # pending label, nothing happens.
+      - name: Mark the merged release PR as tagged
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged \
+                 --label "autorelease: pending" --limit 5 \
+                 --json number --jq '.[0].number // empty')
+          if [ -z "$PR" ]; then
+            echo "no merged release PR is waiting to be marked tagged"
+            exit 0
+          fi
+          gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" \
+            --remove-label "autorelease: pending" --add-label "autorelease: tagged"
+          echo "release PR #$PR marked autorelease: tagged"
+
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7  # v5
         id: release
         with:
