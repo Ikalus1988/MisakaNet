@@ -7,6 +7,14 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.32.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.32.0...v2.32.1) (2026-09-20)
+
+
+### Bug Fixes
+
+* **worker:** flush the traffic counter five times less often, because it was spending the day's KV budget ([57929d9](https://github.com/Ikalus1988/MisakaNet/commit/57929d9959df592631da03ad451cbd70e57afad3))
+* **worker:** flush the traffic counter five times less often, because it was spending the day's KV budget ([b4011ec](https://github.com/Ikalus1988/MisakaNet/commit/b4011ec9d988d7ffac57219a7af593731e0f1717))
+
 ## [2.32.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.31.0...v2.32.0) (2026-09-20)
 
 
