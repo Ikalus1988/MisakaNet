@@ -48,7 +48,10 @@ of Glama.
 
 ### Claude Code
 
-Add to `.claude/settings.json` in your project:
+Add to `.mcp.json` at your project root (project scope — committable, shared with the team), or to
+`~/.claude.json` for user scope. **Not `.claude/settings.json`**: that file holds hooks and
+permissions, and an `mcpServers` block there is never read
+([scope table](https://docs.claude.com/en/docs/claude-code/mcp)):
 
 ```json
 {

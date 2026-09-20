@@ -8,7 +8,7 @@ Connect MisakaNet to your AI coding tool. Search 402 indexed failure-recovery le
 |------|--------|-------|
 | **Cursor** | ✅ Ready | [Failure-memory rule](cursor-failure-memory.md) |
 | **Claude Code** | ✅ Ready | [Failure playbook](claude-code-failure-memory.md) |
-| **Continue.dev** | ✅ Ready | [Setup Guide](continue/README.md) |
+| **Continue.dev** | ✅ Ready | [Setup Guide](continue.md) |
 | **Shell** | ✅ Ready | `misaka-search.sh` — see below |
 | **`misaka run`** | ✅ Ready | `python scripts/misaka_run.py <cmd>` |
 | **Aider** | Planned | — |
@@ -50,36 +50,55 @@ results = tool._run("database locked")
 ## MCP Server
 
 MisakaNet ships as an MCP server for Claude Code, Cursor, Continue.dev, and any MCP-compatible tool.
+Two shapes, same tools:
+
+| Shape | Endpoint | Needs |
+|---|---|---|
+| **Remote (recommended)** | `https://misakanet.org/mcp` (Streamable HTTP) | nothing — no clone, no Python |
+| Local stdio | `python3 /absolute/path/to/MisakaNet/scripts/mcp_server.py` | a clone + `pip install -r requirements.txt` |
 
 ### Claude Code Setup
 
-Add to `~/.claude/settings.json`:
+The installer writes this correctly, plus a rules block and a hook:
 
-```json
-{
-  "mcpServers": {
-    "misakanet": {
-      "command": "python3",
-      "args": ["C:/Users/hp/MisakaNet/scripts/mcp_server.py"]
-    }
-  }
-}
+```bash
+npx @misaka-net/misakanet-setup --only claude    # then: --verify
 ```
 
+By hand — user scope lives in `~/.claude.json`, project scope in `.mcp.json` at the repository root
+(**not** `.claude/settings.json`, which holds hooks and permissions —
+[scope table](https://docs.claude.com/en/docs/claude-code/mcp)):
+
+```bash
+claude mcp add --transport http misakanet https://misakanet.org/mcp
+```
+
+Per-agent guides: [Claude Code](claude-code.md) · [Cursor](cursor.md) · [Continue.dev](continue.md) ·
+[DSH](dsh.md) — the full list with evidence levels is [status.md](status.md).
+
 ### Available Tools
+
+The **remote** endpoint (what every agent above talks to) exposes seven:
 
 | Tool | Description |
 |------|-------------|
 | `misakanet_search` | Search lessons by query, domain, and top-N |
 | `misakanet_get_lesson` | Get full lesson content by path or ID |
-| `misakanet_submit_usage` | Report lesson usage (solved/partial/not-helpful) |
+| `misakanet_submit_intake` | Report a failure or question anonymously (no account) |
+| `misakanet_register` | Register a pseudonymous node; returns a node id + token |
+| `misakanet_write_lesson` | Submit a structured lesson (Bearer token) |
+| `misakanet_preflight` | Risk check before a destructive operation (Bearer token) |
+| `misakanet_me_events` | Read the reuse evidence for this node |
+
+The **local stdio** server adds three that only make sense on your machine:
+`misakanet_submit_usage`, `misakanet_usage_status` and `misakanet_memory_context`.
 
 ### Prerequisites
 
+Remote: none. Local stdio:
+
 ```bash
-# Build SAG-Lite index (one-time)
-python3 scripts/export_okf.py
-python3 scripts/build_sag_index.py
+pip install -r requirements.txt
 ```
 
 ### Usage
@@ -91,4 +110,7 @@ Once configured, your AI tool can search MisakaNet directly:
 
 ---
 
-*Want to build an integration for your tool? See [bounty #268](https://github.com/Ikalus1988/MisakaNet/issues/268).*
+*Want to build an integration for your tool? The pilot issue is
+[#1550](https://github.com/Ikalus1988/MisakaNet/issues/1550) (the earlier bounty #268 is closed). If
+your tool speaks MCP over HTTP, the endpoint above is all you need — tell us where it breaks and we
+will document the client.*

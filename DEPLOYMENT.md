@@ -145,7 +145,8 @@ The `deploy-worker.yml` workflow auto-deploys on push to `main` when `docs/` or 
 
 ### 3.1 Local (stdio) — for Claude Code
 
-Add to `claude_desktop_config.json` or `.claude/settings.json`:
+Add to `claude_desktop_config.json` (Claude Desktop) or `~/.claude.json` / project `.mcp.json`
+(Claude Code — *not* `.claude/settings.json`, which holds hooks and permissions, not MCP servers):
 
 ```json
 {
