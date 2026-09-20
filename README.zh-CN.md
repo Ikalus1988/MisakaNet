@@ -96,8 +96,12 @@ python3 search_knowledge.py "GitHub token 401"
 
 **方式 D：DeepSeek Harness（dsh 插件）与 Python 库**
 
+当前发布到 npm 的版本见**本页上方的 npm 徽章**。本项目同时发 npm 与 PyPI 两个通道，两者并不同步
+（npm 发布是手动、需审批的工作流），所以在这里手写一个版本号，只会在其中一个通道落后时立刻变成假话；
+徽章才是实时答案。
+
 ```bash
-# npm 安装（推荐 — 发布为 misakanet@2.30.2）
+# npm 安装（推荐）
 dsh plugin add misakanet
 # 或直接从 git 安装（同一 bundle）
 # dsh plugin add git+https://github.com/Ikalus1988/MisakaNet.git
