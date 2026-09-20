@@ -79,3 +79,6 @@ pytest tests/ -x -q
 - Use `alembic check` (alembic ≥1.12) to verify chain consistency without applying
 - For SQLite: back up `memory.db` before running migrations
 - CI should run migrations against a fresh DB to catch chain divergence early
+## Related
+
+- See [alembic-upgrade-head-failed](alembic-upgrade-head-failed.md) for exit code 255 / subprocess errors and model import side effects
