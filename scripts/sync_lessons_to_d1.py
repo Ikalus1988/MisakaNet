@@ -48,10 +48,26 @@ MC = str(REPO / ".tools" / "bin" / "mcporter")
 CFG = str(REPO / ".tools" / "mcporter.json")
 
 SECTION_ALIASES = {
-    "problem": ["problem", "问题", "描述"],
-    "root_cause": ["root cause", "根因", "原因", "根因分析"],
-    "solution": ["solution", "fix", "修复", "解法", "方案", "正确做法", "修复方案"],
-    "verification": ["verification", "verify", "验证", "验证方式"],
+    "problem": [
+        "problem", "问题", "描述",
+        "problema", "समस्या", "masalah", "проблема", "sorun", "vấn đề",
+    ],
+    "root_cause": [
+        "root cause", "根因", "原因", "根因分析",
+        "causa", "causa raíz", "causa raiz", "коренная причина", "первопричина", "причина",
+        "मूल कारण", "akar penyebab", "penyebab", "kök neden", "neden",
+        "nguyên nhân gốc rễ", "nguyên nhân",
+    ],
+    "solution": [
+        "solution", "fix", "修复", "解法", "方案", "正确做法", "修复方案",
+        "solução", "solucao", "solución", "solucion", "решение", "समाधान", "solusi",
+        "çözüm", "cozum", "giải pháp",
+    ],
+    "verification": [
+        "verification", "verify", "验证", "验证方式",
+        "verificação", "verificacao", "verificación", "verificacion",
+        "проверка", "सत्यापन", "verifikasi", "doğrulama", "dogrulama", "xác minh",
+    ],
 }
 
 
