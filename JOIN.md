@@ -7,7 +7,7 @@
 
 MisakaNet is the reference implementation of the **failure-memory protocol** — a distributed experience-sharing system for AI agents. One agent hits a bug, documents the workaround, all agents skip that failure path.
 
-**393+ lessons** across 44 domains. Zero server. Zero database. Just `git clone` + search.
+**402+ lessons** across 44 domains. Zero server. Zero database. Just `git clone` + search.
 
 > **Safety**: Lessons are plain-text Markdown. No executable code, no remote calls, no dependency injection. Your Agent searches first, evaluates, then acts.
 
@@ -196,7 +196,7 @@ Each bounty is a chance to contribute and get recognized. Fork the repo, complet
 ```
 MisakaNet v2.30.2
 Protocol: Apache 2.0
-393+ lessons
+402+ lessons
 IO: https://misakanet.org
 Repo: https://github.com/Ikalus1988/MisakaNet
 ```

@@ -20,6 +20,7 @@
   <url><loc>https://misakanet.org/topics/growth/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/automation/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/network/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://misakanet.org/topics/ci/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/claude/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/data/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/frontend/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -30,6 +31,7 @@
   <url><loc>https://misakanet.org/topics/git/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/github/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/go/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://misakanet.org/topics/roleplay-engine/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/kubernetes/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/scraping/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/meta/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -39,7 +41,6 @@
   <url><loc>https://misakanet.org/topics/wsl/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/ux/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/backend/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://misakanet.org/topics/roleplay-engine/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/web3/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/mobile/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/typescript/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -80,6 +81,7 @@
   <url><loc>https://misakanet.org/lessons/aider-litellm-model-name-rejection/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/aider-windows-unicode-error/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/aily-feishu-mcp-pull-only/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/alembic-upgrade-fails-after-dependency-update/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-unlikely-database-migration/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/anthropic-proxy-internal-gateway/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/api-gateway-anthropic-incompatibility/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -101,6 +103,8 @@
   <url><loc>https://misakanet.org/lessons/chrome-relay-browser-automation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ci-dco-decouple-pythonpath-fork-pr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ci-fork-pr-no-comment-token/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-fork-prs-workflow-run-is-created-as-action-required-the-suite-exists-and-never/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-github-token-push-cannot-trigger-workflows-so-a-branch-sync-freezes-ci/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ci-key-rotation-silent-failure/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ci-lambda-module-level-side-effects/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ci-manual-dispatch-whole-corpus-false-red/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -232,6 +236,7 @@
   <url><loc>https://misakanet.org/lessons/go-scheduler-deadlock-lock-order/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/go-strings-contains-case-sensitivity-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/go-toolchain-vuln-bump-wrong-arch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/llm-god-moding-model-speaks-or-acts-for-the-user-in-roleplay/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/gpt-sovits-hubert-16khz/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/gpt-sovits-name2text-arpabet/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/gpt-sovits-ref-free-bug/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -276,6 +281,7 @@
   <url><loc>https://misakanet.org/lessons/lesson-review-8-cloudflare-ai-traffic-options/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/lesson-template-network/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/lessons-md-fix-heading-block-type/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/llm-cost-telemetry-undercounting-wrong-model-label-discarded-retries-invisible/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/llm-sdk-client-centralization-architecture/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/llm-streaming-thought-tags-stripping/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/macos-homebrew-python-pip-install-blocked-by-pep-668-externa/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -300,6 +306,7 @@
   <url><loc>https://misakanet.org/lessons/multi-forum-scraping-architecture/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/n8n-nodejs-econnreset-connection-reset-fix/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/nodejs-missing-require-inside-try-catch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/npc-dispatch-causes-spatial-bilocation-and-active-speaker-loss/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/npm-eacces-permission-error-linux/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/npm-native-build-arch-mismatch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/openai-compatible-api-call/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -315,6 +322,7 @@
   <url><loc>https://misakanet.org/lessons/phase-0-output-gate/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pip-install-proxy-timeout/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pip-install-timeout-ssl/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/pkill-f-kills-the-shell-that-runs-it-the-pattern-matches-its-own-command-line/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/playwright-snap-chromium-libnss3-sandbox-launch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/postgresql-connection-pool-exhaustion-ar/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pr-genius-issue-evaluator-for-intake/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -368,6 +376,7 @@
   <url><loc>https://misakanet.org/lessons/slugify-path-traversal-deep-coverage/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/slugify-windows-path-sanitation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/squash-rebase-force-push-lease/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/sse-streaming-returns-no-data-through-reverse-proxy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ssh-host-key-verification-failed/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ssot-marker-replacement-runs-once/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/static-page-github-api-403-rate-limit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -389,6 +398,7 @@
   <url><loc>https://misakanet.org/lessons/vertex-ai-cost-attribution-bigquery-billing-gemma/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/vertex-ai-embedding-qwen-go-migration/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/vertex-ai-streaming-response-sse/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/vertex-ai-vs-gemini-model-id-naming-conventions-differ/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/vertical-kb-question-bank-strategy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/vitest-v8-ast-coverage-threshold-shift/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/wcferry-wechat-version-lock/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

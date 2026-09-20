@@ -1,6 +1,6 @@
 {
   "name": "MisakaNet",
-  "description": "MisakaNet failure lesson network MCP server: search 393 indexed failure lessons, submit failure intakes, write lessons, and run preflight risk checks.",
+  "description": "MisakaNet failure lesson network MCP server: search 402 indexed failure lessons, submit failure intakes, write lessons, and run preflight risk checks.",
   "version": "2.31.0",
   "remotes": [
     {
