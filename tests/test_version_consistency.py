@@ -390,3 +390,77 @@ def test_the_writer_check_notices_a_file_that_loses_its_annotation(tmp_path):
     problems = _writer_problems(scratch)
     assert any("misakanet_cli.py" in problem for problem in problems), (
         f"removing the annotation must be reported, got: {problems}")
+
+
+# ── The inverse defect: a file declared in `extra-files` that release-please cannot write ──────────
+# `README.md` sat in `extra-files` for months with no annotation anywhere in it. A declared entry whose
+# file carries no `x-release-please-version` marker *looks* wired and writes nothing: the release bot
+# runs, finds no line to replace, and reports success. In practice that is what README.md was — it went
+# on advertising `misakanet@2.30.2` after the repository had released 2.31.0, and nothing could see it,
+# because the only rule that reads those claims (`align_versions.py` R5) is an upper bound: any older
+# number is accepted forever (found 2026-09-20 while fixing exactly that drift).
+
+
+def _declared_without_annotation(root: Path) -> list[str]:
+    """Declared `extra-files` entries whose file carries no annotation release-please could rewrite."""
+    config = json.loads((root / "release-please-config.json").read_text(encoding="utf-8"))
+    problems = []
+    for entry in config["packages"]["."]["extra-files"]:
+        if not isinstance(entry, str):
+            continue  # typed entries carry a jsonpath; the annotation rule does not apply to them
+        if not (root / entry).exists():
+            problems.append(f"{entry} is declared but does not exist")
+        elif "x-release-please-version" not in (root / entry).read_text(encoding="utf-8"):
+            problems.append(f"{entry} carries no x-release-please-version annotation")
+    return problems
+
+
+def test_every_declared_extra_file_can_actually_be_written():
+    problems = _declared_without_annotation(REPO)
+    assert not problems, (
+        "these files are declared in release-please's `extra-files` but release-please cannot write "
+        "anything in them, so the declaration is decoration — either put the annotation on the version "
+        "line or drop the entry:\n  - " + "\n  - ".join(problems))
+
+
+def test_the_decoration_check_notices_an_unwritable_entry(tmp_path):
+    import shutil
+
+    scratch = tmp_path / "repo"
+    (scratch / "scripts").mkdir(parents=True)
+    (scratch / "workers").mkdir(parents=True)
+    (scratch / "docs").mkdir(parents=True)
+    for rel in list(PINNED_VERSION_FILES) + ["release-please-config.json"]:
+        shutil.copy(REPO / rel, scratch / rel)
+    assert _declared_without_annotation(scratch) == [], "control must start clean"
+
+    config = scratch / "release-please-config.json"
+    data = json.loads(config.read_text(encoding="utf-8"))
+    data["packages"]["."]["extra-files"].append("scripts/misakanet_cli.py.md")
+    config.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    assert _declared_without_annotation(scratch) == [
+        "scripts/misakanet_cli.py.md is declared but does not exist"], "a declared ghost must be reported"
+
+
+def test_the_readmes_do_not_hand_write_a_publishable_version():
+    """`misakanet@X.Y.Z` in a README is a claim about **npm**, not about this repository.
+
+    The two channels move independently: the npm publish is a manual, approval-gated workflow
+    (`misakanet-publish.yml`, `workflow_dispatch`), while PyPI follows the release. On 2026-09-20 npm was
+    at 2.30.2 (`package.json` agrees) and PyPI plus the repository were at 2.31.0 — so the README's
+    literal was *correct* and still disagreed with the release line, which is why "align it to the repo
+    version" is the wrong fix and would have advertised an unpublished version.
+
+    The npm badge in the badges block is the live source, and it is the only place this README may take
+    the number from. This rule keeps a hand-written literal from coming back and going stale unobserved.
+    """
+    import re
+
+    offenders = []
+    for rel in ("README.md", "README.zh-CN.md"):
+        text = (REPO / rel).read_text(encoding="utf-8")
+        offenders += [f"{rel}: {m}" for m in re.findall(r"misakanet(?:@| == )\d+\.\d+\.\d+", text)]
+    assert not offenders, (
+        "a README must not hand-write a released version — the npm badge is the live source, and this "
+        "number goes stale whenever the npm channel lags the release (it did):\n  - "
+        + "\n  - ".join(offenders))

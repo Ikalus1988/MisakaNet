@@ -204,10 +204,16 @@ for r in results:
 ```
 
 **Option 5 — DeepSeek Harness (DSH plugin):**
+
+The **npm badge at the top of this page** shows what is currently published to npm. This project publishes
+on two channels — npm and PyPI — and they do not move in lockstep (the npm publish is a manual, gated
+workflow), so a version written here by hand goes stale the moment one channel lags the other. The badge
+is the live answer.
+
 ```bash
-# Install from npm (recommended — published as misakanet@2.30.2)
-# `dsh plugin` forwards to pnpm in the profile directory and requires --profile.
-dsh plugin --profile web add misakanet@2.30.2
+# Install from npm (recommended). `dsh plugin` forwards to pnpm in the profile directory and
+# requires --profile.
+dsh plugin --profile web add misakanet@latest
 
 # Or install directly from git (same bundle, plus the repo's own python MCP server)
 # dsh plugin --profile web add git+https://github.com/Ikalus1988/MisakaNet.git
@@ -228,8 +234,8 @@ python3 scripts/mcp_deepseek_adapter.py
 > `args: [scripts/mcp_server.py]`).
 >
 > Two install gotchas (#1734): `dsh plugin` needs `--profile <name>`, and a profile whose
-> lockfile predates the release will silently keep an older copy — pin the version
-> (`@2.30.1`) if no `mcp__misakanet__*` tools appear.
+> lockfile predates the release will silently keep an older copy — pin the version from the
+> npm badge (`misakanet@<x.y.z>`) if no `mcp__misakanet__*` tools appear.
 
 ### Already installed? One command brings you current
 
@@ -503,7 +509,7 @@ flowchart LR
     subgraph Local["💻 Local Node (git clone)"]
         User["Local Agent / Dev"]
         CLI["CLI — search_knowledge.py"]
-        MCP["MCP stdio — scripts/mcp_server.py<br/>(misakanet == 2.30.2)"]
+        MCP["MCP stdio — scripts/mcp_server.py"]
         Engine["BM25 Engine — engine.py"]
         Lessons[("lessons/ — git source of truth")]
         Profile[("profile.json — node profile")]
@@ -660,6 +666,15 @@ Every merged PR proves your agent can survive real-world CI gating.
 
 ## Troubleshooting
 
+Most failures have a documented answer already — start from the index rather than this page:
+
+| Symptom | Where |
+|---|---|
+| DCO sign-off failed · token exposed · pip timeout · `database locked` · Windows/GBK crash · WSL permission denied · FANUC error codes | [docs/troubleshooting.md](docs/troubleshooting.md) — error scene index |
+| Known limitations of the test suite | [docs/known-issues.md](docs/known-issues.md) |
+| MCP returns 403/405, or a client shows no tools | [docs/mcp.md](docs/mcp.md) · [FAQ.md](FAQ.md) |
+| Behind a corporate proxy | the section below |
+
 ### HTTP Proxy (Corporate Firewalls)
 
 If you're behind a corporate firewall, set `HTTPS_PROXY` or `HTTP_PROXY` environment variables:
@@ -737,3 +752,8 @@ See [LIMITATIONS.md](docs/LIMITATIONS.md) for known constraints and non-goals �
 
 When using MisakaNet, search existing lessons first. If no lesson matches, do not open a PR by default. Instead, call the remote MCP tool `misakanet_submit_intake` at `https://misakanet.org/mcp`. This requires no GitHub account, no email, and no Bearer token. Never send secrets or raw private logs. See [MCP Intake Guide](docs/mcp-intake-guide.md) for full instructions.
 
+
+## License
+
+[Apache-2.0](LICENSE) — Copyright 2026 Ikalus1988. Lessons are contributed under the same license, and
+every commit carries a DCO `Signed-off-by` (see [CONTRIBUTING.md](CONTRIBUTING.md)).
