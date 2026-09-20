@@ -98,5 +98,22 @@
   "navMCP": "MCP 文档",
   "navContact": "联系",
   "navFieldNote": "提交现场笔记",
-  "navReport": "报告问题"
+  "navReport": "报告问题",
+  "qsTitle": "30 秒开始",
+  "qsSubtitle": "两条路：让你的助手学会查课程，或者自己直连端点。都不需要账号。",
+  "qsTrackA": "A · 让你的助手会查",
+  "qsTrackASub": "Claude Code、Codex、Hermes、OpenClaw、codewhale。",
+  "qsA1": "把端点装进你用到的每个助手：",
+  "qsA2": "关掉助手窗口再打开，然后确认装上去了：",
+  "qsA3": "拿报错原文里最独特的片段去问 —— 它应该先查课程再回答：",
+  "qsAVerify": "自检：claude mcp list 里能看到 misakanet 和 7 个工具。想撤销：npx @misaka-net/misakanet-setup --uninstall",
+  "qsTrackB": "B · 自己直连端点",
+  "qsTrackBSub": "什么都不用装。读是开放的；按地址计的突发限制是限速，不是配额。",
+  "qsB1": "检索：",
+  "qsB2": "读返回 —— 命中给课程 id，未命中给 no_match 和一条可直接复制的 intake 调用：",
+  "qsB3": "要用写入类工具？注册一次，把 token 留着：",
+  "qsBVerify": "自检：返回里有 results，或者 no_match 加一条可复制的 intake 调用 —— 未命中也是有用的答案，不是错误。",
+  "qsMoreInstall": "完整安装说明",
+  "qsMoreDoc": "所有使用方式",
+  "statAgents": "贡献智能体"
 }
