@@ -17,9 +17,18 @@ on:
         description: "Run every check and show the tarball, but do not publish"
         type: boolean
         default: true
+      version:
+        description: >-
+          Release version to publish (e.g. 2.31.0). Passing this is what the release flow does: the
+          npm bundle line is moved to this version in the working tree, the package is published, and
+          the bump is committed back — so `package.json` keeps meaning "the version that is on npm".
+          A run with this input set publishes even when dry_run is true; the `release` environment's
+          required reviewer is the human gate.
+        type: string
+        required: false
 
 permissions:
-  contents: read
+  contents: write      # the published version is committed back to `package.json` (see the last step)
 
 jobs:
   publish:
@@ -38,6 +47,26 @@ jobs:
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
+
+      # The npm bundle line (`package.json`) deliberately lags the repository release line: a test
+      # enforces that it may be behind but never ahead, because it means "the version that is on npm",
+      # not "the version this checkout is". So publishing a new version means *moving* that line, and
+      # the release flow cannot do it (it runs before the publish, and the publish can still be refused
+      # by the reviewer). Running the alignment here is what the old error message asked a human to do
+      # by hand — see `scripts/align_versions.py --source`, whose own help says the same thing.
+      - name: Move the npm line to the version being published
+        if: inputs.version != ''
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          python3 scripts/align_versions.py --source "$VERSION"
+          ACTUAL=$(node -e "console.log(require('./package.json').version)")
+          [ "$ACTUAL" = "$VERSION" ] || {
+            echo "::error::package.json says $ACTUAL after aligning to $VERSION - refusing to publish."
+            exit 1
+          }
+          echo "npm line: $ACTUAL"
 
       # A tag that disagrees with package.json would publish a version nobody intended, and
       # npm does not let you take it back.
@@ -85,7 +114,8 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to npm
-        if: github.event_name == 'push' || inputs.dry_run == false
+        id: publish
+        if: github.event_name == 'push' || inputs.dry_run == false || inputs.version != ''
         run: |
           set +e
           npm publish --access public
@@ -97,8 +127,34 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      # Record what was published, so the next reader of `package.json` sees the truth without running
+      # anything. Before this step existed the line moved only when a human remembered to run
+      # `align_versions.py --source`, which is how it sat at 2.30.2 through the 2.31.0 release — the
+      # same "one fact, no writer" shape as the lesson counts. Idempotent: nothing to record, nothing
+      # happens.
+      - name: Record the published version on main
+        if: steps.publish.outcome == 'success' && inputs.version != ''
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "package.json already records $VERSION - nothing to commit."
+            exit 0
+          fi
+          OTHER=$(git diff --name-only | grep -vE '^(package.json|.codex-plugin/plugin.json)$' || true)
+          if [ -n "$OTHER" ]; then
+            echo "::warning::align_versions also changed: $OTHER (committing every tracked change)"
+          fi
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.dev"
+          git add -u
+          git commit --signoff -m "chore(npm): misakanet@$VERSION is published"
+          git push origin HEAD:main
+
       - name: Dry run summary
-        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run && inputs.version == ''
         run: |
           echo "dry_run: all checks passed, nothing was published." >> "$GITHUB_STEP_SUMMARY"
           echo "To publish: push a tag (git tag misakanet-v\$(node -p \"require('./package.json').version\")), or re-run this workflow with dry_run=false." >> "$GITHUB_STEP_SUMMARY"
