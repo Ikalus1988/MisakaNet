@@ -13,7 +13,6 @@ All notable changes to the Misaka Network project are documented here.
 ### Bug Fixes
 
 * **worker:** flush the traffic counter five times less often, because it was spending the day's KV budget ([57929d9](https://github.com/Ikalus1988/MisakaNet/commit/57929d9959df592631da03ad451cbd70e57afad3))
-* **worker:** flush the traffic counter five times less often, because it was spending the day's KV budget ([b4011ec](https://github.com/Ikalus1988/MisakaNet/commit/b4011ec9d988d7ffac57219a7af593731e0f1717))
 
 ## [2.32.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.31.0...v2.32.0) (2026-09-20)
 
@@ -21,17 +20,13 @@ All notable changes to the Misaka Network project are documented here.
 ### Features
 
 * **ci:** the docs auto-merge channel gets a way in — a maintainer's label ([26783c9](https://github.com/Ikalus1988/MisakaNet/commit/26783c963c309850bf3a05d67693f331ce3f6b07))
-* **ci:** the docs auto-merge channel gets a way in — a maintainer's label ([cf84921](https://github.com/Ikalus1988/MisakaNet/commit/cf849219a91c075cbb01d7ad0d4102de1b930be8))
 * **deps:** the documented dev install installs this repository, not just its dependencies ([cde3c56](https://github.com/Ikalus1988/MisakaNet/commit/cde3c563fcd3a5f655ed6f59acc5cb814e56d46a))
-* **deps:** the documented dev install installs this repository, not just its dependencies ([4a3fa3d](https://github.com/Ikalus1988/MisakaNet/commit/4a3fa3dddd750c844c93b09d2c180cc88c57ac02))
 * **lesson:** alembic upgrade failure diagnosis ([#1553](https://github.com/Ikalus1988/MisakaNet/issues/1553)) ([#1713](https://github.com/Ikalus1988/MisakaNet/issues/1713)) ([9b9385a](https://github.com/Ikalus1988/MisakaNet/commit/9b9385a2e0ae26f1a04e24614b82029dac1850d0))
 * **lesson:** alembic upgrade head fails with exit code 255 ([f00499e](https://github.com/Ikalus1988/MisakaNet/commit/f00499e7fa93dc072b41509129e66fa3c862b9ae))
-* **lesson:** alembic upgrade head fails with exit code 255 ([b260e92](https://github.com/Ikalus1988/MisakaNet/commit/b260e925dac283de3a81ec906500831e924ad9fd))
 * **lesson:** Docker multi-stage build OOM-killed with exit code 137 ([9bb2954](https://github.com/Ikalus1988/MisakaNet/commit/9bb29544ee6f83960e74290704a230eb65274947)), closes [#1460](https://github.com/Ikalus1988/MisakaNet/issues/1460)
 * **lesson:** LLM cost telemetry undercounting ([#1672](https://github.com/Ikalus1988/MisakaNet/issues/1672)) ([#1830](https://github.com/Ikalus1988/MisakaNet/issues/1830)) ([1380a9c](https://github.com/Ikalus1988/MisakaNet/commit/1380a9cedfa2a37fdd939dc0053f416bdf0a35aa))
 * **lesson:** LLM god-moding in roleplay ([#1650](https://github.com/Ikalus1988/MisakaNet/issues/1650)) ([#1815](https://github.com/Ikalus1988/MisakaNet/issues/1815)) ([1415ff2](https://github.com/Ikalus1988/MisakaNet/commit/1415ff20dc0debbddc2041a7c505a4be8e17ad0b))
 * **lesson:** Mock Attribute Cascade — adding attribute access breaks existing tests ([f8ba2a9](https://github.com/Ikalus1988/MisakaNet/commit/f8ba2a9cd82293c2db52bb372ad4ee87d2cde272))
-* **lesson:** Mock Attribute Cascade — adding attribute access breaks existing tests ([#1905](https://github.com/Ikalus1988/MisakaNet/issues/1905)) ([df9e39d](https://github.com/Ikalus1988/MisakaNet/commit/df9e39dc7dbbee9a266812972764a98d9182bf86))
 * **lesson:** NPC dispatch speaker/location dislocation ([#1655](https://github.com/Ikalus1988/MisakaNet/issues/1655)) ([#1814](https://github.com/Ikalus1988/MisakaNet/issues/1814)) ([b727653](https://github.com/Ikalus1988/MisakaNet/commit/b72765360606c2fffa8b6ef4de32c3f901978664))
 * **lesson:** Prompt cache prefix invalidation causes location hallucination ([eebe4d8](https://github.com/Ikalus1988/MisakaNet/commit/eebe4d86bb8274024e4af3ece8fbbf7b61bcbb07))
 * **lesson:** Prompt cache prefix invalidation causes location hallucination ([1bae9ae](https://github.com/Ikalus1988/MisakaNet/commit/1bae9ae77df9fd1233a5574929ad18e05c47265f)), closes [#1501](https://github.com/Ikalus1988/MisakaNet/issues/1501)
@@ -41,74 +36,50 @@ All notable changes to the Misaka Network project are documented here.
 * **lesson:** Vertex AI vs Gemini model ID naming conventions ([#1715](https://github.com/Ikalus1988/MisakaNet/issues/1715)) ([d223abd](https://github.com/Ikalus1988/MisakaNet/commit/d223abdde2a26508467e76f34a579220f7562d9a))
 * **scripts:** intake coverage checker ([#1673](https://github.com/Ikalus1988/MisakaNet/issues/1673)) ([#1829](https://github.com/Ikalus1988/MisakaNet/issues/1829)) ([702abc9](https://github.com/Ikalus1988/MisakaNet/commit/702abc9515f5ec139abfac84dd2ccca335111f1b))
 * **site:** the home page finally says how to start ([#1891](https://github.com/Ikalus1988/MisakaNet/issues/1891)) ([a3a8fd0](https://github.com/Ikalus1988/MisakaNet/commit/a3a8fd08f3ebb5300b60f87840c9d33d523746b7))
-* **site:** the home page finally says how to start ([#1891](https://github.com/Ikalus1988/MisakaNet/issues/1891)) ([d89c7c7](https://github.com/Ikalus1988/MisakaNet/commit/d89c7c7a4b3e93979082f231255097a7c57ccbc1))
 * **worker:** count which key family spends the KV write budget, before moving anything ([2a3de37](https://github.com/Ikalus1988/MisakaNet/commit/2a3de378e9a46fd6c4cdda2de594b28ae39ad530))
-* **worker:** count which key family spends the KV write budget, before moving anything ([52e4e84](https://github.com/Ikalus1988/MisakaNet/commit/52e4e84df9a569fdf9138f60a2d06b1b22dd2ec3))
 
 
 ### Bug Fixes
 
 * **aliases:** evidence points at source files, and a gate keeps it there ([4a8b3f5](https://github.com/Ikalus1988/MisakaNet/commit/4a8b3f53951bedc25d6957fbe2390352b70873e9))
-* **aliases:** evidence points at source files, and a gate keeps it there ([ca70788](https://github.com/Ikalus1988/MisakaNet/commit/ca70788048f9a6fe50523d50a0b5a367d30f6f59))
 * **ci:** harden auto-draft tombstone inputs ([d8f8cd3](https://github.com/Ikalus1988/MisakaNet/commit/d8f8cd3b06039a94f23682a26402f99e743d3a16))
 * **ci:** make crash tombstone auto-draft reachable ([44dc16a](https://github.com/Ikalus1988/MisakaNet/commit/44dc16a1169d289442f03c7ad54b63c63d2774bd))
-* **ci:** make crash tombstone auto-draft reachable ([#1876](https://github.com/Ikalus1988/MisakaNet/issues/1876)) ([edb59bf](https://github.com/Ikalus1988/MisakaNet/commit/edb59bfa2f96059e0bc3cfe8e3b2f548d2285ff2))
 * **ci:** the branch sync stops freezing CI on the branches it syncs ([ec63a9b](https://github.com/Ikalus1988/MisakaNet/commit/ec63a9b1d827d2e885d7196e50a469f386c3632d))
-* **ci:** the branch sync stops freezing CI on the branches it syncs ([cb896ff](https://github.com/Ikalus1988/MisakaNet/commit/cb896ff8a321aa334fe06c19d462320c5f541c12))
 * **ci:** the branch sync stops turning contributors' PRs red ([7f51d62](https://github.com/Ikalus1988/MisakaNet/commit/7f51d62813ad28054acd4a84030e8acb68dec9f2))
-* **ci:** the branch sync stops turning contributors' PRs red ([8dfcb4b](https://github.com/Ikalus1988/MisakaNet/commit/8dfcb4ba6ab66236d82e9acdaff0b72d15d1480b))
 * **ci:** the docs auto-merge gate stops treating lessons as documentation ([b2a0f4c](https://github.com/Ikalus1988/MisakaNet/commit/b2a0f4cc8481037c6eceada53dd740152f74bc64))
-* **ci:** the docs auto-merge gate stops treating lessons as documentation ([e2e26cf](https://github.com/Ikalus1988/MisakaNet/commit/e2e26cfc983f9542f24618378a7181b3bf87d1a8))
 * **ci:** the docs channel could never run for the contributors it exists for ([79359ef](https://github.com/Ikalus1988/MisakaNet/commit/79359ef391e79f98c9cded1a8327c325e830d586))
-* **ci:** the docs channel could never run for the contributors it exists for ([a95e2c2](https://github.com/Ikalus1988/MisakaNet/commit/a95e2c22c71c79136e4666960da20ccbbc88cc9b))
 * **ci:** the docs gate re-evaluates when eligibility changes without a push ([0113787](https://github.com/Ikalus1988/MisakaNet/commit/01137872ceb1d7d64d0b4530caefbdb4d6f35bfc))
-* **ci:** the docs gate re-evaluates when eligibility changes without a push ([ee8fdfd](https://github.com/Ikalus1988/MisakaNet/commit/ee8fdfddfbdaac5606c4caa39033b422b85acc63))
 * **ci:** the five things the review of today's changes found ([a5b08fc](https://github.com/Ikalus1988/MisakaNet/commit/a5b08fcd1c26a78141b9cf1fbf9baf7561a2e6e8))
-* **ci:** the five things the review of today's changes found ([1c3cc51](https://github.com/Ikalus1988/MisakaNet/commit/1c3cc51c146be57038b7b12025db122672c3c5c8))
 * **ci:** the npm record step must survive main moving under it ([#1917](https://github.com/Ikalus1988/MisakaNet/issues/1917)) ([607bd22](https://github.com/Ikalus1988/MisakaNet/commit/607bd2205e19cd8f7e1054600a98b547e2f06a0c))
 * **ci:** the sync push really uses the PAT, instead of believing it does ([082c7fb](https://github.com/Ikalus1988/MisakaNet/commit/082c7fbadb3cc4699b51701c95290b9c7bc107af))
-* **ci:** the sync push really uses the PAT, instead of believing it does ([ca76a7d](https://github.com/Ikalus1988/MisakaNet/commit/ca76a7db014b6ff123c34ad21ac3cf009a1562a4))
 * **ci:** the sync's read-back counts Actions runs, not any check run ([afd65e8](https://github.com/Ikalus1988/MisakaNet/commit/afd65e8bdc4242309423068ed27c6d9ebb9c203e))
-* **ci:** the sync's read-back counts Actions runs, not any check run ([04e40fd](https://github.com/Ikalus1988/MisakaNet/commit/04e40fd26d04166ad9e7cf7f1576183f4cebcc9e))
 * **ci:** the two scheduled syncs can read a credential again ([b98e835](https://github.com/Ikalus1988/MisakaNet/commit/b98e835e98b3a1257da49a9cfcd9c1a56bfe5a75))
-* **ci:** the two scheduled syncs can read a credential again ([4ff292d](https://github.com/Ikalus1988/MisakaNet/commit/4ff292daba2046015298f1c66f5af5987d4e8501))
 * **cron:** the leaderboard snapshot is written only when the leaderboard changes ([#1918](https://github.com/Ikalus1988/MisakaNet/issues/1918)) ([09aee05](https://github.com/Ikalus1988/MisakaNet/commit/09aee05d1ce3adcda8558f92c5966344c5801619))
 * **d1:** add multilingual aliases to SECTION_ALIASES for localized lessons ([#1738](https://github.com/Ikalus1988/MisakaNet/issues/1738)) ([#1799](https://github.com/Ikalus1988/MisakaNet/issues/1799)) ([3baeee1](https://github.com/Ikalus1988/MisakaNet/commit/3baeee13b59de99f4fe608ab63cb31da53594384))
 * **guard:** exempt test files from markdown leak detection (Rule 3) ([#1701](https://github.com/Ikalus1988/MisakaNet/issues/1701)) ([aa81323](https://github.com/Ikalus1988/MisakaNet/commit/aa813230b50b5cd450be98885c986ef02f5ed7e1))
 * **mcp:** apply the domain filter to FAQ answers ([#1743](https://github.com/Ikalus1988/MisakaNet/issues/1743)) ([#1800](https://github.com/Ikalus1988/MisakaNet/issues/1800)) ([f42b604](https://github.com/Ikalus1988/MisakaNet/commit/f42b604acb11a4fa68661d7ee1e908724e336cbb))
 * **registry:** the publish waits for the PyPI version it points at ([7197098](https://github.com/Ikalus1988/MisakaNet/commit/7197098e330a831300a7b8fe6d352e86e0e2cc91))
-* **registry:** the publish waits for the PyPI version it points at ([ac91228](https://github.com/Ikalus1988/MisakaNet/commit/ac91228fe34789455c9fd7972d3cd6dbf084592c))
 * **release:** the release flow never marked its release PR as tagged, so every release blocked the next ([#1924](https://github.com/Ikalus1988/MisakaNet/issues/1924)) ([0df5777](https://github.com/Ikalus1988/MisakaNet/commit/0df5777d4179b2fff18c9a19336bdd0cb6cc976e))
 * **tests:** the two code-scanning alerts this session opened, closed at the source ([4032027](https://github.com/Ikalus1988/MisakaNet/commit/4032027c5a8f1b75bdf8cc5b5d13fec7b1f227a9))
-* **tests:** the two code-scanning alerts this session opened, closed at the source ([75743a8](https://github.com/Ikalus1988/MisakaNet/commit/75743a822e27c9f5390ca91e2e16b4c40f9ab0f1))
 * **worker:** KV write health becomes global, and the reason names the cause ([0c141be](https://github.com/Ikalus1988/MisakaNet/commit/0c141be64dbefc606250917789bc13dbd1f86866))
-* **worker:** KV write health becomes global, and the reason names the cause ([34e9ba4](https://github.com/Ikalus1988/MisakaNet/commit/34e9ba495c496101980f56c8f212f72bac7790ab))
 * **worker:** the KV quota has a second phrasing, and it has no error code ([9901093](https://github.com/Ikalus1988/MisakaNet/commit/9901093e169e127e50f8c627081a76536e4b4c50))
-* **worker:** the KV quota has a second phrasing, and it has no error code ([08579da](https://github.com/Ikalus1988/MisakaNet/commit/08579dad9ef6dd5ff38c72c3319cc44b7315dc3c))
 
 
 ### Documentation
 
 * add cross-ref to alembic-upgrade-head-failed ([6013162](https://github.com/Ikalus1988/MisakaNet/commit/6013162c148ff4a1cfe277324e2cc2e3e07b3b33))
 * assess the README against alibaba/open-code-review, and un-orphan zh-CN ([c1164b0](https://github.com/Ikalus1988/MisakaNet/commit/c1164b04afb3fee51205f240900167d672b6c0df))
-* assess the README against alibaba/open-code-review, and un-orphan zh-CN ([d60d8c5](https://github.com/Ikalus1988/MisakaNet/commit/d60d8c513961beb6a9d34b56a463a947e9e928b0))
 * **bounty-notes:** misakanet-setup v0.5.1 review and macOS test report ([#1761](https://github.com/Ikalus1988/MisakaNet/issues/1761)) ([97c41bd](https://github.com/Ikalus1988/MisakaNet/commit/97c41bdffb002f21ff08e9dde5d39201fa10c6c1))
 * **field-reports:** agent A/B comparative benchmark for issue [#1819](https://github.com/Ikalus1988/MisakaNet/issues/1819) ([#1842](https://github.com/Ikalus1988/MisakaNet/issues/1842)) ([ed30b30](https://github.com/Ikalus1988/MisakaNet/commit/ed30b30239c07da54b612ff31b96b3c50b166ebf))
 * **field-reports:** say what not to paste, and stop claiming there are no reports ([5b9aa95](https://github.com/Ikalus1988/MisakaNet/commit/5b9aa9513910dcfd2cba439bccac753c38f1c64c))
-* **field-reports:** say what not to paste, and stop claiming there are no reports ([fa61c5a](https://github.com/Ikalus1988/MisakaNet/commit/fa61c5ac997c698b2ef4a4a030949ec86dfb8f15))
 * **lessons:** correct the mechanism in the token-push lesson, from the two real runs ([#1883](https://github.com/Ikalus1988/MisakaNet/issues/1883)) ([3535d0e](https://github.com/Ikalus1988/MisakaNet/commit/3535d0efab0f9e742902cb1e0ae70e3f97387ebe))
 * **lessons:** the two ways today's CI automation was silently inert ([#1873](https://github.com/Ikalus1988/MisakaNet/issues/1873)) ([a6da633](https://github.com/Ikalus1988/MisakaNet/commit/a6da633cc131e6f48d4d9f26a6524d6e579249bd))
 * **llms:** the root llms.txt becomes a pointer, because it was a second copy with no writer ([43444e0](https://github.com/Ikalus1988/MisakaNet/commit/43444e0a15ab2d2007890a8a9093a3273cdbfd7a))
-* **llms:** the root llms.txt becomes a pointer, because it was a second copy with no writer ([96a3a46](https://github.com/Ikalus1988/MisakaNet/commit/96a3a461dff84fc6615962d9a8cf7a9108e0d154))
 * **maintainer:** how the branch sync's pushes work, and the three ways it silently failed ([826857f](https://github.com/Ikalus1988/MisakaNet/commit/826857f1aa600329377b681ba39556ca4b7e6f3c))
-* **maintainer:** how the branch sync's pushes work, and the three ways it silently failed ([78d332d](https://github.com/Ikalus1988/MisakaNet/commit/78d332d20c095dfac2b78d49f102f87f73b89530))
 * **maintainer:** merge the backlog, growth and weakness assessments, and fact-check the review ([b1ae79e](https://github.com/Ikalus1988/MisakaNet/commit/b1ae79ee1a086607e564355e3b997b613038cbc8))
-* **maintainer:** merge the backlog, growth and weakness assessments, and fact-check the review ([e79bb0e](https://github.com/Ikalus1988/MisakaNet/commit/e79bb0e67db106b7a68c4ead5bdf9e28647f7a00))
 * **readme:** P0 items — License, a Troubleshooting index, and the version drift explained ([#1900](https://github.com/Ikalus1988/MisakaNet/issues/1900)) ([922ff0f](https://github.com/Ikalus1988/MisakaNet/commit/922ff0f6a7ec2a51b687797f493f256ee1f4143c))
 * **readme:** restructure the front page — 759 lines to 298, without losing a fact ([9624315](https://github.com/Ikalus1988/MisakaNet/commit/9624315a0e589c190afb7a2611080f41b7e4873c))
-* **readme:** restructure the front page — 759 lines to 298, without losing a fact ([26fc0ee](https://github.com/Ikalus1988/MisakaNet/commit/26fc0eeb43c9b4062232ece7d91d04a3477d1fbb))
 * record that the D1-only token was proven sufficient, not assumed ([74b329f](https://github.com/Ikalus1988/MisakaNet/commit/74b329fb38cc59ca174158ae65ba2dc2ada818eb))
-* record that the D1-only token was proven sufficient, not assumed ([6f568a4](https://github.com/Ikalus1988/MisakaNet/commit/6f568a4e85e8095162ed25b73f1114c5fd2dd627))
 * the link count in the assessment is post-fix (114 / 40), not pre-fix ([6256536](https://github.com/Ikalus1988/MisakaNet/commit/6256536492606cf491f27d157b850203cf14401a))
 
 
@@ -122,11 +93,9 @@ All notable changes to the Misaka Network project are documented here.
 * **guard:** notice when the PR gate never ran, and start it ([#1921](https://github.com/Ikalus1988/MisakaNet/issues/1921)) ([23a9ee5](https://github.com/Ikalus1988/MisakaNet/commit/23a9ee5519af3eda1873141f5f99871a9e3e4b11))
 * name the secret the workflows actually read, and pin the rule that caught me ([677e65f](https://github.com/Ikalus1988/MisakaNet/commit/677e65fa4bb7137c9fcf660802a4027fc2596367))
 * publish and deploy credentials come from the protected environment ([23d4e97](https://github.com/Ikalus1988/MisakaNet/commit/23d4e97ff85d2b7cceddf6d5c91b183c5cdb414b))
-* publish and deploy credentials come from the protected environment ([f96d06e](https://github.com/Ikalus1988/MisakaNet/commit/f96d06e71ec6dd5b825bf7b51cb79515513b3a0e))
 * re-trigger checks after the auto-sync bot merge ([b080e4f](https://github.com/Ikalus1988/MisakaNet/commit/b080e4f76c99fa6cb3a7dd994ed21a3ea47196ed))
 * **release:** publishing to npm happens on release — the one human step is approving the run ([ad34eee](https://github.com/Ikalus1988/MisakaNet/commit/ad34eeeed644fec623e569e7bacc1353ae8419cb))
 * run the scheduled syncs unattended, with a D1-only credential ([7db90f3](https://github.com/Ikalus1988/MisakaNet/commit/7db90f3b27b5b3068427276981e97020b6a81c31))
-* run the scheduled syncs unattended, with a D1-only credential ([c3fbf55](https://github.com/Ikalus1988/MisakaNet/commit/c3fbf55fd2d99c903cfe593cf435aa7c5ea42357))
 
 ## [2.31.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.30.2...v2.31.0) (2026-09-19)
 

@@ -751,6 +751,25 @@ jobs:
           echo "Changed lesson files: $CHANGED_LESSONS"
           [ "$CHANGED_LESSONS" -gt 0 ] && { echo "PR touches lessons/ — human merge required. Skipping auto-merge."; exit 0; }
 
+          # Release PRs are the one artifact a person should read before it ships: they carry the version
+          # bump and the changelog that becomes the release notes. On 2026-09-20 this gate merged the
+          # 2.32.0 release PR while the maintainer was still reviewing its changelog — which turned out to
+          # hold 30 duplicated entries, and shipped as 2.32.0. (The duplication itself is now caught by
+          # `tests/test_changelog_shape.py`; the point here is that nobody had the chance to look.)
+          #
+          # Detected by the label release-please maintains, with the branch name as a fallback for the
+          # window before the label is applied.
+          PR_LABELS=$(gh api "repos/Ikalus1988/MisakaNet/issues/$PR_NUM" --jq '[.labels[].name] | join(",")' 2>/dev/null || echo "")
+          case "$PR_LABELS" in
+            *"autorelease:"*)
+              echo "Release PR (labels: $PR_LABELS) — human merge required. Skipping auto-merge."; exit 0 ;;
+          esac
+          PR_BRANCH=$(gh api "repos/Ikalus1988/MisakaNet/pulls/$PR_NUM" --jq '.head.ref' 2>/dev/null || echo "")
+          case "$PR_BRANCH" in
+            release-please--*)
+              echo "Release PR (branch: $PR_BRANCH) — human merge required. Skipping auto-merge."; exit 0 ;;
+          esac
+
           BODY=$(gh api repos/Ikalus1988/MisakaNet/pulls/$PR_NUM --jq '.body')
           UNCHECKED=$(echo "$BODY" | grep -c "\[ \]" || true)
           echo "Unchecked AC items: $UNCHECKED"
