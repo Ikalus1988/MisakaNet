@@ -130,3 +130,115 @@ def test_the_release_check_notices_a_stripped_guard(tmp_path):
     mutated = _gate_script_of(victim)
     assert "release-please--" not in mutated, "the mutation did not take"
     assert "autorelease:" in mutated, "the label check survived, so only the branch check is under test"
+
+
+# ── Fork PRs: the gate was red-checking the contributors we ask for (#1952, #1954) ──────────────
+#
+# A `pull_request` run from a fork gets a read-only GITHUB_TOKEN and no repository secrets, so the
+# `gh pr merge --auto` at the end of the gate answered
+# `GraphQL: Resource not accessible by integration (mergePullRequest)`. The step exits non-zero, the
+# whole `audit` job goes red — and `audit` is the one check contributors are told to trust. On
+# 2026-09-20 that is exactly what happened to #1952 and #1954, whose test suite was fully green
+# ("1638 passed"): the only thing wrong with them was that they came from a fork.
+#
+# The tests below *run the real script* with a stub `gh` rather than pattern-matching its text, and
+# the mutation case reproduces the CI failure before the fix, because "the guard is present" and
+# "the guard is what keeps the audit green" are different claims.
+
+_GH_STUB = """#!/usr/bin/env bash
+# Records every call and mimics only what the Auto-Merge Gate asks for.
+echo "$*" >> "$GH_STUB_LOG"
+case "$1 $2" in
+  "api repos/Ikalus1988/MisakaNet/pulls/"*) ;;
+esac
+if [ "$1" = "api" ]; then
+  case "$*" in
+    *--jq*".mergeable"*) echo "true"; exit 0 ;;
+    *"--jq"*"labels[].name"*) echo ""; exit 0 ;;
+    *--jq*".head.ref"*) echo "feature-branch"; exit 0 ;;
+    *--jq*".body"*) printf -- '- [x] everything done\\n'; exit 0 ;;
+  esac
+  exit 0
+fi
+if [ "$1" = "pr" ] && [ "$2" = "diff" ]; then exit 0; fi        # no file names => no lessons/ touched
+if [ "$1" = "pr" ] && [ "$2" = "merge" ]; then
+  # A fork run holds a read-only token: this is the real GitHub answer, verbatim from run logs.
+  if [ "${GH_READ_ONLY:-0}" = "1" ]; then
+    echo "GraphQL: Resource not accessible by integration (mergePullRequest)"
+    exit 1
+  fi
+  exit 0
+fi
+exit 0
+"""
+
+
+def _run_gate(tmp_path, *, fork: bool, read_only: bool, mutate=None):
+    """Execute the Auto-Merge Gate step's real shell, against a stub `gh`."""
+    import os
+    import subprocess
+
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    gh = bin_dir / "gh"
+    gh.write_text(_GH_STUB, encoding="utf-8")
+    gh.chmod(0o755)
+    log = tmp_path / "gh-calls.log"
+    log.write_text("", encoding="utf-8")
+
+    script = _gate_script()
+    # The step's only two Actions expressions; the rest of the step is plain shell.
+    script = script.replace("${{ github.event.pull_request.head.repo.full_name }}",
+                            "someone/MisakaNet" if fork else "Ikalus1988/MisakaNet")
+    script = script.replace("${{ github.repository }}", "Ikalus1988/MisakaNet")
+    assert "${{" not in script, "an unsubstituted Actions expression would be a shell syntax error"
+    if mutate is not None:
+        script = mutate(script)
+
+    body = tmp_path / "step.sh"
+    body.write_text(script, encoding="utf-8")
+    env = dict(os.environ)
+    env.update({
+        "PATH": f"{bin_dir}:{env['PATH']}",
+        "GH_STUB_LOG": str(log),
+        "GH_READ_ONLY": "1" if read_only else "0",
+        "GH_TOKEN": "stub-token",
+        "GITHUB_STEP_SUMMARY": str(tmp_path / "summary.md"),
+        "PR_NUM": "1952",
+        "PR_TITLE": "docs: fix 23 broken relative links",
+    })
+    proc = subprocess.run(["bash", "-e", str(body)], capture_output=True, text=True, env=env)
+    return proc, log.read_text(encoding="utf-8"), (tmp_path / "summary.md")
+
+
+def test_a_fork_pull_request_skips_auto_merge_instead_of_failing_the_audit(tmp_path):
+    proc, calls, summary = _run_gate(tmp_path, fork=True, read_only=True)
+    assert proc.returncode == 0, (
+        "the gate must not fail the audit for a fork PR — that is the #1952/#1954 false red:\n"
+        f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}")
+    assert "pr merge" not in calls, "a fork run must not even attempt `gh pr merge` with a read-only token"
+    assert "Fork PR" in proc.stdout and "maintainer" in proc.stdout, "the skip must say why, in the log"
+    assert "fork" in summary.read_text(encoding="utf-8").lower(), (
+        "the step summary is the part a maintainer reads; it must say the PR was skipped for a fork")
+
+
+def test_the_same_repo_channel_still_merges(tmp_path):
+    """The fork guard must not switch the channel off for the PRs it was built for."""
+    proc, calls, _ = _run_gate(tmp_path, fork=False, read_only=False)
+    assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
+    assert "pr merge" in calls, "a same-repo, green, AC-checked PR must still have auto-merge enabled"
+    assert "Release PR" not in proc.stdout
+
+
+def test_stripping_the_fork_guard_reproduces_the_ci_failure(tmp_path):
+    """Mutation: remove the fork check and the very same run goes red again — on a fork PR."""
+    def strip(script: str) -> str:
+        start = script.index("HEAD_REPO=")
+        end = script.index("# Fork PRs are already gone by now")
+        return script[:start] + script[end:]
+
+    proc, calls, _ = _run_gate(tmp_path, fork=True, read_only=True, mutate=strip)
+    assert proc.returncode != 0, (
+        "without the fork guard the step must fail — this is the state #1952 and #1954 were in")
+    assert "pr merge" in calls, "the mutation has to reach the merge attempt, or it proves nothing"
+    assert "Resource not accessible" in proc.stdout + proc.stderr

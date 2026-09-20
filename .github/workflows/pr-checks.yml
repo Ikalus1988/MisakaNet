@@ -726,8 +726,45 @@ jobs:
         run: |
           echo "=== Auto-Merge Gate for PR #$PR_NUM ==="
 
-          if [ -z "$GH_TOKEN" ] || [ "$GH_TOKEN" = "" ]; then
-            echo "  SKIP: GH_TOKEN not available for fork PR"
+          # A fork PR cannot be auto-merged, and saying so must not fail the audit.
+          #
+          # A `pull_request` run from a fork gets a read-only GITHUB_TOKEN and no repository secrets,
+          # so the `gh pr merge` at the end of this step answers
+          # `GraphQL: Resource not accessible by integration (mergePullRequest)` — and because this
+          # step belongs to the `audit` job, that permission error turned the whole audit check red on
+          # PRs whose every real gate had passed. On 2026-09-20 it did exactly that to #1952 and #1954
+          # (both "1638 passed": no test, schema, secret or DCO failure anywhere). A red check that
+          # only means "you opened your PR from a fork" is worse than no check: `audit` is the single
+          # check contributors are told to trust, and it was lying in the direction that costs them
+          # the most attention.
+          #
+          # The token guard below does not catch this: for a fork PR `secrets.SHELDON_PAT` is empty and
+          # `GITHUB_TOKEN` is still non-empty, so the guard passes and the run goes on to merge.
+          #
+          # Enabling auto-merge is a convenience, not a gate — the same rule `auto-merge-docs.yml`
+          # states in the same words ("if it cannot be … a maintainer will merge it manually"), and the
+          # same reason `auto-merge-lessons.yml` carries `continue-on-error: true`. A maintainer merges
+          # fork PRs by hand; this run just says so and stays green.
+          HEAD_REPO="${{ github.event.pull_request.head.repo.full_name }}"
+          if [ "$HEAD_REPO" != "${{ github.repository }}" ]; then
+            echo "  Fork PR (head repo: ${HEAD_REPO:-deleted fork}) — read-only token cannot enable auto-merge."
+            echo "  A maintainer merges this PR by hand once the checks are green."
+            {
+              echo "### Auto-merge: skipped for a fork PR"
+              echo
+              echo 'This run has a read-only token (`pull_request` runs from forks get no repository'
+              echo 'secrets), so it cannot call `gh pr merge --auto`. Auto-merge is a convenience, not a'
+              echo 'gate: a maintainer merges this PR by hand.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice title=Auto-merge skipped::Fork PR — a maintainer merges this by hand. Not a failure."
+            exit 0
+          fi
+
+          # Fork PRs are already gone by now, so this covers the remaining case: no token at all
+          # (a missing secret on a same-repo run). Nothing to merge with — report, do not fail.
+          if [ -z "$GH_TOKEN" ]; then
+            echo "  SKIP: GH_TOKEN is empty — auto-merge needs a token with pull-requests: write."
+            echo "::warning title=Auto-merge skipped::No GH_TOKEN in this run."
             exit 0
           fi
 
