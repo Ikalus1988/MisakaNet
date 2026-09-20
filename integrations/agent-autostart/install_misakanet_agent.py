@@ -320,7 +320,80 @@ def _mcp_only_config(home: Path, agent: str) -> Path:
     return home.joinpath(*MCP_ONLY_TARGETS[agent]["config"])
 
 
-def _mcp_only_entry(agent: str, token: str) -> dict:
+# Same shape the register path and the npm installer accept. It ends up inside a TOML inline table,
+# a YAML mapping and JSON, so a value that is not id-shaped is not a hint worth writing — it is noise
+# that could close a quote or open a new table (#1859, and the reason the JS side has this regex).
+CLIENT_ID_SHAPE = re.compile(r"^[A-Za-z0-9._-]{8,64}$")
+
+# Node's vocabulary for the same machines, because `X-MisakaNet-Os` is one column in one table and
+# the npm installer writes it as `process.platform/process.arch`. `linux/x64` and `linux/x86_64` are
+# one machine spelled twice; a column with two dialects does not aggregate, and the D1 check that
+# confirmed this (#1820) would have silently under-counted one of the two channels.
+_OS_ALIASES = {
+    "x86_64": "x64", "amd64": "x64", "aarch64": "arm64", "i386": "ia32", "i686": "ia32",
+    "armv7l": "arm", "armv6l": "arm", "ppc64le": "ppc64", "ppc64": "ppc64",
+}
+
+
+def _os_hint() -> str:
+    import platform
+
+    system = platform.system().lower() or "unknown"
+    machine = platform.machine().lower()
+    return f"{system}/{_OS_ALIASES.get(machine, machine)}"[:40]
+
+
+def _declared_client_id(home: Path) -> str:
+    """The stable pseudonym to declare, or '' when this machine has not said."""
+    path = _state_dir(home) / "client_id"
+    try:
+        found = path.read_text(encoding="utf-8").strip() if path.exists() else ""
+    except OSError:
+        return ""
+    return found if CLIENT_ID_SHAPE.match(found) else ""
+
+
+def _installer_version() -> str:
+    """The version of the checkout this script ran from, or '' when it is not running from one.
+
+    The bootstrap route (`curl … bootstrap.sh | bash`) downloads this file into
+    `~/.misakanet-agent` and fetches everything from `main`, so there is no version to report — and
+    inventing one would put a number in the analytics row that nothing maintains, which is exactly
+    the defect #1820 was about. A clone has `pyproject.toml` two directories up; the mtime of a
+    downloaded file is not a version either, so it is not used.
+    """
+    try:
+        text = (HERE.parent.parent / "pyproject.toml").read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.M)
+    return match.group(1) if match else ""
+
+
+def _context_headers(agent: str, home: Path) -> dict:
+    """The self-declared hint headers that accompany the credential on every MCP entry we write.
+
+    `Authorization` is a credential; these are hints the service records on its analytics row
+    (`agent`, `os`, `client_version`, and a stable pseudonym), never identity — AGENTS.md §3.3 is
+    why writing them automatically is acceptable at all. The npm installer has written them since
+    0.5.6 (#1859); this one did not, so every user who arrived through the bootstrap route — the
+    route for machines where npm is not an option — was invisible in the client statistics that
+    decide which clients get worked on next.
+
+    Same four names as the JS side, because both feed the same worker fields: `workers/*.js` reads
+    `X-MisakaNet-Agent` / `-Os` / `-Version` (truncating each to 40) and `X-MisakaNet-Client`.
+    """
+    headers = {"X-MisakaNet-Agent": agent, "X-MisakaNet-Os": _os_hint()}
+    client_id = _declared_client_id(home)
+    if client_id:
+        headers["X-MisakaNet-Client"] = client_id
+    version = _installer_version()
+    if version:
+        headers["X-MisakaNet-Version"] = version
+    return headers
+
+
+def _mcp_only_entry(agent: str, token: str, home: Path) -> dict:
     """The vendor's own remote shape, plus the Bearer header when there is a token."""
     entry: dict = {}
     if agent == "gemini":
@@ -334,8 +407,10 @@ def _mcp_only_entry(agent: str, token: str) -> dict:
         entry["enabled"] = True
     else:                                    # cursor, kiro
         entry["url"] = ENDPOINT
+    headers = _context_headers(agent, home)
     if token:
-        entry["headers"] = {"Authorization": f"Bearer {token}"}
+        headers["Authorization"] = f"Bearer {token}"
+    entry["headers"] = headers
     return entry
 
 
@@ -353,7 +428,7 @@ def install_mcp_only(home: Path, dry: bool, rep: Report, agent: str) -> None:
                              f"手动加入 {spec['container']}.misakanet")
             return
     container = data.setdefault(spec["container"], {})
-    entry = _mcp_only_entry(agent, _read_token(home))
+    entry = _mcp_only_entry(agent, _read_token(home), home)
     if container.get("misakanet") == entry:
         rep.ok(f"{spec['label']}: MCP 已注册（无改动）")
     else:
@@ -381,16 +456,19 @@ def detect(home: Path, agent: str) -> bool:
     return any(p.exists() for p in checks[agent])
 
 
-def mcp_server_entry(token: str = "") -> dict:
+def mcp_server_entry(token: str = "", home: Path | None = None) -> dict:
     """Claude Code / generic JSON shape for a streamable-HTTP MCP server.
 
-    With a token the reads are no longer metered (5/day/IP anonymised), which matters for
-    exactly the user who will never run `misakanet_register` by hand: without this they hit
-    "quota exceeded" on their first busy day and conclude the thing is broken.
+    With a token the entry also carries the credential, which is what unlocks the write tools.
+    Reads stopped being metered on 2026-09-18 (anonymous reads are unlimited; only a burst guard
+    remains), so a token is no longer the difference between "works" and "quota exceeded" — the
+    text here said "5/day/IP" until 2026-09-20, two days after the policy changed in AGENTS.md.
     """
     entry: dict = {"type": "http", "url": ENDPOINT}
+    headers = _context_headers("claude-code", home or Path.home())
     if token:
-        entry["headers"] = {"Authorization": f"Bearer {token}"}
+        headers["Authorization"] = f"Bearer {token}"
+    entry["headers"] = headers
     return entry
 
 
@@ -411,7 +489,7 @@ def install_claude(home: Path, dry: bool, rep: Report) -> None:
         except Exception as exc:
             rep.needs_manual(f"{cfg} 不是合法 JSON（{exc}）→ 请手动加入 mcpServers.misakanet")
             data = {}
-    entry = mcp_server_entry(_read_token(home))
+    entry = mcp_server_entry(_read_token(home), home)
     servers = data.setdefault("mcpServers", {})
     if servers.get("misakanet") == entry:
         rep.ok("Claude Code: MCP 已注册（无改动）")
@@ -465,19 +543,29 @@ def install_claude(home: Path, dry: bool, rep: Report) -> None:
         rep.ok("Claude Code: 钩子已存在（无改动）")
 
 
-def codex_table(token: str = "") -> str:
+def codex_table(token: str = "", home: Path | None = None) -> str:
     """Codex MCP table. Token goes in `http_headers` rather than `bearer_token_env_var`:
     an env var has to be exported by the user's shell (which this user will not do), while
-    the header is written once and used by Codex itself."""
+    the header is written once and used by Codex itself.
+
+    The hint headers ride in the same inline table. Every value is shape-checked before it is
+    written (`_context_headers` only emits a `client_id` that matches `CLIENT_ID_SHAPE`), because a
+    TOML inline table closed early by a quote takes the whole file with it — the npm installer hit
+    exactly that with a corrupt `client_id` file (#1859).
+    """
+    headers = _context_headers("codex", home or Path.home())
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    pairs = ", ".join(f'{key} = "{value}"' for key, value in headers.items())
     lines = [
         "[mcp_servers.misakanet]",
         'type = "streamable-http"',
         f'url = "{ENDPOINT}"',
+        f"http_headers = {{ {pairs} }}",
     ]
-    if token:
-        lines.append('http_headers = { Authorization = "Bearer ' + token + '" }')
-    else:
-        lines.append('# 没有 token：读走匿名通道（5/天/IP）。注册后可写入此文件的 http_headers。')
+    if not token:
+        lines.append("# 上面只有自报的上下文提示头（agent/os/版本），不含凭据：读不需要 token"
+                     "（2026-09-18 起匿名读不限次数），拿到 token 后可回填 Authorization。")
     return "\n".join(lines) + "\n"
 
 
@@ -511,7 +599,7 @@ def _insert_before_first_table(text: str, block: str) -> str:
 def install_codex(home: Path, dry: bool, rep: Report) -> None:
     cfg = home / ".codex" / "config.toml"
     existing = cfg.read_text(encoding="utf-8") if cfg.exists() else ""
-    table_block = f"# {START}\n{codex_table(_read_token(home))}# {END}\n"
+    table_block = f"# {START}\n{codex_table(_read_token(home), home)}# {END}\n"
     top_block = (f"# {TOP_START}\n"
                  "# streamable-http MCP 需要这一行（顶级），否则 Codex 不会用 rmcp client\n"
                  "experimental_use_rmcp_client = true\n"
@@ -1007,9 +1095,10 @@ def install_openclaw(home: Path, dry: bool, rep: Report) -> None:
         return
 
     token = _read_token(home)
-    entry: dict = {"url": ENDPOINT, "transport": "streamable-http"}
+    headers = _context_headers("openclaw", home)
     if token:
-        entry["headers"] = {"Authorization": f"Bearer {token}"}
+        headers["Authorization"] = f"Bearer {token}"
+    entry: dict = {"url": ENDPOINT, "transport": "streamable-http", "headers": headers}
     if servers.get("misakanet") == entry:
         rep.ok("OpenClaw: MCP 已注册（无改动）")
         return

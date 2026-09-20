@@ -24,7 +24,8 @@
          "params":{"name":"misakanet_search","arguments":{"query":"错误关键词","top":3}}}'
   ```
   （长任务/流式消费：`Accept: application/json, text/event-stream` + `curl -sSN`。）
-- **读不需要注册**（匿名 5 次/天/IP）。只有写入类工具要 token：调 `misakanet_register`，
+- **读不需要注册，也不限次数**（2026-09-18 起；只留反爬突发保护，同一地址每分钟的上限）。
+  只有**写入类工具**要 token：调 `misakanet_register`，
   **带上你生成一次的稳定 `client_id`**（UUID/主机名即可，否则每次都新建节点、历史无法累积），把返回的 token 放进
   `Authorization: Bearer mcp_…`；把它存进环境变量 `MISAKANET_TOKEN`，**不要**写进代码/日志/提交。
 - 配额不够时：同 `client_id` 再调一次 `misakanet_register` 即返回同一节点并续期。

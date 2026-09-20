@@ -12,9 +12,12 @@ Two facts verified against production on 2026-09-12 and encoded here:
 * `Origin` is **not** required — absent is 200 OK, and only an *invalid* value gets
   `403 Forbidden: invalid Origin` (AGENTS.md and the troubleshooting table said
   "缺了会失败", which sent people hunting a non-existent failure);
-* the anonymous read quota is 5/day/IP, which shared egress IPs (corporate NAT, CI
-  runners) exhaust immediately — so the welcome has to hand over the
-  `misakanet_register` call, not just mention that it exists.
+* the read path was metered at 5/day/IP on 2026-09-12, and shared egress IPs (corporate NAT,
+  CI runners) exhausted that immediately — so the welcome hands over the `misakanet_register`
+  call instead of only mentioning that it exists. The quota was retired on 2026-09-18 (anonymous
+  reads are unlimited; only a per-address burst guard remains) and the reason to hand the call
+  over outlived it: the token is what unlocks the **write** tools, which is the difference
+  between an agent that reads this repository's memory and one that adds to it.
 """
 import re
 from pathlib import Path
