@@ -493,19 +493,35 @@ TOOLS = [
     {
         "name": "misakanet_memory_context",
         "description": (
-            "Pull relevant failure-memory lessons as context"
-            " before starting a task. Call this at the beginning"
-            " of a coding session or before attempting a"
-            " non-trivial operation. Returns a condensed context"
-            " block with matching lessons (problem + fix"
-            " summaries) that can be injected into the agent's"
-            " system prompt. Input semantics: task (required),"
-            " domain (optional filter), top_n (optional,"
-            " default 5, max 10). Output schema: JSON with task,"
-            " lesson_count, lessons array, and context_block"
-            " (ready-to-inject markdown). Error cases: missing"
-            " task. Side effects: none. Auth: none."
-            " Rate limits: none."
+            "Proactive half of the pair: call this BEFORE starting a task so"
+            " failure-memory is in context from the first step; call"
+            " misakanet_search once a specific error has actually appeared."
+            " How `task` is matched: lexical keyword/token overlap over lesson"
+            " titles, summaries and tags (BM25 when the index is present, a"
+            " plain scorer otherwise) — not embeddings — so pass the"
+            " concrete nouns, tools and error words you are about to meet"
+            " ('chromadb on an NTFS mount', 'docker multi-stage build OOM')"
+            " rather than a goal ('make it faster'); intent-only phrasing"
+            " retrieves nothing. How `domain` behaves: a hard filter over a"
+            " closed vocabulary of the domains the lesson corpus declares (the"
+            " repository's data/domains.json is the list; rag, devops, fanuc,"
+            " python, ci, mcp are examples), and a value outside it returns"
+            " zero lessons with no"
+            " error — so leave it out unless you know the domain; an empty"
+            " result *with* a domain set is usually the filter, not an empty"
+            " corpus. How `top_n` behaves: silently clamped to 10 (larger"
+            " values are accepted and reduced), and each lesson is trimmed to"
+            " 200 characters per field inside context_block — past roughly five"
+            " matches you spend prompt space faster than you gain information."
+            " Returns {task, lesson_count, lessons, context_block};"
+            " context_block is ready-to-inject markdown, and lesson_count 0"
+            " (voice='failure-warning') means the corpus has no match yet —"
+            " retry with the raw error text or submit an intake, rather than"
+            " reading it as a tool failure. No auth, no rate limit, no network:"
+            " matching runs against the lessons/ directory of the checkout this"
+            " server was started from, so results are only as current as that"
+            " checkout. Local stdio server only — the hosted endpoint exposes"
+            " misakanet_search and misakanet_get_lesson instead."
         ),
         "inputSchema": {
             "type": "object",
@@ -513,23 +529,32 @@ TOOLS = [
                 "task": {
                     "type": "string",
                     "description": (
-                        "Task description (e.g. 'set up ChromaDB"
-                        " RAG pipeline', 'deploy FastAPI to"
-                        " production')."
+                        "What you are about to do, in the vocabulary of the"
+                        " tools, systems and errors involved (e.g. 'set up a"
+                        " ChromaDB RAG pipeline on WSL', 'deploy FastAPI behind"
+                        " a corporate proxy'). Matched lexically, so include the"
+                        " distinctive terms a lesson would use in its title or"
+                        " problem statement."
                     ),
                 },
                 "domain": {
                     "type": "string",
                     "description": (
-                        "Optional domain filter (e.g."
-                        " 'search-and-retrieval', 'ci-cd')."
+                        "Optional hard filter on the lesson's frontmatter"
+                        " domain, from a closed vocabulary (e.g. 'rag',"
+                        " 'devops', 'fanuc', 'python', 'ci', 'mcp'). It narrows"
+                        " and never widens: an unknown value yields zero lessons"
+                        " without an error, so omit it when unsure."
                     ),
                 },
                 "top_n": {
                     "type": "integer",
                     "description": (
-                        "Number of lessons to retrieve"
-                        " (default 5, max 10)."
+                        "How many lessons to return (default 5). Values above 10"
+                        " are accepted and silently clamped to 10. Each returned"
+                        " lesson is truncated to 200 characters per field in"
+                        " context_block, so ~5 is where extra matches start"
+                        " costing more prompt budget than they add."
                     ),
                 },
             },
