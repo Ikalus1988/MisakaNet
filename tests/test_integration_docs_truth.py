@@ -21,16 +21,15 @@
 from __future__ import annotations
 
 import re
+import urllib.parse
 from pathlib import Path
 
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 SETUP = REPO / "packages" / "misakanet-setup" / "bin" / "misakanet-setup.mjs"
-DOCS = sorted((REPO / "docs").rglob("*.md")) + [
-    p for p in (REPO / "README.md", REPO / "README.ja.md", REPO / "README.zh-CN.md", REPO / "DEPLOYMENT.md")
-    if p.exists()
-]
+DOCS = sorted((REPO / "docs").rglob("*.md")) + sorted(REPO.glob("*.md"))
+
 
 # What `--only` accepts, spelled the way a human writes it in the docs.
 AGENT_DISPLAY = {
@@ -106,18 +105,45 @@ def test_the_readmes_installer_managed_list_equals_the_installers_targets():
     )
 
 
-def test_relative_links_inside_the_integrations_docs_resolve():
+def test_relative_links_across_all_docs_resolve():
     problems = []
-    for path in sorted((REPO / "docs" / "integrations").rglob("*.md")):
+    for path in DOCS:
         text = path.read_text(encoding="utf-8")
         for target in re.findall(r"\]\((?!https?:|mailto:|#)([^)\s]+)", text):
-            target = target.split("#")[0]
+            target = urllib.parse.unquote(target).split("#")[0]
             if not target:
                 continue
             resolved = (path.parent / target).resolve()
             if not resolved.exists():
                 problems.append(f"{path.relative_to(REPO)} → {target}")
     assert not problems, (
-        "relative links in docs/integrations/ must resolve (an evidence link that 404s is worse "
+        "relative links across all docs must resolve (an evidence link that 404s is worse "
         "than no link):\n  " + "\n  ".join(problems)
     )
+
+
+def test_relative_link_checker_handles_url_encoding_and_fragments(tmp_path):
+    doc = tmp_path / "test.md"
+    target = tmp_path / "my file.md"
+    target.write_text("# Target", encoding="utf-8")
+    doc.write_text("[link](my%20file.md#section)", encoding="utf-8")
+
+    text = doc.read_text(encoding="utf-8")
+    targets = re.findall(r"\]\((?!https?:|mailto:|#)([^)\s]+)", text)
+    assert len(targets) == 1
+    unquoted = urllib.parse.unquote(targets[0]).split("#")[0]
+    resolved = (doc.parent / unquoted).resolve()
+    assert resolved.exists()
+
+
+def test_relative_link_checker_fails_on_broken_link(tmp_path):
+    doc = tmp_path / "test.md"
+    doc.write_text("[broken](non_existent_file.md)", encoding="utf-8")
+
+    text = doc.read_text(encoding="utf-8")
+    targets = re.findall(r"\]\((?!https?:|mailto:|#)([^)\s]+)", text)
+    assert len(targets) == 1
+    unquoted = urllib.parse.unquote(targets[0]).split("#")[0]
+    resolved = (doc.parent / unquoted).resolve()
+    assert not resolved.exists()
+

@@ -102,7 +102,7 @@ Agent-to-Agent 协议，允许节点直接通信。目前处于轻量运行状�
 
 ## 下一步
 
-- [快速开始](README.md#quick-start) — 5 分钟跑起来
+- [快速开始](../README.md#quick-start) — 5 分钟跑起来
 - [搜索知识](../search_knowledge.py) — `python3 search_knowledge.py "关键词"`
-- [贡献知识](README.md#3-contribute-a-lesson) — `python3 scripts/queue_lesson.py`
+- [贡献知识](../README.md#3-contribute-a-lesson) — `python3 scripts/queue_lesson.py`
 - [注册节点](https://misakanet.org/) — 网页注册，无需 GitHub 账号
