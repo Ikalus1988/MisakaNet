@@ -160,8 +160,9 @@ def _render_lesson(title, domain, tags, content, source=NODE_ID, status="publish
 def write_lesson(title, domain, tags, content, source=NODE_ID, status="published"):
     """写一条 lesson 文件 + 更新 index + git push"""
 
-    slug = _slugify(title)
-    filename = f"{slug}.md"
+    slug, filename, body, inferred_level, reasoning = _render_lesson(
+        title, domain, tags, content, source=source, status=status
+    )
     filepath = LESSONS_DIR / filename
 
     now = datetime.now(timezone.utc)
@@ -169,23 +170,6 @@ def write_lesson(title, domain, tags, content, source=NODE_ID, status="published
     # 如果文件已存在，追加内容（同一主题的更新）
     mode = "更新" if filepath.exists() else "新建"
     existing_content = filepath.read_text(encoding="utf-8") if filepath.exists() else ""
-
-    # Auto-infer evidence level from content
-    inferred_level, reasoning = infer_evidence_level(content)
-
-    frontmatter = {
-        "title": title,
-        "domain": domain,
-        "source": source,
-        "status": status,
-        # Auto-infer evidence level; fallback to DEFAULT if inference fails
-        "evidence_level": inferred_level if inferred_level else DEFAULT_EVIDENCE_LEVEL,
-        "tags": tags,
-        "created": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
-        "updated": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
-    }
-
-    body = f"---\n {json.dumps(frontmatter, ensure_ascii=False)}\n ---\n\n{content}\n"
 
     if existing_content:
         body = existing_content.rstrip() + f"\n\n---\n\n### 更新 ({now.strftime('%Y-%m-%d')})\n\n{content}\n"
