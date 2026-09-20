@@ -148,9 +148,6 @@ def test_the_release_check_notices_a_stripped_guard(tmp_path):
 _GH_STUB = """#!/usr/bin/env bash
 # Records every call and mimics only what the Auto-Merge Gate asks for.
 echo "$*" >> "$GH_STUB_LOG"
-case "$1 $2" in
-  "api repos/Ikalus1988/MisakaNet/pulls/"*) ;;
-esac
 if [ "$1" = "api" ]; then
   case "$*" in
     *--jq*".mergeable"*) echo "true"; exit 0 ;;
@@ -160,11 +157,20 @@ if [ "$1" = "api" ]; then
   esac
   exit 0
 fi
-if [ "$1" = "pr" ] && [ "$2" = "diff" ]; then exit 0; fi        # no file names => no lessons/ touched
+if [ "$1" = "pr" ] && [ "$2" = "diff" ]; then
+  printf '%s\\n' "${GH_STUB_CHANGED_FILES:-}"
+  exit 0
+fi
 if [ "$1" = "pr" ] && [ "$2" = "merge" ]; then
   # A fork run holds a read-only token: this is the real GitHub answer, verbatim from run logs.
   if [ "${GH_READ_ONLY:-0}" = "1" ]; then
     echo "GraphQL: Resource not accessible by integration (mergePullRequest)"
+    exit 1
+  fi
+  # A PAT without the `workflow` scope cannot enable auto-merge on a PR that edits CI. Verbatim
+  # from #1964's run.
+  if printf '%s\\n' "${GH_STUB_CHANGED_FILES:-}" | grep -q '^\\.github/workflows/'; then
+    echo 'GraphQL: Pull request refusing to allow a Personal Access Token to create or update workflow `.github/workflows/pr-checks.yml` without `workflow` scope (enablePullRequestAutoMerge)'
     exit 1
   fi
   exit 0
@@ -173,7 +179,7 @@ exit 0
 """
 
 
-def _run_gate(tmp_path, *, fork: bool, read_only: bool, mutate=None):
+def _run_gate(tmp_path, *, fork: bool, read_only: bool, mutate=None, changed_files=()):
     """Execute the Auto-Merge Gate step's real shell, against a stub `gh`."""
     import os
     import subprocess
@@ -202,6 +208,7 @@ def _run_gate(tmp_path, *, fork: bool, read_only: bool, mutate=None):
         "PATH": f"{bin_dir}:{env['PATH']}",
         "GH_STUB_LOG": str(log),
         "GH_READ_ONLY": "1" if read_only else "0",
+        "GH_STUB_CHANGED_FILES": "\n".join(changed_files),
         "GH_TOKEN": "stub-token",
         "GITHUB_STEP_SUMMARY": str(tmp_path / "summary.md"),
         "PR_NUM": "1952",
@@ -224,10 +231,62 @@ def test_a_fork_pull_request_skips_auto_merge_instead_of_failing_the_audit(tmp_p
 
 def test_the_same_repo_channel_still_merges(tmp_path):
     """The fork guard must not switch the channel off for the PRs it was built for."""
-    proc, calls, _ = _run_gate(tmp_path, fork=False, read_only=False)
+    proc, calls, _ = _run_gate(tmp_path, fork=False, read_only=False,
+                               changed_files=("docs/index.html", "tests/test_auto_merge_gate.py"))
     assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
     assert "pr merge" in calls, "a same-repo, green, AC-checked PR must still have auto-merge enabled"
     assert "Release PR" not in proc.stdout
+
+
+# ── A PR that edits CI: same shape, different credential limit (#1964) ──────────────────────────
+#
+# `SHELDON_PAT` has no `workflow` scope, so GitHub refuses to let it enable auto-merge on a PR that
+# changes a workflow file — "refusing to allow a Personal Access Token to create or update workflow…
+# without `workflow` scope (enablePullRequestAutoMerge)". #1964 hit it with every real gate green
+# ("Mergeable: true / Changed lesson files: 0 / Unchecked AC items: 0") and the `audit` check went red
+# for a credential's limitation. Same rule as forks: enabling auto-merge is a convenience, not a gate.
+
+
+def test_a_pull_request_that_edits_ci_skips_auto_merge_without_failing_the_audit(tmp_path):
+    proc, calls, summary = _run_gate(tmp_path, fork=False, read_only=False,
+                                     changed_files=(".github/workflows/pr-checks.yml",
+                                                    "tests/test_audit_report_truth.py"))
+    assert proc.returncode == 0, (
+        "a CI-editing PR must not fail the audit because a PAT lacks the `workflow` scope:\n"
+        f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}")
+    assert "pr merge" not in calls, (
+        "the merge must not even be attempted once the file list says the token cannot enable it")
+    assert "workflow" in proc.stdout, "the skip must name the scope that is missing"
+    assert "workflow" in summary.read_text(encoding="utf-8").lower(), (
+        "the summary is what a maintainer reads; it must carry the reason")
+
+
+def test_a_pull_request_that_only_touches_lessons_still_skips_for_lessons(tmp_path):
+    """The two skips must not be confused: the lessons/ rule is a security gate, not a credential one."""
+    proc, calls, _ = _run_gate(tmp_path, fork=False, read_only=False,
+                               changed_files=("lessons/contrib/example.md",))
+    assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
+    assert "pr merge" not in calls
+    assert "lessons/" in proc.stdout and "human merge" in proc.stdout
+
+
+def test_stripping_the_ci_file_skip_reproduces_the_ci_failure(tmp_path):
+    """Mutation: without the CI-file skip the very same run goes red — that was #1964."""
+    def strip(script: str) -> str:
+        # Line-based: the YAML block scalar removes the leading indentation, so matching on the
+        # indented source text would silently fail to mutate (and a mutation that does not mutate
+        # asserts nothing).
+        lines = script.splitlines(keepends=True)
+        start = next(i for i, l in enumerate(lines) if "A PR that changes a workflow" in l)
+        end = next(i for i, l in enumerate(lines) if "Release PRs are the one artifact" in l)
+        assert start < end, "the two markers are in the wrong order"
+        return "".join(lines[:start] + lines[end:])
+
+    proc, calls, _ = _run_gate(tmp_path, fork=False, read_only=False, mutate=strip,
+                               changed_files=(".github/workflows/pr-checks.yml",))
+    assert proc.returncode != 0, "without the skip the step must fail — this is the state #1964 was in"
+    assert "pr merge" in calls, "the mutation has to reach the merge attempt, or it proves nothing"
+    assert "without `workflow` scope" in proc.stdout
 
 
 def test_stripping_the_fork_guard_reproduces_the_ci_failure(tmp_path):

@@ -799,10 +799,42 @@ jobs:
           # Lesson content is executed by agents; auto-merging attacker-authored
           # lesson files (e.g. from auto-generated intake PRs) is a poisoning
           # vector. Any PR touching lessons/ requires human merge.
-          CHANGED_LESSONS=$(gh pr diff "$PR_NUM" --repo Ikalus1988/MisakaNet --name-only 2>/dev/null \
-            | grep -c "^lessons/" || true)
+          # One `gh pr diff` for both rules below — the file list is the only thing they need.
+          CHANGED_FILES=$(gh pr diff "$PR_NUM" --repo Ikalus1988/MisakaNet --name-only 2>/dev/null || true)
+          CHANGED_LESSONS=$(printf '%s\n' "$CHANGED_FILES" | grep -c "^lessons/" || true)
           echo "Changed lesson files: $CHANGED_LESSONS"
           [ "$CHANGED_LESSONS" -gt 0 ] && { echo "PR touches lessons/ — human merge required. Skipping auto-merge."; exit 0; }
+
+          # A PR that changes a workflow cannot have auto-merge enabled by this token, and that is a
+          # credential limit rather than a fault in the PR — so it must not fail the audit either.
+          #
+          # GitHub refuses the call outright when the enabling credential is a PAT without the
+          # `workflow` scope, because enabling auto-merge on such a PR would let it merge a change to
+          # CI itself:
+          #
+          #   GraphQL: Pull request refusing to allow a Personal Access Token to create or update
+          #   workflow `.github/workflows/pr-checks.yml` without `workflow` scope (enablePullRequestAutoMerge)
+          #
+          # Measured on #1964 (2026-09-20): `audit` red — after "Mergeable: true / Changed lesson
+          # files: 0 / Unchecked AC items: 0", i.e. with every real gate green. Same shape as the fork
+          # case above, same conclusion: enabling auto-merge is a convenience, not a gate. If the
+          # credential ever gains the `workflow` scope, delete this block and the skip disappears on
+          # its own — that is a decision about what a token may do, not about this workflow.
+          CHANGED_WORKFLOWS=$(printf '%s\n' "$CHANGED_FILES" | grep -c "^\.github/workflows/" || true)
+          echo "Changed workflow files: $CHANGED_WORKFLOWS"
+          if [ "$CHANGED_WORKFLOWS" -gt 0 ]; then
+            echo "  This PR edits CI. SHELDON_PAT has no \`workflow\` scope, so auto-merge cannot be enabled."
+            echo "  A maintainer merges it by hand — which is the right reader for a change to CI anyway."
+            {
+              echo "### Auto-merge: skipped for a CI change"
+              echo
+              echo "This PR touches \`.github/workflows/\`. Enabling auto-merge on it needs a token with"
+              echo "the \`workflow\` scope; the PAT used here does not have it. Auto-merge is a convenience,"
+              echo "not a gate — a maintainer merges it by hand."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice title=Auto-merge skipped::PR edits .github/workflows/ — a maintainer merges it by hand. Not a failure."
+            exit 0
+          fi
 
           # Release PRs are the one artifact a person should read before it ships: they carry the version
           # bump and the changelog that becomes the release notes. On 2026-09-20 this gate merged the
