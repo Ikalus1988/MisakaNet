@@ -1,57 +1,27 @@
-# Cursor Integration
+# Cursor Integration – Remote MCP First Approach
 
-Give Cursor access to 402 indexed failure lessons from MisakaNet.
+> **TL;DR** – You don’t need to clone the whole repository or install the Python SDK.  
+> Just point Cursor at a remote **MCP** endpoint and it will work.  
+> The classic *stdio / local* mode is still supported as an offline fallback.
 
-## Setup
+## 1. What is MCP?
 
-1. Clone MisakaNet:
-```bash
-git clone https://github.com/Ikalus1988/MisakaNet.git ~/MisakaNet
-```
+MCP (MisakaNet Control Plane) is a tiny HTTP‑JSON service that implements the
+Cursor tool‑listing and search APIs.  
+Starting with **Cursor 0.45** the client can read a file called `~/.cursor/mcp.json`
+(or a project‑local `.cursor/mcp.json`) and automatically talk to the remote
+endpoint.
 
-2. Create `.cursor/mcp.json` in your project:
-```json
-{
-  "mcpServers": {
-    "misakanet": {
-      "command": "python3",
-      "args": ["~/MisakaNet/scripts/mcp_server.py"]
-    }
-  }
-}
-```
+### Remote‑first configuration shape
 
-3. Restart Cursor.
+Create a file called **`.cursor/mcp.json`** (either in your home directory or
+inside the project you are working on). The file must contain a JSON object
+with the following keys:
 
-## Usage
+| Key      | Type   | Description |
+|----------|--------|-------------|
+| `url`    | string | Base URL of the MCP server (e.g. `https://mcp.example.com/api/v1`). |
+| `headers`| object | Optional HTTP headers. Most often you will need an `Authorization` header with a Bearer token. |
 
-In Cursor's AI chat, ask:
+#### Example – Minimal remote config
 
-- "Search MisakaNet for DCO sign-off failure"
-- "Find lessons about pip install timeout"
-- "What does MisakaNet know about GitHub token issues?"
-
-Cursor will search MisakaNet's lesson database and return relevant debugging experience.
-
-## Demo Queries
-
-| Query | What you'll get |
-|-------|----------------|
-| DCO sign-off failed | Fix workflow with `--amend --signoff` |
-| pip install timeout | SSL/proxy timeout solutions |
-| GitHub token exposed | Secret scanning response pattern |
-| database locked | SQLite WAL mode + timeout fix |
-| Feishu document cleared | API deletion safety pattern |
-
-## Troubleshooting
-
-| Issue | Fix |
-|-------|-----|
-| "No MCP server found" | Check path is absolute in `.cursor/mcp.json` |
-| "Import error" | `pip install -r ~/MisakaNet/requirements.txt` |
-| "No results" | Verify `~/MisakaNet/data/lessons.json` exists |
-
-## Learn More
-
-- [MCP Quickstart](../mcp-quickstart.md)
-- [Full MCP docs](../mcp.md)
