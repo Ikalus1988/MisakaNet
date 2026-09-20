@@ -1,81 +1,81 @@
 {
-  "generated_at": "2026-09-19T23:14:26.353365+00:00",
+  "generated_at": "2026-09-20T05:02:08.310777+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs: assess the README against alibaba/open-code-review, and un-orphan zh-CN",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1889",
-      "timestamp": "2026-09-19T18:50:23Z",
+      "title": "fix(worker): KV write health becomes global, and the reason names the cause",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1904",
+      "timestamp": "2026-09-20T01:48:33Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs: record that the D1-only token was proven sufficient, not assumed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1888",
-      "timestamp": "2026-09-19T18:40:59Z",
+      "title": "docs(readme): restructure the front page — 759 lines to 298, without losing a fact",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1903",
+      "timestamp": "2026-09-20T01:42:11Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ci: run the scheduled syncs unattended, with a D1-only credential",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1887",
-      "timestamp": "2026-09-19T18:33:45Z",
+      "title": "docs(llms): the root llms.txt becomes a pointer, because it was a second copy with no writer",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1902",
+      "timestamp": "2026-09-20T01:33:42Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): the two scheduled syncs can read a credential again",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1885",
-      "timestamp": "2026-09-19T18:02:54Z",
+      "title": "lessons: pkill -f kills the shell that runs it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1899",
+      "timestamp": "2026-09-20T01:28:20Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ci: publish and deploy credentials come from the protected environment",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1884",
-      "timestamp": "2026-09-19T17:38:30Z",
+      "title": "docs(readme): P0 items — License, a Troubleshooting index, and the version drift explained",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1900",
+      "timestamp": "2026-09-20T01:27:45Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "GitHub Actions: a fork PR can never receive the comment that explains its red check",
-      "url": "lessons/contrib/ci-fork-pr-no-comment-token.md",
-      "timestamp": "2026-09-13",
+      "title": "pkill -f kills the shell that runs it: the pattern matches its own command line",
+      "url": "lessons/contrib/pkill-pattern-matches-its-own-shell.md",
+      "timestamp": "2026-09-20",
       "domain": "devops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A manual CI run that sweeps the whole corpus always fails, so nobody trusts the red",
-      "url": "lessons/contrib/ci-manual-dispatch-whole-corpus-false-red.md",
-      "timestamp": "2026-09-13",
+      "title": "A fork PR's workflow run is created as action_required: the suite exists and never executes",
+      "url": "lessons/contrib/ci-fork-pr-run-held-as-action-required.md",
+      "timestamp": "2026-09-19",
+      "domain": "ci",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "A GITHUB_TOKEN push cannot trigger workflows, so a branch sync freezes CI",
+      "url": "lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md",
+      "timestamp": "2026-09-19",
+      "domain": "ci",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Alembic upgrade fails after dependency update",
+      "url": "lessons/contrib/alembic-upgrade-failure.md",
+      "timestamp": "2026-09-15",
       "domain": "devops",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "Uncommitted work has no undo: `git checkout -- .` and reset --hard during branch juggling",
-      "url": "lessons/contrib/git-checkout-discards-uncommitted-work.md",
-      "timestamp": "2026-09-13",
-      "domain": "git",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A hook that swallows every error makes a misconfiguration look like \"nothing to do\"",
-      "url": "lessons/contrib/claude-code-hook-silent-failure.md",
-      "timestamp": "2026-09-12",
-      "domain": "claude",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "GITHUB_TOKEN cannot push changes to .github/workflows/** — your bot job will fail at push time",
-      "url": "lessons/contrib/github-token-cannot-push-workflow-files.md",
-      "timestamp": "2026-09-12",
+      "title": "SSE streaming returns no data through reverse proxy",
+      "url": "lessons/contrib/sse-streaming-failure-via-proxy.md",
+      "timestamp": "2026-09-15",
       "domain": "devops",
       "source": "lessons"
     },
