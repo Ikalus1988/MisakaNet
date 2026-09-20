@@ -80,4 +80,4 @@ Until then: **hooks not verified**.
 
 - [MCP Quickstart](../mcp-quickstart.md)
 - [Full MCP docs](../mcp.md)
-- [Integration status matrix](../status.md)
+- [Integration status matrix](status.md)
