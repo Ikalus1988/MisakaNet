@@ -87,6 +87,12 @@ const health = (env) => worker.fetch(new Request('https://misakanet.org/api/heal
 
 test('the three kinds of KV write failure are told apart', () => {
   assert.deepEqual(kvErrorKind('KV PUT failed: 429 [code: 10048]'), { code: '10048', kind: 'quota' });
+  // The same condition, in the phrasing that carries no code — this is the one production actually
+  // returned on 2026-09-20 (read back from the D1 health row), and it used to classify as `unknown`.
+  assert.deepEqual(kvErrorKind('KV put() limit exceeded for the day.'), { code: '10048', kind: 'quota' });
+  assert.deepEqual(kvErrorKind('KV PUT failed: 429 Too Many Requests'), { code: '429', kind: 'throttle' });
+  assert.deepEqual(kvErrorKind('some rate limit exceeded, please slow down'), { code: '', kind: 'unknown' },
+    'a generic "limit exceeded" is not evidence of the daily cap');
   assert.deepEqual(kvErrorKind('KV PUT failed: [code: 10009]'), { code: '10009', kind: 'binding' });
   assert.deepEqual(kvErrorKind('KV GET failed: 404 Not Found'), { code: '404', kind: 'binding' });
   assert.deepEqual(kvErrorKind('KV PUT failed: 429 Too Many Requests'), { code: '429', kind: 'throttle' });

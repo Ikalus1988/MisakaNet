@@ -1645,9 +1645,17 @@ function kvErrorKind(message) {
   const text = String(message || "");
   const code = (text.match(/code:\s*(\d+)/i) || [])[1]
     || (text.match(/\b(10048|10009|429|404)\b/) || [])[1] || "";
-  if (code === "10048") return { code, kind: "quota" };
+  // Cloudflare phrases the daily allowance two ways, and only one carries a code:
+  //   `your account has reached the free usage limit for this operation for today [code: 10048]`
+  //   `KV put() limit exceeded for the day.`
+  // The second is what production returned on 2026-09-20 06:43 UTC — read back from the D1 row this
+  // module writes, which is the only place the raw message is kept. It classified as `unknown`, so a
+  // condition we understood completely read exactly like an unexplained one; matching the text forms is
+  // what stops the classifier from only working for the phrasing a developer happened to see first.
+  const dailyLimit = /limit exceeded for the day|free usage limit for this operation/i.test(text);
+  if (code === "10048" || dailyLimit) return { code: code || "10048", kind: "quota" };
   if (code === "10009" || code === "404") return { code, kind: "binding" };
-  if (code === "429") return { code, kind: "throttle" };
+  if (code === "429" || /too many requests/i.test(text)) return { code: code || "429", kind: "throttle" };
   return { code, kind: "unknown" };
 }
 
