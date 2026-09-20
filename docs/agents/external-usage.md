@@ -39,27 +39,37 @@ name: MisakaNet Intake Bot
 
 on:
   workflow_run:
-    workflows: ["*"]           # 监听本仓库全部 workflow
+    # 建议写你自己的 CI workflow 名（如 ["CI"]），不要用 "*"：
+    # "*" 会在**任意** workflow 结束时都触发本 workflow，绝大多数运行在 if 处就被跳过
+    # （本仓因此白跑了 21,126 次）。名字写窄一点，跨仓一样工作。
+    workflows: ["CI"]
     types: [completed]
 
 permissions:
   contents: read
   pull-requests: write
-  issues: write
+  issues: write                # 评论走 issues.createComment（PR 也是 issue）
 
 jobs:
   intake:
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     runs-on: ubuntu-latest
     steps:
-      # 无需 checkout MisakaNet —— action 自包含（自动拉取 intake_bot.py）
-      - uses: Ikalus1988/MisakaNet/.github/actions/misaka-intake-bot@main
+      # 无需 checkout MisakaNet：action 自带 scripts/，`@v1` 拿到的就是那一版脚本
+      - uses: Ikalus1988/MisakaNet@v1
         id: intake
         with:
           mode: suggest-and-intake      # 或 suggest-only（只建议不上报）
           source: ${{ github.repository }}   # 上报来源标识 = 你的仓库
           comment-on-pr: 'true'
 ```
+
+> **为什么是 `@v1` 而不是 `@main`**：`@v1` 是打好的 tag，你拿到的是冻结的一份
+> （action 与它跑的 `intake_bot.py` 同版本）；`@main` 每天在变，跨仓出问题时无法复现。
+> 想尝鲜可以临时用 `@main`。
+>
+> 本 action 同时上架 GitHub Marketplace（`MisakaNet Intake Bot`），在 Marketplace 里点
+> "Use latest version" 得到的就是同一行引用。
 
 > 无 PR 的失败（如 main 分支定时任务）不会评论（无关联 PR），但 intake 上报照常。
 
@@ -82,7 +92,7 @@ jobs:
   intake:
     runs-on: ubuntu-latest
     steps:
-      - uses: Ikalus1988/MisakaNet/.github/actions/misaka-intake-bot@main
+      - uses: Ikalus1988/MisakaNet@v1
         with:
           mode: ${{ inputs.mode }}
           error: ${{ inputs.error }}
@@ -114,17 +124,27 @@ decision/fingerprint/lesson_id/sim/receipt），并写入该步的 Job Summary�
 | `mode` | `suggest-only` | `suggest-and-intake` 才真实上报 |
 | `error` / `log-file` | 自动抽取 | 错误文本或 CI 日志路径（留空则从失败的 workflow_run 日志抽取） |
 | `source` | `github-action` | 上报来源标识，建议用 `${{ github.repository }}` |
-| `source-ref` | `main` | 拉取 intake_bot.py 的 MisakaNet ref（外部无本地 checkout 时用） |
+| `source-ref` | `main` | **仅兜底**：本地找不到 `intake_bot.py` 时从该 ref 拉取（`@v1` 自带脚本，通常用不到） |
 | `sim` | `0.45` | 命中相似度阈值（stack-aware；无栈泛化错误需 ≥0.55） |
 | `what-tried` | 空 | 尝试过的修复（提升 intake 转正率） |
 | `comment-on-pr` | `true` | 是否在关联 PR 评论结果 |
+| `pr-number` | 空 | 指定要评论的 PR（默认用失败运行关联的 PR；手动 dispatch 时靠它测试评论路径） |
 
-## 6. 隐私与安全
+## 6. 输出
+
+| output | 内容 |
+|---|---|
+| `decision` | `hit` / `intake` / `ignore`（脚本自身失败是 `error`，且该 step 会**红**——不是"没什么可说的"） |
+| `fingerprint` | 错误指纹（去重用） |
+| `lesson-url` | 命中课程的链接 |
+| `sample` | 一行 NDJSON（repo/workflow/decision/fingerprint/lesson_id/sim/receipt），同时写进 Job Summary |
+
+## 7. 隐私与安全
 
 - intake 只上报**技术错误签名**（≤280 字符）+ source 标识；本地已有 redaction
   （token/路径/邮箱/IP），worker 侧二次脱敏。
-- 匿名通道限流（5 次/日/IP 读；intake 提交通常有独立配额）——需要更高配额可
-  `misakanet_register` 拿 node token。
+- **读取不限次数**（2026-09-18 起）：`search` / `get_lesson` 匿名即可用，只保留同一地址的
+  反爬突发保护；注册只解锁写入类工具（`write_lesson` / `preflight`）。
 - 上报内容进 MisakaNet 公开 issue 前会经去重/质量闸；仍介意可一直用 `suggest-only`。
 
 ## 7. 反馈问题

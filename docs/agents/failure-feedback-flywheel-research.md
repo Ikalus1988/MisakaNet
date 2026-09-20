@@ -40,7 +40,7 @@ MisakaNet 仓
 
 | # | Gap | 影响 | 修复方向 |
 |---|---|---|---|
-| G1 | **action 不 self-contained**：`.github/actions/misaka-intake-bot/action.yml` 依赖调用方仓库有 `scripts/intake_bot.py`（找不到即 skip） | 外部仓库 `uses:` 后**根本不跑** | action 内加一步 `checkout Ikalus1988/MisakaNet`（仅 scripts/）或改用 pip 分发；zsxh 已打包但未解决此点 |
+| G1 | ~~**action 不 self-contained**：`.github/actions/misaka-intake-bot/action.yml` 依赖调用方仓库有 `scripts/intake_bot.py`~~ **已解决（2026-09-20）**：action 移到仓库根 `action.yml`，`Ikalus1988/MisakaNet@v1` 会把整个仓放到 runner 上，`$GITHUB_ACTION_PATH/scripts/intake_bot.py` 直接命中——外部无需 checkout MisakaNet，也不再依赖 `@main` 的网络兜底（脚本与 action 同一个 tag，无版本漂移） | 外部仓库 `uses:` 后**根本不跑**（修复前） | 已按"action 自带 scripts/"落地；`curl` 兜底只剩 `source-ref` 分支 |
 | G2 | **无样本采集/报告通道**：外部跑完没有落盘样本、没有统一上报格式 | 无法验收"≥50 样本报告" | action 增加 `report` 输出（decision/fingerprint/error/lesson/issue 的 NDJSON 累积），外部可 PR 回传或 issue 附报告 |
 | G3 | **无外部接入文档/模板** | 外部用户不知怎么接 | 写 `EXTERNAL-USAGE.md`：3 行 workflow 模板 + 白名单/配额说明 |
 | G4 | **无"达标判定"的观测**：本仓 dogfood 没有公开效果数据 | 无法证明"达到预期"再下发 | 先在本仓用真实 CI 失败跑 N 样本，出一份 dogfood 报告（同验收格式） |
@@ -57,8 +57,9 @@ title: `[Bounty] 复用 misaka-intake-bot 于外部仓库并交付 ≥50 样本�
 labels: `bounty, ready, area:workflow`
 
 **验收标准（AC）**
-1. 在**你自己的真实仓库**（非 fork MisakaNet）接入 `Ikalus1988/MisakaNet/.github/actions/misaka-intake-bot@main`
-   （或发布版 tag），mode=suggest-and-intake。
+1. 在**你自己的真实仓库**（非 fork MisakaNet）接入 `Ikalus1988/MisakaNet@v1`
+   （Marketplace 上的 `MisakaNet Intake Bot`；旧写法 `.github/actions/misaka-intake-bot@main`
+   已于 2026-09-20 随迁移失效），mode=suggest-and-intake。
 2. 交付**完整报告**（≥50 个 CI 失败样本），每样本含：仓库/workflow、错误签名（脱敏）、
    decision（hit/intake/ignore）、若 hit → 课程 id/相似度与是否采纳；若 intake → issue 链接。
 3. 报告须含**自动生成的产物清单**：本 action 在你的仓库自动创建的 lesson/question intake

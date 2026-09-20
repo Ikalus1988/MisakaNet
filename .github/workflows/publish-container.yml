@@ -17,6 +17,15 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    # A published release is not necessarily a *package* release. The intake bot is published to
+    # GitHub Marketplace from its own tag (`v1`, see action.yml), and that release must not build a
+    # container image: docker/metadata-action's `type=semver` rule produces no tag for `v1`, so the
+    # job would either fail or push an untagged image. Package releases are `vX.Y.Z` here, so
+    # "the tag contains a dot" is the cheap, general form of "this tag is a package version"
+    # (release-pypi.yml narrows its tag trigger the same way).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.release.tag_name, '.')
     permissions:
       contents: read
       packages: write

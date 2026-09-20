@@ -3,7 +3,15 @@ name: Release to PyPI
 on:
   push:
     tags:
-      - "v*"
+      # Release tags only — `v<major>.<minor>.<patch>`, not "anything starting with v". The intake
+      # bot's action tag is `v1` (GitHub Marketplace publishes an action from a tag, see action.yml),
+      # and under the previous `v*` filter that tag fired this workflow: a wasted build plus an
+      # approval request on the `pypi` environment that could only end in "file already exists".
+      #
+      # This trigger is inert for release-please's own tags anyway — it pushes with GITHUB_TOKEN and
+      # a GITHUB_TOKEN push never triggers a workflow, which is why release-please.yml dispatches
+      # this workflow explicitly, exactly once. The tag filter stays as the manual escape hatch.
+      - "v[0-9]*.[0-9]*.[0-9]*"
   workflow_dispatch:
     inputs:
       version:
@@ -38,7 +46,10 @@ jobs:
           if [ -n "$VERSION_INPUT" ]; then
             CURRENT_TAG="v$VERSION_INPUT"
           fi
-          PREV_TAG=$(git describe --tags --abbrev=0 "${CURRENT_TAG}^" 2>/dev/null || echo "")
+          # `--match` keeps "the previous release" meaning the previous *release*: the nearest
+          # reachable tag can be the action's `v1` (see the tag filter above), and `sed 's/v//'`
+          # would then hand gen_changelog a range that is not a version at all.
+          PREV_TAG=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' "${CURRENT_TAG}^" 2>/dev/null || echo "")
           if [ -n "$PREV_TAG" ]; then
             SINCE=$(echo "$PREV_TAG" | sed 's/v//')
             python3 scripts/gen_changelog.py --since "$SINCE" --version "$CURRENT_TAG" --output CHANGELOG.md

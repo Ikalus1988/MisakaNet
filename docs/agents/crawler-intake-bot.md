@@ -53,6 +53,14 @@
 触发 = 复用 ci-lesson-search 的 workflow_run 模式（改 `repository: 调用方` 即可在任意仓库跑）。
 产出：PR/issue 评论 = **建议或已采集回执**（见 §5）。
 
+> ⚠️ **实现修正（2026-09-20）**：上面的 `Ikalus1988/misaka-intake-bot` 这个独立仓库
+> **没有建**（GitHub 上 404），那组输入名（`remote`/`token`/`max_intake_per_run`）也从未存在。
+> 实际落地的是本仓的 composite action（#1525），已于 2026-09-20 移到**仓库根** `action.yml`
+> 并准备上架 Marketplace，真实引用与真实输入见
+> [`docs/agents/external-usage.md`](external-usage.md)：
+> `uses: Ikalus1988/MisakaNet@v1`，输入 `mode` / `source` / `sim` / `comment-on-pr` / …
+> （服务端地址写死在 action 内，不需要 `remote`）。
+
 **L2 运行时 sidecar（爬虫进程内崩溃/异常捕获）**
 `@misaka-net/intake-bot`（在 fatal-guard 基础上扩展）：爬虫运行时异常（HTTP 状态码、traceback、
 退出码、限流特征）→ 本地归一化指纹 → 按 §4 闸门决策 → 批量/队列上报。

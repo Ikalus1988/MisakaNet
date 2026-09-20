@@ -1,5 +1,10 @@
+# The repository-root action.yml is what GitHub Marketplace publishes, so this file is the action's
+# public interface: `uses: Ikalus1988/MisakaNet@v1`. It used to live in
+# .github/actions/misaka-intake-bot/, a path no `owner/repo@ref` reference can reach — Marketplace
+# only ever publishes the root action.yml. Same file, one directory up; the caller-side workflow and
+# the input/output contract are documented in docs/agents/external-usage.md.
 name: 'MisakaNet Intake Bot'
-description: 'CI failure → lesson suggestion / gated auto-intake (composite action)'
+description: 'Your CI failed → search MisakaNet lessons, optionally report the gap. No MisakaNet checkout needed.'
 branding:
   icon: 'search'
   color: 'blue'
@@ -22,7 +27,10 @@ inputs:
     required: false
     default: 'github-action'
   source-ref:
-    description: 'Git ref of MisakaNet to fetch intake_bot.py from (only used when caller has no local checkout)'
+    description: >-
+      Fallback only. The ref of MisakaNet to fetch intake_bot.py from, used when the script is not
+      discoverable locally (the action ships scripts/ with itself, so the default path needs no
+      network fetch and this input usually stays untouched).
     required: false
     default: 'main'
   sim:
@@ -128,13 +136,19 @@ runs:
         set -e
         REPO_ROOT="${GITHUB_WORKSPACE:-.}"
 
-        # Self-contained: prefer the caller's own checkout of MisakaNet
-        # (same-repo dogfood), otherwise fetch scripts/intake_bot.py from
-        # the canonical repo so external repos need NO MisakaNet checkout
-        # (intake_bot.py is pure stdlib + fully remote: corpus via
-        # GET /api/lessons, submit via misakanet.org/mcp).
-        SCRIPT="$REPO_ROOT/scripts/intake_bot.py"
-        if [ ! -f "$SCRIPT" ]; then
+        # Where is intake_bot.py? Two places, in order:
+        #   1. the caller's own checkout (same-repo dogfood: this repository),
+        #   2. $GITHUB_ACTION_PATH — the action now lives at the repository root, so a caller using
+        #      `Ikalus1988/MisakaNet@v1` gets the whole repository on the runner and
+        #      scripts/intake_bot.py is already there. No MisakaNet checkout, no network fetch, and
+        #      the script version always matches the action ref the caller pinned.
+        # Only if neither exists do we fall back to fetching from `source-ref` (the pre-v1 path,
+        # kept for callers that reach the action without its repository).
+        SCRIPT=""
+        for CANDIDATE in "$REPO_ROOT/scripts/intake_bot.py" "${GITHUB_ACTION_PATH:+$GITHUB_ACTION_PATH/scripts/intake_bot.py}"; do
+          if [ -n "$CANDIDATE" ] && [ -f "$CANDIDATE" ]; then SCRIPT="$CANDIDATE"; break; fi
+        done
+        if [ -z "$SCRIPT" ]; then
           FETCH_REF="${INPUT_SOURCE_REF:-main}"
           mkdir -p "$RUNNER_TEMP/misaka-intake-bot"
           SCRIPT="$RUNNER_TEMP/misaka-intake-bot/intake_bot.py"
@@ -145,7 +159,7 @@ runs:
               echo "decision=skip" >> "$GITHUB_OUTPUT"
               exit 0
             }
-          echo "::notice::fetched MisakaNet intake_bot.py@$FETCH_REF (self-contained mode)"
+          echo "::notice::fetched MisakaNet intake_bot.py@$FETCH_REF (fallback mode)"
         fi
 
         # A bash ARRAY, and every value quoted. This is the whole of #1825: `--error` carries a
@@ -194,7 +208,7 @@ runs:
         # External pilots collect these into a ≥N-sample report; every line is
         # redaction-safe (error text already capped by intake_bot) and carries
         # the source + decision + lesson/intake references for the flywheel.
-        SAMPLE=$(python3 "${GITHUB_ACTION_PATH:-.}/sample_report.py" "$RESULT")
+        SAMPLE=$(python3 "${GITHUB_ACTION_PATH:-.}/scripts/sample_report.py" "$RESULT")
         echo "sample=$SAMPLE" >> "$GITHUB_OUTPUT"
         echo "### MisakaNet intake-bot sample" >> "$GITHUB_STEP_SUMMARY"
         echo "\`\`\`json" >> "$GITHUB_STEP_SUMMARY"
