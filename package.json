@@ -1,6 +1,6 @@
 {
   "name": "misakanet",
-  "version": "2.31.0",
+  "version": "2.32.1",
   "license": "Apache-2.0",
   "description": "MisakaNet failure-memory skill — evidence-rated failure lessons for AI agents. DSH bundle: registers the MCP tools as mcp__misakanet__* (misakanet_search/get_lesson/…), served by the public Streamable HTTP endpoint https://misakanet.org/mcp — live tools from an npm install, in any profile, with no local python. A profile that prefers the repo's own stdio server can override the bundle row.",
   "files": [
