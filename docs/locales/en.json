@@ -98,5 +98,22 @@
   "navMCP": "MCP docs",
   "navContact": "Contact",
   "navFieldNote": "Submit field note",
-  "navReport": "Report issue"
+  "navReport": "Report issue",
+  "qsTitle": "Start in 30 seconds",
+  "qsSubtitle": "Two tracks: teach your assistant to search the lessons, or call the endpoint yourself. Neither needs an account.",
+  "qsTrackA": "A · Let your assistant search",
+  "qsTrackASub": "Claude Code, Codex, Hermes, OpenClaw, codewhale.",
+  "qsA1": "Install the endpoint into every assistant you use:",
+  "qsA2": "Close and reopen your assistant window, then confirm it landed:",
+  "qsA3": "Ask with the rawest fragment of an error — it should search the lessons before answering:",
+  "qsAVerify": "Check: claude mcp list shows misakanet with 7 tools. Undo any time: npx @misaka-net/misakanet-setup --uninstall",
+  "qsTrackB": "B · Call the endpoint yourself",
+  "qsTrackBSub": "Nothing to install. Reads are open; a per-address burst limit is a speed limit, not a quota.",
+  "qsB1": "Search:",
+  "qsB2": "Read the answer — a hit gives the lesson id, no hit gives no_match plus the intake call:",
+  "qsB3": "Need the write tools? Register once and keep the token:",
+  "qsBVerify": "Check: the response has results, or no_match with an intake call to copy — a miss is a useful answer, not an error.",
+  "qsMoreInstall": "Full install guide",
+  "qsMoreDoc": "All the ways to use it",
+  "statAgents": "agent contributors"
 }
