@@ -109,6 +109,25 @@ jobs:
       # `isLatest = 2.29.0` while this repository, PyPI and the GitHub release were all at 2.30.2
       # (#1820) — a directory listing that no CI step watched, and one that cannot be updated from a
       # sandboxed agent environment at all (github.com is unreachable there, the registry is not).
+      # The npm bundle (the DSH/Codex plugin package) is published on every release too, for the same
+      # reason the registry is: leaving it to a human is how it sat at 2.30.2 through the 2.31.0 release.
+      #
+      # The human gate is not removed, it is moved to where it is visible: `misakanet-publish.yml`
+      # declares the `release` environment, whose required reviewer has to approve the run before any
+      # secret is readable — so a release produces a *pending* publish, not a silent one. That is the
+      # one click this step exists to create.
+      #
+      # `package.json` is not bumped by release-please on purpose (it means "the version on npm", and
+      # the npm channel can lag — `test_version_consistency.py` enforces it may lag but never lead), so
+      # the dispatch carries the version and the publish run moves that line, publishes, and commits it
+      # back. A refused approval therefore leaves the repository exactly as it was.
+      - name: Dispatch the npm publish
+        if: steps.release_tag.outputs.created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.release_tag.outputs.version }}
+        run: gh workflow run misakanet-publish.yml --ref main -f "version=$VERSION"
+
       - name: Dispatch the MCP registry publish
         if: steps.release_tag.outputs.created == 'true'
         env:
