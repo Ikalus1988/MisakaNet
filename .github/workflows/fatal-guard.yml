@@ -2,6 +2,10 @@ name: fatal-guard CI
 
 on:
   push:
+    # `branches` (not just `paths`): a paths-only filter does NOT exclude tag pushes, so pushing a
+    # tag — the intake bot's `v1`, or a hand-made release tag — ran this workflow against a commit
+    # that main already tested. `**` matches every branch, so branch behaviour is unchanged.
+    branches: ['**']
     paths:
       - 'packages/fatal-guard/**'
   pull_request:
