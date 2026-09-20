@@ -180,3 +180,47 @@ def test_the_record_step_assertion_notices_a_push_without_a_rebase(tmp_path):
     steps = [s for s in _steps(publish) if "Record the published" in (s.get("name") or "")]
     assert steps and "git rebase origin/main" not in (steps[0].get("run") or ""), (
         "the mutation did not take, so the assertion above proves nothing")
+
+
+def test_the_release_flow_marks_its_release_pr_as_tagged():
+    """Tagging the commit is only half the bookkeeping, and the missing half blocks the next release.
+
+    `release-please.yml` skips release-please's own release creation (v5 refuses it for these tokens) and
+    tags the commit itself. But the action's release-creation code is *also* what moves the release PR from
+    `autorelease: pending` to `autorelease: tagged`, and the action decides whether a merged release PR is
+    "outstanding" by that **label**, not by the tag. So on 2026-09-20 every run since the 2.31.0 release
+    aborted with
+
+        ⚠ There are untagged, merged release PRs outstanding - aborting
+
+    and no new release PR was proposed until #1862 was relabelled by hand — the same manual step that had
+    cleared the 2.30.0 deadlock (#1631), two releases in a row.
+    """
+    steps = _steps(RELEASE_PLEASE)
+    flip = [s for s in steps if "autorelease: tagged" in (s.get("run") or "")]
+    assert flip, (
+        "no step moves a merged release PR from `autorelease: pending` to `autorelease: tagged`, so the "
+        "next release-please run will abort and the release after that cannot be prepared")
+    script = flip[0]["run"]
+    assert "autorelease: pending" in script, "the step must remove the pending label it is replacing"
+    # Gated on `created == 'true'` this would repair nothing in the state the repository was actually in:
+    # the tag existed and only the label was wrong. The step has to be unconditional (and idempotent).
+    condition = flip[0].get("if") or ""
+    assert "created" not in condition, (
+        "the relabel step runs only when this run created the tag, so a release whose tag already exists "
+        "but whose label is still pending stays stuck forever")
+
+
+def test_the_relabel_step_is_not_merely_defined(tmp_path):
+    import shutil
+
+    scratch = tmp_path / "repo"
+    (scratch / ".github" / "workflows").mkdir(parents=True)
+    for path in (PUBLISH, RELEASE_PLEASE):
+        shutil.copy(path, scratch / ".github" / "workflows" / path.name)
+    release_please = scratch / ".github" / "workflows" / "release-please.yml"
+    release_please.write_text(
+        release_please.read_text(encoding="utf-8").replace("autorelease: tagged", "autorelease: whatever"),
+        encoding="utf-8")
+    assert not [s for s in _steps(release_please) if "autorelease: tagged" in (s.get("run") or "")], (
+        "the mutation did not take, so the assertion above proves nothing")
