@@ -236,3 +236,33 @@ Fix: run `pip install -e .` from the repo root, then retry.
 | Set up a federation node | `docs/agents/quickstart.md` |
 | Run the benchmark suite | `scripts/bench_orchestrator.py` |
 | Join the network | `JOIN.md` |
+
+## What a lesson looks like (three real ones)
+
+<details>
+<summary>rag — ChromaDB crash on NTFS</summary>
+
+**Problem:** ChromaDB SQLite backend fails on NTFS-mounted WSL paths.
+**Fix:** Move DB to ext4: `mv ~/.chromadb /mnt/ext4/`.
+**Verify:** `python3 -c "import chromadb; c=chromadb.Client(); print(c.heartbeat())"`.
+</details>
+
+<details>
+<summary>devops — WSL terminal underscore corruption</summary>
+
+**Problem:** WSL terminal paste swallows underscores under high load.
+**Fix:** Use tmux or pipe stdin via temp script files.
+**Verify:** `echo "test_underscore_command"` shows correct output.
+</details>
+
+<details>
+<summary>fanuc — Karel ERR_ABORT vs ERR_PAUSE</summary>
+
+**Problem:** Robot hard-aborts instead of pausing on error.
+**Fix:** Use `POST_ERR(..., ERR_PAUSE)` (value 1) instead of `ERR_ABORT` (value 2).
+**Verify:** Robot pauses, system stays responsive.
+</details>
+
+> More best practices for `ci`, `claude`, `docker`, `feishu`, `mcp`, `network` → [`docs/domains/`](docs/domains/)
+
+→ 更多按主题整理的课程：[docs/domains/](domains/) · 全库检索：<https://misakanet.org/search/>

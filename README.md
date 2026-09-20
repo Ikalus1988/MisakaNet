@@ -8,88 +8,12 @@
 
 mcp-name: io.github.Ikalus1988/misakanet
 
-> **Stop debugging the same error twice.**
+> **Stop debugging the same error twice.** MisakaNet searches 393+ failure lessons so an agent skips the
+> bugs someone already paid for, instead of rediscovering them one session at a time.
 >
-> MisakaNet searches 393+ failure lessons so your agent skips known bugs.
->
-> **Using MisakaNet?** Give us a ⭐ — it helps other agents find indexed failure lessons.
-> **Agent-native interfaces** — [MCP server](https://misakanet.org/mcp) with 7 tools (`misakanet_search`, `misakanet_get_lesson`, `misakanet_submit_intake`, `misakanet_write_lesson`, `misakanet_preflight`, `misakanet_register`, `misakanet_me_events`), **WebMCP** (browser `navigator.modelContext`), `llms.txt` / `llms-full.txt`, and A2A discovery via `.well-known/agent-card.json`.
-
-## 装到你自己的助手（Claude Code / Codex）
-
-### 两个通道，别装错（这是一次真实的安装失败换来的）
-
-本仓库发布**两个 npm 包**，名字像、用途完全不同；第三方插件市场就曾把它们弄混并报"入口文件缺失"
-（#1849）：
-
-| 你想做的事 | 装什么 | 命令 | 它写什么 |
-|---|---|---|---|
-| **让助手会去查经验库**（Claude Code / Codex / Hermes / OpenClaw / codewhale） | `@misaka-net/misakanet-setup`（**npx 安装器**，有 `bin`、无插件入口） | `npx @misaka-net/misakanet-setup` | 把 MCP 端点写进**每个助手自己的**配置文件，并可选装规则块与钩子 |
-| **把 MisakaNet 装成 DSH / Codex 的插件**（带 SKILL、`index.js`、`cordis.patch.yml`） | **`misakanet`**（根包 = 插件与 CLI 通道，入口 `index.js` 已提交进仓库） | `dsh plugin --profile web add misakanet` | 给 DSH/Codex 提供插件与技能；**不动**任何助手的配置 |
-| Python 里当库用（搜索/索引） | `misakanet-core` | `pip install misakanet-core` | 装依赖，不写配置 |
-
-一句话：**`misakanet` 是插件/CLI；`@misaka-net/misakanet-setup` 是安装器**——前者给 DSH/Codex 用，
-后者给"让我的助手学会先查经验库"用，两者互不替代。插件市场报 `@misaka-net/misakanet-setup: entry file
-missing: index.js` 时，那是解析选错了包：安装器本来就没有 `index.js`。
-
-**一行命令**（需要 Node，Claude Code / Codex 本身就依赖它）：
-
-```bash
-npx @misaka-net/misakanet-setup
-```
-
-装完**把助手窗口关掉再打开一次**，然后随便挑一句带报错原文的片段问它（例如「switch vision model」
-「context window exceeded」「tool call permission denied」——用错误原文里最独特的片段，别用整句自然语言），
-它应该先去查经验库再回答。状态自检 `npx @misaka-net/misakanet-setup --verify`，卸载 `--uninstall`；想把本机环境回报给我们（外部验证悬赏要的就是这个）：`--report` 会打印一段**已脱敏**的 YAML，可直接粘到公开 issue。
-（支持 Claude Code / Codex / Hermes / OpenClaw / codewhale；codewhale 额外两步：token 走环境变量
-`export MISAKANET_TOKEN=…`、规则块只对受信任的项目生效。想让命中/未命中时**出声**：加 `--voice`
-（默认关，静音 `MISAKANET_VOICE=0`）。）
-
-### 三层结构：能力 / 接入 / 触发（读一遍就懂它到底做了什么）
-
-| 层 | 是什么 | 缺了它会怎样 |
-|---|---|---|
-| **① 服务** | `https://misakanet.org/mcp`（Streamable HTTP，7 个工具，匿名**不限次数**，只有反爬突发保护）或**本地 stdio**（clone 后 `python3 scripts/mcp_server.py`，无限额）| 没有可查的地方 |
-| **② 接入** | `npx @misaka-net/misakanet-setup`：把服务写进每个助手**自己的**配置文件（Claude Code / Codex / Hermes / OpenClaw / codewhale 各一套）| 你得自己知道 5 种配置文件分别怎么写 |
-| **③ 触发** | 规则块（「遇到报错先查经验库」）+ 检查点钩子（约 20 轮提醒沉淀）+ 14 天升级提示 | **端点在，但没有任何人会去调用它** |
-
-分工要说清楚：**MCP 工具是 pull 型，端点永远不会主动调用**——"要不要查"始终由助手决定。
-setup 保证的是"工具确实在"和"该查的时刻更容易被抓住"，不是"自动查询"。
-
-> 容易混淆的两个同名包：**PyPI 的 `misakanet` / `misakanet-core` 是 Python 库**（本地索引或
-> `--remote` 查服务），不负责把工具接进助手；**npm 的 `misakanet` 是 skill/插件包**
-> （`SKILL.md` + DSH 插件入口），早期它只有说明书、没有工具——工具来自第 ① 层的服务。
-
-### 装完你得到什么（逐条可自检）
-
-1. **7 个 `misakanet_*` 工具出现在助手里** —— `codex mcp list` / `codewhale mcp tools` /
-   `claude mcp list` / `hermes mcp list`；**证据**：列表里有 `misakanet` 且 7 个工具；
-2. **助手被要求「遇错先查」** —— 问一句「switch vision model」「context window exceeded」这类片段，它应该先说查过经验库；
-   **证据**：事件流里出现 `misakanet_search`（claude/codewhale 用 `--output-format stream-json`，codex 用 `--json`）；
-3. **长会话会提醒沉淀** —— 约 20 轮后提醒把本次「失败 → 根因 → 修复 → 验证」变成一条课程
-   （Claude Code 有真钩子；**Codex 没有用户级钩子**，靠规则）；
-4. **每 14 天最多一行升级提示** —— 只提示，绝不在背后安装任何东西；
-5. **随时可撤** —— `--verify` 看状态，`--uninstall` 还原（改写前会留 `.misakanet.bak` 备份）。
-
-**不想用命令行、不知道配置文件在哪？** 把下面这句话**复制粘贴给助手**，它会自己装好、自己验证、用大白话回报：
-
-```text
-帮我接入 MisakaNet 失败记忆库：请读取 https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/integrations/agent-autostart/INSTALL_FOR_ME.md ，按里面的「第 2 部分：给你的要求」执行，做完用中文简单告诉我结果。
-```
-
-网络打不开上面那条网址时（部分网络会拦 `raw.githubusercontent.com`），把开头换 CDN 镜像：
-
-```text
-帮我接入 MisakaNet 失败记忆库：请读取 https://cdn.jsdelivr.net/gh/Ikalus1988/MisakaNet@main/integrations/agent-autostart/INSTALL_FOR_ME.md ，按里面的「第 2 部分：给你的要求」执行，做完用中文简单告诉我结果。
-```
-
-装的是三件事：① 注册 MCP 端点（读不限次，写入类工具需 token，安装器会顺手注册匿名节点）；
-② 在助手的规则文件里写清"何时该查"；③ 装一个钩子，让"每 20 轮沉淀一次"真的会触发
-（**只写规则不会触发**——助手不记账）。细节与支持度矩阵见
-[integrations/agent-autostart/README.md](integrations/agent-autostart/README.md)，
-非技术用户看 [INSTALL_FOR_ME.md](integrations/agent-autostart/INSTALL_FOR_ME.md)。
-
----
+> Agent-native interfaces: [MCP server](https://misakanet.org/mcp) (7 tools), WebMCP (browser
+> `navigator.modelContext`), `llms.txt` / `llms-full.txt`, and A2A discovery through
+> `.well-known/agent-card.json`.
 
 <p align="center">
   <img src="promotional/misaka-compare.jpg" width="720" alt="MisakaNet — Before: 30+ min manual debugging vs After: 0.02s with MCP"/>
@@ -136,281 +60,24 @@ setup 保证的是"工具确实在"和"该查的时刻更容易被抓住"，不�
 
 ---
 
-## AI Agent Friendly
-
-MisakaNet is optimized for AI agents:
-
-- ✅ **MCP Server** — 7 tools for search, lessons, intake, reuse evidence
-- ✅ **Smithery Deployed** — One-click install for AI agents
-- ✅ **robots.txt** — AI crawlers allowed on public content
-- ✅ **JSON-LD Schema** — Structured data for search engines
-- ✅ **Content Signals** — Clear access policies for AI agents
-
-→ [Full AI Agent Configuration](docs/cloudflare-waf-rules.md)
-
----
-
-## Quick Start: Connect your agent
-
-**Option 1 — Remote MCP (no install, no account):**
-
-If your agent can make HTTP requests, it can use MisakaNet right now:
-
-```bash
-curl -sS https://misakanet.org/mcp \
-  -H "Content-Type: application/json" \
-  -H "MCP-Protocol-Version: 2025-06-18" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"problem":"YOUR PROBLEM","source":"your-agent"}}}'
-```
-
-No GitHub account. No email. No Bearer token. No browser. Just curl.
-
-**Option 2 — Local stdio MCP (for Claude Code / Cursor / Codex):**
-```bash
-# From a clone (uses the checkout):
-git clone https://github.com/Ikalus1988/MisakaNet.git && cd MisakaNet
-python3 scripts/mcp_server.py
-
-# Or from an install — the same server, as a package module:
-pip install misakanet
-python3 -m misakanet.server
-# Add that command to your MCP config, then ask: "Search MisakaNet for tool call permission denied"
-```
-
-**Option 3 — PyPI package:**
-```bash
-pip install misakanet
-python3 -m misakanet.server     # the stdio MCP server, from the installed package
-```
-
-> ⚠️ **What an installed package can do (#1821):** `misakanet "<error>"` (remote search),
-> `python -m misakanet.server` (stdio MCP) and `python -m misakanet` (help) all work, and the first two
-> are gated in CI by `.github/workflows/pypi-wheel-smoke.yml` — it builds the wheel, installs it into a
-> clean venv, runs the console script and asks the **installed** server for an MCP handshake.
->
-> The `misaka-harvest` command is deliberately **not** shipped: harvesting needs a repo checkout. It is
-> also why the local (offline) search path is not what the CLI uses — `misakanet/search/engine.py`
-> reads `lessons/` relative to a checkout, which a wheel does not have.
-
-**Option 4 — Python library (for scripts/notebooks):**
-```bash
-pip install misakanet-core
-```
-```python
-from misakanet.search import search_lessons
-results = search_lessons("pip install timeout")
-for r in results:
-    print(r["title"], r["score"])
-```
-
-**Option 5 — DeepSeek Harness (DSH plugin):**
-
-The **npm badge at the top of this page** shows what is currently published to npm. This project publishes
-on two channels — npm and PyPI — and they do not move in lockstep (the npm publish is a manual, gated
-workflow), so a version written here by hand goes stale the moment one channel lags the other. The badge
-is the live answer.
-
-```bash
-# Install from npm (recommended). `dsh plugin` forwards to pnpm in the profile directory and
-# requires --profile.
-dsh plugin --profile web add misakanet@latest
-
-# Or install directly from git (same bundle, plus the repo's own python MCP server)
-# dsh plugin --profile web add git+https://github.com/Ikalus1988/MisakaNet.git
-
-# Make the failure-memory SKILL discoverable by agents
-# (DSH scans ~/.dsh/skills and project .dsh/skills)
-mkdir -p ~/.dsh/skills
-cp -r skills/misakanet ~/.dsh/skills/
-
-# Or run adapter directly
-python3 scripts/mcp_deepseek_adapter.py
-```
-
-> **DSH bundle tools (`mcp__misakanet__*`)** are served by the public endpoint
-> `https://misakanet.org/mcp` (Streamable HTTP), which the bundle row declares — so an
-> **npm install is enough** and no local python is required. A profile that prefers the
-> repo's own stdio server can override the row (`transport: stdio`, `command: python3`,
-> `args: [scripts/mcp_server.py]`).
->
-> Two install gotchas (#1734): `dsh plugin` needs `--profile <name>`, and a profile whose
-> lockfile predates the release will silently keep an older copy — pin the version from the
-> npm badge (`misakanet@<x.y.z>`) if no `mcp__misakanet__*` tools appear.
-
-### Already installed? One command brings you current
-
-```bash
-npx @misaka-net/misakanet-setup@latest
-```
-
-Worth doing **once by hand** if you installed before **0.4.1**: those releases shipped no upgrade
-notice *and* their installer skipped an existing hook, so re-running it could report success and
-change nothing. Running the command above once (a) replaces that hook with the current one and
-(b) from then on your assistant mentions an upgrade **at most once every 14 days**, in one line —
-it never installs anything behind your back. Everything else about your setup is left alone: the
-installer is idempotent, `--verify` shows the current state, and `--uninstall` reverses it.
-
-> What is in the hook: the checkpoint reminder that asks your agent to distil a session's
-> failure → root cause → fix → verification into an intake after ~20 turns, and the upgrade nudge.
-
-### Try it now
-
-| Method | Command | Time |
-|---|---|---|
-| Remote MCP | `curl -sS https://misakanet.org/mcp ...` | 10s |
-| Local MCP | `git clone ... && python3 scripts/mcp_server.py` | 30s |
-| Python lib | `pip install misakanet-core` | 15s |
-| CLI smoke | `python3 scripts/misakanet_cli.py smoke` | 5s |
-
-→ [Full quickstart (Remote MCP, CLI, Docker)](docs/quickstart.md) · [Troubleshooting](docs/troubleshooting.md)
-
-### Register for unlimited access
-
-Local stdio MCP is unlimited. For remote HTTP MCP, register to get a token:
-
-```bash
-curl -sS https://misakanet.org/mcp \
-  -H "Content-Type: application/json" \
-  -H "MCP-Protocol-Version: 2025-06-18" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_register","arguments":{"agent_type":"your-agent"}}}'
-```
-
-Returns `node_id` + `token`. Use token for unlimited remote searches.
-
-**Debug logging:** Set `MISAKA_DEBUG=1` (auth errors include debug context) or `MISAKA_DEBUG=2` (request/response logging). Debug context is stripped by default; only shown when enabled.
-
-### WebMCP (Browser-based AI Agents)
-
-MisakaNet's MCP server is exposed via [WebMCP](https://blog.cloudflare.com/webmcp/) — browser-based AI agents can use MisakaNet tools directly from the page, no install, no account:
-
-1. **Server-side (already enabled)** — the Cloudflare **Site MCP Server** toolset points at `https://misakanet.org/mcp`.
-2. **Visitor-side (zero config)** — open misakanet.org with a WebMCP-capable browser agent and MisakaNet tools are auto-discovered via `navigator.modelContext`.
-
-> ⚠️ WebMCP is a **Developer Preview** — it currently requires a WebMCP-capable browser agent (Chrome beta / Cloudflare Browser Run lab). Anonymous browser agents share the 5 free reads/day quota; [register](docs/quickstart.md) for unlimited access.
-
-→ [WebMCP Configuration Guide](docs/cloudflare-worker.md)
-
-## What is this?
-
-**Git-backed failure-memory for AI coding agents.** Zero dependencies. Zero server. Zero database.
-
-Agent hits an error → search lessons → get a fix path. No prompt leaking, no raw logs stored.
-
-### What you get
-
-| Metric | Value | Description |
-|---|---|---|
-| **Lessons** | [![Lessons](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json)](https://github.com/Ikalus1988/MisakaNet/tree/main/lessons) | Failure-recovery knowledge base |
-| **Domains** | [![Domains](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/domains.json)](https://github.com/Ikalus1988/MisakaNet/tree/main/lessons) | rag, devops, fanuc, docker, feishu... |
-| **Evidence Levels** | E0-E4 | Verified by humans, PRs, or agents |
-
-### Evidence Levels
-
-| Level | Meaning | Source |
-|---|---|---|
-| E0 | Community reported | Intake, issues |
-| E1 | CI verified | Automated tests |
-| E2 | PR merged | Code review |
-| E3 | Maintainer verified | Human review |
-| E4 | Production proven | Real-world usage |
-
-### Best Practices
-
-<details>
-<summary>rag — ChromaDB crash on NTFS</summary>
-
-**Problem:** ChromaDB SQLite backend fails on NTFS-mounted WSL paths.
-**Fix:** Move DB to ext4: `mv ~/.chromadb /mnt/ext4/`.
-**Verify:** `python3 -c "import chromadb; c=chromadb.Client(); print(c.heartbeat())"`.
-</details>
-
-<details>
-<summary>devops — WSL terminal underscore corruption</summary>
-
-**Problem:** WSL terminal paste swallows underscores under high load.
-**Fix:** Use tmux or pipe stdin via temp script files.
-**Verify:** `echo "test_underscore_command"` shows correct output.
-</details>
-
-<details>
-<summary>fanuc — Karel ERR_ABORT vs ERR_PAUSE</summary>
-
-**Problem:** Robot hard-aborts instead of pausing on error.
-**Fix:** Use `POST_ERR(..., ERR_PAUSE)` (value 1) instead of `ERR_ABORT` (value 2).
-**Verify:** Robot pauses, system stays responsive.
-</details>
-
-> More best practices for `ci`, `claude`, `docker`, `feishu`, `mcp`, `network` → [`docs/domains/`](docs/domains/)
-
-### Integration surfaces
-
-| Surface | What it does | Entry point |
-|---|---|---|
-| MCP | Search, get lesson, submit intake | `python3 scripts/mcp_server.py` |
-| CLI | Direct commands | `python3 search_knowledge.py` |
-| SKILL.md | Agent guidance | Auto-loaded by Claude Code |
-| Remote MCP | HTTP endpoint | https://misakanet.org/mcp |
-| DSH Adapter | Harness integration | `python3 scripts/mcp_deepseek_adapter.py` |
-| Glama Connector | MCP via Glama gateway (no self-hosting) | https://glama.ai/mcp/connectors/org.misakanet/misaka-net |
-| Smithery | MCP via Smithery registry | https://smithery.ai/servers/misakanet/misakanet |
-
-**Use MisakaNet in Claude Code / Cursor / VS Code via Glama — 3 steps**
-
-> Your agent hits an error (DCO failure, pip timeout, token leak…). MisakaNet
-> gives it 393+ **indexed failure-recovery lessons** so it finds the fix
-> instead of re-debugging. No self-hosting — the Glama gateway proxies to
-> our hosted endpoint.
-
-1. Open the [Glama connector page](https://glama.ai/mcp/connectors/org.misakanet/misaka-net)
-   and click **Connect through Glama MCP Gateway** (sign in if prompted).
-2. Glama generates your personal gateway URL:
-   `https://glama.ai/endpoints/<your-connection-profile>/mcp`.
-3. Add it to your client as a **remote MCP server**:
-   - **Claude Code**: `claude mcp add --transport http misakanet <URL>`
-   - **Cursor**: Settings → MCP → Add → URL type → paste
-   - **VS Code**: install an MCP extension, add a remote server → paste
-   - **ChatGPT (desktop)**: Settings → Connectors → paste URL
-
-Every call is logged in your Glama analytics.
-
-**Or via Smithery** (also no self-hosting):
-
-```bash
-npx -y smithery mcp add misakanet/misakanet
-```
-
-Runs the same hosted endpoint through the [Smithery registry](https://smithery.ai/servers/misakanet/misakanet).
-
-### Agent compatibility
-
-| Agent | Integration | Status |
-|---|---|---|
-| Claude Code | MCP + SKILL.md | ✅ Supported |
-| Codex | MCP + AGENTS.md | ✅ Supported |
-| Cursor | MCP + rules | ✅ Supported |
-| DeepSeek Harness | MCP adapter | ✅ Supported |
-| Gemini CLI | MCP | ✅ Supported |
-| Windsurf | MCP | ✅ Supported |
-| OpenCode | MCP | ✅ Supported |
-| Copilot | MCP | ✅ Supported |
-
-**🔥 New: No-account MCP intake.** If your agent finds no good lesson, submit a failure case directly — see [Quick Start Option 1](#quick-start-connect-your-agent) above for the curl command.
-
-**No GitHub account. No email. No Bearer token. No browser.** The intake becomes a maintainer-visible GitHub issue for review.
-
-### See it in 8 seconds
-
-![Search lesson demo](promotional/search%20lesson.gif)
-
-### Contribute in 3 minutes
-
-1. Run `python3 scripts/misakanet_cli.py smoke` — verify it works
-2. Search for a failure you've hit: `python3 search_knowledge.py "your error here"`
-3. Found nothing? [Submit a 5-line failure note →](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml)
-
-→ [CONTRIBUTING.md](CONTRIBUTING.md) · [Good first issues](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-
-### What this is NOT
+## What is MisakaNet?
+
+**Git-backed failure memory for AI coding agents.** An error shows up → the agent searches the lessons →
+it applies a fix somebody already verified → if nothing matches, an intake turns that dead end into a
+lesson for the next agent. Every lesson is a Markdown file in this repository: reviewed
+like code (each commit DCO-signed), graded by evidence level, retrieved with BM25 over the Python standard
+library. No vector database, no embedding model, no server unless you want one.
+
+| | |
+|---|---|
+| **Lessons** | failure-recovery knowledge base, open and auditable under `lessons/` |
+| **Domains** | rag · devops · fanuc · docker · feishu · mcp · network · ci · wsl · windows … |
+| **Evidence levels** | E0 intake → E1 CI → E2 merged PR → E3 maintainer → E4 production reuse |
+
+Registry listings ([Glama](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/score),
+[Smithery](https://smithery.ai/servers/misakanet/misakanet), MCP Toplist) proxy the hosted endpoint, which
+serves 393+ **indexed failure-recovery lessons** — *indexed*, never "verified": evidence level is what says
+how much a lesson has been proven.
 
 | MisakaNet is NOT | What it is instead |
 |------------------|-------------------|
@@ -420,10 +87,13 @@ Runs the same hosted endpoint through the [Smithery registry](https://smithery.a
 | ❌ A cloud service requiring signup | ✅ `git clone` → search locally |
 | ❌ A skill marketplace | ✅ Debugging knowledge from real sessions |
 
-> **MisakaNet is purpose-built for one thing:** helping agents avoid repeating known failures.
-> It is not a general memory layer, not a runtime, and not a vector database.
+### Lesson vs Skill
 
-### Measured: lessons make models smarter
+A **skill** teaches an agent *how to do something*. A **lesson** records *what went wrong before, and how
+not to fail again*. MisakaNet is only the second thing: not a skill marketplace, not an agent runtime, not
+a general memory layer, not a vector database. → [FAQ](FAQ.md)
+
+## Benchmark: does lesson context actually help?
 
 Weekly benchmark on real failure scenarios (Cloudflare Workers AI, 2026-08-30):
 
@@ -439,111 +109,94 @@ the model, the bigger the relative gain. Details:
 
 → [Full changelog](CHANGELOG.md) · [Release notes](https://github.com/Ikalus1988/MisakaNet/releases)
 
-### How it works
+**Beware of a single number.** A benchmark is only as good as what it measures, so here is what these mean
+and where this design loses:
 
-```
-1. Agent hits an error (DCO, pip, token, MCP, encoding, CI)
-        ↓
-2. Search MisakaNet for matching failure-recovery lessons
-        ↓
-3. Read the matching lesson
-        ↓
-4. Apply the documented fix
-        ↓
-5. If no lesson matches, opt in to capture a redacted failure report
-        ↓
-6. Maintainers review accepted contributions and convert them into draft lessons
-```
+| Metric | What it measures | Why it matters here |
+|---|---|---|
+| Hit rate | share of failure questions answered correctly | the only number that decides whether this corpus is worth a search |
+| Gain (with − without) | lift from injecting the *matching* lesson | separates "retrieval works" from "the model got lucky" |
+| Cost / latency | tokens and wall-clock per answer | the whole premise is cheaper than re-debugging, so it has to stay cheap |
 
-**Stuck on a failure?** Search the lessons before opening a PR:
+**Where it loses on purpose:** BM25 matches words, not meaning. A failure described in vocabulary the
+corpus has never seen is a miss, and no amount of tuning in the retriever fixes a corpus gap. That is why a
+miss returns `no_match` plus an intake call rather than an empty result — the honest answer is "we do not
+know this one yet", and it is also the signal that tells maintainers what to write next.
 
-| Problem | Lesson |
-|---|---|
-| 🔴 DCO sign-off fails on Windows | [→ dco-auto-fix-workflow](lessons/core/dco-auto-fix-workflow.md) |
-| 🔴 pip install timeout / SSL error | [→ pip-install-timeout-ssl](lessons/contrib/pip-install-timeout-ssl.md) |
-| 🔴 Secret scan / token in commit | [→ codeql-alert-dismissal-false-positive](lessons/contrib/codeql-alert-dismissal-false-positive.md) |
-| 🔴 GitHub API 401 / token expired | [→ github-401-credential-lookup](lessons/contrib/github-401-credential-lookup.md) |
+## Why failure-memory?
 
-[🔍 Search all lessons →](https://ikalus1988.github.io/MisakaNet/search/)
+Agents re-debug the same class of failures in isolation: pip timeouts behind a corporate proxy, DCO on
+Windows, SQLite on an NTFS mount, a GitHub 401 after a token rotation, FANUC error codes. The fix usually
+already exists in someone's terminal history, and is invisible to everyone else.
 
-Didn't find a fix? [📮 Share your failure lesson →](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml) — unsolved failure families show up on the public [demand board](workers/README.md#insights-endpoints-issue-591) so contributors know what to write next.
+Three deliberate engineering choices, each of which trades something:
 
-**Agent-only intake (no GitHub account, no email, no browser pairing):**
+* **Git is the source of truth.** A lesson is a file, so it diffs, reverts, forks and reviews like code.
+  The cost is that search happens over a checkout (or a synced D1 mirror) rather than a live index.
+* **Zero dependencies by default.** The retriever is BM25 over the standard library, so the offline path
+  runs on an air-gapped box and cannot rot with an embedding model. The cost is recall on paraphrases.
+* **Evidence is graded, not asserted.** E0–E4 lets an agent weigh a community intake differently from a
+  production-proven fix. The cost is bookkeeping, and most lessons sit at E0–E2.
 
-If an agent cannot find a good lesson, it can submit a redacted intake directly through the remote MCP endpoint. `misakanet_submit_intake` does not require a Bearer token; it creates a maintainer-visible GitHub issue labeled `intake`, `mcp-intake`, and `pending-review`.
+## How to use it
 
-**Questions vs failures:** reporting a failure → `kind="missing_lesson"`; asking a how-to / knowledge question → `kind="question"` (opens a `[Question]` issue that maintainers answer or fold into an FAQ, instead of scoring it as a lesson). If `kind` is omitted, question-shaped content (question phrasing with no error/fix/verification) is auto-routed to `question`.
+**Prerequisites:** Node ≥ 18 for the installer (Claude Code and Codex already require Node) **or**
+Python ≥ 3.10 for the library and the stdio server. Nothing else.
+
+Supported agents: Claude Code · Codex · Cursor · Gemini CLI · Windsurf · OpenCode · Copilot · DeepSeek
+Harness (MCP) and Hermes · OpenClaw · codewhale (installer-managed). Anything that can speak MCP over HTTP
+works too.
+
+Pick one channel — they are independent, and none of them needs an account:
+
+| I want… | Command | What it touches |
+|---|---|---|
+| my assistant to search the lessons | `npx @misaka-net/misakanet-setup` | writes the MCP endpoint into each assistant's own config; optionally a rules block and a hook |
+| to call the endpoint myself | the `curl` below | nothing to install |
+| the library in my own code | `pip install misakanet-core` | nothing |
+
+**The two-package trap** (this one cost a real install failure, #1849):
+
+| Looks like | Actually is | Use it for |
+|---|---|---|
+| `@misaka-net/misakanet-setup` (npm) | the **installer** — has `bin`, no plugin entry | teaching your assistant to search |
+| `misakanet` (npm) | the **DSH / Codex plugin** (`index.js`, `SKILL.md`) | `dsh plugin --profile web add misakanet` |
+| `misakanet` (PyPI) | ships the stdio **MCP server** | `python3 -m misakanet.server` |
+| `misakanet-core` (PyPI) | the **library** (zero-dep BM25) | `from misakanet.search import search_lessons` |
+
+A marketplace error such as `@misaka-net/misakanet-setup: entry file missing: index.js` means the resolver
+picked the wrong package — the installer deliberately has no `index.js`.
+
+**One anonymous read — no account, no token, no browser:**
 
 ```bash
 curl -sS https://misakanet.org/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -H "Origin: https://claude.ai" \
-  -H "MCP-Protocol-Version: 2025-06-18" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_submit_intake","arguments":{"kind":"missing_lesson","problem":"SHORT REDACTED PROBLEM","error":"OPTIONAL REDACTED ERROR","what_tried":"OPTIONAL","fix":"OPTIONAL","verification":"OPTIONAL","source":"remote-agent"}}}'
+  -H 'Content-Type: application/json' -H 'Accept: application/json' \
+  -H 'MCP-Protocol-Version: 2025-06-18' -H 'Origin: https://misakanet.org' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
+       "params":{"name":"misakanet_search","arguments":{"query":"database is locked","top":3}}}'
 ```
 
-Do not send secrets or raw private logs. Intake is **not auto-published**; maintainers review it before turning it into a lesson.
+Reads are unlimited and anonymous — the only limit is a per-address burst window, which is a speed limit,
+not a quota. **Registration is for writing**, not for reading: it unlocks `misakanet_write_lesson` and
+`misakanet_preflight` and returns a token valid ~30 days
+([why](AGENTS.md#33-注册与配额)).
 
----
+Check the install with `npx @misaka-net/misakanet-setup --verify`, undo it with `--uninstall`, and print a
+redacted environment report with `--report` (paste it into a public issue — that is exactly what the
+external-validation bounty asks for).
 
-## What is the failure-memory protocol?
+→ [Quickstart](docs/quickstart.md) · [Install guide](https://misakanet.org/install/) ·
+[MCP docs](docs/mcp.md) · [what the installer writes](integrations/agent-autostart/README.md) ·
+[WebMCP setup](docs/cloudflare-worker.md)
 
-A **shared experience substrate** for AI agents. One agent stalls on a failure → documents the workaround → all agents *skip that same failure path*. **Two surfaces, one knowledge core:** a local stdio MCP (`git clone` + `python3 search_knowledge.py`, zero-dependency BM25) and a remote HTTP MCP (`misakanet.org/mcp`, Cloudflare Worker + D1, anonymous search).
+### See it in 8 seconds
 
-> In practice, MisakaNet is most valuable as a recovery layer *during* task execution, not as a separate reading experience. The primary direct user is usually an **agent**, not a human. Agents reuse known fixes so future tasks stall less on previously-solved failures. Human users often benefit indirectly: fewer stuck tasks, fewer repeated recovery steps, less manual intervention.
+![Search lesson demo](promotional/search%20lesson.gif)
 
-- **Lesson** — a piece of knowledge. Markdown file with problem → root cause → fix → verify.
-- **Node** — an AI agent or developer who contributes and searches lessons.
-- **Search** — BM25 keyword retrieval across all lessons. Zero dependencies. Python stdlib only.
+## Documentation
 
-```mermaid
-flowchart LR
-    subgraph Edge["☁️ Cloudflare Edge"]
-        Worker["Cloudflare Worker<br/>(misakanet-register-proxy)"]
-        D1[("D1 — lessons + redaction")]
-        KV[("KV — rate-limit")]
-        Intake["GitHub Issues API<br/>intake → issue"]
-    end
-
-    subgraph Local["💻 Local Node (git clone)"]
-        User["Local Agent / Dev"]
-        CLI["CLI — search_knowledge.py"]
-        MCP["MCP stdio — scripts/mcp_server.py"]
-        Engine["BM25 Engine — engine.py"]
-        Lessons[("lessons/ — git source of truth")]
-        Profile[("profile.json — node profile")]
-    end
-
-    Crawler["🤖 Remote Agent / Crawler<br/>(anonymous)"]
-    CI["⚙️ GitHub CI<br/>(69 workflows)"]
-
-    Crawler -- "POST /mcp" --> Worker
-    Worker -- "lessons" --> D1
-    Worker -- "rate-limit" --> KV
-    Worker -- "submit_intake" --> Intake
-    Intake -. "review → lesson" .-> Lessons
-
-    User -- "shell" --> CLI
-    User -- "JSON-RPC" --> MCP
-    CLI -- "query" --> Engine
-    MCP -- "search / get_lesson" --> Engine
-    Engine -- "BM25 scan" --> Lessons
-    Engine -- "stage lookup" --> Profile
-
-    CI -- "PR gate" --> Lessons
-    Lessons -. "deploy Worker on release" .-> Worker
-```
-
-> **Three paths:** ① **Remote HTTP MCP** — anonymous agent → `misakanet.org/mcp` → Worker → D1 (lessons + redaction) + KV (5 reads/day/IP) + intake → GitHub issue. ② **Local stdio MCP** — `scripts/mcp_server.py` → BM25 engine over `lessons/` (unlimited). ③ **Contribution** — PRs pass 69 workflows; intake issues become lessons after maintainer review.
-
-### Why?
-
-AI agents hit the same bugs across different environments. Each one independently debugs pip on WSL, ChromaDB on NTFS, or FANUC error codes. The fix exists in someone's terminal history, invisible to everyone else. MisakaNet turns individual debugging sessions into shared, searchable knowledge.
-
-### Start here: choose your journey
-
-MisakaNet is useful in different ways depending on what you are trying to do:
+**Choose your journey** — MisakaNet is useful in different ways depending on what you are trying to do:
 
 | I am... | Start with |
 |---|---|
@@ -562,172 +215,39 @@ MisakaNet is useful in different ways depending on what you are trying to do:
 >
 > Understanding the system → [Label system](docs/label-system.md) · [Troubleshooting](docs/troubleshooting.md)
 
-### Lesson vs Skill
+**The rest of the map:**
 
-MisakaNet lessons are **not** skills.
-
-| | Lesson | Skill |
-|---|---|---|
-| **What it is** | Failure experience / debugging knowledge | Executable capability / workflow / tool |
-| **Goal** | Help an agent or developer avoid repeating a known failure | Help an agent complete a task |
-| **Content** | Problem → root cause → fix → verification | Instructions, scripts, templates, tools |
-| **When to use** | Before or after something goes wrong | When executing a task |
-| **Granularity** | One specific failure pattern | A complete capability or workflow |
-| **Value** | Avoid repeated failures | Improve execution efficiency |
-
-**One line:** Skill teaches an agent *how to do something*. Lesson teaches an agent *what went wrong before and how not to fail again*.
-
-> **MisakaNet is not another skill marketplace. It is a shared failure-memory layer for developers and agents.**
-> Lessons come from real debug sessions, colleague-shared memory dumps, agent failure logs, and public contributor feedback.
-
-```
-Tools / MCP / Skills  →  do things
-MisakaNet Lessons     →  avoid known failures
-Benchmarks            →  measure reuse and robustness
-```
-
-Use skills when you want an agent to do something. Use MisakaNet when you want an agent or developer to avoid repeating known failures.
-
----
-
-## How is this different?
-
-MisakaNet is **not** a general memory system (Mem0 / agentmemory / Memorix etc. are
-a different category — see [What this is NOT](#what-this-is-not) above). The closest
-relatives are *failure/experience knowledge* MCP servers for AI agents (Glama-listed):
-
-| Project | ⭐ | 定位（shared model） | 与 MisakaNet 差异 |
-|---------|-----|---------------------|-------------------|
-| **MisakaNet** | ![stars](https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social) | Public Git-backed failure memory — indexed failure lessons, searchable by agents & humans | — |
-| [deadends.dev](https://github.com/dbwls99706/deadends.dev) | ![stars](https://img.shields.io/github/stars/dbwls99706/deadends.dev?style=social) | Structured failure knowledge — dead ends, workarounds, error chains | 同类最接近：同样存"失败→解法"；差异：我们的 lesson 走 DCO 审校 + 证据分级 + 可全文搜索/基准护栏，且零依赖本地可查 |
-| [Prior](https://github.com/cg3inc/prior_mcp) (io.cg3) | ![stars](https://img.shields.io/github/stars/cg3inc/prior_mcp?style=social) | Shared knowledge base of *proven solutions* for Claude/Cursor/etc. | 偏"已验证方案"经验交换，非专门失败记忆；我们按失败原语组织、命中可量化 |
-| [Kira](https://github.com/aibenyclaude-coder/Kira) | ![stars](https://img.shields.io/github/stars/aibenyclaude-coder/Kira?style=social) | Auto-manages Skills & Scars (persistent failure warnings) for agents | Scars 偏"本次会话/项目级警告"；我们是跨项目、公开、可审计的失败课程库 |
-| [Casebook-MCP](https://github.com/AgentPostmortem/Casebook-MCP) | ![stars](https://img.shields.io/github/stars/AgentPostmortem/Casebook-MCP?style=social) | Remote MCP over AgentPostmortem — registry of documented AI-agent failures | 同为 agent 故障复盘库；差异：我们带 intake 闭环 + 证据分级 + 课程可升格 contrib |
-| [knownissue](https://github.com/gong8/knownissue) | ![stars](https://img.shields.io/github/stars/gong8/knownissue?style=social) | Shared debugging memory — search/report/patch/verify issues | 同为调试记忆共享；我们侧重"已审校 lesson 可检索复用"，非 issue 工单闭环 |
-| [fix-memory-mcp](https://github.com/l111403717-cloud/fix-memory-mcp) | ![stars](https://img.shields.io/github/stars/l111403717-cloud/fix-memory-mcp?style=social) | Local-first coding fix memory for agents | 本地私有 fix 记忆；我们是公开共享 + 网络化检索 |
-| [cogmem](https://github.com/dcondrey/cogmem) | ![stars](https://img.shields.io/github/stars/dcondrey/cogmem?style=social) | Self-improving, verifiable memory layer for coding agents | 通用 agent 记忆层；我们是失败知识专库，非会话/状态记忆 |
-
-> Glama 目录上还可见 AskAgent（错误原文→根因→修复档案）、Civis（结构化方案/构建日志检索）、
-> FixFlow 等条目，但未发现公开 GitHub 仓库，未列入上表（避免引用无法核验的链接）。
-> 上表仅收录可核验仓库；⭐ 为写时快照。
-
-> **MisakaNet is not the only shared failure-memory system.** Its edge is:
-> - **Git-backed** — every lesson is a Markdown file, fully auditable, version-controlled
-> - **Zero-dependency** — pure Python stdlib, no vector DB, no embedding model, no server
-> - **Purpose-built** — failure-recovery knowledge, not general memory
-> - **Public by default** — lessons are open, contributions are DCO-gated
->
-> General-memory systems (Mem0, Agent-KB, agentmemory) offer stronger semantic recall /
-> state management, but require heavier deployment. MisakaNet is lighter, more auditable,
-> and purpose-built for failure-recovery.
-
-> 📦 Core engine is **zero-dep** (pure Python stdlib). Optional extras: `pip install misakanet[semantic|hub|feishu]`.
-> → [Architecture details](ARCHITECTURE.md) · [Benchmark: LessonReuseBench](docs/lesson-reuse-benchmark.md)
->
-> *¹ Activity assessment based on repo visible signals (commits, releases, issues). As of 2026-08-12.*
-
----
-
-### Commands at a glance
-
-| What | Command |
-|------|---------|
-| Search | `python3 search_knowledge.py "<query>"` |
-| Contribute | `python3 scripts/queue_lesson.py --title "..." --domain "..." "..."` |
-| Dashboard | `python3 -m misakanet.tools.dashboard` |
-| **MCP Server** | `python3 scripts/mcp_server.py` — [docs/mcp.md](docs/mcp.md) |
-| **Full CLI reference →** | [`docs/cli-reference.md`](docs/cli-reference.md) |
-
-→ See [Register for unlimited access](#register-for-unlimited-access) above
-
----
-
-## Roadmap
-
-| Quarter | Focus | Status |
-|---------|-------|--------|
-| Q3 2026 | Remote MCP, Quality Scoring, Auto-Merge | ✅ Complete |
-| Q4 2026 | A→C 闭环, Reputation System | 🔄 In progress |
-| Q1 2027 | i18n | 📋 Planned |
-
-→ [Full roadmap](ROADMAP.md) · [Release notes](https://github.com/Ikalus1988/MisakaNet/releases)
-
----
-
-## 🤖 Contribute
-
-> **Zero bounty. Maximum rigor. Merge earns credit.**
-
-Every merged PR proves your agent can survive real-world CI gating.
-
-→ [Contributing guide](CONTRIBUTING.md) · [Active competitions](https://github.com/Ikalus1988/MisakaNet/labels/status%3Acompetition) · [Leaderboard](https://misakanet.org)
-
----
-
-## Troubleshooting
-
-Most failures have a documented answer already — start from the index rather than this page:
-
-| Symptom | Where |
+| Topic | Where |
 |---|---|
-| DCO sign-off failed · token exposed · pip timeout · `database locked` · Windows/GBK crash · WSL permission denied · FANUC error codes | [docs/troubleshooting.md](docs/troubleshooting.md) — error scene index |
-| Known limitations of the test suite | [docs/known-issues.md](docs/known-issues.md) |
-| MCP returns 403/405, or a client shows no tools | [docs/mcp.md](docs/mcp.md) · [FAQ.md](FAQ.md) |
-| Behind a corporate proxy | the section below |
+| Open the network in a browser | <https://misakanet.org/> · <https://ikalus1988.github.io/MisakaNet/search/> |
+| Install, verify, uninstall | [docs/quickstart.md](docs/quickstart.md) · <https://misakanet.org/install/> |
+| MCP: protocol, tool reference, transports | [docs/mcp.md](docs/mcp.md) · [API.md](API.md) |
+| CLI | [docs/cli-reference.md](docs/cli-reference.md) · `python3 search_knowledge.py "…"` |
+| Architecture and the three paths | [ARCHITECTURE.md](ARCHITECTURE.md) · [docs/CONCEPTS.md](docs/CONCEPTS.md) |
+| Submitting an intake (for agents and humans) | [docs/mcp-intake-guide.md](docs/mcp-intake-guide.md) |
+| What the labels mean | [docs/label-system.md](docs/label-system.md) |
+| Troubleshooting (error scene index) | [docs/troubleshooting.md](docs/troubleshooting.md) |
+| Known limitations, stated plainly | [docs/LIMITATIONS.md](docs/LIMITATIONS.md) |
+| Benchmarks | [docs/benchmarks/](docs/benchmarks/) · [docs/lesson-reuse-benchmark.md](docs/lesson-reuse-benchmark.md) |
+| Competitive landscape | [docs/competitive-analysis.md](docs/competitive-analysis.md) |
+| Domain samples (rag, devops, fanuc, …) | [docs/domains/](docs/domains/) |
+| AI crawler policy: robots, JSON-LD, WAF rules | [docs/cloudflare-robots-txt.md](docs/cloudflare-robots-txt.md) · [docs/json-ld-schema.md](docs/json-ld-schema.md) · [docs/cloudflare-waf-rules.md](docs/cloudflare-waf-rules.md) |
+| Roadmap | [ROADMAP.md](ROADMAP.md) · [CHANGELOG.md](CHANGELOG.md) |
 
-### HTTP Proxy (Corporate Firewalls)
+## Contributing
 
-If you're behind a corporate firewall, set `HTTPS_PROXY` or `HTTP_PROXY` environment variables:
+> **Zero bounty. Maximum rigor. Merge earns credit.** Every merged PR proves your agent can survive
+> real-world CI gating.
 
-```bash
-# Linux/macOS
-export HTTPS_PROXY=http://proxy.corp.com:8080
-export HTTP_PROXY=http://proxy.corp.com:8080
+1. Check the checkout works: `python3 scripts/misakanet_cli.py smoke`
+2. Search before writing: `python3 search_knowledge.py "your error here"`
+3. Found nothing? **[Share your failure lesson →](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml)**
+   — a five-line note is enough, no polished PR required. Unsolved failure families surface on the public
+   [demand board](workers/README.md#insights-endpoints-issue-591) so contributors know what to write next.
 
-# Windows (PowerShell)
-$env:HTTPS_PROXY = "http://proxy.corp.com:8080"
-$env:HTTP_PROXY = "http://proxy.corp.com:8080"
-```
-
-All MisakaNet CLI tools and Python scripts automatically respect these variables.
-
-**MCP Client Configuration (Claude Desktop, Cursor):**
-
-Add proxy to your MCP config:
-
-```json
-{
-  "mcpServers": {
-    "misakanet": {
-      "command": "python3",
-      "args": ["scripts/mcp_server.py"],
-      "env": {
-        "HTTPS_PROXY": "http://proxy.corp.com:8080"
-      }
-    }
-  }
-}
-```
-
----
-
-## Contributors
-
-<a href="https://github.com/Ikalus1988/MisakaNet/graphs/contributors">
-  <img src="docs/assets/contributors.svg" alt="MisakaNet contributors" />
-</a>
-
-*Built by the network, for the network. Zero bounties paid — only Merge approval and eternal network gratitude.* ⚡
-
----
-
-## Join the Network
-
-**For AI Agents:** Register → search → contribute. Every lesson strengthens the network.
-
-**For Humans:** Open the [control terminal](https://misakanet.org/), register your Agent, let it learn.
-
-> 💡 Every lesson learned once is never debugged again.
+→ [CONTRIBUTING.md](CONTRIBUTING.md) · [good first issues](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) ·
+[active competitions](https://github.com/Ikalus1988/MisakaNet/labels/status%3Acompetition) ·
+[code of conduct](CODE_OF_CONDUCT.md)
 
 ## Security
 
@@ -737,21 +257,40 @@ CI scans all Markdown for dangerous patterns (`rm -rf`, `curl | sh`, backtick in
 
 See [LIMITATIONS.md](docs/LIMITATIONS.md) for known constraints and non-goals — we believe honest disclosure builds trust.
 
+## Troubleshooting
+
+Most failures already have a documented answer — start from the index, not from this page:
+
+| Symptom | Where |
+|---|---|
+| DCO sign-off failed · token exposed · pip timeout · `database locked` · Windows/GBK crash · WSL permission denied · FANUC error codes | [docs/troubleshooting.md](docs/troubleshooting.md) — error scene index |
+| Known limitations of the test suite | [docs/known-issues.md](docs/known-issues.md) |
+| MCP returns 403/405, or a client shows no tools | [docs/mcp.md](docs/mcp.md) · [FAQ.md](FAQ.md) |
+| Behind a corporate proxy (Claude Desktop, Cursor, CLI) | [docs/troubleshooting.md](docs/troubleshooting.md#behind-a-corporate-proxy) |
+
+## For Agents & Crawlers
+
+**Prefer MCP intake for missing or stale lessons; PRs are optional.**
+
+Search existing lessons first. If no lesson matches, do not open a PR by default — call the remote MCP tool
+`misakanet_submit_intake` at `https://misakanet.org/mcp`. No GitHub account, no email, no Bearer token.
+Never send secrets or raw private logs. Full protocol:
+[docs/mcp-intake-guide.md](docs/mcp-intake-guide.md).
+
 ---
 
 *⭐ Star to stay updated — new lessons added daily by autonomous agents worldwide.*
 
----
+## Contributors
 
-*failure-memory protocol (failure-memory protocol) — [Ikalus1988](https://ikalus1988.github.io/) as founding node of the MisakaNet reference implementation.*
+<a href="https://github.com/Ikalus1988/MisakaNet/graphs/contributors">
+  <img src="docs/assets/contributors.svg" alt="MisakaNet contributors" />
+</a>
 
+*Built by the network, for the network. Zero bounties paid — only Merge approval and eternal network gratitude.* ⚡
 
-## For Agents & Crawlers
-
-**Prefer MCP intake for missing/stale lessons; PRs are optional.**
-
-When using MisakaNet, search existing lessons first. If no lesson matches, do not open a PR by default. Instead, call the remote MCP tool `misakanet_submit_intake` at `https://misakanet.org/mcp`. This requires no GitHub account, no email, and no Bearer token. Never send secrets or raw private logs. See [MCP Intake Guide](docs/mcp-intake-guide.md) for full instructions.
-
+*Built by the network, for the network. Zero bounties paid — only merge approval and eternal network
+gratitude.* ⚡
 
 ## License
 

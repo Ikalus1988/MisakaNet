@@ -270,3 +270,42 @@ Common onboarding failures, written as symptom → cause → fix.
   python3 -X utf8 search_knowledge.py "DCO"
   ```
   Related detail: [docs/dco-windows.md](dco-windows.md) and the Windows Unicode section above.
+
+---
+
+_Moved here from the README (2026-09-20) — the README now indexes the error scenes instead of
+carrying them._
+
+## Behind a corporate proxy
+
+If you're behind a corporate firewall, set `HTTPS_PROXY` or `HTTP_PROXY` environment variables:
+
+```bash
+# Linux/macOS
+export HTTPS_PROXY=http://proxy.corp.com:8080
+export HTTP_PROXY=http://proxy.corp.com:8080
+
+# Windows (PowerShell)
+$env:HTTPS_PROXY = "http://proxy.corp.com:8080"
+$env:HTTP_PROXY = "http://proxy.corp.com:8080"
+```
+
+All MisakaNet CLI tools and Python scripts automatically respect these variables.
+
+**MCP Client Configuration (Claude Desktop, Cursor):**
+
+Add the proxy to your MCP config:
+
+```json
+{
+  "mcpServers": {
+    "misakanet": {
+      "command": "python3",
+      "args": ["scripts/mcp_server.py"],
+      "env": {
+        "HTTPS_PROXY": "http://proxy.corp.com:8080"
+      }
+    }
+  }
+}
+```

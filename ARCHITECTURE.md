@@ -122,3 +122,47 @@ docs/ (Cloudflare Workers — see wrangler.jsonc `assets.directory`)
 | **New CI gate** | Add workflow to `.github/workflows/` | `pr-benchmark.yml` |
 | **New lesson domain** | Create subdirectory in `lessons/` | `lessons/kubernetes/` |
 | **New federation peer** | Add URL to `FEDERATION_PEERS` env var | Cross-org knowledge sharing |
+
+## The three paths (diagram)
+
+```mermaid
+flowchart LR
+    subgraph Edge["☁️ Cloudflare Edge"]
+        Worker["Cloudflare Worker<br/>(misakanet-register-proxy)"]
+        D1[("D1 — lessons + redaction")]
+        KV[("KV — rate-limit")]
+        Intake["GitHub Issues API<br/>intake → issue"]
+    end
+
+    subgraph Local["💻 Local Node (git clone)"]
+        User["Local Agent / Dev"]
+        CLI["CLI — search_knowledge.py"]
+        MCP["MCP stdio — scripts/mcp_server.py"]
+        Engine["BM25 Engine — engine.py"]
+        Lessons[("lessons/ — git source of truth")]
+        Profile[("profile.json — node profile")]
+    end
+
+    Crawler["🤖 Remote Agent / Crawler<br/>(anonymous)"]
+    CI["⚙️ GitHub CI<br/>(69 workflows)"]
+
+    Crawler -- "POST /mcp" --> Worker
+    Worker -- "lessons" --> D1
+    Worker -- "rate-limit" --> KV
+    Worker -- "submit_intake" --> Intake
+    Intake -. "review → lesson" .-> Lessons
+
+    User -- "shell" --> CLI
+    User -- "JSON-RPC" --> MCP
+    CLI -- "query" --> Engine
+    MCP -- "search / get_lesson" --> Engine
+    Engine -- "BM25 scan" --> Lessons
+    Engine -- "stage lookup" --> Profile
+
+    CI -- "PR gate" --> Lessons
+    Lessons -. "deploy Worker on release" .-> Worker
+```
+
+> **Three paths:** ① **Remote HTTP MCP** — anonymous agent → `misakanet.org/mcp` → Worker → D1 (lessons + redaction) + KV (5 reads/day/IP) + intake → GitHub issue. ② **Local stdio MCP** — `scripts/mcp_server.py` → BM25 engine over `lessons/` (unlimited). ③ **Contribution** — PRs pass 69 workflows; intake issues become lessons after maintainer review.
+
+_Lifted from the README (2026-09-20): the README keeps the one-paragraph version and points here._
