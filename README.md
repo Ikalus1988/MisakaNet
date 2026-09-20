@@ -143,9 +143,14 @@ Three deliberate engineering choices, each of which trades something:
 **Prerequisites:** Node ≥ 18 for the installer (Claude Code and Codex already require Node) **or**
 Python ≥ 3.10 for the library and the stdio server. Nothing else.
 
-Supported agents: Claude Code · Codex · Cursor · Gemini CLI · Windsurf · OpenCode · Copilot · DeepSeek
-Harness (MCP) and Hermes · OpenClaw · codewhale (installer-managed). Anything that can speak MCP over HTTP
-works too.
+Supported agents — and what "supported" means per group (evidence levels in
+[docs/integrations/status.md](docs/integrations/status.md)):
+
+| Group | Agents | What you get |
+|---|---|---|
+| Installer-managed | Claude Code · Codex · Hermes · OpenClaw · codewhale | `npx @misaka-net/misakanet-setup` writes their MCP config, a rules block, and (Claude Code only) a turn-counting hook — then `--verify` checks it |
+| MCP by hand | Cursor · Gemini CLI · Windsurf · OpenCode · Copilot · DeepSeek Harness | the endpoint is standard MCP over HTTP; add the URL in that client's own config. Cursor also has a rules-file mode |
+| Anything else that speaks MCP over HTTP | — | the endpoint is public, reads are anonymous and unmetered |
 
 Pick one channel — they are independent, and none of them needs an account:
 

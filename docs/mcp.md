@@ -20,7 +20,7 @@ python3 scripts/mcp_server.py
 
 ### 3. Connect from Claude Code
 
-Add to your `~/.claude/settings.json` (or project `.claude/settings.json`):
+Add to `~/.claude.json` (user/local scope) or `.mcp.json` at the project root (project scope, committable):
 
 ```json
 {
@@ -32,6 +32,15 @@ Add to your `~/.claude/settings.json` (or project `.claude/settings.json`):
   }
 }
 ```
+
+> **不是 `settings.json`。** Claude Code 从 `~/.claude.json`（local/user scope）和项目根的
+> `.mcp.json`（project scope）读 MCP servers；`~/.claude/settings.json` 放的是 hooks、
+> `permissions`、env。这一页此前写错成 `settings.json`（安装器 `npx @misaka-net/misakanet-setup`
+> 写的是 `~/.claude.json`，两边对不上）；把 `mcpServers` 放错文件的症状是 `/mcp` 里什么都看不到。
+> 官方 scope 表：<https://docs.claude.com/en/docs/claude-code/mcp>
+>
+> 更省事的路径：整仓都不用 clone —— `claude mcp add --transport http misakanet https://misakanet.org/mcp`
+> 直接接远端端点（同样 7 个工具，读不限次数免注册）。
 
 ### 4. Connect from Cursor
 
