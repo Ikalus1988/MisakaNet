@@ -148,7 +148,7 @@ Supported agents — and what "supported" means per group (evidence levels in
 
 | Group | Agents | What you get |
 |---|---|---|
-| Installer-managed | Claude Code · Codex · Hermes · OpenClaw · codewhale · Cursor | `npx @misaka-net/misakanet-setup` writes their MCP config, a rules block where the client has one, and (Claude Code only) a turn-counting hook — Cursor gets the MCP entry alone; `--verify` checks whatever was written |
+| Installer-managed | Claude Code · Codex · Hermes · OpenClaw · codewhale · Cursor · Gemini CLI · Copilot CLI · OpenCode · Kiro | `npx @misaka-net/misakanet-setup` writes each client's own MCP config, a rules block where the client has one, and (Claude Code only) a turn-counting hook — the five JSON-file clients (Cursor, Gemini CLI, Copilot CLI, OpenCode, Kiro) get the MCP entry alone; `--verify` checks whatever was written |
 | MCP by hand | Cursor · Gemini CLI · Windsurf · OpenCode · Copilot · DeepSeek Harness | the endpoint is standard MCP over HTTP; add the URL in that client's own config. Cursor also has a rules-file mode |
 | Anything else that speaks MCP over HTTP | — | the endpoint is public, reads are anonymous and unmetered |
 

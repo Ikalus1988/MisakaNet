@@ -17,6 +17,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parent.parent
 NPM = REPO / "packages" / "misakanet-setup" / "bin" / "misakanet-setup.mjs"
 PY = REPO / "integrations" / "agent-autostart" / "install_misakanet_agent.py"
@@ -51,39 +53,54 @@ def test_the_two_installers_declare_the_same_targets():
 
 
 def test_every_declared_target_is_actually_implemented_in_both():
-    """A name in the list with no writer is worse than a missing name: it looks supported."""
+    """A name in the list with no writer is worse than a missing name: it looks supported.
+
+    Two implementation shapes are legitimate: a bespoke `installX()` function, or a row in the
+    table-driven `MCP_ONLY_TARGETS` (one JSON file, one entry, no behaviour layer). Both installers
+    must contain one or the other for every declared target.
+    """
     npm_src = NPM.read_text(encoding="utf-8")
     py_src = PY.read_text(encoding="utf-8")
     problems = []
     for target in npm_targets():
         camel = "".join(part.title() for part in target.split("-"))
-        if f"async function install{camel}(" not in npm_src:
-            problems.append(f"npm: install{camel}() is missing")
-        if f"def install_{target}(" not in py_src:
-            problems.append(f"python: install_{target}() is missing")
-        if f"'{target}': install_" not in py_src and f'"{target}": install_' not in py_src:
+        npm_bespoke = f"async function install{camel}(" in npm_src
+        npm_table = re.search(rf"^  {target}: \{{", npm_src, re.M) is not None
+        if not (npm_bespoke or npm_table):
+            problems.append(f"npm: neither install{camel}() nor an MCP_ONLY_TARGETS row")
+        py_bespoke = f"def install_{target}(" in py_src
+        py_table = f'"{target}": {{' in py_src
+        if not (py_bespoke or py_table):
+            problems.append(f"python: neither install_{target}() nor an MCP_ONLY_TARGETS row")
+        if f"'{target}': install_" not in py_src and f'"{target}": install_' not in py_src \
+                and f"partial(install_mcp_only, agent=a) for a in MCP_ONLY_TARGETS" not in py_src:
             problems.append(f"python: INSTALLERS has no {target} entry")
     assert not problems, "; ".join(problems)
 
 
-def test_cursor_is_written_in_the_documented_shape_in_both(tmp_path=None):
-    """The shape is Cursor's, not Claude Code's: `url` + `headers`, and no `type`/`transport` key.
+SHAPES = [
+    # agent, npm marker, python marker — the two installers must not disagree about a vendor's shape.
+    # Cursor and Kiro take a bare `url`; the entry must carry no `type` key for either (that is the
+    # Claude Code entry's shape, and Cursor's docs show none) — the node/pytest suites assert the
+    # written files themselves, this only pins that both installers declare the same intent.
+    ("cursor", "urlField: 'url'", '"url_field": "url"'),
+    ("gemini", "urlField: 'httpUrl'", '"url_field": "httpUrl"'),
+    ("copilot", "{ type: 'http', url: ENDPOINT", 'entry["type"] = "http"'),
+    ("opencode", "container: 'mcp',", '"container": "mcp",'),
+    ("kiro", "urlField: 'url'", '"url_field": "url"'),
+]
 
-    Copying the Claude Code entry (which carries `type: "http"`) into `~/.cursor/mcp.json` is the
-    kind of mistake that fails silently, so both writers are checked for it here.
+
+@pytest.mark.parametrize("agent,npm_marker,py_marker", SHAPES)
+def test_both_installers_agree_on_every_vendor_shape(agent, npm_marker, py_marker):
+    """The shapes are the point: `httpUrl` vs `url`, `mcp` vs `mcpServers`, `type` or not.
+
+    Two installers writing the same client differently is the failure this catches — and a wrong key
+    is silent (the server never appears), so nothing else would notice.
     """
     npm_src = NPM.read_text(encoding="utf-8")
     py_src = PY.read_text(encoding="utf-8")
-    assert "cursor: (home) => [join(home, '.cursor', 'mcp.json')]" in npm_src, (
-        "the npm installer must declare Cursor's write path, or --dry-run/--list-writes cannot "
-        "report it and unwritableTargets() cannot refuse it"
-    )
-    assert '"cursor": [home / ".cursor"]' in py_src
-    for name, src in (("npm", npm_src), ("python", py_src)):
-        block = src[src.index("installCursor") if name == "npm" else src.index("def install_cursor"):]
-        block = block[: block.index("\n}\n") if name == "npm" else block.index("\ndef ")]
-        assert '"url"' in block or "'url'" in block or "url" in block, f"{name}: no url field"
-        assert '"type"' not in block and "'type'" not in block, (
-            f"{name}: Cursor's entry must not carry a `type` key — that is the Claude Code shape, "
-            f"and Cursor documents none"
-        )
+    assert f"  {agent}: {{" in npm_src, f"npm: no MCP_ONLY_TARGETS row for {agent}"
+    assert npm_marker in npm_src, f"npm: {agent} is missing {npm_marker!r}"
+    assert f'"{agent}": {{' in py_src, f"python: no MCP_ONLY_TARGETS row for {agent}"
+    assert py_marker in py_src, f"python: {agent} is missing {py_marker!r}"

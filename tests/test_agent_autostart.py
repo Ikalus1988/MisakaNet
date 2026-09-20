@@ -143,6 +143,47 @@ def test_cursor_is_removed_by_uninstall(tmp_path):
     assert "existing" in cfg["mcpServers"], "uninstall must not take the user's servers with it"
 
 
+JSON_CLIENTS = [
+    # agent, config file, container, URL field, extra keys that vendor's docs show.
+    # These differ on purpose: Gemini CLI's remote field is `httpUrl` (its `url` means SSE), OpenCode
+    # nests under `mcp` and wants `type: "remote"`, Copilot CLI wants `type: "http"`, Cursor and Kiro
+    # take a bare `url`. A wrong key is a silent failure — the server simply never appears.
+    ("gemini", ".gemini/settings.json", "mcpServers", "httpUrl", {}),
+    ("copilot", ".copilot/mcp-config.json", "mcpServers", "url", {"type": "http"}),
+    ("opencode", ".config/opencode/opencode.json", "mcp", "url", {"type": "remote", "enabled": True}),
+    ("kiro", ".kiro/settings/mcp.json", "mcpServers", "url", {}),
+]
+
+
+@pytest.mark.parametrize("agent,rel,container,url_field,extra", JSON_CLIENTS)
+def test_each_json_client_gets_its_own_documented_shape(tmp_path, agent, rel, container, url_field,
+                                                        extra):
+    home = tmp_path / "home"
+    (home / Path(rel).parent).mkdir(parents=True)
+    (home / rel).write_text(json.dumps({container: {"existing": {"url": "https://x"}}}),
+                            encoding="utf-8")
+
+    result = run_installer(home, "--only", agent, "--no-register")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "没有规则块与钩子" in result.stdout, result.stdout
+
+    cfg = json.loads((home / rel).read_text(encoding="utf-8"))
+    entry = cfg[container]["misakanet"]
+    assert entry[url_field] == "https://misakanet.org/mcp", entry
+    assert "type" not in entry or entry["type"] == extra.get("type"), entry
+    for key, value in extra.items():
+        assert entry[key] == value, (key, entry)
+    assert "existing" in cfg[container], "the user's own servers must survive"
+
+    second = run_installer(home, "--only", agent, "--no-register")
+    assert "无改动" in second.stdout, second.stdout
+
+    assert run_installer(home, "--uninstall").returncode == 0
+    after = json.loads((home / rel).read_text(encoding="utf-8"))
+    assert "misakanet" not in after[container]
+    assert "existing" in after[container], "uninstall must not take the user's servers with it"
+
+
 def test_codex_toml_stays_parseable_and_keeps_the_top_level_key_at_top(tmp_path):
     tomllib = pytest.importorskip("tomllib")
     home = make_home(tmp_path)

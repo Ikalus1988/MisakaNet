@@ -43,6 +43,10 @@ AGENT_DISPLAY = {
     # the installer's real capability can be compared by name — a target nobody mapped must fail
     # loudly here rather than be silently dropped from the comparison.
     "cursor": "Cursor",
+    "gemini": "Gemini CLI",
+    "copilot": "Copilot CLI",
+    "opencode": "OpenCode",
+    "kiro": "Kiro",
 }
 
 

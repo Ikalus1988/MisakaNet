@@ -194,7 +194,76 @@ const BARE_HOMES = {
     mkdirSync(join(home, '.cursor'), { recursive: true });
     writeFileSync(join(home, '.cursor', 'mcp.json'), '{}\n');
   },
+  gemini: (home) => {
+    mkdirSync(join(home, '.gemini'), { recursive: true });
+    writeFileSync(join(home, '.gemini', 'settings.json'), '{}\n');
+  },
+  copilot: (home) => {
+    mkdirSync(join(home, '.copilot'), { recursive: true });
+    writeFileSync(join(home, '.copilot', 'mcp-config.json'), '{}\n');
+  },
+  opencode: (home) => {
+    mkdirSync(join(home, '.config', 'opencode'), { recursive: true });
+    writeFileSync(join(home, '.config', 'opencode', 'opencode.json'), '{}\n');
+  },
+  kiro: (home) => {
+    mkdirSync(join(home, '.kiro', 'settings'), { recursive: true });
+    writeFileSync(join(home, '.kiro', 'settings', 'mcp.json'), '{}\n');
+  },
 };
+
+/**
+ * The five clients whose whole install is one MCP entry in one JSON file.
+ *
+ * Every `container` and `urlField` here comes from that vendor's own documentation, and they differ
+ * on purpose: Gemini CLI's remote field is `httpUrl` (its `url` means SSE), OpenCode nests under
+ * `mcp` rather than `mcpServers`, Copilot CLI needs `type: "http"`, OpenCode `type: "remote"`, while
+ * Cursor and Kiro take a bare `url`. A wrong key here is a **silent** failure — the server simply
+ * never appears — so the shape is asserted per client rather than assumed.
+ */
+const MCP_ONLY_SHAPES = [
+  { agent: 'cursor', label: 'Cursor', rel: '.cursor/mcp.json', container: 'mcpServers', urlField: 'url' },
+  { agent: 'gemini', label: 'Gemini CLI', rel: '.gemini/settings.json', container: 'mcpServers', urlField: 'httpUrl' },
+  { agent: 'copilot', label: 'Copilot CLI', rel: '.copilot/mcp-config.json', container: 'mcpServers', urlField: 'url', type: 'http' },
+  { agent: 'opencode', label: 'OpenCode', rel: '.config/opencode/opencode.json', container: 'mcp', urlField: 'url', type: 'remote' },
+  { agent: 'kiro', label: 'Kiro', rel: '.kiro/settings/mcp.json', container: 'mcpServers', urlField: 'url' },
+];
+
+for (const shape of MCP_ONLY_SHAPES) {
+  test(`${shape.agent}: writes the entry that client's own docs show, and only that`, () => {
+    const home = mkdtempSync(join(tmpdir(), `mn-shape-${shape.agent}-`));
+    try {
+      mkdirSync(join(home, dirname(shape.rel)), { recursive: true });
+      writeFileSync(join(home, shape.rel), JSON.stringify({ [shape.container]: { existing: { url: 'https://x' } } }));
+      const first = runOffline(home, '--only', shape.agent);
+      assert.equal(first.status, 0, first.stdout + first.stderr);
+
+      const cfg = JSON.parse(readFileSync(join(home, shape.rel), 'utf8'));
+      const entry = cfg[shape.container].misakanet;
+      assert.ok(entry, `${shape.container}.misakanet must exist: ${JSON.stringify(cfg)}`);
+      assert.equal(entry[shape.urlField], 'https://misakanet.org/mcp',
+        `${shape.agent} documents ${shape.urlField} as its remote field`);
+      assert.equal(entry.headers['X-MisakaNet-Agent'], shape.agent);
+      assert.ok(cfg[shape.container].existing, 'the user\'s own servers must survive');
+      if (shape.type) assert.equal(entry.type, shape.type);
+      else assert.equal(entry.type, undefined,
+        `${shape.agent} documents no type key, and adding one is not harmless`);
+
+      // No behaviour layer is written for any of them, and the output says so.
+      assert.match(first.stdout, new RegExp(`${shape.label}：没有规则块与钩子`), first.stdout);
+
+      // Snapshot *before* the second run: comparing the file with itself after it would pass no
+      // matter what the second run did (the first version of this test did exactly that).
+      const afterFirst = readFileSync(join(home, shape.rel), 'utf8');
+      const second = runOffline(home, '--only', shape.agent);
+      assert.match(second.stdout, /无改动/, second.stdout);
+      assert.equal(readFileSync(join(home, shape.rel), 'utf8'), afterFirst,
+        'a second run must not rewrite the file — byte drift is invisible to every other check');
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+}
 
 function makeCursorHome() {
   const home = mkdtempSync(join(tmpdir(), 'mn-cursor-'));
