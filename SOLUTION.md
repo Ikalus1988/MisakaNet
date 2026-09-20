@@ -1,16 +1,22 @@
-I'll start by exploring the repository structure to understand the conventions used in existing integration docs.
+Let me start by exploring the repository structure to understand the existing code and documentation.
 
 <tool_call>
 <function=list_files>
 <parameter=path>
-docs/integrations
+.
 </parameter>
 </function>
 </tool_call>
 <tool_call>
-<function=list_files>
+<function=read_file>
+<parameter=limit>
+100
+</parameter>
+<parameter=offset>
+1
+</parameter>
 <parameter=path>
-docs
+docs/integrations/status.md
 </parameter>
 </function>
 </tool_call>
