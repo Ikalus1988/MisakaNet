@@ -60,6 +60,38 @@ MisakaNetは、AIコーディングエージェント向けの障害記憶レイ
 
 → [フルクイックスタート（ローカルMCP、CLI、Docker）](docs/quickstart.md) · [トラブルシューティング](docs/troubleshooting.md)
 
+### GitHub Action として使う
+
+CI が失敗したときに自動でレッスンを探す：ワークフローが失敗すると、action がコーパスを検索し、
+最も近いレッスンを PR にコメントします（任意で新しいエラーを報告し、誰かがレッスン化します）。
+[GitHub Marketplace](https://github.com/marketplace/actions/misakanet-intake-bot) に掲載中。
+
+```yaml
+on:
+  workflow_run:
+    workflows: ["CI"]                # 自分の CI ワークフロー名に置き換える
+    types: [completed]
+permissions:
+  actions: read                      # 失敗した job のログを読む（必須）
+  pull-requests: write               # コメントを投稿
+  issues: write                      # コメント API は issues.createComment
+jobs:
+  intake:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Ikalus1988/MisakaNet@v1
+        with:
+          mode: suggest-only         # suggest-and-intake なら新規エラーも報告
+          source: ${{ github.repository }}
+```
+
+> `actions: read` は省略できません。`permissions:` を書いた時点で、記載のない scope は
+> `none` になり、ログが読めないまま「緑だが何も投稿しない」状態になります。この権限を
+> 与えられない場合は `error:` でエラーテキストを明示的に渡してください。
+
+→ [入力と出力の一覧](docs/agents/external-usage.md)
+
 ### 8秒で見る
 
 ![Search lesson demo](promotional/search%20lesson.gif)

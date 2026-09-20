@@ -46,7 +46,12 @@ on:
     types: [completed]
 
 permissions:
-  contents: read
+  # `actions: read` 不是可选项：自动抽取报错时，action 读的是失败 job 的日志
+  # （REST `.../actions/jobs/{id}/logs`）。而 workflow 里一旦写了 `permissions:`，
+  # **没列出的 scope 一律被置为 `none`** → 日志读不到 → warning 被吞 → 变成
+  # "No error input provided, skipping"：**绿着、什么都不发**。给不出这个权限时，
+  # 改用 `error:` / `log-file:` 显式传错误文本。
+  actions: read
   pull-requests: write
   issues: write                # 评论走 issues.createComment（PR 也是 issue）
 
@@ -87,6 +92,15 @@ on:
         type: choice
         options: [suggest-only, suggest-and-intake]
         default: suggest-and-intake
+
+permissions:
+  # 这条路径把错误文本放在 `error:` 里，理论上不需要 `actions: read`；仍然给上，
+  # 因为输入一旦为空，action 就会回落到读日志 —— 少给这一个 scope，回落的那次
+  # 会变成"绿着但什么都没发"。评论要 issues: write（issues.createComment），
+  # 列出失败 PR 要 pull-requests: read。
+  actions: read
+  pull-requests: write
+  issues: write
 
 jobs:
   intake:

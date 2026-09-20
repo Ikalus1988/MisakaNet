@@ -215,6 +215,37 @@ python3 search_knowledge.py "pip install timeout"
 
 > 核心搜索：零依赖，纯 Python 标准库。[快速接入指南 →](docs/quickstart.md)
 
+### 作为 GitHub Action 使用
+
+让 CI 失败自动拿建议：workflow 失败时，action 检索课程、把最接近的一篇评论到 PR 上；
+也可以把新错误上报出去，让别人把它写成课程。已上架
+[GitHub Marketplace](https://github.com/marketplace/actions/misakanet-intake-bot)。
+
+```yaml
+on:
+  workflow_run:
+    workflows: ["CI"]                # 换成你自己 CI workflow 的名字
+    types: [completed]
+permissions:
+  actions: read                      # 读失败 job 的日志（必需）
+  pull-requests: write               # 发评论
+  issues: write                      # 评论接口是 issues.createComment
+jobs:
+  intake:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Ikalus1988/MisakaNet@v1
+        with:
+          mode: suggest-only         # 或 suggest-and-intake（同时上报新错误）
+          source: ${{ github.repository }}
+```
+
+> `actions: read` 不能省：只写 `permissions:` 而不列出它，等于把它设成 `none`，
+> 于是日志读不到 → 绿着但什么都不发。给不出该权限时改用 `error:` 显式传错误文本。
+
+→ [完整输入/输出说明](docs/agents/external-usage.md)
+
 ### 常用命令
 
 | 操作 | 命令 |
