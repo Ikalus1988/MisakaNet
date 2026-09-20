@@ -84,3 +84,49 @@ def test_both_spellings_are_understood_by_the_python_helper_but_only_one_is_clea
     assert mergeable_is_clean(False) is False
     assert mergeable_is_clean(None) is False
     assert mergeable_is_clean("UNKNOWN") is False
+
+
+def test_a_release_pull_request_is_not_auto_merged():
+    """The one PR a person should read before it ships.
+
+    On 2026-09-20 this gate merged the 2.32.0 release PR while the maintainer was still reviewing its
+    changelog — which held 30 duplicated entries and shipped as-is. The duplication is caught separately
+    (`tests/test_changelog_shape.py`); what this asserts is that somebody gets the chance to look: a release
+    PR carries the version bump and the changelog that becomes the release notes, and it is prepared by a
+    bot, so nothing human has read it yet.
+
+    Both signals are asserted because they cover different windows: release-please applies
+    `autorelease: pending` to the PR it opens, and the branch name is there even before that label lands.
+    """
+    script = _gate_script()
+    assert "autorelease:" in script, (
+        "the gate does not look at the `autorelease:` label, so a release PR can be merged by a bot")
+    assert "release-please--" in script, (
+        "the gate does not check the branch name, so a release PR opened without the label yet can be "
+        "merged by a bot")
+    assert re.search(r'case "\$PR_LABELS"', script) and re.search(r'case "\$PR_BRANCH"', script), (
+        "the release checks are not wired to a skip path")
+
+
+def _gate_script_of(path):
+    workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
+    for job in workflow["jobs"].values():
+        for step in job.get("steps", []):
+            if step.get("name") == "Auto-Merge Gate":
+                return step["run"]
+    raise AssertionError(f"no Auto-Merge Gate step in {path}")
+
+
+def test_the_release_check_notices_a_stripped_guard(tmp_path):
+    """A rule that cannot fail is not a rule: strip the branch check and the assertion must notice."""
+    import shutil
+
+    scratch = tmp_path / "repo"
+    (scratch / ".github" / "workflows").mkdir(parents=True)
+    victim = scratch / ".github" / "workflows" / "pr-checks.yml"
+    shutil.copy(PR_CHECKS, victim)
+    victim.write_text(victim.read_text(encoding="utf-8").replace("release-please--", "some-branch-"),
+                      encoding="utf-8")
+    mutated = _gate_script_of(victim)
+    assert "release-please--" not in mutated, "the mutation did not take"
+    assert "autorelease:" in mutated, "the label check survived, so only the branch check is under test"
