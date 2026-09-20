@@ -34,11 +34,16 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # The action reads the failing job's log through the API (`.../actions/jobs/{id}/logs`), which
+      # needs Actions: read. Declaring `permissions:` at all sets every scope left out to `none`, and
+      # without this one the fetch 403s, the warning is swallowed, and the bot "skips" — green, with
+      # nothing posted. Same failure shape as #1825, different cause. The `error:` input above masks
+      # it on the dispatch path, which is exactly why it went unnoticed: the demo's manual trigger
+      # always passes text, and its workflow_run path never does.
+      actions: read
       pull-requests: write
       # Both, not just pull-requests: the comment step calls the "create an issue comment" endpoint,
-      # which is documented as Issues: write — a PR *is* an issue for that endpoint. The demo had
-      # only pull-requests: write, so the permission the comment path actually needs was never
-      # granted, and this workflow is the only place it is exercised.
+      # which is documented as Issues: write — a PR *is* an issue for that endpoint.
       issues: write
     steps:
       - name: Checkout

@@ -190,6 +190,34 @@ external-validation bounty asks for).
 [MCP docs](docs/mcp.md) · [what the installer writes](integrations/agent-autostart/README.md) ·
 [WebMCP setup](docs/cloudflare-worker.md)
 
+### Use it as a GitHub Action
+
+The same corpus, wired to your CI: when a workflow fails, the action searches the lessons, comments
+the closest match on the pull request, and (optionally) reports the new error so someone turns it
+into a lesson. Published on [GitHub Marketplace](https://github.com/marketplace/actions/misakanet-intake-bot).
+
+```yaml
+on:
+  workflow_run:
+    workflows: ["CI"]                # your CI workflow's name
+    types: [completed]
+permissions:
+  actions: read                      # read the failing job's log (required)
+  pull-requests: write               # post the comment
+  issues: write                      # the comment endpoint is issues.createComment
+jobs:
+  intake:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Ikalus1988/MisakaNet@v1
+        with:
+          mode: suggest-only         # or suggest-and-intake, to report new errors too
+          source: ${{ github.repository }}
+```
+
+→ [inputs and outputs](docs/agents/external-usage.md) · [why `actions: read` is not optional](docs/agents/external-usage.md)
+
 ### See it in 8 seconds
 
 ![Search lesson demo](promotional/search%20lesson.gif)
