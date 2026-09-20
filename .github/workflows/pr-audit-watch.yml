@@ -1,0 +1,117 @@
+name: PR Audit Watch
+
+# Why this exists (2026-09-20, #1920)
+# ----------------------------------
+# `pr-checks.yml` ("Misaka Network Agent Auditor") is the repository's real merge gate: it runs the full
+# test suite, the DCO audit, the secrets scan and the lesson-schema check, and publishes a verdict.
+#
+# On 2026-09-20 PR #1918 opened and **not one `pull_request`-triggered workflow ran** — only the
+# `pull_request_target` ones (shape guard, welcome, docs auto-merge). The auditor never ran, and the
+# reason is still unknown (not a fork, not a draft, same-repo branch). The same had happened to the two
+# PRs before it (#1916, #1917), where it looked like "CI hasn't finished yet".
+#
+# Nothing notices, and `main` has **no required status checks at all**, so "the gate never ran" and "the
+# gate passed" render identically to a maintainer: a list of green checks, just shorter. That is the
+# defect this workflow closes. It cannot force GitHub to fire the event, so it does the next best thing:
+# it looks for PRs whose head commit has **no `audit` check-run** and starts the auditor for them.
+#
+# Requiring `audit` in branch protection is the complementary half — it turns "silently skipped" into
+# "pending forever, cannot merge". That is a repository setting, tracked in #1920.
+
+on:
+  schedule:
+    - cron: '17 */2 * * *'   # every two hours; the auditor takes ~2 minutes per PR
+  workflow_dispatch:
+
+permissions:
+  actions: write        # `gh workflow run` (the repair)
+  checks: read          # read the check-runs of a PR head
+  contents: read
+  issues: write         # label a fork PR the repair cannot reach
+  pull-requests: read
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-dispatch the auditor for PRs that never got one
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Give the normal trigger a chance before assuming it failed — a PR opened seconds ago is not
+          # evidence of anything.
+          MIN_AGE_MINUTES=15
+          # A repair storm would be worse than the disease: five per run, the rest reported.
+          MAX_DISPATCH=5
+
+          now=$(date -u +%s)
+          missing=0
+          dispatched=0
+          unreachable=0
+
+          gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 60 \
+            --json number,isDraft,headRefName,headRefOid,headRepositoryOwner,createdAt \
+            --jq '.[] | select(.isDraft | not) | [.number, .headRefName, .headRefOid, .createdAt, (.headRepositoryOwner.login // "")] | @tsv' \
+            > /tmp/open-prs.tsv
+
+          while IFS=$'\t' read -r num branch sha created owner; do
+            [ -n "${num:-}" ] || continue
+
+            age=$(( (now - $(date -u -d "$created" +%s)) / 60 ))
+            [ "$age" -ge "$MIN_AGE_MINUTES" ] || continue
+
+            names=$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha/check-runs?per_page=100" \
+                      --jq '[.check_runs[].name] | join(",")' 2>/dev/null || echo "")
+            case "$names" in
+              *audit*) continue ;;
+            esac
+
+            missing=$((missing + 1))
+
+            # The auditor has to run on the branch it is auditing: dispatching it at `main` would audit
+            # main and report a green verdict about code nobody asked about.
+            if [ "$owner" != "${GITHUB_REPOSITORY%%/*}" ]; then
+              unreachable=$((unreachable + 1))
+              echo "::warning::PR #$num is from $owner/$branch — workflow_dispatch cannot target a fork, so a maintainer has to start the audit by hand"
+              # Built with printf, every line indented: a line inside this block scalar that starts at
+              # a lower indentation ends the scalar and turns the rest of the file into a syntax error
+              # (the failure `tests/test_workflow_yaml_validity.py` exists to catch).
+              printf '%s\n' \
+                "🔍 **The audit did not run for this PR's head commit** (\`${sha:0:7}\`)." \
+                "" \
+                "The scheduled watcher cannot start it for a fork branch — a maintainer will dispatch it with:" \
+                "" \
+                '```' \
+                "gh workflow run pr-checks.yml --repo $GITHUB_REPOSITORY --ref <branch> -f pr_number=$num" \
+                '```' \
+                "" \
+                "Until then the checks on this PR are only the \`pull_request_target\` ones — they do **not** include the test suite, DCO or the lesson gate." \
+                > /tmp/audit-missing.md
+              gh pr comment "$num" --repo "$GITHUB_REPOSITORY" --body-file /tmp/audit-missing.md
+              continue
+            fi
+
+            if [ "$dispatched" -lt "$MAX_DISPATCH" ]; then
+              echo "::warning::PR #$num ($branch @ ${sha:0:7}) has no audit check-run — dispatching the auditor"
+              gh workflow run pr-checks.yml --repo "$GITHUB_REPOSITORY" --ref "$branch" -f "pr_number=$num"
+              dispatched=$((dispatched + 1))
+            else
+              echo "::warning::PR #$num also has no audit run, but the per-run dispatch cap is reached"
+            fi
+          done < /tmp/open-prs.tsv
+
+          {
+            echo "### PR audit watch"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| PRs with no \`audit\` check-run | $missing |"
+            echo "| Auditor dispatched by this run | $dispatched |"
+            echo "| Needs a human (fork branch) | $unreachable |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$missing" -gt 0 ]; then
+            echo "::notice::$missing open PR(s) had no audit check-run; $dispatched dispatched, $unreachable need a human"
+          fi
