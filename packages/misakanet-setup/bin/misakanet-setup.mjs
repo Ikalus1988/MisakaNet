@@ -113,7 +113,8 @@ const SILENT = has('--silent');
 /** `--report-json`: the same report as JSON, and nothing else on stdout (#1784). */
 const REPORT_JSON = has('--report-json');
 const HOME = resolve(valueOf('--home', homedir()));
-const AGENTS = ['claude', 'codex', 'hermes', 'openclaw', 'codewhale', 'cursor'];
+const AGENTS = ['claude', 'codex', 'hermes', 'openclaw', 'codewhale',
+                'cursor', 'gemini', 'copilot', 'opencode', 'kiro'];
 
 const done = [];
 const manual = [];
@@ -319,6 +320,91 @@ function writeText(path, text, { mode } = {}) {
 }
 
 /**
+ * The targets whose whole install is one MCP entry in one JSON file.
+ *
+ * Each entry shape is the one that target's own documentation shows, and they are **not**
+ * interchangeable: Gemini CLI's remote field is `httpUrl` (its `url` means SSE), OpenCode nests under
+ * `mcp` rather than `mcpServers` and wants `type: "remote"`, Copilot CLI wants `type: "http"`, and
+ * Cursor and Kiro use a bare `url`. A copied entry with the wrong key fails **silently** — no error,
+ * the server simply never appears — which is why each shape is pinned by tests instead of assumed.
+ *
+ * None of these five has a rules block or a hook *this installer can write*: their rules live in
+ * project-scoped files (`.cursor/rules/*.mdc`, `GEMINI.md`, `AGENTS.md`, `.github/copilot-instructions.md`,
+ * `.kiro/steering/*.md`) and we do not know where a user's projects are. So tier ① is the whole
+ * install for them, `--mcp-only` is an identity, and the output says "MCP only" out loud instead of
+ * implying behaviour changed. That is also why `--report` says `install-scope: mcp-only` on a machine
+ * whose only target is one of these.
+ */
+const MCP_ONLY_TARGETS = {
+  cursor: {
+    label: 'Cursor',
+    detect: ['.cursor'],
+    config: (home) => join(home, '.cursor', 'mcp.json'),
+    container: 'mcpServers',
+    urlField: 'url',
+    entry: (bearer) => ({ url: ENDPOINT, headers: mcpHeaders(bearer, 'cursor') }),
+    rules: '.cursor/rules/*.mdc 是项目级的，安装器不知道你的项目在哪',
+    ruleHint: '想让 Cursor 主动去查，把 .cursor/rules/misakanet-failure-memory.mdc 放进项目',
+    manual: '重启 Cursor 后在 Settings → MCP 里确认能看见 misakanet（本安装器只写用户级 '
+      + '~/.cursor/mcp.json，项目级 .cursor/mcp.json 归你自己管）',
+    verifyHint: '在 Settings → MCP 里复核',
+  },
+  gemini: {
+    label: 'Gemini CLI',
+    detect: ['.gemini'],
+    config: (home) => join(home, '.gemini', 'settings.json'),
+    container: 'mcpServers',
+    // `httpUrl` is the HTTP-streaming endpoint; `url` would mean SSE. Documented property list:
+    // geminicli.com/docs/tools/mcp-server ("headers: Custom HTTP headers when using url or httpUrl").
+    urlField: 'httpUrl',
+    entry: (bearer) => ({ httpUrl: ENDPOINT, headers: mcpHeaders(bearer, 'gemini') }),
+    rules: '它读 GEMINI.md（全局 ~/.gemini/GEMINI.md 与项目树），而安装器不写别人的规则文件',
+    ruleHint: '想让 Gemini CLI 主动去查，把规则块加进项目的 GEMINI.md',
+    manual: '重启会话后用 `/mcp` 复核 misakanet 是否列出',
+    verifyHint: '用 /mcp 复核',
+  },
+  copilot: {
+    label: 'Copilot CLI',
+    detect: ['.copilot'],
+    config: (home) => join(home, '.copilot', 'mcp-config.json'),
+    container: 'mcpServers',
+    urlField: 'url',
+    entry: (bearer) => ({ type: 'http', url: ENDPOINT, headers: mcpHeaders(bearer, 'copilot') }),
+    rules: '它读 .github/copilot-instructions.md 与 AGENTS.md（项目级），安装器不写项目文件',
+    ruleHint: '想让 Copilot CLI 主动去查，把规则写进项目的 .github/copilot-instructions.md',
+    manual: '跑 `copilot mcp list` 复核（VS Code 里的 Copilot 是另一份配置，键名是 `servers`）',
+    verifyHint: '用 `copilot mcp list` 复核',
+  },
+  opencode: {
+    label: 'OpenCode',
+    detect: ['.config/opencode'],
+    config: (home) => join(home, '.config', 'opencode', 'opencode.json'),
+    container: 'mcp',
+    urlField: 'url',
+    entry: (bearer) => ({ type: 'remote', url: ENDPOINT, enabled: true,
+                          headers: mcpHeaders(bearer, 'opencode') }),
+    rules: '它读 AGENTS.md（项目根与 ~/.config/opencode/AGENTS.md），安装器不写别人的规则文件',
+    ruleHint: '想让 OpenCode 主动去查，把规则块加进项目的 AGENTS.md',
+    manual: '重启 OpenCode 后看它的 MCP 列表；若你设了 XDG_CONFIG_HOME，它读的是 '
+      + '$XDG_CONFIG_HOME/opencode/opencode.json，把同样的条目贴过去即可',
+    verifyHint: '看 OpenCode 的 MCP 列表复核',
+    parseNote: 'opencode.jsonc 允许注释，若你用的正是它，本安装器解析不了',
+  },
+  kiro: {
+    label: 'Kiro',
+    detect: ['.kiro'],
+    config: (home) => join(home, '.kiro', 'settings', 'mcp.json'),
+    container: 'mcpServers',
+    urlField: 'url',
+    entry: (bearer) => ({ url: ENDPOINT, headers: mcpHeaders(bearer, 'kiro') }),
+    rules: '它读 .kiro/steering/*.md（steering 文件），安装器不写别人的规则文件',
+    ruleHint: '想让 Kiro 主动去查，把规则加进 .kiro/steering/',
+    manual: '重启 Kiro 后用它的 MCP 面板复核 misakanet（Kiro 还支持 disabled / autoApprove 字段）',
+    verifyHint: '用 Kiro 的 MCP 面板复核',
+  },
+};
+
+/**
  * The files each assistant's install writes, so a permission problem can be reported *before*
  * anything is touched (and so `--dry-run` can say "I cannot change that" as well as "I would change
  * this"). It mirrors what the per-agent install functions write; those keep their own try/catch as
@@ -330,11 +416,10 @@ const AGENT_WRITE_PATHS = {
   codex: (home) => [join(home, '.codex', 'config.toml'), join(home, '.codex', 'AGENTS.md')],
   hermes: (home) => [join(home, '.hermes', 'config.yaml'), join(home, '.hermes', 'SOUL.md')],
   codewhale: (home) => [join(home, '.codewhale', 'mcp.json')],
-  // Cursor has exactly one surface. `.cursor/rules/*.mdc` is project-scoped and this installer does
-  // not know where the user's projects live, and Cursor has no hook mechanism to attach to — so tier
-  // ① is the whole install, `--mcp-only` is an identity for it, and the output says "MCP only"
-  // rather than implying behaviour changed.
-  cursor: (home) => [join(home, '.cursor', 'mcp.json')],
+  // Every MCP-only target writes exactly one file, so the table above is the single source of truth
+  // for the write manifest, the detection paths and the report's scope line.
+  ...Object.fromEntries(Object.entries(MCP_ONLY_TARGETS)
+    .map(([id, spec]) => [id, (home) => [spec.config(home)]])),
   openclaw: () => openclawWorkspaces().map((workspace) => join(workspace, 'AGENTS.md')),
 };
 
@@ -859,7 +944,8 @@ function mcpEntryPresent(agent) {
     hermes: () => readText(join(HOME, '.hermes', 'config.yaml')),
     openclaw: () => readText(join(HOME, '.openclaw', 'openclaw.json')),
     codewhale: () => readText(join(HOME, '.codewhale', 'mcp.json')),
-    cursor: () => readText(join(HOME, '.cursor', 'mcp.json')),
+    ...Object.fromEntries(Object.entries(MCP_ONLY_TARGETS)
+      .map(([id, spec]) => [id, () => readText(spec.config(HOME))])),
   }[agent]?.() || '';
   return text.includes('misakanet') && text !== 'null';
 }
@@ -871,7 +957,7 @@ function detect(agent) {
     hermes: ['.hermes'],
     openclaw: ['.openclaw'],
     codewhale: ['.codewhale'],
-    cursor: ['.cursor'],
+    ...Object.fromEntries(Object.entries(MCP_ONLY_TARGETS).map(([id, spec]) => [id, spec.detect])),
   }[agent] || [];
   return paths.some((p) => existsSync(join(HOME, p)));
 }
@@ -1393,41 +1479,35 @@ async function installOpenclaw(bearer) {
 }
 
 /**
- * Cursor: one file, one entry, and no way to change how the agent behaves.
+ * Install one MCP-only target: read its JSON, merge our entry under the vendor's own key path, write.
  *
- * The entry shape is the one Cursor's own docs show for a remote server (`mcp.json`:
- * `{ "mcpServers": { "<name>": { "url": …, "headers": {…} } } }`) — no `type`/`transport` key, and
- * `headers` is supported, so the self-declared context hints work like everywhere else. Cursor reads
- * `~/.cursor/mcp.json` for every project and `.cursor/mcp.json` for one; this writes the first,
- * because the installer cannot know the second's location.
- *
- * There is deliberately no rules block and no hook here, and the output says so: an install that
- * claims to have changed behaviour when it only registered an endpoint is the kind of quiet lie
- * `--report` exists to prevent. A Cursor-only machine therefore reports `install-scope: mcp-only`.
+ * File-to-file, never a subprocess, so no token ever reaches a command line. An existing file is
+ * preserved (other servers, other keys) and backed up first; a file we cannot parse stops at a manual
+ * step that names exactly what to paste, because guessing at a half-written config is how a user
+ * loses the servers they already had.
  */
-async function installCursor(bearer) {
-  const cfg = join(HOME, '.cursor', 'mcp.json');
+async function installMcpOnly(agent, bearer) {
+  const spec = MCP_ONLY_TARGETS[agent];
+  const cfg = spec.config(HOME);
   const data = readJson(cfg, null);
   if (data === null && readText(cfg)) {
-    need(`Cursor：${cfg} 不是合法 JSON → 请手动加入 mcpServers.misakanet`
-      + '（每台已注册的服务器都在这个文件里，改完重启 Cursor）');
+    need(`${spec.label}：${cfg} 不是合法 JSON${spec.parseNote ? `（${spec.parseNote}）` : ''}`
+      + ` → 请手动加入 ${spec.container}.misakanet（形状见 https://misakanet.org/mcp 的客户端文档）`);
     return;
   }
   const doc = data || {};
-  doc.mcpServers = doc.mcpServers || {};
-  const entry = { url: ENDPOINT, headers: mcpHeaders(bearer, 'cursor') };
-  if (sameJson(doc.mcpServers.misakanet, entry)) {
-    ok('Cursor：MCP 已注册（无改动）');
+  doc[spec.container] = doc[spec.container] || {};
+  const entry = spec.entry(bearer);
+  if (sameJson(doc[spec.container].misakanet, entry)) {
+    ok(`${spec.label}：MCP 已注册（无改动）`);
   } else {
-    doc.mcpServers.misakanet = entry;
+    doc[spec.container].misakanet = entry;
     backup(cfg);
     writeText(cfg, `${JSON.stringify(doc, null, 2)}\n`);
-    ok(`Cursor：注册 MCP → ${cfg}`);
+    ok(`${spec.label}：注册 MCP → ${cfg}`);
   }
-  skip('Cursor：没有规则块与钩子（.cursor/rules 是项目级的，安装器不知道你的项目在哪）'
-    + '→ 想让 Cursor 主动去查，把 .cursor/rules/misakanet-failure-memory.mdc 放进项目');
-  need('Cursor：重启 Cursor 后在 Settings → MCP 里确认能看见 misakanet'
-    + '（本安装器只写用户级 ~/.cursor/mcp.json，项目级 .cursor/mcp.json 归你自己管）');
+  skip(`${spec.label}：没有规则块与钩子（${spec.rules}）→ ${spec.ruleHint}`);
+  need(`${spec.label}：${spec.manual}`);
 }
 
 // The last endpoint probe, recorded so `--report` can print it without probing twice.
@@ -1585,22 +1665,23 @@ async function verify() {
       skip('Hermes：本进程只能确认"配置已写"，无法确认 Hermes 是否已加载 → 可用 hermes mcp list 复核');
     }
   }
-  // Cursor: like OpenClaw and Hermes, reported only when the user actually has it. Its state lives
-  // in one file, so it is readable without starting anything — but whether Cursor has *loaded* that
-  // file cannot be confirmed from here, and the output says so instead of implying it.
-  if (detect('cursor')) {
-    const cfg = join(HOME, '.cursor', 'mcp.json');
-    const entry = (readJson(cfg, null) || {}).mcpServers?.misakanet;
+  // The MCP-only targets are reported only when the user actually has them, like OpenClaw and
+  // Hermes. Their state is one JSON file, so it is readable without starting anything — but whether
+  // the client has *loaded* that file cannot be confirmed from here, and the line says so.
+  for (const [agent, spec] of Object.entries(MCP_ONLY_TARGETS)) {
+    if (!detect(agent)) continue;
+    const cfg = spec.config(HOME);
+    const entry = (readJson(cfg, null) || {})[spec.container]?.misakanet;
     if (!entry) {
       allOk = false;
-      need(`Cursor：MCP 未注册（${cfg}）→ 重跑安装命令，然后重启 Cursor 在 Settings → MCP 里复核`);
-    } else if (!entry.url) {
+      need(`${spec.label}：MCP 未注册（${cfg}）→ 重跑安装命令，然后${spec.verifyHint}`);
+    } else if (!entry[spec.urlField]) {
       allOk = false;
-      need(`Cursor：MCP 条目在，但没有 url 字段（${cfg}）→ 重跑安装命令；`
-        + '若这个条目是你手写的，注意远端服务器用的是 url 而不是 command');
+      need(`${spec.label}：MCP 条目在，但没有 ${spec.urlField} 字段（${cfg}）→ 重跑安装命令；`
+        + `这家用的是 ${spec.urlField}${spec.container === 'mcp' ? '（注意嵌套在 mcp 而不是 mcpServers 下）' : ''}`);
     } else {
-      ok(`Cursor：MCP 已注册（${entry.url}）`);
-      skip('Cursor：只能确认"配置已写"，无法确认 Cursor 是否已加载 → 在 Settings → MCP 里复核');
+      ok(`${spec.label}：MCP 已注册（${entry[spec.urlField]}）`);
+      skip(`${spec.label}：只能确认"配置已写"，无法确认它是否已加载 → ${spec.verifyHint}`);
     }
   }
   // Version: what is installed, and whether the registry has moved on. Read-only here — the
@@ -1683,7 +1764,7 @@ function restoreEmptiedFiles() {
   // it may have existed before us (an empty `~/.claude.json` is a legitimate user state).
   const jsonFiles = [join(HOME, '.claude.json'), join(HOME, '.claude', 'settings.json'),
                      join(HOME, '.openclaw', 'openclaw.json'), join(HOME, '.codewhale', 'mcp.json'),
-                     join(HOME, '.cursor', 'mcp.json')];
+                     ...Object.values(MCP_ONLY_TARGETS).map((spec) => spec.config(HOME))];
   for (const file of jsonFiles) {
     const data = readJson(file, null);
     if (!data || typeof data !== 'object') continue;
@@ -1750,13 +1831,15 @@ function uninstall() {
     writeText(cfg, `${JSON.stringify(data, null, 2)}\n`);
     ok(`移除 MCP 注册 → ${cfg}`);
   }
-  const cursorCfg = join(HOME, '.cursor', 'mcp.json');
-  const cursor = readJson(cursorCfg, null);
-  if (cursor?.mcpServers?.misakanet) {
-    delete cursor.mcpServers.misakanet;
-    backup(cursorCfg);
-    writeText(cursorCfg, `${JSON.stringify(cursor, null, 2)}\n`);
-    ok(`移除 MCP 注册 → ${cursorCfg}`);
+  for (const spec of Object.values(MCP_ONLY_TARGETS)) {
+    const cfg = spec.config(HOME);
+    const data = readJson(cfg, null);
+    if (data?.[spec.container]?.misakanet) {
+      delete data[spec.container].misakanet;
+      backup(cfg);
+      writeText(cfg, `${JSON.stringify(data, null, 2)}\n`);
+      ok(`移除 MCP 注册 → ${cfg}`);
+    }
   }
   const voiceDir = join(stateDir(), 'voice');
   if (existsSync(voiceDir)) {
@@ -2253,7 +2336,7 @@ try {
         else if (agent === 'hermes') await installHermes(hookPath, bearer);
         else if (agent === 'openclaw') await installOpenclaw(bearer);
         else if (agent === 'codewhale') await installCodewhale(bearer);
-        else if (agent === 'cursor') await installCursor(bearer);
+        else if (MCP_ONLY_TARGETS[agent]) await installMcpOnly(agent, bearer);
         installed += 1;
       } catch (err) {
         need(`${agent}：写入配置失败（${redact((err && err.message) || err)}）`
