@@ -5,6 +5,9 @@ on:
     paths:
       - "lessons/**"
   push:
+    # Any branch, but never a tag: `pull_request` already covers review, and a paths-only push
+    # filter let a tag push re-scan lessons that main had scanned (#1934).
+    branches: ['**']
     paths:
       - "lessons/**"
 

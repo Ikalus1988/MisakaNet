@@ -2,6 +2,8 @@ name: Intake Bot Benchmark
 
 on:
   push:
+    # Any branch, but never a tag: `paths` alone does not filter tag pushes (#1934).
+    branches: ['**']
     paths:
       - 'scripts/intake_bot.py'
       - 'scripts/intake_benchmark.py'
