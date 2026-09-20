@@ -353,3 +353,42 @@ def test_domain_count_row_preserves_the_lesson_count():
         f"the lesson number was rewritten by a domain-count row: "
         f"{before.group(1)} -> {after.group(1)}"
     )
+
+
+# ── The root `llms.txt`: a pointer, not a second copy ────────────────────────────────────────────────
+# It is the file an agent gets from `raw.githubusercontent.com/.../llms.txt`, and for months it was a
+# second, unmanaged copy of the served `docs/llms.txt`. It went stale invisibly (317 lessons against a
+# corpus of 393), advertised three `misaka://` resources the server does not implement, and named the
+# wrong package under "MCP Server" (`misakanet-core`, the library, instead of `misakanet`, which ships
+# the stdio server). None of that could fail a check, because no check read the file.
+#
+# The resolution was to stop duplicating: the root file now points at the managed copy. These two rules
+# keep it a pointer.
+
+ROOT_LLMS = "llms.txt"
+
+
+def test_root_llms_points_at_the_managed_copy():
+    text = (REPO / ROOT_LLMS).read_text(encoding="utf-8")
+    assert "docs/llms.txt" in text or "misakanet.org/llms.txt" in text, (
+        f"{ROOT_LLMS} no longer points at a managed copy of the agent description. Whatever it says "
+        "instead is a second source of truth with nobody maintaining it — which is exactly how it came "
+        "to advertise 317 lessons and three resources that do not exist."
+    )
+
+
+def test_root_llms_carries_no_count_of_its_own():
+    """A number here would be a fact with no writer — the defect this whole module exists to prevent.
+
+    Only counts read as *measurements* are forbidden (`N lessons`, `N indexed`, `N nodes`, `N domains`);
+    a year or a port is not a claim about the corpus, so the regex stays narrow on purpose.
+    """
+    text = (REPO / ROOT_LLMS).read_text(encoding="utf-8")
+    claims = re.findall(
+        r"\b\d{2,5}\+?\s*(?:indexed\s+)?(?:lessons?|failure[- ]lessons?|nodes?|domains?)\b",
+        text, re.IGNORECASE)
+    assert not claims, (
+        f"{ROOT_LLMS} states a corpus count of its own: {claims}. Counts are managed by "
+        "`scripts/sync_lesson_count.py` for the files listed in its SITES registry; this file is not "
+        "one of them and must stay a pointer."
+    )
