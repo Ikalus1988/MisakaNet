@@ -1712,6 +1712,84 @@ async function readKvHealth(env) {
   }
 }
 
+// ── Which key family spends the KV write budget (2026-09-20, #1890) ──────────────────────────────────
+//
+// The free tier's write allowance counts *distinct keys written per day* (1,000), so any decision about
+// what to move to D1 has to be made on that metric. The first version of #1890 was not: it ranked
+// families by how many keys exist in the namespace, and named three (`node:`, `mcp_token:`, `client:`)
+// that already write through `storePut` — D1 first, KV only as a fallback — so they cost the budget
+// nothing and the ranking pointed at the wrong work.
+//
+// Hence this counter, before any further migration: measure, then move. It counts a key **once per
+// isolate** (a Set per family, capped), which is the shape the quota charges for — rewrites of the same
+// key are free — and it counts *attempts*, so a family that keeps trying during an outage is still
+// visible. Because isolates do not share the sets, the numbers are relative, not absolute: they rank
+// families, they do not total the day's keys.
+const KV_FAMILY_SEEN_CAP = 400;
+const kvFamilySeen = new Map();
+
+/** Known families are bounded on purpose: the bucket becomes a D1 row key. */
+const KV_WRITE_FAMILIES = new Set([
+  "client", "node", "mcp_token", "rate", "gap", "unsolved", "stale", "traffic", "traffic_month",
+  "helpful", "intake", "pair", "demand", "feedback", "email", "cache", "counter", "burst", "proxy",
+]);
+
+function kvKeyFamily(key) {
+  const text = String(key || "");
+  const head = text.split(":")[0].replace(/[^A-Za-z0-9_-]/g, "").slice(0, 32).toLowerCase();
+  if (!head) return "bare";
+  if (!text.includes(":")) return "bare";   // colon-free keys: few, fixed, and not a "family"
+  return KV_WRITE_FAMILIES.has(head) ? head : "other";
+}
+
+/**
+ * Record one distinct key for a family. Written straight to D1 — never through `kvPut`/`bumpCounter`,
+ * whose KV fallback lives one call away from this one and would recurse the moment D1 was unhappy.
+ *
+ * Fire and forget on purpose: this is measurement, and it must not add a round trip to a write path.
+ * A count lost when the isolate is evicted is a rounding error against the ranking it feeds.
+ */
+function noteKvWriteFamily(env, key) {
+  const family = kvKeyFamily(key);
+  let seen = kvFamilySeen.get(family);
+  if (!seen) {
+    seen = new Set();
+    kvFamilySeen.set(family, seen);
+  }
+  const statement = String(key);
+  if (seen.has(statement) || seen.size >= KV_FAMILY_SEEN_CAP) return;
+  seen.add(statement);
+  const d1 = d1Binding(env);
+  if (!d1) return;
+  d1.prepare(
+    `INSERT INTO counters (scope, bucket, period, count, updated_at)
+     VALUES ('kvwrite', ?1, ?2, 1, datetime('now'))
+     ON CONFLICT(scope, bucket, period)
+     DO UPDATE SET count = count + 1, updated_at = datetime('now')`,
+  ).bind(family, new Date().toISOString().slice(0, 10)).run()
+    .catch((error) => logInternal("kv write family record failed", error, { family }));
+}
+
+const KV_FAMILY_REPORT_LIMIT = 8;
+
+async function readKvWriteFamilies(env) {
+  const d1 = d1Binding(env);
+  if (!d1) return null;
+  try {
+    const { results } = await d1.prepare(
+      `SELECT bucket, count FROM counters
+        WHERE scope = 'kvwrite' AND period = ?1
+        ORDER BY count DESC LIMIT ?2`,
+    ).bind(new Date().toISOString().slice(0, 10), KV_FAMILY_REPORT_LIMIT).all();
+    if (!results || !results.length) return null;
+    return Object.fromEntries(results.map((row) => [row.bucket, Number(row.count)]));
+  } catch (error) {
+    logInternal("kv write family read failed", error);
+    return null;
+  }
+}
+
+
 
 // ── Traffic counter batching (KV write budget) ───────────────────────────────
 // Counts are buffered per (class, day) and flushed when a batch accumulates or the
@@ -1858,6 +1936,9 @@ async function consumeQuota(env, { scope, bucket, period, limit, message, hint }
 async function kvPut(env, key, value, options) {
   if (!env || !env.MISAKANET_KV) return false;
   kvWriteStats.attempts += 1;
+  // Count the distinct key before the attempt, so the ranking keeps working during an outage (a family
+  // that is being refused is exactly the one worth seeing).
+  noteKvWriteFamily(env, key);
   try {
     // The only place in this file that touches KV.put directly (the helper must not
     // call itself — an earlier bulk rename of every `env.MISAKANET_KV.put(` call
@@ -4451,7 +4532,10 @@ export default {
                      global_last_ok_at: (kvGlobal && kvGlobal.lastOkAt) || "",
                      global_error_kind: kvHealth.kv_error_kind || "",
                      global_error_code: kvHealth.kv_error_code || "",
-                     global_backend: kvGlobal ? "d1" : "isolate" },
+                     global_backend: kvGlobal ? "d1" : "isolate",
+                     // Which key families spent today's allowance, most first (#1890). Relative, not a
+                     // total: each isolate counts the keys it has seen, and they do not share the sets.
+                     families: await readKvWriteFamilies(env) },
         timestamp: new Date().toISOString(),
       });
     }
@@ -5426,6 +5510,9 @@ function findCoveringLesson(problemText, errorText, lessons) {
 
 export {
   healthStatus,
+  // Exported for workers/kv-write-family.test.mjs: the family mapping decides the rows the ranking is
+  // built from, so it is worth asserting without a database.
+  kvKeyFamily,
   // Exported for workers/kv-health-global.test.mjs: the failure *kind* is the part of /api/health
   // that tells a quota outage (10048) apart from a broken binding (10009/404), and telling them
   // apart is the fix this export makes testable.
