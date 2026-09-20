@@ -439,16 +439,30 @@ def main():
     else:
         print(f"\n✅ Leaderboard unchanged. No notification needed.")
 
-    # 4. 保存新快照
-    save_leaderboard(current)
+    # 4. 保存新快照 —— **只在真的变了时写盘**（2026-09-20）
+    #
+    # 这里过去是无条件写盘，并且每次都盖上新的 `updated_at` 时间戳，于是**每次 push 都会产生一个
+    # 只有时间戳不同的提交**：main 的历史里 1,026 个提交（占全仓 25%）只为保存这几个字段的状态，
+    # 而工作流里明明有 `git diff --cached --quiet` 守卫——它永远不生效，因为 diff 从来不空。
+    #
+    # 代价不只是历史噪声：main 因此成为高频移动的目标，2026-09-20 npm 发布的 record 步骤就被这些提交
+    # 撞成非快进（`! [rejected] HEAD -> main (fetch first)`），发布成功却没能记回仓库。
+    #
+    # 状态只在"榜首真的变了"时落盘，守卫随即生效：没有变化 → 没有提交。（快照仍是下次对比的基准，
+    # 排行榜的实时视图本来就来自 Worker 的 `/api/insights/reputation-leaderboard`，不读这两个文件。）
+    material_change = bool(contrib_changed or bench_leaderboard)
+    if material_change:
+        save_leaderboard(current)
 
-    # 5. 更新 meta（记录当前榜首，供下次对比）
-    if bench_top:
-        meta["top_agent"] = bench_top["login"]
-        meta["top_score"] = bench_top["score"]
-        meta["updated_at"] = datetime.now(timezone.utc).isoformat()
-        save_meta(meta)
-        print(f"  Meta saved to {META_FILE}")
+        # 5. 更新 meta（记录当前榜首，供下次对比）
+        if bench_top:
+            meta["top_agent"] = bench_top["login"]
+            meta["top_score"] = bench_top["score"]
+            meta["updated_at"] = datetime.now(timezone.utc).isoformat()
+            save_meta(meta)
+            print(f"  Meta saved to {META_FILE}")
+    else:
+        print("  no material change — snapshot not rewritten, so this run commits nothing")
 
     print("\nDone.")
 
