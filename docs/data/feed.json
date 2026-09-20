@@ -1,42 +1,35 @@
 {
-  "generated_at": "2026-09-20T05:02:08.310777+00:00",
+  "generated_at": "2026-09-20T11:36:13.094806+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(worker): KV write health becomes global, and the reason names the cause",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1904",
-      "timestamp": "2026-09-20T01:48:33Z",
+      "title": "chore(main): release 2.32.1",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1927",
+      "timestamp": "2026-09-20T10:06:39Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(readme): restructure the front page — 759 lines to 298, without losing a fact",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1903",
-      "timestamp": "2026-09-20T01:42:11Z",
+      "title": "fix(worker): flush the traffic counter five times less often, because it was spending the day's KV budget",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1926",
+      "timestamp": "2026-09-20T10:03:44Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(llms): the root llms.txt becomes a pointer, because it was a second copy with no writer",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1902",
-      "timestamp": "2026-09-20T01:33:42Z",
+      "title": "chore(main): release 2.32.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1925",
+      "timestamp": "2026-09-20T09:59:11Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "lessons: pkill -f kills the shell that runs it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1899",
-      "timestamp": "2026-09-20T01:28:20Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(readme): P0 items — License, a Troubleshooting index, and the version drift explained",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1900",
-      "timestamp": "2026-09-20T01:27:45Z",
+      "title": "fix(release): the release flow never marked its release PR as tagged, so every release blocked the next",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1924",
+      "timestamp": "2026-09-20T09:55:36Z",
       "source": "github"
     },
     {
@@ -46,6 +39,13 @@
       "timestamp": "2026-09-20",
       "domain": "devops",
       "source": "lessons"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(main): release 2.31.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1862",
+      "timestamp": "2026-09-19T11:51:59Z",
+      "source": "github"
     },
     {
       "type": "lesson",
