@@ -1804,8 +1804,19 @@ async function readKvWriteFamilies(env) {
 // buffer turns stale. Worst case a few counts are lost when an isolate is evicted;
 // the alternative was spending the day's KV write budget on analytics and losing
 // registration entirely (2026-09-12).
-const TRAFFIC_FLUSH_BATCH = 10;
-const TRAFFIC_FLUSH_MS = 60_000;
+// Raised 10 → 50 and 60s → 300s on 2026-09-20, after measuring what actually spends the free tier's
+// write allowance. Two independent observations agreed: the account wrote **1,218 times** that day
+// (`KV put() limit exceeded for the day.` at 06:43) while the namespace grew by ~4 keys, so the budget
+// behaves like an *operation* limit, not a "distinct keys" one as the pricing table's wording suggested —
+// and the new family counter put `traffic` far ahead of every other writer (310 counts against single
+// digits for the rest). A flush writes one `put` per (class, day) key, so with a one-minute window a
+// handful of isolates could spend the whole day on analytics alone.
+//
+// The cost of the change is bounded and deliberate: analytics are up to five minutes stale, and an isolate
+// evicted mid-buffer loses up to 50 counts instead of 10 — for a counter that was already documented as
+// approximate ("worst case a few counts are lost when an isolate is evicted").
+const TRAFFIC_FLUSH_BATCH = 50;
+const TRAFFIC_FLUSH_MS = 300_000;
 const trafficBuffer = new Map();
 let trafficFlushedAt = 0;
 
@@ -5518,6 +5529,9 @@ function findCoveringLesson(problemText, errorText, lessons) {
 
 export {
   healthStatus,
+  // Exported so workers/kv-write-budget.test.mjs asserts the *ratio* against the real batch size
+  // instead of a hardcoded 10 that stops being true the moment the constant moves.
+  TRAFFIC_FLUSH_BATCH,
   // Exported for workers/kv-write-family.test.mjs: the family mapping decides the rows the ranking is
   // built from, so it is worth asserting without a database.
   kvKeyFamily,

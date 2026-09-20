@@ -13,7 +13,7 @@
 // Run: node --test workers/kv-write-budget.test.mjs
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import worker from './register-proxy-sw.js';
+import worker, { TRAFFIC_FLUSH_BATCH } from './register-proxy-sw.js';
 import { testToken } from './_test-token.mjs';
 
 // Synthetic token: never a literal, so the plugin-scanner's secret patterns do not
@@ -51,20 +51,25 @@ async function hit(env, path = '/api/health') {
 
 test('many cheap requests cost few KV writes', async () => {
   const env = createCountingEnv();
-  const requests = 40;
+  // The batch size moved 10 → 50 on 2026-09-20 (see the constant), so the test reads it rather than
+  // hardcoding a number that stops being true the moment it changes.
+  const requests = TRAFFIC_FLUSH_BATCH * 4;
   for (let i = 0; i < requests; i++) await hit(env);
 
   const counterKeys = [...env._store.keys()].filter((k) => k.startsWith('traffic:'));
   assert.ok(counterKeys.length >= 1, 'the traffic counter never reached KV');
 
-  // Batching is 10 per flush, and a flush also costs one get per key.
-  assert.ok(env.stats.puts <= Math.ceil(requests / 10),
-    `${requests} requests cost ${env.stats.puts} writes; batching should keep this at ${Math.ceil(requests / 10)} or fewer`);
+  // Batching is TRAFFIC_FLUSH_BATCH per flush, each flush also costs one get per key, and the first
+  // request flushes immediately (the interval has never run, so the buffer is already 'stale').
+  const budget = Math.ceil(requests / TRAFFIC_FLUSH_BATCH) + 1;
+  assert.ok(env.stats.puts <= budget,
+    `${requests} requests cost ${env.stats.puts} writes; batching should keep this at ${budget} or fewer`);
 
   const total = [...env._store.entries()]
     .filter(([k]) => k.startsWith('traffic:'))
     .reduce((sum, [, v]) => sum + parseInt(v || '0', 10), 0);
-  assert.ok(total >= 10, `flushed counts must reflect traffic, saw ${total} across ${counterKeys.length} key(s)`);
+  assert.ok(total >= TRAFFIC_FLUSH_BATCH,
+    `flushed counts must reflect traffic, saw ${total} across ${counterKeys.length} key(s)`);
   assert.ok(total <= requests, `counted more traffic than requests: ${total} > ${requests}`);
 });
 
