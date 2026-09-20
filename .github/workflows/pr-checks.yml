@@ -578,6 +578,15 @@ jobs:
             REPORT+=$'\n\n'
             if [ "$OUTCOME" = "success" ]; then
               REPORT+="✅ **PASS** — ${COVERAGE}% coverage"
+            elif [ "$OUTCOME" = "skipped" ]; then
+              # `skipped` is not `failed`. A step whose `if:` contains no status function inherits an
+              # implicit `success()`, so one red gate earlier in this job (DCO, most often) skips every
+              # later step — including this one, which then reports `skipped` while describing itself
+              # as a failure. On 2026-09-20 that is what #1959/#1960/#1961 got: "❌ **FAIL** — tests
+              # have failures" for a suite that never started, which sends a contributor hunting for
+              # test failures that do not exist. Not verified is still not a pass (see the verdict
+              # below) — but the report has to say which of the two it is.
+              REPORT+="⏭️ **Did not run** — an earlier gate failed before it could start (see above)."
             elif [ -n "$OUTCOME" ]; then
               REPORT+="❌ **FAIL** — tests have failures"
               if [ -n "$COVERAGE" ]; then
@@ -630,7 +639,14 @@ jobs:
               VERDICT_PASS=false
             fi
             if [ -n "$OUTCOME" ] && [ "$OUTCOME" != "success" ]; then
-              REPORT+="❌ Test suite failed."$'\n'
+              # Same distinction as in the report above: a suite that never ran is not a suite that
+              # failed. Both keep the verdict red — an unverified PR must not read as green — but the
+              # sentence a contributor acts on is now the true one.
+              if [ "$OUTCOME" = "skipped" ]; then
+                REPORT+="❌ Test suite did not run (an earlier gate failed)."$'\n'
+              else
+                REPORT+="❌ Test suite failed."$'\n'
+              fi
               VERDICT_PASS=false
             fi
           fi
