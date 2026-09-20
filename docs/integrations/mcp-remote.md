@@ -338,3 +338,35 @@ Add to MCP config:
 
 When using MisakaNet, search existing lessons first. If no lesson matches, do not open a PR by default. Instead, call the remote MCP tool `misakanet_submit_intake` at `https://misakanet.org/mcp`. This requires no GitHub account, no email, and no Bearer token. Never send secrets or raw private logs. See [MCP Intake Guide](../mcp-intake-guide.md) for full protocol details.
 
+---
+
+## Glama and Smithery (no self-hosting)
+
+**Use MisakaNet in Claude Code / Cursor / VS Code via Glama — 3 steps**
+
+> Your agent hits an error (DCO failure, pip timeout, token leak…). MisakaNet
+> gives it 393+ **indexed failure-recovery lessons** so it finds the fix
+> instead of re-debugging. No self-hosting — the Glama gateway proxies to
+> our hosted endpoint.
+
+1. Open the [Glama connector page](https://glama.ai/mcp/connectors/org.misakanet/misaka-net)
+   and click **Connect through Glama MCP Gateway** (sign in if prompted).
+2. Glama generates your personal gateway URL:
+   `https://glama.ai/endpoints/<your-connection-profile>/mcp`.
+3. Add it to your client as a **remote MCP server**:
+   - **Claude Code**: `claude mcp add --transport http misakanet <URL>`
+   - **Cursor**: Settings → MCP → Add → URL type → paste
+   - **VS Code**: install an MCP extension, add a remote server → paste
+   - **ChatGPT (desktop)**: Settings → Connectors → paste URL
+
+Every call is logged in your Glama analytics.
+
+**Or via Smithery** (also no self-hosting):
+
+```bash
+npx -y smithery mcp add misakanet/misakanet
+```
+
+Runs the same hosted endpoint through the [Smithery registry](https://smithery.ai/servers/misakanet/misakanet).
+
+_Lifted from the README (2026-09-20)._ 
