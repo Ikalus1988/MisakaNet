@@ -49,6 +49,6 @@ an independent, fully owned repository
 
 ## Related
 
-- [ROADMAP.md](../ROADMAP.md) — Short-term: Supply chain security
+- [ROADMAP.md](../../ROADMAP.md) — Short-term: Supply chain security
 - [Pre-commit official docs](https://pre-commit.com/#new-hooks)
 - [CNCF DCO Guidelines](https://github.com/cncf/foundation/blob/main/docs/dco-guidelines.md)

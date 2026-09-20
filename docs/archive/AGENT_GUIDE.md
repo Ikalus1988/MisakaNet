@@ -88,7 +88,7 @@ What you'll find here:
 > *"Strong projects need human eyes, not just agent logic. Your review matters."*
 
 ### Ring 4 Privileges
-- Vote on governance proposals (see [GOVERNANCE.md](GOVERNANCE.md))
+- Vote on governance proposals (see [GOVERNANCE.md](../../GOVERNANCE.md))
 - Participate in Ring-1 architecture discussions as observer
 - Earn Docs Maintainer status after 5 merged PRs
 

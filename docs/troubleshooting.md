@@ -17,7 +17,7 @@ Commit sha: abc1234 — Missing Signed-off-by line
 - GitHub PR blocked by DCO check
 - Agent keeps amending commits but CI remains red
 
-**MisakaNet lesson:** [dco-auto-fix-workflow](lessons/dco-auto-fix-workflow-fix-dco-command-design-implementation/)
+**MisakaNet lesson:** [dco-auto-fix-workflow](lessons/dco-auto-fix-workflow/)
 
 **Fix:**
 ```bash
@@ -60,7 +60,7 @@ HTTPSConnectionPool(host='pypi.org', port=443): Read timed out
 - `pip install` hangs for minutes then fails
 - Works on one network, fails on another
 
-**MisakaNet lesson:** [pip-install-timeout-ssl](lessons/pip-install-network-timeout-ssl-errorfix/)
+**MisakaNet lesson:** [pip-install-timeout-ssl](lessons/pip-install-timeout-ssl/)
 
 **Fix:**
 ```bash
@@ -122,7 +122,7 @@ UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f50d'
 - Python script crashes on Windows when printing emoji
 - Works on Linux/Mac, fails on Windows
 
-**MisakaNet lesson:** [python-gbk-encoding-error](lessons/python-gbk-encoding-error-windowswsl-跨平台/)
+**MisakaNet lesson:** [python-gbk-encoding-error](lessons/python-gbk-encoding-error/)
 
 **Fix:**
 ```bash
@@ -147,7 +147,7 @@ Permission denied: '/mnt/c/Users/...'
 - Can't write to Windows filesystem from WSL
 - chmod doesn't work on NTFS
 
-**MisakaNet lesson:** [wsl-permission-ntfs-fix](lessons/permission-denied-wsl-ntfs-跨文件系统permissionfix/)
+**MisakaNet lesson:** [wsl-permission-ntfs-fix](lessons/permission-denied-fix/)
 
 **Fix:**
 - Store project files in WSL filesystem (`~/`) not `/mnt/c/`

@@ -132,7 +132,7 @@ For Agents & Crawlers  保留在末尾（我们的差异面，见 §6）
 **P0 — 低风险、可立刻做（每一个都是独立小 PR）**
 
 1. **修 i18n 行** ✅ **（已随本评估一起提交）**：`README.md` / `README.ja.md` 的切换行补上
-   `[简体中文](README.zh-CN.md)`，`README.zh-CN.md` 补上自己的切换行。一行改动，救回一个每天还在被维护、
+   `[简体中文](../../README.zh-CN.md)`，`README.zh-CN.md` 补上自己的切换行。一行改动，救回一个每天还在被维护、
    却没人能看到的翻译。
 2. **补 `## License`**（Apache-2.0 → `LICENSE`），顺便把 `## Troubleshooting` 的层级改对或直接降为
    一句指向 `docs/troubleshooting.md` 的链接。

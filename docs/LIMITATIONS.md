@@ -18,7 +18,7 @@ MisakaNet is designed for a specific niche: **decentralized, git-backed failure-
 
 ## Content Quality
 
-- **Garbage in, garbage out.** Lessons are community-contributed. Despite CI checks for dangerous patterns (see [SECURITY.md](SECURITY.md)), we cannot guarantee factual accuracy of every lesson. Always verify before executing retrieved commands.
+- **Garbage in, garbage out.** Lessons are community-contributed. Despite CI checks for dangerous patterns (see [SECURITY.md](../SECURITY.md)), we cannot guarantee factual accuracy of every lesson. Always verify before executing retrieved commands.
 - **No automated fact-checking.** The CI pipeline validates format, DCO, and dangerous patterns, but not semantic correctness. Misinformation is possible.
 - **Subjectivity in scoring.** Quality Score is a heuristic based on format, DCO compliance, and audit results. It does not measure lesson usefulness or correctness. Evidence levels (E0–E4) and `me_events` reuse signals are the main corrective signals we do track.
 
