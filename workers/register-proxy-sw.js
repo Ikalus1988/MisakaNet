@@ -1585,17 +1585,133 @@ async function getIdentityAura(env, token) {
  * attempts, so a single transient error does not colour the endpoint. The reason string is returned
  * separately and only when something is wrong, because an endpoint that says `degraded` without
  * saying why just moves the guessing.
+ *
+ * The isolate's own counters are not the whole story (2026-09-20): ten consecutive requests to this
+ * endpoint returned `ok` four times and `degraded` six times during a total KV write outage, because
+ * an isolate that had not attempted a write yet answered `attempts: 0`. `global` below carries the
+ * last outcome persisted in D1, which is the same answer from every isolate, and makes a single
+ * sample trustworthy.
  */
-function healthStatus({ hasKV, attempts = 0, failures = 0 } = {}) {
+const KV_HEALTH_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function healthStatus({ hasKV, attempts = 0, failures = 0, global = null, now = Date.now() } = {}) {
   if (!hasKV) return { status: "ok" };                       // nothing bound: not a failure, a config
-  if (attempts >= 2 && failures >= attempts) {
-    return { status: "degraded",
-             reason: `kv writes failing: ${failures}/${attempts} attempts, no successful write` };
-  }
-  return { status: "ok" };
+  const localFailing = attempts >= 2 && failures >= attempts;
+  const since = global && global.lastErrorAt ? Date.parse(global.lastErrorAt) : NaN;
+  const globalFailing = Boolean(global && global.lastErrorAt)
+    && (!global.lastOkAt || global.lastOkAt < global.lastErrorAt)
+    && Number.isFinite(since) && now - since < KV_HEALTH_WINDOW_MS;
+  if (!localFailing && !globalFailing) return { status: "ok" };
+  const { code, kind } = kvErrorKind(global && global.error);
+  const detail = kind === "unknown" ? "" : ` (${kind}${code ? ` ${code}` : ""})`;
+  const counts = localFailing
+    ? `${failures}/${attempts} attempts, no successful write`
+    : "the last write attempt failed";
+  return {
+    status: "degraded",
+    reason: `kv writes failing${detail}: ${counts}`,
+    kv_error_kind: kind,
+    kv_error_code: code,
+    kv_last_failure_at: (global && global.lastErrorAt) || kvWriteStats.last_failure_at || "",
+  };
 }
 
 const kvWriteStats = { attempts: 0, failures: 0, last_error: "", last_failure_at: "", last_ok_at: "" };
+
+// ── The same outcome, made global (2026-09-20, #1890 / #1822) ────────────────────────────────────────
+//
+// The counters above live in one isolate's memory, so they answer "did *this* isolate fail recently",
+// not "is KV broken". A D1 row carries the last outcome for every isolate. It is written on a *change*
+// of state only — one row per failure and one per recovery, not one per write — and a successful write
+// records the recovery only when this isolate has a reason to believe the global state is dirty
+// (it just failed, or the health endpoint read a failure). D1's own allowance is 100,000 rows
+// written/day, so this is noise next to the thing it measures.
+let kvHealthTableReady = false;
+let kvHealthRecoveryPending = false;
+
+/**
+ * Name the kind of KV write failure, because the kinds have different answers — and telling them
+ * apart is the whole point: on 2026-09-20 the reason read `kv writes failing: N/N` for a condition
+ * that was fully understood (`10048`, quota) and would have been read the same way for a condition
+ * that needs a config fix.
+ *
+ * 10048 — the account's daily write budget is gone. The free tier counts *distinct keys* per day
+ *         (1,000), not write operations, and it clears at 00:00 UTC. No code fix exists; the fix is
+ *         to write fewer distinct keys (#1890).
+ * 10009 / 404 — namespace or binding wrong. Needs a configuration change and will never clear alone.
+ * 429   — KV throttles one key to one write per second. Retry-shaped, not quota-shaped.
+ */
+function kvErrorKind(message) {
+  const text = String(message || "");
+  const code = (text.match(/code:\s*(\d+)/i) || [])[1]
+    || (text.match(/\b(10048|10009|429|404)\b/) || [])[1] || "";
+  if (code === "10048") return { code, kind: "quota" };
+  if (code === "10009" || code === "404") return { code, kind: "binding" };
+  if (code === "429") return { code, kind: "throttle" };
+  return { code, kind: "unknown" };
+}
+
+async function ensureKvHealthTable(d1) {
+  if (kvHealthTableReady) return;
+  await d1.prepare(
+    `CREATE TABLE IF NOT EXISTS kv_write_health (
+       id            INTEGER PRIMARY KEY CHECK (id = 1),
+       last_error    TEXT,
+       last_error_at TEXT,
+       last_ok_at    TEXT,
+       updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+     )`,
+  ).run();
+  kvHealthTableReady = true;
+}
+
+/** Persist the last outcome; best effort, because a health record must never break the write path. */
+async function recordKvHealth(env, outcome) {
+  const d1 = d1Binding(env);
+  if (!d1) return;
+  try {
+    await ensureKvHealthTable(d1);
+    const at = new Date().toISOString();
+    if (outcome.error !== undefined) {
+      await d1.prepare(
+        `INSERT INTO kv_write_health (id, last_error, last_error_at, updated_at)
+         VALUES (1, ?1, ?2, datetime('now'))
+         ON CONFLICT(id) DO UPDATE SET last_error = ?1, last_error_at = ?2, updated_at = datetime('now')`,
+      ).bind(String(outcome.error).slice(0, 200), at).run();
+      kvHealthRecoveryPending = true;
+      return;
+    }
+    await d1.prepare(
+      `INSERT INTO kv_write_health (id, last_ok_at, updated_at)
+       VALUES (1, ?1, datetime('now'))
+       ON CONFLICT(id) DO UPDATE SET last_ok_at = ?1, updated_at = datetime('now')`,
+    ).bind(at).run();
+    kvHealthRecoveryPending = false;
+  } catch (error) {
+    logInternal("kv health record failed", error);
+  }
+}
+
+async function readKvHealth(env) {
+  const d1 = d1Binding(env);
+  if (!d1) return null;
+  try {
+    await ensureKvHealthTable(d1);
+    const { results } = await d1.prepare(
+      `SELECT last_error, last_error_at, last_ok_at FROM kv_write_health WHERE id = 1`,
+    ).all();
+    const row = results && results[0];
+    if (!row) return null;
+    if (row.last_error_at && (!row.last_ok_at || row.last_ok_at < row.last_error_at)) {
+      kvHealthRecoveryPending = true;   // let the next successful write clear the global state
+    }
+    return { error: row.last_error || "", lastErrorAt: row.last_error_at || "", lastOkAt: row.last_ok_at || "" };
+  } catch (error) {
+    logInternal("kv health read failed", error);
+    return null;
+  }
+}
+
 
 // ── Traffic counter batching (KV write budget) ───────────────────────────────
 // Counts are buffered per (class, day) and flushed when a batch accumulates or the
@@ -1748,11 +1864,18 @@ async function kvPut(env, key, value, options) {
     // rewrote this line too, making kvPut infinitely recursive: RangeError, no write).
     await env.MISAKANET_KV.put(key, value, options);
     kvWriteStats.last_ok_at = new Date().toISOString();
+    // Record the recovery only when the global state is known to be dirty (this isolate just failed,
+    // or the health endpoint read a failure): one row per outage instead of one per write.
+    if (kvHealthRecoveryPending) await recordKvHealth(env, { ok: true });
     return true;
   } catch (error) {
     kvWriteStats.failures += 1;
     kvWriteStats.last_error = String(error && error.message ? error.message : error).slice(0, 200);
     kvWriteStats.last_failure_at = new Date().toISOString();
+    // Await the record: this is the failing path (rare), and the alternative — a floating promise —
+    // can be cancelled when the response is returned, which would lose exactly the evidence that
+    // makes the outage visible. A failure to record is swallowed inside recordKvHealth.
+    await recordKvHealth(env, { error: kvWriteStats.last_error });
     debugLog(env, 1, "KV write failed", { key: String(key).slice(0, 60), error: kvWriteStats.last_error });
     return false;
   }
@@ -4296,30 +4419,39 @@ export default {
     bufferTraffic(env, typeof ctx !== "undefined" ? ctx : null, _cls);
 
     if (request.method === "GET" && url.pathname === "/api/health") {
-      const kvHealth = healthStatus({ hasKV: !!env.MISAKANET_KV, ...kvWriteStats });
+      const kvGlobal = await readKvHealth(env);
+      const kvHealth = healthStatus({ hasKV: !!env.MISAKANET_KV, ...kvWriteStats, global: kvGlobal });
       return jsonResponse({
         status: kvHealth.status,
         // Present only when something is wrong, so a reader of this endpoint learns *why* instead
-        // of seeing `ok` next to `kv_writes: {attempts: 5, failures: 5}` (issue #1822).
+        // of seeing `ok` next to `kv_writes: {attempts: 5, failures: 5}` (issue #1822). Since
+        // 2026-09-20 the reason also names the *kind* of failure — `quota` (10048, clears at 00:00
+        // UTC), `binding` (10009/404, needs a config fix) or `throttle` (429, per-key 1/s) —
+        // because those three want three different responses and used to read identically.
         ...(kvHealth.reason ? { degraded_reason: kvHealth.reason } : {}),
         worker: "misakanet-register-proxy",
         scheduled_keepalive: true,
         hasToken: !!env.REGISTER_TOKEN,
         hasMcpToken: !!env.MCP_TOKEN,
         hasKV: !!env.MISAKANET_KV,
-        // KV write health, from this isolate's own history (no extra writes, so the
-        // probe cannot itself exhaust a quota). Added 2026-09-12 after every KV
-        // write path began failing while /api/health kept answering "ok": the
-        // service looked healthy from outside and was returning 1101 to every
-        // caller that needed storage.
-        // Counters and timestamps only: the raw message is in the logs, not on an
-        // anonymous endpoint (same reasoning as errorResponse).
+        // KV write health. `attempts`/`failures` are this isolate's own history (no extra writes,
+        // so the probe cannot itself exhaust a quota); the `global_*` fields come from one D1 row
+        // and are therefore the same answer from every isolate — without them a single sample was
+        // a coin flip (4 `ok` / 6 `degraded` across ten requests on 2026-09-20, all of them during
+        // a total write outage).
+        // Counters and timestamps only: the raw message is in the logs, not on an anonymous
+        // endpoint (same reasoning as errorResponse).
         counters: { d1: COUNTERS_BACKEND_STATS.d1, kv: COUNTERS_BACKEND_STATS.kv,
                     failures: COUNTERS_BACKEND_STATS.failures,
                     last_failure_at: COUNTERS_BACKEND_STATS.last_failure_at },
         kv_writes: { attempts: kvWriteStats.attempts, failures: kvWriteStats.failures,
                      last_failure_at: kvWriteStats.last_failure_at,
-                     last_ok_at: kvWriteStats.last_ok_at },
+                     last_ok_at: kvWriteStats.last_ok_at,
+                     global_last_failure_at: (kvGlobal && kvGlobal.lastErrorAt) || "",
+                     global_last_ok_at: (kvGlobal && kvGlobal.lastOkAt) || "",
+                     global_error_kind: kvHealth.kv_error_kind || "",
+                     global_error_code: kvHealth.kv_error_code || "",
+                     global_backend: kvGlobal ? "d1" : "isolate" },
         timestamp: new Date().toISOString(),
       });
     }
@@ -5294,6 +5426,10 @@ function findCoveringLesson(problemText, errorText, lessons) {
 
 export {
   healthStatus,
+  // Exported for workers/kv-health-global.test.mjs: the failure *kind* is the part of /api/health
+  // that tells a quota outage (10048) apart from a broken binding (10009/404), and telling them
+  // apart is the fix this export makes testable.
+  kvErrorKind,
   IDENTITY_AURA,
   MAX_MCP_REQUEST_BYTES,
   UNSOLVED_FAMILY_WHITELIST,
