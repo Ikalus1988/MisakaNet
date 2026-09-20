@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Compose one NDJSON sample-report line from an intake-bot JSON result.
 
-Used by .github/actions/misaka-intake-bot (composite action) so external
+Used by the MisakaNet Intake Bot composite action (the repository-root `action.yml`, which
+resolves it as `$GITHUB_ACTION_PATH/scripts/sample_report.py`) so external
 pilots can accumulate per-decision samples into a >=N-sample report
 (see docs/agents/failure-feedback-flywheel-research.md §4 for the schema).
 

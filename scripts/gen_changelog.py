@@ -40,7 +40,14 @@ LABEL_MAP = {
 def get_last_tag(repo):
     try:
         r = subprocess.run(
-            ["git", "describe", "--tags", "--abbrev=0"],
+            # `--match` is load-bearing, not decoration. `git describe` returns the *nearest*
+            # reachable tag, and this repository now also carries the intake bot's action tag `v1`
+            # (GitHub Marketplace publishes actions from a tag, see action.yml). Without a pattern,
+            # that tag is nearer than the last release tag, so "the previous release" silently
+            # became `v1` → `--since 1` → an empty changelog range. The pattern requires two dots,
+            # which `v1` does not have; note that `v[0-9]*` is NOT enough, it matches `v1` too.
+            ["git", "describe", "--tags", "--abbrev=0",
+             "--match", "v[0-9]*.[0-9]*.[0-9]*"],
             capture_output=True, text=True, cwd=repo, timeout=10,
         )
         return r.stdout.strip() if r.returncode == 0 else None

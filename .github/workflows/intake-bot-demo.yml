@@ -35,12 +35,20 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      # Both, not just pull-requests: the comment step calls the "create an issue comment" endpoint,
+      # which is documented as Issues: write — a PR *is* an issue for that endpoint. The demo had
+      # only pull-requests: write, so the permission the comment path actually needs was never
+      # granted, and this workflow is the only place it is exercised.
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
       - name: Run intake bot
-        uses: ./.github/actions/misaka-intake-bot
+        # `./` resolves to the repository-root action.yml — the same entry point external callers
+        # reach as `Ikalus1988/MisakaNet@v1`. Dogfooding one entry point is the point; the demo used
+        # to exercise .github/actions/misaka-intake-bot, a path no `owner/repo@ref` can reference.
+        uses: ./
         id: intake
         with:
           mode: ${{ inputs.mode || 'suggest-only' }}

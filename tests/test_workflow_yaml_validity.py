@@ -29,6 +29,10 @@ TARGETS = sorted(
     + list((REPO / ".github" / "workflows").glob("*.yaml"))
     + list((REPO / ".github" / "actions").glob("*/action.yml"))
     + list((REPO / ".github" / "actions").glob("*/action.yaml"))
+    # The root action.yml is the one GitHub Marketplace publishes and the one external callers
+    # resolve as `Ikalus1988/MisakaNet@v1`. It is the least forgiving file to get wrong and, until
+    # it moved here, no glob in this gate could see it.
+    + [p for p in (REPO / "action.yml", REPO / "action.yaml") if p.exists()]
 )
 
 
