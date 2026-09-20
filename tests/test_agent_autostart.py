@@ -102,6 +102,47 @@ def test_install_wires_every_detected_agent(tmp_path):
     assert (home / ".agents" / "skills" / "misakanet" / "SKILL.md").exists()
 
 
+def test_cursor_gets_the_entry_cursor_documents_and_nothing_else(tmp_path):
+    """Cursor is the one target whose config this installer writes without a behaviour layer.
+
+    Its documented remote shape is {"url": …, "headers": {…}} with no `type`/`transport` key —
+    that is the Claude Code entry's shape — so Cursor gets its own writer. And because
+    `.cursor/rules/*.mdc` is project-scoped, the install must say out loud that it wrote no rules
+    block and no hook rather than let the user assume otherwise.
+    """
+    home = tmp_path / "home"
+    (home / ".cursor").mkdir(parents=True)
+    (home / ".cursor" / "mcp.json").write_text(
+        json.dumps({"mcpServers": {"existing": {"url": "https://x"}}}), encoding="utf-8")
+
+    result = run_installer(home, "--only", "cursor", "--no-register")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "没有规则块与钩子" in result.stdout
+
+    cfg = json.loads((home / ".cursor" / "mcp.json").read_text(encoding="utf-8"))
+    entry = cfg["mcpServers"]["misakanet"]
+    assert entry == {"url": "https://misakanet.org/mcp"}, entry
+    assert "existing" in cfg["mcpServers"], "the user's own servers must survive"
+
+    second = run_installer(home, "--only", "cursor", "--no-register")
+    assert "无改动" in second.stdout, second.stdout
+
+
+def test_cursor_is_removed_by_uninstall(tmp_path):
+    home = tmp_path / "home"
+    (home / ".cursor").mkdir(parents=True)
+    (home / ".cursor" / "mcp.json").write_text(
+        json.dumps({"mcpServers": {"existing": {"url": "https://x"}}}), encoding="utf-8")
+    run_installer(home, "--only", "cursor", "--no-register")
+    assert "misakanet" in (home / ".cursor" / "mcp.json").read_text(encoding="utf-8")
+
+    result = run_installer(home, "--uninstall")
+    assert result.returncode == 0, result.stdout + result.stderr
+    cfg = json.loads((home / ".cursor" / "mcp.json").read_text(encoding="utf-8"))
+    assert "misakanet" not in cfg["mcpServers"]
+    assert "existing" in cfg["mcpServers"], "uninstall must not take the user's servers with it"
+
+
 def test_codex_toml_stays_parseable_and_keeps_the_top_level_key_at_top(tmp_path):
     tomllib = pytest.importorskip("tomllib")
     home = make_home(tmp_path)

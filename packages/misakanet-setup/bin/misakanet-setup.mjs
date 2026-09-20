@@ -113,7 +113,7 @@ const SILENT = has('--silent');
 /** `--report-json`: the same report as JSON, and nothing else on stdout (#1784). */
 const REPORT_JSON = has('--report-json');
 const HOME = resolve(valueOf('--home', homedir()));
-const AGENTS = ['claude', 'codex', 'hermes', 'openclaw', 'codewhale'];
+const AGENTS = ['claude', 'codex', 'hermes', 'openclaw', 'codewhale', 'cursor'];
 
 const done = [];
 const manual = [];
@@ -330,6 +330,11 @@ const AGENT_WRITE_PATHS = {
   codex: (home) => [join(home, '.codex', 'config.toml'), join(home, '.codex', 'AGENTS.md')],
   hermes: (home) => [join(home, '.hermes', 'config.yaml'), join(home, '.hermes', 'SOUL.md')],
   codewhale: (home) => [join(home, '.codewhale', 'mcp.json')],
+  // Cursor has exactly one surface. `.cursor/rules/*.mdc` is project-scoped and this installer does
+  // not know where the user's projects live, and Cursor has no hook mechanism to attach to — so tier
+  // ① is the whole install, `--mcp-only` is an identity for it, and the output says "MCP only"
+  // rather than implying behaviour changed.
+  cursor: (home) => [join(home, '.cursor', 'mcp.json')],
   openclaw: () => openclawWorkspaces().map((workspace) => join(workspace, 'AGENTS.md')),
 };
 
@@ -413,6 +418,19 @@ function ourHookEntries(hooks) {
 }
 
 /** Insert or refresh a marker-delimited block. Uses a function replacement (no $-escapes). */
+/**
+ * Is tier ③ (the behaviour layer) actually *wired*, or merely present on disk?
+ *
+ * `hook.mjs` living in our own state directory proves nothing about the user's agents: the hook only
+ * runs where a config file points at it, and today that is Claude Code alone. `--report` used to
+ * answer `install-scope: full` from the file's existence, so a Cursor-only machine claimed the
+ * behaviour layer was installed. It is `full` only when Claude Code's settings carry our entries.
+ */
+function hookWired() {
+  const settings = readJson(join(HOME, '.claude', 'settings.json'), null);
+  return ourHookEntries(settings?.hooks).length > 0;
+}
+
 function injectBlock(path, block) {
   const existing = readText(path);
   const pattern = new RegExp(`[ \\t]*<!--\\s*${START}\\s*-->[\\s\\S]*?<!--\\s*${END}\\s*-->\\n?`);
@@ -809,6 +827,7 @@ function mcpEntryPresent(agent) {
     hermes: () => readText(join(HOME, '.hermes', 'config.yaml')),
     openclaw: () => readText(join(HOME, '.openclaw', 'openclaw.json')),
     codewhale: () => readText(join(HOME, '.codewhale', 'mcp.json')),
+    cursor: () => readText(join(HOME, '.cursor', 'mcp.json')),
   }[agent]?.() || '';
   return text.includes('misakanet') && text !== 'null';
 }
@@ -820,6 +839,7 @@ function detect(agent) {
     hermes: ['.hermes'],
     openclaw: ['.openclaw'],
     codewhale: ['.codewhale'],
+    cursor: ['.cursor'],
   }[agent] || [];
   return paths.some((p) => existsSync(join(HOME, p)));
 }
@@ -1340,6 +1360,44 @@ async function installOpenclaw(bearer) {
   ok(`OpenClaw：注册 MCP（streamable-http）→ ${cfg}`);
 }
 
+/**
+ * Cursor: one file, one entry, and no way to change how the agent behaves.
+ *
+ * The entry shape is the one Cursor's own docs show for a remote server (`mcp.json`:
+ * `{ "mcpServers": { "<name>": { "url": …, "headers": {…} } } }`) — no `type`/`transport` key, and
+ * `headers` is supported, so the self-declared context hints work like everywhere else. Cursor reads
+ * `~/.cursor/mcp.json` for every project and `.cursor/mcp.json` for one; this writes the first,
+ * because the installer cannot know the second's location.
+ *
+ * There is deliberately no rules block and no hook here, and the output says so: an install that
+ * claims to have changed behaviour when it only registered an endpoint is the kind of quiet lie
+ * `--report` exists to prevent. A Cursor-only machine therefore reports `install-scope: mcp-only`.
+ */
+async function installCursor(bearer) {
+  const cfg = join(HOME, '.cursor', 'mcp.json');
+  const data = readJson(cfg, null);
+  if (data === null && readText(cfg)) {
+    need(`Cursor：${cfg} 不是合法 JSON → 请手动加入 mcpServers.misakanet`
+      + '（每台已注册的服务器都在这个文件里，改完重启 Cursor）');
+    return;
+  }
+  const doc = data || {};
+  doc.mcpServers = doc.mcpServers || {};
+  const entry = { url: ENDPOINT, headers: mcpHeaders(bearer, 'cursor') };
+  if (sameJson(doc.mcpServers.misakanet, entry)) {
+    ok('Cursor：MCP 已注册（无改动）');
+  } else {
+    doc.mcpServers.misakanet = entry;
+    backup(cfg);
+    writeText(cfg, `${JSON.stringify(doc, null, 2)}\n`);
+    ok(`Cursor：注册 MCP → ${cfg}`);
+  }
+  skip('Cursor：没有规则块与钩子（.cursor/rules 是项目级的，安装器不知道你的项目在哪）'
+    + '→ 想让 Cursor 主动去查，把 .cursor/rules/misakanet-failure-memory.mdc 放进项目');
+  need('Cursor：重启 Cursor 后在 Settings → MCP 里确认能看见 misakanet'
+    + '（本安装器只写用户级 ~/.cursor/mcp.json，项目级 .cursor/mcp.json 归你自己管）');
+}
+
 // The last endpoint probe, recorded so `--report` can print it without probing twice.
 let lastProbe = { reachable: false, tools: 0 };
 
@@ -1388,41 +1446,49 @@ async function verify() {
   } else {
     skip('写入通道：无 token（读不限次数、只读完全可用，写入类工具不可用）');
   }
-  const hookPath = join(stateDir(), 'hook.mjs');
-  let hookPresent = false;
-  try {
-    hookPresent = readFileSync(hookPath, 'utf8').length > 0;
-  } catch {
-    hookPresent = false;
-  }
-  if (!hookPresent) {
-    allOk = false;
-    need('自动沉淀钩子：缺失 → 重跑安装命令');
-  } else {
-    const settingsPath = join(HOME, '.claude', 'settings.json');
-    const settings = readJson(settingsPath, {}) || {};
-    // Only our own entries: a foreign hook that merely mentions "hook.mjs" is not evidence
-    // that this machine is installed (and its interpreter may not even be ours).
-    const commands = ourHookEntries(settings.hooks)
-      .flatMap((entry) => (entry.hooks || []).map((h) => h.command))
-      .filter((c) => typeof c === 'string');
-    if (!commands.length) {
-      allOk = false;
-      need('Claude Code：钩子没装（settings.json 里没有本安装器写入的命令）');
-    } else {
-      const exe = commands[0].startsWith('"') ? commands[0].split('"')[1] : commands[0].split(' ')[0];
-      if (!existsSync(exe)) {
-        allOk = false;
-        need(`Claude Code：钩子里的解释器不存在（${exe}）→ 钩子永远不会触发，重跑安装命令即可修`);
-      } else {
-        ok('Claude Code：钩子已装且解释器存在');
-      }
+  // The hook is Claude Code's alone: it is the one target whose config carries it (Codex's
+  // user-level hook shape is unconfirmed, OpenClaw's events are unverified), so a machine without
+  // Claude Code must not be told its hook is missing. Until 2026-09-20 it was: a Codex-only or
+  // Cursor-only install reported NOT READY with two Claude Code complaints about a target that was
+  // never selected — the same lie the OpenClaw and Hermes checks below already refuse to tell
+  // (found while adding Cursor, which is mcp-only by construction).
+  if (detect('claude')) {
+    const hookPath = join(stateDir(), 'hook.mjs');
+    let hookPresent = false;
+    try {
+      hookPresent = readFileSync(hookPath, 'utf8').length > 0;
+    } catch {
+      hookPresent = false;
     }
-    const cfg = join(HOME, '.claude.json');
-    const data = readJson(cfg, {}) || {};
-    const entry = data.mcpServers?.misakanet;
-    if (!entry) { allOk = false; need(`Claude Code：MCP 未注册（${cfg}）`); }
-    else ok(`Claude Code：MCP 已注册（${entry.url}）`);
+    if (!hookPresent) {
+      allOk = false;
+      need('自动沉淀钩子：缺失 → 重跑安装命令');
+    } else {
+      const settingsPath = join(HOME, '.claude', 'settings.json');
+      const settings = readJson(settingsPath, {}) || {};
+      // Only our own entries: a foreign hook that merely mentions "hook.mjs" is not evidence
+      // that this machine is installed (and its interpreter may not even be ours).
+      const commands = ourHookEntries(settings.hooks)
+        .flatMap((entry) => (entry.hooks || []).map((h) => h.command))
+        .filter((c) => typeof c === 'string');
+      if (!commands.length) {
+        allOk = false;
+        need('Claude Code：钩子没装（settings.json 里没有本安装器写入的命令）');
+      } else {
+        const exe = commands[0].startsWith('"') ? commands[0].split('"')[1] : commands[0].split(' ')[0];
+        if (!existsSync(exe)) {
+          allOk = false;
+          need(`Claude Code：钩子里的解释器不存在（${exe}）→ 钩子永远不会触发，重跑安装命令即可修`);
+        } else {
+          ok('Claude Code：钩子已装且解释器存在');
+        }
+      }
+      const cfg = join(HOME, '.claude.json');
+      const data = readJson(cfg, {}) || {};
+      const entry = data.mcpServers?.misakanet;
+      if (!entry) { allOk = false; need(`Claude Code：MCP 未注册（${cfg}）`); }
+      else ok(`Claude Code：MCP 已注册（${entry.url}）`);
+    }
   }
   // OpenClaw is only reported when the user actually has it: telling a machine without
   // OpenClaw that it is "not ready" would be a lie about a target that was never selected.
@@ -1469,6 +1535,24 @@ async function verify() {
     } else {
       ok(`Hermes：MCP 条目与 token 都在（${HERMES_ENV_KEY}）`);
       skip('Hermes：本进程只能确认"配置已写"，无法确认 Hermes 是否已加载 → 可用 hermes mcp list 复核');
+    }
+  }
+  // Cursor: like OpenClaw and Hermes, reported only when the user actually has it. Its state lives
+  // in one file, so it is readable without starting anything — but whether Cursor has *loaded* that
+  // file cannot be confirmed from here, and the output says so instead of implying it.
+  if (detect('cursor')) {
+    const cfg = join(HOME, '.cursor', 'mcp.json');
+    const entry = (readJson(cfg, null) || {}).mcpServers?.misakanet;
+    if (!entry) {
+      allOk = false;
+      need(`Cursor：MCP 未注册（${cfg}）→ 重跑安装命令，然后重启 Cursor 在 Settings → MCP 里复核`);
+    } else if (!entry.url) {
+      allOk = false;
+      need(`Cursor：MCP 条目在，但没有 url 字段（${cfg}）→ 重跑安装命令；`
+        + '若这个条目是你手写的，注意远端服务器用的是 url 而不是 command');
+    } else {
+      ok(`Cursor：MCP 已注册（${entry.url}）`);
+      skip('Cursor：只能确认"配置已写"，无法确认 Cursor 是否已加载 → 在 Settings → MCP 里复核');
     }
   }
   // Version: what is installed, and whether the registry has moved on. Read-only here — the
@@ -1550,7 +1634,8 @@ function restoreEmptiedFiles() {
   // JSON configs: prune containers that our own removal emptied. The file itself is never deleted —
   // it may have existed before us (an empty `~/.claude.json` is a legitimate user state).
   const jsonFiles = [join(HOME, '.claude.json'), join(HOME, '.claude', 'settings.json'),
-                     join(HOME, '.openclaw', 'openclaw.json'), join(HOME, '.codewhale', 'mcp.json')];
+                     join(HOME, '.openclaw', 'openclaw.json'), join(HOME, '.codewhale', 'mcp.json'),
+                     join(HOME, '.cursor', 'mcp.json')];
   for (const file of jsonFiles) {
     const data = readJson(file, null);
     if (!data || typeof data !== 'object') continue;
@@ -1616,6 +1701,14 @@ function uninstall() {
     backup(cfg);
     writeText(cfg, `${JSON.stringify(data, null, 2)}\n`);
     ok(`移除 MCP 注册 → ${cfg}`);
+  }
+  const cursorCfg = join(HOME, '.cursor', 'mcp.json');
+  const cursor = readJson(cursorCfg, null);
+  if (cursor?.mcpServers?.misakanet) {
+    delete cursor.mcpServers.misakanet;
+    backup(cursorCfg);
+    writeText(cursorCfg, `${JSON.stringify(cursor, null, 2)}\n`);
+    ok(`移除 MCP 注册 → ${cursorCfg}`);
   }
   const voiceDir = join(stateDir(), 'voice');
   if (existsSync(voiceDir)) {
@@ -1799,7 +1892,7 @@ function reportValues(allOk) {
     ['hook', existsSync(join(stateDir(), 'hook.mjs')) ? 'present' : 'absent'],
     // `mcp-only` = the endpoint is registered but the hooks are not, which is a different machine
     // from "nothing installed" and must not be counted as one (#1753's T1-lite rows).
-    ['install-scope', existsSync(join(stateDir(), 'hook.mjs'))
+    ['install-scope', hookWired()
       ? 'full'
       : (AGENTS.some((agent) => detect(agent) && mcpEntryPresent(agent)) ? 'mcp-only' : 'none')],
     ['voice', voiceStatus()],
@@ -2081,9 +2174,13 @@ if (LIST_WRITES) {
 
 try {
   if (!targets.length) {
-    need('没检测到 Claude Code / Codex / Hermes 的配置目录 → 请先打开一次你要用的那个助手，再回来运行本命令');
+    need('没检测到任何受支持助手的配置目录（Claude Code / Codex / Hermes / OpenClaw / Codewhale / '
+      + 'Cursor）→ 请先打开一次你要用的那个助手，再回来运行本命令');
   } else {
-    const hookPath = MCP_ONLY ? null : await installHook();
+    // Only install the hook when a target can actually consume it. Writing it for a Cursor-only or
+    // Codex-only machine produced a file nothing would ever run, and made `--report` claim
+    // `install-scope: full` for an install that registered an endpoint and nothing else.
+    const hookPath = (MCP_ONLY || !targets.includes('claude')) ? null : await installHook();
     if (!MCP_ONLY) stampVersion();
     const bearer = has('--no-register') ? '' : await ensureIdentity();
     for (const agent of targets) {
@@ -2104,6 +2201,7 @@ try {
         else if (agent === 'hermes') await installHermes(hookPath, bearer);
         else if (agent === 'openclaw') await installOpenclaw(bearer);
         else if (agent === 'codewhale') await installCodewhale(bearer);
+        else if (agent === 'cursor') await installCursor(bearer);
         installed += 1;
       } catch (err) {
         need(`${agent}：写入配置失败（${redact((err && err.message) || err)}）`

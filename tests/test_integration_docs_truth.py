@@ -39,6 +39,10 @@ AGENT_DISPLAY = {
     "hermes": "Hermes",
     "openclaw": "OpenClaw",
     "codewhale": "codewhale",
+    # Added with the installer's sixth target. The map exists so the README's public grouping and
+    # the installer's real capability can be compared by name — a target nobody mapped must fail
+    # loudly here rather than be silently dropped from the comparison.
+    "cursor": "Cursor",
 }
 
 

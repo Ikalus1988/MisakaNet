@@ -39,7 +39,7 @@ Two different questions hide behind "do you support X?", so this page answers th
 | **OpenClaw** | ✅ `~/.openclaw/openclaw.json` (`mcp.servers`), `~/.openclaw/workspace/AGENTS.md` | field report only | yes: `transport: "streamable-http"` \| `"sse"` | ✅ verified (`toolSummary: {calls: 3, failures: 0}`) |
 | **Codewhale** | ✅ `~/.codewhale/mcp.json` | field report only | yes: Streamable HTTP, legacy SSE fallback | ✅ verified (`codewhale mcp tools` → 7; search → get_lesson) |
 | **DeepSeek Harness** | via the plugin channel, not the installer | [dsh.md](dsh.md) | yes (plugin bundle) | ✅ verified (`dsh --dump-config`, install) |
-| **Cursor** | ❌ | [cursor.md](cursor.md), [failure-memory rule](cursor-failure-memory.md) | yes since 0.45: `~/.cursor/mcp.json` + `.cursor/mcp.json` | 🟡 recipe (docs teach the clone + stdio path; the remote URL path is shorter) |
+| **Cursor** | ✅ `~/.cursor/mcp.json` (MCP only — no rules block, no hook) | [cursor.md](cursor.md), [failure-memory rule](cursor-failure-memory.md) | yes since 0.45: `~/.cursor/mcp.json` + `.cursor/mcp.json` | 🟡 recipe: the installer writes the entry (both installers, 2026-09-20), still nobody has run the live check — that is #1940 |
 | **Continue.dev** | ❌ | [continue.md](continue.md) | per vendor docs | 🟡 recipe |
 | **Gemini CLI** | ❌ | — (this page only) | yes: `~/.gemini/settings.json`, remote field **`httpUrl`** | 🔵 vendor-only ([mcp-server](https://geminicli.com/docs/tools/mcp-server/)) |
 | **Windsurf** | ❌ | — | yes, **but read the caveat**: `~/.codeium/windsurf/mcp_config.json` applies to the legacy Cascade agent; the current docs moved to `docs.devin.ai` ([MCP](https://docs.devin.ai/desktop/cascade/mcp)) | 🔵 vendor-only, and partly stale |

@@ -190,7 +190,19 @@ const BARE_HOMES = {
     mkdirSync(join(home, '.codewhale'), { recursive: true });
     writeFileSync(join(home, '.codewhale', 'mcp.json'), '{}\n');
   },
+  cursor: (home) => {
+    mkdirSync(join(home, '.cursor'), { recursive: true });
+    writeFileSync(join(home, '.cursor', 'mcp.json'), '{}\n');
+  },
 };
+
+function makeCursorHome() {
+  const home = mkdtempSync(join(tmpdir(), 'mn-cursor-'));
+  mkdirSync(join(home, '.cursor'), { recursive: true });
+  writeFileSync(join(home, '.cursor', 'mcp.json'),
+    JSON.stringify({ mcpServers: { existing: { url: 'https://x' } } }));
+  return home;
+}
 
 /** The tree without the documented `.misakanet.bak` safety copies (`--uninstall` keeps them). */
 const withoutBackups = (tree) => Object.fromEntries(
@@ -477,6 +489,67 @@ test('openclaw: an unwritable config directory is still refused, and left untouc
       rmSync(home, { recursive: true, force: true });
     }
   });
+
+test('cursor: writes the entry Cursor documents, and claims no behaviour layer', () => {
+  const home = makeCursorHome();
+  try {
+    const result = runOffline(home, '--only', 'cursor');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /Cursor：注册 MCP/, result.stdout);
+
+    const cfg = JSON.parse(readFileSync(join(home, '.cursor', 'mcp.json'), 'utf8'));
+    // Cursor's documented remote shape: url + headers, and deliberately no type/transport key
+    // (that is the Claude Code entry's shape, not Cursor's — copying it is a silent no-op there).
+    assert.equal(cfg.mcpServers.misakanet.url, 'https://misakanet.org/mcp');
+    assert.equal(cfg.mcpServers.misakanet.type, undefined);
+    assert.equal(cfg.mcpServers.misakanet.transport, undefined);
+    assert.equal(cfg.mcpServers.misakanet.headers['X-MisakaNet-Agent'], 'cursor');
+    assert.ok(cfg.mcpServers.existing, 'existing servers must survive');
+
+    // The honesty half: no rules block exists for Cursor, and nothing may imply one was written.
+    assert.match(result.stdout, /Cursor：没有规则块与钩子/, result.stdout);
+
+    const report = runOffline(home, '--only', 'cursor', '--report');
+    assert.match(report.stdout, /^detected-agents: \[cursor\]$/m, report.stdout);
+    assert.match(report.stdout, /^install-scope: mcp-only$/m,
+      `a Cursor install is an endpoint, not a behaviour layer: ${report.stdout}`);
+    assert.match(report.stdout, /^hook: absent$/m,
+      `no hook may be written for a machine whose agents cannot consume it: ${report.stdout}`);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('cursor: idempotent — a second run changes nothing', () => {
+  const home = makeCursorHome();
+  try {
+    runOffline(home, '--only', 'cursor');
+    const afterFirst = readFileSync(join(home, '.cursor', 'mcp.json'), 'utf8');
+    const second = runOffline(home, '--only', 'cursor');
+    assert.match(second.stdout, /Cursor：MCP 已注册（无改动）/, second.stdout);
+    assert.equal(readFileSync(join(home, '.cursor', 'mcp.json'), 'utf8'), afterFirst,
+      'a second run must not rewrite the file (byte drift is invisible to every other check)');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('a machine without Claude Code is not told its hook is missing', () => {
+  // The verify block used to run the Claude Code hook checks whenever the hook file existed, so a
+  // Codex-only or Cursor-only install reported NOT READY with two complaints about a target that was
+  // never selected. This is the same lie the OpenClaw and Hermes checks already refused to tell.
+  const home = makeCursorHome();
+  try {
+    const install = runOffline(home, '--only', 'cursor');
+    assert.equal(install.status, 0, install.stdout + install.stderr);
+    const verify = run(home, '--verify');
+    assert.doesNotMatch(verify.stdout, /Claude Code/,
+      `a Cursor-only machine must never be told about Claude Code: ${verify.stdout}`);
+    assert.match(verify.stdout, /Cursor：MCP 已注册/, verify.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
 
 test('openclaw: writes the MCP entry beside the servers the user already has', () => {
   const home = makeOpenclawHome();
