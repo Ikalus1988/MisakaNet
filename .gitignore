@@ -65,8 +65,10 @@ data/sag.db
 # Session handoff doc (contains credential hints — keep local)
 docs/prd/HANDOFF.md
 
-# Local status snapshot (deliberately removed from repo in ed0316f9)
-STATUS.md
+# Local status snapshot (deliberately removed from repo in ed0316f9).
+# Root-anchored: a bare STATUS.md also matches docs/integrations/status.md wherever
+# core.ignorecase is true (macOS, Windows), which left that tracked document ignored too.
+/STATUS.md
 
 # Crawler flywheel metrics (local tracking)
 data/crawler_flywheel.jsonl

@@ -32,18 +32,30 @@ fi
 
 say() { printf '%s\n' "$*"; }
 
+# `timeout` is GNU coreutils. Stock macOS ships neither it nor `gtimeout`, and this
+# one-liner targets macOS, so its absence must not fail the download: curl and wget
+# each carry their own transfer deadline in fetch() below.
+TIMEOUT_BIN=""
+for candidate in timeout gtimeout; do
+  if command -v "$candidate" >/dev/null 2>&1; then TIMEOUT_BIN="$candidate"; break; fi
+done
+run_with_timeout() {
+  seconds="$1"; shift
+  if [ -n "$TIMEOUT_BIN" ]; then "$TIMEOUT_BIN" "$seconds" "$@"; else "$@"; fi
+}
+
 say "MisakaNet setup → $DIR"
 if ! mkdir -p "$DIR" 2>/dev/null || [ ! -w "$DIR" ]; then
-  say "[x] 无法写入 $DIR（权限或只读 HOME）。"
+  say "[x] 无法写入 ${DIR}（权限或只读 HOME）。"
   say "    换一个可写目录再试："
   say "      MISAKANET_SETUP_DIR=~/misakanet-setup curl -fsSL <bootstrap.sh> | MISAKANET_SETUP_DIR=~/misakanet-setup bash"
   exit 1
 fi
 
 if command -v curl >/dev/null 2>&1; then
-  fetch() { curl -fsSL "$1" -o "$2"; }
+  fetch() { curl -fsSL --connect-timeout 8 --max-time 25 "$1" -o "$2"; }
 elif command -v wget >/dev/null 2>&1; then
-  fetch() { wget -qO "$2" "$1"; }
+  fetch() { wget -q --timeout=25 --tries=1 -O "$2" "$1"; }
 else
   say "[x] 需要 curl 或 wget 才能下载安装器。"
   exit 1
@@ -64,7 +76,7 @@ for f in $FILES; do
     host="$(printf '%s' "$base" | sed -E 's#https?://([^/]+).*#\1#')"
     printf '  · %s ← %s ... ' "$f" "$host"
     # --max-time matters as much as --connect-timeout: a stalled transfer never errors.
-    if timeout 40 curl -fsSL --connect-timeout 8 --max-time 25 "$base/$PREFIX/$f" -o "$DIR/$f" 2>/dev/null && [ -s "$DIR/$f" ]; then
+    if run_with_timeout 40 fetch "$base/$PREFIX/$f" "$DIR/$f" 2>/dev/null && [ -s "$DIR/$f" ]; then
       say "OK"
       got="$base"; PREFERRED="$base"; [ -z "$USED" ] && USED="$base"
       break
@@ -74,11 +86,11 @@ for f in $FILES; do
   if [ -z "$got" ]; then
     say "[x] 下载失败：$f"
     for base in "${SOURCES[@]}"; do say "    试过：$base/$PREFIX/$f"; done
-    say "    仍然不通的话：手动下载这三个文件到 $DIR，再执行 python3 $DIR/install_misakanet_agent.py"
+    say "    仍然不通的话：手动下载这三个文件到 ${DIR}，再执行 python3 ${DIR}/install_misakanet_agent.py"
     exit 1
   fi
 done
-say "✓ 已下载：$(echo $FILES | tr ' ' ', ')（来源：$USED）"
+say "✓ 已下载：$(echo $FILES | tr ' ' ', ')（来源：${USED}）"
 
 PY=""
 for candidate in python3 python; do

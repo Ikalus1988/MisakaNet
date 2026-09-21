@@ -75,7 +75,9 @@ while true; do
     # 注意：inotifywait 每触发一次事件返回一次（不是持续输出），所以用 while 循环
     event=$(inotifywait -q -r -e close_write,moved_to,delete --timeout 600 \
         "$LESSONS_DIR" 2>/dev/null) && {
-        echo "[watcher] $(date) — 检测到变更: $event，同步..." | tee -a "$WATCH_LOG"
+        # Brace the expansion: bash 3.2 reads `$event，` as the variable `event\xef`, which under
+    # `set -u` aborts and without it prints a corrupted line (the same bug in bootstrap.sh).
+    echo "[watcher] $(date) — 检测到变更: ${event}，同步..." | tee -a "$WATCH_LOG"
     } || {
         # timeout 或异常 → 继续监听，不退出循环
         echo "[watcher] $(date) — 监听中（无事件或超时）" | tee -a "$WATCH_LOG"
