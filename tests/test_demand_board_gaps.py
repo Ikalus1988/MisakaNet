@@ -156,7 +156,15 @@ class TestSearchGapLogging:
 
     def test_log_silences_errors(self, tmp_path):
         """Gap logging silences I/O errors gracefully."""
-        with patch("misakanet.server.handlers.search._GAPS_FILE", Path("/nonexistent/dir/file.jsonl")):
+        # The parent is a *regular file*, so `mkdir(parents=True, exist_ok=True)` cannot succeed on
+        # any platform and the swallowed-error path really runs. The previous `/nonexistent/dir`
+        # did not fail on Windows — a POSIX-rooted path there is the current drive's root, so the
+        # mkdir succeeded, the test passed without exercising the error, and it left a directory
+        # that tests/test_misaka_capture.py and tests/test_watcher.py then tripped over (they use a
+        # path that must not exist).
+        not_a_dir = tmp_path / "not-a-dir"
+        not_a_dir.write_text("a file, not a directory", encoding="utf-8")
+        with patch("misakanet.server.handlers.search._GAPS_FILE", not_a_dir / "file.jsonl"):
             from misakanet.server.handlers.search import _log_search_gap
             # Should not raise
             _log_search_gap("test", "test")

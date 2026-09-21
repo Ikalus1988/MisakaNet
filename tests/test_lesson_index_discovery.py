@@ -68,7 +68,11 @@ def test_engine_loader_uses_discovery(tmp_path):
     from misakanet.search.engine import LESSONS, _load_docs_cached  # noqa: E402
 
     docs = _load_docs_cached(LESSONS, is_lesson=True)
-    paths = [str(d.filepath.relative_to(REPO)) for d in docs]
+    # .as_posix(): the corpus paths are compared against the repo-relative form the engine
+    # publishes in its own search results (engine.py `MisakaNet.search` uses `.as_posix()`),
+    # so the test must not stringify a Path into OS-native separators — on Windows that
+    # yields `lessons\en\...` and every prefix check below silently misses.
+    paths = [d.filepath.relative_to(REPO).as_posix() for d in docs]
 
     assert any(p.startswith("lessons/en/") for p in paths), "en lessons missing"
     assert any(p.startswith("lessons/user-rescue/") for p in paths), "user-rescue missing"
@@ -96,6 +100,9 @@ def test_canonical_dedupes_mirror_copies(tmp_path):
 
     canon = {f.parent.name + "/" + f.name for f in canonical_lessons(root)}
     assert canon == {"contrib/topic-a.md", "core/topic-b.md", "en/unique-c.md"}
-    # order: core first, then contrib, then other dirs alphabetically
-    order = [str(f.relative_to(root)) for f in canonical_lessons(root)]
+    # order: core first, then contrib, then other dirs alphabetically.
+    # .as_posix(): canonical_lessons returns Path objects, whose `str()` is
+    # separator-native (`core\topic-b.md` on Windows); the expected values below are
+    # repo-relative POSIX paths, so normalise at this boundary, not in the code.
+    order = [f.relative_to(root).as_posix() for f in canonical_lessons(root)]
     assert order == ["core/topic-b.md", "contrib/topic-a.md", "en/unique-c.md"]
