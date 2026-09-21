@@ -8,6 +8,16 @@ on:
 permissions:
   contents: read
 
+# Superseded pushes used to queue a fresh full matrix each, and the older run kept holding
+# runners. On 2026-09-21 five Cross-Platform Tests runs were alive at once — two of them over 90 minutes old,
+# because their jobs were started before `timeout-minutes` existed — and the 9 windows jobs inside
+# them starved the whole account: 30+ runs sat queued and even the ubuntu legs could not start.
+# Cancelling a superseded *pull-request* run is always right, since the newer head is the one being
+# judged. Pushes to main are left to finish so their verdict is never thrown away.
+concurrency:
+  group: ci-cross-platform-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     strategy:
