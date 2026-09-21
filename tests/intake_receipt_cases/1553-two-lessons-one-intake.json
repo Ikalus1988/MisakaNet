@@ -1,0 +1,18 @@
+{
+  "id": "1553-two-lessons-one-intake",
+  "why": "one intake can end in several lessons; the receipt must name all of them, not the first",
+  "intake": 1553,
+  "source": "dsh",
+  "expected": {
+    "emitted": true,
+    "lessons": [
+      "lessons/contrib/alembic-upgrade-failure.md",
+      "lessons/contrib/alembic-upgrade-head-failed.md"
+    ],
+    "evidence_level": "E3",
+    "channels": [
+      "github",
+      "mcp"
+    ]
+  }
+}

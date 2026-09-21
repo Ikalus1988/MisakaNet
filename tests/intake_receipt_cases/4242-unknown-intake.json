@@ -1,0 +1,10 @@
+{
+  "id": "4242-unknown-intake",
+  "why": "an intake nobody has converted: emitting a receipt here would invent a citation",
+  "intake": 4242,
+  "source": "unknown",
+  "expected": {
+    "emitted": false,
+    "reason_contains": "no lesson cites"
+  }
+}

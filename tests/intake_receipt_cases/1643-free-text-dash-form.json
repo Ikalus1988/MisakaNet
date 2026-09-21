@@ -1,0 +1,17 @@
+{
+  "id": "1643-free-text-dash-form",
+  "why": "the `source: \"intake #1643 — …\"` shape must resolve like the canonical one",
+  "intake": 1643,
+  "source": "dsh",
+  "expected": {
+    "emitted": true,
+    "lessons": [
+      "lessons/contrib/npc-dispatch-speaker-dislocation.md"
+    ],
+    "evidence_level": "E3",
+    "channels": [
+      "github",
+      "mcp"
+    ]
+  }
+}

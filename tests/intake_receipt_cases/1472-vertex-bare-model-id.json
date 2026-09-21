@@ -1,0 +1,17 @@
+{
+  "id": "1472-vertex-bare-model-id",
+  "why": "real conversion: intake #1472 became vertex-gemini-model-id-naming.md (#1715)",
+  "intake": 1472,
+  "source": "antigravity",
+  "expected": {
+    "emitted": true,
+    "lessons": [
+      "lessons/contrib/vertex-gemini-model-id-naming.md"
+    ],
+    "evidence_level": "E3",
+    "channels": [
+      "github",
+      "mcp"
+    ]
+  }
+}
