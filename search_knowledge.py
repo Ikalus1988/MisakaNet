@@ -333,23 +333,6 @@ def main():
             env_filter = arg.split("=", 1)[1].lower()
         elif arg == "--env" and i + 1 < len(search_args):
             env_filter = search_args[i + 1].lower()
-    # ── 轻量配额检查 ──
-    # Remote mode queries the D1 service, whose quota (5 free reads/day per
-    # IP, PRD ④) is enforced server-side — skip the local node quota so a
-    # fresh clone without a profile can still search.
-    if not remote:
-        from misakanet.profile import check_quota as _check_quota
-        allowed, quota_msg = _check_quota()
-        if not allowed:
-            if json_output:
-                _print_json_error(quota_msg)
-            else:
-                print(quota_msg, file=sys.stderr)
-            sys.exit(1)
-        if quota_msg and not json_output:
-            print(quota_msg, file=sys.stderr)
-            print("", file=sys.stderr)
-
     t0 = time.time()
     found_any = False
     # Result ids shown this run (for --feedback jsonl). Filenames only, no PII.
@@ -445,9 +428,8 @@ def main():
             results = [r for r in results if r.get("result_type") == "actionable" and r.get("confidence") != "low"]
         results = results[:top_k]
         if results and not remote:
-            from misakanet.profile import increment_search, consume_quota
+            from misakanet.profile import increment_search
             increment_search()
-            consume_quota()
         print(json.dumps(results, ensure_ascii=False, indent=2))
         return
 
@@ -520,9 +502,8 @@ def main():
         _log_zero_result(query)
     _show_timing(time.time() - t0, total_docs)
     if found_any and not suggest and not remote:
-        from misakanet.profile import increment_search, consume_quota
+        from misakanet.profile import increment_search
         increment_search()
-        consume_quota()
     if found_any:
         if remote:
             print(f"  💡 Full content: https://misakanet.org/lessons/<slug>/  (or MCP misakanet_get_lesson)")
