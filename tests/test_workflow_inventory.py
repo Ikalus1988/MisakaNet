@@ -214,3 +214,61 @@ def test_the_orphan_rule_would_have_caught_the_file_this_issue_deleted():
     problems = orphaned_libraries(fixture)
     assert any("ci-self-heal.yml" in p for p in problems), (
         "re-adding the file without a caller must turn the rule red")
+
+
+# ── an approval queue must not accumulate superseded runs (#2006's sibling, 2026-09-21) ───────────
+#
+# `deploy-worker.yml` is gated by the `release` environment's required reviewer, so every push that
+# touches the worker creates a run that *waits*. Four were waiting when this was noticed, the oldest
+# 22 hours old, while production reported `serverInfo.version 2.31.0` and `main` said 2.33.0 —
+# approving the oldest would have deployed a stale worker.
+#
+# `cancel-in-progress: true` is safe exactly where the work is idempotent (a deploy publishes the
+# commit it checked out; newest wins) and dangerous where it is not: `misakanet-publish`,
+# `release-pypi` and `publish-mcp-registry` carry a *version*, so two waiting runs are two releases
+# that must both happen. This rule encodes that distinction rather than a blanket "add concurrency".
+IDEMPOTENT_APPROVAL_WORKFLOWS = {".github/workflows/deploy-worker.yml": "the newest commit is the one you want live"}
+NON_IDEMPOTENT_APPROVAL_WORKFLOWS = {
+    ".github/workflows/misakanet-publish.yml": "each dispatch names a version that must be published",
+    ".github/workflows/release-pypi.yml": "each run publishes a version",
+    ".github/workflows/publish-mcp-registry.yml": "each run publishes a version",
+}
+
+
+def approval_queue_problems(workflows: dict[str, str], repo: Path = REPO) -> list[str]:
+    problems = []
+    for rel, reason in IDEMPOTENT_APPROVAL_WORKFLOWS.items():
+        name = Path(rel).name
+        text = workflows.get(name)
+        if text is None:
+            continue
+        if "cancel-in-progress: true" not in text:
+            problems.append(
+                f"{name} waits for an approval on every push and has no `cancel-in-progress: true`, "
+                f"so superseded runs pile up and the queue shows production as current when it is "
+                f"not ({reason})")
+    for rel, reason in NON_IDEMPOTENT_APPROVAL_WORKFLOWS.items():
+        name = Path(rel).name
+        text = workflows.get(name)
+        if text is None:
+            continue
+        if re.search(r"cancel-in-progress:\s*true", text):
+            problems.append(
+                f"{name} set `cancel-in-progress: true`, but {reason} — cancelling by workflow group "
+                f"would silently drop a release")
+    return problems
+
+
+def test_the_approval_queue_does_not_accumulate_superseded_runs():
+    problems = approval_queue_problems(load_workflows())
+    assert not problems, "\n  ".join(problems)
+
+
+def test_the_queue_rule_tells_the_two_kinds_apart():
+    idempotent = {"deploy-worker.yml": "name: D\non:\n  push:\n"}
+    assert approval_queue_problems(idempotent), "a deploy without cancel-in-progress must be caught"
+    idempotent["deploy-worker.yml"] += "concurrency:\n  group: deploy-worker\n  cancel-in-progress: true\n"
+    assert approval_queue_problems(idempotent) == []
+    publisher = {"misakanet-publish.yml": "name: P\non:\n  workflow_dispatch:\nconcurrency:\n  group: p\n  cancel-in-progress: true\n"}
+    problems = approval_queue_problems(publisher)
+    assert problems and "would silently drop a release" in problems[0], problems

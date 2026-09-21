@@ -11,6 +11,21 @@ on:
 permissions:
   contents: read
 
+# A Worker deploy is idempotent: it publishes the commit it checked out, and the newest commit is
+# always the one you want live. Without this, every push that touches the worker queues a *separate*
+# run in the `release` environment's approval list, and they pile up — measured 2026-09-21: four
+# waiting runs, the oldest 22 hours old, with production reporting `serverInfo.version 2.31.0` while
+# `main` said 2.33.0. Approving the wrong one would have deployed a 22-hour-old worker. With
+# `cancel-in-progress`, the newest run supersedes the one still waiting for approval.
+#
+# Deliberately NOT applied to the *publish* workflows (npm/PyPI/registry): those are not idempotent
+# per workflow, and two waiting runs are two different versions that must **both** run. Cancelling by
+# workflow group there would silently drop a release. They need a reaper that cancels a waiting run
+# only when that version is already published.
+concurrency:
+  group: deploy-worker
+  cancel-in-progress: true
+
 jobs:
   deploy:
     # Secrets live in the `release` environment, not at repository level: they are publish and
