@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-21T13:00:47.052940+00:00",
+  "generated_at": "2026-09-21T20:01:13.848748+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.34.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2007",
-      "timestamp": "2026-09-21T12:12:43Z",
+      "title": "fix: resolve 23 broken relative links and expand link gate to all docs (#1946)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1952",
+      "timestamp": "2026-09-21T17:29:38Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): 给 Windows 腿一个 UTF-8 环境（它 77 条失败主要就是这件事）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2013",
-      "timestamp": "2026-09-21T12:09:08Z",
+      "title": "test(intake): the #1130 receipt case, now that its lesson is on main",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2030",
+      "timestamp": "2026-09-21T17:23:07Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): Worker 部署取代「还在等审批」的那一条，而不是排在它旁边",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2009",
-      "timestamp": "2026-09-21T11:57:03Z",
+      "title": "feat(lessons): three triaged intakes — python naming, DSH_HOME junctions, daemon start detail",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2021",
+      "timestamp": "2026-09-21T17:19:32Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): 跨平台矩阵在 8 条腿上跑了零条测试却报 ✅",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2008",
-      "timestamp": "2026-09-21T11:54:11Z",
+      "title": "fix(windows): the 16 failures, and the three product bugs behind them",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2029",
+      "timestamp": "2026-09-21T17:12:26Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): 恢复 #1964 的两个修复（它被关闭但未合并）—— 跳过的测试不再被说成失败的测试",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2004",
-      "timestamp": "2026-09-21T09:52:46Z",
+      "title": "docs(roadmap): milestone ② is live, not just locally green",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2028",
+      "timestamp": "2026-09-21T16:52:39Z",
       "source": "github"
     },
     {
