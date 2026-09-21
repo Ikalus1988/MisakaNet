@@ -80,14 +80,17 @@ MisakaNet uses a multi-layered CI architecture powered by GitHub Actions with **
 | `lesson-security.yml` | 2 | PR open | Scans lesson content for secrets and PII |
 | `deploy-worker.yml` | 1 | Push to main | Deploys Cloudflare Workers (dashboard) |
 | `publish-container.yml` | 1 | Release | Builds and pushes Docker image |
-| `sync-data.yml` | 1 | Schedule/Manual | Syncs lessons.json and feed data |
 
 ### CI Design Principles
 
 - **Fail fast, fail clearly** — each gate produces a human-readable failure message
 - **Shape before merge** — structural validation (file deletions, scope creep) happens before code review
 - **Auto-merge for docs** — pure documentation PRs skip manual review when CI is green
-- **Self-healing** — `ci-self-heal.yml` can auto-fix known CI failures
+- **Retry, not self-healing** — `.github/actions/retry/` wraps a flaky command with backoff; the
+  workflows that want it call it directly (`cite-lesson.yml`, `lesson-notify.yml`). The
+  `ci-self-heal.yml` wrapper that used to sit in front of it was deleted on 2026-09-21: it was a
+  reusable workflow with no caller in this repository, no caller anywhere else, and four failed
+  runs since June (#1984)
 - **Stateless gates** — no persistent state between runs; each run is independent
 
 ## Dependency Graph
@@ -119,7 +122,7 @@ docs/ (Cloudflare Workers — see wrangler.jsonc `assets.directory`)
 |-----------|-----------|---------|
 | **New search backend** | Register in `misakanet.search.engine` | Add `ElasticsearchEngine` class |
 | **New MCP tool** | Decorate with `@mcp.tool()` in `mcp_server.py` | `misakanet.recommend` tool |
-| **New CI gate** | Add workflow to `.github/workflows/` | `pr-benchmark.yml` |
+| **New CI gate** | Add workflow to `.github/workflows/` | 例如 `pr-benchmark.yml`（示例，仓库里没有这个文件）|
 | **New lesson domain** | Create subdirectory in `lessons/` | `lessons/kubernetes/` |
 | **New federation peer** | Add URL to `FEDERATION_PEERS` env var | Cross-org knowledge sharing |
 

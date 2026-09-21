@@ -4,9 +4,11 @@
 `actions/classify-failure/action.yml` was not parseable and nothing noticed. Its `run: |` block
 contains a Python heredoc whose body sat at column 0, which **ends the block scalar**: the remaining
 lines then look like mapping keys with no value, and the document is a syntax error. The file had been
-in that state since 2026-06-06 (#331), and `.github/workflows/ci-self-heal.yml` still references it —
-the last runs of that workflow list steps 1–5 and then jump to 9, with the classify and notify steps
-absent (run 27079171896).
+in that state since 2026-06-06 (#331), and the one workflow that referenced it —
+`.github/workflows/ci-self-heal.yml`, deleted on 2026-09-21 as an uncalled orphan (#1984) — shows it:
+its last runs list steps 1–5 and then jump to 9, with the classify and notify steps absent
+(run 27079171896). The composite action itself is still here and still used by nothing that a green
+run would notice, which is why this gate is YAML-level rather than "does something call it".
 
 The second half of this gate is duplicate mapping keys. PyYAML's `safe_load` **silently keeps the
 last one**, so a duplicated `env:` block — which GitHub rejects outright — reads as a perfectly normal

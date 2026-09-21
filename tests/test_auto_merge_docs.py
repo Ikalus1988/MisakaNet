@@ -296,3 +296,53 @@ def test_a_stacked_comment_is_caught(tmp_path):
     mutated = _mutate(tmp_path, lambda t: t.replace("updateComment", "createComment"))
     problems = refusal_report_problems(mutated)
     assert any("upsert" in p for p in problems), problems
+
+
+# ── the rule's soundness: "all files" vs "some files" ────────────────────────────────────────────
+#
+# `pulls.listFiles` returns 30 files by default and orders them by filename, where `docs/…` sorts
+# before `lessons/…`. A PR with 30 docs files and one lesson file therefore answered
+# "docs-only: true" from a single call — the poisoning vector this gate exists to close, reachable
+# on a fork PR because the trigger is `pull_request_target`. Truncation is the difference between
+# "every file qualifies" and "the first page qualifies".
+
+
+def file_listing_problems(text: str) -> list[str]:
+    problems = []
+    step = _step_named(text, "Check if docs-only")
+    code = _executable(step)
+    if "listFiles" not in code:
+        return ["the check step no longer lists the PR's files"]
+    if "paginate" not in code:
+        problems.append(
+            "the file list is not paginated: one `pulls.listFiles` call returns 30 files, so a PR "
+            "with 30 docs files plus one lesson file is judged docs-only")
+    if "per_page" not in code:
+        problems.append("no `per_page`, so the page size is whatever the API defaults to")
+    return problems
+
+
+def test_the_docs_only_decision_reads_every_file(tmp_path):
+    assert file_listing_problems(WORKFLOW.read_text(encoding="utf-8")) == []
+
+
+def test_an_unpaginated_file_list_is_caught(tmp_path):
+    def strip_pagination(text: str) -> str:
+        return text.replace("await github.paginate(github.rest.pulls.listFiles, {",
+                            "await github.rest.pulls.listFiles({").replace("per_page: 100,", "")
+
+    mutated = _mutate(tmp_path, strip_pagination)
+    assert "paginate" not in mutated, "the mutation did not take"
+    assert file_listing_problems(mutated), "an unpaginated list must be caught"
+
+
+def test_the_refusal_is_withdrawn_when_the_pr_qualifies():
+    """Otherwise a merged PR keeps a comment saying it was refused — a lie that outlives its state."""
+    text = WORKFLOW.read_text(encoding="utf-8")
+    steps = _steps_of(text)
+    withdraw = [s for s in steps if "Withdraw" in (s.get("name") or "")]
+    assert withdraw, "no step reconciles the earlier refusal"
+    code = _executable(withdraw[0])
+    assert "deleteComment" in code and "auto-merge-docs" in code, code[:200]
+    assert (withdraw[0].get("if") or "").strip() == "steps.check.outputs.docs-only == 'true'", (
+        "the withdrawal must run on the acceptance path")

@@ -65,11 +65,20 @@ jobs:
         with:
           script: |
             const pr = context.payload.pull_request;
-            const files = await github.rest.pulls.listFiles({
+            // **Paginated on purpose, and this is the whole rule's soundness.** `pulls.listFiles`
+            // returns 30 files by default and the list is ordered by filename, where `docs/…` sorts
+            // before `lessons/…`. A single `listFiles` call therefore answers "are the first 30 files
+            // docs-only?", and a PR with 30 docs files plus one lesson file would have been called
+            // `docs-only: true` and auto-merged — the exact poisoning vector this gate exists to
+            // close (unreviewed lesson content is read and executed by agents, and the workflow runs
+            // on `pull_request_target`, so a fork PR reaches it without approval). Truncation here is
+            // not a display detail; it is the difference between "all files" and "some files".
+            const files = { data: await github.paginate(github.rest.pulls.listFiles, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: pr.number,
-            });
+              per_page: 100,
+            }) };
 
             // ── docs-only rule (kept in one place; see tests/test_auto_merge_docs.py) ──
             //
@@ -165,6 +174,26 @@ jobs:
               });
               core.info(`Posted the refusal comment on #${issue_number}`);
             }
+
+      # The refusal comment is upserted, so a PR that becomes docs-only later would otherwise merge
+      # carrying a comment that says it was refused. The two steps are one state machine, and leaving
+      # the other half out is how a comment becomes a lie that outlives the state it described.
+      - name: Withdraw an earlier refusal
+        if: steps.check.outputs.docs-only == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        with:
+          script: |
+            const marker = '<!-- auto-merge-docs -->';
+            const issue_number = context.payload.pull_request.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number, per_page: 100,
+            });
+            const previous = comments.find(c => (c.body || '').includes(marker));
+            if (!previous) return;
+            await github.rest.issues.deleteComment({
+              owner: context.repo.owner, repo: context.repo.repo, comment_id: previous.id,
+            });
+            core.info(`Withdrew the earlier refusal comment on #${issue_number} — the PR is docs-only now`);
 
       - name: Enable auto-merge
         if: steps.check.outputs.docs-only == 'true'
