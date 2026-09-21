@@ -7,12 +7,26 @@
     python3 scripts/referral.py --stats        # 查看推荐链统计
 """
 import argparse
+import json
+import re
 import subprocess
+import urllib.error
+import urllib.parse
+import urllib.request
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from misakanet.profile import _load, _save, apply_referral, get_referral_code
+
+# Every client on this machine can read this file — the npm installer, the bootstrap
+# installer and the CLI all look in `~/.misakanet-agent` for `client_id` and `token` — so it
+# is where an invited node records the code that invited it. `apply_referral` keeps writing the
+# clone-local profile too (that is where this node's own code lives); this file is the part
+# that can leave the machine (#1996).
+REFERRAL_FILE = Path.home() / ".misakanet-agent" / "referral_code"
+ENDPOINT = "https://misakanet.org/api/referrals"
+REFERRAL_RE = re.compile(r"^[A-Za-z0-9]{4,16}$")
 
 
 def show_my_code():
@@ -34,6 +48,41 @@ def show_my_code():
     print()
 
 
+def record_referral_for_clients(code: str) -> bool:
+    """Write the inviting code where every client can read it.
+
+    The value travels from a file into an API request, so it is shape-checked here rather than
+    trusted: `apply_referral` accepts anything at least four characters long for backwards
+    compatibility, and this is the boundary that decides what is allowed to leave the machine.
+    """
+    code = (code or "").strip()
+    if not REFERRAL_RE.match(code):
+        return False
+    try:
+        REFERRAL_FILE.parent.mkdir(parents=True, exist_ok=True)
+        REFERRAL_FILE.write_text(code + "\n", encoding="utf-8")
+        return True
+    except OSError:
+        return False
+
+
+def _server_count(code: str) -> int | None:
+    """The server-side invitation count, or None when it cannot be read.
+
+    None is deliberately distinct from 0: "nobody has used your code yet" and "I could not ask" are
+    different answers, and printing 0 for the second is how a broken counter passes for a fact.
+    """
+    if not code:
+        return None
+    try:
+        with urllib.request.urlopen(f"{ENDPOINT}?code={urllib.parse.quote(code)}", timeout=10) as r:
+            payload = json.loads(r.read().decode("utf-8"))
+    except Exception:
+        return None
+    invited = payload.get("invited")
+    return int(invited) if isinstance(invited, int) else None
+
+
 def show_stats():
     """从 git log 统计推荐链数据。
 
@@ -48,19 +97,24 @@ def show_stats():
     "已邀请 N 个节点" 真的成立，得在注册时把推荐码记到服务端（D1），见 issue #1996。
     """
     code = get_referral_code()
+    server = _server_count(code)
     try:
         r = subprocess.run(
             ["git", "log", "--all", "--oneline", "--grep=" + code, "--", "misakanet/profile.json"],
             capture_output=True, text=True, timeout=10,
             cwd=str(Path(__file__).resolve().parent.parent),
         )
-        count = len(r.stdout.strip().split("\n")) if r.stdout.strip() else 0
+        history = len(r.stdout.strip().split("\n")) if r.stdout.strip() else 0
         print(f"\n📊 推荐链统计")
         print(f"  {'='*40}")
         print(f"  推荐码:     {code}")
-        print(f"  已邀请:     {count} 个节点（仅历史；2026-09-21 起本文件不再被跟踪，此数不会再增长）")
-        print(f"  注意:       推荐链没有服务端记录，worker 不认识 referral —— 要让这条统计成立，")
-        print(f"              需要在注册时把推荐码写进 D1（issue #1995）")
+        if server is None:
+            print(f"  已邀请:     读不到（服务端不可达或响应形状不对）—— 读不到就不编一个数字")
+        else:
+            print(f"  已邀请:     {server} 个节点（服务端计数：{ENDPOINT}）")
+        print(f"  历史值:     {history} 个节点（2026-09-21 之前的 git 历史统计，已停用）")
+        print(f"  说明:       服务端在**注册时**记一次：被邀请方的客户端带上")
+        print(f"              ~/.misakanet-agent/referral_code；新节点 +1，续期同一节点不重复计。")
         print(f"\n  credit 机制说明:")
         print(f"    • 被邀请节点首次贡献 lesson 时，邀请方获得 credit")
         print(f"    • credit 当前阶段: 记账中，后续版本兑现检索权重加成")
@@ -76,6 +130,12 @@ def main():
     args = parser.parse_args()
 
     if args.apply:
+        # Only when it is code-shaped: the same rule the server applies. A value that fails it would
+        # be silently ignored at registration, which is worse than being told now.
+        if record_referral_for_clients(args.apply):
+            print(f"  已记录到 {REFERRAL_FILE}（各客户端注册时会带上它）")
+        else:
+            print(f"  ⚠️ 形状不像推荐码（4-16 位 A-Za-z0-9），只写入了本地 profile")
         if apply_referral(args.apply):
             print(f"  ✅ 已绑定邀请码: {args.apply.upper()}")
         else:

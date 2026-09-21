@@ -160,6 +160,9 @@ const VERSION = '0.5.6'
  * this cannot contain a quote, a newline or a `:`, so it cannot break any of the three.
  */
 const CLIENT_ID_SHAPE = /^[A-Za-z0-9._-]{8,64}$/
+// The server's rule for a referral code (`misakanet_register` → `referral_code`), kept identical on
+// both sides: a value the client is willing to send and the server is willing to count.
+const REFERRAL_SHAPE = /^[A-Za-z0-9]{4,16}$/
 
 // ── argument surface ─────────────────────────────────────────────────
 // Until 2026-09-17 no flag was validated at all: `--help` fell through to a *real install*
@@ -586,6 +589,19 @@ function mcpHeaders(bearer, agent) {
  * syntaxes, so it is checked against `CLIENT_ID_SHAPE` first. A `client_id` that is not id-shaped is
  * not a hint worth writing; it is noise that could close a quote or a mapping.
  */
+/**
+ * The referral code of the node that invited this one, or `''`.
+ *
+ * `python3 scripts/referral.py --apply=CODE` writes it to `<stateDir>/referral_code` — the same
+ * directory `client_id` and `token` live in, so every client on the machine can read it. Shape-checked
+ * for the same reason `client_id` is: it is a value from a file on its way into an API request, and the
+ * server will ignore anything that is not code-shaped, which would be a silent no-op (#1996).
+ */
+function declaredReferral() {
+  const found = readText(join(stateDir(), 'referral_code')).trim();
+  return REFERRAL_SHAPE.test(found) ? found : '';
+}
+
 function declaredClientId() {
   if (knownClientId) return knownClientId;
   const found = readText(join(stateDir(), 'client_id')).trim();
@@ -906,7 +922,10 @@ async function ensureIdentity() {
   // export — an instruction a non-technical user cannot follow, and on Windows a different one.
   const clientId = usable ? explicit : `setup-${randomUUID()}`;
   knownClientId = clientId;
-  const result = await mcpCall('misakanet_register', { agent_type: 'setup', client_id: clientId });
+  const referral = declaredReferral();
+  const result = await mcpCall('misakanet_register', {
+    agent_type: 'setup', client_id: clientId, ...(referral ? { referral_code: referral } : {}),
+  });
   // Validate before persisting: a response body is not something to write to disk unchecked
   // (CodeQL js/http-to-file-access #262/#264 is about exactly that flow). The endpoint is
   // ours, but "trust the shape" is the correct habit and it makes the value failing to match
