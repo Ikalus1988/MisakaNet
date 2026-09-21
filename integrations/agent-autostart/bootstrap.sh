@@ -39,6 +39,7 @@ TIMEOUT_BIN=""
 for candidate in timeout gtimeout; do
   if command -v "$candidate" >/dev/null 2>&1; then TIMEOUT_BIN="$candidate"; break; fi
 done
+# Wraps an executable, never a shell function: `timeout` execs its argument directly.
 run_with_timeout() {
   seconds="$1"; shift
   if [ -n "$TIMEOUT_BIN" ]; then "$TIMEOUT_BIN" "$seconds" "$@"; else "$@"; fi
@@ -53,9 +54,9 @@ if ! mkdir -p "$DIR" 2>/dev/null || [ ! -w "$DIR" ]; then
 fi
 
 if command -v curl >/dev/null 2>&1; then
-  fetch() { curl -fsSL --connect-timeout 8 --max-time 25 "$1" -o "$2"; }
+  fetch() { run_with_timeout 40 curl -fsSL --connect-timeout 8 --max-time 25 "$1" -o "$2"; }
 elif command -v wget >/dev/null 2>&1; then
-  fetch() { wget -q --timeout=25 --tries=1 -O "$2" "$1"; }
+  fetch() { run_with_timeout 40 wget -q --timeout=25 --tries=1 -O "$2" "$1"; }
 else
   say "[x] 需要 curl 或 wget 才能下载安装器。"
   exit 1
@@ -76,7 +77,7 @@ for f in $FILES; do
     host="$(printf '%s' "$base" | sed -E 's#https?://([^/]+).*#\1#')"
     printf '  · %s ← %s ... ' "$f" "$host"
     # --max-time matters as much as --connect-timeout: a stalled transfer never errors.
-    if run_with_timeout 40 fetch "$base/$PREFIX/$f" "$DIR/$f" 2>/dev/null && [ -s "$DIR/$f" ]; then
+    if fetch "$base/$PREFIX/$f" "$DIR/$f" 2>/dev/null && [ -s "$DIR/$f" ]; then
       say "OK"
       got="$base"; PREFERRED="$base"; [ -z "$USED" ] && USED="$base"
       break

@@ -56,6 +56,40 @@ def test_bootstrap_does_not_require_gnu_timeout(tmp_path):
     assert "unbound variable" not in (result.stdout + result.stderr)
 
 
+def test_bootstrap_still_works_where_timeout_does_exist(tmp_path):
+    """The inverse of the test above, and the case a first attempt at this fix broke.
+
+    `timeout` cannot execute a shell function, it execs its argument. Wrapping the call to the
+    `fetch()` helper therefore made every download fail on the machines that *do* have GNU
+    coreutils (which is what the CI runner has, so the bug showed up as a red audit job). The
+    binary has to be wrapped inside `fetch()`, around curl or wget.
+    """
+    if not BASH:
+        pytest.skip("bash unavailable")
+    shim_dir = tmp_path / "bin"
+    shim_dir.mkdir()
+    # A stand-in that behaves like `timeout`: drop the duration, exec the rest.
+    shim = shim_dir / "timeout"
+    shim.write_text('#!/bin/sh\nshift\nexec "$@"\n', encoding="utf-8")
+    shim.chmod(0o755)
+
+    setup_dir = tmp_path / "setup"
+    env = dict(
+        os.environ,
+        MISAKANET_RAW_BASE=f"file://{REPO}",
+        MISAKANET_RAW_ONLY="1",
+        MISAKANET_SETUP_DIR=str(setup_dir),
+        PATH=f"{shim_dir}:/usr/bin:/bin",
+    )
+    result = subprocess.run(
+        [BASH, str(BOOTSTRAP), "--home", str(tmp_path / "home"),
+         "--only", "claude", "--no-register"],
+        capture_output=True, text=True, encoding="utf-8", env=env, cwd=str(tmp_path), timeout=120,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (setup_dir / "prompt.md").is_file(), result.stdout
+
+
 def test_bootstrap_survives_a_multibyte_char_after_an_expansion(tmp_path):
     """`$DIR，` parses as the variable `DIR\\xef` under bash 3.2 and aborts under `set -u`.
 
