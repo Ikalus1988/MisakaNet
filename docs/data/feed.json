@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-21T05:08:04.749127+00:00",
+  "generated_at": "2026-09-21T13:00:47.052940+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(ci): 对抗式复核找出的两个 blocker —— 绿着但什么都没验证，以及只看第一页的门禁",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1994",
-      "timestamp": "2026-09-21T04:38:02Z",
+      "title": "chore(main): release 2.34.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2007",
+      "timestamp": "2026-09-21T12:12:43Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(repo): 被跟踪又被忽略的文件 —— 6 个（每跑一次检索就弄脏工作树）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1993",
-      "timestamp": "2026-09-21T04:10:13Z",
+      "title": "fix(ci): 给 Windows 腿一个 UTF-8 环境（它 77 条失败主要就是这件事）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2013",
+      "timestamp": "2026-09-21T12:09:08Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(bootstrap): 第二个安装器落后一版 —— 一个上下文头都不写，且还在宣传已取消的读配额",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1965",
-      "timestamp": "2026-09-20T17:33:05Z",
+      "title": "fix(ci): Worker 部署取代「还在等审批」的那一条，而不是排在它旁边",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2009",
+      "timestamp": "2026-09-21T11:57:03Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(tests): settings.json 门禁对着正确的 Gemini CLI 文档开了火",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1963",
-      "timestamp": "2026-09-20T17:16:43Z",
+      "title": "fix(ci): 跨平台矩阵在 8 条腿上跑了零条测试却报 ✅",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2008",
+      "timestamp": "2026-09-21T11:54:11Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): fork PR 的 audit 假红 —— Auto-Merge Gate 拿着只读 token 去 merge",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1962",
-      "timestamp": "2026-09-20T17:12:49Z",
+      "title": "fix(ci): 恢复 #1964 的两个修复（它被关闭但未合并）—— 跳过的测试不再被说成失败的测试",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2004",
+      "timestamp": "2026-09-21T09:52:46Z",
       "source": "github"
     },
     {
