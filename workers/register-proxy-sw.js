@@ -232,7 +232,7 @@ function addDebugContext(env, errorObj, context) {
 const MCP_TOOLS = [
   {
     name: "misakanet_register",
-    description: "[ONBOARDING] Get a Bearer token for authenticated access (unlocks misakanet_write_lesson and higher rate limits). Reading needs no registration and has no daily cap: misakanet_search / misakanet_get_lesson work anonymously (a per-address burst limit protects the index; it is a speed limit, not a quota). No GitHub account or email needed, and no personal data is collected — the node is a pseudonym, not an account.\nToken lifetime: valid ~30 days. Pass client_id (a stable id you generate once, e.g. a UUID, workspace id or hostname) to get the SAME node_id and token back on every later call and to renew them; without client_id every call creates a new node, which means your reuse evidence, receipts and history start over.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string, reused?: boolean} — reused=true means an existing node was found for this client_id.\nExample: misakanet_register(agent_type='claude-code', client_id='8f14e45f-2b1c-4f3a-9d2e-7c6b5a4d3e2f')",
+    description: "[ONBOARDING] Get a Bearer token for authenticated access (unlocks misakanet_write_lesson and higher rate limits). Reading needs no registration and has no daily cap: misakanet_search / misakanet_get_lesson work anonymously (a per-address burst limit protects the index; it is a speed limit, not a quota). No GitHub account or email needed, and no personal data is collected — the node is a pseudonym, not an account.\nToken lifetime: valid ~30 days. Pass client_id (a stable id you generate once, e.g. a UUID, workspace id or hostname) to get the SAME node_id and token back on every later call and to renew them; without client_id every call creates a new node, which means your reuse evidence, receipts and history start over.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string, reused?: boolean} — reused=true means an existing node was found for this client_id.\nExample: misakanet_register(agent_type='claude-code', client_id='8f14e45f-2b1c-4f3a-9d2e-7c6b5a4d3e2f')\nOptional referral_code: the code of the node that invited you (`misakanet` referral code, 4-16 letters/digits). Recorded against your node and counted for that code — the only place a referral has ever been recorded, since the invitation otherwise never leaves the inviting machine. Counted once per new node: calling register again with the same client_id renews the same node and does not add to the count.",
     inputSchema: {
       type: "object",
       properties: {
@@ -251,6 +251,10 @@ const MCP_TOOLS = [
       type: "object",
       properties: {
         node_id: { type: "string" },
+        referral_code: {
+          type: "string",
+          description: "Optional: the referral code of the node that invited you (4-16 of A-Z a-z 0-9). Recorded on this node and counted once for that code; ignored when it is not that shape, and never blocks a registration.",
+        },
         token: { type: "string" },
         registered_at: { type: "string" },
         agent_type: { type: "string" },
@@ -2170,6 +2174,22 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       }
     }
 
+    // ── Referral (2026-09-21, issue #1996) ───────────────────────────────
+    // Until now the referral chain existed only inside the inviting machine's
+    // `misakanet/profile.json`: `scripts/referral.py --stats` counted invitations by grepping
+    // git history for the code in that file, which only worked while the file was tracked —
+    // i.e. it counted how many people had accidentally committed their own node state, and
+    // it stopped counting the day that file was untracked (#1991). A referral is a relation
+    // between two parties; recording it in one party's local file is not one.
+    //
+    // Shape-checked, and a bad value never fails the registration: an invitation is a
+    // courtesy, and losing access over a malformed one would be the wrong trade. The value
+    // is stored on the node (no new key per node) and counted as a *row* in `counters`
+    // (scope='referral'), so the daily distinct-key budget that registration depends on is
+    // untouched — the same reasoning as `gap:` and `rate_read:`.
+    const referralCode = typeof args.referral_code === "string" ? args.referral_code.trim() : "";
+    const referralOk = referralCode && /^[A-Za-z0-9]{4,16}$/.test(referralCode);
+
     // Generate node_id
     const nodeId = `Misaka${await nextNodeCounter(env)}`;
 
@@ -2185,6 +2205,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       agent_type: agentType,
       registered_at: new Date().toISOString(),
       token: token,
+      ...(referralOk ? { referred_by: referralCode } : {}),
     }), { expirationTtl: 86400 * 30 });
 
     // Store token lookup (for auth verification)
@@ -2222,11 +2243,22 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       if (!mapped) logInternal("register: client_id mapping write failed", kvWriteStats.last_error);
     }
 
+    // Count the referral *after* the token is safely stored, and only here: this is the
+    // new-node path, so renewing an existing node's token never inflates the number. A failed
+    // counter write must not cost the caller its registration — the node exists either way.
+    let referralCounted = false;
+    if (referralOk) {
+      const counted = await bumpCounter(env, "referral", referralCode, "all", 1);
+      referralCounted = counted !== null;
+      if (!referralCounted) logInternal("register: referral counter write failed", kvWriteStats.last_error);
+    }
+
     return {
       node_id: nodeId,
       token: token,
       registered_at: new Date().toISOString(),
       agent_type: agentType,
+      ...(referralOk ? { referred_by: referralCode, referral_counted: referralCounted } : {}),
     };
   }
 
@@ -4557,6 +4589,33 @@ export default {
                      families: await readKvWriteFamilies(env) },
         timestamp: new Date().toISOString(),
       });
+    }
+
+    // GET /api/referrals?code=XXXX — how many nodes registered with that referral code (#1996)
+    //
+    // Read-only, no credential, and it returns a *count*: the code is already public (it is what a
+    // node shares to invite people) and a count is not personal data. The number comes from one
+    // `counters` row, so this endpoint costs a single indexed read and creates no keys.
+    if (request.method === "GET" && url.pathname === "/api/referrals") {
+      const code = (url.searchParams.get("code") || "").trim();
+      if (!/^[A-Za-z0-9]{4,16}$/.test(code)) {
+        return jsonResponse({ error: "code must be 4-16 characters of A-Z a-z 0-9", code: "invalid_code" }, 400);
+      }
+      const d1 = d1Binding(env);
+      if (d1) {
+        try {
+          const { results } = await d1.prepare(
+            `SELECT count FROM counters WHERE scope = 'referral' AND bucket = ?1 AND period = 'all'`,
+          ).bind(code).all();
+          const row = results && results[0];
+          return jsonResponse({ code, invited: row ? Number(row.count) || 0 : 0, source: "d1" });
+        } catch (error) {
+          logInternal("referral count failed, falling back to KV", error);
+        }
+      }
+      // No D1 binding: the KV fallback stored the same number under its legacy key shape.
+      const legacy = parseInt((await env.MISAKANET_KV.get(legacyCounterKey("referral", code, "all"), "text")) || "0", 10) || 0;
+      return jsonResponse({ code, invited: legacy, source: "kv" });
     }
 
     // GET /api/counter — node registration counter (KV or GitHub)
