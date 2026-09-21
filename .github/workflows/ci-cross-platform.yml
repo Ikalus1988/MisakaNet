@@ -20,6 +20,12 @@ jobs:
           - os: macos-latest
             python-version: "3.11"
     runs-on: ${{ matrix.os }}
+    # Bound the leg. Without this a hang holds a runner for the default 6 hours: measured
+    # 2026-09-21, all three windows-latest legs sat in "Run Tests" for over 50 minutes on two
+    # different runs (one of them a docs-only PR), and a job that never ends reports nothing —
+    # not the failing test, not even a verdict. A normal leg is a few minutes; 30 is headroom,
+    # not a budget.
+    timeout-minutes: 30
     env:
       # Windows consoles default to cp1252, and this repository's scripts print non-ASCII by design
       # (✅/✗, box drawing, and Chinese in the installer and lesson tooling). A script that cannot
