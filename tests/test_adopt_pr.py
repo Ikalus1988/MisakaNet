@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -170,8 +171,21 @@ def test_dry_run_plan_for_fork_pr(repos: Fixture):
     plan = result.stdout
     assert f"/adopt plan for PR #{PR}" in plan
     assert "DRY RUN" in plan
-    # how the head ref is fetched: the fork's clone URL plus the PR head branch
-    assert f"git fetch --no-tags {repos.fork} +refs/heads/{HEAD_BRANCH}" in plan
+    # how the head ref is fetched: the fork's clone URL plus the PR head branch.
+    # The plan prints shell commands, and it shell-quotes each argument for a POSIX shell
+    # (Plan._cmd -> shlex.quote). A Windows tmp path contains backslashes, which is exactly
+    # what forces that quoting (`'C:\...\fork'`), so a raw substring match would fail on the
+    # quoting of a correct line. Parse the printed line instead — this pins the whole argv,
+    # including the destination ref, and reads the same on every platform.
+    fetch_steps = re.findall(r"^\s*\d+\.\s+(git fetch --no-tags .+)$", plan, re.MULTILINE)
+    assert len(fetch_steps) == 1, fetch_steps
+    assert shlex.split(fetch_steps[0]) == [
+        "git",
+        "fetch",
+        "--no-tags",
+        str(repos.fork),
+        f"+refs/heads/{HEAD_BRANCH}:refs/remotes/adopt/{PR}-head",
+    ]
     assert FORK_SLUG in plan  # the fork is shown with GitHub's capitalisation, not lowercased
     assert f"git fetch --no-tags origin refs/pull/{PR}/head" in plan  # documented fallback
     assert repos.head_sha in plan  # the head SHA pins the fetch

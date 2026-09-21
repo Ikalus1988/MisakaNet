@@ -39,10 +39,39 @@ import hashlib
 import json
 import os
 import sys
+import tempfile
 import urllib.request
 from pathlib import Path
 
-DEFAULT_STATE = Path.home() / ".misakanet-agent" / "state"
+
+def _default_state() -> Path:
+    """Where the turn counter lives when MISAKANET_HOOK_STATE is not set.
+
+    Resolved lazily and defensively, because `Path.home()` *raises* when the home directory
+    cannot be determined: on Windows `ntpath.expanduser("~")` returns "~" unchanged when neither
+    `USERPROFILE` nor `HOMEPATH` is in the environment, and pathlib turns that into
+    `RuntimeError("Could not determine home directory.")` (Python 3.11, `Path.home` →
+    `Path("~").expanduser()`).
+
+    That is not hypothetical: this line used to run at import time, so the RuntimeError escaped
+    the `main()` guard and the hook died with a traceback and **exit code 1** — measured on
+    windows-latest / Python 3.11 in
+    `tests/test_agent_autostart.py::test_hook_emits_utf8_even_when_the_console_is_gbk`, which runs
+    the hook with a deliberately minimal environment. A hook whose whole contract is "never break
+    the session" must not fail before it has read the payload, so the fallback is a real location
+    rather than a crash: temp, then the working directory.
+    """
+    try:
+        return Path.home() / ".misakanet-agent" / "state"
+    except Exception:
+        pass
+    try:
+        return Path(tempfile.gettempdir()) / "misakanet-agent" / "state"
+    except Exception:
+        # Anything worse than this is caught by main()'s blanket handler: exit 0, no output.
+        return Path(".misakanet-agent") / "state"
+
+
 ANNOUNCE = (
     "[MisakaNet] 本会话已接入失败经验库。请在你这次回复的开头用一句大白话告诉用户："
     "「我已接入 MisakaNet 失败经验库：以后你这边遇到报错，我会先去查有没有人踩过、怎么修的。」"
@@ -110,7 +139,9 @@ def _session_key(payload: dict) -> str:
 
 
 def _state_path(session: str) -> Path:
-    root = Path(os.environ.get("MISAKANET_HOOK_STATE", str(DEFAULT_STATE)))
+    # `or`, not a default argument: an exported-but-empty MISAKANET_HOOK_STATE means "unset",
+    # and Path("") is "." — a state file next to whatever the agent's cwd happens to be.
+    root = Path(os.environ.get("MISAKANET_HOOK_STATE") or _default_state())
     safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in session)
     return root / f"{safe}.json"
 

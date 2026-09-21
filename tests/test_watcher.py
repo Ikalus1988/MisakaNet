@@ -130,10 +130,22 @@ class TestProcessFile:
 
 
 class TestWatchDirectory:
-    def test_nonexistent_dir(self):
-        results = watch_directory("/nonexistent/dir")
-        assert len(results) == 1
-        assert results[0]["status"] == "error"
+    def test_nonexistent_dir(self, tmp_path):
+        """A directory that is not there yields one `error` result, never a silent or `skipped` one.
+
+        The path is built under tmp_path rather than spelled "/nonexistent/dir", because on Windows
+        that is a *drive-relative* path: "\\nonexistent\\dir" on the current drive root. On the
+        windows-latest runners that path exists — a sibling test's `mkdir(parents=True)` succeeds
+        there and only there, and another test appends a 172-character `s.md` into it — so
+        `watch_directory` walked it, found one file that fails the 200-character content filter, and
+        returned `skipped`. The watcher's own behaviour for a missing directory is
+        platform-independent (`error` + "directory not found"); what was not portable is the test's
+        notion of "cannot exist". A path under tmp_path cannot exist on any platform.
+        """
+        results = watch_directory(str(tmp_path / "definitely-not-here"))
+        assert len(results) == 1, results
+        assert results[0]["status"] == "error", results
+        assert "not found" in results[0]["reason"], results
 
     def test_watches_files(self, tmp_path):
         # Create test files

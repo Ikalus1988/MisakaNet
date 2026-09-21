@@ -27,7 +27,9 @@ from __future__ import annotations
 
 import os
 import re
+import shlex
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -75,9 +77,73 @@ def _step_script() -> str:
     raise AssertionError(f"step {STEP_NAME!r} not found in {WORKFLOW.name}")
 
 
+def _shell_path(shell: str, path) -> str:
+    """`path` in the form *this* shell can open — POSIX, never a bare Windows path.
+
+    Two places need it, and neither is cosmetic. A Windows path interpolated into the step's own
+    *text* loses its backslashes, because MSYS reads `\\` as an escape: `> C:\\Users\\x\\d.md`
+    becomes `> C:Usersxd.md`, the redirect fails, `bash -e` kills the step and the digest is
+    written nowhere. And a `C:\\…` (or `C:/…`) entry inside a `:`-joined PATH is split at the
+    colon, so the stub directory silently leaves the shell's PATH. `cygpath -u` is the general
+    conversion — it yields `/c/…` for a drive letter and needs no interpretation — while forward
+    slashes remain a correct fallback for a plain argv, so the helper degrades instead of failing.
+    """
+    posix_ish = Path(path).as_posix()
+    if os.name != "nt":
+        return posix_ish
+    try:
+        converted = subprocess.run(
+            [shell, "-c", 'cygpath -u "$1"', "sh", posix_ish],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return posix_ish
+    out = (converted.stdout or "").strip()
+    return out if converted.returncode == 0 and out.startswith("/") else posix_ish
+
+
+def _inherited_path(shell: str) -> str:
+    """PATH as the shell itself sees it, for the child environment.
+
+    On Windows the native `C:\\…;C:\\…` list cannot be prefixed with `:` — the first entry then
+    reads `C:\\…\\bin:C:\\Windows`, and whether the stub `gh` is still found depends on how MSYS
+    guesses at that string. The shell has already converted the Windows PATH into its own POSIX
+    form at startup, so ask it for that instead of guessing here.
+    """
+    if os.name != "nt":
+        return os.environ.get("PATH", "")
+    probe = subprocess.run([shell, "-c", 'printf %s "$PATH"'], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=60)
+    return (probe.stdout or "").strip() or os.environ.get("PATH", "")
+
+
+def _ensure_python3(shell: str, bindir: Path, env: dict) -> None:
+    """Give the replayed step a `python3` where this platform's shell has none.
+
+    The step parses the issue list with `python3 -c …` because it is written for
+    `ubuntu-latest`. The Windows images expose the same interpreter as `python`, so without this
+    the replay would measure the runner's naming rather than the step's shell code. The shim is
+    the interpreter already running this suite, so nothing the step *does* changes — only that
+    the name resolves. Where `python3` really runs (Linux, macOS, and any Windows image that has
+    it) no shim is created and the real interpreter is used.
+    """
+    try:
+        probe = subprocess.run([shell, "-c", 'python3 -c "print(1)"'], capture_output=True,
+                               text=True, encoding="utf-8", errors="replace", env=env, timeout=60)
+        usable = probe.returncode == 0 and "1" in (probe.stdout or "")
+    except (OSError, subprocess.SubprocessError):
+        usable = False
+    if usable:
+        return
+    shim = bindir / "python3"
+    shim.write_text(f'#!/bin/bash\nexec "{Path(sys.executable).as_posix()}" "$@"\n',
+                    encoding="utf-8")
+    shim.chmod(0o755)
+
+
 @pytest.fixture()
 def digest_run(tmp_path):
     """Run the step under `bash -e` with a stub gh, returning its result."""
+    shell = require_posix_shell()  # Git Bash on Windows — `bash` on PATH there is the WSL stub
     calls = tmp_path / "gh-calls.log"
     bindir = tmp_path / "bin"
     bindir.mkdir()
@@ -86,10 +152,11 @@ def digest_run(tmp_path):
     gh.chmod(0o755)
 
     # Keep the run hermetic: the step writes to /tmp, which is fine in a runner but
-    # not in a test suite.
+    # not in a test suite. The replacement has to be a *shell-usable* path (see
+    # `_shell_path`) and is shell-quoted, so a temp directory containing a space works too.
     script_body = (_step_script()
                    .replace("${{ github.repository }}", "Ikalus1988/MisakaNet")
-                   .replace("/tmp/", f"{tmp_path}/"))
+                   .replace("/tmp/", shlex.quote(_shell_path(shell, tmp_path)) + "/"))
     script = tmp_path / "step.sh"
     script.write_text("set -e\n" + script_body, encoding="utf-8")
 
@@ -101,9 +168,14 @@ def digest_run(tmp_path):
         str(key): re.sub(r"\$\{\{.*?\}\}", "test-token-placeholder", str(value))
         for key, value in job_env.items()
     }
-    env = {**os.environ, **resolved_env, "PATH": f"{bindir}:{os.environ['PATH']}",
-           "GH_CALLS": str(calls)}
-    result = subprocess.run([require_posix_shell(), "-e", str(script)], capture_output=True,
+    # Everything the shell reads — the script it opens, the stub it must find first on PATH,
+    # the log the stub writes, the directory the step writes into — is handed over in the
+    # shell's own path form, never as a Windows path.
+    env = {**os.environ, **resolved_env,
+           "PATH": f"{_shell_path(shell, bindir)}:{_inherited_path(shell)}",
+           "GH_CALLS": _shell_path(shell, calls)}
+    _ensure_python3(shell, bindir, env)
+    result = subprocess.run([shell, "-e", _shell_path(shell, script)], capture_output=True,
                             text=True, env=env, cwd=tmp_path)
     result.calls = calls.read_text(encoding="utf-8") if calls.exists() else ""
     result.digest = (tmp_path / "salvage_digest.md")

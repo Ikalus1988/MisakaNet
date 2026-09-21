@@ -13,6 +13,8 @@ import stat
 import subprocess
 from pathlib import Path
 
+from posix_shell import require_posix_shell
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 VOICE_DIR = REPO_ROOT / "docs" / "assets" / "voice"
 HOOK_SCRIPT_SH = REPO_ROOT / "scripts" / "misakanet_voice_hook.sh"
@@ -67,21 +69,28 @@ class TestHookScript:
             assert "MISAKANET_VOICE" in content
 
     def test_bash_dry_run_maps_valid_voices_and_ignores_bad_input(self):
+        # Run the hook *through* the shell, never as an executable of its own: on Windows a `.sh`
+        # handed straight to CreateProcess is not a runnable format — `OSError: [WinError 193] %1
+        # is not a valid Win32 application` — the hook has a `#!` line, which only a shell reads.
+        # The script path is passed in the shell's own POSIX form (`C:/…`), which Git Bash opens
+        # unambiguously; `C:\…` only works there by luck of MSYS argument conversion.
+        shell = require_posix_shell()
+        hook = HOOK_SCRIPT_SH.as_posix()
         env = {**os.environ, "MISAKANET_VOICE_DRY_RUN": "1"}
         for voice in ["connect-success", "pair-success", "lesson-found", "failure-warning"]:
             result = subprocess.run(
-                [str(HOOK_SCRIPT_SH)], input=json.dumps({"voice": voice}), text=True,
+                [shell, hook], input=json.dumps({"voice": voice}), text=True,
                 capture_output=True, env=env, timeout=15,
             )
-            assert result.returncode == 0
+            assert result.returncode == 0, result.stderr
             assert result.stdout.strip() == voice
 
         for payload in [{"voice": "unknown-voice-type"}, {"other": "field"}]:
             result = subprocess.run(
-                [str(HOOK_SCRIPT_SH)], input=json.dumps(payload), text=True,
+                [shell, hook], input=json.dumps(payload), text=True,
                 capture_output=True, env=env, timeout=15,
             )
-            assert result.returncode == 0
+            assert result.returncode == 0, result.stderr
             assert result.stdout == ""
 
 
