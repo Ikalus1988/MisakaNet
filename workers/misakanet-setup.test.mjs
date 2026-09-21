@@ -190,7 +190,88 @@ const BARE_HOMES = {
     mkdirSync(join(home, '.codewhale'), { recursive: true });
     writeFileSync(join(home, '.codewhale', 'mcp.json'), '{}\n');
   },
+  cursor: (home) => {
+    mkdirSync(join(home, '.cursor'), { recursive: true });
+    writeFileSync(join(home, '.cursor', 'mcp.json'), '{}\n');
+  },
+  gemini: (home) => {
+    mkdirSync(join(home, '.gemini'), { recursive: true });
+    writeFileSync(join(home, '.gemini', 'settings.json'), '{}\n');
+  },
+  copilot: (home) => {
+    mkdirSync(join(home, '.copilot'), { recursive: true });
+    writeFileSync(join(home, '.copilot', 'mcp-config.json'), '{}\n');
+  },
+  opencode: (home) => {
+    mkdirSync(join(home, '.config', 'opencode'), { recursive: true });
+    writeFileSync(join(home, '.config', 'opencode', 'opencode.json'), '{}\n');
+  },
+  kiro: (home) => {
+    mkdirSync(join(home, '.kiro', 'settings'), { recursive: true });
+    writeFileSync(join(home, '.kiro', 'settings', 'mcp.json'), '{}\n');
+  },
 };
+
+/**
+ * The five clients whose whole install is one MCP entry in one JSON file.
+ *
+ * Every `container` and `urlField` here comes from that vendor's own documentation, and they differ
+ * on purpose: Gemini CLI's remote field is `httpUrl` (its `url` means SSE), OpenCode nests under
+ * `mcp` rather than `mcpServers`, Copilot CLI needs `type: "http"`, OpenCode `type: "remote"`, while
+ * Cursor and Kiro take a bare `url`. A wrong key here is a **silent** failure — the server simply
+ * never appears — so the shape is asserted per client rather than assumed.
+ */
+const MCP_ONLY_SHAPES = [
+  { agent: 'cursor', label: 'Cursor', rel: '.cursor/mcp.json', container: 'mcpServers', urlField: 'url' },
+  { agent: 'gemini', label: 'Gemini CLI', rel: '.gemini/settings.json', container: 'mcpServers', urlField: 'httpUrl' },
+  { agent: 'copilot', label: 'Copilot CLI', rel: '.copilot/mcp-config.json', container: 'mcpServers', urlField: 'url', type: 'http' },
+  { agent: 'opencode', label: 'OpenCode', rel: '.config/opencode/opencode.json', container: 'mcp', urlField: 'url', type: 'remote' },
+  { agent: 'kiro', label: 'Kiro', rel: '.kiro/settings/mcp.json', container: 'mcpServers', urlField: 'url' },
+];
+
+for (const shape of MCP_ONLY_SHAPES) {
+  test(`${shape.agent}: writes the entry that client's own docs show, and only that`, () => {
+    const home = mkdtempSync(join(tmpdir(), `mn-shape-${shape.agent}-`));
+    try {
+      mkdirSync(join(home, dirname(shape.rel)), { recursive: true });
+      writeFileSync(join(home, shape.rel), JSON.stringify({ [shape.container]: { existing: { url: 'https://x' } } }));
+      const first = runOffline(home, '--only', shape.agent);
+      assert.equal(first.status, 0, first.stdout + first.stderr);
+
+      const cfg = JSON.parse(readFileSync(join(home, shape.rel), 'utf8'));
+      const entry = cfg[shape.container].misakanet;
+      assert.ok(entry, `${shape.container}.misakanet must exist: ${JSON.stringify(cfg)}`);
+      assert.equal(entry[shape.urlField], 'https://misakanet.org/mcp',
+        `${shape.agent} documents ${shape.urlField} as its remote field`);
+      assert.equal(entry.headers['X-MisakaNet-Agent'], shape.agent);
+      assert.ok(cfg[shape.container].existing, 'the user\'s own servers must survive');
+      if (shape.type) assert.equal(entry.type, shape.type);
+      else assert.equal(entry.type, undefined,
+        `${shape.agent} documents no type key, and adding one is not harmless`);
+
+      // No behaviour layer is written for any of them, and the output says so.
+      assert.match(first.stdout, new RegExp(`${shape.label}：没有规则块与钩子`), first.stdout);
+
+      // Snapshot *before* the second run: comparing the file with itself after it would pass no
+      // matter what the second run did (the first version of this test did exactly that).
+      const afterFirst = readFileSync(join(home, shape.rel), 'utf8');
+      const second = runOffline(home, '--only', shape.agent);
+      assert.match(second.stdout, /无改动/, second.stdout);
+      assert.equal(readFileSync(join(home, shape.rel), 'utf8'), afterFirst,
+        'a second run must not rewrite the file — byte drift is invisible to every other check');
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+}
+
+function makeCursorHome() {
+  const home = mkdtempSync(join(tmpdir(), 'mn-cursor-'));
+  mkdirSync(join(home, '.cursor'), { recursive: true });
+  writeFileSync(join(home, '.cursor', 'mcp.json'),
+    JSON.stringify({ mcpServers: { existing: { url: 'https://x' } } }));
+  return home;
+}
 
 /** The tree without the documented `.misakanet.bak` safety copies (`--uninstall` keeps them). */
 const withoutBackups = (tree) => Object.fromEntries(
@@ -477,6 +558,67 @@ test('openclaw: an unwritable config directory is still refused, and left untouc
       rmSync(home, { recursive: true, force: true });
     }
   });
+
+test('cursor: writes the entry Cursor documents, and claims no behaviour layer', () => {
+  const home = makeCursorHome();
+  try {
+    const result = runOffline(home, '--only', 'cursor');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /Cursor：注册 MCP/, result.stdout);
+
+    const cfg = JSON.parse(readFileSync(join(home, '.cursor', 'mcp.json'), 'utf8'));
+    // Cursor's documented remote shape: url + headers, and deliberately no type/transport key
+    // (that is the Claude Code entry's shape, not Cursor's — copying it is a silent no-op there).
+    assert.equal(cfg.mcpServers.misakanet.url, 'https://misakanet.org/mcp');
+    assert.equal(cfg.mcpServers.misakanet.type, undefined);
+    assert.equal(cfg.mcpServers.misakanet.transport, undefined);
+    assert.equal(cfg.mcpServers.misakanet.headers['X-MisakaNet-Agent'], 'cursor');
+    assert.ok(cfg.mcpServers.existing, 'existing servers must survive');
+
+    // The honesty half: no rules block exists for Cursor, and nothing may imply one was written.
+    assert.match(result.stdout, /Cursor：没有规则块与钩子/, result.stdout);
+
+    const report = runOffline(home, '--only', 'cursor', '--report');
+    assert.match(report.stdout, /^detected-agents: \[cursor\]$/m, report.stdout);
+    assert.match(report.stdout, /^install-scope: mcp-only$/m,
+      `a Cursor install is an endpoint, not a behaviour layer: ${report.stdout}`);
+    assert.match(report.stdout, /^hook: absent$/m,
+      `no hook may be written for a machine whose agents cannot consume it: ${report.stdout}`);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('cursor: idempotent — a second run changes nothing', () => {
+  const home = makeCursorHome();
+  try {
+    runOffline(home, '--only', 'cursor');
+    const afterFirst = readFileSync(join(home, '.cursor', 'mcp.json'), 'utf8');
+    const second = runOffline(home, '--only', 'cursor');
+    assert.match(second.stdout, /Cursor：MCP 已注册（无改动）/, second.stdout);
+    assert.equal(readFileSync(join(home, '.cursor', 'mcp.json'), 'utf8'), afterFirst,
+      'a second run must not rewrite the file (byte drift is invisible to every other check)');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('a machine without Claude Code is not told its hook is missing', () => {
+  // The verify block used to run the Claude Code hook checks whenever the hook file existed, so a
+  // Codex-only or Cursor-only install reported NOT READY with two complaints about a target that was
+  // never selected. This is the same lie the OpenClaw and Hermes checks already refused to tell.
+  const home = makeCursorHome();
+  try {
+    const install = runOffline(home, '--only', 'cursor');
+    assert.equal(install.status, 0, install.stdout + install.stderr);
+    const verify = run(home, '--verify');
+    assert.doesNotMatch(verify.stdout, /Claude Code/,
+      `a Cursor-only machine must never be told about Claude Code: ${verify.stdout}`);
+    assert.match(verify.stdout, /Cursor：MCP 已注册/, verify.stdout);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
 
 test('openclaw: writes the MCP entry beside the servers the user already has', () => {
   const home = makeOpenclawHome();

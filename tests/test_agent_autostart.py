@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -86,7 +87,13 @@ def test_install_wires_every_detected_agent(tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
 
     claude = json.loads((home / ".claude.json").read_text(encoding="utf-8"))
-    assert claude["mcpServers"]["misakanet"] == {"type": "http", "url": "https://misakanet.org/mcp"}
+    entry = claude["mcpServers"]["misakanet"]
+    assert {k: v for k, v in entry.items() if k != "headers"} == {
+        "type": "http", "url": "https://misakanet.org/mcp"}
+    # The self-declared hint headers ride along from the first write — the npm installer has done
+    # that since 0.5.6, and this one did not, which is the parity gap these tests now close.
+    # `Authorization` is the credential and is asserted absent in the no-token test below.
+    assert entry["headers"]["X-MisakaNet-Agent"] == "claude-code"
     assert "cloudflare" in claude["mcpServers"], "existing servers must survive"
 
     settings = json.loads((home / ".claude" / "settings.json").read_text(encoding="utf-8"))
@@ -100,6 +107,91 @@ def test_install_wires_every_detected_agent(tmp_path):
         assert "misakanet:start" in text and "misakanet:end" in text, rel
         assert "misakanet_search" in text, rel
     assert (home / ".agents" / "skills" / "misakanet" / "SKILL.md").exists()
+
+
+def test_cursor_gets_the_entry_cursor_documents_and_nothing_else(tmp_path):
+    """Cursor is the one target whose config this installer writes without a behaviour layer.
+
+    Its documented remote shape is {"url": …, "headers": {…}} with no `type`/`transport` key —
+    that is the Claude Code entry's shape — so Cursor gets its own writer. And because
+    `.cursor/rules/*.mdc` is project-scoped, the install must say out loud that it wrote no rules
+    block and no hook rather than let the user assume otherwise.
+    """
+    home = tmp_path / "home"
+    (home / ".cursor").mkdir(parents=True)
+    (home / ".cursor" / "mcp.json").write_text(
+        json.dumps({"mcpServers": {"existing": {"url": "https://x"}}}), encoding="utf-8")
+
+    result = run_installer(home, "--only", "cursor", "--no-register")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "没有规则块与钩子" in result.stdout
+
+    cfg = json.loads((home / ".cursor" / "mcp.json").read_text(encoding="utf-8"))
+    entry = cfg["mcpServers"]["misakanet"]
+    # The shape is the assertion: a bare `url` and no `type`/`transport` key, whatever else the
+    # entry carries.
+    assert {k: v for k, v in entry.items() if k != "headers"} == {"url": "https://misakanet.org/mcp"}, entry
+    assert entry["headers"]["X-MisakaNet-Agent"] == "cursor", entry["headers"]
+    assert "existing" in cfg["mcpServers"], "the user's own servers must survive"
+
+    second = run_installer(home, "--only", "cursor", "--no-register")
+    assert "无改动" in second.stdout, second.stdout
+
+
+def test_cursor_is_removed_by_uninstall(tmp_path):
+    home = tmp_path / "home"
+    (home / ".cursor").mkdir(parents=True)
+    (home / ".cursor" / "mcp.json").write_text(
+        json.dumps({"mcpServers": {"existing": {"url": "https://x"}}}), encoding="utf-8")
+    run_installer(home, "--only", "cursor", "--no-register")
+    assert "misakanet" in (home / ".cursor" / "mcp.json").read_text(encoding="utf-8")
+
+    result = run_installer(home, "--uninstall")
+    assert result.returncode == 0, result.stdout + result.stderr
+    cfg = json.loads((home / ".cursor" / "mcp.json").read_text(encoding="utf-8"))
+    assert "misakanet" not in cfg["mcpServers"]
+    assert "existing" in cfg["mcpServers"], "uninstall must not take the user's servers with it"
+
+
+JSON_CLIENTS = [
+    # agent, config file, container, URL field, extra keys that vendor's docs show.
+    # These differ on purpose: Gemini CLI's remote field is `httpUrl` (its `url` means SSE), OpenCode
+    # nests under `mcp` and wants `type: "remote"`, Copilot CLI wants `type: "http"`, Cursor and Kiro
+    # take a bare `url`. A wrong key is a silent failure — the server simply never appears.
+    ("gemini", ".gemini/settings.json", "mcpServers", "httpUrl", {}),
+    ("copilot", ".copilot/mcp-config.json", "mcpServers", "url", {"type": "http"}),
+    ("opencode", ".config/opencode/opencode.json", "mcp", "url", {"type": "remote", "enabled": True}),
+    ("kiro", ".kiro/settings/mcp.json", "mcpServers", "url", {}),
+]
+
+
+@pytest.mark.parametrize("agent,rel,container,url_field,extra", JSON_CLIENTS)
+def test_each_json_client_gets_its_own_documented_shape(tmp_path, agent, rel, container, url_field,
+                                                        extra):
+    home = tmp_path / "home"
+    (home / Path(rel).parent).mkdir(parents=True)
+    (home / rel).write_text(json.dumps({container: {"existing": {"url": "https://x"}}}),
+                            encoding="utf-8")
+
+    result = run_installer(home, "--only", agent, "--no-register")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "没有规则块与钩子" in result.stdout, result.stdout
+
+    cfg = json.loads((home / rel).read_text(encoding="utf-8"))
+    entry = cfg[container]["misakanet"]
+    assert entry[url_field] == "https://misakanet.org/mcp", entry
+    assert "type" not in entry or entry["type"] == extra.get("type"), entry
+    for key, value in extra.items():
+        assert entry[key] == value, (key, entry)
+    assert "existing" in cfg[container], "the user's own servers must survive"
+
+    second = run_installer(home, "--only", agent, "--no-register")
+    assert "无改动" in second.stdout, second.stdout
+
+    assert run_installer(home, "--uninstall").returncode == 0
+    after = json.loads((home / rel).read_text(encoding="utf-8"))
+    assert "misakanet" not in after[container]
+    assert "existing" in after[container], "uninstall must not take the user's servers with it"
 
 
 def test_codex_toml_stays_parseable_and_keeps_the_top_level_key_at_top(tmp_path):
@@ -492,8 +584,15 @@ def test_a_run_without_a_token_still_configures_reads(tmp_path):
     result = run_installer(home, "--only", "claude,codex")
     assert result.returncode == 0
     claude = json.loads((home / ".claude.json").read_text(encoding="utf-8"))
+    headers = claude["mcpServers"]["misakanet"]["headers"]
     assert claude["mcpServers"]["misakanet"]["url"] == "https://misakanet.org/mcp"
-    assert "headers" not in claude["mcpServers"]["misakanet"], "no token, no header"
+    # "no token" means no *credential* — not "no headers". The distinction is the whole point of the
+    # hints: they are self-declared context the service records as analytics, never identity, so a
+    # read-only install still carries them (AGENTS.md §3.3).
+    assert "Authorization" not in headers, "no token, no credential"
+    assert headers["X-MisakaNet-Agent"] == "claude-code"
+    assert headers["X-MisakaNet-Os"], "the OS hint is what makes an unauthenticated row readable"
+    assert "X-MisakaNet-Version" in headers, "and the installer's version, when it has one"
 
 
 def test_codex_config_carries_the_token_as_http_headers(tmp_path, monkeypatch):
@@ -508,6 +607,77 @@ def test_codex_config_carries_the_token_as_http_headers(tmp_path, monkeypatch):
     table = data["mcp_servers"]["misakanet"]
     assert table["http_headers"]["Authorization"] == f"Bearer {SYNTHETIC_TOKEN}"
     assert "bearer_token_env_var" not in table
+
+
+# ── the context hints, which this installer did not write at all until 2026-09-20 ────────────────
+#
+# The npm installer has sent them since 0.5.6 (#1859): `X-MisakaNet-Client` (a stable pseudonym),
+# `-Agent`, `-Os` and `-Version`. The bootstrap route sent none, so the D1 check that confirmed the
+# columns were populated (#1820: `with_agent 3 / with_version 1 / with_os 3`) was reading a sample
+# that excluded every user whose network needed the bootstrap. These tests hold the two routes to
+# the same set of names.
+
+_HINT_NAMES = ("X-MisakaNet-Agent", "X-MisakaNet-Os", "X-MisakaNet-Version", "X-MisakaNet-Client")
+
+
+def test_every_entry_this_installer_writes_carries_the_context_hints(tmp_path):
+    tomllib = pytest.importorskip("tomllib")
+    home = make_home(tmp_path)
+    for sub in (".cursor", ".gemini", ".copilot", ".openclaw"):
+        (home / sub).mkdir(parents=True, exist_ok=True)
+    (home / ".openclaw" / "openclaw.json").write_text(json.dumps({"mcp": {"servers": {}}}), encoding="utf-8")
+    # The pseudonym is the one hint that is conditional: it exists only once this machine has an id
+    # (the register path writes that file). Seed one, so this asserts "carries it", not "minted it".
+    (home / ".misakanet-agent").mkdir(exist_ok=True)
+    (home / ".misakanet-agent" / "client_id").write_text("bootstrap-smoke-0123456789", encoding="utf-8")
+
+    result = run_installer(home, "--no-register")
+    assert result.returncode == 0, result.stdout + result.stderr
+
+    claude = json.loads((home / ".claude.json").read_text(encoding="utf-8"))
+    cursor = json.loads((home / ".cursor" / "mcp.json").read_text(encoding="utf-8"))
+    gemini = json.loads((home / ".gemini" / "settings.json").read_text(encoding="utf-8"))
+    openclaw = json.loads((home / ".openclaw" / "openclaw.json").read_text(encoding="utf-8"))
+    codex = tomllib.loads((home / ".codex" / "config.toml").read_text(encoding="utf-8"))
+
+    written = {
+        "claude-code": claude["mcpServers"]["misakanet"]["headers"],
+        "cursor": cursor["mcpServers"]["misakanet"]["headers"],
+        "gemini": gemini["mcpServers"]["misakanet"]["headers"],
+        "openclaw": openclaw["mcp"]["servers"]["misakanet"]["headers"],
+        "codex": codex["mcp_servers"]["misakanet"]["http_headers"],
+    }
+    for agent, headers in written.items():
+        assert headers["X-MisakaNet-Agent"] == agent, (agent, headers)
+        # Node's vocabulary for the same machines: `linux/x64`, not `linux/x86_64`. Two spellings in
+        # one analytics column is a column that does not aggregate.
+        assert re.match(r"^[a-z0-9]+/[a-z0-9]+$", headers["X-MisakaNet-Os"]), headers
+        assert headers["X-MisakaNet-Client"], f"{agent}: the pseudonym is what ties a caller's history together"
+        assert headers["X-MisakaNet-Version"], f"{agent}: run from a checkout, so the version is knowable"
+
+
+def test_an_id_that_is_not_id_shaped_is_never_written(tmp_path):
+    """`client_id` comes from a file another process wrote, and it lands in TOML, YAML and JSON.
+
+    The npm installer learned this the hard way (#1859): a value with a quote in it closes a TOML
+    inline table and takes the whole config file with it. Same rule here, and the codex file is the
+    sharpest case because the damage would be a parse error rather than a missing header.
+    """
+    tomllib = pytest.importorskip("tomllib")
+    home = make_home(tmp_path)
+    (home / ".misakanet-agent").mkdir(exist_ok=True)
+    (home / ".misakanet-agent" / "client_id").write_text('a" } \n[mcp_servers.evil]\ncommand = "x', encoding="utf-8")
+
+    run_installer(home, "--only", "claude,codex,cursor", "--no-register")
+
+    claude = json.loads((home / ".claude.json").read_text(encoding="utf-8"))
+    assert "X-MisakaNet-Client" not in claude["mcpServers"]["misakanet"]["headers"]
+    codex = tomllib.loads((home / ".codex" / "config.toml").read_text(encoding="utf-8"))
+    assert "X-MisakaNet-Client" not in codex["mcp_servers"]["misakanet"]["http_headers"], (
+        "an id that is not id-shaped is not a hint — it is a way to close a table")
+    assert set(codex["mcp_servers"]) == {"context7", "misakanet"}, "the file still parses, with nothing injected"
+    assert codex["mcp_servers"]["misakanet"]["http_headers"]["X-MisakaNet-Agent"] == "codex"
+
 
 def test_the_hook_never_forwards_a_stored_token(tmp_path):
     """The property CodeQL flagged (js/file-access-to-http #259/#260 in the Node twin).

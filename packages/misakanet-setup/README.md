@@ -1,6 +1,7 @@
 # @misaka-net/misakanet-setup
 
-One command to teach your **Claude Code**, **Codex**, **Hermes**, **OpenClaw** or **codewhale** to
+One command to teach your **Claude Code**, **Codex**, **Hermes**, **OpenClaw**, **codewhale**,
+**Cursor**, **Gemini CLI**, **Copilot CLI**, **OpenCode** or **Kiro** to
 check MisakaNet's failure lessons before repeating a mistake — and to distil the session's reusable
 lessons at a checkpoint.
 
@@ -16,8 +17,18 @@ knowledge base on its own instead of guessing.
 
 | # | Goal | Mechanism |
 |---|---|---|
-| 1 | the agent **can** call it | MCP server `https://misakanet.org/mcp` (streamable HTTP) in `~/.claude.json`, `~/.codex/config.toml` and `~/.openclaw/openclaw.json` (`mcp.servers.misakanet`), with the Bearer token when registration succeeds — reads need no token (anonymous reads are unmetered since 2026-09-18); the token is what opens the **write** path. Every entry also carries the self-declared context hints `X-MisakaNet-Client` / `-Agent` / `-Os` / `-Version`, which the endpoint records on the read's analytics row and never treats as identity (`codewhale` is the one exception: its server entry has no custom-header field). Hermes is the same thing in its own files: `mcp_servers.misakanet` in `~/.hermes/config.yaml` plus the token in `~/.hermes/.env` under `MCP_MISAKANET_API_KEY`. All four are config files written file-to-file — no subprocess is spawned, so **no token ever appears in a command line**. For Claude Code only, the five **read-only** tools are also added to `permissions.allow` — "can call it" otherwise still means a permission prompt on the very first search, so `0.5.3` pre-allows them (`--verify` reports it, `--report` prints `permissions:`); `write_lesson` is deliberately **not** pre-allowed, because a tool that writes should ask |
-| 2 | the agent **knows when** | rules block appended to `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` / `~/.hermes/SOUL.md` / `~/.openclaw/workspace/AGENTS.md` (issue, retry, risky-operation triggers; desensitisation rules). Wording is **imperative first** ("必须先调 misakanet_search") rather than descriptive, because a field test showed a weaker model reads a descriptive block as background and never calls the tool |
+| 1 | the agent **can** call it | MCP server `https://misakanet.org/mcp` (streamable HTTP) in `~/.claude.json`, `~/.codex/config.toml` and `~/.openclaw/openclaw.json` (`mcp.servers.misakanet`), with the Bearer token when registration succeeds — reads need no token (anonymous reads are unmetered since 2026-09-18); the token is what opens the **write** path. Every entry also carries the self-declared context hints `X-MisakaNet-Client` / `-Agent` / `-Os` / `-Version`, which the endpoint records on the read's analytics row and never treats as identity (`codewhale` is the one exception: its server entry has no custom-header field). Hermes is the same thing in its own files: `mcp_servers.misakanet` in `~/.hermes/config.yaml` plus the token in `~/.hermes/.env` under `MCP_MISAKANET_API_KEY`. Five clients take the same idea in one file each, and **each file uses its own key path and URL field** — they are not interchangeable, and a copied entry with the wrong key fails silently (no error, the server simply never appears):
+
+| client | file | container | URL field |
+|---|---|---|---|
+| Cursor | `~/.cursor/mcp.json` | `mcpServers` | `url` |
+| Gemini CLI | `~/.gemini/settings.json` | `mcpServers` | **`httpUrl`** (its `url` means SSE) |
+| Copilot CLI | `~/.copilot/mcp-config.json` | `mcpServers` | `url`, with `type: "http"` |
+| OpenCode | `~/.config/opencode/opencode.json` | **`mcp`** | `url`, with `type: "remote"` |
+| Kiro | `~/.kiro/settings/mcp.json` | `mcpServers` | `url` |
+
+All of them are config files written file-to-file — no subprocess is spawned, so **no token ever appears in a command line**. For Claude Code only, the five **read-only** tools are also added to `permissions.allow` — "can call it" otherwise still means a permission prompt on the very first search, so `0.5.3` pre-allows them (`--verify` reports it, `--report` prints `permissions:`); `write_lesson` is deliberately **not** pre-allowed, because a tool that writes should ask |
+| 2 | the agent **knows when** | rules block appended to `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` / `~/.hermes/SOUL.md` / `~/.openclaw/workspace/AGENTS.md`. **The five JSON-file clients are the exception: they get none**, because their rules are project-scoped (`.cursor/rules/*.mdc`, `GEMINI.md`, `.github/copilot-instructions.md`, `AGENTS.md`, `.kiro/steering/*.md`) and the installer cannot know where your projects live — the install output says so, with the project-side action for each client, instead of implying behaviour changed (issue, retry, risky-operation triggers; desensitisation rules). Wording is **imperative first** ("必须先调 misakanet_search") rather than descriptive, because a field test showed a weaker model reads a descriptive block as background and never calls the tool |
 | 4 | *(opt-in)* you **hear** it | `--voice` adds a `PostToolUse` hook that plays the cue the server asked for (`lesson-found` / `failure-warning` / `connect-success` / `pair-success`). Off by default; mute with `MISAKANET_VOICE=0`; see `docs/integrations/mcp-voice-hooks.md` |
 | 3 | the checkpoint **fires** | a hook that counts user turns: turn 1 announces the install to the user, turn 20 (and every 10 after) injects the "distil and submit" reminder; a failed tool call injects a "search before you retry" reminder built from the error text. Claude Code only today — Codex's user-level hook shape is unconfirmed and OpenClaw's events are unverified, so those two work from the rules block, and `--verify` says so per target instead of implying otherwise |
 
@@ -153,8 +164,29 @@ npx @misaka-net/misakanet-setup@latest
 ## Offline / restricted networks
 
 The hook ships inside the npm tarball, so installing needs no download beyond npm itself.
-Registration is best-effort: without it you keep the anonymous read path (5 reads/day/IP)
+Registration is best-effort: without it you keep the anonymous read path (unmetered since 2026-09-18; only a per-address burst window applies)
 and the installer says so in plain words.
+
+**Behind a corporate proxy, read the probe line before believing it.** `--verify` probes the
+endpoint with Node's `fetch`, and Node ignores `HTTP_PROXY` / `HTTPS_PROXY` unless the runtime is
+told to use them — `NODE_USE_ENV_PROXY=1` or `--use-env-proxy`, with `fetch` support in Node
+≥ 22.21.0 / 24.0.0 ([Node docs](https://nodejs.org/learn/http/enterprise-network-configuration)).
+On a proxy machine the probe can therefore fail while your agent reaches the endpoint fine. The
+report now says which of the two it is:
+
+```bash
+NODE_USE_ENV_PROXY=1 npx @misaka-net/misakanet-setup --verify   # let Node use the proxy
+curl -sS https://misakanet.org/mcp -H 'Accept: application/json' \
+  -H 'MCP-Protocol-Version: 2025-06-18' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+`endpoint-probe: inconclusive-proxy` in `--report` means exactly this: a proxy is configured, this
+process could not use it, so the `endpoint-reachable` boolean above it says nothing. `--strict` /
+`--ci` still fail in that case — a gate that cannot tell must not pass silently. If your proxy also
+intercepts TLS, add `NODE_USE_SYSTEM_CA=1`.
+
+The Python installer (`integrations/agent-autostart/install_misakanet_agent.py`) needs none of this:
+it uses `urllib`, which honours the proxy environment variables by default.
 
 ## Requires
 

@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from functools import partial
 import os
 import re
 import shutil
@@ -61,7 +62,8 @@ HOOK_FILE_MJS = HERE / "checkpoint_reminder.mjs"  # the Node implementation (pre
 
 # The agents this knows how to configure. `detect` is a path that only exists when the
 # agent is actually installed here; everything else hangs off HOME.
-AGENTS = ("claude", "codex", "hermes", "openclaw", "codewhale", "dsh")
+AGENTS = ("claude", "codex", "hermes", "openclaw", "codewhale",
+          "cursor", "gemini", "copilot", "opencode", "kiro", "dsh")
 
 
 def _force_utf8_io() -> None:
@@ -249,6 +251,195 @@ def prompt_block() -> str:
 
 
 # ── per-agent actions ───────────────────────────────────────────────
+# The targets whose whole install is one MCP entry in one JSON file. Each entry shape is the one
+# that vendor's own documentation shows, and they are **not** interchangeable: Gemini CLI's remote
+# field is `httpUrl` (its `url` means SSE), OpenCode nests under `mcp` rather than `mcpServers` and
+# wants `type: "remote"`, Copilot CLI wants `type: "http"`, while Cursor and Kiro take a bare `url`.
+# A copied entry with the wrong key fails **silently**, so each shape is pinned by tests.
+#
+# None of these five has a rules block or a hook this installer can write — their rules are
+# project-scoped files — so tier ① is the whole install and the output says so.
+MCP_ONLY_TARGETS: dict[str, dict] = {
+    "cursor": {
+        "label": "Cursor",
+        "detect": ".cursor",
+        "config": (".cursor", "mcp.json"),
+        "container": "mcpServers",
+        "url_field": "url",
+        "rules": ".cursor/rules/*.mdc 是项目级的，本安装器不知道你的项目在哪",
+        "rule_hint": "想让 Cursor 主动去查，把 .cursor/rules/misakanet-failure-memory.mdc 放进项目",
+        "manual": "重启 Cursor 后在 Settings → MCP 里确认看得见 misakanet"
+                  "（本安装器只写用户级 ~/.cursor/mcp.json，项目级归你自己管）",
+    },
+    "gemini": {
+        "label": "Gemini CLI",
+        "detect": ".gemini",
+        "config": (".gemini", "settings.json"),
+        "container": "mcpServers",
+        "url_field": "httpUrl",
+        "rules": "它读 GEMINI.md（全局与项目树），本安装器不写别人的规则文件",
+        "rule_hint": "想让 Gemini CLI 主动去查，把规则块加进项目的 GEMINI.md",
+        "manual": "重启会话后用 /mcp 复核 misakanet 是否列出",
+    },
+    "copilot": {
+        "label": "Copilot CLI",
+        "detect": ".copilot",
+        "config": (".copilot", "mcp-config.json"),
+        "container": "mcpServers",
+        "url_field": "url",
+        "rules": "它读 .github/copilot-instructions.md 与 AGENTS.md（项目级）",
+        "rule_hint": "想让 Copilot CLI 主动去查，把规则写进项目的 .github/copilot-instructions.md",
+        "manual": "跑 `copilot mcp list` 复核（VS Code 里的 Copilot 是另一份配置，键名是 `servers`）",
+    },
+    "opencode": {
+        "label": "OpenCode",
+        "detect": ".config/opencode",
+        "config": (".config", "opencode", "opencode.json"),
+        "container": "mcp",
+        "url_field": "url",
+        "rules": "它读 AGENTS.md（项目根与 ~/.config/opencode/AGENTS.md）",
+        "rule_hint": "想让 OpenCode 主动去查，把规则块加进项目的 AGENTS.md",
+        "manual": "重启 OpenCode 后看它的 MCP 列表；若你设了 XDG_CONFIG_HOME，它读的是 "
+                  "$XDG_CONFIG_HOME/opencode/opencode.json，把同样的条目贴过去即可",
+        "parse_note": "opencode.jsonc 允许注释，若你用的正是它，本安装器解析不了",
+    },
+    "kiro": {
+        "label": "Kiro",
+        "detect": ".kiro",
+        "config": (".kiro", "settings", "mcp.json"),
+        "container": "mcpServers",
+        "url_field": "url",
+        "rules": "它读 .kiro/steering/*.md（steering 文件）",
+        "rule_hint": "想让 Kiro 主动去查，把规则加进 .kiro/steering/",
+        "manual": "重启 Kiro 后用它的 MCP 面板复核 misakanet（Kiro 还支持 disabled / autoApprove）",
+    },
+}
+
+
+def _mcp_only_config(home: Path, agent: str) -> Path:
+    return home.joinpath(*MCP_ONLY_TARGETS[agent]["config"])
+
+
+# Same shape the register path and the npm installer accept. It ends up inside a TOML inline table,
+# a YAML mapping and JSON, so a value that is not id-shaped is not a hint worth writing — it is noise
+# that could close a quote or open a new table (#1859, and the reason the JS side has this regex).
+CLIENT_ID_SHAPE = re.compile(r"^[A-Za-z0-9._-]{8,64}$")
+
+# Node's vocabulary for the same machines, because `X-MisakaNet-Os` is one column in one table and
+# the npm installer writes it as `process.platform/process.arch`. `linux/x64` and `linux/x86_64` are
+# one machine spelled twice; a column with two dialects does not aggregate, and the D1 check that
+# confirmed this (#1820) would have silently under-counted one of the two channels.
+_OS_ALIASES = {
+    "x86_64": "x64", "amd64": "x64", "aarch64": "arm64", "i386": "ia32", "i686": "ia32",
+    "armv7l": "arm", "armv6l": "arm", "ppc64le": "ppc64", "ppc64": "ppc64",
+}
+
+
+def _os_hint() -> str:
+    import platform
+
+    system = platform.system().lower() or "unknown"
+    machine = platform.machine().lower()
+    return f"{system}/{_OS_ALIASES.get(machine, machine)}"[:40]
+
+
+def _declared_client_id(home: Path) -> str:
+    """The stable pseudonym to declare, or '' when this machine has not said."""
+    path = _state_dir(home) / "client_id"
+    try:
+        found = path.read_text(encoding="utf-8").strip() if path.exists() else ""
+    except OSError:
+        return ""
+    return found if CLIENT_ID_SHAPE.match(found) else ""
+
+
+def _installer_version() -> str:
+    """The version of the checkout this script ran from, or '' when it is not running from one.
+
+    The bootstrap route (`curl … bootstrap.sh | bash`) downloads this file into
+    `~/.misakanet-agent` and fetches everything from `main`, so there is no version to report — and
+    inventing one would put a number in the analytics row that nothing maintains, which is exactly
+    the defect #1820 was about. A clone has `pyproject.toml` two directories up; the mtime of a
+    downloaded file is not a version either, so it is not used.
+    """
+    try:
+        text = (HERE.parent.parent / "pyproject.toml").read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.M)
+    return match.group(1) if match else ""
+
+
+def _context_headers(agent: str, home: Path) -> dict:
+    """The self-declared hint headers that accompany the credential on every MCP entry we write.
+
+    `Authorization` is a credential; these are hints the service records on its analytics row
+    (`agent`, `os`, `client_version`, and a stable pseudonym), never identity — AGENTS.md §3.3 is
+    why writing them automatically is acceptable at all. The npm installer has written them since
+    0.5.6 (#1859); this one did not, so every user who arrived through the bootstrap route — the
+    route for machines where npm is not an option — was invisible in the client statistics that
+    decide which clients get worked on next.
+
+    Same four names as the JS side, because both feed the same worker fields: `workers/*.js` reads
+    `X-MisakaNet-Agent` / `-Os` / `-Version` (truncating each to 40) and `X-MisakaNet-Client`.
+    """
+    headers = {"X-MisakaNet-Agent": agent, "X-MisakaNet-Os": _os_hint()}
+    client_id = _declared_client_id(home)
+    if client_id:
+        headers["X-MisakaNet-Client"] = client_id
+    version = _installer_version()
+    if version:
+        headers["X-MisakaNet-Version"] = version
+    return headers
+
+
+def _mcp_only_entry(agent: str, token: str, home: Path) -> dict:
+    """The vendor's own remote shape, plus the Bearer header when there is a token."""
+    entry: dict = {}
+    if agent == "gemini":
+        entry["httpUrl"] = ENDPOINT
+    elif agent == "copilot":
+        entry["type"] = "http"
+        entry["url"] = ENDPOINT
+    elif agent == "opencode":
+        entry["type"] = "remote"
+        entry["url"] = ENDPOINT
+        entry["enabled"] = True
+    else:                                    # cursor, kiro
+        entry["url"] = ENDPOINT
+    headers = _context_headers(agent, home)
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    entry["headers"] = headers
+    return entry
+
+
+def install_mcp_only(home: Path, dry: bool, rep: Report, agent: str) -> None:
+    """Install one MCP-only target: merge our entry under the vendor's key path, write, say what it is not."""
+    spec = MCP_ONLY_TARGETS[agent]
+    cfg = _mcp_only_config(home, agent)
+    data: dict = {}
+    if cfg.exists():
+        try:
+            data = json.loads(cfg.read_text(encoding="utf-8"))
+        except Exception:
+            note = f"（{spec['parse_note']}）" if spec.get("parse_note") else ""
+            rep.needs_manual(f"{spec['label']}: {cfg} 不是合法 JSON{note} → "
+                             f"手动加入 {spec['container']}.misakanet")
+            return
+    container = data.setdefault(spec["container"], {})
+    entry = _mcp_only_entry(agent, _read_token(home), home)
+    if container.get("misakanet") == entry:
+        rep.ok(f"{spec['label']}: MCP 已注册（无改动）")
+    else:
+        container["misakanet"] = entry
+        backup(cfg, dry)
+        write_text(cfg, json.dumps(data, indent=2, ensure_ascii=False) + "\n", dry)
+        rep.ok(f"{spec['label']}: {'会写入 MCP 条目' if dry else '注册 MCP（streamable-http）'} → {cfg}")
+    rep.skip(f"{spec['label']}: 没有规则块与钩子（{spec['rules']}）→ {spec['rule_hint']}")
+    rep.needs_manual(f"{spec['label']}: {spec['manual']}")
+
+
 def detect(home: Path, agent: str) -> bool:
     checks = {
         # cc-haha / claude-haha is a Claude Code fork that reads ~/.claude (its adapters
@@ -259,21 +450,25 @@ def detect(home: Path, agent: str) -> bool:
         "hermes": [home / ".hermes"],
         "openclaw": [home / ".openclaw"],
         "codewhale": [home / ".codewhale"],
+        **{a: [home / s["detect"]] for a, s in MCP_ONLY_TARGETS.items()},
         "dsh": [home / ".dsh", home / ".agents"],
     }
     return any(p.exists() for p in checks[agent])
 
 
-def mcp_server_entry(token: str = "") -> dict:
+def mcp_server_entry(token: str = "", home: Path | None = None) -> dict:
     """Claude Code / generic JSON shape for a streamable-HTTP MCP server.
 
-    With a token the reads are no longer metered (5/day/IP anonymised), which matters for
-    exactly the user who will never run `misakanet_register` by hand: without this they hit
-    "quota exceeded" on their first busy day and conclude the thing is broken.
+    With a token the entry also carries the credential, which is what unlocks the write tools.
+    Reads stopped being metered on 2026-09-18 (anonymous reads are unlimited; only a burst guard
+    remains), so a token is no longer the difference between "works" and "quota exceeded" — the
+    text here said "5/day/IP" until 2026-09-20, two days after the policy changed in AGENTS.md.
     """
     entry: dict = {"type": "http", "url": ENDPOINT}
+    headers = _context_headers("claude-code", home or Path.home())
     if token:
-        entry["headers"] = {"Authorization": f"Bearer {token}"}
+        headers["Authorization"] = f"Bearer {token}"
+    entry["headers"] = headers
     return entry
 
 
@@ -294,7 +489,7 @@ def install_claude(home: Path, dry: bool, rep: Report) -> None:
         except Exception as exc:
             rep.needs_manual(f"{cfg} 不是合法 JSON（{exc}）→ 请手动加入 mcpServers.misakanet")
             data = {}
-    entry = mcp_server_entry(_read_token(home))
+    entry = mcp_server_entry(_read_token(home), home)
     servers = data.setdefault("mcpServers", {})
     if servers.get("misakanet") == entry:
         rep.ok("Claude Code: MCP 已注册（无改动）")
@@ -348,19 +543,29 @@ def install_claude(home: Path, dry: bool, rep: Report) -> None:
         rep.ok("Claude Code: 钩子已存在（无改动）")
 
 
-def codex_table(token: str = "") -> str:
+def codex_table(token: str = "", home: Path | None = None) -> str:
     """Codex MCP table. Token goes in `http_headers` rather than `bearer_token_env_var`:
     an env var has to be exported by the user's shell (which this user will not do), while
-    the header is written once and used by Codex itself."""
+    the header is written once and used by Codex itself.
+
+    The hint headers ride in the same inline table. Every value is shape-checked before it is
+    written (`_context_headers` only emits a `client_id` that matches `CLIENT_ID_SHAPE`), because a
+    TOML inline table closed early by a quote takes the whole file with it — the npm installer hit
+    exactly that with a corrupt `client_id` file (#1859).
+    """
+    headers = _context_headers("codex", home or Path.home())
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    pairs = ", ".join(f'{key} = "{value}"' for key, value in headers.items())
     lines = [
         "[mcp_servers.misakanet]",
         'type = "streamable-http"',
         f'url = "{ENDPOINT}"',
+        f"http_headers = {{ {pairs} }}",
     ]
-    if token:
-        lines.append('http_headers = { Authorization = "Bearer ' + token + '" }')
-    else:
-        lines.append('# 没有 token：读走匿名通道（5/天/IP）。注册后可写入此文件的 http_headers。')
+    if not token:
+        lines.append("# 上面只有自报的上下文提示头（agent/os/版本），不含凭据：读不需要 token"
+                     "（2026-09-18 起匿名读不限次数），拿到 token 后可回填 Authorization。")
     return "\n".join(lines) + "\n"
 
 
@@ -394,7 +599,7 @@ def _insert_before_first_table(text: str, block: str) -> str:
 def install_codex(home: Path, dry: bool, rep: Report) -> None:
     cfg = home / ".codex" / "config.toml"
     existing = cfg.read_text(encoding="utf-8") if cfg.exists() else ""
-    table_block = f"# {START}\n{codex_table(_read_token(home))}# {END}\n"
+    table_block = f"# {START}\n{codex_table(_read_token(home), home)}# {END}\n"
     top_block = (f"# {TOP_START}\n"
                  "# streamable-http MCP 需要这一行（顶级），否则 Codex 不会用 rmcp client\n"
                  "experimental_use_rmcp_client = true\n"
@@ -776,6 +981,22 @@ def verify(home: Path, endpoint: str, rep: Report) -> bool:
                     f"{agent}: 钩子命令里的解释器不存在 → 钩子会静默不触发，重跑安装器即可修（{commands[0]}）")
             else:
                 rep.needs_manual(f"{agent}: 检查点钩子 ✗ 缺失")
+        if agent in MCP_ONLY_TARGETS:
+            # The MCP-only targets are one JSON file each, reported only when the user has them.
+            # Whether the client has *loaded* that file is not knowable from here, and the line says
+            # so instead of implying it.
+            spec = MCP_ONLY_TARGETS[agent]
+            cfg = _mcp_only_config(home, agent)
+            data = {}
+            if cfg.exists():
+                try:
+                    data = json.loads(cfg.read_text(encoding="utf-8"))
+                except Exception:
+                    data = {}
+            entry = (data.get(spec["container"]) or {}).get("misakanet")
+            ok &= bool(entry)
+            (rep.ok if entry else rep.needs_manual)(
+                f"{spec['label']}: MCP 注册 {'✓' if entry else '✗ 缺失'}（{cfg}）")
         rules = {"codex": home / ".codex" / "AGENTS.md", "hermes": home / ".hermes" / "SOUL.md",
                  "dsh": home / ".agents" / "skills" / "misakanet" / "SKILL.md"}.get(agent)
         if agent == "codewhale":
@@ -874,9 +1095,10 @@ def install_openclaw(home: Path, dry: bool, rep: Report) -> None:
         return
 
     token = _read_token(home)
-    entry: dict = {"url": ENDPOINT, "transport": "streamable-http"}
+    headers = _context_headers("openclaw", home)
     if token:
-        entry["headers"] = {"Authorization": f"Bearer {token}"}
+        headers["Authorization"] = f"Bearer {token}"
+    entry: dict = {"url": ENDPOINT, "transport": "streamable-http", "headers": headers}
     if servers.get("misakanet") == entry:
         rep.ok("OpenClaw: MCP 已注册（无改动）")
         return
@@ -892,6 +1114,7 @@ INSTALLERS = {
     "hermes": install_hermes,
     "openclaw": install_openclaw,
     "codewhale": install_codewhale,
+    **{a: partial(install_mcp_only, agent=a) for a in MCP_ONLY_TARGETS},
     "dsh": install_dsh,
 }
 
@@ -932,6 +1155,18 @@ def uninstall(home: Path, dry: bool, rep: Report) -> None:
                 rep.ok(f"移除 MCP 注册 → {cfg}")
         except Exception:
             rep.needs_manual(f"{cfg} 解析失败 → 手动删除 mcpServers.misakanet")
+    for agent, spec in MCP_ONLY_TARGETS.items():
+        cfg = _mcp_only_config(home, agent)
+        if not cfg.exists():
+            continue
+        try:
+            data = json.loads(cfg.read_text(encoding="utf-8"))
+            if (data.get(spec["container"]) or {}).pop("misakanet", None) is not None:
+                backup(cfg, dry)
+                write_text(cfg, json.dumps(data, indent=2, ensure_ascii=False) + "\n", dry)
+                rep.ok(f"移除 MCP 注册 → {cfg}")
+        except Exception:
+            rep.needs_manual(f"{cfg} 解析失败 → 手动删除 {spec['container']}.misakanet")
     settings_path = home / ".claude" / "settings.json"
     if settings_path.exists():
         try:

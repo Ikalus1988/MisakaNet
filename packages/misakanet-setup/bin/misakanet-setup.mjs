@@ -113,7 +113,8 @@ const SILENT = has('--silent');
 /** `--report-json`: the same report as JSON, and nothing else on stdout (#1784). */
 const REPORT_JSON = has('--report-json');
 const HOME = resolve(valueOf('--home', homedir()));
-const AGENTS = ['claude', 'codex', 'hermes', 'openclaw', 'codewhale'];
+const AGENTS = ['claude', 'codex', 'hermes', 'openclaw', 'codewhale',
+                'cursor', 'gemini', 'copilot', 'opencode', 'kiro'];
 
 const done = [];
 const manual = [];
@@ -319,6 +320,91 @@ function writeText(path, text, { mode } = {}) {
 }
 
 /**
+ * The targets whose whole install is one MCP entry in one JSON file.
+ *
+ * Each entry shape is the one that target's own documentation shows, and they are **not**
+ * interchangeable: Gemini CLI's remote field is `httpUrl` (its `url` means SSE), OpenCode nests under
+ * `mcp` rather than `mcpServers` and wants `type: "remote"`, Copilot CLI wants `type: "http"`, and
+ * Cursor and Kiro use a bare `url`. A copied entry with the wrong key fails **silently** — no error,
+ * the server simply never appears — which is why each shape is pinned by tests instead of assumed.
+ *
+ * None of these five has a rules block or a hook *this installer can write*: their rules live in
+ * project-scoped files (`.cursor/rules/*.mdc`, `GEMINI.md`, `AGENTS.md`, `.github/copilot-instructions.md`,
+ * `.kiro/steering/*.md`) and we do not know where a user's projects are. So tier ① is the whole
+ * install for them, `--mcp-only` is an identity, and the output says "MCP only" out loud instead of
+ * implying behaviour changed. That is also why `--report` says `install-scope: mcp-only` on a machine
+ * whose only target is one of these.
+ */
+const MCP_ONLY_TARGETS = {
+  cursor: {
+    label: 'Cursor',
+    detect: ['.cursor'],
+    config: (home) => join(home, '.cursor', 'mcp.json'),
+    container: 'mcpServers',
+    urlField: 'url',
+    entry: (bearer) => ({ url: ENDPOINT, headers: mcpHeaders(bearer, 'cursor') }),
+    rules: '.cursor/rules/*.mdc 是项目级的，安装器不知道你的项目在哪',
+    ruleHint: '想让 Cursor 主动去查，把 .cursor/rules/misakanet-failure-memory.mdc 放进项目',
+    manual: '重启 Cursor 后在 Settings → MCP 里确认能看见 misakanet（本安装器只写用户级 '
+      + '~/.cursor/mcp.json，项目级 .cursor/mcp.json 归你自己管）',
+    verifyHint: '在 Settings → MCP 里复核',
+  },
+  gemini: {
+    label: 'Gemini CLI',
+    detect: ['.gemini'],
+    config: (home) => join(home, '.gemini', 'settings.json'),
+    container: 'mcpServers',
+    // `httpUrl` is the HTTP-streaming endpoint; `url` would mean SSE. Documented property list:
+    // geminicli.com/docs/tools/mcp-server ("headers: Custom HTTP headers when using url or httpUrl").
+    urlField: 'httpUrl',
+    entry: (bearer) => ({ httpUrl: ENDPOINT, headers: mcpHeaders(bearer, 'gemini') }),
+    rules: '它读 GEMINI.md（全局 ~/.gemini/GEMINI.md 与项目树），而安装器不写别人的规则文件',
+    ruleHint: '想让 Gemini CLI 主动去查，把规则块加进项目的 GEMINI.md',
+    manual: '重启会话后用 `/mcp` 复核 misakanet 是否列出',
+    verifyHint: '用 /mcp 复核',
+  },
+  copilot: {
+    label: 'Copilot CLI',
+    detect: ['.copilot'],
+    config: (home) => join(home, '.copilot', 'mcp-config.json'),
+    container: 'mcpServers',
+    urlField: 'url',
+    entry: (bearer) => ({ type: 'http', url: ENDPOINT, headers: mcpHeaders(bearer, 'copilot') }),
+    rules: '它读 .github/copilot-instructions.md 与 AGENTS.md（项目级），安装器不写项目文件',
+    ruleHint: '想让 Copilot CLI 主动去查，把规则写进项目的 .github/copilot-instructions.md',
+    manual: '跑 `copilot mcp list` 复核（VS Code 里的 Copilot 是另一份配置，键名是 `servers`）',
+    verifyHint: '用 `copilot mcp list` 复核',
+  },
+  opencode: {
+    label: 'OpenCode',
+    detect: ['.config/opencode'],
+    config: (home) => join(home, '.config', 'opencode', 'opencode.json'),
+    container: 'mcp',
+    urlField: 'url',
+    entry: (bearer) => ({ type: 'remote', url: ENDPOINT, enabled: true,
+                          headers: mcpHeaders(bearer, 'opencode') }),
+    rules: '它读 AGENTS.md（项目根与 ~/.config/opencode/AGENTS.md），安装器不写别人的规则文件',
+    ruleHint: '想让 OpenCode 主动去查，把规则块加进项目的 AGENTS.md',
+    manual: '重启 OpenCode 后看它的 MCP 列表；若你设了 XDG_CONFIG_HOME，它读的是 '
+      + '$XDG_CONFIG_HOME/opencode/opencode.json，把同样的条目贴过去即可',
+    verifyHint: '看 OpenCode 的 MCP 列表复核',
+    parseNote: 'opencode.jsonc 允许注释，若你用的正是它，本安装器解析不了',
+  },
+  kiro: {
+    label: 'Kiro',
+    detect: ['.kiro'],
+    config: (home) => join(home, '.kiro', 'settings', 'mcp.json'),
+    container: 'mcpServers',
+    urlField: 'url',
+    entry: (bearer) => ({ url: ENDPOINT, headers: mcpHeaders(bearer, 'kiro') }),
+    rules: '它读 .kiro/steering/*.md（steering 文件），安装器不写别人的规则文件',
+    ruleHint: '想让 Kiro 主动去查，把规则加进 .kiro/steering/',
+    manual: '重启 Kiro 后用它的 MCP 面板复核 misakanet（Kiro 还支持 disabled / autoApprove 字段）',
+    verifyHint: '用 Kiro 的 MCP 面板复核',
+  },
+};
+
+/**
  * The files each assistant's install writes, so a permission problem can be reported *before*
  * anything is touched (and so `--dry-run` can say "I cannot change that" as well as "I would change
  * this"). It mirrors what the per-agent install functions write; those keep their own try/catch as
@@ -330,6 +416,10 @@ const AGENT_WRITE_PATHS = {
   codex: (home) => [join(home, '.codex', 'config.toml'), join(home, '.codex', 'AGENTS.md')],
   hermes: (home) => [join(home, '.hermes', 'config.yaml'), join(home, '.hermes', 'SOUL.md')],
   codewhale: (home) => [join(home, '.codewhale', 'mcp.json')],
+  // Every MCP-only target writes exactly one file, so the table above is the single source of truth
+  // for the write manifest, the detection paths and the report's scope line.
+  ...Object.fromEntries(Object.entries(MCP_ONLY_TARGETS)
+    .map(([id, spec]) => [id, (home) => [spec.config(home)]])),
   openclaw: () => openclawWorkspaces().map((workspace) => join(workspace, 'AGENTS.md')),
 };
 
@@ -413,6 +503,19 @@ function ourHookEntries(hooks) {
 }
 
 /** Insert or refresh a marker-delimited block. Uses a function replacement (no $-escapes). */
+/**
+ * Is tier ③ (the behaviour layer) actually *wired*, or merely present on disk?
+ *
+ * `hook.mjs` living in our own state directory proves nothing about the user's agents: the hook only
+ * runs where a config file points at it, and today that is Claude Code alone. `--report` used to
+ * answer `install-scope: full` from the file's existence, so a Cursor-only machine claimed the
+ * behaviour layer was installed. It is `full` only when Claude Code's settings carry our entries.
+ */
+function hookWired() {
+  const settings = readJson(join(HOME, '.claude', 'settings.json'), null);
+  return ourHookEntries(settings?.hooks).length > 0;
+}
+
 function injectBlock(path, block) {
   const existing = readText(path);
   const pattern = new RegExp(`[ \\t]*<!--\\s*${START}\\s*-->[\\s\\S]*?<!--\\s*${END}\\s*-->\\n?`);
@@ -501,6 +604,38 @@ const CANONICAL_ENDPOINT = 'https://misakanet.org/mcp';
  */
 function probeEndpoint() {
   return (process.env.MISAKANET_ENDPOINT || CANONICAL_ENDPOINT).trim();
+}
+
+/**
+ * The proxy environment, and whether *this* Node will actually use it.
+ *
+ * Node's `fetch` ignores `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` unless the runtime is told to
+ * honour them — `NODE_USE_ENV_PROXY=1` or `--use-env-proxy`, with fetch support in v22.21.0 /
+ * v24.0.0+ (nodejs.org/learn/http/enterprise-network-configuration). So in an enterprise-proxy
+ * environment a failed probe is **not** evidence that the endpoint is down: `curl` and the user's
+ * agent may both be reaching it through a proxy this process never saw. Reporting that as
+ * "端点不可达（网络受限？）" sends a user whose install works off to debug a network that is fine —
+ * and the audience for this installer includes exactly the people whose proxies cause this.
+ *
+ * Returns `null` when no proxy is configured (the ordinary path), otherwise the variables in play
+ * and whether the runtime was told to use them.
+ */
+function proxyEnvironment() {
+  const vars = ['HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy', 'ALL_PROXY', 'all_proxy']
+    .filter((name) => (process.env[name] || '').trim());
+  if (!vars.length) return null;
+  const enabled = Boolean((process.env.NODE_USE_ENV_PROXY || '').trim())
+    || process.execArgv.some((arg) => arg.includes('use-env-proxy'))
+    || (process.env.NODE_OPTIONS || '').includes('use-env-proxy');
+  return { vars, enabled, noProxy: (process.env.NO_PROXY || process.env.no_proxy || '').trim() };
+}
+
+/** The one line that turns an inconclusive probe into a next action. */
+function proxyProbeAdvice(proxy) {
+  return `本机配了代理（${proxy.vars.join('、')}），而 Node 的 fetch 默认不读这些变量 → 探测结果不可信，`
+    + '不代表端点不可达。确认方式：先 `curl -sS https://misakanet.org/mcp` 手测，'
+    + '或让 Node 走代理重跑：`NODE_USE_ENV_PROXY=1 npx @misaka-net/misakanet-setup --verify`'
+    + '（fetch 需要 Node ≥ 22.21.0 / 24.0.0；公司代理做 TLS 拦截时再加 `NODE_USE_SYSTEM_CA=1`）';
 }
 
 /**
@@ -809,6 +944,8 @@ function mcpEntryPresent(agent) {
     hermes: () => readText(join(HOME, '.hermes', 'config.yaml')),
     openclaw: () => readText(join(HOME, '.openclaw', 'openclaw.json')),
     codewhale: () => readText(join(HOME, '.codewhale', 'mcp.json')),
+    ...Object.fromEntries(Object.entries(MCP_ONLY_TARGETS)
+      .map(([id, spec]) => [id, () => readText(spec.config(HOME))])),
   }[agent]?.() || '';
   return text.includes('misakanet') && text !== 'null';
 }
@@ -820,6 +957,7 @@ function detect(agent) {
     hermes: ['.hermes'],
     openclaw: ['.openclaw'],
     codewhale: ['.codewhale'],
+    ...Object.fromEntries(Object.entries(MCP_ONLY_TARGETS).map(([id, spec]) => [id, spec.detect])),
   }[agent] || [];
   return paths.some((p) => existsSync(join(HOME, p)));
 }
@@ -1340,8 +1478,40 @@ async function installOpenclaw(bearer) {
   ok(`OpenClaw：注册 MCP（streamable-http）→ ${cfg}`);
 }
 
+/**
+ * Install one MCP-only target: read its JSON, merge our entry under the vendor's own key path, write.
+ *
+ * File-to-file, never a subprocess, so no token ever reaches a command line. An existing file is
+ * preserved (other servers, other keys) and backed up first; a file we cannot parse stops at a manual
+ * step that names exactly what to paste, because guessing at a half-written config is how a user
+ * loses the servers they already had.
+ */
+async function installMcpOnly(agent, bearer) {
+  const spec = MCP_ONLY_TARGETS[agent];
+  const cfg = spec.config(HOME);
+  const data = readJson(cfg, null);
+  if (data === null && readText(cfg)) {
+    need(`${spec.label}：${cfg} 不是合法 JSON${spec.parseNote ? `（${spec.parseNote}）` : ''}`
+      + ` → 请手动加入 ${spec.container}.misakanet（形状见 https://misakanet.org/mcp 的客户端文档）`);
+    return;
+  }
+  const doc = data || {};
+  doc[spec.container] = doc[spec.container] || {};
+  const entry = spec.entry(bearer);
+  if (sameJson(doc[spec.container].misakanet, entry)) {
+    ok(`${spec.label}：MCP 已注册（无改动）`);
+  } else {
+    doc[spec.container].misakanet = entry;
+    backup(cfg);
+    writeText(cfg, `${JSON.stringify(doc, null, 2)}\n`);
+    ok(`${spec.label}：注册 MCP → ${cfg}`);
+  }
+  skip(`${spec.label}：没有规则块与钩子（${spec.rules}）→ ${spec.ruleHint}`);
+  need(`${spec.label}：${spec.manual}`);
+}
+
 // The last endpoint probe, recorded so `--report` can print it without probing twice.
-let lastProbe = { reachable: false, tools: 0 };
+let lastProbe = { reachable: false, tools: 0, note: '' };
 
 async function verify() {
   let allOk = true;
@@ -1372,9 +1542,25 @@ async function verify() {
     allOk = false;
     need(`端点可达但握手异常：${JSON.stringify(probe).slice(0, 120)}`);
   } else {
-    allOk = false;
-    need(`端点不可达：${ENDPOINT}（网络受限？读课程会静默失败）`
-      + (lastRequestError ? ` —— 最近一次失败原因：${lastRequestError}` : ''));
+    const proxy = proxyEnvironment();
+    if (proxy && !proxy.enabled) {
+      // Inconclusive rather than unreachable. Interactive runs warn (a visible `!` that does not
+      // flip the verdict), because the install itself is fine and the user's agent may well be
+      // reaching the endpoint through that proxy. `--strict` / `--ci` keep a hard verdict: a gate
+      // that cannot tell must not pass silently, and CI machines are the ones actually configured
+      // to make the probe trustworthy.
+      lastProbe = { reachable: false, tools: 0, note: 'inconclusive-proxy' };
+      if (STRICT) {
+        allOk = false;
+        need(`端点探测不可信，且 --strict 不接受"说不清"：${proxyProbeAdvice(proxy)}`);
+      } else {
+        need(`端点探测不可信（不是"不可达"）：${proxyProbeAdvice(proxy)}`);
+      }
+    } else {
+      allOk = false;
+      need(`端点不可达：${ENDPOINT}（网络受限？读课程会静默失败）`
+        + (lastRequestError ? ` —— 最近一次失败原因：${lastRequestError}` : ''));
+    }
   }
   const tokenFile = join(stateDir(), 'token');
   let tokenPresent = '';
@@ -1388,41 +1574,49 @@ async function verify() {
   } else {
     skip('写入通道：无 token（读不限次数、只读完全可用，写入类工具不可用）');
   }
-  const hookPath = join(stateDir(), 'hook.mjs');
-  let hookPresent = false;
-  try {
-    hookPresent = readFileSync(hookPath, 'utf8').length > 0;
-  } catch {
-    hookPresent = false;
-  }
-  if (!hookPresent) {
-    allOk = false;
-    need('自动沉淀钩子：缺失 → 重跑安装命令');
-  } else {
-    const settingsPath = join(HOME, '.claude', 'settings.json');
-    const settings = readJson(settingsPath, {}) || {};
-    // Only our own entries: a foreign hook that merely mentions "hook.mjs" is not evidence
-    // that this machine is installed (and its interpreter may not even be ours).
-    const commands = ourHookEntries(settings.hooks)
-      .flatMap((entry) => (entry.hooks || []).map((h) => h.command))
-      .filter((c) => typeof c === 'string');
-    if (!commands.length) {
-      allOk = false;
-      need('Claude Code：钩子没装（settings.json 里没有本安装器写入的命令）');
-    } else {
-      const exe = commands[0].startsWith('"') ? commands[0].split('"')[1] : commands[0].split(' ')[0];
-      if (!existsSync(exe)) {
-        allOk = false;
-        need(`Claude Code：钩子里的解释器不存在（${exe}）→ 钩子永远不会触发，重跑安装命令即可修`);
-      } else {
-        ok('Claude Code：钩子已装且解释器存在');
-      }
+  // The hook is Claude Code's alone: it is the one target whose config carries it (Codex's
+  // user-level hook shape is unconfirmed, OpenClaw's events are unverified), so a machine without
+  // Claude Code must not be told its hook is missing. Until 2026-09-20 it was: a Codex-only or
+  // Cursor-only install reported NOT READY with two Claude Code complaints about a target that was
+  // never selected — the same lie the OpenClaw and Hermes checks below already refuse to tell
+  // (found while adding Cursor, which is mcp-only by construction).
+  if (detect('claude')) {
+    const hookPath = join(stateDir(), 'hook.mjs');
+    let hookPresent = false;
+    try {
+      hookPresent = readFileSync(hookPath, 'utf8').length > 0;
+    } catch {
+      hookPresent = false;
     }
-    const cfg = join(HOME, '.claude.json');
-    const data = readJson(cfg, {}) || {};
-    const entry = data.mcpServers?.misakanet;
-    if (!entry) { allOk = false; need(`Claude Code：MCP 未注册（${cfg}）`); }
-    else ok(`Claude Code：MCP 已注册（${entry.url}）`);
+    if (!hookPresent) {
+      allOk = false;
+      need('自动沉淀钩子：缺失 → 重跑安装命令');
+    } else {
+      const settingsPath = join(HOME, '.claude', 'settings.json');
+      const settings = readJson(settingsPath, {}) || {};
+      // Only our own entries: a foreign hook that merely mentions "hook.mjs" is not evidence
+      // that this machine is installed (and its interpreter may not even be ours).
+      const commands = ourHookEntries(settings.hooks)
+        .flatMap((entry) => (entry.hooks || []).map((h) => h.command))
+        .filter((c) => typeof c === 'string');
+      if (!commands.length) {
+        allOk = false;
+        need('Claude Code：钩子没装（settings.json 里没有本安装器写入的命令）');
+      } else {
+        const exe = commands[0].startsWith('"') ? commands[0].split('"')[1] : commands[0].split(' ')[0];
+        if (!existsSync(exe)) {
+          allOk = false;
+          need(`Claude Code：钩子里的解释器不存在（${exe}）→ 钩子永远不会触发，重跑安装命令即可修`);
+        } else {
+          ok('Claude Code：钩子已装且解释器存在');
+        }
+      }
+      const cfg = join(HOME, '.claude.json');
+      const data = readJson(cfg, {}) || {};
+      const entry = data.mcpServers?.misakanet;
+      if (!entry) { allOk = false; need(`Claude Code：MCP 未注册（${cfg}）`); }
+      else ok(`Claude Code：MCP 已注册（${entry.url}）`);
+    }
   }
   // OpenClaw is only reported when the user actually has it: telling a machine without
   // OpenClaw that it is "not ready" would be a lie about a target that was never selected.
@@ -1469,6 +1663,25 @@ async function verify() {
     } else {
       ok(`Hermes：MCP 条目与 token 都在（${HERMES_ENV_KEY}）`);
       skip('Hermes：本进程只能确认"配置已写"，无法确认 Hermes 是否已加载 → 可用 hermes mcp list 复核');
+    }
+  }
+  // The MCP-only targets are reported only when the user actually has them, like OpenClaw and
+  // Hermes. Their state is one JSON file, so it is readable without starting anything — but whether
+  // the client has *loaded* that file cannot be confirmed from here, and the line says so.
+  for (const [agent, spec] of Object.entries(MCP_ONLY_TARGETS)) {
+    if (!detect(agent)) continue;
+    const cfg = spec.config(HOME);
+    const entry = (readJson(cfg, null) || {})[spec.container]?.misakanet;
+    if (!entry) {
+      allOk = false;
+      need(`${spec.label}：MCP 未注册（${cfg}）→ 重跑安装命令，然后${spec.verifyHint}`);
+    } else if (!entry[spec.urlField]) {
+      allOk = false;
+      need(`${spec.label}：MCP 条目在，但没有 ${spec.urlField} 字段（${cfg}）→ 重跑安装命令；`
+        + `这家用的是 ${spec.urlField}${spec.container === 'mcp' ? '（注意嵌套在 mcp 而不是 mcpServers 下）' : ''}`);
+    } else {
+      ok(`${spec.label}：MCP 已注册（${entry[spec.urlField]}）`);
+      skip(`${spec.label}：只能确认"配置已写"，无法确认它是否已加载 → ${spec.verifyHint}`);
     }
   }
   // Version: what is installed, and whether the registry has moved on. Read-only here — the
@@ -1550,7 +1763,8 @@ function restoreEmptiedFiles() {
   // JSON configs: prune containers that our own removal emptied. The file itself is never deleted —
   // it may have existed before us (an empty `~/.claude.json` is a legitimate user state).
   const jsonFiles = [join(HOME, '.claude.json'), join(HOME, '.claude', 'settings.json'),
-                     join(HOME, '.openclaw', 'openclaw.json'), join(HOME, '.codewhale', 'mcp.json')];
+                     join(HOME, '.openclaw', 'openclaw.json'), join(HOME, '.codewhale', 'mcp.json'),
+                     ...Object.values(MCP_ONLY_TARGETS).map((spec) => spec.config(HOME))];
   for (const file of jsonFiles) {
     const data = readJson(file, null);
     if (!data || typeof data !== 'object') continue;
@@ -1616,6 +1830,16 @@ function uninstall() {
     backup(cfg);
     writeText(cfg, `${JSON.stringify(data, null, 2)}\n`);
     ok(`移除 MCP 注册 → ${cfg}`);
+  }
+  for (const spec of Object.values(MCP_ONLY_TARGETS)) {
+    const cfg = spec.config(HOME);
+    const data = readJson(cfg, null);
+    if (data?.[spec.container]?.misakanet) {
+      delete data[spec.container].misakanet;
+      backup(cfg);
+      writeText(cfg, `${JSON.stringify(data, null, 2)}\n`);
+      ok(`移除 MCP 注册 → ${cfg}`);
+    }
   }
   const voiceDir = join(stateDir(), 'voice');
   if (existsSync(voiceDir)) {
@@ -1794,12 +2018,16 @@ function reportValues(allOk) {
     ['verify', allOk ? 'READY' : 'NOT READY'],
     ['endpoint-reachable', lastProbe.reachable],
     ['endpoint-tools', lastProbe.tools],
+    // `ok` = the probe ran and its answer is meaningful; `inconclusive-proxy` = the machine has a
+    // proxy this process cannot use, so the boolean above says nothing. Without this field the YAML
+    // a user pastes into a public issue cannot tell a real outage from a false negative.
+    ['endpoint-probe', lastProbe.note || 'ok'],
     ['token', token ? 'present' : 'absent'],
     ['permissions', permissions],
     ['hook', existsSync(join(stateDir(), 'hook.mjs')) ? 'present' : 'absent'],
     // `mcp-only` = the endpoint is registered but the hooks are not, which is a different machine
     // from "nothing installed" and must not be counted as one (#1753's T1-lite rows).
-    ['install-scope', existsSync(join(stateDir(), 'hook.mjs'))
+    ['install-scope', hookWired()
       ? 'full'
       : (AGENTS.some((agent) => detect(agent) && mcpEntryPresent(agent)) ? 'mcp-only' : 'none')],
     ['voice', voiceStatus()],
@@ -2081,9 +2309,13 @@ if (LIST_WRITES) {
 
 try {
   if (!targets.length) {
-    need('没检测到 Claude Code / Codex / Hermes 的配置目录 → 请先打开一次你要用的那个助手，再回来运行本命令');
+    need('没检测到任何受支持助手的配置目录（Claude Code / Codex / Hermes / OpenClaw / Codewhale / '
+      + 'Cursor）→ 请先打开一次你要用的那个助手，再回来运行本命令');
   } else {
-    const hookPath = MCP_ONLY ? null : await installHook();
+    // Only install the hook when a target can actually consume it. Writing it for a Cursor-only or
+    // Codex-only machine produced a file nothing would ever run, and made `--report` claim
+    // `install-scope: full` for an install that registered an endpoint and nothing else.
+    const hookPath = (MCP_ONLY || !targets.includes('claude')) ? null : await installHook();
     if (!MCP_ONLY) stampVersion();
     const bearer = has('--no-register') ? '' : await ensureIdentity();
     for (const agent of targets) {
@@ -2104,6 +2336,7 @@ try {
         else if (agent === 'hermes') await installHermes(hookPath, bearer);
         else if (agent === 'openclaw') await installOpenclaw(bearer);
         else if (agent === 'codewhale') await installCodewhale(bearer);
+        else if (MCP_ONLY_TARGETS[agent]) await installMcpOnly(agent, bearer);
         installed += 1;
       } catch (err) {
         need(`${agent}：写入配置失败（${redact((err && err.message) || err)}）`

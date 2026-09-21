@@ -38,6 +38,14 @@ AGENT_DISPLAY = {
     "hermes": "Hermes",
     "openclaw": "OpenClaw",
     "codewhale": "codewhale",
+    # Added with the installer's sixth target. The map exists so the README's public grouping and
+    # the installer's real capability can be compared by name — a target nobody mapped must fail
+    # loudly here rather than be silently dropped from the comparison.
+    "cursor": "Cursor",
+    "gemini": "Gemini CLI",
+    "copilot": "Copilot CLI",
+    "opencode": "OpenCode",
+    "kiro": "Kiro",
 }
 
 
@@ -64,26 +72,116 @@ def _json_blocks_with_mcp_servers(path: Path):
         yield i + 1, " ".join(lines[max(0, i - 4):i]).lower()
 
 
-def test_no_doc_tells_claude_code_to_use_settings_json_for_mcp_servers():
+# Clients whose MCP configuration file really **is** called `settings.json`. The rule below exists to
+# protect Claude Code readers, and a doc for one of these clients is not making that mistake.
+#
+# Measured on 2026-09-20: PR #1957 added `docs/integrations/gemini-cli.md` — correct content, and the
+# same file this repository's own `docs/integrations/status.md` matrix names for that client
+# (`~/.gemini/settings.json`, key `mcpServers`, URL field `httpUrl`) — and this gate turned it red:
+#
+#     assert not ['docs/integrations/gemini-cli.md:13']
+#
+# A gate that fires on the right answer is worse than a missing one: `audit` is the check
+# contributors are told to trust, and the fix here is not to soften the rule but to scope it to the
+# client it is about. Mapping client → the path its own docs tell you to edit.
+CLIENT_MCP_PATHS_THAT_ARE_SETTINGS_JSON = {
+    "gemini": ".gemini/settings.json",
+}
+
+
+def settings_json_mcp_problems(path: Path) -> list[str]:
+    """`<file>:<line>` for every `mcpServers`-in-`settings.json` block that would mislead a reader.
+
+    Split out of the test so the fixtures below can exercise the real rule instead of a copy of it.
+    """
     problems = []
-    for path in DOCS:
-        for line_no, prose in _json_blocks_with_mcp_servers(path):
-            if "settings.json" not in prose:
-                continue
-            # Claude Desktop's own file legitimately contains mcpServers; `settings.json` does not.
-            if "claude_desktop_config" in prose:
-                continue
-            # A sentence that *warns* against the wrong file is the fix, not the bug — the docs that
-            # explain the trap necessarily name `settings.json` next to an `mcpServers` block. The
-            # gap must allow dots, because the very path being warned about is `.claude/settings.json`.
-            if re.search(r"(not|never|不是|不要|别)[^\n]{0,60}settings\.json", prose):
-                continue
-            problems.append(f"{path.relative_to(REPO)}:{line_no}")
+    for line_no, prose in _json_blocks_with_mcp_servers(path):
+        if "settings.json" not in prose:
+            continue
+        # Claude Desktop's own file legitimately contains mcpServers; `settings.json` does not.
+        if "claude_desktop_config" in prose:
+            continue
+        # A sentence that *warns* against the wrong file is the fix, not the bug — the docs that
+        # explain the trap necessarily name `settings.json` next to an `mcpServers` block. The
+        # gap must allow dots, because the very path being warned about is `.claude/settings.json`.
+        if re.search(r"(not|never|不是|不要|别)[^\n]{0,60}settings\.json", prose):
+            continue
+        # …and a doc that is telling the reader to edit *another* client's `settings.json` is
+        # answering the question this rule asks, not failing it. Two signals, because the prose can be
+        # terse ("Create or edit `~/.gemini/settings.json`"): the path it names, and the file it is.
+        if any(p in prose for p in CLIENT_MCP_PATHS_THAT_ARE_SETTINGS_JSON.values()):
+            continue
+        if any(client in path.name.lower() for client in CLIENT_MCP_PATHS_THAT_ARE_SETTINGS_JSON):
+            continue
+        problems.append(f"{path.relative_to(REPO)}:{line_no}")
+    return problems
+
+
+def test_no_doc_tells_claude_code_to_use_settings_json_for_mcp_servers():
+    problems = [p for path in DOCS for p in settings_json_mcp_problems(path)]
     assert not problems, (
         "these docs put `mcpServers` in a settings.json: Claude Code reads MCP servers from "
         "`~/.claude.json` (local/user) or `.mcp.json` (project), and settings.json is hooks + "
         "permissions. A reader following this gets an empty /mcp panel:\n  " + "\n  ".join(problems)
     )
+
+
+# The two fixtures are the same document shape, one word apart — the whole point is that the rule
+# must tell them apart.
+_GEMINI_DOC = """# Gemini CLI Integration
+
+Create or edit `~/.gemini/settings.json` (user scope) or project `.gemini/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "misakanet": {"httpUrl": "https://misakanet.org/mcp"}
+  }
+}
+```
+"""
+
+_CLAUDE_TRAP_DOC = """# Claude Code Integration
+
+Add this to `~/.claude/settings.json` (user scope):
+
+```json
+{
+  "mcpServers": {
+    "misakanet": {"type": "http", "url": "https://misakanet.org/mcp"}
+  }
+}
+```
+"""
+
+
+def _scan_this_repo(tmp_path, name: str, body: str) -> list[str]:
+    """Run the real rule against a document placed inside the repository layout it expects."""
+    scratch = tmp_path / "repo"
+    (scratch / "docs" / "integrations").mkdir(parents=True)
+    victim = scratch / "docs" / "integrations" / name
+    victim.write_text(body, encoding="utf-8")
+    # `settings_json_mcp_problems` reports paths relative to REPO, so point the module at the copy.
+    global REPO
+    original, REPO = REPO, scratch
+    try:
+        return settings_json_mcp_problems(victim)
+    finally:
+        REPO = original
+
+
+def test_a_gemini_doc_is_not_accused_of_the_claude_trap(tmp_path):
+    """`~/.gemini/settings.json` is Gemini CLI's own file — this was #1957's false red."""
+    assert _scan_this_repo(tmp_path, "gemini-cli.md", _GEMINI_DOC) == [], (
+        "the rule flagged a correct Gemini CLI doc: its config file really is settings.json")
+
+
+def test_the_claude_trap_itself_is_still_caught(tmp_path):
+    """The positive control: without this, 'no problems' above could just mean a rule that never fires."""
+    problems = _scan_this_repo(tmp_path, "claude-code.md", _CLAUDE_TRAP_DOC)
+    assert problems, (
+        "`~/.claude/settings.json` + mcpServers is the exact mistake this gate was written for "
+        "(#1938) — it must still be reported")
 
 
 def test_the_readmes_installer_managed_list_equals_the_installers_targets():

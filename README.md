@@ -8,7 +8,7 @@
 
 mcp-name: io.github.Ikalus1988/misakanet
 
-> **Stop debugging the same error twice.** MisakaNet searches 402+ failure lessons so an agent skips the
+> **Stop debugging the same error twice.** MisakaNet searches 407+ failure lessons so an agent skips the
 > bugs someone already paid for, instead of rediscovering them one session at a time.
 >
 > Agent-native interfaces: [MCP server](https://misakanet.org/mcp) (7 tools), WebMCP (browser
@@ -76,7 +76,7 @@ library. No vector database, no embedding model, no server unless you want one.
 
 Registry listings ([Glama](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/score),
 [Smithery](https://smithery.ai/servers/misakanet/misakanet), MCP Toplist) proxy the hosted endpoint, which
-serves 402+ **indexed failure-recovery lessons** — *indexed*, never "verified": evidence level is what says
+serves 407+ **indexed failure-recovery lessons** — *indexed*, never "verified": evidence level is what says
 how much a lesson has been proven.
 
 | MisakaNet is NOT | What it is instead |
@@ -148,7 +148,7 @@ Supported agents — and what "supported" means per group (evidence levels in
 
 | Group | Agents | What you get |
 |---|---|---|
-| Installer-managed | Claude Code · Codex · Hermes · OpenClaw · codewhale | `npx @misaka-net/misakanet-setup` writes their MCP config, a rules block, and (Claude Code only) a turn-counting hook — then `--verify` checks it |
+| Installer-managed | Claude Code · Codex · Hermes · OpenClaw · codewhale · Cursor · Gemini CLI · Copilot CLI · OpenCode · Kiro | `npx @misaka-net/misakanet-setup` writes each client's own MCP config, a rules block where the client has one, and (Claude Code only) a turn-counting hook — the five JSON-file clients (Cursor, Gemini CLI, Copilot CLI, OpenCode, Kiro) get the MCP entry alone; `--verify` checks whatever was written |
 | MCP by hand | Cursor · Gemini CLI · Windsurf · OpenCode · Copilot · DeepSeek Harness | the endpoint is standard MCP over HTTP; add the URL in that client's own config. Cursor also has a rules-file mode |
 | Anything else that speaks MCP over HTTP | — | the endpoint is public, reads are anonymous and unmetered |
 

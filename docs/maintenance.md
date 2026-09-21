@@ -119,7 +119,7 @@ MisakaNet 现已声明 `dsh.bundle`（`package.json` + `cordis.patch.yml`），�
 
 - **任何安装方式都有工具（2026-09-15 起）**：patch 行 `misakanet-mcp` 声明
   `transport: streamable-http` + `url: https://misakanet.org/mcp`，向 profile 提供
-  `mcp__misakanet__misakanet_search / get_lesson / …`（匿名 5 次/天/IP）。npm 安装即可用，
+  `mcp__misakanet__misakanet_search / get_lesson / …`（匿名读，不限次数；只有写入工具要 token）。npm 安装即可用，
   **不再需要本地 python** —— 旧版本默认以 stdio 启动 `scripts/mcp_server.py`，而它只存在于
   repo/git+ 检出里，于是 npm 装的 profile 挂上一个断开的空行（#1734）。
 - **本地 stdio（可选覆盖）**：想用仓库自带 server 的 profile，把该行 config 覆盖为

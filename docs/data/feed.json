@@ -1,35 +1,42 @@
 {
-  "generated_at": "2026-09-20T11:36:13.094806+00:00",
+  "generated_at": "2026-09-20T23:18:23.888490+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.32.1",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1927",
-      "timestamp": "2026-09-20T10:06:39Z",
+      "title": "fix(bootstrap): 第二个安装器落后一版 —— 一个上下文头都不写，且还在宣传已取消的读配额",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1965",
+      "timestamp": "2026-09-20T17:33:05Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(worker): flush the traffic counter five times less often, because it was spending the day's KV budget",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1926",
-      "timestamp": "2026-09-20T10:03:44Z",
+      "title": "fix(tests): settings.json 门禁对着正确的 Gemini CLI 文档开了火",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1963",
+      "timestamp": "2026-09-20T17:16:43Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.32.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1925",
-      "timestamp": "2026-09-20T09:59:11Z",
+      "title": "fix(ci): fork PR 的 audit 假红 —— Auto-Merge Gate 拿着只读 token 去 merge",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1962",
+      "timestamp": "2026-09-20T17:12:49Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(release): the release flow never marked its release PR as tagged, so every release blocked the next",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1924",
-      "timestamp": "2026-09-20T09:55:36Z",
+      "title": "feat(setup): 安装器目标 6 → 10（Gemini CLI / Copilot CLI / OpenCode / Kiro），表驱动 + 形状门禁",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1958",
+      "timestamp": "2026-09-20T16:31:07Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(setup): 代理环境下的探测失败应判\"不可信\"而非\"端点不可达\"",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1955",
+      "timestamp": "2026-09-20T16:03:08Z",
       "source": "github"
     },
     {
@@ -39,13 +46,6 @@
       "timestamp": "2026-09-20",
       "domain": "devops",
       "source": "lessons"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 2.31.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1862",
-      "timestamp": "2026-09-19T11:51:59Z",
-      "source": "github"
     },
     {
       "type": "lesson",
