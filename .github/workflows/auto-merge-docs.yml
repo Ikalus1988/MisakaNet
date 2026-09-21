@@ -101,12 +101,91 @@ jobs:
             const docsOnly = files.data.length > 0 && files.data.every(f => isDocsFile(f.filename));
 
             core.setOutput('docs-only', docsOnly);
+            // Named, so the refusal comment can say *which* file broke the rule instead of only that
+            // something did. Capped: a PR that breaks the rule in forty files does not need forty lines.
+            core.setOutput('offenders', files.data.filter(f => !isDocsFile(f.filename))
+              .map(f => f.filename).slice(0, 20).join('\n'));
             core.info(`Docs-only: ${docsOnly} (${files.data.length} files)`);
+
+      # A judgement nobody can see did not happen. Until 2026-09-21 this workflow had **no** comment
+      # step at all (the lesson channel has three), so a refusal existed only as one `core.info` line
+      # inside a green run: #1801 was given the maintainer's opt-in label four times on 2026-09-19, the
+      # gate ran and refused it (`Docs-only: false (3 files)`), and from the author's side nothing ever
+      # happened — the PR sat there labelled and untouched for three days.
+      - name: Report the refusal on the pull request
+        if: steps.check.outputs.docs-only != 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        env:
+          OFFENDERS: ${{ steps.check.outputs.offenders }}
+        with:
+          script: |
+            const marker = '<!-- auto-merge-docs -->';
+            const offenders = (process.env.OFFENDERS || '').split('\n').filter(Boolean);
+            const listed = offenders.length
+              ? offenders.map(f => `- \`${f}\``).join('\n')
+              : '- (the file list came back empty)';
+            const body = [
+              marker,
+              '### ⏭️ Auto-merge skipped: this PR is not docs-only',
+              '',
+              'The `auto-merge-eligible` label is on, so this gate looked at the PR — and stopped here,',
+              'because the docs-only rule was not satisfied. A PR qualifies only when **every** file is',
+              'under `docs/` (or is one of `CONTRIBUTING.md`, `README.md`, `JOIN.md`, `CHANGELOG.md`).',
+              '`lessons/**`, `docs/.well-known/**` and `docs/index.html` are never auto-merged: lesson',
+              'content is executed by agents, and those two paths are filed as machine input and the',
+              'site frame.',
+              '',
+              'Files that broke the rule:',
+              '',
+              listed,
+              '',
+              '**What to do.** Either split the non-docs files into a separate PR, or — if the PR is',
+              'docs-only after all, because the list above looks wrong — remove and re-apply the',
+              '`auto-merge-eligible` label. That re-label is not busywork: this gate only re-evaluates on',
+              '`labeled`, `unlabeled`, `edited`, `synchronize` and `ready_for_review`, so a corrected PR',
+              'that is pushed *after* the label was applied does get looked at again, while one that was',
+              'already pushed does not.',
+              '',
+              `_Posted by [the docs auto-merge gate](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/blob/main/.github/workflows/auto-merge-docs.yml); this comment is updated in place, not stacked._`,
+            ].join('\n');
+
+            const issue_number = context.payload.pull_request.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number, per_page: 100,
+            });
+            const previous = comments.find(c => (c.body || '').includes(marker));
+            if (previous) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo, comment_id: previous.id, body,
+              });
+              core.info(`Updated the refusal comment on #${issue_number}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number, body,
+              });
+              core.info(`Posted the refusal comment on #${issue_number}`);
+            }
 
       - name: Enable auto-merge
         if: steps.check.outputs.docs-only == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # `SHELDON_PAT`, not `GITHUB_TOKEN`, and this is not a preference.
+          #
+          # A merge performed with `GITHUB_TOKEN` produces a push that **starts no workflows**, so the
+          # whole post-merge chain silently does not run for PRs merged here: measured on 2026-09-21,
+          # the merge commit of #1969 (this gate, GITHUB_TOKEN) has **0** push-triggered runs, while
+          # #1965 (merged with the PAT) and #1962 have 5 each — `Release Please`, `Leaderboard Watch`,
+          # `Build Live Feed`, `Update Badge Counts`, `Deploy Documentation` and the rest all keyed on
+          # `push`. The repository has paid for this lesson twice already (`auto-sync-prs.yml`, and
+          # `lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md`); this was the third
+          # place.
+          #
+          # It does **not** need the `workflow` scope: GitHub refuses a PAT-without-`workflow` only for
+          # PRs that modify `.github/workflows/`, and by the rule above this gate merges only docs
+          # (see the docs-only check: nothing outside `docs/` plus four root files ever gets here).
+          # Do not widen this to `workflow` "just in case" — that would let this channel merge a change
+          # to CI itself.
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
         run: |
           PR_NUM="${{ github.event.pull_request.number }}"
 
