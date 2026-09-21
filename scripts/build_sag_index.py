@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sqlite3
 import sys
 from pathlib import Path
@@ -149,8 +150,32 @@ def build_index(okf_path: Path, db_path: Path) -> int:
     return len(records)
 
 
+# FTS5 treats a bare query as an expression language: `-`, `:`, `*`, `"`, `(`, `)`,
+# and the operators AND/OR/NOT are all syntax. Real error text is full of them
+# ("ModuleNotFoundError: No module named x", "docker multi-stage build OOM",
+# "GH013: Secret scanning found"), so passing the raw string to MATCH raises
+# sqlite3.OperationalError and the caller never sees a result. Extract the word
+# tokens and quote each one, which is the only form FTS5 cannot misparse.
+_FTS_TOKEN_RE = re.compile(r"[^\W_]+", re.UNICODE)
+
+
+def _fts_expression(query: str, operator: str = "AND") -> str:
+    """Build a quoted FTS5 expression from arbitrary user text.
+
+    Returns "" when the query has no word characters, which callers treat as
+    "no results" rather than sending an empty MATCH (itself a syntax error).
+    """
+    tokens = _FTS_TOKEN_RE.findall(query or "")
+    return f" {operator} ".join(f'"{t}"' for t in tokens)
+
+
 def search(db_path: Path, query: str, domain: str | None = None, top: int = 5) -> list[dict]:
-    """Search the SAG-Lite index."""
+    """Search the SAG-Lite index.
+
+    Tries an AND over the query's word tokens first (precise), then falls back to
+    OR (recall) when AND finds nothing — an error message is usually a sentence,
+    and requiring every token of it to appear would return nothing at all.
+    """
     if not db_path.exists():
         print(f"Error: {db_path} not found. Run build first.")
         sys.exit(1)
@@ -167,7 +192,6 @@ def search(db_path: Path, query: str, domain: str | None = None, top: int = 5) -
             ORDER BY rank
             LIMIT ?
         """
-        rows = conn.execute(sql, (query, domain, top)).fetchall()
     else:
         sql = """
             SELECT l.*, rank
@@ -177,7 +201,16 @@ def search(db_path: Path, query: str, domain: str | None = None, top: int = 5) -
             ORDER BY rank
             LIMIT ?
         """
-        rows = conn.execute(sql, (query, top)).fetchall()
+
+    rows = []
+    for operator in ("AND", "OR"):
+        expression = _fts_expression(query, operator)
+        if not expression:
+            break
+        params = (expression, domain, top) if domain else (expression, top)
+        rows = conn.execute(sql, params).fetchall()
+        if rows:
+            break
 
     conn.close()
 

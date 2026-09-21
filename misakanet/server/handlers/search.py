@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 from datetime import datetime, timezone
+from pathlib import Path
 
 from .._config import REPO_ROOT, _init_search
 
@@ -209,10 +210,25 @@ def _freshness(date_str: str) -> str:
         return "unknown"
 
 
+def _lesson_id(lesson: dict) -> str:
+    """Derive a get_lesson-resolvable id for a search result.
+
+    The backends disagree on what they carry: SAG-Lite returns ``path`` but no
+    ``id``, the hosted worker returns ``id`` but no ``path``, and BM25 returns
+    both. ``misakanet_get_lesson`` accepts either, so prefer an explicit id and
+    fall back to the filename stem of the path.
+    """
+    lesson_id = lesson.get("id") or ""
+    if lesson_id:
+        return lesson_id
+    path = lesson.get("path") or ""
+    return Path(path).stem if path else ""
+
+
 def _compact_result(lesson: dict) -> dict:
     """Build compact result (~80 tokens/lesson)."""
-    return {
-        "id": lesson.get("id", ""),
+    result = {
+        "id": _lesson_id(lesson),
         "title": lesson.get("title", ""),
         "problem": lesson.get("summary", "")[:120],
         "freshness": _freshness(
@@ -220,6 +236,15 @@ def _compact_result(lesson: dict) -> dict:
         ),
         "evidence_level": lesson.get("evidence_level", ""),
     }
+    # `path` and `status` are load-bearing: get_lesson needs one of them to
+    # fetch, and `status` is how a caller can tell a draft from a published
+    # lesson. Dropping them made the documented search -> read flow impossible
+    # against the SAG backend, which has no id of its own.
+    if lesson.get("path"):
+        result["path"] = lesson["path"]
+    if lesson.get("status"):
+        result["status"] = lesson["status"]
+    return result
 
 
 def _summary_result(lesson: dict, content: str = "") -> dict:
@@ -241,16 +266,34 @@ def _apply_detail_level(results: list[dict], detail: str) -> list[dict]:
     # compact — keep core fields, trim verbose ones
     compact = []
     for r in results:
-        compact.append({
-            "id": r.get("id", ""),
+        entry = {
+            "id": _lesson_id(r),
             "title": r.get("title", ""),
             "problem": r.get("summary", r.get("problem", ""))[:120],
             "freshness": r.get("freshness", ""),
             "evidence_level": r.get("evidence_level", ""),
-            # Preserve score if present (BM25/SAG rank)
-            **({"score": r["score"]} if "score" in r else {}),
-        })
+        }
+        # Preserve the fields that keep a result actionable: get_lesson needs
+        # `path` (or `id`), and `status` distinguishes a draft from a lesson.
+        if r.get("path"):
+            entry["path"] = r["path"]
+        if r.get("status"):
+            entry["status"] = r["status"]
+        if "score" in r:  # BM25/SAG rank
+            entry["score"] = r["score"]
+        compact.append(entry)
     return compact
+
+
+def _exclude_drafts(results: list[dict]) -> list[dict]:
+    """Drop draft lessons from the MCP search surface.
+
+    docs/mcp.md promises "Drafts are excluded to avoid surfacing unverified
+    content", and the BM25 engine enforces it (_search_cached filters
+    ``is_draft``). The SAG-Lite and fallback backends do not, so without this
+    the same query surfaces drafts or not depending on which backend answered.
+    """
+    return [r for r in results if r.get("status") != "draft"]
 
 
 def _filter_by_kind(results: list[dict], kind: str) -> list[dict]:
@@ -349,8 +392,13 @@ def handle_search(args: dict, search_state=None) -> dict:
     source = ""
     results = []
 
+    # Drafts are excluded below (docs/mcp.md search scope), but the backends
+    # apply LIMIT before we can filter. Over-fetch so a draft cannot consume a
+    # slot the caller asked for; truncate back to `top` once filtering is done.
+    fetch_n = top * 3 if isinstance(top, int) and top > 0 else top
+
     if HAS_SAG and not explain:
-        results = sag_search(SAG_DB, query, domain=domain, top=top)
+        results = sag_search(SAG_DB, query, domain=domain, top=fetch_n)
         source = "sag-lite"
     elif HAS_BM25:
         from misakanet.search.engine import (
@@ -362,7 +410,7 @@ def handle_search(args: dict, search_state=None) -> dict:
 
         docs = _load_docs_cached(LESSONS, is_lesson=True)
         scored = _search_cached(query, docs, weights=weights or None, include_stale=include_stale)
-        for score, doc in scored[:top]:
+        for score, doc in scored[:fetch_n]:
             result = {
                 "title": doc.title,
                 "path": str(doc.filepath),
@@ -378,7 +426,7 @@ def handle_search(args: dict, search_state=None) -> dict:
         source = "bm25"
     else:
         # Fallback: lightweight keyword search from lessons.json
-        results = _fallback_search(query, domain=domain, top=top)
+        results = _fallback_search(query, domain=domain, top=fetch_n)
         if results is None:
             return {
                 "error": "Search engine unavailable — index not built",
@@ -404,6 +452,15 @@ def handle_search(args: dict, search_state=None) -> dict:
                 "voice": "failure-warning",
             }
         source = "fallback"
+
+    # ── Draft exclusion (docs/mcp.md search scope) ──
+    # Applied before kind/detail transforms so every detail level and every
+    # backend honours the same published-only contract. Truncate back to the
+    # requested count afterwards, since the backends were asked for extra.
+    if results:
+        results = _exclude_drafts(results)
+        if isinstance(top, int) and top > 0:
+            results = results[:top]
 
     # ── Kind filtering (Issue #1441) ──
     if results and kind != "all":
