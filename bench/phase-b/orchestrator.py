@@ -11,9 +11,18 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
+
+# `bench/` is not a package and this file is also loaded by path from the test suite, so
+# make the shared resolver importable rather than assuming the repo root is on sys.path.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from scripts.posix_shell import find_posix_shell  # noqa: E402
 
 FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures"
 REQUIRED_EXPECTED_FIELDS = {"scenario", "title", "failure", "expected_fix", "expected_outcome", "verifier"}
@@ -56,7 +65,15 @@ def verify_fixture(name: str) -> dict[str, Any]:
     expected = fixture["expected"]
     workdir = Path(tempfile.mkdtemp(prefix=f"misakanet-fixture-{name}-"))
     try:
-        setup = subprocess.run([str(path / "setup.sh"), str(workdir)], text=True, capture_output=True, timeout=10)
+        # Fixtures are POSIX shell scripts: executing them directly works on macOS/Linux via
+        # the shebang, but on Windows it raises WinError 193 (and `bash` there is the WSL
+        # launcher, which may not work either). Run them through a shell we have probed.
+        shell = find_posix_shell()
+        if shell is None:
+            return {"fixture": name, "status": "SKIP",
+                    "reason": "no usable POSIX shell: the fixtures are shell scripts"}
+        setup = subprocess.run([shell, str(path / "setup.sh"), str(workdir)], text=True,
+                               capture_output=True, timeout=10, encoding="utf-8", errors="replace")
         if setup.returncode:
             return {"fixture": name, "status": "FAIL", "reason": "setup failed", "output": setup.stderr}
 
@@ -85,7 +102,9 @@ def verify_fixture(name: str) -> dict[str, Any]:
 
         return {"fixture": name, "status": "PASS" if ok else "FAIL", "detail": detail}
     finally:
-        subprocess.run([str(path / "teardown.sh"), str(workdir)], text=True, capture_output=True, timeout=10)
+        if shell is not None:
+            subprocess.run([shell, str(path / "teardown.sh"), str(workdir)], text=True,
+                           capture_output=True, timeout=10, encoding="utf-8", errors="replace")
         shutil.rmtree(workdir, ignore_errors=True)
 
 

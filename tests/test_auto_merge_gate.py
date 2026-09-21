@@ -24,6 +24,7 @@ import pytest
 yaml = pytest.importorskip("yaml", reason="PyYAML parses the workflow")
 
 from scripts.lesson_pr_mergeable import mergeable_is_clean  # noqa: E402
+from posix_shell import require_posix_shell  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 PR_CHECKS = REPO / ".github" / "workflows" / "pr-checks.yml"
@@ -214,7 +215,7 @@ def _run_gate(tmp_path, *, fork: bool, read_only: bool, mutate=None, changed_fil
         "PR_NUM": "1952",
         "PR_TITLE": "docs: fix 23 broken relative links",
     })
-    proc = subprocess.run(["bash", "-e", str(body)], capture_output=True, text=True, env=env)
+    proc = subprocess.run([require_posix_shell(), "-e", str(body)], capture_output=True, text=True, env=env)
     return proc, log.read_text(encoding="utf-8"), (tmp_path / "summary.md")
 
 
