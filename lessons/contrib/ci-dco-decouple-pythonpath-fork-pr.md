@@ -58,6 +58,13 @@ if (!dcoPassed || suiteFailed) {
 设置 `--cov-fail-under=20` 而非 70，避免小改动 PR（如单文件修复）被覆盖率门禁卡住。大改动 PR 自然会有更高覆盖率。
 
 ### 4. 手动审计 workflow（workflow_dispatch）
+> **更新（2026-09-21）：本节描述的 `manual-audit.yml` 已删除。** 它 18/18 次运行全失败（最后一次
+> 2026-06-03），功能由 `pr-checks.yml` 的 `workflow_dispatch` + `pr_number` 入口取代（#1984）。
+> **注意两者并不完全等价**：`pr-checks` 的手动运行**不会 checkout PR 的那份树**（它明说 "No PR
+> context — schema gate skipped"），而 `manual-audit.yml` 会取 `refs/pull/<n>/head`。所以
+> 「用 PR 自己的树跑一遍审计」这个能力**目前没有替代品**；要恢复它，应该给 `pr-checks.yml` 的
+> dispatch 加上 checkout 目标 PR 的能力，而不是再建一个平行 workflow。
+
 
 对于已经跑过 CI 的 fork PR，`gh run rerun` 复用旧 workflow 定义，无法获取更新后的 workflow 文件。解决方案是创建一个独立的 `manual-audit.yml`：
 

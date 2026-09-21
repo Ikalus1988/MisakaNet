@@ -84,7 +84,7 @@ jobs:
                 lines.append(f"- **{c.get('id', '?')}**: {c.get('title', '?')}")
                 lines.append(f"  Domain: {c.get('domain', '?')} | Tags: {', '.join(c.get('tags', []))}")
 
-            lines.extend(['', '---', '> 自动引用追踪 by ci-self-heal'])
+            lines.extend(['', '---', '> 自动引用追踪 by cite-lesson'])
             print('\n'.join(lines))
             PYEOF
           max_attempts: 3

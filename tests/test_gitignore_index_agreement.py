@@ -20,6 +20,7 @@ places (a pattern in `.gitignore`, an entry in the index) and nothing compares t
 """
 from __future__ import annotations
 
+import hashlib
 import subprocess
 import sys
 from pathlib import Path
@@ -39,12 +40,26 @@ def tracked_but_ignored(repo: Path) -> list[str]:
     return sorted(line for line in out.stdout.splitlines() if line.strip())
 
 
-def dirty_tracked_files(repo: Path) -> list[str]:
-    """Tracked paths with working-tree modifications (untracked files are not this rule's business)."""
-    out = subprocess.run(["git", "status", "--porcelain", "--untracked-files=no"],
-                         cwd=repo, capture_output=True, text=True)
+def tracked_content(repo: Path) -> dict[str, str]:
+    """Hash of every tracked file's *content* in the working tree.
+
+    Paths are not enough, and this is the difference between the rule working and not: `profile.json`
+    was rewritten on every search while it was tracked, so on any checkout that had ever searched the
+    file was **already dirty** and a "did the set of dirty paths change?" comparison answers no. The
+    first version of this test could only fail from a pristine clone — which is not the state of the
+    machine that reported #1991.
+    """
+    out = subprocess.run(["git", "ls-files", "-z"], cwd=repo, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
-    return sorted(line[3:] for line in out.stdout.splitlines() if line.strip())
+    digests = {}
+    for name in out.stdout.split("\0"):
+        if not name:
+            continue
+        path = repo / name
+        if not path.is_file():
+            continue
+        digests[name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return digests
 
 
 def test_nothing_in_this_repository_is_ignored_and_tracked_at_once():
@@ -87,11 +102,12 @@ def test_the_contradiction_rule_notices_a_tracked_ignored_file(tmp_path):
 @pytest.mark.skipif(not LESSONS.exists(), reason="needs data/lessons.json (the local corpus)")
 def test_a_search_leaves_no_tracked_file_modified():
     """End-to-end: the documented command must not dirty the tree it runs in."""
-    before = dirty_tracked_files(REPO)
+    before = tracked_content(REPO)
     result = subprocess.run([sys.executable, str(SEARCH_CLI), "context window exceeded", "--json"],
                             cwd=REPO, capture_output=True, text=True, timeout=180)
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
-    after = dirty_tracked_files(REPO)
-    assert after == before, (
-        "running a search changed tracked files: "
-        f"{sorted(set(after) - set(before))} — that is the state #1991 describes")
+    after = tracked_content(REPO)
+    changed = sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k))
+    assert not changed, (
+        f"running a search rewrote tracked files: {changed} — that is the state #1991 describes "
+        "(and the state this test could not see when it compared path sets)")
