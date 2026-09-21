@@ -20,6 +20,25 @@ jobs:
           - os: macos-latest
             python-version: "3.11"
     runs-on: ${{ matrix.os }}
+    env:
+      # Windows consoles default to cp1252, and this repository's scripts print non-ASCII by design
+      # (✅/✗, box drawing, and Chinese in the installer and lesson tooling). A script that cannot
+      # encode its own output exits non-zero before it does its job, so on Windows the *tests that
+      # run the scripts* failed for an environment reason:
+      #
+      #     File "...\scripts\adopt_pr.py", line 1193, in main
+      #       print(plan.render())
+      #     File "C:\...\Lib\encodings\cp1252.py", line 19, in encode
+      #     UnicodeEncodeError: 'charmap' codec can't encode character ...
+      #
+      # Measured 2026-09-21, the first run of this matrix that actually executed the suite: 77 failed
+      # on windows-latest, with this traceback shape as the single most common cause. The pytest job
+      # in `pr-checks.yml` never saw it (Linux is UTF-8), and `pypi-wheel-smoke.yml` already carries
+      # the same fix for the same reason — it was simply never applied here, because here the suite
+      # did not run at all (#2006). Forcing UTF-8 makes the environment match the other two platforms
+      # instead of changing what the product prints.
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7

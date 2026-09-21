@@ -162,3 +162,22 @@ def test_the_exit_code_can_actually_be_captured():
     assert run.index("set +e") < run.index("PYTEST_EXIT="), "the guard must come before the capture"
     assert "PIPESTATUS[0]" in run, "`tee` swallows the exit code otherwise"
     assert '"$GITHUB_OUTPUT"' in run, "the code has to reach the verdict step"
+
+
+def test_windows_runs_with_utf8_output():
+    """Windows consoles are cp1252 and this repository prints non-ASCII by design.
+
+    First real run of this matrix (2026-09-21): `77 failed` on windows-latest, dominated by
+    `UnicodeEncodeError: 'charmap' codec can't encode character` raised *inside* the script under test
+    (`print(plan.render())` → `cp1252.py`), i.e. the script died printing its own output. The fix is
+    an environment one, matching what `pypi-wheel-smoke.yml` already does for the same reason — not a
+    change to what the product prints.
+    """
+    job_env = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"]["test"].get("env") or {}
+    assert str(job_env.get("PYTHONIOENCODING", "")).lower().startswith("utf-8"), (
+        "windows-latest needs PYTHONIOENCODING=utf-8, or every script that prints non-ASCII exits "
+        "non-zero and the tests around it fail for an environment reason")
+    assert str(job_env.get("PYTHONUTF8", "")) in ("1", "true", "True"), (
+        "PYTHONUTF8=1 makes the child interpreters UTF-8 too, not only the console")
+    # …and it is on the *job*, so the install steps and pytest itself get it, not only the test run.
+    assert "env" in yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"]["test"]
