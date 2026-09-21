@@ -427,7 +427,12 @@ def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None
     for slug, (html, _count) in topics.items():
         files[f"docs/topics/{slug}/index.html"] = html
     files["docs/topics/index.html"] = build_topics_index(index_entries, len(lessons))
-    files[str(SITEMAP)] = generate_sitemap(lesson_slugs, list(topics))
+    # .as_posix(), never `str(SITEMAP)`: every key of `files` is a repo-relative POSIX path
+    # (that is the form `docs/.generated-pages.json` is committed in and the form
+    # discover_generated() reports), and `str(Path)` on Windows would make this one key
+    # `docs\sitemap.xml` — which the committed manifest then reads back as a page this run
+    # no longer generates, so `check()` demands a prune of the live sitemap.
+    files[SITEMAP.as_posix()] = generate_sitemap(lesson_slugs, list(topics))
     return files, assigned
 
 

@@ -196,11 +196,19 @@ def build_result(results, *, seed=None, with_misakanet=True, run_id=None,
 
 
 def _history_results(history_dir):
-    """Return stored result files, newest first, ignoring partial runs."""
+    """Return stored result files, newest first, ignoring partial runs.
+
+    ``st_mtime`` alone is not a total order: Windows advances the clock behind file
+    timestamps in ~15 ms ticks, so runs written back-to-back share one timestamp. The
+    tie then fell through to ``glob`` order, which is why ``save_history`` could prune
+    the very run it had just written (run ids sort ascending, and only ``limit`` of them
+    were kept). Break the tie on the run id, which for every id ``build_result``
+    generates itself (``%Y%m%dT%H%M%SZ``) is the run's own timestamp.
+    """
     history_dir = Path(history_dir)
     return sorted(
         (path for path in history_dir.glob("*/results.json") if path.is_file()),
-        key=lambda path: path.stat().st_mtime,
+        key=lambda path: (path.stat().st_mtime, path.parent.name),
         reverse=True,
     )
 
@@ -215,6 +223,10 @@ def save_history(result, history_dir=DEFAULT_HISTORY_DIR, limit=DEFAULT_HISTORY_
 
     stored = _history_results(history_dir)
     for stale in stored[max(1, int(limit)):]:
+        if stale == result_path:
+            # The run just written is never "older": keep it even when a filesystem whose
+            # timestamp granularity cannot order these writes sorted it out of the window.
+            continue
         try:
             stale.unlink()
             stale.parent.rmdir()

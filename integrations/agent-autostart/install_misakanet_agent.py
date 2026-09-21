@@ -813,9 +813,6 @@ def install_dsh(home: Path, dry: bool, rep: Report) -> None:
         f"{ENDPOINT}（prompt.md §0 有可直接粘的命令）")
 
 
-STATE_DIR = Path.home() / ".misakanet-agent"
-
-
 def _state_dir(home: Path) -> Path:
     """Where identity/token live. `home` is honoured so tests never touch the real one."""
     return home / ".misakanet-agent"
