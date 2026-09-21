@@ -38,7 +38,8 @@ CAVEATS = [
     "分母是“我们的语料回答我们的查询”，不是终端用户的生产力：它不能证明“提效”。",
     "缺 solved 的旧格式行按“未命中”处理（保守），所以 legacy_rows > 0 时命中率被低估。",
     "端点最多返回固定行数（truncated=true 时这个数字只是下界）。",
-    "端点不返回 query 文本，所以本脚本不能按查询或 domain 拆分。",
+    "端点不返回 query 文本；下面的 domain 拆分是服务端按聚合计数给的，不是逐条查询。",
+    "命中率低不等于语料差：也可能是问法（语言、措辞）与索引不匹配——第 ③ 项要解决的正是这个。",
     "只覆盖走 worker 的 misakanet_search；本地 stdio MCP 与网站检索页不在其中。",
 ]
 
@@ -104,12 +105,41 @@ def report(payload: dict, endpoint: str, days: int) -> dict:
     stats = aggregate(payload.get("rows"))
     return {
         **stats,
+        # Counts per day / per topic, computed server-side (the endpoint serves no query text,
+        # so the split cannot be derived here). Absent on an older worker: the scalar summary
+        # still works and the table is simply not printed.
+        "breakdown": payload.get("breakdown") or None,
         "source": payload.get("source") or "unknown",
         "url": endpoint,
         "days": days,
         "truncated": bool(payload.get("truncated")),
         "caveats": list(CAVEATS),
     }
+
+
+def _rate(value) -> str:
+    return "n/a" if value is None else f"{value * 100:.1f}%"
+
+
+def _breakdown_lines(breakdown) -> list[str]:
+    """The part that can be pasted into release notes: hit rate by day, and by topic."""
+    if not breakdown:
+        return ["", "分组：端点没有返回 breakdown（worker 版本较旧），下面只有总计。"]
+    lines: list[str] = []
+    by_day = breakdown.get("by_day") or []
+    by_domain = breakdown.get("by_domain") or []
+    if by_day:
+        lines += ["", "按天（UTC）", "", "| 日期 | 命中 | 未命中 | 合计 | 命中率 |", "|---|---|---|---|---|"]
+        lines += [f"| {r.get('key', '?')} | {r.get('hits', 0)} | {r.get('miss', 0)} | "
+                  f"{r.get('total', 0)} | {_rate(r.get('hit_rate'))} |" for r in by_day]
+    if by_domain:
+        lines += ["", "按 domain（命中率最低的在前，便于下一步选题）", "",
+                  "| domain | 命中 | 未命中 | 合计 | 命中率 |", "|---|---|---|---|---|"]
+        ranked = sorted(by_domain, key=lambda r: (r.get("hit_rate") if r.get("hit_rate") is not None else -1,
+                                                  -(r.get("total") or 0)))
+        lines += [f"| {r.get('key', '?')} | {r.get('hits', 0)} | {r.get('miss', 0)} | "
+                  f"{r.get('total', 0)} | {_rate(r.get('hit_rate'))} |" for r in ranked]
+    return lines
 
 
 def format_text(result: dict) -> str:
@@ -127,6 +157,7 @@ def format_text(result: dict) -> str:
     ]
     if result["truncated"]:
         lines.append("warn            : 端点行数被截断，这个数字只是下界")
+    lines.extend(_breakdown_lines(result.get("breakdown")))
     if total == 0:
         lines.append("")
         lines.append("样本不足，等待数据：窗口内还没有记录到的检索，请不要引用任何命中率。")
