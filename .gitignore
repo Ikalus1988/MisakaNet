@@ -4,6 +4,10 @@ __pycache__/
 .pytest_cache/
 .cache/
 node_modules/
+# Per-machine node state (`stage`, referral code, counters) that `increment_search()` rewrites
+# on every successful local search. Ignored here since 2026-08, but it stayed **tracked** until
+# 2026-09-21 because .gitignore does not apply to files already in the index — so every search
+# dirtied the working tree and every `git add -A` committed someone's counters. See #1991.
 misakanet/profile.json
 misakanet/.quota.json
 *.pyo
@@ -106,7 +110,12 @@ data/lessons.db
 # then produced Dependabot alerts for a tool this repo does not ship).
 # Commit 29b098961 (2026-09-12); untracked again here.
 .archify-tool/
-reports/
+# Root-anchored. As a bare `reports/` this also matched `docs/reports/`, so five tracked
+# documents sat in a state where git ignored them and tracked them at the same time —
+# which is how `misakanet/profile.json` (below) stayed tracked for months after being
+# ignored, and how a stray `git add -A` keeps committing per-machine state. The rule's own
+# comment says "Local audit working artifacts", i.e. the repository-root scratch directory.
+/reports/
 scripts/mhs_watch.py
 scripts/mhs_watch_config.json
 docs/agents/mhs-watch.md
