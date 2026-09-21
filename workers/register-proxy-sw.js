@@ -488,7 +488,7 @@ function getMcpServerInfo(env) {
     // this constant drifts from it (rule R7, added 2026-09-18). Before that rule existed the value
     // was a hand-kept string that no script, workflow or var injection ever touched — it sat at
     // 2.27.1 through six releases, and it is the *only* version every MCP client reads.
-    version: env.MCP_VERSION || "2.34.0", // x-release-please-version
+    version: env.MCP_VERSION || "2.33.0", // x-release-please-version
   };
 }
 
@@ -4132,6 +4132,8 @@ async function handleLessonCoverage(env) {
 // aggregator reports `truncated` instead of quietly computing a fraction of the
 // window (see docs/maintainer/search-metrics.md).
 const SEARCH_SIGNAL_MAX_ROWS = 10000;
+// Group counts are bounded too: a year of data across many topics is still a small table.
+const SEARCH_SIGNAL_MAX_GROUPS = 2000;
 
 // The table is created by the worker on first write rather than only by
 // `workers/d1/schema.sql` (applied by .github/workflows/apply-d1-schema.yml):
@@ -4246,6 +4248,36 @@ async function recordSearchSignal(env, {
 // of POST /api/search-signal instead of asking for a token. Aggregation lives in
 // scripts/search_hit_rate.py; legacy rows without a `solved` field are returned
 // with `solved: null` and counted as misses there.
+//
+// `breakdown` (added for the ROADMAP's milestone ②, "a table that can go into release
+// notes"): the scalar hit rate alone answers "how are we doing" but not "where", and the
+// rows cannot be split by day or topic on the client because the endpoint deliberately
+// serves no query text. So the split is computed *here*, as counts only — the response
+// gains no new per-request detail, just totals. `solved IS NULL` (legacy rows) counts as a
+// miss, matching the script, so the two never disagree.
+// Turn `{day, domain, hits, total}` rows into the two tables the report needs. Pure.
+// `hits` is compared as a number because D1 may hand back strings for SUM().
+function buildSignalBreakdown(groups) {
+  const byDay = new Map();
+  const byDomain = new Map();
+  for (const g of groups || []) {
+    const day = String(g.day || "unknown");
+    const domain = String(g.domain || "unknown");
+    const total = Number(g.total || 0);
+    const hits = Number(g.hits || 0);
+    for (const [map, key] of [[byDay, day], [byDomain, domain]]) {
+      const acc = map.get(key) || { key, hits: 0, total: 0 };
+      acc.hits += hits;
+      acc.total += total;
+      map.set(key, acc);
+    }
+  }
+  const finish = (map) => Array.from(map.values())
+    .map((r) => ({ ...r, miss: r.total - r.hits, hit_rate: r.total ? r.hits / r.total : null }))
+    .sort((a, b) => (b.total - a.total) || (b.key < a.key ? -1 : 1));
+  return { by_day: finish(byDay).sort((a, b) => (a.key < b.key ? 1 : -1)), by_domain: finish(byDomain) };
+}
+
 async function handleSearchSignalStats(env, url) {
   const d1 = d1Binding(env);
   if (!d1) return jsonResponse({ error: "D1 not configured" }, 503);
@@ -4261,10 +4293,32 @@ async function handleSearchSignalStats(env, url) {
        ORDER BY id LIMIT ?2`
     ).bind(`-${days} days`, SEARCH_SIGNAL_MAX_ROWS + 1).all();
     const rows = (results || []).map((r) => ({ solved: r.solved ?? null, created_at: r.created_at || "" }));
+
+    // Counts per day and per topic, computed in SQL so nothing per-request crosses the wire.
+    let groups = [];
+    try {
+      const grouped = await d1.prepare(
+        `SELECT date(created_at) AS day,
+                COALESCE(NULLIF(TRIM(domain), ''), 'unknown') AS domain,
+                SUM(CASE WHEN solved = 1 THEN 1 ELSE 0 END) AS hits,
+                COUNT(*) AS total
+           FROM search_signals
+          WHERE created_at >= datetime('now', ?1)
+          GROUP BY day, domain
+          LIMIT ?2`
+      ).bind(`-${days} days`, SEARCH_SIGNAL_MAX_GROUPS).all();
+      groups = grouped.results || [];
+    } catch (e) {
+      // A worker deployed before this column existed, or a table that predates the
+      // aggregate: keep serving rows rather than failing the whole read.
+      debugLog(env, 2, "search signal breakdown unavailable", String((e && e.message) || e));
+    }
+
     return jsonResponse({
       ...base,
       rows: rows.slice(0, SEARCH_SIGNAL_MAX_ROWS),
       truncated: rows.length > SEARCH_SIGNAL_MAX_ROWS,
+      breakdown: buildSignalBreakdown(groups),
       generated_at: new Date().toISOString(),
     });
   } catch (e) {
