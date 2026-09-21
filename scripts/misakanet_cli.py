@@ -36,7 +36,7 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 # extra-files. Without it the bot bumped pyproject.toml but not this line, so the 2.31.0 release PR
 # arrived with R8 red ("misakanet_cli.py says 2.30.2, pyproject says 2.31.0") and could not be
 # merged — a release PR that cannot merge is how a project quietly stops releasing (2026-09-19).
-VERSION = "2.32.1"  # x-release-please-version
+VERSION = "2.33.0"  # x-release-please-version
 
 
 # ── doctor ────────────────────────────────────────────────────────
