@@ -49,7 +49,6 @@
 | `intake-salvage-digest.yml` | Intake Salvage Digest | 定时, 手动 | `0 8 * * *` |
 | `issue-intake-triage.yml` | MCP Intake Triage | issues, 手动 |  |
 | `sync-d1.yml` | Sync Lessons to D1 (PRD ④) | push, 定时, 手动 | `0 3 * * *` |
-| `sync-data.yml` | Sync Metadata to data Branch | push |  |
 | `sync-node-counter.yml` | Mirror Node Counter（把 D1 计数镜像到 main）| 定时, 手动 |  |
 | `apply-d1-schema.yml` | Apply D1 schema | 手动 |  |
 | `d1-counters-report.yml` | D1 counters report | 手动 |  |
