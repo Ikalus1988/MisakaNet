@@ -35,6 +35,7 @@
   <url><loc>https://misakanet.org/topics/kubernetes/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/scraping/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/meta/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://misakanet.org/topics/testing/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/nodejs/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/openclaw/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/crypto-ops/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -44,7 +45,6 @@
   <url><loc>https://misakanet.org/topics/web3/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/mobile/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/typescript/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://misakanet.org/topics/testing/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/wechat/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/cloudflare-worker/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/java/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -82,6 +82,7 @@
   <url><loc>https://misakanet.org/lessons/aider-windows-unicode-error/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/aily-feishu-mcp-pull-only/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/alembic-upgrade-fails-after-dependency-update/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/alembic-upgrade-head-fails-with-exit-code-255-or-subprocess-error/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-unlikely-database-migration/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/anthropic-proxy-internal-gateway/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/api-gateway-anthropic-incompatibility/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -131,6 +132,7 @@
   <url><loc>https://misakanet.org/lessons/debugging-memory-leaks-in-ruby/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/deepwiki-review-fair-hits-stale-misses-trajectory/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/disk-space-cleanup/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/docker-multi-stage-build-oom-killed-with-exit-code-137-on-github-actions/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/docker-compose-basics/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-plugin-install-github-codeload-timeout/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-plugin-installation-troubleshooting/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -301,6 +303,7 @@
   <url><loc>https://misakanet.org/lessons/misakanet-heal-engine-bootstrap-workflow/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/misakanet-heal-ux-gap-queue-lesson-flag-mismatch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/misakanet-refactor-v2-review/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/mock-attribute-cascade-adding-attribute-access-breaks-existing-tests/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/model-output-fix/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/model-switch-script-pattern/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/multi-forum-scraping-architecture/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -329,7 +332,9 @@
   <url><loc>https://misakanet.org/lessons/pr-strategy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/private-agent-memory-fallacy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/process-card-sequence-extraction-rules/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/prompt-cache-prefix-invalidation-causes-location-hallucination-in-roleplay/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/prompt-injection-what-s-the-worst-that-can-happen/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/pronoun-misidentified-as-npc-in-roleplay-extraction/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/instalacao-pip-timeout-proxy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/python-gbk-encoding-error/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/python-pycache-stale/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
