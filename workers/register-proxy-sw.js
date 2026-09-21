@@ -484,7 +484,7 @@ function getMcpServerInfo(env) {
     // this constant drifts from it (rule R7, added 2026-09-18). Before that rule existed the value
     // was a hand-kept string that no script, workflow or var injection ever touched — it sat at
     // 2.27.1 through six releases, and it is the *only* version every MCP client reads.
-    version: env.MCP_VERSION || "2.32.1", // x-release-please-version
+    version: env.MCP_VERSION || "2.33.0", // x-release-please-version
   };
 }
 

@@ -7,6 +7,59 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.33.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.32.1...v2.33.0) (2026-09-21)
+
+
+### Features
+
+* **action:** publish the intake bot from a repository-root action.yml ([8eb23ac](https://github.com/Ikalus1988/MisakaNet/commit/8eb23ac4f4cf9ca418068926dc567ce7d16c1cf8))
+* **action:** 把 intake bot 迁到仓库根以便上架 Marketplace（并修掉 v1 tag 的两处碰撞） ([4f7b99b](https://github.com/Ikalus1988/MisakaNet/commit/4f7b99b32e035142f3463992293fc4d5effc4712))
+* **setup:** add Cursor as a sixth target (and stop two checks from lying) ([fd9739f](https://github.com/Ikalus1988/MisakaNet/commit/fd9739fcb703959594c4ba2dea08a6492bcf9c11))
+* **setup:** installer targets 6 → 10, table-driven, one vendor shape each ([060a2ad](https://github.com/Ikalus1988/MisakaNet/commit/060a2ade39c9253fa5478637e7e6cd3a32b0abc0))
+* **setup:** 安装器加入第 6 个目标 Cursor（并修掉两处在说谎的检查） ([845eb60](https://github.com/Ikalus1988/MisakaNet/commit/845eb60ffdf237c942d891e14951d854cc60a24a))
+* **setup:** 安装器目标 6 → 10（Gemini CLI / Copilot CLI / OpenCode / Kiro），表驱动 + 形状门禁 ([3505b8e](https://github.com/Ikalus1988/MisakaNet/commit/3505b8e7d5d2fa69f3550aafa5d4fa7943b82384))
+
+
+### Bug Fixes
+
+* **bootstrap:** the second installer was a release behind — no context hints, retired quota ([5f4eb19](https://github.com/Ikalus1988/MisakaNet/commit/5f4eb19f1cab9f9ef56d1049c9c7b8930bd00707))
+* **bootstrap:** 第二个安装器落后一版 —— 一个上下文头都不写，且还在宣传已取消的读配额 ([8417494](https://github.com/Ikalus1988/MisakaNet/commit/8417494c4cf70b1c67297922d5a2d6f68e2d1be6))
+* **ci:** a fork PR is not an audit failure ([3bd3ff0](https://github.com/Ikalus1988/MisakaNet/commit/3bd3ff03f1ceafe6e0bf506ed661d8941e22c066))
+* **ci:** a path nobody can trigger is not a tested path, and the inventory must equal reality ([0ee0156](https://github.com/Ikalus1988/MisakaNet/commit/0ee0156c9c12fc65ebb828a6f0ab917b63ab603a))
+* **ci:** fork PR 的 audit 假红 —— Auto-Merge Gate 拿着只读 token 去 merge ([dc50c25](https://github.com/Ikalus1988/MisakaNet/commit/dc50c25ce29d861f9e2b79c3da034acca46a1669))
+* **ci:** stop path-only push filters from running branch CI on tag pushes ([fb31b76](https://github.com/Ikalus1988/MisakaNet/commit/fb31b7695d7e59c4e752ddd29163758405400900))
+* **ci:** the docs gate merged without a trace downstream and refused without a word ([a776f9e](https://github.com/Ikalus1988/MisakaNet/commit/a776f9e88d48d477cd6f2e66f05de7a6868afcb1))
+* **ci:** two blockers an adversarial review found — a green run that verified nothing, and a docs ([3761785](https://github.com/Ikalus1988/MisakaNet/commit/3761785b7163dd70876191a28b8e4461a2a95b01))
+* **ci:** 对抗式复核找出的两个 blocker —— 绿着但什么都没验证，以及只看第一页的门禁 ([ef7873e](https://github.com/Ikalus1988/MisakaNet/commit/ef7873e03d0064cb2d28c97e6959ea4ab0625e83))
+* **ci:** 路径过滤不排除 tag 推送，三个分支 CI 白跑 ([8c59cf5](https://github.com/Ikalus1988/MisakaNet/commit/8c59cf59893ff76e8472f152ed965315d4125ebc))
+* **core:** the local search no longer enforces a quota the service retired ([e38a1c3](https://github.com/Ikalus1988/MisakaNet/commit/e38a1c3adf638a24402dad3411aabce3560f1d00))
+* **core:** 本地检索不再执行一个已被取消的配额（第 6 次就被硬门挡住） ([414bbd3](https://github.com/Ikalus1988/MisakaNet/commit/414bbd353402f7e53a1ced21ddbe9207521dbf4b))
+* correct broken link in gemini-cli.md (follow-up to [#1942](https://github.com/Ikalus1988/MisakaNet/issues/1942)) ([#1969](https://github.com/Ikalus1988/MisakaNet/issues/1969)) ([8044678](https://github.com/Ikalus1988/MisakaNet/commit/80446788044efb7a534cb0109e4ab78cd50c601b))
+* **data:** a generated file must name a generator that exists, and a consumer someone can read ([f1b0bba](https://github.com/Ikalus1988/MisakaNet/commit/f1b0bba9083399af602ee6ffd6dfaf89a753a9a6))
+* **data:** 无消费者的生成物 —— 删掉静默死亡的镜像任务，并让每个生成物都有生成者与消费者 ([e430a17](https://github.com/Ikalus1988/MisakaNet/commit/e430a17a3c728f62e2a9fd88eac93859a84f74f9))
+* **docs:** Claude Code reads MCP servers from ~/.claude.json, not settings.json ([fb9a963](https://github.com/Ikalus1988/MisakaNet/commit/fb9a96344db17c5d6450ce73ced85558c3cabd7f))
+* **docs:** Claude Code 的 MCP 配置是 ~/.claude.json 而非 settings.json（外加 agent 清单与坏链接） ([f5626de](https://github.com/Ikalus1988/MisakaNet/commit/f5626de01448d86ce9a2c873cd6c2321dededdbc))
+* **release:** a release PR needs a human, and its changelog is checked before it ships ([4824628](https://github.com/Ikalus1988/MisakaNet/commit/482462869e8d4c3da24ba2db6c53a7b67c85e730))
+* **repo:** a file cannot be ignored and tracked at the same time — six were ([14f0691](https://github.com/Ikalus1988/MisakaNet/commit/14f06910c5a7a2b2e9418ba48983f1d1117c567a))
+* **repo:** 被跟踪又被忽略的文件 —— 6 个（每跑一次检索就弄脏工作树） ([e176968](https://github.com/Ikalus1988/MisakaNet/commit/e176968284ae6470a2c14f31395e0f346e410b16))
+* **setup:** a failed probe behind a proxy is inconclusive, not "unreachable" ([23c3e19](https://github.com/Ikalus1988/MisakaNet/commit/23c3e19ce17edda4423ee2ef3f87106babb55852))
+* **setup:** 代理环境下的探测失败应判"不可信"而非"端点不可达" ([b380d68](https://github.com/Ikalus1988/MisakaNet/commit/b380d684078721776837686484fd733db0ce70ca))
+* **tests:** settings.json 门禁对着正确的 Gemini CLI 文档开了火 ([a4a9ee7](https://github.com/Ikalus1988/MisakaNet/commit/a4a9ee78e38029467f6fcf72dca9bb458113a1a4))
+* **tests:** the settings.json gate fired on a correct Gemini CLI doc ([819cfbd](https://github.com/Ikalus1988/MisakaNet/commit/819cfbd95d495ed717779031a973da46feed23b5))
+* the review's follow-ups — three regressions we shipped, two gates that could not fail, and a ([c7e24dd](https://github.com/Ikalus1988/MisakaNet/commit/c7e24dd9401fa2a67a03113fb3478fb1e8fcb645))
+* 复核的后续 —— 三个回归、四个跑不出失败的门禁、一课在教已取消的机制 ([c89ee77](https://github.com/Ikalus1988/MisakaNet/commit/c89ee77915112a8c815d5f9164d2b4c9394dd293))
+
+
+### Documentation
+
+* **action:** README 里补上 action 用法；并修掉所有文档片段缺失的 actions: read ([bae4e2b](https://github.com/Ikalus1988/MisakaNet/commit/bae4e2b069ce6fb59c6e089ed7eaeea82016eb78))
+* **action:** show the action in the README, and grant the scope it needs ([36a9a59](https://github.com/Ikalus1988/MisakaNet/commit/36a9a59c1474c1ddcaef2a1e5bb418a8854945fa))
+* **integrations:** one matrix for "do you support X", with who checked it ([3e1cf5c](https://github.com/Ikalus1988/MisakaNet/commit/3e1cf5c83a220dce386e10d11d392aab4af9961a))
+* **integrations:** 一张带证据等级的兼容矩阵（18 个 agent，含各家配置键陷阱） ([6cdb40c](https://github.com/Ikalus1988/MisakaNet/commit/6cdb40c53a128951863b2200842966e62b874010))
+* **mcp:** say what `misakanet_memory_context`'s parameters *mean*, not what the schema already says ([29a375b](https://github.com/Ikalus1988/MisakaNet/commit/29a375b9e101cb7d376c8e0ee09ab5933a9d8b36))
+* **mcp:** say what `misakanet_memory_context`'s parameters mean, not what the schema already says ([13d2451](https://github.com/Ikalus1988/MisakaNet/commit/13d245180a1612ba7d54046d5779921122aaad2e))
+* **referral:** point at the issue that actually tracks the missing server-side record ([da0f581](https://github.com/Ikalus1988/MisakaNet/commit/da0f581f0e40d6123ebc8b6350a996308cf32868))
+
 ## [2.32.1](https://github.com/Ikalus1988/MisakaNet/compare/v2.32.0...v2.32.1) (2026-09-20)
 
 
