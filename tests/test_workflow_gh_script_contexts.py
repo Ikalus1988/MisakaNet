@@ -57,8 +57,9 @@ def _code_without_expressions_and_comments(body: str) -> str:
     """Body text with ``${{ … }}`` interpolations and ``//`` comments removed.
 
     Both are legitimate places for the event payload to appear: a ``${{ … }}`` inside a script
-    is a workflow *expression* evaluated before the script runs (`manual-audit.yml` reads
-    `inputs.pr_number` that way), and a comment explaining the bug is documentation, not code.
+    is a workflow *expression* evaluated before the script runs (``dco-check.yml`` and
+    ``lesson-quality.yml`` pass values in that way), and a comment explaining the bug is
+    documentation, not code.
     What must never survive is an actual property access — which is what the remaining texts
     are searched for.
     """
