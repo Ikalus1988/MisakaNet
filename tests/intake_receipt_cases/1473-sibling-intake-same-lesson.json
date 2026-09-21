@@ -1,0 +1,17 @@
+{
+  "id": "1473-sibling-intake-same-lesson",
+  "why": "the same lesson also answers #1473, cited only inside a free-text `source:` field",
+  "intake": 1473,
+  "source": "antigravity",
+  "expected": {
+    "emitted": true,
+    "lessons": [
+      "lessons/contrib/vertex-gemini-model-id-naming.md"
+    ],
+    "evidence_level": "E3",
+    "channels": [
+      "github",
+      "mcp"
+    ]
+  }
+}

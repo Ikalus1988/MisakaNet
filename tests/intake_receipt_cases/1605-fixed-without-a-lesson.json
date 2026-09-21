@@ -1,0 +1,10 @@
+{
+  "id": "1605-fixed-without-a-lesson",
+  "why": "real history: #1605 was diagnosed, fixed and deployed within 30 minutes (#1606) and its anonymous reporter never heard anything — but it never became a lesson, so there is no conversion receipt to send. This is the case that must NOT produce one.",
+  "intake": 1605,
+  "source": "dsh",
+  "expected": {
+    "emitted": false,
+    "reason_contains": "no lesson cites"
+  }
+}
