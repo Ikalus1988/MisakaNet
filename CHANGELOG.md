@@ -7,6 +7,26 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.34.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.33.0...v2.34.0) (2026-09-21)
+
+
+### Features
+
+* **referral:** record the invitation on the server, not in one machine's git history ([c345f9d](https://github.com/Ikalus1988/MisakaNet/commit/c345f9d970b0bd04dd00bc0e5ae535089534d7b1))
+* **referral:** 把邀请记在服务端，而不是某台机器的 git 历史里 ([ba4e652](https://github.com/Ikalus1988/MisakaNet/commit/ba4e652f3d4667e1d8b5c9aae8fcebe201f16cde))
+
+
+### Bug Fixes
+
+* **ci:** a Worker deploy supersedes the one still waiting for approval, instead of queueing beside it ([27c526f](https://github.com/Ikalus1988/MisakaNet/commit/27c526f1da382fb2aeca8fdb3872444b757b7277))
+* **ci:** capture the exit code before `-e` can abort the step that measures it ([29df1aa](https://github.com/Ikalus1988/MisakaNet/commit/29df1aaac74c6dc613a380c07299a493b64169c9))
+* **ci:** give the Windows legs a UTF-8 environment, which is what their 77 failures were about ([c5695ec](https://github.com/Ikalus1988/MisakaNet/commit/c5695ec697cbd1aef505244363c3bfe4a75fe6e0))
+* **ci:** the cross-platform matrix ran zero tests on eight legs and reported ✅ ([0d3209c](https://github.com/Ikalus1988/MisakaNet/commit/0d3209c61c093085a202efb290483098216a8f0f))
+* **ci:** Worker 部署取代「还在等审批」的那一条，而不是排在它旁边 ([9727799](https://github.com/Ikalus1988/MisakaNet/commit/9727799600de5f8ec02fc1a370ae1df05df9ffc1))
+* **ci:** 恢复 [#1964](https://github.com/Ikalus1988/MisakaNet/issues/1964) 的两个修复（它被关闭但未合并）—— 跳过的测试不再被说成失败的测试 ([#2004](https://github.com/Ikalus1988/MisakaNet/issues/2004)) ([89b1d6a](https://github.com/Ikalus1988/MisakaNet/commit/89b1d6a95d3c3de6e03384ad9fcd551570a9b9ad))
+* **ci:** 给 Windows 腿一个 UTF-8 环境（它 77 条失败主要就是这件事） ([0f3384e](https://github.com/Ikalus1988/MisakaNet/commit/0f3384eed11a18054037e8c7e90af112158dbb53))
+* **ci:** 跨平台矩阵在 8 条腿上跑了零条测试却报 ✅ ([5dcb673](https://github.com/Ikalus1988/MisakaNet/commit/5dcb673443f0b769a34c90f6f3826696b524bb42))
+
 ## [2.33.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.32.1...v2.33.0) (2026-09-21)
 
 
