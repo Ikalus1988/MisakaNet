@@ -141,17 +141,23 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 
 **② 量化"命中 vs 未命中"** ← 不需要新工程线，现在就能做
 
-- 现状：`data/search_gaps.jsonl`（35 行）与 `/api/search-signal` **只记未命中**——
-  `workers/register-proxy-sw.js` 的 `handleSearchSignal` 里写死了
-  "Solved searches are not recorded at all — the map only tracks gaps"。所以今天只有分子没有分母，
-  **任何命中率都算不出来**。
-- 第一步（便宜）：让命中也上报——同一端点加 solved 分支，或 `docs/search/index.html` 在
-  `result_count > 0` 时也发一次。这样分母才存在。
-- 第二步：用 `/api/helpful` 的票数 + `misakanet_me_events` 的 E4 信号作为复用侧分子，产出第一张
-  "命中率 / no_match 率 / 按 task family 分布"表。
-- 边界：不新增 PII。现有设计是 query 原文在服务端归类后立即丢弃、只写聚合计数，保持这条不变。
-- 验收：一张能贴进 release notes 的表。这是把蓝图审视 §4.3 的"能提效 = 0.5/1"变成可引用数字的
-  最短路径。
+- **现状（2026-09-21 更新）**：**分母已经有了**。#1779（2026-09-16 关闭）让 worker 侧的
+  `misakanet_search` 把命中一起写进 D1 `search_signals`；KV 的 unsolved map 仍然只记未命中，
+  那是它的职责，不是缺口——两者别混为一谈。
+- **已完成（2026-09-21）**：`/api/search-signals/stats` 增加服务端聚合 `breakdown`：按天、按
+  `domain` 的**计数**，**只回计数**——不带 query 文本、不带 lesson id，读取口径不变（新增的只是
+  汇总，不是逐条细节）。`scripts/search_hit_rate.py` 据此打印两张 Markdown 表，按 domain 的那张
+  **按命中率从低到高排**，直接回答"下一步该补哪块语料"。
+- 首次实测（2026-09-21，7 天窗口）：`total 231 / hit 173 / miss 58 / hit_rate 74.9%`。
+- **仍未解决**：
+  1. **复用侧的分子没接**——`/api/helpful` 票数与 `misakanet_me_events` 的 E4 信号还没进这张表，
+     所以它衡量的是"检到东西"，不是"帮上了忙"；
+  2. **网站检索页仍只上报未命中**（`docs/search/index.html` 在 `topScore >= 0.35` 时直接返回）。
+     要补它的命中，就得让页面也发查询文本，而那正是当前刻意避免的——**这是一个隐私取舍，
+     需要单独决定，不该顺手改**；
+  3. 计数只覆盖走 worker 的调用：本地 stdio MCP 与页面检索不在其中（脚本的 caveat 已列）。
+- 验收（已达）：一张能贴进 release notes 的表——`python3 scripts/search_hit_rate.py --since 7`
+  输出里的"按天（UTC）"与"按 domain"两张表。
 
 **③ 中文 / 自然语言的检索路径** ← 直接解锁 §2.1 的目标用户
 
