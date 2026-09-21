@@ -1,35 +1,42 @@
 {
-  "generated_at": "2026-09-20T16:17:16.424101+00:00",
+  "generated_at": "2026-09-20T23:18:23.888490+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "fix(bootstrap): 第二个安装器落后一版 —— 一个上下文头都不写，且还在宣传已取消的读配额",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1965",
+      "timestamp": "2026-09-20T17:33:05Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(tests): settings.json 门禁对着正确的 Gemini CLI 文档开了火",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1963",
+      "timestamp": "2026-09-20T17:16:43Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(ci): fork PR 的 audit 假红 —— Auto-Merge Gate 拿着只读 token 去 merge",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1962",
+      "timestamp": "2026-09-20T17:12:49Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(setup): 安装器目标 6 → 10（Gemini CLI / Copilot CLI / OpenCode / Kiro），表驱动 + 形状门禁",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1958",
+      "timestamp": "2026-09-20T16:31:07Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "fix(setup): 代理环境下的探测失败应判\"不可信\"而非\"端点不可达\"",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/1955",
       "timestamp": "2026-09-20T16:03:08Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(setup): 安装器加入第 6 个目标 Cursor（并修掉两处在说谎的检查）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1953",
-      "timestamp": "2026-09-20T15:31:10Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(integrations): 一张带证据等级的兼容矩阵（18 个 agent，含各家配置键陷阱）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1939",
-      "timestamp": "2026-09-20T14:20:44Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(docs): Claude Code 的 MCP 配置是 ~/.claude.json 而非 settings.json（外加 agent 清单与坏链接）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1938",
-      "timestamp": "2026-09-20T14:13:25Z",
       "source": "github"
     },
     {
@@ -55,13 +62,6 @@
       "timestamp": "2026-09-19",
       "domain": "ci",
       "source": "lessons"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(agent-autostart): same two defects as the JS installer, fixed on the Python side",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1722",
-      "timestamp": "2026-09-15T11:51:42Z",
-      "source": "github"
     },
     {
       "type": "lesson",
