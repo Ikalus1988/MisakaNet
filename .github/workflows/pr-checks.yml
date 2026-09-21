@@ -722,7 +722,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
           PR_NUM: ${{ github.event.pull_request.number }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           echo "=== Auto-Merge Gate for PR #$PR_NUM ==="
 

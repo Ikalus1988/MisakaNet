@@ -2,8 +2,9 @@
 """The failure classifier must not call a real bug "flaky".
 
 `.github/actions/classify-failure/` decides whether the self-heal harness retries a failed command
-and whether the maintainer gets notified (`ci-self-heal.yml` notifies only when `should_retry` is
-false). Its category checks used bare substring matching against the lower-cased log, and the
+and whether the maintainer gets notified (the self-heal harness that consumed it,
+`ci-self-heal.yml`, was deleted on 2026-09-21 as an uncalled orphan — #1984 — but
+`.github/actions/classify-failure/` is still here, and so is the bug described below). Its category checks used bare substring matching against the lower-cased log, and the
 `race_condition` list contains `"race"` — which is inside **"Traceback"**, the first line of every
 Python traceback. So:
 

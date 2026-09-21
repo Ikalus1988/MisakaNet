@@ -25,7 +25,7 @@ on:
         required: false
         default: ''
       pr-number:
-        description: 'PR to comment on (testing aid; empty = the PR that owns the failing run)'
+        description: 'PR to comment on (testing aid; empty = no comment, the decision is still printed)'
         required: false
         default: ''
 
@@ -71,7 +71,11 @@ jobs:
             let prNumber = manualPr ? parseInt(manualPr, 10) : null;
             let runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             let runName = 'manual dispatch';
-            let isSameRepo = 'true';
+            // Defaults to *silent* for the manual path: a dispatch has no `workflow_run` payload to
+            // read the head repository from, and this workflow's own contract is that fork PRs never
+            // get the intake note (:131, :204). Assuming 'true' would have posted a maintainer note on
+            // a fork PR whenever someone dispatched this with a `pr-number`.
+            let isSameRepo = 'false';
             let errorSignatures = [];
 
             if (manualError) {
@@ -133,7 +137,13 @@ jobs:
         if: steps.context.outputs.error_signatures != ''
         id: intake
         run: |
-          printf '%s\n' "$ERROR_SIG" > /tmp/ci_error.log
+          # `$ERROR_SIGNATURES`, which is the name this step declares below. It said `$ERROR_SIG`
+          # until 2026-09-21 — an undefined variable is the empty string, so the log file was one
+          # newline, `intake_bot.py` answered `{"decision":"ignore","reason":"错误签名过短"}`, the
+          # comment step was skipped, and the run stayed green. The dispatch added the same day
+          # "verified" exactly that nothing: the path could be triggered and still produced
+          # nothing. A green run is not evidence unless something in it can differ (#1984).
+          printf '%s\n' "$ERROR_SIGNATURES" > /tmp/ci_error.log
           # `|| echo '{"decision":"error","reason":"bot failed"}'` used to stand here, and that is the
           # shape #1825 was about: a crash became a *constant payload*, the comment step parsed
           # `decision: 'error'`, fell through to `return;`, and the run stayed green with nothing
