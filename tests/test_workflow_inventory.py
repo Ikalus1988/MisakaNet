@@ -44,7 +44,9 @@ def _triggers(text: str) -> set[str]:
 
 
 def load_workflows() -> dict[str, str]:
-    return {p.name: p.read_text(encoding="utf-8") for p in sorted(WF_DIR.glob("*.yml"))}
+    # GitHub accepts both spellings; the rules above match `\.ya?ml`, so the loader must too.
+    return {p.name: p.read_text(encoding="utf-8")
+            for p in sorted(list(WF_DIR.glob("*.yml")) + list(WF_DIR.glob("*.yaml")))}
 
 
 # ── rule 1: a path that only a failure can start must also be startable by hand ──────────────────
@@ -65,13 +67,16 @@ def unverifiable_paths(workflows: dict[str, str]) -> list[str]:
 def orphaned_libraries(workflows: dict[str, str]) -> list[str]:
     """A `workflow_call`-only file must be referenced by another workflow in this repository."""
     problems = []
-    all_text = "\n".join(workflows.values())
+    others = {n: t for n, t in workflows.items()}
     for name, text in workflows.items():
         triggers = _triggers(text)
         if triggers != {"workflow_call"}:
             continue
-        # `uses: ./.github/workflows/<name>` is how a local reusable workflow is invoked.
-        referenced = f".github/workflows/{name}" in all_text.replace(text, "", 1)
+        # The reference has to be an invocation. A bare substring match is satisfied by a comment, a
+        # `paths:` filter or an `echo` that happens to name the file — the rule would be green while
+        # nothing calls it, which is the state it exists to catch.
+        pattern = re.compile(rf"uses:\s*(\./)?\.github/workflows/{re.escape(name)}")
+        referenced = any(pattern.search(t) for n, t in others.items() if n != name)
         if not referenced:
             problems.append(
                 f"{name}: declares only `workflow_call` (a library) and no workflow in this "
@@ -96,6 +101,67 @@ def inventory_problems(workflows: dict[str, str], doc_text: str) -> list[str]:
 def test_every_path_that_only_a_failure_can_start_is_also_startable_by_hand():
     problems = unverifiable_paths(load_workflows())
     assert not problems, "\n  ".join(problems)
+
+
+# `retry` is called by cite-lesson.yml and lesson-notify.yml. `classify-failure` is not called by any
+# workflow: it is kept as a tested library (its test encodes "a real bug is not a flaky one"), and it
+# is listed here so its state is a decision rather than an oversight. Anything else must be called.
+UNWIRED_ACTIONS = {"classify-failure": "kept as a tested library; no workflow calls it yet"}
+
+
+def uncalled_actions(workflows: dict[str, str], actions: dict[str, str],
+                     unwired: dict[str, str] = None) -> list[str]:
+    """An action under `.github/actions/` that no workflow invokes."""
+    unwired = UNWIRED_ACTIONS if unwired is None else unwired
+    all_text = "\n".join(workflows.values())
+    problems = []
+    for name in actions:
+        if name in unwired:
+            assert unwired[name].strip(), f"{name} is exempt with an empty reason"
+            continue
+        if not re.search(rf"uses:\s*(\./)?\.github/actions/{re.escape(name)}(/|\s|$)", all_text):
+            problems.append(
+                f".github/actions/{name} is invoked by no workflow — an action nothing calls is a "
+                f"capability that exists only in the file list (#1994 review); wire it up, delete it, "
+                f"or add it to UNWIRED_ACTIONS with the reason")
+    return problems
+
+
+def _actions() -> dict[str, str]:
+    out = {}
+    for path in sorted((REPO / ".github" / "actions").glob("*/action.yml")):
+        out[path.parent.name] = path.read_text(encoding="utf-8")
+    return out
+
+
+def test_no_composite_action_is_left_uncalled():
+    problems = uncalled_actions(load_workflows(), _actions())
+    assert not problems, "\n  ".join(problems)
+
+
+def test_the_uncalled_action_rule_catches_the_one_this_review_deleted():
+    """`notify-failure` was invoked by exactly one workflow — the one deleted as an orphan (#1984),
+    which left the action behind with no caller and no test."""
+    assert not (REPO / ".github" / "actions" / "notify-failure").exists()
+    fixture_workflows = {"a.yml": "name: A\non:\n  push:\njobs:\n  a:\n    runs-on: x\n"}
+    fixture_actions = {"ghost": "name: Ghost\n"}
+    assert uncalled_actions(fixture_workflows, fixture_actions) == [
+        ".github/actions/ghost is invoked by no workflow — an action nothing calls is a capability "
+        "that exists only in the file list (#1994 review); wire it up, delete it, or add it to "
+        "UNWIRED_ACTIONS with the reason"]
+    # …and a real invocation satisfies it.
+    fixture_workflows["a.yml"] += "    steps:\n      - uses: ./.github/actions/ghost\n"
+    assert uncalled_actions(fixture_workflows, fixture_actions) == []
+
+
+def test_a_comment_naming_a_workflow_does_not_count_as_calling_it():
+    """The substring hole the first version had: an echo is not an invocation."""
+    fixture = {
+        "lib.yml": "name: L\non:\n  workflow_call:\n    inputs:\n      x:\n        type: string\n",
+        "user.yml": "name: U\non:\n  push:\njobs:\n  a:\n    runs-on: x\n    steps:\n"
+                    "      - run: echo \"see .github/workflows/lib.yml\"\n",
+    }
+    assert orphaned_libraries(fixture), "a mention is not a call"
 
 
 def test_no_reusable_workflow_is_left_uncalled():

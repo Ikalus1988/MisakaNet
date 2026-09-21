@@ -11,13 +11,9 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-QUOTA_FILE = REPO / "misakanet" / ".quota.json"
-
-
-def reset_quota():
-    """Reset search quota to allow fresh searches."""
-    QUOTA_FILE.write_text(json.dumps({"search_count": 0, "quota_max": 20}))
-
+# This script used to write `misakanet/.quota.json` before every search to get around the local
+# search quota. That quota was retired on 2026-09-21 (#1986) — and it never existed server-side, so
+# the workaround was clearing a counter that gated nothing but itself. Removed with the gate.
 
 def search_lessons(query: str) -> list:
     """Search MisakaNet for relevant lessons."""
@@ -72,9 +68,6 @@ def evaluate_task(task: dict, with_lessons: bool = True) -> dict:
     }
 
     if with_lessons:
-        # Reset quota before search
-        reset_quota()
-
         # Search for relevant lessons
         error_msg = setup.get("error_message", description)
         lessons = search_lessons(error_msg)

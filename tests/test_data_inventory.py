@@ -71,6 +71,18 @@ def table_rows(doc_text: str) -> dict[str, str] | None:
     return rows
 
 
+def _resolves(token: str, repo: Path) -> bool:
+    """A reference resolves as written, or as a workflow/action basename.
+
+    `leaderboard-watch.yml` is how a person writes it; the file is `.github/workflows/leaderboard-watch.yml`.
+    The rule is about the claim being true, not about the path spelling.
+    """
+    if (repo / token).exists():
+        return True
+    name = Path(token).name
+    return any((repo / d / name).exists() for d in (".github/workflows", ".github/actions"))
+
+
 def inventory_problems(doc_text: str, present: set[str], repo: Path = REPO,
                       allowed: set[str] | None = None) -> list[str]:
     allowed = present if allowed is None else allowed
@@ -85,19 +97,27 @@ def inventory_problems(doc_text: str, present: set[str], repo: Path = REPO,
     for name in sorted(set(rows) & present):
         cells = rows[name].split("|")
         generator = cells[2] if len(cells) > 2 else ""
-        if any(marker in generator for marker in HONEST_GENERATOR_MARKERS):
-            continue
-        tokens = PATH_TOKEN.findall(generator)
-        if not tokens:
-            problems.append(
-                f"data/{name}: the generator cell names no file and carries no honest marker "
-                f"({'/'.join(HONEST_GENERATOR_MARKERS)}) — {generator.strip()!r}")
-            continue
-        for token in tokens:
-            if not (repo / token).exists():
+        consumer = cells[3] if len(cells) > 3 else ""
+        if not consumer.strip():
+            problems.append(f"data/{name}: the consumer cell is empty — say who reads it, or say \u65e0")
+        # Paths are checked **first**, and a marker does not excuse them: "手动运行
+        # `scripts/batch_lesson_upgrade.py`" used to skip the whole check because of one word next to
+        # it, which is the defect this rule exists for, reintroducible by typing (review of #1994).
+        for token in PATH_TOKEN.findall(generator):
+            if not _resolves(token, repo):
                 problems.append(
                     f"data/{name}: the generator cell names {token}, which does not exist in this "
                     f"repository (this is the shape of the old `batch_lesson_upgrade.py` row)")
+        if not PATH_TOKEN.findall(generator) and not any(
+                marker in generator for marker in HONEST_GENERATOR_MARKERS):
+            problems.append(
+                f"data/{name}: the generator cell names no file and carries no honest marker "
+                f"({'/'.join(HONEST_GENERATOR_MARKERS)}) — {generator.strip()!r}")
+        # The consumer column has the same failure mode as the generator one, and #1985 was filed
+        # about silence here: a named consumer that does not exist is a claim, not a reader.
+        for token in PATH_TOKEN.findall(consumer):
+            if not _resolves(token, repo):
+                problems.append(f"data/{name}: the consumer cell names {token}, which does not exist")
     return problems
 
 
@@ -150,8 +170,31 @@ def test_a_generator_that_is_not_in_the_tree_is_caught(tmp_path):
 
 def test_a_row_without_any_generator_is_caught():
     head = "| 文件 | 生成者 | 消费者 | 频率 |\n|---|---|---|---|\n"
-    problems = inventory_problems(head + "| `a.json` | CI 自动生成 | x | y |\n", {"a.json"})
+    problems = inventory_problems(head + "| `a.json` | 自动生成 | x | y |\n", {"a.json"})
     assert problems and "names no file" in problems[0], problems
+
+
+def test_a_marker_does_not_excuse_a_path_that_does_not_exist():
+    """The bypass the first version had: one of these words next to the old defect made it pass."""
+    head = "| 文件 | 生成者 | 消费者 | 频率 |\n|---|---|---|---|\n"
+    for cell in ("手动运行 `scripts/batch_lesson_upgrade.py`",
+                 "孤儿：写入者是 `scripts/batch_lesson_upgrade.py`",
+                 "`scripts/batch_lesson_upgrade.py` — 已停"):
+        problems = inventory_problems(head + f"| `a.json` | {cell} | x | y |\n", {"a.json"})
+        assert any("does not exist in this repository" in p for p in problems), (cell, problems)
+
+
+def test_an_empty_consumer_cell_is_caught():
+    head = "| 文件 | 生成者 | 消费者 | 频率 |\n|---|---|---|---|\n"
+    problems = inventory_problems(head + "| `a.json` | 手写输入 |  | y |\n", {"a.json"})
+    assert any("consumer cell is empty" in p for p in problems), problems
+
+
+def test_a_consumer_that_does_not_exist_is_caught():
+    head = "| 文件 | 生成者 | 消费者 | 频率 |\n|---|---|---|---|\n"
+    problems = inventory_problems(head + "| `a.json` | 手写输入 | `scripts/gone.py` | y |\n",
+                                  {"a.json"})
+    assert any("consumer cell names scripts/gone.py" in p for p in problems), problems
 
 
 def test_the_files_this_issue_was_about_are_all_described():
