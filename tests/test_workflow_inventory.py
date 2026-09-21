@@ -272,3 +272,101 @@ def test_the_queue_rule_tells_the_two_kinds_apart():
     publisher = {"misakanet-publish.yml": "name: P\non:\n  workflow_dispatch:\nconcurrency:\n  group: p\n  cancel-in-progress: true\n"}
     problems = approval_queue_problems(publisher)
     assert problems and "would silently drop a release" in problems[0], problems
+
+
+# ── rule: a matrix that fans out across operating systems must be bounded and supersedable ───────
+#
+# Measured 2026-09-21: five `Cross-Platform Tests` runs were alive at once. Two had been running for
+# over 90 minutes because their jobs were started before `timeout-minutes` existed, and the nine
+# windows jobs inside them held the account's runners. Thirty-odd runs then sat queued behind them —
+# and because the queue was saturated, even the ubuntu legs, which normally finish in about two
+# minutes, could not start at all. The hung jobs were the symptom; the reason the queue could pile up
+# in the first place was that a superseded push had no way to cancel the run it replaced.
+#
+# So: a workflow whose job fans out over several operating systems must (a) declare a concurrency
+# group it can cancel, and (b) bound each such job. Both halves are needed — a bound without a
+# concurrency group still allows N superseded runs to hold N× the runners until the bound expires.
+
+OS_FAMILIES = ("ubuntu", "windows", "macos")
+
+
+def _os_families(job: dict) -> set[str]:
+    matrix = ((job or {}).get("strategy") or {}).get("matrix") or {}
+    values = matrix.get("os") if isinstance(matrix, dict) else None
+    if not isinstance(values, list):
+        return set()
+    return {family for value in values if isinstance(value, str)
+            for family in OS_FAMILIES if value.startswith(family)}
+
+
+def unbounded_matrix_workflows(workflows: dict[str, str]) -> list[str]:
+    problems: list[str] = []
+    for name, text in workflows.items():
+        try:
+            data = yaml.safe_load(text) or {}
+        except Exception:
+            continue  # malformed YAML is somebody else's rule
+        jobs = data.get("jobs") or {}
+        fanned = {job_name: job for job_name, job in jobs.items()
+                  if len(_os_families(job)) >= 2}
+        if not fanned:
+            continue
+
+        concurrency = data.get("concurrency")
+        if not isinstance(concurrency, dict) or not concurrency.get("group"):
+            problems.append(
+                f"{name}: its job(s) {sorted(fanned)} fan out across operating systems but the "
+                "workflow declares no concurrency group — a superseded push cannot cancel the run it "
+                "replaced, and those runners keep being held while the new one waits")
+        elif "cancel-in-progress" not in concurrency:
+            problems.append(
+                f"{name}: concurrency declares a group but no `cancel-in-progress`, so superseded "
+                "runs queue instead of being cancelled")
+
+        for job_name, job in sorted(fanned.items()):
+            timeout = job.get("timeout-minutes")
+            if not isinstance(timeout, (int, float)) or timeout <= 0:
+                problems.append(
+                    f"{name}: job '{job_name}' fans out across operating systems with no positive "
+                    "`timeout-minutes` — a hung leg then holds its runner for the default six hours")
+    return problems
+
+
+def test_a_multi_os_matrix_is_bounded_and_cancellable():
+    problems = unbounded_matrix_workflows(load_workflows())
+    assert not problems, (
+        "these workflows can starve the runner pool (see the note above the rule):\n  "
+        + "\n  ".join(problems))
+
+
+def _matrix_workflow(concurrency: str = "", timeout: str = "timeout-minutes: 30") -> str:
+    return (
+        "name: sample\non:\n  pull_request:\n"
+        + concurrency
+        + "jobs:\n  test:\n    runs-on: ${{ matrix.os }}\n    "
+        + timeout + "\n    strategy:\n      matrix:\n        os: [ubuntu-latest, windows-latest]\n"
+    )
+
+
+def test_the_matrix_rule_catches_a_missing_concurrency_group():
+    assert unbounded_matrix_workflows({"sample.yml": _matrix_workflow()}), (
+        "a fan-out with no concurrency group is exactly how superseded runs piled up")
+
+
+def test_the_matrix_rule_catches_a_group_that_cannot_cancel():
+    workflow = _matrix_workflow("concurrency:\n  group: sample-${{ github.ref }}\n")
+    assert unbounded_matrix_workflows({"sample.yml": workflow}), (
+        "declaring a group without `cancel-in-progress` still queues every superseded run")
+
+
+def test_the_matrix_rule_catches_a_missing_timeout():
+    workflow = _matrix_workflow("concurrency:\n  group: g\n  cancel-in-progress: true\n", timeout="")
+    problems = unbounded_matrix_workflows({"sample.yml": workflow})
+    assert any("timeout-minutes" in p for p in problems), problems
+
+
+def test_the_matrix_rule_leaves_single_os_workflows_alone():
+    """No false positives: a workflow that runs on one platform cannot starve the pool this way."""
+    single = ("name: sample\non:\n  pull_request:\njobs:\n  test:\n    runs-on: ubuntu-latest\n"
+              "    strategy:\n      matrix:\n        python-version: ['3.12', '3.13']\n")
+    assert unbounded_matrix_workflows({"sample.yml": single}) == []
