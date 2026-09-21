@@ -111,3 +111,57 @@ def test_a_search_leaves_no_tracked_file_modified():
     assert not changed, (
         f"running a search rewrote tracked files: {changed} — that is the state #1991 describes "
         "(and the state this test could not see when it compared path sets)")
+
+
+def case_insensitive_shadows(repo: Path = REPO) -> list[tuple[str, str]]:
+    """Ignore rules that match a tracked file *only* because case is ignored.
+
+    `git ls-files -i -c` answers the local filesystem's question, so on Linux (case-sensitive)
+    a bare `STATUS.md` rule looked harmless while macOS and Windows — where matching is
+    case-insensitive — reported `docs/integrations/status.md` as tracked-and-ignored. That is
+    how #1991's defect came back in a new shape and stayed invisible for days: the check ran
+    only on the platform where it cannot fail.
+
+    This walks the rules ourselves, comparing case-insensitively against the case-sensitive
+    result, so the answer no longer depends on the host filesystem. Reproduce the real thing
+    with `git -c core.ignorecase=true ls-files -i -c --exclude-standard`.
+    """
+    import fnmatch
+
+    tracked = subprocess.run(["git", "ls-files", "-z"], cwd=repo, capture_output=True, text=True)
+    assert tracked.returncode == 0, tracked.stderr
+    names = [n for n in tracked.stdout.split("\0") if n]
+
+    findings: list[tuple[str, str]] = []
+    for ignore_file in sorted(repo.rglob(".gitignore")):
+        if ".git" in ignore_file.parts:
+            continue
+        # A nested .gitignore's patterns are relative to that directory.
+        base = ignore_file.parent.relative_to(repo).as_posix()
+        for raw in ignore_file.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or line.startswith("!"):
+                continue
+            pattern = line.rstrip("/")
+            anchored = pattern.startswith("/")
+            pattern = pattern.lstrip("/")
+            for name in names:
+                rel = name[len(base) + 1:] if base not in (".", "") and name.startswith(f"{base}/") else name
+                if base not in (".", "") and not name.startswith(f"{base}/"):
+                    continue
+                # No slash in the pattern (git's rule): it matches the basename at any depth.
+                subject = rel.rsplit("/", 1)[-1] if (not anchored and "/" not in pattern) else rel
+                if fnmatch.fnmatch(subject.lower(), pattern.lower()) and not fnmatch.fnmatch(subject, pattern):
+                    findings.append((line, name))
+    return findings
+
+
+def test_no_ignore_rule_shadows_a_tracked_file_only_through_case():
+    """The platform-independent half of #1991 — a Linux-only suite must still catch this."""
+    findings = case_insensitive_shadows(REPO)
+    assert not findings, (
+        "these ignore rules match a tracked file only because matching is case-insensitive, so "
+        "they hide it on macOS/Windows while Linux sees nothing:\n  "
+        + "\n  ".join(f"{rule!r} shadows {name}" for rule, name in findings)
+        + "\nAnchor the rule to the root (/NAME) so it stops matching nested paths."
+    )

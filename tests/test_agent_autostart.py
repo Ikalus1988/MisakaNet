@@ -27,6 +27,8 @@ from pathlib import Path
 
 import pytest
 
+from posix_shell import find_posix_shell
+
 REPO = Path(__file__).resolve().parent.parent
 INTEGRATION = REPO / "integrations" / "agent-autostart"
 # Synthetic token, derived per run: a literal is indistinguishable from a hardcoded credential
@@ -511,9 +513,9 @@ def test_report_url_carries_no_identifying_paths(tmp_path):
 
 def test_bootstrap_downloads_and_hands_over(tmp_path):
     """The one-liner must work without a clone: fetch the three files, then run them."""
-    bash = shutil.which("bash")
+    bash = find_posix_shell()
     if not bash:
-        pytest.skip("bash unavailable")
+        pytest.skip("no usable POSIX shell in this environment")
     setup_dir = tmp_path / "setup"
     home = make_home(tmp_path)
     env = dict(
@@ -524,7 +526,9 @@ def test_bootstrap_downloads_and_hands_over(tmp_path):
     )
     result = subprocess.run(
         [bash, str(INTEGRATION / "bootstrap.sh"), "--home", str(home), "--only", "claude", "--no-register"],
-        capture_output=True, text=True, env=env, cwd=str(tmp_path),
+        # errors="replace": a child's stderr is not guaranteed to be valid UTF-8, and a
+        # UnicodeDecodeError here reports the harness, not what the script did (#2018).
+        capture_output=True, text=True, encoding="utf-8", errors="replace", env=env, cwd=str(tmp_path),
     )
     assert result.returncode == 0, result.stdout + result.stderr
     for name in ("install_misakanet_agent.py", "checkpoint_reminder.py", "prompt.md"):

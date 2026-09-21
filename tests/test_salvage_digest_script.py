@@ -33,6 +33,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from posix_shell import require_posix_shell
+
 REPO = Path(__file__).resolve().parent.parent
 WORKFLOW = REPO / ".github" / "workflows" / "intake-salvage-digest.yml"
 STEP_NAME = "Generate salvage digest"
@@ -101,7 +103,7 @@ def digest_run(tmp_path):
     }
     env = {**os.environ, **resolved_env, "PATH": f"{bindir}:{os.environ['PATH']}",
            "GH_CALLS": str(calls)}
-    result = subprocess.run(["bash", "-e", str(script)], capture_output=True,
+    result = subprocess.run([require_posix_shell(), "-e", str(script)], capture_output=True,
                             text=True, env=env, cwd=tmp_path)
     result.calls = calls.read_text(encoding="utf-8") if calls.exists() else ""
     result.digest = (tmp_path / "salvage_digest.md")

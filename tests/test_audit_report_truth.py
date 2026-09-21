@@ -28,6 +28,8 @@ import subprocess
 import pytest
 from pathlib import Path
 
+from posix_shell import require_posix_shell
+
 yaml = pytest.importorskip("yaml", reason="PyYAML parses the workflow")
 
 REPO = Path(__file__).resolve().parent.parent
@@ -93,7 +95,7 @@ def run_report(tmp_path, **values) -> str:
         "GH_TOKEN": "",           # PR_NUM is empty for the default run, so no gh call happens
         "PR_NUM": "",
     })
-    proc = subprocess.run(["bash", "-e", str(body)], capture_output=True, text=True, env=env, cwd=tmp_path)
+    proc = subprocess.run([require_posix_shell(), "-e", str(body)], capture_output=True, text=True, env=env, cwd=tmp_path)
     assert proc.returncode in (0, 1), f"unexpected exit {proc.returncode}:\n{proc.stdout}\n{proc.stderr}"
     return summary.read_text(encoding="utf-8")
 
@@ -163,7 +165,7 @@ def test_stripping_the_skip_branch_reproduces_the_old_report(tmp_path):
     summary = tmp_path / "mutated.md"
     env = dict(os.environ)
     env.update({"GITHUB_STEP_SUMMARY": str(summary), "GH_TOKEN": "", "PR_NUM": ""})
-    proc = subprocess.run(["bash", "-e", str(body)], capture_output=True, text=True, env=env, cwd=tmp_path)
+    proc = subprocess.run([require_posix_shell(), "-e", str(body)], capture_output=True, text=True, env=env, cwd=tmp_path)
     assert proc.returncode in (0, 1), f"{proc.stdout}\n{proc.stderr}"
     assert "tests have failures" in summary.read_text(encoding="utf-8"), (
         "without the branch, the old 'a skipped suite is a failed suite' wording must return")

@@ -13,6 +13,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from posix_shell import require_posix_shell
+
 REPO = Path(__file__).resolve().parent.parent
 RUN = REPO / "scripts" / "misaka_run.py"
 
@@ -23,7 +25,7 @@ def _run(command: str, expect_exit: int) -> str:
     The wrapper exits with the *wrapped* command's code — that is what lets it sit in a pipeline —
     so a failing command is a non-zero wrapper, and asserting that is part of the contract.
     """
-    result = subprocess.run([sys.executable, str(RUN), "--", "bash", "-c", command],
+    result = subprocess.run([sys.executable, str(RUN), "--", require_posix_shell(), "-c", command],
                             capture_output=True, text=True, timeout=120, cwd=REPO)
     assert result.returncode == expect_exit, (
         f"the wrapper must propagate the command's exit code: got {result.returncode}, "
