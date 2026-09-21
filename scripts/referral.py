@@ -45,7 +45,7 @@ def show_stats():
     * **此后不会再增加**，因为新的 `referred_by` 永远进不了 git 历史。
 
     这不是这里少了一行代码，而是推荐链从来没有服务端记录：worker 完全不认识 referral。要让
-    "已邀请 N 个节点" 真的成立，得在注册时把推荐码记到服务端（D1），见 issue #1995。
+    "已邀请 N 个节点" 真的成立，得在注册时把推荐码记到服务端（D1），见 issue #1996。
     """
     code = get_referral_code()
     try:
