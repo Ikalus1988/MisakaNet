@@ -148,7 +148,11 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
   `domain` 的**计数**，**只回计数**——不带 query 文本、不带 lesson id，读取口径不变（新增的只是
   汇总，不是逐条细节）。`scripts/search_hit_rate.py` 据此打印两张 Markdown 表，按 domain 的那张
   **按命中率从低到高排**，直接回答"下一步该补哪块语料"。
-- 首次实测（2026-09-21，7 天窗口）：`total 231 / hit 173 / miss 58 / hit_rate 74.9%`。
+- **已上线（2026-09-21）**：worker 部署完成后，`/api/search-signals/stats` 真的返回 `breakdown`，
+  `python3 scripts/search_hit_rate.py --since 7` 直接打出上面两张表——验收物不再是「本地能跑」而是
+  「线上能查」。
+- 首次线上实测（2026-09-21，7 天窗口）：`total 259 / hit 191 / miss 68 / hit_rate 73.8%`，
+  按天最低的一天是 62.2%、最高 84.7%（样本还小，别把它当趋势）。
 - **仍未解决**：
   1. **复用侧的分子没接**——`/api/helpful` 票数与 `misakanet_me_events` 的 E4 信号还没进这张表，
      所以它衡量的是"检到东西"，不是"帮上了忙"；
