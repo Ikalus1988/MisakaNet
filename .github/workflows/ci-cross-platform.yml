@@ -56,12 +56,17 @@ jobs:
         shell: bash
         continue-on-error: true
         run: |
-          set -o pipefail
+          # `shell: bash` runs with `-e` (and `-o pipefail`), so a failing pipeline aborts the step
+          # *before* the lines below can record the code — which is what the first version of this
+          # fix did, measured on its own CI run: the macOS legs went red with "The test step produced
+          # no exit code — it did not run". Right conclusion, wrong reason, and the two real macOS
+          # failures were never named. `set +e` is the entire point of capturing the code.
+          set +e
           pytest tests/ -v --tb=short 2>&1 | tee test_output.txt
           PYTEST_EXIT=${PIPESTATUS[0]}
+          set -e
           echo "pytest_exit=$PYTEST_EXIT" >> "$GITHUB_OUTPUT"
           echo "pytest exit code: $PYTEST_EXIT"
-          exit 0
         env:
           # `tests/` imports `scripts.…`, which only resolves with the repository root on the path.
           PYTHONPATH: ${{ github.workspace }}

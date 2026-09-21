@@ -147,3 +147,18 @@ def test_the_defect_that_shipped_is_caught(tmp_path):
     mutated3 = text.replace("PYTHONPATH: ${{ github.workspace }}", "")
     assert "PYTHONPATH: $" not in mutated3, "mutation did not take"
     assert "PYTHONPATH" in mutated3, "the comment mentioning it stays; only the setting is removable"
+
+
+def test_the_exit_code_can_actually_be_captured():
+    """`shell: bash` runs with `-e`, so the capture lines must be protected from the failure they
+    exist to record.
+
+    Measured on this fix's own first CI run: the macOS legs went red with "The test step produced no
+    exit code — it did not run", because `-e` aborted the step at the failing `pytest | tee`
+    pipeline. Right conclusion, wrong reason, and neither of the two real macOS failures was named.
+    """
+    run = _step("Run Tests")["run"]
+    assert "set +e" in run, "without `set +e` the step aborts before PYTEST_EXIT is read"
+    assert run.index("set +e") < run.index("PYTEST_EXIT="), "the guard must come before the capture"
+    assert "PIPESTATUS[0]" in run, "`tee` swallows the exit code otherwise"
+    assert '"$GITHUB_OUTPUT"' in run, "the code has to reach the verdict step"
