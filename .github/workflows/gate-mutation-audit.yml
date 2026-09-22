@@ -1,0 +1,73 @@
+name: Gate Mutation Audit
+
+# Can the gates still go RED? (issue #2045)
+#
+# On 2026-09-21 this repository found four gates that looked like gates and could never fail: the
+# cross-platform matrix ran zero tests on all 8 legs and printed ✅ (#2006/#2008), a tool-count badge
+# grepped the very file it guarded (#1822), 23 of 26 tests in #1999 passed with the production code
+# reverted, and a test in #2002 asserted an environment property (`PATH=/usr/bin:/bin`) that is true
+# on the CI runner. This workflow is the standing answer to that structural failure mode: for each
+# covered gate it breaks the thing the gate checks — in a temporary copy, never in the repository —
+# and requires the gate to exit non-zero. A gate that stays green is reported as a FAILURE.
+#
+# Why this is NOT on `pull_request`: mutation runs are slow (several gate invocations per gate) and
+# carry no PR-specific signal — a mutation audit answers "is this gate still capable of failing",
+# which changes on the timescale of months, not commits. Running it on every PR would spend minutes
+# of CI to re-answer a question the previous PR already answered, and a slow advisory check is a
+# check that gets skipped. It is therefore a **periodic audit** (weekly) plus a manual trigger, which
+# is what the issue asks for ("变异很慢，它属于周期性审计").
+#
+# Gates covered, how to add one, and who acts on a red result: docs/maintainer/gate-mutation-audit.md
+on:
+  schedule:
+    # Weekly, Monday 06:43 UTC — deliberately offset from provenance-gate.yml's 06:17 sweep so the
+    # two do not queue behind each other.
+    - cron: '43 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutation-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          # The audit copies its fixtures to a temp directory outside the checkout, so no history is
+          # needed — but a full history keeps the run reproducible if a future mutation is aimed at a
+          # path inside the repository (the lesson gate classifies such a path against the base branch).
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        # PyYAML is not optional here: the audit runs `scripts/lesson_gate.py` for real, and without
+        # PyYAML that gate cannot read YAML frontmatter at all — it would fail for the wrong reason
+        # and the audit would report a red baseline instead of a green one.
+        run: python3 -m pip install -q pytest pyyaml
+
+      - name: Test the audit itself
+        # Includes the case the audit exists for: a stub gate that always exits 0 must be reported
+        # as an audit failure. Without this, the audit would be the thing it exists to prevent.
+        run: python3 -m pytest tests/test_gate_mutation_audit.py -q -p no:randomly
+
+      - name: Run the mutation audit
+        # Exit 0 only when every covered gate went red under every mutation that ran. A green gate
+        # (or a mutation that no longer applies) fails this job and names the gate in the log.
+        run: python3 scripts/gate_mutation_audit.py
+
+      - name: Network mutations (report only)
+        # `--online` adds the mutations that need the network — currently "cite the 404 repository
+        # from the 2026-09-16 provenance incident", which offline is `unknown` and therefore
+        # unobservable by design. A network failure, a rate limit or a 5xx also reads as `unknown`,
+        # so a green result here is ambiguous: it is reported, not enforced, exactly like the
+        # provenance gate's own scheduled sweep.
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/gate_mutation_audit.py --online -v

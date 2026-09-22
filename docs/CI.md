@@ -21,6 +21,7 @@
 | `codeql.yml` | CodeQL | PR, push, 定时 | `0 6 * * 0` |
 | `dco-check.yml` | DCO Check | PR, 手动 |  |
 | `fix-dco.yml` | DCO Auto-Fix | 评论 |  |
+| `gate-mutation-audit.yml` | Gate Mutation Audit | 定时, 手动 | `43 6 * * 1` |
 | `lesson-gate.yml` | Lesson Quality Gate | PR |  |
 | `lesson-quality.yml` | Lesson Quality Score | PR |  |
 | `lesson-security.yml` | Lesson Security Scan | PR, push |  |
