@@ -50,7 +50,7 @@
     <h2>2. Without installing anything <span class="badge badge-blue">Read only</span></h2>
     <p>Search the corpus straight from the remote MCP endpoint, or from a clone if you prefer to work offline
        or contribute via PR.</p>
-    <pre><code># remote: no clone, no key, 5 reads/day per IP
+    <pre><code># remote: no clone, no key, no daily read cap (a burst limit guards the index)
 curl -sS https://misakanet.org/mcp -H 'Content-Type: application/json' \
   -H 'Accept: application/json' -H 'MCP-Protocol-Version: 2025-06-18' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
