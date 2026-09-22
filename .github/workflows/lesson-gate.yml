@@ -2,13 +2,17 @@ name: Lesson Quality Gate
 
 # Structural gate (issue #889): blocks PRs whose NEW/CHANGED lessons fail the
 # quality checks (required frontmatter fields, min content length, duplicate
-# titles, allowed domain, tag format). Runs only on lessons/ changes.
+# titles, allowed domain, tag format).
+#
+# It runs on **every** pull request, including ones that touch no lesson, so that it can be a
+# *required* status check (#1920). A `paths:` filter is what made that impossible: a filtered
+# workflow reports nothing for the PRs it skips, and GitHub then leaves those PRs at
+# "Expected — waiting for status to be reported" forever. Measured on 2026-09-21: the gate did not
+# exist at all on a `scripts/`-only PR, which is exactly how it stayed advisory while looking like a
+# gate. The filtering now happens *inside* the job, which still reports a result.
 on:
   pull_request:
-    paths:
-      - 'lessons/**'
-      - 'scripts/lesson_gate.py'
-      - 'tests/test_lesson_gate.py'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -82,12 +86,21 @@ jobs:
           echo "modified-files findings reported above (advisory)."
           cat gate_report_existing.txt >> gate_report.txt 2>/dev/null || true
 
-      # Run whenever this job fires (lessons/** or lesson_gate.py or its
-      # tests changed — workflow path filter guarantees at least one).
+      # Always run: now that the job fires on every PR, this is the only step that proves the gate
+      # itself can still fail. It used to rely on the path filter to guarantee a lesson-related
+      # change; the job no longer has that guarantee, and a gate whose own tests never run is how
+      # this repository keeps finding gates that cannot go red (#1984, #1822).
       - name: Run unit tests for the gate
         run: |
           pip install -q pytest
           python3 -m pytest tests/test_lesson_gate.py -q
+
+      - name: No lesson changes — nothing for this gate to check
+        if: steps.changed.outputs.any_changed != 'true'
+        run: |
+          echo "This PR changes no `lessons/**/*.md` file, so the lesson gate has nothing to verify."
+          echo "The job still reports success on purpose: a required status check must always report,"
+          echo "or GitHub holds the PR at 'Expected — waiting for status to be reported' indefinitely."
 
       - name: Comment gate result on PR
         if: steps.changed.outputs.any_changed == 'true'
