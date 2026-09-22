@@ -185,7 +185,12 @@ def write_lesson(title, domain, tags, content, source=NODE_ID, status="published
         "updated": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
     }
 
-    body = f"---\n {json.dumps(frontmatter, ensure_ascii=False)}\n ---\n\n{content}\n"
+    # The fences must start at column 0. This line used to read ` ---` (one leading space),
+    # which no frontmatter parser accepts — `lesson_gate.py` then reported "missing required
+    # field: title/domain/tags" for fields that were right there, which is the same failure
+    # signature that blocked five lesson PRs on 2026-09-21. `_render_lesson` above always had
+    # it right; this copy had drifted. A test now runs this function and parses its output.
+    body = f"---\n{json.dumps(frontmatter, ensure_ascii=False)}\n---\n\n{content}\n"
 
     if existing_content:
         body = existing_content.rstrip() + f"\n\n---\n\n### 更新 ({now.strftime('%Y-%m-%d')})\n\n{content}\n"
