@@ -97,13 +97,39 @@ def _citation_text(fm: dict) -> str:
     return " ".join(part for part in parts if part)
 
 
+def _cites(citations: str, issue: int) -> bool:
+    """Does this citation text name *this* intake?
+
+    Only the shapes the corpus actually uses:
+
+    * ``#1130`` — ``provenance.issue: "#1130"``, or ``"intake #1472 + #1473"`` on a ``source:`` line;
+    * ``intake-1130`` / ``intake 1130`` / ``intake-issue-1130``;
+    * a full link to this repository's issue — ``github.com/Ikalus1988/MisakaNet/issues/1569``.
+
+    A bare number is deliberately **not** a citation. The first version of this matcher accepted one,
+    and on 2026-09-22 that made three of the four "done but not said" intakes artifacts: ``#1940``
+    matched the digits of the forum thread ``bbs.gongkong.com/d/201302/481940``, ``#2015`` matched the
+    year in ``samsaffron.com/archive/2015/…``, and ``#2011`` matched inside the date ``202011``.
+
+    A detector whose output is three-quarters artifacts is worse than none: this one would have had us
+    close three open intakes and tell their reporters the work was done. Requiring the *shape* costs
+    at most a false negative we do not have (``…/issues/1920`` in another repository is not our intake
+    #1920) and removes the whole class.
+    """
+    num = rf"0*{issue}"
+    return bool(
+        re.search(rf"#\s*{num}(?!\d)", citations)
+        or re.search(rf"\bintake[-_ ](?:issue[-_ ])?{num}(?!\d)", citations, re.I)
+        or re.search(rf"github\.com/Ikalus1988/MisakaNet/issues/{num}(?!\d)", citations, re.I)
+    )
+
+
 def lessons_citing(issue: int, lessons_dir: Path = LESSONS_DIR) -> list[dict]:
     """Every lesson that cites this intake, in path order.
 
     Reads the lesson files rather than `data/lessons.json`: that file is a generated snapshot that
     lags a merge by up to a day, and a receipt must not miss a lesson that was merged an hour ago.
     """
-    pattern = re.compile(rf"#?\s*0*{issue}\b")
     found: list[dict] = []
     for path in sorted(lessons_dir.rglob("*.md")):
         if path.name.upper() == "README.MD" or "TEMPLATE" in path.name.upper():
@@ -117,10 +143,9 @@ def lessons_citing(issue: int, lessons_dir: Path = LESSONS_DIR) -> list[dict]:
             rel = path.relative_to(REPO).as_posix()
         except ValueError:
             rel = path.relative_to(lessons_dir).as_posix()
-        # `source: "intake-1130"` has no `#`; `provenance.issue: "#1130"` does. Accept both, but only
-        # inside a citation field — a bare number anywhere in the body would match half the corpus.
-        cited = bool(pattern.search(citations)) or bool(re.search(rf"intake[- ]0*{issue}\b", citations, re.I))
-        if not cited:
+        # Only inside a citation field (`_citation_text` already restricts it to those), and only in
+        # a shape that names this intake — see `_cites` for why a bare number is not enough.
+        if not _cites(citations, issue):
             continue
         found.append({
             "id": str(fm.get("id") or path.stem),
