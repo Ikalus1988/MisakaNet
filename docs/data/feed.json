@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-22T00:10:47.409226+00:00",
+  "generated_at": "2026-09-22T05:09:08.802680+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
@@ -41,6 +41,30 @@
     },
     {
       "type": "lesson",
+      "title": "Supervisor reports 'daemon start failed' with no detail: the child's own log holds the reason",
+      "url": "lessons/contrib/daemon-start-failed-empty-detail-missing-credential.md",
+      "timestamp": "2026-09-21",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Migrating DSH_HOME with robocopy materializes the profile node_modules junctions, and dsh refuses to boot",
+      "url": "lessons/contrib/dsh-home-robocopy-junction-fallback-breakage.md",
+      "timestamp": "2026-09-21",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "zsh: command not found: python — the interpreter exists, just not under that name",
+      "url": "lessons/contrib/python-command-not-found-only-python3.md",
+      "timestamp": "2026-09-21",
+      "domain": "python",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
       "title": "pkill -f kills the shell that runs it: the pattern matches its own command line",
       "url": "lessons/contrib/pkill-pattern-matches-its-own-shell.md",
       "timestamp": "2026-09-20",
@@ -53,30 +77,6 @@
       "url": "lessons/contrib/ci-fork-pr-run-held-as-action-required.md",
       "timestamp": "2026-09-19",
       "domain": "ci",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A GITHUB_TOKEN push cannot trigger workflows, so a branch sync freezes CI",
-      "url": "lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md",
-      "timestamp": "2026-09-19",
-      "domain": "ci",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Alembic upgrade fails after dependency update",
-      "url": "lessons/contrib/alembic-upgrade-failure.md",
-      "timestamp": "2026-09-15",
-      "domain": "devops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "SSE streaming returns no data through reverse proxy",
-      "url": "lessons/contrib/sse-streaming-failure-via-proxy.md",
-      "timestamp": "2026-09-15",
-      "domain": "devops",
       "source": "lessons"
     },
     {
