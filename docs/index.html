@@ -465,6 +465,11 @@
   .agent-badge.codex { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid #f59e0b40; }
   .agent-badge.openclaw { background: rgba(236,72,153,0.15); color: #ec4899; border: 1px solid #ec489940; }
   .agent-badge.opencode { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid #34d39940; }
+  .agent-badge.codewhale { background: rgba(96,165,250,0.15); color: #60a5fa; border: 1px solid #60a5fa40; }
+  .agent-badge.cursor { background: rgba(139,92,246,0.15); color: #8b5cf6; border: 1px solid #8b5cf640; }
+  .agent-badge.gemini { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid #38bdf840; }
+  .agent-badge.copilot { background: rgba(203,213,225,0.15); color: #cbd5e1; border: 1px solid #cbd5e140; }
+  .agent-badge.kiro { background: rgba(251,146,60,0.15); color: #fb923c; border: 1px solid #fb923c40; }
   .agent-badge.unknown { background: rgba(100,100,100,0.15); color: #94a3b8; border: 1px solid #47556940; }
 
   .timeline-date {
@@ -745,7 +750,7 @@
 
   .agent-option {
     text-align: center;
-    padding: 14px 8px 10px;
+    padding: 12px 8px;
     background: rgba(0, 0, 0, 0.25);
     border: 1px solid rgba(0, 229, 255, 0.1);
     border-radius: 10px;
@@ -761,12 +766,6 @@
     gap: 6px;
   }
 
-  .agent-option .agent-icon {
-    font-size: 20px;
-    line-height: 1;
-    transition: transform 0.25s;
-  }
-  .agent-option:hover .agent-icon { transform: scale(1.25); }
   .agent-option:hover { border-color: var(--cyan); color: var(--text-primary); box-shadow: 0 0 16px rgba(0, 229, 255, 0.06); }
   .agent-option:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
   .agent-option.selected {
@@ -2006,7 +2005,7 @@
 
   <!-- Recent Registrations Timeline -->
   <div id="nodes" class="anchor-target"></div>
-  <div class="section-title">📋 <span data-i18n="recentSection">最近创建的 node</span> <span id="recent-count"></span> <span class="recent-note" data-i18n="recentNodesNote" style="font-size:11px;color:var(--text-dim);font-weight:400;font-family:'JetBrains Mono',monospace;">自声明 · 非身份 · 阅读无需注册</span> <span id="recent-showing" style="font-size:11px;color:var(--text-dim);font-weight:400;font-family:'JetBrains Mono',monospace;"></span></div>
+  <div class="section-title">📋 <span data-i18n="recentSection">最近注册记录</span> <span id="recent-count"></span> <span class="recent-note" data-i18n="recentNodesNote" style="font-size:11px;color:var(--text-dim);font-weight:400;font-family:'JetBrains Mono',monospace;">自声明 · 非身份 · 阅读无需注册</span></div>
   <div class="timeline" id="recent-list">
     <div class="loading-item" data-i18n="loading">加载中...</div>
   </div>
@@ -2020,11 +2019,22 @@
       <div class="register-label" data-i18n="agentTypeLabel">Agent 类型（可选 · 仅统计）</div>
       <div class="register-hint" data-i18n="agentTypeHint">仅用于统计各类工具的使用比例；自声明、不验证身份</div>
       <div class="agent-selector" role="radiogroup" aria-label="Agent type">
-        <div class="agent-option selected" data-agent="hermes" tabindex="0" role="radio" aria-checked="true"><span class="agent-icon">🤖</span>Hermes</div>
-        <div class="agent-option" data-agent="claude" tabindex="0" role="radio" aria-checked="false"><span class="agent-icon">⚡</span>Claude</div>
-        <div class="agent-option" data-agent="codex" tabindex="0" role="radio" aria-checked="false"><span class="agent-icon">💻</span>Codex</div>
-        <div class="agent-option" data-agent="openclaw" tabindex="0" role="radio" aria-checked="false"><span class="agent-icon">🐉</span>OpenClaw</div>
-        <div class="agent-option" data-agent="opencode" tabindex="0" role="radio" aria-checked="false"><span class="agent-icon">🔧</span>OpenCode</div>
+        <div class="agent-option selected" data-agent="hermes" tabindex="0" role="radio" aria-checked="true" data-i18n="agentHermes">Hermes</div>
+        <div class="agent-option" data-agent="claude" tabindex="0" role="radio" aria-checked="false" data-i18n="agentCC">Claude</div>
+        <div class="agent-option" data-agent="codex" tabindex="0" role="radio" aria-checked="false" data-i18n="agentCodex">Codex</div>
+        <div class="agent-option" data-agent="openclaw" tabindex="0" role="radio" aria-checked="false" data-i18n="agentOpenClaw">OpenClaw</div>
+        <div class="agent-option" data-agent="opencode" tabindex="0" role="radio" aria-checked="false" data-i18n="agentOpenCode">OpenCode</div>
+        <div class="agent-option" data-agent="codewhale" tabindex="0" role="radio" aria-checked="false" data-i18n="agentCodewhale">codewhale</div>
+        <div class="agent-option" data-agent="cursor" tabindex="0" role="radio" aria-checked="false" data-i18n="agentCursor">Cursor</div>
+        <div class="agent-option" data-agent="gemini" tabindex="0" role="radio" aria-checked="false" data-i18n="agentGemini">Gemini CLI</div>
+        <div class="agent-option" data-agent="copilot" tabindex="0" role="radio" aria-checked="false" data-i18n="agentCopilot">Copilot CLI</div>
+        <div class="agent-option" data-agent="kiro" tabindex="0" role="radio" aria-checked="false" data-i18n="agentKiro">Kiro</div>
+        <div class="agent-option" data-agent="other" tabindex="0" role="radio" aria-checked="false" data-i18n="agentOther">其他</div>
+      </div>
+      <div id="agent-other-wrap" style="display:none;margin-top:10px;">
+        <input type="text" id="agent-other-input" class="register-input" maxlength="30"
+               data-i18n-placeholder="agentOtherPlaceholder"
+               placeholder="例如：my-client（字母、数字、- 和 _）">
       </div>
 
       <div style="margin-top:16px;">
@@ -2230,8 +2240,42 @@ let TEST_NODES = new Set();
 // Latest counter value (for estimated node number)
 let CURRENT_COUNTER = 10010;
 
-// Agent type selection
+// Agent type selection.
+//
+// Two variables on purpose: `selectedAgentChoice` is the highlighted card, `selectedAgent` is the
+// value the registration flow sends. They differ for "other", where the value is the visitor's own
+// client name — the statistics want the real tool, not the literal word "other".
+let selectedAgentChoice = 'hermes';
 let selectedAgent = 'hermes';
+
+// The worker keeps `agent_type` to 30 characters (MAX_AGENT_TYPE in workers/register-proxy-sw.js);
+// the input's maxlength and the slice below must stay equal to it.
+const AGENT_TEXT_MAX = 30;
+
+// Free text, cleaned the way the worker will clean it. `sanitizeIdentifier` (workers/lib/utils.js)
+// drops everything outside `\w`-plus-CJK-and-dash and truncates at MAX_AGENT_TYPE; the page applies
+// the stricter, documented `[A-Za-z0-9_-]` rule, so what the visitor typed is what the issue records
+// instead of a value the server silently rewrites.
+function cleanAgentText(raw) {
+  return String(raw || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, AGENT_TEXT_MAX);
+}
+
+// Point `selectedAgent` at the highlighted card, and for "other" at its free text — empty free text
+// becomes `unknown`, never a default client: an absent answer must not be counted as Hermes.
+function syncSelectedAgent() {
+  const input = document.getElementById('agent-other-input');
+  const wrap = document.getElementById('agent-other-wrap');
+  const isOther = selectedAgentChoice === 'other';
+  if (wrap) wrap.style.display = isOther ? '' : 'none';
+  if (!isOther) {
+    selectedAgent = selectedAgentChoice;
+    return;
+  }
+  selectedAgent = cleanAgentText(input && input.value) || 'unknown';
+}
+
+const agentOtherInput = document.getElementById('agent-other-input');
+if (agentOtherInput) agentOtherInput.addEventListener('input', syncSelectedAgent);
 
 function selectAgent(el) {
   document.querySelectorAll('.agent-option').forEach(opt => {
@@ -2240,7 +2284,9 @@ function selectAgent(el) {
   });
   el.classList.add('selected');
   el.setAttribute('aria-checked', 'true');
-  selectedAgent = el.dataset.agent;
+  selectedAgentChoice = el.dataset.agent;
+  syncSelectedAgent();
+  if (selectedAgentChoice === 'other' && agentOtherInput) agentOtherInput.focus();
 }
 
 // Keyboard support for agent selector
@@ -2315,6 +2361,28 @@ function updateLessonCountSearch() {
 // Initial load
 switchLang(LANG);
 
+// Client name (as recorded) → the locale key that renders it. The keys are the ones the timeline
+// badges have always used, plus the rest of the list the installers actually wire up:
+// `AGENTS` in packages/misakanet-setup/bin/misakanet-setup.mjs (and its bootstrap counterpart,
+// which adds `dsh` — Python-only, no npm target, see tests/test_installer_parity.py). A name that is
+// not in here is not a client we recognise, and it must render as unknown rather than be guessed:
+// `getAgentLabel` used to fall back to Hermes, which attributed every unreadable registration to the
+// wrong tool. tests/test_registration_copy.py keeps this map and the selector in step with the
+// installers.
+const AGENT_LABEL_KEYS = {
+  hermes: 'agentHermes',
+  claude: 'agentCC',
+  cc: 'agentCC',            // legacy entries: the pre-protocol keyword fallback wrote `cc`
+  codex: 'agentCodex',
+  openclaw: 'agentOpenClaw',
+  opencode: 'agentOpenCode',
+  codewhale: 'agentCodewhale',
+  cursor: 'agentCursor',
+  gemini: 'agentGemini',
+  copilot: 'agentCopilot',
+  kiro: 'agentKiro',
+};
+
 function getAgentBadgeClass(agentType) {
   switch(agentType) {
     case 'hermes': return 'hermes';
@@ -2323,20 +2391,51 @@ function getAgentBadgeClass(agentType) {
     case 'codex': return 'codex';
     case 'openclaw': return 'openclaw';
     case 'opencode': return 'opencode';
+    case 'codewhale': return 'codewhale';
+    case 'cursor': return 'cursor';
+    case 'gemini': return 'gemini';
+    case 'copilot': return 'copilot';
+    case 'kiro': return 'kiro';
     default: return 'unknown';
   }
 }
 
+// The timeline badge for a parsed agent type. The `data-i18n-agent` hook is only set when the value
+// has a locale key, so a free-text "other" registration carries its text and no dangling key.
+function agentBadgeHtml(agentType) {
+  const key = AGENT_LABEL_KEYS[agentType];
+  const hook = key ? ` data-i18n-agent="${key}"` : '';
+  return `<span class="agent-badge ${getAgentBadgeClass(agentType)}"${hook}>${getAgentLabel(agentType)}</span>`;
+}
+
 function getAgentLabel(agentType) {
-  switch(agentType) {
-    case 'hermes': return t('agentHermes');
-    case 'claude': return t('agentCC');
-    case 'cc': return t('agentCC');
-    case 'codex': return t('agentCodex');
-    case 'openclaw': return t('agentOpenClaw');
-    case 'opencode': return t('agentOpenCode');
-    default: return t('agentUnknown');
-  }
+  const key = AGENT_LABEL_KEYS[agentType];
+  return key ? t(key) : t('agentUnknown');
+}
+
+// The agent type a *registration* carries, parsed out of the issue body: the line the builder at the
+// bottom of this file writes and the worker rebuilds — `Agent 类型: **CURSOR**`. `unknown` is the
+// honest answer for both failure modes:
+//   * no protocol line and no legacy keyword → we do not know which tool it was;
+//   * a match that is not one of AGENT_LABEL_KEYS → a real self-declared client we cannot render,
+//     including the free-text branch of the selector.
+// Neither may be reported as a *specific* client; see the map above.
+function parseAgentType(body) {
+  const agentMatch = body.match(/Agent\s*类型[：:]\s*\*\*(\w+)\*\*/i);
+  if (agentMatch) return agentMatch[1].toLowerCase();
+  // Legacy entries predate the protocol line; they were tagged by keyword.
+  const b = body.toLowerCase();
+  if (b.includes('[cc]') || b.includes('cc-haha')) return 'cc';
+  if (b.includes('codex')) return 'codex';
+  return 'unknown';
+}
+
+// What the success panel echoes back for the value the flow is about to send: a known client renders
+// as its label, free text as itself (that is the point of "other"), and the `unknown` sentinel as the
+// translated unknown instead of a bare English word.
+function agentDisplayValue(value) {
+  if (AGENT_LABEL_KEYS[value]) return getAgentLabel(value);
+  return value === 'unknown' ? t('agentUnknown') : value;
 }
 
 function getClassificationLabel(cls) {
@@ -2906,6 +3005,10 @@ async function loadStats() {
   loadContributors();
 }
 
+// The count in this block is *registration-labelled issues*, capped at `per_page=100` — see the
+// query below. It is not a node count: a deleted node never comes off it, and neither does a
+// registration whose node number is only in an issue comment. The section label says registrations
+// for that reason; the note next to the number says the rest (self-declared, not identity).
 async function loadRecentRegistrations() {
   const list = document.getElementById("recent-list");
 
@@ -2916,7 +3019,7 @@ async function loadRecentRegistrations() {
 
     const displayIssues = issues.filter(i => !i.pull_request);
     if (displayIssues.length === 0) {
-      list.innerHTML = '<div class="loading-item">暂无注册记录</div>';
+      list.innerHTML = `<div class="loading-item">${t('recentEmpty')}</div>`;
       return;
     }
 
@@ -2946,7 +3049,7 @@ async function loadRecentRegistrations() {
       });
 
     if (registrations.length === 0) {
-      list.innerHTML = '<div class="loading-item">暂无注册记录</div>';
+      list.innerHTML = `<div class="loading-item">${t('recentEmpty')}</div>`;
       return;
     }
 
@@ -2955,11 +3058,8 @@ async function loadRecentRegistrations() {
 
     document.getElementById("recent-count").textContent = `(${registrations.length})`;
 
-    // Show only latest 6 on homepage; full list via /nodes/ or expand
+    // Show only latest 6 on homepage; the rest sits behind the "view all" link at the bottom.
     const DISPLAY_LIMIT = 6;
-    if (registrations.length > DISPLAY_LIMIT) {
-      document.getElementById("recent-showing").textContent = `· showing latest ${DISPLAY_LIMIT}`;
-    }
     const displayed = registrations.slice(0, DISPLAY_LIMIT);
 
     list.innerHTML = displayed.map((issue, idx) => {
@@ -2969,25 +3069,14 @@ async function loadRecentRegistrations() {
         ? result.nodeNum
         : (CURRENT_COUNTER - idx);
       const date = new Date(issue.created_at).toISOString().slice(0, 10);
-      // Detect agent type from registration body "Agent 类型: **XXX**"
-      let agentType = 'hermes';
       const body = issue.body || '';
-      const agentMatch = body.match(/Agent\s*类型[：:]\s*\*\*(\w+)\*\*/i);
-      if (agentMatch) {
-        agentType = agentMatch[1].toLowerCase();
-      } else {
-        // Fallback: keyword detection for legacy entries
-        const b = body.toLowerCase();
-        if (b.includes('[cc]') || b.includes('cc-haha')) agentType = 'cc';
-        else if (b.includes('codex')) agentType = 'codex';
-      }
+      const agentType = parseAgentType(body);
 
       // Public form registration = non-GitHub user
       const isPublicReg = body.includes('通过公开通道');
       const accountLabel = isPublicReg ? t('publicUser') : `@${issue.user.login}`;
 
-      const agentTypeI18nKey = 'agent' + agentType.charAt(0).toUpperCase() + agentType.slice(1);
-      const agentBadge = `<span class="agent-badge ${getAgentBadgeClass(agentType)}" data-i18n-agent="${agentTypeI18nKey}">${getAgentLabel(agentType)}</span>`;
+      const agentBadge = agentBadgeHtml(agentType);
 
       return `
         <div class="timeline-item">
@@ -3010,21 +3099,18 @@ async function loadRecentRegistrations() {
         const number = result ? result.nodeNum : (CURRENT_COUNTER - realIdx);
         const date = new Date(issue.created_at).toISOString().slice(0, 10);
         const nth = registrations.length - realIdx;
-        let agentType = 'hermes';
         const body = issue.body || '';
-        const agentMatch = body.match(/Agent\s*类型[：:]\s*\*\*(\w+)\*\*/i);
-        if (agentMatch) agentType = agentMatch[1].toLowerCase();
-        else { const b = body.toLowerCase(); if (b.includes('[cc]') || b.includes('cc-haha')) agentType = 'cc'; else if (b.includes('codex')) agentType = 'codex'; }
+        const agentType = parseAgentType(body);
         const isPublicReg = body.includes('通过公开通道');
         const accountLabel = isPublicReg ? t('publicUser') : `@${issue.user.login}`;
-        const agentBadge = `<span class="agent-badge ${getAgentBadgeClass(agentType)}">${getAgentLabel(agentType)}</span>`;
+        const agentBadge = agentBadgeHtml(agentType);
         return `<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-order">#${nth}</div><div class="timeline-name">Misaka${String(number).padStart(5, "0")}</div><div class="timeline-account">${accountLabel}</div>${agentBadge}<div class="timeline-date">${date}</div></div>`;
       }).join("");
 
       list.innerHTML += `
         <div style="text-align:center;padding:12px 0;border-top:1px solid rgba(0,229,255,0.06);">
           <details>
-            <summary style="cursor:pointer;font-size:12px;color:var(--cyan);font-family:'JetBrains Mono',monospace;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">View all ${registrations.length} registered nodes →</summary>
+            <summary style="cursor:pointer;font-size:12px;color:var(--cyan);font-family:'JetBrains Mono',monospace;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">${formatText(t('recentViewAll'), { count: registrations.length })}</summary>
             <div style="margin-top:8px;">${remainingHtml}</div>
           </details>
         </div>`;
@@ -3036,114 +3122,6 @@ async function loadRecentRegistrations() {
     } else {
       list.innerHTML = `<div class="error-item">◈ 连接异常: ${err.message}</div>`;
     }
-  }
-}
-
-async function loadActiveNodes() {
-  const title = document.getElementById("active-title");
-  const list = document.getElementById("active-list");
-
-  try {
-    const regs = await fetchJSON(`${GITHUB_PROXY}/issues?labels=registration&state=all&sort=created&direction=desc&per_page=100`);
-    const regIssues = regs.filter(i => !i.pull_request);
-    if (regIssues.length === 0) return;
-
-    const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
-    const usageIssues = await fetchJSON(`${GITHUB_PROXY}/issues?labels=usage&state=all&sort=created&direction=desc&per_page=100`);
-    const recentUsage = usageIssues.filter(i => !i.pull_request && i.created_at >= seventyTwoHoursAgo);
-
-    const activeNodes = new Set();
-    const nodeLastSeen = {};
-    const nodeUsageCount = {};
-
-    usageIssues.forEach(i => {
-      if (i.pull_request) return;
-      const nodeName = (i.title || '').replace('usage:', '').trim() || i.user.login;
-      activeNodes.add(nodeName);
-      if (!nodeLastSeen[nodeName] || i.created_at > nodeLastSeen[nodeName]) {
-        nodeLastSeen[nodeName] = i.created_at;
-      }
-      nodeUsageCount[nodeName] = (nodeUsageCount[nodeName] || 0) + 1;
-    });
-
-    const nodeMap = [];
-    const seenUsers = new Set();
-
-    const sortedIssues = [...regIssues].sort((a, b) => b.created_at.localeCompare(a.created_at));
-
-    for (const issue of sortedIssues) {
-      let nodeNum = null;
-      let comments = [];
-      try { comments = await fetchJSON(proxyGithubUrl(issue.comments_url)); }
-      catch(e) { continue; }
-      if (!Array.isArray(comments)) continue;
-      for (const c of comments) {
-          const m = c.body?.match(/Misaka(\d+)/);
-          if (m) { nodeNum = parseInt(m[1]); break; }
-        }
-      if (!nodeNum) continue;
-      
-      // Skip test nodes
-      if (TEST_NODES.has(nodeNum)) continue;
-      
-      if (seenUsers.has(issue.user.login)) continue;
-      seenUsers.add(issue.user.login);
-
-      const nodeName = `Misaka${nodeNum}`;
-      const wasActive = activeNodes.has(nodeName) || activeNodes.has(issue.user.login);
-      const lastActive = nodeLastSeen[nodeName] || nodeLastSeen[issue.user.login] || null;
-      const usageCount = nodeUsageCount[nodeName] || nodeUsageCount[issue.user.login] || 0;
-      const isRecentlyActive = lastActive && lastActive >= seventyTwoHoursAgo;
-
-      nodeMap.push({
-        number: nodeNum,
-        user: issue.user.login,
-        created_at: issue.created_at,
-        isActive: !!isRecentlyActive,
-        lastActive: lastActive,
-        usageCount: usageCount
-      });
-    }
-
-    nodeMap.sort((a, b) => {
-      if (a.isActive && !b.isActive) return -1;
-      if (!a.isActive && b.isActive) return 1;
-      if (a.isActive && b.isActive) {
-        return (b.lastActive || '').localeCompare(a.lastActive || '');
-      }
-      return (b.created_at || '').localeCompare(a.created_at || '');
-    });
-
-    const activeCount = nodeMap.filter(n => n.isActive).length;
-
-    title.style.display = "";
-    title.innerHTML = `🌐 ${t('activeSection')} <span>${activeCount}/${nodeMap.length}</span>`;
-
-    list.style.display = "";
-    list.innerHTML = nodeMap.slice(0, 10).map(n => {
-      const statusDotClass = n.isActive ? 'status-dot online' : 'status-dot offline';
-      let metaText = '';
-      if (n.isActive) {
-        metaText = t('activeNow');
-      } else {
-        const timeAgo = n.lastActive ? getTimeAgo(new Date(n.lastActive)) : t('noReport');
-        metaText = `${t('lastSeen')} ${timeAgo}`;
-      }
-      if (n.usageCount > 0) metaText += ` · ${n.usageCount} ${t('usageReports')}`;
-
-      return `
-        <div class="active-item">
-          <span class="${statusDotClass}"></span>
-          <div class="active-info">
-            <div class="active-name">Misaka${n.number}</div>
-            <div class="active-meta">${metaText}</div>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-  } catch (err) {
-    console.log("Active nodes not available:", err.message);
   }
 }
 
@@ -3570,7 +3548,7 @@ async function registerNode() {
           <span style="font-size:22px;">🧠</span>
           <div>
             <div class="reg-node-name" style="font-weight:700;font-size:14px;font-family:'JetBrains Mono',monospace;">${estimatedName}</div>
-            <div style="font-size:12px;color:#94a3b8;">Agent: ${getAgentLabel(selectedAgent)} · 预估 #${estimatedNode}${name ? `<br>注册名称: ${name}` : ""}</div>
+            <div style="font-size:12px;color:#94a3b8;">Agent: ${agentDisplayValue(selectedAgent)} · 预估 #${estimatedNode}${name ? `<br>注册名称: ${name}` : ""}</div>
           </div>
           <span class="reg-status-icon" style="margin-left:auto;font-size:11px;color:#58a6ff;animation:pulse 1.5s infinite;">⏳</span>
           <span class="reg-status-text" style="font-size:11px;color:#58a6ff;">分配中</span>
