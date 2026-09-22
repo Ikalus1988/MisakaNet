@@ -1,6 +1,6 @@
 # Cursor Integration
 
-Give Cursor AI chat access to 411+ indexed production failure lessons, architecture traps, and debugging experience from MisakaNet via the Model Context Protocol (MCP).
+Give Cursor access to 411 indexed failure lessons from MisakaNet via the Model Context Protocol (MCP).
 
 ---
 
