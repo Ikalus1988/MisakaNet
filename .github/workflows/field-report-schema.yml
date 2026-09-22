@@ -1,0 +1,110 @@
+name: Field Report Schema
+
+# Validate `docs/field-reports/**` against the evidence bar `misakanet-setup-report/1` already
+# describes (issue #2042).
+#
+# Why the trigger has no `paths:` filter
+# --------------------------------------
+# It must run on **every** pull request and report a verdict. `lesson-gate.yml` learned this the hard
+# way (#1920): a filtered workflow reports *nothing* for the PRs it skips, and GitHub then leaves
+# those PRs at "Expected — waiting for status to be reported" forever if the check is required. The
+# filtering happens *inside* the job instead, where a skip is still a reported success with a reason.
+#
+# What gates what
+# ---------------
+#   * a report this PR touches → judged strictly; any finding fails the job (this is the #1976 path:
+#     a new submission claiming a `tools/list` count of 1, or the host `misakanet.com`);
+#   * any other report in the corpus → findings are printed as `legacy:` (advisory) and land in the
+#     job summary, but do not fail a PR that did not change them. The corpus has pre-existing prose
+#     reports that predate the schema, and one legacy leak (see the summary); making every PR red for
+#     debt it did not create is how a gate gets switched off. `--strict-all` audits the whole corpus
+#     on demand — that is what `workflow_dispatch` runs, so a red manual run means "the corpus itself
+#     has findings", not "this workflow is broken";
+#   * the one exception is FR1 (a host that is not `misakanet.org`): it gates even in an untouched
+#     file, because it is a false statement about our own infrastructure with no legitimate reading.
+#
+# The test suite runs first and on purpose: it is the evidence that every rule *can* go red
+# (both directions per rule), so a green verdict here is never "the checks do nothing".
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: field-report-schema-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  schema:
+    name: field reports
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          # The base revision has to be a real commit object: without the full history the
+          # checker exits 2 ("cannot run") rather than pretending the diff was empty.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: python3 -m pip install -q pytest
+
+      # Proves the gate can fail before trusting its verdict. `tests/test_field_reports_schema.py`
+      # mutates a compliant report once per rule and asserts each mutation turns the gate red.
+      - name: The gate can go red (both directions, every rule)
+        run: python3 -m pytest tests/test_field_reports_schema.py -q -p no:randomly
+
+      - name: Resolve the revision to diff against
+        id: base
+        run: |
+          set -euo pipefail
+          BASE=""
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            BASE="${{ github.event.before }}"
+          fi
+          # A newly created branch reports an all-zero "before"; it is not a revision.
+          if [ -n "$BASE" ] && [ "${BASE//0/}" = "" ]; then BASE=""; fi
+          if [ -n "$BASE" ] && ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            git fetch -q origin "$BASE" || BASE=""
+          fi
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          echo "diffing against: ${BASE:-none (strict full-corpus audit)}"
+
+      # `pipefail` is load-bearing: `| tee` alone would report tee's exit code, which is always 0 —
+      # the pitfall written up in docs/maintainer/setup-health-ci.md §"三个坑".
+      - name: Validate field reports
+        run: |
+          set -o pipefail
+          BASE="${{ steps.base.outputs.base }}"
+          if [ -n "$BASE" ]; then
+            python3 scripts/check_field_reports.py --base "$BASE" 2>&1 | tee "$RUNNER_TEMP/field-reports.txt"
+          else
+            python3 scripts/check_field_reports.py 2>&1 | tee "$RUNNER_TEMP/field-reports.txt"
+          fi
+
+      - name: Verdict in the job summary
+        if: always()
+        run: |
+          {
+            echo "### Field report schema (\`misakanet-setup-report/1\`)"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/field-reports.txt" 2>/dev/null \
+              || echo "(the checker produced no output — read the step above)"
+            echo '```'
+            echo
+            echo "Gating: reports this run changed, plus FR1 (a non-\`misakanet.org\` host) anywhere."
+            echo "\`legacy:\` lines are advisory findings in files this run did not change."
+            echo "Rules and the reasoning behind them: \`scripts/check_field_reports.py\` docstring."
+          } >> "$GITHUB_STEP_SUMMARY"
