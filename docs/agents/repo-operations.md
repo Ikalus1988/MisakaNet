@@ -189,5 +189,6 @@ gh workflow run apply-d1-schema.yml
 - 使用方规则：`AGENTS.md`（§1–§5）+ `docs/agents/retrieval-and-contribution.md`
 - 维护者流程：`docs/maintainer/intake-triage.md`（**修复后必须给报料者回执**）、
   `docs/maintainer/handoff-*.md`（逐轮交接与待办快照）
+- **接手第一份**：`docs/maintainer/state-of-the-repo.md`（**可公开的仓库现状**：哪些自动化在飞、哪些等 owner 审批、门禁信任边界、积压形状、待 owner 拍板项、更新时机）
 - 安全：`docs/agents/content-injection-defense.md`（威胁模型 + L1–L4 防护层）
 - 架构与接口：`ARCHITECTURE.md`、`API.md`
