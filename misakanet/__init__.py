@@ -1,1 +1,3 @@
-"""MisakaNet 搜索模块。"""
+from .inbox import Inbox, IntakeResult
+
+__all__ = ["Inbox", "IntakeResult"]

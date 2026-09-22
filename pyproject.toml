@@ -1,102 +1,13 @@
 [build-system]
-requires = ["setuptools>=68.0"]
+requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
 [project]
-name = "misakanet"
-version = "2.34.0"
-description = "AI Agent 分布式经验知识共享系统 — 踩坑一次，全网受益"
-readme = "README.md"
-license = "Apache-2.0"
+name = "misakanet-inbox"
+version = "0.1.0"
 requires-python = ">=3.10"
-dependencies = [
-    "misakanet-core>=2.7.0",
-]
-keywords = ["ai-agent", "knowledge-base", "bm25", "rag", "distributed"]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-]
 
-[project.urls]
-Homepage = "https://github.com/Ikalus1988/MisakaNet"
-Repository = "https://github.com/Ikalus1988/MisakaNet"
-
-[tool.setuptools.packages.find]
-include = ["misakanet*"]
-
-[project.scripts]
-# Remote-first CLI, in the package, zero dependencies (2026-09-18, #1821). It replaced
-# `misakanet = "search_knowledge:main"`, whose module is not in the wheel, so the command exited with
-# `ModuleNotFoundError` right after a pip install — the defect this entry point's own docstring names.
-# There is no `misaka-harvest`: that tool needs a repo checkout and is intentionally not shipped.
-misakanet = "misakanet.cli.search:main"
-
-# `misaka-harvest` is deliberately not declared (2026-09-18, #1821).
-#
-# The old declarations pointed at modules outside the wheel — `packages.find` ships `misakanet*` only —
-# so `pip install misakanet` installed two commands that exit with `ModuleNotFoundError`. A declared
-# entry point that cannot run is worse than none: it is a broken instruction the user has no way to
-# diagnose, and the README printed it as a Quick Start.
-#
-# The working entries after an install are the package modules: `python -m misakanet.server` (stdio
-# MCP, gated in CI by .github/workflows/pypi-wheel-smoke.yml) and `python -m misakanet` (help).
-#
-# Remember before re-adding one: an installed CLI cannot search today — `misakanet/search/engine.py`
-# reads `lessons/` relative to a repo checkout and there is no remote path in the package, so the
-# corpus question (ship it, or search misakanet.org/mcp) has to be answered first.
-
-[project.optional-dependencies]
-# NOTE (2026-09-05): chromadb was removed from hub extras — this repo has no
-# chromadb imports (external hub package owns its own deps), and every
-# published chromadb (<=1.5.9, the latest) is affected by 4 unfixed GHSAs
-# (pre-auth code injection x2 critical, tenant/RBAC authz bypass x2 high).
-# Re-add ONLY if the hub code returns to this repo and upstream ships a fix.
-hub = [
-    "aiohttp>=3.9",
-    "websocket-client>=1.6",
-    "networkx>=3.2",
-    "PyYAML>=6.0",
-    "numpy>=1.24",
-    "keyring>=25",
-]
-feishu = ["requests>=2.28"]
-semantic = ["sentence-transformers>=2.2"]
-harvest = [
-    "scrapling>=0.4.9",
-    "scrapling[fetchers]",
-]
-
-[tool.ruff]
-line-length = 100
-target-version = "py310"
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "N", "W", "UP"]
-
-[tool.ruff.format]
-quote-style = "double"
-
-[tool.coverage.run]
-omit = ["scripts/*"]
-
-[tool.mypy]
-python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "misakanet.*"
-disallow_untyped_defs = true
-
-[dependency-groups]
-dev = [
-    "hypothesis>=6.165.10",
-    "pytest>=9.1.1",
-]
