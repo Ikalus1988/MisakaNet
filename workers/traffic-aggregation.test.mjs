@@ -1,3 +1,14 @@
+// The daily traffic roll-up reads the same store the flush writes (2026-09-22, #1890).
+//
+// Traffic counts moved from KV to the counter store, so the aggregator had to move with them —
+// otherwise it would keep reading four keys that nothing writes any more and roll up zeros every
+// night while the endpoint reported real numbers.
+//
+// The legacy `traffic:<class>:<day>` key is still read, deliberately: on the day this shipped (and if
+// it is ever rolled back) those keys hold the only copy of the day's counts, and a roll-up that
+// silently loses a day is worse than one that reads two stores.
+//
+// Run: node --test workers/traffic-aggregation.test.mjs
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { aggregateDailyTraffic } from './register-proxy-sw.js';
@@ -20,61 +31,97 @@ function createFakeKV(seed = {}) {
   };
 }
 
-test('aggregateDailyTraffic sums daily counts into monthly keys', async () => {
-  const today = new Date().toISOString().slice(0, 10);
-  const month = today.slice(0, 7);
-  const kv = createFakeKV({
-    [`traffic:mcp:${today}`]: '100',
-    [`traffic:agent:${today}`]: '50',
-    [`traffic:crawler:${today}`]: '10',
-    [`traffic:pageview:${today}`]: '200',
+/** Minimal D1 stand-in answering exactly the counters SELECT (cf. counters-d1.test.mjs). */
+function createCountersD1(seed = {}) {
+  const rows = new Map(Object.entries(seed)); // `${scope}|${bucket}|${period}` -> count
+  return {
+    rows,
+    prepare(sql) {
+      const stmt = {
+        _bound: [],
+        bind(...args) { stmt._bound = args; return stmt; },
+        async all() {
+          if (/SELECT count FROM counters/i.test(sql)) {
+            const [scope, bucket, period] = stmt._bound;
+            const value = rows.get(`${scope}|${bucket}|${period}`);
+            return value === undefined ? { results: [] } : { results: [{ count: value }] };
+          }
+          return { results: [] };
+        },
+        async run() { return { success: true }; },
+      };
+      return stmt;
+    },
+  };
+}
+
+const TODAY = new Date().toISOString().slice(0, 10);
+const MONTH = TODAY.slice(0, 7);
+
+test('aggregateDailyTraffic sums D1 counters into monthly keys', async () => {
+  const kv = createFakeKV();
+  const d1 = createCountersD1({
+    [`traffic|mcp|${TODAY}`]: 100,
+    [`traffic|agent|${TODAY}`]: 50,
+    [`traffic|crawler|${TODAY}`]: 10,
+    [`traffic|pageview|${TODAY}`]: 200,
   });
 
-  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv });
+  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv, MISAKANET_D1: d1 });
   assert.equal(result.aggregated, 360);
-  assert.equal(result.month, month);
-  assert.equal(result.date, today);
+  assert.equal(result.month, MONTH);
+  assert.equal(result.date, TODAY);
 
-  // Verify monthly keys were created
-  assert.equal(kv._store.get(`traffic-month:mcp:${month}`), '100');
-  assert.equal(kv._store.get(`traffic-month:agent:${month}`), '50');
-  assert.equal(kv._store.get(`traffic-month:crawler:${month}`), '10');
-  assert.equal(kv._store.get(`traffic-month:pageview:${month}`), '200');
+  assert.equal(kv._store.get(`traffic-month:mcp:${MONTH}`), '100');
+  assert.equal(kv._store.get(`traffic-month:agent:${MONTH}`), '50');
+  assert.equal(kv._store.get(`traffic-month:crawler:${MONTH}`), '10');
+  assert.equal(kv._store.get(`traffic-month:pageview:${MONTH}`), '200');
+});
+
+test('the legacy KV traffic keys are still read (transition and rollback)', async () => {
+  // Before 2026-09-22 the flush wrote `traffic:<class>:<day>`. Anything written before the switch
+  // lives only there, and a rollback lands there again.
+  const kv = createFakeKV({ [`traffic:mcp:${TODAY}`]: '100', [`traffic:agent:${TODAY}`]: '50' });
+  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv });
+  assert.equal(result.aggregated, 150);
+  assert.equal(kv._store.get(`traffic-month:mcp:${MONTH}`), '100');
+  assert.equal(kv._store.get(`traffic-month:agent:${MONTH}`), '50');
+});
+
+test('the KV counter fallback shape is read too (D1 unhappy, KV carrying the counts)', async () => {
+  // `bumpCounter` falls back to `counters:<scope>:<bucket>:<period>` when D1 is unavailable, so a day
+  // spent in fallback must still roll up.
+  const kv = createFakeKV({ [`counters:traffic:mcp:${TODAY}`]: '70' });
+  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv });
+  assert.equal(result.aggregated, 70);
+  assert.equal(kv._store.get(`traffic-month:mcp:${MONTH}`), '70');
 });
 
 test('aggregateDailyTraffic is idempotent (skips if marker exists)', async () => {
-  const today = new Date().toISOString().slice(0, 10);
-  const kv = createFakeKV({
-    [`traffic-agg-marker:${today}`]: '1',
-    [`traffic:mcp:${today}`]: '100',
-  });
+  const kv = createFakeKV({ [`traffic-agg-marker:${TODAY}`]: '1' });
+  const d1 = createCountersD1({ [`traffic|mcp|${TODAY}`]: 100 });
 
-  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv });
+  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv, MISAKANET_D1: d1 });
   assert.equal(result.skipped, true);
-  assert.equal(result.date, today);
+  assert.equal(result.date, TODAY);
+  assert.equal(kv._store.get(`traffic-month:mcp:${MONTH}`), undefined,
+    'a skipped run must not write a monthly key');
 });
 
 test('aggregateDailyTraffic accumulates with existing monthly totals', async () => {
-  const today = new Date().toISOString().slice(0, 10);
-  const month = today.slice(0, 7);
-  const kv = createFakeKV({
-    [`traffic:mcp:${today}`]: '50',
-    [`traffic-month:mcp:${month}`]: '200', // existing monthly total
-  });
+  const kv = createFakeKV({ [`traffic-month:mcp:${MONTH}`]: '200' }); // existing monthly total
+  const d1 = createCountersD1({ [`traffic|mcp|${TODAY}`]: 50 });
 
-  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv });
+  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv, MISAKANET_D1: d1 });
   assert.equal(result.aggregated, 50);
-  // Should accumulate: 200 + 50 = 250
-  assert.equal(kv._store.get(`traffic-month:mcp:${month}`), '250');
+  assert.equal(kv._store.get(`traffic-month:mcp:${MONTH}`), '250');
 });
 
 test('aggregateDailyTraffic handles zero daily counts gracefully', async () => {
-  const today = new Date().toISOString().slice(0, 10);
-  const month = today.slice(0, 7);
   const kv = createFakeKV({});
+  const d1 = createCountersD1({});
 
-  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv });
+  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv, MISAKANET_D1: d1 });
   assert.equal(result.aggregated, 0);
-  // No monthly keys should be created for zero counts
-  assert.equal(kv._store.get(`traffic-month:mcp:${month}`), undefined);
+  assert.equal(kv._store.get(`traffic-month:mcp:${MONTH}`), undefined);
 });

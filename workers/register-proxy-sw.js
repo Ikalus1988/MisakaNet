@@ -1740,10 +1740,19 @@ async function readKvHealth(env) {
 const KV_FAMILY_SEEN_CAP = 400;
 const kvFamilySeen = new Map();
 
-/** Known families are bounded on purpose: the bucket becomes a D1 row key. */
+/**
+ * Known families are bounded on purpose: the bucket becomes a D1 row key.
+ *
+ * This list has to match the heads that actually appear in the namespace, because `kvKeyFamily`
+ * takes the text before the first colon — `traffic-month:…` was filed under `other` while the list
+ * said `traffic_month`, and `email-node:` / `email-intake:` / `intake_dedup:` / `keepalive:` were
+ * never listed at all. That is why the health panel could show `other: 2` while five real writers
+ * were invisible in it. Checked against a live namespace dump (685 keys, 2026-09-22).
+ */
 const KV_WRITE_FAMILIES = new Set([
-  "client", "node", "mcp_token", "rate", "gap", "unsolved", "stale", "traffic", "traffic_month",
-  "helpful", "intake", "pair", "demand", "feedback", "email", "cache", "counter", "burst", "proxy",
+  "client", "node", "mcp_token", "rate", "gap", "unsolved", "stale", "traffic", "traffic-month",
+  "helpful", "intake", "intake_dedup", "pair", "demand", "feedback", "email", "email-node",
+  "email-intake", "cache", "counter", "counters", "burst", "proxy", "keepalive", "telemetry",
 ]);
 
 function kvKeyFamily(key) {
@@ -1821,12 +1830,17 @@ async function readKvWriteFamilies(env) {
 // approximate ("worst case a few counts are lost when an isolate is evicted").
 const TRAFFIC_FLUSH_BATCH = 50;
 const TRAFFIC_FLUSH_MS = 300_000;
-const trafficBuffer = new Map();
-let trafficFlushedAt = 0;
+const trafficBuffer = new Map(); // `${class}|${day}` -> pending count
+// Started at module load rather than 0 (2026-09-22, #1890). With 0 the window had "never run", so the
+// *first* request of every isolate flushed immediately: a day of cold isolates meant ~1,300 KV puts
+// to four key names — the largest line in the account's write series — while the family panel showed
+// it as "1,342 distinct keys". Analytics tolerate five minutes of lag; the budget does not tolerate
+// an isolate-local clock pretending a window had expired.
+let trafficFlushedAt = Date.now();
 
 function bufferTraffic(env, ctx, cls) {
-  if (!env || !env.MISAKANET_KV) return;
-  const key = `traffic:${cls}:${new Date().toISOString().slice(0, 10)}`;
+  if (!env || (!d1Binding(env) && !env.MISAKANET_KV)) return;
+  const key = `${cls}|${new Date().toISOString().slice(0, 10)}`;
   const pending = (trafficBuffer.get(key) || 0) + 1;
   trafficBuffer.set(key, pending);
   const due = pending >= TRAFFIC_FLUSH_BATCH || Date.now() - trafficFlushedAt > TRAFFIC_FLUSH_MS;
@@ -1835,14 +1849,17 @@ function bufferTraffic(env, ctx, cls) {
 }
 
 function flushTraffic(env, ctx) {
-  if (!env || !env.MISAKANET_KV || trafficBuffer.size === 0) return;
+  if (!env || (!d1Binding(env) && !env.MISAKANET_KV) || trafficBuffer.size === 0) return;
   trafficFlushedAt = Date.now();
   const batch = [...trafficBuffer.entries()].filter(([, n]) => n > 0);
   trafficBuffer.clear();
   const work = (async () => {
     for (const [key, delta] of batch) {
-      const current = parseInt((await env.MISAKANET_KV.get(key, "text")) || "0");
-      await kvPut(env, key, String(current + delta));
+      const [cls, day] = key.split("|");
+      // The counter store, not KV. `bumpCounter` writes D1 and keeps KV as its fallback, so a
+      // rollback still sees the counters it wrote before and the free tier stops paying for
+      // analytics — which is what it exhausted every day (#1890).
+      await bumpCounter(env, "traffic", cls, day, delta);
     }
   })();
   if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(work);
@@ -4418,6 +4435,36 @@ async function probeKeepaliveEndpoint(endpoint) {
 // ── Traffic Aggregation (Issue #1565) ──
 const TRAFFIC_TYPES = ["mcp", "agent", "crawler", "pageview"];
 
+/** One class's count for one day, from whichever store holds it.
+ *
+ * Three places can hold it, and a reader that checks fewer silently loses a day:
+ *  1. the D1 counter (`scope='traffic'`) — where traffic is written now;
+ *  2. the KV counter key `counters:traffic:<class>:<day>` — where `bumpCounter` falls back when D1
+ *     is unhappy (same shape as every other counter, so `legacyCounterKey` owns it);
+ *  3. the legacy `traffic:<class>:<day>` key — counts written before this switch, still needed on
+ *     the day it ships and if it is ever rolled back.
+ */
+async function readTrafficCount(env, cls, day) {
+  const d1 = d1Binding(env);
+  if (d1) {
+    try {
+      const { results } = await d1.prepare(
+        `SELECT count FROM counters WHERE scope = ?1 AND bucket = ?2 AND period = ?3`,
+      ).bind("traffic", cls, day).all();
+      const row = results && results[0];
+      if (row) return Number(row.count) || 0;
+    } catch (error) {
+      logInternal("traffic counter read failed, falling back to KV", error);
+    }
+  }
+  if (!env.MISAKANET_KV) return 0;
+  const [fallback, legacy] = await Promise.all([
+    env.MISAKANET_KV.get(legacyCounterKey("traffic", cls, day), "text"),
+    env.MISAKANET_KV.get(`traffic:${cls}:${day}`, "text"),
+  ]);
+  return (parseInt(fallback, 10) || 0) + (parseInt(legacy, 10) || 0);
+}
+
 async function aggregateDailyTraffic(env) {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const month = today.slice(0, 7); // YYYY-MM
@@ -4433,15 +4480,13 @@ async function aggregateDailyTraffic(env) {
   let totalAggregated = 0;
 
   for (const type of TRAFFIC_TYPES) {
-    const dailyKey = `traffic:${type}:${today}`;
     const monthlyKey = `traffic-month:${type}:${month}`;
 
-    const [dailyVal, monthlyVal] = await Promise.all([
-      env.MISAKANET_KV.get(dailyKey, "text"),
+    const [dailyCount, monthlyVal] = await Promise.all([
+      readTrafficCount(env, type, today),
       env.MISAKANET_KV.get(monthlyKey, "text"),
     ]);
 
-    const dailyCount = parseInt(dailyVal) || 0;
     const monthlyCount = parseInt(monthlyVal) || 0;
 
     if (dailyCount > 0) {
@@ -4833,16 +4878,15 @@ export default {
 
     // GET /api/analytics/traffic — traffic classification breakdown (Issue #1347)
     if (request.method === "GET" && url.pathname === "/api/analytics/traffic") {
-      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+      if (!d1Binding(env) && !env.MISAKANET_KV) {
+        return jsonResponse({ error: "no counter store configured" }, 503);
+      }
       try {
         const today = new Date().toISOString().slice(0, 10);
-        const classes = ["agent", "mcp", "crawler", "pageview"];
+        // Same reader as the aggregator, so the endpoint and the monthly roll-up cannot disagree
+        // about what "today's traffic" is (D1 first, legacy KV key as the fallback).
         const entries = await Promise.all(
-          classes.map(async cls => {
-            const key = `traffic:${cls}:${today}`;
-            const count = parseInt(await env.MISAKANET_KV.get(key, "text") || "0");
-            return [cls, count];
-          })
+          TRAFFIC_TYPES.map(async cls => [cls, await readTrafficCount(env, cls, today)])
         );
         return jsonResponse({
           date: today,
