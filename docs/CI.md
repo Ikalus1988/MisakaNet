@@ -17,6 +17,7 @@
 |---|---|---|---|
 | `auto-merge-docs.yml` | Auto-Merge Docs PRs | PR |  |
 | `auto-merge-lessons.yml` | Auto-Merge Lessons（`auto-merge-lesson` opt-in 标签）| PR, check_suite |  |
+| `bounty-claim-guard.yml` | Bounty Claim Guard | PR（opened/edited）|  |
 | `ci-cross-platform.yml` | Cross-Platform Tests | PR, 手动 |  |
 | `codeql.yml` | CodeQL | PR, push, 定时 | `0 6 * * 0` |
 | `dco-check.yml` | DCO Check | PR, 手动 |  |
