@@ -18,11 +18,13 @@
   required reviewer is the owner**, and 6 run on the owner's PAT (repo-level secret `SHELDON_PAT`).
   The concrete failure mode: a publish run can wait for a human for a day with **nothing notifying
   anyone** (measured: one run waiting since 2026-09-21T12:13:42Z).
-- `main` requires exactly **two** status checks (`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`);
-  the `audit` gate that actually runs the full suite is **not** required — it is only repaired
-  every two hours by `pr-audit-watch.yml`.
-- Backlog: **72 open issues / 14 open PRs**; **4 of those open issues have their work already merged
-  on `main`** (`scripts/done_but_open.py`) — "done but never said".
+- `main` requires **three** status checks (`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate`)
+  with **no bypass actors** — and GitHub enforces that rule on *direct pushes* as well as merges, so
+  every workflow that commits back to `main` is now refused (#2073). The `audit` gate that actually runs
+  the full suite is still **not** required — it is only repaired every two hours by `pr-audit-watch.yml`.
+- Backlog: **72 open issues / 14 open PRs**; **1** of those open issues had its work already merged on
+  `main` (`scripts/done_but_open.py`) — "done but never said". That number read **4** until 2026-09-23,
+  when three of the four turned out to be the detector matching digits inside other people's URLs.
 - Bus factor is one: 2 collaborators, **1 admin**, 1 environment reviewer, 75 of the 100 most recently
   merged PRs authored by the owner.
 - This document is a snapshot. Re-measure with §6, do not trust a stale number.
@@ -115,7 +117,7 @@ PR / issue 事件上自己动的：`auto-merge-docs.yml`（`pull_request_target`
 
 ## 2. 门禁在哪里，哪些值得信任
 
-### 2.1 `main` 上现在**只有两条**必需检查（原文）
+### 2.1 `main` 上现在有**三条**必需检查（2026-09-23 读取；`gate` 于 09-22 加入）
 
 ```
 $ curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -128,7 +130,8 @@ $ curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \
       "do_not_enforce_on_create": false,
       "required_status_checks": [
         { "context": "DCO / Signed-off-by" },
-        { "context": "test (ubuntu-latest, 3.11)" }
+        { "context": "test (ubuntu-latest, 3.11)" },
+        { "context": "gate" }
       ]
     },
     "ruleset_source_type": "Repository",
@@ -138,11 +141,17 @@ $ curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \
 ]
 ```
 
-- 这条规则来自仓库 ruleset **`23826057`「main: the two deterministic gates」**（`active`，作用域
-  `~DEFAULT_BRANCH`，只有 `required_status_checks` 这一条规则）。
-- 两个 context 的来源可以核对：`DCO / Signed-off-by` 由 `dco-check.yml` 用 checks API 上报；
-  `test (ubuntu-latest, 3.11)` 是 `ci-cross-platform.yml` 里的 `test` job。那个矩阵是
-  3 OS × 3 Python 减 1 个排除项 = **8 条腿**，而必需的只有其中 1 条。
+- 这条规则来自仓库 ruleset **`23826057`「main: the deterministic gates」**（`active`，作用域
+  `~DEFAULT_BRANCH`，只有 `required_status_checks` 这一条规则；`bypass_actors: []`）。
+- 三个 context 的来源可以核对：`DCO / Signed-off-by` 由 `dco-check.yml` 用 checks API 上报；
+  `test (ubuntu-latest, 3.11)` 是 `ci-cross-platform.yml` 里的 `test` job（那个矩阵是
+  3 OS × 3 Python 减 1 个排除项 = **8 条腿**，而必需的只有其中 1 条）；`gate` 由 lesson-gate/审计链上报。
+- ⚠️ **`bypass_actors: []` 的副作用（2026-09-23 实测，#2073）**：GitHub 对 `required_status_checks`
+  规则**在直接 push 时也强制**，所以任何"跑完把结果提交回 main"的 workflow 都会被拒：
+  `remote: - 3 of 3 required status checks are expected.` → `push declined due to repository rule violations`。
+  第一次撞上是 npm 发布 2.34.0 的 record 步骤（包发成功、记账被拒，留下三行过期版本号）；每日的
+  `sync-node-counter` / `update-lessons` / `update-badges` 是下一批。**"run 是绿的"不再等于"它写进去了"**——
+  判据要看受管表面最后一次真实提交的时间。
 - 分支保护的其余读法（同一个仓库、同一时刻）：`enforce_admins: true`；响应里**没有**
   `required_pull_request_reviews`（不强制 review）；`allow_force_pushes.enabled: true`——也就是说
   API 当前并不阻止一次强推 `main`。
@@ -219,9 +228,13 @@ $ curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \
 - 标签分布（前几）：`ready` 39 · `needs-ac` 25 · `intake` 21 · `needs-human-review` 18 ·
   `priority:medium` 21 · `bounty` 10。**"标记为 ready" 多于 "有验收标准"**——`needs-ac` 的 25 条
   就是"还没写清怎么算完成"。
-- **4 条 open issue 的工作已经在 `main` 上、issue 还开着**（就是"已完成但没说"）：
-  **#1555（已开 14 天）· #1940 · #2015 · #2011**。测法：`python3 scripts/done_but_open.py`。
-  对报料者来说，"没人理"和"已经做完但没说"是分不出来的——后者是我们这边的失误。
+- **1 条 open issue 的工作已经在 `main` 上**（就是"已完成但没说"）：**#1555**。测法：
+  `python3 scripts/done_but_open.py`。对报料者来说，"没人理"和"已经做完但没说"是分不出来的——后者是我们这边的失误。
+  **这段原本写的是 4 条（#1555 / #1940 / #2015 / #2011），2026-09-23 更正为 1 条**：检测器当时只在引用字段里
+  做**裸数字匹配**，于是 `#1940` 命中 `bbs.gongkong.com/d/201302/48**1940**`（别人的论坛帖号）、`#2015` 命中
+  `samsaffron.com/archive/**2015**/03/31/…`（年份）、`#2011` 命中日期 `202011` 里的一段。它自己的误报比漏报更危险——
+  按它的输出去关单，会给三个报料者发"已经做完了"的回执，而工作根本没做。已修（引用必须是
+  `#NNN` / `intake-NNN` / 本仓 issue 链接三种形状之一，两侧加数字边界），并留了双向测试。
 - **`done_but_open.py` 在 `main` 上，但没有任何 workflow 调用它**（`grep -l done_but_open
   .github/workflows/*.yml` 为空）。它目前是一次性动作，不是机制：下次要靠某个人记得跑。
 - **14 个 open PR 里 12 个来自外部贡献者**，5 个已经超过 48 小时，最老的是 **#1544（14 天，且是
@@ -374,3 +387,36 @@ issue（#2040–#2046）并**全部落地**；main 的必需检查从 **0 条**�
 
 **队列现状**：开放 PR 约 10（多为外部悬赏投稿）；≤1 小时的行动项约 26 条；课程类必须**攒批**后
 **一次**重生成（`lessons/**` 共享生成物，一课一合会让每个 PR 都触发一次重生成）。
+
+---
+
+## 附：2026-09-23 会话交接（下一次先读这里）
+
+**本轮落地**：#2069（`done_but_open` 的引用判据：裸数字 → 必须有形状）· #2065（注册页文案与 i18n）·
+#2064（row-id 门禁不再扫文件系统）· #2072（补记 npm 2.34.0 的三行版本号）。
+**在飞**：#2070（首页"注册记录"标签 + 客户端列表从安装器派生 + 未知类型不再显示成 Hermes）·
+#2071（traffic 写入从 KV 搬到 D1 计数器，冷 isolate 不再首次请求就 flush）。
+**新 issue**：#2066（纯模板 bounty PR 的机械判据）· #2073（ruleset 与回写 main 的冲突）·
+#2074（KV 面板分不清"操作数/不同键"，含 10 分钟判定实验）· #2075（仍按不同键无界的家族）。
+
+**本轮更正了本文自己的两处错**（都已在正文改掉，留痕在此）：
+1. §2.1 写的"只有两条必需检查"是快照过时（`gate` 已加入，现在是三条，且 `bypass_actors: []`）；
+2. §3.1 写的"4 条 open issue 的工作已经在 main 上"是**检测器误报**，真实是 **1 条**（#1555）——
+   另外三条是裸数字匹配到了别人 URL 里的号码和年份。**这条值得记住：一个把误报当事实写进现状文档的
+   工具，比没有工具更危险**；修完之后它才重新可信。
+
+**KV（#1890）诊断被推翻**：面板里的 `traffic: 1,342` 是 **(isolate × key) 写入尝试**，不是不同键；
+一次真实命名空间快照（685 键）里 `traffic:` 只有 **64 个**（= 4 类 × 16 天）。真正花掉额度的是
+**每个冷 isolate 的第一次请求就 flush**（`trafficFlushedAt` 从 0 开始），约 1,300 次 PUT/天打在 4 个键名上。
+#2071 把它改走 D1 计数器后，预期降到 0。**要不要付 $5/月，先看 #2074 的判定实验，不要先付。**
+
+**新发现的门禁反噬**：`required_status_checks` 规则**对直接 push 也生效**，而 `bypass_actors: []` →
+所有"跑完写回 main"的 workflow 都被拒。第一个撞上的是 npm 发布的记账步骤（**包发布成功、记账失败**，
+run 于是显示红——"红"与"没发出去"在这里不是一回事）。受影响的还有每日的计数镜像、课程索引与徽章。
+判据：**看受管表面最后一次真实提交的时间，不要看 run 的颜色**（#2073）。
+
+**仍需 owner**：批准 #2071 的 worker 部署（`release` 环境）· 决定 #2073 走"自动化 bypass"还是"改成开 PR" ·
+#2074 的判定实验窗口（UTC 00:00 之后）· 以及 §4 那张仍在等待的清单。
+
+**未修的脆弱点（本轮新增）**：`done_but_open.py` 仍然**没有任何 workflow 调用它**（§3.1 记着这件事），
+所以"已完成但没说"下次还是靠人记得跑；`docs/` 仍不在注入扫描范围内。
