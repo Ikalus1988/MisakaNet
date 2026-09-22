@@ -14,7 +14,9 @@ Guards the packaging contract that the dsh.so / MCP-registry verification and
   disconnected row with no tools (issue #1734);
 * the patch row and index.js's ``DEFAULT_MCP_CONFIG`` agree, so a profile gets
   the same declaration whether or not the row's config is applied;
-* the row id is unique across the repo (no double-insert drift);
+* the row id is unique across the repo's **tracked** files (no double-insert drift) — a filesystem
+  walk reads nested copies too (git worktrees, a pnpm store, a test DSH home with
+  ``node_modules/misakanet/``) and goes red for reasons that are not about this contract;
 * **the patch never names a protected ``@deepseek-ai/*`` component** — DSH STORE
   hard-blocks that as ``SUBMISSION_PATCH_PROTECTED`` and rates the listing
   ``route: blocked``. Our own test asserted the opposite until 2026-09-12, which
@@ -22,6 +24,7 @@ Guards the packaging contract that the dsh.so / MCP-registry verification and
 """
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -99,9 +102,28 @@ def test_patch_row_matches_the_entry_defaults():
     )
 
 
-def test_row_id_unique_across_repo():
-    id_hits = []
-    for p in (REPO / "cordis.patch.yml").parent.rglob("*.patch.yml"):
+def _tracked_files(root: Path, pattern: str) -> list[Path]:
+    """Git-tracked files under `root` matching `pattern` (any depth).
+
+    ``rglob`` was the wrong tool for "across the repo": a checkout nests inside itself all the
+    time — git worktrees under ``.tools/``, a pnpm store, a test DSH home holding
+    ``node_modules/misakanet/`` — and a filesystem walk reads *those* copies as if they were the
+    repository. On 2026-09-22 that turned this gate red on a clean tree (five worktrees in the
+    ignored ``.tools/`` each carried a copy), which is a gate failing for a reason that has nothing
+    to do with the contract it guards.
+    """
+    out = subprocess.run(
+        ["git", "-C", str(root), "ls-files", "-z", "--", pattern],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    return [root / name for name in out.split("\0") if name]
+
+
+def _row_id_hits(root: Path, paths: list[Path]) -> list[str]:
+    hits = []
+    for p in paths:
         try:
             doc = yaml.safe_load(p.read_text(encoding="utf-8"))
         except Exception:
@@ -109,8 +131,37 @@ def test_row_id_unique_across_repo():
         for op in doc or []:
             for row in op.get("insert", []):
                 if row.get("id") == "misakanet-mcp":
-                    id_hits.append(str(p.relative_to(REPO)))
-    assert id_hits == ["cordis.patch.yml"], id_hits
+                    hits.append(str(p.relative_to(root)))
+    return hits
+
+
+def test_row_id_unique_across_repo():
+    assert _row_id_hits(REPO, _tracked_files(REPO, "*.patch.yml")) == ["cordis.patch.yml"]
+
+
+def test_the_row_id_scan_ignores_nested_untracked_checkouts(tmp_path):
+    """Guard-the-guard: a nested untracked copy must not be able to make the gate red.
+
+    Reproduces the shape that broke it: a worktree-like directory inside the repo carrying its own
+    ``cordis.patch.yml`` with the same row id, left untracked.
+    """
+    patch = (
+        "- insert:\n"
+        "    - id: misakanet-mcp\n"
+        "      name: 'misakanet'\n"
+        "      config:\n"
+        "        transport: streamable-http\n"
+    )
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    (tmp_path / "cordis.patch.yml").write_text(patch, encoding="utf-8")
+    nested = tmp_path / ".tools" / "pr-triage" / "pr-1"
+    nested.mkdir(parents=True)
+    (nested / "cordis.patch.yml").write_text(patch, encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "cordis.patch.yml"], check=True)
+
+    tracked = _tracked_files(tmp_path, "*.patch.yml")
+    assert tracked == [tmp_path / "cordis.patch.yml"], tracked
+    assert _row_id_hits(tmp_path, tracked) == ["cordis.patch.yml"]
 
 
 # The exact rules from AI-Scarlett/DSH-Store scripts/check-plugin-submission.mjs
