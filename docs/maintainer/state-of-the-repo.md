@@ -340,3 +340,37 @@ python3 scripts/injection_scan.py --dir docs | tail -3
 `automation_output_audit.py` 本次输出（窗口 30 天）：`pr-genius-check.yml` 1,426 runs / 130 产出 ·
 `auto-merge-lessons.yml` 2,148 runs / 4 产出 · `intake-salvage-digest.yml` 35 / 1 ·
 `intake-bot-demo.yml` 22,058 / 14 · `arch-review.yml` 尚未跑过（宽限 45 天，最长排期是每月）。
+
+
+---
+
+## 附：2026-09-22 会话交接（下一次先读这里）
+
+**本轮完成**：8 个 PR 合并（#2032 #2039 #2047 #2049 #2051 #2052 #2053 #2054）；战略审视的 7 条建议全部拆成
+issue（#2040–#2046）并**全部落地**；main 的必需检查从 **0 条**变为 **3 条**（`DCO / Signed-off-by`、
+`test (ubuntu-latest, 3.11)`、`gate`），ruleset `23826057`，**无人可绕过（包括 owner）**。
+
+**新增的机制（用之前先读它们自己的文档）**
+- `scripts/done_but_open.py` —— 找出"工作已在 main 上、issue 仍开着"的 intake。
+- `scripts/check_field_reports.py` —— field report 的 8 条结构规则（FR1/FR2 全语料，其余只门禁改动文件）。
+- `scripts/bounty_claim.py` —— 悬赏认领四个判定；`ok` **绝不评论**（`__post_init__` 不变量）。
+- `scripts/gate_mutation_audit.py` —— 每周变异抽查；**门禁在变异下仍绿 = 审计失败**。
+- 里程碑 `v2.36` / `v2.37` / `later`（无 due date，绑定 release-please 的既有节律）。
+
+**未决（需要 owner）**：`#1886`（Cloudflare token，已挂起）、`#2020`（release PR，`mergeable_state: blocked`）、
+§4 的 12 项决定、`#1544`（赏金归属）、`#2056`（提问→反馈的 MCP 收件箱：是否做成 keyed inbox）、
+`#2057`（注册页文案与节点计数的定位）。
+
+**已知脆弱点（未修）**
+- `docs/` **不在**注入扫描范围内（CI 只扫 `lessons/`），main 上有 4 处 high。
+- **每个新 workflow 必须同时加它自己的 `docs/CI.md` 行，且只加自己的**（本轮我踩过两次：带了别的工作流的行；
+  修正提交的分支因 422 没动而我的脚本仍打印"corrected"——两次都是"报告了没发生的事"）。
+- `sync_lesson_count.py --check` 与 `injection_scan.py` 尚未纳入变异抽查（#2045 文档里列为下一步）。
+- `install_misakanet_agent.py` 的 `--home` 默认值仍在解析参数时调 `Path.home()`（同一隐患，无测试覆盖）。
+
+**收尾纪律（本轮教训，值得写进 SOP）**：我三次中止或回滚了自己的改动，原因都是**证据不足**而不是难度——
+一个只改默认文本、会被 i18n 覆盖的文案编辑；一个声称成功但分支没动的推送；一个括号不匹配什么都没推的脚本。
+**"看起来改了"与"确实改了"之间的差距，就是本会话一直在拆的那个病。**
+
+**队列现状**：开放 PR 约 10（多为外部悬赏投稿）；≤1 小时的行动项约 26 条；课程类必须**攒批**后
+**一次**重生成（`lessons/**` 共享生成物，一课一合会让每个 PR 都触发一次重生成）。
