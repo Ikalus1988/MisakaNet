@@ -324,8 +324,8 @@ curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \
   "https://api.github.com/search/issues?q=repo:Ikalus1988/MisakaNet+is:pr+is:merged&sort=updated&order=desc&per_page=100" \
   | python3 -c 'import json,sys,collections;print(collections.Counter(i["user"]["login"] for i in json.load(sys.stdin)["items"]).most_common(6))'
 
-# §2.3 自动化产出核对（每周一那个 job 用的是同一个脚本）
-GITHUB_TOKEN="$GITHUB_TOKEN" python3 scripts/automation_output_audit.py
+# §2.3 自动化产出核对（每周一那个 job 用的是同一个脚本；读本节开头 export 的 GITHUB_TOKEN）
+python3 scripts/automation_output_audit.py
 
 # §2.4 注入扫描的实际覆盖面（CI 只跑 `--dir lessons`；`--dir docs` 会给出 high，且没有门禁因此变红）
 grep -rn 'injection_scan' .github/workflows/
