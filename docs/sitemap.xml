@@ -125,6 +125,7 @@
   <url><loc>https://misakanet.org/lessons/css-z-index-stacking-context-modal/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cubic-ai-vs-pr-genius/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/curl-request-troubleshoot/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/supervisor-reports-daemon-start-failed-with-no-detail-the-childs-own-log-holds-t/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/data-capping-equals-forging-data/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/data-pipeline-lessons-json-canonical-generator/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/data-quality-three-layer-fix-pattern/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -134,6 +135,7 @@
   <url><loc>https://misakanet.org/lessons/disk-space-cleanup/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/docker-multi-stage-build-oom-killed-with-exit-code-137-on-github-actions/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/docker-compose-basics/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/migrating-dsh-home-with-robocopy-materializes-the-profile-node-modules-junctions/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-plugin-install-github-codeload-timeout/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-plugin-installation-troubleshooting/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/dsh-plugin-l5-web-smoke-cordis-duplicate-entry/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -336,6 +338,7 @@
   <url><loc>https://misakanet.org/lessons/prompt-injection-what-s-the-worst-that-can-happen/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pronoun-misidentified-as-npc-in-roleplay-extraction/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/instalacao-pip-timeout-proxy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/zsh-command-not-found-python-the-interpreter-exists-just-not-under-that-name/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/python-gbk-encoding-error/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/python-pycache-stale/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/python-sandbox-path-isolation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -378,6 +381,7 @@
   <url><loc>https://misakanet.org/lessons/session-lesson-4-playwright-forum-selectors/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/shared-json-needs-atomic-write/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/shell-script-debugging/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/silent-data-loss-in-google-cloud-bigquery-schema-mismatch-and-firestore-overwrit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/slugify-path-traversal-deep-coverage/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/slugify-windows-path-sanitation/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/squash-rebase-force-push-lease/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

@@ -56,7 +56,7 @@
 
 ### 这是什么？
 
-MisakaNet 是面向 AI 编码 Agent 的失败经验层。当你的 Agent 遇到错误 —— DCO 失败、pip 超时、GitHub 401、MCP 配置问题 —— MisakaNet 搜索 407 条索引化的失败修复经验并返回修复路径。无 prompt 泄漏，无原始日志存储。
+MisakaNet 是面向 AI 编码 Agent 的失败经验层。当你的 Agent 遇到错误 —— DCO 失败、pip 超时、GitHub 401、MCP 配置问题 —— MisakaNet 搜索 411 条索引化的失败修复经验并返回修复路径。无 prompt 泄漏，无原始日志存储。
 
 ### 什么时候使用？
 
@@ -291,8 +291,8 @@ python3 search_knowledge.py "database locked"
 
 | 指标 | 数值 |
 |------|------|
-| 📚 Lessons | 407 (canonical, 去重后) |
-| 🌐 Nodes | 572 |
+| 📚 Lessons | 411 (canonical, 去重后) |
+| 🌐 Nodes | 1047 |
 | 🎤 Network Voices | 5 条 |
 | 📡 Feed Items | 11 条 |
 | 🔍 领域覆盖 | RAG, DevOps, Feishu, Fanuc, Network, Claude, MCP |
