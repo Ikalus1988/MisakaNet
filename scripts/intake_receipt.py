@@ -75,6 +75,28 @@ def _flatten(value) -> str:
     return str(value)
 
 
+
+def _citation_text(fm: dict) -> str:
+    """Everything in a lesson's frontmatter that can name an intake, as one string.
+
+    The dotted names need walking: `fm.get("provenance.issue")` is a literal key lookup and always
+    returns None, so a lesson that cites its intake *only* through `provenance.issue` (no `source:`
+    line) was invisible to this resolver. Caught on 2026-09-21 by `tests/test_done_but_open.py`, which
+    wanted exactly that shape — the case harness had missed it because every lesson in it also
+    carried a `source:` line.
+    """
+    parts: list[str] = []
+    for key in _CITE_FIELDS:
+        if "." in key:
+            head, tail = key.split(".", 1)
+            node = fm.get(head)
+            if isinstance(node, dict):
+                parts.append(_flatten(node.get(tail)))
+        else:
+            parts.append(_flatten(fm.get(key)))
+    return " ".join(part for part in parts if part)
+
+
 def lessons_citing(issue: int, lessons_dir: Path = LESSONS_DIR) -> list[dict]:
     """Every lesson that cites this intake, in path order.
 
@@ -88,7 +110,7 @@ def lessons_citing(issue: int, lessons_dir: Path = LESSONS_DIR) -> list[dict]:
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
         fm = _frontmatter(text)
-        citations = " ".join(_flatten(fm.get(k)) for k in _CITE_FIELDS)
+        citations = _citation_text(fm)
         # Repo-relative for real lessons; a caller may point this at another tree (the tests do),
         # so fall back to that tree instead of raising from deep inside a resolver.
         try:
