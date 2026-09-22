@@ -174,3 +174,175 @@ def test_the_rule_returns_what_the_gate_needs_for_each_path(tmp_path):
         "the docs-only rule misclassifies paths:\n" + (result.stderr or result.stdout)
     )
     assert "as expected" in result.stdout
+
+# ── the two gaps that share this file: what the merge does downstream, and what a refusal says ───
+#
+# Both were measured on 2026-09-21, and they fail in opposite directions: the merge was invisible to
+# the rest of the repository, and the refusal was invisible to the person who opted in.
+#
+# Each check is a function over the workflow *text*, so the mutation cases below feed a mutated copy
+# through the same code the repository is judged by — asserting "the mutation took" and then asserting
+# something trivially true is not a guard, it is decoration.
+
+
+def _steps_of(text: str) -> list[dict]:
+    return yaml.safe_load(text)["jobs"]["auto-merge"]["steps"]
+
+
+def _step_named(text: str, name: str) -> dict:
+    for step in _steps_of(text):
+        if step.get("name") == name:
+            return step
+    raise AssertionError(f"no step named {name!r} — the steps are {[s.get('name') for s in _steps_of(text)]}")
+
+
+def _executable(step: dict) -> str:
+    """A step's code, comments stripped.
+
+    The comments in this workflow name the constructs the rules forbid (that is what they are for), so
+    a check that reads the raw text is satisfied by the explanation of the bug it is looking for.
+    """
+    text = (step.get("run") or "") + "\n" + (step.get("with", {}).get("script") or "")
+    return "\n".join(line for line in text.splitlines() if not line.strip().startswith("#"))
+
+
+def merge_token_problems(text: str) -> list[str]:
+    """`GITHUB_TOKEN` on the merge, or a token widened to the `workflow` scope."""
+    problems = []
+    step = _step_named(text, "Enable auto-merge")
+    token = (step.get("env") or {}).get("GH_TOKEN", "")
+    if "SHELDON_PAT" not in token:
+        problems.append(f"the merge does not use the PAT (GH_TOKEN={token!r})")
+    if "GITHUB_TOKEN" in token:
+        problems.append(
+            "a `GITHUB_TOKEN` merge produces a push that starts no workflows, so the post-merge chain "
+            "(Release Please, Leaderboard Watch, the count/badge mirrors, docs deploy) never runs")
+    if "workflow" in json.dumps(step.get("env") or {}):
+        problems.append(
+            "the PAT must not need the `workflow` scope: this gate merges docs only, and that scope "
+            "would let an auto-merged PR change CI itself")
+    return problems
+
+
+def refusal_report_problems(text: str) -> list[str]:
+    """The refusal path must post (and update) a comment that names the reason and the way back in."""
+    problems = []
+    reporting = [s for s in _steps_of(text)
+                 if (s.get("if") or "").strip() == "steps.check.outputs.docs-only != 'true'"]
+    if not reporting:
+        return ["no step runs when docs-only is false: the gate can refuse a PR carrying the "
+                "maintainer's opt-in label and leave no trace anywhere a human looks"]
+    code = _executable(reporting[0])
+    if "createComment" not in code or "updateComment" not in code:
+        problems.append(
+            "the comment must be upserted (create + update): the gate wakes on labeled/unlabeled/"
+            "edited/synchronize, so one PR can be evaluated many times")
+    if "OFFENDERS" not in code and "offenders" not in code:
+        problems.append("the refusal must name the files that broke the rule")
+    if "label" not in code:
+        problems.append(
+            "the refusal must say how to be re-evaluated (re-apply `auto-merge-eligible`): "
+            "eligibility can change without a push, and the reader cannot guess which events wake "
+            "this gate")
+    if "pr merge" in code:
+        problems.append("the refusal path must not be able to merge")
+    # A refusal that cannot see the check step's output cannot name the files.
+    if "steps.check.outputs.offenders" not in json.dumps(reporting[0]):
+        problems.append("the reporting step does not read the offender list from the check step")
+    return problems
+
+
+@pytest.mark.parametrize("check", [merge_token_problems, refusal_report_problems])
+def test_the_two_gaps_stay_closed(check):
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert check(text) == [], "; ".join(check(text))
+
+
+def _mutate(tmp_path, mutate) -> str:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    mutated = mutate(text)
+    assert mutated != text, "the mutation did not take — a mutation that does not mutate asserts nothing"
+    return mutated
+
+
+def test_reverting_the_merge_token_is_caught(tmp_path):
+    mutated = _mutate(tmp_path, lambda t: t.replace("GH_TOKEN: ${{ secrets.SHELDON_PAT }}",
+                                                    "GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}"))
+    assert merge_token_problems(mutated), "putting `GITHUB_TOKEN` back must be caught"
+
+
+def test_granting_the_workflow_scope_is_caught(tmp_path):
+    """The tempting "just in case" edit: it would let this channel merge a change to CI."""
+    mutated = _mutate(tmp_path, lambda t: t.replace(
+        "GH_TOKEN: ${{ secrets.SHELDON_PAT }}",
+        "GH_TOKEN: ${{ secrets.WORKFLOW_PAT }}\n          WIDENED: workflow"))
+    problems = merge_token_problems(mutated)
+    assert any("workflow" in p for p in problems), problems
+
+
+def test_dropping_the_refusal_report_is_caught(tmp_path):
+    def drop(text: str) -> str:
+        lines = text.splitlines(keepends=True)
+        start = next(i for i, l in enumerate(lines) if "name: Report the refusal on the pull request" in l)
+        end = next(i for i, l in enumerate(lines) if "name: Enable auto-merge" in l)
+        return "".join(lines[:start - 1] + lines[end:])
+
+    assert refusal_report_problems(_mutate(tmp_path, drop)), (
+        "removing the reporting step must leave the rule with nothing to point at")
+
+
+def test_a_stacked_comment_is_caught(tmp_path):
+    """Regression shape: a refusal that only creates comments stacks one per event on a busy PR."""
+    mutated = _mutate(tmp_path, lambda t: t.replace("updateComment", "createComment"))
+    problems = refusal_report_problems(mutated)
+    assert any("upsert" in p for p in problems), problems
+
+
+# ── the rule's soundness: "all files" vs "some files" ────────────────────────────────────────────
+#
+# `pulls.listFiles` returns 30 files by default and orders them by filename, where `docs/…` sorts
+# before `lessons/…`. A PR with 30 docs files and one lesson file therefore answered
+# "docs-only: true" from a single call — the poisoning vector this gate exists to close, reachable
+# on a fork PR because the trigger is `pull_request_target`. Truncation is the difference between
+# "every file qualifies" and "the first page qualifies".
+
+
+def file_listing_problems(text: str) -> list[str]:
+    problems = []
+    step = _step_named(text, "Check if docs-only")
+    code = _executable(step)
+    if "listFiles" not in code:
+        return ["the check step no longer lists the PR's files"]
+    if "paginate" not in code:
+        problems.append(
+            "the file list is not paginated: one `pulls.listFiles` call returns 30 files, so a PR "
+            "with 30 docs files plus one lesson file is judged docs-only")
+    if "per_page" not in code:
+        problems.append("no `per_page`, so the page size is whatever the API defaults to")
+    return problems
+
+
+def test_the_docs_only_decision_reads_every_file(tmp_path):
+    assert file_listing_problems(WORKFLOW.read_text(encoding="utf-8")) == []
+
+
+def test_an_unpaginated_file_list_is_caught(tmp_path):
+    def strip_pagination(text: str) -> str:
+        return text.replace("await github.paginate(github.rest.pulls.listFiles, {",
+                            "await github.rest.pulls.listFiles({").replace("per_page: 100,", "")
+
+    mutated = _mutate(tmp_path, strip_pagination)
+    assert "paginate" not in mutated, "the mutation did not take"
+    assert file_listing_problems(mutated), "an unpaginated list must be caught"
+
+
+def test_the_refusal_is_withdrawn_when_the_pr_qualifies():
+    """Otherwise a merged PR keeps a comment saying it was refused — a lie that outlives its state."""
+    text = WORKFLOW.read_text(encoding="utf-8")
+    steps = _steps_of(text)
+    withdraw = [s for s in steps if "Withdraw" in (s.get("name") or "")]
+    assert withdraw, "no step reconciles the earlier refusal"
+    code = _executable(withdraw[0])
+    assert "deleteComment" in code and "auto-merge-docs" in code, code[:200]
+    assert (withdraw[0].get("if") or "").strip() == "steps.check.outputs.docs-only == 'true'", (
+        "the withdrawal must run on the acceptance path")

@@ -339,7 +339,7 @@ jobs:
 
       - name: Upload Coverage to Codecov
         if: steps.scope.outputs.scope == 'full'
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5  # v7
         with:
           files: ./coverage.xml
           fail_ci_if_error: false
@@ -722,7 +722,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
           PR_NUM: ${{ github.event.pull_request.number }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           echo "=== Auto-Merge Gate for PR #$PR_NUM ==="
 

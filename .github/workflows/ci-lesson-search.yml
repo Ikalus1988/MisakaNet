@@ -11,9 +11,29 @@ on:
     workflows: ["Cross-Platform Tests"]
     types: [completed]
 
+  # `workflow_dispatch` is here so this path can be *verified*, not for convenience.
+  #
+  # Measured 2026-09-21: this workflow had run 100 times and executed its steps **zero** times. Its
+  # only entry was `workflow_run` on a failing `Cross-Platform Tests`, and that workflow is 100/100
+  # success — so the capability "our CI failed, surface matching lessons" had never been exercised,
+  # and the only way to exercise it was to break CI on purpose. A path nobody can trigger is not a
+  # tested path (#1984); the same reasoning put `workflow_dispatch` on `intake-bot-demo.yml`.
+  workflow_dispatch:
+    inputs:
+      error:
+        description: 'Error text to search (empty = scrape the most recent failing Cross-Platform Tests run)'
+        required: false
+        default: ''
+      pr-number:
+        description: 'PR to comment on (testing aid; empty = no comment, the decision is still printed)'
+        required: false
+        default: ''
+
 jobs:
   search-lessons:
-    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    # The dispatch arm is what makes the automatic arm testable. Both take the same code path below:
+    # the manual run only replaces *where the error text comes from*.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'failure' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,49 +55,78 @@ jobs:
       - name: Get failure context
         id: context
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        env:
+          # Passed through env rather than interpolated into the script: a `${{ }}` inside a
+          # `github-script` body is substituted by the workflow engine *before* node sees it, so a
+          # value containing a quote would edit the program (tests/test_workflow_gh_script_contexts.py
+          # is the rule that keeps this shape out).
+          MANUAL_ERROR: ${{ github.event.inputs.error || '' }}
+          MANUAL_PR: ${{ github.event.inputs['pr-number'] || '' }}
         with:
           script: |
-            const run = context.payload.workflow_run;
+            const run = context.payload.workflow_run || null;
+            const manualError = (process.env.MANUAL_ERROR || '').trim();
+            const manualPr = (process.env.MANUAL_PR || '').trim();
 
-            // Get associated PRs
-            const prs = run.pull_requests || [];
-            const prNumber = prs.length > 0 ? prs[0].number : null;
-
-            // Get failure logs
-            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: run.id,
-              filter: 'failed'
-            });
-
+            let prNumber = manualPr ? parseInt(manualPr, 10) : null;
+            let runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            let runName = 'manual dispatch';
+            // Defaults to *silent* for the manual path: a dispatch has no `workflow_run` payload to
+            // read the head repository from, and this workflow's own contract is that fork PRs never
+            // get the intake note (:131, :204). Assuming 'true' would have posted a maintainer note on
+            // a fork PR whenever someone dispatched this with a `pr-number`.
+            let isSameRepo = 'false';
             let errorSignatures = [];
-            for (const job of jobs.jobs) {
-              try {
-                const { data: logs } = await github.rest.actions.downloadJobLogsForWorkflowRun({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  job_id: job.id
-                });
 
-                // Extract error lines (last 50 lines, filter for errors)
-                const lines = logs.split('\n');
-                const errorLines = lines
-                  .filter(l => /error|fail|exception|traceback/i.test(l))
-                  .slice(-10);
-                errorSignatures.push(...errorLines);
-              } catch (e) {
-                // Logs may not be available
+            if (manualError) {
+              // The manual path does not scrape logs: the caller supplied the error text, which is the
+              // only thing the search needs. This is what makes the capability verifiable in seconds.
+              errorSignatures = [manualError];
+            } else if (run) {
+              const prs = run.pull_requests || [];
+              if (prNumber === null && prs.length > 0) prNumber = prs[0].number;
+
+              const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: run.id,
+                filter: 'failed'
+              });
+
+              for (const job of jobs.jobs) {
+                try {
+                  const { data: logs } = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    job_id: job.id
+                  });
+
+                  // Extract error lines (last 50 lines, filter for errors)
+                  const lines = logs.split('\n');
+                  errorSignatures.push(...lines
+                    .filter(l => /error|fail|exception|traceback/i.test(l))
+                    .slice(-10));
+                } catch (e) {
+                  // Logs may not be available
+                }
               }
+
+              runUrl = run.html_url;
+              runName = run.name || 'CI';
+              // same-repo failures may surface "novel intake" notes; fork PRs stay quiet
+              const headRepo = (run.head_repository || {}).full_name || '';
+              isSameRepo = headRepo === context.repo.full_name ? 'true' : 'false';
+            } else {
+              // A dispatch with no error text and no failing run to look at: say so, and let the steps
+              // below no-op on an empty signature rather than inventing one.
+              core.notice('Nothing to search: no error input and no failing Cross-Platform Tests run found.');
             }
 
-            core.setOutput('pr_number', prNumber || '');
+            core.setOutput('pr_number', prNumber ? String(prNumber) : '');
             core.setOutput('error_signatures', errorSignatures.join('\n').slice(0, 2000));
-            core.setOutput('run_url', run.html_url);
-            core.setOutput('run_name', run.name || 'CI');
-            // same-repo failures may surface "novel intake" notes; fork PRs stay quiet
-            const headRepo = (run.head_repository || {}).full_name || '';
-            core.setOutput('is_same_repo', headRepo === context.repo.full_name ? 'true' : 'false');
+            core.setOutput('run_url', runUrl);
+            core.setOutput('run_name', runName);
+            core.setOutput('is_same_repo', isSameRepo);
 
       # v1.0 (PR #1539) + v1.0.1: 决策交给 intake-bot。
       # 评论策略（真实提效 + 低打扰）：
@@ -88,9 +137,29 @@ jobs:
         if: steps.context.outputs.error_signatures != ''
         id: intake
         run: |
-          printf '%s\n' "$ERROR_SIG" > /tmp/ci_error.log
+          # `$ERROR_SIGNATURES`, which is the name this step declares below. It said `$ERROR_SIG`
+          # until 2026-09-21 — an undefined variable is the empty string, so the log file was one
+          # newline, `intake_bot.py` answered `{"decision":"ignore","reason":"错误签名过短"}`, the
+          # comment step was skipped, and the run stayed green. The dispatch added the same day
+          # "verified" exactly that nothing: the path could be triggered and still produced
+          # nothing. A green run is not evidence unless something in it can differ (#1984).
+          printf '%s\n' "$ERROR_SIGNATURES" > /tmp/ci_error.log
+          # `|| echo '{"decision":"error","reason":"bot failed"}'` used to stand here, and that is the
+          # shape #1825 was about: a crash became a *constant payload*, the comment step parsed
+          # `decision: 'error'`, fell through to `return;`, and the run stayed green with nothing
+          # posted. A bot that cannot run and a bot that found nothing must be distinguishable — so the
+          # failure is reported with its own stderr and the step goes red.
+          set +e
           RESULT=$(python3 scripts/intake_bot.py --log /tmp/ci_error.log --json \
-            --source ci-lesson-search 2>/dev/null || echo '{"decision":"error","reason":"bot failed"}')
+            --source ci-lesson-search 2>/tmp/intake_bot.err)
+          BOT_EXIT=$?
+          set -e
+          if [ "$BOT_EXIT" -ne 0 ]; then
+            echo "--- intake_bot.py stderr (tail) ---"
+            tail -n 20 /tmp/intake_bot.err
+            echo "::error title=intake-bot failed::exit $BOT_EXIT — this run could not decide, and says so instead of posting nothing"
+            exit 1
+          fi
           DECISION=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('decision','unknown'))")
           echo "decision=$DECISION"          # observable in run logs (dogfood)
           echo "decision=$DECISION" >> "$GITHUB_OUTPUT"

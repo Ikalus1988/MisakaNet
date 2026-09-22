@@ -128,7 +128,7 @@ def increment_search():
 
 
 def increment_lesson():
-    """lesson 计数+1，跨阈值时自动升阶段，同时重置搜索配额。"""
+    """lesson 计数+1，跨阈值时自动升阶段。"""
     p = _load()
     p["lesson_count"] = p.get("lesson_count", 0) + 1
     p["last_active"] = datetime.now(timezone.utc).isoformat()
@@ -140,8 +140,10 @@ def increment_lesson():
     elif n > 0 and n % 5 == 0:
         print(f"  累计 {n} 条 lesson，节点权重提升")
     _save(p)
-    # 贡献 lesson 自动重置搜索配额
-    reset_quota()
+    # 这里曾经调用 reset_quota() 并打印"搜索额度已重置（感谢贡献！）"。读路径在 2026-09-18 起
+    # 不限次数，本地检索更是纯本地计算，没有配额可重置 —— 那句话是假的（#1986）。感谢留下，
+    # 假话不留。
+    print("  🙏 感谢贡献！")
 
 
 def apply_referral(code: str) -> bool:
@@ -162,91 +164,3 @@ def get_credit_weight() -> float:
     stage = p.get("stage", "newcomer")
     weights = {"newcomer": 1.0, "active": 1.05, "contributor": 1.10}
     return weights.get(stage, 1.0)
-
-
-# ── 轻量配额制 (Proof of Access lite) ──
-# 新节点默认 5 次免费搜索，用完后引导贡献。
-# 存储: misakanet/.quota.json（gitignore 未跟踪，每 clone 独立）
-# 有 lesson 贡献的节点不受配额限制。
-
-FREE_SEARCH_QUOTA = 5
-_QUOTA_PATH = REPO / "misakanet" / ".quota.json"
-
-
-def _load_quota() -> dict:
-    """读取配额文件，不存在时创建初始配额。"""
-    if _QUOTA_PATH.exists():
-        try:
-            return json.loads(_QUOTA_PATH.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            pass
-    # 新节点：满额配额
-    quota = {"search_count": 0, "quota_max": FREE_SEARCH_QUOTA}
-    _save_quota(quota)
-    return quota
-
-
-def _save_quota(quota: dict):
-    """原子写入配额文件，避免并发损坏。"""
-    _QUOTA_PATH.parent.mkdir(parents=True, exist_ok=True)
-    import tempfile
-    fd, tmp_path = tempfile.mkstemp(
-        dir=str(_QUOTA_PATH.parent),
-        prefix=".quota-",
-        suffix=".tmp",
-    )
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(json.dumps(quota, ensure_ascii=False, indent=2) + "\n")
-        os.replace(tmp_path, str(_QUOTA_PATH))
-    except Exception:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        raise
-
-
-def check_quota() -> tuple:
-    """检查当前节点是否还有搜索配额。
-
-    Returns:
-        (allowed: bool, reason: str) — True 允许搜索，False 配额用尽
-    """
-    # 有 lesson 贡献的节点不受配额限制
-    lesson_count = get_lesson_count()
-    if lesson_count > 0:
-        return True, ""
-
-    q = _load_quota()
-    used = q.get("search_count", 0)
-    remaining = FREE_SEARCH_QUOTA - used
-
-    if remaining <= 0:
-        return (
-            False,
-            f"[MisakaNet] 搜索额度已用尽 ({FREE_SEARCH_QUOTA}/{FREE_SEARCH_QUOTA})。\\n"
-            f"    贡献 1 条 lesson 即可恢复额度：\\n"
-            f"    python3 scripts/queue_lesson.py -t '标题' -d <domain> '...'",
-        )
-    if remaining <= 2:
-        return (
-            True,
-            f"[MisakaNet] 搜索额度剩余 {remaining}/{FREE_SEARCH_QUOTA}。\\n"
-            f"    额度用完后需贡献 lesson 来恢复。",
-        )
-    return True, ""
-
-
-def consume_quota():
-    """消耗 1 次搜索配额。搜索成功后调用。"""
-    q = _load_quota()
-    q["search_count"] = q.get("search_count", 0) + 1
-    _save_quota(q)
-
-
-def reset_quota():
-    """重置搜索配额 — lesson 贡献后调用。"""
-    q = {"search_count": 0, "quota_max": FREE_SEARCH_QUOTA}
-    _save_quota(q)
-    print("[MisakaNet] 搜索额度已重置（感谢贡献！）")
