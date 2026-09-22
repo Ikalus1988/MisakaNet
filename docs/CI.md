@@ -20,6 +20,7 @@
 | `ci-cross-platform.yml` | Cross-Platform Tests | PR, 手动 |  |
 | `codeql.yml` | CodeQL | PR, push, 定时 | `0 6 * * 0` |
 | `dco-check.yml` | DCO Check | PR, 手动 |  |
+| `field-report-schema.yml` | Field Report Schema | PR, push, 手动 |  |
 | `fix-dco.yml` | DCO Auto-Fix | 评论 |  |
 | `lesson-gate.yml` | Lesson Quality Gate | PR |  |
 | `lesson-quality.yml` | Lesson Quality Score | PR |  |
