@@ -1,0 +1,97 @@
+name: Bounty Claim Shape Guard
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  shape-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the trusted base
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch the pull request head
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            "pull/${PR_NUMBER}/head:refs/remotes/origin/pr-${PR_NUMBER}"
+          git show "${BASE_SHA}:pyproject.toml" > /tmp/base-pyproject.toml || :
+          git show "refs/remotes/origin/pr-${PR_NUMBER}:pyproject.toml" > /tmp/head-pyproject.toml || :
+
+      - name: Run the pure shape decision
+        id: decision
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          gh api --paginate \
+            "repos/${REPOSITORY}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename' > /tmp/changed-files.txt
+          python3 scripts/bounty_claim.py \
+            --changed-files /tmp/changed-files.txt \
+            --base-pyproject /tmp/base-pyproject.toml \
+            --head-pyproject /tmp/head-pyproject.toml \
+            --json > /tmp/decision.json
+          cat /tmp/decision.json
+          echo "hit=$(python3 -c 'import json; print(str(json.load(open("/tmp/decision.json"))["hit"]).lower())')" >> "$GITHUB_OUTPUT"
+
+      - name: Label a mechanical hit and leave one actionable comment
+        if: steps.decision.outputs.hit == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          gh label create template-bounty \
+            --repo "${REPOSITORY}" \
+            --color B60205 \
+            --description "Mechanical shape check found a template-only bounty PR" \
+            --force
+          gh pr edit "${PR_NUMBER}" --repo "${REPOSITORY}" --add-label template-bounty
+
+          reasons=$(python3 - <<'PY'
+          import json
+          decision = json.load(open('/tmp/decision.json', encoding='utf-8'))
+          print('\n'.join(f'- {reason}' for reason in decision['reasons']))
+          PY
+          )
+          marker='<!-- bounty-claim-guard -->'
+          existing=$(gh api --paginate \
+            "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            --jq '[.[] | select(.body | contains("<!-- bounty-claim-guard -->"))] | length')
+          if [ "$existing" -eq 0 ]; then
+            gh api "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --method POST \
+              --field body="${marker}
+          ## Mechanical bounty-shape check: flagged
+
+          This PR matches a shape associated with template-only bounty submissions:
+          ${reasons}
+
+          This is a label-and-review signal, not an automatic rejection. Before merging, please verify that the diff contains an issue-specific implementation rather than generated stubs or a replacement `pyproject.toml`.
+
+          Maintainer commands:
+
+          \\`\\`\\`bash
+          git diff --name-status \"${{ github.event.pull_request.base.sha }}\" \"${{ github.event.pull_request.head.sha }}\"
+          git diff \"${{ github.event.pull_request.base.sha }}\" \"${{ github.event.pull_request.head.sha }}\" -- pyproject.toml
+          \\`\\`\\`
+          " >/dev/null
+          else
+            echo "A bounty-claim-guard comment already exists; not posting another."
+          fi
