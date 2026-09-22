@@ -83,6 +83,8 @@ def _slugify(text: str, max_len: int = 60) -> str:
 
 def _parse_tombstone(data: dict) -> dict:
     """验证并规范化墓碑 JSON。"""
+    if not isinstance(data, dict):
+        raise ValueError("Tombstone JSON 必须是对象 (dict)")
     missing = REQUIRED_FIELDS - set(data.keys())
     if missing:
         raise ValueError(f"Missing required tombstone fields: {missing}")
