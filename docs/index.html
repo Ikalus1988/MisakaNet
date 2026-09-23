@@ -1762,14 +1762,22 @@
        #1893 adds a copy button per block and keeps the verify line next to the step it belongs to. -->
   <style>
     #quickstart-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:14px; }
-    #quickstart .qs-card { border:1px solid rgba(0,229,255,0.16); border-radius:14px; background:linear-gradient(180deg, rgba(0,229,255,0.05), rgba(255,255,255,0.02)); padding:15px; }
-    #quickstart .qs-step { display:flex; gap:9px; margin-top:11px; }
-    #quickstart .qs-num { flex:0 0 18px; width:18px; height:18px; border-radius:50%; background:rgba(0,229,255,0.14); border:1px solid rgba(0,229,255,0.32); color:var(--cyan); font-size:11px; font-weight:700; text-align:center; line-height:17px; }
-    #quickstart .qs-cmd { font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#a5f3fc; background:rgba(4,10,24,0.85); border:1px solid rgba(0,229,255,0.18); border-radius:8px; padding:7px 9px; margin-top:5px; overflow-x:auto; white-space:pre; }
-    #quickstart .qs-verify { font-size:11px; color:var(--text-dim); margin-top:11px; line-height:1.55; border-top:1px solid rgba(255,255,255,0.07); padding-top:9px; }
-    #quickstart .qs-links { text-align:center; margin-top:12px; font-size:12px; color:var(--text-dim); }
-    #quickstart .qs-links a { color:var(--cyan); text-decoration:none; }
-    @media (max-width:560px) { #quickstart .qs-cmd { white-space:pre-wrap; word-break:break-all; } }
+    #quickstart-section .qs-card { border:1px solid rgba(0,229,255,0.16); border-radius:14px; background:linear-gradient(180deg, rgba(0,229,255,0.05), rgba(255,255,255,0.02)); padding:15px; }
+    #quickstart-section .qs-step { display:flex; gap:9px; margin-top:11px; }
+    #quickstart-section .qs-num { flex:0 0 18px; width:18px; height:18px; border-radius:50%; background:rgba(0,229,255,0.14); border:1px solid rgba(0,229,255,0.32); color:var(--cyan); font-size:11px; font-weight:700; text-align:center; line-height:17px; }
+    #quickstart-section .qs-cmd { font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#a5f3fc; background:rgba(4,10,24,0.85); border:1px solid rgba(0,229,255,0.18); border-radius:8px; padding:7px 9px; margin-top:5px; overflow-x:auto; white-space:pre; }
+    #quickstart-section .qs-check { font-size:11px; color:var(--text-dim); margin-top:4px; line-height:1.5; }
+    #quickstart-section .qs-cmd-wrap { position:relative; }
+    #quickstart-section .qs-cmd-wrap .qs-cmd { padding-right:66px; }
+    #quickstart-section .qs-copy { position:absolute; top:6px; right:6px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.05em; color:var(--cyan); background:rgba(4,10,24,0.92); border:1px solid rgba(0,229,255,0.28); border-radius:6px; padding:2px 7px; cursor:pointer; }
+    #quickstart-section .qs-copy:hover, #quickstart-section .qs-copy:focus-visible { border-color:var(--cyan); }
+    #quickstart-section .qs-copy:focus-visible { outline:2px solid rgba(0,229,255,0.5); outline-offset:1px; }
+    #quickstart-section .qs-stuck { text-align:center; margin-top:10px; font-size:11px; color:var(--text-dim); line-height:1.6; }
+    #quickstart-section .qs-stuck a { color:var(--cyan); text-decoration:none; }
+    #quickstart-section .qs-stuck code { font-family:'JetBrains Mono',monospace; color:#a5f3fc; }
+    #quickstart-section .qs-links { text-align:center; margin-top:12px; font-size:12px; color:var(--text-dim); }
+    #quickstart-section .qs-links a { color:var(--cyan); text-decoration:none; }
+    @media (max-width:560px) { #quickstart-section .qs-cmd { white-space:pre-wrap; word-break:break-all; } }
   </style>
   <div id="quickstart" class="anchor-target"></div>
   <div id="quickstart-section" style="max-width:760px;margin:26px auto 0;">
@@ -1786,20 +1794,21 @@
 
         <div class="qs-step"><span class="qs-num">1</span><div style="flex:1;min-width:0;">
           <div style="font-size:12.5px;color:var(--text-primary);line-height:1.5;" data-i18n="qsA1">Install the endpoint into every assistant you use:</div>
-          <div class="qs-cmd">npx @misaka-net/misakanet-setup</div>
+          <div class="qs-cmd-wrap"><div class="qs-cmd">npx @misaka-net/misakanet-setup</div><button type="button" class="qs-copy" aria-label="Copy install command">COPY</button></div>
+          <div class="qs-check" data-i18n="qsA1Check">Signal: the installer prints one line per assistant it wrote the endpoint into.</div>
         </div></div>
 
         <div class="qs-step"><span class="qs-num">2</span><div style="flex:1;min-width:0;">
           <div style="font-size:12.5px;color:var(--text-primary);line-height:1.5;" data-i18n="qsA2">Close and reopen your assistant window, then confirm it landed:</div>
-          <div class="qs-cmd">npx @misaka-net/misakanet-setup --verify</div>
+          <div class="qs-cmd-wrap"><div class="qs-cmd">npx @misaka-net/misakanet-setup --verify</div><button type="button" class="qs-copy" aria-label="Copy verify command">COPY</button></div>
+          <div class="qs-check" data-i18n="qsA2Check">Signal: claude mcp list (or codex mcp list) lists misakanet with 7 tools.</div>
         </div></div>
 
         <div class="qs-step"><span class="qs-num">3</span><div style="flex:1;min-width:0;">
           <div style="font-size:12.5px;color:var(--text-primary);line-height:1.5;" data-i18n="qsA3">Ask with the rawest fragment of an error — it should search the lessons before answering:</div>
           <div style="margin-top:4px;"><code style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#a5f3fc;">switch vision model</code> <span style="color:var(--text-dim);font-size:11px;">·</span> <code style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#a5f3fc;">context window exceeded</code></div>
+          <div class="qs-check" data-i18n="qsA3Check">Signal: it searches the lessons before answering, or cites a lesson id.</div>
         </div></div>
-
-        <div class="qs-verify" data-i18n="qsAVerify">Check: claude mcp list shows misakanet with 7 tools. Undo any time: npx @misaka-net/misakanet-setup --uninstall</div>
       </div>
 
       <!-- Track B -->
@@ -1809,11 +1818,12 @@
 
         <div class="qs-step"><span class="qs-num">1</span><div style="flex:1;min-width:0;">
           <div style="font-size:12.5px;color:var(--text-primary);line-height:1.5;" data-i18n="qsB1">Search:</div>
-          <div class="qs-cmd">curl -sS https://misakanet.org/mcp \
+          <div class="qs-cmd-wrap"><div class="qs-cmd">curl -sS https://misakanet.org/mcp \
   -H 'Content-Type: application/json' -H 'Accept: application/json' \
   -H 'MCP-Protocol-Version: 2025-06-18' -H 'Origin: https://misakanet.org' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
-       "params":{"name":"misakanet_search","arguments":{"query":"database is locked","top":3}}}'</div>
+       "params":{"name":"misakanet_search","arguments":{"query":"database is locked","top":3}}}'</div><button type="button" class="qs-copy" aria-label="Copy search command">COPY</button></div>
+          <div class="qs-check" data-i18n="qsB1Check">Signal: the reply has results, or no_match with a ready intake call; a miss is a useful answer.</div>
         </div></div>
 
         <div class="qs-step"><span class="qs-num">2</span><div style="flex:1;min-width:0;">
@@ -1821,17 +1831,17 @@
           <div style="margin-top:4px;font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;overflow-x:auto;white-space:pre;">{"structuredContent":{"source":"worker-bm25",
   "results":[{"id":"hermes-state-database-lock-issues-cleanup-protocol",
               "title":"Hermes State Database Lock Issues - Cleanup Protocol"}]}}</div>
+          <div class="qs-check" data-i18n="qsB2Check">Signal: a hit names the lesson id and title; a miss hands you the intake call to copy.</div>
         </div></div>
 
         <div class="qs-step"><span class="qs-num">3</span><div style="flex:1;min-width:0;">
           <div style="font-size:12.5px;color:var(--text-primary);line-height:1.5;" data-i18n="qsB3">Need the write tools? Register once and keep the token:</div>
-          <div class="qs-cmd">curl -sS https://misakanet.org/mcp \
+          <div class="qs-cmd-wrap"><div class="qs-cmd">curl -sS https://misakanet.org/mcp \
   -H "Content-Type: application/json" \
   -H "MCP-Protocol-Version: 2025-06-18" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_register","arguments":{"agent_type":"your-agent"}}}'</div>
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"misakanet_register","arguments":{"agent_type":"your-agent"}}}'</div><button type="button" class="qs-copy" aria-label="Copy register command">COPY</button></div>
+          <div class="qs-check" data-i18n="qsB3Check">Signal: the reply carries a node_id (MisakaXXXXX) and a token valid for about 30 days.</div>
         </div></div>
-
-        <div class="qs-verify" data-i18n="qsBVerify">Check: the response has results, or no_match with an intake call to copy — a miss is a useful answer, not an error.</div>
       </div>
 
     </div>
@@ -1839,6 +1849,9 @@
       <a href="/install/" data-i18n="qsMoreInstall">Full install guide</a>
       &nbsp;·&nbsp;
       <a href="https://ikalus1988.github.io/MisakaNet/quickstart/" target="_blank" rel="noopener" data-i18n="qsMoreDoc">All the ways to use it</a>
+    </div>
+    <div class="qs-stuck">
+      <span data-i18n="qsStuck">Stuck? Long version:</span> <a href="/start">/start</a> · <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/troubleshooting.md" target="_blank" rel="noopener">troubleshooting</a> · <span data-i18n="qsUndo">undo Track A:</span> <code>npx @misaka-net/misakanet-setup --uninstall</code>
     </div>
   </div>
 
@@ -2171,31 +2184,70 @@ const DEBUG = (() => { try { return localStorage.getItem('misaka_debug') === 'tr
 // ── Toast notification ──
 let toastTimer = null;
 let copyBtnTimer = null;
-function copyAndToast(btn) {
-  const cmd = 'curl -s -X POST https://misakanet.org/api/register -H "Content-Type: application/json" -d \'{"agent_type":"YOUR_AGENT"}\'';
-  navigator.clipboard?.writeText(cmd);
-  // Toast
+function showToast(message) {
   const toast = document.getElementById('toast');
-  toast.textContent = '> Agent Registration Command Copied to Clipboard.';
+  toast.textContent = message;
   toast.className = 'toast show';
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { toast.className = 'toast'; }, 2000);
-  // Button feedback — COPIED ✓ + green flash
-  if (btn) {
-    const orig = btn.textContent;
-    btn.textContent = 'COPIED ✓';
-    btn.style.borderColor = '#22c55e';
-    btn.style.color = '#22c55e';
-    btn.style.boxShadow = '0 0 12px rgba(34,197,94,0.3)';
-    clearTimeout(copyBtnTimer);
-    copyBtnTimer = setTimeout(() => {
-      btn.textContent = orig;
-      btn.style.borderColor = 'rgba(0,229,255,0.28)';
-      btn.style.color = 'var(--cyan)';
-      btn.style.boxShadow = 'none';
-    }, 1800);
-  }
 }
+
+// Button feedback — COPIED ✓ + green flash
+function flashCopyButton(btn) {
+  if (!btn) return;
+  const orig = btn.textContent;
+  btn.textContent = 'COPIED ✓';
+  btn.style.borderColor = '#22c55e';
+  btn.style.color = '#22c55e';
+  btn.style.boxShadow = '0 0 12px rgba(34,197,94,0.3)';
+  clearTimeout(copyBtnTimer);
+  copyBtnTimer = setTimeout(() => {
+    btn.textContent = orig;
+    btn.style.borderColor = 'rgba(0,229,255,0.28)';
+    btn.style.color = 'var(--cyan)';
+    btn.style.boxShadow = 'none';
+  }, 1800);
+}
+
+function copyAndToast(btn) {
+  const cmd = 'curl -s -X POST https://misakanet.org/api/register -H "Content-Type: application/json" -d \'{"agent_type":"YOUR_AGENT"}\'';
+  navigator.clipboard?.writeText(cmd);
+  showToast('> Agent Registration Command Copied to Clipboard.');
+  flashCopyButton(btn);
+}
+
+// ── Quickstart copy buttons (#1893): clipboard write with a non-secure-context fallback ──
+function legacyClipboardCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.top = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+  ta.remove();
+  return ok;
+}
+
+function writeClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).catch(() => legacyClipboardCopy(text));
+  }
+  return Promise.resolve(legacyClipboardCopy(text));
+}
+
+document.querySelectorAll('#quickstart-section .qs-copy').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const holder = btn.closest('.qs-cmd-wrap');
+    const cmd = holder ? holder.querySelector('.qs-cmd').textContent : '';
+    writeClipboard(cmd).then(() => {
+      showToast('> Command copied to Clipboard.');
+      flashCopyButton(btn);
+    });
+  });
+});
 
 // ── Onboarding modal ──
 function toggleModal() {
