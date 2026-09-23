@@ -50,3 +50,4 @@ data/sag.db
 
 # Crawler flywheel metrics (local tracking)
 data/crawler_flywheel.jsonl
+.aider*
