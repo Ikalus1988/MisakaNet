@@ -110,6 +110,8 @@
   "navContact": "Contact",
   "navFieldNote": "Submit field note",
   "navReport": "Report issue",
+  "navQuickstart": "Quickstart",
+  "navInstall": "Install guide",
   "qsTitle": "Start in 30 seconds",
   "qsSubtitle": "Two tracks: teach your assistant to search the lessons, or call the endpoint yourself. Neither needs an account.",
   "qsTrackA": "A · Let your assistant search",
