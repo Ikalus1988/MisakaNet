@@ -49,6 +49,16 @@ jobs:
           echo "manifest says $VERSION and no tag exists yet — tagging"
           git tag "$TAG"
           git push origin "$TAG"
+          # The Marketplace action is *this repository*, so its `v1` alias has to follow the releases:
+          # `uses: Ikalus1988/MisakaNet@v1` should get the newest one, while `@$TAG` (e.g. `@v2.34.0`)
+          # pins an exact version for anyone who needs that. Decided 2026-09-23 — the tag has to show
+          # that the version changed. `v1` moves rather than a `v2` appearing because the action's
+          # input/output contract has not changed, and a new major would break every existing `uses:`
+          # line for nothing. Tag pushes are not covered by the branch ruleset (it targets
+          # `refs/heads/main`), so this is allowed where a push to `main` is not.
+          git tag -f v1
+          git push -f origin v1
+          echo "moved v1 to $TAG ($(git rev-parse --short HEAD))"
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG already exists"
           else

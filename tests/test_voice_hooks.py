@@ -15,6 +15,17 @@ from pathlib import Path
 
 from posix_shell import require_posix_shell
 
+# Per-spawn budget for a shell or PowerShell process, in seconds.
+#
+# It was 15, and on 2026-09-22 and again on 2026-09-23 a `test (windows-latest, *)` leg failed with
+# `subprocess.TimeoutExpired: … powershell … timed out after 15 seconds` while the other 1910 tests
+# in the same run passed. A cold GitHub Windows runner starting PowerShell six times in a loop can
+# exceed that on one spawn — these assertions are about behaviour (exit code, stdout), never about
+# latency, so the tight budget bought nothing and cost a red leg with no information in it.
+# Raised to 45: a genuine hang still fails, it just takes longer to say so. Rule: a red check
+# must mean something.
+VOICE_HOOK_TIMEOUT = 45
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 VOICE_DIR = REPO_ROOT / "docs" / "assets" / "voice"
 HOOK_SCRIPT_SH = REPO_ROOT / "scripts" / "misakanet_voice_hook.sh"
@@ -80,7 +91,7 @@ class TestHookScript:
         for voice in ["connect-success", "pair-success", "lesson-found", "failure-warning"]:
             result = subprocess.run(
                 [shell, hook], input=json.dumps({"voice": voice}), text=True,
-                capture_output=True, env=env, timeout=15,
+                capture_output=True, env=env, timeout=VOICE_HOOK_TIMEOUT,
             )
             assert result.returncode == 0, result.stderr
             assert result.stdout.strip() == voice
@@ -88,7 +99,7 @@ class TestHookScript:
         for payload in [{"voice": "unknown-voice-type"}, {"other": "field"}]:
             result = subprocess.run(
                 [shell, hook], input=json.dumps(payload), text=True,
-                capture_output=True, env=env, timeout=15,
+                capture_output=True, env=env, timeout=VOICE_HOOK_TIMEOUT,
             )
             assert result.returncode == 0, result.stderr
             assert result.stdout == ""
@@ -139,7 +150,7 @@ class TestWindowsVoiceHookExecution:
                     input=json.dumps({"voice": voice}),
                     text=True,
                     capture_output=True,
-                    timeout=15,
+                    timeout=VOICE_HOOK_TIMEOUT,
                     env={**os.environ, "MISAKANET_VOICE_DRY_RUN": "1"},
                 )
                 assert res.returncode == 0, f"PS1 failed on {voice}: {res.stderr}"
@@ -152,7 +163,7 @@ class TestWindowsVoiceHookExecution:
                 input=json.dumps({"voice": "unknown-voice-type"}),
                 text=True,
                 capture_output=True,
-                timeout=15,
+                timeout=VOICE_HOOK_TIMEOUT,
             )
             assert res.returncode == 0, f"PS1 failed on invalid voice: {res.stderr}"
 
@@ -163,7 +174,7 @@ class TestWindowsVoiceHookExecution:
                 input=json.dumps({"other": "field"}),
                 text=True,
                 capture_output=True,
-                timeout=15,
+                timeout=VOICE_HOOK_TIMEOUT,
             )
             assert res.returncode == 0, f"PS1 failed on missing voice: {res.stderr}"
 
@@ -176,7 +187,7 @@ class TestWindowsVoiceHookExecution:
                     text=True,
                     capture_output=True,
                     shell=True,
-                    timeout=15,
+                    timeout=VOICE_HOOK_TIMEOUT,
                     env={**os.environ, "MISAKANET_VOICE_DRY_RUN": "1"},
                 )
                 assert res.returncode == 0, f"BAT failed on {voice}: {res.stderr}"
@@ -190,7 +201,7 @@ class TestWindowsVoiceHookExecution:
                 text=True,
                 capture_output=True,
                 shell=True,
-                timeout=15,
+                timeout=VOICE_HOOK_TIMEOUT,
             )
             assert res.returncode == 0, f"BAT failed on invalid voice: {res.stderr}"
 
@@ -202,7 +213,7 @@ class TestWindowsVoiceHookExecution:
                 text=True,
                 capture_output=True,
                 shell=True,
-                timeout=15,
+                timeout=VOICE_HOOK_TIMEOUT,
             )
             assert res.returncode == 0, f"BAT failed on missing voice: {res.stderr}"
 
