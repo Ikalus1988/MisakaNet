@@ -4800,6 +4800,51 @@ async function readTrafficCount(env, cls, day) {
   return (parseInt(fallback, 10) || 0) + (parseInt(legacy, 10) || 0);
 }
 
+/**
+ * One `counters` row, or `null` when it does not exist — the difference matters when a value is being
+ * handed over from somewhere else (a missing row must be seeded, a zero row must not be re-seeded).
+ */
+async function readCountersRow(env, scope, bucket, period) {
+  const d1 = d1Binding(env);
+  if (!d1) return null;
+  try {
+    const { results } = await d1.prepare(
+      `SELECT count FROM counters WHERE scope = ?1 AND bucket = ?2 AND period = ?3`,
+    ).bind(scope, bucket, period).all();
+    const row = results && results[0];
+    return row ? Number(row.count) || 0 : null;
+  } catch (error) {
+    logInternal("counters row read failed", error);
+    return null;
+  }
+}
+
+/**
+ * The monthly total for one traffic class, from wherever it currently lives (#2120).
+ *
+ * The roll-up used to write `traffic-month:<class>:<month>` — a key whose only reader was the roll-up
+ * itself. It is a counter, the `counters` table exists for counters, and a key that nothing reads cannot
+ * be joined to anything: the monthly figure is a row now (`scope='traffic-month'`, `bucket=<class>`,
+ * `period=<YYYY-MM>`), with the key checked second so a month that was already totalled before the move
+ * is carried over rather than restarted.
+ */
+async function readMonthlyTraffic(env, cls, month) {
+  const fromCounters = await readCountersRow(env, "traffic-month", cls, month);
+  if (fromCounters !== null) return fromCounters;
+  // Two fallbacks, for the same reason the daily reader has them: `bumpCounter` writes
+  // `counters:<scope>:<bucket>:<period>` when D1 is unavailable, while the pre-#2120 roll-up wrote
+  // `traffic-month:<class>:<month>`. A month can have been totalled by either.
+  if (!env || !env.MISAKANET_KV) {
+    const stored = await storeGet(env, `traffic-month:${cls}:${month}`, "text");
+    return parseInt(stored, 10) || 0;
+  }
+  const [fallback, stored] = await Promise.all([
+    env.MISAKANET_KV.get(legacyCounterKey("traffic-month", cls, month), "text"),
+    storeGet(env, `traffic-month:${cls}:${month}`, "text"),
+  ]);
+  return (parseInt(fallback, 10) || 0) + (parseInt(stored, 10) || 0);
+}
+
 async function aggregateDailyTraffic(env) {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const month = today.slice(0, 7); // YYYY-MM
@@ -4816,19 +4861,18 @@ async function aggregateDailyTraffic(env) {
   let totalAggregated = 0;
 
   for (const type of TRAFFIC_TYPES) {
+    const dailyCount = await readTrafficCount(env, type, today);
+    if (dailyCount <= 0) continue;
+
     const monthlyKey = `traffic-month:${type}:${month}`;
-
-    const [dailyCount, monthlyVal] = await Promise.all([
-      readTrafficCount(env, type, today),
-      storeGet(env, monthlyKey, "text"),
-    ]);
-
-    const monthlyCount = parseInt(monthlyVal) || 0;
-
-    if (dailyCount > 0) {
-      await storePut(env, monthlyKey, String(monthlyCount + dailyCount));
-      totalAggregated += dailyCount;
-    }
+    const existingRow = await readCountersRow(env, "traffic-month", type, month);
+    // The one-time hand-off: the first run that finds a pre-move total in the key and no row seeds the
+    // row with **that total plus today's**, then deletes the key. Seeding without deleting would let the
+    // next run add the same pre-move total again; deleting without seeding would lose the month.
+    const carried = existingRow === null ? (parseInt(await storeGet(env, monthlyKey, "text"), 10) || 0) : 0;
+    await bumpCounter(env, "traffic-month", type, month, carried + dailyCount);
+    if (carried > 0) await storeDelete(env, monthlyKey);
+    totalAggregated += dailyCount;
   }
 
   // Mark today as done (TTL 48h to auto-cleanup)
@@ -6021,6 +6065,10 @@ export {
   storePut,
   storeGet,
   storeDelete,
+  // Exported for workers/traffic-aggregation.test.mjs: the monthly roll-up moved from a KV key to a
+  // `counters` row (#2120), and "where does the month's total live" is the property worth asserting
+  // without a database.
+  readMonthlyTraffic,
   // Exported for workers/kv-write-family.test.mjs: with the migration finished, no endpoint's happy
   // path writes KV in a D1-bound deployment — the ranking now describes the *fallback*, which is what
   // fires when D1 is unhappy. There is no HTTP surface left to drive it through, so the test drives
