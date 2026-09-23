@@ -33,7 +33,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      # The deploy token does not have to be the log-reading token: `CF_OBSERVABILITY_TOKEN` is the
+      # least-privilege option (Workers Observability: Read + Account Analytics: Read, no Workers
+      # Scripts: Edit) and falls back to the deploy token so a repository that has not created it yet
+      # still runs every step it is allowed to run.
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CF_OBSERVABILITY_TOKEN || secrets.CF_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
       HOURS: ${{ inputs.hours }}
     steps:
@@ -49,6 +53,14 @@ jobs:
           token = os.environ["CLOUDFLARE_API_TOKEN"]
           hours = int(os.environ.get("HOURS") or 24)
 
+          # `datetime_geq` wants ISO8601, not the `-24h` / `now` shorthand the dashboard accepts:
+          # the first run of this workflow answered
+          #   error parsing args for "httpRequestsAdaptiveGroups": filter: datetime_geq: not an iso8601 time
+          # which is why the window is computed here rather than passed as a relative string.
+          import datetime as _dt
+
+          now = _dt.datetime.now(_dt.timezone.utc).replace(microsecond=0)
+          since = now - _dt.timedelta(hours=hours)
           query = """
           query($account: String!, $since: Time!, $until: Time!) {
             viewer {
@@ -68,8 +80,8 @@ jobs:
           """
           body = json.dumps({"query": query, "variables": {
               "account": account,
-              "since": f"-{hours}h",
-              "until": "now",
+              "since": since.isoformat().replace("+00:00", "Z"),
+              "until": now.isoformat().replace("+00:00", "Z"),
           }}).encode()
           req = urllib.request.Request("https://api.cloudflare.com/client/v4/graphql", data=body,
                                        headers={"Authorization": f"Bearer {token}",
@@ -132,7 +144,16 @@ jobs:
           try:
               raw = urllib.request.urlopen(req, timeout=60).read().decode()
           except urllib.error.HTTPError as exc:
-              print(f"HTTP {exc.code}: {exc.read().decode()[:1200]}")
+              body = exc.read().decode()[:400]
+              print(f"HTTP {exc.code}: {body}")
+              if exc.code in (401, 403):
+                  print("permission hint: the telemetry endpoint needs "
+                        "Account → Workers Observability → Read on the token in CLOUDFLARE_API_TOKEN "
+                        "(a separate read-only token is stored as CF_OBSERVABILITY_TOKEN when it exists), "
+                        "and the GraphQL step above needs Account → Account Analytics → Read. "
+                        "Opening the token in the dashboard and adding the two permissions is enough — "
+                        "GitHub keeps the same secret value.")
+                  print("no-permission is not a service failure: the other steps still ran.")
               raise SystemExit(0)
           except Exception as exc:
               print(f"telemetry query failed: {exc}")

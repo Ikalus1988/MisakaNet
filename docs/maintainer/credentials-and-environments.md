@@ -22,6 +22,7 @@ credential without declaring a known environment.
 | env `release` | `NPM_TOKEN` | `misakanet-publish`, `misakanet-setup-publish`, `fatal-guard-publish` | branch policy `main` + required reviewer |
 | env `automation` | `CF_API_TOKEN` = `misakanet-automation-d1`, **D1:Edit only** | `sync-d1`, `sync-question-answers` | branch policy `main`, **no reviewers** |
 | repo level | `SHELDON_PAT` | `auto-sync-prs`, `pr-checks`, `pr-shape-guard`, `release-please`, `auto-merge-docs` | none (see §5) |
+| env `release` | `CF_OBSERVABILITY_TOKEN` (optional) | `cf-diagnostics` | branch policy `main` + required reviewer — **read-only**: `Workers Observability: Read` + `Account Analytics: Read`, no `Workers Scripts: Edit` |
 | repo level | `AI_GATEWAY_TOKEN` | `benchmark-workers-ai` | none |
 | repo level | `OPENAI_KEY` | `pr-agent-review` | none |
 | repo level | `CLOUDFLARE_API_TOKEN` | **nothing** | none — deleted 2026-09-20, see §6 |
@@ -92,7 +93,35 @@ Requirements are npm CLI ≥ 11.5.1 and Node ≥ 22.14.0, both satisfied by the 
 three publish workflows. The npm side is a per-package setting (up to 10 per package), so it is an
 owner action in the npm UI; the workflow side is a three-line change.
 
-### 4.2 What was proven, and what can only be assumed
+### 4.2 Reading worker logs, and why that is a *separate* token
+
+`cf-diagnostics.yml` queries two Cloudflare APIs, and neither is covered by the deploy token's
+permissions:
+
+| API | permission it needs |
+|---|---|
+| `GET /graphql` `httpRequestsAdaptiveGroups` (status codes by route) | Account → **Account Analytics** → Read |
+| `POST /accounts/{id}/workers/observability/telemetry/query` (worker logs) | Account → **Workers Observability** → Read |
+
+Measured 2026-09-23: with only the deploy token's scopes, the first returned
+`filter: datetime_geq: not an iso8601 time` (a bug in the query, since fixed) and the second returned
+`HTTP 403 Authentication error`.
+
+Two ways to grant it, and the order below is the one this repository's rule prefers (*one credential
+per purpose, narrowest scope*):
+
+1. **Create a separate read-only token** with exactly the two permissions above and store it in the
+   `release` environment as `CF_OBSERVABILITY_TOKEN`. The workflow prefers it and falls back to
+   `CF_API_TOKEN`, so nothing breaks until it exists.
+2. **Add the two permissions to the existing deploy token** — no GitHub change is needed, because
+   editing a token's permissions in Cloudflare applies to the same secret value. It is faster and it
+   widens what a deployment credential can do.
+
+A third option costs nothing at all and is enough for a one-off: the dashboard's
+Workers & Pages → `misakanet-register-proxy` → Observability → Logs view, or
+`npx wrangler tail misakanet-register-proxy` locally.
+
+### 4.3 What was proven, and what can only be assumed
 
 The token's *sufficiency* was verified end-to-end on 2026-09-20 rather than assumed — a narrower token
 plausibly could have been too narrow, and `wrangler` sometimes needs account-level reads that the D1
