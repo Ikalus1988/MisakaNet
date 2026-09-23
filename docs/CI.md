@@ -68,7 +68,7 @@
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
 | `d1-bootstrap.yml` | D1 Bootstrap (PRD ④) | 手动 |  |
-| `deploy-worker.yml` | Deploy Cloudflare Worker | push, 手动 |  |
+| `deploy-worker.yml` | Deploy Cloudflare Worker（`workers/register-proxy-sw.js` **和** `workers/wrangler.toml` 变更都触发；部署后按 config 校对 keepalive cron，不一致即失败） | push, 手动 |  |
 | `docs.yml` | Deploy Documentation | PR, push |  |
 | `fatal-guard-publish.yml` | Publish @misaka-net/fatal-guard | push |  |
 | `fatal-guard.yml` | fatal-guard CI | PR, push, 手动 |  |
