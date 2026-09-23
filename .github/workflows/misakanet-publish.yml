@@ -140,48 +140,69 @@ jobs:
         run: |
           set -euo pipefail
           if git diff --quiet; then
-            echo "package.json already records $VERSION - nothing to commit."
+            echo "package.json already records $VERSION - nothing to record."
             exit 0
           fi
-          OTHER=$(git diff --name-only | grep -vE '^(package.json|.codex-plugin/plugin.json)$' || true)
+          OTHER=$(git diff --name-only | grep -vE '^(package.json|.codex-plugin/plugin.json|workers/register-proxy-sw.js)$' || true)
           if [ -n "$OTHER" ]; then
-            echo "::warning::align_versions also changed: $OTHER (committing every tracked change)"
+            echo "::warning::align_versions also changed: $OTHER (the record PR carries every tracked change)"
           fi
+
+          # Through a pull request, not a direct push. `main` requires three status checks, the ruleset
+          # has no bypass actors, and GitHub enforces that rule on *direct pushes* too: on 2026-09-22
+          # this step was refused five times ("3 of 3 required status checks are expected") **after** a
+          # publish that had already succeeded. The version record is bookkeeping, so it travels the way
+          # every other change does. That also removes the old race against `main` moving during a
+          # publish — a PR is rebased by the merge, not by this step.
+          BRANCH="chore/record-$VERSION"
           git config user.name "misakanet-bot"
           git config user.email "bot@misakanet.dev"
+          git checkout -b "$BRANCH"
           git add -u
           git commit --signoff -m "chore(npm): misakanet@$VERSION is published"
 
-          # `main` moves under this job. The leaderboard and node snapshots commit every few minutes
-          # (`chore: update leaderboard snapshot [skip ci]`), so the checkout taken at the start of the
-          # run is already behind by the time the publish finishes: on 2026-09-20 this push was rejected
-          # as non-fast-forward, and the drift the step exists to prevent came straight back — npm at
-          # 2.31.0 while `package.json` still read 2.30.2. Rebase and retry instead of forcing: the
-          # commit is one line in two files, so a rebase cannot conflict in any interesting way.
-          for attempt in 1 2 3 4 5; do
-            if git push origin HEAD:main; then
-              echo "recorded misakanet@$VERSION on main (attempt $attempt)"
-              exit 0
-            fi
-            echo "::warning::push rejected on attempt $attempt - main moved; rebasing and retrying"
-            git fetch origin main
-            git rebase origin/main
-            sleep $((attempt * 5))
-          done
+          git push --force-with-lease origin "HEAD:refs/heads/$BRANCH"
 
+          EXISTING=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty' || true)
+          if [ -n "$EXISTING" ]; then
+            echo "record PR #$EXISTING is already open for $VERSION"
+          else
+            gh pr create --base main --head "$BRANCH" \
+              --title "chore(npm): record misakanet@$VERSION as published" \
+              --body "$(printf '%s\n' \
+                "The npm publish of \`$VERSION\` succeeded, so \`package.json\` — and the surfaces" \
+                "\`align_versions.py\` keeps in step with it — must move to it, or npm and the repository" \
+                "disagree, which is the drift this step exists to prevent." \
+                "" \
+                "It arrives as a pull request because \`main\` requires three status checks with no bypass" \
+                "actors, and GitHub enforces that on direct pushes too: the first attempt was refused with" \
+                "\`3 of 3 required status checks are expected\` after the package was already published." \
+                "" \
+                "Computed by the repository's own tool: \`python3 scripts/align_versions.py --source $VERSION\`." \
+                "" \
+                "## AC" \
+                "" \
+                "- [x] \`package.json\` records the version that is on npm" \
+                "- [x] the same version reaches \`.codex-plugin/plugin.json\` and the worker's \`serverInfo\`" \
+                "- [x] \`align_versions.py --check\` passes in CI")"
+          fi
+
+      # Its own step, so it can run on failure: the publish step above is the one that must not fail
+      # silently, and this one exists to say which half of the job succeeded.
+      - name: The record did not land (summary)
+        if: failure() && steps.publish.outcome == 'success'
+        run: |
           # Deliberately a failure, not a warning: npm does not allow republishing a version, so the
           # repository has to catch up, and a silent drift is the defect this whole step exists to stop.
           # The summary says the part a human needs first — the package *is* published.
           {
             echo "### npm publish succeeded, but the version record did not land"
             echo ""
-            echo "\`misakanet@$VERSION\` **is published** — npm does not allow republishing a version."
-            echo "\`package.json\` could not be updated on main after five attempts."
+            echo "\`misakanet@${{ inputs.version }}\` **is published** — npm does not allow republishing a version."
+            echo "\`package.json\` still records the previous one. The record PR could not be opened."
             echo ""
-            echo "Fix by hand: \`python3 scripts/align_versions.py --source $VERSION\`, then commit."
+            echo "Fix by hand: \`python3 scripts/align_versions.py --source ${{ inputs.version }}\`, then commit on a branch and open a PR."
           } >> "$GITHUB_STEP_SUMMARY"
-          echo "::error::published misakanet@$VERSION, but recording it on main failed - see the job summary"
-          exit 1
 
       - name: Dry run summary
         if: github.event_name == 'workflow_dispatch' && inputs.dry_run && inputs.version == ''
