@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-23T17:14:45.084032+00:00",
+  "generated_at": "2026-09-23T21:35:35.852863+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "ops(cf): a field this dataset does not have, a schema I guessed, and a branch policy that refused the run",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2135",
+      "timestamp": "2026-09-23T17:52:48Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(worker): the monthly traffic total becomes a counters row — the key had no reader (#2120)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2134",
+      "timestamp": "2026-09-23T17:46:36Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(credentials): 9109 means the token value changed, not that a permission is missing",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2133",
+      "timestamp": "2026-09-23T17:39:48Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "ops(cf): the diagnostics run gets its two permissions written down, and the counters view becomes readable",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2132",
+      "timestamp": "2026-09-23T17:28:52Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "fix(worker): the trust field was dropped on the last hop — the row had it, the projection did not",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2130",
       "timestamp": "2026-09-23T17:14:34Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(tools): compare the two search implementations over one query set (#2121)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2129",
-      "timestamp": "2026-09-23T16:59:00Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "ops(cf): a read-only diagnostics workflow for the 504/522 investigation (#2126)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2128",
-      "timestamp": "2026-09-23T16:43:00Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(worker): the unsolved map moves to the durable store — and the last KV enumeration with it (#2119)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2125",
-      "timestamp": "2026-09-23T16:30:43Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(worker): every outbound call gets a deadline — the 504s are the worker waiting on a stalled fetch",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2127",
-      "timestamp": "2026-09-23T16:25:18Z",
       "source": "github"
     },
     {
