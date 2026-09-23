@@ -113,9 +113,27 @@ per purpose, narrowest scope*):
 1. **Create a separate read-only token** with exactly the two permissions above and store it in the
    `release` environment as `CF_OBSERVABILITY_TOKEN`. The workflow prefers it and falls back to
    `CF_API_TOKEN`, so nothing breaks until it exists.
-2. **Add the two permissions to the existing deploy token** — no GitHub change is needed, because
-   editing a token's permissions in Cloudflare applies to the same secret value. It is faster and it
-   widens what a deployment credential can do.
+2. **Add the two permissions to the existing deploy token** — for a *permission* edit no GitHub change
+   is needed, because the token's value is unchanged. It is faster and it widens what a deployment
+   credential can do.
+
+> ⚠️ **If Cloudflare shows you a new token value, update the GitHub secret in the same sitting.** Editing
+> permissions on an existing token keeps its value; creating or rolling one does not, and the old value
+> is then invalid rather than merely under-privileged. Measured 2026-09-23: after a token update the
+> worker deploy failed with
+>
+> ```
+> ✘ [ERROR] A request to the Cloudflare API (/accounts) failed.
+>   Invalid access token [code: 9109]
+> ```
+>
+> **`9109` means the value is not a token at all** — not a missing permission (that reads
+> `Authentication error` / code `10000`, which is what the telemetry endpoint returned before its
+> permission existed). Every job that reads `release`'s `CF_API_TOKEN` breaks together when this happens:
+> `deploy-worker`, `apply-d1-schema`, `d1-bootstrap`, `d1-counters-report`, `intake-pipeline-test`,
+> `cf-diagnostics`. The `automation` environment holds its **own** `CF_API_TOKEN` (D1:Edit only), so
+> `sync-d1` and `sync-question-answers` keep working — which is the two-credential design earning its
+> keep: a rotation on one path did not stop the scheduled corpus sync.
 
 A third option costs nothing at all and is enough for a one-off: the dashboard's
 Workers & Pages → `misakanet-register-proxy` → Observability → Logs view, or
