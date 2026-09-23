@@ -135,3 +135,24 @@ def _github_tag_matches(pattern: str, tag: str) -> bool:
             out.append(re.escape(ch))
         i += 1
     return re.fullmatch("".join(out), tag) is not None
+
+
+def test_the_action_alias_follows_each_release():
+    """`uses: Ikalus1988/MisakaNet@v1` must get the newest release, not the tag it was born at.
+
+    The action IS this repository, so its `v1` alias has to move with the releases — decided
+    2026-09-23: the tag has to show that the version changed. `v1` was created once at the
+    intake-bot migration and would otherwise freeze the Marketplace listing at whatever `main`
+    looked like that afternoon, while `@v2.34.0` (the versioned tag the same step creates) is
+    what pins an exact version, for anyone who needs that.
+    """
+    text = (REPO / ".github" / "workflows" / "release-please.yml").read_text(encoding="utf-8")
+    assert re.search(r"git tag -f v1\b", text), (
+        "release-please.yml tags the release but never moves `v1`, so the action alias is "
+        "frozen at the first commit it was pointed at")
+    assert re.search(r"git push -f origin v1\b", text), (
+        "the alias is moved locally but never pushed, so consumers never see it")
+    # Ordering matters in one direction only: the versioned tag has to exist before it is used
+    # as the thing `v1` points at, and the release notes are generated from it.
+    assert text.index('git tag "$TAG"') < text.index("git tag -f v1"), (
+        "`v1` must be moved after the versioned tag for the same release exists")
