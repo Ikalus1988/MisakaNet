@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
-"""从 lessons/ 实时统计，自动生成 STATUS.md。"""
+"""从 lessons/ 实时统计，生成 STATUS.md —— **本机工具，不是 CI 的一部分**。
+
+三件事说清楚，因为这份脚本看起来像"仓库的一页"，其实不是（2026-09-23, #2095）：
+
+1. **没有任何 workflow 调用它。** 想更新 `STATUS.md` 得有人在本机手动跑一次。
+2. **它的输出是被 gitignore 的**（`.gitignore:72` `/STATUS.md`），所以它既不随提交发布，也不被
+   任何门禁盯着——`sync_lesson_count.py` 里那条 "NOT managed: STATUS.md" 的注释说的就是这件事。
+   因此 `STATUS.md` 顶部的"自动更新于 …"只是本脚本生成的本地时间戳，不代表仓库在维护它。
+3. **对外可读的现状快照在别处**：`docs/maintainer/state-of-the-repo.md`（走 PR 与评审），
+   以及 `ROADMAP.md` 的「当前数字（受 SSOT 门禁维护）」一节。
+
+另外：本脚本的产物由**实时统计 + 硬编码断言**两部分拼成（例如 Hub 相关断言在 Hub 于 2026-08-31
+退役之后仍然写着 ✅）。把它当当下事实之前，先看上面第 3 条的两个来源。
+"""
 import json
 import re
 import subprocess
