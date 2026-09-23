@@ -149,9 +149,19 @@ $ curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \
 - ⚠️ **`bypass_actors: []` 的副作用（2026-09-23 实测，#2073）**：GitHub 对 `required_status_checks`
   规则**在直接 push 时也强制**，所以任何"跑完把结果提交回 main"的 workflow 都会被拒：
   `remote: - 3 of 3 required status checks are expected.` → `push declined due to repository rule violations`。
-  第一次撞上是 npm 发布 2.34.0 的 record 步骤（包发成功、记账被拒，留下三行过期版本号）；每日的
-  `sync-node-counter` / `update-lessons` / `update-badges` 是下一批。**"run 是绿的"不再等于"它写进去了"**——
-  判据要看受管表面最后一次真实提交的时间。
+  第一次撞上是 npm 发布 2.34.0 的 record 步骤（包发成功、记账被拒，留下三行过期版本号）。随后实测的
+  第二、三例：`sync-node-counter`（run 35843302110，09-23T09:30Z）与 `build-feed`（run 35820175013，
+  09-22T17:03Z）**都在 push 那一步死掉**，而它前面"读 KV / 重建 feed"的步骤是成功的——即"结果被丢在最后一步"。
+  同一批里 `update-badges` / `update-smithery-badge` **不受影响**：它们推的是 `data` 分支，而这个 ruleset 的
+  作用域是 `~DEFAULT_BRANCH`。**"run 是绿的"不再等于"它写进去了"**——判据要看受管表面最后一次真实提交的时间。
+- ✅ **2026-09-23 已修（PR #2107）**：七个批量写入者（`sync-node-counter` / `update-lessons` / `build-feed` /
+  `leaderboard-watch` / `benchmark-workers-ai` / `d1-bootstrap` / `release-please`）改走
+  `scripts/ci/land_change.py`：签核提交 → 稳定分支 `bot/<job>` → PR → 开 squash auto-merge，检查绿了
+  **GitHub 自己合并**（实测两次：#2104 由 11:05Z 开到 11:09:56Z 合并；#2105 复用同一个已合并分支再开一次）。
+  `register.yml` 是唯一仍会 push main 的 workflow，它的正确修法是让 worker 的 KV 计数成为唯一写入者
+  （文件本来就是 KV 的镜像）——证据与建议在 **#2106**。机制、故障对照表、新增写入者的步骤：
+  **`docs/maintainer/automation-lands-via-pr.md`**；`tests/test_no_workflow_pushes_to_main.py` 负责不让
+  "push main" 回来。
 - 分支保护的其余读法（同一个仓库、同一时刻）：`enforce_admins: true`；响应里**没有**
   `required_pull_request_reviews`（不强制 review）；`allow_force_pushes.enabled: true`——也就是说
   API 当前并不阻止一次强推 `main`。
