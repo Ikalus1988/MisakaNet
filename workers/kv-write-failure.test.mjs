@@ -19,8 +19,9 @@
 // Run: node --test workers/kv-write-failure.test.mjs
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import worker, { refreshSearchIndex, BM25_INDEX_KEY } from './register-proxy-sw.js';
+import worker, { refreshSearchIndex, BM25_INDEX_KEY, storeGet } from './register-proxy-sw.js';
 import { testToken } from './_test-token.mjs';
+import { withKvStore } from './_test-kv-store.mjs';
 
 // Synthetic token for the fixtures below (workers/_test-token.mjs explains why these
 // are never written as literals: the plugin-scanner flags that shape).
@@ -144,5 +145,39 @@ test('an un-writable index is reported by the refresh, not swallowed', async () 
   assert.equal(env._store.has(BM25_INDEX_KEY), false, 'the write really did fail');
   assert.equal(result.refreshed, false,
     `a build that could not be stored must not be reported as refreshed: ${JSON.stringify(result)}`);
-  assert.match(String(result.reason), /kv write/i, JSON.stringify(result));
+  // The reason is no longer KV-specific: the index goes through `storePut`, which tries D1 first and
+  // only then KV (#2116), so "the build could not be stored" is the condition — and that is what the
+  // assertion is about. The one above it is the part that matters: a build nobody stored must never
+  // be reported as refreshed.
+  assert.match(String(result.reason), /storage write/i, JSON.stringify(result));
+});
+
+// The point of #2116, as a test: a spent KV budget is no longer enough to freeze the index.
+//
+// This is the state production was in on 2026-09-23 — `/api/health` said `kv writes failing (quota
+// 10048)`, the rebuild ran, the write was refused, and search kept serving a previous build whose
+// lessons had no `evidence_level`. With the index in the durable store the same outage costs nothing.
+test('with D1 bound, a KV write outage no longer freezes the index (#2116)', async () => {
+  const env = createEnv({ failWrites: true,
+    seed: { 'proxy:lessons': JSON.stringify({ ts: Date.now(), data: LESSONS }) } });
+  // The corpus comes from D1 too once it is bound (`loadLessonsFresh`), so the stub answers both:
+  // kv_store rows through the shared helper, lesson rows through this.
+  const lessonsD1 = {
+    prepare() {
+      const stmt = { bind() { return stmt; },
+        async all() { return { results: LESSONS.map(l => ({ ...l, tags: JSON.stringify(l.tags || []) })) }; },
+        async run() { return { success: true }; } };
+      return stmt;
+    },
+  };
+  env.MISAKANET_D1 = withKvStore(lessonsD1);
+
+  const result = await refreshSearchIndex(env);
+  assert.equal(result.refreshed, true,
+    `the rebuild must publish while KV refuses writes: ${JSON.stringify(result)}`);
+
+  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
+  assert.equal(stored.docCount, LESSONS.length, 'the index is readable from where it was written');
+  assert.equal(env._store.has(BM25_INDEX_KEY), false,
+    'and it did not go to KV — the storage it could not use');
 });

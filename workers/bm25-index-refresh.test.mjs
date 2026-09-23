@@ -12,7 +12,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import worker, { buildBM25Index, refreshSearchIndex, BM25_INDEX_KEY } from './register-proxy-sw.js';
+import worker, { buildBM25Index, refreshSearchIndex, BM25_INDEX_KEY, storeGet } from './register-proxy-sw.js';
+import { withKvStore } from './_test-kv-store.mjs';
 import { testToken } from './_test-token.mjs';
 
 // One token for the file: createEnv() hands it to the worker, the requests below
@@ -78,7 +79,7 @@ test('production starts without an index — the state this fixes', async () => 
   const env = createEnv();
   const result = await search(env, 'pip install timeout');
   assert.equal(result.source, 'worker-search', 'the naive fallback is the pre-cron state');
-  assert.equal(await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json'), null);
+  assert.equal(await storeGet(env, BM25_INDEX_KEY, 'json'), null);
 });
 
 test('the refresh builds and stores a usable index', async () => {
@@ -87,7 +88,7 @@ test('the refresh builds and stores a usable index', async () => {
   assert.equal(first.refreshed, true, JSON.stringify(first));
   assert.equal(first.docCount, LESSONS.length);
 
-  const stored = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
+  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
   assert.equal(stored.version, 1);
   assert.equal(stored.docCount, LESSONS.length);
   assert.ok(stored.built_at, 'built_at makes the next refresh a no-op until it is old');
@@ -158,7 +159,10 @@ const MANY = [
 
 function createD1Env(rows, d1 = createLimitedD1(rows)) {
   const env = createEnv([]);
-  env.MISAKANET_D1 = d1;
+  // The durable store is D1-first since #2116, so the stub has to be able to hold `kv_store`
+  // rows: a permissive stub answered `SELECT value FROM kv_store` with lesson rows, which made the
+  // index look published while nothing was stored (7 tests failed on exactly that).
+  env.MISAKANET_D1 = withKvStore(d1);
   env._store.clear(); // start with a cold proxy cache so the D1 path is exercised
   return env;
 }
@@ -224,7 +228,7 @@ test('the internal load asks D1 for the lesson body, not just the summary', asyn
   assert.equal(result.textMode, 'rich',
     'the index is built from summary-only text without the rich projection');
 
-  const stored = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
+  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
   assert.equal(stored.textMode, 'rich');
 
   const hit = await search(env, `${BODY_ONLY} memory limit too low`);
@@ -291,7 +295,7 @@ test('the internal lesson load asks D1 for the whole corpus, not one page', asyn
   assert.equal(result.docCount, MANY.length,
     'a 100-row limit silently shrank the index to the newest 100 lessons');
 
-  const stored = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
+  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
   assert.equal(stored.docCount, MANY.length);
   assert.equal(stored.docs.length, MANY.length);
 });
@@ -350,7 +354,7 @@ test('an empty corpus is not turned into an empty index', async () => {
   const result = await refreshSearchIndex(env);
   assert.equal(result.refreshed, false);
   assert.equal(result.reason, 'no lessons');
-  assert.equal(await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json'), null);
+  assert.equal(await storeGet(env, BM25_INDEX_KEY, 'json'), null);
 });
 
 test('the real corpus builds an index that fits KV', async () => {
@@ -388,7 +392,7 @@ test('the searchable text keeps a term that sits late in a section', async () =>
   const env = createD1Env([late, LESSONS[1]], createColumnAwareD1([late, LESSONS[1]]));
   await refreshSearchIndex(env);
 
-  const stored = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
+  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
   assert.ok(stored.terms.kubectl, 'the late term never reached the index');
 
   const hit = await search(env, 'kubectl describe pod');
@@ -410,7 +414,7 @@ test('a stored index built from older searchable text is rebuilt, not trusted', 
   const result = await refreshSearchIndex(env);
   assert.equal(result.refreshed, true,
     `a text-version change must force a rebuild: ${JSON.stringify(result)}`);
-  const stored = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
+  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
   assert.notEqual(stored.textVersion, 1, 'the rebuilt index must carry the current text version');
 });
 
@@ -423,7 +427,7 @@ test('a sync that rewrote rows triggers a reindex even without a count change', 
   const d1 = createColumnAwareD1(rows);
   const env = createD1Env(rows, d1);
   await refreshSearchIndex(env);
-  const first = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
+  const first = await storeGet(env, BM25_INDEX_KEY, 'json');
   assert.ok(first.syncStamp, 'the index must record the sync stamp it was built from');
 
   // Same rows, same count — only the sync stamp moved (a re-sync after an edit).
@@ -469,7 +473,7 @@ test('a rebuild reads D1, not the lessons cache it may be racing (#1731)', async
   assert.equal(result.refreshed, true, JSON.stringify(result));
   assert.equal(result.docCount, 1, 'the index must describe the D1 corpus, not the cache');
 
-  const stored = await env.MISAKANET_KV.get(BM25_INDEX_KEY, 'json');
+  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
   assert.equal(stored.syncStamp, '2026-09-15 12:29:20');
   assert.deepEqual(stored.docs.map(d => d.id), ['post-sync-row'],
     'the rebuild must be built from D1, not from the cached pre-sync corpus');
