@@ -140,6 +140,22 @@ jobs:
           print(raw[:6000])
           PY
 
+      - name: The served trust field — does the D1 row carry evidence_level? (#2080)
+        run: |
+          set -euo pipefail
+          npm install -g wrangler >/dev/null 2>&1
+          cd workers
+          # #2080 has been open on exactly this question: the deployed worker has the fallback
+          # (`lesson.evidence_level || frontmatterField(lesson.frontmatter, "evidence_level")`), the
+          # D1 rich projection does select `frontmatter`, and the served field is *still* empty. Either
+          # the stored JSON has no such key or the reader is not reaching this column — and the two
+          # demand opposite fixes. This prints the stored value for the lessons that exposed it.
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT id, length(frontmatter) AS fm_len, instr(frontmatter, 'evidence_level') AS has_key, substr(frontmatter, 1, 160) AS head FROM lessons WHERE id IN ('playwright-snap-chromium-libnss3-sandbox-launch', 'openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium');"
+          echo "== how many rows carry the key at all =="
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT COUNT(*) AS rows, SUM(instr(frontmatter, 'evidence_level') > 0) AS with_key FROM lessons;"
+
       - name: D1 health — is storePut falling back to KV?
         run: |
           set -euo pipefail
