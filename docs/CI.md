@@ -55,6 +55,7 @@
 | `sync-node-counter.yml` | Mirror Node Counter（把 D1 计数镜像到 main）| 定时, 手动 |  |
 | `apply-d1-schema.yml` | Apply D1 schema | 手动 |  |
 | `d1-counters-report.yml` | D1 counters report | 手动 |  |
+| `cf-diagnostics.yml` | CF diagnostics（只读运维视图：#2126 的 504/522 归因 + D1/durable store 健康）| 手动 |  |
 | `guarded-repository.yml` | Guarded Repository（仓库守卫巡检）| push, 定时, 手动 | `0 7 * * 1` |
 | `update-smithery-badge.yml` | Update Smithery Badge (daily) | 定时, 手动 | `0 6 * * *` |
 | `sync-question-answers.yml` | Sync Question Answers | 定时, 手动 | `20 7 * * *` |
