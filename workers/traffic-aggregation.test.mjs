@@ -12,6 +12,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { aggregateDailyTraffic } from './register-proxy-sw.js';
+import { withKvStore } from './_test-kv-store.mjs';
 
 function createFakeKV(seed = {}) {
   const store = new Map(Object.entries(seed));
@@ -67,15 +68,20 @@ test('aggregateDailyTraffic sums D1 counters into monthly keys', async () => {
     [`traffic|pageview|${TODAY}`]: 200,
   });
 
-  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv, MISAKANET_D1: d1 });
+  const store = withKvStore(d1);
+  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv, MISAKANET_D1: store });
   assert.equal(result.aggregated, 360);
   assert.equal(result.month, MONTH);
   assert.equal(result.date, TODAY);
 
-  assert.equal(kv._store.get(`traffic-month:mcp:${MONTH}`), '100');
-  assert.equal(kv._store.get(`traffic-month:agent:${MONTH}`), '50');
-  assert.equal(kv._store.get(`traffic-month:crawler:${MONTH}`), '10');
-  assert.equal(kv._store.get(`traffic-month:pageview:${MONTH}`), '200');
+  // The monthly roll-up is a durable-store row since #2120 (D1 first, KV as the fallback), so these read
+  // through the same helper the worker reads through. Asserting against the KV stub described the
+  // fallback, and would have passed while the totals were stored somewhere the assertion never looked.
+  const monthly = (cls) => store.kvStore.get(`traffic-month:${cls}:${MONTH}`)?.value;
+  assert.equal(monthly('mcp'), '100');
+  assert.equal(monthly('agent'), '50');
+  assert.equal(monthly('crawler'), '10');
+  assert.equal(monthly('pageview'), '200');
 });
 
 test('the legacy KV traffic keys are still read (transition and rollback)', async () => {
@@ -112,16 +118,20 @@ test('aggregateDailyTraffic accumulates with existing monthly totals', async () 
   const kv = createFakeKV({ [`traffic-month:mcp:${MONTH}`]: '200' }); // existing monthly total
   const d1 = createCountersD1({ [`traffic|mcp|${TODAY}`]: 50 });
 
-  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv, MISAKANET_D1: d1 });
+  const store = withKvStore(d1);
+  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv, MISAKANET_D1: store });
   assert.equal(result.aggregated, 50);
-  assert.equal(kv._store.get(`traffic-month:mcp:${MONTH}`), '250');
+  // The KV-era total is still read (storeGet falls back to KV), and the accumulated one is durable.
+  assert.equal(store.kvStore.get(`traffic-month:mcp:${MONTH}`)?.value, '250');
 });
 
 test('aggregateDailyTraffic handles zero daily counts gracefully', async () => {
   const kv = createFakeKV({});
   const d1 = createCountersD1({});
 
-  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv, MISAKANET_D1: d1 });
+  const store = withKvStore(d1);
+  const result = await aggregateDailyTraffic({ MISAKANET_KV: kv, MISAKANET_D1: store });
   assert.equal(result.aggregated, 0);
+  assert.equal(store.kvStore.get(`traffic-month:mcp:${MONTH}`), undefined);
   assert.equal(kv._store.get(`traffic-month:mcp:${MONTH}`), undefined);
 });

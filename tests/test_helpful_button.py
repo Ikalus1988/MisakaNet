@@ -95,9 +95,15 @@ class TestHelpfulButtonWorker(unittest.TestCase):
         self.assertIn('sanitizeIdentifier(url.searchParams.get("lesson_id"), 100)', self.js)
         self.assertIn("sanitizeIdentifier(voteBody.lesson_id, 100)", self.js)
 
-    def test_error_handling_for_missing_kv(self):
-        """Returns 503 when KV is not configured."""
-        self.assertIn('"KV not configured"', self.js)
+    def test_error_handling_for_missing_storage(self):
+        """Returns 503 when there is no storage configured.
+
+        The message was "KV not configured" until the write side started moving to D1 (#2116/#2118):
+        the guard is `hasDurableStore(env)` now, and an instance with D1 bound but no KV serves this
+        endpoint rather than refusing it — so the old wording described a limit that no longer exists.
+        """
+        self.assertIn('"no storage configured"', self.js)
+        self.assertIn("hasDurableStore(env)", self.js)
 
     def test_cors_headers_on_helpful(self):
         """Helpful endpoint responses include CORS headers."""
