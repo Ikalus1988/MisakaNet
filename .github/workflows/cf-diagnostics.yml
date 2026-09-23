@@ -1,0 +1,172 @@
+name: CF diagnostics
+
+# Read-only operations view for the 504/522 investigation (issue #2126).
+#
+# Why a workflow instead of a local curl: the credentials live in the `release` environment, and the
+# rule in docs/maintainer/credentials-and-environments.md is that a secret is never copied out of
+# GitHub to be used by hand. This runs the same read-only queries with the token that is already
+# installed, prints the answers into the job log, and holds no write of any kind — every call below is
+# a GET or an analytics/telemetry query.
+#
+# It exists because "the service hangs" needs facts that only Cloudflare has:
+#   * which status codes, on which routes, over the window (the 504/522 split the owner measured);
+#   * whether the worker logs an error for those requests, or nothing at all (a request the platform
+#     killed looks very different from one whose upstream stalled);
+#   * whether D1 is healthy — `storePut` falls back to KV when it is not, which is the only remaining
+#     way this worker spends KV's 1,000-writes/day budget.
+on:
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: 'How many hours back to look'
+        type: number
+        default: 24
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    # `workflow_dispatch`-only, so the environment's protection rules apply to a run a person started —
+    # which is what makes publish/deploy credentials safe to put on it.
+    environment: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+      HOURS: ${{ inputs.hours }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: HTTP status codes by route (last ${{ inputs.hours }}h)
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.request
+
+          account = os.environ["CLOUDFLARE_ACCOUNT_ID"]
+          token = os.environ["CLOUDFLARE_API_TOKEN"]
+          hours = int(os.environ.get("HOURS") or 24)
+
+          query = """
+          query($account: String!, $since: Time!, $until: Time!) {
+            viewer {
+              accounts(filter: {accountTag: $account}) {
+                httpRequestsAdaptiveGroups(
+                  limit: 200
+                  filter: {datetime_geq: $since, datetime_leq: $until}
+                  orderBy: [count_DESC]
+                ) {
+                  count
+                  dimensions { edgeResponseStatus clientRequestPath }
+                  avg { edgeResponseTime }
+                }
+              }
+            }
+          }
+          """
+          body = json.dumps({"query": query, "variables": {
+              "account": account,
+              "since": f"-{hours}h",
+              "until": "now",
+          }}).encode()
+          req = urllib.request.Request("https://api.cloudflare.com/client/v4/graphql", data=body,
+                                       headers={"Authorization": f"Bearer {token}",
+                                                "Content-Type": "application/json"})
+          try:
+              payload = json.load(urllib.request.urlopen(req, timeout=60))
+          except Exception as exc:  # the error text is the finding: it names the missing permission
+              print(f"graphql query failed: {exc}")
+              raise SystemExit(0)
+
+          if payload.get("errors"):
+              print("graphql errors:", json.dumps(payload["errors"])[:1500])
+          groups = (((payload.get("data") or {}).get("viewer") or {}).get("accounts") or [{}])[0] \
+              .get("httpRequestsAdaptiveGroups") or []
+          print(f"groups: {len(groups)}")
+          by_status = {}
+          for g in groups:
+              dims = g.get("dimensions") or {}
+              status = str(dims.get("edgeResponseStatus"))
+              by_status[status] = by_status.get(status, 0) + int(g.get("count") or 0)
+          print("== by status ==")
+          for status, count in sorted(by_status.items(), key=lambda kv: -kv[1]):
+              print(f"  {status}: {count}")
+          print("== worst routes (status >= 500) ==")
+          for g in sorted(groups, key=lambda g: -int(g.get("count") or 0)):
+              dims = g.get("dimensions") or {}
+              status = int(dims.get("edgeResponseStatus") or 0)
+              if status < 500:
+                  continue
+              print(f"  {status} {g.get('count')} avg={((g.get('avg') or {}).get('edgeResponseTime'))}ms "
+                    f"{dims.get('clientRequestPath')}")
+          PY
+
+      - name: Worker errors and logs (Observability telemetry)
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.request
+
+          account = os.environ["CLOUDFLARE_ACCOUNT_ID"]
+          token = os.environ["CLOUDFLARE_API_TOKEN"]
+          hours = int(os.environ.get("HOURS") or 24)
+
+          # Shape from the Workers Observability API: a telemetry query with a time range and a limit.
+          # If the schema differs, the response body says how — which is why the raw text is printed
+          # rather than summarised.
+          body = json.dumps({
+              "queryId": "cf-diagnostics",
+              "timeframe": {"from": int(__import__("time").time() * 1000) - hours * 3_600_000,
+                            "to": int(__import__("time").time() * 1000)},
+              "parameters": {
+                  "datasets": ["cloudflare-workers"],
+                  "filters": [{"key": "scriptName", "operator": "eq", "value": "misakanet-register-proxy"}],
+                  "limit": 50,
+              },
+          }).encode()
+          req = urllib.request.Request(
+              f"https://api.cloudflare.com/client/v4/accounts/{account}/workers/observability/telemetry/query",
+              data=body, headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+          try:
+              raw = urllib.request.urlopen(req, timeout=60).read().decode()
+          except urllib.error.HTTPError as exc:
+              print(f"HTTP {exc.code}: {exc.read().decode()[:1200]}")
+              raise SystemExit(0)
+          except Exception as exc:
+              print(f"telemetry query failed: {exc}")
+              raise SystemExit(0)
+          print(raw[:6000])
+          PY
+
+      - name: The served trust field — does the D1 row carry evidence_level? (#2080)
+        run: |
+          set -euo pipefail
+          npm install -g wrangler >/dev/null 2>&1
+          cd workers
+          # #2080 has been open on exactly this question: the deployed worker has the fallback
+          # (`lesson.evidence_level || frontmatterField(lesson.frontmatter, "evidence_level")`), the
+          # D1 rich projection does select `frontmatter`, and the served field is *still* empty. Either
+          # the stored JSON has no such key or the reader is not reaching this column — and the two
+          # demand opposite fixes. This prints the stored value for the lessons that exposed it.
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT id, length(frontmatter) AS fm_len, instr(frontmatter, 'evidence_level') AS has_key, substr(frontmatter, 1, 160) AS head FROM lessons WHERE id IN ('playwright-snap-chromium-libnss3-sandbox-launch', 'openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium');"
+          echo "== how many rows carry the key at all =="
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT COUNT(*) AS rows, SUM(instr(frontmatter, 'evidence_level') > 0) AS with_key FROM lessons;"
+
+      - name: D1 health — is storePut falling back to KV?
+        run: |
+          set -euo pipefail
+          npm install -g wrangler >/dev/null 2>&1
+          cd workers
+          echo "== kv_store size (the durable store) =="
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT COUNT(*) AS rows, SUM(expires_at IS NOT NULL AND expires_at <= datetime('now')) AS expired FROM kv_store;"
+          echo "== the keys the migrated families use =="
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT substr(key, 1, instr(key || ':', ':') - 1) AS family, COUNT(*) AS keys FROM kv_store GROUP BY family ORDER BY keys DESC LIMIT 20;"
+          echo "== counters by scope (a scope with no rows means that migration is not taking effect) =="
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT scope, COUNT(*) AS buckets, SUM(count) AS total, MAX(updated_at) AS last_update FROM counters GROUP BY scope ORDER BY total DESC;"
