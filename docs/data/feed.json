@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-23T14:36:07.756160+00:00",
+  "generated_at": "2026-09-23T17:14:45.084032+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(register): the registration job stops writing a number it does not own",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2109",
-      "timestamp": "2026-09-23T14:35:52Z",
+      "title": "fix(worker): the trust field was dropped on the last hop — the row had it, the projection did not",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2130",
+      "timestamp": "2026-09-23T17:14:34Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): mirror the live node counter and its surfaces",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2108",
-      "timestamp": "2026-09-23T14:03:18Z",
+      "title": "feat(tools): compare the two search implementations over one query set (#2121)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2129",
+      "timestamp": "2026-09-23T16:59:00Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): the automated writers land through a pull request that merges itself",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2107",
-      "timestamp": "2026-09-23T13:59:28Z",
+      "title": "ops(cf): a read-only diagnostics workflow for the 504/522 investigation (#2126)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2128",
+      "timestamp": "2026-09-23T16:43:00Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs: automated writers land through a pull request that merges itself",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2104",
-      "timestamp": "2026-09-23T11:09:56Z",
+      "title": "fix(worker): the unsolved map moves to the durable store — and the last KV enumeration with it (#2119)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2125",
+      "timestamp": "2026-09-23T16:30:43Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(d1): the served trust field carries the level the corpus publishes",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2100",
-      "timestamp": "2026-09-23T11:04:57Z",
+      "title": "fix(worker): every outbound call gets a deadline — the 504s are the worker waiting on a stalled fetch",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2127",
+      "timestamp": "2026-09-23T16:25:18Z",
       "source": "github"
     },
     {
