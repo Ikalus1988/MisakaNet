@@ -153,6 +153,10 @@ def test_cli_checks_the_node_metric_too(tmp_path):
     # is a hard error by design, so this fixture has to carry every surface the registry names.
     (tmp_path / "README.zh-CN.md").write_text("| 🌐 Nodes | 59 |\n", encoding="utf-8")
     (tmp_path / "README.ja.md").write_text("| 登録ノード | 59個の割り当てID |\n", encoding="utf-8")
+    # ROADMAP.md joined the node surfaces on 2026-09-23 (#2095): its "current numbers" block is the
+    # managed one, while the dated 2026-09-16 snapshot below it stays exempt — which is exactly why
+    # the block's row labels carry 当前.
+    (tmp_path / "ROADMAP.md").write_text("| 已注册节点（当前） | **59** |\n", encoding="utf-8")
 
     stale = subprocess.run([sys.executable, str(SCRIPT), "--check", "--metric", "nodes",
                             "--root", str(tmp_path)],
@@ -164,6 +168,7 @@ def test_cli_checks_the_node_metric_too(tmp_path):
     (tmp_path / "docs" / "llms.txt").write_text("- 42 registered nodes\n", encoding="utf-8")
     (tmp_path / "README.zh-CN.md").write_text("| 🌐 Nodes | 42 |\n", encoding="utf-8")
     (tmp_path / "README.ja.md").write_text("| 登録ノード | 42個の割り当てID |\n", encoding="utf-8")
+    (tmp_path / "ROADMAP.md").write_text("| 已注册节点（当前） | **42** |\n", encoding="utf-8")
     healthy = subprocess.run([sys.executable, str(SCRIPT), "--check", "--metric", "nodes",
                               "--quiet", "--root", str(tmp_path)],
                              capture_output=True, text=True)
