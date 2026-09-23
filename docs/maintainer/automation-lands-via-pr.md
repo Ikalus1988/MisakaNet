@@ -104,3 +104,24 @@ make them *worse* rather than safer:
    on that step.
 4. Keep the "nothing changed → exit 0" early return the script gives you for free. A no-change run
    must not open a pull request.
+
+## Proven live, twice, on 2026-09-23
+
+The mechanism was not written and assumed. It was run against this repository before it was given
+to any workflow, from a scratch clone, with the maintainer's PAT:
+
+* **Round 1** — pull request [#2104](https://github.com/Ikalus1988/MisakaNet/pull/2104) opened
+  `11:05Z`, auto-merge enabled by the script (`merge_method: squash`), merged by GitHub at
+  `11:09:56Z` once `DCO / Signed-off-by`, `gate` and `test (ubuntu-latest, 3.11)` were green. The
+  other five legs of the test matrix were still running at that moment, which is what "the
+  required checks, not all the checks" means in practice.
+* **Round 2** — the *same* branch, `bot/land-selftest`, whose pull request had already been merged
+  and squash-merged away. A second run force-pushed onto it and opened a fresh pull request, which
+  is the property every daily job depends on: a stable branch that can be reused after its own
+  merge, rather than a new branch per run accumulating pull requests. This paragraph is that
+  round's change.
+
+`tests/test_no_workflow_pushes_to_main.py` is the other half: it fails on a workflow that goes
+back to pushing `main`, and it fails when a name on its exception list stops pushing — so the list
+cannot rot into a comment that is no longer true.
+
