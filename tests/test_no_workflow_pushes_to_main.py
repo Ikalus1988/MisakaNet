@@ -17,11 +17,6 @@ on every PR, instead of failing months later in a scheduled run nobody reads.
 Two exceptions are listed with the reason they are exceptions, and the reason has to survive being
 read by the next person to touch them:
 
-* `register.yml` assigns the next node number on a registration issue. Its write is on a user's
-  critical path, so a pull request's latency would be paid by the person registering, and two
-  registrations racing through two unmerged branches could hand out the same number. The fix for
-  that path is to read the number from the worker's KV counter (the source `data/counter.json`
-  mirrors) rather than to invent one in git — see the issue linked in the entry below.
 * `cite-lesson.yml` reacts to an issue labelled `usage` and its `git push` currently pushes
   nothing (the step before it writes no files), so it is a no-op rather than a blocked write.
 
@@ -43,14 +38,13 @@ WORKFLOWS = REPO / ".github" / "workflows"
 LANDER = "scripts/ci/land_change.py"
 
 # file → why it still pushes to `main` instead of using the lander.
+#
+# `register.yml` used to be listed here, with the reason that a pull request would put the
+# required checks' latency on the person registering and that two unmerged branches could issue
+# the same number. #2106 resolved it the other way: that job writes **nothing at all** now (the
+# node number is allocated by the worker's KV counter), so it left this list and
+# `test_register_yml_cannot_write_the_repository` pins the stronger property instead.
 MAIN_PUSHERS = {
-    "register.yml": (
-        "assigns the next node number on a registration issue — a pull request would put the "
-        "required checks' latency on the person registering, and two unmerged branches racing "
-        "could issue the same number. Tracked in #2106, which recommends reading the number from "
-        "the worker's KV counter (the source `data/counter.json` mirrors) instead of writing it in "
-        "git at all."
-    ),
     "cite-lesson.yml": (
         "reacts to an issue labelled `usage`; its push is currently a no-op (the preceding step "
         "writes no files), so nothing is being lost while that path is decided."
@@ -221,6 +215,27 @@ def test_the_converted_writers_go_through_the_lander():
         assert not any(pushes_to_main(s) for s in step_scripts(workflow)), (
             f"{name} still pushes to `main` somewhere"
         )
+
+
+def test_register_yml_cannot_write_the_repository():
+    """The registration job's guarantee is stronger than "does not push to main": it cannot write.
+
+    It held `contents: write` and incremented `data/counter.json` on every registration — a second
+    writer of a number the worker's KV counter owns, which is why the file trailed KV by 730 nodes
+    on 2026-09-23 while the site displayed the stale number as confirmed (#2106). The fix removed
+    the write, and this is what keeps it removed: no `contents` permission, no git command, and no
+    counter file touched.
+    """
+    data = yaml.safe_load((WORKFLOWS / "register.yml").read_text(encoding="utf-8"))
+    perms = data.get("permissions") or {}
+    assert "contents" not in perms, (
+        "register.yml must not hold a `contents` permission: the node number lives in the worker's "
+        "KV counter, and a job that can write the repository will eventually be asked to"
+    )
+    scripts = "\n".join(step_scripts(WORKFLOWS / "register.yml"))
+    for forbidden in ("git ", "data/counter.json", "git push"):
+        assert forbidden not in scripts, f"register.yml still touches {forbidden!r}"
+    assert "scripts/register_issue.py" in scripts, "the job must call the welcome script"
 
 
 def test_the_lander_itself_never_pushes_to_main():

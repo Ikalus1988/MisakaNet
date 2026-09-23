@@ -158,8 +158,10 @@ $ curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \
   `leaderboard-watch` / `benchmark-workers-ai` / `d1-bootstrap` / `release-please`）改走
   `scripts/ci/land_change.py`：签核提交 → 稳定分支 `bot/<job>` → PR → 开 squash auto-merge，检查绿了
   **GitHub 自己合并**（实测两次：#2104 由 11:05Z 开到 11:09:56Z 合并；#2105 复用同一个已合并分支再开一次）。
-  `register.yml` 是唯一仍会 push main 的 workflow，它的正确修法是让 worker 的 KV 计数成为唯一写入者
-  （文件本来就是 KV 的镜像）——证据与建议在 **#2106**。机制、故障对照表、新增写入者的步骤：
+  `register.yml` 也一起处理了（**#2106**）：它原来自己给 `data/counter.json` +1 再 push main，既会被
+  ruleset 拒（2026-09-22 三次 run），又与 KV 差 **730** 个号（文件 11047 / KV 11777）——站点上
+  「✅ 已分配 Misaka11048」报的是一个几百号之前的数字。现在这个 job **什么都不写**（没有 `contents`
+  权限），只贴欢迎词、打 `registered` 标签、关 issue；编号由 worker 的 KV 计数统一发放。机制、故障对照表、新增写入者的步骤：
   **`docs/maintainer/automation-lands-via-pr.md`**；`tests/test_no_workflow_pushes_to_main.py` 负责不让
   "push main" 回来。
 - 分支保护的其余读法（同一个仓库、同一时刻）：`enforce_admins: true`；响应里**没有**

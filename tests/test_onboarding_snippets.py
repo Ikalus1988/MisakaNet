@@ -27,11 +27,16 @@ ENDPOINT = "https://misakanet.org/mcp"
 PROTOCOL_HEADER = "MCP-Protocol-Version: 2025-06-18"
 ORIGIN_HEADER = "Origin: https://misakanet.org"
 
+# The files that hold a welcome message. The join flow's text moved out of the workflow on
+# 2026-09-23 (#2106): `register.yml` no longer writes anything, and its comment is built by
+# `scripts/register_issue.py`, which is unit-tested — including that the text still matches the
+# pattern the site polls for. The guard follows the text rather than the file it used to live in.
 WELCOME_WORKFLOWS = (
-    ".github/workflows/register.yml",          # the join flow (#1622's comment)
+    "scripts/register_issue.py",               # the join flow (#1622's comment)
     ".github/workflows/newbie-welcome.yml",
     ".github/workflows/pr-welcome.yml",
 )
+JOIN_WELCOME = "scripts/register_issue.py"
 
 
 def _read(rel: str) -> str:
@@ -51,7 +56,7 @@ def test_every_onboarding_snippet_uses_the_remote_endpoint():
 
 def test_join_welcome_puts_mcp_before_the_download():
     """MCP-first ordering, not just presence: the download is the fallback."""
-    text = _read(".github/workflows/register.yml")
+    text = _read(JOIN_WELCOME)
     assert ENDPOINT in text and "lessons.json" in text
     assert text.index(ENDPOINT) < text.index("lessons.json"), (
         "the join welcome must lead with the remote MCP call; the local index "
@@ -61,7 +66,7 @@ def test_join_welcome_puts_mcp_before_the_download():
 
 
 def test_join_welcome_covers_read_contribute_and_the_quota_escape():
-    text = _read(".github/workflows/register.yml")
+    text = _read(JOIN_WELCOME)
     for tool in ("misakanet_search", "misakanet_submit_intake", "misakanet_register"):
         assert tool in text, f"join welcome must mention {tool}"
 
