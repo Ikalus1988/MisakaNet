@@ -1638,7 +1638,7 @@ async function fetchLessonContent(env, lessonPath, lessonId) {
       for (const c of paths) {
         try {
           const url = `${GITHUB_API}/repos/${REPO}/contents/${c}?ref=${branch}`;
-          const resp = await fetch(url, {
+          const resp = await fetchWithTimeout(url, {
             headers: { Authorization: `Bearer ${token}`, "User-Agent": "MisakaNet-Worker", Accept: "application/vnd.github.v3+json" },
           });
           if (resp.ok) {
@@ -1655,7 +1655,7 @@ async function fetchLessonContent(env, lessonPath, lessonId) {
   // Try main branch first, then data
   for (const branch of ["main", "data"]) {
     const url = `${GITHUB_API}/repos/${REPO}/contents/${filePath}?ref=${branch}`;
-    const resp = await fetch(url, {
+    const resp = await fetchWithTimeout(url, {
       headers: { Authorization: `Bearer ${token}`, "User-Agent": "MisakaNet-Worker", Accept: "application/vnd.github.v3+json" },
     });
     if (resp.ok) {
@@ -2886,7 +2886,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // 2. Regression-benchmark citations (lesson referenced by a curated query
     //    in data/regression_queries.json — consumed via public data).
     try {
-      const resp = await fetch(`${PUBLIC_DATA_BASE}/regression_queries.json`, {
+      const resp = await fetchWithTimeout(`${PUBLIC_DATA_BASE}/regression_queries.json`, {
         headers: { "User-Agent": "MisakaNet-Events/1.0" },
       });
       if (resp.ok) {
@@ -3119,7 +3119,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         : ["intake", "mcp-intake", "pending-review"];
       // L4: surface the flag to triage instead of silently publishing injection text.
       if (injectionFlags.length) labels.push("needs-injection-review");
-      const resp = await fetch(`${GITHUB_API}/repos/${REPO}/issues`, {
+      const resp = await fetchWithTimeout(`${GITHUB_API}/repos/${REPO}/issues`, {
         method: "POST",
         signal: controller.signal,
         headers: {
@@ -3250,7 +3250,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         : "",
     ].filter(Boolean).join("\n");
     try {
-      const resp = await fetch(`${GITHUB_API}/repos/${REPO}/issues`, {
+      const resp = await fetchWithTimeout(`${GITHUB_API}/repos/${REPO}/issues`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${regToken}`,
@@ -3659,9 +3659,39 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
 }
 
 // ── GitHub API fetch with token ──
+// ── Every outbound call gets a deadline (2026-09-23) ─────────────────────────
+//
+// Cloudflare's analytics for 2026-09-23 show the shape this fixes: 504 Gateway Timeout ×1,171 and
+// 522 Connection Timed Out ×886 in 24h — 99.95% of all 5xx, spread across every hour rather than
+// concentrated in the KV write window. A 504 is the edge giving up on the worker, and the audit that
+// followed found **11 of 13** internal `fetch()` calls with no timeout at all: `fetchFromGitHub`,
+// `fetchPublicJson`, `fetchLessonContent`, the GitHub issue POSTs, the pr-genius fetches. If the
+// upstream stalls, the request stalls with it until the platform's own limit — which the caller
+// experiences as a hang (measured from outside: ~20% of identical requests never returned, `0 bytes
+// received`, while two control hosts were 10/10 fast).
+//
+// A deadline turns that into an ordinary failure the caller already handles: the fallback path
+// (KV copy, GitHub copy, cached payload) or a 5xx with a reason. 8s sits under a client's own timeout
+// while leaving room for a slow-but-real upstream; the keepalive probes use less, because a health
+// check that takes 8s has already failed.
+const UPSTREAM_TIMEOUT_MS = 8000;
+const KEEPALIVE_TIMEOUT_MS = 5000;
+
+/**
+ * `fetch` with a deadline. A caller that brought its own `signal` keeps it — that call already knows
+ * what its timeout should be, and two signals cannot both be honoured.
+ */
+function fetchWithTimeout(url, init = {}, ms = UPSTREAM_TIMEOUT_MS) {
+  if (init && init.signal) return fetch(url, init);
+  const signal = typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
+    ? AbortSignal.timeout(ms)
+    : undefined;
+  return signal ? fetch(url, { ...init, signal }) : fetch(url, init);
+}
+
 async function fetchFromGitHub(token, path, ref = "data") {
   const url = `${GITHUB_API}/repos/${REPO}/contents/${path}?ref=${encodeURIComponent(ref)}`;
-  const resp = await fetch(url, {
+  const resp = await fetchWithTimeout(url, {
     headers: { Authorization: `Bearer ${token}`, "User-Agent": "MisakaNet-Worker", Accept: "application/vnd.github.v3+json" },
   });
   if (!resp.ok) throw new Error(`GitHub API ${resp.status}`);
@@ -4015,7 +4045,7 @@ async function getWithCache(env, cacheKey, fetchFn, opts = {}) {
 }
 
 async function fetchPublicJson(path) {
-  const resp = await fetch(`${PUBLIC_DATA_BASE}/${path}`, {
+  const resp = await fetchWithTimeout(`${PUBLIC_DATA_BASE}/${path}`, {
     headers: { "User-Agent": "MisakaNet-Insights/1.0", Accept: "application/json" },
   });
   if (!resp.ok) throw new Error(`Public data ${resp.status}`);
@@ -4682,9 +4712,13 @@ async function handleSearchSignal(request, env) {
 }
 
 async function probeKeepaliveEndpoint(endpoint) {
-  const resp = await fetch(endpoint.url, {
+  // These probes call the worker's own public URL (see KEEPALIVE_ENDPOINTS), so a worker that is slow
+  // makes its own health check slow, and four such self-requests every 15 minutes add load to it. With
+  // a deadline the probe fails fast, the debounce counts it, and the loopback 522s that comment already
+  // mentions stop being waited on.
+  const resp = await fetchWithTimeout(endpoint.url, {
     headers: { "User-Agent": "MisakaNet-Register-Proxy-Keepalive/1.0" },
-  });
+  }, KEEPALIVE_TIMEOUT_MS);
   if (!resp.ok) {
     throw new Error(`${endpoint.name} returned HTTP ${resp.status}`);
   }
@@ -5457,7 +5491,7 @@ export default {
       if (!ghPath) return jsonResponse({ error: "Missing GitHub API path" }, 400);
       if (!ghPath.startsWith(repoApiPrefix)) return jsonResponse({ error: "Forbidden" }, 403);
 
-      const resp = await fetch(`${GITHUB_API}/${ghPath}${url.search}`, {
+      const resp = await fetchWithTimeout(`${GITHUB_API}/${ghPath}${url.search}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "User-Agent": "MisakaNet-Worker",
@@ -5909,7 +5943,7 @@ async function handlePrGeniusStats(env) {
       if (token) {
         return fetchFromGitHub(token, "data/pr-genius-stats.json");
       }
-      const resp = await fetch("https://raw.githubusercontent.com/" + REPO + "/main/data/pr-genius-stats.json");
+      const resp = await fetchWithTimeout("https://raw.githubusercontent.com/" + REPO + "/main/data/pr-genius-stats.json");
       if (!resp.ok) throw new Error("Failed to fetch pr-genius-stats.json: " + resp.status);
       return resp.json();
     });
@@ -5971,6 +6005,10 @@ export {
   // Exported for workers/kv-store-lifecycle.test.mjs: the reclaimer is the half of the TTL story that
   // `storeGet` does not cover — readers hide expired rows, and this is what removes them.
   sweepExpiredStore,
+  // Exported for workers/upstream-timeout.test.mjs: the deadline is the fix for the 504/522 series, and
+  // a helper nobody can call is a helper nobody can test.
+  fetchWithTimeout,
+  UPSTREAM_TIMEOUT_MS,
   // Exported so workers/kv-write-budget.test.mjs asserts the *ratio* against the real batch size
   // instead of a hardcoded 10 that stops being true the moment the constant moves.
   TRAFFIC_FLUSH_BATCH,
