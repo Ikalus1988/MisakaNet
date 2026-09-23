@@ -79,7 +79,7 @@
 11. 分支 housekeeping（**改法**：只清 >60 天，共 22 个；有开放 PR 的一律不碰）。
 12. intake bot 的 suggest-only 优先（评审；需要接入方数据支撑，目前 intake 仅 19 条）。
 13. #1896（`/start` 分工）、#1897（站点埋点）。
-14. 合并 `lessons/draft/` 与 `lessons/drafts/` 两个空目录。
+14. 合并 `lessons/draft/` 与 `lessons/drafts/` 两个空目录。（✅ 2026-09-23 已处理：删除残留的 `lessons/draft/`，见 #1915）
 
 **P3**
 

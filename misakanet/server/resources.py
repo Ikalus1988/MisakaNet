@@ -111,7 +111,7 @@ def handle_resources_read(uri: str) -> dict:
 
     elif uri.startswith("misakanet://lessons/"):
         lesson_id = uri.replace("misakanet://lessons/", "")
-        for subdir in ["core", "contrib", "draft", "en"]:
+        for subdir in ["core", "contrib", "en"]:
             d = REPO_ROOT / "lessons" / subdir
             if d.exists():
                 for f in d.glob("*.md"):
@@ -137,7 +137,7 @@ def handle_resources_read(uri: str) -> dict:
         from collections import Counter
 
         domain_counts = Counter()
-        for subdir in ["core", "contrib", "draft", "en"]:
+        for subdir in ["core", "contrib", "en"]:
             d = REPO_ROOT / "lessons" / subdir
             if d.exists():
                 for f in d.glob("*.md"):

@@ -176,7 +176,7 @@ def scan_lessons(domain_filter: Optional[str] = None) -> list[LessonInfo]:
 
     for md_file in LESSONS_DIR.rglob("*.md"):
         # Skip templates, archive, etc.
-        if md_file.parent.name in ("_archive", "templates", "draft", "drafts"):
+        if md_file.parent.name in ("templates", "drafts"):
             continue
         if md_file.name in ("index.md", "TEMPLATE.md", "LESSON_QUALITY_SCORING.md"):
             continue
