@@ -1396,11 +1396,22 @@ const INDEX_TEXT_VERSION = 3;
 // The public listing must not ship the internal searchable body: `indexText` feeds
 // the index and the matcher, and it is dropped from every response the worker
 // builds from loadLessons().
-function publicLessonRow({ indexText, textMode, ...rest }) {
-  // Both fields exist only to describe which projection produced the row; neither
-  // is part of the listing's contract (an adversarial review found `textMode`
-  // leaking here on 2026-09-12 while `indexText` was already stripped).
-  return rest;
+function publicLessonRow({ indexText, textMode, frontmatter, ...rest }) {
+  // `indexText` is the searchable body and `textMode` only says which projection produced the row
+  // (an adversarial review found the latter leaking on 2026-09-12, while `indexText` was already
+  // stripped). `frontmatter` is the raw JSON those fields come from, and it is dropped here so a
+  // 411-row listing does not carry 411 copies of it — but **not before lifting the fields the public
+  // contract promises out of it**, because the GitHub-snapshot path carries `evidence_level` only
+  // inside that JSON: stripping it first would turn a correct answer into `""` (#2080).
+  const { evidence_level, summary_plain, trigger, verify, ...rest2 } = rest;
+  const lifted = frontmatterFields(frontmatter);
+  return {
+    ...rest2,
+    ...(summary_plain ? { summary_plain } : lifted.summary_plain ? { summary_plain: lifted.summary_plain } : {}),
+    ...(trigger ? { trigger } : lifted.trigger ? { trigger: lifted.trigger } : {}),
+    ...(verify ? { verify } : lifted.verify ? { verify: lifted.verify } : {}),
+    evidence_level: evidence_level || frontmatterField(frontmatter, "evidence_level"),
+  };
 }
 
 // BM25 hits are projected from the index, which stores only
@@ -3812,6 +3823,19 @@ async function fetchLessonsFromD1(env, filters = {}) {
       fix: slice(r.solution, 200),
       updated: r.updated,
       created: r.created,
+      // The trust field the corpus advertises, derived HERE from the column this query already
+      // selected (#2080).
+      //
+      // `evidence_level` has no column on `lessons` — `update_lessons_json.py` derives it for
+      // `data/lessons.json`, `sync_lessons_to_d1.py` now derives it into the stored `frontmatter`, and
+      // the D1 reader had a fallback for it. Every one of those was in place and the served value was
+      // *still* `""`, because this projection — the only thing every caller sees — never copied
+      // `frontmatter` onto the row it builds. The fetch, the parser and the fallback were all correct
+      // and the field was dropped on the last hop, which is the shape of bug that a green fix hides.
+      evidence_level: r.evidence_level || frontmatterField(r.frontmatter, "evidence_level"),
+      // The three plain-text fields (summary_plain / trigger / verify) are lifted from the same JSON
+      // further down (`Object.assign(row, frontmatterFields(r.frontmatter))`), which is why they were
+      // never the missing half of #2080 — `evidence_level` was.
       // Provenance for detectTextMode(); proves which projection produced this row.
       textMode: richApplied ? "rich" : "lean",
     };
@@ -6008,6 +6032,11 @@ export {
   // Exported for workers/upstream-timeout.test.mjs: the deadline is the fix for the 504/522 series, and
   // a helper nobody can call is a helper nobody can test.
   fetchWithTimeout,
+  // Exported for the worker tests: the loaded index is memoised per *isolate*, so a test process that
+  // builds more than one environment shares one index — measured here as a new D1-path test passing
+  // alone and failing after the snapshot-path tests, because the memo answered from the previous
+  // environment's rows. Production has one environment per isolate; a test has many.
+  invalidateBM25Memo,
   UPSTREAM_TIMEOUT_MS,
   // Exported so workers/kv-write-budget.test.mjs asserts the *ratio* against the real batch size
   // instead of a hardcoded 10 that stops being true the moment the constant moves.
