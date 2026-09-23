@@ -1,0 +1,339 @@
+#!/usr/bin/env python3
+"""Tests for `scripts/ci/land_change.py` — the path automated writers use to reach `main`.
+
+What is pinned here, and why each one is worth a test rather than a comment:
+
+* **A `[skip ci]` title is refused.** The marker suppresses the pull request's own runs, so the
+  three required checks would never report and the auto-merge this script enables could never
+  fire. That is a closed loop with no error message: the PR sits open forever and the data
+  freezes, which is the exact failure the script was written to remove. Refusing loudly is the
+  only safe direction, and a test is what keeps a future "harmless" title edit from
+  reintroducing it.
+* **`check_branch` only accepts `bot/<name>`.** The branch is force-pushed. A typo that produced
+  `main` — or a name with a slash in the middle — would push over a branch this job does not own.
+* **The commit carries `Signed-off-by:`.** The ruleset requires the `DCO / Signed-off-by` check,
+  which reads that trailer. Without it the PR can never merge, and the failure appears only on
+  the checks page of a job that reports success.
+* **The PR is created once and updated after that.** A daily job whose branch name changed per
+  run would grow one unmerged PR per day instead of one PR that tracks the latest regeneration.
+* **`enablePullRequestAutoMerge` failing is a failure of the run.** A PR that will never merge is
+  a silent freeze; the job must go red where a person will see it.
+
+The git half runs for real against a scratch repository (an actual commit, an actual
+`Signed-off-by` trailer); only the network is faked, and the fake records the calls so the
+decision "create or update" is asserted directly. The live end-to-end proof — a real PR opened,
+auto-merge enabled by GitHub, merged with nobody watching — is in the pull request that added
+this file.
+"""
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO / "scripts" / "ci"))
+
+import land_change  # noqa: E402  (path inserted above)
+
+
+# ────────────────────────────── pure helpers ──────────────────────────────
+
+
+@pytest.mark.parametrize("branch", ["bot/update-lessons", "bot/sync-node-counter", "bot/a.b-c_d"])
+def test_bot_branches_are_accepted(branch):
+    assert land_change.check_branch(branch) == branch
+
+
+@pytest.mark.parametrize(
+    "branch",
+    ["main", "", "bot/", "bot/../main", "chore/update-lessons", "bot/Upper", "bot/a/b", "bot/-x"],
+)
+def test_anything_that_is_not_a_bot_branch_is_refused(branch):
+    with pytest.raises(land_change.LandError):
+        land_change.check_branch(branch)
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "chore: update leaderboard snapshot [skip ci]",
+        "chore(data): mirror the counter [ci skip]",
+        "chore: x [no ci]",
+        "chore: x [skip actions]",
+        "chore: x [SKIP CI]",
+    ],
+)
+def test_a_title_that_would_suppress_the_required_checks_is_refused(title):
+    with pytest.raises(land_change.LandError) as e:
+        land_change.check_title(title)
+    assert "skip" in str(e.value).lower()
+
+
+def test_the_title_is_normalised_and_kept_verbatim_otherwise():
+    assert land_change.check_title("  chore:  update   lessons.json \n") == (
+        "chore: update lessons.json"
+    )
+
+
+def test_an_empty_title_is_refused():
+    with pytest.raises(land_change.LandError):
+        land_change.check_title("   ")
+
+
+def test_porcelain_paths_reads_every_status_shape():
+    porcelain = (
+        " M data/counter.json\n"
+        "?? docs/data/feed.json\n"
+        "A  docs/lessons/new.md\n"
+        " D docs/lessons/gone.md\n"
+        "R  docs/lessons/old.md -> docs/lessons/new-name.md\n"
+    )
+    assert land_change.porcelain_paths(porcelain) == [
+        "data/counter.json",
+        "docs/data/feed.json",
+        "docs/lessons/new.md",
+        "docs/lessons/gone.md",
+        "docs/lessons/old.md",
+        "docs/lessons/new-name.md",
+    ]
+
+
+def test_porcelain_paths_keeps_both_sides_of_a_rename():
+    # Staging only the new path leaves the deletion unstaged: the next `git add -A` in the same
+    # job would then commit a tree that still contains the old file.
+    paths = land_change.porcelain_paths("R  a.md -> b.md\n")
+    assert paths == ["a.md", "b.md"]
+
+
+def test_porcelain_paths_unquotes_a_non_ascii_name():
+    # git quotes such a path and escapes the bytes it cannot print literally.
+    assert land_change.porcelain_paths('?? "lessons/pt-br/caf\\303\\251.md"\n') == [
+        "lessons/pt-br/café.md"
+    ]
+
+
+def test_nothing_changed_is_no_paths():
+    assert land_change.porcelain_paths("") == []
+
+
+def test_the_body_says_what_the_merge_will_do():
+    body = land_change.build_body(
+        branch="bot/update-lessons",
+        title="chore: auto-update lessons.json",
+        files=["data/lessons.json", "README.md"],
+        stat=" 2 files changed, 4 insertions(+)",
+        note="Regenerated by update-lessons.yml",
+        run_url="`Update lessons.json` — https://github.com/o/r/actions/runs/1",
+    )
+    assert body.startswith(land_change.MARKER)
+    assert "bot/update-lessons" in body
+    assert "`data/lessons.json`" in body and "`README.md`" in body
+    assert "2 files changed" in body
+    assert "Regenerated by update-lessons.yml" in body
+    assert "actions/runs/1" in body
+    for check in ("DCO / Signed-off-by", "test (ubuntu-latest, 3.11)", "gate"):
+        assert check in body, "the body must name the checks that gate the merge"
+    assert "GITHUB_TOKEN" in body, "the one silent-stall cause has to be written down"
+
+
+def test_the_body_lists_at_most_forty_files():
+    body = land_change.build_body(
+        branch="bot/x", title="t", files=[f"f{i}.txt" for i in range(45)], stat=""
+    )
+    assert "`f39.txt`" in body
+    assert "`f40.txt`" not in body
+    assert "and 5 more" in body
+
+
+def test_auto_merge_success_and_the_two_states_that_are_not_failures():
+    assert land_change.auto_merge_result_ok({}) == (True, "auto-merge enabled")
+    ok, why = land_change.auto_merge_result_ok(
+        {"errors": [{"message": "Pull request auto merge is already enabled"}]}
+    )
+    assert ok and "already enabled" in why
+    ok, why = land_change.auto_merge_result_ok(
+        {"errors": [{"message": "Pull request has already been merged"}]}
+    )
+    assert ok and "already merged" in why
+
+
+def test_auto_merge_refusal_is_a_refusal():
+    ok, why = land_change.auto_merge_result_ok(
+        {"errors": [{"message": "Auto merge is not allowed for this repository"}]}
+    )
+    assert not ok
+    assert "not allowed" in why
+
+
+# ────────────────────────────── the run, against a scratch repository ──────────────────────────────
+
+
+class FakeAPI:
+    """Records the calls the run makes and answers them the way GitHub would."""
+
+    def __init__(self, *, existing: dict | None = None, auto_merge: dict | None = None):
+        self.existing = existing
+        self.auto_merge = auto_merge or {}
+        self.calls: list[tuple[str, str, dict | None]] = []
+
+    def request(self, method, path, payload=None):  # noqa: D401 - mirrors Land.request
+        self.calls.append((method, path, payload))
+        if method == "GET" and "/pulls?" in path:
+            return [self.existing] if self.existing else []
+        if method == "POST" and path.endswith("/pulls"):
+            return {"number": 42, "html_url": "https://github.com/o/r/pull/42",
+                    "node_id": "PR_node42"}
+        if method == "PATCH" and "/pulls/" in path:
+            return {"number": self.existing["number"], "html_url": self.existing["html_url"],
+                    "node_id": self.existing["node_id"]}
+        if path == "/graphql":
+            return self.auto_merge
+        raise AssertionError(f"unexpected call: {method} {path}")
+
+
+def scratch_repo(tmp_path: Path) -> Path:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    subprocess.run(["git", "-C", str(repo), "symbolic-ref", "HEAD", "refs/heads/main"], check=True)
+    (repo / "data").mkdir()
+    (repo / "data" / "counter.json").write_text('{"current": 1}\n', encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    subprocess.run(
+        ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@e",
+         "commit", "-q", "-m", "init"],
+        check=True,
+    )
+    return repo
+
+
+@pytest.fixture
+def landed(tmp_path, monkeypatch):
+    """A scratch repo with one generated change, and a Land whose network is faked."""
+    repo = scratch_repo(tmp_path)
+    (repo / "data" / "counter.json").write_text('{"current": 2}\n', encoding="utf-8")
+    monkeypatch.setattr(land_change, "REPO_ROOT", repo)
+    pushes: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        land_change.Land, "push",
+        lambda self, branch: pushes.append((branch, self.git("rev-parse", "HEAD").strip())),
+    )
+    monkeypatch.setenv("GH_TOKEN", "fake-token")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    return repo, pushes
+
+
+def test_a_change_lands_as_a_signed_commit_on_a_bot_branch_and_an_auto_merging_pr(
+    landed, monkeypatch
+):
+    repo, pushes = landed
+    api = FakeAPI()
+    monkeypatch.setattr(land_change.Land, "request", api.request)
+
+    rc = land_change.main(["--branch", "bot/sync-node-counter",
+                           "--title", "chore(data): mirror the live node counter"])
+    assert rc == 0
+
+    # The branch and the force-push.
+    assert [b for b, _ in pushes] == ["bot/sync-node-counter"]
+
+    # The commit: the work is in it, and DCO can read the trailer it requires.
+    message = subprocess.run(["git", "-C", str(repo), "log", "-1", "--format=%B"],
+                             capture_output=True, text=True, check=True).stdout
+    assert message.splitlines()[0] == "chore(data): mirror the live node counter"
+    assert "Signed-off-by: misakanet-bot <bot@misakanet.dev>" in message
+    changed = subprocess.run(["git", "-C", str(repo), "show", "--name-only", "--format=", "HEAD"],
+                             capture_output=True, text=True, check=True).stdout.split()
+    assert changed == ["data/counter.json"]
+
+    # The pull request: opened once, with the required checks named in its body.
+    paths = [p for _, p, _ in api.calls]
+    assert paths[0] == "/repos/o/r/pulls?state=open&head=o:bot/sync-node-counter"
+    assert paths[1] == "/repos/o/r/pulls"
+    create = next(payload for m, p, payload in api.calls
+                  if m == "POST" and p.endswith("/pulls"))
+    assert create["head"] == "bot/sync-node-counter" and create["base"] == "main"
+    assert "DCO / Signed-off-by" in create["body"]
+
+    # And the one call that makes the human unneeded.
+    graphql = next(payload for _, p, payload in api.calls if p == "/graphql")
+    assert graphql["variables"] == {"id": "PR_node42", "method": "SQUASH"}
+
+
+def test_a_second_run_updates_the_same_branch_instead_of_opening_a_second_pr(
+    landed, monkeypatch
+):
+    repo, pushes = landed
+    api = FakeAPI(existing={"number": 7, "html_url": "https://github.com/o/r/pull/7",
+                            "node_id": "PR_node7"})
+    monkeypatch.setattr(land_change.Land, "request", api.request)
+
+    assert land_change.main(["--branch", "bot/sync-node-counter", "--title", "chore(data): mirror"]) == 0
+
+    kinds = [m for m, p, _ in api.calls if p.endswith("/pulls") or "/pulls/" in p or "pulls?" in p]
+    assert kinds == ["GET", "PATCH"], "an open PR for this branch must be updated, not duplicated"
+    assert [b for b, _ in pushes] == ["bot/sync-node-counter"]
+
+
+def test_nothing_changed_opens_nothing(landed, monkeypatch):
+    repo, pushes = landed
+    subprocess.run(["git", "-C", str(repo), "checkout", "--", "."], check=True)
+    api = FakeAPI()
+    monkeypatch.setattr(land_change.Land, "request", api.request)
+
+    assert land_change.main(["--branch", "bot/build-feed", "--title", "chore(data): feed"]) == 0
+    assert api.calls == []
+    assert pushes == []
+
+
+def test_a_pr_that_could_never_merge_fails_the_run(landed, monkeypatch, capsys):
+    repo, _ = landed
+    api = FakeAPI(auto_merge={"errors": [{"message": "Auto merge is not allowed"}]})
+    monkeypatch.setattr(land_change.Land, "request", api.request)
+
+    rc = land_change.main(["--branch", "bot/build-feed", "--title", "chore(data): feed"])
+    out = capsys.readouterr().out
+    assert rc == 1, "a PR nobody will merge is a silent freeze — the job has to go red"
+    assert "::error::" in out and "pull/42" in out
+
+
+def test_a_skip_ci_title_never_reaches_git(landed, monkeypatch, capsys):
+    repo, pushes = landed
+    api = FakeAPI()
+    monkeypatch.setattr(land_change.Land, "request", api.request)
+
+    rc = land_change.main(["--branch", "bot/build-feed",
+                           "--title", "chore(data): feed [skip ci]"])
+    assert rc == 1
+    assert pushes == [] and api.calls == []
+    assert "skip" in capsys.readouterr().out.lower()
+
+
+def test_dry_run_writes_nothing(landed, monkeypatch, capsys):
+    repo, pushes = landed
+    api = FakeAPI()
+    monkeypatch.setattr(land_change.Land, "request", api.request)
+
+    assert land_change.main(["--branch", "bot/build-feed", "--title", "chore(data): feed",
+                             "--dry-run"]) == 0
+    assert api.calls == [] and pushes == []
+    head = subprocess.run(["git", "-C", str(repo), "log", "-1", "--format=%s"],
+                          capture_output=True, text=True, check=True).stdout.strip()
+    assert head == "init", "dry-run must not commit"
+
+
+def test_explicit_paths_keep_the_run_from_committing_anything_else(landed, monkeypatch):
+    repo, _ = landed
+    (repo / "unrelated.txt").write_text("scratch\n", encoding="utf-8")
+    api = FakeAPI()
+    monkeypatch.setattr(land_change.Land, "request", api.request)
+
+    assert land_change.main(["--branch", "bot/sync-node-counter", "--title", "chore(data): mirror",
+                             "--paths", "data/counter.json"]) == 0
+    changed = subprocess.run(["git", "-C", str(repo), "show", "--name-only", "--format=", "HEAD"],
+                             capture_output=True, text=True, check=True).stdout.split()
+    assert changed == ["data/counter.json"]

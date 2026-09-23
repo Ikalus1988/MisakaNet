@@ -215,19 +215,21 @@ jobs:
           python3 scripts/sync_lesson_count.py
           python3 scripts/sync_lesson_count.py --check
 
-      - name: Commit version sync
+      - name: Land the version sync through a pull request that merges itself
+        # Was `git push` — refused by the ruleset on `main`. This one is worth its own note because
+        # of *when* it runs: a release has just been cut, and the failure used to leave
+        # `docs/index.html` advertising the previous version while the release page advertised the
+        # new one (v2.23.0 sat there for six releases the last time this step was dead). A pull
+        # request that merges itself keeps the badge honest without a human watching the tail of a
+        # release run.
+        #
+        # The staging order the old step needed is now the lander's: it stages first and asks about
+        # the *index* (`git diff --cached`), because `git diff --quiet` ignores the index — the
+        # form that once made this step look alive while committing nothing (2026-09-12).
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
         run: |
-          set -euo pipefail
-          git config user.name "misakanet-bot"
-          git config user.email "bot@misakanet.dev"
-          # NOTE: stage first, then ask about the *index*. `git diff --quiet`
-          # ignores the index, so the previous `git add -A; git diff --quiet ||
-          # git commit` form could never commit anything — the step looked alive
-          # and did nothing (found 2026-09-12 while wiring the count SSOT).
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No version/count sync changes to commit"
-          else
-            git commit -m "docs: sync version to v${{ steps.release_tag.outputs.version }}"
-            git push || { git pull --rebase origin main && git push; }
-          fi
+          python3 scripts/ci/land_change.py \
+            --branch bot/release-version-sync \
+            --title "docs: sync version to v${{ steps.release_tag.outputs.version }}" \
+            --note "The site version badge and every managed lesson count, synced after cutting v${{ steps.release_tag.outputs.version }}."

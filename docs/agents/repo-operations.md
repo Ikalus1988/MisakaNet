@@ -66,6 +66,9 @@ python3 scripts/build_lesson_pages.py --check    # 不一致时：跑不带 --ch
 # 改 workflow：YAML 解析 + 内嵌 JS 语法
 python3 -c "import yaml; yaml.safe_load(open('.github/workflows/x.yml'))"
 node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
+
+# 改了任何自动化写入（workflow 里的 git push / 落盘通道）
+python3 -m pytest tests/test_no_workflow_pushes_to_main.py -q
 ```
 
 > 本地 `pytest` 若报 `mcp.server.mcpserver` 之类导入错误，多半是**本地依赖漂移**（本地 mcp 版本
@@ -92,13 +95,29 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 - **改 lesson**：`lessons/contrib/<name>.md`（frontmatter 必填 `title/domain/tags/status/evidence_level`，
   E0–E4）→ `lesson_gate.py` + `injection_scan.py` → PR（lesson-gate 会再跑一次）
 - **改 workflow**：YAML + 内嵌 JS 双重检查 → 注意 shape guard 对 workflow 改动会标 `workflow-change`
-  并要求更严格的评审
+  并要求更严格的评审 → 若这个 workflow 会往 `main` 写东西，用 `scripts/ci/land_change.py`
+  （**不要**写 `git push`：ruleset 会拒，`tests/test_no_workflow_pushes_to_main.py` 也会拦住你）
 
 ## 3. 部署与数据生成
 
-> 推 main 的固定动作：**先 commit**（有未提交改动时 `git rebase` 会被直接拒绝）→
-> `git fetch origin main` → `git rebase origin/main` → `git push`。远端有 bot 提交
-> （leaderboard 快照等）时几乎必然需要 rebase，别直接 push。
+> **`main` 不能直接 push——对任何人都不行（2026-09-23 起）**。ruleset
+> `23826057 main: the deterministic gates` 要求三个状态检查（`DCO / Signed-off-by`、
+> `test (ubuntu-latest, 3.11)`、`gate`），且 `bypass_actors` 是**空的**：GitHub 对 push 也评估这些
+> 检查，新提交没有它们就被拒。实测（用维护者自己的 PAT，同一个 token）：
+> `remote: - 3 of 3 required status checks are expected.` / `! [remote rejected] main -> main`。
+>
+> 所以人类和自动化的固定动作都是**开 PR**：
+>
+> ```bash
+> git commit --signoff -m "…"          # DCO 是三个必需检查之一
+> git push origin HEAD:refs/heads/<branch>
+> gh pr create --base main --fill       # 然后等三个必需检查变绿再合并
+> ```
+>
+> 自动化写入**不用**手写这段：调 `scripts/ci/land_change.py`（分支 → PR → 开启 squash
+> auto-merge，检查一变绿 GitHub 自己合并），完整说明与故障对照表见
+> **`docs/maintainer/automation-lands-via-pr.md`**。`tests/test_no_workflow_pushes_to_main.py`
+> 会拦住"又回去 push main"的 workflow。
 
 | 对象 | 方式 | 备注 |
 |---|---|---|
@@ -188,6 +207,8 @@ gh workflow run apply-d1-schema.yml
 
 - 使用方规则：`AGENTS.md`（§1–§5）+ `docs/agents/retrieval-and-contribution.md`
 - 维护者流程：`docs/maintainer/intake-triage.md`（**修复后必须给报料者回执**）、
+  `docs/maintainer/automation-lands-via-pr.md`（**自动化怎么把改动落到 main**：分支 → PR →
+  auto-merge，含故障对照表与两个刻意不转换的 workflow）、
   `docs/maintainer/handoff-*.md`（逐轮交接与待办快照）
 - **接手第一份**：`docs/maintainer/state-of-the-repo.md`（**可公开的仓库现状**：哪些自动化在飞、哪些等 owner 审批、门禁信任边界、积压形状、待 owner 拍板项、更新时机）
 - 安全：`docs/agents/content-injection-defense.md`（威胁模型 + L1–L4 防护层）

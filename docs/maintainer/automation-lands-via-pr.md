@@ -90,7 +90,8 @@ make them *worse* rather than safer:
   every registration, and two registrations racing through two unmerged branches could hand out
   the same number. The honest fix for that path is not a pull request — it is to read the number
   from the worker/KV counter (the source `data/counter.json` mirrors) instead of inventing one in
-  git. Tracked separately.
+  git. Tracked in **#2106**, which carries the three refused runs (2026-09-22), the title-keyword
+  false positives that made them look like registrations, and that recommendation.
 * **`cite-lesson.yml`** reacts to an issue and updates references; its `git push` currently pushes
   nothing (the step before it writes no files), so it is a no-op rather than a blocked write.
   Whether it should write at all is a question about the feature, not about the ruleset.

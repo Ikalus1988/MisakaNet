@@ -13,7 +13,7 @@ on:
 permissions:
   contents: write
   issues: read
-  pull-requests: read
+  pull-requests: write   # was read; the feed lands through the auto-merging PR, not a push to main
 
 jobs:
   build-feed:
@@ -49,14 +49,22 @@ jobs:
         run: |
           python3 scripts/build_feed.py
 
-      - name: Commit and push if changed
+      - name: Land the feed through a pull request that merges itself
+        # Was `git push` — refused since 2026-09-22 by the ruleset on `main` (run 35820175013, on
+        # 2026-09-22 17:03 UTC, died here after the sync and the feed build had both succeeded).
+        # See docs/maintainer/automation-lands-via-pr.md.
+        #
+        # The two paths are named rather than left to `git add -A` because this job's contract is
+        # exactly those two files: anything else that appeared in the checkout would be a bug in
+        # the guard above, not something to commit.
+        env:
+          # `SHELDON_PAT`, never `GITHUB_TOKEN`: a branch pushed with `GITHUB_TOKEN` starts no
+          # workflow runs, so the required checks would never report and auto-merge would wait
+          # forever.
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
         run: |
-          git config user.name "misakanet-bot"
-          git config user.email "bot@misakanet.org"
-          git add docs/data/lessons.json docs/data/feed.json
-          if git diff --cached --quiet; then
-            echo "No changes"
-          else
-            git commit -m "chore(data): sync lessons.json + refresh feed"
-            git push
-          fi
+          python3 scripts/ci/land_change.py \
+            --branch bot/build-feed \
+            --title "chore(data): sync lessons.json + refresh feed" \
+            --paths docs/data/lessons.json docs/data/feed.json \
+            --note "Either file may be unchanged on its own; this pull request exists because at least one of them moved."
