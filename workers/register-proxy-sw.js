@@ -2299,7 +2299,7 @@ async function nextNodeCounter(env) {
 async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) {
   if (toolName === "misakanet_register") {
     const agentType = args.agent_type || "unknown";
-    if (!env.MISAKANET_KV) return { error: "KV not configured" };
+    if (!hasDurableStore(env)) return { error: "no storage configured" };
 
     // ── Client-stable identity (2026-09-13) ──────────────────────────────
     // Registration used to mint a fresh node on every call: two identical requests
@@ -2793,9 +2793,9 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
 
     const events = [];
     // 1. Helpful votes (real usage signal).
-    if (env.MISAKANET_KV) {
+    if (hasDurableStore(env)) {
       try {
-        const helpful = parseInt(await env.MISAKANET_KV.get(`helpful:${lessonId}`, "text") || "0", 10) || 0;
+        const helpful = parseInt(await storeGet(env, `helpful:${lessonId}`, "text") || "0", 10) || 0;
         if (helpful > 0) {
           events.push({ type: "lesson_found_helpful", count: helpful, evidence_level: helpful >= 2 ? "E4" : "E3" });
         }
@@ -2913,7 +2913,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // D1 questions row is the durable dedup + answer store (PRD ⑤ §9): a
     // re-submission pulls the answer once a maintainer has answered, instead
     // of a bare "duplicate" — pull-based delivery (no push channel exists).
-    const existingDedup = env.MISAKANET_KV ? await env.MISAKANET_KV.get(dedupKey, "text") : null;
+    const existingDedup = hasDurableStore(env) ? await storeGet(env, dedupKey, "text") : null;
     if (existingDedup || (kind === "question" && d1Binding(env))) {
       const dupRow = kind === "question" ? await lookupQuestionByDedup(env, dedupContentHash) : null;
       if (dupRow) {
@@ -3052,9 +3052,9 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       const data = await resp.json();
       if (!resp.ok) return { error: `GitHub issue creation failed: ${data.message}` };
       // Remember this dedup hash → future identical submissions are rejected.
-      if (env.MISAKANET_KV) {
+      if (hasDurableStore(env)) {
         try {
-          await kvPut(env, dedupKey, data.html_url, { expirationTtl: 86400 * 7 });
+          await storePut(env, dedupKey, data.html_url, { expirationTtl: 86400 * 7 });
         } catch (_) {}
       }
       // PRD ⑤ §9: persist the question row — durable state + answer delivery
@@ -4551,7 +4551,7 @@ async function handleSearchSignalStats(env, url) {
 // POST /api/search-signal — records that a search went unsolved. The query is
 // classified here and dropped; only the derived family + reason are persisted.
 async function handleSearchSignal(request, env) {
-  if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+  if (!hasDurableStore(env)) return jsonResponse({ error: "no storage configured" }, 503);
 
   if (parseInt(request.headers.get("content-length") || "0", 10) > 4096) {
     return jsonResponse({ error: "Request too large" }, 413);
@@ -4669,8 +4669,9 @@ async function aggregateDailyTraffic(env) {
   const month = today.slice(0, 7); // YYYY-MM
 
   // Idempotency: skip if already aggregated today
+  if (!hasDurableStore(env)) return { skipped: true, reason: "no storage", date: today };
   const markerKey = `traffic-agg-marker:${today}`;
-  const alreadyDone = await env.MISAKANET_KV.get(markerKey, "text");
+  const alreadyDone = await storeGet(env, markerKey, "text");
   if (alreadyDone) {
     console.log(`[traffic-aggregation] already done for ${today}, skipping`);
     return { skipped: true, date: today };
@@ -4683,19 +4684,19 @@ async function aggregateDailyTraffic(env) {
 
     const [dailyCount, monthlyVal] = await Promise.all([
       readTrafficCount(env, type, today),
-      env.MISAKANET_KV.get(monthlyKey, "text"),
+      storeGet(env, monthlyKey, "text"),
     ]);
 
     const monthlyCount = parseInt(monthlyVal) || 0;
 
     if (dailyCount > 0) {
-      await kvPut(env, monthlyKey, String(monthlyCount + dailyCount));
+      await storePut(env, monthlyKey, String(monthlyCount + dailyCount));
       totalAggregated += dailyCount;
     }
   }
 
   // Mark today as done (TTL 48h to auto-cleanup)
-  await kvPut(env, markerKey, "1", { expirationTtl: 172800 });
+  await storePut(env, markerKey, "1", { expirationTtl: 172800 });
   console.log(`[traffic-aggregation] aggregated ${totalAggregated} counts for ${month}`);
   return { aggregated: totalAggregated, month, date: today };
 }
@@ -5104,24 +5105,24 @@ export default {
 
     // GET /api/helpful?lesson_id=<id> — return helpful count
     if (request.method === "GET" && url.pathname === "/api/helpful") {
-      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+      if (!hasDurableStore(env)) return jsonResponse({ error: "no storage configured" }, 503);
       const lessonId = sanitizeIdentifier(url.searchParams.get("lesson_id"), 100);
       if (!lessonId) return jsonResponse({ error: "Missing lesson_id" }, 400);
-      const raw = await env.MISAKANET_KV.get(`helpful:${lessonId}`, "text");
+      const raw = await storeGet(env, `helpful:${lessonId}`, "text");
       return jsonResponse({ lesson_id: lessonId, count: raw ? parseInt(raw, 10) || 0 : 0 });
     }
 
     // POST /api/helpful — record a helpful vote
     if (request.method === "POST" && url.pathname === "/api/helpful") {
-      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+      if (!hasDurableStore(env)) return jsonResponse({ error: "no storage configured" }, 503);
       let voteBody;
       try { voteBody = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
       const lessonId = sanitizeIdentifier(voteBody.lesson_id, 100);
       if (!lessonId) return jsonResponse({ error: "Missing lesson_id" }, 400);
       const kvKey = `helpful:${lessonId}`;
-      const cur = parseInt(await env.MISAKANET_KV.get(kvKey, "text") || "0", 10) || 0;
+      const cur = parseInt(await storeGet(env, kvKey, "text") || "0", 10) || 0;
       const newCount = cur + 1;
-      await kvPut(env, kvKey, String(newCount));
+      await storePut(env, kvKey, String(newCount));
       return jsonResponse({ lesson_id: lessonId, count: newCount });
     }
 
@@ -5157,7 +5158,7 @@ export default {
           ip: fbIp,
         };
 
-        await kvPut(env, 
+        await storePut(env,
           `feedback:${feedbackId}`,
           JSON.stringify(record),
           { expirationTtl: 7776000 }, // 90 days
@@ -5289,20 +5290,20 @@ export default {
       };
 
       // Store intake record
-      await kvPut(env, `intake:${intakeId}`, JSON.stringify(record), { expirationTtl: 7776000 });
+      await storePut(env, `intake:${intakeId}`, JSON.stringify(record), { expirationTtl: 7776000 });
 
       // Record demand signal for the task family (maps type to family)
       const FAMILY_MAP = { diagnostic: "unclassified", lesson_candidate: "lesson-feedback", friction: "unclassified", bug: "bug-report", node_join: "unclassified" };
       const family = FAMILY_MAP[type] || "unclassified";
       const demandKey = `demand:family:${family}`;
-      const demandRaw = await env.MISAKANET_KV.get(demandKey, "json");
+      const demandRaw = await storeGet(env, demandKey, "json");
       const demand = demandRaw && typeof demandRaw === "object" ? demandRaw : { days: {} };
       const day = new Date().toISOString().slice(0, 10);
       demand.days[day] = demand.days[day] || { reasons: {}, count: 0 };
       demand.days[day].count++;
       const reasonKey = sanitizeReasonKey(message);
       demand.days[day].reasons[reasonKey] = (demand.days[day].reasons[reasonKey] || 0) + 1;
-      await kvPut(env, demandKey, JSON.stringify(demand), { expirationTtl: 2592000 });
+      await storePut(env, demandKey, JSON.stringify(demand), { expirationTtl: 2592000 });
 
       console.log(`Intake ${intakeId}: type=${type} source=${source} family=${family}`);
       return jsonResponse({ accepted: true, intake_id: intakeId, consent: record.consent });
@@ -5343,7 +5344,7 @@ export default {
       ];
 
       for (const family of families) {
-        const record = await env.MISAKANET_KV.get(`${DEMAND_PREFIX}${family}`, "json");
+        const record = await storeGet(env, `${DEMAND_PREFIX}${family}`, "json");
         if (!record || !record.days) continue;
 
         let total30d = 0, total7d = 0, lastSeen = null;
@@ -5417,7 +5418,7 @@ export default {
       for (let i = 0; i < 6; i++) code += chars[codeBytes[i] % chars.length];
 
       // Store in KV: pending, 10 min TTL
-      await kvPut(env, `pair:${code}`, JSON.stringify({
+      await storePut(env, `pair:${code}`, JSON.stringify({
         status: "pending",
         created: new Date().toISOString(),
         ip: connIp,
@@ -5428,7 +5429,7 @@ export default {
 
     // POST /mcp/pair — exchange pairing code for short-lived MCP token
     if (request.method === "POST" && url.pathname === "/mcp/pair") {
-      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+      if (!hasDurableStore(env)) return jsonResponse({ error: "no storage configured" }, 503);
 
       let pairBody;
       try { pairBody = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
@@ -5437,7 +5438,7 @@ export default {
       if (!code || code.length !== 6) return jsonResponse({ error: "Invalid code format" }, 400);
 
       const pairKey = `pair:${code}`;
-      const pairData = await env.MISAKANET_KV.get(pairKey, "json");
+      const pairData = await storeGet(env, pairKey, "json");
       if (!pairData) return jsonResponse({ error: "Invalid or expired code" }, 404);
       if (pairData.status !== "pending") return jsonResponse({ error: "Code already used" }, 409);
 
@@ -5445,7 +5446,7 @@ export default {
       pairData.status = "used";
       pairData.used_at = new Date().toISOString();
       pairData.used_ip = request.headers.get("CF-Connecting-IP") || "unknown";
-      await kvPut(env, pairKey, JSON.stringify(pairData), { expirationTtl: 86400 });
+      await storePut(env, pairKey, JSON.stringify(pairData), { expirationTtl: 86400 });
 
       // Generate short-lived token (24h, cryptographically secure)
       const tokenChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
