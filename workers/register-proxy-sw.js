@@ -2228,6 +2228,55 @@ async function storePut(env, key, value, options = {}) {
   return written;
 }
 
+// `LIKE` treats `%` and `_` as wildcards, and a lesson id or a query can contain either. Escaping is
+// what keeps `unsolved:lesson:foo_bar` from also matching `unsolved:lesson:fooXbar`.
+function escapeLike(text) {
+  return String(text).replace(/[\\%_]/g, (m) => `\\${m}`);
+}
+
+/**
+ * List the keys under a prefix, in the shape the KV `list()` call returns (`{keys: [{name}]}`).
+ *
+ * `buildUnsolvedMap` is the only enumeration left in this worker: it walks `unsolved:lesson:*` to find
+ * lessons that keep drawing not-helpful feedback. Once those records live in the durable store, the
+ * list has to come from there — and the KV list stays alongside it, for the records written before the
+ * switch and for a deployment with no D1 binding (#2119).
+ *
+ * Expired rows are filtered out here as well, so a listed key is one `storeGet` would actually return.
+ */
+async function storeList(env, prefix, { limit = 1000 } = {}) {
+  const names = new Set();
+  const d1 = d1Binding(env);
+  if (d1) {
+    try {
+      await ensureKvStoreTable(d1);
+      const { results } = await d1.prepare(
+        `SELECT key FROM kv_store
+          WHERE key LIKE ?1 ESCAPE '\\'
+            AND (expires_at IS NULL OR expires_at > datetime('now'))
+          LIMIT ?2`,
+      ).bind(`${escapeLike(prefix)}%`, limit).all();
+      for (const row of results || []) names.add(String(row.key));
+    } catch (error) {
+      // Deduplication, not consistency: a failed D1 list still leaves the KV list below.
+      logInternal("store list failed, falling back to KV", error);
+    }
+  }
+  if (env && env.MISAKANET_KV) {
+    try {
+      let cursor;
+      do {
+        const listed = await env.MISAKANET_KV.list({ prefix, cursor });
+        for (const key of listed.keys || []) names.add(key.name);
+        cursor = listed.list_complete ? null : listed.cursor;
+      } while (cursor);
+    } catch (error) {
+      logInternal("KV list failed", error);
+    }
+  }
+  return { keys: [...names].map((name) => ({ name })), list_complete: true };
+}
+
 async function storeGet(env, key, type) {
   const d1 = d1Binding(env);
   if (d1) {
@@ -4181,13 +4230,13 @@ function pruneUnsolvedDays(days, windowDays = UNSOLVED_WINDOW_DAYS) {
 // Writes one aggregate signal. Callers must pass a derived family and an enum
 // reason — never raw text.
 async function recordUnsolvedSearch(env, { taskFamily, reason, day, intent } = {}) {
-  if (!env.MISAKANET_KV) return null;
+  if (!hasDurableStore(env)) return null;
   const family = UNSOLVED_FAMILY_WHITELIST.includes(taskFamily) ? taskFamily : UNSOLVED_FALLBACK_FAMILY;
   const normalizedReason = normalizeUnsolvedReason(reason);
   const bucketDay = day || unsolvedDay();
   const kvKey = `${UNSOLVED_KV_PREFIX}${family}`;
 
-  const stored = await env.MISAKANET_KV.get(kvKey, "json");
+  const stored = await storeGet(env, kvKey, "json");
   const record = stored && typeof stored === "object" && stored.days ? stored : { days: {} };
   pruneUnsolvedDays(record.days);
 
@@ -4202,21 +4251,21 @@ async function recordUnsolvedSearch(env, { taskFamily, reason, day, intent } = {
     record.intents[normalizedIntent] = (record.intents[normalizedIntent] || 0) + 1;
   }
 
-  await kvPut(env, kvKey, JSON.stringify(record), { expirationTtl: (UNSOLVED_WINDOW_DAYS + 7) * 86_400 });
+  await storePut(env, kvKey, JSON.stringify(record), { expirationTtl: (UNSOLVED_WINDOW_DAYS + 7) * 86_400 });
   return { taskFamily: family, reason: normalizedReason, day: bucketDay, intent: normalizedIntent };
 }
 
 // Tracks lessons that keep drawing not-helpful feedback. Lesson IDs are public
 // repository identifiers, not user data.
 async function recordStaleLesson(env, lessonId, day) {
-  if (!env.MISAKANET_KV || !lessonId) return;
+  if (!hasDurableStore(env) || !lessonId) return;
   const kvKey = `${UNSOLVED_STALE_PREFIX}${lessonId}`;
-  const stored = await env.MISAKANET_KV.get(kvKey, "json");
+  const stored = await storeGet(env, kvKey, "json");
   const record = stored && typeof stored === "object" && stored.days ? stored : { days: {} };
   pruneUnsolvedDays(record.days);
   const bucketDay = day || unsolvedDay();
   record.days[bucketDay] = (record.days[bucketDay] || 0) + 1;
-  await kvPut(env, kvKey, JSON.stringify(record), { expirationTtl: (UNSOLVED_WINDOW_DAYS + 7) * 86_400 });
+  await storePut(env, kvKey, JSON.stringify(record), { expirationTtl: (UNSOLVED_WINDOW_DAYS + 7) * 86_400 });
 }
 
 function sumUnsolvedDays(days, windowDays) {
@@ -4242,7 +4291,7 @@ function sumUnsolvedDays(days, windowDays) {
 async function buildUnsolvedMap(env) {
   const families = [];
   for (const family of UNSOLVED_FAMILY_WHITELIST) {
-    const record = await env.MISAKANET_KV.get(`${UNSOLVED_KV_PREFIX}${family}`, "json");
+    const record = await storeGet(env, `${UNSOLVED_KV_PREFIX}${family}`, "json");
     if (!record || !record.days) continue;
     const { total: unsolved30d, reasons, lastSeen } = sumUnsolvedDays(record.days, UNSOLVED_WINDOW_DAYS);
     if (unsolved30d <= 0) continue;
@@ -4252,18 +4301,14 @@ async function buildUnsolvedMap(env) {
   families.sort((a, b) => b.unsolved30d - a.unsolved30d || a.taskFamily.localeCompare(b.taskFamily));
 
   const staleLessons = [];
-  let cursor;
-  do {
-    const listed = await env.MISAKANET_KV.list({ prefix: UNSOLVED_STALE_PREFIX, cursor });
-    for (const key of listed.keys || []) {
-      const record = await env.MISAKANET_KV.get(key.name, "json");
-      if (!record || !record.days) continue;
-      const { total: notHelpful30d, lastSeen } = sumUnsolvedDays(record.days, UNSOLVED_WINDOW_DAYS);
-      if (notHelpful30d <= 0) continue;
-      staleLessons.push({ lessonId: key.name.slice(UNSOLVED_STALE_PREFIX.length), notHelpful30d, lastSeen });
-    }
-    cursor = listed.list_complete ? null : listed.cursor;
-  } while (cursor);
+  const listed = await storeList(env, UNSOLVED_STALE_PREFIX);
+  for (const key of listed.keys || []) {
+    const record = await storeGet(env, key.name, "json");
+    if (!record || !record.days) continue;
+    const { total: notHelpful30d, lastSeen } = sumUnsolvedDays(record.days, UNSOLVED_WINDOW_DAYS);
+    if (notHelpful30d <= 0) continue;
+    staleLessons.push({ lessonId: key.name.slice(UNSOLVED_STALE_PREFIX.length), notHelpful30d, lastSeen });
+  }
   staleLessons.sort((a, b) => b.notHelpful30d - a.notHelpful30d || a.lessonId.localeCompare(b.lessonId));
 
   return { families, staleLessons: staleLessons.slice(0, UNSOLVED_MAX_STALE_LESSONS) };
@@ -4271,7 +4316,7 @@ async function buildUnsolvedMap(env) {
 
 // GET /api/insights/unsolved-map — public, aggregate-only.
 async function handleUnsolvedMap(env) {
-  const available = !!env.MISAKANET_KV;
+  const available = hasDurableStore(env);
   const data = available ? await buildUnsolvedMap(env) : { families: [], staleLessons: [] };
   return jsonResponse({
     success: true,
@@ -6008,6 +6053,9 @@ export {
   BM25_INDEX_KEY,
   recordStaleLesson,
   recordUnsolvedSearch,
+  // Exported for workers/unsolved-map.test.mjs: the map is the last KV *enumeration* in the worker, so
+  // the prefix list is the seam worth asserting directly (#2119).
+  storeList,
   sanitizeReasonKey,
   hashString,
   findCoveringLesson,

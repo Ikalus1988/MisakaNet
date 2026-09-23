@@ -20,6 +20,10 @@ export function withKvStore(d1 = null, { now = () => new Date().toISOString() } 
   const created = () => ({ run: async () => ({ success: true }) });
 
   return {
+    // The inner stub's own surface is kept (`_usage`, `counters`, whatever a test asserts on): this
+    // wraps it rather than replacing it. `intent-instrument.test.mjs` reads `_usage` off the env, and a
+    // wrapper that dropped it turned twelve passing tests into ReferenceErrors.
+    ...(d1 || {}),
     /** The rows the durable store holds — `Map<key, value>`, for assertions. */
     kvStore: rows,
     /** Every statement this stub saw, so a test can assert the *query* says what it must. */
@@ -72,6 +76,31 @@ export function withKvStore(d1 = null, { now = () => new Date().toISOString() } 
                 }
               }
               return { success: true, meta: { changes: deleted } };
+            },
+          }),
+        };
+      }
+
+      // The prefix list (#2119): `SELECT key … WHERE key LIKE ?1 ESCAPE '\\' …`.
+      if (/SELECT key FROM kv_store/i.test(text)) {
+        const filtersExpiry = /expires_at\s+IS\s+NULL\s+OR\s+expires_at\s*>\s*datetime\('now'\)/i.test(text);
+        return {
+          bind: (pattern, limit = 1000) => ({
+            all: async () => {
+              // The stub reads the *pattern* the worker bound rather than assuming a prefix, the same
+              // way the value read reads its own predicate: a stub that decides on its own would keep
+              // answering "the list is filtered" after the filter was deleted.
+              // Strip the LIKE wildcard, then undo the ESCAPE: the worker binds `escapeLike(prefix) + '%'`.
+              const raw = String(pattern);
+              const prefix = (raw.endsWith("%") ? raw.slice(0, -1) : raw).replace(/\\([%_\\])/g, "$1");
+              const results = [];
+              for (const [key, row] of rows.entries()) {
+                if (results.length >= limit) break;
+                if (!key.startsWith(prefix)) continue;
+                if (filtersExpiry && row.expires_at && row.expires_at <= now()) continue;
+                results.push({ key });
+              }
+              return { results };
             },
           }),
         };
