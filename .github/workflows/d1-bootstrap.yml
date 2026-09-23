@@ -17,7 +17,8 @@ on:
         default: false
 
 permissions:
-  contents: write   # to commit the database_id back to wrangler.toml
+  contents: write   # to land the database_id back in wrangler.toml, through a pull request
+  pull-requests: write
 
 jobs:
   bootstrap:
@@ -90,16 +91,24 @@ jobs:
           grep -q "$DB_ID" workers/wrangler.toml || { echo "::error::failed to write database_id"; exit 1; }
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
-      - name: Commit database_id back to main
+      - name: Land the database_id through a pull request that merges itself
         if: steps.write.outputs.changed == 'true'
+        # Was `git push origin main` — refused by the ruleset on `main`. A bootstrap run that
+        # applied the schema and deployed the worker while failing here would leave the repository
+        # still holding `REPLACE_WITH_D1_DATABASE_ID`, so the next recovery run would repeat the
+        # whole thing. This step runs before the deploy on purpose: the deploy reads the *local*
+        # wrangler.toml that the step above already edited, so it needs no merge to go ahead.
+        #
+        # The `[skip ci]` marker this commit used to carry is dropped: GitHub honours it in a pull
+        # request title, which would suppress the required checks and leave the auto-merge waiting.
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
         run: |
-          set -euo pipefail
-          git config user.name "misakanet-bot"
-          git config user.email "bot@misakanet.org"
-          git add workers/wrangler.toml
-          git commit -m "chore(d1): bind misakanet-db database_id (PRD ④ bootstrap) [skip ci]"
-          git pull --rebase origin main 2>&1 || true
-          git push origin main 2>&1 || { echo "push conflict, retrying..."; sleep 5; git pull --rebase origin main 2>&1 || true; git push origin main; }
+          python3 scripts/ci/land_change.py \
+            --branch bot/d1-bootstrap \
+            --title "chore(d1): bind misakanet-db database_id (PRD ④ bootstrap)" \
+            --paths workers/wrangler.toml \
+            --note "The D1 database id, recovered by a run that created or found the database."
 
       - name: Apply D1 schema (idempotent)
         env:

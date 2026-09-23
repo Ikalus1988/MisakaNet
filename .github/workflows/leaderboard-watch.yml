@@ -8,10 +8,11 @@ on:
 permissions:
   contents: write
   issues: write
+  pull-requests: write   # the snapshot lands through the auto-merging PR, not a push to main
 
-# Two pushes within ~a minute start two runs that both commit the same generated
-# snapshot; rebasing one onto the other conflicts in data/leaderboard_meta.json.
-# Serialize instead of racing (cancel-in-progress: false so a queued run still runs
+# Two pushes within ~a minute start two runs that both recompute the same snapshot and force-push
+# it to the same `bot/leaderboard-watch` branch, so one run's snapshot would overwrite the other's
+# mid-flight. Serialize instead of racing (cancel-in-progress: false so a queued run still runs
 # and picks up the newest main).
 concurrency:
   group: leaderboard-watch
@@ -36,29 +37,27 @@ jobs:
         run: |
           python3 scripts/leaderboard_watch.py 2>&1
 
-      - name: Commit updated leaderboard snapshot
+      - name: Land the snapshot through a pull request that merges itself
+        # Was `git push` — refused by the ruleset on `main`, which requires three status checks on
+        # every commit that lands there and exempts no actor. This job fires on every push to main
+        # and only writes when the snapshot moved, so its failure was invisible until the day it
+        # had something to write. See docs/maintainer/automation-lands-via-pr.md.
+        #
+        # The `[skip ci]` marker this commit used to carry is gone, deliberately: GitHub honours it
+        # in a pull request title, which would suppress the *pull request's* own runs — the three
+        # required checks would never report and the auto-merge would wait forever.
+        # `land_change.py` refuses such a title for that reason. The post-merge run this no longer
+        # suppresses is cheap and idempotent: it recomputes the same snapshot, finds the file
+        # unchanged and exits 0 without opening anything.
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
         run: |
           if [ ! -f data/leaderboard.json ]; then
-            echo "no snapshot produced; nothing to commit"
+            echo "no snapshot produced; nothing to land"
             exit 0
           fi
-          git config user.name "misakanet-bot"
-          git config user.email "bot@misakanet.org"
-          # leaderboard_watch.py also writes leaderboard_meta.json; stage both
-          # so `git pull --rebase` never trips on unstaged changes.
-          git add data/leaderboard.json data/leaderboard_meta.json
-          if git diff --cached --quiet; then
-            echo "snapshot unchanged; nothing to commit"
-            exit 0
-          fi
-          git commit -s -m "chore: update leaderboard snapshot [skip ci]"
-          # main can still move between checkout and push (other workflows, manual
-          # pushes). The snapshot is a generated artifact, so on conflict the freshly
-          # computed one wins: during a rebase, -X theirs means the commit being
-          # replayed, i.e. ours.
-          if ! git pull --rebase -X theirs origin main; then
-            echo "::error::rebase onto origin/main failed; leaving a clean tree"
-            git rebase --abort || true
-            exit 1
-          fi
-          git push
+          python3 scripts/ci/land_change.py \
+            --branch bot/leaderboard-watch \
+            --title "chore: update leaderboard snapshot" \
+            --paths data/leaderboard.json data/leaderboard_meta.json \
+            --note "leaderboard_watch.py writes both files, so both are named here."

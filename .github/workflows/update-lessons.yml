@@ -18,6 +18,7 @@ jobs:
   update:
     permissions:
       contents: write
+      pull-requests: write   # the regeneration lands through the auto-merging PR, not a push
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
@@ -67,17 +68,32 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Commit and push
-        if: steps.check.outputs.changed == 'true'
+      # The "did anything change?" step that used to live here is gone with the push it gated:
+      # `land_change.py` answers the same question by asking git (never a hardcoded file list — the
+      # registry grows, and a stale list is how the counts drifted before, handoff 2026-09-11) and
+      # exits 0 with no pull request when the regeneration produced no diff.
+
+      - name: Land the regeneration through a pull request that merges itself
+        # Was `git push` — refused by the ruleset on `main`, which requires `DCO / Signed-off-by`,
+        # `test (ubuntu-latest, 3.11)` and `gate` on every commit that lands there and exempts no
+        # actor. A regeneration that changes something is exactly the run that used to lose its
+        # work here, while every quiet run reported success: the failure only ever appeared on the
+        # days the job had something to land. See docs/maintainer/automation-lands-via-pr.md.
+        #
+        # `land_change.py` signs the commit off (DCO is one of the three required checks), pushes
+        # it to the stable branch `bot/update-lessons` and enables squash auto-merge: the pull
+        # request is made once and updated by later runs instead of accumulating one PR per day in
+        # front of a human. It stages everything (`git add -A`) on purpose — the page generator
+        # both creates files (a new lesson gets a new page) and deletes them (a retitled lesson
+        # orphans the old URL) — and it exits 0 without opening anything when the regeneration
+        # produced no diff, so "Check for changes" above is now a log line rather than a gate.
+        env:
+          # `SHELDON_PAT`, never `GITHUB_TOKEN`: a branch pushed with `GITHUB_TOKEN` starts no
+          # workflow runs, so the required checks would never report and the auto-merge would wait
+          # forever.
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          # -A (not -u): the page generator both creates files (new lessons get a
-          # new page) and deletes them (a retitled lesson orphans the old URL).
-          git add -A
-          git commit -m "chore: auto-update lessons.json, public counts and generated pages"
-          # main moves under this job (leaderboard snapshots, releases, maintainer
-          # pushes), and a rejected push throws away a full regeneration. Retry once
-          # through a rebase — but let a real conflict fail loudly: #1625 was a
-          # `|| true` that swallowed exactly this and left the repo in a bad state.
-          git push || { git pull --rebase origin main && git push; }
+          python3 scripts/ci/land_change.py \
+            --branch bot/update-lessons \
+            --title "chore: auto-update lessons.json, public counts and generated pages" \
+            --note "data/lessons.json, every managed public lesson count, and the static lesson/topic pages."
