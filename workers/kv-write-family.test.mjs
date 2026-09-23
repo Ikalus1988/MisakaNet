@@ -14,7 +14,7 @@
 // Run: node --test workers/kv-write-family.test.mjs
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import worker, { kvKeyFamily } from './register-proxy-sw.js';
+import worker, { kvKeyFamily, kvPut } from './register-proxy-sw.js';
 import { testToken } from './_test-token.mjs';
 import { withKvStore } from './_test-kv-store.mjs';
 
@@ -85,24 +85,19 @@ function createEnv({ d1 = null } = {}) {
 }
 
 /**
- * A KV-write probe: `POST /api/feedback` writes `rate:feedback:<ip>` through `kvPut` before it does
- * anything else — one KV key per address per minute, which is the "per entity, KV first" shape this
- * measurement exists to rank.
+ * A KV-write probe: `kvPut` itself.
  *
- * It used to be `POST /api/helpful` (one key per lesson). **#2118 moved that vote to the durable store,
- * and a migrated family correctly disappears from this ranking**: the counter measures what spends the
- * *KV* allowance, so a family that no longer writes KV has nothing left to rank. The rate family is one
- * of the ones still on KV (#2117), which is why the probe moved there.
+ * This used to be an endpoint — first `POST /api/helpful`, then `POST /api/feedback` — because those
+ * paths wrote KV unconditionally and a real request is a better probe than a direct call. Both moved to
+ * the durable store (#2118, #2117), and that is the *point* of the migration: in a deployment with D1
+ * bound, no endpoint's happy path writes KV any more.
  *
- * (A search miss would not have done either: `logSearchGap` short-circuits to `bumpCounter` whenever D1
- * is bound, so with D1 present it creates no KV key at all. A useful reminder that "this family looks
- * KV-heavy" is a claim to measure, not to infer.)
+ * What the ranking measures now is the **fallback** — `storePut` calls `kvPut` when D1 is unhappy,
+ * which is exactly when KV's budget gets spent by surprise (the 1,350 writes on 2026-09-22 that could
+ * not be attributed to any scheduled job). There is no HTTP surface that reliably reproduces "D1 is
+ * unhealthy" from a test, so the test drives `kvPut` directly: the call `noteKvWriteFamily` sits in.
  */
-const probeKvWrite = (env, ip = '203.0.113.7') => worker.fetch(new Request('https://misakanet.org/api/feedback', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': ip },
-  body: JSON.stringify({ query: 'pip install timeout', lesson_id: 'pip-timeout-mirror', feedback: 'irrelevant' }),
-}), env);
+const probeKvWrite = (env, key = 'rate:feedback:203.0.113.7') => kvPut(env, key, '1', { expirationTtl: 60 });
 
 // The counter is fire-and-forget by design (measurement must not add a round trip to a write path), so a
 // test has to let the microtask queue drain before it looks.
@@ -127,7 +122,7 @@ test('the family is the key prefix, and unknown prefixes stay bounded', () => {
 test('a failing KV write still attributes its key family', async () => {
   const d1 = createCountersD1();
   const env = createEnv({ d1 });
-  await probeKvWrite(env, '203.0.113.7');
+  await probeKvWrite(env, 'rate:feedback:203.0.113.7');
   await settle();
   assert.ok(totalFor(d1, 'rate') >= 1,
     'the family must be counted even though the write failed - an outage is when the ranking matters most');
@@ -159,16 +154,16 @@ const voteForLesson = (env, lessonId) => worker.fetch(new Request('https://misak
 test('the same key is counted once, because the quota charges per distinct key', async () => {
   const d1 = createCountersD1();
   const env = createEnv({ d1 });
-  await probeKvWrite(env, '203.0.113.7');
+  await probeKvWrite(env, 'rate:feedback:203.0.113.7');
   await settle();
   const after = totalFor(d1, 'rate');
-  await probeKvWrite(env, '203.0.113.7');
+  await probeKvWrite(env, 'rate:feedback:203.0.113.7');
   await settle();
   assert.equal(totalFor(d1, 'rate'), after,
     'a rewrite of the same key is free on the free tier, and must be free here too');
 
   // ...but a different key in the same family is a new unit of the budget, and must show up.
-  await probeKvWrite(env, '203.0.113.8');
+  await probeKvWrite(env, 'rate:feedback:203.0.113.8');
   await settle();
   assert.equal(totalFor(d1, 'rate'), after + 1, 'a second distinct key is a second charge');
 });
@@ -185,7 +180,7 @@ test('the ranking is exposed on /api/health', async () => {
   // An address this file has not probed with before: the dedupe set lives in the worker module, so every
   // test in one process shares one "isolate" (exactly as production isolates do, and the reason a family
   // can only be counted once per isolate).
-  await probeKvWrite(env, '198.51.100.42');
+  await probeKvWrite(env, 'rate:feedback:198.51.100.42');
   await settle();
   const body = await (await worker.fetch(new Request('https://misakanet.org/api/health'), env)).json();
   assert.ok(body.kv_writes.families, 'the payload must carry the day\'s families');

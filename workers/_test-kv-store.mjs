@@ -49,6 +49,15 @@ export function withKvStore(d1 = null, { now = () => new Date().toISOString() } 
         return { bind: () => created(), run: created().run };
       }
 
+      // A delete by key (`storeDelete`): `DELETE FROM kv_store WHERE key = ?1`.
+      if (/DELETE FROM kv_store[\s\S]*WHERE key = \?1/i.test(text)) {
+        return {
+          bind: (key) => ({
+            run: async () => ({ success: true, meta: { changes: rows.delete(String(key)) ? 1 : 0 } }),
+          }),
+        };
+      }
+
       // The reclaimer (#2117): `DELETE … WHERE key IN (SELECT key … LIMIT n)`.
       if (/DELETE FROM kv_store/i.test(text)) {
         return {

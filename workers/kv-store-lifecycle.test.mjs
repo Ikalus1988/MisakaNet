@@ -18,7 +18,7 @@
 // Run: node --test workers/kv-store-lifecycle.test.mjs
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import worker, { storeGet, storePut, sweepExpiredStore } from './register-proxy-sw.js';
+import worker, { storeDelete, storeGet, storePut, sweepExpiredStore } from './register-proxy-sw.js';
 import { withKvStore } from './_test-kv-store.mjs';
 import { testToken } from './_test-token.mjs';
 
@@ -114,4 +114,36 @@ test('per-address rate limits hold with D1 only and no KV at all', async () => {
 
   assert.equal(await storeGet(env, 'rate:feedback:203.0.113.9', 'text'), '10',
     'the window counter is durable, so the next isolate sees it too');
+});
+
+
+// A delete is not the same as an expiry: the keepalive debounce *resets* its counter on a healthy
+// sweep, and a delete that only reached KV would leave the durable row in place — the alert would then
+// fire every 15 minutes forever, which is a worse failure than the one the counter exists to prevent.
+test('storeDelete removes the row from the durable store (#2127)', async () => {
+  const env = envWithStore();
+  await storePut(env, 'keepalive:fail-count', '3', { expirationTtl: 3600 });
+  assert.equal(await storeGet(env, 'keepalive:fail-count', 'text'), '3');
+
+  assert.equal(await storeDelete(env, 'keepalive:fail-count'), true);
+  assert.equal(await storeGet(env, 'keepalive:fail-count', 'text'), null);
+  assert.equal(env.MISAKANET_D1.kvStore.has('keepalive:fail-count'), false,
+    'the row must be gone, not merely expired');
+
+  // Deleting something that is not there is not an error: the sweep and the reset both race with the
+  // cron that writes the counter.
+  assert.equal(await storeDelete(env, 'keepalive:fail-count'), false);
+});
+
+test('storeDelete also clears a key that only exists in KV', async () => {
+  // The transition: the counter was written to KV before this family moved.
+  const kv = { store: new Map([['keepalive:fail-count', '2']]), _store: null,
+    async get(k) { return this.store.get(k) ?? null; },
+    async put(k, v) { this.store.set(k, v); },
+    async delete(k) { this.store.delete(k); } };
+  kv._store = kv.store;
+  const env = { MISAKANET_KV: kv, MISAKANET_D1: withKvStore() };
+
+  assert.equal(await storeDelete(env, 'keepalive:fail-count'), true);
+  assert.equal(kv.store.has('keepalive:fail-count'), false);
 });

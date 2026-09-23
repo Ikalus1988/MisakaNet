@@ -2254,6 +2254,39 @@ async function storeGet(env, key, type) {
 }
 
 /**
+ * Remove a key from wherever it lives — D1 first, then KV.
+ *
+ * Added for the keepalive debounce: that counter is *reset* on a healthy sweep and deleted when the
+ * alert fires, and a delete that only reached KV would leave the D1 row in place, so the debounce would
+ * never reset and the alert would fire every 15 minutes forever. The KV delete also removes keys
+ * written before this family moved, and covers a deployment with no D1 binding.
+ */
+async function storeDelete(env, key) {
+  let removed = false;
+  const d1 = d1Binding(env);
+  if (d1) {
+    try {
+      await ensureKvStoreTable(d1);
+      const { meta } = await d1.prepare(`DELETE FROM kv_store WHERE key = ?1`).bind(String(key)).run();
+      removed = ((meta && meta.changes) || 0) > 0 || removed;
+    } catch (error) {
+      STORE_STATS.failures += 1;
+      STORE_STATS.last_failure_at = new Date().toISOString();
+      logInternal("store delete failed, falling back to KV", error);
+    }
+  }
+  if (env && env.MISAKANET_KV) {
+    try {
+      await env.MISAKANET_KV.delete(key);
+      removed = true;
+    } catch (error) {
+      logInternal("KV delete failed", error);
+    }
+  }
+  return removed;
+}
+
+/**
  * Next node number, atomically, without spending the KV new-key budget.
  *
  * The KV counter this replaces could not survive a write outage — and, worse, it failed
@@ -4776,16 +4809,18 @@ async function runKeepaliveSweep(cron = "manual", env = null) {
     // loopback keepalive to misakanet.org) are monitoring noise, not service
     // outages. Escalate to an error only after KEEPALIVE_FAIL_ALERT_AFTER
     // consecutive failures; reset on any healthy sweep.
-    const kv = env?.MISAKANET_KV;
+    // Through the durable store like every other counter, for two reasons: KV's write budget is the
+    // thing that runs out, and a direct `kv.put` bypasses `kvPut` — so the write-family ranking that
+    // exists to show which families spend the budget could not see this one.
     let count = 1;
-    if (kv) {
-      const raw = await kv.get(KEEPALIVE_FAIL_KEY, "text").catch(() => null);
+    if (hasDurableStore(env)) {
+      const raw = await storeGet(env, KEEPALIVE_FAIL_KEY, "text").catch(() => null);
       count = (parseInt(raw || "0", 10) || 0) + 1;
-      await kv.put(KEEPALIVE_FAIL_KEY, String(count), { expirationTtl: 3600 }).catch(() => {});
+      await storePut(env, KEEPALIVE_FAIL_KEY, String(count), { expirationTtl: 3600 }).catch(() => {});
     }
     if (count >= KEEPALIVE_FAIL_ALERT_AFTER) {
       console.error("[keepalive] failed", JSON.stringify({ cron, failures, consecutive: count }));
-      if (kv) await kv.delete(KEEPALIVE_FAIL_KEY).catch(() => {});
+      if (hasDurableStore(env)) await storeDelete(env, KEEPALIVE_FAIL_KEY).catch(() => {});
       throw new Error(`[keepalive] failed: ${failures.join("; ")}`);
     }
     console.warn("[keepalive] degraded (transient)", JSON.stringify({ cron, failures, consecutive: count }));
@@ -4793,8 +4828,8 @@ async function runKeepaliveSweep(cron = "manual", env = null) {
   }
 
   // Healthy — reset the consecutive-failure counter.
-  if (env?.MISAKANET_KV) {
-    await env.MISAKANET_KV.delete(KEEPALIVE_FAIL_KEY).catch(() => {});
+  if (hasDurableStore(env)) {
+    await storeDelete(env, KEEPALIVE_FAIL_KEY).catch(() => {});
   }
   console.log("[keepalive] ok", JSON.stringify({ cron, endpoints: KEEPALIVE_ENDPOINTS.length }));
   return { ok: true, failures: [] };
@@ -5882,6 +5917,12 @@ export {
   // rather than the storage.
   storePut,
   storeGet,
+  storeDelete,
+  // Exported for workers/kv-write-family.test.mjs: with the migration finished, no endpoint's happy
+  // path writes KV in a D1-bound deployment — the ranking now describes the *fallback*, which is what
+  // fires when D1 is unhappy. There is no HTTP surface left to drive it through, so the test drives
+  // `kvPut` itself: the seam the counter instruments.
+  kvPut,
   // Exported for workers/kv-store-lifecycle.test.mjs: the reclaimer is the half of the TTL story that
   // `storeGet` does not cover — readers hide expired rows, and this is what removes them.
   sweepExpiredStore,
