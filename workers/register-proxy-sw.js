@@ -2164,7 +2164,42 @@ async function ensureKvStoreTable(d1) {
        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
      )`,
   ).run();
+  // The reclaimer below scans for expired rows; without this index that scan is a full table scan of
+  // every cached payload, rate window and intake record the store holds (2026-09-23, #2117).
+  await d1.prepare(
+    `CREATE INDEX IF NOT EXISTS kv_store_expires_at ON kv_store (expires_at)`,
+  ).run();
   kvStoreTableReady = true;
+}
+
+/**
+ * Reclaim expired rows from the durable store.
+ *
+ * KV deleted expired keys for free. Moving the TTL families into `kv_store` moved the *semantics*
+ * (`storeGet` filters expired rows out, so readers are correct) but not the *housekeeping*: nothing
+ * removes them, so every rate window, cache entry, dedup hash and pairing code ever written would stay
+ * in the table. `limit` bounds one run — a backlog is reclaimed over a few cron ticks instead of one
+ * long DELETE.
+ *
+ * Deliberately not a correctness feature: a row that outlives its TTL is invisible to readers either
+ * way. This is what keeps the table (and the scan above it) proportional to live data.
+ */
+async function sweepExpiredStore(env, { limit = 500 } = {}) {
+  const d1 = d1Binding(env);
+  if (!d1) return 0;
+  try {
+    await ensureKvStoreTable(d1);
+    const { meta } = await d1.prepare(
+      `DELETE FROM kv_store WHERE key IN (
+         SELECT key FROM kv_store
+          WHERE expires_at IS NOT NULL AND expires_at <= datetime('now')
+          LIMIT ?1)`,
+    ).bind(limit).run();
+    return (meta && meta.changes) || 0;
+  } catch (error) {
+    logInternal("kv_store sweep failed", error);
+    return 0;
+  }
 }
 
 async function storePut(env, key, value, options = {}) {
@@ -2921,11 +2956,11 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         const lessons = await loadLessons(env, {});
         const cover = findCoveringLesson(safeProblem, safeError || "", lessons || []);
         if (cover) {
-          if (args.source && env.MISAKANET_KV) {
+          if (args.source && hasDurableStore(env)) {
             try {
               const ck = `intake_source_count:${String(args.source).slice(0, 40)}`;
-              const cn = parseInt((await env.MISAKANET_KV.get(ck, "text")) || "0", 10) || 0;
-              await kvPut(env, ck, String(cn + 1), { expirationTtl: 86400 * 30 });
+              const cn = parseInt((await storeGet(env, ck, "text")) || "0", 10) || 0;
+              await storePut(env, ck, String(cn + 1), { expirationTtl: 86400 * 30 });
             } catch (_) { /* best-effort ledger (feeds #1528) */ }
           }
           return {
@@ -5092,15 +5127,15 @@ export default {
 
     // POST /api/feedback — search result feedback intake
     if (request.method === "POST" && url.pathname === "/api/feedback") {
-      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+      if (!hasDurableStore(env)) return jsonResponse({ error: "no storage configured" }, 503);
 
       // IP rate limit: 10 feedbacks per IP per minute
       const fbIp = request.headers.get("CF-Connecting-IP") || "unknown";
       const fbRateKey = `rate:feedback:${fbIp}`;
-      const fbRateRaw = await env.MISAKANET_KV.get(fbRateKey, "text");
+      const fbRateRaw = await storeGet(env, fbRateKey, "text");
       const fbRateCount = fbRateRaw ? parseInt(fbRateRaw, 10) || 0 : 0;
       if (fbRateCount >= 10) return jsonResponse({ error: "Rate limited. Try again later." }, 429);
-      await kvPut(env, fbRateKey, String(fbRateCount + 1), { expirationTtl: 60 });
+      await storePut(env, fbRateKey, String(fbRateCount + 1), { expirationTtl: 60 });
 
       let fbBody;
       try { fbBody = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
@@ -5210,7 +5245,7 @@ export default {
     // POST /api/intake — general-purpose intake for MCP, agents, sandbox (#589)
     // Redacts secrets before persistence. Records demand signals for unmatched items.
     if (request.method === "POST" && url.pathname === "/api/intake") {
-      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+      if (!hasDurableStore(env)) return jsonResponse({ error: "no storage configured" }, 503);
 
       // Max body 8KB
       const contentLength = parseInt(request.headers.get("content-length") || "0");
@@ -5219,10 +5254,10 @@ export default {
       // IP rate limit: 10 per hour
       const intakeIp = request.headers.get("CF-Connecting-IP") || "unknown";
       const intakeRateKey = `rate:intake:${intakeIp}`;
-      const intakeRateRaw = await env.MISAKANET_KV.get(intakeRateKey, "text");
+      const intakeRateRaw = await storeGet(env, intakeRateKey, "text");
       const intakeRateCount = intakeRateRaw ? parseInt(intakeRateRaw, 10) || 0 : 0;
       if (intakeRateCount >= 10) return jsonResponse({ error: "Rate limited (10/hour). Try again later." }, 429);
-      await kvPut(env, intakeRateKey, String(intakeRateCount + 1), { expirationTtl: 3600 });
+      await storePut(env, intakeRateKey, String(intakeRateCount + 1), { expirationTtl: 3600 });
 
       let intakeBody;
       try { intakeBody = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
@@ -5364,15 +5399,15 @@ export default {
 
     // POST /mcp/connect — generate a one-time pairing code
     if (request.method === "POST" && url.pathname === "/mcp/connect") {
-      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 503);
+      if (!hasDurableStore(env)) return jsonResponse({ error: "no storage configured" }, 503);
 
       // Rate limit: 3 codes per IP per 10 minutes
       const connIp = request.headers.get("CF-Connecting-IP") || "unknown";
       const connRateKey = `rate:connect:${connIp}`;
-      const connRateRaw = await env.MISAKANET_KV.get(connRateKey, "text");
+      const connRateRaw = await storeGet(env, connRateKey, "text");
       const connRateCount = connRateRaw ? parseInt(connRateRaw, 10) || 0 : 0;
       if (connRateCount >= 3) return jsonResponse({ error: "Rate limited. Try again later." }, 429);
-      await kvPut(env, connRateKey, String(connRateCount + 1), { expirationTtl: 600 });
+      await storePut(env, connRateKey, String(connRateCount + 1), { expirationTtl: 600 });
 
       // Generate 6-char alphanumeric code (cryptographically secure)
       const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I/O/0/1 for readability
@@ -5760,6 +5795,11 @@ async function getCode() {
         console.error("[traffic-aggregation] failed", e.message)
       ));
     }
+    // Durable-store housekeeping: expire what KV used to expire (2026-09-23, #2117).
+    ctx.waitUntil(sweepExpiredStore(env).then((reclaimed) => {
+      if (reclaimed > 0) console.log(`[kv-store] reclaimed ${reclaimed} expired row(s)`);
+    }).catch((e) => console.error("[kv-store] sweep failed", e.message)));
+
     // Gap lifecycle: clean up gap keys that now have covering lessons (Issue #1567)
     if (env.MISAKANET_KV) {
       ctx.waitUntil(cleanupCoveredGaps(env).catch(e =>
@@ -5841,6 +5881,9 @@ export {
   // rather than the storage.
   storePut,
   storeGet,
+  // Exported for workers/kv-store-lifecycle.test.mjs: the reclaimer is the half of the TTL story that
+  // `storeGet` does not cover — readers hide expired rows, and this is what removes them.
+  sweepExpiredStore,
   // Exported so workers/kv-write-budget.test.mjs asserts the *ratio* against the real batch size
   // instead of a hardcoded 10 that stops being true the moment the constant moves.
   TRAFFIC_FLUSH_BATCH,
