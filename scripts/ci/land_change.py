@@ -244,19 +244,19 @@ def auto_merge_result_ok(payload: dict) -> tuple[bool, str]:
 
 
 class Land:
-    def __init__(self, repo: str, token: str, *, cwd: Path | None = None, dry_run: bool = False):
+    def __init__(self, repo: str, token: str, *, cwd: Path | None = None):
         self.repo = repo
         self.token = token
         # Read at call time, not at import time, so a test can point it at a scratch repository.
         self.cwd = cwd or REPO_ROOT
-        self.dry_run = dry_run
 
     # ── git ──────────────────────────────────────────────────────────────────────────────
-    def git(self, *args: str, check: bool = True) -> str:
+    def git(self, *args: str) -> str:
+        """Run git in the checkout and fail loudly with its own output if it refuses."""
         proc = subprocess.run(
             ["git", *args], cwd=self.cwd, capture_output=True, text=True
         )
-        if check and proc.returncode != 0:
+        if proc.returncode != 0:
             raise LandError(
                 f"`git {' '.join(args)}` failed (exit {proc.returncode}):\n"
                 f"{proc.stdout.strip()}\n{proc.stderr.strip()}"
@@ -389,8 +389,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"::error::{e}")
         return 1
 
-    land = Land(args.repo, os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN", ""),
-                dry_run=args.dry_run)
+    land = Land(args.repo, os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN", ""))
 
     # No `--paths`: everything the run changed. That is what the workflows these jobs replaced did
     # (`git add -A`), and a hand-written path list is how the node-counter job once threw away the
