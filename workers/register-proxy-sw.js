@@ -256,7 +256,7 @@ function addDebugContext(env, errorObj, context) {
 const MCP_TOOLS = [
   {
     name: "misakanet_register",
-    description: "[ONBOARDING] Get a Bearer token for authenticated access (unlocks misakanet_write_lesson and higher rate limits). Reading needs no registration and has no daily cap: misakanet_search / misakanet_get_lesson work anonymously (a per-address burst limit protects the index; it is a speed limit, not a quota). No GitHub account or email needed, and no personal data is collected — the node is a pseudonym, not an account.\nToken lifetime: valid ~30 days. Pass client_id (a stable id you generate once, e.g. a UUID, workspace id or hostname) to get the SAME node_id and token back on every later call and to renew them; without client_id every call creates a new node, which means your reuse evidence, receipts and history start over.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string, reused?: boolean} — reused=true means an existing node was found for this client_id.\nExample: misakanet_register(agent_type='claude-code', client_id='8f14e45f-2b1c-4f3a-9d2e-7c6b5a4d3e2f')\nOptional referral_code: the code of the node that invited you (`misakanet` referral code, 4-16 letters/digits). Recorded against your node and counted for that code — the only place a referral has ever been recorded, since the invitation otherwise never leaves the inviting machine. Counted once per new node: calling register again with the same client_id renews the same node and does not add to the count.",
+    description: "[ONBOARDING] Get a Bearer token for authenticated access (unlocks misakanet_write_lesson and higher rate limits). Reading needs no registration and has no daily cap: misakanet_search / misakanet_get_lesson work anonymously (a per-address burst limit protects the index; it is a speed limit, not a quota). No GitHub account or email needed, and no personal data is collected — the node is a pseudonym, not an account.\nToken lifetime: valid ~30 days. Pass client_id (a random UUID you generate once and keep private) to get the SAME node_id and token back on every later call and to renew them; without client_id every call creates a new node, which means your reuse evidence, receipts and history start over. Treat client_id as the node's key: presenting it returns that node's token, so don't publish it, commit it, or build it from something already public (a hostname or workspace id is guessable and usually visible) — generate a random UUID and store it like a token.\nReturns: object {node_id: string, token: string, registered_at: string, agent_type: string, reused?: boolean} — reused=true means an existing node was found for this client_id.\nExample: misakanet_register(agent_type='claude-code', client_id='8f14e45f-2b1c-4f3a-9d2e-7c6b5a4d3e2f')\nOptional referral_code: the code of the node that invited you (`misakanet` referral code, 4-16 letters/digits). Recorded against your node and counted for that code — the only place a referral has ever been recorded, since the invitation otherwise never leaves the inviting machine. Counted once per new node: calling register again with the same client_id renews the same node and does not add to the count.",
     inputSchema: {
       type: "object",
       properties: {
@@ -710,8 +710,10 @@ const EVIDENCE_INTENT_RE = /(evidence|被用过|多少人|E4|验证|verification
 
 // Client-supplied stable identity for anonymous registration (2026-09-13). A UUID,
 // a workspace id, a hostname — anything the client can regenerate. It is an
-// *identifier*, not a credential: tokens stay random and server-issued, so knowing
-// another client's id grants nothing (see the note in handleMcpToolCall).
+// *identifier* that doubles as a key: the token stays random and server-issued, but presenting the
+// same client_id returns that node's token (that is the renewal path below), so a client_id is
+// secret material — keep it private and generate it randomly. Corrected 2026-09-23 (#2083): this
+// said "knowing another client's id grants nothing", which the reuse branch has never been true of.
 const CLIENT_ID_RE = /^[A-Za-z0-9._:-]{8,64}$/;
 
 function detectKind(query, explicitKind) {
@@ -2259,14 +2261,16 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     // record for it (Stripe's Idempotency-Key, OAuth's client_id, a client-generated
     // UUID) rather than inventing a new pseudonym per request.
     //
-    // `client_id` is an identifier, not a credential: the token stays random and
-    // server-issued, and knowing someone's client_id grants nothing.
+    // `client_id` is an identifier *and* a key: the token is random and server-issued, but this
+    // branch hands it back to whoever presents the matching client_id, so treat the value as a
+    // credential (random, private). The comment here claimed the opposite until 2026-09-23 (#2083) —
+    // it was describing the design intent, not the code.
     const clientId = typeof args.client_id === "string" ? args.client_id.trim() : "";
     if (clientId && !CLIENT_ID_RE.test(clientId)) {
       return {
         error: "client_id must be 8-64 characters of A-Z a-z 0-9 . _ : -",
         code: "invalid_client_id",
-        hint: "Use a value you can regenerate, e.g. a UUID or a workspace/hostname id. Omit client_id to keep the old behaviour.",
+        hint: "Generate a random UUID and keep it private — presenting it returns this node's token. Omit client_id to keep the old behaviour (a new node per call).",
       };
     }
     if (clientId) {
