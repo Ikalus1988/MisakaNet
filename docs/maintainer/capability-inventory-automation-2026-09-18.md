@@ -46,7 +46,7 @@
 | `update-badges.yml` | `workflow_run`(148)/`push`(82)/`schedule 23 3 * * 1`/手动 | 重算课程/工具/节点数推 `data` 分支 | total=**239**；`data` 分支最近提交 `badges: auto-update...` 2026-09-17T17:11:36Z | 数字源自被描述文件自身（`TOOL_COUNT` 直接 grep 源文件），无外部校验 | 强 **(i)** |
 | `lesson-notify.yml` | `issues[opened,labeled]`（含 `new-lesson`） | 飞书推送新课程贡献 | total=**2953**：**skipped 2946**、success 2、failure 5；最后一次触发 2026-09-08；`label:new-lesson` 仅 6 条 | 命中率 0.24%；投递成功与否不可见 | 中 **(ii)** |
 | `d1-counters-report.yml` | 手动（唯一） | 打印 D1 计数并对账 KV 遗留键 | total=**2**（2026-09-13） | 产物只在 run 日志里，无归档 | 中 **(ii)** |
-| `register.yml` | `issues[opened,reopened]` + 手动 | 分配 node_id、贴入门测试、注册完成关 issue | total=**656**；`label:registration` 63 条、`label:registered` 11 条 | 完成率 11/63 需人工确认口径 | 中 **(i)** |
+| `register.yml` | `issues[opened,reopened]` + 手动 | 贴入门测试、注册完成关 issue（2026-09-23 起：**不再分配 node_id**，见 #2106）| total=**656**；`label:registration` 63 条、`label:registered` 11 条 | 完成率 11/63 需人工确认口径 | 中 **(i)** |
 | `automation_output_audit.py`（`guarded-repository.yml` 内，新） | `schedule 0 7 * * 1`（`guarded-repository.yml:30-31`） | 把"运行次数 vs 产物"对账，跑不出产物就 fail | 该 job 加于 2026-09-17（#1811）；`guarded-repository.yml` 最近一次非 push 运行是 **2026-09-14** 的 schedule，jobs 里**只有** `guarded-repository / scan` ⇒ **这个 job 一次都还没跑过** | 下次窗口 2026-09-21；目前所有结论都还无人复核 | 强 **(iii)** |
 
 ## 3. 逐项细节（只记关键项）

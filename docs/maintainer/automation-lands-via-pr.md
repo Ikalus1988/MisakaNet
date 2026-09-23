@@ -82,19 +82,25 @@ a silent strip is how the marker comes back.
 
 ## What must **not** be converted
 
-Two automated writers are deliberately still outside this mechanism, because a pull request would
-make them *worse* rather than safer:
+One automated writer is deliberately still outside this mechanism, because a pull request would make
+it *worse* rather than safer:
 
-* **`register.yml`** assigns the next node number on a registration issue. Its write is on the
-  user's critical path: a pull request would add the required checks' latency (~10 minutes) to
-  every registration, and two registrations racing through two unmerged branches could hand out
-  the same number. The honest fix for that path is not a pull request — it is to read the number
-  from the worker/KV counter (the source `data/counter.json` mirrors) instead of inventing one in
-  git. Tracked in **#2106**, which carries the three refused runs (2026-09-22), the title-keyword
-  false positives that made them look like registrations, and that recommendation.
 * **`cite-lesson.yml`** reacts to an issue and updates references; its `git push` currently pushes
   nothing (the step before it writes no files), so it is a no-op rather than a blocked write.
   Whether it should write at all is a question about the feature, not about the ruleset.
+
+**`register.yml` was the other one, and the answer was that it should not write at all** (#2106,
+2026-09-23). It used to assign the next node number by incrementing `data/counter.json` and pushing
+to `main` — refused by the ruleset three times on 2026-09-22 (35749203103 / 35761772072 /
+35764549504), *and* wrong independently of the ruleset: the file trailed the worker's KV counter by
+730 nodes that day, so the site's "✅ 已分配 Misaka11048" named a number that had not been current
+for months and was not the `node_id` the user's own `misakanet_register` call returned. A pull
+request would have added ten minutes of required checks to a person's registration and let two
+registrations read the same counter and take the same number. The job now writes nothing — no
+`contents` permission, no counter, no commit — and only welcomes, labels and closes;
+`tests/test_no_workflow_pushes_to_main.py::test_register_yml_cannot_write_the_repository` keeps it
+that way. The number is allocated by the worker's KV counter, which is where MCP and email
+registration always allocated it.
 
 ## Adding a new automated writer
 
