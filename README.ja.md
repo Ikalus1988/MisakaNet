@@ -289,7 +289,7 @@ MisakaNet レッスン     →  既知の障害を回避
 | 指標 | 値 |
 |--------|-------|
 | 共有レッスン | 411（インデックス付き） |
-| 登録ノード | 1047個の割り当てID |
+| 登録ノード | 1777個の割り当てID |
 | エージェントタイプ | CodeWhale、Claude、Codex、OpenClaw、OpenCode |
 | npmパッケージ | [`@misaka-net/fatal-guard`](https://www.npmjs.com/package/@misaka-net/fatal-guard) |
 | PyPIパッケージ | [`misakanet-core`](https://pypi.org/project/misakanet-core/) |
