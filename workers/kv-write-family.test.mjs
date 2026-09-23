@@ -16,6 +16,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker, { kvKeyFamily } from './register-proxy-sw.js';
 import { testToken } from './_test-token.mjs';
+import { withKvStore } from './_test-kv-store.mjs';
 
 const TOKEN = testToken('kv-family');
 const LESSONS = [
@@ -84,17 +85,23 @@ function createEnv({ d1 = null } = {}) {
 }
 
 /**
- * A useful vote: `POST /api/helpful` writes `helpful:<lesson_id>` through `kvPut` unconditionally — one
- * KV key per lesson, which is exactly the "per entity, KV first" shape this measurement exists to rank.
+ * A KV-write probe: `POST /api/feedback` writes `rate:feedback:<ip>` through `kvPut` before it does
+ * anything else — one KV key per address per minute, which is the "per entity, KV first" shape this
+ * measurement exists to rank.
  *
- * (A search miss would *not* do: `logSearchGap` short-circuits to `bumpCounter` whenever D1 is bound, so
- * with D1 present it creates no KV key at all. That is also why the first version of this test failed —
- * and a useful reminder that "the family looks KV-heavy" is a claim to measure, not to infer.)
+ * It used to be `POST /api/helpful` (one key per lesson). **#2118 moved that vote to the durable store,
+ * and a migrated family correctly disappears from this ranking**: the counter measures what spends the
+ * *KV* allowance, so a family that no longer writes KV has nothing left to rank. The rate family is one
+ * of the ones still on KV (#2117), which is why the probe moved there.
+ *
+ * (A search miss would not have done either: `logSearchGap` short-circuits to `bumpCounter` whenever D1
+ * is bound, so with D1 present it creates no KV key at all. A useful reminder that "this family looks
+ * KV-heavy" is a claim to measure, not to infer.)
  */
-const vote = (env, lessonId) => worker.fetch(new Request('https://misakanet.org/api/helpful', {
+const probeKvWrite = (env, ip = '203.0.113.7') => worker.fetch(new Request('https://misakanet.org/api/feedback', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ lesson_id: lessonId }),
+  headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': ip },
+  body: JSON.stringify({ query: 'pip install timeout', lesson_id: 'pip-timeout-mirror', feedback: 'irrelevant' }),
 }), env);
 
 // The counter is fire-and-forget by design (measurement must not add a round trip to a write path), so a
@@ -120,46 +127,69 @@ test('the family is the key prefix, and unknown prefixes stay bounded', () => {
 test('a failing KV write still attributes its key family', async () => {
   const d1 = createCountersD1();
   const env = createEnv({ d1 });
-  await vote(env, 'pip-timeout-mirror');
+  await probeKvWrite(env, '203.0.113.7');
   await settle();
-  assert.ok(totalFor(d1, 'helpful') >= 1,
+  assert.ok(totalFor(d1, 'rate') >= 1,
     'the family must be counted even though the write failed - an outage is when the ranking matters most');
 });
+
+// The other half of the same story: this ranking is about the KV allowance, so a family that moved to the
+// durable store must stop appearing in it (#2118). Without this, the ranking would keep crediting a
+// family whose writes no longer cost the budget — and the next migration target would be chosen from a
+// number that describes the past.
+test('a family that moved to the durable store leaves the KV ranking', async () => {
+  const countersD1 = createCountersD1();
+  const d1 = withKvStore(countersD1);
+  const env = createEnv({ d1 });
+  const before = totalFor(countersD1, 'helpful');
+  await voteForLesson(env, 'a-lesson-that-moved');
+  await settle();
+  assert.equal(totalFor(countersD1, 'helpful'), before,
+    'the helpful vote is no longer a KV write, so it must not be counted as one');
+  assert.ok([...d1.kvStore.keys()].some((k) => k.startsWith('helpful:')),
+    'and the vote itself still lands, in the durable store');
+});
+
+const voteForLesson = (env, lessonId) => worker.fetch(new Request('https://misakanet.org/api/helpful', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ lesson_id: lessonId }),
+}), env);
 
 test('the same key is counted once, because the quota charges per distinct key', async () => {
   const d1 = createCountersD1();
   const env = createEnv({ d1 });
-  await vote(env, 'pip-timeout-mirror');
+  await probeKvWrite(env, '203.0.113.7');
   await settle();
-  const after = totalFor(d1, 'helpful');
-  await vote(env, 'pip-timeout-mirror');
+  const after = totalFor(d1, 'rate');
+  await probeKvWrite(env, '203.0.113.7');
   await settle();
-  assert.equal(totalFor(d1, 'helpful'), after,
+  assert.equal(totalFor(d1, 'rate'), after,
     'a rewrite of the same key is free on the free tier, and must be free here too');
 
   // ...but a different key in the same family is a new unit of the budget, and must show up.
-  await vote(env, 'wsl-terminal-underscore-corruption');
+  await probeKvWrite(env, '203.0.113.8');
   await settle();
-  assert.equal(totalFor(d1, 'helpful'), after + 1, 'a second distinct key is a second charge');
+  assert.equal(totalFor(d1, 'rate'), after + 1, 'a second distinct key is a second charge');
 });
 
 test('a broken counters table never breaks the request', async () => {
   const env = createEnv({ d1: createCountersD1({ fail: true }) });
-  const response = await vote(env, 'pip-timeout-mirror');
+  const response = await voteForLesson(env, 'pip-timeout-mirror');
   assert.equal(response.status, 200, 'measurement is not allowed to take the search path down');
 });
 
 test('the ranking is exposed on /api/health', async () => {
   const d1 = createCountersD1();
   const env = createEnv({ d1 });
-  // A lesson id this file has not voted with before: the dedupe set lives in the worker module, so every
+  // An address this file has not probed with before: the dedupe set lives in the worker module, so every
   // test in one process shares one "isolate" (exactly as production isolates do, and the reason a family
   // can only be counted once per isolate).
-  await vote(env, 'health-payload-probe');
+  await probeKvWrite(env, '198.51.100.42');
   await settle();
   const body = await (await worker.fetch(new Request('https://misakanet.org/api/health'), env)).json();
   assert.ok(body.kv_writes.families, 'the payload must carry the day\'s families');
-  assert.ok(Object.keys(body.kv_writes.families).includes('helpful'),
+  assert.ok(Object.keys(body.kv_writes.families).includes('rate'),
     JSON.stringify(body.kv_writes.families));
 });
 
