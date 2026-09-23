@@ -61,7 +61,38 @@ change on `main` can still reach these secrets. It only means a *feature branch*
 The expiry is also tracked as issue **#1886**, labelled `keep` so the stale bot leaves it alone, because
 a date in a document is easy to miss.
 
-### 4.1 What was proven, and what can only be assumed
+### 4.1 `NPM_TOKEN` — expires **2026-11-30**, and it cannot be renewed forever
+
+npm no longer issues tokens that outlive the release train. Since the
+[2025-11-05 security change](https://github.blog/changelog/2025-11-05-npm-security-update-classic-token-creation-disabled-and-granular-token-changes/),
+classic tokens are gone (revoked 2025-11-19) and **every granular token with write permission is
+capped at a 90-day lifetime** — the tokens this repository publishes with are exactly that kind. The
+current one expires **2026-11-30** (reported by the owner from
+`npmjs.com/settings/~/tokens`), which means a rotation whose only failure mode is a red release job
+is already scheduled, by npm, about two months out.
+
+To rotate it:
+
+1. `npmjs.com/settings/~/tokens` → *Generate New Token* → **Granular Access Token**, with
+   `read and write` on the three packages this repository publishes: `misakanet`,
+   `@misaka-net/fatal-guard`, `@misaka-net/misakanet-setup`. Keep the lifetime at the 90-day maximum.
+2. GitHub → Settings → Environments → `release` → update `NPM_TOKEN`.
+3. **Prove it with a run**: the publish workflows call `npm whoami` *before* publishing and fail with
+   `npm rejected NPM_TOKEN (npm whoami failed)` when the value is wrong
+   (`misakanet-publish.yml:105`), so a dispatch with `dry_run` is enough — the token is checked and
+   nothing is published.
+4. Update the date here and in the tracking issue — **#2113**, labelled `keep` for the same
+   reason #1886 is.
+
+**The rotation should be the last one.** [Trusted publishing](https://docs.npmjs.com/trusted-publishers/)
+removes the credential instead of renewing it: the package is configured with a *Trusted Publisher*
+on npmjs.com (repository + workflow filename), the workflow asks for `permissions: id-token: write`,
+and `npm publish` exchanges the OIDC token for a short-lived publish token — no `NPM_TOKEN` at all.
+Requirements are npm CLI ≥ 11.5.1 and Node ≥ 22.14.0, both satisfied by the `setup-node` pins in the
+three publish workflows. The npm side is a per-package setting (up to 10 per package), so it is an
+owner action in the npm UI; the workflow side is a three-line change.
+
+### 4.2 What was proven, and what can only be assumed
 
 The token's *sufficiency* was verified end-to-end on 2026-09-20 rather than assumed — a narrower token
 plausibly could have been too narrow, and `wrangler` sometimes needs account-level reads that the D1
