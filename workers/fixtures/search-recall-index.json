@@ -1,0 +1,1692 @@
+{
+"_note": "Extracted from the live KV index (`wrangler kv key get worker_search_index --remote`, 2026-09-23, 411 docs / avgDocLen 109.1). Only the terms this query can score are kept, so the file stays small; idf/tf/len/df/avgDocLen/docCount are the production values, which is what makes the ordering below reproducible. Regenerate the same way if the corpus changes a lot.",
+"version": 1,
+"docCount": 411,
+"avgDocLen": 109.1,
+"k1": 1.5,
+"b": 0.75,
+"terms": {
+"playwright": {
+"df": 17,
+"idf": 3.1588,
+"docs": [
+{
+"doc": 24,
+"tf": 1,
+"len": 189
+},
+{
+"doc": 25,
+"tf": 1,
+"len": 130
+},
+{
+"doc": 26,
+"tf": 1,
+"len": 223
+},
+{
+"doc": 32,
+"tf": 1,
+"len": 277
+},
+{
+"doc": 49,
+"tf": 1,
+"len": 109
+},
+{
+"doc": 65,
+"tf": 1,
+"len": 98
+},
+{
+"doc": 66,
+"tf": 1,
+"len": 116
+},
+{
+"doc": 67,
+"tf": 1,
+"len": 131
+},
+{
+"doc": 82,
+"tf": 1,
+"len": 192
+},
+{
+"doc": 84,
+"tf": 1,
+"len": 250
+},
+{
+"doc": 85,
+"tf": 1,
+"len": 188
+},
+{
+"doc": 88,
+"tf": 1,
+"len": 113
+},
+{
+"doc": 96,
+"tf": 1,
+"len": 81
+},
+{
+"doc": 97,
+"tf": 1,
+"len": 132
+},
+{
+"doc": 108,
+"tf": 1,
+"len": 128
+},
+{
+"doc": 109,
+"tf": 1,
+"len": 36
+},
+{
+"doc": 114,
+"tf": 1,
+"len": 204
+}
+]
+},
+"wsl": {
+"df": 38,
+"idf": 2.3704,
+"docs": [
+{
+"doc": 16,
+"tf": 1,
+"len": 121
+},
+{
+"doc": 27,
+"tf": 1,
+"len": 187
+},
+{
+"doc": 29,
+"tf": 1,
+"len": 137
+},
+{
+"doc": 30,
+"tf": 1,
+"len": 163
+},
+{
+"doc": 32,
+"tf": 1,
+"len": 277
+},
+{
+"doc": 33,
+"tf": 1,
+"len": 75
+},
+{
+"doc": 35,
+"tf": 1,
+"len": 210
+},
+{
+"doc": 46,
+"tf": 1,
+"len": 227
+},
+{
+"doc": 51,
+"tf": 1,
+"len": 47
+},
+{
+"doc": 52,
+"tf": 1,
+"len": 51
+},
+{
+"doc": 53,
+"tf": 1,
+"len": 50
+},
+{
+"doc": 54,
+"tf": 1,
+"len": 42
+},
+{
+"doc": 55,
+"tf": 1,
+"len": 42
+},
+{
+"doc": 56,
+"tf": 1,
+"len": 46
+},
+{
+"doc": 59,
+"tf": 1,
+"len": 45
+},
+{
+"doc": 60,
+"tf": 1,
+"len": 58
+},
+{
+"doc": 63,
+"tf": 1,
+"len": 143
+},
+{
+"doc": 68,
+"tf": 1,
+"len": 143
+},
+{
+"doc": 70,
+"tf": 1,
+"len": 107
+},
+{
+"doc": 71,
+"tf": 1,
+"len": 83
+},
+{
+"doc": 72,
+"tf": 1,
+"len": 81
+},
+{
+"doc": 73,
+"tf": 1,
+"len": 71
+},
+{
+"doc": 74,
+"tf": 1,
+"len": 107
+},
+{
+"doc": 75,
+"tf": 1,
+"len": 60
+},
+{
+"doc": 76,
+"tf": 1,
+"len": 40
+},
+{
+"doc": 78,
+"tf": 1,
+"len": 47
+},
+{
+"doc": 83,
+"tf": 1,
+"len": 54
+},
+{
+"doc": 84,
+"tf": 1,
+"len": 250
+},
+{
+"doc": 91,
+"tf": 1,
+"len": 118
+},
+{
+"doc": 92,
+"tf": 1,
+"len": 70
+},
+{
+"doc": 95,
+"tf": 1,
+"len": 54
+},
+{
+"doc": 98,
+"tf": 1,
+"len": 50
+},
+{
+"doc": 99,
+"tf": 1,
+"len": 40
+},
+{
+"doc": 100,
+"tf": 1,
+"len": 45
+},
+{
+"doc": 103,
+"tf": 1,
+"len": 169
+},
+{
+"doc": 108,
+"tf": 1,
+"len": 128
+},
+{
+"doc": 111,
+"tf": 1,
+"len": 123
+},
+{
+"doc": 112,
+"tf": 1,
+"len": 54
+}
+]
+},
+"missing": {
+"df": 38,
+"idf": 2.3704,
+"docs": [
+{
+"doc": 0,
+"tf": 1,
+"len": 242
+},
+{
+"doc": 2,
+"tf": 1,
+"len": 209
+},
+{
+"doc": 3,
+"tf": 1,
+"len": 231
+},
+{
+"doc": 5,
+"tf": 1,
+"len": 281
+},
+{
+"doc": 6,
+"tf": 1,
+"len": 400
+},
+{
+"doc": 7,
+"tf": 1,
+"len": 254
+},
+{
+"doc": 8,
+"tf": 1,
+"len": 277
+},
+{
+"doc": 9,
+"tf": 1,
+"len": 348
+},
+{
+"doc": 11,
+"tf": 1,
+"len": 241
+},
+{
+"doc": 12,
+"tf": 1,
+"len": 112
+},
+{
+"doc": 13,
+"tf": 1,
+"len": 138
+},
+{
+"doc": 14,
+"tf": 1,
+"len": 79
+},
+{
+"doc": 15,
+"tf": 1,
+"len": 94
+},
+{
+"doc": 18,
+"tf": 1,
+"len": 268
+},
+{
+"doc": 19,
+"tf": 1,
+"len": 69
+},
+{
+"doc": 20,
+"tf": 1,
+"len": 67
+},
+{
+"doc": 21,
+"tf": 1,
+"len": 84
+},
+{
+"doc": 22,
+"tf": 1,
+"len": 107
+},
+{
+"doc": 23,
+"tf": 1,
+"len": 114
+},
+{
+"doc": 25,
+"tf": 1,
+"len": 130
+},
+{
+"doc": 30,
+"tf": 1,
+"len": 163
+},
+{
+"doc": 32,
+"tf": 1,
+"len": 277
+},
+{
+"doc": 37,
+"tf": 1,
+"len": 252
+},
+{
+"doc": 38,
+"tf": 1,
+"len": 225
+},
+{
+"doc": 39,
+"tf": 1,
+"len": 145
+},
+{
+"doc": 42,
+"tf": 1,
+"len": 101
+},
+{
+"doc": 58,
+"tf": 1,
+"len": 90
+},
+{
+"doc": 61,
+"tf": 1,
+"len": 205
+},
+{
+"doc": 64,
+"tf": 1,
+"len": 187
+},
+{
+"doc": 69,
+"tf": 1,
+"len": 229
+},
+{
+"doc": 79,
+"tf": 1,
+"len": 71
+},
+{
+"doc": 81,
+"tf": 1,
+"len": 127
+},
+{
+"doc": 89,
+"tf": 1,
+"len": 103
+},
+{
+"doc": 102,
+"tf": 1,
+"len": 237
+},
+{
+"doc": 105,
+"tf": 1,
+"len": 72
+},
+{
+"doc": 107,
+"tf": 1,
+"len": 98
+},
+{
+"doc": 110,
+"tf": 1,
+"len": 167
+},
+{
+"doc": 115,
+"tf": 1,
+"len": 207
+}
+]
+},
+"libnss3": {
+"df": 3,
+"idf": 4.7683,
+"docs": [
+{
+"doc": 32,
+"tf": 1,
+"len": 277
+},
+{
+"doc": 49,
+"tf": 1,
+"len": 109
+},
+{
+"doc": 84,
+"tf": 1,
+"len": 250
+}
+]
+},
+"windows": {
+"df": 38,
+"idf": 2.3704,
+"docs": [
+{
+"doc": 0,
+"tf": 1,
+"len": 242
+},
+{
+"doc": 1,
+"tf": 1,
+"len": 209
+},
+{
+"doc": 5,
+"tf": 1,
+"len": 281
+},
+{
+"doc": 10,
+"tf": 1,
+"len": 300
+},
+{
+"doc": 16,
+"tf": 1,
+"len": 121
+},
+{
+"doc": 17,
+"tf": 1,
+"len": 79
+},
+{
+"doc": 29,
+"tf": 1,
+"len": 137
+},
+{
+"doc": 32,
+"tf": 1,
+"len": 277
+},
+{
+"doc": 33,
+"tf": 1,
+"len": 75
+},
+{
+"doc": 35,
+"tf": 1,
+"len": 210
+},
+{
+"doc": 36,
+"tf": 1,
+"len": 294
+},
+{
+"doc": 45,
+"tf": 1,
+"len": 42
+},
+{
+"doc": 46,
+"tf": 1,
+"len": 227
+},
+{
+"doc": 47,
+"tf": 1,
+"len": 154
+},
+{
+"doc": 51,
+"tf": 1,
+"len": 47
+},
+{
+"doc": 52,
+"tf": 1,
+"len": 51
+},
+{
+"doc": 53,
+"tf": 1,
+"len": 50
+},
+{
+"doc": 54,
+"tf": 1,
+"len": 42
+},
+{
+"doc": 55,
+"tf": 1,
+"len": 42
+},
+{
+"doc": 56,
+"tf": 1,
+"len": 46
+},
+{
+"doc": 57,
+"tf": 1,
+"len": 173
+},
+{
+"doc": 59,
+"tf": 1,
+"len": 45
+},
+{
+"doc": 60,
+"tf": 1,
+"len": 58
+},
+{
+"doc": 63,
+"tf": 1,
+"len": 143
+},
+{
+"doc": 64,
+"tf": 1,
+"len": 187
+},
+{
+"doc": 75,
+"tf": 1,
+"len": 60
+},
+{
+"doc": 76,
+"tf": 1,
+"len": 40
+},
+{
+"doc": 77,
+"tf": 1,
+"len": 91
+},
+{
+"doc": 80,
+"tf": 1,
+"len": 135
+},
+{
+"doc": 81,
+"tf": 1,
+"len": 127
+},
+{
+"doc": 83,
+"tf": 1,
+"len": 54
+},
+{
+"doc": 86,
+"tf": 1,
+"len": 153
+},
+{
+"doc": 98,
+"tf": 1,
+"len": 50
+},
+{
+"doc": 99,
+"tf": 1,
+"len": 40
+},
+{
+"doc": 101,
+"tf": 1,
+"len": 132
+},
+{
+"doc": 103,
+"tf": 1,
+"len": 169
+},
+{
+"doc": 108,
+"tf": 1,
+"len": 128
+},
+{
+"doc": 113,
+"tf": 1,
+"len": 57
+}
+]
+},
+"proxy": {
+"df": 31,
+"idf": 2.571,
+"docs": [
+{
+"doc": 4,
+"tf": 1,
+"len": 138
+},
+{
+"doc": 6,
+"tf": 1,
+"len": 400
+},
+{
+"doc": 18,
+"tf": 1,
+"len": 268
+},
+{
+"doc": 28,
+"tf": 1,
+"len": 181
+},
+{
+"doc": 29,
+"tf": 1,
+"len": 137
+},
+{
+"doc": 31,
+"tf": 1,
+"len": 220
+},
+{
+"doc": 34,
+"tf": 1,
+"len": 52
+},
+{
+"doc": 35,
+"tf": 1,
+"len": 210
+},
+{
+"doc": 38,
+"tf": 1,
+"len": 225
+},
+{
+"doc": 40,
+"tf": 1,
+"len": 301
+},
+{
+"doc": 41,
+"tf": 1,
+"len": 111
+},
+{
+"doc": 42,
+"tf": 1,
+"len": 101
+},
+{
+"doc": 43,
+"tf": 1,
+"len": 110
+},
+{
+"doc": 44,
+"tf": 1,
+"len": 125
+},
+{
+"doc": 48,
+"tf": 1,
+"len": 96
+},
+{
+"doc": 50,
+"tf": 1,
+"len": 123
+},
+{
+"doc": 54,
+"tf": 1,
+"len": 42
+},
+{
+"doc": 55,
+"tf": 1,
+"len": 42
+},
+{
+"doc": 62,
+"tf": 1,
+"len": 143
+},
+{
+"doc": 83,
+"tf": 1,
+"len": 54
+},
+{
+"doc": 87,
+"tf": 1,
+"len": 113
+},
+{
+"doc": 90,
+"tf": 1,
+"len": 64
+},
+{
+"doc": 92,
+"tf": 1,
+"len": 70
+},
+{
+"doc": 93,
+"tf": 1,
+"len": 70
+},
+{
+"doc": 94,
+"tf": 1,
+"len": 88
+},
+{
+"doc": 96,
+"tf": 1,
+"len": 81
+},
+{
+"doc": 97,
+"tf": 1,
+"len": 132
+},
+{
+"doc": 104,
+"tf": 1,
+"len": 55
+},
+{
+"doc": 106,
+"tf": 1,
+"len": 169
+},
+{
+"doc": 114,
+"tf": 1,
+"len": 204
+},
+{
+"doc": 116,
+"tf": 1,
+"len": 144
+}
+]
+}
+},
+"docs": [
+{
+"id": "python-command-not-found-only-python3",
+"title": "zsh: command not found: python — the interpreter exists, just not under that name",
+"domain": "python",
+"path": "lessons/contrib/python-command-not-found-only-python3.md",
+"len": 242
+},
+{
+"id": "dsh-home-robocopy-junction-fallback-breakage",
+"title": "Migrating DSH_HOME with robocopy materializes the profile node_modules junctions, and dsh refuses to boot",
+"domain": "devops",
+"path": "lessons/contrib/dsh-home-robocopy-junction-fallback-breakage.md",
+"len": 209
+},
+{
+"id": "daemon-start-failed-empty-detail-missing-credential",
+"title": "Supervisor reports 'daemon start failed' with no detail: the child's own log holds the reason",
+"domain": "devops",
+"path": "lessons/contrib/daemon-start-failed-empty-detail-missing-credential.md",
+"len": 209
+},
+{
+"id": "silent-data-loss-google-cloud",
+"title": "Silent Data Loss in Google Cloud: BigQuery Schema Mismatch and Firestore Overwrite Failures",
+"domain": "data",
+"path": "lessons/contrib/silent-data-loss-google-cloud.md",
+"len": 231
+},
+{
+"id": "sse-streaming-failure-via-proxy",
+"title": "SSE streaming returns no data through reverse proxy",
+"domain": "devops",
+"path": "lessons/contrib/sse-streaming-failure-via-proxy.md",
+"len": 138
+},
+{
+"id": "windows-node-sandbox-hardcoded-root",
+"title": "Windows Node sandbox: a hardcoded /root silently confined the agent to the wrong directory",
+"domain": "mcp",
+"path": "lessons/contrib/windows-node-sandbox-hardcoded-root.md",
+"len": 281
+},
+{
+"id": "retrieval-projection-truncation-caps-recall",
+"title": "Two truncations silently became the soul of an agent-facing search: a default page size and a 400-char projection",
+"domain": "backend",
+"path": "lessons/contrib/retrieval-projection-truncation-caps-recall.md",
+"len": 400
+},
+{
+"id": "claude-code-hook-silent-failure",
+"title": "A hook that swallows every error makes a misconfiguration look like \"nothing to do\"",
+"domain": "claude",
+"path": "lessons/contrib/claude-code-hook-silent-failure.md",
+"len": 254
+},
+{
+"id": "github-token-cannot-push-workflow-files",
+"title": "GITHUB_TOKEN cannot push changes to .github/workflows/** — your bot job will fail at push time",
+"domain": "devops",
+"path": "lessons/contrib/github-token-cannot-push-workflow-files.md",
+"len": 277
+},
+{
+"id": "ssot-marker-replacement-runs-once",
+"title": "A marker-replacement sync consumes its own marker: run #2 is a silent no-op",
+"domain": "devops",
+"path": "lessons/contrib/ssot-marker-replacement-runs-once.md",
+"len": 348
+},
+{
+"id": "openclaw-session-row-entry-updatedat-mismatch",
+"title": "OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit",
+"domain": "devops",
+"path": "lessons/contrib/openclaw-session-row-entry-updatedat-mismatch.md",
+"len": 300
+},
+{
+"id": "vertex-ai-embedding-qwen-go-migration",
+"title": "Vertex AI Embedding 迁移实战：Python 与 Go 双客户端接入、Qwen 适配与维度配额避坑指南",
+"domain": "rag",
+"path": "lessons/contrib/vertex-ai-embedding-qwen-go-migration.md",
+"len": 241
+},
+{
+"id": "mock-attribute-cascade-test-breakage",
+"title": "Mock attribute cascade — adding attribute access breaks existing tests",
+"domain": "testing",
+"path": "lessons/contrib/mock-attribute-cascade-test-breakage.md",
+"len": 112
+},
+{
+"id": "alembic-upgrade-head-failed",
+"title": "alembic upgrade head fails with exit code 255 or subprocess error",
+"domain": "devops",
+"path": "lessons/contrib/alembic-upgrade-head-failed.md",
+"len": 138
+},
+{
+"id": "dco-signoff-force-push-pitfall",
+"title": "DCO Signoff Lost During Force Push",
+"domain": "devops",
+"path": "lessons/contrib/dco-signoff-force-push-pitfall.md",
+"len": 79
+},
+{
+"id": "github-contents-api-sha-required",
+"title": "GitHub contents API edit fails with 422 without the file sha",
+"domain": "development",
+"path": "lessons/contrib/github-contents-api-sha-required.md",
+"len": 94
+},
+{
+"id": "wsl-ntfs-sqlite-update-100x-slower",
+"title": "WSL NTFS SQLite UPDATE 100x slower than ext4",
+"domain": "data",
+"path": "lessons/contrib/wsl-ntfs-sqlite-update-100x-slower.md",
+"len": 121
+},
+{
+"id": "python-smtplib-ssl-certificate-verify-failed-fix",
+"title": "Fix Python Smtplib SSL Certificate Verify Failed Error When Sending Emails Via Gmail",
+"domain": "automation",
+"path": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
+"len": 79
+},
+{
+"id": "n8n-nodejs-econnreset-connection-reset-fix",
+"title": "Fix Node.js ECONNRESET Connection Reset Error in n8n Webhook HTTP Requests",
+"domain": "automation",
+"path": "lessons/contrib/n8n-nodejs-econnreset-connection-reset-fix.md",
+"len": 268
+},
+{
+"id": "json-schema-validate-input",
+"title": "Validate JSON agent inputs with a minimal schema check",
+"domain": "python",
+"path": "lessons/en/json-schema-validate-input.md",
+"len": 69
+},
+{
+"id": "gh-pr-ready-checklist",
+"title": "GitHub PR ready checklist for agent docs PRs",
+"domain": "devops",
+"path": "lessons/en/gh-pr-ready-checklist.md",
+"len": 67
+},
+{
+"id": "github-pat-scopes-minimum",
+"title": "Minimum GitHub PAT scopes for agent PR work",
+"domain": "github",
+"path": "lessons/en/github-pat-scopes-minimum.md",
+"len": 84
+},
+{
+"id": "agent-pid-lockfile",
+"title": "PID lockfile so earn loops do not double-run",
+"domain": "devops",
+"path": "lessons/en/agent-pid-lockfile.md",
+"len": 107
+},
+{
+"id": "ci-dco-fork-pr-signoff",
+"title": "CI DCO failures on fork PRs — sign-off and PYTHONPATH traps",
+"domain": "github",
+"path": "lessons/en/ci-dco-fork-pr-signoff.md",
+"len": 114
+},
+{
+"id": "github-sudo-email-otp-wrong-input-field",
+"title": "GitHub sudo email OTP fails when the wrong input is filled",
+"domain": "github",
+"path": "lessons/contrib/github-sudo-email-otp-wrong-input-field.md",
+"len": 189
+},
+{
+"id": "fiverr-perimeterx-blocks-seller-automation",
+"title": "Fiverr PerimeterX captcha blocks headless seller gig creation",
+"domain": "frontend",
+"path": "lessons/contrib/fiverr-perimeterx-blocks-seller-automation.md",
+"len": 130
+},
+{
+"id": "browser-automation-csp-bypass",
+"title": "CSP blocks JavaScript injection in browser automation of authenticated pages",
+"domain": "mcp",
+"path": "lessons/contrib/browser-automation-csp-bypass.md",
+"len": 223
+},
+{
+"id": "lesson-10-agent-reach-doctor-baseline",
+"title": "Agent-Reach v1.5.0 doctor Baseline: 4/15 Channels Available Without Login",
+"domain": "development",
+"path": "lessons/contrib/lesson-10-agent-reach-doctor-baseline.md",
+"len": 187
+},
+{
+"id": "lesson-09-v2ex-api-show-endpoint-unstable",
+"title": "V2EX API /api/topics/show.json Unstable — Use r.jina.ai Instead",
+"domain": "scraping",
+"path": "lessons/contrib/lesson-09-v2ex-api-show-endpoint-unstable.md",
+"len": 181
+},
+{
+"id": "lesson-08-pip-https-proxy-clash",
+"title": "pip install HTTPS Timeout from WSL — Prepend HTTPS_PROXY=http://172.19.128.1:7890",
+"domain": "devops",
+"path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
+"len": 137
+},
+{
+"id": "lesson-07-uv-venv-seed-fix-no-pip",
+"title": "Ubuntu WSL Python venv Missing pip — uv venv --seed Fixes Without sudo",
+"domain": "devops",
+"path": "lessons/contrib/lesson-07-uv-venv-seed-fix-no-pip.md",
+"len": 163
+},
+{
+"id": "search-first-roadmap-loop",
+"title": "Search-first roadmap loop for agent knowledge projects",
+"domain": "development",
+"path": "lessons/core/search-first-roadmap-loop.md",
+"len": 220
+},
+{
+"id": "openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium",
+"title": "Playwright Chromium launch fails on WSL2 with missing libnss3 / libnspr4",
+"domain": "openclaw",
+"path": "lessons/contrib/openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium.md",
+"len": 277
+},
+{
+"id": "worktree-git-path-deepseek-tui",
+"title": "deepseek tui write file sandbox worktree git path",
+"domain": "wsl",
+"path": "lessons/contrib/worktree-git-path-deepseek-tui.md",
+"len": 75
+},
+{
+"id": "anthropic-proxy-internal-gateway",
+"title": "Internal Gateway — Incompatible with Anthropic Format, Requires OpenAI Proxy",
+"domain": "llm",
+"path": "lessons/contrib/anthropic-proxy-internal-gateway.md",
+"len": 52
+},
+{
+"id": "cloudflare-observability-mcp-oauth-separate-domain",
+"title": "Cloudflare Observability MCP OAuth: Separate Authorization Domain + mcporter Client Trap",
+"domain": "devops",
+"path": "lessons/contrib/cloudflare-observability-mcp-oauth-separate-domain.md",
+"len": 210
+},
+{
+"id": "agent-roleplay-time-consistency-hallucination",
+"title": "Mitigating Time Consistency Hallucinations in Conversational Roleplay Agents",
+"domain": "agent",
+"path": "lessons/contrib/agent-roleplay-time-consistency-hallucination.md",
+"len": 294
+},
+{
+"id": "agent-prompt-preset-template-governance",
+"title": "Prompt Preset Governance: Schema Validation and Immutable Versioning",
+"domain": "agent",
+"path": "lessons/contrib/agent-prompt-preset-template-governance.md",
+"len": 252
+},
+{
+"id": "gemini-safety-settings-multi-hop-passthrough",
+"title": "Gemini Safety Settings: Multi-Hop Gateway Passthrough and Compliance Preservation",
+"domain": "llm",
+"path": "lessons/contrib/gemini-safety-settings-multi-hop-passthrough.md",
+"len": 225
+},
+{
+"id": "vertex-ai-cost-attribution-bigquery-billing-gemma",
+"title": "Vertex AI 成本归因：BigQuery billing exports + traces + Gemma 混合计费",
+"domain": "devops",
+"path": "lessons/contrib/vertex-ai-cost-attribution-bigquery-billing-gemma.md",
+"len": 145
+},
+{
+"id": "iap-tcp-forwarding-numpy-bandwidth",
+"title": "IAP TCP Forwarding: Numpy Upload Bandwidth Optimization and Buffer Tuning",
+"domain": "network",
+"path": "lessons/contrib/iap-tcp-forwarding-numpy-bandwidth.md",
+"len": 301
+},
+{
+"id": "corporate-proxy-curl-timeout",
+"title": "curl Timeout Behind Corporate Proxy: SSL Inspection Breaks Certificate Validation",
+"domain": "devops",
+"path": "lessons/contrib/corporate-proxy-curl-timeout.md",
+"len": 111
+},
+{
+"id": "pip-install-proxy-timeout",
+"title": "pip install ReadTimeoutError Behind Corporate Proxy: Certificate Validation and Timeout Configuration",
+"domain": "python",
+"path": "lessons/contrib/pip-install-proxy-timeout.md",
+"len": 101
+},
+{
+"id": "instalacao-pip-timeout-proxy",
+"title": "pip install falha com ReadTimeoutError atrás de proxy corporativo",
+"domain": "python",
+"path": "lessons/contrib/pt-br/instalacao-pip-timeout-proxy.md",
+"len": 110
+},
+{
+"id": "proxy-corporativo-curl-timeout",
+"title": "Timeout de curl detrás de proxy corporativo: inspección SSL rompe validación de certificados",
+"domain": "devops",
+"path": "lessons/contrib/es/proxy-corporativo-curl-timeout.md",
+"len": 125
+},
+{
+"id": "dsh-plugin-installation-troubleshooting",
+"title": "DSH Plugin Installation Troubleshooting — Common Failures and Fixes",
+"domain": "development",
+"path": "lessons/contrib/dsh-plugin-installation-troubleshooting.md",
+"len": 42
+},
+{
+"id": "mcporter-cloudflare-oauth-endpoint-scope-wsl-callback",
+"title": "mcporter Cloudflare OAuth: Correct Endpoint, No Scope, and WSL Callback Trap",
+"domain": "devops",
+"path": "lessons/contrib/mcporter-cloudflare-oauth-endpoint-scope-wsl-callback.md",
+"len": 227
+},
+{
+"id": "dsh-plugin-install-github-codeload-timeout",
+"title": "DSH Plugin Install Failures — GitHub codeload Timeout vs npm Channel",
+"domain": "mcp",
+"path": "lessons/contrib/dsh-plugin-install-github-codeload-timeout.md",
+"len": 154
+},
+{
+"id": "webcrypto-fallback-consistency-node-worker",
+"title": "WebCrypto API Fallback Consistency in Dual Node and Cloudflare Worker Runtimes",
+"domain": "cloudflare-worker",
+"path": "lessons/contrib/webcrypto-fallback-consistency-node-worker.md",
+"len": 96
+},
+{
+"id": "playwright-snap-chromium-libnss3-sandbox-launch",
+"title": "Playwright 在受限容器/sandbox 启动 snap chromium：用 chrome-headless-shell + LD_LIBRARY_PATH 绕开 snap-confine",
+"domain": "openclaw",
+"path": "lessons/contrib/playwright-snap-chromium-libnss3-sandbox-launch.md",
+"len": 109
+},
+{
+"id": "github-actions-secrets-one-shot-workflow-pattern",
+"title": "用一次性 GitHub Actions workflow 借 secrets 做运维操作（不落地凭据）",
+"domain": "devops",
+"path": "lessons/contrib/github-actions-secrets-one-shot-workflow-pattern.md",
+"len": 123
+},
+{
+"id": "wxauto-windows-python-not-wsl",
+"title": "wxauto 必须在 Windows Python 下安装，不能走 WSL pip",
+"domain": "wechat",
+"path": "lessons/contrib/wxauto-windows-python-not-wsl.md",
+"len": 47
+},
+{
+"id": "wsl2-memory-leak-fix",
+"title": "WSL2 内存泄漏 / 内存占用过高",
+"domain": "wsl",
+"path": "lessons/contrib/wsl2-memory-leak-fix.md",
+"len": 51
+},
+{
+"id": "wsl-terminal-underscore-corruption",
+"title": "WSL 终端编辑Setup危险 — TTy粘贴吞下划线",
+"domain": "wsl",
+"path": "lessons/contrib/wsl-terminal-underscore-corruption.md",
+"len": 50
+},
+{
+"id": "wsl-proxy-setup",
+"title": "WSL 代理Setup — 通过 Windows 梯子Access外网",
+"domain": "wsl",
+"path": "lessons/contrib/wsl-proxy-setup.md",
+"len": 42
+},
+{
+"id": "wsl-proxy-huggingface-external",
+"title": "wsl proxy huggingface external",
+"domain": "wsl",
+"path": "lessons/contrib/wsl-proxy-huggingface-external.md",
+"len": 42
+},
+{
+"id": "wsl-pip-gbk-hub-poller-crash",
+"title": "wsl pip gbk hub poller crash",
+"domain": "wsl",
+"path": "lessons/contrib/wsl-pip-gbk-hub-poller-crash.md",
+"len": 46
+},
+{
+"id": "windows-ci-splitcommand-backslash-unicode-detached",
+"title": "Windows CI: splitCommand backslash stripping, UnicodeEncodeError, and detached process failure",
+"domain": "devops",
+"path": "lessons/contrib/windows-ci-splitcommand-backslash-unicode-detached.md",
+"len": 173
+},
+{
+"id": "welcome-bot-mcp-intake-path",
+"title": "Welcome bot should show MCP intake path for agents",
+"domain": "mcp",
+"path": "lessons/contrib/welcome-bot-mcp-intake-path.md",
+"len": 90
+},
+{
+"id": "wecom-robot-long-connect-no-ngrok",
+"title": "wecom robot long connect no ngrok",
+"domain": "wechat",
+"path": "lessons/contrib/wecom-robot-long-connect-no-ngrok.md",
+"len": 45
+},
+{
+"id": "wcferry-wechat-version-lock",
+"title": "wcferry wechat version lock",
+"domain": "wechat",
+"path": "lessons/contrib/wcferry-wechat-version-lock.md",
+"len": 58
+},
+{
+"id": "version-management-multiple-files",
+"title": "Version Management Across Multiple Files",
+"domain": "devops",
+"path": "lessons/contrib/version-management-multiple-files.md",
+"len": 205
+},
+{
+"id": "tor-orbot-privacy-in-react-native-tr",
+"title": "React Native uygulamasında Orbot (Tor) ile gizlilik akışı",
+"domain": "mobile",
+"path": "lessons/contrib/tor-orbot-privacy-in-react-native-tr.md",
+"len": 143
+},
+{
+"id": "slugify-windows-path-sanitation",
+"title": "slugify windows path sanitation",
+"domain": "wsl",
+"path": "lessons/contrib/slugify-windows-path-sanitation.md",
+"len": 143
+},
+{
+"id": "slugify-path-traversal-deep-coverage",
+"title": "slugify path traversal deep coverage",
+"domain": "security",
+"path": "lessons/contrib/slugify-path-traversal-deep-coverage.md",
+"len": 187
+},
+{
+"id": "session-lesson-4-playwright-forum-selectors",
+"title": "Playwright Forum Selectors — WoltLab/IPS/Common Patterns",
+"domain": "devops",
+"path": "lessons/contrib/session-lesson-4-playwright-forum-selectors.md",
+"len": 98
+},
+{
+"id": "session-lesson-2-forum-accessibility-testing",
+"title": "Forum Accessibility Testing — Systematic Reachability Check",
+"domain": "devops",
+"path": "lessons/contrib/session-lesson-2-forum-accessibility-testing.md",
+"len": 116
+},
+{
+"id": "scrapling-installation-and-usage",
+"title": "Scrapling — Web Scraping Library with Anti-Detection",
+"domain": "devops",
+"path": "lessons/contrib/scrapling-installation-and-usage.md",
+"len": 131
+},
+{
+"id": "rag-three-channel-llm-disaster-recovery",
+"title": "RAG Three-Channel LLM Disaster Recovery",
+"domain": "rag",
+"path": "lessons/contrib/rag-three-channel-llm-disaster-recovery.md",
+"len": 143
+},
+{
+"id": "rag-kb-quality-flywheel-self-loop",
+"title": "RAG Knowledge Base Quality Flywheel Self Loop",
+"domain": "rag",
+"path": "lessons/contrib/rag-kb-quality-flywheel-self-loop.md",
+"len": 229
+},
+{
+"id": "rag-chunk-params-800-100",
+"title": "RAG Chunk Parameters 800 Characters and 100 Overlap",
+"domain": "rag",
+"path": "lessons/contrib/rag-chunk-params-800-100.md",
+"len": 107
+},
+{
+"id": "rag-chinese-encoding-pymupdf",
+"title": "RAG Chinese Encoding with PyMuPDF",
+"domain": "rag",
+"path": "lessons/contrib/rag-chinese-encoding-pymupdf.md",
+"len": 83
+},
+{
+"id": "rag-build-strategy-batch",
+"title": "RAG Build Strategy Batch",
+"domain": "rag",
+"path": "lessons/contrib/rag-build-strategy-batch.md",
+"len": 81
+},
+{
+"id": "rag-brand-filter-three-pitfalls",
+"title": "RAG Brand Filter Three Pitfalls",
+"domain": "rag",
+"path": "lessons/contrib/rag-brand-filter-three-pitfalls.md",
+"len": 71
+},
+{
+"id": "rag-alarm-code-mandatory-recall",
+"title": "RAG Alarm Code Retrieval Needs Mandatory Keyword Recall",
+"domain": "rag",
+"path": "lessons/contrib/rag-alarm-code-mandatory-recall.md",
+"len": 107
+},
+{
+"id": "python-pycache-stale",
+"title": "Python 代码修改不生效 — stale .pyc Cache",
+"domain": "python",
+"path": "lessons/contrib/python-pycache-stale.md",
+"len": 60
+},
+{
+"id": "python-gbk-encoding-error",
+"title": "Python GBK Encoding Error — Windows/WSL 跨平台",
+"domain": "python",
+"path": "lessons/contrib/python-gbk-encoding-error.md",
+"len": 40
+},
+{
+"id": "pip-install-timeout-ssl",
+"title": "pip install Network Timeout / SSL ErrorFix",
+"domain": "python",
+"path": "lessons/contrib/pip-install-timeout-ssl.md",
+"len": 91
+},
+{
+"id": "permission-denied-fix",
+"title": "Permission Denied / WSL NTFS 跨文件系统PermissionFix",
+"domain": "wsl",
+"path": "lessons/contrib/permission-denied-fix.md",
+"len": 47
+},
+{
+"id": "openclaw-gateway-dynamic-module-missing",
+"title": "openclaw gateway dynamic module missing",
+"domain": "openclaw",
+"path": "lessons/contrib/openclaw-gateway-dynamic-module-missing.md",
+"len": 71
+},
+{
+"id": "npm-eacces-permission-error-linux",
+"title": "npm install EACCES permission error on Linux and macOS",
+"domain": "nodejs",
+"path": "lessons/contrib/npm-eacces-permission-error-linux.md",
+"len": 135
+},
+{
+"id": "nodejs-missing-require-inside-try-catch",
+"title": "Node.js missing require inside try/catch silently kills win32 code path",
+"domain": "devops",
+"path": "lessons/contrib/nodejs-missing-require-inside-try-catch.md",
+"len": 127
+},
+{
+"id": "multi-forum-scraping-architecture",
+"title": "Multi-Forum Scraping Architecture — API vs Playwright",
+"domain": "devops",
+"path": "lessons/contrib/multi-forum-scraping-architecture.md",
+"len": 192
+},
+{
+"id": "model-switch-script-pattern",
+"title": "多模型Switch脚本模式 — 双 Agent 模型管理",
+"domain": "llm",
+"path": "lessons/contrib/model-switch-script-pattern.md",
+"len": 54
+},
+{
+"id": "misakanet-heal-engine-bootstrap-workflow",
+"title": "MisakaNet --heal Engine Bootstrap Workflow",
+"domain": "meta",
+"path": "lessons/contrib/misakanet-heal-engine-bootstrap-workflow.md",
+"len": 250
+},
+{
+"id": "mcp-server-that-reduces-claude-code-context-consumption-by-9",
+"title": "Context Mode: Reducing Claude Code Context Consumption by 98%",
+"domain": "agent",
+"path": "lessons/contrib/mcp-server-that-reduces-claude-code-context-consumption-by-9.md",
+"len": 188
+},
+{
+"id": "mcp-registry-readiness-requires-qa-before-promotion",
+"title": "MCP Registry Readiness Requires QA Before Promotion",
+"domain": "mcp",
+"path": "lessons/contrib/mcp-registry-readiness-requires-qa-before-promotion.md",
+"len": 153
+},
+{
+"id": "mcp-endpoint-404-zone-route-misconfig",
+"title": "MCP Endpoint 404: Zone Route Points to Worker Without MCP Implementation",
+"domain": "devops",
+"path": "lessons/contrib/mcp-endpoint-404-zone-route-misconfig.md",
+"len": 113
+},
+{
+"id": "mcp-context-mode-98-reduction",
+"title": "MCP Context Mode — 98% Context Window Reduction for Claude Code",
+"domain": "mcp",
+"path": "lessons/contrib/mcp-context-mode-98-reduction.md",
+"len": 113
+},
+{
+"id": "maintainer-feedback-iteration",
+"title": "Maintainer Feedback Iteration — Address Blockers, Not Just Comments",
+"domain": "meta",
+"path": "lessons/contrib/maintainer-feedback-iteration.md",
+"len": 103
+},
+{
+"id": "lesson-template-network",
+"title": "Network Domain Lesson Template",
+"domain": "network",
+"path": "lessons/contrib/lesson-template-network.md",
+"len": 64
+},
+{
+"id": "kb-4sigma-quality-audit-pipeline",
+"title": "Knowledge Base 4-Sigma Quality Audit Pipeline",
+"domain": "rag",
+"path": "lessons/contrib/kb-4sigma-quality-audit-pipeline.md",
+"len": 118
+},
+{
+"id": "hermes-model-switch-ccswitch",
+"title": "ccswitch-hermes-switch 踩坑Notes",
+"domain": "devops",
+"path": "lessons/contrib/hermes-model-switch-ccswitch.md",
+"len": 70
+},
+{
+"id": "github-release-large-asset-download-cn",
+"title": "GitHub Release 大文件下载在 CN 网络超时：分段并行下载方案",
+"domain": "devops",
+"path": "lessons/contrib/github-release-large-asset-download-cn.md",
+"len": 70
+},
+{
+"id": "git-tls-handshake-failure",
+"title": "GitHub TLS 握手失败 — gnutls_handshake() Error",
+"domain": "git",
+"path": "lessons/contrib/git-tls-handshake-failure.md",
+"len": 88
+},
+{
+"id": "git-credential-helper-gh-path-mismatch",
+"title": "gh credential helper 路径Error导致 git push 静默失败",
+"domain": "git",
+"path": "lessons/contrib/git-credential-helper-gh-path-mismatch.md",
+"len": 54
+},
+{
+"id": "gfw-tls-sni-blocking-tool-layer-ineffective",
+"title": "GFW TLS SNI 阻断：工具层全部无效，只有代理能解",
+"domain": "devops",
+"path": "lessons/contrib/gfw-tls-sni-blocking-tool-layer-ineffective.md",
+"len": 81
+},
+{
+"id": "gfw-tls-sni-block-pattern",
+"title": "GFW TLS SNI Block Pattern — Why Tool-Layer Solutions Fail",
+"domain": "devops",
+"path": "lessons/contrib/gfw-tls-sni-block-pattern.md",
+"len": 132
+},
+{
+"id": "gateway-hang-watchdog-recovery",
+"title": "Gateway 进程挂死未崩溃 — watchdog 自动Recovery",
+"domain": "devops",
+"path": "lessons/contrib/gateway-hang-watchdog-recovery.md",
+"len": 50
+},
+{
+"id": "firewall-port-open-not-public",
+"title": "firewall port open not public",
+"domain": "network",
+"path": "lessons/contrib/firewall-port-open-not-public.md",
+"len": 40
+},
+{
+"id": "feishu-webhook-url-env-config",
+"title": "feishu webhook url env config",
+"domain": "feishu",
+"path": "lessons/contrib/feishu-webhook-url-env-config.md",
+"len": 45
+},
+{
+"id": "fehler-python-modul-nicht-gefunden",
+"title": "ModuleNotFoundError in Python trotz pip install",
+"domain": "python",
+"path": "lessons/contrib/fehler-python-modul-nicht-gefunden.md",
+"len": 132
+},
+{
+"id": "fanuc-backup-payload-extraction",
+"title": "FANUC Backup Payload Extraction — .VR/.SV Binary Parsing and .LS Text Fallback",
+"domain": "fanuc",
+"path": "lessons/contrib/fanuc-backup-payload-extraction.md",
+"len": 237
+},
+{
+"id": "error-dco-signoff-windows",
+"title": "Error de DCO sign-off en commits de Git en Windows",
+"domain": "devops",
+"path": "lessons/contrib/error-dco-signoff-windows.md",
+"len": 169
+},
+{
+"id": "curl-request-troubleshoot",
+"title": "curl / wget 请求失败通用Diagnosis",
+"domain": "network",
+"path": "lessons/contrib/curl-request-troubleshoot.md",
+"len": 55
+},
+{
+"id": "codeql-alert-dismissal-false-positive",
+"title": "Dismiss CodeQL False Positive Alerts",
+"domain": "security",
+"path": "lessons/contrib/codeql-alert-dismissal-false-positive.md",
+"len": 72
+},
+{
+"id": "cloudflare-worker-deploy-three-pitfalls",
+"title": "Cloudflare Worker Programmatic Deploy: Three Pitfalls — Sandbox Egress, 32KB Limit, multipart Content-Type",
+"domain": "devops",
+"path": "lessons/contrib/cloudflare-worker-deploy-three-pitfalls.md",
+"len": 169
+},
+{
+"id": "ci-security-advisory-checks",
+"title": "CI security checks: action pinning, permissions, README, code style",
+"domain": "devops",
+"path": "lessons/contrib/ci-security-advisory-checks.md",
+"len": 98
+},
+{
+"id": "chrome-relay-browser-automation",
+"title": "Chrome Relay 浏览器Automation — CDP over WebSocket 控制无头浏览器",
+"domain": "automation",
+"path": "lessons/contrib/chrome-relay-browser-automation.md",
+"len": 128
+},
+{
+"id": "browser-harness-cdp-browser-automation",
+"title": "browser-harness — AI 直连 Chrome 的 CDP 浏览器Automation",
+"domain": "automation",
+"path": "lessons/contrib/browser-harness-cdp-browser-automation.md",
+"len": 36
+},
+{
+"id": "bm25-vector-hybrid-search-weights",
+"title": "BM25 + Vector Hybrid Search: configurable blending weights",
+"domain": "search",
+"path": "lessons/contrib/bm25-vector-hybrid-search-weights.md",
+"len": 167
+},
+{
+"id": "bge-embedding-fallback-crash",
+"title": "BGE Embedding Fallback Crash",
+"domain": "rag",
+"path": "lessons/contrib/bge-embedding-fallback-crash.md",
+"len": 123
+},
+{
+"id": "api-gateway-anthropic-incompatibility",
+"title": "api gateway anthropic incompatibility",
+"domain": "llm",
+"path": "lessons/contrib/api-gateway-anthropic-incompatibility.md",
+"len": 54
+},
+{
+"id": "aider-windows-unicode-error",
+"title": "Aider --show-repo-map crashes on Windows with UnicodeEncodeError",
+"domain": "devops",
+"path": "lessons/contrib/aider-windows-unicode-error.md",
+"len": 57
+},
+{
+"id": "agent-web-access-toolchain-selection",
+"title": "Agent Web Access Toolchain — 7 Libraries for Reliable Forum Scraping",
+"domain": "agent",
+"path": "lessons/contrib/agent-web-access-toolchain-selection.md",
+"len": 204
+},
+{
+"id": "agent-readfile-silent-truncation",
+"title": "Agent read_file Silent Truncation in Multi-Brain Meeting Recovery",
+"domain": "agent",
+"path": "lessons/contrib/agent-readfile-silent-truncation.md",
+"len": 207
+},
+{
+"id": "agent-reach-multi-platform-scraper",
+"title": "Agent-Reach — Multi-Platform Internet Access for AI Agents",
+"domain": "agent",
+"path": "lessons/contrib/agent-reach-multi-platform-scraper.md",
+"len": 144
+}
+]
+}
