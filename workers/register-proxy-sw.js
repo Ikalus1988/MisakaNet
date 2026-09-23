@@ -1151,12 +1151,27 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null) {
   const floorTerms = originalTerms.length ? originalTerms : queryTerms;
 
   const { docCount, avgDocLen, k1 = 1.5, b = 0.75, terms, docs } = index;
-  const scores = new Float64Array(docCount);
+  const scores = new Float64Array(docCount);        // the user's words + alias expansions
+  const userScores = new Float64Array(docCount);    // only the words the user actually typed
   const matched = new Uint8Array(docCount);
   const coverage = new Uint8Array(docCount);       // distinct query terms per doc
   const informative = new Uint8Array(docCount);    // … that are discriminating
   const matchedIdf = new Float64Array(docCount);   // IDF mass matched, per doc
   const termDf = new Map();
+
+  // Which terms may decide the *order* (2026-09-23, #2079). `floorTerms` is the user's own words
+  // whenever the tokenizer can see them, and the expanded terms only when it cannot (a Chinese
+  // query) — the same rule the relevance floor already uses. Scoring them into the same bucket was
+  // a defect, not a tuning question: expansions are *guesses at what the user meant*, and a guess
+  // that carries equal weight can outrank the words they actually typed.
+  //
+  // Measured on the live index: `playwright wsl missing libnss3` expands to
+  // `… windows proxy`, and the two WSL-proxy lessons — which are about Windows proxies, not about
+  // Playwright — scored 3.28/3.28 and were returned 1st/2nd, ahead of the two libnss3 lessons at
+  // 7.93/7.48 (which match all four words, three of them in the title). The response contradicted
+  // the score the code had just computed. With expansions demoted to a tie-breaker the order is
+  // 7.93 · 7.48 · 6.51, which is what the formula always said.
+  const orderingTerms = new Set(floorTerms);
 
   // Score each document using BM25
   for (const term of queryTerms) {
@@ -1165,12 +1180,14 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null) {
 
     const { idf, docs: termDocs } = termData;
     termDf.set(term, termDocs.length);
+    const decidesOrder = orderingTerms.has(term);
     for (const entry of termDocs) {
       const { doc, tf, len } = entry;
       // BM25 scoring formula
       const norm = 1 - b + b * (len / avgDocLen);
       const score = idf * ((tf * (k1 + 1)) / (tf + k1 * norm));
       scores[doc] += score;
+      if (decidesOrder) userScores[doc] += score;
       matched[doc] = 1;
       coverage[doc] += 1;
       matchedIdf[doc] += idf;
@@ -1207,10 +1224,13 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null) {
       continue;
     }
 
-    results.push({ doc, score: scores[i] });
+    results.push({ doc, score: scores[i], userScore: userScores[i] });
   }
 
-  results.sort((a, b) => b.score - a.score);
+  // The user's own words decide the order; alias expansions only break ties. When the tokenizer
+  // cannot see the query at all (Chinese), `floorTerms` *is* the expanded set, so `userScore`
+  // equals `score` and this is the previous behaviour exactly — #1780 keeps working.
+  results.sort((a, b) => (b.userScore - a.userScore) || (b.score - a.score));
   return results.slice(0, top).map(({ doc, score }) => ({
     id: doc.id || "",
     title: doc.title || "",
