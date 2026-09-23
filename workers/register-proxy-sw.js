@@ -1508,8 +1508,17 @@ async function fetchD1SyncStamp(env) {
   }
 }
 
+// "Is there anywhere durable to put this?" — D1 counts, and it is the *better* answer since
+// 2026-09-23 (#2116). The KV plan allows 1,000 distinct keys written per day and the namespace has
+// been refusing writes since 2026-09-22 23:57Z (#2111); D1 allows 100,000 rows written per day. A job
+// whose only requirement is "somewhere to write" must not be gated on the storage that is out of
+// budget.
+function hasDurableStore(env) {
+  return !!(d1Binding(env) || (env && env.MISAKANET_KV));
+}
+
 async function refreshSearchIndex(env) {
-  if (!env || !env.MISAKANET_KV) return { refreshed: false, reason: "no KV" };
+  if (!hasDurableStore(env)) return { refreshed: false, reason: "no storage" };
   try {
     // From D1, not from the cached lessons payload — see loadLessonsFresh (#1731).
     const lessons = (await loadLessonsFresh(env)) || (await loadLessons(env));
@@ -1518,7 +1527,7 @@ async function refreshSearchIndex(env) {
     }
     const textMode = detectTextMode(lessons);
     const syncStamp = await fetchD1SyncStamp(env);
-    const existing = await env.MISAKANET_KV.get(BM25_INDEX_KEY, "json");
+    const existing = await storeGet(env, BM25_INDEX_KEY, "json");
     if (existing && existing.version === 1 && existing.built_at) {
       const age = Date.now() - Date.parse(existing.built_at);
       // docCount mismatch means the corpus changed (or the previous build ran
@@ -1551,7 +1560,12 @@ async function refreshSearchIndex(env) {
       return { refreshed: false, reason: shapeProblem, docCount: index.docCount,
                termCount: Object.keys(index.terms).length, textMode: index.textMode || "lean" };
     }
-    const written = await kvPut(env, BM25_INDEX_KEY, JSON.stringify(index), {
+    // `storePut`, not `kvPut`: D1 first, KV as the fallback. The index is one key, so it costs
+    // almost nothing either way — what it costs is *freshness*. While the KV budget is spent this
+    // write is refused, the rebuild is reported as failed, and search keeps serving the previous
+    // build: that is why `evidence_level` stayed empty on the live path long after the D1 side was
+    // fixed (#2080, #2104).
+    const written = await storePut(env, BM25_INDEX_KEY, JSON.stringify(index), {
       expirationTtl: BM25_INDEX_TTL_SECONDS,
     });
     // Drop the in-isolate memo: without this, the isolate that just rebuilt the
@@ -1564,7 +1578,7 @@ async function refreshSearchIndex(env) {
       // reports a successful refresh while search keeps serving the previous index —
       // which is exactly how the 2026-09-12 KV write outage froze the index at
       // 03:30Z unnoticed, with new lessons silently unable to enter search.
-      return { refreshed: false, reason: "kv write failed",
+      return { refreshed: false, reason: "storage write failed",
                docCount: index.docCount, termCount: Object.keys(index.terms).length,
                textMode: index.textMode || "lean" };
     }
@@ -1592,10 +1606,10 @@ async function loadBM25Index(env) {
   const now = Date.now();
   if (_bm25Index && now < _bm25IndexExpiry) return _bm25Index;
 
-  if (!env.MISAKANET_KV) return null;
+  if (!hasDurableStore(env)) return null;
 
   try {
-    const index = await env.MISAKANET_KV.get(BM25_INDEX_KEY, "json");
+    const index = await storeGet(env, BM25_INDEX_KEY, "json");
     if (index && index.version === 1) {
       _bm25Index = index;
       _bm25IndexExpiry = now + _BM25_MEMO_TTL_MS;
@@ -3862,9 +3876,13 @@ function matchAnsweredQuestions(rows, query, detail = "compact", top = 3, domain
 
 // ── KV cache wrapper ──
 async function getWithCache(env, cacheKey, fetchFn, opts = {}) {
-  if (env.MISAKANET_KV) {
+  // Through the durable store, for the same reason as the search index (#2116): a cache that
+  // cannot be refreshed during a KV write outage serves the previous corpus to everyone. The key
+  // shapes are unchanged (`proxy:lessons`, `insights:lesson-index`, …), and `storeGet` still reads
+  // a value that only exists in KV.
+  if (hasDurableStore(env)) {
     try {
-      const cached = await env.MISAKANET_KV.get(cacheKey, "json");
+      const cached = await storeGet(env, cacheKey, "json");
       if (cached && cached.ts && Date.now() - cached.ts < PROXY_CACHE_TTL) return cached.data;
     } catch {}
   }
@@ -3872,8 +3890,8 @@ async function getWithCache(env, cacheKey, fetchFn, opts = {}) {
   // Don't cache empty/absent results unless explicitly allowed — a transient
   // empty read must not pin a stale empty state for the TTL window.
   if (data && (!Array.isArray(data) || data.length > 0)) {
-    if (env.MISAKANET_KV) {
-      try { await kvPut(env, cacheKey, JSON.stringify({ ts: Date.now(), data }), { expirationTtl: Math.ceil(PROXY_CACHE_TTL / 1000) + 30 }); } catch {}
+    if (hasDurableStore(env)) {
+      try { await storePut(env, cacheKey, JSON.stringify({ ts: Date.now(), data }), { expirationTtl: Math.ceil(PROXY_CACHE_TTL / 1000) + 30 }); } catch {}
     }
   }
   return data;
@@ -5140,14 +5158,14 @@ export default {
       if (!syncToken || !env.SYNC_TOKEN || !timingSafeEqual(syncToken, env.SYNC_TOKEN)) {
         return jsonResponse({ error: "Unauthorized" }, 401);
       }
-      if (!env.MISAKANET_KV) return jsonResponse({ error: "KV not configured" }, 500);
+      if (!hasDurableStore(env)) return jsonResponse({ error: "no storage configured" }, 500);
 
       try {
         const body = await request.json();
         if (!body.version || !body.terms || !body.docs) {
           return jsonResponse({ error: "Invalid index format" }, 400);
         }
-        await kvPut(env, "worker_search_index", JSON.stringify(body), {
+        await storePut(env, "worker_search_index", JSON.stringify(body), {
           expirationTtl: 86400 * 7, // 7 days
         });
         return jsonResponse({
@@ -5162,9 +5180,9 @@ export default {
 
     // GET /api/search-index — get current index stats
     if (request.method === "GET" && url.pathname === "/api/search-index") {
-      if (!env.MISAKANET_KV) return jsonResponse({ available: false });
+      if (!hasDurableStore(env)) return jsonResponse({ available: false });
       try {
-        const index = await env.MISAKANET_KV.get("worker_search_index", "json");
+        const index = await storeGet(env, "worker_search_index", "json");
         if (!index) return jsonResponse({ available: false });
         return jsonResponse({
           available: true,
@@ -5175,9 +5193,11 @@ export default {
           textMode: index.textMode || "lean",
           textVersion: index.textVersion || 0,
           syncStamp: index.syncStamp || "", 
-          // The cron can only renew this index if KV accepts the write. When writes
-          // fail, `builtAt` freezes and new lessons silently never enter search —
-          // report that state instead of serving a stale index that looks fine.
+          // The cron can only renew this index if its storage accepts the write. When writes
+          // fail, `builtAt` freezes and new lessons silently never enter search — report that
+          // state instead of serving a stale index that looks fine. Since #2116 the storage is
+          // D1-first, so a spent KV budget no longer produces this state on its own; the check
+          // stays because a frozen index is a symptom worth reporting whoever caused it.
           stale: !Number.isFinite(Date.parse(index.built_at)) ||
                  Date.now() - Date.parse(index.built_at) > BM25_INDEX_MAX_AGE_MS,
           corpusHint: "compare docCount against data/lessons.json; a frozen builtAt means the write failed",
@@ -5815,6 +5835,12 @@ function findCoveringLesson(problemText, errorText, lessons) {
 
 export {
   healthStatus,
+  // Exported for the worker tests: the durable store is where the search index and the upstream
+  // caches live since #2116, so a test that asks "was the index published?" has to ask the same
+  // helper the worker asks — asserting against the KV stub directly now describes the fallback
+  // rather than the storage.
+  storePut,
+  storeGet,
   // Exported so workers/kv-write-budget.test.mjs asserts the *ratio* against the real batch size
   // instead of a hardcoded 10 that stops being true the moment the constant moves.
   TRAFFIC_FLUSH_BATCH,
