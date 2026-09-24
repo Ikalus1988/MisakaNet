@@ -22,15 +22,27 @@ const { GITHUB_API, REPO, PUBLIC_DATA_BASE } = _handlers;
 // daily sync), so five minutes is both fresher than the data and ~10x cheaper in
 // writes against the 1,000/day budget.
 const PROXY_CACHE_TTL = 300_000;
+// These probes are for endpoints this worker does **not** serve. Its own public URLs cannot be used
+// from inside it, and the reason is worth writing down, because the previous list did exactly that
+// and produced nothing but noise.
+//
+// Measured 2026-09-24 from the zone's own analytics (72h window, cf-diagnostics run 5): the zone
+// recorded 2,398 HTTP 522s and **all of them** were the three self-probes — `/api/lessons` 826,
+// `/api/health` 790, `/api/counter` 782, which sum to exactly the zone total — while `/journey/`
+// (served by the *site* worker) recorded none. The mechanism: a cron handler that awaits a fetch to
+// its own zone URL is waiting for a response the same single-threaded isolate has to produce, so the
+// subrequest dies at the edge with 522 every single time. An alarm that rings on every run is not an
+// alarm, and it buried the real ones: the 504s on other paths sat under it.
+//
+// So the self-check moved in-process (`probeSelfInProcess`), where it can succeed and can fail, and
+// only cross-worker endpoints are probed over HTTP.
 const KEEPALIVE_ENDPOINTS = [
-  { name: "health", url: "https://misakanet.org/api/health", json: true },
-  { name: "counter", url: "https://misakanet.org/api/counter", json: true },
-  { name: "lessons", url: "https://misakanet.org/api/lessons", json: true, metadataOnly: true },
   { name: "journey", url: "https://misakanet.org/journey/", json: false, metadataOnly: true },
 ];
 
-// Keepalive debounce: transient probe failures (CF edge HTTP 522 on loopback)
-// are warnings; only escalate after this many consecutive failures.
+// Keepalive debounce: a failing probe is a warning; only escalate after this many in a row. (The
+// loopback 522s this used to absorb are gone — see KEEPALIVE_ENDPOINTS — so a failure now means a
+// real dependency is unreachable, not that the worker was asked to serve itself.)
 const KEEPALIVE_FAIL_KEY = "keepalive:fail-count";
 const KEEPALIVE_FAIL_ALERT_AFTER = 3;
 
@@ -4781,10 +4793,8 @@ async function handleSearchSignal(request, env) {
 }
 
 async function probeKeepaliveEndpoint(endpoint) {
-  // These probes call the worker's own public URL (see KEEPALIVE_ENDPOINTS), so a worker that is slow
-  // makes its own health check slow, and four such self-requests every 15 minutes add load to it. With
-  // a deadline the probe fails fast, the debounce counts it, and the loopback 522s that comment already
-  // mentions stop being waited on.
+  // A probe of an endpoint another worker serves: this one can succeed, which is what makes it worth
+  // having. The deadline is still here — a page that hangs is a failure, not a wait.
   const resp = await fetchWithTimeout(endpoint.url, {
     headers: { "User-Agent": "MisakaNet-Register-Proxy-Keepalive/1.0" },
   }, KEEPALIVE_TIMEOUT_MS);
@@ -4990,17 +5000,43 @@ async function cleanupCoveredGaps(env) {
   return { cleaned: cleaned.length, remaining: remaining.length, details: cleaned };
 }
 
+/**
+ * The part of the keepalive that used to be an HTTP probe of this worker by this worker.
+ *
+ * It asks the same question the old `/api/health` probe was trying to ask — "are my dependencies
+ * reachable from inside a request?" — without a request: the durable store answers a read, and D1 (when
+ * bound) answers a query. Both can genuinely fail (that is the outage this is meant to notice), and
+ * neither can 522.
+ */
+async function probeSelfInProcess(env) {
+  if (!hasDurableStore(env)) {
+    throw new Error("self returned no durable store (neither D1 nor KV is bound)");
+  }
+  const checks = ["store_read"];
+  // A read of a key that is usually absent: `null` is a good answer, a throw is the finding.
+  await storeGet(env, KEEPALIVE_FAIL_KEY, "text");
+
+  const d1 = d1Binding(env);
+  if (d1) {
+    await d1.prepare("SELECT 1 AS ok").first();
+    checks.push("d1_query");
+  }
+  return { name: "self", status: 200, contentType: "in-process", inProcess: true, checks };
+}
+
 async function runKeepaliveSweep(cron = "manual", env = null) {
-  const results = await Promise.allSettled(KEEPALIVE_ENDPOINTS.map(probeKeepaliveEndpoint));
+  const results = await Promise.allSettled([
+    probeSelfInProcess(env),
+    ...KEEPALIVE_ENDPOINTS.map(probeKeepaliveEndpoint),
+  ]);
   const failures = results
     .filter((item) => item.status === "rejected")
     .map((item) => item.reason?.message || String(item.reason));
 
   if (failures.length) {
-    // Debounce: transient probe failures (e.g. CF edge HTTP 522 on the public
-    // loopback keepalive to misakanet.org) are monitoring noise, not service
-    // outages. Escalate to an error only after KEEPALIVE_FAIL_ALERT_AFTER
-    // consecutive failures; reset on any healthy sweep.
+    // Escalate to an error only after KEEPALIVE_FAIL_ALERT_AFTER consecutive failures; reset on any
+    // healthy sweep. Those failures are now dependencies rather than self-inflicted 522s, so the
+    // alert means something: a store or D1 that does not answer is a real outage.
     // Through the durable store like every other counter, for two reasons: KV's write budget is the
     // thing that runs out, and a direct `kv.put` bypasses `kvPut` — so the write-family ranking that
     // exists to show which families spend the budget could not see this one.
@@ -5023,8 +5059,11 @@ async function runKeepaliveSweep(cron = "manual", env = null) {
   if (hasDurableStore(env)) {
     await storeDelete(env, KEEPALIVE_FAIL_KEY).catch(() => {});
   }
-  console.log("[keepalive] ok", JSON.stringify({ cron, endpoints: KEEPALIVE_ENDPOINTS.length }));
-  return { ok: true, failures: [] };
+  const checks = results.flatMap((item) => (item.value?.checks || []));
+  console.log("[keepalive] ok", JSON.stringify({
+    cron, endpoints: KEEPALIVE_ENDPOINTS.length, self_checks: checks,
+  }));
+  return { ok: true, failures: [], checks };
 }
 
 // ── Request classification (Issue #1347) ──
@@ -6147,6 +6186,11 @@ export {
   UNSOLVED_REASONS,
   UNSOLVED_WINDOW_DAYS,
   buildUnsolvedMap,
+  // Exported for workers/keepalive-selfcheck.test.mjs: the list is the difference between a keepalive
+  // and a 522 generator (2026-09-24), and "no entry may be a route this worker serves" is an invariant
+  // worth asserting rather than remembering. (`runKeepaliveSweep` is exported further down.)
+  KEEPALIVE_ENDPOINTS,
+  probeSelfInProcess,
   buildLessonCoverage,
   classifyTaskFamily,
   classifyRequest,
