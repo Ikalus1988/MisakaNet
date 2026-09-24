@@ -40,7 +40,14 @@ _VENDORED = {
     "node_modules", ".pnpm-store", ".tools", ".git", "dist", "build",
     ".venv", "site-packages", ".wrangler", "__pycache__",
 }
-_CONFIG_NAMES = {"wrangler.toml", "wrangler.jsonc", "wrangler.json"}
+# By prefix, not by exact name: `wrangler.api.jsonc` existed once (it is what `deploy:api` pointed at
+# until 2026-09-24), and an exact-name list would have missed it — a config can be deployed and
+# ungated at the same time, which is how its compatibility date stayed at 2024-01-01 unnoticed.
+_CONFIG_SUFFIXES = (".toml", ".jsonc", ".json")
+
+
+def is_wrangler_config(name: str) -> bool:
+    return name.startswith("wrangler") and name.endswith(_CONFIG_SUFFIXES)
 
 
 # ── parsing ──────────────────────────────────────────────────────────────────────────────────────
@@ -50,7 +57,7 @@ def wrangler_configs(root: Path = REPO) -> list[Path]:
     found: list[Path] = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in _VENDORED]
-        found.extend(Path(dirpath) / name for name in filenames if name in _CONFIG_NAMES)
+        found.extend(Path(dirpath) / name for name in filenames if is_wrangler_config(name))
     return sorted(found)
 
 
@@ -213,6 +220,16 @@ def test_a_deploy_that_ignores_its_config_is_flagged():
     assert not deploy_watch_problems(["workers/**"], ["workers/register-proxy-sw.js"])
     assert not deploy_watch_problems(["workers/*.toml"], ["workers/wrangler.toml"])
     assert deploy_watch_problems(["workers/*.toml"], ["workers/nested/wrangler.toml"]), "`*` must not cross `/`"
+
+
+def test_the_discovery_rule_finds_configs_by_prefix_not_by_exact_name():
+    """The blind spot that made this note necessary: `wrangler.api.jsonc` was deployed, not gated."""
+    assert is_wrangler_config("wrangler.toml")
+    assert is_wrangler_config("wrangler.api.jsonc")
+    assert is_wrangler_config("wrangler.prod.toml")
+    assert not is_wrangler_config(".pr-agent.toml")
+    assert not is_wrangler_config("wrangler.toml.bak")
+    assert not is_wrangler_config("mswrangler.toml")
 
 
 def test_a_hardcoded_schedule_is_flagged():
