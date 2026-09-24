@@ -86,8 +86,14 @@ class StubGraphQL(BaseHTTPRequestHandler):
             payload = {"data": {"__type": {"fields": [{"name": n} for n in self.fields]}}}
         else:
             # The data query: it must ask for the field this schema actually declares.
-            asked = re.search(r"dimensions\s*\{([^}]*)\}", query)
-            names = (asked.group(1).split() if asked else [])
+            # String scanning rather than a regex: CodeQL flagged the `\s*`+literal shape twice in this
+            # file (alert #281), and the parse it wants is trivial — take what follows the first
+            # `dimensions` up to the closing brace.
+            names = []
+            if "dimensions" in query:
+                tail = query.split("dimensions", 1)[1]
+                if "{" in tail and "}" in tail:
+                    names = tail.split("{", 1)[1].split("}", 1)[0].split()
             unknown = [n for n in names if n not in self.fields]
             if unknown:
                 payload = {"errors": [{"message": f'unknown field "{unknown[0]}"'}]}
