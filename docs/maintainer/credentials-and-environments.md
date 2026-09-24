@@ -272,6 +272,48 @@ repository): two triggers, `Deploy default branch` (`branches=['main']`, `npx wr
 — the deploy is `npx wrangler deploy` against the root `wrangler.jsonc` (`assets.directory = docs`),
 which is reproducible from this repository.
 
+#### 4.5.1 What the build token needs, exactly
+
+Asked and answered on 2026-09-24, from Cloudflare's own
+[Workers Builds configuration docs](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
+rather than from memory, because a wrong scope here is another day of a dead site:
+
+* it must be a **user token**. Account-owned tokens are *not* supported by Workers Builds ("currently,
+  only user tokens are supported") — the same constraint §4.4 hit from the other direction, where the
+  Builds *API* answers an account-scoped token with `Invalid token`;
+* choosing **Create new token** in the panel's build settings makes Cloudflare create one with exactly
+  these permissions:
+
+| scope | permission | why the deploy needs it |
+|---|---|---|
+| Account | **Account Settings** — Read | resolving the account the Worker belongs to |
+| Account | **Workers Scripts** — Edit | the upload itself |
+| Account | **Workers KV Storage** — Edit | the asset store behind `assets.directory` |
+| Account | **Workers R2 Storage** — Edit | same, for the newer assets backend |
+| Zone | **Workers Routes** — Edit (all zones on the account) | keeping the Worker's route/domain attachment |
+| User | **User Details** — Read | the token is a user token, so it identifies a user |
+| User | **Memberships** — Read | which accounts that user can act on |
+
+Cloudflare's `Edit Cloudflare Workers` template is the same list plus `Workers Tail` — either is
+sufficient; **do not hand-trim** the list. A missing permission does not fail at build start, it fails
+at the end of a deploy nobody is watching, which is the shape of failure this section exists to stop.
+
+**Prefer "Create new token" over picking an existing token.** The panel lets you re-use a token you
+already own, and that is exactly how the site died: the build token was one the owner also rotated for
+GitHub Actions. A token created *for* Builds is dedicated, so rolling the deploy token no longer takes
+the site with it — which is the whole failure mode described above, removed by construction rather than
+by remembering.
+
+**`CF_BUILDS_TOKEN` (§4.4) is a different credential and must stay one.** It is read-only
+(`Workers Builds Configuration` + `Workers Scripts` reads) and lives in GitHub's `release` environment;
+the build token is deploy-capable and lives only in the Cloudflare panel. Merging them would put a
+deploy-capable credential in GitHub, where a workflow can print it.
+
+After changing it: re-run the build from the dashboard. `Workers Builds: misakanet-web` on the new
+commit should report success **with a `Version ID:` line** — its absence is how a build that died
+before producing a version looks, which is what every failing check-run above had. The watcher
+(§4.5) then comments once on the tracking issue, because its recorded state is `red`.
+
 ## 5. What is deliberately still repository-level
 
 `SHELDON_PAT` is the token that lets the branch sync push to `main` as a user rather than as
