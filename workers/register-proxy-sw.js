@@ -332,7 +332,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_get_lesson",
-    description: "[RETRIEVAL / READ] Fetch one public MisakaNet lesson by repository path or lesson ID. Use after misakanet_search returns a promising result to pull the full fix content. Provide exactly one of id or path (path takes precedence if both are supplied); if neither is supplied the tool returns {error}.\nReturns: object {path: string, content: string} — lesson markdown body (≤5000 chars); or {error: string}.\nExample: misakanet_get_lesson(id='auto-merge-ci-pipeline')",
+    description: "[RETRIEVAL / READ] Fetch one public MisakaNet lesson by repository path or lesson ID. Use after misakanet_search returns a promising result to pull the full fix content. Provide exactly one of id or path (path takes precedence if both are supplied); if neither is supplied the tool returns {error}.\nReturns: object {path: string, content: string} — lesson markdown body, capped at 5000 chars per call; or {error: string}. When the lesson is longer than the cap the response says so instead of pretending to be complete: {truncated: true, content_length: <full chars>, content_returned: <chars here>, full_content_url: <raw markdown>} — fetch that URL when the tail matters (the cut can fall before the Verification section).\nExample: misakanet_get_lesson(id='auto-merge-ci-pipeline')",
     inputSchema: {
       type: "object",
       properties: {
@@ -564,6 +564,17 @@ function freshness(dateStr) {
 // (the shape is pinned by "keeps the exact legacy shape" in
 // workers/d1-lesson-service.test.mjs).
 const PLAIN_FIELD_KEYS = ["summary_plain", "trigger", "verify"];
+
+/**
+ * How much lesson body one `misakanet_get_lesson` response carries.
+ *
+ * The cap is deliberate — a lesson can run to 27k characters and the caller is an agent's context
+ * window, not a file viewer — but a *silent* cap is the worst version of it: 53 of 457 lessons
+ * (11.6%, measured 2026-09-24) are longer than this, and each of them was returned as if it were
+ * complete. The cut now travels with the response (`truncated`, `content_length`,
+ * `full_content_url`), so a reader can tell "this is the lesson" from "this is the first fifth".
+ */
+const LESSON_CONTENT_LIMIT = 5000;
 
 /** A usable value is a non-empty string; anything else (null, "", numbers, the
  *  nested objects legacy frontmatter sometimes carries) is treated as absent. */
@@ -1654,7 +1665,10 @@ async function fetchLessonContent(env, lessonPath, lessonId) {
           });
           if (resp.ok) {
             const data = await resp.json();
-            if (data.content && data.encoding === "base64") return { path: c, content: atob(data.content).slice(0, 5000) };
+            if (data.content && data.encoding === "base64") {
+              const body = atob(data.content);
+              return { path: c, content: body.slice(0, LESSON_CONTENT_LIMIT), content_length: body.length };
+            }
           }
         } catch {}
       }
@@ -1671,7 +1685,10 @@ async function fetchLessonContent(env, lessonPath, lessonId) {
     });
     if (resp.ok) {
       const data = await resp.json();
-      if (data.content && data.encoding === "base64") return { path: filePath, content: atob(data.content).slice(0, 5000) };
+      if (data.content && data.encoding === "base64") {
+        const body = atob(data.content);
+        return { path: filePath, content: body.slice(0, LESSON_CONTENT_LIMIT), content_length: body.length };
+      }
     }
   }
   throw new Error(`Lesson not found: ${filePath}`);
@@ -2846,16 +2863,34 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       // response already carries the generic trust_notice, but when *this* lesson
       // matches an injection shape the caller should know which rule fired.
       const bodyFlags = detectIntakeInjection(lesson?.content || "");
-      // #1783: the optional structured fields, read from the frontmatter of the very
-      // body this call returns. They are the *content* side of the schema, so here —
-      // unlike search, which reads the corpus row — the body is the only source (D1's
-      // row for this path selects path + content_md only). `summary_plain` is what the
-      // rules block tells the model to repeat to the user verbatim. Empty for a lesson
-      // that does not carry them: no key, no shape change.
-      const plain = plainFieldsFromMarkdown(lesson?.content || "");
+      // #1783: the optional structured fields. They live in frontmatter, and there are two places it
+      // can come from: the returned body's own `---` block (the GitHub path) or D1's `frontmatter`
+      // column (that path's rows store a body with the frontmatter already stripped, so the body
+      // alone is empty there — #2138). `summary_plain` is what the rules block tells the model to
+      // repeat to the user verbatim, so a missing one is a silently degraded answer, not a cosmetic
+      // gap. Body last: where both exist they agree, and the body is the fresher of the two.
+      const plain = {
+        ...frontmatterFields(lesson?.frontmatter),
+        ...plainFieldsFromMarkdown(lesson?.content || ""),
+      };
+      // `frontmatter` is an input, not part of the answer: same reasoning as `publicLessonRow`,
+      // which lifts the three fields before dropping the raw blob.
+      const { frontmatter: _rawFrontmatter, content_length: fullLength, ...body } = lesson || {};
+      const returnedChars = (body.content || "").length;
+      const truncated = Number(fullLength) > returnedChars;
       return {
-        ...lesson,
+        ...body,
         ...plain,
+        // Only when the cut actually happened: a complete lesson must keep exactly the keys it had
+        // before (the projection contract in workers/d1-lesson-service.test.mjs).
+        ...(truncated
+          ? {
+              truncated: true,
+              content_length: Number(fullLength),
+              content_returned: returnedChars,
+              full_content_url: `https://raw.githubusercontent.com/${REPO}/main/${body.path}`,
+            }
+          : {}),
         identity: aura,
         trust_notice: TRUST_NOTICE,
         voice: "connect-success",
@@ -3874,19 +3909,29 @@ async function fetchLessonFromD1(env, lessonPath, lessonId) {
   const d1 = d1Binding(env);
   if (!d1) return null;
   let row = null;
+  // `frontmatter` is selected because `content_md` does **not** contain it: the sync stores
+  // `body = text[end + 4:]` (everything after the closing `---`) and keeps the frontmatter in its
+  // own column. Reading the optional structured fields out of the body alone therefore worked on
+  // the GitHub path and silently returned `{}` on the D1 path — the one production reads (#2138).
   if (lessonPath) {
     const { results } = await d1.prepare(
-      "SELECT path, content_md FROM lessons WHERE path = ?1 LIMIT 1"
+      "SELECT path, content_md, frontmatter FROM lessons WHERE path = ?1 LIMIT 1"
     ).bind(lessonPath).all();
     row = results?.[0] || null;
   } else if (lessonId) {
     const { results } = await d1.prepare(
-      "SELECT path, content_md FROM lessons WHERE id = ?1 LIMIT 1"
+      "SELECT path, content_md, frontmatter FROM lessons WHERE id = ?1 LIMIT 1"
     ).bind(lessonId).all();
     row = results?.[0] || null;
   }
   if (!row || !row.content_md) return null;
-  return { path: row.path || lessonPath || `${lessonId}.md`, content: String(row.content_md).slice(0, 5000) };
+  const body = String(row.content_md);
+  return {
+    path: row.path || lessonPath || `${lessonId}.md`,
+    content: body.slice(0, LESSON_CONTENT_LIMIT),
+    content_length: body.length,
+    frontmatter: row.frontmatter,
+  };
 }
 
 // Unified lesson source: D1 first (real-time, PRD ④), GitHub via KV cache fallback.
