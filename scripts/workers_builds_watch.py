@@ -159,8 +159,12 @@ def comment_body(state: str, sha: str, evidence: str, branch: str) -> str:
     marker = f"<!-- {MARKER}: state={state} sha={sha} -->"
     if state == RED:
         head = f"🔴 **The site build is red on `{branch}`** at `{sha[:9]}`."
+        # "reported", not "opened": the first version said "opened this" and the watcher's very first
+        # production run *commented* on an existing tracker (#2136, labelled `site-build-red`), so the
+        # sentence described an action it had not taken. The text a maintainer reads has to match what
+        # happened, in both the create and the comment path.
         tail = ("The site is not deploying, so every documentation change since the last successful "
-                "build is not live. The watcher opened this rather than blocking merges, because a "
+                "build is not live. The watcher reported this rather than blocking merges, because a "
                 "required check that is red blocks the merge that would fix it.\n\n"
                 "The build log needs the Builds API (a user-scoped `CF_BUILDS_TOKEN`): dispatch "
                 "**CF diagnostics** — its `Workers Builds` step prints the trigger, the recent builds "
