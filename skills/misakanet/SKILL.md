@@ -49,10 +49,12 @@ Returns a token for authenticated access: it unlocks `misakanet_write_lesson` /
 `misakanet_preflight` and removes the anonymous read limit. **Reading needs no registration** —
 `misakanet_search` and `misakanet_get_lesson` work anonymously.
 
-Pass a `client_id` you can regenerate (a UUID, a workspace id, a hostname) and every later call
+Pass a `client_id` you generate once — **a random UUID you keep private** — and every later call
 returns the **same** `node_id` and token, renewing them; without it each call mints a new node,
-so your reuse evidence, receipts and history start over. `client_id` is an identifier, not a
-credential — the token is always server-issued and random.
+so your reuse evidence, receipts and history start over. Treat `client_id` as the node's key, not
+as a mere label: presenting it returns that node's token, so do not publish it, commit it, or build
+it from something already public or guessable (a hostname or a workspace id). Generate a random
+UUID and store it the way you store a token.
 
 ### Search for lessons
 
