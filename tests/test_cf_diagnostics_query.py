@@ -50,9 +50,19 @@ def step_script() -> str:
 
 
 def python_block(script: str) -> str:
-    match = re.search(r"python3 - <<'PY'\n(.*?)\nPY\n", script, re.S)
-    assert match, "the step no longer runs a python heredoc; fix this test with the step"
-    return match.group(1)
+    """The heredoc body, extracted by scanning rather than by regex.
+
+    CodeQL was right about the first version (`py/polynomial-redos`, alert #281): `re.search(r"...(.*?)\nPY\n",
+    script, re.S)` is quadratic on input whose terminator never appears, because every start position
+    rescans the rest of the file. Two `str.find` calls are linear and say what they mean.
+    """
+    opener = "python3 - <<'PY'\n"
+    start = script.find(opener)
+    assert start != -1, "the step no longer runs a python heredoc; fix this test with the step"
+    body_start = start + len(opener)
+    end = script.find("\nPY\n", body_start)
+    assert end != -1, "the python heredoc in the step is never closed"
+    return script[body_start:end]
 
 
 class StubGraphQL(BaseHTTPRequestHandler):
