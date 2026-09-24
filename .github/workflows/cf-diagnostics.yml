@@ -171,6 +171,24 @@ jobs:
           print("== by status ==")
           for status, count in sorted(by_status.items(), key=lambda kv: -kv[1]):
               print(f"  {status}: {count}")
+          # The 401s (2,920 in the 72h window of run 5) had no path breakdown at all, because only the
+          # >= 500 class was ever printed — a status that large is not a rounding error and deserves the
+          # same evidence as the 5xx ones. Every class >= 400 gets its top paths.
+          print("== top paths per status (>= 400) ==")
+          by_path = {}
+          for g in groups:
+              dims_row = g.get("dimensions") or {}
+              status = int(dims_row.get("edgeResponseStatus") or 0)
+              if status < 400:
+                  continue
+              by_path.setdefault(status, []).append(
+                  (int(g.get("count") or 0), str(dims_row.get("clientRequestPath"))))
+          for status in sorted(by_path, key=lambda s: -sum(c for c, _ in by_path[s])):
+              rows = sorted(by_path[status], reverse=True)
+              print(f"  {status}: {sum(c for c, _ in rows)} total, top {min(6, len(rows))} of {len(rows)} paths")
+              for count, path in rows[:6]:
+                  print(f"    {count:>6}  {path}")
+
           print("== routes (status >= 500) ==")
           for g in sorted(groups, key=lambda g: -int(g.get("count") or 0)):
               dims_row = g.get("dimensions") or {}

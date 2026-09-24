@@ -88,6 +88,11 @@ class StubGraphQL(BaseHTTPRequestHandler):
                                                  **({host: "misakanet.org"} if host else {})}},
                     {"count": 900, "dimensions": {"edgeResponseStatus": 200, "clientRequestPath": "/mcp",
                                                   **({host: "misakanet.org"} if host else {})}},
+                    # The class that had no breakdown before: a status below 500 that is nonetheless the
+                    # third largest in the window (2,920 in 72h, measured 2026-09-24).
+                    {"count": 41, "dimensions": {"edgeResponseStatus": 401,
+                                                 "clientRequestPath": "/mcp",
+                                                 **({host: "misakanet.org"} if host else {})}},
                 ]
                 payload = {"data": {"viewer": {"accounts": [{"httpRequestsAdaptiveGroups": rows}]}}}
 
@@ -145,6 +150,9 @@ def test_the_query_uses_the_host_dimension_the_schema_declares(stub):
     assert "522: 12" in proc.stdout and "200: 900" in proc.stdout, proc.stdout
     assert "522 12 path=/ping host=misakanet.org" in proc.stdout, proc.stdout
     assert "misakanet.org: 12" in proc.stdout, proc.stdout
+    # Every class >= 400 gets its paths, not just the 5xx ones.
+    assert "401: 41 total" in proc.stdout, proc.stdout
+    assert "     41  /mcp" in proc.stdout, proc.stdout
 
 
 def test_a_different_schema_name_is_discovered_too(stub, monkeypatch):
