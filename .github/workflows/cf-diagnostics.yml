@@ -47,20 +47,85 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json, os, urllib.request
+          import datetime as _dt
+          import json, os, urllib.error, urllib.request
 
           account = os.environ["CLOUDFLARE_ACCOUNT_ID"]
           token = os.environ["CLOUDFLARE_API_TOKEN"]
           hours = int(os.environ.get("HOURS") or 24)
+          # Overridable so tests/test_cf_diagnostics_query.py can run this exact script against a stub
+          # and prove the field discovery below works, instead of trusting it.
+          endpoint = os.environ.get("CF_GRAPHQL_URL",
+                                   "https://api.cloudflare.com/client/v4/graphql")
 
-          # `datetime_geq` wants ISO8601, not the `-24h` / `now` shorthand the dashboard accepts:
-          # the first run of this workflow answered
+
+          def gql(query, variables=None):
+              """(payload, transport_error). A transport error is a *finding* (usually a missing
+              permission); a GraphQL `errors` list is a bug in this workflow, and the two are handled
+              differently by the caller."""
+              body = json.dumps({"query": query, "variables": variables or {}}).encode()
+              req = urllib.request.Request(endpoint, data=body, headers={
+                  "Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+              try:
+                  return json.load(urllib.request.urlopen(req, timeout=60)), None
+              except urllib.error.HTTPError as exc:
+                  return None, f"HTTP {exc.code}: {exc.read().decode(errors='replace')[:400]}"
+              except Exception as exc:
+                  return None, str(exc)
+
+
+          # ── the dimension name is discovered, not guessed ────────────────────────────────────────
+          # This step has now cost three human approvals to a wrong field name: first `datetime_geq`
+          # was given a relative string, then `edgeResponseTime` did not exist, and then
+          # `clientRequestHost` did not either — while the surrounding fields validated, so the query
+          # *looked* like it ran and printed an empty table. Discovered instead: read the schema's own
+          # type list, then that type's fields, and use whatever the schema actually calls the host.
+          host_field = None
+          type_name = None
+          payload, err = gql("{ __schema { types { name } } }")
+          if err:
+              print(f"schema introspection unavailable ({err}) — falling back to a candidate list")
+          else:
+              types = (((payload or {}).get("data") or {}).get("__schema") or {}).get("types") or []
+              names = [t.get("name") or "" for t in types]
+              candidates = [n for n in names if "HttpRequestsAdaptiveGroupsDimensions" in n]
+              print(f"dimension type candidates: {candidates}")
+              if candidates:
+                  type_name = candidates[0]
+                  payload, err = gql("query($t: String!) { __type(name: $t) { fields { name } } }",
+                                     {"t": type_name})
+                  fields = [f.get("name") or "" for f in
+                            (((payload or {}).get("data") or {}).get("__type") or {}).get("fields") or []]
+                  if fields:
+                      print(f"{type_name} fields: {sorted(fields)}")
+                      hosts = [f for f in fields if "host" in f.lower()]
+                      if hosts:
+                          host_field = hosts[0]
+                          print(f"using host dimension: {host_field}")
+
+          if host_field is None:
+              # No introspection, or a schema with no host dimension: try the spellings that exist in
+              # Cloudflare's datasets, and if none survives validation, group without a host at all —
+              # a status table with paths is still the answer to "which routes are failing".
+              for candidate in ("clientRequestHTTPHost", "clientRequestHost"):
+                  probe = "{ viewer { accounts(filter: {accountTag: %s}) { httpRequestsAdaptiveGroups(limit: 1) { dimensions { %s } } } } }" % (
+                      json.dumps(account), candidate)
+                  payload, err = gql(probe)
+                  if err is None and not (payload or {}).get("errors"):
+                      host_field = candidate
+                      print(f"using host dimension (candidate list): {host_field}")
+                      break
+              if host_field is None:
+                  print("no host dimension available; reporting status by path only")
+
+          # ── the window ──────────────────────────────────────────────────────────────────────────
+          # `datetime_geq` wants ISO8601, not the `-24h` / `now` shorthand the dashboard accepts: the
+          # first run of this workflow answered
           #   error parsing args for "httpRequestsAdaptiveGroups": filter: datetime_geq: not an iso8601 time
-          # which is why the window is computed here rather than passed as a relative string.
-          import datetime as _dt
-
           now = _dt.datetime.now(_dt.timezone.utc).replace(microsecond=0)
           since = now - _dt.timedelta(hours=hours)
+
+          dims = " ".join(["edgeResponseStatus", "clientRequestPath"] + ([host_field] if host_field else []))
           query = """
           query($account: String!, $since: Time!, $until: Time!) {
             viewer {
@@ -71,59 +136,62 @@ jobs:
                   orderBy: [count_DESC]
                 ) {
                   count
-                  dimensions { edgeResponseStatus clientRequestPath clientRequestHost }
+                  dimensions { %s }
                 }
               }
             }
           }
-          """
-          body = json.dumps({"query": query, "variables": {
+          """ % dims
+          payload, err = gql(query, {
               "account": account,
               "since": since.isoformat().replace("+00:00", "Z"),
               "until": now.isoformat().replace("+00:00", "Z"),
-          }}).encode()
-          req = urllib.request.Request("https://api.cloudflare.com/client/v4/graphql", data=body,
-                                       headers={"Authorization": f"Bearer {token}",
-                                                "Content-Type": "application/json"})
-          try:
-              payload = json.load(urllib.request.urlopen(req, timeout=60))
-          except Exception as exc:  # the error text is the finding: it names the missing permission
-              print(f"graphql query failed: {exc}")
+          })
+          if err:
+              # A 403 here means the token lacks Account Analytics — the finding is the permission,
+              # the run should still complete so the other steps report.
+              print(f"::warning::graphql query failed ({err})")
               raise SystemExit(0)
 
           if payload.get("errors"):
-              print("graphql errors:", json.dumps(payload["errors"])[:1500])
+              # This is not a permission problem, it is this workflow being wrong — and it must not
+              # look green: the previous `unknown field` runs printed an empty table and passed.
+              print("::error::the GraphQL query is invalid: "
+                    + json.dumps(payload["errors"])[:800])
+              raise SystemExit(1)
+
           groups = (((payload.get("data") or {}).get("viewer") or {}).get("accounts") or [{}])[0] \
               .get("httpRequestsAdaptiveGroups") or []
           print(f"groups: {len(groups)}")
           by_status = {}
           for g in groups:
-              dims = g.get("dimensions") or {}
-              status = str(dims.get("edgeResponseStatus"))
+              dims_row = g.get("dimensions") or {}
+              status = str(dims_row.get("edgeResponseStatus"))
               by_status[status] = by_status.get(status, 0) + int(g.get("count") or 0)
           print("== by status ==")
           for status, count in sorted(by_status.items(), key=lambda kv: -kv[1]):
               print(f"  {status}: {count}")
           print("== routes (status >= 500) ==")
           for g in sorted(groups, key=lambda g: -int(g.get("count") or 0)):
-              dims = g.get("dimensions") or {}
-              status = int(dims.get("edgeResponseStatus") or 0)
+              dims_row = g.get("dimensions") or {}
+              status = int(dims_row.get("edgeResponseStatus") or 0)
               if status < 500:
                   continue
-              print(f"  {status} {g.get('count')} host={dims.get('clientRequestHost')} "
-                    f"path={dims.get('clientRequestPath')}")
+              host = f" host={dims_row.get(host_field)}" if host_field else ""
+              print(f"  {status} {g.get('count')} path={dims_row.get('clientRequestPath')}{host}")
           # The comparison that says whether these are user requests at all: a 5xx on a hostname nobody
           # was told about (a loopback probe, a legacy subdomain) is a different problem from a 5xx on
           # the one agents call, and the zone-wide total cannot tell them apart.
-          print("== 5xx by host ==")
-          by_host = {}
-          for g in groups:
-              dims = g.get("dimensions") or {}
-              if int(dims.get("edgeResponseStatus") or 0) >= 500:
-                  host = str(dims.get("clientRequestHost"))
-                  by_host[host] = by_host.get(host, 0) + int(g.get("count") or 0)
-          for host, count in sorted(by_host.items(), key=lambda kv: -kv[1]):
-              print(f"  {host}: {count}")
+          if host_field:
+              print("== 5xx by host ==")
+              by_host = {}
+              for g in groups:
+                  dims_row = g.get("dimensions") or {}
+                  if int(dims_row.get("edgeResponseStatus") or 0) >= 500:
+                      host = str(dims_row.get(host_field))
+                      by_host[host] = by_host.get(host, 0) + int(g.get("count") or 0)
+              for host, count in sorted(by_host.items(), key=lambda kv: -kv[1]):
+                  print(f"  {host}: {count}")
           PY
 
       - name: Zone inventory — which worker owns which route, and which KV namespaces are unbound
