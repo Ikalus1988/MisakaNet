@@ -572,3 +572,106 @@ test('the index/KV fallback carries the structured fields when the row has them 
   assert.equal(summary.results[0].verify, PLAIN_FIELDS.verify);
 });
 
+// ── The D1 row shape production actually has (#2138) ──────────────────────────
+//
+// Every test above hands the D1 stub a `content_md` that still contains its `---` frontmatter
+// block. Production's rows do not: `scripts/sync_lessons_to_d1.py` stores
+// `body = text[end + 4:]` — everything *after* the closing `---` — and keeps the frontmatter in
+// its own column. So the fixture shape was more forgiving than the real one, and the gap it hid
+// was exactly the field the rules block tells the model to repeat to the user verbatim:
+// `plainFieldsFromMarkdown(stripped body)` returns `{}`, so `summary_plain` / `trigger` / `verify`
+// were missing from `misakanet_get_lesson` on the path production reads, for every lesson.
+//
+// This block pins the real shape: a stripped body *and* the `frontmatter` column.
+
+const PRODUCTION_ROW = {
+  ...LEGACY_ROW,
+  id: 'prod-shape',
+  frontmatter: JSON.stringify({ ...PLAIN_FIELDS, title: LEGACY_ROW.title, evidence_level: 'E2' }),
+  // Body exactly as the sync writes it: no `---` block, sections only.
+  content_md: '## Problem\n\npip install times out behind the proxy.\n\n## Solution\n\nUse an internal mirror.\n',
+};
+
+test('get_lesson returns the structured fields from a frontmatter-stripped D1 body (#2138)', async () => {
+  const env = {
+    MCP_TOKEN: TOKEN,
+    MISAKANET_D1: createD1([PRODUCTION_ROW]),
+    MISAKANET_KV: createKV(),
+  };
+  const lesson = await resultText(await mcpTool('misakanet_get_lesson', { id: 'prod-shape' }, env));
+  for (const [field, value] of Object.entries(PLAIN_FIELDS)) {
+    assert.equal(lesson[field], value, `get_lesson lost ${field} on the production-shaped row`);
+  }
+  // The raw frontmatter blob is an input, not part of the answer: the three lifted fields are,
+  // and nothing else from that column rides along.
+  assert.ok(!('frontmatter' in lesson), 'the raw frontmatter column leaked into the response');
+  assert.ok(!('content_length' in lesson), 'a complete lesson must not grow the truncation keys');
+  assert.deepEqual(Object.keys(lesson),
+    ['path', 'content', 'summary_plain', 'trigger', 'verify', 'identity', 'trust_notice', 'voice']);
+});
+
+test('a stripped body with no frontmatter column still answers with no extra keys (#2138)', async () => {
+  // A row whose `frontmatter` column is empty (legacy sync) must behave exactly like the legacy
+  // shape above — the new source must not invent keys either.
+  const env = {
+    MCP_TOKEN: TOKEN,
+    MISAKANET_D1: createD1([{ ...PRODUCTION_ROW, frontmatter: null }]),
+    MISAKANET_KV: createKV(),
+  };
+  const lesson = await resultText(await mcpTool('misakanet_get_lesson', { id: 'prod-shape' }, env));
+  assert.deepEqual(Object.keys(lesson), ['path', 'content', 'identity', 'trust_notice', 'voice']);
+});
+
+// ── The 5000-char cap reports itself (#2138) ──────────────────────────────────
+//
+// 53 of 457 lessons (11.6%, measured 2026-09-24) are longer than the cap, and each was returned as
+// if it were the whole lesson — including the docstring the tool advertises to agents.
+
+const TAIL = '\n\n## Verification\n\nTAIL-MARKER-THE-CUT-HIDES\n';
+const LONG_BODY = '## Problem\n\n' + 'x'.repeat(5200) + TAIL;
+
+function longRow(chars) {
+  return { ...PRODUCTION_ROW, id: 'long-shape', content_md: 'y'.repeat(chars) };
+}
+
+test('a lesson longer than the cap says it was cut, and how much is missing (#2138)', async () => {
+  const env = {
+    MCP_TOKEN: TOKEN,
+    MISAKANET_D1: createD1([{ ...PRODUCTION_ROW, id: 'long-shape', content_md: LONG_BODY }]),
+    MISAKANET_KV: createKV(),
+  };
+  const lesson = await resultText(await mcpTool('misakanet_get_lesson', { id: 'long-shape' }, env));
+
+  assert.equal(lesson.content.length, 5000, 'the cap itself must not move: agents pay for context');
+  assert.equal(lesson.truncated, true);
+  assert.equal(lesson.content_length, LONG_BODY.length);
+  assert.equal(lesson.content_returned, 5000);
+  assert.equal(lesson.full_content_url,
+    `https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/${PRODUCTION_ROW.path}`);
+  assert.doesNotMatch(lesson.content, /TAIL-MARKER/, 'the cut must be exactly at the cap');
+});
+
+test('a lesson of exactly the cap length is not reported as truncated (#2138)', async () => {
+  const env = {
+    MCP_TOKEN: TOKEN,
+    MISAKANET_D1: createD1([longRow(5000)]),
+    MISAKANET_KV: createKV(),
+  };
+  const lesson = await resultText(await mcpTool('misakanet_get_lesson', { id: 'long-shape' }, env));
+  assert.ok(!('truncated' in lesson), 'the boundary is >, not >=');
+  assert.ok(!('content_length' in lesson));
+});
+
+test('one character over the cap is reported (#2138)', async () => {
+  const env = {
+    MCP_TOKEN: TOKEN,
+    MISAKANET_D1: createD1([longRow(5001)]),
+    MISAKANET_KV: createKV(),
+  };
+  const lesson = await resultText(await mcpTool('misakanet_get_lesson', { id: 'long-shape' }, env));
+  assert.equal(lesson.truncated, true);
+  assert.equal(lesson.content_length, 5001);
+  assert.equal(lesson.content_returned, 5000);
+});
+
+

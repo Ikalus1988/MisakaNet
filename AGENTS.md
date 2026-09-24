@@ -59,7 +59,7 @@ Agent 侧更常用 MCP：`misakanet_search` → `misakanet_get_lesson` → （�
 | 工具 | 用途 | 鉴权 |
 |---|---|---|
 | `misakanet_search` | 按错误文本/关键词检索课程；`detail` 三档（`compact` 默认 / `summary` / `full`）；FAQ 命中也会返回；**无命中时返回 `no_match` + 可直接调用的 intake 指引** | 开放（匿名不限次数；同一地址有突发上限）|
-| `misakanet_get_lesson` | 按 `id` 或 `path` 取单篇课程正文（≤5000 字符）| 开放（同上，共用一个突发窗口）|
+| `misakanet_get_lesson` | 按 `id` 或 `path` 取单篇课程正文（单次 ≤5000 字符；**超长会返回 `truncated: true` + `content_length` + `full_content_url`**，自己判断要不要取全文——2026-09-24 前是静默截断，457 篇里有 53 篇被腰斩）| 开放（同上，共用一个突发窗口）|
 | `misakanet_submit_intake` | 匿名报料/提问（`kind="missing_lesson"` 或 `kind="question"`，省略则自动判定）→ 服务端去重后开 GitHub issue | 开放（限流，无需账号）|
 | `misakanet_write_lesson` | 结构化提交完整课程（`title`/`domain`/`problem`/`root_cause`/`fix`）→ 走 lesson-gate | **需 `Authorization: Bearer mcp_...`** |
 | `misakanet_preflight` | 高风险操作前的风险检查 | **需 Bearer** |
