@@ -43,7 +43,7 @@ KNOWN_ENVIRONMENTS = (APPROVED_ENVIRONMENT, UNATTENDED_ENVIRONMENT)
 
 # Unattended workflows, and the credential scope their file has to record — the note is what makes
 # reviewer-free access a decision rather than an accident.
-UNATTENDED_WORKFLOWS = ("sync-d1.yml", "sync-question-answers.yml")
+UNATTENDED_WORKFLOWS = ("sync-d1.yml", "sync-question-answers.yml", "d1-backup.yml")
 
 # Jobs that can change what is served in production. These must sit behind a human.
 REVIEWED_JOBS = {"deploy-worker.yml": "deploy"}
