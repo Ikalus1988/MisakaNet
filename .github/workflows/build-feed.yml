@@ -1,6 +1,10 @@
 name: Build Live Feed
 
 on:
+  # The cadence is also the snapshot's freshness: `scripts/sync_site_activity.py` reads a live endpoint,
+  # so nothing in the tree can trigger it — this cron is what keeps the homepage's activity panel
+  # current. `scripts/ci/land_change.py` gives each run a stable `bot/build-feed` branch, so a second
+  # run updates the open pull request instead of starting a queue.
   schedule:
     - cron: "23 */3 * * *"
   push:
@@ -8,6 +12,7 @@ on:
     paths:
       - "data/lessons.json"
       - "scripts/build_feed.py"
+      - "scripts/sync_site_activity.py"
   workflow_dispatch:
 
 permissions:
@@ -49,6 +54,27 @@ jobs:
         run: |
           python3 scripts/build_feed.py
 
+      - name: Snapshot the site's activity counters
+        # `docs/data/activity.json` is what the homepage's activity panel reads, and it is a snapshot
+        # for one measured reason: `/api/analytics/traffic` answers in 0.66-0.75s from cache and
+        # **17.4s** when it recomputes (five consecutive requests, 2026-09-24), so calling it from a
+        # browser would rebuild the 504 generator #2151 spent a day removing.
+        #
+        # It rides in *this* job rather than getting its own workflow on purpose: this job already
+        # runs every three hours and already lands its files through one self-merging pull request, so
+        # the snapshot costs no additional commits, no additional PRs and no additional CI runs.
+        #
+        # `|| true` and then a warning: the feed landing is not allowed to fail because a counter
+        # endpoint was slow. The script itself refuses to write anything it cannot vouch for (a failed
+        # fetch, a zero, a partial breakdown), so a failure here leaves the previous snapshot in place
+        # — and says so in the log rather than passing silently.
+        run: |
+          set -euo pipefail
+          python3 scripts/sync_site_activity.py || {
+            echo "::warning::the activity snapshot could not be refreshed; the previous file is unchanged"
+            exit 0
+          }
+
       - name: Land the feed through a pull request that merges itself
         # Was `git push` — refused since 2026-09-22 by the ruleset on `main` (run 35820175013, on
         # 2026-09-22 17:03 UTC, died here after the sync and the feed build had both succeeded).
@@ -66,5 +92,5 @@ jobs:
           python3 scripts/ci/land_change.py \
             --branch bot/build-feed \
             --title "chore(data): sync lessons.json + refresh feed" \
-            --paths docs/data/lessons.json docs/data/feed.json \
-            --note "Either file may be unchanged on its own; this pull request exists because at least one of them moved."
+            --paths docs/data/lessons.json docs/data/feed.json docs/data/activity.json \
+            --note "Any of these may be unchanged on its own; this pull request exists because at least one of them moved. The activity snapshot is refreshed every three hours so the homepage panel reads a static file instead of the 17-second recompute behind /api/analytics/traffic."
