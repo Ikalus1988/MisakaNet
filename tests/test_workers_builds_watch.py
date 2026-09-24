@@ -407,3 +407,19 @@ def test_the_label_payload_fits_what_github_accepts(stub):
     assert len(label_calls) == 1, StubGitHub.writes
     assert len(label_calls[0]["description"]) <= 100, label_calls[0]
     assert label_calls[0]["name"] == LABEL, label_calls[0]
+
+
+def test_the_red_wording_does_not_claim_it_opened_an_issue(stub):
+    """The first production run commented on an existing tracker, and the text said "opened this".
+
+    That was the watcher's only wrong output in production — and it was wrong in the direction that
+    matters least for safety and most for trust: a maintainer reading it would look for an issue that
+    does not exist, or wonder what the watcher thought it was doing. Both paths (create and comment)
+    use this body, so the sentence has to be true of both.
+    """
+    StubGitHub.issues = [{"number": 2136, "title": "tracker"}]
+    proc = run_watch(stub, "--sha", SHA)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    body = StubGitHub.writes[0][2]["body"]
+    assert "reported this" in body, body
+    assert "opened this" not in body, body
