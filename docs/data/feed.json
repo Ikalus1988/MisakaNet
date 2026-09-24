@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-24T05:03:07.192190+00:00",
+  "generated_at": "2026-09-24T11:58:03.279647+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "ops(d1): a weekly logical export, because Time Travel is a restore and not a backup",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2146",
-      "timestamp": "2026-09-24T01:22:46Z",
+      "title": "fix(worker): the identity badge asked for a key nothing has ever written",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2156",
+      "timestamp": "2026-09-24T11:17:31Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ops(cf): the status-code query asks the schema instead of guessing, and a broken query can no longer pass",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2145",
-      "timestamp": "2026-09-24T01:11:18Z",
+      "title": "ops(cf): a KV namespace another worker binds is not an orphan — the diagnostics stop recommending deletion",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2154",
+      "timestamp": "2026-09-24T11:11:49Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs: six claims the code does not make — client_id as a key, the removed read quota, and unnamed \"cases\"",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2144",
-      "timestamp": "2026-09-24T01:04:42Z",
+      "title": "test: CodeQL alert #281 moved to the next regex, so the pattern is gone from all four files",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2153",
+      "timestamp": "2026-09-24T11:06:49Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ops(cf): the diagnostics now answer the zone audit — stale routes, KV orphans, and D1 Time Travel",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2143",
-      "timestamp": "2026-09-24T00:55:38Z",
+      "title": "test(counters): the guard #2117 asked for in place of an unmeasurable latency comparison",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2155",
+      "timestamp": "2026-09-24T11:01:53Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(worker): a truncated lesson said it was the whole lesson, and the plain fields never reached the D1 path (#2138)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2142",
-      "timestamp": "2026-09-24T00:54:53Z",
+      "title": "fix(site): the registration timeline fired up to 100 parallel requests per visit — the 504/401 source",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2151",
+      "timestamp": "2026-09-24T09:23:26Z",
       "source": "github"
     },
     {
