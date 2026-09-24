@@ -228,7 +228,10 @@ jobs:
 
           account = os.environ["CLOUDFLARE_ACCOUNT_ID"]
           token = os.environ["CLOUDFLARE_API_TOKEN"]
-          base = "https://api.cloudflare.com/client/v4"
+          # Overridable so tests/test_cf_diagnostics_kv_step.py can run this exact script against a stub
+          # account, which is how the correction below ("used by someone else, leave it alone") is kept
+          # from silently reverting to "confirm it is empty before deleting it".
+          base = os.environ.get("CF_API_BASE", "https://api.cloudflare.com/client/v4")
 
 
           def get(path):
@@ -267,25 +270,57 @@ jobs:
                                 f"configure any more — check whether that worker is stale before trusting "
                                 f"the status-code table above")
 
+          # ── KV namespaces, and who actually uses them ────────────────────────────────────────────
+          # The version of this step that only asked "is it bound by this repository?" printed
+          # `confirm it is empty before deleting it` for a namespace that belongs to the owner's
+          # self-hosted VPN (an edgetunnel worker in the same account). That is the kind of advice that
+          # destroys data, so the step now asks the account *who binds what* instead of inferring it
+          # from this repository's config: list the deployed scripts, read each one's bindings, and map
+          # namespace -> workers.
           print("== KV namespaces in the account ==")
           namespaces, err = get(f"/accounts/{account}/storage/kv/namespaces?per_page=50")
+
+          # namespace id -> [script names that bind it], from the workers' own settings.
+          users = {}
+          scripts, serr = get(f"/accounts/{account}/workers/scripts?per_page=100")
+          if serr:
+              print(f"  (could not list workers to attribute namespaces: {serr})")
+          else:
+              names = [(s.get("id") or s.get("name")) for s in ((scripts or {}).get("result") or [])]
+              names = [n for n in names if n][:25]
+              for name in names:
+                  settings, perr = get(f"/accounts/{account}/workers/scripts/{name}/settings")
+                  if perr:
+                      continue
+                  for binding in ((settings or {}).get("result") or {}).get("bindings") or []:
+                      if binding.get("type") == "kv_namespace" and binding.get("namespace_id"):
+                          users.setdefault(binding["namespace_id"], []).append(name)
+
           if err:
               print(f"  namespace read failed ({err}) — needs Account → Workers KV Storage → Read")
           else:
               rows = (namespaces or {}).get("result") or []
-              print(f"  {len(rows)} namespace(s):")
-              for ns in rows:
-                  print(f"    {ns.get('id')}  {ns.get('title')}")
-              # The ids this repository binds, so an orphan is visible rather than inferred.
+              # The ids this repository binds, so "this repo does not use it" is stated as exactly that
+              # and nothing stronger.
               bound = {
                   "d5fb6b0797b84d17b0586fb982231ffe": "workers/wrangler.toml MISAKANET_KV",
               }
-              for ns in rows:
-                  if ns.get("id") in bound:
-                      print(f"  bound   {ns.get('id')} ({bound[ns['id']]})")
+              print(f"  {len(rows)} namespace(s):")
+              for ns in sorted(rows, key=lambda n: str(n.get("id"))):
+                  nsid = str(ns.get("id"))
+                  owners = sorted(users.get(nsid, []))
+                  if nsid in bound:
+                      verdict = f"bound by this repository ({bound[nsid]})"
+                  elif owners:
+                      verdict = f"used by {', '.join(owners)} — NOT by this repository. Leave it alone."
                   else:
-                      print(f"  ⚠ unbound {ns.get('id')} ({ns.get('title')}) — nothing in this repository "
-                            f"binds it; confirm it is empty before deleting it")
+                      verdict = ("no deployed worker binds it and this repository does not either — "
+                                 "check the keys before removing anything")
+                  print(f"    {nsid}  {ns.get('title'):<24} {verdict}")
+              unmapped = sorted(set(users) - {n.get("id") for n in rows})
+              if unmapped:
+                  print(f"  ⚠ bindings referencing namespaces not in the list: {unmapped}")
+
           PY
           exit 0
 
