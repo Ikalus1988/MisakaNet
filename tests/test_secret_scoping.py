@@ -33,7 +33,12 @@ WORKFLOWS = REPO / ".github" / "workflows"
 # comes from the repository (readable by every run on every branch). The names are the ones the
 # workflows actually read — and each environment must carry exactly these names, because environment
 # secrets shadow repository secrets **by name**.
-GUARDED_SECRETS = ("NPM_TOKEN", "CF_API_TOKEN")
+# `CF_OBSERVABILITY_TOKEN` and `CF_BUILDS_TOKEN` are read-only rather than deploy-capable, which is
+# exactly what makes them easy to leave unenforced — and the failure mode they share with the deploy
+# token does not require a leak to matter: a value the document says is environment-scoped can be read
+# from a repository secret any branch can print, and nothing in the file would say so. Same rule, so
+# the same guard.
+GUARDED_SECRETS = ("NPM_TOKEN", "CF_API_TOKEN", "CF_OBSERVABILITY_TOKEN", "CF_BUILDS_TOKEN")
 
 # `release` gates on a required reviewer and holds the deploy-capable tokens; `automation` has no
 # reviewers and holds a D1-only token, so that unattended jobs can run.
