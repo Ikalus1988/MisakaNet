@@ -126,6 +126,83 @@ jobs:
               print(f"  {host}: {count}")
           PY
 
+      - name: Zone inventory — which worker owns which route, and which KV namespaces are unbound
+        run: |
+          set -euo pipefail
+          # Two questions a zone audit asked (2026-09-24) that only the account can answer, and that a
+          # status-code table cannot: (a) whether a *stale* worker still holds a route — this repository
+          # used to run `misakanet-api`, our own lesson records it answering `/mcp` with its 404 branch
+          # (lessons/contrib/mcp-endpoint-404-zone-route-misconfig.md), and it is not in this repository's
+          # configs any more; (b) whether a KV namespace exists in the account that nothing binds — the
+          # audit named one (`KV`, id 5267c932…) while `workers/wrangler.toml` binds only `MISAKANET_KV`.
+          # Either read may 403 for a token that does not carry the zone scopes: the error text names the
+          # missing permission, which is the finding, so this step prints and never fails the run.
+          python3 - <<'PY'
+          import json, os, urllib.error, urllib.request
+
+          account = os.environ["CLOUDFLARE_ACCOUNT_ID"]
+          token = os.environ["CLOUDFLARE_API_TOKEN"]
+          base = "https://api.cloudflare.com/client/v4"
+
+
+          def get(path):
+              req = urllib.request.Request(base + path, headers={
+                  "Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+              try:
+                  return json.load(urllib.request.urlopen(req, timeout=45)), None
+              except urllib.error.HTTPError as exc:
+                  return None, f"HTTP {exc.code}: {exc.read().decode()[:400]}"
+              except Exception as exc:
+                  return None, str(exc)
+
+
+          print("== worker routes on misakanet.org ==")
+          zones, err = get("/zones?name=misakanet.org")
+          if err:
+              print(f"  zone lookup failed ({err}) — needs Zone:Read on this token")
+          else:
+              zone_list = (zones or {}).get("result") or []
+              if not zone_list:
+                  print("  no zone named misakanet.org visible to this token")
+              else:
+                  zone = zone_list[0]["id"]
+                  routes, err = get(f"/zones/{zone}/workers/routes")
+                  if err:
+                      print(f"  route read failed ({err}) — needs Zone → Workers Routes → Read")
+                  else:
+                      rows = (routes or {}).get("result") or []
+                      print(f"  {len(rows)} route(s):")
+                      for r in rows:
+                          print(f"    {r.get('pattern')}  ->  {r.get('script')}")
+                      stale = sorted({r.get("script") for r in rows if r.get("script")}
+                                     - {"misakanet-register-proxy", "misakanet-web"})
+                      if stale:
+                          print(f"  ⚠ routes still point at {stale}, which this repository does not "
+                                f"configure any more — check whether that worker is stale before trusting "
+                                f"the status-code table above")
+
+          print("== KV namespaces in the account ==")
+          namespaces, err = get(f"/accounts/{account}/storage/kv/namespaces?per_page=50")
+          if err:
+              print(f"  namespace read failed ({err}) — needs Account → Workers KV Storage → Read")
+          else:
+              rows = (namespaces or {}).get("result") or []
+              print(f"  {len(rows)} namespace(s):")
+              for ns in rows:
+                  print(f"    {ns.get('id')}  {ns.get('title')}")
+              # The ids this repository binds, so an orphan is visible rather than inferred.
+              bound = {
+                  "d5fb6b0797b84d17b0586fb982231ffe": "workers/wrangler.toml MISAKANET_KV",
+              }
+              for ns in rows:
+                  if ns.get("id") in bound:
+                      print(f"  bound   {ns.get('id')} ({bound[ns['id']]})")
+                  else:
+                      print(f"  ⚠ unbound {ns.get('id')} ({ns.get('title')}) — nothing in this repository "
+                            f"binds it; confirm it is empty before deleting it")
+          PY
+          exit 0
+
       - name: Worker errors and logs (wrangler tail)
         run: |
           set -euo pipefail
@@ -180,6 +257,21 @@ jobs:
           echo "== how many rows carry the key at all =="
           wrangler d1 execute misakanet-db --remote --json --command \
             "SELECT COUNT(*) AS rows, SUM(instr(frontmatter, 'evidence_level') > 0) AS with_key FROM lessons;"
+
+      - name: D1 storage backend — Time Travel eligibility, and the bookmark to restore to
+        run: |
+          set -euo pipefail
+          npm install -g wrangler >/dev/null 2>&1
+          cd workers
+          # A zone audit listed "no D1 backups" as a gap. Half of that is wrong and half of it matters:
+          # Time Travel is on by default and free (30-day point-in-time recovery), but it only covers
+          # databases on the production storage backend — a legacy `version: alpha` database uses the
+          # older snapshot API instead. `d1 info` is what answers that, and `time-travel info` prints the
+          # bookmark that a restore would use, which is the fact worth having *before* an incident.
+          echo "== wrangler d1 info (look at 'version') =="
+          wrangler d1 info misakanet-db || true
+          echo "== time travel bookmark for right now =="
+          wrangler d1 time-travel info misakanet-db || echo "(time-travel needs wrangler >= 3.4 and the production backend)"
 
       - name: D1 health — is storePut falling back to KV?
         run: |

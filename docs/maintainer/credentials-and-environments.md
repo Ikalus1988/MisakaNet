@@ -95,13 +95,19 @@ owner action in the npm UI; the workflow side is a three-line change.
 
 ### 4.2 Reading worker logs, and why that is a *separate* token
 
-`cf-diagnostics.yml` queries two Cloudflare APIs, and neither is covered by the deploy token's
+`cf-diagnostics.yml` queries several Cloudflare APIs, and none is covered by the deploy token's
 permissions:
 
 | API | permission it needs |
 |---|---|
 | `GET /graphql` `httpRequestsAdaptiveGroups` (status codes by route) | Account → **Account Analytics** → Read |
 | `POST /accounts/{id}/workers/observability/telemetry/query` (worker logs) | Account → **Workers Observability** → Read |
+| `GET /zones?name=…` + `GET /zones/{id}/workers/routes` (who owns which route) | Zone → **Zone** → Read + Zone → **Workers Routes** → Read |
+| `GET /accounts/{id}/storage/kv/namespaces` (which namespaces exist, and which nothing binds) | Account → **Workers KV Storage** → Read |
+
+The `wrangler d1 info` / `d1 time-travel info` steps need the same scope the D1 steps already use
+(Account → **D1** → Read), and the zone/KV steps **degrade with the error text** rather than failing
+the run — a 403 body names the missing permission, which is itself the answer to "why is this empty".
 
 Measured 2026-09-23: with only the deploy token's scopes, the first returned
 `filter: datetime_geq: not an iso8601 time` (a bug in the query, since fixed) and the second returned
