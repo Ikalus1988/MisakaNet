@@ -40,9 +40,16 @@ jobs:
     timeout-minutes: 10
     # Only Cloudflare's check suites are interesting; everything else (CodeQL, Actions, other apps)
     # resolves to "no Workers Builds check-run" anyway, and this keeps the run list honest.
+    #
+    # The `head_branch` half is the same rule the script enforces, applied one level earlier: a red
+    # site build on a feature branch is that author's business, and this repository pushes a lot of
+    # branches — a watcher that starts a run for each of them to print "skipped on purpose" is noise
+    # in the one place (the Actions list) where noise hides real failures. It stays in the script too,
+    # because that is the copy the tests exercise and the copy the cron uses.
     if: >-
       github.event_name != 'check_suite'
-      || github.event.check_suite.app.slug == 'cloudflare-workers-and-pages'
+      || (github.event.check_suite.app.slug == 'cloudflare-workers-and-pages'
+          && github.event.check_suite.head_branch == 'main')
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 

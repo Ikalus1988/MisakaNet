@@ -303,7 +303,10 @@ def test_a_red_build_on_a_feature_branch_is_not_the_maintainers_problem(stub, tm
     event = write_event(tmp_path, SHA, "feature/whatever")
     proc = run_watch(stub, "--event", event)
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert "nothing to check" in proc.stdout, proc.stdout
+    # The message has to name the real reason: the first version printed "no commit for main (branch
+    # main is not visible?)", which sends a reader hunting a token problem that is not there.
+    assert "skipped on purpose" in proc.stdout, proc.stdout
+    assert "feature/whatever is not main" in proc.stdout, proc.stdout
     assert StubGitHub.writes == [], StubGitHub.writes
 
 
@@ -349,6 +352,18 @@ def test_the_job_ignores_check_suites_from_other_apps():
     rather than a requirement."""
     condition = workflow()["jobs"]["watch"]["if"]
     assert "cloudflare-workers-and-pages" in condition, condition
+
+
+def test_the_job_does_not_even_start_for_feature_branches():
+    """The same rule as the script's branch guard, one level earlier.
+
+    The repository pushes many branches, and each Cloudflare suite on one would otherwise start a run
+    whose entire job is to print "skipped on purpose" — noise in the Actions list, which is where noise
+    hides the real thing. The script keeps the guard as well, because that copy is the one the tests
+    exercise and the one the cron uses.
+    """
+    condition = workflow()["jobs"]["watch"]["if"]
+    assert "check_suite.head_branch == 'main'" in condition, condition
 
 
 def test_only_one_watcher_runs_at_a_time():

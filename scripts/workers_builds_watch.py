@@ -190,23 +190,28 @@ def plan(state: str, tracker_exists: bool, previous: str) -> str:
     return "comment"
 
 
-def resolve_target(gh: GitHub, args) -> tuple[str, str]:
-    """(sha, branch) from an event payload, or the tip of --branch when there is no event."""
+def resolve_target(gh: GitHub, args) -> tuple[str, str, str]:
+    """(sha, branch, why) — the commit to check, and which route produced it.
+
+    `why` exists so the log says the true reason for declining. The first version returned an empty
+    sha for a feature branch and then printed "no commit for main (branch main is not visible?)", which
+    would send a reader hunting a permissions problem that is not there: the branch was skipped **on
+    purpose**, because a red site build on a feature branch is its author's business, not something to
+    file on the maintainer's tracker.
+    """
     if args.sha:
-        return args.sha, args.branch
+        return args.sha, args.branch, "explicit --sha"
     if args.event:
         payload = json.loads(Path(args.event).read_text(encoding="utf-8"))
         suite = payload.get("check_suite") or {}
         sha = suite.get("head_sha") or (payload.get("after") if payload else None)
         if sha:
             branch = suite.get("head_branch") or args.branch
-            # A red site build on a feature branch is the author's business, not the maintainer's:
-            # only the branch that deploys the site is worth an issue on the tracker.
             if branch != args.branch and not args.any_branch:
-                return "", branch
-            return sha, branch
+                return "", branch, "not-the-deploying-branch"
+            return sha, branch, "event payload"
     head = gh("GET", f"/branches/{args.branch}") or {}
-    return str(((head.get("commit") or {}).get("sha")) or ""), args.branch
+    return str(((head.get("commit") or {}).get("sha")) or ""), args.branch, "branch tip"
 
 
 def main() -> int:
@@ -224,11 +229,15 @@ def main() -> int:
     repo = args.repo
     gh = GitHub(repo, token(), os.environ.get("GH_API_BASE", "https://api.github.com"))
 
-    sha, branch = resolve_target(gh, args)
+    sha, branch, why = resolve_target(gh, args)
     if not sha:
-        print(f"nothing to check: no commit for {branch} (branch {branch} is not visible?)")
+        if why == "not-the-deploying-branch":
+            print(f"skipped on purpose: {branch} is not {args.branch}, and only the branch that "
+                  f"deploys the site is worth a tracker issue (use --any-branch to report others)")
+        else:
+            print(f"nothing to check: no commit resolved for {args.branch} (is it visible to this token?)")
         return 0
-    print(f"repo={repo} branch={branch} sha={sha[:9]}")
+    print(f"repo={repo} branch={branch} sha={sha[:9]} ({why})")
 
     state, evidence = site_build_state(gh, sha)
     print(f"site build: {state} — {evidence}")
