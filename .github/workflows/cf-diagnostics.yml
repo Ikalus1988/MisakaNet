@@ -38,6 +38,10 @@ jobs:
       # Scripts: Edit) and falls back to the deploy token so a repository that has not created it yet
       # still runs every step it is allowed to run.
       CLOUDFLARE_API_TOKEN: ${{ secrets.CF_OBSERVABILITY_TOKEN || secrets.CF_API_TOKEN }}
+      # The Builds API is the one Cloudflare API here that refuses account-scoped tokens: it wants a
+      # *user-scoped* token with Workers Builds Configuration (#2136). It is deliberately a separate
+      # credential rather than a permission added to the deploy token, and empty until one exists.
+      CF_BUILDS_TOKEN: ${{ secrets.CF_BUILDS_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
       HOURS: ${{ inputs.hours }}
     steps:
@@ -321,6 +325,214 @@ jobs:
               if unmapped:
                   print(f"  ⚠ bindings referencing namespaces not in the list: {unmapped}")
 
+          PY
+          exit 0
+
+      - name: Workers Builds — the site deploy that is red on every commit (#2136)
+        run: |
+          set -euo pipefail
+          # `Workers Builds: misakanet-web` is Cloudflare's Git integration building `docs/` into
+          # misakanet.org, and it has concluded `failure` on every commit since the #2133 merge. Its
+          # check-run carries no summary and no annotations, the build log lives behind the dashboard,
+          # and this repository contains no build configuration at all (`package.json` has no `build`
+          # script, `wrangler.jsonc` names no build command) — so the *only* copy of the cause is this
+          # API. That is why the step exists and why it is worth a dispatch.
+          #
+          # It needs its own credential: the Builds API rejects account-scoped tokens outright
+          # ("Invalid token") and wants a *user-scoped* one carrying **Workers Builds Configuration**
+          # (read is enough to read; Edit is only for triggering or reconfiguring) — see
+          # docs/maintainer/credentials-and-environments.md §4.4. The token is optional: without it the
+          # step says what is missing and the rest of the run still happens, exactly like the
+          # observability token it sits next to.
+          python3 - <<'PY'
+          import json, os, urllib.error, urllib.parse, urllib.request
+
+          account = os.environ["CLOUDFLARE_ACCOUNT_ID"]
+          builds_token = (os.environ.get("CF_BUILDS_TOKEN") or "").strip()
+          # The tag lookup is the one endpoint the Builds API needs that is *not* a Builds endpoint
+          # (`GET /workers/scripts`, Workers Scripts: Read). The step already proves elsewhere that the
+          # other Cloudflare token can read it, so it is used as a fallback rather than spending
+          # another dispatch on a permission that may already be granted somewhere.
+          fallback_token = (os.environ.get("CLOUDFLARE_API_TOKEN") or "").strip()
+          # Overridable so tests/test_cf_diagnostics_builds_step.py can run this exact script against a
+          # stub account — including the 403 and pagination paths, which are the two ways this step can
+          # lie about a red build.
+          base = os.environ.get("CF_API_BASE", "https://api.cloudflare.com/client/v4")
+          worker = os.environ.get("CF_BUILDS_WORKER", "misakanet-web")
+          tail_lines = int(os.environ.get("CF_BUILDS_LOG_LINES") or 120)
+
+
+          def get(path, token):
+              req = urllib.request.Request(base + path, headers={
+                  "Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+              try:
+                  return json.load(urllib.request.urlopen(req, timeout=45)), None
+              except urllib.error.HTTPError as exc:
+                  # The body names the missing permission, which is itself the answer to "why is this
+                  # empty" — so it is printed, never swallowed.
+                  return None, f"HTTP {exc.code}: {exc.read().decode(errors='replace')[:400]}"
+              except Exception as exc:
+                  return None, str(exc)
+
+
+          if not builds_token:
+              print("::warning::CF_BUILDS_TOKEN is not set, so the site-build log cannot be read. "
+                    "Create a **user-scoped** token with Workers Builds Configuration (Read) plus "
+                    "Workers Scripts (Read) and store it in the `release` environment — "
+                    "docs/maintainer/credentials-and-environments.md §4.4")
+              raise SystemExit(0)
+
+          print("== worker tag (the Builds API identifies workers by tag, never by name) ==")
+          tag, err = None, None
+          for label, token in (("CF_BUILDS_TOKEN", builds_token), ("CLOUDFLARE_API_TOKEN", fallback_token)):
+              if not token:
+                  continue
+              scripts, err = get(f"/accounts/{account}/workers/scripts?per_page=100", token)
+              if err:
+                  print(f"  {label}: {err}")
+                  continue
+              for script in (scripts or {}).get("result") or []:
+                  if (script.get("id") or script.get("name")) == worker:
+                      tag = script.get("tag")
+              print(f"  {label}: workers listed, {worker} -> tag={tag}")
+              break
+          if not tag:
+              print(f"::warning::could not resolve the tag for {worker} ({err or 'not in the list'}). "
+                    "Workers Scripts: Read is the permission this endpoint needs; without a tag the "
+                    "Builds endpoints cannot be called at all.")
+              raise SystemExit(0)
+
+          # The trigger is where the build command lives, and this repository does not contain it: the
+          # command exists only in the Cloudflare panel, which is why a build break is invisible here.
+          #
+          # Everything printed here goes into a job log on a **public** repository, and a trigger can
+          # legitimately carry a credential (`CLOUDFLARE_API_TOKEN=… npx wrangler deploy` is a normal
+          # way to configure a build, and per-trigger environment variables are a documented feature).
+          # So the step prints variable *names*, never values, and redacts anything token-shaped out of
+          # the commands. The one thing that must never happen here is this diagnostic becoming the
+          # leak — a build log is worth an approval, a token is not.
+          def redact(text):
+              """Replace 32+ character runs of token-shaped characters with a length marker."""
+              out, run = [], []
+              for ch in str(text):
+                  if ch.isalnum() or ch in "-_":
+                      run.append(ch)
+                      continue
+                  if len(run) >= 32:
+                      out.append(f"<redacted {len(run)} chars>")
+                  else:
+                      out.append("".join(run))
+                  run = []
+                  out.append(ch)
+              out.append(f"<redacted {len(run)} chars>" if len(run) >= 32 else "".join(run))
+              return "".join(out)
+
+
+          triggers, err = get(f"/accounts/{account}/builds/workers/{tag}/triggers", builds_token)
+          print("== build triggers ==")
+          if err:
+              print(f"  read failed ({err})")
+          else:
+              rows = (triggers or {}).get("result") or []
+              print(f"  {len(rows)} trigger(s) — this is the only place the build command is recorded:")
+              for t in rows:
+                  print(f"    {t.get('trigger_name')!r} uuid={t.get('trigger_uuid')} "
+                        f"branches={t.get('branch_includes')} root={t.get('root_directory')!r}")
+                  print(f"      build_command:  {redact(t.get('build_command'))}")
+                  print(f"      deploy_command: {redact(t.get('deploy_command'))}")
+                  print(f"      path_includes:  {t.get('path_includes')}")
+                  env_names = sorted((t.get("environment_variables") or {}).keys())
+                  # Names only: a build-time credential that has gone stale is a leading explanation
+                  # for a deploy step failing with `Invalid access token`, so knowing the name is
+                  # useful — and knowing the value is not, which is why it is not read.
+                  print(f"      build-time env vars (names only, values deliberately not printed): "
+                        f"{env_names or 'none'}")
+
+          builds, err = get(f"/accounts/{account}/builds/workers/{tag}/builds?per_page=25", builds_token)
+          if err:
+              print(f"::warning::build list failed ({err})")
+              raise SystemExit(0)
+
+          rows = (builds or {}).get("result") or []
+          # Sorted here rather than trusted: if the API ever returns oldest-first, a step that assumed
+          # newest-first would read the wrong build's log and report success for a red pipeline.
+          rows.sort(key=lambda b: str(b.get("created_on") or ""), reverse=True)
+          print(f"== recent builds ({len(rows)}) ==")
+          for b in rows[:15]:
+              meta = b.get("build_trigger_metadata") or {}
+              print("  {created}  {outcome:<9} {status:<11} {branch:<8} {sha} {source:<6} {uuid}".format(
+                  created=str(b.get("created_on"))[:19],
+                  outcome=str(b.get("build_outcome")),
+                  status=str(b.get("status")),
+                  branch=str(meta.get("branch")),
+                  sha=str(meta.get("commit_hash"))[:9],
+                  source=str(meta.get("build_trigger_source")),
+                  uuid=b.get("build_uuid")))
+
+          # The newest **failure**, not the newest build: a green build pushed after a red one would
+          # otherwise hide the log that has the answer, and the error text is the whole deliverable.
+          failing = [b for b in rows if b.get("build_outcome") == "fail"]
+          print(f"== failures in this page: {len(failing)} ==")
+          if not failing:
+              print("  no failing build in the newest page — the pipeline is green as far as this run sees")
+              raise SystemExit(0)
+          target = failing[0]
+
+
+          def read_log(build_uuid):
+              """Every page of the log, following `cursor`.
+
+              A single request returns the *start* of the log with `truncated: true`, and the error a
+              failed build died on is at the end — so a step that reads one page prints the least
+              interesting half and looks like it worked. Cursor is capped rather than unbounded.
+              """
+              lines, cursor, pages, seen = [], None, 0, 0
+              while pages < 20:
+                  path = f"/accounts/{account}/builds/builds/{build_uuid}/logs"
+                  if cursor:
+                      path += "?cursor=" + urllib.parse.quote(str(cursor))
+                  payload, err = get(path, builds_token)
+                  if err:
+                      return lines, err
+                  result = (payload or {}).get("result") or {}
+                  batch = result.get("lines") or []
+                  lines += batch
+                  pages += 1
+                  seen += len(batch)
+                  if not result.get("truncated") or not result.get("cursor"):
+                      return lines, None
+                  cursor = result["cursor"]
+              return lines, f"stopped after {pages} pages ({seen} lines); the tail is not authoritative"
+
+
+          lines, err = read_log(target["build_uuid"])
+          print(f"== log for build {target['build_uuid']} "
+                f"(outcome={target.get('build_outcome')}, {str(target.get('created_on'))[:19]}, "
+                f"commit={str((target.get('build_trigger_metadata') or {}).get('commit_hash'))[:9]}) ==")
+          if err:
+              print(f"  log read failed ({err})")
+              raise SystemExit(0)
+
+
+          def message_of(line):
+              """`lines` is an array of [epoch, text] pairs; the text is the part that matters."""
+              if isinstance(line, (list, tuple)) and len(line) >= 2:
+                  return str(line[1])
+              return str(line)
+
+
+          messages = [message_of(line) for line in lines]
+          print(f"  {len(messages)} log line(s) retrieved")
+          # Both ends of the error list: the *first* error usually names the cause and the last one is
+          # often a downstream cascade, so printing only one end is how a diagnosis goes wrong.
+          keys = ("error", "fail", "fatal", "cannot", "not found", "denied", "exceed", "quota")
+          hits = [m for m in messages if any(k in m.lower() for k in keys)]
+          print(f"== {len(hits)} line(s) that look like the error ==")
+          for m in (hits[:20] if len(hits) <= 40 else hits[:20] + ["  …"] + hits[-20:]):
+              print(f"  {m}")
+          print(f"== last {min(tail_lines, len(messages))} line(s) of the log ==")
+          for m in messages[-tail_lines:]:
+              print(f"  {m}")
           PY
           exit 0
 
