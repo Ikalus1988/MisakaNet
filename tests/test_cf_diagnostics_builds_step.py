@@ -105,6 +105,9 @@ class StubAccount(BaseHTTPRequestHandler):
     scripts_status_for_builds_token = 200
     builds_list_status = 200
     build_command = "npm run build"
+    # Two triggers, as the real Worker has: production (`main`) and preview (`*`). They each carry a
+    # build token, and the interesting case is that they disagree.
+    triggers: list = []
     # build uuid -> pages of [epoch, text] lines. A page is "truncated" when another follows it.
     logs_by_build: dict = {}
     seen: list[str] = []
@@ -140,17 +143,7 @@ class StubAccount(BaseHTTPRequestHandler):
                                           {"id": WORKER, "tag": TAG}]})
 
         if path == f"/accounts/{ACCOUNT}/builds/workers/{TAG}/triggers":
-            return self._json({"result": [{
-                "trigger_uuid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-                "trigger_name": "Production Deploy",
-                "build_command": self.build_command,
-                "deploy_command": "npx wrangler deploy",
-                "root_directory": "docs",
-                "branch_includes": ["main"],
-                "path_includes": ["docs/**"],
-                "environment_variables": {"CLOUDFLARE_API_TOKEN": {
-                    "value": "Sn3lZJTBX6kkg7OdcBUAxOO963GEIyGQqnFTOFYY", "is_secret": True}},
-            }]})
+            return self._json({"result": self.triggers})
 
         if path == f"/accounts/{ACCOUNT}/builds/workers/{TAG}/builds":
             if self.builds_list_status != 200:
@@ -177,8 +170,27 @@ class StubAccount(BaseHTTPRequestHandler):
         return self._json({"result": []})
 
 
+def make_trigger(name: str, token: str, branches: list) -> dict:
+    return {
+        "trigger_uuid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+        "trigger_name": name,
+        "build_command": StubAccount.build_command,
+        "deploy_command": "npx wrangler deploy",
+        "root_directory": "docs",
+        "branch_includes": branches,
+        "path_includes": ["docs/**"],
+        "build_token_uuid": token,
+        "environment_variables": {"CLOUDFLARE_API_TOKEN": {
+            "value": "Sn3lZJTBX6kkg7OdcBUAxOO963GEIyGQqnFTOFYY", "is_secret": True}},
+    }
+
+
 @pytest.fixture(autouse=True)
 def _reset():
+    StubAccount.triggers = [
+        make_trigger("Deploy default branch", "aaaaaaaa-1111-2222-3333-444444444444", ["main"]),
+        make_trigger("Deploy non-production branches", "aaaaaaaa-1111-2222-3333-444444444444", ["*"]),
+    ]
     StubAccount.builds = [
         build(FAILED_BUILD, "2026-09-24T09:05:00Z", "fail", "8c1f3d1a0d0e"),
         build(GREEN_BUILD, "2026-09-24T11:17:00Z", "success", "10bf35a132f7"),
@@ -331,7 +343,7 @@ def test_a_credential_in_the_trigger_is_never_printed(stub):
     step prints variable *names* and redacts token-shaped runs out of the commands.
     """
     token = "Sn3lZJTBX6kkg7OdcBUAxOO963GEIyGQqnFTOFYY"
-    StubAccount.build_command = f"CLOUDFLARE_API_TOKEN={token} npm run build"
+    StubAccount.triggers[0]["build_command"] = f"CLOUDFLARE_API_TOKEN={token} npm run build"
     proc = run_step(stub)
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert token not in proc.stdout, "the step printed a credential into a public job log"
@@ -403,3 +415,52 @@ def test_the_workflow_env_still_carries_both_credentials():
     env = workflow["jobs"]["diagnose"]["env"]
     assert "secrets.CF_BUILDS_TOKEN" in env["CF_BUILDS_TOKEN"], env["CF_BUILDS_TOKEN"]
     assert "CF_OBSERVABILITY_TOKEN" in env["CLOUDFLARE_API_TOKEN"], env["CLOUDFLARE_API_TOKEN"]
+
+
+# ── the build token is identified, not assumed ────────────────────────────────────────────────────
+
+def test_each_trigger_reports_the_build_token_it_deploys_with(stub):
+    """"I replaced the build token" has to be checkable, and the UUID is the only field that shows it.
+
+    Asked for while renewing the site's token (2026-09-24, #2136), because the failure it prevents is a
+    renewal that lands on one trigger and not the other: the dashboard looks fixed, one branch's builds
+    keep dying with the same error, and nothing distinguishes that from "the renewal did not work".
+    """
+    proc = run_step(stub)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert proc.stdout.count("build_token_uuid: aaaaaaaa-1111-2222-3333-444444444444") == 2, proc.stdout
+    assert "share build token aaaaaaaa-1111-2222-3333-444444444444" in proc.stdout, proc.stdout
+
+
+def test_two_triggers_with_different_tokens_are_called_out(stub):
+    """The half-fixed pipeline, which looks exactly like a working one from the dashboard."""
+    StubAccount.triggers[1]["build_token_uuid"] = "bbbbbbbb-5555-6666-7777-888888888888"
+    proc = run_step(stub)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "2 DIFFERENT build tokens" in proc.stdout, proc.stdout
+    assert "half-fixed pipeline" in proc.stdout, proc.stdout
+    # …and the warning has to say *which* trigger carries which token, or the reader's next step is to
+    # go and find out. (Mutation found this: dropping the mapping from the message left the tests green.)
+    warning = next(line for line in proc.stdout.splitlines() if "DIFFERENT build tokens" in line)
+    for token in ("aaaaaaaa-1111-2222-3333-444444444444", "bbbbbbbb-5555-6666-7777-888888888888"):
+        assert token in warning, warning
+    assert "Deploy default branch" in warning and "Deploy non-production branches" in warning, warning
+
+
+def test_a_missing_build_token_uuid_is_not_silence(stub):
+    """If the API stops publishing the field, the confirmation stops working — say so rather than
+    print nothing and let "no warning" read as "the tokens match"."""
+    for trigger in StubAccount.triggers:
+        trigger.pop("build_token_uuid")
+    proc = run_step(stub)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "no build_token_uuid was returned" in proc.stdout, proc.stdout
+    assert "(not returned)" in proc.stdout, proc.stdout
+
+
+def test_the_build_token_value_is_never_printed(stub):
+    """A UUID is an identifier; the token it points at is not. Only the UUID may appear."""
+    proc = run_step(stub)
+    assert "Sn3lZJTBX6kkg7OdcBUAxOO963GEIyGQqnFTOFYY" not in proc.stdout, (
+        "the step printed the credential itself, not just the identifier"
+    )

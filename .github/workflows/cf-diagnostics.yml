@@ -471,18 +471,38 @@ jobs:
           else:
               rows = (triggers or {}).get("result") or []
               print(f"  {len(rows)} trigger(s) — this is the only place the build command is recorded:")
+              # The build token is a *UUID*, not a value: it identifies which API token the build
+              # system deploys with, and it is the one field that must change when that token is
+              # renewed. Printing it is how "I replaced the build token" is *checked* rather than
+              # believed — the failure it prevents is a renewal that landed on one trigger and not the
+              # other, which leaves one branch's builds dead while the dashboard looks fixed.
+              build_tokens = {}
               for t in rows:
-                  print(f"    {t.get('trigger_name')!r} uuid={t.get('trigger_uuid')} "
+                  name = str(t.get("trigger_name"))
+                  build_tokens[name] = t.get("build_token_uuid")
+                  print(f"    {name!r} uuid={t.get('trigger_uuid')} "
                         f"branches={t.get('branch_includes')} root={t.get('root_directory')!r}")
                   print(f"      build_command:  {redact(t.get('build_command'))}")
                   print(f"      deploy_command: {redact(t.get('deploy_command'))}")
                   print(f"      path_includes:  {t.get('path_includes')}")
+                  print(f"      build_token_uuid: {t.get('build_token_uuid') or '(not returned)'}")
                   env_names = sorted((t.get("environment_variables") or {}).keys())
                   # Names only: a build-time credential that has gone stale is a leading explanation
                   # for a deploy step failing with `Invalid access token`, so knowing the name is
                   # useful — and knowing the value is not, which is why it is not read.
                   print(f"      build-time env vars (names only, values deliberately not printed): "
                         f"{env_names or 'none'}")
+              distinct = {v for v in build_tokens.values() if v}
+              if len(distinct) > 1:
+                  print(f"  ⚠ the triggers carry {len(distinct)} DIFFERENT build tokens "
+                        f"({build_tokens}) — renewing one leaves the other trigger's builds failing, "
+                        f"which reads as a half-fixed pipeline: same error, different branch")
+              elif distinct:
+                  print(f"  all {len(build_tokens)} trigger(s) share build token "
+                        f"{next(iter(distinct))} — renewing it fixes every branch at once")
+              else:
+                  print("  ⚠ no build_token_uuid was returned for any trigger; the Builds API may have "
+                        "stopped publishing it, so this field can no longer confirm a renewal")
 
           builds, err = get(f"/accounts/{account}/builds/workers/{tag}/builds?per_page=25", builds_token)
           if err:
