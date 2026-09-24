@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-24T11:58:03.279647+00:00",
+  "generated_at": "2026-09-24T21:36:32.854898+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(worker): the identity badge asked for a key nothing has ever written",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2156",
-      "timestamp": "2026-09-24T11:17:31Z",
+      "title": "ops(cf): the build token is identified, not assumed — the trigger's UUID is printed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2164",
+      "timestamp": "2026-09-24T15:29:01Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ops(cf): a KV namespace another worker binds is not an orphan — the diagnostics stop recommending deletion",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2154",
-      "timestamp": "2026-09-24T11:11:49Z",
+      "title": "docs(credentials): what the site's build token needs, exactly (§4.5.1)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2163",
+      "timestamp": "2026-09-24T15:12:07Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "test: CodeQL alert #281 moved to the next regex, so the pattern is gone from all four files",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2153",
-      "timestamp": "2026-09-24T11:06:49Z",
+      "title": "feat(site): the homepage's two rotten blocks — a frozen announcement and a registrations list nobody needed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2161",
+      "timestamp": "2026-09-24T13:54:37Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "test(counters): the guard #2117 asked for in place of an unmeasurable latency comparison",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2155",
-      "timestamp": "2026-09-24T11:01:53Z",
+      "title": "ops(ci): the watcher said it \"opened\" an issue it had commented on",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2160",
+      "timestamp": "2026-09-24T12:44:49Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(site): the registration timeline fired up to 100 parallel requests per visit — the 504/401 source",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2151",
-      "timestamp": "2026-09-24T09:23:26Z",
+      "title": "ops(ci): a red site build becomes an issue instead of a red check nobody was required to look at (#2136)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2159",
+      "timestamp": "2026-09-24T12:35:45Z",
       "source": "github"
     },
     {
