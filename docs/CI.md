@@ -101,7 +101,7 @@
 | `protect-pinned-issues.yml` | Protect long-running issues | issues |  |
 | `pr-audit-watch.yml` | PR Audit Watch（PR 审查巡检）| 定时, 手动 | `17 */2 * * *` |
 
-## 基础设施（2）
+## 基础设施（3）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -109,6 +109,7 @@
 | `intake-bot-demo.yml` | Intake Bot Demo（失败 CI 上跑 intake-bot 的 dogfood 入口）| workflow_run, 手动 |  |
 | `intake-benchmark.yml` | Intake Bot Benchmark | push, 手动 |  |
 | `arch-review.yml` | Monthly Architecture Review | 定时（月度）, 手动 |  |
+| `workers-builds-watch.yml` | Site build watch（站点部署流水线 `Workers Builds: misakanet-web` 变红时开 issue；**只报状态变化**、不刷屏，也不把该 check 加进规则集必查项——理由见 #2136）| check_suite（仅 Cloudflare app、仅 main）, 定时, 手动 | `*/30 * * * *` |
 
 ## 常见失败与修复路径
 
