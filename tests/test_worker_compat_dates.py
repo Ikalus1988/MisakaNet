@@ -21,9 +21,9 @@ that cannot go red is not a rule.
 from __future__ import annotations
 
 import datetime as dt
+import fnmatch
 import json
 import os
-import re
 import tomllib
 from pathlib import Path
 
@@ -61,6 +61,27 @@ def wrangler_configs(root: Path = REPO) -> list[Path]:
     return sorted(found)
 
 
+def strip_trailing_commas(text: str) -> str:
+    """JSONC allows a comma before a closing brace; `json.loads` does not.
+
+    Scanned rather than substituted: the regex version was `,(\\s*[}\\]])` — exactly the
+    unbounded-quantifier-then-literal shape CodeQL reported twice (alert #281).
+    """
+    out = []
+    index = 0
+    while index < len(text):
+        if text[index] == ",":
+            look = index + 1
+            while look < len(text) and text[look] in " \t\r\n":
+                look += 1
+            if look < len(text) and text[look] in "}]":
+                index += 1
+                continue
+        out.append(text[index])
+        index += 1
+    return "".join(out)
+
+
 def load_config(path: Path) -> dict:
     """Parse a wrangler config. JSONC is JSON with comments; tomllib handles TOML."""
     text = path.read_text(encoding="utf-8")
@@ -70,7 +91,9 @@ def load_config(path: Path) -> dict:
     stripped = "\n".join(
         line for line in text.splitlines() if not line.lstrip().startswith("//")
     )
-    stripped = re.sub(r",(\s*[}\]])", r"\1", stripped)  # trailing commas are legal in JSONC
+    stripped = strip_trailing_commas(
+        "\n".join(line for line in text.splitlines() if not line.lstrip().startswith("//"))
+    )
     return json.loads(stripped)
 
 
@@ -121,8 +144,14 @@ def deploy_watch_problems(paths: list[str], needed: list[str]) -> list[str]:
         if pattern.endswith("/**"):  # `workers/**` covers everything under workers/
             return want.startswith(pattern[:-3].rstrip("/") + "/")
         # `*` does not cross a separator, matching GitHub's own path-filter behaviour.
-        return re.fullmatch(pattern.replace("**", "\0").replace("*", "[^/]*").replace("\0", ".*"),
-                            want) is not None
+        if "**" in pattern:
+            return False
+        # `*` does not cross a separator, matching GitHub's own path-filter behaviour — one segment at
+        # a time, so no pattern is ever compiled from repository text (alert #281's lesson).
+        pattern_parts, want_parts = pattern.split("/"), want.split("/")
+        return len(pattern_parts) == len(want_parts) and all(
+            fnmatch.fnmatchcase(segment, piece) for piece, segment in zip(pattern_parts, want_parts)
+        )
 
     problems = []
     for want in needed:
@@ -136,18 +165,29 @@ def deploy_watch_problems(paths: list[str], needed: list[str]) -> list[str]:
 
 # ── rule 3: the schedule has one source of truth — the config ─────────────────────────────────────
 
-# Five space-separated whitespace-free fields on one line, quoted: a cron expression. `[^\s'"]`
-# rather than `\S` so a match cannot run across the JSON quoting and swallow the whole document.
-_CRON_LITERAL = re.compile(r"""['"]([^\s'"]+(?:\s+[^\s'"]+){4})['"]""")
+# Five whitespace-separated fields inside quotes: a cron expression. Found by scanning quoted spans
+# rather than by regex — the pattern this replaced nested an unbounded quantifier inside a counted
+# repetition, which is the shape `py/polynomial-redos` exists to catch.
+_CRON_CHARS = set("0123456789*/,- ")
+
+
+def cron_literals(text: str) -> list[str]:
+    found = []
+    for quote in ('"', "'"):
+        # Odd indices of a split on a quote character are the quoted contents.
+        for value in text.split(quote)[1::2]:
+            fields = value.split()
+            if len(fields) == 5 and value.strip() and set(value) <= _CRON_CHARS:
+                found.append(value)
+    return found
 
 
 def cron_literal_problems(text: str) -> list[str]:
     """The deploy must read the schedule from the config, not restate it."""
     problems = []
-    for match in _CRON_LITERAL.finditer(text):
-        if re.fullmatch(r"[\d*/,\- ]+", match.group(1)):
-            problems.append(
-                f"deploy workflow hardcodes the schedule {match.group(1)!r}; the keepalive cadence "
+    for literal in cron_literals(text):
+        problems.append(
+            f"deploy workflow hardcodes the schedule {literal!r}; the keepalive cadence "
                 f"lives in workers/wrangler.toml under [triggers] crons and must be read from there "
                 f"(a hardcoded */5 silently undid the config's */15 on every deploy)")
     if "schedules" in text and "wrangler.toml" not in text:

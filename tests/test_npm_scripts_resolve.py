@@ -18,7 +18,6 @@ The rules are pure functions over parsed input so the fixtures below can prove e
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 
 import pytest
@@ -26,26 +25,64 @@ import pytest
 REPO = Path(__file__).resolve().parent.parent
 PACKAGE = REPO / "package.json"
 
-# `npm run x` / `npm run-script x` / `yarn x`? Only the form this repository uses.
-NPM_RUN = re.compile(r"\bnpm run ([\w:.-]+)")
-# `cd dir && …` — the directory has to exist for the rest of the command to mean anything.
-CD = re.compile(r"(?:^|&&|;)\s*cd\s+([^\s&;]+)")
-# `--config <path>`, resolved relative to the script's own `cd`.
-CONFIG = re.compile(r"--config[= ]([^\s]+)")
+# Shell references, found by scanning. The first version used regular expressions and CodeQL was right
+# to object (alert #281, `py/polynomial-redos`: an unbounded quantifier followed by a literal is
+# quadratic on input that never matches). None of these need a pattern language.
+
+def npm_runs(command: str) -> list[str]:
+    """Script names this command invokes via `npm run <name>`."""
+    out = []
+    for part in command.split("npm run ")[1:]:
+        token = ""
+        for ch in part:
+            if ch.isalnum() or ch in ":.-":
+                token += ch
+            else:
+                break
+        if token:
+            out.append(token)
+    return out
+
+
+def cd_targets(command: str) -> list[str]:
+    """Directories this command changes into — `cd x` at the start or after `&&` / `;`."""
+    out = []
+    for part in command.replace(";", "&&").split("&&"):
+        part = part.strip()
+        if part.startswith("cd "):
+            words = part[3:].split()
+            if words:
+                out.append(words[0])
+    return out
+
+
+def config_targets(command: str) -> list[str]:
+    """Paths after `--config` / `--config=`."""
+    out = []
+    at = command.find("--config")
+    while at != -1:
+        rest = command[at + len("--config"):]
+        if rest[:1] in ("=", " "):
+            rest = rest[1:]
+        words = rest.split()
+        if words:
+            out.append(words[0].strip("\"'"))
+        at = command.find("--config", at + 1)
+    return out
 
 
 def script_problems(scripts: dict[str, str], root: Path) -> list[str]:
     problems: list[str] = []
     names = set(scripts)
     for name, command in scripts.items():
-        for referenced in NPM_RUN.findall(command):
+        for referenced in npm_runs(command):
             if referenced not in names:
                 problems.append(f"{name}: runs `npm run {referenced}`, which is not a script in package.json")
-        cds = CD.findall(command)
+        cds = cd_targets(command)
         for directory in cds:
             if not (root / directory).is_dir():
                 problems.append(f"{name}: `cd {directory}` — no such directory in the repository")
-        for config in CONFIG.findall(command):
+        for config in config_targets(command):
             # Resolve relative to the last `cd` in the same command, which is how the shell does it.
             base = root / cds[-1] if cds else root
             if not (base / config).is_file():
@@ -80,8 +117,8 @@ def resolved_config(command: str) -> str:
     The same command is written two ways — `cd workers && … --config wrangler.toml` here and in CI —
     so comparing the raw strings would only pin the spelling. This is the path the shell would use.
     """
-    cds = CD.findall(command)
-    configs = CONFIG.findall(command)
+    cds = cd_targets(command)
+    configs = config_targets(command)
     assert cds and configs, f"no `cd`/`--config` to resolve in: {command}"
     return (Path(cds[-1]) / configs[-1]).as_posix()
 
@@ -95,14 +132,14 @@ def test_the_deploy_scripts_point_at_what_ci_deploys():
     scripts = json.loads(PACKAGE.read_text(encoding="utf-8"))["scripts"]
     workflow = (REPO / ".github" / "workflows" / "deploy-worker.yml").read_text(encoding="utf-8")
     ci_configs = [config for line in workflow.splitlines()
-                  if "wrangler deploy" in line for config in CONFIG.findall(line)]
+                  if "wrangler deploy" in line for config in config_targets(line)]
     assert ci_configs, "the deploy workflow no longer names a wrangler config; fix this pin with it"
     ci_resolved = sorted({resolved_config(f"cd workers && npx wrangler deploy --config {c}")
                           for c in ci_configs})
     assert resolved_config(scripts["deploy:api"]) in ci_resolved, (
         f"deploy:api resolves to {resolved_config(scripts['deploy:api'])}, "
         f"CI deploys {ci_resolved}")
-    for referenced in NPM_RUN.findall(scripts["deploy:all"]):
+    for referenced in npm_runs(scripts["deploy:all"]):
         assert referenced in scripts, f"deploy:all runs a script that does not exist: {referenced}"
 
 

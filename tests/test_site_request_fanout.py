@@ -21,7 +21,6 @@ that cannot go red is not a rule.
 """
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 import pytest
@@ -29,27 +28,58 @@ import pytest
 REPO = Path(__file__).resolve().parent.parent
 INDEX = REPO / "docs" / "index.html"
 
-# Any `X.map(async …)` / `for … of X` that awaits a fetch inside the registration loader.
-UNBOUNDED_FANOUT = re.compile(r"displayIssues\.map\(\s*async")
-AWAIT_FETCH_IN_LOOP = re.compile(r"for\s*\([^)]*\bof\b[^)]*\)\s*\{[^}]*await\s+fetch", re.S)
+# The shape that caused it, as a literal: one async fetch per registration, unbounded.
+UNBOUNDED_FANOUT = "displayIssues.map(async"
+
+
+def number_after(page: str, prefix: str) -> int | None:
+    """The integer that follows `prefix` — scanning, not regex.
+
+    CodeQL flagged `re.search(r"...\\s*\\{...")` in a sibling test file twice (alert #281,
+    `py/polynomial-redos`), and the shape it objects to is an unbounded quantifier followed by a
+    literal. Reading a constant needs no quantifier at all.
+    """
+    if prefix not in page:
+        return None
+    tail = page.split(prefix, 1)[1]
+    digits = ""
+    for ch in tail:
+        if ch.isdigit():
+            digits += ch
+        elif digits:
+            break
+        elif ch != " ":
+            return None
+    return int(digits) if digits else None
+
+
+def awaited_fetch_inside_a_loop(page: str) -> bool:
+    """`for (…) … of …) { … await fetch … }` — scanned by hand, for the same reason."""
+    at = page.find("for (")
+    while at != -1:
+        window = page[at:at + 400]
+        if " of " in window.split(")", 1)[0] and "await fetch" in window:
+            return True
+        at = page.find("for (", at + 1)
+    return False
 
 
 def fanout_problems(page: str) -> list[str]:
     problems = []
-    if UNBOUNDED_FANOUT.search(page):
+    if UNBOUNDED_FANOUT in page:
         problems.append(
             "the registration loader maps `displayIssues` into async fetches — one request per "
             "registration (up to 100), which is the burst that produced ~2,700 504s. Use "
             "collectNodeNumbers()"
         )
-    if not re.search(r"const NODE_LOOKUP_CONCURRENCY = \d+;", page):
+    if number_after(page, "const NODE_LOOKUP_CONCURRENCY = ") is None:
         problems.append(
             "no NODE_LOOKUP_CONCURRENCY constant: the comment lookup is unbounded again, or the pool "
             "was deleted and the count is now implicit somewhere else"
         )
-    if not re.search(r"async function collectNodeNumbers\(", page):
+    if "async function collectNodeNumbers(" not in page:
         problems.append("collectNodeNumbers() is gone — the bounded pool is what keeps this in line")
-    if AWAIT_FETCH_IN_LOOP.search(page):
+    if awaited_fetch_inside_a_loop(page):
         problems.append(
             "an awaited fetch inside a `for … of` loop: sequential is safe for the *count* but this "
             "page shows six rows and fetches up to a hundred, so make the bound explicit instead"
@@ -61,11 +91,20 @@ def preload_problems(page: str) -> list[str]:
     problems = []
     if "NODE_LOOKUP_PRELOAD" not in page:
         problems.append("nothing bounds the first paint: the loader may be waiting for every issue")
-    if not re.search(r"setTimeout\(\(\)\s*=>\s*\{\s*collectNodeNumbers\(", page):
+    # Scan *every* deferred call, not the first one in the file: the page has several `setTimeout`
+    # calls, and taking the first made this rule depend on their order.
+    deferred = False
+    at = page.find("setTimeout(")
+    while at != -1:
+        if "collectNodeNumbers(" in page[at:at + 240]:
+            deferred = True
+            break
+        at = page.find("setTimeout(", at + 1)
+    if not deferred:
         problems.append(
             "the remainder is no longer deferred, so first paint waits on ~100 requests again"
         )
-    if not re.search(r"const DISPLAY_LIMIT = 6;", page):
+    if "const DISPLAY_LIMIT = 6;" not in page:
         problems.append("the rendered-row limit moved; the preload constant is sized against it")
     return problems
 
@@ -82,13 +121,14 @@ def test_the_registration_loader_is_bounded_and_deferred(page: str) -> None:
 
 def test_the_preload_matches_what_the_page_renders(page: str) -> None:
     """A preload smaller than the visible list would render placeholder numbers on first paint."""
-    preload = int(re.search(r"const NODE_LOOKUP_PRELOAD = (\d+);", page).group(1))
-    display = int(re.search(r"const DISPLAY_LIMIT = (\d+);", page).group(1))
+    preload = number_after(page, "const NODE_LOOKUP_PRELOAD = ")
+    display = number_after(page, "const DISPLAY_LIMIT = ")
+    concurrency = number_after(page, "const NODE_LOOKUP_CONCURRENCY = ")
+    assert preload is not None and display is not None and concurrency is not None, "constants moved"
     assert preload >= display, (
         f"NODE_LOOKUP_PRELOAD={preload} < DISPLAY_LIMIT={display}: the visible rows would rely on the "
         "counter fallback instead of their real node numbers"
     )
-    concurrency = int(re.search(r"const NODE_LOOKUP_CONCURRENCY = (\d+);", page).group(1))
     assert 1 <= concurrency <= 8, f"NODE_LOOKUP_CONCURRENCY={concurrency} is not a bound"
 
 
@@ -117,9 +157,7 @@ def test_an_undeferred_remainder_is_caught():
     assert any("deferred" in p for p in problems), problems
 
 
-def test_a_preload_smaller_than_the_visible_list_is_caught(monkeypatch):
+def test_a_preload_smaller_than_the_visible_list_is_caught():
     page = INDEX.read_text(encoding="utf-8").replace(
         "const NODE_LOOKUP_PRELOAD = 6;", "const NODE_LOOKUP_PRELOAD = 1;")
-    preload = int(re.search(r"const NODE_LOOKUP_PRELOAD = (\d+);", page).group(1))
-    display = int(re.search(r"const DISPLAY_LIMIT = (\d+);", page).group(1))
-    assert preload < display, "the mutation did not change the relationship it was meant to change"
+    assert number_after(page, "const NODE_LOOKUP_PRELOAD = ") < number_after(page, "const DISPLAY_LIMIT = ")
