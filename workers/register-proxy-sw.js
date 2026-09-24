@@ -1714,17 +1714,25 @@ const IDENTITY_AURA = {
   static_token: "🧠 MisakaNet MCP — public read-only access.",
 };
 
+// Two bugs lived in the five lines this replaced, found 2026-09-24 by asking who writes the key:
+//
+//   1. `identity:<ip>` has **no producer anywhere**. The feature commit (9b7fe9813, 2026-08-08) added the
+//      read and nothing else — no `put`, no script, no documented operator step — so the `upgraded`
+//      badge was unreachable from the day it shipped, and every token-bearing read paid a KV read for a
+//      key that cannot exist. `workers/identity-aura.test.mjs` passed because its fixture *seeded* the
+//      key: a permissive double answering for a writer that was never built.
+//   2. it read `mcp_token:` from **KV**, while registration writes that key to the durable store since
+//      the D1 migration (#2116) — so even the `basic` path was looking in the wrong place.
+//
+// `IDENTITY_AURA.upgraded` is kept: it is the documented string, and its test still asserts it. Bringing
+// the feature back means adding a writer for `identity:<ip>` and a test that a paired token returns it.
 async function getIdentityAura(env, token) {
-  if (!token || !env.MISAKANET_KV) return IDENTITY_AURA.static_token;
+  if (!token || !hasDurableStore(env)) return IDENTITY_AURA.static_token;
 
-  // Check if token is a pairing token with identity
+  // Check if token is a pairing token
   if (token.startsWith("mcp_")) {
     const tokenData = await storeGet(env, `mcp_token:${token}`, "json");
-    if (tokenData) {
-      const identity = await env.MISAKANET_KV.get(`identity:${tokenData.ip}`, "json");
-      if (identity?.status === "upgraded") return IDENTITY_AURA.upgraded;
-      return IDENTITY_AURA.basic;
-    }
+    if (tokenData) return IDENTITY_AURA.basic;
   }
 
   // Static MCP_TOKEN
