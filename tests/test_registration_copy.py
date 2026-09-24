@@ -385,9 +385,16 @@ def test_an_unreadable_agent_type_is_unknown_and_never_a_default_client(page: st
     )
     assert not named, f"a specific client ({named.group(0)}) is the fallback again"
     # The timeline reads the parsed value through the helper, not through the old inline copy.
-    assert page.count("const agentType = parseAgentType(body);") == 2, (
-        "both timeline loops must parse the same way"
+    #
+    # This asserted **two** call sites, because the homepage used to render the same registration list
+    # twice — the six visible rows and the collapsed "view all" rows — with two copies of the parse and
+    # the badge. 2026-09-24 collapsed them into one `rowHtml(issue, idx)` closure (the fan-out fix), so
+    # the count is one and the property the assertion was protecting is stronger than it was: there is
+    # no second render path left to disagree with the first.
+    assert page.count("const agentType = parseAgentType(body);") == 1, (
+        "the registration list must parse the agent type in exactly one render path"
     )
+    assert page.count("parseAgentType(") >= 2, "parseAgentType is defined but no longer called"
     # The only hardcoded client defaults left are the selector's own two variables: a client name
     # used as a parse fallback is exactly how the Hermes misattribution was written.
     defaults = re.findall(

@@ -22,15 +22,27 @@ const { GITHUB_API, REPO, PUBLIC_DATA_BASE } = _handlers;
 // daily sync), so five minutes is both fresher than the data and ~10x cheaper in
 // writes against the 1,000/day budget.
 const PROXY_CACHE_TTL = 300_000;
+// These probes are for endpoints this worker does **not** serve. Its own public URLs cannot be used
+// from inside it, and the reason is worth writing down, because the previous list did exactly that
+// and produced nothing but noise.
+//
+// Measured 2026-09-24 from the zone's own analytics (72h window, cf-diagnostics run 5): the zone
+// recorded 2,398 HTTP 522s and **all of them** were the three self-probes — `/api/lessons` 826,
+// `/api/health` 790, `/api/counter` 782, which sum to exactly the zone total — while `/journey/`
+// (served by the *site* worker) recorded none. The mechanism: a cron handler that awaits a fetch to
+// its own zone URL is waiting for a response the same single-threaded isolate has to produce, so the
+// subrequest dies at the edge with 522 every single time. An alarm that rings on every run is not an
+// alarm, and it buried the real ones: the 504s on other paths sat under it.
+//
+// So the self-check moved in-process (`probeSelfInProcess`), where it can succeed and can fail, and
+// only cross-worker endpoints are probed over HTTP.
 const KEEPALIVE_ENDPOINTS = [
-  { name: "health", url: "https://misakanet.org/api/health", json: true },
-  { name: "counter", url: "https://misakanet.org/api/counter", json: true },
-  { name: "lessons", url: "https://misakanet.org/api/lessons", json: true, metadataOnly: true },
   { name: "journey", url: "https://misakanet.org/journey/", json: false, metadataOnly: true },
 ];
 
-// Keepalive debounce: transient probe failures (CF edge HTTP 522 on loopback)
-// are warnings; only escalate after this many consecutive failures.
+// Keepalive debounce: a failing probe is a warning; only escalate after this many in a row. (The
+// loopback 522s this used to absorb are gone — see KEEPALIVE_ENDPOINTS — so a failure now means a
+// real dependency is unreachable, not that the worker was asked to serve itself.)
 const KEEPALIVE_FAIL_KEY = "keepalive:fail-count";
 const KEEPALIVE_FAIL_ALERT_AFTER = 3;
 
@@ -332,7 +344,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_get_lesson",
-    description: "[RETRIEVAL / READ] Fetch one public MisakaNet lesson by repository path or lesson ID. Use after misakanet_search returns a promising result to pull the full fix content. Provide exactly one of id or path (path takes precedence if both are supplied); if neither is supplied the tool returns {error}.\nReturns: object {path: string, content: string} — lesson markdown body (≤5000 chars); or {error: string}.\nExample: misakanet_get_lesson(id='auto-merge-ci-pipeline')",
+    description: "[RETRIEVAL / READ] Fetch one public MisakaNet lesson by repository path or lesson ID. Use after misakanet_search returns a promising result to pull the full fix content. Provide exactly one of id or path (path takes precedence if both are supplied); if neither is supplied the tool returns {error}.\nReturns: object {path: string, content: string} — lesson markdown body, capped at 5000 chars per call; or {error: string}. When the lesson is longer than the cap the response says so instead of pretending to be complete: {truncated: true, content_length: <full chars>, content_returned: <chars here>, full_content_url: <raw markdown>} — fetch that URL when the tail matters (the cut can fall before the Verification section).\nExample: misakanet_get_lesson(id='auto-merge-ci-pipeline')",
     inputSchema: {
       type: "object",
       properties: {
@@ -564,6 +576,17 @@ function freshness(dateStr) {
 // (the shape is pinned by "keeps the exact legacy shape" in
 // workers/d1-lesson-service.test.mjs).
 const PLAIN_FIELD_KEYS = ["summary_plain", "trigger", "verify"];
+
+/**
+ * How much lesson body one `misakanet_get_lesson` response carries.
+ *
+ * The cap is deliberate — a lesson can run to 27k characters and the caller is an agent's context
+ * window, not a file viewer — but a *silent* cap is the worst version of it: 53 of 457 lessons
+ * (11.6%, measured 2026-09-24) are longer than this, and each of them was returned as if it were
+ * complete. The cut now travels with the response (`truncated`, `content_length`,
+ * `full_content_url`), so a reader can tell "this is the lesson" from "this is the first fifth".
+ */
+const LESSON_CONTENT_LIMIT = 5000;
 
 /** A usable value is a non-empty string; anything else (null, "", numbers, the
  *  nested objects legacy frontmatter sometimes carries) is treated as absent. */
@@ -1654,7 +1677,10 @@ async function fetchLessonContent(env, lessonPath, lessonId) {
           });
           if (resp.ok) {
             const data = await resp.json();
-            if (data.content && data.encoding === "base64") return { path: c, content: atob(data.content).slice(0, 5000) };
+            if (data.content && data.encoding === "base64") {
+              const body = atob(data.content);
+              return { path: c, content: body.slice(0, LESSON_CONTENT_LIMIT), content_length: body.length };
+            }
           }
         } catch {}
       }
@@ -1671,7 +1697,10 @@ async function fetchLessonContent(env, lessonPath, lessonId) {
     });
     if (resp.ok) {
       const data = await resp.json();
-      if (data.content && data.encoding === "base64") return { path: filePath, content: atob(data.content).slice(0, 5000) };
+      if (data.content && data.encoding === "base64") {
+        const body = atob(data.content);
+        return { path: filePath, content: body.slice(0, LESSON_CONTENT_LIMIT), content_length: body.length };
+      }
     }
   }
   throw new Error(`Lesson not found: ${filePath}`);
@@ -1685,17 +1714,25 @@ const IDENTITY_AURA = {
   static_token: "🧠 MisakaNet MCP — public read-only access.",
 };
 
+// Two bugs lived in the five lines this replaced, found 2026-09-24 by asking who writes the key:
+//
+//   1. `identity:<ip>` has **no producer anywhere**. The feature commit (9b7fe9813, 2026-08-08) added the
+//      read and nothing else — no `put`, no script, no documented operator step — so the `upgraded`
+//      badge was unreachable from the day it shipped, and every token-bearing read paid a KV read for a
+//      key that cannot exist. `workers/identity-aura.test.mjs` passed because its fixture *seeded* the
+//      key: a permissive double answering for a writer that was never built.
+//   2. it read `mcp_token:` from **KV**, while registration writes that key to the durable store since
+//      the D1 migration (#2116) — so even the `basic` path was looking in the wrong place.
+//
+// `IDENTITY_AURA.upgraded` is kept: it is the documented string, and its test still asserts it. Bringing
+// the feature back means adding a writer for `identity:<ip>` and a test that a paired token returns it.
 async function getIdentityAura(env, token) {
-  if (!token || !env.MISAKANET_KV) return IDENTITY_AURA.static_token;
+  if (!token || !hasDurableStore(env)) return IDENTITY_AURA.static_token;
 
-  // Check if token is a pairing token with identity
+  // Check if token is a pairing token
   if (token.startsWith("mcp_")) {
     const tokenData = await storeGet(env, `mcp_token:${token}`, "json");
-    if (tokenData) {
-      const identity = await env.MISAKANET_KV.get(`identity:${tokenData.ip}`, "json");
-      if (identity?.status === "upgraded") return IDENTITY_AURA.upgraded;
-      return IDENTITY_AURA.basic;
-    }
+    if (tokenData) return IDENTITY_AURA.basic;
   }
 
   // Static MCP_TOKEN
@@ -2846,16 +2883,34 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       // response already carries the generic trust_notice, but when *this* lesson
       // matches an injection shape the caller should know which rule fired.
       const bodyFlags = detectIntakeInjection(lesson?.content || "");
-      // #1783: the optional structured fields, read from the frontmatter of the very
-      // body this call returns. They are the *content* side of the schema, so here —
-      // unlike search, which reads the corpus row — the body is the only source (D1's
-      // row for this path selects path + content_md only). `summary_plain` is what the
-      // rules block tells the model to repeat to the user verbatim. Empty for a lesson
-      // that does not carry them: no key, no shape change.
-      const plain = plainFieldsFromMarkdown(lesson?.content || "");
+      // #1783: the optional structured fields. They live in frontmatter, and there are two places it
+      // can come from: the returned body's own `---` block (the GitHub path) or D1's `frontmatter`
+      // column (that path's rows store a body with the frontmatter already stripped, so the body
+      // alone is empty there — #2138). `summary_plain` is what the rules block tells the model to
+      // repeat to the user verbatim, so a missing one is a silently degraded answer, not a cosmetic
+      // gap. Body last: where both exist they agree, and the body is the fresher of the two.
+      const plain = {
+        ...frontmatterFields(lesson?.frontmatter),
+        ...plainFieldsFromMarkdown(lesson?.content || ""),
+      };
+      // `frontmatter` is an input, not part of the answer: same reasoning as `publicLessonRow`,
+      // which lifts the three fields before dropping the raw blob.
+      const { frontmatter: _rawFrontmatter, content_length: fullLength, ...body } = lesson || {};
+      const returnedChars = (body.content || "").length;
+      const truncated = Number(fullLength) > returnedChars;
       return {
-        ...lesson,
+        ...body,
         ...plain,
+        // Only when the cut actually happened: a complete lesson must keep exactly the keys it had
+        // before (the projection contract in workers/d1-lesson-service.test.mjs).
+        ...(truncated
+          ? {
+              truncated: true,
+              content_length: Number(fullLength),
+              content_returned: returnedChars,
+              full_content_url: `https://raw.githubusercontent.com/${REPO}/main/${body.path}`,
+            }
+          : {}),
         identity: aura,
         trust_notice: TRUST_NOTICE,
         voice: "connect-success",
@@ -3874,19 +3929,29 @@ async function fetchLessonFromD1(env, lessonPath, lessonId) {
   const d1 = d1Binding(env);
   if (!d1) return null;
   let row = null;
+  // `frontmatter` is selected because `content_md` does **not** contain it: the sync stores
+  // `body = text[end + 4:]` (everything after the closing `---`) and keeps the frontmatter in its
+  // own column. Reading the optional structured fields out of the body alone therefore worked on
+  // the GitHub path and silently returned `{}` on the D1 path — the one production reads (#2138).
   if (lessonPath) {
     const { results } = await d1.prepare(
-      "SELECT path, content_md FROM lessons WHERE path = ?1 LIMIT 1"
+      "SELECT path, content_md, frontmatter FROM lessons WHERE path = ?1 LIMIT 1"
     ).bind(lessonPath).all();
     row = results?.[0] || null;
   } else if (lessonId) {
     const { results } = await d1.prepare(
-      "SELECT path, content_md FROM lessons WHERE id = ?1 LIMIT 1"
+      "SELECT path, content_md, frontmatter FROM lessons WHERE id = ?1 LIMIT 1"
     ).bind(lessonId).all();
     row = results?.[0] || null;
   }
   if (!row || !row.content_md) return null;
-  return { path: row.path || lessonPath || `${lessonId}.md`, content: String(row.content_md).slice(0, 5000) };
+  const body = String(row.content_md);
+  return {
+    path: row.path || lessonPath || `${lessonId}.md`,
+    content: body.slice(0, LESSON_CONTENT_LIMIT),
+    content_length: body.length,
+    frontmatter: row.frontmatter,
+  };
 }
 
 // Unified lesson source: D1 first (real-time, PRD ④), GitHub via KV cache fallback.
@@ -4736,10 +4801,8 @@ async function handleSearchSignal(request, env) {
 }
 
 async function probeKeepaliveEndpoint(endpoint) {
-  // These probes call the worker's own public URL (see KEEPALIVE_ENDPOINTS), so a worker that is slow
-  // makes its own health check slow, and four such self-requests every 15 minutes add load to it. With
-  // a deadline the probe fails fast, the debounce counts it, and the loopback 522s that comment already
-  // mentions stop being waited on.
+  // A probe of an endpoint another worker serves: this one can succeed, which is what makes it worth
+  // having. The deadline is still here — a page that hangs is a failure, not a wait.
   const resp = await fetchWithTimeout(endpoint.url, {
     headers: { "User-Agent": "MisakaNet-Register-Proxy-Keepalive/1.0" },
   }, KEEPALIVE_TIMEOUT_MS);
@@ -4945,17 +5008,43 @@ async function cleanupCoveredGaps(env) {
   return { cleaned: cleaned.length, remaining: remaining.length, details: cleaned };
 }
 
+/**
+ * The part of the keepalive that used to be an HTTP probe of this worker by this worker.
+ *
+ * It asks the same question the old `/api/health` probe was trying to ask — "are my dependencies
+ * reachable from inside a request?" — without a request: the durable store answers a read, and D1 (when
+ * bound) answers a query. Both can genuinely fail (that is the outage this is meant to notice), and
+ * neither can 522.
+ */
+async function probeSelfInProcess(env) {
+  if (!hasDurableStore(env)) {
+    throw new Error("self returned no durable store (neither D1 nor KV is bound)");
+  }
+  const checks = ["store_read"];
+  // A read of a key that is usually absent: `null` is a good answer, a throw is the finding.
+  await storeGet(env, KEEPALIVE_FAIL_KEY, "text");
+
+  const d1 = d1Binding(env);
+  if (d1) {
+    await d1.prepare("SELECT 1 AS ok").first();
+    checks.push("d1_query");
+  }
+  return { name: "self", status: 200, contentType: "in-process", inProcess: true, checks };
+}
+
 async function runKeepaliveSweep(cron = "manual", env = null) {
-  const results = await Promise.allSettled(KEEPALIVE_ENDPOINTS.map(probeKeepaliveEndpoint));
+  const results = await Promise.allSettled([
+    probeSelfInProcess(env),
+    ...KEEPALIVE_ENDPOINTS.map(probeKeepaliveEndpoint),
+  ]);
   const failures = results
     .filter((item) => item.status === "rejected")
     .map((item) => item.reason?.message || String(item.reason));
 
   if (failures.length) {
-    // Debounce: transient probe failures (e.g. CF edge HTTP 522 on the public
-    // loopback keepalive to misakanet.org) are monitoring noise, not service
-    // outages. Escalate to an error only after KEEPALIVE_FAIL_ALERT_AFTER
-    // consecutive failures; reset on any healthy sweep.
+    // Escalate to an error only after KEEPALIVE_FAIL_ALERT_AFTER consecutive failures; reset on any
+    // healthy sweep. Those failures are now dependencies rather than self-inflicted 522s, so the
+    // alert means something: a store or D1 that does not answer is a real outage.
     // Through the durable store like every other counter, for two reasons: KV's write budget is the
     // thing that runs out, and a direct `kv.put` bypasses `kvPut` — so the write-family ranking that
     // exists to show which families spend the budget could not see this one.
@@ -4978,8 +5067,11 @@ async function runKeepaliveSweep(cron = "manual", env = null) {
   if (hasDurableStore(env)) {
     await storeDelete(env, KEEPALIVE_FAIL_KEY).catch(() => {});
   }
-  console.log("[keepalive] ok", JSON.stringify({ cron, endpoints: KEEPALIVE_ENDPOINTS.length }));
-  return { ok: true, failures: [] };
+  const checks = results.flatMap((item) => (item.value?.checks || []));
+  console.log("[keepalive] ok", JSON.stringify({
+    cron, endpoints: KEEPALIVE_ENDPOINTS.length, self_checks: checks,
+  }));
+  return { ok: true, failures: [], checks };
 }
 
 // ── Request classification (Issue #1347) ──
@@ -6102,6 +6194,11 @@ export {
   UNSOLVED_REASONS,
   UNSOLVED_WINDOW_DAYS,
   buildUnsolvedMap,
+  // Exported for workers/keepalive-selfcheck.test.mjs: the list is the difference between a keepalive
+  // and a 522 generator (2026-09-24), and "no entry may be a route this worker serves" is an invariant
+  // worth asserting rather than remembering. (`runKeepaliveSweep` is exported further down.)
+  KEEPALIVE_ENDPOINTS,
+  probeSelfInProcess,
   buildLessonCoverage,
   classifyTaskFamily,
   classifyRequest,

@@ -37,7 +37,7 @@
 | `pr-shape-guard.yml` | PR Shape Guard | PR(目标) |  |
 | `shadow-branch.yml` | Shadow Branch - External Agent Isolation | PR |  |
 
-## 数据/索引（15）
+## 数据/索引（16）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -52,10 +52,11 @@
 | `intake-salvage-digest.yml` | Intake Salvage Digest | 定时, 手动 | `0 8 * * *` |
 | `issue-intake-triage.yml` | MCP Intake Triage | issues, 手动 |  |
 | `sync-d1.yml` | Sync Lessons to D1 (PRD ④) | push, 定时, 手动 | `0 3 * * *` |
+| `d1-backup.yml` | D1 backup（每周一次 `d1 export` 存档 + 打印 storage backend 与 Time Travel bookmark；artifact 保留 90 天）| 定时, 手动 | `10 4 * * 1` |
 | `sync-node-counter.yml` | Mirror Node Counter（把 D1 计数镜像到 main）| 定时, 手动 |  |
 | `apply-d1-schema.yml` | Apply D1 schema | 手动 |  |
 | `d1-counters-report.yml` | D1 counters report | 手动 |  |
-| `cf-diagnostics.yml` | CF diagnostics（只读运维视图：#2126 的 504/522 归因 + D1/durable store 健康）| 手动 |  |
+| `cf-diagnostics.yml` | CF diagnostics（只读运维视图：#2126 的 504/522 归因 + 区级 route 表与 KV namespace 清单 + D1 Time Travel 资格与 bookmark + durable store 健康）| 手动 |  |
 | `guarded-repository.yml` | Guarded Repository（仓库守卫巡检）| push, 定时, 手动 | `0 7 * * 1` |
 | `update-smithery-badge.yml` | Update Smithery Badge (daily) | 定时, 手动 | `0 6 * * *` |
 | `sync-question-answers.yml` | Sync Question Answers | 定时, 手动 | `20 7 * * *` |
@@ -68,7 +69,7 @@
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
 | `d1-bootstrap.yml` | D1 Bootstrap (PRD ④) | 手动 |  |
-| `deploy-worker.yml` | Deploy Cloudflare Worker | push, 手动 |  |
+| `deploy-worker.yml` | Deploy Cloudflare Worker（`workers/register-proxy-sw.js` **和** `workers/wrangler.toml` 变更都触发；部署后按 config 校对 keepalive cron，不一致即失败） | push, 手动 |  |
 | `docs.yml` | Deploy Documentation | PR, push |  |
 | `fatal-guard-publish.yml` | Publish @misaka-net/fatal-guard | push |  |
 | `fatal-guard.yml` | fatal-guard CI | PR, push, 手动 |  |

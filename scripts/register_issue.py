@@ -237,7 +237,8 @@ def build_welcome(*, node_id: str | None = None, node_count: int | None = None,
         "",
         "**`client_id` 请自己生成一个随机 UUID 并留好**：以后用同一个值调用都会回到同一个节点"
         "（响应里 `reused: true`）并顺带续期，所以「这个节点复用过的知识」才会累积在一处。"
-        "`client_id` 是**标识不是凭据**：token 始终由服务端随机签发，知道别人的 `client_id` 也无法冒用。",
+        "`client_id` **按凭据对待**（2026-09-24 更正）：出示它就会拿回该节点的 token，"
+        "所以别人知道了就能冒用——用随机 UUID、自己保管，不要拿主机名 / 工作区 id 这类可猜的值派生。",
         "",
         "> ⚠️ **`token` 当密码对待**：只放进 `Authorization` 头，不要贴到 issue、日志或仓库里。"
         "本评论不会替你贴出任何 token。",

@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-23T17:14:45.084032+00:00",
+  "generated_at": "2026-09-24T11:58:03.279647+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(worker): the trust field was dropped on the last hop — the row had it, the projection did not",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2130",
-      "timestamp": "2026-09-23T17:14:34Z",
+      "title": "fix(worker): the identity badge asked for a key nothing has ever written",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2156",
+      "timestamp": "2026-09-24T11:17:31Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(tools): compare the two search implementations over one query set (#2121)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2129",
-      "timestamp": "2026-09-23T16:59:00Z",
+      "title": "ops(cf): a KV namespace another worker binds is not an orphan — the diagnostics stop recommending deletion",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2154",
+      "timestamp": "2026-09-24T11:11:49Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ops(cf): a read-only diagnostics workflow for the 504/522 investigation (#2126)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2128",
-      "timestamp": "2026-09-23T16:43:00Z",
+      "title": "test: CodeQL alert #281 moved to the next regex, so the pattern is gone from all four files",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2153",
+      "timestamp": "2026-09-24T11:06:49Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(worker): the unsolved map moves to the durable store — and the last KV enumeration with it (#2119)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2125",
-      "timestamp": "2026-09-23T16:30:43Z",
+      "title": "test(counters): the guard #2117 asked for in place of an unmeasurable latency comparison",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2155",
+      "timestamp": "2026-09-24T11:01:53Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(worker): every outbound call gets a deadline — the 504s are the worker waiting on a stalled fetch",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2127",
-      "timestamp": "2026-09-23T16:25:18Z",
+      "title": "fix(site): the registration timeline fired up to 100 parallel requests per visit — the 504/401 source",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2151",
+      "timestamp": "2026-09-24T09:23:26Z",
       "source": "github"
     },
     {

@@ -1,8 +1,9 @@
 # Credentials, and the environments that hold them
 
 Which secret lives where, who can read it, and when it expires — written down so that it is not
-remembered. Snapshot verified against the GitHub API on **2026-09-20**; if you change an environment,
-change this table in the same PR.
+remembered. Snapshot re-verified against the GitHub API on **2026-09-24** (§2 lists what is actually
+installed, which is not the same as what this document recommends); if you change an environment, change
+this table in the same PR.
 
 ## 1. The rule
 
@@ -23,6 +24,7 @@ credential without declaring a known environment.
 | env `automation` | `CF_API_TOKEN` = `misakanet-automation-d1`, **D1:Edit only** | `sync-d1`, `sync-question-answers` | branch policy `main`, **no reviewers** |
 | repo level | `SHELDON_PAT` | `auto-sync-prs`, `pr-checks`, `pr-shape-guard`, `release-please`, `auto-merge-docs` | none (see §5) |
 | env `release` | `CF_OBSERVABILITY_TOKEN` (optional) | `cf-diagnostics` | branch policy `main` + required reviewer — **read-only**: `Workers Observability: Read` + `Account Analytics: Read`, no `Workers Scripts: Edit` |
+| env `release` | `CF_BUILDS_TOKEN` (optional) | `cf-diagnostics` | branch policy `main` + required reviewer — **read-only and user-scoped**: `Workers Builds Configuration` (read), no deploy. Created 2026-09-24, see §4.4 |
 | repo level | `AI_GATEWAY_TOKEN` | `benchmark-workers-ai` | none |
 | repo level | `OPENAI_KEY` | `pr-agent-review` | none |
 | repo level | `CLOUDFLARE_API_TOKEN` | **nothing** | none — deleted 2026-09-20, see §6 |
@@ -30,6 +32,25 @@ credential without declaring a known environment.
 Environment secrets shadow repository secrets **by name**: a job in `automation` that reads
 `secrets.CF_API_TOKEN` gets `automation`'s value even if a repository secret of that name exists. So
 one credential must have exactly one name, or the environment is decoration.
+
+**Measured 2026-09-24** (`GET /repos/…/environments/{release,automation}/secrets`, which the maintainer
+token can read):
+
+| environment | secrets actually installed | protection rules |
+|---|---|---|
+| `release` | `CF_API_TOKEN`, `CF_BUILDS_TOKEN`, `NPM_TOKEN` | branch policy `main` + required reviewer `Ikalus1988` |
+| `automation` | `CF_API_TOKEN` | branch policy `main`, no reviewers |
+
+Two things that table settles without a run:
+
+* **`CF_OBSERVABILITY_TOKEN` does not exist**, even though §4.2 recommends creating it and
+  `cf-diagnostics` prefers it. The workflow's `|| secrets.CF_API_TOKEN` fallback is what actually runs, so
+  the deploy token is the one carrying Account Analytics, Workers KV Storage and Workers Scripts reads on
+  the diagnostics path. The recommendation stands (narrower is better); the entry above was aspirational
+  until now, which is what "optional" means and why the fallback exists.
+* **`CF_BUILDS_TOKEN` exists** (created 2026-09-24, §4.4). Its permissions cannot be read back — GitHub
+  never reveals a secret and a Cloudflare token's scopes are not enumerable from here — so the only proof
+  is a run that gets past the tag lookup and prints `== log for build …`.
 
 ## 3. Why two environments, not one
 
@@ -95,13 +116,19 @@ owner action in the npm UI; the workflow side is a three-line change.
 
 ### 4.2 Reading worker logs, and why that is a *separate* token
 
-`cf-diagnostics.yml` queries two Cloudflare APIs, and neither is covered by the deploy token's
+`cf-diagnostics.yml` queries several Cloudflare APIs, and none is covered by the deploy token's
 permissions:
 
 | API | permission it needs |
 |---|---|
 | `GET /graphql` `httpRequestsAdaptiveGroups` (status codes by route) | Account → **Account Analytics** → Read |
 | `POST /accounts/{id}/workers/observability/telemetry/query` (worker logs) | Account → **Workers Observability** → Read |
+| `GET /zones?name=…` + `GET /zones/{id}/workers/routes` (who owns which route) | Zone → **Zone** → Read + Zone → **Workers Routes** → Read |
+| `GET /accounts/{id}/storage/kv/namespaces` (which namespaces exist, and which nothing binds) | Account → **Workers KV Storage** → Read |
+
+The `wrangler d1 info` / `d1 time-travel info` steps need the same scope the D1 steps already use
+(Account → **D1** → Read), and the zone/KV steps **degrade with the error text** rather than failing
+the run — a 403 body names the missing permission, which is itself the answer to "why is this empty".
 
 Measured 2026-09-23: with only the deploy token's scopes, the first returned
 `filter: datetime_geq: not an iso8601 time` (a bug in the query, since fixed) and the second returned
@@ -153,6 +180,50 @@ approval (`pending_deployments` empty), so `automation` really is reviewer-free:
 
 The token value itself is still unverifiable from here, and always will be: GitHub never reveals a secret,
 so a green run is the only proof that the right value is installed. That is why step 3 above exists.
+
+### 4.4 Reading the *site build* logs — the one API that refuses an account-scoped token
+
+`Workers Builds: misakanet-web` is Cloudflare's Git integration building `docs/` into misakanet.org. It is
+not one of the three checks the ruleset requires, so it can be red on every commit while `main` keeps
+merging — which is what happened between 2026-09-23 and this writing (#2136). Its check-run carries no
+summary, no annotation and no log, and this repository contains **no build configuration at all**
+(`package.json` has no `build` script, `wrangler.jsonc` names no build command — the command lives only in
+the Cloudflare panel).
+
+So the build's cause exists in exactly one place, and reading it needs a credential the others do not cover:
+
+| API | permission it needs |
+|---|---|
+| `GET /builds/workers/{external_script_id}/triggers` and `…/builds` (the build command, and which builds are red) | Account → **Workers Builds Configuration** → Read |
+| `GET /builds/builds/{build_uuid}/logs` (the error the build died on) | same |
+| `GET /workers/scripts` (the worker **tag** — every Builds endpoint wants `external_script_id`, never the name) | Account → **Workers Scripts** → Read |
+
+Two things are easy to get wrong here, and both were:
+
+1. **This API rejects account-scoped tokens.** The docs are explicit: account-scoped tokens return
+   `Invalid token`. `CF_BUILDS_TOKEN` must therefore be created at
+   <https://dash.cloudflare.com/profile/api-tokens> as a **user-scoped** token. This is the one credential
+   in this repository that cannot be folded into the account-scoped deploy token even in principle.
+2. **The permission has two names in Cloudflare's own documentation.** The guide calls it *Workers Builds
+   Configuration*; the API reference pages for the two endpoints call it `Workers CI Read` / `Workers CI
+   Write`. They are the same permission group — do not go looking for a third one. Read is enough to read a
+   log; Write is only for triggering a build or editing a trigger.
+
+The workflow treats the token as optional, exactly like `CF_OBSERVABILITY_TOKEN`: absent, it says what is
+missing and the rest of the run still happens. Two deliberate softenings in `cf-diagnostics.yml`:
+
+* the **tag** lookup falls back to `CLOUDFLARE_API_TOKEN`, because `/workers/scripts` is a *Workers Scripts*
+  read and a perfectly good Builds token may not carry it — without that fallback, a token with only the
+  Builds scope would still cost a dispatch;
+* every failure is printed with the API's own error text and never fails the run, because a 403 body names
+  the missing permission, and that is the answer to "why is this empty".
+
+To prove the value is installed (GitHub never reveals a secret, so a run is the only evidence):
+Actions → *CF diagnostics* → Run workflow, and look for `== worker tag …` followed by
+`== log for build …`. The step's behaviour is pinned by `tests/test_cf_diagnostics_builds_step.py`, which
+runs the workflow's own Python against a stub account — including the two ways the step can lie: reading the
+newest build instead of the newest **failure**, and reading the first page of a `truncated` log whose error
+is on the last one.
 
 ## 5. What is deliberately still repository-level
 

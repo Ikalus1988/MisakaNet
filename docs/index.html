@@ -3009,6 +3009,40 @@ async function loadStats() {
 // query below. It is not a node count: a deleted node never comes off it, and neither does a
 // registration whose node number is only in an issue comment. The section label says registrations
 // for that reason; the note next to the number says the rest (self-declared, not identity).
+// Node numbers live in each registration issue's *comments*, so one request per issue is the obvious
+// implementation — and it was: every homepage load fired up to 100 parallel comment requests through
+// the worker. Measured 2026-09-24 in the zone's own analytics (72h window): ~2,700 HTTP 504s and
+// ~2,900 401s, concentrated on `/api/github/repos/…/issues/NNN/comments`, because the burst outran
+// both the worker's upstream budget and GitHub's secondary rate limits — while the page renders six
+// rows and collapses the rest. The lookup is therefore bounded: what is on screen first, the rest
+// afterwards, and never more than NODE_LOOKUP_CONCURRENCY in flight.
+const NODE_LOOKUP_CONCURRENCY = 3;
+const NODE_LOOKUP_PRELOAD = 6;
+const NODE_LOOKUP_DELAY_MS = 1200;
+
+async function collectNodeNumbers(issues, into) {
+  let next = 0;
+  const worker = async () => {
+    while (next < issues.length) {
+      const issue = issues[next++];
+      try {
+        const comments = await fetchJSON(proxyGithubUrl(issue.comments_url));
+        if (!Array.isArray(comments)) continue;
+        for (const c of comments) {
+          const m = c.body?.match(/Misaka(\d+)/);
+          if (m) { into.set(issue.number, parseInt(m[1])); break; }
+        }
+      } catch (e) {
+        // A registration whose comments cannot be read still renders: the node number falls back to
+        // the counter below, which is what this page already did whenever a fetch failed.
+      }
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(NODE_LOOKUP_CONCURRENCY, issues.length) }, worker)
+  );
+}
+
 async function loadRecentRegistrations() {
   const list = document.getElementById("recent-list");
 
@@ -3023,97 +3057,69 @@ async function loadRecentRegistrations() {
       return;
     }
 
-    // Extract real node numbers from comments (parallel with auth)
-    const nodeFetches = displayIssues.map(async (issue) => {
-      try {
-        const comments = await fetchJSON(proxyGithubUrl(issue.comments_url));
-        if (!Array.isArray(comments)) return null;
-        for (const c of comments) {
-          const m = c.body?.match(/Misaka(\d+)/);
-          if (m) return { issue, nodeNum: parseInt(m[1]) };
-        }
-      } catch(e) {}
-      return null;
-    });
+    // issue.number -> node number, grown in two passes (see collectNodeNumbers).
+    const nodeNumbers = new Map();
 
-    const results = (await Promise.allSettled(nodeFetches))
-      .filter(r => r.status === 'fulfilled' && r.value)
-      .map(r => r.value);
-
-    // Show ALL registrations; node number from comment, or fallback to counter
-    const allResults = results;
-    const registrations = displayIssues
-      .filter(i => {
-        const result = allResults.find(r => r.issue.number === i.number);
-        return !result || !TEST_NODES.has(result.nodeNum);
+    const render = () => {
+      // Test nodes are hidden, which is why the filter needs the numbers of *every* registration and
+      // not only the visible ones — the deferred pass exists to make that complete.
+      const registrations = displayIssues.filter(i => {
+        const found = nodeNumbers.get(i.number);
+        return found === undefined || !TEST_NODES.has(found);
       });
 
-    if (registrations.length === 0) {
-      list.innerHTML = `<div class="loading-item">${t('recentEmpty')}</div>`;
-      return;
-    }
+      if (registrations.length === 0) {
+        list.innerHTML = `<div class="loading-item">${t('recentEmpty')}</div>`;
+        return;
+      }
 
-    // Sort newest first
-    registrations.sort((a, b) => b.created_at.localeCompare(a.created_at));
+      // Sort newest first
+      registrations.sort((a, b) => b.created_at.localeCompare(a.created_at));
 
-    document.getElementById("recent-count").textContent = `(${registrations.length})`;
+      document.getElementById("recent-count").textContent = `(${registrations.length})`;
 
-    // Show only latest 6 on homepage; the rest sits behind the "view all" link at the bottom.
-    const DISPLAY_LIMIT = 6;
-    const displayed = registrations.slice(0, DISPLAY_LIMIT);
-
-    list.innerHTML = displayed.map((issue, idx) => {
-      const nth = registrations.length - idx;
-      const result = allResults.find(r => r.issue.number === issue.number);
-      const number = result
-        ? result.nodeNum
-        : (CURRENT_COUNTER - idx);
-      const date = new Date(issue.created_at).toISOString().slice(0, 10);
-      const body = issue.body || '';
-      const agentType = parseAgentType(body);
-
-      // Public form registration = non-GitHub user
-      const isPublicReg = body.includes('通过公开通道');
-      const accountLabel = isPublicReg ? t('publicUser') : `@${issue.user.login}`;
-
-      const agentBadge = agentBadgeHtml(agentType);
-
-      return `
-        <div class="timeline-item">
-          <div class="timeline-dot"></div>
-          <div class="timeline-order">#${nth}</div>
-          <div class="timeline-name">Misaka${String(number).padStart(5, "0")}</div>
-          <div class="timeline-account">${accountLabel}</div>
-          ${agentBadge}
-          <div class="timeline-date">${date}</div>
-        </div>
-      `;
-    }).join("");
-
-    // Add "View all" expand if there are more than DISPLAY_LIMIT
-    if (registrations.length > DISPLAY_LIMIT) {
-      const remaining = registrations.slice(DISPLAY_LIMIT);
-      const remainingHtml = remaining.map((issue, idx) => {
-        const realIdx = DISPLAY_LIMIT + idx;
-        const result = allResults.find(r => r.issue.number === issue.number);
-        const number = result ? result.nodeNum : (CURRENT_COUNTER - realIdx);
+      const rowHtml = (issue, idx) => {
+        const nth = registrations.length - idx;
+        const found = nodeNumbers.get(issue.number);
+        // Node number from the comment, or fallback to the counter.
+        const number = found !== undefined ? found : (CURRENT_COUNTER - idx);
         const date = new Date(issue.created_at).toISOString().slice(0, 10);
-        const nth = registrations.length - realIdx;
         const body = issue.body || '';
         const agentType = parseAgentType(body);
+        // Public form registration = non-GitHub user
         const isPublicReg = body.includes('通过公开通道');
         const accountLabel = isPublicReg ? t('publicUser') : `@${issue.user.login}`;
-        const agentBadge = agentBadgeHtml(agentType);
-        return `<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-order">#${nth}</div><div class="timeline-name">Misaka${String(number).padStart(5, "0")}</div><div class="timeline-account">${accountLabel}</div>${agentBadge}<div class="timeline-date">${date}</div></div>`;
-      }).join("");
+        return `<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-order">#${nth}</div><div class="timeline-name">Misaka${String(number).padStart(5, "0")}</div><div class="timeline-account">${accountLabel}</div>${agentBadgeHtml(agentType)}<div class="timeline-date">${date}</div></div>`;
+      };
 
-      list.innerHTML += `
+      // Show only latest 6 on homepage; the rest sits behind the "view all" link at the bottom.
+      const DISPLAY_LIMIT = 6;
+      list.innerHTML = registrations.slice(0, DISPLAY_LIMIT).map(rowHtml).join("");
+
+      if (registrations.length > DISPLAY_LIMIT) {
+        const remainingHtml = registrations.slice(DISPLAY_LIMIT)
+          .map((issue, idx) => rowHtml(issue, DISPLAY_LIMIT + idx)).join("");
+
+        list.innerHTML += `
         <div style="text-align:center;padding:12px 0;border-top:1px solid rgba(0,229,255,0.06);">
           <details>
             <summary style="cursor:pointer;font-size:12px;color:var(--cyan);font-family:'JetBrains Mono',monospace;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">${formatText(t('recentViewAll'), { count: registrations.length })}</summary>
             <div style="margin-top:8px;">${remainingHtml}</div>
           </details>
         </div>`;
+      }
+    };
+
+    // First paint: the rows the homepage actually shows.
+    await collectNodeNumbers(displayIssues.slice(0, NODE_LOOKUP_PRELOAD), nodeNumbers);
+    render();
+
+    // Then the rest, off the critical path, so the collapsed list is exact and the test-node filter
+    // sees every registration rather than the six that happened to be on screen.
+    if (displayIssues.length > NODE_LOOKUP_PRELOAD) {
+      setTimeout(() => {
+        collectNodeNumbers(displayIssues.slice(NODE_LOOKUP_PRELOAD), nodeNumbers).then(render);
+      }, NODE_LOOKUP_DELAY_MS);
     }
 
   } catch (err) {
