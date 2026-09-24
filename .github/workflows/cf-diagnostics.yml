@@ -102,10 +102,29 @@ jobs:
                             (((payload or {}).get("data") or {}).get("__type") or {}).get("fields") or []]
                   if fields:
                       print(f"{type_name} fields: {sorted(fields)}")
+                      # A *preference order*, not the first field whose name contains "host". Measured
+                      # 2026-09-24 (run 7): the first match was `apiGatewayMatchedHost`, which the
+                      # schema does declare — so the query validated, the step printed
+                      # `using host dimension: apiGatewayMatchedHost`, and the `5xx by host` table
+                      # then reported a single **empty** host, because that dimension is populated
+                      # only for API-Gateway-matched requests. A wrong-but-existing field name is
+                      # exactly the failure this discovery was written to prevent, one level down.
                       hosts = [f for f in fields if "host" in f.lower()]
-                      if hosts:
-                          host_field = hosts[0]
+                      usable = [f for f in hosts if "apigateway" not in f.lower()]
+                      preferred = ("clientRequestHTTPHost", "clientRequestHost",
+                                   "clientRequestHostname")
+                      if usable:
+                          host_field = min(
+                              usable,
+                              key=lambda f: (preferred.index(f) if f in preferred else len(preferred), f))
                           print(f"using host dimension: {host_field}")
+                          if host_field != usable[0]:
+                              print(f"  (chose it over {hosts} — a host field that exists is not the "
+                                    f"same as a host field that is populated)")
+                      elif hosts:
+                          print(f"the schema's only host dimension(s) {hosts} are empty for ordinary "
+                                f"traffic (apiGatewayMatchedHost is set only for API-Gateway-matched "
+                                f"requests) — reporting status by path only")
 
           if host_field is None:
               # No introspection, or a schema with no host dimension: try the spellings that exist in
@@ -287,18 +306,30 @@ jobs:
           # namespace id -> [script names that bind it], from the workers' own settings.
           users = {}
           scripts, serr = get(f"/accounts/{account}/workers/scripts?per_page=100")
+          inspected: list[str] = []
+          deployed: list[str] = []
           if serr:
               print(f"  (could not list workers to attribute namespaces: {serr})")
           else:
-              names = [(s.get("id") or s.get("name")) for s in ((scripts or {}).get("result") or [])]
-              names = [n for n in names if n][:25]
-              for name in names:
+              deployed = [(s.get("id") or s.get("name")) for s in ((scripts or {}).get("result") or [])]
+              deployed = [n for n in deployed if n]
+              # Every worker, not the first 25. Measured 2026-09-24 (run 7): with a cap of 25 the step
+              # printed `no deployed worker binds it` for a namespace that the previous run had
+              # attributed to another worker in this account — because the binding lived past the
+              # cap. A scan that stops early and then states an absolute is the same "it looked like
+              # it ran" defect as the empty status table above, with worse consequences: the verdict
+              # it prints is advice about deleting storage.
+              for name in deployed[:100]:
                   settings, perr = get(f"/accounts/{account}/workers/scripts/{name}/settings")
                   if perr:
                       continue
+                  inspected.append(name)
                   for binding in ((settings or {}).get("result") or {}).get("bindings") or []:
                       if binding.get("type") == "kv_namespace" and binding.get("namespace_id"):
                           users.setdefault(binding["namespace_id"], []).append(name)
+              print(f"  inspected {len(inspected)} of {len(deployed)} deployed worker(s) for bindings"
+                    + ("" if len(inspected) == len(deployed) else " — INCOMPLETE, see the verdicts below"))
+          complete = bool(deployed) and len(inspected) == len(deployed)
 
           if err:
               print(f"  namespace read failed ({err}) — needs Account → Workers KV Storage → Read")
@@ -317,6 +348,11 @@ jobs:
                       verdict = f"bound by this repository ({bound[nsid]})"
                   elif owners:
                       verdict = f"used by {', '.join(owners)} — NOT by this repository. Leave it alone."
+                  elif not complete:
+                      # The claim has to match the evidence: an incomplete scan supports "nothing in
+                      # what I looked at binds it" and nothing stronger.
+                      verdict = ("no binding found in the workers inspected, and the scan was NOT "
+                                 "complete — do not read this as 'nothing binds it'")
                   else:
                       verdict = ("no deployed worker binds it and this repository does not either — "
                                  "check the keys before removing anything")

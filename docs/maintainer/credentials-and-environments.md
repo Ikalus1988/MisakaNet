@@ -161,6 +161,10 @@ per purpose, narrowest scope*):
 > `cf-diagnostics`. The `automation` environment holds its **own** `CF_API_TOKEN` (D1:Edit only), so
 > `sync-d1` and `sync-question-answers` keep working — which is the two-credential design earning its
 > keep: a rotation on one path did not stop the scheduled corpus sync.
+>
+> **…and it breaks one thing GitHub cannot show you.** The same 2026-09-23 roll also invalidated the
+> Worker Builds **build token** in the Cloudflare panel, which is why the site stopped deploying for a
+> day — see §4.5, which is the half of this warning that cost the most.
 
 A third option costs nothing at all and is enough for a one-off: the dashboard's
 Workers & Pages → `misakanet-register-proxy` → Observability → Logs view, or
@@ -220,10 +224,53 @@ missing and the rest of the run still happens. Two deliberate softenings in `cf-
 
 To prove the value is installed (GitHub never reveals a secret, so a run is the only evidence):
 Actions → *CF diagnostics* → Run workflow, and look for `== worker tag …` followed by
-`== log for build …`. The step's behaviour is pinned by `tests/test_cf_diagnostics_builds_step.py`, which
-runs the workflow's own Python against a stub account — including the two ways the step can lie: reading the
-newest build instead of the newest **failure**, and reading the first page of a `truncated` log whose error
-is on the last one.
+`== log for build …`. The step's behaviour is pinned by `tests/test_cf_diagnostics_builds_step.py`,
+which runs the workflow's own Python against a stub account — including the two ways the step can lie:
+reading the newest build instead of the newest **failure**, and reading the first page of a
+`truncated` log whose error is on the last one.
+
+### 4.5 Rolling an API token also breaks the site build — and that is how it broke for a day
+
+The first thing the step above found (#2136) is a credential that is **not** in this document, because
+it is not in GitHub at all: the Workers Builds **build token**, selected in the Cloudflare panel
+(Worker → Settings → Builds → API token, documented as `build_token_uuid`). Measured 2026-09-24, the
+failing build's entire log was three lines:
+
+```
+Initializing build environment...
+Success: Finished initializing build environment
+Failed: The build token selected for this build has been deleted or rolled and cannot be used for
+this build. Please update your build token in the Worker Builds settings and retry the build.
+```
+
+What makes this worth a section rather than a line: **the build token is derived from an API token, so
+rolling the API token invalidates it too**, and nothing anywhere says so. On 2026-09-23 the deploy
+token was rolled — the event §4.2 already documents as `9109 Invalid access token`. The GitHub secret
+was updated (§4.2's warning), which is why `deploy-worker` works; the build token in the panel was
+not, which is why every site build since **2026-09-23T17:40Z** died before building anything. The live
+site stayed byte-identical to `7fcebbf2a` — the commit *before* the first failure — for a day.
+
+So the rotation procedure in §4 and §4.2 gains a step, and it applies to **every** Cloudflare token
+rotation, not just the deploy one:
+
+1. roll the token and update the GitHub secret, as §4.2 says;
+2. **update the build token** in Worker → `misakanet-web` → Settings → Builds → API token, and re-run
+   the build from the dashboard;
+3. confirm the site actually moved, by fetching something that changed in the last commit — a green
+   `deploy-worker` run says nothing about the site, and the site's own check-run is not a required
+   check, so it will not stop a merge.
+
+`.github/workflows/workers-builds-watch.yml` now opens an issue when that check goes red on `main`
+(label `site-build-red`), so the second half of a rotation fails loudly instead of silently. It does
+**not** make the check required: a required check that is red blocks every merge, including the merge
+that fixes it.
+
+The trigger configuration worth knowing, read from the API on 2026-09-24 (it exists nowhere in this
+repository): two triggers, `Deploy default branch` (`branches=['main']`, `npx wrangler deploy`) and
+`Deploy non-production branches` (`branches=['*']`, `npx wrangler versions upload`), both with an
+**empty build command** and no build-time environment variables. So the site has no build step at all
+— the deploy is `npx wrangler deploy` against the root `wrangler.jsonc` (`assets.directory = docs`),
+which is reproducible from this repository.
 
 ## 5. What is deliberately still repository-level
 

@@ -58,12 +58,27 @@ def python_block(script: str) -> str:
 
 
 class StubAccount(BaseHTTPRequestHandler):
+    """An account with several workers, each carrying its own bindings."""
+
+    workers: list = [{"id": "misakanet-register-proxy"}, {"id": "edgetunnel-vpn"}]
+    bindings: dict = {
+        "misakanet-register-proxy": [
+            {"type": "kv_namespace", "name": "MISAKANET_KV", "namespace_id": MISAKANET_KV},
+            {"type": "d1", "name": "MISAKANET_D1"},
+        ],
+        "edgetunnel-vpn": [
+            {"type": "kv_namespace", "name": "KV", "namespace_id": VPN_KV},
+        ],
+    }
+    # Workers whose `/settings` read fails — the way a partial scan happens in production.
+    settings_failures: set = set()
+
     def log_message(self, *args):
         pass
 
-    def _json(self, payload: dict) -> None:
+    def _json(self, payload: dict, status: int = 200) -> None:
         raw = json.dumps(payload).encode()
-        self.send_response(200)
+        self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(raw)))
         self.end_headers()
@@ -85,17 +100,31 @@ class StubAccount(BaseHTTPRequestHandler):
                 {"id": NOBODY_KV, "title": "leftover"},
             ]})
         if path == f"/accounts/{ACCOUNT}/workers/scripts":
-            return self._json({"result": [{"id": "misakanet-register-proxy"}, {"id": "edgetunnel-vpn"}]})
-        if path.endswith("/misakanet-register-proxy/settings"):
-            return self._json({"result": {"bindings": [
-                {"type": "kv_namespace", "name": "MISAKANET_KV", "namespace_id": MISAKANET_KV},
-                {"type": "d1", "name": "MISAKANET_D1"},
-            ]}})
-        if path.endswith("/edgetunnel-vpn/settings"):
-            return self._json({"result": {"bindings": [
-                {"type": "kv_namespace", "name": "KV", "namespace_id": VPN_KV},
-            ]}})
+            return self._json({"result": self.workers})
+        if "/workers/scripts/" in path and path.endswith("/settings"):
+            name = path.split("/workers/scripts/", 1)[1][: -len("/settings")]
+            if name in self.settings_failures:
+                return self._json({"success": False, "errors": [
+                    {"code": 10000, "message": "Authentication error"}]}, 403)
+            return self._json({"result": {"bindings": self.bindings.get(name, [])}})
         self._json({"result": []})
+
+
+@pytest.fixture(autouse=True)
+def _reset_stub():
+    """The server is per-test; the class attributes that configure it are not, so reset them."""
+    StubAccount.workers = [{"id": "misakanet-register-proxy"}, {"id": "edgetunnel-vpn"}]
+    StubAccount.bindings = {
+        "misakanet-register-proxy": [
+            {"type": "kv_namespace", "name": "MISAKANET_KV", "namespace_id": MISAKANET_KV},
+            {"type": "d1", "name": "MISAKANET_D1"},
+        ],
+        "edgetunnel-vpn": [
+            {"type": "kv_namespace", "name": "KV", "namespace_id": VPN_KV},
+        ],
+    }
+    StubAccount.settings_failures = set()
+    yield
 
 
 @pytest.fixture(scope="module")
@@ -115,15 +144,22 @@ def probe():
 
 
 @pytest.fixture()
-def stub(probe):
+def stub_url():
+    """A live stub account — what a test needs when it must configure the account *before* running."""
     server = HTTPServer(("127.0.0.1", 0), StubAccount)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     try:
         # `base` is concatenated with paths that already start with `/`, so no trailing slash.
-        yield probe(f"http://127.0.0.1:{server.server_port}")
+        yield f"http://127.0.0.1:{server.server_port}"
     finally:
         server.shutdown()
         server.server_close()
+
+
+@pytest.fixture()
+def stub(stub_url, probe):
+    """The step's output for the default account. Runs at fixture setup, hence the split."""
+    return probe(stub_url)
 
 
 def namespace_lines(output: str) -> dict[str, str]:
@@ -174,3 +210,39 @@ def test_the_step_asks_the_workers_for_their_bindings():
     assert "/workers/scripts?per_page=" in block, "the step no longer lists deployed workers"
     assert "/settings" in block, "the step no longer reads per-worker bindings"
     assert "kv_namespace" in block, "the step no longer looks at kv_namespace bindings"
+
+
+def test_a_binding_past_the_first_page_of_workers_is_still_found(stub_url, probe):
+    """Measured 2026-09-24 (run 7): the step said `no deployed worker binds it` for `5267c932…`.
+
+    The previous run had attributed that namespace to another worker in the same account, and the
+    difference was a `[:25]` cap on the worker list: the binding sat past it, so the step reported an
+    absence it had not established. That is the worst version of this step's bug, because the
+    sentence it prints is advice about deleting storage.
+    """
+    extra = [{"id": f"worker-{i:02d}"} for i in range(30)]
+    StubAccount.workers = [{"id": "misakanet-register-proxy"}] + extra
+    StubAccount.bindings["worker-29"] = [
+        {"type": "kv_namespace", "name": "KV", "namespace_id": VPN_KV},
+    ]
+    proc = probe(stub_url)
+    lines = namespace_lines(proc.stdout)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "worker-29" in lines[VPN_KV], lines[VPN_KV]
+    assert "Leave it alone" in lines[VPN_KV], lines[VPN_KV]
+    assert "inspected 31 of 31" in proc.stdout, proc.stdout
+
+
+def test_an_incomplete_scan_is_not_reported_as_an_absence(stub_url, probe):
+    """A `/settings` read that fails must weaken the claim, not disappear from it."""
+    StubAccount.settings_failures = {"edgetunnel-vpn"}
+    proc = probe(stub_url)
+    lines = namespace_lines(proc.stdout)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "inspected 1 of 2" in proc.stdout, proc.stdout
+    assert "INCOMPLETE" in proc.stdout, proc.stdout
+    line = lines[VPN_KV]
+    assert "NOT complete" in line, line
+    assert "do not read this as" in line, line
+    # The stronger claim is reserved for a scan that actually covered every deployed worker.
+    assert "no deployed worker binds it" not in line, line

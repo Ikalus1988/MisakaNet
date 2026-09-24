@@ -194,6 +194,49 @@ def test_a_schema_with_no_host_dimension_still_reports_status_by_path(stub, monk
     assert "522: 12" in proc.stdout, proc.stdout
 
 
+def test_a_host_field_that_exists_but_is_never_populated_is_not_chosen(stub, monkeypatch):
+    """Measured 2026-09-24, run 7: the step printed `using host dimension: apiGatewayMatchedHost`.
+
+    That field is real — which is exactly why picking the first name containing "host" passed
+    validation and looked right — but it is populated only for API-Gateway-matched requests, so the
+    `5xx by host` table reported a single **empty** host:
+
+        == 5xx by host ==
+          : 63
+
+    The whole point of that section is to separate a 5xx on the hostname agents call from one on a
+    hostname nobody was told about, and an empty dimension destroys that distinction while looking
+    like a successful query — the same shape as the three wrong field names that got this discovery
+    written in the first place, one level down. Preference order, not first match.
+    """
+    monkeypatch.setattr(StubGraphQL, "fields",
+                        ["apiGatewayMatchedHost", "datetime", "clientRequestPath",
+                         "clientRequestHTTPHost", "edgeResponseStatus"])
+    proc = run_step(stub)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "using host dimension: clientRequestHTTPHost" in proc.stdout, proc.stdout
+    assert "apiGatewayMatchedHost" in proc.stdout, proc.stdout  # the reason is stated, not hidden
+    assert "host=misakanet.org" in proc.stdout, proc.stdout
+
+
+def test_a_schema_whose_only_host_field_is_the_gateway_one_falls_back_to_paths(stub, monkeypatch):
+    """An empty column is worse than no column: say so instead of printing a blank host.
+
+    Note the assertion on the *reason*: the candidate-list fallback ends with the same
+    "reporting status by path only" sentence, so asserting that alone would pass even if this branch
+    were deleted — the reader would lose the explanation of why a host column the schema declares is
+    being ignored.
+    """
+    monkeypatch.setattr(StubGraphQL, "fields",
+                        ["apiGatewayMatchedHost", "clientRequestPath", "edgeResponseStatus"])
+    proc = run_step(stub)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "reporting status by path only" in proc.stdout, proc.stdout
+    assert "are empty for ordinary" in proc.stdout, proc.stdout
+    assert "522: 12" in proc.stdout, proc.stdout
+    assert "== 5xx by host ==" not in proc.stdout, proc.stdout
+
+
 def test_a_validation_error_fails_the_step(stub, monkeypatch):
     """The failure mode that hid this for three runs: a broken query that reports success.
 
