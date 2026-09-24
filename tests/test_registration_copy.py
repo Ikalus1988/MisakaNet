@@ -9,17 +9,25 @@ overwrites it at render time (`switchLang` writes `el.textContent`), and a key m
 dictionary falls back to English silently — the trap that left a statistic in English in zh mode.
 
 The second thing pinned here is the **protocol**. `Agent 类型` is copy; `Agent 类型: **X**` is the
-machine-readable line the registration issue body is built from and read back by. A global replace
-of the visible label rewrites both and breaks registration while every other test stays green, so
-builder and parser are asserted *by shape and by round trip*, and
+line the registration issue body is built from — by **two** writers, this page and
+`workers/register-proxy-sw.js` — so the two are compared against each other by shape, and
 `test_a_global_label_replace_is_caught` proves this file can go red rather than merely passing.
+
+Until 2026-09-24 a third party was involved: the page also *parsed* that line back out, to render the
+registration timeline's agent badges. The timeline is gone (see `tests/test_site_activity_panel.py`),
+so the parser went with it, and one half of the round-trip assertion went with that. What replaced it
+is stronger than what it lost: a round trip only proves this page agrees with itself, while the
+page-vs-worker comparison catches the two writers drifting apart — which is the failure the line's
+readers (humans, and any future analytics) would actually see.
 
 Two additions after that:
 
-* **The count is labelled as what it counts.** `#recent-count` is filled from a GitHub Issues query
-  for `labels=registration&per_page=100`, so it counts registration-labelled issues — capped at 100.
-  It is not a node count, and "最近创建的 node" claimed one. The tail `· showing latest 6` was
-  hardcoded English with no locale key and said nothing the "view all" link below does not.
+* **The count is labelled as what it counts.** `#recent-count` was filled from a GitHub Issues query
+  for `labels=registration&per_page=100`, so it counted registration-labelled issues — capped at 100,
+  and "最近创建的 node" claimed something else entirely. That section was deleted on 2026-09-24 (the
+  panel that replaced it is pinned in `tests/test_site_activity_panel.py`), so its count assertion went
+  with it; what remains of that fix is the rule it was an instance of — a number and its label have to
+  match — now asserted in `tests/test_site_i18n.py` and `tests/test_site_activity_panel.py`.
 * **The client list is not hand-maintained in three places.** The selector offered five clients, the
   npm installer wires ten, the bootstrap installer eleven — and `let agentType = 'hermes'` meant
   every registration whose type could not be read was *displayed as Hermes*. The selector is now
@@ -53,16 +61,19 @@ SITE_ONLY = {"other"}
 # `tests/test_installer_parity.py` owns the installer-vs-installer half of this contract.
 PY_ONLY = {"dsh"}
 
-# The machine-readable surface of the registration flow.
+# The machine-readable surface of the registration flow: the line both writers build.
 PROTOCOL_BUILDER = re.compile(
-    r"const agentLine = `\\nAgent 类型: \*\*\$\{selectedAgent\.toUpperCase\(\)\}\*\*`"
+    r"const agentLine = `\\nAgent 类型: \*\*\$\{(\w+)\.toUpperCase\(\)\}\*\*`"
 )
-PROTOCOL_PARSER = re.compile(
-    r"body\.match\(/Agent\\s\*类型\[：:\]\\s\*\\\*\\\*\(\\w\+\)\\\*\\\*/i\)"
-)
-# The JS regex literal on its own, so the round-trip test can compile and run it.
-JS_PARSER_LITERAL = re.compile(r"/(Agent\\s\*类型\[：:\]\\s\*\\\*\\\*\(\\w\+\)\\\*\\\*)/i")
 PROTOCOL_TEMPLATE = "Agent 类型: **YOUR_AGENT**"
+# The third copy of the label: the issue template the visitor is asked to fill in by hand when the
+# worker is unreachable.
+TEMPLATE = ROOT / ".github" / "ISSUE_TEMPLATE" / "register.yml"
+# The other writer of the same line. This file compares the two because a drift between them is
+# invisible to every other check in this repository.
+WORKER_BUILDER = re.compile(r"const agentLine = `\\nAgent 类型: \*\*\$\{(\w+)\.toUpperCase\(\)\}\*\*`")
+# The issue-body preamble both writers share, which is what makes the lines the same record.
+BODY_SHELL = "## 🧠 通过公开通道加入御坂网络"
 
 # `client: 'agentKey',` rows of the page's own name → locale-key map, comment-tolerant.
 AGENT_LABEL_ROW = re.compile(r"^\s{2}([a-z][a-z0-9-]*): '(agent[A-Za-z]+)',\s*(?://.*)?$", re.M)
@@ -74,6 +85,11 @@ GLYPH = re.compile("[\U0001f000-\U0001faff\u2600-\u27bf\ufe0f]")
 @pytest.fixture(scope="module")
 def page() -> str:
     return INDEX.read_text(encoding="utf-8")
+
+
+@pytest.fixture(scope="module")
+def worker() -> str:
+    return WORKER.read_text(encoding="utf-8")
 
 
 def locale(lang: str) -> dict[str, str]:
@@ -158,61 +174,10 @@ def test_the_description_describes_registration_correctly() -> None:
     assert "access to the Misaka Network knowledge base" not in en
 
 
-def test_the_registration_count_is_labelled_as_registrations_not_nodes(page: str) -> None:
-    """The number is registration-labelled issues, so that is what the label may say.
-
-    #2057 fixed the older "最新注册" (members) framing by calling it "最近创建的 node" — still a
-    claim the number cannot support: it is capped at `per_page=100` and a deleted node never comes
-    off it. The label now names the thing it counts, and the query it is counted from is pinned
-    alongside it so the two cannot drift.
-    """
-    assert "最近注册记录" in default_text(page, "recentSection")
-    assert locale("zh")["recentSection"] == "最近注册记录"
-    assert locale("en")["recentSection"] == "Recent registrations"
-    # Both languages name the thing the number counts…
-    assert "注册记录" in locale("zh")["recentSection"]
-    assert "registration" in locale("en")["recentSection"].lower()
-    # …and neither keeps the members framing this block was fixed for in #2057.
-    for lang in ("en", "zh"):
-        assert "最新注册" not in locale(lang)["recentSection"]
-    # What the label claims must be what the query returns…
-    assert "labels=registration" in page
-    # …and the old claims are gone, in both the dictionary and the HTML default.
-    assert "最近创建的 node" not in page
-    assert "Recently created nodes" not in page
-
-
-def test_the_registration_block_is_translated_end_to_end(page: str) -> None:
-    """Two strings in this block never reached the dictionaries: the empty state (zh only, so an
-    English reader saw Chinese) and the "view all" link (English only, count and all)."""
-    assert "暂无注册记录" not in page
-    assert "View all ${registrations.length} registered nodes" not in page
-    assert "t('recentEmpty')" in page, "the empty state is not read from the dictionaries"
-    assert "formatText(t('recentViewAll'), { count: registrations.length })" in page, (
-        "the view-all link must go through formatText with the {count} placeholder convention "
-        "updateLessonCountSearch() already uses for searchPanelStats"
-    )
-    assert locale("zh")["recentEmpty"] == "暂无注册记录"
-    assert not re.search(r"[\u4e00-\u9fa5]", locale("en")["recentEmpty"]), (
-        "the English empty state is still Chinese"
-    )
-    for lang in ("en", "zh"):
-        assert "{count}" in locale(lang)["recentViewAll"], f"{lang}.json lost the count placeholder"
-
-
 def test_the_noise_tail_is_gone(page: str) -> None:
     """`· showing latest 6` duplicated the "view all" link in hardcoded English, with no key."""
     assert "showing latest" not in page
     assert "recent-showing" not in page
-
-
-def test_the_node_count_carries_an_honest_annotation(page: str) -> None:
-    zh, en = locale("zh")["recentNodesNote"], locale("en")["recentNodesNote"]
-    assert "自声明" in zh and "无需注册" in zh
-    assert "self-declared" in en and "no registration" in en
-    # …and it has to sit next to the number, not merely exist in the dictionary.
-    assert 'id="recent-count"' in page
-    assert page.index('data-i18n="recentNodesNote"') > page.index('id="recent-count"')
 
 
 def test_the_agent_type_label_is_marked_optional_and_statistical(page: str) -> None:
@@ -341,10 +306,11 @@ def test_other_takes_cleaned_free_text_into_the_registration_flow(page: str) -> 
 
 
 def test_every_client_the_selector_offers_renders_back_as_itself(page: str) -> None:
-    """The round trip that matters for the timeline: the value the flow sends must come back out of
-    the page's own parser and be findable in the page's own label map. A client offered by the
-    selector but missing from the map shows up in the timeline as "unknown" — the mirror image of
-    the Hermes misattribution, and just as wrong."""
+    """The value the flow sends must be findable in the page's own label map.
+
+    A client the selector offers but the map lacks renders as "unknown" — the mirror image of the
+    Hermes misattribution, and just as wrong. (This used to be asserted as a round trip through the
+    page's own parser; the parser went with the timeline, and the map is what is left to check.)"""
     labels = dict(AGENT_LABEL_ROW.findall(page))
     assert labels, "AGENT_LABEL_KEYS moved; fix this gate rather than deleting it"
     offered = set(site_clients(page)) - SITE_ONLY
@@ -355,48 +321,43 @@ def test_every_client_the_selector_offers_renders_back_as_itself(page: str) -> N
     )
     for lang in ("en", "zh"):
         absent = sorted(k for k in list(labels.values()) if k not in locale(lang))
-        assert not absent, f"{lang}.json is missing {absent}, so those badges fall back to English"
-    # The parser half: build the line the way the page builds it, parse it with the page's regex.
-    match = JS_PARSER_LITERAL.search(page)
-    assert match, "the parser regex is no longer a JS literal we can compile"
-    pattern = re.compile(match.group(1))
-    for client in sorted(offered):
-        parsed = pattern.search(f"Agent 类型: **{client.upper()}**")
-        assert parsed, f"{client!r} does not survive the page's own parser"
-        assert parsed.group(1).lower() in labels, f"{client!r} parses to a value with no label"
+        assert not absent, f"{lang}.json is missing {absent}, so those labels fall back to English"
+    # The map's own fallback, which is what a client missing from it used to hit: `unknown`, never a
+    # specific tool. The parser that used to feed this map is gone with the timeline, so the property
+    # is asserted where it still lives — `getAgentLabel` and `agentDisplayValue`.
+    label_fn = re.search(r"function getAgentLabel\(agentType\) \{(.*?)\n\}", page, re.S)
+    assert label_fn, "getAgentLabel() moved; fix this gate rather than deleting it"
+    assert "t('agentUnknown')" in label_fn.group(1)
+    assert "AGENT_LABEL_KEYS[agentType]" in label_fn.group(1)
 
 
 def test_an_unreadable_agent_type_is_unknown_and_never_a_default_client(page: str) -> None:
     """The misattribution: `let agentType = 'hermes'` displayed every registration whose type could
-    not be read as Hermes — a statistic that lied in the same direction for every parse miss."""
+    not be read as Hermes — a statistic that lied in the same direction for every parse miss.
+
+    The parser that produced those values is gone with the timeline, so what is left to pin is the
+    rendering rule it delegated to: an unrecognised value renders as *unknown*, never as a specific
+    client, and the selector's own labels stay the only place a client name is hardcoded.
+    """
     assert "let agentType = 'hermes'" not in page
-    parse = re.search(r"function parseAgentType\(body\) \{(.*?)\n\}", page, re.S)
-    assert parse, "parseAgentType() moved; fix this gate rather than deleting it"
-    body = parse.group(1)
-    assert "return 'unknown';" in body, "a parse miss must be reported as unknown"
-    # …and the rendered label for anything without a locale key is the unknown key.
     label = re.search(r"function getAgentLabel\(agentType\) \{(.*?)\n\}", page, re.S)
     assert label, "getAgentLabel() moved; fix this gate rather than deleting it"
-    assert "AGENT_LABEL_KEYS[agentType]" in label.group(1)
-    assert "t('agentUnknown')" in label.group(1)
+    body = label.group(1)
+    assert "AGENT_LABEL_KEYS[agentType]" in body
+    assert "t('agentUnknown')" in body, "an unknown client must render as unknown"
     named = re.search(
         r"agent(?:Hermes|CC|Codex|OpenClaw|OpenCode|Codewhale|Cursor|Gemini|Copilot|Kiro)",
-        label.group(1),
+        body,
     )
     assert not named, f"a specific client ({named.group(0)}) is the fallback again"
-    # The timeline reads the parsed value through the helper, not through the old inline copy.
-    #
-    # This asserted **two** call sites, because the homepage used to render the same registration list
-    # twice — the six visible rows and the collapsed "view all" rows — with two copies of the parse and
-    # the badge. 2026-09-24 collapsed them into one `rowHtml(issue, idx)` closure (the fan-out fix), so
-    # the count is one and the property the assertion was protecting is stronger than it was: there is
-    # no second render path left to disagree with the first.
-    assert page.count("const agentType = parseAgentType(body);") == 1, (
-        "the registration list must parse the agent type in exactly one render path"
-    )
-    assert page.count("parseAgentType(") >= 2, "parseAgentType is defined but no longer called"
-    # The only hardcoded client defaults left are the selector's own two variables: a client name
-    # used as a parse fallback is exactly how the Hermes misattribution was written.
+    # `agentDisplayValue` is the selector's path to the same rule: free text renders as itself, the
+    # `unknown` sentinel as the translated unknown.
+    display = re.search(r"function agentDisplayValue\(value\) \{(.*?)\n\}", page, re.S)
+    assert display, "agentDisplayValue() moved; fix this gate rather than deleting it"
+    assert "AGENT_LABEL_KEYS[value]" in display.group(1)
+    assert "t('agentUnknown')" in display.group(1)
+    # The only hardcoded client defaults left are the selector's own two variables: a client name used
+    # as a parse fallback is exactly how the Hermes misattribution was written.
     defaults = re.findall(
         r"= '(?:hermes|claude|codex|openclaw|opencode|codewhale|cursor|gemini|copilot|kiro)'", page
     )
@@ -406,39 +367,50 @@ def test_an_unreadable_agent_type_is_unknown_and_never_a_default_client(page: st
 # ── the i18n trap ─────────────────────────────────────────────────────────────
 
 
-def test_every_key_the_page_renders_exists_in_both_dictionaries(page: str) -> None:
-    used = set(re.findall(r'data-i18n="([^"]+)"', page)) | set(
-        re.findall(r'data-i18n-placeholder="([^"]+)"', page)
+def test_the_registration_protocol_strings_are_untouched(page: str, worker: str) -> None:
+    """Both writers still stand, and the label they spell literally is unchanged.
+
+    The page and the worker each build the same line into the issue body. Neither *reads* it back any
+    more — the only reader was the timeline's parser — so what is pinned here is that the two writers
+    keep producing the same record.
+    """
+    assert PROTOCOL_BUILDER.search(page), "the page's issue-body builder changed shape"
+    assert PROTOCOL_TEMPLATE in page, "the page lost the protocol line it renders as a placeholder"
+    assert WORKER_BUILDER.search(worker), (
+        "the worker's issue-body builder changed shape — it writes the same line the page does, and "
+        "the two must not drift"
     )
-    assert used, "no i18n keys found — did the page stop using data-i18n?"
-    for lang in ("en", "zh"):
-        missing = sorted(used - set(locale(lang)))
-        assert not missing, f"{lang}.json is missing keys the page renders: {missing}"
+    template = TEMPLATE.read_text(encoding="utf-8")
+    assert "Agent 类型" in template, (
+        "the issue template no longer asks for the label the two builders write, so a hand-made "
+        "registration carries a different record from an automated one"
+    )
+    assert BODY_SHELL in page and BODY_SHELL in worker, (
+        "the two writers no longer share the issue-body preamble, so their issues are no longer the "
+        "same kind of record"
+    )
+    # And the parser half really is gone, rather than merely unused: a second reader with no callers
+    # is how this repository ends up with two implementations of one rule.
+    assert "parseAgentType" not in page, (
+        "the agent-type parser is back. It existed to render registration badges on the timeline, "
+        "which was deleted — if a new reader is needed, add it with its caller in the same change"
+    )
 
 
-def test_the_two_dictionaries_have_the_same_keys() -> None:
-    assert set(locale("en")) == set(locale("zh"))
+def test_the_page_and_the_worker_name_the_same_label(page: str, worker: str) -> None:
+    """The line is copy in three places — the page, the worker and the issue template — and a global
+    replace of the visible label rewrites whichever of them spells it literally.
 
-
-# ── the protocol (the AC's required proof) ────────────────────────────────────
-
-
-def test_the_registration_protocol_strings_are_untouched(page: str) -> None:
-    assert PROTOCOL_BUILDER.search(page), "the issue-body builder changed shape"
-    assert PROTOCOL_PARSER.search(page), "the issue-body parser changed shape"
-    assert PROTOCOL_TEMPLATE in page, "the registration issue template lost its protocol line"
-
-
-def test_the_builder_output_is_parsed_by_the_parser(page: str) -> None:
-    """The two halves must stay compatible: build the line the way the page does, run it through the
-    parser's own regex, and require the agent type back."""
-    match = JS_PARSER_LITERAL.search(page)
-    assert match, "the parser regex is no longer a JS literal we can compile"
-    pattern = re.compile(match.group(1))
-    built = f"Agent 类型: **{'hermes'.upper()}**"  # what `agentLine` emits
-    assert pattern.search(built), f"{built!r} is not matched by the page's own parser"
-    assert pattern.search(built).group(1) == "HERMES"
-
+    The old round-trip test proved the page could parse its own output, which is a page agreeing with
+    itself. Comparing the two *writers* catches the failure the line's human readers would see:
+    an issue body labelled one way and a worker building another.
+    """
+    page_label = PROTOCOL_BUILDER.search(page)
+    worker_label = WORKER_BUILDER.search(worker)
+    assert page_label and worker_label, "one of the builders moved"
+    assert page_label.group(0).split("**")[0] == worker_label.group(0).split("**")[0], (
+        "the page and the worker now spell the protocol line differently"
+    )
 
 def test_a_global_label_replace_is_caught(page: str) -> None:
     """Guard-the-guard: the failure mode the issue names is a *global* replace of the visible label.
@@ -455,6 +427,7 @@ def test_a_global_label_replace_is_caught(page: str) -> None:
     assert mutated != page, "the label was not found — the pins above match nothing"
     assert not PROTOCOL_BUILDER.search(mutated), "the builder pin has no teeth"
     assert PROTOCOL_TEMPLATE not in mutated, "the template pin has no teeth"
-    # …and the parser survives, which is the trap rather than a flaw in the pin.
-    assert PROTOCOL_PARSER.search(mutated)
-    assert PROTOCOL_PARSER.search(page)
+    # The other writer is untouched by a replace in this file, which is why the two are pinned
+    # separately: a page-only rename leaves the worker building the old label, and the issues then
+    # carry two different lines with every other test green.
+    assert WORKER_BUILDER.search(WORKER.read_text(encoding="utf-8"))

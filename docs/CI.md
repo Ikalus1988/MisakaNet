@@ -44,7 +44,7 @@
 | `auto-draft.yml` | Auto-Draft from Crash Tombstone | 手动 |  |
 | `auto-sync-prs.yml` | Auto-Sync PR Branches | push, 手动 |  |
 | `benchmark-workers-ai.yml` | Workers AI Lesson Benchmark (weekly) | 定时, 手动 | `0 2 * * 1` |
-| `build-feed.yml` | Build Live Feed | push, 定时, 手动 | `23 */3 * * *` |
+| `build-feed.yml` | Build Live Feed（并写 `docs/data/activity.json`：首页活动面板的静态快照，由 `scripts/sync_site_activity.py` 生成——`/api/analytics/traffic` 冷路径实测 17 秒，不能让浏览器直连）| push, 定时, 手动 | `23 */3 * * *` |
 | `example-capture.yml` | Example Capture (not active) | 手动 |  |
 | `intake-auto-review.yml` | Intake Auto Review | issues, 手动 |  |
 | `intake-kind-audit.yml` | Intake Kind Audit | 定时, 手动 | `30 6 * * 1` |

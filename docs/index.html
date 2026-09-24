@@ -375,111 +375,85 @@
     font-size: 12px;
   }
 
-  /* ── Timeline ── */
-  .timeline {
-    position: relative;
+  /* ── Network activity panel ──
+     Fed by docs/data/activity.json (scripts/sync_site_activity.py). Not a live request: see the panel's
+     markup comment for the 17.4-second cold path that keeps it out of the browser. */
+  .activity-panel {
     background: var(--bg-card);
     border: 1px solid var(--border-glow);
-    border-radius: 14px;
-    padding: 8px 0;
-    margin-bottom: 32px;
-    overflow: hidden;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
   }
-
-  .timeline::before {
-    content: '';
-    position: absolute;
-    left: 28px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: linear-gradient(180deg, var(--cyan) 0%, rgba(0, 229, 255, 0.05) 100%);
-  }
-
-  .timeline-item {
+  .activity-headline {
     display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 12px 20px 12px 56px;
-    position: relative;
-    transition: background 0.15s;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
   }
-
-  .timeline-item:hover { background: rgba(96, 165, 250, 0.04); }
-
-  .timeline-dot {
-    position: absolute;
-    left: 22px;
-    width: 14px;
-    height: 14px;
-    background: var(--cyan);
-    border-radius: 50%;
-    box-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
-    z-index: 1;
+  .activity-number {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 34px;
+    font-weight: 800;
+    color: var(--cyan);
+    line-height: 1;
   }
-
-
-  .timeline-order {
-    font-size: 11px;
-    color: #f59e0b;
-    font-weight: 700;
+  .activity-label { font-size: 13px; color: var(--text-dim); }
+  .activity-classes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+    gap: 10px;
+  }
+  .activity-class {
+    background: rgba(0, 229, 255, 0.05);
+    border: 1px solid var(--border-glow);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+  }
+  .activity-class-number {
+    display: block;
     font-family: 'JetBrains Mono', monospace;
-    background: rgba(245, 158, 11, 0.1);
-    padding: 2px 10px;
-    border-radius: 20px;
-    flex-shrink: 0;
-  }
-
-  .timeline-name {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
+    font-size: 17px;
     font-weight: 700;
-    color: #f1f5f9;
-    flex: 0 0 auto;
+    color: var(--text-primary);
+  }
+  .activity-class-label { display: block; font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .activity-footnote {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 12px;
   }
 
-  .timeline-account {
+  /* ── Latest feed (docs/data/feed.json, rebuilt by build-feed.yml) ── */
+  .latest-list { display: flex; flex-direction: column; gap: 8px; }
+  .latest-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-glow);
+    background: rgba(0, 229, 255, 0.04);
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .latest-item:hover { background: rgba(0, 229, 255, 0.09); }
+  .latest-title { font-size: 13px; color: var(--text-primary); line-height: 1.5; }
+  .latest-date {
     font-size: 11px;
-    color: #94a3b8;
-    font-family: 'Inter', sans-serif;
-    flex: 1;
-    margin-left: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
     white-space: nowrap;
   }
-
-  /* Agent type badge */
-  .agent-badge {
-    font-size: 10px;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 10px;
-    flex-shrink: 0;
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .agent-badge.hermes { background: rgba(88,166,255,0.15); color: #58a6ff; border: 1px solid #58a6ff40; }
-  .agent-badge.cc { background: rgba(163,173,188,0.15); color: #a3adbc; border: 1px solid #a3adbc40; }
-  .agent-badge.codex { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid #f59e0b40; }
-  .agent-badge.openclaw { background: rgba(236,72,153,0.15); color: #ec4899; border: 1px solid #ec489940; }
-  .agent-badge.opencode { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid #34d39940; }
-  .agent-badge.codewhale { background: rgba(96,165,250,0.15); color: #60a5fa; border: 1px solid #60a5fa40; }
-  .agent-badge.cursor { background: rgba(139,92,246,0.15); color: #8b5cf6; border: 1px solid #8b5cf640; }
-  .agent-badge.gemini { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid #38bdf840; }
-  .agent-badge.copilot { background: rgba(203,213,225,0.15); color: #cbd5e1; border: 1px solid #cbd5e140; }
-  .agent-badge.kiro { background: rgba(251,146,60,0.15); color: #fb923c; border: 1px solid #fb923c40; }
-  .agent-badge.unknown { background: rgba(100,100,100,0.15); color: #94a3b8; border: 1px solid #47556940; }
-
-  .timeline-date {
-    font-size: 12px;
-    color: #94a3b8;
-    font-family: 'JetBrains Mono', monospace;
-    flex-shrink: 0;
+  @media (max-width: 640px) {
+    .latest-item { flex-direction: column; gap: 4px; }
+    .activity-number { font-size: 28px; }
   }
 
-  /* Status dots */
   .status-dot {
     width: 10px;
     height: 10px;
@@ -1436,21 +1410,6 @@
       min-height: 48px;
       font-size: 13px;
     }
-    .timeline::before {
-      left: 16px;
-    }
-    .timeline-item {
-      padding-left: 36px;
-      padding-bottom: 16px;
-    }
-    .timeline-dot {
-      left: 10px;
-      width: 14px;
-      height: 14px;
-    }
-    .timeline-content {
-      font-size: 13px;
-    }
     .stat-card {
       padding: 14px 16px;
     }
@@ -1492,9 +1451,6 @@
     .header-qr img { width: 140px; height: 140px; }
     .logo-title { font-size: 32px; letter-spacing: 2px; }
     .logo-cn { font-size: 32px; letter-spacing: 6px; }
-    .timeline::before { left: 20px; }
-    .timeline-item { padding-left: 44px; }
-    .timeline-dot { left: 14px; width: 12px; height: 12px; }
     .stat-card { padding: 16px 20px; }
     .stat-number { font-size: 24px; }
     .agent-selector { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
@@ -1675,7 +1631,7 @@
 
   <div class="drawer-section">
     <div class="drawer-section-title" data-i18n="navNetworkSection">Network</div>
-    <a class="drawer-link" href="#nodes" onclick="closeDrawer()"><span class="link-icon">🌐</span><span data-i18n="navNodes">Agent nodes</span></a>
+    <a class="drawer-link" href="#activity" onclick="closeDrawer()"><span class="link-icon">📈</span><span data-i18n="navActivity">Network activity</span></a>
     <a class="drawer-link" href="#contributors" onclick="closeDrawer()"><span class="link-icon">🏆</span><span data-i18n="navRanking">Contributor ranking</span></a>
     <a class="drawer-link" href="https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3Aready+label%3Aagent-friendly" target="_blank" onclick="closeDrawer()"><span class="link-icon">🎯</span><span data-i18n="navChallenges">Challenges</span></a>
     <a class="drawer-link" href="#voices" onclick="closeDrawer()"><span class="link-icon">💬</span><span data-i18n="navVoices">Voices from the Network</span></a>
@@ -1901,8 +1857,14 @@
       <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;width:100%;">
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:14px;">🌐</span>
-          <span style="font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;color:var(--cyan);" id="total-nodes">—</span>
-          <span style="font-size:12px;color:var(--text-dim);" data-i18n="statNodes">registered nodes</span>
+          <span id="total-nodes" style="font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;color:var(--cyan);">—</span>
+          <!-- Same number, honest label. It was `statNodes` ("registered nodes" / "Active Nodes"), and
+               neither language was true: the value is `counter.current`, a monotonic allocation
+               counter that node IDs are handed out from — nothing is ever removed from it, so it
+               cannot measure who is active. `statLatest` already existed in both dictionaries
+               describing exactly what it is, and nothing rendered it (see
+               tests/test_site_activity_panel.py). -->
+          <span style="font-size:12px;color:var(--text-dim);" data-i18n="statLatest">node IDs issued</span>
         </div>
         <div style="width:1px;height:24px;background:rgba(0,229,255,0.1);"></div>
         <div style="display:flex;align-items:center;gap:10px;">
@@ -1931,38 +1893,36 @@
     </div>
   </div>
 
-  <!-- Latest Updates / Blog -->
-  <div class="section-title">📝 <span data-i18n="latestUpdates">Latest Updates</span></div>
+  <!-- Latest Updates ────────────────────────────────────────────────────────────────────────────
+       The list below is rendered from `docs/data/feed.json`, which `build-feed.yml` rebuilds on every
+       push that touches the corpus and every three hours besides — so this block cannot rot the way
+       its predecessor did. That one was a launch post frozen on 2026-08-07 carrying four numbers that
+       stopped being true soon after: a hardcoded date, "60 Days" (the repository's first commit is
+       2026-05-20), "13 Contributors" (counted by hand, while the ranking further up counts them a
+       different way) and "24 CI Workflows" (there are 75 files). A block titled "Latest Updates" that
+       a reader cannot tell apart from an announcement is worse than no block at all.
+
+       The version badge is the one part that was always correct: release-please owns this file
+       (`release-please-config.json` extra-files) by rewriting the number the annotation comment on
+       that span points at — quoted here it would read as a second annotation, which is why
+       `tests/test_version_consistency.py` refuses to let this comment spell it out.
+       `lesson-count-hero` is owned by `sync_lesson_count.py`; do not move or reword it without
+       updating that registry (tests/test_lesson_count_ssot.py). -->
+  <div class="section-title">📝 <span data-i18n="latestUpdates">最新动态</span></div>
   <div class="content-glass" style="margin-bottom:24px;">
     <div style="padding:20px 24px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
         <span style="background:var(--cyan);color:var(--bg-deep);font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;letter-spacing:0.5px;">v2.34.0</span><!-- x-release-please-version -->
-        <span style="color:var(--text-dim);font-size:13px;">2026-08-07</span>
       </div>
-      <h3 style="font-size:18px;font-weight:700;margin-bottom:12px;color:var(--text-primary);">Zero-Bounty Open Source: 60 Days, <span id="lesson-count-hero">411</span> Lessons, $0 Spent</h3>
+      <h3 style="font-size:18px;font-weight:700;margin-bottom:12px;color:var(--text-primary);">Zero-Bounty Open Source: <span id="lesson-count-hero">411</span> Lessons, $0 Spent</h3>
       <p style="color:var(--text-dim);font-size:14px;line-height:1.7;margin-bottom:16px;">
         MisakaNet is a <strong style="color:var(--cyan);">Swarm Knowledge Protocol</strong> — when one AI agent hits a bug, it documents the workaround, and all agents skip that failure path.
         Connect via <a href="/start" style="color:var(--cyan);">Remote MCP</a> or <code style="background:rgba(0,229,255,0.1);padding:2px 6px;border-radius:4px;font-size:13px;">git clone</code> + <code style="background:rgba(0,229,255,0.1);padding:2px 6px;border-radius:4px;font-size:13px;">python3 search_knowledge.py</code>.
       </p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px;">
-        <div style="background:rgba(0,229,255,0.05);border:1px solid var(--border-glow);border-radius:8px;padding:12px;text-align:center;">
-          <div id="lesson-count-stat" style="font-size:24px;font-weight:900;color:var(--cyan);">—</div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Lessons</div>
-        </div>
-        <div style="background:rgba(0,229,255,0.05);border:1px solid var(--border-glow);border-radius:8px;padding:12px;text-align:center;">
-          <div style="font-size:24px;font-weight:900;color:var(--cyan);">13</div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Contributors</div>
-        </div>
-        <div style="background:rgba(0,229,255,0.05);border:1px solid var(--border-glow);border-radius:8px;padding:12px;text-align:center;">
-          <div style="font-size:24px;font-weight:900;color:var(--cyan);">$0</div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Bounty Spent</div>
-        </div>
-        <div style="background:rgba(0,229,255,0.05);border:1px solid var(--border-glow);border-radius:8px;padding:12px;text-align:center;">
-          <div style="font-size:24px;font-weight:900;color:var(--cyan);">24</div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">CI Workflows</div>
-        </div>
+      <div class="latest-list" id="latest-list">
+        <div class="loading-item" data-i18n="loading">加载中...</div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">
         <a href="https://github.com/Ikalus1988/MisakaNet" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:var(--cyan);color:var(--bg-deep);font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;text-decoration:none;transition:opacity 0.2s;">⭐ Star on GitHub</a>
         <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,229,255,0.1);color:var(--cyan);font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;text-decoration:none;border:1px solid var(--border-glow);">🤝 Contribute</a>
         <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/JOIN.md" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,229,255,0.1);color:var(--cyan);font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;text-decoration:none;border:1px solid var(--border-glow);">🔗 Join as Node</a>
@@ -2003,10 +1963,26 @@
     <div class="loading-item" data-i18n="loading">加载中...</div>
   </div>
 
-  <!-- Recent Registrations Timeline -->
-  <div id="nodes" class="anchor-target"></div>
-  <div class="section-title">📋 <span data-i18n="recentSection">最近注册记录</span> <span id="recent-count"></span> <span class="recent-note" data-i18n="recentNodesNote" style="font-size:11px;color:var(--text-dim);font-weight:400;font-family:'JetBrains Mono',monospace;">自声明 · 非身份 · 阅读无需注册</span></div>
-  <div class="timeline" id="recent-list">
+  <!-- Network activity ────────────────────────────────────────────────────────────────────────────
+       Replaces the registrations timeline (2026-09-24). Two reasons, both measured:
+
+       * the timeline listed up to 100 `labels=registration` issues and then fetched **each issue's
+         comments** to read its node number — the burst behind ~2,700 504s in a 72h window (#2151
+         bounded it; this removes the path);
+       * its count was registration-labelled issues, capped at 100, which is not a node count and not
+         a member count, and it sat next to a nav item called "Agent nodes". Three names, one thing.
+
+       What replaces it is the number this project actually wants to show: how much the network is
+       being *used*. It is read from `docs/data/activity.json`, a snapshot
+       (`scripts/sync_site_activity.py`) because the live endpoint answers in 0.7s from cache and
+       **17.4s** when it recomputes — a live call here would be a 504 generator, which is the bug
+       that was just removed, not a feature to add.
+
+       The snapshot's own date is rendered rather than the word "today": a stale file must look
+       stale, not claim currency it does not have. -->
+  <div id="activity" class="anchor-target"></div>
+  <div class="section-title">📈 <span data-i18n="activitySection">网络活动</span> <span class="panel-note" data-i18n="activityNote" style="font-size:11px;color:var(--text-dim);font-weight:400;font-family:'JetBrains Mono',monospace;">聚合计数 · 不含身份 · 阅读无需注册</span></div>
+  <div class="activity-panel" id="activity-body">
     <div class="loading-item" data-i18n="loading">加载中...</div>
   </div>
 
@@ -2142,7 +2118,6 @@
 <script>
 const REPO = "Ikalus1988/MisakaNet";
 const BASE = "https://api.github.com/repos/" + REPO;
-const RAW_BASE = "https://raw.githubusercontent.com/" + REPO + "/main";
 
 // Worker API 基础 URL — 同域 /api/* 代理，不再依赖外部 workers.dev
 const WORKER_BASE = "";
@@ -2150,15 +2125,6 @@ const WORKER_BASE = "";
 // Worker GitHub API 代理：通过 Worker 中转 GitHub API 请求，绕开浏览器端未认证限速
 const GITHUB_PROXY = WORKER_BASE ? `${WORKER_BASE}/api/github/repos/${REPO}` : `/api/github/repos/${REPO}`;
 
-// 将 GitHub API URL 转为同域代理 URL
-function proxyGithubUrl(url) {
-  if (!url) return url;
-  const ghPrefix = "https://api.github.com/";
-  if (url.startsWith(ghPrefix)) {
-    return (WORKER_BASE || "") + "/api/github/" + url.slice(ghPrefix.length);
-  }
-  return url;
-}
 
 /** 返回数据源基础 URL：同域 /api */
 function getDataBase() {
@@ -2234,10 +2200,8 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Test node numbers (from test-nodes.json) — fetched dynamically
-let TEST_NODES = new Set();
-
-// Latest counter value (for estimated node number)
+// Latest counter value: the highest node number handed out. Read by the registration success panel as
+// the fallback estimate below; nothing renders it as a population any more.
 let CURRENT_COUNTER = 10010;
 
 // Agent type selection.
@@ -2383,51 +2347,9 @@ const AGENT_LABEL_KEYS = {
   kiro: 'agentKiro',
 };
 
-function getAgentBadgeClass(agentType) {
-  switch(agentType) {
-    case 'hermes': return 'hermes';
-    case 'claude': return 'cc';
-    case 'cc': return 'cc';
-    case 'codex': return 'codex';
-    case 'openclaw': return 'openclaw';
-    case 'opencode': return 'opencode';
-    case 'codewhale': return 'codewhale';
-    case 'cursor': return 'cursor';
-    case 'gemini': return 'gemini';
-    case 'copilot': return 'copilot';
-    case 'kiro': return 'kiro';
-    default: return 'unknown';
-  }
-}
-
-// The timeline badge for a parsed agent type. The `data-i18n-agent` hook is only set when the value
-// has a locale key, so a free-text "other" registration carries its text and no dangling key.
-function agentBadgeHtml(agentType) {
-  const key = AGENT_LABEL_KEYS[agentType];
-  const hook = key ? ` data-i18n-agent="${key}"` : '';
-  return `<span class="agent-badge ${getAgentBadgeClass(agentType)}"${hook}>${getAgentLabel(agentType)}</span>`;
-}
-
 function getAgentLabel(agentType) {
   const key = AGENT_LABEL_KEYS[agentType];
   return key ? t(key) : t('agentUnknown');
-}
-
-// The agent type a *registration* carries, parsed out of the issue body: the line the builder at the
-// bottom of this file writes and the worker rebuilds — `Agent 类型: **CURSOR**`. `unknown` is the
-// honest answer for both failure modes:
-//   * no protocol line and no legacy keyword → we do not know which tool it was;
-//   * a match that is not one of AGENT_LABEL_KEYS → a real self-declared client we cannot render,
-//     including the free-text branch of the selector.
-// Neither may be reported as a *specific* client; see the map above.
-function parseAgentType(body) {
-  const agentMatch = body.match(/Agent\s*类型[：:]\s*\*\*(\w+)\*\*/i);
-  if (agentMatch) return agentMatch[1].toLowerCase();
-  // Legacy entries predate the protocol line; they were tagged by keyword.
-  const b = body.toLowerCase();
-  if (b.includes('[cc]') || b.includes('cc-haha')) return 'cc';
-  if (b.includes('codex')) return 'codex';
-  return 'unknown';
 }
 
 // What the success panel echoes back for the value the flow is about to send: a known client renders
@@ -2513,7 +2435,6 @@ async function loadLessons() {
     const count = _allLessons.length;
     const countStr = count.toString();
     const el = (id) => document.getElementById(id);
-    if (el('lesson-count-stat')) el('lesson-count-stat').textContent = countStr;
     if (el('lesson-count-hero')) el('lesson-count-hero').textContent = countStr;
     if (el('lesson-count-product')) el('lesson-count-product').textContent = countStr;
     updateLessonCountSearch();
@@ -2965,15 +2886,27 @@ function getHelpfulUrl() {
   return WORKER_BASE ? `${WORKER_BASE}/api/helpful` : `/api/helpful`;
 }
 
+// How long after first paint the below-the-fold panels load. Long enough that the hero and the
+// stats card are painted and quiet first, short enough that a reader scrolling down finds data.
+const PANEL_DEFER_MS = 1200;
+
 async function loadStats() {
   const counter = await fetchWithCache(getCounterUrl(), 'counter').catch(() => null);
 
   if (counter) {
-    const current = counter.current;
-    CURRENT_COUNTER = current;
-    const totalNodes = current - 10000;
-
-    animateCounter(document.getElementById("total-nodes"), totalNodes);
+    // Rendered as itself. The counter is a monotonic allocation counter that node IDs are handed out
+    // from (the first node is Misaka10001), not a population — nothing ever comes off it — so it
+    // cannot answer "how many nodes are active". It used to be rendered with the 10 000 offset subtracted, under a
+    // label that said "registered nodes" in Chinese and "Active Nodes" in English: two claims,
+    // neither true, for one number. The label now names what the number is
+    // (tests/test_site_activity_panel.py pins it).
+    animateCounter(document.getElementById("total-nodes"), Number(counter.current) || 0);
+    // Still assigned, and this is load-bearing: the registration success panel estimates the visitor's
+    // node number from the counter when the worker does not return one
+    // (`data.node_number || (CURRENT_COUNTER + 1)`). The timeline was the other reader; deleting the
+    // timeline without this line would have left that fallback frozen at its initial value — a wrong
+    // node number shown to a visitor who just registered, which is the one place it must be right.
+    CURRENT_COUNTER = Number(counter.current) || CURRENT_COUNTER;
     document.getElementById("total-nodes").classList.remove("loading");
     document.getElementById("last-updated").textContent = `last updated ${counter.updated.slice(0, 10)}`;
   }
@@ -3001,133 +2934,96 @@ async function loadStats() {
 
   showCacheLabels();
 
-  loadRecentRegistrations();
-  loadContributors();
+  // Panels below the fold. Every one of them reads a static file or a single bounded request, and
+  // every one of them is deferred, because the network must not be on the first paint's path. The
+  // panel this replaced was called from here and fanned out to ~100 requests per visit — the burst
+  // behind ~2,700 504s (tests/test_site_request_fanout.py is the gate that keeps it that way).
+  setTimeout(() => {
+    loadContributors();
+    loadLatestUpdates();
+    loadActivity();
+  }, PANEL_DEFER_MS);
 }
 
-// The count in this block is *registration-labelled issues*, capped at `per_page=100` — see the
-// query below. It is not a node count: a deleted node never comes off it, and neither does a
-// registration whose node number is only in an issue comment. The section label says registrations
-// for that reason; the note next to the number says the rest (self-declared, not identity).
-// Node numbers live in each registration issue's *comments*, so one request per issue is the obvious
-// implementation — and it was: every homepage load fired up to 100 parallel comment requests through
-// the worker. Measured 2026-09-24 in the zone's own analytics (72h window): ~2,700 HTTP 504s and
-// ~2,900 401s, concentrated on `/api/github/repos/…/issues/NNN/comments`, because the burst outran
-// both the worker's upstream budget and GitHub's secondary rate limits — while the page renders six
-// rows and collapses the rest. The lookup is therefore bounded: what is on screen first, the rest
-// afterwards, and never more than NODE_LOOKUP_CONCURRENCY in flight.
-const NODE_LOOKUP_CONCURRENCY = 3;
-const NODE_LOOKUP_PRELOAD = 6;
-const NODE_LOOKUP_DELAY_MS = 1200;
+// ── Network activity ─────────────────────────────────────────────────────────────────────────────
+// Replaces the registrations timeline (2026-09-24). That block listed up to 100 registration issues
+// and then fetched *each issue's comments* to read its node number — one request per registration, on
+// every visit — which is where ~2,700 HTTP 504s in a 72h window came from. #2151 bounded the burst;
+// this deletes the path, and with it the page's only reason to need `test-nodes.json`, a
+// `proxyGithubUrl` helper and a per-issue request budget.
+//
+// What the panel shows instead is the number this project actually wants a visitor to see: how much
+// the network is being *used*. It comes from `docs/data/activity.json`, written by
+// `scripts/sync_site_activity.py`, and never from a live call — the live endpoint answers in 0.7s from
+// cache and **17.4s** when it recomputes, so putting it here would rebuild the 504 generator that was
+// just removed.
+//
+// The class list below is the contract with the file's producer: that script refuses to publish a
+// breakdown missing one of these, and tests/test_sync_site_activity.py compares this list against the
+// one in the script. A class in only one of the two is a number that disappears with nobody told.
+const ACTIVITY_CLASSES = [
+  ['mcp', 'activityClassMcp'],
+  ['agent', 'activityClassAgent'],
+  ['crawler', 'activityClassCrawler'],
+  ['pageview', 'activityClassPageview'],
+];
+const ACTIVITY_URL = "data/activity.json";
+const FEED_URL = "data/feed.json";
+const LATEST_LIMIT = 5;
 
-async function collectNodeNumbers(issues, into) {
-  let next = 0;
-  const worker = async () => {
-    while (next < issues.length) {
-      const issue = issues[next++];
-      try {
-        const comments = await fetchJSON(proxyGithubUrl(issue.comments_url));
-        if (!Array.isArray(comments)) continue;
-        for (const c of comments) {
-          const m = c.body?.match(/Misaka(\d+)/);
-          if (m) { into.set(issue.number, parseInt(m[1])); break; }
-        }
-      } catch (e) {
-        // A registration whose comments cannot be read still renders: the node number falls back to
-        // the counter below, which is what this page already did whenever a fetch failed.
-      }
-    }
-  };
-  await Promise.all(
-    Array.from({ length: Math.min(NODE_LOOKUP_CONCURRENCY, issues.length) }, worker)
-  );
+function formatCount(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toLocaleString('en-US') : '—';
 }
 
-async function loadRecentRegistrations() {
-  const list = document.getElementById("recent-list");
+// Both panels below build markup from JSON, so both escape it — with the page's existing
+// `escapeHTML`, not a second copy of it, and not `DOMPurify`, which is loaded from a CDN: a sanitizer
+// that fails to load would throw inside the render and take the panel with it, and these values need
+// escaping rather than sanitizing.
+function safeHref(url) {
+  return /^https?:\/\//i.test(String(url || '')) ? escapeHTML(url) : '#';
+}
 
+async function loadActivity() {
+  const body = document.getElementById("activity-body");
+  if (!body) return;
   try {
-    const issues = await fetchJSON(
-      `${GITHUB_PROXY}/issues?labels=registration&state=all&sort=created&direction=desc&per_page=100`
-    );
+    const snap = await fetchJSON(ACTIVITY_URL);
+    const calls = snap.calls || {};
+    body.innerHTML = `
+      <div class="activity-headline">
+        <span class="activity-number">${formatCount(calls.mcp)}</span>
+        <span class="activity-label" data-i18n="activityCalls">${t('activityCalls')}</span>
+      </div>
+      <div class="activity-classes">
+        ${ACTIVITY_CLASSES.map(([name, key]) => `
+        <div class="activity-class" data-call-class="${name}">
+          <span class="activity-class-number">${formatCount(calls[name])}</span>
+          <span class="activity-class-label" data-i18n="${key}">${t(key)}</span>
+        </div>`).join("")}
+      </div>
+      <div class="activity-footnote">${formatText(t('activityOn'), { date: escapeHTML(snap.date) })}</div>`;
+  } catch (e) {
+    // Stated, not hidden. The file ships with the site, so if it is missing the deployed page is older
+    // than this code — which is exactly what a reader should conclude rather than seeing a zero.
+    body.innerHTML = `<div class="loading-item">${t('activityUnavailable')}</div>`;
+  }
+}
 
-    const displayIssues = issues.filter(i => !i.pull_request);
-    if (displayIssues.length === 0) {
-      list.innerHTML = `<div class="loading-item">${t('recentEmpty')}</div>`;
-      return;
-    }
-
-    // issue.number -> node number, grown in two passes (see collectNodeNumbers).
-    const nodeNumbers = new Map();
-
-    const render = () => {
-      // Test nodes are hidden, which is why the filter needs the numbers of *every* registration and
-      // not only the visible ones — the deferred pass exists to make that complete.
-      const registrations = displayIssues.filter(i => {
-        const found = nodeNumbers.get(i.number);
-        return found === undefined || !TEST_NODES.has(found);
-      });
-
-      if (registrations.length === 0) {
-        list.innerHTML = `<div class="loading-item">${t('recentEmpty')}</div>`;
-        return;
-      }
-
-      // Sort newest first
-      registrations.sort((a, b) => b.created_at.localeCompare(a.created_at));
-
-      document.getElementById("recent-count").textContent = `(${registrations.length})`;
-
-      const rowHtml = (issue, idx) => {
-        const nth = registrations.length - idx;
-        const found = nodeNumbers.get(issue.number);
-        // Node number from the comment, or fallback to the counter.
-        const number = found !== undefined ? found : (CURRENT_COUNTER - idx);
-        const date = new Date(issue.created_at).toISOString().slice(0, 10);
-        const body = issue.body || '';
-        const agentType = parseAgentType(body);
-        // Public form registration = non-GitHub user
-        const isPublicReg = body.includes('通过公开通道');
-        const accountLabel = isPublicReg ? t('publicUser') : `@${issue.user.login}`;
-        return `<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-order">#${nth}</div><div class="timeline-name">Misaka${String(number).padStart(5, "0")}</div><div class="timeline-account">${accountLabel}</div>${agentBadgeHtml(agentType)}<div class="timeline-date">${date}</div></div>`;
-      };
-
-      // Show only latest 6 on homepage; the rest sits behind the "view all" link at the bottom.
-      const DISPLAY_LIMIT = 6;
-      list.innerHTML = registrations.slice(0, DISPLAY_LIMIT).map(rowHtml).join("");
-
-      if (registrations.length > DISPLAY_LIMIT) {
-        const remainingHtml = registrations.slice(DISPLAY_LIMIT)
-          .map((issue, idx) => rowHtml(issue, DISPLAY_LIMIT + idx)).join("");
-
-        list.innerHTML += `
-        <div style="text-align:center;padding:12px 0;border-top:1px solid rgba(0,229,255,0.06);">
-          <details>
-            <summary style="cursor:pointer;font-size:12px;color:var(--cyan);font-family:'JetBrains Mono',monospace;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">${formatText(t('recentViewAll'), { count: registrations.length })}</summary>
-            <div style="margin-top:8px;">${remainingHtml}</div>
-          </details>
-        </div>`;
-      }
-    };
-
-    // First paint: the rows the homepage actually shows.
-    await collectNodeNumbers(displayIssues.slice(0, NODE_LOOKUP_PRELOAD), nodeNumbers);
-    render();
-
-    // Then the rest, off the critical path, so the collapsed list is exact and the test-node filter
-    // sees every registration rather than the six that happened to be on screen.
-    if (displayIssues.length > NODE_LOOKUP_PRELOAD) {
-      setTimeout(() => {
-        collectNodeNumbers(displayIssues.slice(NODE_LOOKUP_PRELOAD), nodeNumbers).then(render);
-      }, NODE_LOOKUP_DELAY_MS);
-    }
-
-  } catch (err) {
-    if (err.message.includes("403")) {
-      list.innerHTML = '<div class="error-item">◈ 网络同步状态：缓存模式 · 刷新或稍后重试</div>';
-    } else {
-      list.innerHTML = `<div class="error-item">◈ 连接异常: ${err.message}</div>`;
-    }
+async function loadLatestUpdates() {
+  const list = document.getElementById("latest-list");
+  if (!list) return;
+  try {
+    const feed = await fetchJSON(FEED_URL);
+    const items = (feed.items || []).slice(0, LATEST_LIMIT);
+    if (!items.length) throw new Error('feed has no items');
+    list.innerHTML = items.map(item => `
+      <a class="latest-item" href="${safeHref(item.url)}" target="_blank" rel="noopener">
+        <span class="latest-title">${escapeHTML(item.title)}</span>
+        <span class="latest-date">${escapeHTML(String(item.timestamp || '').slice(0, 10))}</span>
+      </a>`).join("");
+  } catch (e) {
+    list.innerHTML = `<div class="loading-item">${t('latestUnavailable')}</div>`;
   }
 }
 
@@ -3554,18 +3450,18 @@ async function registerNode() {
           <span style="font-size:22px;">🧠</span>
           <div>
             <div class="reg-node-name" style="font-weight:700;font-size:14px;font-family:'JetBrains Mono',monospace;">${estimatedName}</div>
-            <div style="font-size:12px;color:#94a3b8;">Agent: ${agentDisplayValue(selectedAgent)} · 预估 #${estimatedNode}${name ? `<br>注册名称: ${name}` : ""}</div>
+            <div style="font-size:12px;color:#94a3b8;">${formatText(t("regNodeLine"), { agent: agentDisplayValue(selectedAgent), node: estimatedNode })}${name ? `<br>${t("regNameLabel")}: ${escapeHTML(name)}` : ""}</div>
           </div>
           <span class="reg-status-icon" style="margin-left:auto;font-size:11px;color:#58a6ff;animation:pulse 1.5s infinite;">⏳</span>
-          <span class="reg-status-text" style="font-size:11px;color:#58a6ff;">分配中</span>
+          <span class="reg-status-text" style="font-size:11px;color:#58a6ff;" data-i18n="regAssigning">${t("regAssigning")}</span>
         </div>
       </div>
       <div style="margin:10px 0;padding:10px 12px;background:#0f172a;border-radius:8px;border:1px solid rgba(148,163,184,0.22);font-size:13px;color:#cbd5e1;line-height:1.7;">
         ${entryTestSteps}
       </div>
       <div class="reg-wait-msg" style="text-align:center;margin-top:10px;font-size:13px;color:#cbd5e1;">
-        ⏳ 无需审核，自动分配中（最终节点号以 Issue 回复为准，预计30秒后刷新可见）<br>
-        <a href="${issue.html_url}" target="_blank" style="color:#60a5fa;">📋 查看欢迎消息</a>
+        ${t("regWait")}<br>
+        <a href="${issue.html_url}" target="_blank" style="color:#60a5fa;">📋 ${t("viewIssue")}</a>
       </div>`;
 
     // ── Auto-poll: check Issue comments for welcome message ──
@@ -3665,14 +3561,10 @@ document.querySelectorAll('.agent-option').forEach(el => {
 document.getElementById('register-btn').addEventListener('click', registerNode);
 
 (async () => {
-  // Load test node numbers
-  try {
-    const r = await fetch(`${RAW_BASE}/test-nodes.json`);
-    const data = await r.json();
-    TEST_NODES = new Set(data.tests || []);
-  } catch(e) {}
+  // `loadStats()` now starts every panel itself, deferred (see PANEL_DEFER_MS): the test-node list
+  // that used to be fetched here only existed to hide test registrations from the timeline, and the
+  // timeline is gone — one fewer request before first paint.
   loadStats();
-  loadContributors();
 })();
 
 // 用户切回 tab 时静默刷新（利用缓存 TTL，不清缓存）
