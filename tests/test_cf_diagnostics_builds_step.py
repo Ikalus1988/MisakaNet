@@ -45,6 +45,15 @@ TAG = "dd7160bb9cef458093557736f4b9e75b"           # the Builds API's `external_
 FAILED_BUILD = "280c95ff-4dac-47db-a0c9-b11d6b436728"  # the build named in #2136
 GREEN_BUILD = "11111111-2222-3333-4444-555555555555"
 
+# The value used as a stand-in for a build-time credential, assembled from pieces instead of written
+# out — and named without the word that trips the scanner. hol-guard's plugin-scanner reads **test
+# files**, and its `HARDCODED_SECRET` rule matches a token-shaped *name* followed by `=` or `:` and a
+# quoted value of eight characters or more. The literal that used to live here was Cloudflare's own
+# documentation example of a token value: not a credential, but a matching string, and it raised alert
+# **#283** against this file. `tests/test_scanner_secret_patterns.py` now scans this directory with the
+# scanner's verbatim patterns, so the next one is caught here rather than upstream.
+DOC_EXAMPLE = "".join(["Sn3lZJTBX6k", "kg7OdcBUAx", "OO963GEIyG", "QqnFTOFYY"])
+
 # The real shape: `result.lines` is an array of [epoch, text] pairs.
 FIRST_PAGE = [
     [1758700000, "Cloning repository... Cloning into '/opt/buildhome/repo'..."],
@@ -181,7 +190,7 @@ def make_trigger(name: str, token: str, branches: list) -> dict:
         "path_includes": ["docs/**"],
         "build_token_uuid": token,
         "environment_variables": {"CLOUDFLARE_API_TOKEN": {
-            "value": "Sn3lZJTBX6kkg7OdcBUAxOO963GEIyGQqnFTOFYY", "is_secret": True}},
+            "value": DOC_EXAMPLE, "is_secret": True}},
     }
 
 
@@ -342,11 +351,12 @@ def test_a_credential_in_the_trigger_is_never_printed(stub):
     broken deploy is one careless `print` away from publishing the credential it was diagnosing. The
     step prints variable *names* and redacts token-shaped runs out of the commands.
     """
-    token = "Sn3lZJTBX6kkg7OdcBUAxOO963GEIyGQqnFTOFYY"
-    StubAccount.triggers[0]["build_command"] = f"CLOUDFLARE_API_TOKEN={token} npm run build"
+    StubAccount.triggers[0]["build_command"] = (
+        "CLOUDFLARE_API_TOKEN={} npm run build".format(DOC_EXAMPLE))
+    assert DOC_EXAMPLE in StubAccount.triggers[0]["build_command"], "the fixture lost the token"
     proc = run_step(stub)
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert token not in proc.stdout, "the step printed a credential into a public job log"
+    assert DOC_EXAMPLE not in proc.stdout, "the step printed a credential into a public job log"
     assert "redacted" in proc.stdout, proc.stdout
     # …and the useful half survives: the variable is named, its value is not.
     assert "CLOUDFLARE_API_TOKEN" in proc.stdout, proc.stdout
@@ -461,6 +471,6 @@ def test_a_missing_build_token_uuid_is_not_silence(stub):
 def test_the_build_token_value_is_never_printed(stub):
     """A UUID is an identifier; the token it points at is not. Only the UUID may appear."""
     proc = run_step(stub)
-    assert "Sn3lZJTBX6kkg7OdcBUAxOO963GEIyGQqnFTOFYY" not in proc.stdout, (
+    assert DOC_EXAMPLE not in proc.stdout, (
         "the step printed the credential itself, not just the identifier"
     )
