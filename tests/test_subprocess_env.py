@@ -77,14 +77,44 @@ def test_the_host_environment_is_inherited(monkeypatch):
     assert child_env()["MISAKANET_CHILD_ENV_MARKER"] == "inherited"
 
 
+def _get(env: dict, name: str) -> str | None:
+    """Read `name` the way the *platform* spells it, not the way the caller typed it.
+
+    Windows environment variables are case-insensitive and Python reports the ones it inherits in upper
+    case: `monkeypatch.setenv("SystemRoot", …)` puts `SYSTEMROOT` into `os.environ`, so a plain
+    `env.get("SystemRoot")` is `None` there. That is not the contract failing — the child does receive
+    the variable — it is the assertion reading it in a case the OS never uses. Measured 2026-09-25: this
+    one line failed all three `windows-latest` legs with `AssertionError: SystemRoot / assert None ==
+    'marker-value'`.
+    """
+    if name in env:
+        return env[name]
+    wanted = name.lower()
+    for key, value in env.items():
+        if key.lower() == wanted:
+            return value
+    return None
+
+
 def test_the_child_keeps_the_system_variables_it_is_given(monkeypatch):
     """Whatever the host provides — `SystemRoot` on Windows, `HOME` elsewhere — must reach the child,
-    because the fix was precisely that "build a fresh env for determinism" dropped it."""
+    because the fix was precisely that "build a fresh env for determinism" dropped it.
+
+    Read back case-insensitively: the question is whether the variable is there, not whether the runner
+    spells it the way this test does.
+    """
     for name in ("SystemRoot", "windir", "HOME", "LANG"):
         monkeypatch.setenv(name, "marker-value")
     env = child_env()
     for name in ("SystemRoot", "windir", "HOME", "LANG"):
-        assert env.get(name) == "marker-value", name
+        assert _get(env, name) == "marker-value", f"{name} did not reach the child: {sorted(env)[:5]}…"
+
+
+def test_the_lookup_is_case_insensitive_on_purpose():
+    """The guard for the line above: `SystemRoot` on Windows is `SYSTEMROOT` in `os.environ`."""
+    assert _get({"SYSTEMROOT": "x"}, "SystemRoot") == "x"
+    assert _get({"SystemRoot": "x"}, "SYSTEMROOT") == "x"
+    assert _get({}, "SystemRoot") is None
 
 
 def test_overrides_win(monkeypatch):
