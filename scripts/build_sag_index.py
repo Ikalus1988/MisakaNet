@@ -52,10 +52,11 @@ def export_coverage(records: list[dict]) -> tuple[int, int]:
 def warn_if_export_is_stale(records: list[dict]) -> bool:
     """Say so, loudly, when the export cannot be describing the corpus we are indexing.
 
-    Not a hard failure: an old checkout, a filtered export or a partial clone are all legitimate, and
-    a build script that refuses to run is a worse trap than the one it closes. But silence here is
-    what let a 61%-missing index sit in the repository for two and a half months — and because the
-    search path prefers SAG over BM25, the resulting index made recall *worse* than building nothing.
+    Not a hard failure: an old checkout, a filtered export or a partial clone are all legitimate,
+    and a build script that refuses to run is a worse trap than the one it closes. But silence here
+    is what let a 61%-missing index sit in the repository for two and a half months — and because
+    the search path prefers SAG over BM25, the resulting index made recall *worse* than building
+    nothing.
     """
     covered, total = export_coverage(records)
     if not total or covered >= total * COVERAGE_FLOOR:
@@ -126,7 +127,8 @@ def build_index(okf_path: Path, db_path: Path) -> int:
     for r in records:
         tags_str = ", ".join(r.get("tags", []))
         conn.execute(
-            "INSERT INTO lessons (title, description, domain, tags, source, status, path, timestamp, verified_date, domain_expert) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO lessons (title, description, domain, tags, source, status, path,"
+            " timestamp, verified_date, domain_expert) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 r.get("title", ""),
                 r.get("description", ""),
@@ -267,7 +269,7 @@ def main():
         okf_path = Path(args.okf)
         count = build_index(okf_path, db_path)
         print(f"SAG-Lite index built: {count} lessons -> {db_path}")
-        print(f"Query: python3 scripts/build_sag_index.py --query \"your search\"")
+        print("Query: python3 scripts/build_sag_index.py --query \"your search\"")
 
 
 if __name__ == "__main__":
