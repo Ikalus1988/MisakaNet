@@ -859,12 +859,28 @@ jobs:
           echo "Unchecked AC items: $UNCHECKED"
           [ "$UNCHECKED" -gt 0 ] && { echo "AC not all checked. Skipping."; exit 0; }
 
-          # No `--subject`. It used to write "Auto-merge #N: <the PR title>", and because that is a
-          # conventional-commit-shaped subject, release-please counted it as a *second* changelog
-          # entry next to the branch commit it merged — every auto-merged PR appeared twice in the
-          # next release's notes (#1820 was listed twice in the 2.31.0 PR; see
-          # googleapis/release-please#1016 for the general behaviour with merge commits). GitHub's
-          # default subject, "Merge pull request #N from <branch>", is not conventional, so it is
-          # skipped, and it still names the PR for anyone reading the log.
-          gh pr merge "$PR_NUM" --repo Ikalus1988/MisakaNet --merge --auto
+          # `--squash`, and the history of this line is worth keeping because two earlier fixes here
+          # were both incomplete:
+          #
+          #   * it used to write `--subject "Auto-merge #N: <the PR title>"`, and that conventional
+          #     subject was counted by release-please as a *second* changelog entry next to the branch
+          #     commit it merged (#1820 appeared twice in the 2.31.0 notes);
+          #   * the fix was to drop `--subject`, on the reasoning that GitHub's default merge subject
+          #     ("Merge pull request #N from <branch>") is not conventional. **The subject is not where
+          #     the duplicate comes from.** GitHub's default merge commit puts the PR *title* in the
+          #     **body**, and release-please reads the whole message. Measured 2026-09-25 against
+          #     main's own history:
+          #
+          #         Merge pull request #2047 from Ikalus1988/feat/done-but-open-detector
+          #         <blank line>
+          #         feat(intake): detect intakes whose work is already merged but whose issue is still open
+          #
+          #     so `a6923ea` (the merge) and `fd1bbca` (the branch commit it merged, same files) each
+          #     produced an entry — and the 2.35.0 release PR arrived with **113 entries covering 103
+          #     duplicates**.
+          #
+          # A squash merge produces exactly one commit per PR and no merge commit at all, which is what
+          # `auto-merge-docs`, `auto-merge-lessons` and `scripts/ci/land_change.py` already do. This
+          # line was the last path that did not.
+          gh pr merge "$PR_NUM" --repo Ikalus1988/MisakaNet --squash --auto
           echo "Auto-merge enabled for PR #$PR_NUM"
