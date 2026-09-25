@@ -22,14 +22,14 @@ misakanet/
 └── node/                # Node scripts
     └── __init__.py
 
-scripts/
+scripts/                  # a partial map, not an inventory — but every name here must exist
+                          # (tests/test_architecture_map_paths.py enforces that)
 ├── new_lesson.py         # Interactive lesson wizard
 ├── contribute.py         # GitHub API lesson submission (no fork needed)
 ├── score_lessons.py      # Quality scoring for all lessons
 ├── referral.py           # Referral code viewer
 ├── setup.py              # Environment check + setup wizard
 ├── update_lessons_json.py  # Regenerate lessons.json
-├── update_status.py      # Regenerate STATUS.md
 └── demo.tape             # VHS demo recording script
 
 lessons/                  # Shared knowledge (411+ indexed lessons)  — count auto-refreshed by scripts/sync_lesson_count.py
