@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-09-25T17:19:41.296032+00:00",
+  "generated_at": "2026-09-25T21:40:37.683514+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2253",
+      "timestamp": "2026-09-25T17:22:46Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(ops): the preflight picked the GitHub token by substring — CodeQL alert #285",
@@ -23,13 +30,6 @@
       "title": "test(search): four measured designs for CJK recall, all of them regress the English floors",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2251",
       "timestamp": "2026-09-25T15:13:18Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2247",
-      "timestamp": "2026-09-25T15:04:57Z",
       "source": "github"
     },
     {
