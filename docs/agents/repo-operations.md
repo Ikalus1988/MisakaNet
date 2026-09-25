@@ -17,7 +17,10 @@ npm install                            # devDep: wrangler（部署 worker 用）
   import Python；Python 脚本若要在 worker 复用逻辑，只能移植（见 `injection_scan.py` → worker
   的 `INTAKE_INJECTION_RULES` 这个先例）
 - 需要跑测试时另装：`pip install pytest pytest-cov`
-- 自检：`python3 scripts/doctor.py`（`--kv-only` 校验 wrangler 配置里没有占位符 id）
+- 自检：`python3 scripts/doctor.py`（三条检查：wrangler 配置无占位符 id、`misakanet_core` 可导入、远端
+  `/mcp` 能完成 MCP 握手）。两个子集标志给调用方用：`--kv-only <path>` 只查配置（部署前）、
+  `--remote-only` 只探远端（部署后）——**每个检查都必须有 CI 调用点**，
+  `tests/test_doctor_reach.py` 从 workflow 的命令行里反推并断言这一点（#1822）
 - 动手前同步：`git pull --ff-only`（在**你的** clone 目录里执行）
 
 ### 目录导航
