@@ -187,6 +187,14 @@ jobs:
             exit 0
           fi
           git commit -s -m "chore(changelog): drop the duplicate entries in the pending release section"
+          # The checkout persisted `GITHUB_TOKEN` into `http.https://github.com/.extraheader`. A push then
+          # carries **both** Authorization headers and the server uses the checkout's, so this push — which
+          # is meant to be the PAT, i.e. an ordinary user push — was attributed to `github-actions[bot]`:
+          # measured 2026-09-25 on the 2.35.0 release PR, all 22 runs on the repaired head came back
+          # `action_required` (held, never executed), including the required `DCO / Signed-off-by`. The
+          # duplicates were fixed and the PR became unmergeable for a new reason, which is what this line
+          # prevents. `auto-sync-prs.yml` documents the same trap for its own PAT push.
+          git config --unset-all "http.https://github.com/.extraheader" || true
           git remote set-url origin "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin "HEAD:refs/heads/$BRANCH"
           echo "repaired $BRANCH; its checks will run on the new head" >> "$GITHUB_STEP_SUMMARY"
