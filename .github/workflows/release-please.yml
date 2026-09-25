@@ -20,6 +20,15 @@ jobs:
         with:
           fetch-depth: 0                        # tags, to see whether the release is tagged
           token: ${{ secrets.GITHUB_TOKEN }}
+          # No persisted credentials, because every push below supplies its own: `actions/checkout`
+          # writes GITHUB_TOKEN into `http.https://github.com/.extraheader` *and* into a credentials file
+          # reached through `includeIf`, and a push that also carries a PAT then has two identities to
+          # choose from. Measured 2026-09-25 on the 2.35.0 release PR: the changelog repair's push — PAT in
+          # its URL, checkout credentials still present — was attributed to `github-actions[bot]`, so all
+          # 13 runs on the repaired head came back `action_required` (held, never executed), the required
+          # `DCO / Signed-off-by` among them. Unsetting the header alone was not enough. This is the same
+          # setting, for the same reason, as `auto-sync-prs.yml`.
+          persist-credentials: false
 
       # release-please is invoked with skip-github-release: true below, and that
       # flag skips `manifest.createReleases()` entirely
@@ -36,8 +45,14 @@ jobs:
         id: release_tag
         env:
           GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          # Tags are pushed as the *built-in* token, supplied here as a header because the checkout no
+          # longer persists one. Deliberate, and the reason is in the comment above the checkout: a
+          # GITHUB_TOKEN push never triggers another workflow, so tagging here cannot fire
+          # release-pypi.yml behind our back — publishing stays a single explicit dispatch below.
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GIT_TOKEN" | base64 -w0)"
           VERSION=$(python3 -c "import json;print(json.load(open('.release-please-manifest.json'))['.'])")
           TAG="v$VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -48,7 +63,7 @@ jobs:
           fi
           echo "manifest says $VERSION and no tag exists yet — tagging"
           git tag "$TAG"
-          git push origin "$TAG"
+          git -c http.extraheader="$AUTH_HEADER" push origin "$TAG"
           # The Marketplace action is *this repository*, so its `v1` alias has to follow the releases:
           # `uses: Ikalus1988/MisakaNet@v1` should get the newest one, while `@$TAG` (e.g. `@v2.34.0`)
           # pins an exact version for anyone who needs that. Decided 2026-09-23 — the tag has to show
@@ -57,7 +72,7 @@ jobs:
           # line for nothing. Tag pushes are not covered by the branch ruleset (it targets
           # `refs/heads/main`), so this is allowed where a push to `main` is not.
           git tag -f v1
-          git push -f origin v1
+          git -c http.extraheader="$AUTH_HEADER" push -f origin v1
           echo "moved v1 to $TAG ($(git rev-parse --short HEAD))"
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG already exists"
@@ -194,9 +209,12 @@ jobs:
           # `action_required` (held, never executed), including the required `DCO / Signed-off-by`. The
           # duplicates were fixed and the PR became unmergeable for a new reason, which is what this line
           # prevents. `auto-sync-prs.yml` documents the same trap for its own PAT push.
+          # Belt and braces with `persist-credentials: false` on the checkout: if that setting is ever
+          # flipped back, the checkout's header would be *appended* to this one and the server would use
+          # the checkout's — which is how the push above was attributed to the bot.
           git config --unset-all "http.https://github.com/.extraheader" || true
-          git remote set-url origin "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push origin "HEAD:refs/heads/$BRANCH"
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$PUSH_TOKEN" | base64 -w0)"
+          git -c http.extraheader="$AUTH_HEADER" push origin "HEAD:refs/heads/$BRANCH"
           echo "repaired $BRANCH; its checks will run on the new head" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Dispatch the PyPI publish

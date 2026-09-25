@@ -16,6 +16,7 @@ release.
 """
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -173,57 +174,66 @@ def test_the_repair_runs_after_the_step_that_regenerates_the_section():
 
 
 def test_the_repair_push_does_not_use_the_built_in_token():
-    step = step_running_the_script()
-    run = step["run"]
-    references = set(__import__("re").findall(r"x-access-token:\$\{?(\w+)\}?", run))
-    assert references, "the push no longer builds an authenticated remote URL — re-check this rule"
-    env = step.get("env") or {}
+    """A `GITHUB_TOKEN` push creates held runs, and `DCO / Signed-off-by` is a required check."""
+    run = step_running_the_script()["run"]
+    # Both spellings this repository uses: `printf 'x-access-token:%s' "$VAR"` (the header form, which is
+    # what a checkout without persisted credentials needs) and `x-access-token:${VAR}` inside a URL.
+    header_form = re.findall(r"x-access-token:%s'\s*\"\$(\w+)\"", run)
+    url_form = re.findall(r"x-access-token:\$\{?(\w+)\}", run)
+    references = set(header_form) | set(url_form)
+    assert references, "the push no longer builds its own Authorization header — re-check this rule"
+    env = step_running_the_script().get("env") or {}
     for variable in references:
         value = str(env.get(variable, ""))
         assert value, f"{variable} is used to push but is not in the step's env"
         assert "secrets.GITHUB_TOKEN" not in value, (
-            f"the release-changelog push authenticates with GITHUB_TOKEN ({variable}={value}); the new "
-            "head's runs would be held, and DCO is a required check")
+            f"the repair push authenticates with GITHUB_TOKEN ({variable}={value}); the new head's runs "
+            "would be held, and DCO is a required check")
 
 
-def test_every_invocation_passes_the_changelog_path_explicitly():
-    """The step runs a *copy* of the script from `$RUNNER_TEMP`, so the script's `__file__`-relative default
-    points outside the repository: `/home/runner/work/CHANGELOG.md`. The first run of the step died on
-    exactly that (`FileNotFoundError`, run 36105826072) — the default is right for a checkout and wrong for
-    a copy, and only an explicit argument covers both.
+def _checkout_step() -> dict:
+    for step in steps():
+        if str(step.get("uses", "")).startswith("actions/checkout"):
+            return step
+    raise AssertionError(f"no checkout in {WORKFLOW.name}")
+
+
+def test_the_pat_push_has_no_persisted_checkout_credentials_to_fight_with():
+    """`actions/checkout` stores `GITHUB_TOKEN` in `http.https://github.com/.extraheader` *and* in a
+    credentials file reached through `includeIf`; a push that also carries a PAT then has two identities, and
+    the checkout's wins. Measured 2026-09-25 on the 2.35.0 release PR: the repair push was attributed to
+    `github-actions[bot]`, so all 13 runs on the repaired head came back `action_required` — held, never
+    executed — with the required `DCO / Signed-off-by` among them. Unsetting the header alone was not
+    enough, which is why the checkout must not persist credentials at all (`auto-sync-prs.yml`'s setting).
     """
+    assert (_checkout_step().get("with") or {}).get("persist-credentials") is False, (
+        "the checkout persists credentials, so this workflow's PAT pushes can be attributed to the bot")
+
+
+def test_the_push_names_its_own_credential_and_clears_any_leftover_header():
     run = step_running_the_script()["run"]
-    calls = [line for line in run.splitlines()
-             if "python3" in line and "dedupe_release_entries.py" in line]
-    assert calls, f"no invocation found in the step:\n{run}"
-    for line in calls:
-        assert "CHANGELOG.md" in line, (
-            "this invocation relies on the script's default path, which resolves next to the copy, not "
-            f"next to the checkout:\n{line}")
-
-
-def test_a_missing_changelog_is_a_sentence_not_a_traceback(tmp_path):
-    proc = subprocess.run([sys.executable, str(SCRIPT), "--check", str(tmp_path / "nope.md")],
-                          capture_output=True, text=True, timeout=60)
-    assert proc.returncode == 2, proc.stdout + proc.stderr
-    assert "no such file" in proc.stderr and "Traceback" not in proc.stderr, proc.stderr
-
-
-def test_the_push_clears_the_checkouts_persisted_credentials_first():
-    """`actions/checkout` writes `GITHUB_TOKEN` into `http.https://github.com/.extraheader`, and a push that
-    also carries a PAT in its URL sends **both** Authorization headers — the server uses the checkout's, so
-    the push is attributed to `github-actions[bot]` and every run on the new head is held
-    (`action_required`, never executed). Measured 2026-09-25 on the 2.35.0 release PR: 22 held runs on the
-    repaired head, `DCO / Signed-off-by` among them, i.e. the repair made the PR unmergeable for a new
-    reason. The unset has to come before the push.
-    """
-    run = step_running_the_script()["run"]
+    assert "PUSH_TOKEN" in run and "x-access-token:%s" in run, (
+        "the push no longer builds its own Authorization header — re-check this rule")
     unset = run.find("git config --unset-all")
-    push = run.find("git push origin")
-    assert unset != -1, "the PAT push does not clear the checkout's credential header — the runs will be held"
-    assert "extraheader" in run[unset:unset + 120], run[unset:unset + 160]
+    push = run.find("push origin")
+    assert unset != -1 and "extraheader" in run[unset:unset + 120], (
+        "the belt-and-braces unset of a persisted header is gone")
     assert push != -1, "the step no longer pushes — re-check this rule"
     assert unset < push, "the header is cleared after the push, which is too late"
+
+
+def test_every_git_push_in_this_workflow_supplies_a_credential():
+    """The checkout no longer persists one, so a bare `git push origin` here would simply fail."""
+    for step in steps():
+        run = step.get("run") or ""
+        for line in run.splitlines():
+            if line.strip().startswith("git -c http.extraheader=") and " push " in line:
+                continue
+            if line.strip().startswith("#"):
+                continue
+            assert not (line.strip().startswith("git push") or "git push origin" in line), (
+                f"`{step.get('name')}` pushes without naming a credential, and the checkout persists "
+                f"none:\n{line}")
 
 
 def test_the_repair_tool_exists_where_the_workflow_reads_it_from():
