@@ -781,7 +781,18 @@ jobs:
       - name: Auto-Merge Gate
         if: success() && github.event_name == 'pull_request'
         env:
-          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          # The PAT alone, with no `|| secrets.GITHUB_TOKEN` fallback. The fallback is what the
+          # empty-token guard below was written against ("no token at all"), except it made that case
+          # unreachable: `secrets.GITHUB_TOKEN` is always non-empty, so a run with no PAT proceeded and
+          # tried to merge with a token this job deliberately limits to `contents: read` — a merge
+          # writes to the base branch, and the failure would be the same `Resource not accessible by
+          # integration` red the fork guard above exists to prevent. Declaring `contents: write` for the
+          # audit job is not the fix: this job runs the pull request's own tests, so handing it write
+          # access to the repository would let a branch that reached the repo through `adopt-pr` rewrite
+          # `main` from a test. Enabling auto-merge is a convenience, not a gate (the rule the fork, CI
+          # and release guards state in the same words), so when the PAT is missing the step says so and
+          # stays green; a maintainer merges. `tests/test_auto_merge_gate.py` pins all three.
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
           PR_NUM: ${{ github.event.pull_request.number }}
         run: |
           echo "=== Auto-Merge Gate for PR #$PR_NUM ==="
@@ -822,6 +833,12 @@ jobs:
 
           # Fork PRs are already gone by now, so this covers the remaining case: no token at all
           # (a missing secret on a same-repo run). Nothing to merge with — report, do not fail.
+          #
+          # This branch used to be dead code: the step's `GH_TOKEN` was
+          # `secrets.SHELDON_PAT || secrets.GITHUB_TOKEN`, and the second operand is never empty, so a
+          # run with no PAT fell through to a merge attempt with a token this job scopes to
+          # `contents: read` — the red-with-no-cause shape this file keeps having to fix. The env line
+          # above is now the PAT alone, which is what makes this guard reachable.
           if [ -z "$GH_TOKEN" ]; then
             echo "  SKIP: GH_TOKEN is empty — auto-merge needs a token with pull-requests: write."
             echo "::warning title=Auto-merge skipped::No GH_TOKEN in this run."

@@ -194,6 +194,24 @@ def plan(state: str, tracker_exists: bool, previous: str) -> str:
     return "comment"
 
 
+def _read_event(path: str) -> dict | None:
+    """The event payload, or `None` when it cannot be read — never a traceback.
+
+    `$GITHUB_EVENT_PATH` is always set for the triggers this workflow uses, so a missing or malformed
+    file means the trigger changed, which is not a reason to lose the run: the answer is still available
+    from the branch tip. The first version called `json.loads(Path(args.event).read_text())` directly, so
+    a payload that was absent (`FileNotFoundError`) or truncated (`JSONDecodeError`) ended the run in a
+    stack trace — a watcher whose job is to notice a silent failure failing silently itself. The warning
+    names the file, because "the payload could not be read" is otherwise a fact nobody can check.
+    """
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        print(f"::warning title=Event payload unreadable::could not read {path} ({exc}) — "
+              f"falling back to the branch tip.", file=sys.stderr)
+        return None
+
+
 def resolve_target(gh: GitHub, args) -> tuple[str, str, str]:
     """(sha, branch, why) — the commit to check, and which route produced it.
 
@@ -206,8 +224,8 @@ def resolve_target(gh: GitHub, args) -> tuple[str, str, str]:
     if args.sha:
         return args.sha, args.branch, "explicit --sha"
     if args.event:
-        payload = json.loads(Path(args.event).read_text(encoding="utf-8"))
-        suite = payload.get("check_suite") or {}
+        payload = _read_event(args.event)
+        suite = (payload or {}).get("check_suite") or {}
         sha = suite.get("head_sha") or (payload.get("after") if payload else None)
         if sha:
             branch = suite.get("head_branch") or args.branch
