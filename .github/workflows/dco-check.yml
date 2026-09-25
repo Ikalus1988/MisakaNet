@@ -112,10 +112,20 @@ jobs:
                 name: CHECK_NAME,
                 head_sha: headSha,
                 status: 'completed',
-                conclusion: pass ? 'success' : 'action_required',
+                // `failure`, not `action_required`. This repository's own lessons use
+                // `action_required` to mean *the run was held by GitHub and never executed*
+                // (`lessons/contrib/ci-fork-pr-run-held-as-action-required.md` and
+                // `ci-github-token-push-does-not-trigger-workflows.md`), and GitHub renders it as
+                // "waiting for approval" — a state only a maintainer can clear. Reporting a missing
+                // sign-off that way made a contributor's fixable mistake look like an infrastructure
+                // hold: measured 2026-09-25, #2090 / #2037 / #1982 all sat in it, and the comment on
+                // them had to explain that the state meant "your commits are unsigned".
+                // Same blocking effect (a required context is satisfied only by `success`), without
+                // the ambiguity: an unsigned commit is a *failed gate*, so say so.
+                conclusion: pass ? 'success' : 'failure',
                 output: { title: 'Developer Certificate of Origin', summary, text },
               });
-              core.info(`${CHECK_NAME} on ${headSha}: ${pass ? 'success' : 'action_required'}`);
+              core.info(`${CHECK_NAME} on ${headSha}: ${pass ? 'success' : 'failure'}`);
             } catch (e) {
               // The consequence is not "this run looks odd": the required check is missing, so GitHub
               // holds the PR at "Expected — waiting for status to be reported" indefinitely and no
