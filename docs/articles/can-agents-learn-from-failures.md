@@ -86,21 +86,32 @@ We need benchmarks that measure *learning*, not just *solving*. A model that can
 git clone https://github.com/Ikalus1988/MisakaNet.git
 cd MisakaNet
 
-# Validate task structure (no API keys needed)
+# Intended: validate task structure (no API keys needed).
+# Today: ModuleNotFoundError: No module named 'agents' — the harness is a stub.
 python3 scripts/lesson_reuse_bench.py --dry-run
 
-# Run with your agent
+# Intended: run with your agent (no agent has been scored yet)
 python3 scripts/lesson_reuse_bench.py --agent your-agent --compare
 ```
 
 ## What We've Learned So Far
 
-From our initial dry-run validation:
+**Nothing measured** — corrected 2026-09-25, because this section previously reported four results from a
+dry run that could not run:
 
-- All 3 task pairs are structurally valid
-- Task B always has a relevant lesson available in the pool
-- The scoring correctly rewards agents that retrieve and adapt lessons
-- The biggest differentiator is whether the agent *searches* before *debugging*
+| then | now |
+|---|---|
+| "All 3 task pairs are structurally valid" | the three pairs are hardcoded in the script; the files in `tasks/reuse/` are read by nothing, and the documented `--tasks` flag does not exist |
+| "Task B always has a relevant lesson available in the pool" | not evaluated by anything |
+| "The scoring correctly rewards agents that retrieve and adapt lessons" | `calculate_score` is a placeholder: *"Placeholder for actual score calculation"*, returning `1.0 if result == "success"` |
+| "The biggest differentiator is whether the agent *searches* before *debugging*" | not measured |
+
+`python3 scripts/lesson_reuse_bench.py --dry-run` exits at import (`from agents import YourAgent`,
+`ModuleNotFoundError`). So the honest state of this article's subject is: **a good design, with a harness
+that does not execute and a metric that does not exist** — implementing it is
+[#2221](https://github.com/Ikalus1988/MisakaNet/issues/2221). The design itself is unchanged and worth
+building: nothing else in this repository measures whether an agent that *finds* a lesson does better than one
+that does not.
 
 ## Next Steps
 
