@@ -128,6 +128,65 @@ jobs:
       # Publish only when this run tagged a release: `gh workflow run` is one of
       # the two events a GITHUB_TOKEN push *can* still create, so this is the
       # single, explicit publish path.
+      # `release-please` regenerates the release PR's changelog from the commit range on **every** push to
+      # `main`, so a repair made by hand is undone by the next push. The repair therefore belongs here, in
+      # the same run, right after the action that regenerates it.
+      #
+      # Measured 2026-09-25 on the open 2.35.0 release PR: 137 bullet lines, 104 distinct entries, **33 of
+      # them listed twice** — because a PR that reached `main` through a merge commit whose message also
+      # carried the PR title looks conventional twice (the branch commit and the merge commit it merged).
+      # `tests/test_changelog_shape.py` refuses to release in that state and is right to: the notes are the
+      # one page a user reads to decide whether to upgrade, and a change listed twice reads as two changes.
+      # The *cause* is fixed (every merge path squashes — pinned by `test_every_merge_path_squashes`), but
+      # the damage from the merges that already happened stays in the range until the release carrying it is
+      # tagged, so this step has to keep running.
+      - name: Drop the duplicate entries in the pending release section
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}          # reads only
+          # A PAT, not GITHUB_TOKEN, for the push: a bot push creates *held* runs on the release PR
+          # (`action_required`), and `DCO / Signed-off-by` is a required check — the release PR would then
+          # be unmergeable for a reason nobody can see. Same lesson as `fix-dco.yml` (#2204).
+          PUSH_TOKEN: ${{ secrets.SHELDON_PAT }}
+        run: |
+          set -euo pipefail
+
+          BRANCH=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 50 \
+                     --json headRefName \
+                     --jq '[.[] | select(.headRefName | startswith("release-please--")) | .headRefName][0] // empty')
+          if [ -z "$BRANCH" ]; then
+            echo "no open release PR — nothing to repair"
+            exit 0
+          fi
+
+          # The tool comes from `main` (this checkout), the file from the release branch: the branch is only
+          # ever `main` plus the release commit, but it can lag `main` by minutes, and a repair tool that
+          # exists only on the branch it is repairing would fail on the first run.
+          cp scripts/dedupe_release_entries.py "$RUNNER_TEMP/dedupe_release_entries.py"
+          git fetch --quiet origin "$BRANCH"
+          git checkout -B "$BRANCH" "origin/$BRANCH"
+
+          if python3 "$RUNNER_TEMP/dedupe_release_entries.py" --check; then
+            {
+              echo "### Release changelog"
+              echo
+              echo "No duplicate entries in the newest release section — nothing to repair."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          python3 "$RUNNER_TEMP/dedupe_release_entries.py" | tee -a "$GITHUB_STEP_SUMMARY"
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.dev"
+          git add CHANGELOG.md
+          if git diff --cached --quiet; then
+            echo "the script reported duplicates but the file did not change — not pushing"
+            exit 0
+          fi
+          git commit -s -m "chore(changelog): drop the duplicate entries in the pending release section"
+          git remote set-url origin "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:refs/heads/$BRANCH"
+          echo "repaired $BRANCH; its checks will run on the new head" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Dispatch the PyPI publish
         if: steps.release_tag.outputs.created == 'true'
         env:
