@@ -76,21 +76,20 @@ def dedupe(text: str) -> tuple[str, list[tuple[str, str]]]:
         return text, []
 
     section = lines[start:end]
-    best: dict[str, tuple[int, str]] = {}   # normalised entry -> (first line index, the copy to keep)
-    order: list[str] = []
+    # normalised entry -> the copy to keep. No index is stored: at rebuild time the entry is emitted where
+    # its *first* occurrence was, which the iteration below gives for free.
+    best: dict[str, str] = {}
     dropped: list[tuple[str, str]] = []
-    for index, line in enumerate(section):
+    for line in section:
         if not _BULLET.match(line):
             continue
         key = normalise(line)
         if key not in best:
-            best[key] = (index, line)
-            order.append(key)
+            best[key] = line
             continue
-        first_index, kept_line = best[key]
+        kept_line = best[key]
         if reference_count(line) > reference_count(kept_line):
-            # The later copy carries the PR link; keep it, at the position of the first occurrence.
-            best[key] = (first_index, line)
+            best[key] = line
             dropped.append((line.rstrip("\n"), kept_line.rstrip("\n")))
         else:
             dropped.append((kept_line.rstrip("\n"), line.rstrip("\n")))
@@ -108,7 +107,7 @@ def dedupe(text: str) -> tuple[str, list[tuple[str, str]]]:
         if key in emitted:
             continue
         emitted.add(key)
-        out.append(best[key][1])
+        out.append(best[key])
     return "".join(lines[:start] + out + lines[end:]), dropped
 
 
