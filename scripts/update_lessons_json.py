@@ -21,6 +21,41 @@ INDEXED_DIRS = ("core", "contrib")
 # Non-lesson markdown that must never be indexed (mirrors sync_lessons_to_d1.py).
 EXCLUDED = {"README.md", "index.md", "TEMPLATE.md", "CONTRIBUTING.md"}
 
+# The optional structured fields (#1783). MUST stay in lockstep with
+# `PLAIN_FIELD_KEYS` in workers/register-proxy-sw.js — that array is the contract
+# for what the search projection can carry, and this tuple is the only thing that
+# puts the values where the projection can read them.
+#
+# WHY THIS EXISTS: the D1 path gets these three from the row's `frontmatter`
+# column, so they arrived there and nowhere else. The GitHub/KV fallback reads
+# `data/lessons.json` (register-proxy-sw.js: loadLessons → fetchFromGitHub) and
+# applies no lift at all, so the only thing the projection can see is a
+# *top-level key on the index entry* — and the generator never wrote one. The
+# symptom was invisible: `evidence_level` works on that path purely because the
+# generator does emit it top-level (411/411), and the fallback code beside the
+# plain fields (`frontmatterField(lesson.frontmatter, …)`) cannot rescue them
+# because no index entry has a `frontmatter` key. docs/maintainer/lesson-fields.md
+# documented this gap; this closes it.
+PLAIN_FIELD_KEYS = ("summary_plain", "trigger", "verify")
+
+
+def plain_fields(meta: dict) -> dict:
+    """The three structured fields, or `{}` when a lesson carries none.
+
+    Mirrors `plainFields()` in workers/register-proxy-sw.js: a *usable* value is a
+    non-empty string, and anything else — missing, "", a number, the nested
+    objects legacy frontmatter carries — counts as absent. Emitting nothing for
+    such a lesson is what keeps the worker's byte-identity guarantee ("a lesson
+    without these fields answers exactly as it did before") structural rather
+    than a promise.
+    """
+    out = {}
+    for key in PLAIN_FIELD_KEYS:
+        value = meta.get(key)
+        if isinstance(value, str) and value.strip():
+            out[key] = value.strip()
+    return out
+
 
 def parse_frontmatter(text: str) -> dict:
     """Parse lesson frontmatter: JSON first, then YAML fallback.
@@ -213,6 +248,11 @@ def main():
             "tags": tags,
             "summary": summary,
             "preview": preview,
+            # The three optional structured fields (#1783), top-level so the
+            # GitHub/KV fallback can serve them. NOTE: singular `trigger` — the
+            # plural `triggers` below is a different, older field (the structured
+            # intent object from schemas/lesson.json); do not conflate them.
+            **plain_fields(meta),
             "url": f"lessons/{rel_path}",
             "created": meta.get("created", ""),
             "updated": meta.get("updated", ""),
