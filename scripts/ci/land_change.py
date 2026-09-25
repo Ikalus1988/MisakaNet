@@ -263,6 +263,27 @@ class Land:
             )
         return proc.stdout
 
+    def head_is(self, base: str) -> tuple[bool, str, str]:
+        """(HEAD == origin/<base>, HEAD sha, origin/<base> sha).
+
+        The branch this job pushes becomes a pull request against `base`, and it is pushed as `HEAD` — so if
+        something earlier in the workflow moved the checkout, the pull request carries *that* branch's commits
+        too. Measured 2026-09-25: `release-please.yml`'s release-PR update left the workspace on
+        `release-please--branches--main`, and the job that lands the version sync pushed three commits — the
+        release commit, the changelog repair, and its own docs change — to `bot/release-version-sync`. The
+        resulting PR was titled "docs: sync version to v2.34.0" and carried the entire **2.35.0 version bump**
+        (`.release-please-manifest.json`, `pyproject.toml`, the worker's `MCP_VERSION`, `server.json`,
+        `CHANGELOG.md`), which the shape guard then flagged. Landing is a statement about the generated files,
+        not about whatever branch the checkout happens to be on.
+        """
+        head = self.git("rev-parse", "HEAD").strip()
+        try:
+            base_sha = self.git("rev-parse", f"origin/{base}").strip()
+        except LandError:
+            # A shallow or single-branch checkout may not have the remote ref; not this rule's business.
+            return True, head, ""
+        return head == base_sha, head, base_sha
+
     def status_porcelain(self) -> str:
         return self.git("status", "--porcelain")
 
@@ -390,6 +411,18 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     land = Land(args.repo, os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN", ""))
+
+    # Fail loudly when the checkout is not on the branch this pull request targets. The alternative is a
+    # pull request whose title describes one change and whose diff contains another (see `head_is`).
+    same, head_sha, base_sha = land.head_is(args.base)
+    if not same:
+        print(
+            f"::error::HEAD is {head_sha[:10]} but origin/{args.base} is {base_sha[:10] or 'unknown'} — the "
+            f"workflow moved the checkout, so landing would push that branch's commits to `{args.branch}` "
+            "as well. Restore the checkout (`git checkout --force " + args.base + "`) after whatever moved "
+            "it, or land from a separate worktree."
+        )
+        return 1
 
     # No `--paths`: everything the run changed. That is what the workflows these jobs replaced did
     # (`git add -A`), and a hand-written path list is how the node-counter job once threw away the

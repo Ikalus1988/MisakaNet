@@ -227,13 +227,39 @@ def test_every_git_push_in_this_workflow_supplies_a_credential():
     for step in steps():
         run = step.get("run") or ""
         for line in run.splitlines():
-            if line.strip().startswith("git -c http.extraheader=") and " push " in line:
+            if "http.extraheader=" in line and " push " in line:
                 continue
             if line.strip().startswith("#"):
                 continue
             assert not (line.strip().startswith("git push") or "git push origin" in line), (
                 f"`{step.get('name')}` pushes without naming a credential, and the checkout persists "
                 f"none:\n{line}")
+
+
+def test_the_repair_does_not_move_the_shared_workspace():
+    """The repair used to run in the checkout, leaving it on the release branch. The step that lands the
+    version sync stages with `git add -A` and pushes **HEAD**, so it then shipped the release commit and the
+    repair along with its own change: measured 2026-09-25, PR #2210 was titled "docs: sync version to
+    v2.34.0" and carried the entire 2.35.0 bump. A worktree keeps the shared checkout where it was.
+    """
+    run = step_running_the_script()["run"]
+    assert "git worktree add" in run, "the repair must not switch the branch the rest of the workflow is on"
+    assert "git checkout -B" not in run, run
+    assert 'git -C "$WORKTREE"' in run, "the repair's git calls must run inside the worktree"
+
+
+def test_the_checkout_is_restored_after_the_action_that_moved_it():
+    """The release-please action rewrites the release branch in place and leaves the workspace on it."""
+    names = [str(s.get("name") or s.get("uses") or "") for s in steps()]
+    action = next(i for i, s in enumerate(steps())
+                  if str(s.get("uses", "")).startswith("googleapis/release-please-action"))
+    restore = next((i for i, n in enumerate(names) if n == "Return the checkout to main"), None)
+    assert restore is not None, "nothing returns the checkout to main after the action moves it"
+    assert restore > action, f"the restore ({restore}) runs before the action ({action})"
+    assert str(steps()[restore]["run"]).strip() == "git checkout --force main", steps()[restore]["run"]
+    # …and it must come before anything that stages files for a landing.
+    lander = next(i for i, s in enumerate(steps()) if "land_change.py" in str(s.get("run") or ""))
+    assert restore < lander, "the lander would still push the branch the action left behind"
 
 
 def test_the_repair_tool_exists_where_the_workflow_reads_it_from():
