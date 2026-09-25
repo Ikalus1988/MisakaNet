@@ -53,6 +53,16 @@ jobs:
       - name: Regenerate lesson/topic pages
         run: python3 scripts/build_lesson_pages.py
 
+      # The OKF export had no writer for two and a half months (#2185): `data/okf/lessons.jsonl` was last
+      # written 2026-07-07 while the corpus grew to 411 lessons, and because `data/sag.db` is built from it
+      # and the search path prefers SAG over the complete BM25 index, following the documented setup produced
+      # an index covering 47% of the corpus — recall *worse* than building nothing. It looked fine in the
+      # repository (tracked, valid format, readable), which is why only a relation, not a number, catches it.
+      # Regenerating it here makes it the same kind of artifact as `data/lessons.json`: derived, refreshed
+      # daily, landed through the self-merging pull request below.
+      - name: Regenerate the OKF export
+        run: python3 scripts/export_okf.py
+
       - name: Check for changes
         id: check
         run: |
@@ -96,4 +106,4 @@ jobs:
           python3 scripts/ci/land_change.py \
             --branch bot/update-lessons \
             --title "chore: auto-update lessons.json, public counts and generated pages" \
-            --note "data/lessons.json, every managed public lesson count, and the static lesson/topic pages."
+            --note "data/lessons.json, the OKF export (data/okf/lessons.jsonl), every managed public lesson count, and the static lesson/topic pages."
