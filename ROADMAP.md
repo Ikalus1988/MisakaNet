@@ -95,7 +95,7 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 | 基线：Smithery / GitHub `/mcp` 暂停 | **仍然成立** | 与 External channel policy 一致，本轮无外部证据可推翻（**未验证**外部页面） |
 | 8月 v2.17.0：Lesson Lint（P0） | **已完成** | `scripts/lesson_lint.py` 存在；`.github/workflows/lesson-quality.yml:31` 以 `--fail-on high` 跑 |
 | 8月 v2.17.0：GX1 闭环（#968 合并） | **已放弃** | commit `42e374345 fix(security): revert GX1 changes, keep security hotfix only`——GX1 被显式回滚，只保留安全修复 |
-| 8月 v2.17.0：版本漂移清理（同步到 v2.17） | **已过时** | 手工对齐被两个自动机制取代：`scripts/sync_lesson_count.py --check`（计数）+ `scripts/update_status.py`（STATUS.md 头部自述"自动更新于 2026-09-15 04:28 UTC"） |
+| 8月 v2.17.0：版本漂移清理（同步到 v2.17） | **已过时** | 手工对齐被自动机制取代：`scripts/sync_lesson_count.py --check`（计数）。**2026-09-25 更正**：这里原写"+ `scripts/update_status.py`"，该生成器已连同 `STATUS.md` 一起删除（#2095），且它从未在任何 workflow 里跑过 |
 | 8月 v2.17.0：Security 收尾（#969 / #964） | **部分可验证** | 回滚提交带 #964（`42e374345`）；#969 在 git 历史里只出现在 `docs/maintainer/handoff-2026-08-11.md`，**未验证**已关闭 |
 | 8月 v2.17.0：定位固化到 `CONCEPTS.md` | **已完成（路径需更正）** | 文件是 **`docs/CONCEPTS.md`**，开篇即"不是通用记忆系统，不是 Agent runtime，不是向量数据库"；仓库根目录没有 `CONCEPTS.md` |
 | 8月 v2.17.0：Duplicate governance | **已完成** | `docs/duplicate-governance.md` 存在 |
@@ -299,7 +299,8 @@ python3 -c "import json;d=json.load(open('data/regression_queries.json'));print(
 
 > 状态（2026-09-16）：Lesson Lint、Duplicate governance、定位固化（**文件在 `docs/CONCEPTS.md`**）
 > 已完成；**GX1 闭环已放弃**（commit `42e374345` 显式回滚，只留安全修复）；版本漂移清理已过时
-> （改由 `sync_lesson_count.py --check` + `update_status.py` 自动维护）；DoD 里的
+> （改由 `sync_lesson_count.py --check` 自动维护——原文还写了 `update_status.py`，该生成器与
+> `STATUS.md` 已于 #2095 一并删除）；DoD 里的
 > `scripts/site_health.py` 已改名 `site_health_check.py`；289 这个数字已前移。
 
 Goal: 把 v2.16.0 的增长势能收敛成"可信、可维护、可审计的 failure-memory 网络"。
