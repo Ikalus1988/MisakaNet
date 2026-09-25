@@ -99,17 +99,25 @@ def lesson_to_okf(path: Path, domain_filter: str | None = None) -> dict | None:
     if not meta:
         return None
 
-    # Domain: use frontmatter domain, fallback to folder name
+    # Domain: the frontmatter is the only source.
+    #
+    # The previous version inferred one from the second path component — "fallback to folder name" — and did
+    # it by splitting a string on a **backslash**:
+    #
+    #     parts = str(path.relative_to(REPO_ROOT)).split("\\")
+    #
+    # On Windows that yields ("lessons", "en", "x.md"); on POSIX `str(Path(...))` contains no backslash at
+    # all, so the split returns one element and the whole fallback never ran. The same corpus therefore
+    # exported two different files, and only on one platform: `lessons/en/mkdir-p-race-safe.md` came out with
+    # `"domain": "en"` on Windows and `""` on POSIX. The windows legs found it the day the export became a
+    # graded artifact (2026-09-25) — `tests/test_okf_export_freshness.py` compares bytes, so it surfaced as
+    # "STALE — the tracked export has 411 records, the corpus exports 411 (+0)".
+    #
+    # A directory is not a domain (`contrib`/`en`/`pt-br` are layout, and `docs/agents/repo-operations.md`
+    # records the directory-as-domain confusion separately), so the explicit rule is the frontmatter, and
+    # POSIX — the platform that produces the tracked file and builds the index in CI — keeps the output it
+    # has always had.
     domain = meta.get("domain", "")
-    if not domain or domain == "contrib":
-        # Try to infer from folder
-        parts = str(path.relative_to(REPO_ROOT)).split("\\")
-        if len(parts) >= 2:
-            folder = parts[1]  # e.g., "core", "contrib"
-            if folder in ("core", "contrib"):
-                domain = meta.get("subdomain", "general")
-            else:
-                domain = folder
 
     if domain_filter and domain != domain_filter:
         return None
@@ -158,13 +166,73 @@ def lesson_to_okf(path: Path, domain_filter: str | None = None) -> dict | None:
     return okf
 
 
+def build_records(domain_filter: str | None = None) -> list[dict]:
+    """The OKF records for the canonical corpus, in order. No clock, no environment: same input, same output.
+
+    Split out of `main()` so `--check` (and `tests/test_okf_export_freshness.py`) can compare a fresh export
+    against the tracked one without writing a file first. Determinism is a property this file *needs*: the
+    tracked `data/okf/lessons.jsonl` is refreshed by a daily job, and a non-reproducible export would show up
+    as a change every single day.
+    """
+    from misakanet.lesson_index import canonical_lessons
+
+    records = []
+    for path in canonical_lessons(LESSONS_DIR):
+        if path.name == "README.md":
+            continue
+        record = lesson_to_okf(path, domain_filter=domain_filter)
+        if record:
+            records.append(record)
+    return records
+
+
+def serialise(records: list[dict], fmt: str = "jsonl") -> str:
+    """Exactly the bytes the export writes — one place, so `--check` cannot drift from the writer."""
+    if fmt == "jsonl":
+        return "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records)
+    return json.dumps(records, ensure_ascii=False, indent=2)
+
+
+def check_export(output_dir: Path, domain_filter: str | None, fmt: str) -> int:
+    """Compare a fresh export with the tracked one. 0 = identical, 1 = stale, 2 = missing."""
+    target = output_dir / ("lessons.jsonl" if fmt == "jsonl" else "lessons.json")
+    if not target.is_file():
+        print(f"{target} does not exist — run `python3 scripts/export_okf.py` to create it.", file=sys.stderr)
+        return 2
+
+    fresh = serialise(build_records(domain_filter), fmt)
+    tracked = target.read_text(encoding="utf-8")
+    if fresh == tracked:
+        print(f"{target}: up to date ({len(fresh.splitlines())} records)")
+        return 0
+
+    fresh_lines = fresh.splitlines()
+    tracked_lines = tracked.splitlines()
+    print(f"{target}: STALE — the tracked export has {len(tracked_lines)} records, the corpus exports "
+          f"{len(fresh_lines)} ({len(fresh_lines) - len(tracked_lines):+d}).", file=sys.stderr)
+    for index, (a, b) in enumerate(zip(tracked_lines, fresh_lines)):
+        if a != b:
+            print(f"  first difference at record {index + 1}:", file=sys.stderr)
+            print(f"    tracked: {a[:120]}", file=sys.stderr)
+            print(f"    fresh:   {b[:120]}", file=sys.stderr)
+            break
+    print("  Run `python3 scripts/export_okf.py` — `data/sag.db` is built from this file, and the search "
+          "path prefers SAG over the complete BM25 index (issue #2185).", file=sys.stderr)
+    return 1
+
+
 def main():
     parser = argparse.ArgumentParser(description="Export MisakaNet lessons to OKF format")
     parser.add_argument("--output", type=str, default=str(DEFAULT_OUTPUT), help="Output directory")
     parser.add_argument("--domain", type=str, default=None, help="Filter by domain")
     parser.add_argument("--format", choices=["jsonl", "json"], default="jsonl", help="Output format")
     parser.add_argument("--from-index", action="store_true", help="Read from data/lessons.json instead of raw files")
+    parser.add_argument("--check", action="store_true",
+                        help="Only compare: exit 1 when the tracked export does not match the corpus")
     args = parser.parse_args()
+
+    if args.check:
+        sys.exit(check_export(Path(args.output), args.domain, args.format))
 
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -205,34 +273,17 @@ def main():
         print(f"Domains: {len(set(r['domain'] for r in okf_records))}")
         return
 
-    # Collect canonical (deduped) lesson files — audit T2.5 parity with the
-    # local search corpus and public index.
+    # Collect canonical (deduped) lessons and convert — one implementation, shared with `--check`
+    # (audit T2.5 parity with the local search corpus and public index).
     from misakanet.lesson_index import canonical_lessons
 
-    lesson_files = list(canonical_lessons(LESSONS_DIR))
-
-    # Convert to OKF
-    okf_records = []
-    skipped = 0
-    for path in lesson_files:
-        if path.name == "README.md":
-            continue
-        record = lesson_to_okf(path, domain_filter=args.domain)
-        if record:
-            okf_records.append(record)
-        else:
-            skipped += 1
+    okf_records = build_records(args.domain)
+    skipped = sum(1 for path in canonical_lessons(LESSONS_DIR)
+                  if path.name != "README.md" and lesson_to_okf(path, domain_filter=args.domain) is None)
 
     # Write output
-    if args.format == "jsonl":
-        output_file = output_dir / "lessons.jsonl"
-        with open(output_file, "w", encoding="utf-8") as f:
-            for record in okf_records:
-                f.write(json.dumps(record, ensure_ascii=False) + "\n")
-    else:
-        output_file = output_dir / "lessons.json"
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(okf_records, f, ensure_ascii=False, indent=2)
+    output_file = output_dir / ("lessons.jsonl" if args.format == "jsonl" else "lessons.json")
+    output_file.write_text(serialise(okf_records, args.format), encoding="utf-8")
 
     # Summary
     print(f"Exported {len(okf_records)} lessons to {output_file}")

@@ -370,6 +370,28 @@ def _installer_version() -> str:
     return match.group(1) if match else ""
 
 
+# Same shape the server accepts for a referral code, and the same rule the client writes with
+# (`scripts/referral.py`). A file another process wrote decides what leaves this machine, so it is
+# checked here rather than trusted (#1996).
+REFERRAL_SHAPE = re.compile(r"^[A-Za-z0-9]{4,16}$")
+
+
+def _declared_referral(home: Path) -> str:
+    """The code of the node that invited this one, or '' when this machine has not said.
+
+    Recorded by `python3 scripts/referral.py --apply=CODE` into `~/.misakanet-agent/referral_code`,
+    which every client on the machine can read. It is sent once, at registration: the server counts a
+    new node against that code, so the invitation finally exists somewhere other than the inviting
+    machine's git history (#1996) — and renewing the same node never counts twice.
+    """
+    path = _state_dir(home) / "referral_code"
+    try:
+        found = path.read_text(encoding="utf-8").strip() if path.exists() else ""
+    except OSError:
+        return ""
+    return found if REFERRAL_SHAPE.match(found) else ""
+
+
 def _context_headers(agent: str, home: Path) -> dict:
     """The self-declared hint headers that accompany the credential on every MCP entry we write.
 
@@ -791,9 +813,6 @@ def install_dsh(home: Path, dry: bool, rep: Report) -> None:
         f"{ENDPOINT}（prompt.md §0 有可直接粘的命令）")
 
 
-STATE_DIR = Path.home() / ".misakanet-agent"
-
-
 def _state_dir(home: Path) -> Path:
     """Where identity/token live. `home` is honoured so tests never touch the real one."""
     return home / ".misakanet-agent"
@@ -898,7 +917,11 @@ def ensure_identity(home: Path, endpoint: str, dry: bool, rep: Report) -> None:
         client_path.parent.mkdir(parents=True, exist_ok=True)
         client_path.write_text(client_id, encoding="utf-8")
 
-    result = _post(endpoint, "misakanet_register", {"agent_type": "setup", "client_id": client_id})
+    payload = {"agent_type": "setup", "client_id": client_id}
+    referral = _declared_referral(home)
+    if referral:
+        payload["referral_code"] = referral
+    result = _post(endpoint, "misakanet_register", payload)
     token = str(result.get("token") or "")
     if not token:
         rep.needs_manual(

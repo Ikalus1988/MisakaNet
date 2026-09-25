@@ -4,34 +4,36 @@ Run with: python3 -m pytest tests/test_ci_self_heal.py -v
 """
 import json
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
+
+from posix_shell import require_posix_shell
+
+
+def _shell_path(path) -> str:
+    """A path a POSIX shell can open, rather than a Windows one.
+
+    On Windows the retry helper hands the command to a nested `bash -c`, i.e. the script path
+    arrives as shell *text*, where MSYS reads every backslash as an escape: `bash
+    C:\\Users\\RUNNER~1\\…\\t.sh` asks for `C:UsersRUNNER~1…t.sh`, so a file that exists is
+    "No such file or directory". Forward slashes are what Git Bash expects (`C:/Users/…`) and
+    are already correct on Linux and macOS.
+    """
+    return Path(path).as_posix()
 
 
 class TestRetryBackoff(unittest.TestCase):
     """Test retry action behavior via subprocess."""
 
-    @classmethod
-    def setUpClass(cls):
-        cls.bash = shutil.which("bash")
-        if cls.bash:
-            probe = subprocess.run(
-                [cls.bash, "-c", "echo ok"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=10,
-            )
-            if probe.returncode != 0 or "ok" not in (probe.stdout or ""):
-                cls.bash = None
-
     def setUp(self):
-        if not self.bash:
-            self.skipTest("requires a usable POSIX bash")
+        # `shutil.which("bash")` is not a usable shell on windows-latest: it finds
+        # `C:\Windows\System32\bash.exe`, the WSL launcher, in an image with no distribution
+        # installed. tests/posix_shell.py is the suite's one resolver, and it probes instead of
+        # trusting PATH; finding the shell is not enough, the paths handed to it also matter.
+        self.bash = require_posix_shell()
 
     def _run_retry(self, command, max_attempts=3, backoff="exponential", base_seconds=1, retry_codes=""):
         """Helper: run a command through retry logic."""
@@ -102,7 +104,7 @@ class TestRetryBackoff(unittest.TestCase):
             f.write('exit 0\n')
             script_path = f.name
         try:
-            result = self._run_retry(f"bash {script_path}", max_attempts=3, base_seconds=1)
+            result = self._run_retry(f"bash {_shell_path(script_path)}", max_attempts=3, base_seconds=1)
             self.assertEqual(result.returncode, 0, f"Expected success, got: {result.stdout} {result.stderr}")
             self.assertIn("attempts=3", result.stdout)
         finally:

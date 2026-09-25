@@ -64,6 +64,10 @@ function createEnv(opts = {}) {
             return { results: [{ count: next }] };
           }
           if (sql.includes('FROM search_signals')) {
+            if (sql.includes('GROUP BY')) {
+              if (opts.groupsThrow) throw new Error('D1_ERROR: no such column: domain');
+              return { results: opts.signalGroups || [] };
+            }
             statsBinds.push(stmt._bound);
             if (opts.statsThrows) throw new Error('D1_ERROR: no such table: search_signals');
             return { results: opts.signalRows || [] };
@@ -318,4 +322,74 @@ test('a client_id becomes a pseudonymous hint, never the raw value', async () =>
   assert.match(row.client_hint || '', /^[0-9a-f]{8}$/, 'the hint is a salted dedup key');
   assert.notEqual(row.client_hint, 'agent-alpha-1',
     'the row store must not hold the identifier as sent');
+});
+
+
+// ── the breakdown added for the ROADMAP's milestone ② (a table for release notes) ──────────
+
+test('the breakdown merges days and topics into count-only tables', async () => {
+  const env = createEnv({
+    signalRows: [{ solved: 1, created_at: '2026-09-16 10:00:00' }],
+    signalGroups: [
+      { day: '2026-09-16', domain: 'devops', hits: 1, total: 4 },
+      { day: '2026-09-16', domain: 'llm', hits: 3, total: 3 },
+      { day: '2026-09-15', domain: 'devops', hits: 0, total: 2 },
+    ],
+  });
+  const resp = await worker.fetch(
+    new Request('https://misakanet.org/api/search-signals/stats?days=30'), env);
+  const body = await resp.json();
+
+  const day = body.breakdown.by_day.find((r) => r.key === '2026-09-16');
+  assert.equal(day.hits, 4, 'the day sums both topics');
+  assert.equal(day.total, 7);
+  assert.equal(day.miss, 3, 'miss is derived, not asked of the database');
+  assert.equal(day.hit_rate, 4 / 7);
+
+  const devops = body.breakdown.by_domain.find((r) => r.key === 'devops');
+  assert.equal(devops.total, 6, 'the topic sums both days');
+  assert.equal(devops.hits, 1);
+  assert.equal(devops.hit_rate, 1 / 6);
+});
+
+test('the breakdown counts legacy rows as misses, like the report does', async () => {
+  // The SQL is `SUM(CASE WHEN solved = 1 ...)`, so a NULL solved contributes nothing to
+  // `hits` while still counting in `total` — the same conservative rule as the script.
+  const env = createEnv({
+    signalGroups: [{ day: '2026-09-16', domain: 'devops', hits: 0, total: 3 }],
+  });
+  const body = await (await worker.fetch(
+    new Request('https://misakanet.org/api/search-signals/stats'), env)).json();
+  assert.equal(body.breakdown.by_day[0].miss, 3);
+  assert.equal(body.breakdown.by_day[0].hit_rate, 0);
+});
+
+test('the breakdown adds no per-request detail to the response', async () => {
+  const env = createEnv({
+    signalRows: [{ solved: 1, created_at: '2026-09-16 10:00:00' }],
+    signalGroups: [{ day: '2026-09-16', domain: 'devops', hits: 1, total: 2 }],
+  });
+  const body = await (await worker.fetch(
+    new Request('https://misakanet.org/api/search-signals/stats'), env)).json();
+  const wire = JSON.stringify(body);
+  for (const forbidden of ['query', 'top_id', 'topId', 'query_hash']) {
+    assert.ok(!wire.includes(forbidden),
+      `the breakdown must stay count-only — "${forbidden}" appeared in the response`);
+  }
+  assert.ok(wire.includes('by_day') && wire.includes('by_domain'));
+});
+
+test('a deployment without the aggregate column still serves the rows', async () => {
+  // Deploy order: the script ships first and the worker follows, so the endpoint must keep
+  // answering while the old worker is still live (or when the column is missing).
+  const env = createEnv({
+    signalRows: [{ solved: 1, created_at: '2026-09-16 10:00:00' }],
+    groupsThrow: true,
+  });
+  const resp = await worker.fetch(
+    new Request('https://misakanet.org/api/search-signals/stats'), env);
+  assert.equal(resp.status, 200);
+  const body = await resp.json();
+  assert.equal(body.rows.length, 1);
+  assert.deepEqual(body.breakdown, { by_day: [], by_domain: [] });
 });

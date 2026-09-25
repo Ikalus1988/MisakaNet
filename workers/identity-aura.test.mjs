@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   IDENTITY_AURA,
@@ -66,7 +67,6 @@ test('wrong static token without pairing identity falls back to basic badge', as
 test('pairing token with registered identity yields the failure-memory badge', async () => {
   const kv = createFakeKV({
     'mcp_token:mcp_test123': JSON.stringify({ ip: '203.0.113.7' }),
-    'identity:203.0.113.7': JSON.stringify({ status: 'basic' }),
   });
   const env = { MCP_TOKEN: TOKEN, MISAKANET_KV: kv };
   const aura = await getIdentityAura(env, 'mcp_test123');
@@ -84,15 +84,19 @@ test('pairing token without identity record falls back to the basic badge', asyn
 
 // ── getIdentityAura: upgraded token ──
 
-test('upgraded identity yields the Japanese AIM拡散力場 badge', async () => {
-  const kv = createFakeKV({
-    'mcp_token:mcp_test123': JSON.stringify({ ip: '203.0.113.7' }),
-    'identity:203.0.113.7': JSON.stringify({ status: 'upgraded' }),
-  });
-  const env = { MCP_TOKEN: TOKEN, MISAKANET_KV: kv };
-  const aura = await getIdentityAura(env, 'mcp_test123');
-  assert.equal(aura, IDENTITY_AURA.upgraded);
-  assert.ok(aura.includes('AIM拡散力場'));
+test('the upgraded badge has no producer, and the read that reached for it is gone (2026-09-24)', async () => {
+  // The finding: `identity:<ip>` was read on every token-bearing MCP request and **written nowhere** —
+  // not in this worker, not in a script, not in the docs. The badge was unreachable since the feature
+  // shipped (9b7fe9813, 2026-08-08), and this test used to pass only because the fixture seeded the
+  // key it was asking about. The read is removed; the constant stays, because it documents the intent
+  // and `IDENTITY_AURA defines all three badge types` above asserts its text.
+  //
+  // To bring the feature back: add the writer for `identity:<ip>`, restore the read, and assert here
+  // that a paired token returns `upgraded`. Until then this test is the note that says so.
+  const source = readFileSync(new URL('./register-proxy-sw.js', import.meta.url), 'utf8');
+  assert.ok(!source.includes('identity:${'),
+    'the dead identity read is back — either wire a writer for it or remove it again');
+  assert.ok(IDENTITY_AURA.upgraded.includes('AIM拡散力場'));
 });
 
 test('unknown pairing token falls back to the basic badge', async () => {

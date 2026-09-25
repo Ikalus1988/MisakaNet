@@ -1,43 +1,67 @@
 {
-  "generated_at": "2026-09-20T23:18:23.888490+00:00",
+  "generated_at": "2026-09-25T05:06:29.035709+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(bootstrap): 第二个安装器落后一版 —— 一个上下文头都不写，且还在宣传已取消的读配额",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1965",
-      "timestamp": "2026-09-20T17:33:05Z",
+      "title": "fix(site): the contributor wall listed commit scopes as contributors — \"worker\", \"ci\", \"cf\"",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2195",
+      "timestamp": "2026-09-25T05:04:26Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(tests): settings.json 门禁对着正确的 Gemini CLI 文档开了火",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1963",
-      "timestamp": "2026-09-20T17:16:43Z",
+      "title": "fix(leaderboard): a bot sat at rank #2, and the snapshot could never correct itself",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2194",
+      "timestamp": "2026-09-25T04:58:37Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): fork PR 的 audit 假红 —— Auto-Merge Gate 拿着只读 token 去 merge",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1962",
-      "timestamp": "2026-09-20T17:12:49Z",
+      "title": "docs(skill): the skill taught a hosted-only tool without saying which surface",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2193",
+      "timestamp": "2026-09-25T04:39:16Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(setup): 安装器目标 6 → 10（Gemini CLI / Copilot CLI / OpenCode / Kiro），表驱动 + 形状门禁",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1958",
-      "timestamp": "2026-09-20T16:31:07Z",
+      "title": "fix(ci): the claim window said 8 hours and released after 4 — plus #1826 re-adjudicated",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2192",
+      "timestamp": "2026-09-25T04:34:14Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(setup): 代理环境下的探测失败应判\"不可信\"而非\"端点不可达\"",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/1955",
-      "timestamp": "2026-09-20T16:03:08Z",
+      "title": "feat(doctor): read the deployed version back, so a self-reported number has a live gate",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2191",
+      "timestamp": "2026-09-25T04:19:02Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "Supervisor reports 'daemon start failed' with no detail: the child's own log holds the reason",
+      "url": "lessons/contrib/daemon-start-failed-empty-detail-missing-credential.md",
+      "timestamp": "2026-09-21",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Migrating DSH_HOME with robocopy materializes the profile node_modules junctions, and dsh refuses to boot",
+      "url": "lessons/contrib/dsh-home-robocopy-junction-fallback-breakage.md",
+      "timestamp": "2026-09-21",
+      "domain": "devops",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "zsh: command not found: python — the interpreter exists, just not under that name",
+      "url": "lessons/contrib/python-command-not-found-only-python3.md",
+      "timestamp": "2026-09-21",
+      "domain": "python",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -53,30 +77,6 @@
       "url": "lessons/contrib/ci-fork-pr-run-held-as-action-required.md",
       "timestamp": "2026-09-19",
       "domain": "ci",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A GITHUB_TOKEN push cannot trigger workflows, so a branch sync freezes CI",
-      "url": "lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md",
-      "timestamp": "2026-09-19",
-      "domain": "ci",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Alembic upgrade fails after dependency update",
-      "url": "lessons/contrib/alembic-upgrade-failure.md",
-      "timestamp": "2026-09-15",
-      "domain": "devops",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "SSE streaming returns no data through reverse proxy",
-      "url": "lessons/contrib/sse-streaming-failure-via-proxy.md",
-      "timestamp": "2026-09-15",
-      "domain": "devops",
       "source": "lessons"
     },
     {

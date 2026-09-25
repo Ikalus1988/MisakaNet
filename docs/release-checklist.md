@@ -25,8 +25,15 @@ Standard release process. Do not skip steps.
    - Add new version section with highlights, new files, data stats
 
 5. **Update stale docs**
-   - Scan for old lesson/node counts: `grep -rn "235\+\|244\|旧数字" --include="*.md" --include="*.html" --include="*.json"`
-   - Update: README.md, docs/index.html, docs/search/index.html, docs/mcp-quickstart.md, STATUS.md, server.json description
+   - Lesson / node / domain counts are **not** hand-edited any more: the managed sentences are rewritten
+     by `scripts/sync_lesson_count.py`, which the daily jobs run (`update-lessons.yml` reaches it through
+     `update_lessons_json.py`; `sync-node-counter.yml` owns the node row). Run
+     `python3 scripts/sync_lesson_count.py --check` instead of grepping for the previous numbers — a
+     grep pattern is stale the moment the number moves, which is how this step used to read.
+   - Update the prose that no gate owns: README.md, docs/index.html, docs/search/index.html,
+     docs/mcp-quickstart.md, server.json description
+   - `STATUS.md` is gone (#2095 deleted the generator *and* the file, in that order of discovery — the
+     file was never in the repo). If a step here still names it, that step is stale, not the file.
 
 ## Release
 

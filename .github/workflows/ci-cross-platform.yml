@@ -8,6 +8,16 @@ on:
 permissions:
   contents: read
 
+# Superseded pushes used to queue a fresh full matrix each, and the older run kept holding
+# runners. On 2026-09-21 five Cross-Platform Tests runs were alive at once — two of them over 90 minutes old,
+# because their jobs were started before `timeout-minutes` existed — and the 9 windows jobs inside
+# them starved the whole account: 30+ runs sat queued and even the ubuntu legs could not start.
+# Cancelling a superseded *pull-request* run is always right, since the newer head is the one being
+# judged. Pushes to main are left to finish so their verdict is never thrown away.
+concurrency:
+  group: ci-cross-platform-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     strategy:
@@ -20,6 +30,31 @@ jobs:
           - os: macos-latest
             python-version: "3.11"
     runs-on: ${{ matrix.os }}
+    # Bound the leg. Without this a hang holds a runner for the default 6 hours: measured
+    # 2026-09-21, all three windows-latest legs sat in "Run Tests" for over 50 minutes on two
+    # different runs (one of them a docs-only PR), and a job that never ends reports nothing —
+    # not the failing test, not even a verdict. A normal leg is a few minutes; 30 is headroom,
+    # not a budget.
+    timeout-minutes: 30
+    env:
+      # Windows consoles default to cp1252, and this repository's scripts print non-ASCII by design
+      # (✅/✗, box drawing, and Chinese in the installer and lesson tooling). A script that cannot
+      # encode its own output exits non-zero before it does its job, so on Windows the *tests that
+      # run the scripts* failed for an environment reason:
+      #
+      #     File "...\scripts\adopt_pr.py", line 1193, in main
+      #       print(plan.render())
+      #     File "C:\...\Lib\encodings\cp1252.py", line 19, in encode
+      #     UnicodeEncodeError: 'charmap' codec can't encode character ...
+      #
+      # Measured 2026-09-21, the first run of this matrix that actually executed the suite: 77 failed
+      # on windows-latest, with this traceback shape as the single most common cause. The pytest job
+      # in `pr-checks.yml` never saw it (Linux is UTF-8), and `pypi-wheel-smoke.yml` already carries
+      # the same fix for the same reason — it was simply never applied here, because here the suite
+      # did not run at all (#2006). Forcing UTF-8 makes the environment match the other two platforms
+      # instead of changing what the product prints.
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
@@ -30,29 +65,82 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
+      # The repository itself has to be importable, and that is not the same thing as installing
+      # its dependencies. `tests/` does `from scripts.… import …` at the repository root, so the
+      # root must be on `sys.path`; this workflow installed `requirements.txt` only (and swallowed
+      # even that behind `|| echo "::warning::"`), so every leg died in collection with
+      # `ModuleNotFoundError: No module named 'scripts'` — and the verdict below read that as a pass.
+      # `pr-checks.yml` already spells the working recipe: dependencies hard-fail, the editable
+      # install is a warning, and `PYTHONPATH` is set explicitly.
       - name: Install Dependencies
+        shell: bash
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt || echo "::warning::Core dependency install failed"
-          pip install pytest pytest-cov
+          python -m pip install pytest pytest-cov
+          # External dependencies: hard failure, they are required to run anything.
+          grep -v '^-e ' requirements.txt > /tmp/reqs.txt || true
+          python -m pip install -r /tmp/reqs.txt \
+            || { echo "::error::Core dependency install failed"; exit 1; }
+          # The editable install of this checkout: losing it costs the `misakanet` package import
+          # convenience, not the test run (PYTHONPATH below covers the tests either way).
+          python -m pip install --no-deps -e . \
+            || echo "::warning::Editable install of this repository failed; tests still run against PYTHONPATH"
 
       - name: Run Tests
-        run: |
-          pytest tests/ \
-            -v --tb=short 2>&1 | tee test_output.txt
+        id: test
+        shell: bash
         continue-on-error: true
+        run: |
+          # `shell: bash` runs with `-e` (and `-o pipefail`), so a failing pipeline aborts the step
+          # *before* the lines below can record the code — which is what the first version of this
+          # fix did, measured on its own CI run: the macOS legs went red with "The test step produced
+          # no exit code — it did not run". Right conclusion, wrong reason, and the two real macOS
+          # failures were never named. `set +e` is the entire point of capturing the code.
+          set +e
+          pytest tests/ -v --tb=short 2>&1 | tee test_output.txt
+          PYTEST_EXIT=${PIPESTATUS[0]}
+          set -e
+          echo "pytest_exit=$PYTEST_EXIT" >> "$GITHUB_OUTPUT"
+          echo "pytest exit code: $PYTEST_EXIT"
+        env:
+          # `tests/` imports `scripts.…`, which only resolves with the repository root on the path.
+          PYTHONPATH: ${{ github.workspace }}
 
-      # Fail the job if tests actually failed (continue-on-error above only
-      # shields env-dependent tests; a real regression must turn CI red).
+      # The verdict has to come from pytest's **exit code**, not from a text match.
+      #
+      # This step used to run `grep -qE "==+ .* failed" test_output.txt`, which cannot match
+      # `Interrupted: 1 error during collection` or `1 error in 5.12s` — so eight legs whose entire
+      # suite failed to start printed "✅ Tests passed" (measured on PR #2002: `test
+      # (macos-latest, 3.12)` → `1 skipped, 1 error in 5.12s` → ✅, while the same job's report line
+      # said ❌). 0 = passed, 1 = failures, 2 = interrupted/collection error, 5 = **no tests ran**.
+      # Exit code 5 matters most of all: "the suite never started" must never read as "green".
       - name: Verify test outcome
         if: always()
         shell: bash
         run: |
-          if grep -qE "==+ .* failed" test_output.txt; then
-            echo "::error::Tests failed — see test_output.txt"
+          EXIT_CODE="${{ steps.test.outputs.pytest_exit }}"
+          if [ -z "$EXIT_CODE" ]; then
+            echo "::error::The test step produced no exit code — it did not run."
             exit 1
           fi
-          echo "✅ Tests passed"
+          case "$EXIT_CODE" in
+            0) echo "✅ Tests passed" ;;
+            1) echo "::error::Tests failed — see test_output.txt"; exit 1 ;;
+            2) echo "::error::The suite was interrupted (collection error) — pytest never ran the tests:"; tail -20 test_output.txt; exit 1 ;;
+            5) echo "::error::No tests were collected at all — a green run here would mean nothing"; exit 1 ;;
+            *) echo "::error::pytest exited $EXIT_CODE — treat as failure"; tail -20 test_output.txt; exit 1 ;;
+          esac
+          # Belt and braces: a suite that collected nothing is not a suite.
+          if grep -q "no tests ran" test_output.txt; then
+            echo "::error::'no tests ran' — the collection is empty"
+            exit 1
+          fi
+          COLLECTED=$(grep -oE "collected [0-9]+ item" test_output.txt | tail -1 | grep -oE "[0-9]+" || echo "")
+          if [ -z "$COLLECTED" ] || [ "$COLLECTED" -eq 0 ] 2>/dev/null; then
+            echo "::error::No collection summary in the log — this leg did not run tests"
+            exit 1
+          fi
+          echo "collected ${COLLECTED} tests"
 
       - name: Report Results
         if: always()
@@ -60,11 +148,13 @@ jobs:
         run: |
           OS="${{ matrix.os }}"
           PY="${{ matrix.python-version }}"
-          OUTCOME="${{ steps.test.outcome }}"
-          if [ "$OUTCOME" = "success" ]; then
+          # This line used to read `steps.test.outcome` — but the test step had **no `id`**, so the
+          # value was empty, the comparison was always false, and every leg printed "❌ …: FAIL"
+          # even when it passed (while the job succeeded). One signal, one conclusion.
+          EXIT_CODE="${{ steps.test.outputs.pytest_exit }}"
+          if [ "$EXIT_CODE" = "0" ]; then
             echo "✅ ${OS} / Python ${PY}: PASS"
           else
-            echo "❌ ${OS} / Python ${PY}: FAIL"
-            # Show last 30 lines of output on failure
+            echo "❌ ${OS} / Python ${PY}: FAIL (pytest exit ${EXIT_CODE:-none})"
             tail -30 test_output.txt 2>/dev/null || true
           fi

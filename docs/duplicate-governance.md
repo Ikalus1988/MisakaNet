@@ -64,8 +64,8 @@ lesson-b: DCO fix for Windows (额外的 troubleshooting)
 **示例：**
 ```markdown
 ## See also
-- [DCO Auto-Fix Workflow](../core/dco-auto-fix-workflow.md) - 自动修复工具
-- [DCO on Windows](../contrib/error-dco-signoff-windows.md) - Windows 特定问题
+- [DCO Auto-Fix Workflow](../lessons/core/dco-auto-fix-workflow.md) - 自动修复工具
+- [DCO on Windows](../lessons/contrib/error-dco-signoff-windows.md) - Windows 特定问题
 ```
 
 ### 3. Supersede（替代）
@@ -81,7 +81,7 @@ lesson-b: DCO fix for Windows (额外的 troubleshooting)
 **示例：**
 ```markdown
 > ⚠️ **This lesson has been superseded by**
-> [New DCO Fix](../contrib/dco-fix-v2.md) - 包含更多场景和自动修复
+> [New DCO Fix](../lessons/core/dco-auto-fix-workflow.md) - 包含更多场景和自动修复
 
 ---
 
@@ -100,10 +100,10 @@ lesson-b: DCO fix for Windows (额外的 troubleshooting)
 **评论模板：**
 ```
 感谢贡献！但这个 lesson 与现有内容重复：
-- [Existing Lesson](link) - 已覆盖相同问题
+- [Existing Lesson](../lessons/core/dco-auto-fix-workflow.md) - 已覆盖相同问题
 
 建议：
-1. 查看我们的 [contribution guidelines](CONTRIBUTING.md)
+1. 查看我们的 [contribution guidelines](../CONTRIBUTING.md)
 2. 考虑贡献不同领域的 lesson
 3. 如果现有 lesson 有遗漏，请在现有 lesson 上补充
 ```
@@ -165,7 +165,7 @@ lesson-b: DCO fix for Windows (额外的 troubleshooting)
 ## 参考
 
 - Memoria 的 governance / cooldown 思路
-- [Lesson Quality Scoring](lesson-quality-scoring.md)
+- [Lesson Quality Scoring](quality-score.md)
 - [Contribution Guidelines](../CONTRIBUTING.md)
 
 ---

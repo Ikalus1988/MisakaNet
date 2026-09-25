@@ -22,17 +22,17 @@ misakanet/
 └── node/                # Node scripts
     └── __init__.py
 
-scripts/
+scripts/                  # a partial map, not an inventory — but every name here must exist
+                          # (tests/test_architecture_map_paths.py enforces that)
 ├── new_lesson.py         # Interactive lesson wizard
 ├── contribute.py         # GitHub API lesson submission (no fork needed)
 ├── score_lessons.py      # Quality scoring for all lessons
 ├── referral.py           # Referral code viewer
 ├── setup.py              # Environment check + setup wizard
 ├── update_lessons_json.py  # Regenerate lessons.json
-├── update_status.py      # Regenerate STATUS.md
 └── demo.tape             # VHS demo recording script
 
-lessons/                  # Shared knowledge (407+ indexed lessons)  — count auto-refreshed by scripts/sync_lesson_count.py
+lessons/                  # Shared knowledge (411+ indexed lessons)  — count auto-refreshed by scripts/sync_lesson_count.py
 ```
 
 ## Communication
@@ -166,6 +166,6 @@ flowchart LR
     Lessons -. "deploy Worker on release" .-> Worker
 ```
 
-> **Three paths:** ① **Remote HTTP MCP** — anonymous agent → `misakanet.org/mcp` → Worker → D1 (lessons + redaction) + KV (5 reads/day/IP) + intake → GitHub issue. ② **Local stdio MCP** — `scripts/mcp_server.py` → BM25 engine over `lessons/` (unlimited). ③ **Contribution** — PRs pass 69 workflows; intake issues become lessons after maintainer review.
+> **Three paths:** ① **Remote HTTP MCP** — anonymous agent → `misakanet.org/mcp` → Worker → D1 (lessons + redaction) + KV (per-address burst window only — reads have been unlimited since 2026-09-18; it is a speed limit, not a quota) + intake → GitHub issue. ② **Local stdio MCP** — `scripts/mcp_server.py` → BM25 engine over `lessons/` (unlimited). ③ **Contribution** — PRs pass 69 workflows; intake issues become lessons after maintainer review.
 
 _Lifted from the README (2026-09-20): the README keeps the one-paragraph version and points here._

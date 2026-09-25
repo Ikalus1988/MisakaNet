@@ -20,9 +20,10 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write   # the mirror lands through the auto-merging PR, not a push to main
 
-# Serialised: the commit below rebases onto main, and two runs racing on the same file is how
-# this repository previously landed a conflicted data commit.
+# Serialised: two runs racing on the same branch would force-push over one another, and two runs
+# racing on the same file is how this repository previously landed a conflicted data commit.
 concurrency:
   group: mirror-node-counter
   cancel-in-progress: false
@@ -32,6 +33,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          # `persist-credentials: false`, because `land_change.py` supplies its own: it pushes
+          # `https://x-access-token:<PAT>@…`, and the checkout's stored token takes precedence over
+          # the URL — so the branch went out as `github-actions[bot]` and every run on its pull request
+          # came back `action_required`: held, never executed, with nothing able to satisfy the required
+          # checks, so the self-merging PR could not merge. Measured 2026-09-25: 39 held runs on
+          # `bot/release-version-sync`, 24 on `bot/build-feed`, and the version-sync PR stuck.
+          persist-credentials: false
 
       - name: Read the live counter into data/counter.json
         # Fails loudly instead of writing a bad number: the script refuses a payload that is
@@ -42,26 +51,30 @@ jobs:
       - name: Refresh every surface that quotes it
         run: python3 scripts/sync_lesson_count.py
 
-      - name: Commit when it moved
+      - name: Land the mirror through a pull request that merges itself
+        # Was `git push` — refused since 2026-09-22 by the ruleset on `main`, which requires three
+        # status checks on any commit that lands there and exempts nobody: run 35843302110 died
+        # here on 2026-09-23 after the two steps above had read the live counter successfully, so
+        # the number the endpoint served was dropped on the floor. See
+        # docs/maintainer/automation-lands-via-pr.md.
+        #
+        # `land_change.py` stages **everything** the two scripts just changed, not a hand-written
+        # list of paths. The list used to be `data/counter.json docs/llms.txt
+        # docs/.well-known/llms.txt`, which silently threw away the README tables the refresh step
+        # had just corrected: the counter moved to 357 while README.zh-CN.md and README.ja.md
+        # stayed at 333, so `sync_lesson_count.py --check` (and `test_lesson_count_ssot.py`)
+        # failed on main for every PR opened afterwards — found 2026-09-19 on PR #1859.
+        #
+        # A run with nothing to mirror opens no pull request and still exits 0, so a quiet day is
+        # not a red job.
+        env:
+          # `SHELDON_PAT`, never `GITHUB_TOKEN`: a branch pushed with `GITHUB_TOKEN` starts no
+          # workflow runs, so the required checks would never report and the auto-merge below would
+          # wait forever. `.github/workflows/auto-merge-docs.yml` documents the third time this
+          # repository paid for that.
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
         run: |
-          # `git status --porcelain`, not `git diff --quiet`: the latter ignores untracked files, so a
-          # file the refresh *created* would take this early exit and never be committed — the same
-          # "the fix ran and its result was dropped" shape as the discarded README tables below.
-          if [ -z "$(git status --porcelain)" ]; then
-            echo "No change — the file and its surfaces already match the live counter."
-            exit 0
-          fi
-          git status --porcelain
-          git config user.name "misakanet-bot"
-          git config user.email "bot@misakanet.dev"
-          # Everything the two scripts just changed, not a hand-written list of paths. The list used
-          # to be `data/counter.json docs/llms.txt docs/.well-known/llms.txt`, which silently threw
-          # away the README tables the refresh step had just corrected: the counter moved to 357
-          # while README.zh-CN.md and README.ja.md stayed at 333, so `sync_lesson_count.py --check`
-          # (and `test_lesson_count_ssot.py`) failed on main for every PR opened afterwards — found
-          # 2026-09-19 on PR #1859. The `git diff --quiet` guard above means this can only ever stage
-          # what the refresh actually produced.
-          git add -A
-          git commit -m "chore(data): mirror the live node counter and its surfaces"
-          # main moves under this job; retry once on a rejected push rather than losing the read.
-          git push || { git pull --rebase --autostash && git push; }
+          python3 scripts/ci/land_change.py \
+            --branch bot/sync-node-counter \
+            --title "chore(data): mirror the live node counter and its surfaces" \
+            --note "The mirror of the live KV counter, plus every public surface that quotes it."

@@ -1,0 +1,17 @@
+{
+  "id": "1130-python-name-vs-program",
+  "why": "the oldest intake in the backlog (32d): the fix was 'python is installed, just not under that name'. Held back from #2025 only because its lesson lived in another PR; it lands here as the case that proves an intake closed months after the repo stopped tracking it.",
+  "intake": 1130,
+  "source": "your-agent",
+  "expected": {
+    "emitted": true,
+    "lessons": [
+      "lessons/contrib/python-command-not-found-only-python3.md"
+    ],
+    "evidence_level": "E1",
+    "channels": [
+      "github",
+      "mcp"
+    ]
+  }
+}

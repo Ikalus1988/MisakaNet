@@ -15,7 +15,33 @@ labels: ["enhancement", "bounty"]
 
 ## 🛠️ MANDATORY ACCEPTANCE CRITERIA (AC)
 
-To claim the reward and get your PR merged, your Agent/submission **MUST** satisfy all 4 conditions below.
+To claim the reward and get your PR merged, your Agent/submission **MUST** satisfy all 5 conditions below.
+
+**0. REPRODUCIBLE EVIDENCE — the condition most submissions fail (added 2026-09-21, #2041)**
+
+State the command you ran and the output you got. Not a description of what you did — the command
+and its output, pasted.
+
+```console
+$ curl -sS https://misakanet.org/mcp -H 'Content-Type: application/json' \
+    -H 'MCP-Protocol-Version: 2025-06-18' -H 'Origin: https://misakanet.org' \
+    -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | jq '.result.tools | length'
+7
+```
+
+Why this is a condition rather than a suggestion: on 2026-09-21 three submissions were closed for
+carrying **zero** executable evidence — no command, no output, no endpoint — while a fourth was
+closed because its "field report" claimed a verified run whose quoted `tools/list` returned **1**
+tool (the live endpoint returns 7). A measurement that cannot be reproduced is not evidence, and a
+submission without evidence cannot be reviewed, only guessed at.
+
+Rules:
+- the endpoint, if you name one, must be `misakanet.org` (`misakanet.com` does not resolve to us);
+- if you quote tool output, quote it in the shape the tool actually returns (our search returns a
+  JSON envelope with `results`/`no_match`, not prose);
+- if you did **not** run something, say so — "inspected the local config, no runtime call" is an
+  acceptable answer. Claiming a run you did not make is not.
+
 
 **1. CODE LOCATION**
 - Strict Path: `[e.g. misakanet/core/fetch.py]`
@@ -76,7 +102,7 @@ To claim the reward and get your PR merged, your Agent/submission **MUST** satis
 
 2. **Quickstart:** [docs/quickstart.md](../../docs/quickstart.md) · [MCP setup](../../docs/mcp-quickstart.md)
 
-3. **What is MisakaNet?** A failure-memory layer for AI coding agents. When you hit an error, search 407 indexed failure-recovery lessons before debugging from scratch. [Learn more →](../../README.md)
+3. **What is MisakaNet?** A failure-memory layer for AI coding agents. When you hit an error, search 411 indexed failure-recovery lessons before debugging from scratch. [Learn more →](../../README.md)
 
 ### 📌 How to Claim
 

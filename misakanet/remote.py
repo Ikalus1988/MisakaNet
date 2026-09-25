@@ -35,9 +35,9 @@ def call(tool: str, arguments: dict, *, token: str = "", timeout: float = 30.0,
 
     `token` goes in the `Authorization` header only — never in the body (the endpoint deprecated
     `args.token`, and a token in a payload ends up in logs). `client_id`, when the user set one, is
-    passed through as the *stable pseudonym* the endpoint documents (`AGENTS.md` §3.3): it is an
-    identifier, not a credential, and without it the service has no way to keep one client's history
-    together.
+    passed through as the stable key the endpoint documents (`AGENTS.md` §3.3): presenting it returns
+    that node's token, so it is a **credential** (generate a random UUID, keep it private) — and
+    without it the service has no way to keep one client's history together.
     """
     args = dict(arguments)
     if client_id:

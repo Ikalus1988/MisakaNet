@@ -56,7 +56,10 @@ runs:
           subject=$(git log -1 --format="%s" "$sha")
 
           if ! echo "$msg" | grep -qE "Signed-off-by: .* <.*>"; then
-            FAILED_LOG="${FAILED_LOG}${sha:0:7} | ${subject} | ${author_name} <${author_email}>\n"
+            # A real newline, not the two characters `\n`: the comment step prints this value into the
+            # contributor's receipt, and `echo` renders a literal `\n` as backslash-n — so every
+            # offender used to arrive on one unreadable line.
+            FAILED_LOG="${FAILED_LOG}${sha:0:7} | ${subject} | ${author_name} <${author_email}>"$'\n'
             FAILED_COUNT=$((FAILED_COUNT + 1))
             echo "  ❌ ${sha:0:7} — missing sign-off"
           else
@@ -84,12 +87,21 @@ runs:
       run: |
         PR="${{ inputs.pr-number }}"
         REPO="${{ inputs.repo }}"
+        # `failed_commits_log`, with underscores: the scan step writes exactly that name to
+        # `$GITHUB_OUTPUT`, and this expression spelled it with hyphens — which GitHub resolves to the
+        # empty string rather than to an error. So the one comment a contributor sees for a DCO failure
+        # listed **no commits at all**: "The following commits are missing Signed-off-by:" followed by an
+        # empty code block. Measured 2026-09-25 on PR #2201/#2202.
         FAILED_LOG=$(cat << 'DCO_EOF'
-        ${{ steps.scan.outputs.failed-commits-log }}
+        ${{ steps.scan.outputs.failed_commits_log }}
         DCO_EOF
         )
 
-        cat > /tmp/dco_comment.md << 'CMTEOF'
+        # `$RUNNER_TEMP`, not a hard-coded `/tmp`: on a Windows runner that path does not exist, and the
+        # step would fail on the write rather than on the comment it is trying to post.
+        COMMENT_FILE="${RUNNER_TEMP:-/tmp}/dco_comment.md"
+
+        cat > "$COMMENT_FILE" << 'CMTEOF'
         <!-- misakanet-dco-block -->
         ### 🔏 DCO Check — some commits need sign-off
 
@@ -97,8 +109,8 @@ runs:
 
         ```text
         CMTEOF
-        echo "$FAILED_LOG" >> /tmp/dco_comment.md
-        cat >> /tmp/dco_comment.md << 'CMTEOF'
+        printf '%s\n' "$FAILED_LOG" >> "$COMMENT_FILE"
+        cat >> "$COMMENT_FILE" << 'CMTEOF'
         ```
 
         **How to fix (about 2 minutes):**
@@ -126,11 +138,11 @@ runs:
           --jq '.[] | select(.body | contains("misakanet-dco-block")) | .id' 2>/dev/null | tail -n1)
         if [ -n "$EXISTING_ID" ]; then
           gh api -X PATCH "repos/$REPO/issues/comments/$EXISTING_ID" \
-            -f "body=@/tmp/dco_comment.md" >/dev/null 2>&1 \
+            -f "body=$(cat "$COMMENT_FILE")" >/dev/null 2>&1 \
             && echo "Updated DCO block comment on PR #$PR" \
-            || gh pr comment "$PR" --repo "$REPO" --body-file /tmp/dco_comment.md 2>/dev/null \
+            || gh pr comment "$PR" --repo "$REPO" --body-file "$COMMENT_FILE" 2>/dev/null \
             || echo "::warning::Could not update/post DCO comment on PR #$PR (read-only fork run?)"
         else
-          gh pr comment "$PR" --repo "$REPO" --body-file /tmp/dco_comment.md 2>/dev/null \
+          gh pr comment "$PR" --repo "$REPO" --body-file "$COMMENT_FILE" 2>/dev/null \
             || echo "::warning::Could not post DCO comment on PR #$PR (read-only fork run?)"
         fi

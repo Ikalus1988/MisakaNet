@@ -1,6 +1,6 @@
 {
   "name": "misakanet",
-  "version": "2.32.1",
+  "version": "2.34.0",
   "description": "Failure-memory network for AI coding agents: search evidence-rated failure lessons, submit new failures, and turn crashes into reusable knowledge.",
   "author": {
     "name": "Ikalus1988",

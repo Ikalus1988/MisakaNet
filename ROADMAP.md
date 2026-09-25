@@ -31,6 +31,22 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 > 规则：**本节所有数字都来自下面附录里的命令，可逐条复现**；无法复现的结论一律标注 **未验证**，
 > 不标注即视为已复现。下面 2026-08-22 的原文一律不删，只在新章节里给状态裁定。
 
+### 当前数字（受 SSOT 门禁维护）
+
+| 指标 | 数值 |
+|---|---|
+| 公开索引语料（SSOT，当前） | **411** |
+| 已注册节点（当前） | **2480** |
+| domain 覆盖（当前） | **44** |
+
+> 这三行由 `scripts/sync_lesson_count.py` 维护：每日 job 会重写它们，`--check` 不一致即红，
+> 与 README / `llms.txt` / 站点卡片同源。加这一节的原因是下面那张快照表——2026-09-23 实测它
+> **13 项里 9 项过期**（393/232/43 对 411/1047/44），而它周围写着"所有数字可逐条复现"。
+> **可复现 ≠ 会被重算**：这些数字此前没有写作者（#2095）。
+>
+> **下面那张 2026-09-16 的快照表是当天的记录，不是"当前值"**，其中的数字故意保留原样——
+> 本仓的惯例是旧条目只加状态裁定、不改写历史。
+
 ### 状态快照（2026-09-16）
 
 | 指标 | 数值 | 来源命令 / 文件 |
@@ -79,7 +95,7 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 | 基线：Smithery / GitHub `/mcp` 暂停 | **仍然成立** | 与 External channel policy 一致，本轮无外部证据可推翻（**未验证**外部页面） |
 | 8月 v2.17.0：Lesson Lint（P0） | **已完成** | `scripts/lesson_lint.py` 存在；`.github/workflows/lesson-quality.yml:31` 以 `--fail-on high` 跑 |
 | 8月 v2.17.0：GX1 闭环（#968 合并） | **已放弃** | commit `42e374345 fix(security): revert GX1 changes, keep security hotfix only`——GX1 被显式回滚，只保留安全修复 |
-| 8月 v2.17.0：版本漂移清理（同步到 v2.17） | **已过时** | 手工对齐被两个自动机制取代：`scripts/sync_lesson_count.py --check`（计数）+ `scripts/update_status.py`（STATUS.md 头部自述"自动更新于 2026-09-15 04:28 UTC"） |
+| 8月 v2.17.0：版本漂移清理（同步到 v2.17） | **已过时** | 手工对齐被自动机制取代：`scripts/sync_lesson_count.py --check`（计数）。**2026-09-25 更正**：这里原写"+ `scripts/update_status.py`"，该生成器已连同 `STATUS.md` 一起删除（#2095），且它从未在任何 workflow 里跑过 |
 | 8月 v2.17.0：Security 收尾（#969 / #964） | **部分可验证** | 回滚提交带 #964（`42e374345`）；#969 在 git 历史里只出现在 `docs/maintainer/handoff-2026-08-11.md`，**未验证**已关闭 |
 | 8月 v2.17.0：定位固化到 `CONCEPTS.md` | **已完成（路径需更正）** | 文件是 **`docs/CONCEPTS.md`**，开篇即"不是通用记忆系统，不是 Agent runtime，不是向量数据库"；仓库根目录没有 `CONCEPTS.md` |
 | 8月 v2.17.0：Duplicate governance | **已完成** | `docs/duplicate-governance.md` 存在 |
@@ -141,17 +157,27 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 
 **② 量化"命中 vs 未命中"** ← 不需要新工程线，现在就能做
 
-- 现状：`data/search_gaps.jsonl`（35 行）与 `/api/search-signal` **只记未命中**——
-  `workers/register-proxy-sw.js` 的 `handleSearchSignal` 里写死了
-  "Solved searches are not recorded at all — the map only tracks gaps"。所以今天只有分子没有分母，
-  **任何命中率都算不出来**。
-- 第一步（便宜）：让命中也上报——同一端点加 solved 分支，或 `docs/search/index.html` 在
-  `result_count > 0` 时也发一次。这样分母才存在。
-- 第二步：用 `/api/helpful` 的票数 + `misakanet_me_events` 的 E4 信号作为复用侧分子，产出第一张
-  "命中率 / no_match 率 / 按 task family 分布"表。
-- 边界：不新增 PII。现有设计是 query 原文在服务端归类后立即丢弃、只写聚合计数，保持这条不变。
-- 验收：一张能贴进 release notes 的表。这是把蓝图审视 §4.3 的"能提效 = 0.5/1"变成可引用数字的
-  最短路径。
+- **现状（2026-09-21 更新）**：**分母已经有了**。#1779（2026-09-16 关闭）让 worker 侧的
+  `misakanet_search` 把命中一起写进 D1 `search_signals`；KV 的 unsolved map 仍然只记未命中，
+  那是它的职责，不是缺口——两者别混为一谈。
+- **已完成（2026-09-21）**：`/api/search-signals/stats` 增加服务端聚合 `breakdown`：按天、按
+  `domain` 的**计数**，**只回计数**——不带 query 文本、不带 lesson id，读取口径不变（新增的只是
+  汇总，不是逐条细节）。`scripts/search_hit_rate.py` 据此打印两张 Markdown 表，按 domain 的那张
+  **按命中率从低到高排**，直接回答"下一步该补哪块语料"。
+- **已上线（2026-09-21）**：worker 部署完成后，`/api/search-signals/stats` 真的返回 `breakdown`，
+  `python3 scripts/search_hit_rate.py --since 7` 直接打出上面两张表——验收物不再是「本地能跑」而是
+  「线上能查」。
+- 首次线上实测（2026-09-21，7 天窗口）：`total 259 / hit 191 / miss 68 / hit_rate 73.8%`，
+  按天最低的一天是 62.2%、最高 84.7%（样本还小，别把它当趋势）。
+- **仍未解决**：
+  1. **复用侧的分子没接**——`/api/helpful` 票数与 `misakanet_me_events` 的 E4 信号还没进这张表，
+     所以它衡量的是"检到东西"，不是"帮上了忙"；
+  2. **网站检索页仍只上报未命中**（`docs/search/index.html` 在 `topScore >= 0.35` 时直接返回）。
+     要补它的命中，就得让页面也发查询文本，而那正是当前刻意避免的——**这是一个隐私取舍，
+     需要单独决定，不该顺手改**；
+  3. 计数只覆盖走 worker 的调用：本地 stdio MCP 与页面检索不在其中（脚本的 caveat 已列）。
+- 验收（已达）：一张能贴进 release notes 的表——`python3 scripts/search_hit_rate.py --since 7`
+  输出里的"按天（UTC）"与"按 domain"两张表。
 
 **③ 中文 / 自然语言的检索路径** ← 直接解锁 §2.1 的目标用户
 
@@ -273,7 +299,8 @@ python3 -c "import json;d=json.load(open('data/regression_queries.json'));print(
 
 > 状态（2026-09-16）：Lesson Lint、Duplicate governance、定位固化（**文件在 `docs/CONCEPTS.md`**）
 > 已完成；**GX1 闭环已放弃**（commit `42e374345` 显式回滚，只留安全修复）；版本漂移清理已过时
-> （改由 `sync_lesson_count.py --check` + `update_status.py` 自动维护）；DoD 里的
+> （改由 `sync_lesson_count.py --check` 自动维护——原文还写了 `update_status.py`，该生成器与
+> `STATUS.md` 已于 #2095 一并删除）；DoD 里的
 > `scripts/site_health.py` 已改名 `site_health_check.py`；289 这个数字已前移。
 
 Goal: 把 v2.16.0 的增长势能收敛成"可信、可维护、可审计的 failure-memory 网络"。

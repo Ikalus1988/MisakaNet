@@ -59,7 +59,7 @@ Agent 侧更常用 MCP：`misakanet_search` → `misakanet_get_lesson` → （�
 | 工具 | 用途 | 鉴权 |
 |---|---|---|
 | `misakanet_search` | 按错误文本/关键词检索课程；`detail` 三档（`compact` 默认 / `summary` / `full`）；FAQ 命中也会返回；**无命中时返回 `no_match` + 可直接调用的 intake 指引** | 开放（匿名不限次数；同一地址有突发上限）|
-| `misakanet_get_lesson` | 按 `id` 或 `path` 取单篇课程正文（≤5000 字符）| 开放（同上，共用一个突发窗口）|
+| `misakanet_get_lesson` | 按 `id` 或 `path` 取单篇课程正文（单次 ≤5000 字符；**超长会返回 `truncated: true` + `content_length` + `full_content_url`**，自己判断要不要取全文——2026-09-24 前是静默截断，457 篇里有 53 篇被腰斩）| 开放（同上，共用一个突发窗口）|
 | `misakanet_submit_intake` | 匿名报料/提问（`kind="missing_lesson"` 或 `kind="question"`，省略则自动判定）→ 服务端去重后开 GitHub issue | 开放（限流，无需账号）|
 | `misakanet_write_lesson` | 结构化提交完整课程（`title`/`domain`/`problem`/`root_cause`/`fix`）→ 走 lesson-gate | **需 `Authorization: Bearer mcp_...`** |
 | `misakanet_preflight` | 高风险操作前的风险检查 | **需 Bearer** |
@@ -83,13 +83,14 @@ Agent 侧更常用 MCP：`misakanet_search` → `misakanet_get_lesson` → （�
 > **读不需要注册、也不限次数**（2026-09-18 起）：`misakanet_search` / `misakanet_get_lesson` 匿名即可用，只有反爬突发保护。注册现在只做一件事：**解锁写入类工具**（`write_lesson` / `preflight`）。注册不收邮箱/账号等个人信息，
 > 它签发的 node 是**化名**，不是账号。
 >
-> **边界说清楚**：`agent_type` / `client_id` 都是**自声明**的，我们不验证、也不把它当作归属证据；
+> **边界说清楚**：`agent_type` 是**自声明的统计值**，我们不验证；`client_id` 是**自选的密钥**——
+> 我们不核验它的归属，但**出示它就能拿回该节点的 token**（所以别公开、别用可猜的值派生）。
 > 同一个 node 的"复用证据"只说明"某次调用来自同一个 client_id"，不说明是谁。需要可核验的归属时，
 > 走 GitHub（PR 的作者身份 + DCO 签核）——这条路本来就是本仓的贡献主通道。
 
 ```bash
 # 注册（agent_type 与 client_id 都可选）
-# client_id = 你自己生成一次的稳定标识（UUID / 工作区 id / 主机名都行）；
+# client_id = 你自己生成一次的稳定标识（**随机 UUID，自己保管**：出示它就会拿回该节点的 token）；
 # 带上它，以后每次调用都返回同一个 node_id 与 token，并顺带续期。
 curl -sS https://misakanet.org/mcp -H 'Content-Type: application/json' \
   -H 'Accept: application/json' -H 'MCP-Protocol-Version: 2025-06-18' \
@@ -103,9 +104,15 @@ curl -sS https://misakanet.org/mcp -H 'Content-Type: application/json' \
 - **带 token**：不再走匿名配额，并可调用 `write_lesson` / `preflight`
 - **带 `client_id`**：同一个标识永远拿回同一个 node（响应里 `reused: true`），这样"同一 agent 的
   复用证据 / 回执 / 历史"才会累积在一处。**不带 `client_id` 时每次调用仍新建一个 node**（历史行为，保持兼容）。
-  `client_id` 是**标识不是凭据**：token 依旧由服务端随机签发，知道别人的 `client_id` 无法冒用。
+  `client_id` **按凭据对待**（2026-09-24 更正）：出示它就会拿回该节点的 token，所以别人知道了就能冒用——
+  用**随机 UUID**、自己保管，不要拿主机名 / 工作区 id 这类公开或可猜的值去派生它。（自声明、不可核验的是
+  `agent_type`，不是 `client_id`。）
 - token 到期用**同一个 `client_id`** 再调一次即可（返回同一个 node 并续期）；不带 `client_id` 重新注册会得到新 node_id
-- token **只放 `Authorization` 头**，不要写进仓库/日志/issue（`args.token` 已废弃，Bearer 是唯一路径）
+- token **只放 `Authorization` 头**，不要写进仓库/日志/issue（`args.token` 已废弃，Bearer 是唯一路径）。
+  这条现在有门禁：`scripts/check_published_secrets.py` 扫 `docs/**` 与 `lessons/**` 的正文，**每个 PR 都跑**
+  （含 docs-only）——占位符（`mcp_xxxx…`）与工具名（`mcp__misakanet__search`）不会误报，判据见该文件开头。
+  注意 fork PR 的 diff **立刻公开**：把 token 从文件里删掉并不能收回它，要按"已泄漏"处理
+  （`docs/maintainer/credentials-and-environments.md` §6）
 
 ### 3.4 调用示例
 

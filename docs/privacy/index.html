@@ -58,8 +58,9 @@
     <li>No passwords, API keys, or cloud credentials. Submitted text is passed through redaction
       (tokens, keys, secrets, private paths, emails) before storage, and again server-side.</li>
     <li>No accounts, no profiles, no tracking cookies, no third-party analytics scripts.</li>
-    <li>No IP-address history: the anonymous read quota counts requests per IP for a rolling day
-      window; the counter is not joined to any identity.</li>
+    <li>No IP-address history: the anti-crawler burst window counts requests per IP for a rolling
+      minute (max 20 reads per 60s). There is no daily read quota — it was removed on 2026-09-18,
+      so reads are unlimited — and the counter is not joined to any identity.</li>
   </ul>
 
   <div class="note">

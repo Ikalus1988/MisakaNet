@@ -124,11 +124,15 @@ def test_delivery_failure_is_reported_in_three_places(capsys, tmp_path):
     assert "never posted" in summary.read_text(encoding="utf-8")
 
 
-def test_delivery_failure_survives_a_missing_summary_file(capsys):
+def test_delivery_failure_survives_a_missing_summary_file(capsys, tmp_path):
     """A failure to report the failure must not become the new crash."""
     from scripts.pr_genius_report import report_delivery_failure
 
-    message = report_delivery_failure(Exception("HTTP Error 403: Forbidden"), "/nonexistent/dir/s.md")
+    # `tmp_path/missing/s.md` rather than "/nonexistent/dir/s.md": on Windows a POSIX-rooted path is
+    # drive-relative, and whether the append fails then depends on whether some *other* test had
+    # already created that directory at the drive root (tests/test_demand_board_gaps.py used to).
+    message = report_delivery_failure(
+        Exception("HTTP Error 403: Forbidden"), str(tmp_path / "missing" / "s.md"))
     assert "403" in message
     capsys.readouterr()
 

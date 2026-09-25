@@ -217,3 +217,58 @@ test('the gap counter accumulates per query and day', async () => {
   }
   assert.equal(env.MISAKANET_D1.rows.get(`gap|another unmatched query qqq|${day}`), 3);
 });
+
+// ── the forward guard for #2117's unmeasurable criterion ──────────────────────────────────────────
+//
+// That issue's fourth acceptance criterion was "a measured latency comparison for one rate-limited
+// path, before and after" — and it is not measurable retroactively: the KV version stopped running on
+// 2026-09-23, and an end-to-end read (0.7–1.5s, network-dominated) would not resolve the difference
+// even if it could be run again. What the criterion was *protecting against* is a regression, and that
+// part is checkable now and later: the swap replaced "one KV get + one KV put" with D1, and D1 invites
+// statement-per-record loops. So this pins the shape instead of the clock.
+
+/** The counters double, counting how many statements the worker prepares. */
+function countingD1() {
+  const inner = createCountersD1();
+  const statements = [];
+  return {
+    rows: inner.rows,
+    statements,
+    prepare(sql) {
+      statements.push(sql);
+      return inner.prepare(sql);
+    },
+  };
+}
+
+test('a limited read costs a bounded, constant number of D1 statements (#2117)', async () => {
+  const d1 = countingD1();
+  const env = createEnv({ d1 });
+  const perCall = [];
+  // A fresh address per call: same code path, no accumulated window state.
+  for (let i = 0; i < 4; i++) {
+    const before = d1.statements.length;
+    const result = await readResult(env, `203.0.113.${40 + i}`);
+    assert.equal(result.error, undefined, `read ${i} failed: ${JSON.stringify(result)}`);
+    perCall.push(d1.statements.length - before);
+  }
+
+  // Measured on 2026-09-24: **6 statements per limited read, constant** — the rate-limit upsert, two
+  // cache/index reads out of `kv_store`, the lessons select, and two supporting selects. The two
+  // `CREATE TABLE IF NOT EXISTS kv_store` / `CREATE INDEX` statements that a *cold isolate* also
+  // prepares are one-time per isolate, which is exactly why this asserts constancy between calls
+  // rather than an absolute number from a cold start (a cold run measures 8, then 6, 6, 6).
+  //
+  // So the bound is deliberately tight: today's number, not today's number plus headroom. Any addition
+  // makes this red and forces the change to be a decision — which is the whole point of pinning it.
+  const STATEMENT_BOUND = 6;
+  assert.ok(perCall.every((n) => n <= STATEMENT_BOUND),
+    `a limited read prepared ${perCall} statements; the bound is ${STATEMENT_BOUND}`);
+  assert.equal(new Set(perCall).size, 1,
+    `the per-call statement count changed between calls (${perCall}) — that is the shape an N+1 takes`);
+
+  // And the limit is genuinely among them: otherwise this guard would pass on a path that had simply
+  // stopped counting, which is the failure it exists to make visible.
+  assert.ok(d1.statements.some((sql) => /INSERT INTO counters/i.test(sql)),
+    `no counter upsert was prepared at all; statements seen: ${JSON.stringify(d1.statements)}`);
+});

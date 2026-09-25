@@ -1,6 +1,6 @@
 {
   "name": "misakanet",
-  "version": "2.32.1",
+  "version": "2.34.0",
   "license": "Apache-2.0",
   "description": "MisakaNet failure-memory skill — evidence-rated failure lessons for AI agents. DSH bundle: registers the MCP tools as mcp__misakanet__* (misakanet_search/get_lesson/…), served by the public Streamable HTTP endpoint https://misakanet.org/mcp — live tools from an npm install, in any profile, with no local python. A profile that prefers the repo's own stdio server can override the bundle row.",
   "files": [
@@ -44,11 +44,10 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "deploy:web": "cd web && npx wrangler deploy",
-    "deploy:api": "cd workers && npx wrangler deploy --config wrangler.api.jsonc",
-    "deploy:email": "cd workers/email-register && npx wrangler deploy",
-    "deploy:all": "npm run deploy:web && npm run deploy:api && npm run deploy:email",
     "deploy": "wrangler deploy",
+    "deploy:api": "cd workers && npx wrangler deploy --config wrangler.toml",
+    "deploy:email": "cd workers/email-register && npx wrangler deploy",
+    "deploy:all": "npm run deploy && npm run deploy:api && npm run deploy:email",
     "preview": "wrangler dev"
   },
   "devDependencies": {

@@ -383,8 +383,15 @@ def handle_search(args: dict, search_state=None) -> dict:
             return {
                 "error": "Search engine unavailable — index not built",
                 "action": (
-                    "Run: python3 scripts/build_sag_index.py"
-                    " to enable BM25/SAG search"
+                    # Two steps, in this order. `build_sag_index.py` reads the *tracked* OKF export
+                    # (`data/okf/lessons.jsonl`), and that file has no writer in CI: measured
+                    # 2026-09-25 it was last written 2026-07-07 and covered 179 of 458 lessons, so
+                    # running only the second command built an index missing 61% of the corpus — and
+                    # SAG is preferred over the complete BM25 path, which made recall *worse* than
+                    # building nothing. See issue #2185.
+                    "Run: python3 scripts/export_okf.py && python3 scripts/build_sag_index.py"
+                    " to enable BM25/SAG search (the export refreshes data/okf/lessons.jsonl,"
+                    " which build_sag_index.py reads)"
                 ),
                 "fallback": (
                     "Browse lessons via misaka://lessons/index"

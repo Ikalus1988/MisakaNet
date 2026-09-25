@@ -55,7 +55,7 @@ relatives are *failure/experience knowledge* MCP servers for AI agents (Glama-li
 > and purpose-built for failure-recovery.
 
 > 📦 Core engine is **zero-dep** (pure Python stdlib). Optional extras: `pip install misakanet[semantic|hub|feishu]`.
-> → [Architecture details](ARCHITECTURE.md) · [Benchmark: LessonReuseBench](docs/lesson-reuse-benchmark.md)
+> → [Architecture details](../ARCHITECTURE.md) · [Benchmark: LessonReuseBench](lesson-reuse-benchmark.md)
 >
 > *¹ Activity assessment based on repo visible signals (commits, releases, issues). As of 2026-08-12.*
 

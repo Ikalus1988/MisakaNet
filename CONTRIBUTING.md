@@ -88,7 +88,9 @@ gh issue list --label "status:competition" --repo Ikalus1988/MisakaNet
 
 Before opening a PR, confirm:
 - [ ] Code meets all AC items in the Issue
-- [ ] `pytest tests/` passes
+- [ ] `pytest tests/` passes — on **Python 3.11+**: the suite imports `tomllib`, which is stdlib only from
+  3.11, so on 3.10 pytest exits during *collection* and nothing runs. That floor is derived, not
+  hand-written: `tests/test_workflow_python_floors.py` computes it from the suite's own imports.
 - [ ] No raw Python Traceback in output
 - [ ] Node ID declared in PR description or lesson frontmatter
 - [ ] Every commit has `Signed-off-by:` trailer (`git commit -s`)
@@ -378,7 +380,10 @@ The repository uses **ruff** for linting and formatting (configured in `pyprojec
 
 - **Line length**: 100 columns (`line-length = 100`)
 - **Quotes**: double quotes (`quote-style = "double"`)
-- **Target**: Python 3.10+ (`target-version = "py310"`)
+- **Target**: Python 3.10+ (`target-version = "py310"`) — that is the **library's** floor, the one
+  `pyproject.toml`'s `requires-python` and the ruff target describe. The **test suite** needs 3.11+ (it
+  imports `tomllib`), so a 3.10 environment can `pip install` this repository and still not run a single
+  test; `tests/test_workflow_python_floors.py` derives that second floor from `tests/` and holds CI to it.
 - **Enabled rule groups**: `E` (pycodestyle errors), `F` (pyflakes), `I` (isort/imports), `N` (pep8-naming), `W` (warnings), `UP` (pyupgrade)
 - **Type hints**: required on public functions and properties (`def is_draft(self) -> bool:`), including `dict | None` union syntax
 - **Docstrings**: one-line summaries describing the return value when non-obvious (`"""Lazy-load cross-encoder model. Returns None if unavailable."""`); avoid multi-line Google/numpy styles unless the docstring needs parameter details

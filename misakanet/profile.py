@@ -4,7 +4,8 @@
     newcomer  →  active  →  contributor
     首次使用       3次搜索       1条 lesson
 
-存储: misakanet/profile.json（git 跟踪，与节点绑定）
+存储: misakanet/profile.json（**每台机器一份、git 不跟踪**、每次检索都会被改写；
+      2026-09-21 之前它曾被跟踪，那段时间每次搜索都会弄脏工作树 —— 见 #1991）
 
 推荐链:
     referral_code  < 8 位随机短码

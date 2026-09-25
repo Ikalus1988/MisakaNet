@@ -263,6 +263,6 @@ Fix: run `pip install -e .` from the repo root, then retry.
 **Verify:** Robot pauses, system stays responsive.
 </details>
 
-> More best practices for `ci`, `claude`, `docker`, `feishu`, `mcp`, `network` → [`docs/domains/`](docs/domains/)
+> More best practices for `ci`, `claude`, `docker`, `feishu`, `mcp`, `network` → [`docs/domains/`](domains/)
 
 → 更多按主题整理的课程：[docs/domains/](domains/) · 全库检索：<https://misakanet.org/search/>

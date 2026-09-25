@@ -195,3 +195,61 @@ def test_default_endpoint_matches_the_worker_route():
     worker = WORKER.read_text(encoding="utf-8")
     assert 'url.pathname === "/api/search-signals/stats"' in worker
     assert 'INSERT INTO search_signals' in worker
+
+
+# ── the release-notes table (milestone ② of ROADMAP.md) ────────────────────────────────────
+
+BREAKDOWN = {
+    "by_day": [{"key": "2026-09-21", "hits": 30, "miss": 10, "total": 40, "hit_rate": 0.75}],
+    "by_domain": [
+        {"key": "llm", "hits": 9, "miss": 1, "total": 10, "hit_rate": 0.9},
+        {"key": "devops", "hits": 1, "miss": 9, "total": 10, "hit_rate": 0.1},
+    ],
+}
+
+
+def test_the_table_is_rendered_when_the_endpoint_returns_a_breakdown():
+    from scripts.search_hit_rate import format_text, report
+
+    text = format_text(report({"rows": [], "breakdown": BREAKDOWN}, DEFAULT_ENDPOINT, 7))
+    assert "| 日期 | 命中 | 未命中 | 合计 | 命中率 |" in text
+    assert "| 2026-09-21 | 30 | 10 | 40 | 75.0% |" in text
+    assert "| devops | 1 | 9 | 10 | 10.0% |" in text
+
+
+def test_a_weak_domain_is_listed_first_so_the_next_lesson_is_obvious():
+    from scripts.search_hit_rate import format_text, report
+
+    text = format_text(report({"rows": [], "breakdown": BREAKDOWN}, DEFAULT_ENDPOINT, 7))
+    table = text.split("按 domain", 1)[1]
+    assert table.index("devops") < table.index("llm"), (
+        "the domain table is ranked worst-first: the point of the table is to choose what to write"
+    )
+
+
+def test_an_older_worker_without_a_breakdown_still_prints_the_summary():
+    from scripts.search_hit_rate import format_text, report
+
+    text = format_text(report({"rows": [{"solved": 1, "created_at": "x"}],
+                               "source": "d1:search_signals"}, DEFAULT_ENDPOINT, 7))
+    assert "worker 版本较旧" in text, "deploy order must not be a silent failure"
+    assert "| 日期 |" not in text
+
+
+def test_the_breakdown_is_passed_through_untouched():
+    """The server answers for its own window and cap; the script must not re-derive rates."""
+    from scripts.search_hit_rate import report
+
+    result = report({"rows": [], "breakdown": BREAKDOWN}, DEFAULT_ENDPOINT, 7)
+    assert result["breakdown"] == BREAKDOWN
+    assert result["total"] == 0, "the scalar summary still comes from `rows`, as before"
+
+
+def test_the_json_output_carries_the_breakdown(capsys):
+    from scripts.search_hit_rate import main
+
+    payload = {"rows": [], "breakdown": BREAKDOWN, "source": "d1:search_signals"}
+    with patch("scripts.search_hit_rate.fetch_payload", return_value=payload):
+        assert main(["--json", "--since", "7"]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["breakdown"]["by_day"][0]["key"] == "2026-09-21"

@@ -26,6 +26,12 @@ on:
 permissions:
   contents: read
 
+# Same reason as ci-cross-platform.yml: a fan-out over operating systems that cannot
+# cancel a superseded pull-request run lets the replaced one keep holding runners.
+concurrency:
+  group: pypi-wheel-smoke-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   wheel:
     name: wheel (${{ matrix.os }}, py ${{ matrix.python }})

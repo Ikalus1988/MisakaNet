@@ -8,7 +8,7 @@
 
 mcp-name: io.github.Ikalus1988/misakanet
 
-> **Stop debugging the same error twice.** MisakaNet searches 407+ failure lessons so an agent skips the
+> **Stop debugging the same error twice.** MisakaNet searches 411+ failure lessons so an agent skips the
 > bugs someone already paid for, instead of rediscovering them one session at a time.
 >
 > Agent-native interfaces: [MCP server](https://misakanet.org/mcp) (7 tools), WebMCP (browser
@@ -76,7 +76,7 @@ library. No vector database, no embedding model, no server unless you want one.
 
 Registry listings ([Glama](https://glama.ai/mcp/servers/Ikalus1988/MisakaNet/score),
 [Smithery](https://smithery.ai/servers/misakanet/misakanet), MCP Toplist) proxy the hosted endpoint, which
-serves 407+ **indexed failure-recovery lessons** — *indexed*, never "verified": evidence level is what says
+serves 411+ **indexed failure-recovery lessons** — *indexed*, never "verified": evidence level is what says
 how much a lesson has been proven.
 
 | MisakaNet is NOT | What it is instead |
@@ -93,19 +93,24 @@ A **skill** teaches an agent *how to do something*. A **lesson** records *what w
 not to fail again*. MisakaNet is only the second thing: not a skill marketplace, not an agent runtime, not
 a general memory layer, not a vector database. → [FAQ](FAQ.md)
 
-## Benchmark: does lesson context actually help?
+## Benchmark: how much of a lesson does a model reproduce when handed one?
 
-Weekly benchmark on real failure scenarios (Cloudflare Workers AI, 2026-08-30):
+Weekly benchmark (Cloudflare Workers AI, 2026-08-30). **Read the metric before the numbers** — measured
+2026-09-25, the scenario in this benchmark is each lesson's own title, the "matching lesson" injected into the
+`with_lesson` arm is *that same lesson*, and the score is `lesson_hit_rate`: **the share of the injected lesson's commands reproduced in the answer**.
+No retrieval is called and correctness is not checked, so this is the **recitation** half of RAG, not
+evidence that search works:
 
-| Model | Without lesson context | With lesson context | Gain |
+| Model | Lesson pasted in prompt: not pasted | Lesson pasted in prompt: pasted | Difference |
 |---|---|---|---|
-| llama-3.2-3b (light) | 21% hit | **43% hit** | **2× — lesson context doubles a weak model** |
-| llama-3.3-70b (strong) | 42% hit | **73% hit** | **+31%** |
+| llama-3.2-3b (light) | 21% of the lesson's commands reproduced | **43%** | **2×** |
+| llama-3.3-70b (strong) | 42% | **73%** | **+31%** |
 
-Lesson context is a **RAG win across the board**: injecting the matching
-failure-recovery lesson lifts answer quality for every model — the smaller
-the model, the bigger the relative gain. Details:
-[benchmark-2026-08-30](docs/benchmarks/benchmark-2026-08-30.json)
+A model repeats more of a document it was handed, and the weaker the model the bigger the relative
+difference. That is *necessary* for the product to help and it is not sufficient — the claim "search finds the
+right lesson for a failure you described" is measured nowhere yet. Details:
+[benchmark-2026-08-30](docs/benchmarks/benchmark-2026-08-30.json) · metric definition: `METRIC_DEFINITION` in
+[`scripts/benchmark_workers_ai.py`](scripts/benchmark_workers_ai.py)
 
 → [Full changelog](CHANGELOG.md) · [Release notes](https://github.com/Ikalus1988/MisakaNet/releases)
 
@@ -114,8 +119,8 @@ and where this design loses:
 
 | Metric | What it measures | Why it matters here |
 |---|---|---|
-| Hit rate | share of failure questions answered correctly | the only number that decides whether this corpus is worth a search |
-| Gain (with − without) | lift from injecting the *matching* lesson | separates "retrieval works" from "the model got lucky" |
+| Hit rate | share of the **injected** lesson's commands reproduced in the answer — a recitation check; the scenario is that lesson's own title and no retrieval happens | it is the ceiling on usefulness, not the measure of it: a corpus can be recitable and still unfindable |
+| Gain (with − without) | how much more of that lesson appears when it is pasted in | separates "the model can use a lesson" from "the model guessed the same words" — it says nothing about finding the lesson |
 | Cost / latency | tokens and wall-clock per answer | the whole premise is cheaper than re-debugging, so it has to stay cheap |
 
 **Where it loses on purpose:** BM25 matches words, not meaning. A failure described in vocabulary the
@@ -275,8 +280,12 @@ jobs:
 1. Check the checkout works: `python3 scripts/misakanet_cli.py smoke`
 2. Search before writing: `python3 search_knowledge.py "your error here"`
 3. Found nothing? **[Share your failure lesson →](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml)**
-   — a five-line note is enough, no polished PR required. Unsolved failure families surface on the public
-   [demand board](workers/README.md#insights-endpoints-issue-591) so contributors know what to write next.
+   — a five-line note is enough, no polished PR required. Two places say what is missing, and they measure
+   different things: the [demand board](workers/README.md#insights-endpoints-issue-591) aggregates anonymous
+   *search* misses (`/api/insights/unsolved-map`; measured 2026-09-25 it held **one** signal in 30 days,
+   because the intake path does not feed it — [#2224](https://github.com/Ikalus1988/MisakaNet/issues/2224)),
+   and the [open intake issues](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3Aintake)
+   are where the real gaps currently arrive.
 
 → [CONTRIBUTING.md](CONTRIBUTING.md) · [good first issues](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) ·
 [active competitions](https://github.com/Ikalus1988/MisakaNet/labels/status%3Acompetition) ·

@@ -208,8 +208,8 @@ $ curl ... -d '{"method":"initialize",...}'
 
 | 项 | 位置 | 为什么是自证/空转 |
 |---|---|---|
-| MCP 工具数徽章 | `.github/workflows/update-badges.yml:54` | `grep -cE 'name: "misakanet_' workers/register-proxy-sw.js` —— 数与源同一个文件，永远一致；只数远端 7 个，看不见本地 9 个 |
-| 远端可达性检查 | `scripts/doctor.py:77-92` | 只要 HTTP code 非 `000` 就算 reachable（`:89`），401/403/405/500 全过；而且 CI 里**从不调用它**：唯一的调用点是 `deploy-worker.yml:24` 的 `--kv-only`，而 `doctor.py:102-107` 在 `--kv-only` 分支直接 return，走不到 `:110` 的 `CHECKS` |
+| MCP 工具数徽章 | `.github/workflows/update-badges.yml:54` | `grep -cE 'name: "misakanet_' workers/register-proxy-sw.js` —— 数与源同一个文件，永远一致；只数远端 7 个，看不见本地 9 个。**2026-09-25 已修（#1822）**：改用 `sync_lesson_count.canonical_mcp_tools()`，期望值来自 `AGENTS.md §3.2` 的表、实测值来自 worker，不一致就报错 |
+| 远端可达性检查 | `scripts/doctor.py:77-92` | 只要 HTTP code 非 `000` 就算 reachable（`:89`），401/403/405/500 全过；而且 CI 里**从不调用它**：唯一的调用点是 `deploy-worker.yml:24` 的 `--kv-only`，而 `doctor.py:102-107` 在 `--kv-only` 分支直接 return，走不到 `:110` 的 `CHECKS`。**2026-09-25 已修（#1822）**：判据早已收紧成"必须完成一次 `initialize` 握手"（405 是健康答案，不算失败），现在 `deploy-worker.yml` 在部署后跑 `--remote-only`，且有 `tests/test_doctor_reach.py` 断言每个检查都有 CI 调用点 |
 | 节点计数 | `workers/register-proxy-sw.js:4159-4190` | 优先 D1 `counters`，KV 次之，最后回落 `fetchFromGitHub(token,"data/counter.json")`（`:4187`），而该函数默认 `ref="data"`（`:3002`）——`data` 分支那份实测是 `{"current": 10047, "updated": "2026-06-01T02:25:00Z"}`，**比真值低 250+ 且停在 3.5 个月前**，没有告警 |
 | 采用率报告 | `scripts/track_adoption.py` | 采集 npm/PyPI/GitHub 指标并输出周报，但 `grep -rn track_adoption` 在全仓（除自身）**零命中**：没有任何 workflow 跑它 |
 | 协议版本门禁 | `register-proxy-sw.js:2838-2843` | 只 `debugLog`，不会失败（见 §3.5） |

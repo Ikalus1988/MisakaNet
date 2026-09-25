@@ -19,13 +19,14 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 import uuid
 from pathlib import Path
 
 import pytest
+
+from posix_shell import find_posix_shell
 
 REPO = Path(__file__).resolve().parent.parent
 INTEGRATION = REPO / "integrations" / "agent-autostart"
@@ -366,6 +367,48 @@ def test_hook_emits_utf8_even_when_the_console_is_gbk(tmp_path):
     proc.stdout.decode("utf-8")   # must be valid UTF-8, not GBK bytes
     assert "检查点" in proc.stdout.decode("utf-8")
 
+
+def test_hook_starts_when_the_home_directory_cannot_be_resolved(tmp_path):
+    """The hook must not die before it reads the payload, whatever the environment looks like.
+
+    `env` above is a *replacement* environment (three variables), which on Windows means no
+    `USERPROFILE` and no `HOMEPATH`. `ntpath.expanduser("~")` then returns "~" unchanged, and
+    Python 3.11's `pathlib.Path.home()` turns that into `RuntimeError("Could not determine home
+    directory.")`. The hook resolved its default state path at import time, so that exception
+    escaped `main()`'s "never break the session" guard and the process died with a traceback and
+    exit code 1 — measured on windows-latest in the test above, which then failed on
+    `assert 1 == 0` rather than on anything GBK-related.
+
+    Linux cannot reproduce it through the environment alone (posixpath falls back to `pwd`), so the
+    child gets a `sitecustomize` that makes `expanduser` behave the way ntpath does without those
+    variables. That keeps the defect falsifiable on every platform: revert the lazy, defensive
+    resolution in the hook and this test fails with the traceback the runner saw.
+    """
+    shim = tmp_path / "shim"
+    shim.mkdir()
+    (shim / "sitecustomize.py").write_text(
+        "import os\n"
+        "# exactly what ntpath.expanduser('~') does with USERPROFILE and HOMEPATH absent:\n"
+        "os.path.expanduser = lambda path: path\n",
+        encoding="utf-8",
+    )
+    state = tmp_path / "state"
+    env = {
+        "MISAKANET_CHECKPOINT_AT": "1",
+        "MISAKANET_HOOK_STATE": str(state),
+        "PYTHONPATH": str(shim),
+    }
+    proc = subprocess.run(
+        [sys.executable, str(HOOK), "prompt"],
+        input=json.dumps({"session_id": "nohome"}).encode("utf-8"), capture_output=True, env=env,
+    )
+    assert proc.returncode == 0, f"the hook must survive an unresolvable home: {proc.stderr!r}"
+    assert b"Traceback" not in proc.stderr, proc.stderr.decode("utf-8", "replace")
+    assert "已接入失败经验库" in proc.stdout.decode("utf-8")
+    assert json.loads((state / "nohome.json").read_text(encoding="utf-8"))["turn"] == 1, (
+        "the counter must still work when MISAKANET_HOOK_STATE is set")
+
+
 # ── one-click surfaces: --verify, identity provisioning, bootstrap ────
 class _McpStub:
     """A local MCP endpoint so the installer's network paths are testable offline.
@@ -432,7 +475,28 @@ def test_identity_is_provisioned_so_write_tools_need_no_setup(tmp_path):
         token = home / ".misakanet-agent" / "token"
         assert token.read_text(encoding="utf-8").strip() == SYNTHETIC_TOKEN
         assert (home / ".misakanet-agent" / "client_id").exists(), "client_id must be reused, not regenerated"
-        assert (token.stat().st_mode & 0o777) == 0o600, "a token file must not be world-readable"
+
+        # The mode is part of the contract for a credential file, but the two platforms state it
+        # differently, so each is asserted in its own terms rather than skipped.
+        #
+        # POSIX: the installer asks for 0o600, and that is the whole of the protection — 0o600 is
+        # the property "not world-readable".
+        #
+        # Windows: `os.chmod` has no permission bits at all. It toggles one attribute
+        # (FILE_ATTRIBUTE_READONLY), and Python's nt stat synthesises the mode from that attribute:
+        # a writable file reports 0o666 (windows-latest reported st_mode=33206 == 0o100666), a
+        # read-only file reports 0o444. 0o600 carries S_IWUSR, so what the code actually guarantees
+        # there is the write-owner behaviour asserted below — the file stays writable so the next
+        # run can refresh the token. The real boundary on Windows is the ACL the file inherits from
+        # ~/.misakanet-agent; checking that needs icacls, which is out of scope here.
+        mode = token.stat().st_mode & 0o777
+        if os.name == "posix":
+            assert mode == 0o600, f"a token file must not be world-readable: got {mode:04o}"
+        else:
+            assert mode == 0o666, (
+                "on Windows os.chmod only toggles the read-only attribute: 0o600 means 'owner may "
+                f"write', so os.stat must report a writable file (0o666 on Windows), got {mode:04o}"
+            )
 
         # The token DOES belong in the local agent config - that is what lifts the anonymous
         # 5-reads/day limit for a user who will never run `misakanet_register` by hand. What
@@ -511,9 +575,9 @@ def test_report_url_carries_no_identifying_paths(tmp_path):
 
 def test_bootstrap_downloads_and_hands_over(tmp_path):
     """The one-liner must work without a clone: fetch the three files, then run them."""
-    bash = shutil.which("bash")
+    bash = find_posix_shell()
     if not bash:
-        pytest.skip("bash unavailable")
+        pytest.skip("no usable POSIX shell in this environment")
     setup_dir = tmp_path / "setup"
     home = make_home(tmp_path)
     env = dict(
@@ -524,7 +588,9 @@ def test_bootstrap_downloads_and_hands_over(tmp_path):
     )
     result = subprocess.run(
         [bash, str(INTEGRATION / "bootstrap.sh"), "--home", str(home), "--only", "claude", "--no-register"],
-        capture_output=True, text=True, env=env, cwd=str(tmp_path),
+        # errors="replace": a child's stderr is not guaranteed to be valid UTF-8, and a
+        # UnicodeDecodeError here reports the harness, not what the script did (#2018).
+        capture_output=True, text=True, encoding="utf-8", errors="replace", env=env, cwd=str(tmp_path),
     )
     assert result.returncode == 0, result.stdout + result.stderr
     for name in ("install_misakanet_agent.py", "checkpoint_reminder.py", "prompt.md"):

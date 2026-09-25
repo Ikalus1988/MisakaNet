@@ -10,10 +10,20 @@ import argparse
 import json
 import os
 import shutil
+import signal
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
+
+# `bench/` is not a package and this file is also loaded by path from the test suite, so
+# make the shared resolver importable rather than assuming the repo root is on sys.path.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from scripts.posix_shell import find_posix_shell  # noqa: E402
 
 FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures"
 REQUIRED_EXPECTED_FIELDS = {"scenario", "title", "failure", "expected_fix", "expected_outcome", "verifier"}
@@ -46,8 +56,46 @@ def load_fixture(name: str) -> dict[str, Any]:
     return {"name": name, "path": str(path), "expected": expected}
 
 
+def _kill_tree(process: subprocess.Popen) -> None:
+    """Kill the process **and its children**.
+
+    On Windows, `Popen.kill()` reaches only the shell that `shell=True` started. The process the
+    shell spawned keeps running and keeps the stdout/stderr pipes open, so the `communicate()` that
+    `subprocess.run` performs internally waits for an EOF that never arrives — the caller does not
+    see its timeout, it hangs. Measured 2026-09-21: the `timeout-hang` fixture, whose entire purpose
+    is to time out, hung the windows CI legs for the full 30-minute job bound, on three legs at once.
+    """
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/F", "/T", "/PID", str(process.pid)], capture_output=True)
+        return
+    try:
+        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        process.kill()
+
+
 def _run(command: str, workdir: Path, timeout: float) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, shell=True, cwd=workdir, text=True, capture_output=True, timeout=timeout)
+    """Run a fixture command with a real timeout — including on Windows.
+
+    `subprocess.run(..., timeout=...)` is not enough here: see `_kill_tree`. The pipes are drained
+    with their own bound so that even an unkillable child cannot turn a timeout into a hang.
+    """
+    process = subprocess.Popen(
+        command, shell=True, cwd=workdir, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        start_new_session=(os.name != "nt"),   # so killpg can reach the whole tree on POSIX
+    )
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        _kill_tree(process)
+        try:
+            stdout, stderr = process.communicate(timeout=10)
+        except subprocess.TimeoutExpired:
+            stdout, stderr = "", ""
+        # Re-raise: callers use this exception to mean "timed out as expected".
+        raise subprocess.TimeoutExpired(command, timeout, output=stdout, stderr=stderr)
+    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
 
 
 def verify_fixture(name: str) -> dict[str, Any]:
@@ -56,7 +104,15 @@ def verify_fixture(name: str) -> dict[str, Any]:
     expected = fixture["expected"]
     workdir = Path(tempfile.mkdtemp(prefix=f"misakanet-fixture-{name}-"))
     try:
-        setup = subprocess.run([str(path / "setup.sh"), str(workdir)], text=True, capture_output=True, timeout=10)
+        # Fixtures are POSIX shell scripts: executing them directly works on macOS/Linux via
+        # the shebang, but on Windows it raises WinError 193 (and `bash` there is the WSL
+        # launcher, which may not work either). Run them through a shell we have probed.
+        shell = find_posix_shell()
+        if shell is None:
+            return {"fixture": name, "status": "SKIP",
+                    "reason": "no usable POSIX shell: the fixtures are shell scripts"}
+        setup = subprocess.run([shell, str(path / "setup.sh"), str(workdir)], text=True,
+                               capture_output=True, timeout=10, encoding="utf-8", errors="replace")
         if setup.returncode:
             return {"fixture": name, "status": "FAIL", "reason": "setup failed", "output": setup.stderr}
 
@@ -85,7 +141,9 @@ def verify_fixture(name: str) -> dict[str, Any]:
 
         return {"fixture": name, "status": "PASS" if ok else "FAIL", "detail": detail}
     finally:
-        subprocess.run([str(path / "teardown.sh"), str(workdir)], text=True, capture_output=True, timeout=10)
+        if shell is not None:
+            subprocess.run([shell, str(path / "teardown.sh"), str(workdir)], text=True,
+                           capture_output=True, timeout=10, encoding="utf-8", errors="replace")
         shutil.rmtree(workdir, ignore_errors=True)
 
 
