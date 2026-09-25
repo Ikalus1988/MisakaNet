@@ -59,7 +59,7 @@ jobs:
           cd workers
           npx wrangler deploy --config wrangler.toml
 
-      - name: Post-deploy — the deployed endpoint answers the MCP handshake (#1822)
+      - name: Post-deploy — the deployed endpoint answers the handshake, at the version we shipped
         run: |
           set -euo pipefail
 
@@ -75,16 +75,21 @@ jobs:
           # timeout, and HTTP 200 again. The retry is the difference between a signal and a coin flip.
           # Every attempt prints doctor's own message, so a human can still tell a timeout (HTTP 000)
           # from a service that answered wrongly (405, or a 200 whose body has no serverInfo).
+          # `--post-deploy` = the handshake *plus* the version read-back: the number every MCP client
+          # sees is self-reported by the worker, and it read 2.27.1 across six releases while every
+          # file-based check over it passed (#1820). This is the only place a live read-back can run —
+          # `make doctor` deliberately skips it, because a developer's checkout is often ahead of
+          # production and going red there would be the expensive kind of red.
           ATTEMPTS=5
           for attempt in $(seq 1 "$ATTEMPTS"); do
-            if python3 scripts/doctor.py --remote-only; then
+            if python3 scripts/doctor.py --post-deploy; then
               exit 0
             fi
             echo "::warning::the MCP handshake probe failed (attempt $attempt/$ATTEMPTS)"
             [ "$attempt" = "$ATTEMPTS" ] || sleep 10
           done
 
-          echo "::error::the worker deployed but https://misakanet.org/mcp did not complete an MCP handshake in $ATTEMPTS attempts — the deploy is not verified"
+          echo "::error::the worker deployed but https://misakanet.org/mcp did not answer the handshake at the declared version in $ATTEMPTS attempts — the deploy is not verified"
           exit 1
 
       - name: Reconcile the keepalive schedule with the config
