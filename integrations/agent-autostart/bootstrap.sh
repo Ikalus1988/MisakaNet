@@ -40,23 +40,32 @@ if ! mkdir -p "$DIR" 2>/dev/null || [ ! -w "$DIR" ]; then
   exit 1
 fi
 
-if command -v curl >/dev/null 2>&1; then
-  fetch() { curl -fsSL "$1" -o "$2"; }
-elif command -v wget >/dev/null 2>&1; then
-  fetch() { wget -qO "$2" "$1"; }
-else
-  say "[x] 需要 curl 或 wget 才能下载安装器。"
-  exit 1
-fi
-
 # GNU `timeout` does not exist on macOS by default. Wrapping the download in it made every
 # source fail there before curl ran, and the failure then walked straight into the message
-# below — so the installer was broken on macOS and reported the wrong reason. curl's own
-# --max-time (set at the call site) is the real backstop; the wrapper is optional.
+# below — so the installer was broken on macOS and reported the wrong reason. The download
+# timeouts are the real backstop; the wrapper is optional.
+#
+# It wraps an **executable**, which is why it is used *inside* the fetchers below and not at the
+# call site: `with_timeout fetch …` cannot work, because `timeout` runs a program and `fetch` is
+# a shell function. (Measured while fixing this: on a machine that has `timeout`, that spelling
+# failed every mirror with "failed to run command 'fetch'".)
 if command -v timeout >/dev/null 2>&1; then
   with_timeout() { timeout 40 "$@"; }
 else
   with_timeout() { "$@"; }
+fi
+
+if command -v curl >/dev/null 2>&1; then
+  # The timeouts live with the fetch: --connect-timeout/--max-time matter as much as the wrapper
+  # (a stalled transfer connects fine and never errors), and wget spells them differently.
+  fetch() { with_timeout curl -fsSL --connect-timeout 8 --max-time 25 "$1" -o "$2"; }
+elif command -v wget >/dev/null 2>&1; then
+  # One try per mirror: the loop at the call site *is* the retry strategy, so wget's default of 20
+  # retries would turn a blocked network into minutes of silence per source.
+  fetch() { with_timeout wget -q --timeout=25 --tries=1 -O "$2" "$1"; }
+else
+  say "[x] 需要 curl 或 wget 才能下载安装器。"
+  exit 1
 fi
 
 USED=""
@@ -73,8 +82,10 @@ for f in $FILES; do
   for base in "${ORDER[@]}"; do
     host="$(printf '%s' "$base" | sed -E 's#https?://([^/]+).*#\1#')"
     printf '  · %s ← %s ... ' "$f" "$host"
-    # --max-time matters as much as --connect-timeout: a stalled transfer never errors.
-    if with_timeout curl -fsSL --connect-timeout 8 --max-time 25 "$base/$PREFIX/$f" -o "$DIR/$f" 2>/dev/null && [ -s "$DIR/$f" ]; then
+    # `fetch`, not `curl`: the helper above picks whichever of curl/wget this machine has, and
+    # calling curl directly here made the wget branch dead code — a wget-only machine could never
+    # download anything, while the script cheerfully defined the function that would have worked.
+    if fetch "$base/$PREFIX/$f" "$DIR/$f" 2>/dev/null && [ -s "$DIR/$f" ]; then
       say "OK"
       got="$base"; PREFERRED="$base"; [ -z "$USED" ] && USED="$base"
       break
