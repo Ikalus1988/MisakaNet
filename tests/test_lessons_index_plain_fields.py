@@ -178,6 +178,41 @@ def test_the_generator_only_emits_a_non_empty_string(key):
         )
 
 
+def _stale_entries(committed: dict[str, dict], fresh: dict[str, dict]) -> list[str]:
+    """Entries the committed index carries that a fresh generation disagrees with.
+
+    Compared over the **intersection**, deliberately. Requiring `data/lessons.json` to equal a fresh
+    generation would also fail when the corpus has simply gained a lesson, and that is not this
+    module's subject: the file is refreshed by the daily `update-lessons.yml` job and by
+    `scripts/queue_lesson.py`, and this repo's other freshness gates (`sync_lesson_count.py --check`,
+    `build_lesson_pages.py --check`) run on push to main rather than inside a PR. Asserting it here
+    would red a hand-written lesson PR for something a scheduled job owns — a false accusation, and
+    the same shape this repository keeps finding in its own gates.
+
+    What survives is the part that matters for #1783: an entry the index *already carries* must not
+    disagree with the corpus, so a lesson that gains `summary_plain` without the index being
+    regenerated is still caught (the fallback path would keep answering without it).
+    """
+    return sorted(i for i in committed if i in fresh and fresh[i] != committed[i])
+
+
+def test_a_lesson_new_to_the_corpus_is_not_reported_as_stale():
+    """The index lags the corpus every time a lesson is added; a scheduled job closes that gap."""
+    committed = {"a": {"id": "a", "summary_plain": "x"}}
+    fresh = {
+        "a": {"id": "a", "summary_plain": "x"},
+        "b": {"id": "b", "summary_plain": "y"},
+    }
+    assert _stale_entries(committed, fresh) == []
+
+
+def test_an_entry_the_corpus_has_moved_past_is_stale():
+    """The direction that matters: the corpus carries a field the index never picked up."""
+    committed = {"a": {"id": "a"}}
+    fresh = {"a": {"id": "a", "summary_plain": "x"}}
+    assert _stale_entries(committed, fresh) == ["a"]
+
+
 def test_the_generator_itself_emits_the_fields(tmp_path, monkeypatch):
     """Run the real generator and check its output — the committed file is not the subject.
 
@@ -187,8 +222,8 @@ def test_the_generator_itself_emits_the_fields(tmp_path, monkeypatch):
     the *function* is covered, the *wiring into the artifact* is not. So this one drives the real
     `main()` over the real corpus and reads what it wrote.
 
-    It doubles as a staleness gate: the committed index must equal a fresh generation from the
-    current corpus, which is what `.github/workflows/update-lessons.yml` produces daily.
+    It doubles as a staleness gate — see `_stale_entries` for exactly what "stale" means here, and
+    why a lesson the corpus has just gained is not it.
     """
     import scripts.update_lessons_json as gen
 
@@ -213,7 +248,9 @@ def test_the_generator_itself_emits_the_fields(tmp_path, monkeypatch):
     )
 
     committed = _by_id()
-    assert fresh == committed, (
-        "data/lessons.json is not what the generator produces from the current corpus — "
-        "run `python3 scripts/update_lessons_json.py`"
+    stale = _stale_entries(committed, fresh)
+    assert not stale, (
+        "data/lessons.json is stale relative to the corpus, so the GitHub/KV fallback keeps serving "
+        "the old entry — run `python3 scripts/update_lessons_json.py`; "
+        f"{stale[:10]}"
     )
