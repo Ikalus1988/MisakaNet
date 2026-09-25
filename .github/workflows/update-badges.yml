@@ -47,11 +47,18 @@ jobs:
       - name: Count MCP tools
         id: tools
         run: |
-          # MCP tool definitions live in the worker (register-proxy-sw.js).
-          # grep -c prints "0" AND exits 1 when nothing matches, so `|| echo 0`
-          # would double-print and break $GITHUB_OUTPUT — use awk to force a
-          # single clean count instead.
-          TOOL_COUNT=$(grep -cE 'name: "misakanet_' workers/register-proxy-sw.js | awk '{print $1+0}')
+          # Through the SSOT reader, like the domain and node counts below — but for a stronger
+          # reason than theirs (issue #1822). This step used to be
+          # `grep -cE 'name: "misakanet_' workers/register-proxy-sw.js`: the expected value and the
+          # measured value were the *same file*, so the badge could not disagree with the worker and
+          # could never notice that the worker disagreed with the documentation. It only proved the
+          # file had not been deleted.
+          #
+          # `canonical_mcp_tools` takes the expectation from the AGENTS.md §3.2 table and the
+          # measurement from the worker, and **raises** when they differ, so this step now fails on
+          # a tool that is registered but undocumented (or the reverse) instead of publishing a
+          # number that is merely consistent with itself.
+          TOOL_COUNT=$(python3 -c "from scripts.sync_lesson_count import canonical_mcp_tools; print(canonical_mcp_tools())")
           echo "tools=$TOOL_COUNT" >> "$GITHUB_OUTPUT"
 
       - name: Count registered nodes

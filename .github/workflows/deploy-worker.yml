@@ -59,6 +59,34 @@ jobs:
           cd workers
           npx wrangler deploy --config wrangler.toml
 
+      - name: Post-deploy — the deployed endpoint answers the MCP handshake (#1822)
+        run: |
+          set -euo pipefail
+
+          # `--kv-only` above returns before `CHECKS`, so `check_remote_endpoint` — the only check that
+          # talks to the deployed service, and the one whose bar took an argument to get right (see the
+          # 405 note in scripts/doctor.py) — had **no call site anywhere in CI**. A check nobody runs is
+          # a comment. This is its call site, at the one moment its answer is both fresh and worth
+          # reacting to: the deploy has just happened, and the question is whether what landed speaks MCP.
+          #
+          # Retried, because a Worker deploy propagates over a few seconds and because this probe's
+          # expensive failure mode is "red on a healthy service" — measured while writing this: three
+          # consecutive probes of misakanet.org from one machine returned HTTP 200, a connection
+          # timeout, and HTTP 200 again. The retry is the difference between a signal and a coin flip.
+          # Every attempt prints doctor's own message, so a human can still tell a timeout (HTTP 000)
+          # from a service that answered wrongly (405, or a 200 whose body has no serverInfo).
+          ATTEMPTS=5
+          for attempt in $(seq 1 "$ATTEMPTS"); do
+            if python3 scripts/doctor.py --remote-only; then
+              exit 0
+            fi
+            echo "::warning::the MCP handshake probe failed (attempt $attempt/$ATTEMPTS)"
+            [ "$attempt" = "$ATTEMPTS" ] || sleep 10
+          done
+
+          echo "::error::the worker deployed but https://misakanet.org/mcp did not complete an MCP handshake in $ATTEMPTS attempts — the deploy is not verified"
+          exit 1
+
       - name: Reconcile the keepalive schedule with the config
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
