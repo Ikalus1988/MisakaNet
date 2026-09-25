@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-25T05:06:29.035709+00:00",
+  "generated_at": "2026-09-25T11:59:12.515547+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(site): the contributor wall listed commit scopes as contributors — \"worker\", \"ci\", \"cf\"",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2195",
-      "timestamp": "2026-09-25T05:04:26Z",
+      "title": "chore(friction): the stale bot may label but never close, and the contributor wall states its basis",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2228",
+      "timestamp": "2026-09-25T11:52:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(leaderboard): a bot sat at rank #2, and the snapshot could never correct itself",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2194",
-      "timestamp": "2026-09-25T04:58:37Z",
+      "title": "fix(ci): the OCR review's four real findings — a dead token guard, an orphaned reader, a writer with no floor, a traceback in the watcher",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2235",
+      "timestamp": "2026-09-25T11:48:18Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(skill): the skill taught a hosted-only tool without saying which surface",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2193",
-      "timestamp": "2026-09-25T04:39:16Z",
+      "title": "fix(ci): iteration 1 listed a fix it did not apply — the dispatch input was still interpolated into the shell",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2234",
+      "timestamp": "2026-09-25T10:59:22Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): the claim window said 8 hours and released after 4 — plus #1826 re-adjudicated",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2192",
-      "timestamp": "2026-09-25T04:34:14Z",
+      "title": "fix(ci): Open Code Review iteration 2 — dead state, a writer with no concurrency, unbounded jobs",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2233",
+      "timestamp": "2026-09-25T10:50:50Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(doctor): read the deployed version back, so a self-reported number has a live gate",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2191",
-      "timestamp": "2026-09-25T04:19:02Z",
+      "title": "fix(security): a PR-controlled branch name was interpolated into a shell command (Open Code Review pass)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2230",
+      "timestamp": "2026-09-25T10:41:32Z",
       "source": "github"
     },
     {
