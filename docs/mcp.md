@@ -105,6 +105,22 @@ which surface has which).
 | `misakanet_get_lesson` | Get a specific lesson | `path` or `id` (required) |
 | `misakanet_submit_usage` | Report lesson usage — outcome feeds live reuse signals (solved → helpful vote; partial/not-helpful → feedback) | `lesson_id` (required), `tool?`, `outcome?` |
 
+### Reading errors
+
+`misakanet_get_lesson` answers `{error, code}` when it cannot return a lesson, and the code is what says
+what to do next:
+
+| Code | Meaning |
+|------|---------|
+| `lesson_not_found` | No such lesson (id or path, on `main` or `data`). Search instead of retrying. |
+| `invalid_lesson_path` | The argument is not a lesson reference. `path` must be a file under `lessons/` ending in `.md` — other repository files are not readable through this tool. |
+| `internal_error` | A service fault. Retrying is reasonable. |
+
+Added 2026-09-25 (B35), because those last two were one code: a missing lesson answered `internal_error`
+— the message for a transient fault — so a caller that obeyed it retried a 404 forever, and a caller that
+quoted it reported MisakaNet as down for its own typo. In the same call `path` went into the GitHub
+contents URL unvalidated, so `path=docs/CI.md` returned that file.
+
 ## Resources
 
 **Local stdio surface only** — the hosted endpoint exposes no resources (see *Which surface?*).

@@ -344,11 +344,11 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_get_lesson",
-    description: "[RETRIEVAL / READ] Fetch one public MisakaNet lesson by repository path or lesson ID. Use after misakanet_search returns a promising result to pull the full fix content. Provide exactly one of id or path (path takes precedence if both are supplied); if neither is supplied the tool returns {error}.\nReturns: object {path: string, content: string} — lesson markdown body, capped at 5000 chars per call; or {error: string}. When the lesson is longer than the cap the response says so instead of pretending to be complete: {truncated: true, content_length: <full chars>, content_returned: <chars here>, full_content_url: <raw markdown>} — fetch that URL when the tail matters (the cut can fall before the Verification section).\nExample: misakanet_get_lesson(id='auto-merge-ci-pipeline')",
+    description: "[RETRIEVAL / READ] Fetch one public MisakaNet lesson by repository path or lesson ID. Use after misakanet_search returns a promising result to pull the full fix content. Provide exactly one of id or path (path takes precedence if both are supplied); if neither is supplied the tool returns {error}. `path` must be a lesson file (lessons/<topic>/<slug>.md) — anything else is refused with code=invalid_lesson_path rather than read.\nReturns: object {path: string, content: string} — lesson markdown body, capped at 5000 chars per call; or {error, code}. The code says which: lesson_not_found (no such lesson — do not retry, search instead), invalid_lesson_path (the argument is not a lesson reference — fix the argument), internal_error (a service fault — retrying is reasonable). When the lesson is longer than the cap the response says so instead of pretending to be complete: {truncated: true, content_length: <full chars>, content_returned: <chars here>, full_content_url: <raw markdown>} — fetch that URL when the tail matters (the cut can fall before the Verification section).\nExample: misakanet_get_lesson(id='auto-merge-ci-pipeline')",
     inputSchema: {
       type: "object",
       properties: {
-        path: { type: "string", description: "Lesson path relative to the repository, e.g. lessons/core/auto-merge-ci-pipeline.md. Either path or id is required." },
+        path: { type: "string", description: "Lesson path relative to the repository, e.g. lessons/core/auto-merge-ci-pipeline.md — must be a file under lessons/ ending in .md (other repository files are not readable through this tool). Either path or id is required." },
         id: { type: "string", description: "Lesson ID, usually the filename without .md, e.g. auto-merge-ci-pipeline. Either id or path is required." },
       },
       minProperties: 1,
@@ -1655,6 +1655,54 @@ async function loadBM25Index(env) {
   return null;
 }
 
+// ── The lesson-reference guard (B35) ────────────────────────────────────────────────────────────────
+//
+// Measured against production on 2026-09-25, `misakanet_get_lesson` answered two ways it should not:
+//
+//   * `path=docs/CI.md` returned that file's text. The path was interpolated into the GitHub contents
+//     URL with no validation, so a tool documented as "fetch one public lesson" was also a
+//     read-anything-in-the-repository endpoint — and it is the tool whose whole purpose is to be
+//     called by a stranger's agent;
+//   * a path that does not exist answered `{"error":"Temporary service error. Retry shortly.",
+//     "code":"internal_error"}`. That is the message for a *service fault*, so an agent doing the
+//     right thing with it — retry — retries a 404 forever, and an agent doing the wrong thing with it
+//     reports "MisakaNet is down" for a lesson that was simply never there. The distinction is not
+//     cosmetic: `internal_error` is the only code this file gives a client to quote, and it was
+//     carrying a not-found.
+//
+// The id branch had the same conflation from the other side: it swallowed every answer (`catch {}`),
+// so a 401 from an expired token was reported as "Lesson not found". A caller cannot act on either.
+//
+// So: references are checked before anything is fetched, and only a genuine 404 on both refs is a
+// not-found. Everything else stays `internal_error`, because it is one.
+const LESSON_PATH_RE = /^lessons\/[A-Za-z0-9][A-Za-z0-9._/-]*\.md$/;
+const LESSON_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+function lessonError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
+/** Empty string when `value` is a usable lesson reference, else the reason it is not. */
+function lessonReferenceProblem(value, kind) {
+  if (typeof value !== "string" || !value.trim()) return `${kind} must be a non-empty string`;
+  const ref = value.trim();
+  if (ref.length > 200) return `${kind} is longer than any lesson ${kind}`;
+  if (ref.includes("..") || ref.startsWith("/") || ref.includes("//")) {
+    // The value goes into a URL path; `..` and a leading slash are how a "read one lesson" call
+    // becomes a read of something else.
+    return `${kind} must not contain ".." or start with "/"`;
+  }
+  const ok = kind === "path" ? LESSON_PATH_RE.test(ref) : LESSON_ID_RE.test(ref);
+  if (!ok) {
+    return kind === "path"
+      ? `path must look like lessons/<topic>/<slug>.md (got ${JSON.stringify(ref)})`
+      : `id must be a lesson slug without a slash (got ${JSON.stringify(ref)})`;
+  }
+  return "";
+}
+
 // Fetch a single lesson markdown from GitHub
 async function fetchLessonContent(env, lessonPath, lessonId) {
   // PRD ④: prefer D1 (real-time serving layer) when bound
@@ -1665,9 +1713,14 @@ async function fetchLessonContent(env, lessonPath, lessonId) {
   if (!token) throw new Error("REGISTER_TOKEN not configured");
   let filePath = lessonPath;
   if (!filePath && lessonId) {
+    const idProblem = lessonReferenceProblem(lessonId, "id");
+    if (idProblem) throw lessonError("invalid_lesson_path", `Not a lesson reference: ${idProblem}.`);
     // Try multiple paths and branches
     const paths = [`lessons/core/${lessonId}.md`, `lessons/contrib/${lessonId}.md`, `lessons/_archive/${lessonId}.md`];
     const branches = ["main", "data"];
+    // Answers that are neither a lesson nor a 404: a 401/403/5xx means this worker could not ask, which
+    // is not the same as "there is no such lesson" and must not be reported as one.
+    const unanswered = [];
     for (const branch of branches) {
       for (const c of paths) {
         try {
@@ -1681,15 +1734,32 @@ async function fetchLessonContent(env, lessonPath, lessonId) {
               const body = atob(data.content);
               return { path: c, content: body.slice(0, LESSON_CONTENT_LIMIT), content_length: body.length };
             }
+          } else if (resp.status !== 404) {
+            unanswered.push(resp.status);
           }
-        } catch {}
+        } catch (e) {
+          unanswered.push(e && e.message ? e.message : "network error");
+        }
       }
     }
-    throw new Error(`Lesson not found: ${lessonId}`);
+    if (unanswered.length === branches.length * paths.length) {
+      throw new Error(`GitHub API unreachable for all ${unanswered.length} candidate paths`);
+    }
+    throw lessonError("lesson_not_found", `No lesson with id ${JSON.stringify(lessonId)}.`);
   }
-  if (!filePath) throw new Error("Missing path or id");
+  if (!filePath) {
+    // Neither argument, or an empty `path`: the caller's mistake, and the answer has to say which
+    // arguments exist rather than "retry shortly".
+    throw lessonError("invalid_lesson_path",
+      'Pass exactly one of path ("lessons/<topic>/<slug>.md") or id (the lesson slug).');
+  }
+  const pathProblem = lessonReferenceProblem(filePath, "path");
+  if (pathProblem) {
+    throw lessonError("invalid_lesson_path", `Not a lesson path: ${pathProblem}.`);
+  }
 
   // Try main branch first, then data
+  const unanswered = [];
   for (const branch of ["main", "data"]) {
     const url = `${GITHUB_API}/repos/${REPO}/contents/${filePath}?ref=${branch}`;
     const resp = await fetchWithTimeout(url, {
@@ -1701,9 +1771,12 @@ async function fetchLessonContent(env, lessonPath, lessonId) {
         const body = atob(data.content);
         return { path: filePath, content: body.slice(0, LESSON_CONTENT_LIMIT), content_length: body.length };
       }
+    } else if (resp.status !== 404) {
+      unanswered.push(resp.status);
     }
   }
-  throw new Error(`Lesson not found: ${filePath}`);
+  if (unanswered.length) throw new Error(`GitHub API answered ${unanswered.join("/")} for ${filePath}`);
+  throw lessonError("lesson_not_found", `No lesson at ${JSON.stringify(filePath)} on main or data.`);
 }
 
 // ── MCP Identity Aura (御坂共有視界モード) ──
@@ -2917,6 +2990,14 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         ...(bodyFlags.length ? { suspicious: true, suspicious_rules: bodyFlags } : {}),
       };
     } catch (e) {
+      // A missing lesson, or a reference that is not a lesson at all, is the caller's answer — not a
+      // service fault (B35). `internal_error` reads "Temporary service error. Retry shortly.", so
+      // answering a 404 with it invites a retry loop against a lesson that will never exist, and
+      // reports MisakaNet as down for a caller typo. Anything else is genuinely internal, including a
+      // GitHub answer that is not a 404, and keeps the message that says so.
+      if (e && (e.code === "lesson_not_found" || e.code === "invalid_lesson_path")) {
+        return { error: e.message, code: e.code };
+      }
       logInternal("tool call failed", e);
       return { error: ERROR_CODES.internal_error, code: "internal_error" };
     }

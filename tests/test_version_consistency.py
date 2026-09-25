@@ -464,3 +464,67 @@ def test_the_readmes_do_not_hand_write_a_publishable_version():
         "a README must not hand-write a released version — the npm badge is the live source, and this "
         "number goes stale whenever the npm channel lags the release (it did):\n  - "
         + "\n  - ".join(offenders))
+
+
+# ── The annotation is a writer; the *value* is a relation to the manifest ───────────────────────────
+# `_writer_problems` proves every pinned file has one line release-please can rewrite. It does not check
+# that the line currently carries the right number, and on 2026-09-25 that gap cost nine `test` legs,
+# twice. A branch whose `docs/index.html` had been pushed as whole-file content from a checkout taken
+# before the 2.35.0 release arrived with badge `v2.34.0` against a manifest of `2.35.0`:
+#
+#     AssertionError: site badge v2.34.0 != manifest 2.35.0      1 failed, 2459 passed
+#
+# `test_site_badge_matches_the_manifest` caught the badge (that is what it is for). The same stale
+# checkout also held `workers/register-proxy-sw.js` — the version string every MCP client reads as the
+# server version — and `scripts/misakanet_cli.py` at 2.34.0, and **nothing** could see those two: no
+# rule compares them to anything. A release step that misses one leaves no trace at all, because the
+# value is only wrong in relation to the manifest.
+def _annotated_value_problems(root: Path) -> list[str]:
+    """Annotated version lines whose value is not the manifest's. Takes a root so it can be mutated."""
+    manifest = json.loads((root / ".release-please-manifest.json").read_text(encoding="utf-8"))["."]
+    problems = []
+    for rel, pattern in PINNED_VERSION_FILES.items():
+        for line in (root / rel).read_text(encoding="utf-8").splitlines():
+            # The annotation must be on the version-carrying line (same rule as `_writer_problems`):
+            # these files document the mechanism in prose, and prose is not an annotation.
+            if "x-release-please-version" not in line or not re.search(pattern, line):
+                continue
+            found = re.findall(r"\d+\.\d+\.\d+", line)
+            if manifest not in found:
+                problems.append(
+                    f"{rel} carries {found or 'no version'} on its annotated line, the manifest says "
+                    f"{manifest} — release-please owns both, so they disagree only when a release step "
+                    "missed one or a stale file was written over a newer one")
+    return problems
+
+
+def test_every_annotated_version_line_carries_the_manifest_version():
+    problems = _annotated_value_problems(REPO)
+    assert not problems, (
+        "these pinned version lines disagree with .release-please-manifest.json:\n  - "
+        + "\n  - ".join(problems))
+
+
+def test_the_value_check_notices_a_stale_line(tmp_path):
+    """Guard the guard: a rule that cannot fail is not a rule, and this one reads the real repository."""
+    import shutil
+
+    scratch = tmp_path / "repo"
+    scratch.mkdir()
+    for rel in list(PINNED_VERSION_FILES) + [".release-please-manifest.json"]:
+        (scratch / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(REPO / rel, scratch / rel)
+    assert _annotated_value_problems(scratch) == [], "the copied tree must start clean"
+
+    manifest = json.loads((scratch / ".release-please-manifest.json").read_text(encoding="utf-8"))["."]
+    for rel, marker in (("docs/index.html", f">v{manifest}<"),
+                        ("scripts/misakanet_cli.py", f'"{manifest}"'),
+                        ("workers/register-proxy-sw.js", f'"{manifest}"')):
+        victim = scratch / rel
+        text = victim.read_text(encoding="utf-8")
+        assert marker in text, f"{rel} does not carry {marker!r}, so the mutation cannot be applied"
+        victim.write_text(text.replace(marker, marker.replace(manifest, "0.0.1"), 1), encoding="utf-8")
+        problems = _annotated_value_problems(scratch)
+        assert any(rel in problem for problem in problems), (
+            f"an older number in {rel} must be reported, got: {problems}")
+        victim.write_text(text, encoding="utf-8")
