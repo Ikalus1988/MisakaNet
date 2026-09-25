@@ -49,7 +49,7 @@
 | `intake-auto-review.yml` | Intake Auto Review | issues, 手动 |  |
 | `intake-kind-audit.yml` | Intake Kind Audit | 定时, 手动 | `30 6 * * 1` |
 | `intake-pipeline-test.yml` | Intake Pipeline Test (PRD ③) | 手动 |  |
-| `intake-salvage-digest.yml` | Intake Salvage Digest | 定时, 手动 | `0 8 * * *` |
+| `intake-salvage-digest.yml` | Intake Salvage Digest（另跑 `scripts/done_but_open.py`：工作已在 `main`、issue 还开着的 intake，非空才写进 digest 议题；**只报告，不关单**）| 定时, 手动 | `0 8 * * *` |
 | `issue-intake-triage.yml` | MCP Intake Triage | issues, 手动 |  |
 | `sync-d1.yml` | Sync Lessons to D1 (PRD ④) | push, 定时, 手动 | `0 3 * * *` |
 | `d1-backup.yml` | D1 backup（每周一次 `d1 export` 存档 + 打印 storage backend 与 Time Travel bookmark；artifact 保留 90 天）| 定时, 手动 | `10 4 * * 1` |

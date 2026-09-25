@@ -44,6 +44,12 @@
 
 自动回执机制见 #1528（bounty，实现前由人工执行本条）。
 
+**这条铁律的"提醒"半边已经有机制**（2026-09-25 接上，#2040）：`intake-salvage-digest.yml` 每天
+08:00 UTC 跑 `scripts/done_but_open.py`，找出「课程已经在 `main` 上、issue 还开着」的 intake 并写进
+`salvage-digest` 议题（清单为空时**不发言**，只写 step summary）。它**只报告**：不代替人写回执、
+也不关单——§2 已经把"服务端 auto-rejected 的噪音不主动关闭"写死了，而"按文件名匹配就自动关"正是本
+节反例的机器版本。人要做的仍然是那 5 条模板要点。
+
 ## 4. 与自动化管线的关系
 
 | 管线 | 职责 | 与 SOP 的接口 |
@@ -52,6 +58,7 @@
 | intake-bot 外部试点（#1550）| 外部仓库 CI 失败 → 建议/intake | 报料来源；回执靠 §3 |
 | `workers/register-proxy-sw.js` `gap:*` | 记录检索无结果的查询 | 定期分析（gap→lesson 生命周期 #1586 已交付） |
 | failure_harvest / watcher（#1545/#1597）| 失败事件 → lesson 草稿 | 草稿仍需人工 triage |
+| `intake-salvage-digest.yml` + `scripts/done_but_open.py`（#2040，2026-09-25 接上）| 每天找出「工作已在 `main`、issue 还开着」的 intake，非空时写进 digest 议题 | **只提醒，不代替 §3**：回执与关单仍由人做 |
 
 ## 5. 参考
 

@@ -15,6 +15,11 @@ second set of answers to the same question.
     python3 scripts/done_but_open.py                 # needs a token: reads open issues
     python3 scripts/done_but_open.py --issue 1472    # just this one, no token needed
     python3 scripts/done_but_open.py --json
+    python3 scripts/done_but_open.py --json-out /tmp/dbo.json   # one pass, both forms
+
+The scheduled caller is `intake-salvage-digest.yml`, which folds the report into the digest issue it
+already maintains — and only when the list is non-empty, so a clean backlog is silent instead of a
+daily "nothing to report".
 
 Exit code is 0 whether or not anything is found: this is a report, not a gate. Making it a gate
 would block a release on a backlog-hygiene item, which is how gates become noise.
@@ -125,6 +130,11 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="intakes that are done but still open (#2040)")
     parser.add_argument("--issue", type=int, action="append", help="check one intake (no token needed)")
     parser.add_argument("--json", action="store_true")
+    # The scheduled caller needs the human report *and* a structural "how many?" answer from the
+    # same API pass: deciding emptiness by grepping the rendered text for 没有发现 would break the
+    # moment somebody rewords the sentence, and printing both costs a second listing of the backlog.
+    parser.add_argument("--json-out", type=Path, metavar="PATH",
+                        help="also write the machine-readable report here (stdout stays human-readable)")
     args = parser.parse_args(argv)
 
     if args.issue:
@@ -133,6 +143,8 @@ def main(argv=None) -> int:
         issues = open_issue_numbers(_token())
 
     report = findings(issues)
+    if args.json_out:
+        args.json_out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else render(report))
     return 0
 
