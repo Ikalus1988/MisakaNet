@@ -92,6 +92,27 @@ def test_the_fresh_export_matches_the_tracked_bytes():
 
 
 # ── `--check`, the thing a person runs ──────────────────────────────────────────────
+def test_the_export_does_not_infer_a_domain_from_a_path_separator():
+    """The same corpus must export the same file on every platform.
+
+    `str(path).split("\\\\")` works on Windows and never on POSIX — `str(Path("lessons/en/x.md"))` has no
+    backslash to split on — so the folder fallback in `lesson_to_okf` silently applied on Windows only, and
+    `lessons/en/mkdir-p-race-safe.md` exported `"domain": "en"` there against `""` here. The windows legs said
+    so the day the export became a graded artifact:
+
+        STALE — the tracked export has 411 records, the corpus exports 411 (+0)
+
+    A rule on the idiom, because the divergence cannot be reproduced on the platform this test runs on; the
+    byte comparison below is the behavioural half and it does run on Windows.
+    """
+    code = [line for line in SCRIPT.read_text(encoding="utf-8").splitlines()
+            if not line.lstrip().startswith("#")]
+    offenders = [line for line in code if '.split("\\\\")' in line or ".split(os.sep)" in line]
+    assert not offenders, (
+        "the export infers something from a path separator, which makes it platform-dependent — use "
+        "`Path.parts` or the frontmatter:\n" + "\n".join(offenders))
+
+
 def test_check_mode_passes_on_the_current_export():
     proc = subprocess.run([sys.executable, str(SCRIPT), "--check"], capture_output=True, text=True, timeout=300)
     assert proc.returncode == 0, proc.stdout + proc.stderr

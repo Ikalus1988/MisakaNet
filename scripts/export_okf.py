@@ -99,17 +99,25 @@ def lesson_to_okf(path: Path, domain_filter: str | None = None) -> dict | None:
     if not meta:
         return None
 
-    # Domain: use frontmatter domain, fallback to folder name
+    # Domain: the frontmatter is the only source.
+    #
+    # The previous version inferred one from the second path component — "fallback to folder name" — and did
+    # it by splitting a string on a **backslash**:
+    #
+    #     parts = str(path.relative_to(REPO_ROOT)).split("\\")
+    #
+    # On Windows that yields ("lessons", "en", "x.md"); on POSIX `str(Path(...))` contains no backslash at
+    # all, so the split returns one element and the whole fallback never ran. The same corpus therefore
+    # exported two different files, and only on one platform: `lessons/en/mkdir-p-race-safe.md` came out with
+    # `"domain": "en"` on Windows and `""` on POSIX. The windows legs found it the day the export became a
+    # graded artifact (2026-09-25) — `tests/test_okf_export_freshness.py` compares bytes, so it surfaced as
+    # "STALE — the tracked export has 411 records, the corpus exports 411 (+0)".
+    #
+    # A directory is not a domain (`contrib`/`en`/`pt-br` are layout, and `docs/agents/repo-operations.md`
+    # records the directory-as-domain confusion separately), so the explicit rule is the frontmatter, and
+    # POSIX — the platform that produces the tracked file and builds the index in CI — keeps the output it
+    # has always had.
     domain = meta.get("domain", "")
-    if not domain or domain == "contrib":
-        # Try to infer from folder
-        parts = str(path.relative_to(REPO_ROOT)).split("\\")
-        if len(parts) >= 2:
-            folder = parts[1]  # e.g., "core", "contrib"
-            if folder in ("core", "contrib"):
-                domain = meta.get("subdomain", "general")
-            else:
-                domain = folder
 
     if domain_filter and domain != domain_filter:
         return None
