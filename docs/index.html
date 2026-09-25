@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="MisakaNet — Git-backed, zero-dependency failure lesson network for AI agents. 411 indexed failure-recovery lessons, GitHub-audited, searchable.">
 <meta name="keywords" content="AI Agent, MisakaNet, failure lessons, debugging, knowledge base, zero-dependency, GitHub-audited">
+<!-- Browsers request `/favicon.ico` on **every** page load when no page declares an icon, and until
+     2026-09-25 that path answered 404 (~360 self-inflicted 404s a day, the only 404 in the zone's own
+     status table that was ours rather than a WordPress scanner's). The file now exists at the site
+     root, which fixes every page at once; these two links name it explicitly so the choice is this
+     icon rather than whatever the user agent would otherwise guess.
+     `scripts/build_favicon.py` regenerates both files from `docs/assets/misaka-avatar-crop.png`. -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
 <link rel="canonical" href="https://misakanet.org/">
 <meta property="og:title" content="MisakaNet — Failure Lesson Network for AI Agents">
 <meta property="og:description" content="Git-backed, zero-dependency failure lesson network. 411 indexed failure-recovery lessons from real AI agent debugging sessions.">
