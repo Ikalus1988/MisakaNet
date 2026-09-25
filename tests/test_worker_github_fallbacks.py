@@ -55,10 +55,10 @@ CALL_RE = re.compile(
 DEF_RE = re.compile(r"async\s+function\s+fetchFromGitHub\s*\(([^)]*)\)")
 
 
-def _code_lines() -> list[str]:
-    """The worker's lines with comments removed — the same trap that has cost this repo four tests."""
+def _code_lines(path: Path = WORKER) -> list[str]:
+    """The file's lines with comments removed — the same trap that has cost this repo four tests."""
     out = []
-    for raw in WORKER.read_text(encoding="utf-8").splitlines():
+    for raw in path.read_text(encoding="utf-8").splitlines():
         stripped = raw.strip()
         if stripped.startswith(("//", "*", "/*")):
             continue
@@ -131,3 +131,27 @@ def test_no_declared_other_ref_is_dead():
     for key, reason in OTHER_REFS.items():
         assert key in live, f"OTHER_REFS lists {key}, which no call uses any more"
         assert len(reason) > 40, f"{key} is exempted without a real reason: {reason!r}"
+
+
+def test_there_is_only_one_reader_named_fetchfromgithub():
+    """A second copy is how the `ref = "data"` default comes back.
+
+    `workers/lib/handlers.js` — the module "extracted from register-proxy-sw.js for maintainability" —
+    carried its own `async function fetchFromGitHub(token, path, ref = "data")` until 2026-09-25. It was
+    worse than a duplicate: it interpolated `PUBLIC_DATA_BASE` and never read `ref` at all, so its
+    default named a branch the function did not fetch, and it held the very default this file exists to
+    keep out of the worker. Nothing imported it — the worker takes only
+    `GITHUB_API`/`REPO`/`PUBLIC_DATA_BASE` from that module — which is precisely why it survived: a copy
+    no caller uses cannot be caught by a test of the callers, and the next one to import it would have
+    inherited both the signature and the lie.
+    """
+    definitions = sorted(
+        path.relative_to(REPO).as_posix()
+        for path in (REPO / "workers").rglob("*.js")
+        if DEF_RE.search("\n".join(_code_lines(path)))
+    )
+    assert definitions == ["workers/register-proxy-sw.js"], (
+        f"`fetchFromGitHub` is defined in {definitions}. Keep one reader, in the worker: that is the copy "
+        "with no default, the deadline, and the (path, ref) checks in this file — a second one starts "
+        "from a clean slate and a default"
+    )

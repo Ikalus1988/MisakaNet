@@ -192,6 +192,45 @@ def serialise(records: list[dict], fmt: str = "jsonl") -> str:
     return json.dumps(records, ensure_ascii=False, indent=2)
 
 
+def corpus_size() -> int:
+    """How many lessons a complete export covers: `lessons/**/*.md`, READMEs excluded.
+
+    The denominator of the coverage floor below. `build_sag_index.export_coverage` counts the corpus the
+    same way; both sides read the number from the same place, so "what the corpus is" cannot move for one
+    of them and not the other.
+    """
+    from misakanet.lesson_index import canonical_lessons
+
+    return sum(1 for path in canonical_lessons(LESSONS_DIR) if path.name != "README.md")
+
+
+def coverage_shortfall(covered: int, total: int) -> tuple[bool, str]:
+    """Should the writer refuse to write an export covering `covered` of `total` lessons?
+
+    `--check` cannot answer this one, and that is the point: it re-runs the same `build_records()` and
+    compares the result with the file that run just wrote, so a *short* export agrees with itself and
+    passes. Only a relation to the corpus can see it — `build_sag_index.py` states the same relation for
+    the reader (`COVERAGE_FLOOR`, with the historical numbers behind it); this is the writer's half, and
+    it exists because the writer had none: `main()` printed "Skipped N files (no valid frontmatter)" and
+    exited 0, so a frontmatter parser that quietly stops parsing (the shape of #1726, where CI lacking
+    PyYAML degraded the parser for 91% of the corpus) would write a small file and look successful.
+
+    Not cosmetic: `data/sag.db` is built from this file and the local search path prefers SAG over the
+    complete BM25 index, so the 47%-covering export #2185 was filed about made search *worse* than having
+    no index. A short export is worse than a stale one, because a stale one is at least the whole corpus
+    as of a date.
+    """
+    from scripts.build_sag_index import COVERAGE_FLOOR
+
+    if not total:
+        return True, "the corpus is empty (LESSONS_DIR resolved to nothing), so the export would be empty"
+    if covered < total * COVERAGE_FLOOR:
+        missing = total - covered
+        return True, (f"it would cover {covered} of {total} lessons ({missing} missing, "
+                      f"{100 * missing / total:.0f}%), and the floor is {COVERAGE_FLOOR:.0%}")
+    return False, ""
+
+
 def check_export(output_dir: Path, domain_filter: str | None, fmt: str) -> int:
     """Compare a fresh export with the tracked one. 0 = identical, 1 = stale, 2 = missing."""
     target = output_dir / ("lessons.jsonl" if fmt == "jsonl" else "lessons.json")
@@ -282,6 +321,23 @@ def main():
 
     # Write output
     output_file = output_dir / ("lessons.jsonl" if args.format == "jsonl" else "lessons.json")
+
+    # Before, not after the write: a guard that runs afterwards has already replaced the tracked file
+    # (and staged it for the self-merging pull request), which is the artifact this refuses to produce.
+    # `--domain` is a filter by definition, so it is exempt — the floor is about the complete export.
+    if args.domain is None:
+        short, why = coverage_shortfall(len(okf_records), corpus_size())
+        if short:
+            print(f"refusing to write {output_file}: {why}.", file=sys.stderr)
+            print(f"  {output_file} is unchanged. A short export is worse than a stale one: "
+                  f"`data/sag.db` is built from this file and the search path prefers SAG over the complete "
+                  f"BM25 index, so a partial export makes search *worse* than no index (#2185).",
+                  file=sys.stderr)
+            print("  Fix the cause (the corpus path, the frontmatter parser) and run again; the daily "
+                  "`update-lessons.yml` job lands a complete export through the self-merging pull request.",
+                  file=sys.stderr)
+            sys.exit(1)
+
     output_file.write_text(serialise(okf_records, args.format), encoding="utf-8")
 
     # Summary

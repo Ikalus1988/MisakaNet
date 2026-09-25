@@ -332,6 +332,37 @@ def test_the_scheduled_path_reads_the_tip_of_main(stub):
     assert ("POST", f"/repos/{OWNER_REPO}/issues") in posts(), posts()
 
 
+# ── an unreadable payload is not a reason to lose the run ───────────────────────────────────────────
+#
+# `resolve_target` called `json.loads(Path(args.event).read_text())` directly, so `$GITHUB_EVENT_PATH`
+# pointing at a file that is absent (`FileNotFoundError`) or half-written (`JSONDecodeError`) ended the
+# run in a stack trace. The trigger always sets that variable for the events this workflow listens to,
+# which is exactly why the failure is worth surviving rather than printing: it means the trigger changed,
+# not that the build is fine, and the answer the watcher needs is also available from the branch tip. A
+# watcher that exists because a red build was invisible must not be the thing that goes invisible.
+
+def test_a_missing_event_payload_falls_back_to_the_branch_tip(stub, tmp_path):
+    missing = tmp_path / "not-there.json"
+    proc = run_watch(stub, "--event", str(missing))
+    assert proc.returncode == 0, (
+        "an unreadable payload must not end the run in a traceback:\n" + proc.stdout + proc.stderr)
+    assert "Event payload unreadable" in proc.stderr, proc.stderr
+    assert str(missing) in proc.stderr, "the warning has to name the file, or nobody can check it"
+    assert "/branches/main" in " ".join(StubGitHub.seen), StubGitHub.seen
+    assert ("POST", f"/repos/{OWNER_REPO}/issues") in posts(), (
+        "the run still has to report the red build it was triggered by")
+
+
+def test_a_malformed_event_payload_falls_back_to_the_branch_tip(stub, tmp_path):
+    half_written = tmp_path / "event.json"
+    half_written.write_text('{"check_suite": {"head_sha": "8c1f3d1a', encoding="utf-8")
+    proc = run_watch(stub, "--event", str(half_written))
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "Event payload unreadable" in proc.stderr, proc.stderr
+    assert f"sha={SHA[:9]}" in proc.stdout, proc.stdout
+    assert ("POST", f"/repos/{OWNER_REPO}/issues") in posts(), posts()
+
+
 # ── the workflow around it ──────────────────────────────────────────────────────────────────────────
 
 def workflow() -> dict:
