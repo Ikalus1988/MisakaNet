@@ -13,9 +13,15 @@ reason that had nothing to do with the code under test: ~30 tests across
 `test_cf_diagnostics_*`, `test_workers_builds_watch.py`, `test_automation_output_audit.py` and
 `test_d1_backup_guard.py`, all of them passing on ubuntu.
 
-So: keep the POSIX value where it is safe, inherit the host PATH on Windows. Tests that genuinely need
-a *restricted* PATH (a wget-only machine, say) must set it themselves and require a POSIX shell, since
-that scenario is a POSIX one.
+**The first fix was wrong, and the next CI run said so.** It kept building a *fresh* environment with a
+corrected PATH and still produced 43 failures per windows leg with the same `WinError 10106`:
+`os.environ` was still not inherited, so `SystemRoot`/`windir` — which Winsock needs to locate its
+provider — were missing. A child environment has to be the host's, with the test's values layered on top,
+not a dict of two keys. Recorded here because "fresh env for determinism" is the habit that caused this,
+and it looks like care.
+
+Tests that genuinely need a *restricted* environment (a wget-only machine, say) set it themselves on
+POSIX only, since that scenario is a POSIX one.
 """
 from __future__ import annotations
 
@@ -32,10 +38,13 @@ def child_env(overrides: dict | None = None, **kwargs: object) -> dict:
     PATH when the test is about a restricted environment). Pass a mapping or keyword arguments —
     both spellings appear in the suite.
     """
-    env = {
-        "PATH": os.environ.get("PATH", "") if os.name == "nt" else POSIX_PATH,
-        "PYTHONIOENCODING": "utf-8",
-    }
+    # Start from the host environment: on Windows a child stripped of `SystemRoot`/`windir` cannot
+    # initialise Winsock (`WinError 10106`) even when its PATH is correct, and these children talk HTTP
+    # to a stub server. The POSIX determinism the old dict was reaching for is kept for PATH, which is
+    # the only variable any of these tests was pinning.
+    env = dict(os.environ)
+    env["PATH"] = os.environ.get("PATH", "") if os.name == "nt" else POSIX_PATH
+    env["PYTHONIOENCODING"] = "utf-8"
     for source in (overrides or {}, kwargs):
         env.update({k: str(v) for k, v in source.items()})
     return env
