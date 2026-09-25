@@ -831,10 +831,21 @@ function relevanceFloor(termDf, docCount) {
 // A query is answered when the matched terms carry a meaningful share of the query's
 // *information*, measured in IDF. Terms the corpus has never seen count as maximally
 // rare, so a query whose words are unknown cannot be satisfied by matching one common
-// word out of five. Calibrated against the real corpus (14 positive queries that must
-// keep finding their lesson, 10 negative ones that must not): 0.55 separates them
-// cleanly — 14/14 and 10/10 — where 0.45 already admits three negatives and 0.65
-// starts dropping positives.
+// word out of five.
+//
+// The value is re-derived by `workers/relevance-floor-calibration.test.mjs`, which sweeps the constant
+// over the query sets this repository actually keeps — `data/regression_queries.json` (11) plus the
+// four in `workers/search-floor-real-corpus.test.mjs`, its five unanswerable queries, and the 15
+// `forbidden` sets in `data/retrieval_noisebench_queries.json`. Measured 2026-09-25, positives /
+// negatives-rejected: 0.30 13/15·3/5 · 0.45 13/15·3/5 · 0.50 13/15·4/5 · **0.55 13/15·5/5** ·
+// 0.60 13/15·5/5 · 0.70 13/15·5/5 · 0.80 12/15·5/5.
+//
+// So 0.55 is the smallest value that rejects every unanswerable query, and 0.80 starts costing recall.
+// This paragraph replaces a provenance that could not be re-run ("calibrated on 14 positives and 10
+// negatives: 0.55 separates them 14/14 and 10/10, where 0.45 admits three negatives and 0.65 drops
+// positives"): those sets were never committed — the test in the same commit asserted 4 and 5 — so the
+// one number deciding answered-vs-`no_match` rested on a measurement nobody could repeat, and "0.65
+// starts dropping positives" does not hold for the sets that exist here (they survive to 0.70).
 const RELEVANCE_MIN_COVERAGE = 0.55;
 
 /** IDF of a term, counting an unseen term as if it occurred in zero documents. */
