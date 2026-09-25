@@ -56,6 +56,7 @@ import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
@@ -75,15 +76,41 @@ MANAGED_LINE_PATTERNS = (
 )
 
 
+def credentials_token(path: pathlib.Path) -> str | None:
+    """The password for **exactly** `github.com` out of a `~/.git-credentials` file, or None.
+
+    The host is compared after parsing, not by substring. `"github.com" in line` also accepts
+    `https://user:pw@notgithub.com/` and `https://user:pw@github.com.example.net/`, and this function's
+    entire job is deciding which credential to send where — a credential file is exactly where a
+    second host is likely to appear. CodeQL raised this as
+    `py/incomplete-url-substring-sanitization` on the substring version (alert #285); the neighbouring
+    `scripts/gh_push_via_api.py` was never affected because it anchors a regex to `github\\.com`.
+    """
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            parsed = urllib.parse.urlsplit(line)
+        except ValueError:                      # not a URL at all — skip it rather than guess
+            continue
+        if parsed.hostname != "github.com":
+            continue
+        if not parsed.username or parsed.password is None:
+            continue
+        return urllib.parse.unquote(parsed.password)
+    return None
+
+
 def resolve_token() -> str:
     for key in ("GITHUB_TOKEN", "GH_TOKEN"):
         if os.environ.get(key):
             return os.environ[key]
     credentials = pathlib.Path.home() / ".git-credentials"
     if credentials.is_file():
-        for line in credentials.read_text(encoding="utf-8").splitlines():
-            if "github.com" in line:
-                return line.split("//", 1)[1].split("@", 1)[0].split(":", 1)[1]
+        token = credentials_token(credentials)
+        if token:
+            return token
     raise SystemExit("no GitHub token: set $GITHUB_TOKEN or put github.com credentials in ~/.git-credentials")
 
 
