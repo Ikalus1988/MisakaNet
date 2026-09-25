@@ -199,12 +199,22 @@ jobs:
           printf '## PR Size Check\n\n| Metric | Value |\n|--------|-------|\n| Files Changed | %s |\n| Lines Added | %s |\n| Suspicious | %s |\n\n' "${CHANGED}" "${ADDITIONS}" "${SUSPICIOUS}" >> "$GITHUB_STEP_SUMMARY"
 
       # ── Secret Scanning (full scope only) ──
+      # ── Secret Scanning ──
+      # No scope condition, on purpose. It used to be `if: steps.scope.outputs.scope == 'full'`, which
+      # meant a docs-only PR never ran it — and the scanner it runs reads `workers/**` only, so even
+      # the "full" path looked at nothing in `docs/`. On 2026-09-25 a docs-only PR (#1982) was one step
+      # from merging two live-looking node tokens pasted into its smoke reports, and no gate in this
+      # repository had an opinion about that. Both scans take seconds; both now run for every scope.
       - name: Secret Scan
         id: secrets
-        if: steps.scope.outputs.scope == 'full'
         run: |
           echo "=== Scanning for hardcoded secrets ==="
-          if python3 scripts/check_worker_secrets.py; then
+          FAILED=0
+          # Run both even when the first fails: a second scanner's findings must not be hidden by the
+          # first one's exit code.
+          python3 scripts/check_worker_secrets.py || FAILED=1
+          python3 scripts/check_published_secrets.py || FAILED=1
+          if [ "$FAILED" = "0" ]; then
             echo "secrets_result=pass" >> "$GITHUB_OUTPUT"
           else
             echo "secrets_result=fail" >> "$GITHUB_OUTPUT"

@@ -108,7 +108,11 @@ curl -sS https://misakanet.org/mcp -H 'Content-Type: application/json' \
   用**随机 UUID**、自己保管，不要拿主机名 / 工作区 id 这类公开或可猜的值去派生它。（自声明、不可核验的是
   `agent_type`，不是 `client_id`。）
 - token 到期用**同一个 `client_id`** 再调一次即可（返回同一个 node 并续期）；不带 `client_id` 重新注册会得到新 node_id
-- token **只放 `Authorization` 头**，不要写进仓库/日志/issue（`args.token` 已废弃，Bearer 是唯一路径）
+- token **只放 `Authorization` 头**，不要写进仓库/日志/issue（`args.token` 已废弃，Bearer 是唯一路径）。
+  这条现在有门禁：`scripts/check_published_secrets.py` 扫 `docs/**` 与 `lessons/**` 的正文，**每个 PR 都跑**
+  （含 docs-only）——占位符（`mcp_xxxx…`）与工具名（`mcp__misakanet__search`）不会误报，判据见该文件开头。
+  注意 fork PR 的 diff **立刻公开**：把 token 从文件里删掉并不能收回它，要按"已泄漏"处理
+  （`docs/maintainer/credentials-and-environments.md` §6）
 
 ### 3.4 调用示例
 
