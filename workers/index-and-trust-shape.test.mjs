@@ -16,7 +16,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import worker, { buildBM25Index, indexShapeProblem, invalidateBM25Memo } from './register-proxy-sw.js';
+import worker, { buildBM25Index, indexShapeProblem, invalidateBM25Memo, matchTokens, bm25Tokenize } from './register-proxy-sw.js';
 import { testToken } from './_test-token.mjs';
 
 const TOKEN = 'mcp_' + testToken('index-and-trust');
@@ -48,6 +48,82 @@ test('a malformed index is refused too', () => {
   assert.equal(indexShapeProblem(null, ROWS), 'empty index');
   assert.equal(indexShapeProblem({ docCount: 0, terms: {} }, ROWS), 'empty index');
   assert.match(indexShapeProblem({ docCount: 7, terms: { a: 1 }, avgDocLen: 100 }, ROWS), /does not match/);
+});
+
+// ── the sample is drawn with one tokenizer and judged against another ────────
+// `matchTokens` keeps whole CJK runs; `bm25Tokenize` erases CJK entirely. Counting a CJK run as a
+// body token that is "missing from the index" therefore charges the build for a token it was never
+// able to produce, and the ratio ends up describing how much Chinese the corpus carries instead of
+// whether the bodies were indexed. On the live corpus (2026-09-25) that is 32.5% of the sample and a
+// ratio of 0.675 against a 0.5 threshold — headroom that shrinks as the corpus grows Chinese, and past
+// it every rebuild is refused, which with a bumped `INDEX_TEXT_VERSION` means the stored index is
+// rejected on every tick. That is a search outage, not a failed gate.
+
+test('the live corpus really does put CJK tokens into the sample', () => {
+  // Guards the two tests below from passing vacuously: if the corpus had no CJK there would be nothing
+  // to exclude and they would agree with the old code for the wrong reason. Reproduces the gate's own
+  // sampling so the share it reports is the share the gate sees.
+  const titleTokens = new Set();
+  for (const lesson of ROWS) {
+    for (const token of matchTokens(`${lesson.title || ''} ${lesson.name || ''}`)) titleTokens.add(token);
+  }
+  const bodyOnly = new Set();
+  for (const lesson of ROWS.slice(0, 60)) {
+    const body = String(lesson.preview || lesson.indexText || '');
+    if (!body) continue;
+    for (const token of matchTokens(body)) {
+      if (!titleTokens.has(token)) bodyOnly.add(token);
+    }
+  }
+  const cjkOnly = [...bodyOnly].filter((t) => bm25Tokenize(t).length === 0);
+  assert.ok(cjkOnly.length > 100,
+    `expected the live sample to carry a substantial CJK share, found ${cjkOnly.length}`);
+  assert.ok(cjkOnly.length / bodyOnly.size > 0.2,
+    `expected a CJK share above 20% of the sample, measured ${(cjkOnly.length / bodyOnly.size * 100).toFixed(1)}%`);
+});
+
+// A corpus whose *bodies* are mostly Chinese, indexed correctly. Each row gets five CJK runs that no
+// other row shares, so the CJK tokens genuinely outnumber the latin ones in the sample — a repeated
+// run would collapse in the `Set` and the fixture would agree with the old code for the wrong reason.
+// (The first draft of this test did exactly that and the mutation audit did not notice: reverting the
+// fix left it green.)
+function cjkHeavyRows() {
+  const rows = [];
+  for (let i = 0; i < 40; i += 1) {
+    const latin = `kubectl${i}`;
+    const runs = [];
+    for (let k = 0; k < 5; k += 1) {
+      const n = i * 5 + k;
+      runs.push(String.fromCodePoint(0x4e00 + n) + String.fromCodePoint(0x4e00 + 400 + n));
+    }
+    rows.push({
+      id: `cjk-${i}`,
+      title: `Lesson ${i}`,
+      domain: 'devops',
+      tags: [],
+      summary: latin,
+      preview: `${latin} ${runs.join(' ')}`,
+    });
+  }
+  return rows;
+}
+
+test('a CJK-heavy corpus is not judged as a build that dropped its bodies', () => {
+  const rows = cjkHeavyRows();
+  const built = buildBM25Index(rows, { textMode: 'rich' });
+  assert.equal(indexShapeProblem(built, rows), null,
+    'a correctly-indexed CJK-heavy corpus was refused, so the gate would freeze the search index');
+});
+
+test('the same CJK-heavy corpus still refuses a build that dropped its bodies', () => {
+  // The exclusion must not turn the gate into a wall: the failure it names is still caught. Note the
+  // pairing — the index is built from rows whose bodies were stripped, while the gate samples the rows
+  // that *have* bodies, which is the real situation (the rich projection was unavailable at build time).
+  const rows = cjkHeavyRows();
+  const degraded = rows.map((r) => ({ ...r, preview: undefined, summary: r.title, description: r.title }));
+  const problem = indexShapeProblem(buildBM25Index(degraded, { textMode: 'lean' }), rows);
+  assert.ok(problem, 'a body-less build over a CJK-heavy corpus was accepted');
+  assert.match(problem, /titles without the lesson bodies/);
 });
 
 function createEnv(rows) {
