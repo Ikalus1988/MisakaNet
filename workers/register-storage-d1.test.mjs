@@ -252,3 +252,45 @@ test('when neither store works, registration still refuses to hand out a token',
   assert.equal(result.token, undefined, 'a token that nothing stored must not be returned');
   assert.equal(result.code, 'storage_unavailable', JSON.stringify(result));
 });
+
+test('/api/counter last resort reads the branch that actually carries the file', async () => {
+  // Both stores gone: D1 throws on every read and there is no KV binding, so the handler must fall
+  // through to the GitHub contents read. Watch the URL it builds.
+  //
+  // Why this test exists (issue #1820, 2026-09-25): that call used to inherit `fetchFromGitHub`'s
+  // default ref — the `data` branch — which does NOT carry `data/counter.json`
+  // (`contents/data/counter.json?ref=data` → 404). So the last resort 404'd into a 502 exactly when
+  // D1 and KV were both unavailable. The `data` branch's own `counter.json` (at its root, frozen on
+  // 2026-06-01) is not a fallback: it is the stale number the issue was filed about.
+  const environment = env({ kv: false, d1: false });
+  environment.MISAKANET_D1 = d1Stub({ fail: true });
+  environment.REGISTER_TOKEN = testToken('register-token');
+
+  const seen = [];
+  const orig = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    seen.push(String(url));
+    const payload = JSON.stringify({ current: 12480, updated: '2026-09-24T09:29:05Z' });
+    return new Response(
+      JSON.stringify({ content: Buffer.from(payload).toString('base64'), encoding: 'base64' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+  };
+  try {
+    const resp = await worker.fetch(new Request('https://misakanet.org/api/counter'), environment, {});
+    assert.equal(resp.status, 200, 'a 502 here means the fallback could not read its file');
+    const body = await resp.json();
+    assert.equal(Number(body.current), 12480, JSON.stringify(body));
+    assert.equal(body.updated, '2026-09-24T09:29:05Z', 'the mirror carries its own date — pass it through');
+
+    const contents = seen.find((u) => u.includes('/contents/'));
+    assert.ok(contents, `no GitHub contents call was made: ${JSON.stringify(seen)}`);
+    assert.match(contents, /ref=main/, `the fallback must name the maintained copy: ${contents}`);
+    assert.ok(
+      contents.includes('data/counter.json') || contents.includes('data%2Fcounter.json'),
+      `unexpected path: ${contents}`,
+    );
+  } finally {
+    globalThis.fetch = orig;
+  }
+});

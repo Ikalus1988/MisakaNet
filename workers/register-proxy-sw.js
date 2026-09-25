@@ -3755,7 +3755,15 @@ function fetchWithTimeout(url, init = {}, ms = UPSTREAM_TIMEOUT_MS) {
   return signal ? fetch(url, { ...init, signal }) : fetch(url, init);
 }
 
-async function fetchFromGitHub(token, path, ref = "data") {
+// Read one JSON file out of the repository through the contents API.
+//
+// `ref` has no default, deliberately. It used to default to "data", and that branch is maintained by
+// `update-badges.yml` for badges plus a compact index — it does **not** carry `data/counter.json` or
+// `data/pr-genius-stats.json`. Two callers relied on the default, so both asked for a path that does
+// not exist there, got a 404, and turned into a 502 at exactly the moment the fallback was the last
+// thing standing. A caller must now say which copy it wants; `tests/test_worker_github_fallbacks.py`
+// enforces that, and that the named path exists on the named ref.
+async function fetchFromGitHub(token, path, ref) {
   const url = `${GITHUB_API}/repos/${REPO}/contents/${path}?ref=${encodeURIComponent(ref)}`;
   const resp = await fetchWithTimeout(url, {
     headers: { Authorization: `Bearer ${token}`, "User-Agent": "MisakaNet-Worker", Accept: "application/vnd.github.v3+json" },
@@ -5219,7 +5227,14 @@ export default {
             const kvCounter = await env.MISAKANET_KV.get("node_counter", "text");
             if (kvCounter) return { current: parseInt(kvCounter), updated: new Date().toISOString().slice(0, 10) };
           }
-          return fetchFromGitHub(token, "data/counter.json");
+          // Last resort, and it has to be the *maintained* copy: `main` carries the mirrored counter
+          // (`sync-node-counter.yml` rewrites it daily, with its own `updated` date inside, so a
+          // reader can see how fresh it is). This line used to take the old default ref — the `data`
+          // branch — which does not have this path at all, so the counter answered 502 whenever D1
+          // and KV were both unavailable. The stale duplicate that *is* on that branch
+          // (`counter.json` at its root, frozen on 2026-06-01) is not a fallback; it is the number
+          // issue #1820 was filed about.
+          return fetchFromGitHub(token, "data/counter.json", "main");
         });
         return jsonResponse(data);
       } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
@@ -6101,7 +6116,10 @@ async function handlePrGeniusStats(env) {
   try {
     const data = await getWithCache(env, "proxy:pr-genius-stats", async () => {
       if (token) {
-        return fetchFromGitHub(token, "data/pr-genius-stats.json");
+        // `main`, like the no-token branch two lines below has always done. The two halves of this
+        // one handler disagreed: with a token it asked the default ref (the `data` branch, which has
+        // no such path → 404 → 502), without a token it read `main` correctly.
+        return fetchFromGitHub(token, "data/pr-genius-stats.json", "main");
       }
       const resp = await fetchWithTimeout("https://raw.githubusercontent.com/" + REPO + "/main/data/pr-genius-stats.json");
       if (!resp.ok) throw new Error("Failed to fetch pr-genius-stats.json: " + resp.status);
