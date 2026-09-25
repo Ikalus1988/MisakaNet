@@ -280,7 +280,14 @@ class Land:
         try:
             base_sha = self.git("rev-parse", f"origin/{base}").strip()
         except LandError:
-            # A shallow or single-branch checkout may not have the remote ref; not this rule's business.
+            # A shallow or single-branch checkout may not have the remote ref. That is not a mismatch — but
+            # saying nothing would disable a safety net silently, which is the shape of failure this guard
+            # exists to catch, so the caller is told and the workflow can fix its checkout.
+            print(
+                f"::warning::origin/{base} is not in this checkout, so the \"is HEAD on the base branch\" "
+                "check cannot run. `actions/checkout` with `fetch-depth: 0` (or a fetch of the base ref) "
+                "restores it."
+            )
             return True, head, ""
         return head == base_sha, head, base_sha
 

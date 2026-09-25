@@ -21,12 +21,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "tests"))
+
+import test_changelog_shape as gate  # noqa: E402
 
 from scripts.dedupe_release_entries import (  # noqa: E402
     dedupe,
@@ -34,7 +35,6 @@ from scripts.dedupe_release_entries import (  # noqa: E402
     normalise,
     reference_count,
 )
-import test_changelog_shape as gate  # noqa: E402
 
 WORKFLOW = REPO / ".github" / "workflows" / "release-please.yml"
 SCRIPT = REPO / "scripts" / "dedupe_release_entries.py"

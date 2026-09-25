@@ -65,7 +65,6 @@ def test_the_verdict_is_reported_as_a_check_run_and_a_commit_status():
 
 def test_the_status_carries_the_verdict_and_not_the_step_outcome():
     """The one mistake that would forge a required context: a red verdict reported as a green status."""
-    script = script_of(step_named("commit status"))
     assert "steps.dco.outcome" not in str(step_named("commit status").get("env") or {}), (
         "the first step succeeds even when DCO fails, so its outcome is not the verdict")
     assert "steps.dco.outputs.passed" in str(step_named("commit status").get("env") or {}), (

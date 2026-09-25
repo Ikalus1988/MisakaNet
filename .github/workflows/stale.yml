@@ -12,29 +12,39 @@ permissions:
 jobs:
   stale:
     runs-on: ubuntu-latest
+    # A job without a bound holds its runner until the platform default (six hours).
+    timeout-minutes: 10
     steps:
       - uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93  # v11
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-          # PR settings
+          # Labelling only — it never closes anything.
+          #
+          # Measured 2026-09-25 over the workflow's whole life: 97 runs, **1** `stale` label, **0** automatic
+          # closes. So the labelling is what this automation actually does, and the closing is a purely
+          # hypothetical action whose only possible effect on a contributor is "a bot closed my issue" —
+          # a promise the repository cannot keep on their behalf (the exemption list is a guess about intent,
+          # and a closed issue is work the maintainer silently dropped). `-1` disables closing; the messages
+          # that announced a closure are gone with it rather than left saying something that cannot happen.
+          #
+          # Friction test, which is the reason for this change: does it add friction for the people it acts on?
+          # Labelling: a reversible hint, yes it helps (maintainers find stale items). Closing: irreversible,
+          # zero measured benefit, real cost when it fires.
           stale-pr-message: |
-            This PR has been inactive for 14 days. It will be closed in 7 days if no further activity occurs.
-            If you're still working on it, please leave a comment or push new changes.
-          close-pr-message: |
-            This PR has been automatically closed due to 21 days of inactivity. Feel free to reopen if you'd like to continue working on it.
+            This PR has been inactive for 14 days. It is still open — leave a comment or push changes whenever
+            you can; nothing here will close it for you.
           stale-pr-label: stale
           days-before-pr-stale: 14
-          days-before-pr-close: 7
+          days-before-pr-close: -1
 
           # Issue settings
           stale-issue-message: |
-            This issue has been inactive for 30 days. It will be closed in 14 days if no further activity occurs.
-          close-issue-message: |
-            This issue has been automatically closed due to 44 days of inactivity.
+            This issue has been inactive for 30 days. It is still open — an issue here is not closed for being
+            quiet, and the backlog is worked through when someone has the context to act on it.
           stale-issue-label: stale
           days-before-issue-stale: 30
-          days-before-issue-close: 14
+          days-before-issue-close: -1
 
           # Exemptions
           exempt-pr-labels: keep,dependencies,registered
