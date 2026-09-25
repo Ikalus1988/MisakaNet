@@ -313,3 +313,46 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 """), ), "a checkout of the base branch is not untrusted"
+
+
+# ── the conclusion, not just the existence ──────────────────────────────────────────
+def _dco_check_script() -> str:
+    """The `github-script` body that creates the required `DCO / Signed-off-by` check."""
+    workflow = yaml.safe_load((WORKFLOWS / "dco-check.yml").read_text(encoding="utf-8"))
+    for job in workflow["jobs"].values():
+        for step in job.get("steps") or []:
+            # `actions/github-script` takes its body under `with:` — a step-level `script` key only
+            # exists for `run:`-style steps, so looking there found nothing.
+            script = (step.get("with") or {}).get("script") or step.get("script") or ""
+            if "checks.create" in script:
+                return script
+    raise AssertionError("no step creates the DCO check — the required context would never report")
+
+
+def test_a_dco_violation_is_reported_as_a_failure_not_as_action_required():
+    """`action_required` is a *state*, not a verdict, and this repository documents it as such.
+
+    GitHub renders `action_required` as "waiting for approval" — the same thing a held fork run looks
+    like — and only a maintainer can clear it. `lessons/contrib/ci-fork-pr-run-held-as-action-required.md`
+    and `ci-github-token-push-does-not-trigger-workflows.md` both define it that way, so reporting a
+    missing `Signed-off-by` with it made a contributor's fixable mistake read as an infrastructure
+    hold. Measured 2026-09-25: #2090 / #2037 / #1982 all sat in that state, and the maintainer comment
+    on them had to explain what it actually meant.
+
+    `failure` blocks exactly the same way (a required context is satisfied only by `success`) while
+    saying what happened.
+
+    Asserted on the assignment, not the file: the comment above that line quotes `action_required` on
+    purpose, and a whole-file search would be satisfied — or defeated — by its own explanation.
+    """
+    script = _dco_check_script()
+    assignment = [line.strip() for line in script.splitlines()
+                  if re.match(r"^\s*conclusion\s*:", line) or "const conclusion" in line]
+    assert assignment, "the conclusion is no longer set where this test can see it"
+    joined = " ".join(assignment)
+    assert "'failure'" in joined or '"failure"' in joined, joined
+    assert "action_required" not in joined, (
+        f"a DCO violation is reported as a held run again: {joined}"
+    )
+    logged = [line.strip() for line in script.splitlines() if "core.info(" in line]
+    assert logged and "action_required" not in " ".join(logged), logged
