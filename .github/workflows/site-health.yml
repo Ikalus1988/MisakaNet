@@ -56,8 +56,17 @@ jobs:
         run: |
           set -uo pipefail
 
-          BASE_ARGS=()
-          if [ -n "$BASE_URL" ]; then BASE_ARGS=(--base-url "$BASE_URL"); fi
+          # Positional parameters, not an array: `"${BASE_ARGS[@]}"` on an *empty* array is
+          # `unbound variable` under `set -u` in bash 3.2 — which is `/bin/bash` on macOS — where bash 4.4+
+          # treats it as empty. The five tests in `tests/test_site_health_wiring.py` that execute this step
+          # went red on both macos legs for exactly that reason (measured 2026-09-25, run 36108206753),
+          # which is the matrix earning its keep: the same step under a 3.2 bash would have died before its
+          # first probe, and `if-no-files-found` would have called the report missing rather than empty.
+          if [ -n "$BASE_URL" ]; then
+            set -- --base-url "$BASE_URL"
+          else
+            set --
+          fi
 
           ATTEMPTS=3
           status=1
@@ -65,7 +74,7 @@ jobs:
           for attempt in $(seq 1 "$ATTEMPTS"); do
             # `--strict` is the verdict; the table is printed either way, so a failing run still says
             # *which* endpoint and *how* it failed instead of only that something was wrong.
-            python3 scripts/site_health_check.py "${BASE_ARGS[@]}" --strict > "attempt-$attempt.md" 2>&1
+            python3 scripts/site_health_check.py "$@" --strict > "attempt-$attempt.md" 2>&1
             status=$?
 
             echo "### Attempt $attempt/$ATTEMPTS — exit $status" >> "$GITHUB_STEP_SUMMARY"

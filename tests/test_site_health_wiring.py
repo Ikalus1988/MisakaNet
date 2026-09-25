@@ -171,6 +171,24 @@ def test_the_dispatch_input_is_not_interpolated_into_the_shell():
     assert "base-url" in str(step.get("env") or {}), "the dispatch input is not reaching the step through `env`"
 
 
+def test_the_step_does_not_expand_an_array_under_set_u():
+    """bash 3.2 is `/bin/bash` on macOS, and there `"${arr[@]}"` on an **empty** array is `unbound variable`
+    under `set -u` (bash 4.4+ expanded it happily). Both macos legs went red on exactly that — five tests in
+    this file, run 36108206753 — and the step would have died before its first probe on any 3.2 bash.
+    Positional parameters (`set -- …`, `"$@"`) behave the same on both.
+    """
+    run = probe_step()["run"]
+    assert "set -u" in run or "set -euo" in run, (
+        "this rule exists because the step runs under `set -u`; if that changed, revisit the rule")
+    # Comments are stripped: the comment explaining this bug quotes the spelling it bans, and a rule that
+    # cannot tell code from prose flags its own documentation (the raw-field rule learned the same thing).
+    offenders = [line for line in run.splitlines()
+                 if "[@]" in line and not line.lstrip().startswith("#")]
+    assert not offenders, (
+        "an array expansion under `set -u` is a bash-3.2 error when the array is empty — use `set --` and "
+        '`"$@"` instead:\n' + "\n".join(offenders))
+
+
 # ── the schedule itself ─────────────────────────────────────────────────────────────
 def test_the_workflow_is_scheduled_and_dispatchable():
     """A call site nobody triggers is still no call site."""
