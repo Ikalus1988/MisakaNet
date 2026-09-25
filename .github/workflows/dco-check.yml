@@ -1,6 +1,25 @@
 name: DCO Check
+
+# ── why this is `pull_request_target` and not `pull_request` ─────────────────────────────────────
+# `DCO / Signed-off-by` is one of the three **required** status checks on `main` (ruleset 23826057),
+# and it is not produced by a job name — it is created through the Checks API
+# (`github.rest.checks.create`). For a **fork** PR the default `GITHUB_TOKEN` is read-only, so that
+# call answers 403, the catch below swallowed it, and the required check was **never reported**. A
+# required check that is never reported leaves a PR at GitHub's "Expected — waiting for status to be
+# reported" **forever**.
+#
+# Measured 2026-09-25: 12 of the 14 open PRs were blocked exactly this way, the oldest for 17 days,
+# while this workflow reported **green** on every one of them (runs `completed/success`). It is the
+# repository's own recurring shape: a check that looks like it works because the thing it exists to
+# report is not what its own status shows.
+#
+# `pull_request_target` runs the base branch's workflow with a write-capable token, which is what
+# creating the check needs. The danger of `pull_request_target` is checking out and *executing* PR
+# code with that token; this job checks out the fork's commits only to read their **messages**
+# (`git log` / `git rev-list`), runs no script from the checked-out tree, and now sets
+# `persist-credentials: false` so the write token is not left in the tree's git config either.
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
@@ -20,13 +39,16 @@ jobs:
     # Skip DCO check for release-please bot PRs
     if: github.event.pull_request.user.login != 'release-please[bot]'
     steps:
-      - name: Checkout (pull_request)
-        if: github.event_name == 'pull_request'
+      - name: Checkout (pull_request_target)
+        if: github.event_name == 'pull_request_target'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+          # Only commit messages are read from this tree, and the token in it is write-capable under
+          # `pull_request_target`. It does not belong in a tree we do not trust.
+          persist-credentials: false
 
       - name: Checkout (workflow_dispatch)
         if: github.event_name == 'workflow_dispatch'
@@ -51,7 +73,7 @@ jobs:
 
       - name: Fetch base branch for comparison
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "${{ github.event_name }}" = "pull_request_target" ]; then
             TARGET="${{ github.base_ref }}"
           else
             TARGET="main"
@@ -94,13 +116,26 @@ jobs:
           echo "✅ All commits have Signed-off-by."
 
       - name: Post DCO status on PR
+        # No `continue-on-error`: swallowing this step is what let the required check go unreported
+        # for 17 days while the run showed green. If the check cannot be created, the job has to say
+        # so — loudly, and in the shape a reader will connect to a blocked PR.
         if: always()
-        continue-on-error: true  # fork PR may not have checks:write permission
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         with:
           script: |
+            const dcoPass = '${{ job.status }}' === 'success';
+            // `pull_request_target` gives the PR; `workflow_dispatch` does not, and the manual path
+            // already resolves the head sha into `HEAD_SHA` (it has to check the PR out by hand). The
+            // first version read `context.payload.pull_request.head.sha` unconditionally, so the
+            // manual recovery path threw before it created anything — a repair button that could not
+            // repair, which is how it stayed unnoticed.
+            const headSha = context.payload.pull_request?.head.sha || process.env.HEAD_SHA;
+            if (!headSha) {
+              core.setFailed('No PR head sha in this event and no HEAD_SHA resolved; cannot report '
+                + '`DCO / Signed-off-by`, which is a required check — the PR stays blocked.');
+              return;
+            }
             try {
-              const dcoPass = '${{ job.status }}' === 'success';
               const body = dcoPass
                 ? '✅ **DCO Check Passed** — All commits include `Signed-off-by:`. Thank you for respecting code origin!'
                 : '❌ **DCO Check Failed** — Some commits are missing `Signed-off-by:`. Please amend with `--signoff`.';
@@ -113,7 +148,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 name: 'DCO / Signed-off-by',
-                head_sha: context.payload.pull_request.head.sha,
+                head_sha: headSha,
                 status: 'completed',
                 conclusion: conclusion,
                 output: {
@@ -123,7 +158,12 @@ jobs:
                 }
               });
             } catch (e) {
-              console.log('Skipping DCO status check (fork PR permission):', e.message);
+              // The consequence is not "this run looks odd": the required check is missing, so GitHub
+              // holds the PR at "Expected — waiting for status to be reported" indefinitely and no
+              // amount of green elsewhere can merge it. Say that, and fail.
+              core.setFailed(`Could not create the required check \`DCO / Signed-off-by\` on ${headSha}: ${e.message}. `
+                + 'Until it exists, this PR cannot satisfy the ruleset on `main` — check that this '
+                + 'workflow has `checks: write` and that it still triggers on `pull_request_target`.');
             }
 
       # DCO 评论已迁移至 pr-checks.yml 统一管理（使用 SHELDON_PAT）
