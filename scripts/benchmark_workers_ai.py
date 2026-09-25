@@ -2,8 +2,33 @@
 """
 Workers AI Lesson Benchmark (tiered / full-scan mode)
 ======================================================
-Evaluate how Cloudflare Workers AI models handle real MisakaNet failure
-scenarios, with RAG-ablation compare (with vs without lesson context).
+Measure how much of a lesson a model reproduces when that lesson is pasted into the prompt.
+
+**What this does not measure.** Three facts, all verifiable in this file, and the reason the numbers below
+must not be read as retrieval or correctness quality:
+
+1. a "scenario" is the lesson's **own title** (`load_all_scenarios`, `scene = (title or problem)`), not a
+   failure question a user would type;
+2. the "matching lesson" injected in the `with_lesson` arm is **the same lesson the metric scores against** —
+   `load_lesson_context` recovers the stem from the scenario string and returns that file;
+3. `lesson_hit_rate` counts how many of *that* lesson's commands (or long words inside them) appear in the
+   answer (`score_response`). Nothing here calls a search or retrieval path, and nothing checks whether the
+   answer is correct.
+
+So the honest reading of "42% → 73%" is "the model repeats more of a document it was handed", which is the
+recitation half of RAG — necessary, and not sufficient. Replacing this metric with one that can fail requires
+retrieving from a scenario that was not derived from the scored lesson; until then the number is labelled
+wherever it is written (see `METRIC_DEFINITION` below and the note in `README.md`).
+
+Tiered strategy (Free-plan friendly, <10k neurons/day):
+  - full model:  runs ALL lessons (light model, low neuron cost)
+  - strong model: runs a representative subset (heavy model, high quality)
+
+Features:
+  - --all: full lesson scan (default: small sample)
+  - concurrency + rate control (~250 req/min, Free limit 300/min)
+  - resume cache: skips already-evaluated (model, scenario, condition)
+  - lesson_hit_rate: share of the injected lesson's commands reproduced in the answer
 
 Tiered strategy (Free-plan friendly, <10k neurons/day):
   - full model:  runs ALL lessons (light model, low neuron cost)
@@ -121,6 +146,17 @@ def call_ai(model: str, prompt: str, timeout: int = 90) -> dict:
         return json.loads(r.stdout.strip())
     except json.JSONDecodeError:
         return {"success": False, "error": r.stdout[-300:]}
+
+
+# One sentence, reused wherever the number is published, so the public claim and the implementation cannot
+# drift apart (`tests/test_benchmark_claims.py` requires the public docs to carry it verbatim).
+METRIC_SUMMARY = "the share of the injected lesson's commands reproduced in the answer"
+
+METRIC_DEFINITION = (
+    f"lesson_hit_rate = {METRIC_SUMMARY}. The scenario is that same lesson's title, no retrieval call is "
+    "made, and correctness is not checked — it measures recitation of the document that was handed to the "
+    "model."
+)
 
 
 def score_response(content: str, reference_commands: list | None = None) -> dict:
@@ -331,6 +367,10 @@ def run_one(args, model, scene, condition, prompt, ref_cmds, out_path):
         data = load_cache(out_path)
         data.setdefault("models", [])
         data.setdefault("scenarios", [])
+        # The number travels with its definition: this artifact has been quoted as evidence that retrieval
+        # works, and it cannot say so about itself.
+        data["metric_definition"] = METRIC_DEFINITION
+        data["metric_summary"] = METRIC_SUMMARY
         data["runs"].append(run)
         if out_path:
             out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -417,6 +457,7 @@ def main() -> int:
             done += 1
 
     print(f"\nDone {done} runs in {time.time()-start:.0f}s. Report: {out_path}")
+    print(f"\nℹ️  What `lesson_hit_rate` is: {METRIC_DEFINITION}")
     return 0
 
 
