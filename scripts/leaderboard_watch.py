@@ -115,6 +115,54 @@ def _recency_bonus(days_ago: int) -> float:
     return 0.0
 
 
+# Identities that are not independent contributors.
+#
+# `[bot]` is GitHub's own convention for an App (and the only shape that generalises): any App that
+# ever commits here is caught by the suffix, without anybody maintaining a list. The explicit set
+# below is *this repository's* automation — the git identities its workflows configure, which have no
+# GitHub account at all, so no `type` field exists to consult for them.
+SELF_IDENTITIES = {
+    "misakanet-bot",         # scripts/adopt_pr.py DEFAULT_SIGNOFF_NAME; 7 workflows `git config user.name`
+    "misakanet-sync-bot",    # .github/workflows/auto-sync-prs.yml
+    "misakanet-agent",       # older tooling identity (no GitHub account)
+    "misakanet agent",       #   "        (same, with a space)
+    "github-actions",        # the *name* GitHub's own runner commits with, distinct from [bot]
+    "actions-user",          # GitHub's legacy actions identity
+    "ikalus1988",            # the maintainer: excluded so the board is about contributors
+    "sheldonisspark-lab",    # maintainer's second account
+    "claude",                # a coding agent used here
+}
+
+
+def board_moved(previous: list[dict], current: list[dict], threshold: float = 0.5) -> bool:
+    """Whether the *visible* board changed: the ranking order, or any score by more than `threshold`.
+
+    Deliberately not "did the top entry change". A board can be wrong in every other row — a bot in
+    second place, a contributor dropped — while #1 is untouched, and with the old predicate that
+    correction was computed and then thrown away (measured 2026-09-25).
+    """
+    if [r.get("login") for r in previous] != [r.get("login") for r in current]:
+        return True
+    for before, after in zip(previous, current):
+        try:
+            if abs(float(before.get("score", 0)) - float(after.get("score", 0))) > threshold:
+                return True
+        except (TypeError, ValueError):
+            return True
+    return False
+
+
+def is_automation_login(login: str) -> bool:
+    """True for GitHub Apps and for this repository's own automation identities.
+
+    Not a judgement about whether a *person* is behind an account — GitHub cannot tell us that, and
+    this project's own `agent_type` is self-declared and unverified. It answers the narrower, checkable
+    question: is this identity the project's own machinery?
+    """
+    name = str(login or "").strip().lower()
+    return name.endswith("[bot]") or name in SELF_IDENTITIES
+
+
 def compute_leaderboard():
     """从 GitHub API 获取贡献数据，计算排行榜
 
@@ -251,11 +299,19 @@ def compute_leaderboard():
         total = commit_score * size_multiplier + recency
         scored[login] = total
 
-    # 排除自产自销账号
-    EXCLUDE_LOGINS = {"misakanet-bot", "ikalus1988", "sheldonisspark-lab", "claude",
-                      "actions-user", "cloudflare-workers-and-pages[bot]",
-                      "dependabot[bot]", "pre-commit-ci[bot]"}
-    scored = {k: v for k, v in scored.items() if k not in EXCLUDE_LOGINS}
+    # 排除自产自销与自动化账号 —— 按**规则**而不是按一张要人记得更新的清单。
+    #
+    # 这张清单漏掉了 `github-actions[bot]`：仓库里最活跃的自动化身份，2026-09-25 实测它坐在公开
+    # "贡献排行" 的**第 2 名**（7.54），而清单里却写着 dependabot / pre-commit-ci / cloudflare 三个
+    # 更少露面的 bot。同一个漏洞还漏掉 `misakanet-sync-bot`（第 5 名）—— 那是
+    # `.github/workflows/auto-sync-prs.yml` 里 `git config user.name` 设的身份，没有对应的 GitHub
+    # 账号，所以它连用户页都是 404，却照样上榜；`misakanet agent` / `misakanet-agent` / `github-actions`
+    # 同理（都是本仓工具写入的裸 git 身份）。
+    #
+    # 另外，榜上的"贡献者"来自提交作者：GraphQL 能给到 GitHub 用户时用 login，否则**退化成 git 里的
+    # 裸名字**（见上面 `login = ... or author.get("name")`）。所以任何身份都能上榜，包括不存在的账号 ——
+    # 这也是为什么规则必须按形状判（`[bot]`）而不是按名字枚举。
+    scored = {k: v for k, v in scored.items() if not is_automation_login(k)}
 
     # Feature: lessons_contributed bonus — read source field from lesson frontmatter
     lessons_bonus = {}
@@ -407,6 +463,19 @@ def main():
         abs(previous[0]["score"] - current[0]["score"]) > 0.5
     )
 
+    # 快照该不该写盘，与"要不要通知"是两个问题，曾经被合并成一个（2026-09-20 → 2026-09-25）。
+    #
+    # 2026-09-20 的修法是对的：main 曾经有 1,026 个提交（占全仓 25%）只为保存一份只有时间戳不同的
+    # 快照，还撞坏了 npm 发布的记账步骤。但当时用的判据是**"榜首换人了没有"**，于是
+    # `data/leaderboard.json` 除了榜首易主那一刻之外**永远不会更新**。今天实测：脚本算出 #1 是
+    # zsxh1990 (79.08)，而被提交的那份写着 94.81 —— 脚本把这个 15.7 分的差距称为 "no material change"，
+    # 所以那份文件既保留着四个自动化身份，又慢了五天，而且**靠它自己永远修不回来**。
+    #
+    # 正确的判据是"算出来的榜与被提交的榜是否一致"：一致 → 不写（保住 2026-09-20 的成果）；
+    # 不一致 → 写。为了不让每天的时间衰减制造无意义的提交，这里按**可见变化**判定：名次顺序变了，
+    # 或者任一位的分数移动超过 0.5（与上面的通知阈值同一个尺度）。
+    snapshot_changed = previous is None or board_moved(previous, current)
+
     bench_top_login = meta.get("top_agent", "")
     bench_top_score = meta.get("top_score", 0)
     bench_top = {"login": bench_top_login, "score": bench_top_score} if bench_top_login else None
@@ -450,7 +519,8 @@ def main():
     #
     # 状态只在"榜首真的变了"时落盘，守卫随即生效：没有变化 → 没有提交。（快照仍是下次对比的基准，
     # 排行榜的实时视图本来就来自 Worker 的 `/api/insights/reputation-leaderboard`，不读这两个文件。）
-    material_change = bool(contrib_changed or bench_leaderboard)
+    # 与通知分开：只要榜面动了就写盘（哪怕榜首没换），否则被提交的那份会一直错下去。
+    material_change = bool(snapshot_changed or bench_leaderboard)
     if material_change:
         save_leaderboard(current)
 
