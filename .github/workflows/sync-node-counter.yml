@@ -33,6 +33,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          # `persist-credentials: false`, because `land_change.py` supplies its own: it pushes
+          # `https://x-access-token:<PAT>@…`, and the checkout's stored token takes precedence over
+          # the URL — so the branch went out as `github-actions[bot]` and every run on its pull request
+          # came back `action_required`: held, never executed, with nothing able to satisfy the required
+          # checks, so the self-merging PR could not merge. Measured 2026-09-25: 39 held runs on
+          # `bot/release-version-sync`, 24 on `bot/build-feed`, and the version-sync PR stuck.
+          persist-credentials: false
 
       - name: Read the live counter into data/counter.json
         # Fails loudly instead of writing a bad number: the script refuses a payload that is
