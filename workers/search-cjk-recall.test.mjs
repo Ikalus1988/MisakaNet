@@ -20,6 +20,30 @@
 // regression fails with the measurement above in the message. That is the whole point: the next
 // person to try gets told by CI rather than by production.
 //
+// HOW FAR THAT GOES, measured 2026-09-25 (#2250). Four designs were built and run through this corpus
+// with the real handler; **every one of them regresses the configuration production runs**:
+//
+//   variant                                          zh top-1  zh top-3   EN positives
+//   base (what ships today)                             5/20      9/20       13/15
+//   CJK bigrams in the index                            2/20      2/20       12/15
+//   …plus leaving the Chinese in the scoring query      2/20      2/20       12/15
+//   …plus counting coverage only over the user's words  0/20      0/20        4/15
+//   …plus the previous two together                     0/20      0/20        4/15
+//   base, expansion OFF (not a production config)       2/20      3/20       13/15
+//   CJK bigrams, expansion OFF                          4/20      6/20       12/15
+//
+// The only cell that improves is the non-production one, and it still drops an English positive. The
+// third row is the one worth remembering: it was written *for* this problem — "let the expansion add
+// ranking but not coverage, so the floor judges one term space" — and it is the worst of the four,
+// because the floor's `required` and `informative` are derived from the same `floorTerms` that the
+// change moved, so English queries whose lesson is reached through an expansion suddenly have to match
+// the user's own words. Reading the code is not enough to see that; the numbers are in #2250.
+//
+// So this file's job is not "don't touch the tokenizer". It is: **the floor's four parts
+// (`required`, `informative`, `matchedIdf`, `idfTotal`) have to be moved onto one explicit term space
+// first**, and until that exists, any CJK change trades Chinese recall for English recall. The two
+// floors here and in `workers/relevance-floor-calibration.test.mjs` are what make that trade visible.
+//
 // Run: node --test workers/search-cjk-recall.test.mjs
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
