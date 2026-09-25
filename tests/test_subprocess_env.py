@@ -64,6 +64,14 @@ def test_windows_children_still_get_a_nonempty_path_when_the_host_has_none(monke
     assert isinstance(child_env()["PATH"], str)   # never None: `env["PATH"] = None` raises in subprocess
 
 
+def test_the_host_environment_is_inherited(monkeypatch):
+    """A fresh dict of two keys is what broke the windows legs twice: Winsock needs the system
+    variables, and these children talk HTTP to a stub server."""
+    monkeypatch.setenv("SystemRoot", r"C:\Windows")
+    monkeypatch.setattr(subprocess_env.os, "name", "nt")
+    assert child_env()["SystemRoot"] == r"C:\Windows"
+
+
 def test_overrides_win(monkeypatch):
     monkeypatch.setattr(subprocess_env.os, "name", "posix")
     env = child_env({"A": 1}, B=2)

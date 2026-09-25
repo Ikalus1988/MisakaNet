@@ -129,6 +129,8 @@ def test_the_fetcher_carries_its_own_timeouts():
     )
 
 
+@pytest.mark.skipif(os.name == "nt", reason="a wget-only POSIX machine is a POSIX scenario; Git Bash "
+                                             "on Windows resolves Windows paths differently and is not it")
 def test_a_wget_only_machine_can_download(tmp_path):
     from posix_shell import require_posix_shell
     """Behavioural: PATH contains no curl, a stub wget serves a local mirror, and the three files must
