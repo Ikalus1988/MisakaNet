@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-25T13:21:39.722620+00:00",
+  "generated_at": "2026-09-25T17:19:41.296032+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(index): the plain fields were never in the index, so the fallback path answered without them",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2240",
-      "timestamp": "2026-09-25T13:21:27Z",
+      "title": "fix(ops): the preflight picked the GitHub token by substring — CodeQL alert #285",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2252",
+      "timestamp": "2026-09-25T15:20:07Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(worker): the guard refused a lesson that exists — the corpus has a Korean filename",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2239",
-      "timestamp": "2026-09-25T12:18:50Z",
+      "title": "fix(search): the threshold that decides answered-vs-no_match rested on a measurement nobody could re-run",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2249",
+      "timestamp": "2026-09-25T15:13:42Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(worker): a missing lesson answered \"retry shortly\", and any repository path was readable (B35)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2237",
-      "timestamp": "2026-09-25T12:10:50Z",
+      "title": "test(search): four measured designs for CJK recall, all of them regress the English floors",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2251",
+      "timestamp": "2026-09-25T15:13:18Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2236",
-      "timestamp": "2026-09-25T12:01:48Z",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2247",
+      "timestamp": "2026-09-25T15:04:57Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(friction): the stale bot may label but never close, and the contributor wall states its basis",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2228",
-      "timestamp": "2026-09-25T11:52:58Z",
+      "title": "fix(ops): the \"diff every file against main before you push\" ritual is now a command",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2246",
+      "timestamp": "2026-09-25T14:59:30Z",
       "source": "github"
     },
     {
