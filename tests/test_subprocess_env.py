@@ -65,11 +65,26 @@ def test_windows_children_still_get_a_nonempty_path_when_the_host_has_none(monke
 
 
 def test_the_host_environment_is_inherited(monkeypatch):
-    """A fresh dict of two keys is what broke the windows legs twice: Winsock needs the system
-    variables, and these children talk HTTP to a stub server."""
-    monkeypatch.setenv("SystemRoot", r"C:\Windows")
-    monkeypatch.setattr(subprocess_env.os, "name", "nt")
-    assert child_env()["SystemRoot"] == r"C:\Windows"
+    """A fresh dict of two keys is what broke the windows legs twice: these children talk HTTP to a stub
+    server, and Windows needs its own system variables to initialise Winsock at all.
+
+    Asserted with a **marker variable the test sets**, not with `SystemRoot`: the runner's environment is
+    not something this repository controls, and the first version of this test failed on Windows with
+    `KeyError: 'SystemRoot'` — an assumption about somebody else's environment, which is the same mistake
+    the module exists to fix. What the contract actually promises is inheritance.
+    """
+    monkeypatch.setenv("MISAKANET_CHILD_ENV_MARKER", "inherited")
+    assert child_env()["MISAKANET_CHILD_ENV_MARKER"] == "inherited"
+
+
+def test_the_child_keeps_the_system_variables_it_is_given(monkeypatch):
+    """Whatever the host provides — `SystemRoot` on Windows, `HOME` elsewhere — must reach the child,
+    because the fix was precisely that "build a fresh env for determinism" dropped it."""
+    for name in ("SystemRoot", "windir", "HOME", "LANG"):
+        monkeypatch.setenv(name, "marker-value")
+    env = child_env()
+    for name in ("SystemRoot", "windir", "HOME", "LANG"):
+        assert env.get(name) == "marker-value", name
 
 
 def test_overrides_win(monkeypatch):
