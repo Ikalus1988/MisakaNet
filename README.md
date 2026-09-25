@@ -280,8 +280,12 @@ jobs:
 1. Check the checkout works: `python3 scripts/misakanet_cli.py smoke`
 2. Search before writing: `python3 search_knowledge.py "your error here"`
 3. Found nothing? **[Share your failure lesson →](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml)**
-   — a five-line note is enough, no polished PR required. Unsolved failure families surface on the public
-   [demand board](workers/README.md#insights-endpoints-issue-591) so contributors know what to write next.
+   — a five-line note is enough, no polished PR required. Two places say what is missing, and they measure
+   different things: the [demand board](workers/README.md#insights-endpoints-issue-591) aggregates anonymous
+   *search* misses (`/api/insights/unsolved-map`; measured 2026-09-25 it held **one** signal in 30 days,
+   because the intake path does not feed it — [#2224](https://github.com/Ikalus1988/MisakaNet/issues/2224)),
+   and the [open intake issues](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3Aintake)
+   are where the real gaps currently arrive.
 
 → [CONTRIBUTING.md](CONTRIBUTING.md) · [good first issues](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) ·
 [active competitions](https://github.com/Ikalus1988/MisakaNet/labels/status%3Acompetition) ·
