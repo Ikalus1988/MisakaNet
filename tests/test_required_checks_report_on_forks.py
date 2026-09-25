@@ -23,6 +23,7 @@ rather than remembered.
 """
 from __future__ import annotations
 
+import json
 import pathlib
 import re
 
@@ -69,7 +70,15 @@ def producers() -> dict[str, list[tuple[pathlib.Path, str]]]:
     for path in sorted(WORKFLOWS.glob("*.y*ml")):
         text = path.read_text(encoding="utf-8")
         for context in REQUIRED:
-            if f"name: '{context}'" in text or f'name: "{context}"' in text:
+            # A producer *creates* the check, so the context has to appear next to `checks.create` —
+            # and as any quoted literal, not a particular key: the name moved from
+            # `name: 'DCO / Signed-off-by'` (an action input) to `const CHECK_NAME = 'DCO / Signed-off-by'`
+            # (a JS constant) when the posting step was rewritten. Widening it to "the string appears
+            # anywhere" was too broad the other way: `pr-quality-gate.yml` only *reads* the check
+            # name, and counting it as a producer made the fork rule fail on a workflow that produces
+            # nothing.
+            cites = (f"'{context}'" in text) or (f'"{context}"' in text)
+            if cites and "checks.create" in text:
                 found[context].append((path, "api"))
         doc = workflow(path)
         for job, spec in (doc.get("jobs") or {}).items():
@@ -148,23 +157,38 @@ def test_no_required_producer_is_filtered_by_path(context: str) -> None:
         )
 
 
+def posting_steps() -> list[dict]:
+    """Every step in the tree whose script creates a check through the API.
+
+    Found by what the step *does*: the DCO posting step was renamed when its body was rewritten, and a
+    gate keyed on the old name went from "checks something" to "raises IndexError", which is why the
+    lookup lives here and not inside one test.
+    """
+    out = []
+    for path in sorted(WORKFLOWS.glob("*.y*ml")):
+        doc = workflow(path)
+        for job in (doc.get("jobs") or {}).values():
+            for step in (job or {}).get("steps") or []:
+                script = ((step.get("with") or {}).get("script") or "") + (step.get("run") or "")
+                if "checks.create" in script:
+                    out.append({"workflow": path, "step": step, "script": script})
+    return out
+
+
 def test_the_check_posting_step_never_swallows_its_failure() -> None:
     """The specific reason this went unnoticed for 17 days: the failure was caught and logged.
 
     A required check that cannot be created is not a cosmetic problem — it is a permanent block on
     every fork PR — so the step has to fail, and the message has to name that consequence.
     """
-    path = WORKFLOWS / "dco-check.yml"
-    doc = workflow(path)
-    steps = doc["jobs"]["dco"]["steps"]
-    posting = [s for s in steps if str(s.get("name") or "").startswith("Post DCO status")]
-    assert posting, "the step that reports the required check moved; fix this gate"
-    for step in posting:
+    posting = [p for p in posting_steps() if str(p["step"].get("name") or "").lower().find("dco") >= 0]
+    assert posting, "no step creates the DCO check any more; fix this gate rather than deleting it"
+    for step in [p["step"] for p in posting]:
         assert step.get("continue-on-error") is not True, (
             "`continue-on-error: true` on the step that creates a *required* check means the job stays "
             "green while the check is never reported — which is exactly how 12 PRs sat blocked"
         )
-    script = posting[0]["with"]["script"]
+    script = posting[0]["script"]
     assert "setFailed" in script, "the step no longer fails when it cannot create the check"
     assert "Skipping" not in script, "the failure is being logged into the void again"
 
@@ -176,13 +200,14 @@ def test_the_manual_recovery_path_can_actually_recover() -> None:
     exactly the situation this whole file is about. It threw before creating anything, so the repair
     button could not repair. Pinned because a recovery path is only worth having if it runs.
     """
-    script = [s for s in workflow(WORKFLOWS / "dco-check.yml")["jobs"]["dco"]["steps"]
-              if str(s.get("name") or "").startswith("Post DCO status")][0]["with"]["script"]
-    assert "context.payload.pull_request?.head.sha" in script, (
-        "the head sha is read without guarding the event that has no `pull_request` payload"
+    script = [p for p in posting_steps()
+              if str(p["step"].get("name") or "").lower().find("dco") >= 0][0]["script"]
+    assert "payload.pull_request" in script and "?" in script, (
+        "the script no longer guards the event that has no `pull_request` payload"
     )
-    assert "HEAD_SHA" in script, (
-        "the manual path resolves HEAD_SHA in an earlier step and the posting step must fall back to it"
+    assert "pulls.get" in script, (
+        "the manual path must resolve the head sha from the API — a dispatch carries no PR payload, and "
+        "reading one unconditionally is what made this recovery button unable to recover"
     )
 
 
@@ -215,3 +240,76 @@ def test_the_producers_are_found_by_the_shapes_the_rules_check() -> None:
     assert any(p.name == "lesson-gate.yml" for p, _ in PRODUCERS["gate"])
     assert any(p.name == "ci-cross-platform.yml" for p, _ in PRODUCERS["test (ubuntu-latest, 3.11)"])
     assert all(kind in ("api", "job") for group in PRODUCERS.values() for _, kind in group)
+
+
+# ── the rule hol-guard raised as alert #284 ──────────────────────────────────────────────────────
+
+def checkout_steps(doc: dict) -> list[dict]:
+    """Every `actions/checkout` step in a workflow, by structure rather than by text.
+
+    Structural on purpose: the workflow that fixed this mentions `actions/checkout` **in a comment**
+    explaining that it has none, and a scan for the string reports it as present. Same trap as
+    `uncommented()` in `tests/test_site_activity_panel.py`, one file over.
+    """
+    out = []
+    for job in (doc.get("jobs") or {}).values():
+        for step in (job or {}).get("steps") or []:
+            if str(step.get("uses") or "").startswith("actions/checkout"):
+                out.append(step)
+    return out
+
+
+def untrusted_checkouts(doc: dict) -> list[str]:
+    """Checkouts of the *PR head* — the input a privileged run must not touch."""
+    bad = []
+    for step in checkout_steps(doc):
+        spec = json.dumps(step.get("with") or {})
+        if "pull_request" in spec:
+            bad.append(str(step.get("name") or spec))
+    return bad
+
+
+def test_a_privileged_workflow_does_not_check_out_the_pull_request():
+    """`pull_request_target` gives the job a write token and the repo's secrets.
+
+    Checking out the PR head under that trigger is the shape of a pwn request — the scanner raised
+    `GITHUB_ACTIONS_UNTRUSTED_CHECKOUT` (alert #284) on the first version of this fix, which kept
+    `actions/checkout` to read commit messages with `git log`. It was right: a comment explaining that
+    only messages are read is not something a scanner can see, and it is not a property the workflow
+    *enforces*. The API answers the same question, so the checkout is gone.
+    """
+    problems = []
+    for path in sorted(WORKFLOWS.glob("*.y*ml")):
+        doc = workflow(path)
+        if "pull_request_target" not in triggers(doc):
+            continue
+        bad = untrusted_checkouts(doc)
+        if bad:
+            problems.append(f"{path.name}: checks out the pull request under pull_request_target — {bad}")
+    assert not problems, (
+        "these workflows combine a privileged trigger with an untrusted checkout; read what you need "
+        "through the API instead:\n  - " + "\n  - ".join(problems)
+    )
+
+
+def test_the_untrusted_checkout_rule_can_go_red():
+    doc = yaml.safe_load("""
+on:
+  pull_request_target:
+jobs:
+  dco:
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+""")
+    assert untrusted_checkouts(doc), "the fixture no longer describes an untrusted checkout"
+    assert not untrusted_checkouts(yaml.safe_load("""
+on:
+  pull_request_target:
+jobs:
+  dco:
+    steps:
+      - uses: actions/checkout@v7
+"""), ), "a checkout of the base branch is not untrusted"
