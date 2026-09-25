@@ -1675,8 +1675,16 @@ async function loadBM25Index(env) {
 //
 // So: references are checked before anything is fetched, and only a genuine 404 on both refs is a
 // not-found. Everything else stays `internal_error`, because it is one.
-const LESSON_PATH_RE = /^lessons\/[A-Za-z0-9][A-Za-z0-9._/-]*\.md$/;
-const LESSON_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+// The classes are deliberately permissive about *characters* and strict about *structure*. The corpus
+// has a Korean filename — `lessons/contrib/자바-버전-불일치-빌드-오류.md`, and its index id is the same
+// string — so the first version of this guard, written as `[A-Za-z0-9._/-]`, refused a lesson that
+// `misakanet_search` returns. A guard that rejects a lesson that exists is worse than no guard: the
+// caller asked for something real and is told its argument is malformed. What matters is the structure
+// (`lessons/`, `.md`, no `..`, no leading `/`, no `//`, nothing URL-significant), and
+// `workers/get-lesson-guard.test.mjs` checks both against the whole 458-file corpus and every id in the
+// public index, not against this file's idea of a filename.
+const LESSON_PATH_RE = /^lessons\/[^\\?#%\u0000-\u001f]+\.md$/;
+const LESSON_ID_RE = /^[^\\/?#%\u0000-\u001f]+$/;
 
 function lessonError(code, message) {
   const error = new Error(message);

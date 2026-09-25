@@ -18,10 +18,14 @@
 // Run: node --test workers/get-lesson-guard.test.mjs
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import worker from './register-proxy-sw.js';
 import { testToken } from './_test-token.mjs';
 
 const TOKEN = testToken('b35');
+const REPO = fileURLToPath(new URL('../', import.meta.url));
 
 function createEnv() {
   return { MCP_TOKEN: TOKEN, REGISTER_TOKEN: TOKEN, MCP_VERSION: 'b35-test' };
@@ -34,6 +38,9 @@ function mcpCall(args) {
       'Content-Type': 'application/json',
       'MCP-Protocol-Version': '2025-06-18',
       'CF-Connecting-IP': '203.0.113.77',
+      // Authenticated, so the anonymous read burst window (one counter per address per minute) does not
+      // decide the outcome of a test that makes hundreds of calls in a second.
+      Authorization: `Bearer ${TOKEN}`,
     },
     body: JSON.stringify({
       jsonrpc: '2.0', id: 1, method: 'tools/call',
@@ -149,4 +156,49 @@ test('the two new codes are documented in the tool description', async () => {
     assert.match(tool.description, new RegExp(code), `${code} is not described`);
   }
   assert.match(tool.inputSchema.properties.path.description, /lessons\//, 'the path argument is not documented');
+});
+
+// ── The guard against the real corpus, not against its own idea of a filename ────────────────────────
+//
+// The first version of the guard was `[A-Za-z0-9._/-]`, and the corpus contains
+// `lessons/contrib/자바-버전-불일치-빌드-오류.md` — a published lesson whose index id is the same Korean
+// string. Both the path and the id were refused with `invalid_lesson_path`, i.e. the guard answered
+// "your argument is malformed" for a lesson `misakanet_search` returns by name. That is worse than the
+// bug it fixed, and no test written against this file's idea of a filename could see it: the rule has
+// to be checked against the lesson set. Both of these read it from the checkout.
+
+function lessonFiles() {
+  const out = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.md')) out.push(path.relative(REPO, full).split(path.sep).join('/'));
+    }
+  };
+  walk(path.join(REPO, 'lessons'));
+  return out;
+}
+
+test('every lesson file in this checkout passes the path guard', async () => {
+  const files = lessonFiles();
+  assert.ok(files.length > 400, `the corpus probe found ${files.length} lessons — it is broken, not the guard`);
+  const refused = [];
+  for (const rel of files) {
+    const { payload } = await withUpstream(200, { path: rel });
+    if (payload.code === 'invalid_lesson_path') refused.push(rel);
+  }
+  assert.deepEqual(refused, [], `the guard refuses lessons that exist: ${refused.slice(0, 5).join(', ')}`);
+});
+
+test('every id in the public index passes the id guard', async () => {
+  const index = JSON.parse(readFileSync(path.join(REPO, 'data', 'lessons.json'), 'utf8'));
+  const ids = [...new Set(index.map((row) => row.id).filter(Boolean))];
+  assert.ok(ids.length > 300, `the index probe found ${ids.length} ids — it is broken, not the guard`);
+  const refused = [];
+  for (const id of ids) {
+    const { payload } = await withUpstream(200, { id });
+    if (payload.code === 'invalid_lesson_path') refused.push(id);
+  }
+  assert.deepEqual(refused, [], `the guard refuses ids the index publishes: ${refused.slice(0, 5).join(', ')}`);
 });
