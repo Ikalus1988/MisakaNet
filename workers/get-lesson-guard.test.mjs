@@ -49,13 +49,24 @@ async function answer(args) {
 }
 
 /** Run one call against a stub GitHub that answers `status` for every contents request. */
+const LESSON_BODY = '# A lesson\n\n## Root cause\n\nSomething real.\n';
+
 async function withUpstream(status, args) {
   const seen = [];
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
     seen.push(String(url));
-    return new Response(status === 200 ? JSON.stringify({ content: '', encoding: 'utf-8' }) : '{}',
-      { status, headers: { 'content-type': 'application/json' } });
+    if (status !== 200) {
+      return new Response('{}', { status, headers: { 'content-type': 'application/json' } });
+    }
+    // A 200 has to look like a real contents-API answer. The worker only accepts
+    // `encoding === "base64"` before using `content`, so a stub that answered `{content, encoding:
+    // 'utf-8'}` would return *no* content for a lesson that exists — and a happy-path assertion
+    // written against it would read "the guard rejected a valid lesson" from its own fixture.
+    return new Response(JSON.stringify({
+      content: Buffer.from(LESSON_BODY, 'utf-8').toString('base64'),
+      encoding: 'base64',
+    }), { status: 200, headers: { 'content-type': 'application/json' } });
   };
   try {
     const result = await answer(args);
@@ -98,6 +109,15 @@ test('a lesson path that does not exist is lesson_not_found, not internal_error'
 test('an unknown id is lesson_not_found too', async () => {
   const { payload } = await withUpstream(404, { id: 'no-such-lesson' });
   assert.equal(payload.code, 'lesson_not_found', JSON.stringify(payload));
+});
+
+test('a real lesson path still returns the body — the guard must not block the happy path', async () => {
+  const { payload, seen } = await withUpstream(200, { path: 'lessons/core/auto-merge-ci-pipeline.md' });
+  assert.equal(payload.path, 'lessons/core/auto-merge-ci-pipeline.md', JSON.stringify(payload).slice(0, 200));
+  assert.match(payload.content, /## Root cause/);
+  assert.equal(payload.code, undefined, 'a found lesson carries no code');
+  assert.equal(seen.length, 1, `the first ref that answers wins, and only it: ${seen.join(' ')}`);
+  assert.match(seen[0], /ref=main/);
 });
 
 test('an id that is not a slug is refused before six useless fetches', async () => {
