@@ -209,6 +209,23 @@ def test_a_missing_changelog_is_a_sentence_not_a_traceback(tmp_path):
     assert "no such file" in proc.stderr and "Traceback" not in proc.stderr, proc.stderr
 
 
+def test_the_push_clears_the_checkouts_persisted_credentials_first():
+    """`actions/checkout` writes `GITHUB_TOKEN` into `http.https://github.com/.extraheader`, and a push that
+    also carries a PAT in its URL sends **both** Authorization headers — the server uses the checkout's, so
+    the push is attributed to `github-actions[bot]` and every run on the new head is held
+    (`action_required`, never executed). Measured 2026-09-25 on the 2.35.0 release PR: 22 held runs on the
+    repaired head, `DCO / Signed-off-by` among them, i.e. the repair made the PR unmergeable for a new
+    reason. The unset has to come before the push.
+    """
+    run = step_running_the_script()["run"]
+    unset = run.find("git config --unset-all")
+    push = run.find("git push origin")
+    assert unset != -1, "the PAT push does not clear the checkout's credential header — the runs will be held"
+    assert "extraheader" in run[unset:unset + 120], run[unset:unset + 160]
+    assert push != -1, "the step no longer pushes — re-check this rule"
+    assert unset < push, "the header is cleared after the push, which is too late"
+
+
 def test_the_repair_tool_exists_where_the_workflow_reads_it_from():
     assert SCRIPT.is_file(), f"{WORKFLOW.name} copies {SCRIPT.name} from the #main checkout"
     assert (REPO / "CHANGELOG.md").is_file(), "the file the repair edits must exist in the checkout"
