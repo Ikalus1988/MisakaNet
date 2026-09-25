@@ -143,6 +143,16 @@ jobs:
       # Publish only when this run tagged a release: `gh workflow run` is one of
       # the two events a GITHUB_TOKEN push *can* still create, so this is the
       # single, explicit publish path.
+      # The release-please action leaves the workspace on the release PR's branch (it rewrites that branch
+      # in place). Every step after this one assumes `main`: `Sync version to docs` rewrites
+      # `docs/index.html`, and the lander stages with `git add -A` and pushes **HEAD** — which is how the
+      # 2026-09-25 PR #2210 came to be titled "docs: sync version to v2.34.0" while carrying the entire
+      # 2.35.0 bump (release commit + changelog repair + docs change, all on `bot/release-version-sync`).
+      # `land_change.py` refuses to land from a moved checkout as well, so this is the fix and that is the
+      # net under it.
+      - name: Return the checkout to main
+        run: git checkout --force main
+
       # `release-please` regenerates the release PR's changelog from the commit range on **every** push to
       # `main`, so a repair made by hand is undone by the next push. The repair therefore belongs here, in
       # the same run, right after the action that regenerates it.
@@ -178,13 +188,18 @@ jobs:
           # exists only on the branch it is repairing would fail on the first run.
           cp scripts/dedupe_release_entries.py "$RUNNER_TEMP/dedupe_release_entries.py"
           git fetch --quiet origin "$BRANCH"
-          git checkout -B "$BRANCH" "origin/$BRANCH"
+          # A *worktree*, not `git checkout`: the shared workspace must stay on `main` for the steps below
+          # (see "Return the checkout to main"). Repairing in place left it on the release branch, and the
+          # lander then built `bot/release-version-sync` from that HEAD — three commits, and a pull request
+          # whose title described one of them (measured 2026-09-25, PR #2210).
+          WORKTREE="$RUNNER_TEMP/release-repair"
+          git worktree add --force --detach "$WORKTREE" "origin/$BRANCH" >/dev/null
 
           # The path is explicit, and that is not cosmetic: this runs a *copy* of the script from outside
           # the checkout, so its `__file__`-relative default (`<repo>/CHANGELOG.md`) resolves to
           # `/home/runner/work/CHANGELOG.md` and the first run of this step died on
           # `FileNotFoundError: '/home/runner/work/CHANGELOG.md'` (measured 2026-09-25, run 36105826072).
-          if python3 "$RUNNER_TEMP/dedupe_release_entries.py" --check CHANGELOG.md; then
+          if python3 "$RUNNER_TEMP/dedupe_release_entries.py" --check "$WORKTREE/CHANGELOG.md"; then
             {
               echo "### Release changelog"
               echo
@@ -193,15 +208,15 @@ jobs:
             exit 0
           fi
 
-          python3 "$RUNNER_TEMP/dedupe_release_entries.py" CHANGELOG.md | tee -a "$GITHUB_STEP_SUMMARY"
-          git config user.name "misakanet-bot"
-          git config user.email "bot@misakanet.dev"
-          git add CHANGELOG.md
-          if git diff --cached --quiet; then
+          python3 "$RUNNER_TEMP/dedupe_release_entries.py" "$WORKTREE/CHANGELOG.md" | tee -a "$GITHUB_STEP_SUMMARY"
+          git -C "$WORKTREE" config user.name "misakanet-bot"
+          git -C "$WORKTREE" config user.email "bot@misakanet.dev"
+          git -C "$WORKTREE" add CHANGELOG.md
+          if git -C "$WORKTREE" diff --cached --quiet; then
             echo "the script reported duplicates but the file did not change — not pushing"
             exit 0
           fi
-          git commit -s -m "chore(changelog): drop the duplicate entries in the pending release section"
+          git -C "$WORKTREE" commit -s -m "chore(changelog): drop the duplicate entries in the pending release section"
           # The checkout persisted `GITHUB_TOKEN` into `http.https://github.com/.extraheader`. A push then
           # carries **both** Authorization headers and the server uses the checkout's, so this push — which
           # is meant to be the PAT, i.e. an ordinary user push — was attributed to `github-actions[bot]`:
@@ -214,7 +229,8 @@ jobs:
           # the checkout's — which is how the push above was attributed to the bot.
           git config --unset-all "http.https://github.com/.extraheader" || true
           AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$PUSH_TOKEN" | base64 -w0)"
-          git -c http.extraheader="$AUTH_HEADER" push origin "HEAD:refs/heads/$BRANCH"
+          git -C "$WORKTREE" -c http.extraheader="$AUTH_HEADER" push origin "HEAD:refs/heads/$BRANCH"
+          git worktree remove --force "$WORKTREE"
           echo "repaired $BRANCH; its checks will run on the new head" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Dispatch the PyPI publish
