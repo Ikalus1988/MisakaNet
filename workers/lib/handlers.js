@@ -105,15 +105,16 @@ async function fetchLessonContent(env, lessonPath, lessonId) {
 }
 
 // ── GitHub fetch helpers ──
-
-async function fetchFromGitHub(token, path, ref = "data") {
-  const url = `${PUBLIC_DATA_BASE}/${path}`;
-  const headers = { "User-Agent": "MisakaNet-Worker" };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const resp = await fetch(url, { headers });
-  if (!resp.ok) throw new Error(`GitHub fetch failed: ${resp.status} ${path}`);
-  return resp.json();
-}
+//
+// There is no `fetchFromGitHub` here any more, deliberately. This module carried a second copy with
+// `ref = "data"` as the default — the exact default `register-proxy-sw.js` removed on 2026-09-25,
+// because the `data` branch does not hold `data/counter.json` or `data/pr-genius-stats.json`: two
+// callers relied on it, asked for a path that is not there, got a 404, and surfaced it as a 502 at the
+// moment the fallback was all that was left (#1820). The copy was worse than a duplicate — it
+// interpolated `PUBLIC_DATA_BASE` and *ignored* the `ref` argument entirely, so its default named a
+// branch the function never read, and a future caller importing it would have inherited both the
+// signature and the lie. The live reader is `register-proxy-sw.js::fetchFromGitHub(token, path, ref)`:
+// no default, a deadline, and `tests/test_worker_github_fallbacks.py` checking every (path, ref) pair.
 
 const _cache = new Map();
 async function getWithCache(env, cacheKey, fetchFn) {
@@ -137,7 +138,6 @@ async function fetchPublicJson(path) {
 }
 
 export {
-  fetchFromGitHub,
   getWithCache,
   fetchPublicJson,
   GITHUB_API,
