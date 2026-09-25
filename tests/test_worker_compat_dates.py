@@ -98,7 +98,7 @@ def load_config(path: Path) -> dict:
 
 
 def real_configs() -> list[tuple[str, dict]]:
-    return [(str(p.relative_to(REPO)), load_config(p)) for p in wrangler_configs()]
+    return [(p.relative_to(REPO).as_posix(), load_config(p)) for p in wrangler_configs()]
 
 
 # ── rule 1: the compatibility date is a decision, and a stale one is a silent one ────────────────
@@ -207,7 +207,9 @@ def test_every_wrangler_config_pins_a_current_compatibility_date():
 def test_deploy_workflow_watches_the_config_and_the_entry_point():
     config_path = "workers/wrangler.toml"
     config = load_config(REPO / config_path)
-    entry = str(Path(config_path).parent / config["main"])
+    # `as_posix()`, not `str()`: on Windows the latter is `workers\\register-proxy-sw.js`, which
+    # never matches the workflow's POSIX-style path filter, so this gate failed on that leg alone.
+    entry = (Path(config_path).parent / config["main"]).as_posix()
     workflow = yaml.safe_load(DEPLOY_WORKFLOW.read_text(encoding="utf-8"))
     triggers = workflow.get("on") or workflow.get(True) or {}
     paths = triggers["push"]["paths"]

@@ -33,6 +33,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from subprocess_env import child_env  # tests/subprocess_env.py
 
 REPO = Path(__file__).resolve().parent.parent
 WORKFLOW = REPO / ".github" / "workflows" / "cf-diagnostics.yml"
@@ -141,14 +142,13 @@ def run_step(endpoint: str, env_extra: dict | None = None) -> subprocess.Complet
     proc = subprocess.run(
         [sys.executable, "-c", py],
         capture_output=True, text=True,
-        env={
-            "PATH": "/usr/bin:/bin",
+        env=child_env({
             "CLOUDFLARE_ACCOUNT_ID": "6b92325b505f2b76aec49e9fe4195d31",
             "CLOUDFLARE_API_TOKEN": "stub-token",
             "CF_GRAPHQL_URL": endpoint,
             "HOURS": "24",
             **(env_extra or {}),
-        },
+        }),
     )
     assert script.exists()
     return proc

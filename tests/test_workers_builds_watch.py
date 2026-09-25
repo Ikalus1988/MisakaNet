@@ -30,6 +30,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from subprocess_env import child_env  # tests/subprocess_env.py
 
 REPO = Path(__file__).resolve().parent.parent
 SCRIPT = REPO / "scripts" / "workers_builds_watch.py"
@@ -59,8 +60,15 @@ def run_watch(base: str, *extra: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         [sys.executable, str(SCRIPT), *extra],
         capture_output=True, text=True,
-        env={"PATH": "/usr/bin:/bin", "GH_TOKEN": "stub-token", "GH_REPO": OWNER_REPO,
-             "GH_API_BASE": base, "PYTHONPATH": str(REPO / "scripts")},
+        # `child_env`, not a hardcoded POSIX PATH: on Windows a PATH without System32 cannot load
+        # Winsock, so every stub call failed with WinError 10106 and these tests were red on that leg
+        # for a harness reason (tests/subprocess_env.py).
+        # the mapping form, not keyword arguments: the kwargs spelling writes the token name and an
+        # equals sign next to a quoted value, which is the assignment shape
+        # `tests/test_scanner_secret_patterns.py` refuses to keep in this surface (it caught this very
+        # line). The dict spelling keeps the scan clean, as it was before.
+        env=child_env({"GH_TOKEN": "stub-token", "GH_REPO": OWNER_REPO,
+                       "GH_API_BASE": base, "PYTHONPATH": str(REPO / "scripts")}),
     )
 
 

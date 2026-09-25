@@ -34,6 +34,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from subprocess_env import child_env  # tests/subprocess_env.py
 
 REPO = Path(__file__).resolve().parent.parent
 WORKFLOW = REPO / ".github" / "workflows" / "cf-diagnostics.yml"
@@ -230,13 +231,12 @@ def stub():
 
 
 def run_step(base: str | None, env_extra: dict | None = None) -> subprocess.CompletedProcess:
-    env = {
-        "PATH": "/usr/bin:/bin",
+    env = child_env({
         "CLOUDFLARE_ACCOUNT_ID": ACCOUNT,
         "CLOUDFLARE_API_TOKEN": "observability-token",
         "CF_BUILDS_WORKER": WORKER,
         **(env_extra if env_extra is not None else {"CF_BUILDS_TOKEN": "builds-token"}),
-    }
+    })
     if base:
         env["CF_API_BASE"] = base
     return subprocess.run([sys.executable, "-c", python_block(step_script())],

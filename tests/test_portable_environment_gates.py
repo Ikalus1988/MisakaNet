@@ -55,13 +55,15 @@ def _isolated_git_env(tmp_path: Path, default_branch: str) -> dict:
 
 @pytest.mark.parametrize("default_branch", ["dev", "trunk", "main", "master"])
 def test_the_merge_conflict_fixture_works_whatever_the_default_branch_is(default_branch, tmp_path):
+    from posix_shell import require_posix_shell
+    shell = require_posix_shell()
     """The fixture's job is to create a conflict; the branch name is incidental.
 
     Under `init.defaultBranch=dev` the old `switch master || switch main` exited before creating one —
     the benchmark then reported a fixture failure that had nothing to do with the benchmark.
     """
     workdir = tmp_path / "work"
-    proc = subprocess.run(["bash", str(FIXTURE), str(workdir)],
+    proc = subprocess.run([shell, str(FIXTURE), str(workdir)],
                           capture_output=True, text=True, env=_isolated_git_env(tmp_path, default_branch))
     assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
 
@@ -128,6 +130,7 @@ def test_the_fetcher_carries_its_own_timeouts():
 
 
 def test_a_wget_only_machine_can_download(tmp_path):
+    from posix_shell import require_posix_shell
     """Behavioural: PATH contains no curl, a stub wget serves a local mirror, and the three files must
     land. This is the claim the previous fix only *appeared* to make."""
     mirror = tmp_path / "mirror"
@@ -163,7 +166,9 @@ def test_a_wget_only_machine_can_download(tmp_path):
     }
     # absolute path: with `env=` the child's own PATH is what resolves the program, and this PATH
     # deliberately contains no shell.
-    bash = shutil.which("bash") or "/bin/bash"
+    # A "wget-only POSIX machine" is a POSIX scenario; on Windows `bash` is the WSL launcher, whose
+    # absence of a distribution is a skip rather than a failure.
+    bash = require_posix_shell()
     proc = subprocess.run([bash, str(BOOTSTRAP), "--dry-run"], capture_output=True, text=True, env=env)
     assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
     missing = [name for name in files if not (setup_dir / name).is_file()]
