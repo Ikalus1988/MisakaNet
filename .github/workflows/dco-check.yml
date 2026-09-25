@@ -42,6 +42,8 @@ permissions:
 jobs:
   dco:
     runs-on: ubuntu-latest
+    # A job with no bound holds its runner until the platform default (six hours).
+    timeout-minutes: 5
     # Skip DCO check for release-please bot PRs
     if: github.event.pull_request.user.login != 'release-please[bot]'
     steps:

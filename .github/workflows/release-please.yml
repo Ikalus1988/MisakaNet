@@ -12,6 +12,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # A job with no bound holds its runner until the platform default (six hours).
+    timeout-minutes: 20
     steps:
       # Deliberately GITHUB_TOKEN, not the PAT: a GITHUB_TOKEN push never triggers
       # another workflow, so the tag created below cannot fire release-pypi.yml
