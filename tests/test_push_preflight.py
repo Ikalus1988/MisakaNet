@@ -218,6 +218,63 @@ def test_main_reports_a_flaky_link_as_exit_2_not_a_crash(stubbed, monkeypatch):
     monkeypatch.setattr(pp, "remote_tree", dead)
     assert pp.main(["--all"]) == 2
 
+# ── which credential goes to which host ─────────────────────────────────────
+
+def _creds(tmp_path, *lines):
+    path = tmp_path / ".git-credentials"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+def test_a_credential_for_another_host_is_not_used(tmp_path):
+    """The reason CodeQL flagged the first version (`py/incomplete-url-substring-sanitization`, #285).
+
+    `"github.com" in line` also accepts `notgithub.com` and `github.com.example.net`. A credential file
+    is exactly where a second host is likely to appear, and this function decides which secret to send
+    where — so the host is compared after parsing.
+    """
+    path = _creds(tmp_path,
+                  "https://someone:pw-for-lookalike@notgithub.com",
+                  "https://someone@github.com.example.net:pw-for-subdomain",
+                  "https://someone:right-one@github.com")
+    assert pp.credentials_token(path) == "right-one"
+
+
+def test_lookalike_hosts_on_their_own_yield_nothing(tmp_path):
+    for line in ("https://u:pw@notgithub.com",
+                 "https://u:pw@github.com.example.net",
+                 "https://u:pw@evil.example/github.com",
+                 "https://u:pw@githubxcom"):
+        assert pp.credentials_token(_creds(tmp_path, line)) is None, f"accepted {line!r}"
+
+
+def test_the_ordinary_forms_still_resolve(tmp_path):
+    assert pp.credentials_token(_creds(tmp_path, "https://u:tok@github.com")) == "tok"
+    assert pp.credentials_token(_creds(tmp_path, "https://u:tok@github.com:443")) == "tok"
+    assert pp.credentials_token(_creds(tmp_path, "https://u:tok@GITHUB.COM")) == "tok"
+    # A token that was percent-encoded into the file comes back decoded, like git would read it.
+    assert pp.credentials_token(_creds(tmp_path, "https://u:a%2Fb@github.com")) == "a/b"
+
+
+def test_a_file_with_no_github_entry_yields_nothing(tmp_path):
+    assert pp.credentials_token(_creds(tmp_path, "https://u:pw@gitlab.com", "")) is None
+
+
+def test_the_environment_wins_over_the_file(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_TOKEN", "from-env")
+    assert pp.resolve_token() == "from-env"
+
+
+def test_resolve_token_reads_a_real_working_tree_shape(tmp_path, monkeypatch):
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    path = _creds(tmp_path, "https://Ikalus1988:gho_example@github.com")
+    monkeypatch.setattr(pp.pathlib.Path, "home", staticmethod(lambda: tmp_path))
+    assert pp.resolve_token() == "gho_example"
+
+
+# ── exit codes, with the network stubbed ────────────────────────────────────
+
 @pytest.fixture
 def stubbed(monkeypatch):
     """Feed the CLI a remote tree and file contents without touching the network."""
