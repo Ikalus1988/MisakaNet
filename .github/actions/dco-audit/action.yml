@@ -138,7 +138,7 @@ runs:
           --jq '.[] | select(.body | contains("misakanet-dco-block")) | .id' 2>/dev/null | tail -n1)
         if [ -n "$EXISTING_ID" ]; then
           gh api -X PATCH "repos/$REPO/issues/comments/$EXISTING_ID" \
-            -f "body=@$COMMENT_FILE" >/dev/null 2>&1 \
+            -f "body=$(cat "$COMMENT_FILE")" >/dev/null 2>&1 \
             && echo "Updated DCO block comment on PR #$PR" \
             || gh pr comment "$PR" --repo "$REPO" --body-file "$COMMENT_FILE" 2>/dev/null \
             || echo "::warning::Could not update/post DCO comment on PR #$PR (read-only fork run?)"

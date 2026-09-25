@@ -126,8 +126,19 @@ def _scan_outputs(repo: Path, base: str, head: str, tmp_path: Path) -> dict[str,
     return outputs
 
 
-def _render_comment(repo: Path, outputs: dict[str, str], tmp_path: Path) -> str:
-    """Run the comment step and return the file it wrote — the text a contributor would see."""
+# A `gh` that records its argv and answers the marker lookup with an existing comment id, so the step takes
+# the *update* path rather than creating a new comment. That path is where the receipt was being destroyed.
+FAKE_GH = """#!/usr/bin/env bash
+printf '%s\\n' "### $*" >> "$FAKE_GH_LOG"
+case "$*" in
+  *"comments?per_page=100"*) echo 424242 ;;
+esac
+exit 0
+"""
+
+
+def _run_comment_step(repo: Path, outputs: dict[str, str], tmp_path: Path) -> dict:
+    """Run the comment step. Returns the comment file's text, the `gh` argv log, and the step's stdout."""
     scan = f"{_step('Scan DCO')['id']}"
     values = {
         "inputs.pr-number": "2201", "inputs.repo": "Ikalus1988/MisakaNet", "inputs.token": "stub",
@@ -136,13 +147,25 @@ def _render_comment(repo: Path, outputs: dict[str, str], tmp_path: Path) -> str:
     }
     runner_temp = tmp_path / "runner_temp"
     runner_temp.mkdir(exist_ok=True)
+    gh_log = tmp_path / "gh_calls.log"
+    gh_log.write_text("", encoding="utf-8")
+    (runner_temp / "gh").write_text(FAKE_GH, encoding="utf-8")
+    (runner_temp / "gh").chmod(0o755)
     script = _substitute(_step("Post DCO Failure Comment")["run"], values)
-    subprocess.run([_bash(), "-c", script], cwd=repo, capture_output=True, text=True, timeout=120,
-                   env=child_env({"RUNNER_TEMP": str(runner_temp), "HOME": str(tmp_path),
-                                  "GH_TOKEN": "stub", "PATH": f"{runner_temp}:{POSIX_PATH}"}))
+    proc = subprocess.run([_bash(), "-c", script], cwd=repo, capture_output=True, text=True, timeout=120,
+                          env=child_env({"RUNNER_TEMP": str(runner_temp), "HOME": str(tmp_path),
+                                         "FAKE_GH_LOG": str(gh_log),
+                                         "GH_TOKEN": "stub", "PATH": f"{runner_temp}:{POSIX_PATH}"}))
     written = runner_temp / "dco_comment.md"
     assert written.exists(), "the comment step wrote nothing — check RUNNER_TEMP handling"
-    return written.read_text(encoding="utf-8")
+    return {"body": written.read_text(encoding="utf-8"),
+            "gh": gh_log.read_text(encoding="utf-8"),
+            "stdout": proc.stdout + proc.stderr}
+
+
+def _render_comment(repo: Path, outputs: dict[str, str], tmp_path: Path) -> str:
+    """The text a contributor would see."""
+    return _run_comment_step(repo, outputs, tmp_path)["body"]
 
 
 # ── the receipt names the offending commits ─────────────────────────────────────────
@@ -254,3 +277,24 @@ def test_the_workflow_can_still_be_triggered_by_a_human_command():
     assert "contains(github.event.comment.body, '/fix-dco')" in condition, condition
     assert "github.event.issue.pull_request" in condition, condition
     assert json.dumps(["MEMBER", "OWNER", "COLLABORATOR"]) in condition, condition
+
+
+def test_updating_an_existing_receipt_sends_the_receipt_not_a_file_path(tmp_path):
+    """The upsert path is the one that destroyed the receipt.
+
+    `gh api -f body=@file` does not read the file — `--raw-field` sends the literal string — and the call
+    *succeeded*, so the `||` fallbacks never ran. Every audit run replaced the previous comment with
+    `@/tmp/tmp.XXXXXXXX`, the marker disappeared with it, and the next run wrote a fresh one: PR #2020 (the
+    release PR) had 53 of those, and no readable verdict on a PR that had been blocked for four days.
+    """
+    repo, base, unsigned = _repo_with_one_unsigned_commit(tmp_path)
+    result = _run_comment_step(repo, _scan_outputs(repo, base, unsigned, tmp_path), tmp_path)
+    assert "Updated DCO block comment on PR #2201" in result["stdout"], result["stdout"][:300]
+    assert "424242" in result["gh"], f"the step did not take the update path: {result['gh'][:200]}"
+    assert "-X PATCH" in result["gh"], result["gh"][:300]
+    assert "body=@" not in result["gh"], (
+        "the update posted a file *path* instead of the file's contents — the receipt never reaches the "
+        f"contributor:\n{result['gh'][:300]}")
+    assert unsigned[:7] in result["gh"], (
+        "the body sent to the API does not contain the offending commit, so the update lost the receipt:\n"
+        f"{result['gh'][:300]}")
