@@ -59,7 +59,18 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
         with:
-          python-version: "3.10"
+          # 3.11, not 3.10: this job runs the whole test suite, and two of its files import
+          # `tomllib` (stdlib only from 3.11), so on 3.10 pytest died during **collection**
+          # (`ModuleNotFoundError: tomllib`, exit 2) before running a single test. The audit then
+          # reported "Audit failed: test suite has issues" — blaming the contribution for a runner
+          # version. Measured 2026-09-25 while triaging the open backlog: **3 of the 11 open PRs**
+          # (#1999, #2020, #1982) carried exactly this, so their red `audit` said nothing about their
+          # content. (The others that were red were a genuine DCO failure and two PRs whose audit
+          # never ran at all — different problems.) The required matrix (`ci-cross-platform.yml`) has
+          # always been 3.11/3.12/3.13; this job was the outlier.
+          # `tests/test_workflow_python_floors.py` derives the suite's floor from the imports in
+          # tests/ and fails any pytest job that pins something lower.
+          python-version: "3.11"
           cache: pip
 
       - name: Install Dependencies
@@ -334,6 +345,10 @@ jobs:
             tests/ 2>&1 | tee pytest_report.txt
           PYTEST_EXIT=${PIPESTATUS[0]}
           echo "pytest_exit=$PYTEST_EXIT"
+          # Handed to the summary step below, which is the only place the *cause* is turned into the
+          # one line a maintainer reads. Exit codes are pytest's, not ours: 1 = tests failed,
+          # 2 = interrupted (a collection error), 4 = usage error, 5 = nothing collected.
+          echo "exit=$PYTEST_EXIT" >> "$GITHUB_OUTPUT"
           exit $PYTEST_EXIT
         continue-on-error: true
 
@@ -466,6 +481,7 @@ jobs:
         run: |
           SCOPE="${{ steps.scope.outputs.scope }}"
           OUTCOME="${{ steps.pytest.outcome }}"
+          PYTEST_EXIT="${{ steps.pytest.outputs.exit }}"
           COVERAGE="${{ steps.coverage.outputs.rate }}"
           SUSPICIOUS="${{ steps.prsize.outputs.suspicious }}"
           SIZE_NOTES="${{ steps.prsize.outputs.notes }}"
@@ -720,7 +736,20 @@ jobs:
           # Note: dep audit blocking is handled in the dep audit step itself
           # (only blocks when dependency files actually changed)
           if [ "$SCOPE" = "full" ] && [ -n "$OUTCOME" ] && [ "$OUTCOME" != "success" ]; then
-            echo "Audit failed: test suite has issues."
+            # "test suite has issues" was the whole message for days while the suite never ran: on
+            # 3.10 pytest aborted during *collection* (`ModuleNotFoundError: tomllib`, exit 2), and
+            # the audit blamed the PR for a runner version (3 of the 11 open PRs on 2026-09-25).
+            # A red gate has to name its cause, or the reader has to go and find it — which is how
+            # 3 PRs sat blocked on a one-line workflow bug.
+            case "$PYTEST_EXIT" in
+              2)
+                echo "Audit failed: pytest could not COLLECT the suite (exit 2) — an import or conftest error, so no test ran at all. This is normally the runner, not the contribution: check the python-version this job pins."
+                ;;
+              4) echo "Audit failed: pytest usage error (exit 4) — the invocation is wrong, not the tests." ;;
+              5) echo "Audit failed: pytest collected no tests (exit 5)." ;;
+              1) echo "Audit failed: test suite has failing tests (exit 1)." ;;
+              *) echo "Audit failed: test suite has issues (pytest exit ${PYTEST_EXIT:-unknown})." ;;
+            esac
             exit 1
           fi
           if [ "$DCO_RESULT" != "true" ]; then

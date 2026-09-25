@@ -40,6 +40,9 @@ PR_CHECKS = REPO / ".github" / "workflows" / "pr-checks.yml"
 _EXPRESSIONS = {
     "${{ steps.scope.outputs.scope }}": "SCOPE",
     "${{ steps.pytest.outcome }}": "OUTCOME",
+    # pytest's own exit code (1 = failing tests, 2 = interrupted during collection, 4 = usage error,
+    # 5 = nothing collected). Carried out of the test step so the verdict can say *which* it was.
+    "${{ steps.pytest.outputs.exit }}": "PYTEST_EXIT",
     "${{ steps.coverage.outputs.rate }}": "COVERAGE",
     "${{ steps.prsize.outputs.suspicious }}": "SUSPICIOUS",
     "${{ steps.prsize.outputs.notes }}": "SIZE_NOTES",
@@ -74,11 +77,12 @@ def _escape(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"').replace("$", "\\$").replace("`", "\\`")
 
 
-def run_report(tmp_path, **values) -> str:
-    """Execute the real step with the given step outputs; return the report it writes.
+def run_report_streams(tmp_path, tag: str = "report", **values) -> tuple[str, str]:
+    """Execute the real step; return (the report it writes, everything it printed).
 
-    A red verdict makes the step `exit 1` on purpose — the report is still written to the summary
-    before that, which is the part a contributor reads.
+    Both halves matter and they are read by different people: the report is the comment a contributor
+    sees, and stdout is the run log — which for a *failed* audit is where the reason has to appear,
+    because the report says what failed while the log has to say why.
     """
     script = _report_step_script()
     for expression, key in _EXPRESSIONS.items():
@@ -86,9 +90,9 @@ def run_report(tmp_path, **values) -> str:
     leftover = re.findall(r"\$\{\{[^}]*\}\}", script)
     assert not leftover, f"these expressions are not substituted and bash cannot evaluate them: {leftover}"
 
-    body = tmp_path / "report.sh"
+    body = tmp_path / f"{tag}.sh"
     body.write_text(script, encoding="utf-8")
-    summary = tmp_path / "summary.md"
+    summary = tmp_path / f"{tag}-summary.md"
     env = dict(os.environ)
     env.update({
         "GITHUB_STEP_SUMMARY": str(summary),
@@ -97,13 +101,23 @@ def run_report(tmp_path, **values) -> str:
     })
     proc = subprocess.run([require_posix_shell(), "-e", str(body)], capture_output=True, text=True, env=env, cwd=tmp_path)
     assert proc.returncode in (0, 1), f"unexpected exit {proc.returncode}:\n{proc.stdout}\n{proc.stderr}"
-    return summary.read_text(encoding="utf-8")
+    return summary.read_text(encoding="utf-8"), proc.stdout
+
+
+def run_report(tmp_path, **values) -> str:
+    """Execute the real step with the given step outputs; return the report it writes.
+
+    A red verdict makes the step `exit 1` on purpose — the report is still written to the summary
+    before that, which is the part a contributor reads.
+    """
+    return run_report_streams(tmp_path, **values)[0]
 
 
 # A PR whose every gate passed — the control that proves the wording below comes from `OUTCOME` and
-# not from a report that always says the same thing.
+# not from a report that always says the same thing. PYTEST_EXIT is inert here (the message branch is
+# only reached when OUTCOME is not success); the tests that care set it themselves.
 _GREEN = {
-    "SCOPE": "full", "OUTCOME": "success", "COVERAGE": "63", "SCORE": "100",
+    "SCOPE": "full", "OUTCOME": "success", "COVERAGE": "63", "SCORE": "100", "PYTEST_EXIT": "0",
     "DCO_RESULT": "true", "SCHEMA": "pass", "SECRETS": "pass", "DEPAUDIT": "pass",
     "SHA": "abcdef1234567",
 }
@@ -169,3 +183,59 @@ def test_stripping_the_skip_branch_reproduces_the_old_report(tmp_path):
     assert proc.returncode in (0, 1), f"{proc.stdout}\n{proc.stderr}"
     assert "tests have failures" in summary.read_text(encoding="utf-8"), (
         "without the branch, the old 'a skipped suite is a failed suite' wording must return")
+
+
+# ── the reason, not just the fact (2026-09-25) ───────────────────────────────────────
+# The wording above was already truthful about *what* happened. What it could not say is *why*: for
+# days the audit printed "test suite has issues" for a suite that never ran, because the job pinned
+# Python 3.10 while two test files import `tomllib` — pytest aborted during **collection** (exit 2)
+# and the reader had to go several thousand log lines up to find out. Three of the eleven open PRs on
+# 2026-09-25 were red for exactly that. So: the exit code is now carried out of the test step, and the
+# failure message names it.
+def _pytest_step_run() -> str:
+    workflow = yaml.safe_load(PR_CHECKS.read_text(encoding="utf-8"))
+    for job in workflow["jobs"].values():
+        for step in job.get("steps", []):
+            if step.get("id") == "pytest":
+                return step["run"]
+    raise AssertionError("the `Run Test Suite` step (id: pytest) disappeared")
+
+
+def test_the_test_step_publishes_its_exit_code():
+    """The harness below substitutes `${{ … }}` into the script, so it *cannot* notice if the step
+    stops writing the output — every message test would still pass on a value that never arrives."""
+    run = _pytest_step_run()
+    assert re.search(r"PYTEST_EXIT=\$\{PIPESTATUS\[0\]\}", run), run[-400:]
+    assert re.search(r'echo "exit=\$PYTEST_EXIT" >> "\$GITHUB_OUTPUT"', run), (
+        "pytest's exit code never reaches $GITHUB_OUTPUT, so the verdict cannot branch on it"
+    )
+
+
+def test_a_suite_that_never_ran_says_so_instead_of_blaming_the_contribution(tmp_path):
+    _, stdout = run_report_streams(tmp_path, tag="collect", **{**_GREEN, "OUTCOME": "failure", "PYTEST_EXIT": "2"})
+    assert "could not COLLECT" in stdout, stdout[-600:]
+    assert "no test ran" in stdout, stdout[-600:]
+    assert "python-version" in stdout or "runner" in stdout, (
+        "a collection error is normally the runner rather than the PR, and the message should point "
+        "there — that is the sentence that would have saved three PRs"
+    )
+
+
+def test_a_real_test_failure_is_still_called_a_test_failure(tmp_path):
+    """The positive control: naming collection errors must not relabel a genuinely failing suite."""
+    _, stdout = run_report_streams(tmp_path, tag="fail", **{**_GREEN, "OUTCOME": "failure", "PYTEST_EXIT": "1"})
+    assert "failing tests" in stdout, stdout[-600:]
+    assert "could not COLLECT" not in stdout, stdout[-600:]
+
+
+@pytest.mark.parametrize("code,expected", [("4", "usage error"), ("5", "collected no tests")])
+def test_the_other_pytest_exit_codes_are_named_too(code, expected, tmp_path):
+    """4 and 5 are also "the suite did not really run"; the catch-all must not swallow them."""
+    _, stdout = run_report_streams(tmp_path, tag=f"exit{code}", **{**_GREEN, "OUTCOME": "failure", "PYTEST_EXIT": code})
+    assert expected in stdout, stdout[-600:]
+
+
+def test_an_unknown_exit_code_falls_back_without_crashing(tmp_path):
+    """The step must still produce a verdict when the output is empty (a skipped test step)."""
+    _, stdout = run_report_streams(tmp_path, tag="unknown", **{**_GREEN, "OUTCOME": "failure", "PYTEST_EXIT": ""})
+    assert "test suite has issues" in stdout, stdout[-600:]
