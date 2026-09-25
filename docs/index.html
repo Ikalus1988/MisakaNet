@@ -3074,7 +3074,15 @@ async function loadContributors() {
         const SKIP_PAREN = /^#|^(Fixes?|Close[sd]?|Resolve[sd]?|Level|Ring|Bounty|Zero.Bounty|Honor|WIP|Draft)\b/i;
         let titleMatch = pr.title.match(/\(([^/#()]+)\/Misaka\d+\)/);
         if (!titleMatch) {
-          titleMatch = pr.title.match(/\(([a-zA-Z\u4e00-\u9fff][\w.\-]{1,20}?)\)(?![\s\w])/);
+          // The fallback has to be anchored: a conventional-commit **scope** is not a contributor.
+          // `fix(worker): …`, `docs(skill): …` and `fix(ci): …` were read as names, so 81 of the last
+          // 100 closed PRs landed on this wall as "worker" / "skill" / "ci" — 75 of them the
+          // maintainer's own, which the owner filter then failed to drop because it compares the
+          // *display name*, not the login. The convention this fallback exists for writes the name
+          // after a space or at the start of the title ("feat: xxx (太阳)"), and a commit scope is
+          // always glued to its type, so requiring that boundary is enough.
+          // tests/test_contributor_wall_attribution.py runs these regexes over real titles.
+          titleMatch = pr.title.match(/(?:^|\s)\(([a-zA-Z\u4e00-\u9fff][\w.\-]{1,20}?)\)(?![\s\w])/);
         }
         if (titleMatch && !SKIP_PAREN.test(titleMatch[1])) {
           prContributor = titleMatch[1].trim();
@@ -3162,6 +3170,11 @@ async function loadContributors() {
     const badges = ["🥇", "🥈", "🥉"];
     // Skip owner accounts from contributor wall (自产自销不计入排行)
     const SKIP_OWNER = new Set(["misakanet-bot", "Ikalus1988", "ikalus1988", "sheldonisspark-lab", "claude"]);
+    // The row's *login* is what decides whether a row is the owner's — the display name can be
+    // rewritten from the PR title (that is the whole point of the extraction above), so filtering on
+    // the name alone let the maintainer's own PRs onto the wall under their commit scopes.
+    const isOwnerRow = (node, data) => SKIP_OWNER.has(node)
+      || SKIP_OWNER.has(String((data && data.user) || "").toLowerCase());
 
     // Agent contributor count (participant narrative, real data): distinct
     // non-owner contributors that self-declared an agent type (Agent-Type:)
@@ -3169,7 +3182,7 @@ async function loadContributors() {
     // excludes humans (agentClass === 'human'). This is the "how many agents
     // are actually contributing" signal.
     const agentContribCount = sorted.filter(([node, data]) =>
-      !SKIP_OWNER.has(node) && data.agentClass !== '' && data.agentClass !== 'human'
+      !isOwnerRow(node, data) && data.agentClass !== '' && data.agentClass !== 'human'
     ).length;
     const agentContribEl = document.getElementById("agent-contrib-count");
     if (agentContribEl) {
@@ -3181,7 +3194,7 @@ async function loadContributors() {
 
     list.style.display = "";
     list.innerHTML = sorted
-      .filter(([node]) => !SKIP_OWNER.has(node))
+      .filter(([node, data]) => !isOwnerRow(node, data))
       .slice(0, 10).map(([node, data], idx) => {
       const rank = idx < 3 ? badges[idx] : `#${idx + 1}`;
       const total = data.count;
