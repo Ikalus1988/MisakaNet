@@ -216,6 +216,58 @@ def test_the_orphan_rule_would_have_caught_the_file_this_issue_deleted():
         "re-adding the file without a caller must turn the rule red")
 
 
+# ── the heading counts are claims about the table under them ─────────────────────────────────────
+#
+# Measured 2026-09-26: every section heading in `docs/CI.md` understated its own table — 17 rows were
+# announced as 3 in 基础设施, 21 as 17 in 质量门禁, 22 as 16 in 数据/索引, 12 as 8, 15 as 12. Five
+# headings, five wrong numbers, and the page's opening line invites the reader to trust them ("本页为
+# 其完整索引"). A hand-maintained count with no gate is the same shape as the workflow inventory that
+# rule 3 above exists to fix: it drifts silently, and the drift is invisible precisely because the
+# number looks authoritative.
+SECTION_HEADING = re.compile(r"^## +(.+?)（(\d+)）\s*$")
+
+
+def section_count_problems(doc_text: str) -> list[str]:
+    """Every `## 标题（N）` must have exactly N workflow rows under it."""
+    problems: list[str] = []
+    heading, declared, rows = None, None, 0
+
+    def flush() -> None:
+        if heading is not None and declared != rows:
+            problems.append(
+                f"docs/CI.md section {heading!r} announces {declared} workflow(s) but its table has "
+                f"{rows} — the count is the first thing a reader believes about this page")
+
+    for line in doc_text.splitlines() + ["## "]:
+        match = SECTION_HEADING.match(line)
+        if line.startswith("## "):
+            flush()
+            heading, declared, rows = (
+                (match.group(1), int(match.group(2)), 0) if match else (None, None, 0))
+            continue
+        if heading is not None and re.match(r"^\| `[^`]+\.ya?ml` \|", line):
+            rows += 1
+    return problems
+
+
+def test_every_section_heading_declares_the_number_of_rows_it_has():
+    problems = section_count_problems(CI_DOC.read_text(encoding="utf-8"))
+    assert not problems, "\n  ".join(problems)
+
+
+def test_the_heading_count_rule_can_go_red():
+    """Replayed on the real document with the numbers it actually had on 2026-09-26."""
+    stale = CI_DOC.read_text(encoding="utf-8").replace("## 基础设施（6）", "## 基础设施（3）", 1)
+    problems = section_count_problems(stale)
+    assert len(problems) == 1 and "基础设施" in problems[0], problems
+
+
+def test_the_heading_count_rule_ignores_headings_that_declare_no_count():
+    """`## 说明与边界` and the quiet-automation table are not inventory counts; a rule that demanded
+    one from every heading would be red for a reason nobody agreed to."""
+    assert section_count_problems("## 说明与边界\n\n| `a.yml` | A | push |  |\n") == []
+
+
 # ── an approval queue must not accumulate superseded runs (#2006's sibling, 2026-09-21) ───────────
 #
 # `deploy-worker.yml` is gated by the `release` environment's required reviewer, so every push that
