@@ -20,6 +20,8 @@ permissions:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
+    # A job with no bound holds its runner until the platform default (six hours).
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
@@ -39,8 +41,12 @@ jobs:
         env:
           AI_GATEWAY_ID: misakanet-bench
           AI_GATEWAY_TOKEN: ${{ secrets.AI_GATEWAY_TOKEN }}
+          # Through the environment: a `workflow_dispatch` input is free text, and `${{ … }}` inside `run:`
+          # is substituted before bash parses the line. (Open Code Review, GitHub Actions ruleset: "Script
+          # injection".) `|| ''` is gone with the interpolation — an unset input is already empty here.
+          SCENARIOS: ${{ github.event.inputs.scenarios }}
         run: |
-          SCEN="${{ github.event.inputs.scenarios || '' }}"
+          SCEN="$SCENARIOS"
           # Free-tier only (2026-08-30): llama-3.3-70b billed $0.11 past the
           # 10k neurons/day allocation. 3b full + 8b strong stay inside the
           # free pool; --neuron-budget hard-stops before any billing.
