@@ -119,6 +119,14 @@ def main() -> int:
     args = parser.parse_args()
 
     path = Path(args.path)
+    if not path.is_file():
+        # A traceback here says "somebody else's bug"; a sentence says what to do. The first version of the
+        # caller in `release-please.yml` ran a copy of this script from `$RUNNER_TEMP` and relied on the
+        # default path, so the default resolved next to the *copy* and the step died on
+        # `FileNotFoundError: '/home/runner/work/CHANGELOG.md'`.
+        print(f"{path}: no such file — pass the changelog path explicitly when running a copy of this "
+              f"script from outside the repository", file=sys.stderr)
+        return 2
     text = path.read_text(encoding="utf-8")
     new_text, dropped = dedupe(text)
 

@@ -186,6 +186,29 @@ def test_the_repair_push_does_not_use_the_built_in_token():
             "head's runs would be held, and DCO is a required check")
 
 
+def test_every_invocation_passes_the_changelog_path_explicitly():
+    """The step runs a *copy* of the script from `$RUNNER_TEMP`, so the script's `__file__`-relative default
+    points outside the repository: `/home/runner/work/CHANGELOG.md`. The first run of the step died on
+    exactly that (`FileNotFoundError`, run 36105826072) — the default is right for a checkout and wrong for
+    a copy, and only an explicit argument covers both.
+    """
+    run = step_running_the_script()["run"]
+    calls = [line for line in run.splitlines()
+             if "python3" in line and "dedupe_release_entries.py" in line]
+    assert calls, f"no invocation found in the step:\n{run}"
+    for line in calls:
+        assert "CHANGELOG.md" in line, (
+            "this invocation relies on the script's default path, which resolves next to the copy, not "
+            f"next to the checkout:\n{line}")
+
+
+def test_a_missing_changelog_is_a_sentence_not_a_traceback(tmp_path):
+    proc = subprocess.run([sys.executable, str(SCRIPT), "--check", str(tmp_path / "nope.md")],
+                          capture_output=True, text=True, timeout=60)
+    assert proc.returncode == 2, proc.stdout + proc.stderr
+    assert "no such file" in proc.stderr and "Traceback" not in proc.stderr, proc.stderr
+
+
 def test_the_repair_tool_exists_where_the_workflow_reads_it_from():
     assert SCRIPT.is_file(), f"{WORKFLOW.name} copies {SCRIPT.name} from the #main checkout"
     assert (REPO / "CHANGELOG.md").is_file(), "the file the repair edits must exist in the checkout"

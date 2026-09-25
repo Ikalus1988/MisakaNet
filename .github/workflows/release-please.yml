@@ -165,7 +165,11 @@ jobs:
           git fetch --quiet origin "$BRANCH"
           git checkout -B "$BRANCH" "origin/$BRANCH"
 
-          if python3 "$RUNNER_TEMP/dedupe_release_entries.py" --check; then
+          # The path is explicit, and that is not cosmetic: this runs a *copy* of the script from outside
+          # the checkout, so its `__file__`-relative default (`<repo>/CHANGELOG.md`) resolves to
+          # `/home/runner/work/CHANGELOG.md` and the first run of this step died on
+          # `FileNotFoundError: '/home/runner/work/CHANGELOG.md'` (measured 2026-09-25, run 36105826072).
+          if python3 "$RUNNER_TEMP/dedupe_release_entries.py" --check CHANGELOG.md; then
             {
               echo "### Release changelog"
               echo
@@ -174,7 +178,7 @@ jobs:
             exit 0
           fi
 
-          python3 "$RUNNER_TEMP/dedupe_release_entries.py" | tee -a "$GITHUB_STEP_SUMMARY"
+          python3 "$RUNNER_TEMP/dedupe_release_entries.py" CHANGELOG.md | tee -a "$GITHUB_STEP_SUMMARY"
           git config user.name "misakanet-bot"
           git config user.email "bot@misakanet.dev"
           git add CHANGELOG.md
