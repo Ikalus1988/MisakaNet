@@ -857,7 +857,16 @@ function queryIdfTotal(queryTerms, terms, docCount) {
 // "git push failed" stopped finding the git-push lessons, because they say
 // "rejected"/"403", not "failed". A rule that costs recall without buying
 // precision is not a floor, it is a coin flip; the rank-level fix belongs with the
-// BM25 index that production never syncs.
+// BM25 index itself.
+//
+// This used to end "…the BM25 index that production never syncs", and that was true for **41
+// minutes**: the sentence is from `cac0f78bd` (2026-09-12 10:07:48 +0800), and `e7856daf6` ("let the
+// worker build its own BM25 index — the one that never existed", 10:49:36) landed the same morning.
+// The worker now rebuilds the index itself on a 15-minute cron (`wrangler.toml`, `scheduled`) with no
+// secret and no external runner to forget, so the reason this note gave for leaving ranking alone has
+// not applied since the day it was written. It is kept here because the stale version was *cited*:
+// both `docs/maintainer/query-alias-design-2026-09-16.md` and the H-04 item of the 2026-09-24 handoff
+// treated "production never syncs the index" as a live constraint when deciding what was safe to fix.
 
 
 // Tokens for *matching* (not for the BM25 index): lowercase, stopwords dropped,
@@ -1336,6 +1345,10 @@ const BM25_INDEX_KEY = "worker_search_index";
  * bodies in the index?" is the property that matters and is false at any corpus size when the rich
  * projection was missing. Titles are excluded when sampling, so a build that indexed only titles has
  * nothing left to match.
+ *
+ * The sample is *drawn* with `matchTokens` (so the sample size keeps its old meaning, including the
+ * floor below which the corpus cannot be judged this way) but *judged* against the tokens the index
+ * builder can actually produce. Those are not the same vocabulary — see the note at the filter.
  */
 function indexShapeProblem(index, lessons) {
   const docs = Array.isArray(lessons) ? lessons : [];
@@ -1356,8 +1369,19 @@ function indexShapeProblem(index, lessons) {
   // A corpus that carries no body in the rows it hands the builder cannot be judged this way; the
   // caller's `textMode` already records that, and failing here would block a legitimate lean deploy.
   if (bodyOnly.size < 20) return null;
-  const indexed = [...bodyOnly].filter((token) => index.terms[token]).length;
-  const share = indexed / bodyOnly.size;
+  // Only tokens the index's *own* tokenizer can produce may be counted as "missing". `matchTokens`
+  // keeps whole CJK runs and `bm25Tokenize` erases CJK entirely, so every Chinese run in the sample
+  // was scored as an absent token that no build could ever have indexed. The gate therefore measured
+  // how much CJK the corpus happens to carry alongside the thing it names in its own failure message.
+  // Measured on the live corpus 2026-09-25: 32.5% of the sample was CJK-only and the ratio read 0.675
+  // against a 0.5 threshold — headroom, not slack, and it shrinks as the corpus grows Chinese. Past
+  // it the gate refuses every rebuild, and because a bump to `INDEX_TEXT_VERSION` makes the freshness
+  // check reject the stored index on *every* tick, that refusal is a search outage with no rollback.
+  const indexable = [...bodyOnly].filter((token) => bm25Tokenize(token).length > 0);
+  // A corpus with nothing this index can tokenize is not a shape problem either.
+  if (!indexable.length) return null;
+  const indexed = indexable.filter((token) => index.terms[token]).length;
+  const share = indexed / indexable.length;
   if (share < 0.5) {
     return `only ${Math.round(share * 100)}% of sampled body tokens are indexed — this build indexed `
       + `titles without the lesson bodies (avgDocLen ${index.avgDocLen})`;
