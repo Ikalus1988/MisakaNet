@@ -12,6 +12,8 @@ permissions:
 jobs:
   stale:
     runs-on: ubuntu-latest
+    # A job without a bound holds its runner until the platform default (six hours).
+    timeout-minutes: 10
     steps:
       - uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93  # v11
         with:

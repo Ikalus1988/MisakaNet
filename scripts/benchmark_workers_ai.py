@@ -58,8 +58,8 @@ import re
 import subprocess
 import sys
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 from pathlib import Path
 
 ACCOUNT = "6b92325b505f2b76aec49e9fe4195d31"

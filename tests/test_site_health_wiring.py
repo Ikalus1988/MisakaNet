@@ -22,7 +22,6 @@ is weather, and a probe that reddens the day on weather is a probe people mute.
 from __future__ import annotations
 
 import json
-import os
 import shlex
 import subprocess
 import sys

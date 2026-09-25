@@ -106,8 +106,13 @@ jobs:
         working-directory: pr-code
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Through the environment, not interpolated into the script: both values come from the pull
+          # request, and `${{ … }}` inside `run:` is substituted *before* bash parses — so a crafted ref
+          # would be parsed as shell. (Open Code Review's GitHub Actions ruleset, "Script injection";
+          # branch names may contain `$`, backticks and parentheses.)
+          BASE_REF: ${{ steps.pr.outputs.baseRef }}
         run: |
-          BASE="${{ steps.pr.outputs.baseRef }}"
+          BASE="$BASE_REF"
           echo "Rebasing against $BASE..."
           git rebase --signoff "origin/$BASE" 2>&1 || {
             echo "Rebase with base failed — trying HEAD~N fallback"
@@ -143,13 +148,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUSH_TOKEN: ${{ secrets.SHELDON_PAT }}
+          HEAD_REF: ${{ steps.pr.outputs.headRef }}
         run: |
           if [ -z "${PUSH_TOKEN:-}" ]; then
             echo "::warning::SHELDON_PAT is empty — the sign-off was applied locally but NOT pushed. A push with GITHUB_TOKEN would create held runs (`action_required`) on the new head, and with `DCO / Signed-off-by` a required check that leaves this PR unmergeable — worse than leaving it red, where the contributor can still fix it by hand. Set the secret and re-run this workflow, or use the manual commands in the DCO comment."
             exit 0
           fi
           git remote set-url origin "https://x-access-token:${PUSH_TOKEN}@github.com/${{ github.repository }}.git"
-          git push --force-with-lease origin HEAD:refs/heads/${{ steps.pr.outputs.headRef }} 2>&1 || {
+          git push --force-with-lease origin "HEAD:refs/heads/$HEAD_REF" 2>&1 || {
             echo "Force push failed — branch may have diverged"
             exit 1
           }
