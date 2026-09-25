@@ -69,7 +69,11 @@ jobs:
           # INSERT per row, or one per table; quoted identifiers or not) is wrangler's business, and a
           # check that encodes my guess about it would fail on the next wrangler release instead of on
           # a bad dump.
-          SIZE=$(stat -c%s "$DUMP")
+          # `wc -c`, not `stat -c%s`: the GNU spelling is not a size on macOS/BSD (which spells it
+          # `-f%z`), and under `set -e` it killed this step *before* any assertion ran — the step's
+          # stdout on the macos-latest legs was the `ls -l` line above and nothing else, so the guard
+          # had no verdict to give. `wc -c` is POSIX and needs no per-platform branch.
+          SIZE=$(wc -c < "$DUMP" | tr -d '[:space:]')
           INSERTS=$(grep -ciE '^[[:space:]]*insert into' "$DUMP" || true)
           TABLES=$(grep -ciE '^[[:space:]]*create table' "$DUMP" || true)
           LESSONS=$(grep -ciE '(create table|insert into)[^(]*lessons' "$DUMP" || true)

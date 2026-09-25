@@ -11,6 +11,13 @@ This runs the step's own shell with a stub `wrangler` on PATH, which is what kee
 honest: the stub can be told to produce a good dump, an empty one, or a schema-only one, and the test
 checks the guard's verdict on each. A guard that only runs when a human is watching is the thing this
 file is here to prevent.
+
+The stub PATH also carries a **BSD `stat`**, on every platform, because that is how this file went
+red on the `macos-latest` legs for weeks: the step sized the dump with GNU's `stat -c%s`, macOS
+rejects that spelling, and `set -e` then killed the step before any assertion ran — its stdout was
+the `ls -l` line and nothing else, so the guard never gave a verdict at all. Five tests failed there
+while every ubuntu leg stayed green. Binding the BSD dialect locally keeps that class of mistake
+from reaching CI in the first place.
 """
 from __future__ import annotations
 
@@ -65,6 +72,18 @@ def write_stub(bindir: Path, dump: str) -> None:
     (bindir / "wrangler").chmod((bindir / "wrangler").stat().st_mode | stat.S_IEXEC)
     (bindir / "npm").write_text("#!/usr/bin/env bash\nexit 0\n")
     (bindir / "npm").chmod((bindir / "npm").stat().st_mode | stat.S_IEXEC)
+    # BSD `stat`, deliberately — see the module docstring. `-c` does not exist there and the size is
+    # `-f%z`, so a step that reintroduces the GNU spelling fails here instead of only on macOS.
+    (bindir / "stat").write_text(
+        "#!/usr/bin/env bash\n"
+        'case "${1:-}" in\n'
+        "  -f%z) shift ;;\n"
+        '  -f) [ "${2:-}" = "%z" ] && shift 2 ;;\n'
+        '  *) echo "stat: illegal option -- ${1#-}" >&2; exit 1 ;;\n'
+        "esac\n"
+        'wc -c < "$1" | tr -d "[:space:]"\n'
+    )
+    (bindir / "stat").chmod((bindir / "stat").stat().st_mode | stat.S_IEXEC)
 
 
 def run_export(tmp_path: Path, dump: str) -> subprocess.CompletedProcess:
