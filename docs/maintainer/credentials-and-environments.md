@@ -323,7 +323,36 @@ workflows, so it cannot move into an environment with reviewers. `AI_GATEWAY_TOK
 are model-provider keys used by workflows that also must run unattended. Moving any of them would break
 the automation that needs them; the mitigation is that they cannot deploy anything.
 
-## 6. Known gaps
+## 6. When a credential has been published (2026-09-25, #1982)
+
+A token in a **published document** is a different incident from a token in a secret store, and it needs
+a different reflex. On 2026-09-25 a docs-only PR was one merge away from landing two live-looking node
+tokens: both smoke reports quoted `"Authorization": "Bearer mcp_…"` verbatim.
+
+**The first thing to understand is that editing the file does not fix it.** A fork PR's diff is public
+the moment it is opened, so the value is already out. Removing the line (or closing the PR without
+merging) is necessary and insufficient — the string must be treated as burned.
+
+What can actually be done:
+
+| | |
+|---|---|
+| Redact the document | replace with `Bearer <redacted>` or `$MISAKANET_TOKEN`, so main is not a copy of a live credential |
+| Re-issue the node | re-register with the same `client_id` to get a fresh node and token; that is the only self-service lever, and it is the *right* one for the reporter |
+| Kill it now | delete the stored keys — `mcp_token:<token>` and `node:MisakaNNNN` in D1/KV (`workers/register-proxy-sw.js:2517-2545`, 30-day TTL). **There is no revocation endpoint**, so this is a manual ops action rather than an API call |
+| Assume the write path | until expiry, whoever holds the string can call the Bearer-only tools (`misakanet_write_lesson`, `misakanet_preflight`) as that node |
+| **Invalidate the reason it merged** | if an auto-merge label or auto-merge was enabled on the PR, turn it off while the tokens are in the branch — otherwise the next passing check lands them |
+
+**Why nothing caught it**, because the reasons are worth more than the incident: the auditor's
+`Secret Scan` step read `workers/**` only *and* was gated on `scope == 'full'`, so a docs-only PR never
+ran it; HOL Guard covers `lessons/`, `scripts/` and `workers/`, not `docs/`; and the audit's test suite
+was aborting during collection on the Python version that job pinned (§4.5's sibling bug, fixed the same
+day). Four overlapping scanners, none of them looking at the file. `scripts/check_published_secrets.py`
+now scans `docs/**` and `lessons/**` prose **for every scope**, with a rule that separates a token from
+the tool names and placeholders this repository is full of (`MIN_DISTINCT` — the measurement is in that
+file's docstring).
+
+## 7. Known gaps
 
 * The repository-level `CLOUDFLARE_API_TOKEN` was a leftover from the migration: nothing read it, and
   the name was the *wrong* name (the test in §1 requires the Cloudflare credential to be referenced as
