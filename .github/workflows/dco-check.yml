@@ -36,6 +36,8 @@ permissions:
   contents: read
   pull-requests: read
   checks: write
+  # The verdict is reported twice on purpose — see the note above `createCommitStatus` below.
+  statuses: write
 
 jobs:
   dco:
@@ -44,6 +46,7 @@ jobs:
     if: github.event.pull_request.user.login != 'release-please[bot]'
     steps:
       - name: Check commits and report DCO status
+        id: dco
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         with:
           script: |
@@ -126,6 +129,11 @@ jobs:
                 output: { title: 'Developer Certificate of Origin', summary, text },
               });
               core.info(`${CHECK_NAME} on ${headSha}: ${pass ? 'success' : 'failure'}`);
+              // The verdict for the commit-status step below, which must report *this* value and never the
+              // step's own outcome: this step succeeds even when the verdict is `failure` (a red check run
+              // is a report, not an error), so `steps.dco.outcome` would turn an unsigned commit into a
+              // green required context. That is the one mistake this file must not make.
+              core.setOutput('passed', pass ? 'true' : 'false');
             } catch (e) {
               // The consequence is not "this run looks odd": the required check is missing, so GitHub
               // holds the PR at "Expected — waiting for status to be reported" indefinitely and no
@@ -133,6 +141,67 @@ jobs:
               core.setFailed(`Could not create the required check \`${CHECK_NAME}\` on ${headSha}: ${e.message}. `
                 + 'Until it exists, this PR cannot satisfy the ruleset on `main` — check that this '
                 + 'workflow has `checks: write` and that it still triggers on `pull_request_target`.');
+            }
+
+      # The same verdict, as a **commit status** as well as a check run.
+      #
+      # `DCO / Signed-off-by` is one of the three required contexts on `main`, and a check run has always
+      # been enough for it — except when it is not, and the failure is invisible: measured 2026-09-25 on
+      # #2209, the head carried a green `DCO / Signed-off-by` check run (two of them, after a
+      # `workflow_dispatch` re-report) and the ruleset still answered
+      #
+      #     Repository rule violations found
+      #     Required status check "DCO / Signed-off-by" is expected.
+      #
+      # while `PUT /pulls/2209/merge` returned 405 and the PR sat `mergeable_state: blocked`. Posting the
+      # *same* verdict through the statuses API (`POST /statuses/{sha}`, context `DCO / Signed-off-by`)
+      # merged it immediately (200, squash). Check suites and check runs on both that PR and a PR that
+      # merged minutes earlier were structurally identical, so the mechanism is not established here — what
+      # is established is that the context is satisfied by either form, and that a required context which
+      # can be unsatisfied by an invisible evaluation is the definition of the "merge ghost" this
+      # repository has been working around for weeks (`docs/agents/repo-operations.md` §4).
+      #
+      # Best-effort on purpose: the check run is the report a human reads, so a failure here warns and
+      # does not replace a real verdict with an infrastructure error.
+      - name: Report the same verdict as a commit status
+        if: always()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        env:
+          DCO_PASSED: ${{ steps.dco.outputs.passed }}
+        with:
+          script: |
+            const CHECK_NAME = 'DCO / Signed-off-by';
+            const verdict = process.env.DCO_PASSED;
+            if (verdict !== 'true' && verdict !== 'false') {
+              // The first step never reached its verdict (the check run itself could not be created, and
+              // that step failed loudly). Reporting `success` here would be inventing a pass.
+              core.warning('no DCO verdict to mirror — the check-run step did not report one');
+              return;
+            }
+            const pass = verdict === 'true';
+            const pullNumber = context.payload.pull_request
+              ? context.payload.pull_request.number
+              : Number((context.payload.inputs || {}).pr_number || 0);
+            if (!pullNumber) {
+              core.info('no pull request to report on');
+              return;
+            }
+            const { data: pr } = await github.rest.pulls.get({ ...context.repo, pull_number: pullNumber });
+            try {
+              await github.rest.repos.createCommitStatus({
+                ...context.repo,
+                sha: pr.head.sha,
+                context: CHECK_NAME,
+                state: pass ? 'success' : 'failure',
+                description: pass
+                  ? 'All commits carry Signed-off-by.'
+                  : 'One or more commits are missing Signed-off-by.',
+              });
+              core.info(`commit status ${CHECK_NAME} on ${pr.head.sha}: ${pass ? 'success' : 'failure'}`);
+            } catch (e) {
+              core.warning(`could not post the commit status \`${CHECK_NAME}\`: ${e.message} — the check run `
+                + 'above is unaffected, but a required context only the statuses API can satisfy would now '
+                + 'be missing (see the note in this file)');
             }
 
       # The DCO *comment* lives in pr-checks.yml (it needs SHELDON_PAT to write on a fork PR); this
