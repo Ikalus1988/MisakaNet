@@ -23,6 +23,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from posix_shell import require_posix_shell  # a real POSIX shell, or a skip
 
 REPO = Path(__file__).resolve().parent.parent
 WORKFLOW = REPO / ".github" / "workflows" / "d1-backup.yml"
@@ -73,7 +74,7 @@ def run_export(tmp_path: Path, dump: str) -> subprocess.CompletedProcess:
     output = tmp_path / "gh_output"
     output.write_text("")
     return subprocess.run(
-        ["bash", "-c", export_script()],
+        [require_posix_shell(), "-c", export_script()],
         cwd=REPO,
         capture_output=True, text=True,
         env={

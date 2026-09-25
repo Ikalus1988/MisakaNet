@@ -26,6 +26,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from subprocess_env import child_env  # tests/subprocess_env.py
 
 REPO = Path(__file__).resolve().parent.parent
 WORKFLOW = REPO / ".github" / "workflows" / "cf-diagnostics.yml"
@@ -133,12 +134,11 @@ def probe():
         return subprocess.run(
             [sys.executable, "-c", python_block(step_script())],
             capture_output=True, text=True,
-            env={
-                "PATH": "/usr/bin:/bin",
+            env=child_env({
                 "CLOUDFLARE_ACCOUNT_ID": ACCOUNT,
                 "CLOUDFLARE_API_TOKEN": "stub-token",
                 "CF_API_BASE": base,
-            },
+            }),
         )
     return run
 
