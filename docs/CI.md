@@ -111,6 +111,24 @@
 | `arch-review.yml` | Monthly Architecture Review | 定时（月度）, 手动 |  |
 | `workers-builds-watch.yml` | Site build watch（站点部署流水线 `Workers Builds: misakanet-web` 变红时开 issue；**只报状态变化**、不刷屏，也不把该 check 加进规则集必查项——理由见 #2136）| check_suite（仅 Cloudflare app、仅 main）, 定时, 手动 | `*/30 * * * *` |
 
+## 有意保持安静的自动化（#1826 的结论，2026-09-25 复核）
+
+这一节存在的理由：`#1826` 的审计把"跑了很多次但那个有用的分支从没走到"列成清单，其中几条**不是坏掉的**，
+而是**设计上就不会触发**。静默空转确实比没有更贵（它让人以为有人管），但**把"设计如此"和"坏了"分开**才是重点——
+下面每条都带实测状态与"什么情况下它会真的动"。下次审计不必重新发现一遍。
+
+| workflow | 实测（2026-09-25） | 它为什么安静 | 什么会让它动 |
+|---|---|---|---|
+| `adopt-pr.yml` | 70 次运行 / 70 次 skipped；`/adopt` 真实使用 **0** 次 | 入口是维护者在 fork PR 上评论 `/adopt`；这条路径从没被用起过 | 有人真的评论 `/adopt`（`docs/maintainer/adopt-fork-pr.md`）。**删掉它是 owner 的选项**，不是维护者的默认动作 |
+| `stale.yml` | 97 次 success；`label:stale` 1 条；自动关闭评论 0 条 | 豁免面很大（`keep`/`registered`/`help wanted`/`bounty` + `exempt-all-milestones`），而本仓多数开放项都带其中至少一个 | 出现既不豁免、又 14 天（PR）/30 天（issue）无活动的项。**这是它的设计目的**：宁可空转，也不要在一堆 bounty 上乱贴 stale |
+| `lesson-notify.yml` | 2953 次运行：2946 skipped / 2 success / 5 failure | 只在 `new-lesson` 标签出现时才有意义，而该标签全仓只有 6 条 | 新建的 lesson PR 打上 `new-lesson`。投递成功与否**不可见**——这是它真正的短板，要改不是关 |
+| `intake-kind-audit.yml` | 3 次 clean；2026-09-25 手工重跑仍然 clean（37 条 open `mcp-intake`） | 语料里**确实**没有错分 | 出现"内容读起来是问题、却被当课程处理"的 intake。这条以前无法区分"真的干净"和"检测从不触发"，现在 `tests/test_intake_kind_audit.py` 用夹具证明检测能触发、且摘要句与 workflow 的 grep 是同一条 |
+| `automation_output_audit.py` | 2026-09-21 定时运行 **success**（job `automation-output-audit`） | push 触发时该 job 会被 skip，只有每周一 07:00 的窗口才跑 | 每周一。`#1826` 记的"这个 job 一次都没跑过"是因为当时窗口还没到——**已经跑过了** |
+
+**已修好的那几条**（同一次复核）：`pr-checks.yml` 的 Auto-Merge Gate（布尔比 `true` 而不是 GraphQL 的 `MERGEABLE` 枚举）、
+`auto-merge-docs.yml` 的触发补上 `labeled`、`auto-draft.yml` 不再依赖没有写入者的 `crash-reports/` 路径、
+以及 `claim-enforcer.yml` 的窗口（4h → 与文档一致的 **8h**，并把数字收进一个变量，见 `tests/test_claim_window.py`）。
+
 ## 常见失败与修复路径
 
 | 失败信号 | 原因 | 修复 |
