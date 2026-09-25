@@ -20,9 +20,18 @@ permissions:
   issues: read
   pull-requests: write   # was read; the feed lands through the auto-merging PR, not a push to main
 
+# Two runs of this job would each regenerate `docs/data/activity.json` and push it through the lander,
+# which force-pushes its own stable branch — serialised like its siblings (`update-lessons`,
+# `sync-node-counter`, `leaderboard-watch`), not cancelled: an interrupted run leaves the feed stale.
+concurrency:
+  group: build-feed
+  cancel-in-progress: false
+
 jobs:
   build-feed:
     runs-on: ubuntu-latest
+    # A job with no bound holds its runner until the platform default (six hours).
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
