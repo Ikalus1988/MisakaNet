@@ -11,7 +11,7 @@ pip install -r requirements.txt        # core deps **and this checkout** (`-e .`
 npm install                            # devDep: wrangler（部署 worker 用）
 ```
 
-- **Python ≥ 3.10**；CI 跑 3.11 / 3.12 / 3.13 × ubuntu / macos / windows 矩阵
+- **Python ≥ 3.10**（库、脚本、stdio server 的下限；ruff 的 `target-version` 也是 `py310`）；**跑测试套件需要 3.11+**——`tests/` 里有 `import tomllib`（3.11 才进标准库），3.10 下 pytest 会在**收集阶段**就退出（`ModuleNotFoundError`，exit 2）：那不是「测试失败」，而是「一个都没跑」。CI 的必需矩阵是 3.11 / 3.12 / 3.13 × ubuntu / macos / windows。⚠️ 这个下限是**推导**出来的，**不要手写数字**：`tests/test_workflow_python_floors.py` 从 `tests/` 的导入里算出它，并断言每个跑 pytest 的 job 都不低于它（2026-09-25：`pr-checks.yml` 曾钉 3.10，于是**每个 PR** 都带着红的 auditor，3 个待合 PR 因此卡住）
 - Python 侧**零外部依赖**是核心设计目标（`requirements.txt` 就那四个包）——新增依赖前先问是否必要
 - **Worker 侧是纯 JS**（Cloudflare Workers，无构建步骤、无 bundler）。不要试图在 worker 里
   import Python；Python 脚本若要在 worker 复用逻辑，只能移植（见 `injection_scan.py` → worker
