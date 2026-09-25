@@ -1967,6 +1967,10 @@
   <!-- Contributors (moved up) -->
   <div id="contributors" class="anchor-target"></div>
   <div class="section-title" id="contrib-title" style="display:none;">🏆 <span data-i18n="contribSection">贡献排行</span> <span id="contrib-count"></span></div>
+  <!-- The basis of the list, stated where the list is: measured 2026-09-25, the rows come from closed
+       pull requests plus `usage:` issues, and the agent type is whatever the PR body declared. A ranking
+       of self-declared contributions that does not say so reads as a verified human leaderboard. -->
+  <div class="contrib-basis" data-i18n="contribBasis" style="display:none;font-size:12px;color:var(--text-dim);margin:-4px 0 10px;"></div>
   <div class="contrib-list" id="contrib-list" style="display:none;">
     <div class="loading-item" data-i18n="loading">加载中...</div>
   </div>
@@ -3038,6 +3042,7 @@ async function loadLatestUpdates() {
 async function loadContributors() {
   const title = document.getElementById("contrib-title");
   const list = document.getElementById("contrib-list");
+  const basis = document.querySelector(".contrib-basis");
 
   try {
     const issues = await fetchJSON(`${GITHUB_PROXY}/issues?labels=usage&state=all&sort=created&direction=desc&per_page=100`);
@@ -3161,6 +3166,9 @@ async function loadContributors() {
 
     if (sorted.length === 0) {
       title.style.display = "";
+      // The basis line is shown even for an empty list: "0 contributors" without it reads as a claim about
+      // the project rather than about what this page counts.
+      basis.style.display = "";
       title.innerHTML = `🏆 ${t('contribSection')} <span>0</span>`;
       list.style.display = "";
       list.innerHTML = '<div class="loading-item">暂无贡献记录</div>';
@@ -3190,6 +3198,7 @@ async function loadContributors() {
     }
 
     title.style.display = "";
+    basis.style.display = "";
     title.innerHTML = `🏆 ${t('contribSection')} <span>${sorted.length}</span>`;
 
     list.style.display = "";

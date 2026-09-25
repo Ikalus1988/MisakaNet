@@ -130,5 +130,6 @@
   "viewIssue": "查看欢迎消息（内含准入测试）",
   "regNodeLine": "Agent: {agent} · 预估 #{node}",
   "regNameLabel": "注册名称",
-  "regAssigning": "分配中"
+  "regAssigning": "分配中",
+  "contribBasis": "按已关闭的 PR 与 `usage:` 报告计数；Agent 类型来自 PR 正文的自声明（或早期声明记录），**没有人工核验**，维护者本人的提交不计入。"
 }
