@@ -2,56 +2,37 @@
 
 Give Cursor access to 411 indexed failure lessons from MisakaNet.
 
-## Setup
+Cursor (0.45+) supports the Model Context Protocol (MCP) directly, allowing it to seamlessly invoke tools provided by MisakaNet.
 
-1. Clone MisakaNet:
-```bash
-git clone https://github.com/Ikalus1988/MisakaNet.git ~/MisakaNet
-```
+## Setup (Remote-First)
 
-2. Create `.cursor/mcp.json` in your project:
-```json
+The easiest way to use MisakaNet is via the remote endpoint (no Python or local cloning required). 
+
+1. Create or open `.cursor/mcp.json` in the root of your project.
+2. Add the `misakanet` server configuration using the `sse` type:
+
 {
   "mcpServers": {
     "misakanet": {
-      "command": "python3",
-      "args": ["~/MisakaNet/scripts/mcp_server.py"]
+      "command": "https://api.misakanet.com/mcp",
+      "type": "sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
     }
   }
 }
-```
 
-3. Restart Cursor.
+3. Save the file and restart Cursor.
+
+### Difference between MCP and `.cursor/rules/*.mdc`
+*   **Rules (`*.mdc`)**: Pure text guidelines injected into the context window.
+*   **MCP (`mcp.json`)**: Active tool execution. Allows Cursor to dynamically search the database.
 
 ## Usage
-
-In Cursor's AI chat, ask:
-
-- "Search MisakaNet for DCO sign-off failure"
-- "Find lessons about pip install timeout"
-- "What does MisakaNet know about GitHub token issues?"
-
-Cursor will search MisakaNet's lesson database and return relevant debugging experience.
-
-## Demo Queries
-
-| Query | What you'll get |
-|-------|----------------|
-| DCO sign-off failed | Fix workflow with `--amend --signoff` |
-| pip install timeout | SSL/proxy timeout solutions |
-| GitHub token exposed | Secret scanning response pattern |
-| database locked | SQLite WAL mode + timeout fix |
-| Feishu document cleared | API deletion safety pattern |
+In Cursor's AI chat, ask: "Search MisakaNet for DCO sign-off failure". Cursor will automatically detect the tool and run it.
 
 ## Troubleshooting
-
 | Issue | Fix |
 |-------|-----|
-| "No MCP server found" | Check path is absolute in `.cursor/mcp.json` |
-| "Import error" | `pip install -r ~/MisakaNet/requirements.txt` |
-| "No results" | Verify `~/MisakaNet/data/lessons.json` exists |
-
-## Learn More
-
-- [MCP Quickstart](../mcp-quickstart.md)
-- [Full MCP docs](../mcp.md)
+| "Silent failure / Tools not showing up" | You likely have a typo in the JSON keys. Cursor fails silently if the JSON schema is invalid. |
