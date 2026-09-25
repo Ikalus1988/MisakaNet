@@ -8,6 +8,12 @@
 > 来源：#1767 的 B5 → **#1784**；「数据边界」一节的依据是
 > `docs/maintainer/blueprint-and-strategy-review-2026-09-16.md` §2.4（"机构真正会问的三件事"）
 > 相关：`docs/maintainer/setup-health-ci.md`（`--report --strict` 接 CI）、`packages/misakanet-setup/README.md`（全部 flag）
+>
+> **评审入口（2026-09-25 新增）**：面向评审者的落地页是
+> [`/enterprise/`](https://misakanet.org/enterprise/)，它把本文 §4 与 §4.7 组织成"路由到证据"的形式，
+> 并**同等醒目地**列出目前还没有的东西（无合规认证、无组织级审计导出、托管端点无自托管形态）。
+> 本文仍是详细版（含四种 MDM 的配方）。两条路径都由
+> `tests/test_enterprise_page_truth.py` 钉住，避免其中一边悄悄变成过期的公开说法。
 
 本文写给**推工具的人**（IT / 平台工程），不是写给点 `npx` 的那个人。目标只有两个：**静默地装**、
 **拿回机器可读的结果**。安全评审要的「数据边界」在第 4 节，那一节可以直接复制给评审。
