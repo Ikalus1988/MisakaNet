@@ -155,3 +155,40 @@ def test_there_is_only_one_reader_named_fetchfromgithub():
         "with no default, the deadline, and the (path, ref) checks in this file — a second one starts "
         "from a clean slate and a default"
     )
+
+
+LIB = REPO / "workers" / "lib" / "handlers.js"
+FUNCTION_RE = re.compile(r"^\s*(?:async\s+)?function\s+\w+|^\s*(?:const|let)\s+\w+\s*=\s*(?:async\s*)?\(", re.M)
+
+
+def test_the_shared_module_keeps_no_function_of_its_own():
+    """The copies in `workers/lib/handlers.js` were live code's forks, and they drifted the moment they
+    were written — so the module keeps constants and nothing else.
+
+    Read the file rather than trusting this docstring: every implementation it carried (`searchLessons`,
+    `tokenize`, `fetchLessonContent`, `fetchFromGitHub`, `fetchPublicJson`, `getWithCache`) was
+    unreachable from any test, because nothing imported it except the worker's destructuring of three
+    constants. The drift is on the record: its `fetchLessonContent` never got the B35 guard, and its
+    `fetchFromGitHub` kept the `ref = "data"` default #1820 removed. A "keep them in sync" rule would
+    need a test per function per change; the rule that no copy exists needs one test, this one.
+    """
+    code = "\n".join(_code_lines(LIB))
+    found = FUNCTION_RE.findall(code)
+    assert not found, (
+        f"{LIB.relative_to(REPO)} defines functions again ({[f.strip() for f in found]}). Implementations "
+        "belong in workers/register-proxy-sw.js, where the tests and the live callers are; a helper in "
+        "this module is a fork nothing exercises"
+    )
+    assert code.count("export") == 1, "one export block with the constants"
+
+
+def test_the_shared_constants_are_the_ones_the_worker_destructures():
+    """The module's entire contract — asserted against the consumer, not against a list here."""
+    from_name = re.findall(r"const\s*\{([^}]*)\}\s*=\s*_handlers", (REPO / "workers" / "register-proxy-sw.js")
+                           .read_text(encoding="utf-8"))
+    assert from_name, "the worker no longer destructures anything from lib/handlers.js"
+    wanted = {name.strip() for name in from_name[0].split(",") if name.strip()}
+    exported = set(re.findall(r"^\s*([A-Z_]+),\s*$", LIB.read_text(encoding="utf-8"), re.M))
+    assert wanted == exported == {"GITHUB_API", "REPO", "PUBLIC_DATA_BASE"}, (
+        f"worker imports {sorted(wanted)}, module exports {sorted(exported)}"
+    )
