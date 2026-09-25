@@ -150,7 +150,11 @@ def test_the_action_alias_follows_each_release():
     assert re.search(r"git tag -f v1\b", text), (
         "release-please.yml tags the release but never moves `v1`, so the action alias is "
         "frozen at the first commit it was pointed at")
-    assert re.search(r"git push -f origin v1\b", text), (
+    # The push is spelled `git -c http.extraheader="$AUTH_HEADER" push -f origin v1` since 2026-09-25:
+    # the checkout no longer persists credentials (a PAT push alongside them is attributed to the bot and
+    # the new head's runs are held), so each push names its own. The property is the same one — the alias
+    # is pushed — so the rule reads the property, not the spelling.
+    assert re.search(r"push\s+(-f|--force)\s+origin\s+v1\b", text), (
         "the alias is moved locally but never pushed, so consumers never see it")
     # Ordering matters in one direction only: the versioned tag has to exist before it is used
     # as the thing `v1` points at, and the release notes are generated from it.
