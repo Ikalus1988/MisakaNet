@@ -11,7 +11,7 @@
 > 许多 workflow 是机器人/数据管道，失败常在外部依赖（D1、registry、配额）。
 
 
-## 质量门禁（17）
+## 质量门禁（21）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -37,7 +37,7 @@
 | `pr-shape-guard.yml` | PR Shape Guard | PR(目标) |  |
 | `shadow-branch.yml` | Shadow Branch - External Agent Isolation | PR |  |
 
-## 数据/索引（16）
+## 数据/索引（22）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -64,7 +64,7 @@
 | `update-lessons.yml` | Update lessons.json | 定时, 手动 | `0 0 * * *` |
 | `nightly-mirror-consistency.yml` | Nightly Mirror Consistency（镜像一致性）| 定时 |  |
 
-## 发布/部署（8）
+## 发布/部署（12）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -81,7 +81,7 @@
 | `misakanet-setup-publish.yml` | Publish @misaka-net/misakanet-setup | tag push, 手动 |  |
 | `publish-mcp-registry.yml` | Publish to MCP Registry（等 PyPI 落地后发布）| 手动 |  |
 
-## 社区/机器人（12）
+## 社区/机器人（15）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -101,7 +101,7 @@
 | `protect-pinned-issues.yml` | Protect long-running issues | issues |  |
 | `pr-audit-watch.yml` | PR Audit Watch（PR 审查巡检）| 定时, 手动 | `17 */2 * * *` |
 
-## 基础设施（3）
+## 基础设施（6）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -110,6 +110,7 @@
 | `intake-benchmark.yml` | Intake Bot Benchmark | push, 手动 |  |
 | `arch-review.yml` | Monthly Architecture Review | 定时（月度）, 手动 |  |
 | `workers-builds-watch.yml` | Site build watch（站点部署流水线 `Workers Builds: misakanet-web` 变红时开 issue；**只报状态变化**、不刷屏，也不把该 check 加进规则集必查项——理由见 #2136）| check_suite（仅 Cloudflare app、仅 main）, 定时, 手动 | `*/30 * * * *` |
+| `site-health.yml` | Site Health（`scripts/site_health_check.py` 的 CI 调用点：每天探线上首页与 `/api/*` 等 6 个入口 + 首页关键标记；**连续 3 次都不过才算失败**——实测从真实机器发出约 1/4 请求会在 TLS 握手超时，单次失败是天气不是故障。报告进 step summary，并作为 artifact 留存）| 定时, 手动 | `37 5 * * *` |
 
 ## 有意保持安静的自动化（#1826 的结论，2026-09-25 复核）
 

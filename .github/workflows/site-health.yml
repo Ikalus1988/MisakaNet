@@ -1,0 +1,100 @@
+name: Site Health
+
+# `scripts/site_health_check.py` was written for #783 and, until now, the only recorded use was a human
+# running it off `docs/release-checklist.md`. The newest snapshot in `docs/maintainer/` is dated
+# 2026-08-10, so for six weeks nobody measured the public surface between releases — and a probe that
+# only runs when someone remembers is a belief, not a check. The repository already states the rule for
+# `scripts/doctor.py` ("every check must have a CI call site", `docs/agents/repo-operations.md`,
+# enforced by `tests/test_doctor_reach.py`); this is the same rule applied to the other probe script.
+#
+# Why the runner and not the dev box it was written on: measured 2026-09-26, three of these six probes
+# timed out at the TLS handshake from that box while `curl` answered `200` for two of the same paths on
+# the next try. A network that drops roughly one request in four cannot tell "the site is down" from "my
+# laptop is", and either conclusion written down from there would be worse than no measurement.
+on:
+  schedule:
+    # Daily at 05:37 UTC — off the hour, after the corpus sync (~03:00) and clear of the weekly backup
+    # (Mon 04:10) and the Monday gate audits (06:17 / 06:43), so a slow probe never queues behind them.
+    - cron: '37 5 * * *'
+  workflow_dispatch:
+    inputs:
+      base-url:
+        description: 'Probe something other than https://misakanet.org'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-health
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          # Stdlib only — the script imports nothing outside `json`/`urllib`. This matches the suite's
+          # floor rather than the script's so the pin does not need revisiting on its own.
+          python-version: "3.11"
+
+      # Three attempts, then a verdict. One attempt is a measurement; three in a row is a claim about the
+      # service. The repository has the receipt for why this matters: `docs/maintainer/handoff-2026-09-24.md`
+      # records that ~1 request in 4 to misakanet.org timed out from a real machine while the service was
+      # fine. A probe that reddens the day on one dropped TLS handshake is weather, not a gate — and
+      # weather is what people mute.
+      - name: Probe the public surface
+        env:
+          # Through the environment, not interpolated into the script: a `workflow_dispatch` input is free
+          # text, and `${{ inputs… }}` inside `run:` is how a dispatch input becomes shell code.
+          BASE_URL: ${{ inputs.base-url }}
+        run: |
+          set -uo pipefail
+
+          BASE_ARGS=()
+          if [ -n "$BASE_URL" ]; then BASE_ARGS=(--base-url "$BASE_URL"); fi
+
+          ATTEMPTS=3
+          status=1
+          attempt=0
+          for attempt in $(seq 1 "$ATTEMPTS"); do
+            # `--strict` is the verdict; the table is printed either way, so a failing run still says
+            # *which* endpoint and *how* it failed instead of only that something was wrong.
+            python3 scripts/site_health_check.py "${BASE_ARGS[@]}" --strict > "attempt-$attempt.md" 2>&1
+            status=$?
+
+            echo "### Attempt $attempt/$ATTEMPTS — exit $status" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            cat "attempt-$attempt.md" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+
+            if [ "$status" -eq 0 ]; then
+              break
+            fi
+            echo "::warning::attempt $attempt of $ATTEMPTS was not OK — retrying, because one bad probe is a measurement and three are a verdict"
+            if [ "$attempt" -lt "$ATTEMPTS" ]; then sleep 30; fi
+          done
+
+          cp "attempt-$attempt.md" site-health-report.md
+
+          if [ "$status" -ne 0 ]; then
+            echo "::error::the public surface has been unhealthy on $ATTEMPTS consecutive probes — see the report in the job summary"
+          fi
+          exit "$status"
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: site-health-report
+          path: |
+            site-health-report.md
+            attempt-1.md
+            attempt-2.md
+            attempt-3.md
+          if-no-files-found: warn
