@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-24T21:36:32.854898+00:00",
+  "generated_at": "2026-09-25T05:06:29.035709+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "ops(cf): the build token is identified, not assumed — the trigger's UUID is printed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2164",
-      "timestamp": "2026-09-24T15:29:01Z",
+      "title": "fix(site): the contributor wall listed commit scopes as contributors — \"worker\", \"ci\", \"cf\"",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2195",
+      "timestamp": "2026-09-25T05:04:26Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(credentials): what the site's build token needs, exactly (§4.5.1)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2163",
-      "timestamp": "2026-09-24T15:12:07Z",
+      "title": "fix(leaderboard): a bot sat at rank #2, and the snapshot could never correct itself",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2194",
+      "timestamp": "2026-09-25T04:58:37Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(site): the homepage's two rotten blocks — a frozen announcement and a registrations list nobody needed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2161",
-      "timestamp": "2026-09-24T13:54:37Z",
+      "title": "docs(skill): the skill taught a hosted-only tool without saying which surface",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2193",
+      "timestamp": "2026-09-25T04:39:16Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ops(ci): the watcher said it \"opened\" an issue it had commented on",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2160",
-      "timestamp": "2026-09-24T12:44:49Z",
+      "title": "fix(ci): the claim window said 8 hours and released after 4 — plus #1826 re-adjudicated",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2192",
+      "timestamp": "2026-09-25T04:34:14Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ops(ci): a red site build becomes an issue instead of a red check nobody was required to look at (#2136)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2159",
-      "timestamp": "2026-09-24T12:35:45Z",
+      "title": "feat(doctor): read the deployed version back, so a self-reported number has a live gate",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2191",
+      "timestamp": "2026-09-25T04:19:02Z",
       "source": "github"
     },
     {
