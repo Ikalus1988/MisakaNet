@@ -87,26 +87,31 @@ def test_a_local_only_exemption_names_a_real_check_and_says_why():
 
 
 def test_no_flag_is_the_only_way_to_reach_a_check_silently():
-    """Every selection must name its checks: `selection([])` is all of them, and each flag maps to a
-    subset that is a *subset*, never a superset invented at the call site."""
-    assert doctor.selection([]) == [name for name, _ in doctor.CHECKS]
-    for flag, name in doctor.FLAG_CHECKS.items():
-        assert name in [n for n, _ in doctor.CHECKS], (flag, name)
-        assert doctor.selection([flag]) == [name], flag
-    # Flags compose rather than override — `--kv-only --remote-only` is a legitimate pre+post request.
-    both = doctor.selection(["--kv-only", "--remote-only"])
-    assert set(both) == {"config", "remote"}, both
+    """Every selection must name its checks: bare `doctor.py` is everything except the post-deploy-only
+    ones, and each flag selects exactly the checks it declares."""
+    assert doctor.selection([]) == [name for name, _ in doctor.CHECKS
+                                    if name not in doctor.POST_DEPLOY_ONLY]
+    for flag, names in doctor.FLAG_CHECKS.items():
+        for name in names:
+            assert name in [n for n, _ in doctor.CHECKS], (flag, name)
+        assert doctor.selection([flag]) == list(names), flag
+    # Flags compose rather than override — `--kv-only --post-deploy` is a legitimate request.
+    both = doctor.selection(["--kv-only", "--post-deploy"])
+    assert set(both) == {"config", "remote", "deployed-version"}, both
 
 
 def test_the_deploy_probe_runs_after_the_deploy():
     """Ordering is load-bearing: probing before the deploy measures the *previous* worker."""
     text = (WORKFLOWS / "deploy-worker.yml").read_text(encoding="utf-8")
     deploy_at = text.index("npx wrangler deploy")
-    probe_at = text.index("--remote-only")
+    probe_at = text.index("--post-deploy")
     assert probe_at > deploy_at, (
-        "the MCP handshake probe is placed before `npx wrangler deploy`, so it verifies the worker "
-        "that is about to be replaced"
+        "the handshake + version probe is placed before `npx wrangler deploy`, so it verifies the "
+        "worker that is about to be replaced"
     )
+    # The version read-back only makes sense against what actually landed, so it has to be in the
+    # same post-deploy probe rather than a separate pre-deploy one.
+    assert "--post-deploy" in text, text[:200]
 
 
 def test_the_deploy_probe_retries_before_calling_the_service_broken():
