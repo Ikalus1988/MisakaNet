@@ -727,8 +727,14 @@ jobs:
             EXISTING_ID=$(gh api "repos/Ikalus1988/MisakaNet/issues/$PR_NUM/comments?per_page=100" \
               --jq ".[] | select(.body | contains(\"$MARKER\")) | .id" 2>/dev/null | tail -n1)
             if [ -n "$EXISTING_ID" ]; then
+              # `-f body="$(cat …)"`, not `-f body=@$REPORT_FILE`: `--raw-field` does **not** read
+              # `@file` (only `-F/--field` and `--input` do), so this call posted the literal string
+              # `@/tmp/tmp.XXXXXXXX` as the comment body — and it *succeeded*, so the `||` fallbacks never
+              # ran. Every audit run replaced the previous report with a file path, the marker vanished,
+              # and the next run created another one: the release PR had **53** of them and no readable
+              # verdict on 2026-09-25, which is exactly the state nobody can act on.
               gh api -X PATCH "repos/Ikalus1988/MisakaNet/issues/comments/$EXISTING_ID" \
-                -f "body=@$REPORT_FILE" >/dev/null 2>&1 || \
+                -f "body=$(cat "$REPORT_FILE")" >/dev/null 2>&1 || \
                 gh issue comment "$PR_NUM" --repo Ikalus1988/MisakaNet --body-file "$REPORT_FILE" 2>/dev/null || \
                 echo "::warning::Could not update the report comment on PR #$PR_NUM (read-only fork token) — the report is in this run's summary and as a check annotation."
             else
