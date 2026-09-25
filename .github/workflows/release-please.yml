@@ -333,8 +333,9 @@ jobs:
         # form that once made this step look alive while committing nothing (2026-09-12).
         env:
           GH_TOKEN: ${{ secrets.SHELDON_PAT }}
+          VERSION: ${{ steps.release_tag.outputs.version }}
         run: |
           python3 scripts/ci/land_change.py \
             --branch bot/release-version-sync \
-            --title "docs: sync version to v${{ steps.release_tag.outputs.version }}" \
-            --note "The site version badge and every managed lesson count, synced after cutting v${{ steps.release_tag.outputs.version }}."
+            --title "docs: sync version to v$VERSION" \
+            --note "The site version badge and every managed lesson count, synced after cutting v$VERSION."
