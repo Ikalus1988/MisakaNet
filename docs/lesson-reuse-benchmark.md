@@ -1,5 +1,14 @@
 # LessonReuseBench
 
+> **Status (measured 2026-09-25): the harness is a stub, so these are instructions for a design, not a
+> runnable benchmark.** `python3 scripts/lesson_reuse_bench.py --dry-run` fails at import —
+> `ModuleNotFoundError: No module named 'agents'` (`:4` imports `agents.YourAgent`, which does not exist) — its
+> scoring is a placeholder (`calculate_score`: *"Placeholder for actual score calculation"*, `return 1.0 if
+> result == "success" else 0.0`), and the three pairs are hardcoded in the script while the real pair files in
+> [`tasks/reuse/`](../tasks/reuse) are never read (the documented `--tasks` flag does not exist). No agent has
+> ever been scored by it, so any number below is an illustration. Implementing it is tracked in
+> [#2221](https://github.com/Ikalus1988/MisakaNet/issues/2221); until then, treat this page as the design.
+
 Evaluate whether AI agents can learn from past failures and reuse lessons when encountering similar problems.
 
 ## Why this benchmark exists
@@ -65,18 +74,23 @@ total = 40% × task_b_pass
 
 ## Running
 
+Not runnable yet — see the status note at the top. The intended commands are:
+
 ```bash
-# Dry-run (no API keys needed)
+# Intended: validate the task files (no API keys needed). Today this exits on `ModuleNotFoundError: agents`.
 python3 scripts/lesson_reuse_bench.py --dry-run
 
-# Full run
-python3 scripts/lesson_reuse_bench.py --agent openai --tasks tasks/reuse/
+# Intended: run one agent over tasks/reuse/ (the flag does not exist yet; the pairs are hardcoded today)
+python3 scripts/lesson_reuse_bench.py --agent <your-agent> --tasks tasks/reuse/
 
-# Compare with/without lesson pool
-python3 scripts/lesson_reuse_bench.py --agent claude --compare
+# Intended: compare with/without the lesson pool
+python3 scripts/lesson_reuse_bench.py --agent <your-agent> --compare
 ```
 
 ## Output
+
+The shape is fixed; **the example below is an illustration, not a measurement** — nothing has
+produced one yet:
 
 ```json
 {
@@ -101,13 +115,10 @@ python3 scripts/lesson_reuse_bench.py --agent claude --compare
 
 ## How to participate
 
-1. **Run the benchmark:**
-   ```bash
-   git clone https://github.com/Ikalus1988/MisakaNet.git
-   cd MisakaNet
-   python3 scripts/lesson_reuse_bench.py --dry-run  # validate
-   python3 scripts/lesson_reuse_bench.py --agent your-agent --compare
-   ```
+1. **Run the benchmark** — *blocked on [#2221](https://github.com/Ikalus1988/MisakaNet/issues/2221)*:
+   the harness cannot execute yet (see the status note at the top). What is genuinely useful today is a
+   [new A/B pair](https://github.com/Ikalus1988/MisakaNet/tree/main/tasks/reuse) — the design below says what
+   a pair needs, and the files are read by nothing until the harness exists.
 
 2. **Share your results:** Open an issue titled `[Benchmark] <agent-name> LessonReuseBench results` with:
    - Agent name and version
