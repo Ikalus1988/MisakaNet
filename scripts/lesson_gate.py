@@ -75,6 +75,46 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
 
 
 # ── Field validators ────────────────────────────────────────────────
+def frontmatter_diagnostic(text: str) -> str | None:
+    """Why the block that *is* there failed to parse, or None if it parsed (or is absent).
+
+    `parse_frontmatter` swallows the loader's error and returns `{}`, which makes "this YAML is
+    broken" indistinguishable from "there is no frontmatter" — and the gate then reports
+    `missing required field: title` for a file whose third line is `title: ...`.
+
+    Measured on PR #2293 (2026-09-26), a bounty submission whose frontmatter reads
+
+        fixes: [#2255, #2259, #2283]
+
+    `#` starts a YAML comment, so the block fails to load and every field is reported missing. The
+    contributor's only signal pointed at fields that were already correct: a gate whose error text
+    sends you to fix the wrong thing is a gate that costs a round trip per contributor.
+    """
+    m = FM_RE.match(text)
+    if not m:
+        return None
+    raw = m.group(1).strip()
+    # The block parses if either loader accepts it — mirror parse_frontmatter exactly, so this can
+    # only fire on the case it is about.
+    try:
+        if isinstance(json.JSONDecoder().raw_decode(raw)[0], dict):
+            return None
+    except json.JSONDecodeError:
+        pass
+    try:
+        import yaml
+        parsed = yaml.safe_load(raw)
+    except Exception as exc:  # noqa: BLE001 — the message *is* the product here
+        return (f"frontmatter is not valid YAML: {type(exc).__name__}: {exc} "
+                f"— the block is there but nothing can read it, which is why the fields below are "
+                f"reported missing. Check values that need quoting (a bare `#`, `:`, `[`, `{{`, or a "
+                f"leading `*`), then re-run")
+    if parsed is None or not isinstance(parsed, dict):
+        return (f"frontmatter did not parse as a mapping: got {type(parsed).__name__} "
+                f"({str(parsed)[:60]!r}) — a lesson's block must be `key: value` pairs")
+    return None
+
+
 def validate_required(fm: dict) -> list[str]:
     errors = []
     for field in ("title", "domain", "tags", "status"):
@@ -600,6 +640,12 @@ def validate_file(path: Path, repo: Path = REPO, dirs: tuple[str, ...] | None = 
         return [f"[warn] cannot read {path}: {e}"] if existing else [f"cannot read {path}: {e}"]
 
     fm, content = parse_frontmatter(text)
+    # Say *why* the block is unreadable before listing what it is missing: the two failures look
+    # identical downstream, and only one of them is fixed by editing fields (see
+    # frontmatter_diagnostic).
+    diagnostic = None if fm else frontmatter_diagnostic(text)
+    if diagnostic:
+        errors.append(diagnostic)
     errors += validate_required(fm)
     if fm:
         errors += validate_title(fm.get("title"))
