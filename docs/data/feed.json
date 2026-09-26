@@ -1,81 +1,81 @@
 {
-  "generated_at": "2026-09-26T11:34:22.906320+00:00",
+  "generated_at": "2026-09-26T15:46:17.841263+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(data): mirror the live node counter and its surfaces",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2298",
-      "timestamp": "2026-09-26T09:33:37Z",
+      "title": "chore: auto-update lessons.json, public counts and generated pages",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2318",
+      "timestamp": "2026-09-26T15:45:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(questions): the receipt pointed at unrelated answers, and the digest collected needs-ac — plus the daily job now posts by default",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2286",
-      "timestamp": "2026-09-26T06:00:56Z",
+      "title": "feat(lesson): adopt the macOS Chrome headless PDF supervision lesson (from #2299)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2316",
+      "timestamp": "2026-09-26T15:35:15Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2279",
-      "timestamp": "2026-09-26T05:18:04Z",
+      "title": "feat(site): the node count is not published anywhere — it was never a measurement of use",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2313",
+      "timestamp": "2026-09-26T15:03:59Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2278",
-      "timestamp": "2026-09-26T05:12:06Z",
+      "title": "lesson: land four lessons — three found uncommitted in the working tree, one written this session",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2310",
+      "timestamp": "2026-09-26T14:52:24Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2276",
-      "timestamp": "2026-09-26T03:38:36Z",
+      "title": "fix(tests): the suite rewrote the published index, and a lesson-only PR paid for it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2312",
+      "timestamp": "2026-09-26T14:47:27Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "Supervisor reports 'daemon start failed' with no detail: the child's own log holds the reason",
-      "url": "lessons/contrib/daemon-start-failed-empty-detail-missing-credential.md",
-      "timestamp": "2026-09-21",
-      "domain": "devops",
+      "title": "A stubbed success is not a sandbox — a faked `git push` let the suite rewrite the published index",
+      "url": "lessons/contrib/a-stubbed-success-is-not-a-sandbox.md",
+      "timestamp": "2026-09-26",
+      "domain": "testing",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "Migrating DSH_HOME with robocopy materializes the profile node_modules junctions, and dsh refuses to boot",
-      "url": "lessons/contrib/dsh-home-robocopy-junction-fallback-breakage.md",
-      "timestamp": "2026-09-21",
-      "domain": "devops",
+      "title": "An assertion that cannot fail is not a test — five shapes it took in one working session",
+      "url": "lessons/contrib/assertion-that-cannot-fail.md",
+      "timestamp": "2026-09-26",
+      "domain": "testing",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "zsh: command not found: python — the interpreter exists, just not under that name",
-      "url": "lessons/contrib/python-command-not-found-only-python3.md",
-      "timestamp": "2026-09-21",
-      "domain": "python",
+      "title": "An allowlist that rejects real data is worse than no validation — test the rule against the corpus",
+      "url": "lessons/core/allowlist-must-be-tested-against-the-corpus.md",
+      "timestamp": "2026-09-25",
+      "domain": "testing",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "pkill -f kills the shell that runs it: the pattern matches its own command line",
-      "url": "lessons/contrib/pkill-pattern-matches-its-own-shell.md",
-      "timestamp": "2026-09-20",
-      "domain": "devops",
+      "title": "A not-found answered with a retryable error code makes agents retry a 404 forever",
+      "url": "lessons/core/an-error-code-that-says-retry-cannot-carry-a-not-found.md",
+      "timestamp": "2026-09-25",
+      "domain": "api",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A fork PR's workflow run is created as action_required: the suite exists and never executes",
-      "url": "lessons/contrib/ci-fork-pr-run-held-as-action-required.md",
-      "timestamp": "2026-09-19",
+      "title": "A whole-file content push silently reverts the lines another writer owns",
+      "url": "lessons/core/whole-file-content-push-reverts-managed-lines.md",
+      "timestamp": "2026-09-25",
       "domain": "ci",
       "source": "lessons"
     },
