@@ -7,6 +7,47 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.36.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.35.0...v2.36.0) (2026-09-26)
+
+
+### Features
+
+* **questions:** the answer step is delegated to the bounty machinery, not to a maintainer ([#2275](https://github.com/Ikalus1988/MisakaNet/issues/2275)) ([8ce336f](https://github.com/Ikalus1988/MisakaNet/commit/8ce336f613970d75d1df6f1edea428993c739802))
+* **questions:** the middle of the question loop is now automated — triage, receipts, one digest ([#2273](https://github.com/Ikalus1988/MisakaNet/issues/2273)) ([945be7f](https://github.com/Ikalus1988/MisakaNet/commit/945be7f2906f04b91ba4877be5f1df6b4236210d))
+
+
+### Bug Fixes
+
+* **ci:** iteration 1 listed a fix it did not apply — the dispatch input was still interpolated into the shell ([#2234](https://github.com/Ikalus1988/MisakaNet/issues/2234)) ([436dc50](https://github.com/Ikalus1988/MisakaNet/commit/436dc50c09dafbeab8c843d9c89b4b40f073f7bc))
+* **ci:** iteration 2 of the Open Code Review pass — dead state, a writer with no concurrency, unbounded jobs ([#2233](https://github.com/Ikalus1988/MisakaNet/issues/2233)) ([35d3116](https://github.com/Ikalus1988/MisakaNet/commit/35d3116ea7f0766259a921d5f4f9ed16f42b52ca))
+* **ci:** the OCR review's four real findings — a dead token guard, an orphaned reader, a writer with no floor, a traceback in the watcher ([#2235](https://github.com/Ikalus1988/MisakaNet/issues/2235)) ([92f5f9c](https://github.com/Ikalus1988/MisakaNet/commit/92f5f9c42a7257824d8b6afd15e1030b86eb5579))
+* **index:** the plain fields were never in the index, so the fallback path answered without them ([#2240](https://github.com/Ikalus1988/MisakaNet/issues/2240)) ([d6a1c72](https://github.com/Ikalus1988/MisakaNet/commit/d6a1c720d91b0b16e9a5dfb79a0aecf4eb9c4b56))
+* **ops:** push_preflight called a legitimate bump a "revert", and never noticed a merged branch ([#2305](https://github.com/Ikalus1988/MisakaNet/issues/2305)) ([2f2e19f](https://github.com/Ikalus1988/MisakaNet/commit/2f2e19f5e52916c775c7c63709086d0fe060ab98))
+* **ops:** the "diff every file against main before you push" ritual is now a command ([#2246](https://github.com/Ikalus1988/MisakaNet/issues/2246)) ([bce17b3](https://github.com/Ikalus1988/MisakaNet/commit/bce17b3d977e5dd111d3ad3d86b43afbc23d8fb3))
+* **ops:** the preflight picked the GitHub token by substring — CodeQL alert [#285](https://github.com/Ikalus1988/MisakaNet/issues/285) ([#2252](https://github.com/Ikalus1988/MisakaNet/issues/2252)) ([8897b18](https://github.com/Ikalus1988/MisakaNet/commit/8897b188bd1aaa9c6baa3babca9b44dbd03f8ee0))
+* **questions:** the receipt pointed at unrelated answers, and the digest collected `needs-ac` — plus the daily job now posts by default ([#2286](https://github.com/Ikalus1988/MisakaNet/issues/2286)) ([451b716](https://github.com/Ikalus1988/MisakaNet/commit/451b7163a849c2004ab021a6c9696f1beebd7101))
+* **questions:** the stored answer carried its own routing marker, and agents were served it ([#2271](https://github.com/Ikalus1988/MisakaNet/issues/2271)) ([83cc825](https://github.com/Ikalus1988/MisakaNet/commit/83cc82595d126e514bbd8d9b76cebd443ea29f60))
+* **search:** the note said production never syncs the index, and the shape gate sampled with the wrong tokenizer ([#2243](https://github.com/Ikalus1988/MisakaNet/issues/2243)) ([6ec737d](https://github.com/Ikalus1988/MisakaNet/commit/6ec737de82b59069379e995c2ba489de4239286e))
+* **search:** the threshold that decides answered-vs-no_match rested on a measurement nobody could re-run ([#2249](https://github.com/Ikalus1988/MisakaNet/issues/2249)) ([2764e76](https://github.com/Ikalus1988/MisakaNet/commit/2764e767cfef955e0529b2977211f4191f8248b6))
+* **security:** a PR-controlled branch name was interpolated into a shell command (Open Code Review pass) ([#2230](https://github.com/Ikalus1988/MisakaNet/issues/2230)) ([9075f9b](https://github.com/Ikalus1988/MisakaNet/commit/9075f9bb1c13b1185ddcca1e0407eed468b2aa93))
+* **test:** the guard for the search scope read a field that level never returns — it could not fail ([#2306](https://github.com/Ikalus1988/MisakaNet/issues/2306)) ([b61d1ed](https://github.com/Ikalus1988/MisakaNet/commit/b61d1ed203c14c6e0f26c11863678ce608496904))
+* **test:** the second over-strict assertion, found and patched by an external contributor first ([#2308](https://github.com/Ikalus1988/MisakaNet/issues/2308)) ([a796755](https://github.com/Ikalus1988/MisakaNet/commit/a796755683da23c4fe96bf066fbd8e6b5d5f3528))
+* **worker:** a missing lesson answered "retry shortly", and any repository path was readable (B35) ([#2237](https://github.com/Ikalus1988/MisakaNet/issues/2237)) ([5a140e0](https://github.com/Ikalus1988/MisakaNet/commit/5a140e08b1525351fc8998daad1bdf45ae8fc9bd))
+* **worker:** the guard refused a lesson that exists — the corpus has a Korean filename ([#2239](https://github.com/Ikalus1988/MisakaNet/issues/2239)) ([1e4e2ff](https://github.com/Ikalus1988/MisakaNet/commit/1e4e2ffab9f7ec32394608d004cc00a042b0f634))
+
+
+### Documentation
+
+* **enterprise:** the material a reviewer needs existed, but only as raw markdown behind one package README ([#2245](https://github.com/Ikalus1988/MisakaNet/issues/2245)) ([8855a86](https://github.com/Ikalus1988/MisakaNet/commit/8855a8699ce901f057df3acc49eca1ebea7fcc6b))
+* **triage:** the SOP said "answer the maintainer answer in the issue" and never said how ([#2272](https://github.com/Ikalus1988/MisakaNet/issues/2272)) ([d1c9cea](https://github.com/Ikalus1988/MisakaNet/commit/d1c9cea81821a8e05d958d43daf2621dc45f09a1))
+
+
+### Tests
+
+* **index:** the staleness check I added yesterday reds a hand-written lesson PR for nothing ([#2244](https://github.com/Ikalus1988/MisakaNet/issues/2244)) ([d7e566d](https://github.com/Ikalus1988/MisakaNet/commit/d7e566dc0edf4cb0fbdf7831cf0d168cc386cf96))
+* **search:** four measured designs for CJK recall, all of them regress the English floors ([#2251](https://github.com/Ikalus1988/MisakaNet/issues/2251)) ([2dd434a](https://github.com/Ikalus1988/MisakaNet/commit/2dd434ae9cfb41db0d2b01eab17188bec2dbe036))
+* the suite was writing into the repository's own data files — the logs about the repo were 99% test traffic ([#2269](https://github.com/Ikalus1988/MisakaNet/issues/2269)) ([34b6847](https://github.com/Ikalus1988/MisakaNet/commit/34b68470beabd0bc873a2db9bc2231cac1fb07a8))
+
 ## [2.35.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.34.0...v2.35.0) (2026-09-25)
 
 
