@@ -60,7 +60,7 @@
 | `guarded-repository.yml` | Guarded Repository（仓库守卫巡检）| push, 定时, 手动 | `0 7 * * 1` |
 | `update-smithery-badge.yml` | Update Smithery Badge (daily) | 定时, 手动 | `0 6 * * *` |
 | `sync-question-answers.yml` | Sync Question Answers | 定时, 手动 | `20 7 * * *` |
-| `question-autopilot.yml` | Question Autopilot（逐条 open `[Question]`：用**生产检索**判定「语料是否已覆盖」，把同一问题的多条聚簇，刷一条 digest；**只分级、只报告，从不写答复、从不打 `answered`、从不关单** —— `answered` 是「把文本送进 FAQ」的开关，必须来自真正踩过的人。默认 report-only，`post: true` 才写评论）| 定时, 手动 | `40 6 * * *` |
+| `question-autopilot.yml` | Question Autopilot（逐条 open `[Question]`：用**生产检索**判定「语料是否已覆盖」，把同一问题的多条聚簇，刷一条 digest；**只分级、只报告，从不写答复、从不打 `answered`、从不关单** —— `answered` 是「把文本送进 FAQ」的开关，必须来自真正踩过的人。**默认就写**（回执 + 每簇一条 `[Bounty]` 任务 + digest；`post: false` 才是演练）——因为"没人看的报告"就是要清掉的那个积压本身。每次写入都幂等：回执按内容哈希、任务按锚点标记、digest 原地更新）| 定时, 手动 | `40 6 * * *` |
 | `update-badges.yml` | Update Badge Counts | push, 定时, 手动 | `23 3 * * 1` |
 | `update-lessons.yml` | Update lessons.json | 定时, 手动 | `0 0 * * *` |
 | `nightly-mirror-consistency.yml` | Nightly Mirror Consistency（镜像一致性）| 定时 |  |
