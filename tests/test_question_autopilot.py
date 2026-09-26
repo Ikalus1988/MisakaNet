@@ -270,3 +270,46 @@ def test_a_cluster_produces_exactly_one_bounty_anchored_at_its_lowest_number():
             "groups": [{"members": [2264, 2266], "shared": ["cli"]}]}
     got = qa.planned_bounties(plan)
     assert len(got) == 1 and got[0]["anchor"] == 2264
+
+
+# ── the digest is a report, and the quality gate must know it ───────────────
+
+def _gate_exempt_labels() -> set[str]:
+    """The labels `issue-quality-gate.yml` exempts, parsed from the **list literal**.
+
+    Parsed rather than substring-searched because the first version of this test asserted the label
+    appeared anywhere in the file — and the explanatory comment added directly above the list satisfied it,
+    so deleting the label from the list itself went unnoticed. This repository has this failure recorded
+    ("断言读的是赋值语句而不是整个文件；全文搜索会被自己的解释满足"), and it reproduced here.
+    """
+    gate = (REPO / ".github/workflows/issue-quality-gate.yml").read_text(encoding="utf-8")
+    m = qa.re.search(r"\[([^\]]*?)\]\s*[\n\s]*\.includes\(typeof l", gate)
+    assert m, "the exempt-label list is not in the shape this test parses"
+    return set(qa.re.findall(r"'([^']+)'", m.group(1)))
+
+
+def test_the_digest_label_is_exempt_in_the_quality_gate():
+    """An unexempt digest collects `needs-ac` forever, which is churn the gate was already burned by.
+
+    `issue-quality-gate.yml`'s own comment records the incident: five of six `needs-ac` issues were once
+    intakes, "including a salvage digest the workflow itself opened". The gate exempts a fixed label list,
+    so a new automatic report has to be added to it — in the same change that starts opening one.
+    """
+    labels = _gate_exempt_labels()
+    assert labels, "parsed no exempt labels at all — the test would pass for the wrong reason"
+    assert qa.DIGEST_LABEL in labels, (
+        f"{qa.DIGEST_LABEL!r} is not in the quality gate's exempt list ({sorted(labels)}), so every digest "
+        "it opens will be labelled `needs-ac` and sit in the tracker as missing work"
+    )
+
+
+def test_the_receipt_does_not_claim_a_related_answered_question():
+    """The FAQ matcher is token overlap; measured, it attached two unrelated answers to a PDF question."""
+    body = qa.receipt({"number": 2255,
+                       "coverage": {"ok": True, "no_match": True, "lessons": [],
+                                    "faq": [{"issue_url": "https://example.invalid/2099"},
+                                            {"issue_url": "https://example.invalid/1724"}]},
+                       "cluster_with": []})
+    assert "2099" not in body and "1724" not in body, (
+        "the receipt pointed the asker at answers the FAQ matcher merely token-overlapped"
+    )

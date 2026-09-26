@@ -47,7 +47,11 @@ jobs:
             // intakes, including a salvage digest the workflow itself opened). The AC
             // requirement stays for tasks and bounties, where someone will implement.
             const isIntake = (issue.labels || []).some((l) =>
-              ['intake', 'mcp-intake', 'salvage-digest'].includes(typeof l === 'string' ? l : l.name));
+              // `question-digest` is opened by scripts/question_autopilot.py: a report of the open
+              // question backlog, with no acceptance criteria to hold. Registering it here is the
+              // agreement that keeps it out of `needs-ac` — the same fix as `salvage-digest`.
+              ['intake', 'mcp-intake', 'salvage-digest', 'question-digest']
+                .includes(typeof l === 'string' ? l : l.name));
             const satisfied = HAS_AC && HAS_CHECKBOX;
             if (isIntake) {
               console.log('  intake: AC not required for reports');
