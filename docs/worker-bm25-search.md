@@ -40,7 +40,7 @@ python scripts/build_worker_index.py \
 
 Output:
 ```
-Loaded 411 lessons
+Loaded 417 lessons
 Building BM25 index...
 Index written to data/worker-index.json (250,379 bytes)
 
