@@ -22,7 +22,10 @@ VOICE_DIR="${MISAKANET_VOICE_DIR:-$(cd "$(dirname "$0")/../docs/assets/voice" &&
 INPUT=$(cat)
 
 # Extract voice field — silent exit if missing
-VOICE=$(echo "$INPUT" | python -c "
+PYTHON_BIN="$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)"
+[ -z "$PYTHON_BIN" ] && exit 0
+
+VOICE=$(echo "$INPUT" | "$PYTHON_BIN" -c "
 import sys, json
 try:
     data = json.load(sys.stdin)

@@ -54,7 +54,9 @@ def get_proxy_opener() -> urllib.request.OpenerDirector:
     handler = get_proxy_handler()
     if handler:
         return urllib.request.build_opener(handler)
-    return urllib.request.build_opener()
+    opener = urllib.request.build_opener()
+    opener.handlers = [h for h in opener.handlers if not isinstance(h, urllib.request.ProxyHandler)]
+    return opener
 
 
 def urlopen_with_proxy(

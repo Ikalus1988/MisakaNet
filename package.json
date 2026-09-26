@@ -44,6 +44,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
+    "test": "node --test workers/*.test.mjs",
     "deploy": "wrangler deploy",
     "deploy:api": "cd workers && npx wrangler deploy --config wrangler.toml",
     "deploy:email": "cd workers/email-register && npx wrangler deploy",

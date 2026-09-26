@@ -102,7 +102,12 @@ def resolves_non_public(host: str) -> bool:
     for info in infos:
         address = info[4][0].split("%")[0]
         try:
-            if not ipaddress.ip_address(address).is_global:
+            ip = ipaddress.ip_address(address)
+            # 198.18.0.0/15 is reserved for benchmarking (RFC 2544) and standardly used
+            # by transparent proxy TUNs (Clash/Surge/Sing-box Fake-IP pool) on dev machines.
+            if ip in ipaddress.ip_network("198.18.0.0/15"):
+                continue
+            if not ip.is_global:
                 return True
         except ValueError:
             continue

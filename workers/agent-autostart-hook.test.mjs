@@ -278,8 +278,10 @@ function stubBin(names = [...PLAYER_BINS, ...NOTIFIER_BINS]) {
   const dir = mkdtempSync(join(tmpdir(), 'mn-stubbin-'));
   const log = join(dir, 'calls.log');
   const script = '#!/bin/sh\n'
-    + '{ printf \'%s\' "${0##*/}"; for a in "$@"; do printf \'\\t%s\' "$a"; done; printf \'\\n\'; }'
-    + ' >> "$MN_TEST_STUB_LOG"\n';
+    + 'TAB="$(printf \'\\t\')"\n'
+    + 'msg="${0##*/}"\n'
+    + 'for a in "$@"; do msg="${msg}${TAB}${a}"; done\n'
+    + 'printf \'%s\\n\' "$msg" >> "$MN_TEST_STUB_LOG"\n';
   for (const name of names) {
     const file = join(dir, name);
     writeFileSync(file, script);
