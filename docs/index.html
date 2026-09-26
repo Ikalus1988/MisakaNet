@@ -1863,18 +1863,19 @@
   <div class="stats-grid">
     <div class="stat-card" style="padding:20px 28px;">
       <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;width:100%;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:14px;">🌐</span>
-          <span id="total-nodes" style="font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;color:var(--cyan);">—</span>
-          <!-- Same number, honest label. It was `statNodes` ("registered nodes" / "Active Nodes"), and
-               neither language was true: the value is `counter.current`, a monotonic allocation
-               counter that node IDs are handed out from — nothing is ever removed from it, so it
-               cannot measure who is active. `statLatest` already existed in both dictionaries
-               describing exactly what it is, and nothing rendered it (see
-               tests/test_site_activity_panel.py). -->
-          <span style="font-size:12px;color:var(--text-dim);" data-i18n="statLatest">node IDs issued</span>
-        </div>
-        <div style="width:1px;height:24px;background:rgba(0,229,255,0.1);"></div>
+        <!-- The node counter used to be rendered here, first in the row. It is gone (2026-09-26), and
+             this is not a labelling fix: `counter.current` is a monotonic **allocation** counter that
+             node IDs are handed out from (the first node is Misaka10001, nothing ever comes off it),
+             and an anonymous caller gets a fresh node per call — so it grows with our own automation
+             and cannot answer "how many nodes are active", whatever the label says. Two earlier rounds
+             renamed the label ("registered nodes" / "Active Nodes" → "node IDs issued"), which only
+             turned a false claim into a true number nobody needs.
+             The page still *reads* the counter below — the registration success panel estimates the
+             visitor's node number from it — it is simply no longer displayed as a stat. What is
+             actually used is in the network-activity panel further down (MCP calls, split by MCP /
+             agent / crawler / page view). The five surfaces that quoted the number are gone too:
+             `scripts/sync_lesson_count.py` has no node metric any more, and
+             tests/test_lesson_count_ssot.py asserts it is not published anywhere. -->
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:14px;">🤖</span>
           <span style="font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;color:var(--cyan);" id="agent-contrib-count">—</span>
@@ -2906,20 +2907,13 @@ async function loadStats() {
   const counter = await fetchWithCache(getCounterUrl(), 'counter').catch(() => null);
 
   if (counter) {
-    // Rendered as itself. The counter is a monotonic allocation counter that node IDs are handed out
-    // from (the first node is Misaka10001), not a population — nothing ever comes off it — so it
-    // cannot answer "how many nodes are active". It used to be rendered with the 10 000 offset subtracted, under a
-    // label that said "registered nodes" in Chinese and "Active Nodes" in English: two claims,
-    // neither true, for one number. The label now names what the number is
-    // (tests/test_site_activity_panel.py pins it).
-    animateCounter(document.getElementById("total-nodes"), Number(counter.current) || 0);
-    // Still assigned, and this is load-bearing: the registration success panel estimates the visitor's
-    // node number from the counter when the worker does not return one
-    // (`data.node_number || (CURRENT_COUNTER + 1)`). The timeline was the other reader; deleting the
-    // timeline without this line would have left that fallback frozen at its initial value — a wrong
-    // node number shown to a visitor who just registered, which is the one place it must be right.
+    // The counter is still fetched, and this assignment is the only reason: the registration success
+    // panel estimates the visitor's node number from it when the worker does not return one
+    // (`data.node_number || (CURRENT_COUNTER + 1)`), and a wrong node number shown to someone who
+    // just registered is the one place it must be right. It is deliberately **not displayed** any
+    // more (2026-09-26): a monotonic allocation counter that anonymous callers advance by one per
+    // call is not a population, so no label makes it a stat worth showing.
     CURRENT_COUNTER = Number(counter.current) || CURRENT_COUNTER;
-    document.getElementById("total-nodes").classList.remove("loading");
     document.getElementById("last-updated").textContent = `last updated ${counter.updated.slice(0, 10)}`;
   }
 

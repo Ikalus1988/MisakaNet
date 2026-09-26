@@ -48,14 +48,19 @@ ENV_VARS = ("MISAKANET_GAP_LOG", "MISAKANET_CONTRIBUTION_QUEUE", "MISAKANET_LESS
 def published_surfaces() -> dict[str, str | None]:
     """Digest every file a run of the index generator may rewrite.
 
-    Read from the count SSOT's own registry instead of a hand-written list: a surface added there
-    (`scripts/sync_lesson_count.py`) is covered here the day it is added, which is the property the
-    hand-written list would lose silently.
+    Read from the count SSOT's own registries instead of a hand-written list: a surface added there
+    (`scripts/sync_lesson_count.py`) is covered here the day it is added, which is the property a
+    hand-written list loses silently. Discovered by attribute rather than imported by name, because
+    the node metric was retired on 2026-09-26 and a hard-coded `NODE_SITES` import turned this whole
+    file into collection errors.
     """
-    from scripts.sync_lesson_count import COUNT_FILE, DOMAIN_SITES, NODE_SITES, SITES
+    from scripts import sync_lesson_count as slc
 
-    rels = {s.path for s in (*SITES, *NODE_SITES, *DOMAIN_SITES)}
-    rels.update({"data/lessons.json", str(COUNT_FILE)})
+    rels = {site.path
+            for name, value in vars(slc).items()
+            if (name == "SITES" or name.endswith("_SITES")) and isinstance(value, tuple)
+            for site in value}
+    rels.update({"data/lessons.json", str(slc.COUNT_FILE)})
     return {rel: digest(REPO / rel) for rel in sorted(rels)}
 
 

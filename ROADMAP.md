@@ -36,16 +36,20 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 | 指标 | 数值 |
 |---|---|
 | 公开索引语料（SSOT，当前） | **411** |
-| 已注册节点（当前） | **4926** |
 | domain 覆盖（当前） | **44** |
 
-> 这三行由 `scripts/sync_lesson_count.py` 维护：每日 job 会重写它们，`--check` 不一致即红，
+> 这两行由 `scripts/sync_lesson_count.py` 维护：每日 job 会重写它们，`--check` 不一致即红，
 > 与 README / `llms.txt` / 站点卡片同源。加这一节的原因是下面那张快照表——2026-09-23 实测它
 > **13 项里 9 项过期**（393/232/43 对 411/1047/44），而它周围写着"所有数字可逐条复现"。
 > **可复现 ≠ 会被重算**：这些数字此前没有写作者（#2095）。
 >
 > **下面那张 2026-09-16 的快照表是当天的记录，不是"当前值"**，其中的数字故意保留原样——
 > 本仓的惯例是旧条目只加状态裁定、不改写历史。
+>
+> **状态裁定（2026-09-26）：节点数不再对外发布。** 它不是用户数——`data/counter.json` 的 `current`
+> 是单调的**编号分配计数器**（匿名调用每次都会新建一个 node），只会随自动化增长，因此五个曾引用它的
+> 表面（`docs/llms.txt` 两份、`README.zh-CN.md`、`README.ja.md`、本表）都已去掉该行，
+> `sync_lesson_count.py --metric nodes` 也已移除。快照表里那一行只是当天的记录，其"来源命令"已失效。
 
 ### 状态快照（2026-09-16）
 

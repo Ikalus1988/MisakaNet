@@ -57,11 +57,14 @@ os.environ.setdefault("MISAKANET_LESSONS_INDEX", str(TEST_DATA_DIR / "lessons.js
 # changed only if it moved *during this session*, so a dirty working tree is not reported.
 def _published_surface_stamps() -> dict[str, tuple[int, int] | None]:
     """Size and mtime of every published surface a test must never rewrite."""
-    from scripts.sync_lesson_count import COUNT_FILE, DOMAIN_SITES, NODE_SITES, SITES
+    from scripts import sync_lesson_count as slc
 
     repo = Path(__file__).resolve().parents[1]
-    paths = {s.path for s in (*SITES, *NODE_SITES, *DOMAIN_SITES)}
-    paths.add(str(COUNT_FILE))
+    paths = {site.path
+             for name, value in vars(slc).items()
+             if (name == "SITES" or name.endswith("_SITES")) and isinstance(value, tuple)
+             for site in value}
+    paths.add(str(slc.COUNT_FILE))
     paths.add("data/lessons.json")
     stamps: dict[str, tuple[int, int] | None] = {}
     for rel in sorted(paths):
