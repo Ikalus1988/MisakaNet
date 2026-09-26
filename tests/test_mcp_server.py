@@ -10,12 +10,23 @@ import json
 import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.mcp_server import TOOLS, handle_request
+# This script is directly runnable (`python3 tests/test_mcp_server.py`), so it cannot rely on
+# `tests/conftest.py` for isolation — and it drives the real submit and search handlers, which append to
+# two of the repository's own data files. Before this, every submission here added a row to
+# `data/contribution_queue.jsonl` and every no-result search added a row to `data/search_gaps.jsonl`:
+# 520 of the queue's 522 rows were fixtures, and the gap log's largest entries were this script's
+# queries. Set before the import below, because that import resolves the paths into constants.
+_TEST_DATA_DIR = Path(tempfile.mkdtemp(prefix="misakanet-mcp-smoke-"))
+os.environ.setdefault("MISAKANET_GAP_LOG", str(_TEST_DATA_DIR / "search_gaps.jsonl"))
+os.environ.setdefault("MISAKANET_CONTRIBUTION_QUEUE", str(_TEST_DATA_DIR / "contribution_queue.jsonl"))
+
+from scripts.mcp_server import TOOLS, handle_request  # noqa: E402
 
 PASS = 0
 FAIL = 0
