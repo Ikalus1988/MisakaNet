@@ -1,0 +1,51 @@
+name: Question Autopilot
+
+# The mechanical half of the question loop is already automatic (answered label -> sync -> D1 -> FAQ).
+# What piles up is the reading and triage, which is what this job does: per open `[Question]`, measure
+# whether the corpus answers it through the **production** retrieval path, group questions that are the
+# same question, and refresh one digest.
+#
+# It never writes an answer, never adds the `answered` label and never closes an issue: `answered` is the
+# switch that puts text into the FAQ, which agents receive as a maintainer answer, and that has to come
+# from someone who observed the failure (docs/maintainer/provenance-gate-2026-09-16.md).
+#
+# Script: scripts/question_autopilot.py
+
+on:
+  schedule:
+    - cron: '40 6 * * *'
+  workflow_dispatch:
+    inputs:
+      post:
+        description: "Write the receipts and the digest (otherwise report only)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: "3.12"
+
+      - name: Triage the open questions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Report-only by default, deliberately rather than timidly: the receipts are public comments
+          # and the digest is a public issue. Turning it on is a maintainer decision (`post: true` on a
+          # manual dispatch).
+          if [ "${{ inputs.post }}" = "true" ]; then
+            python3 scripts/question_autopilot.py --post | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            python3 scripts/question_autopilot.py | tee -a "$GITHUB_STEP_SUMMARY"
+          fi

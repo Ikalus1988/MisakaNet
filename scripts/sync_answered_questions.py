@@ -42,6 +42,11 @@ ANSWER_MARKERS = ("<!-- misakanet-answer -->", "## ✅ Answered", "## [ANSWER]")
 AUTOMATED_MARKERS = ("<!-- misakanet-intake-triage -->", "<!-- misakanet-intake-question -->",
                      "<!-- misakanet-question-clarification -->", "<!-- misakanet-question-reclassification -->",
                      "<!-- misakanet-smoke-test -->", "<!-- misakanet-duplicate -->",
+                     # The autopilot's triage receipt (scripts/question_autopilot.py). It is *not* an
+                     # answer — it states the measured coverage and asks for the missing pieces — and
+                     # `extract_answer`'s rule is "has an answer marker AND no automated marker", so
+                     # registering it here is what keeps a receipt out of the FAQ.
+                     "<!-- misakanet-question-autopilot -->",
                      "## MCP Intake Triage", "## [QUESTION]", "## [REJECTED]")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
