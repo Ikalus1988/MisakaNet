@@ -352,3 +352,15 @@ def test_a_path_that_is_not_a_string_is_a_usage_error():
     with pytest.raises(SystemExit) as exc:
         pp.main([])
     assert exc.value.code == 2
+
+
+def test_a_count_sentence_going_forward_is_value_ahead_not_revert():
+    """#2274: an intentional increment (e.g. 22 -> 23) must not be reported as a value revert."""
+    remote = "## 数据/索引（22）\n"
+    local = "## 数据/索引（23）\n"
+    lost = pp.removals(remote, local)
+    assert lost == ["## 数据/索引（22）"]
+    assert pp.value_reverts(lost, local) == []
+    behind, ahead = pp.value_reverts_directed(lost, local)
+    assert behind == []
+    assert ahead == ["## 数据/索引（22）"]

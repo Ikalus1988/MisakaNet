@@ -243,6 +243,45 @@ def _wording(line: str) -> str:
     return _NUMBER.sub("#", line).strip()
 
 
+def _nums(line: str) -> list[int]:
+    """Extract all numbers from line as integers, stripping commas."""
+    return [int(n.replace(",", "")) for n in re.findall(r"\b\d[\d,]*\b", line)]
+
+
+def value_reverts_directed(lost: list[str], local_text: str) -> tuple[list[str], list[str]]:
+    """Split lost lines with identical wording into (behind, ahead).
+
+    - `behind`: local value is smaller than remote value (real revert: pushing reverts main's value)
+      -> hard failure (exit 1).
+    - `ahead`: local value is larger than remote value (forward edit/count advancement)
+      -> warn loudly but do not fail (exit 0), user must confirm companion files are included.
+    """
+    local_by_wording = {}
+    for line in local_text.splitlines():
+        w = _wording(line)
+        if w:
+            local_by_wording[w] = line
+
+    behind = []
+    ahead = []
+    for line in lost:
+        wording = _wording(line)
+        if wording and wording != line.strip() and wording in local_by_wording:
+            local_line = local_by_wording[wording]
+            r_nums = _nums(line)
+            l_nums = _nums(local_line)
+            if r_nums and l_nums:
+                if l_nums < r_nums:
+                    behind.append(line)
+                elif l_nums > r_nums:
+                    ahead.append(line)
+                else:
+                    behind.append(line)
+            else:
+                behind.append(line)
+    return behind, ahead
+
+
 def value_reverts(lost: list[str], local_text: str) -> list[str]:
     """The removals that are a *value* going backwards, not an edit.
 
@@ -251,14 +290,10 @@ def value_reverts(lost: list[str], local_text: str) -> list[str]:
     `sync_lesson_count.py` — the sentence is removed, the replacement is not a loss, and a gate that
     cannot tell those apart is a gate that gets switched off. Requiring the *wording* to be unchanged
     on both sides isolates the case the two recorded incidents were: same sentence, older number.
+    Only returns true reverts where the local copy is behind main.
     """
-    here = {_wording(line) for line in local_text.splitlines()}
-    out = []
-    for line in lost:
-        wording = _wording(line)
-        if wording and wording != line.strip() and wording in here:
-            out.append(line)
-    return out
+    behind, _ = value_reverts_directed(lost, local_text)
+    return behind
 
 
 def report_named(args, token: str, ref: str, paths: list[str]) -> int:
@@ -281,7 +316,7 @@ def report_named(args, token: str, ref: str, paths: list[str]) -> int:
         remote_text = remote_bytes(args.repo, ref, path, token).decode("utf-8", errors="replace")
         local_text = (REPO / path).read_text(encoding="utf-8", errors="replace")
         lost = removals(remote_text, local_text)
-        reverts = value_reverts(lost, local_text)
+        behind, ahead = value_reverts_directed(lost, local_text)
         hit = managed(lost)
         print(f"  {'⚠️ ' if lost else '✅ '}{path}: {len(lost)} line(s) {ref} has that your copy lacks")
         for line in lost[: args.max_removals]:
@@ -290,9 +325,11 @@ def report_named(args, token: str, ref: str, paths: list[str]) -> int:
             print(f"       … {len(lost) - args.max_removals} more")
         for line in hit:
             print(f"       ⚠️  managed line — {line}")
-        for line in reverts:
+        for line in ahead:
+            print(f"       ⚠️  VALUE AHEAD — {line.strip()[:100]} (本地超前，确认配套文件在同一次推送里)")
+        for line in behind:
             print(f"       ❌ VALUE REVERTED — {line.strip()[:110]}")
-        if reverts:
+        if behind:
             problems.append(path)
         elif hit:
             print("       (managed-shaped removals above, but the wording also differs — read as an edit, "
