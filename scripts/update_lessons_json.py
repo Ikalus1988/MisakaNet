@@ -7,6 +7,7 @@ lessons, while excluding archives, drafts, templates, locale docs, and the
 top-level lessons/index.md.
 """
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -16,7 +17,23 @@ sys.path.insert(0, str(REPO))
 from misakanet.evidence import evidence_of, trust_score  # noqa: E402
 
 LESSONS_DIR = REPO / "lessons"
-OUTPUT = REPO / "data" / "lessons.json"
+# The published index. A *test* may redirect the write (MISAKANET_LESSONS_INDEX, the same
+# env-override shape as MISAKANET_GAP_LOG / MISAKANET_CONTRIBUTION_QUEUE); nothing in
+# production sets it, so the CLI and the daily job write here as before.
+#
+# WHY (2026-09-26): `tests/test_frontmatter_writers_agree.py` drives `queue_lesson.write_lesson`
+# with a stubbed `git push` that *reports success*. The success branch of `write_lesson` rebuilds
+# this index, so the real `data/lessons.json` was rewritten from the working tree in the middle of
+# the suite — 411 entries → 415 the moment a pull request added a lesson. Two things followed:
+# every *published* count surface (README, ARCHITECTURE, the site's meta tags, the issue
+# templates, `docs/_lessons_count.txt`, …) was rewritten too, and
+# `test_lesson_page_generator::test_repo_pages_match_the_index` — which runs later and compares
+# the pages against that same file — failed with "generated pages drifted from data/lessons.json"
+# for pages nobody had touched. The failure named the wrong test, appeared only when a PR added a
+# lesson (i.e. only on the contribution path the repository most needs), and read as an
+# instruction to regenerate pages rather than as evidence that the suite edits the checkout.
+PUBLISHED_INDEX = REPO / "data" / "lessons.json"
+OUTPUT = Path(os.environ.get("MISAKANET_LESSONS_INDEX") or PUBLISHED_INDEX)
 INDEXED_DIRS = ("core", "contrib")
 # Non-lesson markdown that must never be indexed (mirrors sync_lessons_to_d1.py).
 EXCLUDED = {"README.md", "index.md", "TEMPLATE.md", "CONTRIBUTING.md"}
@@ -274,7 +291,13 @@ def main():
 
     OUTPUT.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"OK lessons.json updated: {len(entries)} entries")
-    refresh_lesson_count_markers(len(entries))
+    # The count surfaces say "N indexed failure-recovery lessons about `data/lessons.json`". Refreshing
+    # them from a run that wrote the index somewhere else would publish a number the published index
+    # does not have — and in tests it rewrote 20+ tracked files for a fixture nobody asked for.
+    if OUTPUT == PUBLISHED_INDEX:
+        refresh_lesson_count_markers(len(entries))
+    else:
+        print(f"count markers not refreshed: this run wrote {OUTPUT}, not {PUBLISHED_INDEX}")
 
 
 if __name__ == "__main__":
