@@ -50,6 +50,64 @@
 也不关单——§2 已经把"服务端 auto-rejected 的噪音不主动关闭"写死了，而"按文件名匹配就自动关"正是本
 节反例的机器版本。人要做的仍然是那 5 条模板要点。
 
+### 3.1 怎么真的把一条 question 答完（2026-09-25 按此流程走过 #2099 与 #1724）
+
+§2 说"question 类：维护者直接在 issue 内答复"——下面是把这句话**执行完**的步骤，
+每一步都有一句话说明它为什么必须是这一步。完整闭环的意义在于：**答复一次 = 之后同类问题自动被回答**，
+所以积压不是"8 条/天 vs 人工答 1 条/天"的线性竞赛，而是"每簇答一次"。
+
+```bash
+# 0) 先检索（SOP §1 要求的"确认 0 覆盖"）。用**生产检索路径**，不要用本地 Python 引擎：
+#    本地 `misakanet/search/engine.py` 的 _rank_docs 是无下限的原始打分器，实测把
+#    "knitting pattern stitch count" 打到 1.007、而 "pip install timeout behind corporate proxy" 只有 0.905
+#    ——用它判"伪盲区"会把无关问题判成"已有覆盖"。生产路径 = worker 的 BM25 + IDF 加权相关性下限。
+#    no_match → 真盲区（要写新知识）；有 lesson 命中 → 伪盲区（修召回，**不要写重复课**）。
+
+# 1) 写答复。三件事同时满足：
+#    (a) **必须**含 ANSWER_MARKERS 之一：`<!-- misakanet-answer -->`（推荐，对读者不可见）
+#        或 `## ✅ Answered` / `## [ANSWER]`。没有标记 = 同步脚本找不到它 = D1 里没有这行 = FAQ 不会回答任何人。
+#    (b) **不能**含 AUTOMATED_MARKERS 任何一个（`<!-- misakanet-intake-triage -->`、
+#        `<!-- misakanet-intake-question -->`、`## [QUESTION]`、`## [REJECTED]` …）。
+#        脚本的判据是"有 answer 标记 **且** 无 bot 标记"——粘错一条 bot 评论就会被静默跳过。
+#    (c) §3 的 5 条：点名致谢报料来源 / 根因或结论 / 答复本体 / **报料者自己能跑的验证命令** / 回执渠道说明。
+gh issue comment <N> --body-file answer.md          # 或 POST /repos/{o}/{r}/issues/<N>/comments
+
+# 2) 打 answered 标签 —— 这一步**就是**闭环开关：`issues: labeled` 事件会触发单条同步。
+gh issue edit <N> --add-label answered
+
+# 3) 关单（`closed` + 有 answered 标签会再触发一次；upsert 幂等，跑两次无害）
+gh issue close <N> --reason completed
+
+# 4) **读日志，不要看绿点**。`Sync single question answer to D1` 这一步在"没找到答复评论"时
+#    也是 success（脚本只 print 并 return 0）。要看的是这一行：
+gh run list --workflow=sync-question-answers.yml -L 3
+gh run view <run-id> --log | grep -E "#<N>|upserted|no answer comment"
+#    期望：`#<N>: answered row upserted`；若是 `no answer comment found (skipped)` → 回第 1 步查标记。
+
+# 5) 验证闭环两端（都在线上、都别只看自己的仓）：
+#    (a) 检索侧：misakanet_search(query="...") 期望出现 `faq-issue-<N>`（type=faq，且 no_match 被抑制）
+#    (b) 回拉侧：用**完全相同的 problem 文本**重新 submit_intake(kind="question", ...)
+#        期望 {"submitted": false, "duplicate": true, "answered": true, "intake_id": "issue-<N>", "answer": "..."}
+#        —— 且**不会**新建 issue。这是报料者拿到答复的官方路径。
+```
+
+**四个坑（都实测踩过）：**
+
+1. **bot 的 intake 评论也带标记，别把它们当成答复**。每条 intake 会收到 2 条机器评论
+   （`<!-- misakanet-intake-triage -->` 与 `<!-- misakanet-intake-question -->`）；它们**故意**带 bot 标记，
+   正是为了不被当成维护者答复。
+2. **`ANSWER_MARKERS` 混了两类东西**：`<!-- misakanet-answer -->` 是**给脚本的信号**（issue 里谁也看不见），
+   而 `## ✅ Answered` / `## [ANSWER]` 是维护者写的**可见标题**（是内容）。存进 D1 的是评论原文，
+   而 D1 那行会被**逐字**返回给 agent（`type=faq` 与回拉路径都是），所以只有 HTML 注释那一类会被剥掉——
+   见 #2271（剥可见标题 = 改答复）。
+3. **本地跑不了 `--dry-run`**：它会查 D1 的 `questions` 表，需要 Cloudflare 凭据。所以"写进去了吗"
+   只能靠第 4 步的日志 + 第 5 步的线上验证。
+4. **读 job 日志要处理 302**：`/actions/jobs/{id}/logs` 会 302 到签名 URL，且**签名 URL 上不能带
+   `Authorization` 头**（带了会被拒）。先取 `Location` 再裸取。
+
+**一个自愈性质**：`upsert_answered` 是 upsert，且每天 07:20 UTC 有批量同步。所以"答复已发但某一轮同步
+写坏了"会在下一轮被覆盖修正——不需要为了修一行数据去手工触发什么。
+
 ## 4. 与自动化管线的关系
 
 | 管线 | 职责 | 与 SOP 的接口 |
