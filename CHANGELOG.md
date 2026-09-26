@@ -7,6 +7,20 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.37.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.36.0...v2.37.0) (2026-09-26)
+
+
+### Features
+
+* **lesson:** adopt the macOS Chrome headless PDF supervision lesson (from [#2299](https://github.com/Ikalus1988/MisakaNet/issues/2299)) ([#2316](https://github.com/Ikalus1988/MisakaNet/issues/2316)) ([1206022](https://github.com/Ikalus1988/MisakaNet/commit/1206022d510cf51cfb71d86369b4afbfff84287a))
+* **site:** the node count is not published anywhere — it was never a measurement of use ([#2313](https://github.com/Ikalus1988/MisakaNet/issues/2313)) ([5e71e30](https://github.com/Ikalus1988/MisakaNet/commit/5e71e30121c8ac2471f56491602ff515b5f78b0c))
+
+
+### Bug Fixes
+
+* **gate:** an unreadable frontmatter block was reported as missing fields, and "no lesson" read as a pass ([#2317](https://github.com/Ikalus1988/MisakaNet/issues/2317)) ([c9ed3e6](https://github.com/Ikalus1988/MisakaNet/commit/c9ed3e69125eb770aa593420441bb770c6240f28))
+* **tests:** the suite rewrote the published index, and a lesson-only PR paid for it ([#2312](https://github.com/Ikalus1988/MisakaNet/issues/2312)) ([dfbf8a9](https://github.com/Ikalus1988/MisakaNet/commit/dfbf8a95b7df896e00881f5e5851070787185ab0))
+
 ## [2.36.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.35.0...v2.36.0) (2026-09-26)
 
 
