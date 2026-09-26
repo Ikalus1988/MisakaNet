@@ -143,12 +143,38 @@ def fetch_issue_comments(issue_number: int) -> list[dict]:
     return out
 
 
+def _strip_routing_markers(body: str) -> str:
+    """Remove the **invisible** markers from a stored answer.
+
+    `ANSWER_MARKERS` mixes two different things and only one of them should be removed:
+
+    * `<!-- misakanet-answer -->` is a signal *to this script* — an HTML comment nobody reads in the
+      issue. It is not content.
+    * `## ✅ Answered` and `## [ANSWER]` are headings a maintainer deliberately wrote. They are content,
+      and stripping them would be editing the answer.
+
+    Stored answers are served verbatim to agents: `misakanet_search` returns them as `type=faq`, and the
+    re-submission pull path returns them as `answer`. Measured 2026-09-25 on issue #2099 — the first
+    answer written with the HTML-comment marker — the stored text began with `<!-- misakanet-answer -->`,
+    so every agent retrieving it got an HTML comment as the first line of the FAQ entry. The earlier
+    answers used the `## ✅ Answered` heading and were unaffected, which is why nobody noticed.
+    """
+    for marker in ANSWER_MARKERS:
+        if marker.startswith("<!--"):
+            body = body.replace(marker, "")
+    return body.strip()
+
+
 def extract_answer(comments: list[dict]) -> tuple[str | None, str | None, int | None]:
-    """Find the maintainer answer comment. Returns (answer, created_at, comment_id)."""
+    """Find the maintainer answer comment. Returns (answer, created_at, comment_id).
+
+    The body returned here is what gets **stored and later served**, so the routing markers are stripped
+    at this point rather than at a display site — the D1 row is the only copy that exists.
+    """
     for c in comments:
         body = c.get("body") or ""
         if any(m in body for m in ANSWER_MARKERS) and not any(a in body for a in AUTOMATED_MARKERS):
-            return body, c.get("created_at"), c.get("id")
+            return _strip_routing_markers(body), c.get("created_at"), c.get("id")
     # Fallback: last non-automated, non-bot comment.
     for c in reversed(comments):
         body = c.get("body") or ""
@@ -158,7 +184,7 @@ def extract_answer(comments: list[dict]) -> tuple[str | None, str | None, int | 
         if any(a in body for a in AUTOMATED_MARKERS):
             continue
         if len(body) > 100:
-            return body, c.get("created_at"), c.get("id")
+            return _strip_routing_markers(body), c.get("created_at"), c.get("id")
     return None, None, None
 
 
