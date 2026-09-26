@@ -79,6 +79,12 @@ DIGEST_TITLE = "Question intake digest — unresolved clusters"
 # 3 is the only setting that recovers the three clusters a human reading the backlog also produced, so
 # the two questionable pairs are accepted as *suggestions* — which is why the receipt says "may be the
 # same question" and invites the reader to ignore the line.
+# Re-swept after the Opire-banner fix (see `signature()`), same result: 3 is the only floor that
+# recovers every cluster a human reading the backlog also produced. Known imprecision, stated
+# rather than hidden: `{2171, 2260}` groups on `returns`/`source`/`text`, which are filler, so that
+# pair is wrong. It is left in because the alternative — raising the floor to 4 — loses #2254 from
+# the `secret-safe` cluster, and because both the receipt and the bounty task say explicitly that
+# the grouping is a suggestion the reader may reject.
 CLUSTER_MIN_SHARED = 3
 # A token present in more than this share of the open questions distinguishes nothing, however
 # topical it looks. Measured, not guessed — see `distinctive()`.
@@ -163,6 +169,16 @@ def signature(issue: dict) -> str:
     version of the 2026-09-25 triage did that and put 54 of 91 issues in "corpus already covers this".
     """
     body = re.sub(r"<!--.*?-->", " ", issue.get("body") or "", flags=re.S)
+    # Every issue in this repository carries an Opire banner inside `<details>` ("Everyone can add
+    # rewards … `/reward 100` … `/try` … `/claim #N`"). Left in, it contributes `everyone`, `add`,
+    # `reward`, `claim`, `amount` to *every* signature — tokens shared by all questions, which is the
+    # definition of noise for a clustering step. Found by reading the generated bounty body: the
+    # "shared vocabulary" it printed was `add`, `everyone`, `fields`.
+    body = re.sub(r"(?is)<details.*?</details>", " ", body)
+    body = re.sub(r"(?is)<[^>]{1,80}>", " ", body)
+    # `re.M` is load-bearing: without it `$` only matches at the very end of the string, so the
+    # submitter footer survived even though the pattern looked right (caught by its own test).
+    body = re.sub(r"(?im)^_?submitted via remote mcp.*$", " ", body)
     body = re.sub(r"(?im)^\s*\*{0,2}(source|kind|dedup|submitted by|intake id)\*{0,2}\s*[:：].*$", " ", body)
     title = issue["title"].replace("[Question]", "").replace("Problem", "").strip()
     parts = [title, _section(body, "Problem")[:400], _section(body, "Error")[:200]]
@@ -256,6 +272,137 @@ def corpus_answers(query: str) -> dict:
 
 # ── cluster ─────────────────────────────────────────────────────────────────
 
+# ── bounty tasks: the answer step, delegated to the people who had the problem ──
+#
+# The one part of this loop that cannot be automated is writing the answer, because an answer generated
+# by someone who never observed the failure is an invented source — the failure
+# `docs/maintainer/provenance-gate-2026-09-16.md` exists to prevent. So it is *delegated* instead, to the
+# repository's existing bounty machinery: `bounty` label, `/try` + `/claim` for claiming, merge credit and
+# a leaderboard entry as the reward, and Opire's `/reward` for anyone who wants to fund one with money.
+# See `JOIN.md` § "Bounties & payment" — `zero-bounty` is the design, not an omission.
+#
+# Why a **separate** issue rather than writing acceptance criteria into the question: the quality gate
+# (`issue-quality-gate.yml`) deliberately skips anything labelled `intake`/`mcp-intake` — "intakes are
+# *reports*, not specs" — and every question carries those labels. Writing AC into 22 intake issues was
+# tried on 2026-09-12 and only produced `needs-ac` churn; the exemption is the fix for that. So the task is
+# a new issue that *references* the question, which is also why the gate can label it `ready`: an
+# AC section plus a checkbox list is exactly what `ready` requires.
+#
+# One bounty per **cluster**, not per question: the whole point of the clustering is that N questions are
+# one answer, and a bounty per question would recreate the pile in a new place.
+BOUNTY_MARKER = "<!-- misakanet-question-bounty:anchor-{} -->"
+BOUNTY_LABEL = "bounty"
+
+
+def bounty_body(anchor_number: int, members: list[dict], shared: list[str]) -> str:
+    """An AC-complete task body, in the shape `ai-bounty-template.md` and the quality gate expect.
+
+    Two structural requirements are not cosmetic: the gate looks for an acceptance-criteria section **and**
+    a checkbox list to grant `ready`, and `ai-bounty-template.md` names reproducible evidence as "the
+    condition most submissions fail" — so the first criterion is a pasted command and its output.
+    """
+    lines = [
+        BOUNTY_MARKER.format(anchor_number),
+        f"# [Bounty] Answer the {len(members)} linked question(s) as a lesson",
+        "",
+        "## Context",
+        "",
+        "These intakes ask about something no lesson covers. Measured through the production retrieval path "
+        "(BM25 plus the IDF-weighted relevance floor), every one of them returns `no_match` — so there is "
+        "nothing to link the asker to, and the answer has to be written rather than looked up.",
+        "",
+    ]
+    for member in members:
+        lines.append(f"- #{member['number']} — {member['title']}")
+    if shared:
+        lines += ["", f"_Shared vocabulary that grouped them: `{'`, `'.join(shared)}`._"]
+    lines += [
+        "",
+        "## Deliverable",
+        "",
+        "A lesson under `lessons/` that answers the question(s) above, following "
+        "`docs/maintainer/lesson-fields.md` (title / domain / problem / root cause / fix, and a "
+        "`## Verification` that is a checkable command with an expected result). A written answer in the "
+        "issue is welcome as a first step, but the lesson is what makes it count — it is the artifact the "
+        "corpus keeps and the FAQ is built from.",
+        "",
+        "## MANDATORY ACCEPTANCE CRITERIA (AC)",
+        "",
+        "**0. REPRODUCIBLE EVIDENCE — the condition most submissions fail**",
+        "",
+        "- [ ] Paste the command you ran and the output you got. Not a description of what you did — the "
+        "command and its output. If you name an endpoint it must be `misakanet.org`.",
+        "- [ ] Say what you observed yourself versus what you read somewhere. A lesson citing a source "
+        "that does not exist is worse than one citing nothing (`scripts/check_provenance.py` fails on it).",
+        "",
+        "**1. The lesson passes the repository's own gates**",
+        "",
+        "- [ ] `python3 scripts/lesson_gate.py <your lesson>` is clean.",
+        "- [ ] `python3 scripts/check_provenance.py --check` does not report a dead source for it.",
+        "- [ ] `python3 -m pytest tests/ -q` still passes.",
+        "",
+        "**2. Answering means being found**",
+        "",
+        "- [ ] `misakanet_search` finds your lesson for the question text that produced this bounty. Paste "
+        "the query and the returned lesson id — this is the whole point of the task, and it is measurable.",
+        "",
+        "**3. Claiming**",
+        "",
+        "- [ ] Comment `/try` (or `/claim`) so others know you are on it; one open PR per task. The claim "
+        "rules are in `JOIN.md` and `CONTRIBUTING.md`.",
+        "",
+        "## What the reward is, stated plainly",
+        "",
+        "**This is a `zero-bounty` task: $0.** The reward is merge credit, a leaderboard entry and a line in "
+        "the Hall of Fame. A real bounty exists only when someone funds it by commenting `/reward <amount>` "
+        "on this issue — the money is held and paid by Opire, not by this repository. If you want this one "
+        "funded, say so; if nobody funds it, it is still worth doing, because the answer gets reused by "
+        "every agent that hits the same thing.",
+        "",
+        "## Closes",
+        "",
+        "A merged lesson closes this task **and** the questions above (link them with `Fixes #N` so the "
+        "receipt rule applies). If you cannot finish it, comment here and it goes back to the pool.",
+        "",
+        "<sub>Opened automatically by `scripts/question_autopilot.py` from measured coverage of the open "
+        "questions. The grouping is a suggestion: if these are not really one question, say so and this "
+        "task will be split.</sub>",
+    ]
+    return "\n".join(lines)
+
+
+def planned_bounties(plan: dict) -> list[dict]:
+    """One bounty per cluster. A cluster is the unit a single answer clears."""
+    by_number = {i["number"]: i for i in plan["items"]}
+    out = []
+    for group in plan["groups"]:
+        members = [by_number[n] for n in group["members"] if n in by_number]
+        if len(members) < 2:
+            continue
+        out.append({"anchor": min(group["members"]), "members": members, "shared": group["shared"]})
+    return out
+
+
+def existing_bounty(anchor_number: int) -> dict | None:
+    marker = BOUNTY_MARKER.format(anchor_number).split(":")[0]
+    for issue in gh(f"/issues?state=all&labels={BOUNTY_LABEL}&per_page=100"):
+        if "pull_request" in issue:
+            continue
+        if BOUNTY_MARKER.format(anchor_number) in (issue.get("body") or ""):
+            return issue
+    return None
+
+
+def open_bounties(items: list[dict], groups: list[dict]) -> list[dict]:
+    """One entry per cluster; a question with no cluster is its own single-member task."""
+    expected = []
+    by_number = {i["number"]: i for i in items}
+    if groups:
+        expected = [{"anchor": min(g["members"]), "shared": g["shared"],
+                     "members": [by_number[n] for n in g["members"] if n in by_number]} for g in groups]
+    return [e for e in expected if len(e["members"]) >= 2 or True]
+
+
 # ── receipt text ────────────────────────────────────────────────────────────
 
 def receipt(item: dict) -> str:
@@ -302,7 +449,7 @@ def receipt(item: dict) -> str:
     )
 
 
-def digest_body(items: list[dict], groups: list[dict]) -> str:
+def digest_body(items: list[dict], groups: list[dict], bounties: list[dict] | None = None) -> str:
     lines = [
         "# Question intake digest — unresolved clusters",
         "",
@@ -323,6 +470,21 @@ def digest_body(items: list[dict], groups: list[dict]) -> str:
     uncovered = [i for i in items if i["coverage"]["ok"] and not i["coverage"]["lessons"]]
     covered = [i for i in items if i["coverage"]["ok"] and i["coverage"]["lessons"]]
     unmeasured = [i for i in items if not i["coverage"]["ok"]]
+    lines += [
+        "",
+        "## Claimable tasks",
+        "",
+        "Each genuine-gap cluster has a `[Bounty]` task linked to it. **$0 / `zero-bounty` by design**: the "
+        "reward is merge credit, a leaderboard entry and a line in the Hall of Fame, and a real bounty "
+        "exists only when someone funds it with `/reward <amount>` (`JOIN.md` § Bounties & payment).",
+        "",
+    ]
+    if bounties:
+        for entry in bounties:
+            lines.append(f"- #{entry['anchor']} anchor · {len(entry['members'])} question(s) · "
+                         f"`{', '.join('#' + str(m['number']) for m in entry['members'])}`")
+    else:
+        lines.append("- _none this run_")
     lines += [
         "",
         "## By measured coverage",
@@ -387,6 +549,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--post", action="store_true", help="write the receipts and the digest")
     parser.add_argument("--json", action="store_true", help="print the plan as JSON and stop")
     parser.add_argument("--limit", type=int, default=0, help="only the first N questions (debugging)")
+    parser.add_argument("--bounties", action="store_true",
+                        help="also open/refresh one bounty task per cluster (requires --post to write; "
+                             "dry run prints the bodies)")
     args = parser.parse_args(argv)
 
     plan = build_plan()
@@ -406,6 +571,12 @@ def main(argv: list[str] | None = None) -> int:
                    f"covered by {cov['lessons'][0].get('id')}" if cov["lessons"] else "genuine gap")
         print(f"  #{item['number']:5} {verdict[:44]:44} cluster={item['cluster_with']}")
 
+    if args.bounties:
+        for entry in planned_bounties(plan):
+            print(f"\n--- bounty for anchor #{entry['anchor']} "
+                  f"({len(entry['members'])} question(s)) ---")
+            print(bounty_body(entry["anchor"], entry["members"], entry["shared"]))
+
     if not args.post:
         print("\ndry run — nothing written. Pass --post to write the receipts and the digest.")
         return 0
@@ -421,9 +592,25 @@ def main(argv: list[str] | None = None) -> int:
         written += 1
     print(f"receipts written: {written} (unchanged: {len(plan['items']) - written})")
 
+    if args.bounties:
+        created = updated = 0
+        for entry in planned_bounties(plan):
+            body = bounty_body(entry["anchor"], entry["members"], entry["shared"])
+            found = existing_bounty(entry["anchor"])
+            if found:
+                gh(f"/issues/{found['number']}", {"body": body}, method="PATCH")
+                updated += 1
+            else:
+                issue = gh("/issues", {"title": f"[Bounty] Answer {len(entry['members'])} linked "
+                                                  f"question(s) as a lesson",
+                                       "body": body, "labels": [BOUNTY_LABEL]})
+                print(f"  bounty opened: #{issue['number']}")
+                created += 1
+        print(f"bounties: {created} created, {updated} refreshed")
+
     existing = [i for i in gh("/issues?state=open&per_page=100")
                 if "pull_request" not in i and i["title"].startswith(DIGEST_TITLE)]
-    body = digest_body(plan["items"], plan["groups"])
+    body = digest_body(plan["items"], plan["groups"], planned_bounties(plan))
     if existing:
         gh(f"/issues/{existing[0]['number']}", {"body": body}, method="PATCH")
         print(f"digest updated: #{existing[0]['number']}")
