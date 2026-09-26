@@ -134,12 +134,20 @@ def test_every_lesson_that_carries_the_fields_carries_them_in_the_index():
     missing, wrong = [], []
     for lesson_id, fields in sorted(carriers.items()):
         entry = entries.get(lesson_id)
-        assert entry is not None, f"{lesson_id} carries structured fields but is not in the index"
-        for key, value in sorted(fields.items()):
-            if key not in entry:
-                missing.append(f"{lesson_id}.{key}")
-            elif entry[key] != value:
-                wrong.append(f"{lesson_id}.{key}: index={entry[key]!r} frontmatter={value!r}")
+        if entry is not None:
+            for key, value in sorted(fields.items()):
+                if key not in entry:
+                    missing.append(f"{lesson_id}.{key}")
+                elif entry[key] != value:
+                    wrong.append(f"{lesson_id}.{key}: index={entry[key]!r} frontmatter={value!r}")
+            continue
+        # A lesson that is new to the corpus is not in the index yet, and `data/lessons.json` is refreshed
+        # by the daily `update-lessons.yml` job — the same reasoning as `stale_entries()` above, which was
+        # relaxed for exactly this reason in #2244. This assertion was the second instance of the same
+        # over-strictness and was found by an external contributor whose lesson PR added a file carrying the
+        # structured fields the gate requires: the gate failed on the contributor for something a scheduled
+        # job owns. Their patch (PR #2299) is what this adopts, with the attribution kept.
+        continue
     assert not missing, (
         "the index dropped structured fields the lesson's frontmatter carries, so the "
         f"GitHub/KV fallback cannot serve them: {missing}"
