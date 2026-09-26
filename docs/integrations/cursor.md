@@ -1,6 +1,6 @@
 # Cursor Integration
 
-Give Cursor access to 411 indexed failure lessons from MisakaNet.
+Give Cursor access to 417 indexed failure lessons from MisakaNet.
 
 Cursor (0.45+) supports the Model Context Protocol (MCP) directly, allowing it to seamlessly invoke tools provided by MisakaNet.
 
