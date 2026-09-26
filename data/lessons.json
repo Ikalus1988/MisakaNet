@@ -12120,5 +12120,37 @@
     "evidence_source": "frontmatter",
     "trust_score": 0.387,
     "contributor": ""
+  },
+  {
+    "id": "write-success-silent-data-loss",
+    "title": "Write operations return success but data is missing",
+    "domain": "backend",
+    "tags": [
+      "data-loss",
+      "go",
+      "bigquery",
+      "silent-failure",
+      "verification"
+    ],
+    "summary": "API返回成功但数据未写入，因为错误被静默吞掉——需要写后读验证。",
+    "preview": "# Write operations return success but data is missing\n\nAPI returns 200 OK, logs show write successful, but data does not appear in destination store.\n\n## Root Cause\n\nError in write path is silently swallowed by try/except or error handler that logs but does not propagate.\n\n## Fix\n\nImplement write-then-read verification: after every write, immediately read back and compare. Check batch APIs for partial failure iterators.",
+    "url": "https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/contrib/write-success-silent-data-loss.md",
+    "created": "2026-09-15",
+    "updated": "2026-09-15",
+    "triggers": [
+      "write success but data missing",
+      "200 OK but no data"
+    ],
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.85,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": false,
+    "evidence_level": "E0",
+    "evidence_source": "intake",
+    "trust_score": 0.5,
+    "contributor": "Ikalus1988"
   }
 ]
