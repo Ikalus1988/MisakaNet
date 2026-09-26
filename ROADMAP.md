@@ -35,7 +35,7 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 
 | 指标 | 数值 |
 |---|---|
-| 公开索引语料（SSOT，当前） | **411** |
+| 公开索引语料（SSOT，当前） | **417** |
 | domain 覆盖（当前） | **44** |
 
 > 这两行由 `scripts/sync_lesson_count.py` 维护：每日 job 会重写它们，`--check` 不一致即红，
