@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-09-26T15:46:17.841263+00:00",
+  "generated_at": "2026-09-26T16:31:13.095863+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2320",
+      "timestamp": "2026-09-26T16:05:17Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2319",
+      "timestamp": "2026-09-26T16:00:23Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(gate): an unreadable frontmatter block was reported as missing fields, and \"no lesson\" read as a pass",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2317",
+      "timestamp": "2026-09-26T15:49:28Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore: auto-update lessons.json, public counts and generated pages",
@@ -16,27 +37,6 @@
       "title": "feat(lesson): adopt the macOS Chrome headless PDF supervision lesson (from #2299)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2316",
       "timestamp": "2026-09-26T15:35:15Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(site): the node count is not published anywhere — it was never a measurement of use",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2313",
-      "timestamp": "2026-09-26T15:03:59Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lesson: land four lessons — three found uncommitted in the working tree, one written this session",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2310",
-      "timestamp": "2026-09-26T14:52:24Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(tests): the suite rewrote the published index, and a lesson-only PR paid for it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2312",
-      "timestamp": "2026-09-26T14:47:27Z",
       "source": "github"
     },
     {
