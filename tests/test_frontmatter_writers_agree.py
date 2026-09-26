@@ -34,7 +34,13 @@ from misakanet.freshness import _extract_frontmatter  # noqa: E402
 
 
 def _no_git(*args, **kwargs):
-    """Stand in for `git add/commit/push`: report success without touching a repository."""
+    """Stand in for `git add/commit/push`: report success without touching a repository.
+
+    "Report success" is the whole problem: `write_lesson`'s success branch rebuilds the public index
+    (`from update_lessons_json import main`), so a stub that returns `returncode = 0` sends the code
+    down the *production* path with the repository as its output directory. Pair this with
+    `_no_index_rebuild` — never with the real rebuild.
+    """
     import subprocess
 
     class _Done:
@@ -43,6 +49,25 @@ def _no_git(*args, **kwargs):
         stderr = ""
 
     return _Done()
+
+
+def _no_index_rebuild(monkeypatch):
+    """Stop `write_lesson` from rebuilding `data/lessons.json` after its (stubbed) successful push.
+
+    Measured 2026-09-26: without this, running the suite rewrote the checkout's own index from
+    `lessons/` (411 → 415 entries as soon as a pull request added a lesson) **and** every published
+    count surface, because `update_lessons_json.main()` finishes by refreshing them. The next test to
+    read the index then failed — `test_lesson_page_generator::test_repo_pages_match_the_index`, on a
+    branch that had touched no page at all.
+
+    `tests/conftest.py` redirects `MISAKANET_LESSONS_INDEX` so the write cannot reach the repository
+    even if this stub is removed; this keeps the test from doing pointless work and from depending on
+    that redirection to be honest about what it covers.
+    """
+    import types
+
+    monkeypatch.setitem(sys.modules, "update_lessons_json",
+                        types.SimpleNamespace(main=lambda *a, **k: None))
 
 
 # ── #1922: the lesson writer's frontmatter must be readable ────────────────────────────────────────
@@ -83,6 +108,7 @@ def test_write_lesson_writes_frontmatter_that_parses(tmp_path, monkeypatch):
     # `write_lesson` finishes by committing and pushing for real. Stub the *process* rather than
     # the callers: a test that can reach the network is a test that behaves differently in CI.
     monkeypatch.setattr(q.subprocess, "run", _no_git)
+    _no_index_rebuild(monkeypatch)
 
     ok = q.write_lesson(
         "Frontmatter fence probe",
@@ -112,6 +138,7 @@ def test_both_frontmatter_builders_agree(tmp_path, monkeypatch):
     monkeypatch.setattr(q, "_update_index", lambda *a, **k: None)
     monkeypatch.setattr(q, "_print_suggested_git", lambda *a, **k: None)
     monkeypatch.setattr(q.subprocess, "run", _no_git)
+    _no_index_rebuild(monkeypatch)
 
     content = "## Problem\n\nx\n\n## Root Cause\n\ny\n\n## Solution\n\nz\n\n## Verification\n\nw\n"
     args = ("Both builders", "devops", ["t"], content)
