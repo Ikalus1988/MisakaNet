@@ -20,6 +20,7 @@ sys.path.insert(0, str(REPO))
 from scripts.lesson_gate import (  # noqa: E402
     allowed_domains,
     find_duplicate_title,
+    frontmatter_diagnostic,
     parse_frontmatter,
     validate_content_len,
     validate_evidence,
@@ -434,3 +435,87 @@ def test_section_aliases_cover_chinese_headings():
     zh = "## 问题\n\n## 根因\n\n## 修复\n\n## 验证\n"
     assert validate_sections(zh) == []
     assert validate_sections("## Problem\n\n## Notes\n") == ["Root Cause", "Solution", "Verification"]
+
+
+# ── an unparseable block must not read as "no block" (2026-09-26) ────────────────────────────────
+
+BROKEN_YAML_LESSON = '''---
+title: "Chrome headless PDF supervision on macOS"
+domain: "automation"
+tags:
+  - "chrome"
+status: "published"
+evidence_level: "E2"
+fixes: [#2255, #2259]
+---
+
+## Problem
+
+body
+
+## Root Cause
+
+r
+
+## Solution
+
+s
+
+## Verification
+
+v
+'''
+
+
+def test_a_broken_frontmatter_block_says_so_instead_of_naming_its_fields(tmp_path):
+    """`fixes: [#2255, #2259]` is invalid YAML (`#` starts a comment) — the fields are all there.
+
+    Measured on PR #2293, a bounty submission: the gate reported
+    `missing required field: title` for a file whose third line is `title: ...`, because
+    `parse_frontmatter` swallows the loader error and returns `{}`. That is the same shape as "no
+    frontmatter at all", and only one of the two is fixed by editing fields. The contributor's only
+    signal sent them to correct values that were already correct.
+    """
+    text = BROKEN_YAML_LESSON
+    assert parse_frontmatter(text)[0] == {}, "the premise: this block does not load"
+    diagnostic = frontmatter_diagnostic(text)
+    assert diagnostic and "not valid YAML" in diagnostic, diagnostic
+    # And the gate prints it *before* the field list, so it is the first thing read.
+    p = tmp_path / "broken.md"
+    p.write_text(text, encoding="utf-8")
+    issues = validate_file(p, REPO)
+    assert issues[0] == diagnostic, issues
+    assert any("missing required field: title" in e for e in issues), (
+        "the downstream field errors must still be reported — the diagnostic explains them"
+    )
+
+
+def test_quoting_the_value_removes_the_diagnostic(tmp_path):
+    """The control: the same file with `fixes: ["#2255"]` parses, so the diagnostic is not a blanket
+    "your frontmatter is odd" warning that fires on every lesson."""
+    fixed = BROKEN_YAML_LESSON.replace('fixes: [#2255, #2259]', 'fixes: ["#2255", "#2259"]')
+    assert frontmatter_diagnostic(fixed) is None
+    assert frontmatter_diagnostic("---\ntitle: x\n---\nbody") is None, "a normal block stays quiet"
+    assert frontmatter_diagnostic("# no frontmatter at all") is None, (
+        "an absent block is not a parse error — the field errors are the right report for it"
+    )
+
+
+def test_the_no_lesson_annotation_says_the_check_verified_nothing():
+    """The workflow's green tick must not read as certification of a deliverable.
+
+    `lesson-gate.yml` runs on every PR so it can be a required check, and reports success when no
+    `lessons/**/*.md` matches (#1920). On 2026-09-26 two PRs claiming a *question-bounty* issue — whose
+    task is a lesson under `lessons/` — carried that check green while adding no lesson at all: one
+    patched `scripts/check_provenance.py`, the other added `solutions/issue_2283_solution.ts`. Nothing
+    can make the job fail there without breaking the required-check property, so what has to be true is
+    that the run *says* it verified nothing, in the annotation a reviewer sees.
+    """
+    text = (REPO / ".github" / "workflows" / "lesson-gate.yml").read_text(encoding="utf-8")
+    assert "::warning title=Lesson Quality Gate verified nothing::" in text, (
+        "the no-lesson branch no longer annotates the run"
+    )
+    assert "says nothing about a lesson" in text, "the annotation no longer states what it does not mean"
+    assert "still reports success on purpose" in text, (
+        "the reason the job cannot simply fail (a required check must report) must stay written down"
+    )
