@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-26T05:09:20.227386+00:00",
+  "generated_at": "2026-09-26T11:34:22.906320+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "chore(data): mirror the live node counter and its surfaces",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2298",
+      "timestamp": "2026-09-26T09:33:37Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(questions): the receipt pointed at unrelated answers, and the digest collected needs-ac — plus the daily job now posts by default",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2286",
+      "timestamp": "2026-09-26T06:00:56Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2279",
+      "timestamp": "2026-09-26T05:18:04Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2278",
+      "timestamp": "2026-09-26T05:12:06Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "chore: update leaderboard snapshot",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2276",
       "timestamp": "2026-09-26T03:38:36Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(questions): the answer step is delegated to the bounty machinery, not to a maintainer",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2275",
-      "timestamp": "2026-09-26T03:33:15Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(questions): the middle of the question loop is now automated — triage, receipts, one digest",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2273",
-      "timestamp": "2026-09-26T03:24:41Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(triage): the SOP said \"answer the maintainer answer in the issue\" and never said how",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2272",
-      "timestamp": "2026-09-26T02:09:20Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(questions): the stored answer carried its own routing marker, and agents were served it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2271",
-      "timestamp": "2026-09-26T02:02:23Z",
       "source": "github"
     },
     {
