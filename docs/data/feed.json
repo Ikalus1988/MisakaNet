@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-09-26T16:31:13.095863+00:00",
+  "generated_at": "2026-09-26T21:17:43.173246+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2321",
+      "timestamp": "2026-09-26T16:34:13Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -30,13 +37,6 @@
       "title": "chore: auto-update lessons.json, public counts and generated pages",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2318",
       "timestamp": "2026-09-26T15:45:36Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(lesson): adopt the macOS Chrome headless PDF supervision lesson (from #2299)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2316",
-      "timestamp": "2026-09-26T15:35:15Z",
       "source": "github"
     },
     {
