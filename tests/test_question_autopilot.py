@@ -28,8 +28,8 @@ spec.loader.exec_module(qa)
 from scripts.sync_answered_questions import AUTOMATED_MARKERS, ANSWER_MARKERS, extract_answer  # noqa: E402
 
 
-def _item(number: int, text: str) -> dict:
-    return {"number": number, "tokens": qa.tokens(text)}
+def _item(number: int, text: str, title: str = "") -> dict:
+    return {"number": number, "title": title or text[:60], "tokens": qa.tokens(text)}
 
 
 # ── coverage verdicts ───────────────────────────────────────────────────────
@@ -170,3 +170,103 @@ def test_a_question_with_no_body_is_still_triaged():
     sig = qa.signature(issue)
     assert sig, "an empty Problem section produced an empty signature"
     assert "Source" not in sig, "the metadata lines are being searched as if they were content"
+
+
+# ── the signature must not be boilerplate ───────────────────────────────────
+
+OPIRE_ISSUE = {
+    "number": 2166,
+    "title": "[Question] When regenerating a PDF from sanitized HTML, which checks verify removal",
+    "body": """**Kind:** question
+**Source:** codex
+**Dedup:** `abc`
+
+## Problem
+Which checks verify that removed fields are absent from text, annotations and metadata?
+
+---
+_Submitted via remote MCP (codex). No account required._
+<br/>
+<hr/>
+
+<details><summary>This repo is using Opire - what does it mean? 👇</summary><br/>💵 Everyone can add
+rewards for this issue commenting <code>/reward 100</code>.<br/>🕵️ If someone starts working on this
+issue they can comment <code>/try</code>.<br/>🪙 Also, everyone can tip any user.</details>
+""",
+}
+
+
+def test_the_opire_banner_is_not_part_of_the_signature():
+    """Every issue carries that `<details>` banner, so leaving it in gives every question the same words.
+
+    Found by reading the autopilot's own output: the "shared vocabulary" of a generated bounty task was
+    `add`, `everyone`, `fields` — the banner's words, not the questions'. A clustering step fed
+    corpus-wide boilerplate clusters on nothing.
+    """
+    sig = qa.signature(OPIRE_ISSUE)
+    for leaked in ("everyone", "reward", "claim", "tip", "opire", "documentation"):
+        assert leaked not in sig.lower(), f"{leaked!r} leaked in from the Opire banner: {sig[:200]!r}"
+    assert "removed fields are absent" in sig, "stripping the banner also removed the problem statement"
+
+
+def test_html_leftovers_do_not_reach_the_signature():
+    sig = qa.signature(OPIRE_ISSUE)
+    assert "<" not in sig and ">" not in sig, sig[:200]
+    assert "submitted via remote mcp" not in sig.lower()
+
+
+# ── a task may only tell a contributor to run commands that exist ───────────
+
+def test_every_script_named_in_the_bounty_body_exists():
+    """The autopilot writes instructions for other people; it must not invent a command.
+
+    The first generated body said `python3 scripts/provenance_gate.py --check`. There is no such file —
+    the real one is `scripts/check_provenance.py` — and nobody would have noticed until a contributor
+    reported it, because the task is a document.
+    """
+    body = qa.bounty_body(2254, [_item(2254, "secret-safe validation"), _item(2257, "secret-safe metadata")],
+                          ["secret-safe"])
+    named = sorted(set(qa.re.findall(r"scripts/[A-Za-z0-9_./-]+\.py", body)))
+    assert named, "expected the task to name the repository's own gates"
+    missing = [n for n in named if not (REPO / n).is_file()]
+    assert not missing, f"the task tells contributors to run scripts that do not exist: {missing}"
+
+
+def test_the_task_satisfies_the_quality_gates_own_criteria():
+    """`issue-quality-gate.yml` grants `ready` only with an AC section *and* a checkbox list."""
+    body = qa.bounty_body(2254, [_item(2254, "a"), _item(2257, "b")], [])
+    assert qa.re.search(r"acceptance criteria|AC|验收标准|MANDATORY", body, qa.re.I), "no AC section"
+    assert qa.re.search(r"\[ \]|\[x\]|\[X\]", body), "no checkbox list — the gate would label it needs-ac"
+
+
+def test_the_task_states_the_payment_terms_plainly():
+    """`JOIN.md`: zero-bounty is the design, not an omission. A task must not imply it pays."""
+    body = qa.bounty_body(2254, [_item(2254, "a"), _item(2257, "b")], [])
+    assert "$0" in body and "zero-bounty" in body
+    assert "/reward" in body, "a reader who wants it funded must be told how"
+    assert "JOIN.md" in body, "the terms live in JOIN.md; cite them"
+
+
+def test_the_task_carries_its_idempotency_marker():
+    body = qa.bounty_body(2254, [_item(2254, "a"), _item(2257, "b")], [])
+    assert qa.BOUNTY_MARKER.format(2254) in body
+
+
+def test_a_lone_question_is_not_given_a_bounty():
+    """A cluster is the unit one answer clears, and one question is not a cluster.
+
+    Two shapes of "no cluster": no groups at all, and a group that happens to hold a single member. Only
+    the second one exercises the length check — the first version of this test used only the first, so
+    lowering the threshold from 2 to 1 went unnoticed.
+    """
+    items = [{"number": 1, "title": "a", "tokens": {"a"}}, {"number": 2, "title": "b", "tokens": {"b"}}]
+    assert qa.planned_bounties({"items": items, "groups": []}) == []
+    assert qa.planned_bounties({"items": items, "groups": [{"members": [1], "shared": []}]}) == []
+
+
+def test_a_cluster_produces_exactly_one_bounty_anchored_at_its_lowest_number():
+    plan = {"items": [{"number": 2264, "title": "x", "tokens": set()},
+                      {"number": 2266, "title": "y", "tokens": set()}],
+            "groups": [{"members": [2264, 2266], "shared": ["cli"]}]}
+    got = qa.planned_bounties(plan)
+    assert len(got) == 1 and got[0]["anchor"] == 2264
