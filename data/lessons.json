@@ -6917,6 +6917,43 @@
     "contributor": ""
   },
   {
+    "id": "macos-chrome-headless-pdf-supervision",
+    "title": "Supervise macOS Chrome Headless PDF Generation and Handle Process Timeouts",
+    "domain": "automation",
+    "tags": [
+      "chrome",
+      "headless",
+      "pdf",
+      "macos",
+      "subprocess",
+      "timeout",
+      "process-supervision"
+    ],
+    "summary": "When generating PDF documents on macOS using Google Chrome in headless mode (`--headless --print-to-pdf`), parent supervisor processes (such as Python scripts i…",
+    "preview": "# Supervise macOS Chrome Headless PDF Generation and Handle Process Timeouts\n\n## Problem\n\nWhen generating PDF documents on macOS using Google Chrome in headless mode (`--headless --print-to-pdf`), parent supervisor processes (such as Python scripts invoking `subprocess.run()`) frequently hang until the process timeout expires, raising an unhandled exception:\n\n```text\nsubprocess.TimeoutExpired: Chrome --headless --print-to-pdf timed out after 45 seconds\n```\n\nThe output PDF file is already written to disk, complete, and syntactically valid. Independent inspection confirms that page counts match, fonts are embedded, PDF syntax (via `qpdf --check`) is intact, text parity matches source content, and raster review passes.\n\nHowever, because the Chrome process does not exit promptly upon finalizing the PDF file, a naive supervisor blocks until the full timeout threshold is reached. Relying on an arbitrary 40- or 45-second timeout to kill the process adds massive latency to document generation pipelines, misclassifies successful generation jobs as errors, and risks accumulating orphaned `Google Chrome Helper` processes on macOS.\n\n## Root Cause\n\nChrome remaining alive after completing local PDF generation on macOS is caused by the decoupling of document serialization from the Chromium browser process lifecycle:\n\n1. **Decoupled PDF Output and Browser Teardown**: Chromium's print subsystem (Blink and Skia PDF) rasterizes the layout and flushes the complete PDF byte stream (including header `%PDF-` and trailer `%%EOF`) to disk, subsequently closing the file handle. However, closing the output file does not automatically trigger an immediate browser exit. In modern headless mode (`--headless=new`), Chromium runs the full browser architecture (`base::RunLoop`) rather than a single-shot conversion utility.\n2. **Lingering Background Connections and Event Loop Tasks**: Pages containing external assets, web fonts, analytics scripts, service workers, or HTTP/2 keep-alive socket connections keep Chromium's Network Service active. Chromium keeps its main event loop running while awaiting socket draining or connection timeouts.\n3. **macOS-Specific RunLoop and Subsystem Teardown**: On macOS, Chrome initializes Cocoa/AppKit run loops (`NSApplication`), Mach IPC ports, CoreAudio, and helper subprocesses (`Google Chrome Helper (GPU)`, `Google Chrome Helper (Alerts)`). macOS-specific s\n\n[clipped]",
+    "summary_plain": "Chrome headless on macOS writes the PDF but lingers; supervise file completion rather than waiting on process exit.",
+    "trigger": "subprocess.TimeoutExpired: Chrome --headless --print-to-pdf timed out after 45 seconds macOS remain alive",
+    "verify": "python3 test_supervise.py exits with code 0 and verifies complete PDF within 3s without timeout",
+    "url": "lessons/contrib/macos-chrome-headless-pdf-supervision.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [
+      "issue:#2283",
+      "repro:https://developer.chrome.com/docs/chromium/new-headless"
+    ],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E2",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.425,
+    "contributor": ""
+  },
+  {
     "id": "macos-homebrew-python-pip-install-blocked-by-pep-668-externa",
     "title": "macOS Homebrew Python: pip install Blocked by PEP 668 externally-managed-environment",
     "domain": "devops",

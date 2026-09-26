@@ -35,7 +35,7 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 
 | 指标 | 数值 |
 |---|---|
-| 公开索引语料（SSOT，当前） | **411** |
+| 公开索引语料（SSOT，当前） | **412** |
 | 已注册节点（当前） | **4926** |
 | domain 覆盖（当前） | **44** |
 

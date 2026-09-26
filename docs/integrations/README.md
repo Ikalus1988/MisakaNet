@@ -1,6 +1,6 @@
 # Integrations
 
-Connect MisakaNet to your AI coding tool. Search 411 indexed failure-recovery lessons directly from your workflow.
+Connect MisakaNet to your AI coding tool. Search 412 indexed failure-recovery lessons directly from your workflow.
 
 ## Available Integrations
 

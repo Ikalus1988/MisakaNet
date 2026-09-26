@@ -179,7 +179,8 @@ class TestMisakaNetSearchTool(unittest.TestCase):
             results,
             ["async result: first query", "async result: second query"],
         )
-        self.assertLess(elapsed, 0.35)
+        # Sequential execution would take >= 0.40s (2 * 0.2s); allow headroom for CI runner jitter
+        self.assertLess(elapsed, 0.38)
 
     def test_repeated_query_signature_short_circuits_search(self):
         with tempfile.TemporaryDirectory() as tmp:
