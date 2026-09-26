@@ -61,6 +61,12 @@ jobs:
       # docs/.generated-pages.json records the set.
       - name: Regenerate lesson/topic pages
         run: python3 scripts/build_lesson_pages.py
+      - name: Rebuild lessons/index.md
+        run: python3 scripts/rebuild_lessons_index.py
+
+      - name: Check lessons/index.md consistency
+        run: python3 scripts/rebuild_lessons_index.py --check
+
 
       # The OKF export had no writer for two and a half months (#2185): `data/okf/lessons.jsonl` was last
       # written 2026-07-07 while the corpus grew to 411 lessons, and because `data/sag.db` is built from it
