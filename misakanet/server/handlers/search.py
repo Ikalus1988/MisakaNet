@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from datetime import datetime, timezone
+from pathlib import Path
 
 from .._config import REPO_ROOT, _init_search
 
@@ -32,7 +34,17 @@ def _detect_kind(query: str, explicit_kind: str | None = None) -> str:
     return "all"
 
 # Gap analysis: log zero-result queries (Issue #1164)
-_GAPS_FILE = REPO_ROOT / "data" / "search_gaps.jsonl"
+#
+# The path is overridable because a *test* drives this handler for real: `tests/test_mcp_server.py` is a
+# smoke script that calls `handle_request` directly, and before this override existed every one of its
+# no-result searches appended a line to the developer's own `data/search_gaps.jsonl`. That file is the
+# local input for "which lessons are missing" (`scripts/demand_board.py`), and it had reached 278 rows
+# whose largest entries were test traffic — `quantum computing error correction` ×105 and
+# `draft test lesson` ×49 — so the signal it exists to provide was mostly noise. `tests/conftest.py`
+# points this at a per-session temporary directory, and the smoke script points it at one for itself when
+# it is run directly rather than under pytest.
+GAP_LOG_ENV = "MISAKANET_GAP_LOG"
+_GAPS_FILE = Path(os.environ.get(GAP_LOG_ENV) or (REPO_ROOT / "data" / "search_gaps.jsonl"))
 
 
 def _log_search_gap(query: str, source: str) -> None:
