@@ -2,8 +2,9 @@ name: Question Autopilot
 
 # The mechanical half of the question loop is already automatic (answered label -> sync -> D1 -> FAQ).
 # What piles up is the reading and triage, which is what this job does: per open `[Question]`, measure
-# whether the corpus answers it through the **production** retrieval path, group questions that are the
-# same question, and refresh one digest.
+# whether the corpus answers it through the **production** retrieval path, post a receipt, group questions
+# that are the same question, and open one **bounty task** per cluster so the answer comes from someone who
+# hit the same thing rather than from a maintainer (`JOIN.md` § Bounties & payment).
 #
 # It never writes an answer, never adds the `answered` label and never closes an issue: `answered` is the
 # switch that puts text into the FAQ, which agents receive as a maintainer answer, and that has to come
@@ -17,10 +18,10 @@ on:
   workflow_dispatch:
     inputs:
       post:
-        description: "Write the receipts and the digest (otherwise report only)"
+        description: "Write the receipts, the bounty tasks and the digest (set false for a dry run)"
         required: false
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: read
@@ -41,11 +42,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Report-only by default, deliberately rather than timidly: the receipts are public comments
-          # and the digest is a public issue. Turning it on is a maintainer decision (`post: true` on a
-          # manual dispatch).
-          if [ "${{ inputs.post }}" = "true" ]; then
-            python3 scripts/question_autopilot.py --post | tee -a "$GITHUB_STEP_SUMMARY"
-          else
+          # Posting is the default, because report-only is the thing this job exists to replace: a report
+          # nobody reads *is* the backlog. Established by the maintainer on 2026-09-26 after reviewing a
+          # full dry run against the live backlog (18 questions → 18 receipts, 4 cluster bounty tasks,
+          # 1 digest). `post: false` on a manual dispatch restores the dry run for inspecting a change.
+          #
+          # Safe to run daily: every write is idempotent — receipts are keyed by the hash of their own
+          # content, bounty tasks by an anchor marker, and the digest is updated in place.
+          if [ "${{ inputs.post }}" = "false" ]; then
             python3 scripts/question_autopilot.py | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            python3 scripts/question_autopilot.py --post --bounties | tee -a "$GITHUB_STEP_SUMMARY"
           fi

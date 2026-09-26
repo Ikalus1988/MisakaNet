@@ -67,6 +67,12 @@ ENDPOINT = os.environ.get("MISAKANET_ENDPOINT", "https://misakanet.org/mcp")
 # its AUTOMATED_MARKERS, and this marker is registered there for exactly that reason.
 RECEIPT_MARKER = "<!-- misakanet-question-autopilot -->"
 DIGEST_TITLE = "Question intake digest — unresolved clusters"
+# A digest is a *report*: it has no acceptance criteria and must not be labelled `needs-ac`, which is
+# the "phantom missing AC" churn `issue-quality-gate.yml` was already burned by (its own comment
+# records five of six needs-ac issues once being intakes, "including a salvage digest the workflow
+# itself opened"). That gate exempts a fixed label list, so the digest carries one of its own and
+# the gate learns it — an agreement pinned by `tests/test_question_autopilot.py`.
+DIGEST_LABEL = "question-digest"
 
 # Distinctive-token floor for calling two questions one cluster. Tuned low on purpose: an over-eager
 # cluster costs a merge suggestion a human can ignore, an under-eager one costs the duplication this
@@ -427,10 +433,11 @@ def receipt(item: dict) -> str:
                "symptom you saw (`## Error`), what you already tried, and how you would check a fix "
                "worked (a command plus its expected output). With those this becomes either an answer "
                "or — better — a lesson, and the corpus keeps it for the next agent that hits it.")
+    # No "related answered question" line, deliberately. The FAQ matcher is token overlap, and measured
+    # on this backlog it attached two unrelated answered questions (#2099 site-offline, #1724 a bounty
+    # status question) to a macOS PDF question. A receipt that points the asker at an unrelated answer is
+    # worse than one that says nothing: it is the only claim in the comment, and it is wrong.
     faq = ""
-    if cov.get("faq"):
-        faq = (f"\n\n_One related answered question exists: "
-               f"{', '.join(str(r.get('issue_url')) for r in cov['faq'][:2])}._")
     cluster_line = ""
     if item.get("cluster_with"):
         cluster_line = (
@@ -615,7 +622,7 @@ def main(argv: list[str] | None = None) -> int:
         gh(f"/issues/{existing[0]['number']}", {"body": body}, method="PATCH")
         print(f"digest updated: #{existing[0]['number']}")
     else:
-        created = gh("/issues", {"title": DIGEST_TITLE, "body": body})
+        created = gh("/issues", {"title": DIGEST_TITLE, "body": body, "labels": [DIGEST_LABEL]})
         print(f"digest created: #{created['number']}")
     return 0
 
