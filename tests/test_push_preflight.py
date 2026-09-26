@@ -19,6 +19,7 @@ red instead of the gate going quiet.
 """
 from __future__ import annotations
 
+import json
 import pathlib
 import re
 import sys
@@ -52,12 +53,34 @@ def test_removals_is_a_multiset_not_a_set():
     assert pp.removals(remote, local) == ["y"]
 
 
-def test_a_value_revert_is_caught():
-    remote = "MisakaNet searches 411+ failure lessons so an agent skips the\n"
-    local = "MisakaNet searches 414+ failure lessons so an agent skips the\n"
+def test_a_value_behind_main_is_a_revert():
+    """main's number is larger, so pushing my copy would revert it — the loss the tool is for."""
+    remote = "MisakaNet searches 414+ failure lessons so an agent skips the\n"
+    local = "MisakaNet searches 411+ failure lessons so an agent skips the\n"
     lost = pp.removals(remote, local)
-    assert lost == ["MisakaNet searches 411+ failure lessons so an agent skips the"]
-    assert pp.value_reverts(lost, local) == lost
+    assert _directions(lost, local) == {"behind": lost}
+
+
+def test_a_value_ahead_of_main_is_not_called_a_revert():
+    """The case that produced issue #2274: a legitimate bump, mislabelled as a revert.
+
+    `docs/CI.md`'s section count went 22 -> 23 because a row was added. The first version of this tool
+    called that `VALUE REVERTED — pushing this reverts main's value to your older one`, which is backwards:
+    it also fires on every legitimate count bump, and the repo's documented workflow includes rewording and
+    re-registering those sentences. Ahead is reported, not failed — whether it is safe depends on files the
+    tool cannot see.
+    """
+    remote = "## 数据/索引（22）\n"
+    local = "## 数据/索引（23）\n"
+    lost = pp.removals(remote, local)
+    assert _directions(lost, local) == {"ahead": lost}
+    assert _reverts(lost, local) == [], "a count bump must not be reported as a revert"
+
+
+def test_a_number_that_moves_without_a_wording_change_only_in_whitespace_is_ignored():
+    """A line whose only difference is spacing has no number change to judge."""
+    lost = ["the build takes 30 seconds   "]
+    assert pp.value_changes(lost, "the build takes 30 seconds\n") == []
 
 
 def test_a_reworded_sentence_is_not_a_value_revert():
@@ -70,14 +93,14 @@ def test_a_reworded_sentence_is_not_a_value_revert():
     local = "MisakaNet searches 411+ indexed failure lessons so agents skip the\n"
     lost = pp.removals(remote, local)
     assert lost, "sanity: the old sentence really is removed by the rewording"
-    assert pp.value_reverts(lost, local) == []
+    assert _reverts(lost, local) == []
 
 
 def test_a_line_without_numbers_is_never_a_value_revert():
     remote = "See docs/agents/repo-operations.md for the full manual.\n"
     local = "See docs/agents/repo-operations.md.\n"
     lost = pp.removals(remote, local)
-    assert pp.value_reverts(lost, local) == []
+    assert _reverts(lost, local) == []
 
 
 def test_a_version_line_going_backwards_is_a_value_revert():
@@ -85,7 +108,19 @@ def test_a_version_line_going_backwards_is_a_value_revert():
     remote = '  version: env.MCP_VERSION || "2.35.0", // x-release-please-version\n'
     local = '  version: env.MCP_VERSION || "2.34.0", // x-release-please-version\n'
     lost = pp.removals(remote, local)
-    assert pp.value_reverts(lost, local), "a stale annotated version must be reported"
+    assert _directions(lost, local)["behind"], "a stale annotated version must be reported"
+
+
+def _directions(lost, local_text):
+    """`{direction: [line, ...]}` — the tests are about which direction a change goes."""
+    out: dict[str, list[str]] = {}
+    for line, direction in pp.value_changes(lost, local_text):
+        out.setdefault(direction, []).append(line)
+    return out
+
+
+def _reverts(lost, local_text):
+    return _directions(lost, local_text).get("behind", [])
 
 
 # ── the patterns must match the repository's real managed lines ─────────────
@@ -105,7 +140,7 @@ def test_patterns_match_the_real_lesson_count_sentence():
     # And the value-revert rule must fire on that same real sentence with a different number, which is
     # the state this repository has actually been in (the local copy one count behind main).
     older = re.sub(r"\d[\d,]*", "1", line, count=1)
-    assert pp.value_reverts([older], line), (
+    assert _directions([older], line), (
         f"a count sentence whose number moved is not treated as a value revert: {older!r} vs {line!r}"
     )
 
@@ -352,3 +387,66 @@ def test_a_path_that_is_not_a_string_is_a_usage_error():
     with pytest.raises(SystemExit) as exc:
         pp.main([])
     assert exc.value.code == 2
+
+
+def test_the_problem_advice_matches_the_problem_kind(stubbed, tmp_path, capsys):
+    """An identical file is not a number problem, and saying it is sends the reader the wrong way.
+
+    The first version printed the "same wording, larger number on main" explanation for every kind,
+    including "identical to main" — found by running the tool on a file whose change had just been merged.
+    """
+    path = "docs/llms.txt"
+    stubbed["remote"] = {path: pp.local_blob_hashes([path])[path]}
+    assert pp.main([path]) == 1
+    out = capsys.readouterr().out
+    assert "(identical)" in out
+    # Presence *and* absence. The first version asserted only the absence of the wrong advice, so an output
+    # that printed no advice at all passed — which is what collapsing the per-kind loop does. Asserting
+    # absence is not asserting the right thing happened; this is the third time in one session that a test
+    # of mine was weak in exactly this direction.
+    # A fragment unique to the *advice* line. "nothing to push" also appears in the per-file line above it,
+    # so asserting that string proved nothing about the advice — the fourth assertion of mine in one session
+    # to be satisfied by text that came from somewhere else.
+    assert "re-check that you edited the file" in out, f"the identical-file advice is missing:\n{out}"
+    assert "reverts it" not in out, f"the revert advice was printed for an identical file:\n{out}"
+
+
+# ── the branch you are about to push to may already be merged ───────────────
+
+def _pulls(monkeypatch, payload):
+    monkeypatch.setattr(pp, "_get", lambda url, token, accept=None, attempts=3: json.dumps(payload).encode())
+
+
+def test_pushing_to_an_already_merged_branch_is_refused(monkeypatch):
+    """The trap that cost two PRs in one session: the commit lands on the branch and nowhere else.
+
+    `gh_push_via_api.py --base <branch> --branch <branch>` is the documented way to add a commit to an open
+    PR, and auto-merge here is fast — so the branch is often merged before the follow-up arrives. Nothing
+    fails; the commit simply exists only on a branch nobody reads again.
+    """
+    _pulls(monkeypatch, [
+        {"merged_at": None, "base": {"ref": "main"}, "merge_commit_sha": "0" * 40},
+        {"merged_at": "2026-09-26T03:33:15Z", "base": {"ref": "main"}, "merge_commit_sha": "8ce336f613aa"},
+    ])
+    message = pp.merged_branch_problem("o/r", "my/branch", "t")
+    assert message and "already merged" in message
+    assert "8ce336f613" in message, "the message should name the merge commit so the reader can check"
+    assert "new branch" in message
+
+
+def test_an_unmerged_branch_is_fine(monkeypatch):
+    _pulls(monkeypatch, [{"merged_at": None, "base": {"ref": "main"}, "merge_commit_sha": "0" * 40}])
+    assert pp.merged_branch_problem("o/r", "my/branch", "t") is None
+
+
+def test_a_closed_but_unmerged_pr_does_not_block_the_push(monkeypatch):
+    """Closed without merging is the normal state of a branch being iterated on."""
+    _pulls(monkeypatch, [{"merged_at": None, "state": "closed", "base": {"ref": "main"},
+                          "merge_commit_sha": None}])
+    assert pp.merged_branch_problem("o/r", "my/branch", "t") is None
+
+
+def test_main_refuses_before_reporting_anything(monkeypatch, capsys, stubbed):
+    monkeypatch.setattr(pp, "merged_branch_problem", lambda repo, branch, token: "already merged (test)")
+    assert pp.main(["--branch", "my/branch", "docs/llms.txt"]) == 1
+    assert "already merged" in capsys.readouterr().out
