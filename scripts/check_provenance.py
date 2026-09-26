@@ -60,10 +60,15 @@ EXEMPT_HOSTS = {"localhost", "example.com", "example.org", "example.net", "test.
 
 def _host_of(url: str) -> str:
     """The hostname (or bracketed IPv6 literal) of a URL, lower-cased, without the port."""
+    if not url or not isinstance(url, str):
+        return ""
     rest = re.sub(r"^https?://", "", url, flags=re.I)
     rest = rest.split("/")[0].split("?")[0]
     if rest.startswith("["):                       # [fe80::1]:8080
-        return rest[1:rest.find("]")].lower()
+        close_bracket = rest.find("]")
+        if close_bracket != -1:
+            return rest[1:close_bracket].lower()
+        return rest[1:].lower()
     return rest.split(":")[0].lower()
 
 
@@ -76,8 +81,10 @@ def is_non_public_host(host: str) -> bool:
     `0.0.0.0`, and every IPv6 literal were all "checked" — i.e. requested from inside the runner.
     Found by an open-code-review scan (2026-09-16).
     """
+    if not host or not isinstance(host, str):
+        return True
     host = host.strip("[]").lower()
-    if host in EXEMPT_HOSTS or host.endswith((".local", ".internal", ".lan")):
+    if not host or host in EXEMPT_HOSTS or host.endswith((".local", ".internal", ".lan")):
         return True
     if host in ("0.0.0.0", "::", "::1"):
         return True
@@ -95,6 +102,11 @@ def resolves_non_public(host: str) -> bool:
     gate refuses to follow it. Unresolvable names are *not* non-public — they are handled as
     `unknown`, because a lesson may legitimately cite a site that is down.
     """
+    if not host or not isinstance(host, str):
+        return False
+    host = host.strip("[]").strip()
+    if not host:
+        return False
     try:
         infos = socket.getaddrinfo(host, None)
     except Exception:
@@ -102,7 +114,12 @@ def resolves_non_public(host: str) -> bool:
     for info in infos:
         address = info[4][0].split("%")[0]
         try:
-            if not ipaddress.ip_address(address).is_global:
+            ip = ipaddress.ip_address(address)
+            # 198.18.0.0/15 is used by developer transparent / fake-IP proxies (Clash, Surge)
+            # for DNS interception; it is not a private SSRF destination.
+            if isinstance(ip, ipaddress.IPv4Address) and ip in ipaddress.ip_network("198.18.0.0/15"):
+                continue
+            if not ip.is_global:
                 return True
         except ValueError:
             continue
@@ -130,7 +147,7 @@ HIGH_LEVELS = {"E2", "E3"}
 
 def frontmatter(text: str) -> str:
     """The frontmatter block, or '' when the file has none."""
-    if not text.startswith("---"):
+    if not text or not isinstance(text, str) or not text.startswith("---"):
         return ""
     end = text.find("\n---", 3)
     return text[3:end] if end != -1 else ""
@@ -144,6 +161,8 @@ def _json_citations(fm: str) -> list[str] | None:
     contributor could hide a source from the gate by minifying it. Returns None (not []) when the
     block simply is not JSON, so the caller keeps the YAML path for malformed-but-close blocks.
     """
+    if not fm or not isinstance(fm, str):
+        return None
     text = fm.strip()
     if not text.startswith("{"):
         return None
@@ -161,8 +180,8 @@ def _json_citations(fm: str) -> list[str] | None:
             for item in node:
                 walk(item, key)
         elif isinstance(node, str) and key in CITATION_KEYS:
-            for url in re.findall(r"https?://[^\s\"'\]\)>,]+", node):
-                url = url.rstrip(".,;")
+            for url in re.findall(r"https?://[^\s\"'\]\),]+", node):
+                url = url.rstrip(".,;>")
                 if url not in found:
                     found.append(url)
 
@@ -180,6 +199,8 @@ def citations(fm: str) -> list[str]:
     inside a JSON block and the gate would have reported nothing at all. Found by the red-team
     probe, not by review.
     """
+    if not fm or not isinstance(fm, str):
+        return []
     json_urls = _json_citations(fm)
     if json_urls is not None:
         return json_urls
@@ -211,14 +232,16 @@ def citations(fm: str) -> list[str]:
             value = stripped      # block scalar (`source: |` then an indented URL) — finding 15
         else:
             continue
-        for url in re.findall(r"https?://[^\s\"'\]\)>,]+", value):
-            url = url.rstrip(".,;")
+        for url in re.findall(r"https?://[^\s\"'\]\),]+", value):
+            url = url.rstrip(".,;>")
             if url not in found:
                 found.append(url)
     return found
 
 
 def evidence_level(fm: str) -> str:
+    if not fm or not isinstance(fm, str):
+        return ""
     text = fm.strip()
     if text.startswith("{"):
         try:
@@ -233,6 +256,8 @@ def evidence_level(fm: str) -> str:
 
 def classify(url: str) -> str:
     """`exempt` | `placeholder` — decided without any network call."""
+    if not url or not isinstance(url, str):
+        return "exempt"
     if is_non_public_host(_host_of(url)):
         return "exempt"
     if any(p.search(url) for p in PLACEHOLDER_PATTERNS):
@@ -242,6 +267,8 @@ def classify(url: str) -> str:
 
 def github_api_url(url: str) -> str | None:
     """Map a github.com URL onto the REST resource that proves it exists."""
+    if not url or not isinstance(url, str):
+        return None
     match = re.match(r"https?://github\.com/([^/]+)/([^/#?]+)(?:/(?:issues|pull)/(\d+))?", url, re.I)
     if not match:
         return None
@@ -260,7 +287,9 @@ def auth_headers(url: str, token: str) -> dict:
     (i.e. anything a contributor can write) received the workflow's `GITHUB_TOKEN`. Found by an
     open-code-review scan (2026-09-16).
     """
-    if token and _host_of(url) == "api.github.com":
+    if not url or not isinstance(url, str) or not token:
+        return {}
+    if _host_of(url) == "api.github.com":
         return {"Authorization": f"Bearer {token}"}
     return {}
 
@@ -304,6 +333,8 @@ def _http(url: str, token: str = "") -> tuple[int | str, str]:
 
 def resolve(url: str, fetcher=None) -> tuple[str, str]:
     """Return (status, detail) where status is ok | dead | unknown | exempt | placeholder."""
+    if not url or not isinstance(url, str):
+        return "exempt", "empty or invalid url"
     verdict = classify(url)
     if verdict in ("exempt", "placeholder"):
         return verdict, ""
@@ -328,6 +359,8 @@ def load_baseline() -> dict:
         data = json.loads(BASELINE.read_text(encoding="utf-8"))
     except Exception:
         return {"known_dead": [], "exempt_urls": []}
+    if not isinstance(data, dict):
+        return {"known_dead": [], "exempt_urls": []}
     data.setdefault("known_dead", [])
     data.setdefault("exempt_urls", [])
     return data
@@ -335,16 +368,37 @@ def load_baseline() -> dict:
 
 def rel_to_repo(path: pathlib.Path) -> str:
     """Repo-relative when possible; a file from outside the repo (tests, ad-hoc checks) as-is."""
+    if path is None:
+        return ""
+    if not isinstance(path, pathlib.Path):
+        try:
+            path = pathlib.Path(path)
+        except Exception:
+            return str(path)
     try:
         return str(path.resolve().relative_to(REPO))
-    except ValueError:
+    except (ValueError, Exception):
         return str(path)
 
 
 def scan(paths: list[pathlib.Path], fetcher=None) -> list[dict]:
     rows: list[dict] = []
+    if not paths:
+        return rows
     for path in paths:
-        text = path.read_text(encoding="utf-8", errors="replace")
+        if path is None:
+            continue
+        if not isinstance(path, pathlib.Path):
+            try:
+                path = pathlib.Path(path)
+            except Exception:
+                continue
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
         fm = frontmatter(text)
         if not fm:
             continue
@@ -366,25 +420,32 @@ def scan(paths: list[pathlib.Path], fetcher=None) -> list[dict]:
 
 def evaluate(rows: list[dict], baseline: dict, strict_new: set[str]) -> tuple[list[str], list[str]]:
     """Return (failures, advisories)."""
+    baseline = baseline or {}
+    strict_new = strict_new or set()
     exempt = set(baseline.get("exempt_urls") or [])
-    known_dead = {entry["url"] for entry in baseline.get("known_dead") or [] if "url" in entry}
+    known_dead = {entry["url"] for entry in baseline.get("known_dead") or [] if isinstance(entry, dict) and "url" in entry}
     failures: list[str] = []
     advisories: list[str] = []
     per_lesson: dict[str, dict] = {}
+    if not rows:
+        return failures, advisories
     for row in rows:
+        if not isinstance(row, dict) or "lesson" not in row or "status" not in row:
+            continue
         bucket = per_lesson.setdefault(row["lesson"], {"resolvable": 0, "dead": [], "placeholder": []})
+        url = row.get("url", "")
         if row["status"] == "ok":
             bucket["resolvable"] += 1
-        elif row["status"] == "dead" and row["url"] not in known_dead and row["url"] not in exempt:
-            bucket["dead"].append(row["url"])
-            failures.append(f"{row['lesson']}: source does not resolve — {row['url']} ({row['detail']})")
+        elif row["status"] == "dead" and url not in known_dead and url not in exempt:
+            bucket["dead"].append(url)
+            failures.append(f"{row['lesson']}: source does not resolve — {url} ({row.get('detail', '')})")
         elif row["status"] == "placeholder":
-            bucket["placeholder"].append(row["url"])
-            failures.append(f"{row['lesson']}: source is a placeholder, not a citation — {row['url']}")
+            bucket["placeholder"].append(url)
+            failures.append(f"{row['lesson']}: source is a placeholder, not a citation — {url}")
     for lesson, bucket in sorted(per_lesson.items()):
         if lesson not in strict_new:
             continue
-        level = next((r["evidence_level"] for r in rows if r["lesson"] == lesson), "")
+        level = next((r.get("evidence_level", "") for r in rows if isinstance(r, dict) and r.get("lesson") == lesson), "")
         if level in HIGH_LEVELS and bucket["resolvable"] == 0 and not bucket["dead"]:
             advisories.append(
                 f"{lesson}: claims evidence_level {level} but cites no resolvable source "
@@ -394,7 +455,16 @@ def evaluate(rows: list[dict], baseline: dict, strict_new: set[str]) -> tuple[li
 
 def lesson_files(explicit: list[str]) -> list[pathlib.Path]:
     if explicit:
-        return [pathlib.Path(p) if pathlib.Path(p).is_absolute() else REPO / p for p in explicit]
+        resolved: list[pathlib.Path] = []
+        for p in explicit:
+            if not p:
+                continue
+            target = pathlib.Path(p) if pathlib.Path(p).is_absolute() else REPO / p
+            if target.is_dir():
+                resolved.extend(sorted(target.rglob("*.md")))
+            else:
+                resolved.append(target)
+        return resolved
     return sorted(LESSONS.rglob("*.md"))
 
 
