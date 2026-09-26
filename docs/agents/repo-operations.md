@@ -77,6 +77,11 @@ python3 -m pytest tests/test_no_workflow_pushes_to_main.py -q
 > 本地 `pytest` 若报 `mcp.server.mcpserver` 之类导入错误，多半是**本地依赖漂移**（本地 mcp 版本
 > 与 `requirements.txt` 不符），不是代码坏了——以 CI 为准。
 
+> **测试不得改写仓库里已发布的面**（2026-09-26）：`tests/conftest.py` 在 import 期把索引生成器的输出
+> 重定向到临时目录，并在**每个测试**前后对「已发布面」（计数 SSOT 注册表里的文件 + `data/lessons.json`
+> + `docs/_lessons_count.txt`）取 `(size, mtime_ns)` 快照；谁改了就以**测试 nodeid** 报错。写测试时
+> 不要「快照-还原」——那会掩盖写入；要么给它一个重定向路径（env / `tmp_path`），要么把调用打桩。
+
 ### PR 上的硬阻断门禁
 
 | 门禁 | 何时跑 | 失败原因示例 |
@@ -172,6 +177,7 @@ python3 -m pytest tests/test_no_workflow_pushes_to_main.py -q
 | `leaderboard-watch` 失败：`fatal: You are not currently on a branch` + 日志里有 `CONFLICT ... data/leaderboard_meta.json` | 两次 push 间隔太近 → 两个 watch run 并发，各自提交同一份**生成物**并互相 rebase 冲突；脚本里的 `git pull --rebase ... \|\| true` 把冲突吞掉，仓库停在 detached HEAD，随即 `git push` 报上面那句。已在 workflow 加 `concurrency`（串行化）+ `-X theirs`（生成物以本次快照为准）+ 显式 `git rebase --abort` 并对失败返回非零 |
 | 每日 `update-lessons.yml` 在 `Commit and push` 步骤失败：`refusing to allow a GitHub App to create or update workflow ... without \`workflows\` permission` | 该 job 的提交里含 `.github/workflows/**` 文件。`GITHUB_TOKEN` **永远**没有 `workflows` 权限（设计如此），所以"用 bot 维持 workflow 文件里的某个值"必然在值变化的那天炸——而且整个重新生成都会被丢弃。修法：把值从 workflow 里搬走，改成运行时读（如 `docs/_lessons_count.txt`，见 `pr-thank-you.yml`），或给该 job 换带 `workflows` 权限的 PAT/App（属安全决策）。计数 SSOT 已把这个文件从注册表移除并写明原因 |
 | 站点课程页/主题页缺失或计数陈旧（例：`docs/topics/contrib` 写 176、实际 330） | `python3 scripts/build_lesson_pages.py --check` 看清单，再跑一次不带 `--check` 的生成。生成物由每日 job 维护；**不要手改** `docs/lessons/**`、`docs/topics/**`、`docs/sitemap.xml`（`docs.yml` 的 push 门禁会红） |
+| **只加了 lesson 的 PR** 上 `test_repo_pages_match_the_index` 红，报 `generated pages drifted from data/lessons.json`，且点名的是**这个 PR 刚加的那几篇**页 | **不是页面漂移，是测试在写仓库**（2026-09-26 查明）：`tests/test_frontmatter_writers_agree.py` 把 `git push` 打桩成 `returncode=0`，而 `queue_lesson.write_lesson` 的**成功分支**会 `from update_lessons_json import main` 重建 `data/lessons.json`（并连带刷新 20+ 个受管计数面，实测一次套件跑完改写 **25 个 tracked 文件**）。于是**后运行**的页面门禁拿被改写的索引去比对 → 11 个"漂移"路径；**只在 PR 新增 lesson 时出现**，而 CI 的字母序保证每次都会撞上。**别照报错跑 `build_lesson_pages.py`**——那会把索引里根本没有的课程页提交上去，真因仍在。已修：生成器认 `MISAKANET_LESSONS_INDEX`（`conftest` import 期重定向，重定向时不同步计数面），`conftest` 另有逐测试的已发布面戳检查会点出**写入者**；`tests/test_no_test_writes_repo_data.py` 用 digest 锁住这两个方向 |
 | 需要看某个脚本的用途 | `ls scripts/` + `<script> --help`；`scripts/doctor.py` 做整体自检 |
 | 站点/README 上的课程数对不上（例如 meta description 写 435、实际 378） | 跑 `python3 scripts/sync_lesson_count.py --check` 看漂移清单，再跑不带 `--check` 的同一命令修好。若某条报 `matched 0× ... The sentence was reworded`，说明受管句子被改写：改文件或更新脚本里的 `SITES` 注册表——**不要**把该行删掉当成"没事"（旧机制就是这么静默失效的，见脚本 docstring） |
 | 需要看 worker 线上错误 | 用 `cf_mcp_auth.py` 拿 CF 凭证 → Cloudflare observability MCP 查（worker 的 `[observability]` 需启用） |

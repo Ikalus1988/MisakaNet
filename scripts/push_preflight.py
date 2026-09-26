@@ -79,7 +79,9 @@ API = "https://api.github.com"
 # only — see `value_reverts` for what actually fails, and why a bare pattern match must not.
 MANAGED_LINE_PATTERNS = (
     ("lesson count", re.compile(r"\b\d[\d,]*\+?\b[^\n]{0,60}?\blessons?\b", re.IGNORECASE)),
-    ("registered-node count", re.compile(r"\b\d[\d,]*\+?\b[^\n]{0,60}?\bnodes?\b", re.IGNORECASE)),
+    # A "registered-node count" row was retired here on 2026-09-26 with the number itself: no surface
+    # publishes one any more (tests/test_lesson_count_ssot.py asserts that, in the same change), so the
+    # row could only ever have flagged historical text in handoff documents.
     ("release-please annotated version", re.compile(r"x-release-please-version")),
     ("package/manifest version", re.compile(r'"(?:version|\.release-please-manifest)"\s*:')),
     ("badge version", re.compile(r"badge/version|img\.shields\.io/badge/version")),
