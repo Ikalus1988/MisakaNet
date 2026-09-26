@@ -52,28 +52,54 @@ def test_repo_count_surface_is_consistent():
     )
 
 
-def test_repo_node_surface_is_consistent():
-    """The same gate for the node count (issue #1683).
+# Surfaces that quoted the node count until 2026-09-26, with the sentence each carried. The
+# registry that kept them consistent is gone (the number is not a measurement of anything a reader
+# would take it for — see the `sync_lesson_count.py` docstring), so what has to be gated now is the
+# opposite direction: it must not come back, on a surface or in a dictionary.
+_FORMER_NODE_SURFACES = (
+    ("docs/llms.txt", r"\b\d[\d,]*\+?\s+registered nodes\b"),
+    ("docs/.well-known/llms.txt", r"\b\d[\d,]*\+?\s+registered nodes\b"),
+    ("README.zh-CN.md", r"\|\s*🌐\s*Nodes\s*\|"),
+    ("README.ja.md", r"\|\s*登録ノード\s*\|"),
+    ("docs/index.html", r'id="total-nodes"'),
+)
 
-    `check_count_file=False`: docs/_lessons_count.txt is the *lesson* count's
-    machine-readable copy. Comparing it against the node count is exactly the kind
-    of crossed wire this registry exists to prevent, so the flag is asserted here
-    rather than assumed.
+
+def test_the_node_count_is_not_published_anywhere():
+    """The inverse gate for issue #1683's metric, retired 2026-09-26.
+
+    A node count was published in five places and synced from `data/counter.json`. It is not a
+    population: `current` is a monotonic allocation counter (the first node is Misaka10001, nothing
+    is ever removed, and an anonymous caller gets a fresh node per call), so it grows with our own
+    automation and cannot show usage. Renaming the label twice did not fix that; removing the number
+    did. This test is what keeps it removed — a re-added line here would otherwise be invisible
+    until someone read the same page in two languages.
     """
-    problems = slc.stale_entries(slc.canonical_nodes(REPO), root=REPO,
-                                sites=slc.NODE_SITES, check_count_file=False)
-    assert problems == [], (
-        "node counts drifted from data/counter.json:\n  - "
-        + "\n  - ".join(problems)
-        + "\nFix: python3 scripts/sync_lesson_count.py"
+    found = []
+    for rel, pattern in _FORMER_NODE_SURFACES:
+        text = (REPO / rel).read_text(encoding="utf-8")
+        if re.search(pattern, text):
+            found.append(rel)
+    assert not found, f"the node count is published again in: {found}"
+
+
+def test_the_node_metric_is_gone_from_the_registry():
+    """No metric, no sites, no CLI value — otherwise the gate above has a writer again."""
+    assert not hasattr(slc, "NODE_SITES"), "sync_lesson_count still registers node surfaces"
+    assert not hasattr(slc, "canonical_nodes"), "sync_lesson_count still reads the counter"
+    proc = subprocess.run([sys.executable, str(SCRIPT), "--check", "--metric", "nodes"],
+                          capture_output=True, text=True)
+    assert proc.returncode == 2, (
+        f"`--metric nodes` is still an accepted value (exit {proc.returncode}); a choice nothing "
+        f"implements invites the metric back:\n{proc.stderr[-300:]}"
     )
+    assert "invalid choice" in proc.stderr, proc.stderr[-300:]
 
 
 def _registries():
     """(sites, canonical value, owns-count-file) for every managed metric."""
     return (
         (slc.SITES, slc.canonical_count(REPO), True),
-        (slc.NODE_SITES, slc.canonical_nodes(REPO), False),
         (slc.DOMAIN_SITES, slc.canonical_domains(REPO), False),
     )
 
@@ -81,8 +107,8 @@ def _registries():
 def test_registry_patterns_are_idempotent_fixed_points():
     """Every registered row must still match the text it just wrote.
 
-    Runs over both metrics: the node rows are newer and carry a `\\+?` and a full-width
-    unit ("73 个"), which is where a pattern that cannot match its own output would hide.
+    Runs over every metric: the domain rows carry a full-width unit ("44 个") and a
+    normalisation step, which is where a pattern that cannot match its own output would hide.
     """
     for sites, count, _ in _registries():
         for site in sites:
@@ -101,15 +127,16 @@ def test_registry_patterns_are_idempotent_fixed_points():
             assert str(count + 1) in mutated, f"{site.path}: newer count not written"
 
 
-def test_node_count_never_writes_the_lesson_count_file():
+def test_a_metric_without_its_own_count_file_does_not_write_the_lesson_count_file():
     """Guarding the `write_count_file` flag both ways (found by the gate, 2026-09-15).
 
-    The first version of the node sync reused `sync_all` unchanged, which overwrote
-    docs/_lessons_count.txt with the node count — a lesson-count surface silently
-    holding a node count. The flag exists for that, and the lesson metric must keep
-    writing the file.
+    The first version of a second metric reused `sync_all` unchanged and overwrote
+    docs/_lessons_count.txt with its own count — a lesson-count surface silently holding a different
+    measure. The flag exists for that; the lesson metric must keep writing the file. This used the
+    node metric until it was retired (2026-09-26), and runs on the domain metric now, which is the
+    remaining metric that owns no count file.
     """
-    changes, errors = slc.sync_all(42, root=REPO, sites=slc.NODE_SITES,
+    changes, errors = slc.sync_all(slc.canonical_domains(REPO), root=REPO, sites=slc.DOMAIN_SITES,
                                    dry_run=True, write_count_file=False)
     assert errors == []
     assert not any("_lessons_count.txt" in change for change in changes), changes
@@ -121,58 +148,24 @@ def test_node_count_never_writes_the_lesson_count_file():
     assert not any("_lessons_count.txt" in change for change in lesson_changes), lesson_changes
 
 
-def test_canonical_nodes_reads_the_counter_minus_the_offset(tmp_path):
+def test_cli_checks_more_than_the_lesson_metric(tmp_path):
+    """`--check` must fail on a stale domain surface too, not only on a stale lesson surface.
+
+    Same shape as the retired `--metric nodes` test: a second metric that only the Python API can
+    check is a metric the CI gate cannot see.
+    """
     (tmp_path / "data").mkdir()
-    (tmp_path / "data" / "counter.json").write_text(
-        json.dumps({"current": 10073, "updated": "2026-09-15T01:53:11Z"}), encoding="utf-8")
-    assert slc.canonical_nodes(tmp_path) == 73
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "data" / "lessons.json").write_text("[]", encoding="utf-8")
+    (tmp_path / "docs" / "install").mkdir()
+    (tmp_path / "docs" / "install" / "index.html").write_text(
+        "99 domains of failure knowledge\n", encoding="utf-8")
 
-
-def test_canonical_nodes_refuses_a_counter_it_cannot_trust(tmp_path):
-    (tmp_path / "data").mkdir()
-    counter = tmp_path / "data" / "counter.json"
-    for broken in ('{"current": "10073"}', "{}", '{"current": 9}', "not json"):
-        counter.write_text(broken, encoding="utf-8")
-        try:
-            slc.canonical_nodes(tmp_path)
-        except ValueError:
-            continue
-        raise AssertionError(f"counter {broken!r} should have been refused")
-
-
-def test_cli_checks_the_node_metric_too(tmp_path):
-    """`--check` must fail on a stale node surface, not only on a stale lesson surface."""
-    (tmp_path / "data").mkdir()
-    (tmp_path / "docs" / ".well-known").mkdir(parents=True)
-    (tmp_path / "data" / "counter.json").write_text(
-        json.dumps({"current": 10042}), encoding="utf-8")
-    (tmp_path / "docs" / "llms.txt").write_text("- 999 registered nodes\n", encoding="utf-8")
-    (tmp_path / "docs" / ".well-known" / "llms.txt").write_text(
-        "- 42 registered nodes\n", encoding="utf-8")
-    # The localized READMEs are managed node surfaces too (2026-09-17). An unreadable managed file
-    # is a hard error by design, so this fixture has to carry every surface the registry names.
-    (tmp_path / "README.zh-CN.md").write_text("| 🌐 Nodes | 59 |\n", encoding="utf-8")
-    (tmp_path / "README.ja.md").write_text("| 登録ノード | 59個の割り当てID |\n", encoding="utf-8")
-    # ROADMAP.md joined the node surfaces on 2026-09-23 (#2095): its "current numbers" block is the
-    # managed one, while the dated 2026-09-16 snapshot below it stays exempt — which is exactly why
-    # the block's row labels carry 当前.
-    (tmp_path / "ROADMAP.md").write_text("| 已注册节点（当前） | **59** |\n", encoding="utf-8")
-
-    stale = subprocess.run([sys.executable, str(SCRIPT), "--check", "--metric", "nodes",
+    stale = subprocess.run([sys.executable, str(SCRIPT), "--check", "--metric", "domains",
                             "--root", str(tmp_path)],
                            capture_output=True, text=True)
     assert stale.returncode == 1, stale.stdout + stale.stderr
-    assert "node-count SSOT drift" in stale.stderr
-    assert "docs/llms.txt:1" in stale.stderr, stale.stderr
-
-    (tmp_path / "docs" / "llms.txt").write_text("- 42 registered nodes\n", encoding="utf-8")
-    (tmp_path / "README.zh-CN.md").write_text("| 🌐 Nodes | 42 |\n", encoding="utf-8")
-    (tmp_path / "README.ja.md").write_text("| 登録ノード | 42個の割り当てID |\n", encoding="utf-8")
-    (tmp_path / "ROADMAP.md").write_text("| 已注册节点（当前） | **42** |\n", encoding="utf-8")
-    healthy = subprocess.run([sys.executable, str(SCRIPT), "--check", "--metric", "nodes",
-                              "--quiet", "--root", str(tmp_path)],
-                             capture_output=True, text=True)
-    assert healthy.returncode == 0, healthy.stdout + healthy.stderr
+    assert "domain-count SSOT drift" in stale.stderr, stale.stderr
 
 
 def test_sync_reruns_with_a_new_count(tmp_path):

@@ -145,11 +145,6 @@ def test_patterns_match_the_real_lesson_count_sentence():
     )
 
 
-def test_patterns_match_the_real_registered_node_sentence():
-    line = _line_containing("docs/llms.txt", "registered nodes")
-    assert pp.managed([line]), f"the node-count pattern does not match {line!r}"
-
-
 def test_patterns_match_a_real_annotated_version_line():
     src = (REPO / "workers/register-proxy-sw.js").read_text(encoding="utf-8")
     annotated = [l for l in src.splitlines() if "x-release-please-version" in l]

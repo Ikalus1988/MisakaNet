@@ -34,7 +34,13 @@
 ## 4. 指标口径（写进公开数字的定义）
 
 公开的 "registered nodes" = **发生过的注册次数**（其中绝大多数来自安装自动注册），**不是独立用户数**。它会因"卸载重装"增长。
-计数由 `data/counter.json`（KV 计数器的镜像，每日同步）驱动，表面由 `scripts/sync_lesson_count.py --metric nodes` 门禁覆盖。
+
+**2026-09-26 更新：这个数字不再对外发布。** 上面那句"不是独立用户数"就是原因——没有一个表面能诚实地
+展示它（`README.zh-CN.md` 曾把它写成"节点数"、站点曾写成"Active Nodes"），而它只会随自动化增长。
+五个引用它的表面已去掉该行，`scripts/sync_lesson_count.py --metric nodes` 已移除。
+`data/counter.json` 仍然保留并由 `sync-node-counter.yml` 每日镜像：它是 `/api/counter` 在 D1/KV
+都不可用时的最后兜底值，只是不再被公开引用。要看"被使用"的信号请看站点的 **网络活动** 面板
+（MCP 调用数，按 MCP / Agent / 爬虫 / 页面浏览拆分）。
 
 ## 5. 已退役（文案已对齐，2026-09-15）
 

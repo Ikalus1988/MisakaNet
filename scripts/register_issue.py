@@ -64,8 +64,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-# The node offset lives in one place, next to the gate that checks every public surface that quotes
-# it (`docs/index.html` computes `current - 10000` the same way).
+# The node offset lives in one place. The node *count* is no longer published anywhere (2026-09-26),
+# but the arithmetic still is: this script writes the registrant's node number into the welcome comment
+# and `docs/index.html` estimates it from the same counter, so both keep reading one constant.
 from scripts.sync_lesson_count import NODE_OFFSET  # noqa: E402
 
 API_ROOT = "https://api.github.com"
