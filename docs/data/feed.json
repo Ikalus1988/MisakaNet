@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-27T05:27:08.235894+00:00",
+  "generated_at": "2026-09-27T12:13:08.344096+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(test): the concurrency gate asserted an absolute 0.35s, so macOS runners failed it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2330",
-      "timestamp": "2026-09-27T05:16:55Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
       "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2329",
-      "timestamp": "2026-09-27T04:38:27Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2341",
+      "timestamp": "2026-09-27T10:19:07Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(search): the index froze because it is one row under a hard cap, and the diagnosis lived inside that row",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2327",
-      "timestamp": "2026-09-27T04:31:26Z",
+      "title": "chore(data): mirror the live node counter and its surfaces",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2340",
+      "timestamp": "2026-09-27T10:13:23Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(site): the drawer links the pages that existed and nobody could reach",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2328",
-      "timestamp": "2026-09-27T04:26:25Z",
+      "title": "feat(mcp): the call record now says who is calling, not just how many calls",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2338",
+      "timestamp": "2026-09-27T09:45:59Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(site): the \"agent contributors\" count is gone — it measured who wrote a header",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2326",
-      "timestamp": "2026-09-27T01:38:23Z",
+      "title": "chore(main): release 2.37.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2311",
+      "timestamp": "2026-09-27T06:11:32Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(ci): the new shape predicate flagged the release train — a claim is not a mention",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2335",
+      "timestamp": "2026-09-27T06:01:34Z",
       "source": "github"
     },
     {
