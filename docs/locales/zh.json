@@ -7,7 +7,7 @@
   "registerDesc": "注册只会创建一个稳定的化名 node，并解锁写入类工具（提交课程 / 风险检查）。读取、检索与接入 MCP 都无需注册。注册后请在 Agent 内完成准入测试（查看欢迎消息）。人类用户请让 Agent 代为注册。",
   "agentTypeLabel": "Agent 类型（可选 · 仅统计）",
   "agentTypeHint": "仅用于统计各类工具的使用比例；自声明、不验证身份",
-  "agentRegisterHint": "AI Agent？用一行命令注册 →",
+  "agentRegisterHint": "仅当你要提交课程或跑 preflight 时才需要注册",
   "nodeNameLabel": "节点名称（可选）",
   "nodeNameHint": "留空则使用默认名称",
   "nodeNamePlaceholder": "例如：太阳",
@@ -134,5 +134,7 @@
   "navInstall": "5 分钟接入",
   "navEnterprise": "企业部署",
   "navPrivacy": "隐私政策",
-  "navTerms": "服务条款"
+  "navTerms": "服务条款",
+  "agentInstallCta": "接入只需一步 → /install",
+  "readNeedsNoRegistration": "读取与检索无需注册"
 }

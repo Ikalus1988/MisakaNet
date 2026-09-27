@@ -82,3 +82,44 @@ def test_the_generated_pages_are_not_claimed_as_static_ones():
     offenders = [t for t in drawer_targets()
                  if f"docs{t}index.html" in generated and t not in ("/search/",)]
     assert not offenders, f"the drawer links generated pages directly: {offenders}"
+
+
+# ── the two things this page used to get wrong about itself (2026-09-27) ──────────────────────────
+#
+# Both were copy-level defects with a structural cause: the page described a *step* (register) as the way
+# in, and described a *counter's* date as content freshness. Neither is a design question, which is why
+# they are asserted here rather than left to review.
+
+def test_the_page_does_not_claim_a_content_freshness_date():
+    """`last updated <date>` read `counter.updated` — a registration counter, not the corpus.
+
+    The daily job moves the corpus and the counter moves when someone registers; no date on the stats card
+    can honestly claim the other. Removing it is the fix, not re-dating it: every timestamp on a page is a
+    claim that has to be kept true, and the one date that *is* meaningful already lives in the activity
+    panel where it belongs to the snapshot.
+    """
+    page = INDEX.read_text(encoding="utf-8")
+    assert 'id="last-updated"' not in page, "the freshness label is back"
+    # Comments are stripped first: the explanation of *why* the label is gone quotes it, and a test that
+    # cannot tell prose from markup would forbid writing the reason down.
+    rendered = re.sub(r"<!--.*?-->", "", page, flags=re.S)
+    assert "last updated" not in rendered, "a rewritten but equally misleading variant appeared"
+
+
+def test_the_primary_entry_point_is_connecting_not_registering():
+    """Reading needs no account (`AGENTS.md` §3.3), so the hero's first actionable line is `/install`."""
+    page = INDEX.read_text(encoding="utf-8")
+    assert 'href="/install/"' in page, "the primary CTA no longer points at the install page"
+    hero_start = page.index('class="agent-register-bar"')  # the markup, not the CSS rule of the same name
+    # The first `safety-notice` in the file is the CSS rule, so the search starts after the hero.
+    hero = page[hero_start:page.index("safety-notice", hero_start)]
+    assert 'href="/install/"' in hero, "the install link is no longer in the hero block"
+    assert "agentInstallCta" in hero and "readNeedsNoRegistration" in hero, (
+        "the hero no longer states what needs no account"
+    )
+    for lang in ("en", "zh"):
+        dictionary = json.loads((REPO / "docs" / "locales" / f"{lang}.json").read_text(encoding="utf-8"))
+        assert "agentInstallCta" in dictionary and "readNeedsNoRegistration" in dictionary, lang
+        assert "register" in dictionary["agentRegisterHint"].lower() or "注册" in dictionary["agentRegisterHint"], (
+            f"{lang}: the register hint no longer scopes itself to the write tools"
+        )

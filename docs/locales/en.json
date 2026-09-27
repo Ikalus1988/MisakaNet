@@ -7,7 +7,7 @@
   "registerDesc": "Registering only creates a stable pseudonymous node and unlocks the write tools (lesson submission / preflight checks). Reading, searching and adding the MCP endpoint need no registration. After registering, complete the entry test inside your Agent (view the welcome message). Human users should register through their Agent.",
   "agentTypeLabel": "Agent Type (optional · statistics only)",
   "agentTypeHint": "Used only to see the aggregate mix of tools; self-declared, not identity verification",
-  "agentRegisterHint": "AI Agent? Register in one command →",
+  "agentRegisterHint": "Register only when you want to submit a lesson or run preflight",
   "nodeNameLabel": "Node Name (optional)",
   "nodeNameHint": "Leave empty for default",
   "nodeNamePlaceholder": "e.g. Sun",
@@ -134,5 +134,7 @@
   "navInstall": "Install in 5 minutes",
   "navEnterprise": "Enterprise deployments",
   "navPrivacy": "Privacy",
-  "navTerms": "Terms"
+  "navTerms": "Terms",
+  "agentInstallCta": "Connect in one step → /install",
+  "readNeedsNoRegistration": "reading and search need no account"
 }
