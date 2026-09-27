@@ -16,8 +16,9 @@ dropped. So this file pins the label-to-number correspondence on both sides:
   (`scripts/sync_site_activity.py`), and every class has a label in both dictionaries;
 * the date shown is the *snapshot's* date, never the word "today" — a stale file has to look stale
   instead of claiming currency it does not have;
-* the node counter is **not** rendered: it is a monotonic allocation counter, so no label makes it
-  a stat worth showing, and a dictionary entry kept for it is dead copy (2026-09-26).
+* the node counter is **not** rendered, and neither is the "agent contributors" count that sat
+  next to it: one is a monotonic allocation counter, the other counts an optional self-declared
+  header, and no label makes either a stat worth showing (2026-09-26).
 
 **How it is fed.** `/api/analytics/traffic` answers in 0.66–0.75s from cache and **17.4s** when it
 recomputes (five consecutive requests, 2026-09-24). A browser panel calling it would rebuild the 504
@@ -196,6 +197,32 @@ def test_the_node_counter_is_not_published_as_a_stat(page):
                 "renders is the correct wording sitting next to a wrong one, which is how the last "
                 "round shipped"
             )
+
+
+def test_the_agent_contributor_count_is_not_published_as_a_stat(page):
+    """The other half of the same decision (2026-09-26): a count of self-declared agents, gone.
+
+    It sat next to the node counter and read `sorted.filter(... agentClass !== '' && !== 'human').length`
+    over the contributor wall — rows that carry an `Agent-Type:` header, minus a client-side list of
+    owner logins. `agent_type` is self-reported and unverified (`AGENTS.md` §3.3), and the header is
+    optional, so the number measured who remembered to write one rather than how many agents
+    contribute. The wall below already lists the contributors with their contributions.
+
+    The assertion is on the *published stat*, not on the wall: the wall's own count stays, because it
+    counts rows the page renders and a reader can check each one by hand.
+    """
+    assert 'id="agent-contrib-count"' not in page, "the agent-contributor stat is rendered again"
+    assert "agent contributors" not in uncommented(page)
+    for lang in ("en", "zh"):
+        assert "statAgents" not in locale(lang), (
+            f"{lang}.json still carries statAgents — a label for a stat the card no longer renders"
+        )
+    # The wall keeps its heading and its own row count; only the headline number is gone.
+    for lang in ("en", "zh"):
+        assert "contribSection" in locale(lang), f"the contributor wall's heading must stay ({lang})"
+    assert 'id="contrib-count"' in page and 'data-i18n="contribSection"' in page, (
+        "the contributor wall itself must still render — this test removes a headline stat, not the list"
+    )
 
 
 def test_the_registration_success_panel_still_gets_a_counter_to_estimate_from(page):

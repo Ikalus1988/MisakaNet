@@ -106,7 +106,6 @@
   "qsBVerify": "Check: the response has results, or no_match with an intake call to copy — a miss is a useful answer, not an error.",
   "qsMoreInstall": "Full install guide",
   "qsMoreDoc": "All the ways to use it",
-  "statAgents": "agent contributors",
   "navActivity": "Network activity",
   "activitySection": "Network activity",
   "activityNote": "aggregate counts · no identity · reading needs no registration",
