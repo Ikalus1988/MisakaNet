@@ -2931,9 +2931,11 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       // the relevance floor keeps judging what the user typed (see searchLessonsBM25).
       results = searchLessonsBM25(bm25Index, scoringQuery, args.domain, args.top || 5, args.query);
       source = "worker-bm25";
+      noteSearchBackend(env, "bm25");
       debugLog(env, 2, "BM25 search", { query: scoringQuery, results: results.length });
     } else {
       results = searchLessons(lessons, scoringQuery, args.domain, args.top || 5, args.query);
+      noteSearchBackend(env, "fallback");
       debugLog(env, 2, "Fallback search", { query: scoringQuery, results: results.length });
     }
 
@@ -5104,6 +5106,24 @@ const TRAFFIC_TYPES = ["mcp", "agent", "crawler", "pageview"];
 // client*, never a user count.
 const MCP_CLIENT_BUCKET_PREFIX = "mcpclient:";
 
+// Which search implementation answered (#2121).
+//
+// Two implementations serve `/mcp` searches — the BM25 index built from the rich D1 projection, and the
+// naive matcher over the same rows when that index is unavailable — and they rank differently. Before
+// this counter, "search gave me a bad answer" could not be attributed to either one from outside the
+// worker, so the question "which of the two should be deleted?" had no data behind it (#2121), and the
+// reports that did arrive (a mixed CJK query returning an unrelated lesson, for instance) could not be
+// told apart from index unavailability.
+//
+// Counting only: the ranking is untouched. It reuses the traffic buffer, so it costs one batched write
+// per flush rather than one write per query.
+const SEARCH_BACKEND_BUCKET_PREFIX = "searchbackend:";
+const SEARCH_BACKENDS = ["bm25", "fallback"];
+
+function noteSearchBackend(env, backend) {
+  bufferTraffic(env, null, SEARCH_BACKEND_BUCKET_PREFIX + backend);
+}
+
 function mcpClientBucket(params, request) {
   const declared = params && params.clientInfo && (params.clientInfo.name || params.clientInfo.title);
   const ua = (request && request.headers && request.headers.get("User-Agent")) || "";
@@ -5146,7 +5166,7 @@ async function readTrafficCount(env, cls, day) {
  * Calls today, per self-declared MCP client (`mcpclient:<name>` buckets). D1 only: the KV fallback
  * cannot enumerate keys, and inventing that here would cost more than the missing number is worth.
  */
-async function readMcpClientCounts(env, day) {
+async function readCounterBuckets(env, day, prefix, label) {
   const d1 = d1Binding(env);
   if (!d1) return {};
   try {
@@ -5154,15 +5174,22 @@ async function readMcpClientCounts(env, day) {
       `SELECT bucket, count FROM counters
         WHERE scope = ?1 AND period = ?2 AND bucket LIKE ?3
         ORDER BY count DESC LIMIT 50`,
-    ).bind("traffic", day, `${MCP_CLIENT_BUCKET_PREFIX}%`).all();
+    ).bind("traffic", day, `${prefix}%`).all();
     return Object.fromEntries((results || []).map(row => [
-      String(row.bucket).slice(MCP_CLIENT_BUCKET_PREFIX.length), Number(row.count) || 0,
+      String(row.bucket).slice(prefix.length), Number(row.count) || 0,
     ]));
   } catch (error) {
-    logInternal("mcp client counts read failed", error);
+    logInternal(`${label} counts read failed`, error);
     return {};
   }
 }
+
+const readMcpClientCounts = (env, day) =>
+  readCounterBuckets(env, day, MCP_CLIENT_BUCKET_PREFIX, "mcp client");
+
+/** How many searches each implementation answered today (#2121). */
+const readSearchBackendCounts = (env, day) =>
+  readCounterBuckets(env, day, SEARCH_BACKEND_BUCKET_PREFIX, "search backend");
 
 /**
  * One `counters` row, or `null` when it does not exist — the difference matters when a value is being
@@ -5667,6 +5694,10 @@ export default {
         const today = new Date().toISOString().slice(0, 10);
         // Same reader as the aggregator, so the endpoint and the monthly roll-up cannot disagree
         // about what "today's traffic" is (D1 first, legacy KV key as the fallback).
+        //
+        // `/api/analytics/traffic` is where this belongs long-term; it needs a D1 binding for the
+        // bucket enumeration either way, and the index endpoint is the one already read when the
+        // question is "is search healthy".
         const entries = await Promise.all(
           TRAFFIC_TYPES.map(async cls => [cls, await readTrafficCount(env, cls, today)])
         );
@@ -5832,6 +5863,9 @@ export default {
           // published. They disagreeing is the freeze this endpoint exists to make visible, and the
           // reason is in `lastRefresh.reason` ("fresh" while they disagree = the comparison is wrong).
           behindBy: Number.isFinite(health?.corpusCount) ? health.corpusCount - index.docCount : null,
+          // Which implementation answered today's searches (#2121): `{bm25: N, fallback: M}`. Empty
+          // without a D1 binding, for the same reason `mcpClients` is.
+          servedBy: await readSearchBackendCounts(env, new Date().toISOString().slice(0, 10)),
           lastRefresh: health || null,
           corpusHint: "compare docCount against data/lessons.json; a frozen builtAt means the write failed",
         });
@@ -6509,6 +6543,9 @@ export {
   TRAFFIC_FLUSH_BATCH,
   mcpClientBucket,
   MCP_CLIENT_BUCKET_PREFIX,
+  noteSearchBackend,
+  SEARCH_BACKEND_BUCKET_PREFIX,
+  SEARCH_BACKENDS,
   // Exported for workers/kv-write-family.test.mjs: the family mapping decides the rows the ranking is
   // built from, so it is worth asserting without a database.
   kvKeyFamily,
