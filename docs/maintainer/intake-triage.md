@@ -3,6 +3,9 @@
 > 适用：所有从外部通道进来的报料类 issue——`[Intake]` / `[Question]` /
 > `[Lesson]`——包括经远程 MCP 匿名提交（`misakanet_submit_intake`）自动开的 issue。
 > 目的：**每条报料都有确定的归宿与回执**，外部贡献者能感知自己的贡献被采纳。
+>
+> **外部 PR**（不是 issue）的每周分诊窗口见 `docs/maintainer/external-pr-triage.md`——机制判据、四种判定，
+> 以及「lesson 门禁在没有课的时候是绿的」这个坑都记在那里。
 
 ## 1. 分类（每条 intake 走其一）
 
