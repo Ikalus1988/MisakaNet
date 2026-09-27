@@ -1347,6 +1347,28 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null) {
 // loadLessons() asks for the rich projection (problem/root_cause/solution) instead;
 // without it, body-only queries such as "exit code 137" match nothing.
 const BM25_INDEX_KEY = "worker_search_index";
+// Where the *outcome* of the last refresh attempt is recorded, in a row of its own.
+//
+// The index row is precisely the thing that stops being writable when storage is unhappy, so a
+// diagnosis stored inside it would be the one payload that never arrives. This row is a few hundred
+// bytes and is written on every attempt, successful or not, which is what turns "builtAt froze and
+// nobody knows why" into a readable state (`GET /api/search-index` → `lastRefresh`).
+const BM25_INDEX_HEALTH_KEY = "worker_search_index_health";
+
+// The index is one JSON blob in one `kv_store` row, and D1 caps a row at 2 MB
+// (https://developers.cloudflare.com/d1/platform/limits/ — "Maximum string, BLOB or table row size").
+// Measured on this corpus 2026-09-26, a production-shaped rich index is **1.63 MB** over 463 lesson
+// files / 10,133 terms: ~80% of the cap, growing with the corpus, and the failure mode past it is the
+// one this file keeps re-learning — the rebuild is not published, the previous index keeps answering,
+// and `builtAt` freezes while `GET /api/search-index` still says `available: true`. Measured on the
+// live worker the same day: `docCount 411 / builtAt 08:16Z`, while D1 already held 417 lessons and
+// `/api/lessons` served all 417 — a frozen index with a fresh source.
+//
+// So the row is stored gzipped and base64-encoded, which is ~4-6× smaller for this payload (term and
+// path strings repeat heavily). A legacy plain row still loads — `decodeIndexFromStorage` accepts both.
+const INDEX_ENCODING = "gzip+base64";
+const INDEX_ENCODING_KEY = "__indexEncoding";
+const INDEX_ROW_LIMIT_BYTES = 2_000_000;
 
 /**
  * Why this index must not be published, or `null` when it is complete enough to answer with.
@@ -1586,6 +1608,86 @@ function hasDurableStore(env) {
   return !!(d1Binding(env) || (env && env.MISAKANET_KV));
 }
 
+// ── index storage: one row, under a hard cap ──────────────────────────────────────────────────────
+//
+// `storePut` writes the value as one `kv_store.value` TEXT cell, so the index has a ceiling that has
+// nothing to do with the search itself. Encode/decode live here rather than in the refresh path so a
+// test can round-trip them without a database, and so `loadBM25Index` and the two HTTP endpoints all
+// read the stored row the same way.
+
+async function gzipToBase64(text) {
+  const bytes = new Uint8Array(
+    await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer(),
+  );
+  // Chunked: `String.fromCharCode(...bytes)` on a ~500 KB payload blows the argument limit.
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+
+async function gunzipFromBase64(payload) {
+  const binary = atob(payload);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return await new Response(
+    new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip")),
+  ).text();
+}
+
+/** The row to store for `json` (the index as it comes out of `buildBM25Index`). */
+async function encodeIndexForStorage(json) {
+  // No CompressionStream (an older runtime, or a test stub): store plain rather than lose the build.
+  if (typeof CompressionStream !== "function" || typeof btoa !== "function") return json;
+  try {
+    const payload = await gzipToBase64(json);
+    // A pathological payload (already-compressed input) must not grow: keep whichever is smaller.
+    if (payload.length + 60 >= json.length) return json;
+    return JSON.stringify({ [INDEX_ENCODING_KEY]: INDEX_ENCODING, payload });
+  } catch {
+    return json;
+  }
+}
+
+/** The index from a stored row — the encoded form, or a legacy plain one. `null` when unreadable. */
+async function decodeIndexFromStorage(raw) {
+  if (raw === null || raw === undefined || raw === "") return null;
+  let parsed = raw;
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (parsed && typeof parsed === "object" && parsed[INDEX_ENCODING_KEY] === INDEX_ENCODING) {
+    try {
+      return JSON.parse(await gunzipFromBase64(String(parsed.payload || "")));
+    } catch (error) {
+      debugLog(null, 1, "stored index could not be decoded", { error: error.message });
+      return null;
+    }
+  }
+  return parsed;
+}
+
+/** Read the stored index whatever encoding it is in. The one place that knows the key. */
+async function readStoredIndex(env) {
+  return await decodeIndexFromStorage(await storeGet(env, BM25_INDEX_KEY, "json"));
+}
+
+/** Record the outcome of a refresh attempt. Never throws: it runs on failure paths too. */
+async function recordIndexHealth(env, record) {
+  try {
+    await storePut(env, BM25_INDEX_HEALTH_KEY, JSON.stringify({ at: new Date().toISOString(), ...record }), {
+      expirationTtl: BM25_INDEX_TTL_SECONDS,
+    });
+  } catch (error) {
+    logInternal("search index health write failed", error);
+  }
+}
+
 async function refreshSearchIndex(env) {
   if (!hasDurableStore(env)) return { refreshed: false, reason: "no storage" };
   try {
@@ -1596,7 +1698,7 @@ async function refreshSearchIndex(env) {
     }
     const textMode = detectTextMode(lessons);
     const syncStamp = await fetchD1SyncStamp(env);
-    const existing = await storeGet(env, BM25_INDEX_KEY, "json");
+    const existing = await readStoredIndex(env);
     if (existing && existing.version === 1 && existing.built_at) {
       const age = Date.now() - Date.parse(existing.built_at);
       // docCount mismatch means the corpus changed (or the previous build ran
@@ -1611,7 +1713,10 @@ async function refreshSearchIndex(env) {
       if (Number.isFinite(age) && age < BM25_INDEX_MAX_AGE_MS &&
           existing.docCount === lessons.length && !modeChanged && !textChanged &&
           !corpusChanged) {
-        return { refreshed: false, reason: "fresh" };
+        const fresh = { refreshed: false, reason: "fresh", docCount: existing.docCount,
+                        corpusCount: lessons.length, textMode: existing.textMode || "lean" };
+        await recordIndexHealth(env, fresh);
+        return fresh;
       }
     }
     const index = buildBM25Index(lessons, { textMode });
@@ -1626,15 +1731,22 @@ async function refreshSearchIndex(env) {
     // query with nothing to show for it, so keep serving the previous index and say why.
     const shapeProblem = indexShapeProblem(index, lessons);
     if (shapeProblem) {
-      return { refreshed: false, reason: shapeProblem, docCount: index.docCount,
-               termCount: Object.keys(index.terms).length, textMode: index.textMode || "lean" };
+      const refused = { refreshed: false, reason: shapeProblem, docCount: index.docCount,
+                        corpusCount: lessons.length,
+                        termCount: Object.keys(index.terms).length, textMode: index.textMode || "lean" };
+      await recordIndexHealth(env, refused);
+      return refused;
     }
     // `storePut`, not `kvPut`: D1 first, KV as the fallback. The index is one key, so it costs
     // almost nothing either way — what it costs is *freshness*. While the KV budget is spent this
     // write is refused, the rebuild is reported as failed, and search keeps serving the previous
     // build: that is why `evidence_level` stayed empty on the live path long after the D1 side was
     // fixed (#2080, #2104).
-    const written = await storePut(env, BM25_INDEX_KEY, JSON.stringify(index), {
+    const plain = JSON.stringify(index);
+    const stored = await encodeIndexForStorage(plain);
+    const sizes = { plainBytes: plain.length, storedBytes: stored.length,
+                    encoding: stored.length === plain.length ? "plain" : INDEX_ENCODING };
+    const written = await storePut(env, BM25_INDEX_KEY, stored, {
       expirationTtl: BM25_INDEX_TTL_SECONDS,
     });
     // Drop the in-isolate memo: without this, the isolate that just rebuilt the
@@ -1647,16 +1759,24 @@ async function refreshSearchIndex(env) {
       // reports a successful refresh while search keeps serving the previous index —
       // which is exactly how the 2026-09-12 KV write outage froze the index at
       // 03:30Z unnoticed, with new lessons silently unable to enter search.
-      return { refreshed: false, reason: "storage write failed",
-               docCount: index.docCount, termCount: Object.keys(index.terms).length,
-               textMode: index.textMode || "lean" };
+      const failed = { refreshed: false, reason: "storage write failed", docCount: index.docCount,
+                       corpusCount: lessons.length,
+                       termCount: Object.keys(index.terms).length, textMode: index.textMode || "lean",
+                       ...sizes, overRowLimit: sizes.storedBytes > INDEX_ROW_LIMIT_BYTES };
+      await recordIndexHealth(env, failed);
+      return failed;
     }
-    return { refreshed: true, docCount: index.docCount, termCount: Object.keys(index.terms).length,
-             // Reported so the rich-text path can be verified from outside: a lean
-             // build means the extra D1 columns were unavailable (see the catch above).
-             textMode: index.textMode || "lean" };
+    const published = { refreshed: true, docCount: index.docCount, corpusCount: lessons.length,
+                        termCount: Object.keys(index.terms).length,
+                        // Reported so the rich-text path can be verified from outside: a lean
+                        // build means the extra D1 columns were unavailable (see the catch above).
+                        textMode: index.textMode || "lean", ...sizes };
+    await recordIndexHealth(env, published);
+    return published;
   } catch (error) {
-    return { refreshed: false, reason: `error: ${error.message}` };
+    const crashed = { refreshed: false, reason: `error: ${error.message}` };
+    await recordIndexHealth(env, crashed);
+    return crashed;
   }
 }
 
@@ -1678,7 +1798,7 @@ async function loadBM25Index(env) {
   if (!hasDurableStore(env)) return null;
 
   try {
-    const index = await storeGet(env, BM25_INDEX_KEY, "json");
+    const index = await readStoredIndex(env);
     if (index && index.version === 1) {
       _bm25Index = index;
       _bm25IndexExpiry = now + _BM25_MEMO_TTL_MS;
@@ -5614,7 +5734,7 @@ export default {
         if (!body.version || !body.terms || !body.docs) {
           return jsonResponse({ error: "Invalid index format" }, 400);
         }
-        await storePut(env, "worker_search_index", JSON.stringify(body), {
+        await storePut(env, BM25_INDEX_KEY, await encodeIndexForStorage(JSON.stringify(body)), {
           expirationTtl: 86400 * 7, // 7 days
         });
         return jsonResponse({
@@ -5631,8 +5751,14 @@ export default {
     if (request.method === "GET" && url.pathname === "/api/search-index") {
       if (!hasDurableStore(env)) return jsonResponse({ available: false });
       try {
-        const index = await storeGet(env, "worker_search_index", "json");
-        if (!index) return jsonResponse({ available: false });
+        const index = await readStoredIndex(env);
+        // Read unconditionally: the health row is what explains an *empty* or frozen index, so it has
+        // to be reported in exactly the states where the index itself cannot be read.
+        const health = await storeGet(env, BM25_INDEX_HEALTH_KEY, "json").catch(() => null);
+        if (!index) {
+          return jsonResponse({ available: false, lastRefresh: health || null,
+            corpusHint: "no index row: the cron has never published one, or the row was swept" });
+        }
         return jsonResponse({
           available: true,
           docCount: index.docCount,
@@ -5649,6 +5775,11 @@ export default {
           // stays because a frozen index is a symptom worth reporting whoever caused it.
           stale: !Number.isFinite(Date.parse(index.built_at)) ||
                  Date.now() - Date.parse(index.built_at) > BM25_INDEX_MAX_AGE_MS,
+          // `lastRefresh.corpusCount` is the corpus the last refresh *saw*; `docCount` is what is
+          // published. They disagreeing is the freeze this endpoint exists to make visible, and the
+          // reason is in `lastRefresh.reason` ("fresh" while they disagree = the comparison is wrong).
+          behindBy: Number.isFinite(health?.corpusCount) ? health.corpusCount - index.docCount : null,
+          lastRefresh: health || null,
           corpusHint: "compare docCount against data/lessons.json; a frozen builtAt means the write failed",
         });
       } catch {
@@ -6367,6 +6498,10 @@ export {
   relevanceFloor,
   refreshSearchIndex,
   BM25_INDEX_KEY,
+  BM25_INDEX_HEALTH_KEY,
+  encodeIndexForStorage,
+  decodeIndexFromStorage,
+  readStoredIndex,
   recordStaleLesson,
   recordUnsolvedSearch,
   // Exported for workers/unsolved-map.test.mjs: the map is the last KV *enumeration* in the worker, so

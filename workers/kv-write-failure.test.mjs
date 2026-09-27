@@ -19,7 +19,8 @@
 // Run: node --test workers/kv-write-failure.test.mjs
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import worker, { refreshSearchIndex, BM25_INDEX_KEY, storeGet } from './register-proxy-sw.js';
+import worker, { refreshSearchIndex, BM25_INDEX_KEY, storeGet, readStoredIndex
+} from './register-proxy-sw.js';
 import { testToken } from './_test-token.mjs';
 import { withKvStore } from './_test-kv-store.mjs';
 
@@ -176,7 +177,7 @@ test('with D1 bound, a KV write outage no longer freezes the index (#2116)', asy
   assert.equal(result.refreshed, true,
     `the rebuild must publish while KV refuses writes: ${JSON.stringify(result)}`);
 
-  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
+  const stored = await readStoredIndex(env);
   assert.equal(stored.docCount, LESSONS.length, 'the index is readable from where it was written');
   assert.equal(env._store.has(BM25_INDEX_KEY), false,
     'and it did not go to KV — the storage it could not use');
