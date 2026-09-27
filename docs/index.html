@@ -1856,14 +1856,20 @@
   -->
   <!-- Terminal Widget -->
   <div class="agent-register-bar">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+      <!-- The primary action is *connecting*; registration is the step that only unlocks the write
+           tools (AGENTS.md §3.3: reading, searching and adding the MCP endpoint need no account). The
+           line used to lead with the register command, which spent the most valuable space on this
+           page on a step that is not needed to get any value out of it. -->
       <span style="color:var(--cyan);font-size:12px;font-family:'JetBrains Mono',monospace;">$</span>
-      <span style="color:#cbd5e1;font-size:12px;" data-i18n="agentRegisterHint">AI Agent？用一行命令注册</span>
+      <a href="/install/" style="color:var(--cyan);font-size:13px;font-weight:600;text-decoration:none;border-bottom:1px solid rgba(0,229,255,0.35);" data-i18n="agentInstallCta">接入只需一步 → /install</a>
+      <span style="color:var(--text-dim);font-size:11px;" data-i18n="readNeedsNoRegistration">读取与检索无需注册</span>
     </div>
     <div style="background:rgba(3,7,18,0.86);border:1px solid rgba(0,229,255,0.24);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:12px;">
       <code style="color:var(--cyan);word-break:break-all;flex:1;text-align:left;line-height:1.5;">curl -s -X POST https://misakanet.org/api/register/ \</code>
       <button onclick="copyAndToast(this)" style="flex-shrink:0;background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.28);color:var(--cyan);padding:5px 11px;border-radius:6px;cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;transition:all 0.2s;" onmouseover="this.style.background='rgba(0,229,255,0.18)'" onmouseout="this.style.background='rgba(0,229,255,0.12)'">COPY</button>
     </div>
+    <div style="margin-top:6px;font-size:11px;color:var(--text-dim);" data-i18n="agentRegisterHint">仅当你要提交课程或跑 preflight 时才需要注册</div>
   </div>
 
   <!-- Sandbox warning -->
@@ -1919,7 +1925,13 @@
         <div style="width:1px;height:24px;background:rgba(0,229,255,0.1);"></div>
         <div style="display:flex;align-items:center;gap:6px;">
           <span class="status-dot online"></span>
-          <span style="font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;" id="last-updated">last updated —</span>
+          <!-- A "last updated <date>" label sat here, reading the *counter's* date
+               (`counter.updated`) while a reader takes it as "the lessons were updated then" — the
+               two are unrelated: the counter moves when someone registers, and the corpus moves when
+               the daily job runs. Nothing on this card can honestly claim content freshness, so the
+               label is gone rather than re-dated: every timestamp on a page is a thing that has to be
+               kept true, and the one place a date *is* meaningful already carries it — the activity
+               panel, under "counted {date}", where it belongs to the snapshot. -->
         </div>
       </div>
     </div>
@@ -2937,7 +2949,6 @@ async function loadStats() {
     // more (2026-09-26): a monotonic allocation counter that anonymous callers advance by one per
     // call is not a population, so no label makes it a stat worth showing.
     CURRENT_COUNTER = Number(counter.current) || CURRENT_COUNTER;
-    document.getElementById("last-updated").textContent = `last updated ${counter.updated.slice(0, 10)}`;
   }
 
   // SSOT: use _allLessons (from safeFetchLessons) instead of /api/lessons
