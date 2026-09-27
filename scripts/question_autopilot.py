@@ -363,8 +363,16 @@ def bounty_body(anchor_number: int, members: list[dict], shared: list[str]) -> s
         "",
         "**3. Answering means being found**",
         "",
-        "- [ ] `misakanet_search` finds your lesson for the question text that produced this bounty. Paste "
-        "the query and the returned lesson id — this is the whole point of the task, and it is measurable.",
+        "- [ ] Your lesson is reachable for the question text that produced this bounty. **Two steps, and "
+        "the second one is ours, not yours:**",
+        "  - run the query locally against a fresh index and paste the result:",
+        "    `MISAKANET_LESSONS_INDEX=/tmp/idx.json python3 scripts/update_lessons_json.py` then search "
+        "that file for the question's words (`grep -i`), or run the shipped search over the corpus "
+        "(`python3 search_knowledge.py \"<question>\"`);",
+        "  - after the merge, a maintainer confirms it against the **hosted** `misakanet_search` once the "
+        "daily index job has run. Measured 2026-09-26: the live index lagged the corpus by hours (and "
+        "froze outright for seven of them), so \"the hosted search finds it\" cannot be a condition you "
+        "satisfy before the merge — a submission was failed by us for a state we caused.",
         "",
         "**4. Claiming**",
         "",
