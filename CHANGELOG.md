@@ -7,6 +7,32 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.37.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.36.0...v2.37.0) (2026-09-27)
+
+
+### Features
+
+* **ci:** the shape guard now decides the three shapes that cost the most review time ([#2332](https://github.com/Ikalus1988/MisakaNet/issues/2332)) ([28da790](https://github.com/Ikalus1988/MisakaNet/commit/28da79003504032fe7734080390ba8fde5e3d8e6))
+* **lesson:** adopt the macOS Chrome headless PDF supervision lesson (from [#2299](https://github.com/Ikalus1988/MisakaNet/issues/2299)) ([#2316](https://github.com/Ikalus1988/MisakaNet/issues/2316)) ([1206022](https://github.com/Ikalus1988/MisakaNet/commit/1206022d510cf51cfb71d86369b4afbfff84287a))
+* **site:** the "agent contributors" count is gone — it measured who wrote a header ([#2326](https://github.com/Ikalus1988/MisakaNet/issues/2326)) ([5fe38c8](https://github.com/Ikalus1988/MisakaNet/commit/5fe38c8af58a7d4c4cf800c1506f5e55b71d005b))
+* **site:** the drawer links the pages that existed and nobody could reach ([#2328](https://github.com/Ikalus1988/MisakaNet/issues/2328)) ([68dff78](https://github.com/Ikalus1988/MisakaNet/commit/68dff789172a00df22ea45238676a6a3c2a2fc6d))
+* **site:** the node count is not published anywhere — it was never a measurement of use ([#2313](https://github.com/Ikalus1988/MisakaNet/issues/2313)) ([5e71e30](https://github.com/Ikalus1988/MisakaNet/commit/5e71e30121c8ac2471f56491602ff515b5f78b0c))
+
+
+### Bug Fixes
+
+* **ci:** the new shape predicate flagged the release train — a claim is not a mention ([#2335](https://github.com/Ikalus1988/MisakaNet/issues/2335)) ([16a9cfd](https://github.com/Ikalus1988/MisakaNet/commit/16a9cfda4d61c434da9e6d10bcfd814ce70a037b))
+* **gate:** an unreadable frontmatter block was reported as missing fields, and "no lesson" read as a pass ([#2317](https://github.com/Ikalus1988/MisakaNet/issues/2317)) ([c9ed3e6](https://github.com/Ikalus1988/MisakaNet/commit/c9ed3e69125eb770aa593420441bb770c6240f28))
+* **search:** the index froze because it is one row under a hard cap, and the diagnosis lived inside that row ([#2327](https://github.com/Ikalus1988/MisakaNet/issues/2327)) ([c435c9f](https://github.com/Ikalus1988/MisakaNet/commit/c435c9fa5b0037501c92ca2c947cf0c77262282d))
+* **tests:** the suite rewrote the published index, and a lesson-only PR paid for it ([#2312](https://github.com/Ikalus1988/MisakaNet/issues/2312)) ([dfbf8a9](https://github.com/Ikalus1988/MisakaNet/commit/dfbf8a95b7df896e00881f5e5851070787185ab0))
+* **test:** the concurrency gate asserted an absolute 0.35s, so macOS runners failed it ([#2330](https://github.com/Ikalus1988/MisakaNet/issues/2330)) ([e0e719a](https://github.com/Ikalus1988/MisakaNet/commit/e0e719a73ed36a4b662c48d7d66b5b9b85801677))
+
+
+### Documentation
+
+* **bounty:** "the hosted search finds it" is our step, not the contributor's ([#2334](https://github.com/Ikalus1988/MisakaNet/issues/2334)) ([fbef877](https://github.com/Ikalus1988/MisakaNet/commit/fbef877cc8e411b1d6e8ea72bdc580ac0b12c2f2))
+* **triage:** the weekly external-PR window, with the four verdicts and the trap CI cannot see ([#2333](https://github.com/Ikalus1988/MisakaNet/issues/2333)) ([3f447ce](https://github.com/Ikalus1988/MisakaNet/commit/3f447ced9164e3dbfbaf4dfb5ab2284358b6bf6a))
+
 ## [2.36.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.35.0...v2.36.0) (2026-09-26)
 
 
