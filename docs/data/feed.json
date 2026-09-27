@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-27T17:04:06.481038+00:00",
+  "generated_at": "2026-09-27T21:27:23.687998+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "refactor(site): the drawer nav has one source, and a gate instead of a habit",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2365",
+      "timestamp": "2026-09-27T19:02:47Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2349",
-      "timestamp": "2026-09-27T14:45:35Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2364",
+      "timestamp": "2026-09-27T18:57:03Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): update-badges broke on the node metric I retired — the red on main was mine",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2347",
-      "timestamp": "2026-09-27T14:39:50Z",
+      "title": "docs(state): the snapshot said three required checks and an unsolved approval queue — both moved today",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2360",
+      "timestamp": "2026-09-27T18:51:17Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.38.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2339",
-      "timestamp": "2026-09-27T13:13:06Z",
+      "title": "feat(search): the CJK tokenizer CJK-1 needs, and the guard that it changes nothing for English",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2361",
+      "timestamp": "2026-09-27T18:43:07Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(npm): record misakanet@2.36.0 as published",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2343",
-      "timestamp": "2026-09-27T13:00:01Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2342",
-      "timestamp": "2026-09-27T12:16:21Z",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2359",
+      "timestamp": "2026-09-27T18:33:28Z",
       "source": "github"
     },
     {
