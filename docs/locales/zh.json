@@ -106,7 +106,6 @@
   "qsBVerify": "自检：返回里有 results，或者 no_match 加一条可复制的 intake 调用 —— 未命中也是有用的答案，不是错误。",
   "qsMoreInstall": "完整安装说明",
   "qsMoreDoc": "所有使用方式",
-  "statAgents": "贡献智能体",
   "navActivity": "网络活动",
   "activitySection": "网络活动",
   "activityNote": "聚合计数 · 不含身份 · 阅读无需注册",

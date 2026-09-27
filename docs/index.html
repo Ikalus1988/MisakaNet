@@ -1876,12 +1876,18 @@
              agent / crawler / page view). The five surfaces that quoted the number are gone too:
              `scripts/sync_lesson_count.py` has no node metric any more, and
              tests/test_lesson_count_ssot.py asserts it is not published anywhere. -->
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:14px;">🤖</span>
-          <span style="font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;color:var(--cyan);" id="agent-contrib-count">—</span>
-          <span style="font-size:12px;color:var(--text-dim);" data-i18n="statAgents">agent contributors</span>
-        </div>
-        <div style="width:1px;height:24px;background:rgba(0,229,255,0.1);"></div>
+        <!-- An "agent contributors" count sat here next to the node counter, and it went for the same
+             reason (2026-09-26): it was `sorted.filter(... agentClass !== '' && !== 'human').length`
+             over the contributor wall, i.e. a count of rows that *self-declared* an `Agent-Type:`
+             header, filtered by a client-side list of owner logins — an estimate of who counts as an
+             agent, dressed as a count of agents. Nothing verifies the declaration (AGENTS.md §3.3:
+             `agent_type` is self-reported and unverified), and a PR whose author forgot the header is
+             simply invisible in it. The wall below already shows the contributors by name with their
+             contributions, which is the honest form of the same information; a headline number that
+             depends on an unverified optional field is not. `statAgents` is gone from both
+             dictionaries with it, and tests/test_site_activity_panel.py asserts neither comes back.
+             The card now carries counts taken from the corpus: curated lessons and evidence-backed
+             lessons, both derived from `data/lessons.json`. -->
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:14px;">📖</span>
           <span style="font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;color:var(--cyan);" id="knowledge-count">—</span>
@@ -3178,18 +3184,10 @@ async function loadContributors() {
     const isOwnerRow = (node, data) => SKIP_OWNER.has(node)
       || SKIP_OWNER.has(String((data && data.user) || "").toLowerCase());
 
-    // Agent contributor count (participant narrative, real data): distinct
-    // non-owner contributors that self-declared an agent type (Agent-Type:)
-    // or are classified as autonomous in the knowledge base. Explicitly
-    // excludes humans (agentClass === 'human'). This is the "how many agents
-    // are actually contributing" signal.
-    const agentContribCount = sorted.filter(([node, data]) =>
-      !isOwnerRow(node, data) && data.agentClass !== '' && data.agentClass !== 'human'
-    ).length;
-    const agentContribEl = document.getElementById("agent-contrib-count");
-    if (agentContribEl) {
-      animateCounter(agentContribEl, agentContribCount);
-    }
+    // The stats card used to show an "agent contributors" count computed right here, from this list
+    // and a self-declared `Agent-Type:` header. It is gone (2026-09-26) — see the comment on the card:
+    // the declaration is unverified and optional, so the number measured who remembered to write a
+    // header, not how many agents contribute. The wall below shows the same contributors by name.
 
     title.style.display = "";
     basis.style.display = "";
