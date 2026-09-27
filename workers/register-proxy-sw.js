@@ -3853,6 +3853,11 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
 
     // 5. Dispatch
     if (method === "initialize") {
+      // One extra counter bucket for the client dimension (see mcpClientBucket). Buffered like every
+      // other traffic count: this is analytics, and an extra write per request is what exhausted the
+      // free tier before (#1890). `ctx` is not in scope here, and the buffer flushes on the fetch
+      // path's own schedule.
+      bufferTraffic(env, null, mcpClientBucket(params, request));
       const serverInfo = getMcpServerInfo(env);
       // Respond with negotiated protocol version
       const negotiatedVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(params?.protocolVersion)
@@ -5085,6 +5090,28 @@ async function probeKeepaliveEndpoint(endpoint) {
 // ── Traffic Aggregation (Issue #1565) ──
 const TRAFFIC_TYPES = ["mcp", "agent", "crawler", "pageview"];
 
+// A fifth dimension, for the question the four above cannot answer (#A2, 2026-09-26).
+//
+// `classifyRequest` returns `"mcp"` for every `/mcp` request, so "14 788 calls/day" is a real number
+// that says nothing about *who* is calling: one agent's retry loop and twenty agents look identical.
+// `initialize` is the one place a client names itself — `params.clientInfo.name`, per the MCP spec —
+// and it costs one extra bucket in the counter that already exists.
+//
+// Deliberately not a header rule: `User-Agent` is the *fallback* (many SDKs send `node` or the runtime
+// name), and both are sanitised to `[a-z0-9._-]{1,32}` so a client cannot inject a bucket name, a
+// delimiter, or a 10 KB string into the counters table. Self-declared and unverified, exactly like
+// `agent_type` in `AGENTS.md` §3.3 — which is why this is a *measurement of calls by self-identified
+// client*, never a user count.
+const MCP_CLIENT_BUCKET_PREFIX = "mcpclient:";
+
+function mcpClientBucket(params, request) {
+  const declared = params && params.clientInfo && (params.clientInfo.name || params.clientInfo.title);
+  const ua = (request && request.headers && request.headers.get("User-Agent")) || "";
+  const candidate = String(declared || ua).toLowerCase();
+  const name = candidate.replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32);
+  return MCP_CLIENT_BUCKET_PREFIX + (name || "unknown");
+}
+
 /** One class's count for one day, from whichever store holds it.
  *
  * Three places can hold it, and a reader that checks fewer silently loses a day:
@@ -5113,6 +5140,28 @@ async function readTrafficCount(env, cls, day) {
     env.MISAKANET_KV.get(`traffic:${cls}:${day}`, "text"),
   ]);
   return (parseInt(fallback, 10) || 0) + (parseInt(legacy, 10) || 0);
+}
+
+/**
+ * Calls today, per self-declared MCP client (`mcpclient:<name>` buckets). D1 only: the KV fallback
+ * cannot enumerate keys, and inventing that here would cost more than the missing number is worth.
+ */
+async function readMcpClientCounts(env, day) {
+  const d1 = d1Binding(env);
+  if (!d1) return {};
+  try {
+    const { results } = await d1.prepare(
+      `SELECT bucket, count FROM counters
+        WHERE scope = ?1 AND period = ?2 AND bucket LIKE ?3
+        ORDER BY count DESC LIMIT 50`,
+    ).bind("traffic", day, `${MCP_CLIENT_BUCKET_PREFIX}%`).all();
+    return Object.fromEntries((results || []).map(row => [
+      String(row.bucket).slice(MCP_CLIENT_BUCKET_PREFIX.length), Number(row.count) || 0,
+    ]));
+  } catch (error) {
+    logInternal("mcp client counts read failed", error);
+    return {};
+  }
 }
 
 /**
@@ -5625,6 +5674,10 @@ export default {
           date: today,
           breakdown: Object.fromEntries(entries),
           total: entries.reduce((s, [, n]) => s + n, 0),
+          // Who called, as far as each client is willing to say (#A2). Read from the same counter
+          // family; empty rather than absent when the store is KV-only, because an enumeration is the
+          // one thing the fallback cannot do.
+          mcpClients: await readMcpClientCounts(env, today),
         });
       } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }
@@ -6454,6 +6507,8 @@ export {
   // Exported so workers/kv-write-budget.test.mjs asserts the *ratio* against the real batch size
   // instead of a hardcoded 10 that stops being true the moment the constant moves.
   TRAFFIC_FLUSH_BATCH,
+  mcpClientBucket,
+  MCP_CLIENT_BUCKET_PREFIX,
   // Exported for workers/kv-write-family.test.mjs: the family mapping decides the rows the ranking is
   // built from, so it is worth asserting without a database.
   kvKeyFamily,
