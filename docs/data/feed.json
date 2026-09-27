@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-27T12:13:08.344096+00:00",
+  "generated_at": "2026-09-27T17:04:06.481038+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
@@ -7,36 +7,36 @@
     {
       "type": "merged_pr",
       "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2341",
-      "timestamp": "2026-09-27T10:19:07Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2349",
+      "timestamp": "2026-09-27T14:45:35Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): mirror the live node counter and its surfaces",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2340",
-      "timestamp": "2026-09-27T10:13:23Z",
+      "title": "fix(ci): update-badges broke on the node metric I retired — the red on main was mine",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2347",
+      "timestamp": "2026-09-27T14:39:50Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(mcp): the call record now says who is calling, not just how many calls",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2338",
-      "timestamp": "2026-09-27T09:45:59Z",
+      "title": "chore(main): release 2.38.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2339",
+      "timestamp": "2026-09-27T13:13:06Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 2.37.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2311",
-      "timestamp": "2026-09-27T06:11:32Z",
+      "title": "chore(npm): record misakanet@2.36.0 as published",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2343",
+      "timestamp": "2026-09-27T13:00:01Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): the new shape predicate flagged the release train — a claim is not a mention",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2335",
-      "timestamp": "2026-09-27T06:01:34Z",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2342",
+      "timestamp": "2026-09-27T12:16:21Z",
       "source": "github"
     },
     {
