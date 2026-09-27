@@ -100,22 +100,48 @@ QUESTION_BOUNTY_MARKER = "misakanet-question-bounty"
 LESSON_FILE = re.compile(r"^lessons/(?:core|contrib|en)/.+\.md$")
 
 
+# `Closes/Fixes/Resolves #N` — a *claim*, not a mention. The distinction is not pedantry: measured on
+# the release PR (#2311, 2026-09-27), a body that merely *lists* merged pull requests by number
+# (`… (#2332)`) matched a bare-number rule, and one of those PRs discusses this very marker — so a
+# release was reported as "claims a question bounty without a lesson". A rule that fires on the release
+# train is a rule that gets switched off.
+# The noun in between is real: the titles on 2026-09-26 read "fix: solve issue #2283 - [Bounty] …".
+# Up to three filler words are allowed between the verb and the number ("solve issue #2283"), because
+# that is how the titles on 2026-09-26 read. A colon stops it: `fix: bump (#2332)` — a commit-list line in
+# a release body — must never be read as a claim.
+CLAIMS_ISSUE = re.compile(
+    r"(?i)\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|solve[sd]?|address(?:es|ed)?)\b"
+    r"(?:\s+\w+){0,3}?\s+#(\d{1,6})"
+)
+
+
 def linked_issues(pr_text: str) -> list[int]:
-    """Issue numbers the PR claims, from `Closes/Fixes/Resolves #N` and a bare `#N` in the title/body."""
+    """Issue numbers the PR **claims** to resolve (`Closes`/`Fixes`/`Resolves #N`).
+
+    A bare `#N` is deliberately not enough — see :data:`CLAIMS_ISSUE`. `mentions_issues()` returns those,
+    for callers that want to look something up.
+    """
+    return sorted({int(n) for n in CLAIMS_ISSUE.findall(pr_text or "")})
+
+
+def mentions_issues(pr_text: str) -> list[int]:
+    """Every `#N` in the text, claimed or not (used to fetch issue bodies, never to decide)."""
     return sorted({int(n) for n in re.findall(r"#(\d{1,6})", pr_text or "")})
 
 
 def question_bounty_without_a_lesson(paths, issue_bodies: dict, pr_text: str = "") -> list[str]:
     """A PR that claims a question bounty while changing no lesson file."""
-    bounty_issues = sorted(
+    bounty_issues = {
         int(number) for number, body in (issue_bodies or {}).items()
+        # The caller hands us the bodies of the issues this PR *mentions*; a PR's own body can quote the
+        # marker while explaining it, so only a claimed number that carries the marker counts.
         if QUESTION_BOUNTY_MARKER in (body or "")
-    )
-    if not bounty_issues:
+    }
+    claimed = [n for n in linked_issues(pr_text) if n in bounty_issues]
+    if not claimed:
         return []
     if any(LESSON_FILE.match(p) for p in paths):
         return []
-    claimed = [n for n in linked_issues(pr_text) if n in bounty_issues] or bounty_issues
     return [
         "**This claims a question bounty (#"
         + ", #".join(str(n) for n in claimed[:4])
