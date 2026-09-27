@@ -63,7 +63,9 @@ jobs:
           out = {}
           for n in numbers:
               try:
-                  body = subprocess.run(['gh', 'api', f"repos/{os.environ['REPOSITORY']}/issues/{n}", '--jq', '.body // ""'],
+                  # `if .pull_request then ""` — `/issues/N` answers for pull requests too, and a released
+                  # PR body listing numbers would otherwise be read as "this issue is a bounty".
+                  body = subprocess.run(['gh', 'api', f"repos/{os.environ['REPOSITORY']}/issues/{n}", '--jq', 'if .pull_request then "" else (.body // "") end'],
                                         capture_output=True, text=True, timeout=30).stdout
               except Exception:
                   body = ''

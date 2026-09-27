@@ -23,6 +23,7 @@ sys.path.insert(0, str(REPO))
 from scripts.pr_shape_guard import (  # noqa: E402
     findings,
     linked_issues,
+    mentions_issues,
     packaging_damage,
     question_bounty_without_a_lesson,
     root_solution_dump,
@@ -115,9 +116,33 @@ def test_a_lesson_pr_and_a_code_bounty_are_both_left_alone():
 
 def test_linked_issues_reads_the_forms_contributors_actually_use():
     assert linked_issues("Fixes #2283") == [2283]
-    assert linked_issues("Closes #2255, related to #2259") == [2255, 2259]
+    assert linked_issues("Closes #2255") == [2255]
     assert linked_issues("resolve issue #2280 - [Bounty] Answer 3 linked question(s)") == [2280]
     assert linked_issues("no issue reference here") == []
+
+
+def test_a_release_pr_body_that_lists_merged_prs_is_not_a_claim():
+    """Measured on #2311 (2026-09-27): the release body lists `… (#2332)`, and #2332's own body quotes
+    the bounty marker while explaining the rule — so a bare-number rule reported the release train as
+    "claims a question bounty without a lesson", and `audit-shape` went red on the release PR.
+
+    A body that names many numbers and claims none must stay clean, even when one of those numbers is a
+    bounty issue.
+    """
+    release_body = (
+        "chore(main): release 2.37.0\n\n"
+        "* fix(search): the index froze because it is one row under a hard cap (#2327)\n"
+        "* feat(ci): the shape guard now decides the three shapes (#2332)\n"
+        "* feat(site): the drawer links the pages that existed (#2328)\n"
+        "* Refs #2283\n"
+    )
+    assert linked_issues(release_body) == [], linked_issues(release_body)
+    assert question_bounty_without_a_lesson(
+        ["pyproject.toml", "CHANGELOG.md", "workers/register-proxy-sw.js"],
+        {2283: QUESTION_BOUNTY_BODY, 2332: "explaining the marker: misakanet-question-bounty"},
+        release_body) == [], "the release train must not be reported as a bounty claim"
+    # And the lookup helper still sees the mentions, so the workflow can fetch their bodies.
+    assert 2283 in mentions_issues(release_body)
 
 
 # ── the aggregation, and the CLI the workflow calls ───────────────────────────────────────────────
@@ -166,3 +191,30 @@ def test_the_workflow_runs_this_module_and_merges_its_findings():
     assert "pull_request_target" in text, (
         "the guard must run on the trusted base, never checking out the PR's code"
     )
+
+
+def test_the_claim_forms_the_2026_09_26_prs_actually_used():
+    """Real titles from the four PRs triaged that night, each classified the way a reviewer would.
+
+    The guard's job is to fire on the ones that claimed a lesson task and delivered something else — not
+    on the ones that merely mention a number. A guard that cannot tell these apart false-positives on the
+    release train (which is exactly what happened to #2311 minutes after this rule shipped).
+    """
+    claims = {
+        "fix: solve issue #2283 - [Bounty] Answer 2 linked question(s) as a lesson": [2283],
+        "fix(MisakaNet): resolve issue #2283 - [Bounty] Answer 2 linked question(s) as a lesson": [2283],
+        "AI Agent Fix for Issue #2283": [2283],
+        "Fixes #2283": [2283],
+        "Closes #2255": [2255],
+    }
+    for text, expected in claims.items():
+        assert linked_issues(text) == expected, (text, linked_issues(text))
+
+    mentions_only = [
+        "chore(main): release 2.37.0\n* fix(search): the index froze (#2327)\n* feat(ci): the guard (#2332)\n* Refs #2283",
+        "Related to #2283",
+        "[Draft] [Bounty] Answer 2 linked question(s) as a lesson",
+        "fix: bump (#2332)",
+    ]
+    for text in mentions_only:
+        assert linked_issues(text) == [], (text, linked_issues(text))
