@@ -7,6 +7,13 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.38.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.37.0...v2.38.0) (2026-09-27)
+
+
+### Features
+
+* **mcp:** the call record now says who is calling, not just how many calls ([#2338](https://github.com/Ikalus1988/MisakaNet/issues/2338)) ([c8f5a76](https://github.com/Ikalus1988/MisakaNet/commit/c8f5a76c5b1dd03041dffb88a8ad70d9537ac1ba))
+
 ## [2.37.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.36.0...v2.37.0) (2026-09-27)
 
 
