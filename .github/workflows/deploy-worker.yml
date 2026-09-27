@@ -39,7 +39,13 @@ jobs:
     # place today; once "required reviewers" is switched on, **this job waits for an approval on every
     # push to main that touches the worker**. That is deliberate — a Worker deploy is production
     # infrastructure — but it is a change in pace, so it is stated here rather than discovered.
-    environment: release
+    # Split on 2026-09-27: the worker deploy is reversible (push the previous commit's worker back),
+    # so it no longer waits on the same human approval as the four publishes that cannot be taken back
+    # (npm / PyPI / GHCR / MCP registry, which stay on `release`). Measured before the split: three runs
+    # waited on one person in a single day (worker deploy + two npm runs), and one npm run had waited
+    # ~23 hours — a fix that is ready to ship should not be gated on someone being awake. `deploy` is
+    # restricted to `main` and carries only CF_API_TOKEN.
+    environment: deploy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
