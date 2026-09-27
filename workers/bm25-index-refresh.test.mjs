@@ -12,7 +12,13 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import worker, { buildBM25Index, refreshSearchIndex, BM25_INDEX_KEY, storeGet } from './register-proxy-sw.js';
+import worker, {
+  buildBM25Index,
+  refreshSearchIndex,
+  BM25_INDEX_KEY,
+  storeGet,
+  readStoredIndex,
+} from './register-proxy-sw.js';
 import { withKvStore } from './_test-kv-store.mjs';
 import { testToken } from './_test-token.mjs';
 
@@ -34,6 +40,15 @@ const LESSONS = [
     summary: 'Container terminates with exit code 137 under memory pressure.',
     preview: 'kubectl describe shows OOMKilled; raise the memory limit or fix the leak.' },
 ];
+
+
+// The index is stored gzipped+base64 in one row (see INDEX_ENCODING in the worker), so "what is in
+// storage" and "what search reads" are no longer the same bytes. Tests read it the way production
+// does — through the worker's own reader — and only reach for the raw row when asserting the format
+// itself.
+async function storedIndex(env) {
+  return await readStoredIndex(env);
+}
 
 function createEnv(lessons = LESSONS) {
   const store = new Map([
@@ -88,7 +103,7 @@ test('the refresh builds and stores a usable index', async () => {
   assert.equal(first.refreshed, true, JSON.stringify(first));
   assert.equal(first.docCount, LESSONS.length);
 
-  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
+  const stored = await storedIndex(env);
   assert.equal(stored.version, 1);
   assert.equal(stored.docCount, LESSONS.length);
   assert.ok(stored.built_at, 'built_at makes the next refresh a no-op until it is old');
@@ -228,7 +243,7 @@ test('the internal load asks D1 for the lesson body, not just the summary', asyn
   assert.equal(result.textMode, 'rich',
     'the index is built from summary-only text without the rich projection');
 
-  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
+  const stored = await storedIndex(env);
   assert.equal(stored.textMode, 'rich');
 
   const hit = await search(env, `${BODY_ONLY} memory limit too low`);
@@ -295,7 +310,7 @@ test('the internal lesson load asks D1 for the whole corpus, not one page', asyn
   assert.equal(result.docCount, MANY.length,
     'a 100-row limit silently shrank the index to the newest 100 lessons');
 
-  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
+  const stored = await storedIndex(env);
   assert.equal(stored.docCount, MANY.length);
   assert.equal(stored.docs.length, MANY.length);
 });
@@ -328,7 +343,13 @@ test('a fresh index is not rebuilt', async () => {
   const env = createEnv();
   await refreshSearchIndex(env);
   const again = await refreshSearchIndex(env);
-  assert.deepEqual(again, { refreshed: false, reason: 'fresh' });
+  assert.equal(again.refreshed, false, JSON.stringify(again));
+  assert.equal(again.reason, 'fresh', JSON.stringify(again));
+  // The "fresh" verdict carries the two counts it compared, because that comparison is what a frozen
+  // index gets diagnosed with: `docCount` (published) vs `corpusCount` (seen). A "fresh" verdict where
+  // those disagree would be a bug in the comparison, not a healthy index.
+  assert.equal(again.docCount, LESSONS.length, JSON.stringify(again));
+  assert.equal(again.corpusCount, LESSONS.length, JSON.stringify(again));
 });
 
 test('a rebuild drops the isolate-level index memo', async () => {
@@ -392,7 +413,7 @@ test('the searchable text keeps a term that sits late in a section', async () =>
   const env = createD1Env([late, LESSONS[1]], createColumnAwareD1([late, LESSONS[1]]));
   await refreshSearchIndex(env);
 
-  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
+  const stored = await storedIndex(env);
   assert.ok(stored.terms.kubectl, 'the late term never reached the index');
 
   const hit = await search(env, 'kubectl describe pod');
@@ -414,7 +435,7 @@ test('a stored index built from older searchable text is rebuilt, not trusted', 
   const result = await refreshSearchIndex(env);
   assert.equal(result.refreshed, true,
     `a text-version change must force a rebuild: ${JSON.stringify(result)}`);
-  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
+  const stored = await storedIndex(env);
   assert.notEqual(stored.textVersion, 1, 'the rebuilt index must carry the current text version');
 });
 
@@ -427,7 +448,7 @@ test('a sync that rewrote rows triggers a reindex even without a count change', 
   const d1 = createColumnAwareD1(rows);
   const env = createD1Env(rows, d1);
   await refreshSearchIndex(env);
-  const first = await storeGet(env, BM25_INDEX_KEY, 'json');
+  const first = await storedIndex(env);
   assert.ok(first.syncStamp, 'the index must record the sync stamp it was built from');
 
   // Same rows, same count — only the sync stamp moved (a re-sync after an edit).
@@ -473,7 +494,7 @@ test('a rebuild reads D1, not the lessons cache it may be racing (#1731)', async
   assert.equal(result.refreshed, true, JSON.stringify(result));
   assert.equal(result.docCount, 1, 'the index must describe the D1 corpus, not the cache');
 
-  const stored = await storeGet(env, BM25_INDEX_KEY, 'json');
+  const stored = await storedIndex(env);
   assert.equal(stored.syncStamp, '2026-09-15 12:29:20');
   assert.deepEqual(stored.docs.map(d => d.id), ['post-sync-row'],
     'the rebuild must be built from D1, not from the cached pre-sync corpus');
