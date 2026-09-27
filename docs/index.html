@@ -1632,6 +1632,10 @@
     <div class="drawer-section-title" data-i18n="navMain">Main</div>
     <a class="drawer-link" href="/" onclick="closeDrawer()"><span class="link-icon">🏠</span><span data-i18n="navHome">Home</span></a>
     <a class="drawer-link" href="/search/" onclick="closeDrawer()"><span class="link-icon">🔍</span><span data-i18n="navSearch">Search lessons</span></a>
+    <!-- `/install` is the page an agent or a person needs first, and nothing linked it (#1892: the page
+         existed, the entry point did not). tests/test_site_pages_are_reachable.py now fails when a
+         drawer link has no page behind it, or when one of these four loses its entry. -->
+    <a class="drawer-link" href="/install/" onclick="closeDrawer()"><span class="link-icon">🚀</span><span data-i18n="navInstall">Install in 5 minutes</span></a>
     <a class="drawer-link" href="#register" onclick="closeDrawer()"><span class="link-icon">⚡</span><span data-i18n="navRegister">Register node</span></a>
   </div>
 
@@ -1652,6 +1656,19 @@
     <a class="drawer-link" href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/skill.md" target="_blank" onclick="closeDrawer()"><span class="link-icon">📦</span><span data-i18n="navSkill">Install skill.md</span></a>
     <a class="drawer-link" href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/cli-reference.md" target="_blank" onclick="closeDrawer()"><span class="link-icon">⌨️</span><span data-i18n="navCLI">CLI reference</span></a>
     <a class="drawer-link" href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/mcp.md" target="_blank" onclick="closeDrawer()"><span class="link-icon">🔌</span><span data-i18n="navMCP">MCP docs</span></a>
+  </div>
+
+  <div class="drawer-divider"></div>
+
+  <div class="drawer-divider"></div>
+
+  <div class="drawer-section">
+    <div class="drawer-section-title" data-i18n="navAbout">About</div>
+    <!-- These three pages were live and unreachable: nothing on the site linked them, so the only way to
+         arrive was to type the URL (found 2026-09-26, while adding the entry above). -->
+    <a class="drawer-link" href="/enterprise/" onclick="closeDrawer()"><span class="link-icon">🏢</span><span data-i18n="navEnterprise">Enterprise deployments</span></a>
+    <a class="drawer-link" href="/privacy/" onclick="closeDrawer()"><span class="link-icon">🔒</span><span data-i18n="navPrivacy">Privacy</span></a>
+    <a class="drawer-link" href="/terms/" onclick="closeDrawer()"><span class="link-icon">📄</span><span data-i18n="navTerms">Terms</span></a>
   </div>
 
   <div class="drawer-divider"></div>
