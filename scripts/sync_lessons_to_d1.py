@@ -36,6 +36,8 @@ import os
 import re
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -266,7 +268,6 @@ def _fetch_d1_checksums(db_name: str) -> dict | None:
         # Resolve database_id by name via the D1 list API.
         try:
             if token:
-                import urllib.error as _ue
                 req = urllib.request.Request(
                     f"https://api.cloudflare.com/client/v4/accounts/{account}/d1/database?per_page=50",
                     headers={"Authorization": f"Bearer {token}", "User-Agent": "misakanet-sync"},
