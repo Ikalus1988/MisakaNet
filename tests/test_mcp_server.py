@@ -116,10 +116,12 @@ def test_search():
     check("returns results list", isinstance(results, list))
     if results:
         first = results[0]
-        check("result has path", "path" in first, f"keys: {list(first.keys())}")
-        check("result has status", "status" in first)
+        check("result has id", "id" in first, f"keys: {list(first.keys())}")
+        check("result has title", "title" in first)
         check("result has score/rank", "score" in first or "rank" in first)
-        check("no draft results", first.get("status") != "draft")
+        # Draft filtering is validated in test_search_scope_and_drafts() —
+        # the default (compact) detail does not carry `status`, so checking
+        # it here would pass vacuously (#2270).
     else:
         print("  WARN No results returned (index may be empty)")
 
