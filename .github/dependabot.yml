@@ -17,7 +17,10 @@ updates:
   #     https://api.github.com/repos/<owner>/<repo>/contents/<path>/action.yml?ref=<sha>
   #
   # 200 = safe; 404 = the bump cannot work (and a `.yaml` spelling, a `Dockerfile`, or a reusable
-  # workflow path are the other legitimate shapes).
+  # workflow path are the other legitimate shapes). When the manifest is missing at the path the
+  # bump keeps, check the **repository root** before closing anything: `zsxh1990/pr-genius-check`
+  # moved there in v1.9.x (measured 2026-09-28), so the right landing was a repoint plus the new
+  # SHA — a reviewer's job, not something dependabot can express, since it only moves the SHA.
   #
   # Still **not** auto-merged — and the one-line "never auto-merge" note that used to sit here is now a
   # decision with its reason: this ecosystem's bumps edit `.github/workflows/**`, which is the deploy
