@@ -25,13 +25,25 @@ the alerts confusing:
     and a quoted value of eight characters or more matches whether that value is a
     placeholder, an environment-variable reference, or a real credential.
 
-Scope: the paths the scanner has actually reported on here (workflows, the
-workers/ bundle, the plugin manifest). It also reads test files (#256), so a test
-that needs secret-shaped strings must assemble them at runtime — see the samples
-below. The rest of the repository contains dozens
-of deliberate placeholders — redaction fixtures, lesson examples, benchmark
-transcripts — where such strings are the point, so the guard starts where the
-plugin listing is judged rather than pretending the whole tree is clean.
+Scope: the paths the scanner has actually reported on here — workflows, the workers/
+bundle, the plugin manifest, **and `tests/`**. The last one is not optional and was
+learned the same way twice: the scanner reads test files (#256), and on 2026-09-25 it
+raised **#283** against a literal in `tests/test_cf_diagnostics_builds_step.py` that
+this guard could not see, because `tests/*.py` was not in its glob list while the
+scanner's own file list included it. A local copy of someone else's rule is only worth
+having if it is applied to the same files.
+
+A handful of test files are exempt **by name, with a reason**: their subject *is*
+secret-shaped input (they feed a redactor a synthetic `ghp_…` and assert it comes back
+redacted), so their fixtures are the point rather than an accident. `EXEMPT_FILES`
+below is that list, and `test_every_exemption_is_still_earned` requires each one to
+still match a pattern — an exemption that no longer matches is a stale exemption, and
+a stale exemption is a hole.
+
+The rest of the repository contains dozens of deliberate placeholders — lesson examples,
+benchmark transcripts, redaction fixtures elsewhere — where such strings are the point,
+so the guard covers the surfaces the scanner reports on rather than pretending the whole
+tree is clean.
 
 Practical rule this encodes: never write a token-shaped *inline assignment*
 (`NAME=<quoted value>`) in our plugin surface. Use the YAML `env:` form, which the
@@ -76,7 +88,23 @@ SCAN_GLOBS = [
     ".codex-plugin/*.json",
     "cordis.patch.yml",
     "index.js",
+    # Added 2026-09-25, after alert #283: the scanner reads test files, so this guard has to as
+    # well. The gap was the whole reason that alert reached GitHub instead of failing here.
+    "tests/*.py",
 ]
+
+# Test files whose *subject* is secret handling: they hand a synthetic credential to a redactor and
+# assert it comes back redacted, so a secret-shaped literal in them is the fixture rather than a
+# leak. Each one is named with the reason it is exempt, and each must still match a pattern (a stale
+# exemption is a hole — see `test_every_exemption_is_still_earned`).
+EXEMPT_FILES = {
+    "test_contribution_queue.py": "queues a message containing a PAT and asserts it is redacted",
+    "test_intake_redaction.py": "redacts secrets/env dumps out of intake payloads — the fixtures",
+    "test_intake_spam_guard.py": "asserts credential-shaped intake bodies are refused",
+    "test_misaka_capture.py": "asserts captured failure reports have credentials stripped",
+    "test_redaction_sync.py": "the JS and Python redactors must agree on the same fixture set",
+    "test_tombstone_redaction.py": "tombstones carry secrets; the test asserts they are removed",
+}
 
 BINARY_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".woff", ".woff2", ".ttf"}
 
@@ -85,7 +113,9 @@ def _files() -> list[Path]:
     found: list[Path] = []
     for pattern in SCAN_GLOBS:
         found.extend(sorted(REPO.glob(pattern)))
-    return [p for p in found if p.is_file() and p.suffix.lower() not in BINARY_SUFFIXES]
+    return [p for p in found
+            if p.is_file() and p.suffix.lower() not in BINARY_SUFFIXES
+            and p.name not in EXEMPT_FILES]
 
 
 def _findings() -> list[str]:
@@ -156,3 +186,40 @@ def test_the_patterns_still_detect_what_they_are_for(sample):
     — either way the green result above would be meaningless.
     """
     assert any(p.search(sample) for p in COMPILED), f"no pattern matched {sample!r}"
+
+
+def test_the_scan_covers_the_test_directory():
+    """The scope that made #283 possible: the scanner reads `tests/`, so this guard must too.
+
+    Named as its own test because the failure mode is silent — dropping a glob from a list makes
+    every other assertion here pass on less evidence.
+    """
+    scanned = {p.name for p in _files()}
+    assert "test_cf_diagnostics_builds_step.py" in scanned, (
+        "tests/*.py left the scan surface; the upstream scanner still reads them, which is how a "
+        "token-shaped literal in a test file reached GitHub as alert #283"
+    )
+
+
+def test_every_exemption_is_still_earned():
+    """An exemption for a file that no longer matches is a hole with a comment next to it."""
+    for name, reason in EXEMPT_FILES.items():
+        path = REPO / "tests" / name
+        assert path.is_file(), f"EXEMPT_FILES lists {name}, which does not exist"
+        assert reason.strip(), f"{name} is exempt with no reason recorded"
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        matched = [raw for raw, pattern in zip(SECRET_PATTERNS, COMPILED) if pattern.search(text)]
+        assert matched, (
+            f"{name} is exempt but no longer matches any pattern — the fixture it was exempted for "
+            f"is gone, so remove it from EXEMPT_FILES rather than leaving the hole open"
+        )
+
+
+def test_the_exemptions_are_not_just_a_directory():
+    """Guard the guard: the exemption list must stay a named few, not a pattern that swallows tests.
+
+    If someone replaces `EXEMPT_FILES` with a glob or a tuple of directories, the scan quietly loses
+    its subject files and every other assertion here still passes.
+    """
+    assert all("/" not in name and name.endswith(".py") for name in EXEMPT_FILES), EXEMPT_FILES
+    assert len(EXEMPT_FILES) < 15, f"the exemption list grew into a directory: {sorted(EXEMPT_FILES)}"

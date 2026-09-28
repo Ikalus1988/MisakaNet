@@ -122,20 +122,12 @@ describe('MisakaNet dsh Plugin Functionality', function () {
     });
   });
 
-  describe('Resource access', function () {
-    it('should expose misaka://lessons/index resource', function () {
-      // dsh resource list is not standardized; check via help or info
-      try {
-        const result = execSync('dsh --help', { encoding: 'utf8', timeout: 10000 });
-        // If resources are exposed they should appear in dsh info
-        const infoResult = execSync('dsh info misakanet', { encoding: 'utf8', timeout: 10000 });
-        expect(infoResult).to.include('misakanet');
-      } catch (e) {
-        // dsh info may not exist; skip if not available
-        this.skip();
-      }
-    });
-  });
+  // `describe('Resource access')` used to live here, asserting that `dsh info misakanet` output
+  // contains the string "misakanet" — which it always does, on a command whose failure path was a
+  // `this.skip()`. It could not fail, so it could not tell anyone anything (#1901). The resource
+  // surface is asserted where it can actually be read: `tests/test_mcp_http_server.py` checks the
+  // three `misaka://` URIs the local HTTP server registers, and `tests/test_mcp_doc_surface.py` checks
+  // every URI and prompt this repository documents against the code that implements them.
 
   describe('Error handling', function () {
     it('should not crash on malformed JSON input', function () {

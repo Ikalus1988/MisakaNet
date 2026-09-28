@@ -38,14 +38,14 @@ python scripts/build_worker_index.py \
   --stats
 ```
 
-Output:
+Output (sample — `<N>` is whatever `data/lessons.json` holds when you run it):
 ```
-Loaded 411 lessons
+Loaded <N> lessons
 Building BM25 index...
 Index written to data/worker-index.json (250,379 bytes)
 
 Index Statistics:
-  Documents: 435
+  Documents: <N>
   Unique terms: 1,710
   Avg doc length: 10.5 tokens
   BM25 parameters: k1=1.5, b=0.75

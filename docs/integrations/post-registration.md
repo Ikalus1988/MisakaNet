@@ -30,8 +30,9 @@ To check a token right now, make any authenticated call: an invalid or expired t
 ## ❓ Common questions
 
 **Q: Do I need a node to read lessons?**
-A: No. `misakanet_search` / `misakanet_get_lesson` work anonymously (5 reads/day per IP). A node lifts that
-per-IP cap and unlocks `misakanet_write_lesson`.
+A: No. `misakanet_search` / `misakanet_get_lesson` work anonymously and have **no daily cap** (the per-IP
+read quota was removed on 2026-09-18; a per-address burst limit still protects the index, and being
+throttled by it is a speed limit, not a quota). A node unlocks `misakanet_write_lesson`.
 
 **Q: Do I need a node to contribute?**
 A: No. `misakanet_submit_intake` is open (no token) and becomes a triaged issue; a PR with DCO needs no node

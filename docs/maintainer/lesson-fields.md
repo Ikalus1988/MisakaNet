@@ -64,11 +64,19 @@ reviewer 和读者都无法判断它是否算数；一条可判定的判据（�
 规则块（`PROMPT_BLOCK` 与 `integrations/agent-autostart/prompt.md`）要求：命中后用
 `summary_plain` 原样说给用户听；没有该字段时自己提炼一句大白话。
 
-**已知缺口（本 issue 范围外，一行改动可补）**：`misakanet_search` 投影读的是语料行的字段，
-D1 侧已从 `lessons.frontmatter`（schema 已有列、sync 已写入）解析；
-GitHub/KV 兜底路径读的是 `data/lessons.json`，该文件目前还没有这三个键
-（生成器 `scripts/update_lessons_json.py` 显式挑选字段）。所以**检索侧要完全生效**，
-还需要把这三个字段加进索引生成器；`misakanet_get_lesson` 不受影响，今天就能用。
+**索引侧（2026-09-25 补齐）**：`misakanet_search` 投影读的是语料行的字段。D1 侧从
+`lessons.frontmatter`（schema 已有列、sync 已写入）解析；GitHub/KV 兜底路径读的是
+`data/lessons.json`，而生成器 `scripts/update_lessons_json.py` 现在**会**把这三个字段写成
+索引条目的顶层键，所以兜底路径也生效了。
+
+> 为什么必须在**生成器**里补、而不是在读取侧加兜底：兜底路径对索引条目**不做任何 lift**
+> （`loadLessons` → `fetchFromGitHub` 直接返回原始数组），所以投影能看到的只有"条目上的顶层键"。
+> 读取侧那段 `frontmatterField(lesson.frontmatter, …)` 在这条路径上**永远不会命中**——索引里
+> 没有任何条目带 `frontmatter` 键（实测 0/411）。`evidence_level` 之所以在这条路径上是好的，
+> 唯一原因就是生成器一直把它写成顶层键。这条由 `tests/test_lessons_index_plain_fields.py` 守着
+> （从**语料**推导期望，两边字段表不一致即红）。
+
+`misakanet_get_lesson` 不经过这条管道（直接从返回正文的 frontmatter 解析）。
 
 另外：`trigger` 目前**只出现在响应里**，还没有进入 BM25 的正文索引文本
 （`lessonIndexText()` 的字段表）——它的定位是"查询侧片段"（同类先例是

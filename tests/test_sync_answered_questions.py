@@ -262,3 +262,45 @@ class TestMarkerConstants:
     def test_no_overlap(self):
         overlap = set(ANSWER_MARKERS) & set(AUTOMATED_MARKERS)
         assert not overlap, f"overlapping markers: {overlap}"
+
+
+class TestStoredAnswerHasNoRoutingMarkers:
+    """What gets stored is what agents later receive, so the routing marker must not be in it.
+
+    Measured 2026-09-25 while answering issue #2099 — the first answer written with the
+    `<!-- misakanet-answer -->` marker rather than the older `## ✅ Answered` heading: the stored row began
+    with the HTML comment, and both delivery paths serve the row verbatim (`misakanet_search` as
+    `type=faq`, the re-submission pull as `answer`). So every agent retrieving it got an HTML comment as
+    the first line of the FAQ entry. The earlier answers were unaffected, which is why it went unnoticed.
+    """
+
+    def test_the_html_comment_marker_is_not_stored(self):
+        comments = [_comment("<!-- misakanet-answer -->\nThe answer is 42.", cid=2)]
+        answer, _, _ = extract_answer(comments)
+        assert "misakanet-answer" not in answer, "the routing marker is being stored as content"
+        assert answer.startswith("The answer is 42"), answer[:60]
+
+    def test_a_marker_on_its_own_line_leaves_no_leading_blank(self):
+        answer, _, _ = extract_answer([_comment("<!-- misakanet-answer -->\n\nBody starts here.")])
+        assert answer == "Body starts here."
+
+    def test_the_visible_headings_are_kept(self):
+        """`## ✅ Answered` is a heading a maintainer wrote — it is content, not a routing signal.
+
+        Stripping it would be editing the answer, and the three older rows in D1 use exactly this shape.
+        """
+        answer, _, _ = extract_answer([_comment("## ✅ Answered\nUse the new config flag.")])
+        assert answer.startswith("## ✅ Answered"), answer[:60]
+
+    def test_the_bracket_heading_is_kept(self):
+        answer, _, _ = extract_answer([_comment("## [ANSWER]\nSet WORKER_TIMEOUT=30.")])
+        assert answer.startswith("## [ANSWER]"), answer[:60]
+
+    def test_the_fallback_path_also_stores_served_text(self):
+        """The fallback (no marker at all) returns what it stores too, so it is held to the same rule."""
+        comments = [_comment("A plain maintainer answer, long enough to clear the fallback threshold. " * 3,
+                             login="maintainer", cid=9)]
+        answer, _, cid = extract_answer(comments)
+        assert cid == 9
+        assert "misakanet-answer" not in answer
+        assert answer.startswith("A plain maintainer answer")

@@ -12,6 +12,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # A job with no bound holds its runner until the platform default (six hours).
+    timeout-minutes: 20
     steps:
       # Deliberately GITHUB_TOKEN, not the PAT: a GITHUB_TOKEN push never triggers
       # another workflow, so the tag created below cannot fire release-pypi.yml
@@ -20,6 +22,15 @@ jobs:
         with:
           fetch-depth: 0                        # tags, to see whether the release is tagged
           token: ${{ secrets.GITHUB_TOKEN }}
+          # No persisted credentials, because every push below supplies its own: `actions/checkout`
+          # writes GITHUB_TOKEN into `http.https://github.com/.extraheader` *and* into a credentials file
+          # reached through `includeIf`, and a push that also carries a PAT then has two identities to
+          # choose from. Measured 2026-09-25 on the 2.35.0 release PR: the changelog repair's push — PAT in
+          # its URL, checkout credentials still present — was attributed to `github-actions[bot]`, so all
+          # 13 runs on the repaired head came back `action_required` (held, never executed), the required
+          # `DCO / Signed-off-by` among them. Unsetting the header alone was not enough. This is the same
+          # setting, for the same reason, as `auto-sync-prs.yml`.
+          persist-credentials: false
 
       # release-please is invoked with skip-github-release: true below, and that
       # flag skips `manifest.createReleases()` entirely
@@ -36,8 +47,14 @@ jobs:
         id: release_tag
         env:
           GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          # Tags are pushed as the *built-in* token, supplied here as a header because the checkout no
+          # longer persists one. Deliberate, and the reason is in the comment above the checkout: a
+          # GITHUB_TOKEN push never triggers another workflow, so tagging here cannot fire
+          # release-pypi.yml behind our back — publishing stays a single explicit dispatch below.
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GIT_TOKEN" | base64 -w0)"
           VERSION=$(python3 -c "import json;print(json.load(open('.release-please-manifest.json'))['.'])")
           TAG="v$VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -48,7 +65,17 @@ jobs:
           fi
           echo "manifest says $VERSION and no tag exists yet — tagging"
           git tag "$TAG"
-          git push origin "$TAG"
+          git -c http.extraheader="$AUTH_HEADER" push origin "$TAG"
+          # The Marketplace action is *this repository*, so its `v1` alias has to follow the releases:
+          # `uses: Ikalus1988/MisakaNet@v1` should get the newest one, while `@$TAG` (e.g. `@v2.34.0`)
+          # pins an exact version for anyone who needs that. Decided 2026-09-23 — the tag has to show
+          # that the version changed. `v1` moves rather than a `v2` appearing because the action's
+          # input/output contract has not changed, and a new major would break every existing `uses:`
+          # line for nothing. Tag pushes are not covered by the branch ruleset (it targets
+          # `refs/heads/main`), so this is allowed where a push to `main` is not.
+          git tag -f v1
+          git -c http.extraheader="$AUTH_HEADER" push -f origin v1
+          echo "moved v1 to $TAG ($(git rev-parse --short HEAD))"
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG already exists"
           else
@@ -118,6 +145,96 @@ jobs:
       # Publish only when this run tagged a release: `gh workflow run` is one of
       # the two events a GITHUB_TOKEN push *can* still create, so this is the
       # single, explicit publish path.
+      # The release-please action leaves the workspace on the release PR's branch (it rewrites that branch
+      # in place). Every step after this one assumes `main`: `Sync version to docs` rewrites
+      # `docs/index.html`, and the lander stages with `git add -A` and pushes **HEAD** — which is how the
+      # 2026-09-25 PR #2210 came to be titled "docs: sync version to v2.34.0" while carrying the entire
+      # 2.35.0 bump (release commit + changelog repair + docs change, all on `bot/release-version-sync`).
+      # `land_change.py` refuses to land from a moved checkout as well, so this is the fix and that is the
+      # net under it.
+      - name: Return the checkout to main
+        run: git checkout --force main
+
+      # `release-please` regenerates the release PR's changelog from the commit range on **every** push to
+      # `main`, so a repair made by hand is undone by the next push. The repair therefore belongs here, in
+      # the same run, right after the action that regenerates it.
+      #
+      # Measured 2026-09-25 on the open 2.35.0 release PR: 137 bullet lines, 104 distinct entries, **33 of
+      # them listed twice** — because a PR that reached `main` through a merge commit whose message also
+      # carried the PR title looks conventional twice (the branch commit and the merge commit it merged).
+      # `tests/test_changelog_shape.py` refuses to release in that state and is right to: the notes are the
+      # one page a user reads to decide whether to upgrade, and a change listed twice reads as two changes.
+      # The *cause* is fixed (every merge path squashes — pinned by `test_every_merge_path_squashes`), but
+      # the damage from the merges that already happened stays in the range until the release carrying it is
+      # tagged, so this step has to keep running.
+      - name: Drop the duplicate entries in the pending release section
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}          # reads only
+          # A PAT, not GITHUB_TOKEN, for the push: a bot push creates *held* runs on the release PR
+          # (`action_required`), and `DCO / Signed-off-by` is a required check — the release PR would then
+          # be unmergeable for a reason nobody can see. Same lesson as `fix-dco.yml` (#2204).
+          PUSH_TOKEN: ${{ secrets.SHELDON_PAT }}
+        run: |
+          set -euo pipefail
+
+          BRANCH=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 50 \
+                     --json headRefName \
+                     --jq '[.[] | select(.headRefName | startswith("release-please--")) | .headRefName][0] // empty')
+          if [ -z "$BRANCH" ]; then
+            echo "no open release PR — nothing to repair"
+            exit 0
+          fi
+
+          # The tool comes from `main` (this checkout), the file from the release branch: the branch is only
+          # ever `main` plus the release commit, but it can lag `main` by minutes, and a repair tool that
+          # exists only on the branch it is repairing would fail on the first run.
+          cp scripts/dedupe_release_entries.py "$RUNNER_TEMP/dedupe_release_entries.py"
+          git fetch --quiet origin "$BRANCH"
+          # A *worktree*, not `git checkout`: the shared workspace must stay on `main` for the steps below
+          # (see "Return the checkout to main"). Repairing in place left it on the release branch, and the
+          # lander then built `bot/release-version-sync` from that HEAD — three commits, and a pull request
+          # whose title described one of them (measured 2026-09-25, PR #2210).
+          WORKTREE="$RUNNER_TEMP/release-repair"
+          git worktree add --force --detach "$WORKTREE" "origin/$BRANCH" >/dev/null
+
+          # The path is explicit, and that is not cosmetic: this runs a *copy* of the script from outside
+          # the checkout, so its `__file__`-relative default (`<repo>/CHANGELOG.md`) resolves to
+          # `/home/runner/work/CHANGELOG.md` and the first run of this step died on
+          # `FileNotFoundError: '/home/runner/work/CHANGELOG.md'` (measured 2026-09-25, run 36105826072).
+          if python3 "$RUNNER_TEMP/dedupe_release_entries.py" --check "$WORKTREE/CHANGELOG.md"; then
+            {
+              echo "### Release changelog"
+              echo
+              echo "No duplicate entries in the newest release section — nothing to repair."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          python3 "$RUNNER_TEMP/dedupe_release_entries.py" "$WORKTREE/CHANGELOG.md" | tee -a "$GITHUB_STEP_SUMMARY"
+          git -C "$WORKTREE" config user.name "misakanet-bot"
+          git -C "$WORKTREE" config user.email "bot@misakanet.dev"
+          git -C "$WORKTREE" add CHANGELOG.md
+          if git -C "$WORKTREE" diff --cached --quiet; then
+            echo "the script reported duplicates but the file did not change — not pushing"
+            exit 0
+          fi
+          git -C "$WORKTREE" commit -s -m "chore(changelog): drop the duplicate entries in the pending release section"
+          # The checkout persisted `GITHUB_TOKEN` into `http.https://github.com/.extraheader`. A push then
+          # carries **both** Authorization headers and the server uses the checkout's, so this push — which
+          # is meant to be the PAT, i.e. an ordinary user push — was attributed to `github-actions[bot]`:
+          # measured 2026-09-25 on the 2.35.0 release PR, all 22 runs on the repaired head came back
+          # `action_required` (held, never executed), including the required `DCO / Signed-off-by`. The
+          # duplicates were fixed and the PR became unmergeable for a new reason, which is what this line
+          # prevents. `auto-sync-prs.yml` documents the same trap for its own PAT push.
+          # Belt and braces with `persist-credentials: false` on the checkout: if that setting is ever
+          # flipped back, the checkout's header would be *appended* to this one and the server would use
+          # the checkout's — which is how the push above was attributed to the bot.
+          git config --unset-all "http.https://github.com/.extraheader" || true
+          AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$PUSH_TOKEN" | base64 -w0)"
+          git -C "$WORKTREE" -c http.extraheader="$AUTH_HEADER" push origin "HEAD:refs/heads/$BRANCH"
+          git worktree remove --force "$WORKTREE"
+          echo "repaired $BRANCH; its checks will run on the new head" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Dispatch the PyPI publish
         if: steps.release_tag.outputs.created == 'true'
         env:
@@ -205,19 +322,22 @@ jobs:
           python3 scripts/sync_lesson_count.py
           python3 scripts/sync_lesson_count.py --check
 
-      - name: Commit version sync
+      - name: Land the version sync through a pull request that merges itself
+        # Was `git push` — refused by the ruleset on `main`. This one is worth its own note because
+        # of *when* it runs: a release has just been cut, and the failure used to leave
+        # `docs/index.html` advertising the previous version while the release page advertised the
+        # new one (v2.23.0 sat there for six releases the last time this step was dead). A pull
+        # request that merges itself keeps the badge honest without a human watching the tail of a
+        # release run.
+        #
+        # The staging order the old step needed is now the lander's: it stages first and asks about
+        # the *index* (`git diff --cached`), because `git diff --quiet` ignores the index — the
+        # form that once made this step look alive while committing nothing (2026-09-12).
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
+          VERSION: ${{ steps.release_tag.outputs.version }}
         run: |
-          set -euo pipefail
-          git config user.name "misakanet-bot"
-          git config user.email "bot@misakanet.dev"
-          # NOTE: stage first, then ask about the *index*. `git diff --quiet`
-          # ignores the index, so the previous `git add -A; git diff --quiet ||
-          # git commit` form could never commit anything — the step looked alive
-          # and did nothing (found 2026-09-12 while wiring the count SSOT).
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No version/count sync changes to commit"
-          else
-            git commit -m "docs: sync version to v${{ steps.release_tag.outputs.version }}"
-            git push || { git pull --rebase origin main && git push; }
-          fi
+          python3 scripts/ci/land_change.py \
+            --branch bot/release-version-sync \
+            --title "docs: sync version to v$VERSION" \
+            --note "The site version badge and every managed lesson count, synced after cutting v$VERSION."

@@ -39,6 +39,20 @@ Do NOT use MisakaNet for:
 
 ## Tools
 
+> **Which surface these examples target.** They are written against the **hosted** endpoint
+> (`https://misakanet.org/mcp`) — the one `docs/mcp.md` recommends and the one most agents are pointed
+> at. The two surfaces differ, and this matters for exactly one tool below:
+>
+> * **hosted** exposes 7 tools, and `misakanet_me_events` is **one of them**
+>   (the stdio set minus `misakanet_submit_usage` / `misakanet_usage_status` /
+>   `misakanet_memory_context`, plus `misakanet_me_events`);
+> * a **local stdio** install (`python3 scripts/mcp_server.py`) exposes 9 tools and **does not have
+>   `misakanet_me_events`** — it has `misakanet_usage_status` and `misakanet_submit_usage` instead.
+>
+> So an agent running the local server will get an unknown-tool error from the reuse-evidence steps and
+> should use `misakanet_usage_status` there. `docs/mcp.md` carries the full table, and
+> `tests/test_mcp_doc_surface.py` keeps this file's tool names in step with it (issue #2000).
+
 ### Register an agent node
 
 ```

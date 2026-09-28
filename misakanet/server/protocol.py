@@ -175,7 +175,21 @@ def main():
         except json.JSONDecodeError:
             continue
 
-        response = handle_request(request)
+        # A tool handler that raises must not take the process down: the client
+        # would lose the whole session, not just this call, and would see a
+        # closed pipe instead of a diagnosable error. Report it as a JSON-RPC
+        # error for this request and keep serving.
+        try:
+            response = handle_request(request)
+        except Exception as exc:  # noqa: BLE001 - boundary guard, see above
+            response = {
+                "jsonrpc": "2.0",
+                "id": request.get("id"),
+                "error": {
+                    "code": -32603,
+                    "message": f"Internal error: {type(exc).__name__}: {exc}",
+                },
+            }
         if response:
             sys.stdout.write(json.dumps(response) + "\n")
             sys.stdout.flush()

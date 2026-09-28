@@ -1,0 +1,109 @@
+name: D1 backup
+
+# A logical export of the served corpus, kept outside D1.
+#
+# Why this exists next to Time Travel (which is on, free, and restores to any minute in the last 30
+# days): Time Travel is a *restore* mechanism, not an export. It cannot be read from outside D1, it
+# cannot be diffed, and it expires. Measured 2026-09-24, `wrangler d1 info misakanet-db` is the fact
+# this workflow also prints, because a database on the legacy `alpha` storage backend does *not* have
+# Time Travel at all — it has the older snapshot API. So the two cover different failures:
+#
+#   * a bad migration / a DELETE without a WHERE, discovered today   -> Time Travel bookmark
+#   * a corrupt or missing database, discovered in six weeks         -> one of these dumps
+#   * "what did the corpus look like when that lesson was written?"  -> a dump, by definition
+#
+# The dump is an artifact, not a commit: a ~14 MB SQL file has no business in git history, and the
+# artifact store already has the retention and access control for it.
+#
+# Credential: `automation` (no required reviewers, branch-restricted to `main`), whose Cloudflare token
+# is scoped to **D1:Edit** — the same reviewer-free environment the two scheduled syncs use, and the
+# reason an unattended weekly job is acceptable here. That token's scope, and the rotation procedure,
+# are documented in docs/maintainer/credentials-and-environments.md §4. A backup behind a required
+# reviewer is not a backup: it waits.
+on:
+  schedule:
+    # Weekly, Monday 04:10 UTC — after the daily corpus sync (03:00) has settled, and off the hour so
+    # it does not contend with the other scheduled jobs.
+    - cron: "10 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: d1-backup
+  cancel-in-progress: false
+
+jobs:
+  export:
+    environment: automation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Export the database
+        id: export
+        run: |
+          set -euo pipefail
+          npm install -g wrangler >/dev/null 2>&1
+          cd workers
+
+          STAMP=$(date -u +%Y-%m-%d)
+          echo "stamp=$STAMP" >> "$GITHUB_OUTPUT"
+
+          # `d1 export --remote` reads the database as it is right now. The schema travels with the
+          # data (no --no-schema): a dump that needs the current schema to be meaningful is not a
+          # backup, it is a fragment.
+          wrangler d1 export misakanet-db --remote --output "/tmp/misakanet-db-$STAMP.sql"
+
+          DUMP="/tmp/misakanet-db-$STAMP.sql"
+          ls -l "$DUMP"
+
+          # An export that produced a plausible file is not the same as one that produced the corpus,
+          # and the failure worth guarding against is a truncated or empty dump being archived for
+          # months. The assertions stay coarse on purpose — the dump's exact statement shape (one
+          # INSERT per row, or one per table; quoted identifiers or not) is wrangler's business, and a
+          # check that encodes my guess about it would fail on the next wrangler release instead of on
+          # a bad dump.
+          # `wc -c`, not `stat -c%s`: the GNU spelling is not a size on macOS/BSD (which spells it
+          # `-f%z`), and under `set -e` it killed this step *before* any assertion ran — the step's
+          # stdout on the macos-latest legs was the `ls -l` line above and nothing else, so the guard
+          # had no verdict to give. `wc -c` is POSIX and needs no per-platform branch.
+          SIZE=$(wc -c < "$DUMP" | tr -d '[:space:]')
+          INSERTS=$(grep -ciE '^[[:space:]]*insert into' "$DUMP" || true)
+          TABLES=$(grep -ciE '^[[:space:]]*create table' "$DUMP" || true)
+          LESSONS=$(grep -ciE '(create table|insert into)[^(]*lessons' "$DUMP" || true)
+          echo "size=$SIZE bytes, INSERT statements=$INSERTS, CREATE TABLE=$TABLES, lines naming the lessons table=$LESSONS"
+          if [ "$SIZE" -lt 500000 ] || [ "$INSERTS" -lt 1 ] || [ "$TABLES" -lt 1 ] || [ "$LESSONS" -lt 1 ]; then
+            echo "::error::the dump looks wrong (size=$SIZE, inserts=$INSERTS, tables=$TABLES, lessons lines=$LESSONS) — refusing to archive it"
+            exit 1
+          fi
+          echo "bytes=$SIZE" >> "$GITHUB_OUTPUT"
+          echo "inserts=$INSERTS" >> "$GITHUB_OUTPUT"
+
+          # For the record, side by side with the dump: what the database itself says it holds.
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT COUNT(*) AS lessons, SUM(instr(frontmatter, 'evidence_level') > 0) AS with_evidence_level FROM lessons;" || true
+
+          # The two facts that decide whether this dump is the *only* safety net: which storage
+          # backend the database is on (Time Travel needs `production`), and the bookmark a restore
+          # would use right now — worth knowing before an incident rather than during one.
+          echo "== storage backend (Time Travel needs version: production) =="
+          wrangler d1 info misakanet-db || true
+          echo "== the bookmark to restore to, right now =="
+          wrangler d1 time-travel info misakanet-db || echo "(time travel unavailable — this dump is the only restore path)"
+
+      - name: Upload the dump
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: d1-dump-${{ steps.export.outputs.stamp }}
+          path: /tmp/misakanet-db-*.sql
+          # The artifact store is not a backup system either: 90 days is the ceiling, so at most ~13
+          # weekly dumps are ever retained. Beyond that horizon the data lives in git (lessons/**) and
+          # in Time Travel, which is the honest answer rather than a promise this job cannot keep.
+          retention-days: 90
+          if-no-files-found: error

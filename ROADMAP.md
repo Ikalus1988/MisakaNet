@@ -31,6 +31,29 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 > 规则：**本节所有数字都来自下面附录里的命令，可逐条复现**；无法复现的结论一律标注 **未验证**，
 > 不标注即视为已复现。下面 2026-08-22 的原文一律不删，只在新章节里给状态裁定。
 
+### 当前数字（动态徽章，不写死）
+
+| 指标 | 数值 |
+|---|---|
+| 公开索引语料 | ![lessons](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json) |
+| domain 覆盖 | ![domains](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/domains.json) |
+
+> 这两行不再是写死在文档里的数字：徽章读 `data` 分支的 `badges/*.json`，由 `update-badges.yml` 每日从
+> `data/lessons.json`（语料）与 `scripts/sync_lesson_count.py::canonical_domains`（domain）重算，
+> 所以数字没法过期——它不在文档的字节里。`llms.txt` 是唯一保留字面计数的入口（读它的人不会执行 JS）。
+>
+> 这一节以前由 `scripts/sync_lesson_count.py` 写死维护；起因是下面那张快照表——2026-09-23 实测它
+> **13 项里 9 项过期**（393/232/43 对 411/1047/44），而它周围写着"所有数字可逐条复现"。
+> **可复现 ≠ 会被重算**：这些数字此前没有写作者（#2095）。
+>
+> **下面那张 2026-09-16 的快照表是当天的记录，不是"当前值"**，其中的数字故意保留原样——
+> 本仓的惯例是旧条目只加状态裁定、不改写历史。
+>
+> **状态裁定（2026-09-26）：节点数不再对外发布。** 它不是用户数——`data/counter.json` 的 `current`
+> 是单调的**编号分配计数器**（匿名调用每次都会新建一个 node），只会随自动化增长，因此五个曾引用它的
+> 表面（`docs/llms.txt` 两份、`README.zh-CN.md`、`README.ja.md`、本表）都已去掉该行，
+> `sync_lesson_count.py --metric nodes` 也已移除。快照表里那一行只是当天的记录，其"来源命令"已失效。
+
 ### 状态快照（2026-09-16）
 
 | 指标 | 数值 | 来源命令 / 文件 |
@@ -79,7 +102,7 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 | 基线：Smithery / GitHub `/mcp` 暂停 | **仍然成立** | 与 External channel policy 一致，本轮无外部证据可推翻（**未验证**外部页面） |
 | 8月 v2.17.0：Lesson Lint（P0） | **已完成** | `scripts/lesson_lint.py` 存在；`.github/workflows/lesson-quality.yml:31` 以 `--fail-on high` 跑 |
 | 8月 v2.17.0：GX1 闭环（#968 合并） | **已放弃** | commit `42e374345 fix(security): revert GX1 changes, keep security hotfix only`——GX1 被显式回滚，只保留安全修复 |
-| 8月 v2.17.0：版本漂移清理（同步到 v2.17） | **已过时** | 手工对齐被两个自动机制取代：`scripts/sync_lesson_count.py --check`（计数）+ `scripts/update_status.py`（STATUS.md 头部自述"自动更新于 2026-09-15 04:28 UTC"） |
+| 8月 v2.17.0：版本漂移清理（同步到 v2.17） | **已过时** | 手工对齐被自动机制取代：`scripts/sync_lesson_count.py --check`（计数）。**2026-09-25 更正**：这里原写"+ `scripts/update_status.py`"，该生成器已连同 `STATUS.md` 一起删除（#2095），且它从未在任何 workflow 里跑过 |
 | 8月 v2.17.0：Security 收尾（#969 / #964） | **部分可验证** | 回滚提交带 #964（`42e374345`）；#969 在 git 历史里只出现在 `docs/maintainer/handoff-2026-08-11.md`，**未验证**已关闭 |
 | 8月 v2.17.0：定位固化到 `CONCEPTS.md` | **已完成（路径需更正）** | 文件是 **`docs/CONCEPTS.md`**，开篇即"不是通用记忆系统，不是 Agent runtime，不是向量数据库"；仓库根目录没有 `CONCEPTS.md` |
 | 8月 v2.17.0：Duplicate governance | **已完成** | `docs/duplicate-governance.md` 存在 |
@@ -283,7 +306,8 @@ python3 -c "import json;d=json.load(open('data/regression_queries.json'));print(
 
 > 状态（2026-09-16）：Lesson Lint、Duplicate governance、定位固化（**文件在 `docs/CONCEPTS.md`**）
 > 已完成；**GX1 闭环已放弃**（commit `42e374345` 显式回滚，只留安全修复）；版本漂移清理已过时
-> （改由 `sync_lesson_count.py --check` + `update_status.py` 自动维护）；DoD 里的
+> （改由 `sync_lesson_count.py --check` 自动维护——原文还写了 `update_status.py`，该生成器与
+> `STATUS.md` 已于 #2095 一并删除）；DoD 里的
 > `scripts/site_health.py` 已改名 `site_health_check.py`；289 这个数字已前移。
 
 Goal: 把 v2.16.0 的增长势能收敛成"可信、可维护、可审计的 failure-memory 网络"。

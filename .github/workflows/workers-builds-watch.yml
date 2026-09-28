@@ -1,0 +1,76 @@
+name: Site build watch
+
+# `Workers Builds: misakanet-web` deploys the site (Cloudflare's Git integration builds `docs/` into
+# misakanet.org). It is not one of the three checks the ruleset requires, and its check-run carries no
+# summary, no annotation and no log — so it was red on every commit from 2026-09-23T17:40Z for a day
+# while ~25 commits merged and the live site stayed byte-identical to the commit *before* the first
+# failure (#2136). Nobody was required to look, so nobody did.
+#
+# This workflow is the alternative to making that check required. A required check that is red blocks
+# every merge — including the merge that fixes the build — which replaces a silent failure with a
+# stuck repository. Instead the red build becomes an issue, which is where a maintainer looks.
+#
+# Two triggers on purpose:
+#   * `check_suite` fires the moment Cloudflare's app publishes the result (seconds, no cron latency).
+#     Actions' own check suites do not fire this event, so the `if` below only filters for the
+#     Cloudflare app explicitly rather than assuming.
+#   * the cron is the safety net for the case this repository cannot test from here: if GitHub ever
+#     stops delivering app check suites to workflows, the watcher still runs and still notices.
+on:
+  check_suite:
+    types: [completed]
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: read
+  issues: write
+
+# The watcher is idempotent but not concurrent-safe: two runs that both see "no tracker" would both
+# open one. A single group makes that impossible.
+concurrency:
+  group: site-build-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Only Cloudflare's check suites are interesting; everything else (CodeQL, Actions, other apps)
+    # resolves to "no Workers Builds check-run" anyway, and this keeps the run list honest.
+    #
+    # The `head_branch` half is the same rule the script enforces, applied one level earlier: a red
+    # site build on a feature branch is that author's business, and this repository pushes a lot of
+    # branches — a watcher that starts a run for each of them to print "skipped on purpose" is noise
+    # in the one place (the Actions list) where noise hides real failures. It stays in the script too,
+    # because that is the copy the tests exercise and the copy the cron uses.
+    if: >-
+      github.event_name != 'check_suite'
+      || (github.event.check_suite.app.slug == 'cloudflare-workers-and-pages'
+          && github.event.check_suite.head_branch == 'main')
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Report the state of the site build
+        env:
+          # `GITHUB_TOKEN`, not a PAT: this job only reads check-runs and writes an issue, and the
+          # default token is scoped to exactly that by the `permissions:` block above.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # The repository is passed explicitly rather than left to the script's built-in default: a
+          # watcher that silently watches the wrong repository reports nothing, forever, and looks
+          # exactly like a healthy one. (`tests/test_workflow_env_is_used.py` is the gate that caught
+          # the first version of this, which set `GH_REPO` in the env and never read it here.)
+          #
+          # The event payload carries the suite's own `head_sha`, so the event path never guesses which
+          # commit to look at; the scheduled path asks for the tip of the branch that deploys the site.
+          if [ "${GITHUB_EVENT_NAME}" = "check_suite" ]; then
+            python3 scripts/workers_builds_watch.py \
+              --repo "${GITHUB_REPOSITORY}" --event "${GITHUB_EVENT_PATH}"
+          else
+            python3 scripts/workers_builds_watch.py \
+              --repo "${GITHUB_REPOSITORY}" --branch main
+          fi

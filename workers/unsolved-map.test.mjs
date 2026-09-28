@@ -11,7 +11,10 @@ import worker, {
   handleUnsolvedMap,
   recordStaleLesson,
   recordUnsolvedSearch,
+  storeList,
+  storePut,
 } from './register-proxy-sw.js';
+import { withKvStore } from './_test-kv-store.mjs';
 
 function createFakeKV(seed = {}) {
   const store = new Map(Object.entries(seed));
@@ -257,4 +260,68 @@ test('helpful feedback does not pollute the unsolved map', async () => {
   });
   await worker.fetch(feedback, env);
   assert.deepEqual((await (await handleUnsolvedMap(env)).json()).families, []);
+});
+
+
+// ── #2119: the map's storage moved to the durable store ──────────────────────
+
+const today = new Date().toISOString().slice(0, 10);
+
+test('the unsolved map is served from D1 alone, with no KV binding at all', async () => {
+  // The state this migration exists for: KV over budget is not the same as "no storage". Before
+  // #2119 the whole endpoint answered `available: false` without a KV binding.
+  const env = { MISAKANET_D1: withKvStore() };   // deliberately no MISAKANET_KV
+
+  await recordUnsolvedSearch(env, { taskFamily: 'ci-pipeline', reason: 'no_match', day: today });
+  await recordStaleLesson(env, 'a-lesson-that-keeps-missing', today);
+
+  const map = await buildUnsolvedMap(env);
+  assert.equal(map.families.length, 1, JSON.stringify(map));
+  assert.equal(map.families[0].taskFamily, 'ci-pipeline');
+  assert.equal(map.families[0].reasons.no_match, 1);
+  assert.equal(map.staleLessons.length, 1);
+  assert.equal(map.staleLessons[0].lessonId, 'a-lesson-that-keeps-missing');
+
+  const payload = await (await handleUnsolvedMap(env)).json();
+  assert.equal(payload.available, true, 'the endpoint must report itself available with D1 alone');
+});
+
+test('a record written before the switch is still listed (KV union)', async () => {
+  // The transition, not the destination: `unsolved:lesson:` records written while this family was
+  // still KV-first are visible only in KV, and the map must keep counting them.
+  const d1 = withKvStore();
+  const legacy = createFakeKV({
+    'unsolved:lesson:legacy-lesson': JSON.stringify({ days: { [today]: 2 } }),
+  });
+  const env = { MISAKANET_KV: legacy, MISAKANET_D1: d1 };
+
+  await recordStaleLesson(env, 'new-lesson', today);
+
+  const map = await buildUnsolvedMap(env);
+  const ids = map.staleLessons.map((s) => s.lessonId).sort();
+  assert.deepEqual(ids, ['legacy-lesson', 'new-lesson'], JSON.stringify(map.staleLessons));
+});
+
+test('storeList enforces the prefix, hides expired rows, and skips other prefixes', async () => {
+  const env = { MISAKANET_D1: withKvStore() };
+  await storePut(env, 'unsolved:lesson:a', '{}', { expirationTtl: 3600 });
+  await storePut(env, 'unsolved:lesson:b', '{}', { expirationTtl: -60 });   // already expired
+  await storePut(env, 'unsolved:family:ci-pipeline', '{}');
+  await storePut(env, 'rate:intake:203.0.113.5', '1', { expirationTtl: 60 });
+
+  const listed = await storeList(env, 'unsolved:lesson:');
+  assert.deepEqual(listed.keys.map((k) => k.name), ['unsolved:lesson:a'],
+    'only live keys under the prefix: the expired one is hidden and the others are not this prefix');
+  assert.equal(listed.list_complete, true);
+});
+
+test('storeList does not treat an underscore in a lesson id as a wildcard', async () => {
+  // `_` is a LIKE wildcard, and lesson ids contain it. Without the ESCAPE, `unsolved:lesson:foo_bar`
+  // would also match `unsolved:lesson:fooXbar` — a list that quietly disagrees with the exact reads.
+  const env = { MISAKANET_D1: withKvStore() };
+  await storePut(env, 'unsolved:lesson:foo_bar', '{}');
+  await storePut(env, 'unsolved:lesson:fooXbar', '{}');
+
+  const listed = await storeList(env, 'unsolved:lesson:foo_bar');
+  assert.deepEqual(listed.keys.map((k) => k.name), ['unsolved:lesson:foo_bar']);
 });

@@ -11,13 +11,16 @@ pip install -r requirements.txt        # core deps **and this checkout** (`-e .`
 npm install                            # devDep: wrangler（部署 worker 用）
 ```
 
-- **Python ≥ 3.10**；CI 跑 3.11 / 3.12 / 3.13 × ubuntu / macos / windows 矩阵
+- **Python ≥ 3.10**（库、脚本、stdio server 的下限；ruff 的 `target-version` 也是 `py310`）；**跑测试套件需要 3.11+**——`tests/` 里有 `import tomllib`（3.11 才进标准库），3.10 下 pytest 会在**收集阶段**就退出（`ModuleNotFoundError`，exit 2）：那不是「测试失败」，而是「一个都没跑」。CI 的必需矩阵是 3.11 / 3.12 / 3.13 × ubuntu / macos / windows。⚠️ 这个下限是**推导**出来的，**不要手写数字**：`tests/test_workflow_python_floors.py` 从 `tests/` 的导入里算出它，并断言每个跑 pytest 的 job 都不低于它（2026-09-25：`pr-checks.yml` 曾钉 3.10，于是**每个 PR** 都带着红的 auditor，3 个待合 PR 因此卡住）
 - Python 侧**零外部依赖**是核心设计目标（`requirements.txt` 就那四个包）——新增依赖前先问是否必要
 - **Worker 侧是纯 JS**（Cloudflare Workers，无构建步骤、无 bundler）。不要试图在 worker 里
   import Python；Python 脚本若要在 worker 复用逻辑，只能移植（见 `injection_scan.py` → worker
   的 `INTAKE_INJECTION_RULES` 这个先例）
 - 需要跑测试时另装：`pip install pytest pytest-cov`
-- 自检：`python3 scripts/doctor.py`（`--kv-only` 校验 wrangler 配置里没有占位符 id）
+- 自检：`python3 scripts/doctor.py`（三条检查：wrangler 配置无占位符 id、`misakanet_core` 可导入、远端
+  `/mcp` 能完成 MCP 握手）。两个子集标志给调用方用：`--kv-only <path>` 只查配置（部署前）、
+  `--remote-only` 只探远端（部署后）——**每个检查都必须有 CI 调用点**，
+  `tests/test_doctor_reach.py` 从 workflow 的命令行里反推并断言这一点（#1822）
 - 动手前同步：`git pull --ff-only`（在**你的** clone 目录里执行）
 
 ### 目录导航
@@ -29,7 +32,7 @@ npm install                            # devDep: wrangler（部署 worker 用）
 | `workers/email-register/` | 邮件 intake worker（独立部署） |
 | `scripts/` | 维护/分析脚本（`lesson_gate.py`、`injection_scan.py`、`cf_mcp_auth.py`、`doctor.py` …） |
 | `lessons/{core,contrib,en,...}/` | 课程语料（本仓的"产品"） |
-| `data/` | 生成物：`lessons.json`、`counter.json`、`leaderboard*.json` 等 |
+| `data/` | 生成物：`lessons.json`、`leaderboard*.json` 等（`counter.json` 已于 2026-09-28 删除，连同它的镜像 workflow；那个数字的单一来源是 worker 的 D1/KV 计数器）|
 | `docs/` | 站点静态资源（`docs/` 就是 misakanet-web 的 assets 目录）+ 面向人的文档 |
 | `.github/workflows/` | CI（门禁见 §2） |
 
@@ -66,10 +69,18 @@ python3 scripts/build_lesson_pages.py --check    # 不一致时：跑不带 --ch
 # 改 workflow：YAML 解析 + 内嵌 JS 语法
 python3 -c "import yaml; yaml.safe_load(open('.github/workflows/x.yml'))"
 node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
+
+# 改了任何自动化写入（workflow 里的 git push / 落盘通道）
+python3 -m pytest tests/test_no_workflow_pushes_to_main.py -q
 ```
 
 > 本地 `pytest` 若报 `mcp.server.mcpserver` 之类导入错误，多半是**本地依赖漂移**（本地 mcp 版本
 > 与 `requirements.txt` 不符），不是代码坏了——以 CI 为准。
+
+> **测试不得改写仓库里已发布的面**（2026-09-26）：`tests/conftest.py` 在 import 期把索引生成器的输出
+> 重定向到临时目录，并在**每个测试**前后对「已发布面」（计数 SSOT 注册表里的文件 + `data/lessons.json`
+> + `docs/_lessons_count.txt`）取 `(size, mtime_ns)` 快照；谁改了就以**测试 nodeid** 报错。写测试时
+> 不要「快照-还原」——那会掩盖写入；要么给它一个重定向路径（env / `tmp_path`），要么把调用打桩。
 
 ### PR 上的硬阻断门禁
 
@@ -92,22 +103,38 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 - **改 lesson**：`lessons/contrib/<name>.md`（frontmatter 必填 `title/domain/tags/status/evidence_level`，
   E0–E4）→ `lesson_gate.py` + `injection_scan.py` → PR（lesson-gate 会再跑一次）
 - **改 workflow**：YAML + 内嵌 JS 双重检查 → 注意 shape guard 对 workflow 改动会标 `workflow-change`
-  并要求更严格的评审
+  并要求更严格的评审 → 若这个 workflow 会往 `main` 写东西，用 `scripts/ci/land_change.py`
+  （**不要**写 `git push`：ruleset 会拒，`tests/test_no_workflow_pushes_to_main.py` 也会拦住你）
 
 ## 3. 部署与数据生成
 
-> 推 main 的固定动作：**先 commit**（有未提交改动时 `git rebase` 会被直接拒绝）→
-> `git fetch origin main` → `git rebase origin/main` → `git push`。远端有 bot 提交
-> （leaderboard 快照等）时几乎必然需要 rebase，别直接 push。
+> **`main` 不能直接 push——对任何人都不行（2026-09-23 起）**。ruleset
+> `23826057 main: the deterministic gates` 要求三个状态检查（`DCO / Signed-off-by`、
+> `test (ubuntu-latest, 3.11)`、`gate`），且 `bypass_actors` 是**空的**：GitHub 对 push 也评估这些
+> 检查，新提交没有它们就被拒。实测（用维护者自己的 PAT，同一个 token）：
+> `remote: - 3 of 3 required status checks are expected.` / `! [remote rejected] main -> main`。
+>
+> 所以人类和自动化的固定动作都是**开 PR**：
+>
+> ```bash
+> git commit --signoff -m "…"          # DCO 是三个必需检查之一
+> git push origin HEAD:refs/heads/<branch>
+> gh pr create --base main --fill       # 然后等三个必需检查变绿再合并
+> ```
+>
+> 自动化写入**不用**手写这段：调 `scripts/ci/land_change.py`（分支 → PR → 开启 squash
+> auto-merge，检查一变绿 GitHub 自己合并），完整说明与故障对照表见
+> **`docs/maintainer/automation-lands-via-pr.md`**。`tests/test_no_workflow_pushes_to_main.py`
+> 会拦住"又回去 push main"的 workflow。
 
 | 对象 | 方式 | 备注 |
 |---|---|---|
 | `misakanet-register-proxy`（主 worker，含 `/mcp`）| **push main 自动部署** | `deploy-worker.yml`：wrangler + `workers/wrangler.toml`（含 `[triggers]` cron 定义） |
-| `misakanet-web`（站点，assets = `docs/`）| **自动**：Cloudflare **Workers Builds**（Git 集成，**任何 push main 都触发**，不是 GitHub Actions） | 结果看 commit 上的 `Workers Builds: misakanet-web` check-run（由 Cloudflare app 发出，含 Version ID）；配置在 CF 控制台，不在仓库里。手工 `npx wrangler deploy`（根 `wrangler.jsonc`）只当应急/本地预览用 |
+| `misakanet-web`（站点，assets = `docs/`）| **自动**：Cloudflare **Workers Builds**（Git 集成，**任何 push main 都触发**，不是 GitHub Actions） | 结果看 commit 上的 `Workers Builds: misakanet-web` check-run（由 Cloudflare app 发出，含 Version ID）；配置在 CF 控制台，不在仓库里。手工 `npx wrangler deploy`（根 `wrangler.jsonc`）只当应急/本地预览用。**这条流水线不在规则集必查项里，check-run 又不带日志与 annotations** → 它红了没人必须看：`workers-builds-watch.yml` 在它红时开 issue（标签 `site-build-red`，只报**状态变化**、不刷屏）；要读构建日志则 dispatch `cf-diagnostics`（其中 `Workers Builds` 步骤打印 trigger + 最近构建 + 失败构建的日志，凭据见 credentials 文档 §4.4/§4.5）|
 | `email-register` worker | `npm run deploy:email` | 独立 worker |
 | `docs/lessons/**`、`docs/topics/**`、`docs/sitemap.xml` | `python3 scripts/build_lesson_pages.py`（幂等；`--check` 是门禁） | **生成物自己的清单**是 `docs/.generated-pages.json`：脚本只会删自己生成的页面（带 `Back to MisakaNet` 标记），手写文件永不删除。接线前它没人跑，站点因此有 205/378 个课程页、88 个失效页、主题页计数停在 176（实际 330）——见 handoff-2026-09-12 |
 | `data/lessons.json` | `python3 scripts/update_lessons_json.py` | **不要**用 `scripts/misakanet-index.py`：它缺 `preview/triggers/verified` 等字段，会静默回滚线上统计（#1374；CI 已有 schema 校验） |
-| 全站公开计数（README / ARCHITECTURE / 站点 meta / issue 模板 …） | `python3 scripts/sync_lesson_count.py`（幂等）· 门禁 `--check` | 由 `update_lessons_json.py` 在每日 `update-lessons.yml` 里自动跑；新增/改写受管句子后要同步更新脚本里的 `SITES` 注册表，`tests/test_lesson_count_ssot.py` 会锁住"能重复刷新"与"改写就报错"两条不变量 |
+| 公开计数：只有 `docs/index.html`（meta + 首屏降级）与两份 `llms.txt` 保留字面 | `python3 scripts/sync_lesson_count.py`（幂等）· 门禁 `--check` | 由 `update_lessons_json.py` 在每日 `update-lessons.yml` 里自动跑；其余表面（README×3、ARCHITECTURE、ROADMAP、JOIN、skill.md、integrations、`.well-known/*.json`、issue 模板…）改**指向**：GitHub 渲染的用 shields 动态徽章，其余在散文里写来源。`tests/test_lesson_count_ssot.py` 锁住"能重复刷新"、"改写就报错"、**面数上限**（8 行 / 3 文件，防止面数再长回去）与"已去数字的表面不得把数字写回来"四条不变量；要加面先改那个上限并写明理由 |
 | `data/badges/*.json` | 由各 badge workflow 生成到 `data` 分支 | 例如 smithery 徽章由 `update-smithery-badge.yml` 产出 |
 | 版本发布 | release-please 自动开 release PR | **不要手改** `.release-please-manifest.json`；PyPI 另走 `release-pypi.yml` 的 workflow_dispatch |
 | CF MCP 凭证（查 worker 日志等）| `python3 scripts/cf_mcp_auth.py --server cloudflare-observability [--refresh\|--verify]` | 一键完成 discovery/DCR/PKCE/换 token/验证 |
@@ -139,14 +166,20 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 | badge 显示 `resource not found` | shields.io endpoint badge 读的 JSON 不存在（例如 workflow 从未成功产出）。先手工补数据文件，再修 workflow |
 | lesson PR 被 shape-guard 拦"markdown/diff 泄露" | 测试文件里粘了 markdown/patch。把示例移入**代码围栏**，或参考 #1604 的测试文件豁免规则 |
 | issue 被莫名关闭 | 某个合并的 PR 正文/提交写了 `Closes #N`。长期开放 issue（#1550/#1258）有守护 workflow 会自动 reopen；交付报告类 PR 用 `Refs #N` |
-| "站点没更新/新页面 404" | 先排除**尾斜杠误判**（无尾斜杠 → 307 不是 404）；再看 commit 上有没有 `Workers Builds: misakanet-web` check-run 及其结论/Version ID。CF Workers Builds 是**异步**的，push 完立刻 curl 可能还是旧版本 |
+| "站点没更新/新页面 404" | 先排除**尾斜杠误判**（无尾斜杠 → 307 不是 404）；再看 commit 上有没有 `Workers Builds: misakanet-web` check-run 及其结论/Version ID。CF Workers Builds 是**异步**的，push 完立刻 curl 可能还是旧版本。**要判断"到底冻在哪一版"**：拿一个仓库里的文件去 curl（例如 `/maintainer/credentials-and-environments.md`），逐 commit `git show <sha>:<path>` 比对，能精确定位最后一个成功部署的 commit。实测 2026-09-24：站点冻结在 `7fcebbf2a`，之后 ~25 个 commit 全部没上线 |
+| 站点构建全红：日志只有三行、`Failed: The build token selected for this build has been deleted or rolled` | **不是仓库的问题，是 CF 面板里的 build token 失效了**。build token 派生自 API token，**轮换 API token 会同时作废它**（2026-09-23 那次轮换就作废了，站点因此停更一天，见 #2136）。修法：Worker → `misakanet-web` → Settings → Builds → API token 重新选/建一个 build token，然后在面板重跑一次构建；再复核站点真的变了。仓库侧无法代劳（Builds API 的写操作要 Edit 权限，且它自己就是被轮换作废的那类凭据）。完整记录见 credentials 文档 §4.5 |
 | git 协议连不上 github.com | 不只是慢：实测 `Failed to connect to github.com port 443 after 134359 ms`。别手搓四步 curl 了，用 `scripts/gh_push_via_api.py --branch <br> --message-file <msg> <files>`（同一套 Git Data API，带"分支不在 base 上就拒绝"的保护）；细节见上一行 |
-| PR 的 CI 全卡在 `action_required`（"awaiting approval"） | 该 PR 分支最近被 **bot 推过**（`Auto-Merge Docs PRs` 把 main 合进分支、`/fix-dco` 的 force-push 等）——这类 run 会挂起等人工批准。批准：Actions 页点 "Review pending deployments"，或 `POST /repos/{owner}/{repo}/actions/runs/{run_id}/approve`（owner 权限即可，本仓实测返回 201）。**注意**：bot 每再推一次都会重新挂起，批完要再确认一次 |
+| **用 `gh_push_via_api.py` 推完，main 上的东西被"悄悄回退"了** | 它是**内容推送器**：写的是**本地字节**。你的工作副本只要比远端旧一次（发版、bot 改计数、别的会话在写），被推文件里**任何受管行都会被静默回退**，而分支自己是自洽的 → 分支上**没有测试能看见**。已发生过两次：发版分支的 `docs/index.html` 把徽章从 2.35.0 退回 2.34.0（只有 `test_version_consistency.py` 抓到）；`workers/register-proxy-sw.js` 那行 `x-release-please-version` 带着旧值推上去而**全绿**（测试只断言注解在不在，不断言值对不对）。**固定动作**：推之前 `python3 scripts/push_preflight.py <要推的文件...>`——它逐文件打印"**main 有而你的副本没有**"的行，并对"**措辞相同、数字不同**"的行直接判红（措辞也不同 = 正常编辑，不算回退；这条区分是它能用的原因，否则改一次计数句就会被它拦住）。另有 `--all` 给全树漂移图（**2 次 API 调用**覆盖 2200+ 个 blob，本地用 `git hash-object` 对比），它会在"main 上有而本地缺"时判红——那正是"再推就危险"的状态 |
+| PR 的 CI 全卡在 `action_required`（"awaiting approval"） | **根因：分支上最后一次 push 用的是 `GITHUB_TOKEN`**（内置 token 的 push 所触发的 run 会以 `actor=github-actions[bot]` 建出来并挂起等批准）。要区分两种情况：`auto-merge-docs.yml` / `auto-sync-prs.yml` 已经改用 `SHELDON_PAT`（普通用户 push → run 正常执行）；而 **`fix-dco.yml` 一直用 `GITHUB_TOKEN` force-push**，于是"签核自动修复"这个动作本身把该 PR 的 run 全部挂起——`DCO / Signed-off-by` 是**必需**检查，挂起 = 永远停在 "Expected — waiting for status"，帮人修 DCO 反而把 PR 锁死（实测 2026-09-25，PR #2201/#2202）。已修：`fix-dco.yml` 改用 `SHELDON_PAT`，秘密为空时**只警告不 push**（挂起的 head 比红的 head 更糟——红的还能手改）。**存量已挂起的 run** 仍需人工批准：Actions 页点 "Review pending deployments"，或 `POST /repos/{owner}/{repo}/actions/runs/{run_id}/approve`（owner 权限即可，本仓实测返回 201）；先查清单：`GET /repos/{owner}/{repo}/actions/runs?status=action_required&per_page=50`。⚠️ **只批同仓分支**，fork PR 的挂起是安全边界，不要批。同一形状尚未修的还有 `adopt-pr.yml`（用 `GITHUB_TOKEN` push 并 `gh pr create`，被采纳的 PR 会没有任何 run——它至今 0 次真实使用） |
+| 合并报 `Required status check "DCO / Signed-off-by" is expected`，但那个 check **是绿的** | 规则集要的是「这个必需的 context 被报过」，而**check run 与 commit status 两种形态都可能被它接受**——实测 2026-09-25 #2209：head 上 `DCO / Signed-off-by` check run 成功（补报过两次也一样），规则集仍回 `405 Repository rule violations found ... is expected.`、`mergeable_state: blocked`；用状态 API 报**同一个裁决**（`POST /repos/{o}/{r}/statuses/{sha}`，`context="DCO / Signed-off-by"`、`state=success`）立刻合并成功（200, squash）。两边的 check suite 与 check run 结构完全相同，**机制未查明**；因此 `dco-check.yml` 现在**两种形态都报**（同一裁决、同一 context），这就是为什么本仓的「合并幽灵」不该再出现。⚠️ 报 status 时必须用 check 步骤算出的 `passed` 输出，**不能**用 `steps.<id>.outcome`：那一步在 DCO 失败时也是 success（红 check 是「报告」不是「报错」），用它会把未签核的提交变成绿 context |
+| 用 PAT 推分支，run 还是被挂起（`action_required`） | **`actions/checkout` 会把 `GITHUB_TOKEN` 存两处**：`http.https://github.com/.extraheader`，以及一个通过 `includeIf.gitdir:…path` 引用的 credentials 文件。只 `git config --unset-all` 掉 header **不够**——实测 2026-09-25 release PR：PAT 在 URL 里、header 也清了，那次 push 仍被算成 `github-actions[bot]`，新 head 上 13 个 run 全部挂起（含必需检查 `DCO / Signed-off-by`）。正解与 `auto-sync-prs.yml` 一致：checkout 加 **`persist-credentials: false`**，每次 push 自己带凭据——`AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$PAT" | base64 -w0)"` + `git -c http.extraheader="$AUTH_HEADER" push origin …` |
 | release PR 的 DCO / audit 永远红 | release-please 生成的提交默认**不带 `Signed-off-by:`**，而 DCO 是硬门禁 → 每个 release PR 必红。`release-please-config.json` 顶层的 `signoff` 必须是**字符串** `"misakanet-bot <bot@misakanet.dev>"`（PR #1628 + `03f66f86d`）。⚠️ **不要**写成 `true`：schema 里那个 `"signoff": true` 是 JSON Schema 的**布尔子模式**（"任意值合法"），不是推荐值；填 `true` 会让 main 上每次 push 都 `release-please failed: The format of 'true' is not a valid email address with display name`（连挂四次）。改完这个文件**立刻看它自己的下一次运行**。临时救急可在 PR 里评论 `/fix-dco`（同仓 PR 会 rebase --signoff 后 force-push） |
 | `leaderboard-watch` 失败：`fatal: You are not currently on a branch` + 日志里有 `CONFLICT ... data/leaderboard_meta.json` | 两次 push 间隔太近 → 两个 watch run 并发，各自提交同一份**生成物**并互相 rebase 冲突；脚本里的 `git pull --rebase ... \|\| true` 把冲突吞掉，仓库停在 detached HEAD，随即 `git push` 报上面那句。已在 workflow 加 `concurrency`（串行化）+ `-X theirs`（生成物以本次快照为准）+ 显式 `git rebase --abort` 并对失败返回非零 |
 | 每日 `update-lessons.yml` 在 `Commit and push` 步骤失败：`refusing to allow a GitHub App to create or update workflow ... without \`workflows\` permission` | 该 job 的提交里含 `.github/workflows/**` 文件。`GITHUB_TOKEN` **永远**没有 `workflows` 权限（设计如此），所以"用 bot 维持 workflow 文件里的某个值"必然在值变化的那天炸——而且整个重新生成都会被丢弃。修法：把值从 workflow 里搬走，改成运行时读（如 `docs/_lessons_count.txt`，见 `pr-thank-you.yml`），或给该 job 换带 `workflows` 权限的 PAT/App（属安全决策）。计数 SSOT 已把这个文件从注册表移除并写明原因 |
 | 站点课程页/主题页缺失或计数陈旧（例：`docs/topics/contrib` 写 176、实际 330） | `python3 scripts/build_lesson_pages.py --check` 看清单，再跑一次不带 `--check` 的生成。生成物由每日 job 维护；**不要手改** `docs/lessons/**`、`docs/topics/**`、`docs/sitemap.xml`（`docs.yml` 的 push 门禁会红） |
+| **只加了 lesson 的 PR** 上 `test_repo_pages_match_the_index` 红，报 `generated pages drifted from data/lessons.json`，且点名的是**这个 PR 刚加的那几篇**页 | **不是页面漂移，是测试在写仓库**（2026-09-26 查明）：`tests/test_frontmatter_writers_agree.py` 把 `git push` 打桩成 `returncode=0`，而 `queue_lesson.write_lesson` 的**成功分支**会 `from update_lessons_json import main` 重建 `data/lessons.json`（并连带刷新 20+ 个受管计数面，实测一次套件跑完改写 **25 个 tracked 文件**）。于是**后运行**的页面门禁拿被改写的索引去比对 → 11 个"漂移"路径；**只在 PR 新增 lesson 时出现**，而 CI 的字母序保证每次都会撞上。**别照报错跑 `build_lesson_pages.py`**——那会把索引里根本没有的课程页提交上去，真因仍在。已修：生成器认 `MISAKANET_LESSONS_INDEX`（`conftest` import 期重定向，重定向时不同步计数面），`conftest` 另有逐测试的已发布面戳检查会点出**写入者**；`tests/test_no_test_writes_repo_data.py` 用 digest 锁住这两个方向 |
 | 需要看某个脚本的用途 | `ls scripts/` + `<script> --help`；`scripts/doctor.py` 做整体自检 |
+| 线上 `misakanet_search` 搜不到**今天刚合入的课**（但 `misakanet_get_lesson` 按 id 能取到）| **先看 `GET https://misakanet.org/api/search-index`**：`docCount` 是**已发布**的索引条数，`lastRefresh.corpusCount` 是**上一次刷新看到**的语料条数，两者不等就是「索引冻结」，`behindBy` 直接给出差值、`lastRefresh.reason` 给出原因（`storage write failed` = 行没写进去）。索引与语料都在一个 `kv_store` 行里，而 D1 单行上限 **2 MB**（实测生产形状的 rich 索引 1.63 MB ≈ 86% 上限），KV 兜底自 2026-09-22 起预算耗尽 → 写失败时**旧索引继续服务**、`builtAt` 冻结，而 `stale` 仍为 `false`（阈值 20 小时）。2026-09-26 实测：`docCount 411 / builtAt 08:16Z` 对 D1 里 417 篇。已改：索引 gzip+base64 存（1.63 MB → 0.24 MB），刷新结果写进**独立的** `worker_search_index_health` 行并作为 `lastRefresh` 暴露——诊断不能存放在「会写失败的那一行」里 |
 | 站点/README 上的课程数对不上（例如 meta description 写 435、实际 378） | 跑 `python3 scripts/sync_lesson_count.py --check` 看漂移清单，再跑不带 `--check` 的同一命令修好。若某条报 `matched 0× ... The sentence was reworded`，说明受管句子被改写：改文件或更新脚本里的 `SITES` 注册表——**不要**把该行删掉当成"没事"（旧机制就是这么静默失效的，见脚本 docstring） |
 | 需要看 worker 线上错误 | 用 `cf_mcp_auth.py` 拿 CF 凭证 → Cloudflare observability MCP 查（worker 的 `[observability]` 需启用） |
 
@@ -188,6 +221,9 @@ gh workflow run apply-d1-schema.yml
 
 - 使用方规则：`AGENTS.md`（§1–§5）+ `docs/agents/retrieval-and-contribution.md`
 - 维护者流程：`docs/maintainer/intake-triage.md`（**修复后必须给报料者回执**）、
+  `docs/maintainer/automation-lands-via-pr.md`（**自动化怎么把改动落到 main**：分支 → PR →
+  auto-merge，含故障对照表与两个刻意不转换的 workflow）、
   `docs/maintainer/handoff-*.md`（逐轮交接与待办快照）
+- **接手第一份**：`docs/maintainer/state-of-the-repo.md`（**可公开的仓库现状**：哪些自动化在飞、哪些等 owner 审批、门禁信任边界、积压形状、待 owner 拍板项、更新时机）
 - 安全：`docs/agents/content-injection-defense.md`（威胁模型 + L1–L4 防护层）
 - 架构与接口：`ARCHITECTURE.md`、`API.md`

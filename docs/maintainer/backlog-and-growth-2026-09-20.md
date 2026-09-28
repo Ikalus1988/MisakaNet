@@ -22,7 +22,7 @@
 | 注册节点 | **357** | 与站点徽章一致 |
 | 包下载（30 天） | PyPI `misakanet-core` **8,774** ≫ PyPI `misakanet` 1,134 ≫ npm `misakanet` **501** | **最容易拿走的不是安装器，是引擎** |
 | 需求信号 | `gap` **83** 个未命中家族 | 头部是 "monolithic 5000-line frontend…"（×4）|
-| Benchmark（`docs/benchmarks/latest.json`，987 runs）| `with_lesson` 命中率 **0.466** vs `plain` **0.234**（≈2×）| 评审引用 0.489~0.667：0.667 是**单次 run** 的字段值 |
+| Benchmark（`docs/benchmarks/latest.json`，987 runs）| `with_lesson` 命中率 **0.466** vs `plain` **0.234**（≈2×）| 评审引用 0.489~0.667：0.667 是**单次 run** 的字段值。⚠️ **这个数是复述率，不是检索/正确率**：`lesson_hit_rate` 就是「注入的那篇课的修复命令有多少出现在回答里」，scenario 取自**同一篇课的标题**、全程没有检索调用（`METRIC_SUMMARY`，`scripts/benchmark_workers_ai.py`）；内部复核见 `docs/maintainer/capability-inventory-new-user-2026-09-18.md:21`（「同一脚本既出题又打分」）。README 的公开口径已于 2026-09-25 改成同一句，并由 `tests/test_benchmark_claims.py` 守住 |
 | Benchmark 反向信号 | `actionable` 0.763（with）vs 0.830（plain）| **评审漏了**：命中率翻倍的同时可操作性下降 |
 | 站点流量 | GitHub UV ~176（`growth-funnel.md` 旧基线）；KV 读 ~4,800/天 | 无法区分人 / agent / CI |
 

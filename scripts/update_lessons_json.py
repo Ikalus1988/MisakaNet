@@ -7,6 +7,7 @@ lessons, while excluding archives, drafts, templates, locale docs, and the
 top-level lessons/index.md.
 """
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -16,10 +17,61 @@ sys.path.insert(0, str(REPO))
 from misakanet.evidence import evidence_of, trust_score  # noqa: E402
 
 LESSONS_DIR = REPO / "lessons"
-OUTPUT = REPO / "data" / "lessons.json"
+# The published index. A *test* may redirect the write (MISAKANET_LESSONS_INDEX, the same
+# env-override shape as MISAKANET_GAP_LOG / MISAKANET_CONTRIBUTION_QUEUE); nothing in
+# production sets it, so the CLI and the daily job write here as before.
+#
+# WHY (2026-09-26): `tests/test_frontmatter_writers_agree.py` drives `queue_lesson.write_lesson`
+# with a stubbed `git push` that *reports success*. The success branch of `write_lesson` rebuilds
+# this index, so the real `data/lessons.json` was rewritten from the working tree in the middle of
+# the suite — 411 entries → 415 the moment a pull request added a lesson. Two things followed:
+# every *published* count surface (README, ARCHITECTURE, the site's meta tags, the issue
+# templates, `docs/_lessons_count.txt`, …) was rewritten too, and
+# `test_lesson_page_generator::test_repo_pages_match_the_index` — which runs later and compares
+# the pages against that same file — failed with "generated pages drifted from data/lessons.json"
+# for pages nobody had touched. The failure named the wrong test, appeared only when a PR added a
+# lesson (i.e. only on the contribution path the repository most needs), and read as an
+# instruction to regenerate pages rather than as evidence that the suite edits the checkout.
+PUBLISHED_INDEX = REPO / "data" / "lessons.json"
+OUTPUT = Path(os.environ.get("MISAKANET_LESSONS_INDEX") or PUBLISHED_INDEX)
 INDEXED_DIRS = ("core", "contrib")
 # Non-lesson markdown that must never be indexed (mirrors sync_lessons_to_d1.py).
 EXCLUDED = {"README.md", "index.md", "TEMPLATE.md", "CONTRIBUTING.md"}
+
+# The optional structured fields (#1783). MUST stay in lockstep with
+# `PLAIN_FIELD_KEYS` in workers/register-proxy-sw.js — that array is the contract
+# for what the search projection can carry, and this tuple is the only thing that
+# puts the values where the projection can read them.
+#
+# WHY THIS EXISTS: the D1 path gets these three from the row's `frontmatter`
+# column, so they arrived there and nowhere else. The GitHub/KV fallback reads
+# `data/lessons.json` (register-proxy-sw.js: loadLessons → fetchFromGitHub) and
+# applies no lift at all, so the only thing the projection can see is a
+# *top-level key on the index entry* — and the generator never wrote one. The
+# symptom was invisible: `evidence_level` works on that path purely because the
+# generator does emit it top-level (411/411), and the fallback code beside the
+# plain fields (`frontmatterField(lesson.frontmatter, …)`) cannot rescue them
+# because no index entry has a `frontmatter` key. docs/maintainer/lesson-fields.md
+# documented this gap; this closes it.
+PLAIN_FIELD_KEYS = ("summary_plain", "trigger", "verify")
+
+
+def plain_fields(meta: dict) -> dict:
+    """The three structured fields, or `{}` when a lesson carries none.
+
+    Mirrors `plainFields()` in workers/register-proxy-sw.js: a *usable* value is a
+    non-empty string, and anything else — missing, "", a number, the nested
+    objects legacy frontmatter carries — counts as absent. Emitting nothing for
+    such a lesson is what keeps the worker's byte-identity guarantee ("a lesson
+    without these fields answers exactly as it did before") structural rather
+    than a promise.
+    """
+    out = {}
+    for key in PLAIN_FIELD_KEYS:
+        value = meta.get(key)
+        if isinstance(value, str) and value.strip():
+            out[key] = value.strip()
+    return out
 
 
 def parse_frontmatter(text: str) -> dict:
@@ -126,8 +178,10 @@ def get_summary(content: str, max_chars: int = 160) -> str:
 
 
 # Public lesson counts are kept in lockstep by scripts/sync_lesson_count.py,
-# which owns the registry of managed surfaces (README, ARCHITECTURE, the
-# website metadata, issue templates, …) and the docs/_lessons_count.txt mirror.
+# which owns the registry of surfaces that must carry the literal number — since
+# 2026-09-28 that is three files (docs/index.html's meta/no-JS copy and the two
+# llms.txt) plus the docs/_lessons_count.txt mirror. Everything else points at the
+# number (shields badge over data/badges/lessons.json, or the source named in prose).
 # Do not hand-edit a count there.
 
 
@@ -213,6 +267,11 @@ def main():
             "tags": tags,
             "summary": summary,
             "preview": preview,
+            # The three optional structured fields (#1783), top-level so the
+            # GitHub/KV fallback can serve them. NOTE: singular `trigger` — the
+            # plural `triggers` below is a different, older field (the structured
+            # intent object from schemas/lesson.json); do not conflate them.
+            **plain_fields(meta),
             "url": f"lessons/{rel_path}",
             "created": meta.get("created", ""),
             "updated": meta.get("updated", ""),
@@ -234,7 +293,13 @@ def main():
 
     OUTPUT.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"OK lessons.json updated: {len(entries)} entries")
-    refresh_lesson_count_markers(len(entries))
+    # The count surfaces say "N indexed failure-recovery lessons about `data/lessons.json`". Refreshing
+    # them from a run that wrote the index somewhere else would publish a number the published index
+    # does not have — and in tests it rewrote 20+ tracked files for a fixture nobody asked for.
+    if OUTPUT == PUBLISHED_INDEX:
+        refresh_lesson_count_markers(len(entries))
+    else:
+        print(f"count markers not refreshed: this run wrote {OUTPUT}, not {PUBLISHED_INDEX}")
 
 
 if __name__ == "__main__":

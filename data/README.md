@@ -16,7 +16,6 @@
 | `domains.json` | `scripts/normalize_domains.py` | `scripts/expand_query.py`、`scripts/lesson_gate.py`、计数门禁 | 手动 / 随语料变更 |
 | `synonyms.json` | 手写维护（`scripts/sync_lesson_count.py` 读）| 检索扩展 | 手动 |
 | `query-aliases.json` | `misakanet/search/engine.py`、`scripts/expand_query.py` | 检索扩展、`tests/test_query_alias_wiring.py` | 手动 |
-| `counter.json` | `.github/workflows/register.yml`（注册流程写 D1 后镜像）| `scripts/sync_lesson_count.py`（README/站点计数 SSOT）| 随注册 + 每日镜像 |
 | `quality_scores.json` | **无现存生成者**（`scripts/check_lesson_quality.py` 已不再写它；引用它的只有 `archive/dead/` 与测试）| **无** | 快照停在 141 篇（语料已 402 篇）——待判决：删掉或重建 |
 | `contributor-points.json` | `scripts/update_contributor_points.py` | `workers/register-proxy-sw.js`、`docs/contributor-points.md` | 手动 |
 | `intake-kind-hints.json` | `scripts/sync_intake_hints.py` | `scripts/intake_kind.py` | 手动 |
@@ -45,7 +44,8 @@
 |---|---|---|---|
 | `main` 的 `data/` | 上表各生成者 | 上表各消费者 | **正常工作路径**：站点、Worker、agent、测试都读这里 |
 | `data` 分支 | `update-badges.yml`（**PAT** 推送，活着）| shields.io 徽章端点（README 的 Lessons / Tools / Domains / Smithery 徽章）| 只有 `badges/*.json` 被消费 |
-| `data` 分支的 `counter.json` / `lessons.json` | 曾经由 `sync-data.yml` 推送 | **无** | 该 workflow 已于 2026-09-21 删除：触发条件（`push` 改动这两个文件）永远不会满足，因为写它们的 `update-lessons.yml` 用的是 `GITHUB_TOKEN`，而 **GITHUB_TOKEN 的推送不触发 workflow**（#1985）|
+| `data` 分支的 `lessons.json` | `update-badges.yml`（与 `badges/*.json` 同一次推送）| `workers/register-proxy-sw.js` 的检索代理（`fetchFromGitHub(..., "lessons.json", "data")`，一份 81 KB 的紧凑索引，与 main 的 1.26 MB 不是同一个产物）| 每日 / 随语料 |
+| ~~`data` 分支的 `counter.json`~~ | 曾经由 `sync-data.yml` 推送 | **无** | **2026-09-28 已删**（连同 main 上的 `data/counter.json` 与 `sync-node-counter.yml`）：它是同一份主键的第二个副本，而且是 `data/counter.json` 那个 2026-06-01 冻结值的来源——`/api/counter` 曾把它当兜底返回（#1820）。那个 workflow 本身自 2026-09-21 起就死了（#1985）|
 
 ## 外部贡献者注意
 

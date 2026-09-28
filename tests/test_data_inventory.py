@@ -200,13 +200,16 @@ def test_a_consumer_that_does_not_exist_is_caught():
 def test_the_files_this_issue_was_about_are_all_described():
     """Each of these is a different lesson; all three were absent or wrong before #1985."""
     rows = table_rows(README.read_text(encoding="utf-8"))
-    for name in ("lessons.json", "counter.json", "leaderboard.json", "quality_scores.json",
+    # `counter.json` was in this list until 2026-09-28: the file, its mirror workflow and the
+    # row describing it were deleted together (a second copy of a number that is read to predict
+    # the next registrant's id — a stale one is worse than none, #1820).
+    for name in ("lessons.json", "leaderboard.json", "quality_scores.json",
                  "okf/lessons.jsonl"):
         assert name in rows, f"{name} lost its row"
         assert rows[name].count("|") >= 5, f"{name}'s row lost its columns: {rows[name]!r}"
 
 
-@pytest.mark.parametrize("name", ["lessons.json", "counter.json", "leaderboard.json"])
+@pytest.mark.parametrize("name", ["lessons.json", "leaderboard.json", "domains.json"])
 def test_the_consumer_column_is_not_empty(name):
     row = table_rows(README.read_text(encoding="utf-8"))[name]
     consumer = row.split("|")[3]

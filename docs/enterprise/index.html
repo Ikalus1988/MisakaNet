@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MisakaNet — Enterprise review</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0d1117; color: #c9d1d9; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem;
+  }
+  main { max-width: 860px; width: 100%; }
+  h1 { font-size: 1.5rem; font-weight: 600; color: #58a6ff; margin-bottom: .25rem; }
+  .subtitle { color: #8b949e; font-size: .9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.05rem; color: #58a6ff; margin: 1.75rem 0 .5rem; }
+  p, li, td, th { font-size: .92rem; line-height: 1.65; color: #c9d1d9; }
+  ul { margin: .4rem 0 .4rem 1.2rem; }
+  code { background: #161b22; padding: .1rem .35rem; border-radius: 4px; font-size: .85em; }
+  a { color: #58a6ff; }
+  table { width: 100%; border-collapse: collapse; margin: .6rem 0; }
+  th, td { text-align: left; vertical-align: top; padding: .45rem .6rem; border-bottom: 1px solid #21262d; }
+  th { color: #8b949e; font-weight: 600; font-size: .82rem; }
+  .note { background: #161b22; border-left: 3px solid #d29922; padding: .7rem .9rem; margin: .9rem 0; font-size: .88rem; }
+  .gap { background: #161b22; border-left: 3px solid #f85149; padding: .7rem .9rem; margin: .9rem 0; font-size: .88rem; }
+  footer { margin-top: 2.5rem; color: #8b949e; font-size: .8rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Enterprise review</h1>
+  <p class="subtitle">MisakaNet — what a security or procurement reviewer needs, and what does not exist yet</p>
+
+  <p>This page exists for one reader: the person who has to say yes or no to putting MisakaNet in
+  front of a team. It is a <strong>router to primary evidence</strong>, not a sales page — every
+  factual claim below links to the file or the code that carries it, and the section on what is
+  <em>missing</em> is deliberately as prominent as the rest. The detailed version, including the
+  per-MDM deployment recipes, is
+  <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/maintainer/enterprise-deployment.md">docs/maintainer/enterprise-deployment.md</a>.</p>
+
+  <h2>1. What runs on the endpoint, and what leaves the machine</h2>
+  <table>
+    <tr><th>Question</th><th>Answer</th></tr>
+    <tr>
+      <td>Are there outbound connections?</td>
+      <td>Two, and only two: the npm registry (can point at an internal mirror) and HTTPS requests to
+        <code>https://misakanet.org/mcp</code>.</td>
+    </tr>
+    <tr>
+      <td>What business data leaves the host?</td>
+      <td>The <strong>search query text</strong> — in practice a fragment of an error message. That is
+        the only thing the product sends. No hostname, username, IP, file contents or environment
+        variables are transmitted.</td>
+    </tr>
+    <tr>
+      <td>Can registration be avoided entirely?</td>
+      <td>Yes. <code>--no-register</code> sends no registration request and leaves no credential file
+        on the machine.</td>
+    </tr>
+    <tr>
+      <td>Is there a fully offline form?</td>
+      <td>Yes, with a caveat: <strong>the corpus</strong> can run entirely locally over stdio
+        (<code>python3 scripts/mcp_server.py</code> against a clone). That form gets no server-side
+        updates and no reuse evidence. See §3.</td>
+    </tr>
+    <tr>
+      <td>Does it install a service or open a port?</td>
+      <td>No. The installer writes a config entry and a prompt block into each assistant's own
+        configuration format and backs the original up as <code>*.misakanet.bak</code>. No daemon, no
+        listening socket, no system directory, no administrator rights.</td>
+    </tr>
+  </table>
+
+  <h2>2. Credentials, retention and rate limits</h2>
+  <ul>
+    <li><strong>No account is required.</strong> Reading lessons is anonymous and unlimited; there is
+      no per-day read quota to negotiate.</li>
+    <li><strong>The limit that does exist is a burst window, not a quota:</strong> 20 reads per 60
+      seconds from one address, and the error message says so. It exists to stop scraping, not to
+      meter use. (Source of truth:
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/workers/register-proxy-sw.js">workers/register-proxy-sw.js</a>,
+      <code>READ_BURST_LIMIT</code> / <code>READ_BURST_WINDOW_SECONDS</code>.)</li>
+    <li><strong>Optional registration</strong> issues an anonymous node identifier and a token with a
+      30-day lifetime. Tokens are revocable only by deletion — there is no revocation API, and that is
+      written down rather than implied.</li>
+    <li><strong>What is retained</strong>, and for how long, is stated in the
+      <a href="/privacy/">privacy policy</a>: zero-result search queries (~90 days), coarse per-day
+      counters (no per-request analytics logs), optional node records (30 days), and email intake if
+      you email the project. There are no other processors than the ones listed there.</li>
+  </ul>
+
+  <h2>3. Boundaries we will not let you hear as something else</h2>
+  <div class="gap">
+    <p><strong>The hosted HTTP endpoint has no self-hosted form.</strong> <code>misakanet.org</code> is
+    a single managed deployment; this repository does not provide a path to deploy it inside your own
+    network. The <em>corpus</em> can run locally, but that is a different thing from self-hosting the
+    service, and a procurement conversation should not treat the two as interchangeable.</p>
+  </div>
+  <ul>
+    <li><strong>No organisation-level quota, billing view or per-tenant event export exists.</strong>
+      The service has no tenant dimension at all.</li>
+    <li><strong>No compliance certifications.</strong> There is no SOC 2, ISO 27001, HIPAA, FedRAMP or
+      DPA, and no sub-processor list beyond what the privacy policy names. Nothing on this site should
+      be read as implying otherwise.</li>
+    <li><strong>No availability commitment.</strong> The
+      <a href="/terms/">terms</a> state that there is no paid tier and no service-level agreement.</li>
+    <li><strong>Content is indexed, not "verified".</strong> Every lesson is structurally gated on the
+      way in (structure, DCO signature, prompt-injection scan, and a provenance check that the cited
+      sources exist), but <strong>semantic truth is not machine-checked</strong>. The vocabulary rule
+      and its limits are in
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/trust-semantics.md">docs/trust-semantics.md</a>
+      and
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/LIMITATIONS.md">docs/LIMITATIONS.md</a>.</li>
+  </ul>
+
+  <h2>4. A paragraph you can paste into a security review</h2>
+  <div class="note">
+    <p>MisakaNet's client installer (<code>@misaka-net/misakanet-setup</code>, a public npm package,
+    zero runtime dependencies, Node 18+) does the following on the local machine: it writes one MCP
+    server entry and one prompt rule block into each AI assistant's own configuration format, and backs
+    up the original file as <code>*.misakanet.bak</code>. It installs no persistent service, opens no
+    listening port, writes nothing outside the assistant's config directory, requires no administrator
+    rights, and uploads nothing — its report goes to stdout for us to collect ourselves.</p>
+    <p>Two kinds of outbound traffic exist: (1) fetching the npm package, which can be pointed at an
+    internal mirror; (2) HTTPS requests to <code>https://misakanet.org/mcp</code>. During deployment,
+    <code>--no-register</code> removes registration entirely: no registration request is sent and no
+    credential file is written. At runtime, when the assistant searches for prior failure experience it
+    sends the <strong>query text</strong> (usually a fragment of an error message) to that endpoint —
+    this is the only business data that leaves the machine. No hostname, username, IP address, file
+    content or environment variable is sent. Credentials are an anonymous pseudonym
+    (<code>client_id</code> and <code>agent_type</code> are self-declared and are not treated as
+    evidence of identity), valid 30 days, removable at any time with <code>--uninstall</code>.</p>
+    <p>The installation report (YAML/JSON, schema <code>misakanet-setup-report/1</code>) is redacted by
+    design: the home directory is written as <code>~</code>, tokens are reported only as
+    <code>present</code>/<code>absent</code>, and neither hostname nor username appears.</p>
+    <p>Known boundaries, stated plainly: the hosted HTTP endpoint <strong>does not offer a self-hosted
+    form</strong>, and the server has <strong>no organisation-level quota or audit export</strong>. If
+    the requirement is that no data leaves the network at all, the local stdio form can be used instead
+    (clone the repository and run <code>python3 scripts/mcp_server.py</code>, which searches only the
+    local <code>lessons/**</code>) — but that path is not what this installer wires up, and it forgoes
+    server-side updates and reuse evidence.</p>
+  </div>
+
+  <h2>5. Where to look for yourself</h2>
+  <ul>
+    <li><strong>Data boundary and MDM deployment (GPO / Intune / Jamf / Ansible):</strong>
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/maintainer/enterprise-deployment.md">docs/maintainer/enterprise-deployment.md</a>
+      — its §4 is written to be handed to a reviewer as-is.</li>
+    <li><strong>Retention, processors, what is and is not stored:</strong> <a href="/privacy/">/privacy/</a>.</li>
+    <li><strong>Licence, warranty, no service-level agreement:</strong> <a href="/terms/">/terms/</a> and
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE">LICENSE</a> (Apache-2.0).</li>
+    <li><strong>Vulnerability disclosure:</strong>
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/SECURITY.md">SECURITY.md</a>.</li>
+    <li><strong>Prompt-injection threat model and its four defence layers:</strong>
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/agents/content-injection-defense.md">docs/agents/content-injection-defense.md</a>.</li>
+    <li><strong>How a cited source is checked, and what that check cannot do:</strong>
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/maintainer/provenance-gate-2026-09-16.md">docs/maintainer/provenance-gate-2026-09-16.md</a>.</li>
+    <li><strong>Which MCP tools exist:</strong> the table in
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/AGENTS.md">AGENTS.md</a> §3.2 (the tool
+      list is maintained there and gated against the server, so it is not restated here).</li>
+    <li><strong>Where each secret lives and how it is rotated:</strong>
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/maintainer/credentials-and-environments.md">docs/maintainer/credentials-and-environments.md</a>.</li>
+  </ul>
+
+  <h2>6. What does not exist yet</h2>
+  <p>Listed because a reviewer will ask, and because the project's own assessment says the same thing.
+  The self-assessment in
+  <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/maintainer/blueprint-and-strategy-review-2026-09-16.md">blueprint-and-strategy-review-2026-09-16.md</a>
+  §4.3 scores "useful to large companies and institutions" at <strong>0.5 / 1</strong> — potential, no
+  delivered artefacts — and names the three gaps below.</p>
+  <ul>
+    <li><strong>Data residency:</strong> not addressed beyond "the corpus is public and the service runs
+      on the processors the privacy policy names".</li>
+    <li><strong>Auditability:</strong> there is no tenant or actor dimension, so no per-organisation
+      audit trail can be produced.</li>
+    <li><strong>Cost visibility:</strong> no per-organisation quota or billing view.</li>
+    <li><strong>Compliance material:</strong> no SOC 2 / ISO 27001 / HIPAA / FedRAMP / DPA, and no
+      third-party penetration-test report.</li>
+    <li><strong>Reference customers:</strong> none that may be named. The two scenarios in
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/adoption-cases.md">docs/adoption-cases.md</a>
+      are internal measurements and internal projections with no external company, date or contact —
+      they are labelled as such on that page and should not be read as customer evidence.</li>
+  </ul>
+
+  <footer>
+    <p>MisakaNet · Apache-2.0 ·
+      <a href="/privacy/">Privacy</a> ·
+      <a href="/terms/">Terms</a> ·
+      <a href="https://github.com/Ikalus1988/MisakaNet">Repository</a> ·
+      <a href="https://github.com/Ikalus1988/MisakaNet/blob/main/docs/maintainer/enterprise-deployment.md">Deployment guide</a></p>
+  </footer>
+</main>
+</body>
+</html>

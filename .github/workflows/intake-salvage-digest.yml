@@ -129,3 +129,50 @@ jobs:
               --comment "Auto-closed after 30 days. This issue was auto-rejected and not salvaged." \
               --reason "not-planned" || true
           done
+
+      # The other half of the same promise. The steps above cover intakes that were rejected and might
+      # still be worth saving; this covers the opposite state — the work IS on `main` and the issue is
+      # still open, so the reporter cannot tell "nobody looked" from "we fixed it and said nothing".
+      # Seven of those were found by hand on 2026-09-21 (#1472/#1473/#1635/#1574/#1618/#1619 …), which
+      # is the definition of a rule that needs a mechanism: SOP §3 is an iron rule that a person has to
+      # remember, and remembering is not a mechanism (#2040).
+      #
+      # It reports and stops. It never comments on the intakes it finds and never closes one: the
+      # receipt in SOP §3 is a human sentence addressed to a reporter, and a bot that closes an issue
+      # because a filename matched would be the worst possible version of this automation.
+      - name: Report intakes whose work is already on main (#2040)
+        run: |
+          set -euo pipefail
+
+          python3 scripts/done_but_open.py --json-out /tmp/done_but_open.json > /tmp/done_but_open.md
+          count=$(python3 -c "import json; print(len(json.load(open('/tmp/done_but_open.json'))))")
+
+          if [ "$count" = "0" ]; then
+            # Silent on purpose: a report that fires every day with nothing in it is the alarm people
+            # mute. The step summary still records that it ran, so "no findings" and "never ran" stay
+            # distinguishable.
+            {
+              echo "### Done but open"
+              echo ""
+              echo "No intake is in the done-but-unannounced state."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          cat /tmp/done_but_open.md >> "$GITHUB_STEP_SUMMARY"
+
+          DIGEST_ISSUE=$(gh issue list --repo ${{ github.repository }} \
+            --label "salvage-digest" \
+            --state open \
+            --json number \
+            --limit 1 --jq '.[0].number // ""')
+
+          if [ -n "$DIGEST_ISSUE" ]; then
+            gh issue comment "$DIGEST_ISSUE" --repo ${{ github.repository }} \
+              --body-file /tmp/done_but_open.md
+          else
+            gh issue create --repo ${{ github.repository }} \
+              --title "📋 Intake Backlog Digest - $(date -u +%Y-%m-%d)" \
+              --body-file /tmp/done_but_open.md \
+              --label "salvage-digest,needs-human-review"
+          fi

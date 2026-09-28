@@ -59,7 +59,18 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
         with:
-          python-version: "3.10"
+          # 3.11, not 3.10: this job runs the whole test suite, and two of its files import
+          # `tomllib` (stdlib only from 3.11), so on 3.10 pytest died during **collection**
+          # (`ModuleNotFoundError: tomllib`, exit 2) before running a single test. The audit then
+          # reported "Audit failed: test suite has issues" — blaming the contribution for a runner
+          # version. Measured 2026-09-25 while triaging the open backlog: **3 of the 11 open PRs**
+          # (#1999, #2020, #1982) carried exactly this, so their red `audit` said nothing about their
+          # content. (The others that were red were a genuine DCO failure and two PRs whose audit
+          # never ran at all — different problems.) The required matrix (`ci-cross-platform.yml`) has
+          # always been 3.11/3.12/3.13; this job was the outlier.
+          # `tests/test_workflow_python_floors.py` derives the suite's floor from the imports in
+          # tests/ and fails any pytest job that pins something lower.
+          python-version: "3.11"
           cache: pip
 
       - name: Install Dependencies
@@ -188,12 +199,22 @@ jobs:
           printf '## PR Size Check\n\n| Metric | Value |\n|--------|-------|\n| Files Changed | %s |\n| Lines Added | %s |\n| Suspicious | %s |\n\n' "${CHANGED}" "${ADDITIONS}" "${SUSPICIOUS}" >> "$GITHUB_STEP_SUMMARY"
 
       # ── Secret Scanning (full scope only) ──
+      # ── Secret Scanning ──
+      # No scope condition, on purpose. It used to be `if: steps.scope.outputs.scope == 'full'`, which
+      # meant a docs-only PR never ran it — and the scanner it runs reads `workers/**` only, so even
+      # the "full" path looked at nothing in `docs/`. On 2026-09-25 a docs-only PR (#1982) was one step
+      # from merging two live-looking node tokens pasted into its smoke reports, and no gate in this
+      # repository had an opinion about that. Both scans take seconds; both now run for every scope.
       - name: Secret Scan
         id: secrets
-        if: steps.scope.outputs.scope == 'full'
         run: |
           echo "=== Scanning for hardcoded secrets ==="
-          if python3 scripts/check_worker_secrets.py; then
+          FAILED=0
+          # Run both even when the first fails: a second scanner's findings must not be hidden by the
+          # first one's exit code.
+          python3 scripts/check_worker_secrets.py || FAILED=1
+          python3 scripts/check_published_secrets.py || FAILED=1
+          if [ "$FAILED" = "0" ]; then
             echo "secrets_result=pass" >> "$GITHUB_OUTPUT"
           else
             echo "secrets_result=fail" >> "$GITHUB_OUTPUT"
@@ -334,6 +355,10 @@ jobs:
             tests/ 2>&1 | tee pytest_report.txt
           PYTEST_EXIT=${PIPESTATUS[0]}
           echo "pytest_exit=$PYTEST_EXIT"
+          # Handed to the summary step below, which is the only place the *cause* is turned into the
+          # one line a maintainer reads. Exit codes are pytest's, not ours: 1 = tests failed,
+          # 2 = interrupted (a collection error), 4 = usage error, 5 = nothing collected.
+          echo "exit=$PYTEST_EXIT" >> "$GITHUB_OUTPUT"
           exit $PYTEST_EXIT
         continue-on-error: true
 
@@ -466,6 +491,7 @@ jobs:
         run: |
           SCOPE="${{ steps.scope.outputs.scope }}"
           OUTCOME="${{ steps.pytest.outcome }}"
+          PYTEST_EXIT="${{ steps.pytest.outputs.exit }}"
           COVERAGE="${{ steps.coverage.outputs.rate }}"
           SUSPICIOUS="${{ steps.prsize.outputs.suspicious }}"
           SIZE_NOTES="${{ steps.prsize.outputs.notes }}"
@@ -701,8 +727,14 @@ jobs:
             EXISTING_ID=$(gh api "repos/Ikalus1988/MisakaNet/issues/$PR_NUM/comments?per_page=100" \
               --jq ".[] | select(.body | contains(\"$MARKER\")) | .id" 2>/dev/null | tail -n1)
             if [ -n "$EXISTING_ID" ]; then
+              # `-f body="$(cat …)"`, not `-f body=@$REPORT_FILE`: `--raw-field` does **not** read
+              # `@file` (only `-F/--field` and `--input` do), so this call posted the literal string
+              # `@/tmp/tmp.XXXXXXXX` as the comment body — and it *succeeded*, so the `||` fallbacks never
+              # ran. Every audit run replaced the previous report with a file path, the marker vanished,
+              # and the next run created another one: the release PR had **53** of them and no readable
+              # verdict on 2026-09-25, which is exactly the state nobody can act on.
               gh api -X PATCH "repos/Ikalus1988/MisakaNet/issues/comments/$EXISTING_ID" \
-                -f "body=@$REPORT_FILE" >/dev/null 2>&1 || \
+                -f "body=$(cat "$REPORT_FILE")" >/dev/null 2>&1 || \
                 gh issue comment "$PR_NUM" --repo Ikalus1988/MisakaNet --body-file "$REPORT_FILE" 2>/dev/null || \
                 echo "::warning::Could not update the report comment on PR #$PR_NUM (read-only fork token) — the report is in this run's summary and as a check annotation."
             else
@@ -720,7 +752,20 @@ jobs:
           # Note: dep audit blocking is handled in the dep audit step itself
           # (only blocks when dependency files actually changed)
           if [ "$SCOPE" = "full" ] && [ -n "$OUTCOME" ] && [ "$OUTCOME" != "success" ]; then
-            echo "Audit failed: test suite has issues."
+            # "test suite has issues" was the whole message for days while the suite never ran: on
+            # 3.10 pytest aborted during *collection* (`ModuleNotFoundError: tomllib`, exit 2), and
+            # the audit blamed the PR for a runner version (3 of the 11 open PRs on 2026-09-25).
+            # A red gate has to name its cause, or the reader has to go and find it — which is how
+            # 3 PRs sat blocked on a one-line workflow bug.
+            case "$PYTEST_EXIT" in
+              2)
+                echo "Audit failed: pytest could not COLLECT the suite (exit 2) — an import or conftest error, so no test ran at all. This is normally the runner, not the contribution: check the python-version this job pins."
+                ;;
+              4) echo "Audit failed: pytest usage error (exit 4) — the invocation is wrong, not the tests." ;;
+              5) echo "Audit failed: pytest collected no tests (exit 5)." ;;
+              1) echo "Audit failed: test suite has failing tests (exit 1)." ;;
+              *) echo "Audit failed: test suite has issues (pytest exit ${PYTEST_EXIT:-unknown})." ;;
+            esac
             exit 1
           fi
           if [ "$DCO_RESULT" != "true" ]; then
@@ -736,7 +781,18 @@ jobs:
       - name: Auto-Merge Gate
         if: success() && github.event_name == 'pull_request'
         env:
-          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          # The PAT alone, with no `|| secrets.GITHUB_TOKEN` fallback. The fallback is what the
+          # empty-token guard below was written against ("no token at all"), except it made that case
+          # unreachable: `secrets.GITHUB_TOKEN` is always non-empty, so a run with no PAT proceeded and
+          # tried to merge with a token this job deliberately limits to `contents: read` — a merge
+          # writes to the base branch, and the failure would be the same `Resource not accessible by
+          # integration` red the fork guard above exists to prevent. Declaring `contents: write` for the
+          # audit job is not the fix: this job runs the pull request's own tests, so handing it write
+          # access to the repository would let a branch that reached the repo through `adopt-pr` rewrite
+          # `main` from a test. Enabling auto-merge is a convenience, not a gate (the rule the fork, CI
+          # and release guards state in the same words), so when the PAT is missing the step says so and
+          # stays green; a maintainer merges. `tests/test_auto_merge_gate.py` pins all three.
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
           PR_NUM: ${{ github.event.pull_request.number }}
         run: |
           echo "=== Auto-Merge Gate for PR #$PR_NUM ==="
@@ -777,6 +833,12 @@ jobs:
 
           # Fork PRs are already gone by now, so this covers the remaining case: no token at all
           # (a missing secret on a same-repo run). Nothing to merge with — report, do not fail.
+          #
+          # This branch used to be dead code: the step's `GH_TOKEN` was
+          # `secrets.SHELDON_PAT || secrets.GITHUB_TOKEN`, and the second operand is never empty, so a
+          # run with no PAT fell through to a merge attempt with a token this job scopes to
+          # `contents: read` — the red-with-no-cause shape this file keeps having to fix. The env line
+          # above is now the PAT alone, which is what makes this guard reachable.
           if [ -z "$GH_TOKEN" ]; then
             echo "  SKIP: GH_TOKEN is empty — auto-merge needs a token with pull-requests: write."
             echo "::warning title=Auto-merge skipped::No GH_TOKEN in this run."
@@ -859,12 +921,28 @@ jobs:
           echo "Unchecked AC items: $UNCHECKED"
           [ "$UNCHECKED" -gt 0 ] && { echo "AC not all checked. Skipping."; exit 0; }
 
-          # No `--subject`. It used to write "Auto-merge #N: <the PR title>", and because that is a
-          # conventional-commit-shaped subject, release-please counted it as a *second* changelog
-          # entry next to the branch commit it merged — every auto-merged PR appeared twice in the
-          # next release's notes (#1820 was listed twice in the 2.31.0 PR; see
-          # googleapis/release-please#1016 for the general behaviour with merge commits). GitHub's
-          # default subject, "Merge pull request #N from <branch>", is not conventional, so it is
-          # skipped, and it still names the PR for anyone reading the log.
-          gh pr merge "$PR_NUM" --repo Ikalus1988/MisakaNet --merge --auto
+          # `--squash`, and the history of this line is worth keeping because two earlier fixes here
+          # were both incomplete:
+          #
+          #   * it used to write `--subject "Auto-merge #N: <the PR title>"`, and that conventional
+          #     subject was counted by release-please as a *second* changelog entry next to the branch
+          #     commit it merged (#1820 appeared twice in the 2.31.0 notes);
+          #   * the fix was to drop `--subject`, on the reasoning that GitHub's default merge subject
+          #     ("Merge pull request #N from <branch>") is not conventional. **The subject is not where
+          #     the duplicate comes from.** GitHub's default merge commit puts the PR *title* in the
+          #     **body**, and release-please reads the whole message. Measured 2026-09-25 against
+          #     main's own history:
+          #
+          #         Merge pull request #2047 from Ikalus1988/feat/done-but-open-detector
+          #         <blank line>
+          #         feat(intake): detect intakes whose work is already merged but whose issue is still open
+          #
+          #     so `a6923ea` (the merge) and `fd1bbca` (the branch commit it merged, same files) each
+          #     produced an entry — and the 2.35.0 release PR arrived with **113 entries covering 103
+          #     duplicates**.
+          #
+          # A squash merge produces exactly one commit per PR and no merge commit at all, which is what
+          # `auto-merge-docs`, `auto-merge-lessons` and `scripts/ci/land_change.py` already do. This
+          # line was the last path that did not.
+          gh pr merge "$PR_NUM" --repo Ikalus1988/MisakaNet --squash --auto
           echo "Auto-merge enabled for PR #$PR_NUM"

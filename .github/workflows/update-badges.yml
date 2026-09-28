@@ -47,38 +47,41 @@ jobs:
       - name: Count MCP tools
         id: tools
         run: |
-          # MCP tool definitions live in the worker (register-proxy-sw.js).
-          # grep -c prints "0" AND exits 1 when nothing matches, so `|| echo 0`
-          # would double-print and break $GITHUB_OUTPUT — use awk to force a
-          # single clean count instead.
-          TOOL_COUNT=$(grep -cE 'name: "misakanet_' workers/register-proxy-sw.js | awk '{print $1+0}')
+          # Through the SSOT reader, like the domain and node counts below — but for a stronger
+          # reason than theirs (issue #1822). This step used to be
+          # `grep -cE 'name: "misakanet_' workers/register-proxy-sw.js`: the expected value and the
+          # measured value were the *same file*, so the badge could not disagree with the worker and
+          # could never notice that the worker disagreed with the documentation. It only proved the
+          # file had not been deleted.
+          #
+          # `canonical_mcp_tools` takes the expectation from the AGENTS.md §3.2 table and the
+          # measurement from the worker, and **raises** when they differ, so this step now fails on
+          # a tool that is registered but undocumented (or the reverse) instead of publishing a
+          # number that is merely consistent with itself.
+          TOOL_COUNT=$(python3 -c "from scripts.sync_lesson_count import canonical_mcp_tools; print(canonical_mcp_tools())")
           echo "tools=$TOOL_COUNT" >> "$GITHUB_OUTPUT"
 
-      - name: Count registered nodes
-        id: nodes
-        run: |
-          # Through the SSOT reader instead of a second copy of the offset. README.zh-CN.md's
-          # badge now points at this JSON rather than carrying a number nobody refreshed — it
-          # said 59 while data/counter.json said 73 (issue #1683).
-          NODE_COUNT=$(python3 -c "from scripts.sync_lesson_count import canonical_nodes; print(canonical_nodes())")
-          echo "nodes=$NODE_COUNT" >> "$GITHUB_OUTPUT"
-
+      # The registered-node badge is gone with the number itself (2026-09-26, #2313). It imported
+      # `canonical_nodes` from the count SSOT, and that metric was retired — so this workflow failed
+      # with an ImportError on every run from the moment #2313 merged until this line was removed,
+      # which is what a red workflow on `main` looks like when nobody reads it (#2332's neighbour).
+      # `README.zh-CN.md` stopped pointing at `nodes.json` in the same change, so nothing consumes it.
+      # `data/counter.json` was deleted in the same week (2026-09-28): it was the `/api/counter`
+      # fallback, and a stale copy of a number read to predict the next registrant's id is worse
+      # than no answer (#1820). The endpoint now says `counter_unavailable` instead.
       - name: Generate badge JSONs
         run: |
           mkdir -p /tmp/badges
           LESSON_COUNT="${{ steps.count.outputs.lessons }}"
           TOOL_COUNT="${{ steps.tools.outputs.tools }}"
-          NODE_COUNT="${{ steps.nodes.outputs.nodes }}"
           DOMAIN_COUNT="${{ steps.domains.outputs.domains }}"
           echo "{\"schemaVersion\":1,\"label\":\"lessons\",\"message\":\"$LESSON_COUNT\",\"color\":\"brightgreen\"}" > /tmp/badges/lessons.json
           echo "{\"schemaVersion\":1,\"label\":\"MCP tools\",\"message\":\"$TOOL_COUNT\",\"color\":\"purple\"}" > /tmp/badges/tools.json
           echo "{\"schemaVersion\":1,\"label\":\"domains\",\"message\":\"$DOMAIN_COUNT\",\"color\":\"blue\"}" > /tmp/badges/domains.json
-          echo "{\"schemaVersion\":1,\"label\":\"nodes\",\"message\":\"$NODE_COUNT\",\"color\":\"green\"}" > /tmp/badges/nodes.json
-          echo "Generated badges: lessons=$LESSON_COUNT, tools=$TOOL_COUNT, domains=$DOMAIN_COUNT, nodes=$NODE_COUNT"
+          echo "Generated badges: lessons=$LESSON_COUNT, tools=$TOOL_COUNT, domains=$DOMAIN_COUNT"
           cat /tmp/badges/lessons.json
           cat /tmp/badges/tools.json
           cat /tmp/badges/domains.json
-          cat /tmp/badges/nodes.json
 
       - name: Push to data branch
         env:

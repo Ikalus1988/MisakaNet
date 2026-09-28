@@ -128,6 +128,58 @@ def test_a_number_mentioned_in_the_body_is_not_a_citation(tmp_path):
     assert lessons_citing(9999, tmp_path) == []
 
 
+def test_digits_inside_a_url_or_a_date_are_not_a_citation(tmp_path):
+    """Regression (2026-09-22): three of the four "done but not said" intakes were artifacts.
+
+    The matcher accepted a bare number anywhere in a citation field, so a lesson whose `source:` is a
+    forum thread, a blog archive or a date "cited" intakes it had never heard of. `done_but_open.py`
+    reported four of them; on inspection only `#1555` was real, and the other three would have been
+    closed with a receipt telling their reporters the work was done.
+    """
+    (tmp_path / "forum-thread.md").write_text(
+        '---\ntitle: fanuc\nsource: bbs.gongkong.com/d/201302/481940\n---\n\n## Problem\n\nx\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "blog-archive.md").write_text(
+        "---\ntitle: ruby\n"
+        "source: https://samsaffron.com/archive/2015/03/31/debugging-memory-leaks-in-ruby\n---\n\nx\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "date-in-path.md").write_text(
+        "---\ntitle: profinet\nsource: bbs.gongkong.com/d/202011/845226\n---\n\nx\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "another-repo.md").write_text(
+        "---\ntitle: pool\nsource: https://github.com/brianc/node-postgres/issues/1920\n---\n\nx\n",
+        encoding="utf-8",
+    )
+    for issue in (1940, 2015, 2011, 1920):
+        assert lessons_citing(issue, tmp_path) == [], f"#{issue} matched an artifact"
+
+
+def test_every_citation_shape_the_corpus_uses_is_still_found(tmp_path):
+    """The other direction: requiring a shape must not lose a real citation.
+
+    These four are the shapes present in `lessons/` today, taken from real frontmatter.
+    """
+    (tmp_path / "by-issue-field.md").write_text(
+        '---\ntitle: a\nprovenance:\n  issue: "#1555"\n---\n\nx\n', encoding="utf-8"
+    )
+    (tmp_path / "by-source-slug.md").write_text(
+        '---\ntitle: b\nsource: "intake-1130 — SSE calls failed"\n---\n\nx\n', encoding="utf-8"
+    )
+    (tmp_path / "by-long-form.md").write_text(
+        '---\ntitle: c\nsource: "intake-issue-1200"\n---\n\nx\n', encoding="utf-8"
+    )
+    (tmp_path / "by-repo-link.md").write_text(
+        "---\ntitle: d\nsource: https://github.com/Ikalus1988/MisakaNet/issues/1569\n---\n\nx\n",
+        encoding="utf-8",
+    )
+    for issue, expected in ((1555, "by-issue-field.md"), (1130, "by-source-slug.md"),
+                            (1200, "by-long-form.md"), (1569, "by-repo-link.md")):
+        assert [l["path"] for l in lessons_citing(issue, tmp_path)] == [expected]
+
+
 def test_a_lesson_merged_minutes_ago_is_found(tmp_path):
     """Read the lesson files, not the generated snapshot.
 

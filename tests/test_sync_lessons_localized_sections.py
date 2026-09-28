@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 import pytest
-from scripts.sync_lessons_to_d1 import split_sections, parse_lesson, REPO
+import scripts.sync_lessons_to_d1 as sync_lessons_to_d1
+from scripts.sync_lessons_to_d1 import REPO, parse_lesson, split_sections
 
 
 @pytest.mark.parametrize(
@@ -96,3 +97,57 @@ def test_existing_localized_lessons_parse_non_empty():
         assert record["root_cause"], f"Root cause empty for {file_path}"
         assert record["solution"], f"Solution empty for {file_path}"
         assert record["verification"], f"Verification empty for {file_path}"
+
+
+def test_the_synced_row_carries_the_derived_evidence_level(tmp_path, monkeypatch):
+    """The served trust field has to match the published one (#2080).
+
+    Most lessons do not declare `evidence_level`; they earn it from their content, and the
+    public index derives it (`update_lessons_json.py`). The D1 sync stored the raw frontmatter
+    only, so those rows reached the API with `evidence_level: ""` on every hit — the field
+    looked *provided and blank*, while the GitHub-snapshot path answered correctly. Measured
+    against the live database on 2026-09-23: the stored frontmatter of two libnss3 lessons did
+    not contain the key at all, while the corpus said E2 and E0 for them.
+    """
+    import json as _json
+
+    # `parse_lesson` records `path` relative to REPO, so the module's REPO points at the temp
+    # tree instead of scratch lessons being written into the repository.
+    monkeypatch.setattr(sync_lessons_to_d1, "REPO", tmp_path)
+    lesson = tmp_path / "no-level-declared.md"
+    lesson.write_text(
+        "---\ntitle: a lesson that never declared a level\ndomain: devops\ntags: [ci]\n---\n\n"
+        "## Problem\n\nA pipeline reported success while the artifact was missing.\n\n"
+        "## Root Cause\n\nThe exit code was read after a pipe, so it was the pipe's.\n\n"
+        "## Solution\n\nCapture the exit code before the pipe.\n\n"
+        "## Verification\n\nRan it and the failure now surfaces.\n",
+        encoding="utf-8",
+    )
+    record = parse_lesson(lesson)
+    assert record is not None
+    stored = _json.loads(record["frontmatter"])
+    assert stored.get("evidence_level"), (
+        "the synced frontmatter carries no evidence_level, so the API answers \"\" for a "
+        "lesson whose level the corpus publishes")
+    # …and the rest of the frontmatter is untouched: this adds the derived key, it does not rewrite.
+    assert stored["title"] == "a lesson that never declared a level"
+    assert stored["domain"] == "devops"
+
+
+def test_a_declared_level_is_not_overwritten(tmp_path, monkeypatch):
+    """A lesson that says E3 keeps E3 — the derivation never second-guesses an explicit value."""
+    import json as _json
+
+    monkeypatch.setattr(sync_lessons_to_d1, "REPO", tmp_path)
+    lesson = tmp_path / "declared.md"
+    lesson.write_text(
+        "---\ntitle: explicit\ndomain: devops\nevidence_level: E3\ntags: [ci]\n---\n\n"
+        "## Problem\n\nx is long enough to look like a section.\n\n"
+        "## Root Cause\n\ny is also long enough.\n\n"
+        "## Solution\n\nz is long enough too.\n\n"
+        "## Verification\n\nw as well, and long enough.\n",
+        encoding="utf-8",
+    )
+    record = parse_lesson(lesson)
+    assert record is not None
+    assert _json.loads(record["frontmatter"])["evidence_level"] == "E3"

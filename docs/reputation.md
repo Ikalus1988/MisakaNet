@@ -20,6 +20,36 @@ score = usage_reports × 2.0
 | Lessons reused | ×0.2 | Light signal: multiple people found it useful |
 | Verified lessons | ×0.5 | Quality signal: lesson has verification steps |
 
+## Two different boards — read this before judging a name on either
+
+The project publishes **two** rankings, and neither of them answers "is this a person?":
+
+| board | what it ranks | where it comes from |
+|---|---|---|
+| **Reputation points** (this document's formula) | contributors in the `data/contributor-points.json` ledger, weighted by *reuse* — a lesson somebody actually used | `/api/insights/reputation-leaderboard`, rendered on `docs/insights/reputation-leaderboard.html` |
+| **Contributor snapshot** (`data/leaderboard.json`) | **commit authors on `main`**, scored by commit recency (30-day half-life) × median PR size | `scripts/leaderboard_watch.py` |
+
+The second one is not the formula above, and it is worth knowing why its rows are what they are:
+
+* contributors are taken from *commit authors* — `author.user.login` when GitHub can resolve one, and
+  otherwise **the raw git author name**. So a board row can be an account, an identity that has no
+  GitHub account at all (`misakanet-sync-bot` is configured in a workflow's `git config user.name`), or
+  a string nobody owns;
+* GitHub's `type` field separates **Apps** from users and nothing else. Measured on this repository
+  (2026-09-25): `github-actions[bot]` and `dependabot[bot]` are `type=Bot`, while `actions-user`
+  (GitHub's own automation identity) and `claude` (a coding agent) are `type=User`. A `User` row is
+  therefore **not** evidence of a human;
+* the only filter was a hardcoded list, which had missed `github-actions[bot]` — the most active
+  automation identity in the repository — so it sat at **rank #2** on the public board until
+  2026-09-25. The filter is now a rule (`[bot]` suffix, plus this repository's own identities, checked
+  against the workflows by `tests/test_leaderboard_exclusions.py`).
+
+There is one genuine self-declaration in the system, and it is about *nodes* rather than accounts: a
+registered MCP node reports an `agent_type` (`claude-code`, `codex`, …). It is **not verified** — agents
+type it themselves — so it can describe an agent population but cannot certify that any particular
+contributor is (or is not) a human. When attribution has to be checkable, the project uses GitHub
+instead: the PR's author identity plus the DCO sign-off.
+
 ## Anti-Gaming Safeguards
 
 ### Sigmoid Cap

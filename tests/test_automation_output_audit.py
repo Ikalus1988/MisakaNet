@@ -22,6 +22,7 @@ SCRIPT = REPO_ROOT / "scripts" / "automation_output_audit.py"
 sys.path.insert(0, str(REPO_ROOT))
 
 import scripts.automation_output_audit as audit_mod  # noqa: E402
+from subprocess_env import child_env  # tests/subprocess_env.py
 
 
 def fake_fetch(window_runs: dict[str, int], output_counts: dict[str, int], ever_runs: dict[str, int],
@@ -162,7 +163,7 @@ def test_cli_exits_zero_with_a_warning_when_the_api_is_unreachable(monkeypatch, 
 def test_cli_requires_a_token(capsys):
     exit_code = subprocess.run(
         [sys.executable, str(SCRIPT), "--token", ""],
-        capture_output=True, text=True, env={"PATH": "/usr/bin:/bin"},
+        capture_output=True, text=True, env=child_env(),
     )
     assert exit_code.returncode == 2
     assert "GITHUB_TOKEN" in exit_code.stderr

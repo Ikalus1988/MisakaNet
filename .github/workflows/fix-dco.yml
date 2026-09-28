@@ -9,12 +9,20 @@ permissions:
 
 jobs:
   fix-dco:
+    # `contains(body, '/fix-dco')` alone was satisfied by `dco-audit`'s own failure comment, which
+    # *explains* the command ("Same-repo PRs can also comment `/fix-dco` to auto-apply the sign-off.").
+    # So the receipt for a missing sign-off silently ran the auto-fix on every DCO failure, whether or
+    # not anybody asked for it — a help string is not a request. The marker exclusion is what keeps
+    # teaching the command from being the same thing as typing it.
     if: |
       github.event.issue.pull_request &&
       contains(github.event.comment.body, '/fix-dco') &&
+      !contains(github.event.comment.body, 'misakanet-dco-block') &&
       (github.event.comment.user.login == github.event.issue.user.login ||
        contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), github.event.comment.author_association))
     runs-on: ubuntu-latest
+    # A job with no bound holds its runner until the platform default (six hours).
+    timeout-minutes: 10
     steps:
       - name: Get PR info
         id: pr
@@ -78,6 +86,12 @@ jobs:
           fetch-depth: 0
           path: pr-code
           token: ${{ secrets.GITHUB_TOKEN }}
+          # The push below authenticates with its own token, and the two must not coexist:
+          # `actions/checkout` writes an `http.https://github.com/.extraheader` with this token, and a
+          # later push carries *both* Authorization headers — the server picks the checkout's, so the
+          # workflow believes it pushed as the PAT while it actually pushed as the bot.
+          # (`auto-sync-prs.yml` measured exactly this on 2026-09-19.)
+          persist-credentials: false
 
       - name: Configure git safe directory
         run: git config --global safe.directory '*'
@@ -94,8 +108,13 @@ jobs:
         working-directory: pr-code
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Through the environment, not interpolated into the script: both values come from the pull
+          # request, and `${{ … }}` inside `run:` is substituted *before* bash parses — so a crafted ref
+          # would be parsed as shell. (Open Code Review's GitHub Actions ruleset, "Script injection";
+          # branch names may contain `$`, backticks and parentheses.)
+          BASE_REF: ${{ steps.pr.outputs.baseRef }}
         run: |
-          BASE="${{ steps.pr.outputs.baseRef }}"
+          BASE="$BASE_REF"
           echo "Rebasing against $BASE..."
           git rebase --signoff "origin/$BASE" 2>&1 || {
             echo "Rebase with base failed — trying HEAD~N fallback"
@@ -114,14 +133,31 @@ jobs:
           }
           echo "DCO fix applied."
 
+      # The push decides whether this workflow helps or *strands* the PR it is fixing.
+      #
+      # Measured 2026-09-25: this step pushed with the built-in `GITHUB_TOKEN`, and the runs GitHub
+      # created for the new head came back as `action_required` — held, never executed
+      # (`actor=github-actions[bot]` on PR #2201/#2202). `DCO / Signed-off-by` is one of the three
+      # **required** checks on `main`, so a held DCO run means the PR sits at "Expected — waiting for
+      # status to be reported" for ever, and the auto-fix that was supposed to unblock a contributor
+      # is what blocks them. The repository's own lesson file says it in the title
+      # (`lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md`), and
+      # `auto-sync-prs.yml` already solved it by pushing with a PAT: a PAT push is an ordinary user
+      # push, so `pull_request: synchronize` runs actually run.
       - name: Force push (same-repo only)
         if: steps.pr.outputs.isFork != 'true'
         working-directory: pr-code
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUSH_TOKEN: ${{ secrets.SHELDON_PAT }}
+          HEAD_REF: ${{ steps.pr.outputs.headRef }}
         run: |
-          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git
-          git push --force-with-lease origin HEAD:refs/heads/${{ steps.pr.outputs.headRef }} 2>&1 || {
+          if [ -z "${PUSH_TOKEN:-}" ]; then
+            echo "::warning::SHELDON_PAT is empty — the sign-off was applied locally but NOT pushed. A push with GITHUB_TOKEN would create held runs (`action_required`) on the new head, and with `DCO / Signed-off-by` a required check that leaves this PR unmergeable — worse than leaving it red, where the contributor can still fix it by hand. Set the secret and re-run this workflow, or use the manual commands in the DCO comment."
+            exit 0
+          fi
+          git remote set-url origin "https://x-access-token:${PUSH_TOKEN}@github.com/${{ github.repository }}.git"
+          git push --force-with-lease origin "HEAD:refs/heads/$HEAD_REF" 2>&1 || {
             echo "Force push failed — branch may have diverged"
             exit 1
           }

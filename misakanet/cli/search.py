@@ -8,7 +8,7 @@ checkout for its corpus — a wheel has no `lessons/`.
     misakanet "database is locked"          # search by the error text you actually see
     misakanet --top 3 --json "ECONNREFUSED"
     MISAKANET_TOKEN=mcp_… misakanet "…"     # a token lifts the anonymous limits
-    MISAKANET_CLIENT_ID=<stable-id> …       # keeps one client's history together (not a credential)
+    MISAKANET_CLIENT_ID=<random-uuid> …     # keeps one client's history together (a key: keep it private)
 
 Argparse rather than a hand-rolled `sys.argv` walk: 意见 4 of the same review asked for it, and a new
 entry point is the cheap place to start.
@@ -32,7 +32,8 @@ def build_parser() -> argparse.ArgumentParser:
         prog="misakanet",
         description="Search MisakaNet failure lessons by the error text you are looking at.",
         epilog="Reading needs no account. A token (env MISAKANET_TOKEN) lifts the anonymous limits and "
-               "unlocks the write tools; MISAKANET_CLIENT_ID is a self-declared pseudonym, not a credential.",
+               "unlocks the write tools; MISAKANET_CLIENT_ID is the node's key — presenting it returns "
+               "that node's token, so generate a random UUID and keep it private.",
     )
     parser.add_argument("query", help="the most distinctive fragment of the error text")
     parser.add_argument("--top", type=int, default=5, help="how many lessons to show (default 5)")

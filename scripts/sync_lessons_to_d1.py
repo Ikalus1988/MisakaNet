@@ -152,6 +152,21 @@ def parse_lesson(path: Path) -> dict | None:
     if not isinstance(tags, list):
         tags = [tags] if tags else []
     summary = fm.get("summary", "") or re.sub(r"\s+", " ", body).strip()[:200]
+    # `evidence_level` (#2080): the served field must carry the same value the published corpus
+    # carries, and that value is *derived* — most lessons do not declare it, they earn it from their
+    # content (`update_lessons_json.py` does this for `data/lessons.json`, and the API promises the
+    # field to every client). Storing the raw frontmatter alone kept nothing for those rows,
+    # so the D1 path answered `""` on every hit while the GitHub-snapshot path answered correctly:
+    # the trust field looked *provided and blank*, worse than missing. Reuses the same two helpers;
+    # there must not be a second implementation of "what level is this lesson".
+    from misakanet.evidence import evidence_of  # one derivation of the level, never a second
+
+    if fm.get("evidence_level") is not None:
+        evidence_level = evidence_of(fm)
+    else:
+        from scripts.infer_evidence_level import infer_evidence_level
+
+        evidence_level, _ = infer_evidence_level(body)
     return {
         "id": path.stem,
         "title": title,
@@ -165,7 +180,7 @@ def parse_lesson(path: Path) -> dict | None:
         "solution": sections["solution"],
         "verification": sections["verification"],
         "content_md": body.strip()[:30000],
-        "frontmatter": json.dumps(fm, ensure_ascii=False),
+        "frontmatter": json.dumps({**fm, "evidence_level": evidence_level}, ensure_ascii=False),
         "summary": summary,
         "created": fm.get("created", ""),
         "updated": fm.get("updated", ""),

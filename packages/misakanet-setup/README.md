@@ -109,6 +109,10 @@ GPO / Intune / Jamf / Ansible snippets, and the section an IT security review ac
 `--no-register` avoids registration entirely):
 [`docs/maintainer/enterprise-deployment.md`](https://github.com/Ikalus1988/MisakaNet/blob/main/docs/maintainer/enterprise-deployment.md).
 
+A reviewer-facing landing page — the same boundary questions, plus an explicit list of what does
+**not** exist yet (no compliance certifications, no organisation-level audit export, no self-hosted
+form of the hosted endpoint): <https://misakanet.org/enterprise/>.
+
 The short version for a deployment script — two commands, both silent:
 
 ```bash

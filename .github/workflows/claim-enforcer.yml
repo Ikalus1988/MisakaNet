@@ -21,6 +21,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # The exclusive window for a `/claim`, in hours. It is one variable because it had two
+          # readers that disagreed (issue #1826): the comparison below said 4 while this job's name
+          # and the notice it posts both said 8. The window was raised from 4h to 8h in June 2026
+          # (`docs/ring0-founder-track.md`: "Global 8h window (increased from 4h in Jun 2026)"), and
+          # the arithmetic was the half left behind — so the enforcer released issues four hours early
+          # while telling everybody the eight hours were up. `tests/test_claim_window.py` pins this
+          # value to the documented one, and pins the notice to this variable, so the two cannot part
+          # company again.
+          CLAIM_WINDOW_HOURS=8
+
           ISSUES=$(gh issue list --repo Ikalus1988/MisakaNet --state open \
             --label "status: competition" --json number --jq '.[].number')
 
@@ -33,7 +43,7 @@ jobs:
             [ -z "$CLAIM_TS" ] && continue
 
             ELAPSED=$(( ($(date +%s) - $(date -d "$CLAIM_TS" +%s)) / 3600 ))
-            [ "$ELAPSED" -lt 4 ] && continue
+            [ "$ELAPSED" -lt "$CLAIM_WINDOW_HOURS" ] && continue
 
             PR_COUNT=$(gh pr list --repo Ikalus1988/MisakaNet --state open \
               --search "\"#$NUM\"" --json number --jq 'length')
@@ -43,11 +53,11 @@ jobs:
               --jq '[.[] | select(.body | test("Claim Window Expired"))] | length')
             [ "$NOTIFIED" -gt 0 ] && continue
 
-            COMMENT='## Claim Window Expired - Issue Reopened for Competition
+            COMMENT="## Claim Window Expired - Issue Reopened for Competition
 
-            The 8-hour exclusive /claim window has expired without a submitted PR. This issue is now open for all agents to compete. First agent to submit a CI-green PR will be merged.
+            The ${CLAIM_WINDOW_HOURS}-hour exclusive /claim window has expired without a submitted PR. This issue is now open for all agents to compete. First agent to submit a CI-green PR will be merged.
 
-            To claim: comment /claim and submit a PR within 8 hours.'
+            To claim: comment /claim and submit a PR within ${CLAIM_WINDOW_HOURS} hours."
 
             gh api "repos/Ikalus1988/MisakaNet/issues/$NUM/comments" \
               --method POST --field body="$COMMENT" > /dev/null 2>&1

@@ -1,0 +1,678 @@
+name: CF diagnostics
+
+# Read-only operations view for the 504/522 investigation (issue #2126).
+#
+# Why a workflow instead of a local curl: the credentials live in the `release` environment, and the
+# rule in docs/maintainer/credentials-and-environments.md is that a secret is never copied out of
+# GitHub to be used by hand. This runs the same read-only queries with the token that is already
+# installed, prints the answers into the job log, and holds no write of any kind — every call below is
+# a GET or an analytics/telemetry query.
+#
+# It exists because "the service hangs" needs facts that only Cloudflare has:
+#   * which status codes, on which routes, over the window (the 504/522 split the owner measured);
+#   * whether the worker logs an error for those requests, or nothing at all (a request the platform
+#     killed looks very different from one whose upstream stalled);
+#   * whether D1 is healthy — `storePut` falls back to KV when it is not, which is the only remaining
+#     way this worker spends KV's 1,000-writes/day budget.
+on:
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: 'How many hours back to look'
+        type: number
+        default: 24
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    # `workflow_dispatch`-only, so the environment's protection rules apply to a run a person started —
+    # which is what makes publish/deploy credentials safe to put on it.
+    environment: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # The deploy token does not have to be the log-reading token: `CF_OBSERVABILITY_TOKEN` is the
+      # least-privilege option (Workers Observability: Read + Account Analytics: Read, no Workers
+      # Scripts: Edit) and falls back to the deploy token so a repository that has not created it yet
+      # still runs every step it is allowed to run.
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CF_OBSERVABILITY_TOKEN || secrets.CF_API_TOKEN }}
+      # The Builds API is the one Cloudflare API here that refuses account-scoped tokens: it wants a
+      # *user-scoped* token with Workers Builds Configuration (#2136). It is deliberately a separate
+      # credential rather than a permission added to the deploy token, and empty until one exists.
+      CF_BUILDS_TOKEN: ${{ secrets.CF_BUILDS_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+      HOURS: ${{ inputs.hours }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: HTTP status codes by route (last ${{ inputs.hours }}h)
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import datetime as _dt
+          import json, os, urllib.error, urllib.request
+
+          account = os.environ["CLOUDFLARE_ACCOUNT_ID"]
+          token = os.environ["CLOUDFLARE_API_TOKEN"]
+          hours = int(os.environ.get("HOURS") or 24)
+          # Overridable so tests/test_cf_diagnostics_query.py can run this exact script against a stub
+          # and prove the field discovery below works, instead of trusting it.
+          endpoint = os.environ.get("CF_GRAPHQL_URL",
+                                   "https://api.cloudflare.com/client/v4/graphql")
+
+
+          def gql(query, variables=None):
+              """(payload, transport_error). A transport error is a *finding* (usually a missing
+              permission); a GraphQL `errors` list is a bug in this workflow, and the two are handled
+              differently by the caller."""
+              body = json.dumps({"query": query, "variables": variables or {}}).encode()
+              req = urllib.request.Request(endpoint, data=body, headers={
+                  "Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+              try:
+                  return json.load(urllib.request.urlopen(req, timeout=60)), None
+              except urllib.error.HTTPError as exc:
+                  return None, f"HTTP {exc.code}: {exc.read().decode(errors='replace')[:400]}"
+              except Exception as exc:
+                  return None, str(exc)
+
+
+          # ── the dimension name is discovered, not guessed ────────────────────────────────────────
+          # This step has now cost three human approvals to a wrong field name: first `datetime_geq`
+          # was given a relative string, then `edgeResponseTime` did not exist, and then
+          # `clientRequestHost` did not either — while the surrounding fields validated, so the query
+          # *looked* like it ran and printed an empty table. Discovered instead: read the schema's own
+          # type list, then that type's fields, and use whatever the schema actually calls the host.
+          host_field = None
+          type_name = None
+          payload, err = gql("{ __schema { types { name } } }")
+          if err:
+              print(f"schema introspection unavailable ({err}) — falling back to a candidate list")
+          else:
+              types = (((payload or {}).get("data") or {}).get("__schema") or {}).get("types") or []
+              names = [t.get("name") or "" for t in types]
+              candidates = [n for n in names if "HttpRequestsAdaptiveGroupsDimensions" in n]
+              print(f"dimension type candidates: {candidates}")
+              if candidates:
+                  type_name = candidates[0]
+                  payload, err = gql("query($t: String!) { __type(name: $t) { fields { name } } }",
+                                     {"t": type_name})
+                  fields = [f.get("name") or "" for f in
+                            (((payload or {}).get("data") or {}).get("__type") or {}).get("fields") or []]
+                  if fields:
+                      print(f"{type_name} fields: {sorted(fields)}")
+                      # A *preference order*, not the first field whose name contains "host". Measured
+                      # 2026-09-24 (run 7): the first match was `apiGatewayMatchedHost`, which the
+                      # schema does declare — so the query validated, the step printed
+                      # `using host dimension: apiGatewayMatchedHost`, and the `5xx by host` table
+                      # then reported a single **empty** host, because that dimension is populated
+                      # only for API-Gateway-matched requests. A wrong-but-existing field name is
+                      # exactly the failure this discovery was written to prevent, one level down.
+                      hosts = [f for f in fields if "host" in f.lower()]
+                      usable = [f for f in hosts if "apigateway" not in f.lower()]
+                      preferred = ("clientRequestHTTPHost", "clientRequestHost",
+                                   "clientRequestHostname")
+                      if usable:
+                          host_field = min(
+                              usable,
+                              key=lambda f: (preferred.index(f) if f in preferred else len(preferred), f))
+                          print(f"using host dimension: {host_field}")
+                          if host_field != usable[0]:
+                              print(f"  (chose it over {hosts} — a host field that exists is not the "
+                                    f"same as a host field that is populated)")
+                      elif hosts:
+                          print(f"the schema's only host dimension(s) {hosts} are empty for ordinary "
+                                f"traffic (apiGatewayMatchedHost is set only for API-Gateway-matched "
+                                f"requests) — reporting status by path only")
+
+          if host_field is None:
+              # No introspection, or a schema with no host dimension: try the spellings that exist in
+              # Cloudflare's datasets, and if none survives validation, group without a host at all —
+              # a status table with paths is still the answer to "which routes are failing".
+              for candidate in ("clientRequestHTTPHost", "clientRequestHost"):
+                  probe = "{ viewer { accounts(filter: {accountTag: %s}) { httpRequestsAdaptiveGroups(limit: 1) { dimensions { %s } } } } }" % (
+                      json.dumps(account), candidate)
+                  payload, err = gql(probe)
+                  if err is None and not (payload or {}).get("errors"):
+                      host_field = candidate
+                      print(f"using host dimension (candidate list): {host_field}")
+                      break
+              if host_field is None:
+                  print("no host dimension available; reporting status by path only")
+
+          # ── the window ──────────────────────────────────────────────────────────────────────────
+          # `datetime_geq` wants ISO8601, not the `-24h` / `now` shorthand the dashboard accepts: the
+          # first run of this workflow answered
+          #   error parsing args for "httpRequestsAdaptiveGroups": filter: datetime_geq: not an iso8601 time
+          now = _dt.datetime.now(_dt.timezone.utc).replace(microsecond=0)
+          since = now - _dt.timedelta(hours=hours)
+
+          dims = " ".join(["edgeResponseStatus", "clientRequestPath"] + ([host_field] if host_field else []))
+          query = """
+          query($account: String!, $since: Time!, $until: Time!) {
+            viewer {
+              accounts(filter: {accountTag: $account}) {
+                httpRequestsAdaptiveGroups(
+                  limit: 200
+                  filter: {datetime_geq: $since, datetime_leq: $until}
+                  orderBy: [count_DESC]
+                ) {
+                  count
+                  dimensions { %s }
+                }
+              }
+            }
+          }
+          """ % dims
+          payload, err = gql(query, {
+              "account": account,
+              "since": since.isoformat().replace("+00:00", "Z"),
+              "until": now.isoformat().replace("+00:00", "Z"),
+          })
+          if err:
+              # A 403 here means the token lacks Account Analytics — the finding is the permission,
+              # the run should still complete so the other steps report.
+              print(f"::warning::graphql query failed ({err})")
+              raise SystemExit(0)
+
+          if payload.get("errors"):
+              # This is not a permission problem, it is this workflow being wrong — and it must not
+              # look green: the previous `unknown field` runs printed an empty table and passed.
+              print("::error::the GraphQL query is invalid: "
+                    + json.dumps(payload["errors"])[:800])
+              raise SystemExit(1)
+
+          groups = (((payload.get("data") or {}).get("viewer") or {}).get("accounts") or [{}])[0] \
+              .get("httpRequestsAdaptiveGroups") or []
+          print(f"groups: {len(groups)}")
+          by_status = {}
+          for g in groups:
+              dims_row = g.get("dimensions") or {}
+              status = str(dims_row.get("edgeResponseStatus"))
+              by_status[status] = by_status.get(status, 0) + int(g.get("count") or 0)
+          print("== by status ==")
+          for status, count in sorted(by_status.items(), key=lambda kv: -kv[1]):
+              print(f"  {status}: {count}")
+          # The 401s (2,920 in the 72h window of run 5) had no path breakdown at all, because only the
+          # >= 500 class was ever printed — a status that large is not a rounding error and deserves the
+          # same evidence as the 5xx ones. Every class >= 400 gets its top paths.
+          print("== top paths per status (>= 400) ==")
+          by_path = {}
+          for g in groups:
+              dims_row = g.get("dimensions") or {}
+              status = int(dims_row.get("edgeResponseStatus") or 0)
+              if status < 400:
+                  continue
+              by_path.setdefault(status, []).append(
+                  (int(g.get("count") or 0), str(dims_row.get("clientRequestPath"))))
+          for status in sorted(by_path, key=lambda s: -sum(c for c, _ in by_path[s])):
+              rows = sorted(by_path[status], reverse=True)
+              print(f"  {status}: {sum(c for c, _ in rows)} total, top {min(6, len(rows))} of {len(rows)} paths")
+              for count, path in rows[:6]:
+                  print(f"    {count:>6}  {path}")
+
+          print("== routes (status >= 500) ==")
+          for g in sorted(groups, key=lambda g: -int(g.get("count") or 0)):
+              dims_row = g.get("dimensions") or {}
+              status = int(dims_row.get("edgeResponseStatus") or 0)
+              if status < 500:
+                  continue
+              host = f" host={dims_row.get(host_field)}" if host_field else ""
+              print(f"  {status} {g.get('count')} path={dims_row.get('clientRequestPath')}{host}")
+          # The comparison that says whether these are user requests at all: a 5xx on a hostname nobody
+          # was told about (a loopback probe, a legacy subdomain) is a different problem from a 5xx on
+          # the one agents call, and the zone-wide total cannot tell them apart.
+          if host_field:
+              print("== 5xx by host ==")
+              by_host = {}
+              for g in groups:
+                  dims_row = g.get("dimensions") or {}
+                  if int(dims_row.get("edgeResponseStatus") or 0) >= 500:
+                      host = str(dims_row.get(host_field))
+                      by_host[host] = by_host.get(host, 0) + int(g.get("count") or 0)
+              for host, count in sorted(by_host.items(), key=lambda kv: -kv[1]):
+                  print(f"  {host}: {count}")
+          PY
+
+      - name: Zone inventory — which worker owns which route, and which KV namespaces are unbound
+        run: |
+          set -euo pipefail
+          # Two questions a zone audit asked (2026-09-24) that only the account can answer, and that a
+          # status-code table cannot: (a) whether a *stale* worker still holds a route — this repository
+          # used to run `misakanet-api`, our own lesson records it answering `/mcp` with its 404 branch
+          # (lessons/contrib/mcp-endpoint-404-zone-route-misconfig.md), and it is not in this repository's
+          # configs any more; (b) whether a KV namespace exists in the account that nothing binds — the
+          # audit named one (`KV`, id 5267c932…) while `workers/wrangler.toml` binds only `MISAKANET_KV`.
+          # Either read may 403 for a token that does not carry the zone scopes: the error text names the
+          # missing permission, which is the finding, so this step prints and never fails the run.
+          python3 - <<'PY'
+          import json, os, urllib.error, urllib.request
+
+          account = os.environ["CLOUDFLARE_ACCOUNT_ID"]
+          token = os.environ["CLOUDFLARE_API_TOKEN"]
+          # Overridable so tests/test_cf_diagnostics_kv_step.py can run this exact script against a stub
+          # account, which is how the correction below ("used by someone else, leave it alone") is kept
+          # from silently reverting to "confirm it is empty before deleting it".
+          base = os.environ.get("CF_API_BASE", "https://api.cloudflare.com/client/v4")
+
+
+          def get(path):
+              req = urllib.request.Request(base + path, headers={
+                  "Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+              try:
+                  return json.load(urllib.request.urlopen(req, timeout=45)), None
+              except urllib.error.HTTPError as exc:
+                  return None, f"HTTP {exc.code}: {exc.read().decode()[:400]}"
+              except Exception as exc:
+                  return None, str(exc)
+
+
+          print("== worker routes on misakanet.org ==")
+          zones, err = get("/zones?name=misakanet.org")
+          if err:
+              print(f"  zone lookup failed ({err}) — needs Zone:Read on this token")
+          else:
+              zone_list = (zones or {}).get("result") or []
+              if not zone_list:
+                  print("  no zone named misakanet.org visible to this token")
+              else:
+                  zone = zone_list[0]["id"]
+                  routes, err = get(f"/zones/{zone}/workers/routes")
+                  if err:
+                      print(f"  route read failed ({err}) — needs Zone → Workers Routes → Read")
+                  else:
+                      rows = (routes or {}).get("result") or []
+                      print(f"  {len(rows)} route(s):")
+                      for r in rows:
+                          print(f"    {r.get('pattern')}  ->  {r.get('script')}")
+                      stale = sorted({r.get("script") for r in rows if r.get("script")}
+                                     - {"misakanet-register-proxy", "misakanet-web"})
+                      if stale:
+                          print(f"  ⚠ routes still point at {stale}, which this repository does not "
+                                f"configure any more — check whether that worker is stale before trusting "
+                                f"the status-code table above")
+
+          # ── KV namespaces, and who actually uses them ────────────────────────────────────────────
+          # The version of this step that only asked "is it bound by this repository?" printed
+          # `confirm it is empty before deleting it` for a namespace that belongs to the owner's
+          # self-hosted VPN (an edgetunnel worker in the same account). That is the kind of advice that
+          # destroys data, so the step now asks the account *who binds what* instead of inferring it
+          # from this repository's config: list the deployed scripts, read each one's bindings, and map
+          # namespace -> workers.
+          print("== KV namespaces in the account ==")
+          namespaces, err = get(f"/accounts/{account}/storage/kv/namespaces?per_page=50")
+
+          # namespace id -> [script names that bind it], from the workers' own settings.
+          users = {}
+          scripts, serr = get(f"/accounts/{account}/workers/scripts?per_page=100")
+          inspected: list[str] = []
+          deployed: list[str] = []
+          if serr:
+              print(f"  (could not list workers to attribute namespaces: {serr})")
+          else:
+              deployed = [(s.get("id") or s.get("name")) for s in ((scripts or {}).get("result") or [])]
+              deployed = [n for n in deployed if n]
+              # Every worker, not the first 25. Measured 2026-09-24 (run 7): with a cap of 25 the step
+              # printed `no deployed worker binds it` for a namespace that the previous run had
+              # attributed to another worker in this account — because the binding lived past the
+              # cap. A scan that stops early and then states an absolute is the same "it looked like
+              # it ran" defect as the empty status table above, with worse consequences: the verdict
+              # it prints is advice about deleting storage.
+              for name in deployed[:100]:
+                  settings, perr = get(f"/accounts/{account}/workers/scripts/{name}/settings")
+                  if perr:
+                      continue
+                  inspected.append(name)
+                  for binding in ((settings or {}).get("result") or {}).get("bindings") or []:
+                      if binding.get("type") == "kv_namespace" and binding.get("namespace_id"):
+                          users.setdefault(binding["namespace_id"], []).append(name)
+              print(f"  inspected {len(inspected)} of {len(deployed)} deployed worker(s) for bindings"
+                    + ("" if len(inspected) == len(deployed) else " — INCOMPLETE, see the verdicts below"))
+          complete = bool(deployed) and len(inspected) == len(deployed)
+
+          if err:
+              print(f"  namespace read failed ({err}) — needs Account → Workers KV Storage → Read")
+          else:
+              rows = (namespaces or {}).get("result") or []
+              # The ids this repository binds, so "this repo does not use it" is stated as exactly that
+              # and nothing stronger.
+              bound = {
+                  "d5fb6b0797b84d17b0586fb982231ffe": "workers/wrangler.toml MISAKANET_KV",
+              }
+              print(f"  {len(rows)} namespace(s):")
+              for ns in sorted(rows, key=lambda n: str(n.get("id"))):
+                  nsid = str(ns.get("id"))
+                  owners = sorted(users.get(nsid, []))
+                  if nsid in bound:
+                      verdict = f"bound by this repository ({bound[nsid]})"
+                  elif owners:
+                      verdict = f"used by {', '.join(owners)} — NOT by this repository. Leave it alone."
+                  elif not complete:
+                      # The claim has to match the evidence: an incomplete scan supports "nothing in
+                      # what I looked at binds it" and nothing stronger.
+                      verdict = ("no binding found in the workers inspected, and the scan was NOT "
+                                 "complete — do not read this as 'nothing binds it'")
+                  else:
+                      verdict = ("no deployed worker binds it and this repository does not either — "
+                                 "check the keys before removing anything")
+                  print(f"    {nsid}  {ns.get('title'):<24} {verdict}")
+              unmapped = sorted(set(users) - {n.get("id") for n in rows})
+              if unmapped:
+                  print(f"  ⚠ bindings referencing namespaces not in the list: {unmapped}")
+
+          PY
+          exit 0
+
+      - name: Workers Builds — the site deploy that is red on every commit (#2136)
+        run: |
+          set -euo pipefail
+          # `Workers Builds: misakanet-web` is Cloudflare's Git integration building `docs/` into
+          # misakanet.org, and it has concluded `failure` on every commit since the #2133 merge. Its
+          # check-run carries no summary and no annotations, the build log lives behind the dashboard,
+          # and this repository contains no build configuration at all (`package.json` has no `build`
+          # script, `wrangler.jsonc` names no build command) — so the *only* copy of the cause is this
+          # API. That is why the step exists and why it is worth a dispatch.
+          #
+          # It needs its own credential: the Builds API rejects account-scoped tokens outright
+          # ("Invalid token") and wants a *user-scoped* one carrying **Workers Builds Configuration**
+          # (read is enough to read; Edit is only for triggering or reconfiguring) — see
+          # docs/maintainer/credentials-and-environments.md §4.4. The token is optional: without it the
+          # step says what is missing and the rest of the run still happens, exactly like the
+          # observability token it sits next to.
+          python3 - <<'PY'
+          import json, os, urllib.error, urllib.parse, urllib.request
+
+          account = os.environ["CLOUDFLARE_ACCOUNT_ID"]
+          builds_token = (os.environ.get("CF_BUILDS_TOKEN") or "").strip()
+          # The tag lookup is the one endpoint the Builds API needs that is *not* a Builds endpoint
+          # (`GET /workers/scripts`, Workers Scripts: Read). The step already proves elsewhere that the
+          # other Cloudflare token can read it, so it is used as a fallback rather than spending
+          # another dispatch on a permission that may already be granted somewhere.
+          fallback_token = (os.environ.get("CLOUDFLARE_API_TOKEN") or "").strip()
+          # Overridable so tests/test_cf_diagnostics_builds_step.py can run this exact script against a
+          # stub account — including the 403 and pagination paths, which are the two ways this step can
+          # lie about a red build.
+          base = os.environ.get("CF_API_BASE", "https://api.cloudflare.com/client/v4")
+          worker = os.environ.get("CF_BUILDS_WORKER", "misakanet-web")
+          tail_lines = int(os.environ.get("CF_BUILDS_LOG_LINES") or 120)
+
+
+          def get(path, token):
+              req = urllib.request.Request(base + path, headers={
+                  "Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+              try:
+                  return json.load(urllib.request.urlopen(req, timeout=45)), None
+              except urllib.error.HTTPError as exc:
+                  # The body names the missing permission, which is itself the answer to "why is this
+                  # empty" — so it is printed, never swallowed.
+                  return None, f"HTTP {exc.code}: {exc.read().decode(errors='replace')[:400]}"
+              except Exception as exc:
+                  return None, str(exc)
+
+
+          if not builds_token:
+              print("::warning::CF_BUILDS_TOKEN is not set, so the site-build log cannot be read. "
+                    "Create a **user-scoped** token with Workers Builds Configuration (Read) plus "
+                    "Workers Scripts (Read) and store it in the `release` environment — "
+                    "docs/maintainer/credentials-and-environments.md §4.4")
+              raise SystemExit(0)
+
+          print("== worker tag (the Builds API identifies workers by tag, never by name) ==")
+          tag, err = None, None
+          for label, token in (("CF_BUILDS_TOKEN", builds_token), ("CLOUDFLARE_API_TOKEN", fallback_token)):
+              if not token:
+                  continue
+              scripts, err = get(f"/accounts/{account}/workers/scripts?per_page=100", token)
+              if err:
+                  print(f"  {label}: {err}")
+                  continue
+              for script in (scripts or {}).get("result") or []:
+                  if (script.get("id") or script.get("name")) == worker:
+                      tag = script.get("tag")
+              print(f"  {label}: workers listed, {worker} -> tag={tag}")
+              break
+          if not tag:
+              print(f"::warning::could not resolve the tag for {worker} ({err or 'not in the list'}). "
+                    "Workers Scripts: Read is the permission this endpoint needs; without a tag the "
+                    "Builds endpoints cannot be called at all.")
+              raise SystemExit(0)
+
+          # The trigger is where the build command lives, and this repository does not contain it: the
+          # command exists only in the Cloudflare panel, which is why a build break is invisible here.
+          #
+          # Everything printed here goes into a job log on a **public** repository, and a trigger can
+          # legitimately carry a credential (`CLOUDFLARE_API_TOKEN=… npx wrangler deploy` is a normal
+          # way to configure a build, and per-trigger environment variables are a documented feature).
+          # So the step prints variable *names*, never values, and redacts anything token-shaped out of
+          # the commands. The one thing that must never happen here is this diagnostic becoming the
+          # leak — a build log is worth an approval, a token is not.
+          def redact(text):
+              """Replace 32+ character runs of token-shaped characters with a length marker."""
+              out, run = [], []
+              for ch in str(text):
+                  if ch.isalnum() or ch in "-_":
+                      run.append(ch)
+                      continue
+                  if len(run) >= 32:
+                      out.append(f"<redacted {len(run)} chars>")
+                  else:
+                      out.append("".join(run))
+                  run = []
+                  out.append(ch)
+              out.append(f"<redacted {len(run)} chars>" if len(run) >= 32 else "".join(run))
+              return "".join(out)
+
+
+          triggers, err = get(f"/accounts/{account}/builds/workers/{tag}/triggers", builds_token)
+          print("== build triggers ==")
+          if err:
+              print(f"  read failed ({err})")
+          else:
+              rows = (triggers or {}).get("result") or []
+              print(f"  {len(rows)} trigger(s) — this is the only place the build command is recorded:")
+              # The build token is a *UUID*, not a value: it identifies which API token the build
+              # system deploys with, and it is the one field that must change when that token is
+              # renewed. Printing it is how "I replaced the build token" is *checked* rather than
+              # believed — the failure it prevents is a renewal that landed on one trigger and not the
+              # other, which leaves one branch's builds dead while the dashboard looks fixed.
+              build_tokens = {}
+              for t in rows:
+                  name = str(t.get("trigger_name"))
+                  build_tokens[name] = t.get("build_token_uuid")
+                  print(f"    {name!r} uuid={t.get('trigger_uuid')} "
+                        f"branches={t.get('branch_includes')} root={t.get('root_directory')!r}")
+                  print(f"      build_command:  {redact(t.get('build_command'))}")
+                  print(f"      deploy_command: {redact(t.get('deploy_command'))}")
+                  print(f"      path_includes:  {t.get('path_includes')}")
+                  print(f"      build_token_uuid: {t.get('build_token_uuid') or '(not returned)'}")
+                  env_names = sorted((t.get("environment_variables") or {}).keys())
+                  # Names only: a build-time credential that has gone stale is a leading explanation
+                  # for a deploy step failing with `Invalid access token`, so knowing the name is
+                  # useful — and knowing the value is not, which is why it is not read.
+                  print(f"      build-time env vars (names only, values deliberately not printed): "
+                        f"{env_names or 'none'}")
+              distinct = {v for v in build_tokens.values() if v}
+              if len(distinct) > 1:
+                  print(f"  ⚠ the triggers carry {len(distinct)} DIFFERENT build tokens "
+                        f"({build_tokens}) — renewing one leaves the other trigger's builds failing, "
+                        f"which reads as a half-fixed pipeline: same error, different branch")
+              elif distinct:
+                  print(f"  all {len(build_tokens)} trigger(s) share build token "
+                        f"{next(iter(distinct))} — renewing it fixes every branch at once")
+              else:
+                  print("  ⚠ no build_token_uuid was returned for any trigger; the Builds API may have "
+                        "stopped publishing it, so this field can no longer confirm a renewal")
+
+          builds, err = get(f"/accounts/{account}/builds/workers/{tag}/builds?per_page=25", builds_token)
+          if err:
+              print(f"::warning::build list failed ({err})")
+              raise SystemExit(0)
+
+          rows = (builds or {}).get("result") or []
+          # Sorted here rather than trusted: if the API ever returns oldest-first, a step that assumed
+          # newest-first would read the wrong build's log and report success for a red pipeline.
+          rows.sort(key=lambda b: str(b.get("created_on") or ""), reverse=True)
+          print(f"== recent builds ({len(rows)}) ==")
+          for b in rows[:15]:
+              meta = b.get("build_trigger_metadata") or {}
+              print("  {created}  {outcome:<9} {status:<11} {branch:<8} {sha} {source:<6} {uuid}".format(
+                  created=str(b.get("created_on"))[:19],
+                  outcome=str(b.get("build_outcome")),
+                  status=str(b.get("status")),
+                  branch=str(meta.get("branch")),
+                  sha=str(meta.get("commit_hash"))[:9],
+                  source=str(meta.get("build_trigger_source")),
+                  uuid=b.get("build_uuid")))
+
+          # The newest **failure**, not the newest build: a green build pushed after a red one would
+          # otherwise hide the log that has the answer, and the error text is the whole deliverable.
+          failing = [b for b in rows if b.get("build_outcome") == "fail"]
+          print(f"== failures in this page: {len(failing)} ==")
+          if not failing:
+              print("  no failing build in the newest page — the pipeline is green as far as this run sees")
+              raise SystemExit(0)
+          target = failing[0]
+
+
+          def read_log(build_uuid):
+              """Every page of the log, following `cursor`.
+
+              A single request returns the *start* of the log with `truncated: true`, and the error a
+              failed build died on is at the end — so a step that reads one page prints the least
+              interesting half and looks like it worked. Cursor is capped rather than unbounded.
+              """
+              lines, cursor, pages, seen = [], None, 0, 0
+              while pages < 20:
+                  path = f"/accounts/{account}/builds/builds/{build_uuid}/logs"
+                  if cursor:
+                      path += "?cursor=" + urllib.parse.quote(str(cursor))
+                  payload, err = get(path, builds_token)
+                  if err:
+                      return lines, err
+                  result = (payload or {}).get("result") or {}
+                  batch = result.get("lines") or []
+                  lines += batch
+                  pages += 1
+                  seen += len(batch)
+                  if not result.get("truncated") or not result.get("cursor"):
+                      return lines, None
+                  cursor = result["cursor"]
+              return lines, f"stopped after {pages} pages ({seen} lines); the tail is not authoritative"
+
+
+          lines, err = read_log(target["build_uuid"])
+          print(f"== log for build {target['build_uuid']} "
+                f"(outcome={target.get('build_outcome')}, {str(target.get('created_on'))[:19]}, "
+                f"commit={str((target.get('build_trigger_metadata') or {}).get('commit_hash'))[:9]}) ==")
+          if err:
+              print(f"  log read failed ({err})")
+              raise SystemExit(0)
+
+
+          def message_of(line):
+              """`lines` is an array of [epoch, text] pairs; the text is the part that matters."""
+              if isinstance(line, (list, tuple)) and len(line) >= 2:
+                  return str(line[1])
+              return str(line)
+
+
+          messages = [message_of(line) for line in lines]
+          print(f"  {len(messages)} log line(s) retrieved")
+          # Both ends of the error list: the *first* error usually names the cause and the last one is
+          # often a downstream cascade, so printing only one end is how a diagnosis goes wrong.
+          keys = ("error", "fail", "fatal", "cannot", "not found", "denied", "exceed", "quota")
+          hits = [m for m in messages if any(k in m.lower() for k in keys)]
+          print(f"== {len(hits)} line(s) that look like the error ==")
+          for m in (hits[:20] if len(hits) <= 40 else hits[:20] + ["  …"] + hits[-20:]):
+              print(f"  {m}")
+          print(f"== last {min(tail_lines, len(messages))} line(s) of the log ==")
+          for m in messages[-tail_lines:]:
+              print(f"  {m}")
+          PY
+          exit 0
+
+      - name: Worker errors and logs (wrangler tail)
+        run: |
+          set -euo pipefail
+          npm install -g wrangler >/dev/null 2>&1
+          # `wrangler tail` rather than the telemetry query: the first two runs of this workflow proved
+          # the query body is not what I thought (HTTP 400 `invalid_union` on `kind`, after a 403 while
+          # the permission was missing), and a documented CLI is a better tool than a guessed schema —
+          # each guess costs a dispatch and a human approval. `--status error` keeps the volume down;
+          # 45 seconds is one cron interval's worth of events.
+          timeout 60 npx wrangler tail misakanet-register-proxy --format json --status error \
+            > /tmp/tail.ndjson 2>/tmp/tail.err || true
+          echo "== tail stderr (names the permission when it is missing) =="
+          tail -20 /tmp/tail.err || true
+          echo "== exception/error events seen: $(wc -l < /tmp/tail.ndjson 2>/dev/null || echo 0) =="
+          python3 - <<'PY2' || true
+          import json, collections, pathlib
+          path = pathlib.Path("/tmp/tail.ndjson")
+          if not path.exists():
+              raise SystemExit(0)
+          buckets = collections.Counter()
+          for line in path.read_text(errors="replace").splitlines():
+              line = line.strip()
+              if not line:
+                  continue
+              try:
+                  event = json.loads(line)
+              except Exception:
+                  continue
+              outcome = event.get("outcome") or event.get("event", {}).get("request", {}).get("outcome")
+              exc = event.get("exceptions") or []
+              name = (exc[0].get("name") if exc else None) or outcome or "unknown"
+              buckets[str(name)] += 1
+          for name, count in buckets.most_common(20):
+              print(f"  {count:>5}  {name}")
+          PY2
+          echo "== first 5 raw events =="
+          head -5 /tmp/tail.ndjson || true
+          exit 0
+
+      - name: The served trust field — does the D1 row carry evidence_level? (#2080)
+        run: |
+          set -euo pipefail
+          npm install -g wrangler >/dev/null 2>&1
+          cd workers
+          # #2080 has been open on exactly this question: the deployed worker has the fallback
+          # (`lesson.evidence_level || frontmatterField(lesson.frontmatter, "evidence_level")`), the
+          # D1 rich projection does select `frontmatter`, and the served field is *still* empty. Either
+          # the stored JSON has no such key or the reader is not reaching this column — and the two
+          # demand opposite fixes. This prints the stored value for the lessons that exposed it.
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT id, length(frontmatter) AS fm_len, instr(frontmatter, 'evidence_level') AS has_key, substr(frontmatter, 1, 160) AS head FROM lessons WHERE id IN ('playwright-snap-chromium-libnss3-sandbox-launch', 'openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium');"
+          echo "== how many rows carry the key at all =="
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT COUNT(*) AS rows, SUM(instr(frontmatter, 'evidence_level') > 0) AS with_key FROM lessons;"
+
+      - name: D1 storage backend — Time Travel eligibility, and the bookmark to restore to
+        run: |
+          set -euo pipefail
+          npm install -g wrangler >/dev/null 2>&1
+          cd workers
+          # A zone audit listed "no D1 backups" as a gap. Half of that is wrong and half of it matters:
+          # Time Travel is on by default and free (30-day point-in-time recovery), but it only covers
+          # databases on the production storage backend — a legacy `version: alpha` database uses the
+          # older snapshot API instead. `d1 info` is what answers that, and `time-travel info` prints the
+          # bookmark that a restore would use, which is the fact worth having *before* an incident.
+          echo "== wrangler d1 info (look at 'version') =="
+          wrangler d1 info misakanet-db || true
+          echo "== time travel bookmark for right now =="
+          wrangler d1 time-travel info misakanet-db || echo "(time-travel needs wrangler >= 3.4 and the production backend)"
+
+      - name: D1 health — is storePut falling back to KV?
+        run: |
+          set -euo pipefail
+          npm install -g wrangler >/dev/null 2>&1
+          cd workers
+          echo "== kv_store size (the durable store) =="
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT COUNT(*) AS rows, SUM(expires_at IS NOT NULL AND expires_at <= datetime('now')) AS expired FROM kv_store;"
+          echo "== the keys the migrated families use =="
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT substr(key, 1, instr(key || ':', ':') - 1) AS family, COUNT(*) AS keys FROM kv_store GROUP BY family ORDER BY keys DESC LIMIT 20;"
+          echo "== counters by scope (a scope with no rows means that migration is not taking effect) =="
+          wrangler d1 execute misakanet-db --remote --json --command \
+            "SELECT scope, COUNT(*) AS buckets, SUM(count) AS total, MAX(updated_at) AS last_update FROM counters GROUP BY scope ORDER BY total DESC;"

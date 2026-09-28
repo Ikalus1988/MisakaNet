@@ -145,28 +145,32 @@ def test_the_wiring_check_notices_a_lost_approval_gate(tmp_path):
     assert any("without the protected environment" in problem for problem in _wiring_problems(scratch))
 
 
-def test_the_record_step_survives_main_moving_under_it():
-    """`main` moves every few minutes, and the publish job starts from a checkout of it.
+def test_the_record_step_opens_a_pull_request_instead_of_pushing_to_main():
+    """`main` requires three status checks and has no bypass actors, and GitHub enforces that on
+    *direct pushes* too.
 
-    On 2026-09-20 the record step pushed a non-fast-forward and was rejected — the leaderboard/node
-    snapshots had landed while `npm publish` ran. The result was the exact drift the step exists to
-    prevent (npm at 2.31.0, `package.json` at 2.30.2), so the step has to rebase and try again rather
-    than assume the branch it checked out still exists.
+    Measured 2026-09-22 (run 35757024370): the npm 2.34.0 publish **succeeded**, then this step was
+    refused five times —
+
+        remote: - 3 of 3 required status checks are expected.
+         ! [remote rejected] HEAD -> main (push declined due to repository rule violations)
+
+    — leaving `package.json`, the plugin manifest and the worker's `serverInfo` a version behind while
+    npm served the new one. The old rebase-and-retry loop could not fix that: no amount of retrying
+    makes a direct push satisfy a rule that refuses direct pushes.
     """
     run = next((s.get("run") or "" for s in _steps(PUBLISH)
                 if "Record the published" in (s.get("name") or "")), "")
     assert run, "no record step found in misakanet-publish.yml"
-    assert "git fetch origin main" in run and "git rebase origin/main" in run, (
-        "the record step pushes without rebasing, so a snapshot commit landing during the publish turns "
-        "a successful release into a stale package.json")
-    assert "for attempt in" in run, "no retry loop: a single rejected push is not retried"
-    # ...and the failure it produces must say which half succeeded: the package is already published and
-    # npm will not let anyone republish it, so "the run failed" alone is misleading.
-    assert "is published" in run and "GITHUB_STEP_SUMMARY" in run, (
-        "a failed record step must state that the publish itself succeeded")
+    assert "gh pr create" in run, "the record must arrive as a pull request"
+    assert "HEAD:main" not in run and "push origin main" not in run, (
+        "a direct push to main is refused by the ruleset (no bypass actors), so this step would fail "
+        "after a successful publish — the exact drift it exists to prevent")
+    assert "chore/record-$VERSION" in run and "gh pr list" in run, (
+        "re-running the publish job must report an existing record PR, not fail on it")
 
 
-def test_the_record_step_assertion_notices_a_push_without_a_rebase(tmp_path):
+def test_the_record_step_assertion_notices_a_direct_push(tmp_path):
     import shutil
 
     scratch = tmp_path / "repo"
@@ -175,11 +179,21 @@ def test_the_record_step_assertion_notices_a_push_without_a_rebase(tmp_path):
         shutil.copy(path, scratch / ".github" / "workflows" / path.name)
     publish = scratch / ".github" / "workflows" / "misakanet-publish.yml"
     publish.write_text(
-        publish.read_text(encoding="utf-8").replace("git rebase origin/main", "true # no rebase"),
+        publish.read_text(encoding="utf-8").replace("gh pr create", "true # direct push"),
         encoding="utf-8")
     steps = [s for s in _steps(publish) if "Record the published" in (s.get("name") or "")]
-    assert steps and "git rebase origin/main" not in (steps[0].get("run") or ""), (
+    assert steps and "gh pr create" not in (steps[0].get("run") or ""), (
         "the mutation did not take, so the assertion above proves nothing")
+
+
+def test_the_failure_summary_still_says_the_package_was_published():
+    """A failed record must not read as a failed release: npm cannot republish a version, so the job
+    summary has to say which half succeeded."""
+    steps = [s for s in _steps(PUBLISH) if "did not land" in (s.get("name") or "")]
+    assert steps, "no step explains a failed record in the job summary"
+    run = steps[0].get("run") or ""
+    assert "is published" in run and "GITHUB_STEP_SUMMARY" in run, (
+        "a failed record step must state that the publish itself succeeded")
 
 
 def test_the_release_flow_marks_its_release_pr_as_tagged():

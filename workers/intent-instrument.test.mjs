@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from './register-proxy-sw.js';
 import { testToken } from './_test-token.mjs';
+import { withKvStore } from './_test-kv-store.mjs';
 
 const TOKEN = testToken('intent');
 
@@ -50,7 +51,7 @@ function createEnv(opts = {}) {
       async put(key, value) { store.set(key, value); },
       _store: store,
     },
-    MISAKANET_D1: createD1(opts.d1Rows || []),
+    MISAKANET_D1: withKvStore(createD1(opts.d1Rows || [])),
   };
 }
 
@@ -205,9 +206,12 @@ test('search-signal records valid intent in the unsolved map; invalid is dropped
   assert.equal(badBody.recorded, true);
   assert.equal(badBody.intent, undefined);
 
-  const records = [...env.MISAKANET_KV._store.entries()]
+  // The unsolved records live in the durable store since #2119, so the assertion reads there. It used
+  // to read `MISAKANET_KV._store`, which now describes the fallback rather than the storage — the same
+  // trap this series has hit in every family it moved.
+  const records = [...env.MISAKANET_D1.kvStore.entries()]
     .filter(([k]) => k.startsWith('unsolved:family:'));
   assert.equal(records.length, 1, 'both signals land in the same family bucket');
-  const rec = JSON.parse(records[0][1]);
+  const rec = JSON.parse(records[0][1].value);
   assert.deepEqual(rec.intents, { search: 1 }, 'only the valid intent is aggregated');
 });

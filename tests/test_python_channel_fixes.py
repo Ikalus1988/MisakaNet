@@ -126,3 +126,69 @@ def test_the_cli_version_is_bound_to_pyproject():
     assert declared.group(1) == pyproject.group(1), (
         f"misakanet_cli.py says {declared.group(1)}, pyproject says {pyproject.group(1)}"
     )
+
+
+# ── the version read-back (#1820) ───────────────────────────────────────────────────
+def _handshake(version: str) -> str:
+    return ('{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18",'
+            '"capabilities":{"tools":{}},"serverInfo":{"name":"misakanet",'
+            f'"version":"{version}"}}}}\n200')
+
+
+def test_doctor_reads_the_deployed_version_back(monkeypatch):
+    """The number every MCP client sees is self-reported, so it needs a *live* gate: it sat at
+    2.27.1 across six releases while every file-based check passed (#1820)."""
+    import doctor
+    declared, _ = doctor.declared_version()
+    assert declared, "this checkout declares no worker version — cannot compare"
+    monkeypatch.setattr(doctor.subprocess, "run", _fake_curl(_handshake(declared)))
+    ok, message = doctor.check_deployed_version("https://misakanet.org/mcp")
+    assert ok is True, message
+    assert declared in message, message
+
+
+def test_doctor_rejects_a_deployment_that_reports_a_stale_version(monkeypatch):
+    import doctor
+    declared, _ = doctor.declared_version()
+    monkeypatch.setattr(doctor.subprocess, "run", _fake_curl(_handshake("2.27.1")))
+    ok, message = doctor.check_deployed_version("https://misakanet.org/mcp")
+    assert ok is False, "a stale self-report must be a failed check"
+    assert "2.27.1" in message and declared in message, message
+
+
+def test_a_handshake_without_a_version_is_a_failure_not_a_pass(monkeypatch):
+    """'No serverInfo' was already a failure for reachability; the same must hold here rather than
+    the comparison silently finding nothing to compare."""
+    import doctor
+    monkeypatch.setattr(doctor.subprocess, "run", _fake_curl('{"result":{"serverInfo":{}}}\n200'))
+    ok, message = doctor.check_deployed_version("https://misakanet.org/mcp")
+    assert ok is False
+    assert "without a serverInfo.version" in message, message
+
+
+def test_the_version_check_is_not_part_of_plain_doctor(monkeypatch):
+    """A developer's checkout is routinely ahead of production. If `make doctor` compared them, every
+    unpushed version bump would look like a deployment failure — the expensive kind of red."""
+    import doctor
+    assert "deployed-version" not in doctor.selection([])
+    assert "deployed-version" not in doctor.selection(["--remote-only"])
+    assert "deployed-version" in doctor.selection(["--post-deploy"])
+
+
+def test_the_live_version_is_compared_against_the_workers_own_constant():
+    """Which number is compared is the whole check, so it gets asserted.
+
+    `package.json` and the worker's `serverInfo` constant are allowed to differ (release-please bumps
+    the worker line, and the manifest/source line can sit ahead of it). Comparing against the wrong one
+    turns real drift into a false green — and, when the two are the other way round, a false red. The
+    mutation that swapped the key passed every other test in this file because the two values happen to
+    be equal today.
+    """
+    import align_versions
+    import doctor
+    assert "register-proxy-sw.js" in doctor.WORKER_VERSION_KEY, doctor.WORKER_VERSION_KEY
+    assert doctor.WORKER_VERSION_KEY in align_versions.locations(), (
+        "the key is not one scripts/align_versions.py publishes — the comparison would read nothing"
+    )
+    value, where = doctor.declared_version()
+    assert re.match(r"^\d+\.\d+\.\d+$", value), (value, where)

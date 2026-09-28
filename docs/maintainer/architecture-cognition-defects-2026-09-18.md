@@ -27,9 +27,17 @@
 
 **状态**：已修（#1818）。
 
-**同类的第二处（未修）**：`scripts/doctor.py:77-92` 的远端可达性检查，唯一的 CI 调用点是
+**同类的第二处**：`scripts/doctor.py:77-92` 的远端可达性检查，唯一的 CI 调用点是
 `deploy-worker.yml:24` 的 `doctor.py --kv-only`，而 `doctor.py:102-107` 在 `--kv-only` 分支里
 **直接 return**，到不了 `:110` 的 `CHECKS`。也就是说：CI 里那段检查从来没有运行过。
+
+> **2026-09-25 更新：已修（#1822 / PR 见 issue）**。`--kv-only` 的提前 return 去掉了（子集选择现在是
+> `doctor.selection()` 的纯函数），`deploy-worker.yml` 在 **部署之后**加了
+> `doctor.py --remote-only`（带重试：本机实测三次连续探测里出现过一次连接超时），而
+> `tests/test_doctor_reach.py` 从 workflow 里反推每个检查的调用点，**没有任何调用点且未声明为
+> `LOCAL_ONLY` 的检查会让测试变红**。写这次修复时它立刻又抓到第三条：`check_misakanet_core` 同样没有
+> 调用点——但那条是"CI 里装了它才跑"，在 CI 跑只会变成一个不会红的门禁，所以显式登记进
+> `LOCAL_ONLY` 并写明理由。
 
 ---
 

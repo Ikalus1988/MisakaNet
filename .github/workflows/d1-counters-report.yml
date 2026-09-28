@@ -43,7 +43,12 @@ jobs:
             "SELECT scope, COUNT(*) AS buckets, SUM(count) AS total, MAX(updated_at) AS last_update FROM counters GROUP BY scope ORDER BY total DESC;"
           echo "== last ${{ inputs.days }} day(s) by scope =="
           wrangler d1 execute misakanet-db --remote --json --command \
-            "SELECT period, scope, COUNT(*) AS buckets, SUM(count) AS total FROM counters WHERE period >= date('now', '-${{ inputs.days }} day') GROUP BY period, scope ORDER BY period DESC, total DESC LIMIT 40;"
+            "SELECT period, scope, COUNT(*) AS buckets, SUM(count) AS total FROM counters WHERE period >= date('now', '-${{ inputs.days }} day') AND scope NOT IN ('rate_read') GROUP BY period, scope ORDER BY period DESC, total DESC LIMIT 40;"
+          # `rate_read` is excluded on purpose: it is written per *minute* (a burst window is its
+          # period), so on a real day it contributes hundreds of single-count rows and the LIMIT 40
+          # was spent entirely on them — measured 2026-09-23, when the two-day view printed nothing but
+          # `burst-2026-09-23T16-03`-style rows and no family could be read out of it. Its totals are
+          # in the by-scope view above.
 
       - name: Confirm the KV-era keys are no longer being created
         env:

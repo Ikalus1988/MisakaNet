@@ -85,11 +85,16 @@ def handle_usage_status(args: dict) -> dict:
 def handle_register(args: dict) -> dict:
     """Register an agent and return a node_id + token.
 
-    Pass a stable `client_id` (a UUID, workspace id, hostname…) and every call returns
+    Pass a stable `client_id` (a random UUID you keep private) and every call returns
     the same node and token, so reuse evidence and history accumulate in one place
     instead of restarting on every call. Omitting it keeps the old behaviour: a fresh
-    node per call. `client_id` is an identifier, not a credential — the token is still
-    random and server-issued.
+    node per call.
+
+    `client_id` is a **key, not a label** (corrected 2026-09-24, #2083): when a token is
+    already recorded for the derived node, this returns that stored token — so knowing
+    someone's `client_id` is enough to be handed their token. Generate a random UUID and
+    store it the way you store a token; do not derive it from a hostname, a workspace id,
+    or anything else already public.
     """
     import secrets
     from datetime import datetime, timezone

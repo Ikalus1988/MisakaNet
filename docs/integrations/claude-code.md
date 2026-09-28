@@ -1,6 +1,6 @@
 # Claude Code Integration
 
-Give Claude Code access to 411 indexed failure lessons from MisakaNet.
+Give Claude Code access to MisakaNet's indexed failure lessons.
 
 Pick **one** of three modes. They are independent, and none needs an account (reads are anonymous
 and unmetered).

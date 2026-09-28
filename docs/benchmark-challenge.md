@@ -1,6 +1,8 @@
 # Benchmark Challenge: Can Your Agent Learn from Failures?
 
-We're inviting agent developers and AI engineers to run LessonReuseBench and share results.
+**The challenge is not open yet (measured 2026-09-25): the harness is a stub and cannot run** — `python3 scripts/lesson_reuse_bench.py --dry-run` fails at import (`ModuleNotFoundError: No module named 'agents'`) and its scoring is a placeholder, so no submission can be produced. Tracked in [#2221](https://github.com/Ikalus1988/MisakaNet/issues/2221); the design is in [lesson-reuse-benchmark.md](lesson-reuse-benchmark.md).
+
+Once the harness runs, we're inviting agent developers and AI engineers to run LessonReuseBench and share results.
 
 ## What we're measuring
 
@@ -17,7 +19,7 @@ If your agent can't reuse prior debugging experience, it's stuck in an infinite 
 ```bash
 git clone https://github.com/Ikalus1988/MisakaNet.git
 cd MisakaNet
-python3 scripts/lesson_reuse_bench.py --dry-run  # validate structure
+python3 scripts/lesson_reuse_bench.py --dry-run  # today: ModuleNotFoundError: No module named 'agents'
 python3 scripts/lesson_reuse_bench.py --agent your-agent --compare
 ```
 

@@ -215,6 +215,32 @@ def _extract_frontmatter(content: str) -> Optional[dict]:
             stripped = line.strip()
             if not stripped or stripped.startswith("#"):
                 continue
+            # List item — including the list-of-mappings form (`- type: x`), which the
+            # nested-object branch below used to swallow as `{"- type": "x"}`. That made every
+            # list-of-mappings field parse as a dict, so `isinstance(value, list)` checks
+            # downstream never held and `freshness_boosts` was silently a no-op (#1775).
+            if stripped.startswith("- ") and current_key is not None:
+                if current_list is None:
+                    current_list = []
+                item = stripped[2:].strip()
+                if ":" in item and not item.startswith(("http://", "https://")):
+                    mk, _, mv = item.partition(":")
+                    current_list.append({mk.strip(): mv.strip().strip("\"'")})
+                else:
+                    current_list.append(item.strip("\"'"))
+                continue
+            # Continuation line of the mapping item we just started (indented deeper than the dash).
+            if (current_list and isinstance(current_list[-1], dict) and ":" in stripped
+                    and not stripped.startswith("- ") and line[:4] == "    "):
+                mk, _, mv = stripped.partition(":")
+                current_list[-1][mk.strip()] = mv.strip().strip("\"'")
+                continue
+            # Only now a nested object. This has to come *after* the `- ` branches: an indented
+            # `- key: value` looks identical to a nested object by indentation alone, and when
+            # this ran first it both mis-keyed the item as `"- type"` and left `current_list`
+            # empty, which the flush below then wrote over the real value — so a list of
+            # mappings arrived as `[]` and every `isinstance(x, list)` check downstream was
+            # dead. Order is the fix, not just the pattern (#1775).
             # Nested object (2-space indent)
             if line.startswith("  ") and ":" in stripped and current_key:
                 if current_nested is None:
@@ -224,15 +250,15 @@ def _extract_frontmatter(content: str) -> Optional[dict]:
                 if nv:
                     current_nested[nk] = nv.strip("\"'")
                 continue
-            # List item
-            if stripped.startswith("- "):
-                if current_key and current_list is not None:
-                    current_list.append(stripped[2:].strip().strip("\"'"))
-                continue
             # Save nested if we're leaving it
             if current_nested and current_key:
                 fm[current_key] = current_nested
                 current_nested = None
+                # The same field cannot also be a list. Without this the `Key: value` branch
+                # below saw the still-pending empty `current_list` and wrote it over the object
+                # it had just stored, so every nested map arrived as `[]` (pre-existing on
+                # 2026-09-21, and the reason a nested `freshness_boosts` could never be read).
+                current_list = None
             # Key: value
             if ":" in line:
                 key, _, val = line.partition(":")

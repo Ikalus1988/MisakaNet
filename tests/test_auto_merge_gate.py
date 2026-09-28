@@ -35,13 +35,17 @@ def _code(script: str) -> str:
     return "\n".join(line for line in script.splitlines() if not line.strip().startswith("#"))
 
 
-def _gate_script() -> str:
+def _gate_step() -> dict:
     workflow = yaml.safe_load(PR_CHECKS.read_text(encoding="utf-8"))
     for job in workflow["jobs"].values():
         for step in job.get("steps", []):
             if step.get("name") == "Auto-Merge Gate":
-                return step["run"]
+                return step
     raise AssertionError("the Auto-Merge Gate step disappeared — #1826 tracked it as dead, not unwanted")
+
+
+def _gate_script() -> str:
+    return _gate_step()["run"]
 
 
 def test_the_gate_reads_the_rest_boolean_not_the_graphql_enum():
@@ -180,8 +184,14 @@ exit 0
 """
 
 
-def _run_gate(tmp_path, *, fork: bool, read_only: bool, mutate=None, changed_files=()):
-    """Execute the Auto-Merge Gate step's real shell, against a stub `gh`."""
+def _run_gate(tmp_path, *, fork: bool, read_only: bool, mutate=None, changed_files=(), gh_token=None):
+    """Execute the Auto-Merge Gate step's real shell, against a stub `gh`.
+
+    `gh_token=None` keeps the stub credential. An empty string is the case the step's `-z "$GH_TOKEN"`
+    guard exists for, and it has to be settable *to* empty — hence a value-oriented parameter and the
+    mapping form below, never a keyword argument spelled next to a quoted value (that assignment shape
+    is what `tests/test_scanner_secret_patterns.py` scans for, and it caught this line once).
+    """
     import os
     import subprocess
 
@@ -210,7 +220,7 @@ def _run_gate(tmp_path, *, fork: bool, read_only: bool, mutate=None, changed_fil
         "GH_STUB_LOG": str(log),
         "GH_READ_ONLY": "1" if read_only else "0",
         "GH_STUB_CHANGED_FILES": "\n".join(changed_files),
-        "GH_TOKEN": "stub-token",
+        "GH_TOKEN": "stub-token" if gh_token is None else gh_token,
         "GITHUB_STEP_SUMMARY": str(tmp_path / "summary.md"),
         "PR_NUM": "1952",
         "PR_TITLE": "docs: fix 23 broken relative links",
@@ -301,4 +311,65 @@ def test_stripping_the_fork_guard_reproduces_the_ci_failure(tmp_path):
     assert proc.returncode != 0, (
         "without the fork guard the step must fail — this is the state #1952 and #1954 were in")
     assert "pr merge" in calls, "the mutation has to reach the merge attempt, or it proves nothing"
+    assert "Resource not accessible" in proc.stdout + proc.stderr
+
+
+# ── The fallback token, and a guard that could not be reached ───────────────────────────────────────
+#
+# The step's env was `GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}`, and the guard it
+# documents — "no token at all (a missing secret on a same-repo run) … report, do not fail" — tested
+# `-z "$GH_TOKEN"`. `secrets.GITHUB_TOKEN` is never empty, so the second operand always won and the
+# guard was dead code: a PAT-less same-repo run went on to `gh pr merge --auto` holding a token this job
+# deliberately scopes to `contents: read` (`contents: write` is what a merge needs, and what the audit
+# job must not have — see below). The answer is the read-only
+# `Resource not accessible by integration` that the fork guard exists to prevent: the same red check on
+# a PR whose every real gate passed, reached by a different route.
+#
+# Two ways to "fix" it, and only one is right:
+#
+#   * give the audit job `contents: write` — rejected. This job runs the pull request's own test suite,
+#     so write access to the repository would let a branch that entered through `adopt-pr` rewrite
+#     `main` from inside a test. Least privilege is the property, not an inconvenience.
+#   * drop the fallback, so the step runs with the PAT or with nothing — which is what the guard was
+#     always written for. Enabling auto-merge is a convenience, not a gate.
+
+def test_the_audit_job_keeps_a_read_only_token():
+    """The regression guard for the tempting fix: this job executes the PR's code."""
+    permissions = yaml.safe_load(PR_CHECKS.read_text(encoding="utf-8"))["jobs"]["audit"]["permissions"]
+    assert permissions.get("contents") == "read", (
+        f"the audit job now has {permissions.get('contents')!r} on `contents`. It runs `pytest` over the "
+        "pull request, so `contents: write` lets a test rewrite the repository — a merge needs write "
+        "access, and that is why the merge step uses a PAT instead of widening this job"
+    )
+    assert permissions.get("issues") == "write" and permissions.get("pull-requests") == "write", (
+        f"the report comment and the review writes need these scopes: {permissions}")
+
+
+def test_the_merge_step_does_not_fall_back_to_the_github_token():
+    token = _gate_step()["env"]["GH_TOKEN"]
+    assert "SHELDON_PAT" in token, f"the merge credential changed ({token!r}) — a PAT is what can merge here"
+    assert "GITHUB_TOKEN" not in token, (
+        f"the step falls back to GITHUB_TOKEN again ({token!r}). That operand is never empty, so the "
+        "`-z \"$GH_TOKEN\"` guard below it can never fire and a PAT-less run merges with a token scoped to "
+        "`contents: read` — a red audit for a credential reason"
+    )
+
+
+def test_a_run_without_a_pat_skips_instead_of_failing_the_audit(tmp_path):
+    """The guard the fallback made unreachable, exercised with the empty token it looks for."""
+    proc, calls, _ = _run_gate(tmp_path, fork=False, read_only=True, gh_token="")
+    assert proc.returncode == 0, (
+        "a missing PAT must not fail the audit — that is the red-with-no-cause shape this file keeps "
+        f"having to fix:\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}")
+    assert "pr merge" not in calls, "with no credential there is nothing to merge with, so do not try"
+    assert "GH_TOKEN is empty" in proc.stdout, "the skip has to name the missing secret"
+    assert "Auto-merge skipped" in proc.stdout, "and it has to be an annotation, not a silent exit"
+
+
+def test_the_read_only_token_is_what_used_to_turn_the_audit_red(tmp_path):
+    """The mutation half: with *a* token the merge attempt reaches GitHub, and the read-only answer
+    fails the step — exactly where the removed fallback left a PAT-less run."""
+    proc, calls, _ = _run_gate(tmp_path, fork=False, read_only=True)
+    assert proc.returncode != 0, f"the read-only answer must fail the step:\n{proc.stdout}"
+    assert "pr merge" in calls, "the run has to reach the merge attempt, or it proves nothing"
     assert "Resource not accessible" in proc.stdout + proc.stderr

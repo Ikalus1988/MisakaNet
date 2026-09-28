@@ -19,7 +19,67 @@ jobs:
           repo-token: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
           configuration-path: .github/labeler.yml
 
+      # ── the tested half of this guard ────────────────────────────────────────────────────────────
+      #
+      # The JS block below reports shapes it can see in the file list. Three defects from #2066 and the
+      # 2026-09-26/27 triage need more than a file list (a base/head `pyproject.toml` comparison, the
+      # body of the *claimed* issue), and they are the ones that cost the most review time: three
+      # template-only bounty PRs, a root `ai_solution.py` answering a different issue than the one it
+      # claimed, `solutions/issue_2283_solution.ts`, and a `pyproject.toml` rewrite that dropped
+      # `[build-system]` and `[project]`. They live in `scripts/pr_shape_guard.py` as pure functions so
+      # they can be tested (`tests/test_pr_shape_guard.py`) instead of argued about.
+      #
+      # Checkout is the **base** (the default for `pull_request_target`): the PR's code is never
+      # executed, only its file *names* and texts are passed in as data.
+      - name: Check out the trusted base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          persist-credentials: false
+
+      - name: Shape predicates (pure, tested)
+        id: predicates
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -uo pipefail
+          gh api --paginate "repos/${REPOSITORY}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename' > /tmp/changed-files.txt || : > /tmp/changed-files.txt
+          gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" --jq '.title + "\n" + (.body // "")' \
+            > /tmp/pr-text.txt || : > /tmp/pr-text.txt
+          # The base's file is on HEAD (this checkout is the base); the PR's must come from the PR ref.
+          # Fetching a ref and reading one blob is *data*: `pull_request_target` never executes the PR's
+          # code, which is why the comparison is safe here and why the script itself takes texts.
+          git show "${BASE_SHA}:pyproject.toml" > /tmp/base-pyproject.toml 2>/dev/null || true
+          git fetch --no-tags origin "pull/${PR_NUMBER}/head:refs/remotes/origin/pr-${PR_NUMBER}" >/dev/null 2>&1 || true
+          git show "refs/remotes/origin/pr-${PR_NUMBER}:pyproject.toml" > /tmp/head-pyproject.toml 2>/dev/null || true
+          # Bodies of the issues this PR claims, so "a question bounty with no lesson" is decidable.
+          python3 - <<'PYEOF' > /tmp/issue-bodies.json
+          import json, os, re, subprocess
+          text = open('/tmp/pr-text.txt', encoding='utf-8', errors='replace').read() if os.path.exists('/tmp/pr-text.txt') else ''
+          numbers = sorted({int(n) for n in re.findall(r'#(\d{1,6})', text)})[:20]
+          out = {}
+          for n in numbers:
+              try:
+                  # `if .pull_request then ""` — `/issues/N` answers for pull requests too, and a released
+                  # PR body listing numbers would otherwise be read as "this issue is a bounty".
+                  body = subprocess.run(['gh', 'api', f"repos/{os.environ['REPOSITORY']}/issues/{n}", '--jq', 'if .pull_request then "" else (.body // "") end'],
+                                        capture_output=True, text=True, timeout=30).stdout
+              except Exception:
+                  body = ''
+              if body:
+                  out[str(n)] = body
+          print(json.dumps(out))
+          PYEOF
+          python3 scripts/pr_shape_guard.py --changed-files /tmp/changed-files.txt \
+            --pr-body /tmp/pr-text.txt --base-pyproject /tmp/base-pyproject.toml \
+            --head-pyproject /tmp/head-pyproject.toml --issue-bodies /tmp/issue-bodies.json \
+            > findings.json || echo '[]' > findings.json
+
       - name: Shape guard + auto-label
+        if: always()
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         with:
           github-token: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
@@ -39,6 +99,16 @@ jobs:
 
             const names = files.map(f => f.filename);
             const failures = [];
+
+            // The predicates step (`scripts/pr_shape_guard.py`) writes its findings as JSON; merge them
+            // in so one comment and one check report everything. A missing or unreadable file must never
+            // be a failure of its own — the guard reports shapes, it does not police itself.
+            try {
+              const extra = JSON.parse(require('fs').readFileSync('findings.json', 'utf8'));
+              if (Array.isArray(extra)) failures.push(...extra);
+            } catch (e) {
+              core.info(`shape predicates produced no findings file: ${e.message}`);
+            }
 
             // ═══════════════════════════════════════════
             // SHAPE CHECKS (failures block merge)

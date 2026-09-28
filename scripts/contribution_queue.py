@@ -13,6 +13,7 @@ Usage:
 import argparse
 import hashlib
 import json
+import os
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -22,7 +23,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scripts.intake_redact import redact_payload, redaction_summary
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-QUEUE_FILE = REPO_ROOT / "data" / "contribution_queue.jsonl"
+# Overridable for the same reason as the gap log (see misakanet/server/handlers/search.py): the smoke
+# script `tests/test_mcp_server.py` exercises the real submit path, so before this override every one of
+# its submissions was appended to the developer's own queue. That queue had reached 522 rows of which
+# 520 were test fixtures (`source: contract-test` 381, `mcp-agent` 134) and **all** were still `pending`
+# — i.e. the file that is supposed to list contributions awaiting review was 99% synthetic, so anything
+# reading it to decide "what is waiting for a decision" was reading noise. `tests/conftest.py` redirects
+# it per session; existing tests that `patch(...QUEUE_FILE...)` keep working because it is still a
+# module-level constant resolved at import.
+QUEUE_FILE_ENV = "MISAKANET_CONTRIBUTION_QUEUE"
+QUEUE_FILE = Path(os.environ.get(QUEUE_FILE_ENV) or (REPO_ROOT / "data" / "contribution_queue.jsonl"))
 
 VALID_TYPES = {"intake", "lesson"}
 VALID_STATUSES = {"pending", "needs_repro", "accepted", "rejected", "duplicate", "converted"}

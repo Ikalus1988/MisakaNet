@@ -1,0 +1,127 @@
+name: Bounty Claim Guard
+
+# One implementation per bounty issue, enforced as a *comment* and nothing else (issue #2043).
+#
+# On 2026-09-21 three PRs (#1959 / #1968 / #1980) simultaneously claimed the already-satisfied #1942
+# and asked about payment, and #1959's tree was byte-identical to #1960's. The rule they were all
+# breaking — "one implementation per bounty, claim it with /try, claim the PR with /claim #N" — is
+# prose in CONTRIBUTING.md, and prose enforces nothing. This workflow runs scripts/bounty_claim.py,
+# whose entire judgement is the pure `decide()` function (tests: tests/test_bounty_claim.py), and
+# posts its receipt only when the verdict is not `ok`.
+#
+# Four choices, each of which this repository has been burned by:
+#
+#   * **A comment is the whole action — never a failing check.** Blocking a contributor on a
+#     governance rule (or on this workflow's own bugs) would make this gate part of the queue noise it
+#     was written to remove. The step that can fail is `continue-on-error: true`, so the job is green
+#     no matter what; the verdict is reported in the run summary instead.
+#   * **No `paths:` filter.** A filtered workflow reports *nothing* on the PRs it skips, and GitHub
+#     then holds those PRs at "Expected — waiting for status to be reported" forever (#1920, see the
+#     header of lesson-gate.yml). Every PR is meant to be checked here, so there is nothing to filter.
+#   * **Idempotent.** The receipt carries a marker; on a later `edited` event the CLI *updates* that
+#     comment rather than adding another one, so a body edited five times does not collect five
+#     receipts.
+#   * **Nothing from the PR is ever checked out or executed.** The body and the issue state are read
+#     over the API; the only code this job runs is this repository's own script.
+#
+# Known limitation, stated out loud rather than discovered from a green run: #2043 asks for the
+# `pull_request` event, and on a PR **from a fork** GitHub hands the run a **read-only token**, so the
+# comment POST can be rejected with 403 — the failure mode that once made a whole class of receipts in
+# this repository fail invisibly. The CLI prints exactly that, exits 1, and the job still passes; the
+# run summary says the receipt was not delivered. `workflow_dispatch` is here so a maintainer can run
+# the same guard by hand with a token that can write. If this guard should comment on fork PRs
+# unattended, the fix is one word — `pull_request_target` with the same `types:` — and it is safe here
+# precisely because no PR code is ever executed (the test file pins this decision in both directions).
+
+on:
+  pull_request:
+    types: [opened, edited]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to audit (fork PRs: the automatic run gets a read-only token)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+# A superseded edit has nothing worth finishing: newest wins, and it is the same receipt, updated.
+concurrency:
+  group: bounty-claim-guard-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout this repository's script (no PR code is fetched or run)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: '3.12'
+
+      - name: Decide the verdict and post the receipt when it is not ok
+        id: guard
+        # The guard's whole action is a comment. Let the step show its own failure — a guard that
+        # silently never delivers a receipt is how this repository lost months of comments to a 403 —
+        # while keeping the *job* green, so a governance rule never holds a contributor's PR.
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_SLUG: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          VERDICT_FILE: ${{ runner.temp }}/bounty-claim-verdict.txt
+          COMMENT_FILE: ${{ runner.temp }}/bounty-claim-comment.md
+        run: |
+          set +e
+          python3 scripts/bounty_claim.py \
+            --repo "$REPO_SLUG" \
+            --pr "$PR_NUMBER" \
+            --post \
+            --verdict-file "$VERDICT_FILE" \
+            --comment-file "$COMMENT_FILE"
+          code=$?
+          set -e
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" -eq 1 ]; then
+            echo "The verdict was decided but the receipt was not delivered (see the log above)."
+            echo "A fork PR gets a read-only token on this event; run this workflow by hand with"
+            echo "workflow_dispatch and a token that can write to post the receipt."
+          fi
+          exit "$code"
+
+      - name: Report the verdict (this job never fails the PR)
+        if: always()
+        run: |
+          VERDICT=$(cat "$VERDICT_FILE" 2>/dev/null || true)
+          if [ -z "$VERDICT" ]; then
+            VERDICT="unknown (the guard could not decide - nothing was posted)"
+          fi
+          {
+            echo "## Bounty Claim Guard"
+            echo ""
+            echo "verdict: $VERDICT"
+            echo ""
+            echo "step exit code: ${{ steps.guard.outputs.exit }} (0 decided, 1 receipt not delivered, 2 could not decide)"
+            echo ""
+            echo "This workflow is deliberately non-blocking: the only action it takes is a comment."
+            echo "The marker comment means a later edit updates the receipt instead of adding one."
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -s "$COMMENT_FILE" ]; then
+            {
+              echo ""
+              echo "<details><summary>Receipt posted to the PR</summary>"
+              echo ""
+              cat "$COMMENT_FILE"
+              echo ""
+              echo "</details>"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

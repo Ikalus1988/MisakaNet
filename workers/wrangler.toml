@@ -1,6 +1,16 @@
 name = "misakanet-register-proxy"
 main = "register-proxy-sw.js"
-compatibility_date = "2024-01-01"
+# Pinned on purpose, bumped on purpose: this date chooses the runtime semantics the Worker is
+# compiled against, so letting it rot means production runs by rules nobody picked any more.
+# It sat at 2024-01-01 for 997 days (found 2026-09-24 by a zone audit) while the other three
+# configs in this repo were current:
+#   wrangler.jsonc (misakanet-web)         2026-07-04
+#   workers/email-register/wrangler.jsonc  2026-06-01
+# `tests/test_worker_compat_dates.py` fails once this is more than a year old, and
+# `.github/workflows/deploy-worker.yml` watches this file so that a config-only change actually
+# reaches production — before 2026-09-24 the deploy only triggered on `register-proxy-sw.js`, so
+# this file could be edited on main and nothing would deploy it.
+compatibility_date = "2026-09-01"
 
 # Self-monitoring keepalive probe cadence (was */5 — every 5 min; HTTP 522 on
 # the public loopback probe was generating error noise. */15 keeps watch with

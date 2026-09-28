@@ -4,6 +4,12 @@ on:
   push:
     paths:
       - "workers/register-proxy-sw.js"
+      # The config is part of the deployed artifact. Without this entry a compatibility-date,
+      # binding or cron change merged to main never reached production — measured 2026-09-24:
+      # `workers/wrangler.toml` still said `compatibility_date = "2024-01-01"`, and fixing it alone
+      # would have deployed nothing. `tests/test_worker_compat_dates.py` fails if this list stops
+      # covering both the entry point and the config it is built from.
+      - "workers/wrangler.toml"
     branches:
       - main
   workflow_dispatch:
@@ -53,13 +59,91 @@ jobs:
           cd workers
           npx wrangler deploy --config wrangler.toml
 
-      - name: Ensure keepalive schedule
-        env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      - name: Post-deploy — the deployed endpoint answers the handshake, at the version we shipped
         run: |
           set -euo pipefail
+
+          # `--kv-only` above returns before `CHECKS`, so `check_remote_endpoint` — the only check that
+          # talks to the deployed service, and the one whose bar took an argument to get right (see the
+          # 405 note in scripts/doctor.py) — had **no call site anywhere in CI**. A check nobody runs is
+          # a comment. This is its call site, at the one moment its answer is both fresh and worth
+          # reacting to: the deploy has just happened, and the question is whether what landed speaks MCP.
+          #
+          # Retried, because a Worker deploy propagates over a few seconds and because this probe's
+          # expensive failure mode is "red on a healthy service" — measured while writing this: three
+          # consecutive probes of misakanet.org from one machine returned HTTP 200, a connection
+          # timeout, and HTTP 200 again. The retry is the difference between a signal and a coin flip.
+          # Every attempt prints doctor's own message, so a human can still tell a timeout (HTTP 000)
+          # from a service that answered wrongly (405, or a 200 whose body has no serverInfo).
+          # `--post-deploy` = the handshake *plus* the version read-back: the number every MCP client
+          # sees is self-reported by the worker, and it read 2.27.1 across six releases while every
+          # file-based check over it passed (#1820). This is the only place a live read-back can run —
+          # `make doctor` deliberately skips it, because a developer's checkout is often ahead of
+          # production and going red there would be the expensive kind of red.
+          ATTEMPTS=5
+          for attempt in $(seq 1 "$ATTEMPTS"); do
+            if python3 scripts/doctor.py --post-deploy; then
+              exit 0
+            fi
+            echo "::warning::the MCP handshake probe failed (attempt $attempt/$ATTEMPTS)"
+            [ "$attempt" = "$ATTEMPTS" ] || sleep 10
+          done
+
+          echo "::error::the worker deployed but https://misakanet.org/mcp did not answer the handshake at the declared version in $ATTEMPTS attempts — the deploy is not verified"
+          exit 1
+
+      - name: Reconcile the keepalive schedule with the config
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          ACCOUNT_ID: 6b92325b505f2b76aec49e9fe4195d31
+          WORKER_NAME: misakanet-register-proxy
+        run: |
+          set -euo pipefail
+
+          # The keepalive cadence lives in `workers/wrangler.toml` under `[triggers] crons` — one
+          # source of truth. This step used to PUT a hardcoded `*/5 * * * *` after every deploy,
+          # which silently undid the config: the config had been moved to `*/15` precisely to cut
+          # the 522 noise the loopback probe generates (see the comment there), and every deploy put
+          # `*/5` back. Measured 2026-09-24: production ran `*/5` while main said `*/15`, so the
+          # mitigation never survived a deploy. Read the config, apply it, read it back, and fail
+          # when the two disagree.
+          CONFIGURED=$(python3 -c '
+          import tomllib
+          crons = tomllib.load(open("workers/wrangler.toml", "rb"))["triggers"]["crons"]
+          print(",".join(sorted(crons)))
+          ')
+          echo "workers/wrangler.toml asks for: $CONFIGURED"
+
+          python3 -c '
+          import json, sys
+          print(json.dumps([{"cron": c} for c in sys.argv[1].split(",")]))
+          ' "$CONFIGURED" > /tmp/schedules.json
+
           curl -fsS -X PUT \
             -H "Authorization: Bearer $CF_API_TOKEN" \
             -H "Content-Type: application/json" \
-            --data '[{"cron":"*/5 * * * *"}]' \
-            "https://api.cloudflare.com/client/v4/accounts/6b92325b505f2b76aec49e9fe4195d31/workers/scripts/misakanet-register-proxy/schedules"
+            --data @/tmp/schedules.json \
+            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/workers/scripts/$WORKER_NAME/schedules" > /dev/null
+
+          curl -fsS -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/workers/scripts/$WORKER_NAME/schedules" \
+            > /tmp/live-schedules.json
+
+          LIVE=$(python3 -c '
+          import json
+          result = json.load(open("/tmp/live-schedules.json")).get("result")
+          if isinstance(result, dict):
+              result = result.get("schedules")
+          # An unrecognised shape prints nothing, which the check below reports as a warning rather
+          # than pretending the schedule matched.
+          print(",".join(sorted(s["cron"] for s in result if isinstance(s, dict) and "cron" in s))
+                if isinstance(result, list) else "")
+          ')
+          echo "live on Cloudflare:               $LIVE"
+
+          if [ -z "$LIVE" ]; then
+            echo "::warning::could not read the live schedule back (unexpected API shape) — see /tmp/live-schedules.json"
+          elif [ "$LIVE" != "$CONFIGURED" ]; then
+            echo "::error::the live keepalive schedule ($LIVE) does not match workers/wrangler.toml ($CONFIGURED)"
+            exit 1
+          fi
