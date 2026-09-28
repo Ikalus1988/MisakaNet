@@ -253,44 +253,55 @@ test('when neither store works, registration still refuses to hand out a token',
   assert.equal(result.code, 'storage_unavailable', JSON.stringify(result));
 });
 
-test('/api/counter last resort reads the branch that actually carries the file', async () => {
-  // Both stores gone: D1 throws on every read and there is no KV binding, so the handler must fall
-  // through to the GitHub contents read. Watch the URL it builds.
+test('/api/counter says so when both stores are down, and reads no file', async () => {
+  // The endpoint used to end at a GitHub contents read of `data/counter.json` — the mirror
+  // `sync-node-counter.yml` maintained. That was removed on 2026-09-28, because the file is the
+  // worst possible source for this particular number: it can be arbitrarily far behind (issue #1820
+  // was filed when the `data` branch's copy was frozen 3.5 months earlier), nothing in the response
+  // says how old it is, and the only use of `current` is predicting the id the next registrant is
+  // handed — where a stale value is worse than no value.
   //
-  // Why this test exists (issue #1820, 2026-09-25): that call used to inherit `fetchFromGitHub`'s
-  // default ref — the `data` branch — which does NOT carry `data/counter.json`
-  // (`contents/data/counter.json?ref=data` → 404). So the last resort 404'd into a 502 exactly when
-  // D1 and KV were both unavailable. The `data` branch's own `counter.json` (at its root, frozen on
-  // 2026-06-01) is not a fallback: it is the stale number the issue was filed about.
+  // So three things are asserted together: an explicit unavailable answer, a 5xx (this is a
+  // degradation, and scripts/site_health_check.py should see it), and *no outbound request* — the
+  // last one is what actually keeps a fallback from creeping back in.
   const environment = env({ kv: false, d1: false });
   environment.MISAKANET_D1 = d1Stub({ fail: true });
   environment.REGISTER_TOKEN = testToken('register-token');
 
   const seen = [];
   const orig = globalThis.fetch;
-  globalThis.fetch = async (url) => {
-    seen.push(String(url));
-    const payload = JSON.stringify({ current: 12480, updated: '2026-09-24T09:29:05Z' });
-    return new Response(
-      JSON.stringify({ content: Buffer.from(payload).toString('base64'), encoding: 'base64' }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } },
-    );
-  };
+  globalThis.fetch = async (url) => { seen.push(String(url)); throw new Error('no network in this test'); };
   try {
     const resp = await worker.fetch(new Request('https://misakanet.org/api/counter'), environment, {});
-    assert.equal(resp.status, 200, 'a 502 here means the fallback could not read its file');
     const body = await resp.json();
-    assert.equal(Number(body.current), 12480, JSON.stringify(body));
-    assert.equal(body.updated, '2026-09-24T09:29:05Z', 'the mirror carries its own date — pass it through');
-
-    const contents = seen.find((u) => u.includes('/contents/'));
-    assert.ok(contents, `no GitHub contents call was made: ${JSON.stringify(seen)}`);
-    assert.match(contents, /ref=main/, `the fallback must name the maintained copy: ${contents}`);
-    assert.ok(
-      contents.includes('data/counter.json') || contents.includes('data%2Fcounter.json'),
-      `unexpected path: ${contents}`,
-    );
+    assert.equal(resp.status, 503, `expected an explicit unavailability, got ${resp.status}`);
+    assert.equal(body.code, 'counter_unavailable', JSON.stringify(body));
+    assert.equal(body.current, null, 'a null count, never a number from a file');
+    assert.equal(body.source, 'unavailable');
+    assert.match(String(body.hint || ''), /no file fallback/, 'the hint must say why there is no number');
+    assert.equal(seen.length, 0, `the handler made outbound request(s): ${JSON.stringify(seen)}`);
   } finally {
     globalThis.fetch = orig;
   }
+});
+
+test('the unavailable answer is not cached, so the endpoint recovers immediately', async () => {
+  // `getWithCache` caches truthy results for PROXY_CACHE_TTL. Returning `null` from the cached
+  // function rather than an object with a null field is what keeps "nobody answered" out of that
+  // cache — otherwise one bad minute would pin the unavailable answer for the whole window *after*
+  // the stores recovered, which is the shape this endpoint already met once (a KV read failure froze
+  // `/api/counter` for 6.5 hours).
+  const store = new Map([['proxy:lessons', JSON.stringify({ ts: Date.now(), data: LESSONS })]]);
+  const environment = env({ kv: true, d1: false, store, failKvWrites: false });
+  environment.MISAKANET_D1 = d1Stub({ fail: true });
+
+  const first = await worker.fetch(new Request('https://misakanet.org/api/counter'), environment, {});
+  assert.equal(first.status, 503, JSON.stringify(await first.json()));
+  assert.ok(!store.has('proxy:counter'), 'the unavailable answer was cached');
+
+  // Seed the KV counter: the very next call answers, with no TTL to wait out.
+  store.set('node_counter', String(KV_NODE_COUNTER + 3));
+  const second = await worker.fetch(new Request('https://misakanet.org/api/counter'), environment, {});
+  assert.equal(second.status, 200);
+  assert.equal(Number((await second.json()).current), KV_NODE_COUNTER + 3);
 });

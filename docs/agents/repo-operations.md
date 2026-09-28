@@ -32,7 +32,7 @@ npm install                            # devDep: wrangler（部署 worker 用）
 | `workers/email-register/` | 邮件 intake worker（独立部署） |
 | `scripts/` | 维护/分析脚本（`lesson_gate.py`、`injection_scan.py`、`cf_mcp_auth.py`、`doctor.py` …） |
 | `lessons/{core,contrib,en,...}/` | 课程语料（本仓的"产品"） |
-| `data/` | 生成物：`lessons.json`、`counter.json`、`leaderboard*.json` 等 |
+| `data/` | 生成物：`lessons.json`、`leaderboard*.json` 等（`counter.json` 已于 2026-09-28 删除，连同它的镜像 workflow；那个数字的单一来源是 worker 的 D1/KV 计数器）|
 | `docs/` | 站点静态资源（`docs/` 就是 misakanet-web 的 assets 目录）+ 面向人的文档 |
 | `.github/workflows/` | CI（门禁见 §2） |
 

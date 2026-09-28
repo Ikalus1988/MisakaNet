@@ -56,7 +56,6 @@
 | `update-smithery-badge.yml` | `0 6 * * *` | 徽章刷新 |
 | `sync-question-answers.yml` | `20 7 * * *` | 问答回填（`automation` 环境） |
 | `intake-salvage-digest.yml` | `0 8 * * *` | 每日 intake 打捞摘要 |
-| `sync-node-counter.yml` | `41 4 * * *` | 节点计数 |
 | `claim-enforcer.yml` | `0 */6 * * *` | 悬赏认领到期 |
 | `pr-audit-watch.yml` | `17 */2 * * *` | **补跑没跑过的 audit**（见 §2.4） |
 | `benchmark-workers-ai.yml` | `0 2 * * 1` | 每周基准 |
