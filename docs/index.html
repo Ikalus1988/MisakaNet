@@ -2248,9 +2248,14 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Latest counter value: the highest node number handed out. Read by the registration success panel as
-// the fallback estimate below; nothing renders it as a population any more.
-let CURRENT_COUNTER = 10010;
+// The last counter value this page actually *read* from /api/counter, or null when it never got one.
+// The registration success panel predicts the visitor's node id from it (`counter + 1`). It used to be
+// seeded with a constant (10010) and refreshed with `Number(counter.current) || CURRENT_COUNTER`, so an
+// unavailable endpoint silently produced a prediction from a stale default — and the number it prints
+// is the visitor's own node id. The endpoint lost its file fallback on 2026-09-28 (a mirror with no
+// freshness guarantee was answering with a value months old, issue #1820), so "no value" is a state
+// this page handles rather than papers over: see the success panel, which omits the number.
+let CURRENT_COUNTER = null;
 
 // Agent type selection.
 //
@@ -2941,15 +2946,17 @@ const PANEL_DEFER_MS = 1200;
 async function loadStats() {
   const counter = await fetchWithCache(getCounterUrl(), 'counter').catch(() => null);
 
-  if (counter) {
-    // The counter is still fetched, and this assignment is the only reason: the registration success
-    // panel estimates the visitor's node number from it when the worker does not return one
-    // (`data.node_number || (CURRENT_COUNTER + 1)`), and a wrong node number shown to someone who
-    // just registered is the one place it must be right. It is deliberately **not displayed** any
-    // more (2026-09-26): a monotonic allocation counter that anonymous callers advance by one per
-    // call is not a population, so no label makes it a stat worth showing.
-    CURRENT_COUNTER = Number(counter.current) || CURRENT_COUNTER;
-  }
+  // The counter is still fetched, and this assignment is the only reason: the registration success
+  // panel predicts the visitor's node number from it. It is deliberately **not displayed** any more
+  // (2026-09-26) — a monotonic allocation counter that anonymous callers advance by one per call is not
+  // a population, so no label makes it a stat worth showing.
+  //
+  // `null` when the payload carries no usable number. The endpoint answers 503 with `current: null`
+  // when neither D1 nor KV answered (2026-09-28), and a prediction built from a value we never read is
+  // not a prediction. The check is explicit rather than `||`, because `Number(null)` is 0 and
+  // `Number(undefined)` is NaN — and a falsy-coalescing `||` is exactly how a stale default stays alive.
+  const readCounter = counter ? Number(counter.current) : NaN;
+  CURRENT_COUNTER = Number.isFinite(readCounter) && readCounter > 0 ? readCounter : null;
 
   // SSOT: use _allLessons (from safeFetchLessons) instead of /api/lessons
   if (!_allLessons) {
@@ -3465,9 +3472,16 @@ async function registerNode() {
     // Worker returns the issue URL directly
     const issue = { html_url: data.issue_url };
 
-    // Use real node number from Worker, fall back to counter estimate
-    const estimatedNode = data.node_number || (CURRENT_COUNTER + 1);
-    const estimatedName = 'Misaka' + String(estimatedNode).padStart(5, '0');
+    // This path's worker response carries the issue URL, not a node number, so what is shown is a
+    // *prediction* from the counter read in `loadStats()`. When there is no counter value there is
+    // nothing to predict from, and this number is the visitor's own node id — so it is omitted
+    // entirely rather than filled in from a default (`regWait` already says the real one arrives in
+    // about 30 seconds, and the poll below replaces the panel with it).
+    const estimatedNode = Number(data.node_number)
+      || (CURRENT_COUNTER === null ? null : CURRENT_COUNTER + 1);
+    const estimatedName = estimatedNode === null
+      ? t("regAssigning")
+      : 'Misaka' + String(estimatedNode).padStart(5, '0');
 
     const entryTestSteps = LANG === 'en' ? `
       <b>📋 Next: Configure Your Agent</b><br>
@@ -3485,8 +3499,8 @@ async function registerNode() {
       <br>
       <small>完整指引见欢迎消息。</small>`;
 
-    // Terminal access granted
-    result.innerHTML += `<br><span style="color:#94a3b8;">> </span><span style="color:#22c55e;">ACCESS GRANTED: ${estimatedName}</span>`;
+    // Terminal access granted — with the predicted id only when there is one to predict.
+    result.innerHTML += `<br><span style="color:#94a3b8;">> </span><span style="color:#22c55e;">ACCESS GRANTED${estimatedNode === null ? '' : ': ' + estimatedName}</span>`;
     await new Promise(r => setTimeout(r, 400));
 
     // Build success UI
@@ -3500,7 +3514,9 @@ async function registerNode() {
           <span style="font-size:22px;">🧠</span>
           <div>
             <div class="reg-node-name" style="font-weight:700;font-size:14px;font-family:'JetBrains Mono',monospace;">${estimatedName}</div>
-            <div style="font-size:12px;color:#94a3b8;">${formatText(t("regNodeLine"), { agent: agentDisplayValue(selectedAgent), node: estimatedNode })}${name ? `<br>${t("regNameLabel")}: ${escapeHTML(name)}` : ""}</div>
+            <div style="font-size:12px;color:#94a3b8;">${estimatedNode === null
+              ? formatText(t("regNodeLineNoNumber"), { agent: agentDisplayValue(selectedAgent) })
+              : formatText(t("regNodeLine"), { agent: agentDisplayValue(selectedAgent), node: estimatedNode })}${name ? `<br>${t("regNameLabel")}: ${escapeHTML(name)}` : ""}</div>
           </div>
           <span class="reg-status-icon" style="margin-left:auto;font-size:11px;color:#58a6ff;animation:pulse 1.5s infinite;">⏳</span>
           <span class="reg-status-text" style="font-size:11px;color:#58a6ff;" data-i18n="regAssigning">${t("regAssigning")}</span>

@@ -45,7 +45,7 @@
 | 站内**必须含字面计数**的三处（`docs/index.html` 的 meta/首屏降级、`docs/llms.txt` 与 `.well-known` 副本） | `python3 scripts/sync_lesson_count.py`（幂等；`--check` 是门禁，`tests/test_lesson_count_ssot.py` 锁不变量 + 面数上限）。其余表面**指向**而不是复制：GitHub 渲染的 markdown 用 shields 动态徽章（读 `data` 分支 `badges/*.json`，`update-badges.yml` 每日推），散文/描述里只写来源（`data/lessons.json` / `llms.txt`） |
 | `data/okf/lessons.jsonl` | `python3 scripts/export_okf.py`（SAG/OKF 数据源） |
 | `data/sag.db` | `python3 scripts/build_sag_index.py`（构建模式） |
-| `docs/data/lessons.json` 等站点镜像 | **无自动化**：`sync-data.yml` 已于 2026-09-21 删除（触发条件永远不满足，且 `data` 分支上的 `lessons.json`/`counter.json` 无人消费，见 `data/README.md` 与 #1985）|
+| `docs/data/lessons.json` 等站点镜像 | **无自动化**：`sync-data.yml` 已于 2026-09-21 删除（触发条件永远不满足）。`data` 分支上的 `counter.json` 也已于 2026-09-28 删除（连同 main 的 `data/counter.json` 与 `sync-node-counter.yml`：那个数字的单一来源是 worker 的 D1/KV 计数器，见 `data/README.md` 与 #1985/#1820）|
 
 ### 可见性/去重政策（用户决策 2026-09-05）
 - 索引 = 图书馆：core/contrib + 语言副本独特内容 + 生命周期目录**全部可见**
