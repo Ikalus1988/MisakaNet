@@ -8,6 +8,9 @@ tags:
 - ci-gate
 - pull-request
 status: published
+summary_plain: "A pull request that changes code without changing tests is stopped by CI, so every fix ships with a test."
+trigger: "CI coverage gate changed tests missing pull request blocked code change without tests"
+verify: '`gh pr checks <PR>` reports the changed-tests check as success; a code-only change makes the same check fail.'
 confidence: '0.95'
 created: '2026-09-08'
 updated: '2026-09-08'
@@ -78,7 +81,11 @@ git stash pop
 After pushing, verify the CI gate passes:
 ```bash
 gh pr checks <PR_NUMBER> --json name,bucket | jq '.[] | select(.name | contains("Changed tests"))'
-# Should show: {"name": "Changed tests fail without the change", "bucket": "success"}
+# Expected output (the gate is satisfied — the check ran and passed):
+# {"name": "Changed tests fail without the change", "bucket": "success"}
+#
+# If the change touched code but no test, the same command exits non-zero because the
+# job never reports success: `gh pr checks` treats a missing required check as a failure.
 ```
 
 ## Notes
