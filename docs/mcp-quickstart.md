@@ -1,6 +1,7 @@
 # MCP Quickstart — Use MisakaNet in Cursor / Claude Desktop / Claude Code
 
-Give your AI coding assistant access to 418 indexed failure-recovery lessons from real debugging sessions.
+Give your AI coding assistant access to indexed failure-recovery lessons from real debugging sessions.
+The live corpus size is in <https://misakanet.org/llms.txt>.
 
 ## What you get
 
