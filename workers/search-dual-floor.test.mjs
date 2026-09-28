@@ -32,6 +32,12 @@
 // their distinguishing token appears in the lesson *body* and in no title anywhere, so an
 // implementation that matches titles only fails on them.
 //
+// The floors here are measured over the *repository* corpus. Production is a different corpus (426 rows
+// in D1's `rich` projection when these floors were last raised, against `data/lessons.json`'s 418), so
+// the live numbers legitimately differ: measured 2026-09-28 they were 13/20 · 18/20 and 11/22 · 14/22.
+// `scripts/bench_production_recall.py` prints both sides at once. Never move these floors to match it —
+// that deletes the measurement instead of the gap.
+//
 // Run: node --test workers/search-dual-floor.test.mjs
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
