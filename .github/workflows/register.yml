@@ -14,9 +14,11 @@ name: 御坂网络注册
 #
 # Moving the write behind a pull request would have been worse than the push: ten minutes of
 # required checks paid by the person registering, and two registrations in flight reading the same
-# counter and handing out the same number. The number is allocated by the worker (KV
-# `node_counter`), which is the path MCP and email registration already use; `sync-node-counter.yml`
-# mirrors KV back into the repository.
+# counter and handing out the same number. The number is allocated by the worker (D1 `counters`,
+# with KV `node_counter` as the fallback), which is the path MCP and email registration already
+# use. Nothing mirrors it back into the repository any more (2026-09-28): `data/counter.json` and
+# `sync-node-counter.yml` were deleted, because a second copy of a number that is read to predict
+# the next id is a stale answer with no way for the reader to tell (#1820).
 #
 # What is left here is the part only this job can do: tell a person, where they already are, how to
 # register and what to expect. `scripts/register_issue.py` does it, and it is unit-tested — including

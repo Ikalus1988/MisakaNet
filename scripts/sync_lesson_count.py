@@ -70,10 +70,17 @@ false claim to a true number nobody needs.
 
 So the five surfaces it was synced into carry no node count now, and the metric
 is gone from this file: :data:`SITES` (lessons) and :data:`DOMAIN_SITES` are the
-whole registry. ``data/counter.json`` itself **stays**, and so does
-``sync-node-counter.yml``: it is the last-resort value ``/api/counter`` serves
-when both D1 and KV are unavailable (``workers/register-proxy-sw.js``), so the
-file still has to be fresh — it is simply no longer advertised.
+whole registry.
+
+Two days later the *copies* of that number went too (2026-09-28): ``data/counter.json``,
+``sync-node-counter.yml`` and ``scripts/node_status.py --mirror`` were deleted
+together, and ``/api/counter`` stopped falling back to the file — it answers 503
+``counter_unavailable`` when D1 and KV are both down. Retiring the surfaces left
+the reason for the file intact (it was the endpoint's last resort), but the file
+was the wrong shape for what the number is *for*: a registrant reads their id
+immediately, so a mirror that can be months behind is worse than no answer. Issue
+#1820 was filed because the ``data`` branch's copy sat frozen on 2026-06-01, and
+``/api/counter``'s old default ref would have served it as current.
 
 Count surfaces: three, not twenty-four (2026-09-28)
 ---------------------------------------------------
