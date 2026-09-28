@@ -82,6 +82,11 @@ MANAGED_LINE_PATTERNS = (
     # A "registered-node count" row was retired here on 2026-09-26 with the number itself: no surface
     # publishes one any more (tests/test_lesson_count_ssot.py asserts that, in the same change), so the
     # row could only ever have flagged historical text in handoff documents.
+    #
+    # The count badge replaced the hard-coded sentence on the READMEs and ROADMAP.md (2026-09-28): those
+    # files no longer contain a number for the "lesson count" row above to match, so dropping the badge
+    # line would leave them with no corpus size at all — and nothing else in this script would say so.
+    ("count badge", re.compile(r"badges/(?:lessons|domains)\.json")),
     ("release-please annotated version", re.compile(r"x-release-please-version")),
     ("package/manifest version", re.compile(r'"(?:version|\.release-please-manifest)"\s*:')),
     ("badge version", re.compile(r"badge/version|img\.shields\.io/badge/version")),
