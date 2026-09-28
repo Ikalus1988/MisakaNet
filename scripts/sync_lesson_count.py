@@ -43,21 +43,73 @@ reports. So does *testimony* (``docs/community/voices.json`` quotes a user
 saying "200+ lessons") and any metric that is not the lesson total or the node
 total (per-domain topic pages).
 
-The **domain** count stays unmanaged on purpose (2026-09-15): three different
-numbers are in play and none of them is wrong about the thing it measures —
-``docs/install/index.html`` says "18 domains" (the curated ``docs/domains/``
-list), the ``domains`` badge counts raw frontmatter strings, and a normalised
-count sits between them. Picking one is a product decision, not a sync job, so
-it is tracked separately and no gate pretends otherwise.
+The **domain** count was unmanaged on purpose until 2026-09-28 (2026-09-15, issue
+#1687): three different numbers were in play and none of them was wrong about the
+thing it measured — ``docs/install/index.html`` said "18 domains" (the curated
+``docs/domains/`` list), the ``domains`` badge counted raw frontmatter strings, and
+a normalised count sat between them. Picking one was a product decision, so no gate
+pretended otherwise. The product decision is now to **stop quoting a domain number
+in prose at all**: ``llms.txt`` (and its served copy) keeps the one number that is
+verifiable from the corpus, and the surfaces that used to advertise a different
+domain figure — the install page, ``skill.md``, ``JOIN.md``, ``ROADMAP.md`` —
+describe the coverage without a count. ``canonical_domains`` therefore still exists
+and still owns two rows; what changed is who is allowed to quote it.
 
-Registered nodes *are* managed here as of 2026-09-15 (issue #1683): the same
-fact read 52+ (``docs/llms.txt``), 59 (a hardcoded shields badge in
-``README.zh-CN.md``) and 73 (``data/counter.json``) at once, and nothing watched
-it. The canonical value comes from the counter the site itself reads —
-``data/counter.json`` ``current`` minus ``NODE_OFFSET`` — with one caveat stated
-in the docstring of :func:`canonical_nodes`. ``STATUS.md`` also showed 52+, but
-it is generated and gitignored, so the fix for it belongs in
-``scripts/update_status.py`` (a gate on an untracked file can only fail).
+Registered nodes were managed here from 2026-09-15 (issue #1683) until
+2026-09-26, and are **no longer published at all**. The gate was correct about
+its own job — the same fact read 52+ (``docs/llms.txt``), 59 (a hardcoded
+shields badge in ``README.zh-CN.md``) and 73 (``data/counter.json``) at once —
+but the number it kept consistent was never a measurement of anything a reader
+would take it for: ``data/counter.json`` ``current`` is a **monotonic allocation
+counter** that node IDs are handed out from (the first node is Misaka10001),
+nothing ever comes off it, and anonymous callers get a fresh node per call
+(``AGENTS.md`` §3.3), so it grows with our own automation. It cannot show churn,
+retention or adoption, and any surface quoting it invites exactly those
+readings — the honest label ("node IDs issued") only moved the problem from a
+false claim to a true number nobody needs.
+
+So the five surfaces it was synced into carry no node count now, and the metric
+is gone from this file: :data:`SITES` (lessons) and :data:`DOMAIN_SITES` are the
+whole registry.
+
+Two days later the *copies* of that number went too (2026-09-28): ``data/counter.json``,
+``sync-node-counter.yml`` and ``scripts/node_status.py --mirror`` were deleted
+together, and ``/api/counter`` stopped falling back to the file — it answers 503
+``counter_unavailable`` when D1 and KV are both down. Retiring the surfaces left
+the reason for the file intact (it was the endpoint's last resort), but the file
+was the wrong shape for what the number is *for*: a registrant reads their id
+immediately, so a mirror that can be months behind is worse than no answer. Issue
+#1820 was filed because the ``data`` branch's copy sat frozen on 2026-06-01, and
+``/api/counter``'s old default ref would have served it as current.
+
+Count surfaces: three, not twenty-four (2026-09-28)
+---------------------------------------------------
+A correct sync over a surface that should not carry the number is still the wrong
+shape: 38 rows across 24 files meant every surface anyone ever wrote a number into
+became *our* maintenance liability, and the number was duplicated into contexts
+(registry descriptions, fenced sample output, translated taglines) where a daily
+commit is the only thing keeping it true. The registry is now three files —
+``docs/index.html`` (its ``<meta>``/``og:`` copy and the no-JS body fallbacks),
+``docs/llms.txt`` and its served ``.well-known`` copy — chosen because they are
+**read without running anything**: crawlers and social cards never execute the JS
+that fetches ``data/lessons.json``, and an agent reads ``llms.txt`` before it is
+willing to make an MCP call, so both need a number that is present *in the bytes*.
+
+Every other surface points instead of copying: GitHub-rendered markdown (the three
+READMEs, ``ROADMAP.md``) carries the shields **dynamic badge**, which reads
+``data/badges/lessons.json`` from the ``data`` branch — refreshed daily by
+``update-badges.yml``, never committed to ``main``; prose, descriptions and sample
+output name the source (``data/lessons.json`` / ``llms.txt``) rather than quoting
+it. ``tests/test_lesson_count_ssot.py`` pins both directions: the registry may not
+grow past its cap, and a de-numbered surface may not quietly acquire a corpus count
+again (``gemini-cli.md`` had already drifted to "402 indexed failure lessons" with
+no writer to notice, and ``README.zh-CN.md`` still published the retired **node**
+badge from a file nothing writes any more).
+
+The two ``update-badges.yml`` metrics that stay are the ones a badge can carry: the
+badge reads the badge file, so the number is computed once, on a schedule, and
+never lands in a document anyone edits.
+
 
 Usage
 -----
@@ -77,9 +129,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 LESSONS_JSON = Path("data") / "lessons.json"
 COUNT_FILE = Path("docs") / "_lessons_count.txt"
-COUNTER_JSON = Path("data") / "counter.json"
-# Node ids are the counter offset by a fixed base, which is how the site reads the
-# same fact: docs/index.html does `const totalNodes = current - 10000`.
+# The base that turns the allocation counter into the node id a registrant sees (Misaka10001 is
+# 10000 + 1). It stayed here when the node *count* stopped being published: `scripts/register_issue.py`
+# writes the number into the welcome comment and `docs/index.html` estimates it the same way, so the
+# arithmetic still needs one home — it is simply no longer a gate input.
 NODE_OFFSET = 10000
 
 
@@ -105,10 +158,10 @@ class Site:
 
 
 _COUNT = r"(?P<n>\d{2,4})"
-# meta / og / JSON-LD / issue-template scale claim: "435 indexed failure-recovery
-# lessons" (index.html, search page), "310+ indexed …" (mcp-quickstart), "249
-# indexed …" (issue templates). The optional "+" is normalised away: the number
-# is exact, and "N+" made two files disagree about the same claim.
+# meta / og / JSON-LD scale claim: "435 indexed failure-recovery lessons". Only `docs/index.html`
+# uses it now — the search page, mcp-quickstart and the issue templates point at the count instead
+# (2026-09-28). The optional "+" is normalised away: the number is exact, and "N+" made two files
+# disagree about the same claim.
 _META = rf"{_COUNT}\+? indexed failure-recovery lessons"
 _META_REPL = "{n} indexed failure-recovery lessons"
 # "205+ verified failure lessons": the `\+?`/`(?:…)?` groups make the pattern
@@ -124,43 +177,25 @@ def _build_sites() -> tuple[Site, ...]:
     def add(path: str, pattern: str, replace: str, note: str, min_matches: int = 1) -> None:
         sites.append(Site(path, pattern, replace, note, min_matches))
 
-    # ── repo-facing prose ───────────────────────────────────────────────────
-    add("README.md", rf"{_COUNT}\+ failure lessons", "{n}+ failure lessons",
-        "README tagline — quoted by GitHub search and social cards")
-    # The localized READMEs carried their own hand-written totals (358 and 289) for months while
-    # the corpus said 393: the two files disagreed with the site and with each other, and nothing
-    # watched them because they were not registered here. Their "v2.17.0 新功能" release-history
-    # rows are deliberately NOT registered — those numbers are a record of that release, not a
-    # claim about today.
-    add("README.zh-CN.md", rf"搜索 {_COUNT} 条索引化的失败修复经验", "搜索 {n} 条索引化的失败修复经验",
-        "zh-CN tagline")
-    add("README.zh-CN.md", rf"\| 📚 Lessons \| {_COUNT} \(canonical, 去重后\) \|",
-        "| 📚 Lessons | {n} (canonical, 去重后) |",
-        "zh-CN current-numbers table")
-    add("README.ja.md", rf"{_COUNT}件のレッスンを検索", "{n}件のレッスンを検索", "ja hero line")
-    add("README.ja.md", rf"{_COUNT}件のインデックス付き障害復旧レッスン",
-        "{n}件のインデックス付き障害復旧レッスン", "ja tagline")
-    add("README.ja.md", rf"\| 共有レッスン \| {_COUNT}（インデックス付き） \|",
-        "| 共有レッスン | {n}（インデックス付き） |",
-        "ja current-numbers table")
-    add("ARCHITECTURE.md", rf"Shared knowledge \({_COUNT}\+ indexed lessons\)",
-        "Shared knowledge ({n}+ indexed lessons)",
-        "architecture tree comment; reports the index metric, not raw .md count")
-    # ROADMAP.md was the largest *unmanaged* surface: its 2026-09-16 snapshot had drifted in 9 of 13
-    # rows (393/232/43 there against 411/1047/44) while the section around it promised every number
-    # was reproducible — and reproducible is not the same as *recomputed* (#2095).
-    # The dated table stays as the record of that day; the block registered here is the current one,
-    # so the daily job has a writer for it and `--check` has something to fail on.
-    add("ROADMAP.md", rf"\| 公开索引语料（SSOT，当前） \| \*\*{_COUNT}\*\* \|",
-        "| 公开索引语料（SSOT，当前） | **{n}** |",
-        "ROADMAP current-numbers block (the dated snapshot below it is history, not a claim)")
+    # ── repo-facing prose: badge, not a number (2026-09-28) ─────────────────
+    # README.md / README.zh-CN.md / README.ja.md / ARCHITECTURE.md / ROADMAP.md / JOIN.md /
+    # docs/skill.md / docs/mcp-quickstart.md / docs/integrations/*.md used to be registered rows
+    # here. They are GitHub-rendered markdown, so the live number is the shields *dynamic badge*
+    # (`data` branch `badges/lessons.json`, written daily by update-badges.yml) — a number that
+    # cannot be stale because it is not in the bytes. The badge was already in README.md and
+    # README.zh-CN.md for exactly this reason while the same files also hard-coded the total two
+    # paragraphs above it; that contradiction ("418+" next to a badge reading 418, and in
+    # `gemini-cli.md` a badge-less "402") is what this change removes.
+    #
+    # `docs/install/index.html` also left the registry: its feature list advertised both counts in
+    # one sentence ("418+ lessons across 44 domains"), which is where the 2026-09-15 `\g<1>` bug
+    # shipped ("393+ lessons across 393 domains", both numbers plausible) — see the module
+    # docstring and `lessons/contrib/` for the write-up. With no number in the sentence the failure
+    # mode is gone rather than guarded.
 
     # ── public website metadata (static: no JS can fix these) ───────────────
     add("docs/index.html", _META, _META_REPL,
         "<meta description> + og:description + JSON-LD (search/social copy)", 3)
-    add("docs/search/index.html", _META, _META_REPL,
-        "search page <meta description> + og:description", 2)
-    add("docs/mcp-quickstart.md", _META, _META_REPL, "MCP quickstart first paragraph")
 
     # ── website body fallbacks (JS overwrites them once data/lessons.json loads,
     #    but crawlers and no-JS readers only ever see the static text) ────────
@@ -172,113 +207,37 @@ def _build_sites() -> tuple[Site, ...]:
         r"\g<1>{n}", "JS fallback count shown before the index finishes loading")
 
     # ── agent-facing entry points ───────────────────────────────────────────
+    # The only prose that keeps a literal count, and the reason is in the module docstring: an
+    # agent reads this file *instead of* running something, so "how big is this corpus" has to be
+    # answerable from the bytes. The served `.well-known` copy is registered as its own row (two
+    # files, one logical surface) because static hosting has no way to alias it.
     add("docs/llms.txt", _SCALE_CLAIM, "{n} indexed failure lessons",
         "llms.txt scale claim (trust vocabulary enforced: indexed, not verified)")
     add("docs/.well-known/llms.txt", _SCALE_CLAIM, "{n} indexed failure lessons",
         "served copy of llms.txt")
-    # Agent-discovery documents: what crawlers and MCP clients read before they
-    # ever see the site. They advertised "300+ verified debugging lessons" — a
-    # stale count *and* the trust claim docs/trust-semantics.md forbids.
-    for _path in ("docs/.well-known/mcp.json", "docs/.well-known/agent.json",
-                  "docs/.well-known/agent-card.json"):
-        add(_path, _SCALE_CLAIM, "{n} indexed failure lessons", "agent-discovery description")
-    # The glama connector document uses its own phrasing. It was served live at
-    # https://misakanet.org/.well-known/glama.json while claiming "320+ … lessons"
-    # at 380+ lessons and a version three releases behind (found 2026-09-12) — so it
-    # is registered here as well as in the version line.
-    add("docs/.well-known/glama.json", rf"{_COUNT}\+ indexed failure-recovery lessons",
-        "{n}+ indexed failure-recovery lessons", "glama connector description")
-    add("docs/skill.md", rf"\*\*{_COUNT}\+ lessons\*\*", "**{n}+ lessons**",
-        "skill manifest tagline")
-    add("JOIN.md", rf"\*\*{_COUNT}\+ lessons\*\*", "**{n}+ lessons**",
-        "contributor onboarding tagline")
-    # Both surfaces below sat live and stale without any gate seeing them
-    # (found 2026-09-14, while re-checking README accuracy before the 2.30.0
-    # publish): the Glama section advertised "385+ verified failure-recovery
-    # lessons" — a count this registry never tracked, in the vocabulary
-    # docs/trust-semantics.md forbids — and JOIN.md's Version-Info block
-    # advertised "384+ lessons" next to a version two releases behind.
-    add("README.md", rf"{_COUNT}\+ \*\*(?:verified|indexed) failure-recovery lessons\*\*",
-        "{n}+ **indexed failure-recovery lessons**",
-        "README Glama install section — indexed, never 'verified'")
-    add("JOIN.md", rf"(?m)^\s*{_COUNT}\+ lessons\s*$", "{n}+ lessons",
-        "JOIN.md Version-Info block (its own line inside the fenced block)")
-
-    # ── integration guides ──────────────────────────────────────────────────
-    for _path in ("docs/integrations/cursor.md", "docs/integrations/continue.md",
-                  "docs/integrations/claude-code.md"):
-        add(_path, _SCALE_CLAIM, "{n} indexed failure lessons",
-            "integration landing line")
-    add("docs/integrations/README.md",
-        rf"(Search ){_COUNT}\+? (?:indexed )?failure-recovery lessons",
-        r"\g<1>{n} indexed failure-recovery lessons", "integrations index intro")
-    # The domain count in this sentence is owned by DOMAIN_SITES (which runs after this one);
-    # hardcoding 18 here would rewrite it back on every lesson sync and, once the domain pass
-    # had moved it, stop matching its own output — the write-once failure this registry exists
-    # to prevent.
-    # No capture around the lesson number: `\g<1>` used to carry the OLD number, and writing it
-    # next to {n} produced "393393" and ate " domains" (caught by --check, 2026-09-15).
+    # `.well-known/{mcp,agent,agent-card,glama}.json`, `skill.md`, `JOIN.md`, the integration
+    # guides, the two issue templates and `worker-bm25-search.md` were rows here until 2026-09-28.
+    # Several were registered only *after* they were caught lying: the agent-discovery documents
+    # advertised "300+ verified debugging lessons" (stale count *and* the vocabulary
+    # docs/trust-semantics.md forbids); glama.json served "320+ …" at 380+ lessons; JOIN.md's
+    # Version-Info block advertised "384+ lessons" next to a version two releases behind; README's
+    # Glama section said "385+ verified failure-recovery lessons". Each fix added the file to this
+    # registry — which is how the registry reached 24 files, one per incident. They now name the
+    # source instead of quoting it, and `docs/integrations/gemini-cli.md` (never registered, and
+    # found by the 2026-09-28 sweep still advertising "402 indexed failure lessons") is the
+    # argument for that: a surface nobody wrote into the registry drifts with nothing to catch it.
     #
-    # The domain number is referenced BY NAME, not by number. `_COUNT` is `(?P<n>\d{2,4})`, and a
-    # named group is *also* a numbered one, so the group that used to be written as `\g<1>` was
-    # the lesson count, not the domain count: on 2026-09-15 the daily update-lessons run turned
-    # this sentence into "393+ lessons across 393 domains" (both numbers correct-looking, the
-    # domain one silently wrong) and left main failing test_lesson_count_ssot. A name cannot be
-    # renumbered by a later edit to the pattern.
-    add("docs/install/index.html", rf"{_COUNT}\+ lessons across (?P<domains>\d{{2,4}}) domains",
-        r"{n}+ lessons across \g<domains> domains", "install page feature list")
-
-    # ── GitHub-facing automation ────────────────────────────────────────────
-    add(".github/ISSUE_TEMPLATE/config.yml", _META, _META_REPL,
-        "issue-template chooser description")
-    add(".github/ISSUE_TEMPLATE/ai-bounty-template.md", _META, _META_REPL,
-        "AI-bounty issue preamble")
-    # NOT managed: .github/workflows/pr-thank-you.yml. It used to hardcode
+    # .github/workflows/pr-thank-you.yml is still deliberately NOT managed. It used to hardcode
     # "MisakaNet's 298+ lessons", but GITHUB_TOKEN is refused any push that touches
-    # .github/workflows/** ("refusing to allow a GitHub App to create or update
-    # workflow ... without `workflows` permission") — so managing it made the daily
-    # update job fail at push time the first time a count actually changed (caught
-    # 2026-09-12 by dispatching that job). It now reads docs/_lessons_count.txt at
-    # runtime, which this script writes.
-
-    # ── docs that quote tool output ─────────────────────────────────────────
-    add("docs/worker-bm25-search.md", rf"Loaded {_COUNT} lessons", "Loaded {n} lessons",
-        "sample `doctor` output in the BM25 doc")
+    # .github/workflows/** ("refusing to allow a GitHub App to create or update workflow ...
+    # without `workflows` permission") — so managing it made the daily update job fail at push time
+    # the first time a count actually changed (caught 2026-09-12 by dispatching that job). It reads
+    # docs/_lessons_count.txt at runtime, which this script writes.
 
     return tuple(sites)
 
 
 SITES: tuple[Site, ...] = _build_sites()
-
-
-def _build_node_sites() -> tuple[Site, ...]:
-    """Surfaces that advertise how many nodes have registered (issue #1683)."""
-    sites: list[Site] = []
-
-    def add(path: str, pattern: str, replace: str, note: str, min_matches: int = 1) -> None:
-        sites.append(Site(path, pattern, replace, note, min_matches))
-
-    add("docs/llms.txt", rf"{_COUNT}\+? registered nodes", "{n} registered nodes",
-        "llms.txt data section (agent-facing)")
-    add("docs/.well-known/llms.txt", rf"{_COUNT}\+? registered nodes", "{n} registered nodes",
-        "served copy of llms.txt")
-    add("README.zh-CN.md", rf"\| 🌐 Nodes \| {_COUNT} \|", "| 🌐 Nodes | {n} |",
-        "zh-CN current-numbers table (said 59 while the counter said 262)")
-    add("README.ja.md", rf"\| 登録ノード \| {_COUNT}個の割り当てID \|",
-        "| 登録ノード | {n}個の割り当てID |",
-        "ja current-numbers table (said 59 while the counter said 262)")
-    add("ROADMAP.md", rf"\| 已注册节点（当前） \| \*\*{_COUNT}\*\* \|",
-        "| 已注册节点（当前） | **{n}** |",
-        "ROADMAP current-numbers block (#2095: the dated snapshot below it is history)")
-    # NOT managed: STATUS.md. It is gitignored and was generated by a local script, so a gate
-    # on it would fail forever in CI (where the file does not exist) and could only ever be
-    # satisfied on one machine. The generator was deleted on 2026-09-23 (#2095): nothing ran it
-    # and nobody read its output. The maintained snapshots are
-    # docs/maintainer/state-of-the-repo.md and the ROADMAP "current numbers" block.
-    return tuple(sites)
-
-
-NODE_SITES: tuple[Site, ...] = _build_node_sites()
 
 
 def _lesson_domain(path: Path) -> str:
@@ -389,7 +348,15 @@ def canonical_mcp_tools(root: Path = REPO) -> int:
 
 
 def _build_domain_sites() -> tuple[Site, ...]:
-    """Surfaces that advertise how many domains the corpus covers (issue #1687)."""
+    """Surfaces that advertise how many domains the corpus covers (issue #1687).
+
+    Two rows, both the agent-facing ``llms.txt`` pair, same reason as its lesson rows. The
+    install page / ``skill.md`` / ``JOIN.md`` / ``ROADMAP.md`` rows were removed on 2026-09-28
+    together with the lesson rows for those files: they are the surfaces that disagreed about the
+    domain figure in the first place (18 curated vs 69 raw strings vs 61 normalised, #1687), so
+    the product decision recorded in the module docstring — describe the coverage, do not quote a
+    second number — retires them rather than picking a winner per page.
+    """
     sites: list[Site] = []
 
     def add(path: str, pattern: str, replace: str, note: str, min_matches: int = 1) -> None:
@@ -399,15 +366,6 @@ def _build_domain_sites() -> tuple[Site, ...]:
         "llms.txt domain line (agent-facing)")
     add("docs/.well-known/llms.txt", rf"(?m)^- {_COUNT} domains:", "- {n} domains:",
         "served copy of llms.txt")
-    add("docs/skill.md", rf"across {_COUNT} domains", "across {n} domains",
-        "skill manifest tagline")
-    add("JOIN.md", rf"across {_COUNT} domains", "across {n} domains",
-        "contributor onboarding tagline")
-    add("docs/install/index.html", rf"(across ){_COUNT}( domains)",
-        r"\g<1>{n} domains", "install page feature list")
-    add("ROADMAP.md", rf"\| domain 覆盖（当前） \| \*\*{_COUNT}\*\* \|",
-        "| domain 覆盖（当前） | **{n}** |",
-        "ROADMAP current-numbers block (#2095: the dated snapshot below it is history)")
     return tuple(sites)
 
 
@@ -420,29 +378,6 @@ def canonical_count(root: Path = REPO) -> int:
     if not isinstance(data, list):
         raise TypeError("data/lessons.json root must be a list")
     return len(data)
-
-
-def canonical_nodes(root: Path = REPO) -> int:
-    """Registered-node count: ``data/counter.json`` current, offset by NODE_OFFSET.
-
-    ``data/counter.json`` is the repository's declared source of truth (see
-    ``scripts/node_status.py``), committed by the registration workflow, and the same
-    offset the site applies in ``docs/index.html`` (``current - 10000``).
-
-    It is a **mirror**: the authoritative value is the worker's KV counter, and
-    ``scripts/node_status.py --mirror`` (daily workflow ``sync-node-counter.yml``) copies it
-    into this file, which is the offline-checkable copy these surfaces and this gate read.
-    The two can differ by a day's registrations — that is the point: a number anybody can
-    check out, rather than one that changes between two reads of the same page.
-    """
-    try:
-        data = json.loads((root / COUNTER_JSON).read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise ValueError(f"{COUNTER_JSON}: unreadable ({exc})") from exc
-    current = data.get("current")
-    if not isinstance(current, int) or isinstance(current, bool) or current < NODE_OFFSET:
-        raise ValueError(f"{COUNTER_JSON}: current={current!r} is not an int >= {NODE_OFFSET}")
-    return current - NODE_OFFSET
 
 
 def _line_of(text: str, pos: int) -> int:
@@ -485,8 +420,8 @@ def stale_entries(count: int, *, root: Path = REPO,
     """Every health problem with the count surface; empty list == healthy.
 
     ``check_count_file`` is off for a metric that has no ``COUNT_FILE`` of its own
-    (the node count lives in ``data/counter.json`` already); leaving it on would
-    compare the lesson count's copy against a node count.
+    (the domain count is derived from the corpus); leaving it on would compare the
+    lesson count's copy against a different measure.
     """
     scans, errors = _scan(root, sites)
     for scan in scans:
@@ -522,9 +457,9 @@ def sync_all(count: int, *, root: Path = REPO, sites: tuple[Site, ...] = SITES,
     (found the hard way — only the last row survived on disk).
 
     ``write_count_file`` is off for metrics whose source of truth is already a file
-    in the tree (the node count reads ``data/counter.json``); ``COUNT_FILE`` is the
+    in the tree (the domain count is derived from the corpus); ``COUNT_FILE`` is the
     lesson count's machine-readable copy and would otherwise be overwritten with a
-    node count.
+    different measure.
     """
     scans, errors = _scan(root, sites)
     changes: list[str] = []
@@ -593,26 +528,25 @@ def _run_metric(label: str, count: int, sites: tuple[Site, ...], *, root: Path,
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Sync public lesson and node counts with their sources of truth "
+        description="Sync public lesson and domain counts with their sources of truth "
                     "(idempotent).")
     parser.add_argument("--check", action="store_true",
                         help="verify only; exit 1 on stale or unmatched counts")
     parser.add_argument("--quiet", action="store_true", help="silent on success")
-    parser.add_argument("--metric", choices=("all", "lessons", "nodes", "domains"), default="all",
-                        help="narrow to one metric (default: both)")
+    parser.add_argument("--metric", choices=("all", "lessons", "domains"), default="all",
+                        help="narrow to one metric (default: all)")
     parser.add_argument("--root", type=Path, default=REPO, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
 
     # Each metric: (label, canonical reader, managed sites, owns a COUNT_FILE copy).
     metrics = [
         ("lesson", canonical_count, SITES, True),
-        ("node", canonical_nodes, NODE_SITES, False),
         # Last: the install page carries both counts in one sentence, and this pass owns the
         # domain half of it.
         ("domain", canonical_domains, DOMAIN_SITES, False),
     ]
-    wanted = {"all": {"lesson", "node", "domain"},
-              "lessons": {"lesson"}, "nodes": {"node"}, "domains": {"domain"}}[args.metric]
+    wanted = {"all": {"lesson", "domain"},
+              "lessons": {"lesson"}, "domains": {"domain"}}[args.metric]
 
     status = 0
     for label, canonical, sites, owns_count_file in metrics:

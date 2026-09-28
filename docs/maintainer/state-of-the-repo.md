@@ -20,9 +20,18 @@
   anyone** (measured: one run waiting since 2026-09-21T12:13:42Z).
 - `main` requires **three** status checks (`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate`)
   with **no bypass actors** — and GitHub enforces that rule on *direct pushes* as well as merges, so
-  every workflow that commits back to `main` is now refused (#2073). The `audit` gate that actually runs
-  the full suite is still **not** required — it is only repaired every two hours by `pr-audit-watch.yml`.
-- Backlog: **72 open issues / 14 open PRs**; **1** of those open issues had its work already merged on
+  every workflow that commits back to `main` is now refused (#2073). Since 2026-09-27 the `audit` gate
+  **is** required (four checks now: `DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate`, `audit`),
+  which closes the "green but nothing ran the full suite" hole — and lengthens every PR's path to mergeable
+  by however long that leg takes. Measured on the change that added it: two of four required checks were
+  still running minutes after the other two reported. It is only repaired every two hours by
+  `pr-audit-watch.yml`, so a *missing* audit is still possible; what changed is that a missing one now
+  blocks instead of passing silently.
+- Backlog (re-measured 2026-09-27): **~107 open issues / ~12 open PRs**, of which 54 carry `intake`, 39
+  `needs-human-review`, 18 `question`, and only ~3 predate 2026-09-01 — the queue is *young*, and what it
+  lacks is throughput out of it, not containment of old debt. Branch count went **453 → 35** the same day
+  (auto-delete on merge is now enabled; the pile was mostly branches whose work had been **squash-merged**,
+  which ancestry can never report as merged). Oldest notes kept below are historical: **1** of those open issues had its work already merged on
   `main` (`scripts/done_but_open.py`) — "done but never said". That number read **4** until 2026-09-23,
   when three of the four turned out to be the detector matching digits inside other people's URLs.
 - Bus factor is one: 2 collaborators, **1 admin**, 1 environment reviewer, 75 of the 100 most recently
@@ -47,7 +56,6 @@
 | `update-smithery-badge.yml` | `0 6 * * *` | 徽章刷新 |
 | `sync-question-answers.yml` | `20 7 * * *` | 问答回填（`automation` 环境） |
 | `intake-salvage-digest.yml` | `0 8 * * *` | 每日 intake 打捞摘要 |
-| `sync-node-counter.yml` | `41 4 * * *` | 节点计数 |
 | `claim-enforcer.yml` | `0 */6 * * *` | 悬赏认领到期 |
 | `pr-audit-watch.yml` | `17 */2 * * *` | **补跑没跑过的 audit**（见 §2.4） |
 | `benchmark-workers-ai.yml` | `0 2 * * 1` | 每周基准 |
@@ -83,7 +91,20 @@ PR / issue 事件上自己动的：`auto-merge-docs.yml`（`pull_request_target`
 不是安全特性，是停摆）。它的安全来自另一头：里面的凭据只能做一件事（D1:Edit）。理由与全表见
 `docs/maintainer/credentials-and-environments.md`。
 
-**实测此刻有 1 个 run 卡在等审批**：`Publish misakanet`（分支 `main`，2026-09-21T12:13:42Z 创建）。
+**实测 2026-09-27 一天内有 3 个 run 同时卡在等审批**（worker 部署 + 两个 npm 发布），其中一个 npm run 从
+前一天下午起等了约 23 小时，而**没有任何东西通知任何人**——这条"发布可用性"问题至今**未解决**。
+
+同一天尝试过的解法与结论，写在这里避免重复走一遍：把 `deploy-worker.yml` 移到一个人为新建的、**没有必需
+审批人**的 `deploy` 环境。PR 被仓库自己的门禁挡下，理由是**凭据的作用域**：
+
+> `deploy-worker.yml:deploy` declares environment='deploy'. The deploy-capable credential belongs in
+> `release`, whose required reviewer is the only thing standing between a merged workflow edit and production.
+> —— `tests/test_secret_scoping.py`
+
+这个论证比"延迟"更强：workflow 文件本身对任何能合并的人都是可改的，必需检查不审意图，所以环境审批人是
+唯一让"改 workflow"不足以单独触达生产的东西。**已回滚**（`deploy` 环境已删，凭据回到只存在于 `release`
+一处）。政策兼容的替代是**让等待可见**（定时报告处于 `waiting` 的 run / 在 PR 留言）——尚未实现，
+**仍是 open 决策**。
 
 ### 1.3 走 owner PAT 的那条链
 
@@ -117,7 +138,7 @@ PR / issue 事件上自己动的：`auto-merge-docs.yml`（`pull_request_target`
 
 ## 2. 门禁在哪里，哪些值得信任
 
-### 2.1 `main` 上现在有**三条**必需检查（2026-09-23 读取；`gate` 于 09-22 加入）
+### 2.1 `main` 上现在有**四条**必需检查（2026-09-27 读取；`gate` 于 09-22 加入，`audit` 于 09-27 加入）
 
 ```
 $ curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -172,7 +193,7 @@ $ curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \
 
 | 门禁 | 工作流 | 跑什么 |
 |---|---|---|
-| `audit` | `pr-checks.yml`（"Misaka Network Agent Auditor"） | **全量测试 + DCO 审计 + secret 扫描 + lesson schema + verdict** |
+| ~~`audit`~~ → 见 §2.1 | `pr-checks.yml`（"Misaka Network Agent Auditor"） | **2026-09-27 起为必需检查**：全量测试 + DCO 审计 + secret 扫描 + lesson schema + verdict |
 | `audit-shape` | `pr-shape-guard.yml` | 把 diff/markdown 粘进源码、改动越出标题范围 |
 | `lesson-gate` | `lesson-gate.yml` | frontmatter 必填字段、标题重复、domain 白名单 |
 | `lesson-security` | `lesson-security.yml` | lesson 里的危险命令、注入扫描 |

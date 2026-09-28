@@ -157,21 +157,40 @@ class TestMisakaNetSearchTool(unittest.TestCase):
         self.assertEqual(expanded[0], "async cache async cache")
 
     def test_arun_runs_blocking_work_concurrently(self):
+        """Overlap, measured against this machine's own serial cost — not against 0.35 seconds.
+
+        This used to assert `elapsed < 0.35` for two 0.2s sleeps, which is a property of the runner
+        rather than of the code. Measured 2026-09-27 on `macos-latest` / 3.13: 0.3535s and 0.3623s on
+        two consecutive runs — red twice, for a change that touches nothing in this file. The same
+        threshold is why an unrelated bounty PR (#2299) carried a `0.35 -> 0.38` tweak that reviewers
+        had to argue about: raising it makes the macOS leg green and the assertion meaningless.
+
+        What the test is about is the *ratio*: two 0.2s sleeps that overlap finish in about one sleep,
+        and the baseline is measured in the same interpreter on the same machine, so a slow runner
+        moves both numbers together. The bar is 0.8 x serial: generous enough for a scheduler hiccup,
+        and a non-overlapping implementation (awaited one after the other) lands at ~1.0 x serial.
+        """
         tool = MisakaNetSearchTool(cache_path=Path(tempfile.gettempdir()) / "unused-misakanet.db")
 
-        async def run():
-            def slow_run(query):
-                time.sleep(0.2)
-                return f"async result: {query}"
+        def slow_run(query):
+            time.sleep(0.2)
+            return f"async result: {query}"
 
-            tool._run = slow_run
+        tool._run = slow_run
+
+        # Serial baseline, same process and same function the concurrent path calls.
+        serial_started = time.perf_counter()
+        for query in ("first query", "second query"):
+            slow_run(query)
+        serial = time.perf_counter() - serial_started
+
+        async def run():
             started = time.perf_counter()
             results = await asyncio.gather(
                 tool._arun("first query"),
                 tool._arun("second query"),
             )
-            elapsed = time.perf_counter() - started
-            return results, elapsed
+            return results, time.perf_counter() - started
 
         results, elapsed = asyncio.run(run())
 
@@ -179,7 +198,12 @@ class TestMisakaNetSearchTool(unittest.TestCase):
             results,
             ["async result: first query", "async result: second query"],
         )
-        self.assertLess(elapsed, 0.35)
+        self.assertLess(
+            elapsed,
+            serial * 0.8,
+            f"two `_arun` calls took {elapsed:.3f}s against a serial baseline of {serial:.3f}s — "
+            "they are not overlapping",
+        )
 
     def test_repeated_query_signature_short_circuits_search(self):
         with tempfile.TemporaryDirectory() as tmp:

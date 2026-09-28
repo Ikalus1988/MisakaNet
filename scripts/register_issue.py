@@ -15,9 +15,10 @@ commit, push to `main`. Two things are wrong with that, and only the first is ne
 
    and the two steps after it — the welcome comment and the close — were `skipped`.
 
-2. **It should never have been the writer.** `data/counter.json` is documented in
+2. **It should never have been the writer.** `data/counter.json` was documented in
    `sync-node-counter.yml` as *the offline-checkable copy* of the counter that `/api/counter`
-   serves from the worker's KV; `scripts/node_status.py` calls the KV value authoritative, and the
+   served from the worker's KV (both the file and that workflow were deleted on 2026-09-28);
+   `scripts/node_status.py` called the KV value authoritative, and the
    worker (`node_counter` in `register-proxy-sw.js`, plus `workers/email-register/`) is what
    actually allocates a node. Issue #1683 was filed because the file and KV had drifted apart
    while both claimed to be the truth. Assigning a number in a workflow is that same second-writer
@@ -27,7 +28,9 @@ The fix is not to move the write behind a pull request. It would put ten minutes
 on the person registering, and two registrations in flight would each read the same
 `data/counter.json` from `main` and hand out the **same number**. It is to stop writing: the node
 number is allocated by the worker when the user calls `misakanet_register`, which is the path the
-MCP and email channels already use, and `sync-node-counter.yml` mirrors KV back into the file.
+MCP and email channels already use. Nothing mirrors it back into the repository any more: the file
+and the workflow that refreshed it were deleted on 2026-09-28 (a stale copy of a number read to
+predict the next id is worse than no copy, #1820).
 
 So this job keeps only what it is uniquely good at: telling a person, in the place where they
 already are, exactly how to register and what to expect. It reads the live count (a read, not a
@@ -64,8 +67,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-# The node offset lives in one place, next to the gate that checks every public surface that quotes
-# it (`docs/index.html` computes `current - 10000` the same way).
+# The node offset lives in one place. The node *count* is no longer published anywhere (2026-09-26),
+# but the arithmetic still is: this script writes the registrant's node number into the welcome comment
+# and `docs/index.html` estimates it from the same counter, so both keep reading one constant.
 from scripts.sync_lesson_count import NODE_OFFSET  # noqa: E402
 
 API_ROOT = "https://api.github.com"
@@ -299,7 +303,8 @@ def build_welcome(*, node_id: str | None = None, node_count: int | None = None,
         "---",
         "",
         f"> 本评论由 `register.yml` 自动生成（{today}），它只读取实时计数、发评论、打标签、关 issue —— "
-        "**不写任何节点编号**：编号由 worker 的 KV 计数统一发放，镜像回仓库是 `sync-node-counter.yml` 的事。",
+        "**不写任何节点编号**：编号由 worker 的 D1/KV 计数统一发放，仓库里没有副本（镜像文件与"
+        "它的每日 workflow 已于 2026-09-28 删除）。",
     ]
 
     body = "\n".join(lines) + "\n"
@@ -461,7 +466,7 @@ def main(argv: list[str] | None = None) -> int:
            or next_id and f"{next_id} (the worker's next number — not allocated here)"
            or "none (the counter could not be read)")
         + f"\n- live count: {display_count(current) if current is not None else 'unavailable'}"
-        + "\n- **no commit**: the node counter lives in the worker's KV; `sync-node-counter.yml` "
+        + "\n- **no commit**: the node counter lives in the worker's D1/KV counter; nothing "
           "mirrors it into the repository."
     )
     return 0

@@ -32,7 +32,7 @@ npm install                            # devDep: wrangler（部署 worker 用）
 | `workers/email-register/` | 邮件 intake worker（独立部署） |
 | `scripts/` | 维护/分析脚本（`lesson_gate.py`、`injection_scan.py`、`cf_mcp_auth.py`、`doctor.py` …） |
 | `lessons/{core,contrib,en,...}/` | 课程语料（本仓的"产品"） |
-| `data/` | 生成物：`lessons.json`、`counter.json`、`leaderboard*.json` 等 |
+| `data/` | 生成物：`lessons.json`、`leaderboard*.json` 等（`counter.json` 已于 2026-09-28 删除，连同它的镜像 workflow；那个数字的单一来源是 worker 的 D1/KV 计数器）|
 | `docs/` | 站点静态资源（`docs/` 就是 misakanet-web 的 assets 目录）+ 面向人的文档 |
 | `.github/workflows/` | CI（门禁见 §2） |
 
@@ -76,6 +76,11 @@ python3 -m pytest tests/test_no_workflow_pushes_to_main.py -q
 
 > 本地 `pytest` 若报 `mcp.server.mcpserver` 之类导入错误，多半是**本地依赖漂移**（本地 mcp 版本
 > 与 `requirements.txt` 不符），不是代码坏了——以 CI 为准。
+
+> **测试不得改写仓库里已发布的面**（2026-09-26）：`tests/conftest.py` 在 import 期把索引生成器的输出
+> 重定向到临时目录，并在**每个测试**前后对「已发布面」（计数 SSOT 注册表里的文件 + `data/lessons.json`
+> + `docs/_lessons_count.txt`）取 `(size, mtime_ns)` 快照；谁改了就以**测试 nodeid** 报错。写测试时
+> 不要「快照-还原」——那会掩盖写入；要么给它一个重定向路径（env / `tmp_path`），要么把调用打桩。
 
 ### PR 上的硬阻断门禁
 
@@ -129,7 +134,7 @@ python3 -m pytest tests/test_no_workflow_pushes_to_main.py -q
 | `email-register` worker | `npm run deploy:email` | 独立 worker |
 | `docs/lessons/**`、`docs/topics/**`、`docs/sitemap.xml` | `python3 scripts/build_lesson_pages.py`（幂等；`--check` 是门禁） | **生成物自己的清单**是 `docs/.generated-pages.json`：脚本只会删自己生成的页面（带 `Back to MisakaNet` 标记），手写文件永不删除。接线前它没人跑，站点因此有 205/378 个课程页、88 个失效页、主题页计数停在 176（实际 330）——见 handoff-2026-09-12 |
 | `data/lessons.json` | `python3 scripts/update_lessons_json.py` | **不要**用 `scripts/misakanet-index.py`：它缺 `preview/triggers/verified` 等字段，会静默回滚线上统计（#1374；CI 已有 schema 校验） |
-| 全站公开计数（README / ARCHITECTURE / 站点 meta / issue 模板 …） | `python3 scripts/sync_lesson_count.py`（幂等）· 门禁 `--check` | 由 `update_lessons_json.py` 在每日 `update-lessons.yml` 里自动跑；新增/改写受管句子后要同步更新脚本里的 `SITES` 注册表，`tests/test_lesson_count_ssot.py` 会锁住"能重复刷新"与"改写就报错"两条不变量 |
+| 公开计数：只有 `docs/index.html`（meta + 首屏降级）与两份 `llms.txt` 保留字面 | `python3 scripts/sync_lesson_count.py`（幂等）· 门禁 `--check` | 由 `update_lessons_json.py` 在每日 `update-lessons.yml` 里自动跑；其余表面（README×3、ARCHITECTURE、ROADMAP、JOIN、skill.md、integrations、`.well-known/*.json`、issue 模板…）改**指向**：GitHub 渲染的用 shields 动态徽章，其余在散文里写来源。`tests/test_lesson_count_ssot.py` 锁住"能重复刷新"、"改写就报错"、**面数上限**（8 行 / 3 文件，防止面数再长回去）与"已去数字的表面不得把数字写回来"四条不变量；要加面先改那个上限并写明理由 |
 | `data/badges/*.json` | 由各 badge workflow 生成到 `data` 分支 | 例如 smithery 徽章由 `update-smithery-badge.yml` 产出 |
 | 版本发布 | release-please 自动开 release PR | **不要手改** `.release-please-manifest.json`；PyPI 另走 `release-pypi.yml` 的 workflow_dispatch |
 | CF MCP 凭证（查 worker 日志等）| `python3 scripts/cf_mcp_auth.py --server cloudflare-observability [--refresh\|--verify]` | 一键完成 discovery/DCR/PKCE/换 token/验证 |
@@ -172,7 +177,9 @@ python3 -m pytest tests/test_no_workflow_pushes_to_main.py -q
 | `leaderboard-watch` 失败：`fatal: You are not currently on a branch` + 日志里有 `CONFLICT ... data/leaderboard_meta.json` | 两次 push 间隔太近 → 两个 watch run 并发，各自提交同一份**生成物**并互相 rebase 冲突；脚本里的 `git pull --rebase ... \|\| true` 把冲突吞掉，仓库停在 detached HEAD，随即 `git push` 报上面那句。已在 workflow 加 `concurrency`（串行化）+ `-X theirs`（生成物以本次快照为准）+ 显式 `git rebase --abort` 并对失败返回非零 |
 | 每日 `update-lessons.yml` 在 `Commit and push` 步骤失败：`refusing to allow a GitHub App to create or update workflow ... without \`workflows\` permission` | 该 job 的提交里含 `.github/workflows/**` 文件。`GITHUB_TOKEN` **永远**没有 `workflows` 权限（设计如此），所以"用 bot 维持 workflow 文件里的某个值"必然在值变化的那天炸——而且整个重新生成都会被丢弃。修法：把值从 workflow 里搬走，改成运行时读（如 `docs/_lessons_count.txt`，见 `pr-thank-you.yml`），或给该 job 换带 `workflows` 权限的 PAT/App（属安全决策）。计数 SSOT 已把这个文件从注册表移除并写明原因 |
 | 站点课程页/主题页缺失或计数陈旧（例：`docs/topics/contrib` 写 176、实际 330） | `python3 scripts/build_lesson_pages.py --check` 看清单，再跑一次不带 `--check` 的生成。生成物由每日 job 维护；**不要手改** `docs/lessons/**`、`docs/topics/**`、`docs/sitemap.xml`（`docs.yml` 的 push 门禁会红） |
+| **只加了 lesson 的 PR** 上 `test_repo_pages_match_the_index` 红，报 `generated pages drifted from data/lessons.json`，且点名的是**这个 PR 刚加的那几篇**页 | **不是页面漂移，是测试在写仓库**（2026-09-26 查明）：`tests/test_frontmatter_writers_agree.py` 把 `git push` 打桩成 `returncode=0`，而 `queue_lesson.write_lesson` 的**成功分支**会 `from update_lessons_json import main` 重建 `data/lessons.json`（并连带刷新 20+ 个受管计数面，实测一次套件跑完改写 **25 个 tracked 文件**）。于是**后运行**的页面门禁拿被改写的索引去比对 → 11 个"漂移"路径；**只在 PR 新增 lesson 时出现**，而 CI 的字母序保证每次都会撞上。**别照报错跑 `build_lesson_pages.py`**——那会把索引里根本没有的课程页提交上去，真因仍在。已修：生成器认 `MISAKANET_LESSONS_INDEX`（`conftest` import 期重定向，重定向时不同步计数面），`conftest` 另有逐测试的已发布面戳检查会点出**写入者**；`tests/test_no_test_writes_repo_data.py` 用 digest 锁住这两个方向 |
 | 需要看某个脚本的用途 | `ls scripts/` + `<script> --help`；`scripts/doctor.py` 做整体自检 |
+| 线上 `misakanet_search` 搜不到**今天刚合入的课**（但 `misakanet_get_lesson` 按 id 能取到）| **先看 `GET https://misakanet.org/api/search-index`**：`docCount` 是**已发布**的索引条数，`lastRefresh.corpusCount` 是**上一次刷新看到**的语料条数，两者不等就是「索引冻结」，`behindBy` 直接给出差值、`lastRefresh.reason` 给出原因（`storage write failed` = 行没写进去）。索引与语料都在一个 `kv_store` 行里，而 D1 单行上限 **2 MB**（实测生产形状的 rich 索引 1.63 MB ≈ 86% 上限），KV 兜底自 2026-09-22 起预算耗尽 → 写失败时**旧索引继续服务**、`builtAt` 冻结，而 `stale` 仍为 `false`（阈值 20 小时）。2026-09-26 实测：`docCount 411 / builtAt 08:16Z` 对 D1 里 417 篇。已改：索引 gzip+base64 存（1.63 MB → 0.24 MB），刷新结果写进**独立的** `worker_search_index_health` 行并作为 `lastRefresh` 暴露——诊断不能存放在「会写失败的那一行」里 |
 | 站点/README 上的课程数对不上（例如 meta description 写 435、实际 378） | 跑 `python3 scripts/sync_lesson_count.py --check` 看漂移清单，再跑不带 `--check` 的同一命令修好。若某条报 `matched 0× ... The sentence was reworded`，说明受管句子被改写：改文件或更新脚本里的 `SITES` 注册表——**不要**把该行删掉当成"没事"（旧机制就是这么静默失效的，见脚本 docstring） |
 | 需要看 worker 线上错误 | 用 `cf_mcp_auth.py` 拿 CF 凭证 → Cloudflare observability MCP 查（worker 的 `[observability]` 需启用） |
 

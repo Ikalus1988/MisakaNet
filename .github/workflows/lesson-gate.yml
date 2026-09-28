@@ -98,6 +98,14 @@ jobs:
       - name: No lesson changes — nothing for this gate to check
         if: steps.changed.outputs.any_changed != 'true'
         run: |
+          # `success` from this job means "there was nothing to check", not "the deliverable is
+          # fine" — and on a bounty PR those two are not the same thing. Measured 2026-09-26: two
+          # PRs claiming a *question-bounty* issue (whose task is a lesson under `lessons/`) carried
+          # this check green while adding no lesson at all — one patched `scripts/check_provenance.py`
+          # and the other added an essay at `solutions/issue_2283_solution.ts`. The annotation below is
+          # what a reviewer sees in the diff and on the check summary; the job still reports success
+          # because a required status check must always report (#1920).
+          echo "::warning title=Lesson Quality Gate verified nothing::This PR changes no lessons/**/*.md file, so this check says nothing about a lesson. If it claims a bounty whose task is 'a lesson under lessons/', the deliverable is missing until a lesson file appears."
           echo "This PR changes no `lessons/**/*.md` file, so the lesson gate has nothing to verify."
           echo "The job still reports success on purpose: a required status check must always report,"
           echo "or GitHub holds the PR at 'Expected — waiting for status to be reported' indefinitely."

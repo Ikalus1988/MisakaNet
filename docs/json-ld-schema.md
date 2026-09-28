@@ -69,7 +69,7 @@ Add this to your main HTML template (e.g., `templates/base.html` or `layout.html
 
 <!-- Open Graph Meta Tags -->
 <meta property="og:title" content="MisakaNet - Failure-Memory for AI Agents" />
-<meta property="og:description" content="Git-backed failure-memory for AI coding agents. 310+ lessons." />
+<meta property="og:description" content="Git-backed failure-memory for AI coding agents. N indexed failure lessons." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://misakanet.org" />
 <meta property="og:image" content="https://misakanet.org/promotional/misaka-compare.jpg" />
@@ -77,7 +77,7 @@ Add this to your main HTML template (e.g., `templates/base.html` or `layout.html
 <!-- Twitter Card Meta Tags -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="MisakaNet - Failure-Memory for AI Agents" />
-<meta name="twitter:description" content="Git-backed failure-memory for AI coding agents. 310+ lessons." />
+<meta name="twitter:description" content="Git-backed failure-memory for AI coding agents. N indexed failure lessons." />
 <meta name="twitter:image" content="https://misakanet.org/promotional/misaka-compare.jpg" />
 
 <!-- AI Agent Support Headers -->

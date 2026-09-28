@@ -109,10 +109,13 @@ def test_the_owner_filter_keys_on_the_login_not_on_the_display_name():
         "the filter no longer looks at the row's login, so an owner's PR can still appear under a "
         f"name taken from its title: {body}"
     )
-    # the wall and the agent counter must both route through it
-    assert html.count("!isOwnerRow(node, data)") >= 2 or html.count("!isOwnerRow(") >= 2, (
-        "the wall or the agent counter bypasses the owner filter"
-    )
+    # The wall routes its rows through it. This used to require **two** callers, because the stats
+    # card's "agent contributors" count was the second one — that count was removed on 2026-09-26
+    # (its input was an optional self-declared `Agent-Type:` header, so it measured who wrote a header,
+    # not who contributes). The assertion is about the wall now: a rendered row that skips the filter
+    # puts the owner back on their own wall under a name taken from a PR title, which is the defect the
+    # helper exists for.
+    assert "!isOwnerRow(node, data)" in html, "the wall bypasses the owner filter"
 
 
 def test_the_skip_owner_set_still_names_the_owners():

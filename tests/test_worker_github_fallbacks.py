@@ -10,14 +10,15 @@ two callers relied on the default:
 
 Neither path exists on `data`, measured 2026-09-25 (`contents/data/counter.json?ref=data` → 404), so
 both asked for a file that is not there, got a 404, and surfaced as `502` at exactly the moment the
-fallback was the only thing left. The counter's maintained copy is on `main`
-(`data/counter.json`, rewritten daily by `sync-node-counter.yml`, with its own `updated` date); the
-pr-genius handler's *no-token* branch had always read `main`, so one handler disagreed with itself.
+fallback was the only thing left.
 
-The counter case has a second edge worth recording: the `data` branch does carry a `counter.json`, at
-its **root**, frozen on **2026-06-01** (`{"current": 10047, "updated": "2026-06-01T02:25:00Z"}`) — that
-is the stale number issue #1820 was filed about. It is not a fallback; reading it again would restore the
-original defect in a different shape. Hence: no default ref, and every named (path, ref) pair is checked.
+The counter case went one step further on 2026-09-28: the read is **gone**, not repointed. A mirrored
+file is the wrong shape for that number — issue #1820 was filed because the `data` branch's copy sat
+frozen on 2026-06-01, and nothing in `/api/counter`'s response says how old the file was while the only
+use of `current` is predicting the id the next registrant is handed. The endpoint now answers 503 with
+`source: "unavailable"` when D1 and KV are both down
+(`workers/register-storage-d1.test.mjs` drives that path); this file keeps the pattern honest for the
+reads that remain.
 
 Two rules, both derived from the source rather than remembered:
 
@@ -74,7 +75,25 @@ def test_the_scanner_sees_the_calls_it_is_about():
     """A regex that matched nothing would make every assertion below vacuous."""
     found = calls()
     assert len(found) >= 3, found
-    assert any(path == "data/counter.json" for path, _ in found), found
+    assert any(path == "data/pr-genius-stats.json" for path, _ in found), found
+
+
+def test_the_counter_has_no_file_fallback_left():
+    """`/api/counter` must read no file at all — that is the whole 2026-09-28 change.
+
+    A pattern over the calls is not enough on its own (the read could move into a helper this file
+    does not parse), so the handler body is read as text: between its route condition and the next
+    route, there is no `fetchFromGitHub` and no mention of a counter file.
+    """
+    text = WORKER.read_text(encoding="utf-8")
+    start = text.index('url.pathname === "/api/counter"')
+    end = text.index('url.pathname === "/api/lessons"', start)
+    handler = text[start:end]
+    assert "fetchFromGitHub" not in handler, (
+        "the counter handler reads a file again — a mirrored number with no freshness guarantee is "
+        "what #1820 was filed about"
+    )
+    assert not any("counter.json" in path for path, _ in calls()), calls()
 
 
 def test_the_reader_has_no_default_ref():
@@ -97,13 +116,12 @@ def test_every_call_names_its_ref():
     )
 
 
-@pytest.mark.parametrize("path", ["data/counter.json", "data/pr-genius-stats.json"])
+@pytest.mark.parametrize("path", ["data/pr-genius-stats.json"])
 def test_the_main_backed_reads_name_main(path):
-    """The two that were broken: their files live on `main` and nowhere else."""
+    """The one that was broken and stayed: its file lives on `main` and nowhere else."""
     refs = {ref for p, ref in calls() if p == path}
     assert refs == {"main"}, (
-        f"{path} is read from {refs or 'nowhere'}; the maintained copy is on `main` "
-        f"(and `data/counter.json` is 404 on the `data` branch — measured 2026-09-25)"
+        f"{path} is read from {refs or 'nowhere'}; the maintained copy is on `main`"
     )
 
 

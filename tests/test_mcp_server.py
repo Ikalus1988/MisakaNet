@@ -241,22 +241,71 @@ def test_unknown_tool():
     check("error code is -32601", resp.get("error", {}).get("code") == -32601)
 
 
-def test_no_drafts_in_search():
-    print("\n-- search scope: no drafts --")
-    resp = rpc("tools/call", {
-        "name": "misakanet_search",
-        "arguments": {"query": "draft test lesson", "top": 10},
-    })
-    result_text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
-    result = json.loads(result_text)
+def test_search_scope_and_drafts():
+    """What this surface actually tells a caller about drafts — the old check here could never fail (#2270).
 
-    if "error" in result:
-        print("  WARN Search unavailable, skipping draft check")
+    It computed `draft_count = sum(1 for r in results if r.get("status") == "draft")` on a **default**
+    search. `status` is not in this surface's compact projection, nor in `summary` — only `detail=full`
+    carries it — so `r.get("status")` was `None` for every result whatever the search returned, and the
+    check passed unconditionally while claiming to police the search scope.
+
+    Measured here (2026-09-26), so the assertion is about this surface and not about a policy nobody has
+    implemented:
+
+        compact  keys: evidence_level, freshness, id, kind, problem, score, title
+        summary  keys: domain, evidence_level, freshness, id, kind, problem, tags, title
+        full     keys: description, domain, kind, path, score, source, status, tags, title
+
+    A caller at the default level therefore cannot tell a draft from a published lesson — and at compact
+    the `id` comes back empty as well, so it cannot cross-reference one either. Whether drafts should be
+    searchable at all, and whether the default level should say so, are the open decisions in #2270;
+    this test reds if either changes.
+    """
+    print("\n-- search scope: what this surface reveals about drafts --")
+
+    index = json.loads((REPO_ROOT / "data" / "lessons.json").read_text(encoding="utf-8"))
+    drafts = {e["id"] for e in index if e.get("status") == "draft"}
+    if not drafts:
+        check("corpus still carries drafts (probe is meaningful)", False,
+              "no draft lessons in data/lessons.json — this test would pass vacuously")
         return
 
-    results = result.get("results", [])
-    draft_count = sum(1 for r in results if r.get("status") == "draft")
-    check("no drafts in results", draft_count == 0, f"found {draft_count} drafts")
+    # The query comes from the corpus, not from my typing: the first version of this test hardcoded the
+    # lesson title and misspelled one word, so the probe returned nothing and the assertions below never
+    # ran. Deriving it means the fixture cannot drift from the lesson it is about.
+    probe = next((e for e in index if e["id"] in drafts and len(e.get("title", "")) > 20), None)
+    assert probe is not None, "no draft with a usable title to probe with"
+    query = probe["title"]
+
+    def search(detail):
+        resp = rpc("tools/call", {"name": "misakanet_search",
+                                  "arguments": {"query": query, "top": 3, "detail": detail}})
+        text = resp.get("result", {}).get("content", [{}])[0].get("text", "{}")
+        return json.loads(text)
+
+    compact, summary, full = search("compact"), search("summary"), search("full")
+    if "error" in compact:
+        print("  WARN Search unavailable, skipping the draft scope check")
+        return
+
+    compact_hits = compact.get("results", [])
+    check("the probe query returns a hit at compact", bool(compact_hits), f"got {compact_hits!r}")
+    if not compact_hits:
+        return
+
+    check("compact does not carry `status` (the field the old check read)",
+          "status" not in compact_hits[0], f"compact keys: {sorted(compact_hits[0])}")
+    check("summary does not carry it either",
+          all("status" not in r for r in summary.get("results", [])),
+          f"summary keys: {sorted(summary['results'][0]) if summary.get('results') else []}")
+
+    full_hits = full.get("results", [])
+    check("detail=full is where `status` appears",
+          bool(full_hits) and "status" in full_hits[0], f"full keys: {sorted(full_hits[0]) if full_hits else []}")
+    if full_hits:
+        check("and that lesson is a draft — so drafts are searchable here",
+              str(full_hits[0].get("status")) == "draft",
+              f"status={full_hits[0].get('status')!r} for {full_hits[0].get('title', '')[:40]!r}")
 
 
 def test_usage_status():
@@ -402,7 +451,7 @@ if __name__ == "__main__":
     test_get_lesson()
     test_submit_usage()
     test_unknown_tool()
-    test_no_drafts_in_search()
+    test_search_scope_and_drafts()
     test_usage_status()
     test_write_lesson_missing_fields()
     test_write_lesson_no_token()

@@ -41,7 +41,27 @@ sys.path.insert(0, str(REPO))
 
 GAP_LOG = REPO / "data" / "search_gaps.jsonl"
 QUEUE = REPO / "data" / "contribution_queue.jsonl"
-ENV_VARS = ("MISAKANET_GAP_LOG", "MISAKANET_CONTRIBUTION_QUEUE")
+INDEX = REPO / "data" / "lessons.json"
+ENV_VARS = ("MISAKANET_GAP_LOG", "MISAKANET_CONTRIBUTION_QUEUE", "MISAKANET_LESSONS_INDEX")
+
+
+def published_surfaces() -> dict[str, str | None]:
+    """Digest every file a run of the index generator may rewrite.
+
+    Read from the count SSOT's own registries instead of a hand-written list: a surface added there
+    (`scripts/sync_lesson_count.py`) is covered here the day it is added, which is the property a
+    hand-written list loses silently. Discovered by attribute rather than imported by name, because
+    the node metric was retired on 2026-09-26 and a hard-coded `NODE_SITES` import turned this whole
+    file into collection errors.
+    """
+    from scripts import sync_lesson_count as slc
+
+    rels = {site.path
+            for name, value in vars(slc).items()
+            if (name == "SITES" or name.endswith("_SITES")) and isinstance(value, tuple)
+            for site in value}
+    rels.update({"data/lessons.json", str(slc.COUNT_FILE)})
+    return {rel: digest(REPO / rel) for rel in sorted(rels)}
 
 
 def digest(path: Path) -> str | None:
@@ -92,6 +112,109 @@ def test_without_an_override_the_paths_stay_in_the_repository():
         "from misakanet.server.handlers.search import _GAPS_FILE as path", {}) == str(GAP_LOG)
     assert _resolve_in_subprocess(
         "from scripts.contribution_queue import QUEUE_FILE as path", {}) == str(QUEUE)
+    assert _resolve_in_subprocess(
+        "from scripts.update_lessons_json import OUTPUT as path", {}) == str(INDEX)
+
+
+# ── the published index (2026-09-26) ────────────────────────────────────────────────────────────
+#
+# The same defect as the two logs above, on the file that is *published*: the daily job rebuilds
+# `data/lessons.json` from `lessons/`, and so does `queue_lesson.write_lesson` after a successful push.
+# `tests/test_frontmatter_writers_agree.py` drove that tool with a `git push` stubbed to report
+# success, so the running suite rewrote the checkout's index (411 → 415 entries as soon as a pull
+# request added a lesson) and every managed count surface with it. The bill arrived in a different
+# test — `test_lesson_page_generator::test_repo_pages_match_the_index` compared the generated pages
+# against the rewritten index and reported 11 "drifted" pages on a branch that had touched none of
+# them, which is what a lesson-adding PR saw as its CI verdict.
+
+def test_the_index_honours_its_override(tmp_path):
+    target = tmp_path / "lessons.json"
+    got = _resolve_in_subprocess("from scripts.update_lessons_json import OUTPUT as path",
+                                 {"MISAKANET_LESSONS_INDEX": str(target)})
+    assert got == str(target), "the index generator ignores MISAKANET_LESSONS_INDEX"
+
+
+def test_this_test_session_redirected_the_index():
+    from scripts import update_lessons_json
+
+    assert REPO not in update_lessons_json.OUTPUT.parents, (
+        f"the generator still writes into the checkout ({update_lessons_json.OUTPUT}) — "
+        "tests/conftest.py's redirection is not in effect"
+    )
+    assert Path(os.environ["MISAKANET_LESSONS_INDEX"]) == update_lessons_json.OUTPUT
+
+
+def test_a_lesson_write_does_not_rewrite_the_index_or_the_published_counts(tmp_path, monkeypatch):
+    """Drive the call that did the damage, and check the *repository's* files afterwards.
+
+    This is the regression test for the defect, and it exercises the real rebuild rather than a stub:
+    `write_lesson` → stubbed-but-successful `git push` → `update_lessons_json.main()`.
+    """
+    import scripts.queue_lesson as q
+    import scripts.update_lessons_json as gen
+
+    before = published_surfaces()
+    monkeypatch.setattr(q, "LESSONS_DIR", tmp_path)
+    monkeypatch.setattr(q, "_update_index", lambda *a, **k: None)
+    monkeypatch.setattr(q, "_print_suggested_git", lambda *a, **k: None)
+
+    def _push_succeeds(*args, **kwargs):
+        class _Done:
+            returncode = 0
+            stdout = ""
+            stderr = ""
+        return _Done()
+
+    monkeypatch.setattr(q.subprocess, "run", _push_succeeds)
+    assert q.write_lesson("Isolation probe", "devops", ["probe"],
+                          "## Problem\n\nx\n\n## Root Cause\n\ny\n\n## Solution\n\nz\n\n## Verification\n\nw\n",
+                          source="test"), "write_lesson reported failure"
+
+    after = published_surfaces()
+    changed = sorted(rel for rel in before if before[rel] != after[rel])
+    assert changed == [], (
+        f"a lesson write from the test suite rewrote published files: {changed}. The lesson-page gate "
+        "then fails in a *later* test against the rewritten index, which is how a lesson-adding PR got "
+        "'generated pages drifted from data/lessons.json'"
+    )
+    # The other direction: isolation must not be achieved by making the generator a no-op.
+    assert gen.OUTPUT.exists() and json.loads(gen.OUTPUT.read_text(encoding="utf-8")), (
+        f"the redirected index ({gen.OUTPUT}) was never written, so the rebuild did not run and this "
+        "test proves nothing about it"
+    )
+    assert gen.OUTPUT != INDEX
+
+
+def test_a_redirected_run_leaves_the_count_surfaces_alone(tmp_path):
+    """`main()` must not sync the published counts when the index went somewhere else.
+
+    A fresh interpreter, because that is the shape of the real call (`write_lesson` imports `main`
+    into a running process) and because `sys.modules` surgery inside a test is how this file's first
+    version broke.
+    """
+    target = tmp_path / "lessons.json"
+    surfaces = published_surfaces()
+    code = (
+        "import sys\n"
+        "sys.path.insert(0, %r)\n"
+        "from scripts.update_lessons_json import main\n"
+        "main()\n" % str(REPO)
+    )
+    env = {k: v for k, v in os.environ.items() if k not in ENV_VARS}
+    env["MISAKANET_LESSONS_INDEX"] = str(target)
+    result = subprocess.run([sys.executable, "-c", code], cwd=REPO, env=env,
+                            capture_output=True, text=True, timeout=300)
+    assert result.returncode == 0, f"the redirected run failed:\n{result.stderr[-600:]}"
+    assert target.exists(), "the redirected run wrote no index at all"
+    assert "count markers not refreshed" in result.stdout, (
+        "the run did not report skipping the count surfaces, so the skip is not in effect:\n"
+        + result.stdout[-400:]
+    )
+    assert published_surfaces() == surfaces, (
+        "a run that wrote the index outside data/lessons.json still rewrote the published count "
+        "surfaces (README, ARCHITECTURE, the site's meta tags, …) — those numbers describe the "
+        "published index, so this makes them lie"
+    )
 
 
 # ── the session is redirected, and a real write does not reach the repository ──

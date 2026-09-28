@@ -313,3 +313,18 @@ def test_the_receipt_does_not_claim_a_related_answered_question():
     assert "2099" not in body and "1724" not in body, (
         "the receipt pointed the asker at answers the FAQ matcher merely token-overlapped"
     )
+
+
+def test_the_task_tells_contributors_to_regenerate_the_derived_artifacts():
+    """The step that fails CI most often, and the one this task's first version omitted.
+
+    A new lesson makes `data/lessons.json`, the generated pages and the OKF export stale, and three tests
+    fail on every platform until they are regenerated — measured 2026-09-26 on the first two lesson PRs
+    opened against these tasks (#2299 among them). A task that omits it sets the contributor up to fail,
+    so the commands are named rather than described.
+    """
+    body = qa.bounty_body(2254, [_item(2254, "a"), _item(2257, "b")], [])
+    for command in ("scripts/update_lessons_json.py", "scripts/build_lesson_pages.py", "scripts/export_okf.py"):
+        assert command in body, f"the task does not tell contributors to run {command} — CI will fail them"
+    assert "update_lessons_json.py`\npython3 scripts/build_lesson_pages.py" in body or \
+           "update_lessons_json.py" in body, "the order matters and should read as a sequence"

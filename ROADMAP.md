@@ -31,21 +31,28 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 > 规则：**本节所有数字都来自下面附录里的命令，可逐条复现**；无法复现的结论一律标注 **未验证**，
 > 不标注即视为已复现。下面 2026-08-22 的原文一律不删，只在新章节里给状态裁定。
 
-### 当前数字（受 SSOT 门禁维护）
+### 当前数字（动态徽章，不写死）
 
 | 指标 | 数值 |
 |---|---|
-| 公开索引语料（SSOT，当前） | **411** |
-| 已注册节点（当前） | **3981** |
-| domain 覆盖（当前） | **44** |
+| 公开索引语料 | ![lessons](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json) |
+| domain 覆盖 | ![domains](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/domains.json) |
 
-> 这三行由 `scripts/sync_lesson_count.py` 维护：每日 job 会重写它们，`--check` 不一致即红，
-> 与 README / `llms.txt` / 站点卡片同源。加这一节的原因是下面那张快照表——2026-09-23 实测它
+> 这两行不再是写死在文档里的数字：徽章读 `data` 分支的 `badges/*.json`，由 `update-badges.yml` 每日从
+> `data/lessons.json`（语料）与 `scripts/sync_lesson_count.py::canonical_domains`（domain）重算，
+> 所以数字没法过期——它不在文档的字节里。`llms.txt` 是唯一保留字面计数的入口（读它的人不会执行 JS）。
+>
+> 这一节以前由 `scripts/sync_lesson_count.py` 写死维护；起因是下面那张快照表——2026-09-23 实测它
 > **13 项里 9 项过期**（393/232/43 对 411/1047/44），而它周围写着"所有数字可逐条复现"。
 > **可复现 ≠ 会被重算**：这些数字此前没有写作者（#2095）。
 >
 > **下面那张 2026-09-16 的快照表是当天的记录，不是"当前值"**，其中的数字故意保留原样——
 > 本仓的惯例是旧条目只加状态裁定、不改写历史。
+>
+> **状态裁定（2026-09-26）：节点数不再对外发布。** 它不是用户数——`data/counter.json` 的 `current`
+> 是单调的**编号分配计数器**（匿名调用每次都会新建一个 node），只会随自动化增长，因此五个曾引用它的
+> 表面（`docs/llms.txt` 两份、`README.zh-CN.md`、`README.ja.md`、本表）都已去掉该行，
+> `sync_lesson_count.py --metric nodes` 也已移除。快照表里那一行只是当天的记录，其"来源命令"已失效。
 
 ### 状态快照（2026-09-16）
 

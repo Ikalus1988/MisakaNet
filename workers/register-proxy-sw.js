@@ -524,7 +524,7 @@ function getMcpServerInfo(env) {
     // this constant drifts from it (rule R7, added 2026-09-18). Before that rule existed the value
     // was a hand-kept string that no script, workflow or var injection ever touched — it sat at
     // 2.27.1 through six releases, and it is the *only* version every MCP client reads.
-    version: env.MCP_VERSION || "2.35.0", // x-release-please-version
+    version: env.MCP_VERSION || "2.38.0", // x-release-please-version
   };
 }
 
@@ -980,6 +980,46 @@ const BM25_STOPWORDS = new Set([
   "good", "some", "could", "them", "see", "other", "than", "then",
 ]);
 
+// ── CJK tokenisation (#2250, CJK-1) ────────────────────────────────────────────────────────────────
+//
+// `bm25Tokenize` above is a Latin tokenizer: it lowercases, splits on `[^a-z0-9]+` and drops tokens
+// shorter than two characters. Applied to Chinese or Japanese it therefore produces **nothing at all** —
+// `文件系统沙箱` becomes the empty string, which is why a mixed query's CJK half carries no weight and two
+// Latin tokens decide the answer (measured 2026-09-27: `wsl2 landlock 文件系统沙箱` returned an unrelated
+// lesson, while the same shape with a strong Latin half returned the right one).
+//
+// The standard fix in BM25 systems is character n-grams — Lucene's `CJKBigramFilter` — rather than word
+// segmentation: no dictionary to ship or maintain, and short queries work better. SQLite's `unicode61`
+// offers neither, which is the root cause here rather than a parameter.
+//
+// Two deliberate choices, both cheap to get wrong:
+//
+//   * **Runs, not the whole string.** Bigrams are emitted per run of CJK characters, so `wsl2 文件系统`
+//     cannot produce a bigram spanning the space (that would be a term nobody can type).
+//   * **A single-character run emits that character.** A one-character Chinese query is common, and
+//     bigrams alone would make it unmatchable.
+//
+// This is the *tokenizer* half of CJK-1 and nothing else: it does not touch the index, the scoring, or any
+// existing term namespace, so English postings and `avgDocLen` are byte-identical until the channel that
+// consumes these tokens is added (in `index.cjk`, next to — never mixed into — `index.terms`).
+// Kana, Hangul, the BMP ideograph blocks, and the supplementary ideograph planes (Extension B onward,
+// which are beyond UTF-16's basic plane and therefore need the `u` flag — otherwise a surrogate pair is
+// split into two half-characters and the bigram built from it matches nothing).
+const CJK_CLASS = "\\u3040-\\u30ff\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff\\uac00-\\ud7af"
+  + "\\u{20000}-\\u{2a6df}\\u{2a700}-\\u{2b73f}\\u{2b740}-\\u{2b81f}\\u{2b820}-\\u{2ceaf}\\u{2f800}-\\u{2fa1f}";
+const CJK_CHAR = new RegExp(`[${CJK_CLASS}]`, "u");
+
+function cjkBigrams(text) {
+  const runs = String(text || "").match(new RegExp(`[${CJK_CLASS}]+`, "gu")) || [];
+  const out = new Set();
+  for (const run of runs) {
+    const chars = [...run];                     // code points, so a surrogate pair is one character
+    if (chars.length === 1) { out.add(chars[0]); continue; }
+    for (let i = 0; i + 1 < chars.length; i += 1) out.add(chars[i] + chars[i + 1]);
+  }
+  return [...out];
+}
+
 function bm25Tokenize(text) {
   const lower = text.toLowerCase();
   // Split on non-alphanumeric, get base tokens
@@ -1347,6 +1387,28 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null) {
 // loadLessons() asks for the rich projection (problem/root_cause/solution) instead;
 // without it, body-only queries such as "exit code 137" match nothing.
 const BM25_INDEX_KEY = "worker_search_index";
+// Where the *outcome* of the last refresh attempt is recorded, in a row of its own.
+//
+// The index row is precisely the thing that stops being writable when storage is unhappy, so a
+// diagnosis stored inside it would be the one payload that never arrives. This row is a few hundred
+// bytes and is written on every attempt, successful or not, which is what turns "builtAt froze and
+// nobody knows why" into a readable state (`GET /api/search-index` → `lastRefresh`).
+const BM25_INDEX_HEALTH_KEY = "worker_search_index_health";
+
+// The index is one JSON blob in one `kv_store` row, and D1 caps a row at 2 MB
+// (https://developers.cloudflare.com/d1/platform/limits/ — "Maximum string, BLOB or table row size").
+// Measured on this corpus 2026-09-26, a production-shaped rich index is **1.63 MB** over 463 lesson
+// files / 10,133 terms: ~80% of the cap, growing with the corpus, and the failure mode past it is the
+// one this file keeps re-learning — the rebuild is not published, the previous index keeps answering,
+// and `builtAt` freezes while `GET /api/search-index` still says `available: true`. Measured on the
+// live worker the same day: `docCount 411 / builtAt 08:16Z`, while D1 already held 417 lessons and
+// `/api/lessons` served all 417 — a frozen index with a fresh source.
+//
+// So the row is stored gzipped and base64-encoded, which is ~4-6× smaller for this payload (term and
+// path strings repeat heavily). A legacy plain row still loads — `decodeIndexFromStorage` accepts both.
+const INDEX_ENCODING = "gzip+base64";
+const INDEX_ENCODING_KEY = "__indexEncoding";
+const INDEX_ROW_LIMIT_BYTES = 2_000_000;
 
 /**
  * Why this index must not be published, or `null` when it is complete enough to answer with.
@@ -1586,6 +1648,86 @@ function hasDurableStore(env) {
   return !!(d1Binding(env) || (env && env.MISAKANET_KV));
 }
 
+// ── index storage: one row, under a hard cap ──────────────────────────────────────────────────────
+//
+// `storePut` writes the value as one `kv_store.value` TEXT cell, so the index has a ceiling that has
+// nothing to do with the search itself. Encode/decode live here rather than in the refresh path so a
+// test can round-trip them without a database, and so `loadBM25Index` and the two HTTP endpoints all
+// read the stored row the same way.
+
+async function gzipToBase64(text) {
+  const bytes = new Uint8Array(
+    await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer(),
+  );
+  // Chunked: `String.fromCharCode(...bytes)` on a ~500 KB payload blows the argument limit.
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+
+async function gunzipFromBase64(payload) {
+  const binary = atob(payload);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return await new Response(
+    new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip")),
+  ).text();
+}
+
+/** The row to store for `json` (the index as it comes out of `buildBM25Index`). */
+async function encodeIndexForStorage(json) {
+  // No CompressionStream (an older runtime, or a test stub): store plain rather than lose the build.
+  if (typeof CompressionStream !== "function" || typeof btoa !== "function") return json;
+  try {
+    const payload = await gzipToBase64(json);
+    // A pathological payload (already-compressed input) must not grow: keep whichever is smaller.
+    if (payload.length + 60 >= json.length) return json;
+    return JSON.stringify({ [INDEX_ENCODING_KEY]: INDEX_ENCODING, payload });
+  } catch {
+    return json;
+  }
+}
+
+/** The index from a stored row — the encoded form, or a legacy plain one. `null` when unreadable. */
+async function decodeIndexFromStorage(raw) {
+  if (raw === null || raw === undefined || raw === "") return null;
+  let parsed = raw;
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (parsed && typeof parsed === "object" && parsed[INDEX_ENCODING_KEY] === INDEX_ENCODING) {
+    try {
+      return JSON.parse(await gunzipFromBase64(String(parsed.payload || "")));
+    } catch (error) {
+      debugLog(null, 1, "stored index could not be decoded", { error: error.message });
+      return null;
+    }
+  }
+  return parsed;
+}
+
+/** Read the stored index whatever encoding it is in. The one place that knows the key. */
+async function readStoredIndex(env) {
+  return await decodeIndexFromStorage(await storeGet(env, BM25_INDEX_KEY, "json"));
+}
+
+/** Record the outcome of a refresh attempt. Never throws: it runs on failure paths too. */
+async function recordIndexHealth(env, record) {
+  try {
+    await storePut(env, BM25_INDEX_HEALTH_KEY, JSON.stringify({ at: new Date().toISOString(), ...record }), {
+      expirationTtl: BM25_INDEX_TTL_SECONDS,
+    });
+  } catch (error) {
+    logInternal("search index health write failed", error);
+  }
+}
+
 async function refreshSearchIndex(env) {
   if (!hasDurableStore(env)) return { refreshed: false, reason: "no storage" };
   try {
@@ -1596,7 +1738,7 @@ async function refreshSearchIndex(env) {
     }
     const textMode = detectTextMode(lessons);
     const syncStamp = await fetchD1SyncStamp(env);
-    const existing = await storeGet(env, BM25_INDEX_KEY, "json");
+    const existing = await readStoredIndex(env);
     if (existing && existing.version === 1 && existing.built_at) {
       const age = Date.now() - Date.parse(existing.built_at);
       // docCount mismatch means the corpus changed (or the previous build ran
@@ -1611,7 +1753,10 @@ async function refreshSearchIndex(env) {
       if (Number.isFinite(age) && age < BM25_INDEX_MAX_AGE_MS &&
           existing.docCount === lessons.length && !modeChanged && !textChanged &&
           !corpusChanged) {
-        return { refreshed: false, reason: "fresh" };
+        const fresh = { refreshed: false, reason: "fresh", docCount: existing.docCount,
+                        corpusCount: lessons.length, textMode: existing.textMode || "lean" };
+        await recordIndexHealth(env, fresh);
+        return fresh;
       }
     }
     const index = buildBM25Index(lessons, { textMode });
@@ -1626,15 +1771,22 @@ async function refreshSearchIndex(env) {
     // query with nothing to show for it, so keep serving the previous index and say why.
     const shapeProblem = indexShapeProblem(index, lessons);
     if (shapeProblem) {
-      return { refreshed: false, reason: shapeProblem, docCount: index.docCount,
-               termCount: Object.keys(index.terms).length, textMode: index.textMode || "lean" };
+      const refused = { refreshed: false, reason: shapeProblem, docCount: index.docCount,
+                        corpusCount: lessons.length,
+                        termCount: Object.keys(index.terms).length, textMode: index.textMode || "lean" };
+      await recordIndexHealth(env, refused);
+      return refused;
     }
     // `storePut`, not `kvPut`: D1 first, KV as the fallback. The index is one key, so it costs
     // almost nothing either way — what it costs is *freshness*. While the KV budget is spent this
     // write is refused, the rebuild is reported as failed, and search keeps serving the previous
     // build: that is why `evidence_level` stayed empty on the live path long after the D1 side was
     // fixed (#2080, #2104).
-    const written = await storePut(env, BM25_INDEX_KEY, JSON.stringify(index), {
+    const plain = JSON.stringify(index);
+    const stored = await encodeIndexForStorage(plain);
+    const sizes = { plainBytes: plain.length, storedBytes: stored.length,
+                    encoding: stored.length === plain.length ? "plain" : INDEX_ENCODING };
+    const written = await storePut(env, BM25_INDEX_KEY, stored, {
       expirationTtl: BM25_INDEX_TTL_SECONDS,
     });
     // Drop the in-isolate memo: without this, the isolate that just rebuilt the
@@ -1647,16 +1799,24 @@ async function refreshSearchIndex(env) {
       // reports a successful refresh while search keeps serving the previous index —
       // which is exactly how the 2026-09-12 KV write outage froze the index at
       // 03:30Z unnoticed, with new lessons silently unable to enter search.
-      return { refreshed: false, reason: "storage write failed",
-               docCount: index.docCount, termCount: Object.keys(index.terms).length,
-               textMode: index.textMode || "lean" };
+      const failed = { refreshed: false, reason: "storage write failed", docCount: index.docCount,
+                       corpusCount: lessons.length,
+                       termCount: Object.keys(index.terms).length, textMode: index.textMode || "lean",
+                       ...sizes, overRowLimit: sizes.storedBytes > INDEX_ROW_LIMIT_BYTES };
+      await recordIndexHealth(env, failed);
+      return failed;
     }
-    return { refreshed: true, docCount: index.docCount, termCount: Object.keys(index.terms).length,
-             // Reported so the rich-text path can be verified from outside: a lean
-             // build means the extra D1 columns were unavailable (see the catch above).
-             textMode: index.textMode || "lean" };
+    const published = { refreshed: true, docCount: index.docCount, corpusCount: lessons.length,
+                        termCount: Object.keys(index.terms).length,
+                        // Reported so the rich-text path can be verified from outside: a lean
+                        // build means the extra D1 columns were unavailable (see the catch above).
+                        textMode: index.textMode || "lean", ...sizes };
+    await recordIndexHealth(env, published);
+    return published;
   } catch (error) {
-    return { refreshed: false, reason: `error: ${error.message}` };
+    const crashed = { refreshed: false, reason: `error: ${error.message}` };
+    await recordIndexHealth(env, crashed);
+    return crashed;
   }
 }
 
@@ -1678,7 +1838,7 @@ async function loadBM25Index(env) {
   if (!hasDurableStore(env)) return null;
 
   try {
-    const index = await storeGet(env, BM25_INDEX_KEY, "json");
+    const index = await readStoredIndex(env);
     if (index && index.version === 1) {
       _bm25Index = index;
       _bm25IndexExpiry = now + _BM25_MEMO_TTL_MS;
@@ -2811,9 +2971,11 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       // the relevance floor keeps judging what the user typed (see searchLessonsBM25).
       results = searchLessonsBM25(bm25Index, scoringQuery, args.domain, args.top || 5, args.query);
       source = "worker-bm25";
+      noteSearchBackend(env, "bm25");
       debugLog(env, 2, "BM25 search", { query: scoringQuery, results: results.length });
     } else {
       results = searchLessons(lessons, scoringQuery, args.domain, args.top || 5, args.query);
+      noteSearchBackend(env, "fallback");
       debugLog(env, 2, "Fallback search", { query: scoringQuery, results: results.length });
     }
 
@@ -3733,6 +3895,11 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
 
     // 5. Dispatch
     if (method === "initialize") {
+      // One extra counter bucket for the client dimension (see mcpClientBucket). Buffered like every
+      // other traffic count: this is analytics, and an extra write per request is what exhausted the
+      // free tier before (#1890). `ctx` is not in scope here, and the buffer flushes on the fetch
+      // path's own schedule.
+      bufferTraffic(env, null, mcpClientBucket(params, request));
       const serverInfo = getMcpServerInfo(env);
       // Respond with negotiated protocol version
       const negotiatedVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(params?.protocolVersion)
@@ -4965,6 +5132,46 @@ async function probeKeepaliveEndpoint(endpoint) {
 // ── Traffic Aggregation (Issue #1565) ──
 const TRAFFIC_TYPES = ["mcp", "agent", "crawler", "pageview"];
 
+// A fifth dimension, for the question the four above cannot answer (#A2, 2026-09-26).
+//
+// `classifyRequest` returns `"mcp"` for every `/mcp` request, so "14 788 calls/day" is a real number
+// that says nothing about *who* is calling: one agent's retry loop and twenty agents look identical.
+// `initialize` is the one place a client names itself — `params.clientInfo.name`, per the MCP spec —
+// and it costs one extra bucket in the counter that already exists.
+//
+// Deliberately not a header rule: `User-Agent` is the *fallback* (many SDKs send `node` or the runtime
+// name), and both are sanitised to `[a-z0-9._-]{1,32}` so a client cannot inject a bucket name, a
+// delimiter, or a 10 KB string into the counters table. Self-declared and unverified, exactly like
+// `agent_type` in `AGENTS.md` §3.3 — which is why this is a *measurement of calls by self-identified
+// client*, never a user count.
+const MCP_CLIENT_BUCKET_PREFIX = "mcpclient:";
+
+// Which search implementation answered (#2121).
+//
+// Two implementations serve `/mcp` searches — the BM25 index built from the rich D1 projection, and the
+// naive matcher over the same rows when that index is unavailable — and they rank differently. Before
+// this counter, "search gave me a bad answer" could not be attributed to either one from outside the
+// worker, so the question "which of the two should be deleted?" had no data behind it (#2121), and the
+// reports that did arrive (a mixed CJK query returning an unrelated lesson, for instance) could not be
+// told apart from index unavailability.
+//
+// Counting only: the ranking is untouched. It reuses the traffic buffer, so it costs one batched write
+// per flush rather than one write per query.
+const SEARCH_BACKEND_BUCKET_PREFIX = "searchbackend:";
+const SEARCH_BACKENDS = ["bm25", "fallback"];
+
+function noteSearchBackend(env, backend) {
+  bufferTraffic(env, null, SEARCH_BACKEND_BUCKET_PREFIX + backend);
+}
+
+function mcpClientBucket(params, request) {
+  const declared = params && params.clientInfo && (params.clientInfo.name || params.clientInfo.title);
+  const ua = (request && request.headers && request.headers.get("User-Agent")) || "";
+  const candidate = String(declared || ua).toLowerCase();
+  const name = candidate.replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32);
+  return MCP_CLIENT_BUCKET_PREFIX + (name || "unknown");
+}
+
 /** One class's count for one day, from whichever store holds it.
  *
  * Three places can hold it, and a reader that checks fewer silently loses a day:
@@ -4994,6 +5201,35 @@ async function readTrafficCount(env, cls, day) {
   ]);
   return (parseInt(fallback, 10) || 0) + (parseInt(legacy, 10) || 0);
 }
+
+/**
+ * Calls today, per self-declared MCP client (`mcpclient:<name>` buckets). D1 only: the KV fallback
+ * cannot enumerate keys, and inventing that here would cost more than the missing number is worth.
+ */
+async function readCounterBuckets(env, day, prefix, label) {
+  const d1 = d1Binding(env);
+  if (!d1) return {};
+  try {
+    const { results } = await d1.prepare(
+      `SELECT bucket, count FROM counters
+        WHERE scope = ?1 AND period = ?2 AND bucket LIKE ?3
+        ORDER BY count DESC LIMIT 50`,
+    ).bind("traffic", day, `${prefix}%`).all();
+    return Object.fromEntries((results || []).map(row => [
+      String(row.bucket).slice(prefix.length), Number(row.count) || 0,
+    ]));
+  } catch (error) {
+    logInternal(`${label} counts read failed`, error);
+    return {};
+  }
+}
+
+const readMcpClientCounts = (env, day) =>
+  readCounterBuckets(env, day, MCP_CLIENT_BUCKET_PREFIX, "mcp client");
+
+/** How many searches each implementation answered today (#2121). */
+const readSearchBackendCounts = (env, day) =>
+  readCounterBuckets(env, day, SEARCH_BACKEND_BUCKET_PREFIX, "search backend");
 
 /**
  * One `counters` row, or `null` when it does not exist — the difference matters when a value is being
@@ -5323,15 +5559,21 @@ export default {
       return jsonResponse({ code, invited: legacy, source: "kv" });
     }
 
-    // GET /api/counter — node registration counter (KV or GitHub)
+    // GET /api/counter — the node *allocation* counter (D1 first, then KV)
+    //
+    // There is no third source since 2026-09-28. The last resort used to be a GitHub read of
+    // `data/counter.json` (mirrored daily by `sync-node-counter.yml`), and it was the worst possible
+    // shape for this particular number: the file could be arbitrarily far behind — issue #1820 was
+    // filed because the `data` branch's copy was frozen 3.5 months earlier — a caller could not tell
+    // from the response, and the only thing `current` is *for* is predicting the id a registrant is
+    // about to be handed, where a stale value is worse than none. So when both stores are
+    // unavailable this says so instead of answering with a number from a file.
     if (request.method === "GET" && (url.pathname === "/api/counter" || url.pathname === "/api/counter.json")) {
-      const token = env.REGISTER_TOKEN;
-      if (!token) return jsonResponse({ error: "REGISTER_TOKEN not configured" }, 500);
       try {
         const data = await getWithCache(env, "proxy:counter", async () => {
           // D1 first: registrations increment the counter there since 2026-09-17 (the KV counter
           // is only as reliable as the KV daily write budget, and it froze for 6.5 hours during
-          // that day's outage). KV and the mirrored file stay as fallbacks, in that order.
+          // that day's outage). KV stays as the fallback.
           const d1 = d1Binding(env);
           if (d1) {
             try {
@@ -5351,15 +5593,24 @@ export default {
             const kvCounter = await env.MISAKANET_KV.get("node_counter", "text");
             if (kvCounter) return { current: parseInt(kvCounter), updated: new Date().toISOString().slice(0, 10) };
           }
-          // Last resort, and it has to be the *maintained* copy: `main` carries the mirrored counter
-          // (`sync-node-counter.yml` rewrites it daily, with its own `updated` date inside, so a
-          // reader can see how fresh it is). This line used to take the old default ref — the `data`
-          // branch — which does not have this path at all, so the counter answered 502 whenever D1
-          // and KV were both unavailable. The stale duplicate that *is* on that branch
-          // (`counter.json` at its root, frozen on 2026-06-01) is not a fallback; it is the number
-          // issue #1820 was filed about.
-          return fetchFromGitHub(token, "data/counter.json", "main");
+          // `null`, not an object with a null field: `getWithCache` only caches truthy results, so
+          // this keeps "nobody answered" out of the cache — otherwise one bad minute would pin the
+          // unavailable answer for the whole TTL window after the stores recovered.
+          return null;
         });
+        if (!data) {
+          return jsonResponse({
+            error: "counter unavailable",
+            code: "counter_unavailable",
+            current: null,
+            updated: null,
+            source: "unavailable",
+            hint: "The node counter is unavailable: neither the D1 service nor the KV fallback "
+                  + "answered. Retry shortly. This endpoint deliberately has no file fallback — a "
+                  + "stale node number is worse than none, because the one thing it is used for is "
+                  + "predicting the id the next registrant is handed (#1820).",
+          }, 503);
+        }
         return jsonResponse(data);
       } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }
@@ -5498,6 +5749,10 @@ export default {
         const today = new Date().toISOString().slice(0, 10);
         // Same reader as the aggregator, so the endpoint and the monthly roll-up cannot disagree
         // about what "today's traffic" is (D1 first, legacy KV key as the fallback).
+        //
+        // `/api/analytics/traffic` is where this belongs long-term; it needs a D1 binding for the
+        // bucket enumeration either way, and the index endpoint is the one already read when the
+        // question is "is search healthy".
         const entries = await Promise.all(
           TRAFFIC_TYPES.map(async cls => [cls, await readTrafficCount(env, cls, today)])
         );
@@ -5505,6 +5760,10 @@ export default {
           date: today,
           breakdown: Object.fromEntries(entries),
           total: entries.reduce((s, [, n]) => s + n, 0),
+          // Who called, as far as each client is willing to say (#A2). Read from the same counter
+          // family; empty rather than absent when the store is KV-only, because an enumeration is the
+          // one thing the fallback cannot do.
+          mcpClients: await readMcpClientCounts(env, today),
         });
       } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }
@@ -5614,7 +5873,7 @@ export default {
         if (!body.version || !body.terms || !body.docs) {
           return jsonResponse({ error: "Invalid index format" }, 400);
         }
-        await storePut(env, "worker_search_index", JSON.stringify(body), {
+        await storePut(env, BM25_INDEX_KEY, await encodeIndexForStorage(JSON.stringify(body)), {
           expirationTtl: 86400 * 7, // 7 days
         });
         return jsonResponse({
@@ -5631,8 +5890,14 @@ export default {
     if (request.method === "GET" && url.pathname === "/api/search-index") {
       if (!hasDurableStore(env)) return jsonResponse({ available: false });
       try {
-        const index = await storeGet(env, "worker_search_index", "json");
-        if (!index) return jsonResponse({ available: false });
+        const index = await readStoredIndex(env);
+        // Read unconditionally: the health row is what explains an *empty* or frozen index, so it has
+        // to be reported in exactly the states where the index itself cannot be read.
+        const health = await storeGet(env, BM25_INDEX_HEALTH_KEY, "json").catch(() => null);
+        if (!index) {
+          return jsonResponse({ available: false, lastRefresh: health || null,
+            corpusHint: "no index row: the cron has never published one, or the row was swept" });
+        }
         return jsonResponse({
           available: true,
           docCount: index.docCount,
@@ -5649,6 +5914,14 @@ export default {
           // stays because a frozen index is a symptom worth reporting whoever caused it.
           stale: !Number.isFinite(Date.parse(index.built_at)) ||
                  Date.now() - Date.parse(index.built_at) > BM25_INDEX_MAX_AGE_MS,
+          // `lastRefresh.corpusCount` is the corpus the last refresh *saw*; `docCount` is what is
+          // published. They disagreeing is the freeze this endpoint exists to make visible, and the
+          // reason is in `lastRefresh.reason` ("fresh" while they disagree = the comparison is wrong).
+          behindBy: Number.isFinite(health?.corpusCount) ? health.corpusCount - index.docCount : null,
+          // Which implementation answered today's searches (#2121): `{bm25: N, fallback: M}`. Empty
+          // without a D1 binding, for the same reason `mcpClients` is.
+          servedBy: await readSearchBackendCounts(env, new Date().toISOString().slice(0, 10)),
+          lastRefresh: health || null,
           corpusHint: "compare docCount against data/lessons.json; a frozen builtAt means the write failed",
         });
       } catch {
@@ -6323,6 +6596,11 @@ export {
   // Exported so workers/kv-write-budget.test.mjs asserts the *ratio* against the real batch size
   // instead of a hardcoded 10 that stops being true the moment the constant moves.
   TRAFFIC_FLUSH_BATCH,
+  mcpClientBucket,
+  MCP_CLIENT_BUCKET_PREFIX,
+  noteSearchBackend,
+  SEARCH_BACKEND_BUCKET_PREFIX,
+  SEARCH_BACKENDS,
   // Exported for workers/kv-write-family.test.mjs: the family mapping decides the rows the ranking is
   // built from, so it is worth asserting without a database.
   kvKeyFamily,
@@ -6354,6 +6632,8 @@ export {
   buildBM25Index,
   indexShapeProblem,
   bm25Tokenize,
+  cjkBigrams,
+  CJK_CHAR,
   matchTokens,
   // Query alias expansion (#1780) — exported so workers/query-alias-expansion.test.mjs
   // can assert the intermediate scoring query and compare it with the Python port.
@@ -6367,6 +6647,10 @@ export {
   relevanceFloor,
   refreshSearchIndex,
   BM25_INDEX_KEY,
+  BM25_INDEX_HEALTH_KEY,
+  encodeIndexForStorage,
+  decodeIndexFromStorage,
+  readStoredIndex,
   recordStaleLesson,
   recordUnsolvedSearch,
   // Exported for workers/unsolved-map.test.mjs: the map is the last KV *enumeration* in the worker, so
