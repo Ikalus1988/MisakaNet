@@ -1,0 +1,86 @@
+name: Approval Watch
+
+# Eight workflows sit behind the `release` environment, whose only required reviewer is the owner, and
+# nothing tells anyone when one of them starts waiting. Measured 2026-09-27: three runs waited on one person
+# in a single day (the worker deploy plus two npm publishes), one of them for ~23 hours; the health snapshot
+# recorded the same shape on 2026-09-21, a run waiting since 12:13Z with no notification anywhere.
+#
+# The obvious "fix" — move the deploy credential to an environment without a required reviewer — was tried
+# and rejected by this repository's own gate (`tests/test_secret_scoping.py`): the deploy-capable credential
+# belongs behind a reviewer, because the workflow file itself is editable by anyone who can merge, and
+# required status checks do not review intent. So the liveness problem is solved here instead: make the wait
+# *visible*, which changes no credential scoping at all.
+#
+# What this does NOT do: it never approves anything. An automation that approves deployments would defeat the
+# approval it is reporting on (`tests/test_approval_watch.py` asserts the absence of that call).
+on:
+  schedule:
+    # Twice an hour. The point is that a wait is noticed within minutes rather than the next time someone
+    # happens to look at the Actions tab.
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read          # list workflow runs
+  issues: write          # keep one tracking issue up to date
+
+concurrency:
+  group: approval-watch
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: List runs waiting for approval and update the tracking issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const LABEL = 'approval-watch';
+            const TITLE = 'Runs waiting for approval';
+            const waiting = (await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+              owner: context.repo.owner, repo: context.repo.repo, status: 'waiting', per_page: 100,
+            })).filter(r => r.status === 'waiting');
+
+            const lines = waiting.length
+              ? waiting.map(r => `- **${r.name}** — waiting since ${r.created_at} — ${r.html_url}`).join('\n')
+              : '_Nothing is waiting for approval right now._';
+            const age = waiting.map(r => (Date.now() - Date.parse(r.created_at)) / 3600000);
+            const oldest = age.length ? Math.max(...age).toFixed(1) : '0';
+            const body = [
+              '<!-- approval-watch -->',
+              `Updated ${new Date().toISOString()} by \`approval-watch.yml\`.`,
+              '',
+              `**${waiting.length}** run(s) waiting for approval; oldest **${oldest} h**.`,
+              '',
+              lines,
+              '',
+              'Approve at Actions → the run → “Review pending deployments”, or on the environment page:',
+              `https://github.com/${context.repo.owner}/${context.repo.repo}/deployments/activity_log?environments_filter=release`,
+            ].join('\n');
+
+            const open = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: LABEL, per_page: 100,
+            });
+            const existing = open.find(i => i.title === TITLE && !i.pull_request);
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number, body,
+              });
+              core.info(`updated #${existing.number}`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo, title: TITLE, body, labels: [LABEL],
+              });
+              core.info(`created #${created.data.number}`);
+            }
+            // An annotation, so a waiting run shows up in the Actions tab too, not only in the issue.
+            if (waiting.length) {
+              core.warning(`${waiting.length} run(s) waiting for approval, oldest ${oldest} h: `
+                + waiting.map(r => r.name).join(', '));
+            } else {
+              core.info('nothing waiting');
+            }
