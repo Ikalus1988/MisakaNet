@@ -7,6 +7,38 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.39.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.38.0...v2.39.0) (2026-09-28)
+
+
+### Features
+
+* **ci:** a run waiting for approval now says so, instead of waiting in silence ([#2385](https://github.com/Ikalus1988/MisakaNet/issues/2385)) ([2831662](https://github.com/Ikalus1988/MisakaNet/commit/28316625dc3de07fc5077a0406cad977488a80fe))
+* **search:** record which implementation answered, so "which one do we delete" has data ([#2353](https://github.com/Ikalus1988/MisakaNet/issues/2353)) ([6f1dc5c](https://github.com/Ikalus1988/MisakaNet/commit/6f1dc5c54c2fb94deb18244c60859c3418656178))
+* **search:** the CJK tokenizer CJK-1 needs, and the guard that it changes nothing for English ([#2361](https://github.com/Ikalus1988/MisakaNet/issues/2361)) ([1556b5a](https://github.com/Ikalus1988/MisakaNet/commit/1556b5afa59309ef4a48650393c940ce4a144c92))
+
+
+### Bug Fixes
+
+* **ci:** the link gate clamped `..` with forward slashes only, so windows-latest went red again ([#2398](https://github.com/Ikalus1988/MisakaNet/issues/2398)) ([14741ab](https://github.com/Ikalus1988/MisakaNet/commit/14741ab799fb5fbab6c624c13bd7add182727d79))
+* **ci:** the nav sync returned Windows paths, so every windows-latest leg was red ([#2389](https://github.com/Ikalus1988/MisakaNet/issues/2389)) ([8b12f1b](https://github.com/Ikalus1988/MisakaNet/commit/8b12f1b156e5c47d485993e595499ec1a3d193f0))
+* **ci:** update-badges broke on the node metric I retired — the red on main was mine ([#2347](https://github.com/Ikalus1988/MisakaNet/issues/2347)) ([c5fa045](https://github.com/Ikalus1988/MisakaNet/commit/c5fa04557846cbc512b26e5223ea8a59e3ff50fc))
+* **site:** the hero sold registration as the way in, and the card sold a counter's date as freshness ([#2354](https://github.com/Ikalus1988/MisakaNet/issues/2354)) ([15eea30](https://github.com/Ikalus1988/MisakaNet/commit/15eea30d0f6dfb366c4fd37d632b7823787598b4))
+
+
+### Documentation
+
+* **state:** the snapshot said three required checks and an unsolved approval queue — both moved today ([#2360](https://github.com/Ikalus1988/MisakaNet/issues/2360)) ([3d6dbdb](https://github.com/Ikalus1988/MisakaNet/commit/3d6dbdbee4845afefea0c3d91f51693144fd6c79))
+
+
+### Refactoring
+
+* **site:** the drawer nav has one source, and a gate instead of a habit ([#2365](https://github.com/Ikalus1988/MisakaNet/issues/2365)) ([377dc02](https://github.com/Ikalus1988/MisakaNet/commit/377dc02fd0ace7188d3f98f232e86f3ee6062ff4))
+
+
+### Tests
+
+* **site:** every internal link in docs/ must resolve, and two pages were lying ([#2393](https://github.com/Ikalus1988/MisakaNet/issues/2393)) ([297a9c2](https://github.com/Ikalus1988/MisakaNet/commit/297a9c2a0128431230e9dd8c4494653bc3d0de46))
+
 ## [2.38.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.37.0...v2.38.0) (2026-09-27)
 
 
