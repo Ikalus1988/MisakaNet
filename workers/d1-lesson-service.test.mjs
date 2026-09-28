@@ -675,3 +675,61 @@ test('one character over the cap is reported (#2138)', async () => {
 });
 
 
+
+test('a draft lesson is marked in the default detail levels and in get_lesson (#2270)', async () => {
+  // Measured on production 2026-09-29: `misakanet_search("FANUC Robot Alarm Code Reference Table")`
+  // returned `fanuc-alarm-code-reference` — a `status: draft` lesson — as its top hit, and its compact
+  // and summary hits carried no marker at all; `misakanet_get_lesson` for the same id answered
+  // `{path, content, identity, trust_notice, voice}`. Only `detail=full` ever said `status`. The corpus
+  // is 426 rows against 418 published lessons, so a caller reading the default answer could not tell it
+  // was quoting unreviewed content.
+  //
+  // This does **not** decide whether drafts should be searchable — that is #2270's open product
+  // question, and it stays open. It only makes the fact visible, without touching published responses.
+  const draftRow = {
+    ...LEGACY_ROW,
+    id: 'draft-shape',
+    path: 'lessons/contrib/draft-shape.md',
+    status: 'draft',
+    // The declared status also rides inside the raw frontmatter, which is where the get_lesson path has
+    // to read it from: that row carries `path`, `content_md` and `frontmatter`, not the column.
+    frontmatter: JSON.stringify({ status: 'draft', title: LEGACY_ROW.title }),
+  };
+  const env = {
+    MCP_TOKEN: TOKEN,
+    MISAKANET_D1: createD1([{ ...draftRow, content_md: LEGACY_BODY }]),
+    MISAKANET_KV: createKV(),
+  };
+
+  for (const detail of ['compact', 'summary']) {
+    const parsed = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail }, env));
+    assert.equal(parsed.results[0].status, 'draft',
+      `detail=${detail} did not mark a draft lesson: ${JSON.stringify(parsed.results[0])}`);
+  }
+  // Appended last, never reordered: a caller that reads keys positionally (or diffs a response) sees the
+  // old ones in the old places.
+  const compact = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail: 'compact' }, env));
+  assert.deepEqual(Object.keys(compact.results[0]),
+    ['id', 'title', 'problem', 'freshness', 'evidence_level', 'status', 'kind']);
+
+  const lesson = await resultText(await mcpTool('misakanet_get_lesson', { id: 'draft-shape' }, env));
+  assert.equal(lesson.status, 'draft', JSON.stringify(lesson));
+  assert.deepEqual(Object.keys(lesson), ['path', 'content', 'identity', 'trust_notice', 'voice', 'status']);
+});
+
+test('a published lesson is byte-identical to before the draft marker existed (#2270)', async () => {
+  // The other half of the contract, and the reason this change is additive rather than a new field for
+  // everyone: `status: "published"` — declared, or defaulted by the sync for a row that declares nothing
+  // — must not grow a key, so every existing consumer sees exactly the bytes it saw yesterday.
+  for (const row of [LEGACY_ROW, { ...LEGACY_ROW, id: 'no-status', status: undefined }]) {
+    const env = {
+      MCP_TOKEN: TOKEN,
+      MISAKANET_D1: createD1([{ ...row, content_md: LEGACY_BODY }]),
+      MISAKANET_KV: createKV(),
+    };
+    const compact = await resultText(await mcpTool('misakanet_search', { query: 'pip install timeout', detail: 'compact' }, env));
+    assert.ok(!('status' in compact.results[0]), `a published lesson grew a status key: ${JSON.stringify(compact.results[0])}`);
+    const lesson = await resultText(await mcpTool('misakanet_get_lesson', { id: row.id }, env));
+    assert.ok(!('status' in lesson), `get_lesson grew a status key for a published lesson: ${JSON.stringify(lesson)}`);
+  }
+});
