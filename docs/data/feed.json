@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-28T02:11:55.456918+00:00",
+  "generated_at": "2026-09-28T05:37:36.170629+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore: auto-update lessons.json, public counts and generated pages",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2374",
-      "timestamp": "2026-09-28T02:11:45Z",
+      "title": "chore(npm): record misakanet@2.38.0 as published",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2382",
+      "timestamp": "2026-09-28T05:32:43Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2366",
-      "timestamp": "2026-09-27T21:30:53Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "refactor(site): the drawer nav has one source, and a gate instead of a habit",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2365",
-      "timestamp": "2026-09-27T19:02:47Z",
+      "title": "chore(deps): update pymdown-extensions requirement from >=12.0.1 to >=12.1",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2367",
+      "timestamp": "2026-09-28T03:06:54Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2364",
-      "timestamp": "2026-09-27T18:57:03Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2376",
+      "timestamp": "2026-09-28T02:47:31Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(state): the snapshot said three required checks and an unsolved approval queue — both moved today",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2360",
-      "timestamp": "2026-09-27T18:51:17Z",
+      "title": "chore(deps-dev): bump wrangler from 4.134.0 to 4.139.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2368",
+      "timestamp": "2026-09-28T02:47:24Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2375",
+      "timestamp": "2026-09-28T02:17:51Z",
       "source": "github"
     },
     {
