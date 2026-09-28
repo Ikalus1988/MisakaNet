@@ -1756,6 +1756,26 @@ function detectTextMode(lessons) {
     ? "rich" : "lean";
 }
 
+/** The bigram channel's shape in a built or stored index — `null` when it carries none (#2355).
+ *
+ *  Why this exists as a named helper (2026-09-28): after the #2413/#2414 deploy the live index was
+ *  still `textVersion: 3`, i.e. built by the previous worker and therefore **without** `index.cjk`.
+ *  `rankCjkChannel` answers `[]` in that state, so the deployed fusion was a silent no-op — and the
+ *  only way to see it was to read `INDEX_TEXT_VERSION` out of the source and compare it by hand with
+ *  what `GET /api/search-index` reported. "Does the index carry the channel the code ranks?" is a
+ *  question the endpoint has to answer on its own.
+ */
+function cjkChannelShape(index) {
+  const cjk = index && index.cjk;
+  if (!cjk || !cjk.terms) return null;
+  return {
+    version: cjk.version || 0,
+    docCount: cjk.docCount || 0,
+    termCount: Object.keys(cjk.terms).length,
+    avgDocLen: cjk.avgDocLen || 0,
+  };
+}
+
 function buildBM25Index(lessons, { k1 = 1.5, b = 0.75, textMode } = {}) {
   const docs = [];
   const lengths = [];
@@ -1991,7 +2011,9 @@ async function refreshSearchIndex(env) {
           existing.docCount === lessons.length && !modeChanged && !textChanged &&
           !corpusChanged) {
         const fresh = { refreshed: false, reason: "fresh", docCount: existing.docCount,
-                        corpusCount: lessons.length, textMode: existing.textMode || "lean" };
+                        corpusCount: lessons.length, textMode: existing.textMode || "lean",
+                        textVersion: existing.textVersion || 0,
+                        cjkChannel: cjkChannelShape(existing) };
         await recordIndexHealth(env, fresh);
         return fresh;
       }
@@ -2010,7 +2032,8 @@ async function refreshSearchIndex(env) {
     if (shapeProblem) {
       const refused = { refreshed: false, reason: shapeProblem, docCount: index.docCount,
                         corpusCount: lessons.length,
-                        termCount: Object.keys(index.terms).length, textMode: index.textMode || "lean" };
+                        termCount: Object.keys(index.terms).length, textMode: index.textMode || "lean",
+                        cjkChannel: cjkChannelShape(index) };
       await recordIndexHealth(env, refused);
       return refused;
     }
@@ -2039,6 +2062,7 @@ async function refreshSearchIndex(env) {
       const failed = { refreshed: false, reason: "storage write failed", docCount: index.docCount,
                        corpusCount: lessons.length,
                        termCount: Object.keys(index.terms).length, textMode: index.textMode || "lean",
+                       cjkChannel: cjkChannelShape(index),
                        ...sizes, overRowLimit: sizes.storedBytes > INDEX_ROW_LIMIT_BYTES };
       await recordIndexHealth(env, failed);
       return failed;
@@ -2047,7 +2071,11 @@ async function refreshSearchIndex(env) {
                         termCount: Object.keys(index.terms).length,
                         // Reported so the rich-text path can be verified from outside: a lean
                         // build means the extra D1 columns were unavailable (see the catch above).
-                        textMode: index.textMode || "lean", ...sizes };
+                        textMode: index.textMode || "lean",
+                        // …and the same for the bigram channel: a cron line that says how many
+                        // bigrams it just published is the evidence that CJK ranking is live.
+                        textVersion: index.textVersion || 0,
+                        cjkChannel: cjkChannelShape(index), ...sizes };
     await recordIndexHealth(env, published);
     return published;
   } catch (error) {
@@ -6135,6 +6163,8 @@ export default {
           return jsonResponse({ available: false, lastRefresh: health || null,
             corpusHint: "no index row: the cron has never published one, or the row was swept" });
         }
+        const cjkChannel = cjkChannelShape(index);
+        const textVersion = index.textVersion || 0;
         return jsonResponse({
           available: true,
           docCount: index.docCount,
@@ -6142,7 +6172,16 @@ export default {
           avgDocLen: index.avgDocLen,
           builtAt: index.built_at,
           textMode: index.textMode || "lean",
-          textVersion: index.textVersion || 0,
+          textVersion,
+          // What the *running* code expects, next to what is published. `textVersion: 3` means nothing
+          // to a reader who cannot see the constant, and the difference is a real state: the deployed
+          // worker ranks a channel the published index does not carry yet, so CJK ranking is a silent
+          // no-op until the next cron rebuild. Measured 2026-09-28, right after this code was deployed.
+          expectedTextVersion: INDEX_TEXT_VERSION,
+          textVersionCurrent: textVersion === INDEX_TEXT_VERSION,
+          // The bigram channel (#2355) as published: how many bigrams, over how many documents. `null`
+          // means the index predates the channel, which is the state above.
+          cjkChannel,
           syncStamp: index.syncStamp || "", 
           // The cron can only renew this index if its storage accepts the write. When writes
           // fail, `builtAt` freezes and new lessons silently never enter search — report that
@@ -6160,6 +6199,10 @@ export default {
           servedBy: await readSearchBackendCounts(env, new Date().toISOString().slice(0, 10)),
           lastRefresh: health || null,
           corpusHint: "compare docCount against data/lessons.json; a frozen builtAt means the write failed",
+          channelHint: cjkChannel
+            ? "the published index carries the bigram channel; CJK ranking is live"
+            : "no bigram channel in the published index: rankCjkChannel() returns [] and CJK recall is at "
+              + "the pre-#2355 level until the cron rebuilds (≤15 min) — check textVersionCurrent",
         });
       } catch {
         return jsonResponse({ available: false });
