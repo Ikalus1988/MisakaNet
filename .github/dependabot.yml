@@ -1,27 +1,49 @@
 version: 2
 updates:
-  # GitHub Actions — auto-update action SHA pins
+  # GitHub Actions — auto-update action SHA pins.
+  #
+  # Grouped (2026-09-28): the five open PRs this ecosystem had produced at once were the same weekly
+  # bump for five different actions, so a Monday review was five diffs instead of one. `groups` makes it
+  # one PR per ecosystem per week; the `*` pattern is deliberate, because "miscellaneous" is exactly
+  # what a half-grouped config leaves behind.
+  #
+  # Still **not** auto-merged — and the one-line "never auto-merge" note that used to sit here is now a
+  # decision with its reason: this ecosystem's bumps edit `.github/workflows/**`, which is the deploy
+  # path (`deploy-worker.yml`, `misakanet-publish.yml`, `release-pypi.yml`) and the credential-bearing
+  # surface of the repository. The argument that made #2352 (a reviewer-free deploy environment)
+  # unacceptable — "whoever can merge a workflow edit reaches production" — makes an auto-merged action
+  # bump a supply-chain change nobody reads. `tests/test_workflow_pins.py` also cites this policy as the
+  # reason SHA pins stay fresh, so relaxing it would have to update that file too.
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
-    # PR Genius, wrangler-action, etc. — Dependabot will open PRs for new versions
-    # We keep SHA pinning + manual review (never auto-merge)
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns: ["*"]
 
   # npm — root package.json
+  #
+  # `directory: "/web"` was here as well, for a "web/ Cloudflare Pages frontend" that does not exist in
+  # this repository (`deploy:web` pointed at it until 2026-09-24, when the two dead deploy scripts were
+  # fixed — #2150). A dependabot entry for a missing directory is an ecosystem that updates nothing and
+  # reports nothing, which is the shape this repository keeps deleting elsewhere.
   - package-ecosystem: npm
     directory: "/"
     schedule:
       interval: weekly
-
-  # npm — web/ (Cloudflare Pages frontend)
-  - package-ecosystem: npm
-    directory: "/web"
-    schedule:
-      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm:
+        patterns: ["*"]
 
   # pip — Python dependencies
   - package-ecosystem: pip
     directory: "/"
     schedule:
       interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      pip:
+        patterns: ["*"]
