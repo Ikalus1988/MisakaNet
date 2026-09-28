@@ -1426,7 +1426,10 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null) {
   const matched = new Uint8Array(docCount);
   const coverage = new Uint8Array(docCount);       // distinct query terms per doc
   const informative = new Uint8Array(docCount);    // … that are discriminating
-  const matchedIdf = new Float64Array(docCount);   // IDF mass matched, per doc
+  // The floor's own counters, accumulated from `floorTerms` and nothing else: the same term set
+  // `floor.required` and `idfTotal` below are computed from. See the note at the floor.
+  const floorCoverage = new Uint8Array(docCount);
+  const floorMatchedIdf = new Float64Array(docCount);
   const termDf = new Map();
 
   // Which terms may decide the *order* (2026-09-23, #2079). `floorTerms` is the user's own words
@@ -1459,10 +1462,14 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null) {
       const norm = 1 - b + b * (len / avgDocLen);
       const score = idf * ((tf * (k1 + 1)) / (tf + k1 * norm));
       scores[doc] += score;
-      if (decidesOrder) userScores[doc] += score;
+      if (decidesOrder) {
+        userScores[doc] += score;
+        // … and the floor's counters, which is the same set of terms (see the floor note below).
+        floorCoverage[doc] += 1;
+        floorMatchedIdf[doc] += idf;
+      }
       matched[doc] = 1;
       coverage[doc] += 1;
-      matchedIdf[doc] += idf;
     }
   }
 
@@ -1481,14 +1488,26 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null) {
   }
 
   // Collect and sort results
+  //
+  // The floor is evaluated in ONE term space (#2358). `floor.required` and `idfTotal` are both
+  // computed from `floorTerms` — the words the user typed — so the document's side of the comparison
+  // has to be counted from those same words. It used to be counted from `queryTerms` (typed words
+  // *plus alias expansions*), which let a guess supply mass the denominator never contained. The
+  // measured case: `wsl2 landlock 文件系统沙箱` — the tokenizer cannot see the CJK words, so the floor
+  // terms are `wsl2·landlock` (idfTotal 9.966), while the alias table adds `sandbox` from 沙箱.
+  // `chrome-relay-browser-automation` matches `wsl2`+`sandbox` = 6.747, i.e. 0.677 against that
+  // denominator — above RELEVANCE_MIN_COVERAGE, so an unrelated lesson was returned as the answer.
+  // Counted from the floor terms it is 3.235/9.966 = 0.325 and the floor refuses it, which is what
+  // it was written to do. `covered` (below) stays over `queryTerms`: it is the fusion weight, and it
+  // describes this channel's own term space rather than the floor's.
   const results = [];
   for (let i = 0; i < docCount; i++) {
     if (!matched[i]) continue;
-    if (coverage[i] < floor.required) continue;
+    if (floorCoverage[i] < floor.required) continue;
     if (!informative[i]) continue;
     // IDF-weighted coverage: the guard that makes "no lesson matches" reachable for
     // natural language (see RELEVANCE_MIN_COVERAGE).
-    if (matchedIdf[i] / idfTotal < RELEVANCE_MIN_COVERAGE) continue;
+    if (floorMatchedIdf[i] / idfTotal < RELEVANCE_MIN_COVERAGE) continue;
     const doc = docs[i];
 
     // Apply domain filter

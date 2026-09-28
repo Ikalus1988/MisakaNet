@@ -157,6 +157,23 @@ test('both sets were actually run — a floor over an empty set cannot fail', ()
   }
 });
 
+test('the production-measured confidently-wrong answer is gone (#2358)', async () => {
+  // The query #2358 records from production: on 2026-09-27 the MCP endpoint answered it with
+  // `chrome-relay-browser-automation` — a lesson about driving a headless browser — because the two
+  // Latin tokens decided it (the CJK half contributed no statistics). The corpus still has no landlock
+  // lesson, so `no_match` is an honest answer here; an unrelated lesson is not. This is the case on the
+  // *real* corpus, which the fixture in `workers/search-floor-term-space.test.mjs` cannot cover: there
+  // the shape is reproduced in isolation, here it is pinned where it was measured.
+  const { ids, noMatch } = await search('wsl2 landlock 文件系统沙箱');
+  assert.ok(!ids.includes('chrome-relay-browser-automation'),
+    `the unrelated WSL2 browser-automation lesson is back: ${JSON.stringify(ids)}`);
+  if (noMatch) return;
+  const top = CORPUS.find((l) => l.id === ids[0]);
+  assert.ok(top, `the answer names a lesson the corpus does not have: ${ids[0]}`);
+  assert.ok(['wsl', 'linux'].includes(top.domain),
+    `the answer to a WSL2 filesystem-sandbox question is a ${top.domain} lesson: ${JSON.stringify(ids)}`);
+});
+
 test('a body-only query is answered from the body, not the title', () => {
   // The three `body-only` rows are the reason a title-only matcher cannot pass this bench: their
   // distinguishing token occurs in the lesson's body and in no title anywhere. The schema test proves
