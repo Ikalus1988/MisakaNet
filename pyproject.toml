@@ -74,6 +74,10 @@ harvest = [
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+# `archive/` is where dead code is kept, and one file there (`archive/dead/scripts/_fix.py`) does not
+# even parse — deliberately, as a recorded broken state. Excluding it here rather than inside the gate
+# means a contributor running `ruff check .` inspects the same 436 maintained files the gate does.
+extend-exclude = ["archive"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
