@@ -11,12 +11,13 @@
 // through the real MCP handler, with alias expansion on (the production default):
 //
 //   language   rows   top-1   top-3
-//   English     20    16/20   19/20
-//   CJK         22     6/22   11/22
+//   English     20    16/20   19/20   (unchanged by the CJK channel, #2356 — the floor is the same)
+//   CJK         22    11/22   15/22   (was 6/22 and 11/22; the bigram channel and its fusion, #2355/#2356)
 //
 // Both are *floors*, not equalities: the corpus grows, and a row that moves reds this gate only when
-// recall actually drops. Raising a floor is how an improvement is recorded — the CJK numbers are
-// expected to rise when #2355/#2356 land, and that is the point of writing them down now. Lowering one
+// recall actually drops. Raising a floor is how an improvement is recorded — the CJK pair was raised
+// from 6/22 and 11/22 on 2026-09-28, when the bigram channel (#2355) and its fusion (#2356) landed and
+// the English pair did not move at all. That is the property this file exists for. Lowering one
 // means accepting less than the code did on 2026-09-28, so it needs a reason in the commit message.
 //
 // The CJK set is `scripts/eval_query_aliases.py`'s twenty questions (the corpus's own measure of the
@@ -41,7 +42,7 @@ import { testToken } from './_test-token.mjs';
 // Exported so the schema test and this file cannot disagree about which corpus these numbers describe.
 export const MEASURED_ON = '2026-09-28, data/lessons.json at 418 rows';
 export const EN_FLOOR = { hit1: 16, hit3: 19 };
-export const ZH_FLOOR = { hit1: 6, hit3: 11 };
+export const ZH_FLOOR = { hit1: 11, hit3: 15 };
 
 export const QUERIES = readFileSync(new URL('../data/search-floor-queries.jsonl', import.meta.url), 'utf8')
   .split('\n')

@@ -9,8 +9,9 @@
 //                                                   the two Latin tokens decided the answer
 //
 // The tokenizer half landed in #2361 (`cjkBigrams()`); this is the index channel that consumes it. Rank
-// fusion is #2356 and the confidently-wrong case stays pinned in #2358 — **nothing here changes what a
-// query returns**, which is the point: the write side can be reviewed and merged on its own.
+// fusion landed in #2356 (`rankCjkChannel` + `fuseRankings`, tested in `search-cjk-fusion.test.mjs`) and the
+// confidently-wrong case stays pinned in #2358 — **nothing in this file changes what a query returns**,
+// which was the point: the write side was reviewable and mergeable on its own.
 //
 // The three risks the design named, and the check for each:
 //
