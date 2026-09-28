@@ -2,6 +2,7 @@
   "generator": "scripts/build_lesson_pages.py",
   "pages": [
     "docs/lessons/a-cloned-confirmation-line-poisons-the-context-loop-detection-must-compare-dialo/index.html",
+    "docs/lessons/a-corpus-cached-in-one-row-has-a-ceiling-and-the-diagnosis-cannot-live-in-that-r/index.html",
     "docs/lessons/a-fork-prs-workflow-run-is-created-as-action-required-the-suite-exists-and-never/index.html",
     "docs/lessons/a-github-token-push-cannot-trigger-workflows-so-a-branch-sync-freezes-ci/index.html",
     "docs/lessons/a-not-found-answered-with-a-retryable-error-code-makes-agents-retry-a-404-foreve/index.html",
@@ -472,6 +473,7 @@
     "docs/topics/wsl/index.html"
   ],
   "slugs": {
+    "a-corpus-cached-in-one-row-has-a-ceiling": "a-corpus-cached-in-one-row-has-a-ceiling-and-the-diagnosis-cannot-live-in-that-r",
     "a-stubbed-success-is-not-a-sandbox": "a-stubbed-success-is-not-a-sandbox-a-faked-git-push-let-the-suite-rewrite-the-pu",
     "accidental-pycache-commit": "accidental-pycache-commit",
     "agent-error-handling-hi": "agent-error-handling-hi",
