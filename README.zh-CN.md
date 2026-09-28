@@ -291,9 +291,13 @@ python3 search_knowledge.py "database locked"
 | 指标 | 数值 |
 |------|------|
 | 📚 Lessons | <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json" alt="知识" height="20"> (canonical, 去重后) |
-| 🎤 Network Voices | 5 条 |
-| 📡 Feed Items | 11 条 |
+| 🎤 Network Voices | 见 [voices.json](docs/community/voices.json) |
+| 📡 Feed Items | 见 [feed.json](docs/data/feed.json) 的 `item_count` |
 | 🔍 领域覆盖 | RAG, DevOps, Feishu, Fanuc, Network, Claude, MCP |
+
+> 这三个数字都有活来源（徽章 / `docs/community/voices.json` / `docs/data/feed.json`），所以表里不再写死。
+> 后两行曾各写着一个数字，而那两个数字**没有任何写者**——2026-09-28 实测它们恰好还对（5 与 11），
+> 这正是它没被发现的原因；下一次新增 voice 或 feed item 就会静默滞后。
 
 ### v2.17.0 新功能
 

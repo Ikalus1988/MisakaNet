@@ -464,3 +464,43 @@ def test_root_llms_carries_no_count_of_its_own():
         "`scripts/sync_lesson_count.py` for the files listed in its SITES registry; this file is not "
         "one of them and must stay a pointer."
     )
+
+
+# ── the README's 当前数据 table: two of its three rows had no writer ──────────
+# Measured 2026-09-28. `README.zh-CN.md`'s 当前数据 table read `| 🎤 Network Voices | 5 条 |` and
+# `| 📡 Feed Items | 11 条 |`. The sources are `docs/community/voices.json` and `docs/data/feed.json`,
+# and on that day both numbers happened to be **right** — which is the whole reason nobody had noticed
+# the class rather than the instance: nothing wrote them, so the next voice or feed item would leave the
+# table silently behind, and the row above them (`📚 Lessons`) had already been answered with a live
+# badge. The same file answers its corpus total with a pointer too ("当前条数见顶部「知识」徽章").
+#
+# Sibling of `_DE_NUMBERED_SURFACES` (that rule is about corpus counts); this one is about the table
+# that lists counts next to two other live numbers. `\d+ 条` is deliberately the only shape it forbids:
+# the table's third row names domains, not counts.
+_README_TABLE_COUNT = re.compile(r"\|\s*[^|\n]*\|\s*\d+\s*条\s*\|")
+
+
+def readme_table_counts(text: str) -> list[str]:
+    """Hand-written `N 条` cells in a markdown table — the shape the README's data table must not use."""
+    return [line.strip() for line in text.splitlines() if _README_TABLE_COUNT.search(line)]
+
+
+def test_the_readme_data_table_carries_no_hand_written_count():
+    text = (REPO / "README.zh-CN.md").read_text(encoding="utf-8")
+    offenders = readme_table_counts(text)
+    assert not offenders, (
+        "a count in this table has no writer, so it goes stale unobserved — point at the source "
+        f"(`docs/community/voices.json`, `docs/data/feed.json`) instead: {offenders}"
+    )
+
+
+def test_the_readme_table_rule_notices_a_count_coming_back():
+    """Guard: the rule above reads the real repository, so its failure mode needs a fixture."""
+    assert readme_table_counts("| 🎤 Network Voices | 见 [voices.json](docs/community/voices.json) |") == [], \
+        "the pointer form must pass, or the rule is unusable"
+    assert readme_table_counts("| 🎤 Network Voices | 5 条 |") == ["| 🎤 Network Voices | 5 条 |"], \
+        "a hand-written count must be reported"
+    assert readme_table_counts("| 📡 Feed Items | 11  条 |") != [], "spacing must not defeat the rule"
+    # A non-count cell that merely contains a number (a year, a port) is not a claim about the corpus.
+    assert readme_table_counts("| 📚 Lessons | 418 lessons, canonical |") == [], (
+        "the rule is about `N 条` cells; a corpus count is the `_DE_NUMBERED_SURFACES` rule's business")
