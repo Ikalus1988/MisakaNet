@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-28T14:11:43.228844+00:00",
+  "generated_at": "2026-09-28T21:16:41.812008+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "test(docs): a document may not send a reader to a lesson file that is not there",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2408",
-      "timestamp": "2026-09-28T14:02:20Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "test(ci): gate the two name-error classes that shipped on main today",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2405",
-      "timestamp": "2026-09-28T13:47:36Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(ci): three action bumps land, one cannot — the pinned path does not exist at the SHA it points at",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2404",
-      "timestamp": "2026-09-28T13:36:52Z",
+      "title": "fix(mcp): mark a non-published lesson in the default detail levels and in get_lesson",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2423",
+      "timestamp": "2026-09-28T18:06:03Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2403",
-      "timestamp": "2026-09-28T13:21:29Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2422",
+      "timestamp": "2026-09-28T17:34:20Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): land five bounty lessons cleanly — the answers were right, the 95 regenerated files were not",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2401",
-      "timestamp": "2026-09-28T13:09:12Z",
+      "title": "docs(readme): two rows of the 当前数据 table carried counts that nothing writes",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2421",
+      "timestamp": "2026-09-28T17:28:22Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(bench): measure the live service against the gate's floors, in one command",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2420",
+      "timestamp": "2026-09-28T17:22:58Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(ops): the troubleshooting table did not mention the edge's Python-urllib UA rule",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2419",
+      "timestamp": "2026-09-28T16:28:23Z",
       "source": "github"
     },
     {
