@@ -43,13 +43,15 @@ function throwingD1() {
   };
 }
 
-function createEnv({ d1, kvFails = false } = {}) {
+function createEnv({ d1, kvFails = false, kv = true } = {}) {
   const store = new Map();
   return {
     MCP_TOKEN: TOKEN,
     REGISTER_TOKEN: TOKEN,
     ...(d1 ? { MISAKANET_D1: d1 } : {}),
-    MISAKANET_KV: {
+    // `kv: false` models a deployment with no KV binding at all — the shape `/api/counter` has to
+    // answer for now that its file fallback is gone (see the counter_unavailable test below).
+    ...(kv ? { MISAKANET_KV: {
       async get(key, type) {
         if (!store.has(key)) return null;
         const raw = store.get(key);
@@ -60,7 +62,7 @@ function createEnv({ d1, kvFails = false } = {}) {
         return undefined;
       },
       async delete(key) { store.delete(key); },
-    },
+    } } : {}),
   };
 }
 
@@ -71,6 +73,17 @@ function assertNoInternals(text, label) {
   assert.ok(!/at Object\.|<anonymous>/.test(text), `${label} echoed a stack: ${text.slice(0, 200)}`);
 }
 
+// Every 5xx the worker can answer with, and the code it must carry so a caller can quote something
+// machine-readable instead of a sentence. An enumerated set rather than a regex: the point of this
+// assertion is that a *new* 5xx shape cannot appear without someone deciding its code here.
+//
+// `counter_unavailable` joined the list on 2026-09-28, when `/api/counter` lost its GitHub file
+// fallback: with D1 throwing and no KV binding the handler now says which stores it asked, instead of
+// answering with a number from a mirror that could be months old (issue #1820). That is still a 5xx —
+// a degradation scripts/site_health_check.py should see — so it belongs in this table rather than
+// outside the rule.
+const DOCUMENTED_5XX_CODES = new Set(['internal_error', 'counter_unavailable']);
+
 for (const path of ['/api/counter', '/api/lessons', '/api/analytics', '/api/analytics/traffic']) {
   test(`${path} reports a failure without internals`, async () => {
     const response = await worker.fetch(new Request(`https://misakanet.org${path}`), createEnv({ d1: throwingD1() }));
@@ -79,10 +92,25 @@ for (const path of ['/api/counter', '/api/lessons', '/api/analytics', '/api/anal
     if (response.status >= 500) {
       const parsed = JSON.parse(body);
       assert.ok(parsed.error, `${path} must still say that it failed`);
-      assert.equal(parsed.code, 'internal_error', `${path} must give a stable code to quote`);
+      assert.ok(DOCUMENTED_5XX_CODES.has(parsed.code),
+        `${path} gave an undocumented code (${parsed.code}) — add it to DOCUMENTED_5XX_CODES with a reason`);
     }
   });
 }
+
+test('/api/counter says which stores it asked when they are both down', async () => {
+  // The specific shape behind `counter_unavailable`: no D1 binding, no KV binding, and — since the
+  // 2026-09-28 change — no outbound request either. `workers/register-storage-d1.test.mjs` asserts the
+  // no-network half; this one pins the body a caller actually reads.
+  const env = createEnv({ d1: null, kv: false });
+  const response = await worker.fetch(new Request('https://misakanet.org/api/counter'), env);
+  assert.equal(response.status, 503);
+  const body = await response.json();
+  assert.equal(body.code, 'counter_unavailable');
+  assert.equal(body.current, null, 'never a number it could not verify');
+  assert.match(String(body.hint || ''), /D1 service nor the KV fallback|no file fallback/);
+  assertNoInternals(JSON.stringify(body), '/api/counter (unavailable)');
+});
 
 test('registration does not echo the storage error', async () => {
   const env = createEnv({ kvFails: true });

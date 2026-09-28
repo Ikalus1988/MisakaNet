@@ -1,45 +1,32 @@
 #!/usr/bin/env python3
-"""Node status dashboard — read MisakaNet KV to display node stats.
+"""Node status dashboard — read the live node counter and the corpus size.
 
 Usage:
-    # Via wrangler (requires Cloudflare auth)
-    python3 scripts/node_status.py
-
-    # Or pass KV namespace ID directly
-    python3 scripts/node_status.py --kv-id d5fb6b0797b84d17b0586fb982231ffe
+    python3 scripts/node_status.py                 # human-readable
+    python3 scripts/node_status.py --json          # machine-readable
 
 Output:
-    Node Counter: 10060
-    Latest Node ID: Misaka00060
-    Active Nodes (sampled): 5
+    Node Counter:     15774
+    Latest Node ID:   Misaka15774
+    Counter updated:  2026-09-27
+    Lessons:          418
+
+The counter is read from `https://misakanet.org/api/counter`, which serves D1 (or its KV fallback)
+and **only** those: the endpoint's last-resort read of `data/counter.json` was removed on 2026-09-28,
+and this script's own `--mirror` mode (and the `sync-node-counter.yml` job that called it) went with
+it. The file was a second copy of one number, and the wrong shape for it: `/api/counter` is read to
+predict the id the next registrant is handed, so a mirror that can be days behind — issue #1820 was
+filed when the `data` branch's copy was frozen 3.5 months earlier — is worse than no answer.
+
+So this script no longer reads or writes a file at all. When the endpoint cannot answer, it says so
+and exits 1 rather than printing a number from somewhere else. `data/counter.json` is not "kept for
+offline use": it was deleted in the same change, because a copy nobody writes is a number that only
+looks authoritative.
 """
 import argparse
 import json
-import subprocess
 import sys
 from pathlib import Path
-
-
-def read_counter_file(repo_root: Path) -> dict:
-    """Read node counter from data/counter.json.
-
-    The file is a *mirror* of the live counter, refreshed by ``--mirror`` (daily job); the
-    authoritative value is the worker's KV counter behind /api/counter.
-    """
-    counter_path = repo_root / "data" / "counter.json"
-    if not counter_path.exists():
-        return {"current": None, "updated": None}
-    try:
-        data = json.loads(counter_path.read_text(encoding="utf-8"))
-        return {"current": data.get("current"), "updated": data.get("updated", "?")[:10]}
-    except (json.JSONDecodeError, OSError):
-        return {"current": None, "updated": None}
-
-
-def read_test_nodes(repo_root: Path) -> list:
-    """Read test/non-formal node IDs (legacy, returns empty)."""
-    return []
-
 
 COUNTER_URL = "https://misakanet.org/api/counter"
 # Cloudflare in front of the endpoint answers 403 to urllib's default User-Agent, so the
@@ -48,7 +35,7 @@ USER_AGENT = "misakanet-node-status/1.0 (+https://misakanet.org)"
 
 
 def fetch_counter(url: str = COUNTER_URL, timeout: float = 20.0) -> dict:
-    """GET /api/counter, which serves the KV counter when it is bound."""
+    """GET /api/counter, which serves the durable counter when it is bound."""
     import urllib.request
 
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
@@ -56,90 +43,72 @@ def fetch_counter(url: str = COUNTER_URL, timeout: float = 20.0) -> dict:
         return json.loads(response.read().decode("utf-8"))
 
 
-def mirror_counter(repo_root: Path, payload: dict, *, today: str | None = None) -> int | None:
-    """Write the live counter into ``data/counter.json`` when it is ahead. Returns the new value.
+def usable_current(payload: object) -> int | None:
+    """The payload's `current` when it is a usable allocation counter, else None.
 
-    ``data/counter.json`` was written only by the issue-based registration workflow, while
-    every MCP registration (the npx installer's path) incremented the worker's KV counter —
-    two independent sequences for one fact. By 2026-09-15 the file said 10073 and KV said
-    10178: the site showed 178 nodes, the file implied 73, and nothing watched (issue #1683).
-
-    Monotonic on purpose: a payload that is *behind* the file means the endpoint fell back to
-    its GitHub copy or the KV read failed, and rewriting the file with it would move the
-    published count backwards. A malformed payload is refused for the same reason.
+    Same rule as `scripts/register_issue.py` (which fills a welcome comment from the same endpoint):
+    an int, not a bool, positive. `/api/counter` answers `{current: null, source: "unavailable"}` with
+    a 503 when neither store answered, and a 5xx body parsed as JSON is exactly the shape that would
+    otherwise print `Node Counter: None` or, worse, `0`.
     """
-    from datetime import datetime, timezone
-
+    if not isinstance(payload, dict):
+        return None
     current = payload.get("current")
     if not isinstance(current, int) or isinstance(current, bool) or current <= 0:
-        raise ValueError(f"counter payload has no usable 'current': {payload!r}")
-
-    path = repo_root / "data" / "counter.json"
-    data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
-    have = data.get("current")
-    if isinstance(have, int) and current <= have:
         return None
-
-    data["current"] = current
-    data["updated"] = today or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     return current
+
+
+def count_lessons(repo_root: Path) -> int:
+    """Lesson files on disk — the raw count, not the published index (`data/lessons.json`)."""
+    lessons_dir = repo_root / "lessons"
+    total = 0
+    for subdir in ("core", "contrib"):
+        directory = lessons_dir / subdir
+        if directory.exists():
+            total += len(list(directory.glob("*.md")))
+    return total
 
 
 def main():
     parser = argparse.ArgumentParser(description="MisakaNet node status dashboard")
     parser.add_argument("--json", action="store_true", help="JSON output")
-    parser.add_argument("--mirror", action="store_true",
-                        help="read the live counter and refresh data/counter.json when it is behind")
     parser.add_argument("--url", default=COUNTER_URL, help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parent.parent
 
-    if args.mirror:
-        try:
-            payload = fetch_counter(args.url)
-        except Exception as exc:                     # offline, DNS, non-JSON: leave the file alone
-            print(f"❌ could not read the live counter ({exc}) — data/counter.json left alone",
-                  file=sys.stderr)
-            return 1
-        try:
-            mirrored = mirror_counter(repo_root, payload)
-        except ValueError as exc:
-            print(f"❌ refusing to mirror: {exc}", file=sys.stderr)
-            return 1
-        print("✅ data/counter.json already matches the live counter"
-              if mirrored is None else f"✅ data/counter.json ← {mirrored} (live counter)")
-        return 0
+    try:
+        payload = fetch_counter(args.url)
+    except Exception as exc:                     # offline, DNS, 503, non-JSON: there is no value
+        print(f"❌ could not read the live counter ({exc})", file=sys.stderr)
+        print("   There is no local fallback any more: `data/counter.json` was deleted on 2026-09-28 "
+              "(it could be months behind, #1820). Retry when the endpoint answers, or read the "
+              "durable counter directly if you have Cloudflare access.", file=sys.stderr)
+        return 1
 
-    # Read from data/counter.json (source of truth)
-    counter_info = read_counter_file(repo_root)
-    counter = counter_info["current"]
+    counter = usable_current(payload)
     latest_id = f"Misaka{str(counter).zfill(5)}" if counter else "unknown"
-    test_nodes = read_test_nodes(repo_root)
-
-    # Count lessons
-    lessons_dir = repo_root / "lessons"
-    lesson_count = 0
-    for subdir in ("core", "contrib"):
-        d = lessons_dir / subdir
-        if d.exists():
-            lesson_count += len(list(d.glob("*.md")))
+    updated = payload.get("updated") if isinstance(payload, dict) else None
+    lesson_count = count_lessons(repo_root)
 
     if args.json:
         print(json.dumps({
             "counter": counter,
             "latest_node_id": latest_id,
-            "counter_updated": counter_info["updated"],
-            "test_nodes_count": len(test_nodes),
+            "counter_updated": updated,
+            "source": payload.get("source", "durable-store") if isinstance(payload, dict) else None,
             "lesson_count": lesson_count,
         }, ensure_ascii=False, indent=2))
     else:
         print(f"Node Counter:     {counter or 'unknown'}")
         print(f"Latest Node ID:   {latest_id}")
-        print(f"Counter updated:  {counter_info['updated']}")
-        print(f"Test nodes:       {len(test_nodes)} (excluded from active count)")
-        print(f"Lessons:          {lesson_count}")
+        print(f"Counter updated:  {updated or '?'}")
+        print(f"Lessons (files):  {lesson_count}")
+
+    # A 2xx whose body carries no usable counter is still an unavailable answer: exit 1 so a caller
+    # scripting this notices, instead of reading "unknown" as a value.
+    return 0 if counter else 1
 
 
 if __name__ == "__main__":
