@@ -228,14 +228,45 @@ def test_the_agent_contributor_count_is_not_published_as_a_stat(page):
 def test_the_registration_success_panel_still_gets_a_counter_to_estimate_from(page):
     """Deleting the timeline nearly took this with it.
 
-    The success panel estimates the visitor's node number as `data.node_number || (CURRENT_COUNTER +
-    1)` when the worker returns none. `CURRENT_COUNTER` was assigned inside `loadStats()` for the
-    timeline's benefit; a deletion that removed the assignment as "dead" would have frozen the
-    estimate at its initial value and shown a wrong node number to someone who had just registered.
+    The success panel predicts the visitor's node number from `CURRENT_COUNTER + 1` when the worker
+    returns none. `CURRENT_COUNTER` is assigned inside `loadStats()` for the panel's benefit only; a
+    deletion that removed the assignment as "dead" would freeze the prediction, and this is the one
+    number a visitor reads back about *themselves*.
+
+    2026-09-28 changed what an unusable counter means. It used to be seeded with a constant (10010)
+    and refreshed with `Number(counter.current) || CURRENT_COUNTER`, so an unavailable endpoint still
+    produced a number — from a default or from whatever was read last. `/api/counter` lost its file
+    fallback that day (the mirror could be months old; issue #1820), so the page now treats "no value"
+    as a state: `null`, and the panel prints no id at all rather than a wrong one. Both halves are
+    pinned here, because either alone is a regression: a constant seed, or a `||` that turns
+    `Number(null) === 0` back into a number.
     """
     code = uncommented(page)
-    assert "CURRENT_COUNTER + 1" in code, "the success panel's estimate moved"
-    assert re.search(r"CURRENT_COUNTER = Number\(counter\.current\)", code), (
-        "CURRENT_COUNTER is no longer refreshed from the counter — the registration success panel "
-        "would estimate from a constant"
+    assert "CURRENT_COUNTER + 1" in code, "the success panel's prediction moved"
+    assert re.search(r"CURRENT_COUNTER = Number\.isFinite\(readCounter\)[^;]*\? readCounter : null", code), (
+        "CURRENT_COUNTER is no longer refreshed from the counter, or no longer distinguishes "
+        "'no value' from a value — the success panel would print a node id it never read"
+    )
+    assert re.search(r"let CURRENT_COUNTER = null;", code), (
+        "CURRENT_COUNTER is seeded with a constant again: an unavailable counter would then predict a "
+        "node id from that constant"
+    )
+    assert re.search(r"const readCounter = counter \? Number\(counter\.current\) : NaN;", code), (
+        "the counter read no longer coerces explicitly — `Number(null)` is 0, so a null payload must "
+        "not travel through a bare Number() into CURRENT_COUNTER"
+    )
+    # The prediction itself: a number only when the counter was read, `null` otherwise. This is the
+    # line the whole change is about — `data.node_number || (CURRENT_COUNTER + 1)` needs a
+    # `CURRENT_COUNTER` that is never a stand-in.
+    assert re.search(
+        r"const estimatedNode = Number\(data\.node_number\)\s*"
+        r"\|\|\s*\(CURRENT_COUNTER === null \? null : CURRENT_COUNTER \+ 1\);",
+        code,
+    ), (
+        "the success panel's prediction no longer distinguishes 'no counter value' from a value — it "
+        "would print a node id derived from a number this page never read"
+    )
+    assert "regNodeLineNoNumber" in code, (
+        "the no-number branch lost its own wording — the panel would reuse 'estimated #...' for a "
+        "number it does not have"
     )

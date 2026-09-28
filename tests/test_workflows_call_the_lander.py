@@ -42,7 +42,6 @@ import land_change  # noqa: E402  (path inserted above)
 
 # workflow → the branch the lander must be told to use.
 EXPECTED_BRANCH = {
-    "sync-node-counter.yml": "bot/sync-node-counter",
     "update-lessons.yml": "bot/update-lessons",
     "build-feed.yml": "bot/build-feed",
     "leaderboard-watch.yml": "bot/leaderboard-watch",

@@ -45,9 +45,6 @@ expected`），所以那条路当时是**既错又断**。
   Worker: KV node_counter +1   ← 唯一写入者
           KV node:MisakaXXXXX
        ↓
-  GitHub data/counter.json     ← 只读镜像，由 sync-node-counter.yml 每日同步
-                                  （bot 分支 → PR → auto-merge，见
-                                   docs/maintainer/automation-lands-via-pr.md）
 ```
 
 站点注册页在轮询 issue 评论里的 `节点代号**MisakaXXXXX**`：那是 **worker 的下一个号**（读
@@ -63,4 +60,4 @@ expected`），所以那条路当时是**既错又断**。
 | API 代理 Worker | `workers/register-proxy-sw.js`（`wrangler.toml` 的 `main`；push main 自动部署） |
 | API Worker 配置 | `workers/wrangler.api.jsonc` |
 | Issue 注册 Workflow | `.github/workflows/register.yml` |
-| 节点计数器 | `data/counter.json`（GitHub） + KV `node_counter`（实时） |
+| 节点计数器 | worker 的 D1 `counters` 表（主）/ KV `node_counter`（回退）——2026-09-28 起仓库里**没有**副本：`/api/counter` 不再读文件，D1 与 KV 都不可用时返回 503 `counter_unavailable`（陈旧值比没有更糟，#1820）|
