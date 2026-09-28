@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-09-27T21:27:23.687998+00:00",
+  "generated_at": "2026-09-28T02:11:55.456918+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore: auto-update lessons.json, public counts and generated pages",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2374",
+      "timestamp": "2026-09-28T02:11:45Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2366",
+      "timestamp": "2026-09-27T21:30:53Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "refactor(site): the drawer nav has one source, and a gate instead of a habit",
@@ -26,18 +40,12 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "feat(search): the CJK tokenizer CJK-1 needs, and the guard that it changes nothing for English",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2361",
-      "timestamp": "2026-09-27T18:43:07Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2359",
-      "timestamp": "2026-09-27T18:33:28Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "A corpus cached in one row has a ceiling, and the diagnosis cannot live in that row",
+      "url": "lessons/contrib/a-corpus-cached-in-one-row-has-a-ceiling.md",
+      "timestamp": "2026-09-27",
+      "domain": "search",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -69,14 +77,6 @@
       "url": "lessons/core/an-error-code-that-says-retry-cannot-carry-a-not-found.md",
       "timestamp": "2026-09-25",
       "domain": "api",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A whole-file content push silently reverts the lines another writer owns",
-      "url": "lessons/core/whole-file-content-push-reverts-managed-lines.md",
-      "timestamp": "2026-09-25",
-      "domain": "ci",
       "source": "lessons"
     },
     {
