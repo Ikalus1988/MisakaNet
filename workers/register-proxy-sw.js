@@ -5559,15 +5559,21 @@ export default {
       return jsonResponse({ code, invited: legacy, source: "kv" });
     }
 
-    // GET /api/counter — node registration counter (KV or GitHub)
+    // GET /api/counter — the node *allocation* counter (D1 first, then KV)
+    //
+    // There is no third source since 2026-09-28. The last resort used to be a GitHub read of
+    // `data/counter.json` (mirrored daily by `sync-node-counter.yml`), and it was the worst possible
+    // shape for this particular number: the file could be arbitrarily far behind — issue #1820 was
+    // filed because the `data` branch's copy was frozen 3.5 months earlier — a caller could not tell
+    // from the response, and the only thing `current` is *for* is predicting the id a registrant is
+    // about to be handed, where a stale value is worse than none. So when both stores are
+    // unavailable this says so instead of answering with a number from a file.
     if (request.method === "GET" && (url.pathname === "/api/counter" || url.pathname === "/api/counter.json")) {
-      const token = env.REGISTER_TOKEN;
-      if (!token) return jsonResponse({ error: "REGISTER_TOKEN not configured" }, 500);
       try {
         const data = await getWithCache(env, "proxy:counter", async () => {
           // D1 first: registrations increment the counter there since 2026-09-17 (the KV counter
           // is only as reliable as the KV daily write budget, and it froze for 6.5 hours during
-          // that day's outage). KV and the mirrored file stay as fallbacks, in that order.
+          // that day's outage). KV stays as the fallback.
           const d1 = d1Binding(env);
           if (d1) {
             try {
@@ -5587,15 +5593,24 @@ export default {
             const kvCounter = await env.MISAKANET_KV.get("node_counter", "text");
             if (kvCounter) return { current: parseInt(kvCounter), updated: new Date().toISOString().slice(0, 10) };
           }
-          // Last resort, and it has to be the *maintained* copy: `main` carries the mirrored counter
-          // (`sync-node-counter.yml` rewrites it daily, with its own `updated` date inside, so a
-          // reader can see how fresh it is). This line used to take the old default ref — the `data`
-          // branch — which does not have this path at all, so the counter answered 502 whenever D1
-          // and KV were both unavailable. The stale duplicate that *is* on that branch
-          // (`counter.json` at its root, frozen on 2026-06-01) is not a fallback; it is the number
-          // issue #1820 was filed about.
-          return fetchFromGitHub(token, "data/counter.json", "main");
+          // `null`, not an object with a null field: `getWithCache` only caches truthy results, so
+          // this keeps "nobody answered" out of the cache — otherwise one bad minute would pin the
+          // unavailable answer for the whole TTL window after the stores recovered.
+          return null;
         });
+        if (!data) {
+          return jsonResponse({
+            error: "counter unavailable",
+            code: "counter_unavailable",
+            current: null,
+            updated: null,
+            source: "unavailable",
+            hint: "The node counter is unavailable: neither the D1 service nor the KV fallback "
+                  + "answered. Retry shortly. This endpoint deliberately has no file fallback — a "
+                  + "stale node number is worse than none, because the one thing it is used for is "
+                  + "predicting the id the next registrant is handed (#1820).",
+          }, 503);
+        }
         return jsonResponse(data);
       } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }

@@ -22,7 +22,7 @@ permissions:
 
 # Two runs of this job would each regenerate `docs/data/activity.json` and push it through the lander,
 # which force-pushes its own stable branch — serialised like its siblings (`update-lessons`,
-# `sync-node-counter`, `leaderboard-watch`), not cancelled: an interrupted run leaves the feed stale.
+# `leaderboard-watch`), not cancelled: an interrupted run leaves the feed stale.
 concurrency:
   group: build-feed
   cancel-in-progress: false
