@@ -63,7 +63,8 @@
           "type": "json",
           "path": "docs/.well-known/glama.json",
           "jsonpath": "$.version"
-        }
+        },
+        "API.md"
       ]
     }
   }

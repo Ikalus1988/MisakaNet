@@ -195,9 +195,16 @@ Each bounty is a chance to contribute and get recognized. Fork the repo, complet
 ## Version Info
 
 ```
-MisakaNet v2.30.2
+MisakaNet — server version: MCP `initialize` → `serverInfo.version` (https://misakanet.org/mcp)
 Protocol: Apache 2.0
 Lessons: https://misakanet.org/llms.txt
 IO: https://misakanet.org
 Repo: https://github.com/Ikalus1988/MisakaNet
 ```
+
+The version line used to be a literal — it said `2.30.2` and sat there for nine releases while `main`
+reached `2.39.0`. That is the same defect the READMEs were fixed for on 2026-09-20: a number with no writer
+is a number that goes stale unobserved, because the only rule that read it was an *upper* bound, so any
+older value is accepted forever. Every other line in this block is a live pointer, so this one is too.
+(`tests/test_version_consistency.py` now fails if a hand-written server version comes back here, and if
+API.md's §2.3 example payload grows one.)

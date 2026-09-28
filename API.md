@@ -1,6 +1,6 @@
 # MisakaNet API Reference
 
-> **Version:** 2.30.2 | **Protocol:** `misaka-protocol.json`
+> **Version:** 2.39.0 <!-- x-release-please-version --> | **Protocol:** `misaka-protocol.json`
 
 MisakaNet exposes a multi-surface API: CLI search, MCP tools, GitHub-based contribution endpoints, and optional Hub federation. This document catalogues every supported interface.
 
@@ -127,9 +127,22 @@ Server identity advertised at connection:
 ```json
 {
   "name": "misakanet",
-  "version": "2.30.2",
+  "version": "<serverInfo.version>",
   "description": "MisakaNet knowledge search and contribution"
 }
+```
+
+`version` is what the **deployed** worker reports, which is not always what `main` says: a worker deploy is
+approval-gated, so production can run a commit several releases behind. It is deliberately a placeholder
+rather than a literal — this example carried `2.30.2` for nine releases while the manifest said `2.39.0`,
+and no rule could see it, because the only check reading this file compared against an *upper* bound
+(`tests/test_version_consistency.py`). Read the live value from an `initialize` call:
+
+```bash
+curl -sS https://misakanet.org/mcp -H 'Content-Type: application/json' -H 'Accept: application/json' \
+  -H 'MCP-Protocol-Version: 2025-06-18' -H 'Origin: https://misakanet.org' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"probe","version":"0"}}}'
+# → {"result":{"serverInfo":{"name":"misakanet","version":"…"}}}
 ```
 
 ---
