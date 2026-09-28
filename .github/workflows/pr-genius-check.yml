@@ -23,19 +23,27 @@ jobs:
       !contains(github.event.pull_request.labels.*.name, 'docs-only')
     runs-on: ubuntu-latest
     steps:
-      # PIN HELD at the pre-v1.9.1 commit on purpose (2026-09-28). Dependabot proposed `db0ff6ed…`
-      # (tag v1.9.1) and the job failed on every run — including on the bump PR itself:
+      # The action moved in v1.9.x, and that is what the dependabot bump could not express.
+      #
+      # Dependabot proposed `db0ff6ed…` (tag v1.9.1) while keeping this line's path, and the job then failed
+      # on every run — including on the bump PR itself:
       #
       #   ##[error]Can't find 'action.yml', 'action.yaml' or 'Dockerfile' for action
       #   'zsxh1990/pr-genius/.github/actions/pr-genius-check@db0ff6ed…'.
       #
-      # Measured upstream through the contents API: at that SHA the directory
-      # `.github/actions/pr-genius-check` contains only `post_comment.py` — the composite action's
-      # manifest is gone, so no `uses:` can resolve there. The old pin still works (that SHA has
-      # `action.yml`), and this is not a version we can express with a comment: **do not merge a
-      # bump of this action until its manifest is back at the path this line uses.** The failure is
-      # easy to miss because `pr-genius` is not one of the four required checks.
-      - uses: zsxh1990/pr-genius/.github/actions/pr-genius-check@0222fbd23f71ea945be022ac921211c6429912cb  # v1.8.0
+      # Measured upstream through the contents API: at v1.9.1 the subdirectory `.github/actions/pr-genius-check`
+      # holds only `post_comment.py`, and the action's manifest is at the **repository root** instead — where
+      # `action.yml` declares the same inputs this step passes (`title`, `repo`, `body`). So the correct bump is a
+      # **repoint plus the new SHA**, which is a thing a reviewer does and dependabot cannot: it only moves the
+      # SHA. (This repository closed two of these proposals — #2400 and #2407 — before noticing the move; the
+      # earlier comment here said "do not merge until the manifest is back at this path", which was the wrong
+      # conclusion from the right measurement.)
+      #
+      # If this fails again with the same error: curl the manifest at the pinned SHA
+      # (`contents/.github/actions/pr-genius-check/action.yml?ref=<sha>`) *and* at the root
+      # (`contents/action.yml?ref=<sha>`), and repoint the path to wherever it lives. Do not ignore the bump —
+      # a pinned action whose path is stale stops being updated at all.
+      - uses: zsxh1990/pr-genius@db0ff6ed2af9d24b9a82495ac27d22ff6e26d196  # v1.9.1
         id: pr-genius
         continue-on-error: true  # advisory only: never block merge on tool failure
         with:
