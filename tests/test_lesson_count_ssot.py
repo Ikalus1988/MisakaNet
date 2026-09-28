@@ -62,6 +62,12 @@ _FORMER_NODE_SURFACES = (
     ("README.zh-CN.md", r"\|\s*🌐\s*Nodes\s*\|"),
     ("README.ja.md", r"\|\s*登録ノード\s*\|"),
     ("docs/index.html", r'id="total-nodes"'),
+    # The badge outlived the number by two days and nothing looked at it (#2313 retired the metric on
+    # 2026-09-26; this line was still there on 2026-09-28, reading `badges/nodes.json` — a file that
+    # stopped being written the moment `canonical_nodes` was deleted, so the image showed a frozen
+    # 4,926 to every reader of the Chinese README). A *stale* published number is worse than a
+    # missing one, and an `<img>` whose data source has no writer is exactly how it happens.
+    ("README.zh-CN.md", r"badges/nodes\.json"),
 )
 
 
@@ -295,62 +301,130 @@ def test_domain_count_normalises_quotes_and_case(tmp_path):
     assert slc.canonical_domains(tmp_path) == 2, "devops×3 collapses to one; ops is a second"
 
 
-# ── the two numbers in one sentence must not be confused ─────────────────────
-# 2026-09-15: the install page carries both counts in a single line —
-# "393+ lessons across 55 domains". The lesson-count row referenced the domain
-# number as `\g<1>`, but `_COUNT` is `(?P<n>\d{2,4})` and a *named* group is also
-# a numbered one, so `\g<1>` was the lesson count: the daily `update-lessons`
-# run rewrote the sentence to "393+ lessons across 393 domains", committed it,
-# and left `main` failing test_cli_check_passes_on_this_repo. Both numbers looked
-# plausible, which is why nothing else noticed.
-_INSTALL_PAGE = "docs/install/index.html"
-_TWO_NUMBERS = re.compile(r"(\d{2,4})\+ lessons across (\d{2,4}) domains")
+# ── the registry may shrink, never grow ──────────────────────────────────────
+# Three files, eight rows (2026-09-28). The count of managed surfaces is itself the defect the previous
+# shape grew into: every incident ("this page says 385+", "this manifest says 320+") was answered by
+# registering one more file, until 38 rows across 24 files meant the daily job rewrote the corpus total
+# into places that only ever quoted it. These caps are what stops the next incident from being answered
+# the same way — the fix is a badge, a pointer, or dropping the number, and if a new surface genuinely
+# cannot be read without a literal, raise the cap *here*, where the reason has to be written down.
+MAX_MANAGED_ROWS = 8
+MAX_MANAGED_FILES = 3
 
 
-def test_lesson_count_row_preserves_the_domain_count():
-    """A lesson-count rewrite must leave the domain number alone."""
-    rows = [site for site in slc.SITES if site.path == _INSTALL_PAGE]
-    assert rows, f"no lesson-count row manages {_INSTALL_PAGE}"
-
-    text = (REPO / _INSTALL_PAGE).read_text(encoding="utf-8")
-    before = _TWO_NUMBERS.search(text)
-    assert before, f"{_INSTALL_PAGE} no longer carries the two-number sentence"
-
-    # A count that differs from the domain count, so a mixed-up backreference is
-    # visible rather than coincidentally equal (393 vs 393 is what shipped).
-    rewritten = text
-    for row in rows:
-        rewritten, _ = row.compiled().subn(row.replace.format(n=1234), rewritten)
-
-    after = _TWO_NUMBERS.search(rewritten)
-    assert after, f"the sentence stopped matching its own output:\n{rewritten}"
-    assert after.group(1) == "1234", "the lesson number was not rewritten"
-    assert after.group(2) == before.group(2), (
-        f"the domain number was rewritten by a lesson-count row: "
-        f"{before.group(2)} -> {after.group(2)}"
+def test_the_managed_registry_stays_small():
+    """The surface count is capped, so "just register it" is not the default answer anymore."""
+    rows = slc.SITES + slc.DOMAIN_SITES
+    files = {site.path for site in rows}
+    assert len(rows) <= MAX_MANAGED_ROWS, (
+        f"{len(rows)} managed count rows (cap {MAX_MANAGED_ROWS}): "
+        f"{sorted(site.path for site in rows)}"
+    )
+    assert len(files) <= MAX_MANAGED_FILES, (
+        f"{len(files)} managed count files (cap {MAX_MANAGED_FILES}): {sorted(files)}"
     )
 
 
-def test_domain_count_row_preserves_the_lesson_count():
-    """And the mirror case: the domain row must not touch the lesson number."""
-    rows = [site for site in slc.DOMAIN_SITES if site.path == _INSTALL_PAGE]
-    assert rows, f"no domain-count row manages {_INSTALL_PAGE}"
+# ── and a de-numbered surface must not quietly get its number back ───────────
+# The surfaces that left the registry are still the ones a reader sees first, so "we removed the row" is
+# only half a fix: nothing would fail if someone wrote the total back into the README tagline, which is
+# exactly the drift that created the registry. These files carry no historical snapshots (ROADMAP does,
+# so it is checked positively further down), which is what lets the pattern be a plain corpus-count
+# search instead of a per-sentence allowlist.
+_DE_NUMBERED_SURFACES = (
+    "README.md",
+    "README.zh-CN.md",
+    "README.ja.md",
+    "ARCHITECTURE.md",
+    "JOIN.md",
+    "docs/skill.md",
+    "docs/mcp-quickstart.md",
+    "docs/search/index.html",
+    "docs/integrations/README.md",
+    "docs/integrations/cursor.md",
+    "docs/integrations/continue.md",
+    "docs/integrations/claude-code.md",
+    "docs/integrations/gemini-cli.md",
+    "docs/install/index.html",
+    "docs/worker-bm25-search.md",
+    "docs/json-ld-schema.md",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    ".github/ISSUE_TEMPLATE/ai-bounty-template.md",
+    "docs/.well-known/mcp.json",
+    "docs/.well-known/agent.json",
+    "docs/.well-known/agent-card.json",
+    "docs/.well-known/glama.json",
+)
 
-    text = (REPO / _INSTALL_PAGE).read_text(encoding="utf-8")
-    before = _TWO_NUMBERS.search(text)
-    assert before, f"{_INSTALL_PAGE} no longer carries the two-number sentence"
+# `(?<![\w%])` keeps URL-encoded spaces out of it: `promotional/search%20lesson.gif` in the READMEs reads
+# as "20lesson" to a naive `\b\d+…lessons?\b` and would fail this test on an image path.
+_CORPUS_COUNT_CLAIM = re.compile(
+    r"(?<![\w%])\d{2,5}\+?\s*(?:indexed\s+|verified\s+)?"
+    r"(?:failure[-\s]?recovery\s+|failure\s+|debugging\s+)?lessons?\b"
+    r"|(?<![\w%])\d{2,5}\+?\s*(?:curated\s+|个)?\s*domains?\b"
+    r"|(?<![\w%])\d{2,5}\s*条[^|\n]{0,12}(?:经验|课程)"
+    r"|(?<![\w%])\d{2,5}\s*件[^|\n]{0,12}レッスン"
+    r"|(?<![\w%])\d{2,5}\s*个[^|\n]{0,6}(?:领域|域名)"
+    r"|\|\s*📚 Lessons \|\s*\d",
+    re.IGNORECASE,
+)
 
-    rewritten = text
-    for row in rows:
-        rewritten, _ = row.compiled().subn(row.replace.format(n=777), rewritten)
 
-    after = _TWO_NUMBERS.search(rewritten)
-    assert after, f"the sentence stopped matching its own output:\n{rewritten}"
-    assert after.group(2) == "777", "the domain number was not rewritten"
-    assert after.group(1) == before.group(1), (
-        f"the lesson number was rewritten by a domain-count row: "
-        f"{before.group(1)} -> {after.group(1)}"
+def test_de_numbered_surfaces_do_not_grow_a_count_back():
+    offenders = []
+    for rel in _DE_NUMBERED_SURFACES:
+        text = (REPO / rel).read_text(encoding="utf-8")
+        for match in _CORPUS_COUNT_CLAIM.finditer(text):
+            line = text.count("\n", 0, match.start()) + 1
+            offenders.append(f"{rel}:{line}: {match.group(0)!r}")
+    assert offenders == [], (
+        "these surfaces point at the count now, they do not quote it (see the module docstring of "
+        "scripts/sync_lesson_count.py, 'Count surfaces: three, not twenty-four'):\n  - "
+        + "\n  - ".join(offenders)
+        + "\nUse the shields dynamic badge (data branch badges/lessons.json) in rendered markdown, or "
+        "name the source in prose. If a surface genuinely needs the literal, register it in SITES and "
+        "raise MAX_MANAGED_ROWS with the reason."
     )
+
+
+# ROADMAP.md is excluded above because it *is* a dated record: its 2026-08-22 adjudication table quotes
+# the numbers it adjudicated (377/393/411) on purpose, and this repo keeps history rather than rewriting
+# it. So its live block is gated positively — the current-numbers section has to point at the badges.
+_ROADMAP_CURRENT_BLOCK = re.compile(r"(?m)^###\s+当前数字")
+
+
+def test_roadmap_current_numbers_point_at_the_badges():
+    text = (REPO / "ROADMAP.md").read_text(encoding="utf-8")
+    start = _ROADMAP_CURRENT_BLOCK.search(text)
+    assert start, "ROADMAP.md lost its '当前数字' section — moving it means updating this reader"
+    rest = text[start.end():]
+    end = rest.find("\n### ")
+    section = rest if end == -1 else rest[:end]
+    for badge in ("badges/lessons.json", "badges/domains.json"):
+        assert badge in section, (
+            f"ROADMAP's current-numbers block no longer reads {badge}: either the number is back in "
+            "the bytes, or the badge was dropped without a replacement"
+        )
+
+
+# ── the retired two-number sentence, kept as a forward guard ─────────────────
+# 2026-09-15: the install page carried both counts in one line — "393+ lessons across 55 domains" — and
+# its lesson-count row referenced the domain number positionally. `_COUNT` is `(?P<n>\d{2,4})`, and a
+# *named* group is also a numbered one, so `\g<1>` was the lesson count: the daily `update-lessons` run
+# rewrote the sentence to "393+ lessons across 393 domains", committed it, and left `main` failing while
+# both numbers looked plausible. The sentence is gone (2026-09-28), so it cannot recur in that file — but
+# "reference a named group by number" is the transferable mistake and one row is all it needs, so it is a
+# lint over the registry rather than a test over one page.
+def test_registry_rows_reference_named_groups_by_name_only():
+    for sites, *_ in _registries():
+        for site in sites:
+            for name, index in site.compiled().groupindex.items():
+                assert f"\\g<{index}>" not in site.replace, (
+                    f"{site.path}: the replace template references group {index} positionally, and "
+                    f"that group is named {name!r}. Numbers are not stable — a later edit to the "
+                    "pattern (adding a capture around some prose) silently repoints them, which is how "
+                    "'393+ lessons across 393 domains' shipped."
+                )
 
 
 # ── The root `llms.txt`: a pointer, not a second copy ────────────────────────────────────────────────
