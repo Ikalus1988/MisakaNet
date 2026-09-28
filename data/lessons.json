@@ -402,6 +402,38 @@
     "contributor": ""
   },
   {
+    "id": "a-corpus-cached-in-one-row-has-a-ceiling",
+    "title": "A corpus cached in one row has a ceiling, and the diagnosis cannot live in that row",
+    "domain": "search",
+    "tags": [
+      "search-index",
+      "d1",
+      "storage-limits",
+      "observability",
+      "silent-failure"
+    ],
+    "summary": "Lessons merged into the corpus stopped being findable. `misakanet_get_lesson` served them by id — the",
+    "preview": "# A corpus cached in one row has a ceiling, and the diagnosis cannot live in that row\n\n## Problem\n\nLessons merged into the corpus stopped being findable. `misakanet_get_lesson` served them by id — the\nD1 sync had run and logged `Parsed 417 lessons` / `FTS index rebuilt for 417 lessons` / `COUNT(*) = 417`\n— while `misakanet_search` could not return them for any query, **including their exact titles**. The\nworker's own diagnostic endpoint described a healthy index:\n\n```\nGET /api/search-index\n{\"available\":true,\"docCount\":411,\"termCount\":9975,\"avgDocLen\":109.1,\n \"builtAt\":\"2026-09-26T08:16:11.663Z\",\"textMode\":\"rich\",\"textVersion\":3,\n \"syncStamp\":\"2026-09-26 08:03:21\",\"stale\":false,\n \"corpusHint\":\"compare docCount against data/lessons.json; a frozen builtAt means the write failed\"}\n```\n\nEvery field was true and the endpoint could not say the one thing that mattered: `docCount` 411 against\na corpus of 417 is a freeze, and `stale: false` is correct — the build was 8 hours old and the threshold\nis 20. The hint pointed at `data/lessons.json`, which agreed with the *repo*, not with the index.\n\nThe refresh runs every 15 minutes (`crons = [\"*/15 * * * *\"]`), so ~30 rebuilds had been attempted since\n08:16 without publishing anything.\n\n## Root Cause\n\n**The published index is one JSON blob in one storage row, and that row has a hard size cap.** `storePut`\nwrites `kv_store.value` — a single D1 cell, capped at 2 MB\n([D1 limits](https://developers.cloudflare.com/d1/platform/limits/): \"Maximum string, BLOB or table row\nsize\"). Measured on this corpus the same day: a production-shaped rich index is **1.63 MB** over 463\nlesson files and 10,133 terms — **86% of the cap**, growing with the corpus. The KV fallback cannot\nabsorb the overflow: it has been out of write budget since 2026-09-22 (the 1,000-distinct-keys-per-day\nrule), which is why an earlier round had moved this index to D1 in the first place.\n\nSo the publish step is a cliff, and past it the failure mode is the one this repository keeps\nre-learning:\n\n* `refreshSearchIndex` builds the index, calls `storePut`, and the write fails;\n* search keeps serving the **previous** index — correct as a fallback, invisible as a state;\n* the cron logs one line, and nothing outside the worker can read it (the OAuth token for `wrangler tail`\n  had expired, and the log line is the only place the reason existed).\n\n**The second, separate def\n\n[clipped]",
+    "summary_plain": "A search index in one storage row froze at its size ceiling; keep the diagnosis out of the thing that fails.",
+    "trigger": "search cannot find newly merged lessons / index docCount behind the corpus / storage row size limit / monitoring lives in the thing that fails",
+    "verify": "Compare GET /api/search-index docCount against the corpus: they must agree after a refresh, and lastRefresh.reason must name why when they do not.",
+    "url": "lessons/contrib/a-corpus-cached-in-one-row-has-a-ceiling.md",
+    "created": "2026-09-27",
+    "updated": "2026-09-27",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E2",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.425,
+    "contributor": ""
+  },
+  {
     "id": "a-stubbed-success-is-not-a-sandbox",
     "title": "A stubbed success is not a sandbox — a faked `git push` let the suite rewrite the published index",
     "domain": "testing",
