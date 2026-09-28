@@ -17,10 +17,20 @@ values instead of silently drifting.
 
 Note: `.release-please-manifest.json` (`.` key) records the last
 release-please release; it must never be *older* than the declared PyPI
-version on main. JOIN.md/API.md/docs/index.html/README.md advertise
-informational versions which must never claim something NEWER than the
-authoritative lines (catches forward-typos; making them exactly equal is the
-Milestone-2 version-source-of-truth task, not this safety net).
+version on main.
+
+Two tiers, and the difference is deliberate:
+
+* **Files release-please can own** (`PINNED_VERSION_FILES`) must be *exactly*
+  the manifest version — the annotation is the writer, so equality is a
+  relation between two things the release bot maintains, and a mismatch means
+  a release step missed one or a stale file was written over a newer one.
+* **Prose that advertises a version it cannot own** may not hand-write one at
+  all (`test_prose_docs_do_not_hand_write_a_released_version`): README.md and
+  README.zh-CN.md (the npm line moves on its own) and JOIN.md (its Version Info
+  block is a list of live pointers) take the number from a live source
+  instead. The upper bound below still applies to everything else, which is
+  how `docs/index.html`'s badge and API.md's header are read as well.
 """
 import json
 import re
@@ -62,9 +72,9 @@ def _version_locations() -> dict[str, str]:
     api_version = re.search(r"\*\*Version:\*\*\s*([0-9.]+)", api_md)
     assert api_version, "API.md header has no Version: field"
 
-    join_md = _read_text("JOIN.md")
-    join_version = re.search(r"MisakaNet v?([0-9.]+)", join_md)
-    assert join_version, "JOIN.md has no 'MisakaNet vX.Y.Z' line"
+    # JOIN.md is deliberately absent (2026-09-28): its Version Info block advertised a literal that went
+    # nine releases stale, so the number is gone and the block points at the live source instead — every
+    # other line in it already did. `test_prose_docs_do_not_hand_write_a_released_version` keeps it gone.
 
     index_html = _read_text("docs/index.html")
     html_versions = re.findall(r">v?(\d+\.\d+\.\d+)<", index_html)
@@ -83,7 +93,6 @@ def _version_locations() -> dict[str, str]:
             _read_json(".release-please-manifest.json")["."]
         ),
         "API.md header": api_version.group(1),
-        "JOIN.md version info": join_version.group(1),
         "docs/index.html badge(s)": ", ".join(sorted(set(html_versions))),
         "README.md misakanet@/== claims": ", ".join(sorted(set(readme_versions))),
     }
@@ -184,7 +193,7 @@ def test_docs_never_claim_newer_than_authoritative_lines():
     manifest = LOCATIONS['.release-please-manifest.json (".")']
     ceiling = max(_ver(LOCATIONS[REGISTRY_LINE]), _ver(manifest))
     ceiling_str = ".".join(str(p) for p in ceiling)
-    for label in ("API.md header", "JOIN.md version info", "docs/index.html badge(s)",
+    for label in ("API.md header", "docs/index.html badge(s)",
                   "README.md misakanet@/== claims"):
         for raw in LOCATIONS[label].split(","):
             for single in raw.strip().split():
@@ -329,6 +338,12 @@ PINNED_VERSION_FILES = {
     "scripts/misakanet_cli.py": r'^VERSION\s*=\s*"\d+\.\d+\.\d+"',
     "workers/register-proxy-sw.js": r'env\.MCP_VERSION\s*\|\|\s*"\d+\.\d+\.\d+"',
     "docs/index.html": r">v\d+\.\d+\.\d+<",
+    # Added 2026-09-28. API.md's header advertised 2.30.2 while the manifest said 2.39.0 — nine releases,
+    # invisible, because the only rule that read it was the upper bound below. It is the same "one fact,
+    # no writer" defect the READMEs were fixed for; here release-please can own the line (it is an HTML
+    # comment on the version line, so nothing user-visible changes), so it gets a writer *and* the value
+    # assertion instead of losing the number.
+    "API.md": r"\*\*Version:\*\*\s*\d+\.\d+\.\d+",
 }
 
 
@@ -442,28 +457,51 @@ def test_the_decoration_check_notices_an_unwritable_entry(tmp_path):
         "scripts/misakanet_cli.py.md is declared but does not exist"], "a declared ghost must be reported"
 
 
-def test_the_readmes_do_not_hand_write_a_publishable_version():
-    """`misakanet@X.Y.Z` in a README is a claim about **npm**, not about this repository.
+# Version literals that no writer can own, per file. Kept as patterns rather than a sentence so the rule
+# fails on the *mechanism* (a number in a place that cannot be maintained) instead of on wording.
+HAND_WRITTEN_VERSION = {
+    # A README's `misakanet@X.Y.Z` is a claim about **npm**, not about this repository. The two channels
+    # move independently: the npm publish is a manual, approval-gated workflow (`misakanet-publish.yml`,
+    # `workflow_dispatch`), while PyPI follows the release. On 2026-09-20 npm was at 2.30.2
+    # (`package.json` agrees) and PyPI plus the repository were at 2.31.0 — so the README's literal was
+    # *correct* and still disagreed with the release line, which is why "align it to the repo version" is
+    # the wrong fix and would have advertised an unpublished version. The npm badge is the live source.
+    "README.md": r"misakanet(?:@| == )\d+\.\d+\.\d+",
+    "README.zh-CN.md": r"misakanet(?:@| == )\d+\.\d+\.\d+",
+    # JOIN.md's Version Info block: every other line in it is already a live pointer
+    # (`https://misakanet.org/llms.txt`, `https://misakanet.org`), and its literal `MisakaNet v2.30.2`
+    # survived nine releases (main was at 2.39.0 on 2026-09-28) because the only rule reading it was the
+    # upper bound. Release-please cannot own a line inside a code fence without showing the annotation to
+    # the reader, so the number is a live pointer too: MCP `initialize` → `serverInfo.version`.
+    "JOIN.md": r"MisakaNet\s+v?\d+\.\d+\.\d+",
+    # API.md's §2.3 example payload. Its *header* is owned by release-please and pinned in
+    # `PINNED_VERSION_FILES`; an example of a live response cannot be, so it carries a placeholder.
+    "API.md": r'"version":\s*"\d+\.\d+\.\d+"',
+}
 
-    The two channels move independently: the npm publish is a manual, approval-gated workflow
-    (`misakanet-publish.yml`, `workflow_dispatch`), while PyPI follows the release. On 2026-09-20 npm was
-    at 2.30.2 (`package.json` agrees) and PyPI plus the repository were at 2.31.0 — so the README's
-    literal was *correct* and still disagreed with the release line, which is why "align it to the repo
-    version" is the wrong fix and would have advertised an unpublished version.
 
-    The npm badge in the badges block is the live source, and it is the only place this README may take
-    the number from. This rule keeps a hand-written literal from coming back and going stale unobserved.
+def test_prose_docs_do_not_hand_write_a_released_version():
+    """A documented version that nothing can update is a version that goes stale unobserved.
+
+    Measured 2026-09-28, the day this rule was extended past the READMEs: `JOIN.md` said `MisakaNet
+    v2.30.2` and `API.md`'s example payload said `"version": "2.30.2"`, while `main` was at **2.39.0**.
+    Nine releases of drift, and `test_docs_never_claim_newer_than_authoritative_lines` — the only rule
+    that reads either file — is an *upper* bound, so any older number is accepted forever. That is the
+    defect the READMEs were fixed for on 2026-09-20; it had simply been fixed in one place.
+
+    Each file's resolution is now explicit: release-please owns `API.md`'s header (annotation + extra-file
+    + the value assertion), and JOIN.md/API.md's example take the number from a live source instead.
     """
     import re
 
     offenders = []
-    for rel in ("README.md", "README.zh-CN.md"):
+    for rel, pattern in HAND_WRITTEN_VERSION.items():
         text = (REPO / rel).read_text(encoding="utf-8")
-        offenders += [f"{rel}: {m}" for m in re.findall(r"misakanet(?:@| == )\d+\.\d+\.\d+", text)]
+        offenders += [f"{rel}: {m}" for m in re.findall(pattern, text)]
     assert not offenders, (
-        "a README must not hand-write a released version — the npm badge is the live source, and this "
-        "number goes stale whenever the npm channel lags the release (it did):\n  - "
-        + "\n  - ".join(offenders))
+        "a version is hand-written where nothing can keep it current: release-please cannot own the line "
+        "(add it to `extra-files` with an annotation, or point at the live source) and the upper-bound "
+        "rule will accept it forever:\n  - " + "\n  - ".join(offenders))
 
 
 # ── The annotation is a writer; the *value* is a relation to the manifest ───────────────────────────
@@ -519,7 +557,8 @@ def test_the_value_check_notices_a_stale_line(tmp_path):
     manifest = json.loads((scratch / ".release-please-manifest.json").read_text(encoding="utf-8"))["."]
     for rel, marker in (("docs/index.html", f">v{manifest}<"),
                         ("scripts/misakanet_cli.py", f'"{manifest}"'),
-                        ("workers/register-proxy-sw.js", f'"{manifest}"')):
+                        ("workers/register-proxy-sw.js", f'"{manifest}"'),
+                        ("API.md", f"**Version:** {manifest}")):
         victim = scratch / rel
         text = victim.read_text(encoding="utf-8")
         assert marker in text, f"{rel} does not carry {marker!r}, so the mutation cannot be applied"
