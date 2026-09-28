@@ -1510,9 +1510,14 @@ const INDEX_TEXT_MAX_CHARS = 6000;
 // that this constant means "retrieval behaviour changed" — it does not; it means "the
 // rebuild input changed". The word list has its own, separate revision:
 // `QUERY_ALIAS_VERSION`, which moves with data/query-aliases.json and needs no rebuild.
-// (The one change that *would* force this to 4 is indexing CJK, e.g. bigrams in
-// lessonIndexText — not done here; see the design doc.)
-const INDEX_TEXT_VERSION = 3;
+// v4 (2026-09-28): the CJK channel (#2355) — `index.cjk`, a bigram map with its own lengths, built in
+// the same pass from the same `lessonIndexText()`. This *is* the change the paragraph above said would
+// force a bump: the rebuild input gained a field the old build does not have, and a stale build must not
+// be served as if it had it. Without the bump a deployed worker would answer English perfectly while CJK
+// is silently absent — the failure that looks like nothing is wrong. What did *not* change is the English
+// side: `terms`, `docs` and `avgDocLen` are byte-identical to a build without the channel, because the
+// bigrams never enter their map (see `buildBM25Index`).
+const INDEX_TEXT_VERSION = 4;
 // The public listing must not ship the internal searchable body: `indexText` feeds
 // the index and the matcher, and it is dropped from every response the worker
 // builds from loadLessons().
@@ -1572,8 +1577,23 @@ function buildBM25Index(lessons, { k1 = 1.5, b = 0.75, textMode } = {}) {
   const docs = [];
   const lengths = [];
   const termDocs = new Map();
+  // ── the CJK channel (issue #2355) ──────────────────────────────────────────
+  //
+  // Bigrams go into their **own** map with their **own** lengths, and never into `termDocs`. The
+  // reason is `avgDocLen`: BM25 normalises every document's score by it (`b = 0.75`), so a bigram
+  // stream sharing the text would move every English score even though no English token changed —
+  // which is exactly what `workers/relevance-floor-calibration.test.mjs` measures, and this channel
+  // must leave that table byte-identical.
+  //
+  // The text comes from the same `lessonIndexText()` call the English tokens do, so the two channels
+  // cannot describe different documents; the tokenizer is `cjkBigrams()` (#2361), whose own test
+  // asserts it changes nothing for English. Query-side routing is #2356 and deliberately absent here:
+  // this map is written, stored and tested, and nothing reads it yet.
+  const cjkTermDocs = new Map();
+  const cjkLengths = [];
   lessons.forEach((lesson, i) => {
-    const tokens = bm25Tokenize(lessonIndexText(lesson));
+    const text = lessonIndexText(lesson);
+    const tokens = bm25Tokenize(text);
     const len = tokens.length;
     lengths.push(len);
     docs.push({
@@ -1588,6 +1608,15 @@ function buildBM25Index(lessons, { k1 = 1.5, b = 0.75, textMode } = {}) {
     for (const [term, count] of tf) {
       if (!termDocs.has(term)) termDocs.set(term, []);
       termDocs.get(term).push({ doc: i, tf: count, len });
+    }
+    const grams = cjkBigrams(text);
+    cjkLengths.push(grams.length);
+    for (const gram of grams) {
+      if (!cjkTermDocs.has(gram)) cjkTermDocs.set(gram, []);
+      // `tf` is 1 by construction: `cjkBigrams` returns a Set, so a pair repeated inside one document
+      // is one entry. The field is kept so the posting shape matches `index.terms` exactly, which is
+      // what lets #2356 reuse the existing scorer without a second format.
+      cjkTermDocs.get(gram).push({ doc: i, tf: 1, len: grams.length });
     }
   });
 
@@ -1605,6 +1634,30 @@ function buildBM25Index(lessons, { k1 = 1.5, b = 0.75, textMode } = {}) {
       docs: entries,
     };
   }
+  // The CJK channel: same shape as `terms`, its own IDF and its own length normaliser. `docLen` is the
+  // per-document bigram count for every document in order (0 for a document with no CJK), and
+  // `avgDocLen` is the normaliser a BM25 pass over this map needs — included here rather than left to
+  // #2356 so that adding the channel costs exactly one rebuild and one version bump.
+  const cjkTerms = {};
+  for (const [gram, entries] of cjkTermDocs) {
+    const df = entries.length;
+    cjkTerms[gram] = {
+      df,
+      idf: Math.round(Math.log((docCount - df + 0.5) / (df + 0.5) + 1) * 10000) / 10000,
+      docs: entries,
+    };
+  }
+  const cjkDocCount = docCount;
+  const cjkAvgDocLen = cjkDocCount
+    ? Math.round((cjkLengths.reduce((sum, n) => sum + n, 0) / cjkDocCount) * 10) / 10
+    : 0;
+  const cjk = {
+    version: 1,
+    docCount: cjkDocCount,
+    avgDocLen: cjkAvgDocLen,
+    docLen: cjkLengths,
+    terms: cjkTerms,
+  };
   return {
     version: 1,
     built_at: new Date().toISOString(),
@@ -1615,6 +1668,7 @@ function buildBM25Index(lessons, { k1 = 1.5, b = 0.75, textMode } = {}) {
     textMode: textMode || detectTextMode(lessons),
     textVersion: INDEX_TEXT_VERSION,
     terms,
+    cjk,
     docs,
   };
 }
