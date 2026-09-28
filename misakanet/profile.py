@@ -43,7 +43,6 @@ def _load() -> dict:
 def _save(profile: dict):
     """原子写入：使用临时文件 + rename 避免并发损坏。"""
     PROFILE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    import tempfile
     # 在同一目录创建临时文件，确保 rename 原子性
     fd, tmp_path = tempfile.mkstemp(
         dir=str(PROFILE_PATH.parent),
