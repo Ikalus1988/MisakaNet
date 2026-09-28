@@ -44,6 +44,23 @@
 // first**, and until that exists, any CJK change trades Chinese recall for English recall. The two
 // floors here and in `workers/relevance-floor-calibration.test.mjs` are what make that trade visible.
 //
+// DONE, 2026-09-28 (#2358, PR #2414). Three of the four parts (`required`, `informative`, `idfTotal`)
+// were already derived from `floorTerms`; the document's side of the comparison — `matchedIdf`, and the
+// coverage count that fed `floor.required` — was accumulated over `queryTerms`, i.e. the user's words
+// *plus the alias table's guesses*. The measured consequence was a confidently-wrong answer on a mixed
+// query (`wsl2 landlock 文件系统沙箱` → a lesson about driving a browser, ratio 0.677 against a 0.55
+// threshold where the floor's own term space gives 0.325), and a hard error in the *other* direction:
+// a `df = 0` query term counts at maximum IDF, so absent words never vanished from the denominator.
+//
+// Both of the floor's sides now count `floorTerms` and nothing else, and the measured cost is zero:
+// English 16/20 · 19/20 and CJK 11/22 · 15/22 on `data/search-floor-queries.jsonl`, plus an identical
+// row-for-row re-measurement of the calibration table above `RELEVANCE_MIN_COVERAGE`. The reason row
+// four above is *not* this change: that design moved the tokenizer and the scoring query too, so the
+// floor began judging CJK bigrams while the scorer still scored English. Here the tokens, the scoring
+// query and `floorTerms` are all untouched — only the counter that was reading a different word set.
+// `workers/search-floor-term-space.test.mjs` pins the shape, and the real corpus is pinned in
+// `workers/search-dual-floor.test.mjs`.
+//
 // Run: node --test workers/search-cjk-recall.test.mjs
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

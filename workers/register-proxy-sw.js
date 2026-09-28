@@ -841,6 +841,11 @@ function relevanceFloor(termDf, docCount) {
 // 0.60 13/15·5/5 · 0.70 13/15·5/5 · 0.80 12/15·5/5.
 //
 // So 0.55 is the smallest value that rejects every unanswerable query, and 0.80 starts costing recall.
+// Re-measured 2026-09-28 with the same probe, after #2358 moved the coverage ratio's numerator onto
+// `floorTerms`: **identical, row for row** (0.30 13/15·3/5 · 0.45 13/15·3/5 · 0.50 13/15·4/5 ·
+// 0.55 13/15·5/5 · 0.60 13/15·5/5 · 0.70 13/15·5/5 · 0.80 12/15·5/5). The numerator can only shrink
+// for a query whose alias expansion matched, and none of the fifteen positives is reached that way — so
+// this table still describes the code, and 0.55 is still the smallest value that rejects all five.
 // This paragraph replaces a provenance that could not be re-run ("calibrated on 14 positives and 10
 // negatives: 0.55 separates them 14/14 and 10/10, where 0.45 admits three negatives and 0.65 drops
 // positives"): those sets were never committed — the test in the same commit asserted 4 and 5 — so the
@@ -1500,6 +1505,15 @@ function searchLessonsBM25(index, query, domain, top = 5, floorQuery = null) {
   // Counted from the floor terms it is 3.235/9.966 = 0.325 and the floor refuses it, which is what
   // it was written to do. `covered` (below) stays over `queryTerms`: it is the fusion weight, and it
   // describes this channel's own term space rather than the floor's.
+  //
+  // This is *not* the design `workers/search-cjk-recall.test.mjs` measured as row four of #2250's table
+  // ("counting coverage only over the user's words" → 0/20 zh, 4/15 English). That design moved the
+  // tokenizer and the scoring query, so the floor started judging CJK bigrams while the scorer still
+  // scored English. Nothing about the tokens, the scoring query or `floorTerms` changes here: all three
+  // of the floor's other parts (`required`, `informative`, `idfTotal`) were already derived from
+  // `floorTerms`, and the document's side now is too — which is the precondition that file names
+  // ("the floor's four parts … have to be moved onto one explicit term space first"). Measured
+  // consequences, both floors: English 16/20 · 19/20 and CJK 11/22 · 15/22, unchanged.
   const results = [];
   for (let i = 0; i < docCount; i++) {
     if (!matched[i]) continue;
