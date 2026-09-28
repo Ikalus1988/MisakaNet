@@ -25,13 +25,17 @@ Standard release process. Do not skip steps.
    - Add new version section with highlights, new files, data stats
 
 5. **Update stale docs**
-   - Lesson / node / domain counts are **not** hand-edited any more: the managed sentences are rewritten
-     by `scripts/sync_lesson_count.py`, which the daily jobs run (`update-lessons.yml` reaches it through
-     `update_lessons_json.py`; `sync-node-counter.yml` owns the node row). Run
+   - Lesson / domain counts are **not** hand-edited any more: the three surfaces that carry the literal
+     number are rewritten by `scripts/sync_lesson_count.py`, which the daily jobs run
+     (`update-lessons.yml` reaches it through `update_lessons_json.py`). Run
      `python3 scripts/sync_lesson_count.py --check` instead of grepping for the previous numbers — a
-     grep pattern is stale the moment the number moves, which is how this step used to read.
-   - Update the prose that no gate owns: README.md, docs/index.html, docs/search/index.html,
-     docs/mcp-quickstart.md, server.json description
+     grep pattern is stale the moment the number moves, which is how this step used to read. The node
+     count is not published at all (#2313).
+   - Everything else *points* at the count: the READMEs/ROADMAP carry the shields badge, and prose names
+     the source. Do not paste a total back into README.md, docs/search/index.html, the integration
+     guides, `skill.md`, JOIN.md or `.well-known/*.json` — `tests/test_lesson_count_ssot.py` fails on it.
+     What still needs a human eye at release time is the prose *around* the numbers (server.json
+     description, the site's marketing copy) and the version lines.
    - `STATUS.md` is gone (#2095 deleted the generator *and* the file, in that order of discovery — the
      file was never in the repo). If a step here still names it, that step is stale, not the file.
 

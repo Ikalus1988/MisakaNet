@@ -152,14 +152,31 @@ def test_patterns_match_a_real_annotated_version_line():
     assert pp.managed(annotated), "the release-please pattern does not match the real annotated line"
 
 
-def test_the_markdown_bold_sentence_also_matches():
-    """README's count sentence has `**` inside it; a pattern that needs a plain space misses it.
+def test_the_markdown_emphasis_sentence_also_matches():
+    """Markdown emphasis between the number and the word must not defeat the pattern.
 
-    This is the exact line whose removal the tool failed to flag on its first run — the pattern was
-    written against an imagined shape rather than the file.
+    This was written against README.md's then-real count sentence — "serves 418+ **indexed
+    failure-recovery lessons**" — after a pattern that needed a plain space failed to flag its
+    removal. README carries no number at all now (2026-09-28: the surfaces point at the shields badge
+    instead), so the emphasis shape cannot be sourced from a file any more; the two tests above still
+    take their fixtures out of the repository. It stays because `managed()` reads any line an author
+    might write, including on a branch cut before the change.
     """
-    line = _line_containing("README.md", "indexed failure-recovery lessons")
+    line = 'serves 418+ **indexed failure-recovery lessons** — *indexed*, never "verified"'
     assert pp.managed([line]), f"a bolded count sentence is not recognised: {line!r}"
+
+
+def test_the_count_badge_lines_are_managed():
+    """The badge is the README's only remaining carrier of the corpus size, so name it.
+
+    A dropped badge line is a *loss* `removals()` can see, but without a pattern it is not reported as
+    an edit to a surface another writer owns — and since 2026-09-28 nothing else in the README states
+    the count. The fixtures come out of the files, like the other pattern tests.
+    """
+    readme = _line_containing("README.md", r"badges/lessons\.json")
+    roadmap = _line_containing("ROADMAP.md", r"badges/domains\.json")
+    assert pp.managed([readme]), f"the README's lesson badge line is not recognised: {readme!r}"
+    assert pp.managed([roadmap]), f"ROADMAP's domain badge line is not recognised: {roadmap!r}"
 
 
 # ── non-ASCII paths ─────────────────────────────────────────────────────────
