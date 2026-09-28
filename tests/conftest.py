@@ -45,7 +45,8 @@ os.environ.setdefault("MISAKANET_CONTRIBUTION_QUEUE", str(TEST_DATA_DIR / "contr
 # logs; this one is the *published index*: `tests/test_frontmatter_writers_agree.py` stubs `git push`
 # to report success, and the success branch of `queue_lesson.write_lesson` rebuilds `data/lessons.json`
 # from `lessons/`. So a suite run rewrote the checkout's index and every managed count surface
-# (README, ARCHITECTURE, the site's meta tags, the issue templates, docs/_lessons_count.txt) — and
+# (then 24 files: the READMEs, ARCHITECTURE, the site's meta tags, the issue templates — today three,
+# see `sync_lesson_count.py`; plus docs/_lessons_count.txt) — and
 # `test_lesson_page_generator` then failed against the rewritten file, on PRs that merely added a
 # lesson. Redirected at *import* time, before any test module can import the generator.
 os.environ.setdefault("MISAKANET_LESSONS_INDEX", str(TEST_DATA_DIR / "lessons.json"))

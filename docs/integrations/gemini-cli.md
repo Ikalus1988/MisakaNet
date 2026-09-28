@@ -1,6 +1,6 @@
 # Gemini CLI Integration
 
-Give Gemini CLI access to 402 indexed failure lessons from MisakaNet.
+Give Gemini CLI access to MisakaNet's indexed failure lessons.
 
 Gemini CLI natively supports Streamable HTTP MCP. The config key is **`mcpServers`**,
 and the remote URL field is **`httpUrl`** (not `url`) — that distinction is the common
