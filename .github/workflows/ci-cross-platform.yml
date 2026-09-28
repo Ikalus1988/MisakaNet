@@ -76,7 +76,9 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest pytest-cov
+          # `ruff`: the F821/F811 gate in `tests/test_python_undefined_names.py` shells out to it, and
+          # skips (loudly) where it is missing — so it has to be here too, not only in pr-checks.
+          python -m pip install pytest pytest-cov ruff
           # External dependencies: hard failure, they are required to run anything.
           grep -v '^-e ' requirements.txt > /tmp/reqs.txt || true
           python -m pip install -r /tmp/reqs.txt \
