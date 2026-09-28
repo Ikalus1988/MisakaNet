@@ -32,7 +32,7 @@ scripts/                  # a partial map, not an inventory — but every name h
 ├── update_lessons_json.py  # Regenerate lessons.json
 └── demo.tape             # VHS demo recording script
 
-lessons/                  # Shared knowledge (418+ indexed lessons)  — count auto-refreshed by scripts/sync_lesson_count.py
+lessons/                  # Shared knowledge (420+ indexed lessons)  — count auto-refreshed by scripts/sync_lesson_count.py
 ```
 
 ## Communication
