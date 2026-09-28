@@ -114,7 +114,12 @@ def resolve_link(target: str, page: Path, docs: Path = DOCS) -> Path | None:
         rel = target.lstrip("/")
     else:
         rel = os.path.join(str(page.parent.relative_to(docs)), target)
-    rel = os.path.normpath(rel)
+    # `normpath` is platform-dependent: on Windows it collapses `sub/../../index.html` to
+    # `..\index.html`, so the clamp below — written in URL syntax, the way a browser resolves it —
+    # has to see forward slashes, or it stops clamping. Not hypothetical: the first version of this
+    # file failed on every `windows-latest` leg with `docs/sub/page.html: ['../../index.html']`,
+    # reporting a *valid* link as broken, because `..\index.html` did not match `^(?:\.\./)+`.
+    rel = os.path.normpath(rel).replace(os.sep, "/")
     # Leading `..` cannot go above the origin: drop them (browser behaviour), then resolve what is left
     # inside `docs/`. Nothing outside `docs/` is servable, so it can never satisfy a link.
     rel = re.sub(r"^(?:\.\./)+", "", rel)
