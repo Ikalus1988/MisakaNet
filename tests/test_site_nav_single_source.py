@@ -56,6 +56,13 @@ def test_write_brings_the_page_back_to_the_partial(tmp_path):
                        encoding="utf-8")
     changed = ssp.write(root)
     assert changed == ["docs/index.html"], changed
+    # The *shape* of that path is part of the contract, and this line exists because it was assumed:
+    # `str(Path("docs") / "index.html")` is `docs\index.html` on Windows, which made this test — and
+    # therefore the whole `windows-latest` leg of ci-cross-platform.yml — red on every PR from
+    # 2026-09-27 (#2365) until the script returned `as_posix()` (2026-09-28). The assertion below
+    # cannot fail on Linux; the Windows leg is the gate that can, and this comment is what tells the
+    # next reader that the leg is load-bearing rather than noisy.
+    assert all("\\" not in path for path in changed), changed
     assert ssp.check(root) == [], "write did not reconcile the two copies"
 
 

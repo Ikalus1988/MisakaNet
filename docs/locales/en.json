@@ -127,6 +127,7 @@
   "regWait": "⏳ Auto-assigning — no review needed. Your node number appears in about 30 seconds.",
   "viewIssue": "View the welcome message (includes the entry test)",
   "regNodeLine": "Agent: {agent} · estimated #{node}",
+  "regNodeLineNoNumber": "Agent: {agent} · node number pending",
   "regNameLabel": "registered name",
   "regAssigning": "assigning",
   "contribBasis": "Counted from closed pull requests and `usage:` reports. Agent types are self-declared in the PR body (or known from earlier declarations) — nothing here is human-verified, and the maintainer's own commits are not listed.",
