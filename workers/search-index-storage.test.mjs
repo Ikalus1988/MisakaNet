@@ -277,3 +277,62 @@ test('the health row survives a store that refuses everything else', async () =>
   await storePut(env, 'probe', 'x'.repeat(3_000));
   assert.ok(env._rejected.length >= 2, 'the cap must be real — a stub that accepts everything proves nothing');
 });
+
+// ── the bigram channel, as published (2026-09-28, #2355/#2356 wiring) ───────────────────────────────
+// The channel that #2355 writes and #2356 ranks is invisible in this endpoint until asked for, and that
+// cost a diagnosis: right after the worker carrying both was deployed, production's index was still
+// `textVersion: 3` and had no `cjk` key at all, so `rankCjkChannel()` answered `[]` and the fusion was a
+// silent no-op — visible only by reading `INDEX_TEXT_VERSION` out of the source and comparing it by hand
+// with what the endpoint reported. "Does the published index carry the channel the code ranks?" is a
+// question this endpoint has to answer itself.
+
+/** The synthetic corpus plus Chinese text, so the bigram channel has something to index. */
+function withCjk(lessons) {
+  return lessons.map((lesson, i) => (i % 3 === 0
+    ? { ...lesson, title: `${lesson.title} 文件系统沙箱`, preview: `${lesson.preview} 在 wsl2 里启用文件系统沙箱` }
+    : lesson));
+}
+
+test('the endpoint reports the bigram channel the published index carries', async () => {
+  const env = createStore({ lessons: withCjk(syntheticLessons(20)) });
+  seedLessons(env);
+  const result = await refreshSearchIndex(env);
+
+  // The cron's own log line has to carry it: `[bm25-index] {...}` is the evidence that CJK ranking is
+  // live, and a refresh record that says only "refreshed: true" cannot distinguish the two states.
+  assert.ok(result.cjkChannel && result.cjkChannel.termCount > 0,
+    `the refresh record must report the channel it published: ${JSON.stringify(result)}`);
+  assert.equal(result.cjkChannel.version, 1, JSON.stringify(result.cjkChannel));
+  assert.equal(result.textVersion, 4, `the published index must be the current text version: ${JSON.stringify(result)}`);
+
+  const body = await (await worker.fetch(new Request('https://misakanet.org/api/search-index'), env)).json();
+  assert.equal(body.textVersionCurrent, true, JSON.stringify(body));
+  assert.equal(body.cjkChannel.termCount, result.cjkChannel.termCount,
+    `the endpoint and the cron record must agree: ${JSON.stringify(body.cjkChannel)}`);
+  assert.equal(body.cjkChannel.docCount, body.docCount, JSON.stringify(body.cjkChannel));
+  assert.match(body.channelHint, /carries the bigram channel/);
+});
+
+test('an index built before the channel is visible as a no-op, not as a working deploy', async () => {
+  const env = createStore({ lessons: withCjk(syntheticLessons(20)) });
+  seedLessons(env);
+  await refreshSearchIndex(env);
+
+  // Reproduce the production state exactly: a stored index from the previous worker — no `cjk` key,
+  // `textVersion: 3` — which `loadBM25Index` serves happily (`version: 1`) and which makes the fused
+  // ranking fall back to the English list alone.
+  const published = await readStoredIndex(env);
+  delete published.cjk;
+  published.textVersion = 3;
+  env._rows.set(BM25_INDEX_KEY, await encodeIndexForStorage(JSON.stringify(published)));
+
+  const body = await (await worker.fetch(new Request('https://misakanet.org/api/search-index'), env)).json();
+  assert.equal(body.available, true, `the index is still served, which is the point: ${JSON.stringify(body)}`);
+  assert.equal(body.cjkChannel, null, `no channel in the index must read as null, not as zero: ${JSON.stringify(body.cjkChannel)}`);
+  assert.equal(body.textVersion, 3, JSON.stringify(body));
+  assert.equal(body.textVersionCurrent, false,
+    'the running code expects a newer index; without this field a reader cannot tell 3 from current');
+  assert.ok(body.expectedTextVersion > body.textVersion, JSON.stringify(body));
+  assert.match(body.channelHint, /rankCjkChannel\(\) returns \[\]/,
+    `the hint must name the consequence, not just the absence: ${body.channelHint}`);
+});
