@@ -74,6 +74,16 @@ node --check <(sed -n '/script: |/,/^$/p' .github/workflows/x.yml)
 python3 -m pytest tests/test_no_workflow_pushes_to_main.py -q
 ```
 
+**上线后（需要线上服务，不进 CI）**：检索改动合并并部署后，用同一份基准表对**线上**跑一遍，看
+它和本地地板差多少——地板的语料是仓内 `data/lessons.json`（418 课、`summary+preview`），线上是 D1
+的 426 课、`rich` 投影，**两者本来就不该相等**。实测 2026-09-28：线上英文 13/20 · 18/20、中文
+11/22 · 14/22，对应地板 16/19 与 11/15。
+
+```bash
+python3 scripts/bench_production_recall.py            # 打印两边 + 两份语料的规模（差异的混淆项）
+python3 scripts/bench_production_recall.py --json     # 机器可读
+```
+
 > 本地 `pytest` 若报 `mcp.server.mcpserver` 之类导入错误，多半是**本地依赖漂移**（本地 mcp 版本
 > 与 `requirements.txt` 不符），不是代码坏了——以 CI 为准。
 
