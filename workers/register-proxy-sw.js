@@ -665,10 +665,30 @@ function frontmatterFields(raw) {
   }
 }
 
+// A lesson the repository does not consider published is still searchable. Whether it *should* be is an
+// open product question (#2270), and this helper does not answer it — it makes the fact visible.
+//
+// Until 2026-09-29 the two default detail levels and `misakanet_get_lesson` said nothing about it:
+// `status` appeared only at `detail=full`. Measured on production that day —
+// `misakanet_search("FANUC Robot Alarm Code Reference Table")` returned `fanuc-alarm-code-reference` as
+// its top hit, a `status: draft` lesson whose compact and summary hits carried no marker, and whose
+// `get_lesson` response was `{path, content, identity, trust_notice, voice}` with no status at all. The
+// corpus is 426 rows against 418 published lessons, so this is not a single stray file.
+//
+// Additive in the shape `summary_plain` already uses: a *published* lesson's response is byte-identical to
+// what it was before (the projection contract in `workers/d1-lesson-service.test.mjs` pins that), and only
+// a non-published lesson grows a key — appended last, never reordered.
+function lessonStatusMarker(lesson) {
+  const declared = String((lesson && lesson.status)
+    || frontmatterField(lesson && lesson.frontmatter, "status") || "").trim();
+  return declared && declared.toLowerCase() !== "published" ? declared : null;
+}
+
 function compactResult(lesson) {
   // `summary_plain` rides along with compact on purpose: it is the one field the
   // model is told to repeat to the user verbatim, and compact is the default detail.
   const summaryPlain = plainField(lesson.summary_plain);
+  const statusMarker = lessonStatusMarker(lesson);
   return {
     id: lesson.id || "",
     title: lesson.title || "",
@@ -684,6 +704,7 @@ function compactResult(lesson) {
     // path, which is why nobody noticed. Fall back to the raw frontmatter the row already carries.
     evidence_level: lesson.evidence_level || frontmatterField(lesson.frontmatter, "evidence_level"),
     ...(summaryPlain ? { summary_plain: summaryPlain } : {}),
+    ...(statusMarker ? { status: statusMarker } : {}),
   };
 }
 
@@ -3439,6 +3460,10 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
       // `frontmatter` is an input, not part of the answer: same reasoning as `publicLessonRow`,
       // which lifts the three fields before dropping the raw blob.
       const { frontmatter: _rawFrontmatter, content_length: fullLength, ...body } = lesson || {};
+      // Read before the destructuring above throws the frontmatter away: this is the only place the
+      // draft marker can come from on the D1 path, whose row carries `path`, `content_md` and the raw
+      // frontmatter — not the `status` column.
+      const statusMarker = lessonStatusMarker(lesson);
       const returnedChars = (body.content || "").length;
       const truncated = Number(fullLength) > returnedChars;
       return {
@@ -3457,6 +3482,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         identity: aura,
         trust_notice: TRUST_NOTICE,
         voice: "connect-success",
+        ...(statusMarker ? { status: statusMarker } : {}),
         ...(bodyFlags.length ? { suspicious: true, suspicious_rules: bodyFlags } : {}),
       };
     } catch (e) {
