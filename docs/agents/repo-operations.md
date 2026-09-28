@@ -155,6 +155,7 @@ python3 -m pytest tests/test_no_workflow_pushes_to_main.py -q
 | 症状 | 原因 / 处理 |
 |---|---|
 | MCP 请求 `403 Forbidden: invalid Origin` | **值不被接受**（MCP 规范要求，防 DNS rebinding）。实测 2026-09-12：**缺席=200 放行**，只有带**非法值**（如 `https://evil.example.com`）才 403——别把「没带」当成故障在查；照标准写法带 `-H 'Origin: https://misakanet.org'` 即可 |
+| 探针脚本 `403` 而同样的 `curl` 是 `200` | 边缘对 **Python urllib 的默认 UA**（`Python-urllib/3.x`）直接 403。实测 2026-09-28：同一 URL、同一段 urllib 代码，**只把 UA 换成 `misakanet-maintainer/1.0` 就从 403 变 200**（另测 `python-requests/2.31.0`、`curl/*`、空 UA 均 200，所以不是"非浏览器 UA 一律拦"）。**手搓探针一律显式设 `User-Agent`**。仓内已发布的客户端都设了（`misakanet/remote.py` 的 `misakanet-cli/*`、`scripts/site_health_check.py`、`scripts/cf_mcp_auth.py`——后者注释记的是同一类 WAF 规则），所以这是**手搓探针的坑，不是产品缺陷**；不知道这条时，一个跑满基准表的脚本会安静地每行"失败" |
 | MCP 请求 `405` | 方法用错：写操作用 `POST`；SSE 长连接用 `GET` + `Accept: text/event-stream`（响应会提示正确用法） |
 | 工具输出被客户端拒绝 `missing required property "value.structuredContent"` | 客户端（如 DSH/cordis harness）校验结构化输出。worker 已按 MCP 2025-06-18 同时返回 `structuredContent`；若复现，检查是否走了旧的部署版本 |
 | `ImportError: cannot import name 'Client' from 'mcp'` / `No module named 'mcp.server.mcpserver'` | 本地依赖漂移（本地 mcp 版本 ≠ `requirements.txt`）。以 CI 为准；本地要复现就先按 requirements 装 |
