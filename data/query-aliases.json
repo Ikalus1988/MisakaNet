@@ -2065,7 +2065,7 @@
         "canonical_term": "modulenotfounderror",
         "canonical_df": 10,
         "alias_evidence": {
-          "file": "lessons/import-path-verification-after-refactor.md",
+          "file": "lessons/contrib/import-path-verification-after-refactor.md",
           "quote": "After refactoring Python modules (moving functions between files, renaming modules), import statements in test files and other modules become stale, c"
         },
         "canonical_evidence": {
@@ -2660,7 +2660,7 @@
         "canonical_term": "end",
         "canonical_df": 34,
         "alias_evidence": {
-          "file": "lessons/ci-workflow-fail-fast-matrix.md",
+          "file": "lessons/contrib/ci-workflow-fail-fast-matrix.md",
           "quote": "test-group: [\"unit\", \"integration\", \"e2e\", \"smoke\", \"regression\"]"
         },
         "canonical_evidence": {
