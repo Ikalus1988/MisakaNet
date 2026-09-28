@@ -87,7 +87,7 @@ jobs:
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/` | 静态说明页 |
-| GET | `/api/counter` | 返回 counter.json（JSON 对象） |
+| GET | `/api/counter` | 返回节点分配计数器 `{current, updated}`（D1 优先、KV 回退；两者都不可用 → 503 `counter_unavailable`，**没有文件兜底**，见 #1820） |
 | GET | `/api/counter.json` | 同上，兼容 `.json` 后缀 |
 | GET | `/api/lessons` | 返回 lessons.json（JSON 数组） |
 | GET | `/api/lessons.json` | 同上，兼容 `.json` 后缀 |

@@ -1,0 +1,36 @@
+# Generated artifacts.
+#
+# GitHub collapses a `linguist-generated` file's diff by default and leaves it out of the language
+# statistics, which is what these need: `data/lessons.json` is 1.26 MB rewritten in full by
+# `scripts/update_lessons_json.py` on every corpus change, and `docs/lessons/**` is 419 generated pages.
+# A reviewer who wants to see the bytes can expand the file; a reviewer who does not was previously
+# scrolling past them to find the one hand-written line in the diff.
+#
+# The rule for this list: the file has a generator named in `data/README.md` (data/) or in
+# `docs/.generated-pages.json` (docs/), and a gate that re-runs that generator. Nothing here is written
+# by hand, so nothing here is a review target — `tests/test_generated_artifact_marking.py` checks that
+# every path exists and that the three artifacts the repository's own docs call generated are listed.
+#
+# NOTE: `data/counter.json` is deliberately absent even though older documentation called it generated —
+# it was deleted on 2026-09-28 along with its mirror workflow (#1820), and a stale path in this file
+# would be a rule about nothing.
+
+# ── data/ ────────────────────────────────────────────────────────────────────────────────────────
+data/lessons.json linguist-generated=true
+data/domains.json linguist-generated=true
+data/intake-kind-hints.json linguist-generated=true
+data/contributor-points.json linguist-generated=true
+data/pr-genius-stats.json linguist-generated=true
+data/okf/lessons.jsonl linguist-generated=true
+
+# ── docs/ (the site is served verbatim from this tree) ───────────────────────────────────────────
+docs/lessons/** linguist-generated=true
+docs/topics/** linguist-generated=true
+docs/sitemap.xml linguist-generated=true
+docs/.generated-pages.json linguist-generated=true
+docs/data/** linguist-generated=true
+docs/_lessons_count.txt linguist-generated=true
+
+# ── the mirror of the above on the `data` branch is not in this tree ─────────────────────────────
+# `badges/*.json` and the compact `lessons.json` live on `data`, written by `update-badges.yml`; a
+# `.gitattributes` entry here would describe a file this checkout does not have.

@@ -9,7 +9,7 @@
 > **AIコーディングエージェント向けGitバックアップ障害記憶。**
 >
 > 依存関係ゼロ。サーバー不要。データベース不要。
-> エラーを貼り付ける → 418件のレッスンを検索 → 修正パスを取得。
+> エラーを貼り付ける → レッスンを検索 → 修正パスを取得（件数は上部のLessonsバッジ）。
 
 mcp-name: io.github.Ikalus1988/misakanet
 
@@ -18,6 +18,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 </p>
 
 [![CI](https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml/badge.svg)](https://github.com/Ikalus1988/MisakaNet/actions/workflows/pr-quality-gate.yml)
+[![Lessons](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json)](https://github.com/Ikalus1988/MisakaNet/tree/main/lessons)
 [![PyPI](https://img.shields.io/pypi/v/misakanet-core)](https://pypi.org/project/misakanet-core/)
 [![Python](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/github/license/Ikalus1988/MisakaNet?style=flat&color=blueviolet)](https://github.com/Ikalus1988/MisakaNet/blob/main/LICENSE)
@@ -30,7 +31,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 
 ### これは何か？
 
-MisakaNetは、AIコーディングエージェント向けの障害記憶レイヤーです。エージェントがDCO障害、pipタイムアウト、GitHub 401、MCPセットアップ問題などのエラーに遭遇した場合、MisakaNetは418件のインデックス付き障害復旧レッスンを検索し、修正パスを返します。プロンプト洩れなし、生ログ保存なし。
+MisakaNetは、AIコーディングエージェント向けの障害記憶レイヤーです。エージェントがDCO障害、pipタイムアウト、GitHub 401、MCPセットアップ問題などのエラーに遭遇した場合、MisakaNetはインデックス付き障害復旧レッスンを検索し、修正パスを返します。プロンプト洩れなし、生ログ保存なし。
 
 ### 使うタイミング
 
@@ -288,7 +289,7 @@ MisakaNet レッスン     →  既知の障害を回避
 
 | 指標 | 値 |
 |--------|-------|
-| 共有レッスン | 418（インデックス付き） |
+| 共有レッスン | <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json" alt="Lessons" height="20">（インデックス付き） |
 | エージェントタイプ | CodeWhale、Claude、Codex、OpenClaw、OpenCode |
 | npmパッケージ | [`@misaka-net/fatal-guard`](https://www.npmjs.com/package/@misaka-net/fatal-guard) |
 | PyPIパッケージ | [`misakanet-core`](https://pypi.org/project/misakanet-core/) |
