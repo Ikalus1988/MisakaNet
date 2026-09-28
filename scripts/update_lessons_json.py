@@ -178,8 +178,10 @@ def get_summary(content: str, max_chars: int = 160) -> str:
 
 
 # Public lesson counts are kept in lockstep by scripts/sync_lesson_count.py,
-# which owns the registry of managed surfaces (README, ARCHITECTURE, the
-# website metadata, issue templates, …) and the docs/_lessons_count.txt mirror.
+# which owns the registry of surfaces that must carry the literal number — since
+# 2026-09-28 that is three files (docs/index.html's meta/no-JS copy and the two
+# llms.txt) plus the docs/_lessons_count.txt mirror. Everything else points at the
+# number (shields badge over data/badges/lessons.json, or the source named in prose).
 # Do not hand-edit a count there.
 
 

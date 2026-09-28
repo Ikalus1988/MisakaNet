@@ -66,7 +66,9 @@ jobs:
       # with an ImportError on every run from the moment #2313 merged until this line was removed,
       # which is what a red workflow on `main` looks like when nobody reads it (#2332's neighbour).
       # `README.zh-CN.md` stopped pointing at `nodes.json` in the same change, so nothing consumes it.
-      # `data/counter.json` stays (the `/api/counter` fallback reads it); it is simply not advertised.
+      # `data/counter.json` was deleted in the same week (2026-09-28): it was the `/api/counter`
+      # fallback, and a stale copy of a number read to predict the next registrant's id is worse
+      # than no answer (#1820). The endpoint now says `counter_unavailable` instead.
       - name: Generate badge JSONs
         run: |
           mkdir -p /tmp/badges

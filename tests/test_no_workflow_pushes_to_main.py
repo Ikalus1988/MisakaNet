@@ -52,8 +52,11 @@ MAIN_PUSHERS = {
 }
 
 # The jobs converted on 2026-09-23. They must call the lander, not a push.
+#
+# `sync-node-counter.yml` was in this list until 2026-09-28, when the job and the file it mirrored
+# were deleted together: `/api/counter` reads D1 (KV as the fallback) and answers 503 when neither
+# is available, instead of serving a copy that could be months old (#1820).
 CONVERTED = (
-    "sync-node-counter.yml",
     "update-lessons.yml",
     "build-feed.yml",
     "leaderboard-watch.yml",
@@ -172,7 +175,9 @@ def main_pushers() -> dict[str, list[str]]:
 def test_the_scan_sees_the_repository_s_workflows():
     """A glob that silently matched nothing would make every assertion below vacuous."""
     assert len(list(WORKFLOWS.glob("*.y*ml"))) > 50
-    assert len(step_scripts(WORKFLOWS / "sync-node-counter.yml")) >= 3
+    # A converted workflow with several steps, so the ">= 3" fixture has something to read: the
+    # file this pointed at (`sync-node-counter.yml`) was deleted on 2026-09-28.
+    assert len(step_scripts(WORKFLOWS / "update-lessons.yml")) >= 3
 
 
 def test_only_the_documented_exceptions_push_to_main():
