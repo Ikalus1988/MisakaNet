@@ -90,7 +90,7 @@ When an email contains learning/reflection:
 
 1. Extract: context, mistake, correction, takeaway
 2. Anonymize thoroughly
-3. Format as lesson (see `lessons/schema/lesson.json`)
+3. Format as lesson (see `schemas/lesson.json`)
 4. Show draft to maintainer for approval
 5. On approval → commit to `lessons/`
 
