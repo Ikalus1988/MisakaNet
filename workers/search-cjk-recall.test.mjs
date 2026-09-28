@@ -103,32 +103,21 @@ async function search(query, top = 5) {
   return { ids: (payload.results || []).map((r) => r.id), noMatch: !!payload.no_match };
 }
 
-// `scripts/eval_query_aliases.py`'s QUERIES, reduced to (query, the lesson that answers it).
-// The expected lesson is that file's `primary`; the alternates it lists are accepted too, because
-// "the corpus answers this query" is the property under test, not which of two good lessons ranks
-// first.
-const ZH_QUERIES = [
-  ['如何切换模型', ['model-switch-script-pattern']],
-  ['pip 安装超时怎么办', ['pip-install-timeout-ssl']],
-  ['pip install 卡住不动', ['lesson-08-pip-https-proxy-clash']],
-  ['公司代理导致 SSL 证书校验失败', ['pip-install-proxy-timeout', 'corporate-proxy-curl-timeout']],
-  ['磁盘空间不足怎么清理', ['disk-space-cleanup']],
-  ['权限不足无法执行', ['permission-denied-fix']],
-  ['定时任务不执行', ['cron-job-not-running']],
-  ['Python 改了代码不生效', ['python-pycache-stale']],
-  ['中文乱码怎么解决', ['python-gbk-encoding-error', 'wsl-pip-gbk-hub-poller-crash', 'aider-windows-unicode-error']],
-  ['装了包还是提示模块找不到', ['python-venv-tiktoken-module-not-found', 'import-path-verification-after-refactor']],
-  ['飞书机器人收不到消息', ['feishu-gateway-group-policy-silently-drops-messages']],
-  ['WSL 内存占用过高', ['wsl2-memory-leak-fix']],
-  ['容器内存不足被杀死', ['kubernetes-crashloopbackoff-debugging']],
-  ['DCO 签名失败怎么办', ['dco-signoff-force-push-pitfall', 'ci-dco-decouple-pythonpath-fork-pr', 'error-dco-signoff-windows']],
-  ['Node.js 连接被重置', ['n8n-nodejs-econnreset-connection-reset-fix']],
-  ['git TLS 握手失败', ['git-tls-handshake-failure']],
-  ['向量检索召回率低', ['bm25-vector-hybrid-search-weights', 'rag-retrieval-six-layer-silent-degradation']],
-  ['机器人报警代码', ['fanuc-alarm-code-reference']],
-  ['YAML 内联注释导致类型错误', ['yaml-inline-comment-type-coercion']],
-  ['浏览器自动化被拦截', ['browser-automation-csp-bypass']],
-];
+// The CJK rows of `data/search-floor-queries.jsonl` — one source for the query set, because that
+// file is also what `workers/search-dual-floor.test.mjs` measures both floors from (#2357). The
+// expected lesson is `scripts/eval_query_aliases.py`'s `primary` plus the alternates it accepts: the
+// property under test is "the corpus answers this query", not which of two good lessons ranks first.
+//
+// The file's rows are checked against the corpus by `tests/test_search_floor_queries_schema.py`,
+// which is how `import-path-verification-after-refactor` left this list: the lesson file exists at the
+// root of `lessons/`, outside the published subdirectories, so it is not in `data/lessons.json` and
+// could never be returned. An expectation that cannot match only makes the floor look lower.
+const ZH_QUERIES = readFileSync(new URL('../data/search-floor-queries.jsonl', import.meta.url), 'utf8')
+  .split('\n')
+  .filter((line) => line.trim())
+  .map((line) => JSON.parse(line))
+  .filter((row) => row.language === 'zh')
+  .map((row) => [row.query, row.expected]);
 
 // Measured 2026-09-25 on the corpus in this checkout, expansion enabled (the production default).
 // Every one of these queries has a lesson in the corpus that answers it; the ones that are missing
