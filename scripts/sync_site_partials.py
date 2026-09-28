@@ -48,28 +48,37 @@ def check(root: Path = REPO) -> list[str]:
     page = (root / INDEX).read_text(encoding="utf-8")
     current = extract_nav(page)
     if current is None:
-        return [f"{INDEX}: the drawer nav block is gone (or its element changed)"]
+        return [f"{INDEX.as_posix()}: the drawer nav block is gone (or its element changed)"]
     want = partial_body(root / PARTIALS["nav"])
     if current.strip() != want.strip():
         problems.append(
-            f"{INDEX}: the drawer nav differs from {PARTIALS['nav']} — run "
+            f"{INDEX.as_posix()}: the drawer nav differs from {PARTIALS['nav'].as_posix()} — run "
             "`python3 scripts/sync_site_partials.py` (a menu edited in one place only is how pages end up "
             "unlinked, #1892)")
     return problems
 
 
 def write(root: Path = REPO) -> list[str]:
-    """Rewrite the page from the partial. Returns the files changed."""
+    """Rewrite the page from the partial. Returns the files changed, as POSIX relative paths.
+
+    ``as_posix()``, not ``str()``: callers compare these against literals like ``"docs/index.html"``,
+    and on Windows ``str(Path("docs") / "index.html")`` is ``docs\\index.html``. That is what made
+    ``tests/test_site_nav_single_source.py::test_write_brings_the_page_back_to_the_partial`` fail on
+    every ``windows-latest`` leg from the day this script landed (2026-09-28, #2365) — and a
+    cross-platform job that is red for a reason unrelated to the change under review is a job nobody
+    reads, which is how the *next* Windows-only defect ships unnoticed. The path shape is part of this
+    function's contract now, not an accident of where it ran.
+    """
     path = root / INDEX
     page = path.read_text(encoding="utf-8")
     want = partial_body(root / PARTIALS["nav"])
     if extract_nav(page) is None:
-        raise SystemExit(f"{INDEX}: no nav block to replace")
+        raise SystemExit(f"{INDEX.as_posix()}: no nav block to replace")
     updated = NAV_BLOCK.sub(lambda _: want, page, count=1)
     if updated == page:
         return []
     path.write_text(updated, encoding="utf-8")
-    return [str(INDEX)]
+    return [INDEX.as_posix()]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -84,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
             for problem in problems:
                 print(f"❌ {problem}", file=sys.stderr)
             return 1
-        print(f"✅ {PARTIALS['nav']} and {INDEX} agree")
+        print(f"✅ {PARTIALS['nav'].as_posix()} and {INDEX.as_posix()} agree")
         return 0
     changed = write(args.root)
     print(f"✅ rewrote {changed}" if changed else "✅ already in sync")
