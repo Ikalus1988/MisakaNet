@@ -134,7 +134,7 @@ python3 -m pytest tests/test_no_workflow_pushes_to_main.py -q
 | `email-register` worker | `npm run deploy:email` | 独立 worker |
 | `docs/lessons/**`、`docs/topics/**`、`docs/sitemap.xml` | `python3 scripts/build_lesson_pages.py`（幂等；`--check` 是门禁） | **生成物自己的清单**是 `docs/.generated-pages.json`：脚本只会删自己生成的页面（带 `Back to MisakaNet` 标记），手写文件永不删除。接线前它没人跑，站点因此有 205/378 个课程页、88 个失效页、主题页计数停在 176（实际 330）——见 handoff-2026-09-12 |
 | `data/lessons.json` | `python3 scripts/update_lessons_json.py` | **不要**用 `scripts/misakanet-index.py`：它缺 `preview/triggers/verified` 等字段，会静默回滚线上统计（#1374；CI 已有 schema 校验） |
-| 全站公开计数（README / ARCHITECTURE / 站点 meta / issue 模板 …） | `python3 scripts/sync_lesson_count.py`（幂等）· 门禁 `--check` | 由 `update_lessons_json.py` 在每日 `update-lessons.yml` 里自动跑；新增/改写受管句子后要同步更新脚本里的 `SITES` 注册表，`tests/test_lesson_count_ssot.py` 会锁住"能重复刷新"与"改写就报错"两条不变量 |
+| 公开计数：只有 `docs/index.html`（meta + 首屏降级）与两份 `llms.txt` 保留字面 | `python3 scripts/sync_lesson_count.py`（幂等）· 门禁 `--check` | 由 `update_lessons_json.py` 在每日 `update-lessons.yml` 里自动跑；其余表面（README×3、ARCHITECTURE、ROADMAP、JOIN、skill.md、integrations、`.well-known/*.json`、issue 模板…）改**指向**：GitHub 渲染的用 shields 动态徽章，其余在散文里写来源。`tests/test_lesson_count_ssot.py` 锁住"能重复刷新"、"改写就报错"、**面数上限**（8 行 / 3 文件，防止面数再长回去）与"已去数字的表面不得把数字写回来"四条不变量；要加面先改那个上限并写明理由 |
 | `data/badges/*.json` | 由各 badge workflow 生成到 `data` 分支 | 例如 smithery 徽章由 `update-smithery-badge.yml` 产出 |
 | 版本发布 | release-please 自动开 release PR | **不要手改** `.release-please-manifest.json`；PyPI 另走 `release-pypi.yml` 的 workflow_dispatch |
 | CF MCP 凭证（查 worker 日志等）| `python3 scripts/cf_mcp_auth.py --server cloudflare-observability [--refresh\|--verify]` | 一键完成 discovery/DCR/PKCE/换 token/验证 |
