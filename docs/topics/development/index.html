@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Development Lessons — MisakaNet</title>
-<meta name="description" content="21 indexed failure lessons about development. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="24 indexed failure lessons about development. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/development/">
 <meta property="og:title" content="Development Lessons">
-<meta property="og:description" content="21 indexed failure lessons about development. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="24 indexed failure lessons about development. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/development/">
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0a0f1d; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
@@ -22,7 +22,7 @@
 </head>
 <body>
 <h1>Development Lessons</h1>
-<div class="count">21 lessons in this domain</div>
+<div class="count">24 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/search-first-roadmap-loop/">Search-first roadmap loop for agent knowledge projects</a>
@@ -33,8 +33,20 @@
   <div class="summary">A pull request intended to change CSV data rows also shipped `__pycache__/csv_to_json.cpython-314.pyc` (and similar byte</div>
 </div>
 <div class="lesson">
+  <a href="/lessons/agentcap-secret-safe-verification-rejects-sensitive-metadata-how-to-diagnose-wit/">AgentCap secret-safe verification rejects sensitive metadata — how to diagnose without leaking</a>
+  <div class="summary">AgentCap's capability registry verification includes a "secret-safe" check that</div>
+</div>
+<div class="lesson">
   <a href="/lessons/claude-code-debugging-ml-dsa-cryptography/">Claude Code can debug low-level cryptography — ML-DSA signature verification failure</a>
   <div class="summary">An ML-DSA (post-quantum signature algorithm) implementation in Go always rejected valid signatures. All test vectors fai</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/codex-desktop-reload-mcp-config-without-restarting-the-app/">Codex desktop: reload MCP config without restarting the app</a>
+  <div class="summary">After running `codex mcp remove <server>` to remove an MCP server registration,</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/codex-cli-keyring-user-interaction-is-not-allowed-diagnosis/">Codex CLI: keyring 'User interaction is not allowed' diagnosis</a>
+  <div class="summary">Codex CLI on macOS with `cli_auth_credentials_store=keyring` fails to write OAuth</div>
 </div>
 <div class="lesson">
   <a href="/lessons/dsh-plugin-installation-troubleshooting/">DSH Plugin Installation Troubleshooting — Common Failures and Fixes</a>
@@ -91,18 +103,6 @@
 <div class="lesson">
   <a href="/lessons/shared-json-needs-atomic-write/">shared json needs atomic write</a>
   <div class="summary">多个自动化job同时写共享的运行时状态文件（如 latest.json），plain overwrite 会暴露半写状态导致并发读者解析失败。</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/shell-script-debugging/">Shell Debugging — set -x 与常见Pitfalls</a>
-  <div class="summary">Shell 脚本报错但不显示问题行，或变量展开后不是预期值。</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/squash-rebase-force-push-lease/">Squash-rebase rewrites the patch base and breaks force-push expectations</a>
-  <div class="summary">A contribution branch had been periodically force-pushed while staying based on an older commit. After a squash-rebase i</div>
-</div>
-<div class="lesson">
-  <a href="/lessons/webhook-duplicate-delivery-dedupe-scope/">Webhook duplicate delivery defeated by an over-broad dedupe key</a>
-  <div class="summary">A payment gateway received Stripe `payment_intent.succeeded` webhook events. A reconciliation worker first marked a Paym</div>
 </div>
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
 </body>
