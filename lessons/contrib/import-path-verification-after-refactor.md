@@ -8,6 +8,9 @@ tags:
 - python
 - testing
 status: published
+summary_plain: "Renaming a Python module leaves the old import path behind, and the program only breaks when that line runs."
+trigger: "ModuleNotFoundError after refactor old import path still referenced"
+verify: '`python -c "import new.module"` exits 0 and `grep -rn "from old.module" tests/` prints nothing.'
 confidence: '0.9'
 created: '2026-09-08'
 updated: '2026-09-08'
@@ -74,10 +77,25 @@ python -m pytest tests/ -x --tb=short 2>&1 | grep -i "import\|module"
 
 ## Verification
 
-After fixing, verify:
-1. `python -c "from new.module import thing"` succeeds
-2. `grep -r "from old.module" tests/` returns no results
-3. CI passes without import errors
+After fixing, run the two checks that a passing CI run is made of:
+
+```bash
+# 1. the new path resolves — no output and exit 0 means the import works
+python -c "import new.module"
+
+# 2. no stale reference to the old path is left behind
+if grep -rn "from old.module" tests/ ; then
+  echo "STALE: the old path is still referenced (see the lines above)"
+else
+  echo "clean: no stale references to the old module path"
+fi
+```
+
+Expected output of a correct fix: the first command prints nothing, and the second prints
+`clean: no stale references to the old module path`. A `ModuleNotFoundError` from the first, or any
+`from old.module` line from the second, is the failure this lesson is about — and both are exactly
+what CI reports as an import error rather than as a test failure, which is why they are worth running
+locally before pushing.
 
 ## Notes
 

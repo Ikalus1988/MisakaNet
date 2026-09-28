@@ -66,7 +66,7 @@ QUERIES: list[tuple[str, str, list[str], str]] = [
       "lessons/contrib/aider-windows-unicode-error.md"],
      "Python GBK Encoding Error — Windows/WSL 跨平台"),
     ("装了包还是提示模块找不到", "lessons/contrib/python-venv-tiktoken-module-not-found.md",
-     ["lessons/import-path-verification-after-refactor.md"],
+     ["lessons/contrib/import-path-verification-after-refactor.md"],
      "venv 中 tiktoken 安装后仍报 ModuleNotFoundError"),
     ("飞书机器人收不到消息",
      "lessons/contrib/feishu-gateway-group-policy-silently-drops-messages.md", [],

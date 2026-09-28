@@ -41,7 +41,7 @@ Analyze ≥50 CI failure cases to identify correctable patterns and submit actio
 
 **Fix**: Add at least one test file when modifying source code. For refactors, a smoke test verifying the extracted function exists is sufficient.
 
-**Lesson file**: `lessons/ci-test-coverage-gate.md`
+**Lesson file**: `lessons/contrib/ci-test-coverage-gate.md`
 
 ### 2. `ci-workflow-fail-fast-matrix` (13%)
 
@@ -51,7 +51,7 @@ Analyze ≥50 CI failure cases to identify correctable patterns and submit actio
 
 **Fix**: Set `fail-fast: false` for matrix builds where you need all results.
 
-**Lesson file**: `lessons/ci-workflow-fail-fast-matrix.md`
+**Lesson file**: `lessons/contrib/ci-workflow-fail-fast-matrix.md`
 
 ### 3. `import-path-verification-after-refactor` (12%)
 
@@ -61,7 +61,7 @@ Analyze ≥50 CI failure cases to identify correctable patterns and submit actio
 
 **Fix**: `grep -r "from old.module" tests/` after refactoring, verify imports in fresh Python process.
 
-**Lesson file**: `lessons/import-path-verification-after-refactor.md`
+**Lesson file**: `lessons/contrib/import-path-verification-after-refactor.md`
 
 ## Unavoidable Patterns → Report Only
 
@@ -122,9 +122,9 @@ Analyze ≥50 CI failure cases to identify correctable patterns and submit actio
 
 ## Artifacts
 
-- `lessons/ci-test-coverage-gate.md` — Lesson for pattern #1
-- `lessons/ci-workflow-fail-fast-matrix.md` — Lesson for pattern #2
-- `lessons/import-path-verification-after-refactor.md` — Lesson for pattern #3
+- `lessons/contrib/ci-test-coverage-gate.md` — Lesson for pattern #1
+- `lessons/contrib/ci-workflow-fail-fast-matrix.md` — Lesson for pattern #2
+- `lessons/contrib/import-path-verification-after-refactor.md` — Lesson for pattern #3
 - This report (`docs/agents/ci-failure-pattern-analysis-2026-09-08.md`)
 
 ---

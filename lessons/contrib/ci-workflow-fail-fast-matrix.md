@@ -8,6 +8,9 @@ tags:
 - workflow-design
 - ci-optimization
 status: published
+summary_plain: "One failing matrix job cancels the others unless fail-fast is off, hiding which other versions break too."
+trigger: "github actions matrix fail-fast cancels other jobs incomplete results"
+verify: '`grep -rn "fail-fast" .github/workflows/` prints the setting for every matrix job (five lines in this repository).'
 confidence: '0.9'
 created: '2026-09-08'
 updated: '2026-09-08'
@@ -61,9 +64,20 @@ Expected output should show all 15 jobs with their individual conclusions, not 1
 
 ## Verification
 
-Compare the before/after:
-- **Before**: 1 failure, 14 cancelled (wasted compute, incomplete data)
-- **After**: 15 jobs completed, showing full failure/success matrix
+Check the setting on every matrix job, then compare the before/after:
+
+```bash
+# Every matrix workflow that depends on seeing all cells must say `fail-fast: false`:
+grep -rn "fail-fast" .github/workflows/
+```
+
+Expected result: each matrix job prints `fail-fast: false` — this repository has five such lines
+(`ci-cross-platform.yml`, `codeql.yml`, `fatal-guard.yml` and `misakanet-setup-ci.yml` twice).
+
+Compare the before/after on a run that has one failing cell:
+
+- **Before**: 1 failure, 14 cancelled (wasted compute, incomplete data — the other cells never report)
+- **After**: 15 jobs completed, showing the full failure/success matrix
 
 ## Notes
 
