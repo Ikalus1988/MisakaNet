@@ -38,7 +38,7 @@
 | `approval-watch.yml` | Approval Watch | 定时, 手动 | `17,47 * * * *` —— 列出 `status: waiting` 的 run，维护一个跟踪 issue；**永不审批**（`tests/test_approval_watch.py` 断言它不含任何审批调用） |
 | `shadow-branch.yml` | Shadow Branch - External Agent Isolation | PR |  |
 
-## 数据/索引（23）
+## 数据/索引（22）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -54,7 +54,6 @@
 | `issue-intake-triage.yml` | MCP Intake Triage | issues, 手动 |  |
 | `sync-d1.yml` | Sync Lessons to D1 (PRD ④) | push, 定时, 手动 | `0 3 * * *` |
 | `d1-backup.yml` | D1 backup（每周一次 `d1 export` 存档 + 打印 storage backend 与 Time Travel bookmark；artifact 保留 90 天）| 定时, 手动 | `10 4 * * 1` |
-| `sync-node-counter.yml` | Mirror Node Counter（把 D1 计数镜像到 main）| 定时, 手动 |  |
 | `apply-d1-schema.yml` | Apply D1 schema | 手动 |  |
 | `d1-counters-report.yml` | D1 counters report | 手动 |  |
 | `cf-diagnostics.yml` | CF diagnostics（只读运维视图：#2126 的 504/522 归因 + 区级 route 表与 KV namespace 清单 + D1 Time Travel 资格与 bookmark + durable store 健康）| 手动 |  |
