@@ -233,7 +233,7 @@ Fix: run `pip install -e .` from the repo root, then retry.
 | Goal | Go to |
 |------|-------|
 | Understand the architecture | `docs/CONCEPTS.md` |
-| Set up a federation node | `docs/agents/quickstart.md` |
+| Set up a federation node | `AGENTS.md` §3.3 |
 | Run the benchmark suite | `scripts/bench_orchestrator.py` |
 | Join the network | `JOIN.md` |
 
