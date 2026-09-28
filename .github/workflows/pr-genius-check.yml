@@ -35,7 +35,7 @@ jobs:
       # `action.yml`), and this is not a version we can express with a comment: **do not merge a
       # bump of this action until its manifest is back at the path this line uses.** The failure is
       # easy to miss because `pr-genius` is not one of the four required checks.
-      - uses: zsxh1990/pr-genius/.github/actions/pr-genius-check@0222fbd23f71ea945be022ac921211c6429912cb  # v1.8.0
+      - uses: zsxh1990/pr-genius/.github/actions/pr-genius-check@db0ff6ed2af9d24b9a82495ac27d22ff6e26d196  # v1.9.1
         id: pr-genius
         continue-on-error: true  # advisory only: never block merge on tool failure
         with:
