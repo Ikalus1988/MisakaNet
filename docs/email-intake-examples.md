@@ -60,7 +60,9 @@ Real examples of what good submissions look like.
 > **Sensitive info:** None — all code is open source.
 > **Can publish anonymously:** Yes
 
-**Outcome:** Anonymized, drafted as lesson, confirmed with author, published as `lessons/contrib/mysql-pool-exhaustion.md`.
+**Outcome:** Anonymized, drafted as lesson, confirmed with the author, then published as an anonymized
+lesson. (No file is named here: this example predates the current corpus and the path it used to name is
+not in it — the intake is what the example is about, not the filename.)
 
 ---
 
@@ -83,7 +85,8 @@ Real examples of what good submissions look like.
 > **Sensitive info:** Contains internal Feishu app ID and webhook URL.
 > **Can publish:** Only if anonymized — remove app ID, URL, and company name.
 
-**Outcome:** Anonymized (removed app ID, URL, company), published as `lessons/contrib/feishu-webhook-rate-limit.md`.
+**Outcome:** Anonymized (app ID, URL and company name removed) and published as a lesson. Same note as
+the example above: the corpus no longer has a file at the path this line used to name.
 
 ---
 

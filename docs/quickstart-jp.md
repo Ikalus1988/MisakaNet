@@ -149,6 +149,6 @@ from misakanet_core import BM25, tokenize
 | 目的 | 参照先 |
 |------|--------|
 | アーキテクチャを理解する | `docs/CONCEPTS.md` |
-| フェデレーションノードをセットアップする | `docs/agents/quickstart.md` |
+| フェデレーションノードをセットアップする | `AGENTS.md` §3.3 |
 | ベンチマークスイートを実行する | `scripts/bench_orchestrator.py` |
 | ネットワークに参加する | `JOIN.md` |
