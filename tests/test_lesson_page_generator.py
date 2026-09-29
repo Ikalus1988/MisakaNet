@@ -178,3 +178,74 @@ def test_slug_map_is_recorded_in_the_manifest(tmp_path):
     blp.sync(files, root=tmp_path, slugs=slugs)
     manifest = json.loads((tmp_path / blp.MANIFEST).read_text(encoding="utf-8"))
     assert manifest["slugs"] == dict(sorted(slugs.items()))
+
+
+# ── a search hit's id must be a working URL ─────────────────────────────────────────────────────────
+# Measured on the live site 2026-09-29: 73 of 426 lessons have a frontmatter `id` that differs from their
+# title-derived page slug, so `/lessons/<id>/` answered **404** for 17% of the corpus while the page existed
+# under another name — and `docs/llms.txt` promises `https://misakanet.org/lessons/<slug>/`, which is what a
+# consumer has after a `misakanet_search` call. The alias pages below make the id resolve; these tests pin
+# both the page and the two properties that keep it harmless (canonical to the real page, absent from the
+# sitemap).
+
+def _plan(lessons):
+    files, slugs = blp.plan_with_slugs(lessons, {})
+    return files, slugs
+
+
+def test_an_id_that_differs_from_its_slug_gets_a_redirect_page():
+    lessons = [{"id": "short-id", "title": "A Much Longer Title That Becomes The Page Slug", "domain": "x"}]
+    files, _ = _plan(lessons)
+    slug = blp.slugify("A Much Longer Title That Becomes The Page Slug")
+    assert f"docs/lessons/{slug}/index.html" in files, sorted(files)
+    assert f"docs/lessons/short-id/index.html" in files, (
+        "the id `misakanet_search` returns must resolve, or the documented page URL 404s")
+
+    alias = files["docs/lessons/short-id/index.html"]
+    assert f'<link rel="canonical" href="{blp.SITE_URL}/lessons/{slug}/">' in alias, alias
+    assert f'meta http-equiv="refresh" content="0; url=/lessons/{slug}/"' in alias, alias
+    assert blp.GENERATOR_MARK in alias, (
+        "without the marker the generator does not own the file and can never prune it")
+
+
+def test_no_alias_is_planned_when_the_id_is_already_the_slug():
+    title = "Some Lesson Title"
+    lessons = [{"id": blp.slugify(title), "title": title, "domain": "x"}]
+    files, _ = _plan(lessons)
+    lesson_paths = {p for p in files if p.startswith("docs/lessons/")}
+    assert lesson_paths == {f"docs/lessons/{blp.slugify(title)}/index.html"}, lesson_paths
+
+
+def test_a_real_page_wins_over_an_alias_at_the_same_path():
+    """A lesson whose *id* equals another lesson's *slug* must not have its page overwritten."""
+    lessons = [
+        {"id": "collides-with-a-slug", "title": "First Lesson", "domain": "x"},
+        {"id": "second", "title": "Collides With A Slug", "domain": "x"},
+    ]
+    files, _ = _plan(lessons)
+    real = files["docs/lessons/collides-with-a-slug/index.html"]
+    assert "canonical" in real and "http-equiv" not in real, (
+        "the real page for lesson 2 was replaced by lesson 1's redirect: " + real[:200])
+
+
+def test_the_alias_is_absent_from_the_sitemap():
+    lessons = [{"id": "short-id", "title": "A Much Longer Title That Becomes The Page Slug", "domain": "x"}]
+    files, _ = _plan(lessons)
+    sitemap = files[blp.SITEMAP.as_posix()]
+    assert "/lessons/short-id/" not in sitemap, (
+        "the alias is a redirect, not a second page — putting it in the sitemap asks crawlers to index it")
+    assert f"/lessons/{blp.slugify(lessons[0]['title'])}/" in sitemap, sitemap[:400]
+
+
+def test_every_lesson_id_has_a_generated_page_on_disk():
+    """The property the live site needs: after `build_lesson_pages.py`, every id resolves.
+
+    This is the repository-side version of "`/lessons/<id>/` is not a 404" — the docs/ tree is what gets
+    deployed, so a missing file here is a 404 there.
+    """
+    rows = json.loads((REPO / "data" / "lessons.json").read_text(encoding="utf-8"))
+    missing = [row["id"] for row in rows
+               if not (REPO / "docs" / "lessons" / row["id"] / "index.html").exists()]
+    assert not missing, (
+        f"{len(missing)} lesson ids have no page at `/lessons/<id>/` (run build_lesson_pages.py): "
+        f"{missing[:5]}")
