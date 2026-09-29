@@ -235,10 +235,19 @@ test('both routes read the same counters and cannot disagree about today', async
   assert.equal(activity.date, traffic.date);
 });
 
-test('the traffic endpoint keeps its per-client field — this change did not remove it', async () => {
-  const traffic = await (await worker.fetch(request('/api/analytics/traffic'), createEnv())).json();
-  assert.ok('mcpClients' in traffic, JSON.stringify(traffic));
-  assert.deepEqual(traffic.mcpClients, {}, 'no D1 bucket rows are seeded, so the map is empty');
+test('the traffic endpoint keeps its per-client field for the maintainer — this change did not remove it', async () => {
+  // Written when the field was published to everyone; rebased onto the 2026-09-29 privacy change (#2454),
+  // which withholds it anonymously and names it in `withheld`. The property this test exists for — *this
+  // refactor did not drop the field* — is unchanged, so it is asserted where the field legitimately
+  // appears: the maintainer's view. The withholding itself is owned by
+  // `workers/analytics-exposure.test.mjs`.
+  const anonymous = await (await worker.fetch(request('/api/analytics/traffic'), createEnv())).json();
+  assert.ok(!('mcpClients' in anonymous), JSON.stringify(anonymous));
+  assert.deepEqual(anonymous.withheld, ['mcpClients'], JSON.stringify(anonymous));
+
+  const mine = await (await worker.fetch(request('/api/analytics/traffic', { Authorization: `Bearer ${TOKEN}` }), createEnv())).json();
+  assert.ok('mcpClients' in mine, JSON.stringify(mine));
+  assert.deepEqual(mine.mcpClients, {}, 'no D1 bucket rows are seeded, so the map is empty');
 });
 
 test('readTrafficBreakdown is the single reader both routes import', async () => {

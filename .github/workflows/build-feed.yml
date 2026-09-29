@@ -72,10 +72,15 @@ jobs:
           python3 scripts/build_feed.py
 
       - name: Snapshot the site's activity counters
-        # `docs/data/activity.json` is what the homepage's activity panel reads, and it is a snapshot
-        # for one measured reason: `/api/analytics/traffic` answers in 0.66-0.75s from cache and
-        # **17.4s** when it recomputes (five consecutive requests, 2026-09-24), so calling it from a
-        # browser would rebuild the 504 generator #2151 spent a day removing.
+        # `docs/data/activity.json` is the homepage panel's **fallback** (2026-09-29): the panel
+        # prefers `/api/activity`, the anonymous edge-cached projection of these counters with a
+        # minutes-scale TTL, and reads this file when that route is unreachable.
+        #
+        # The reason it was the *only* source no longer holds. `/api/analytics/traffic` answers in
+        # 0.66-0.75s from cache and **17.4s** when it recomputes (five consecutive requests,
+        # 2026-09-24) — but re-measured 2026-09-29, six consecutive requests answered in 1.08-1.28s,
+        # while the three-hour snapshot had drifted to `total 5974` against the endpoint's 6645 for
+        # the same date. A snapshot nothing refreshes is not a fallback, so this job keeps writing it.
         #
         # It rides in *this* job rather than getting its own workflow on purpose: this job already
         # runs every three hours and already lands its files through one self-merging pull request, so
@@ -110,4 +115,4 @@ jobs:
             --branch bot/build-feed \
             --title "chore(data): sync lessons.json + refresh feed" \
             --paths docs/data/lessons.json docs/data/feed.json docs/data/activity.json \
-            --note "Any of these may be unchanged on its own; this pull request exists because at least one of them moved. The activity snapshot is refreshed every three hours so the homepage panel reads a static file instead of the 17-second recompute behind /api/analytics/traffic."
+            --note "Any of these may be unchanged on its own; this pull request exists because at least one of them moved. docs/data/activity.json is the homepage activity panel's fallback: the panel prefers /api/activity (anonymous, edge-cached for minutes) and reads this file when that route is unreachable, so the file is kept fresh on this three-hourly cadence."
