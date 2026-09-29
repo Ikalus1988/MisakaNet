@@ -164,7 +164,7 @@ function errorResponse(context, code = "internal_error", status = 500, error = n
   return jsonResponse({ error: ERROR_CODES[code] || ERROR_CODES.internal_error, code, ...extra }, status);
 }
 
-function jsonResponse(body, status = 200) {
+function jsonResponse(body, status = 200, extraHeaders = null) {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
@@ -173,6 +173,7 @@ function jsonResponse(body, status = 200) {
       "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
       "Pragma": "no-cache",
       "Expires": "0",
+      ...(extraHeaders || {}),
     },
   });
 }
@@ -2319,6 +2320,22 @@ const IDENTITY_AURA = {
 //
 // `IDENTITY_AURA.upgraded` is kept: it is the documented string, and its test still asserts it. Bringing
 // the feature back means adding a writer for `identity:<ip>` and a test that a paired token returns it.
+/** True when the caller presents the static MCP token — the maintainer's own credential.
+ *
+ * Used by the analytics endpoints to decide how much of the usage record to publish. Those endpoints are
+ * anonymous reads on purpose (the site's activity panel and the badges read them), and the maintainer needs
+ * the full picture; the two are different questions, so the answer is one flag rather than two endpoints.
+ */
+function isMaintainerRequest(request, env) {
+  const header = String((request && request.headers && request.headers.get("Authorization")) || "");
+  const token = header.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : "";
+  return !!(env && env.MCP_TOKEN && token === env.MCP_TOKEN);
+}
+
+/** Query/gap text, bounded. A `no_match` row is whatever the caller sent, and a caller sent a prompt. */
+const ANALYTICS_TEXT_LIMIT = 120;
+const boundText = (value) => (value == null ? "" : String(value).slice(0, ANALYTICS_TEXT_LIMIT));
+
 async function getIdentityAura(env, token) {
   if (!token || !hasDurableStore(env)) return IDENTITY_AURA.static_token;
 
@@ -6088,13 +6105,38 @@ export default {
              GROUP BY day ORDER BY day`
           ).all(),
         ]);
-        return jsonResponse({
-          top_searches: (topQueries.results || []).map(r => ({ query: r.query, count: r.n })),
+        // Two audiences, one endpoint (2026-09-29). Anonymous callers get the *aggregate* activity —
+        // which is what the site panel and the badges are for — and not the two fields that carry other
+        // people's words or names:
+        //
+        //   * `knowledge_gaps` is the `no_match` column, i.e. **verbatim failed queries**. A failed query
+        //     is whatever the caller sent, and callers send prompts: measured live 2026-09-29, the top
+        //     entry was a complete multi-sentence agent prompt, published world-readable and crawlable.
+        //     There is no length or content bound on that column, so it cannot be sanitised into safety —
+        //     it is withheld.
+        //   * `mcpClients` (on `/api/analytics/traffic`) is per-client call counts keyed on a
+        //     self-declared name. That is third-party tooling, not our own telemetry.
+        //
+        // The maintainer keeps both by presenting the static token, which is the same credential that
+        // already unlocks the write tools. `top_searches`/`intents` stay public but are now bounded to the
+        // length of a query rather than of a prompt.
+        const maintainer = isMaintainerRequest(request, env);
+        const payload = {
+          top_searches: (topQueries.results || []).map(r => ({ query: boundText(r.query), count: r.n })),
           top_lessons: (topLessons.results || []).map(r => ({ lesson_id: r.lesson_id, count: r.n })),
-          knowledge_gaps: (topGaps.results || []).map(r => ({ query: r.query, count: r.n })),
-          intents: (topIntents.results || []).map(r => ({ intent: r.intent, count: r.n })),
+          intents: (topIntents.results || []).map(r => ({ intent: boundText(r.intent), count: r.n })),
           daily_requests: (daily.results || []).map(r => ({ day: r.day, count: r.n })),
-        });
+        };
+        if (maintainer) {
+          payload.knowledge_gaps = (topGaps.results || []).map(r => ({ query: r.query, count: r.n }));
+          payload.text_limit = null;
+        } else {
+          payload.withheld = ["knowledge_gaps", "mcpClients"];
+          payload.text_limit = ANALYTICS_TEXT_LIMIT;
+          payload.note = "Aggregate activity only: failed-query text and per-client counts are withheld. "
+                       + "Present the maintainer token for the full breakdown.";
+        }
+        return jsonResponse(payload, 200, { "X-Robots-Tag": "noindex" });
       } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }
 
@@ -6121,8 +6163,14 @@ export default {
           // Who called, as far as each client is willing to say (#A2). Read from the same counter
           // family; empty rather than absent when the store is KV-only, because an enumeration is the
           // one thing the fallback cannot do.
-          mcpClients: await readMcpClientCounts(env, today),
-        });
+          //
+          // Anonymous callers do not get it (2026-09-29): these are other people's tool names and call
+          // volumes, keyed on a self-declared `clientInfo.name` falling back to the User-Agent. The
+          // maintainer does, with the same token that unlocks the write tools.
+          ...(isMaintainerRequest(request, env)
+            ? { mcpClients: await readMcpClientCounts(env, today) }
+            : { withheld: ["mcpClients"] }),
+        }, 200, { "X-Robots-Tag": "noindex" });
       } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }
 
@@ -6850,7 +6898,14 @@ async function getCode() {
   async scheduled(controller, env, ctx) {
     ctx.waitUntil(runKeepaliveSweep(controller.cron, env));
     // Daily traffic aggregation: accumulate daily traffic:* into monthly traffic-month:*
-    if (env.MISAKANET_KV) {
+    //
+    // `hasDurableStore`, not `env.MISAKANET_KV` (2026-09-29). Both this and the index refresh below write
+    // through the D1-first helpers (`bumpCounter`, `storePut`), so gating them on the KV *binding* means
+    // the day KV is dropped — the direction the migration has been heading since #2116 — the cron silently
+    // stops rolling up traffic and, worse, stops rebuilding the search index, leaving search on the naive
+    // matcher with nothing reporting it. The predicate for "is there anywhere durable to write?" already
+    // exists and is used by the readers; the cron now asks the same question they do.
+    if (hasDurableStore(env)) {
       ctx.waitUntil(aggregateDailyTraffic(env).catch(e =>
         console.error("[traffic-aggregation] failed", e.message)
       ));
@@ -6861,6 +6916,10 @@ async function getCode() {
     }).catch((e) => console.error("[kv-store] sweep failed", e.message)));
 
     // Gap lifecycle: clean up gap keys that now have covering lessons (Issue #1567)
+    //
+    // This one *does* need KV, and keeps the binding check deliberately: `cleanupCoveredGaps` reads the
+    // legacy `gap:index` KV key as its fallback when the D1 read fails, so a D1-only deployment has nothing
+    // for it to enumerate. It is the one guard here that is about the binding rather than about storage.
     if (env.MISAKANET_KV) {
       ctx.waitUntil(cleanupCoveredGaps(env).catch(e =>
         console.error("[gap-lifecycle] failed", e.message)
@@ -6869,7 +6928,7 @@ async function getCode() {
     // BM25 search index: without this the worker's only search is the naive
     // fallback (see the note above BM25_INDEX_KEY). Reported in logs either way so
     // "did the index ever get built?" is answerable from the cron history.
-    if (env.MISAKANET_KV) {
+    if (hasDurableStore(env)) {
       ctx.waitUntil(refreshSearchIndex(env).then(r =>
         console.log("[bm25-index]", JSON.stringify(r))
       ).catch(e => console.error("[bm25-index] failed", e.message)));
