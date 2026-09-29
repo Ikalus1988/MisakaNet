@@ -32,6 +32,7 @@ import worker, {
   BM25_INDEX_KEY,
   BM25_INDEX_HEALTH_KEY,
   storePut,
+  INDEX_TEXT_VERSION,
 } from './register-proxy-sw.js';
 import { testToken } from './_test-token.mjs';
 
@@ -303,7 +304,8 @@ test('the endpoint reports the bigram channel the published index carries', asyn
   assert.ok(result.cjkChannel && result.cjkChannel.termCount > 0,
     `the refresh record must report the channel it published: ${JSON.stringify(result)}`);
   assert.equal(result.cjkChannel.version, 1, JSON.stringify(result.cjkChannel));
-  assert.equal(result.textVersion, 4, `the published index must be the current text version: ${JSON.stringify(result)}`);
+  assert.equal(result.textVersion, INDEX_TEXT_VERSION,
+    `the published index must be the current text version: ${JSON.stringify(result)}`);
 
   const body = await (await worker.fetch(new Request('https://misakanet.org/api/search-index'), env)).json();
   assert.equal(body.textVersionCurrent, true, JSON.stringify(body));
