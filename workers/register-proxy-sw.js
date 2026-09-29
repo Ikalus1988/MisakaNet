@@ -4405,6 +4405,10 @@ async function fetchLessonsFromD1(env, filters = {}) {
   // 0.35 → 1.57 MB, cached payload 0.89 MB.
   const leanCols = "id, title, domain, status, tags, path, summary, problem, updated, created";
   const richCols = leanCols + ", root_cause, solution, verification";
+  // The stored body, when the table has it (2026-09-29). It is the *outermost* tier rather than part of
+  // `richCols` so a deployment without the column degrades into the section-only projection instead of
+  // falling all the way to lean — see the measurement at `indexText` below for why the body matters.
+  const richColsWithBody = richCols + ", content_md";
   // `frontmatter` (#1783) carries the optional structured fields (summary_plain /
   // trigger / verify) and is the only source for them that needs no schema change:
   // every row already stores its raw frontmatter JSON (see workers/d1/schema.sql and
@@ -4413,6 +4417,7 @@ async function fetchLessonsFromD1(env, filters = {}) {
   // time (rich+frontmatter → rich → lean) instead of losing the rich projection —
   // and therefore search relevance — wholesale.
   const richColsWithFrontmatter = richCols + ", frontmatter";
+  const richColsWithBodyAndFrontmatter = richColsWithBody + ", frontmatter";
   const run = async (cols) => {
     let stmt = d1.prepare(
       `SELECT ${cols}
@@ -4426,21 +4431,25 @@ async function fetchLessonsFromD1(env, filters = {}) {
   let results;
   let richApplied = false;
   if (filters.rich) {
-    try {
-      results = await run(richColsWithFrontmatter);
-      richApplied = true;
-    } catch (error) {
-      // A D1 deployment that predates the extra columns must not break search: drop
-      // the `frontmatter` column first (the rich projection and therefore relevance
-      // survive), and only then the rich projection itself.
-      debugLog(env, 1, "frontmatter column unavailable, using the rich projection", { error: error.message });
+    // A D1 deployment that predates one of these column sets must not break search: try the widest
+    // projection first and drop one column group at a time (body+frontmatter → body → frontmatter →
+    // sections → lean). Every step down is logged, so "which projection answered" is answerable from
+    // the cron log instead of only from `textMode`.
+    for (const [cols, tier] of [[richColsWithBodyAndFrontmatter, "body+frontmatter"],
+                                [richColsWithBody, "body"],
+                                [richColsWithFrontmatter, "frontmatter"],
+                                [richCols, "sections"]]) {
       try {
-        results = await run(richCols);
+        results = await run(cols);
         richApplied = true;
-      } catch (richError) {
-        debugLog(env, 1, "rich lesson projection unavailable, using lean", { error: richError.message });
-        results = await run(leanCols);
+        break;
+      } catch (error) {
+        debugLog(env, 1, `rich projection unavailable (${tier}), trying the next tier`, { error: error.message });
       }
+    }
+    if (!richApplied) {
+      debugLog(env, 1, "rich lesson projection unavailable, using lean", {});
+      results = await run(leanCols);
     }
   } else {
     results = await run(leanCols);
@@ -4488,16 +4497,35 @@ async function fetchLessonsFromD1(env, filters = {}) {
       // `indexText` is the searchable body and never leaves the worker: the index and
       // the naive matcher read it, responses do not carry it.
       //
-      // One budget for the whole body, not four per-section caps. The caps compounded
-      // into a coverage hole: kubernetes-crashloopbackoff-debugging.md says "kubectl"
-      // four times, all of them in the *tail* of its 1849-char Solution section, so
-      // `solution[:1200]` dropped every one of them and the query
-      // "kubectl crashloopbackoff" could only ever match half the query — the lesson
-      // lost to unrelated documents that happened to contain both words (found
-      // 2026-09-12 while calibrating the coverage floor). Total indexed text grows
-      // 0.63 MB → 0.70 MB for the whole corpus.
-      row.indexText = [summary, r.problem, r.root_cause, r.solution, r.verification]
-        .filter(Boolean).join(" ").slice(0, INDEX_TEXT_MAX_CHARS);
+      // Prefer the stored body (`content_md`). Measured 2026-09-29, on this corpus, by rebuilding the
+      // *production* projection locally from `scripts/sync_lessons_to_d1.py`'s own rows and running the
+      // dual-floor bench over it:
+      //
+      //   sections [summary,problem,root_cause,solution,verification]  en 13/20 · 18/20   zh 11/22 · 14/22
+      //   body (content_md)                                            en 15/20 · 19/20   zh 11/22 · 15/22
+      //   the gate's own corpus (summary + preview)                    en 16/20 · 19/20   zh 11/22 · 15/22
+      //
+      // …and the sections projection reproduced **production's live numbers exactly** (13/20 · 18/20,
+      // 11/22 · 14/22), which is how the gap between the gate and production was attributed to this
+      // line rather than to the corpus: the 8 lessons the snapshot was missing changed nothing (both
+      // projections score the same at 418 and 426).
+      //
+      // The sections are *derived from* the body, so indexing them alone both duplicated them (they are
+      // also carried as `problem`/`root_cause`/`solution` fields `lessonIndexText` picks up) and dropped
+      // everything outside the four headings. Concretely, `pygrep dco signoff action` — a bench row —
+      // returned **nothing** under the sections projection, because `pygrep` appears in
+      // `dco-auto-fix-workflow.md` under "## 上游 PR 被拒后的 Plan B 独立部署", a section the projection
+      // does not extract. The body restores it. Cost, measured on the same run: terms 10,372 → 12,222,
+      // avgDocLen 113.5 → 144.3, stored index 403 KB → 529 KB (26% of D1's 2 MB row ceiling), so one row
+      // is still the right shape.
+      //
+      // The single budget is what the earlier per-section caps (`solution[:1200]`) lacked — they dropped
+      // "kubectl" from all four mentions in the tail of a 1849-char Solution section (found 2026-09-12
+      // while calibrating the coverage floor), which is why the caps became one budget; the body is that
+      // same rule taken to its source.
+      row.indexText = (r.content_md
+        || [summary, r.problem, r.root_cause, r.solution, r.verification].filter(Boolean).join(" "))
+        .slice(0, INDEX_TEXT_MAX_CHARS);
     }
     // #1783: the optional structured fields, appended (never inserted) and only when
     // non-empty — a lesson that does not carry them contributes no key at all, which
