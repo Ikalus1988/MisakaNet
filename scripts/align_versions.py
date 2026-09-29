@@ -32,6 +32,11 @@ Policy invariants (mirrored by tests/test_version_consistency.py):
   R1 registry pair equal:        server.json.version == glama.json.version
   R2 npm-bundle never ahead:     package.json <= manifest "."  (npm bundle
                                  line lags the repo release line)
+
+There is deliberately **no floor** on the npm bundle line: moving backwards is
+reported by `--check` as an advisory and never fails, because a deliberate
+rollback and a typo look identical from the version number alone
+(`npm_bundle_floor`, 2026-09-29).
   R3 pypi-source equal:          server.json pypi-package.version == pyproject
   R4 lag allowed:                pyproject <= manifest
   R5 docs never ahead:           API.md / JOIN.md / README claims
@@ -41,6 +46,7 @@ Policy invariants (mirrored by tests/test_version_consistency.py):
 from __future__ import annotations
 
 import json
+import subprocess
 import re
 import sys
 from pathlib import Path
@@ -168,6 +174,58 @@ def _docs_badge() -> str:
     return found[0] if len(found) == 1 else ""
 
 
+def npm_bundle_floor(root: Path | None = None) -> tuple[str, str]:
+    """Advisory (never a failure): did the npm bundle line move *backwards*?
+
+    R2 bounds this line from **above** only — ``package.json <= manifest`` — because the npm channel
+    publishes on its own, approval-gated cadence and legitimately lags the release line. Nothing bounds
+    it from below, and the owner's decision (2026-09-29) is that it stays that way: a version number
+    moves backwards for two reasons that are indistinguishable from the number itself —
+
+    * a hand-edit, or an older artifact getting published (a mistake), and
+    * a deliberate rollback because the published version is broken (legitimate, and urgent).
+
+    A hard floor would block the second exactly when it is most needed, so this reports and never fails.
+    The previous value comes from git history: the most recent committed ``package.json`` whose version
+    differs from today's. A shallow checkout cannot answer that, and says so instead of reporting "ok" —
+    a check that passes when it could not run is the shape this repository keeps removing.
+    """
+    directory = Path(root) if root else REPO
+    # Read from `directory`, not from `REPO`: the parameter exists so a scratch repository can be
+    # used to demonstrate the failure mode, and a check that reads one tree while inspecting another
+    # is a check nobody can drive.
+    try:
+        current = str(json.loads((directory / "package.json").read_text(encoding="utf-8")).get("version", ""))
+    except (OSError, json.JSONDecodeError):
+        return "unverified", "package.json is missing or unreadable"
+    if not current:
+        return "unverified", "package.json has no version"
+    try:
+        listing = subprocess.run(["git", "-C", str(directory), "log", "--format=%H", "-n", "50",
+                                  "--", "package.json"],
+                                 capture_output=True, text=True, check=True).stdout.split()
+    except (subprocess.CalledProcessError, FileNotFoundError) as error:
+        return "unverified", f"git history unavailable ({type(error).__name__})"
+    if not listing:
+        return "unverified", "package.json has no committed history (shallow checkout, or a new file)"
+    for sha in listing:
+        try:
+            blob = subprocess.run(["git", "-C", str(directory), "show", f"{sha}:package.json"],
+                                  capture_output=True, text=True, check=True).stdout
+        except subprocess.CalledProcessError:
+            continue
+        try:
+            previous = str(json.loads(blob).get("version", ""))
+        except json.JSONDecodeError:
+            continue
+        if previous and previous != current:
+            return ("backwards", f"{previous} → {current}") if _ver(previous) > _ver(current) \
+                else ("ok", f"{previous} → {current}")
+    # History exists and never differs: no backwards move *within the commits we could see*, which is a
+    # bounded claim and says so. (Only a checkout with no history at all is `unverified`.)
+    return "ok", f"unchanged across {len(listing)} committed version(s)"
+
+
 def check() -> int:
     loc = locations()
     registry = loc["server.json (registry)"]
@@ -181,6 +239,17 @@ def check() -> int:
     print("— version lines —")
     for label, value in loc.items():
         print(f"  {label}: {value}")
+
+    # Advisory, not a policy: printed, never collected into `problems`. See `npm_bundle_floor`.
+    floor_status, floor_detail = npm_bundle_floor()
+    if floor_status == "backwards":
+        print(f"  ⚠️  advisory — the npm bundle line moved backwards ({floor_detail}). R2 has no floor by "
+              "design, because a rollback is sometimes the right answer; if this was not deliberate, "
+              "restore the previous value.")
+    elif floor_status == "unverified":
+        print(f"  ·  npm bundle floor not checked: {floor_detail}")
+    else:
+        print(f"  ·  npm bundle line did not move backwards ({floor_detail})")
 
     problems = []
     badge = loc["docs/index.html (badge)"]
