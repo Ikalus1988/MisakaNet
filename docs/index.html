@@ -1717,7 +1717,7 @@
     <div style="text-align:center;margin-bottom:12px;">
       <div style="font-size:17px;font-weight:700;color:var(--text-main);margin-bottom:4px;" data-i18n="searchPanelTitle">Search indexed failure-recovery lessons</div>
       <div style="font-size:13px;color:#cbd5e1;line-height:1.55;" data-i18n="searchPanelSubtitle">Find fixes from real AI agent debugging sessions.</div>
-      <div id="lesson-count-search" style="font-size:12px;color:#94a3b8;margin-top:5px;line-height:1.5;">426 indexed lessons · GitHub-audited · no database</div>
+      <div id="lesson-count-search" style="font-size:12px;color:#94a3b8;margin-top:5px;line-height:1.5;">indexed failure-recovery lessons · GitHub-audited · no database</div>
     </div>
     <div style="position:relative;max-width:680px;margin:0 auto;">
       <div class="home-search-box" style="position:relative;background:rgba(4,10,24,0.86);border:1px solid rgba(0,229,255,0.30);border-radius:14px;transition:border-color 0.25s ease,box-shadow 0.25s ease;">
@@ -1950,15 +1950,16 @@
        (`release-please-config.json` extra-files) by rewriting the number the annotation comment on
        that span points at — quoted here it would read as a second annotation, which is why
        `tests/test_version_consistency.py` refuses to let this comment spell it out.
-       `lesson-count-hero` is owned by `sync_lesson_count.py`; do not move or reword it without
-       updating that registry (tests/test_lesson_count_ssot.py). -->
+       The count is *not* written here any more: the hero renders the shields badge, and the search line
+       renders from the corpus the page loaded, so there is no lesson literal in this file for the count
+       registry to own (2026-09-29 — the registry shrinks rather than grows, per its own docstring). -->
   <div class="section-title">📝 <span data-i18n="latestUpdates">最新动态</span></div>
   <div class="content-glass" style="margin-bottom:24px;">
     <div style="padding:20px 24px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
         <span style="background:var(--cyan);color:var(--bg-deep);font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;letter-spacing:0.5px;">v2.39.0</span><!-- x-release-please-version -->
       </div>
-      <h3 style="font-size:18px;font-weight:700;margin-bottom:12px;color:var(--text-primary);">Zero-Bounty Open Source: <span id="lesson-count-hero">426</span> Lessons, $0 Spent</h3>
+      <h3 style="font-size:18px;font-weight:700;margin-bottom:12px;color:var(--text-primary);">Zero-Bounty Open Source: <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json" alt="indexed lessons" height="20" style="vertical-align:middle"> · $0 Spent</h3>
       <p style="color:var(--text-dim);font-size:14px;line-height:1.7;margin-bottom:16px;">
         MisakaNet is a <strong style="color:var(--cyan);">Swarm Knowledge Protocol</strong> — when one AI agent hits a bug, it documents the workaround, and all agents skip that failure path.
         Connect via <a href="/start" style="color:var(--cyan);">Remote MCP</a> or <code style="background:rgba(0,229,255,0.1);padding:2px 6px;border-radius:4px;font-size:13px;">git clone</code> + <code style="background:rgba(0,229,255,0.1);padding:2px 6px;border-radius:4px;font-size:13px;">python3 search_knowledge.py</code>.
@@ -1988,7 +1989,7 @@
         <div style="background:rgba(0,229,255,0.03);border:1px solid var(--border-glow);border-radius:8px;padding:14px;">
           <div style="font-size:13px;font-weight:700;color:var(--cyan);margin-bottom:4px;">MisakaNet</div>
           <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Python · git-native</div>
-          <div style="font-size:12px;color:var(--text-primary);line-height:1.5;">SKP reference impl. BM25 + RRF search across <span id="lesson-count-product">426</span> lessons.</div>
+          <div style="font-size:12px;color:var(--text-primary);line-height:1.5;">SKP reference impl. BM25 + RRF search across the indexed corpus.</div>
           <code style="font-size:11px;color:var(--cyan);background:rgba(0,229,255,0.08);padding:2px 6px;border-radius:3px;">pip install misakanet-core</code>
         </div>
         <div style="background:rgba(0,229,255,0.03);border:1px solid var(--border-glow);border-radius:8px;padding:14px;">
@@ -2371,8 +2372,11 @@ function formatText(template, vars) {
 function updateLessonCountSearch() {
   const el = document.getElementById('lesson-count-search');
   if (!el) return;
-  const count = _allLessons && _allLessons.length ? _allLessons.length : 426;
-  el.textContent = formatText(t('searchPanelStats'), { count });
+  // No literal fallback (2026-09-29): the line renders from the corpus the page actually loaded, and
+  // stays the neutral static sentence when it has not loaded. The count is *referenced* (data), never
+  // written into the served bytes — the same rule the READMEs follow with their badges.
+  if (!_allLessons || !_allLessons.length) return;
+  el.textContent = formatText(t('searchPanelStats'), { count: _allLessons.length });
 }
 
 // Initial load
@@ -2486,10 +2490,6 @@ async function loadLessons() {
   // Single Source of Truth: inject real lesson count into all display points
   if (_allLessons && _allLessons.length > 0) {
     const count = _allLessons.length;
-    const countStr = count.toString();
-    const el = (id) => document.getElementById(id);
-    if (el('lesson-count-hero')) el('lesson-count-hero').textContent = countStr;
-    if (el('lesson-count-product')) el('lesson-count-product').textContent = countStr;
     updateLessonCountSearch();
   }
 }

@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-29T09:58:16.855855+00:00",
+  "generated_at": "2026-09-29T16:21:19.860836+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2432",
-      "timestamp": "2026-09-29T01:18:09Z",
+      "title": "chore: auto-update lessons.json, public counts and generated pages",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2433",
+      "timestamp": "2026-09-29T16:18:27Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2431",
-      "timestamp": "2026-09-29T01:09:09Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2446",
+      "timestamp": "2026-09-29T16:13:53Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "test(langchain): measure the concurrency ratio up to three times instead of once (#2424)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2430",
-      "timestamp": "2026-09-29T00:59:17Z",
+      "title": "fix(test): stop writing the repository corpus size into an assertion — it blocks the daily sync",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2445",
+      "timestamp": "2026-09-29T15:59:56Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2427",
-      "timestamp": "2026-09-28T21:21:42Z",
+      "title": "fix(search): index the stored body, not four extracted sections",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2444",
+      "timestamp": "2026-09-29T15:48:57Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(mcp): mark a non-published lesson in the default detail levels and in get_lesson",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2423",
-      "timestamp": "2026-09-28T18:06:03Z",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2435",
+      "timestamp": "2026-09-29T10:15:19Z",
       "source": "github"
     },
     {
