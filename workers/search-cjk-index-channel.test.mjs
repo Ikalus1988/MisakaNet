@@ -33,7 +33,7 @@ import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { bm25Tokenize, buildBM25Index, cjkBigrams, encodeIndexForStorage, matchTokens } from './register-proxy-sw.js';
+import { bm25Tokenize, buildBM25Index, cjkBigrams, encodeIndexForStorage, INDEX_TEXT_VERSION, matchTokens } from './register-proxy-sw.js';
 
 const WORKER = new URL('./register-proxy-sw.js', import.meta.url);
 const SOURCE = readFileSync(WORKER, 'utf8');
@@ -88,7 +88,11 @@ function scratchWorkerThatIgnoresCjk() {
 }
 
 test('the channel is a versioned, separate map', () => {
-  assert.equal(INDEX.textVersion, 4, 'INDEX_TEXT_VERSION must move with the indexed text (#2355)');
+  // `>= 4` because 4 is the version that introduced the channel: a later bump is fine, dropping below
+  // 4 would mean the channel silently left the index. The current value is read from the constant —
+  // pinning the literal made a correct bump look like a broken test.
+  assert.equal(INDEX.textVersion, INDEX_TEXT_VERSION, 'the index must carry the current text version');
+  assert.ok(INDEX.textVersion >= 4, 'the CJK channel (#2355) must stay in the indexed text');
   assert.ok(INDEX.cjk, 'the index has no cjk channel at all');
   assert.equal(INDEX.cjk.version, 1);
   assert.equal(INDEX.cjk.docCount, CORPUS.length);
