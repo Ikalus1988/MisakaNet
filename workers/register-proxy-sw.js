@@ -1934,6 +1934,30 @@ async function fetchD1SyncStamp(env) {
 // been refusing writes since 2026-09-22 23:57Z (#2111); D1 allows 100,000 rows written per day. A job
 // whose only requirement is "somewhere to write" must not be gated on the storage that is out of
 // budget.
+/** Turn arbitrary user text into an FTS5 MATCH string that means "these words, literally".
+ *
+ * Measured on the live endpoint (2026-09-29): `/api/lessons?q=` answered **502 internal_error** for
+ * `C++ compiler`, for `NEAR(` and even for an ordinary no-match query (`zzzz-no-such-thing-xyz`). The
+ * "sanitized query" it used was `q.replace(/["']/g, " ")`, which leaves every byte of FTS5 *syntax* in
+ * place — `+`, `-`, `(`, `)`, `*`, `:`, `^` and the bare keywords `AND`/`OR`/`NOT`/`NEAR` are operators, so
+ * a search box's ordinary input became a query-syntax error and the endpoint reported a service failure.
+ *
+ * Quoting is what makes it literal: inside `"…"` FTS5 treats the content as a string, and an embedded quote
+ * is escaped by doubling it. Terms are joined with `AND` so multi-word input keeps meaning "all of these"
+ * (the previous space-joined form meant implicit AND too, but a bare `OR` silently turned it into a union).
+ * A query that is only punctuation yields an empty string, which the caller answers as "no match".
+ */
+function buildFtsMatch(raw, maxTerms = 12, maxTermLength = 40) {
+  const terms = String(raw || "")
+    .replace(/[\u0000-\u001f]/g, " ")
+    .split(/\s+/)
+    .map(term => term.replace(/"/g, '""').trim())
+    .filter(term => /[\p{L}\p{N}]/u.test(term))
+    .slice(0, maxTerms)
+    .map(term => term.slice(0, maxTermLength));
+  return terms.map(term => `"${term}"`).join(" AND ");
+}
+
 function hasDurableStore(env) {
   return !!(d1Binding(env) || (env && env.MISAKANET_KV));
 }
@@ -6042,8 +6066,9 @@ export default {
             }).slice(0, limit);
             return jsonResponse({ query: qSearch, results: filtered, source: "client-side" });
           }
-          // FTS5 MATCH with sanitized query; join lessons for full metadata.
-          const safeQ = qSearch.replace(/["']/g, " ").trim().slice(0, 100);
+          // FTS5 MATCH built from *quoted literals* (`buildFtsMatch`), so a user's input cannot be read as
+          // query syntax — see the helper for the measured 502s this replaces.
+          const safeQ = buildFtsMatch(qSearch);
           let sql =
             `SELECT l.id, l.title, l.domain, l.status, l.tags, l.path, l.summary,
                     l.problem, l.updated, l.created, f.rank
@@ -6061,6 +6086,13 @@ export default {
             description: (r.summary || r.problem || "").slice(0, 400),
             updated: r.updated, created: r.created, rank: r.rank,
           }));
+          // An empty result is an *answer*, not a failure (2026-09-29): a search box that shows "service
+          // error" because a query matched nothing teaches its user the wrong thing. The MCP tools call
+          // this `no_match` and point at intake; the HTTP surface now says the same thing.
+          if (data.length === 0) {
+            return jsonResponse({ query: qSearch, results: [], source: "d1-fts5", no_match: true,
+                                  hint: "No lesson matched. `misakanet_submit_intake` (MCP) accepts a gap report." });
+          }
           return jsonResponse({ query: qSearch, results: data, source: "d1-fts5" });
         }
 
@@ -7056,6 +7088,7 @@ function findCoveringLesson(problemText, errorText, lessons) {
 
 
 export {
+  buildFtsMatch,
   healthStatus,
   // Exported for the worker tests: the durable store is where the search index and the upstream
   // caches live since #2116, so a test that asks "was the index published?" has to ask the same
