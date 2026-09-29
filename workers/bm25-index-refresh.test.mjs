@@ -542,3 +542,23 @@ test('a table without the body column still indexes the sections — the new tie
   assert.ok(!bodyOnly.results.some(r => r.id === 'rich-k8s'),
     'a token only the body carries cannot be found without the body column — that is the tier, not a bug');
 });
+
+test('the cron rebuilds the index with no KV binding at all', async () => {
+  // The guard this replaces was `if (env.MISAKANET_KV)` around the index refresh in `scheduled()`, while
+  // the refresh writes through the D1-first `storePut`. A deployment that drops the KV namespace — the
+  // direction the migration has been heading since #2116 — would therefore never rebuild its index: search
+  // would answer from the naive matcher and `/api/search-index` would keep serving the frozen row, with
+  // nothing reporting it. The guard now asks `hasDurableStore`, the same question the readers ask
+  // (measured 2026-09-29 by an architecture review).
+  const env = createD1Env(RICH, createColumnAwareD1(RICH));
+  delete env.MISAKANET_KV;                     // D1 only, exactly the shape the guard could not survive
+  assert.equal(await storedIndex(env), null, 'the store must start cold');
+
+  const pending = [];
+  await worker.scheduled({ cron: '*/15 * * * *' }, env, { waitUntil: (p) => pending.push(p) });
+  await Promise.all(pending);
+
+  const index = await storedIndex(env);
+  assert.ok(index, 'the cron published nothing in a D1-only deployment');
+  assert.equal(index.docCount, RICH.length, JSON.stringify(index.docCount));
+});
