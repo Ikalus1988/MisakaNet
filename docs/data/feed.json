@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-09-28T21:16:41.812008+00:00",
+  "generated_at": "2026-09-29T01:04:47.099633+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "test(langchain): measure the concurrency ratio up to three times instead of once (#2424)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2430",
+      "timestamp": "2026-09-29T00:59:17Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2427",
+      "timestamp": "2026-09-28T21:21:42Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "fix(mcp): mark a non-published lesson in the default detail levels and in get_lesson",
@@ -23,20 +37,6 @@
       "title": "docs(readme): two rows of the 当前数据 table carried counts that nothing writes",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2421",
       "timestamp": "2026-09-28T17:28:22Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(bench): measure the live service against the gate's floors, in one command",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2420",
-      "timestamp": "2026-09-28T17:22:58Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(ops): the troubleshooting table did not mention the edge's Python-urllib UA rule",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2419",
-      "timestamp": "2026-09-28T16:28:23Z",
       "source": "github"
     },
     {
