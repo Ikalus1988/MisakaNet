@@ -83,6 +83,14 @@ jobs:
           cat /tmp/badges/tools.json
           cat /tmp/badges/domains.json
 
+      # The one badge that is a *live* fact rather than a repository fact: how today's searches were
+      # answered (BM25 vs the naive fallback). It reads `/api/search-index` and publishes one number —
+      # the decision (2026-09-29) is to publish this and **not** `mcpClients`, because this one is about
+      # our own implementation while that one is about other people's tooling. A transport failure
+      # writes nothing, so yesterday's value stays rather than the badge claiming "no data".
+      - name: Generate retrieval-backend badge
+        run: python3 scripts/update_retrieval_badge.py --out /tmp/badges/retrieval.json
+
       - name: Push to data branch
         env:
           GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}

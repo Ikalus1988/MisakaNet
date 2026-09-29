@@ -293,6 +293,7 @@ python3 search_knowledge.py "database locked"
 | 📚 Lessons | <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/lessons.json" alt="知识" height="20"> (canonical, 去重后) |
 | 🎤 Network Voices | 见 [voices.json](docs/community/voices.json) |
 | 📡 Feed Items | 见 [feed.json](docs/data/feed.json) 的 `item_count` |
+| 🔎 检索后端 | <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/retrieval.json" alt="检索后端" height="20"> (今日；BM25 与退化到 fallback 的比例) |
 | 🔍 领域覆盖 | RAG, DevOps, Feishu, Fanuc, Network, Claude, MCP |
 
 > 这三个数字都有活来源（徽章 / `docs/community/voices.json` / `docs/data/feed.json`），所以表里不再写死。
