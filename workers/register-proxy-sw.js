@@ -1721,7 +1721,14 @@ const INDEX_TEXT_MAX_CHARS = 6000;
 // is silently absent — the failure that looks like nothing is wrong. What did *not* change is the English
 // side: `terms`, `docs` and `avgDocLen` are byte-identical to a build without the channel, because the
 // bigrams never enter their map (see `buildBM25Index`).
-const INDEX_TEXT_VERSION = 4;
+// v5 (2026-09-29): the *shape* of the indexed text changed — `indexText` is the stored body
+// (`content_md`) instead of four extracted sections (`[summary, problem, root_cause, solution,
+// verification]`). This is exactly the case the paragraph above describes, and it was missed on the
+// first attempt: the worker that indexes the body was deployed, the produced numbers did not move at
+// all (en 13/20 · 18/20, zh 11/22 · 14/22, identical to the sections projection), and the reason was
+// this constant — `docCount`, `textMode` and the sync stamp were all unchanged, so the cron kept
+// serving the old index for up to 20h. Bumped, the freshness gate rebuilds on the next tick.
+const INDEX_TEXT_VERSION = 5;
 // The public listing must not ship the internal searchable body: `indexText` feeds
 // the index and the matcher, and it is dropped from every response the worker
 // builds from loadLessons().
@@ -6965,6 +6972,10 @@ export {
   handlePrGeniusStats,
   buildBM25Index,
   indexShapeProblem,
+  // Exported so the tests assert `textVersion === INDEX_TEXT_VERSION` rather than a literal: pinning
+  // the current number made a *correct* bump look like a broken test (it is how the body-indexing
+  // change shipped without one — see the v5 note).
+  INDEX_TEXT_VERSION,
   bm25Tokenize,
   cjkBigrams,
   CJK_CHAR,
