@@ -73,6 +73,11 @@ jobs:
           python-version: "3.11"
           cache: pip
 
+      # The worker suite needs node; the Python steps in this job do not assume it.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          node-version: "22"
+
       - name: Install Dependencies
         if: steps.scope.outputs.scope == 'full'
         run: |
@@ -366,6 +371,26 @@ jobs:
           exit $PYTEST_EXIT
         continue-on-error: true
 
+      # ── The worker suite (this is what makes it gate) ──────────────────────────────────────────────
+      # `node --test workers/*.test.mjs` is the only automated verification of
+      # `workers/register-proxy-sw.js`: the MCP endpoint, the search ranking (BM25 + the CJK channel + the
+      # relevance floor) and every public `/api/*` route. It ran in `mcp-stress.yml`, which is **not** a
+      # required check, so a red worker test merged green-looking — and until 2026-09-29 that workflow's
+      # trigger paths named 6 of its 59 test files, so most of them did not run on the PRs that changed
+      # them. The `audit` job *is* required, and this step puts the suite behind the same verdict as the
+      # Python one (the suite runs in seconds; see `mcp-stress.yml`).
+      - name: Run Worker Test Suite (node)
+        if: steps.scope.outputs.scope == 'full'
+        id: node_tests
+        run: |
+          set +e
+          node --test workers/*.test.mjs 2>&1 | tee node_worker_report.txt
+          NODE_EXIT=${PIPESTATUS[0]}
+          echo "exit=$NODE_EXIT" >> "$GITHUB_OUTPUT"
+          echo "Worker suite exit: $NODE_EXIT"
+          exit $NODE_EXIT
+        continue-on-error: true
+
       - name: Upload Coverage to Codecov
         if: steps.scope.outputs.scope == 'full'
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5  # v7
@@ -495,6 +520,7 @@ jobs:
         run: |
           SCOPE="${{ steps.scope.outputs.scope }}"
           OUTCOME="${{ steps.pytest.outcome }}"
+          NODE_OUTCOME="${{ steps.node_tests.outcome }}"
           PYTEST_EXIT="${{ steps.pytest.outputs.exit }}"
           COVERAGE="${{ steps.coverage.outputs.rate }}"
           SUSPICIOUS="${{ steps.prsize.outputs.suspicious }}"
@@ -668,6 +694,17 @@ jobs:
               REPORT+="❌ Dependency audit found vulnerabilities."$'\n'
               VERDICT_PASS=false
             fi
+            if [ -n "$NODE_OUTCOME" ] && [ "$NODE_OUTCOME" != "success" ]; then
+              # Same distinction as the Python suite: skipped (an earlier gate failed) is not failed, but
+              # both keep the verdict red — an unverified PR must not read as green.
+              if [ "$NODE_OUTCOME" = "skipped" ]; then
+                REPORT+="❌ Worker test suite (node) did not run (an earlier gate failed)."$'\n'
+              else
+                REPORT+="❌ Worker test suite (node) failed — the worker is the MCP endpoint, search and the public API."$'\n'
+              fi
+              VERDICT_PASS=false
+            fi
+
             if [ -n "$OUTCOME" ] && [ "$OUTCOME" != "success" ]; then
               # Same distinction as in the report above: a suite that never ran is not a suite that
               # failed. Both keep the verdict red — an unverified PR must not read as green — but the
