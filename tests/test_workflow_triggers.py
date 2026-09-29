@@ -57,12 +57,82 @@ def test_the_intake_bot_demo_names_its_trigger_source():
     )
 
 
+# GitHub's activity types for `workflow_run`. `completed` is what most consumers want; `requested` fires
+# when a run is *created*, which is the only moment at which a run can be reported as waiting for approval.
+VALID_WORKFLOW_RUN_TYPES = ("completed", "in_progress", "requested")
+
+
+def workflow_run_blocks(path: Path) -> list[dict]:
+    """The `workflow_run` trigger(s) in one workflow file, as parsed YAML.
+
+    Parsed rather than string-matched, and that is the point of this version (2026-09-29): the rule below
+    used to accept only the literal spellings `types: [completed]` or a `types:` block, so
+    `types: [requested]` — valid YAML, valid GitHub, and the only type that can see a run enter the
+    approval queue — was reported as a *missing* declaration. That is the "assert on the wording instead of
+    the mechanism" failure this repository has a lesson about; the intent here is "name your activity types
+    explicitly", and the spelling is not the mechanism.
+    """
+    spec = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(spec, dict):
+        return []
+    triggers = spec.get("on") or spec.get(True) or {}
+    if not isinstance(triggers, dict):
+        return []
+    block = triggers.get("workflow_run")
+    if block is None:
+        return []
+    return block if isinstance(block, list) else [block]
+
+
+def activity_type_problems(path: Path) -> list[str]:
+    """Problems with one file's `workflow_run` activity types — empty when the file is fine.
+
+    A function rather than an inline assertion so the rule's own failure mode can be driven from a fixture.
+    """
+    problems: list[str] = []
+    for block in workflow_run_blocks(path):
+        types = block.get("types") if isinstance(block, dict) else None
+        if not types:
+            problems.append(
+                f"{path.name}: a workflow_run trigger with no `types` fires on every activity type")
+            continue
+        unknown = sorted(set(types) - set(VALID_WORKFLOW_RUN_TYPES))
+        if unknown:
+            problems.append(f"{path.name}: {unknown} is not a workflow_run activity type "
+                            f"(valid: {list(VALID_WORKFLOW_RUN_TYPES)})")
+    return problems
+
+
 def test_workflow_run_consumers_still_declare_a_valid_trigger_type():
-    """A `workflow_run` without `types` fires on every activity type; all of ours want completed."""
-    for path in _workflow_run_files():
-        text = path.read_text(encoding="utf-8")
-        if re.search(r"^\s*workflow_run\s*:", text, re.MULTILINE):
-            assert "types: [completed]" in text or "types:\n" in text, path.name
+    """A `workflow_run` without `types` fires on every activity type; each consumer must name its own."""
+    problems = [problem for path in _workflow_run_files() for problem in activity_type_problems(path)]
+    assert not problems, "\n  - ".join(["workflow_run triggers must declare valid activity types:"] + problems)
+
+
+def test_the_activity_type_rule_notices_a_missing_or_invalid_types_list(tmp_path):
+    """Guard the guard: the rule reads the real repository, so its failure modes need fixtures."""
+    def write(name: str, trigger: str) -> Path:
+        path = tmp_path / name
+        path.write_text("name: Fixture\non:\n" + trigger + "\njobs: {}\n", encoding="utf-8")
+        return path
+
+    fine = write("fine.yml", "  workflow_run:\n    workflows: [\"A\"]\n    types: [requested]\n")
+    assert activity_type_problems(fine) == [], "an inline list is a declaration like any other"
+
+    block_form = write("block.yml", "  workflow_run:\n    workflows: [\"A\"]\n    types:\n      - completed\n")
+    assert activity_type_problems(block_form) == [], "the block form must keep working"
+
+    missing = write("missing.yml", "  workflow_run:\n    workflows: [\"A\"]\n")
+    assert activity_type_problems(missing) == [
+        "missing.yml: a workflow_run trigger with no `types` fires on every activity type"], (
+        "a trigger that fires on every activity type must be reported")
+
+    bogus = write("bogus.yml", "  workflow_run:\n    workflows: [\"A\"]\n    types: [finished]\n")
+    assert any("not a workflow_run activity type" in problem for problem in activity_type_problems(bogus)), (
+        "an activity type GitHub does not have must be reported")
+
+    plain = write("plain.yml", "  push:\n    branches: [main]\n")
+    assert activity_type_problems(plain) == [], "a workflow with no workflow_run trigger is not this rule's business"
 
 
 # ── a `workflow_run` that names a workflow which does not exist fires never ─────────────────────────
