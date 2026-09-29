@@ -499,3 +499,46 @@ test('a rebuild reads D1, not the lessons cache it may be racing (#1731)', async
   assert.deepEqual(stored.docs.map(d => d.id), ['post-sync-row'],
     'the rebuild must be built from D1, not from the cached pre-sync corpus');
 });
+
+// ── the stored body, not just the four extracted sections (2026-09-29) ───────────────────────────────
+// Measured on production: `misakanet_search("pygrep dco signoff action")` — one of the repository's own
+// bench queries — returned **nothing**, because the D1 projection indexed
+// `[summary, problem, root_cause, solution, verification]` and the word `pygrep` lives in
+// `dco-auto-fix-workflow.md` under "## 上游 PR 被拒后的 Plan B 独立部署", a section the projection does
+// not extract. Rebuilding the production projection locally reproduced production's live bench numbers
+// exactly (en 13/20 · 18/20, zh 11/22 · 14/22 against the gate's 16/20 · 19/20 and 11/22 · 15/22), and
+// indexing `content_md` instead recovered most of it (en 15/20 · 19/20, zh 11/22 · 15/22).
+const OUTSIDE_SECTIONS = 'quokkasection';
+
+test('a token outside the four extracted sections is searchable when the table has the body', async () => {
+  const rows = [{ ...RICH[0],
+    // The four columns the old projection indexed say nothing about the token…
+    problem: 'the pod restarts', root_cause: 'the limit is low', solution: 'raise the limit',
+    verification: 'watch it',
+    // …and the body carries it in a section none of them extracts.
+    content_md: `## Problem\n\nthe pod restarts\n\n## 上游被拒后的 Plan B\n\n${OUTSIDE_SECTIONS} 是内置钩子\n\n## Verification\n\nwatch it` }];
+  const env = createD1Env(rows, createColumnAwareD1(rows, { columns: [...D1_COLUMNS, 'content_md'] }));
+  const result = await refreshSearchIndex(env);
+  assert.equal(result.refreshed, true, JSON.stringify(result));
+
+  const found = await search(env, OUTSIDE_SECTIONS);
+  assert.ok(found.results.some(r => r.id === 'rich-k8s'),
+    `the body must be indexed, not only its extracted sections: ${JSON.stringify(found.results)}`);
+});
+
+test('a table without the body column still indexes the sections — the new tier degrades', async () => {
+  // The ladder is body+frontmatter → body → frontmatter → sections → lean. A deployment whose table
+  // predates `content_md` must keep the section-only projection it had, not fall to lean text.
+  const rows = [{ ...RICH[0], content_md: `## Problem\n\nthe pod restarts\n\n${OUTSIDE_SECTIONS}` }];
+  const env = createD1Env(rows, createColumnAwareD1(rows));   // D1_COLUMNS has no content_md
+  const result = await refreshSearchIndex(env);
+  assert.equal(result.refreshed, true, JSON.stringify(result));
+  assert.equal(result.textMode, 'rich', 'a missing body column must not cost the rich projection');
+
+  const sections = await search(env, `${BODY_ONLY} memory limit too low`);
+  assert.ok(sections.results.some(r => r.id === 'rich-k8s'),
+    `the sections must still be indexed: ${JSON.stringify(sections.results)}`);
+  const bodyOnly = await search(env, OUTSIDE_SECTIONS);
+  assert.ok(!bodyOnly.results.some(r => r.id === 'rich-k8s'),
+    'a token only the body carries cannot be found without the body column — that is the tier, not a bug');
+});
