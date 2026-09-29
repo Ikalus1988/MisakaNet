@@ -4,28 +4,51 @@
 
 ## Hard Gates (must pass)
 
-These checks block merge if they fail. Fix them before requesting review.
+The required set is defined by the branch ruleset **`main: the deterministic gates`** (id `23826057`,
+`target: branch`, `enforcement: active`, `bypass_actors: []`). Read it back with:
 
-| Check | Workflow | What it validates |
-|-------|----------|-------------------|
-| **DCO / Signed-off-by** | `dco-check.yml` | Every commit has `Signed-off-by:` line |
-| **DCO Audit** | `pr-checks.yml` | Same as above, embedded in audit workflow |
-| **Secret Scan** | `pr-checks.yml` | No API keys, tokens, or credentials in diff |
-| **Dependency Audit** | `pr-checks.yml` | No known vulnerabilities in dependencies |
-| **CodeQL (python)** | GitHub default | No security vulnerabilities in Python code |
-| **CodeQL (javascript)** | GitHub default | No security vulnerabilities in JS/TS code |
+```bash
+curl -sS -H "Authorization: Bearer $TOKEN" \
+  https://api.github.com/repos/Ikalus1988/MisakaNet/rulesets/23826057 \
+  | python3 -c "import json,sys; [print(c['context']) for r in json.load(sys.stdin)['rules'] \
+      if r['type']=='required_status_checks' for c in r['parameters']['required_status_checks']]"
+```
+
+Measured that way on 2026-09-29, **four** checks block a merge:
+
+| Check (context as GitHub reports it) | Workflow | What it validates |
+|---|---|---|
+| **DCO / Signed-off-by** | `dco-check.yml` | Every commit carries `Signed-off-by:` |
+| **test (ubuntu-latest, 3.11)** | `ci-cross-platform.yml` | The pytest suite on one leg of a 9-leg matrix — the other eight legs are *not* required |
+| **gate** | `lesson-gate.yml` | The lesson gate (structure, quality, injection). It deliberately has **no `paths:` filter**, because a required check that sometimes does not run blocks every PR that does not trigger it (#1920) |
+| **audit** | `pr-checks.yml` | The audit verdict: DCO audit, secret scan (`scripts/check_worker_secrets.py`), dependency audit, and a `pytest --cov-fail-under=20` run. This is the job that turns a test failure into a blocked merge |
+
+Three notes that have each cost someone an afternoon:
+
+* **"Required" is about the *context name*.** Only `test (ubuntu-latest, 3.11)` is required out of the nine
+  `test (…)` legs, so a red `windows-latest` or `macos-latest` leg **does not block a merge** — it merges
+  green-looking and shows up afterwards as "that PR broke something". Read the leg you changed.
+* **`audit` runs pytest too** (with a coverage floor), so the suite *is* gated even though the
+  `Run Test Suite` step inside `pr-checks.yml` is `continue-on-error`.
+* **The node suite is not required at all.** `node --test workers/*.test.mjs` (~561 tests, the only automated
+  verification of `workers/register-proxy-sw.js` — i.e. of the MCP endpoint, search and the public API) runs in
+  `mcp-stress.yml`, which is not in the required set. Its trigger paths were also a hand-written file list
+  until 2026-09-29, so most of its test files did not even run on the PRs that changed them. Until it is
+  required, a red worker test merges; treat its check-run as part of review.
 
 ## Soft Gates (advisory, won't block)
 
-These checks provide feedback but won't prevent merge. They may fail due to external issues.
+These report but cannot stop a merge. Some are advisory by design; two are advisory by accident, which is
+worth knowing before treating a green page as coverage.
 
-| Check | Workflow | Why it's advisory |
-|-------|----------|-------------------|
-| **Agent Quality Score** | `pr-checks.yml` | `continue-on-error: true` — score unavailable doesn't block |
-| **Run Test Suite** | `pr-checks.yml` | `continue-on-error: true` — tests may fail on external deps |
-| **Validate Lesson Schema** | `pr-checks.yml` | `continue-on-error: true` — legacy lessons may not pass |
-| **Workers Builds** | Cloudflare bot | External service, frequently fails on bot PRs |
-| **submit-pypi** | deploy workflow | Only runs on release tags, not PRs |
+| Check | Workflow | Why it is advisory |
+|---|---|---|
+| **the other eight `test (…)` legs** | `ci-cross-platform.yml` | Only `ubuntu-latest, 3.11` is in the ruleset — the windows/macos legs exist to catch platform drift and merge red (measured twice on 2026-09-28 alone) |
+| **MCP Endpoint Stress Tests** | `mcp-stress.yml` | The worker suite, not in the required set — see the note above |
+| **CodeQL (python / javascript-typescript)** | GitHub default | Security queries; findings do not block |
+| **Agent Quality Score / Validate Lesson Schema** | `pr-checks.yml` | `continue-on-error: true` |
+| **pr-agent / pr-genius** | external | Review helpers |
+| **Workers Builds: misakanet-web** | Cloudflare bot | The site build; external, and noisy on bot PRs |
 
 ## External (not gated)
 
