@@ -39,9 +39,9 @@
   <url><loc>https://misakanet.org/topics/nodejs/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/openclaw/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/crypto-ops/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://misakanet.org/topics/backend/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/wsl/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/ux/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://misakanet.org/topics/backend/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/web3/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/mobile/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://misakanet.org/topics/typescript/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -81,6 +81,7 @@
   <url><loc>https://misakanet.org/lessons/agent-roleplay-time-consistency-hallucination/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/agent-state-database-lock-cleanup/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/agent-web-access-toolchain-selection/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/agentcap-secret-safe-verification-rejects-sensitive-metadata-how-to-diagnose-wit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ai-agent-project-outreach-guide/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/aider-api-key-leak/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/aider-litellm-model-name-rejection/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -117,6 +118,8 @@
   <url><loc>https://misakanet.org/lessons/ci-manual-dispatch-whole-corpus-false-red/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ci-push-triggered-bot-races-generated-artifact/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ci-security-advisory-checks/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/always-add-tests-with-code-changes-to-pass-ci-coverage-gates/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/set-fail-fast-false-for-matrix-builds-to-see-all-failures/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/claude-code-debugging-ml-dsa-cryptography/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/claude-code-hook-silent-failure/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-ai-gateway-auth-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -124,6 +127,8 @@
   <url><loc>https://misakanet.org/lessons/cloudflare-observability-mcp-oauth-separate-domain/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-worker-deploy-three-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codeql-alert-dismissal-false-positive/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/codex-desktop-reload-mcp-config-without-restarting-the-app/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/codex-cli-keyring-user-interaction-is-not-allowed-diagnosis/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/corporate-proxy-curl-timeout/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cron-job-not-running/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cross-repo-contribution-strategy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -255,6 +260,7 @@
   <url><loc>https://misakanet.org/lessons/hub-credential-gateway-vs-hub/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/hub-feishu-wsclient-start-never-called/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/iap-tcp-forwarding-numpy-bandwidth/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/verify-import-paths-after-refactoring-python-modules/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/issue-comment-newbie-welcome/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/jieba-synonym-expansion-pitfall/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/js-dead-code-chain-break/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -296,6 +302,7 @@
   <url><loc>https://misakanet.org/lessons/llm-streaming-thought-tags-stripping/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/supervise-macos-chrome-headless-pdf-generation-and-handle-process-timeouts/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/macos-homebrew-python-pip-install-blocked-by-pep-668-externa/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/macos-oslistxattr-missing-and-ocr-returns-empty-for-transparent-png/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/maintainer-feedback-iteration/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-context-mode-98-reduction/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/mcp-endpoint-404-zone-route-misconfig/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -330,6 +337,7 @@
   <url><loc>https://misakanet.org/lessons/openclaw-82-session-nodes-entry-valid-stays-0-after-manual-sqlite-edit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/opire-bounty-hunting/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/oss-refactor-lessons/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/pdf-oxide-drops-compound-word-hyphen-when-pdf-wraps-at-that-hyphen/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/permission-denied-fix/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/phase-0-output-gate/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pip-install-proxy-timeout/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
