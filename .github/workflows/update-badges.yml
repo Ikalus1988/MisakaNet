@@ -7,7 +7,12 @@ on:
       - "lessons/**"
       - "scripts/mcp_server.py"
   workflow_run:
-    workflows: ["Lesson Quality Gate", "Update Lessons"]
+    # By `name:`, which is what GitHub matches on. "Update Lessons" was not a name any workflow had
+    # (the file is `update-lessons.yml`, its name is "Update lessons.json"), so this half of the
+    # trigger could never fire and the badges refreshed only on the weekly cron — invisibly, with no
+    # error. `tests/test_workflow_triggers.py` now checks every name in every `workflow_run` list
+    # against the workflows that exist, so the next typo fails a test instead of going quiet.
+    workflows: ["Lesson Quality Gate", "Update lessons.json"]
     types: [completed]
   schedule:
     - cron: "23 3 * * 1"
