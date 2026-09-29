@@ -154,13 +154,19 @@ def test_the_report_prints_both_corpora_and_names_every_miss():
     results = {"a": {"ids": ["hit"]}, "b": {"ids": ["other"]}, "c": {"ids": ["other"]},
                "d": {"ids": ["other"]}, "e": {"ids": ["hit"]}}
     tallies = bench.tally(FIXTURE_ROWS, results, top=3)
+    # The repository-corpus number is **derived**, never written down. This test used to assert the
+    # literal `418`, and on 2026-09-29 that made it block the daily sync PR (#2433), which legitimately
+    # moves `data/lessons.json` to 426 — the same "a pinned value with no writer" shape the repository
+    # keeps fixing elsewhere, this time in a test of mine. Deriving it asserts the property that matters
+    # (the report prints the corpus it actually read) and cannot go stale.
+    repo_rows = len(json.loads(bench.REPO_CORPUS.read_text(encoding="utf-8")))
     report = bench.render(bench.compare(tallies, floors), tallies,
                           {"docCount": 426, "textMode": "rich", "textVersion": 4,
                            "expectedTextVersion": 4, "textVersionCurrent": True,
                            "cjkChannel": {"termCount": 10519, "docCount": 426}},
-                          len(json.loads(bench.REPO_CORPUS.read_text(encoding="utf-8"))),
-                          floors, "2026-09-28, data/lessons.json at 418 rows")
-    assert "repository corpus: 418 rows" in report, report
+                          repo_rows, floors, "2026-09-28, data/lessons.json at 418 rows")
+    assert f"repository corpus: {repo_rows} rows" in report, report
+    assert repo_rows > 0, "the corpus must exist for this assertion to mean anything"
     assert "426 rows, textMode rich" in report, report
     assert "10519 bigrams" in report, report
     assert "second" in report and "expected ['hit']" in report, report
