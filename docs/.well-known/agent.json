@@ -25,7 +25,10 @@
       "misakanet_register",
       "misakanet_submit_intake",
       "initialize",
-      "tools/list"
+      "tools/list",
+      "misakanet_search",
+      "misakanet_get_lesson",
+      "misakanet_me_events"
     ]
   }
 }

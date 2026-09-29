@@ -78,7 +78,7 @@ endpoint; `python3 -c "from misakanet.server import TOOLS; print(len(TOOLS))"`):
 | Tool | Parameters | Returns |
 |------|-----------|---------|
 | `misakanet_search` | `query` (str), `domain?` (str), `top?` (int=5) | Ranked lesson results |
-| `misakanet_get_lesson` | `path_or_id` (str) | Full lesson markdown content |
+| `misakanet_get_lesson` | `id` (str) **or** `path` (str) — exactly one | Full lesson markdown content |
 | `misakanet_submit_usage` | `lesson_id` (str), `tool` (str), `outcome` (str) | Confirmation |
 | `misakanet_usage_status` | `user?` (str) | Usage statistics |
 | `misakanet_submit_intake` | `problem` (str), `kind?`, `source?` | Intake id — opens a GitHub issue |
