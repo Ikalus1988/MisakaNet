@@ -5,10 +5,11 @@ that script, while its own pull request was still open.
 
 ## Why the direct pushes stopped working
 
-`main` carries the ruleset **"main: the deterministic gates"** (id `23826057`). It requires three
+`main` carries the ruleset **"main: the deterministic gates"** (id `23826057`). It requires four
 status checks on whatever lands there — `DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`,
-`gate` — and its `bypass_actors` list is **empty**, so it applies to a direct push exactly as it
-applies to a pull request. GitHub evaluates the checks against the commit in the push; a commit
+`gate`, `audit` (the list lives in `docs/ci-gates.md`, with the command that reads it back from the
+ruleset, so it is stated once) — and its `bypass_actors` list is **empty**, so it applies to a direct
+push exactly as it applies to a pull request. GitHub evaluates the checks against the commit in the push; a commit
 that no pull request ever carried has none of them, and the push is refused:
 
 ```
