@@ -62,6 +62,13 @@ jobs:
           fi
           echo "Guard passed: $SIZE bytes, $COUNT lessons"
 
+      # Belt and braces since 2026-09-29, not the mechanism: `update_lessons_json.py` now writes both
+      # copies in the daily `update-lessons.yml` job, because a copy that waited for this three-hourly
+      # run left the site serving the previous corpus (measured 2026-09-29: 426 vs 418 for about a
+      # day). This `cp` is harmless — it can only make the two files equal — and it still covers a
+      # push to `main` that changes `data/lessons.json` (this workflow triggers on that path). The
+      # divergence itself is gated by `scripts/check_docs_data_copy.py`, run under
+      # `tests/test_docs_data_copy.py` by the audit job in `pr-checks.yml`.
       - name: Sync lessons.json to docs/data/
         run: cp data/lessons.json docs/data/lessons.json
 

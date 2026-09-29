@@ -50,6 +50,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # Writes BOTH copies of the corpus: `data/lessons.json` and the copy the browser downloads,
+      # `docs/data/lessons.json`. The site copy used to be produced only by the three-hourly
+      # `build-feed.yml`, so a regeneration left the site serving the previous corpus until that job
+      # ran — measured 2026-09-29, 426 vs 418 for about a day, with no check complaining. The
+      # guarantee belongs to the job that owns the corpus; `build-feed.yml`'s `cp` is now a harmless
+      # second copy, not the mechanism. Gate: `scripts/check_docs_data_copy.py`
+      # (`tests/test_docs_data_copy.py`), run by `pr-checks.yml`'s audit job.
       - name: Regenerate lessons.json
         run: python3 scripts/update_lessons_json.py
 
