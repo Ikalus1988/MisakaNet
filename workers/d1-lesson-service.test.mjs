@@ -323,15 +323,24 @@ test('/api/analytics aggregates usage without auth', async () => {
     { event: 'no_match', query: 'zzz nonexistent', lesson_id: '', domain: '' },
     { event: 'get_lesson', query: '', lesson_id: 'pip-install-timeout-ssl', domain: 'python' },
   ]);
-  const env = { MISAKANET_D1: d1 };
+  const env = { MISAKANET_D1: d1, MCP_TOKEN: TOKEN };
   const resp = await worker.fetch(new Request('https://misakanet.org/api/analytics'), env);
   assert.equal(resp.status, 200);
   const data = await resp.json();
+  // The *aggregate* is anonymous on purpose (the site panel and the badges read it) …
   assert.ok(Array.isArray(data.top_searches));
   assert.equal(data.top_searches[0].query, 'pip timeout');
   assert.equal(data.top_searches[0].count, 2);
-  assert.ok(data.knowledge_gaps.some(g => g.query === 'zzz nonexistent'));
   assert.ok(data.top_lessons.some(l => l.lesson_id === 'pip-install-timeout-ssl'));
+  // … while the `no_match` column is verbatim caller text, so it is not (2026-09-29): measured live, its
+  // top entry was a complete agent prompt. The maintainer still sees it.
+  assert.ok(!('knowledge_gaps' in data), JSON.stringify(data.knowledge_gaps));
+  assert.deepEqual(data.withheld, ['knowledge_gaps', 'mcpClients'], JSON.stringify(data.withheld));
+
+  const mine = await (await worker.fetch(new Request('https://misakanet.org/api/analytics', {
+    headers: { Authorization: `Bearer ${TOKEN}` },
+  }), env)).json();
+  assert.ok(mine.knowledge_gaps.some(g => g.query === 'zzz nonexistent'), JSON.stringify(mine.knowledge_gaps));
 });
 
 test('trackUsage anonymizes IP to /16 prefix', async () => {

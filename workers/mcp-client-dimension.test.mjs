@@ -100,10 +100,22 @@ test('a client that declares nothing is counted as unknown, not dropped', async 
 test('the analytics endpoint reports the split instead of inventing one', async () => {
   // No D1 binding: the endpoint must still answer, with an empty map rather than a fabricated split
   // (the KV fallback cannot enumerate keys, and pretending otherwise would be worse than a gap).
+  //
+  // The *anonymous* answer no longer carries `mcpClients` at all (2026-09-29): those are other people's
+  // tool names and call volumes, keyed on a self-declared field, so they moved behind the maintainer
+  // token that already unlocks the write tools. The property this test holds — "the endpoint reports the
+  // split it has, and does not invent one" — is asserted through the maintainer's view, where the map is
+  // visible; `workers/analytics-exposure.test.mjs` owns the withholding itself.
   const env = createEnv();
-  const resp = await worker.fetch(new Request('https://misakanet.org/api/analytics/traffic'), env);
-  const body = await resp.json();
-  assert.equal(body.error, undefined, JSON.stringify(body));
-  assert.deepEqual(body.mcpClients, {}, JSON.stringify(body));
-  assert.ok(body.breakdown, 'the four original dimensions must survive');
+  const anonymous = await (await worker.fetch(new Request('https://misakanet.org/api/analytics/traffic'), env)).json();
+  assert.equal(anonymous.error, undefined, JSON.stringify(anonymous));
+  assert.ok(!('mcpClients' in anonymous), JSON.stringify(anonymous));
+  assert.deepEqual(anonymous.withheld, ['mcpClients'], JSON.stringify(anonymous));
+  assert.ok(anonymous.breakdown, 'the four original dimensions must survive');
+
+  const mine = await (await worker.fetch(new Request('https://misakanet.org/api/analytics/traffic', {
+    headers: { Authorization: `Bearer ${TOKEN}` },
+  }), env)).json();
+  assert.deepEqual(mine.mcpClients, {}, JSON.stringify(mine));
+  assert.ok(mine.breakdown, 'the four original dimensions must survive for the maintainer too');
 });
