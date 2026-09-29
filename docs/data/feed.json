@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-09-29T01:04:47.099633+00:00",
+  "generated_at": "2026-09-29T09:58:16.855855+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2432",
+      "timestamp": "2026-09-29T01:18:09Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2431",
+      "timestamp": "2026-09-29T01:09:09Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "test(langchain): measure the concurrency ratio up to three times instead of once (#2424)",
@@ -23,20 +37,6 @@
       "title": "fix(mcp): mark a non-published lesson in the default detail levels and in get_lesson",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2423",
       "timestamp": "2026-09-28T18:06:03Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2422",
-      "timestamp": "2026-09-28T17:34:20Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(readme): two rows of the 当前数据 table carried counts that nothing writes",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2421",
-      "timestamp": "2026-09-28T17:28:22Z",
       "source": "github"
     },
     {
