@@ -18,11 +18,11 @@
   required reviewer is the owner**, and 6 run on the owner's PAT (repo-level secret `SHELDON_PAT`).
   The concrete failure mode: a publish run can wait for a human for a day with **nothing notifying
   anyone** (measured: one run waiting since 2026-09-21T12:13:42Z).
-- `main` requires **three** status checks (`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate`)
-  with **no bypass actors** — and GitHub enforces that rule on *direct pushes* as well as merges, so
-  every workflow that commits back to `main` is now refused (#2073). Since 2026-09-27 the `audit` gate
-  **is** required (four checks now: `DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate`, `audit`),
-  which closes the "green but nothing ran the full suite" hole — and lengthens every PR's path to mergeable
+- `main` requires **four** status checks (`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate`,
+  `audit` — `docs/ci-gates.md` is the single statement of the set, with the command that re-reads it from
+  the ruleset) with **no bypass actors** — and GitHub enforces that rule on *direct pushes* as well as
+  merges, so every workflow that commits back to `main` is now refused (#2073). The `audit` gate became
+  required on 2026-09-27, which closed the "green but nothing ran the full suite" hole — and lengthens every PR's path to mergeable
   by however long that leg takes. Measured on the change that added it: two of four required checks were
   still running minutes after the other two reported. It is only repaired every two hours by
   `pr-audit-watch.yml`, so a *missing* audit is still possible; what changed is that a missing one now
