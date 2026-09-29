@@ -96,21 +96,54 @@ a general memory layer, not a vector database. → [FAQ](FAQ.md)
 
 ## Benchmark: how much of a lesson does a model reproduce when handed one?
 
-Weekly benchmark (Cloudflare Workers AI, 2026-08-30). **Read the metric before the numbers** — measured
-2026-09-25, the scenario in this benchmark is each lesson's own title, the "matching lesson" injected into the
-`with_lesson` arm is *that same lesson*, and the score is `lesson_hit_rate`: **the share of the injected lesson's commands reproduced in the answer**.
+Weekly benchmark (Cloudflare Workers AI). **Read the metric before the numbers** — the scenario is each
+lesson's own title, the "matching lesson" injected into the `with_lesson` arm is *that same lesson*, and the
+score is `lesson_hit_rate`: **the share of the injected lesson's commands reproduced in the answer**.
 No retrieval is called and correctness is not checked, so this is the **recitation** half of RAG, not
-evidence that search works:
+evidence that search works.
 
-| Model | Lesson pasted in prompt: not pasted | Lesson pasted in prompt: pasted | Difference |
+Latest aggregated data: [`docs/benchmarks/latest.json`](docs/benchmarks/latest.json) (2026-09-22, two
+independent runs of ≈500 scenarios each):
+
+| Condition | Run 1 hit rate | Run 2 hit rate | Avg | n (per run) | Actionable |
+|---|---|---|---|---|---|
+| plain (no lesson) | 0.239 | 0.233 | **23.3%** | ≈510 | 82–83% |
+| with_lesson (pasted) | 0.464 | 0.461 | **46.1%** | ≈512 | 76–77% |
+
+**Reproducibility.** Two runs with identical config produce hit rates within 0.3% of each other
+(0.464 vs 0.461 for `with_lesson`; 0.239 vs 0.233 for `plain`), confirming the metric is stable.
+
+**Aggregation.** Each run evaluates ~510 lesson scenarios. The `with_lesson` arm pastes the matching lesson
+into the prompt; `plain` uses no lesson. `actionable` is a boolean per scenario indicating whether the
+model produced a usable answer. Actionable rates are stable across runs (76–77% with lesson, 82–83% plain).
+
+**Trend** (weekly snapshots):
+
+| Date | with_lesson hit rate | plain hit rate | n |
 |---|---|---|---|
-| llama-3.2-3b (light) | 21% of the lesson's commands reproduced | **43%** | **2×** |
-| llama-3.3-70b (strong) | 42% | **73%** | **+31%** |
+| 2026-08-30 | 46.4% | 23.9% | 358 |
+| 2026-08-31 | 49.1% | 25.1% | 398 |
+| 2026-09-06 | 48.3% | 24.1% | 455 |
+| 2026-09-14 | 46.6% | 23.4% | 494 |
+| 2026-09-21 | 46.1% | 23.3% | 512 |
+
+```
+with_lesson hit rate (weekly)
+49.1% │    ▄
+48.3% │    █  ▄
+46.6% │    █  █  ▄
+46.4% │ ▄  █  █  █  ▄
+46.1% │ █  █  █  █  █
+      └──────────────────
+       08  08  09  09  09
+       30  31  06  14  21
+```
 
 A model repeats more of a document it was handed, and the weaker the model the bigger the relative
 difference. That is *necessary* for the product to help and it is not sufficient — the claim "search finds the
 right lesson for a failure you described" is measured nowhere yet. Details:
-[benchmark-2026-08-30](docs/benchmarks/benchmark-2026-08-30.json) · metric definition: `METRIC_DEFINITION` in
+[`docs/benchmarks/latest.json`](docs/benchmarks/latest.json) · per-run files in
+[`docs/benchmarks/`](docs/benchmarks/) · metric definition: `METRIC_DEFINITION` in
 [`scripts/benchmark_workers_ai.py`](scripts/benchmark_workers_ai.py)
 
 → [Full changelog](CHANGELOG.md) · [Release notes](https://github.com/Ikalus1988/MisakaNet/releases)
@@ -122,6 +155,7 @@ and where this design loses:
 |---|---|---|
 | Hit rate | share of the **injected** lesson's commands reproduced in the answer — a recitation check; the scenario is that lesson's own title and no retrieval happens | it is the ceiling on usefulness, not the measure of it: a corpus can be recitable and still unfindable |
 | Gain (with − without) | how much more of that lesson appears when it is pasted in | separates "the model can use a lesson" from "the model guessed the same words" — it says nothing about finding the lesson |
+| Actionable | whether the model produced a usable answer at all (boolean per scenario) | a high hit rate on an answer that is not actionable is noise; this tracks whether the model engages with the problem |
 | Cost / latency | tokens and wall-clock per answer | the whole premise is cheaper than re-debugging, so it has to stay cheap |
 
 **Where it loses on purpose:** BM25 matches words, not meaning. A failure described in vocabulary the
