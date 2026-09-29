@@ -96,8 +96,7 @@ a general memory layer, not a vector database. → [FAQ](FAQ.md)
 
 ## Benchmark: how much of a lesson does a model reproduce when handed one?
 
-Weekly benchmark (Cloudflare Workers AI). **Read the metric before the numbers** — the scenario is each
-lesson's own title, the "matching lesson" injected into the `with_lesson` arm is *that same lesson*, and the
+Weekly benchmark (Cloudflare Workers AI). **Read the metric before the numbers** — the scenario in this benchmark is each lesson's own title, the "matching lesson" injected into the `with_lesson` arm is *that same lesson*, and the
 score is `lesson_hit_rate`: **the share of the injected lesson's commands reproduced in the answer**.
 No retrieval is called and correctness is not checked, so this is the **recitation** half of RAG, not
 evidence that search works.
@@ -113,7 +112,7 @@ independent runs of ≈500 scenarios each):
 **Reproducibility.** Two runs with identical config produce hit rates within 0.3% of each other
 (0.464 vs 0.461 for `with_lesson`; 0.239 vs 0.233 for `plain`), confirming the metric is stable.
 
-**Aggregation.** Each run evaluates ~510 lesson scenarios. The `with_lesson` arm pastes the matching lesson
+**Aggregation.** Each run evaluates every lesson in the corpus as a scenario. The `with_lesson` arm pastes the matching lesson
 into the prompt; `plain` uses no lesson. `actionable` is a boolean per scenario indicating whether the
 model produced a usable answer. Actionable rates are stable across runs (76–77% with lesson, 82–83% plain).
 
