@@ -5,30 +5,39 @@ Disallow: /api/
 # AI crawlers — MisakaNet is a failure-lesson network built for AI agents; explicitly welcomed.
 User-agent: GPTBot
 Allow: /
+Disallow: /api/   # named groups must not re-open what `*` closes
 
 User-agent: ClaudeBot
 Allow: /
+Disallow: /api/   # named groups must not re-open what `*` closes
 
 User-agent: anthropic-ai
 Allow: /
+Disallow: /api/   # named groups must not re-open what `*` closes
 
 User-agent: PerplexityBot
 Allow: /
+Disallow: /api/   # named groups must not re-open what `*` closes
 
 User-agent: OAI-SearchBot
 Allow: /
+Disallow: /api/   # named groups must not re-open what `*` closes
 
 User-agent: Google-Extended
 Allow: /
+Disallow: /api/   # named groups must not re-open what `*` closes
 
 User-agent: Bytespider
 Allow: /
+Disallow: /api/   # named groups must not re-open what `*` closes
 
 User-agent: CCBot
 Allow: /
+Disallow: /api/   # named groups must not re-open what `*` closes
 
 User-agent: Meta-ExternalAgent
 Allow: /
+Disallow: /api/   # named groups must not re-open what `*` closes
 
 Sitemap: https://misakanet.org/sitemap.xml
 
