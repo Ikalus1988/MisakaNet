@@ -17,8 +17,11 @@ loop, and each one is a real bug that was present:
    `data/lessons.json` would produce (the gate the daily job and docs.yml use).
 """
 import json
+import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -249,3 +252,166 @@ def test_every_lesson_id_has_a_generated_page_on_disk():
     assert not missing, (
         f"{len(missing)} lesson ids have no page at `/lessons/<id>/` (run build_lesson_pages.py): "
         f"{missing[:5]}")
+
+
+# ── the two properties the plan cannot express (2026-09-30) ───────────────────────────────────────
+#
+# `check()` compares the generator's plan against the pages the generator wrote. Both sides come
+# from `data/lessons.json`, so a lesson the plan never contained — one that cannot be given a page —
+# is invisible to it, and a manifest that lost a slug entry is invisible too. Neither is the same
+# question as the id-alias test above: that one asks whether `/lessons/<id>/` exists, while the live
+# URL is `/lessons/<slug>/`, and the slug is knowable only from the manifest.
+#
+# The two properties are therefore tested, and gated by `main()`, as relations over the corpus and
+# the manifest rather than over the plan.
+
+# The two shapes of "cannot be given a page" that reach the generator in practice: a `title:` key
+# with an empty value (PyYAML gives None), and a title that is long enough for `lesson_gate.py`
+# but slugifies to nothing because `slugify()` strips every non-word character.
+UNTITLED = {"id": "untitled-lesson-probe", "title": "", "domain": "ops", "summary": "p",
+            "tags": [], "url": "lessons/ops/untitled-lesson-probe.md"}
+EMOJI_TITLED = {"id": "emoji-title-probe", "title": "\U0001F525" * 5, "domain": "ops", "summary": "p",
+                "tags": [], "url": "lessons/ops/emoji-title-probe.md"}
+
+
+def _run_cli(root: Path, *args: str) -> subprocess.CompletedProcess:
+    """The real CLI against a scratch root — `main()` is the gate, not the helper."""
+    return subprocess.run(
+        [sys.executable, str(REPO / "scripts" / "build_lesson_pages.py"), *args, "--root", str(root)],
+        cwd=REPO, capture_output=True, text=True, timeout=300)
+
+
+def _write_corpus(root: Path, lessons: list) -> None:
+    (root / "data").mkdir(parents=True, exist_ok=True)
+    (root / "data" / "lessons.json").write_text(json.dumps(lessons, ensure_ascii=False), encoding="utf-8")
+
+
+def test_an_unpageable_lesson_is_a_named_failure_not_a_silent_skip(tmp_path):
+    """A lesson that can never get a page is a red gate that names it, in both modes.
+
+    Measured on the un-fixed script (2026-09-30): a 3-lesson corpus holding one untitled lesson and
+    one emoji-titled lesson planned **1** page, wrote it, and exited 0 — and `--check` then printed
+    "✅ every generated page matches the index", because the plan and the disk agreed with each other
+    while two corpus lessons had no page at all.
+    """
+    corpus = json.loads(json.dumps(LESSONS)) + [dict(UNTITLED), dict(EMOJI_TITLED)]
+    _write_corpus(tmp_path, corpus)
+
+    red = _run_cli(tmp_path, "--check")
+    assert red.returncode == 1, red.stdout + red.stderr
+    # Named by id, both of them — the ids are the fact this asserts, not the sentence around them.
+    assert UNTITLED["id"] in red.stderr and EMOJI_TITLED["id"] in red.stderr, red.stderr
+
+    # Write mode refuses too, before it writes anything: a plan that silently drops lessons is the
+    # half-synced tree `update_lessons_json.py` already refuses to commit.
+    red_write = _run_cli(tmp_path)
+    assert red_write.returncode == 1, red_write.stdout + red_write.stderr
+    assert not (tmp_path / "docs").exists(), "pages were written for a corpus holding unpageable lessons"
+
+    # Green once the two titles are real, and then a page exists for each of the three lessons.
+    corpus[-2]["title"] = "A probe lesson that now has a title"
+    corpus[-1]["title"] = "Fire probe lesson"
+    _write_corpus(tmp_path, corpus)
+    green = _run_cli(tmp_path)
+    assert green.returncode == 0, green.stdout + green.stderr
+    assert _run_cli(tmp_path, "--check").returncode == 0
+    for slug in ("bravo-lesson", "a-probe-lesson-that-now-has-a-title", "fire-probe-lesson"):
+        assert (tmp_path / "docs" / "lessons" / slug / "index.html").is_file(), slug
+
+
+def test_every_corpus_lesson_has_a_page_on_disk():
+    """The gate, over the real corpus: corpus + recorded slug map -> a page must exist.
+
+    Independent of the generator's own plan on purpose. `check()` compares the plan to the pages the
+    plan wrote, so it cannot notice a lesson that was never planned; this walks `data/lessons.json`
+    and resolves each lesson through `docs/.generated-pages.json` (or the `/lessons/<id>/` alias).
+    """
+    lessons = json.loads((REPO / "data" / "lessons.json").read_text(encoding="utf-8"))
+    assert len(lessons) > 400, f"only {len(lessons)} lessons — the corpus moved, not the pages"
+    assert len(blp.load_slug_map(REPO)) > 400, "the slug map is empty — this gate would pass vacuously"
+    assert blp.corpus_page_problems(lessons, root=REPO) == []
+
+
+def test_the_corpus_page_gate_reports_a_missing_page(tmp_path):
+    """Guard the guard: the relation goes red in each shape it claims to cover."""
+    lessons = json.loads(json.dumps(LESSONS))
+    files, slugs = blp.plan_with_slugs(lessons, {})
+    blp.sync(files, root=tmp_path, slugs=slugs)
+    assert blp.corpus_page_problems(LESSONS, root=tmp_path) == []
+
+    # 1. The page at the recorded (live) slug is gone, and so is the id alias: the lesson is a 404
+    #    under both of its names.
+    slug_page = tmp_path / "docs" / "lessons" / "bravo-lesson" / "index.html"
+    alias = tmp_path / "docs" / "lessons" / "bravo" / "index.html"
+    assert alias.is_file(), "no alias page for an id that differs from its slug — the alias writer moved"
+    slug_page.unlink()
+    alias.unlink()
+    problems = blp.corpus_page_problems(LESSONS, root=tmp_path)
+    assert len(problems) == 1, problems
+    assert "bravo" in problems[0] and "bravo-lesson/index.html" in problems[0], problems[0]
+
+    # 2. The id alias alone satisfies this gate (2026-09-29 alias pages; the task's "either the slug
+    #    page or the id alias"). It must not be allowed to hide the missing live page, and it cannot:
+    #    the alias is a redirect to `/lessons/<slug>/`, so the plan-versus-disk gate in the same
+    #    `--check` run still holds the slug page and reports it.
+    alias.write_text(files["docs/lessons/bravo/index.html"], encoding="utf-8")
+    assert blp.corpus_page_problems(LESSONS, root=tmp_path) == []
+    assert blp.check(files, root=tmp_path) == [f"{slug_page.relative_to(tmp_path).as_posix()}: "
+                                              "missing (would be created)"], blp.check(files, root=tmp_path)
+
+    # 3. A lesson the slug map does not know is a failure even when a page is on disk: the recorded
+    #    slug is what keeps a live URL sticky, and re-deriving it is how 88 pages were orphaned once.
+    manifest_path = tmp_path / blp.MANIFEST
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["slugs"].pop("bravo")
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    problems = blp.corpus_page_problems(LESSONS, root=tmp_path)
+    assert len(problems) == 1 and "bravo" in problems[0], problems
+
+    # 4. A lesson new to the corpus that the generator has never planned — the "never planned at
+    #    all" case `check()` cannot see, because nothing in the plan mentions it.
+    newcomer = {"id": "newcomer", "title": "Brand New Lesson", "domain": "ops", "summary": "n",
+                "tags": [], "url": "lessons/ops/n.md"}
+    problems = blp.corpus_page_problems(LESSONS + [newcomer], root=tmp_path)
+    assert [p for p in problems if "newcomer" in p], problems
+
+    # 5. An *empty* recorded slug is not a recorded slug. `plan_with_slugs` writes `""` into the slug
+    #    map for a title that slugifies to nothing, and `""` resolves to `docs/lessons/index.html` —
+    #    the lessons directory index — which must never be mistaken for a lesson's page. Found
+    #    2026-09-30 by removing the unpageable gate and watching this check go green off that file.
+    (tmp_path / "docs" / "lessons" / "index.html").write_text("<html>directory index</html>",
+                                                             encoding="utf-8")
+    manifest["slugs"]["bravo"] = ""
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    problems = blp.corpus_page_problems(LESSONS, root=tmp_path)
+    assert len(problems) == 1 and "bravo" in problems[0], problems
+
+    # 6. A manifest with no slug map at all is one named problem, not a page-missing claim about
+    #    every lesson whose id differs from its slug.
+    manifest_path.unlink()
+    problems = blp.corpus_page_problems(LESSONS, root=tmp_path)
+    assert len(problems) == 1 and blp.MANIFEST.as_posix() in problems[0], problems
+
+
+def test_a_lesson_merge_regenerates_the_pages():
+    """The writer, so "a merged lesson gets a page" has a mechanism rather than a habit.
+
+    Measured 2026-09-30: `build_lesson_pages.py` ran only from `update-lessons.yml`'s daily cron
+    (plus `--check` from `docs.yml`, which filters on `docs/**` and compares the plan to the pages
+    the plan wrote), while `sync-d1.yml` made a merged lesson searchable on the push itself. A
+    search hit therefore led to a page that did not exist yet, for up to a day.
+    """
+    yaml = pytest.importorskip("yaml", reason="PyYAML reads the workflow trigger block")
+    workflow = REPO / ".github" / "workflows" / "update-lessons.yml"
+    data = yaml.safe_load(workflow.read_text(encoding="utf-8"))
+    on = data.get("on") or data.get(True) or {}  # PyYAML resolves the bare key `on` to True
+    assert "push" in on, (
+        "update-lessons.yml no longer runs on a push, so a merged lesson has no page until the "
+        "daily cron — the gap this trigger closes")
+    push = on["push"] or {}
+    assert "main" in (push.get("branches") or []), push
+    assert "lessons/**" in (push.get("paths") or []), push
+    steps = next(iter(data["jobs"].values()))["steps"]
+    assert any("build_lesson_pages.py" in str(step.get("run") or "") for step in steps), (
+        "the push-triggered run no longer regenerates the pages")
+
