@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-29T16:21:19.860836+00:00",
+  "generated_at": "2026-09-29T18:23:15.513245+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore: auto-update lessons.json, public counts and generated pages",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2433",
-      "timestamp": "2026-09-29T16:18:27Z",
+      "title": "docs(ci): the required-check set is four, and three documents disagreed about it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2456",
+      "timestamp": "2026-09-29T18:03:54Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2446",
-      "timestamp": "2026-09-29T16:13:53Z",
+      "title": "fix(api): `?q=` answered 502 for ordinary searches — FTS5 was reading the user text as syntax",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2458",
+      "timestamp": "2026-09-29T17:50:52Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(test): stop writing the repository corpus size into an assertion — it blocks the daily sync",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2445",
-      "timestamp": "2026-09-29T15:59:56Z",
+      "title": "docs(contracts): three published surfaces an agent reads first, each verified against the live service",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2452",
+      "timestamp": "2026-09-29T17:31:40Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(search): index the stored body, not four extracted sections",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2444",
-      "timestamp": "2026-09-29T15:48:57Z",
+      "title": "fix(privacy): the analytics endpoints published caller text and third-party tool names",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2454",
+      "timestamp": "2026-09-29T17:26:11Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2435",
-      "timestamp": "2026-09-29T10:15:19Z",
+      "title": "fix(site): the homepage quoted the lesson count four times — now it references it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2455",
+      "timestamp": "2026-09-29T17:21:51Z",
       "source": "github"
     },
     {
