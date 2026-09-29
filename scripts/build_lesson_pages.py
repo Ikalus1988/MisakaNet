@@ -373,6 +373,36 @@ def topic_plan(lessons: list) -> dict[str, tuple[str, int]]:
     return pages
 
 
+def build_id_alias_page(lesson_id: str, slug: str) -> str:
+    """A tiny redirect page at `/lessons/<id>/` for a lesson whose page slug differs from its id.
+
+    Why this exists (2026-09-29): `misakanet_search` returns the frontmatter `id`, `docs/llms.txt` tells
+    readers that static pages live at `https://misakanet.org/lessons/<slug>/`, and the page slug is
+    **title-derived** (`slugify(title)`, sticky across renames only through the manifest). Measured on the
+    live site: **73 of 426 lessons** have an id that is not their slug, so `curl /lessons/<id>/` answered
+    **404** for 17% of the corpus while the page existed under another name — the documented mapping
+    between a search hit and its page simply did not hold.
+
+    Two ways to close that: publish a canonical URL in the API (needs the slug in D1, i.e. a second
+    implementation of `slugify` in JavaScript — the drift this repository keeps paying for), or make the id
+    resolve. This is the second one: static, generated from the *same* slug map the pages use, no runtime
+    cost, no API contract change, and it makes the documented pattern true under either reading of
+    "slug". `rel="canonical"` keeps search engines pointed at the real page, which is also why the alias is
+    deliberately absent from the sitemap.
+    """
+    target = f"/lessons/{slug}/"
+    return (
+        '<!doctype html>\n<html lang="en">\n<head>\n'
+        '<meta charset="utf-8">\n'
+        f'<title>Moved — {lesson_id}</title>\n'
+        f'<link rel="canonical" href="{SITE_URL}{target}">\n'
+        f'<meta http-equiv="refresh" content="0; url={target}">\n'
+        '</head>\n<body>\n'
+        f'<p>{GENERATOR_MARK} — this lesson lives at <a href="{target}">{target}</a>.</p>\n'
+        '</body>\n</html>\n'
+    )
+
+
 def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None
                     ) -> tuple[dict[str, dict], dict[str, str]]:
     """Plan every page, and return the lesson-id -> slug map that produced it.
@@ -424,6 +454,20 @@ def plan_with_slugs(lessons: list, known_slugs: dict[str, str] | None = None
     files: dict[str, str] = {}
     for slug, html in lesson_pages.items():
         files[f"docs/lessons/{slug}/index.html"] = html
+    # Every id resolves too, so `/lessons/<id>/` (what a search hit hands a consumer) is not a 404 for the
+    # 73 lessons whose slug is title-derived. A real page always wins: if an id happens to equal another
+    # lesson's slug, the alias is dropped rather than overwriting it.
+    aliases = 0
+    for lesson in lessons:
+        lesson_id = str(lesson.get("id") or "")
+        slug = assigned.get(lesson_id)
+        if not lesson_id or not slug or lesson_id == slug:
+            continue
+        path = f"docs/lessons/{lesson_id}/index.html"
+        if path in files:
+            continue
+        files[path] = build_id_alias_page(lesson_id, slug)
+        aliases += 1
     for slug, (html, _count) in topics.items():
         files[f"docs/topics/{slug}/index.html"] = html
     files["docs/topics/index.html"] = build_topics_index(index_entries, len(lessons))
