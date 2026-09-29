@@ -199,12 +199,13 @@ def _build_sites() -> tuple[Site, ...]:
 
     # ── website body fallbacks (JS overwrites them once data/lessons.json loads,
     #    but crawlers and no-JS readers only ever see the static text) ────────
-    add("docs/index.html", rf'(<span id="lesson-count-(?:hero|product)">){_COUNT}\+?(</span>)',
-        r"\g<1>{n}\g<3>", "hero + product count spans", 2)
-    add("docs/index.html", rf'(id="lesson-count-search"[^>]*>){_COUNT} indexed lessons',
-        r"\g<1>{n} indexed lessons", "search-panel fallback line")
-    add("docs/index.html", rf"(_allLessons\.length : ){_COUNT}",
-        r"\g<1>{n}", "JS fallback count shown before the index finishes loading")
+    # The three body literals used to live here too — the hero/product spans, the search-panel fallback
+    # line and a JS fallback (2026-09-29). They are gone from the page rather than managed: the hero now
+    # renders the same shields badge the READMEs use, and the search line renders from the corpus the page
+    # loaded, so the served bytes carry no lesson count at all. "The registry may shrink, never grow" is
+    # this file's own rule; the alternative (another row per surface) is how it reached 38 rows once.
+    # The metadata row below stays because a crawler has no JavaScript and no shields fetch: for it the
+    # number has to be in the bytes, and this is the one surface where that is true.
 
     # ── agent-facing entry points ───────────────────────────────────────────
     # The only prose that keeps a literal count, and the reason is in the module docstring: an
