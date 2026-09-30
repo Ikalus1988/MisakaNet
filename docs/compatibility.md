@@ -45,6 +45,34 @@ What is deliberately **not** claimed:
 * **Any other release.** Add a row to both this table and `dsh.compatibility.dshReleases` only after the
   same add → remove run on that release; the test below keeps the two lists identical.
 
+## The client half (the browser bundle)
+
+The package also ships a browser half: `exports["./client"]` → `lib/client.js`, declared as
+`dsh.client.platform: "web"`. The host turns that pair into a served bundle and a graph row; it is what
+puts a view on the `misakanet_search` tool call.
+
+**Measured (2026-10-01, `dsh 0.2.0-rc.2`), installing the working tree rather than the published tarball:**
+
+```sh
+export DSH_HOME=/tmp/dsh-client-proof npm_config_cache=/tmp/npm-cache-dsh
+dsh plugin --profile web add /path/to/MisakaNet        # bundles gain 'misakanet'
+dsh --profile web --no-open --port 4011 &              # token in the log line, then:
+curl -sSL -c jar -b jar "http://127.0.0.1:4011/?token=$TOKEN"   # index carries __DSH_BOOT__
+# boot graph entry: {"id":"misakanet","url":"plugins/??misakanet/client.js&rev=…"} in batch 'application'
+curl -b jar "http://127.0.0.1:4011/plugins/??misakanet/client.js&rev=…"   # 200, bytes == lib/client.js
+```
+
+So the file composes into the boot graph and is served **verbatim** — no build step, no bundler, no
+sibling chunk (`lib/client.js` is hand-written CJS-factory JavaScript because the module table supplies
+`react`).
+
+What this does **not** claim: no browser was driven, so *rendering* is not verified here — that the card
+appears, that the buttons post, and how it looks in either theme are all still unproven. The static
+contract is gated instead, in `tests/test_dsh_plugin_surface.py`: the loader contract
+(`window.__ModuleLoader__.load({id, factory})`), bundle purity (only seeded modules, no relative
+requires), the keyed slot name derived from `cordis.patch.yml`'s `serverName`, that the two `/api/`
+routes the card posts to exist in the worker, and that the bundle carries no credential.
+
 ## The optional peer, and why its range is written the long way
 
 `@deepseek-ai/dsh-mcp-client` is an **optional peer**: `index.js` resolves it at runtime with a dynamic

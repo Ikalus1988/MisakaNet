@@ -282,3 +282,134 @@ def test_the_readme_installs_the_dsh_plugin_above_the_fold():
     assert install_at < howto_at, "the DSH install command must appear above `How to use it`"
     assert readme[:install_at].count("\n") < 120, (
         "the install command is below the fold; the host's dialog points users at this file to find it")
+
+
+# ── the client half (lib/client.js) ──────────────────────────────────────────
+#
+# `dsh.client` + `exports["./client"]` turn one file into a browser bundle the host serves through the
+# module loader. Three things break it silently and all three are static: a bundle that does not
+# register its own factory (the loader contract is `window.__ModuleLoader__.load({id, factory})`), a
+# bundle that requires a module the frozen platform table cannot answer (bundle purity), and packaging
+# that drops the file from the published tarball (the host throws "exports[./client] must be …" or the
+# route 404s). None of that needs a browser to check, so it is a gate rather than a manual step.
+
+CLIENT_BUNDLE = "lib/client.js"
+# The module table the shell seeds: React, Cordis, and the static UI libraries. We declare no
+# `dsh.client.external`, so the bundle may only ask for what the seed already answers.
+PLATFORM_MODULES = {"react", "react/jsx-runtime", "react-dom", "react-dom/client", "@deepseek-ai/cordis"}
+REQUIRE_CALL = re.compile(r"""require\(\s*["']([^"']+)["']\s*\)""")
+ROUTE_LITERAL = re.compile(r"""(/api/[a-z0-9/_-]+)""")
+
+
+def client_source(root: Path = REPO) -> str:
+    return (root / CLIENT_BUNDLE).read_text(encoding="utf-8")
+
+
+def declared_client_export(root: Path = REPO) -> str | None:
+    """`exports["./client"]` in either form the host accepts (a string, or an object with default)."""
+    entry = (_pkg(root).get("exports") or {}).get("./client")
+    if isinstance(entry, str):
+        return entry
+    if isinstance(entry, dict):
+        return entry.get("default")
+    return None
+
+
+def unbundled_requires(source: str, declared: set[str]) -> list[str]:
+    """Specifiers the bundle asks for that the platform table and the declaration cannot answer.
+
+    Bundler-relative specifiers count as failures regardless of the declaration: a hand-written
+    single-file bundle has no sibling chunk to resolve them against, and the host serves one file.
+    """
+    problems = []
+    for specifier in REQUIRE_CALL.findall(source):
+        if specifier.startswith("."):
+            problems.append(f"{specifier} (relative — no sibling chunk is served)")
+        elif specifier not in PLATFORM_MODULES and specifier not in declared:
+            problems.append(f"{specifier} (not in the platform seed and not declared)")
+    return problems
+
+
+def test_the_client_bundle_satisfies_the_module_loader_contract():
+    pkg = _pkg(REPO)
+    declared = declared_client_export()
+    assert declared, (
+        "package.json exports[\"./client\"] is what the host resolver reads; without it "
+        "dsh-client-modules throws instead of serving a bundle")
+    path = REPO / declared.lstrip("./")
+    assert path.is_file(), f"exports[\"./client\"] points at {declared}, which is not in the package"
+    assert CLIENT_BUNDLE in pkg.get("files", []), (
+        f"{CLIENT_BUNDLE} must be in `files` or the published tarball drops the browser half")
+    assert pkg["dsh"]["client"]["platform"] == "web", "the Web consumer selects platform 'web'"
+
+    source = client_source()
+    assert "window.__ModuleLoader__.load(" in source, (
+        "the bundle must register its own factory: executing it registers, materializing runs the body")
+    assert re.search(r"""id:\s*["']%s["']""" % re.escape(pkg["name"]), source), (
+        f"the registered id must be the package name ({pkg['name']}) — that is the graph row's identity")
+    assert re.search(r"factory:\s*\(", source), "the loader contract is load({id, factory})"
+    assert "exports.apply" in source, "a client plugin activates through its `apply` export"
+    assert "exports.inject" in source, "the slot service must be declared so the fiber waits for it"
+
+
+def test_the_client_bundle_only_asks_for_modules_the_platform_supplies():
+    declared = set((_pkg(REPO).get("dsh", {}).get("client", {}) or {}).get("external", []))
+    problems = unbundled_requires(client_source(), declared)
+    assert not problems, (
+        "a request the module table cannot answer does not degrade — it fails the row: " + str(problems))
+
+
+def test_the_bundle_purity_rule_can_go_red():
+    """A gate nobody has seen fail is a gate nobody can trust."""
+    assert unbundled_requires("var a = require('react');", set()) == []
+    assert unbundled_requires("var a = require('./chunk.js');", set()) == [
+        "./chunk.js (relative — no sibling chunk is served)"]
+    assert unbundled_requires("var a = require('@deepseek-ai/dsh-client-ui-primitives');", set()) == [
+        "@deepseek-ai/dsh-client-ui-primitives (not in the platform seed and not declared)"]
+    assert unbundled_requires(
+        "var a = require('@deepseek-ai/dsh-client-ui-primitives');",
+        {"@deepseek-ai/dsh-client-ui-primitives"}) == []
+
+
+def test_the_client_half_registers_the_wire_tool_name_the_host_builds():
+    """The slot is keyed by the wire tool name, and a key that matches nothing renders nothing.
+
+    `dsh-mcp-client` builds it as `mcp__${serverName}__${rawName}`, and our bundle row sets
+    `serverName` in cordis.patch.yml — so a rename in either file silently erases the card.
+    """
+    patch = (REPO / "cordis.patch.yml").read_text(encoding="utf-8")
+    server = re.search(r"^\s*serverName:\s*(\S+)\s*$", patch, re.M)
+    assert server, "cordis.patch.yml no longer sets serverName; the wire names cannot be predicted"
+    expected = f"mcp__{server.group(1)}__misakanet_search"
+    assert expected in client_source(), (
+        f"the card must register `key: '{expected}'` — the name the host derives from serverName "
+        f"{server.group(1)!r}")
+
+
+def test_the_client_card_calls_endpoints_the_worker_actually_serves():
+    """Votes are posted to public JSON routes; a renamed route would look like a broken button."""
+    worker = (REPO / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
+    called = sorted(set(ROUTE_LITERAL.findall(client_source())))
+    assert called, "the client half posts verdicts somewhere; no /api/ route found in the bundle"
+    missing = [route for route in called if f'"{route}"' not in worker]
+    assert not missing, f"the bundle posts to routes the worker does not serve: {missing}"
+
+
+def test_the_client_half_carries_no_credential():
+    """Anonymous by design: the card may only use the public, unauthenticated read/write routes.
+
+    Two different questions, so two different checks. The bundle could *embed* a credential — answered
+    by the repository's own rule (`scan_file`; `check_published_secrets.py` walks prose, so it never
+    sees this file) — and it could *send* one, which no pattern of secret shapes catches, so the header
+    and field names are asserted directly.
+    """
+    from scripts.check_published_secrets import scan_file
+
+    findings = scan_file(REPO / CLIENT_BUNDLE)
+    assert not findings, f"the browser half embeds a credential-shaped string: {findings}"
+
+    source = client_source()
+    forbidden = {"Authorization": "an auth header", "Bearer ": "a bearer token",
+                 "api_key": "an API key field", "client_secret": "a secret field"}
+    found = [f"{needle!r} ({why})" for needle, why in forbidden.items() if needle in source]
+    assert not found, f"the browser half must not send credentials: {found}"
