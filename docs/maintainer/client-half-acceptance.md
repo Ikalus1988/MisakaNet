@@ -30,39 +30,39 @@ Two surfaces follow from it, and the split is deliberate:
 | --- | --- | --- | --- |
 | A1 | installing the plugin puts the browser half in the boot graph, with the declared factory order | `dsh plugin --profile web add <repo>` → the `__DSH_BOOT__` entry for `misakanet` carries `inject: [ui-tool, ui-chat]` | ✅ measured |
 | A2 | the served bundle is the file itself, byte for byte (no build step, no sibling chunk) | fetch the combo URL and compare with `lib/client.js` | ✅ measured |
-| A3 | the panel opens: a tab in the conversation ring labelled **MisakaNet**, and on hosts that have the right-sidebar tab registry, a guide entry that opens the same body | registration is in the served bundle (`conversation.view` id `misakanet`; sidebar type `id` = its body key; guide entry carries the required `id` + the product glyph) and 5 gates pin the wiring | ✅ built (rendered ⚠️) |
+| A3 | the panel opens: a tab in the conversation ring labelled **MisakaNet**, and on hosts that have the right-sidebar tab registry, a guide entry that opens the same body | registration is in the served bundle (`conversation.view` id `misakanet`; sidebar type `id` = its body key; guide entry carries the required `id` + the product glyph); 5 gates pin the wiring, and the live render mounts the registered component | ✅ built + rendered (the **body**; the sidebar's own chrome is the host's) |
 | A4 | on a host line without the sidebar-tab service the plugin still loads, with the conversation tab only and no error | `ctx.inject(['sidebarRightTabs'], …)` with a runtime re-proof, a try/catch and a collected disposer list; the registry is deliberately **not** in the static inject list | ✅ built (older line ⚠️ unmeasured) |
-| A5 | uninstalling removes every surface — no orphan tab, no orphan row | every registration is an effect or rides the `ctx.inject` fiber's disposer, so the graph row leaving takes them; measured for the entry itself (`add` → entry present) | ⚠️ partial |
+| A5 | uninstalling removes every surface — no orphan tab, no orphan row | every registration is an effect or rides the `ctx.inject` fiber's disposer, so the graph row leaving takes them; measured for the entry itself (`add` → entry present) | ✅ **measured** — boot graph 66 → **65 entries**, the `misakanet` row gone, `bundles` back to the two official ones, `dependencies: none` |
 | A6 | a throwing component cannot take the conversation down | every handler wrapped; the search row renders on all three phases | ✅ code + gates |
 
 ## B. What the panel shows (the content a person asked for)
 
 | # | condition | how it is checked | state |
 | --- | --- | --- | --- |
-| B1 | **problems**: every MisakaNet search in this session appears once, with the query text, a real timestamp, and the hit count; `no_match` is visually distinct from "found" | rows count == searches recorded; `no_match` rows carry a distinguishable class/label | ⛔ not built |
-| B2 | **lessons**: each lesson the session surfaced appears with title, evidence level, when it was surfaced, and how many times it was reused this session (counted once per lesson, not once per search) | reuse count per lesson == distinct sightings | ⛔ not built |
+| B1 | **problems**: every MisakaNet search in this session appears once, with the query text, a real timestamp, and the hit count; `no_match` is visually distinct from "found" | rows count == searches recorded; `no_match` rows carry a distinguishable class/label | ✅ built — live render section ① (5 rows, one per call, each with the event's clock) |
+| B2 | **lessons**: each lesson the session surfaced appears with title, evidence level, when it was surfaced, and how many times it was reused this session (counted once per lesson, not once per search) | reuse count per lesson == distinct sightings | ✅ built — live render section ③ (`used 1×`, `01:46 AM`) |
 | B3 | **contributions**: each intake submitted from this session appears with its state ∈ {`pending`, `answered`, `already_have`, `converted`} and the receipt text when the server returned one | the four states are four distinct renderings; `already_have` is **not** labelled "converted" | ✅ built (states come from the agent's own calls — see D4) |
-| B4 | the stat strip **adds up**: every number equals the rows it summarises | machine-checked against the rendered DOM | ⛔ not built |
-| B5 | every row carries the **event's own timestamp**, never the render time | timestamps come from the recorded event | ⛔ not built |
-| B6 | per lesson, the **human-confirmation count** comes from `GET /api/helpful?lesson_id=` and is labelled as *other people's* votes, with the rule stated: one confirmation makes the reuse event appear, the second is what agents read as `E4` | one request per lesson on panel open; the label says whose votes they are | ⛔ not built |
-| B7 | **your activity**, two scopes: this session, and this browser (`localStorage`) — searches, lessons reused, votes cast, reports filed, reports converted | the browser column survives a reload; the session column does not | ⛔ not built |
+| B4 | the stat strip **adds up**: every number equals the rows it summarises | machine-checked against the rendered DOM | ✅ strip and rows are computed from the same arrays (gate) and agree in the live render |
+| B5 | every row carries the **event's own timestamp**, never the render time | timestamps come from the recorded event | ✅ built — `at` is recorded by the event, `clockOf` renders it; the fixture times are the harness's |
+| B6 | per lesson, the **human-confirmation count** comes from `GET /api/helpful?lesson_id=` and is labelled as *other people's* votes, with the rule stated: one confirmation makes the reuse event appear, the second is what agents read as `E4` | one request per lesson on panel open; the label says whose votes they are | ✅ built — the live render made **8 real `/api/helpful` calls** and printed the counts they returned |
+| B7 | **your activity**, two scopes: this session, and this browser (`localStorage`) — searches, lessons reused, votes cast, reports filed, reports converted | the browser column survives a reload; the session column does not | ✅ built — both columns render; the browser one is `localStorage` |
 
 ## C. Voice (the built-in voice hook)
 
 | # | condition | how it is checked | state |
 | --- | --- | --- | --- |
-| C1 | a real toggle controls **in-browser cues**, default **off** (matching the repo's opt-in culture), and its state is visible | toggle writes/reads one `localStorage` key; no sound before opting in | ⛔ not built |
-| C2 | the cue comes from the **server**, not from the UI's guess: the panel shows the `voice` field the last search returned (`lesson-found` / `failure-warning` / `connect-success`) and can play that cue's audio | the recorded sighting carries the server's cue name; the audio URL is the public one | ⛔ not built |
-| C3 | the panel says the **local hook is a different thing**: installed with `--voice`, muted with `MISAKANET_VOICE=0`, playing through the machine's own player and desktop notifications | the panel names both commands verbatim | ⛔ not built |
-| C4 | the toggle never implies it controls the local hook, and it never reports the hook's state as if it could read it | gate: the rendered voice section contains the mute command **and** a sentence that the browser cannot change the hook; a red fixture pins it | ⛔ not built |
-| C5 | no autoplay: opening the panel or rendering a row never makes sound | nothing calls `Audio.play()` outside the click handler | ⛔ not built |
+| C1 | a real toggle controls **in-browser cues**, default **off** (matching the repo's opt-in culture), and its state is visible | toggle writes/reads one `localStorage` key; no sound before opting in | ✅ built — toggle, default **off** |
+| C2 | the cue comes from the **server**, not from the UI's guess: the panel shows the `voice` field the last search returned (`lesson-found` / `failure-warning` / `connect-success`) and can play that cue's audio | the recorded sighting carries the server's cue name; the audio URL is the public one | ✅ built — `Play “failure-warning”`, the server's own cue |
+| C3 | the panel says the **local hook is a different thing**: installed with `--voice`, muted with `MISAKANET_VOICE=0`, playing through the machine's own player and desktop notifications | the panel names both commands verbatim | ✅ built — names `--voice` and `MISAKANET_VOICE=0` |
+| C4 | the toggle never implies it controls the local hook, and it never reports the hook's state as if it could read it | gate: the rendered voice section contains the mute command **and** a sentence that the browser cannot change the hook; a red fixture pins it | ✅ gate |
+| C5 | no autoplay: opening the panel or rendering a row never makes sound | nothing calls `Audio.play()` outside the click handler | ✅ gate — exactly two playback paths, each guarded |
 
 ## D. Honesty about data
 
 | # | condition | how it is checked | state |
 | --- | --- | --- | --- |
-| D1 | every number comes from either this session's own transcript events or the two public endpoints; nothing is invented | each section names its source in the panel or its docstring | ⛔ not built |
-| D2 | the panel states what a reload loses (session detail) and what it keeps (browser counters) | the footer says so | ⛔ not built |
+| D1 | every number comes from either this session's own transcript events or the two public endpoints; nothing is invented | each section names its source in the panel or its docstring | ✅ gate + each section names its source |
+| D2 | the panel states what a reload loses (session detail) and what it keeps (browser counters) | the footer says so | ✅ built — panel footer and the activity line say it |
 | D3 | no credential, no account, no `client_id`, no leaderboard, no rank | gate: the bundle carries no credential shape and sends no auth header | ✅ gate |
 | D4 | **no control in the panel may file an issue.** A receipt can only be pulled by submitting the same text again, and the server's dedup window is finite (a week), so a page-triggered re-check could open a second issue for the same problem | gate: the bundle contains no `/mcp` call and no `tools/call`; the panel names who re-checks (`by the agent, not by this page`) | ✅ built |
 | D5 | the browser half reads only fields the default payload carries — richer facts are asked for on purpose | gate: the search row's field reads ⊆ the compact key set parsed from the worker's tool description | ✅ gate |
@@ -71,10 +71,10 @@ Two surfaces follow from it, and the split is deliberate:
 
 | # | condition | how it is checked | state |
 | --- | --- | --- | --- |
-| E1 | static gates exist for: loader contract, bundle purity, slot↔inject consistency, no credentials, compact-field discipline, and the three design rules (visibility cannot vote; nothing auto-votes; every sending control says what it sends) | `pytest tests/test_dsh_plugin_surface.py` | ✅ 23 pass |
+| E1 | static gates exist for: loader contract, bundle purity, slot↔inject consistency (5 slots), no credentials, compact-field discipline, the three design rules, the four panel rules, the brand-mark pin, the plural rule and the no-issue-filing rule | `pytest tests/test_dsh_plugin_surface.py` | ✅ **38 pass** |
 | E2 | every gate has a red fixture — a gate nobody has seen fail is a gate nobody can trust | one `*_can_go_red` test per rule | ✅ |
 | E3 | **smoke**: a disposable profile installs the plugin, boots the web host, and the boot graph plus the served bytes match | disposable `DSH_HOME` → `dsh plugin add` → `dsh web` → `__DSH_BOOT__` entry + combo route compared with the file | ✅ (43,971 B served verbatim, inject array echoed back) |
-| E4 | the preview matches the **current** file (re-render after the last edit, and the fixture is a payload the server really returns) | re-render + compare the rendered row text with a real payload | ✅ (after the compact fix) |
+| E4 | the preview matches the **current** file (re-render after the last edit, and the fixture is a payload the server really returns) | re-render + compare the rendered row text with a real payload | ⏳ re-rendering now (the plural fix and the header mark landed after the last shot) |
 | E5 | the panel renders without the host's CSS, in both a wide and a narrow column, with no clipping | live browser render of the real components mounted through `apply()`, with real `/api/helpful` calls (see `ops/panel-live/`) | ✅ produced (wide 1100px + narrow 620px) |
 
 ## What the render caught (why the screenshots are part of the method)
@@ -90,6 +90,19 @@ gated:
    `flexWrap` with a full-basis disclosure keeps the buttons on one short line;
 4. the stat strip printed **"1 reports"**, and the first fix for it printed **"2 searchs"** — the helper
    now takes the plural explicitly, because English is irregular exactly where a helper's `+ "s"` is not.
+
+## Out of scope for this first version (dsh-context has these; we do not)
+
+Named so their absence reads as a decision rather than an oversight:
+
+* a **slash command** (`/misakanet`) that opens the panel — the tab and the sidebar entry already open it,
+  and a command adds a shortcut-catalog registration to keep in step;
+* a **settings card** — the natural home for an endpoint/mode choice (hosted MCP vs a local stdio server),
+  which is a real feature and its own contract, not a card to fill in;
+* a **modal** and an **overview button** — dsh-context's shape for a denser view; the panel is a page, and
+  two ways into the same content would need a reason first.
+
+Each is a deliberate deferral. The acceptance list above is the bar for *this* version.
 
 ## What this deliberately does not do
 
