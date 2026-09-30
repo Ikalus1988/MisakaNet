@@ -537,3 +537,44 @@ def test_the_design_rules_can_go_red():
     bad = """/api/helpful", { lesson_id: lesson, query: memory.query }"""
     assert "query" not in CALL_TO_HELPFUL.findall(ok)[0]
     assert "query" in CALL_TO_HELPFUL.findall(bad)[0]
+
+
+# ── the payload a default call really returns ────────────────────────────────
+#
+# The browser half renders whatever the agent's tool call returned. A default `misakanet_search` uses
+# `detail: "compact"`, and the worker's own tool description names that key set — `domain` arrives only
+# at `summary`, `path` only at `full`. The first version of the search row printed `(domain E3)` and
+# therefore printed `(E3)` for every real call; the preview did not catch it because the preview's
+# fixture was hand-written with a `domain` in it.
+#
+# So the key set is parsed from the *worker* (SSOT) and the row may not reach past it.
+
+COMPACT_KEYS = re.compile(r"compact:\s*\{([^}]*)\}")
+
+
+def compact_payload_keys(worker_source: str) -> set[str]:
+    match = COMPACT_KEYS.search(worker_source)
+    assert match, "the search tool description no longer spells out the compact key set"
+    return {name.strip() for name in match.group(1).split(",") if name.strip()}
+
+
+def test_the_search_row_reads_only_fields_the_default_payload_carries():
+    worker = (REPO / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
+    allowed = compact_payload_keys(worker)
+    assert allowed == {"id", "title", "problem", "freshness", "evidence_level"}, (
+        f"the compact key set changed in the worker: {sorted(allowed)} — the row and the docs follow it")
+    search, _ = surface_bodies(client_source())
+    read = set(re.findall(r"\btop\.([A-Za-z_][A-Za-z0-9_]*)", search))
+    beyond = sorted(read - allowed)
+    assert not beyond, (
+        "the search row reads fields the default `detail: \"compact\"` payload does not carry, so they "
+        f"render empty in production: {beyond} (compact carries {sorted(allowed)}; ask the worker's "
+        "description, not the fixture, when in doubt)")
+
+
+def test_the_payload_rule_can_go_red():
+    source = "function MisakanetSearchRow() { return top.domain + top.title; } function MisakanetVerdictAction() {}"
+    search, _ = surface_bodies(source)
+    assert sorted(set(re.findall(r"\btop\.([A-Za-z_][A-Za-z0-9_]*)", search)) - {"id", "title", "problem", "freshness", "evidence_level"}) == ["domain"]
+    assert compact_payload_keys('compact: {id, title, problem, freshness, evidence_level}') == {
+        "id", "title", "problem", "freshness", "evidence_level"}
