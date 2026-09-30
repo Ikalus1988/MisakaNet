@@ -1,0 +1,135 @@
+name: Install Smoke
+
+# A *real install*, measured daily (owner D3 = A, 2026-09-30).
+#
+# Why this exists: every previous green about installing MisakaNet came from metadata — npm's
+# `dist-tags`, the MCP registry read-back in `publish-mcp-registry.yml` (which only checks that the
+# registry's `isLatest` matches what was published), and our own CI, which runs a checkout. None of them
+# installs anything. A reader reported the consequence directly (intake #2486, point 3): they read
+# "automatic check passed" as "it works". docs/dsh-installation.md's "What verified means here" table now
+# points its *real-machine* row at the badge this workflow publishes.
+#
+# Two forms, deliberately independent jobs (`npm-form`, `git-stdio`), because the npm call is anonymous and
+# burst-limited on the public endpoint: `needs:` is only on the publisher, so one throttled hosted call can
+# never turn the local stdio probe red. Each job's probe writes its JSON artifact **even on failure**
+# (`scripts/install_smoke.py` funnels every failure path through one writer), so the publisher can tell
+# "measured, and wrong" (publishes red, naming the form) from "never measured" (publishes nothing at all).
+on:
+  schedule:
+    # 06:43 UTC daily — after the 05:37 site-health and 03:23 weekly badge jobs, so a daily run has the
+    # day's earlier signals already in place and the data-branch badge is not racing update-badges.yml.
+    - cron: "43 6 * * *"
+  workflow_dispatch:
+
+# Least privilege, per job: the probes only read the checkout, and only the publisher writes. A
+# top-level `contents: write` would hand the deploy-capable token to two jobs that never push.
+permissions:
+  contents: read
+
+jobs:
+  npm-form:
+    name: npm form (pack + hosted MCP call)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: pack the bundle, assert its shape and row, then call the hosted endpoint
+        run: |
+          # The two assertions the npm form needs, in one probe: the tarball is skill-only (no
+          # `scripts/`, no local server) and its row names the hosted endpoint; then initialize +
+          # tools/call misakanet_search with a fixed query, and require at least one result.
+          python3 scripts/install_smoke.py npm-form --repo . --out /tmp/install-npm.json
+
+      - name: keep the npm result even when the probe failed
+        # `always()` because the artifact is the evidence the publisher reads: a failed probe that
+        # uploaded nothing would look identical to a probe that never ran, and the badge rule treats
+        # those two cases differently on purpose.
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: install-smoke-npm
+          path: /tmp/install-npm.json
+          if-no-files-found: warn
+
+  git-stdio:
+    name: git+ form (local stdio handshake)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: assert the interpreter floor, handshake the server, and call search
+        run: |
+          # No setup-python on purpose: the documented prerequisite is "python3 ≥ 3.10", so the probe
+          # must read the interpreter the runner actually has (`python3 --version`) rather than the one
+          # a setup step would install. The tool set is compared against docs/mcp.md's local-stdio row.
+          python3 scripts/install_smoke.py git-stdio --repo . --out /tmp/install-git.json
+
+      - name: keep the git+ result even when the probe failed
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: install-smoke-git
+          path: /tmp/install-git.json
+          if-no-files-found: warn
+
+  publish-install-badge:
+    name: publish badges/install.json (data branch)
+    # Runs even when a probe failed — that is when the badge matters most. It only *waits* for both
+    # probes; it never lets one probe's failure change the other's verdict.
+    needs: [npm-form, git-stdio]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          fetch-depth: 0
+
+      - name: collect both per-form results
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
+        with:
+          pattern: install-smoke-*
+          path: /tmp/install-results
+          merge-multiple: true
+
+      - name: build the badge from the measured results
+        run: |
+          # Publishes nothing when a result file is absent (no measurement) and red when a probe
+          # reported `"ok": false` (a measurement that failed). See the script's docstring.
+          python3 scripts/update_install_badge.py \
+            --results-dir /tmp/install-results --out /tmp/badges/install.json
+
+      - name: push to data branch
+        env:
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Same shape as update-badges.yml, including "publish nothing rather than an empty claim":
+          # when the script above deliberately wrote no badge, there is nothing to commit.
+          if [ ! -f /tmp/badges/install.json ]; then
+            echo "no install badge was written this run (incomplete evidence) — nothing to push"
+            exit 0
+          fi
+          git config user.name "misakanet-bot"
+          git config user.email "bot@misakanet.dev"
+          git remote set-url origin "https://x-access-token:${GIT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          cp /tmp/badges/install.json /tmp/install-badge-backup.json
+
+          git fetch origin data
+          git checkout --track origin/data || git checkout data
+
+          mkdir -p badges
+          cp -f /tmp/install-badge-backup.json badges/install.json
+
+          git add badges/install.json
+          if ! git diff --cached --quiet; then
+            git commit -m "badges: install smoke $(date -u +%Y-%m-%d) [skip ci]"
+            git push origin data
+            echo "install badge updated: $(cat badges/install.json)"
+          else
+            echo "install badge unchanged"
+          fi
