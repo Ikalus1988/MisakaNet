@@ -30,7 +30,14 @@ jobs:
             let HAS_AC = false;
             let HAS_CHECKBOX = false;
 
-            if (/acceptance criteria|AC|验收标准|MANDATORY/i.test(body)) {
+            // `AC` without word boundaries matched *any* "ac" inside a word — "characters", "exact",
+            // "practical" — so this half of the rule passed on almost every body and the checkbox test was
+            // doing all the work (measured 2026-09-30: `re.search(r"acceptance criteria|AC|…", "characters",
+            // re.I)` is truthy). Word-bounded now, and the Chinese headings the repository actually writes
+            // are accepted: `## 验收` was not recognised (`验收标准` was), which is how issues with real
+            // acceptance criteria ended up labelled `needs-ac` (found the same day, on issues this session
+            // filed). `tests/test_issue_quality_gate.py` extracts this pattern and drives it directly.
+            if (/acceptance criteria|\bAC\b|验收(标准|条件|要求)?|完成标准|MANDATORY/i.test(body)) {
               HAS_AC = true;
               console.log('  AC section found');
             }
