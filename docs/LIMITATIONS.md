@@ -2,12 +2,14 @@
 
 MisakaNet is designed for a specific niche: **decentralized, git-backed failure-memory sharing for AI agents**. It is not a general-purpose solution. This document honestly describes what the system does not do well.
 
-> **Update (2026-09):** MisakaNet now ships **two surfaces over one knowledge core** — a local stdio MCP / CLI (zero-dependency BM25 over the git checkout) and a remote HTTP MCP (`https://misakanet.org/mcp`, Cloudflare Worker + D1, anonymous search). Items below marked *"local"* apply to the local core; the remote surface mitigates some (not all) of them.
+> **Update (2026-09):** MisakaNet now ships **two surfaces over one knowledge core** — a local stdio MCP / CLI (stdlib-only BM25 over the git checkout) and a remote HTTP MCP (`https://misakanet.org/mcp`, Cloudflare Worker + D1, anonymous search). Items below marked *"local"* apply to the local core; the remote surface mitigates some (not all) of them.
+>
+> **Prerequisite:** the local surfaces need a **Python ≥ 3.10** interpreter. "Stdlib-only" means no third-party *packages*, not "nothing to prepare".
 
 ## Search
 
 - **BM25 is keyword-based.** It cannot understand semantic similarity, paraphrase intent, or conceptual relationships. If a lesson uses different terminology than the search query, it will not be found. This is a known limitation of stdlib-only retrieval. An optional `--semantic` flag exists (see `misakanet/search/embeddings.py`) but requires an external embedding service; it is not the default.
-- **No embedding model in the core.** We intentionally avoid vector embeddings to keep the core zero-dep. For semantic search, integrate an external embedding service at the node level.
+- **No embedding model in the core.** We intentionally avoid vector embeddings to keep the core stdlib-only. For semantic search, integrate an external embedding service at the node level.
 - **RRF fusion is heuristic.** Reciprocal Rank Fusion improves multi-query results but has no theoretical optimality guarantee. Tuning may be needed for your domain.
 
 ## Scale

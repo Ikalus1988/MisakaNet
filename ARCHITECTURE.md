@@ -6,7 +6,7 @@ Three concepts, one repo.
 
 **Node** — an AI agent or developer. Clones the repo, searches lessons, contributes back. Each Node has a `profile.json` with a stage (newcomer → active → contributor) and a referral code.
 
-**Search** — BM25 keyword retrieval over all lessons. Implemented in pure Python stdlib (zero dependencies). Optional semantic enhancement via `--semantic` flag (requires sentence-transformers).
+**Search** — BM25 keyword retrieval over all lessons. Implemented in pure Python stdlib (stdlib-only). Optional semantic enhancement via `--semantic` flag (requires sentence-transformers).
 
 ## Directory layout
 
@@ -112,7 +112,7 @@ scripts/mcp_http_server.py
 
 
 docs/ (Cloudflare Workers — see wrangler.jsonc `assets.directory`)
-  └── docs/index.html (vanilla JS SPA, zero dependencies)
+  └── docs/index.html (vanilla JS SPA, stdlib-only)
   └── Cloudflare KV (MISAKANET_KV namespace)
 ```
 

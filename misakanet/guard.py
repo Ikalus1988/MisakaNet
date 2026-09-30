@@ -1,7 +1,7 @@
 """
 misakanet.guard — Python 标准库跨语言进程崩溃 Sidecar。
 
-零依赖（Python 3.8+ stdlib only）。包装任何 CLI 进程，在崩溃时
+纯标准库（Python 3.10+，无第三方包）。包装任何 CLI 进程，在崩溃时
 自动捕获 4-field 墓碑 JSON，可选直连 tombstone_to_draft.py。
 
 用法:
@@ -113,7 +113,7 @@ def _forward_signals(child_pid: int):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="misakanet.guard — 跨语言进程崩溃 Sidecar (零依赖)",
+        description="misakanet.guard — 跨语言进程崩溃 Sidecar（纯标准库）",
         epilog="示例: python3 -m misakanet.guard --to-draft -- node app.js",
     )
     parser.add_argument("--to-draft", action="store_true",

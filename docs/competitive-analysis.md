@@ -32,7 +32,7 @@ relatives are *failure/experience knowledge* MCP servers for AI agents (Glama-li
 | Project | ⭐ | 定位（shared model） | 与 MisakaNet 差异 |
 |---------|-----|---------------------|-------------------|
 | **MisakaNet** | ![stars](https://img.shields.io/github/stars/Ikalus1988/MisakaNet?style=social) | Public Git-backed failure memory — indexed failure lessons, searchable by agents & humans | — |
-| [deadends.dev](https://github.com/dbwls99706/deadends.dev) | ![stars](https://img.shields.io/github/stars/dbwls99706/deadends.dev?style=social) | Structured failure knowledge — dead ends, workarounds, error chains | 同类最接近：同样存"失败→解法"；差异：我们的 lesson 走 DCO 审校 + 证据分级 + 可全文搜索/基准护栏，且零依赖本地可查 |
+| [deadends.dev](https://github.com/dbwls99706/deadends.dev) | ![stars](https://img.shields.io/github/stars/dbwls99706/deadends.dev?style=social) | Structured failure knowledge — dead ends, workarounds, error chains | 同类最接近：同样存"失败→解法"；差异：我们的 lesson 走 DCO 审校 + 证据分级 + 可全文搜索/基准护栏，且纯标准库本地可查 |
 | [Prior](https://github.com/cg3inc/prior_mcp) (io.cg3) | ![stars](https://img.shields.io/github/stars/cg3inc/prior_mcp?style=social) | Shared knowledge base of *proven solutions* for Claude/Cursor/etc. | 偏"已验证方案"经验交换，非专门失败记忆；我们按失败原语组织、命中可量化 |
 | [Kira](https://github.com/aibenyclaude-coder/Kira) | ![stars](https://img.shields.io/github/stars/aibenyclaude-coder/Kira?style=social) | Auto-manages Skills & Scars (persistent failure warnings) for agents | Scars 偏"本次会话/项目级警告"；我们是跨项目、公开、可审计的失败课程库 |
 | [Casebook-MCP](https://github.com/AgentPostmortem/Casebook-MCP) | ![stars](https://img.shields.io/github/stars/AgentPostmortem/Casebook-MCP?style=social) | Remote MCP over AgentPostmortem — registry of documented AI-agent failures | 同为 agent 故障复盘库；差异：我们带 intake 闭环 + 证据分级 + 课程可升格 contrib |
@@ -46,7 +46,7 @@ relatives are *failure/experience knowledge* MCP servers for AI agents (Glama-li
 
 > **MisakaNet is not the only shared failure-memory system.** Its edge is:
 > - **Git-backed** — every lesson is a Markdown file, fully auditable, version-controlled
-> - **Zero-dependency** — pure Python stdlib, no vector DB, no embedding model, no server
+> - **Stdlib-only** — pure Python stdlib, no vector DB, no embedding model, no server
 > - **Purpose-built** — failure-recovery knowledge, not general memory
 > - **Public by default** — lessons are open, contributions are DCO-gated
 >
@@ -54,7 +54,7 @@ relatives are *failure/experience knowledge* MCP servers for AI agents (Glama-li
 > state management, but require heavier deployment. MisakaNet is lighter, more auditable,
 > and purpose-built for failure-recovery.
 
-> 📦 Core engine is **zero-dep** (pure Python stdlib). Optional extras: `pip install misakanet[semantic|hub|feishu]`.
+> 📦 Core engine is **stdlib-only** (pure Python stdlib). Optional extras: `pip install misakanet[semantic|hub|feishu]`.
 > → [Architecture details](../ARCHITECTURE.md) · [Benchmark: LessonReuseBench](lesson-reuse-benchmark.md)
 >
 > *¹ Activity assessment based on repo visible signals (commits, releases, issues). As of 2026-08-12.*

@@ -17,7 +17,7 @@ Add this to your main HTML template (e.g., `templates/base.html` or `layout.html
       "@type": "WebSite",
       "name": "MisakaNet",
       "url": "https://misakanet.org",
-      "description": "Git-backed failure-memory for AI coding agents. Zero dependencies. Zero server. Zero database.",
+      "description": "Git-backed failure-memory for AI coding agents. No third-party packages. No server. No database.",
       "potentialAction": {
         "@type": "SearchAction",
         "target": {

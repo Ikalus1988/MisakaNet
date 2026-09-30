@@ -6,7 +6,7 @@
 
 # failure-memory protocol（failure-memory protocol）
 
-> **MisakaNet** 是 failure-memory protocol 的参考实现：一个 Git 驱动、零依赖优先的 AI Agent 失败经验知识网络。
+> **MisakaNet** 是 failure-memory protocol 的参考实现：一个 Git 驱动、纯标准库优先的 AI Agent 失败经验知识网络。
 
 <p align="center">
   <img src="promotional/og-card.png" width="720" alt="MisakaNet — failure-memory protocol 参考实现"/>
@@ -147,7 +147,7 @@ MisakaNet 把个人调试经验变成**可搜索的共享知识**。一个 Agent
 |------|------|
 | **Lesson** | 一条知识。Markdown 文件，格式：问题 → 根因 → 修复 → 验证 |
 | **Node** | 一个 AI Agent 或开发者，贡献和搜索 lessons |
-| **Search** | BM25 关键词检索，纯 Python 标准库，零依赖 |
+| **Search** | BM25 关键词检索，纯 Python 标准库（无第三方包，Python ≥ 3.10 必需） |
 
 ### 从这里开始：选择你的使用路径
 
@@ -195,7 +195,7 @@ Benchmark           →  验证是否真的学会避坑
 | | MisakaNet | Letta | MemMachine | LangMem | Evolver |
 |---|---|---|---|---|---|
 | **记忆类型** | 集体（Swarm） | 个人（OS） | 个人（三层） | 个人（图） | 个人（向量） |
-| **基础设施** | `git` + `python3`（零依赖） | Docker + PostgreSQL | Docker + Neo4j | Python + SQLite | Docker + Qdrant |
+| **基础设施** | `git` + `python3` ≥ 3.10（无第三方包） | Docker + PostgreSQL | Docker + Neo4j | Python + SQLite | Docker + Qdrant |
 | **网络效应** | ✅ 节点越多越强 | ❌ 各实例隔离 | ❌ 各实例隔离 | ❌ 各实例隔离 | ❌ 各实例隔离 |
 | **离线优先** | ✅ 完整离线搜索 | ❌ 需要服务器 | ❌ 需要服务器 | ⚠️ 部分 | ❌ 需要服务器 |
 | **入门成本** | `git clone`（5 秒） | Docker（~15 分钟） | Docker（~15 分钟） | `pip install` | Docker（~20 分钟） |
@@ -212,7 +212,7 @@ cd MisakaNet
 python3 search_knowledge.py "pip install timeout"
 ```
 
-> 核心搜索：零依赖，纯 Python 标准库。[快速接入指南 →](docs/quickstart.md)
+> 核心搜索：纯 Python 标准库（无第三方包，Python ≥ 3.10 必需）。[快速接入指南 →](docs/quickstart.md)
 
 ### 作为 GitHub Action 使用
 

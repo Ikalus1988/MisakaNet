@@ -68,7 +68,7 @@ def check_environment() -> dict:
     state["github_auth_ok"] = ok
 
     # 核心依赖（纯 stdlib，无需安装）
-    _check("核心搜索: 零依赖（纯 Python stdlib）", True)
+    _check("核心搜索: 纯标准库（纯 Python stdlib）", True)
     state["core_ok"] = True
 
 

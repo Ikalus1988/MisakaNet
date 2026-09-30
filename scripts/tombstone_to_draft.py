@@ -175,7 +175,7 @@ def _generate_ai_hint(tombstone: dict) -> str:
         except Exception:
             pass  # 回退到启发式
 
-    # 启发式诊断（零依赖）
+    # 启发式诊断（纯标准库）
     hints = []
 
     # Exit code 常见含义

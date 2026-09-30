@@ -206,16 +206,16 @@ An install page can show two green things and they are not the same claim:
 A green static check with a broken install is possible, and a green install with a stale listing is possible.
 Verify with the second row; the first row is about the catalogue.
 
-## Prerequisites, and what "zero dependency" does and does not mean
+## Prerequisites, and what "stdlib-only" does and does not mean
 
 * **Hosted MCP path** (the npm form): no local runtime at all — it is an HTTPS call.
 * **Local paths** — the library (`misakanet-core`), the stdio server (`python3 scripts/mcp_server.py`), the
   CLI and `search_knowledge.py` — need **Python ≥ 3.10**.
-* **"Zero dependency" means no third-party packages**, not "nothing to prepare": the default search path is
-  pure Python stdlib, which is why it runs anywhere a Python interpreter exists. Two things sit outside that
-  claim: the **interpreter itself** is a hard prerequisite, and the optional `--semantic` path needs
-  `sentence-transformers` (or an external embedding service) — see `docs/LIMITATIONS.md` and
-  `docs/cli-reference.md`.
+* **"Stdlib-only" means no third-party packages**, not "nothing to prepare": the default search path is pure
+  Python standard library, which is why it runs anywhere a Python interpreter exists. Two things sit outside
+  that claim: the **interpreter itself** is a hard prerequisite (**Python ≥ 3.10**), and the optional
+  `--semantic` path needs `sentence-transformers` (or an external embedding service) — see
+  `docs/LIMITATIONS.md` and `docs/cli-reference.md`.
 
 ## Which version number is which
 

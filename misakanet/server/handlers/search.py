@@ -96,7 +96,7 @@ def _get_search_state():
 
 
 def _fallback_search(query: str, domain: str = None, top: int = 5) -> list | None:
-    """Lightweight keyword search from lessons.json — zero dependencies.
+    """Lightweight keyword search from lessons.json — stdlib-only.
 
     Used when SAG-Lite and BM25 are both unavailable (e.g. Glama sandbox).
     Returns None if lessons.json is not found (caller should show error).

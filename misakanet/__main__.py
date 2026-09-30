@@ -1,8 +1,8 @@
-"""MisakaNet — Lesson / Node / Search. Zero dep Agent Library.
+"""MisakaNet — Lesson / Node / Search. Stdlib-only agent library.
 
 Commands:
     python3 -m misakanet             Show this help
-    python3 search_knowledge.py      Search Lessons (BM25, zero-dep)
+    python3 search_knowledge.py      Search Lessons (BM25, stdlib-only)
     python3 scripts/new_lesson.py    Create a Lesson
     python3 scripts/contribute.py    Submit a Lesson via GitHub API
     python3 scripts/setup.py --check Environment check
@@ -15,7 +15,7 @@ import sys
 USAGE = """MisakaNet — Lesson / Node / Search
 
 Commands:
-    python3 search_knowledge.py "query"    Search Lessons (BM25, zero-dep)
+    python3 search_knowledge.py "query"    Search Lessons (BM25, stdlib-only)
     python3 scripts/new_lesson.py          Create a Lesson
     python3 scripts/contribute.py          Submit via GitHub API
     python3 scripts/setup.py --check       Environment check

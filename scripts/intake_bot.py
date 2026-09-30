@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""misaka-intake-bot MVP — 报错 → 预查建议 → 可靠 intake 决策（零依赖，stdlib only）
+"""misaka-intake-bot MVP — 报错 → 预查建议 → 可靠 intake 决策（纯标准库，stdlib only）
 
 构想（docs/agents/crawler-intake-bot.md）的最小实现，供爬虫/外部仓库与 zsxh 实测。
 设计取舍：suggest 可宽、intake 必严；默认只报告（dry-run），显式 --auto-intake 才提交。
