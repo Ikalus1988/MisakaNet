@@ -413,31 +413,8 @@ def test_the_field_rule_notices_a_page_reading_an_unprojected_field(tmp_path):
         "…and adding the field to the projection must clear it")
 
 
-# Each page has one top-level call that starts its corpus load; the constant has to be declared before it,
-# because `const` is not hoisted — a use before the declaration is a temporal dead zone, i.e. a run-time
-# `ReferenceError` in a file that parses perfectly.
-CORPUS_ENTRY_POINTS = {HOME: "loadLessons();", SEARCH: "init();"}
-
-
-def test_the_corpus_constants_are_declared_before_each_page_loads_the_corpus():
-    """A `const` used before its declaration throws at run time, not at parse time.
-
-    The homepage did exactly that after the projection landed: `loadLessons();` sat ~450 lines above
-    `const LESSONS_LITE_URL`. The promise rejected, `_allLessons` stayed null, and every counter on the stats
-    card rendered its placeholder "—" (2026-09-30, reported from a screenshot). The search page was fine,
-    and this rule keeps both that way.
-    """
-    problems = []
-    for rel, entry in CORPUS_ENTRY_POINTS.items():
-        text = (REPO / rel).read_text(encoding="utf-8")
-        declaration = text.index("const LESSONS_LITE_URL")
-        # The *first* occurrence: a call inside an earlier function body is still a use site, but what
-        # matters is whether anything can reach it before the declaration is evaluated.
-        first_use = text.index(entry)
-        if declaration > first_use:
-            problems.append(f"{rel}: `{entry}` (offset {first_use}) precedes `const LESSONS_LITE_URL` "
-                            f"(offset {declaration})")
-    assert not problems, (
-        "these pages read the corpus URL before the constant is declared, which is "
-        "`ReferenceError: Cannot access 'LESSONS_LITE_URL' before initialization` at run time — it aborts "
-        "the corpus load and leaves every counter on its placeholder:\n  - " + "\n  - ".join(problems))
+# The ordering of the corpus constants against the first top-level call is checked by
+# `tests/test_site_script_ordering.py`: it covers **every** script the site ships and follows the call graph.
+# The rule that used to live here compared two page-specific entry-point strings, so it would have missed the
+# shape that actually broke the homepage — a top-level call of a function that read the constant two calls
+# deeper (2026-09-30).
