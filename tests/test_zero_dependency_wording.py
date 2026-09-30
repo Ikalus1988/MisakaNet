@@ -31,7 +31,13 @@ MANGLED = re.compile(r"stdlib-only(?=[A-Za-z])")
 
 # History keeps its wording: dated snapshots, transcripts, corpus material and the tests that quote the
 # report. Each entry is a directory whose files are records rather than current guidance.
+#
+# `CHANGELOG.md` is a history file even though it lives at the repo root: release-please records every
+# merged commit's subject verbatim, so a retirement entry inevitably quotes the retired phrase (e.g.
+# `* retire the "zero-dependency" slogan …`). Treating it as current copy would make every retirement
+# trip its own retirement gate.
 HISTORY = (
+    "CHANGELOG.md",
     "archive/", "data/", "lessons/", "tasks/", "tests/",
     "docs/adr/", "docs/agents/crawler-intake-bot.md", "docs/baseline/", "docs/benchmarks/", "docs/blog/",
     "docs/bounty-notes/", "docs/data/", "docs/field-reports/", "docs/journey-reports/", "docs/lessons/",
@@ -123,6 +129,25 @@ def test_the_slogan_rule_notices_a_current_use(tmp_path):
         "zero-dependency core\n", encoding="utf-8")
     assert retired_phrase_offenders(tmp_path) == offenders, (
         "a dated journey report is history and must keep its wording")
+
+
+def test_the_changelog_exemption_does_not_silence_real_offenders(tmp_path):
+    """Guard: `CHANGELOG.md` is exempt because release-please records merged subjects verbatim
+    (a retirement entry inevitably quotes the retired phrase). A fixture `CHANGELOG.md` placed at
+    the repo root in this tmpdir must be exempted too — *while* a current-copy file with the same
+    line at the same root must still be flagged, so the exemption cannot be widened silently."""
+    (tmp_path / "CHANGELOG.md").write_text(
+        "* retire the \"zero-dependency\" slogan — it read as \"nothing to prepare\"\n",
+        encoding="utf-8",
+    )
+    assert not retired_phrase_offenders(tmp_path), (
+        "the CHANGELOG exemption must be matched by this fixture, otherwise the test fixture is "
+        "out of sync with the rule and the next retirement silently fails CI")
+    # A current-copy file in the same root (not under a HISTORY prefix) must still be flagged.
+    (tmp_path / "current.md").write_text("zero-dependency core\n", encoding="utf-8")
+    offenders = retired_phrase_offenders(tmp_path)
+    assert offenders and "current.md" in offenders[0], (
+        "the CHANGELOG exemption must not extend to other root-level files: " + repr(offenders))
 
 
 def test_every_surface_that_claims_stdlib_only_states_the_prerequisite():
