@@ -40,6 +40,9 @@ PR_CHECKS = REPO / ".github" / "workflows" / "pr-checks.yml"
 _EXPRESSIONS = {
     "${{ steps.scope.outputs.scope }}": "SCOPE",
     "${{ steps.pytest.outcome }}": "OUTCOME",
+    # The worker suite runs inside this same job (2026-09-29) because `audit` is a required check and
+    # `mcp-stress.yml` is not; its outcome therefore also reaches the report.
+    "${{ steps.node_tests.outcome }}": "NODE_OUTCOME",
     # pytest's own exit code (1 = failing tests, 2 = interrupted during collection, 4 = usage error,
     # 5 = nothing collected). Carried out of the test step so the verdict can say *which* it was.
     "${{ steps.pytest.outputs.exit }}": "PYTEST_EXIT",
@@ -119,6 +122,9 @@ def run_report(tmp_path, **values) -> str:
 _GREEN = {
     "SCOPE": "full", "OUTCOME": "success", "COVERAGE": "63", "SCORE": "100", "PYTEST_EXIT": "0",
     "DCO_RESULT": "true", "SCHEMA": "pass", "SECRETS": "pass", "DEPAUDIT": "pass",
+    # A real green audit run has the worker suite green too (it runs in this job since 2026-09-29), so the
+    # baseline represents an actual run rather than a value the job never leaves empty.
+    "NODE_OUTCOME": "success",
     "SHA": "abcdef1234567",
 }
 
@@ -239,3 +245,33 @@ def test_an_unknown_exit_code_falls_back_without_crashing(tmp_path):
     """The step must still produce a verdict when the output is empty (a skipped test step)."""
     _, stdout = run_report_streams(tmp_path, tag="unknown", **{**_GREEN, "OUTCOME": "failure", "PYTEST_EXIT": ""})
     assert "test suite has issues" in stdout, stdout[-600:]
+
+
+# ── the worker suite inside the audit job (2026-09-29) ──────────────────────────────────────────────
+# `node --test workers/*.test.mjs` is the only automated verification of the worker (the MCP endpoint,
+# search, the public API). It used to run ONLY in `mcp-stress.yml`, which is not a required check, so a red
+# worker test merged green-looking. It now runs in `audit` — which means the verdict must name it, in both
+# directions, or the run that misses it becomes the new silent hole.
+
+def test_a_skipped_worker_suite_is_named_as_not_having_run(tmp_path):
+    report = run_report(tmp_path, **{**_GREEN, "NODE_OUTCOME": "skipped"})
+    verdict = report.split("Verdict")[-1]
+    assert "Worker test suite (node) did not run" in verdict, verdict[-500:]
+    assert "all gates passed" not in report.lower(), (
+        "an unrun worker suite must keep the verdict red, exactly like an unrun Python suite")
+
+
+def test_a_failing_worker_suite_is_named_and_blames_the_worker(tmp_path):
+    report = run_report(tmp_path, **{**_GREEN, "NODE_OUTCOME": "failure"})
+    verdict = report.split("Verdict")[-1]
+    assert "Worker test suite (node) failed" in verdict, verdict[-500:]
+    assert "MCP endpoint" in verdict, (
+        "the one line a maintainer reads must say what a red node test means — the MCP endpoint, search "
+        "and the public API — not just 'a test failed'")
+
+
+def test_a_green_worker_suite_does_not_touch_the_verdict(tmp_path):
+    """The positive control: a green worker suite must not make the report red."""
+    report = run_report(tmp_path, **{**_GREEN, "NODE_OUTCOME": "success"})
+    assert "All gates passed" in report, report[-400:]
+    assert "Worker test suite" not in report, report[-400:]
