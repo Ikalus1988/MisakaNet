@@ -567,3 +567,66 @@ def test_the_identity_step_keeps_the_token_diagnostics(tmp_path):
     proc = _run_identity_step(tmp_path / "token", ACTIONS_ID_TOKEN_REQUEST_URL="", NODE_AUTH_TOKEN="npm_x")
     assert proc.returncode == 0, proc.stdout
     assert "token fallback" in proc.stdout, proc.stdout
+# ── every workflow that publishes to npm must be able to do it without a long-lived secret ───────────
+# There are three publishing workflows (`misakanet`, `@misaka-net/misakanet-setup`, `@misaka-net/fatal-guard`)
+# and they shared one `NPM_TOKEN`. Migrating only the first would have left the other two unable to publish
+# through trusted publishing — and, worse, deleting the token afterwards would have broken them. So the rule
+# is repo-wide: any job whose steps run `npm publish` must grant `id-token: write` and run on a Node that
+# meets npm's trusted-publishing floor (CLI >= 11.5.1, i.e. Node >= 22.14).
+
+def publish_auth_problems(workflow_dir: Path) -> list[str]:
+    """Jobs that run `npm publish` without the means to authenticate through OIDC."""
+    problems: list[str] = []
+    found = 0
+    for path in sorted(workflow_dir.glob("*.yml")):
+        spec = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        for job_name, job in (spec.get("jobs") or {}).items():
+            steps = job.get("steps") or []
+            if not any("npm publish" in str(step.get("run") or "") for step in steps):
+                continue
+            found += 1
+            granted = {**(spec.get("permissions") or {}), **(job.get("permissions") or {})}
+            if granted.get("id-token") != "write":
+                problems.append(
+                    f"{path.name}:{job_name} runs `npm publish` without `id-token: write`, so npm trusted "
+                    "publishing cannot authenticate it (the release then depends on a long-lived secret)")
+            node = next((s for s in steps if str(s.get("uses", "")).startswith("actions/setup-node")), None)
+            version = str(((node or {}).get("with") or {}).get("node-version", ""))
+            major = int(re.match(r"\d+", version).group()) if re.match(r"\d+", version) else 0
+            if major < 22:
+                problems.append(
+                    f"{path.name}:{job_name} pins Node {version!r}; trusted publishing needs npm CLI >= 11.5.1, "
+                    "which means Node >= 22.14")
+            # A publish step that cannot name its two credentials fails as a bare 401 instead.
+            publish_run = "\n".join(str(step.get("run") or "") for step in steps if "npm publish" in str(step.get("run") or ""))
+            if "ACTIONS_ID_TOKEN_REQUEST_URL" not in publish_run and "NODE_AUTH_TOKEN" not in str(steps):
+                problems.append(
+                    f"{path.name}:{job_name} neither detects an OIDC environment nor passes a token to "
+                    "`npm publish`, so a missing credential surfaces as an unexplained 401")
+    if found == 0:
+        problems.append(f"no workflow in {workflow_dir.name}/ runs `npm publish` — this rule would be vacuous")
+    return problems
+
+
+def test_every_publishing_workflow_can_authenticate_without_a_long_lived_secret():
+    problems = publish_auth_problems(WORKFLOWS)
+    assert not problems, "\n  - ".join(["publishing workflows that cannot use trusted publishing:"] + problems)
+
+
+def test_the_publish_auth_rule_notices_a_token_only_workflow(tmp_path):
+    """Guard: the rule reads the real workflow directory, so its red case needs a fixture."""
+    (tmp_path / "token-only.yml").write_text(
+        "permissions:\n  contents: read\njobs:\n  publish:\n    steps:\n"
+        "      - uses: actions/setup-node@v7\n        with:\n          node-version: \"20\"\n"
+        "      - name: Publish\n        run: npm publish --access public\n", encoding="utf-8")
+    problems = publish_auth_problems(tmp_path)
+    assert any("id-token" in p for p in problems), problems
+    assert any("Node '20'" in p for p in problems), problems
+    (tmp_path / "good.yml").write_text(
+        "permissions:\n  contents: read\n  id-token: write\njobs:\n  publish:\n    steps:\n"
+        "      - uses: actions/setup-node@v7\n        with:\n          node-version: \"24\"\n"
+        "      - name: Publish\n        run: |\n          if [ -n \"${ACTIONS_ID_TOKEN_REQUEST_URL:-}\" ]; then true; fi\n"
+        "          npm publish --access public\n        env:\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}\n",
+        encoding="utf-8")
+    (tmp_path / "token-only.yml").unlink()
+    assert publish_auth_problems(tmp_path) == []
