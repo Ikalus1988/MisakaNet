@@ -786,3 +786,36 @@ def test_the_plural_helper_is_given_the_plural_where_english_is_irregular():
     assert not bare, f"`count(n, \"search\")` would print \"searchs\": {bare}"
     assert source.count('"search", "searches"') >= 2, (
         "both search counts (the stat strip and the activity line) must pass the plural")
+
+
+def test_the_trust_rule_is_stated_once_and_every_row_shows_its_own_count():
+    """A rule repeated under every row buries the numbers; a rule stated nowhere leaves them unexplained.
+
+    The first version printed the E4 sentence only on rows whose count was 0 — so a lesson people had
+    already confirmed twice read as a bare "2 human confirmations" with no explanation of what that
+    means. Now the sentence is stated once for the section, and each row carries its own count plus an
+    `→ E4` marker when it has crossed.
+    """
+    panel = panel_body(client_source())
+    assert panel.count("second is what agents read as E4") == 1, (
+        "the rule belongs once per section, not once per row")
+    assert '→ E4' in panel, "a row past the threshold should say what its count means"
+    assert 'count(confirmations, "human confirmation")' in panel, (
+        "each row must print its own confirmation count through the plural helper")
+
+
+def test_the_panel_asks_each_lesson_once_and_only_nags_about_open_reports():
+    """Two things the live render measured rather than revealed by reading.
+
+    * It made **8 `/api/helpful` calls for 4 lessons**: the effect re-runs on every log revision, and while
+      the first round was in flight `trust[id]` was still `undefined`, so a second round started. A public
+      endpoint should be asked once per lesson, so the panel keeps a `asked` ref.
+    * It printed "a pending report is re-checked…" under a report that had already been **converted** — the
+      sentence is about work that is still open, so it is now computed from the reports that are.
+    """
+    panel = panel_body(client_source())
+    assert "react.useRef(Object.create(null))" in panel, "the once-per-lesson guard must exist"
+    assert "!asked.current[lesson.lessonId]" in panel, "the fetch must consult the guard"
+    assert "asked.current[lesson.lessonId] = true" in panel, "the guard must be set before the request"
+    assert "var openReports = intakes.filter(" in panel, (
+        "the re-check hint must be derived from the reports that are still open, not from any report")

@@ -89,7 +89,13 @@ gated:
 3. the verdict stretched the host's action row across the pane once the disclosure sat inline —
    `flexWrap` with a full-basis disclosure keeps the buttons on one short line;
 4. the stat strip printed **"1 reports"**, and the first fix for it printed **"2 searchs"** — the helper
-   now takes the plural explicitly, because English is irregular exactly where a helper's `+ "s"` is not.
+   now takes the plural explicitly, because English is irregular exactly where a helper's `+ "s"` is not;
+5. the panel asked the public endpoint **twice per lesson** (8 calls for 4 lessons): the effect re-runs on
+   every log revision and `trust[id]` is still `undefined` while the first round is in flight, so a second
+   round started — now guarded by an `asked` ref, measured back down to 4;
+6. the "a pending report is re-checked…" sentence appeared under a report that had already been
+   **converted** — it is now computed from the reports that are actually open, and the row shows which
+   issue it is (`#1130`) instead of leaving the number stored and unrendered.
 
 ## Out of scope for this first version (dsh-context has these; we do not)
 
