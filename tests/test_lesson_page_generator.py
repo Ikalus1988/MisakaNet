@@ -205,7 +205,9 @@ def test_an_id_that_differs_from_its_slug_gets_a_redirect_page():
         "the id `misakanet_search` returns must resolve, or the documented page URL 404s")
 
     alias = files["docs/lessons/short-id/index.html"]
-    assert f'<link rel="canonical" href="{blp.SITE_URL}/lessons/{slug}/">' in alias, alias
+    # Site-relative since 2026-09-29 (see the absolute-origin rule below): `rel="canonical"` resolves a
+    # relative URL against the page, and the origin was the shape a secret-scanning heuristic matched.
+    assert f'<link rel="canonical" href="/lessons/{slug}/">' in alias, alias
     assert f'meta http-equiv="refresh" content="0; url=/lessons/{slug}/"' in alias, alias
     assert blp.GENERATOR_MARK in alias, (
         "without the marker the generator does not own the file and can never prune it")
@@ -415,3 +417,38 @@ def test_a_lesson_merge_regenerates_the_pages():
     assert any("build_lesson_pages.py" in str(step.get("run") or "") for step in steps), (
         "the push-triggered run no longer regenerates the pages")
 
+
+
+# ── generated redirect pages carry no absolute URL ──────────────────────────────────────────────────
+# GitHub's secret-scanning heuristic (`HARDCODED_SECRET`, tool `plugin-scanner 2.2.0`) flagged two alias
+# pages on 2026-09-29 — `docs/lessons/idempotent-task-claim/index.html:6` and
+# `docs/lessons/disk-full-agent-tmp-gc/index.html:6`. Both lines were the *canonical* link, and both slugs
+# are ordinary lesson titles that happen to contain secret-flavoured words ("Idempotent task claim **keys**
+# for snipers", "Disk full from agent tmp dirs — **GC pattern**"). Nothing was leaked: the lesson sources
+# carry no credential-shaped string and `scripts/check_published_secrets.py` is green over every published
+# prose file. The canonical is now site-relative (valid for `rel="canonical"`), so a generated file whose
+# only content is a redirect no longer contains an absolute URL — and this rule keeps that shape from coming
+# back, because the next title with "token" or "secret" in it would trip the same heuristic.
+
+def test_generated_redirect_pages_do_not_embed_an_absolute_origin():
+    aliases = [p for p in (REPO / "docs" / "lessons").glob("*/index.html")
+               if "Moved —" in p.read_text(encoding="utf-8")[:200]]
+    assert aliases, "no alias pages found — this rule has lost its subject (did the generator change?)"
+    offenders = []
+    for page in aliases:
+        text = page.read_text(encoding="utf-8")
+        for origin in blp.SITE_URL, "http://", "https://raw.githubusercontent.com":
+            if origin in text:
+                offenders.append(f"{page.relative_to(REPO).as_posix()}: {origin}")
+    assert not offenders, (
+        "these generated redirect pages embed an absolute URL; an ordinary lesson title that slugifies to a "
+        "secret-flavoured string then reads as a hardcoded endpoint to a scanner: " + "; ".join(offenders[:5]))
+
+
+def test_the_relative_canonical_rule_notices_an_absolute_origin():
+    """Guard: the rule reads the repository, so its failure mode needs a fixture."""
+    def has_absolute(text: str) -> bool:
+        return any(origin in text for origin in (blp.SITE_URL, "http://", "https://raw.githubusercontent.com"))
+
+    assert has_absolute(f'<link rel="canonical" href="{blp.SITE_URL}/lessons/x/">'), "fixture must trip the rule"
+    assert not has_absolute('<link rel="canonical" href="/lessons/x/">'), "a relative canonical is fine"

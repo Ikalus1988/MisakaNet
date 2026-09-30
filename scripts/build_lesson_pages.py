@@ -406,11 +406,19 @@ def build_id_alias_page(lesson_id: str, slug: str) -> str:
     deliberately absent from the sitemap.
     """
     target = f"/lessons/{slug}/"
+    # The canonical is **site-relative** on purpose (2026-09-29). An absolute one here made the line look
+    # like a hardcoded endpoint to GitHub's secret-scanning heuristic: two alias pages were flagged
+    # (`HARDCODED_SECRET`, plugin-scanner 2.2.0) purely because their *titles* slugify to secret-flavoured
+    # words — "Idempotent task claim **keys** for snipers", "Disk full from agent tmp dirs — **GC pattern**".
+    # No credential exists: the lesson sources carry none and `scripts/check_published_secrets.py` is green
+    # over all 739 published prose files. `rel="canonical"` accepts a relative URL (resolved against the
+    # page), so the origin was never needed — dropping it removes the absolute-URL shape from a generated
+    # file whose only other content is a redirect, which is the shape that got matched.
     return (
         '<!doctype html>\n<html lang="en">\n<head>\n'
         '<meta charset="utf-8">\n'
         f'<title>Moved — {lesson_id}</title>\n'
-        f'<link rel="canonical" href="{SITE_URL}{target}">\n'
+        f'<link rel="canonical" href="{target}">\n'
         f'<meta http-equiv="refresh" content="0; url={target}">\n'
         '</head>\n<body>\n'
         f'<p>{GENERATOR_MARK} — this lesson lives at <a href="{target}">{target}</a>.</p>\n'
