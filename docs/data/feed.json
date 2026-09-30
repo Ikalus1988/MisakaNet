@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-30T12:46:53.664413+00:00",
+  "generated_at": "2026-09-30T20:07:42.448730+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(reviews): case study — a third-party install report, checked claim by claim",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2519",
-      "timestamp": "2026-09-30T12:11:36Z",
+      "title": "feat(dsh): a browser half for the plugin — visibility on the search, the reuse verdict where the outcome is",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2551",
+      "timestamp": "2026-09-30T17:56:46Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(lessons): remove stale lessons/draft/ directory",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2438",
-      "timestamp": "2026-09-30T11:55:23Z",
+      "title": "docs(readme): show the DeepSeek Harness \"Add plugin\" dialog, three steps marked",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2549",
+      "timestamp": "2026-09-30T17:31:31Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(issues): the acceptance-criteria half of the quality gate was decorative (unbounded `AC`)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2514",
-      "timestamp": "2026-09-30T11:54:04Z",
+      "title": "feat(mcp): the intake re-submit channel now carries a poll hint and a verified conversion receipt (#2494)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2553",
+      "timestamp": "2026-09-30T17:27:17Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "ci(install): make \"install verified\" a measured, dated fact (D3=A)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2500",
-      "timestamp": "2026-09-30T11:54:00Z",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2550",
+      "timestamp": "2026-09-30T17:01:38Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(versions): one version line — npm joins release-please, and publishing becomes unattended (D1=A)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2499",
-      "timestamp": "2026-09-30T11:37:42Z",
+      "title": "ci(release): make the other two publishing workflows idempotent and manually triggerable",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2518",
+      "timestamp": "2026-09-30T14:21:19Z",
       "source": "github"
     },
     {
