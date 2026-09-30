@@ -375,7 +375,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_submit_intake",
-    description: "[OPEN TRIAGE / INTAKE] Use misakanet_submit_intake when you only have a partial failure description or want to ask a question; use misakanet_write_lesson (Bearer required) once you already have structured title/domain/problem/root_cause/fix. submit_intake is open, rate-limited, no Bearer — output is a GitHub issue (intake,mcp-intake,pending-review) for maintainer triage, NOT a merged lesson.\nRouting: if you are ASKING a how-to / knowledge question (not reporting a failure), set kind=\"question\" — it opens a [Question] issue that maintainers answer/FAQ instead of scoring it as a lesson. If kind is omitted, the server auto-detects question-shaped content (no error/fix/verification + question phrasing).\nPull answers later: questions are answered asynchronously (hours to days). Re-call this tool with the SAME problem text later — the dedup response returns the maintainer's answer once it exists ({answered:true, answer}); or re-run misakanet_search on the topic for FAQ hits.\nReturns: object {submitted: boolean, intake_id, status, redactions_applied, quality_score, receipt, routing:{kind, auto_detected}, follow_up?}; duplicates: {submitted: false, duplicate: true, previous_issue} or {answered: true, answer} for answered questions.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code'); misakanet_submit_intake(kind='question', problem='How do I configure MCP auth in production?', source='claude-code')",
+    description: "[OPEN TRIAGE / INTAKE] Use misakanet_submit_intake when you only have a partial failure description or want to ask a question; use misakanet_write_lesson (Bearer required) once you already have structured title/domain/problem/root_cause/fix. submit_intake is open, rate-limited, no Bearer — output is a GitHub issue (intake,mcp-intake,pending-review) for maintainer triage, NOT a merged lesson.\nRouting: if you are ASKING a how-to / knowledge question (not reporting a failure), set kind=\"question\" — it opens a [Question] issue that maintainers answer/FAQ instead of scoring it as a lesson. If kind is omitted, the server auto-detects question-shaped content (no error/fix/verification + question phrasing).\nPull answers later: questions are answered asynchronously (hours to days). Re-call this tool with the SAME problem text later and follow the returned poll_hint — the dedup response returns the maintainer's answer once it exists ({answered:true, answer}), and once your report has become a lesson it returns a conversion receipt ({converted:true, receipt, events}) naming the lesson, its path and its evidence_level; or re-run misakanet_search on the topic for FAQ hits. Every response also carries dedup_key, and poll_hint.recheck_after_seconds says when re-checking is worth it (21600s for questions, 86400s for failure reports).\nReturns: object {submitted: boolean, intake_id, status, dedup_key, poll_hint, redactions_applied, quality_score, receipt, routing:{kind, auto_detected}, follow_up?}; duplicates: {submitted: false, duplicate: true, previous_issue, dedup_key} or {answered: true, answer, dedup_key} for answered questions, plus {converted: true, receipt, events} when a lesson now cites the intake.\nExample: misakanet_submit_intake(kind='missing_lesson', problem='pip install times out behind corporate proxy', source='claude-code'); misakanet_submit_intake(kind='question', problem='How do I configure MCP auth in production?', source='claude-code')",
     inputSchema: {
       type: "object",
       properties: {
@@ -411,11 +411,36 @@ const MCP_TOOLS = [
         answer: { type: "string" },
         answer_url: { type: "string" },
         dedup_hash: { type: "string" },
+        dedup_key: { type: "string" },
+        converted: { type: "boolean" },
+        events: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              type: { type: "string" },
+              intake: { type: "string" },
+              lesson_id: { type: "string" },
+              lesson_path: { type: "string" },
+              evidence_level: { type: "string" },
+              search: { type: "string" },
+            },
+          },
+        },
         error: { type: "string" },
         note: { type: "string" },
         receipt: { type: "string" },
         routing: { type: "object", properties: { kind: { type: "string" }, auto_detected: { type: "boolean" }, note: { type: "string" } } },
         follow_up: { type: "object", properties: { how: { type: "string" }, intake_id: { type: "string" }, issue_url: { type: "string" } } },
+        poll_hint: {
+          type: "object",
+          properties: {
+            tool: { type: "string" },
+            argument: { type: "string" },
+            how: { type: "string" },
+            recheck_after_seconds: { type: "number" },
+          },
+        },
       },
     },
   },
@@ -3775,6 +3800,14 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     const existingDedup = hasDurableStore(env) ? await storeGet(env, dedupKey, "text") : null;
     if (existingDedup || (kind === "question" && d1Binding(env))) {
       const dupRow = kind === "question" ? await lookupQuestionByDedup(env, dedupContentHash) : null;
+      // The issue number is the D1 row's when there is one, otherwise it is parsed back out of the KV
+      // value (the issue URL `storePut` wrote on the first submit). Either way it is what the
+      // conversion lookup is keyed on (#1528): the receipt rides on this same re-submit channel.
+      const dupIssue = dupRow && dupRow.issue_number
+        ? Number(dupRow.issue_number)
+        : issueNumberFromUrl(dupRow ? dupRow.issue_url : existingDedup);
+      const conversionFields = conversionReceiptFields(
+        dupIssue, dupIssue ? await lookupIntakeConversion(env, dupIssue) : []);
       if (dupRow) {
         if (dupRow.status === "answered" && dupRow.answer) {
           return {
@@ -3785,6 +3818,8 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
             answer: dupRow.answer,
             answer_url: dupRow.issue_url || existingDedup,
             issue_url: dupRow.issue_url || existingDedup,
+            dedup_key: dedupContentHash,
+            ...conversionFields,
             note: "This question was already answered — the maintainer's answer is returned above (PRD ⑤ pull-based delivery).",
           };
         }
@@ -3794,6 +3829,8 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
           pending: true,
           previous_issue: dupRow.issue_url || existingDedup,
           intake_id: `issue-${dupRow.issue_number}`,
+          dedup_key: dedupContentHash,
+          ...conversionFields,
           note: "This question is already open and pending a maintainer answer. Re-submit the same problem later to pull the answer once it is answered.",
         };
       }
@@ -3801,7 +3838,11 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         return {
           submitted: false,
           duplicate: true,
-          previous_issue: existingDedup,          error: "Duplicate intake — this problem was already submitted. See the linked issue.",
+          previous_issue: existingDedup,
+          intake_id: dupIssue ? `issue-${dupIssue}` : undefined,
+          dedup_key: dedupContentHash,
+          ...conversionFields,
+          error: "Duplicate intake — this problem was already submitted. See the linked issue.",
         };
       }
     }
@@ -3934,6 +3975,7 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         status: "pending_review",
         issue_url: data.html_url,
         dedup_hash: dedupHash,
+        dedup_key: dedupContentHash,
         routing: {
           kind,
           auto_detected: kindAutoDetected,
@@ -3946,6 +3988,14 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
           intake_id: `issue-${data.number}`,
           issue_url: data.html_url,
         } : undefined,
+        // The machine-readable half of the same pull contract: a caller that keeps only this can
+        // re-check without guessing when. Questions get answered sooner than a report becomes a lesson.
+        poll_hint: {
+          tool: "misakanet_submit_intake",
+          argument: "problem (same text, same kind/error)",
+          how: "Re-call with the SAME problem text; the duplicate response returns the maintainer's answer and, once your report becomes a lesson, its receipt.",
+          recheck_after_seconds: kind === "question" ? 21600 : 86400,
+        },
         receipt: `GitHub issue ${data.number} created. No account or email required.`,
       };
     } catch (e) {
@@ -4798,6 +4848,135 @@ async function lookupQuestionByDedup(env, dedupHash) {
     debugLog(env, 1, "lookupQuestionByDedup failed", String(e && e.message || e));
     return null;
   }
+}
+
+// ── Intake → lesson conversion receipts (#1528, the MCP half) ─────────────────────────
+//
+// `scripts/intake_receipt.py` is the SSOT for "does this lesson cite this intake?", judged by the
+// cases in `tests/intake_receipt_cases/` (seven real conversions/refusals from this repo's history).
+// The two matchers below are a faithful port of its `_citation_text`/`_cites`, not an approximation:
+// the SQL is only a *superset* prefilter and `citesIntake` decides.
+//
+// The exactness matters. A matcher that accepted a bare number anywhere in a citation field turned
+// three of four "done but not said" intakes into artifacts on 2026-09-22 — a forum path containing
+// 481940 "cited" #1940, a blog-archive year "cited" #2015, a date "cited" #2011 — and acting on
+// those would have told three reporters their work was done when it was not.
+const INTAKE_CITE_FIELDS = ["source", "provenance.issue", "provenance.related", "provenance.source"];
+
+/** Python `_flatten`: every scalar inside a citation field, joined by spaces. */
+function flattenCitation(value) {
+  if (value === null || value === undefined) return "";
+  if (Array.isArray(value)) return value.map(flattenCitation).join(" ");
+  if (typeof value === "object") return Object.values(value).map(flattenCitation).join(" ");
+  return String(value);
+}
+
+/** Python `_citation_text`: only these fields can name an intake — never the lesson body. */
+function citationText(fm) {
+  if (!fm || typeof fm !== "object") return "";
+  const parts = [];
+  for (const key of INTAKE_CITE_FIELDS) {
+    const dot = key.indexOf(".");
+    if (dot === -1) {
+      parts.push(flattenCitation(fm[key]));
+      continue;
+    }
+    // The dotted names need walking: `fm["provenance.issue"]` is a literal key lookup and always
+    // misses, so a lesson citing its intake only through `provenance.issue` would be invisible.
+    const node = fm[key.slice(0, dot)];
+    if (node && typeof node === "object" && !Array.isArray(node)) {
+      parts.push(flattenCitation(node[key.slice(dot + 1)]));
+    }
+  }
+  return parts.filter((part) => part).join(" ");
+}
+
+/** Python `_cites`: the three shapes the corpus uses. A bare number is deliberately not one. */
+function citesIntake(citations, issueNumber) {
+  const num = `0*${Number(issueNumber)}`;
+  return new RegExp(`#\\s*${num}(?!\\d)`).test(citations)
+    || new RegExp(`\\bintake[-_ ](?:issue[-_ ])?${num}(?!\\d)`, "i").test(citations)
+    || new RegExp(`github\\.com/Ikalus1988/MisakaNet/issues/${num}(?!\\d)`, "i").test(citations);
+}
+
+/**
+ * Every lesson that cites this intake — the JS mirror of `intake_receipt.lessons_citing`.
+ *
+ * `frontmatter LIKE ?1` is the superset prefilter (a row whose frontmatter mentions the number at
+ * all); `citesIntake` is the decision. Rows without `path`/`frontmatter` are ignored rather than
+ * guessed at. Best-effort: a D1 outage must not turn a duplicate report into an error.
+ */
+async function lookupIntakeConversion(env, issueNumber) {
+  const d1 = d1Binding(env);
+  if (!d1 || !issueNumber) return [];
+  try {
+    const res = await d1.prepare(
+      "SELECT id, path, title, status, frontmatter FROM lessons WHERE frontmatter LIKE ?1 LIMIT 20"
+    ).bind(`%${Number(issueNumber)}%`).all();
+    const rows = (res && res.results) || [];
+    const hits = [];
+    for (const row of rows) {
+      if (!row || !row.path || !row.frontmatter) continue;
+      let fm;
+      try {
+        fm = typeof row.frontmatter === "string" ? JSON.parse(row.frontmatter) : row.frontmatter;
+      } catch {
+        continue; // hand-edited/legacy frontmatter is not worth failing a receipt over
+      }
+      if (!fm || typeof fm !== "object" || Array.isArray(fm)) continue;
+      if (!citesIntake(citationText(fm), issueNumber)) continue;
+      const path = String(row.path);
+      const slug = path.split("/").pop().replace(/\.md$/i, "");
+      hits.push({
+        id: String(row.id || fm.id || slug),
+        path,
+        title: String(row.title || fm.title || "").trim(),
+        // `lessons_citing` reads status out of the frontmatter; the column is the same value and is
+        // only a fallback, so a row whose column is stale still reports what the lesson says.
+        status: String(fm.status || row.status || "").trim(),
+        evidence_level: String(fm.evidence_level || "").trim(),
+        url: `https://github.com/Ikalus1988/MisakaNet/blob/main/${path}`,
+        search: `python3 search_knowledge.py "${slug}" --lessons`,
+      });
+    }
+    return hits;
+  } catch (e) {
+    debugLog(env, 1, "lookupIntakeConversion failed", String(e && e.message || e));
+    return [];
+  }
+}
+
+/** The intake number out of a KV dedup value (the issue URL) or a bare integer. `0` when unknown. */
+function issueNumberFromUrl(value) {
+  const url = /\/issues\/(\d+)/.exec(String(value || ""));
+  if (url) return Number(url[1]);
+  const bare = /^(\d+)$/.exec(String(value || "").trim());
+  return bare ? Number(bare[1]) : 0;
+}
+
+/**
+ * The additive re-submit receipt fields for one intake: `{}` when no lesson cites it yet.
+ *
+ * The receipt travels on the channel the anonymous reporter already has (#1605) — re-submitting the
+ * same problem text — because they have no issue thread to be notified in. Nothing is emitted from
+ * suspicion: only `lessons_citing`'s verified citations produce `converted`.
+ */
+function conversionReceiptFields(issueNumber, hits) {
+  if (!issueNumber || !hits || !hits.length) return {};
+  const events = hits.slice(0, 5).map((hit) => ({
+    type: "converted",
+    intake: `#${issueNumber}`,
+    lesson_id: hit.id,
+    lesson_path: hit.path,
+    evidence_level: hit.evidence_level,
+    search: hit.search,
+  }));
+  const first = hits[0];
+  return {
+    converted: true,
+    receipt: `Your report #${issueNumber} became lesson ${first.id} (evidence_level ${first.evidence_level}).`,
+    events,
+  };
 }
 
 // All answered questions (FAQ corpus for search merge). Best-effort.
