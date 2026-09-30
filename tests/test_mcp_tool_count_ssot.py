@@ -65,15 +65,21 @@ def test_the_heading_count_in_agents_matches_its_own_table():
 
 
 def test_the_docs_page_derives_the_same_set_from_the_stdio_list():
-    """`docs/mcp.md` never lists the hosted names: it describes them as "the stdio set minus … plus
-    `misakanet_me_events`". Recomputing that derivation is the only way the third copy can be checked."""
+    """`docs/mcp.md` never lists the hosted names: it describes them as "the stdio set minus …".
+
+    Since 2026-09-30 (D4=A, #2000) the hosted set *is* the stdio set minus the three local-only
+    tools, so the row no longer needs a `**plus**` leg — the reader accepts either form, because the
+    derivation it can express is exactly what the surfaces must agree on."""
     stdio = set(NAME_RE.findall(_mcp_doc_row("**local stdio**")))
-    assert len(stdio) == 9, sorted(stdio)
+    # 10 since 2026-09-30: the local stdio server gained `misakanet_me_events` (proxied to the
+    # hosted service) so the skill's reuse-evidence step works on either surface (D4=A, #2000).
+    assert len(stdio) == 10, sorted(stdio)
 
     hosted = _mcp_doc_row("**hosted**")
     derivation = hosted.split("**minus**")[1]
-    minus, plus = derivation.split("**plus**")[0], derivation.split("**plus**")[1]
-    derived = (stdio - set(NAME_RE.findall(minus))) | set(NAME_RE.findall(plus))
+    derived = stdio - set(NAME_RE.findall(derivation.split("**plus**")[0]))
+    if "**plus**" in derivation:
+        derived |= set(NAME_RE.findall(derivation.split("**plus**")[1]))
 
     assert derived == documented_hosted_tools(), {
         "docs/mcp.md derivation only": sorted(derived - documented_hosted_tools()),

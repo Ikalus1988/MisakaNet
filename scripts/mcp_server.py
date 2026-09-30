@@ -36,6 +36,7 @@ from misakanet.server._config import (  # noqa: E402
 )
 from misakanet.server.handlers import (  # noqa: E402
     handle_get_lesson,
+    handle_me_events,
     handle_memory_context,
     handle_preflight,
     handle_register,
@@ -88,6 +89,7 @@ __all__ = [
     "handle_usage_status",
     "handle_register",
     "handle_memory_context",
+    "handle_me_events",
     "handle_resources_list",
     "handle_resources_read",
     "handle_prompts_get",
