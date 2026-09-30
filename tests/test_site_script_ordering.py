@@ -34,7 +34,10 @@ DECL = re.compile(r"^(?:const|let)\s+([A-Za-z_$][\w$]*)")
 FUNC = re.compile(r"^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(")
 TOP_CALL = re.compile(r"^(?:await\s+)?([A-Za-z_$][\w$]*)\s*\(")
 CALL_NAME = re.compile(r"\b([A-Za-z_$][\w$]*)\s*\(")
-INLINE_SCRIPT = re.compile(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", re.S)
+# `re.I`: HTML tags are case-insensitive, so `<SCRIPT>` is the same block as `<script>`. Today's files
+# happen to be lowercase, which is exactly why the pattern is pinned here rather than left to habit
+# (code scanning read it correctly: `py/bad-tag-filter`, alert #293).
+INLINE_SCRIPT = re.compile(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", re.S | re.I)
 
 
 def site_scripts() -> dict[str, str]:
