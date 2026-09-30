@@ -5,39 +5,45 @@ MisakaNet's DSH plugin declares which `@deepseek-ai/dsh` releases it is tested a
 which host build, by what method — and what was not. A declaration without the measurement behind it is
 the kind of claim this repository removes rather than adds.
 
-Declared today: **`0.2.0-rc.2` — compatible**.
+Declared today: **`0.1.5-rc.1`**, **`0.1.7-rc.2`** and **`0.2.0-rc.2`** — compatible.
 
 ## Verified
 
 | dsh release | Declared | Disposable-profile install → uninstall | Live tool call |
 | --- | --- | --- | --- |
-| `0.2.0-rc.2` | compatible | ✅ install OK → `dsh.profile.bundles` gains `misakanet` → remove OK → bundles back to the two official ones (verified 2026-09-30) | covered by CI, not here (see below) |
+| `0.1.5-rc.1` | compatible | ✅ install OK → `dsh.profile.bundles` gains `misakanet` → remove OK → bundles back to the two official ones (verified 2026-09-30) | covered by CI, not here (see below) |
+| `0.1.7-rc.2` | compatible | ✅ install OK → bundles gain `misakanet` → remove OK → back to the two official ones (verified 2026-09-30) | covered by CI, not here |
+| `0.2.0-rc.2` | compatible | ✅ install OK → bundles gain `misakanet` → remove OK → back to the two official ones (verified 2026-09-30) | covered by CI, not here |
 
-The install row is a real profile install, not a manifest read:
+The install rows are real profile installs, not manifest reads — one disposable `DSH_HOME` per line, each
+run through `add` **and** `remove`:
 
 ```sh
-export DSH_HOME=/tmp/dsh-probe        # the real ~/.dsh is never touched
-dsh plugin --profile web add misakanet
-python3 -c "import json;print(json.load(open('$DSH_HOME/profiles/web/package.json'))['dsh']['profile']['bundles'])"
-# ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'misakanet']
-dsh plugin --profile web remove misakanet
-# bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app']
+export npm_config_cache=/tmp/npm-cache-dsh
+for V in 0.1.5-rc.1 0.1.7-rc.2 0.2.0-rc.2; do
+  export DSH_HOME=/tmp/dsh-home-$V        # the real ~/.dsh is never touched
+  npx -y "@deepseek-ai/dsh@$V" plugin --profile web add misakanet
+  python3 -c "import json;print(json.load(open('$DSH_HOME/profiles/web/package.json'))['dsh']['profile']['bundles'])"
+  # ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'misakanet']
+  npx -y "@deepseek-ai/dsh@$V" plugin --profile web remove misakanet
+  # back to ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'], dependencies: none
+done
 ```
 
-`dsh --version` on the machine that produced this row is `0.2.0-rc.2`. The install resolves the published
-`misakanet` from npm, so the row is evidence about the **bundle** (which is what compatibility is about),
-not about the working tree.
+The install resolves the published `misakanet` from npm, so the row is evidence about the **bundle**
+(which is what compatibility is about), not about the working tree. `dsh --version` on the machine that
+produced the `0.2.0-rc.2` row is `0.2.0-rc.2`; the two `0.1.x` rows were produced by
+`npx @deepseek-ai/dsh@<version>`, which is the same binary the host ships.
 
 What is deliberately **not** claimed:
 
-* **A live tool call.** This sandbox cannot reach `https://misakanet.org/mcp` (`fetch failed`), so the row
-  proves the profile composes and the row is mounted; it does not prove a `misakanet_search` round trip.
-  That is what `.github/workflows/install-smoke.yml` probes daily from CI
+* **A live tool call.** This sandbox cannot reach `https://misakanet.org/mcp` (`fetch failed`), so the
+  rows prove the profile composes and the row is mounted; they do not prove a `misakanet_search` round
+  trip. That is what `.github/workflows/install-smoke.yml` probes daily from CI
   (`scripts/install_smoke.py npm-form`, `git-stdio`, `setup-installer`), against the same endpoint the
   bundle declares.
-* **The `0.1.x` lines.** They are inside the declared optional-peer range, but no `0.1.x` host was
-  installed here, so they are not declared compatible. Add a row to both this table and
-  `dsh.compatibility.dshReleases` only after the same install → remove run on that release.
+* **Any other release.** Add a row to both this table and `dsh.compatibility.dshReleases` only after the
+  same add → remove run on that release; the test below keeps the two lists identical.
 
 ## The optional peer, and why its range is written the long way
 
@@ -54,23 +60,22 @@ Measured 2026-09-30, before this change:
 | the client that host ships | `@deepseek-ai/dsh-mcp-client 0.2.0-rc.2` |
 | MisakaNet's declared peer range | `>=0.1.0-rc.8 <0.2.0` |
 
-The host line this package was just installed on sat **outside its own declared range**. The first
-attempt at a fix widened the bound to `>=0.1.0-rc.8 <0.3.0`, which *still* excludes it — npm only admits
-a pre-release version into a comparator set that names a pre-release with the **same
-major.minor.patch**, so no upper bound can rescue `0.2.0-rc.2`; the 0.2.0 line has to be named:
+The host line this package was installed on sat **outside its own declared range**. The first attempt at a
+fix widened the bound to `>=0.1.0-rc.8 <0.3.0`, which *still* excludes it — npm only admits a pre-release
+version into a comparator set that names a pre-release with the **same major.minor.patch**, so no upper
+bound can rescue a pre-release; each line has to be named. That is why the declaration is a disjunction,
+one clause per verified line:
 
 ```
->=0.1.0-rc.8 <0.2.0 || >=0.2.0-rc.1 <0.3.0
+>=0.1.0-rc.8 <0.2.0 || >=0.1.5-rc.1 <0.2.0 || >=0.1.7-rc.1 <0.2.0 || >=0.2.0-rc.1 <0.3.0
 ```
 
-That is the declaration today. The 9×3 table of npm's own answers is pinned in
-`tests/test_dsh_plugin_surface.py::test_the_prerelease_rule_matches_npm_semver`, and
-`test_every_declared_release_is_inside_the_optional_peer_range` fails for both earlier spellings — the
-contradiction cannot come back silently.
-
-One consequence worth knowing before adding a host line: `0.1.5-rc.1` is admitted by **neither** the old
-range nor the new one, because it is a pre-release the range does not name. A directory may list a plugin
-as compatible with that line; this package does not claim it.
+The last clause adds the 0.2.0 line (stable `0.2.x` and its pre-releases); the middle two exist purely
+because `0.1.5-rc.1` and `0.1.7-rc.2` are pre-releases npm will not admit any other way. The 9×3 table of
+npm's own answers is pinned in `tests/test_dsh_plugin_surface.py::test_the_prerelease_rule_matches_npm_semver`,
+and `test_every_declared_release_is_inside_the_optional_peer_range` fails for every spelling tried before
+this one (the original single clause, and the `<0.3.0` widening) — the contradiction cannot come back
+silently, and a new declared line that is not named here fails the test rather than shipping.
 
 ## How to re-verify after a host bump
 
