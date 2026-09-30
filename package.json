@@ -10,12 +10,22 @@
     "index.js",
     "index.d.ts",
     "icon.svg",
+    "lib/client.js",
     "cordis.patch.yml",
     ".codex-plugin/**"
   ],
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-chat",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-client-ui-tool"
+      ]
     },
     "compatibility": {
       "dshReleases": {
@@ -71,6 +81,11 @@
     "sharp": "0.35.4"
   },
   "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
   "types": "index.d.ts",
   "type": "module"
 }
