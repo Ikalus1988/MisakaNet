@@ -609,6 +609,9 @@ def test_the_value_check_notices_a_stale_line(tmp_path):
 JSON_PINNED_VERSION_FILES = {
     "package.json": "$.version",
     ".codex-plugin/plugin.json": "$.version",
+    # The Claude Code plugin manifest joined 2026-09-30 with the same shape: release-please's json updater
+    # reaches `$.version`, so the number has one writer instead of two.
+    ".claude-plugin/plugin.json": "$.version",
 }
 
 
