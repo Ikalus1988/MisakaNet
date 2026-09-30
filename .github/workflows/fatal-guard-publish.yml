@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "fatal-guard-v*"
+  workflow_dispatch:      # allow a manual publish of the current version
 
 #  * **Authentication, best first** (2026-09-30, the migration `misakanet-publish.yml` made): this job asks
 #    for `id-token: write`, so npm CLI (>= 11.5.1 on Node >= 22.14) can exchange a GitHub OIDC token for a
@@ -43,10 +44,37 @@ jobs:
           echo "dependencies: $DEPS"
           [ "$DEPS" = "0" ] || { echo "FAIL: expected 0 dependencies"; exit 1; }
 
+      - name: Read the version to publish
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
       - name: Run tests
         run: npm test
 
+      # Idempotent by design (2026-09-30, matching `misakanet-publish.yml`): a re-run after a successful
+      # publish used to fail with a bare npm conflict, so "run it again to be sure" was impossible and a
+      # retried event looked like a broken release. A version already on the registry is a *done* state.
+      - name: Skip when npm already has this version
+        id: npm_state
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          PKG: "@misaka-net/fatal-guard"
+        run: |
+          set -euo pipefail
+          ALREADY=false
+          FOUND=$(npm view "$PKG@$VERSION" version 2>/tmp/npm-view.err || true)
+          if [ "$(printf '%s' "$FOUND" | tr -d '[:space:]')" = "$VERSION" ]; then
+            ALREADY=true
+            echo "$PKG@$VERSION is already on npm - nothing to publish."
+            echo "### $PKG@$VERSION is already on npm" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "npm does not report $PKG@$VERSION as published - publishing it"
+            if [ -s /tmp/npm-view.err ]; then sed 's/^/    npm view: /' /tmp/npm-view.err | head -3; fi
+          fi
+          echo "already=$ALREADY" >> "$GITHUB_OUTPUT"
+
       - name: Publish to npm
+        if: steps.npm_state.outputs.already != 'true'
         run: |
           # Trusted publishing first; the token is the transitional fallback. With neither, say so by name
           # instead of letting npm emit a bare 401 (2026-09-30).
