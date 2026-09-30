@@ -2454,6 +2454,19 @@ function getClassificationClass(cls) {
  */
 let _allLessons = null;
 
+// Declared **here**, above `loadLessons()`'s top-level call (2026-09-30). They used to sit next to
+// `getLessonsUrl()` ~450 lines below, which made the first `loadLessons()` throw
+// `ReferenceError: Cannot access 'LESSONS_LITE_URL' before initialization` — a `const` in its temporal dead
+// zone. The failure was silent in the worst way: the promise rejected, `_allLessons` stayed null, and every
+// counter on the stats card rendered its placeholder "—" (the reported symptom), including the lesson count.
+// `tests/test_docs_data_copy.py` now pins the ordering, and the projection carries everything the page reads.
+const LESSONS_LITE_URL = "data/lessons-lite.json";
+const LESSONS_FULL_URL = "data/lessons.json";
+
+function getLessonsUrl() {
+  return LESSONS_LITE_URL;
+}
+
 /**
  * 安全异步加载并校验 Lessons 数据（带错误边界）
  * @returns {Promise<Lesson[]>}
@@ -2941,12 +2954,6 @@ function getCounterUrl() {
  * （149 KB raw / 60 KB gzip，小 7 倍），由写语料的同一环生成（不会漂移，见
  * `scripts/check_docs_data_copy.py`）。整库仍作兜底：投影缺失或损坏时退回它。
  */
-const LESSONS_LITE_URL = "data/lessons-lite.json";
-const LESSONS_FULL_URL = "data/lessons.json";
-
-function getLessonsUrl() {
-  return LESSONS_LITE_URL;
-}
 
 /** 一次主源、一次兜底（**不是** per-item 扇出：`tests/test_site_request_fanout.py` 有明确规则）。
  *

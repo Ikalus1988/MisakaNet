@@ -248,12 +248,19 @@ def mirror_published_index(source: Path | None = None) -> bool:
     return True
 
 
-# The fields the site's two local search paths read, measured 2026-09-30 from their own scoring code:
-# both use title/summary/domain/tags and nothing else. `preview` is deliberately **not** here even though
-# the search page's preview panel used to read it from the corpus: it is ~2.1 KB of body text per lesson
-# (median 2088 chars), i.e. 1.09 MB of the corpus's 1.32 MB — shipping it to run a search over four short
-# fields was the whole cost. That panel now fetches the one lesson it needs, on demand.
-LITE_FIELDS = ("id", "title", "summary", "domain", "tags")
+# The fields the site's pages read from the corpus, derived from their own code rather than guessed —
+# `tests/test_docs_data_copy.py::test_the_projection_carries_every_field_the_pages_read` re-derives this set
+# from `docs/index.html` and `docs/search/index.html` and fails when a page starts reading a field that is
+# not here. That rule exists because the first version of this projection was built from the *search*
+# scoring code alone and silently broke the homepage's stats card: `evidence_level` was missing, so the
+# "evidence-backed lessons" counter computed 0 (it should be E3+E4 = 26), and a `const` ordering bug in the
+# same change meant the page loaded no corpus at all (both counters stayed "—").
+#
+# `preview` is deliberately **not** here even though the search page's preview panel used to read it from the
+# corpus: it is ~2.1 KB of body text per lesson (median 2088 chars), i.e. 1.09 MB of the corpus's 1.32 MB —
+# shipping it to run a search over a few short fields was the whole cost. That panel fetches the one lesson
+# it needs, on demand.
+LITE_FIELDS = ("id", "title", "summary", "domain", "tags", "evidence_level", "url")
 
 
 def build_lite_projection(rows: list) -> list:
