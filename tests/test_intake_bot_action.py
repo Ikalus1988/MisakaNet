@@ -211,3 +211,49 @@ def test_the_how_to_doc_names_the_reference_external_users_can_actually_use():
         "this doc is the instruction external maintainers follow; it must not name the path that "
         "no longer exists"
     )
+
+# ── the README badge must point at the listing *this* action gets ───────────────────────────────────
+# GitHub derives the Marketplace slug from the action's `name:` — "MisakaNet Intake Bot" becomes
+# `/marketplace/actions/misakanet-intake-bot` — so renaming the action silently 404s every badge and every
+# prose link that still used the old slug. The badge itself is a *link*, not a number, so it needs no
+# writer; what it needs is this rule, which is the same "a documented pattern must still hold" property the
+# count/badge registries enforce elsewhere.
+
+MARKETPLACE = "https://github.com/marketplace/actions/"
+
+
+def _marketplace_slug(name: str) -> str:
+    import re
+
+    return re.sub(r"[^a-z0-9]+", "-", str(name).lower()).strip("-")
+
+
+def _marketplace_links(text: str) -> list[str]:
+    import re
+
+    return re.findall(r"https://github\.com/marketplace/actions/[A-Za-z0-9._-]+", text)
+
+
+def test_every_readme_links_the_listing_this_action_gets():
+    """All three READMEs claim the listing, so all three are checked — and none may keep a stale slug."""
+    expected = MARKETPLACE + _marketplace_slug(_action()["name"])
+    readmes = sorted(REPO.glob("README*.md"))
+    assert len(readmes) >= 3, f"expected the localised READMEs to exist, found {[p.name for p in readmes]}"
+    for path in readmes:
+        found = _marketplace_links(path.read_text(encoding="utf-8"))
+        assert expected in found, (
+            f"{path.name} must link the Marketplace listing derived from action.yml's name ({expected}); "
+            f"found: {found or 'no Marketplace link'}")
+        stale = [link for link in found if link != expected]
+        assert not stale, (
+            f"{path.name} links a stale Marketplace slug {stale}; a renamed action changes the listing URL, "
+            f"and the badge would 404 without anything else noticing")
+
+
+def test_the_marketplace_slug_rule_notices_a_renamed_action():
+    """Guard: the rule reads the real files, so its failure mode needs a fixture."""
+    assert _marketplace_slug("MisakaNet Intake Bot") == "misakanet-intake-bot", "the derivation changed"
+    assert _marketplace_slug("Some Renamed Action") != "misakanet-intake-bot"
+    assert _marketplace_links("see https://github.com/marketplace/actions/other-action for details") == [
+        "https://github.com/marketplace/actions/other-action"
+    ]

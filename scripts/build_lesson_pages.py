@@ -406,14 +406,20 @@ def build_id_alias_page(lesson_id: str, slug: str) -> str:
     deliberately absent from the sitemap.
     """
     target = f"/lessons/{slug}/"
-    # The canonical is **site-relative** on purpose (2026-09-29). An absolute one here made the line look
-    # like a hardcoded endpoint to GitHub's secret-scanning heuristic: two alias pages were flagged
-    # (`HARDCODED_SECRET`, plugin-scanner 2.2.0) purely because their *titles* slugify to secret-flavoured
-    # words — "Idempotent task claim **keys** for snipers", "Disk full from agent tmp dirs — **GC pattern**".
-    # No credential exists: the lesson sources carry none and `scripts/check_published_secrets.py` is green
-    # over all 739 published prose files. `rel="canonical"` accepts a relative URL (resolved against the
-    # page), so the origin was never needed — dropping it removes the absolute-URL shape from a generated
-    # file whose only other content is a redirect, which is the shape that got matched.
+    # The canonical is **site-relative** on purpose (2026-09-29). `rel="canonical"` resolves a relative URL
+    # against the page, so the origin is not needed here, and a generated file whose only content is a
+    # redirect should not carry one.
+    #
+    # **Correction (2026-09-30).** The original comment claimed the absolute URL was what tripped GitHub's
+    # secret-scanning heuristic on two alias pages (`HARDCODED_SECRET`, plugin-scanner 2.2.0). That was
+    # wrong: after this file switched to a relative canonical the same two pages were flagged again at the
+    # same line, so the match is the **slug text** — "Idempotent task claim **keys** for snipers", "Disk full
+    # from agent tmp dirs — **GC pattern**" — which is a public URL built from a lesson title, not a
+    # credential. `scripts/check_published_secrets.py` is green over all 739 published prose files and
+    # neither lesson source contains credential-shaped material, so those alerts are false positives and are
+    # disposed of as such. Removing the HTML entirely (one `docs/_redirects` table instead of 73 redirect
+    # pages) is the structural alternative, tracked separately because it needs the platform's redirect
+    # support verified on a probe path *before* the alias pages are deleted.
     return (
         '<!doctype html>\n<html lang="en">\n<head>\n'
         '<meta charset="utf-8">\n'

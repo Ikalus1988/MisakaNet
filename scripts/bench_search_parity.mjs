@@ -18,6 +18,11 @@
 // Read-only: it fetches public endpoints and reads two files. No writes, no tokens.
 
 import { readFileSync } from 'node:fs';
+// The page's own scorer, extracted at build time (`python3 scripts/build_page_scorer.py`) and gated against
+// `docs/search/index.html` by tests/test_page_scorer_generated.py. It is extracted rather than constructed and
+// executed at run time, because that is dynamic code execution (code scanning alert #290): this keeps the
+// property — the bench measures the page's scorer — without the execution.
+import { makePageSearch } from './page_scorer.mjs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -40,25 +45,6 @@ function arg(name, fallback = null) {
   return i >= 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith('--') ? process.argv[i + 1] : fallback;
 }
 const flag = (name) => process.argv.includes(`--${name}`);
-
-/** The page's scorer, lifted out of the HTML and evaluated — deliberately not reimplemented. */
-function loadPageScorer() {
-  const html = readFileSync(join(REPO, 'docs', 'search', 'index.html'), 'utf8');
-  const pick = (name) => {
-    const start = html.indexOf(`function ${name}(`);
-    if (start < 0) throw new Error(`docs/search/index.html no longer defines ${name}() — this bench must be updated with it`);
-    let depth = 0, i = html.indexOf('{', start);
-    for (let j = i; j < html.length; j++) {
-      if (html[j] === '{') depth++;
-      else if (html[j] === '}') { depth--; if (depth === 0) return html.slice(start, j + 1); }
-    }
-    throw new Error(`could not read ${name}() to its closing brace`);
-  };
-  const source = `${pick('isSearchable')}\n${pick('search')}\n`;
-  // `_lessons` is the page's module-level corpus; bind it and hand `search` back.
-  const factory = new Function('_lessons', `${source}; return search;`);
-  return factory;
-}
 
 const ids = (rows) => (rows || []).map(r => r.id).filter(Boolean);
 
@@ -123,8 +109,7 @@ async function main() {
     } catch { /* try the next one */ }
   }
   if (!lessons) throw new Error(`no browser corpus found (tried ${sources.join(', ')})`);
-  const makeScorer = loadPageScorer();
-  const localSearch = makeScorer(lessons);
+  const localSearch = makePageSearch(lessons).search;
 
   const explicit = process.argv.flatMap((a, i) => (a === '--query' && process.argv[i + 1] ? [process.argv[i + 1]] : []));
   const extra = explicit.length ? explicit : await liveQueries(Number(arg('live-queries', 0)) || 0);

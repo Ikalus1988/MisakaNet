@@ -50,7 +50,10 @@ test('the capability surface comes from the worker itself, not from a copy', () 
 test('an unreadable source degrades to null with its source named, instead of failing the endpoint', () => {
   const p = buildVersionsPayload({ serverVersion: '9.9.9' });
   assert.equal(p.versions.npm.version, null);
-  assert.match(p.versions.npm.source, /registry\.npmjs\.org/);
+  // Anchored, and now an equality: an unanchored URL pattern also matches
+  // `evil-registry.npmjs.org.attacker.example`, which is what CodeQL's js/regex/missing-regexp-anchor
+  // reported on this line (alert #291) — and the weaker assertion could not catch a wrong source.
+  assert.equal(p.versions.npm.source, 'registry.npmjs.org/misakanet/latest');
   assert.ok(p.versions.npm.note, 'a null must say why it is null');
   assert.equal(p.versions.plugin_manifest.version, null);
   assert.equal(p.capabilities.declared, null);
