@@ -160,11 +160,12 @@ Supported agents — and what "supported" means per group (evidence levels in
 | MCP by hand | Cursor · Gemini CLI · Windsurf · OpenCode · Copilot · DeepSeek Harness | the endpoint is standard MCP over HTTP; add the URL in that client's own config. Cursor also has a rules-file mode |
 | Anything else that speaks MCP over HTTP | — | the endpoint is public, reads are anonymous and unmetered |
 
-Pick one channel — they are independent, and none of them needs an account:
+Pick one channel — they are independent, and none of them needs an account (the Claude Code row needs a Claude Code version with plugin support):
 
 | I want… | Command | What it touches |
 |---|---|---|
 | my assistant to search the lessons | `npx @misaka-net/misakanet-setup` | writes the MCP endpoint into each assistant's own config; optionally a rules block and a hook |
+| my **Claude Code** assistant to search the lessons, as a plugin | `/plugin marketplace add Ikalus1988/MisakaNet` then `/plugin install misakanet@misakanet` | adds the hosted MCP tools to Claude Code from this repository — no installer, no local process |
 | to call the endpoint myself | the `curl` below | nothing to install |
 | the library in my own code | `pip install misakanet-core` | nothing |
 
@@ -174,6 +175,7 @@ Pick one channel — they are independent, and none of them needs an account:
 |---|---|---|
 | `@misaka-net/misakanet-setup` (npm) | the **installer** — has `bin`, no plugin entry | teaching your assistant to search |
 | `misakanet` (npm) | the **DSH / Codex plugin** (`index.js`, `SKILL.md`) | `dsh plugin --profile web add misakanet` |
+| this repository (git) | also a **Claude Code plugin marketplace** (`.claude-plugin/`) | `/plugin marketplace add Ikalus1988/MisakaNet` — the Claude channel is repo-based on purpose: a marketplace resolves the plugin from the repository, so the npm bundle stays the DSH/Codex artifact |
 | `misakanet` (PyPI) | ships the stdio **MCP server** | `python3 -m misakanet.server` |
 | `misakanet-core` (PyPI) | the **library** (stdlib-only BM25 — Python ≥ 3.10 required, no third-party packages) | `from misakanet.search import search_lessons` |
 
