@@ -67,28 +67,33 @@
 
 ## 5. 版本通道（audit T2.1 统一后的策略）
 
-MisakaNet 有**三条刻意分开、节奏独立的版本通道**（不要试图合并成单个数）：
+MisakaNet 有**三条版本通道**（registry / repo release / pypi）。registry 与 pypi 各有自己的节奏；
+**npm bundle 从 2026-09-30 起不再是独立节奏**，它已经是 repo release 线的一部分（owner 决策 D1 = A，
+消费者报的“一页两个版本号”见 intake #2486）——下表仍单列一行，只因为它的发布面（npm）不同。不要试图把
+剩下的通道合并成单个数：registry 跟进 MCP registry、pypi 跟进发布实况，它们的时间点本来就不同。
 
 | 通道 | 载体 | 现状 | 何时 bump |
 <!-- 版本数字**不写在这里**（intake #2486）：这张表曾经写着 2.29.0 / 2.23.1，而 main 早已到 2.4x——“两处信息来自不同维护动作”正是这样产生的。每一行指向它的载体，那里才是唯一真相。 -->
 |---|---|---|---|
 | **registry 线** | `server.json`/`glama.json` `version` + API.md/JOIN.md 声明 | 见 `server.json` | 每次发版 tag 后“对齐”（随 handoff 流程） |
 | **repo release 线** | `pyproject.toml` + `.release-please-manifest.json`（release-please python 型随发版 bump）+ README `misakanet@` 声明 | 见 `pyproject.toml` | 每次发版（release-please/tag） |
-| **npm bundle 线** | `package.json`（发布实况见 `npm view misakanet version` 或 npm 徽章） | 见 `package.json` | 仅 DSH skill bundle 实际发布 npm 时（允许滞后于 release 线） |
+| **npm bundle 线** | `package.json` + `.codex-plugin/plugin.json`（发布实况见 `npm view misakanet version` 或 npm 徽章） | 见 `package.json` | **每次发版**：自 2026-09-30（owner 决策 D1 = A）这两个文件都在 release-please 的 `extra-files` 里（json updater），随发版 PR 一起走，不再有独立节奏 |
 | **pypi 通道** | server.json pypi entry == pyproject；发布实况见 PyPI（自 tag push 自动发布；通道修复见 §9） | 见 `pyproject.toml` | 发布即同步（release-pypi workflow_dispatch） |
 
 统一方式 = **单一工具 + 不变量门禁**，不再手改多处：
 
 ```bash
-python3 scripts/align_versions.py --check                 # 门禁：R1-R5 不变量
+python3 scripts/align_versions.py --check                 # 门禁：R1-R7 不变量 + 两条 advisory
 python3 scripts/align_versions.py --registry 2.28.0       # 升 registry 线（server/glama/API/JOIN 一次完成）
-python3 scripts/align_versions.py --source 2.24.0         # 升 source 线（pyproject/package/manifest/README）
+python3 scripts/align_versions.py --source 2.24.0         # 事故路径：手改 source 线（**不再是发版路径**）
 make check-versions                                       # 等价的 Makefile 入口（建议 CI 用）
 ```
 
-不变量（R1-R5，与 tests/test_version_consistency.py 一致）：registry 对等；
-source 线 package==manifest；pypi 源线 pyproject==server pypi entry；pyproject 允许滞后于 manifest；
-文档声明不得超过当前上限。PyPI 实况可用 `scripts/align_versions.py --check` 输出对照 pypi.org 人工核对。
+不变量（与 tests/test_version_consistency.py 一致）：registry 对等；npm bundle 线**等于** manifest
+（2026-09-30 起 release-please 同时拥有两者，`JSON_PINNED_VERSION_FILES` 把“声明了没有”和“值对不对”
+一起锁住）；pypi 源线 pyproject==server pypi entry；pyproject 允许滞后于 manifest；文档声明不得超过当前上限。
+npm 线的**下界刻意不存在**（`npm_bundle_floor`）：回滚与手误从版本号上无法区分，所以 `--check` 只提示、
+不失败（2026-09-29 的 owner 决策）。PyPI 实况可用 `scripts/align_versions.py --check` 输出对照 pypi.org 人工核对。
 
 ## 6. Dependabot 排查记录（2026-09-05）
 
@@ -166,7 +171,9 @@ MisakaNet 现已声明 `dsh.bundle`（`package.json` + `cordis.patch.yml`），�
    `--source`）。
 5. **数据/远端**：跑 `update-lessons.yml`（workflow_dispatch）刷新索引；`sync-d1.yml`
    同步 D1（canonical 359+）。
-6. **发布渠道**：npm bundle（若需出新版本号则 bump package.json 后 publish）、PyPI（如恢复，
+6. **发布渠道**：npm bundle（**不用手 bump**：`package.json`/`.codex-plugin/plugin.json` 自 2026-09-30 由
+   release-please 随发版 PR 写入，`misakanet-publish.yml` 由 release 事件自动发布；回滚 runbook 见
+   `docs/release-checklist.md`）、PyPI（如恢复，
    PyPI 已恢复发布（2.29.0，见 §9 附注））、**MCP registry**（见 §9）。
 7. **收尾**：跑一遍 `make check-versions` 确认对齐无漂移；把 CHANGELOG 顶部数字与
    docs/maintenance 数据行同步。

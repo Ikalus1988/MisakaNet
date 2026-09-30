@@ -6,8 +6,16 @@ on:
       - "misakanet-setup-v*"
   workflow_dispatch:      # allow a manual publish of the current version
 
+#  * **Authentication, best first** (2026-09-30, the migration `misakanet-publish.yml` made): this job asks
+#    for `id-token: write`, so npm CLI (>= 11.5.1 on Node >= 22.14) can exchange a GitHub OIDC token for a
+#    short-lived publish credential — nothing long-lived to rotate. One-time entry on npmjs.com (package ->
+#    Settings -> Trusted Publisher -> GitHub Actions): user `Ikalus1988`, repository `MisakaNet`, **workflow
+#    filename `misakanet-setup-publish.yml`**, environment `release` (this job declares it; leaving the field empty also works), and
+#    **allow direct `npm publish`** — the staged-only default would reject this workflow's command. Until the
+#    entry exists the token keeps working: npm prefers OIDC when it is available, then falls back.
 permissions:
   contents: read
+  id-token: write      # npm trusted publishing (OIDC)
 
 jobs:
   publish:
@@ -27,7 +35,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
         with:
-          node-version: "20"
+          node-version: "24"   # trusted publishing: npm CLI >= 11.5.1 needs Node >= 22.14
           registry-url: "https://registry.npmjs.org"
 
       - name: Verify zero dependencies
@@ -102,11 +110,20 @@ jobs:
       # the token itself.
       - name: Check npm identity and publish rights
         run: |
-          if [ -z "${NODE_AUTH_TOKEN}" ]; then
-            echo "::error::NPM_TOKEN is empty - set it to a token that can publish this package."
+          # Trusted publishing first, token second (2026-09-30). Asking for `id-token: write` means GitHub
+          # exposes `ACTIONS_ID_TOKEN_REQUEST_URL`, and npm CLI (>= 11.5.1) exchanges that OIDC token for a
+          # short-lived credential **before** falling back to a token — so an empty `NPM_TOKEN` is only fatal
+          # when there is no OIDC either. `npm whoami` also runs on the token path only: under OIDC there is
+          # no long-lived identity to name.
+          if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+            echo "OIDC available: npm will authenticate with trusted publishing (no long-lived token)."
+            echo "node $(node --version) / npm $(npm --version)"
+          elif [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::Neither trusted publishing (no OIDC token request URL) nor NPM_TOKEN is available."
+            echo "::error::Configure a trusted publisher for workflow misakanet-setup-publish.yml on npmjs.com,"
+            echo "::error::or set the transitional NPM_TOKEN secret."
             exit 1
-          fi
-          if ! ACCOUNT=$(npm whoami 2>/tmp/whoami.err); then
+          elif ! ACCOUNT=$(npm whoami 2>/tmp/whoami.err); then
             echo "::error::npm rejected NPM_TOKEN (npm whoami failed)."
             sed 's/^/    /' /tmp/whoami.err | head -5
             echo "::error::A rejected token is usually expired (npm tokens default to 90 days;"
@@ -114,10 +131,11 @@ jobs:
             echo "::error::Fix: create a new automation token on npmjs.com and update the"
             echo "::error::NPM_TOKEN repository secret, then re-run this workflow."
             exit 1
+          else
+            echo "account: $ACCOUNT (token fallback)"
+            echo "packages this token can reach:"
+            npm access list packages --json 2>/dev/null || echo "  (npm access not permitted by this token)"
           fi
-          echo "account: $ACCOUNT"
-          echo "packages this token can reach:"
-          npm access list packages --json 2>/dev/null || echo "  (npm access not permitted by this token)"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

@@ -19,16 +19,25 @@ Note: `.release-please-manifest.json` (`.` key) records the last
 release-please release; it must never be *older* than the declared PyPI
 version on main.
 
-Two tiers, and the difference is deliberate:
+Three tiers, and the difference is deliberate:
 
-* **Files release-please can own** (`PINNED_VERSION_FILES`) must be *exactly*
-  the manifest version — the annotation is the writer, so equality is a
-  relation between two things the release bot maintains, and a mismatch means
-  a release step missed one or a stale file was written over a newer one.
+* **Files release-please owns through the generic (annotation) updater**
+  (`PINNED_VERSION_FILES`) must be *exactly* the manifest version — the
+  annotation is the writer, so equality is a relation between two things the
+  release bot maintains, and a mismatch means a release step missed one or a
+  stale file was written over a newer one.
+* **Files release-please owns through the json updater**
+  (`JSON_PINNED_VERSION_FILES`, added 2026-09-30 with owner decision D1 = A)
+  carry the same invariant by a different mechanism: a JSON file cannot hold
+  `x-release-please-version`, so release-please reaches the field through
+  `{"type": "json", "jsonpath": ...}`. `package.json` and
+  `.codex-plugin/plugin.json` joined the release line here — before that they
+  moved on their own and sat at 2.38.0 while the manifest said 2.39.0, which a
+  reader reported as "one page, two version numbers" (intake #2486).
 * **Prose that advertises a version it cannot own** may not hand-write one at
   all (`test_prose_docs_do_not_hand_write_a_released_version`): README.md and
-  README.zh-CN.md (the npm line moves on its own) and JOIN.md (its Version Info
-  block is a list of live pointers) take the number from a live source
+  README.zh-CN.md (the npm badge is the live source) and JOIN.md (its Version
+  Info block is a list of live pointers) take the number from a live source
   instead. The upper bound below still applies to everything else, which is
   how `docs/index.html`'s badge and API.md's header are read as well.
 """
@@ -172,8 +181,15 @@ def test_manifest_not_older_than_pypi_line():
 
 
 def test_npm_bundle_line_never_ahead_of_manifest():
-    """package.json (npm bundle line) may lag the repo release line but must
-    never claim a version newer than the release-please manifest (R2)."""
+    """package.json may lag the repo release line but must never claim a version newer than the
+    release-please manifest (R2).
+
+    Since 2026-09-30 release-please owns both sides, so the relation that matters is *equality*, and it
+    is asserted (together with the writer) in
+    `test_the_npm_bundle_line_is_release_owned_and_carries_the_manifest_version`. This upper bound stays
+    as the cheap standalone half: it reads no release-please config, so it still catches a forward-typo
+    in `package.json` if that declaration is ever dropped.
+    """
     package = LOCATIONS["package.json version"]
     manifest = LOCATIONS['.release-please-manifest.json (".")']
     if _ver(package) > _ver(manifest):
@@ -460,12 +476,15 @@ def test_the_decoration_check_notices_an_unwritable_entry(tmp_path):
 # Version literals that no writer can own, per file. Kept as patterns rather than a sentence so the rule
 # fails on the *mechanism* (a number in a place that cannot be maintained) instead of on wording.
 HAND_WRITTEN_VERSION = {
-    # A README's `misakanet@X.Y.Z` is a claim about **npm**, not about this repository. The two channels
-    # move independently: the npm publish is a manual, approval-gated workflow (`misakanet-publish.yml`,
-    # `workflow_dispatch`), while PyPI follows the release. On 2026-09-20 npm was at 2.30.2
-    # (`package.json` agrees) and PyPI plus the repository were at 2.31.0 — so the README's literal was
-    # *correct* and still disagreed with the release line, which is why "align it to the repo version" is
-    # the wrong fix and would have advertised an unpublished version. The npm badge is the live source.
+    # A README's `misakanet@X.Y.Z` is a claim about **npm**, not about this repository. Until
+    # 2026-09-30 the two channels moved independently: the npm publish was a manually dispatched,
+    # approval-gated workflow (`misakanet-publish.yml`) while PyPI followed the release, so on
+    # 2026-09-20 npm was at 2.30.2 (`package.json` agreed) and PyPI plus the repository were at 2.31.0 —
+    # the README's literal was *correct* and still disagreed with the release line, which is why "align
+    # it to the repo version" was the wrong fix. Since 2026-09-30 release-please owns the npm line too
+    # (`JSON_PINNED_VERSION_FILES`), so the two channels no longer disagree; the literal stays out for
+    # the reason that never changed — nothing writes that README line, and the npm badge is the live
+    # source. (Out of scope to add a writer here; the rule is about the absence of one.)
     "README.md": r"misakanet(?:@| == )\d+\.\d+\.\d+",
     "README.zh-CN.md": r"misakanet(?:@| == )\d+\.\d+\.\d+",
     # JOIN.md's Version Info block: every other line in it is already a live pointer
@@ -574,3 +593,86 @@ def test_the_value_check_notices_a_stale_line(tmp_path):
         assert any(rel in problem for problem in problems), (
             f"an older number in {rel} must be reported, got: {problems}")
         victim.write_text(text, encoding="utf-8")
+
+
+# ── The npm bundle line, joined to the release line on 2026-09-30 (owner decision D1 = A) ───────────
+# `package.json` and `.codex-plugin/plugin.json` used to move on their own. The release PR bumped
+# pyproject.toml, server.json, glama.json, the worker, the site and the manifest while both stayed at
+# 2.38.0, so the published page carried two version numbers under one release and a reader reported it
+# (intake #2486). They are release-please-owned now, with one mechanical difference that is exactly why
+# this is a second dict instead of another two rows in `PINNED_VERSION_FILES`: a JSON file cannot carry
+# `x-release-please-version`, so release-please writes these through the *json* updater
+# (`{"type": "json", "jsonpath": ...}`) rather than the annotation the rules above look for. Same
+# invariant — equal to the manifest — through a different writer, so it needs its own check and its own
+# mutation case: the annotation rule would report a clean file as "0 annotated lines" and a JSON file as
+# unwritable, which is a rule failing for the wrong reason.
+JSON_PINNED_VERSION_FILES = {
+    "package.json": "$.version",
+    ".codex-plugin/plugin.json": "$.version",
+}
+
+
+def _json_pinned_problems(root: Path) -> list[str]:
+    """Declared-and-equal problems for the jsonpath-owned version files. Takes a root so it can be driven."""
+    config = json.loads((root / "release-please-config.json").read_text(encoding="utf-8"))
+    declared = {entry["path"]: entry.get("jsonpath")
+                for entry in config["packages"]["."]["extra-files"]
+                if isinstance(entry, dict)}
+    manifest = json.loads((root / ".release-please-manifest.json").read_text(encoding="utf-8"))["."]
+    problems = []
+    for rel, jsonpath in JSON_PINNED_VERSION_FILES.items():
+        if declared.get(rel) != jsonpath:
+            problems.append(
+                f"{rel} is declared as {declared.get(rel)!r} in release-please-config.json, expected "
+                f"{jsonpath!r} — release-please cannot bump a field it does not point at")
+            continue
+        found = json.loads((root / rel).read_text(encoding="utf-8")).get("version")
+        if found != manifest:
+            problems.append(
+                f"{rel} says {found!r}, the manifest says {manifest!r} — release-please owns both, so "
+                "they disagree only when a release step missed one or a stale file was written over a "
+                "newer one")
+    return problems
+
+
+def test_the_npm_bundle_line_is_release_owned_and_carries_the_manifest_version():
+    problems = _json_pinned_problems(REPO)
+    assert not problems, (
+        "the npm bundle line does not move with the release line — that is the drift a reader reported "
+        "as 'one page, two version numbers' (intake #2486):\n  - " + "\n  - ".join(problems))
+
+
+def test_the_npm_bundle_rule_notices_a_lagging_or_undeclared_file(tmp_path):
+    """Guard the guard: this rule reads the real repository, so both failure modes need a scratch copy."""
+    import shutil
+
+    scratch = tmp_path / "repo"
+    scratch.mkdir()
+    for rel in list(JSON_PINNED_VERSION_FILES) + ["release-please-config.json",
+                                                 ".release-please-manifest.json"]:
+        (scratch / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(REPO / rel, scratch / rel)
+    assert _json_pinned_problems(scratch) == [], "the copied tree must start clean"
+
+    manifest = json.loads((scratch / ".release-please-manifest.json").read_text(encoding="utf-8"))["."]
+
+    # (a) a stale value in the file: the release PR moved the manifest and left the bundle behind.
+    victim = scratch / "package.json"
+    original = victim.read_text(encoding="utf-8")
+    marker = f'"version": "{manifest}"'
+    assert marker in original, f"package.json does not carry {marker!r}, so the mutation cannot be applied"
+    victim.write_text(original.replace(marker, '"version": "0.0.1"', 1), encoding="utf-8")
+    assert any("package.json" in problem for problem in _json_pinned_problems(scratch)), (
+        "an older number in package.json must be reported")
+
+    # (b) the declaration removed: the value would stay behind on the next release with nothing to say so.
+    victim.write_text(original, encoding="utf-8")
+    config = scratch / "release-please-config.json"
+    data = json.loads(config.read_text(encoding="utf-8"))
+    data["packages"]["."]["extra-files"] = [
+        entry for entry in data["packages"]["."]["extra-files"]
+        if not (isinstance(entry, dict) and entry.get("path") == ".codex-plugin/plugin.json")]
+    config.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    assert any(".codex-plugin/plugin.json" in problem for problem in _json_pinned_problems(scratch)), (
+        "a version file declared nowhere must be reported — that is the 'declared but nothing writes it' "
+        "shape, in its jsonpath form")

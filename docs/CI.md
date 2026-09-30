@@ -78,7 +78,7 @@
 | `release-please.yml` | Release Please | push |  |
 | `release-pypi.yml` | Release to PyPI | push |  |
 | `pypi-wheel-smoke.yml` | PyPI Wheel Smoke（wheel 安装冒烟）| PR, push, 手动 |  |
-| `misakanet-publish.yml` | Publish misakanet（npm，由 release-please 派发并回写版本）| tag push, 手动 |  |
+| `misakanet-publish.yml` | Publish misakanet（npm；`package.json`/`.codex-plugin/plugin.json` 自 2026-09-30 归 release-please，发布前用版本守卫拒绝对不上的树；release 事件 + release-please 派发 + 手动 tag 三条入口，已在 npm 上的版本直接跳过）| release, tag push, 手动 |  |
 | `misakanet-setup-publish.yml` | Publish @misaka-net/misakanet-setup | tag push, 手动 |  |
 | `publish-mcp-registry.yml` | Publish to MCP Registry（等 PyPI 落地后发布）| 手动 |  |
 

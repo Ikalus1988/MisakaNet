@@ -37,7 +37,11 @@ on:
       - "Intake Pipeline Test (PRD ③)"
       - "Publish @misaka-net/fatal-guard"
       - "Publish @misaka-net/misakanet-setup"
-      - "Publish misakanet"
+      # "Publish misakanet" left this list on 2026-09-30 (intake #2486, D1 = A): it publishes from the
+      # reviewer-free `npm-release` environment now, so it no longer waits for a person and there is
+      # nothing for this watcher to make visible. If that environment ever regains required reviewers,
+      # the name comes back here — the rule's other direction checks exactly that
+      # (tests/test_approval_watch.py computes the cohort from the workflows that declare `release`).
     types: [requested]
   workflow_dispatch:
 
