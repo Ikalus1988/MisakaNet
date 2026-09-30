@@ -74,11 +74,36 @@ jobs:
           path: /tmp/install-git.json
           if-no-files-found: warn
 
+  setup-installer:
+    name: client installer (npx, temp HOME, self-verify)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          node-version: "22"
+      # The path two thirds of contributors actually take (codex/claude-code intakes outnumber dsh ~10:1)
+      # and the one no probe covered: `@misaka-net/misakanet-setup` writes into a user's own client config.
+      # The probe installs the **published** package into a temp `--home`, asserts the registered row and the
+      # behaviour layer, reads the installer's own `--report-json` verdict (`verify: READY`), and then
+      # uninstalls. It never copies the config: the install mints a bearer token, and this artifact must not
+      # carry a credential.
+      - name: probe the published installer
+        run: python3 scripts/install_smoke.py setup-installer --out /tmp/install-setup.json
+      - name: upload the per-form result
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: install-smoke-setup-installer
+          path: /tmp/install-setup.json
+          if-no-files-found: error
+
   publish-install-badge:
     name: publish badges/install.json (data branch)
     # Runs even when a probe failed — that is when the badge matters most. It only *waits* for both
     # probes; it never lets one probe's failure change the other's verdict.
-    needs: [npm-form, git-stdio]
+    needs: [npm-form, git-stdio, setup-installer]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 10
