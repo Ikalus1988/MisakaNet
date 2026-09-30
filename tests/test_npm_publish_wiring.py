@@ -630,3 +630,65 @@ def test_the_publish_auth_rule_notices_a_token_only_workflow(tmp_path):
         encoding="utf-8")
     (tmp_path / "token-only.yml").unlink()
     assert publish_auth_problems(tmp_path) == []
+
+
+# ── a publishing workflow must be re-runnable, and runnable by hand ──────────────────────────────────
+# Two gaps found on 2026-09-30 while verifying the trusted-publishing migration for the other two packages:
+# their jobs had **no** already-published stand-down, so a re-run after a successful publish failed with a
+# bare npm conflict ("run it again to be sure" was impossible, and a retried event looked like a broken
+# release), and `fatal-guard-publish.yml` had no manual trigger at all — so its OIDC path could not be
+# exercised without cutting a release. Both matter for the same reason: the step that retires `NPM_TOKEN`
+# requires every package to have published through OIDC at least once, and "wait for a release" is not a
+# verification.
+
+def publish_safety_problems(workflow_dir: Path) -> list[str]:
+    """Publishing jobs that cannot stand down, or that a human cannot start."""
+    problems: list[str] = []
+    found = 0
+    for path in sorted(workflow_dir.glob("*.yml")):
+        spec = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        # YAML 1.1 reads the bare key `on:` as the boolean True; accept both spellings.
+        triggers = spec.get("on") or spec.get(True) or {}
+        for job_name, job in (spec.get("jobs") or {}).items():
+            steps = job.get("steps") or []
+            publishes = [step for step in steps if "npm publish" in str(step.get("run") or "")]
+            if not publishes:
+                continue
+            found += 1
+            if not any(step.get("id") == "npm_state" for step in steps):
+                problems.append(
+                    f"{path.name}:{job_name} has no already-published check, so re-running it after a "
+                    "successful publish fails on a version conflict instead of standing down")
+            if not any("npm_state" in str(step.get("if") or "") for step in publishes):
+                problems.append(
+                    f"{path.name}:{job_name} detects the already-published case but does not use it to skip "
+                    "the publish")
+            if "workflow_dispatch" not in triggers:
+                problems.append(
+                    f"{path.name}:{job_name} cannot be triggered by hand, so its OIDC path can only be "
+                    "exercised by cutting a release")
+    if found == 0:
+        problems.append(f"no workflow in {workflow_dir.name}/ runs `npm publish` — this rule would be vacuous")
+    return problems
+
+
+def test_every_publishing_workflow_is_idempotent_and_manually_triggerable():
+    problems = publish_safety_problems(WORKFLOWS)
+    assert not problems, "\n  - ".join(["publishing workflows that cannot be re-run safely:"] + problems)
+
+
+def test_the_publish_safety_rule_notices_a_workflow_with_neither(tmp_path):
+    """Guard: the rule reads the real workflow directory, so its red case needs a fixture."""
+    (tmp_path / "bare.yml").write_text(
+        "on:\n  push:\n    tags:\n      - \"v*\"\njobs:\n  publish:\n    steps:\n"
+        "      - name: Publish\n        run: npm publish --access public\n", encoding="utf-8")
+    problems = publish_safety_problems(tmp_path)
+    assert any("already-published check" in p for p in problems), problems
+    assert any("by hand" in p for p in problems), problems
+    (tmp_path / "bare.yml").unlink()
+    (tmp_path / "good.yml").write_text(
+        "on:\n  push:\n    tags:\n      - \"v*\"\n  workflow_dispatch:\njobs:\n  publish:\n    steps:\n"
+        "      - name: Skip when npm already has this version\n        id: npm_state\n        run: echo hi\n"
+        "      - name: Publish\n        if: steps.npm_state.outputs.already != 'true'\n"
+        "        run: npm publish --access public\n", encoding="utf-8")
+    assert publish_safety_problems(tmp_path) == []
