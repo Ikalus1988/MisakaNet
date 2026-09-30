@@ -97,6 +97,11 @@ jobs:
       - name: Regenerate the OKF export
         run: python3 scripts/export_okf.py
 
+      # Freshness gate (#2082): verify managed docs don't carry stale numbers
+      # that contradict the SSOT. Runs after regeneration so counts are current.
+      - name: Check doc freshness
+        run: python3 scripts/check_doc_freshness.py --check
+
       - name: Check for changes
         id: check
         run: |
