@@ -61,6 +61,11 @@ def published_surfaces() -> dict[str, str | None]:
             if (name == "SITES" or name.endswith("_SITES")) and isinstance(value, tuple)
             for site in value}
     rels.update({"data/lessons.json", str(slc.COUNT_FILE)})
+    # The site's copy, written by the same generator since 2026-09-29 (`mirror_published_index`): it
+    # used to be produced by a `cp` in a workflow and so was not a surface a run could touch, and a
+    # redirected test run that rewrote it would leave the checkout's two corpus copies inconsistent —
+    # which `tests/test_docs_data_copy.py` would then report against whichever test ran next.
+    rels.add("docs/data/lessons.json")
     return {rel: digest(REPO / rel) for rel in sorted(rels)}
 
 

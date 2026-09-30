@@ -115,6 +115,8 @@
   "activityClassCrawler": "爬虫",
   "activityClassPageview": "页面浏览",
   "activityOn": "统计日期 {date}",
+  "activityLive": "实时 · {age}更新",
+  "activityAge": "快照生成于{age}",
   "activityUnavailable": "活动快照暂不可用（站点部署早于本页）",
   "latestUnavailable": "动态列表暂不可用",
   "regWorkerOffline": "注册节点暂时不可达",

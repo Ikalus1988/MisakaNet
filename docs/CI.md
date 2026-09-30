@@ -45,7 +45,7 @@
 | `auto-draft.yml` | Auto-Draft from Crash Tombstone | 手动 |  |
 | `auto-sync-prs.yml` | Auto-Sync PR Branches | push, 手动 |  |
 | `benchmark-workers-ai.yml` | Workers AI Lesson Benchmark (weekly) | 定时, 手动 | `0 2 * * 1` |
-| `build-feed.yml` | Build Live Feed（并写 `docs/data/activity.json`：首页活动面板的静态快照，由 `scripts/sync_site_activity.py` 生成——`/api/analytics/traffic` 冷路径实测 17 秒，不能让浏览器直连）| push, 定时, 手动 | `23 */3 * * *` |
+| `build-feed.yml` | Build Live Feed（并写 `docs/data/activity.json`：首页活动面板的**兜底**快照，由 `scripts/sync_site_activity.py` 生成。面板首选 `/api/activity`——同一批计数器的匿名边缘缓存投影，TTL 分钟级（2026-09-29 加）；三小时快照只在它不可达时兜底。起因：2026-09-29 实测首页显示 `total 5974` 而同日端点报 6645，日期相同、页面看不出陈旧；当年 17.4 秒冷路径理由是重测为 1.08–1.28 秒）| push, 定时, 手动 | `23 */3 * * *` |
 | `example-capture.yml` | Example Capture (not active) | 手动 |  |
 | `intake-auto-review.yml` | Intake Auto Review | issues, 手动 |  |
 | `intake-kind-audit.yml` | Intake Kind Audit | 定时, 手动 | `30 6 * * 1` |
@@ -62,7 +62,7 @@
 | `sync-question-answers.yml` | Sync Question Answers | 定时, 手动 | `20 7 * * *` |
 | `question-autopilot.yml` | Question Autopilot（逐条 open `[Question]`：用**生产检索**判定「语料是否已覆盖」，把同一问题的多条聚簇，刷一条 digest；**只分级、只报告，从不写答复、从不打 `answered`、从不关单** —— `answered` 是「把文本送进 FAQ」的开关，必须来自真正踩过的人。**默认就写**（回执 + 每簇一条 `[Bounty]` 任务 + digest；`post: false` 才是演练）——因为"没人看的报告"就是要清掉的那个积压本身。每次写入都幂等：回执按内容哈希、任务按锚点标记、digest 原地更新）| 定时, 手动 | `40 6 * * *` |
 | `update-badges.yml` | Update Badge Counts | push, 定时, 手动 | `23 3 * * 1` |
-| `update-lessons.yml` | Update lessons.json | 定时, 手动 | `0 0 * * *` |
+| `update-lessons.yml` | Update lessons.json（`lessons/**` 合并进来时也跑一遍，别让新课程等一天才有页面）| push, 定时, 手动 | `0 0 * * *` |
 | `nightly-mirror-consistency.yml` | Nightly Mirror Consistency（镜像一致性）| 定时 |  |
 
 ## 发布/部署（12）
