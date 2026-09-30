@@ -137,6 +137,7 @@ test('submit_intake rejects duplicate submissions by content hash', async () => 
     const first = await submitIntake({ kind: 'missing_lesson', problem: 'duplicate test problem' }, env);
     const firstResult = JSON.parse((await first.json()).result.content[0].text);
     assert.equal(firstResult.submitted, true);
+    assert.equal(firstResult.dedup_key, contentHashOf('missing_lesson', 'duplicate test problem'));
 
     // Identical problem → dedup hit, no second issue.
     const dup = await submitIntake({ kind: 'missing_lesson', problem: 'duplicate test problem' }, env);
@@ -145,6 +146,11 @@ test('submit_intake rejects duplicate submissions by content hash', async () => 
     assert.equal(dupResult.submitted, false);
     assert.equal(dupResult.duplicate, true);
     assert.match(dupResult.error, /Duplicate intake/);
+    // #1528: the duplicate branch also carries the key, and the issue number comes back out of the KV
+    // value (the issue URL) even though this kind has no durable questions row.
+    assert.equal(dupResult.dedup_key, contentHashOf('missing_lesson', 'duplicate test problem'));
+    assert.equal(dupResult.intake_id, 'issue-42');
+    assert.equal('converted' in dupResult, false);
   } finally {
     restore();
   }
@@ -258,9 +264,17 @@ test('non-missing_lesson explicit kinds are never overridden', async () => {
 
 // Minimal D1 stub for the questions table: INSERT INTO questions (.run),
 // SELECT ... WHERE dedup_hash = ?1 / status = 'answered' (.all).
+//
+// The `FROM lessons` branch is explicit: without it this stub's permissive fallthrough (below) answers
+// *any* unrecognised SELECT with the question rows, and the conversion lookup added in #1528's worker
+// half would be reading question rows rather than lessons. The honest answer for a questions-only
+// corpus is "no lesson cites it".
 function createQuestionD1(seedRows = []) {
   const rows = seedRows.map((r) => ({ ...r }));
   const selectAll = (sql, bound) => {
+    if (sql.includes('FROM lessons')) {
+      return { results: [] };
+    }
     if (sql.includes("status = 'answered'")) {
       return { results: rows.filter((r) => r.status === 'answered') };
     }
@@ -313,6 +327,10 @@ test('question submit records a pending row in D1 when bound', async () => {
   assert.equal(rows[0].status, 'pending');
   assert.equal(rows[0].issue_number, 42);
   assert.equal(rows[0].dedup_hash, contentHashOf('question', 'How do I configure MCP auth in production?'));
+  // #1528: the fresh response hands back the dedup key and the machine-readable poll contract.
+  assert.equal(result.dedup_key, contentHashOf('question', 'How do I configure MCP auth in production?'));
+  assert.equal(result.poll_hint.tool, 'misakanet_submit_intake');
+  assert.equal(result.poll_hint.recheck_after_seconds, 21600);
 });
 
 test('re-submitting an answered question returns the answer (pull)', async () => {
@@ -329,6 +347,7 @@ test('re-submitting an answered question returns the answer (pull)', async () =>
   assert.equal(result.answered, true);
   assert.match(result.answer, /Register once per node/);
   assert.equal(result.intake_id, 'issue-1364');
+  assert.equal(result.dedup_key, contentHashOf('question', problem));
 });
 
 test('re-submitting a pending question returns the pending pointer', async () => {
@@ -344,6 +363,7 @@ test('re-submitting a pending question returns the pending pointer', async () =>
   assert.equal(result.pending, true);
   assert.ok(result.answered !== true);
   assert.match(result.note, /pending a maintainer answer/i);
+  assert.equal(result.dedup_key, contentHashOf('question', problem));
 });
 
 test('search surfaces answered questions as FAQ hits', async () => {
