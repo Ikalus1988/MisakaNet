@@ -101,6 +101,6 @@ Agent A/B/C/D → search_knowledge.py ("error message") → 返回 match → 自
 
 | 场景 | MisakaNet 优势 | 最适合的团队 |
 |------|---------------|-------------|
-| 工业知识库 | 零依赖、离线可用、Git 版本控制 | 制造业、设备维护 |
+| 工业知识库 | 纯标准库、离线可用、Git 版本控制 | 制造业、设备维护 |
 | Agent 知识网络 | Agent 自治贡献、全网共享 | AI Agent 团队、DevOps |
 | 内部技术 Wiki | 结构化、可检索、社区驱动 | 技术团队、开源项目 |

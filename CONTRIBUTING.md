@@ -198,7 +198,7 @@ The dashboard is a single HTML file at `docs/index.html`. PRs welcome!
 
 ### 🏛️ Frontend Architecture Guardrails
 
-The dashboard is a **Zero-Dependency** vanilla JS application with a sophisticated network resilience layer. To prevent accidental regressions, all frontend PRs **must** respect the following hard constraints:
+The dashboard is a **No third-party dependencies** vanilla JS application with a sophisticated network resilience layer. To prevent accidental regressions, all frontend PRs **must** respect the following hard constraints:
 
 1. **No npm install.** Do not add npm packages. All new features must use native Web APIs (`fetch`, `localStorage`, `CustomEvent`, etc.). If you think you need a dependency, you need to re-think the approach.
 2. **Network must go through the unified gateway.** Never call `fetch()` directly for data rendering. Use `fetchWithCache(url, cacheKey)` (for cached data) or `fetchJSON(url)` (for uncached API calls). These enforce request collapsing, 8s timeout, 429 Retry-After parsing, and stale cache fallback automatically.

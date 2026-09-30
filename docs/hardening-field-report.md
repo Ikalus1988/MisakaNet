@@ -10,7 +10,7 @@ A failure-memory open source project underwent a full-day hardening session to t
 
 **Problem:** Monolithic repository mixing core algorithm with application logic. Hard to audit, harder for third parties to reuse.
 
-**Pattern:** Identify the zero-dependency mathematical core. Extract into a standalone PyPI package. The main repo becomes the orchestration layer; the core package is the protocol implementation.
+**Pattern:** Identify the stdlib-onlyendency mathematical core. Extract into a standalone PyPI package. The main repo becomes the orchestration layer; the core package is the protocol implementation.
 
 ```
 Monorepo → PyPI core package + Application repo
@@ -76,7 +76,7 @@ Browser → Proxy Worker (with token) → api.github.com
 
 ### 7. Dependency Layering Narrative
 
-**Problem:** README claimed "zero-dependency" but listed optional 2GB model dependencies, creating credibility gap.
+**Problem:** README claimed "stdlib-onlyendency" but listed optional 2GB model dependencies, creating credibility gap.
 
 **Fix:** Replace flat "dependencies" section with a layered table:
 
@@ -87,7 +87,7 @@ Browser → Proxy Worker (with token) → api.github.com
 | Advanced search | ML model ~2GB | pip install [extras] |
 | Federated mode | aiohttp | pip install [extras] |
 
-**Generic takeaway:** Transparency about dependency layering builds trust. Don't claim "zero-dep" if your ecosystem includes heavy optional deps — just separate them clearly.
+**Generic takeaway:** Transparency about dependency layering builds trust. Don't claim "stdlib-only" if your ecosystem includes heavy optional deps — just separate them clearly.
 
 ## Outcome
 

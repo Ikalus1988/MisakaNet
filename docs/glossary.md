@@ -110,3 +110,12 @@ Validation script that checks lesson frontmatter, body structure, and quality re
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — How to contribute lessons
 - [README.md](../README.md) — Project overview and setup
 - [docs/](./) — Detailed documentation
+
+## Retired terms
+
+**"zero-dependency" / 零依赖** — retired 2026-09-30 (intake #2486). It was used as a slogan for "no third-party
+packages", and readers reasonably took it to mean "nothing to prepare" — while a **Python ≥ 3.10 interpreter**
+is a hard prerequisite and the optional `--semantic` path pulls a large model. The current wording is
+**stdlib-only (no third-party packages)**, stated next to the interpreter requirement. Dated records and
+journey reports keep the old phrase, because they are history; `tests/test_zero_dependency_wording.py` is what
+keeps it out of current copy.

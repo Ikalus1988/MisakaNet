@@ -1,6 +1,6 @@
 # @misaka-net/fatal-guard
 
-> Zero-dependency non-invasive fatal error guard for Node.js CLIs.  
+> Non-invasive fatal error guard for Node.js CLIs — no third-party dependencies (Node built-ins only, Node ≥ 18).  
 > Capture uncaught exceptions, unhandled rejections, and non-zero exits — route a structured 4-field payload to any external handler.
 
 ```bash
@@ -142,7 +142,7 @@ On each signal, the handler executable is spawned with a single JSON argv argume
 
 | Principle | Implementation |
 |-----------|---------------|
-| **Zero dependencies** | `require('node:child_process')` only |
+| **No third-party dependencies** | `require('node:child_process')` only |
 | **Non-blocking** | `spawn` + `detached: true` + `unref()` — handler never blocks shutdown |
 | **Injection-safe** | `shell: false` — no shell interpretation of env var or payload |
 | **Fire-and-forget** | Handler failure is silently swallowed — process continues |

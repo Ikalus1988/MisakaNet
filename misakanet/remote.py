@@ -5,7 +5,7 @@ checkout, so a wheel cannot search offline (there is no corpus in it). That is w
 is remote-first: `pip install misakanet` + `misakanet "<error text>"` should work on a machine that has
 never cloned anything (2026-09-18 review, 意见 1; #1821).
 
-Zero dependencies on purpose, like the rest of the core: `urllib.request` from the standard library.
+No third-party packages on purpose, like the rest of the core: `urllib.request` from the standard library.
 """
 from __future__ import annotations
 

@@ -140,7 +140,7 @@ Three deliberate engineering choices, each of which trades something:
 
 * **Git is the source of truth.** A lesson is a file, so it diffs, reverts, forks and reviews like code.
   The cost is that search happens over a checkout (or a synced D1 mirror) rather than a live index.
-* **Zero dependencies by default.** The retriever is BM25 over the standard library, so the offline path
+* **No third-party packages by default.** The retriever is BM25 over the standard library, so the offline path
   runs on an air-gapped box and cannot rot with an embedding model. The cost is recall on paraphrases.
 * **Evidence is graded, not asserted.** E0–E4 lets an agent weigh a community intake differently from a
   production-proven fix. The cost is bookkeeping, and most lessons sit at E0–E2.
