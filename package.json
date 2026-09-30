@@ -19,6 +19,8 @@
     },
     "compatibility": {
       "dshReleases": {
+        "0.1.5-rc.1": "compatible",
+        "0.1.7-rc.2": "compatible",
         "0.2.0-rc.2": "compatible"
       }
     }
@@ -45,7 +47,7 @@
     "lessons"
   ],
   "peerDependencies": {
-    "@deepseek-ai/dsh-mcp-client": ">=0.1.0-rc.8 <0.2.0 || >=0.2.0-rc.1 <0.3.0"
+    "@deepseek-ai/dsh-mcp-client": ">=0.1.0-rc.8 <0.2.0 || >=0.1.5-rc.1 <0.2.0 || >=0.1.7-rc.1 <0.2.0 || >=0.2.0-rc.1 <0.3.0"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/dsh-mcp-client": {
