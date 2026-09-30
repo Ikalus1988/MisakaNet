@@ -1,6 +1,24 @@
 name: Update lessons.json
 
+# Why `push` on `lessons/**` (2026-09-30)
+# ---------------------------------------
+# A merged lesson is searchable within minutes — `sync-d1.yml` is triggered by this same push —
+# but it had no page until the next daily run of this job, so following a search hit led to a 404
+# for up to 24 hours. Nothing else closed that gap: `docs.yml`, the only other caller of
+# `build_lesson_pages.py`, filters on `docs/**` (a lesson merge does not touch it) and runs
+# `--check`, which compares the generator's plan against the pages the generator wrote — both
+# derived from the same `data/lessons.json`, which the merge did not change either.
+#
+# Regenerating here rather than in a new workflow reuses the one writer of `data/lessons.json`,
+# the pages and the OKF export, and the one landing path (`land_change.py`, stable branch
+# `bot/update-lessons`); a second writer would put two bot branches on the same files. The commit
+# this lands touches `data/**`, `docs/**` and the count surfaces — never `lessons/**` — so it
+# cannot re-trigger this job.
 on:
+  push:
+    branches: [main]
+    paths:
+      - "lessons/**"
   schedule:
     - cron: "0 0 * * *"  # Daily at 08:00 Beijing time
   workflow_dispatch:  # Manual trigger for release prep
