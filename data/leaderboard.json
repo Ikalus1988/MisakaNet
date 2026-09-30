@@ -1,23 +1,19 @@
 [
   {
     "login": "zsxh1990",
-    "score": 68.73
+    "score": 68.13
   },
   {
     "login": "2lll5",
-    "score": 3.34
+    "score": 3.33
   },
   {
     "login": "s6pa1rta3n-lab",
-    "score": 2.38
-  },
-  {
-    "login": "huyhoang2k5",
-    "score": 1.35
+    "score": 2.34
   },
   {
     "login": "techlogiadg-spec",
-    "score": 1.27
+    "score": 1.25
   },
   {
     "login": "yashraj4",
@@ -25,11 +21,15 @@
   },
   {
     "login": "mr-neutr0n",
-    "score": 1.17
+    "score": 1.14
+  },
+  {
+    "login": "huyhoang2k5",
+    "score": 1.03
   },
   {
     "login": "hjqcan",
-    "score": 1.02
+    "score": 1.01
   },
   {
     "login": "harshadkhetpal",
@@ -45,15 +45,11 @@
   },
   {
     "login": "orderstream",
-    "score": 0.96
+    "score": 0.95
   },
   {
     "login": "rushikeshgarad2024-dev",
-    "score": 0.96
-  },
-  {
-    "login": "tomasbogado203-bit",
-    "score": 0.93
+    "score": 0.95
   },
   {
     "login": "gloskull",
@@ -61,11 +57,15 @@
   },
   {
     "login": "kveita",
-    "score": 0.85
+    "score": 0.84
   },
   {
     "login": "knowaguy4u-cell",
-    "score": 0.8
+    "score": 0.79
+  },
+  {
+    "login": "tomasbogado203-bit",
+    "score": 0.68
   },
   {
     "login": "huiyuansun28-cmyk",
@@ -73,7 +73,7 @@
   },
   {
     "login": "ghazi10qw",
-    "score": 0.62
+    "score": 0.61
   },
   {
     "login": "goanscryca",
@@ -85,7 +85,7 @@
   },
   {
     "login": "tmtproductions",
-    "score": 0.5
+    "score": 0.49
   },
   {
     "login": "simultech369",
@@ -97,6 +97,6 @@
   },
   {
     "login": "ghzhost",
-    "score": 0.48
+    "score": 0.47
   }
 ]
