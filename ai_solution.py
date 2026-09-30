@@ -1,34 +1,34 @@
-To address the questions, here's the structured solution:
+To address the reviewer's feedback, I'll structure the PRs correctly, ensuring each PR corresponds to one issue and includes the appropriate code changes.
 
 ### 1. NSOpenPanel and NSSavePanel Disabled Issue
 
-**Problem:**  
-NSOpenPanel and NSSavePanel are not opening or saving when expected in a SwiftUIView.
+```swift
+// Problem:
+// NSOpenPanel and NSSavePanel are not opening or saving when expected in a SwiftUIView.
 
-**Root Cause:**  
-When using `selectedAsset` with `toURL()`, it returns a temporary URL. Repeated use may not work as intended.
+// Root Cause:
+// When using `selectedAsset()` with `toURL()`, it returns a temporary URL. Repeated use may not work as intended.
 
-**Fix:**  
-Use `URL(fileURLWithPath:)` to convert the URL to a file URL.
+// Fix:
+// Use `URL(fileURLWithPath:)` to convert the URL to a file URL.
+
+// Verification Command:
+let url = URL(fileURLWithPath: urlPath)
+```
 
 ### 2. ScrollView Scroll Position Retention in HSplitView
 
-**Problem:**  
-ScrollView's scroll position is lost when the view is re-rendered.
-
-**Root Cause:**  
-ScrollView resets its position during view re-renders.
-
-**Fix:**  
-Wrap ScrollView in a `ScrollView` with `id(by: \.self)`.
-
-### Verification Command
-
 ```swift
-// For the first issue:
-let url = URL(fileURLWithPath: urlPath)
+// Problem:
+// ScrollView's scroll position is lost when the view is re-rendered.
 
-// For the second issue:
+// Root Cause:
+// ScrollView resets its position during view re-renders.
+
+// Fix:
+// Wrap ScrollView in a `ScrollView` with `id(by: \.self)`.
+
+// Verification Command:
 ScrollView {
     VStack {
         // Content
@@ -37,4 +37,4 @@ ScrollView {
 }
 ```
 
-This should resolve both issues.
+Each PR should be separate, addressing one issue with the appropriate code changes.
