@@ -2,7 +2,8 @@
 """Publish the install-smoke result as a shields badge (`data` branch `badges/install.json`).
 
 The decision this implements (owner D3 = A, 2026-09-30): make "install verified" a **measured, dated
-fact**, not a claim. Two forms are probed daily by `.github/workflows/install-smoke.yml` and this script
+fact**, not a claim. Three forms are probed daily by `.github/workflows/install-smoke.yml` — the plugin's
+npm and git+ shapes, plus the client installer most people actually run — and this script
 turns their per-form JSON artifacts into one badge a human can read without opening a log:
 
     {"schemaVersion":1,"label":"install verified","message":"verified 2026-09-30","color":"brightgreen"}
@@ -40,7 +41,8 @@ from pathlib import Path
 
 # The artifact files the workflow uploads, keyed by the form name that goes into the result JSON. Bound to
 # filenames rather than globbing so a renamed artifact is a visible "missing form", not a silent one.
-FORM_FILES = {"npm": "install-npm.json", "git": "install-git.json"}
+FORM_FILES = {"npm": "install-npm.json", "git": "install-git.json",
+              "setup": "install-setup.json"}
 LABEL = "install verified"
 DEFAULT_OUT = Path("badges/install.json")
 

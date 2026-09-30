@@ -36,6 +36,7 @@ Usage:
     python3 scripts/install_smoke.py npm-form  --repo . --out /tmp/install-npm.json
     python3 scripts/install_smoke.py git-stdio --repo . --out /tmp/install-git.json
     python3 scripts/install_smoke.py git-stdio --dry-run      # interpreter/tool-set only, no server
+    python3 scripts/install_smoke.py setup-installer --out /tmp/install-setup.json
 """
 from __future__ import annotations
 
@@ -44,6 +45,7 @@ import datetime as _datetime
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -243,6 +245,152 @@ def stdio_jsonrpc(repo: Path, requests: list[dict], *, timeout: int) -> tuple[di
 
 
 # ── the two probes ────────────────────────────────────────────────────────────────────────────────
+
+# ── the installer form (2026-09-30) ─────────────────────────────────────────────────────────────────
+# The two forms above probe the *plugin* (what dsh and Codex install). But most people do not arrive that
+# way: of the last 100 intakes, codex (38%) and claude-code (27%) account for two thirds, and Codex has its
+# own plugin channel (`.codex-plugin/plugin.json`) while Claude Code has none — so Claude Code users are
+# served by this installer, which no daily probe covered. It is a different failure surface too: the
+# installer writes into a *user's own* client config, so "does it register and can it verify itself" is the
+# question, and both are answerable without a human.
+#
+# Measured before writing this (2026-09-30, published 0.5.6 + the repo's bin, temp `--home`):
+#   * `--report-json --silent` alone is the MDM *report-only* form (#1784) — it writes nothing, which is
+#     correct and was the first thing this probe got wrong by assuming otherwise;
+#   * a real install (`--silent`) then a report gives `verify: READY`, `install-scope: full`,
+#     `hook: present`, `endpoint-reachable: true`, `endpoint-tools: 7`;
+#   * the install mints a **real bearer token** into the client config, so the probe asserts shape and
+#     never copies the file (the artifact must not carry a credential — this repository's own rule).
+SETUP_ENDPOINT = "https://misakanet.org/mcp"
+SETUP_REPORT_SCHEMA = "misakanet-setup-report/1"
+# The hosted tool set (`docs/mcp.md`). A shrink is a regression; growth is fine, so this is a floor.
+SETUP_MIN_ENDPOINT_TOOLS = 7
+
+
+def setup_config_problems(config_text: str) -> list[str]:
+    """What the installer promises to write: one `misakanet` MCP row pointing at the hosted endpoint."""
+    problems: list[str] = []
+    try:
+        doc = json.loads(config_text)
+    except json.JSONDecodeError as exc:
+        return [f"the client config is not JSON after install: {exc}"]
+    entry = ((doc.get("mcpServers") or {}).get("misakanet")) or None
+    if not isinstance(entry, dict):
+        return ["the installer did not register an `mcpServers.misakanet` entry"]
+    if entry.get("url") != SETUP_ENDPOINT:
+        problems.append(f"the registered url is {entry.get('url')!r}, not {SETUP_ENDPOINT!r}")
+    if entry.get("type") != "http":
+        problems.append(f"the registered transport is {entry.get('type')!r}, not 'http'")
+    return problems
+
+
+def setup_report_problems(report: dict) -> list[str]:
+    """The installer's own verdict, read from its machine-readable report."""
+    problems: list[str] = []
+    if report.get("schema") != SETUP_REPORT_SCHEMA:
+        problems.append(f"report schema is {report.get('schema')!r}, not {SETUP_REPORT_SCHEMA!r}")
+    if report.get("verify") != "READY":
+        problems.append(
+            f"the installer's own verdict is {report.get('verify')!r}, not 'READY' "
+            f"(open-items={report.get('open-items')}: {report.get('open-items-detail')})")
+    if report.get("install-scope") != "full":
+        problems.append(f"install-scope is {report.get('install-scope')!r}, not 'full'")
+    if report.get("endpoint-reachable") is not True:
+        problems.append("the installer could not reach the endpoint it registers")
+    tools = report.get("endpoint-tools")
+    if not isinstance(tools, int) or tools < SETUP_MIN_ENDPOINT_TOOLS:
+        problems.append(f"endpoint-tools is {tools!r}; the hosted set is {SETUP_MIN_ENDPOINT_TOOLS} or more")
+    return problems
+
+
+def probe_setup_installer(repo: Path, *, timeout: int, dry_run: bool) -> dict:
+    """Install the **published** installer into a throwaway HOME, then read its own report.
+
+    The published package is the point: this is the path a Claude Code user takes
+    (`npx @misaka-net/misakanet-setup`), so probing the repository's own bin would test something nobody
+    runs. `--home` plus `HOME=` keep the probe hermetic — both are needed, because detection reads
+    `$HOME` while the writes follow `--home`.
+    """
+    fails: list[str] = []
+    checks: list[str] = []
+    detail: dict = {}
+    home = Path(tempfile.mkdtemp(prefix="misakanet-setup-smoke-home-"))
+    env = dict(os.environ, npm_config_cache=str(home / "npm-cache"), HOME=str(home))
+    # Claude Code's detection marker: the installer acts on clients it can see, and a machine with no
+    # client at all legitimately installs nothing (measured: `detected-agents: []` → `install-scope: none`).
+    (home / ".claude.json").write_text("{}\n", encoding="utf-8")
+
+    def run(args: list[str]) -> subprocess.CompletedProcess:
+        return subprocess.run(args, env=env, capture_output=True, text=True, timeout=timeout)
+
+    pkg = "@misaka-net/misakanet-setup@latest"
+    if dry_run:
+        # No install, no report: the flags exist and the package resolves at all.
+        probe = run(["npx", "--yes", pkg, "--help"])
+        checks.append(f"`{pkg} --help` exits {probe.returncode}")
+        if probe.returncode != 0:
+            fails.append(f"npx could not run {pkg} (exit {probe.returncode}): {probe.stderr.strip()[:200]}")
+        shutil.rmtree(home, ignore_errors=True)
+        return _result("setup-installer", checks, fails, detail, tools_seen=[], result_count=0)
+
+    install = run(["npx", "--yes", pkg, "--home", str(home), "--silent"])
+    detail["install_exit"] = install.returncode
+    if install.returncode != 0:
+        fails.append(f"`npx {pkg} --home … --silent` exited {install.returncode}: "
+                     f"{(install.stderr or install.stdout).strip()[:200]}")
+    else:
+        checks.append("install exited 0")
+
+    config = home / ".claude.json"
+    if config.is_file():
+        problems = setup_config_problems(config.read_text(encoding="utf-8"))
+        # Never copy the file: it carries the bearer token the install minted.
+        if problems:
+            fails.extend(problems)
+        else:
+            checks.append("registered mcpServers.misakanet → the hosted endpoint over http")
+    else:
+        fails.append("the install wrote no client config at all")
+    detail["client_config_written"] = config.is_file()
+    detail["hook_written"] = (home / ".claude" / "settings.json").is_file()
+    if not detail["hook_written"]:
+        fails.append("no behaviour layer: `.claude/settings.json` was not written")
+    else:
+        checks.append("wrote the behaviour layer (.claude/settings.json)")
+
+    report_proc = run(["npx", "--yes", pkg, "--home", str(home), "--report-json", "--silent"])
+    report: dict = {}
+    try:
+        report = json.loads(report_proc.stdout)
+    except json.JSONDecodeError as exc:
+        fails.append(f"the report is not JSON (exit {report_proc.returncode}): {exc}; "
+                     f"stderr={report_proc.stderr.strip()[:160]}")
+    if report:
+        detail["report"] = {k: report.get(k) for k in
+                            ("schema", "setup-version", "detected-agents", "verify", "install-scope",
+                             "endpoint-reachable", "endpoint-tools", "hook", "open-items")}
+        problems = setup_report_problems(report)
+        if problems:
+            fails.extend(problems)
+        else:
+            checks.append(f"the installer reports verify=READY with {report.get('endpoint-tools')} "
+                          "endpoint tools")
+
+    # Its own promise: `--uninstall` removes exactly what was added.
+    uninstall = run(["npx", "--yes", pkg, "--home", str(home), "--uninstall", "--silent"])
+    detail["uninstall_exit"] = uninstall.returncode
+    if uninstall.returncode != 0:
+        fails.append(f"`--uninstall` exited {uninstall.returncode}")
+    else:
+        left = json.loads(config.read_text(encoding="utf-8")) if config.is_file() else {}
+        if "misakanet" in json.dumps(left):
+            fails.append("`--uninstall` left the misakanet entry in the client config")
+        else:
+            checks.append("`--uninstall` removed the registered entry")
+
+    shutil.rmtree(home, ignore_errors=True)   # the temp HOME holds a minted token
+    return _result("setup-installer", checks, fails, detail, tools_seen=[], result_count=0)
+
 
 def probe_npm_form(repo: Path, *, timeout: int, dry_run: bool) -> dict:
     """Pack the bundle, assert its shape and row, then call the hosted endpoint for real."""
@@ -452,7 +600,7 @@ def _result(form: str, checks: list[str], fails: list[str], detail: dict,
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("form", choices=["npm-form", "git-stdio"],
+    parser.add_argument("form", choices=["npm-form", "git-stdio", "setup-installer"],
                         help="which install form to exercise")
     parser.add_argument("--repo", type=Path, default=REPO_FALLBACK,
                         help="checkout to pack / spawn the server from (default: this repository)")
@@ -467,6 +615,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.form == "npm-form":
             result = probe_npm_form(repo, timeout=args.timeout, dry_run=args.dry_run)
+        elif args.form == "setup-installer":
+            result = probe_setup_installer(repo, timeout=args.timeout, dry_run=args.dry_run)
         else:
             result = probe_git_stdio(repo, timeout=args.timeout, dry_run=args.dry_run)
     except Exception as error:   # noqa: BLE001 — a crash must still leave evidence, see the module docstring
