@@ -67,6 +67,16 @@ misakanet.org".
 Both environments are branch-restricted to `main`. That is not a substitute for review — a merged
 change on `main` can still reach these secrets. It only means a *feature branch* cannot.
 
+**One ref that has to be allowed explicitly, not remembered (2026-09-30).** `misakanet-publish.yml`
+also runs on a **published release** (`on: release: types: [published]`), and that run's ref is
+`refs/tags/vX.Y.Z` — not `main`. A `release` environment restricted to the branch `main` refuses that
+job at deploy time, before any step runs, so the symptom is a release with no publish and no log to
+read. The environment therefore needs the tag pattern `v*` allowed as well (Settings → Environments →
+`release` → deployment branch and tag rules). Two further settings the automatic npm publish depends
+on, both repository settings rather than code: for an *unattended* publish `release` must not require
+a reviewer (with one configured the run waits for approval, which is a deliberate choice — the human
+gate moved from memory to a visible click), and it must carry `NPM_TOKEN`.
+
 ## 4. Rotation
 
 `misakanet-automation-d1` was created 2026-09-19 with a **TTL ending 2027-03-01**. To rotate:
@@ -101,7 +111,7 @@ To rotate it:
 2. GitHub → Settings → Environments → `release` → update `NPM_TOKEN`.
 3. **Prove it with a run**: the publish workflows call `npm whoami` *before* publishing and fail with
    `npm rejected NPM_TOKEN (npm whoami failed)` when the value is wrong
-   (`misakanet-publish.yml:105`), so a dispatch with `dry_run` is enough — the token is checked and
+   (`misakanet-publish.yml:196`), so a dispatch with `dry_run` is enough — the token is checked and
    nothing is published.
 4. Update the date here and in the tracking issue — **#2113**, labelled `keep` for the same
    reason #1886 is.

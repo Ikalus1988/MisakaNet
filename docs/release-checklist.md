@@ -81,6 +81,41 @@ Standard release process. Do not skip steps.
       unreachable there (measured 2026-09-19 — HTTP 000 after 15s) while the registry is reachable,
       so "retry when the network is available" was never going to happen from inside one.
 
+## npm bundle (`misakanet`) — automatic since 2026-09-30 (D1 = A)
+
+- `package.json` and `.codex-plugin/plugin.json` are release-please-owned now
+  (`release-please-config.json` → `.` → `extra-files`, `{"type": "json", "jsonpath": "$.version"}`), so
+  the release PR carries the npm line and the tagged commit already says the released version.
+  `tests/test_version_consistency.py::JSON_PINNED_VERSION_FILES` fails if either file lags the manifest
+  or loses its declaration.
+- The publish runs itself: `.github/workflows/misakanet-publish.yml` triggers on a **published
+  release** (and on `misakanet-v*` tags, and on `workflow_dispatch`). Before publishing it refuses a
+  tree whose `package.json` is not the released version — the run cannot ship a stale bundle, and it no
+  longer moves or rewrites the line (a run that finds the version already on npm stands down, because
+  the release event and release-please's dispatch both fire for one release).
+- It declares `environment: release`, which holds `NPM_TOKEN` (granular, read+write on `misakanet`;
+  rotation in `docs/maintainer/credentials-and-environments.md` §4.1). For an unattended publish that
+  environment must not require a reviewer, and its deployment branch policy must allow the tag refs the
+  release-event run uses (`v*`).
+- Manual republish (escape hatch):
+  ```bash
+  gh workflow run misakanet-publish.yml --ref main -f "version=2.39.0"
+  ```
+
+**Rolling back a bad automatic publish** — npm cannot republish a version, and `npm unpublish` is only
+available for **72 hours** after the publish (after that, only npm support can remove it):
+
+```bash
+npm deprecate misakanet@X.Y.Z "broken: install Y.Y.Y"   # always available — the safe default
+npm unpublish misakanet@X.Y.Z --force                   # only inside the 72h window
+```
+
+Prefer `deprecate`: an unpublished version breaks every lockfile that pinned it (`ETARGET`), which turns
+one bad release into a fleet of broken installs. Then fix forward — cut a patch release so the channels
+move together. Do **not** hand-edit `package.json` backwards: release-please owns the line, and a
+backwards move is what `npm_bundle_floor` in `scripts/align_versions.py` reports on (an advisory by the
+owner's decision of 2026-09-29 — a rollback and a typo look identical from the number alone).
+
 ## Do NOT update for routine releases
 
 - **npm `@misaka-net/fatal-guard`** — only if fatal-guard code changed

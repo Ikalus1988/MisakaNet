@@ -219,14 +219,14 @@ Verify with the second row; the first row is about the catalogue.
 
 ## Which version number is which
 
-Three channels move independently, and comparing two of them is how "the page says two versions" happens.
+Three channels move with different clocks, and comparing two of them is how "the page says two versions" happens.
 Read each from its carrier; this document deliberately quotes no numbers:
 
 | Channel | Carrier (live source) | Notes |
 |---|---|---|
 | **release / PyPI line** | `pyproject.toml`, `.release-please-manifest.json`, the GitHub release | release-please maintains it |
 | **registry listing line** | `server.json`, `glama.json` | bumped alongside a release; the MCP registry is read back after publish |
-| **npm bundle line** | `package.json` and `.codex-plugin/plugin.json` (the version a plugin market shows) | **lags by design**: publishing is a manual, approval-gated workflow, so npm can be behind the release line and still be correct |
+| **npm bundle line** | `package.json` and `.codex-plugin/plugin.json` (the version a plugin market shows) | **moves with the release since 2026-09-30**: both files are release-please `extra-files`, and the publish runs itself off a published release — but a *manual* republish can still be pending, so read the live value from `npm view misakanet version` rather than from a page |
 
 So: the **compatibility number a plugin market shows is the plugin manifest's `version`**, while an install
 snippet may quote the release line. If they disagree, that is the two-channel design, not a broken page —
