@@ -16,6 +16,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import yaml
+
 REPO = Path(__file__).resolve().parent.parent
 WORKFLOWS = REPO / ".github" / "workflows"
 
@@ -61,3 +63,64 @@ def test_workflow_run_consumers_still_declare_a_valid_trigger_type():
         text = path.read_text(encoding="utf-8")
         if re.search(r"^\s*workflow_run\s*:", text, re.MULTILINE):
             assert "types: [completed]" in text or "types:\n" in text, path.name
+
+
+# ── a `workflow_run` that names a workflow which does not exist fires never ─────────────────────────
+# Found by an architecture review, 2026-09-29: `update-badges.yml` listened for
+# `workflows: ["Lesson Quality Gate", "Update Lessons"]`, and no workflow is named "Update Lessons" —
+# the file is `update-lessons.yml` and its `name:` is "Update lessons.json". GitHub matches on the name,
+# so that half of the trigger could never fire and the badges refreshed only on the weekly cron, with no
+# error anywhere. A trigger that cannot fire is invisible in exactly the way a check that cannot fail is.
+def declared_workflow_names(root: Path | None = None) -> set[str]:
+    """Every `name:` a workflow file declares (the string `workflow_run.workflows` is matched against)."""
+    directory = (root or WORKFLOWS)
+    names = set()
+    for path in sorted(directory.glob("*.y*ml")):
+        spec = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if isinstance(spec, dict) and spec.get("name"):
+            names.add(str(spec["name"]))
+    return names
+
+
+def unknown_watched_workflows(root: Path | None = None) -> list[str]:
+    """`file: name` for every `workflow_run.workflows` entry that no workflow declares."""
+    directory = (root or WORKFLOWS)
+    known = declared_workflow_names(directory)
+    problems = []
+    for path in sorted(directory.glob("*.y*ml")):
+        spec = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if not isinstance(spec, dict):
+            continue
+        triggers = spec.get("on") or spec.get(True) or {}
+        block = triggers.get("workflow_run") if isinstance(triggers, dict) else None
+        for entry in ([block] if isinstance(block, dict) else (block or [])):
+            for name in (entry or {}).get("workflows") or []:
+                if name != "*" and name not in known:
+                    problems.append(f"{path.name}: {name}")
+    return problems
+
+
+def test_every_workflow_run_trigger_names_a_workflow_that_exists():
+    problems = unknown_watched_workflows()
+    assert not problems, (
+        "these `workflow_run` triggers name a workflow no file declares, so they can never fire — GitHub "
+        "matches on `name:`, and a typo here is silent (the fix is to correct the name or drop the "
+        "trigger deliberately):\n  - " + "\n  - ".join(problems))
+
+
+def test_the_name_rule_notices_a_typo(tmp_path):
+    """Guard the guard: the rule reads the real repository, so its failure mode needs a fixture."""
+    (tmp_path / "real.yml").write_text(
+        "name: Update lessons.json\non: [push]\njobs: {}\n", encoding="utf-8")
+    (tmp_path / "watcher.yml").write_text(
+        "name: Watcher\non:\n  workflow_run:\n    workflows: [\"Update Lessons\"]\n    types: [completed]\n"
+        "jobs: {}\n", encoding="utf-8")
+    assert declared_workflow_names(tmp_path) == {"Update lessons.json", "Watcher"}, declared_workflow_names(tmp_path)
+    problems = unknown_watched_workflows(tmp_path)
+    assert problems == ["watcher.yml: Update Lessons"], problems
+
+    # …and the wildcard escape hatch this repository documents is not flagged.
+    (tmp_path / "watcher.yml").write_text(
+        "name: Watcher\non:\n  workflow_run:\n    workflows: [\"*\"]\n    types: [completed]\n"
+        "jobs: {}\n", encoding="utf-8")
+    assert unknown_watched_workflows(tmp_path) == [], "the documented wildcard is not a typo"

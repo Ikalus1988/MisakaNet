@@ -449,24 +449,21 @@ jobs:
           fi
 
       # ── Lesson Count Consistency Check ──
+      # The *real* invariant, through the count SSOT, and it fails. What stood here was a heuristic that
+      # compared `find lessons/core lessons/contrib -name '*.md'` against the number of `data/lessons.json`
+      # rows and, on a mismatch, printed `::warning::` and then `✅` — it could not fail, and the two
+      # numbers it compared are different facts by design (`canonical_lessons` de-duplicates stems across
+      # directories and excludes templates, so the file count is *expected* to be larger). A gate that
+      # cannot fail and measures the wrong thing is worse than no gate: it reads as coverage.
+      #
+      # `sync_lesson_count.py --check` compares every managed surface (README, ARCHITECTURE, the site's
+      # meta tags, llms.txt …) against `canonical_count()`, and exits non-zero on drift. It was already
+      # running on the release path; this puts it on the PR path too, where count sentences are edited.
       - name: Lesson Count Check
         if: steps.scope.outputs.scope == 'full'
         run: |
-          echo "=== Lesson Count Consistency ==="
-          # Count actual lesson files (excluding README, TEMPLATE, etc.)
-          ACTUAL=$(find lessons/core lessons/contrib -name "*.md" \
-            ! -name "README.md" \
-            ! -name "TEMPLATE.md" \
-            ! -name "LESSON_QUALITY_SCORING.md" \
-            | wc -l)
-          # Count entries in lessons.json
-          JSON_COUNT=$(python3 -c "import json; print(len(json.load(open('data/lessons.json', encoding='utf-8'))))")
-          echo "Actual .md files: $ACTUAL"
-          echo "lessons.json entries: $JSON_COUNT"
-          if [ "$ACTUAL" -ne "$JSON_COUNT" ]; then
-            echo "::warning::Lesson count mismatch: actual=$ACTUAL, lessons.json=$JSON_COUNT"
-          fi
-          echo "✅ Lesson count: $ACTUAL files, $JSON_COUNT indexed"
+          echo "=== Lesson Count Consistency (count SSOT) ==="
+          python3 scripts/sync_lesson_count.py --check
 
       - name: Validate lessons.json schema
         run: |
