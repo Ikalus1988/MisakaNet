@@ -87,7 +87,9 @@ function assertNoInternals(text, label) {
 // and a body naming a table or a file path would be one every visitor's browser caches and re-serves.
 const DOCUMENTED_5XX_CODES = new Set(['internal_error', 'counter_unavailable']);
 
-for (const path of ['/api/counter', '/api/lessons', '/api/analytics', '/api/analytics/traffic', '/api/activity']) {
+// `/api/versions` joined on 2026-09-30 (intake #2486, decision D5): it aggregates five sources, so it is
+// exactly the kind of route that could leak an upstream error message instead of degrading.
+for (const path of ['/api/counter', '/api/lessons', '/api/analytics', '/api/analytics/traffic', '/api/activity', '/api/versions']) {
   test(`${path} reports a failure without internals`, async () => {
     const response = await worker.fetch(new Request(`https://misakanet.org${path}`), createEnv({ d1: throwingD1() }));
     const body = await response.text();
