@@ -413,3 +413,127 @@ def test_the_client_half_carries_no_credential():
                  "api_key": "an API key field", "client_secret": "a secret field"}
     found = [f"{needle!r} ({why})" for needle, why in forbidden.items() if needle in source]
     assert not found, f"the browser half must not send credentials: {found}"
+
+
+# ── the client half's two surfaces, and the rules they encode ────────────────
+#
+# The browser half answers a question the CLI cannot: it puts a *human judgment* into the evidence
+# system (`POST /api/helpful` is the only writer of what `misakanet_me_events` reports). Three properties
+# make that judgment worth having, and each is a static property of this file:
+#
+#   1. it is asked where the outcome is visible, not where the search happened;
+#   2. abstaining costs nothing — nothing auto-votes and nothing is pre-selected;
+#   3. each action says what it sends, and the cheap action sends the least.
+#
+# A UI whose misplacement is invisible to review is how a poisoned evidence signal ships, so these are
+# gates with red fixtures rather than review notes.
+
+SEARCH_ROW = "function MisakanetSearchRow"
+VERDICT_ACTION = "function MisakanetVerdictAction"
+VERDICT_SLOT = "conversation.chat.assistant-actions"
+# Which package declares and types each slot we register into; its row must arrive before ours.
+SLOT_OWNERS = {
+    "tool.call.toolview": "@deepseek-ai/dsh-client-ui-tool",
+    "conversation.chat.assistant-actions": "@deepseek-ai/dsh-client-ui-chat",
+}
+CALL_TO_HELPFUL = re.compile(r"""/api/helpful["']\s*,\s*\{(.*?)\}""", re.S)
+USE_EFFECT = re.compile(r"react\.useEffect\(\s*function\s*\(\)\s*\{(.*?)\}\s*,\s*\[", re.S)
+
+
+def registered_slots(source: str) -> set[str]:
+    """Slot names this bundle registers into (`name: "…"` inside a `slots.register` call)."""
+    return {slot for slot in SLOT_OWNERS if f'name: "{slot}"' in source}
+
+
+def surface_bodies(source: str) -> tuple[str, str]:
+    """The two component bodies, split at the verdict so each can be checked on its own."""
+    assert SEARCH_ROW in source and VERDICT_ACTION in source, (
+        "the client half is expected to keep two surfaces: visibility on the tool call, judgment on the "
+        "assistant message")
+    cut = source.index(VERDICT_ACTION)
+    return source[source.index(SEARCH_ROW):cut], source[cut:]
+
+
+def auto_votes(source: str) -> list[str]:
+    """A POST issued from an effect would be a vote nobody cast. Effects may only observe."""
+    return [body.strip()[:60] for body in USE_EFFECT.findall(source) if "post(" in body or "send(" in body]
+
+
+def test_the_visibility_surface_cannot_vote():
+    """Rule 1: the search row shows what came back; the verdict is asked at the outcome.
+
+    At search time the fix has not run, so "did it help?" is unanswerable. A button there would collect
+    reflex clicks, and reflex clicks are indistinguishable from judgment once they are in the counter.
+    """
+    search, _ = surface_bodies(client_source())
+    assert "post(" not in search, (
+        "the search row must not post anything: judgment belongs on the finalized assistant message, "
+        "where the outcome is visible")
+
+
+def test_the_judgment_surface_is_the_assistant_action_row():
+    """Rule 1, other half: the vote rides the host's own per-message action row, not a new panel."""
+    source = client_source()
+    _, verdict = surface_bodies(source)
+    assert VERDICT_SLOT in source, (
+        "the verdict registers into the host's finalized-assistant-message action list")
+    assert "messageId" in verdict, (
+        "the action row is a list slot keyed per message; the entry must read its own messageId")
+    assert "return null" in verdict, (
+        "an entry with nothing to judge must render nothing, leaving the host's standard action row "
+        "unchanged")
+
+
+def test_every_registered_slot_has_its_owning_package_declared_first():
+    """A keyed/list slot belongs to a package; registering before it loads is a race, not a feature."""
+    pkg = _pkg(REPO)
+    declared = list((pkg.get("dsh", {}).get("client", {}) or {}).get("inject", []))
+    source = client_source()
+    slots = registered_slots(source)
+    assert slots, "no known slot is registered any more; the owner map needs updating with the code"
+    missing = [SLOT_OWNERS[slot] for slot in sorted(slots) if SLOT_OWNERS[slot] not in declared]
+    assert not missing, (
+        f"`dsh.client.inject` must order the factories that declare these slots first: missing {missing}")
+    dead = [name for name in declared if name not in set(SLOT_OWNERS.values())]
+    assert not dead, (
+        f"`dsh.client.inject` names a package no registered slot comes from: {dead} — a declaration "
+        "nobody needs is a dependency the plugin pays for at boot")
+
+
+def test_the_vote_is_never_cast_for_the_person():
+    """Rule 2: abstention is the default. Nothing posts from an effect, and nothing pre-selects."""
+    source = client_source()
+    offenders = auto_votes(source)
+    assert not offenders, f"a verdict must never be posted without a click: {offenders}"
+    assert "defaultChecked" not in source and "checked=" not in source, (
+        "no control may start in a chosen state")
+
+
+def test_the_cheap_vote_sends_the_least_it_can():
+    """Rule 3: 👍 carries the lesson id alone; 👎 carries the search text, and the UI says so.
+
+    The disclosure is not decoration. `/api/feedback` stores the query text and an IP for 90 days, so a
+    click that sends it has to be a click the person understood.
+    """
+    source = client_source()
+    matches = CALL_TO_HELPFUL.findall(source)
+    assert matches, "the helpful vote must post to /api/helpful"
+    assert len(matches) == 1, f"one call site expected for /api/helpful, found {len(matches)}"
+    assert "query" not in matches[0], (
+        f"👍 must send only lesson_id, but its body carries more: {matches[0].strip()!r}")
+    assert "sends the lesson id" in source and "also sends the search text" in source, (
+        "each action must state what it sends, in the UI, before the click")
+
+
+def test_the_design_rules_can_go_red():
+    """The three rules above, demonstrated on both sides of each line."""
+    # a POST in an effect is an auto-vote
+    assert auto_votes("react.useEffect(function () { post('/api/helpful', {}); }, [x]);") != []
+    assert auto_votes("react.useEffect(function () { memory.shownFor = id; }, [x]);") == []
+    # the visibility surface posting is the misplacement
+    assert "post(" in "function MisakanetSearchRow() { post('/api/helpful', {}); } function MisakanetVerdictAction() {}"
+    # 👍 carrying the query is the disclosure bug
+    ok = """/api/helpful", { lesson_id: lesson }"""
+    bad = """/api/helpful", { lesson_id: lesson, query: memory.query }"""
+    assert "query" not in CALL_TO_HELPFUL.findall(ok)[0]
+    assert "query" in CALL_TO_HELPFUL.findall(bad)[0]

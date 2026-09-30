@@ -48,8 +48,20 @@ What is deliberately **not** claimed:
 ## The client half (the browser bundle)
 
 The package also ships a browser half: `exports["./client"]` → `lib/client.js`, declared as
-`dsh.client.platform: "web"`. The host turns that pair into a served bundle and a graph row; it is what
-puts a view on the `misakanet_search` tool call.
+`dsh.client.platform: "web"` with `dsh.client.inject` naming the two packages that declare the slots it
+registers into (`@deepseek-ai/dsh-client-ui-tool`, `@deepseek-ai/dsh-client-ui-chat`). The host turns that
+pair into a served bundle and a graph row. It renders two things, on purpose in two different places:
+
+| slot | what it shows | why there |
+| --- | --- | --- |
+| `tool.call.toolview` (keyed by wire tool name) | the search row: how many lessons came back, which one is on top, its domain and evidence level, with the raw payload in a disclosure | search time is when a person can *see* something; it is the wrong moment to ask whether it helped, because the fix has not run yet |
+| `conversation.chat.assistant-actions` (list entry `misakanet-verdict`) | 👍 Helpful / 👎 Not what I needed, beside the host's own Like/Dislike | the finalized assistant message is where the outcome is visible, and the only surface a human can judge from |
+
+The verdict is not cosmetic: `POST /api/helpful` is the only writer of the counter `misakanet_me_events`
+reports as `lesson_found_helpful`, so one click is what turns a private success into reuse evidence every
+later agent can read. 👍 sends the lesson id alone; 👎 also sends the search text — `/api/feedback` stores
+that query and an IP for 90 days, which is why the row says so before the click. Nothing votes
+automatically and abstaining is free.
 
 **Measured (2026-10-01, `dsh 0.2.0-rc.2`), installing the working tree rather than the published tarball:**
 
