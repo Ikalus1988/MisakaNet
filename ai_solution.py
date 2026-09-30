@@ -1,10 +1,7 @@
-To address the questions, I'll create a lesson that covers both issues.
-
-# Using Swift-format: Diagnostics and Source Path
-
+```swift
 ## Problem
 
-When using Swift-format, which diagnostics require editing the source, and what are the correct options for specifying the source?
+When using Swift-format, which diagnostics require editing the source, and what is the correct way to specify the source?
 
 ## Domain
 
@@ -29,52 +26,15 @@ Programming, Swift, Swift-format.
 
 Run the following commands:
 
-```bash
 swift-format --help
-```
 
 Expected output includes the options and their descriptions.
 
-```bash
 swift-format --source-directory .
-```
 
 This command should format all Swift files in the current directory.
 
-```bash
 swift-format --path example.swift
-```
 
 This command should format the specified file.
-
----
-
-```bash
-swift-format --help
 ```
-
-Output:
-
-```
-Usage: swift-format [options]
-
-Options:
-  --strict             Use the strict formatting rules.
-  --use-lexicographic-ordered-dictionary-keys
-                        Order dictionary keys lexicographically when possible.
-  --source-directory
-                        The directory containing the source files.
-  --path                The path to a single source file.
-```
-
-```bash
-swift-format --source-directory .
-```
-
-This command formats all Swift files in the current directory.
-
-```bash
-swift-format --path example.swift
-```
-
-This command formats the specified Swift file.
