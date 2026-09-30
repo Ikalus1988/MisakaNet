@@ -77,6 +77,11 @@ workflows / workers / 插件清单 / `tests/`，线上那份扫全树。
 改完要把这些文件从 `EXEMPT_FILES` 去掉——`test_every_exemption_is_still_earned` 会逼你这么做
 （不再命中却还挂在豁免表里 = 一个开了口的洞）。
 
+⚠️ **但先别动手**：上游已经在做同一件事（[#3153](https://github.com/hashgraph-online/hol-guard/issues/3153)
+收录了这一类，修复 PR [#3260](https://github.com/hashgraph-online/hol-guard/pull/3260) 开着），
+等 action 换新后这 8 条会自己消失。改 5 个脱敏测试的夹具是有风险的动作（改坏断言不容易被发现），
+不值得跟上游抢。见 §6。
+
 ### 3.2 `sk-` 词内碰撞（9 条告警 / 7 个文件，**只能上游修**）
 
 命中的不是 key，是**普通英文词里的 `sk-`**：`di`+`sk-full-…`、`ta`+`sk-claim-…`、`ri`+`sk-concurrency-…`。
@@ -103,13 +108,20 @@ PY
 （路径用 glob 写，是为了让**这份记录本身**不包含那个 `sk-` 连续串——否则本文会变成同规则的第 8 条告警。
 上面 7 个文件的命中行号与告警一一对应：8 / 6 / 8 / 6 / 456 / 120 / 270。）
 
-hol-guard 的源码里**已经有**词边界 `(?<![A-Za-z0-9])`（v3.6.1 的
-`src/codex_plugin_scanner/checks/security_secret_patterns.py`）。**部署的那份没有**——这是推断，
-依据是上面对齐的行号（有词边界时这 7 个文件一个都不命中）加上告警上写的 tool version `2.2.0`：那个
-2.2.0 的 wheel 不在 PyPI 上（PyPI 上最新是 2.0.12，也就是本地那份门禁复制的版本），所以没法把它装下来
-直接复现。结论仍然是「上游已修、尚未发布」：等 hol-guard 发了带这个词边界的版本、并 bump
-`guarded-repository.yml` 的 pin，这 7 条会自己消失——届时**本地那份门禁也该换成新版本的模式表**，
-把两个模型之间的漂移一起修掉。
+**根因已定位（不再是推断）：CI 真正跑的不是我们 pin 的那个 SHA。**
+
+- 我们 pin 的 reusable workflow 是 `guarded-repository.yml@f220f7b0`（v3.6.1）；
+- 它内部调用的是 `hashgraph-online/hol-guard/guarded-repository@4f2dbdfc45`；
+- 那个 action 树停在 **2026-08-10**，`src/codex_plugin_scanner/version.py` 正是
+  **`__version__ = "2.2.0"`**（与告警上的 tool version 逐字对上），它的 `checks/security.py` 里那条正则
+  **没有词边界**：`SecretPattern(re.compile(r"sk-(?:proj-|ant-)?[A-Za-z0-9_-]{20,}"))`；
+- `main` 已把检测器挪进 `checks/security_secret_patterns.py` 并补上 `(?<![A-Za-z0-9])`，但**这个修复到不了
+  Action**：`guarded-repository.yml` 在 **v3.6.1 和最新 v3.13.1 上都指向同一个 `4f2dbdfc45`**。
+
+所以 bump 我们自己的 pin 也没用。已提上游
+[hol-guard#3291](https://github.com/hashgraph-online/hol-guard/issues/3291)：请他们把 action 引用指到带修复的
+提交，或把 lookbehind 回移到那个 action。等 action 换掉，这 7 条（以及重复的两条）会自己消失——届时**本地
+那份门禁也该换成新版本的模式表**，把两个模型之间的漂移一起修掉。
 
 这 7 条**不能**在仓库侧修：其中 4 个是 `lessons/*.md` 生成的公开页面（slug 就是 URL），
 `sitemap.xml` / `.generated-pages.json` 是生成物，`docs/field-reports/…` 是历史记录。
@@ -152,11 +164,26 @@ TDZ 规则分析的是两个脚本拼起来的假文件，正是它要抓的那�
 处置：把那个词拆开写（例如在中间插 Markdown 强调）即可不再命中——**本文也照此处理**，
 否则这份记录自己就会变成同规则的第 3 条告警。
 
-## 6. 待 owner 决定
+## 6. 现在等什么（2026-09-30 收尾时更新）
 
-1. **#3.2 / #3.3 的 10 条**：上游修好之前只能 dismiss（`won't fix` / `false positive`），
-   或者等 hol-guard 发新版本后 bump `guarded-repository.yml` 的 pin 再看它们自己消失。
-   （#288/#289 是其中两条的重复，一起关掉。）
-2. **#3.4 / §5 的 3 条**：改文档措辞就能消，但要动发布说明和历史交接记录，属于编辑决定。
-3. **#3.1 的 8 条**：仓库侧可以清，做法在 §3.1；本轮**没有**动它们，因为这需要把 5 个脱敏测试的夹具
-   改成运行时拼接，风险与收益要 owner 先点头（改夹具容易，改坏脱敏断言不容易被发现）。
+**21 条误报里有 21 条都指向同一个上游动作，所以仓库侧不需要做内容手术** —— 这是后来查清的部分：
+
+| 类别 | 上游状态 | 我们要等的 |
+|---|---|---|
+| #3.2 的 9 条（`sk-` 词内碰撞） | `main` 已修，**Action 未发布** | [hol-guard#3291](https://github.com/hashgraph-online/hol-guard/issues/3291)；他们换掉 action 引用后告警自动消失 |
+| #3.1 的 8 条（脱敏夹具假凭据）+ §5 的 2 条（文档里引用沙箱模式名） | 已被 [#3153](https://github.com/hashgraph-online/hol-guard/issues/3153) 收录，修复 PR [#3260](https://github.com/hashgraph-online/hol-guard/pull/3260) **开着** | #3260 进到 action 之后同样自动消失 |
+| §3.3 的 1 条（`data/lessons.json` 里的课程占位 key） | 未被上游收录（投影里没有 `docs/` 路径提示，示例豁免不生效） | 要么给上游补一个「schema 化生成物也继承源文件路径」的点，要么就让它挂着（**不**改课程正文） |
+| §3.4 的 1 条（发布说明里的公开标签） | 与上游无关 | 改标点的编辑决定，或 dismiss |
+
+具体到动作：
+
+1. **等 hol-guard 把 action 引用换掉**（我们 #3291 + 他们的 #3260），然后重跑 `guarded-repository.yml`；
+   如果新 action 里 #3260 的豁免生效，8 + 2 + 2（重复）条会一起消失。
+2. **#3.3 那 1 条**：可以直接 dismiss（课程示例，不是凭据），或者给上游再提一个点——**不要**为了它改课程正文。
+3. **`sk-` 的 7 条**：#3291 之前只能 dismiss 或等。**不要**为了让 slug 不命中而改公开 URL。
+4. 若上游长期不动：把 `guarded-repository.yml` 的调用换成自带扫描器版本（或自建一次扫描），那是更大的一步，
+   需要 owner 决定。
+
+**一件事仍然值得在仓库里做**：`tests/test_scanner_secret_patterns.py` 复制的是 PyPI 2.0.12 的模式表，与 CI 上
+跑的 2.2.0 已经漂移。等 action 换新后，把那份表同步到当时的 release，并让它覆盖 CI 真正扫的路径
+（现在只扫 workflows/workers/插件清单/tests 四类 glob）。
