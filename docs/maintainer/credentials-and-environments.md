@@ -136,6 +136,48 @@ environment → prove it with a `dry_run` dispatch (the identity step calls `npm
 and fails with a named error when the value is wrong). Expiry date tracked as issue **#2113**, labelled
 `keep`. The token's real "rotation" is step 5 above: deleting it.
 
+**Retirement decision (2026-10-01, owner): the secret stays until *every* package has published once
+through OIDC — and that condition is checkable, so nobody has to remember it.** `misakanet` has
+(2.39.0); the other two are already at their published version, so **their next release is the proof** and
+there is nothing to do until then. Provenance/attestations are produced *only* by the trusted-publish
+path, which makes them the evidence rather than a guess:
+
+```sh
+for p in misakanet @misaka-net/misakanet-setup @misaka-net/fatal-guard; do
+  enc=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=''))" "$p")
+  curl -sS "https://registry.npmjs.org/$enc" | python3 -c "
+import json,sys
+d = json.load(sys.stdin); v = d['dist-tags']['latest']
+print(d['name'], v, 'attestations:', bool(d['versions'][v].get('dist', {}).get('attestations')))"
+done
+```
+
+Delete `NPM_TOKEN` (and the `NODE_AUTH_TOKEN` passthrough) only when all three print `attestations: True`.
+Deleting earlier trades a working fallback for a release that can fail with a bare 401, and step 5 above is
+the only thing that makes deletion safe.
+
+### 4.2 The onboarding snapshot's GitHub traffic leg is deliberately credential-free (2026-10-01)
+
+`scripts/snapshot_onboarding.py` has three legs: npm downloads, the site's own activity counts, and
+GitHub's 14-day clones/views. The third needs the **Administration: read** repository permission, which
+`GITHUB_TOKEN` cannot be granted — and the first attempt at a fix suggested a PAT instead. **Decision: it
+does not get one, and `"traffic": null` is the intended state**, for two reasons that both point the same
+way:
+
+* **Blast radius vs. value.** The only token in this repository that can already read that endpoint is
+  `SHELDON_PAT`, which exists to **push to `main` as a user** (§5, `branch-sync-and-ci.md`). Handing a
+  push-capable credential to an unattended weekly job — to fetch three integers — is a bad trade; the
+  numbers are context for a metric we already concluded is measured at the wrong end of the funnel.
+* **Better data already exists.** Every request the worker answers is classified as **`agent` /
+  `crawler` / `pageview`** (`/api/activity`, published in the badge's `activity.calls`), which answers
+  "how much of this is machines" per request, at the bottom of the funnel, with no new permission.
+
+If someone later wants the clone counts automated, the only acceptable shape is a **fine-grained PAT with
+`Administration: read` and nothing else**, in its own environment — never `SHELDON_PAT`, never a classic
+token. Until then the snapshot keeps saying so: it warns, it does not claim a `traffic` window it did not
+measure, and the workflow passes only `GITHUB_TOKEN`.
+
+
 ## 5. What is deliberately still repository-level
 
 `SHELDON_PAT` is the token that lets the branch sync push to `main` as a user rather than as
