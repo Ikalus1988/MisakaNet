@@ -544,7 +544,7 @@ function openFeedbackIssue() {
   window.open(url, '_blank');
 }
 
-function render(results, q) {
+function render(results, q, meta) {
   const el = document.getElementById('results');
   _lastResults = results;
   reportUnsolvedSearch(q, results);
@@ -560,6 +560,9 @@ function render(results, q) {
   }
   const searchable = _lessons ? _lessons.filter(isSearchable).length : 0;
   const total = _lessons ? _lessons.length : 0;
+  if (meta && meta.source === 'server') {
+    showServerNote(q, meta.relaxed ? serverNote('relaxed') : serverNote('ranked'));
+  }
 
   // Classify and group results (resultType drives Top fixes / Related /
   // Common grouping; the composite confidence value is no longer displayed —
@@ -754,6 +757,74 @@ function runSearch(q) {
   return results;
 }
 
+/** The *committed* query goes to the Worker; typing stays local.
+ *
+ * WHY (2026-09-30, measured by `scripts/bench_search_parity.mjs`): the local scorer is a substring match
+ * over four metadata fields — it always returns five rows (its extra hits are mostly false positives) and
+ * it cannot see lesson **bodies**. The server ranks by BM25/IDF over the bodies too. The two rankings
+ * disagree on most queries, so this is a visible change, and it is split deliberately: `input` keeps using
+ * the local scorer so the list is instant and no request is made per keystroke — this worker shares one
+ * anti-burst window (20 reads / 60 s) across every read entry point, so per-keystroke server calls would
+ * throttle a real visitor.
+ *
+ * The local list renders first and is replaced by the server's answer when it has one; when the server
+ * answers `no_match` the local hits stay and the note says what the server knows, rather than blanking a
+ * page that visibly had results.
+ */
+async function runServerSearch(q) {
+  runSearch(q);
+  try {
+    const r = await fetch('/api/lessons?q=' + encodeURIComponent(q) + '&limit=20');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const payload = await r.json();
+    const rows = Array.isArray(payload && payload.results) ? payload.results : [];
+    if (!rows.length) {
+      if (payload && payload.no_match) showServerNote(q, serverNote('noMatch'));
+      return;
+    }
+    render(rows.map(toLocalShape), q, { source: 'server', relaxed: payload.relaxed === true });
+  } catch (err) {
+    console.warn('MisakaNet search: server ranking unavailable — ' + err.message);
+  }
+}
+
+/** Server rows carry `description` where the local rows carry `summary`, and `rank` where they carry
+ *  `score`. Only the shape is adapted — the order is the server's. */
+function toLocalShape(row) {
+  return Object.assign({}, row, { summary: row.summary || row.description || '' });
+}
+
+/** The note's copy lives here rather than in `docs/locales/*.json`, because those dictionaries are the
+ *  *homepage's* translation surface and `tests/test_site_i18n.py` fails any key the homepage does not
+ *  reach — a rule that has already caught wrong wording shipped next to the right one. This page keeps its
+ *  own map, in both languages, beside the inline English copy its no-match block has always had. */
+const SERVER_NOTES = {
+  en: {
+    ranked: 'Ranked by the server index — it matches lesson bodies, not only titles.',
+    relaxed: 'No lesson matched every word; these match some of them.',
+    noMatch: 'The server index found no match; showing local keyword matches.',
+  },
+  zh: {
+    ranked: '由服务端索引排序——它覆盖课程正文，不只是标题。',
+    relaxed: '没有课程命中全部词；以下是命中部分词的结果。',
+    noMatch: '服务端索引没有命中；以下是本地关键词匹配。',
+  },
+};
+
+const serverNote = (kind) => (SERVER_NOTES[LANG] || SERVER_NOTES.en)[kind] || '';
+
+/** One line under the results, so "these are partial matches" and "these are substring matches" are
+ *  never confused with "the server ranked these". */
+function showServerNote(q, text) {
+  const el = document.getElementById('results');
+  if (!el || !text) return;
+  const note = document.createElement('div');
+  note.className = 'result-source';
+  note.style.cssText = 'font-size:12px;color:#8b949e;margin:10px 0 0;';
+  note.textContent = text;
+  el.insertBefore(note, el.firstChild);
+}
+
 async function init() {
   try {
     _lessons = await fetchLessonsWithFallback();
@@ -764,8 +835,11 @@ async function init() {
     const lessonId = params.get('lesson');
     if (q) {
       document.getElementById('q').value = q;
-      const results = search(q);
+      let results = search(q);
       render(results, q);
+      // A deep link is a committed query: the server's ranking replaces the local one when it answers.
+      await runServerSearch(q);
+      results = _lastResults;
       // Auto-expand matching lesson
       if (lessonId && results.length) {
         const idx = results.findIndex(r => r.id === lessonId);
@@ -794,6 +868,7 @@ document.getElementById('q').addEventListener('keydown', function(event) {
   event.preventDefault();
   const results = runSearch(q);
   if (results.length) togglePreview(0);
+  runServerSearch(q);
 });
 
 document.getElementById('results').addEventListener('click', function(event) {
