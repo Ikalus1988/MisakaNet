@@ -41,7 +41,7 @@
 |---|---|
 | `data/lessons.json` | `python3 scripts/update_lessons_json.py`（canonical 378 条，唯一 id） |
 | `docs/_lessons_count.txt` | 同上，经 `scripts/sync_lesson_count.py` |
-| `docs/lessons/**`、`docs/topics/**`（含 `/topics/` 索引）、`docs/sitemap.xml` | `python3 scripts/build_lesson_pages.py`（幂等，`--check` 是门禁；清单在 `docs/.generated-pages.json`）——由每日 `update-lessons.yml` 在刷新索引后自动跑 |
+| `docs/lessons/**`、`docs/topics/**`（含 `/topics/` 索引）、`docs/sitemap.xml` | `python3 scripts/build_lesson_pages.py`（幂等，`--check` 是门禁；清单在 `docs/.generated-pages.json`）——由 `update-lessons.yml` 在刷新索引后自动跑：每日一次，以及 push 到 `lessons/**` 时一次（否则合并进来的课程要等一天才有页面，而 `sync-d1.yml` 当场就让它可检索了）。`--check` 除"计划 vs 磁盘"外还查两条与计划无关的关系：不可成页的 lesson（无 `title`，或 `title` 无法成 slug）与语料里没有页面的 lesson（2026-09-30）|
 | 站内**必须含字面计数**的三处（`docs/index.html` 的 meta/首屏降级、`docs/llms.txt` 与 `.well-known` 副本） | `python3 scripts/sync_lesson_count.py`（幂等；`--check` 是门禁，`tests/test_lesson_count_ssot.py` 锁不变量 + 面数上限）。其余表面**指向**而不是复制：GitHub 渲染的 markdown 用 shields 动态徽章（读 `data` 分支 `badges/*.json`，`update-badges.yml` 每日推），散文/描述里只写来源（`data/lessons.json` / `llms.txt`） |
 | `data/okf/lessons.jsonl` | `python3 scripts/export_okf.py`（SAG/OKF 数据源） |
 | `data/sag.db` | `python3 scripts/build_sag_index.py`（构建模式） |
