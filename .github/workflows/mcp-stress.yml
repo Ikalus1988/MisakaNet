@@ -1,24 +1,19 @@
 name: MCP Endpoint Stress Tests
 
 on:
+  # `workers/**`, not a hand-picked list. This filter used to name `register-proxy-sw.js` plus five test
+  # files, while the job itself runs `node --test workers/*.test.mjs` — so the *suite* was fixed in
+  # 2026-09-12 (`d1-fts-search.test.mjs` had been red on main unnoticed) and the *trigger* kept the same
+  # defect: a PR touching any of the other ~54 test files ran no node tests at all. Found by an
+  # architecture review, 2026-09-29. A path filter that enumerates files is a file list that drifts.
   pull_request:
     paths:
-      - "workers/register-proxy-sw.js"
-      - "workers/mcp-endpoint.stress.test.mjs"
-      - "workers/mcp-no-match.test.mjs"
-      - "workers/d1-lesson-service.test.mjs"
-      - "workers/mcp-anonymous-read.test.mjs"
-      - "workers/intake-kind.test.mjs"
+      - "workers/**"
       - ".github/workflows/mcp-stress.yml"
   push:
     branches: [main]
     paths:
-      - "workers/register-proxy-sw.js"
-      - "workers/mcp-endpoint.stress.test.mjs"
-      - "workers/mcp-no-match.test.mjs"
-      - "workers/d1-lesson-service.test.mjs"
-      - "workers/mcp-anonymous-read.test.mjs"
-      - "workers/intake-kind.test.mjs"
+      - "workers/**"
   workflow_dispatch:
 
 permissions:
