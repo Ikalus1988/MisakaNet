@@ -477,6 +477,7 @@
   <url><loc>https://misakanet.org/lessons/single-instance-flock-for-shell-snipers/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fault-tolerance-for-static-pages-calling-external-apis/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/split-stdoutstderr-in-cron-earn-jobs/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/swift-format-diagnostics-that-need-source-edits-vs-auto-fixable-nsopenpanelnssav/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/set-a-clear-user-agent-on-earn-http-clients/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/archive-open-failure/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/fanuc-backup-extract-guide/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
