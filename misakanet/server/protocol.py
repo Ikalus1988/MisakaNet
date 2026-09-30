@@ -7,6 +7,7 @@ import sys
 from ._config import get_server_version
 from .handlers import (
     handle_get_lesson,
+    handle_me_inbox,
     handle_memory_context,
     handle_preflight,
     handle_register,
@@ -31,6 +32,7 @@ _HANDLERS = {
     "misakanet_usage_status": handle_usage_status,
     "misakanet_register": handle_register,
     "misakanet_memory_context": handle_memory_context,
+    "misakanet_me_inbox": handle_me_inbox,
 }
 
 

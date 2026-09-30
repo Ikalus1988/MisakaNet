@@ -571,6 +571,47 @@ TOOLS = [
             "required": ["task"],
         },
     },
+    {
+        "name": "misakanet_me_inbox",
+        "description": (
+            "Check your agent inbox for answered questions and"
+            " conversion receipts. Use after submitting an intake"
+            " (misakanet_submit_intake) to poll for maintainer"
+            " answers or lesson conversions."
+            " Input semantics: provide intake_id (the ID from"
+            " submit_intake) or dedup_key (the dedup hash from"
+            " submit_intake). At least one is required."
+            " Output schema: JSON with events[], count, status,"
+            " and poll_hint. Each event has a type (answered,"
+            " converted, accepted, lesson_published) and"
+            " type-specific fields."
+            " Error cases: missing both intake_id and dedup_key"
+            " returns {error, hint}."
+            " Side effects: none — this is a read-only call."
+            " Auth: none."
+            " Rate limits: none — reads from D1 database and"
+            " local data files."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "intake_id": {
+                    "type": "string",
+                    "description": (
+                        "The intake ID from misakanet_submit_intake"
+                        " response (e.g. 'abc123')."
+                    ),
+                },
+                "dedup_key": {
+                    "type": "string",
+                    "description": (
+                        "The dedup hash from misakanet_submit_intake"
+                        " response (e.g. 'def456')."
+                    ),
+                },
+            },
+        },
+    },
 ]
 
 
