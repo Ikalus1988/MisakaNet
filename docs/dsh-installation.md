@@ -45,6 +45,14 @@ cp -r skills/misakanet ~/.dsh/skills/
    ```
    You should see `misakanet` in the output.
 
+The same install from the Web UI, which is the path most people take — the sidebar's **插件** page, its
+**添加插件** button, and the package name:
+
+![DeepSeek Harness — Add plugin dialog with the package name misakanet typed in](assets/dsh-plugin-add.png)
+
+The dialog takes a **package name**, a GitHub URL, or a local path — not a catalogue entry, so the value
+to type is the same one the command above uses.
+
 ### Method 2: Git Repository
 
 1. Ensure Git is installed on your system
