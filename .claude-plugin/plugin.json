@@ -1,0 +1,32 @@
+{
+  "name": "misakanet",
+  "description": "Failure-memory network for AI coding agents: search evidence-rated failure lessons before re-debugging, and turn new failures into shared knowledge.",
+  "version": "2.39.0",
+  "author": {
+    "name": "Ikalus1988",
+    "url": "https://github.com/Ikalus1988"
+  },
+  "homepage": "https://misakanet.org",
+  "repository": "https://github.com/Ikalus1988/MisakaNet",
+  "license": "Apache-2.0",
+  "keywords": [
+    "failure-memory",
+    "lessons",
+    "debugging",
+    "mcp",
+    "agents",
+    "knowledge-base",
+    "postmortem",
+    "error-signatures"
+  ],
+  "mcpServers": {
+    "misakanet": {
+      "type": "http",
+      "url": "https://misakanet.org/mcp",
+      "headers": {
+        "X-MisakaNet-Agent": "claude-code",
+        "X-MisakaNet-Client": "claude-code-plugin"
+      }
+    }
+  }
+}
