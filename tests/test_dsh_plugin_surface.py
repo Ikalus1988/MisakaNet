@@ -771,3 +771,18 @@ def test_every_counted_noun_in_the_panel_can_be_singular():
         f"a count is concatenated with a hard-coded plural, so it reads wrong at 1: {hardcoded}")
     assert panel.count("count(") >= 6, (
         "the panel's counted nouns must all go through the helper")
+
+
+def test_the_plural_helper_is_given_the_plural_where_english_is_irregular():
+    """The first version printed "2 searchs" — and the commit message that introduced it said "2 searches".
+
+    A helper that appends "s" is right for most of this panel's nouns and wrong for exactly one of them,
+    which is the shape of bug that survives review. So the irregular plural is passed at the call site,
+    and this gate refuses a two-argument `count(…, "search")`.
+    """
+    source = client_source()
+    assert "function count(n, singular, many)" in source, "the helper must accept an explicit plural"
+    bare = re.findall(r'count\([^)]*?"search"\)', source)
+    assert not bare, f"`count(n, \"search\")` would print \"searchs\": {bare}"
+    assert source.count('"search", "searches"') >= 2, (
+        "both search counts (the stat strip and the activity line) must pass the plural")
