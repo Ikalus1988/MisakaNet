@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from .get_lesson import handle_get_lesson
+from .inbox import handle_me_inbox
 from .memory_context import handle_memory_context
 from .preflight import handle_preflight
 from .search import handle_search
@@ -19,4 +20,5 @@ __all__ = [
     "handle_usage_status",
     "handle_register",
     "handle_memory_context",
+    "handle_me_inbox",
 ]

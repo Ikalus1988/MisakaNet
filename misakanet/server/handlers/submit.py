@@ -151,9 +151,28 @@ def handle_submit_intake(args: dict) -> dict:
             "existing_id": result.get("existing_id", ""),
         }
 
+    # Build dedup key for polling (same scheme as worker: kind:problem:error)
+    import hashlib
+    dedup_source = f"{kind}:{problem}:{error}"
+    dedup_hash = hashlib.sha256(dedup_source.encode()).hexdigest()[:16]
+
+    # Polling instructions — the agent can call misakanet_me_inbox with
+    # either the intake_id or the dedup_key to check for answers.
+    is_question = kind == "question"
+    poll_hint = (
+        f"To check for an answer later, call misakanet_me_inbox"
+        f" with intake_id=\"{result['id']}\" or dedup_key=\"{dedup_hash}\"."
+        f" Answers typically arrive within 24-48 hours."
+        if is_question else
+        f"To check if this intake was converted to a lesson, call"
+        f" misakanet_me_inbox with intake_id=\"{result['id']}\""
+        f" or dedup_key=\"{dedup_hash}\"."
+    )
+
     return {
         "submitted": True,
         "intake_id": result["id"],
+        "dedup_key": dedup_hash,
         "status": result["status"],
         "redactions_applied": result.get("redactions_applied", 0),
         "quality_score": result.get("quality_score", 0),
@@ -161,4 +180,6 @@ def handle_submit_intake(args: dict) -> dict:
             f"Keep this ID ({result['id']});"
             " no account or email is required."
         ),
+        "poll_hint": poll_hint,
+        "inbox_tool": "misakanet_me_inbox",
     }
