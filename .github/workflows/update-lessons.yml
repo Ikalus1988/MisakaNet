@@ -97,6 +97,14 @@ jobs:
       - name: Regenerate the OKF export
         run: python3 scripts/export_okf.py
 
+      # Emit intake conversion receipts (#1528).  When a contributed lesson
+      # (with contrib_id in frontmatter) is published, notify the original
+      # source by commenting on their intake issue.
+      - name: Emit intake receipts
+        env:
+          GH_TOKEN: ${{ secrets.SHELDON_PAT }}
+        run: python3 scripts/emit_intake_receipt.py --quiet
+
       - name: Check for changes
         id: check
         run: |
