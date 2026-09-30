@@ -1,6 +1,6 @@
 # Node Hardening — @misaka-net/fatal-guard
 
-> How to harden any Node.js CLI process with stdlib-onlyendency fatal error monitoring.
+> How to harden any Node.js CLI process with stdlib-only fatal error monitoring.
 > Two modes: **wrapper** (no code changes) and **preload** (`node -r`).
 
 ## Why
