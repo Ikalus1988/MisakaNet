@@ -26,6 +26,7 @@ Run: `python3 -m pytest tests/test_docs_data_copy.py -q`
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -290,8 +291,9 @@ def test_the_browser_projection_is_a_view_of_the_corpus():
 def test_the_projection_rule_notices_a_missing_lesson(tmp_path):
     """Guard the guard: this check reads the repository, so its red case needs a fixture."""
     canonical = write_index(tmp_path / "data" / "lessons.json", [lesson("a"), lesson("b")])
-    thin = write_index(tmp_path / "lite.json", [{"id": "a", "title": "A", "summary": "s",
-                                                "domain": "d", "tags": []}])
+    thin = write_index(tmp_path / "lite.json",
+                       [{field: ("a" if field == "id" else ([] if field == "tags" else "x"))
+                         for field in cdc.LITE_FIELDS}])
     problems = cdc.compare_lite_projection(canonical, thin)
     assert any("missing from the projection" in p for p in problems), problems
 
@@ -310,10 +312,13 @@ def test_the_projection_rule_notices_the_size_regression_it_exists_to_prevent(tm
 def test_the_projection_rule_accepts_the_same_ids_in_another_order(tmp_path):
     """Order is the corpus's business, not the projection's — a reshuffle must not read as drift."""
     canonical = write_index(tmp_path / "data" / "lessons.json", [lesson("a"), lesson("b")])
-    shuffled = write_index(tmp_path / "lite.json", [
-        {"id": "b", "title": "B", "summary": "s", "domain": "d", "tags": []},
-        {"id": "a", "title": "A", "summary": "s", "domain": "d", "tags": []},
-    ])
+    # Built from LITE_FIELDS, not typed out: a fixture with yesterday's field list fails the day the
+    # projection gains a field, which is noise rather than signal (this file has already done that once).
+    def entry(lid: str) -> dict:
+        return {field: (lid if field == "id" else []) if field == "tags" else lid
+                for field in cdc.LITE_FIELDS}
+
+    shuffled = write_index(tmp_path / "lite.json", [entry("b"), entry("a")])
     assert cdc.compare_lite_projection(canonical, shuffled) == []
 
 
@@ -344,3 +349,95 @@ def test_the_search_page_fetches_the_lesson_body_instead_of_shipping_every_body(
     assert "misakanet_get_lesson" in search, "the panel must read the documented public read path"
     assert "lesson.preview" in search or "preview" in search, (
         "the panel should still accept a projection/corpus that carries preview, so the fallback works")
+
+
+# ── the projection must be sufficient for what the pages compute ─────────────────────────────────────
+# Two regressions from the change that introduced the projection (2026-09-30), both silent:
+#
+#   * `evidence_level` was not in it, so the homepage's stats card computed **0** evidence-backed lessons
+#     (it filters E3+E4, which is 26 of 426) — the field was read by the page, missing from the data, and
+#     nothing said so;
+#   * `getLessonsUrl()` returned a `const` declared ~450 lines *below* the top-level `loadLessons()` call,
+#     so the first load threw `ReferenceError: Cannot access 'LESSONS_LITE_URL' before initialization` and
+#     the page rendered its placeholder "—" for **every** counter — a temporal dead zone, i.e. the file
+#     parsed and then failed at run time.
+#
+# The rules below derive both facts from the pages themselves, so the next projection change cannot repeat
+# them quietly: what the page reads must be in the projection, and the corpus constants must be declared
+# before anything uses them.
+
+HOME = "docs/index.html"
+SEARCH = "docs/search/index.html"
+
+
+def fields_the_page_reads(root: Path | None = None, rel: str = HOME) -> set[str]:
+    """Corpus-object fields a page reads, as `l.<field>` (the projection's job is to carry these)."""
+    base = Path(root) if root is not None else REPO
+    return set(re.findall(r"\bl\.([a-z_]+)", (base / rel).read_text(encoding="utf-8")))
+
+
+def test_the_projection_carries_every_field_the_pages_read():
+    missing = projection_gaps(REPO, cdc.LITE_FIELDS)
+    assert not missing, (
+        "these pages read corpus fields the projection does not carry, so the value is silently undefined "
+        "at run time (the first version of the projection broke the homepage's evidence counter this "
+        "way — `evidence_level` missing → 0 instead of 26): "
+        + "; ".join(f"{rel}: {gap}" for rel, gap in missing.items())
+        + " — either add the field to LITE_FIELDS in scripts/update_lessons_json.py, or stop reading it")
+
+
+def projection_gaps(root: Path, lite_fields) -> dict[str, list[str]]:
+    """Pages that read a corpus field the projection does not carry, as {page: [fields]}."""
+    keys = set(json.loads((root / "data" / "lessons.json").read_text(encoding="utf-8"))[0])
+    gaps: dict[str, list[str]] = {}
+    for rel in (HOME, SEARCH):
+        read = fields_the_page_reads(root, rel) & keys
+        missing = sorted(read - set(lite_fields))
+        if missing:
+            gaps[rel] = missing
+    return gaps
+
+
+def test_the_field_rule_notices_a_page_reading_an_unprojected_field(tmp_path):
+    """Guard: the rule reads real files, so its red case needs a fixture."""
+    scratch = tmp_path / "repo"
+    (scratch / "docs" / "search").mkdir(parents=True)
+    (scratch / "data").mkdir(parents=True)
+    (scratch / "data" / "lessons.json").write_text(
+        json.dumps([{"id": "a", "title": "A", "brand_new_field": 1}]), encoding="utf-8")
+    (scratch / "docs" / "index.html").write_text("<script>l.brand_new_field</script>", encoding="utf-8")
+    (scratch / "docs" / "search" / "index.html").write_text("<script>l.title</script>", encoding="utf-8")
+    assert projection_gaps(scratch, ("id", "title")) == {HOME: ["brand_new_field"]}, (
+        "a page reading a field the projection lacks must be reported")
+    assert projection_gaps(scratch, ("id", "title", "brand_new_field")) == {}, (
+        "…and adding the field to the projection must clear it")
+
+
+# Each page has one top-level call that starts its corpus load; the constant has to be declared before it,
+# because `const` is not hoisted — a use before the declaration is a temporal dead zone, i.e. a run-time
+# `ReferenceError` in a file that parses perfectly.
+CORPUS_ENTRY_POINTS = {HOME: "loadLessons();", SEARCH: "init();"}
+
+
+def test_the_corpus_constants_are_declared_before_each_page_loads_the_corpus():
+    """A `const` used before its declaration throws at run time, not at parse time.
+
+    The homepage did exactly that after the projection landed: `loadLessons();` sat ~450 lines above
+    `const LESSONS_LITE_URL`. The promise rejected, `_allLessons` stayed null, and every counter on the stats
+    card rendered its placeholder "—" (2026-09-30, reported from a screenshot). The search page was fine,
+    and this rule keeps both that way.
+    """
+    problems = []
+    for rel, entry in CORPUS_ENTRY_POINTS.items():
+        text = (REPO / rel).read_text(encoding="utf-8")
+        declaration = text.index("const LESSONS_LITE_URL")
+        # The *first* occurrence: a call inside an earlier function body is still a use site, but what
+        # matters is whether anything can reach it before the declaration is evaluated.
+        first_use = text.index(entry)
+        if declaration > first_use:
+            problems.append(f"{rel}: `{entry}` (offset {first_use}) precedes `const LESSONS_LITE_URL` "
+                            f"(offset {declaration})")
+    assert not problems, (
+        "these pages read the corpus URL before the constant is declared, which is "
+        "`ReferenceError: Cannot access 'LESSONS_LITE_URL' before initialization` at run time — it aborts "
+        "the corpus load and leaves every counter on its placeholder:\n  - " + "\n  - ".join(problems))
