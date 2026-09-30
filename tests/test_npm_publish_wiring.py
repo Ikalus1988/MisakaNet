@@ -36,11 +36,14 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
+
+from posix_shell import require_posix_shell
 
 yaml = pytest.importorskip("yaml", reason="PyYAML parses the workflow")
 
@@ -305,7 +308,11 @@ def _run_guard(tmp_path: Path, package_version: str, **env: str) -> subprocess.C
         "EVENT_NAME": "", "RELEASE_TAG": "", "REF_TYPE": "", "REF_NAME": "", "REQUESTED_VERSION": "",
     }
     environment.update(env)
-    return subprocess.run(["bash", str(script)], cwd=tree, env=environment,
+    # A usable POSIX shell or a skip that names the problem: on Windows `bash` is the WSL launcher and
+    # fails with "no installed distributions", which is an environment fact rather than a test result
+    # (2026-09-30 — the first version of these tests reported exactly that on three Windows legs).
+    shell = require_posix_shell()
+    return subprocess.run([shell, str(script)], cwd=tree, env=environment,
                           capture_output=True, text=True)
 
 
@@ -391,7 +398,8 @@ def _run_skip_step(tmp_path: Path, stdout: str, exit_code: int = 0) -> tuple[int
         "GITHUB_STEP_SUMMARY": str(tmp_path / "summary.md"),
         "VERSION": "2.39.0",
     }
-    proc = subprocess.run(["bash", str(script)], cwd=tmp_path, env=environment,
+    shell = require_posix_shell()
+    proc = subprocess.run([shell, str(script)], cwd=tmp_path, env=environment,
                           capture_output=True, text=True)
     return proc.returncode, proc.stdout, output.read_text(encoding="utf-8")
 
@@ -487,3 +495,75 @@ def test_the_dispatch_names_the_version_the_tree_carries():
     assert '-f "version=$VERSION"' in dispatch["run"]
     assert "${{" not in dispatch["run"], (
         "no expression may be interpolated into the dispatched shell command")
+
+# ── trusted publishing: the job must be able to authenticate with no token at all (D1, 2026-09-30) ───
+# npm's docs: trusted publishing needs npm CLI >= 11.5.1 and Node >= 22.14; the CLI "automatically detects
+# OIDC environments and uses them for authentication before falling back to traditional tokens"; GitHub
+# exposes `ACTIONS_ID_TOKEN_REQUEST_URL` when the job asks for `id-token: write`. These rules pin the three
+# things that make the migration real rather than aspirational: the permission, the toolchain floor, and an
+# identity step that does not demand a secret it no longer needs.
+
+def test_the_publish_job_can_authenticate_without_a_long_lived_token():
+    spec = yaml.safe_load(PUBLISH.read_text(encoding="utf-8"))
+    workflow_permissions = spec.get("permissions") or {}
+    job_permissions = (spec["jobs"]["publish"].get("permissions") or {})
+    granted = {**workflow_permissions, **job_permissions}
+    assert granted.get("id-token") == "write", (
+        f"the publish job does not grant `id-token: write` (granted: {granted}); without it there is no "
+        "OIDC token to exchange and the release still depends on a long-lived secret")
+
+
+def test_the_toolchain_meets_the_trusted_publishing_floor():
+    spec = yaml.safe_load(PUBLISH.read_text(encoding="utf-8"))
+    steps = spec["jobs"]["publish"]["steps"]
+    node = next((s for s in steps if str(s.get("uses", "")).startswith("actions/setup-node")), None)
+    assert node, "the publish job no longer pins a Node version"
+    version = str((node.get("with") or {}).get("node-version", ""))
+    major = int(re.match(r"\d+", version).group()) if re.match(r"\d+", version) else 0
+    # npm CLI >= 11.5.1 requires Node >= 22.14; a bare major >= 22 resolves to the newest 22.x, so the
+    # floor is expressed as "22 or newer" rather than pinning a patch.
+    assert major >= 22, (
+        f"node-version is {version!r}; trusted publishing requires Node >= 22.14 (npm CLI >= 11.5.1), and "
+        "Node 24 is what the npm docs' example uses")
+
+
+def _run_identity_step(tmp_path: Path, **env: str):
+    """Execute the real 'Check npm identity' step, with a stubbed npm on PATH."""
+    step = next(s for s in yaml.safe_load(PUBLISH.read_text(encoding="utf-8"))["jobs"]["publish"]["steps"]
+                if s.get("name") == "Check npm identity")
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    (bin_dir / "npm").write_text('#!/bin/bash\nif [ "$1" = "whoami" ]; then echo "ci-bot"; exit 0; fi\necho "9.9.9"\n', encoding="utf-8")
+    (bin_dir / "npm").chmod(0o755)
+    (bin_dir / "node").write_text('#!/bin/bash\necho "v24.0.0"\n', encoding="utf-8")
+    (bin_dir / "node").chmod(0o755)
+    script = tmp_path / "identity.sh"
+    script.write_text(step["run"], encoding="utf-8")
+    environment = {"PATH": f"{bin_dir}:{os.environ['PATH']}", "HOME": os.environ.get("HOME", "")}
+    environment.update(env)
+    shell = require_posix_shell()
+    return subprocess.run([shell, str(script)], cwd=tmp_path, env=environment, capture_output=True, text=True)
+
+
+def test_the_identity_step_accepts_oidc_when_no_token_is_present(tmp_path):
+    """The point of the migration: a release must be publishable with the secret deleted."""
+    proc = _run_identity_step(tmp_path / "oidc", ACTIONS_ID_TOKEN_REQUEST_URL="https://oidc.example/token",
+                              NODE_AUTH_TOKEN="")
+    assert proc.returncode == 0, (
+        "the identity step refused to continue although OIDC was available — that would keep the release "
+        f"dependent on NPM_TOKEN:\n{proc.stdout[-400:]}{proc.stderr[-300:]}")
+    assert "trusted publishing" in proc.stdout
+
+
+def test_the_identity_step_still_fails_loudly_with_neither_mechanism(tmp_path):
+    """Positive control: removing the fallback must not turn a missing credential into a silent pass."""
+    proc = _run_identity_step(tmp_path / "nothing", ACTIONS_ID_TOKEN_REQUEST_URL="", NODE_AUTH_TOKEN="")
+    assert proc.returncode != 0, proc.stdout
+    assert "Neither trusted publishing" in proc.stdout and "npm-release" in proc.stdout, proc.stdout
+
+
+def test_the_identity_step_keeps_the_token_diagnostics(tmp_path):
+    """The transitional path is still the one most releases will use until the npm side is configured."""
+    proc = _run_identity_step(tmp_path / "token", ACTIONS_ID_TOKEN_REQUEST_URL="", NODE_AUTH_TOKEN="npm_x")
+    assert proc.returncode == 0, proc.stdout
+    assert "token fallback" in proc.stdout, proc.stdout
