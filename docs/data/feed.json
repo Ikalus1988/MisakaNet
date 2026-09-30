@@ -1,9 +1,23 @@
 {
-  "generated_at": "2026-09-29T22:24:09.615850+00:00",
+  "generated_at": "2026-09-30T05:46:47.111787+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(activity): serve today's activity behind a minutes TTL, and print the snapshot's age",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2461",
+      "timestamp": "2026-09-30T05:46:37Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2466",
+      "timestamp": "2026-09-29T22:29:28Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "chore(data): sync lessons.json + refresh feed",
@@ -23,20 +37,6 @@
       "title": "fix(api): `?q=` answered 502 for ordinary searches — FTS5 was reading the user text as syntax",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2458",
       "timestamp": "2026-09-29T17:50:52Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(contracts): three published surfaces an agent reads first, each verified against the live service",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2452",
-      "timestamp": "2026-09-29T17:31:40Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(site): the homepage quoted the lesson count four times — now it references it",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2455",
-      "timestamp": "2026-09-29T17:21:51Z",
       "source": "github"
     },
     {
