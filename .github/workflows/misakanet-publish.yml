@@ -33,14 +33,22 @@ name: Publish misakanet
 # event), so a run that finds the version already on npm stands down instead of failing.
 #
 # ── What this job needs from the repository (settings, not code) ────────────────────────────────────
-#  * environment `release`, holding `NPM_TOKEN`: a granular npm token with read+write on `misakanet`
-#    (expiry and rotation: docs/maintainer/credentials-and-environments.md §4.1). It is the only secret
-#    this job reads - the GitHub side is `contents: read` and nothing else.
-#  * for an *unattended* publish, `release` must not require a reviewer. With a reviewer configured the
-#    run waits for approval: the human gate moved from someone's memory to a visible click, not removed.
-#  * the environment's deployment branch policy must allow the tag refs this workflow runs on (`v*`):
-#    a `release: published` run is on `refs/tags/vX.Y.Z`, and a policy that allows only `main` refuses
-#    the job at deploy time, before a single step runs.
+#  * environment **`npm-release`** (created 2026-09-30), holding `NPM_TOKEN`: a granular npm token with
+#    read+write on `misakanet` (expiry and rotation: docs/maintainer/credentials-and-environments.md §4.1).
+#    It is the only secret this job reads — the GitHub side is `contents: read` and nothing else.
+#
+#    **Why its own environment** (owner decision D1 = A, intake #2486): the point of that decision is that
+#    the npm line stops drifting from the release line, which needs the publish to run unattended. The
+#    `release` environment is *also* what gates `deploy-worker.yml`, so making it unattended would silently
+#    un-gate production worker deploys too. Two trust boundaries, two environments: `npm-release` carries
+#    no required reviewer, `release` keeps its own click.
+#  * `npm-release`'s deployment branch policy allows `main` **and `v*`**: a `release: published` run is on
+#    `refs/tags/vX.Y.Z`, and a policy that allows only `main` refuses the job at deploy time, before a
+#    single step runs. Both policies are set.
+#  * **one manual step remains, and it needs a human**: the `NPM_TOKEN` *value* must be added to
+#    `npm-release` (environment secrets are write-only — nothing can copy them). Until it is there, this
+#    job fails at the publish step with the message it already prints; the manual `workflow_dispatch` path
+#    is unaffected in intent, it simply reads the same environment.
 #
 # ── Rolling back a bad automatic publish (added 2026-09-30) ─────────────────────────────────────────
 # npm cannot republish a version, and it allows `npm unpublish` for only **72 hours** after the publish
@@ -91,7 +99,7 @@ jobs:
     # deploy credentials, and environment secrets can carry protection rules — a branch policy today,
     # and "required reviewers" as soon as it is switched on, which is what stops a workflow that has
     # been edited on a branch from using them without a person approving the run.
-    environment: release
+    environment: npm-release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

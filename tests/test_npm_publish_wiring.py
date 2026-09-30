@@ -25,8 +25,8 @@ So what these tests pin now:
   trigger can look right and never fire — `publish-mcp-registry.yml`'s header records it);
 * the publish job **fails loudly** when `package.json` disagrees with the version that was released,
   which is executed for real below rather than string-matched;
-* the `release` environment stays on the job, so the run waits for a required reviewer while that is
-  configured — the human gate is kept, it is just no longer a *memory* gate;
+* the job declares its own environment (`npm-release`), so an unattended publish cannot un-gate the
+  `release` environment that `deploy-worker.yml` waits on — two trust boundaries, two environments;
 * the job **does not write the tree**: no `align_versions`, no commit, no push. release-please is the
   writer now, and a publisher that also writes is two writers for one fact;
 * both trigger paths fire for the same release, so the second run has to be a no-op instead of a red
@@ -119,10 +119,14 @@ def _wiring_problems(root: Path) -> list[str]:
     job = spec["jobs"]["publish"]
     environment = job.get("environment")
     environment = environment.get("name") if isinstance(environment, dict) else environment
-    if environment != "release":
+    # Its **own** environment, not `release`: `release` also gates `deploy-worker.yml`, so publishing
+    # unattended there would un-gate production worker deploys as a side effect (intake #2486, D1 = A —
+    # the orchestrator created `npm-release` with no required reviewer and branch policies `main` + `v*`).
+    if environment != "npm-release":
         problems.append(
-            f"the publish job declares environment={environment!r}; without the protected environment "
-            "an automatic dispatch would publish the moment a release lands, with nobody looking")
+            f"the publish job declares environment={environment!r}; unattended publishing needs an "
+            "environment without a required reviewer, and it must not be `release` (which gates worker "
+            "deploys) — see the workflow header")
 
     # 3. a version input exists, and every way of starting the run can reach the publish step
     if "version" not in (dispatch_trigger.get("inputs") or {}):
@@ -249,9 +253,10 @@ def test_the_wiring_check_notices_a_lost_approval_gate(tmp_path):
     scratch = _scratch_workflows(tmp_path)
     publish = scratch / ".github" / "workflows" / "misakanet-publish.yml"
     publish.write_text(
-        publish.read_text(encoding="utf-8").replace("    environment: release\n", ""),
+        publish.read_text(encoding="utf-8").replace("    environment: npm-release\n", ""),
         encoding="utf-8")
-    assert any("without the protected environment" in problem for problem in _wiring_problems(scratch))
+    assert any("unattended publishing needs an environment" in problem for problem in _wiring_problems(scratch)), (
+        "removing the environment must be reported as a lost gate, not silently accepted")
 
 
 def test_the_wiring_check_notices_a_publish_that_writes_the_tree(tmp_path):

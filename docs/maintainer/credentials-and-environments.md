@@ -20,7 +20,7 @@ credential without declaring a known environment.
 | Where | Secret | Read by | Protection |
 |---|---|---|---|
 | env `release` | `CF_API_TOKEN` (deploy-capable) | `apply-d1-schema`, `d1-bootstrap`, `d1-counters-report`, `deploy-worker`, `intake-pipeline-test` | branch policy `main` + required reviewer |
-| env `release` | `NPM_TOKEN` | `misakanet-publish`, `misakanet-setup-publish`, `fatal-guard-publish` | branch policy `main` + required reviewer |
+| env `npm-release` | `NPM_TOKEN` | `misakanet-publish` | branch policy `main` + `v*`, **no reviewer** (unattended, 2026-09-30 — intake #2486 D1) |
 | env `automation` | `CF_API_TOKEN` = `misakanet-automation-d1`, **D1:Edit only** | `sync-d1`, `sync-question-answers` | branch policy `main`, **no reviewers** |
 | repo level | `SHELDON_PAT` | `auto-sync-prs`, `pr-checks`, `pr-shape-guard`, `release-please`, `auto-merge-docs` | none (see §5) |
 | env `release` | `CF_OBSERVABILITY_TOKEN` (optional) | `cf-diagnostics` | branch policy `main` + required reviewer — **read-only**: `Workers Observability: Read` + `Account Analytics: Read`, no `Workers Scripts: Edit` |
@@ -38,7 +38,8 @@ token can read):
 
 | environment | secrets actually installed | protection rules |
 |---|---|---|
-| `release` | `CF_API_TOKEN`, `CF_BUILDS_TOKEN`, `NPM_TOKEN` | branch policy `main` + required reviewer `Ikalus1988` |
+| `release` | `CF_API_TOKEN`, `CF_BUILDS_TOKEN` | branch policy `main` + required reviewer `Ikalus1988` (gates `deploy-worker.yml`) |
+| `npm-release` | `NPM_TOKEN` | branch policy `main` + `v*`, no reviewer — an unattended publish must not un-gate worker deploys |
 | `automation` | `CF_API_TOKEN` | branch policy `main`, no reviewers |
 
 Two things that table settles without a run:
@@ -75,7 +76,7 @@ read. The environment therefore needs the tag pattern `v*` allowed as well (Sett
 `release` → deployment branch and tag rules). Two further settings the automatic npm publish depends
 on, both repository settings rather than code: for an *unattended* publish `release` must not require
 a reviewer (with one configured the run waits for approval, which is a deliberate choice — the human
-gate moved from memory to a visible click), and it must carry `NPM_TOKEN`.
+gate moved from memory to a visible click), and the **`npm-release`** environment (no reviewer, branch policies `main` + `v*`) carries the npm credential so the publish can be unattended without un-gating worker deploys.
 
 ## 4. Rotation
 
@@ -108,7 +109,7 @@ To rotate it:
 1. `npmjs.com/settings/~/tokens` → *Generate New Token* → **Granular Access Token**, with
    `read and write` on the three packages this repository publishes: `misakanet`,
    `@misaka-net/fatal-guard`, `@misaka-net/misakanet-setup`. Keep the lifetime at the 90-day maximum.
-2. GitHub → Settings → Environments → `release` → update `NPM_TOKEN`.
+2. GitHub → Settings → Environments → `npm-release` → update `NPM_TOKEN`.
 3. **Prove it with a run**: the publish workflows call `npm whoami` *before* publishing and fail with
    `npm rejected NPM_TOKEN (npm whoami failed)` when the value is wrong
    (`misakanet-publish.yml:196`), so a dispatch with `dry_run` is enough — the token is checked and
