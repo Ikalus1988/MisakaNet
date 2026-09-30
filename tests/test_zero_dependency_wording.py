@@ -22,6 +22,13 @@ REPO = Path(__file__).resolve().parents[1]
 
 RETIRED = re.compile(r"zero[- ]dep(?:endency|endencies|s)?|零依赖", re.IGNORECASE)
 
+# The retirement was applied by replacing the phrase, and a replacement can leave a word's tail behind:
+# `zero-dependency` -> `stdlib-onlyendency` survived in four files (a page's meta keywords, two hardening
+# notes and a field report) because the *retired* term is gone from them — the sweep looked for the phrase it
+# had just replaced and so could not see its own debris. This rule checks the replacement instead: `stdlib-only`
+# must be a whole token.
+MANGLED = re.compile(r"stdlib-only(?=[A-Za-z])")
+
 # History keeps its wording: dated snapshots, transcripts, corpus material and the tests that quote the
 # report. Each entry is a directory whose files are records rather than current guidance.
 HISTORY = (
@@ -55,6 +62,18 @@ def user_facing_files(root: Path | None = None) -> list[Path]:
             continue
         files.append(path)
     return files
+
+
+def mangled_slogan_offenders(root: Path | None = None) -> list[str]:
+    """`stdlib-only` glued to the tail of the phrase it replaced (history excepted, like the sibling rule)."""
+    repo = Path(root) if root is not None else REPO
+    offenders = []
+    for path in user_facing_files(repo):
+        rel = path.relative_to(repo).as_posix()
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if MANGLED.search(line):
+                offenders.append(f"{rel}:{number}: {line.strip()[:100]}")
+    return offenders
 
 
 def retired_phrase_offenders(root: Path | None = None) -> list[str]:
@@ -121,3 +140,20 @@ def test_the_glossary_records_the_retirement():
     glossary = (REPO / GLOSSARY).read_text(encoding="utf-8")
     assert "Retired terms" in glossary and RETIRED.search(glossary), (
         "the term's history belongs in the glossary: without it the next reader re-invents the slogan")
+
+
+def test_no_current_copy_carries_the_tail_of_the_replaced_phrase():
+    offenders = mangled_slogan_offenders()
+    assert not offenders, (
+        "these lines contain `stdlib-only` glued to the rest of the phrase it replaced (found 2026-09-30: "
+        "one of them is in the live page's meta keywords, i.e. it reaches search engines):\n  - "
+        + "\n  - ".join(offenders))
+
+
+def test_the_mangled_slogan_rule_notices_the_real_debris(tmp_path):
+    """Guard: the rule reads the real tree, so its red case needs a fixture."""
+    (tmp_path / "page.html").write_text('<meta name="keywords" content="stdlib-onlyendency">\n', encoding="utf-8")
+    assert mangled_slogan_offenders(tmp_path), "the exact string that shipped must be reported"
+    (tmp_path / "page.html").write_text('<meta name="keywords" content="stdlib-only, no third-party packages">\n',
+                                        encoding="utf-8")
+    assert mangled_slogan_offenders(tmp_path) == []
