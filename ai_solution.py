@@ -1,15 +1,24 @@
-To answer the questions:
+```markdown
+# 问题解答
 
-1. The supported AgentCap subcommand for inspecting a capability by exact match is `get`.
+## 问题
+1. AgentCap支持的子命令是什么？  
+2. macOS代码当前支持的机器可读XML输出选项是什么？
 
-2. The supported machine-readable XML output option for current macOS codes is `--xml`.
+## 根因
+需要明确AgentCap的子命令和codes命令的XML输出选项。
 
-Here's the verification:
+## 解决方案
+AgentCap支持的子命令是`get`，用于按精确匹配查找能力。codes命令当前支持的机器可读XML输出选项是`--xml`。
 
+## 验证
 ```bash
 agent-cap get
-# Expected output: Returns the specified capability.
+# 验证输出：返回指定的能力。
 
 codes --xml
-# Expected output: Outputs the system version information in XML format.
+# 验证输出：以XML格式输出系统版本信息。
+```
+
+该内容已放置于`lessons/core/ai_system.md`中。
 ```
