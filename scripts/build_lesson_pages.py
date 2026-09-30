@@ -5,6 +5,21 @@ Usage:
     python3 scripts/build_lesson_pages.py            # write/refresh every page
     python3 scripts/build_lesson_pages.py --check    # report drift, write nothing (exit 1 if stale)
 
+Two gates the plan cannot see (2026-09-30)
+------------------------------------------
+`check()` compares this generator's plan against the pages this generator wrote, and both
+sides are derived from `data/lessons.json` — so it can only ever report drift *inside* the
+plan. Two defects lived in that blind spot and are now separate, named failures:
+
+* **An unpageable lesson.** Both slug passes used to `continue` when a lesson had no
+  `title`, and the page loop skipped it a third time, so the lesson got no page and nothing
+  said so. `unpageable_lessons()` names every lesson that can never get a page (no title, a
+  non-string title, or a title that slugifies to nothing) and `main()` refuses to run.
+* **A corpus lesson with no page.** `corpus_page_problems()` walks the corpus itself and
+  resolves each lesson against the slug map recorded by the previous run in
+  `docs/.generated-pages.json` (or the `/lessons/<id>/` alias page), which is what makes it
+  able to notice a lesson that was never planned at all.
+
 Output:
     docs/lessons/<slug>/index.html   — one page per lesson
     docs/topics/<slug>/index.html    — one page per topic (see TOPIC policy below)
@@ -573,6 +588,103 @@ def check(files: dict[str, str], *, root: Path = REPO) -> list[str]:
     return problems
 
 
+def unpageable_lessons(lessons: list) -> list[str]:
+    """Lessons that can never get a page, each named by id with the reason why.
+
+    Why this exists (2026-09-30): both passes of `plan_with_slugs` had `if not title: continue`
+    and the page loop skipped a lesson with no title a third time, so an untitled lesson got no
+    page and **no gate fired**. `--check` cannot see it either — it compares this generator's
+    plan against the pages this generator wrote, and both come from the same index, so a lesson
+    that was never planned cannot show up as drift. `scripts/lesson_gate.py` requires a title on
+    the PR path, but nothing checked the *index*: a `title:` key with an empty value, or a title
+    that `slugify()` empties out (e.g. one made only of emoji), reached the generator unopposed.
+    """
+    problems: list[str] = []
+    seen: set[str] = set()
+    for index, lesson in enumerate(lessons):
+        lesson_id = lesson.get("id") or f"<entry #{index} with no id>"
+        if lesson_id in seen:
+            continue
+        seen.add(lesson_id)
+        title = lesson.get("title")
+        if not isinstance(title, str) or not title.strip():
+            problems.append(
+                f"{lesson_id}: no usable `title` (got {title!r}) — no slug can be derived, so no "
+                f"page is generated and nothing the lesson owns is reachable")
+        elif not slugify(title):
+            problems.append(
+                f"{lesson_id}: title {title!r} slugifies to an empty string — no page URL can be "
+                f"derived from it")
+    return problems
+
+
+def corpus_page_problems(lessons: list, *, root: Path = REPO) -> list[str]:
+    """Every lesson in the corpus must have a page on disk — derived WITHOUT the plan.
+
+    The page URL is not re-derived from the title while a slug is on record: the slug map the
+    previous run wrote to `docs/.generated-pages.json` is the authority, because slugs are sticky
+    and re-deriving on every run is what orphaned 88 live URLs once. `docs/lessons/<id>/index.html`
+    is accepted as well, since the generator also writes an id alias page for a lesson whose id
+    differs from its slug (2026-09-29). Accepting the alias cannot hide a missing live page: the
+    alias is a redirect *to* `/lessons/<slug>/`, and the plan-versus-disk comparison in the same
+    `--check` run still carries the slug page, so the missing URL is reported on its own (pinned in
+    tests/test_lesson_page_generator.py). Only a lesson **absent from the slug map** is probed at its
+    title-derived URL, and that is reported as its own defect rather than counted as healthy: the
+    recorded slug is what keeps a live URL sticky.
+
+    This reads the corpus and the manifest, never `plan_with_slugs()`, so it can notice a lesson the
+    plan left out — the class `check()` is structurally blind to.
+    """
+    if not lessons:
+        return []
+    slugs = load_slug_map(root)
+    if not slugs:
+        # One named problem, not one per lesson: with no slug map every URL is unknown, and
+        # "no page on disk" would be said about the 70+ lessons whose slug differs from their id.
+        return [f"{MANIFEST.as_posix()} carries no lesson-id -> slug map, so no lesson's page URL "
+                f"is knowable — run `python3 scripts/build_lesson_pages.py` to record it"]
+
+    problems: list[str] = []
+    for lesson in lessons:
+        lesson_id = lesson.get("id") or ""
+        if not lesson_id:
+            problems.append("a corpus entry has no `id` — nothing can map it to a page")
+            continue
+        # `or None` is load-bearing: `plan_with_slugs` writes `""` into the slug map for a title that
+        # slugifies to nothing, and `""` would otherwise index `docs/lessons/index.html` — the lessons
+        # *directory* index — as if it were this lesson's page. Found 2026-09-30 by removing the
+        # unpageable gate and watching this check accept the directory index as a page.
+        slug = slugs.get(lesson_id) or None
+        alias_page = LESSONS_DIR / lesson_id / "index.html"
+        if slug is not None:
+            candidates = [LESSONS_DIR / slug / "index.html", alias_page]
+            # Deliberately NOT the title-derived URL: when a slug is on record, a page at another
+            # URL does not make the live one reachable.
+            if any((root / candidate).is_file() for candidate in candidates):
+                continue
+            problems.append(
+                f"lesson {lesson_id!r}: no page on disk — looked for "
+                + " and ".join(candidate.as_posix() for candidate in candidates))
+            continue
+        # No recorded slug: the manifest is behind the corpus (a lesson new to the index, or a
+        # hand-trimmed manifest). Say which of the two it is; both are failures, for the reason
+        # `plan_with_slugs` gives — an unrecorded slug is a URL that can be re-derived and orphaned.
+        derived = slugify(lesson.get("title") or "") if isinstance(lesson.get("title"), str) else ""
+        derived_page = LESSONS_DIR / derived / "index.html" if derived else None
+        found = next((page for page in (derived_page, alias_page)
+                      if page is not None and (root / page).is_file()), None)
+        if found is None:
+            problems.append(
+                f"lesson {lesson_id!r}: no page on disk and no slug recorded for its id in "
+                f"{MANIFEST.as_posix()} — the page generator has never planned it")
+        else:
+            problems.append(
+                f"lesson {lesson_id!r}: {MANIFEST.as_posix()} records no slug for its id, though the "
+                f"page {found.as_posix()} is on disk — the recorded slug is what keeps a live URL "
+                f"sticky, so the next run can re-derive it and orphan this page")
+    return problems
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true",
@@ -582,6 +694,24 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     lessons = json.loads((args.root / LESSONS_JSON).read_text(encoding="utf-8"))
+
+    # A lesson that can never get a page is a hard error in BOTH modes, and it is reported before
+    # anything is written: planning around it is what used to leave it silently page-less
+    # (2026-09-30). Refusing rather than writing a half-synced tree is the same call
+    # `update_lessons_json.py` makes when the count SSOT cannot be refreshed.
+    unpageable = unpageable_lessons(lessons)
+    if unpageable:
+        print(f"❌ {len(unpageable)} lesson(s) in {LESSONS_JSON.as_posix()} can never get a page:",
+              file=sys.stderr)
+        for item in unpageable[:20]:
+            print(f"  - {item}", file=sys.stderr)
+        if len(unpageable) > 20:
+            print(f"  … and {len(unpageable) - 20} more", file=sys.stderr)
+        print("\nFix: give each one a real `title` in its frontmatter (lesson_gate.py requires one). "
+              "Until then no page is generated for it and the site has nothing behind a search hit.",
+              file=sys.stderr)
+        return 1
+
     known_slugs = load_slug_map(args.root)
     files, slug_map = plan_with_slugs(lessons, known_slugs)
     if not args.quiet:
@@ -590,17 +720,29 @@ def main(argv: list[str] | None = None) -> int:
               f"+ {sum(1 for p in files if p.startswith('docs/topics/'))} topic pages + sitemap")
 
     if args.check:
+        # Two independent gates. `check()` is the plan-versus-disk comparison; the corpus walk is
+        # the relation the plan cannot express, so the two are reported separately (2026-09-30).
         problems = check(files, root=args.root)
-        if problems:
-            print(f"❌ generated pages are stale ({len(problems)} path(s)):", file=sys.stderr)
-            for problem in problems[:20]:
-                print(f"  - {problem}", file=sys.stderr)
-            if len(problems) > 20:
-                print(f"  … and {len(problems) - 20} more", file=sys.stderr)
+        corpus_problems = corpus_page_problems(lessons, root=args.root)
+        if problems or corpus_problems:
+            if problems:
+                print(f"❌ generated pages are stale ({len(problems)} path(s)):", file=sys.stderr)
+                for problem in problems[:20]:
+                    print(f"  - {problem}", file=sys.stderr)
+                if len(problems) > 20:
+                    print(f"  … and {len(problems) - 20} more", file=sys.stderr)
+            if corpus_problems:
+                print(f"❌ the corpus and the pages on disk disagree "
+                      f"({len(corpus_problems)} problem(s)):", file=sys.stderr)
+                for problem in corpus_problems[:20]:
+                    print(f"  - {problem}", file=sys.stderr)
+                if len(corpus_problems) > 20:
+                    print(f"  … and {len(corpus_problems) - 20} more", file=sys.stderr)
             print("\nFix: python3 scripts/build_lesson_pages.py", file=sys.stderr)
             return 1
         if not args.quiet:
             print("✅ every generated page matches the index")
+            print(f"✅ every one of the {len(lessons)} lessons in {LESSONS_JSON.as_posix()} has a page")
         return 0
 
     result = sync(files, root=args.root, slugs=slug_map)

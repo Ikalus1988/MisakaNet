@@ -384,8 +384,9 @@
   }
 
   /* ── Network activity panel ──
-     Fed by docs/data/activity.json (scripts/sync_site_activity.py). Not a live request: see the panel's
-     markup comment for the 17.4-second cold path that keeps it out of the browser. */
+     Prefers the live, edge-cached /api/activity and falls back to docs/data/activity.json
+     (scripts/sync_site_activity.py). Both carry the generation time, and the footnote renders the
+     number's *age*, which is what a stale snapshot used to hide (2026-09-29). */
   .activity-panel {
     background: var(--bg-card);
     border: 1px solid var(--border-glow);
@@ -2022,13 +2023,19 @@
          a member count, and it sat next to a nav item called "Agent nodes". Three names, one thing.
 
        What replaces it is the number this project actually wants to show: how much the network is
-       being *used*. It is read from `docs/data/activity.json`, a snapshot
-       (`scripts/sync_site_activity.py`) because the live endpoint answers in 0.7s from cache and
-       **17.4s** when it recomputes — a live call here would be a 504 generator, which is the bug
-       that was just removed, not a feature to add.
+       being *used*.
 
-       The snapshot's own date is rendered rather than the word "today": a stale file must look
-       stale, not claim currency it does not have. -->
+       Where that number comes from changed on 2026-09-29. Measured that day, the panel rendered
+       `total 5974` from `docs/data/activity.json` (generated_at 16:21Z) while the same endpoint
+       answered 6645 for the same date — ~10% low, and a reviewer had caught a ~2x case. The *date*
+       was identical in both, so nothing on the page could show the staleness, and the 17.4s cold
+       path that justified the snapshot no longer exists (six consecutive requests that day answered
+       in 1.08–1.28s).
+
+       So the panel now prefers `/api/activity` — the anonymous, edge-cached projection of the same
+       counters (`Cache-Control` TTL of minutes) — and keeps the committed snapshot as its fallback
+       for the case the route is unreachable. Both carry `generated_at`, and the footnote below
+       renders the *age* of whichever it got: a stale number can never again read as current. -->
   <div id="activity" class="anchor-target"></div>
   <div class="section-title">📈 <span data-i18n="activitySection">网络活动</span> <span class="panel-note" data-i18n="activityNote" style="font-size:11px;color:var(--text-dim);font-weight:400;font-family:'JetBrains Mono',monospace;">聚合计数 · 不含身份 · 阅读无需注册</span></div>
   <div class="activity-panel" id="activity-body">
@@ -3000,10 +3007,17 @@ async function loadStats() {
 // `proxyGithubUrl` helper and a per-issue request budget.
 //
 // What the panel shows instead is the number this project actually wants a visitor to see: how much
-// the network is being *used*. It comes from `docs/data/activity.json`, written by
-// `scripts/sync_site_activity.py`, and never from a live call — the live endpoint answers in 0.7s from
-// cache and **17.4s** when it recomputes, so putting it here would rebuild the 504 generator that was
-// just removed.
+// the network is being *used*.
+//
+// Where that number comes from changed on 2026-09-29. This panel used to read only
+// `docs/data/activity.json`, rewritten every three hours. Measured that day: it rendered `total 5974`
+// (generated_at 16:21Z) while the endpoint answered 6645 for the same date — ~10% low, with a ~2x
+// case a reviewer had caught. The *date* was the same in both, so the panel could not show the
+// staleness, and the 17.4s cold path that justified the snapshot is gone (six consecutive requests
+// that day answered in 1.08–1.28s). So the panel now prefers `/api/activity` — the anonymous,
+// edge-cached projection of the same counters — and keeps the committed snapshot as its fallback.
+// Both carry `generated_at`, and the footnote renders the *age*, so a stale figure cannot read as
+// current whatever its source.
 //
 // The class list below is the contract with the file's producer: that script refuses to publish a
 // breakdown missing one of these, and tests/test_sync_site_activity.py compares this list against the
@@ -3014,13 +3028,31 @@ const ACTIVITY_CLASSES = [
   ['crawler', 'activityClassCrawler'],
   ['pageview', 'activityClassPageview'],
 ];
+// The fallback: the committed snapshot, and the exact five keys the live route also answers with.
 const ACTIVITY_URL = "data/activity.json";
+// The source the panel prefers. A path of its own, not `/api/analytics/traffic`: that route serves
+// per-client counts to the maintainer token, so its body varies by caller and must not be publicly
+// cached. This one cannot read the caller at all, which is what makes a shared TTL safe.
+const ACTIVITY_LIVE_URL = "/api/activity";
+// A cold recompute is the one slow answer this route can give (1.2s measured 2026-09-29, 17.4s when
+// the snapshot was justified). Past this the snapshot answers instead of an empty slot, and the
+// footnote says which source rendered either way.
+const ACTIVITY_LIVE_TIMEOUT_MS = 4000;
 const FEED_URL = "data/feed.json";
 const LATEST_LIMIT = 5;
 
 function formatCount(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n.toLocaleString('en-US') : '—';
+}
+
+// The age of the number, from the payload's own `generated_at`. One age vocabulary for the page:
+// `getTimeAgo` already renders "just now" / "5m ago" from the same locale keys. An absent or
+// malformed timestamp returns null so the caller prints the date alone rather than "NaN ago".
+function formatActivityAge(generatedAt) {
+  const at = new Date(generatedAt);
+  if (Number.isNaN(at.getTime())) return null;
+  return getTimeAgo(at);
 }
 
 // Both panels below build markup from JSON, so both escape it — with the page's existing
@@ -3031,13 +3063,10 @@ function safeHref(url) {
   return /^https?:\/\//i.test(String(url || '')) ? escapeHTML(url) : '#';
 }
 
-async function loadActivity() {
-  const body = document.getElementById("activity-body");
-  if (!body) return;
-  try {
-    const snap = await fetchJSON(ACTIVITY_URL);
-    const calls = snap.calls || {};
-    body.innerHTML = `
+// One renderer for two sources: the live route and the snapshot answer with the same shape
+// (`calls`/`total`/`date`/`generated_at`), so a key that moves in one breaks the other loudly.
+function activityMarkup(calls, footnote) {
+  return `
       <div class="activity-headline">
         <span class="activity-number">${formatCount(calls.mcp)}</span>
         <span class="activity-label" data-i18n="activityCalls">${t('activityCalls')}</span>
@@ -3049,10 +3078,38 @@ async function loadActivity() {
           <span class="activity-class-label" data-i18n="${key}">${t(key)}</span>
         </div>`).join("")}
       </div>
-      <div class="activity-footnote">${formatText(t('activityOn'), { date: escapeHTML(snap.date) })}</div>`;
+      <div class="activity-footnote">${footnote}</div>`;
+}
+
+async function loadActivity() {
+  const body = document.getElementById("activity-body");
+  if (!body) return;
+  // `live` chooses the wording, never the number: both sources read the same counters, and the age is
+  // rendered either way so a reader can tell a five-minute-old figure from a five-hour-old one.
+  const footnote = (date, generatedAt, live) => {
+    const on = formatText(t('activityOn'), { date: escapeHTML(String(date || '—')) });
+    const age = formatActivityAge(generatedAt);
+    if (!age) return on;
+    return `${on} · ${live ? formatText(t('activityLive'), { age })
+                           : formatText(t('activityAge'), { age })}`;
+  };
+  try {
+    const live = await fetchWithTimeout(ACTIVITY_LIVE_URL, ACTIVITY_LIVE_TIMEOUT_MS);
+    const calls = live.calls || {};
+    if (!Number.isFinite(Number(live.total)) || !Object.keys(calls).length) {
+      throw new Error('the live route answered without a breakdown');
+    }
+    body.innerHTML = activityMarkup(calls, footnote(live.date, live.generated_at, true));
+    return;
   } catch (e) {
-    // Stated, not hidden. The file ships with the site, so if it is missing the deployed page is older
-    // than this code — which is exactly what a reader should conclude rather than seeing a zero.
+    if (DEBUG) console.log('[MisakaNet] live activity unavailable, using the snapshot:', e.message);
+  }
+  try {
+    const snap = await fetchJSON(ACTIVITY_URL);
+    body.innerHTML = activityMarkup(snap.calls || {}, footnote(snap.date, snap.generated_at, false));
+  } catch (e) {
+    // Stated, not hidden. Both sources ship with the site, so if neither can be read the deployed
+    // page is older than this code — which is exactly what a reader should conclude, not a zero.
     body.innerHTML = `<div class="loading-item">${t('activityUnavailable')}</div>`;
   }
 }
