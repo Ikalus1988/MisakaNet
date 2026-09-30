@@ -63,6 +63,23 @@ mcp-name: io.github.Ikalus1988/misakanet
 
 ---
 
+## Install (30 seconds)
+
+| Your host | Command |
+|---|---|
+| **DeepSeek Harness** | `dsh plugin --profile web add misakanet` — or type `misakanet` in the host's **Add plugin** dialog |
+| **Claude Code** | `/plugin marketplace add Ikalus1988/MisakaNet` then `/plugin install misakanet@misakanet` |
+| **Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode, …** | `npx @misaka-net/misakanet-setup` — writes the MCP row into each host's own config |
+| **Any other MCP client** | point it at `https://misakanet.org/mcp` — the endpoint is public and reads are anonymous |
+| **Your own code** | `pip install misakanet-core` (library) · `pip install misakanet` (stdio server) |
+
+Updates: `dsh plugin --profile web update misakanet@latest`.
+Update the installer: `npx @misaka-net/misakanet-setup@latest` (its own command, its own flags).
+
+No account, no token, no Python needed for the plugin path: the npm bundle mounts the hosted endpoint.
+Declared hosts and what was measured: [compatibility](docs/compatibility.md). Every channel, the
+prerequisites, and the two-package trap that costs people an install: [How to use it](#how-to-use-it).
+
 ## What is MisakaNet?
 
 **Git-backed failure memory for AI coding agents.** An error shows up → the agent searches the lessons →
@@ -245,7 +262,7 @@ jobs:
 |---|---|
 | 🔴 Debugging a real failure | [Search existing lessons](https://ikalus1988.github.io/MisakaNet/search/) before retrying |
 | 🤖 Building an AI agent / tool | Use lessons as [failure-memory](docs/mcp-quickstart.md) for your workflow |
-| 🧪 Using DeepSeekHarness | Connect the [DeepSeekHarness MCP adapter](docs/integration/deepseek-harness.md) as a recovery-memory plugin |
+| 🧪 Using DeepSeek Harness | `dsh plugin --profile web add misakanet`, then [what it registers](docs/integration/deepseek-harness.md) — skill + `mcp__misakanet__*` tools, no local Python |
 | 🔧 Contributing a fix | Read [CONTRIBUTING.md](CONTRIBUTING.md) for code style + PR checklist, check [related lessons](https://ikalus1988.github.io/MisakaNet/search/), then open a small PR |
 | 📝 Sharing a failure case | Submit a [5-line failure note](https://github.com/Ikalus1988/MisakaNet/issues/new?template=lesson-feedback.yml) — no polished PR required |
 | 📊 Evaluating agent learning | Run the [benchmarks](scripts/retrieval_noisebench.py) and compare reuse behavior |

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MisakaNet plugin icon — the mark the DSH plugin manager renders (package.json "icon").
+     Same mark as docs/assets/misaka-avatar-fallback.svg (dark plate, cyan ring + "M", amber node);
+     tests/test_dsh_plugin_surface.py pins the shared path so the two copies cannot drift apart.
+     The host's own rules (dsh-app-boot iconOf): relative path, SVG/PNG/JPEG/WebP, <=256 KiB, inside
+     the package — an icon that breaks any of them makes plugin loading throw, which is why the test
+     next to this file asserts them instead of trusting the eye. -->
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MisakaNet">
+  <rect width="64" height="64" rx="12" fill="#070b15"/>
+  <rect x="2" y="2" width="60" height="60" rx="10" stroke="#00e5ff" stroke-opacity="0.55" stroke-width="2"/>
+  <path d="M16 44V20h7l9 14 9-14h7v24h-7V31.5L34.5 44h-5L23 31.5V44h-7Z" fill="#67e8f9"/>
+  <circle cx="50" cy="14" r="4" fill="#f59e0b"/>
+</svg>

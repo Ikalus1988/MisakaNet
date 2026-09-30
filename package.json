@@ -3,17 +3,24 @@
   "version": "2.39.0",
   "license": "Apache-2.0",
   "description": "MisakaNet failure-memory skill — evidence-rated failure lessons for AI agents. DSH bundle: registers the MCP tools as mcp__misakanet__* (misakanet_search/get_lesson/…), served by the public Streamable HTTP endpoint https://misakanet.org/mcp — live tools from an npm install, in any profile, with no local python. A profile that prefers the repo's own stdio server can override the bundle row.",
+  "icon": "icon.svg",
   "files": [
     "SKILL.md",
     "skills/",
     "index.js",
     "index.d.ts",
+    "icon.svg",
     "cordis.patch.yml",
     ".codex-plugin/**"
   ],
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "compatibility": {
+      "dshReleases": {
+        "0.2.0-rc.2": "compatible"
+      }
     }
   },
   "repository": {
@@ -26,14 +33,19 @@
   },
   "keywords": [
     "misakanet",
+    "dsh",
     "dsh-plugin",
+    "dsh-plugins",
+    "deepseek-harness",
+    "deepseek-harness-plugin",
+    "cordis",
     "failure-memory",
     "mcp",
     "skill",
     "lessons"
   ],
   "peerDependencies": {
-    "@deepseek-ai/dsh-mcp-client": ">=0.1.0-rc.8 <0.2.0"
+    "@deepseek-ai/dsh-mcp-client": ">=0.1.0-rc.8 <0.2.0 || >=0.2.0-rc.1 <0.3.0"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/dsh-mcp-client": {
