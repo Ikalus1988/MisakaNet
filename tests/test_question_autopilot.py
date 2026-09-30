@@ -235,7 +235,10 @@ def test_every_script_named_in_the_bounty_body_exists():
 def test_the_task_satisfies_the_quality_gates_own_criteria():
     """`issue-quality-gate.yml` grants `ready` only with an AC section *and* a checkbox list."""
     body = qa.bounty_body(2254, [_item(2254, "a"), _item(2257, "b")], [])
-    assert qa.re.search(r"acceptance criteria|AC|验收标准|MANDATORY", body, qa.re.I), "no AC section"
+    # The gate's own pattern, word-bounded on 2026-09-30 (`\bAC\b`): see tests/test_issue_quality_gate.py
+    # for why — the unbounded form matched any "ac" inside a word and was effectively decorative.
+    assert qa.re.search(r"acceptance criteria|\bAC\b|验收(标准|条件|要求)?|完成标准|MANDATORY", body, qa.re.I), \
+        "no AC section"
     assert qa.re.search(r"\[ \]|\[x\]|\[X\]", body), "no checkbox list — the gate would label it needs-ac"
 
 
