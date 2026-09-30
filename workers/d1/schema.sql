@@ -168,3 +168,14 @@ CREATE TABLE IF NOT EXISTS kv_store (
 );
 
 CREATE INDEX IF NOT EXISTS idx_kv_store_expires ON kv_store(expires_at);
+
+-- ── Leaderboard state (issue #1919) ──────────────────────────────────────────
+-- Replaces git-committed data/leaderboard.json and data/leaderboard_meta.json.
+-- Single row: key='leaderboard' for the full board, key='meta' for metadata.
+-- The workflow writes here instead of committing to main, so the repo history
+-- no longer accumulates one commit per snapshot change.
+CREATE TABLE IF NOT EXISTS leaderboard_state (
+  key        TEXT PRIMARY KEY,   -- 'leaderboard' | 'meta'
+  value      TEXT NOT NULL,      -- JSON payload
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
