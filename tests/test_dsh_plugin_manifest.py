@@ -151,3 +151,35 @@ def test_setup_cli_is_not_shipped_as_a_plugin():
         "already mistakes for the plugin (#1677), so this would make the mis-pick permanent"
     )
     assert data.get("bin", {}).get("misakanet-setup"), "the setup package must stay a CLI"
+
+
+# ── the two install forms do not have the same capability surface (intake #2486) ─────────────────────
+# A reader reported the confusion the hard way: "npm 安装只含 skill+CLI，mcp_misakanet 工具只在 git+
+# 安装时存在，两种安装形态能力面不同". It is true by design — the npm bundle has no `bin` and does not ship
+# the repository's local stdio server, so its MCP row points at the hosted endpoint — and it was documented
+# only in code comments (`index.js`, `cordis.patch.yml`) and `skills/misakanet/SKILL.md`. These two rules
+# keep the *fact* and the *guide* from drifting apart: if the bundle ever ships the local server, or the
+# install guide stops naming either form or the interpreter prerequisite, the doc's table becomes wrong.
+
+def test_the_npm_bundle_ships_no_local_mcp_server():
+    package = json.loads((REPO / "package.json").read_text(encoding="utf-8"))
+    assert not package.get("bin"), (
+        "the npm bundle gained a bin — the hosted-versus-local table in docs/dsh-installation.md is now "
+        "wrong (intake #2486)")
+    shipped = package.get("files") or []
+    assert "scripts/mcp_server.py" not in shipped and not any(f.startswith("scripts/") for f in shipped), (
+        "the npm bundle now ships the repository's scripts, including the local stdio MCP server: the "
+        "capability surface of the two install forms is no longer what the install guide documents "
+        f"(files: {shipped})")
+    # …and the local server still exists for the git+ form, so the difference is real rather than vacuous.
+    assert (REPO / "scripts" / "mcp_server.py").exists(), (
+        "the local stdio server is gone, so the git+ form no longer differs — update the table")
+
+
+def test_the_install_guide_names_both_forms_and_the_interpreter_prerequisite():
+    guide = (REPO / "docs" / "dsh-installation.md").read_text(encoding="utf-8")
+    assert "dsh plugin add misakanet" in guide, "the npm form is not named"
+    assert "dsh plugin add github:Ikalus1988/MisakaNet" in guide, "the git+ form is not named"
+    assert "Python" in guide and "3.10" in guide, (
+        "the install guide must state the interpreter prerequisite: \"zero dependency\" means no "
+        "third-party packages, not nothing to prepare (intake #2486)")
