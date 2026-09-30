@@ -10,7 +10,7 @@ A failure-memory open source project underwent a full-day hardening session to t
 
 **Problem:** Monolithic repository mixing core algorithm with application logic. Hard to audit, harder for third parties to reuse.
 
-**Pattern:** Identify the stdlib-onlyendency mathematical core. Extract into a standalone PyPI package. The main repo becomes the orchestration layer; the core package is the protocol implementation.
+**Pattern:** Identify the stdlib-only mathematical core. Extract into a standalone PyPI package. The main repo becomes the orchestration layer; the core package is the protocol implementation.
 
 ```
 Monorepo → PyPI core package + Application repo
@@ -76,7 +76,7 @@ Browser → Proxy Worker (with token) → api.github.com
 
 ### 7. Dependency Layering Narrative
 
-**Problem:** README claimed "stdlib-onlyendency" but listed optional 2GB model dependencies, creating credibility gap.
+**Problem:** README claimed "stdlib-only" but listed optional 2GB model dependencies, creating credibility gap.
 
 **Fix:** Replace flat "dependencies" section with a layered table:
 
