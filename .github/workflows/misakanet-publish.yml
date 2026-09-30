@@ -4,10 +4,75 @@ name: Publish misakanet
 # skills/misakanet/SKILL.md). The MCP installer for Claude Code / Codex is a separate
 # package: @misaka-net/misakanet-setup, published by misakanet-setup-publish.yml.
 #
-# Until now nothing published this package at all - the registry copy sat at 2.23.0 while the
+# Until 2026-09-14 nothing published this package at all - the registry copy sat at 2.23.0 while the
 # repo moved to 2.30.x, because the only publish path was a human running npm by hand.
+#
+# ── Automatic on a release since 2026-09-30 (owner decision D1 = A) ─────────────────────────────────
+# `package.json` and `.codex-plugin/plugin.json` joined the release-please package
+# (`release-please-config.json` → `extra-files`, `{"type": "json", "jsonpath": "$.version"}`), so the
+# release PR now carries the npm line with everything else and the tagged commit already says the
+# released version. Two things follow, and they are why this file looks the way it does:
+#
+#  * the publish no longer *moves* the line. It refuses to run when `package.json` disagrees with the
+#    version that was released ("The released version is the one in package.json"). The old
+#    `align_versions.py --source` step could put a fresh number on a tree that was not that release —
+#    the stale-bundle failure, which is why the check is a failure and not a repair;
+#  * the publish no longer *records* the line afterwards. That post-hoc PR existed because nothing
+#    wrote the version; release-please writes it before the tag exists, so the record had become a
+#    duplicate of a fact instead of the source of it (and a direct push to `main` is refused by the
+#    ruleset anyway - the 2026-09-22 lesson, PR #2210's sibling).
+#
+# Three ways in, and the guard covers all three:
+#   * `release: published` — the direct path. `release-please.yml` creates the release with the PAT, and
+#     only a PAT (never GITHUB_TOKEN) can start a workflow from an event it caused - a `push: tags`
+#     trigger alone would look right and never fire, which is the trap publish-mcp-registry.yml records;
+#   * `workflow_dispatch` — the release flow dispatches it with `version`, and a human can use the same
+#     input to republish (the escape hatch);
+#   * `push: tags: misakanet-v*` — the documented manual tag path.
+# The release event and the dispatch fire for the same release on purpose (the dispatch survives a lost
+# event), so a run that finds the version already on npm stands down instead of failing.
+#
+# ── What this job needs from the repository (settings, not code) ────────────────────────────────────
+#  * environment **`npm-release`** (created 2026-09-30), holding `NPM_TOKEN`: a granular npm token with
+#    read+write on `misakanet` (expiry and rotation: docs/maintainer/credentials-and-environments.md §4.1).
+#    It is the only secret this job reads — the GitHub side is `contents: read` and nothing else.
+#
+#    **Why its own environment** (owner decision D1 = A, intake #2486): the point of that decision is that
+#    the npm line stops drifting from the release line, which needs the publish to run unattended. The
+#    `release` environment is *also* what gates `deploy-worker.yml`, so making it unattended would silently
+#    un-gate production worker deploys too. Two trust boundaries, two environments: `npm-release` carries
+#    no required reviewer, `release` keeps its own click.
+#  * `npm-release`'s deployment branch policy allows `main` **and `v*`**: a `release: published` run is on
+#    `refs/tags/vX.Y.Z`, and a policy that allows only `main` refuses the job at deploy time, before a
+#    single step runs. Both policies are set.
+#  * **authentication, best first** (2026-09-30):
+#    1. **npm trusted publishing (OIDC)** — the job now asks for `id-token: write`, and npm CLI (>= 11.5.1
+#       on Node >= 22.14) exchanges that token for a short-lived credential. Nothing long-lived to rotate or
+#       leak, and provenance attestations are generated automatically. It needs a one-time configuration on
+#       npmjs.com (package → Settings → Trusted publisher): organisation/user, repository, **workflow file
+#       name** `misakanet-publish.yml`, **environment** `npm-release`, and the allowed actions.
+#    2. **`NPM_TOKEN`** (transitional) — kept as the fallback so the migration cannot break a release: npm
+#       prefers OIDC when it is available. Once a publish has succeeded through OIDC, delete the secret;
+#       that is what retires the expiry date in docs/maintainer/credentials-and-environments.md §4.1.
+#    With neither mechanism the job fails loudly and names both (see "Check npm identity" below).
+#
+# ── Rolling back a bad automatic publish (added 2026-09-30) ─────────────────────────────────────────
+# npm cannot republish a version, and it allows `npm unpublish` for only **72 hours** after the publish
+# (after that, only npm support can remove it). So:
+#
+#     npm deprecate misakanet@X.Y.Z "broken: install Y.Y.Y"   # always available — the safe default
+#     npm unpublish misakanet@X.Y.Z --force                   # only inside the 72h window
+#
+# Prefer `deprecate`: an unpublished version breaks every lockfile that pinned it (ETARGET), which turns
+# one bad release into a fleet of broken installs. `--force` is required because npm treats an unpublish
+# as destructive. After either one, fix forward — cut a patch release so the channels move together.
+# Do **not** hand-edit `package.json` backwards: release-please owns that line now, and a backwards move
+# is what `npm_bundle_floor` in scripts/align_versions.py reports on (an advisory, by the owner's
+# decision of 2026-09-29: a rollback and a typo look identical from the number alone).
 
 on:
+  release:
+    types: [published]
   push:
     tags:
       - "misakanet-v*"
@@ -19,16 +84,22 @@ on:
         default: true
       version:
         description: >-
-          Release version to publish (e.g. 2.31.0). Passing this is what the release flow does: the
-          npm bundle line is moved to this version in the working tree, the package is published, and
-          the bump is committed back — so `package.json` keeps meaning "the version that is on npm".
-          A run with this input set publishes even when dry_run is true; the `release` environment's
-          required reviewer is the human gate.
+          Release version to verify and publish (e.g. 2.39.0). A mismatch with package.json fails the
+          run instead of publishing it; leave empty to publish whatever the checked-out tree says.
         type: string
         required: false
 
 permissions:
-  contents: write      # the published version is committed back to `package.json` (see the last step)
+  contents: read       # publishing reads the tree; the version is written by release-please, not here
+  id-token: write      # npm **trusted publishing**: GitHub mints an OIDC token and npm exchanges it for a
+                       # short-lived publish credential, so no long-lived secret is needed (2026-09-30)
+
+# Two runs for one release are expected (the dispatch and the release event), and `cancel-in-progress`
+# is false on purpose: a cancelled release publish is a release that silently did not happen.
+# tests/test_workflow_inventory.py pins that distinction for every version-carrying workflow.
+concurrency:
+  group: publish-misakanet
+  cancel-in-progress: false
 
 jobs:
   publish:
@@ -36,7 +107,7 @@ jobs:
     # deploy credentials, and environment secrets can carry protection rules — a branch policy today,
     # and "required reviewers" as soon as it is switched on, which is what stops a workflow that has
     # been edited on a branch from using them without a person approving the run.
-    environment: release
+    environment: npm-release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -45,44 +116,87 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
         with:
-          node-version: "20"
+          # Trusted publishing needs npm CLI >= 11.5.1 and Node >= 22.14 (npm docs); Node 24 ships npm 11,
+          # and the docs' own example uses it. Bumping this is part of the migration, not incidental.
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
 
-      # The npm bundle line (`package.json`) deliberately lags the repository release line: a test
-      # enforces that it may be behind but never ahead, because it means "the version that is on npm",
-      # not "the version this checkout is". So publishing a new version means *moving* that line, and
-      # the release flow cannot do it (it runs before the publish, and the publish can still be refused
-      # by the reviewer). Running the alignment here is what the old error message asked a human to do
-      # by hand — see `scripts/align_versions.py --source`, whose own help says the same thing.
-      - name: Move the npm line to the version being published
-        if: inputs.version != ''
+      # The whole point of the change this step exists for: an automatic run may not publish a version
+      # that was not released. release-please owns `package.json` (since 2026-09-30), so at release time
+      # the version is already in the tree; a mismatch means this checkout is not the released tree (a
+      # stale branch, a hand-edited number, a release cut before its bump merged), and publishing anyway
+      # would put a version number on npm describing different bytes. The three spellings the three
+      # triggers produce are all read: `release.tag_name` (vX.Y.Z), `ref_name` for a tag push
+      # (misakanet-vX.Y.Z), and the `version` input of a dispatch.
+      #
+      # Every value arrives through `env:` and none is interpolated into the script text: a shell script
+      # whose *content* depends on a value is the injection shape this repository has been bitten by.
+      - name: The released version is the one in package.json
+        id: release
         env:
-          VERSION: ${{ inputs.version }}
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          REQUESTED_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          python3 scripts/align_versions.py --source "$VERSION"
-          ACTUAL=$(node -e "console.log(require('./package.json').version)")
-          [ "$ACTUAL" = "$VERSION" ] || {
-            echo "::error::package.json says $ACTUAL after aligning to $VERSION - refusing to publish."
-            exit 1
-          }
-          echo "npm line: $ACTUAL"
 
-      # A tag that disagrees with package.json would publish a version nobody intended, and
-      # npm does not let you take it back.
-      - name: Version must match the tag
-        run: |
-          PKG_VERSION=$(node -e "console.log(require('./package.json').version)")
-          echo "package.json: $PKG_VERSION"
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            TAG_VERSION="${GITHUB_REF_NAME#misakanet-v}"
-            echo "tag: $TAG_VERSION"
-            [ "$PKG_VERSION" = "$TAG_VERSION" ] || {
-              echo "::error::tag $GITHUB_REF_NAME says $TAG_VERSION but package.json says $PKG_VERSION"
-              echo "::error::fix with: python3 scripts/align_versions.py --source $TAG_VERSION"
-              exit 1
-            }
+          PKG=$(python3 -c "import json;print(json.load(open('package.json'))['version'])")
+          echo "package.json: $PKG"
+
+          EXPECTED=""
+          if [ "$EVENT_NAME" = "release" ]; then
+            EXPECTED="${RELEASE_TAG#v}"
+          elif [ "$REF_TYPE" = "tag" ]; then
+            EXPECTED="${REF_NAME#misakanet-v}"
+            EXPECTED="${EXPECTED#v}"
+          elif [ -n "${REQUESTED_VERSION:-}" ]; then
+            EXPECTED="$REQUESTED_VERSION"
           fi
+
+          if [ -z "$EXPECTED" ]; then
+            # The manual republish path: a dispatch with no version says nothing about which release
+            # this is, so there is nothing to compare against. Say so rather than claim a verdict.
+            echo "::warning::no released version to check against (dispatch with no version input) - publishing what package.json says"
+          elif [ "$PKG" != "$EXPECTED" ]; then
+            echo "::error::this run was started by the release $EXPECTED, but package.json says $PKG."
+            echo "::error::release-please owns package.json, so the release PR must carry the bump before the tag exists; this workflow does not move the line (that is how a fresh number lands on a tree that was not that release)."
+            echo "::error::publish the released tree instead: check out the tag, or dispatch with the version that tree carries."
+            exit 1
+          else
+            echo "package.json agrees with the release: $PKG"
+          fi
+
+          echo "version=$PKG" >> "$GITHUB_OUTPUT"
+
+      # The release event and release-please.yml's dispatch both fire for one release, so a run can
+      # arrive after the version is already on npm. npm cannot publish a version twice and "already on
+      # npm" is the desired end state, not a failure - but this is a registry *read*, so an unreadable
+      # registry is treated as "not published" and the publish step below stays the loud path. The
+      # concurrency group above means the two runs of one release are serialized, not racing.
+      - name: Skip when npm already has this version
+        id: npm_state
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          ALREADY=false
+          FOUND=$(npm view "misakanet@$VERSION" version 2>/tmp/npm-view.err || true)
+          if [ "$(printf '%s' "$FOUND" | tr -d '[:space:]')" = "$VERSION" ]; then
+            ALREADY=true
+            echo "misakanet@$VERSION is already on npm - nothing to publish."
+            echo "(A re-run, or the release event and the dispatch both ran and the first one published it.)"
+            echo "### misakanet@$VERSION is already on npm" >> "$GITHUB_STEP_SUMMARY"
+          else
+            # A failed lookup is not a verdict: the publish step below is the loud path, and it is what
+            # reports a genuine conflict.
+            echo "npm does not report misakanet@$VERSION as published - publishing it"
+            if [ -s /tmp/npm-view.err ]; then
+              sed 's/^/    npm view: /' /tmp/npm-view.err | head -3
+            fi
+          fi
+          echo "already=$ALREADY" >> "$GITHUB_OUTPUT"
 
       - name: Verify zero runtime dependencies
         run: |
@@ -98,24 +212,44 @@ jobs:
       # a bare "PUT 404".
       - name: Check npm identity
         run: |
-          if [ -z "${NODE_AUTH_TOKEN}" ]; then
-            echo "::error::NPM_TOKEN is empty - set it to a token that can publish this package."
+          # **Trusted publishing first** (2026-09-30). With `id-token: write`, GitHub exposes
+          # `ACTIONS_ID_TOKEN_REQUEST_URL` and npm CLI (>= 11.5.1) exchanges the OIDC token for a
+          # short-lived publish credential — *before* falling back to a token (npm docs, "Trusted
+          # publishing": "automatically detects OIDC environments and uses them for authentication before
+          # falling back to traditional tokens"). So this step must not demand NPM_TOKEN when OIDC is
+          # available: it would fail the very run that no longer needs a secret.
+          #
+          # The token path stays as the documented transitional fallback, and still fails loudly: with
+          # neither mechanism there is nothing to publish with, and the message names both.
+          if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+            echo "OIDC available: npm will authenticate with trusted publishing (no long-lived token)."
+            echo "node $(node --version) / npm $(npm --version)"
+          elif [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::Neither trusted publishing (no OIDC token request URL) nor NPM_TOKEN is available."
+            echo "::error::Configure a trusted publisher on npmjs.com for workflow misakanet-publish.yml"
+            echo "::error::and environment npm-release, or set the transitional NPM_TOKEN secret."
             exit 1
-          fi
-          if ! ACCOUNT=$(npm whoami 2>/tmp/whoami.err); then
+          elif ! ACCOUNT=$(npm whoami 2>/tmp/whoami.err); then
             echo "::error::npm rejected NPM_TOKEN (npm whoami failed)."
             sed 's/^/    /' /tmp/whoami.err | head -5
             echo "::error::A rejected token is usually expired; create a new automation token and"
-            echo "::error::update the NPM_TOKEN repository secret."
+            echo "::error::update the NPM_TOKEN secret in the release environment — or finish the"
+            echo "::error::trusted-publishing migration so no token is needed at all."
             exit 1
+          else
+            echo "account: $ACCOUNT (token fallback; OIDC not available in this run)"
           fi
-          echo "account: $ACCOUNT"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to npm
         id: publish
-        if: github.event_name == 'push' || inputs.dry_run == false || inputs.version != ''
+        # A release, a tag push, `dry_run=false`, or a dispatch that names a version all publish. The
+        # `already` half is the second run of one release standing down (see the step above).
+        if: >-
+          steps.npm_state.outputs.already != 'true' &&
+          (github.event_name == 'release' || github.event_name == 'push' ||
+          inputs.dry_run == false || inputs.version != '')
         run: |
           set +e
           npm publish --access public
@@ -127,81 +261,25 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # Record what was published, so the next reader of `package.json` sees the truth without running
-      # anything. Before this step existed the line moved only when a human remembered to run
-      # `align_versions.py --source`, which is how it sat at 2.30.2 through the 2.31.0 release — the
-      # same "one fact, no writer" shape as the lesson counts. Idempotent: nothing to record, nothing
-      # happens.
-      - name: Record the published version on main
-        if: steps.publish.outcome == 'success' && inputs.version != ''
+      # Its own step, so a failed publish says in the job summary which half did not happen. Deliberately
+      # not "nothing was published": a `npm publish` that fails on the way back from the registry may
+      # already have landed, and npm's refusal to republish is itself the proof — so the summary names the
+      # read that settles it instead of asserting an outcome this job cannot see.
+      - name: Publish did not land (summary)
+        if: failure() && steps.npm_state.outputs.already != 'true'
         env:
-          GH_TOKEN: ${{ secrets.SHELDON_PAT || secrets.GITHUB_TOKEN }}
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.release.outputs.version }}
         run: |
-          set -euo pipefail
-          if git diff --quiet; then
-            echo "package.json already records $VERSION - nothing to record."
-            exit 0
-          fi
-          OTHER=$(git diff --name-only | grep -vE '^(package.json|.codex-plugin/plugin.json|workers/register-proxy-sw.js)$' || true)
-          if [ -n "$OTHER" ]; then
-            echo "::warning::align_versions also changed: $OTHER (the record PR carries every tracked change)"
-          fi
-
-          # Through a pull request, not a direct push. `main` requires three status checks, the ruleset
-          # has no bypass actors, and GitHub enforces that rule on *direct pushes* too: on 2026-09-22
-          # this step was refused five times ("3 of 3 required status checks are expected") **after** a
-          # publish that had already succeeded. The version record is bookkeeping, so it travels the way
-          # every other change does. That also removes the old race against `main` moving during a
-          # publish — a PR is rebased by the merge, not by this step.
-          BRANCH="chore/record-$VERSION"
-          git config user.name "misakanet-bot"
-          git config user.email "bot@misakanet.dev"
-          git checkout -b "$BRANCH"
-          git add -u
-          git commit --signoff -m "chore(npm): misakanet@$VERSION is published"
-
-          git push --force-with-lease origin "HEAD:refs/heads/$BRANCH"
-
-          EXISTING=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty' || true)
-          if [ -n "$EXISTING" ]; then
-            echo "record PR #$EXISTING is already open for $VERSION"
-          else
-            gh pr create --base main --head "$BRANCH" \
-              --title "chore(npm): record misakanet@$VERSION as published" \
-              --body "$(printf '%s\n' \
-                "The npm publish of \`$VERSION\` succeeded, so \`package.json\` — and the surfaces" \
-                "\`align_versions.py\` keeps in step with it — must move to it, or npm and the repository" \
-                "disagree, which is the drift this step exists to prevent." \
-                "" \
-                "It arrives as a pull request because \`main\` requires three status checks with no bypass" \
-                "actors, and GitHub enforces that on direct pushes too: the first attempt was refused with" \
-                "\`3 of 3 required status checks are expected\` after the package was already published." \
-                "" \
-                "Computed by the repository's own tool: \`python3 scripts/align_versions.py --source $VERSION\`." \
-                "" \
-                "## AC" \
-                "" \
-                "- [x] \`package.json\` records the version that is on npm" \
-                "- [x] the same version reaches \`.codex-plugin/plugin.json\` and the worker's \`serverInfo\`" \
-                "- [x] \`align_versions.py --check\` passes in CI")"
-          fi
-
-      # Its own step, so it can run on failure: the publish step above is the one that must not fail
-      # silently, and this one exists to say which half of the job succeeded.
-      - name: The record did not land (summary)
-        if: failure() && steps.publish.outcome == 'success'
-        run: |
-          # Deliberately a failure, not a warning: npm does not allow republishing a version, so the
-          # repository has to catch up, and a silent drift is the defect this whole step exists to stop.
-          # The summary says the part a human needs first — the package *is* published.
           {
-            echo "### npm publish succeeded, but the version record did not land"
+            echo "### The npm publish did not land"
             echo ""
-            echo "\`misakanet@${{ inputs.version }}\` **is published** — npm does not allow republishing a version."
-            echo "\`package.json\` still records the previous one. The record PR could not be opened."
+            echo "This run did not complete a publish of misakanet@$VERSION."
+            echo "Check what npm actually has before re-running: npm view misakanet version"
+            echo "If $VERSION is already there, this run lost a race - npm cannot publish a version twice,"
+            echo "so the desired state is reached and nothing needs doing."
             echo ""
-            echo "Fix by hand: \`python3 scripts/align_versions.py --source ${{ inputs.version }}\`, then commit on a branch and open a PR."
+            echo "If the version guard refused the tree, the fix is a release, not a hand edit: the npm"
+            echo "version line is owned by release-please, and this workflow does not move it."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Dry run summary
