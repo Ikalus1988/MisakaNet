@@ -115,6 +115,8 @@
   "activityClassCrawler": "Crawler",
   "activityClassPageview": "Page view",
   "activityOn": "counted {date}",
+  "activityLive": "live, updated {age}",
+  "activityAge": "snapshot taken {age}",
   "activityUnavailable": "activity snapshot unavailable (this page is newer than the deploy)",
   "latestUnavailable": "the update list is unavailable",
   "regWorkerOffline": "Registration is unreachable right now",

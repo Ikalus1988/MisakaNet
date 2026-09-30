@@ -1,22 +1,29 @@
 #!/usr/bin/env python3
-"""Snapshot the live traffic counters into a static file the homepage can read.
+"""Snapshot the live traffic counters into a static file the homepage can fall back to.
 
-Why a snapshot instead of the endpoint
--------------------------------------
-`/api/analytics/traffic` is correct, public and cheap to *describe* — and far too slow to sit on a
-visitor's critical path. Measured by hand on 2026-09-24, five consecutive requests:
+Why a snapshot at all
+---------------------
+`/api/analytics/traffic` is correct, public and expensive to *recompute*. Measured by hand on
+2026-09-24, five consecutive requests:
 
     0.674s   0.659s   0.689s   17.426s   0.753s
 
 The fast answers come from the worker's cache; the 17-second one is a recompute, which happens
 whenever the counter has moved since the cache was filled — i.e. most of the time on a site that
-is actually being used. A homepage panel calling it would be a 504 generator for a fraction of
-visitors, which is precisely the failure #2151 spent a day removing (up to 100 parallel
-`/api/github/…/comments` requests per homepage load). A static file cannot be slow, and it costs
-the worker nothing.
+is actually being used.
 
-That is also why this is not a worker change: the endpoint is fine where it is. It just must not be
-called by a browser.
+That 17-second path was the whole argument for writing a file every three hours, and it is gone:
+re-measured 2026-09-29, six consecutive requests answered in 1.08–1.28s. The file is therefore no
+longer the homepage panel's source — the panel reads `/api/activity`, the anonymous, edge-cached
+projection of these same counters (TTL of minutes), and this snapshot is what answers when that route
+is unreachable. It stays committed and refreshed on the same cadence, because a fallback that nothing
+writes is not a fallback.
+
+This script keeps reading `/api/analytics/traffic` rather than `/api/activity`, deliberately: it is
+a batch job with a 60-second timeout and retries, so the recompute costs it nothing, and the raw
+endpoint is the one whose payload this schema was built against (`breakdown`, and the refusal to
+publish a class it does not know). The `source` field names where the numbers came from, and that
+should keep naming the computation rather than the cache in front of it.
 
 What it refuses to do matters more than what it does
 ----------------------------------------------------
@@ -41,9 +48,9 @@ Usage::
     python3 scripts/sync_site_activity.py --base http://127.0.0.1:8123   # used by the tests
 
 `--check` deliberately says nothing about the snapshot's **age**. The page prints the snapshot's own
-date, so a stale file is visible to a reader; asserting freshness in CI would instead turn a broken
-cron into a red required check that blocks every merge, which is a much worse trade than a date a
-human can see.
+date *and* its age (2026-09-29), so a stale file is visible to a reader; asserting freshness in CI
+would instead turn a broken cron into a red required check that blocks every merge, which is a much
+worse trade than a date and an age a human can see.
 """
 from __future__ import annotations
 

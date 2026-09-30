@@ -164,6 +164,10 @@ function errorResponse(context, code = "internal_error", status = 500, error = n
   return jsonResponse({ error: ERROR_CODES[code] || ERROR_CODES.internal_error, code, ...extra }, status);
 }
 
+// `extraHeaders` exists for the one route that is deliberately cacheable (2026-09-29): the API
+// surface answers `no-store` on purpose, and that stays the default — a handler has to say out loud
+// that it wants a shared TTL, because on this worker that means "this body is the same for every
+// caller, including one holding the maintainer token".
 function jsonResponse(body, status = 200, extraHeaders = null) {
   return new Response(JSON.stringify(body), {
     status,
@@ -5569,6 +5573,40 @@ async function readTrafficCount(env, cls, day) {
   return (parseInt(fallback, 10) || 0) + (parseInt(legacy, 10) || 0);
 }
 
+/** Today's traffic classification — the four classes and their sum — from the counters.
+ *
+ * One reader for the two routes that answer with it (2026-09-29): `/api/analytics/traffic`, which
+ * additionally carries the per-caller fields, and `/api/activity`, the anonymous cacheable
+ * projection the homepage panel reads. A second copy of this loop is how the two would come to
+ * disagree about what "today's traffic" is, which is the one thing they must never do.
+ */
+async function readTrafficBreakdown(env, day) {
+  const entries = await Promise.all(
+    TRAFFIC_TYPES.map(async cls => [cls, await readTrafficCount(env, cls, day)])
+  );
+  return {
+    date: day,
+    breakdown: Object.fromEntries(entries),
+    total: entries.reduce((sum, [, n]) => sum + n, 0),
+  };
+}
+
+// ── The homepage activity feed (2026-09-29) ──
+//
+// Five minutes, on purpose. Measured 2026-09-29 the homepage panel rendered `total 5974` from a
+// snapshot generated at 16:21Z while the same endpoint answered 6645 for the same day — ~10% low,
+// and a reviewer had seen a ~2x case. The gap is the snapshot's three-hour cadence; the 17.4s cold
+// path that justified that cadence is gone (six consecutive requests that day answered in
+// 1.08–1.28s), so the panel now reads the route below and keeps the file as its fallback.
+//
+// The TTL is a *number* here rather than a literal in the header so the test asserts it against the
+// constant: a "short TTL" that drifts to a day is the failure this whole change exists to prevent.
+const ACTIVITY_TTL_SECONDS = 300;
+const ACTIVITY_CACHE_CONTROL =
+  `public, max-age=${ACTIVITY_TTL_SECONDS}, s-maxage=${ACTIVITY_TTL_SECONDS}`;
+// Where the numbers are computed; carried in the payload so a reader can go to the source.
+const ACTIVITY_SOURCE = "/api/analytics/traffic";
+
 /**
  * Calls today, per self-declared MCP client (`mcpclient:<name>` buckets). D1 only: the KV fallback
  * cannot enumerate keys, and inventing that here would cost more than the missing number is worth.
@@ -6153,13 +6191,11 @@ export default {
         // `/api/analytics/traffic` is where this belongs long-term; it needs a D1 binding for the
         // bucket enumeration either way, and the index endpoint is the one already read when the
         // question is "is search healthy".
-        const entries = await Promise.all(
-          TRAFFIC_TYPES.map(async cls => [cls, await readTrafficCount(env, cls, today)])
-        );
+        const traffic = await readTrafficBreakdown(env, today);
         return jsonResponse({
-          date: today,
-          breakdown: Object.fromEntries(entries),
-          total: entries.reduce((s, [, n]) => s + n, 0),
+          date: traffic.date,
+          breakdown: traffic.breakdown,
+          total: traffic.total,
           // Who called, as far as each client is willing to say (#A2). Read from the same counter
           // family; empty rather than absent when the store is KV-only, because an enumeration is the
           // one thing the fallback cannot do.
@@ -6171,6 +6207,62 @@ export default {
             ? { mcpClients: await readMcpClientCounts(env, today) }
             : { withheld: ["mcpClients"] }),
         }, 200, { "X-Robots-Tag": "noindex" });
+      } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
+    }
+
+    // GET /api/activity — the homepage panel's live read of today's activity (2026-09-29).
+    //
+    // Why this is a route of its own rather than a TTL on `/api/analytics/traffic`:
+    //
+    //   * that route's body depends on the caller — `mcpClients` is other people's tool names and
+    //     call volumes, served to the maintainer token only (2026-09-29) — and an edge cache keys on
+    //     the URL, not on `Authorization`. A shared `Cache-Control: public` there would let one
+    //     maintainer request seed an entry that then handed `mcpClients` to every anonymous visitor.
+    //     So the cacheable projection must be a route that *cannot* carry a per-caller field: there
+    //     is no code path here that reads the Authorization header at all.
+    //   * `/api/analytics/traffic` carries no `generated_at`, so a client cannot tell how old the
+    //     number it just received is — the exact failure this route exists to end.
+    //
+    // The payload is deliberately the same five keys `scripts/sync_site_activity.py` publishes
+    // (`generated_at`, `source`, `date`, `total`, `calls`), so the panel renders one shape from two
+    // sources and the contract lives in one place (`tests/test_sync_site_activity.py`).
+    if (request.method === "GET" && url.pathname === "/api/activity") {
+      if (!d1Binding(env) && !env.MISAKANET_KV) {
+        return jsonResponse({ error: "no counter store configured" }, 503);
+      }
+      try {
+        // A Worker route is *not* cached by the CDN because a header says so — on a route, the
+        // response the Worker returns is what the visitor gets. The header is what browsers and
+        // intermediaries honour; the Cache API is what makes the TTL real at the edge, so a colo
+        // pays the recompute once per TTL instead of once per visitor (the cold path that used to
+        // measure 17.4s is why that matters even though it now measures ~1.2s). Guarded, because a
+        // runtime without `caches` must degrade to a recompute, never to a 500.
+        const cache = (typeof caches !== "undefined" && caches.default) ? caches.default : null;
+        const cacheKey = new Request(`${url.origin}/api/activity`);
+        if (cache) {
+          const hit = await cache.match(cacheKey);
+          if (hit) return hit;
+        }
+        const traffic = await readTrafficBreakdown(env, new Date().toISOString().slice(0, 10));
+        // `total: 0` is served rather than refused. This route reports what the counters hold, and
+        // unlike `scripts/sync_site_activity.py` it has no earlier value to keep in its place: the
+        // writer refuses a zero because overwriting a good file with it would *lose* a number, while
+        // here the panel's age is what tells a reader these are the counters of a day that just began.
+        const response = jsonResponse({
+          // Milliseconds are dropped so this reads identically to the snapshot's `generated_at`
+          // (`datetime.isoformat()` on the Python side): the panel parses both with the same code.
+          generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+          source: ACTIVITY_SOURCE,
+          date: traffic.date,
+          total: traffic.total,
+          calls: traffic.breakdown,
+        }, 200, { "Cache-Control": ACTIVITY_CACHE_CONTROL, "X-Robots-Tag": "noindex" });
+        if (cache) {
+          const putting = cache.put(cacheKey, response.clone()).catch(e =>
+            console.error("[activity] cache put failed", e && e.message));
+          if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(putting); else await putting;
+        }
+        return response;
       } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }
 
@@ -7097,6 +7189,14 @@ export {
   hashString,
   findCoveringLesson,
   aggregateDailyTraffic,
+  // Exported for workers/activity-route.test.mjs: the homepage route's TTL and the reader it shares
+  // with `/api/analytics/traffic`. Asserting the header against the constant is what stops a "short
+  // TTL" from quietly becoming a day, and asserting the two routes against the *same* reader is what
+  // stops them from disagreeing about today's traffic (2026-09-29).
+  readTrafficBreakdown,
+  ACTIVITY_TTL_SECONDS,
+  ACTIVITY_CACHE_CONTROL,
+  ACTIVITY_SOURCE,
   runKeepaliveSweep,
   cleanupCoveredGaps,
   matchAnsweredQuestions,

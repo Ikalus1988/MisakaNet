@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """The homepage's activity panel must not be able to show a lie, so the snapshot is gated.
 
-`docs/data/activity.json` exists because `/api/analytics/traffic` is correct and unusable from a
-browser: measured 2026-09-24 in five consecutive requests, it answered in 0.66–0.75s from cache and
-**17.4s** when it recomputed. Putting that on a homepage is how #2151's ~2,700 504s were made.
+`docs/data/activity.json` is the **fallback** the panel reads when the live, edge-cached
+`/api/activity` cannot be reached (2026-09-29). It exists because the raw computation behind both —
+`/api/analytics/traffic` — can take 17.4s to recompute: measured 2026-09-24 in five consecutive
+requests, it answered in 0.66–0.75s from cache and **17.4s** once.
+
+That is no longer the panel's source (re-measured 2026-09-29: six consecutive requests answered in
+1.08–1.28s, and the three-hour snapshot had drifted to `total 5974` against the endpoint's 6645 for
+the same day). The file stays, and stays gated, because a fallback nothing refreshes is not one.
 
 A snapshot introduces the failure mode a live endpoint does not have: **the file can be wrong and
 still look like data**. `{"total": 0}` renders as "no calls today" — a perfectly plausible sentence
@@ -15,9 +20,9 @@ schema change upstream produces. So the interesting tests here are the refusals:
 * a class the schema does not know is a hard error rather than a silently dropped number;
 * a material change is what earns a commit — the timestamp alone is not one.
 
-The page's side of the contract — that it renders exactly these classes, in both languages, from
-this file and never from the live endpoint — lives in `tests/test_site_activity_panel.py`, next to the
-markup it describes.
+The page's side of the contract — that it renders exactly these classes, in both languages, from this
+file (preferring the live route and printing the age of whichever answered) — lives in
+`tests/test_site_activity_panel.py`, next to the markup it describes.
 """
 from __future__ import annotations
 

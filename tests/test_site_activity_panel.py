@@ -20,10 +20,24 @@ dropped. So this file pins the label-to-number correspondence on both sides:
   next to it: one is a monotonic allocation counter, the other counts an optional self-declared
   header, and no label makes either a stat worth showing (2026-09-26).
 
-**How it is fed.** `/api/analytics/traffic` answers in 0.66–0.75s from cache and **17.4s** when it
-recomputes (five consecutive requests, 2026-09-24). A browser panel calling it would rebuild the 504
-generator that #2151 spent a day removing, so the panel reads `docs/data/activity.json` and the live
-endpoint must not appear on this page at all.
+**How it is fed.** This panel used to read only `docs/data/activity.json`, a snapshot written every
+three hours because `/api/analytics/traffic` answered in 0.66–0.75s from cache and **17.4s** when it
+recomputed (five consecutive requests, 2026-09-24) — a browser panel calling it would have rebuilt the
+504 generator #2151 spent a day removing.
+
+That premise was re-measured on 2026-09-29 and no longer holds: six consecutive requests answered in
+1.08–1.28s, while the snapshot had drifted far enough to matter — the panel rendered `total 5974`
+(generated_at 16:21Z) against the endpoint's 6645 for the *same date*, and a reviewer had caught a ~2x
+case. The date was identical in both, so the page could not show the staleness.
+
+So the panel now prefers `/api/activity` — the anonymous, edge-cached projection of the same counters
+— and keeps `docs/data/activity.json` as its fallback. Both carry `generated_at`, and the footnote
+renders the *age*, which is the assertion this file gained on 2026-09-29: a stale number must be
+unable to read as current whatever its source.
+
+`/api/analytics/traffic` still must not appear on this page: its body varies by caller (per-client
+counts are behind the maintainer token since 2026-09-29), so it can never carry a shared TTL, and
+`test_the_panel_never_calls_the_live_endpoint` pins that.
 """
 from __future__ import annotations
 
@@ -38,9 +52,11 @@ INDEX = REPO / "docs" / "index.html"
 LOCALES = {lang: REPO / "docs" / "locales" / f"{lang}.json" for lang in ("en", "zh")}
 SCRIPT = REPO / "scripts" / "sync_site_activity.py"
 
-# The file the panel reads, and the endpoint it must never read.
+# The file the panel falls back to, and the endpoint it must never read.
 SNAPSHOT_PATH = "data/activity.json"
 LIVE_ENDPOINT = "/api/analytics/traffic"
+# The route the panel does read: anonymous-only and cacheable, which `/api/analytics/traffic` is not.
+LIVE_ACTIVITY_URL = "/api/activity"
 
 # The node counter must be rendered from `counter.current`; this is the subtraction that used to turn
 # it into a population it is not.
@@ -123,16 +139,74 @@ def test_the_committed_snapshot_satisfies_the_panel():
 # ── it cannot be slow ────────────────────────────────────────────────────────────────────────────
 
 def test_the_panel_never_calls_the_live_endpoint(page):
-    """The 17.4-second cold path, measured — a browser must not be able to reach it."""
+    """The per-caller endpoint, measured — a browser must not be able to reach it.
+
+    Two independent reasons by 2026-09-29: it once took 17.4s to recompute, and it now answers a
+    different body to a caller holding the maintainer token (per-client counts). A URL whose body
+    depends on `Authorization` cannot be publicly cached, so it is not what a homepage reads.
+    """
     assert LIVE_ENDPOINT not in uncommented(page), (
-        f"the page calls {LIVE_ENDPOINT}, whose recompute takes 17.4s; read "
-        f"{SNAPSHOT_PATH} instead (scripts/sync_site_activity.py)"
+        f"the page calls {LIVE_ENDPOINT}, whose body varies by caller and whose recompute once took "
+        f"17.4s; read {LIVE_ACTIVITY_URL} (cacheable, anonymous) and fall back to {SNAPSHOT_PATH}"
     )
 
 
 def test_the_panel_reads_the_static_snapshot(page):
     assert f'const ACTIVITY_URL = "{SNAPSHOT_PATH}"' in page, "the panel's data source moved"
     assert "fetchJSON(ACTIVITY_URL)" in panel(page), "the panel no longer reads ACTIVITY_URL"
+
+
+def test_the_panel_prefers_the_live_route_and_keeps_the_snapshot_as_fallback(page):
+    """Order is the assertion: a fallback fetched first would still be the panel's real source."""
+    body = panel(page)
+    assert f'const ACTIVITY_LIVE_URL = "{LIVE_ACTIVITY_URL}"' in page, "the live route moved"
+    assert "fetchWithTimeout(ACTIVITY_LIVE_URL, ACTIVITY_LIVE_TIMEOUT_MS)" in body, (
+        "the panel no longer reads the live route"
+    )
+    assert "fetchJSON(ACTIVITY_URL)" in body, "the snapshot fallback is gone"
+    assert body.index("ACTIVITY_LIVE_URL") < body.index("fetchJSON(ACTIVITY_URL)"), (
+        "the snapshot is fetched before the live route — the fallback became the source"
+    )
+    # A live body that is not a breakdown must not render as one: the fallback answers instead.
+    assert "answered without a breakdown" in body, (
+        "the live payload is rendered without checking it is a breakdown, so a 200 carrying an error "
+        "object would render four em-dashes as data"
+    )
+
+
+def test_the_live_route_is_not_the_uncacheable_endpoint(page):
+    """The value, not the prose: the constant must not be the per-caller endpoint."""
+    match = re.search(r'const ACTIVITY_LIVE_URL = "([^"]+)"', page)
+    assert match, "ACTIVITY_LIVE_URL moved"
+    assert match.group(1) != LIVE_ENDPOINT, (
+        f"{LIVE_ENDPOINT} varies by caller and cannot be cached publicly"
+    )
+    assert match.group(1).startswith("/api/"), match.group(1)
+
+
+def test_the_live_fetch_is_bounded(page):
+    """A cold recompute must not hold the panel open; past the bound the snapshot answers."""
+    match = re.search(r"const ACTIVITY_LIVE_TIMEOUT_MS = (\d+)", page)
+    assert match, "the live fetch timeout moved"
+    assert 0 < int(match.group(1)) <= 8000, f"{match.group(1)}ms is not a bound on a cold recompute"
+
+
+def test_the_age_is_rendered_from_the_payloads_own_timestamp(page):
+    """A date cannot show that *today's* number is three hours old; an age can.
+
+    Measured 2026-09-29: the panel showed `total 5974` (generated_at 16:21Z) while the endpoint said
+    6645 for the same date, so "counted 2026-09-29" was true and useless. The panel therefore
+    computes an age from `generated_at` and renders it for both sources.
+    """
+    body = panel(page)
+    assert "function formatActivityAge(" in page, "the age helper is gone"
+    assert "formatActivityAge(" in body, "the panel no longer computes an age"
+    assert "generated_at" in body, "the panel no longer reads the payload's generation time"
+    assert "{ age }" in body, "the footnote no longer interpolates the age"
+    for key in ("activityLive", "activityAge"):
+        assert f"t('{key}')" in body, f"{key} is no longer rendered by the panel"
+        for lang in ("en", "zh"):
+            assert "{age}" in locale(lang)[key], f"{lang}.json {key} lost its placeholder"
 
 
 def test_the_panel_loads_after_first_paint(page):
