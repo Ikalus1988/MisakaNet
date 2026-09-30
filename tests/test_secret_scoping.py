@@ -3,7 +3,9 @@
 
 `NPM_TOKEN` and the deploy-capable `CF_API_TOKEN` moved into the `release` environment
 (2026-09-19), and the two scheduled syncs got their own D1-scoped credential in `automation`
-(2026-09-20). Splitting credentials across two environments only buys something if the arrangement
+(2026-09-20). On 2026-09-30 (intake #2486, decision D1) the npm credential moved to its **own**
+reviewer-free environment `npm-release`, so that publishing can be unattended without also making
+`release` — which gates `deploy-worker.yml` — unattended. Splitting credentials across two environments only buys something if the arrangement
 cannot quietly rot, and the failure modes are not visible in the workflow files:
 
 * **a job that reads a credential without declaring an environment** reads the repository-level
@@ -41,10 +43,13 @@ WORKFLOWS = REPO / ".github" / "workflows"
 GUARDED_SECRETS = ("NPM_TOKEN", "CF_API_TOKEN", "CF_OBSERVABILITY_TOKEN", "CF_BUILDS_TOKEN")
 
 # `release` gates on a required reviewer and holds the deploy-capable tokens; `automation` has no
-# reviewers and holds a D1-only token, so that unattended jobs can run.
+# reviewers and holds a D1-only token, so that unattended jobs can run; `npm-release` (2026-09-30, intake
+# #2486 D1) has no reviewers and holds the npm publish credential, because making `release` unattended
+# would have un-gated production worker deploys as a side effect. Three boundaries, three environments.
 APPROVED_ENVIRONMENT = "release"
 UNATTENDED_ENVIRONMENT = "automation"
-KNOWN_ENVIRONMENTS = (APPROVED_ENVIRONMENT, UNATTENDED_ENVIRONMENT)
+PUBLISH_ENVIRONMENT = "npm-release"
+KNOWN_ENVIRONMENTS = (APPROVED_ENVIRONMENT, UNATTENDED_ENVIRONMENT, PUBLISH_ENVIRONMENT)
 
 # Unattended workflows, and the credential scope their file has to record — the note is what makes
 # reviewer-free access a decision rather than an accident.
@@ -111,6 +116,20 @@ def test_scheduled_jobs_use_the_environment_without_reviewers(secret):
         "reviewers, branch-restricted to main). Behind an approval gate the run waits for a person, "
         "so the automation silently stops being automation:\n  - " + "\n  - ".join(offenders)
     )
+
+
+def test_the_publish_runs_unattended_without_un_gating_the_worker_deploy():
+    """The two boundaries are separate on purpose: one click gates production code, not the catalogue."""
+    publish = _job_environments(WORKFLOWS / "misakanet-publish.yml").get("publish")
+    assert publish == PUBLISH_ENVIRONMENT, (
+        f"misakanet-publish.yml:publish declares environment={publish!r}; unattended publishing needs "
+        f"`{PUBLISH_ENVIRONMENT}` (no reviewer), and it must not be `{APPROVED_ENVIRONMENT}` — that "
+        "environment gates deploy-worker.yml, so publishing there would drop the human gate on "
+        "production code as a side effect"
+    )
+    deploy = _job_environments(WORKFLOWS / "deploy-worker.yml").get("deploy")
+    assert deploy == APPROVED_ENVIRONMENT, (
+        f"deploy-worker.yml:deploy moved to environment={deploy!r}; production code must keep its reviewer")
 
 
 @pytest.mark.parametrize("filename,job", sorted(REVIEWED_JOBS.items()))

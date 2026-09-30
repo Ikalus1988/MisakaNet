@@ -1,47 +1,62 @@
 #!/usr/bin/env python3
 """Version alignment for MisakaNet's multi-channel version lines (audit T2.1).
 
-MisakaNet deliberately runs THREE version channels with independent cadence
-(see docs/maintenance.md → 版本通道):
+MisakaNet deliberately runs THREE version channels, and their clocks are not
+the same (see docs/maintenance.md → 版本通道):
 
 * registry line  — server.json/glama.json ``version`` (MCP-registry listing
   version; currently 2.29.x). Bumped together with the repo release tags, the
   docs that advertise them (API.md header, JOIN.md) and the agent-discovery
   cards under docs/.well-known/ (they declare the *server* version; their
   ``supportedInterfaces.protocolVersion`` is a different fact and is left alone).
-* source line    — pyproject.toml + package.json + .release-please-manifest
-  (the repo's own "next release" line, currently 2.23.x). package.json and
-  the manifest must match; pyproject may lag it by design (bumped when the
-  PyPI package is actually published).
-* pypi channel   — the version actually on pypi.org (currently far behind,
-  2.18.0): publishes have not run since; server.json's pypi packages[] entry
-  tracks the source line (== pyproject) as the *next* pypi version.
+* source line    — pyproject.toml + package.json + .codex-plugin/plugin.json +
+  .release-please-manifest (the repo's own release line). Since **2026-09-30**
+  release-please owns all of these (owner decision D1 = A): `package.json` and
+  the Codex plugin manifest are declared in `release-please-config.json`'s
+  `extra-files` through the json updater, so a release PR moves them with
+  everything else. Before that they moved on their own cadence and sat at 2.38.0
+  while the manifest said 2.39.0 — the drift a reader reported as "one page, two
+  version numbers" (intake #2486).
+* pypi channel   — the version actually on pypi.org. server.json's pypi
+  packages[] entry tracks the source line (== pyproject) as the *next* pypi
+  version.
 
 Usage:
   python3 scripts/align_versions.py --check
       Print every declared version + pass/fail against the policy below.
       Exit 1 when a policy invariant breaks (CI / release gate).
   python3 scripts/align_versions.py --source 2.24.0
-      Bump the repo release line: pyproject.toml, package.json,
-      .release-please-manifest.json ("."), README npm claims.
+      Move the source line by hand: pyproject.toml, package.json,
+      .codex-plugin/plugin.json, .release-please-manifest.json ("."), the CLI,
+      the worker's serverInfo, README npm claims. **Not the release path any
+      more** — release-please writes these files in the release PR (2026-09-30);
+      this is the deliberate-incident path (see `npm_bundle_floor`).
   python3 scripts/align_versions.py --registry 2.28.0
       Bump the registry line: server.json + glama.json + API.md + JOIN.md
       + the docs/.well-known cards' server version.
 
 Policy invariants (mirrored by tests/test_version_consistency.py):
   R1 registry pair equal:        server.json.version == glama.json.version
-  R2 npm-bundle never ahead:     package.json <= manifest "."  (npm bundle
-                                 line lags the repo release line)
-
-There is deliberately **no floor** on the npm bundle line: moving backwards is
-reported by `--check` as an advisory and never fails, because a deliberate
-rollback and a typo look identical from the version number alone
-(`npm_bundle_floor`, 2026-09-29).
+  R2 npm-bundle never ahead:     package.json <= manifest "."
   R3 pypi-source equal:          server.json pypi-package.version == pyproject
   R4 lag allowed:                pyproject <= manifest
   R5 docs never ahead:           API.md / JOIN.md / README claims
   R6 cards equal registry:       docs/.well-known/*.json server version
                                  <= max(registry, manifest)
+  R7 plugin manifest == npm:     .codex-plugin/plugin.json == package.json
+
+There is deliberately **no floor** on the npm bundle line: moving backwards is
+reported by `--check` as an advisory and never fails, because a deliberate
+rollback and a typo look identical from the version number alone
+(`npm_bundle_floor`, 2026-09-29). That decision survives the 2026-09-30 change
+even though its setting did: release-please moves this line forward only, so a
+backwards move is now *always* a hand action — which makes the advisory a report
+about people rather than about cadence, and no more of a gate.
+
+The **equality** of the npm line with the manifest (the relation R2 only bounds
+from above, because the channel used to lag) is asserted in
+tests/test_version_consistency.py::test_the_npm_bundle_line_is_release_owned_and_carries_the_manifest_version,
+where the writer is checked at the same time as the value.
 """
 from __future__ import annotations
 
@@ -177,10 +192,9 @@ def _docs_badge() -> str:
 def npm_bundle_floor(root: Path | None = None) -> tuple[str, str]:
     """Advisory (never a failure): did the npm bundle line move *backwards*?
 
-    R2 bounds this line from **above** only — ``package.json <= manifest`` — because the npm channel
-    publishes on its own, approval-gated cadence and legitimately lags the release line. Nothing bounds
-    it from below, and the owner's decision (2026-09-29) is that it stays that way: a version number
-    moves backwards for two reasons that are indistinguishable from the number itself —
+    R2 bounds this line from **above** only — ``package.json <= manifest``. Nothing bounds it from below,
+    and the owner's decision (2026-09-29) is that it stays that way: a version number moves backwards for
+    two reasons that are indistinguishable from the number itself —
 
     * a hand-edit, or an older artifact getting published (a mistake), and
     * a deliberate rollback because the published version is broken (legitimate, and urgent).
@@ -189,6 +203,14 @@ def npm_bundle_floor(root: Path | None = None) -> tuple[str, str]:
     The previous value comes from git history: the most recent committed ``package.json`` whose version
     differs from today's. A shallow checkout cannot answer that, and says so instead of reporting "ok" —
     a check that passes when it could not run is the shape this repository keeps removing.
+
+    **Still meaningful after 2026-09-30**, when release-please took ownership of this line (D1 = A), and
+    the reason changed rather than disappeared: the old rationale had two halves — "the npm channel
+    publishes on its own cadence and lags" and "a hand edit or a rollback looks the same" — and the first
+    half is gone (release-please moves the line only forward, with the release PR). So a backwards move
+    now *always* means a person moved it, which is precisely what this reports: a hand edit or a
+    deliberate rollback. The owner's decision not to gate on it is untouched by that, so it stays an
+    advisory.
     """
     directory = Path(root) if root else REPO
     # Read from `directory`, not from `REPO`: the parameter exists so a scratch repository can be
@@ -245,11 +267,21 @@ def check() -> int:
     if floor_status == "backwards":
         print(f"  ⚠️  advisory — the npm bundle line moved backwards ({floor_detail}). R2 has no floor by "
               "design, because a rollback is sometimes the right answer; if this was not deliberate, "
-              "restore the previous value.")
+              "restore the previous value. Since 2026-09-30 release-please moves this line forward only, "
+              "so a backwards move is a hand action by construction.")
     elif floor_status == "unverified":
         print(f"  ·  npm bundle floor not checked: {floor_detail}")
     else:
         print(f"  ·  npm bundle line did not move backwards ({floor_detail})")
+
+    # Informational, same reason as the advisory: `package.json`/`plugin.json` are release-please-owned
+    # since 2026-09-30, so a *lag* is no longer the channel's own cadence (R2 still allows it) but a
+    # release step that missed them. The equality itself is a test, not a policy here — this line exists
+    # so `--check` says which of the two readings of a lag applies.
+    if source != manifest:
+        print(f"  ·  note — the npm bundle line ({source}) is not the manifest version ({manifest}); "
+              "release-please owns both since 2026-09-30, so that lag means a release step missed "
+              "package.json/.codex-plugin/plugin.json (tests/test_version_consistency.py gates it)")
 
     problems = []
     badge = loc["docs/index.html (badge)"]
@@ -311,6 +343,14 @@ def check() -> int:
 
 
 def bump_source(version: str) -> None:
+    """Move the source line by hand — the incident path, not the release path.
+
+    Since 2026-09-30 release-please writes all of these files in the release PR (`package.json` and
+    `.codex-plugin/plugin.json` through `extra-files`, pyproject/the manifest through the python release
+    type), so this function is what the *deliberate rollback* or an emergency hand-fix uses — see
+    `npm_bundle_floor` for why that path stays open. Running it as part of a normal release would fight
+    the release PR and re-introduce the two-writer shape D1 = A removed.
+    """
     assert SEMVER.match(version), version
     py = REPO / "pyproject.toml"
     text = re.sub(r'(?m)^version\s*=\s*"[^"]+"', f'version = "{version}"',

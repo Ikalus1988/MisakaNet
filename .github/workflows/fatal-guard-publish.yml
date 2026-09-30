@@ -5,8 +5,16 @@ on:
     tags:
       - "fatal-guard-v*"
 
+#  * **Authentication, best first** (2026-09-30, the migration `misakanet-publish.yml` made): this job asks
+#    for `id-token: write`, so npm CLI (>= 11.5.1 on Node >= 22.14) can exchange a GitHub OIDC token for a
+#    short-lived publish credential — nothing long-lived to rotate. One-time entry on npmjs.com (package ->
+#    Settings -> Trusted Publisher -> GitHub Actions): user `Ikalus1988`, repository `MisakaNet`, **workflow
+#    filename `fatal-guard-publish.yml`**, environment `release` (this job declares it; leaving the field empty also works), and
+#    **allow direct `npm publish`** — the staged-only default would reject this workflow's command. Until the
+#    entry exists the token keeps working: npm prefers OIDC when it is available, then falls back.
 permissions:
   contents: read
+  id-token: write      # npm trusted publishing (OIDC)
 
 jobs:
   publish:
@@ -26,7 +34,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
         with:
-          node-version: "20"
+          node-version: "24"   # trusted publishing: npm CLI >= 11.5.1 needs Node >= 22.14
           registry-url: "https://registry.npmjs.org"
 
       - name: Verify zero dependencies
@@ -39,6 +47,19 @@ jobs:
         run: npm test
 
       - name: Publish to npm
-        run: npm publish --access public
+        run: |
+          # Trusted publishing first; the token is the transitional fallback. With neither, say so by name
+          # instead of letting npm emit a bare 401 (2026-09-30).
+          if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] && [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::Neither trusted publishing (no OIDC token request URL) nor NPM_TOKEN is available."
+            echo "::error::Configure a trusted publisher for workflow fatal-guard-publish.yml on npmjs.com,"
+            echo "::error::or the transitional NPM_TOKEN secret."
+            exit 1
+          fi
+          if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+            echo "OIDC available: npm will authenticate with trusted publishing (no long-lived token)."
+            echo "node $(node --version) / npm $(npm --version)"
+          fi
+          npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
