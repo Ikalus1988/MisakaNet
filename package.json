@@ -51,7 +51,7 @@
     "preview": "wrangler dev"
   },
   "devDependencies": {
-    "wrangler": "^4.140.0"
+    "wrangler": "^4.144.0"
   },
   "overrides": {
     "sharp": "0.35.4"
