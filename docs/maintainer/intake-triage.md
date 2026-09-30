@@ -53,6 +53,16 @@
 也不关单——§2 已经把"服务端 auto-rejected 的噪音不主动关闭"写死了，而"按文件名匹配就自动关"正是本
 节反例的机器版本。人要做的仍然是那 5 条模板要点。
 
+**"送达"半边也已经在线**（2026-09-30，worker 侧，#1528 的 MCP 通道）：匿名报料者没有线程可通知，
+所以回执走**他们本来就用的那条通道**——用**完全相同的 problem 文本**再 `submit_intake` 一次。
+若某篇课程的 frontmatter `source:` / `provenance.issue` 引用了这条 intake，去重响应就带上
+`converted: true` + `receipt`（`Your report #<N> became lesson <id> (evidence_level <E>).`）+
+`events[]`（含 `lesson_path` 与报料者自己能跑的 `search` 命令）。**判据不是猜的**：SSOT 是
+`scripts/intake_receipt.py`，由 `tests/intake_receipt_cases/` 的 7 个真实案例判定；只提了号码的
+正文**不算**引用（否则 #1940/#2015/#2011 都会被误判成已转换），所以没有课程引用时 `converted`
+这个键**缺席**、仍然是一条普通 duplicate。维护者侧要做的仍然是把课程合进 `main` 并留下
+`source:`/`provenance.issue`——回执依赖的是这条可核验的引用，不是谁记得去写评论。
+
 ### 3.1 怎么真的把一条 question 答完（2026-09-25 按此流程走过 #2099 与 #1724）
 
 §2 说"question 类：维护者直接在 issue 内答复"——下面是把这句话**执行完**的步骤，
@@ -92,6 +102,10 @@ gh run view <run-id> --log | grep -E "#<N>|upserted|no answer comment"
 #    (b) 回拉侧：用**完全相同的 problem 文本**重新 submit_intake(kind="question", ...)
 #        期望 {"submitted": false, "duplicate": true, "answered": true, "intake_id": "issue-<N>", "answer": "..."}
 #        —— 且**不会**新建 issue。这是报料者拿到答复的官方路径。
+#        同一条通道也送回**转换回执**（#1528）：该 intake 已被某篇课程引用时，响应里还会有
+#        {"converted": true, "receipt": "Your report #<N> became lesson <id> (evidence_level <E>)",
+#         "events": [{"type": "converted", "intake": "#<N>", "lesson_id", "lesson_path", "evidence_level", "search"}]}；
+#        没有课程引用时该键**缺席**（不是 false）——回执只在有可核验引用时发出。
 ```
 
 **四个坑（都实测踩过）：**
