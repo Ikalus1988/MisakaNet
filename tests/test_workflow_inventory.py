@@ -256,8 +256,19 @@ def test_every_section_heading_declares_the_number_of_rows_it_has():
 
 
 def test_the_heading_count_rule_can_go_red():
-    """Replayed on the real document with the numbers it actually had on 2026-09-26."""
-    stale = CI_DOC.read_text(encoding="utf-8").replace("## 基础设施（6）", "## 基础设施（3）", 1)
+    """Replayed on the real document, with a wrong number derived from the one it declares.
+
+    The first version hardcoded "基础设施（6）" as the string to replace, so adding the seventh row
+    (`install-smoke.yml`, 2026-09-30) quietly turned this guard into a no-op: `str.replace` found nothing,
+    the stale copy was byte-identical to the real one, and the assertion that the rule reports a problem
+    failed instead of the rule. Deriving the current number keeps the replay honest across inventory edits.
+    """
+    text = CI_DOC.read_text(encoding="utf-8")
+    heading = re.search(r"(?m)^## 基础设施（(\d+)）$", text)
+    assert heading, "the section heading this replay mutates is gone — update the replay with it"
+    wrong = "3" if heading.group(1) != "3" else "4"
+    stale = text.replace(heading.group(0), f"## 基础设施（{wrong}）", 1)
+    assert stale != text, "the mutation did not take"
     problems = section_count_problems(stale)
     assert len(problems) == 1 and "基础设施" in problems[0], problems
 
