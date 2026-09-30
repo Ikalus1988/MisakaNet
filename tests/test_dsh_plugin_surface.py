@@ -30,7 +30,8 @@ What is pinned here, with the failure each rule prevents:
 from __future__ import annotations
 
 import json
-import os
+import ntpath
+import posixpath
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -51,6 +52,18 @@ VERIFIED_ROW = re.compile(r"^\|\s*`([^`]+)`\s*\|\s*compatible\s*\|", re.M | re.I
 ABSOLUTE_OR_URI = re.compile(r"^[A-Za-z][A-Za-z\d+.-]*:")
 
 
+def is_absolute(icon: str) -> bool:
+    """The host's own test: `path.isAbsolute(value) || path.win32.isAbsolute(value)`.
+
+    Both conventions, because a manifest can come from either platform. `os.path.isabs` is only one of
+    them — on Windows it answers *False* for `/etc/passwd`, which is how the first version of this rule
+    passed on Linux and turned `windows-latest` red. `ntpath.isabs` requires a drive, and
+    `win32.isAbsolute` does not, so the rooted form is checked separately here.
+    """
+    return (posixpath.isabs(icon) or ntpath.isabs(icon) or icon[:1] in ("/", "\\")
+            or bool(re.match(r"^[A-Za-z]:", icon)))
+
+
 def _pkg(root: Path) -> dict:
     return json.loads((root / "package.json").read_text(encoding="utf-8"))
 
@@ -62,7 +75,7 @@ def icon_problems(root: Path) -> list[str]:
     if not isinstance(icon, str) or not icon:
         return ["package.json declares no `icon` — the host's plugin list renders an empty artwork slot"]
     problems: list[str] = []
-    if os.path.isabs(icon) or ABSOLUTE_OR_URI.match(icon):
+    if is_absolute(icon) or ABSOLUTE_OR_URI.match(icon):
         return [f"icon {icon!r} must be a relative file path (the host throws on absolute paths and URIs)"]
     suffix = Path(icon).suffix.lower()
     if suffix not in ICON_MEDIA_TYPES:
@@ -100,8 +113,13 @@ def test_the_icon_rule_can_go_red(tmp_path):
         (tmp_path / "package.json").write_text(
             json.dumps({"icon": icon, "files": files}), encoding="utf-8")
 
-    write("/etc/passwd", [])
-    assert any("relative file path" in p for p in icon_problems(tmp_path)), icon_problems(tmp_path)
+    # Every spelling the host's `isAbsolute || win32.isAbsolute` rejects. `"/etc/passwd"` is the one that
+    # got away: `ntpath.isabs` says it is relative, `win32.isAbsolute` says it is absolute, and the host
+    # asks both — so this fixture is what keeps the rule cross-platform.
+    for absolute in (str(tmp_path / "icon.svg"), "/etc/passwd", "\\windows\\icon.svg", "C:/tmp/icon.svg"):
+        write(absolute, [])
+        assert any("relative file path" in p for p in icon_problems(tmp_path)), \
+            (absolute, icon_problems(tmp_path))
 
     write("icon.gif", ["icon.gif"])
     (tmp_path / "icon.gif").write_bytes(b"GIF89a")
