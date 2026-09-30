@@ -4,7 +4,7 @@ title: "AgentCap uses 'inspect' not 'show' for capability lookup; macOS codesign
 tags: [agentcap, codesign, macos, cli, subcommand, xml, plistlib]
 status: "published"
 evidence_level: "E1"
-summary_plain: "AgentCap's capability lookup subcommand is 'inspect', not 'show'. macOS codesign needs the '-xml' flag for plistlib-compatible XML output."
+summary_plain: "AgentCap inspect not show; codesign -xml for plistlib XML."
 trigger: "agentcap invalid choice show inspect codesign plistlib InvalidFileException"
 verify: "agentcap inspect --help 2>&1 | grep -q inspect && echo PASS || echo FAIL"
 ---
