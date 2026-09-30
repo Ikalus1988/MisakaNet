@@ -160,8 +160,6 @@ class TestSubmitIntakePollHint:
     def test_submit_returns_poll_hint(self):
         """submit_intake response includes poll_hint and inbox_tool."""
         import os
-        import tempfile
-        from pathlib import Path
 
         # Use temp dir for contribution queue
         test_dir = Path(tempfile.mkdtemp())
@@ -188,8 +186,6 @@ class TestSubmitIntakePollHint:
     def test_question_poll_hint_mentions_hours(self):
         """Question kind → poll_hint mentions 24-48 hours."""
         import os
-        import tempfile
-        from pathlib import Path
 
         test_dir = Path(tempfile.mkdtemp())
         os.environ["MISAKANET_CONTRIBUTION_QUEUE"] = str(test_dir / "queue.jsonl")
