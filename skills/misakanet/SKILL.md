@@ -41,17 +41,20 @@ Do NOT use MisakaNet for:
 
 > **Which surface these examples target.** They are written against the **hosted** endpoint
 > (`https://misakanet.org/mcp`) — the one `docs/mcp.md` recommends and the one most agents are pointed
-> at. The two surfaces differ, and this matters for exactly one tool below:
+> at. Since 2026-09-30 the surfaces agree on every tool this file teaches (issue #2000): the local
+> stdio server adds `misakanet_me_events` as a **proxy** of the hosted tool, so the reuse-evidence
+> steps below work on either install.
 >
-> * **hosted** exposes 7 tools, and `misakanet_me_events` is **one of them**
->   (the stdio set minus `misakanet_submit_usage` / `misakanet_usage_status` /
->   `misakanet_memory_context`, plus `misakanet_me_events`);
-> * a **local stdio** install (`python3 scripts/mcp_server.py`) exposes 9 tools and **does not have
->   `misakanet_me_events`** — it has `misakanet_usage_status` and `misakanet_submit_usage` instead.
+> * **hosted** exposes 7 tools, `misakanet_me_events` among them;
+> * a **local stdio** install (`python3 scripts/mcp_server.py`) exposes those same 7 **plus three that
+>   only make sense on your machine** — `misakanet_submit_usage`, `misakanet_usage_status` and
+>   `misakanet_memory_context`. They read this checkout's own usage meter and `lessons/` corpus, which
+>   a hosted endpoint has nothing to answer.
 >
-> So an agent running the local server will get an unknown-tool error from the reuse-evidence steps and
-> should use `misakanet_usage_status` there. `docs/mcp.md` carries the full table, and
-> `tests/test_mcp_doc_surface.py` keeps this file's tool names in step with it (issue #2000).
+> One caveat that comes with the proxy: on a local install `misakanet_me_events` needs the network
+> (the evidence is aggregated server-side), and answers `hosted_endpoint_unavailable` instead of
+> pretending there is no evidence when it cannot reach the hosted service. `docs/mcp.md` carries the
+> full table, and `tests/test_mcp_doc_surface.py` keeps this file's tool names in step with it.
 
 ### Register an agent node
 

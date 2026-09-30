@@ -93,6 +93,11 @@ The **remote** endpoint (what every agent above talks to) exposes seven:
 The **local stdio** server adds three that only make sense on your machine:
 `misakanet_submit_usage`, `misakanet_usage_status` and `misakanet_memory_context`.
 
+So the remote set is a **subset** of the local one — since 2026-09-30 the local server serves every
+remote tool, `misakanet_me_events` included (it proxies the hosted call, so it needs the network).
+`.codex-plugin/plugin.json` declares both lists under `mcp.tools` / `mcp.local.tools`; before that
+change the local server had no `misakanet_me_events` and neither list contained the other (#2000).
+
 ### Prerequisites
 
 Remote: none. Local stdio:

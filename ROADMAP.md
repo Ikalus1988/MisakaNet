@@ -65,7 +65,7 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 | 主包 / 发布账本版本 | **2.30.2** | `grep -m1 '^version' pyproject.toml`、`.release-please-manifest.json`、`server.json` |
 | 已发布 npx 安装器版本 | **0.5.3** | `packages/misakanet-setup/package.json` |
 | 远端 MCP 工具数 | **7** | `grep -o 'name: "misakanet_[a-z_]*"' workers/register-proxy-sw.js \| sort -u \| wc -l` |
-| 本地 stdio MCP 工具数 | **9** | `python3 -c "from misakanet.server import TOOLS; print(len(TOOLS))"` |
+| 本地 stdio MCP 工具数 | **10** | `python3 -c "from misakanet.server import TOOLS; print(len(TOOLS))"`（2026-09-30 起含 `misakanet_me_events`，代理到远端；详单见 `.codex-plugin/plugin.json` 的 `mcp.local.tools`） |
 | 安装器支持的 agent 目标 | **5**（claude / codex / hermes / openclaw / codewhale） | `packages/misakanet-setup/bin/misakanet-setup.mjs:72` |
 | 回归查询夹具 | **11 条 / 8 类**（`updated: 2026-08-13`） | `data/regression_queries.json` |
 | 带 `provenance` 的课程 | **399 / 440（91%）** | 附录命令 ⑥ |
@@ -98,7 +98,7 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 | 基线：`GitHub release v2.18.0` | **已过时** | 发布已走到 **2.30.2**：`.release-please-manifest.json`、`pyproject.toml:7`、`server.json` 三处一致 |
 | 基线：PyPI `misakanet-core` | **已过时** | 现在的 PyPI 标识是 **`misakanet`**：`pyproject.toml:6`、`server.json` 的 `packages[0].identifier` |
 | 基线：`377 indexed failure lessons` | **已完成并前移** | 现为 **393**，且从"手写数字"改成 `scripts/sync_lesson_count.py` 统一维护 + `--check` 门禁 |
-| 基线：`Local MCP server exposes three tools` | **已过时** | 本地 stdio 服务现 **9** 个工具（含 `misakanet_memory_context` / `misakanet_usage_status`），远端端点 **7** 个 |
+| 基线：`Local MCP server exposes three tools` | **已过时** | 本地 stdio 服务现 **10** 个工具（含 `misakanet_memory_context` / `misakanet_usage_status`，以及 2026-09-30 起代理到远端的 `misakanet_me_events`），远端端点 **7** 个；远端集合是本地集合的子集 |
 | 基线：Smithery / GitHub `/mcp` 暂停 | **仍然成立** | 与 External channel policy 一致，本轮无外部证据可推翻（**未验证**外部页面） |
 | 8月 v2.17.0：Lesson Lint（P0） | **已完成** | `scripts/lesson_lint.py` 存在；`.github/workflows/lesson-quality.yml:31` 以 `--fail-on high` 跑 |
 | 8月 v2.17.0：GX1 闭环（#968 合并） | **已放弃** | commit `42e374345 fix(security): revert GX1 changes, keep security hotfix only`——GX1 被显式回滚，只保留安全修复 |
