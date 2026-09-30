@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """A wait for approval must be visible, and the watcher must not approve anything.
 
-The problem this guards (2026-09-27): eight workflows sit behind the `release` environment, whose only
+The problem this guards (2026-09-27): every workflow that declares `environment: release` waits on one
+reviewer, whose only
 required reviewer is the owner, and **nothing notifies anyone** when one of them starts waiting. Measured:
 three runs waited on one person in a day (worker deploy + two npm publishes), one for ~23 hours; the health
 snapshot had recorded a run waiting since 2026-09-21T12:13Z with no notification anywhere.
@@ -29,14 +30,102 @@ def text() -> str:
     return WORKFLOW.read_text(encoding="utf-8")
 
 
+def triggers(spec: dict | None = None) -> dict:
+    """The `on:` block. YAML 1.1 loaders parse the bare key `on` as the boolean True — read the document
+    rather than guessing which spelling this loader produced."""
+    spec = yaml.safe_load(text()) if spec is None else spec
+    return spec.get("on") or spec.get(True) or {}
+
+
 def test_the_watcher_runs_on_a_schedule_and_on_demand():
     spec = yaml.safe_load(text())
-    # `on` is parsed as the boolean True by YAML 1.1 loaders — read the document rather than guessing.
-    triggers = spec.get("on") or spec.get(True)
-    assert triggers, sorted(spec)
-    assert "schedule" in triggers and "workflow_dispatch" in triggers, triggers
-    crons = [entry["cron"] for entry in triggers["schedule"]]
+    block = triggers(spec)
+    assert block, sorted(spec)
+    assert "schedule" in block and "workflow_dispatch" in block, block
+    crons = [entry["cron"] for entry in block["schedule"]]
     assert crons and all(re.fullmatch(r"[\d*/, -]+", c) for c in crons), crons
+
+
+def release_environment_workflows(workflows_dir: Path | None = None) -> set[str]:
+    """The `name:` of every workflow that declares `environment: release`.
+
+    Derived rather than listed: this is the set the watch exists for, and a hand-maintained copy of it is
+    a copy that drifts. Takes a directory so the rule can be shown to fail (see the guard test below).
+    """
+    names = set()
+    directory = workflows_dir or (REPO / ".github" / "workflows")
+    for path in sorted(directory.glob("*.yml")):
+        spec = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if not isinstance(spec, dict):
+            continue
+        for job in (spec.get("jobs") or {}).values():
+            if not isinstance(job, dict):
+                continue
+            environment = job.get("environment")
+            if isinstance(environment, dict):
+                environment = environment.get("name")
+            if environment == "release":
+                names.add(spec.get("name") or path.stem)
+    return names
+
+
+def watched_workflows(workflow_path: Path | None = None) -> set[str]:
+    """The workflow names the `workflow_run` trigger watches."""
+    spec = yaml.safe_load((workflow_path or WORKFLOW).read_text(encoding="utf-8"))
+    block = spec.get("on") or spec.get(True) or {}
+    return set((block.get("workflow_run") or {}).get("workflows") or [])
+
+
+def test_the_event_trigger_covers_every_workflow_that_waits_on_the_release_environment():
+    """The cron is a backstop now, so the event list is what actually makes a wait visible.
+
+    Measured 2026-09-29: this workflow ran **once** in ~9 hours against a `17,47 * * * *` schedule —
+    five-plus slots with no run created at all — while other scheduled workflows in this repository fired
+    normally. `workflow_run: [requested]` does not depend on that scheduler. It is matched by `name:`,
+    which is why the list has to be kept in step with the workflows that declare `environment: release`,
+    in both directions: a missing name is a workflow that can wait silently, and a stale name is a trigger
+    that silently never fires.
+    """
+    expected = release_environment_workflows()
+    assert len(expected) >= 5, f"the derivation found {sorted(expected)} — that is not the release cohort"
+    listed = watched_workflows()
+    assert not (expected - listed), (
+        f"these workflows wait on `environment: release` and are not watched: {sorted(expected - listed)}"
+    )
+    assert not (listed - expected), (
+        f"the watch names workflows that do not declare `environment: release`: {sorted(listed - expected)}"
+    )
+    assert (triggers().get("workflow_run") or {}).get("types") == ["requested"], (
+        "`requested` is the moment a run is created, which is when it may start waiting"
+    )
+
+
+def test_the_coverage_rule_notices_a_workflow_that_leaves_the_list(tmp_path):
+    """Guard the guard: the rule above reads the real repository, so its failure mode needs a fixture."""
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "a.yml").write_text(
+        "name: A watched workflow\n"
+        "on: [push]\n"
+        "jobs:\n  deploy:\n    environment: release\n    runs-on: ubuntu-latest\n    steps: []\n",
+        encoding="utf-8")
+    (workflows / "b.yml").write_text(
+        "name: An unreviewed workflow\n"
+        "on: [push]\n"
+        "jobs:\n  build:\n    runs-on: ubuntu-latest\n    steps: []\n",
+        encoding="utf-8")
+    assert release_environment_workflows(workflows) == {"A watched workflow"}, (
+        "only the workflow behind the reviewed environment belongs in the set")
+
+    watched = tmp_path / "watch.yml"
+    watched.write_text(text().replace('      - "Apply D1 schema"\n', ""), encoding="utf-8")
+    assert "Apply D1 schema" not in watched_workflows(watched), "the mutation must really remove a name"
+
+    spec = yaml.safe_load(watched.read_text(encoding="utf-8"))
+    block = spec.get("on") or spec.get(True) or {}
+    block.setdefault("workflow_run", {})["workflows"] = ["Something else"]
+    watched.write_text(yaml.safe_dump(spec, allow_unicode=True), encoding="utf-8")
+    assert watched_workflows(watched) == {"Something else"}, "the fixture must be readable"
 
 
 def test_it_asks_for_runs_that_are_waiting_for_approval():

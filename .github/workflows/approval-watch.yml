@@ -18,6 +18,27 @@ on:
     # Twice an hour. The point is that a wait is noticed within minutes rather than the next time someone
     # happens to look at the Actions tab.
     - cron: "17,47 * * * *"
+  # …and the cron is only the backstop, because it is the one part of this workflow nothing can test and
+  # the part that failed. Measured 2026-09-29: this workflow ran **once** in ~9 hours against `17,47`
+  # (five consecutive slots with no run created at all), while other `schedule` workflows in this
+  # repository fired normally — GitHub drops scheduled events under load, and this repository runs a lot
+  # of CI. So the watch also listens for the runs themselves: `requested` fires the moment a run is
+  # created, which is exactly when it may start waiting.
+  workflow_run:
+    # By `name:`, because that is what GitHub matches on. The list must name every workflow that declares
+    # `environment: release`; `tests/test_approval_watch.py` derives that set from the workflow files and
+    # fails if this one stops covering it (or names something that does not exist).
+    workflows:
+      - "Apply D1 schema"
+      - "CF diagnostics"
+      - "D1 Bootstrap (PRD ④)"
+      - "D1 counters report"
+      - "Deploy Cloudflare Worker"
+      - "Intake Pipeline Test (PRD ③)"
+      - "Publish @misaka-net/fatal-guard"
+      - "Publish @misaka-net/misakanet-setup"
+      - "Publish misakanet"
+    types: [requested]
   workflow_dispatch:
 
 permissions:
