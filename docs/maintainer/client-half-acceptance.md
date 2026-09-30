@@ -75,7 +75,21 @@ Two surfaces follow from it, and the split is deliberate:
 | E2 | every gate has a red fixture — a gate nobody has seen fail is a gate nobody can trust | one `*_can_go_red` test per rule | ✅ |
 | E3 | **smoke**: a disposable profile installs the plugin, boots the web host, and the boot graph plus the served bytes match | disposable `DSH_HOME` → `dsh plugin add` → `dsh web` → `__DSH_BOOT__` entry + combo route compared with the file | ✅ (43,971 B served verbatim, inject array echoed back) |
 | E4 | the preview matches the **current** file (re-render after the last edit, and the fixture is a payload the server really returns) | re-render + compare the rendered row text with a real payload | ✅ (after the compact fix) |
-| E5 | the panel renders without the host's CSS, in both a wide and a narrow column, with no clipping | live browser render of the real components mounted through `apply()` (see `ops/panel-live/`) | ⏳ in progress |
+| E5 | the panel renders without the host's CSS, in both a wide and a narrow column, with no clipping | live browser render of the real components mounted through `apply()`, with real `/api/helpful` calls (see `ops/panel-live/`) | ✅ produced (wide 1100px + narrow 620px) |
+
+## What the render caught (why the screenshots are part of the method)
+
+Four defects were found by rendering the real components, not by reading them, and each is now fixed and
+gated:
+
+1. the search row promised a **domain** the default payload never carries — it printed `(E3)` for every
+   real call, and the preview missed it because the preview's fixture had a `domain` in it;
+2. the verdict's disclosure line used 👍/👎 as its labels, so a render without an emoji font read
+   "□ sends the lesson id" — words now carry it;
+3. the verdict stretched the host's action row across the pane once the disclosure sat inline —
+   `flexWrap` with a full-basis disclosure keeps the buttons on one short line;
+4. the stat strip printed **"1 reports"**, and the first fix for it printed **"2 searchs"** — the helper
+   now takes the plural explicitly, because English is irregular exactly where a helper's `+ "s"` is not.
 
 ## What this deliberately does not do
 
