@@ -82,9 +82,12 @@ function assertNoInternals(text, label) {
 // answering with a number from a mirror that could be months old (issue #1820). That is still a 5xx —
 // a degradation scripts/site_health_check.py should see — so it belongs in this table rather than
 // outside the rule.
+// `/api/activity` joined the list on 2026-09-29 with the homepage's cacheable activity route: it
+// reads the same counter stores through the same readers, so it can raise the same D1/parse failures,
+// and a body naming a table or a file path would be one every visitor's browser caches and re-serves.
 const DOCUMENTED_5XX_CODES = new Set(['internal_error', 'counter_unavailable']);
 
-for (const path of ['/api/counter', '/api/lessons', '/api/analytics', '/api/analytics/traffic']) {
+for (const path of ['/api/counter', '/api/lessons', '/api/analytics', '/api/analytics/traffic', '/api/activity']) {
   test(`${path} reports a failure without internals`, async () => {
     const response = await worker.fetch(new Request(`https://misakanet.org${path}`), createEnv({ d1: throwingD1() }));
     const body = await response.text();
