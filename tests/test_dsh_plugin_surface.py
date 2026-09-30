@@ -755,3 +755,19 @@ def test_the_panel_cannot_file_an_issue():
     panel = panel_body(source)
     assert "by the agent, not by this page" in panel, (
         "the panel must say who re-checks a pending report, or the missing control looks like an oversight")
+
+
+def test_every_counted_noun_in_the_panel_can_be_singular():
+    """"1 reports" is the kind of thing that makes a panel look machine-written.
+
+    The render caught it, and the fix is one helper — so this pins the helper rather than the sentence:
+    a hard-coded plural next to a count is the bug, and it is invisible until someone has exactly one.
+    """
+    panel = panel_body(client_source())
+    assert "function count(" in client_source(), "the plural helper must exist"
+    hardcoded = [phrase for phrase in ('" searches', '" lessons surfaced', '" reports filed', '" votes (')
+                 if phrase in panel]
+    assert not hardcoded, (
+        f"a count is concatenated with a hard-coded plural, so it reads wrong at 1: {hardcoded}")
+    assert panel.count("count(") >= 6, (
+        "the panel's counted nouns must all go through the helper")
