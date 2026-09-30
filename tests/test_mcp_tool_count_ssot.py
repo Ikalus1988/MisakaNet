@@ -68,7 +68,7 @@ def test_the_docs_page_derives_the_same_set_from_the_stdio_list():
     """`docs/mcp.md` never lists the hosted names: it describes them as "the stdio set minus … plus
     `misakanet_me_events`". Recomputing that derivation is the only way the third copy can be checked."""
     stdio = set(NAME_RE.findall(_mcp_doc_row("**local stdio**")))
-    assert len(stdio) == 9, sorted(stdio)
+    assert len(stdio) == 10, sorted(stdio)
 
     hosted = _mcp_doc_row("**hosted**")
     derivation = hosted.split("**minus**")[1]
