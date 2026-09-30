@@ -282,3 +282,52 @@ def test_the_readme_installs_the_dsh_plugin_above_the_fold():
     assert install_at < howto_at, "the DSH install command must appear above `How to use it`"
     assert readme[:install_at].count("\n") < 120, (
         "the install command is below the fold; the host's dialog points users at this file to find it")
+
+
+# ── the documented `dsh plugin` command ──────────────────────────────────────
+#
+# `dsh plugin` requires `--profile`: measured 2026-10-01 against dsh 0.2.0-rc.2, `add`, `list`, `remove`
+# and `update` (and even `--help`) all exit with `required option '--profile <name>' not specified`.
+# The install guide's *Recommended* method was `dsh plugin add misakanet` — a command that cannot run —
+# so this is a gate rather than a wording preference.
+
+INSTRUCTION_DOCS = ("README.md", "SKILL.md", "docs/dsh-installation.md",
+                    "docs/integration/deepseek-harness.md", "docs/compatibility.md")
+BARE_PLUGIN_VERB = re.compile(
+    r"dsh plugin (?!\-\-profile)(?:add|list|remove|update|install|uninstall|upgrade)\b")
+# The host's Add-plugin dialog hints that the package name is "the part after `dsh plugin add` in a
+# community plugin's README install command". That is a quotation of the host's UI, not an instruction.
+QUOTED_HOST_HINT = re.compile(r"the part after `dsh plugin add`")
+
+
+def bare_plugin_commands(text: str) -> list[str]:
+    """`dsh plugin <verb>` occurrences that name no profile; the quoted host hint is not one."""
+    found = []
+    for line in text.splitlines():
+        if QUOTED_HOST_HINT.search(line):
+            continue
+        for match in BARE_PLUGIN_VERB.finditer(line):
+            found.append(f"dsh plugin {match.group(0).split(' ', 2)[2]}")
+    return found
+
+
+def test_every_documented_dsh_plugin_command_names_its_profile():
+    problems = []
+    for name in INSTRUCTION_DOCS:
+        path = REPO / name
+        assert path.is_file(), f"{name} is in the instruction set but missing from the repository"
+        for command in bare_plugin_commands(path.read_text(encoding="utf-8")):
+            problems.append(f"{name}: {command}")
+    assert not problems, (
+        "`dsh plugin` refuses to run without `--profile <name>` (the CLI exits with "
+        f"`required option '--profile <name>' not specified`): {problems}")
+
+
+def test_the_profile_rule_can_go_red():
+    assert bare_plugin_commands("dsh plugin add misakanet") == ["dsh plugin add"]
+    assert bare_plugin_commands("dsh plugin list") == ["dsh plugin list"]
+    assert bare_plugin_commands("dsh plugin --profile web add misakanet") == []
+    assert bare_plugin_commands("sudo dsh plugin remove misakanet") == ["dsh plugin remove"]
+    # the host's own hint is quoted verbatim in one doc; quoting it is not a broken instruction
+    quote = 'The dialog says the name is "the part after `dsh plugin add` in a community plugin\'s README"'
+    assert bare_plugin_commands(quote) == []
