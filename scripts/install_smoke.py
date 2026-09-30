@@ -1,0 +1,490 @@
+#!/usr/bin/env python3
+"""Two *real install* probes, so "install verified" can be a measured, dated fact (owner D3 = A, 2026-09-30).
+
+Why this script exists
+----------------------
+Until today every green thing about installing MisakaNet came from metadata: npm's `dist-tags`, the MCP
+registry read-back in `publish-mcp-registry.yml`, and our own CI. None of them installs anything. A reader
+reported the consequence directly (intake #2486, point 3): they read "automatic check passed" as "it
+works". The install guide already said the static layer proves only that the catalogue is current; this
+script is the other layer, the one that actually packs/installs and then *calls a tool*.
+
+Two forms, because they are different products (docs/dsh-installation.md):
+
+* ``npm-form`` — `misakanet` on npm is the DSH/Codex bundle: `SKILL.md`, `index.js`,
+  `cordis.patch.yml`, and **no `scripts/`** by design (no `bin`, no local server). Its MCP row points at
+  the hosted endpoint ``https://misakanet.org/mcp``, so the probe calls *that*.
+* ``git-stdio`` — a git+/checkout install gets the repository too, including the local stdio server
+  ``scripts/mcp_server.py``. The probe speaks JSON-RPC to it over stdin/stdout and checks the tool set
+  against the one `docs/mcp.md` documents.
+
+Design notes
+------------
+* **No third-party imports.** `tarfile`, `urllib` and `subprocess` are stdlib, so the probes run on a
+  runner with nothing installed — the same **stdlib-only** claim the package makes (AGENTS.md §6). The
+  interpreter itself is still the prerequisite, which is why the git+ probe asserts `python3 >= 3.10`.
+* **The probe always writes its JSON**, including when it fails. A crash that left no artifact would be
+  indistinguishable from "the probe never ran", and `scripts/update_install_badge.py` refuses to publish
+  from absent evidence. So every failure path funnels through ``_result``/``run`` and still writes `--out`.
+* **Structural assertions only** (tarball member names, a parsed URL, a measured tool set, a result
+  count). No assertion here reads prose.
+* Failure messages name the *possibility* they cannot distinguish: the hosted call is anonymous and
+  burst-limited, so a 429/403/timeout on a runner is at least as likely to be rate limiting as a broken
+  install. Saying so is the difference between a useful red and a red someone learns to ignore.
+
+Usage:
+    python3 scripts/install_smoke.py npm-form  --repo . --out /tmp/install-npm.json
+    python3 scripts/install_smoke.py git-stdio --repo . --out /tmp/install-git.json
+    python3 scripts/install_smoke.py git-stdio --dry-run      # interpreter/tool-set only, no server
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as _datetime
+import json
+import os
+import re
+import subprocess
+import sys
+import tarfile
+import tempfile
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+REPO_FALLBACK = Path(__file__).resolve().parent.parent
+
+# The hosted endpoint the npm bundle's row must name, and the one this probe calls.
+HOSTED_URL = "https://misakanet.org/mcp"
+# Fixed query: deterministic enough that "0 results" means something broke rather than "the corpus moved".
+SMOKE_QUERY = "pip install timeout"
+PROTOCOL_VERSION = "2025-06-18"
+ORIGIN = "https://misakanet.org"
+# Explicit UA, always: the edge answers 403 to urllib's default UA (measured 2026-09-28, recorded in
+# docs/agents/repo-operations.md §4 and reused in scripts/update_retrieval_badge.py). A probe that
+# forgets this reads as an outage.
+USER_AGENT = "misakanet-install-smoke/1.0 (+https://misakanet.org)"
+
+# `npm pack` names everything under this prefix, so "the tarball has scripts/" is a prefix test.
+NPM_REQUIRED_MEMBERS = ("package/SKILL.md", "package/index.js", "package/cordis.patch.yml")
+NPM_FORBIDDEN_PREFIX = "package/scripts/"
+# The tool the git+ probe must be able to call, and the row it must be told about by docs/mcp.md.
+REQUIRED_TOOL = "misakanet_search"
+STDIO_DOC_ROW = "**local stdio**"
+
+# A failed hosted call is ambiguous on purpose-built evidence: an anonymous public endpoint with a burst
+# window. Print the ambiguity, so nobody turns a throttled minute into "the install is broken".
+RATE_LIMIT_HINT = (
+    "the hosted endpoint refused or stalled this probe; its anonymous burst window is shared by every "
+    "caller, so a 429/403/timeout on a CI runner may be rate limiting rather than a broken install — "
+    f"re-run the job, or check {HOSTED_URL} by hand, before treating this as a regression"
+)
+
+TOOL_NAME_RE = re.compile(r"misakanet_[a-z_]+")
+# `url: https://…` at the start of a line: the shape of the row in cordis.patch.yml and of
+# `DEFAULT_MCP_CONFIG.url` in index.js. Comments carry neither in either file (checked 2026-09-30).
+ROW_URL_RE = re.compile(r"(?m)^\s*url:\s*[\"']?(https?://[^\s\"',]+)")
+# A local row would name a process to spawn. The bundle must not: the npm form has no server to spawn.
+ROW_COMMAND_RE = re.compile(r"(?m)^\s*command:\s*\S")
+PY_VERSION_RE = re.compile(r"Python\s+(\d+)\.(\d+)")
+MIN_PYTHON = (3, 10)
+
+
+def _now() -> str:
+    return _datetime.datetime.now(_datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+# ── pure helpers (the parts a test can mutate) ────────────────────────────────────────────────────
+
+def tarball_problems(members: list[str]) -> list[str]:
+    """What is wrong with a packed npm tarball's member list.
+
+    Two facts, both structural: the files the bundle advertises are present, and the repository's
+    `scripts/` (including the local stdio server) is not. The second half is the intake #2486 confusion —
+    an npm install that silently shipped the server would make the two install forms look equivalent.
+    """
+    problems = [f"the packed tarball is missing {member}" for member in NPM_REQUIRED_MEMBERS
+                if member not in members]
+    leaked = sorted(member for member in members if member.startswith(NPM_FORBIDDEN_PREFIX))
+    if leaked:
+        problems.append(
+            f"the packed tarball ships {len(leaked)} file(s) under {NPM_FORBIDDEN_PREFIX} "
+            f"(first: {leaked[0]}) — the npm bundle must stay skill-only; the local stdio server is the "
+            "git+ form's difference (tests/test_dsh_plugin_manifest.py pins the same fact)")
+    return problems
+
+
+def mcp_row_problems(patch_text: str, index_text: str) -> list[str]:
+    """What is wrong with the MCP row the bundle wires (patch row + index.js default).
+
+    The npm install's only route to tools is this URL, so a row that names anything else — a local
+    command, a stale host — installs a skill with no working tools and every metadata check stays green.
+    """
+    problems = []
+    for label, text in (("cordis.patch.yml", patch_text), ("index.js", index_text)):
+        urls = ROW_URL_RE.findall(text)
+        if HOSTED_URL not in urls:
+            problems.append(
+                f"{label} does not wire the hosted endpoint {HOSTED_URL} (urls found: {urls or 'none'}) "
+                "— an npm install has no local server to reach")
+    if ROW_COMMAND_RE.search(patch_text):
+        problems.append(
+            "cordis.patch.yml declares a local `command:` row, so the npm form depends on a process the "
+            "tarball does not ship (issue #1734)")
+    return problems
+
+
+def documented_stdio_tools(mcp_md_text: str) -> frozenset[str]:
+    """The stdio tool set `docs/mcp.md` documents — the expectation for ``tools/list``.
+
+    Read from the document, not from ``misakanet/server/TOOLS``: an expectation taken from the file under
+    test cannot disagree with it (the same mistake `canonical_mcp_tools` was written to fix, #1822). A
+    missing row raises instead of returning an empty set — a reader that quietly finds nothing is how a
+    gate stops existing.
+    """
+    for line in mcp_md_text.splitlines():
+        if line.startswith("|") and STDIO_DOC_ROW in line:
+            names = frozenset(TOOL_NAME_RE.findall(line))
+            if names:
+                return names
+    raise ValueError(
+        f"docs/mcp.md has no `{STDIO_DOC_ROW}` surface row carrying tool names — moving that table means "
+        "updating this reader (and the gate would otherwise compare against nothing)")
+
+
+def search_result_count(result: dict) -> int:
+    """How many ranked results a `misakanet_search` result carries.
+
+    Reads `structuredContent` first (the machine-readable half) and falls back to parsing `content[0].text`,
+    because both shapes are served and a probe that only understood one would report 0 successes.
+    """
+    structured = result.get("structuredContent")
+    if isinstance(structured, dict) and isinstance(structured.get("results"), list):
+        return len(structured["results"])
+    for part in result.get("content") or []:
+        if not isinstance(part, dict) or part.get("type") != "text":
+            continue
+        try:
+            payload = json.loads(part.get("text") or "")
+        except (TypeError, ValueError):
+            continue
+        if isinstance(payload, dict) and isinstance(payload.get("results"), list):
+            return len(payload["results"])
+    return 0
+
+
+# ── transports ────────────────────────────────────────────────────────────────────────────────────
+
+class HostedCallError(RuntimeError):
+    """A hosted JSON-RPC call that could not be completed or answered with an error."""
+
+
+def hosted_jsonrpc(url: str, method: str, params: dict, *, request_id: int, timeout: int) -> dict:
+    body = json.dumps({"jsonrpc": "2.0", "id": request_id, "method": method, "params": params}).encode()
+    request = urllib.request.Request(url, data=body, method="POST", headers={
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "MCP-Protocol-Version": PROTOCOL_VERSION,
+        "Origin": ORIGIN,
+        "User-Agent": USER_AGENT,
+    })
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            raw = response.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as error:                       # includes 429/403: see RATE_LIMIT_HINT
+        detail = error.read()[:300].decode("utf-8", errors="replace")
+        raise HostedCallError(f"{method} → HTTP {error.code} from {url}: {detail}") from error
+    except (urllib.error.URLError, TimeoutError, OSError) as error:
+        raise HostedCallError(f"{method} → {type(error).__name__} from {url}: {error}") from error
+    try:
+        payload = json.loads(raw)
+    except ValueError as error:
+        raise HostedCallError(f"{method} → non-JSON response from {url} ({raw[:200]!r})") from error
+    if "error" in payload:
+        raise HostedCallError(f"{method} → JSON-RPC error from {url}: {payload['error']}")
+    result = payload.get("result")
+    if not isinstance(result, dict):
+        raise HostedCallError(f"{method} → response from {url} has no `result` object: {payload}")
+    return result
+
+
+def stdio_jsonrpc(repo: Path, requests: list[dict], *, timeout: int) -> tuple[dict[int, dict], str, str]:
+    """Speak JSON-RPC to the local server and return ({id: result}, stdout, stderr).
+
+    Requests are written up front and stdin is closed: the server answers each request and exits at EOF
+    (measured 2026-09-30 with the same shape as the manual probe in the PR evidence), so no timeout logic
+    beyond the process deadline is needed.
+    """
+    script = repo / "scripts" / "mcp_server.py"
+    if not script.is_file():
+        raise HostedCallError(f"{script} does not exist — the git+ form's local server is missing")
+    payload = "".join(json.dumps(request) + "\n" for request in requests)
+    try:
+        completed = subprocess.run(
+            ["python3", "scripts/mcp_server.py"], cwd=str(repo), input=payload,
+            capture_output=True, text=True, timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise HostedCallError(
+            f"scripts/mcp_server.py did not answer within {timeout}s — the local search may be building "
+            "its index; raise --timeout before calling this a failure") from error
+    results: dict[int, dict] = {}
+    for line in completed.stdout.splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            message = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(message.get("id"), int) and isinstance(message.get("result"), dict):
+            results[message["id"]] = message["result"]
+    return results, completed.stdout, completed.stderr
+
+
+# ── the two probes ────────────────────────────────────────────────────────────────────────────────
+
+def probe_npm_form(repo: Path, *, timeout: int, dry_run: bool) -> dict:
+    """Pack the bundle, assert its shape and row, then call the hosted endpoint for real."""
+    fails: list[str] = []
+    checks: list[str] = []
+    detail: dict = {}
+    workdir = Path(tempfile.mkdtemp(prefix="misakanet-install-smoke-"))
+    # npm writes its logs under the cache dir (`$cache/_logs`), and a sandboxed local run failed with
+    # "Log files were not written ... /home/<user>/.npm/_logs" (measured 2026-09-30). Pointing the cache at
+    # the probe's own temp dir makes the probe work wherever it is run, including this repo's own docs
+    # workflow sandboxes.
+    env = dict(os.environ, npm_config_cache=str(workdir / "npm-cache"))
+
+    packed = subprocess.run(
+        ["npm", "pack", "--pack-destination", str(workdir), "--loglevel=error"],
+        cwd=str(repo), env=env, capture_output=True, text=True, timeout=timeout,
+    )
+    if packed.returncode != 0:
+        fails.append(f"`npm pack` exited {packed.returncode}: {(packed.stderr or '').strip()[-400:]}")
+        return _result("npm", checks, fails, detail, tools_seen=[], result_count=0)
+    tarballs = sorted(workdir.glob("*.tgz"))
+    if not tarballs:
+        fails.append(f"`npm pack` printed no tarball and left none in {workdir}: {packed.stdout.strip()!r}")
+        return _result("npm", checks, fails, detail, tools_seen=[], result_count=0)
+    tarball = tarballs[-1]
+    detail["tarball"] = tarball.name
+
+    with tarfile.open(tarball) as archive:
+        members = archive.getnames()
+        detail["members"] = members
+        shape_problems = tarball_problems(members)
+        if shape_problems:
+            fails.extend(shape_problems)
+        else:
+            checks.append(f"tarball shape: {len(NPM_REQUIRED_MEMBERS)} required members present, "
+                          f"no {NPM_FORBIDDEN_PREFIX}*")
+        # Parse the row out of the *packed* files, not the checkout: what a consumer installs is the
+        # tarball, and a stale build could wire something the working tree no longer does.
+        patch = _tar_member(archive, "package/cordis.patch.yml")
+        index = _tar_member(archive, "package/index.js")
+    if patch is None or index is None:
+        if patch is None:
+            fails.append("package/cordis.patch.yml is not readable in the tarball")
+        if index is None:
+            fails.append("package/index.js is not readable in the tarball")
+    else:
+        row_problems = mcp_row_problems(patch, index)
+        if row_problems:
+            fails.extend(row_problems)
+        else:
+            checks.append(f"MCP row in the packed bundle names {HOSTED_URL} and no local command")
+
+    if dry_run:
+        checks.append("dry run: hosted call skipped")
+        return _result("npm", checks, fails, detail, tools_seen=[], result_count=0)
+
+    tools_seen: list[str] = []
+    result_count = 0
+    if fails:
+        # The install shape is wrong, so calling the endpoint would prove nothing about the install.
+        checks.append("hosted call skipped: the packed bundle failed its own shape checks")
+    else:
+        try:
+            initialize = hosted_jsonrpc(HOSTED_URL, "initialize", {
+                "protocolVersion": PROTOCOL_VERSION, "capabilities": {},
+                "clientInfo": {"name": "misakanet-install-smoke", "version": "1.0"},
+            }, request_id=1, timeout=timeout)
+            detail["server_info"] = initialize.get("serverInfo")
+            listing = hosted_jsonrpc(HOSTED_URL, "tools/list", {}, request_id=2, timeout=timeout)
+            tools_seen = sorted(str(tool.get("name")) for tool in listing.get("tools") or []
+                                if isinstance(tool, dict))
+            call = hosted_jsonrpc(HOSTED_URL, "tools/call", {
+                "name": REQUIRED_TOOL, "arguments": {"query": SMOKE_QUERY, "top": 3},
+            }, request_id=3, timeout=timeout)
+            result_count = search_result_count(call)
+            if REQUIRED_TOOL not in tools_seen:
+                fails.append(f"the hosted endpoint does not list {REQUIRED_TOOL} (saw {tools_seen})")
+            elif result_count < 1:
+                fails.append(f"{REQUIRED_TOOL}({SMOKE_QUERY!r}) returned 0 results through the hosted "
+                             "endpoint")
+            else:
+                checks.append(f"hosted {REQUIRED_TOOL}({SMOKE_QUERY!r}) → {result_count} result(s)")
+                checks.append(f"hosted initialize → {detail.get('server_info')}")
+        except HostedCallError as error:
+            fails.append(str(error))
+            detail["hint"] = RATE_LIMIT_HINT
+    return _result("npm", checks, fails, detail, tools_seen=tools_seen, result_count=result_count)
+
+
+def probe_git_stdio(repo: Path, *, timeout: int, dry_run: bool) -> dict:
+    """Assert the interpreter floor, then handshake the local stdio server and call search."""
+    fails: list[str] = []
+    checks: list[str] = []
+    detail: dict = {}
+
+    version = subprocess.run(["python3", "--version"], capture_output=True, text=True)
+    version_text = (version.stdout or version.stderr).strip()
+    detail["python"] = version_text
+    match = PY_VERSION_RE.search(version_text)
+    if not match:
+        fails.append(f"cannot read a version out of `python3 --version` → {version_text!r}")
+    else:
+        found = (int(match.group(1)), int(match.group(2)))
+        if found < MIN_PYTHON:
+            fails.append(f"`python3 --version` is {version_text}, below the documented prerequisite "
+                         f"{MIN_PYTHON[0]}.{MIN_PYTHON[1]} (docs/dsh-installation.md)")
+        else:
+            checks.append(f"interpreter prerequisite: {version_text} ≥ {MIN_PYTHON[0]}.{MIN_PYTHON[1]}")
+
+    guide = repo / "docs" / "mcp.md"
+    try:
+        expected_tools = documented_stdio_tools(guide.read_text(encoding="utf-8"))
+        detail["documented_tools"] = sorted(expected_tools)
+    except (OSError, ValueError) as error:
+        return _result("git", checks, fails + [str(error)], detail, tools_seen=[], result_count=0)
+
+    if dry_run:
+        checks.append("dry run: stdio server not spawned")
+        return _result("git", checks, fails, detail, tools_seen=[], result_count=0)
+
+    requests = [
+        {"jsonrpc": "2.0", "id": 1, "method": "initialize",
+         "params": {"protocolVersion": PROTOCOL_VERSION, "capabilities": {},
+                    "clientInfo": {"name": "misakanet-install-smoke", "version": "1.0"}}},
+        {"jsonrpc": "2.0", "method": "notifications/initialized"},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+        {"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+         "params": {"name": REQUIRED_TOOL, "arguments": {"query": SMOKE_QUERY, "top": 3}}},
+    ]
+    try:
+        results, stdout, stderr = stdio_jsonrpc(repo, requests, timeout=timeout)
+    except HostedCallError as error:
+        return _result("git", checks, fails + [str(error)], detail, tools_seen=[], result_count=0)
+    detail["stderr_tail"] = "\n".join(stderr.strip().splitlines()[-3:])
+
+    initialize = results.get(1)
+    if initialize is None:
+        fails.append("the stdio server did not answer `initialize` (see stdout/stderr in the artifact)")
+        detail["stdout_tail"] = "\n".join(stdout.strip().splitlines()[-3:])
+    else:
+        detail["server_info"] = initialize.get("serverInfo")
+        checks.append(f"stdio initialize → {detail.get('server_info')}")
+
+    listing = results.get(2) or {}
+    tools_seen = sorted(str(tool.get("name")) for tool in listing.get("tools") or []
+                        if isinstance(tool, dict))
+    if not tools_seen:
+        fails.append("the stdio server answered `tools/list` with no tools")
+    else:
+        measured = frozenset(tools_seen)
+        if measured != expected_tools:
+            fails.append(
+                f"the stdio tool set disagrees with docs/mcp.md: only in the server: "
+                f"{sorted(measured - expected_tools)}; only in the document: "
+                f"{sorted(expected_tools - measured)}")
+        else:
+            checks.append(f"stdio tools/list → {len(tools_seen)} tools, equal to docs/mcp.md "
+                          f"({STDIO_DOC_ROW})")
+        if REQUIRED_TOOL not in measured:
+            fails.append(f"the stdio server does not register {REQUIRED_TOOL}, so the call below is "
+                         "impossible")
+
+    result_count = 0
+    call = results.get(3)
+    if call is None:
+        fails.append(f"the stdio server did not answer `tools/call {REQUIRED_TOOL}`")
+    else:
+        result_count = search_result_count(call)
+        if result_count < 1:
+            fails.append(f"{REQUIRED_TOOL}({SMOKE_QUERY!r}) returned 0 results from the local server — "
+                         "the checkout's `lessons/` index may be unreadable")
+        else:
+            checks.append(f"stdio {REQUIRED_TOOL}({SMOKE_QUERY!r}) → {result_count} result(s)")
+    return _result("git", checks, fails, detail, tools_seen=tools_seen, result_count=result_count)
+
+
+def _tar_member(archive: tarfile.TarFile, name: str) -> str | None:
+    try:
+        handle = archive.extractfile(name)
+    except KeyError:
+        return None
+    if handle is None:
+        return None
+    return handle.read().decode("utf-8", errors="replace")
+
+
+def _result(form: str, checks: list[str], fails: list[str], detail: dict,
+            *, tools_seen: list[str], result_count: int) -> dict:
+    """The artifact's shape: per-form detail a human or agent can read without prose.
+
+    `checks` is what was measured and passed; `failures` is what failed. Both are lists of facts (names,
+    counts, exit codes), because a reader of a *red* artifact needs the measurement, not the narrative.
+    """
+    return {
+        "form": form,
+        "ok": not fails,
+        "timestamp": _now(),
+        "query": SMOKE_QUERY,
+        "tools_seen": tools_seen,
+        "tool_count": len(tools_seen),
+        "result_count": result_count,
+        "checks": checks,
+        "failures": fails,
+        "detail": detail,
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("form", choices=["npm-form", "git-stdio"],
+                        help="which install form to exercise")
+    parser.add_argument("--repo", type=Path, default=REPO_FALLBACK,
+                        help="checkout to pack / spawn the server from (default: this repository)")
+    parser.add_argument("--out", type=Path, help="write the per-form JSON here (always written)")
+    parser.add_argument("--timeout", type=int, default=180)
+    parser.add_argument("--dry-run", action="store_true",
+                        help="stop before the call: pack+shape checks for npm-form, interpreter+tool-set "
+                             "for git-stdio (no network, no server spawn)")
+    args = parser.parse_args(argv)
+
+    repo = args.repo.resolve()
+    try:
+        if args.form == "npm-form":
+            result = probe_npm_form(repo, timeout=args.timeout, dry_run=args.dry_run)
+        else:
+            result = probe_git_stdio(repo, timeout=args.timeout, dry_run=args.dry_run)
+    except Exception as error:   # noqa: BLE001 — a crash must still leave evidence, see the module docstring
+        result = _result("npm" if args.form == "npm-form" else "git", [], [
+            f"the probe crashed before it could measure anything: {type(error).__name__}: {error}"],
+            {"traceback_form": args.form}, tools_seen=[], result_count=0)
+
+    rendered = json.dumps(result, indent=2, ensure_ascii=False)
+    if args.out:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(rendered + "\n", encoding="utf-8")
+    print(rendered)
+    for failure in result["failures"]:
+        print(f"install-smoke[{result['form']}]: FAIL {failure}", file=sys.stderr)
+    if result["detail"].get("hint"):
+        print(f"install-smoke[{result['form']}]: note {result['detail']['hint']}", file=sys.stderr)
+    return 0 if result["ok"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

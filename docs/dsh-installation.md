@@ -203,17 +203,27 @@ the local server now **proxies** it to the hosted service instead (it needs the 
 `.codex-plugin/plugin.json` carries both sets under `mcp.tools` / `mcp.local.tools`, and
 `tests/test_mcp_capability_parity.py` checks those lists against the server and the worker.
 
-## What "verified" means here — two different checks
 
-An install page can show two green things and they are not the same claim:
+## What "verified" means here — three different checks
+
+An install page can show green things and they are not the same claim:
 
 | Layer | What it proves | Where it comes from |
 |---|---|---|
-| **Registry / market metadata** (static) | the listing knows about this version — nothing more | npm `dist-tags` / the plugin manifest's `version`, and the MCP registry read-back in `publish-mcp-registry.yml` (it fails unless the registry's `isLatest` matches what was published) |
-| **Real-machine install** (what you should run) | the thing actually works on *your* machine | `dsh plugin list` shows `misakanet`, then call a tool — `misakanet_search` with any error string should return ranked lessons |
+| **Registry / market metadata** (static) | the listing knows about this version — **nothing more**; it says nothing about whether an install works | npm `dist-tags` / the plugin manifest's `version`, and the MCP registry read-back in `publish-mcp-registry.yml` (it fails unless the registry's `isLatest` matches what was published) |
+| **Real-machine install** (our daily smoke) ![install smoke](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Ikalus1988/MisakaNet/data/badges/install.json) | both install forms were **actually installed and called** on a date, from a clean runner: the npm tarball's shape and hosted endpoint, and the git+ checkout's local stdio server — each answering a real `misakanet_search` | `.github/workflows/install-smoke.yml` → `data` branch `badges/install.json` (green = both forms passed, with the date; red names the failing form). Read the badge, do not read this sentence: no status is hand-written here |
+| **Real-machine install** (what you should run) | the thing actually works on *your* machine, with your network and your profile | `dsh plugin list` shows `misakanet`, then call a tool — `misakanet_search` with any error string should return ranked lessons |
 
-A green static check with a broken install is possible, and a green install with a stale listing is possible.
-Verify with the second row; the first row is about the catalogue.
+**The static layer proves only that the catalogue is current.** It is a claim about a listing, not about an
+install: npm `dist-tags` and the registry read-back will both be green for a package whose tarball is
+missing an entry point, and they will stay green while the hosted endpoint is down. That gap is why the
+middle row exists (intake #2486, point 3 — a reader treated "automatic check passed" as "it works"), and why
+the middle row is a *badge* rather than a sentence: a hand-written "verified" is exactly the kind of claim
+this table is warning you about.
+
+The smoke runs daily and on demand; it is **not** a substitute for the third row. It uses one fixed query
+against one public endpoint from one runner, so it proves the install path is alive, not that your profile,
+proxy or corpus subset works.
 
 ## Prerequisites, and what "stdlib-only" does and does not mean
 
