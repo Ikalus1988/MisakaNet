@@ -139,7 +139,30 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      # Idempotent by design (2026-09-30, matching `misakanet-publish.yml`): a re-run after a successful
+      # publish used to fail with a bare npm conflict, so "run it again to be sure" was impossible and a
+      # retried event looked like a broken release. A version already on the registry is a *done* state.
+      - name: Skip when npm already has this version
+        id: npm_state
+        env:
+          VERSION: ${{ steps.pack.outputs.version }}
+          PKG: "@misaka-net/misakanet-setup"
+        run: |
+          set -euo pipefail
+          ALREADY=false
+          FOUND=$(npm view "$PKG@$VERSION" version 2>/tmp/npm-view.err || true)
+          if [ "$(printf '%s' "$FOUND" | tr -d '[:space:]')" = "$VERSION" ]; then
+            ALREADY=true
+            echo "$PKG@$VERSION is already on npm - nothing to publish."
+            echo "### $PKG@$VERSION is already on npm" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "npm does not report $PKG@$VERSION as published - publishing it"
+            if [ -s /tmp/npm-view.err ]; then sed 's/^/    npm view: /' /tmp/npm-view.err | head -3; fi
+          fi
+          echo "already=$ALREADY" >> "$GITHUB_OUTPUT"
+
       - name: Publish to npm
+        if: steps.npm_state.outputs.already != 'true'
         run: |
           set +e
           # The exact file the e2e above installed and exercised — `npm publish <file>` publishes a
