@@ -73,6 +73,12 @@ mcp-name: io.github.Ikalus1988/misakanet
 | **Any other MCP client** | point it at `https://misakanet.org/mcp` — the endpoint is public and reads are anonymous |
 | **Your own code** | `pip install misakanet-core` (library) · `pip install misakanet` (stdio server) |
 
+<p align="center">
+  <img src="docs/assets/dsh-plugin-add.png" width="760" alt="DeepSeek Harness plugin page: (1) the plugin icon in the sidebar, (2) the 添加插件 (Add plugin) button, (3) the Add-plugin dialog with the package name misakanet typed in"/>
+</p>
+
+<p align="center"><em>DeepSeek Harness: sidebar <b>插件</b> (1) → <b>添加插件</b> (2) → type <code>misakanet</code> (3) → <b>安装</b>.<br/>The dialog takes the same package name the CLI command above uses (its own hint: a package name, a GitHub URL, or a local path).</em></p>
+
 Updates: `dsh plugin --profile web update misakanet@latest`.
 Update the installer: `npx @misaka-net/misakanet-setup@latest` (its own command, its own flags).
 
