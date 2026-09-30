@@ -19,6 +19,4 @@ agent-cap get
 codes --xml
 # 验证输出：以XML格式输出系统版本信息。
 ```
-
-该内容已放置于`lessons/core/ai_system.md`中。
 ```
