@@ -578,3 +578,78 @@ def test_the_payload_rule_can_go_red():
     assert sorted(set(re.findall(r"\btop\.([A-Za-z_][A-Za-z0-9_]*)", search)) - {"id", "title", "problem", "freshness", "evidence_level"}) == ["domain"]
     assert compact_payload_keys('compact: {id, title, problem, freshness, evidence_level}') == {
         "id", "title", "problem", "freshness", "evidence_level"}
+
+
+# ── the panel (the review surface) ───────────────────────────────────────────
+#
+# The panel is where the numbers live, so its failure modes are different from the transcript rows': a
+# number that cannot be traced, a state that is mislabelled, or a sound nobody asked for. Each is a
+# static property of the file, and each has a red fixture below.
+
+PANEL = "function MisakanetPanel"
+INTAKE_LABELS = re.compile(r"already_have:\s*\"([^\"]*)\"")
+# call sites only: the definition is not a place sound starts
+PLAY_CUE = re.compile(r"^(?!\s*function ).*playCue\(.*$", re.M)
+
+
+def panel_body(source: str) -> str:
+    assert PANEL in source, "the client half is expected to keep the review panel"
+    return source[source.index(PANEL):]
+
+
+def test_the_panel_answers_the_questions_it_exists_for():
+    """Problems, lessons, contributions, trust, activity, voice — in that order, each labelled."""
+    panel = panel_body(client_source())
+    for heading in ("What this session asked", "Reports you filed", "How much these lessons are trusted",
+                    "Your activity", "Voice"):
+        assert heading in panel, f"the panel lost its `{heading}` section"
+
+
+def test_the_panel_never_mislabels_a_report_that_was_never_filed():
+    """`already_have` is the worker's #1526 backstop: the corpus already covered it, nothing was filed.
+
+    Reading it as "converted" would tell a reporter their work landed when they never filed anything —
+    a lie the server's own wording does not support. Conversion is its own state, and it arrives as
+    `converted` (the receipt the #2494 channel returns).
+    """
+    source = client_source()
+    labels = INTAKE_LABELS.findall(source)
+    assert labels, "the intake states must be rendered by name"
+    assert not any("convert" in label.lower() or "became" in label.lower() for label in labels), (
+        f"a report that was never filed must not be labelled as a conversion: {labels}")
+    assert '"converted"' in source, "the real conversion state must still exist"
+    assert "backstop" in source, (
+        "the reason `already_have` is not a conversion belongs next to the mapping (it is easy to undo)")
+
+
+def test_the_panel_states_what_it_cannot_know_about_the_local_voice_hook():
+    """The browser can toggle its own cues; the hook is another process with its own switch."""
+    panel = panel_body(client_source())
+    for fact in ("MISAKANET_VOICE=0", "--voice", "cannot read or change"):
+        assert fact in panel, f"the voice section must say {fact!r} instead of implying control"
+    assert "localStorage" in client_source() or "VOICE_KEY" in client_source(), (
+        "the browser toggle must be browser-local; anything else would claim to change the hook")
+
+
+def test_nothing_makes_sound_without_opt_in_or_a_click():
+    """Two playback paths, both asked for: the opt-in switch, and the button the person pressed."""
+    calls = [line.strip() for line in PLAY_CUE.findall(client_source())]
+    assert len(calls) == 2, f"expected exactly two playback paths (opt-in, click), found {len(calls)}: {calls}"
+    for line in calls:
+        assert "voiceEnabled()" in line or "onClick" in line, (
+            f"a playback path must be guarded by the opt-in switch or a click: {line}")
+
+
+def test_the_voice_and_intake_rules_can_go_red():
+    assert not any("convert" in label.lower() for label in INTAKE_LABELS.findall('already_have: "cited by a lesson"'))
+    assert any("convert" in label.lower() for label in INTAKE_LABELS.findall('already_have: "converted to a lesson"'))
+    guarded = "if (entry.voice && voiceEnabled()) playCue(entry.voice);"
+    unguarded = "playCue(entry.voice);"
+    assert ("voiceEnabled()" in guarded) and ("voiceEnabled()" not in unguarded)
+
+
+def test_every_panel_number_comes_from_the_session_log_or_the_browser_counters():
+    """No constant may masquerade as a count: the rows are the log, the counters are localStorage."""
+    panel = panel_body(client_source())
+    for source_of_truth in ("log.searches", "log.intakes", "log.votes", "log.lessons", "browserStats()"):
+        assert source_of_truth in panel, f"the panel stopped reading {source_of_truth!r}"
