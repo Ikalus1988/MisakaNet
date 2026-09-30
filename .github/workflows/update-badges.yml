@@ -96,6 +96,15 @@ jobs:
       - name: Generate retrieval-backend badge
         run: python3 scripts/update_retrieval_badge.py --out /tmp/badges/retrieval.json
 
+      # One badge cannot answer "is onboarding working" — this one puts the funnel's legs side by side
+      # (npm weekly downloads, today's agent calls, GitHub's 14-day clone/view context). It publishes
+      # *nothing* when a leg cannot be measured, which is why the step is allowed to fail the run: a week
+      # without a measurement should be visible, not silently replaced by yesterday's number.
+      - name: Generate onboarding snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/snapshot_onboarding.py --out /tmp/badges/onboarding.json
+
       - name: Push to data branch
         env:
           GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
