@@ -435,6 +435,9 @@ VERDICT_SLOT = "conversation.chat.assistant-actions"
 SLOT_OWNERS = {
     "tool.call.toolview": "@deepseek-ai/dsh-client-ui-tool",
     "conversation.chat.assistant-actions": "@deepseek-ai/dsh-client-ui-chat",
+    "conversation.view": "@deepseek-ai/dsh-client-ui-conversation",
+    "sidebar.right.pane.tab": "@deepseek-ai/dsh-client-ui-sidebar-right",
+    "sidebar.right.pane.tab.title": "@deepseek-ai/dsh-client-ui-sidebar-right",
 }
 CALL_TO_HELPFUL = re.compile(r"""/api/helpful["']\s*,\s*\{(.*?)\}""", re.S)
 USE_EFFECT = re.compile(r"react\.useEffect\(\s*function\s*\(\)\s*\{(.*?)\}\s*,\s*\[", re.S)
@@ -653,3 +656,86 @@ def test_every_panel_number_comes_from_the_session_log_or_the_browser_counters()
     panel = panel_body(client_source())
     for source_of_truth in ("log.searches", "log.intakes", "log.votes", "log.lessons", "browserStats()"):
         assert source_of_truth in panel, f"the panel stopped reading {source_of_truth!r}"
+
+
+def test_the_panel_glyph_is_the_package_mark():
+    """One brand mark, two places: the package icon the host shows in its plugin list, and the tab glyph.
+
+    They are drawn differently (a file vs an inline SVG) because the host asks a tab for a component, so
+    nothing structural keeps them equal — this does. A panel whose glyph drifted from the icon users see
+    in the plugin manager is a small thing that looks like two different plugins.
+    """
+    mark = re.search(r'd="(M16 44V20[^"]*)"', (REPO / "icon.svg").read_text(encoding="utf-8"))
+    assert mark, "icon.svg no longer contains the brand path this gate pins"
+    assert mark.group(1) in client_source(), (
+        "the panel's inline glyph must draw the same path as icon.svg, or the two marks drift apart")
+
+
+# ── the panel's two seats, and the two ways they can be wired wrong ───────────
+#
+# The right sidebar ships from 0.1.5 on, and the panel must exist without it (the conversation ring is
+# enough). Two mistakes are invisible in a browser that has the registry, and both are static:
+# hard-injecting `sidebarRightTabs` (which pends or fails the plugin on an older line), and keying the
+# body seat with anything other than the type `id` (which renders the host's "nothing can view this").
+
+DEFERRED_SIDEBAR = re.compile(r'ctx\.inject\(\s*\[\s*"sidebarRightTabs"\s*\]')
+PANEL_TYPE_ID = re.compile(r"var PANEL_ID = \"([^\"]+)\";")
+# both spellings: a bare constant, or a string literal (which the first version of this gate missed
+SIDEBAR_KEY = re.compile(r'name: "sidebar\.right\.pane\.tab",\s*key: ([A-Za-z_$][\w$.]*|"[^"]*")')
+
+
+def test_the_panel_is_reachable_in_the_conversation_ring():
+    """The ring takes a list entry: an id, an order and a label — there is no icon channel there."""
+    source = client_source()
+    assert 'name: "conversation.view"' in source, "the panel must be registered in the conversation ring"
+    block = source[source.index('name: "conversation.view"'):]
+    block = block[:block.index("}", block.index("label:"))]
+    for field in ("id: PANEL_ID", "order:", "label:"):
+        assert field in block, f"a conversation-view entry needs {field!r} ({block[:120]!r})"
+
+
+def test_the_sidebar_seat_is_deferred_so_older_lines_keep_the_conversation_tab():
+    """`sidebarRightTabs` must NOT be a static inject: on a host without it the fiber would pend."""
+    source = client_source()
+    assert DEFERRED_SIDEBAR.search(source), (
+        "the sidebar registration must ride a deferred `ctx.inject(['sidebarRightTabs'], …)`")
+    assert '"sidebarRightTabs"' not in re.findall(r"var inject = \[([^\]]*)\]", source)[0], (
+        "the registry must not sit in the module's static inject list, or a pre-0.1.5 host pends")
+    deferred = source[source.index('ctx.inject(["sidebarRightTabs"]'):]
+    for guard in ("typeof tabs.register !== \"function\"", "catch (error)", "unwind"):
+        assert guard in deferred, f"the deferred registration must guard against {guard!r}"
+
+
+def test_the_sidebar_body_is_keyed_by_the_type_id_the_contract_requires():
+    """The host dispatches `sidebar.right.pane.tab` with the *type's* id; any other key is dead."""
+    source = client_source()
+    type_id = PANEL_TYPE_ID.search(source)
+    assert type_id, "the panel type id must be a single named constant"
+    keys = SIDEBAR_KEY.findall(source)
+    assert keys, "no `sidebar.right.pane.tab` registration found — this check would pass vacuously"
+    allowed = {"PANEL_ID", '"%s"' % type_id.group(1)}
+    for key in keys:
+        assert key in allowed, (
+            f"a pane seat keyed {key!r} will never be dispatched: the key must equal the type id "
+            f"({type_id.group(1)!r}), written as PANEL_ID or as that literal")
+
+
+def test_the_guide_entry_carries_the_id_the_contract_requires():
+    """`guide[].id` is required by the host (it becomes the entry's `entryId` and its React key).
+
+    The one third-party implementation of this pattern omits it, which is harmless only while that
+    provider contributes a single entry — so this pins that we supply it rather than copying the bug.
+    """
+    source = client_source()
+    guide = source[source.index("guide: [{"):]
+    guide = guide[:guide.index("}]")]
+    assert re.search(r'\bid:\s*"', guide), f"the guide entry needs an id: {guide[:120]!r}"
+    assert "icon: MisakanetGlyph" in guide, "the guide capsule must carry the product glyph"
+
+
+def test_the_slot_registration_rules_can_go_red():
+    assert not DEFERRED_SIDEBAR.search('ctx.inject(["slots"], cb)')
+    assert DEFERRED_SIDEBAR.search('ctx.inject(["sidebarRightTabs"], cb)')
+    assert SIDEBAR_KEY.findall('{ name: "sidebar.right.pane.tab", key: PANEL_ID }') == ["PANEL_ID"]
+    assert SIDEBAR_KEY.findall('{ name: "sidebar.right.pane.tab", key: "misakanet-panel" }') == ['"misakanet-panel"']
+    assert SIDEBAR_KEY.findall('{ name: "sidebar.right.pane.tab" }') == []  # non-vacuity matters

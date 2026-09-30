@@ -30,9 +30,9 @@ Two surfaces follow from it, and the split is deliberate:
 | --- | --- | --- | --- |
 | A1 | installing the plugin puts the browser half in the boot graph, with the declared factory order | `dsh plugin --profile web add <repo>` → the `__DSH_BOOT__` entry for `misakanet` carries `inject: [ui-tool, ui-chat]` | ✅ measured |
 | A2 | the served bundle is the file itself, byte for byte (no build step, no sibling chunk) | fetch the combo URL and compare with `lib/client.js` | ✅ measured |
-| A3 | the panel opens: a tab in the conversation ring labelled **MisakaNet** with a glyph, and on hosts that have the right-sidebar tab registry, an entry that opens the same body | boot the host; the tab is in the ring; the sidebar guide lists it | ⛔ not built |
-| A4 | on a host line without the sidebar-tab service the plugin still loads, with the conversation tab only and no error | deferred inject; the callback never fires on older lines | ⛔ not built |
-| A5 | uninstalling removes every surface — no orphan tab, no orphan row | `dsh plugin --profile web remove misakanet` → the boot graph loses the entry and the panel is gone after reload | ⛔ not built |
+| A3 | the panel opens: a tab in the conversation ring labelled **MisakaNet**, and on hosts that have the right-sidebar tab registry, a guide entry that opens the same body | registration is in the served bundle (`conversation.view` id `misakanet`; sidebar type `id` = its body key; guide entry carries the required `id` + the product glyph) and 5 gates pin the wiring | ✅ built (rendered ⚠️) |
+| A4 | on a host line without the sidebar-tab service the plugin still loads, with the conversation tab only and no error | `ctx.inject(['sidebarRightTabs'], …)` with a runtime re-proof, a try/catch and a collected disposer list; the registry is deliberately **not** in the static inject list | ✅ built (older line ⚠️ unmeasured) |
+| A5 | uninstalling removes every surface — no orphan tab, no orphan row | every registration is an effect or rides the `ctx.inject` fiber's disposer, so the graph row leaving takes them; measured for the entry itself (`add` → entry present) | ⚠️ partial |
 | A6 | a throwing component cannot take the conversation down | every handler wrapped; the search row renders on all three phases | ✅ code + gates |
 
 ## B. What the panel shows (the content a person asked for)
