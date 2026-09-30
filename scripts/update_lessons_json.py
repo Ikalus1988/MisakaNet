@@ -34,6 +34,16 @@ LESSONS_DIR = REPO / "lessons"
 # instruction to regenerate pages rather than as evidence that the suite edits the checkout.
 PUBLISHED_INDEX = REPO / "data" / "lessons.json"
 OUTPUT = Path(os.environ.get("MISAKANET_LESSONS_INDEX") or PUBLISHED_INDEX)
+# The copy the browser downloads (`docs/` is what Cloudflare Workers Builds publishes). It used to be
+# produced only by `cp data/lessons.json docs/data/lessons.json` in the three-hourly `build-feed.yml`,
+# so between a regeneration and the next feed run the site served a corpus that disagreed with the
+# repository. Measured 2026-09-29: the two files held 426 and 418 lessons for about a day and no check
+# noticed — they agreed again only because the 3-hourly job happened to have run. The guarantee now
+# comes from the job that owns the corpus: this same generator writes both files, so a daily
+# `update-lessons.yml` run cannot land a canonical index without its published copy.
+# `tests/test_docs_data_copy.py` pins that (both the copy and the comparison), and
+# `scripts/check_docs_data_copy.py` is the standalone gate the audit job runs.
+DOCS_INDEX = REPO / "docs" / "data" / "lessons.json"
 INDEXED_DIRS = ("core", "contrib")
 # Non-lesson markdown that must never be indexed (mirrors sync_lessons_to_d1.py).
 EXCLUDED = {"README.md", "index.md", "TEMPLATE.md", "CONTRIBUTING.md"}
@@ -213,6 +223,31 @@ def refresh_lesson_count_markers(count: int) -> None:
         raise SystemExit(1)
 
 
+def mirror_published_index(source: Path | None = None) -> bool:
+    """Copy the canonical index onto the site's copy. Returns True when the copy moved.
+
+    WHY (2026-09-29): the two files are one corpus shipped twice, and the copy existed only as a `cp`
+    in the three-hourly `build-feed.yml` — so a regeneration of `data/lessons.json` left
+    `docs/data/lessons.json` serving the previous corpus until the next feed run. Measured 2026-09-29:
+    426 vs 418 for about a day, with the site internally inconsistent and no check complaining. Writing
+    both from the generator means the guarantee comes from the job that owns the corpus, not from a
+    schedule that happens to run later.
+
+    Byte-compares before writing (and skips the write when they already match) so a no-op regeneration
+    produces no diff: `land_change.py` opens a pull request for any change in the tree, so a needless
+    write here would manufacture a daily commit for nothing.
+    """
+    source = Path(source) if source is not None else PUBLISHED_INDEX
+    payload = source.read_bytes()
+    if DOCS_INDEX.exists() and DOCS_INDEX.read_bytes() == payload:
+        print(f"OK site copy already current: {DOCS_INDEX}")
+        return False
+    DOCS_INDEX.parent.mkdir(parents=True, exist_ok=True)
+    DOCS_INDEX.write_bytes(payload)
+    print(f"OK site copy refreshed: {DOCS_INDEX} ({len(payload)} bytes)")
+    return True
+
+
 def main():
     # Audit T2.2/T2.5 "图书馆" policy: index every lessons/ subdir with real
     # content, deduplicated by stem (canonical_lessons: core > contrib >
@@ -298,8 +333,13 @@ def main():
     # does not have — and in tests it rewrote 20+ tracked files for a fixture nobody asked for.
     if OUTPUT == PUBLISHED_INDEX:
         refresh_lesson_count_markers(len(entries))
+        # Same reasoning one file over: the site copy describes the published index, so a run that
+        # wrote the index somewhere else must not touch it (a redirected test run would otherwise
+        # rewrite `docs/data/lessons.json` with fixture data and leave the checkout inconsistent).
+        mirror_published_index()
     else:
         print(f"count markers not refreshed: this run wrote {OUTPUT}, not {PUBLISHED_INDEX}")
+        print(f"site copy not refreshed: this run wrote {OUTPUT}, not {PUBLISHED_INDEX}")
 
 
 if __name__ == "__main__":
