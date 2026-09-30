@@ -142,8 +142,14 @@ def test_the_three_sets_are_actually_different():
     local, hosted = local_tool_names(), hosted_tool_names()
     assert local and hosted, "one of the tool sets came back empty"
     assert local != hosted, "the local and hosted tool sets are now identical — re-check this gate"
-    assert "misakanet_me_events" in hosted and "misakanet_me_events" not in local
+    # Since 2026-09-30 the difference is one-directional (D4=A, #2000): the local stdio server serves
+    # every hosted tool — `misakanet_me_events` included, proxied to the hosted service — plus the
+    # three that read this checkout's own meter and `lessons/` corpus. Before that, `me_events` was
+    # hosted-only, so the skill taught a call that answered "Unknown tool" on a local install and
+    # neither set contained the other.
+    assert "misakanet_me_events" in hosted and "misakanet_me_events" in local
     assert "misakanet_submit_usage" in local and "misakanet_submit_usage" not in hosted
+    assert hosted < local, "the hosted set is no longer a subset of the local one"
 
 
 def test_the_gate_can_go_red(doc: str):
@@ -157,10 +163,15 @@ def test_the_gate_can_go_red(doc: str):
 # ── the agent-facing skill files (#2000) ────────────────────────────────────────────
 # `skills/misakanet/SKILL.md` is deployed into agents' skill directories and `SKILL.md` is the copy the
 # installer reads from the repo root; both teach tool calls. On 2026-09-25 neither said *which surface*
-# it was describing — and the two surfaces differ: `misakanet_me_events` is hosted-only, while
+# it was describing — and the two surfaces differed: `misakanet_me_events` was hosted-only, while
 # `misakanet_usage_status` / `misakanet_submit_usage` / `misakanet_memory_context` are stdio-only. An
 # agent on the local server following the reuse-evidence steps got an unknown-tool error in the one flow
 # that asks it to verify its own contribution (#2000).
+#
+# Fixed 2026-09-30 (owner decision D4=A): the local stdio server registers `misakanet_me_events` as a
+# proxy of the hosted tool, so the hosted set is now a subset of the local one and the only asymmetry
+# left is the three genuinely local tools. These rules keep saying which surface owns what — the
+# specific tool names may move, the requirement to name a surface may not.
 SKILL_FILES = (REPO / "SKILL.md", REPO / "skills" / "misakanet" / "SKILL.md")
 TOOL_RE = re.compile(r"\bmisakanet_[a-z_]+\b")
 

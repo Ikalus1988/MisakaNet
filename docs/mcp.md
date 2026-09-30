@@ -81,21 +81,29 @@ It is **not the same surface** as the hosted endpoint that most agents are point
 
 | surface | how you reach it | tools | resources | prompts |
 |---|---|---|---|---|
-| **local stdio** — what this page installs | `python3 scripts/mcp_server.py` | 9: `misakanet_search`, `misakanet_get_lesson`, `misakanet_submit_usage`, `misakanet_submit_intake`, `misakanet_write_lesson`, `misakanet_preflight`, `misakanet_usage_status`, `misakanet_register`, `misakanet_memory_context` | 5 (below) | 3 (below) |
+| **local stdio** — what this page installs | `python3 scripts/mcp_server.py` | 10: `misakanet_search`, `misakanet_get_lesson`, `misakanet_submit_usage`, `misakanet_submit_intake`, `misakanet_write_lesson`, `misakanet_preflight`, `misakanet_usage_status`, `misakanet_register`, `misakanet_memory_context`, `misakanet_me_events` | 5 (below) | 3 (below) |
 | local HTTP (optional) | `python3 scripts/mcp_http_server.py` | 6: `misakanet_search`, `misakanet_get_lesson`, `misakanet_submit_intake`, `misakanet_submit_usage`, `misakanet_usage_status`, `misakanet_register` | 3 | 2 |
-| **hosted** — what agents usually call | `https://misakanet.org/mcp` | 7: the stdio set **minus** `misakanet_submit_usage`, `misakanet_usage_status`, `misakanet_memory_context`, **plus** `misakanet_me_events` | **none** | **none** |
+| **hosted** — what agents usually call | `https://misakanet.org/mcp` | 7: the stdio set **minus** the three local-only tools `misakanet_submit_usage`, `misakanet_usage_status`, `misakanet_memory_context` | **none** | **none** |
 
 **The hosted endpoint exposes tools only.** It handles `tools/list` and `tools/call` and nothing else
 (measured 2026-09-25), so an MCP client that calls `resources/list` or `prompts/list` against
 `misakanet.org/mcp` gets an error rather than the tables below. `misaka://…` URIs and prompts are a
 **local-only** feature; the hosted surface's tool set is the seven names above.
 
+Since **2026-09-30** (owner decision D4=A, issue #2000) the hosted set is a **subset** of the local one:
+the local stdio server registers `misakanet_me_events` too, as a proxy of the hosted tool (the evidence it
+returns is aggregated server-side), and the only difference left is the three tools that read the local
+checkout — `misakanet_submit_usage`, `misakanet_usage_status`, `misakanet_memory_context`. Before that,
+`misakanet_me_events` was hosted-only, so the skill's reuse-evidence step answered "Unknown tool" on a
+local install. `.codex-plugin/plugin.json` declares both sets, and `tests/test_mcp_capability_parity.py`
+checks them against this server and the worker.
+
 The three sets are pinned against their sources by `tests/test_mcp_doc_surface.py`, so a tool added
 without a line here fails the suite rather than leaving a reader with a wrong map.
 
 ## Available Tools
 
-The three below are the ones with parameters people ask about; all nine exist (see the table above for
+The three below are the ones with parameters people ask about; all ten exist (see the table above for
 which surface has which).
 
 

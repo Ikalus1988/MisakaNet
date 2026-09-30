@@ -571,6 +571,63 @@ TOOLS = [
             "required": ["task"],
         },
     },
+    {
+        # Added 2026-09-30 (owner decision D4=A, intake #2000 / #2486). The local stdio server used to
+        # lack this tool while the hosted endpoint had it, so the skill's reuse-evidence step — the
+        # one flow that verifies a contribution was actually reused — answered "Unknown tool" on a
+        # local install, and neither surface's tool set contained the other. It is a proxy of the
+        # hosted tool, because the evidence it returns is aggregated server-side (helpful votes,
+        # regression citations, cross-node confirmation) and no checkout can compute it locally.
+        #
+        # The description below is the hosted definition verbatim (workers/register-proxy-sw.js,
+        # MCP_TOOLS) followed by the local operating contract every stdio tool carries. Keeping the
+        # hosted text as a prefix is not decoration: tests/test_mcp_capability_parity.py asserts it, so
+        # the two surfaces cannot start teaching different behaviour for one tool name.
+        "name": "misakanet_me_events",
+        "description": (
+            "[READ-ONLY EVIDENCE] Return evidence of a lesson being reused (E4 signals): "
+            "helpful votes, regression-benchmark citations, and cross-node confirmation. Use "
+            "to check whether a lesson is proven by real usage, not just self-reported. "
+            "Provide lesson_id or lesson_path — if neither is supplied the tool returns "
+            "{error}. Semantically 'misakanet_get_my_events' (evidence for the lessons your "
+            "node submitted/used); kept as me_events for backward compatibility. No auth "
+            "required (read-only, rate-limited).\n"
+            "Returns: object {lesson_id, events: [{type, count|queries|sources, "
+            "evidence_level}], evidence: 'E0'|'E3'|'E4', note}.\n"
+            "Example: misakanet_me_events(lesson_id='dco-auto-fix-workflow')\n"
+            "Input semantics: lesson_id (filename stem, e.g. dco-auto-fix-workflow) or "
+            "lesson_path (e.g. lessons/core/dco-auto-fix-workflow.md) — the endpoint derives "
+            "the id from the path the same way. Passing neither is refused before any network "
+            "call. Output schema: proxied unchanged from the hosted tool (lesson_id, events[], "
+            "evidence, note). Error cases: missing_lesson_reference when both arguments are "
+            "absent; hosted_endpoint_unavailable when the hosted service cannot be reached or "
+            "refuses the call — this is a proxy, so there is no local fallback, and an empty "
+            "events list would be a different, wrong answer. Side effects: none (read-only, no "
+            "local writes). Auth: none. Rate limits: the hosted endpoint's anonymous read "
+            "burst window applies; the proxy adds no local limit."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lesson_id": {
+                    "type": "string",
+                    "description": (
+                        "Lesson ID (filename stem), e.g. dco-auto-fix-workflow. Either "
+                        "lesson_id or lesson_path is required."
+                    ),
+                },
+                "lesson_path": {
+                    "type": "string",
+                    "description": (
+                        "Optional full path, e.g."
+                        " lessons/core/dco-auto-fix-workflow.md. Either lesson_id or"
+                        " lesson_path is required."
+                    ),
+                },
+            },
+            "minProperties": 1,
+        },
+    },
 ]
 
 

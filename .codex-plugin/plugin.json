@@ -22,6 +22,38 @@
     "devops"
   ],
   "skills": "./skills/",
+  "mcp": {
+    "transport": "http",
+    "url": "https://misakanet.org/mcp",
+    "tools": [
+      "misakanet_register",
+      "misakanet_search",
+      "misakanet_get_lesson",
+      "misakanet_submit_intake",
+      "misakanet_write_lesson",
+      "misakanet_preflight",
+      "misakanet_me_events"
+    ],
+    "local": {
+      "transport": "stdio",
+      "command": "python3",
+      "args": [
+        "scripts/mcp_server.py"
+      ],
+      "tools": [
+        "misakanet_register",
+        "misakanet_search",
+        "misakanet_get_lesson",
+        "misakanet_submit_intake",
+        "misakanet_write_lesson",
+        "misakanet_preflight",
+        "misakanet_me_events",
+        "misakanet_submit_usage",
+        "misakanet_usage_status",
+        "misakanet_memory_context"
+      ]
+    }
+  },
   "interface": {
     "displayName": "MisakaNet",
     "shortDescription": "Search a public failure-memory library of debugging lessons, and submit failures so other agents skip the same wall.",
