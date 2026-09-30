@@ -248,6 +248,48 @@ def mirror_published_index(source: Path | None = None) -> bool:
     return True
 
 
+# The fields the site's two local search paths read, measured 2026-09-30 from their own scoring code:
+# both use title/summary/domain/tags and nothing else. `preview` is deliberately **not** here even though
+# the search page's preview panel used to read it from the corpus: it is ~2.1 KB of body text per lesson
+# (median 2088 chars), i.e. 1.09 MB of the corpus's 1.32 MB — shipping it to run a search over four short
+# fields was the whole cost. That panel now fetches the one lesson it needs, on demand.
+LITE_FIELDS = ("id", "title", "summary", "domain", "tags")
+
+
+def build_lite_projection(rows: list) -> list:
+    """The type-ahead/search projection of the corpus: the fields the browser reads, and nothing else."""
+    return [{key: row.get(key) for key in LITE_FIELDS} for row in rows]
+
+
+def mirror_lite_projection(source: Path | None = None) -> bool:
+    """Write the browser projection beside the site's corpus copy. Returns True when it moved.
+
+    WHY (2026-09-30): both pages downloaded the whole corpus (1.27 MB raw, 418 KB transferred) to run a
+    local search over six fields. The projection is ~5-7× smaller, which removes the largest object the
+    site makes a visitor fetch — and it is written *here*, in the job that owns the corpus, so it cannot
+    drift from it (`scripts/check_docs_data_copy.py` asserts the id sets match).
+
+    Same byte-compare rule as `mirror_published_index`: a no-op regeneration must not manufacture a diff,
+    because `land_change.py` opens a pull request for any change in the tree.
+    """
+    source = Path(source) if source is not None else PUBLISHED_INDEX
+    # Derived from `DOCS_INDEX` at call time, deliberately **not** a module constant: #2459's redirect
+    # contract is that a test (or a redirected run) moves `DOCS_INDEX` and every write follows it. A
+    # constant evaluated at import time does not follow — the first version of this function wrote a
+    # fixture corpus into the real `docs/data/lessons-lite.json` during the test suite, which is the
+    # "a write that no redirection covers" failure that whole gate exists to prevent.
+    target = DOCS_INDEX.with_name("lessons-lite.json")
+    rows = json.loads(source.read_text(encoding="utf-8"))
+    payload = json.dumps(build_lite_projection(rows), ensure_ascii=False, separators=(",", ":")).encode()
+    if target.exists() and target.read_bytes() == payload:
+        print(f"OK browser projection already current: {target}")
+        return False
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(payload)
+    print(f"OK browser projection refreshed: {target} ({len(payload)} bytes)")
+    return True
+
+
 def main():
     # Audit T2.2/T2.5 "图书馆" policy: index every lessons/ subdir with real
     # content, deduplicated by stem (canonical_lessons: core > contrib >
@@ -337,9 +379,13 @@ def main():
         # wrote the index somewhere else must not touch it (a redirected test run would otherwise
         # rewrite `docs/data/lessons.json` with fixture data and leave the checkout inconsistent).
         mirror_published_index()
+        # …and the projection the browser actually searches over, so it cannot drift from the corpus it
+        # is a view of (2026-09-30).
+        mirror_lite_projection()
     else:
         print(f"count markers not refreshed: this run wrote {OUTPUT}, not {PUBLISHED_INDEX}")
         print(f"site copy not refreshed: this run wrote {OUTPUT}, not {PUBLISHED_INDEX}")
+        print(f"browser projection not refreshed: this run wrote {OUTPUT}, not {PUBLISHED_INDEX}")
 
 
 if __name__ == "__main__":

@@ -2459,11 +2459,8 @@ let _allLessons = null;
  * @returns {Promise<Lesson[]>}
  */
 async function safeFetchLessons() {
-  const DATA_URL = getLessonsUrl();
   try {
-    const response = await fetch(DATA_URL);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
+    const data = await fetchLessonsWithFallback();
     // 严格边界检查：确保是数组
     if (!Array.isArray(data)) throw new TypeError("lessons.json root must be an Array");
     // 过滤并确保基础字段完整性
@@ -2937,9 +2934,38 @@ function refreshStats() {
 function getCounterUrl() {
   return WORKER_BASE ? `${WORKER_BASE}/api/counter` : `/api/counter`;
 }
-/** 返回 lessons 数据 URL：静态 /data/lessons.json（避开 Worker 污染数据源） */
+/** 返回 lessons 数据 URL：静态浏览器投影（避开 Worker 污染数据源）。
+ *
+ * 2026-09-30：这里原本是整库 `data/lessons.json`（1.32 MB raw / 418 KB 传输），而这个页面的本地检索
+ * 只用到 title/summary/domain/tags 四个字段；`data/lessons-lite.json` 就是这四个字段的投影
+ * （149 KB raw / 60 KB gzip，小 7 倍），由写语料的同一环生成（不会漂移，见
+ * `scripts/check_docs_data_copy.py`）。整库仍作兜底：投影缺失或损坏时退回它。
+ */
+const LESSONS_LITE_URL = "data/lessons-lite.json";
+const LESSONS_FULL_URL = "data/lessons.json";
+
 function getLessonsUrl() {
-  return "data/lessons.json";
+  return LESSONS_LITE_URL;
+}
+
+/** 一次主源、一次兜底（**不是** per-item 扇出：`tests/test_site_request_fanout.py` 有明确规则）。
+ *
+ * 投影加载失败时退回整库——宁可多传输一次，也不要一个空搜索框。 */
+async function fetchLessonsOnce(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data = await response.json();
+  if (!Array.isArray(data) || !data.length) throw new TypeError("lessons data root must be a non-empty Array");
+  return data;
+}
+
+async function fetchLessonsWithFallback() {
+  try {
+    return await fetchLessonsOnce(LESSONS_LITE_URL);
+  } catch (err) {
+    console.warn(`MisakaNet: ${LESSONS_LITE_URL} unavailable — ${err.message}; falling back to the corpus`);
+    return fetchLessonsOnce(LESSONS_FULL_URL);
+  }
 }
 /** 返回 helpful vote API URL：同域 /api/helpful */
 function getHelpfulUrl() {

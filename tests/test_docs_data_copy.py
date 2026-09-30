@@ -198,6 +198,16 @@ def test_the_generator_writes_the_site_copy_too(tmp_path, monkeypatch):
     )
     assert published.read_bytes() == canonical.read_bytes(), "the site copy is not a copy of the index"
     assert cdc.compare_index_copies(canonical, published) == []
+    # The browser projection is written by the same run, and it follows the patched site copy: the path is
+    # derived from `DOCS_INDEX` at call time, so a redirected run cannot reach into the repository (the
+    # first version of that function used an import-time constant and wrote a fixture corpus into
+    # `docs/data/lessons-lite.json` during this very suite).
+    projection = published.with_name("lessons-lite.json")
+    assert projection.exists(), "the generator wrote the corpus but not the browser projection"
+    import json as _json
+    rows = _json.loads(projection.read_text(encoding="utf-8"))
+    assert [r["id"] for r in rows] == [e["id"] for e in _json.loads(canonical.read_text(encoding="utf-8"))]
+    assert cdc.compare_lite_projection(canonical, projection) == []
 
 
 def test_a_redirected_generator_run_leaves_the_site_copy_alone(tmp_path, monkeypatch):
@@ -229,6 +239,9 @@ def test_a_redirected_generator_run_leaves_the_site_copy_alone(tmp_path, monkeyp
     assert site_copy.read_text(encoding="utf-8") == "[]\n", (
         "a run whose index went somewhere else still rewrote docs/data/lessons.json"
     )
+    assert not site_copy.with_name("lessons-lite.json").exists(), (
+        "a run whose index went somewhere else still wrote the browser projection"
+    )
 
 
 # ── which job runs this file ───────────────────────────────────────────────────────────────────
@@ -258,3 +271,76 @@ def test_the_audit_job_runs_pytest_over_the_whole_tests_directory():
         "the audit job's pytest invocation no longer collects the tests/ directory, so a test added "
         f"later would not run on any PR. Command: {' '.join(tokens)}"
     )
+
+
+# ── the browser projection (2026-09-30) ─────────────────────────────────────────────────────────────
+# Both search pages read `title/summary/domain/tags` and nothing else, so they now fetch
+# `docs/data/lessons-lite.json` (149 KB raw / 60 KB gzip) instead of the corpus (1.32 MB raw / 418 KB) —
+# 7× less for an identical local search. The projection is written by the job that owns the corpus, and
+# these tests hold the three relations that make it a *view* rather than a second dataset.
+
+def test_the_browser_projection_is_a_view_of_the_corpus():
+    problems = cdc.compare_lite_projection(cdc.CANONICAL, cdc.LITE)
+    assert problems == [], problems
+    size = cdc.LITE.stat().st_size
+    assert size < cdc.LITE_MAX_BYTES, (
+        f"the projection grew to {size:,} bytes; it exists to be far smaller than the corpus")
+
+
+def test_the_projection_rule_notices_a_missing_lesson(tmp_path):
+    """Guard the guard: this check reads the repository, so its red case needs a fixture."""
+    canonical = write_index(tmp_path / "data" / "lessons.json", [lesson("a"), lesson("b")])
+    thin = write_index(tmp_path / "lite.json", [{"id": "a", "title": "A", "summary": "s",
+                                                "domain": "d", "tags": []}])
+    problems = cdc.compare_lite_projection(canonical, thin)
+    assert any("missing from the projection" in p for p in problems), problems
+
+
+def test_the_projection_rule_notices_the_size_regression_it_exists_to_prevent(tmp_path):
+    """`preview` is why the corpus was 1.32 MB; a projection that carries it again is the regression."""
+    rows = [{"id": "a", "title": "A", "summary": "s", "domain": "d", "tags": [], "preview": "x" * 400_000}]
+    canonical = write_index(tmp_path / "data" / "lessons.json", [lesson("a")])
+    fat = write_index(tmp_path / "lite.json", rows)
+    problems = cdc.compare_lite_projection(canonical, fat)
+    assert any("carries ['preview']" in p for p in problems), problems
+    assert any("over the" in p and "ceiling" in p for p in problems), (
+        "the ceiling is what catches a *new* long field the field list cannot know about: " + str(problems))
+
+
+def test_the_projection_rule_accepts_the_same_ids_in_another_order(tmp_path):
+    """Order is the corpus's business, not the projection's — a reshuffle must not read as drift."""
+    canonical = write_index(tmp_path / "data" / "lessons.json", [lesson("a"), lesson("b")])
+    shuffled = write_index(tmp_path / "lite.json", [
+        {"id": "b", "title": "B", "summary": "s", "domain": "d", "tags": []},
+        {"id": "a", "title": "A", "summary": "s", "domain": "d", "tags": []},
+    ])
+    assert cdc.compare_lite_projection(canonical, shuffled) == []
+
+
+def test_both_search_pages_use_the_projection_and_keep_the_corpus_as_a_fallback():
+    """The wiring, checked on the two files a browser actually loads."""
+    for rel in ("docs/index.html", "docs/search/index.html"):
+        text = (REPO / rel).read_text(encoding="utf-8")
+        assert "lessons-lite.json" in text, f"{rel} does not load the browser projection"
+        assert "lessons.json" in text, f"{rel} dropped the corpus fallback"
+    # and the corpus URL must not be the one the local search fetches first
+    index = (REPO / "docs" / "index.html").read_text(encoding="utf-8")
+    assert 'return LESSONS_LITE_URL;' in index, (
+        "the homepage's getLessonsUrl() must return the projection; the corpus is the fallback")
+    search = (REPO / "docs" / "search" / "index.html").read_text(encoding="utf-8")
+    assert "fetchLessonsOnce(LESSONS_LITE_URL)" in search, "the search page must try the projection first"
+    assert "fetchLessonsOnce(LESSONS_FULL_URL)" in search, (
+        "the search page must fall back to the corpus when the projection is missing")
+    # …and neither page may fan out per item while doing it: this site forbids that pattern outright
+    # (`tests/test_site_request_fanout.py`), and the first version of this fallback was a `for … of` loop.
+    for rel, text in (("docs/index.html", index), ("docs/search/index.html", search)):
+        assert "for (const url of [LESSONS_LITE_URL" not in text, f"{rel} reintroduced the fan-out loop"
+
+
+def test_the_search_page_fetches_the_lesson_body_instead_of_shipping_every_body():
+    """`preview` used to ride along in the corpus (~1.09 MB of it) for one inline panel."""
+    search = (REPO / "docs" / "search" / "index.html").read_text(encoding="utf-8")
+    assert "fetchLessonBody" in search, "the on-demand body fetch disappeared"
+    assert "misakanet_get_lesson" in search, "the panel must read the documented public read path"
+    assert "lesson.preview" in search or "preview" in search, (
+        "the panel should still accept a projection/corpus that carries preview, so the fallback works")

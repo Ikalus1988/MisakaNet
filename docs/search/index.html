@@ -184,7 +184,30 @@ const I18N = {
     githubAudited: 'GitHub 审核'
   }
 };
-const LESSONS_URL = "../data/lessons.json";
+// 2026-09-30: this page's local scoring reads title/summary/domain/tags only, so it loads the projection
+// (149 KB raw / 60 KB gzip) instead of the whole corpus (1.32 MB raw / 418 KB) — 7× less for an identical
+// local search. The corpus stays as a fallback so a missing projection cannot empty the page.
+const LESSONS_LITE_URL = "../data/lessons-lite.json";
+const LESSONS_FULL_URL = "../data/lessons.json";
+
+// One primary and one fallback — deliberately not a loop: an awaited fetch inside a `for … of` is the
+// per-item fan-out pattern `tests/test_site_request_fanout.py` forbids on this site.
+async function fetchLessonsOnce(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const data = await r.json();
+  if (!Array.isArray(data) || !data.length) throw new Error('not a non-empty array');
+  return data;
+}
+
+async function fetchLessonsWithFallback() {
+  try {
+    return await fetchLessonsOnce(LESSONS_LITE_URL);
+  } catch (err) {
+    console.warn('MisakaNet search: ' + LESSONS_LITE_URL + ' unavailable — ' + err.message);
+    return fetchLessonsOnce(LESSONS_FULL_URL);
+  }
+}
 const RAW_BASE = "https://raw.githubusercontent.com/Ikalus1988/MisakaNet/main/";
 let _lessons = null;
 let _lastResults = [];
@@ -645,6 +668,41 @@ function renderMarkdown(text) {
   return '<p>' + html + '</p>';
 }
 
+/** The lesson's markdown, for the inline preview panel — fetched when a reader asks for it.
+ *
+ * Falls back to whatever `preview` the search data happens to carry (the corpus fallback path still has
+ * it), then to the API's short `description`, so the panel never shows nothing when something is known.
+ */
+async function fetchLessonBody(lesson) {
+  if (lesson && lesson.preview) return lesson.preview;
+  if (!lesson || !lesson.id) return '';
+  try {
+    const r = await fetch('../mcp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json',
+                 'MCP-Protocol-Version': '2025-06-18', 'Origin': location.origin },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call',
+        params: { name: 'misakanet_get_lesson', arguments: { id: lesson.id, detail: 'summary' } } }),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const payload = await r.json();
+    const text = payload && payload.result && payload.result.content && payload.result.content[0]
+      && payload.result.content[0].text;
+    if (!text) throw new Error('no content');
+    // The tool answers with a JSON envelope: {path, content, ...}. Plain markdown is accepted too, so a
+    // future shape change degrades to showing the payload rather than showing nothing.
+    try {
+      const parsed = JSON.parse(text);
+      return parsed.content || parsed.summary || parsed.description || '';
+    } catch (e) {
+      return text;
+    }
+  } catch (err) {
+    console.warn('MisakaNet search: lesson body unavailable —', err.message);
+    return lesson.summary || '';
+  }
+}
+
 async function togglePreview(index) {
   const lesson = _lastResults[index];
   const card = document.querySelector('.result[data-index="' + index + '"]');
@@ -674,8 +732,12 @@ async function togglePreview(index) {
   const btn = card.querySelector('[data-action="preview"]');
   if (btn) btn.textContent = t('collapse');
   try {
-    // Use pre-generated preview from lessons.json (no remote fetch)
-    const body = lesson.preview || '';
+    // The lesson body is fetched on demand (2026-09-30). It used to ride along in the corpus as
+    // `preview` (~2.1 KB per lesson, 1.09 MB of the 1.32 MB file) because this panel wanted *one* of
+    // them. `misakanet_get_lesson` is the documented public read path and answers with the lesson's
+    // markdown; the panel's loading and unavailable states already exist, so a failure here degrades
+    // exactly as it did before.
+    const body = await fetchLessonBody(lesson);
     const clipped = body.length > 2400 ? body.slice(0, 2400) + '\n\n' + t('clipped') : body;
     panel.dataset.loaded = 'true';
     panel.innerHTML = renderMarkdown(clipped || t('noPreview'));
@@ -694,9 +756,7 @@ function runSearch(q) {
 
 async function init() {
   try {
-    const r = await fetch(LESSONS_URL);
-    if (!r.ok) throw new Error(r.status);
-    _lessons = await r.json();
+    _lessons = await fetchLessonsWithFallback();
     updateStats();
     document.getElementById('results').innerHTML = '';
     const params = new URLSearchParams(location.search);

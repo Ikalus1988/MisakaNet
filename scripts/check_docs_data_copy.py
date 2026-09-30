@@ -47,6 +47,14 @@ REPO = Path(__file__).resolve().parent.parent
 # The two files the site serves. Kept as module constants so a test can point them at a temp directory
 # (and so `update_lessons_json` can reuse CANONICAL as the source of the copy it writes).
 CANONICAL = REPO / "data" / "lessons.json"
+LITE = REPO / "docs" / "data" / "lessons-lite.json"
+# The projection's field list and its ceiling: the field list comes from the writer, so there is one
+# definition; the ceiling is stated here because this file is what fails when it is crossed.
+if str(REPO) not in sys.path:            # runnable as `python3 scripts/check_docs_data_copy.py`
+    sys.path.insert(0, str(REPO))
+from scripts.update_lessons_json import LITE_FIELDS  # noqa: E402  (REPO must exist first)
+
+LITE_MAX_BYTES = 300_000
 PUBLISHED = REPO / "docs" / "data" / "lessons.json"
 
 # How many ids a failure message names before it stops: enough to recognize the diff, short enough to
@@ -157,6 +165,66 @@ def compare_index_copies(canonical: Path, published: Path) -> list:
     return problems
 
 
+def compare_lite_projection(canonical: Path, lite: Path) -> list:
+    """Problems that make the browser projection something other than a view of the corpus.
+
+    Three relations, because they fail differently (2026-09-30):
+
+    * **same ids** — a projection that is one lesson behind serves a search box that cannot find a lesson
+      the site has;
+    * **exactly the projection's fields** — this is the one a size regression arrives through. The file
+      exists to be ~7× smaller than the corpus; adding `preview` back (as it was, ~2.1 KB per lesson)
+      would quietly restore the 1.09 MB download the projection replaced;
+    * **a hard ceiling** — a guard that only checks for *known* fields cannot see a new long one, so the
+      ceiling is what actually holds the line.
+    """
+    canonical, lite = Path(canonical), Path(lite)
+    problems: list[str] = []
+    try:
+        entries = load_index(canonical)
+        ids = lesson_ids(entries, canonical)
+    except IndexShapeError as exc:
+        return [f"the canonical copy is unusable: {exc}"]
+    try:
+        projection = load_index(lite)
+    except IndexShapeError as exc:
+        return [f"the browser projection is unusable: {exc}"]
+    if not projection:
+        return [f"{lite} is empty"]
+
+    proj_ids = [e.get("id") for e in projection if isinstance(e, dict)]
+    duplicated = sorted(i for i, n in Counter(proj_ids).items() if n > 1)
+    if duplicated:
+        problems.append(f"{lite} repeats {len(duplicated)} id(s), first: {duplicated[0]}")
+    missing = sorted(set(ids) - set(x for x in proj_ids if isinstance(x, str)))
+    extra = sorted(set(x for x in proj_ids if isinstance(x, str)) - set(ids))
+    if missing:
+        problems.append(f"{len(missing)} lesson(s) in the corpus are missing from the projection: "
+                        + _sample(missing))
+    if extra:
+        problems.append(f"{len(extra)} id(s) in the projection are not in the corpus: " + _sample(extra))
+    if len(projection) != len(entries):
+        problems.append(f"the projection has {len(projection)} entries, the corpus {len(entries)}")
+
+    expected = set(LITE_FIELDS)
+    for entry in projection[:50]:
+        if not isinstance(entry, dict):
+            problems.append("a projection entry is not an object")
+            break
+        keys = set(entry)
+        if keys != expected:
+            problems.append(
+                f"a projection entry carries {sorted(keys - expected) or 'no extra keys'} and is missing "
+                f"{sorted(expected - keys) or 'nothing'}; the projection is exactly {sorted(expected)}")
+            break
+
+    size = lite.stat().st_size
+    if size > LITE_MAX_BYTES:
+        problems.append(f"the projection is {size:,} bytes, over the {LITE_MAX_BYTES:,}-byte ceiling — it "
+                        "is meant to be a small view of the corpus, not the corpus")
+    return problems
+
+
 def main(argv: list | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Fail when docs/data/lessons.json is not the same corpus as data/lessons.json.")
@@ -164,14 +232,29 @@ def main(argv: list | None = None) -> int:
                         help=f"the canonical index (default: {CANONICAL.relative_to(REPO)})")
     parser.add_argument("--published", default=str(PUBLISHED),
                         help=f"the copy the site serves (default: {PUBLISHED.relative_to(REPO)})")
+    parser.add_argument("--lite", default=None,
+                        help="the browser projection (default: beside --published; skipped when absent, "
+                             "because a fixture pair has none — the repository's own file is asserted to "
+                             "exist by tests/test_docs_data_copy.py)")
     args = parser.parse_args(argv)
 
-    problems = compare_index_copies(Path(args.canonical), Path(args.published))
+    published = Path(args.published)
+    lite = Path(args.lite) if args.lite else published.with_name("lessons-lite.json")
+    checked_projection = lite.exists() or bool(args.lite)
+
+    problems = compare_index_copies(Path(args.canonical), published)
+    if checked_projection:
+        problems += compare_lite_projection(Path(args.canonical), lite)
     if not problems:
-        print(f"OK {args.published} carries the same {len(load_index(Path(args.canonical)))} lessons "
-              f"as {args.canonical}")
+        count = len(load_index(Path(args.canonical)))
+        print(f"OK {published} carries the same {count} lessons as {args.canonical}")
+        if checked_projection:
+            print(f"OK {lite} is a {lite.stat().st_size:,}-byte projection of the same {count} lessons "
+                  f"({sorted(LITE_FIELDS)})")
+        else:
+            print(f"note: {lite} does not exist — no projection to check for this pair")
         return 0
-    print(f"FAIL {args.published} is not the same corpus as {args.canonical}:")
+    print(f"FAIL the site's data files are not views of {args.canonical}:")
     for problem in problems:
         print(f"  - {problem}")
     return 1
