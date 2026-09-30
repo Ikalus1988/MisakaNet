@@ -127,13 +127,18 @@ PY
 `sitemap.xml` / `.generated-pages.json` 是生成物，`docs/field-reports/…` 是历史记录。
 为了让别的仓库不再踩，值得给 hol-guard 提一个 issue（现象 + 上面这段复算）。
 
-### 3.3 课程投影里的占位 key（1 条，不能修）
+### 3.3 课程投影里的占位 key（1 条，**已 dismiss**）
 
 `data/lessons.json:897` 是 `aider-api-key-leak` 那篇的 preview，里面有课程作者写的
 `sk-ant-api03-` + 一串 `X` 占位符。源文件 `lessons/contrib/aider-api-key-leak.md` **没有**被告警——
 因为它在 `docs/`/`lessons/` 这类「示例面」路径下被扫描器的 illustrative-context 规则放过了；
 投影到 `data/lessons.json` 之后路径提示没了，同一段文字就命中。改课程正文才能消掉这条告警，
 而那是拿内容去迁就别人的正则，不值。
+
+**处置（2026-10-01，owner 决定）：** 已用 `PATCH /code-scanning/alerts/294` 以
+`dismissed_reason: "false positive"` 关闭，评论写明「生成物、课程自己的占位符、已复核、不改课程正文」并指向本文档。
+之所以**只关这一条、把其余 21 条留着**：其余 21 条上游修好后会**自己消失**，那正是验证 action 换新生效的信号
+（见 §6）；这条上游不会修，留着只会教人忽略告警队列。
 
 ### 3.4 历史文档里的公开标签（1 条，可修）
 
@@ -179,10 +184,12 @@ TDZ 规则分析的是两个脚本拼起来的假文件，正是它要抓的那�
 
 1. **等 hol-guard 把 action 引用换掉**（我们 #3291 + 他们的 #3260），然后重跑 `guarded-repository.yml`；
    如果新 action 里 #3260 的豁免生效，8 + 2 + 2（重复）条会一起消失。
-2. **#3.3 那 1 条**：可以直接 dismiss（课程示例，不是凭据），或者给上游再提一个点——**不要**为了它改课程正文。
-3. **`sk-` 的 7 条**：#3291 之前只能 dismiss 或等。**不要**为了让 slug 不命中而改公开 URL。
-4. 若上游长期不动：把 `guarded-repository.yml` 的调用换成自带扫描器版本（或自建一次扫描），那是更大的一步，
-   需要 owner 决定。
+2. **#3.3 那 1 条：已 dismiss**（2026-10-01，理由写在告警评论里并指向本文档）。
+3. **其余 21 条：故意留着不 dismiss。** 它们的消失就是「action 换新生效」的证据 —— 如果我们先把它们关掉，
+   下一次换 pin 就没有任何信号告诉你它到底生效了还是豁免又变了。队列的信噪比靠**只关不会自己消失的那些**维持。
+4. **`sk-` 的 7 条**：#3291 之前不要为了让 slug 不命中而改公开 URL。
+5. 若上游长期不动：把 `guarded-repository.yml` 的调用换成自带扫描器版本（或自建一次扫描），那是更大的一步，
+   需要 owner 重新决定。
 
 **一件事仍然值得在仓库里做**：`tests/test_scanner_secret_patterns.py` 复制的是 PyPI 2.0.12 的模式表，与 CI 上
 跑的 2.2.0 已经漂移。等 action 换新后，把那份表同步到当时的 release，并让它覆盖 CI 真正扫的路径

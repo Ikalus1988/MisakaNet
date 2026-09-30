@@ -84,8 +84,9 @@ def test_a_refused_traffic_leg_warns_with_the_reason_instead_of_going_quiet(tmp_
     """`GITHUB_TOKEN` cannot read `/repos/*/traffic/*`; the run has to say so, or the leg stays dead.
 
     The first production run went green with the log line "no traffic leg: no token or the API refused"
-    while a token *was* set — the ambiguity is the bug this pins. The warning names the permission and
-    the remedy, and the file it writes no longer claims the window.
+    while a token *was* set — the ambiguity is the bug this pins. The warning now names the decision
+    (no credential for this leg) rather than a remedy that was rejected, and the file it writes no
+    longer claims the window.
     """
     import scripts.snapshot_onboarding as snap
     monkeypatch.setattr(snap, "npm_week", lambda pkg, **kw: 100)
@@ -95,7 +96,12 @@ def test_a_refused_traffic_leg_warns_with_the_reason_instead_of_going_quiet(tmp_
     out = tmp_path / "onboarding.json"
     assert snap.main(["--out", str(out)]) == 0
     printed = capsys.readouterr().out
+    # The warning has to name the *decision*, not a remedy we decided against: it used to suggest
+    # `GH_TOKEN: ${{ secrets.SHELDON_PAT }}`, and that token can push to main
+    # (docs/maintainer/credentials-and-environments.md §4.2).
     assert "::warning::" in printed and "Administration" in printed, printed
+    assert "credentials-and-environments" in printed, printed
+    assert "SHELDON_PAT" not in printed, printed
     payload = json.loads(out.read_text(encoding="utf-8"))
     assert payload["traffic"] is None and "traffic" not in payload["window"]
 

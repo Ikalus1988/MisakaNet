@@ -160,14 +160,16 @@ def main(argv: list[str] | None = None) -> int:
     traffic = None if args.no_traffic else github_traffic(token=token)
     if traffic is None and not args.no_traffic:
         # Not fatal — the two measured legs are the point and this one is context — but not silent
-        # either. `/repos/*/traffic/*` needs the **Administration** repository permission (read), which
-        # `GITHUB_TOKEN` cannot hold (the workflow `permissions:` vocabulary has no `administration`
-        # key), so a run with only `GITHUB_TOKEN` is expected to land here. Measured: the first real run
-        # went green with `"traffic": null` and the log line below (2026-09-30, run 36732770964); the
-        # same endpoint answered 200 for a user token, so the remedy is `GH_TOKEN` = a PAT, not a retry.
-        print("::warning::no GitHub traffic leg — the endpoint needs Administration: read, which "
-              "GITHUB_TOKEN cannot hold; set GH_TOKEN to a PAT with repository read (e.g. SHELDON_PAT)",
-              file=sys.stdout)
+        # either. The missing leg is a **decision**, not a pending fix:
+        # `/repos/*/traffic/*` needs the Administration: read permission, `GITHUB_TOKEN` cannot hold it,
+        # and the only token in this repository that could read it can also push to `main` — so it does
+        # not get one. The human-vs-machine question is answered by `/api/activity`
+        # (`agent` / `crawler` / `pageview`, already in this file's `activity` leg) instead.
+        # docs/maintainer/credentials-and-environments.md §4.2.
+        print("::warning::no GitHub traffic leg — by decision: the endpoint needs Administration: read, "
+              "which GITHUB_TOKEN cannot hold, and the token that could read it can also push to main, so "
+              "it does not get one (docs/maintainer/credentials-and-environments.md 4.2). 'How much of "
+              "this is machines' comes from /api/activity instead.", file=sys.stdout)
     payload = compose(downloads, activity, traffic)
 
     text = json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
