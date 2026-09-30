@@ -85,7 +85,7 @@ how much a lesson has been proven.
 |------------------|-------------------|
 | ❌ A general-purpose memory system | ✅ Failure-recovery knowledge layer |
 | ❌ An Agent runtime or framework | ✅ Searchable lesson database |
-| ❌ A vector database or RAG system | ✅ BM25 keyword search (zero deps) |
+| ❌ A vector database or RAG system | ✅ BM25 keyword search — **stdlib only**, no third-party packages, but a **Python ≥ 3.10 interpreter is still required** |
 | ❌ A cloud service requiring signup | ✅ `git clone` → search locally |
 | ❌ A skill marketplace | ✅ Debugging knowledge from real sessions |
 
@@ -174,7 +174,7 @@ Pick one channel — they are independent, and none of them needs an account:
 | `@misaka-net/misakanet-setup` (npm) | the **installer** — has `bin`, no plugin entry | teaching your assistant to search |
 | `misakanet` (npm) | the **DSH / Codex plugin** (`index.js`, `SKILL.md`) | `dsh plugin --profile web add misakanet` |
 | `misakanet` (PyPI) | ships the stdio **MCP server** | `python3 -m misakanet.server` |
-| `misakanet-core` (PyPI) | the **library** (zero-dep BM25) | `from misakanet.search import search_lessons` |
+| `misakanet-core` (PyPI) | the **library** (stdlib-only BM25 — Python ≥ 3.10 required, no third-party packages) | `from misakanet.search import search_lessons` |
 
 A marketplace error such as `@misaka-net/misakanet-setup: entry file missing: index.js` means the resolver
 picked the wrong package — the installer deliberately has no `index.js`.

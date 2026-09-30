@@ -69,12 +69,13 @@
 
 MisakaNet 有**三条刻意分开、节奏独立的版本通道**（不要试图合并成单个数）：
 
-| 通道 | 载体 | 现状(2026-09-05) | 何时 bump |
+| 通道 | 载体 | 现状 | 何时 bump |
+<!-- 版本数字**不写在这里**（intake #2486）：这张表曾经写着 2.29.0 / 2.23.1，而 main 早已到 2.4x——“两处信息来自不同维护动作”正是这样产生的。每一行指向它的载体，那里才是唯一真相。 -->
 |---|---|---|---|
-| **registry 线** | `server.json`/`glama.json` `version` + API.md/JOIN.md 声明 | 2.29.0 | 每次发版 tag 后“对齐”（随 handoff 流程） |
-| **repo release 线** | `pyproject.toml` + `.release-please-manifest.json`（release-please python 型随发版 bump）+ README `misakanet@` 声明 | 2.29.0 | 每次发版（release-please/tag） |
-| **npm bundle 线** | `package.json` | 2.23.1（npm 已发布 2.23.0） | 仅 DSH skill bundle 实际发布 npm 时（允许滞后于 release 线） |
-| **pypi 通道** | server.json pypi entry == pyproject；PyPI 实况 2.29.0（2026-09-12 由 `v2.29.0` tag push 自动发布；通道修复见 §9） | 2.29.0 | 发布即同步（release-pypi workflow_dispatch） |
+| **registry 线** | `server.json`/`glama.json` `version` + API.md/JOIN.md 声明 | 见 `server.json` | 每次发版 tag 后“对齐”（随 handoff 流程） |
+| **repo release 线** | `pyproject.toml` + `.release-please-manifest.json`（release-please python 型随发版 bump）+ README `misakanet@` 声明 | 见 `pyproject.toml` | 每次发版（release-please/tag） |
+| **npm bundle 线** | `package.json`（发布实况见 `npm view misakanet version` 或 npm 徽章） | 见 `package.json` | 仅 DSH skill bundle 实际发布 npm 时（允许滞后于 release 线） |
+| **pypi 通道** | server.json pypi entry == pyproject；发布实况见 PyPI（自 tag push 自动发布；通道修复见 §9） | 见 `pyproject.toml` | 发布即同步（release-pypi workflow_dispatch） |
 
 统一方式 = **单一工具 + 不变量门禁**，不再手改多处：
 

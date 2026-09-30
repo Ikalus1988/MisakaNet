@@ -477,6 +477,13 @@ HAND_WRITTEN_VERSION = {
     # API.md's §2.3 example payload. Its *header* is owned by release-please and pinned in
     # `PINNED_VERSION_FILES`; an example of a live response cannot be, so it carries a placeholder.
     "API.md": r'"version":\s*"\d+\.\d+\.\d+"',
+    # `docs/maintenance.md`'s version-channel table (intake #2486): it said `2.29.0` / `2.23.1（npm 已发布
+    # 2.23.0）` while `main` was at 2.4x — the "two places, two maintenance actions" confusion a reader
+    # reported. A version as a *table cell* is the shape: the row has a carrier to point at instead.
+    "docs/maintenance.md": r"\|\s*\d+\.\d+\.\d+",
+    # `docs/release-checklist.md` pointed at the MCP manifest as `server.json (v2.23.0)`, six releases
+    # behind. A pointer carrying a literal goes stale exactly like the thing it points at.
+    "docs/release-checklist.md": r"server\.json\s*\(v?\d+\.\d+\.\d+\)",
 }
 
 
