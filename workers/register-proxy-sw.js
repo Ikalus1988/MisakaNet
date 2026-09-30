@@ -1958,6 +1958,88 @@ function buildFtsMatch(raw, maxTerms = 12, maxTermLength = 40, joiner = " AND ")
   return terms.map(term => `"${term}"`).join(joiner);
 }
 
+/** One payload that answers "which number is which, what does each install give me, and what was verified".
+ *
+ * WHY (2026-09-30, intake #2486): the project runs **three version channels** (release, registry listing,
+ * npm bundle) and a plugin market shows the *manifest* version while install docs quote the release line, so
+ * a reader comparing two numbers on one page concluded the page was broken. Prose cannot fix that — the
+ * numbers move on their own schedules — so this endpoint *is* the comparison: each channel with its source,
+ * its value read live, and a note saying why a difference is expected.
+ *
+ * It is an **aggregator, never a second copy**: the release version comes from the worker's own constant
+ * (release-please owns it), the npm version from the npm registry, the plugin-market version from the
+ * manifest on `main`, the capability surface from the worker's own tool table plus whatever the manifest
+ * declares, and the real-install result from the published smoke badge. Every source degrades to `null` with
+ * its `source` still named, because an endpoint whose job is "tell me the truth about versions" must not fail
+ * when one of five fetches does.
+ *
+ * Pure function, so its shape is testable without a network (see workers/versions-endpoint.test.mjs).
+ */
+function buildVersionsPayload({ serverVersion, npm, manifest, install, now = new Date().toISOString() }) {
+  const manifestVersion = manifest && typeof manifest.version === "string" ? manifest.version : null;
+  return {
+    versions: {
+      release: {
+        version: serverVersion,
+        source: "pyproject.toml via release-please — the version MCP clients read from `serverInfo`",
+      },
+      registry: {
+        version: serverVersion,
+        source: "server.json / glama.json — bumped in lockstep with a release",
+      },
+      npm: npm && npm.version
+        ? { version: npm.version, source: "registry.npmjs.org/misakanet/latest",
+            note: "the npm bundle has its own publish step, so it may lag the release line and still be correct" }
+        : { version: null, source: "registry.npmjs.org/misakanet/latest", note: "not readable right now" },
+      plugin_manifest: {
+        version: manifestVersion,
+        source: ".codex-plugin/plugin.json on `main`",
+        note: "this is the number a plugin market shows — compare it with `npm`, not with the release line",
+      },
+    },
+    capabilities: {
+      hosted: {
+        transport: "http",
+        endpoint: "https://misakanet.org/mcp",
+        tools: MCP_TOOLS.map(tool => tool.name),
+        source: "the worker's own tool table",
+      },
+      declared: (manifest && manifest.mcp) || null,
+      note: "a local stdio install exposes a different set: see docs/dsh-installation.md",
+    },
+    verification: {
+      real_install: install
+        ? { label: install.label || null, message: install.message || null, colour: install.color || null,
+            source: "`data` branch badges/install.json (the daily install smoke)" }
+        : { message: null, source: "`data` branch badges/install.json",
+            note: "no published smoke result yet — treat \"install verified\" as unproven" },
+      registry_metadata: {
+        note: "a static catalogue check (npm dist-tags, the MCP registry read-back) proves the listing is "
+            + "current; it does not prove that an install works on a machine",
+      },
+    },
+    generated_at: now,
+  };
+}
+
+async function readPublicJson(url) {
+  const resp = await fetchWithTimeout(url, { headers: { "User-Agent": "MisakaNet-Worker", Accept: "application/json" } }, 8000);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+
+async function handleVersions(env) {
+  const cached = (key, fn) => getWithCache(env, key, fn).catch(() => null);
+  const [npm, manifest, install] = await Promise.all([
+    cached("versions:npm", () => readPublicJson("https://registry.npmjs.org/misakanet/latest")),
+    cached("versions:manifest", () => readPublicJson(`https://raw.githubusercontent.com/${REPO}/main/.codex-plugin/plugin.json`)),
+    cached("versions:install-badge", () => readPublicJson(`https://raw.githubusercontent.com/${REPO}/data/badges/install.json`)),
+  ]);
+  return jsonResponse(buildVersionsPayload({
+    serverVersion: getMcpServerInfo(env).version, npm, manifest, install,
+  }));
+}
+
 function hasDurableStore(env) {
   return !!(d1Binding(env) || (env && env.MISAKANET_KV));
 }
@@ -6127,6 +6209,12 @@ export default {
     // GET /api/analytics — usage analytics (PRD ④ #1357)
     // Top searches, top viewed lessons, top no-match queries (knowledge
     // gaps), and daily request counts from the lesson_usage table.
+    // GET /api/versions — which version number is which, what each install form exposes, and what was
+    // actually verified (intake #2486: three channels move independently, and prose could not say so).
+    if (request.method === "GET" && url.pathname === "/api/versions") {
+      return handleVersions(env);
+    }
+
     if (request.method === "GET" && url.pathname === "/api/analytics") {
       const d1 = d1Binding(env);
       if (!d1) return jsonResponse({ error: "D1 not configured" }, 503);
@@ -7105,6 +7193,8 @@ function findCoveringLesson(problemText, errorText, lessons) {
 
 
 export {
+  MCP_TOOLS,
+  buildVersionsPayload,
   buildFtsMatch,
   healthStatus,
   // Exported for the worker tests: the durable store is where the search index and the upstream
