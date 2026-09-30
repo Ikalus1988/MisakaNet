@@ -97,6 +97,16 @@ jobs:
       - name: Regenerate the OKF export
         run: python3 scripts/export_okf.py
 
+      # Rebuild lessons/index.md from corpus frontmatter (#1661).  The index
+      # was hand-maintained and drifted: 25 dangling paths, 136 title mismatches.
+      # This replaces the ad-hoc append in queue_lesson.py with a deterministic
+      # full rebuild; --check is a no-op here (we just wrote it) but confirms
+      # the rebuild itself produced a consistent file.
+      - name: Rebuild lessons index
+        run: |
+          python3 scripts/rebuild_lessons_index.py
+          python3 scripts/rebuild_lessons_index.py --check
+
       - name: Check for changes
         id: check
         run: |
