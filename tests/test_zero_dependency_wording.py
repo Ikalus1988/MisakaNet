@@ -15,7 +15,9 @@ Two rules, both mechanism-shaped:
 """
 from __future__ import annotations
 
+import os
 import re
+import subprocess
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -55,11 +57,33 @@ CLAIM = re.compile(r"stdlib-only|纯标准库|standard library|标准库", re.IG
 PREREQUISITE = re.compile(r"3\.10")
 
 
+def _tracked_files(repo: Path) -> list[Path]:
+    """The files git would publish — not everything on disk.
+
+    `rglob` was the wrong tool for "current copy": a checkout nests inside itself all the time (a pnpm
+    store, `.tools/` worktrees, `.deps-baseline/`, `reports/heartbeat/*/vendor/…`, a test DSH home), and
+    a filesystem walk reads those copies as if they were the repository. Measured on 2026-09-30 in a
+    real worktree: 401 files outside the HISTORY prefixes carry the retired phrase, and one of them is
+    not even UTF-8 — so this gate either crashed with a bare `UnicodeDecodeError` (naming nothing) or
+    would have gone red over copies of old releases. CI is green only because a fresh checkout has none
+    of those directories. `-z` keeps git from quoting non-ASCII names (the lesson already recorded in
+    `scripts/push_preflight.py`), and `os.fsdecode` handles the platform encoding.
+    """
+    out = subprocess.run(["git", "-C", str(repo), "ls-files", "-z"],
+                         capture_output=True, check=True).stdout
+    return [repo / os.fsdecode(name) for name in out.split(b"\0") if name]
+
+
 def user_facing_files(root: Path | None = None) -> list[Path]:
     repo = Path(root) if root is not None else REPO
+    if (repo / ".git").exists():
+        candidates = [path for path in _tracked_files(repo) if path.is_file()]
+    else:
+        # A `tmp_path` fixture is not a checkout; the red cases below build plain directories.
+        candidates = [path for path in sorted(repo.rglob("*")) if path.is_file()]
     files = []
-    for path in sorted(repo.rglob("*")):
-        if not path.is_file() or path.suffix not in (".md", ".html", ".json", ".py"):
+    for path in candidates:
+        if path.suffix not in (".md", ".html", ".json", ".py"):
             continue
         rel = path.relative_to(repo).as_posix()
         if rel.startswith((".git/",)) or "node_modules" in rel:
@@ -76,7 +100,9 @@ def mangled_slogan_offenders(root: Path | None = None) -> list[str]:
     offenders = []
     for path in user_facing_files(repo):
         rel = path.relative_to(repo).as_posix()
-        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        # `errors="replace"`: a wording rule does not need byte fidelity, and a crash on one undecodable
+        # file names nothing (which is how this gate first failed in a real worktree).
+        for number, line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
             if MANGLED.search(line):
                 offenders.append(f"{rel}:{number}: {line.strip()[:100]}")
     return offenders
@@ -89,7 +115,7 @@ def retired_phrase_offenders(root: Path | None = None) -> list[str]:
         rel = path.relative_to(repo).as_posix()
         if rel == GLOSSARY:
             continue
-        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        for number, line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
             if RETIRED.search(line):
                 offenders.append(f"{rel}:{number}: {line.strip()[:100]}")
     return offenders
@@ -182,3 +208,28 @@ def test_the_mangled_slogan_rule_notices_the_real_debris(tmp_path):
     (tmp_path / "page.html").write_text('<meta name="keywords" content="stdlib-only, no third-party packages">\n',
                                         encoding="utf-8")
     assert mangled_slogan_offenders(tmp_path) == []
+
+
+def test_the_walk_reads_tracked_files_not_the_whole_worktree(tmp_path):
+    """Guard: a gitignored or untracked copy must not make this gate red — or crash it.
+
+    Reproduces the two shapes a real worktree has and a fresh checkout does not: a nested copy that
+    still uses the retired phrase (`.pnpm-store/`, `.tools/`, `reports/heartbeat/*/vendor/…`) and one
+    undecodable file. Measured 2026-09-30 in a real checkout: 401 such files carried the phrase and one
+    was not UTF-8, so this gate either went red over old copies or died with a bare
+    `UnicodeDecodeError` that named nothing. Nothing here is about current copy, which is what the
+    rule is for.
+    """
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    (tmp_path / "current.md").write_text("zero-dependency core\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "current.md"], check=True)
+
+    nested = tmp_path / "reports" / "run-2026-09-25" / "vendor"
+    nested.mkdir(parents=True)
+    (nested / "README.md").write_text("zero-dependency core\n", encoding="utf-8")
+    (tmp_path / "legacy.md").write_bytes(b"zero-dependency \xa1\n")      # untracked, not UTF-8
+    (tmp_path / "mangled.md").write_text("stdlib-onlyendency\n", encoding="utf-8")
+
+    offenders = retired_phrase_offenders(tmp_path)
+    assert offenders == ["current.md:1: zero-dependency core"], offenders
+    assert mangled_slogan_offenders(tmp_path) == [], mangled_slogan_offenders(tmp_path)
