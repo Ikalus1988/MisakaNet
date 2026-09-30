@@ -30,8 +30,13 @@ sys.path.insert(0, str(REPO))
 
 from scripts.install_smoke import (  # noqa: E402
     HOSTED_URL,
+    SETUP_ENDPOINT,
+    SETUP_MIN_ENDPOINT_TOOLS,
+    SETUP_REPORT_SCHEMA,
     documented_stdio_tools,
     mcp_row_problems,
+    setup_config_problems,
+    setup_report_problems,
     tarball_problems,
 )
 from scripts.update_install_badge import FORM_FILES, badge_for, load_results  # noqa: E402
@@ -139,8 +144,9 @@ def _payload(ok: bool, form: str = "npm") -> dict:
     return {"form": form, "ok": ok, "result_count": 3, "tool_count": 7, "timestamp": "2026-09-30T06:43:00Z"}
 
 
-def test_both_forms_ok_is_green_with_the_date():
-    badge = badge_for({"npm": _payload(True, "npm"), "git": _payload(True, "git")}, "2026-09-30")
+def test_every_form_ok_is_green_with_the_date():
+    badge = badge_for({"npm": _payload(True, "npm"), "git": _payload(True, "git"),
+                       "setup": _payload(True, "setup")}, "2026-09-30")
     assert badge == {"schemaVersion": 1, "label": "install verified",
                      "message": "verified 2026-09-30", "color": "brightgreen"}
 
@@ -150,9 +156,10 @@ def test_a_failed_form_publishes_red_and_names_it():
     assert badge["color"] == "red" and "npm" in badge["message"], badge
 
 
-@pytest.mark.parametrize("present", [{}, {"npm": _payload(True, "npm")}, {"git": _payload(True, "git")}])
-def test_half_the_evidence_publishes_nothing(present):
-    """Green off one form would be "green from metadata" in miniature: the missing form is not a pass."""
+@pytest.mark.parametrize("present", [{}, {"npm": _payload(True, "npm")}, {"git": _payload(True, "git")},
+                                     {"npm": _payload(True, "npm"), "git": _payload(True, "git")}])
+def test_partial_evidence_publishes_nothing(present):
+    """Green off some forms would be "green from metadata" in miniature: a missing form is not a pass."""
     assert badge_for(present, "2026-09-30") is None
 
 
@@ -163,7 +170,7 @@ def test_a_measured_failure_wins_over_a_missing_form():
 
 
 def test_results_are_read_from_the_artifact_names_the_workflow_uploads():
-    assert set(FORM_FILES.values()) == {"install-npm.json", "install-git.json"}
+    assert set(FORM_FILES.values()) == {"install-npm.json", "install-git.json", "install-setup.json"}
 
 
 def test_a_missing_result_file_is_not_an_error(tmp_path):
@@ -197,12 +204,29 @@ def test_the_workflow_runs_daily_and_on_demand(workflow):
     assert [entry["cron"] for entry in triggers["schedule"]] == ["43 6 * * *"]
 
 
-def test_the_two_probes_are_independent(workflow):
-    """The hosted call is burst-limited: a throttled npm job must not be able to fail the stdio job."""
+def test_every_probe_is_independent(workflow):
+    """The hosted endpoint is burst-limited: one throttled form must not be able to fail the others.
+
+    Three forms now — the plugin's npm and git+ shapes, plus the client installer — and the reason the
+    badge job fans out to all of them is the same reason none of them may `needs:` another: a 429 on one
+    call is not evidence about the other two.
+    """
     jobs = workflow["jobs"]
-    assert not (jobs["npm-form"].get("needs") or []), "the npm probe must not wait on anything"
-    assert not (jobs["git-stdio"].get("needs") or []), "the stdio probe must not wait on the hosted call"
-    assert sorted(jobs["publish-install-badge"]["needs"]) == ["git-stdio", "npm-form"]
+    probes = ["npm-form", "git-stdio", "setup-installer"]
+    for name in probes:
+        assert not (jobs[name].get("needs") or []), f"{name} must not wait on another probe"
+        assert any("install_smoke.py" in (step.get("run") or "") for step in jobs[name]["steps"]), (
+            f"{name} must run the probe script")
+    assert sorted(jobs["publish-install-badge"]["needs"]) == sorted(probes)
+
+
+def test_the_installer_probe_never_copies_the_client_config(workflow):
+    """The install mints a bearer token *into* that config; an artifact must not carry a credential."""
+    runs = "\n".join(step.get("run") or "" for step in workflow["jobs"]["setup-installer"]["steps"])
+    assert "install_smoke.py setup-installer" in runs
+    assert "cat " not in runs.replace("--out", ""), "the probe must not dump a config that holds a token"
+    uploads = " ".join(str(step.get("with") or {}) for step in workflow["jobs"]["setup-installer"]["steps"])
+    assert "install-setup.json" in uploads, "only the probe's own JSON artifact may be uploaded"
 
 
 def test_the_git_probe_measures_the_runners_own_python(workflow):
@@ -233,3 +257,49 @@ def test_the_install_guide_references_the_badge_instead_of_a_hand_written_status
     guide = (REPO / "docs" / "dsh-installation.md").read_text(encoding="utf-8")
     assert "data/badges/install.json" in guide, "the install guide does not reference the smoke badge"
     assert "install-smoke.yml" in guide, "the install guide does not name what produces the badge"
+
+
+# ── the installer form: what it promises, and the two ways this probe could lie ────────────────────
+# `@misaka-net/misakanet-setup` is the path a Claude Code user takes (codex has its own plugin channel,
+# claude-code does not), so it is the one install most contributors actually run. Its probe has a trap the
+# other two do not: the install mints a **real bearer token into the client config**, so the probe asserts
+# shape and never copies the file. These tests drive the two rules it asserts with, using the shapes
+# measured from the published 0.5.6 on 2026-09-30.
+
+def test_a_correctly_written_client_config_passes():
+    import json as _json
+    assert setup_config_problems(_json.dumps({
+        "mcpServers": {"misakanet": {"type": "http", "url": SETUP_ENDPOINT,
+                                     "headers": {"Authorization": "Bearer mcp_redacted"}}}})) == []
+
+
+def test_a_config_without_the_row_or_with_the_wrong_target_is_caught():
+    import json as _json
+    assert setup_config_problems("{}"), "an empty config must not pass"
+    assert setup_config_problems("not json at all")
+    wrong = _json.dumps({"mcpServers": {"misakanet": {"type": "http", "url": "https://evil.example/mcp"}}})
+    assert any("not" in problem and SETUP_ENDPOINT in problem for problem in setup_config_problems(wrong))
+    stdio = _json.dumps({"mcpServers": {"misakanet": {"type": "stdio", "url": SETUP_ENDPOINT}}})
+    assert any("transport" in problem for problem in setup_config_problems(stdio))
+
+
+def _report(**over):
+    base = {"schema": SETUP_REPORT_SCHEMA, "verify": "READY", "install-scope": "full",
+            "endpoint-reachable": True, "endpoint-tools": SETUP_MIN_ENDPOINT_TOOLS}
+    base.update(over)
+    return base
+
+
+def test_the_installers_own_report_is_required_to_say_ready():
+    assert setup_report_problems(_report()) == []
+    assert setup_report_problems(_report(verify="NOT READY"))
+    assert setup_report_problems(_report(**{"install-scope": "mcp-only"}))
+    assert setup_report_problems(_report(**{"endpoint-reachable": False}))
+    assert setup_report_problems(_report(schema="something-else/9"))
+
+
+def test_a_shrinking_endpoint_tool_set_is_a_failure_and_growth_is_not():
+    """The floor is the hosted set (`docs/mcp.md`): a shrink is a regression, growth is not."""
+    assert setup_report_problems(_report(**{"endpoint-tools": SETUP_MIN_ENDPOINT_TOOLS - 1}))
+    assert setup_report_problems(_report(**{"endpoint-tools": SETUP_MIN_ENDPOINT_TOOLS + 3})) == []
+    assert setup_report_problems(_report(**{"endpoint-tools": None}))
