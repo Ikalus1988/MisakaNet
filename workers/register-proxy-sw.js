@@ -1947,7 +1947,7 @@ async function fetchD1SyncStamp(env) {
  * (the previous space-joined form meant implicit AND too, but a bare `OR` silently turned it into a union).
  * A query that is only punctuation yields an empty string, which the caller answers as "no match".
  */
-function buildFtsMatch(raw, maxTerms = 12, maxTermLength = 40) {
+function buildFtsMatch(raw, maxTerms = 12, maxTermLength = 40, joiner = " AND ") {
   const terms = String(raw || "")
     .replace(/[\u0000-\u001f]/g, " ")
     .split(/\s+/)
@@ -1955,7 +1955,7 @@ function buildFtsMatch(raw, maxTerms = 12, maxTermLength = 40) {
     .filter(term => /[\p{L}\p{N}]/u.test(term))
     .slice(0, maxTerms)
     .map(term => term.slice(0, maxTermLength));
-  return terms.map(term => `"${term}"`).join(" AND ");
+  return terms.map(term => `"${term}"`).join(joiner);
 }
 
 function hasDurableStore(env) {
@@ -6079,7 +6079,22 @@ export default {
           if (qStatus) { sql += " AND l.status = ?" + (bind.length + 1); bind.push(qStatus.slice(0, 20)); }
           sql += ` ORDER BY f.rank LIMIT ${limit}`;
           let stmt = d1.prepare(sql).bind(...bind);
-          const { results } = await stmt.all();
+          let { results } = await stmt.all();
+          // A query of six words is a sentence, not a conjunction (2026-09-30). Measured live:
+          // `?q=docker compose port is already allocated` answered **zero** results, because FTS5 read it
+          // as "every one of these six tokens must appear" — and a visitor who types a sentence gets an
+          // empty page for a lesson that exists. So: strict first (precision), then the same terms as an
+          // OR (recall), and the answer says which one it was, because "these are partial matches" is a
+          // different claim from "these are matches".
+          let relaxed = false;
+          if (!results || results.length === 0) {
+            const loose = buildFtsMatch(qSearch, 12, 40, " OR ");
+            if (loose) {
+              const retry = await d1.prepare(sql).bind(loose, ...bind.slice(1)).all();
+              results = retry.results || [];
+              relaxed = results.length > 0;
+            }
+          }
           const data = (results || []).map(r => ({
             id: r.id, title: r.title, domain: r.domain, status: r.status,
             path: r.path, tags: safeParseTags(r.tags),
@@ -6093,7 +6108,9 @@ export default {
             return jsonResponse({ query: qSearch, results: [], source: "d1-fts5", no_match: true,
                                   hint: "No lesson matched. `misakanet_submit_intake` (MCP) accepts a gap report." });
           }
-          return jsonResponse({ query: qSearch, results: data, source: "d1-fts5" });
+          return jsonResponse({ query: qSearch, results: data, source: "d1-fts5",
+                                ...(relaxed ? { relaxed: true,
+                                  note: "No lesson matched every term; these match some of them." } : {}) });
         }
 
         if (hasFilters && !d1Binding(env)) {

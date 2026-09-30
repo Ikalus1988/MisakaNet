@@ -11,7 +11,10 @@ function createD1(rows) {
     domain: r.domain, status: r.status, tags: JSON.stringify(r.tags || []),
     path: r.path, summary: r.summary || '', updated: r.updated, created: r.created,
   }));
-  return {
+  const d1 = {
+    // Every MATCH string this stub was asked to evaluate, in order — so a test can assert that the strict
+    // attempt happens first and the relaxed one only when it found nothing.
+    matchQueries: [],
     prepare(sql) {
       const stmt = {
         _bound: null,
@@ -27,21 +30,27 @@ function createD1(rows) {
             // turned `C++ compiler` and `NEAR(` into a 502 in production. The stub refuses the same shapes
             // (only quoted literals joined by AND are accepted), so these tests can fail: without
             // `buildFtsMatch` the guard throws and the endpoint answers 502.
-            if (!/^"(?:[^"]|"")*"(?: AND "(?:[^"]|"")*")*$/.test(rawMatch)) {
+            // Both joiners the worker can send: `"a" AND "b"` (every term) and `"a" OR "b"` (any term).
+            if (!/^"(?:[^"]|"")*"(?:(?: AND | OR )"(?:[^"]|"")*")*$/.test(rawMatch)) {
               throw new Error('fts5: syntax error near "' + rawMatch.slice(0, 24) + '"');
             }
+            d1.matchQueries.push(rawMatch);
+            const orJoiner = / OR /.test(rawMatch);
             const terms = rawMatch
               .toLowerCase()
-              .split(/\s+and\s+/)
+              .split(/\s+(?:and|or)\s+/)
               .map(part => part.trim().replace(/^"|"$/g, '').replace(/""/g, '"'))
               .filter(Boolean);
             const domain = stmt._bound?.[1];
+            const hit = (terms, text) => {
+              const tokens = text.split(/[^a-z0-9]+/).filter(Boolean);
+              return terms.some(t => tokens.some(tok => tok.startsWith(t) || t.startsWith(tok)));
+            };
             const matched = ftsRows.filter(r => {
               const text = (r.title + ' ' + r.problem).toLowerCase();
-              // Token-ish match: any query term appears as a word or prefix.
-              const tokens = text.split(/[^a-z0-9]+/).filter(Boolean);
-              return terms.every(t => tokens.some(tok => tok.startsWith(t) || t.startsWith(tok))) &&
-                (!domain || r.domain === domain);
+              // FTS5 semantics: AND needs every term, OR needs any one of them.
+              const ok = orJoiner ? hit(terms, text) : terms.every(t => hit([t], text));
+              return ok && (!domain || r.domain === domain);
             }).sort((a, b) => a.rank - b.rank);
             return { results: matched.slice(0, 20) };
           }
@@ -52,6 +61,7 @@ function createD1(rows) {
       return stmt;
     },
   };
+  return d1;
 }
 
 const ROWS = [
@@ -138,4 +148,54 @@ test('?q= without D1 binding returns a hint', async () => {
   assert.equal(resp.status, 200);
   const data = await resp.json();
   assert.match(JSON.stringify(data), /requires the D1 service/);
+});
+
+// ── a sentence is not a conjunction (2026-09-30) ────────────────────────────────────────────────────
+// Measured live: `?q=docker compose port is already allocated` answered **zero** results and `no_match`,
+// because FTS5 reads a bare list of tokens as "every one of these must appear". A visitor who types a
+// sentence got an empty page for a lesson that exists. The endpoint now tries the strict query first
+// (precision) and, only when it finds nothing, the same terms as an OR (recall) — and says which it was,
+// because "these match some of your words" is a different claim from "these match".
+
+const SENTENCE_ROWS = [
+  { id: 'docker-port-allocated', title: 'Docker compose port is already allocated', domain: 'devops',
+    status: 'published', tags: ['docker'], path: 'lessons/core/docker-port.md',
+    problem: 'Run docker compose up for a second project', updated: 'u', created: 'c' },
+  { id: 'compose-files', title: 'Compose files drift', domain: 'devops',
+    status: 'published', tags: ['docker'], path: 'lessons/core/compose-files.md',
+    problem: 'Two compose files disagree', updated: 'u', created: 'c' },
+];
+
+test('a sentence query falls back to any term instead of nothing', async () => {
+  const d1 = createD1(SENTENCE_ROWS);
+  const env = { MISAKANET_D1: d1 };
+  const resp = await apiSearch('unknown port bind address collision lookup table', env);
+  assert.equal(resp.status, 200);
+  const data = await resp.json();
+  // `port` and `bind`/`address` appear in some rows; nothing contains all six terms.
+  assert.ok(data.results.length > 0, `a sentence still matched nothing: ${JSON.stringify(data)}`);
+  assert.equal(data.relaxed, true, 'the answer must say the matches are partial');
+  assert.match(data.note || '', /partial|some of them|every term/i);
+  // Strict first, then relaxed — the order is the contract, not an implementation detail.
+  assert.equal(d1.matchQueries.length, 2, JSON.stringify(d1.matchQueries));
+  assert.match(d1.matchQueries[0], / AND /, 'the first attempt must be the strict one');
+  assert.match(d1.matchQueries[1], / OR /, 'the second attempt must be the relaxed one');
+});
+
+test('a query where every term matches is answered strictly, and only once', async () => {
+  const d1 = createD1(SENTENCE_ROWS);
+  const resp = await apiSearch('docker compose port', { MISAKANET_D1: d1 });
+  const data = await resp.json();
+  assert.ok(data.results.length > 0, JSON.stringify(data));
+  assert.ok(!('relaxed' in data), 'a strict answer must not be labelled partial');
+  assert.equal(d1.matchQueries.length, 1, `expected exactly the strict attempt: ${JSON.stringify(d1.matchQueries)}`);
+});
+
+test('when neither attempt matches, the answer is still no_match rather than relaxed', async () => {
+  const d1 = createD1(SENTENCE_ROWS);
+  const resp = await apiSearch('zzzz yyyy xxxx', { MISAKANET_D1: d1 });
+  const data = await resp.json();
+  assert.equal(data.no_match, true, JSON.stringify(data));
+  assert.ok(!('relaxed' in data), 'nothing matched either attempt, so nothing is partial');
+  assert.equal(data.results.length, 0);
 });
