@@ -739,3 +739,19 @@ def test_the_slot_registration_rules_can_go_red():
     assert SIDEBAR_KEY.findall('{ name: "sidebar.right.pane.tab", key: PANEL_ID }') == ["PANEL_ID"]
     assert SIDEBAR_KEY.findall('{ name: "sidebar.right.pane.tab", key: "misakanet-panel" }') == ['"misakanet-panel"']
     assert SIDEBAR_KEY.findall('{ name: "sidebar.right.pane.tab" }') == []  # non-vacuity matters
+
+
+def test_the_panel_cannot_file_an_issue():
+    """The browser half reads and votes; it never submits an intake.
+
+    The only way to pull a receipt is to submit the same text again, and the server's dedup window is
+    finite — so a page-triggered re-submit could file a *second* GitHub issue for the same problem. No
+    click in a UI may create an issue, which is why the panel explains who re-checks instead of offering
+    a button. This gate is the difference between a design note and an enforced one.
+    """
+    source = client_source()
+    assert 'API + "/mcp"' not in source and '"tools/call"' not in source, (
+        "the browser half must not call the MCP endpoint at all: submits create issues")
+    panel = panel_body(source)
+    assert "by the agent, not by this page" in panel, (
+        "the panel must say who re-checks a pending report, or the missing control looks like an oversight")

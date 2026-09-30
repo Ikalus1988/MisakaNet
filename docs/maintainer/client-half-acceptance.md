@@ -41,7 +41,7 @@ Two surfaces follow from it, and the split is deliberate:
 | --- | --- | --- | --- |
 | B1 | **problems**: every MisakaNet search in this session appears once, with the query text, a real timestamp, and the hit count; `no_match` is visually distinct from "found" | rows count == searches recorded; `no_match` rows carry a distinguishable class/label | ⛔ not built |
 | B2 | **lessons**: each lesson the session surfaced appears with title, evidence level, when it was surfaced, and how many times it was reused this session (counted once per lesson, not once per search) | reuse count per lesson == distinct sightings | ⛔ not built |
-| B3 | **contributions**: each intake submitted from this session appears with its state ∈ {`pending`, `answered`, `already_have`, `converted`} and the receipt text when the server returned one | the four states are four distinct renderings; `already_have` is **not** labelled "converted" | ⛔ not built |
+| B3 | **contributions**: each intake submitted from this session appears with its state ∈ {`pending`, `answered`, `already_have`, `converted`} and the receipt text when the server returned one | the four states are four distinct renderings; `already_have` is **not** labelled "converted" | ✅ built (states come from the agent's own calls — see D4) |
 | B4 | the stat strip **adds up**: every number equals the rows it summarises | machine-checked against the rendered DOM | ⛔ not built |
 | B5 | every row carries the **event's own timestamp**, never the render time | timestamps come from the recorded event | ⛔ not built |
 | B6 | per lesson, the **human-confirmation count** comes from `GET /api/helpful?lesson_id=` and is labelled as *other people's* votes, with the rule stated: one confirmation makes the reuse event appear, the second is what agents read as `E4` | one request per lesson on panel open; the label says whose votes they are | ⛔ not built |
@@ -64,7 +64,7 @@ Two surfaces follow from it, and the split is deliberate:
 | D1 | every number comes from either this session's own transcript events or the two public endpoints; nothing is invented | each section names its source in the panel or its docstring | ⛔ not built |
 | D2 | the panel states what a reload loses (session detail) and what it keeps (browser counters) | the footer says so | ⛔ not built |
 | D3 | no credential, no account, no `client_id`, no leaderboard, no rank | gate: the bundle carries no credential shape and sends no auth header | ✅ gate |
-| D4 | the receipt check states its limit (the public MCP endpoint accepts a `localhost` Origin) and **degrades visibly** elsewhere instead of pretending there are no receipts | the control's own text names the limit | ⛔ not built |
+| D4 | **no control in the panel may file an issue.** A receipt can only be pulled by submitting the same text again, and the server's dedup window is finite (a week), so a page-triggered re-check could open a second issue for the same problem | gate: the bundle contains no `/mcp` call and no `tools/call`; the panel names who re-checks (`by the agent, not by this page`) | ✅ built |
 | D5 | the browser half reads only fields the default payload carries — richer facts are asked for on purpose | gate: the search row's field reads ⊆ the compact key set parsed from the worker's tool description | ✅ gate |
 
 ## E. Gates and smoke test
@@ -73,9 +73,9 @@ Two surfaces follow from it, and the split is deliberate:
 | --- | --- | --- | --- |
 | E1 | static gates exist for: loader contract, bundle purity, slot↔inject consistency, no credentials, compact-field discipline, and the three design rules (visibility cannot vote; nothing auto-votes; every sending control says what it sends) | `pytest tests/test_dsh_plugin_surface.py` | ✅ 23 pass |
 | E2 | every gate has a red fixture — a gate nobody has seen fail is a gate nobody can trust | one `*_can_go_red` test per rule | ✅ |
-| E3 | **smoke**: a disposable profile installs the plugin, boots the web host, and the boot graph plus the served bytes match; the panel's server-rendered preview is produced from the shipped file | `scripts/`-level run + `ops/*/shoot-*.sh` | ⚠️ partial (two surfaces verified; panel pending) |
+| E3 | **smoke**: a disposable profile installs the plugin, boots the web host, and the boot graph plus the served bytes match | disposable `DSH_HOME` → `dsh plugin add` → `dsh web` → `__DSH_BOOT__` entry + combo route compared with the file | ✅ (43,971 B served verbatim, inject array echoed back) |
 | E4 | the preview matches the **current** file (re-render after the last edit, and the fixture is a payload the server really returns) | re-render + compare the rendered row text with a real payload | ✅ (after the compact fix) |
-| E5 | the panel renders without the host's CSS, in both a wide and a narrow column, with no clipping | two screenshots (see `ops/panel-mock/`) | ⛔ not built |
+| E5 | the panel renders without the host's CSS, in both a wide and a narrow column, with no clipping | live browser render of the real components mounted through `apply()` (see `ops/panel-live/`) | ⏳ in progress |
 
 ## What this deliberately does not do
 
