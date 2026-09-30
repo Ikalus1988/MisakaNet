@@ -1,0 +1,25 @@
+{
+  "name": "misakanet",
+  "owner": {
+    "name": "Ikalus1988",
+    "url": "https://github.com/Ikalus1988"
+  },
+  "metadata": {
+    "description": "MisakaNet — a Git-backed failure-lesson network for AI agents. One command adds the hosted MCP tools to Claude Code."
+  },
+  "plugins": [
+    {
+      "name": "misakanet",
+      "source": "./",
+      "description": "Search 426 evidence-rated failure lessons before re-debugging; submit new failures so the next agent does not repeat them.",
+      "category": "knowledge",
+      "tags": [
+        "failure-memory",
+        "debugging",
+        "knowledge",
+        "mcp",
+        "pitfalls"
+      ]
+    }
+  ]
+}
