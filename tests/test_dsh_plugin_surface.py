@@ -282,3 +282,540 @@ def test_the_readme_installs_the_dsh_plugin_above_the_fold():
     assert install_at < howto_at, "the DSH install command must appear above `How to use it`"
     assert readme[:install_at].count("\n") < 120, (
         "the install command is below the fold; the host's dialog points users at this file to find it")
+
+
+# ── the client half (lib/client.js) ──────────────────────────────────────────
+#
+# `dsh.client` + `exports["./client"]` turn one file into a browser bundle the host serves through the
+# module loader. Three things break it silently and all three are static: a bundle that does not
+# register its own factory (the loader contract is `window.__ModuleLoader__.load({id, factory})`), a
+# bundle that requires a module the frozen platform table cannot answer (bundle purity), and packaging
+# that drops the file from the published tarball (the host throws "exports[./client] must be …" or the
+# route 404s). None of that needs a browser to check, so it is a gate rather than a manual step.
+
+CLIENT_BUNDLE = "lib/client.js"
+# The module table the shell seeds: React, Cordis, and the static UI libraries. We declare no
+# `dsh.client.external`, so the bundle may only ask for what the seed already answers.
+PLATFORM_MODULES = {"react", "react/jsx-runtime", "react-dom", "react-dom/client", "@deepseek-ai/cordis"}
+REQUIRE_CALL = re.compile(r"""require\(\s*["']([^"']+)["']\s*\)""")
+ROUTE_LITERAL = re.compile(r"""(/api/[a-z0-9/_-]+)""")
+
+
+def client_source(root: Path = REPO) -> str:
+    return (root / CLIENT_BUNDLE).read_text(encoding="utf-8")
+
+
+def declared_client_export(root: Path = REPO) -> str | None:
+    """`exports["./client"]` in either form the host accepts (a string, or an object with default)."""
+    entry = (_pkg(root).get("exports") or {}).get("./client")
+    if isinstance(entry, str):
+        return entry
+    if isinstance(entry, dict):
+        return entry.get("default")
+    return None
+
+
+def unbundled_requires(source: str, declared: set[str]) -> list[str]:
+    """Specifiers the bundle asks for that the platform table and the declaration cannot answer.
+
+    Bundler-relative specifiers count as failures regardless of the declaration: a hand-written
+    single-file bundle has no sibling chunk to resolve them against, and the host serves one file.
+    """
+    problems = []
+    for specifier in REQUIRE_CALL.findall(source):
+        if specifier.startswith("."):
+            problems.append(f"{specifier} (relative — no sibling chunk is served)")
+        elif specifier not in PLATFORM_MODULES and specifier not in declared:
+            problems.append(f"{specifier} (not in the platform seed and not declared)")
+    return problems
+
+
+def test_the_client_bundle_satisfies_the_module_loader_contract():
+    pkg = _pkg(REPO)
+    declared = declared_client_export()
+    assert declared, (
+        "package.json exports[\"./client\"] is what the host resolver reads; without it "
+        "dsh-client-modules throws instead of serving a bundle")
+    path = REPO / declared.lstrip("./")
+    assert path.is_file(), f"exports[\"./client\"] points at {declared}, which is not in the package"
+    assert CLIENT_BUNDLE in pkg.get("files", []), (
+        f"{CLIENT_BUNDLE} must be in `files` or the published tarball drops the browser half")
+    assert pkg["dsh"]["client"]["platform"] == "web", "the Web consumer selects platform 'web'"
+
+    source = client_source()
+    assert "window.__ModuleLoader__.load(" in source, (
+        "the bundle must register its own factory: executing it registers, materializing runs the body")
+    assert re.search(r"""id:\s*["']%s["']""" % re.escape(pkg["name"]), source), (
+        f"the registered id must be the package name ({pkg['name']}) — that is the graph row's identity")
+    assert re.search(r"factory:\s*\(", source), "the loader contract is load({id, factory})"
+    assert "exports.apply" in source, "a client plugin activates through its `apply` export"
+    assert "exports.inject" in source, "the slot service must be declared so the fiber waits for it"
+
+
+def test_the_client_bundle_only_asks_for_modules_the_platform_supplies():
+    declared = set((_pkg(REPO).get("dsh", {}).get("client", {}) or {}).get("external", []))
+    problems = unbundled_requires(client_source(), declared)
+    assert not problems, (
+        "a request the module table cannot answer does not degrade — it fails the row: " + str(problems))
+
+
+def test_the_bundle_purity_rule_can_go_red():
+    """A gate nobody has seen fail is a gate nobody can trust."""
+    assert unbundled_requires("var a = require('react');", set()) == []
+    assert unbundled_requires("var a = require('./chunk.js');", set()) == [
+        "./chunk.js (relative — no sibling chunk is served)"]
+    assert unbundled_requires("var a = require('@deepseek-ai/dsh-client-ui-primitives');", set()) == [
+        "@deepseek-ai/dsh-client-ui-primitives (not in the platform seed and not declared)"]
+    assert unbundled_requires(
+        "var a = require('@deepseek-ai/dsh-client-ui-primitives');",
+        {"@deepseek-ai/dsh-client-ui-primitives"}) == []
+
+
+def test_the_client_half_registers_the_wire_tool_name_the_host_builds():
+    """The slot is keyed by the wire tool name, and a key that matches nothing renders nothing.
+
+    `dsh-mcp-client` builds it as `mcp__${serverName}__${rawName}`, and our bundle row sets
+    `serverName` in cordis.patch.yml — so a rename in either file silently erases the card.
+    """
+    patch = (REPO / "cordis.patch.yml").read_text(encoding="utf-8")
+    server = re.search(r"^\s*serverName:\s*(\S+)\s*$", patch, re.M)
+    assert server, "cordis.patch.yml no longer sets serverName; the wire names cannot be predicted"
+    expected = f"mcp__{server.group(1)}__misakanet_search"
+    assert expected in client_source(), (
+        f"the card must register `key: '{expected}'` — the name the host derives from serverName "
+        f"{server.group(1)!r}")
+
+
+def test_the_client_card_calls_endpoints_the_worker_actually_serves():
+    """Votes are posted to public JSON routes; a renamed route would look like a broken button."""
+    worker = (REPO / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
+    called = sorted(set(ROUTE_LITERAL.findall(client_source())))
+    assert called, "the client half posts verdicts somewhere; no /api/ route found in the bundle"
+    missing = [route for route in called if f'"{route}"' not in worker]
+    assert not missing, f"the bundle posts to routes the worker does not serve: {missing}"
+
+
+def test_the_client_half_carries_no_credential():
+    """Anonymous by design: the card may only use the public, unauthenticated read/write routes.
+
+    Two different questions, so two different checks. The bundle could *embed* a credential — answered
+    by the repository's own rule (`scan_file`; `check_published_secrets.py` walks prose, so it never
+    sees this file) — and it could *send* one, which no pattern of secret shapes catches, so the header
+    and field names are asserted directly.
+    """
+    from scripts.check_published_secrets import scan_file
+
+    findings = scan_file(REPO / CLIENT_BUNDLE)
+    assert not findings, f"the browser half embeds a credential-shaped string: {findings}"
+
+    source = client_source()
+    forbidden = {"Authorization": "an auth header", "Bearer ": "a bearer token",
+                 "api_key": "an API key field", "client_secret": "a secret field"}
+    found = [f"{needle!r} ({why})" for needle, why in forbidden.items() if needle in source]
+    assert not found, f"the browser half must not send credentials: {found}"
+
+
+# ── the client half's two surfaces, and the rules they encode ────────────────
+#
+# The browser half answers a question the CLI cannot: it puts a *human judgment* into the evidence
+# system (`POST /api/helpful` is the only writer of what `misakanet_me_events` reports). Three properties
+# make that judgment worth having, and each is a static property of this file:
+#
+#   1. it is asked where the outcome is visible, not where the search happened;
+#   2. abstaining costs nothing — nothing auto-votes and nothing is pre-selected;
+#   3. each action says what it sends, and the cheap action sends the least.
+#
+# A UI whose misplacement is invisible to review is how a poisoned evidence signal ships, so these are
+# gates with red fixtures rather than review notes.
+
+SEARCH_ROW = "function MisakanetSearchRow"
+VERDICT_ACTION = "function MisakanetVerdictAction"
+VERDICT_SLOT = "conversation.chat.assistant-actions"
+# Which package declares and types each slot we register into; its row must arrive before ours.
+SLOT_OWNERS = {
+    "tool.call.toolview": "@deepseek-ai/dsh-client-ui-tool",
+    "conversation.chat.assistant-actions": "@deepseek-ai/dsh-client-ui-chat",
+    "conversation.view": "@deepseek-ai/dsh-client-ui-conversation",
+    "sidebar.right.pane.tab": "@deepseek-ai/dsh-client-ui-sidebar-right",
+    "sidebar.right.pane.tab.title": "@deepseek-ai/dsh-client-ui-sidebar-right",
+}
+CALL_TO_HELPFUL = re.compile(r"""/api/helpful["']\s*,\s*\{(.*?)\}""", re.S)
+USE_EFFECT = re.compile(r"react\.useEffect\(\s*function\s*\(\)\s*\{(.*?)\}\s*,\s*\[", re.S)
+
+
+def registered_slots(source: str) -> set[str]:
+    """Slot names this bundle registers into (`name: "…"` inside a `slots.register` call)."""
+    return {slot for slot in SLOT_OWNERS if f'name: "{slot}"' in source}
+
+
+def surface_bodies(source: str) -> tuple[str, str]:
+    """The two component bodies, split at the verdict so each can be checked on its own."""
+    assert SEARCH_ROW in source and VERDICT_ACTION in source, (
+        "the client half is expected to keep two surfaces: visibility on the tool call, judgment on the "
+        "assistant message")
+    cut = source.index(VERDICT_ACTION)
+    return source[source.index(SEARCH_ROW):cut], source[cut:]
+
+
+def auto_votes(source: str) -> list[str]:
+    """A POST issued from an effect would be a vote nobody cast. Effects may only observe."""
+    return [body.strip()[:60] for body in USE_EFFECT.findall(source) if "post(" in body or "send(" in body]
+
+
+def test_the_visibility_surface_cannot_vote():
+    """Rule 1: the search row shows what came back; the verdict is asked at the outcome.
+
+    At search time the fix has not run, so "did it help?" is unanswerable. A button there would collect
+    reflex clicks, and reflex clicks are indistinguishable from judgment once they are in the counter.
+    """
+    search, _ = surface_bodies(client_source())
+    assert "post(" not in search, (
+        "the search row must not post anything: judgment belongs on the finalized assistant message, "
+        "where the outcome is visible")
+
+
+def test_the_judgment_surface_is_the_assistant_action_row():
+    """Rule 1, other half: the vote rides the host's own per-message action row, not a new panel."""
+    source = client_source()
+    _, verdict = surface_bodies(source)
+    assert VERDICT_SLOT in source, (
+        "the verdict registers into the host's finalized-assistant-message action list")
+    assert "messageId" in verdict, (
+        "the action row is a list slot keyed per message; the entry must read its own messageId")
+    assert "return null" in verdict, (
+        "an entry with nothing to judge must render nothing, leaving the host's standard action row "
+        "unchanged")
+
+
+def test_every_registered_slot_has_its_owning_package_declared_first():
+    """A keyed/list slot belongs to a package; registering before it loads is a race, not a feature."""
+    pkg = _pkg(REPO)
+    declared = list((pkg.get("dsh", {}).get("client", {}) or {}).get("inject", []))
+    source = client_source()
+    slots = registered_slots(source)
+    assert slots, "no known slot is registered any more; the owner map needs updating with the code"
+    missing = [SLOT_OWNERS[slot] for slot in sorted(slots) if SLOT_OWNERS[slot] not in declared]
+    assert not missing, (
+        f"`dsh.client.inject` must order the factories that declare these slots first: missing {missing}")
+    dead = [name for name in declared if name not in set(SLOT_OWNERS.values())]
+    assert not dead, (
+        f"`dsh.client.inject` names a package no registered slot comes from: {dead} — a declaration "
+        "nobody needs is a dependency the plugin pays for at boot")
+
+
+def test_the_vote_is_never_cast_for_the_person():
+    """Rule 2: abstention is the default. Nothing posts from an effect, and nothing pre-selects."""
+    source = client_source()
+    offenders = auto_votes(source)
+    assert not offenders, f"a verdict must never be posted without a click: {offenders}"
+    assert "defaultChecked" not in source and "checked=" not in source, (
+        "no control may start in a chosen state")
+
+
+def test_the_cheap_vote_sends_the_least_it_can():
+    """Rule 3: 👍 carries the lesson id alone; 👎 carries the search text, and the UI says so.
+
+    The disclosure is not decoration. `/api/feedback` stores the query text and an IP for 90 days, so a
+    click that sends it has to be a click the person understood.
+    """
+    source = client_source()
+    matches = CALL_TO_HELPFUL.findall(source)
+    assert matches, "the helpful vote must post to /api/helpful"
+    assert len(matches) == 1, f"one call site expected for /api/helpful, found {len(matches)}"
+    assert "query" not in matches[0], (
+        f"👍 must send only lesson_id, but its body carries more: {matches[0].strip()!r}")
+    assert "sends the lesson id" in source and "also sends the search text" in source, (
+        "each action must state what it sends, in the UI, before the click")
+
+
+def test_the_design_rules_can_go_red():
+    """The three rules above, demonstrated on both sides of each line."""
+    # a POST in an effect is an auto-vote
+    assert auto_votes("react.useEffect(function () { post('/api/helpful', {}); }, [x]);") != []
+    assert auto_votes("react.useEffect(function () { memory.shownFor = id; }, [x]);") == []
+    # the visibility surface posting is the misplacement
+    assert "post(" in "function MisakanetSearchRow() { post('/api/helpful', {}); } function MisakanetVerdictAction() {}"
+    # 👍 carrying the query is the disclosure bug
+    ok = """/api/helpful", { lesson_id: lesson }"""
+    bad = """/api/helpful", { lesson_id: lesson, query: memory.query }"""
+    assert "query" not in CALL_TO_HELPFUL.findall(ok)[0]
+    assert "query" in CALL_TO_HELPFUL.findall(bad)[0]
+
+
+# ── the payload a default call really returns ────────────────────────────────
+#
+# The browser half renders whatever the agent's tool call returned. A default `misakanet_search` uses
+# `detail: "compact"`, and the worker's own tool description names that key set — `domain` arrives only
+# at `summary`, `path` only at `full`. The first version of the search row printed `(domain E3)` and
+# therefore printed `(E3)` for every real call; the preview did not catch it because the preview's
+# fixture was hand-written with a `domain` in it.
+#
+# So the key set is parsed from the *worker* (SSOT) and the row may not reach past it.
+
+COMPACT_KEYS = re.compile(r"compact:\s*\{([^}]*)\}")
+
+
+def compact_payload_keys(worker_source: str) -> set[str]:
+    match = COMPACT_KEYS.search(worker_source)
+    assert match, "the search tool description no longer spells out the compact key set"
+    return {name.strip() for name in match.group(1).split(",") if name.strip()}
+
+
+def test_the_search_row_reads_only_fields_the_default_payload_carries():
+    worker = (REPO / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
+    allowed = compact_payload_keys(worker)
+    assert allowed == {"id", "title", "problem", "freshness", "evidence_level"}, (
+        f"the compact key set changed in the worker: {sorted(allowed)} — the row and the docs follow it")
+    search, _ = surface_bodies(client_source())
+    read = set(re.findall(r"\btop\.([A-Za-z_][A-Za-z0-9_]*)", search))
+    beyond = sorted(read - allowed)
+    assert not beyond, (
+        "the search row reads fields the default `detail: \"compact\"` payload does not carry, so they "
+        f"render empty in production: {beyond} (compact carries {sorted(allowed)}; ask the worker's "
+        "description, not the fixture, when in doubt)")
+
+
+def test_the_payload_rule_can_go_red():
+    source = "function MisakanetSearchRow() { return top.domain + top.title; } function MisakanetVerdictAction() {}"
+    search, _ = surface_bodies(source)
+    assert sorted(set(re.findall(r"\btop\.([A-Za-z_][A-Za-z0-9_]*)", search)) - {"id", "title", "problem", "freshness", "evidence_level"}) == ["domain"]
+    assert compact_payload_keys('compact: {id, title, problem, freshness, evidence_level}') == {
+        "id", "title", "problem", "freshness", "evidence_level"}
+
+
+# ── the panel (the review surface) ───────────────────────────────────────────
+#
+# The panel is where the numbers live, so its failure modes are different from the transcript rows': a
+# number that cannot be traced, a state that is mislabelled, or a sound nobody asked for. Each is a
+# static property of the file, and each has a red fixture below.
+
+PANEL = "function MisakanetPanel"
+INTAKE_LABELS = re.compile(r"already_have:\s*\"([^\"]*)\"")
+# call sites only: the definition is not a place sound starts
+PLAY_CUE = re.compile(r"^(?!\s*function ).*playCue\(.*$", re.M)
+
+
+def panel_body(source: str) -> str:
+    assert PANEL in source, "the client half is expected to keep the review panel"
+    return source[source.index(PANEL):]
+
+
+def test_the_panel_answers_the_questions_it_exists_for():
+    """Problems, lessons, contributions, trust, activity, voice — in that order, each labelled."""
+    panel = panel_body(client_source())
+    for heading in ("What this session asked", "Reports you filed", "How much these lessons are trusted",
+                    "Your activity", "Voice"):
+        assert heading in panel, f"the panel lost its `{heading}` section"
+
+
+def test_the_panel_never_mislabels_a_report_that_was_never_filed():
+    """`already_have` is the worker's #1526 backstop: the corpus already covered it, nothing was filed.
+
+    Reading it as "converted" would tell a reporter their work landed when they never filed anything —
+    a lie the server's own wording does not support. Conversion is its own state, and it arrives as
+    `converted` (the receipt the #2494 channel returns).
+    """
+    source = client_source()
+    labels = INTAKE_LABELS.findall(source)
+    assert labels, "the intake states must be rendered by name"
+    assert not any("convert" in label.lower() or "became" in label.lower() for label in labels), (
+        f"a report that was never filed must not be labelled as a conversion: {labels}")
+    assert '"converted"' in source, "the real conversion state must still exist"
+    assert "backstop" in source, (
+        "the reason `already_have` is not a conversion belongs next to the mapping (it is easy to undo)")
+
+
+def test_the_panel_states_what_it_cannot_know_about_the_local_voice_hook():
+    """The browser can toggle its own cues; the hook is another process with its own switch."""
+    panel = panel_body(client_source())
+    for fact in ("MISAKANET_VOICE=0", "--voice", "cannot read or change"):
+        assert fact in panel, f"the voice section must say {fact!r} instead of implying control"
+    assert "localStorage" in client_source() or "VOICE_KEY" in client_source(), (
+        "the browser toggle must be browser-local; anything else would claim to change the hook")
+
+
+def test_nothing_makes_sound_without_opt_in_or_a_click():
+    """Two playback paths, both asked for: the opt-in switch, and the button the person pressed."""
+    calls = [line.strip() for line in PLAY_CUE.findall(client_source())]
+    assert len(calls) == 2, f"expected exactly two playback paths (opt-in, click), found {len(calls)}: {calls}"
+    for line in calls:
+        assert "voiceEnabled()" in line or "onClick" in line, (
+            f"a playback path must be guarded by the opt-in switch or a click: {line}")
+
+
+def test_the_voice_and_intake_rules_can_go_red():
+    assert not any("convert" in label.lower() for label in INTAKE_LABELS.findall('already_have: "cited by a lesson"'))
+    assert any("convert" in label.lower() for label in INTAKE_LABELS.findall('already_have: "converted to a lesson"'))
+    guarded = "if (entry.voice && voiceEnabled()) playCue(entry.voice);"
+    unguarded = "playCue(entry.voice);"
+    assert ("voiceEnabled()" in guarded) and ("voiceEnabled()" not in unguarded)
+
+
+def test_every_panel_number_comes_from_the_session_log_or_the_browser_counters():
+    """No constant may masquerade as a count: the rows are the log, the counters are localStorage."""
+    panel = panel_body(client_source())
+    for source_of_truth in ("log.searches", "log.intakes", "log.votes", "log.lessons", "browserStats()"):
+        assert source_of_truth in panel, f"the panel stopped reading {source_of_truth!r}"
+
+
+def test_the_panel_glyph_is_the_package_mark():
+    """One brand mark, two places: the package icon the host shows in its plugin list, and the tab glyph.
+
+    They are drawn differently (a file vs an inline SVG) because the host asks a tab for a component, so
+    nothing structural keeps them equal — this does. A panel whose glyph drifted from the icon users see
+    in the plugin manager is a small thing that looks like two different plugins.
+    """
+    mark = re.search(r'd="(M16 44V20[^"]*)"', (REPO / "icon.svg").read_text(encoding="utf-8"))
+    assert mark, "icon.svg no longer contains the brand path this gate pins"
+    assert mark.group(1) in client_source(), (
+        "the panel's inline glyph must draw the same path as icon.svg, or the two marks drift apart")
+
+
+# ── the panel's two seats, and the two ways they can be wired wrong ───────────
+#
+# The right sidebar ships from 0.1.5 on, and the panel must exist without it (the conversation ring is
+# enough). Two mistakes are invisible in a browser that has the registry, and both are static:
+# hard-injecting `sidebarRightTabs` (which pends or fails the plugin on an older line), and keying the
+# body seat with anything other than the type `id` (which renders the host's "nothing can view this").
+
+DEFERRED_SIDEBAR = re.compile(r'ctx\.inject\(\s*\[\s*"sidebarRightTabs"\s*\]')
+PANEL_TYPE_ID = re.compile(r"var PANEL_ID = \"([^\"]+)\";")
+# both spellings: a bare constant, or a string literal (which the first version of this gate missed
+SIDEBAR_KEY = re.compile(r'name: "sidebar\.right\.pane\.tab",\s*key: ([A-Za-z_$][\w$.]*|"[^"]*")')
+
+
+def test_the_panel_is_reachable_in_the_conversation_ring():
+    """The ring takes a list entry: an id, an order and a label — there is no icon channel there."""
+    source = client_source()
+    assert 'name: "conversation.view"' in source, "the panel must be registered in the conversation ring"
+    block = source[source.index('name: "conversation.view"'):]
+    block = block[:block.index("}", block.index("label:"))]
+    for field in ("id: PANEL_ID", "order:", "label:"):
+        assert field in block, f"a conversation-view entry needs {field!r} ({block[:120]!r})"
+
+
+def test_the_sidebar_seat_is_deferred_so_older_lines_keep_the_conversation_tab():
+    """`sidebarRightTabs` must NOT be a static inject: on a host without it the fiber would pend."""
+    source = client_source()
+    assert DEFERRED_SIDEBAR.search(source), (
+        "the sidebar registration must ride a deferred `ctx.inject(['sidebarRightTabs'], …)`")
+    assert '"sidebarRightTabs"' not in re.findall(r"var inject = \[([^\]]*)\]", source)[0], (
+        "the registry must not sit in the module's static inject list, or a pre-0.1.5 host pends")
+    deferred = source[source.index('ctx.inject(["sidebarRightTabs"]'):]
+    for guard in ("typeof tabs.register !== \"function\"", "catch (error)", "unwind"):
+        assert guard in deferred, f"the deferred registration must guard against {guard!r}"
+
+
+def test_the_sidebar_body_is_keyed_by_the_type_id_the_contract_requires():
+    """The host dispatches `sidebar.right.pane.tab` with the *type's* id; any other key is dead."""
+    source = client_source()
+    type_id = PANEL_TYPE_ID.search(source)
+    assert type_id, "the panel type id must be a single named constant"
+    keys = SIDEBAR_KEY.findall(source)
+    assert keys, "no `sidebar.right.pane.tab` registration found — this check would pass vacuously"
+    allowed = {"PANEL_ID", '"%s"' % type_id.group(1)}
+    for key in keys:
+        assert key in allowed, (
+            f"a pane seat keyed {key!r} will never be dispatched: the key must equal the type id "
+            f"({type_id.group(1)!r}), written as PANEL_ID or as that literal")
+
+
+def test_the_guide_entry_carries_the_id_the_contract_requires():
+    """`guide[].id` is required by the host (it becomes the entry's `entryId` and its React key).
+
+    The one third-party implementation of this pattern omits it, which is harmless only while that
+    provider contributes a single entry — so this pins that we supply it rather than copying the bug.
+    """
+    source = client_source()
+    guide = source[source.index("guide: [{"):]
+    guide = guide[:guide.index("}]")]
+    assert re.search(r'\bid:\s*"', guide), f"the guide entry needs an id: {guide[:120]!r}"
+    assert "icon: MisakanetGlyph" in guide, "the guide capsule must carry the product glyph"
+
+
+def test_the_slot_registration_rules_can_go_red():
+    assert not DEFERRED_SIDEBAR.search('ctx.inject(["slots"], cb)')
+    assert DEFERRED_SIDEBAR.search('ctx.inject(["sidebarRightTabs"], cb)')
+    assert SIDEBAR_KEY.findall('{ name: "sidebar.right.pane.tab", key: PANEL_ID }') == ["PANEL_ID"]
+    assert SIDEBAR_KEY.findall('{ name: "sidebar.right.pane.tab", key: "misakanet-panel" }') == ['"misakanet-panel"']
+    assert SIDEBAR_KEY.findall('{ name: "sidebar.right.pane.tab" }') == []  # non-vacuity matters
+
+
+def test_the_panel_cannot_file_an_issue():
+    """The browser half reads and votes; it never submits an intake.
+
+    The only way to pull a receipt is to submit the same text again, and the server's dedup window is
+    finite — so a page-triggered re-submit could file a *second* GitHub issue for the same problem. No
+    click in a UI may create an issue, which is why the panel explains who re-checks instead of offering
+    a button. This gate is the difference between a design note and an enforced one.
+    """
+    source = client_source()
+    assert 'API + "/mcp"' not in source and '"tools/call"' not in source, (
+        "the browser half must not call the MCP endpoint at all: submits create issues")
+    panel = panel_body(source)
+    assert "by the agent, not by this page" in panel, (
+        "the panel must say who re-checks a pending report, or the missing control looks like an oversight")
+
+
+def test_every_counted_noun_in_the_panel_can_be_singular():
+    """"1 reports" is the kind of thing that makes a panel look machine-written.
+
+    The render caught it, and the fix is one helper — so this pins the helper rather than the sentence:
+    a hard-coded plural next to a count is the bug, and it is invisible until someone has exactly one.
+    """
+    panel = panel_body(client_source())
+    assert "function count(" in client_source(), "the plural helper must exist"
+    hardcoded = [phrase for phrase in ('" searches', '" lessons surfaced', '" reports filed', '" votes (')
+                 if phrase in panel]
+    assert not hardcoded, (
+        f"a count is concatenated with a hard-coded plural, so it reads wrong at 1: {hardcoded}")
+    assert panel.count("count(") >= 6, (
+        "the panel's counted nouns must all go through the helper")
+
+
+def test_the_plural_helper_is_given_the_plural_where_english_is_irregular():
+    """The first version printed "2 searchs" — and the commit message that introduced it said "2 searches".
+
+    A helper that appends "s" is right for most of this panel's nouns and wrong for exactly one of them,
+    which is the shape of bug that survives review. So the irregular plural is passed at the call site,
+    and this gate refuses a two-argument `count(…, "search")`.
+    """
+    source = client_source()
+    assert "function count(n, singular, many)" in source, "the helper must accept an explicit plural"
+    bare = re.findall(r'count\([^)]*?"search"\)', source)
+    assert not bare, f"`count(n, \"search\")` would print \"searchs\": {bare}"
+    assert source.count('"search", "searches"') >= 2, (
+        "both search counts (the stat strip and the activity line) must pass the plural")
+
+
+def test_the_trust_rule_is_stated_once_and_every_row_shows_its_own_count():
+    """A rule repeated under every row buries the numbers; a rule stated nowhere leaves them unexplained.
+
+    The first version printed the E4 sentence only on rows whose count was 0 — so a lesson people had
+    already confirmed twice read as a bare "2 human confirmations" with no explanation of what that
+    means. Now the sentence is stated once for the section, and each row carries its own count plus an
+    `→ E4` marker when it has crossed.
+    """
+    panel = panel_body(client_source())
+    assert panel.count("second is what agents read as E4") == 1, (
+        "the rule belongs once per section, not once per row")
+    assert '→ E4' in panel, "a row past the threshold should say what its count means"
+    assert 'count(confirmations, "human confirmation")' in panel, (
+        "each row must print its own confirmation count through the plural helper")
+
+
+def test_the_panel_asks_each_lesson_once_and_only_nags_about_open_reports():
+    """Two things the live render measured rather than revealed by reading.
+
+    * It made **8 `/api/helpful` calls for 4 lessons**: the effect re-runs on every log revision, and while
+      the first round was in flight `trust[id]` was still `undefined`, so a second round started. A public
+      endpoint should be asked once per lesson, so the panel keeps a `asked` ref.
+    * It printed "a pending report is re-checked…" under a report that had already been **converted** — the
+      sentence is about work that is still open, so it is now computed from the reports that are.
+    """
+    panel = panel_body(client_source())
+    assert "react.useRef(Object.create(null))" in panel, "the once-per-lesson guard must exist"
+    assert "!asked.current[lesson.lessonId]" in panel, "the fetch must consult the guard"
+    assert "asked.current[lesson.lessonId] = true" in panel, "the guard must be set before the request"
+    assert "var openReports = intakes.filter(" in panel, (
+        "the re-check hint must be derived from the reports that are still open, not from any report")
