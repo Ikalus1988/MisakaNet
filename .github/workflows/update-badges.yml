@@ -100,6 +100,14 @@ jobs:
       # (npm weekly downloads, today's agent calls, GitHub's 14-day clone/view context). It publishes
       # *nothing* when a leg cannot be measured, which is why the step is allowed to fail the run: a week
       # without a measurement should be visible, not silently replaced by yesterday's number.
+      #
+      # The `traffic` leg does **not** work with the token below, and the first real run said so
+      # (`"traffic": null`, log: "no traffic leg: no token or the API refused", run 36732770964,
+      # 2026-09-30). `/repos/*/traffic/*` needs the **Administration** repository permission (read),
+      # which `GITHUB_TOKEN` cannot hold — the `permissions:` vocabulary has no such key. Reading it
+      # takes a PAT (`GH_TOKEN: ${{ secrets.SHELDON_PAT }}`, verified against the endpoint on
+      # 2026-09-30), which is a credential decision rather than a code one; until then the step warns
+      # and the snapshot omits the leg instead of claiming a window it did not measure.
       - name: Generate onboarding snapshot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

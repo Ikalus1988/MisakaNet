@@ -99,3 +99,54 @@ def test_the_pin_comment_rule_can_go_red():
     fixture["new.yml"] = f"      - uses: actions/upload-artifact@{sha}  # v7.0.1\n"
     assert pin_comment_conflicts(fixture) == [], "v7 and v7.0.1 name the same release line"
 
+
+# ── one action, one SHA ───────────────────────────────────────────────────────────────────────────
+#
+# The comment rule above only fires when the *same* SHA carries two comments, so it cannot see the
+# neighbouring mistake: the same action pinned to **two different** SHAs. Measured 2026-09-30 — the new
+# client-installer job in `install-smoke.yml` used `upload-artifact@ea165f8d…# v4` while the same file's
+# two other jobs and five other workflows used `upload-artifact@043fb46d…# v7`. Two majors of the same
+# action in one workflow run is exactly the drift SHA-pinning exists to prevent (and the two comments were
+# each internally consistent, so every existing test was green). Dependabot updates one pin per action, so
+# a duplicate pin also means the odd one out stops being updated at all.
+PIN_SHA = re.compile(r"^\s*(?:-\s*)?uses:\s*([^@\s]+)@([0-9a-f]{40})", re.M)
+
+
+def pin_sha_conflicts(workflows: dict[str, str]) -> list[str]:
+    """Every `owner/repo` must be pinned to exactly one SHA across the workflow directory."""
+    seen: dict[str, dict[str, list[str]]] = {}
+    for name, text in workflows.items():
+        for target, sha in PIN_SHA.findall(text):
+            seen.setdefault(target, {}).setdefault(sha, []).append(name)
+    problems = []
+    for target, shas in sorted(seen.items()):
+        if len(shas) > 1:
+            detail = "; ".join(f"{sha[:12]} in {', '.join(sorted(set(files)))}"
+                               for sha, files in sorted(shas.items()))
+            problems.append(
+                f"{target} is pinned to {len(shas)} different commits — {detail}. One action, one SHA: "
+                f"mixing majors can change behaviour between jobs, and the duplicate stops being Dependabot's "
+                f"business")
+    return problems
+
+
+def test_every_action_is_pinned_to_exactly_one_sha():
+    problems = pin_sha_conflicts({p.name: p.read_text(encoding="utf-8") for p in WORKFLOWS})
+    assert not problems, "\n  - " + "\n  - ".join(problems)
+
+
+def test_the_one_action_one_sha_rule_can_go_red():
+    """Replayed on the mistake that prompted it: the same action at two majors in two files."""
+    old = "ea165f8d65b6e75b540449e92b4886f43607fa02"
+    new = "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
+    fixture = {
+        "install-smoke.yml": f"        uses: actions/upload-artifact@{old}  # v4\n",
+        "d1-backup.yml": f"      - uses: actions/upload-artifact@{new}  # v7\n",
+    }
+    assert pin_sha_conflicts(fixture), "one action at two SHAs must be caught"
+    # …and the same SHA in both places, or two different actions, must not be.
+    fixture["install-smoke.yml"] = f"        uses: actions/upload-artifact@{new}  # v7\n"
+    assert pin_sha_conflicts(fixture) == []
+    assert pin_sha_conflicts({"a.yml": f"uses: actions/checkout@{new}\n",
+                              "b.yml": f"uses: actions/setup-node@{old}\n"}) == []
+

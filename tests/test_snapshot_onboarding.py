@@ -62,6 +62,54 @@ def test_the_ratio_is_omitted_rather_than_divided_by_zero():
     assert "mcp_per_weekly_install" not in payload
 
 
+def test_the_window_names_only_the_legs_that_were_measured():
+    """The first real run shipped `"traffic": null` beside `"window": {"traffic": "14d"}`.
+
+    A window for a measurement nobody took is a claim, and the repo's rule is that an absent number is
+    neither a pass nor a zero — so the window block follows the file (run 36732770964, 2026-09-30).
+    """
+    without = compose({"misakanet": 1196, "@misaka-net/misakanet-setup": 116}, ACTIVITY, None,
+                      now="2026-10-01T00:00:00Z")
+    assert without["traffic"] is None
+    assert "traffic" not in without["window"], without["window"]
+    assert without["window"]["downloads"] == "last-week"
+
+    with_traffic = compose({"misakanet": 1196, "@misaka-net/misakanet-setup": 116}, ACTIVITY,
+                           {"clones": 1, "unique_cloners": 1, "views": 1, "unique_visitors": 1,
+                            "window_days": 14}, now="2026-10-01T00:00:00Z")
+    assert with_traffic["window"]["traffic"] == "14d"
+
+
+def test_a_refused_traffic_leg_warns_with_the_reason_instead_of_going_quiet(tmp_path, capsys, monkeypatch):
+    """`GITHUB_TOKEN` cannot read `/repos/*/traffic/*`; the run has to say so, or the leg stays dead.
+
+    The first production run went green with the log line "no traffic leg: no token or the API refused"
+    while a token *was* set — the ambiguity is the bug this pins. The warning names the permission and
+    the remedy, and the file it writes no longer claims the window.
+    """
+    import scripts.snapshot_onboarding as snap
+    monkeypatch.setattr(snap, "npm_week", lambda pkg, **kw: 100)
+    monkeypatch.setattr(snap, "activity_counts", lambda path=None, **kw: ACTIVITY)
+    monkeypatch.setattr(snap, "github_traffic", lambda **kw: None)
+    monkeypatch.setenv("GITHUB_TOKEN", "set-but-not-sufficient")
+    out = tmp_path / "onboarding.json"
+    assert snap.main(["--out", str(out)]) == 0
+    printed = capsys.readouterr().out
+    assert "::warning::" in printed and "Administration" in printed, printed
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    assert payload["traffic"] is None and "traffic" not in payload["window"]
+
+
+def test_the_deliberate_skip_does_not_warn(tmp_path, capsys, monkeypatch):
+    """`--no-traffic` is a choice, not a failure: it must not page anyone."""
+    import scripts.snapshot_onboarding as snap
+    monkeypatch.setattr(snap, "npm_week", lambda pkg, **kw: 100)
+    monkeypatch.setattr(snap, "activity_counts", lambda path=None, **kw: ACTIVITY)
+    out = tmp_path / "onboarding.json"
+    assert snap.main(["--out", str(out), "--no-traffic"]) == 0
+    assert "::warning::" not in capsys.readouterr().out
+
+
 def test_a_missing_measurement_publishes_nothing(tmp_path, capsys):
     """npm unreachable → no file, exit 1, and the reason on stderr."""
     out = tmp_path / "onboarding.json"

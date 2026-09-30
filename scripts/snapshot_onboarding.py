@@ -14,7 +14,11 @@ So this writes **one snapshot** with the three legs side by side:
 * `downloads` — npm weekly, per package (the funnel's top);
 * `activity` — today's `mcp` / `agent` / `crawler` / `pageview` counts from the site's own projection
   (the funnel's bottom: is anyone calling?);
-* `traffic` — GitHub's 14-day clones/views (context: how much of the clone number is even human).
+* `traffic` — GitHub's 14-day clones/views (context: how much of the clone number is even human). This
+  leg needs a token that can read `/repos/*/traffic/*`, i.e. **Administration: read** — `GITHUB_TOKEN`
+  cannot hold that permission, so the workflow must pass `GH_TOKEN`. Without it the leg is absent, the
+  `window` block says so (rather than claiming `14d` for a measurement nobody took), and the run emits a
+  `::warning::` naming the reason.
 
 and one derived number, `mcp_per_weekly_install`: agent calls per week divided by installer downloads per
 week. It is a **proxy, not a conversion rate** (both terms are noisy: npx caching suppresses the
@@ -100,6 +104,12 @@ def compose(downloads: dict, activity: dict, traffic: dict | None, *, now: str |
     setup = downloads.get("@misaka-net/misakanet-setup")
     plugin = downloads.get("misakanet")
     mcp_day = (activity.get("calls") or {}).get("mcp")
+    # The window names only the legs that are actually in the file. The first real run published
+    # `"traffic": null` next to `"window": {"traffic": "14d"}` — a window claim for a measurement that
+    # was never taken (2026-09-30, run 36732770964).
+    window = {"downloads": "last-week", "activity": activity.get("date")}
+    if traffic is not None:
+        window["traffic"] = "14d"
     payload = {
         "schemaVersion": 1,
         "label": "onboarding",
@@ -107,7 +117,7 @@ def compose(downloads: dict, activity: dict, traffic: dict | None, *, now: str |
         if isinstance(setup, int) and isinstance(mcp_day, int) else "measured weekly",
         "color": "blue",
         "generated_at": now or _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "window": {"downloads": "last-week", "activity": activity.get("date"), "traffic": "14d"},
+        "window": window,
         "downloads": {name: value for name, value in
                       (("misakanet", plugin), ("misakanet-setup", setup))},
         "activity": activity,
@@ -148,6 +158,16 @@ def main(argv: list[str] | None = None) -> int:
 
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
     traffic = None if args.no_traffic else github_traffic(token=token)
+    if traffic is None and not args.no_traffic:
+        # Not fatal — the two measured legs are the point and this one is context — but not silent
+        # either. `/repos/*/traffic/*` needs the **Administration** repository permission (read), which
+        # `GITHUB_TOKEN` cannot hold (the workflow `permissions:` vocabulary has no `administration`
+        # key), so a run with only `GITHUB_TOKEN` is expected to land here. Measured: the first real run
+        # went green with `"traffic": null` and the log line below (2026-09-30, run 36732770964); the
+        # same endpoint answered 200 for a user token, so the remedy is `GH_TOKEN` = a PAT, not a retry.
+        print("::warning::no GitHub traffic leg — the endpoint needs Administration: read, which "
+              "GITHUB_TOKEN cannot hold; set GH_TOKEN to a PAT with repository read (e.g. SHELDON_PAT)",
+              file=sys.stdout)
     payload = compose(downloads, activity, traffic)
 
     text = json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
