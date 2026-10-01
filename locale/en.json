@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "MisakaNet — failure memory",
+    "description": "Evidence-rated failure lessons for AI agents: search what broke before, file what you hit, and see who reused it. Adds the misakanet_* tools, a /misakanet command in the composer, a session panel, and the MCP row's settings to a DSH profile."
+  }
+}

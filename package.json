@@ -12,7 +12,8 @@
     "icon.svg",
     "lib/client.js",
     "cordis.patch.yml",
-    ".codex-plugin/**"
+    ".codex-plugin/**",
+    "locale/"
   ],
   "dsh": {
     "bundle": {

@@ -102,6 +102,7 @@ Version 2.40.0 ships the browser half. It is not a dialog: it puts MisakaNet whe
 | **Tool call rows** | Every `misakanet_search` and `misakanet_submit_intake` call gets its own row on the tool card: the query as it was sent, whether a lesson came back, and one reuse vote per lesson. |
 | **Assistant action row** | 👍 / 👎 on the answer that used a lesson. Those two are the only things the page ever sends — counters live in the browser, not on a server. |
 | **`/misakanet` in the composer** | Type `/misakanet pip install timeout` and press Enter: the lessons come back in a card inside the composer, with no agent in the loop. The query is the only thing it sends. |
+| **中文 / English** | Every MisakaNet surface follows the host language: the panel, the `/misakanet` card, the settings row, and the plugin page's own title and description. |
 | **Settings → General** | A MisakaNet preference row: play voice cues in this browser, and how much the surfaces show (compact / full). Both stay in the browser. |
 | **Plugin page** | The MCP row's effective configuration — endpoint, transport, timeout — shown read-only, next to where it is edited (the profile's `cordis.patch.yml`). |
 | **Voice** | An off-by-default switch that explains both mechanisms: the cue the server names on the next search, and the local hook a page cannot read. |

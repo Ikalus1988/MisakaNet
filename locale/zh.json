@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "MisakaNet —— 失败记忆",
+    "description": "给 AI agent 用的、带证据分级的失败课程库：先查别人踩过的坑，再把你踩的报上来，并能看到谁复用过。为 DSH profile 提供 misakanet_* 工具、composer 里的 /misakanet 命令、会话面板，以及 MCP 行的设置。"
+  }
+}
