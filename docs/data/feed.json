@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-01T07:35:46.894440+00:00",
+  "generated_at": "2026-10-01T10:17:27.717076+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore: auto-update lessons.json, public counts and generated pages",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2585",
-      "timestamp": "2026-10-01T07:35:02Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(watcher): clean the lesson mirror without the pattern that blocks the store listing",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2584",
-      "timestamp": "2026-10-01T07:34:48Z",
+      "title": "feat(dsh): the MCP row's configuration in the plugin page (read-only, by host design)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2599",
+      "timestamp": "2026-10-01T10:14:34Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2583",
-      "timestamp": "2026-10-01T07:20:55Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2586",
+      "timestamp": "2026-10-01T10:10:36Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(lessons): instrumentation that never reached the artifact",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2578",
-      "timestamp": "2026-10-01T07:20:28Z",
+      "title": "feat(dsh): the /misakanet command, answered in the composer",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2598",
+      "timestamp": "2026-10-01T10:00:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(dsh): a permanent seat in the left column, and the page it opens",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2582",
-      "timestamp": "2026-10-01T06:58:45Z",
+      "title": "docs(readme): show what the 2.40.0 browser half actually looks like",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2592",
+      "timestamp": "2026-10-01T08:18:38Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(ci): sync PR branches six-hourly, and never push to a PR that can already merge",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2588",
+      "timestamp": "2026-10-01T08:07:44Z",
       "source": "github"
     },
     {
