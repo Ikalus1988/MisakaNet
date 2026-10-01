@@ -869,14 +869,24 @@ const slots = {
 };
 const realWarn = console.warn;
 console.warn = (line) => warnings.push(String(line));
+const sources = [];
 const ctx = {
   effect: (fn) => { fn(); return () => {}; },
   slots,
-  inject: (deps, cb) => { cb({ sidebarRightTabs: undefined }); return { dispose() {} }; },
+  // `inputTriggers` is a **service**, not a slot: the slash pipeline owns the draft, so the contract
+  // that matters is `registerSource`. A host without it must lose the command and keep every seat.
+  inject: (deps, cb) => {
+    if (deps && deps[0] === 'inputTriggers') {
+      cb({ inputTriggers: { registerSource: (src) => { sources.push(src.trigger + src.name); return () => {}; } } });
+    } else {
+      cb({ sidebarRightTabs: undefined });
+    }
+    return { dispose() {} };
+  },
 };
 try { mod.apply(ctx); } catch (error) { warnings.push('apply threw: ' + error.message); }
 console.warn = realWarn;
-console.log(JSON.stringify({ registrations, warnings, pending }));
+console.log(JSON.stringify({ registrations, warnings, pending, sources }));
 """
 
 
@@ -900,11 +910,13 @@ def test_every_client_registration_waits_for_its_slot_declaration():
     result = _run_client_apply(REPO / "lib" / "client.js")
     assert result["warnings"] == [], (
         f"a surface failed to register — the real host would show `misakanet: failed`: {result['warnings']}")
-    assert len(result["registrations"]) == 8, result
+    assert len(result["registrations"]) == 9, result
     assert result["pending"].count("tool.call.toolview") == 4, result
-    for seat in ("conversation.view", "sidebar.panellist", "main"):
+    for seat in ("conversation.view", "sidebar.panellist", "main", "conversation.input.overlay"):
         assert seat in result["pending"], (
             f"{seat} must wait for its declaration too, not just the child slots")
+    # The slash command is a service registration, and it is the only one: one `/misakanet` source.
+    assert result["sources"] == ["/misakanet"], result
 
 
 def test_the_declaration_rule_can_go_red(tmp_path):
