@@ -43,7 +43,7 @@
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
 | `auto-draft.yml` | Auto-Draft from Crash Tombstone | 手动 |  |
-| `auto-sync-prs.yml` | Auto-Sync PR Branches | push, 手动 |  |
+| `auto-sync-prs.yml` | Auto-Sync PR Branches | 定时（6 小时）, 手动 | 每次 main push 就同步会把每个开着的 PR 推一次新 head：整个矩阵重跑 + 可合并性重置（详见 `docs/maintainer/branch-sync-and-ci.md`） |
 | `benchmark-workers-ai.yml` | Workers AI Lesson Benchmark (weekly) | 定时, 手动 | `0 2 * * 1` |
 | `build-feed.yml` | Build Live Feed（并写 `docs/data/activity.json`：首页活动面板的**兜底**快照，由 `scripts/sync_site_activity.py` 生成。面板首选 `/api/activity`——同一批计数器的匿名边缘缓存投影，TTL 分钟级（2026-09-29 加）；三小时快照只在它不可达时兜底。起因：2026-09-29 实测首页显示 `total 5974` 而同日端点报 6645，日期相同、页面看不出陈旧；当年 17.4 秒冷路径理由是重测为 1.08–1.28 秒）| push, 定时, 手动 | `23 */3 * * *` |
 | `example-capture.yml` | Example Capture (not active) | 手动 |  |

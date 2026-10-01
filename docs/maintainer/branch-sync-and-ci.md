@@ -46,3 +46,23 @@ is worse than no sync: the PR then looks like it is waiting for something that w
 It cannot push to a fork, so a fork PR is never kept current by it — that is GitHub's rule, not a
 missing feature. Those PRs are refreshed by their authors, or by the maintainer's `update-branch` API
 call when the branch is merely behind.
+
+## 4. It runs six-hourly, not on every push to `main` (changed 2026-10-01)
+
+It used to be `on: push: branches: [main]`, so every main push re-headed every open PR. Measured costs on
+2026-10-01:
+
+* each sync re-runs that PR's whole cross-platform matrix (30+ checks) — at the point this was measured,
+  **42 runs** were queued repo-wide;
+* the push **resets GitHub's `mergeable` computation**, so a PR that was about to merge returns to
+  `mergeable_state: unknown` and auto-merge stalls. The 2.40.0 release PR's head moved three times in
+  about twenty minutes, and PR #2584 had to be merged through the API because a sync had re-headed it
+  seconds earlier;
+* what the sync buys is **optional**: `main`'s ruleset has
+  `strict_required_status_checks_policy: false`, so a PR does **not** have to be up to date with `main` to
+  merge. Syncing avoids conflicts accumulating, and six hours is enough for that.
+
+The workflow now runs on `schedule: 17 */6 * * *` plus `workflow_dispatch`, and it skips any PR whose
+`mergeable` is already `true`: a PR that can merge must not be pushed to at all, whatever the schedule
+says. Both properties are pinned by `tests/test_auto_sync_prs.py`, which takes a workflow source as an
+argument so the rule can be shown to fail.
