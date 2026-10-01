@@ -176,3 +176,7 @@ silently, and a new declared line that is not named here fails the test rather t
 2. check `dsh.profile.bundles` gained `misakanet`, then `remove` it and check it is gone;
 3. update this table **and** the manifest in the same change — the test above keeps them in step;
 4. leave the live-call column to CI, which reaches the endpoint this sandbox cannot.
+
+## Localization
+
+Dictionaries live inline in `lib/client.js` and go through `ctx.locale`; `locale/en.json` and `locale/zh.json` are the package metadata the host reads for the plugin page. Verified live in 中文 on 2026-10-01: the settings row, all five panel headings, and the `/misakanet` overlay copy.

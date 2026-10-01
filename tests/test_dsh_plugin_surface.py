@@ -605,11 +605,21 @@ def panel_body(source: str) -> str:
 
 
 def test_the_panel_answers_the_questions_it_exists_for():
-    """Problems, lessons, contributions, trust, activity, voice — in that order, each labelled."""
+    """Problems, lessons, contributions, trust, activity, voice — each labelled, in both languages.
+
+    The copy moved into the dictionaries when the surfaces were localized, so this pins the key the panel
+    asks for **and** the English string behind it: a key that resolves to nothing would pass a keys-only
+    check while telling the reader nothing.
+    """
     panel = panel_body(client_source())
-    for heading in ("What this session asked", "Reports you filed", "How much these lessons are trusted",
-                    "Your activity", "Voice"):
-        assert heading in panel, f"the panel lost its `{heading}` section"
+    source = client_source()
+    for key, english in (("panel.asked", "What this session asked"),
+                         ("panel.reports", "Reports you filed"),
+                         ("panel.trust", "How much these lessons are trusted"),
+                         ("panel.activity", "Your activity"),
+                         ("panel.voice", "Voice")):
+        assert f'T("{key}")' in panel, f"the panel lost its `{key}` section"
+        assert f'"{key}": "{english}"' in source, f"`{key}` no longer reads as `{english}`"
 
 
 def test_the_panel_never_mislabels_a_report_that_was_never_filed():
