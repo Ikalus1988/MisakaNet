@@ -12,9 +12,13 @@ tags:
 - markdown
 status: published
 created: '2026-07-26'
+updated: '2026-10-02'
 source: agent_experience
 confidence: 0.95
 evidence_level: E0
+summary_plain: "Glama 的构建红了先看耗时和日志：毫秒级失败、日志为空、错误来自 docker-modem 的 502，是它的构建器连不上自己的 Docker daemon，重试即可，别改 Dockerfile。"
+trigger: "glama build failed 502 bad gateway docker-modem buildDockerImage.js logs empty duration milliseconds uv venv uv pip install -e . mcp-proxy introspection"
+verify: "按 build spec 的 pinnedCommit 跑 uv pip install -e .，再用 .venv/bin/python scripts/mcp_server.py 应答 tools/list：拿到工具列表说明本地没问题、红的构建在 Glama 侧。"
 provenance:
   source: "community"
   contributor: "Community"
@@ -72,6 +76,53 @@ Glama's build system:
 **Cause:** Glama build queue overload
 **Fix:** Retry during off-peak hours
 
+## Triage: is a red build your Dockerfile, or Glama's runner?
+
+Failures 6 and 7 are Glama-side, and so is the one below — but they look nothing like a Dockerfile error, and
+telling the two apart is what decides whether you have anything to fix. The signal is **not** the message; it
+is the **duration** and the **logs**.
+
+A build record that shows **single-digit milliseconds**, **`logs: []`**, and a stack frame from `docker-modem`
+inside Glama's own `buildDockerImage.js` never ran your Dockerfile at all. The 502 comes from nginx in front of
+Glama's Docker daemon: the build runner could not reach its own daemon.
+
+```
+(HTTP code 502) unexpected - <html><head><title>502 Bad Gateway</title></head>…</html>
+    at …/docker-modem@5.0.7/node_modules/docker-modem/lib/modem.js:389:17
+    at buildDockerImage (…/domain/docker/routines/buildDockerImage.js:243:9)
+```
+
+| What the build record shows | Whose problem | What to do |
+|---|---|---|
+| milliseconds + `logs: []` + `docker-modem` / `buildDockerImage.js` | Glama's runner (daemon unreachable) | **Retry.** Do not touch the Dockerfile — no instruction ran, so there is nothing in it to fix |
+| seconds/minutes + logs ending in a failing `RUN` | yours | Read the failing step |
+
+Pulling `debian:trixie-slim` and running `git clone` cannot finish in 8 ms, so the duration alone separates the
+two cases: **a Dockerfile problem always produces logs and a non-zero duration.**
+
+**A red build is staleness, not an outage.** The listing keeps serving the last *successful* build — badge and
+score stay up — while the indexed tool list freezes. Measured on this repository, 2026-10-01: the badge read
+`9 tools` while both the pinned commit and `main` advertised **10** (`misakanet_me_events`, added that same day),
+i.e. the index was one tool and ~39 commits behind. Compare the badge's tool count against a live `tools/list`
+to measure how stale it is, instead of reading "build failed" as "the listing is down".
+
+**Check your own side in two commands** (no Glama access needed): take the `pinnedCommit` from the build spec,
+then run that spec's `buildSteps` verbatim and the `CMD`'s interpreter directly —
+
+```bash
+git checkout <pinnedCommit-from-the-build-spec>
+uv venv && . .venv/bin/activate && uv pip install -e .          # the buildSteps, verbatim
+printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+  | .venv/bin/python scripts/mcp_server.py                      # the CMD, minus mcp-proxy
+```
+
+A `tools/list` result means your side works and the failure was theirs.
+
+One trap that check sets: do **not** conclude "the build step is missing a dependency" from your server's import
+block. This server imports `mcp`, yet `uv pip install -e .` installs only the package's own declared dependency
+— and the stdio server is self-contained, so it answers `tools/list` anyway. Running the command is the check;
+reading the imports is not.
+
 ## Final Working Configuration
 
 ```json
@@ -92,6 +143,8 @@ Glama's build system:
 3. **Use `./subdir` for nested packages** — `pyproject.toml` may not be at root
 4. **Use `.venv/bin/python` in CMD** — not system `python`
 5. **Test locally first** — simulate the build before submitting to Glama
+6. **Read the duration before the message** — milliseconds with `logs: []` is Glama's daemon, not your Dockerfile;
+   seconds with logs is yours
 
 ## Failure 8: glama.json too complex
 
@@ -143,16 +196,22 @@ The working Glama deployment requires:
 
 ## Verification
 
+Take the `pinnedCommit` out of the build spec and run that spec's two halves locally. Both are re-runnable, and
+neither needs Glama:
+
 ```bash
-grep -i mcp lessons/contrib/mcp-*.md 2>/dev/null | head -3
-echo MCP verified
+git checkout <pinnedCommit-from-the-build-spec>
+uv venv && . .venv/bin/activate && uv pip install -e .          # buildSteps, verbatim
+printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+  | .venv/bin/python scripts/mcp_server.py
+# → {"jsonrpc":"2.0","id":2,"result":{"tools":[ … ]}}
 ```
 
-**Expected Output:**
-```
-# (refs)
-MCP verified
-```
+**Pass criterion:** the last command prints a `tools/list` result whose `tools` array is the set your server
+advertises. Measured 2026-10-02 on this repository: the install took ~21 s and installed 2 packages, and the
+server answered with 10 tools. A traceback means the failure is yours and names the missing piece; a tools list
+means a red build is Glama's runner — see the triage section above, and retry rather than editing the
+Dockerfile.
 
 ## Notes
 
@@ -169,5 +228,7 @@ https://glama.ai/mcp/servers
 1. Glama's build environment is different from standard Docker Python images — `uv` toolchain requires explicit venv creation
 2. glama.json is minimal (maintainers only) — tool definitions come from MCP introspection
 3. Build success ≠ tools registered — introspection is a separate async step
+4. Build **failure** ≠ your bug — a millisecond failure with no logs is Glama's runner losing its Docker daemon;
+   retry, and check the badge's tool count to see how stale the index actually is
 4. Always verify the full build chain locally before submitting
 5. **Use Markdown badge syntax `[![alt](img)](link)`** — HTML `<img>` tags may not render on Glama's frontend
