@@ -1,0 +1,124 @@
+name: DSH Client E2E
+
+# Behavioural regression for the DSH client half, in a real host and a real browser (issue: the source-level
+# gates pin *registrations* — a seat is declared, a dictionary key exists, a schema matches its defaults —
+# while every DOM-level behaviour rested on a human running Playwright by hand).
+#
+# `tests/e2e/run_client_e2e.py` boots a **disposable** host (`DSH_HOME` in a temp directory, `env -i`, a fixed
+# port), installs this working tree into a profile, and drives three scenarios: the `/misakanet` command
+# answering in the composer, the frame-wide toast appearing and dismissing itself, and the General-section
+# switch moving the panel's switch. The lesson library is intercepted, so the suite never depends on the
+# public site being reachable.
+#
+# **No `paths:` filter on purpose.** `lesson-gate.yml` carries the measurement: a filtered workflow reports
+# nothing for the PRs it skips, and GitHub then leaves those PRs at "Expected — waiting for status to be
+# reported" forever, which is how a gate looks advisory while being absent. The filter lives *inside* the job
+# instead, so every PR gets a result either way.
+#
+# It is deliberately **not** in the required-checks set yet: the job installs a pinned DSH release plus a
+# Chromium, which is minutes of network. Promote it by adding `DSH Client E2E / client-e2e` to the ruleset once
+# it has a green history.
+#
+# **Resolved 2026-10-02: the fresh profile reaches a live composer, so this runs on pull requests.** The
+# blocker was not "a fresh profile cannot create a first session" — it was `seed_workspace` writing a workspace
+# record without `createdAt` / `updatedAt`, which the workspace domain's schema requires. The record was
+# dropped, the profile came up with no usable workspace, and the composer stayed a chooser. Measured A/B on
+# `dsh 0.2.0-rc.2` with those two fields as the only difference: without them the composer reads
+# `Choose workspace` and the body says `No sessions yet`; with them the **host creates the first session
+# itself** while the page loads and the composer is live. So the session is created the way the host supports,
+# nothing fabricates session storage, and the runner now *asserts* a live composer instead of driving the
+# chooser — driving it is what hid the rejection.
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "40 3 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dsh-client-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  client-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      #: Pinned to the release this suite was measured against. Bump it with the plugin's own peer range.
+      DSH_VERSION: "0.2.0-rc.2"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether the client half moved
+        id: scope
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=yes" >> "$GITHUB_OUTPUT"
+            echo "not a pull request: run the suite"
+            exit 0
+          fi
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- \
+            lib/ index.js index.d.ts cordis.patch.yml locale/ icon.svg tests/e2e/ \
+            .github/workflows/dsh-client-e2e.yml | head -3)
+          if [ -n "$changed" ]; then
+            echo "run=yes" >> "$GITHUB_OUTPUT"
+            echo "client-half files changed:"; echo "$changed"
+          else
+            echo "run=no" >> "$GITHUB_OUTPUT"
+            echo "client half unchanged: the source-level gates cover this PR"
+          fi
+
+      - name: Setup Node
+        if: steps.scope.outputs.run == 'yes'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
+        with:
+          node-version: "22"
+
+      - name: Setup Python
+        if: steps.scope.outputs.run == 'yes'
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: "3.11"
+
+      - name: Install the pinned DSH and pnpm
+        if: steps.scope.outputs.run == 'yes'
+        run: |
+          set -euo pipefail
+          npm i -g "@deepseek-ai/dsh@${DSH_VERSION}" pnpm@11
+          command -v dsh
+          dsh --help > /dev/null
+
+      - name: Install Playwright chromium
+        if: steps.scope.outputs.run == 'yes'
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Drive the client half in a disposable host
+        if: steps.scope.outputs.run == 'yes'
+        # No `npm_config_cache` here on purpose: the runner gives the disposable home its own cache
+        # (`clean_env`), so the host's pnpm install never shares a store with anything outside it — and a
+        # declared-but-unread env key is what `tests/test_workflow_env_is_used.py` exists to catch.
+        run: python3 tests/e2e/run_client_e2e.py --out e2e-shots
+
+      - name: Upload the screenshots
+        if: always() && steps.scope.outputs.run == 'yes'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: dsh-client-e2e-screenshots
+          path: e2e-shots
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Nothing to do
+        if: steps.scope.outputs.run == 'no'
+        run: echo "client half unchanged"
