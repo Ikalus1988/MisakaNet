@@ -118,6 +118,13 @@ _STACK_HINTS = {
     "feishu": {"feishu", "lark", "webhook", "bot"},
 }
 
+# 技术栈词的**单词项**（`_detect_stack` 是子串匹配，这里只要单词）：覆盖门的第二类主体词。
+# 技术栈词（`curl`/`ssl`/`proxy`/`git`…）本身就是最有区分度的失败主体，但它们大多只有 3-5 个字符，
+# `_distinctive_tokens` 的长度门槛会把它们排除掉——于是"唯一 ≥6 字符的词恰好不是主体"的查询
+# （`curl: (35) SSL connect error wrong version number proxy` 里的 `connect`/`number`）会以
+# "没有共同主体词"为由拒掉一篇对症的课。见 precheck 覆盖门。
+_STACK_TOKENS = {word for words in _STACK_HINTS.values() for word in words if " " not in word}
+
 _NOISE_RE = re.compile(
     r"^https?://\S+|^[\w./-]+\.(json|yaml|yml|log|txt)$|^\[?[0-9a-f-]{8,}\]?$"
     r"|^[\[{].{0,80}[}\]]$|^[\w@.:/\\-]{0,40}$|^[^a-zA-Z\u4e00-\u9fff]{2,}$",
@@ -178,11 +185,14 @@ _ERR_CLASS_RE = re.compile(r"(?:error|exception|failure|fault|fatal)s?$")
 
 
 def _distinctive_tokens(tokens: set[str]) -> set[str]:
-    """返回承载失败主体的查询词（`pytest_mock`/`tfstate`/`credential`…）。
+    """返回承载失败主体的**显著**查询词（`pytest_mock`/`tfstate`/`credential`…）。
 
     排除：短词（<6 字符，多为英文虚词/缩写）、通用失败词、错误类别名（`*Error`）。
     全是通用词的查询（如「Error: something went wrong」）返回空集——此时不做覆盖门，
     退回原有的加权阈值判定。
+
+    这只是主体词的**一类**：长度门槛会漏掉 `curl`/`ssl`/`proxy`/`git` 这种 3-5 字符的技术栈词，
+    所以覆盖门另外接受 `_STACK_TOKENS`（见 `precheck`）。
     """
     return {t for t in tokens
             if len(t) >= 6 and t not in _GENERIC_TOKENS and not _ERR_CLASS_RE.search(t)}
@@ -248,6 +258,12 @@ def precheck(error: str, sim_threshold: float, corpus: list | None = None) -> di
       会把一篇德语课推成"命中"，而该课根本没提 `pytest_mock`。
       **刻意不按语言/书写系统过滤课程**——那会连坐 zh / pt-br / de 等语种里真正对症的课；
       覆盖门问的是"这门课讲的是不是你的东西"，与它用什么语言写的无关。
+    - 主体词有**两类**：`_distinctive_tokens` 的显著词（≥6 字符）**和**已知技术栈词
+      （`_STACK_TOKENS`：`curl`/`ssl`/`proxy`/`git`…）。只认前者会把"唯一 ≥6 字符的词不是主体"
+      的对症命中拒掉（#2646 复核实测的漏报：`curl: (35) SSL connect error wrong version number
+      proxy` 里 `connect`/`number` 都不是主体，真正的证据 `curl`/`ssl`/`proxy` 只有 3-5 字符，
+      外部试点报告第 4 行判它 on-target，旧实现却落到 intake）；`*Error` 类别名与通用失败词
+      依旧不算主体，所以德语课那种"唯一共同词是 `modulenotfounderror`"的误报仍然被拒。
     `corpus` 供测试注入固定语料；缺省走远端（_load_corpus）。
     """
     q = _tokens(error)
@@ -257,6 +273,7 @@ def precheck(error: str, sim_threshold: float, corpus: list | None = None) -> di
     q_stack = _detect_stack(error)
     bar = sim_threshold if q_stack else max(sim_threshold, HIGH_BAR_SIM)
     q_distinct = _distinctive_tokens(q)
+    q_subject = q_distinct | (q & _STACK_TOKENS)  # 覆盖门认的"主体词"（显著词 ∪ 技术栈词）
     best, best_score = None, 0.0           # 有覆盖证据的最佳课程
     fallback, fallback_score = None, 0.0   # 词面最高分（仅用于无覆盖证据时的强信号）
     for doc in docs:
@@ -272,11 +289,11 @@ def precheck(error: str, sim_threshold: float, corpus: list | None = None) -> di
             continue
         if score > fallback_score:
             fallback, fallback_score = doc, score
-        if q_distinct and not (q_distinct & evidence):
+        if q_subject and not (q_subject & evidence):
             continue  # 课程没提查询的主体词 → 不是这门课在讲你的失败
         if score > best_score:
             best, best_score = doc, score
-    if not q_distinct and best is None and fallback_score >= bar:
+    if not q_subject and best is None and fallback_score >= bar:
         # 查询本身只有泛化失败词（没有主体词可覆盖）→ 保留 v1.0 行为，靠高分兜底。
         # 注意：查询**有**主体词却没有任何课程提到它时**不兜底**——那正是"这门课不是在讲
         # 你的失败"的信号（#2643 的德语课误报），此时正确答案是 intake 报缺口。
