@@ -12096,6 +12096,38 @@
     "contributor": ""
   },
   {
+    "id": "crypto-web3-bounty-settlement-units-cross-chain-gas-trust-grading",
+    "title": "Crypto/Web3 bounty settlement — basic units, cross-chain payments, gas, platform trust grading",
+    "domain": "development",
+    "tags": [
+      "crypto",
+      "web3",
+      "bounty",
+      "settlement",
+      "gas",
+      "cross-chain"
+    ],
+    "summary": "Contributors see \"$50 bounty\" on a GitHub issue and assume they will receive $50. In practice, the settlement involves multiple layers: the payment unit (USDC, …",
+    "preview": "# Crypto/Web3 bounty settlement — basic units, cross-chain payments, gas, and platform trust grading\n\n## Problem\n\nContributors see \"$50 bounty\" on a GitHub issue and assume they will receive $50. In practice, the settlement involves multiple layers: the payment unit (USDC, XLM, ETH, TON), the chain (Ethereum mainnet, Base, Stellar, Solana, TON), the gas model (who pays for the transaction), and the platform's trust level (escrow, auto-verify, manual review). Without understanding these layers, a contributor may accept work that costs more in gas than it pays.\n\n## Root cause\n\nCrypto bounty platforms differ in settlement mechanics, and the differences are not always documented in the bounty description. A $50 bounty on Platform A (instant USDC on Base, gasless) is worth more than a $50 bounty on Platform B (manual ETH payout on mainnet, gas deducted from payout). Contributors who do not check the settlement layer before claiming may find their payout reduced by gas fees, delayed by review windows, or locked behind claim limits.\n\n## Fix\n\n### 1. Know the basic units\n\n| Unit | Chain | Worth | Precision |\n|------|-------|-------|-----------|\n| wei | Ethereum/Base | 1 ETH = 10^18 wei | 18 decimals |\n| gwei | Ethereum/Base | 1 gwei = 10^9 wei | Gas price unit |\n| USDC cents | Base/Ethereum | 1 USDC = 10^6 units (6 decimals) | 6 decimals |\n| lamports | Solana | 1 SOL = 10^9 lamports | 9 decimals |\n| stroops | Stellar | 1 XLM = 10^7 stroops | 7 decimals |\n| nanoton | TON | 1 TON = 10^9 nanoton | 9 decimals |\n\n### 2. Cross-chain payment models\n\n- **Same-chain payout**: Bounty funds are on the same chain as the work (e.g., USDC on Base, paid to a Base wallet). No bridge needed.\n- **Cross-chain payout**: Bounty funds are on Chain A but the contributor's wallet is on Chain B. A bridge or swap is needed, adding latency and fees.\n- **Gasless payout**: The platform's paymaster covers gas (e.g., Pimlico Paymaster on Base). The contributor receives the full bounty amount with $0 gas cost.\n- **Self-paid gas**: The contributor must hold the chain's native token (ETH, SOL, XLM) for gas. If the wallet is empty, the payout transaction cannot be submitted.\n\n### 3. Gas models — even \"free\" mints cost something\n\n- **ERC-4337 Account Abstraction**: Smart contract wallets (like Safe + Pimlico) can sponsor gas via a paymaster. The contributor does not need ETH. But the paymaster must hav\n\n[clipped]",
+    "summary_plain": "Crypto bounty platforms differ in settlement units, chains, gas models, and trust levels — check before claiming.",
+    "trigger": "crypto bounty settlement USDC wei gas cross-chain",
+    "url": "lessons/en/crypto-web3-bounty-settlement-units-cross-chain-gas-trust-grading.md",
+    "created": "",
+    "updated": "",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "curl-fail-fast-flags",
     "title": "curl fail-fast flags for agent scripts",
     "domain": "devops",
