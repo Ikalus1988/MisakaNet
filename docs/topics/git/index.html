@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Git Lessons — MisakaNet</title>
-<meta name="description" content="9 indexed failure lessons about git. From MisakaNet — Git-backed failure lesson network.">
+<meta name="description" content="10 indexed failure lessons about git. From MisakaNet — Git-backed failure lesson network.">
 <link rel="canonical" href="https://misakanet.org/topics/git/">
 <meta property="og:title" content="Git Lessons">
-<meta property="og:description" content="9 indexed failure lessons about git. From MisakaNet — Git-backed failure lesson network.">
+<meta property="og:description" content="10 indexed failure lessons about git. From MisakaNet — Git-backed failure lesson network.">
 <meta property="og:url" content="https://misakanet.org/topics/git/">
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0a0f1d; color: #e2e8f0; max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
@@ -22,7 +22,7 @@
 </head>
 <body>
 <h1>Git Lessons</h1>
-<div class="count">9 lessons in this domain</div>
+<div class="count">10 lessons in this domain</div>
 
 <div class="lesson">
   <a href="/lessons/git-checkout-discards-uncommitted-work/">Uncommitted work has no undo: `git checkout -- .` and reset --hard during branch juggling</a>
@@ -47,6 +47,10 @@
 <div class="lesson">
   <a href="/lessons/git-push-without-shell-agent/">Git Push 的正确方式 — 在受限 Agent 环境中推送代码</a>
   <div class="summary">在某些 Agent 平台的安全模式下，shell 工具不可用。需要执行 `git push` 时，不能直接用 shell 命令。</div>
+</div>
+<div class="lesson">
+  <a href="/lessons/git-stash-is-repository-wide-not-worktree-local-a-bare-stash-pop-can-apply-anoth/">git stash is repository-wide, not worktree-local — a bare stash pop can apply another session's work</a>
+  <div class="summary">Two agent sessions work on the same repository in two different worktrees. Session A finishes a change, stashes</div>
 </div>
 <div class="lesson">
   <a href="/lessons/git-tls-handshake-failure/">GitHub TLS 握手失败 — gnutls_handshake() Error</a>

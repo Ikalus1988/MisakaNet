@@ -229,6 +229,7 @@
   <url><loc>https://misakanet.org/lessons/git-force-with-lease-detached-head/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-merge-conflict-resolution/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-push-without-shell-agent/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/git-stash-is-repository-wide-not-worktree-local-a-bare-stash-pop-can-apply-anoth/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-tls-handshake-failure/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-worktree-dangling-commit-recovery/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/gitguardian-placeholder-url-credential-safe-form/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -396,6 +397,7 @@
   <url><loc>https://misakanet.org/lessons/session-lesson-3-lobsters-json-api/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/session-lesson-4-playwright-forum-selectors/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/shared-json-needs-atomic-write/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/navigating-a-shared-browser-tab-is-a-destructive-action-treat-it-like-deleting-a/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/shell-script-debugging/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/silent-data-loss-in-google-cloud-bigquery-schema-mismatch-and-firestore-overwrit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/slugify-path-traversal-deep-coverage/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
