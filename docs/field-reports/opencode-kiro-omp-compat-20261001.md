@@ -87,10 +87,4 @@ The issue asks for:
 
 The three integration docs are ready to merge. They document the config format for each client based on public documentation and local config inspection. A follow-up PR with runtime smoke test evidence can be submitted once the CLIs are installed.
 
-The `README.md` in `docs/integrations/` should be updated to add these three clients to the "Available Integrations" table:
-
-```markdown
-| **OpenCode** | ✅ Ready | [Setup Guide](opencode.md) |
-| **Kiro** | ✅ Ready | [Setup Guide](kiro.md) |
-| **Oh-my-Pi** | ✅ Ready | [Setup Guide](oh-my-pi.md) |
-```
+The `README.md` in `docs/integrations/` has been updated to add these three clients to the "Available Integrations" table (done in this PR).
