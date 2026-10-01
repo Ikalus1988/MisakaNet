@@ -7,6 +7,101 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [2.40.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.39.0...v2.40.0) (2026-10-01)
+
+
+### Features
+
+* **activity:** serve today's activity behind a minutes TTL, and print the snapshot's age ([#2461](https://github.com/Ikalus1988/MisakaNet/issues/2461)) ([f0a4e7f](https://github.com/Ikalus1988/MisakaNet/commit/f0a4e7fec78f13adc4b5ee75274083022ca219d3))
+* **api:** `GET /api/versions` — one place that says which number is which (intake [#2486](https://github.com/Ikalus1988/MisakaNet/issues/2486), D5) ([#2498](https://github.com/Ikalus1988/MisakaNet/issues/2498)) ([c7c8a28](https://github.com/Ikalus1988/MisakaNet/commit/c7c8a28f3d986bb31194c5de6b325aecf370de73))
+* **badge:** publish the retrieval-backend split, and not the per-client counts ([#2450](https://github.com/Ikalus1988/MisakaNet/issues/2450)) ([f581309](https://github.com/Ikalus1988/MisakaNet/commit/f581309bdf38c81d201e1805cc34cf69706d026a))
+* **bench:** measure the live service against the gate's floors, in one command ([#2420](https://github.com/Ikalus1988/MisakaNet/issues/2420)) ([b250831](https://github.com/Ikalus1988/MisakaNet/commit/b250831fe275661afeb8b485ce01aa6fb75ec212))
+* **dsh:** a browser half for the plugin — visibility on the search, the reuse verdict where the outcome is ([#2551](https://github.com/Ikalus1988/MisakaNet/issues/2551)) ([5a86c37](https://github.com/Ikalus1988/MisakaNet/commit/5a86c37f19af3debe3ef621dcbd7b50cddd01587))
+* **dsh:** a permanent seat in the left column, and the page it opens ([#2582](https://github.com/Ikalus1988/MisakaNet/issues/2582)) ([42d5992](https://github.com/Ikalus1988/MisakaNet/commit/42d59920f2dc242aab1898bc7719254a4b40d271))
+* **dsh:** declare the two 0.1.x lines too, each measured the same way ([#2546](https://github.com/Ikalus1988/MisakaNet/issues/2546)) ([a998924](https://github.com/Ikalus1988/MisakaNet/commit/a998924c76a86b187699c0463e15e356d1539709))
+* **dsh:** give the plugin a surface the host actually shows — icon, ecosystem metadata, a measured compatibility row ([#2543](https://github.com/Ikalus1988/MisakaNet/issues/2543)) ([369278e](https://github.com/Ikalus1988/MisakaNet/commit/369278e8a69b2edb406ccb80594a2a38f00f9ec7))
+* **index:** /api/search-index reports the bigram channel, and the version the code expects ([#2418](https://github.com/Ikalus1988/MisakaNet/issues/2418)) ([16cf583](https://github.com/Ikalus1988/MisakaNet/commit/16cf583e1a95cf9b49f723a5956e6261747db3bd))
+* **lessons:** land five bounty lessons cleanly — the answers were right, the 95 regenerated files were not ([#2401](https://github.com/Ikalus1988/MisakaNet/issues/2401)) ([7458d15](https://github.com/Ikalus1988/MisakaNet/commit/7458d152e3c01b0ae0f39266898b408205694124)), closes [#2282](https://github.com/Ikalus1988/MisakaNet/issues/2282) [#2281](https://github.com/Ikalus1988/MisakaNet/issues/2281) [#2280](https://github.com/Ikalus1988/MisakaNet/issues/2280) [#2171](https://github.com/Ikalus1988/MisakaNet/issues/2171) [#2260](https://github.com/Ikalus1988/MisakaNet/issues/2260) [#2264](https://github.com/Ikalus1988/MisakaNet/issues/2264) [#2266](https://github.com/Ikalus1988/MisakaNet/issues/2266) [#2254](https://github.com/Ikalus1988/MisakaNet/issues/2254) [#2257](https://github.com/Ikalus1988/MisakaNet/issues/2257) [#2263](https://github.com/Ikalus1988/MisakaNet/issues/2263)
+* **mcp:** serve misakanet_me_events locally and declare both install surfaces ([#2501](https://github.com/Ikalus1988/MisakaNet/issues/2501)) ([cb7a11a](https://github.com/Ikalus1988/MisakaNet/commit/cb7a11a88d10f584d16cc6c7d608b821f1089b82))
+* **mcp:** the intake re-submit channel now carries a poll hint and a verified conversion receipt ([#2494](https://github.com/Ikalus1988/MisakaNet/issues/2494)) ([#2553](https://github.com/Ikalus1988/MisakaNet/issues/2553)) ([19c0247](https://github.com/Ikalus1988/MisakaNet/commit/19c024741dcea40c7ad83f68d3fdb28523ab5c95))
+* **metrics:** a weekly onboarding snapshot — installs in, agent calls out ([#2531](https://github.com/Ikalus1988/MisakaNet/issues/2531)) ([e6bf83f](https://github.com/Ikalus1988/MisakaNet/commit/e6bf83f34a41e77cdcb6cd010b3e6a0e2698316c))
+* **plugin:** a Claude Code channel — the fix for the installer's numbers is a channel, not a campaign ([#2530](https://github.com/Ikalus1988/MisakaNet/issues/2530)) ([65a2426](https://github.com/Ikalus1988/MisakaNet/commit/65a242699bd69ca0f91b7c116b3823218d112b7b))
+* **search:** fuse the CJK channel into ranking with coverage-weighted RRF ([#2356](https://github.com/Ikalus1988/MisakaNet/issues/2356)) ([#2413](https://github.com/Ikalus1988/MisakaNet/issues/2413)) ([2432f4a](https://github.com/Ikalus1988/MisakaNet/commit/2432f4ac0fbc8cab25ed492d4d022af05d85ed49))
+* **search:** index CJK text as bigrams in a channel of its own ([#2355](https://github.com/Ikalus1988/MisakaNet/issues/2355)) ([#2412](https://github.com/Ikalus1988/MisakaNet/issues/2412)) ([f7ae1e7](https://github.com/Ikalus1988/MisakaNet/commit/f7ae1e7bb5686209b47c52de0f68583471d9a19d))
+* **search:** the committed query gets the Worker's ranking; typing stays local ([#2492](https://github.com/Ikalus1988/MisakaNet/issues/2492)) ([6bab8a1](https://github.com/Ikalus1988/MisakaNet/commit/6bab8a156ba4d2b90eac1c3d6a0715b301182bec))
+* **smoke:** a dsh-client probe that boots a throwaway host, because that is where it broke ([#2571](https://github.com/Ikalus1988/MisakaNet/issues/2571)) ([729cbe1](https://github.com/Ikalus1988/MisakaNet/commit/729cbe1553e6472bfeed7c6a3d3c71120caee31d))
+* **versions:** one version line — npm joins release-please, and publishing becomes unattended (D1=A) ([#2499](https://github.com/Ikalus1988/MisakaNet/issues/2499)) ([8f8b350](https://github.com/Ikalus1988/MisakaNet/commit/8f8b350ab8bbadf7c008d2d508756ed8b79307bd))
+* **versions:** report the npm bundle line moving backwards, without gating on it ([#2449](https://github.com/Ikalus1988/MisakaNet/issues/2449)) ([2279fe3](https://github.com/Ikalus1988/MisakaNet/commit/2279fe3149ee5c993f2885d2e936b51059445d42))
+
+
+### Bug Fixes
+
+* **api:** `?q=` now answers a sentence instead of nothing — strict first, then any-term ([#2490](https://github.com/Ikalus1988/MisakaNet/issues/2490)) ([bfb6589](https://github.com/Ikalus1988/MisakaNet/commit/bfb65899a86e0f72805469c489fe2e4d556859f1))
+* **bundle:** activation must not be able to abort a host's startup ([#2568](https://github.com/Ikalus1988/MisakaNet/issues/2568)) ([9276d2d](https://github.com/Ikalus1988/MisakaNet/commit/9276d2da8a1465847f934129fe32da28b9ee70a3))
+* **ci:** bind the two copies of the corpus and gate their divergence ([#2459](https://github.com/Ikalus1988/MisakaNet/issues/2459)) ([60e019e](https://github.com/Ikalus1988/MisakaNet/commit/60e019e462bdd519e921dfcbdafdc6e6a6fb0c25))
+* **ci:** the approval watch hears about a waiting run instead of asking a cron that drops it ([#2416](https://github.com/Ikalus1988/MisakaNet/issues/2416)) ([#2429](https://github.com/Ikalus1988/MisakaNet/issues/2429)) ([c000bf4](https://github.com/Ikalus1988/MisakaNet/commit/c000bf45c48dbdce5ec5a92804dff7444689b539))
+* **ci:** the pr-genius bump works — the action moved to the repository root in v1.9.x ([#2409](https://github.com/Ikalus1988/MisakaNet/issues/2409)) ([6a71c0c](https://github.com/Ikalus1988/MisakaNet/commit/6a71c0c1c9f7c84377139a5c8519f9538e71563b))
+* **ci:** three gates that could not see what they claimed ([#2451](https://github.com/Ikalus1988/MisakaNet/issues/2451)) ([ed68fd2](https://github.com/Ikalus1988/MisakaNet/commit/ed68fd21c95b512220173fd7d5b983708dd18235))
+* **dsh:** the client half registered child slots before their parents declared them ([#2575](https://github.com/Ikalus1988/MisakaNet/issues/2575)) ([44835ee](https://github.com/Ikalus1988/MisakaNet/commit/44835ee42f249cec5700f61d58265d2041c765ca))
+* **issues:** the acceptance-criteria half of the quality gate was decorative ([#2514](https://github.com/Ikalus1988/MisakaNet/issues/2514)) ([775ef69](https://github.com/Ikalus1988/MisakaNet/commit/775ef695f2fdb5caf86c1027eff5468c33193f9e))
+* **lessons:** three published lessons were invisible — the indexer never looks at the root of `lessons/` ([#2406](https://github.com/Ikalus1988/MisakaNet/issues/2406)) ([8eb2ec7](https://github.com/Ikalus1988/MisakaNet/commit/8eb2ec7b57b1bfdbb251cb0b5bfff9c9449eaf9a))
+* **mcp:** mark a non-published lesson in the default detail levels and in get_lesson ([#2270](https://github.com/Ikalus1988/MisakaNet/issues/2270)) ([#2423](https://github.com/Ikalus1988/MisakaNet/issues/2423)) ([a406a95](https://github.com/Ikalus1988/MisakaNet/commit/a406a9512c0f2cc3236e04e9fccddf1a73f599da))
+* NameErrors in the embedding dev-fallback and the D1 sync script ([#2387](https://github.com/Ikalus1988/MisakaNet/issues/2387)) ([bcf2003](https://github.com/Ikalus1988/MisakaNet/commit/bcf200314ec1336c621ec103416d7c134f80a30b))
+* **pages:** a merged lesson gets a page, and a page-less lesson is a gate ([#2460](https://github.com/Ikalus1988/MisakaNet/issues/2460)) ([963852b](https://github.com/Ikalus1988/MisakaNet/commit/963852b33df795fe085a234d1bef72c7c87bc322))
+* **privacy:** the analytics endpoints published caller text and third-party tool names ([#2454](https://github.com/Ikalus1988/MisakaNet/issues/2454)) ([fa1a11a](https://github.com/Ikalus1988/MisakaNet/commit/fa1a11ac6bca52c48843e5f0175bf5616992d161))
+* **scanners:** remove the dynamic execution the bench needed, anchor a URL assertion, and correct a wrong claim ([#2509](https://github.com/Ikalus1988/MisakaNet/issues/2509)) ([07a9782](https://github.com/Ikalus1988/MisakaNet/commit/07a97827ea504bea60c43370d3be8197ef4e2738))
+* **search:** index the stored body, not four extracted sections ([#2444](https://github.com/Ikalus1988/MisakaNet/issues/2444)) ([babd06b](https://github.com/Ikalus1988/MisakaNet/commit/babd06b5ad70f6f1a108d77970395854851c6dd7))
+* **search:** the body-indexing change needs its INDEX_TEXT_VERSION bump (4 → 5) ([#2447](https://github.com/Ikalus1988/MisakaNet/issues/2447)) ([5e2ddc8](https://github.com/Ikalus1988/MisakaNet/commit/5e2ddc8e923773ab7672c2fac771dc301e315c90))
+* **search:** the relevance floor counts the words the user typed, not the alias table's guesses ([#2358](https://github.com/Ikalus1988/MisakaNet/issues/2358)) ([#2414](https://github.com/Ikalus1988/MisakaNet/issues/2414)) ([ea720aa](https://github.com/Ikalus1988/MisakaNet/commit/ea720aa3963d24d8d15a01f9a2bcb8ed6e536494))
+* **site:** 73 of 426 lesson ids answered 404 — `/lessons/<id>/` now resolves ([#2453](https://github.com/Ikalus1988/MisakaNet/issues/2453)) ([2e0e6a3](https://github.com/Ikalus1988/MisakaNet/commit/2e0e6a3db3a473cbc0dc237f271b3c927f56a6f6))
+* **site:** the generated redirect pages no longer embed an absolute URL (secret-scanner false positives) ([#2483](https://github.com/Ikalus1988/MisakaNet/issues/2483)) ([7cac799](https://github.com/Ikalus1988/MisakaNet/commit/7cac799107f60be38db6f06e7fbb0bb2483b2ed3))
+* **site:** the homepage quoted the lesson count four times — now it references it ([#2455](https://github.com/Ikalus1988/MisakaNet/issues/2455)) ([d21a7fb](https://github.com/Ikalus1988/MisakaNet/commit/d21a7fb00324ba4a0ade3a240e2b15fc7fad15ca))
+* **site:** the stats card rendered "—" for every counter — two regressions from the projection change ([#2515](https://github.com/Ikalus1988/MisakaNet/issues/2515)) ([805cd79](https://github.com/Ikalus1988/MisakaNet/commit/805cd793f0026aff020278b4404910fec5b1006b))
+* **test:** CHANGELOG.md is a history record, not current copy ([#2539](https://github.com/Ikalus1988/MisakaNet/issues/2539)) ([9157d20](https://github.com/Ikalus1988/MisakaNet/commit/9157d20efe0239481ae9a5299adb216d70da0985))
+* **test:** remove vacuous draft-status check from compact search ([#2270](https://github.com/Ikalus1988/MisakaNet/issues/2270)) ([a602ed8](https://github.com/Ikalus1988/MisakaNet/commit/a602ed8e751fb3b35fe202b1c186297df8d4278e))
+* **tests:** hand node a file URL, not a Windows path (reds the 2.40.0 release) ([#2577](https://github.com/Ikalus1988/MisakaNet/issues/2577)) ([780d34c](https://github.com/Ikalus1988/MisakaNet/commit/780d34c7a13b689a789b82a9a3f54f97a7c3d08a))
+* **test:** stop writing the repository corpus size into an assertion — it blocks the daily sync ([#2445](https://github.com/Ikalus1988/MisakaNet/issues/2445)) ([c7cc2ab](https://github.com/Ikalus1988/MisakaNet/commit/c7cc2abf07783f1901f30137a3aabc60c5a13617))
+* **test:** the icon rule asked one path convention, and windows-latest went red on it ([#2545](https://github.com/Ikalus1988/MisakaNet/issues/2545)) ([fa9f6c8](https://github.com/Ikalus1988/MisakaNet/commit/fa9f6c82d28505dc431245b7ed392447d59c2b7c))
+* **test:** the retired-slogan gate read the filesystem, not the repository ([#2547](https://github.com/Ikalus1988/MisakaNet/issues/2547)) ([45dee73](https://github.com/Ikalus1988/MisakaNet/commit/45dee7367a5975702b4f1c289df6534c43330da7))
+* **watcher:** clean the lesson mirror without the pattern that blocks the store listing ([#2584](https://github.com/Ikalus1988/MisakaNet/issues/2584)) ([2e4922d](https://github.com/Ikalus1988/MisakaNet/commit/2e4922ddbe6e865b1d71bcb63d9c06d3f153261a))
+
+
+### Documentation
+
+* **agents:** correct my own diagnosis — and split the real trap from the crash ([#2569](https://github.com/Ikalus1988/MisakaNet/issues/2569)) ([5d408fd](https://github.com/Ikalus1988/MisakaNet/commit/5d408fd03e4448f71cec1483a235734e3949c282))
+* **agents:** the profile trap I fell into — never change a profile from the CLI while the host runs ([#2557](https://github.com/Ikalus1988/MisakaNet/issues/2557)) ([5086ee2](https://github.com/Ikalus1988/MisakaNet/commit/5086ee27e55982a8bb59b8d9016ce9863f27aa3f))
+* **ci:** the required-check set is four, and the docs disagreed with each other and with GitHub ([#2456](https://github.com/Ikalus1988/MisakaNet/issues/2456)) ([f4d48c8](https://github.com/Ikalus1988/MisakaNet/commit/f4d48c8c5e5a18a6278801f63bf07238e1f0e2bb))
+* **contracts:** three published surfaces an agent reads first, each verified against the live service ([#2452](https://github.com/Ikalus1988/MisakaNet/issues/2452)) ([3729f32](https://github.com/Ikalus1988/MisakaNet/commit/3729f3270334803e7f53870f4ef3e36d084d77a4))
+* **handoff:** 2026-09-30 — one version line closed, npm trusted publishing proven, three site regressions fixed ([#2532](https://github.com/Ikalus1988/MisakaNet/issues/2532)) ([b6a40fd](https://github.com/Ikalus1988/MisakaNet/commit/b6a40fd34a4dc7ef077781867bebca7ef8931cb4))
+* **install:** answer intake [#2486](https://github.com/Ikalus1988/MisakaNet/issues/2486) — four install pitfalls, all four verified true ([#2493](https://github.com/Ikalus1988/MisakaNet/issues/2493)) ([ecdcc1b](https://github.com/Ikalus1988/MisakaNet/commit/ecdcc1b1e3311f2cb86f22c79b042610b61ef62c))
+* **lessons:** instrumentation that never reached the artifact ([#2578](https://github.com/Ikalus1988/MisakaNet/issues/2578)) ([3c43913](https://github.com/Ikalus1988/MisakaNet/commit/3c439131969e6020fa345811678042d9e724472c))
+* **maintainer:** record the two credential decisions — NPM_TOKEN's exit condition, and no token for the traffic leg ([#2548](https://github.com/Ikalus1988/MisakaNet/issues/2548)) ([d33ae7c](https://github.com/Ikalus1988/MisakaNet/commit/d33ae7ce879c546e3c3527aedb41290964aa384a))
+* **ops:** the troubleshooting table did not mention the edge's Python-urllib UA rule ([#2419](https://github.com/Ikalus1988/MisakaNet/issues/2419)) ([4284fdd](https://github.com/Ikalus1988/MisakaNet/commit/4284fdd6ce8513392d5855722ffe9c68d3d54f5d))
+* **readme:** add the GitHub Marketplace badge — the listing is real and the prose already claimed it ([#2512](https://github.com/Ikalus1988/MisakaNet/issues/2512)) ([134744f](https://github.com/Ikalus1988/MisakaNet/commit/134744fb1affef1efdfd152d1c5519e64073fa94))
+* **readme:** show the DeepSeek Harness "Add plugin" dialog, three steps marked ([#2549](https://github.com/Ikalus1988/MisakaNet/issues/2549)) ([cfd4ff5](https://github.com/Ikalus1988/MisakaNet/commit/cfd4ff5d09499b065636a440e92435186e176b3c))
+* **readme:** two rows of the 当前数据 table carried counts that nothing writes ([#2421](https://github.com/Ikalus1988/MisakaNet/issues/2421)) ([346b1f9](https://github.com/Ikalus1988/MisakaNet/commit/346b1f958ef3f0d349ef14734cac356f1e8d634e))
+* retire the "zero-dependency" slogan — it read as "nothing to prepare" (intake [#2486](https://github.com/Ikalus1988/MisakaNet/issues/2486), D2) ([#2497](https://github.com/Ikalus1988/MisakaNet/issues/2497)) ([eed57f3](https://github.com/Ikalus1988/MisakaNet/commit/eed57f3f87aafdf485ab9d12a9dba4e52c1ba8ce))
+* **reviews:** case study — a third-party install report, checked claim by claim ([#2519](https://github.com/Ikalus1988/MisakaNet/issues/2519)) ([dedb332](https://github.com/Ikalus1988/MisakaNet/commit/dedb3328ba5debdc45f88e370db282c9b774df2d))
+* **reviews:** Rust rewrite feasibility — the measured case against it, and the one path worth trying ([#2502](https://github.com/Ikalus1988/MisakaNet/issues/2502)) ([5514f34](https://github.com/Ikalus1988/MisakaNet/commit/5514f3444681985d06637e701b36ba48742b424e))
+* **search:** record the one-term-space precondition as met, and re-measure the calibration table ([#2415](https://github.com/Ikalus1988/MisakaNet/issues/2415)) ([a71ffef](https://github.com/Ikalus1988/MisakaNet/commit/a71ffef7db730926a55b52c363da0cdfad7e5cd7))
+* **version:** two more files advertised a server version that nothing could update ([#2417](https://github.com/Ikalus1988/MisakaNet/issues/2417)) ([ba5853f](https://github.com/Ikalus1988/MisakaNet/commit/ba5853fbc642fc16fd9b5ecc736f44d2e9710e61))
+
+
+### Tests
+
+* **ci:** gate the two name-error classes that shipped on main today, in code no test drives ([#2405](https://github.com/Ikalus1988/MisakaNet/issues/2405)) ([c96161a](https://github.com/Ikalus1988/MisakaNet/commit/c96161a256b18fef01346db28e3c96e9ba5bc1f0))
+* **docs:** a document may not send a reader to a lesson file that is not there ([#2408](https://github.com/Ikalus1988/MisakaNet/issues/2408)) ([ac84ef6](https://github.com/Ikalus1988/MisakaNet/commit/ac84ef63877d7155c73174e8e3b2f3d732fb57e3))
+* **langchain:** measure the concurrency ratio up to three times instead of once ([#2424](https://github.com/Ikalus1988/MisakaNet/issues/2424)) ([#2430](https://github.com/Ikalus1988/MisakaNet/issues/2430)) ([89d5103](https://github.com/Ikalus1988/MisakaNet/commit/89d5103b0f56fced8016b5915bd74a773115328a))
+* **site:** check every script for the temporal dead zone, not two entry-point strings ([#2516](https://github.com/Ikalus1988/MisakaNet/issues/2516)) ([056efee](https://github.com/Ikalus1988/MisakaNet/commit/056efee44103f3bc40e29930116814c8a4fdce0b))
+
+
+### CI/CD
+
+* **install:** make "install verified" a measured, dated fact (D3 = A) ([#2500](https://github.com/Ikalus1988/MisakaNet/issues/2500)) ([4bd3608](https://github.com/Ikalus1988/MisakaNet/commit/4bd3608d60da75d6d3cb4d603c0f11e836714e5b))
+* **install:** probe the client installer daily — the path two thirds of contributors actually take ([#2529](https://github.com/Ikalus1988/MisakaNet/issues/2529)) ([747050e](https://github.com/Ikalus1988/MisakaNet/commit/747050e2c22e1fa6965d81a25f31a55386b1f48c))
+* **release:** make the other two publishing workflows idempotent and manually triggerable ([#2518](https://github.com/Ikalus1988/MisakaNet/issues/2518)) ([8d727b3](https://github.com/Ikalus1988/MisakaNet/commit/8d727b31ba851fbb0284b48e99c6f17729602061))
+* the worker suite now gates merges, through the required audit job ([#2457](https://github.com/Ikalus1988/MisakaNet/issues/2457)) ([12d7981](https://github.com/Ikalus1988/MisakaNet/commit/12d7981a1b4f420454c374981dd06f3be7cf87f2))
+
 ## [2.39.0](https://github.com/Ikalus1988/MisakaNet/compare/v2.38.0...v2.39.0) (2026-09-28)
 
 
