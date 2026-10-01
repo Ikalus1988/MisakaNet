@@ -98,7 +98,14 @@ against dsh 0.2.0-rc.2:
 | `tool.call.toolview` | keyed / session | the search and intake rows on tool cards | either wire spelling |
 | `sidebar.right.pane.tab` (+ `.title`) | keyed / session | the pane body and its chip | the right column's add-tab guide |
 | `sidebar.panellist` | list / **root** | a persistent entry in the **left** column, drawn as an icon | the sidebar itself |
+| `conversation.input.overlay` | list / session | the `/misakanet` result card inside the composer | the composer, after the `/` menu picks the command |
 | `main` | keyed / **root** | **the page that entry opens** — the contract says *"Central panel selected by sidebar entry id"* | dispatched with the same id |
+
+The slash command is a **service**, not a seat: the host's slash pipeline owns the draft, and a source is
+registered through `ctx.inject(["inputTriggers"], …)` → `registerSource({trigger, name, candidates, onPick})`.
+Its pick returns a *claim*, which puts the token in the composer and hands the argument back through
+`submit(args)` — that is why the command and the overlay are two registrations: the claim needs somewhere to
+render its answer.
 
 Two facts worth keeping. The two `root` seats do **not** come and go with a session, which is what makes the
 left-column entry permanent. And `sidebar.panellist` alone would be a dead end: the sidebar draws the
