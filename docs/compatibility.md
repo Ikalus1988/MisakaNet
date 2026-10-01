@@ -85,6 +85,36 @@ contract is gated instead, in `tests/test_dsh_plugin_surface.py`: the loader con
 requires), the keyed slot name derived from `cordis.patch.yml`'s `serverName`, that the two `/api/`
 routes the card posts to exist in the worker, and that the bundle carries no credential.
 
+
+**Which seats the client half occupies.** The host publishes its slot contract inside the shipped
+`dsh-cordis-client-runner` bundle (85 entries: kind, scope, options, owner props, occupants), and the
+sidebar's own copy is `dsh-client-ui-sidebar/lib/types/client/contract/slots.d.ts`. Measured 2026-10-01
+against dsh 0.2.0-rc.2:
+
+| seat | kind / scope | what it gives us | how a person reaches it |
+| --- | --- | --- | --- |
+| `conversation.view` | list / session | the MisakaNet tab beside Chat and Trajectory | a session's tab ring |
+| `conversation.chat.assistant-actions` | list / session | the reuse verdict on the assistant action row | a chat turn |
+| `tool.call.toolview` | keyed / session | the search and intake rows on tool cards | either wire spelling |
+| `sidebar.right.pane.tab` (+ `.title`) | keyed / session | the pane body and its chip | the right column's add-tab guide |
+| `sidebar.panellist` | list / **root** | a persistent entry in the **left** column, drawn as an icon | the sidebar itself |
+| `main` | keyed / **root** | **the page that entry opens** — the contract says *"Central panel selected by sidebar entry id"* | dispatched with the same id |
+
+Two facts worth keeping. The two `root` seats do **not** come and go with a session, which is what makes the
+left-column entry permanent. And `sidebar.panellist` alone would be a dead end: the sidebar draws the
+button, the `main` occupant is what that button dispatches to — the shipped `Plugins` row is exactly this
+pair (its occupant is `client-ui-plugin-manager PluginManagerPage`).
+
+Verified live with Playwright against a throwaway host: the left column rendered `MisakaNet` directly under
+`Plugins`, clicking it opened the full page, and the console stayed empty (a failed activation would have
+logged `misakanet: failed`).
+
+![the MisakaNet entry in the left column, and the page it opens](assets/dsh-client-left-column.png)
+
+The same panel in a session's right column, where it can sit beside the other panes:
+
+![the MisakaNet pane in the right column](assets/dsh-client-right-panel.png)
+
 ## The optional peer, and why its range is written the long way
 
 `@deepseek-ai/dsh-mcp-client` is an **optional peer**: `index.js` resolves it at runtime with a dynamic
