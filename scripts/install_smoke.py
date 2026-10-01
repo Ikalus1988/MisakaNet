@@ -681,8 +681,11 @@ def probe_dsh_client(repo: Path, *, timeout: int, dry_run: bool = False,
             return _result("dsh-client", checks, fails, detail, tools_seen=[], result_count=0)
 
         port = _free_port()
+        # `start_new_session` matters for --serve: without it the host is in this process's group and dies
+        # with the shell that ran the probe, which is the opposite of "left running for a human look".
         process = subprocess.Popen([binary, "--profile", "web", "--no-open", "--port", str(port)],
-                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env,
+                                   start_new_session=serve)
         detail["host_pid"] = process.pid
         url = _wait_for_url(process, timeout=timeout)
         if url is None:
@@ -706,10 +709,18 @@ def probe_dsh_client(repo: Path, *, timeout: int, dry_run: bool = False,
                 checks.append(f"the host echoed the declared inject order ({len(declared_inject)} packages)")
             else:
                 fails.append(f"inject mismatch: declared {declared_inject}, host said {entry.get('inject')}")
+            # `base` keeps its trailing slash and the entry url is document-relative, so this is
+            # `http://host:port/plugins/??…`. Joining with an extra slash (`//plugins/…`) makes the host
+            # answer with its SPA fallback — a **200 carrying the index HTML** — which reads exactly like
+            # "the bundle is not served". That false alarm cost a real debugging round on 2026-10-01, so
+            # the assertion below also checks the content type, not just the bytes.
             base = url.split("?", 1)[0]
             served = _get(base + entry["url"], cookies=home / "cookies.txt", timeout=timeout)
             source = (repo / "lib" / "client.js").read_text(encoding="utf-8")
-            if source.strip() in served:
+            if served.lstrip().startswith("<!doctype") or served.lstrip().startswith("<html"):
+                fails.append("the combo route answered with HTML (looks like the SPA fallback, not a "
+                             "bundle) — check the request URL before believing the bundle is missing")
+            elif source.strip() in served:
                 checks.append("the combo route serves lib/client.js verbatim (no build step, no chunk)")
             else:
                 fails.append("the served bundle differs from lib/client.js")
