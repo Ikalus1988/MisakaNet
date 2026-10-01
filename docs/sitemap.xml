@@ -460,6 +460,7 @@
   <url><loc>https://misakanet.org/lessons/copy-firefox-cookiessqlite-for-authenticated-api-calls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ci-dco-failures-on-fork-prs-sign-off-and-pythonpath-traps/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/build-superteam-content-packs-before-credits-refill/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/cryptoweb3-bounty-settlement-basic-units-cross-chain-payments-gas-platform-trust/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/curl-fail-fast-flags-for-agent-scripts/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/log-timestamps-in-sast-for-sa-ops-agents/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/disk-full-from-agent-tmp-dirs-gc-pattern/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
