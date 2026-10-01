@@ -59,6 +59,7 @@ Since 2.40.0 the plugin ships a browser half as well as the MCP row. Six seats, 
 | Conversation tab ring | session | A `MisakaNet` tab beside Chat and Trajectory |
 | Right column pane | session | The same panel as a pane, beside the other tools |
 | Tool call rows | session | One row per `misakanet_search` / `misakanet_submit_intake` call, with a reuse vote per lesson |
+| Settings → General | root | A MisakaNet preference row (voice cues, display density); the endpoint field appears only where the host exposes a writable form, and the row says where the value lives otherwise |
 | Assistant action row | session | 👍 / 👎 on an answer that used a lesson |
 
 <p align="center">
