@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-01T14:04:29.592410+00:00",
+  "generated_at": "2026-10-01T14:32:53.479584+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
+      "title": "lessons: a missing source must not resolve to a default; and a sandboxed panel is an entitlement problem",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2624",
+      "timestamp": "2026-10-01T14:32:42Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2623",
+      "timestamp": "2026-10-01T14:21:28Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2622",
+      "timestamp": "2026-10-01T14:15:25Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(dsh): name the session the footer copies, and hand over a patch snippet",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2618",
+      "timestamp": "2026-10-01T14:05:36Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "lessons: shared-tab navigation is destructive, and git stash is repository-wide",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2621",
       "timestamp": "2026-10-01T13:57:58Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(tests): the inline-script pattern must match a closing tag with whitespace",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2619",
-      "timestamp": "2026-10-01T12:31:50Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(dsh): the MisakaNet surfaces follow the host language (zh/en)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2602",
-      "timestamp": "2026-10-01T12:01:27Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(dsh): the Config gate and the resolver must import through a file URL, not a path",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2609",
-      "timestamp": "2026-10-01T11:50:46Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(dsh): a MisakaNet preference row in Settings → General",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2600",
-      "timestamp": "2026-10-01T11:34:45Z",
       "source": "github"
     },
     {
@@ -57,26 +57,26 @@
     },
     {
       "type": "lesson",
+      "title": "A disabled NSOpenPanel/NSSavePanel is usually the sandbox, not your code — and how to read entitlements",
+      "url": "lessons/contrib/macos-sandbox-panel-needs-the-entitlement-in-the-signature.md",
+      "timestamp": "2026-10-01",
+      "domain": "development",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "A source that does not exist must not resolve to a default — the bug that reports 'pending' forever",
+      "url": "lessons/contrib/missing-source-must-not-resolve-to-a-default.md",
+      "timestamp": "2026-10-01",
+      "domain": "development",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
       "title": "Navigating a shared browser tab is a destructive action — treat it like deleting a file",
       "url": "lessons/contrib/shared-tab-navigation-is-destructive.md",
       "timestamp": "2026-10-01",
       "domain": "agent",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A corpus cached in one row has a ceiling, and the diagnosis cannot live in that row",
-      "url": "lessons/contrib/a-corpus-cached-in-one-row-has-a-ceiling.md",
-      "timestamp": "2026-09-27",
-      "domain": "search",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A stubbed success is not a sandbox — a faked `git push` let the suite rewrite the published index",
-      "url": "lessons/contrib/a-stubbed-success-is-not-a-sandbox.md",
-      "timestamp": "2026-09-26",
-      "domain": "testing",
       "source": "lessons"
     },
     {
