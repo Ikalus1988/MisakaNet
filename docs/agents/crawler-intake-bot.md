@@ -173,6 +173,29 @@ canonical 近重复复检 + kind 路由（question→FAQ）后才 lesson 化。�
 - **实测**：zsxh 跨语言样例 9 例误配 **19/50 → 0-1/9**；同栈真命中不受影响（git 401→git 课、curl proxy→proxy 课、AWS creds→aws 课）
 - 局限（v1.0 已知）：词表驱动、非语言检测器；`suggest-only` 语义请消费方遵守
 
+## 10c. v1.1（#2643）——命中证据覆盖门 + sim 量纲写死
+
+外部报告的两条反馈（同一份 intake bot 输出）在这里收口：
+
+1. **跨语言/泛化词误报仍会放行**：0.45 阈值下，
+   `--error "ModuleNotFoundError: No module named 'pytest_mock'"` 仍会以 sim 0.5 命中德语课
+   `fehler-python-modul-nicht-gefunden`——两篇课唯一的共同词是**失败类别名** `modulenotfounderror`，
+   而那篇德语课从头到尾没提 `pytest_mock`。
+   修法（v1.1 **命中证据覆盖门**）：查询里承载失败主体的词（`_distinctive_tokens`：≥6 字符、
+   不是通用失败词、不是 `*Error` 类别名）必须在命中课程里至少出现一个；否则不 hit，走 intake 报缺口。
+   **刻意不按语言/书写系统过滤课程**——那会连坐 zh / pt-br / de 里真正对症的课，
+   覆盖门问的是"这门课讲的是不是你的东西"，与它用什么语言写无关。
+   查询本身只有泛化词时（无主体词可覆盖），保留 v1.0 的高分兜底。
+   - 实测（语料 435 篇，2026-10-02）：原复现 → `intake`（不再 hit）；同栈真命中不受影响
+     （`ModuleNotFoundError ... 'requests' python pip venv` 改判到真正对症的 tiktoken 课、sim 1.0）。
+   - 自测回归：`tests/test_intake_bot_50.py::TestDistinctiveTokenCoverage`（含"摘掉覆盖门就变红"的变异验证）。
+
+2. **`sim` 不是 0..1**：`docs/external-pilots/roof4u-samples-2026-09-08.ndjson` 里的 1.67 / 1.33
+   不是脏数据，是**加权分** `max(标题重叠×2, 描述重叠)`（上限 2.0）——1.67 = 标题重叠 0.835×2。
+   阈值 `--sim` / action 的 `sim` 与它同量纲：0.45 等价于「标题重叠 ≥0.23」或「描述重叠 ≥0.45」。
+   输出新增 `sim_norm`（同分数的 0..1 视图）与 `sim_scale`（量纲上界），但**判据仍只认 `sim`**；
+   约定由 `TestSimScaleContract` 钉住，改权重/归一化会让测试变红。
+
 ## 10. MVP 已实现（2026-09-06）——`scripts/intake_bot.py`（零依赖，供 zsxh 实测）
 
 实现范围：设计中"五闸"的 2/3/4 最小版 + 三态决策；**默认 dry-run**（防噪音），
@@ -186,7 +209,7 @@ cat err.log | python3 scripts/intake_bot.py --json        # 管道 + JSON（Acti
 ```
 
 测试要点（zsxh 侧）：
-- **命中**：输出课程 id/链接/sim → 验证建议是否对症（`--sim` 调灵敏度，默认 0.30）。
+- **命中**：输出课程 id/链接/sim → 验证建议是否对症（`--sim` 调灵敏度，默认 0.45，量纲 0..2，见 §10c）。
 - **intake 候选**：dry-run 只打印将提交内容；确认无误再加 `--auto-intake`（指纹去重防重复灌）。
 - **忽略**：无证据/重复签名静默 —— 预期行为，非故障。
 - 缓存/去重目录：`MISAKA_CACHE_DIR`（默认 ~/.cache/misaka-intake-bot，300s 语料缓存）。

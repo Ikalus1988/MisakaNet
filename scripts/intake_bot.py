@@ -17,8 +17,16 @@
 
 噪音闸（MVP 版，对应设计五闸中的 2/3/4）:
     闸2 指纹去重（~/.cache/misaka-intake-bot/sigs.json，sha1 归一化错误）
-    闸3 预查命中门（GET https://misakanet.org/api/lessons 免注册，标题/正文 token 重叠）
+    闸3 预查命中门（GET https://misakanet.org/api/lessons 免注册，标题/正文 token 重叠
+        + 覆盖门：查询的主体词必须在命中课程里出现过）
     闸4 质量门槛（错误 ≥10 字符、非占位/回声模式；--force 可绕过仅用于自测）
+
+输出里的相似度字段（外部试点报告按它判命中质量）:
+    lesson.sim        加权分 = max(标题重叠×2, 描述重叠)，**量纲 0..2 而非 0..1**
+    lesson.sim_norm   同一分数的 0..1 归一化视图（= sim / 2）
+    lesson.sim_scale  量纲上界（当前 2.0），消费方不用把 2 写死
+    --sim 阈值与 sim 同量纲：默认 0.45 等价于「标题重叠 ≥0.23」或「描述重叠 ≥0.45」
+    （sim=1.67 = 标题重叠 0.835×2；约定由 TestSimScaleContract 钉住）
 """
 from __future__ import annotations
 
@@ -43,6 +51,19 @@ CORPUS_FILE = CACHE_DIR / "corpus.json"
 DEFAULT_HIT_SIM = 0.45  # v1.0：命中确认阈值（title 重叠 ×2 / body 重叠，取 max）。0.30 曾致 38% 跨语言假阳性（#1529 反馈）
 HIGH_BAR_SIM = 0.55    # 无技术栈特征（泛化错误）时要求更高相似度才给 hit
 PRECHECK_LIMIT = 5
+
+# ── 相似度分（输出 JSON 的 lesson.sim）的量纲 ───────────────────────────────
+# **不是 0..1**：它是加权分 = max(title 重叠 ×2, body 重叠)，上限 2.0。
+#   title 重叠 = |q ∩ title| / max(|q|, |title|)   （×2：标题证据加倍）
+#   body  重叠 = |q ∩ body|  / max(|q|, |body|)    （分母取 max 而非并集，两个方向都不对称）
+# 阈值（--sim / action 的 sim 输入）就是与这个加权分比较，于是：
+#   sim=0.45 实际等于「标题重叠 ≥0.23」或「描述重叠 ≥0.45」；
+#   sim ≥1.0 只可能来自标题，表示查询词有一半以上直接落在课程标题里（强信号）。
+# 外部试点报告拿这个字段判命中质量（docs/external-pilots/roof4u-samples-2026-09-08.ndjson 里
+# 的 1.67 = 标题重叠 0.835×2），所以这里是**冻结的约定**，由
+# tests/test_intake_bot_50.py::TestSimScaleContract 钉住；改权重/归一化/量纲会让那些测试变红。
+SIM_TITLE_WEIGHT = 2.0
+SIM_MAX = SIM_TITLE_WEIGHT  # 2.0：阈值参数与输出共用的量纲上界
 
 
 PLACEHOLDER_RE = re.compile(
@@ -140,6 +161,46 @@ def _tokens(text: str) -> set[str]:
     return toks - _STOP
 
 
+# ── 命中证据词（#2643：跨语言/泛化词误报的结构性修复）──────────────────────
+# 词面相似度会把「失败类别名」当成证据：`ModuleNotFoundError` 出现在几百篇课程里，
+# 于是 `--error "ModuleNotFoundError: No module named 'pytest_mock'"` 会以 0.5 命中一篇
+# 与 pytest_mock 毫无关系的德语课（只有 modulenotfounderror 一个共同词）。
+# 修法不是"按语言过滤"（那会连坐到 zh/pt-br 等同样合法的课程），而是要求命中课程里
+# 至少出现一个**承载失败主体的词**：既不是通用失败词，也不是错误类别名。
+_GENERIC_TOKENS = {
+    # 失败/工具通用词：出现在大量课程里，单独不构成"这门课在讲你的问题"的证据
+    "connection", "database", "permission", "undefined", "unexpected", "exception",
+    "traceback", "warning", "loading", "install", "command", "version", "process",
+    "timeout", "failure", "missing", "cannot", "failed", "invalid",
+    "results", "nothing", "pattern",
+}
+_ERR_CLASS_RE = re.compile(r"(?:error|exception|failure|fault|fatal)s?$")
+
+
+def _distinctive_tokens(tokens: set[str]) -> set[str]:
+    """返回承载失败主体的查询词（`pytest_mock`/`tfstate`/`credential`…）。
+
+    排除：短词（<6 字符，多为英文虚词/缩写）、通用失败词、错误类别名（`*Error`）。
+    全是通用词的查询（如「Error: something went wrong」）返回空集——此时不做覆盖门，
+    退回原有的加权阈值判定。
+    """
+    return {t for t in tokens
+            if len(t) >= 6 and t not in _GENERIC_TOKENS and not _ERR_CLASS_RE.search(t)}
+
+
+def _doc_tokens(doc: dict) -> tuple[set[str], set[str], set[str]]:
+    """课程侧词集合，一次算好两用：`(title, body)` 用于打分，`title|body|domain|tags` 用于覆盖判定。"""
+    title = _tokens(doc.get("title") or "")
+    body = _tokens((doc.get("description") or "")[:500])
+    extra = _tokens(" ".join([doc.get("domain") or "", " ".join(doc.get("tags") or [])]))
+    return title, body, title | body | extra
+
+
+def _score(q: set[str], title: set[str], body: set[str]) -> float:
+    """单篇课程的加权相似度分（0..SIM_MAX）。量纲见文件头 `SIM_TITLE_WEIGHT` 注释。"""
+    return max(_sim(q, title) * SIM_TITLE_WEIGHT, _sim(q, body))
+
+
 def _sim(a: set[str], b: set[str]) -> float:
     if not a or not b:
         return 0.0
@@ -175,11 +236,18 @@ def _load_corpus(timeout: int = 60) -> list[dict]:
 
 
 def precheck(error: str, sim_threshold: float, corpus: list | None = None) -> dict | None:
-    """全量语料本地打分（title 重叠 ×2 / body 重叠）。命中返回最佳课程 dict；无命中返回 None。
+    """全量语料本地打分（title 重叠 ×2 / body 重叠，取 max）。命中返回最佳课程 dict；无命中返回 None。
 
     v1.0 结构性防假阳性（#1529 反馈：0.30 阈值跨语言 FP 38%）：
     - 查询含明确技术栈特征 → 最佳课程必须同栈（跨栈即使词面相似也不 hit）
     - 查询无技术栈特征（泛化错误）→ 需过 HIGH_BAR_SIM 才 hit
+    v1.1 命中证据覆盖门（#2643：0.45 仍放行的跨语言/泛化误报）：
+    - 查询带主体词（`pytest_mock`/`tfstate`…）时，命中课程**必须**至少含其中一个
+      （`_distinctive_tokens` / `_doc_tokens`）；否则宁可不 hit、走 intake 报缺口。
+      动机：`ModuleNotFoundError` 这类失败类别名出现在几百篇课里，只靠它凑出的 0.5 分
+      会把一篇德语课推成"命中"，而该课根本没提 `pytest_mock`。
+      **刻意不按语言/书写系统过滤课程**——那会连坐 zh / pt-br / de 等语种里真正对症的课；
+      覆盖门问的是"这门课讲的是不是你的东西"，与它用什么语言写的无关。
     `corpus` 供测试注入固定语料；缺省走远端（_load_corpus）。
     """
     q = _tokens(error)
@@ -188,12 +256,13 @@ def precheck(error: str, sim_threshold: float, corpus: list | None = None) -> di
     docs = _load_corpus() if corpus is None else corpus
     q_stack = _detect_stack(error)
     bar = sim_threshold if q_stack else max(sim_threshold, HIGH_BAR_SIM)
-    best, best_score = None, 0.0
+    q_distinct = _distinctive_tokens(q)
+    best, best_score = None, 0.0           # 有覆盖证据的最佳课程
+    fallback, fallback_score = None, 0.0   # 词面最高分（仅用于无覆盖证据时的强信号）
     for doc in docs:
-        title = _tokens(doc.get("title") or "")
-        body = _tokens((doc.get("description") or "")[:500])
-        score = max(_sim(q, title) * 2.0, _sim(q, body))
-        if score <= best_score:
+        title, body, evidence = _doc_tokens(doc)
+        score = _score(q, title, body)
+        if score <= 0.0:
             continue
         # 技术栈一致性：query 有栈特征时，仅排除"明确属于不同栈"的课程；
         # 无栈特征的通用课程（agent/ops/dco 类）仍可凭词面命中（否则会被误滤）。
@@ -201,8 +270,19 @@ def precheck(error: str, sim_threshold: float, corpus: list | None = None) -> di
         d_stack = _doc_stack(doc)
         if q_stack and d_stack and not (q_stack & d_stack):
             continue
-        best, best_score = doc, score
-    if best and best_score >= bar:
+        if score > fallback_score:
+            fallback, fallback_score = doc, score
+        if q_distinct and not (q_distinct & evidence):
+            continue  # 课程没提查询的主体词 → 不是这门课在讲你的失败
+        if score > best_score:
+            best, best_score = doc, score
+    if not q_distinct and best is None and fallback_score >= bar:
+        # 查询本身只有泛化失败词（没有主体词可覆盖）→ 保留 v1.0 行为，靠高分兜底。
+        # 注意：查询**有**主体词却没有任何课程提到它时**不兜底**——那正是"这门课不是在讲
+        # 你的失败"的信号（#2643 的德语课误报），此时正确答案是 intake 报缺口。
+        best, best_score = fallback, fallback_score
+    if best is not None and best_score >= bar:
+        best = dict(best)  # 不就地改调用方（可能来自缓存 corpus）的元素
         best["_sim"] = best_score
         best["_suggest_only"] = True  # v1.0：命中仅为建议，供人工核对
         return best
@@ -275,11 +355,16 @@ def decide(error: str, *, source: str, what_tried: str, auto_intake: bool,
     sigs = load_sigs()
     hit = None if offline else precheck(error, sim_threshold, corpus=corpus)
     if hit:
+        sim = round(hit.get("_sim", 0), 2)
         return {"decision": "hit", "fingerprint": sig,
                 "suggest_only": True,  # v1.0：命中仅为建议，请人工核对后再采用
                 "lesson": {"id": hit.get("id"), "title": hit.get("title"),
                            "url": f"https://misakanet.org/lessons/{hit.get('id') or ''}/",
-                           "sim": round(hit.get("_sim", 0), 2)}}
+                           "sim": sim,
+                           # 同一分数的 0..1 归一化视图，给按 [0,1] 理解"相似度"的消费方用；
+                           # 判据/阈值仍只认 `sim`（加权分，0..2）。
+                           "sim_norm": round(sim / SIM_MAX, 4),
+                           "sim_scale": SIM_MAX}}
 
     ok, reason = quality_gate(error, what_tried)
     seen = sigs.get(sig, 0)
@@ -338,7 +423,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--source", default="intake-bot", help="intake 来源标识（默认 intake-bot）")
     ap.add_argument("--what-tried", default="", help="已尝试内容（提高转正率）")
     ap.add_argument("--auto-intake", action="store_true", help="真实调用 submit_intake（默认 dry-run）")
-    ap.add_argument("--sim", type=float, default=DEFAULT_HIT_SIM, help=f"命中阈值（默认 {DEFAULT_HIT_SIM}）")
+    ap.add_argument("--sim", type=float, default=DEFAULT_HIT_SIM,
+                    help=f"命中阈值（默认 {DEFAULT_HIT_SIM}），与输出的 sim 同量纲 0..{SIM_MAX:g}"
+                         f"（加权分 max(标题重叠×2, 描述重叠)）；无栈特征的泛化错误另需 ≥{HIGH_BAR_SIM}")
     ap.add_argument("--offline", action="store_true", help="跳过远端预查")
     ap.add_argument("--force", action="store_true", help="绕过去重/质量闸（仅自测）")
     ap.add_argument("--json", action="store_true")
@@ -367,7 +454,9 @@ def main(argv: list[str] | None = None) -> int:
     else:
         if res["decision"] == "hit":
             l = res["lesson"]
-            print(f"💡 命中课程（sim={l['sim']}，仅供参考）：{l['title']}\n   {l['url']}")
+            # 量纲写在输出里：sim 是加权分（0..sim_scale），不是百分比；sim_norm 才是 0..1。
+            print(f"💡 命中课程（sim={l['sim']}/{l.get('sim_scale', SIM_MAX):g}"
+                  f" = {l.get('sim_norm', 0):.3f}×满分，仅供参考）：{l['title']}\n   {l['url']}")
             print("   ⚠️ suggest-only：AI 建议，请人工核对后再采用。已存在课程 → 不 intake；")
             print("   按该课程修复后再试仍失败，请补 what_tried 重跑。")
         elif res["decision"] == "intake":
