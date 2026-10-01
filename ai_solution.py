@@ -1,8 +1,8 @@
 ```json
 {
   "kind": "missing_lesson",
-  "problem": "2026-10-01T09:57:24.7726845Z \u001b[36;1m# value was empty, the comparison was always false, and every leg printed \"❌ …: FAIL\"\u001b[0m\r\n2026-10-01T09:57:24.7728242Z \u001b[36;1m  echo \"❌ ${{OS}} / Python ${{PY}}: FAIL (pytest exit ${{EXIT_CODE:-none}})\"\u001b[0m\r\n2026-10-01T09:57:24.7737570Z shell: C:\\Pr",
-  "error": "2026-10-01T09:57:24.7726845Z \u001b[36;1m# value was empty, the comparison was always false, and every leg printed \"❌ …: FAIL\"\u001b[0m\r\n2026-10-01T09:57:24.7728242Z \u001b[36;1m  echo \"❌ ${{OS}} / Python ${{PY}}: FAIL (pytest exit ${{EXIT_CODE:-none}})\"\u001b[0m\r\n2026-10-01T09:57:24.7737570Z shell: C:\\Pr",
+  "problem": "2026-10-01T10:47:24.3082750Z # value was empty, the comparison was always false, and every leg printed \"❌ …: FAIL\"\n2026-10-01T10:47:24.3084706Z   echo \"❌ ${{OS}} / Python ${{PY}}: FAIL (pytest exit ${{EXIT_CODE:-none}})\"\n2026-10-01T10:47:24.3099614Z shell: C:\\Pr",
+  "error": "2026-10-01T10:47:24.3082750Z # value was empty, the comparison was always false, and every leg printed \"❌ …: FAIL\"\n2026-10-01T10:47:24.3084706Z   echo \"❌ ${{OS}} / Python ${{PY}}: FAIL (pytest exit ${{EXIT_CODE:-none}})\"\n2026-10-01T10:47:24.3099614Z shell: C:\\Pr",
   "what_tried": "",
   "source": "github-action",
   "matched_lesson_id": "",
