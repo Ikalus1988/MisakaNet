@@ -30,7 +30,7 @@ The 2.40.0 tarball's `lib/client.js` is **50,486 bytes** and carries **no `local
 
 | Where you install from | Surfaces you get |
 | --- | --- |
-| `misakanet` on npm (`latest` = **2.40.0**) | the 2.40.0 seats: the left-column entry, the page it opens, the conversation tab, the right-column pane, the tool-call rows, and the 👍/👎 action row |
+| `misakanet` on npm (`latest` = **2.40.0**) | the **five** 2.40.0 seats: left column (the permanent entry **and** the `main` page it opens — one row in the README), conversation tab, right column, tool-call rows, 👍/👎 action row. The bounty asks about them as six because it counts the entry and its page separately |
 | **this working tree** (`main`, ahead of npm) | the above **plus** everything merged since: `/misakanet` in the composer, the frame-wide toast, the sidebar-foot action, Settings → General, the plugin page, and the packaged Chinese/English locales |
 
 The second row is what the bounty needs. The extra surfaces are carried by **2.41.0**, whose release PR is
@@ -134,6 +134,17 @@ instead of a composer — `[role=textbox]` is labelled `Choose workspace`, the b
 start`. Nothing is broken and **nothing is logged**: the domain silently drops a workspace record that does
 not satisfy its schema, and the chosen-looking symptom is a textbox nobody can type into.
 
+It also has **no `storages/` directory**: `dsh plugin --profile web add` writes `profiles/web/` and nothing
+else, so the `workspace.json` write below creates that directory first. Skip it and the seed fails outright,
+before the host is involved at all:
+
+```console
+$ python3 - "$HOMEDIR" "$REPO" <<'PY'     # the seed block below, without its mkdir -p
+Traceback (most recent call last):
+  ...
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/dsh-client-half/storages/workspace.json'
+```
+
 The record needs `createdAt` and `updatedAt`. Without them it is rejected with no error; with them the host
 creates the first session itself on page load, which is the way the host supports it. A/B measured on
 2026-10-01 (`dsh 0.2.0-rc.2`), with those two fields as the only difference:
@@ -144,15 +155,19 @@ creates the first session itself on page load, which is the way the host support
 | with them | `Describe what you want to build, / commands, @ files or sessions` | composer is live |
 
 Do not try to *drive* the chooser as a workaround: adding a workspace through the real UI goes through a
-native directory picker that a headless browser cannot open, and driving the chooser is what hid the
-rejected-record bug for a day (`docs/maintainer/handoff-2026-09-30-ext.md` §11.2).
+native directory picker that a headless browser cannot open, and a chooser that accepts a click while the
+record is dropped is how this trap stays invisible — the composer is still inert and still logs nothing. The
+per-surface list this step feeds is
+[`docs/maintainer/client-half-acceptance.md`](../maintainer/client-half-acceptance.md).
 
 ```bash
+mkdir -p "$HOMEDIR/storages"      # `dsh plugin --profile web add` does not create it
 python3 - "$HOMEDIR" "$REPO" <<'PY'
 import json, pathlib, sys, uuid
 from datetime import datetime, timezone
 
 home, repo = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]).resolve()
+(home / "storages").mkdir(parents=True, exist_ok=True)
 now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 wid = str(uuid.uuid4())
 (home / "storages" / "workspace.json").write_text(json.dumps({
@@ -165,6 +180,31 @@ wid = str(uuid.uuid4())
 }), encoding="utf-8")
 print("seeded workspace", wid, "->", repo)
 PY
+```
+
+Run on a brand-new `DSH_HOME` on 2026-10-01 (`dsh 0.2.0-rc.2`): without the `mkdir -p`, the seed exits 1
+with the `FileNotFoundError` above; with it, the record is on disk and the host boots off that home:
+
+```console
+$ dsh plugin --profile web add "$REPO"
+dsh: initialized profile web at /tmp/dsh-client-half/profiles/web
++ misakanet link:/path/to/your/MisakaNet
+Done in 338ms using pnpm v11.9.0
+
+$ ls -d "$HOMEDIR/storages"
+ls: cannot access '/tmp/dsh-client-half/storages': No such file or directory
+
+$ mkdir -p "$HOMEDIR/storages"
+$ python3 - "$HOMEDIR" "$REPO" <<'PY'      # the seed block above
+seeded workspace 1c537fe5-8ab3-451a-9862-6be52bc62ef9 -> /path/to/your/MisakaNet
+PY
+
+$ ls -l "$HOMEDIR/storages/workspace.json"
+-rw-r--r-- 1 you you 422 Oct  2 01:38 /tmp/dsh-client-half/storages/workspace.json
+
+$ dsh --profile web --no-open --port "$PORT" >"$HOMEDIR/host.log" 2>&1 &
+$ cat "$HOMEDIR/host.log"
+dsh web: http://127.0.0.1:41337/?token=…        # the host is up on the throwaway home
 ```
 
 ### Boot the host
@@ -199,17 +239,40 @@ were observed on a fresh throwaway home on 2026-10-01. Then check the composer i
 
 Take these in order; each row says what it looks like when it is there. The bounty's screenshots are the
 left-column entry + the page it opens (seats 1–2), and one session surface with data in it (seats 3–6 after a
-search). The bounty's table is written against 2.40.0, and the first five rows below are the seats that
-release already carried:
+search).
 
-| Seat (bounty #2593) | Slot | In 2.40.0? |
-| --- | --- | --- |
-| 1. Left column, under `Plugins` | `sidebar.panellist` | ✅ |
-| 2. `main` page | `main` | ✅ |
-| 3. Conversation tab ring | `conversation.view` | ✅ |
-| 4. Right column pane | `sidebar.right.pane.tab` | ✅ |
-| 5. Tool call rows | `tool.call.toolview` | ✅ |
-| 6. Assistant action row | `conversation.chat.assistant-actions` | ✅ |
+**2.40.0 carries five seats, and the bounty asks about them as six**: the README's 2.40.0 table describes the
+left-column entry and the `main` page it opens as **one** row, while the bounty numbers them 1 and 2. Every
+one of the six is in the published package, and the slot each registers is what says so:
+
+| Seat (bounty #2593) | Slot | In 2.40.0? | README row |
+| --- | --- | --- | --- |
+| 1. Left column, under `Plugins` | `sidebar.panellist` | ✅ | the 1st of the five |
+| 2. `main` page | `main` | ✅ | the same row as seat 1 |
+| 3. Conversation tab ring | `conversation.view` | ✅ | the 2nd |
+| 4. Right column pane | `sidebar.right.pane.tab` | ✅ | the 3rd |
+| 5. Tool call rows | `tool.call.toolview` | ✅ | the 4th |
+| 6. Assistant action row | `conversation.chat.assistant-actions` | ✅ | the 5th |
+
+You can check that against the published tarball instead of taking this page's word for it — the slots the
+bundle reaches for are the seats it draws:
+
+```console
+$ npm pack misakanet@2.40.0 --pack-destination /tmp && tar xzf /tmp/misakanet-2.40.0.tgz -C /tmp
+$ grep -oE '(registerWhenDeclared|slots\.inject)\("[a-z.]+"' /tmp/package/lib/client.js | sed 's/.*("//' | sort -u
+conversation.view"
+main"
+sidebar.panellist"
+sidebar.right.pane.tab"
+sidebar.right.pane.tab.title"
+tool.call.toolview"
+```
+
+`conversation.chat.assistant-actions` (seat 6) is a child slot declared by a parent entry, so it does not
+appear in that list; the bundle's own comments name it, and it renders on the finalized answer. The same
+command on a **checkout** bundle also lists the 2.41.0 slots: `conversation.input.overlay` (`/misakanet`),
+`shell.overlay` (the toast), `sidebar.footer.action`, `settings.general.item`, and
+`plugins.bundle.config` / `plugins.row.config` (the plugin page).
 
 The full slot-vs-scope table, with the host's own contract text quoted, is in
 [`docs/compatibility.md`](../compatibility.md).
@@ -223,10 +286,20 @@ The full slot-vs-scope table, with the host's own contract text quoted, is in
 | 5. Tool call rows | one row per `misakanet_search` / `misakanet_submit_intake` call, on the tool card. |
 | 6. Assistant action row | 👍 / 👎 on a finalized answer that used a lesson. |
 
-Seats 1–6 are the 2.40.0 set. On a **checkout** install you should also see the surfaces that are not in
-2.40.0 yet — `/misakanet` in the composer, the frame-wide toast after a search, the sidebar-foot action,
-Settings → General, and the localized Chinese/English copy. Report those as *found* only if you installed
-from a checkout; on the npm 2.40.0 package their absence is expected, not a bug.
+All six of those seats ship in 2.40.0 — the release the bounty is written against. On a **checkout** install
+you should also see the surfaces that are **not** in 2.40.0 and ship in **2.41.0**
+([release PR #2591](https://github.com/Ikalus1988/MisakaNet/pull/2591)):
+
+* `/misakanet` in the composer,
+* the frame-wide toast after a search,
+* the sidebar-foot action,
+* Settings → General,
+* the plugin page's read-only MCP row,
+* the packaged Chinese/English locales.
+
+Report those as *found* only if you installed from a checkout; on the npm 2.40.0 package their absence is
+expected, not a bug. The voice-cue switch is **not** on that list — it is drawn inside the panel, and
+`"Voice cues: off"` is already in the 2.40.0 tarball's `lib/client.js`.
 
 To get data into a session surface (seat 3–6), ask the agent to search, e.g. *"search MisakaNet for
 `pip install timeout`"*: the search row and the panel then have content, and the toast appears once the
