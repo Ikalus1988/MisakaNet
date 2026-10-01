@@ -59,9 +59,9 @@ All three clients support MCP over HTTP — MisakaNet's remote endpoint (`https:
 
 | File | Client | Config Key | URL Field | Type Field |
 |---|---|---|---|---|
-| `docs/integrations/opencode.md` | OpenCode | `mcp` | `url` | `type: "remote"` |
-| `docs/integrations/kiro.md` | Kiro | `mcpServers` | `url` | (inferred from URL) |
-| `docs/integrations/oh-my-pi.md` | OMP | flat per-server | `url` | `type: "http"` |
+| [opencode.md](../integrations/opencode.md) | OpenCode | `mcp` | `url` | `type: "remote"` |
+| [kiro.md](../integrations/kiro.md) | Kiro | `mcpServers` | `url` | (inferred from URL) |
+| [oh-my-pi.md](../integrations/oh-my-pi.md) | OMP | flat per-server | `url` | `type: "http"` |
 
 ## 4. What Requires Runtime Verification
 
