@@ -1,7 +1,24 @@
 name: Auto-Sync PR Branches
+# Six-hourly + on demand, **not** on every push to main (changed 2026-10-01).
+#
+# It used to run on `push: branches: [main]`, which meant every main push re-headed every open PR. Three
+# measured costs, all on 2026-10-01:
+#
+#   * each sync re-runs the whole cross-platform matrix (30+ checks) on that PR — 42 runs were queued
+#     repo-wide at the point this was measured;
+#   * the push resets GitHub's `mergeable` computation, so a PR that was about to merge goes back to
+#     `mergeable_state: unknown` and auto-merge stalls — the release PR's head moved three times in about
+#     twenty minutes, and #2584 had to be merged through the API because a sync had re-headed it seconds
+#     before;
+#   * the value it buys is optional: `main`'s ruleset sets
+#     `strict_required_status_checks_policy: false`, so a PR does **not** need to be up to date with main
+#     to merge. Syncing is about avoiding conflicts, and six hours is enough for that.
+#
+# The per-PR guard below (skip a PR that can already merge) is the other half: a mergeable PR must not be
+# pushed to at all, whatever the schedule says.
 on:
-  push:
-    branches: [main]
+  schedule:
+    - cron: '17 */6 * * *'
   workflow_dispatch:
 
 permissions:
@@ -74,6 +91,15 @@ jobs:
             # Skip fork PRs (cannot push to fork branches)
             if [ "$HEAD_REPO" != "${{ github.repository }}" ]; then
               echo "  SKIP: fork PR — cannot push to $HEAD_REPO"
+              continue
+            fi
+
+            # A PR that can already merge does not need main merged into it, and pushing to it is
+            # actively harmful: the sync re-runs the whole matrix and resets GitHub's mergeability
+            # computation, which is how a green PR ends up sitting unmergeable at the finish line
+            # (measured 2026-10-01: #2584 had to be merged through the API for exactly this reason).
+            if [ "$MERGEABLE" = "true" ]; then
+              echo "  SKIP: already mergeable — a sync would only reset its checks and its mergeability"
               continue
             fi
 
