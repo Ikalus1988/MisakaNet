@@ -98,6 +98,8 @@ against dsh 0.2.0-rc.2:
 | `tool.call.toolview` | keyed / session | the search and intake rows on tool cards | either wire spelling |
 | `sidebar.right.pane.tab` (+ `.title`) | keyed / session | the pane body and its chip | the right column's add-tab guide |
 | `sidebar.panellist` | list / **root** | a persistent entry in the **left** column, drawn as an icon | the sidebar itself |
+| `shell.overlay` | list / **root** | a frame-wide toast when a search in the session comes back with lessons; dismissible, and its title opens the lesson | after a `/misakanet` search |
+| `sidebar.footer.action` | list / **root** | one action beside Settings: copy this session's MisakaNet activity as a summary | the sidebar foot |
 | `settings.general.item` | list / **root** | one preference row in Settings → General: voice cues and display density (browser scope), plus the MCP endpoint when the host exposes a writable form | Settings → General |
 | `plugins.bundle.config` / `plugins.row.config` | keyed / **root** | the row's effective configuration in the plugin page | the plugin page's configure control |
 | `conversation.input.overlay` | list / session | the `/misakanet` result card inside the composer | the composer, after the `/` menu picks the command |
@@ -180,3 +182,47 @@ silently, and a new declared line that is not named here fails the test rather t
 ## Localization
 
 Dictionaries live inline in `lib/client.js` and go through `ctx.locale`; `locale/en.json` and `locale/zh.json` are the package metadata the host reads for the plugin page. Verified live in 中文 on 2026-10-01: the settings row, all five panel headings, and the `/misakanet` overlay copy.
+
+## Frame-wide seats
+
+Both `shell.overlay` and `sidebar.footer.action` are **root** scope and receive no `sessionId` — the footer's
+own wording is "each action receives only the column state". The store therefore remembers the session that
+moved last and these two surfaces speak about it, through a browser-scope notification (`subscribeShell`)
+rather than a per-session subscription: an effect that subscribed once at mount, when there is no session yet,
+would subscribe to nothing and never repaint. That was a real bug here, caught by looking at the DOM instead
+of trusting the wiring.
+
+Two things worth keeping from this seat:
+
+* the shell layer is **click-through** — "entries opt back into pointer events" — so the toast sets
+  `pointerEvents: auto` on its own root, or its dismiss button would be unclickable;
+* the overlay's state is nested (`log.overlay`) while the counters beside it are not, and the summary line
+  says `tool searches` and `composer search` separately, because the `/misakanet` command never goes through
+  the MCP tools and folding the two together would misdescribe both.
+
+Measured 2026-10-01 in a throwaway host: after `/misakanet pip install timeout`, the toast appeared with
+`命中 5 篇课程` and the top lesson, clicking its own × removed it, and the footer action put
+
+```
+MisakaNet — this session
+tool searches: 0 (0 with a lesson)
+lessons: —
+votes: 0 (helpful 0)
+reports filed: 0
+composer search: 'pip install timeout' → 5 results
+```
+
+on the clipboard.
+
+### The two root seats, after living with them
+
+`sidebar.footer.action` receives no session, so the store remembers the one that moved last. The action now
+**names that session in the text it copies** (`session: effa17cd`) and its tooltip says which session it means
+— better than a silent guess, and honest about being a guess at all.
+
+Both places that can only *read* the row's configuration — the plugin page's card and the settings row — now
+offer **Copy patch snippet**, which produces the `cordis.patch.yml` entry for the row. That turns the
+read-only dead end into the next step, and it is the same document the host's native editor points at.
+
+Measured 2026-10-01 in a throwaway host: the footer's clipboard begins `MisakaNet — this session` /
+`会话：effa17cd`, and the snippet copies as `- id: misakanet-mcp` / `disabled: false` / `config:`.
