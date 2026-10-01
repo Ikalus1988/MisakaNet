@@ -211,8 +211,25 @@ dsh web: http://127.0.0.1:41337/?token=…        # the host is up on the throwa
 
 ```bash
 dsh --profile web --no-open --port "$PORT" >"$HOMEDIR/host.log" 2>&1 &
-grep -o "http://127.0.0.1:$PORT/?token=[A-Za-z0-9_-]*" "$HOMEDIR/host.log" | head -1
+# the URL is written about a second after the process starts, so poll for it instead of reading once
+URL=""
+for _ in $(seq 75); do                    # 75 × 2s = 150s, the same bound the e2e runner waits
+  URL=$(grep -o "http://127.0.0.1:$PORT/?token=[A-Za-z0-9_-]*" "$HOMEDIR/host.log" | head -1)
+  [ -n "$URL" ] && break
+  sleep 2
+done
+if [ -z "$URL" ]; then
+  echo "the host never printed its URL within 150s; last lines of $HOMEDIR/host.log:" >&2
+  tail -20 "$HOMEDIR/host.log" >&2
+  exit 1
+fi
+echo "$URL"
 ```
+
+Read the log **once** right after `&` and you get an empty line, not an error — the host writes
+`dsh web: http://127.0.0.1:41337/?token=…` a second later, on a brand-new home as much as on a warm one. The
+loop above is the shell form of `wait_for_url()` in `tests/e2e/run_client_e2e.py`: bounded, and on timeout it
+prints the log tail instead of nothing.
 
 The printed URL carries a one-time token — open the **full URL including `?token=…`**. It is a credential
 for your throwaway host, so keep it out of screenshots.
