@@ -81,7 +81,7 @@
   <url><loc>https://misakanet.org/lessons/agent-roleplay-time-consistency-hallucination/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/agent-state-database-lock-cleanup/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/agent-web-access-toolchain-selection/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/huggingfaceagentcap-inspect-not-show-is-the-subcommand-to-read-a-run-record/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/pip-install-agentcap-gets-a-different-project-huggingfaceagentcap-is-a-rust-bina/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/agentcap-secret-safe-verification-rejects-sensitive-metadata-how-to-diagnose-wit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ai-agent-project-outreach-guide/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/aider-api-key-leak/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -128,7 +128,7 @@
   <url><loc>https://misakanet.org/lessons/cloudflare-observability-mcp-oauth-separate-domain/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/cloudflare-worker-deploy-three-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codeql-alert-dismissal-false-positive/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://misakanet.org/lessons/codesign-display-entitlements-xml-outputs-machine-readable-entitlements-xml/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/codesign-entitlements-prints-a-usage-banner-unless-you-give-it-a-destination/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codex-desktop-reload-mcp-config-without-restarting-the-app/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/codex-cli-keyring-user-interaction-is-not-allowed-diagnosis/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/corporate-proxy-curl-timeout/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

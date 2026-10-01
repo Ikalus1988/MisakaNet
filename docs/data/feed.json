@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-01T00:36:49.953909+00:00",
+  "generated_at": "2026-10-01T07:38:21.930615+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2555",
-      "timestamp": "2026-09-30T20:12:29Z",
+      "title": "chore: auto-update lessons.json, public counts and generated pages",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2585",
+      "timestamp": "2026-10-01T07:35:02Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(dsh): a browser half for the plugin — visibility on the search, the reuse verdict where the outcome is",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2551",
-      "timestamp": "2026-09-30T17:56:46Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(readme): show the DeepSeek Harness \"Add plugin\" dialog, three steps marked",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2549",
-      "timestamp": "2026-09-30T17:31:31Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "feat(mcp): the intake re-submit channel now carries a poll hint and a verified conversion receipt (#2494)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2553",
-      "timestamp": "2026-09-30T17:27:17Z",
+      "title": "fix(watcher): clean the lesson mirror without the pattern that blocks the store listing",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2584",
+      "timestamp": "2026-10-01T07:34:48Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2550",
-      "timestamp": "2026-09-30T17:01:38Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2583",
+      "timestamp": "2026-10-01T07:20:55Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(lessons): instrumentation that never reached the artifact",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2578",
+      "timestamp": "2026-10-01T07:20:28Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(dsh): a permanent seat in the left column, and the page it opens",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2582",
+      "timestamp": "2026-10-01T06:58:45Z",
       "source": "github"
     },
     {
