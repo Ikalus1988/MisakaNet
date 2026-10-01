@@ -44,7 +44,6 @@ import land_change  # noqa: E402  (path inserted above)
 EXPECTED_BRANCH = {
     "update-lessons.yml": "bot/update-lessons",
     "build-feed.yml": "bot/build-feed",
-    "leaderboard-watch.yml": "bot/leaderboard-watch",
     "benchmark-workers-ai.yml": "bot/benchmark-workers-ai",
     "d1-bootstrap.yml": "bot/d1-bootstrap",
     "release-please.yml": "bot/release-version-sync",

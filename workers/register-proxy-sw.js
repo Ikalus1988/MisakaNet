@@ -6811,6 +6811,52 @@ export default {
       return handleReputationLeaderboard(request, env);
     }
 
+    // ── Leaderboard state API (issue #1919) ──────────────────────────────────
+    // Replaces git-committed data/leaderboard.json with D1 storage.
+    // GET  /api/leaderboard/state?key=leaderboard|meta
+    // POST /api/leaderboard/state  {key, value}
+    if (request.method === "GET" && url.pathname === "/api/leaderboard/state") {
+      const d1 = d1Binding(env);
+      if (!d1) return jsonResponse({ error: "D1 not configured" }, 503);
+      const key = url.searchParams.get("key");
+      if (!key || !["leaderboard", "meta"].includes(key)) {
+        return jsonResponse({ error: "Missing or invalid key (leaderboard|meta)" }, 400);
+      }
+      try {
+        const { results } = await d1.prepare(
+          "SELECT value, updated_at FROM leaderboard_state WHERE key = ?"
+        ).bind(key).all();
+        if (!results || results.length === 0) {
+          return jsonResponse({ key, value: null, updated_at: null });
+        }
+        return jsonResponse({ key, value: JSON.parse(results[0].value), updated_at: results[0].updated_at });
+      } catch (e) {
+        return jsonResponse({ error: "D1 query failed", detail: String(e) }, 500);
+      }
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/leaderboard/state") {
+      const d1 = d1Binding(env);
+      if (!d1) return jsonResponse({ error: "D1 not configured" }, 503);
+      let body;
+      try { body = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
+      const { key, value } = body || {};
+      if (!key || !["leaderboard", "meta"].includes(key)) {
+        return jsonResponse({ error: "Missing or invalid key (leaderboard|meta)" }, 400);
+      }
+      if (value === undefined) {
+        return jsonResponse({ error: "Missing value" }, 400);
+      }
+      try {
+        await d1.prepare(
+          "INSERT INTO leaderboard_state (key, value, updated_at) VALUES (?, ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
+        ).bind(key, JSON.stringify(value)).run();
+        return jsonResponse({ key, ok: true });
+      } catch (e) {
+        return jsonResponse({ error: "D1 write failed", detail: String(e) }, 500);
+      }
+    }
+
     // GET /api/insights/demand-board — public aggregate view of intake clusters
     if (request.method === "GET" && url.pathname === "/api/insights/demand-board") {
       if (!env.MISAKANET_KV) return jsonResponse({ success: true, available: false, summary: [] });

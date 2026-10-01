@@ -34,6 +34,9 @@ LESSONS_DIR = REPO_ROOT / "lessons"
 LEADERBOARD_FILE = REPO_ROOT / "data" / "leaderboard.json"
 META_FILE = REPO_ROOT / "data" / "leaderboard_meta.json"
 
+# D1 API base for leaderboard state storage (#1919)
+D1_API_BASE = os.environ.get("MISAKANET_API_BASE", "https://misakanet.org").rstrip("/")
+
 GRAPHQL_QUERY = """
 query($owner: String!, $repo: String!, $cursor: String) {
   repository(owner: $owner, name: $repo) {
@@ -344,7 +347,12 @@ def compute_leaderboard():
 
 
 def load_previous_leaderboard():
-    """读取上次的排行榜快照"""
+    """读取上次的排行榜快照 (D1 first, file fallback)"""
+    # Try D1 first (#1919)
+    d1_val = _d1_get("leaderboard")
+    if d1_val is not None:
+        return d1_val
+    # Fallback to file (migration period)
     if LEADERBOARD_FILE.exists():
         try:
             return json.load(LEADERBOARD_FILE.open())
@@ -354,7 +362,10 @@ def load_previous_leaderboard():
 
 
 def load_meta():
-    """读取 leaderboard_meta.json，返回上次榜首"""
+    """读取 meta (D1 first, file fallback)"""
+    d1_val = _d1_get("meta")
+    if d1_val is not None:
+        return d1_val
     if META_FILE.exists():
         try:
             return json.loads(META_FILE.read_text(encoding="utf-8"))
@@ -364,7 +375,9 @@ def load_meta():
 
 
 def save_meta(meta: dict):
-    """原子写入 leaderboard_meta.json"""
+    """写入 meta (D1 + file for migration)"""
+    _d1_set("meta", meta)
+    # Also write file during migration (remove after D1 is stable)
     LEADERBOARD_FILE.parent.mkdir(parents=True, exist_ok=True)
     tmp = META_FILE.with_suffix(".tmp")
     tmp.write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -372,10 +385,47 @@ def save_meta(meta: dict):
 
 
 def save_leaderboard(data):
-    """保存排行榜快照"""
+    """保存排行榜快照 (D1 + file for migration)"""
+    _d1_set("leaderboard", data)
+    # Also write file during migration (remove after D1 is stable)
     LEADERBOARD_FILE.parent.mkdir(parents=True, exist_ok=True)
     json.dump(data, LEADERBOARD_FILE.open("w"), indent=2)
-    print(f"  Leaderboard saved to {LEADERBOARD_FILE}")
+    print(f"  Leaderboard saved to D1 + {LEADERBOARD_FILE}")
+
+
+def _d1_get(key: str):
+    """Read leaderboard state from D1 via Worker API."""
+    try:
+        url = f"{D1_API_BASE}/api/leaderboard/state?key={key}"
+        req = Request(url, method="GET", headers={
+            "User-Agent": "misakanet-leaderboard-bot",
+            "Accept": "application/json",
+        })
+        with urlopen(req, timeout=10) as resp:
+            body = json.loads(resp.read().decode("utf-8", errors="replace"))
+            return body.get("value")
+    except Exception as e:
+        print(f"  D1 read failed for {key}: {e}")
+        return None
+
+
+def _d1_set(key: str, value):
+    """Write leaderboard state to D1 via Worker API."""
+    try:
+        url = f"{D1_API_BASE}/api/leaderboard/state"
+        data = json.dumps({"key": key, "value": value}).encode("utf-8")
+        req = Request(url, data=data, method="POST", headers={
+            "Content-Type": "application/json",
+            "User-Agent": "misakanet-leaderboard-bot",
+        })
+        with urlopen(req, timeout=10) as resp:
+            body = json.loads(resp.read().decode("utf-8", errors="replace"))
+            if body.get("ok"):
+                print(f"  D1 write ok: {key}")
+            else:
+                print(f"  D1 write unexpected response: {body}")
+    except Exception as e:
+        print(f"  D1 write failed for {key}: {e}")
 
 
 def create_notification_issue(new_top, old_top, changed):
