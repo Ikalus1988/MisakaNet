@@ -599,6 +599,17 @@ INTAKE_LABELS = re.compile(r"already_have:\s*\"([^\"]*)\"")
 PLAY_CUE = re.compile(r"^(?!\s*function ).*playCue\(.*$", re.M)
 
 
+
+def dict_value(key: str, lang: str = "en") -> str:
+    """One entry of the client's own dictionary — the copy those gates used to read out of the render."""
+    source = client_source()
+    block = re.search(rf"\n\t\tvar {lang} = \{{(.*?)\n\t\t\}};", source, re.S)
+    assert block, f"the {lang} dictionary is not a `var {lang} = {{…}}` block"
+    found = re.search(rf'"{re.escape(key)}":\s*"((?:[^"\\]|\\.)*)"', block.group(1))
+    assert found, f"{key} is not declared in {lang}"
+    return json.loads('"' + found.group(1) + '"')
+
+
 def panel_body(source: str) -> str:
     assert PANEL in source, "the client half is expected to keep the review panel"
     return source[source.index(PANEL):]
@@ -642,8 +653,10 @@ def test_the_panel_never_mislabels_a_report_that_was_never_filed():
 def test_the_panel_states_what_it_cannot_know_about_the_local_voice_hook():
     """The browser can toggle its own cues; the hook is another process with its own switch."""
     panel = panel_body(client_source())
+    assert 'T("panel.voice.hook")' in panel, "the voice section renders the hook note from the dictionary"
+    hook = dict_value("panel.voice.hook")
     for fact in ("MISAKANET_VOICE=0", "--voice", "cannot read or change"):
-        assert fact in panel, f"the voice section must say {fact!r} instead of implying control"
+        assert fact in hook, f"the hook note must say {fact!r} instead of implying control"
     assert "localStorage" in client_source() or "VOICE_KEY" in client_source(), (
         "the browser toggle must be browser-local; anything else would claim to change the hook")
 
@@ -767,8 +780,10 @@ def test_the_panel_cannot_file_an_issue():
     assert 'API + "/mcp"' not in source and '"tools/call"' not in source, (
         "the browser half must not call the MCP endpoint at all: submits create issues")
     panel = panel_body(source)
-    assert "by the agent, not by this page" in panel, (
+    assert 'T("panel.report.recheck")' in panel, (
         "the panel must say who re-checks a pending report, or the missing control looks like an oversight")
+    assert "by the agent, not by this page" in dict_value("panel.report.recheck"), (
+        "the sentence behind that key is what makes the missing control read as deliberate")
 
 
 def test_every_counted_noun_in_the_panel_can_be_singular():
@@ -798,8 +813,10 @@ def test_the_plural_helper_is_given_the_plural_where_english_is_irregular():
     assert "function count(n, singular, many)" in source, "the helper must accept an explicit plural"
     bare = re.findall(r'count\([^)]*?"search"\)', source)
     assert not bare, f"`count(n, \"search\")` would print \"searchs\": {bare}"
-    assert source.count('"search", "searches"') >= 2, (
+    assert source.count('T("unit.search"), T("unit.searches")') >= 2, (
         "both search counts (the stat strip and the activity line) must pass the plural")
+    assert dict_value("unit.searches") != dict_value("unit.search") + "s", (
+        "the whole point of this call site is that English spells this plural irregularly")
 
 
 def test_the_trust_rule_is_stated_once_and_every_row_shows_its_own_count():
@@ -811,10 +828,12 @@ def test_the_trust_rule_is_stated_once_and_every_row_shows_its_own_count():
     `→ E4` marker when it has crossed.
     """
     panel = panel_body(client_source())
-    assert panel.count("second is what agents read as E4") == 1, (
+    assert panel.count('T("panel.trust.footnote")') == 1, (
         "the rule belongs once per section, not once per row")
+    assert "second is what agents read as E4" in dict_value("panel.trust.footnote"), (
+        "the sentence behind that key is the rule")
     assert '→ E4' in panel, "a row past the threshold should say what its count means"
-    assert 'count(confirmations, "human confirmation")' in panel, (
+    assert 'count(confirmations, T("panel.trust.human"))' in panel, (
         "each row must print its own confirmation count through the plural helper")
 
 
