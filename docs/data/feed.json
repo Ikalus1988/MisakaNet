@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-10-01T14:44:43.716392+00:00",
+  "generated_at": "2026-10-01T15:17:24.223970+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "lesson: the log sanitizer has to live in the formatter, or exc_info walks around it",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2631",
+      "timestamp": "2026-10-01T15:17:09Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore: update leaderboard snapshot",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2627",
+      "timestamp": "2026-10-01T14:55:39Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2626",
+      "timestamp": "2026-10-01T14:50:33Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "lessons: close the two zero-hit npm gaps, and the force-with-lease gap behind them",
@@ -16,27 +37,6 @@
       "title": "chore(data): sync lessons.json + refresh feed",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2625",
       "timestamp": "2026-10-01T14:38:20Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lessons: missing-source defaults, the sandbox entitlement, and the relevance boundary sample",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2624",
-      "timestamp": "2026-10-01T14:32:42Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2623",
-      "timestamp": "2026-10-01T14:21:28Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2622",
-      "timestamp": "2026-10-01T14:15:25Z",
       "source": "github"
     },
     {
@@ -65,16 +65,16 @@
     },
     {
       "type": "lesson",
-      "title": "A disabled NSOpenPanel/NSSavePanel is usually the sandbox, not your code — and how to read entitlements",
-      "url": "lessons/contrib/macos-sandbox-panel-needs-the-entitlement-in-the-signature.md",
+      "title": "Sanitizing every interpolated value is not enough — exc_info=True appends the raw traceback",
+      "url": "lessons/contrib/log-sanitizer-must-live-in-the-formatter.md",
       "timestamp": "2026-10-01",
-      "domain": "development",
+      "domain": "security",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A source that does not exist must not resolve to a default — the bug that reports 'pending' forever",
-      "url": "lessons/contrib/missing-source-must-not-resolve-to-a-default.md",
+      "title": "A disabled NSOpenPanel/NSSavePanel is usually the sandbox, not your code — and how to read entitlements",
+      "url": "lessons/contrib/macos-sandbox-panel-needs-the-entitlement-in-the-signature.md",
       "timestamp": "2026-10-01",
       "domain": "development",
       "source": "lessons"
