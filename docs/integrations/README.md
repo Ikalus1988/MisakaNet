@@ -9,6 +9,9 @@ Connect MisakaNet to your AI coding tool. Search indexed failure-recovery lesson
 | **Cursor** | ✅ Ready | [Failure-memory rule](cursor-failure-memory.md) |
 | **Claude Code** | ✅ Ready | [Failure playbook](claude-code-failure-memory.md) |
 | **Continue.dev** | ✅ Ready | [Setup Guide](continue.md) |
+| **OpenCode** | ✅ Ready | [Setup Guide](opencode.md) |
+| **Kiro** | ✅ Ready | [Setup Guide](kiro.md) |
+| **Oh-my-Pi** | ✅ Ready | [Setup Guide](oh-my-pi.md) |
 | **Shell** | ✅ Ready | `misaka-search.sh` — see below |
 | **`misaka run`** | ✅ Ready | `python scripts/misaka_run.py <cmd>` |
 | **Aider** | Planned | — |
