@@ -92,15 +92,16 @@ Version 2.40.0 ships the browser half, and 2.41.0 adds the rest of it: the surfa
 the same release, so this section lists them by the version that carries them. It is not a dialog: it puts
 MisakaNet where the session already is.
 
-**In 2.40.0 — published.** These five seats are what `npm view misakanet version` gives you today.
+**In 2.40.0 — published.** These six seats are what `npm view misakanet version` gives you today.
 
 | Where | What you get |
 | --- | --- |
 | **Left column** | A permanent `MisakaNet` entry directly under `Plugins`. It is a shortcut, not the panel: clicking it opens a full page in the main column. Root scope — it does not come and go with a session. |
 | **Conversation tab** | A `MisakaNet` tab beside Chat and Trajectory: what this session asked, what came back, and what you filed, rebuilt from the conversation's own rows. |
 | **Right column** | The same panel as a pane, so it can sit next to the file tree, a terminal, or a document. |
-| **Tool call rows** | Every `misakanet_search` and `misakanet_submit_intake` call gets its own row on the tool card: the query as it was sent, whether a lesson came back, and one reuse vote per lesson. |
+| **Tool call rows** | Every `misakanet_search` and `misakanet_submit_intake` call gets its own row on the tool card: the query as it was sent, whether a lesson came back, and which lesson is on top, with the raw result one disclosure away. The row reports and never posts — the vote belongs on the answer's action row below. |
 | **Assistant action row** | 👍 / 👎 on the answer that used a lesson. Those two are the only things the page ever sends — counters live in the browser, not on a server. |
+| **Voice** | An off-by-default switch that explains both mechanisms: the cue the server names on the next search, and the local hook a page cannot read. |
 
 <p align="center">
   <img src="docs/assets/dsh-client-left-column.png" width="820" alt="DeepSeek Harness: a permanent MisakaNet entry in the left column under Plugins, and the full page it opens"/>
@@ -110,7 +111,7 @@ MisakaNet where the session already is.
   <img src="docs/assets/dsh-client-right-panel.png" width="820" alt="The MisakaNet pane in the right column of a DeepSeek Harness session"/>
 </p>
 
-**With 2.41.0 — [release PR #2591](https://github.com/Ikalus1988/MisakaNet/pull/2591).** These seven surfaces
+**With 2.41.0 — [release PR #2591](https://github.com/Ikalus1988/MisakaNet/pull/2591).** These six surfaces
 are in `main` and ship in 2.41.0; a 2.40.0 install does not have them yet.
 
 | Where | What you get |
@@ -121,7 +122,6 @@ are in `main` and ship in 2.41.0; a 2.40.0 install does not have them yet.
 | **中文 / English** | Every MisakaNet surface follows the host language: the panel, the `/misakanet` card, the settings row, and the plugin page's own title and description. |
 | **Settings → General** | A MisakaNet preference row: play voice cues in this browser, and how much the surfaces show (compact / full). Both stay in the browser. |
 | **Plugin page** | The MCP row's effective configuration — endpoint, transport, timeout — shown read-only, next to where it is edited (the profile's `cordis.patch.yml`). |
-| **Voice** | An off-by-default switch that explains both mechanisms: the cue the server names on the next search, and the local hook a page cannot read. |
 
 Which seats the half occupies and why they are `root` or `session` scope, with the host's own contract text
 quoted: [compatibility](docs/compatibility.md). Running a host of your own and want a check that cannot
