@@ -74,22 +74,49 @@ export const DEFAULT_MCP_CONFIG = Object.freeze({
  */
 export async function apply(ctx, config = {}) {
   const options = { ...DEFAULT_MCP_CONFIG, ...config };
-  if (typeof ctx?.plugin !== 'function') {
-    throw new Error('misakanet: cordis context has no plugin() to mount the MCP client');
-  }
 
-  let client;
+  // NOTHING BELOW MAY THROW OUT OF THIS FUNCTION.
+  //
+  // A throw here is a failed activation, and a failed activation inside a profile
+  // bundle can take the whole host down: `dsh: startup failed: N required plugins
+  // did not activate` — the entire `dsh web` refuses to start, not just this
+  // server. That is a catastrophic outcome for a feature whose worst case should
+  // be "the tools are missing": the skill (SKILL.md) and every other plugin in
+  // the profile are unrelated to whether MisakaNet's MCP client mounted.
+  //
+  // So the whole body is guarded and reports through the host logger instead.
+  // `failOnStartupError` still works as documented — it asks the *MCP client* to
+  // treat a failed initial connection or tool sync as fatal (that is a config
+  // field of the client, `dsh-mcp-client/lib/index.js`), and when it is set the
+  // client's own fiber fails where the host can attribute it. What it must never
+  // do is make *our* wrapper the reason a profile will not boot.
   try {
-    // Dynamic import: the client is ESM and only exists inside a DSH install.
-    client = await import('@deepseek-ai/dsh-mcp-client');
+    if (typeof ctx?.plugin !== 'function') {
+      // A host that cannot mount child plugins: the skill still works, so say so and stop. This used to
+      // throw unconditionally — before the try — which is exactly the failure mode above. The explicit
+      // opt-in still gets its error, because that is what an opt-in is for.
+      const message = 'misakanet: cordis context has no plugin(); MCP tools not mounted';
+      if (options.failOnStartupError) throw new Error(message);
+      ctx?.logger?.warn?.(message);
+      return;
+    }
+
+    let client;
+    try {
+      // Dynamic import: the client is ESM and only exists inside a DSH install.
+      client = await import('@deepseek-ai/dsh-mcp-client');
+    } catch (error) {
+      if (options.failOnStartupError) throw error;
+      // Expected on npm skill-only installs: the skill (SKILL.md) is the payload,
+      // and a missing client must not take the whole profile down with it.
+      return;
+    }
+
+    // The Loader normalizes ESM/CJS/default export shapes before applying a plugin.
+    const component = ctx?.loader?.unwrapExports ? ctx.loader.unwrapExports(client) : client;
+    ctx.plugin(component, options);
   } catch (error) {
     if (options.failOnStartupError) throw error;
-    // Expected on npm skill-only installs: the skill (SKILL.md) is the payload,
-    // and a missing client must not take the whole profile down with it.
-    return;
+    ctx?.logger?.warn?.(`misakanet: MCP client not mounted: ${error?.message ?? error}`);
   }
-
-  // The Loader normalizes ESM/CJS/default export shapes before applying a plugin.
-  const component = ctx?.loader?.unwrapExports ? ctx.loader.unwrapExports(client) : client;
-  ctx.plugin(component, options);
 }
