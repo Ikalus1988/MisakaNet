@@ -24,7 +24,7 @@
 |---|---|
 | **hit** | 在 PR/issue 评论"相关 MisakaNet 课程"（suggest-only，附相似度与链接，供人工核对） |
 | **intake** | 错误新颖且达标 → 自动经 `misakanet.org/mcp` 上报；worker 侧去重后**自动在 MisakaNet 仓开 `[Intake]` issue**（或 `[Question]`），成为他人可认领的任务 |
-| **ignore** | 噪音/重复/缺证据 → 静默（不打扰），仅本地计数 |
+| **ignore** | 噪音/重复/缺证据 → 不上报；默认只在关联 PR 贴一条 `🚫 MisakaNet: Skipped`（判读见 §8） |
 
 价值闭环：你的仓库 CI 失败 → MisakaNet 建议帮你省排查时间；你上报的新颖失败 →
 MisakaNet 语料变厚 → 全网络命中率提升。**复用越多 → intake/issue 越多 → 任务越多 →
@@ -139,7 +139,7 @@ decision/fingerprint/lesson_id/sim/receipt），并写入该步的 Job Summary�
 | `error` / `log-file` | 自动抽取 | 错误文本或 CI 日志路径（留空则从失败的 workflow_run 日志抽取） |
 | `source` | `github-action` | 上报来源标识，建议用 `${{ github.repository }}` |
 | `source-ref` | `main` | **仅兜底**：本地找不到 `intake_bot.py` 时从该 ref 拉取（`@v1` 自带脚本，通常用不到） |
-| `sim` | `0.45` | 命中相似度阈值（stack-aware；无栈泛化错误需 ≥0.55） |
+| `sim` | `0.45` | 命中阈值，量纲 **0..2**（加权分 `max(标题重叠×2, 描述重叠)`，不是百分比）：0.45 = 标题重叠 ≥0.23 或描述重叠 ≥0.45；stack-aware，无栈泛化错误需 ≥0.55 |
 | `what-tried` | 空 | 尝试过的修复（提升 intake 转正率） |
 | `comment-on-pr` | `true` | 是否在关联 PR 评论结果 |
 | `pr-number` | 空 | 指定要评论的 PR（默认用失败运行关联的 PR；手动 dispatch 时靠它测试评论路径） |
@@ -148,7 +148,7 @@ decision/fingerprint/lesson_id/sim/receipt），并写入该步的 Job Summary�
 
 | output | 内容 |
 |---|---|
-| `decision` | `hit` / `intake` / `ignore`（脚本自身失败是 `error`，且该 step 会**红**——不是"没什么可说的"） |
+| `decision` | `hit` / `intake` / `ignore`（脚本自身失败是 `error`，且该 step 会**红**——不是"没什么可说的"；判读方法见 §8） |
 | `fingerprint` | 错误指纹（去重用） |
 | `lesson-url` | 命中课程的链接 |
 | `sample` | 一行 NDJSON（repo/workflow/decision/fingerprint/lesson_id/sim/receipt），同时写进 Job Summary |
@@ -168,3 +168,114 @@ decision/fingerprint/lesson_id/sim/receipt），并写入该步的 Job Summary�
 - 想参与长期试点（≥20 样本反馈报告，zero-bounty）：见
   [#1550](https://github.com/Ikalus1988/MisakaNet/issues/1550)（长期开放，进度
   Pilot 1/20）；任何接入/报告问题可直接在该 issue 提问。
+
+## 8. 怎么判断 bot 是否真的在工作
+
+跑了一段时间却**一条评论、一条 intake 都没有**时，先别急着下"这个错误没人踩过"的结论。
+action 有两种完全不同的"安静"：
+
+- **bot 坏了**（`decision=error`）——链路/参数/网络有问题，本次失败**根本没被检索、也没被上报**；
+- **没有失败可报**（`decision=ignore`）——噪音/重复/缺证据，**不上报**（但仍可能在关联 PR 上留一条
+  `🚫 MisakaNet: Skipped` 说明原因，见 §8.3）。
+
+历史教训：外部试点仓库 `zsxh1990/upgraded-docs-framework` 连续 **7/7** 次运行都是
+`{"decision":"error","reason":"script failed"}`，**0 条 intake**，报告因此一直无法结案
+（[#1825](https://github.com/Ikalus1988/MisakaNet/issues/1825) 记录了根因与规模：
+**21,732 次运行、0 条评论**）。接入方当时拿不到任何线索去区分这两种安静。
+
+### 8.1 一条命令自检（接入前 / 排障时）
+
+在 MisakaNet 仓内（或任何有 `scripts/intake_bot.py` 的地方）跑：
+
+```bash
+python3 scripts/intake_bot.py --json --source probe --error "ModuleNotFoundError: No module named 'requests'"
+```
+
+期望 `decision` ∈ {`hit`, `intake`, `ignore`}——**这三者都算"bot 在工作"**：
+`hit` = 命中已有课程、`intake` = 该报料（不带 `--auto-intake` 时是 dry-run）、
+`ignore` = 噪音/重复/缺证据。**得到 `decision=error` 就是故障**，不是"没有失败可报"。
+
+实测输出（2026-10-02，`main` @ `2116718`）。注意裸的 `'requests'` 现在落到 `intake`：自
+[#2646](https://github.com/Ikalus1988/MisakaNet/pull/2646) 起命中要过**覆盖门**——命中的课必须提到
+查询的主体词（`requests`）。提到它的课要么属于别的技术栈（被栈门排除），要么词面分远低于阈值，
+所以这条自检诚实地报缺口，而不是硬凑一篇泛化的德语课：
+
+```console
+$ python3 scripts/intake_bot.py --json --source probe --error "ModuleNotFoundError: No module named 'requests'"
+{"decision": "intake", "fingerprint": "08b7f8e407058a27", "dry_run": true, "payload": {"kind": "missing_lesson", "problem": "ModuleNotFoundError: No module named 'requests'", "error": "ModuleNotFoundError: No module named 'requests'", "what_tried": "", "source": "probe", "matched_lesson_id": "", "fix": "", "verification": ""}}
+$ echo $?
+0
+
+# hit：主体词（git / credential / helper）真的出现在某篇课里
+$ python3 scripts/intake_bot.py --json --source probe --error "git credential helper 401 credential lookup failed github helper path mismatch"
+{"decision": "hit", "fingerprint": "c621008f8956e4f2", "suggest_only": true, "lesson": {"id": "git-credential-helper-gh-path-mismatch", "title": "gh credential helper 路径Error导致 git push 静默失败", "url": "https://misakanet.org/lessons/git-credential-helper-gh-path-mismatch/", "sim": 0.86, "sim_norm": 0.43, "sim_scale": 2.0}}
+```
+
+三种 decision 都实测过（同一台机器、同一份脚本）：
+
+```console
+# ignore：无失败语义的输入
+$ python3 scripts/intake_bot.py --json --source probe --error "https://example.com/some/long/path/segment"
+{"decision": "ignore", "fingerprint": "18c2205186763857", "reason": "纯噪音（URL/JSON/路径/符号串），无失败语义"}
+
+# intake：断网/不想联网时加 --offline，跳过远端预查（仍然会给出该不该报料的判断）
+$ python3 scripts/intake_bot.py --json --source probe --offline --error "ModuleNotFoundError: No module named 'requests'"
+{"decision": "intake", "fingerprint": "08b7f8e407058a27", "dry_run": true, "payload": {...}}
+```
+
+> `--error` 的值**必须整体加引号**：含空格/换行的错误文本一旦被 shell 拆成多个 argv，
+> 脚本会以 exit 2 结束、stdout 为空——这正是下面 §8.2 那个坑。连 `--error` 一起丢掉引号，
+> 你会亲手复现它：
+> `python3 scripts/intake_bot.py --json --source probe --error ModuleNotFoundError: No module named 'requests'`
+> → `intake_bot.py: error: unrecognized arguments: No module named requests`、**exit 2**。
+
+### 8.2 `script failed` 是什么（历史签名）
+
+如果你看到的是这个对象，说明你的 action 版本还带着修复前的兜底分支：
+
+```json
+{"decision":"error","reason":"script failed"}
+```
+
+原因（[#1825](https://github.com/Ikalus1988/MisakaNet/issues/1825)，已修）：
+
+1. action 里 `--error` 携带的是失败 job 的**多行日志摘录**，而脚本调用写成
+   `python3 $SCRIPT $ARGS`（变量**未加引号**）；
+2. 多行文本被 word-split 成多个 argv → `argparse` 直接 **exit 2**；
+3. `2>/dev/null` 把真正的报错**吞掉**，`|| echo '...'` 兜成一个泛化的
+   `{"decision":"error","reason":"script failed"}`；
+4. 调用方遇到未知 decision 走 `return`（不发评论）→ 于是**步骤是绿的、什么都不发**。
+
+修复已进 `main`，**`v1` tag 也包含修复**（`v1` 的
+[`action.yml`](https://github.com/Ikalus1988/MisakaNet/blob/v1/action.yml) 用 bash 数组
+`ARGS=(...)` + `"${ARGS[@]}"` 逐值传参，并保留 stderr：脚本非 0 退出会打 `::error::`、把 exit code
+与 stderr 尾部写进 `reason`，**步骤会红**）。所以：
+
+- pin 的如果是 `@v1`，你不会再看到 `reason: "script failed"`；看到就说明**没拿到修复**——
+  确认引用的是 `Ikalus1988/MisakaNet@v1`（或更新），而不是旧的 commit SHA / 旧 tag；
+- 修好之后 `decision=error` 会带 `reason: "intake bot exited <code>"` 与 `stderr` 尾部，
+  可以直接拿去报障。
+
+### 8.3 "绿着、什么都不发"的三步判别法
+
+1. **看该 step 的 `decision` 输出**（Job Summary、`steps.intake.outputs.decision`，或日志里的
+   `RESULT: {...}`）：`error`/`skip` = bot 侧的问题，`hit`/`intake`/`ignore` = bot 工作了。
+2. **看 `reason`**：`script failed` → 修复前的静默失败（§8.2，升到 `@v1`）；
+   `intake bot exited N` → 脚本真的报错（看它附的 stderr 尾部）。
+3. **绿 + 没有任何评论时，逐条排除**：
+
+| 现象 | 含义 | 怎么办 |
+|---|---|---|
+| 步骤**红** + `decision=error` | bot / 参数 / 网络坏了（修复后的正常失败形态） | 读 `reason` 里的 exit code 与 stderr 尾部；先跑 §8.1 自检 |
+| 步骤**绿** + `decision=error`（`reason: "script failed"`） | **修复前的静默失败**：绿着、什么都没发 | 升到 `@v1` 重跑；这就是 [#1825](https://github.com/Ikalus1988/MisakaNet/issues/1825) |
+| 步骤绿 + `decision=skip` | 压根没拿到错误文本——典型是 workflow 写了 `permissions:` 却漏了 `actions: read`，读不到失败 job 的日志 | 补 `actions: read`，或用 `error:` / `log-file:` 显式传入（见 §2/§3） |
+| 步骤绿 + `decision=ignore` | 正常：噪音 / 重复签名 / 缺证据，**不会 intake** | 无需处理；默认会在关联 PR 贴一条 `🚫 MisakaNet: Skipped`（带 `reason`），`comment-on-pr: false` 或无关联 PR 时才完全安静；想提高转正率可加 `what-tried:` |
+| 步骤绿 + `decision=hit`/`intake` + 无评论 | 该 run **没有关联 PR**（如 main 上的定时任务），评论无处可贴；intake 上报本身照常 | 正常；要测评论路径用 `pr-number:` 手动指名 |
+
+> 反过来说：**只要你看到过任何一条 bot 评论**（含 `🚫 Skipped`），就说明"读日志 → 跑脚本 → 贴评论"
+> 这条链路是通的，问题只可能在 decision 本身；**一条都没有**时才优先怀疑 `error`/`skip`
+> 与"没有关联 PR"这两类原因。
+
+> 注意：**"没有失败可报"只会以 `ignore` 出现**，永远不会以 `error` 出现。
+> 任何 `error` 都值得报障——把 `reason`（含 exit code / stderr 尾部）连同你的 workflow 片段
+> 贴到 [#1550](https://github.com/Ikalus1988/MisakaNet/issues/1550) 或新开 issue 即可。
