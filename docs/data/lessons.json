@@ -6168,6 +6168,41 @@
     "contributor": ""
   },
   {
+    "id": "instrumentation-that-never-reached-the-artifact",
+    "title": "Instrumentation that never reached the artifact: a silent probe is not evidence",
+    "domain": "development",
+    "tags": [
+      "instrumentation",
+      "root-cause",
+      "verification",
+      "build-artifacts",
+      "silent-failure",
+      "debugging"
+    ],
+    "summary": "A web plugin failed to boot, and the host said so in one line:",
+    "preview": "# Instrumentation that never reached the artifact: a silent probe is not evidence\n\n## Problem\n\nA web plugin failed to boot, and the host said so in one line:\n\n```text\nweb boot: 1 entry did not activate / misakanet: failed\n```\n\nTo find out how far the plugin got, the investigator instrumented the plugin's **source** with three\nlayers of probes — one at module scope, one around the factory, one inside the apply path. Nothing\nprinted. From that silence they concluded the file had been evaluated but its factory never ran, leaving\nthe activation fiber in FAILED.\n\n**That conclusion was wrong.** The probes were never in the code the browser executed, so their absence\nsaid nothing about the plugin. A wrong-but-confident root cause is worse than no root cause: it sends the\nnext hour of work into the wrong half of the system, and it arrives with the authority of a measurement.\n\n## Root Cause\n\nThe host serves the browser-side plugins as **one prebuilt merged combo**, not as per-plugin source files.\nAt the time, that combo covered 58 plugins and measured **10,468,804 bytes**. Editing a plugin's source\nfile does not change the combo; the artifact must be rebuilt and the host restarted (or the plugin\ntoggled) before an edit is what a page actually loads.\n\nThe tell was available before any conclusion was drawn: the merged artifact's byte size **did not\nchange** after an edit that added probe statements. A probe adds bytes. If the artifact's size is\nidentical after the edit, the probe is not in the artifact — and the artifact is what runs. Silence from\na probe that never shipped is evidence about the build pipeline, not about the plugin.\n\nThe trap runs in both directions. After the actual defect (a child slot registered before its parent\ndeclared it, fixed in #2575) was addressed, the per-row bundle URL served the new file — **48,267 bytes**,\nrevision recomputed — while the page kept loading the stale batch. So the artifact under test and the\nartifact the runtime loaded were different files both times, in the two opposite ways they can differ.\n\n## Solution\n\nTreat \"the probe reached the artifact\" as a precondition of any probe-based conclusion, and check it\nbefore interpreting any output.\n\n1. **Diff the artifact across the edit.** Record the byte size (or a content hash) of the artifact the\n   runtime actually loads, make the probe edit, then record it again. An unchanged ar\n\n[clipped]",
+    "summary_plain": "A probe proves nothing if the runtime loads a prebuilt bundle: check the artifact changed before reading its silence.",
+    "trigger": "probe produced no output / web boot: 1 entry did not activate / source edited but the served bundle is unchanged / stale merged batch",
+    "verify": "After a probe edit, the served artifact's byte size or hash must change, and a control probe on a path that always runs must print. If either fails, the probe was never in the running code.",
+    "url": "lessons/contrib/instrumentation-that-never-reached-the-artifact.md",
+    "created": "2026-10-01",
+    "updated": "2026-10-01",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [
+      "issue:#2566"
+    ],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "issue-comment-newbie-welcome",
     "title": "Auto-Welcome Newcomers via issue_comment Event",
     "domain": "automation",
