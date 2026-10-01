@@ -35,9 +35,13 @@ FUNC = re.compile(r"^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(")
 TOP_CALL = re.compile(r"^(?:await\s+)?([A-Za-z_$][\w$]*)\s*\(")
 CALL_NAME = re.compile(r"\b([A-Za-z_$][\w$]*)\s*\(")
 # `re.I`: HTML tags are case-insensitive, so `<SCRIPT>` is the same block as `<script>`. Today's files
-# happen to be lowercase, which is exactly why the pattern is pinned here rather than left to habit
-# (code scanning read it correctly: `py/bad-tag-filter`, alert #293).
-INLINE_SCRIPT = re.compile(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", re.S | re.I)
+# happen to be lowercase, which is exactly why the pattern is pinned here rather than left to habit.
+#
+# `</script\s*>`: the closing tag may carry whitespace (`</script >`), and without it the block does not
+# match **at all** — the script is then silently skipped and this gate reports coverage it never had. Code
+# scanning flagged exactly that (`py/bad-tag-filter`, alert #293 / #314); the comment that used to sit here
+# acknowledged the finding and kept the hole, which is the wrong half of "code scanning read it correctly".
+INLINE_SCRIPT = re.compile(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script\s*>", re.S | re.I)
 
 
 def site_scripts() -> dict[str, str]:
