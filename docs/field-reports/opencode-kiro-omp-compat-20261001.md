@@ -72,7 +72,7 @@ The following need runtime verification when the CLIs become available:
 2. **Kiro MCP transport**: Does Kiro auto-detect Streamable HTTP from the `url` field, or does it need `type`?
 3. **OMP headers support**: Does OMP's `mcp.json` support `headers` for Bearer token auth?
 4. **Tool visibility**: Do all 7 MisakaNet MCP tools appear in each client's tool list?
-5. **Live search**: Does `misakanet_search` return results from each client?
+5. **Live search**: Does `misakanet_search` return results from each client? *(unverified — no CLI installed to run the call)*
 
 ## 5. Diff from Issue Requirements
 
