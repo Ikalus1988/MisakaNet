@@ -47,6 +47,35 @@ host as:
 The skill (`SKILL.md`, `skills/misakanet/`) ships in the same package and is discoverable by any profile
 that lists `misakanet` as a dependency.
 
+## What you see in the host
+
+Since 2.40.0 the plugin ships a browser half as well as the MCP row. Six seats, and the two that are
+`root` scope survive a session ending:
+
+| Seat | Scope | What it is |
+| --- | --- | --- |
+| Left column, under `Plugins` | root | A permanent `MisakaNet` entry — a shortcut that opens a full page in the main column |
+| `main` page | root | What that entry opens: the browser-scoped view (what this browser has contributed, how trust is counted, the voice switch) |
+| Conversation tab ring | session | A `MisakaNet` tab beside Chat and Trajectory |
+| Right column pane | session | The same panel as a pane, beside the other tools |
+| Tool call rows | session | One row per `misakanet_search` / `misakanet_submit_intake` call, with a reuse vote per lesson |
+| Assistant action row | session | 👍 / 👎 on an answer that used a lesson |
+
+<p align="center">
+  <img src="../assets/dsh-client-left-column.png" width="760" alt="The MisakaNet entry in the left column and the page it opens"/>
+</p>
+
+A page cannot read the local voice hook and does not try: the Voice section says which mechanism is which
+instead of reporting a state it cannot see.
+
+Verify a host without touching your own profile — a throwaway `DSH_HOME`, a free port, and no writes outside
+the temp directory:
+
+```sh
+python3 scripts/install_smoke.py dsh-client --repo .       # asserts the bundle, the boot graph, the served bytes, the seats
+python3 scripts/install_smoke.py dsh-client --serve        # leaves the host up and prints a URL to click
+```
+
 ## When the endpoint is not reachable
 
 The row sets `failOnStartupError: false` and a 60 s tool timeout: an unreachable endpoint degrades to a
