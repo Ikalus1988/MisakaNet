@@ -31,8 +31,12 @@ from __future__ import annotations
 
 import json
 import ntpath
+import os
+import pytest
 import posixpath
 import re
+import shutil
+import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -819,3 +823,106 @@ def test_the_panel_asks_each_lesson_once_and_only_nags_about_open_reports():
     assert "asked.current[lesson.lessonId] = true" in panel, "the guard must be set before the request"
     assert "var openReports = intakes.filter(" in panel, (
         "the re-check hint must be derived from the reports that are still open, not from any report")
+
+
+# ── the rule the real host enforced, as a red/green gate ─────────────────────
+#
+# On 2026-10-01 the live GUI showed "Failed to load plugins / misakanet: failed". The host's own audit says
+# exactly what happened (`dsh-app-boot`): the plugin's fiber ended in state `failed`, which means `apply()`
+# threw. The client console then named the rule:
+#
+#     slot "tool.call.toolview" is not declared (a parent entry's children table must declare it)
+#
+# `tool.call.toolview` and `conversation.chat.assistant-actions` are **child slots**: a parent entry
+# declares them, and registering into one before that declaration is committed throws. First-party plugins
+# therefore register through `ctx.slots.inject(slot, …)`, which runs immediately when the declaration
+# already exists and otherwise inside the declaring call. Registering directly — what this file did — made
+# the *first* registration throw, which aborted `apply()`, failed the fiber, and took every other surface
+# with it: the panel tab was never at fault, it simply never got registered.
+#
+# A fake context that accepts anything cannot see this. So the fake below encodes the host's rule, and the
+# red fixture runs the same harness against a copy that registers directly again.
+
+# The interpreter that runs the bundle; the repo already runs node from Python elsewhere.
+NODE = "node"
+
+CLIENT_APPLY_HARNESS = r"""
+global.window = { __ModuleLoader__: { load: (m) => { global.__m = m; } } };
+const fs = require('fs');
+eval(fs.readFileSync(process.env.CLIENT_FILE, 'utf8'));
+const react = { createElement: () => null, useState: (v) => [v, () => {}], useRef: (v) => ({ current: v }),
+                useEffect: () => {}, Fragment: function () {} };
+const mod = global.__m.factory((name) => (name === 'react' ? react : undefined));
+const declared = new Set();          // what some parent entry has declared so far: nothing, at first
+const registrations = [], warnings = [], pending = [];
+const slots = {
+  // Faithful ordering: the declaration commits, *then* the waiting callback runs. Nothing is declared
+  // before we activate, which is exactly why registering a child slot directly throws.
+  inject(slot, cb) { pending.push(slot); declared.add(slot); cb(); return () => {}; },
+  register(options) {
+    if (!declared.has(options.name)) {
+      throw new Error(`slot "${options.name}" is not declared (a parent entry's children table must declare it)`);
+    }
+    registrations.push(options.key || options.id || options.name);
+    return () => {};
+  },
+};
+const realWarn = console.warn;
+console.warn = (line) => warnings.push(String(line));
+const ctx = {
+  effect: (fn) => { fn(); return () => {}; },
+  slots,
+  inject: (deps, cb) => { cb({ sidebarRightTabs: undefined }); return { dispose() {} }; },
+};
+try { mod.apply(ctx); } catch (error) { warnings.push('apply threw: ' + error.message); }
+console.warn = realWarn;
+console.log(JSON.stringify({ registrations, warnings, pending }));
+"""
+
+
+def _run_client_apply(client_file: Path) -> dict:
+    done = subprocess.run([NODE, "--input-type=module", "-e", ""] if False else
+                          [NODE, "-e", CLIENT_APPLY_HARNESS],
+                          capture_output=True, text=True, timeout=120,
+                          env={**os.environ, "CLIENT_FILE": str(client_file)})
+    assert done.returncode == 0, done.stderr[-500:]
+    return json.loads(done.stdout.strip().splitlines()[-1])
+
+
+def test_every_client_registration_waits_for_its_slot_declaration():
+    """The regression that reached the owner's GUI: a child slot registered before its declaration.
+
+    Only a context that enforces the host's rule can catch it, so the harness above throws the host's own
+    message. Green here means every surface went through `slots.inject` and none raised.
+    """
+    if shutil.which(NODE) is None:
+        pytest.skip("node runs the client half")
+    result = _run_client_apply(REPO / "lib" / "client.js")
+    assert result["warnings"] == [], (
+        f"a surface failed to register — the real host would show `misakanet: failed`: {result['warnings']}")
+    assert len(result["registrations"]) == 6, result
+    assert result["pending"].count("tool.call.toolview") == 4, result
+    assert "conversation.view" in result["pending"], (
+        "the panel tab must wait for its declaration too, not just the child slots")
+
+
+def test_the_declaration_rule_can_go_red(tmp_path):
+    """The pre-fix shape: register into a child slot directly, and the harness must report it."""
+    if shutil.which(NODE) is None:
+        pytest.skip("node runs the client half")
+    source = client_source()
+    mutated = source.replace(
+        """					return ctx.effect(function () {
+						return ctx.slots.inject(slot, function () {
+							return ctx.slots.register(options, component);
+						});
+					}, "misakanet: " + label);""",
+        """					return ctx.effect(function () {
+						return ctx.slots.register(options, component);
+					}, "misakanet: " + label);""")
+    assert mutated != source, "the guarded registration is no longer where this fixture expects it"
+    path = tmp_path / "client.js"
+    path.write_text(mutated, encoding="utf-8")
+    result = _run_client_apply(path)
+    assert result["warnings"], "the harness must catch a direct child-slot registration"
+    assert "is not declared" in " ".join(result["warnings"]), result
