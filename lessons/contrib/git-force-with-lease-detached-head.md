@@ -8,6 +8,9 @@ tags:
 - rebase
 - recovery
 status: published
+summary_plain: "rebase 后强推被拒（stale info）：lease 比的是 remote-tracking ref，缺了就先显式 fetch 它，再用 --force-with-lease=<ref>:<sha>。"
+trigger: "git push --force-with-lease rejected stale info failed to push some refs detached HEAD"
+verify: "git rev-parse --verify refs/remotes/origin/<branch> 成功，且 git push --force-with-lease 不再报 stale info"
 created: 2026-07-21
 source: hermes-agent
 confidence: 0.9
@@ -90,6 +93,51 @@ git log origin/feature-branch --oneline -5
 git push --force-with-lease origin feature-branch \
   refs/remotes/origin/feature-branch:<expected-old-sha>
 ```
+
+### Why `--force-with-lease` says "stale info" when you never touched the branch
+
+The exit above ends with an explicit expected SHA, which is the robust form. There is a second, more confusing
+failure that is worth naming separately, because the message points at the wrong thing:
+
+```
+! [rejected]    feature-branch -> feature-branch (stale info)
+error: failed to push some refs to 'github.com:user/repo.git'
+```
+
+"stale info" reads like *somebody else pushed*, but a lease with no explicit value compares against your
+**remote-tracking ref** — `refs/remotes/origin/feature-branch`. When that ref is **absent** (or older than
+your last fetch), the lease has no expected value to check against and git refuses. It is not detecting a
+conflict; it is telling you it cannot tell.
+
+`git fetch origin` does not always create it. Fetching honours the remote's configured refspec and your
+clone's shape, so a `--single-branch` clone, a narrowed `remote.origin.fetch`, or a branch that was never
+fetched leaves the ref missing even after a fetch that "worked".
+
+Check the ref itself, not the fetch:
+
+```bash
+git rev-parse --verify refs/remotes/origin/feature-branch   # exits non-zero when the ref is absent
+```
+
+Then request that ref **explicitly**, which is what actually creates it:
+
+```bash
+git fetch origin feature-branch:refs/remotes/origin/feature-branch
+git push --force-with-lease origin feature-branch
+```
+
+Two habits that make this class of surprise go away:
+
+* **Pass the expected value yourself** — `git push --force-with-lease=feature-branch:<sha>` — when you have
+  just read the remote with `git ls-remote origin feature-branch`. Then nothing depends on a local ref that
+  may or may not exist.
+* **Add `--force-if-includes`** (git 2.30+). It makes the lease also require that the commits you are
+  overwriting are ones you have already integrated, which closes the gap where a lease passes because your
+  remote-tracking ref is stale in *your* favour.
+
+In a **worktree**, note that the remote-tracking refs are shared by every worktree of the repository while the
+fetch is not: another agent's fetch can move `refs/remotes/origin/...` out from under the check you just made.
+Prefer the explicit expected SHA there, for the same reason `git stash` is dangerous in a worktree.
 
 ### Detached HEAD Recovery
 

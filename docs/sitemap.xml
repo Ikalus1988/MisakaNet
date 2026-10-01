@@ -68,6 +68,7 @@
   <url><loc>https://misakanet.org/lessons/search-first-roadmap-loop/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-whole-file-content-push-silently-reverts-the-lines-another-writer-owns/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-corpus-cached-in-one-row-has-a-ceiling-and-the-diagnosis-cannot-live-in-that-r/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-hit-is-not-evidence-of-relevance-the-boundary-queries-that-must-come-back-empt/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-stubbed-success-is-not-a-sandbox-a-faked-git-push-let-the-suite-rewrite-the-pu/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/accidental-pycache-commit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/agent-error-handling-hi/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -330,7 +331,9 @@
   <url><loc>https://misakanet.org/lessons/n8n-nodejs-econnreset-connection-reset-fix/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/nodejs-missing-require-inside-try-catch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/npc-dispatch-causes-spatial-bilocation-and-active-speaker-loss/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/npm-e403-forbidden-is-three-failures-registry-auth-scope-routing-or-a-proxy-that/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/npm-eacces-permission-error-linux/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/npm-eresolve-is-a-dependency-graph-report-not-an-install-failure-read-the-chain/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/npm-native-build-arch-mismatch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/openai-compatible-api-call/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/openclaw-fatal-error-hook-protocol/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
