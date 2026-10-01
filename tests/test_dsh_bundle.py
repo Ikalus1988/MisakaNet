@@ -24,9 +24,12 @@ Guards the packaging contract that the dsh.so / MCP-registry verification and
 """
 import json
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 import yaml
 
@@ -206,3 +209,63 @@ def test_entry_mounts_the_official_client_instead_of_naming_it():
 
 if __name__ == "__main__":
     sys.exit(0)
+
+# ── the host half must never be the reason a profile will not boot ────────────
+
+NODE = "node"
+APPLY_PATH = REPO / "index.js"
+
+
+def _run_apply(ctx_source: str, config_source: str) -> tuple[int, str]:
+    """Call index.js's apply() in node with a synthetic ctx; return (exit code, output).
+
+    Behavioural, not textual: what matters is whether the host's activation can throw, and only running
+    it answers that. The repo already runs node from Python elsewhere (`tests/test_agent_autostart.py`),
+    with the same `shutil.which` skip.
+    """
+    script = f"""
+const m = await import({str(APPLY_PATH)!r});
+try {{
+  await m.apply({ctx_source}, {config_source});
+  console.log('RETURNED');
+}} catch (error) {{
+  console.log('THREW: ' + error.message);
+}}
+"""
+    done = subprocess.run([NODE, "--input-type=module", "-e", script],
+                          capture_output=True, text=True, timeout=120)
+    return done.returncode, (done.stdout + done.stderr).strip()
+
+
+def test_a_host_without_plugin_support_does_not_fail_activation():
+    """A failed activation can abort the whole host: `dsh: startup failed: N required plugins did not
+    activate` — `dsh web` then refuses to start, and every unrelated plugin in that profile goes with it.
+
+    The first version of `apply()` threw unconditionally when the context had no `plugin()` (the throw sat
+    *before* the try/catch). For a feature whose worst case should be "the MCP tools are missing", that is
+    the wrong failure: the skill and the rest of the profile have nothing to do with our mount. Measured
+    by actually calling it, because that is the only way to know.
+
+    Seen failing: putting a throw *before* the guard (the original shape) reds it. A throw placed *inside*
+    the guard does not — the guard swallows it, which is the point — so the red fixture is a throw that
+    escapes, not any change to the body.
+    """
+    if shutil.which(NODE) is None:
+        pytest.skip("node is what runs the host half")
+    code, out = _run_apply("{ logger: { warn: () => {} } }", "{}")
+    assert code == 0, out
+    assert "RETURNED" in out, f"activation must not throw on a host without plugin(): {out}"
+    assert "THREW" not in out, out
+
+
+def test_the_opt_in_still_gets_its_error():
+    """`failOnStartupError` is a real choice, and hardening must not silently delete it.
+
+    It asks the MCP client to treat a failed initial connection or tool sync as fatal; the same flag on
+    our wrapper decides whether a wiring failure is reported. Default quiet, opt-in loud.
+    """
+    if shutil.which(NODE) is None:
+        pytest.skip("node is what runs the host half")
+    code, out = _run_apply("{}", "{ failOnStartupError: true }")
+    assert code == 0, out
+    assert "THREW" in out, f"the opt-in must still surface the failure: {out}"
