@@ -147,6 +147,7 @@ async function loadSchemastery() {
   try {
     const { createRequire } = await import('node:module');
     const { realpathSync } = await import('node:fs');
+    const { pathToFileURL } = await import('node:url');
     const hostEntry = process.argv[1];
     // Both spellings matter: the bin is usually a **symlink**, and the package's own node_modules sits
     // beside its real path — resolving from the link's directory finds the global root instead.
@@ -156,7 +157,10 @@ async function loadSchemastery() {
     for (const entry of from) {
       try {
         const resolved = createRequire(entry).resolve('@deepseek-ai/schemastery');
-        if (!attempts.includes(resolved)) attempts.push(resolved);
+        // `require.resolve` hands back a filesystem path, and a Windows one is not a valid ESM specifier
+        // (`C:` parses as a scheme). The bare specifier above is left alone; only paths are wrapped.
+        const url = pathToFileURL(resolved).href;
+        if (!attempts.includes(url)) attempts.push(url);
       } catch (error) { /* this entry cannot see it */ }
     }
   } catch (error) { /* keep the bare specifier as the only attempt */ }

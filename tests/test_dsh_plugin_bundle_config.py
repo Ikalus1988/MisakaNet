@@ -37,7 +37,11 @@ def _defaults_from_schema() -> tuple[dict, dict] | None:
     # on a bare checkout instead of pretending to have checked anything.
     dsh = shutil.which("dsh") or "/nonexistent/dsh"
     script = f"""
-const entry = {str(REPO / 'index.js')!r};
+import {{ pathToFileURL }} from 'node:url';
+// A bare absolute path is a valid specifier on POSIX and **not** on Windows, where `C:` reads as a URL
+// scheme and the import dies with ERR_UNSUPPORTED_ESM_URL_SCHEME. This gate went red on the windows legs
+// from the moment it was added, and nothing on Linux could see it.
+const entry = pathToFileURL({str(REPO / 'index.js')!r}).href;
 process.argv[1] = {dsh!r};
 const mod = await import(entry);
 if (mod.Config === undefined) {{ console.log('NO_SCHEMA'); process.exit(0); }}
@@ -70,3 +74,17 @@ def test_schema_defaults_match_the_entry_defaults(tmp_path):
     schema_defaults, entry_defaults = resolved
     assert schema_defaults == entry_defaults, (
         "the schema and DEFAULT_MCP_CONFIG disagree; one of them is now lying about the row")
+
+
+def test_module_imports_go_through_file_urls():
+    """`await import("C:\\path")` is not a path, it is a scheme — and only Windows says so.
+
+    This gate ran red on both windows legs from the moment it was added (#2599) and stayed red through every
+    PR stacked on it, because a POSIX absolute path happens to be a valid specifier while a Windows one is
+    rejected with ERR_UNSUPPORTED_ESM_URL_SCHEME. The same trap sat in `index.js`'s linked-install fallback,
+    where it degraded silently to "no schema" instead of failing.
+    """
+    test_source = Path(__file__).read_text(encoding="utf-8")
+    index_source = (REPO / "index.js").read_text(encoding="utf-8")
+    assert "pathToFileURL" in test_source, "the harness must import the module through a file URL"
+    assert "pathToFileURL" in index_source, "the runtime fallback must wrap resolved paths as file URLs"
