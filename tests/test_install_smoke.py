@@ -29,12 +29,16 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
 from scripts.install_smoke import (  # noqa: E402
+    CLIENT_MARKERS,
     HOSTED_URL,
     SETUP_ENDPOINT,
     SETUP_MIN_ENDPOINT_TOOLS,
     SETUP_REPORT_SCHEMA,
+    assert_disposable_home,
     documented_stdio_tools,
     mcp_row_problems,
+    parse_boot_graph,
+    parse_web_url,
     setup_config_problems,
     setup_report_problems,
     tarball_problems,
@@ -303,3 +307,47 @@ def test_a_shrinking_endpoint_tool_set_is_a_failure_and_growth_is_not():
     assert setup_report_problems(_report(**{"endpoint-tools": SETUP_MIN_ENDPOINT_TOOLS - 1}))
     assert setup_report_problems(_report(**{"endpoint-tools": SETUP_MIN_ENDPOINT_TOOLS + 3})) == []
     assert setup_report_problems(_report(**{"endpoint-tools": None}))
+
+
+# ── dsh-client: the probe that boots a host must not be able to touch yours ───────────────────────
+
+BOOT_HTML = (
+    '<script>globalThis["__DSH_BOOT__"] = {"rev":"abc","entries":'
+    '[{"id":"misakanet","url":"plugins/??misakanet/client.js&rev=x",'
+    '"inject":["@deepseek-ai/dsh-client-ui-chat"]}],"batches":[]}</script>'
+)
+
+
+def test_the_probe_reads_the_url_the_host_prints():
+    """The printed URL *is* the startup check: no line means the host never listened."""
+    line = "dsh web: http://127.0.0.1:33639/?token=R6qStSExKVK_DPWA6UcUUOuEtmJTWaTyAdnmbBSeX08"
+    assert parse_web_url(line) == "http://127.0.0.1:33639/?token=R6qStSExKVK_DPWA6UcUUOuEtmJTWaTyAdnmbBSeX08"
+    assert parse_web_url("initialized profile web") is None
+
+
+def test_the_probe_decodes_the_boot_graph_it_asserts_on():
+    graph = parse_boot_graph(BOOT_HTML)
+    assert graph["entries"][0]["id"] == "misakanet"
+    with pytest.raises(ValueError):
+        parse_boot_graph("<html>no graph here</html>")
+
+
+def test_the_probe_refuses_a_home_that_is_not_disposable(tmp_path):
+    """The guard that makes this probe safe on a machine someone is using.
+
+    It is the countermeasure to the incident it was written after: a CLI install against a *live*
+    ``~/.dsh`` left that profile with the plugin quietly unloaded. A probe able to do the same is worse
+    than no probe, so the refusal is a test rather than a comment.
+    """
+    assert_disposable_home(tmp_path)                      # a temp dir is what it is for
+    with pytest.raises(RuntimeError):
+        assert_disposable_home(Path.home() / ".dsh")      # the real one, refused
+    with pytest.raises(RuntimeError):
+        assert_disposable_home(REPO)                      # anywhere outside the temp tree, refused
+
+
+def test_the_client_markers_are_really_in_the_shipped_bundle():
+    """The probe asserts those names are served; if they were renamed, the probe would pass vacuously."""
+    served = (REPO / "lib" / "client.js").read_text(encoding="utf-8")
+    missing = [marker for marker in CLIENT_MARKERS if marker not in served]
+    assert not missing, f"the probe looks for registrations the bundle no longer makes: {missing}"

@@ -33,6 +33,8 @@ Design notes
   install. Saying so is the difference between a useful red and a red someone learns to ignore.
 
 Usage:
+    python3 scripts/install_smoke.py dsh-client --repo . --out /tmp/install-dsh.json
+    python3 scripts/install_smoke.py dsh-client --serve        # throwaway host to click, then Ctrl-C
     python3 scripts/install_smoke.py npm-form  --repo . --out /tmp/install-npm.json
     python3 scripts/install_smoke.py git-stdio --repo . --out /tmp/install-git.json
     python3 scripts/install_smoke.py git-stdio --dry-run      # interpreter/tool-set only, no server
@@ -577,6 +579,198 @@ def _tar_member(archive: tarfile.TarFile, name: str) -> str | None:
     return handle.read().decode("utf-8", errors="replace")
 
 
+# ── dsh-client: boot a real host, in a home that is not yours ─────────────────────────────────────
+#
+# The other three forms probe a *package*. This one probes what the package does inside a running host,
+# because that is where the interesting failure lives: an activation error in a profile bundle is not a
+# local failure — the host prints `dsh: startup failed: N required plugins did not activate` and **refuses
+# to start**, taking every unrelated plugin in that profile with it (observed live on 2026-10-01).
+#
+# Two rules make this probe safe to run on a machine someone is using:
+#
+# 1. **It never touches a real `DSH_HOME`.** The home is a fresh temp directory and the guard below
+#    refuses anything else, so a profile the owner is running cannot be mutated — which is exactly how
+#    the incident above started (a CLI `dsh plugin add` against a *live* profile).
+# 2. **Startup is an assertion, not a precondition.** The probe fails if the host does not come up, so a
+#    bundle that can break boot is caught here rather than on the owner's daily driver.
+
+WEB_URL = re.compile(r"dsh web:\s*(http://[^\s]+)")
+BOOT_GRAPH = re.compile(r'globalThis\["__DSH_BOOT__"\]\s*=\s*(\{.*?\})\s*</script>', re.S)
+# The panel's own registrations: if the bundle were served but the panel missing, these would be absent.
+CLIENT_MARKERS = ("conversation.view", "sidebar.right.pane.tab", "sidebarRightTabs")
+
+
+def assert_disposable_home(home: Path) -> None:
+    """Refuse to run against anything that looks like a real DSH home.
+
+    A probe that can mutate the owner's profile is worse than no probe: that is the mistake this whole
+    function exists to make impossible (2026-10-01, a live `~/.dsh` rewritten from the CLI while its host
+    was running, after which the plugin stopped loading).
+    """
+    resolved = home.resolve()
+    real = (Path.home() / ".dsh").resolve()
+    if resolved == real or real in resolved.parents:
+        raise RuntimeError(f"refusing to run against a real DSH home: {resolved}")
+    tmp = Path(tempfile.gettempdir()).resolve()
+    if tmp not in resolved.parents and resolved != tmp:
+        raise RuntimeError(f"refusing a home outside the temporary directory: {resolved}")
+
+
+def parse_web_url(stdout: str) -> str | None:
+    """The URL the host prints once it is listening — its presence *is* the startup check."""
+    match = WEB_URL.search(stdout)
+    return match.group(1).strip() if match else None
+
+
+def parse_boot_graph(html: str) -> dict:
+    """The composed client entry graph the shell injects as `window.__DSH_BOOT__`."""
+    match = BOOT_GRAPH.search(html)
+    if match is None:
+        raise ValueError("the served page carries no __DSH_BOOT__ graph")
+    raw = match.group(1).replace("\\u003c", "<").replace('\\"', '"')
+    return json.loads(raw)
+
+
+def _get(url: str, *, cookies: Path, timeout: int) -> str:
+    request = urllib.request.Request(url, headers={"User-Agent": "misakanet-install-smoke/1.0"})
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(_cookie_jar(cookies)))
+    with opener.open(request, timeout=timeout) as response:
+        return response.read().decode("utf-8", "replace")
+
+
+def _cookie_jar(path: Path):
+    import http.cookiejar  # stdlib, and only needed on this path
+    return http.cookiejar.MozillaCookieJar(str(path))
+
+
+def probe_dsh_client(repo: Path, *, timeout: int, dry_run: bool = False,
+                     keep: bool = False, serve: bool = False,
+                     check_uninstall: bool = False, dsh: str | None = None) -> dict:
+    """Install into a throwaway profile, boot the host, and read the graph it composes."""
+    checks: list[str] = []
+    fails: list[str] = []
+    detail: dict = {"home": None, "url": None, "package": None, "host_pid": None}
+    package = json.loads((repo / "package.json").read_text(encoding="utf-8"))
+    detail["package"] = package.get("name")
+    declared_inject = list((package.get("dsh", {}).get("client", {}) or {}).get("inject", []))
+
+    binary = dsh or shutil.which("dsh")
+    if binary is None:
+        fails.append("`dsh` is not on PATH, so no host can be booted; install the harness first")
+        return _result("dsh-client", checks, fails, detail, tools_seen=[], result_count=0)
+
+    home = Path(tempfile.mkdtemp(prefix="misakanet-dsh-smoke-"))
+    try:
+        assert_disposable_home(home)
+        detail["home"] = str(home)
+        checks.append(f"empty DSH_HOME at {home} (never the owner's)")
+
+        env = dict(os.environ, DSH_HOME=str(home), DSH_PROFILE="web",
+                   npm_config_cache=str(home / "npm-cache"))
+        add = subprocess.run([binary, "plugin", "--profile", "web", "add", str(repo)],
+                             capture_output=True, text=True, env=env, timeout=timeout)
+        profile = json.loads((home / "profiles" / "web" / "package.json").read_text(encoding="utf-8"))
+        bundles = profile.get("dsh", {}).get("profile", {}).get("bundles", [])
+        if package["name"] in bundles:
+            checks.append(f"`dsh plugin add` put {package['name']} in dsh.profile.bundles")
+        else:
+            fails.append(f"the profile did not gain the bundle: {bundles} (add exited {add.returncode})")
+
+        if dry_run:
+            detail["hint"] = "dry-run: the host was never booted; the startup check did not run"
+            return _result("dsh-client", checks, fails, detail, tools_seen=[], result_count=0)
+
+        port = _free_port()
+        # `start_new_session` matters for --serve: without it the host is in this process's group and dies
+        # with the shell that ran the probe, which is the opposite of "left running for a human look".
+        process = subprocess.Popen([binary, "--profile", "web", "--no-open", "--port", str(port)],
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env,
+                                   start_new_session=serve)
+        detail["host_pid"] = process.pid
+        url = _wait_for_url(process, timeout=timeout)
+        if url is None:
+            output = process.stdout.read() if process.stdout else ""
+            process.kill()
+            fails.append("the host did not come up: no `dsh web:` line. **Startup is the thing that "
+                         f"breaks** when an activation fails; output was: {output.strip()[-600:]}")
+            return _result("dsh-client", checks, fails, detail, tools_seen=[], result_count=0)
+        checks.append(f"host booted on {url.split('?')[0]} (startup check passed)")
+        detail["url"] = url
+
+        index = _get(url, cookies=home / "cookies.txt", timeout=timeout)
+        graph = parse_boot_graph(index)
+        entry = next((row for row in graph.get("entries", []) if row.get("id") == package["name"]), None)
+        if entry is None:
+            fails.append(f"the boot graph has no {package['name']} entry "
+                         f"({len(graph.get('entries', []))} entries)")
+        else:
+            checks.append(f"boot graph entry: {json.dumps(entry)}")
+            if list(entry.get("inject", [])) == declared_inject:
+                checks.append(f"the host echoed the declared inject order ({len(declared_inject)} packages)")
+            else:
+                fails.append(f"inject mismatch: declared {declared_inject}, host said {entry.get('inject')}")
+            # `base` keeps its trailing slash and the entry url is document-relative, so this is
+            # `http://host:port/plugins/??…`. Joining with an extra slash (`//plugins/…`) makes the host
+            # answer with its SPA fallback — a **200 carrying the index HTML** — which reads exactly like
+            # "the bundle is not served". That false alarm cost a real debugging round on 2026-10-01, so
+            # the assertion below also checks the content type, not just the bytes.
+            base = url.split("?", 1)[0]
+            served = _get(base + entry["url"], cookies=home / "cookies.txt", timeout=timeout)
+            source = (repo / "lib" / "client.js").read_text(encoding="utf-8")
+            if served.lstrip().startswith("<!doctype") or served.lstrip().startswith("<html"):
+                fails.append("the combo route answered with HTML (looks like the SPA fallback, not a "
+                             "bundle) — check the request URL before believing the bundle is missing")
+            elif source.strip() in served:
+                checks.append("the combo route serves lib/client.js verbatim (no build step, no chunk)")
+            else:
+                fails.append("the served bundle differs from lib/client.js")
+            missing = [marker for marker in CLIENT_MARKERS if marker not in served]
+            if missing:
+                fails.append(f"the served bundle does not register the panel: missing {missing}")
+            else:
+                checks.append("the served bundle registers the panel in both seats")
+
+        if check_uninstall:
+            process.kill()
+            subprocess.run([binary, "plugin", "--profile", "web", "remove", package["name"]],
+                           capture_output=True, text=True, env=env, timeout=timeout)
+            after = json.loads((home / "profiles" / "web" / "package.json").read_text(encoding="utf-8"))
+            if package["name"] in after.get("dsh", {}).get("profile", {}).get("bundles", []):
+                fails.append("remove left the bundle in the profile")
+            else:
+                checks.append("remove takes the bundle out of the profile")
+
+        if serve:
+            detail["hint"] = (f"left running for a human look (pid {process.pid}): {url}\n"
+                              "  this is a throwaway DSH_HOME; your own profile was never touched")
+        else:
+            process.kill()
+    finally:
+        if not (keep or serve):
+            shutil.rmtree(home, ignore_errors=True)
+    return _result("dsh-client", checks, fails, detail, tools_seen=[], result_count=0)
+
+
+def _free_port() -> int:
+    import socket
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return int(probe.getsockname()[1])
+
+
+def _wait_for_url(process: subprocess.Popen, *, timeout: int) -> str | None:
+    import time
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            return None
+        line = process.stdout.readline() if process.stdout else ""
+        url = parse_web_url(line)
+        if url:
+            return url
+    return None
+
+
 def _result(form: str, checks: list[str], fails: list[str], detail: dict,
             *, tools_seen: list[str], result_count: int) -> dict:
     """The artifact's shape: per-form detail a human or agent can read without prose.
@@ -600,12 +794,18 @@ def _result(form: str, checks: list[str], fails: list[str], detail: dict,
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("form", choices=["npm-form", "git-stdio", "setup-installer"],
-                        help="which install form to exercise")
+    parser.add_argument("form", choices=["npm-form", "git-stdio", "setup-installer", "dsh-client"],
+                        help="which install form to exercise (dsh-client boots a throwaway host)")
     parser.add_argument("--repo", type=Path, default=REPO_FALLBACK,
                         help="checkout to pack / spawn the server from (default: this repository)")
     parser.add_argument("--out", type=Path, help="write the per-form JSON here (always written)")
     parser.add_argument("--timeout", type=int, default=180)
+    parser.add_argument("--serve", action="store_true",
+                        help="dsh-client: leave the throwaway host running and print its URL")
+    parser.add_argument("--keep", action="store_true",
+                        help="dsh-client: keep the throwaway DSH_HOME for inspection")
+    parser.add_argument("--check-uninstall", action="store_true",
+                        help="dsh-client: also assert that `remove` takes the bundle back out")
     parser.add_argument("--dry-run", action="store_true",
                         help="stop before the call: pack+shape checks for npm-form, interpreter+tool-set "
                              "for git-stdio (no network, no server spawn)")
@@ -617,6 +817,10 @@ def main(argv: list[str] | None = None) -> int:
             result = probe_npm_form(repo, timeout=args.timeout, dry_run=args.dry_run)
         elif args.form == "setup-installer":
             result = probe_setup_installer(repo, timeout=args.timeout, dry_run=args.dry_run)
+        elif args.form == "dsh-client":
+            result = probe_dsh_client(repo, timeout=args.timeout, dry_run=args.dry_run,
+                                      keep=args.keep, serve=args.serve,
+                                      check_uninstall=args.check_uninstall)
         else:
             result = probe_git_stdio(repo, timeout=args.timeout, dry_run=args.dry_run)
     except Exception as error:   # noqa: BLE001 — a crash must still leave evidence, see the module docstring
