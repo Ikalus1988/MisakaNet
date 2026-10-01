@@ -537,7 +537,7 @@ const MCP_TOOLS = [
       type: "object",
       properties: {
         intake_id: { type: "string" },
-        status: { type: "string", enum: ["answered", "pending", "converted", "not_found"] },
+        status: { type: "string", enum: ["answered", "pending", "converted", "unknown", "not_found"] },
         answer: { type: "string" },
         lesson_id: { type: "string" },
         issue_url: { type: "string" },
@@ -3714,26 +3714,35 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
     }
 
     // 2. Not in questions table — check if the intake was converted to a
-    //    lesson by scanning corpus frontmatter for an intake_id reference.
+    //    lesson. Delegated to lookupIntakeConversion, which is the faithful
+    //    port of scripts/intake_receipt.py and reads the citation fields that
+    //    actually exist (source / provenance.issue / provenance.related /
+    //    provenance.source).
+    //
+    //    The previous version of this branch scanned meta.intake_id /
+    //    contrib_id / source_issue / related_issues. None of those keys exist
+    //    in the corpus — measured 2026-10-01 across 461 lessons: 0 / 0 / 0 / 0,
+    //    while `provenance` appears in 428. That scan could never match, so
+    //    this branch always fell through and every converted intake reported
+    //    `pending` forever. Same defect as the JSONL files the review called
+    //    out, just pointed at a different source that is also not there.
     if (issueNum) {
       try {
-        const lessons = await loadLessons(env, {});
-        if (lessons) {
-          for (const lesson of lessons) {
-            const meta = lesson.frontmatter || {};
-            const refs = [
-              meta.intake_id, meta.contrib_id, meta.source_issue,
-              ...(meta.related_issues || []),
-            ].filter(Boolean).map(String);
-            if (refs.some(r => r.includes(issueNum))) {
-              return {
-                intake_id: `issue-${issueNum}`,
-                status: "converted",
-                lesson_id: meta.id || lesson.id || "",
-                note: "This intake was converted into a lesson.",
-              };
-            }
-          }
+        const hits = await lookupIntakeConversion(env, parseInt(issueNum, 10));
+        if (hits && hits.length) {
+          const first = hits[0];
+          return {
+            intake_id: `issue-${issueNum}`,
+            status: hits.length === 1 ? "converted" : "converted",
+            lesson_id: first.id || first.path || "",
+            lesson_title: first.title || "",
+            lesson_path: first.path || "",
+            lesson_status: first.status || "",
+            converted_count: hits.length,
+            note: hits.length === 1
+              ? "This intake was converted into a lesson."
+              : `This intake is cited by ${hits.length} lessons.`,
+          };
         }
       } catch (_) {}
     }
@@ -3759,8 +3768,12 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
 
     return {
       intake_id: rawId || `dedup-${dedupKey}`,
-      status: "not_found",
-      note: "No intake found with this ID or dedup_key. It may not have been submitted yet, or the ID is incorrect.",
+      status: "unknown",
+      note: "Nothing found in the D1 question table, the lesson corpus, or the dedup store. " +
+            "Read this as 'cannot be determined', not 'never happened': only a minority of " +
+            "lessons carry an intake citation (provenance.issue / source), so most converted " +
+            "intakes leave no backlink to find. A bare `not_found` would claim more than the " +
+            "data supports.",
     };
   }
 
