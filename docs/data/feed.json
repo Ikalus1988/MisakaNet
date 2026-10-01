@@ -1,12 +1,26 @@
 {
-  "generated_at": "2026-10-01T14:32:53.479584+00:00",
+  "generated_at": "2026-10-01T14:44:43.716392+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "lessons: a missing source must not resolve to a default; and a sandboxed panel is an entitlement problem",
+      "title": "lessons: close the two zero-hit npm gaps, and the force-with-lease gap behind them",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2620",
+      "timestamp": "2026-10-01T14:44:33Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2625",
+      "timestamp": "2026-10-01T14:38:20Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "lessons: missing-source defaults, the sandbox entitlement, and the relevance boundary sample",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2624",
       "timestamp": "2026-10-01T14:32:42Z",
       "source": "github"
@@ -26,18 +40,12 @@
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "feat(dsh): name the session the footer copies, and hand over a patch snippet",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2618",
-      "timestamp": "2026-10-01T14:05:36Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "lessons: shared-tab navigation is destructive, and git stash is repository-wide",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2621",
-      "timestamp": "2026-10-01T13:57:58Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "A hit is not evidence of relevance — the boundary queries that must come back empty",
+      "url": "lessons/contrib/a-hit-is-not-evidence-of-relevance.md",
+      "timestamp": "2026-10-01",
+      "domain": "search",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -69,14 +77,6 @@
       "url": "lessons/contrib/missing-source-must-not-resolve-to-a-default.md",
       "timestamp": "2026-10-01",
       "domain": "development",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "Navigating a shared browser tab is a destructive action — treat it like deleting a file",
-      "url": "lessons/contrib/shared-tab-navigation-is-destructive.md",
-      "timestamp": "2026-10-01",
-      "domain": "agent",
       "source": "lessons"
     },
     {
