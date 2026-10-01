@@ -226,3 +226,7 @@ read-only dead end into the next step, and it is the same document the host's na
 
 Measured 2026-10-01 in a throwaway host: the footer's clipboard begins `MisakaNet — this session` /
 `会话：effa17cd`, and the snippet copies as `- id: misakanet-mcp` / `disabled: false` / `config:`.
+
+Want to see these seats on your own host before they reach npm? [Testing the DSH client half from a
+checkout](agents/client-half-testing.md) installs this working tree into a throwaway `DSH_HOME`, with the two
+first-run dialogs and the workspace seed that a fresh profile needs.
