@@ -193,6 +193,48 @@ class TestDistinctiveTokenCoverage:
             "摘掉覆盖门后应当复现旧的误报——若这里不再命中，说明本测试已经钉不住 #2643 的修复"
         )
 
+    # ── #2646 复核发现的**漏报**：主体词只有 3-5 字符的技术栈词时，旧的 ≥6 字符门槛 ──
+    # 会把它当成"没有共同主体词"。两篇课都用真实语料的字段；第一条是外部试点报告
+    # docs/external-pilots/roof4u-2026-09-08.md 第 4 行判为 on-target 的样本。
+    CURL_PROXY_LESSON = {
+        "id": "corporate-proxy-curl-timeout",
+        "title": "curl Timeout Behind Corporate Proxy: SSL Inspection Breaks Certificate Validation",
+        "domain": "devops",
+        "tags": ["proxy", "curl", "corporate-network", "ssl", "tls", "mitm"],
+        "description": ("# curl Timeout Behind Corporate Proxy ## Problem `curl` requests to external "
+                        "APIs timeout behind corporate proxy with SSL inspection enabled."),
+    }
+    GIT_403_LESSON = {
+        "id": "lesson-06-git-push-credential-helper-403",
+        "title": ("Git Push to Fork Repo: 'Permission Denied to Other User' — Wrong PAT "
+                  "Selected by Helper"),
+        "domain": "devops",
+        "tags": ["meta", "lesson", "push", "credential", "helper"],
+        "description": ("# Git Push to Fork Repo: \"Permission Denied to Other User\" — Wrong PAT "
+                        "Selected by Helper > Domain: devops > Source: R"),
+    }
+
+    def test_stack_word_subject_is_accepted_by_the_coverage_gate(self):
+        """`curl`/`ssl`/`proxy`/`git` 这类技术栈词就是主体词，不能被 ≥6 字符门槛排除。
+
+        这两条查询里唯一 ≥6 字符的词（`connect`/`number`、`access`/`requested`/`returned`）
+        都不是失败主体；只按长度挑"主体词"就会把对症的课拒掉（#2646 复核实测的漏报）。
+        """
+        for query, lesson in (
+            ("curl: (35) SSL connect error wrong version number proxy", self.CURL_PROXY_LESSON),
+            ("fatal: unable to access 'https://github.com/user/repo.git/': "
+             "The requested URL returned error: 403", self.GIT_403_LESSON),
+        ):
+            r = run(query, corpus=[lesson])
+            assert r["decision"] == "hit", (query, r)
+            assert r["lesson"]["id"] == lesson["id"], (query, r["lesson"])
+
+    def test_stack_word_subject_does_not_reopen_the_error_class_false_positive(self):
+        """放宽到技术栈词后，德语课那种"唯一共同词是错误类别名"的误报仍必须被拒。"""
+        r = run(self.MODULE_NOT_FOUND_QUERY,
+                corpus=[self.GERMAN_LESSON, self.CURL_PROXY_LESSON])
+        assert r["decision"] != "hit", r
+
     def test_covered_candidate_beats_a_higher_scoring_uncovered_one(self):
         """覆盖门是**选课**条件，不是只给最高分做体检。
 
