@@ -86,6 +86,31 @@ No account, no token, no Python needed for the plugin path: the npm bundle mount
 Declared hosts and what was measured: [compatibility](docs/compatibility.md). Every channel, the
 prerequisites, and the two-package trap that costs people an install: [How to use it](#how-to-use-it).
 
+## What the DeepSeek Harness plugin adds
+
+Version 2.40.0 ships the browser half. It is not a dialog: it puts MisakaNet where the session already is.
+
+<p align="center">
+  <img src="docs/assets/dsh-client-left-column.png" width="820" alt="DeepSeek Harness: a permanent MisakaNet entry in the left column under Plugins, and the full page it opens"/>
+</p>
+
+| Where | What you get |
+| --- | --- |
+| **Left column** | A permanent `MisakaNet` entry directly under `Plugins`. It is a shortcut, not the panel: clicking it opens a full page in the main column. Root scope — it does not come and go with a session. |
+| **Conversation tab** | A `MisakaNet` tab beside Chat and Trajectory: what this session asked, what came back, and what you filed, rebuilt from the conversation's own rows. |
+| **Right column** | The same panel as a pane, so it can sit next to the file tree, a terminal, or a document. |
+| **Tool call rows** | Every `misakanet_search` and `misakanet_submit_intake` call gets its own row on the tool card: the query as it was sent, whether a lesson came back, and one reuse vote per lesson. |
+| **Assistant action row** | 👍 / 👎 on the answer that used a lesson. Those two are the only things the page ever sends — counters live in the browser, not on a server. |
+| **Voice** | An off-by-default switch that explains both mechanisms: the cue the server names on the next search, and the local hook a page cannot read. |
+
+<p align="center">
+  <img src="docs/assets/dsh-client-right-panel.png" width="820" alt="The MisakaNet pane in the right column of a DeepSeek Harness session"/>
+</p>
+
+Which seats the half occupies and why they are `root` or `session` scope, with the host's own contract text
+quoted: [compatibility](docs/compatibility.md). Running a host of your own and want a check that cannot
+touch your profile: `python3 scripts/install_smoke.py dsh-client --serve`.
+
 ## What is MisakaNet?
 
 **Git-backed failure memory for AI coding agents.** An error shows up → the agent searches the lessons →
