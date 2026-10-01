@@ -139,7 +139,7 @@ decision/fingerprint/lesson_id/sim/receipt），并写入该步的 Job Summary�
 | `error` / `log-file` | 自动抽取 | 错误文本或 CI 日志路径（留空则从失败的 workflow_run 日志抽取） |
 | `source` | `github-action` | 上报来源标识，建议用 `${{ github.repository }}` |
 | `source-ref` | `main` | **仅兜底**：本地找不到 `intake_bot.py` 时从该 ref 拉取（`@v1` 自带脚本，通常用不到） |
-| `sim` | `0.45` | 命中相似度阈值（stack-aware；无栈泛化错误需 ≥0.55） |
+| `sim` | `0.45` | 命中阈值，量纲 **0..2**（加权分 `max(标题重叠×2, 描述重叠)`，不是百分比）：0.45 = 标题重叠 ≥0.23 或描述重叠 ≥0.45；stack-aware，无栈泛化错误需 ≥0.55 |
 | `what-tried` | 空 | 尝试过的修复（提升 intake 转正率） |
 | `comment-on-pr` | `true` | 是否在关联 PR 评论结果 |
 | `pr-number` | 空 | 指定要评论的 PR（默认用失败运行关联的 PR；手动 dispatch 时靠它测试评论路径） |
