@@ -910,13 +910,17 @@ def test_every_client_registration_waits_for_its_slot_declaration():
     result = _run_client_apply(REPO / "lib" / "client.js")
     assert result["warnings"] == [], (
         f"a surface failed to register — the real host would show `misakanet: failed`: {result['warnings']}")
-    assert len(result["registrations"]) == 9, result
+    assert len(result["registrations"]) == 11, result
     assert result["pending"].count("tool.call.toolview") == 4, result
     for seat in ("conversation.view", "sidebar.panellist", "main", "conversation.input.overlay"):
         assert seat in result["pending"], (
             f"{seat} must wait for its declaration too, not just the child slots")
     # The slash command is a service registration, and it is the only one: one `/misakanet` source.
     assert result["sources"] == ["/misakanet"], result
+    # The plugin page's row key is `<bundle>#<row id>`, exactly as the bundle patch spells the row.
+    assert "misakanet#misakanet-mcp" in result["registrations"], result
+    assert "misakanet" in result["registrations"], (
+        "the bundle-level config is keyed by the package name; the row-level one by <bundle>#<row id>")
 
 
 def test_the_declaration_rule_can_go_red(tmp_path):

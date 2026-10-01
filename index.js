@@ -120,3 +120,69 @@ export async function apply(ctx, config = {}) {
     ctx?.logger?.warn?.(`misakanet: MCP client not mounted: ${error?.message ?? error}`);
   }
 }
+
+/**
+ * The row's `Config`: what the Loader validates the bundle patch's `config:` against, and what the plugin
+ * page turns into a form — the host's own words for it are "the cordis `Config` validator and the
+ * Config-form generation's served schema" (`dsh-context`'s `index.d.ts` says the same thing about its own).
+ *
+ * Built with a **top-level `await` inside a `try`**, not a static import. `@deepseek-ai/schemastery` is a
+ * host dependency, but this package is also installed by skill-only consumers that never load this module,
+ * and a module-level import failure would take the whole row down rather than only its form. Without it the
+ * row keeps working from the patch and only the GUI form is lost — the same "absence is not failure" rule
+ * `apply()` follows for the MCP client.
+ */
+/**
+ * Import schemastery from wherever this install can actually reach it.
+ *
+ * A profile that **installed** this package resolves the bare specifier on its own: Node walks up from
+ * `…/profiles/web/node_modules/misakanet/` and finds the profile's copy. A profile that **linked** a working
+ * tree does not — Node resolves the link to its real path, so the walk starts in the repository and never
+ * sees the profile. That is the shape this repository's own contributor profiles (and the owner's live one)
+ * use, so the second attempt resolves from the `dsh` entry point that started the host, where schemastery is
+ * a dependency of DSH itself.
+ */
+async function loadSchemastery() {
+  const attempts = ['@deepseek-ai/schemastery'];
+  try {
+    const { createRequire } = await import('node:module');
+    const { realpathSync } = await import('node:fs');
+    const hostEntry = process.argv[1];
+    // Both spellings matter: the bin is usually a **symlink**, and the package's own node_modules sits
+    // beside its real path — resolving from the link's directory finds the global root instead.
+    const from = [];
+    if (hostEntry) from.push(hostEntry);
+    try { from.push(realpathSync(hostEntry)); } catch (error) { /* no real path to add */ }
+    for (const entry of from) {
+      try {
+        const resolved = createRequire(entry).resolve('@deepseek-ai/schemastery');
+        if (!attempts.includes(resolved)) attempts.push(resolved);
+      } catch (error) { /* this entry cannot see it */ }
+    }
+  } catch (error) { /* keep the bare specifier as the only attempt */ }
+  for (const specifier of attempts) {
+    try {
+      const loaded = await import(specifier);
+      return loaded.default ?? loaded;
+    } catch (error) { /* try the next location */ }
+  }
+  return undefined;
+}
+
+let Config;
+try {
+  const z = await loadSchemastery();
+  if (z === undefined) throw new Error('schemastery is not resolvable from this install');
+  Config = z.object({
+    transport: z.string().default(DEFAULT_MCP_CONFIG.transport),
+    serverName: z.string().default(DEFAULT_MCP_CONFIG.serverName),
+    url: z.string().default(DEFAULT_MCP_CONFIG.url),
+    headers: z.dict(z.string()).default({ ...DEFAULT_MCP_CONFIG.headers }),
+    toolCallTimeoutMs: z.number().default(DEFAULT_MCP_CONFIG.toolCallTimeoutMs),
+    failOnStartupError: z.boolean().default(DEFAULT_MCP_CONFIG.failOnStartupError),
+  });
+} catch (error) {
+  Config = undefined;
+}
+
+export { Config };
