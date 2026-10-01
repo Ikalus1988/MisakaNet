@@ -49,18 +49,18 @@ that lists `misakanet` as a dependency.
 
 ## What you see in the host
 
-Since 2.40.0 the plugin ships a browser half as well as the MCP row. Six seats, and the two that are
-`root` scope survive a session ending:
+2.40.0 shipped the browser half next to the MCP row; 2.41.0 adds the Settings row. All seven seats below
+are in `main` today, and the three whose scope is `root` survive a session ending:
 
-| Seat | Scope | What it is |
-| --- | --- | --- |
-| Left column, under `Plugins` | root | A permanent `MisakaNet` entry — a shortcut that opens a full page in the main column |
-| `main` page | root | What that entry opens: the browser-scoped view (what this browser has contributed, how trust is counted, the voice switch) |
-| Conversation tab ring | session | A `MisakaNet` tab beside Chat and Trajectory |
-| Right column pane | session | The same panel as a pane, beside the other tools |
-| Tool call rows | session | One row per `misakanet_search` / `misakanet_submit_intake` call, with a reuse vote per lesson |
-| Settings → General | root | A MisakaNet preference row (voice cues, display density); the endpoint field appears only where the host exposes a writable form, and the row says where the value lives otherwise |
-| Assistant action row | session | 👍 / 👎 on an answer that used a lesson |
+| Seat | Scope | Since | What it is |
+| --- | --- | --- | --- |
+| Left column, under `Plugins` | root | 2.40.0 | A permanent `MisakaNet` entry — a shortcut that opens a full page in the main column |
+| `main` page | root | 2.40.0 | What that entry opens: the browser-scoped view (what this browser has contributed, how trust is counted, the voice switch) |
+| Conversation tab ring | session | 2.40.0 | A `MisakaNet` tab beside Chat and Trajectory |
+| Right column pane | session | 2.40.0 | The same panel as a pane, beside the other tools |
+| Tool call rows | session | 2.40.0 | One row per `misakanet_search` / `misakanet_submit_intake` call: the query, whether a lesson came back, and the raw payload. It posts nothing — the reuse vote is asked on the Assistant action row, once the outcome is visible |
+| Settings → General | root | 2.41.0 | A MisakaNet preference row (voice cues, display density); the endpoint field appears only where the host exposes a writable form, and the row says where the value lives otherwise |
+| Assistant action row | session | 2.40.0 | 👍 / 👎 on an answer that used a lesson — the only surface that sends a vote |
 
 <p align="center">
   <img src="../assets/dsh-client-left-column.png" width="760" alt="The MisakaNet entry in the left column and the page it opens"/>

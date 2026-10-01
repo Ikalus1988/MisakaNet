@@ -1,10 +1,12 @@
 # MisakaNet 4-Month Roadmap
 
-Last updated: 2026-09-16（上一版：2026-08-22，原文保留在下方，未改写）
+Last updated: 2026-10-02（上一版：2026-09-16，原文保留在下方，未改写）
 
-> **要看当前计划，直接看 [`2026-09-16 更新 — 五层拼图与优先事项`](#2026-09-16-更新--五层拼图与优先事项)。**
+> **要看当前计划，直接看 [`2026-10-02 更新 — 交付、在飞与 KV 迁移到 D1`](#2026-10-02-更新--交付在飞与-kv-迁移到-d1)。**
+> 它只补 2026-09-16 之后的增量，并回答"现在在哪、下一步做什么"；`2026-09-16 更新 — 五层拼图与优先事项`
+> 是上一轮的记录，其文字、数字、裁定一律未改写（本仓惯例：旧条目只加状态裁定，不改写历史）。
 > 下面 2026-08-22 的原文全部保留，只作历史记录：其中的版本号、课程数、工具数都已前移，
-> 逐条状态裁定（已完成 / 已过时 / 已放弃 + 理由 + 证据）写在新章节的「旧条目状态裁定」里。
+> 逐条状态裁定（已完成 / 已过时 / 已放弃 + 理由 + 证据）写在 09-16 那节的「旧条目状态裁定」里。
 >
 > **本文是唯一对外路线图**：`README.md`（Roadmap 节）、`README.zh-CN.md`、`README.ja.md`、
 > `CONTRIBUTING.md` 都只链接 `ROADMAP.md`。`docs/roadmap/` 下的四个文件与
@@ -21,6 +23,156 @@ private intake -> classification -> maintainer demand board -> curated lesson/re
 
 MisakaNet should stay offline-first and Git-backed. External listings are useful
 "amplifiers", not the product itself.
+
+## 2026-10-02 更新 — 交付、在飞与 KV 迁移到 D1
+
+> 本节只写 **2026-09-16 之后的增量**：上一轮的五层拼图、四类用户路径、六步优先级**仍然有效**，
+> 这里回答的是"这三周交付了什么、哪些还在飞、下一步先做哪一件"。
+> `2026-09-16` 那节的文字、数字与裁定**一字未改**（本仓惯例：旧条目只加状态裁定，不改写历史）。
+> 本节每条断言都带 issue / PR 号，可按文末附录逐条核；核不动的明确标 **未验证**。
+> **语料规模不写成本节的"当前值"**：看 09-16 节的「当前数字」动态徽章（`data` 分支的 `badges/*.json`，
+> 由 `update-badges.yml` 每日重算）；本节出现的唯一规模数字是附录里一条带日期的命令输出。
+
+### 现在在哪（2026-09-16 → 2026-10-02）
+
+**一、DSH 客户端半身：从"只有 MCP 工具"变成"宿主里看得见的一层"。**
+
+| 面 | 落点（PR） | 状态 |
+|---|---|---|
+| 插件面声明（图标 / 生态元数据 / 实测兼容行） | #2543、#2546 | 已合并（09-30） |
+| 检索结果的**可见性**（命中数 / 置顶那条 / 证据等级 / 新鲜度；`tool.call.toolview`，**不发任何 POST**） | #2551 | 已合并（09-30） |
+| 复用投票（Helpful / Not what I needed；`conversation.chat.assistant-actions`，`order: 20`） | #2551 | 已合并（09-30） |
+| 右栏面板（`sidebar.right.pane.tab`：本会话问过什么 / 报过什么 / 可信度 / 活动 / 语音） | #2551 | 已合并（09-30） |
+| 左栏常驻入口 + 它打开的页面 | #2582 | 已合并（10-01） |
+| `/misakanet` 命令 + 浮层（在 composer 里作答） | #2598 | 已合并（10-01） |
+| 插件页的 MCP 行配置（只读） | #2599 | 已合并（10-01） |
+| 设置 → General 的 MisakaNet 行（语音开关） | #2600 | 已合并（10-01） |
+| zh/en locale（UI 走 `ctx.locale`，包元数据走 `locale/*.json`） | #2602 | 已合并（10-01） |
+| 全窗口 toast + 侧栏底部动作（复制本会话活动） | #2618 | 已合并（10-01） |
+| 客户端行为 e2e：一次性真宿主 + 真 Chromium，三场景 | #2610 | **在飞（open）** |
+| 2.41.0 的 release 承载 | #2591 | **在飞（open）** |
+
+- 这些客户端面由 **2.41.0 的 release PR #2591** 承载；截至本行 #2591 仍是 open，仓库里最后一个 tag 是
+  `v2.40.0`（附录命令 ④）——所以"已合并"指**落在 `main` 上**，不等于"已发布"。
+- **检索行与投票是两个座位，不是一个**（#2551 的第一版把它们混在一起，动机就是纠正它）：`tool.call.toolview`
+  只做可见性，**不发任何投票**；投票注册在 `conversation.chat.assistant-actions`（`misakanet-verdict`，
+  `order: 20`），即"最终助手消息"那一条动作行——检索时修复还没跑，"did this help?" 在那个时刻答不了。
+  判据（可实跑，附录命令 ⑥）：`python3 -m pytest tests/test_dsh_plugin_surface.py -q` 里的
+  `test_the_visibility_surface_cannot_vote` 断言检索行体内不得出现 `post(`；分工原文
+  "Posts nothing." 在 `docs/maintainer/client-half-acceptance.md` §0。
+- **#2610 之前，客户端行为只有人工 Playwright**：静态门禁只钉"注册了没有"（座位声明了、字典键存在、
+  schema 与默认值一致），看不见"到底发生了没有"。它把 `slash-overlay` / `frame-wide-toast` /
+  `settings-to-panel` 三场景变成可自动跑的检查；宿主是一次性的 `DSH_HOME`，语料库被拦截，不依赖线上。
+- 一条会踩坑的记法：同一批里的 **#2607（"toast + 侧栏底部动作"）关闭未合并**，#2618 把这两面连同
+  "面板抄哪一段会话"一起落地——按"关掉的 PR"去找产物会找不到。
+- **未验证**：线上 2.41.0 的实际发布状态（本节只读仓库与 tag，没有调 npm / PyPI；`v2.40.0` 之后无新 tag）。
+
+**二、容量：唯一真把功能打挂过的配额问题，现在有位置了。**
+
+- **2026-09-12 生产事故（记在 #1647）**：KV 免费档只有 **1,000 次「写到不同 key」/天**；
+  `misakanet_register` 报 `KV put() limit exceeded for the day.`，而 cron 的索引重写（同 key）照旧成功——
+  **需要新 key 的路径先死**：注册一次要两个新 key（`node:<id>`、`mcp_token:<token>`），计数与它抢同一个预算。
+- **2026-09-22/23 复发（#2111）**：`/api/health` 连续 ~14 小时 `degraded`，`degraded_reason: kv writes failing
+  (quota 10048)`（10048 = Cloudflare 的"KV PUT 每日上限"）。读没事（KV 免费档 100,000 次读/天），
+  所以症状是**陈旧**而不是"打不开"：索引重发不了，检索只能供 `evidence_level: ""`（#2080）。
+- **PR #2639（2026-10-01 合并）**：`/api/lessons` 加 120 秒边缘缓存（`caches.default` + `Cache-Control`，
+  `workers/lessons-cache.test.mjs` 钉住），并给 `misakanet-register-proxy` 打开 `[observability]`——
+  在那之前它是**唯一没有日志、却承载全部动态流量**的 worker，所以账号内也答不了自己的容量问题。
+- 它给出的容量口径：D1 免费档 500 万行读 + 10 万行写每天，Workers 10 万请求每天；相除 = **每请求 50 行读 /
+  1 行写**。**D1 超限是 Worker 内部报错，fail open 救不了这一层**——写侧迁移是下一面墙，不是"优化"。
+
+### 下一步（2026-10-02 起）
+
+**① KV → D1 写侧迁移（#2115，open，`priority:high`）** ← 本仓唯一真把功能打挂过的配额问题，排第一
+
+- 现状（2026-10-02 在 `main` 上重数，附录命令 ②）：
+
+  ```text
+  kvPut(env,          9
+  MISAKANET_KV.put(   2
+  storePut(env,      26    ← 这些已经"先写 D1"
+  ```
+
+  #2115 自己的清单是 **2026-09-23** 实测的 `30 / 27 / 7`——三周里计数与注册 key 都已迁 D1
+  （#1647–#1649 建表、#1804 迁注册），**迁移已比 issue 描述走得更远**，但 issue 仍未关：
+  剩下的写点按"每天新增多少 key"分类，而那张清单里"无界的那一类"**已经不在了**——#2117
+  （**2026-09-24 关闭**，completed）把每地址限流整族搬进 D1：`rate:feedback` / `rate:intake` / `rate:connect`
+  走 `storePut(env,`（D1 优先，KV 只是回退），`rate:read` / `rate:signal` 只剩 `counters` 表的 legacy key
+  形状，同样只在 D1 缺失或写入失败时才落到 KV。今天这个文件里还会走 `kvPut(env,` 的只剩四类，都不是
+  "每请求一个新 key"：`gap:<query>` + `gap:index`（#1649 起 D1 优先；KV 路径只给没有 D1 binding 的部署，
+  另受每天 400 个新 key 的上限）、`node_counter`（单个固定 key，重写不新增）、`telemetry:newkeys:<date>`
+  （每天一个新 key，它本身就是那个上限计数器）、以及 `bumpCounter` 的 legacy counters 回退（附录命令 ⑦）。
+- 为什么放在最前：它不是性能问题，是**用户看得见的失败**——注册路径直接报错、索引重发不了、检索字段变空；
+  这三件事在 09-12 与 09-22 各发生过一次。
+- 验收（**口径以 #2115 的 "How this epic ends" 为准**）：`/api/health` 在普通日子不再出现
+  `degraded_reason: kv writes failing`，即**写量降到免费额度以下**（#2115 原文：不是因为配额几小时后就重置），
+  #2111 可以关闭。**与 #2115 的差异写在明处**：本节还想再严一档——`kvPut(env,` / `MISAKANET_KV.put(`
+  的每个直写点都写明"为什么必须留 KV"——但那是**本节的自我要求，不是 #2115 的关闭条件**，不能拿它当判据。
+
+**② provenance gate 已在跑（#1768）；intake conversion receipt 在飞（#1528 / #2491）。**
+
+- #1768（2026-09-16 合并）：`scripts/check_provenance.py` + `.github/workflows/provenance-gate.yml` +
+  `data/provenance-baseline.json`（`known_dead: []`）。它把"来源存不存在"从人工阅读变成自动挡：
+  触发条件是 PR 动了 `lessons/**`、检查脚本或基线，另有一条每周的 link-rot 定时（report-only）。
+- 本轮实跑（离线口径，附录命令 ⑤）：**检查 477 篇课程、引用 35 条外链，exit 0**。这是 2026-10-02 的
+  命令输出，**不是当前值**——当前语料规模看动态徽章（两个口径的差别 09-16 节已解释）。
+- **仍未解决**（09-16 节已写，本节不改写）：语义真伪——一个真实但无关的链接仍会通过这一档。
+- intake conversion receipt：#1528（issue，open）的设计由 **#2491**（PR，open）实现——课程转正后给报料
+  来源回执。它决定"报料者能不能知道自己有用"，是飞轮闭环的那一环。
+- 这两条是 09-16 节优先级 ② / ③ 的前置：**先让来源可信、让报料者有回执，再谈中文检索与企业材料。**
+
+**③ 09-16 节的其他优先级不动。** ① provenance 门禁已由 #1768 落地；③ 中文检索、④ 首次调用可观测、
+⑤ 两页企业说明、⑥ 多 agent 协同语义仍按原顺序——缺的是执行，不是重新排序。
+
+### 本节不做
+
+- **不改 09-16 节**：它的文字、数字、裁定一律保留（旧条目只加状态裁定，不改写历史）。
+- **不把语料规模写成"当前值"**：受管计数句子在 09-16 节的「当前数字」，只认 `badges/*.json` 动态徽章；
+  本节唯一的规模数字是带日期的命令输出（477 篇），引用时必须带那个日期。
+- 不为对齐路线图去动生成物（`data/lessons.json`、`docs/data/*`、`docs/lessons/**`）。
+- 不顺手重构 `workers/register-proxy-sw.js`：① 是一项独立迁移（#2115），不是这条路线图的附带修改。
+
+### 附录：本节断言的复现命令
+
+```bash
+# ① 这些 PR / issue 的标题与状态（本节引用的号都在这一行里）
+for n in 2543 2546 2551 2582 2598 2599 2600 2602 2607 2610 2618 2591 2639 2115 1528 2491 1768; do
+  curl -sS -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
+    "https://api.github.com/repos/Ikalus1988/MisakaNet/issues/$n" \
+    | python3 -c "import json,sys; d=json.load(sys.stdin); print('#%s'%d['number'], d['state'], d['title'])"
+done
+
+# ② KV 写点（#2115 用的同一口径：按出现次数，不按行）
+grep -o "kvPut(env," workers/register-proxy-sw.js | wc -l
+grep -o "MISAKANET_KV.put(" workers/register-proxy-sw.js | wc -l
+grep -o "storePut(env," workers/register-proxy-sw.js | wc -l
+
+# ③ 120 秒边缘缓存与 observability
+grep -n "LESSONS_TTL_SECONDS" workers/register-proxy-sw.js
+grep -n -A2 "^\[observability\]" workers/wrangler.toml
+
+# ④ 客户端半身就在这个文件里；哪一批落的看提交，发布到哪看 tag
+git log --oneline -8 -- lib/client.js
+git tag --sort=-v:refname | head -1
+
+# ⑤ provenance gate（离线，不碰网络）
+python3 scripts/check_provenance.py --offline --check
+
+# ⑥ 客户端两个座位：检索行只做可见性、不投票（离线）
+python3 -m pytest tests/test_dsh_plugin_surface.py -q   # 含 test_the_visibility_surface_cannot_vote
+grep -n "tool.call.toolview\|conversation.chat.assistant-actions" lib/client.js
+grep -n "Posts nothing" docs/maintainer/client-half-acceptance.md
+
+# ⑦ #2117（每地址限流迁 D1）已关闭，与文件里还剩的 KV 写点
+curl -sS -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/Ikalus1988/MisakaNet/issues/2117" \
+  | python3 -c "import json,sys; d=json.load(sys.stdin); print('#%s'%d['number'], d['state'], d['state_reason'])"
+grep -n "rate:feedback\|rate:intake\|rate:connect" workers/register-proxy-sw.js
+grep -n "storePut(env, fbRateKey\|storePut(env, intakeRateKey\|storePut(env, connRateKey" workers/register-proxy-sw.js
+grep -n "await kvPut(env," workers/register-proxy-sw.js   # 7 处：6 处直写 + storePut 自己的 KV 回退（另 1 行是注释）
+```
+
+---
 
 ## 2026-09-16 更新 — 五层拼图与优先事项
 
