@@ -181,14 +181,23 @@ canonical 近重复复检 + kind 路由（question→FAQ）后才 lesson 化。�
    `--error "ModuleNotFoundError: No module named 'pytest_mock'"` 仍会以 sim 0.5 命中德语课
    `fehler-python-modul-nicht-gefunden`——两篇课唯一的共同词是**失败类别名** `modulenotfounderror`，
    而那篇德语课从头到尾没提 `pytest_mock`。
-   修法（v1.1 **命中证据覆盖门**）：查询里承载失败主体的词（`_distinctive_tokens`：≥6 字符、
-   不是通用失败词、不是 `*Error` 类别名）必须在命中课程里至少出现一个；否则不 hit，走 intake 报缺口。
+   修法（v1.1 **命中证据覆盖门**）：查询里承载失败主体的词必须在命中课程里至少出现一个；
+   主体词有**两类**——`_distinctive_tokens` 的显著词（≥6 字符、不是通用失败词、不是 `*Error`
+   类别名）与**已知技术栈词**（`_STACK_TOKENS`：`curl`/`ssl`/`proxy`/`git`…）。否则不 hit，
+   走 intake 报缺口。
    **刻意不按语言/书写系统过滤课程**——那会连坐 zh / pt-br / de 里真正对症的课，
    覆盖门问的是"这门课讲的是不是你的东西"，与它用什么语言写无关。
    查询本身只有泛化词时（无主体词可覆盖），保留 v1.0 的高分兜底。
    - 实测（语料 435 篇，2026-10-02）：原复现 → `intake`（不再 hit）；同栈真命中不受影响
      （`ModuleNotFoundError ... 'requests' python pip venv` 改判到真正对症的 tiktoken 课、sim 1.0）。
    - 自测回归：`tests/test_intake_bot_50.py::TestDistinctiveTokenCoverage`（含"摘掉覆盖门就变红"的变异验证）。
+   - **复核修正（#2646 复验）**：最初只认 ≥6 字符的显著词，于是 `curl: (35) SSL connect error
+     wrong version number proxy`（唯一 ≥6 字符的词 `connect`/`number` 都不是主体，真正证据
+     `curl`/`ssl`/`proxy` 只有 3-5 字符）被拒——`docs/external-pilots/roof4u-2026-09-08.md` 第 4 行
+     把这篇 `corporate-proxy-curl-timeout` 判为 on-target，旧实现却落到 intake。现在技术栈词
+     也算主体词；`ModuleNotFoundError` 这类 `*Error` 类别名与通用失败词依旧不算，德语课误报仍被拒。
+     变异验证：把 `q_subject` 换回只认显著词 →
+     `test_stack_word_subject_is_accepted_by_the_coverage_gate` 变红。
 
 2. **`sim` 不是 0..1**：`docs/external-pilots/roof4u-samples-2026-09-08.ndjson` 里的 1.67 / 1.33
    不是脏数据，是**加权分** `max(标题重叠×2, 描述重叠)`（上限 2.0）——1.67 = 标题重叠 0.835×2。

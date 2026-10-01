@@ -195,13 +195,20 @@ python3 scripts/intake_bot.py --json --source probe --error "ModuleNotFoundError
 `hit` = 命中已有课程、`intake` = 该报料（不带 `--auto-intake` 时是 dry-run）、
 `ignore` = 噪音/重复/缺证据。**得到 `decision=error` 就是故障**，不是"没有失败可报"。
 
-实测输出（2026-09-25，`main` @ `66dace0`）：
+实测输出（2026-10-02，`main` @ `2116718`）。注意裸的 `'requests'` 现在落到 `intake`：自
+[#2646](https://github.com/Ikalus1988/MisakaNet/pull/2646) 起命中要过**覆盖门**——命中的课必须提到
+查询的主体词（`requests`）。提到它的课要么属于别的技术栈（被栈门排除），要么词面分远低于阈值，
+所以这条自检诚实地报缺口，而不是硬凑一篇泛化的德语课：
 
 ```console
 $ python3 scripts/intake_bot.py --json --source probe --error "ModuleNotFoundError: No module named 'requests'"
-{"decision": "hit", "fingerprint": "08b7f8e407058a27", "suggest_only": true, "lesson": {"id": "fehler-python-modul-nicht-gefunden", "title": "ModuleNotFoundError in Python trotz pip install", "url": "https://misakanet.org/lessons/fehler-python-modul-nicht-gefunden/", "sim": 0.5}}
+{"decision": "intake", "fingerprint": "08b7f8e407058a27", "dry_run": true, "payload": {"kind": "missing_lesson", "problem": "ModuleNotFoundError: No module named 'requests'", "error": "ModuleNotFoundError: No module named 'requests'", "what_tried": "", "source": "probe", "matched_lesson_id": "", "fix": "", "verification": ""}}
 $ echo $?
 0
+
+# hit：主体词（git / credential / helper）真的出现在某篇课里
+$ python3 scripts/intake_bot.py --json --source probe --error "git credential helper 401 credential lookup failed github helper path mismatch"
+{"decision": "hit", "fingerprint": "c621008f8956e4f2", "suggest_only": true, "lesson": {"id": "git-credential-helper-gh-path-mismatch", "title": "gh credential helper 路径Error导致 git push 静默失败", "url": "https://misakanet.org/lessons/git-credential-helper-gh-path-mismatch/", "sim": 0.86, "sim_norm": 0.43, "sim_scale": 2.0}}
 ```
 
 三种 decision 都实测过（同一台机器、同一份脚本）：
