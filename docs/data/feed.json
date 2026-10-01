@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-01T07:38:21.930615+00:00",
+  "generated_at": "2026-10-01T07:41:39.479862+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
@@ -41,6 +41,14 @@
     },
     {
       "type": "lesson",
+      "title": "Instrumentation that never reached the artifact: a silent probe is not evidence",
+      "url": "lessons/contrib/instrumentation-that-never-reached-the-artifact.md",
+      "timestamp": "2026-10-01",
+      "domain": "development",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
       "title": "A corpus cached in one row has a ceiling, and the diagnosis cannot live in that row",
       "url": "lessons/contrib/a-corpus-cached-in-one-row-has-a-ceiling.md",
       "timestamp": "2026-09-27",
@@ -69,14 +77,6 @@
       "url": "lessons/core/allowlist-must-be-tested-against-the-corpus.md",
       "timestamp": "2026-09-25",
       "domain": "testing",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A not-found answered with a retryable error code makes agents retry a 404 forever",
-      "url": "lessons/core/an-error-code-that-says-retry-cannot-carry-a-not-found.md",
-      "timestamp": "2026-09-25",
-      "domain": "api",
       "source": "lessons"
     },
     {
