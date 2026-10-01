@@ -98,8 +98,17 @@ against dsh 0.2.0-rc.2:
 | `tool.call.toolview` | keyed / session | the search and intake rows on tool cards | either wire spelling |
 | `sidebar.right.pane.tab` (+ `.title`) | keyed / session | the pane body and its chip | the right column's add-tab guide |
 | `sidebar.panellist` | list / **root** | a persistent entry in the **left** column, drawn as an icon | the sidebar itself |
+| `plugins.bundle.config` / `plugins.row.config` | keyed / **root** | the row's effective configuration in the plugin page | the plugin page's configure control |
 | `conversation.input.overlay` | list / session | the `/misakanet` result card inside the composer | the composer, after the `/` menu picks the command |
 | `main` | keyed / **root** | **the page that entry opens** — the contract says *"Central panel selected by sidebar entry id"* | dispatched with the same id |
+
+The plugin page's card is **read-only on purpose**, and the reason is in the host: `dsh-settings`'s
+`describe()` builds a form only out of fields whose schema is marked `volatile()` — ones the host can change
+without remounting the plugin (`volatileForm(schema)` filters on `schema.meta.volatile`, and a schema with
+none returns no form). An MCP endpoint, transport or timeout only takes effect after a reload, so declaring
+them volatile to win a form would misdescribe this plugin. The card therefore prints the values in force and
+names the place they are edited — the profile's `cordis.patch.yml`, entry `id: misakanet-mcp` — which is the
+same document the host's native configuration editor points at.
 
 The slash command is a **service**, not a seat: the host's slash pipeline owns the draft, and a source is
 registered through `ctx.inject(["inputTriggers"], …)` → `registerSource({trigger, name, candidates, onPick})`.
