@@ -40,7 +40,8 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 | 面 | 落点（PR） | 状态 |
 |---|---|---|
 | 插件面声明（图标 / 生态元数据 / 实测兼容行） | #2543、#2546 | 已合并（09-30） |
-| 检索结果就地可投 Helpful 票（`tool.call.toolview`） | #2551 | 已合并（09-30） |
+| 检索结果的**可见性**（命中数 / 置顶那条 / 证据等级 / 新鲜度；`tool.call.toolview`，**不发任何 POST**） | #2551 | 已合并（09-30） |
+| 复用投票（Helpful / Not what I needed；`conversation.chat.assistant-actions`，`order: 20`） | #2551 | 已合并（09-30） |
 | 右栏面板（`sidebar.right.pane.tab`：本会话问过什么 / 报过什么 / 可信度 / 活动 / 语音） | #2551 | 已合并（09-30） |
 | 左栏常驻入口 + 它打开的页面 | #2582 | 已合并（10-01） |
 | `/misakanet` 命令 + 浮层（在 composer 里作答） | #2598 | 已合并（10-01） |
@@ -53,6 +54,12 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 
 - 这些客户端面由 **2.41.0 的 release PR #2591** 承载；截至本行 #2591 仍是 open，仓库里最后一个 tag 是
   `v2.40.0`（附录命令 ④）——所以"已合并"指**落在 `main` 上**，不等于"已发布"。
+- **检索行与投票是两个座位，不是一个**（#2551 的第一版把它们混在一起，动机就是纠正它）：`tool.call.toolview`
+  只做可见性，**不发任何投票**；投票注册在 `conversation.chat.assistant-actions`（`misakanet-verdict`，
+  `order: 20`），即"最终助手消息"那一条动作行——检索时修复还没跑，"did this help?" 在那个时刻答不了。
+  判据（可实跑，附录命令 ⑥）：`python3 -m pytest tests/test_dsh_plugin_surface.py -q` 里的
+  `test_the_visibility_surface_cannot_vote` 断言检索行体内不得出现 `post(`；分工原文
+  "Posts nothing." 在 `docs/maintainer/client-half-acceptance.md` §0。
 - **#2610 之前，客户端行为只有人工 Playwright**：静态门禁只钉"注册了没有"（座位声明了、字典键存在、
   schema 与默认值一致），看不见"到底发生了没有"。它把 `slash-overlay` / `frame-wide-toast` /
   `settings-to-panel` 三场景变成可自动跑的检查；宿主是一次性的 `DSH_HOME`，语料库被拦截，不依赖线上。
@@ -88,11 +95,19 @@ MisakaNet should stay offline-first and Git-backed. External listings are useful
 
   #2115 自己的清单是 **2026-09-23** 实测的 `30 / 27 / 7`——三周里计数与注册 key 都已迁 D1
   （#1647–#1649 建表、#1804 迁注册），**迁移已比 issue 描述走得更远**，但 issue 仍未关：
-  剩下的是按"每天新增多少 key"分类的写点，其中 `rate:<ip>:<window>`（每地址每窗口一个新 key）是无界的那一类。
+  剩下的写点按"每天新增多少 key"分类，而那张清单里"无界的那一类"**已经不在了**——#2117
+  （**2026-09-24 关闭**，completed）把每地址限流整族搬进 D1：`rate:feedback` / `rate:intake` / `rate:connect`
+  走 `storePut(env,`（D1 优先，KV 只是回退），`rate:read` / `rate:signal` 只剩 `counters` 表的 legacy key
+  形状，同样只在 D1 缺失或写入失败时才落到 KV。今天这个文件里还会走 `kvPut(env,` 的只剩四类，都不是
+  "每请求一个新 key"：`gap:<query>` + `gap:index`（#1649 起 D1 优先；KV 路径只给没有 D1 binding 的部署，
+  另受每天 400 个新 key 的上限）、`node_counter`（单个固定 key，重写不新增）、`telemetry:newkeys:<date>`
+  （每天一个新 key，它本身就是那个上限计数器）、以及 `bumpCounter` 的 legacy counters 回退（附录命令 ⑦）。
 - 为什么放在最前：它不是性能问题，是**用户看得见的失败**——注册路径直接报错、索引重发不了、检索字段变空；
   这三件事在 09-12 与 09-22 各发生过一次。
-- 验收：`kvPut(env,` / `MISAKANET_KV.put(` 的写点清零（或每个都写明为什么必须留 KV），且 `/api/health`
-  不再出现 `degraded_reason: kv writes failing`。口径以 #2115 的清单为准。
+- 验收（**口径以 #2115 的 "How this epic ends" 为准**）：`/api/health` 在普通日子不再出现
+  `degraded_reason: kv writes failing`，即**写量降到免费额度以下**（#2115 原文：不是因为配额几小时后就重置），
+  #2111 可以关闭。**与 #2115 的差异写在明处**：本节还想再严一档——`kvPut(env,` / `MISAKANET_KV.put(`
+  的每个直写点都写明"为什么必须留 KV"——但那是**本节的自我要求，不是 #2115 的关闭条件**，不能拿它当判据。
 
 **② provenance gate 已在跑（#1768）；intake conversion receipt 在飞（#1528 / #2491）。**
 
@@ -142,6 +157,19 @@ git tag --sort=-v:refname | head -1
 
 # ⑤ provenance gate（离线，不碰网络）
 python3 scripts/check_provenance.py --offline --check
+
+# ⑥ 客户端两个座位：检索行只做可见性、不投票（离线）
+python3 -m pytest tests/test_dsh_plugin_surface.py -q   # 含 test_the_visibility_surface_cannot_vote
+grep -n "tool.call.toolview\|conversation.chat.assistant-actions" lib/client.js
+grep -n "Posts nothing" docs/maintainer/client-half-acceptance.md
+
+# ⑦ #2117（每地址限流迁 D1）已关闭，与文件里还剩的 KV 写点
+curl -sS -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/Ikalus1988/MisakaNet/issues/2117" \
+  | python3 -c "import json,sys; d=json.load(sys.stdin); print('#%s'%d['number'], d['state'], d['state_reason'])"
+grep -n "rate:feedback\|rate:intake\|rate:connect" workers/register-proxy-sw.js
+grep -n "storePut(env, fbRateKey\|storePut(env, intakeRateKey\|storePut(env, connRateKey" workers/register-proxy-sw.js
+grep -n "await kvPut(env," workers/register-proxy-sw.js   # 7 处：6 处直写 + storePut 自己的 KV 回退（另 1 行是注释）
 ```
 
 ---
