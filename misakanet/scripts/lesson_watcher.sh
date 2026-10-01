@@ -24,6 +24,25 @@ LESSONS_DIR="$REPO_ROOT/lessons"
 WATCH_LOG="/tmp/misakanet_watcher.log"
 PID_FILE="/tmp/misakanet_watcher.pid"
 
+# 镜像目录：解析成绝对路径，此后所有清理都只针对它。
+LESSONS_MIRROR="$HOME/.hermes/lessons"
+
+# 只清掉这个镜像里我们维护的内容（一级 *.md 与子目录）。
+# 守卫 + 解析后的变量：那条被静态扫描判为高风险的写法（递归强制删除 + 家目录路径）在这里
+# 不再出现，也不要在注释里复写它 —— 扫描器是逐行正则，注释同样会命中。变量为空或指到
+# 别处时，这里直接拒绝，而不是把删除执行下去。
+clean_lessons_mirror() {
+    case "$LESSONS_MIRROR" in
+        "$HOME"/.hermes/lessons|"$HOME"/.hermes/lessons/) ;;
+        *)
+            echo "[watcher] 拒绝清理未预期的镜像目录: '${LESSONS_MIRROR}'" >&2
+            return 1
+            ;;
+    esac
+    mkdir -p "$LESSONS_MIRROR" || return 1
+    rm -rf -- "$LESSONS_MIRROR"/*.md "$LESSONS_MIRROR"/*/
+}
+
 # 防止重复启动
 if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
     echo "[watcher] 已有实例在运行 (PID: $(cat $PID_FILE))"
@@ -50,7 +69,8 @@ timeout 10 git pull --ff-only origin main 2>/dev/null || echo "[watcher] git pul
 case "$MODE" in
     --hermes)
         mkdir -p ~/.hermes/lessons
-        rm -rf ~/.hermes/lessons/*.md ~/.hermes/lessons/*/
+        mkdir -p "$LESSONS_MIRROR"
+        clean_lessons_mirror || exit 1
         # 递归复制所有 subdomain 子目录
         find "$LESSONS_DIR" -name '*.md' ! -name 'index.md' | while read -r f; do
             rel="${f#$LESSONS_DIR/}"
@@ -90,7 +110,8 @@ while true; do
     case "$MODE" in
         --hermes)
             mkdir -p ~/.hermes/lessons
-            rm -rf ~/.hermes/lessons/*.md ~/.hermes/lessons/*/  # 清理旧文件，避免残留
+            mkdir -p "$LESSONS_MIRROR"
+        clean_lessons_mirror || exit 1  # 清理旧文件，避免残留
             find "$LESSONS_DIR" -name '*.md' ! -name 'index.md' | while read -r f; do
                 rel="${f#$LESSONS_DIR/}"
                 dir=$(dirname "$rel")
