@@ -216,15 +216,10 @@ NODE = "node"
 APPLY_PATH = REPO / "index.js"
 
 
-def _run_apply(ctx_source: str, config_source: str) -> tuple[int, str]:
-    """Call index.js's apply() in node with a synthetic ctx; return (exit code, output).
-
-    Behavioural, not textual: what matters is whether the host's activation can throw, and only running
-    it answers that. The repo already runs node from Python elsewhere (`tests/test_agent_autostart.py`),
-    with the same `shutil.which` skip.
-    """
-    script = f"""
-const m = await import({str(APPLY_PATH)!r});
+def _apply_script(ctx_source: str, config_source: str) -> str:
+    """The node program `_run_apply` executes. Separate so a test can read it instead of guessing."""
+    return f"""
+const m = await import({APPLY_PATH.as_uri()!r});
 try {{
   await m.apply({ctx_source}, {config_source});
   console.log('RETURNED');
@@ -232,6 +227,21 @@ try {{
   console.log('THREW: ' + error.message);
 }}
 """
+
+
+def _run_apply(ctx_source: str, config_source: str) -> tuple[int, str]:
+    """Call index.js's apply() in node with a synthetic ctx; return (exit code, output).
+
+    Behavioural, not textual: what matters is whether the host's activation can throw, and only running
+    it answers that. The repo already runs node from Python elsewhere (`tests/test_agent_autostart.py`),
+    with the same `shutil.which` skip.
+
+    The module is imported by **`file://` URL**, not by path: node's ESM loader rejects a bare Windows path
+    with `ERR_UNSUPPORTED_ESM_URL_SCHEME` ("On Windows, absolute paths must be valid file:// URLs"). Passing
+    the path red the whole 2.40.0 release run on windows-latest (3.11/3.12/3.13) while ubuntu stayed green —
+    the exact shape of defect a cross-platform gate exists to catch.
+    """
+    script = _apply_script(ctx_source, config_source)
     done = subprocess.run([NODE, "--input-type=module", "-e", script],
                           capture_output=True, text=True, timeout=120)
     return done.returncode, (done.stdout + done.stderr).strip()
@@ -269,3 +279,25 @@ def test_the_opt_in_still_gets_its_error():
     code, out = _run_apply("{}", "{ failOnStartupError: true }")
     assert code == 0, out
     assert "THREW" in out, f"the opt-in must still surface the failure: {out}"
+
+
+def test_the_host_half_harness_hands_node_a_file_url():
+    """The Windows shape, provable on Linux.
+
+    `PureWindowsPath.as_uri()` gives the URL node needs for a Windows path, so this rule can be pinned
+    without a Windows runner — which matters, because the runner that found it was the 2.40.0 release
+    build, three Python versions at once, long after the merge that introduced it.
+
+    The assertion reads the script node is actually handed. Asserting on this file's own text instead
+    matched the words in this docstring and proved nothing (the first version did exactly that).
+    """
+    from pathlib import PureWindowsPath
+
+    assert PureWindowsPath("C:/Users/dev/index.js").as_uri() == "file:///C:/Users/dev/index.js"
+    script = _apply_script("{}", "{}")
+    assert f"await import('{APPLY_PATH.as_uri()}')" in script, script[:200]
+    # The broken form specifically: a bare path as the import argument. (`str(APPLY_PATH)` alone is not a
+    # usable check — it is a substring of the file URL that replaced it.)
+    assert f"await import('{APPLY_PATH}')" not in script, (
+        "the script carries a bare path; node's ESM loader rejects that on Windows "
+        "(ERR_UNSUPPORTED_ESM_URL_SCHEME)")
