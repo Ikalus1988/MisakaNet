@@ -213,3 +213,16 @@ composer search: 'pip install timeout' → 5 results
 ```
 
 on the clipboard.
+
+### The two root seats, after living with them
+
+`sidebar.footer.action` receives no session, so the store remembers the one that moved last. The action now
+**names that session in the text it copies** (`session: effa17cd`) and its tooltip says which session it means
+— better than a silent guess, and honest about being a guess at all.
+
+Both places that can only *read* the row's configuration — the plugin page's card and the settings row — now
+offer **Copy patch snippet**, which produces the `cordis.patch.yml` entry for the row. That turns the
+read-only dead end into the next step, and it is the same document the host's native editor points at.
+
+Measured 2026-10-01 in a throwaway host: the footer's clipboard begins `MisakaNet — this session` /
+`会话：effa17cd`, and the snippet copies as `- id: misakanet-mcp` / `disabled: false` / `config:`.
