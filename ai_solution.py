@@ -1,3 +1,5 @@
+The problem and error fields in the original code have triple curly braces which are incorrect in YAML. We'll fix this by using double curly braces.
+
 ```markdown
 ---
 kind: missing_lesson
