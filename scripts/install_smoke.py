@@ -597,7 +597,15 @@ def _tar_member(archive: tarfile.TarFile, name: str) -> str | None:
 WEB_URL = re.compile(r"dsh web:\s*(http://[^\s]+)")
 BOOT_GRAPH = re.compile(r'globalThis\["__DSH_BOOT__"\]\s*=\s*(\{.*?\})\s*</script>', re.S)
 # The panel's own registrations: if the bundle were served but the panel missing, these would be absent.
-CLIENT_MARKERS = ("conversation.view", "sidebar.right.pane.tab", "sidebarRightTabs")
+CLIENT_MARKERS = (
+    "conversation.view",          # a tab in the session's tab ring
+    "conversation.chat.assistant-actions",
+    "tool.call.toolview",         # the rows on the search/intake tool cards
+    "sidebar.right.pane.tab",     # the pane in the right column
+    "sidebarRightTabs",
+    "sidebar.panellist",          # the permanent entry in the LEFT column (added 2026-10-01)
+    "name: \"main\"",             # the page that entry dispatches to
+)
 
 
 def assert_disposable_home(home: Path) -> None:
@@ -728,7 +736,7 @@ def probe_dsh_client(repo: Path, *, timeout: int, dry_run: bool = False,
             if missing:
                 fails.append(f"the served bundle does not register the panel: missing {missing}")
             else:
-                checks.append("the served bundle registers the panel in both seats")
+                checks.append(f"the served bundle registers all {len(CLIENT_MARKERS)} seats")
 
         if check_uninstall:
             process.kill()
