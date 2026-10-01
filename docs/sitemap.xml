@@ -261,6 +261,7 @@
   <url><loc>https://misakanet.org/lessons/hub-feishu-wsclient-start-never-called/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/iap-tcp-forwarding-numpy-bandwidth/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/verify-import-paths-after-refactoring-python-modules/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/instrumentation-that-never-reached-the-artifact-a-silent-probe-is-not-evidence/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/issue-comment-newbie-welcome/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/jieba-synonym-expansion-pitfall/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/js-dead-code-chain-break/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
