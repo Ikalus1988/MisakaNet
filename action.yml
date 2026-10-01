@@ -34,7 +34,10 @@ inputs:
     required: false
     default: 'main'
   sim:
-    description: 'Hit similarity threshold (0.0-1.0)'
+    description: >-
+      Hit threshold on the weighted score max(title-overlap x2, body-overlap), i.e. 0.0-2.0 and NOT
+      a percentage: 0.45 means "title overlap >= 0.23 OR body overlap >= 0.45". Scores above 1.0 can
+      only come from the title.
     required: false
     default: '0.45'  # v1.0: 0.30 曾致跨语言 FP 38%（#1529）
   what-tried:
@@ -238,8 +241,15 @@ runs:
           let body = '';
           if (decision === 'hit') {
             const l = result.lesson || {};
+            // The score is the weighted `sim` (0..2), not a 0..1 ratio: show the scale so a reader
+            // does not read 1.67 as "167% similar" or assume 1.0 is the ceiling. `sim_norm` is the
+            // 0..1 view of the same number.
+            const scale = l.sim_scale || 2;
+            const simText = (l.sim === undefined || l.sim === null)
+              ? '?'
+              : `${l.sim}/${scale}${l.sim_norm === undefined ? '' : ` (= ${l.sim_norm} of full marks)`}`;
             body = `## 💡 MisakaNet: Lesson Found\n\n` +
-                   `**Similarity:** ${l.sim || '?'}\n` +
+                   `**Similarity:** ${simText}\n` +
                    `**Lesson:** [${l.title || l.id}](${l.url || '#'})\n\n` +
                    `> This error matches an existing lesson — **suggest-only (仅供参考)**; please verify before applying.`;
           } else if (decision === 'intake') {

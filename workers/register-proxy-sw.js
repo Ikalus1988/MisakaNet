@@ -5868,6 +5868,27 @@ const ACTIVITY_CACHE_CONTROL =
 // Where the numbers are computed; carried in the payload so a reader can go to the source.
 const ACTIVITY_SOURCE = "/api/analytics/traffic";
 
+// `/api/lessons` — the read both the MCP tools and the web search box call, and the most expensive
+// request this worker serves (2026-10-02).
+//
+// Why it is cacheable: the branch below builds its answer out of the URL alone (`?q=`, `?domain=`,
+// `?limit=`, …). It reads no `Authorization`, no `X-Client-Id` and no cookie — the property that
+// makes a *shared* TTL safe, and the one `/api/analytics/traffic` deliberately lacks (its
+// `mcpClients` field is maintainer-only, so a shared entry there would hand it to everyone).
+//
+// Why it is worth caching: the budget this protects is D1's, not Workers'. Workers Free gives
+// 100,000 requests/day; D1 Free gives **5 million rows read/day**, and rows read (not requests) is
+// what a search costs. Divided out, the two budgets meet at **50 rows per request** — so a request
+// that reads more than that exhausts D1 before it exhausts requests, and D1's limit errors inside
+// the Worker, where the route's fail mode cannot help. A `?q=` search runs an FTS5 MATCH and, when
+// that finds nothing, a second relaxed `OR` — the two most expensive reads on the endpoint.
+//
+// Two minutes, not five: the corpus syncs daily, so the only thing the TTL can hide is a lesson
+// merged in the last two minutes, while a popular error string is asked many times a minute.
+const LESSONS_TTL_SECONDS = 120;
+const LESSONS_CACHE_CONTROL =
+  `public, max-age=${LESSONS_TTL_SECONDS}, s-maxage=${LESSONS_TTL_SECONDS}`;
+
 /**
  * Calls today, per self-declared MCP client (`mcpclient:<name>` buckets). D1 only: the KV fallback
  * cannot enumerate keys, and inventing that here would cost more than the missing number is worth.
@@ -6283,8 +6304,30 @@ export default {
 
     // GET /api/lessons — lessons index (D1 first when bound, else GitHub w/ KV cache)
     // Structured filters (PRD ④ §3.3): ?domain=&status=&tag=&id=&limit=
+    //
+    // Cacheable in front of D1 (2026-10-02): the body is a function of the URL alone, so a colo pays
+    // the FTS5 read once per TTL instead of once per caller. `caches.default` — not the header alone —
+    // is what makes the TTL real on a Worker route (same reason `/api/activity` uses it).
     if (request.method === "GET" && (url.pathname === "/api/lessons" || url.pathname === "/api/lessons.json")) {
       try {
+        const lessonsCache = (typeof caches !== "undefined" && caches.default) ? caches.default : null;
+        // Keyed on the full URL, query string included, so `?q=a` and `?q=b` cannot collide. The
+        // method is pinned to GET: a cached response must never be handed to a write.
+        const lessonsCacheKey = new Request(url.toString(), { method: "GET" });
+        if (lessonsCache) {
+          const hit = await lessonsCache.match(lessonsCacheKey);
+          if (hit) return hit;
+        }
+        // Only the two *answers* below go through this. Errors, the "D1 unavailable" hint and the
+        // `requires D1` refusal are states rather than answers, and pinning one for the TTL is how a
+        // transient D1 problem becomes a two-minute outage for everyone else.
+        const answerWith = (response) => {
+          if (!lessonsCache || !response || response.status !== 200) return response;
+          const putting = lessonsCache.put(lessonsCacheKey, response.clone())
+            .catch(e => console.error("[lessons] cache put failed", e && e.message));
+          if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(putting);
+          return response;
+        };
         const filters = {};
         const qDomain = url.searchParams.get("domain");
         const qStatus = url.searchParams.get("status");
@@ -6366,12 +6409,14 @@ export default {
           // error" because a query matched nothing teaches its user the wrong thing. The MCP tools call
           // this `no_match` and point at intake; the HTTP surface now says the same thing.
           if (data.length === 0) {
-            return jsonResponse({ query: qSearch, results: [], source: "d1-fts5", no_match: true,
-                                  hint: "No lesson matched. `misakanet_submit_intake` (MCP) accepts a gap report." });
+            return answerWith(jsonResponse({ query: qSearch, results: [], source: "d1-fts5", no_match: true,
+                                  hint: "No lesson matched. `misakanet_submit_intake` (MCP) accepts a gap report." },
+                                  200, { "Cache-Control": LESSONS_CACHE_CONTROL }));
           }
-          return jsonResponse({ query: qSearch, results: data, source: "d1-fts5",
+          return answerWith(jsonResponse({ query: qSearch, results: data, source: "d1-fts5",
                                 ...(relaxed ? { relaxed: true,
-                                  note: "No lesson matched every term; these match some of them." } : {}) });
+                                  note: "No lesson matched every term; these match some of them." } : {}) },
+                                200, { "Cache-Control": LESSONS_CACHE_CONTROL }));
         }
 
         if (hasFilters && !d1Binding(env)) {
@@ -6381,7 +6426,7 @@ export default {
         const token = env.REGISTER_TOKEN;
         if (!token && !d1Binding(env)) return jsonResponse({ error: "REGISTER_TOKEN not configured" }, 500);
         const data = (await loadLessons(env, hasFilters ? filters : {})).map(publicLessonRow);
-        return jsonResponse(data);
+        return answerWith(jsonResponse(data, 200, { "Cache-Control": LESSONS_CACHE_CONTROL }));
       } catch (e) { return errorResponse("api handler failed", "internal_error", 502, e); }
     }
 
@@ -7483,6 +7528,10 @@ export {
   ACTIVITY_TTL_SECONDS,
   ACTIVITY_CACHE_CONTROL,
   ACTIVITY_SOURCE,
+  // Exported for workers/lessons-cache.test.mjs: the TTL is asserted against the constant so a
+  // "short TTL" that drifts to a day fails a test instead of quietly pinning search results.
+  LESSONS_TTL_SECONDS,
+  LESSONS_CACHE_CONTROL,
   runKeepaliveSweep,
   cleanupCoveredGaps,
   matchAnsweredQuestions,
