@@ -50,11 +50,11 @@ def test_the_documented_and_registered_sets_are_identical():
         "documented only": sorted(documented - registered),
         "registered only": sorted(registered - documented),
     }
-    assert len(documented) == 7, sorted(documented)
+    assert len(documented) == 8, sorted(documented)
 
 
 def test_the_heading_count_in_agents_matches_its_own_table():
-    """`### 3.2 工具清单（7 个）` — a number a human retypes. The reader parses the table instead, and
+    """`### 3.2 工具清单（8 个）` — a number a human retypes. The reader parses the table instead, and
     this makes the heading answerable to it."""
     text = (REPO / "AGENTS.md").read_text(encoding="utf-8")
     heading = re.search(r"(?m)^###\s+3\.2\s+工具清单（(\d+)\s*个）", text)

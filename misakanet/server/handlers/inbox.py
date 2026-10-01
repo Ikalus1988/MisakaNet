@@ -1,156 +1,62 @@
-"""Agent-readable inbox for answers and conversion receipts (#2056).
-
-Polls D1 for answered questions and conversion receipts, keyed by
-intake_id or dedup_key.  This is the pull-based channel that closes
-the feedback loop for anonymous MCP users who can't receive email.
-
-Usage from MCP:
-    misakanet_me_inbox(intake_id="abc123")
-    misakanet_me_inbox(dedup_key="def456")
-"""
+"""Inbox handler — check intake status via the hosted worker API."""
 from __future__ import annotations
 
-import hashlib
-import json
-import os
-import urllib.error
-import urllib.request
-
-
-def _query_d1(sql: str, params: list | None = None) -> list[dict]:
-    """Query D1 via the worker API."""
-    base = os.environ.get("MISAKANET_API_BASE", "https://misakanet.org").rstrip("/")
-    payload = {"sql": sql, "params": params or []}
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        f"{base}/api/d1/query",
-        data=data,
-        method="POST",
-        headers={"Content-Type": "application/json", "User-Agent": "MisakaNet-MCP"},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            body = json.loads(resp.read().decode("utf-8", errors="replace"))
-            return body.get("results", [])
-    except (OSError, urllib.error.URLError, urllib.error.HTTPError):
-        return []
+import json as _json
+import os as _os
+import urllib.error as _url_error
+import urllib.request as _url_request
 
 
 def handle_me_inbox(args: dict) -> dict:
-    """Check inbox for answered questions and conversion receipts.
+    """Check the status of a previously submitted intake without re-submitting.
 
-    Input:
-        intake_id: optional — the intake ID from submit_intake
-        dedup_key: optional — the dedup hash from submit_intake
+    Accepts an intake_id (e.g. 'issue-1234') from a prior submit_intake
+    response, or a dedup_key (the 16-char hash). Calls the hosted worker
+    endpoint for the actual lookup — the local server has no durable state.
 
-    Output:
-        {events: [...], count: N, poll_hint: "..."} or {events: [], count: 0, ...}
+    Returns: {intake_id, status, answer?, lesson_id?, issue_url?, note}
     """
-    intake_id = args.get("intake_id", "")
-    dedup_key = args.get("dedup_key", "")
-
+    intake_id = str(args.get("intake_id", "")).strip()
+    dedup_key = str(args.get("dedup_key", "")).strip()
     if not intake_id and not dedup_key:
-        return {
-            "error": "Provide intake_id or dedup_key (from misakanet_submit_intake response)",
-            "hint": "Use the intake_id or dedup_key returned when you submitted the intake.",
-        }
+        return {"error": "intake_id or dedup_key is required"}
 
-    events = []
+    base = _os.environ.get("MISAKANET_API_BASE", "https://misakanet.org").rstrip("/")
 
-    # Try D1 questions table first (answered questions)
+    # Build query params
+    params = []
+    if intake_id:
+        params.append(f"intake_id={intake_id}")
+    if dedup_key:
+        params.append(f"dedup_key={dedup_key}")
+    query = "&".join(params)
+
     try:
-        if dedup_key:
-            rows = _query_d1(
-                "SELECT * FROM questions WHERE dedup_hash = ? AND status = 'answered' ORDER BY answered_at DESC LIMIT 5",
-                [dedup_key],
-            )
-        elif intake_id:
-            rows = _query_d1(
-                "SELECT * FROM questions WHERE issue_number = ? AND status = 'answered' ORDER BY answered_at DESC LIMIT 5",
-                [intake_id],
-            )
-        else:
-            rows = []
-
-        for row in rows:
-            events.append({
-                "type": "answered",
-                "question": row.get("problem", ""),
-                "answer": row.get("answer", ""),
-                "issue_number": row.get("issue_number"),
-                "answered_at": row.get("answered_at", ""),
-                "evidence_level": row.get("evidence_level", "unverified"),
-            })
-    except Exception:
-        pass  # D1 may be unavailable
-
-    # Check local contribution queue for conversion receipts
-    from pathlib import Path
-
-    repo = Path(__file__).resolve().parent.parent.parent.parent
-    queue_path = repo / "data" / "contribution_queue.jsonl"
-    if queue_path.exists():
-        try:
-            for line in queue_path.read_text(encoding="utf-8").splitlines():
-                entry = json.loads(line.strip())
-                # Match by intake_id or dedup_key
-                entry_id = entry.get("id", "")
-                entry_dedup = hashlib.sha256(
-                    f"{entry.get('kind', '')}:{entry.get('title', '')}:{entry.get('message', '')}".encode()
-                ).hexdigest()[:16]
-
-                if intake_id and entry_id != intake_id:
-                    continue
-                if dedup_key and entry_dedup != dedup_key:
-                    continue
-
-                status = entry.get("status", "")
-                if status == "converted":
-                    events.append({
-                        "type": "converted",
-                        "intake_id": entry_id,
-                        "lesson_path": entry.get("note", ""),
-                        "converted_at": entry.get("reviewed_at", ""),
-                    })
-                elif status == "accepted":
-                    events.append({
-                        "type": "accepted",
-                        "intake_id": entry_id,
-                        "note": entry.get("note", ""),
-                    })
-        except (json.JSONDecodeError, OSError):
-            pass
-
-    # Check intake receipts log
-    receipts_path = repo / "data" / "intake_receipts.jsonl"
-    if receipts_path.exists() and (intake_id or dedup_key):
-        try:
-            for line in receipts_path.read_text(encoding="utf-8").splitlines():
-                entry = json.loads(line.strip())
-                if intake_id and entry.get("contrib_id") == intake_id:
-                    events.append({
-                        "type": "lesson_published",
-                        "lesson_path": entry.get("lesson_path", ""),
-                        "evidence_level": entry.get("evidence_level", "unverified"),
-                        "emitted_at": entry.get("emitted_at", ""),
-                    })
-        except (json.JSONDecodeError, OSError):
-            pass
-
-    if not events:
+        url = f"{base}/api/inbox?{query}"
+        req = _url_request.Request(
+            url,
+            method="GET",
+            headers={"User-Agent": "MisakaNet-MCP"},
+        )
+        with _url_request.urlopen(req, timeout=10) as resp:
+            body = resp.read() or b"{}"
+            return _json.loads(body.decode("utf-8", errors="replace"))
+    except _url_error.HTTPError as exc:
+        if exc.code == 404:
+            return {
+                "intake_id": intake_id or f"dedup-{dedup_key}",
+                "status": "not_found",
+                "note": "No intake found with this ID or dedup_key.",
+            }
         return {
-            "events": [],
-            "count": 0,
-            "status": "pending",
-            "poll_hint": (
-                "No answer yet. Questions are typically answered within 24-48 hours."
-                " Call misakanet_me_inbox again later with the same intake_id or dedup_key."
-            ),
+            "error": f"Worker returned HTTP {exc.code}",
+            "intake_id": intake_id or f"dedup-{dedup_key}",
+            "status": "unknown",
         }
-
-    return {
-        "events": events,
-        "count": len(events),
-        "status": "resolved",
-        "poll_hint": "Your submission has been processed. See events above for details.",
-    }
+    except (OSError, _url_error.URLError, ValueError) as exc:
+        return {
+            "error": f"Worker unreachable: {exc}",
+            "intake_id": intake_id or f"dedup-{dedup_key}",
+            "status": "unknown",
+            "note": "Could not reach the hosted endpoint. Try again later.",
+        }
