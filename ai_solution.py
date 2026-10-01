@@ -1,35 +1,12 @@
-```console
-$ npm view misaka
+```json
 {
-  "name": "misaka",
-  "version": "2.40.0",
-  "description": "MisakaNet's DeepSeek Harness plugin for DeepSeek Chat.",
-  "main": "index.js",
-  "scripts": {
-    "start": "misaka start"
-  },
-  "dependencies": {
-    "dash": "^0.2.0-rc.2",
-    "lodash": "^4.17.19",
-    "markdown": "^2.3.0",
-    "vscode": "^1.80.0"
-  },
-  "keywords": [
-    "DeepSeek",
-    "plugin"
-  ],
-  "bugs": {
-    "email": "support@deepseek.com"
-  },
-  "author": {
-    "name": "DeepSeek",
-    "email": "support@deepseek.com"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/DeepSeek/misaka"
-  },
-  "homepage": "https://github.com/DeepSeek/misaka"
+  "kind": "missing_lesson",
+  "problem": "2026-10-01T08:39:09.8802813Z \u001b[36;1m# value was empty, the comparison was always false, and every leg printed \"❌ …: FAIL\"\u001b[0m\r\n2026-10-01T08:39:09.8804847Z \u001b[36;1m  echo \"❌ ${{OS}} / Python ${{PY}}: FAIL (pytest exit ${{EXIT_CODE:-none}})\"\u001b[0m\r\n2026-10-01T08:39:09.8819738Z shell: C:\\Pr",
+  "error": "2026-10-01T08:39:09.8802813Z \u001b[36;1m# value was empty, the comparison was always false, and every leg printed \"❌ …: FAIL\"\u001b[0m\r\n2026-10-01T08:39:09.8804847Z \u001b[36;1m  echo \"❌ ${{OS}} / Python ${{PY}}: FAIL (pytest exit ${{EXIT_CODE:-none}})\"\u001b[0m\r\n2026-10-01T08:39:09.8819738Z shell: C:\\Pr",
+  "what_tried": "misaka",
+  "source": "github-action",
+  "matched_lesson_id": "",
+  "fix": "",
+  "verification": ""
 }
 ```
