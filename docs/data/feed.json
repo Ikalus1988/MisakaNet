@@ -1,43 +1,51 @@
 {
-  "generated_at": "2026-10-01T10:17:27.717076+00:00",
+  "generated_at": "2026-10-01T14:04:29.592410+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(dsh): the MCP row's configuration in the plugin page (read-only, by host design)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2599",
-      "timestamp": "2026-10-01T10:14:34Z",
+      "title": "lessons: shared-tab navigation is destructive, and git stash is repository-wide",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2621",
+      "timestamp": "2026-10-01T13:57:58Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore: update leaderboard snapshot",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2586",
-      "timestamp": "2026-10-01T10:10:36Z",
+      "title": "fix(tests): the inline-script pattern must match a closing tag with whitespace",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2619",
+      "timestamp": "2026-10-01T12:31:50Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(dsh): the /misakanet command, answered in the composer",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2598",
-      "timestamp": "2026-10-01T10:00:58Z",
+      "title": "feat(dsh): the MisakaNet surfaces follow the host language (zh/en)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2602",
+      "timestamp": "2026-10-01T12:01:27Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(readme): show what the 2.40.0 browser half actually looks like",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2592",
-      "timestamp": "2026-10-01T08:18:38Z",
+      "title": "fix(dsh): the Config gate and the resolver must import through a file URL, not a path",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2609",
+      "timestamp": "2026-10-01T11:50:46Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(ci): sync PR branches six-hourly, and never push to a PR that can already merge",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2588",
-      "timestamp": "2026-10-01T08:07:44Z",
+      "title": "feat(dsh): a MisakaNet preference row in Settings → General",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2600",
+      "timestamp": "2026-10-01T11:34:45Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "git stash is repository-wide, not worktree-local — a bare stash pop can apply another session's work",
+      "url": "lessons/contrib/git-stash-is-repository-wide.md",
+      "timestamp": "2026-10-01",
+      "domain": "git",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -45,6 +53,14 @@
       "url": "lessons/contrib/instrumentation-that-never-reached-the-artifact.md",
       "timestamp": "2026-10-01",
       "domain": "development",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Navigating a shared browser tab is a destructive action — treat it like deleting a file",
+      "url": "lessons/contrib/shared-tab-navigation-is-destructive.md",
+      "timestamp": "2026-10-01",
+      "domain": "agent",
       "source": "lessons"
     },
     {
@@ -60,22 +76,6 @@
       "title": "A stubbed success is not a sandbox — a faked `git push` let the suite rewrite the published index",
       "url": "lessons/contrib/a-stubbed-success-is-not-a-sandbox.md",
       "timestamp": "2026-09-26",
-      "domain": "testing",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "An assertion that cannot fail is not a test — five shapes it took in one working session",
-      "url": "lessons/contrib/assertion-that-cannot-fail.md",
-      "timestamp": "2026-09-26",
-      "domain": "testing",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "An allowlist that rejects real data is worse than no validation — test the rule against the corpus",
-      "url": "lessons/core/allowlist-must-be-tested-against-the-corpus.md",
-      "timestamp": "2026-09-25",
       "domain": "testing",
       "source": "lessons"
     },
