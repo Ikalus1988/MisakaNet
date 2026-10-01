@@ -98,9 +98,16 @@ against dsh 0.2.0-rc.2:
 | `tool.call.toolview` | keyed / session | the search and intake rows on tool cards | either wire spelling |
 | `sidebar.right.pane.tab` (+ `.title`) | keyed / session | the pane body and its chip | the right column's add-tab guide |
 | `sidebar.panellist` | list / **root** | a persistent entry in the **left** column, drawn as an icon | the sidebar itself |
+| `settings.general.item` | list / **root** | one preference row in Settings → General: voice cues and display density (browser scope), plus the MCP endpoint when the host exposes a writable form | Settings → General |
 | `plugins.bundle.config` / `plugins.row.config` | keyed / **root** | the row's effective configuration in the plugin page | the plugin page's configure control |
 | `conversation.input.overlay` | list / session | the `/misakanet` result card inside the composer | the composer, after the `/` menu picks the command |
 | `main` | keyed / **root** | **the page that entry opens** — the contract says *"Central panel selected by sidebar entry id"* | dispatched with the same id |
+
+The settings row is the one seat where a `ConfigForm` **can** be written from the page, because the row holds the
+form itself instead of receiving the trimmed `ConfigPageForm` a plugin page passes. Measured 2026-10-01: this
+host exposes no writable form for `misakanet-mcp` (`ctx.configForms.get(...)` returns nothing usable), so the
+row falls back to naming `cordis.patch.yml` — the same document the native editor points at — and its two
+browser preferences work either way.
 
 The plugin page's card is **read-only on purpose**, and the reason is in the host: `dsh-settings`'s
 `describe()` builds a form only out of fields whose schema is marked `volatile()` — ones the host can change

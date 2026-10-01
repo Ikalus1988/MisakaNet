@@ -855,11 +855,13 @@ const react = { createElement: () => null, useState: (v) => [v, () => {}], useRe
 const mod = global.__m.factory((name) => (name === 'react' ? react : undefined));
 const declared = new Set();          // what some parent entry has declared so far: nothing, at first
 const registrations = [], warnings = [], pending = [];
+const settingsRows = [];
 const slots = {
   // Faithful ordering: the declaration commits, *then* the waiting callback runs. Nothing is declared
   // before we activate, which is exactly why registering a child slot directly throws.
   inject(slot, cb) { pending.push(slot); declared.add(slot); cb(); return () => {}; },
   register(options) {
+    if (options.name === "settings.general.item") settingsRows.push(options.id);
     if (!declared.has(options.name)) {
       throw new Error(`slot "${options.name}" is not declared (a parent entry's children table must declare it)`);
     }
@@ -873,6 +875,7 @@ const sources = [];
 const ctx = {
   effect: (fn) => { fn(); return () => {}; },
   slots,
+  // The General-section row is a list seat whose id is the only thing that names it.
   // `inputTriggers` is a **service**, not a slot: the slash pipeline owns the draft, so the contract
   // that matters is `registerSource`. A host without it must lose the command and keep every seat.
   inject: (deps, cb) => {
@@ -886,7 +889,7 @@ const ctx = {
 };
 try { mod.apply(ctx); } catch (error) { warnings.push('apply threw: ' + error.message); }
 console.warn = realWarn;
-console.log(JSON.stringify({ registrations, warnings, pending, sources }));
+console.log(JSON.stringify({ registrations, warnings, pending, sources, settingsRows }));
 """
 
 
@@ -910,7 +913,7 @@ def test_every_client_registration_waits_for_its_slot_declaration():
     result = _run_client_apply(REPO / "lib" / "client.js")
     assert result["warnings"] == [], (
         f"a surface failed to register — the real host would show `misakanet: failed`: {result['warnings']}")
-    assert len(result["registrations"]) == 11, result
+    assert len(result["registrations"]) == 12, result
     assert result["pending"].count("tool.call.toolview") == 4, result
     for seat in ("conversation.view", "sidebar.panellist", "main", "conversation.input.overlay"):
         assert seat in result["pending"], (
@@ -919,6 +922,7 @@ def test_every_client_registration_waits_for_its_slot_declaration():
     assert result["sources"] == ["/misakanet"], result
     # The plugin page's row key is `<bundle>#<row id>`, exactly as the bundle patch spells the row.
     assert "misakanet#misakanet-mcp" in result["registrations"], result
+    assert result["settingsRows"] == ["misakanet"], result   # the General-section preference row
     assert "misakanet" in result["registrations"], (
         "the bundle-level config is keyed by the package name; the row-level one by <bundle>#<row id>")
 
