@@ -180,7 +180,7 @@ python3 scripts/queue_lesson.py \
 ```bash
 pip install -r requirements.txt                 # core 依赖（Python 侧零外部依赖是设计目标）
 pytest tests/ -v --tb=short                      # Python 测试（与 CI 同命令）
-node --test workers/*.test.mjs                   # worker 测试（纯 node:test）
+node --test 'workers/**/*.test.mjs'              # worker 测试（纯 node:test；引号必须保留，否则漏掉嵌套的 email-register）
 python3 scripts/lesson_gate.py <lesson.md>       # 改 lesson 时：结构门禁
 python3 scripts/injection_scan.py --dir lessons  # 改 lesson 时：注入/污染扫描（high 级失败）
 python3 scripts/sync_lesson_count.py --check     # 改公开计数/meta 描述时：计数 SSOT 门禁

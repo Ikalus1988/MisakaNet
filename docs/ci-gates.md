@@ -21,7 +21,22 @@ Measured that way on 2026-09-29, **four** checks block a merge:
 | **DCO / Signed-off-by** | `dco-check.yml` | Every commit carries `Signed-off-by:` |
 | **test (ubuntu-latest, 3.11)** | `ci-cross-platform.yml` | The pytest suite on one leg of a 9-leg matrix — the other eight legs are *not* required |
 | **gate** | `lesson-gate.yml` | The lesson gate (structure, quality, injection). It deliberately has **no `paths:` filter**, because a required check that sometimes does not run blocks every PR that does not trigger it (#1920) |
-| **audit** | `pr-checks.yml` | The audit verdict: DCO audit, secret scan (`scripts/check_worker_secrets.py`), dependency audit, and a `pytest --cov-fail-under=20` run. This is the job that turns a test failure into a blocked merge |
+| **audit** | `pr-checks.yml` | The audit verdict: DCO audit, secret scan (`scripts/check_worker_secrets.py`), dependency audit, the worker `node --test` suite, and a `pytest --cov-fail-under=20` run. This is the job that turns a test failure into a blocked merge |
+
+Two notes on **what those commands actually measure** (both fixed 2026-10-02 after an audit found the
+gates naming scope they did not have):
+
+* **Coverage measures `misakanet/` only — accepted technical debt.** The command is
+  `--cov=misakanet`; `scripts/` is **not** in the measured set. It used to be passed as
+  `--cov=scripts` *and* omitted via `[tool.coverage.run] omit = ["scripts/*"]`, so it contributed
+  0 lines to a TOTAL that therefore only ever described `misakanet/` (9,109 LOC — about 17 % of the
+  54,527 LOC of non-test Python). Measuring `scripts/` properly is a separate investment decision;
+  until then the debt is recorded here and in `pyproject.toml`, and the threshold is deliberately
+  left alone.
+* **The worker suite is `node --test 'workers/**/*.test.mjs'` — 66 files, not 65.** The unquoted
+  `workers/*.test.mjs` did not reach `workers/email-register/email-utils.test.mjs` (the nested
+  email worker's test, shipped by `make deploy-email`), so that file ran in no workflow at all. The
+  quotes matter: unquoted, the shell expands the glob to the nested files only.
 
 Three notes that have each cost someone an afternoon:
 
@@ -30,11 +45,17 @@ Three notes that have each cost someone an afternoon:
   green-looking and shows up afterwards as "that PR broke something". Read the leg you changed.
 * **`audit` runs pytest too** (with a coverage floor), so the suite *is* gated even though the
   `Run Test Suite` step inside `pr-checks.yml` is `continue-on-error`.
-* **The node suite is not required at all.** `node --test workers/*.test.mjs` (~561 tests, the only automated
-  verification of `workers/register-proxy-sw.js` — i.e. of the MCP endpoint, search and the public API) runs in
-  `mcp-stress.yml`, which is not in the required set. Its trigger paths were also a hand-written file list
-  until 2026-09-29, so most of its test files did not even run on the PRs that changed them. Until it is
-  required, a red worker test merges; treat its check-run as part of review.
+* **The node suite is behind the required `audit` verdict — it was not, until 2026-10-02.**
+  `node --test 'workers/**/*.test.mjs'` (66 `.test.mjs` files; 634 tests — 633 pass, 1 skipped — measured
+  2026-10-02) is the only automated verification of `workers/register-proxy-sw.js`, i.e. of the MCP
+  endpoint, search and the public API. It runs in the **required** `audit` job (`pr-checks.yml`) and in
+  `mcp-stress.yml`, which is not required. The `audit` step carried `continue-on-error: true` and no
+  `exit 1` read its outcome, so a red suite produced an `::error` annotation and a **green** required
+  check; both halves are fixed and pinned by `tests/test_ci_runs_what_it_claims.py`. Worth knowing before
+  you rely on it: the suite now blocks a merge, so if it ever goes flaky it blocks PRs until it is fixed —
+  fix the test rather than re-adding `continue-on-error`. (`mcp-stress.yml`'s trigger paths were also a
+  hand-written file list until 2026-09-29, so most of its test files did not run on the PRs that changed
+  them.)
 
 ## Soft Gates (advisory, won't block)
 
