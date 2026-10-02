@@ -70,38 +70,15 @@ def _function_body(name: str) -> str:
     return tail.split("\nfunction ", 1)[0]
 
 
-def _strip_js_comments(text: str) -> str:
-    """Whole-line `//` comments and `/* … */` blocks, leaving string literals alone.
+def _scan(text: str):
+    """Yield ``(index, char, depth)`` for every character, with quotes understood.
 
-    Only whole-line `//` comments are dropped: `//` also occurs inside URLs in the same function, and a
-    naive strip would cut a lesson link in half. A review showed why this matters — a comment mentioning
-    the no-match panel's copy moved the anchor a text search keys on and failed the rule on correct code.
+    `depth` is the block nesting **at** that character: a `{` is reported at the depth outside it, a `}`
+    at the depth inside it. Braces are yielded rather than swallowed, because the two helpers below need
+    them — the first version of this scanner dropped them and brace matching could never close.
+    Backticks count as strings, which also keeps `${…}` template braces out of the depth.
     """
-    kept, in_block = [], False
-    for line in text.splitlines():
-        stripped = line.strip()
-        if in_block:
-            in_block = "*/" not in stripped
-            continue
-        if stripped.startswith("/*"):
-            in_block = "*/" not in stripped
-            continue
-        if stripped.startswith("//"):
-            continue
-        kept.append(line)
-    return "\n".join(kept)
-
-
-def _brace_block(text: str, start: int) -> str:
-    """The `{…}` block beginning at or after `start`, quote-aware.
-
-    Brace matching, not a character window: the three branches share one function body, so a window
-    around a phrase can be moved by ordinary copy edits — reordering the no-match panel's three
-    `innerHTML` lines was enough to slide the *results* branch's write into the miss branch's window,
-    and the rule then passed while the browser showed the miss panel with a stale summary.
-    """
-    opening = text.index("{", start)
-    depth, quote, index = 0, None, opening
+    depth, quote, index = 0, None, 0
     while index < len(text):
         char = text[index]
         if quote:
@@ -110,41 +87,131 @@ def _brace_block(text: str, start: int) -> str:
                 continue
             if char == quote:
                 quote = None
-        elif char in "\"'`":
+            index += 1
+            continue
+        if char in "\"'`":
             quote = char
-        elif char == "{":
+            yield index, char, depth
+            index += 1
+            continue
+        if char == "{":
+            yield index, char, depth
+            depth += 1
+            index += 1
+            continue
+        if char == "}":
+            depth -= 1
+            yield index, char, depth
+            index += 1
+            continue
+        yield index, char, depth
+        index += 1
+
+
+def _strip_js_comments(text: str) -> str:
+    """Drop `//…` and `/*…*/` comments that sit **outside** string literals.
+
+    Quote-aware on purpose. The first version dropped only *whole-line* comments — written that way to
+    avoid cutting a URL's `//` in half — and a review walked through it with a **trailing** comment
+    (`display = "block";  // used to be: if (status) status.textContent = …` plus deleting the real
+    write): 9 passed, and the page kept announcing the previous query. Understanding strings removes the
+    tradeoff — a `//` inside quotes survives because it is in quotes, not because of where the line ends.
+    """
+    keep, index, quote = [], 0, None
+    while index < len(text):
+        char = text[index]
+        if quote:
+            keep.append(char)
+            if char == "\\":
+                keep.append(text[index + 1:index + 2])
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in "\"'`":
+            quote = char
+            keep.append(char)
+            index += 1
+            continue
+        if char == "/" and text[index + 1:index + 2] == "/":
+            index = text.find("\n", index)
+            if index == -1:
+                break
+            continue
+        if char == "/" and text[index + 1:index + 2] == "*":
+            end = text.find("*/", index + 2)
+            index = len(text) if end == -1 else end + 2
+            continue
+        keep.append(char)
+        index += 1
+    return "".join(keep)
+
+
+def _brace_block(text: str, start: int) -> str:
+    """The `{…}` block beginning at or after `start`, found with the same quote-aware scanner.
+
+    Braces, not a character window: an ordinary copy edit (reordering the miss panel's three `innerHTML`
+    lines) was enough to slide another branch's write into a window and keep the rule green while the
+    browser showed a stale summary.
+    """
+    opening = text.index("{", start)
+    depth = 0
+    for index, char, _ in _scan(text[opening:]):
+        if char == "{":
             depth += 1
         elif char == "}":
             depth -= 1
             if depth == 0:
-                return text[opening:index + 1]
-        index += 1
+                return text[opening:opening + index + 1]
     raise AssertionError("unbalanced braces in searchLessons — this helper needs updating")
 
 
-def test_the_summary_is_written_inside_each_branch_block():
-    """Per branch **block**, located by braces — not per phrase, and not a count.
+def _has_write_at_depth(text: str, depth: int) -> bool:
+    """True when `status.textContent =` is a **direct** statement at that depth.
 
-    Two earlier versions of this rule were beaten and both are worth keeping in mind: counting
-    assignments passed when the miss write was deleted and two dummies added elsewhere; a ±window around
-    each outcome's copy passed when that copy was merely reordered (the results write slid into the miss
-    window). Braces do not move when copy does.
+    Depth, because "somewhere in the block" is satisfied by a write nested in another condition —
+    `if (rawQ.length > 200) { if (status) status.textContent = … }` passed while a normal query wrote
+    nothing (a review built exactly that, and it is not dead code: the branch is reachable).
+    """
+    pattern = re.compile(r"status\.textContent\s*=")
+    for index, _char, current in _scan(text):
+        if current == depth and pattern.match(text, index):
+            return True
+    return False
+
+
+def test_the_summary_is_written_inside_each_branch_block():
+    """Per branch **block**, located by braces, with the write a direct statement of that block.
+
+    Three earlier versions of this rule were beaten, each worth remembering: a count of assignments
+    (defeated by deleting one write and adding two dummies elsewhere); a ±window around each branch's
+    copy (defeated by reordering that copy, which slid another branch's write into the window); and
+    whole-line-only comment stripping (defeated by a *trailing* comment containing the very text the rule
+    looks for). Braces do not move when copy does, strings are understood before comments are stripped,
+    and depth keeps a nested conditional from standing in for the statement itself.
 
     Known limit, stated rather than implied: this reads the source, so `if (false) { status.textContent
-    = … }` inside a block still satisfies it. That is true of every rule in this file and is not
+    = … }` inside a block satisfies it — measured. That is true of every rule in this file and is not
     fixable without executing the page.
     """
     body = _strip_js_comments(_function_body("searchLessons"))
     miss_start = body.index("if (scored.length === 0)")
     miss_block = _brace_block(body, miss_start)
-    branches = {
+    # The two `if` bodies get the strict form: a write that is a **direct** statement of that block, so
+    # a write nested in another condition cannot stand in for it. The success path is the remainder of
+    # the function — not a balanced slice, so its baseline depth is not comparable — and existence is
+    # what is checkable there.
+    blocks = {
         "cleared query": _brace_block(body, body.index("if (!q || !_allLessons)")),
         "no match": miss_block,
-        "results": body[miss_start + len(miss_block):],
     }
-    for branch, block in branches.items():
-        assert re.search(r"status\.textContent\s*=", block), (
-            f"the {branch} branch can reach its outcome without writing the summary region")
+    for branch, block in blocks.items():
+        assert _has_write_at_depth(block, 1), (
+            f"the {branch} branch can reach its outcome without a direct write to the summary region")
+    assert re.search(r"status\.textContent\s*=", body[miss_start + len(miss_block):]), (
+        "the results branch can reach its outcome without writing the summary region")
 
 
 def test_a_blocked_data_load_is_announced_not_just_painted():
