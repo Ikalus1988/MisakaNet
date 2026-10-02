@@ -168,18 +168,29 @@ def _brace_block(text: str, start: int) -> str:
     raise AssertionError("unbalanced braces in searchLessons — this helper needs updating")
 
 
-def _has_write_at_depth(text: str, depth: int) -> bool:
-    """True when `status.textContent =` is a **direct** statement at that depth.
+_WRITE = re.compile(r"status\.textContent\s*=")
+
+
+def _writes_at_depth(text: str, depth: int) -> list[str]:
+    """The `status.textContent = …;` statements that are **direct** statements at that depth.
 
     Depth, because "somewhere in the block" is satisfied by a write nested in another condition —
-    `if (rawQ.length > 200) { if (status) status.textContent = … }` passed while a normal query wrote
+    `if (rawQ.length > 200) { if (status) status.textContent = … }` passed while an ordinary query wrote
     nothing (a review built exactly that, and it is not dead code: the branch is reachable).
+
+    Returns the statements rather than a flag so a branch can also require **what** it announces: a
+    depth-1 `status.textContent = "";` satisfies "it writes" while announcing nothing.
     """
-    pattern = re.compile(r"status\.textContent\s*=")
+    found = []
     for index, _char, current in _scan(text):
-        if current == depth and pattern.match(text, index):
-            return True
-    return False
+        if current != depth:
+            continue
+        match = _WRITE.match(text, index)
+        if not match:
+            continue
+        end = text.find(";", match.end())
+        found.append(text[index:end if end != -1 else len(text)])
+    return found
 
 
 def test_the_summary_is_written_inside_each_branch_block():
@@ -192,26 +203,42 @@ def test_the_summary_is_written_inside_each_branch_block():
     looks for). Braces do not move when copy does, strings are understood before comments are stripped,
     and depth keeps a nested conditional from standing in for the statement itself.
 
-    Known limit, stated rather than implied: this reads the source, so `if (false) { status.textContent
-    = … }` inside a block satisfies it — measured. That is true of every rule in this file and is not
-    fixable without executing the page.
+    Known limits, stated rather than implied — every one of them measured by a review:
+
+    * `if (false) { status.textContent = … }` inside a branch satisfies it;
+    * the scanner does not model JS **regular-expression literals**, so a regex containing
+      `status.textContent = …` counts as code (`/status.textContent = "No lesson matches "/`);
+    * a depth-1 write whose text happens to name `rawQ` satisfies the no-match rule even if it announces
+      nothing useful — the rules check shape and one word, not meaning.
+
+    All three are consequences of reading source text instead of running it, and they are why the
+    behavioural proof belongs in the browser suite (`tests/e2e/run_client_e2e.py` already drives a real
+    Chromium): "search a hit, a miss, and then clear — what did the live region say?" is a question this
+    file can only approximate.
     """
     body = _strip_js_comments(_function_body("searchLessons"))
     miss_start = body.index("if (scored.length === 0)")
+    opening = body.index("{", miss_start)
     miss_block = _brace_block(body, miss_start)
     # The two `if` bodies get the strict form: a write that is a **direct** statement of that block, so
     # a write nested in another condition cannot stand in for it. The success path is the remainder of
     # the function — not a balanced slice, so its baseline depth is not comparable — and existence is
     # what is checkable there.
-    blocks = {
-        "cleared query": _brace_block(body, body.index("if (!q || !_allLessons)")),
-        "no match": miss_block,
-    }
-    for branch, block in blocks.items():
-        assert _has_write_at_depth(block, 1), (
-            f"the {branch} branch can reach its outcome without a direct write to the summary region")
-    assert re.search(r"status\.textContent\s*=", body[miss_start + len(miss_block):]), (
-        "the results branch can reach its outcome without writing the summary region")
+    cleared = _brace_block(body, body.index("if (!q || !_allLessons)"))
+    assert _writes_at_depth(cleared, 1), (
+        "the cleared-query branch can reach its outcome without a direct write to the summary region")
+    misses = _writes_at_depth(miss_block, 1)
+    assert misses, (
+        "the no-match branch can reach its outcome without a direct write to the summary region")
+    assert any("rawQ" in statement for statement in misses), (
+        "the no-match announcement must name the query that missed, not just write something")
+    # The success path starts where the miss block *ends* — `miss_start + len(miss_block)` was 25
+    # characters short, because the block begins at its `{` while `miss_start` points at the `if`, so the
+    # slice opened inside the miss block and its baseline depth was never comparable (measured by a
+    # review, which is why the results branch was only "exists somewhere" for two rounds).
+    tail = body[opening + len(miss_block):]
+    assert _writes_at_depth(tail, 0), (
+        "the results branch can reach its outcome without a direct write to the summary region")
 
 
 def test_a_blocked_data_load_is_announced_not_just_painted():
