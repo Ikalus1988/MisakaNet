@@ -86,6 +86,15 @@ select = ["E", "F", "I", "N", "W", "UP"]
 quote-style = "double"
 
 [tool.coverage.run]
+# `scripts/` is deliberately outside the measured set — **accepted technical debt**, not an
+# oversight. The scripts layer is long-tail maintenance code (54,527 LOC of non-test Python in
+# total; `scripts/` is the bulk of it) and testing it to the `misakanet/` standard is a separate
+# investment decision, not something to fake by passing `--cov=scripts` to a run that then omits
+# the package. The CI command is `--cov=misakanet` only, and the debt is recorded here and in
+# `docs/ci-gates.md`.
+#
+# Keep this `omit` even though the flag is gone: it is the belt to the command's braces, and it
+# covers both depths because `*` in a coverage pattern crosses `/`.
 omit = ["scripts/*"]
 
 [tool.mypy]

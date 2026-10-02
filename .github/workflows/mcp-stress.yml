@@ -39,9 +39,13 @@ jobs:
       # test files, and `d1-fts-search.test.mjs` sat red on main unnoticed because it
       # was not one of them (found 2026-09-12 — the same "a check nothing runs"
       # pattern as the lesson counts and the page generator). The suite runs in ~4s.
+      #
+      # Keep the glob quoted: `workers/*.test.mjs` (and an *unquoted* `workers/**`) does
+      # not reach `workers/email-register/email-utils.test.mjs`, so that file ran in no
+      # workflow. Node expands the quoted `**` pattern and matches at every depth.
       - name: Run the full worker test suite
         run: |
-          node --test workers/*.test.mjs
+          node --test 'workers/**/*.test.mjs'
       - name: Run D1 lesson service tests (PRD ④)
         run: |
           node --test workers/d1-lesson-service.test.mjs

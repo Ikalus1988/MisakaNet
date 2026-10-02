@@ -28,7 +28,7 @@ npm install                            # devDep: wrangler（部署 worker 用）
 | 路径 | 内容 |
 |---|---|
 | `workers/register-proxy-sw.js` | **主 worker**（`misakanet.org` 的 `/mcp`、`/api/*`、cron）；绝大多数线上行为在这里 |
-| `workers/*.test.mjs` | worker 的 `node:test` 测试（无框架依赖，直接 `node --test`） |
+| `workers/**/*.test.mjs` | worker 的 `node:test` 测试（无框架依赖，直接 `node --test`）；**66** 个文件，含嵌套的 `workers/email-register/email-utils.test.mjs` |
 | `workers/email-register/` | 邮件 intake worker（独立部署） |
 | `scripts/` | 维护/分析脚本（`lesson_gate.py`、`injection_scan.py`、`cf_mcp_auth.py`、`doctor.py` …） |
 | `lessons/{core,contrib,en,...}/` | 课程语料（本仓的"产品"） |
@@ -45,7 +45,7 @@ npm install                            # devDep: wrangler（部署 worker 用）
 pytest tests/ -v --tb=short
 
 # Worker / Node 测试（纯 node:test）
-node --test workers/*.test.mjs
+node --test 'workers/**/*.test.mjs'   # 引号必须保留：不加引号 shell 只展开到嵌套文件
 node --test packages/fatal-guard/tests/*.js
 
 # 改安装器（packages/misakanet-setup/**）：先跑单测，再跑**打包产物**的 e2e
@@ -116,7 +116,7 @@ python3 scripts/bench_production_recall.py --json     # 机器可读
 
 ### 三类改动的标准步骤
 
-- **改 worker**：改 `workers/register-proxy-sw.js` → `node --check` → `node --test workers/*.test.mjs`
+- **改 worker**：改 `workers/register-proxy-sw.js` → `node --check` → `node --test 'workers/**/*.test.mjs'`
   → 提交（DCO）→ PR → 合并后**自动部署**（`deploy-worker.yml`）
 - **改 lesson**：`lessons/contrib/<name>.md`（frontmatter 必填 `title/domain/tags/status/evidence_level`，
   E0–E4）→ `lesson_gate.py` + `injection_scan.py` → PR（lesson-gate 会再跑一次）

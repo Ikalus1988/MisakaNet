@@ -23,6 +23,21 @@ Measured that way on 2026-09-29, **four** checks block a merge:
 | **gate** | `lesson-gate.yml` | The lesson gate (structure, quality, injection). It deliberately has **no `paths:` filter**, because a required check that sometimes does not run blocks every PR that does not trigger it (#1920) |
 | **audit** | `pr-checks.yml` | The audit verdict: DCO audit, secret scan (`scripts/check_worker_secrets.py`), dependency audit, and a `pytest --cov-fail-under=20` run. This is the job that turns a test failure into a blocked merge |
 
+Two notes on **what those commands actually measure** (both fixed 2026-10-02 after an audit found the
+gates naming scope they did not have):
+
+* **Coverage measures `misakanet/` only — accepted technical debt.** The command is
+  `--cov=misakanet`; `scripts/` is **not** in the measured set. It used to be passed as
+  `--cov=scripts` *and* omitted via `[tool.coverage.run] omit = ["scripts/*"]`, so it contributed
+  0 lines to a TOTAL that therefore only ever described `misakanet/` (9,109 LOC — about 17 % of the
+  54,527 LOC of non-test Python). Measuring `scripts/` properly is a separate investment decision;
+  until then the debt is recorded here and in `pyproject.toml`, and the threshold is deliberately
+  left alone.
+* **The worker suite is `node --test 'workers/**/*.test.mjs'` — 66 files, not 65.** The unquoted
+  `workers/*.test.mjs` did not reach `workers/email-register/email-utils.test.mjs` (the nested
+  email worker's test, shipped by `make deploy-email`), so that file ran in no workflow at all. The
+  quotes matter: unquoted, the shell expands the glob to the nested files only.
+
 Three notes that have each cost someone an afternoon:
 
 * **"Required" is about the *context name*.** Only `test (ubuntu-latest, 3.11)` is required out of the nine
@@ -30,7 +45,8 @@ Three notes that have each cost someone an afternoon:
   green-looking and shows up afterwards as "that PR broke something". Read the leg you changed.
 * **`audit` runs pytest too** (with a coverage floor), so the suite *is* gated even though the
   `Run Test Suite` step inside `pr-checks.yml` is `continue-on-error`.
-* **The node suite is not required at all.** `node --test workers/*.test.mjs` (~561 tests, the only automated
+* **The node suite is not required at all.** `node --test 'workers/**/*.test.mjs'` (~570 tests across all
+  66 `.test.mjs` files, the only automated
   verification of `workers/register-proxy-sw.js` — i.e. of the MCP endpoint, search and the public API) runs in
   `mcp-stress.yml`, which is not in the required set. Its trigger paths were also a hand-written file list
   until 2026-09-29, so most of its test files did not even run on the PRs that changed them. Until it is
