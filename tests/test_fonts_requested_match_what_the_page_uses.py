@@ -95,7 +95,34 @@ def test_no_declared_weight_is_missing_from_the_request():
 
 
 def test_the_stylesheet_is_still_one_request_with_swap():
-    """`display=swap` is what keeps text visible while the faces load; `&`-splitting above depends on the
-    single-link shape, so both are pinned here rather than assumed."""
+    """`display=swap` keeps text visible while the faces load; `&`-splitting above depends on the
+    single-link shape."""
     assert "display=swap" in PAGE, "without display=swap the page paints no text until the faces arrive"
-    assert PAGE.count("fonts.googleapis.com/css2") == 1, "more than one font stylesheet request"
+    assert PAGE.count("fonts.googleapis.com/css2") == 3, (
+        "expected the preload + the deferred stylesheet + the noscript fallback")
+
+
+def test_the_font_stylesheet_is_not_blocking_first_paint():
+    """Measured 2026-10-02: with the stylesheet blocking, a 1 s CDN delay moved FCP 512 -> 1540 ms.
+
+    A `rel=stylesheet` link to Google Fonts must therefore carry `media="print"` (off the critical path)
+    and switch itself to `all` on load, with a `<noscript>` fallback for readers without JS. A regression
+    here is invisible in every other gate: the page just waits again.
+    """
+    # The `<noscript>` fallback is *meant* to be a plain blocking stylesheet — nobody without JS is
+    # waiting on a font anyway — so it is removed before the critical-path check.
+    # Only the *font* fallback is removed, and it is matched by its own content: the page has other
+    # `<noscript>` blocks, and a lazy `.*?` between the first `<noscript>` and the first `</noscript>`
+    # swallowed this whole link group (which made the rule fail on correct markup).
+    without_noscript = re.sub(
+        r'<noscript><link[^>]*fonts\.googleapis\.com[^>]*></noscript>', "", PAGE)
+    links = re.findall(r'<link[^>]*fonts\.googleapis\.com[^>]*>', without_noscript)
+    assert links, "the font stylesheet is gone; this rule needs updating"
+    blocking = [l for l in links if 'rel="stylesheet"' in l and 'media="print"' not in l]
+    assert not blocking, f"a blocking font stylesheet is back: {blocking}"
+    deferred = [l for l in links if re.search(r'rel="stylesheet".*media="print".*onload=', l)]
+    assert deferred, "the font stylesheet no longer switches itself to `all` after loading"
+    assert re.search(r'<noscript>\s*<link[^>]*fonts\.googleapis\.com', PAGE), (
+        "without JS the page loses its fonts entirely; keep the noscript fallback")
+    assert re.search(r'<link rel="preload" as="style"[^>]*fonts\.googleapis\.com', PAGE), (
+        "a print stylesheet is fetched at low priority; the preload is what starts it early")

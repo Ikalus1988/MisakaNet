@@ -35,7 +35,14 @@
 }
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js" integrity="sha384-3HPB1XT51W3gGRxAmZ+qbZwRpRlFQL632y8x+adAqCr4Wp3TaWwCLSTAJJKbyWEK" crossorigin="anonymous"></script>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800;900&family=Ma+Shan+Zheng&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- The font stylesheet is ~463 KB decoded and was blocking first paint: with a 1 s CDN delay FCP
+     moved 512 -> 1540 ms (measured 2026-10-02). `media="print"` keeps it off the critical path and
+     `onload` switches it to `all` once it arrives; the `preload` starts the fetch early anyway (a
+     print stylesheet is fetched at low priority), and `<noscript>` keeps the page styled without JS.
+     `display=swap` is already in the URL, so text paints immediately and swaps when the faces land. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800;900&family=Ma+Shan+Zheng&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800;900&family=Ma+Shan+Zheng&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800;900&family=Ma+Shan+Zheng&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600;700&display=swap"></noscript>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
