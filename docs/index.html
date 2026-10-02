@@ -2033,9 +2033,10 @@
   <!-- Contributors (moved up) -->
   <div id="contributors" class="anchor-target"></div>
   <div class="section-title" id="contrib-title" style="display:none;">🏆 <span data-i18n="contribSection">贡献排行</span> <span id="contrib-count"></span></div>
-  <!-- The basis of the list, stated where the list is: measured 2026-09-25, the rows come from closed
-       pull requests plus `usage:` issues, and the agent type is whatever the PR body declared. A ranking
-       of self-declared contributions that does not say so reads as a verified human leaderboard. -->
+  <!-- The basis of the list, stated where the list is: the rows come from merged pull requests plus
+       `usage:` issues — the PR half keys on `merged_at`, so a row with no merge is not a contribution
+       (changed 2026-10-02) — and the agent type is whatever the PR body declared. A ranking of
+       self-declared contributions that does not say so reads as a verified human leaderboard. -->
   <div class="contrib-basis" data-i18n="contribBasis" style="display:none;font-size:12px;color:var(--text-dim);margin:-4px 0 10px;"></div>
   <div class="contrib-list" id="contrib-list" style="display:none;">
     <div class="loading-item" data-i18n="loading">加载中...</div>
@@ -3199,8 +3200,24 @@ async function loadContributors() {
     // Also fetch merged PRs to count lesson contributions from external users
     try {
       const prs = await fetchJSON(`${GITHUB_PROXY}/pulls?state=closed&sort=updated&direction=desc&per_page=100`);
-      // All closed PRs count as contributions (merged via API or force-push merged)
-      const closedPRs = prs.filter(p => p.closed_at && !p.draft);
+      // Only PRs that were actually **merged** count as contributions.
+      // The API sets `merged_at` on every merged PR and leaves it `null` on one that was never merged,
+      // so keying on `merged_at` is what separates "a stranger opened a PR and abandoned it" from a
+      // contribution. The previous rule keyed on the close timestamp, which put any GitHub user on the
+      // wall for opening and abandoning a PR of their own — measured 2026-10-02 against
+      // `pulls?state=closed&per_page=100`: 11 of the 100 had `merged_at: null` — 4 the maintainer's own,
+      // 6 non-owner rows, and 1 draft already dropped by `!p.draft`. Re-read the same day, each of the 6
+      // was rejected ("cannot merge") or superseded by the author's own follow-up; the two accounts
+      // whose rows actually leave (`alienvisitor8675-bit` ×4, `shruhicollections-beep` ×1) have zero
+      // commits on main, and `zsxh1990` keeps a row because #2438 was merged inside the same window.
+      // So no merged contribution leaves the wall — the visible change is 2 accounts / 5 PRs, all of
+      // them rows that should never have been counted. The force-push cost this comment first claimed
+      // is not what the closing comments show.
+      // That is the "who counts as a contributor" half of the stored-XSS incident (#2672) whose sink
+      // this loop feeds.
+      // tests/test_contributor_wall_attribution.py extracts this predicate and runs it over fixtures,
+      // so keying on the close timestamp — or dropping `!p.draft` — turns that gate red.
+      const mergedPRs = prs.filter(p => p.merged_at && !p.draft);
       // Build a lookup to avoid adding duplicate contributors
       const usageNames = new Set(usageIssues.map(i =>
         (i.title || '').replace('usage:', '').trim() || i.user.login
@@ -3220,7 +3237,7 @@ async function loadContributors() {
         'Ikalus1988': { type: 'human', model: '' },
       };
 
-      for (const pr of closedPRs) {
+      for (const pr of mergedPRs) {
         // Extract contributor name from PR title: "feat: xxx (太阳/Misaka10004)"
         let prContributor = pr.user.login;
         // 优先匹配 name/MisakaID 格式；其次匹配短名称（排除 #、Fixes、Level 等非名称模式）
