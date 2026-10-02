@@ -18,6 +18,23 @@ What is pinned here, and why each one is worth a test:
 * **A missing section is a failure, not an empty set.** An empty documented set compared against
   a live one is a divergence — but silently parsing to nothing would make a renamed heading look
   like "the document lists no gates", which is a different and much more confusing message.
+* **What this file is *not* allowed to police.** The gate count only has to live in one place, and
+  it is `docs/ci-gates.md`. Two classes of writing are explicitly out of scope, and a sweep that
+  takes them in is wrong rather than thorough:
+
+  * **Dated records** — `CHANGELOG.md`, and the `2026-09-22 会话交接` appendix in
+    `docs/maintainer/state-of-the-repo.md`. Their sentences describe *the day they were written*.
+    "0 条变为 3 条（DCO / test / gate）" is a fact about 2026-09-22 and cannot go stale; rewriting
+    it to "从无到有（清单见 §2.1）" deletes the fact and points at a *different date's* list, which
+    is a loss dressed as a cleanup. A hand-maintained count is only a bug when it claims to be
+    current.
+  * **Live sections that merely mention the set.** The same file's §2.1 is a current-state
+    statement, and its count *is* the bug this change exists to remove — the ruleset has four
+    contexts now and the text that says so by hand is what a reader trusts.
+
+  The prose scanner this file replaced had an `EXCLUDED_FILES` map with a one-line reason per
+  entry. That map went away with it, and its absence is what let a dated appendix be edited twice
+  in one sitting — so the exclusion is written down here instead.
 """
 from __future__ import annotations
 
@@ -47,10 +64,16 @@ WORKFLOW = REPO / ".github" / "workflows" / "check-documented-gates.yml"
 
 # "a count **of the gates**", not a count of anything. The trailing noun is what makes it a claim;
 # without it this pattern is the prose scanner, and it fires on "Three notes" in this very section.
+#
+# The Chinese branch is anchored on the same noun, and it has to be. `三条建议` ("three suggestions")
+# and `一条命令` ("one command") are counts of something else — and an unanchored
+# `[一二三四五六七八九十]\s*条` is *broader* than the repo-wide scanner it replaced, which anchored on
+# `required|sign-off|status check|context`. A narrower scope does not pay for a looser anchor.
 COUNT_CLAIM = re.compile(
     r"(\b(?:one|two|three|four|five|six|seven|eight|nine|ten)\b|\d+)\s*"
     r"(?:mandatory\s+|required\s+|hard\s+|deterministic\s+)*(?:gates?|checks?)\b"
-    r"|[一二三四五六七八九十]\s*条",
+    r"|[一二三四五六七八九十]\s*条\s*(?:必需|必须|硬性|强制)?\s*"
+    r"(?:门禁|检查|门禁检查|必需检查|状态检查|硬门禁)",
     re.IGNORECASE,
 )
 
@@ -127,6 +150,35 @@ def test_the_document_carries_no_count_of_its_own_gates() -> None:
     assert not claims, f"the Hard Gates section states a count of the gates: {claims}"
 
 
+def test_the_marker_lookup_pages_and_cannot_match_a_pull_request() -> None:
+    """The two ways "open or update one issue" turns into "open a new one every Monday".
+
+    * **No pagination.** The repository carries ~160 open issues and intake adds more every day.
+      An unpaginated `per_page: 100` sees roughly the last week — against a weekly schedule the
+      marker issue leaves page 1 on the second or third run, `find` returns `undefined`, and the
+      workflow opens a duplicate. The issue body itself promises "re-running the workflow
+      refreshes this issue", so that is a broken promise rather than a cosmetic one.
+    * **Pull requests are not issues.** `listForRepo` returns both, and `PATCH /issues/<n>`
+      addresses a pull request number — so a PR whose description happened to contain this marker
+      (plausible for any PR touching this very workflow) would have its body replaced.
+
+    Read off the workflow rather than described, so deleting either guard reddens this.
+    """
+    _, script = next(
+        (name, body) for name, body in _script_bodies(WORKFLOW.read_text(encoding="utf-8"))
+        if "documented-gates-ratchet" in body
+    )
+    assert "github.paginate(" in script, (
+        "the marker lookup is not paginated, so it only ever sees the first 100 open items"
+    )
+    assert "issue.pull_request" in script, (
+        "`listForRepo` returns pull requests too, and a PR's description is addressable as an "
+        "issue — one containing this marker would be overwritten"
+    )
+    # and the paginated call must not have been re-broken by dropping the per_page
+    assert "per_page: 100" in script
+
+
 def test_the_count_pattern_catches_the_claims_it_claims_to() -> None:
     """A guard on the guard: a pattern that matches nothing would pass the test above forever.
 
@@ -134,11 +186,14 @@ def test_the_count_pattern_catches_the_claims_it_claims_to() -> None:
     makes the pattern narrower, this goes red instead.
     """
     for phrase in ("the 4 required checks", "four hard gates", "all three gates",
-                   "五条必需检查", "the Four required checks"):
+                   "五条必需检查", "四条门禁", "the Four required checks", "三条状态检查"):
         assert re.search(COUNT_CLAIM, phrase), f"the pattern misses a real claim: {phrase!r}"
     for phrase in ("Two notes on what those commands measure",
                    "Three notes that have each cost someone an afternoon",
-                   "out of the nine test (…) legs", "the 3.11 leg", "9-leg matrix"):
+                   "out of the nine test (…) legs", "the 3.11 leg", "9-leg matrix",
+                   # The Chinese arm used to be unanchored, so it fired on any count of 条 —
+                   # strictly broader than the scanner this replaced.
+                   "三条建议", "这三条命令都很快", "一条命令即可", "读了五篇文章"):
         assert not re.search(COUNT_CLAIM, phrase), f"the pattern fires on a non-claim: {phrase!r}"
 
 
@@ -157,10 +212,73 @@ def test_a_renamed_or_missing_section_fails_loudly() -> None:
         broken.write_text("# something else\n\nno section here\n", encoding="utf-8")
         try:
             checker.parse_documented(broken)
-        except SystemExit as error:
+        except checker.GateDocumentUnreadable as error:
             assert checker.SECTION in str(error)
         else:  # pragma: no cover - only reached if the guard is removed
             raise AssertionError("a missing section must fail, not parse to an empty set")
+
+
+def test_a_renamed_section_exits_cannot_check_and_never_the_drift_code() -> None:
+    """The test above passed for the wrong reason, and the exit code is what the workflow reads.
+
+    `parse_documented` raised `SystemExit` **with a string**, and CPython exits **1** for a
+    non-integer `SystemExit` code — 1 being this script's own "the document has drifted". So a
+    renamed heading produced `compare_exit=1` with an empty stdout, the report step fired, the
+    guard step (which fires for anything that is not 0 or 1) was skipped, and the job went **green
+    with a confidently wrong issue open**. That is the exact defect the previous commit claimed to
+    eliminate, re-entering through a one-word change to a heading.
+
+    Asserting the exception in-process cannot see this. Only the process's exit code can.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        renamed = Path(tmp) / "ci-gates.md"
+        renamed.write_text(
+            DOC.read_text(encoding="utf-8").replace(checker.SECTION, "## Hard Gates (required)"),
+            encoding="utf-8",
+        )
+        saved = Path(tmp) / "ruleset.json"
+        saved.write_text(json.dumps(RULESET_RESPONSE), encoding="utf-8")
+        code, out, err = run_cli(["--from-file", str(saved), "--doc", str(renamed)])
+
+    assert code == checker.EXIT_CANNOT_CHECK, (
+        f"a renamed section exited {code}; {code} is the drift code, and the workflow opens an "
+        "issue for it"
+    )
+    assert code != checker.EXIT_DIVERGED
+    assert out == "", "a verdict reached stdout that was never rendered"
+    assert checker.SECTION in err
+
+
+def test_a_system_exit_with_a_string_can_never_become_a_verdict() -> None:
+    """The mechanism, pinned — because the fix is a guard, and a guard needs a test.
+
+    `SystemExit("...")` is not an error code; CPython prints it and exits **1**. That is the same
+    exit code `report()` returns for a real divergence, and nothing downstream can tell them
+    apart. The guard maps a non-integer code to `EXIT_BROKEN`.
+    """
+    original = checker.main
+    checker.main = lambda argv=None: (_ for _ in ()).throw(SystemExit("a string, not a code"))
+    try:
+        code, out, err = run_cli(["--doc", str(DOC)])
+    finally:
+        checker.main = original
+    assert code == checker.EXIT_BROKEN
+    assert code != checker.EXIT_DIVERGED
+    assert out == ""
+    assert "a string, not a code" in err
+
+
+def test_argparses_own_exit_codes_still_pass_through() -> None:
+    """The guard must not swallow `--help` or a bad flag.
+
+    `argparse` raises `SystemExit(0)` for `--help` and `SystemExit(2)` for a bad argument, and both
+    are *intentional* exit codes. A guard that treated every `SystemExit` as a crash would turn
+    `check_documented_gates.py --help` into a failure.
+    """
+    for argv, expected in ((["--help"], 0), (["--no-such-flag"], 2)):
+        with pytest.raises(SystemExit) as raised:
+            run_cli(argv)
+        assert raised.value.code == expected, f"{argv} should exit {expected}"
 
 
 def test_divergence_is_reported_as_a_difference_not_a_count() -> None:
@@ -361,6 +479,11 @@ def _strip_js_comments(body: str) -> str:
     a "string" at the apostrophe in *don't* and everything after it is inside one. A substitution in
     a comment is not code, and a lint that cries wolf on a comment gets switched off — which is
     worse than the bug it was looking for.
+
+    Escapes are honoured, and that is not optional. Comparing `line[index] == in_string` raw means
+    `"x \" // not a comment"` closes the string at the escaped quote, the `//` is then read as a
+    comment, the line truncates, and a **real** splice later on the same line goes unseen. Both
+    halves of that were reproduced before this was fixed.
     """
     out: list[str] = []
     in_block = False
@@ -377,6 +500,10 @@ def _strip_js_comments(body: str) -> str:
                 continue
             if in_string:
                 result.append(line[index])
+                if line[index] == "\\" and index + 1 < len(line):
+                    result.append(line[index + 1])  # an escaped char cannot close the string
+                    index += 2
+                    continue
                 if line[index] == in_string:
                     in_string = ""
                 index += 1
@@ -397,17 +524,22 @@ def _strip_js_comments(body: str) -> str:
 
 
 def _quoted_substitutions(body: str) -> list[str]:
-    """Lines where a `${{ }}` sits inside a `'…'` or `"…"` string, with the quote in effect.
+    """Where a `${{ }}` sits inside a `'…'` or `"…"` string — including across lines.
 
-    A template literal may span lines, so `` `${{ x }}` `` is fine and must not be reported — which
-    is why the check tracks quote state rather than searching for a pattern. Walking each line
-    independently is deliberate and sufficient: an unterminated quote cannot be *opened* mid-line
-    from a previous one in a well-formed script, and a value spliced into one produces its own
-    unterminated quote, which is the case reported.
+    A template literal may span lines, so `` `${{ x }}` `` is fine and must not be reported, which
+    is why the check tracks quote state rather than searching for a pattern. Resetting that state
+    at every newline is the obvious simplification and it is wrong: a `github-script` body that
+    opens a quoted string on one line and splices a value into it on the next is *precisely* the
+    F1 shape, and it parses as a `SyntaxError` under `node --check` — verified, not assumed.
     """
     offenders = []
-    for line in _strip_js_comments(body).splitlines():
-        state = ""
+    state = ""
+    for number, line in enumerate(_strip_js_comments(body).splitlines(), start=1):
+        stripped = line.strip()
+        if state in ("'", '"') and stripped.startswith("${{"):
+            offenders.append(f"{state}-quoted across lines: {stripped}")
+            state = ""
+            continue
         index = 0
         while index < len(line):
             if line.startswith("${{", index) and state in ("'", '"'):
@@ -463,6 +595,46 @@ def test_the_splice_detector_distinguishes_the_three_quote_kinds() -> None:
     # alternative is a detector that reasons about which values are multi-line, which is exactly
     # the guessing this is meant to replace.
     assert _quoted_substitutions("const u = 'https://example.com/${{ steps.x.outputs.d }}';")
+
+
+def test_the_detector_survives_an_escaped_quote_earlier_on_the_line() -> None:
+    """Reproduced false negative: the escaped quote closed the string, then `//` ate the rest.
+
+    `_strip_js_comments` compared the closing quote with `==`, so the `\"` inside
+    `"x \" // not a comment"` ended the string, the `//` was then read as a comment, the line was
+    truncated, and a real splice on the same line was never seen. Both halves of that are guarded
+    here: the escape is honoured, and the comment marker inside a string is not one.
+    """
+    assert _quoted_substitutions(
+        'const a = "x \\" // not a comment"; const b = \'${{ steps.x.outputs.d }}\';'
+    ), "an escaped quote must not let a later splice on the same line go unseen"
+    # ...and the inverse: with the escape honoured, that `//` stays inside the string
+    assert not _quoted_substitutions('const a = "x \\" // not a comment";')
+
+
+def test_the_detector_survives_a_quote_opened_on_one_line_and_spliced_on_the_next() -> None:
+    """Reproduced false negative, and the *realistic* form of F1.
+
+    Resetting quote state at each newline is the obvious simplification, and it misses exactly the
+    shape that broke the first version of this workflow:
+
+        const diff = '
+        ${{ steps.compare.outputs.diff }}
+        '.trim();
+
+    That is a genuine `SyntaxError` under `node --check`, and it is what the mutation below
+    reconstructs — so "the one-line shape is caught" was never enough on its own.
+    """
+    body = "const diff = '\n${{ steps.compare.outputs.diff }}\n'.trim();"
+    assert _quoted_substitutions(body)
+    node = shutil.which("node")
+    if node:  # pragma: no branch - node is present in this repository's CI
+        rendered = "async function run() {\n" + body + "\n}\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            script = Path(tmp) / "m.mjs"
+            script.write_text(rendered, encoding="utf-8")
+            result = subprocess.run([node, "--check", str(script)], capture_output=True, text=True)
+        assert result.returncode != 0, "the premise is a script node rejects"
 
 
 def test_the_reporting_step_still_parses_with_a_real_multi_line_diff() -> None:

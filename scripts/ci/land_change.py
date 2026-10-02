@@ -190,7 +190,7 @@ def build_body(*, branch: str, title: str, files: list[str], stat: str, note: st
         "Opened by `scripts/ci/land_change.py` because `main` requires "
         "`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate` and `audit` on every commit that "
         "lands there — a direct push from the workflow that produced this change is refused by "
-        "the ruleset (`3 of 3 required status checks are expected`).",
+        "the ruleset, which reports how many status checks it expected and did not see.",
         "",
         f"**Auto-merge is enabled (squash):** GitHub merges this as soon as the required "
         f"checks are green. Nobody has to be here for it. The branch `{branch}` is reused by the "

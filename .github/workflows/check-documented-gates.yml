@@ -123,13 +123,25 @@ jobs:
               'issue; closing it while the drift persists will just reopen it next Monday._',
             ].join('\n');
 
-            const open = await github.rest.issues.listForRepo({
+            // Paginated, and it has to be. The repository carries ~160 open issues and intake adds
+            // more every day, so an unpaginated `per_page: 100` sees roughly the last week —
+            // against a weekly schedule the marker issue falls off the end on the second or third
+            // run and this opens a duplicate instead of updating it. The issue body promises
+            // "re-running the workflow refreshes this issue", so a silent duplicate would be a
+            // broken promise, not a cosmetic one.
+            //
+            // `listForRepo` also returns pull requests, and `PATCH /issues/<n>` addresses them:
+            // a pull request whose description happened to contain this marker — plausible for
+            // any PR touching this very workflow — would have its body replaced. The filter is
+            // the same test the GitHub API uses to tell the two apart.
+            const open = await github.paginate(github.rest.issues.listForRepo, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
               per_page: 100,
             });
-            const existing = open.data.find(issue => (issue.body || '').includes(marker));
+            const existing = open.find(
+              issue => !issue.pull_request && (issue.body || '').includes(marker));
 
             if (existing) {
               await github.rest.issues.update({

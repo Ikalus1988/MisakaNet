@@ -66,6 +66,17 @@ EXIT_CANNOT_CHECK = 2
 EXIT_BROKEN = 3
 
 
+class GateDocumentUnreadable(Exception):
+    """The document does not contain the section this script reads. Not a verdict.
+
+    Raised rather than returned, and deliberately **not** a `SystemExit`. `SystemExit("message")`
+    exits **1** in CPython — 1 being this script's own "the document has drifted" — so the first
+    version of this function reported a renamed heading as drift with an empty diff on stdout, and
+    the workflow opened an issue about a document that was fine. An ordinary exception cannot be
+    mistaken for a verdict, and `main` turns it into `EXIT_CANNOT_CHECK`.
+    """
+
+
 def parse_documented(path: Path) -> list[str]:
     """The contexts `docs/ci-gates.md` claims block a merge, in document order.
 
@@ -75,7 +86,7 @@ def parse_documented(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     start = text.find(SECTION)
     if start < 0:
-        raise SystemExit(f"fail: {SECTION!r} is not in {path}")
+        raise GateDocumentUnreadable(f"{SECTION!r} is not in {path}")
     # Scan *after* the heading line. Slicing from `start` includes the heading itself, and the
     # loop below stops at the next `## ` — which, left unskipped, is the line it just started on.
     body = text[start:].splitlines()[1:]
@@ -191,6 +202,14 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         documented = parse_documented(args.doc)
+    except GateDocumentUnreadable as error:
+        # The adjacent case, `if not documented`, already routed to `cannot_check`; this one did
+        # not, and it exited 1 — the drift code — with an empty stdout. Two halves of one mistake.
+        return cannot_check(
+            f"{error}. That is not a statement about the ruleset: the document's gate table "
+            "cannot be read, so nothing can be compared. Check the heading and the table before "
+            "concluding that the gates moved."
+        )
     except OSError as error:
         return cannot_check(f"could not read {args.doc}: {error}")
 
@@ -237,15 +256,27 @@ def main(argv: list[str] | None = None) -> int:
 def run_cli(argv: list[str] | None = None) -> int:
     """`main()` plus the guard that keeps a crash from being read as a verdict.
 
-    A traceback used to exit 1, which is this script's own "the document has drifted" — so a typo
-    in a line added six months from now would have opened an issue asking a maintainer to edit a
-    document that was correct. It gets its own code, and the workflow treats anything that is
-    neither 0 nor 1 as *no verdict at all*.
+    Two ways out of `main` used to land on the drift code by accident, and both are closed here
+    rather than at the call site, so a future edit cannot reopen them:
+
+    * an uncaught exception — a traceback exits 1, and 1 is this script's own "the document has
+      drifted". A one-character typo would have opened a recurring, authoritative-looking issue
+      about a document that was correct;
+    * a `SystemExit` whose code is a **string** — CPython exits 1 for it. `argparse` raises
+      `SystemExit(2)` for a bad argument and `SystemExit(0)` for `--help`, and those pass through
+      untouched; anything non-integer is not a verdict and is not 1.
+
+    The check is `isinstance(code, int)`, not `code == 0`, because `True` is an `int` and nobody
+    should have to think about that.
     """
     try:
         return main(argv)
-    except SystemExit:
-        raise
+    except SystemExit as exit_request:
+        code = exit_request.code
+        if isinstance(code, int) and not isinstance(code, bool):
+            raise
+        print(f"fail: the ratchet exited with a non-numeric status: {code!r}", file=sys.stderr)
+        return EXIT_BROKEN
     except BaseException as error:  # noqa: BLE001 - the point is to catch *everything*
         print(f"fail: the ratchet itself broke: {error!r}", file=sys.stderr)
         return EXIT_BROKEN
