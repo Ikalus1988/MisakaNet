@@ -3,7 +3,7 @@
 
 Why this exists (2026-09-23)
 ----------------------------
-`main` carries the ruleset **"main: the deterministic gates"** (id 23826057): four required
+`main` carries the ruleset **"main: the deterministic gates"** (id 23826057): the required
 status checks — `DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate`, `audit` — with
 `bypass_actors: []`. GitHub evaluates those checks on the *commit being pushed*, including for a
 direct push, and no actor is exempt. A push that arrives without them is refused:

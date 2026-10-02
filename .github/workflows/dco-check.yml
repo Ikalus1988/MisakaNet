@@ -1,6 +1,6 @@
 name: DCO Check
 
-# `DCO / Signed-off-by` is one of the three **required** status checks on `main` (ruleset 23826057), and
+# `DCO / Signed-off-by` is one of the **required** status checks on `main` (ruleset 23826057), and
 # it is not a job name: this workflow creates it through the Checks API. Two things follow, and both
 # cost the repository real time before they were written down here.
 #

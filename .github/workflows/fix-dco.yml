@@ -137,7 +137,7 @@ jobs:
       #
       # Measured 2026-09-25: this step pushed with the built-in `GITHUB_TOKEN`, and the runs GitHub
       # created for the new head came back as `action_required` — held, never executed
-      # (`actor=github-actions[bot]` on PR #2201/#2202). `DCO / Signed-off-by` is one of the three
+      # (`actor=github-actions[bot]` on PR #2201/#2202). `DCO / Signed-off-by` is one of the
       # **required** checks on `main`, so a held DCO run means the PR sits at "Expected — waiting for
       # status to be reported" for ever, and the auto-fix that was supposed to unblock a contributor
       # is what blocks them. The repository's own lesson file says it in the title
