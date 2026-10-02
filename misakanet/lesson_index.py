@@ -82,7 +82,20 @@ def tracked_lesson_files(lessons_root: Path) -> list[Path] | None:
         return None
     if proc.returncode != 0:
         return None
-    return [lessons_root / line for line in proc.stdout.splitlines() if line.endswith(".md")]
+    found = [lessons_root / line for line in proc.stdout.splitlines() if line.endswith(".md")]
+    found = [path for path in found if path.is_file()]
+    if not found:
+        # "Git says there are no lessons here" is not an answer this can act on. It is either a tree
+        # that genuinely has none (in which case the walk below also finds none, and nothing changes)
+        # or a `subprocess.run` that no longer reaches git — which is a real shape in this repository:
+        # tests stub `subprocess.run` globally (the module object is shared), and a stub returning
+        # success with no output turned the rebuilt index **empty**. Measured on 2026-10-02: PR #2708's
+        # CI legs all failed in `test_no_test_writes_repo_data.py` with "the redirected index … was
+        # never written, so the rebuild did not run", because the generator had enumerated nothing.
+        # A caller who wants untracked files excluded still gets that: git answers with paths whenever
+        # it can, and this branch is only reached when it answers with none.
+        return None
+    return found
 
 
 def canonical_lessons(lessons_root: Path) -> list[Path]:

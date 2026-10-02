@@ -23,6 +23,8 @@ import pytest
 
 from misakanet.lesson_index import EXCLUDED_LESSON_FILES, canonical_lessons
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
 LESSON = "---\ntitle: t\ndomain: test\n---\n\n## Problem\nx\n"
 
 
@@ -82,3 +84,28 @@ def test_a_non_ascii_filename_is_not_octal_escaped(repository: Path):
     git(repository, "commit", "-q", "-m", "add a CJK lesson")
     assert names(repository) == {"tracked.md", "中文课程.md"}, (
         "a non-ASCII lesson name was escaped into a path that does not exist")
+
+
+def test_a_stubbed_subprocess_does_not_empty_the_index(monkeypatch):
+    """The failure CI found on this change, pinned.
+
+    `subprocess` is a shared module object, so a test that stubs `subprocess.run` — as
+    `tests/test_no_test_writes_repo_data.py` legitimately does for `git push` — also intercepts the
+    `git ls-files` here. A stub that reports success with no output made this function return an empty
+    list, the index generator enumerated no lessons and wrote an empty index, and every CI leg failed
+    with "the redirected index … was never written, so the rebuild did not run".
+
+    "Git answered with nothing" is not an answer to act on, so it now falls back to the walk.
+    """
+    real_run = subprocess.run
+
+    class Done:
+        returncode, stdout, stderr = 0, "", ""
+
+    monkeypatch.setattr(subprocess, "run",
+                        lambda *a, **k: Done() if a and a[0] and a[0][0] == "git" else real_run(*a, **k))
+    from misakanet.lesson_index import canonical_lessons
+    lesson_files = canonical_lessons(REPO_ROOT / "lessons")
+    assert len(lesson_files) > 400, (
+        f"a stubbed subprocess emptied the corpus ({len(lesson_files)} lessons); the walk must take "
+        "over when git cannot answer")
