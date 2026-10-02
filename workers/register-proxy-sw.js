@@ -1642,7 +1642,11 @@ const BM25_INDEX_HEALTH_KEY = "worker_search_index_health";
 // path strings repeat heavily). A legacy plain row still loads — `decodeIndexFromStorage` accepts both.
 const INDEX_ENCODING = "gzip+base64";
 const INDEX_ENCODING_KEY = "__indexEncoding";
-const INDEX_ROW_LIMIT_BYTES = 2_000_000;
+// D1's documented row cap, named once because two payloads in this file are proportional to the
+// corpus and both have to stay under it: the search index (above) and the lessons cache
+// (`getWithCache`, :5172).
+const D1_ROW_LIMIT_BYTES = 2_000_000;
+const INDEX_ROW_LIMIT_BYTES = D1_ROW_LIMIT_BYTES;
 
 /**
  * Why this index must not be published, or `null` when it is complete enough to answer with.
@@ -5041,6 +5045,132 @@ function matchAnsweredQuestions(rows, query, detail = "compact", top = 3, domain
   }));
 }
 
+// ── KV cache wrapper, and why one of its payloads had to stop being one row ──
+//
+// `getWithCache` holds the whole cached value in a single `kv_store` row, and for `proxy:lessons:d1`
+// that value is the corpus. Measured 2026-10-02 by driving this worker's own shaping code over the
+// repo's 436 rich rows: **1,821,172 bytes** (UTF-8) — 91% of D1's 2 MB row cap
+// (https://developers.cloudflare.com/d1/platform/limits/) and growing ~4.2 KB per lesson.
+//
+// Past that cap `storePut` is refused, falls back to KV (whose write budget has been spent since
+// 2026-09-22, #2111), and the old code here discarded the boolean *and* swallowed both errors — so
+// this one key would quietly stop being durable, which is precisely the property #2116 exists to
+// give it. Same shape as the frozen search index (#2327), on the more important key.
+//
+// So a payload that would cross `CACHE_SINGLE_ROW_BYTES` is written as a small manifest row at the
+// cache key plus N chunk rows, and no row we write exceeds that budget:
+//
+//   proxy:lessons:d1        → {"ts":…,"sharded":true,"gen":…,"chunks":2,"bytes":…}
+//   proxy:lessons:d1:chunk:<gen>:0 → the first ≤1.5 MB of the JSON payload
+//   proxy:lessons:d1:chunk:<gen>:1 → the rest
+//
+// The budget is deliberately 95% of the cap, not 100%: the remaining ~100 KB absorbs the key and the
+// row's other columns, which `String.length` does not count. A payload that still fits keeps its old
+// single-row shape, so nothing changes for readers (or for the number of queries) until the corpus
+// actually needs it. Only a deployment with D1 bound shards at all: the cap is D1's.
+//
+// The alternative in the report — "store only the minimum shape the cache needs" — is not available
+// for this key. 72% of the payload (1,314,984 B) is `indexText`, and the *cached* consumers read it:
+// the naive scorer ranks with `lesson.indexText` (:979) and the MCP search path ranks over
+// `loadLessons()`. Dropping it would buy the headroom by deleting body-text matching from the cached
+// path — the regression #1675/#2138 spent two issues repairing.
+//
+// Compression was the other candidate (it is what #2327 does for the index). It keeps one row but
+// only moves the cliff, and it charges gunzip CPU on every read of the hottest cache in the worker;
+// this cache's payload is the corpus itself and the corpus has no ceiling.
+const CACHE_SINGLE_ROW_BYTES = 1_900_000;
+// Chunk size in **bytes**, never `String.length`: D1 counts UTF-8 bytes, and 1.5 M code units of this
+// multilingual corpus can be several times that. 1.5 MB leaves a chunk at 75% of the cap.
+const CACHE_CHUNK_BYTES = 1_500_000;
+const CACHE_CHUNK_MARK = ":chunk:";
+// A per-isolate salt, so two isolates writing the same key in the same millisecond cannot interleave
+// their chunks: a manifest names exactly one generation, and a reader only ever reads that one.
+const CACHE_WRITE_SALT = Math.random().toString(36).slice(2, 8);
+let cacheWriteSeq = 0;
+
+function utf8Bytes(text) {
+  return new TextEncoder().encode(String(text)).byteLength;
+}
+
+/** Split `text` into pieces of at most `limit` UTF-8 bytes, never inside a surrogate pair. */
+function splitByUtf8Bytes(text, limit) {
+  const parts = [];
+  let offset = 0;
+  while (offset < text.length) {
+    // Start optimistic (ASCII, the common case, is 1 byte per code unit) and shrink until the
+    // *encoded* size fits. Only CJK-heavy spans need more than one extra pass.
+    let end = Math.min(text.length, offset + limit);
+    let size = utf8Bytes(text.slice(offset, end));
+    while (size > limit && end > offset + 1) {
+      end = offset + Math.max(1, Math.floor(((end - offset) * limit) / size));
+      size = utf8Bytes(text.slice(offset, end));
+    }
+    // A surrogate pair cut in half is two replacement characters once D1 stores UTF-8: keep it whole.
+    if (end < text.length && end > offset + 1) {
+      const code = text.charCodeAt(end - 1);
+      if (code >= 0xd800 && code <= 0xdbff) end -= 1;
+    }
+    parts.push(text.slice(offset, end));
+    offset = end;
+  }
+  return parts;
+}
+
+/**
+ * Write a cache payload, sharding it when one row would cross `CACHE_SINGLE_ROW_BYTES`.
+ *
+ * Returns `{written, bytes, chunks, sharded, overRowLimit}` — the caller reports the refusal instead
+ * of discarding it. `written` is `storePut`'s answer, so the KV fallback (#2111's budget is spent,
+ * but another deployment may still have one) keeps working exactly as before.
+ */
+async function storeCachePayload(env, cacheKey, payload, options = {}) {
+  const plain = JSON.stringify(payload);
+  const bytes = utf8Bytes(plain);
+  // The row cap is D1's, so a deployment without D1 keeps the single-key shape KV has always taken
+  // (KV's value limit is 25 MiB). Sharding there would only triple this cache's *distinct keys* —
+  // the ceiling #2115 is about — to solve a problem that store does not have.
+  if (!d1Binding(env) || bytes <= CACHE_SINGLE_ROW_BYTES) {
+    return { written: await storePut(env, cacheKey, plain, options), bytes, chunks: 1, sharded: false,
+             overRowLimit: bytes > D1_ROW_LIMIT_BYTES };
+  }
+  const parts = splitByUtf8Bytes(plain, CACHE_CHUNK_BYTES);
+  const gen = `${Date.now().toString(36)}-${CACHE_WRITE_SALT}-${(cacheWriteSeq += 1).toString(36)}`;
+  // Chunks first, manifest last: a reader only ever sees a manifest whose chunks are already stored,
+  // so a write that dies halfway is a cache miss (the previous value, or nothing) — never a torn one.
+  let written = true;
+  for (let i = 0; i < parts.length; i += 1) {
+    if (!(await storePut(env, `${cacheKey}${CACHE_CHUNK_MARK}${gen}:${i}`, parts[i], options))) written = false;
+  }
+  if (written) {
+    written = await storePut(env, cacheKey,
+      JSON.stringify({ ts: payload && payload.ts, sharded: true, gen, chunks: parts.length, bytes }),
+      options);
+  }
+  return { written, bytes, chunks: parts.length, sharded: true, overRowLimit: bytes > D1_ROW_LIMIT_BYTES };
+}
+
+/** Read back what `storeCachePayload` wrote: a plain `{ts, data}` row, or a manifest plus its chunks. */
+async function readCachePayload(env, cacheKey) {
+  const manifest = await storeGet(env, cacheKey, "json");
+  if (!manifest || typeof manifest !== "object") return null;
+  if (!manifest.sharded) return manifest;
+  const chunks = Number(manifest.chunks) || 0;
+  if (!manifest.gen || chunks < 1) return null;
+  // Independent point reads, so a sharded hit costs one round trip for the manifest plus one for the
+  // chunks — the price of keeping the cached value byte-identical for every reader.
+  const parts = await Promise.all(Array.from({ length: chunks }, (_, i) =>
+    storeGet(env, `${cacheKey}${CACHE_CHUNK_MARK}${manifest.gen}:${i}`, "text")));
+  if (parts.some((part) => typeof part !== "string")) {
+    // Half a corpus would rank as if the missing lessons did not exist, so an incomplete shard set is
+    // a *miss* that the next fetch refills — and it says so, because "no cache" and "a cache that
+    // never lands" are indistinguishable from outside otherwise.
+    console.warn(`[cache] incomplete shard set key=${cacheKey} gen=${manifest.gen} ` +
+                 `have=${parts.filter((part) => typeof part === "string").length}/${chunks}`);
+    return null;
+  }
+  return JSON.parse(parts.join(""));
+}
+
 // ── KV cache wrapper ──
 async function getWithCache(env, cacheKey, fetchFn, opts = {}) {
   // Through the durable store, for the same reason as the search index (#2116): a cache that
@@ -5049,16 +5179,33 @@ async function getWithCache(env, cacheKey, fetchFn, opts = {}) {
   // a value that only exists in KV.
   if (hasDurableStore(env)) {
     try {
-      const cached = await storeGet(env, cacheKey, "json");
+      const cached = await readCachePayload(env, cacheKey);
       if (cached && cached.ts && Date.now() - cached.ts < PROXY_CACHE_TTL) return cached.data;
-    } catch {}
+    } catch (error) {
+      // A miss is a slow path, not a failure — but an unreadable shard set and a cache that never
+      // lands look identical from outside, which is how the swallowed errors below went unnoticed.
+      console.warn(`[cache] read failed key=${cacheKey}: ${(error && error.message) || error}`);
+    }
   }
   const data = await fetchFn();
   // Don't cache empty/absent results unless explicitly allowed — a transient
   // empty read must not pin a stale empty state for the TTL window.
   if (data && (!Array.isArray(data) || data.length > 0)) {
     if (hasDurableStore(env)) {
-      try { await storePut(env, cacheKey, JSON.stringify({ ts: Date.now(), data }), { expirationTtl: Math.ceil(PROXY_CACHE_TTL / 1000) + 30 }); } catch {}
+      try {
+        const stored = await storeCachePayload(env, cacheKey, { ts: Date.now(), data },
+          { expirationTtl: Math.ceil(PROXY_CACHE_TTL / 1000) + 30 });
+        if (!stored.written) {
+          // Refused, and not rescued by the KV fallback. This is the state that must never be quiet:
+          // the cache did not become durable, and the caller cannot tell from the value it got back.
+          console.warn(`[cache] durable write refused key=${cacheKey} bytes=${stored.bytes} ` +
+                       `chunks=${stored.chunks} overRowLimit=${stored.overRowLimit}`);
+        } else if (stored.sharded) {
+          console.log(`[cache] sharded key=${cacheKey} bytes=${stored.bytes} chunks=${stored.chunks}`);
+        }
+      } catch (error) {
+        console.error(`[cache] write failed key=${cacheKey}: ${(error && error.message) || error}`);
+      }
     }
   }
   return data;
@@ -7428,6 +7575,19 @@ export {
   storePut,
   storeGet,
   storeDelete,
+  // Exported for workers/lessons-cache-row-limit.test.mjs: the corpus cache is the one `getWithCache`
+  // payload that grows with the corpus, so "it fits in a row" is a property of the *split*, not of the
+  // store. The test drives the same splitter and the same reader the worker uses, and asserts against
+  // the real byte budgets instead of restating them — a literal in the test stops describing the code
+  // the moment one of the constants moves.
+  readCachePayload,
+  storeCachePayload,
+  splitByUtf8Bytes,
+  utf8Bytes,
+  CACHE_SINGLE_ROW_BYTES,
+  CACHE_CHUNK_BYTES,
+  CACHE_CHUNK_MARK,
+  D1_ROW_LIMIT_BYTES,
   // Exported for workers/traffic-aggregation.test.mjs: the monthly roll-up moved from a KV key to a
   // `counters` row (#2120), and "where does the month's total live" is the property worth asserting
   // without a database.
