@@ -137,4 +137,10 @@ def test_a_non_utf8_filename_does_not_crash_the_lookup(tmp_path: Path):
 
     got = canonical_lessons(repo / "lessons")           # must not raise
 
-    assert any(path.name == "ok.md" for path in got), "the readable lesson vanished from the index"
+    names = [path.name for path in got]
+    assert any(name == "ok.md" for name in names), "the readable lesson vanished from the index"
+    # "Did not raise" is not the property that matters: `surrogateescape` round-trips the bytes, so the
+    # unreadable-looking name must still be **indexed**. An independent review pointed out that the first
+    # version of this test passed even if the lesson was silently dropped.
+    assert any("\udcff" in name for name in names), (
+        f"the non-UTF-8 lesson was dropped instead of indexed: {names!r}")
