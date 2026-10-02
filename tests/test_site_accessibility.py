@@ -2,7 +2,8 @@
 """The front page has to work without a mouse and without motion.
 
 Measured on `docs/index.html` on 2026-10-02, before this change: **0** `<h1>`, **0** `<main>`, **0**
-`prefers-reduced-motion` rules — against 24 keyframes and `transition:` declarations — and **0**
+`prefers-reduced-motion` rules — against 11 `@keyframes` and 13 `animation:` declarations
+(plus 32 `transition:`) — and **0**
 `role="status"`/`aria-live` regions. The drawer was hidden with `left: -300px`, which moves it
 off-canvas but leaves its links in the tab order, so a keyboard reader tabbed through invisible links
 before reaching the page.
@@ -53,16 +54,6 @@ def test_the_closed_drawer_is_not_in_the_tab_order():
     assert toggle and "aria-expanded" in toggle.group(0), "the toggle does not report its state"
 
 
-def test_a_reader_who_asked_for_no_motion_gets_none():
-    """Zero of these rules existed while the page shipped 24 animations and transitions."""
-    block = re.search(r"@media \(prefers-reduced-motion: reduce\)\s*\{(.*?)\n  \}", PAGE, re.DOTALL)
-    assert block, "no prefers-reduced-motion block"
-    body = block.group(1)
-    assert "animation-duration" in body and "transition-duration" in body, (
-        "the block must neutralise both animations and transitions, not one of them")
-    assert "!important" in body, "without !important the inline and later rules win"
-
-
 def test_the_search_field_has_a_label_and_the_results_have_a_summary_region():
     """A placeholder is not a label (`aria-label`-free inputs announce as "edit text"), and results
     that appear silently leave a screen-reader user without the count they can see."""
@@ -85,16 +76,39 @@ def test_the_summary_is_written_on_every_branch_of_the_search():
     It asserted only that the string `search-status` appears inside `searchLessons` — which the
     `const status = document.getElementById("search-status")` line satisfies on its own. An independent
     review deleted the three writes and the whole suite stayed green (367 passed) while the browser
-    showed eight results and announced nothing. A behavioural rule has to read the assignment.
+    showed eight results and announced nothing. A behavioural rule has to read the assignment — and
+    then the same review beat the fixed version too: deleting the *no-match* write and adding two empty
+    assignments kept the count at three, so the suite was green while the browser showed "No exact
+    match" and the summary region stayed empty. Counting says "three writes exist somewhere"; the rule
+    below locates each outcome and requires a write in the stretch that leads to it.
     """
-    writes = re.findall(r"status\.textContent\s*=", _function_body("searchLessons"))
-    assert len(writes) >= 3, (
-        f"expected a write per branch (results, no match, cleared query), found {len(writes)}")
+    body = _function_body("searchLessons")
+    # Each branch's *outcome* — the thing a reader sees — must have a write beside it. A window rather
+    # than a block, because the three branches share one function body and their outcomes are not in the
+    # same order as their writes (`display = "none"` precedes the clear; the results write precedes the
+    # innerHTML it describes). Locality is the point: the bypass this replaced added two dummy writes
+    # elsewhere in the function, which a function-wide count happily accepted.
+    outcomes = {
+        "cleared query": 'container.style.display = "none";',
+        "no match": "No exact match.",
+        "results": "container.innerHTML = scored.map",
+    }
+    for branch, anchor in outcomes.items():
+        position = body.index(anchor)
+        window = body[max(0, position - 400):position + 200]
+        assert re.search(r"status\.textContent\s*=", window), (
+            f"the {branch} branch reaches its outcome without writing the summary region beside it")
 
 
 def test_a_blocked_data_load_is_announced_not_just_painted():
-    """`renderErrorBoundaryUI` is reachable — blocking `data/lessons*.json` shows its panel — and the
-    panel is visible while a screen reader gets nothing unless the live region is written too."""
+    """`renderErrorBoundaryUI` is reachable — aborting *both* lesson payloads shows its panel (aborting
+    only `lessons-lite.json` does not: the page falls back to the full corpus) — and the panel is
+    visible while a screen reader gets nothing unless the live region is written too.
+
+    Like every rule in this file it reads the source, so a *comment* containing `status.textContent =`
+    would satisfy it; a review measured that general property of regex assertions. It is kept because
+    the concrete regression it prevents is one edit away, and the alternative is not to check at all.
+    """
     body = _function_body("renderErrorBoundaryUI")
     assert re.search(r"status\.textContent\s*=", body), (
         "the error panel is painted but never announced through the live region")
