@@ -185,15 +185,26 @@ measure, and the workflow passes only `GITHUB_TOKEN`.
 token is the gap this section closes, and issue #2521 (the "Network activity" trend) widens the same
 read path rather than adding a second one.
 
-**What to create — an account-scoped Cloudflare API token with exactly two permissions:**
+**What to create — an account-scoped Cloudflare API token.** The set is wider than two
+permissions, because `cf-diagnostics.yml` is wider than the Analytics query. Measured against the
+workflow's own request list rather than its name:
 
-| Permission | Why |
+| Permission | Endpoint that needs it |
 |---|---|
 | Account · **Workers Observability** · Read | `wrangler tail` / the worker-log half of `cf-diagnostics` |
 | Account · **Account Analytics** · Read | the `httpRequestsAdaptiveGroups` GraphQL query (status codes by route) |
+| Account · **Workers KV Storage** · Read | `GET /accounts/{acct}/storage/kv/namespaces` |
+| Account · **Workers Scripts** · Read | `GET /accounts/{acct}/workers/scripts` and `…/scripts/{name}/settings` |
+| Zone · **Workers Routes** · Read | `GET /zones/{zone}/workers/routes` |
 
-Nothing else: no `Workers Scripts: Edit`, no `Zone`, no `D1`, no `Workers Builds`. The Builds API
-already has its own user-scoped credential (§4.4) and rejects account-scoped tokens outright.
+**Still nothing write-capable**: no `Workers Scripts: Edit`, no `Workers KV Storage: Edit`, no
+`D1: Write`, no `Zone: Edit`. And `Workers Builds` is not here at all — that API has its own
+user-scoped credential (§4.4) and rejects account-scoped tokens outright.
+
+Two earlier drafts of this table said "exactly two permissions … nothing else". That was wrong in
+a way that would have 403'd four endpoints the moment the `|| secrets.CF_API_TOKEN` fallback is
+removed, so the list above is taken from the workflow source (`cf-diagnostics.yml` `get(...)`
+calls), not from what the chart happens to need.
 
 **Where it goes:** GitHub → Settings → Environments → `release` → Environment secrets →
 `CF_OBSERVABILITY_TOKEN`. `cf-diagnostics.yml` already prefers it (`secrets.CF_OBSERVABILITY_TOKEN ||
