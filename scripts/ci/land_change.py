@@ -3,8 +3,8 @@
 
 Why this exists (2026-09-23)
 ----------------------------
-`main` carries the ruleset **"main: the deterministic gates"** (id 23826057): three required
-status checks — `DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate` — with
+`main` carries the ruleset **"main: the deterministic gates"** (id 23826057): four required
+status checks — `DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate`, `audit` — with
 `bypass_actors: []`. GitHub evaluates those checks on the *commit being pushed*, including for a
 direct push, and no actor is exempt. A push that arrives without them is refused:
 
@@ -30,7 +30,7 @@ The one property that makes it usable for a job that runs daily
 A pull request that waits for a human is *worse* than the direct push it replaced: the daily jobs
 would pile one unmerged PR per day in front of the maintainer, and the data would freeze exactly
 as it does now. So this script does not stop at `gh pr create` — it enables **GitHub's own
-auto-merge** on the PR it just opened. Once the three required checks report green, GitHub
+auto-merge** on the PR it just opened. Once the four required checks report green, GitHub
 squashes the PR into `main` with no human in the loop. A human is needed only when something is
 genuinely wrong, which is what the loud failure at the end is for.
 
@@ -62,7 +62,7 @@ Usage (by hand, to replay what a run did):
 
 Proven live before it was given to any workflow. On 2026-09-23, from a scratch clone and with the
 maintainer's PAT: **#2104** — opened 11:05Z, auto-merge enabled by this script, merged by GitHub at
-11:09:56Z once the three required checks were green — and **#2105** — a second run reusing that same
+11:09:56Z once the required checks were green — and **#2105** — a second run reusing that same
 branch after its pull request had been merged, which is the property every daily job depends on.
 The write-up is `docs/maintainer/automation-lands-via-pr.md`; the half that keeps a workflow from
 quietly going back to pushing `main` is `tests/test_no_workflow_pushes_to_main.py`.
@@ -188,11 +188,11 @@ def build_body(*, branch: str, title: str, files: list[str], stat: str, note: st
     lines = [MARKER, f"### {title}", ""]
     lines += [
         "Opened by `scripts/ci/land_change.py` because `main` requires "
-        "`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)` and `gate` on every commit that "
+        "`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate` and `audit` on every commit that "
         "lands there — a direct push from the workflow that produced this change is refused by "
         "the ruleset (`3 of 3 required status checks are expected`).",
         "",
-        f"**Auto-merge is enabled (squash):** GitHub merges this as soon as the three required "
+        f"**Auto-merge is enabled (squash):** GitHub merges this as soon as the four required "
         f"checks are green. Nobody has to be here for it. The branch `{branch}` is reused by the "
         "next run of this job, which force-pushes onto it and updates this pull request rather "
         "than opening a second one.",

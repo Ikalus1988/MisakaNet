@@ -47,14 +47,14 @@ jobs:
           python3 scripts/leaderboard_watch.py 2>&1
 
       - name: Land the snapshot through a pull request that merges itself
-        # Was `git push` — refused by the ruleset on `main`, which requires three status checks on
+        # Was `git push` — refused by the ruleset on `main`, which requires the status checks on
         # every commit that lands there and exempts no actor. This job fires on every push to main
         # and only writes when the snapshot moved, so its failure was invisible until the day it
         # had something to write. See docs/maintainer/automation-lands-via-pr.md.
         #
         # The `[skip ci]` marker this commit used to carry is gone, deliberately: GitHub honours it
-        # in a pull request title, which would suppress the *pull request's* own runs — the three
-        # required checks would never report and the auto-merge would wait forever.
+        # in a pull request title, which would suppress the *pull request's* own runs — the required
+        # checks would never report and the auto-merge would wait forever.
         # `land_change.py` refuses such a title for that reason. The post-merge run this no longer
         # suppresses is cheap and idempotent: it recomputes the same snapshot, finds the file
         # unchanged and exits 0 without opening anything.
@@ -63,6 +63,24 @@ jobs:
         run: |
           if [ ! -f data/leaderboard.json ]; then
             echo "no snapshot produced; nothing to land"
+            exit 0
+          fi
+          # This job fires on *every* push to main, and the snapshot really does move that often: 15 of
+          # the last 100 pull requests were these snapshots, a median of 84 minutes apart. Each one is a
+          # full pull-request lifecycle, and the landing is a standings page rather than a live feed, so
+          # **once a day** is the cadence the maintainer asked for. The recompute above still happens on
+          # every push; this only bounds how often the result is published. The value is a product
+          # decision: `tests/test_automated_prs_skip_llm_review.py` pins it, so change both together.
+          RATE_LIMIT_SECONDS=86400
+          # `git log` on a path with no history prints nothing and still exits 0, and comparing an empty
+          # string numerically aborts the step — which would turn a normal "nothing landed yet" into a
+          # red job. Normalise instead of trusting the command's exit code.
+          landed_at=$(git log -1 --format=%ct -- data/leaderboard.json 2>/dev/null | head -1)
+          case "$landed_at" in ''|*[!0-9]*) landed_at=0 ;; esac
+          now=$(date +%s)
+          if [ "$landed_at" -gt 0 ] && [ $((now - landed_at)) -lt "$RATE_LIMIT_SECONDS" ]; then
+            echo "the snapshot landed $(( (now - landed_at) / 60 )) minutes ago;"
+            echo "at most one landing every $((RATE_LIMIT_SECONDS / 60)) minutes — skipping this push."
             exit 0
           fi
           python3 scripts/ci/land_change.py \

@@ -20,6 +20,7 @@ jobs:
   pr-genius:
     if: |
       !github.event.pull_request.draft &&
+      !startsWith(github.head_ref, 'bot/') &&
       !contains(github.event.pull_request.labels.*.name, 'docs-only')
     runs-on: ubuntu-latest
     steps:
