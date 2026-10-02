@@ -67,16 +67,25 @@ def tracked_lesson_files(lessons_root: Path) -> list[Path] | None:
     git (an installed package, an exported tarball, a test fixture that is not a repository) gets the
     walk instead, which is exactly the old behaviour.
 
-    ``-c core.quotepath=false`` is load-bearing: without it git escapes non-ASCII paths as octal
-    inside quotes, and this repository has CJK lesson filenames. `scripts/push_preflight.py` records
-    the same lesson, learned the same way.
+    ``-c core.quotepath=false`` defends against a silent loss: without it git octal-escapes non-ASCII
+    paths inside quotes, so a CJK filename becomes a path that does not exist and the lesson disappears
+    from the index. This repository currently has **no** non-ASCII tracked path (an independent review
+    counted 0 of 2511 on 2026-10-02), so the flag is one character of insurance rather than a fix for a
+    present defect — `scripts/push_preflight.py` records the same lesson, and a test pins it with a
+    synthetic non-ASCII filename.
+
+    `errors="surrogateescape"` is not optional either: `git ls-files` writes raw bytes, `text=True`
+    decodes them with the locale codec, and `UnicodeDecodeError` is neither `OSError` nor
+    `SubprocessError` — so without it a single non-UTF-8 filename **crashed** this function where the
+    walk it replaced coped (found by the same review; the test below is the regression).
     """
     if not lessons_root.is_dir():
         return None
     try:
         proc = subprocess.run(
             ["git", "-c", "core.quotepath=false", "ls-files", "--", "."],
-            cwd=lessons_root, capture_output=True, text=True, check=False, timeout=60,
+            cwd=lessons_root, capture_output=True, text=True, errors="surrogateescape",
+            check=False, timeout=60,
         )
     except (OSError, subprocess.SubprocessError):  # git missing, or not a repository
         return None
@@ -85,15 +94,20 @@ def tracked_lesson_files(lessons_root: Path) -> list[Path] | None:
     found = [lessons_root / line for line in proc.stdout.splitlines() if line.endswith(".md")]
     found = [path for path in found if path.is_file()]
     if not found:
-        # "Git says there are no lessons here" is not an answer this can act on. It is either a tree
-        # that genuinely has none (in which case the walk below also finds none, and nothing changes)
-        # or a `subprocess.run` that no longer reaches git — which is a real shape in this repository:
-        # tests stub `subprocess.run` globally (the module object is shared), and a stub returning
-        # success with no output turned the rebuilt index **empty**. Measured on 2026-10-02: PR #2708's
-        # CI legs all failed in `test_no_test_writes_repo_data.py` with "the redirected index … was
-        # never written, so the rebuild did not run", because the generator had enumerated nothing.
-        # A caller who wants untracked files excluded still gets that: git answers with paths whenever
-        # it can, and this branch is only reached when it answers with none.
+        # "Git says there are no lessons here" is not an answer this can act on, because two very
+        # different situations produce it. One is a `subprocess.run` that no longer reaches git: tests
+        # stub that module object globally, and a stub returning success with no output turned the
+        # rebuilt index **empty** (measured 2026-10-02: this PR's CI legs all failed in
+        # `test_no_test_writes_repo_data.py` with "the redirected index … was never written, so the
+        # rebuild did not run"). The other is a tree where git legitimately tracks nothing under
+        # `lessons/` — for instance a repository that ignores that directory — and there the walk is the
+        # only thing that finds anything, at the cost of picking up untracked files again. That second
+        # case is worth naming rather than glossing: an independent review built it and showed the walk
+        # returning disk-only lessons. It is not a regression against the previous behaviour (the walk
+        # *was* the previous behaviour), and CI and the hosted worker are unaffected — both check out a
+        # clean tree where `lessons/` is tracked, so git answers with paths and this branch is not
+        # reached. A caller who needs untracked files excluded needs git to answer, which is exactly
+        # what it does whenever it can.
         return None
     return found
 

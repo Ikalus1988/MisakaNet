@@ -12,10 +12,16 @@ git (an installed package, an exported tarball, a fixture that is not a reposito
 Both halves matter, and both are tested here — including the flag that is easy to forget:
 `-c core.quotepath=false`. Without it git octal-escapes non-ASCII paths inside quotes, so a CJK lesson
 filename turns into a path that does not exist and the lesson silently vanishes from the index.
-`scripts/push_preflight.py` records the same lesson.
+`scripts/push_preflight.py` records the same lesson. (This repository has no non-ASCII tracked path
+today — an independent review counted 0 of 2511 — so the rule is insurance, not a present defect.)
+
+And `errors="surrogateescape"`: `git ls-files` emits raw bytes, and a `text=True` decode without it
+raises `UnicodeDecodeError`, which is neither `OSError` nor `SubprocessError` — the previous walk coped
+with such names, this function crashed on them until the review found it.
 """
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -109,3 +115,26 @@ def test_a_stubbed_subprocess_does_not_empty_the_index(monkeypatch):
     assert len(lesson_files) > 400, (
         f"a stubbed subprocess emptied the corpus ({len(lesson_files)} lessons); the walk must take "
         "over when git cannot answer")
+
+
+def test_a_non_utf8_filename_does_not_crash_the_lookup(tmp_path: Path):
+    """An independent review's counterexample: `git ls-files` writes raw bytes.
+
+    `subprocess.run(..., text=True)` decodes with the locale codec, and `UnicodeDecodeError` is not an
+    `OSError` or a `SubprocessError`, so it slipped past the `except` clause that exists for "git is
+    missing" and `canonical_lessons` raised — while the `rglob` walk it replaced handled the same name
+    through `surrogateescape`. One byte in the wrong place turned the corpus lookup into a crash.
+    """
+    repo = tmp_path / "repo"
+    contrib = repo / "lessons" / "contrib"
+    contrib.mkdir(parents=True)
+    (contrib / "ok.md").write_text(LESSON, encoding="utf-8")
+    raw = os.fsencode(contrib) + b"/\xff\xfe-bad.md"
+    with open(raw, "wb") as handle:
+        handle.write(LESSON.encode("utf-8"))
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+
+    got = canonical_lessons(repo / "lessons")           # must not raise
+
+    assert any(path.name == "ok.md" for path in got), "the readable lesson vanished from the index"
