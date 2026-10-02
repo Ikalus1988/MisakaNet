@@ -7,9 +7,9 @@ name: Documented Gates Ratchet
 # document rests on could change with nobody noticing — and a reader would take a stale list of
 # the checks that block a merge as current.
 #
-# It did drift. A previous session removed twenty-three hand-written counts of "the required
-# checks" out of the repository's prose, and the surviving one sat in *this* document, five lines
-# below the command that would have made it unnecessary. That is the argument for what this
+# It did drift. A previous session removed the hand-written counts of "the required checks" out
+# of the repository's prose — twenty-two such lines — and the surviving one sat in *this*
+# document, five lines below the command that would have made it unnecessary. That is the argument for what this
 # workflow does: it checks the authoritative set against the authoritative document, rather than
 # grepping two thousand files for numerals — a heuristic that keeps finding new shapes to miss,
 # and that turns every document in the repository into somewhere CI can fail.
@@ -77,14 +77,22 @@ jobs:
           # `cmd || code=$?` rather than capturing `$?` straight after: this shell runs with
           # `set -e`, where a bare non-zero status ends the step before the next line runs.
           python3 scripts/check_documented_gates.py > /tmp/diff.txt 2> /tmp/reason.txt || code=$?
+          # The terminators are randomised. A context whose *name* contains a newline could contain
+          # the literal `DIFF_EOF`, which would close the heredoc early; the runner then rejects the
+          # whole output file as malformed and **every** output is discarded, `compare_exit`
+          # included — so a real drift would go red with no issue and no reason. No ordinary diff
+          # line can collide (`+ `/`- ` prefixes rule that out), but a newline can, and the cost of
+          # not defending is a silent week.
+          DIFF_EOF="DIFF_$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+          REASON_EOF="REASON_$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \n')"
           {
             echo "compare_exit=${code:-0}"
-            echo 'diff<<DIFF_EOF'
+            echo "diff<<$DIFF_EOF"
             cat /tmp/diff.txt
-            echo DIFF_EOF
-            echo 'reason<<REASON_EOF'
+            echo "$DIFF_EOF"
+            echo "reason<<$REASON_EOF"
             cat /tmp/reason.txt
-            echo REASON_EOF
+            echo "$REASON_EOF"
           } >> "$GITHUB_OUTPUT"
           cat /tmp/diff.txt /tmp/reason.txt
 

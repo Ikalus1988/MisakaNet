@@ -64,7 +64,7 @@ worth knowing before treating a green page as coverage.
 
 | Check | Workflow | Why it is advisory |
 |---|---|---|
-| **the other eight `test (…)` legs** | `ci-cross-platform.yml` | Only `ubuntu-latest, 3.11` is in the ruleset — the windows/macos legs exist to catch platform drift and merge red (measured twice on 2026-09-28 alone) |
+| **the other `test (…)` legs** | `ci-cross-platform.yml` | Only `ubuntu-latest, 3.11` is in the ruleset — the windows/macos legs exist to catch platform drift and merge red (measured twice on 2026-09-28 alone) |
 | **MCP Endpoint Stress Tests** | `mcp-stress.yml` | The worker suite, not in the required set — see the note above |
 | **CodeQL (python / javascript-typescript)** | GitHub default | Security queries; findings do not block |
 | **Agent Quality Score / Validate Lesson Schema** | `pr-checks.yml` | `continue-on-error: true` |

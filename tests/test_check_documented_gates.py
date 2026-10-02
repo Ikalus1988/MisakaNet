@@ -44,6 +44,7 @@ import io
 import json
 import re
 import shutil
+import string
 import subprocess
 import sys
 import tempfile
@@ -69,11 +70,24 @@ WORKFLOW = REPO / ".github" / "workflows" / "check-documented-gates.yml"
 # and `一条命令` ("one command") are counts of something else — and an unanchored
 # `[一二三四五六七八九十]\s*条` is *broader* than the repo-wide scanner it replaced, which anchored on
 # `required|sign-off|status check|context`. A narrower scope does not pay for a looser anchor.
+#
+# The gap between the numeral and the noun is markdown, and it is the gap that matters: `**four**`
+# checks, `四个门禁`, `四项必需检查`, `4 条检查`. The first version of this pattern allowed only
+# whitespace and a four-word adjective list there, which meant it missed **the sentence this very
+# branch deleted** from the section it guards — and a test that misses the real text is worse than
+# no test, because it reads as coverage. Every phrase below is taken from this repository, not
+# invented for the test.
 COUNT_CLAIM = re.compile(
     r"(\b(?:one|two|three|four|five|six|seven|eight|nine|ten)\b|\d+)\s*"
-    r"(?:mandatory\s+|required\s+|hard\s+|deterministic\s+)*(?:gates?|checks?)\b"
-    r"|[一二三四五六七八九十]\s*条\s*(?:必需|必须|硬性|强制)?\s*"
-    r"(?:门禁|检查|门禁检查|必需检查|状态检查|硬门禁)",
+    r"(?:\*\*|__|`)*\s*"                          # emphasis and code marks around the numeral
+    r"(?:mandatory|required|hard|deterministic|blocking|enforced|main\s+branch\s+)?\s*"
+    r"(?:\*\*|__|`)*\s*"
+    r"(?:required\s+|status\s+|mandatory\s+)?"
+    r"(?:gates?|checks?|contexts?)\b"
+    r"|[一二三四五六七八九十\d]+\s*[条个项]\s*"
+    r"(?:必需|必须|硬性|强制|状态)?\s*"
+    r"(?:门禁|检查|门禁检查|必需检查|状态检查|硬门禁)"
+    r"|(?:必需检查|状态检查|门禁)\s*(?:有|共|为)\s*[一二三四五六七八九十\d]+\s*[条个项]",
     re.IGNORECASE,
 )
 
@@ -162,7 +176,11 @@ def test_the_marker_lookup_pages_and_cannot_match_a_pull_request() -> None:
       addresses a pull request number — so a PR whose description happened to contain this marker
       (plausible for any PR touching this very workflow) would have its body replaced.
 
-    Read off the workflow rather than described, so deleting either guard reddens this.
+    Read off the **parsed call arguments**, not off the script text. The first version asserted
+    `"per_page: 100" in script`, and the workflow's own explanatory comment contains that literal
+    string — so changing the code to `per_page: 50` left the test green. This is the anti-pattern
+    `tests/test_workflow_env_is_used.py` records as having happened five times in this repository's
+    gates, and it bit a test in a file whose docstring claimed "deleting either guard reddens this".
     """
     _, script = next(
         (name, body) for name, body in _script_bodies(WORKFLOW.read_text(encoding="utf-8"))
@@ -175,8 +193,39 @@ def test_the_marker_lookup_pages_and_cannot_match_a_pull_request() -> None:
         "`listForRepo` returns pull requests too, and a PR's description is addressable as an "
         "issue — one containing this marker would be overwritten"
     )
-    # and the paginated call must not have been re-broken by dropping the per_page
-    assert "per_page: 100" in script
+
+    # The call, with its comments gone. A substring search over the raw script cannot tell the
+    # two apart, and the comment is the one that is easy to leave behind when the code changes.
+    code = "\n".join(line for line in script.splitlines() if not line.strip().startswith("//"))
+    call = code[code.index("listForRepo"):]
+    call = call[:call.index(")") + 1]
+    assert re.search(r"per_page:\s*100\b", call), (
+        f"the paginated call's own page size was not found in {call!r}"
+    )
+
+
+def test_the_compare_step_keeps_continue_on_error() -> None:
+    """The load-bearing assumption nobody could verify from the repository.
+
+    Both later steps carry `if:` conditions with no status function, so GitHub evaluates the
+    **implicit `success()`** — and an `if:` on a step that was skipped is false. `continue-on-error`
+    is the only thing giving the compare step a `success` *conclusion* while its `outcome` is
+    `failure`, which is what makes the two downstream steps run at all. Remove it and the job ends
+    at the compare step: a real drift goes red with **no issue opened and no reason shown**, which
+    is the one outcome this whole branch exists to prevent.
+
+    This is a configuration value, not behaviour, so no test of the script can catch it losing.
+    """
+    yaml = pytest.importorskip("yaml", reason="PyYAML reads the workflow's steps")
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    compare = next(
+        step for step in workflow["jobs"]["ratchet"]["steps"] if step.get("id") == "compare"
+    )
+    assert compare.get("continue-on-error") is True, (
+        "the compare step must keep continue-on-error: the downstream `if:` conditions have no "
+        "status function, so they inherit the implicit success() and are skipped entirely "
+        "without it — a drift would go red with no issue and no reason"
+    )
 
 
 def test_the_count_pattern_catches_the_claims_it_claims_to() -> None:
@@ -186,7 +235,13 @@ def test_the_count_pattern_catches_the_claims_it_claims_to() -> None:
     makes the pattern narrower, this goes red instead.
     """
     for phrase in ("the 4 required checks", "four hard gates", "all three gates",
-                   "五条必需检查", "四条门禁", "the Four required checks", "三条状态检查"):
+                   "五条必需检查", "四条门禁", "the Four required checks", "三条状态检查",
+                   # Verbatim from the base commit of this branch — the sentences it deleted.
+                   "Measured that way on 2026-09-29, **four** checks block a merge:",
+                   "requires **four** status checks",
+                   "三个必需检查",
+                   "the 4 required status checks", "4 blocking checks", "the 4 contexts",
+                   "四项必需检查", "四个门禁", "4 条检查", "必需检查有 4 条"):
         assert re.search(COUNT_CLAIM, phrase), f"the pattern misses a real claim: {phrase!r}"
     for phrase in ("Two notes on what those commands measure",
                    "Three notes that have each cost someone an afternoon",
@@ -204,6 +259,191 @@ def test_advisory_tables_below_the_heading_are_not_counted() -> None:
     assert "coverage" not in documented
     for context in documented:
         assert "Hard Gates" not in context
+
+
+def test_a_duplicate_heading_refuses_to_guess_which_table_is_authoritative() -> None:
+    """The natural edit to this file is the dangerous one.
+
+    The document's subject is now "this table is parsed by a ratchet", so the most natural
+    documentation change is a fenced example of the table format in the preamble. A substring search
+    for the heading finds that example, reads its placeholder cells as contexts, and reports that
+    **all four gates are missing and one invented** — on a document whose table is byte-for-byte
+    correct. Refusing on ambiguity is the only safe answer: two headings means the tool cannot know
+    which one is authoritative, and guessing is how it opened an issue about a correct file.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        original = DOC.read_text(encoding="utf-8")
+        example = (
+            "## 门禁在哪里\n\n"
+            "表格长这样：\n\n"
+            f"```\n{checker.SECTION}\n\n| Check | Workflow |\n|---|---|\n| **example** | `x.yml` |\n```\n"
+        )
+        document = Path(tmp) / "d.md"
+        document.write_text(original + "\n" + example, encoding="utf-8")
+        saved = Path(tmp) / "r.json"
+        saved.write_text(json.dumps(RULESET_RESPONSE), encoding="utf-8")
+        code, out, err = run_cli(["--from-file", str(saved), "--doc", str(document)])
+
+    assert code == checker.EXIT_CANNOT_CHECK
+    assert out == "", "an example in the preamble was read as the real table"
+    assert "appears as a heading" in err
+
+
+def test_a_preamble_mention_of_the_heading_is_not_another_heading() -> None:
+    """The safe variant of the shape above, and it must still pass.
+
+    Writing the section name inside a sentence — "the table under `## Hard Gates (must pass)` is the
+    single statement of the set" — is the documentation edit somebody will actually make, and it
+    leaves exactly one heading. A substring search would have found the sentence and parsed
+    nothing; the line match ignores it and the document still verifies.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        document = Path(tmp) / "d.md"
+        document.write_text(
+            f"The table under `{checker.SECTION}` below is the single statement of the set.\n\n"
+            + DOC.read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        saved = Path(tmp) / "r.json"
+        saved.write_text(json.dumps(RULESET_RESPONSE), encoding="utf-8")
+        code, out, _ = run_cli(["--from-file", str(saved), "--doc", str(document)])
+
+    assert code == checker.EXIT_AGREE
+    assert out.startswith(checker.OK_PREFIX)
+
+
+def test_a_readable_ruleset_that_is_not_enforcing_is_not_a_match() -> None:
+    """`docs/ci-gates.md` is titled *Hard Gates (must pass)*. A disabled ruleset is decorative.
+
+    A set comparison asks *which* checks are named. It cannot tell a ruleset that blocks a merge
+    from one that is switched off, aimed at tags, or exempted for some actors — and all three are
+    stated in the document's own second paragraph, so all three are claims a reader relies on. With
+    them unchecked, turning the ruleset off left the ratchet reporting a cheerful green.
+    """
+    for field, value, expected in (
+        ("enforcement", "disabled", "enforcement"),
+        ("enforcement", "evaluate", "enforcement"),
+        ("target", "tag", "target"),
+    ):
+        payload = dict(RULESET_RESPONSE, **{field: value})
+        with tempfile.TemporaryDirectory() as tmp:
+            saved = Path(tmp) / "r.json"
+            saved.write_text(json.dumps(payload), encoding="utf-8")
+            code, out, err = run_cli(["--from-file", str(saved), "--doc", str(DOC)])
+        assert code == checker.EXIT_CANNOT_CHECK, f"{field}={value!r} reported a match"
+        assert out == "", f"{field}={value!r} rendered a verdict"
+        assert expected in err
+
+    payload = dict(RULESET_RESPONSE, bypass_actors=[{"actor_id": 136884451, "actor_type": "Integration"}])
+    with tempfile.TemporaryDirectory() as tmp:
+        saved = Path(tmp) / "r.json"
+        saved.write_text(json.dumps(payload), encoding="utf-8")
+        code, out, err = run_cli(["--from-file", str(saved), "--doc", str(DOC)])
+    assert code == checker.EXIT_CANNOT_CHECK
+    assert "bypass_actors" in err
+
+
+def test_decoration_is_stripped_from_both_sides_of_the_comparison() -> None:
+    """One-sided normalisation made some live context permanently undocumentable.
+
+    The document's cells were stripped of `` ` ``, `*`, `_` and the ruleset's contexts were not, so
+    a context ending in `_` — markdown's emphasis marker — could never be written down in the table
+    and the comparison failed forever with no edit that could fix it.
+    """
+    # The enforcement fields are carried even though they are not the point here: a payload
+    # without them is refused by design, and weakening that check to suit a fixture would be the
+    # wrong trade for a check whose whole job is failing closed.
+    payload = {
+        **RULESET_RESPONSE,
+        "rules": [{"type": "required_status_checks", "parameters": {
+            "required_status_checks": [{"context": "gate_"}]}}],
+    }
+    assert checker.contexts_from_ruleset(payload) == ["gate"], (
+        "the ruleset side was not normalised"
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        document = Path(tmp) / "d.md"
+        document.write_text(
+            f"# x\n\n{checker.SECTION}\n\n| Check | W |\n|---|---|\n| `gate_` | `a.yml` |\n",
+            encoding="utf-8",
+        )
+        saved = Path(tmp) / "r.json"
+        saved.write_text(json.dumps(payload), encoding="utf-8")
+        code, out, _ = run_cli(["--from-file", str(saved), "--doc", str(document)])
+    assert code == checker.EXIT_AGREE, f"a documented `gate_` did not match the live `gate_`: {out}"
+
+
+def test_an_integer_one_from_the_script_cannot_become_a_verdict() -> None:
+    """`sys.exit(1)` inside `main` would exit 1 — this script's own drift code.
+
+    The guard was written as "an integer code is argparse talking", which is true of 0 and 2 and
+    false of 1. Latent today because `main` has no `sys.exit(1)`, and that is exactly the kind of
+    fact that stops being true when someone adds an argument.
+    """
+    for code in (1, 3, 99):
+        original = checker.main
+        checker.main = lambda argv=None: (_ for _ in ()).throw(SystemExit(code))
+        try:
+            got, out, _ = run_cli(["--doc", str(DOC)])
+        finally:
+            checker.main = original
+        assert got == checker.EXIT_BROKEN, f"SystemExit({code}) escaped as {got}"
+        assert out == ""
+
+
+def test_the_detector_survives_a_regex_literal_containing_a_quote() -> None:
+    """Third route to the same miss, and the one that hides best.
+
+    `/['"]/` is not a string. A quote-naive scanner opens one at the `[`, never closes it, and the
+    phantom state blinds the detector for the **rest of the body** — a three-line script reports
+    zero offenders. Same failure as the escaped-quote defect, reached through a different door.
+    """
+    body = "const q = /['\"]/;\nconst a = 1;\nconst b = '${{ steps.x.outputs.d }}';"
+    assert _quoted_substitutions(body), (
+        "a regex literal opened a phantom string and hid a real splice two lines later"
+    )
+    # Both tokenizers must know about regex literals, and that redundancy is deliberate: the stripper
+    # and the detector are two independent walks over the same line, and an earlier version taught
+    # only one of them — which is how the same defect got in twice.
+    #
+    # The input here is a regex that *contains a comment marker*, which is the only case where the
+    # stripper's handling changes its output. Asserting on `/['"]/` alone would pass either way,
+    # because a line with no `//` survives the naive walk unchanged — a test that passes for the
+    # wrong reason is the thing this branch keeps having to undo.
+    slashes = "const u = /https?:\\/\\//;"
+    assert _strip_js_comments(slashes) == slashes, (
+        f"a // inside a regex literal was read as a comment: {_strip_js_comments(slashes)!r}"
+    )
+    assert not _quoted_substitutions(slashes + "\nconst b = process.env.DIFF;")
+    # ...and division is not mistaken for a regex
+    assert not _quoted_substitutions("const r = (n) / 2;\nconst b = process.env.DIFF;")
+    assert not _quoted_substitutions("const r = 4 / 2;\nconst b = process.env.DIFF;")
+
+
+def test_the_output_heredoc_terminators_are_not_a_fixed_string() -> None:
+    """A context whose name contains the terminator would otherwise discard every output.
+
+    `report()` renders each difference as `    + <context>`, so no ordinary line can equal
+    `DIFF_EOF` — but a context *containing a newline* could, the heredoc would close early, the
+    runner would reject the whole output file as malformed, and **every** output would be
+    discarded including `compare_exit`. A real drift would then go red with no issue and no reason.
+    Randomising the terminator costs two lines and removes the possibility rather than reasoning
+    about it.
+    """
+    # The heredoc lives in the compare step's `run:` block, not in a github-script body, so the
+    # script extractor is the wrong reader here.
+    yaml = pytest.importorskip("yaml", reason="PyYAML reads the workflow's steps")
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    compare = next(
+        step for step in workflow["jobs"]["ratchet"]["steps"] if step.get("id") == "compare"
+    )
+    script = compare["run"]
+    code_lines = [line for line in script.splitlines() if "<<" in line or "EOF=" in line]
+    assert code_lines, "the heredoc block was not found in the compare step"
+    assert not any(re.search(r"<<\s*['\"]?[A-Z_]*EOF\b", line) for line in code_lines), (
+        f"a fixed heredoc terminator is still in use: {code_lines}"
+    )
+    assert "urandom" in script, "the terminators must be randomised per run"
 
 
 def test_a_renamed_or_missing_section_fails_loudly() -> None:
@@ -484,6 +724,12 @@ def _strip_js_comments(body: str) -> str:
     `"x \" // not a comment"` closes the string at the escaped quote, the `//` is then read as a
     comment, the line truncates, and a **real** splice later on the same line goes unseen. Both
     halves of that were reproduced before this was fixed.
+
+    **Regex literals** are the third route to the same miss, and the one that hides best: `/['"]/`
+    is not a string, but a quote-naive scanner opens one that never closes, and the phantom state
+    then blinds the detector for the *rest of the body* — a three-line script reports zero
+    offenders. So a `/` is only treated as a regex when a regex can actually start there and end on
+    this line; otherwise it stays an ordinary character and a division sign is not mistaken for one.
     """
     out: list[str] = []
     in_block = False
@@ -514,6 +760,15 @@ def _strip_js_comments(body: str) -> str:
                 continue
             if line.startswith("//", index):
                 break
+            # A regex literal, checked *after* the comment forms: `//` reads as an empty regex
+            # to a scanner that looks for a closing slash first, and swallowing it means the rest
+            # of the line is parsed as code.
+            if line[index] == "/" and result[-1:] not in (")", "]", "}", *string.digits):
+                end = _regex_end(line, index)
+                if end < len(line):  # a regex that closes on this line, not a division
+                    result.append(line[index:end + 1])
+                    index = end + 1
+                    continue
             char = line[index]
             if char in "'\"`":
                 in_string = char
@@ -521,6 +776,25 @@ def _strip_js_comments(body: str) -> str:
             index += 1
         out.append("".join(result))
     return "\n".join(out)
+
+
+def _regex_end(line: str, start: int) -> int:
+    """Where a regex literal opened at `start` closes on this line, or `len(line)`."""
+    index = start + 1
+    in_class = False
+    while index < len(line):
+        char = line[index]
+        if char == "\\":
+            index += 2
+            continue
+        if char == "[":
+            in_class = True
+        elif char == "]":
+            in_class = False
+        elif char == "/" and not in_class:
+            return index
+        index += 1
+    return len(line)
 
 
 def _quoted_substitutions(body: str) -> list[str]:
@@ -545,6 +819,15 @@ def _quoted_substitutions(body: str) -> list[str]:
             if line.startswith("${{", index) and state in ("'", '"'):
                 offenders.append(f"{state}-quoted: {line.strip()}")
                 break
+            # The same regex-literal skip as the comment stripper. Two independent tokenizers over
+            # the same line is how this defect got in twice: the stripper learned about regexes and
+            # the detector, which re-walks the stripped text with its own state machine, did not.
+            if state == "" and line[index] == "/" and line[index:index + 2] not in ("//", "/*") \
+                    and line[index - 1:index] not in (")", "]", "}", *string.digits):
+                end = _regex_end(line, index)
+                if end < len(line):
+                    index = end + 1
+                    continue
             char = line[index]
             if char == "\\":
                 index += 2
