@@ -433,3 +433,200 @@ def test_the_matrix_rule_leaves_single_os_workflows_alone():
     single = ("name: sample\non:\n  pull_request:\njobs:\n  test:\n    runs-on: ubuntu-latest\n"
               "    strategy:\n      matrix:\n        python-version: ['3.12', '3.13']\n")
     assert unbounded_matrix_workflows({"sample.yml": single}) == []
+
+
+# ── rule: a workflow must not subscribe to an event its own runs re-emit (2026-10-02) ─────────────
+#
+# `check_suite: [completed]` and `check_run: [completed]` fire for the check suites and check runs
+# that GitHub Actions itself creates — and **every workflow run creates one**. A workflow that
+# subscribes to either is therefore (at least partly) its own trigger:
+#
+#     run → its own check suite / check run completes → check_suite|check_run → run → …
+#
+# Measured on `dedc383b`, main's tip from 04:07:48Z to 05:22:42Z (the next commit landed at
+# 05:22:42Z, so nobody pushed to it during either window below):
+#
+# * **280 check suites** on that one commit; **276 are from `github-actions`**. The only non-Actions
+#   suite that ever *completed* is `cloudflare-workers-and-pages` at 04:08:19Z (the other three never
+#   left `queued`).
+# * **276 check runs** on it, and **0 of them carry a `pull_requests` entry** — so `pull_requests` is
+#   not a filter that can exclude this repository's own re-emitted events.
+# * the three subscribers started **57 distinct seconds** of the day at the *identical* timestamp.
+# * `Auto-Merge Lessons` started **37 of its 39** `check_suite` runs on that commit within 60 s of a
+#   completed `github-actions` suite on the same commit (the other two within 748 s).
+#
+# So a subscription is allowed only when the workflow also carries a job `if:` that *proves* it
+# excludes its own re-emitted events. Two guards qualify:
+#
+# * `check_suite` — a test on `check_suite.app.slug`. Actions' own suites carry
+#   `app.slug == 'github-actions'`, so naming any other app excludes them
+#   (`workers-builds-watch.yml` admits only `cloudflare-workers-and-pages`).
+# * `check_run` — a test on `check_run.app.slug`, or a `check_run.name != '<own>'` against one of
+#   *this workflow's own* check-run names. GitHub names a job's check run after `jobs.<id>.name`, and
+#   after the job id when no `name:` is given (the job id of `pr-quality-gate.yml` is
+#   `quality-labels`, which is exactly the check run it used to re-trigger on). The coupling is the
+#   point: renaming that job renames the check run, so the guard has to be updated with it.
+#
+# This rule reads the workflow files rather than the run history on purpose — the run history is what
+# it exists to keep clean, and the history of a repository this busy is not available to a reader of
+# a commit.
+SELF_TRIGGERING_EVENTS = {"check_suite", "check_run"}
+
+
+def _workflow_jobs(spec: dict) -> dict:
+    jobs = spec.get("jobs")
+    return jobs if isinstance(jobs, dict) else {}
+
+
+def _job_guard_text(spec: dict) -> str:
+    """Every job-level `if:` in the workflow, joined (the guards live at job level, not trigger level)."""
+    return "\n".join(
+        job["if"] for job in _workflow_jobs(spec).values()
+        if isinstance(job, dict) and isinstance(job.get("if"), str))
+
+
+def _own_check_run_names(spec: dict) -> set[str]:
+    """The check-run names this workflow's own jobs produce (`jobs.<id>.name`, else the job id)."""
+    names = set()
+    for job_id, job in _workflow_jobs(spec).items():
+        declared = job.get("name") if isinstance(job, dict) else None
+        names.add(declared if isinstance(declared, str) else str(job_id))
+    return names
+
+
+def _excludes_own_re_emitted_event(spec: dict, event: str) -> bool:
+    """Does the workflow carry a guard that proves it is not its own trigger for `event`?"""
+    guards = _job_guard_text(spec)
+    if event == "check_suite":
+        # Actions' own suites are `app.slug == 'github-actions'`; naming another app excludes them.
+        return "check_suite.app.slug" in guards
+    if "check_run.app.slug" in guards:
+        return True
+    return any(
+        re.search(rf"check_run\.name\s*!=\s*['\"]{re.escape(own)}['\"]", guards)
+        for own in _own_check_run_names(spec))
+
+
+def self_triggering_triggers(workflows: dict[str, str]) -> list[str]:
+    problems: list[str] = []
+    for name, text in workflows.items():
+        try:
+            spec = yaml.safe_load(text) or {}
+        except Exception:
+            continue  # malformed YAML is somebody else's rule
+        if not isinstance(spec, dict):
+            continue
+        for event in sorted(_triggers(text) & SELF_TRIGGERING_EVENTS):
+            if not _excludes_own_re_emitted_event(spec, event):
+                problems.append(
+                    f"{name}: `{event}: [completed]` also fires for the check runs/suites this "
+                    f"repository's own workflows create — including this workflow's own — so the run "
+                    f"re-emits the event that started it. Add a job `if:` that excludes them (for "
+                    f"`check_suite`, a `check_suite.app.slug` other than `github-actions`; for "
+                    f"`check_run`, a `check_run.name != '<this workflow's own job name>'`), or drop "
+                    f"the trigger")
+    return problems
+
+
+def test_no_workflow_triggers_on_an_event_its_own_runs_re_emit():
+    problems = self_triggering_triggers(load_workflows())
+    assert not problems, (
+        "these workflows are (at least partly) their own trigger:\n  " + "\n  ".join(problems))
+
+
+# The two shapes this rule was written for, verbatim from `dedc383b`. Literals rather than a
+# `git show`, because the checkout is shallow and that commit will fall out of it: the detector has to
+# stay able to see the shape that was removed, on any checkout, or the rule is only green because
+# nobody looks.
+BEFORE_AUTO_MERGE_LESSONS = """name: Auto-Merge Lessons
+on:
+  pull_request:
+    types: [labeled, synchronize, ready_for_review]
+  check_suite:
+    types: [completed]
+jobs:
+  auto-merge-lessons:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'pull_request'
+      || github.event.check_suite.pull_requests[0].number != null
+      || github.event.check_suite.head_branch != github.event.repository.default_branch
+"""
+
+BEFORE_PR_QUALITY_GATE = """name: PR Quality Gate
+on:
+  check_run:
+    types: [completed]
+  pull_request:
+    types: [synchronize]
+jobs:
+  quality-labels:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'check_run' || github.event_name == 'pull_request'
+"""
+
+
+def test_the_self_trigger_rule_catches_the_two_triggers_this_change_removed():
+    """Positive control — the whole reason this rule exists.
+
+    Verbatim `dedc383b`: the `check_suite` subscription whose `if:` only looked for an attached pull
+    request (empty on `main`), and the `check_run` subscription whose `if:` accepted every check run,
+    including the `quality-labels` one it creates itself. A rule that cannot see these is green for
+    the same reason the loop was invisible.
+    """
+    problems = self_triggering_triggers({
+        "auto-merge-lessons.yml": BEFORE_AUTO_MERGE_LESSONS,
+        "pr-quality-gate.yml": BEFORE_PR_QUALITY_GATE,
+    })
+    assert any("auto-merge-lessons.yml" in p and "check_suite" in p for p in problems), problems
+    assert any("pr-quality-gate.yml" in p and "check_run" in p for p in problems), problems
+
+
+def test_a_pull_requests_guard_does_not_exclude_this_repositorys_own_events():
+    """`pull_requests` is empty for every check run and suite on `main`, so it filters nothing.
+
+    Measured 2026-10-02 on `dedc383b`: 0 of 276 check runs carry one, and all 71 `check_run`-triggered
+    `PR Quality Gate` runs had `head_branch: main` with an empty `pull_requests`. This is the guard the
+    old `auto-merge-lessons.yml` believed it had.
+    """
+    guard = ("name: X\non:\n  check_suite:\n    types: [completed]\njobs:\n  x:\n"
+             "    runs-on: ubuntu-latest\n"
+             "    if: github.event.check_suite.pull_requests[0].number != null\n")
+    assert self_triggering_triggers({"x.yml": guard}), (
+        "a `pull_requests` guard does not exclude the events this repository's own runs emit — that "
+        "array is empty on `main`")
+
+
+def test_the_self_trigger_rule_accepts_the_guards_this_change_kept():
+    """The other direction: the guards that stayed have to pass, or the rule is unlivable.
+
+    Both are the guarded forms shipped by this change, so this is also the assertion that the rule and
+    the repository agree on what "proves it is not self-triggering" means.
+    """
+    keep = {
+        "pr-quality-gate.yml": (
+            "name: PR Quality Gate\non:\n  check_run:\n    types: [completed]\njobs:\n"
+            "  quality-labels:\n    runs-on: ubuntu-latest\n"
+            "    if: >-\n      github.event.check_run.name != 'quality-labels'\n"
+            "      && github.event.check_run.pull_requests[0].number != null\n"),
+        "workers-builds-watch.yml": (
+            "name: Site build watch\non:\n  check_suite:\n    types: [completed]\njobs:\n"
+            "  watch:\n    runs-on: ubuntu-latest\n"
+            "    if: >-\n      github.event_name != 'check_suite'\n"
+            "      || github.event.check_suite.app.slug == 'cloudflare-workers-and-pages'\n"),
+    }
+    assert self_triggering_triggers(keep) == [], self_triggering_triggers(keep)
+
+
+def test_the_own_check_run_guard_is_read_against_the_workflows_own_job_names():
+    """A `check_run.name` guard that names somebody *else's* check run is not a self-exclusion.
+
+    The rule derives the names to exclude from the workflow's own jobs, so a guard naming a check run
+    this workflow does not produce must still be reported — otherwise the guard could be about the
+    wrong check run and the rule would not notice.
+    """
+    someone_elses = ("name: Y\non:\n  check_run:\n    types: [completed]\njobs:\n  y:\n"
+                     "    runs-on: ubuntu-latest\n"
+                     "    if: github.event.check_run.name != 'codecov'\n")
+    assert self_triggering_triggers({"y.yml": someone_elses}), (
+        "excluding a check run this workflow does not produce does not exclude its own")

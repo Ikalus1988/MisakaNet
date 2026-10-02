@@ -28,14 +28,22 @@
 | `pull_request: labeled` | 打标签的瞬间（这是"我同意自动合并"的入口） |
 | `pull_request: synchronize` | 每次 push 新提交（这是**主力**触发路径：检查重启后会再判一次） |
 | `pull_request: ready_for_review` | draft 转正 |
-| `check_suite: completed` | 兜底：某个检查套件跑完时再判一次 |
 
-> ⚠️ **关于 `check_suite` 的实话**：社区多份报告（[discussion #26169](https://github.com/orgs/community/discussions/26169)、
-> [#26236](https://github.com/orgs/community/discussions/26236)）指出，**由 GitHub Actions 自己创建的
-> check suite 完成时不会触发 `check_suite` 工作流**，只有别的 GitHub App 产生的套件才会。
-> 本仓的机械检查恰好都是 Actions 工作流，所以这条触发**很可能根本不响**——它写在那里是零成本的兜底，
-> **真正干活的是 `synchronize` 与 `ready_for_review`**。也就是说：检查全绿之后如果没有任何新事件，
-> 合并可能不会自动发生，需要人手动合一次（这也是"安全的一侧"）。
+> ⚠️ **`check_suite: completed` 那条兜底已在 2026-10-02 删除**。它原本依据的是社区报告
+> （[discussion #26169](https://github.com/orgs/community/discussions/26169)、
+> [#26236](https://github.com/orgs/community/discussions/26236)）里的说法：**由 GitHub Actions
+> 自己创建的 check suite 完成时不会触发 `check_suite` 工作流**，只有别的 GitHub App 产生的套件才会。
+> **那个说法在本仓是假的**。实测（`dedc383b`，main 从 04:07:48Z 到 05:22:42Z 的 tip）：
+>
+> * 该 commit 上有 **280 个 check suite，其中 276 个来自 `github-actions`**；非 Actions 的 4 个里
+>   只有 `cloudflare-workers-and-pages` 真正完成过（04:08:19Z），另外 3 个一直停在 `queued`。
+> * 本工作流在那条 commit 上启动了 **39 个 `check_suite` run**，其中 **37 个**发生在同一 commit 上
+>   某个 `github-actions` 套件完成后的 **60 秒内**；而每一次 run 又会完成一个 `auto-merge-lessons`
+>   套件——于是触发自己。真正的触发源不是第三方 App，是本仓自己的工作流。
+>
+> 所以"零成本兜底"不成立，它是**扇出**。删掉之后要接受的后果，正是这份文档原本就写明的"安全的一侧"：
+> 一个已 opt-in 的 PR 如果在 `synchronize` / `ready_for_review` / `labeled` 之后检查才全绿，
+> **不会**自动合并，需要人手动合一次。判定逻辑与 opt-in 标签的校验都没变，变的是"什么时候被叫醒"。
 
 ### 判定从哪来（事实全部读 API，不读 PR 内容）
 
