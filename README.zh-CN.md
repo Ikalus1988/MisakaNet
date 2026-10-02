@@ -102,9 +102,9 @@ python3 search_knowledge.py "GitHub token 401"
 
 ```bash
 # npm 安装（推荐）
-dsh plugin add misakanet
+dsh plugin --profile web add misakanet
 # 或直接从 git 安装（同一 bundle）
-# dsh plugin add git+https://github.com/Ikalus1988/MisakaNet.git
+# dsh plugin --profile web add git+https://github.com/Ikalus1988/MisakaNet.git
 
 # 让 failure-memory SKILL 可被发现（DSH 扫描 ~/.dsh/skills 与项目 .dsh/skills）
 mkdir -p ~/.dsh/skills

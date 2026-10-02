@@ -162,6 +162,11 @@ def _guide_form_rows() -> dict[str, str]:
 
     Scoped to the `## Choosing an install form` section so a `misakanet_*` token elsewhere on the
     page cannot satisfy these assertions.
+
+    The install command is matched by *shape*, not by a literal string (2026-10-02). It used to look
+    for `dsh plugin add misakanet`, which pinned a command that cannot run — `--profile` is required —
+    and so broke the moment the guide was corrected. `(?:--profile \\S+ )?` accepts the flag and any
+    profile name, so fixing or renaming a profile can no longer red a test that is about tool counts.
     """
     text = GUIDE.read_text(encoding="utf-8")
     start = text.index("## Choosing an install form")
@@ -171,9 +176,9 @@ def _guide_form_rows() -> dict[str, str]:
     for line in body.splitlines():
         if not line.startswith("|"):
             continue
-        if "dsh plugin add misakanet" in line:
+        if re.search(r"dsh plugin (?:--profile \S+ )?add misakanet\b", line):
             rows["npm"] = line
-        elif "dsh plugin add github:Ikalus1988/MisakaNet" in line:
+        elif re.search(r"dsh plugin (?:--profile \S+ )?add github:Ikalus1988/MisakaNet\b", line):
             rows["git+"] = line
         elif "cp -r skills/misakanet" in line:
             rows["manual"] = line

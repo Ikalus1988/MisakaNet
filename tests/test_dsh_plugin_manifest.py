@@ -33,6 +33,7 @@ What is pinned here
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -178,8 +179,55 @@ def test_the_npm_bundle_ships_no_local_mcp_server():
 
 def test_the_install_guide_names_both_forms_and_the_interpreter_prerequisite():
     guide = (REPO / "docs" / "dsh-installation.md").read_text(encoding="utf-8")
-    assert "dsh plugin add misakanet" in guide, "the npm form is not named"
-    assert "dsh plugin add github:Ikalus1988/MisakaNet" in guide, "the git+ form is not named"
+    assert "dsh plugin --profile web add misakanet" in guide, "the npm form is not named"
+    assert "dsh plugin --profile web add github:Ikalus1988/MisakaNet" in guide, (
+        "the git+ form is not named")
     assert "Python" in guide and "3.10" in guide, (
         "the install guide must state the interpreter prerequisite: \"zero dependency\" means no "
         "third-party packages, not nothing to prepare (intake #2486)")
+
+
+# ── the command form itself has to be runnable (2026-10-02) ─────────────────────────────────────────
+# This rule used to assert the *opposite*: it required the guide to contain `dsh plugin add misakanet`,
+# with no `--profile`. Measured against `dsh 0.2.0-rc.2`, that command cannot run at all:
+#
+#     $ dsh plugin add misakanet
+#     error: required option '--profile <name>' not specified
+#
+# `--profile` is required on every `dsh plugin` subcommand (`add`, `list`, `remove`, `update` — even
+# `--help`), so a gate that pinned the bare form was pinning a command no reader could execute, and it
+# blocked the PR that fixed the guide (#2552) for a week. The lesson is the one this repository keeps
+# relearning in other shapes: a gate has to assert what is *true*, not what the document already says —
+# otherwise it converts a documentation bug into a permanent one.
+
+#: The user-facing surfaces that tell a reader what to type. Keep this list to documents that give
+#: instructions; dated handoffs, `docs/benchmarks/**` (generated) and corpus lessons are out of scope
+#: here — the first two are records, and the lessons are covered by their own gates.
+INSTRUCTION_DOCS = (
+    "README.md",
+    "README.zh-CN.md",
+    "README.ja.md",
+    "docs/dsh-installation.md",
+    "docs/compatibility.md",
+    "docs/install/index.html",
+)
+
+
+def test_no_instruction_document_shows_a_dsh_plugin_command_without_profile():
+    """`dsh plugin <anything>` without `--profile` exits before doing anything."""
+    offenders = []
+    for name in INSTRUCTION_DOCS:
+        path = REPO / name
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for match in re.finditer(r"dsh plugin (\S+)", text):
+            token = match.group(1)
+            if token != "--profile":
+                line = text.count("\n", 0, match.start()) + 1
+                offenders.append(f"{name}:{line}: dsh plugin {token} …")
+    assert not offenders, (
+        "`dsh plugin` requires `--profile <name>`; these instructions tell a reader to run a command "
+        "that exits with `error: required option '--profile <name>' not specified`:\n  - "
+        + "\n  - ".join(offenders))
+
