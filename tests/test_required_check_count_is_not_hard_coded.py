@@ -45,8 +45,11 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
-# Files that can hold repository prose. The benchmark JSON and the lesson corpus are excluded by
-# the prefixes below rather than by extension, so a format nobody thought of is still scanned.
+# Files that can hold repository prose. Only the benchmark directory is excluded by prefix; the
+# lesson corpus is skipped only because `data/okf/lessons.jsonl` and `docs/data/lessons-lite.json`
+# happen to carry extensions outside this set, not because anything excludes them. That is a
+# weaker guarantee than it looks — a corpus file given a scanned extension would be read — and it
+# is stated here so the next person does not rely on an exclusion that does not exist.
 SCANNED_SUFFIXES = frozenset(
     {".py", ".md", ".yml", ".yaml", ".js", ".mjs", ".cjs", ".toml", ".sh", ".txt", ".cfg", ".rst"}
 )
@@ -62,8 +65,14 @@ EXCLUDED_PREFIXES = (
 
 # Files that quote GitHub's own push rejection verbatim. The message is
 # `remote: - N of N required status checks are expected.` and it necessarily contains a count
-# — that count is the day it was copied, which is the whole reason it is quoted. Only the full
-# message exempts a line, and only inside these files.
+# — that count is the day it was copied, which is the whole reason it is quoted.
+#
+# **The size of the exemption is larger than it may look.** Finding the message exempts every
+# line it spans, not just the matched characters, and a line that merely *contains* the message
+# anywhere is exempt as a whole. So a claim disguised as a citation — a sentence on the same
+# line that happens to quote the rejection — is not caught. That is a real, bounded hole; it is
+# recorded here rather than papered over, because a limit described as narrower than it is gets
+# relied upon by whoever reads it next.
 QUOTED_REFUSAL = re.compile(
     r"[1-9][0-9]?\s+of\s+[1-9][0-9]?\s+required\s+status\s+checks\s+are\s+expected", re.IGNORECASE
 )
@@ -80,7 +89,12 @@ QUOTED_SITES = {
 # ── English ────────────────────────────────────────────────────────────────────────────────────
 # "two", "three", … and plain digits. Two-digit counts are included: the set is small now and
 # the point of this gate is to survive the day it stops being small.
-_COUNT_EN = r"(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|[1-9][0-9]?)"
+_COUNT_EN = r"(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|[2-9]|[1-9][0-9])"
+# "one" and a bare "1" are deliberately not in the list. `only one required check is red right
+# now` is a report about a run's state, not a claim about how many the ruleset demands, and it
+# is the shape a status page produces by itself. Claims about the size of the set start at two.
+# Two-digit counts are in, because the set is small now and the point is to survive the day it
+# stops being small.
 # The noun, and it must actually be about the *required* checks. Making the adjectives optional
 # was a mistake: it turned every "three checks" and "two contexts" in the repository into a hit,
 # including lesson text about ordinary CI checks, a watcher asserting on "2 context lines", and a
@@ -95,11 +109,13 @@ _NOUN_EN = (
 # This repository documents itself in both languages and the count is a hard-coded number in
 # both. A gate that only reads English is a gate that leaves half the repository unwatched.
 #
-# The measure word is mandatory. Without it the numeral is read inside ordinary words — 任**一**
-# 必需检查 ("any one of the required checks") is a table row about no particular number, and a
-# first version of this pattern counted it as a claim. A real count in Chinese prose carries
-# its measure word: 三个 / 四条 / 两项.
-_COUNT_ZH = r"[一二三四五六七八九十两]"
+# The measure word is what distinguishes a count from an ordinary word. Without it the numeral is
+# read inside one — 任**一**必需检查 ("any one of the required checks") is a table row about no
+# particular number, and a version of this pattern without it counted that as a claim. A real
+# count in Chinese prose carries its measure word: 三个 / 四条 / 两项.
+#
+# Arabic digits count too, and they are the commoner form in technical writing.
+_COUNT_ZH = r"(?:[一二三四五六七八九十两]|[2-9][0-9]?)"
 _MEASURE_ZH = r"(?:条|个|项|道|种|枚)"
 _NOUN_ZH = rf"{_MEASURE_ZH}\s*必需检查"
 
@@ -109,15 +125,30 @@ PATTERNS = (
     re.compile(rf"\b{_COUNT_EN}\s+{_NOUN_EN}\b", re.IGNORECASE),
     # A verb placed before the count, which is as common an order as the other one.
     re.compile(rf"\brequires?\s+{_COUNT_EN}\s+{_NOUN_EN}\b", re.IGNORECASE),
-    # The same sentence in Chinese, where the count precedes the noun outright.
+    # The same sentence in Chinese, in both orders. The count-before-noun order is the obvious
+    # one; the reverse order — the count trailing the noun, as a changelog line writes it — is
+    # just as common, and a version matching only the first left that shape unwatched.
     re.compile(rf"{_COUNT_ZH}\s*{_NOUN_ZH}"),
+    re.compile(rf"必需检查\s*(?:从|由|共|计|有)?\s*(?:[0-9]+\s*条\s*(?:变为|变成|到|至)|[0-9]+\s*{_MEASURE_ZH})"),
 )
 
-# Markdown emphasis and code markers: formatting, not words. A word wrapped in asterisks or
-# backticks reads the same to a person and must read the same here. The space this leaves
-# behind is load-bearing — a first version swallowed the markers without emitting it and
-# welded the neighbouring words together, which then matched nothing at all.
-_DECORATION = re.compile(r"[`*_~]")
+# Markdown emphasis, code markers and string-literal delimiters: formatting, not words.
+# A word wrapped in asterisks or quotes reads the same to a person and must read the same here.
+# The space each of these leaves behind is load-bearing — a version that swallowed the markers
+# without emitting it welded the neighbouring words together, and then matched nothing at all.
+#
+# The quotes matter for a second reason: a long sentence is routinely wrapped across adjacent
+# f-strings, and the `f"` / `"` between them used to weld `the four required` to `f"checks`,
+# hiding a count that lives in a string the program actually prints.
+_DECORATION = re.compile(r"[`*_~\"'‘’“”]")
+
+# A letter that is only a string prefix — `f"…"`, `r'…'`, `rb"…"`. Dropped with its quote so
+# `f"checks` does not read as the word `fchecks`.
+_STRING_PREFIX = "frbuFRBU"
+
+# Dates are not counts. `on 2026-09-27 required checks landed` is a sentence about a day, and
+# reading `27` as a tally of the gates is how a date became a false alarm.
+_DATE = re.compile(r"\b\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?\b")
 
 # The structural prefix a line may open with: a heading marker, a blockquote, a bullet, a table
 # bar, an ordered-list number. A count behind one of these is a row label or a list index, not a
@@ -136,23 +167,36 @@ def normalise(text: str) -> tuple[str, list[int]]:
     out: list[str] = []
     origin: list[int] = []
     for number, raw in enumerate(text.splitlines(), start=1):
+        body = _DATE.sub(" ", _STRUCT_PREFIX.sub("", raw))
+        index = 0
         pending_space = True  # also swallows the gap between lines
-        for char in _STRUCT_PREFIX.sub("", raw):
+        while index < len(body):
+            char = body[index]
+            if char in _STRING_PREFIX and index + 1 < len(body) and body[index + 1] in "\"'":
+                out.append(" ")
+                origin.append(number)
+                pending_space = True
+                index += 2
+                continue
             if char.isspace():
                 if pending_space:
+                    index += 1
                     continue
                 out.append(" ")
                 origin.append(number)
                 pending_space = True
+                index += 1
                 continue
             if _DECORATION.match(char):
                 out.append(" ")
                 origin.append(number)
                 pending_space = True
+                index += 1
                 continue
             out.append(char)
             origin.append(number)
             pending_space = False
+            index += 1
         out.append(" ")
         origin.append(number)
     return "".join(out), origin

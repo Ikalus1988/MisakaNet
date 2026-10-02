@@ -14,7 +14,8 @@ triggers **PR-Agent** (`Codium-ai/pr-agent`), the one paid model call in the set
 
 So the honest saving is **one paid review per chore pull request** (about 15 % of pull requests stop paying
 for PR-Agent), not three. The first version of this file said three, counting the two free analyses; the
-review that caught it also found the ruleset requires a **fixed set** of status checks on `main`.
+review that caught it also found this file's account of the required checks on `main` did
+not match what the ruleset actually demands.
 
 Two things have to hold together:
 

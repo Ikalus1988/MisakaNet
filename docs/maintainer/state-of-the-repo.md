@@ -23,8 +23,8 @@
   the ruleset) with **no bypass actors** — and GitHub enforces that rule on *direct pushes* as well as
   merges, so every workflow that commits back to `main` is now refused (#2073). The `audit` gate became
   required on 2026-09-27, which closed the "green but nothing ran the full suite" hole — and lengthens every PR's path to mergeable
-  by however long that leg takes. Measured on the change that added it, the new leg was still running minutes
-  after the others reported. It is only repaired every two hours by
+  by however long that leg takes. Measured on the change that added it, the `audit` leg was still running minutes
+  after the rest had reported. It is only repaired every two hours by
   `pr-audit-watch.yml`, so a *missing* audit is still possible; what changed is that a missing one now
   blocks instead of passing silently.
 - Backlog (re-measured 2026-09-27): **~107 open issues / ~12 open PRs**, of which 54 carry `intake`, 39
@@ -398,8 +398,7 @@ python3 scripts/injection_scan.py --dir docs | tail -3
 ## 附：2026-09-22 会话交接（下一次先读这里）
 
 **本轮完成**：8 个 PR 合并（#2032 #2039 #2047 #2049 #2051 #2052 #2053 #2054）；战略审视的 7 条建议全部拆成
-issue（#2040–#2046）并**全部落地**；main 的必需检查从 **0 条**变为 **3 条**（`DCO / Signed-off-by`、
-`test (ubuntu-latest, 3.11)`、`gate`），ruleset `23826057`，**无人可绕过（包括 owner）**。
+issue（#2040–#2046）并**全部落地**；main 的必需检查从**无到有**（清单与各自加入的时间见 §2.1），ruleset `23826057`，**无人可绕过（包括 owner）**。
 
 **新增的机制（用之前先读它们自己的文档）**
 - `scripts/done_but_open.py` —— 找出"工作已在 main 上、issue 仍开着"的 intake。
@@ -438,7 +437,7 @@ issue（#2040–#2046）并**全部落地**；main 的必需检查从 **0 条**�
 #2074（KV 面板分不清"操作数/不同键"，含 10 分钟判定实验）· #2075（仍按不同键无界的家族）。
 
 **本轮更正了本文自己的两处错**（都已在正文改掉，留痕在此）：
-1. §2.1 写的快照是过时的（必需检查已增加，且 `bypass_actors: []`）；
+1. §2.1 写的快照过时（其后 `gate` 与 `audit` 相继加入），且 `bypass_actors: []` 为空；
 2. §3.1 写的"4 条 open issue 的工作已经在 main 上"是**检测器误报**，真实是 **1 条**（#1555）——
    另外三条是裸数字匹配到了别人 URL 里的号码和年份。**这条值得记住：一个把误报当事实写进现状文档的
    工具，比没有工具更危险**；修完之后它才重新可信。

@@ -192,7 +192,7 @@ def build_body(*, branch: str, title: str, files: list[str], stat: str, note: st
         "lands there — a direct push from the workflow that produced this change is refused by "
         "the ruleset (`3 of 3 required status checks are expected`).",
         "",
-        f"**Auto-merge is enabled (squash):** GitHub merges this as soon as the four required "
+        f"**Auto-merge is enabled (squash):** GitHub merges this as soon as the required "
         f"checks are green. Nobody has to be here for it. The branch `{branch}` is reused by the "
         "next run of this job, which force-pushes onto it and updates this pull request rather "
         "than opening a second one.",
