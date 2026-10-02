@@ -44,7 +44,7 @@ token can read):
 
 Two things that table settles without a run:
 
-* **`CF_OBSERVABILITY_TOKEN` does not exist**, even though §4.2 recommends creating it and
+* **`CF_OBSERVABILITY_TOKEN` does not exist**, even though §4.3 recommends creating it and
   `cf-diagnostics` prefers it. The workflow's `|| secrets.CF_API_TOKEN` fallback is what actually runs, so
   the deploy token is the one carrying Account Analytics, Workers KV Storage and Workers Scripts reads on
   the diagnostics path. The recommendation stands (narrower is better); the entry above was aspirational
@@ -176,6 +176,51 @@ If someone later wants the clone counts automated, the only acceptable shape is 
 `Administration: read` and nothing else**, in its own environment — never `SHELDON_PAT`, never a classic
 token. Until then the snapshot keeps saying so: it warns, it does not claim a `traffic` window it did not
 measure, and the workflow passes only `GITHUB_TOKEN`.
+
+### 4.3 `CF_OBSERVABILITY_TOKEN`: the scopes, and that creating it is an ops action (2026-10-02)
+
+§2 has said since 2026-09-24 that this token is "optional", and it has never existed — so
+`cf-diagnostics.yml` has been running its read-only Cloudflare Analytics queries with
+`secrets.CF_API_TOKEN`, the **deploy-capable** credential. A read-only diagnostic that holds a deploy
+token is the gap this section closes, and issue #2521 (the "Network activity" trend) widens the same
+read path rather than adding a second one.
+
+**What to create — an account-scoped Cloudflare API token.** The set is wider than two
+permissions, because `cf-diagnostics.yml` is wider than the Analytics query. Measured against the
+workflow's own request list rather than its name:
+
+| Permission | Endpoint that needs it |
+|---|---|
+| Account · **Workers Observability** · Read | `wrangler tail` / the worker-log half of `cf-diagnostics` |
+| Account · **Account Analytics** · Read | the `httpRequestsAdaptiveGroups` GraphQL query (status codes by route) |
+| Account · **Workers KV Storage** · Read | `GET /accounts/{acct}/storage/kv/namespaces` |
+| Account · **Workers Scripts** · Read | `GET /accounts/{acct}/workers/scripts` and `…/scripts/{name}/settings` |
+| Zone · **Workers Routes** · Read | `GET /zones/{zone}/workers/routes` |
+
+**Still nothing write-capable**: no `Workers Scripts: Edit`, no `Workers KV Storage: Edit`, no
+`D1: Write`, no `Zone: Edit`. And `Workers Builds` is not here at all — that API has its own
+user-scoped credential (§4.4) and rejects account-scoped tokens outright.
+
+Two earlier drafts of this table said "exactly two permissions … nothing else". That was wrong in
+a way that would have 403'd four endpoints the moment the `|| secrets.CF_API_TOKEN` fallback is
+removed, so the list above is taken from the workflow source (`cf-diagnostics.yml` `get(...)`
+calls), not from what the chart happens to need.
+
+**Where it goes:** GitHub → Settings → Environments → `release` → Environment secrets →
+`CF_OBSERVABILITY_TOKEN`. `cf-diagnostics.yml` already prefers it (`secrets.CF_OBSERVABILITY_TOKEN ||
+secrets.CF_API_TOKEN`), so installing it is the whole change — no workflow edit, no redeploy.
+
+**No value is written down here or anywhere in this repository.** Creating the token is an operator's
+action in the Cloudflare dashboard; this document records which scopes it needs and nothing more. A
+token pasted into a document is the incident §6 exists for.
+
+**How to prove it works, since no run can name the token it used:** GitHub never reveals a secret's
+value and Cloudflare token scopes are not enumerable from here, so a green `cf-diagnostics` run proves
+only that *some* credential answered. The proof that the **narrow** one is what answered is a run with
+the fallback temporarily out of the chain — set the workflow's `CLOUDFLARE_API_TOKEN` line to
+`${{ secrets.CF_OBSERVABILITY_TOKEN }}` alone on a dispatch branch, run *CF diagnostics*, and look for
+`== by status ==` with real counts in the first step. A 403 there names the missing permission, which
+is the finding rather than a failure of the run.
 
 
 ## 5. What is deliberately still repository-level

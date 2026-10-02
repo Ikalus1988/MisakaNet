@@ -1,0 +1,81 @@
+{
+  "generated_at": "2026-10-02T03:35:34Z",
+  "series": [
+    {
+      "calls": {
+        "agent": 79,
+        "crawler": 165,
+        "mcp": 14788,
+        "pageview": 152
+      },
+      "date": "2026-09-25",
+      "total": 15184
+    },
+    {
+      "calls": {
+        "agent": 48,
+        "crawler": 51,
+        "mcp": 12240,
+        "pageview": 30
+      },
+      "date": "2026-09-26",
+      "total": 12369
+    },
+    {
+      "calls": {
+        "agent": 45,
+        "crawler": 26,
+        "mcp": 11037,
+        "pageview": 106
+      },
+      "date": "2026-09-27",
+      "total": 11214
+    },
+    {
+      "calls": {
+        "agent": 98,
+        "crawler": 142,
+        "mcp": 8055,
+        "pageview": 38
+      },
+      "date": "2026-09-28",
+      "total": 8333
+    },
+    {
+      "calls": {
+        "agent": 129,
+        "crawler": 25,
+        "mcp": 8051,
+        "pageview": 58
+      },
+      "date": "2026-09-29",
+      "total": 8263
+    },
+    {
+      "calls": {
+        "agent": 635,
+        "crawler": 876,
+        "mcp": 11943,
+        "pageview": 231
+      },
+      "date": "2026-09-30",
+      "total": 13685
+    },
+    {
+      "calls": {
+        "agent": 285,
+        "crawler": 137,
+        "mcp": 8983,
+        "pageview": 49
+      },
+      "date": "2026-10-01",
+      "total": 9454
+    }
+  ],
+  "source": "git-history:docs/data/activity.json",
+  "window": {
+    "days": 7,
+    "from": "2026-09-25",
+    "to": "2026-10-01"
+  }
+}
