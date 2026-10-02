@@ -34,9 +34,16 @@ REPO = Path(__file__).resolve().parent.parent
 WF_DIR = REPO / ".github" / "workflows"
 
 # Read by the tool the step invokes, not by the script text.
+#
+# `SHELDON_PAT` joined this list for the documented-gates ratchet, and it is the same class as
+# the entries above rather than a new exemption invented to pass: a program the step invokes
+# reads it out of the environment. A shell script cannot mention it without putting the token on
+# a command line, where `ps` can read it — which is the thing the rule exists to prevent. The
+# ratchet script reads `SHELDON_PAT` from the environment and never echoes it.
 TOOL_CONSUMED = {
     "GH_TOKEN", "GITHUB_TOKEN", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "AI_GATEWAY_ID",
     "AI_GATEWAY_TOKEN", "NODE_AUTH_TOKEN", "NPM_TOKEN", "PYTHONPATH", "ACTIONS_STEP_DEBUG",
+    "SHELDON_PAT",
 }
 
 

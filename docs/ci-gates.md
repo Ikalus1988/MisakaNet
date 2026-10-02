@@ -14,7 +14,7 @@ curl -sS -H "Authorization: Bearer $TOKEN" \
       if r['type']=='required_status_checks' for c in r['parameters']['required_status_checks']]"
 ```
 
-Measured that way on 2026-09-29, **four** checks block a merge:
+Read that way on 2026-09-29, the gates that block a merge are the rows below —
 
 | Check (context as GitHub reports it) | Workflow | What it validates |
 |---|---|---|

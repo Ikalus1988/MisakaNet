@@ -18,13 +18,13 @@
   required reviewer is the owner**, and 6 run on the owner's PAT (repo-level secret `SHELDON_PAT`).
   The concrete failure mode: a publish run can wait for a human for a day with **nothing notifying
   anyone** (measured: one run waiting since 2026-09-21T12:13:42Z).
-- `main` requires the **status** checks below (`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate`,
+- `main` requires the status checks below (`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate`,
   `audit` — `docs/ci-gates.md` is the single statement of the set, with the command that re-reads it from
   the ruleset) with **no bypass actors** — and GitHub enforces that rule on *direct pushes* as well as
   merges, so every workflow that commits back to `main` is now refused (#2073). The `audit` gate became
   required on 2026-09-27, which closed the "green but nothing ran the full suite" hole — and lengthens every PR's path to mergeable
-  by however long that leg takes. Measured on the change that added it, the `audit` leg was still running minutes
-  after the rest had reported. It is only repaired every two hours by
+  by however long that leg takes. Measured on the change that added it: the `audit` leg and one other were
+  still running minutes after the rest had reported. It is only repaired every two hours by
   `pr-audit-watch.yml`, so a *missing* audit is still possible; what changed is that a missing one now
   blocks instead of passing silently.
 - Backlog (re-measured 2026-09-27): **~107 open issues / ~12 open PRs**, of which 54 carry `intake`, 39
@@ -437,7 +437,7 @@ issue（#2040–#2046）并**全部落地**；main 的必需检查从**无到有
 #2074（KV 面板分不清"操作数/不同键"，含 10 分钟判定实验）· #2075（仍按不同键无界的家族）。
 
 **本轮更正了本文自己的两处错**（都已在正文改掉，留痕在此）：
-1. §2.1 写的快照过时（其后 `gate` 与 `audit` 相继加入），且 `bypass_actors: []` 为空；
+1. §2.1 写的快照过时（其后必需检查又增补过，见 §2.1 各自的加入日期），且 `bypass_actors: []` 为空；
 2. §3.1 写的"4 条 open issue 的工作已经在 main 上"是**检测器误报**，真实是 **1 条**（#1555）——
    另外三条是裸数字匹配到了别人 URL 里的号码和年份。**这条值得记住：一个把误报当事实写进现状文档的
    工具，比没有工具更危险**；修完之后它才重新可信。

@@ -1,0 +1,111 @@
+name: Documented Gates Ratchet
+
+# Does `docs/ci-gates.md` still describe the gates that actually block a merge?
+#
+# That document names the ruleset, carries the `curl` that reads it back, and lists the contexts
+# in a table. **The command was documented and nothing ran it.** So the one fact the whole
+# document rests on could change with nobody noticing — and a reader would take a stale list of
+# the checks that block a merge as current.
+#
+# It did drift. A previous session removed twenty-three hand-written counts of "the required
+# checks" out of the repository's prose, and the surviving one sat in *this* document, five lines
+# below the command that would have made it unnecessary. That is the argument for what this
+# workflow does: it checks the authoritative set against the authoritative document, rather than
+# grepping two thousand files for numerals — a heuristic that keeps finding new shapes to miss,
+# and that turns every document in the repository into somewhere CI can fail.
+#
+# Why weekly and not on `pull_request`: the ruleset changes on a timescale of months. Paying CI
+# minutes on every commit to re-answer a question the last run already answered is how a slow
+# advisory check gets skipped. Same reasoning, and the same Monday-slot discipline, as
+# `gate-mutation-audit.yml` (#2045).
+#
+# A red run opens (or updates) one issue naming the difference, so the fix is the diff itself
+# rather than a hunt. It does not fail a pull request: nothing about a pull request can cause
+# the ruleset to have moved.
+on:
+  schedule:
+    # Weekly, Monday 07:11 UTC — offset from provenance-gate.yml (06:17), gate-mutation-audit.yml
+    # (06:43) and codeql.yml (06:00) so the weekly jobs do not queue behind one another.
+    - cron: '11 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ratchet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7
+        with:
+          python-version: '3.12'
+
+      - name: Compare the documented gates with the live ruleset
+        id: compare
+        # continue-on-error so the diff survives into the reporting step; the run's verdict is
+        # the comparison's exit code, not this step's.
+        continue-on-error: true
+        env:
+          # Not GITHUB_TOKEN: reading a ruleset needs a scope the built-in token does not carry,
+          # and the request comes back 404 rather than 403, which reads as "no such ruleset".
+          SHELDON_PAT: ${{ secrets.SHELDON_PAT }}
+        run: python3 scripts/check_documented_gates.py
+
+      - name: Report a divergence
+        if: steps.compare.outcome == 'failure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        with:
+          script: |
+            const marker = '<!-- documented-gates-ratchet -->';
+            const title = 'The documented gates no longer match ruleset 23826057';
+
+            const body = [
+              marker,
+              '## `docs/ci-gates.md` has fallen behind the ruleset',
+              '',
+              'The gate table in `docs/ci-gates.md` no longer matches the set that ruleset',
+              '`main: the deterministic gates` (id `23826057`) actually requires. The diff:',
+              '',
+              '```',
+              '${{ steps.compare.stdout }}',
+              '```',
+              '',
+              'Read the ruleset back with the command in `docs/ci-gates.md`, update the table,',
+              'and **keep the count out of the prose** — the number of rows in the table is the',
+              'count, so there is nothing to forget to update.',
+              '',
+              '_Opened by `check-documented-gates.yml`. Re-running the workflow refreshes this',
+              'issue; closing it while the drift persists will just reopen it next Monday._',
+            ].join('\n');
+
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const existing = open.data.find(issue => (issue.body || '').includes(marker));
+
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+              core.info(`updated #${existing.number}`);
+              return;
+            }
+            const created = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['needs-ac', 'type:bug'],
+            });
+            core.info(`opened #${created.data.number}`);
