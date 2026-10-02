@@ -99,6 +99,11 @@ def test_the_section_is_written_in_the_language_it_claims(name):
     The check is on the **body after the image**, not on the section as a whole: an independent review
     kept each localized heading, replaced everything below the image with the English prose, and the
     whole-section rule stayed green because the heading alone satisfied it.
+
+    And it is a **share**, not an appearance. "At least one CJK character" was the review's next finding:
+    English prose plus a single `一`, or one character inside a code span, still passed. The threshold is
+    a tenth of the non-whitespace body — measured against the real files: zh 62/90 characters (69 %), ja
+    24/118 (20 %), and English with one stray character about 0.6 %.
     """
     if name == "README.md":
         pytest.skip("the English README is the original, not a translation")
@@ -106,9 +111,11 @@ def test_the_section_is_written_in_the_language_it_claims(name):
     image = section.find("![")
     image_end = section.find(")", image) if image != -1 else -1
     body = section[image_end + 1:] if image_end != -1 else section
-    assert CJK.search(body), (
-        f"{name}'s scope section is not written in its own language — the heading is localized but the "
-        f"body after the comic is not: {body.strip()[:120]!r}")
+    cjk = len(CJK.findall(body))
+    visible = len(re.sub(r"\s", "", body))
+    assert cjk * 10 >= visible, (
+        f"{name}'s scope section is not written in its own language — only {cjk} of {visible} "
+        f"non-whitespace characters after the comic are CJK: {body.strip()[:120]!r}")
     assert CJK.search(section), f"{name}'s scope section has no CJK characters: {section[:80]!r}"
 
 
