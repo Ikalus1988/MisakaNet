@@ -1966,9 +1966,16 @@
 
        The "📝 最新动态" heading is gone (2026-10-02): this is an intro card, not a news section, so it
        leads with the version badge and the feed list carries its own quiet label ("最近合并") instead.
-       The same edit retired two claims a reader cannot use: "Swarm Knowledge Protocol" (the protocol
-       name the project stopped using — the sentence now states the mechanism, which is the part that
-       was doing the work) and "Zero-Bounty … · $0 Spent" (a spend figure nobody can act on). -->
+       The same edit removed two claims a reader cannot act on: a protocol name the project stopped
+       using (the paragraph now states the mechanism, which is the part that was doing the work) and a
+       sponsor/spend framing. Those strings live in the merge commit for this change and are deliberately
+       not repeated here: this file is served to browsers, so a retired name should not survive in the
+       bytes we ship — an HTML comment is published too.
+
+       Same rule, one line down in spirit: the Product Matrix's MisakaNet card used to name the retired
+       protocol by its three-letter abbreviation. The live DOM proved that one was *visible* text, not a
+       comment, which is how it survived a pass that only looked for the spelled-out name — so it now
+       reads "The reference implementation." -->
   <div class="content-glass" style="margin-bottom:24px;">
     <div style="padding:20px 24px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
@@ -2011,7 +2018,7 @@
         <div style="background:rgba(0,229,255,0.03);border:1px solid var(--border-glow);border-radius:8px;padding:14px;">
           <div style="font-size:13px;font-weight:700;color:var(--cyan);margin-bottom:4px;">MisakaNet</div>
           <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Python · git-native</div>
-          <div style="font-size:12px;color:var(--text-primary);line-height:1.5;">SKP reference impl. BM25 + RRF search across the indexed corpus.</div>
+          <div style="font-size:12px;color:var(--text-primary);line-height:1.5;">The reference implementation. BM25 + RRF search across the indexed corpus.</div>
           <code style="font-size:11px;color:var(--cyan);background:rgba(0,229,255,0.08);padding:2px 6px;border-radius:3px;">pip install misakanet-core</code>
         </div>
         <div style="background:rgba(0,229,255,0.03);border:1px solid var(--border-glow);border-radius:8px;padding:14px;">
