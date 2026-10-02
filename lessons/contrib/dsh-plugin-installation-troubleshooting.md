@@ -25,7 +25,7 @@ Users installing the MisakaNet DSH plugin encounter a variety of failures across
 
 ### 1. npm Install — Registry Unreachable
 
-**Symptom:** `dsh plugin add misakanet` hangs or times out.
+**Symptom:** `dsh plugin --profile web add misakanet` hangs or times out.
 
 **Cause:** Corporate firewall or proxy blocks `registry.npmjs.org`. Alternatively, npm cache is corrupted.
 
@@ -36,7 +36,7 @@ curl -sS -o /dev/null -w "%{http_code}\n" https://registry.npmjs.org/
 
 # Clear npm cache and retry
 npm cache clean --force
-dsh plugin add misakanet
+dsh plugin --profile web add misakanet
 
 # Or set proxy
 npm config set proxy http://proxy:8080
@@ -45,13 +45,13 @@ npm config set https-proxy http://proxy:8080
 
 ### 2. Git Method — codeload.github.com Timeout
 
-**Symptom:** `dsh plugin add github:Ikalus1988/MisakaNet` fails with `request timeout: cannot reach GitHub`.
+**Symptom:** `dsh plugin --profile web add github:Ikalus1988/MisakaNet` fails with `request timeout: cannot reach GitHub`.
 
 **Cause:** `codeload.github.com` is blocked or slow in some networks (especially CN/GFW).
 
 **Fix:** Use the npm channel instead (see `dsh-plugin-install-github-codeload-timeout.md`):
 ```bash
-dsh plugin add misakanet   # from npm registry
+dsh plugin --profile web add misakanet   # from npm registry
 ```
 
 ### 3. Permission Denied on ~/.dsh/skills
@@ -66,12 +66,12 @@ dsh plugin add misakanet   # from npm registry
 sudo chown -R $(whoami) ~/.dsh
 
 # Option B: Use user-level install
-dsh plugin add misakanet --user
+dsh plugin --profile web add misakanet --user
 ```
 
 ### 4. Plugin Not Found After Install
 
-**Symptom:** `dsh plugin list` shows no misakanet plugin after successful install.
+**Symptom:** `dsh plugin --profile web list` shows no misakanet plugin after successful install.
 
 **Cause:** Shell session not refreshed, or `~/.dsh/skills` not in PATH.
 
@@ -79,7 +79,7 @@ dsh plugin add misakanet --user
 ```bash
 # Restart terminal, then:
 source ~/.bashrc   # or ~/.zshrc
-dsh plugin list
+dsh plugin --profile web list
 
 # Or manually verify
 ls -la ~/.dsh/skills/misakanet
@@ -107,8 +107,8 @@ set PYTHON=python
 **Fix:**
 ```bash
 npm update -g dsh
-dsh plugin remove misakanet
-dsh plugin add misakanet
+dsh plugin --profile web remove misakanet
+dsh plugin --profile web add misakanet
 ```
 
 ### 7. Manual Install — Wrong Directory
@@ -128,9 +128,9 @@ ls ~/.dsh/skills/misakanet/skill.md    # must exist
 
 After fixing any installation issue:
 ```bash
-dsh plugin list                     # should show misakanet
+dsh plugin --profile web list                     # should show misakanet
 dsh tool list | grep misakanet      # should show tools
-dsh plugin --dump-config            # should show misakanet layer
+dsh --profile web --dump-config            # should show misakanet layer
 ```
 
 ## Related Lessons
