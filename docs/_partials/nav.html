@@ -3,7 +3,7 @@
      runs in the test suite, so a menu edited in one place and not the other fails rather than drifts.
      This is deliberately a *partial + checker* rather than a template engine: the site is served verbatim
      from docs/ with no build step, which is what keeps every page greppable and testable by the suite. -->
-<nav class="drawer" id="drawer">
+<nav class="drawer" id="drawer" inert aria-hidden="true">
   <div class="drawer-header">
     <div class="drawer-brand">MISAKA NET</div>
     <div class="drawer-tagline">Safe. Useful. Runs anywhere Python does.</div>

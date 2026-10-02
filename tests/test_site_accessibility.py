@@ -73,3 +73,18 @@ def test_the_search_field_has_a_label_and_the_results_have_a_summary_region():
     assert "search-status" in PAGE.split("function searchLessons")[1], (
         "the summary region exists but the search never writes to it")
     assert "sr-only" in PAGE, "the label and summary need the visually-hidden utility"
+
+
+def test_the_nav_partial_carries_the_closed_state_too():
+    """The drawer is *generated* from `docs/_partials/nav.html`, and `sync_site_partials.py --check`
+    enforces that the page matches it.
+
+    Editing only `docs/index.html` therefore passes every rule above and still fails the repository:
+    the first version of this change was caught exactly here, because the next sync would have put the
+    focusable drawer back. The source of truth has to carry the attribute, not just the page.
+    """
+    partial = (REPO / "docs" / "_partials" / "nav.html").read_text(encoding="utf-8")
+    nav = re.search(r'<nav class="drawer"[^>]*>', partial)
+    assert nav, "the partial no longer defines the drawer; this test needs updating"
+    assert "inert" in nav.group(0), "the partial would regenerate a focusable closed drawer"
+    assert 'aria-hidden="true"' in nav.group(0), "the partial exposes the closed drawer to assistive tech"
