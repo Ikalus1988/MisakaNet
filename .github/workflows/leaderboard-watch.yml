@@ -65,6 +65,22 @@ jobs:
             echo "no snapshot produced; nothing to land"
             exit 0
           fi
+          # This job fires on *every* push to main, and the snapshot really does move that often (15 of
+          # the last 100 pull requests were these snapshots — about one every 40 minutes). Each one is a
+          # full pull-request lifecycle, so bound the rate here: one landing an hour is plenty for a
+          # leaderboard, and the recompute above still happens on every push.
+          RATE_LIMIT_SECONDS=3600
+          # `git log` on a path with no history prints nothing and still exits 0, and comparing an empty
+          # string numerically aborts the step — which would turn a normal "nothing landed yet" into a
+          # red job. Normalise instead of trusting the command's exit code.
+          landed_at=$(git log -1 --format=%ct -- data/leaderboard.json 2>/dev/null | head -1)
+          case "$landed_at" in ''|*[!0-9]*) landed_at=0 ;; esac
+          now=$(date +%s)
+          if [ "$landed_at" -gt 0 ] && [ $((now - landed_at)) -lt "$RATE_LIMIT_SECONDS" ]; then
+            echo "the snapshot landed $(( (now - landed_at) / 60 )) minutes ago;"
+            echo "at most one landing every $((RATE_LIMIT_SECONDS / 60)) minutes — skipping this push."
+            exit 0
+          fi
           python3 scripts/ci/land_change.py \
             --branch bot/leaderboard-watch \
             --title "chore: update leaderboard snapshot" \

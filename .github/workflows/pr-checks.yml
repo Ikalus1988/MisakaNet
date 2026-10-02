@@ -121,8 +121,12 @@ jobs:
           echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> "$GITHUB_ENV"
 
       # ── Quality Score Gate (full scope only) ──
+      # The `audit` job is a required check, so it always runs; only the paid model call skips the
+      # automation's own branches. Measured 2026-10-02: 15 of the last 100 pull requests were
+      # `bot/leaderboard-watch` snapshots (~one every 40 minutes), and every one of them paid for this
+      # step, the PR-Agent review and PR Genius.
       - name: Agent Quality Score
-        if: steps.scope.outputs.scope == 'full'
+        if: steps.scope.outputs.scope == 'full' && !startsWith(github.head_ref, 'bot/')
         id: score
         continue-on-error: true
         uses: ./.github/actions/score-agent
