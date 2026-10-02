@@ -8,11 +8,17 @@ Measured on `docs/index.html`, 2026-10-02, with a route-level delay on `cdnjs.cl
 | 0 ms | 464 ms | **236 ms** |
 | 1000 ms | **1468 ms** | **236 ms** |
 
-`defer` alone is not enough, and the first attempt at this proved it: with the script deferred but the
-sanitising paths unchanged, three of three runs threw `DOMPurify is not defined`, because a top-level
-`switchLang(LANG)` / `loadLessons()` / `loadVoices()` reaches `DOMPurify.sanitize` before the deferred
-script has run. Waiting only for `DOMContentLoaded` was not enough either — instrumented, `readyState`
-was already `interactive` with `DOMPurify` still undefined, so the gate waits for `load` as well.
+`defer` alone is not enough: a top-level `switchLang(LANG)` / `loadLessons()` / `loadVoices()` reaches
+`DOMPurify.sanitize` before a deferred script has run. (An earlier version of this docstring claimed
+"three of three runs threw `DOMPurify is not defined`"; an independent review could not reproduce it —
+that throw is swallowed by `loadVoices`' own `try/catch` and surfaces as `voicesLoadFailed`. What it did
+reproduce is `main` throwing in three places under a **poisoned payload plus an aborted CDN**, which is
+the failure this gate exists to prevent.)
+
+`interactive` is not "the script has had its chance": it means `DOMContentLoaded` has fired while the
+deferred script may still be **in flight**. An earlier version settled whenever `readyState` was anything
+but `loading`, so on a slow CDN the gate resolved false before DOMPurify arrived and the voices wall was
+never rendered. The gate now waits for `complete` — or for `DOMContentLoaded` **and** `load`.
 
 The failure that matters most is the quiet one: `cdnjs` is a common block-list target, and a page that
 cannot sanitise must render **plain text** rather than inject what it could not sanitise. That is what the
@@ -47,8 +53,8 @@ def test_every_sanitising_path_waits_for_it():
         body = _body_of(name)
         assert "DOMPurify." in body, f"{name} no longer sanitises; update SANITISERS"
         assert "whenPurifyReady" in body, (
-            f"{name} sanitises without waiting for the deferred script — under a slow CDN it throws "
-            "`DOMPurify is not defined` (measured 3/3 runs)")
+            f"{name} sanitises without waiting for the deferred script — under a slow CDN the voices "
+            "wall is never rendered and a search during the window fails")
 
 
 def _on_missing_arm(name: str) -> str:
@@ -99,3 +105,23 @@ def test_a_missing_sanitiser_degrades_to_text_not_markup():
         arm = _on_missing_arm(name)
         assert "textContent" in arm, (
             f"{name}'s degraded path says nothing to the reader: {arm.strip()[:120]}")
+    # The search arm's text is what tells a reader why results are missing; an earlier version asserted it
+    # somewhere in the file, so emptying the arm stayed green (the review's M8).
+    assert "sanitiser failed to load" in _on_missing_arm("searchLessons"), (
+        "search no longer explains why it cannot show results")
+    # Every sanitising function has to guard on the sanitiser itself, not merely mention the helper
+    # somewhere: `if (false)` satisfied the old check (M9).
+    for name in SANITISERS:
+        body = _body_of(name)
+        guard = body.find("if (!window.DOMPurify)")
+        first_use = body.find("DOMPurify.")
+        assert 0 <= guard < first_use, (
+            f"{name} calls DOMPurify without a reachable guard on it being there")
+    # `resolve(!!window.DOMPurify)` is what makes the missing-arm honest: `resolve(true)` passes every
+    # other rule while disabling every degraded path (M10).
+    assert "resolve(!!window.DOMPurify)" in helper, (
+        "the gate must settle with the sanitiser's actual presence, or no degraded path ever runs")
+    # Strip comments before matching the listener, or a commented-out line satisfies it (M11).
+    helper_code = re.sub(r"//[^\n]*", "", helper)
+    assert re.search(r'addEventListener\(\s*["\']load["\']', helper_code), (
+        "the `load` fallback is commented out or gone")
