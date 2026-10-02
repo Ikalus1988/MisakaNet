@@ -112,7 +112,7 @@ patch makes duplicate-id collisions structurally impossible:
 `cordis.patch.yml` — deleted entirely.
 
 `index.js` — keep the `name` export and the no-op `apply()` so
-`dsh plugin add misakanet` still passes the install contract, but rewrite the
+`dsh plugin --profile web add misakanet` still passes the install contract, but rewrite the
 top comment to explain why no Cordis contribution is made.
 
 After the change, the same local repro boots cleanly and `dsh web` returns

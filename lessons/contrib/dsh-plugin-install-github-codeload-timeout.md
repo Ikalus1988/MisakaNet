@@ -27,7 +27,7 @@ dsh plugin --profile web add github:ikalus1988/misakanet
 
 ## Root Cause
 
-`dsh plugin add github:<owner>/<repo>` resolves through **codeload.github.com** to download the repository tarball. In some networks (especially in CN/GFW environments), `codeload.github.com` is blocked or times out while `api.github.com`, `raw.githubusercontent.com`, and `registry.npmjs.org` remain reachable. The install log shows:
+`dsh plugin --profile web add github:<owner>/<repo>` resolves through **codeload.github.com** to download the repository tarball. In some networks (especially in CN/GFW environments), `codeload.github.com` is blocked or times out while `api.github.com`, `raw.githubusercontent.com`, and `registry.npmjs.org` remain reachable. The install log shows:
 
 ```
 [WARN] GET https://codeload.github.com/ikalus1988/misakanet/tar.gz/2932d914... error (23). Will retry in 10 seconds. 2 retries left.
@@ -43,7 +43,7 @@ A second contributing factor: the marketplace metadata (`npmPackage` field) may 
 1. **Prefer the npm channel** when the plugin is published to npm (independent of GitHub codeload):
 
 ```bash
-dsh plugin add misakanet   # from npm registry — fast, no GitHub dependency
+dsh plugin --profile web add misakanet   # from npm registry — fast, no GitHub dependency
 ```
 
 2. Verify connectivity per endpoint before choosing a channel:
@@ -63,6 +63,6 @@ const python = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 
 
 ## Verification
 
-- `dsh plugin add misakanet` completes in ~1s (resolved, downloaded, added) when the package is on npm.
+- `dsh plugin --profile web add misakanet` completes in ~1s (resolved, downloaded, added) when the package is on npm.
 - `dsh plugin --profile <name> --dump-config` shows the `# == misakanet` layer for the installed bundle.
 - The failing git-channel command reproduces the timeout deterministically in networks where codeload is blocked.
