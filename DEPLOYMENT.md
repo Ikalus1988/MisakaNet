@@ -113,15 +113,22 @@ npm install -g wrangler
 
 ### Deploy
 
+The site is deployed by Cloudflare **Workers Builds** (Git integration) on every push to `main`
+that touches `docs/` — there is no per-developer deploy step. The commands below are for local
+preview and emergency use only:
+
 ```bash
-# From repo root
-cd web
+# From repo root — the site config is the ROOT wrangler.jsonc (name: misakanet-web, assets: docs/)
 npm install
 npx wrangler deploy
-
-# Or from repo root with wrangler.jsonc at root
-npx wrangler deploy
 ```
+
+> **No `web/` directory.** This section used to start with `cd web`. That directory held only
+> `package.json`, `package-lock.json`, `vitest.config.js` and `wrangler.jsonc`, and was **deleted on
+> 2026-08-31 by 739cae4d9** ("slim repo — … drop web/ shell"). It is present in `v2.23.0`
+> (`git ls-tree -r --name-only v2.23.0 web/`). An empty result from
+> `git log origin/main -- web/` is not evidence it never existed: main was flattened on 2026-10-01,
+> so use `git log --all -- web/` or a tag.
 
 ### KV Namespace Setup
 
@@ -130,14 +137,25 @@ npx wrangler kv:namespace create MISAKANET_KV
 # Update wrangler.jsonc with the returned ID
 ```
 
-### CI/CD (`.github/workflows/deploy-worker.yml`)
+### CI/CD
 
-The `deploy-worker.yml` workflow auto-deploys on push to `main` when `docs/` or `web/` files change. Requires:
+Two independent pipelines deploy Cloudflare resources; neither needs a local `wrangler deploy`.
+
+**Site (`misakanet-web`, assets = `docs/`)** — Cloudflare **Workers Builds** (Git integration).
+Fires on every push to `main`; configuration lives in the Cloudflare console, not in this repository.
+The result appears as the `Workers Builds: misakanet-web` check-run on the commit. No GitHub secret
+is involved.
+
+**Main worker (`misakanet-register-proxy`)** — `.github/workflows/deploy-worker.yml`. It runs only
+when `workers/register-proxy-sw.js` or `workers/wrangler.toml` changes on `main` (`paths:` in the
+workflow), and requires:
 
 | Secret | Purpose |
 |--------|---------|
-| `CLOUDFLARE_API_TOKEN` | API token with Workers edit permission |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account identifier |
+| `CF_API_TOKEN` | Cloudflare API token with Workers edit permission |
+
+> The account id is not a secret here — the workflows that need it inline the account id
+> (`CLOUDFLARE_ACCOUNT_ID`), which is why it is not in the table above.
 
 ---
 
@@ -279,4 +297,4 @@ export $(grep -v '^#' .env | xargs)  # Load from .env (not tracked in git)
 | MCP connection refused | Server not running or wrong port | Check `lsof -i :8080` |
 | Search returns 0 results | Index not built | Run `python3 search_knowledge.py "" --domain any` to warm cache |
 | Docker build fails | Outdated base image | `docker pull python:3.11-slim` first |
-| CF deploy 401 | Expired API token | Rotate `CLOUDFLARE_API_TOKEN` in repo secrets |
+| CF deploy 401 | Expired API token | Rotate `CF_API_TOKEN` in repo secrets (the env var it is exposed as inside a step is `CLOUDFLARE_API_TOKEN`) |

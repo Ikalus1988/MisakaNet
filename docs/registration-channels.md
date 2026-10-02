@@ -58,6 +58,6 @@ expected`），所以那条路当时是**既错又断**。
 | 邮件/Web Worker | `workers/email-register/src/index.js` |
 | 邮件 Worker 配置 | `workers/email-register/wrangler.jsonc` |
 | API 代理 Worker | `workers/register-proxy-sw.js`（`wrangler.toml` 的 `main`；push main 自动部署） |
-| API Worker 配置 | `workers/wrangler.api.jsonc` |
+| API Worker 配置 | `workers/wrangler.toml`（`deploy-worker.yml` 部署的就是这一份；`workers/wrangler.api.jsonc` 不存在，#2150 起 npm 侧与这里的引用同批修正）|
 | Issue 注册 Workflow | `.github/workflows/register.yml` |
 | 节点计数器 | worker 的 D1 `counters` 表（主）/ KV `node_counter`（回退）——2026-09-28 起仓库里**没有**副本：`/api/counter` 不再读文件，D1 与 KV 都不可用时返回 503 `counter_unavailable`（陈旧值比没有更糟，#1820）|
