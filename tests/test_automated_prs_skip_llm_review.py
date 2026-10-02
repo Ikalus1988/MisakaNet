@@ -103,13 +103,24 @@ def _runs_on_pull_requests(path: Path) -> bool:
     return False
 
 
-def _conditions(job: dict) -> str:
-    """Every `if:` in the job and its steps, so a guard may sit at either level."""
-    parts = [str(job.get("if", ""))]
+def _guarded(job: dict) -> bool:
+    """The guard must sit on the job itself or on **the step that calls the model**.
+
+    Not the union of every condition in the job: the review moved the guard from `pr-agent-review.yml`'s
+    job `if:` onto a decoy step (`if: <guard>` + `run: echo`) and the first version of this rule stayed
+    green while the model job ran unguarded on every `bot/*` pull request.
+    """
+    if any(guard in str(job.get("if", "")) for guard in GUARDS):
+        return True
     for step in job.get("steps") or []:
-        if isinstance(step, dict):
-            parts.append(str(step.get("if", "")))
-    return "\n".join(parts)
+        if not isinstance(step, dict):
+            continue
+        blob = json.dumps(step)
+        if not any(marker in blob for marker in MODEL_MARKERS):
+            continue
+        if any(guard in str(step.get("if", "")) for guard in GUARDS):
+            return True
+    return False
 
 
 def test_a_job_calling_a_model_skips_the_automation_branches():
@@ -127,8 +138,7 @@ def test_a_job_calling_a_model_skips_the_automation_branches():
             blob = json.dumps(job)
             if not any(marker in blob for marker in MODEL_MARKERS):
                 continue
-            conditions = _conditions(job)
-            if not any(guard in conditions for guard in GUARDS):
+            if not _guarded(job):
                 offenders.append(f"{path.name}:{name}")
     assert not offenders, (
         "these jobs call a model on every pull request, including the automation's own "
@@ -159,8 +169,7 @@ def test_the_required_audit_check_still_runs_on_those_branches():
     assert not job.get("if"), (
         "the `audit` job now has a condition, so a `bot/*` pull request would never see its required "
         "check report — the extra work is what should skip, not the job")
-    assert any(guard in _conditions(job) for guard in GUARDS), (
-        "the model-scoring step no longer skips the automation's branches")
+    assert _guarded(job), "the model-scoring step no longer skips the automation's branches"
 
 
 def test_the_snapshot_lands_at_the_cadence_that_was_decided():

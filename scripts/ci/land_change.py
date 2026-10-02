@@ -4,7 +4,7 @@
 Why this exists (2026-09-23)
 ----------------------------
 `main` carries the ruleset **"main: the deterministic gates"** (id 23826057): four required
-status checks — `DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate` — with
+status checks — `DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate`, `audit` — with
 `bypass_actors: []`. GitHub evaluates those checks on the *commit being pushed*, including for a
 direct push, and no actor is exempt. A push that arrives without them is refused:
 
@@ -188,7 +188,7 @@ def build_body(*, branch: str, title: str, files: list[str], stat: str, note: st
     lines = [MARKER, f"### {title}", ""]
     lines += [
         "Opened by `scripts/ci/land_change.py` because `main` requires "
-        "`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)` and `gate` on every commit that "
+        "`DCO / Signed-off-by`, `test (ubuntu-latest, 3.11)`, `gate` and `audit` on every commit that "
         "lands there — a direct push from the workflow that produced this change is refused by "
         "the ruleset (`3 of 3 required status checks are expected`).",
         "",
