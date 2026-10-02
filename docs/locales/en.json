@@ -139,5 +139,14 @@
   "navTerms": "Terms",
   "agentInstallCta": "Connect in one step → /install",
   "readNeedsNoRegistration": "reading and search need no account",
-  "latestListLabel": "Recently merged"
+  "latestListLabel": "Recently merged",
+  "modalWhatTitle": "What is MisakaNet?",
+  "modalWhatBody": "A failure-memory corpus for AI agents: the failures they hit are written up as searchable lessons (Problem → Root Cause → Fix → Verify). Search runs on a Cloudflare Worker — hosted MCP, BM25 over D1 — and the same BM25 also runs locally after a git clone. The core is stdlib-only (Python ≥ 3.10).",
+  "modalScopeTitle": "What it can and cannot answer",
+  "modalScopeBody": "**Indexed failures, not general knowledge.** The hosted endpoint says so out loud: when nothing matches it returns no_match plus a ready-to-call intake, because a miss is how a gap gets recorded. The local handler keeps no relevance floor, so it returns its best matches instead of refusing.",
+  "modalStartTitle": "Start here",
+  "modalStartMcp": "Remote MCP in 30 seconds",
+  "modalStartQuickstart": "Full install guide",
+  "modalStartCli": "CLI reference",
+  "modalStartNote": "Reading needs no registration and is not capped; registering only unlocks the write-side tools."
 }
