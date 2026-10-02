@@ -35,6 +35,24 @@ permissions:
   contents: write
   pull-requests: write
 
+# One run per pull request, newest wins. The trigger list above is deliberately wide — `labeled` and
+# `unlabeled` carry the maintainer's opt-in and the withdrawal of a human hold, `edited` covers a
+# retargeted base — and those events arrive in bursts from other automations: `.github/labeler.yml`
+# labels every `**/*.md`, the shape guard adds `docs-only` on its own run, and a maintainer's label
+# edit produces two events. Measured 2026-10-02: 33 `pull_request_target` runs in 20 minutes, **10 of
+# them on a single PR within 11 seconds**, and all 33 skipped by the `if:` below — the repository
+# listed 33 runs to say "not eligible" 33 times.
+#
+# Collapsing them to the newest is safe because the decision is a pure function of facts fetched fresh
+# from the API, so an older evaluation of the same PR can only be stale. The step that acts is
+# `gh pr merge --squash --auto`: it *arms* auto-merge in one idempotent call instead of performing a
+# multi-step merge, so a cancelled run can neither half-merge nor un-arm — the run that replaces it
+# re-derives eligibility and arms it again. **If a future edit turns this into a multi-step merge, it
+# must become `cancel-in-progress: false`** — the lesson channel keeps `false` for exactly that reason.
+concurrency:
+  group: auto-merge-docs-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   auto-merge:
     # Only run on PRs that are:

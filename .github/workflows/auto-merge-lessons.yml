@@ -5,7 +5,7 @@ name: Auto-Merge Lessons
 # A lessons-only pull request that carries the `auto-merge-lesson` label is squash-merged
 # automatically once every *mechanical* condition holds; when one fails this workflow
 # leaves exactly one comment naming the blocker, and when one is merely unfinished it does
-# nothing at all (the next `synchronize` / check event re-evaluates).
+# nothing at all (the next `synchronize` / `ready_for_review` re-evaluates).
 #
 # Two design rules are worth stating up front, because both are load-bearing:
 #
@@ -16,17 +16,30 @@ name: Auto-Merge Lessons
 #    branch* and never the pull request head: a PR that could rewrite its own gate could
 #    approve itself. The facts come from the API, so nothing from the PR is executed.
 #
-# Honest note on the `check_suite` trigger: check suite events created by GitHub Actions
-# are widely reported not to trigger workflows (only check suites from other GitHub Apps
-# do) — see community discussions 26169 / 26236. It is declared here because it is free
-# and it does cover third-party check suites, but the load-bearing triggers are
-# `synchronize` and `ready_for_review`. Full decision table, risks and rollback:
-# docs/maintainer/auto-merge-lessons.md.
+# On the `check_suite` trigger that used to sit here, removed 2026-10-02. It was declared as a
+# zero-cost fallback on the assumption that "check suite events created by GitHub Actions do not
+# trigger workflows" (community discussions 26169 / 26236) — docs/maintainer/auto-merge-lessons.md
+# says the same and concludes that the real work is done by `synchronize` and `ready_for_review`.
+# Measured on the tip of `main`, the assumption is false **in this repository**, and that makes the
+# fallback a fan-out: `check_suite: [completed]` fires for every one of the check suites this
+# repository's own workflows create — the same wildcard mistake that `intake-bot-demo.yml` (21,126
+# runs) and `ci-lesson-search.yml` (33,317 runs) already had to fix one level up, in `workflow_run`.
+#
+# Commit `dedc383b` carries 147 check suites; exactly one is not from `github-actions`
+# (`cloudflare-workers-and-pages`, completed 04:08:19Z, after which the commit never changed). This
+# workflow still started 20 runs between 04:54Z and 05:07Z, each 1–25 s after a `github-actions` suite
+# on that same commit completed — and because every run of this workflow completes an
+# `auto-merge-lessons` check suite, the trigger re-entered itself. At 05:04Z it produced 8 runs in 100
+# seconds on a commit nobody had pushed to, and each one checked out the default branch to resolve a
+# pull request from `main` that does not exist. That was 43 of this ring's 62 real job executions in 20
+# minutes, all of them deciding nothing.
+#
+# The accepted consequence is the one the doc already describes as the safe side: an opted-in PR whose
+# checks go green with no further event (`synchronize` / `ready_for_review` / `labeled`) waits for a
+# human. Full decision table, risks and rollback: docs/maintainer/auto-merge-lessons.md.
 on:
   pull_request:
     types: [labeled, synchronize, ready_for_review]
-  check_suite:
-    types: [completed]
 
 permissions:
   contents: write
@@ -35,7 +48,7 @@ permissions:
 
 # One run per pull request, and never cancel one that may be mid-merge.
 concurrency:
-  group: auto-merge-lessons-${{ github.event.pull_request.number || github.event.check_suite.head_sha }}
+  group: auto-merge-lessons-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -46,13 +59,12 @@ jobs:
     # did, via a 403 on `gh api user`) costs every contributor attention and teaches them to
     # ignore checks. Signals reach humans as a PR comment — see docs/maintainer/auto-merge-lessons.md.
     continue-on-error: true
-    # Cheap early exit for check suites that cannot concern a pull request. It cannot be
-    # the only test: `check_suite.pull_requests` is empty for fork PRs, so the run step
-    # resolves the PR from the head SHA as well.
-    if: >
-      github.event_name == 'pull_request'
-      || github.event.check_suite.pull_requests[0].number != null
-      || github.event.check_suite.head_branch != github.event.repository.default_branch
+    # The opt-in label is the *only* entry condition of this channel — the run step re-checks it
+    # against the API and the merge is guarded by it a third time — so a PR that does not carry it can
+    # produce neither a comment nor a merge, and does not need a runner to say so. Measured
+    # 2026-10-02: 26 `pull_request` runs in 20 minutes across 8 open PRs, nearly all of them for PRs
+    # without the label, and with `cancel-in-progress: false` they could not even cancel each other.
+    if: contains(github.event.pull_request.labels.*.name, 'auto-merge-lesson')
     steps:
       - name: Checkout the trusted decision script
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
@@ -65,8 +77,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          SUITE_PR: ${{ github.event.check_suite.pull_requests[0].number }}
-          SUITE_SHA: ${{ github.event.check_suite.head_sha }}
           OPT_IN_LABEL: auto-merge-lesson
         run: |
           set -euo pipefail
@@ -80,13 +90,9 @@ jobs:
           fi
 
           # ── resolve the pull request ────────────────────────────────────────────────
-          # check_suite payloads carry no pull_request, and for fork PRs their
-          # `pull_requests` array is empty, so fall back to the head SHA.
-          PR="${PR_NUMBER:-${SUITE_PR:-}}"
-          if [ -z "$PR" ] && [ -n "${SUITE_SHA:-}" ]; then
-            PR="$(gh api "repos/$REPO/commits/$SUITE_SHA/pulls" \
-                  --jq '[.[] | select(.state == "open")][0].number // empty' || true)"
-          fi
+          # Every trigger left is a `pull_request` event, so the number comes straight from the
+          # payload; the head-SHA lookup that used to back-stop the `check_suite` path went with it.
+          PR="${PR_NUMBER:-}"
           if [ -z "$PR" ]; then
             echo "No open pull request in this event — nothing to do."
             exit 0

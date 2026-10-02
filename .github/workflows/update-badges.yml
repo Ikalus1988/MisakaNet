@@ -21,6 +21,15 @@ on:
 permissions:
   contents: write
 
+# The badges are a pure function of the tree, so the newest run is the only one worth finishing: two
+# runs on the same ref race on `git push`, and the loser can only write an older count over a newer
+# one. Measured 2026-10-02: 8 `workflow_run` runs in 20 minutes on a `main` that never moved
+# (`dedc383b`), 7 of them executing — and `types: [completed]` includes the `cancelled` completions
+# that every bounded workflow now produces, so the trigger keeps firing for runs that decided nothing.
+concurrency:
+  group: update-badges-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   update-badges:
     runs-on: ubuntu-latest
