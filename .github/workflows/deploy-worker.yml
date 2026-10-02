@@ -28,6 +28,13 @@ permissions:
 # per workflow, and two waiting runs are two different versions that must **both** run. Cancelling by
 # workflow group there would silently drop a release. They need a reaper that cancels a waiting run
 # only when that version is already published.
+# ⚠️ 审批与 dispatch 的相互作用（实测 2026-10-02）：审批请**只**点 run 页面上的
+# "Review pending deployments → Approve"。若在部署审阅流程里走了 `workflow_dispatch`
+# （"Run workflow"，或审阅弹窗里重新派发），那会**新起一个 run**，而它与被审批的 push run
+# 同属这一组 → `cancel-in-progress` 先把正在等审批的那个 run 取消，审批就白点了；新起的 run
+# 自己还要再批一次。实测：一个 push run 等了 8h44m，维护者点批后 1 秒被 dispatch run 取消，
+# dispatch run 又被 push run 的 re-run 取消，界面上就表现为"批了还在排队"。
+
 concurrency:
   group: deploy-worker
   cancel-in-progress: true
