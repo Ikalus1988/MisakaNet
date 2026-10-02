@@ -1,9 +1,16 @@
 {
-  "generated_at": "2026-10-02T17:54:47.290278+00:00",
+  "generated_at": "2026-10-02T22:21:08.312366+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 11,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2726",
+      "timestamp": "2026-10-02T18:00:46Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "docs: add OpenCode, Kiro, and Oh-my-Pi integration guides",
@@ -30,13 +37,6 @@
       "title": "docs: external pilot report — upgraded-docs-framework (#1550)",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/2581",
       "timestamp": "2026-10-02T16:51:10Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs: add Copilot integration recipes for three surfaces (#1941)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/2489",
-      "timestamp": "2026-10-02T16:51:02Z",
       "source": "github"
     },
     {
