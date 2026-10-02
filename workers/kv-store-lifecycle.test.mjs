@@ -28,17 +28,40 @@ const FUTURE = new Date(Date.now() + 3_600_000).toISOString();
 // A D1 stand-in that answers the queries this test does not care about (the handler's own lookups) and
 // delegates `kv_store` to the shared helper. Without the inner stub the helper *refuses* unknown SQL on
 // purpose — which is what turned a permissive stub into a visible failure earlier in this series.
-const permissiveD1 = {
-  prepare() {
-    const stmt = { bind() { return stmt; }, async all() { return { results: [] }; },
-                   async run() { return { success: true, meta: { changes: 0 } }; } };
-    return stmt;
-  },
-};
+//
+// It implements the `counters` upsert as well (#2075): the per-address rate limits moved from a
+// `kv_store` value to that upsert, so a stub that answers `INSERT INTO counters` with an empty result
+// set makes `bumpCounter` fall through to KV — and with no KV bound here, `consumeQuota` fails open
+// and no limit ever fires. That is the failure this double now refuses to hide.
+function createPermissiveD1() {
+  const counters = new Map();
+  return {
+    counters,
+    prepare(sql) {
+      const stmt = {
+        _sql: String(sql),
+        _bound: [],
+        bind(...args) { stmt._bound = args; return stmt; },
+        async all() {
+          if (/INSERT INTO counters/i.test(stmt._sql)) {
+            const [scope, bucket, period, delta] = stmt._bound;
+            const key = `${scope}|${bucket}|${period}`;
+            const next = (counters.get(key) || 0) + Number(delta);
+            counters.set(key, next);
+            return { results: [{ count: next }] };
+          }
+          return { results: [] };
+        },
+        async run() { return { success: true, meta: { changes: 0 } }; },
+      };
+      return stmt;
+    },
+  };
+}
 
 function envWithStore() {
   return { MCP_TOKEN: testToken('kv-store-lifecycle'),
-           MISAKANET_D1: withKvStore(permissiveD1) };
+           MISAKANET_D1: withKvStore(createPermissiveD1()) };
 }
 
 test('storeGet hides an expired row and returns a live one', async () => {
@@ -93,6 +116,8 @@ test('the sweeper respects its limit, so a backlog is reclaimed over several run
 });
 
 // The reason the rate family moved (#2117): these limits used to answer 503 without a KV binding.
+// Since #2075 the same limits also stop being a `kv_store` value and become the atomic `counters`
+// upsert — which is why the durability assertion below reads the counters table and not a key.
 test('per-address rate limits hold with D1 only and no KV at all', async () => {
   const env = envWithStore();
   const post = (ip) => worker.fetch(new Request('https://misakanet.org/api/feedback', {
@@ -112,8 +137,19 @@ test('per-address rate limits hold with D1 only and no KV at all', async () => {
   // A different address has its own window: the limit is per caller, not global.
   assert.equal((await post('203.0.113.10')).status, 200);
 
-  assert.equal(await storeGet(env, 'rate:feedback:203.0.113.9', 'text'), '10',
-    'the window counter is durable, so the next isolate sees it too');
+  // Durable, and in the counters table rather than as a `kv_store` key: the window is one row per
+  // (address, window), which is what makes the increment atomic across concurrent requests.
+  const rows = [...env.MISAKANET_D1.counters.keys()];
+  assert.equal(rows.length, 2, `one window row per address, got ${JSON.stringify(rows)}`);
+  assert.ok(rows.some((k) => k.startsWith('rate_feedback|203.0.113.9|')),
+    `the window counter must be a counters row for this address: ${JSON.stringify(rows)}`);
+  assert.equal(env.MISAKANET_D1.counters.get(rows.find((k) => k.startsWith('rate_feedback|203.0.113.9|'))), 11,
+    'every call incremented the counter, refusals included — that is what makes the boundary hold');
+
+  // Nothing about the limit lives in kv_store any more, so a rollback's `rate:feedback:<ip>` read
+  // finds nothing and the window resets once: fail-open on abuse protection.
+  assert.equal([...env.MISAKANET_D1.kvStore.keys()].filter((k) => k.startsWith('rate:')).length, 0,
+    'the rate family must not leave a kv_store key behind');
 });
 
 

@@ -240,6 +240,28 @@ function normalizeIntent(value) {
   return INTENT_WHITELIST.includes(v) ? v : undefined;
 }
 
+// ── The per-source intake ledger's key space is bounded (#2075) ───────────────
+// `intake_source_count:<source>` is one key per source, and `source` is **caller-reported**: the
+// tool takes a free string ("codex, claude-code, cursor, dsh, curl, or other"), so before this the
+// ledger's cardinality was whatever a caller typed — a 40-character alphabet of junk keys is
+// unbounded in the one way that matters here, and the endpoint is open (no Bearer). The old code
+// truncated to 40 characters, which caps the length of a key and does nothing at all to the number
+// of keys.
+//
+// The whitelist is the tool's own documented vocabulary plus the default the handler falls back to,
+// so a legitimate caller loses nothing: everything outside it lands in `other`, which is exactly
+// what the schema promises for an unlisted client. The ledger has no reader in this repo (it feeds
+// #1528), so bucketing cannot break a consumer — it only stops an unauthenticated caller from
+// writing one row per distinct string.
+const INTAKE_SOURCE_WHITELIST = new Set([
+  "codex", "claude-code", "cursor", "dsh", "curl", "mcp", "other",
+]);
+
+function intakeSourceBucket(raw) {
+  const s = String(raw == null ? "" : raw).trim().toLowerCase().slice(0, 40);
+  return INTAKE_SOURCE_WHITELIST.has(s) ? s : "other";
+}
+
 function addDebugContext(env, errorObj, context) {
   if (getDebugLevel(env) < 1) return errorObj;
   return {
@@ -2813,7 +2835,44 @@ const COUNTERS_BACKEND_STATS = { d1: 0, kv: 0, failures: 0, last_failure_at: "" 
 function legacyCounterKey(scope, bucket, period) {
   if (scope === "rate_read") return `rate:read:${bucket}:${period}`;
   if (scope === "signal_rate") return `rate:signal:${bucket}`;
+  // The per-address limits (#2075). The family prefix is kept so `kvKeyFamily` still files these
+  // under `rate`, and the window rides in the key the way `rate_read` does it — the fallback's fixed
+  // `expirationTtl: 86400` is cleanup, not the window. A rollback reads `rate:feedback:<ip>` (no
+  // period) and finds nothing, so the limit resets for one window: fail-open on abuse protection is
+  // the safe direction, and the counter is ephemeral state either way.
+  if (scope === "rate_feedback") return `rate:feedback:${bucket}:${period}`;
+  if (scope === "rate_intake") return `rate:intake:${bucket}:${period}`;
+  if (scope === "rate_connect") return `rate:connect:${bucket}:${period}`;
   return `counters:${scope}:${bucket}:${period}`;
+}
+
+/**
+ * Wall-clock windows for the per-address limits that used to be TTL-based (#2075).
+ *
+ * They were `storeGet` + compare + `storePut` on a `rate:<name>:<ip>` value whose TTL *was* the
+ * window — a read-modify-write with no atomicity: two concurrent requests from one address could
+ * both read `4` and both write `5`, so the limit undercounted exactly when it was under load. They
+ * now share `consumeQuota`, the atomic D1 counter `rate:read` and `signal_rate` already use.
+ *
+ * The one behavioural difference is the window's alignment: a TTL starts at the first request,
+ * these buckets start at the wall clock, so a burst straddling a boundary can see up to twice the
+ * limit. That is what `rate:read` already does, and it is what makes each window one counter row
+ * instead of a value whose lifetime is its own expiry.
+ *
+ * Colon-free, the same reason as `readBurstPeriod`: the KV fallback builds
+ * `rate:<name>:<bucket>:<period>`, and a `:` in the period makes the key ambiguous to anything that
+ * parses it back.
+ */
+function rateWindowMinute(now = new Date()) {
+  return `min-${now.toISOString().slice(0, 16).replace(":", "-")}`;      // min-2026-10-02T02-46
+}
+function rateWindowHour(now = new Date()) {
+  return `hour-${now.toISOString().slice(0, 13)}`;                        // hour-2026-10-02T02
+}
+function rateWindowTenMinutes(now = new Date()) {
+  const iso = now.toISOString();
+  const slot = String(Math.floor(Number(iso.slice(14, 16)) / 10) * 10).padStart(2, "0");
+  return `tenmin-${iso.slice(0, 13)}-${slot}`;                            // tenmin-2026-10-02T02-40
 }
 
 /** Increment a counter and return its new value (D1 atomic upsert, else KV). */
@@ -3862,7 +3921,10 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx) 
         if (cover) {
           if (args.source && hasDurableStore(env)) {
             try {
-              const ck = `intake_source_count:${String(args.source).slice(0, 40)}`;
+              // Bucketed to a finite whitelist, not the caller's own string: `source` is
+              // caller-reported and the endpoint is open, so the raw value made this ledger's key
+              // count whatever an unauthenticated caller felt like writing (#2075).
+              const ck = `intake_source_count:${intakeSourceBucket(args.source)}`;
               const cn = parseInt((await storeGet(env, ck, "text")) || "0", 10) || 0;
               await storePut(env, ck, String(cn + 1), { expirationTtl: 86400 * 30 });
             } catch (_) { /* best-effort ledger (feeds #1528) */ }
@@ -6838,13 +6900,19 @@ export default {
     if (request.method === "POST" && url.pathname === "/api/feedback") {
       if (!hasDurableStore(env)) return jsonResponse({ error: "no storage configured" }, 503);
 
-      // IP rate limit: 10 feedbacks per IP per minute
+      // IP rate limit: 10 feedbacks per IP per minute.
+      //
+      // Through `consumeQuota` rather than the `storeGet` + compare + `storePut` this used to be
+      // (#2075). That was a read-modify-write with no atomicity — two concurrent requests from one
+      // address could both read `4` and both write `5`, so the window undercounted exactly when it
+      // was under load — and it kept its own counter shape instead of sharing the one `rate:read`
+      // and `signal_rate` already use. The boundary is unchanged: ten pass, the eleventh is 429.
       const fbIp = request.headers.get("CF-Connecting-IP") || "unknown";
-      const fbRateKey = `rate:feedback:${fbIp}`;
-      const fbRateRaw = await storeGet(env, fbRateKey, "text");
-      const fbRateCount = fbRateRaw ? parseInt(fbRateRaw, 10) || 0 : 0;
-      if (fbRateCount >= 10) return jsonResponse({ error: "Rate limited. Try again later." }, 429);
-      await storePut(env, fbRateKey, String(fbRateCount + 1), { expirationTtl: 60 });
+      const fbRefusal = await consumeQuota(env, {
+        scope: "rate_feedback", bucket: fbIp, period: rateWindowMinute(), limit: 10,
+        message: "Rate limited. Try again later.",
+      });
+      if (fbRefusal) return jsonResponse({ error: fbRefusal.error }, 429);
 
       let fbBody;
       try { fbBody = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
@@ -6989,13 +7057,13 @@ export default {
       const contentLength = parseInt(request.headers.get("content-length") || "0");
       if (contentLength > 8192) return jsonResponse({ error: "Request too large (max 8KB)" }, 413);
 
-      // IP rate limit: 10 per hour
+      // IP rate limit: 10 per hour — same atomic counter as /api/feedback (#2075)
       const intakeIp = request.headers.get("CF-Connecting-IP") || "unknown";
-      const intakeRateKey = `rate:intake:${intakeIp}`;
-      const intakeRateRaw = await storeGet(env, intakeRateKey, "text");
-      const intakeRateCount = intakeRateRaw ? parseInt(intakeRateRaw, 10) || 0 : 0;
-      if (intakeRateCount >= 10) return jsonResponse({ error: "Rate limited (10/hour). Try again later." }, 429);
-      await storePut(env, intakeRateKey, String(intakeRateCount + 1), { expirationTtl: 3600 });
+      const intakeRefusal = await consumeQuota(env, {
+        scope: "rate_intake", bucket: intakeIp, period: rateWindowHour(), limit: 10,
+        message: "Rate limited (10/hour). Try again later.",
+      });
+      if (intakeRefusal) return jsonResponse({ error: intakeRefusal.error }, 429);
 
       let intakeBody;
       try { intakeBody = await request.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
@@ -7139,13 +7207,13 @@ export default {
     if (request.method === "POST" && url.pathname === "/mcp/connect") {
       if (!hasDurableStore(env)) return jsonResponse({ error: "no storage configured" }, 503);
 
-      // Rate limit: 3 codes per IP per 10 minutes
+      // Rate limit: 3 codes per IP per 10 minutes — same atomic counter as /api/feedback (#2075)
       const connIp = request.headers.get("CF-Connecting-IP") || "unknown";
-      const connRateKey = `rate:connect:${connIp}`;
-      const connRateRaw = await storeGet(env, connRateKey, "text");
-      const connRateCount = connRateRaw ? parseInt(connRateRaw, 10) || 0 : 0;
-      if (connRateCount >= 3) return jsonResponse({ error: "Rate limited. Try again later." }, 429);
-      await storePut(env, connRateKey, String(connRateCount + 1), { expirationTtl: 600 });
+      const connRefusal = await consumeQuota(env, {
+        scope: "rate_connect", bucket: connIp, period: rateWindowTenMinutes(), limit: 3,
+        message: "Rate limited. Try again later.",
+      });
+      if (connRefusal) return jsonResponse({ error: connRefusal.error }, 429);
 
       // Generate 6-char alphanumeric code (cryptographically secure)
       const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I/O/0/1 for readability
@@ -7757,4 +7825,14 @@ export {
   runKeepaliveSweep,
   cleanupCoveredGaps,
   matchAnsweredQuestions,
+  // Exported for workers/rate-limits-counter.test.mjs: the per-address limits' window keys and the
+  // source ledger's bucket are the two seams #2075 changed, and both are worth asserting without
+  // driving the whole worker — one is the atomicity claim, the other is "the key space is finite".
+  consumeQuota,
+  legacyCounterKey,
+  rateWindowMinute,
+  rateWindowHour,
+  rateWindowTenMinutes,
+  intakeSourceBucket,
+  INTAKE_SOURCE_WHITELIST,
 };

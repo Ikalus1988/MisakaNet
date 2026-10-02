@@ -137,7 +137,7 @@ CREATE INDEX IF NOT EXISTS idx_questions_dedup ON questions(dedup_hash);
 -- is not required for correctness; anything older than the longest window (30 days for
 -- traffic monthly) can be deleted at leisure.
 CREATE TABLE IF NOT EXISTS counters (
-  scope      TEXT NOT NULL,   -- rate_read | signal_rate | traffic | traffic_monthly | gap
+  scope      TEXT NOT NULL,   -- rate_read | rate_feedback | rate_intake | rate_connect | signal_rate | traffic | traffic_monthly | gap
   bucket     TEXT NOT NULL,   -- ip | ip:minute | class | query
   period     TEXT NOT NULL,   -- YYYY-MM-DD | YYYY-MM-DDTHH:MM | YYYY-MM
   count      INTEGER NOT NULL DEFAULT 0,
