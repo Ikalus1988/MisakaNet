@@ -39,10 +39,10 @@ jobs:
     # See docs/maintainer/credentials-and-environments.md.
     environment: automation
     runs-on: ubuntu-latest
-    # The script retries a transient import failure up to three times at `subprocess.run(timeout=600)`,
-    # so the worst case is ~30 minutes. Without this the job inherits the 360-minute default, which
-    # hides a hang rather than reporting it.
-    timeout-minutes: 35
+    # The script retries a transient import failure up to three times at a 240s bound, plus ~52s of
+    # backoff: ~13 minutes worst case, against a 45-minute ceiling. Without this the job inherits the
+    # 360-minute default, which hides a hang rather than reporting it.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 

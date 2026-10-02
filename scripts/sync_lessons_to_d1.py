@@ -91,10 +91,25 @@ TRANSIENT_IMPORT_MARKERS = (
     "fetch failed",
     "ECONNRESET",
     "ETIMEDOUT",
-    "502 Bad Gateway",
-    "503 Service Unavailable",
-    "504 Gateway Timeout",
+    # The three upload errors wrangler raises while sending the SQL literally say "Please retry" — the
+    # most obviously retryable class there is, since the corpus is re-uploaded on every attempt.
+    "Please retry",
+    # cfetch renders a non-envelope failure as `Failed to fetch <resource> - <status>: <statusText>;`,
+    # so the status and its phrase are separated by a colon. The first version of this list spelled them
+    # "502 Bad Gateway" (with a space), which matches nothing wrangler prints — three dead entries, and
+    # 500 missing entirely. An independent review measured the attempt counts against these strings.
+    " - 500: ",
+    " - 502: ",
+    " - 503: ",
+    " - 504: ",
+    # 5xx carried inside the Cloudflare error *envelope* is deliberately absent: `throwFetchError` does
+    # not print the status, and wrangler's own `isRetryable()` already retries 5xx/429 internally.
 )
+
+
+#: Three attempts at this bound, plus ~52s of backoff, is ~13 minutes — comfortably inside the
+#: job's `timeout-minutes: 45`.
+IMPORT_TIMEOUT_SECONDS = 240
 
 
 def parse_frontmatter(text: str) -> dict:
@@ -435,39 +450,52 @@ def main() -> int:
             # sampled through the served endpoint were complete. So this is a transient status-poll
             # failure, not a rejected import, and the thing to do about it is try again.
             #
-            # Retrying is safe because this SQL converges: every lesson is an upsert, `--prune` deletes
-            # only ids the repository no longer has, and the FTS index is deleted and rebuilt whole.
-            # A second attempt therefore lands on the same table state as the first.
             # 3 attempts at most, ~10s then ~30s with jitter. This is a *mitigation*, not a fix: the
             # failure it covers is a control-plane hiccup, and an unattended push/cron job going red for
-            # one is the kind of noise that erodes the signal. The SQL converges (upsert by id, prune
-            # against the current id set, FTS rebuilt whole), so a repeat lands on the same state — and
-            # with `concurrency: cancel-in-progress: false` on the workflow, no other sync can overlap.
+            # one is the kind of noise that erodes the signal. Retrying is safe because the SQL
+            # converges — every lesson is an upsert by id, `--prune` deletes only ids the repository no
+            # longer has, and the FTS index is deleted and rebuilt whole — and because the workflow sets
+            # `concurrency: cancel-in-progress: false`, so no other sync can be importing at the same
+            # time.
             backoffs = (10.0, 30.0)
             attempts = len(backoffs) + 1
             for attempt in range(1, attempts + 1):
                 print(f"Executing (attempt {attempt}/{attempts}): {' '.join(cmd[:4])} --file=<tmp> ...",
                       file=sys.stderr)
-                r = subprocess.run(cmd, capture_output=True, text=True, cwd=REPO, timeout=600)
+                # 240s, not 600s: the successful import in the incident log took 1.26s, so this is ~190x
+                # headroom, and three attempts of it fit inside the job's timeout instead of filling it.
+                timed_out = False
+                try:
+                    r = subprocess.run(cmd, capture_output=True, text=True, cwd=REPO,
+                                       timeout=IMPORT_TIMEOUT_SECONDS)
+                    out, err, rc = r.stdout or "", r.stderr or "", r.returncode
+                except subprocess.TimeoutExpired as exc:
+                    # A hung import leg is in-transit by definition, so it is retryable — the first
+                    # version let the exception escape `main()` as a traceback instead (an independent
+                    # review found that by making the fake runner raise).
+                    timed_out = True
+                    out, err, rc = (exc.stdout or ""), (exc.stderr or ""), 1
+                    err += f"\nthe wrangler process did not finish within {IMPORT_TIMEOUT_SECONDS}s\n"
                 # Every attempt's output is printed as it arrives, so a failure that is given up on
                 # still carries the evidence of all three.
-                sys.stdout.write(r.stdout)
-                sys.stderr.write(r.stderr)
-                if r.returncode == 0:
+                sys.stdout.write(out)
+                sys.stderr.write(err)
+                if rc == 0:
                     return 0
-                output = (r.stdout or "") + (r.stderr or "")
-                transient = next((m for m in TRANSIENT_IMPORT_MARKERS if m in output), None)
+                output = out + err
+                transient = (f"timeout after {IMPORT_TIMEOUT_SECONDS}s" if timed_out
+                             else next((m for m in TRANSIENT_IMPORT_MARKERS if m in output), None))
                 if transient is None:
-                    print(f"attempt {attempt}/{attempts} failed with rc={r.returncode} and no transient "
-                          f"marker; not retrying (only in-transit failures are)", file=sys.stderr)
-                    return r.returncode
+                    print(f"attempt {attempt}/{attempts} failed with rc={rc} and no transient marker; "
+                          f"not retrying (only in-transit failures are)", file=sys.stderr)
+                    return rc
                 if attempt == attempts:
                     break
                 delay = backoffs[attempt - 1] * (1 + random.uniform(-0.3, 0.3))
-                print(f"attempt {attempt}/{attempts} failed with rc={r.returncode} on {transient!r}; "
+                print(f"attempt {attempt}/{attempts} failed with rc={rc} on {transient!r}; "
                       f"retrying in {delay:.0f}s", file=sys.stderr)
                 time.sleep(delay)
-            return r.returncode
+            return rc
         finally:
             Path(tmp_path).unlink(missing_ok=True)
 

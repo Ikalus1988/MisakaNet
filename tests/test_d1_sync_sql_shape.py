@@ -29,6 +29,8 @@ import re
 import subprocess
 import sys
 
+import pytest
+
 import scripts.sync_lessons_to_d1 as sync
 from scripts.sync_lessons_to_d1 import REPO, collect_lessons, upsert_sql
 
@@ -64,7 +66,7 @@ def test_the_note_about_the_fts_rebuild_reaches_a_human():
 def test_neither_note_reaches_the_sql():
     """Assert the two shapes this script produces — **not** "no line starts with `--`".
 
-    399 lines of the generated SQL start with `--`: lesson bodies are embedded in quoted strings, and a
+    398 lines of the generated SQL start with `--`: lesson bodies are embedded in quoted strings, and a
     markdown rule, an arrow (`-->`) or a commented-out `WHERE` clause at the start of a line inside one
     looks exactly like a comment to a line scan. A general rule would redden correct output, which is
     the same mistake as the first version's `"FTS index rebuilt" not in stdout` check.
@@ -76,13 +78,21 @@ def test_neither_note_reaches_the_sql():
 
 
 def test_the_prune_shape_ci_runs_also_ends_with_a_statement():
-    """CI runs `--execute --prune`, which prepends a DELETE — the shape the first version never checked."""
-    lessons = collect_lessons()
-    ids = sorted(l["id"] for l in lessons)
-    prune = ("DELETE FROM lessons WHERE id NOT IN (" + ",".join(f"'{i}'" for i in ids) + ");\n")
-    lines = [line for line in (prune + upsert_sql(lessons)).splitlines() if line.strip()]
+    """CI runs `--execute --prune`, which prepends a DELETE — so the assertion runs that same path.
+
+    The first version rebuilt the prune prefix in the test with the same expression `main()` uses, so it
+    asserted against a string it had assembled itself: appending a trailing comment to the real
+    `sql = prune_sql + sql` left the suite green (an independent review measured 21 passed, 0 red). A
+    subprocess of the real CLI cannot drift from what CI hands wrangler.
+    """
+    proc = subprocess.run([sys.executable, "scripts/sync_lessons_to_d1.py", "--sql", "--prune"],
+                          cwd=REPO, capture_output=True, text=True, timeout=300)
+    assert proc.returncode == 0, proc.stderr[-400:]
+    lines = [line for line in proc.stdout.splitlines() if line.strip()]
     assert lines[-1].rstrip().endswith(";"), f"the prune shape ends with {lines[-1][:80]!r}"
-    assert not lines[0].startswith("--"), "the prune shape opens with a comment"
+    assert lines[0].startswith("DELETE FROM lessons"), f"the prune shape opens with {lines[0][:60]!r}"
+    assert not re.search(r"^-- \\d+ lessons parsed at ", proc.stdout, re.M)
+    assert not re.search(r"^-- FTS index rebuilt for \\d+ lessons$", proc.stdout, re.M)
 
 
 #: The string from the incident (run 36950668957) and something that must never be retried.
@@ -144,3 +154,58 @@ def test_a_failure_that_is_not_transient_is_not_retried(monkeypatch):
     calls = _fake_wrangler(monkeypatch, [(1, FATAL)])
     assert _run_execute(monkeypatch) != 0
     assert len(calls) == 1, f"a deterministic failure was retried {len(calls)} times"
+
+
+@pytest.mark.parametrize("output,attempts_expected", [
+    # --- in-transit, must be retried (three attempts total) -----------------------------------------
+    ("\u2718 [ERROR] Not currently importing anything.\n", 3),
+    ("\u2718 [ERROR] D1 reset before execute completed!\n", 3),
+    ("\u2718 [ERROR] TypeError: fetch failed\n", 3),
+    ("\u2718 [ERROR] read ECONNRESET\n", 3),
+    ("Failed to fetch https://api.cloudflare.com/x - 500: Internal Server Error;\n", 3),
+    ("Failed to fetch https://api.cloudflare.com/x - 502: Bad Gateway;\n", 3),
+    ("Failed to fetch https://api.cloudflare.com/x - 503: Service Unavailable;\n", 3),
+    ("Failed to fetch https://api.cloudflare.com/x - 504: Gateway Timeout;\n", 3),
+    ("\u2718 [ERROR] File could not be uploaded. Please retry.\n", 3),
+    ("\u2718 [ERROR] File did not upload successfully. Please retry.\n", 3),
+    ("\u2718 [ERROR] File contents did not upload successfully. Please retry.\n", 3),
+    # --- deterministic, must fail on the first attempt ----------------------------------------------
+    ('\u2718 [ERROR] near "FROM": syntax error\n', 1),
+    ("\u2718 [ERROR] Authentication error: 403\n", 1),
+    ("\u2718 [ERROR] File could not be uploaded: etag mismatch\n", 1),
+])
+def test_the_predicate_matches_wrangler_real_renderings(monkeypatch, output, attempts_expected):
+    """One row per string an independent review fed through its own harness.
+
+    The first version spelled the 5xx entries "502 Bad Gateway" (space); cfetch prints
+    `- 502: Bad Gateway` (colon), so those three matched nothing, 500 was missing, and the three upload
+    errors that literally say "Please retry" were absent. This table is that harness, kept.
+    """
+    calls = _fake_wrangler(monkeypatch, [(1, output)])
+    assert _run_execute(monkeypatch) != 0
+    assert len(calls) == attempts_expected, (
+        f"{output.strip()!r} was attempted {len(calls)} times, expected {attempts_expected}")
+
+
+def test_a_hung_import_is_retried_not_raised(monkeypatch):
+    """`subprocess.TimeoutExpired` used to escape `main()` as a traceback with no retry."""
+    calls = []
+
+    class Done:
+        def __init__(self, rc):
+            self.returncode, self.stdout, self.stderr = rc, "", ""
+
+    real_run = subprocess.run
+
+    def fake_run(cmd, **kwargs):
+        if cmd and cmd[0] == "wrangler":
+            calls.append(list(cmd))
+            if len(calls) == 1:
+                raise subprocess.TimeoutExpired(cmd, 240, output="", stderr="")
+            return Done(0)
+        return real_run(cmd, **kwargs)
+
+    monkeypatch.setattr(sync.subprocess, "run", fake_run)
+    monkeypatch.setattr(sync.time, "sleep", lambda seconds: None)
+    assert _run_execute(monkeypatch) == 0, "a hang must be retried, not raised"
+    assert len(calls) == 2

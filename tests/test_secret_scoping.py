@@ -210,3 +210,12 @@ def test_the_unattended_d1_writers_serialize():
         assert concurrency.get("cancel-in-progress") is False, (
             f"{name}: cancel-in-progress must stay false — cancelling an interrupted import is not "
             "superseding it")
+        if name == "sync-d1.yml":
+            # Only this one retries, so only it has a computed worst case (~13 minutes) to bound. Its
+            # ceiling is asserted because the new `timeout-minutes: 45` had no rule at all: deleting it
+            # left the suite green (found in review). The other two keep the default deliberately —
+            # nobody has measured how long a backup may legitimately take.
+            job = next(iter(data["jobs"].values()))
+            assert "timeout-minutes" in job, (
+                f"{name} retries an import up to three times, so the job needs its own ceiling — the "
+                "360-minute default hides a hang instead of reporting it")
