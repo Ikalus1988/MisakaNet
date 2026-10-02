@@ -62,7 +62,7 @@ Usage (by hand, to replay what a run did):
 
 Proven live before it was given to any workflow. On 2026-09-23, from a scratch clone and with the
 maintainer's PAT: **#2104** — opened 11:05Z, auto-merge enabled by this script, merged by GitHub at
-11:09:56Z once the three required checks were green — and **#2105** — a second run reusing that same
+11:09:56Z once the required checks were green — and **#2105** — a second run reusing that same
 branch after its pull request had been merged, which is the property every daily job depends on.
 The write-up is `docs/maintainer/automation-lands-via-pr.md`; the half that keeps a workflow from
 quietly going back to pushing `main` is `tests/test_no_workflow_pushes_to_main.py`.
