@@ -70,9 +70,56 @@ def test_the_search_field_has_a_label_and_the_results_have_a_summary_region():
     region = re.search(r"<div id=\"search-status\"[^>]*>", PAGE)
     assert region, "no result-summary region"
     assert 'role="status"' in region.group(0) and 'aria-live="polite"' in region.group(0), region.group(0)
-    assert "search-status" in PAGE.split("function searchLessons")[1], (
-        "the summary region exists but the search never writes to it")
     assert "sr-only" in PAGE, "the label and summary need the visually-hidden utility"
+
+
+def _function_body(name: str) -> str:
+    """One function's source, from its declaration to the next top-level `function`."""
+    tail = PAGE.split(f"function {name}", 1)[1]
+    return tail.split("\nfunction ", 1)[0]
+
+
+def test_the_summary_is_written_on_every_branch_of_the_search():
+    """This is the rule that protects the feature, and the first version got it wrong.
+
+    It asserted only that the string `search-status` appears inside `searchLessons` — which the
+    `const status = document.getElementById("search-status")` line satisfies on its own. An independent
+    review deleted the three writes and the whole suite stayed green (367 passed) while the browser
+    showed eight results and announced nothing. A behavioural rule has to read the assignment.
+    """
+    writes = re.findall(r"status\.textContent\s*=", _function_body("searchLessons"))
+    assert len(writes) >= 3, (
+        f"expected a write per branch (results, no match, cleared query), found {len(writes)}")
+
+
+def test_a_blocked_data_load_is_announced_not_just_painted():
+    """`renderErrorBoundaryUI` is reachable — blocking `data/lessons*.json` shows its panel — and the
+    panel is visible while a screen reader gets nothing unless the live region is written too."""
+    body = _function_body("renderErrorBoundaryUI")
+    assert re.search(r"status\.textContent\s*=", body), (
+        "the error panel is painted but never announced through the live region")
+
+
+def test_hiding_the_results_clears_the_summary():
+    """The blur handler hides the panel after 200 ms; a summary that keeps saying "Results are listed
+    below the search box" then describes something that is no longer on screen."""
+    handler = re.search(r"setTimeout\(\(\)=>\{document\.getElementById\('search-results'\)\.style\.display='none';(.*?)\}?,200\)", PAGE)
+    assert handler and "search-status" in handler.group(1), (
+        "hiding the results leaves the summary claiming they are listed below")
+
+
+def test_a_reader_who_asked_for_no_motion_gets_none():
+    """Zero of these rules existed while the page shipped 11 @keyframes and 13 animation declarations."""
+    block = re.search(r"@media \(prefers-reduced-motion: reduce\)\s*\{(.*?)\n  \}", PAGE, re.DOTALL)
+    assert block, "no prefers-reduced-motion block"
+    body = block.group(1)
+    assert "animation-duration" in body and "transition-duration" in body, (
+        "the block must neutralise both animations and transitions, not one of them")
+    assert "!important" in body, "without !important the inline and later rules win"
+    # The selector matters as much as the declarations: narrowing it to `.drawer` would leave every
+    # other animation on the page running, and a rule that only counts declarations stays green.
+    assert "*, *::before, *::after" in body, (
+        "the block no longer covers every element, so most of the page still moves")
 
 
 def test_the_nav_partial_carries_the_closed_state_too():
