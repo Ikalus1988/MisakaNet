@@ -21,12 +21,15 @@ with such names, this function crashed on them until the review found it.
 """
 from __future__ import annotations
 
+import errno
 import os
 import subprocess
+import types
 from pathlib import Path
 
 import pytest
 
+from misakanet import lesson_index
 from misakanet.lesson_index import EXCLUDED_LESSON_FILES, canonical_lessons
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -134,12 +137,17 @@ def test_a_non_utf8_filename_does_not_crash_the_lookup(tmp_path: Path):
         with open(raw, "wb") as handle:
             handle.write(LESSON.encode("utf-8"))
     except OSError as exc:
-        # APFS refuses the name outright: `OSError: [Errno 92] Illegal byte sequence`. The behaviour
-        # under test cannot be reproduced on a filesystem that cannot hold the input, so this leg is
-        # skipped there rather than deleted — it runs on ext4 in CI (measured 2026-10-02; the first
-        # version of this test broke the macOS legs, which are not required checks and let the pull
-        # request merge with them red). `test_the_git_reading_decodes_raw_bytes` pins the argument on
-        # every platform.
+        # APFS refuses the name outright: `OSError: [Errno 92] Illegal byte sequence`, which is EILSEQ on
+        # macOS and 84 on Linux — so the constants are compared, never the number. The behaviour under
+        # test cannot be reproduced on a filesystem that cannot hold the input, so this leg is skipped
+        # there rather than deleted (measured 2026-10-02: the first version of this test broke the macOS
+        # legs, which are not required checks and let the pull request merge with them red).
+        #
+        # Only a *name-encoding* failure counts as that capability limit. Catching bare `OSError` also
+        # swallowed EACCES and ENOSPC — an independent review proved it by shimming both — which would
+        # have turned a permissions problem or a full disk into a quiet skip.
+        if exc.errno not in (errno.EILSEQ, errno.EINVAL, errno.ENOTSUP):
+            raise
         pytest.skip(f"this filesystem refuses non-UTF-8 filenames: {exc}")
     subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
     subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
@@ -155,17 +163,45 @@ def test_a_non_utf8_filename_does_not_crash_the_lookup(tmp_path: Path):
         f"the non-UTF-8 lesson was dropped instead of indexed: {names!r}")
 
 
-def test_the_git_reading_decodes_raw_bytes():
+def test_the_git_reading_decodes_raw_bytes(tmp_path: Path, monkeypatch):
     """The argument that keeps a non-UTF-8 name from becoming an exception, pinned everywhere.
 
     The behavioural test above needs a filesystem that can hold such a name, which APFS cannot, so this
     checks the call itself: `text=True` without `errors=` decodes with the locale codec, and
     `UnicodeDecodeError` is neither an `OSError` nor a `SubprocessError`, so it escapes the `except` that
     exists for a missing git and takes `canonical_lessons` down with it.
+
+    It asserts the **kwargs the call is made with**, not text in the source. An independent review broke
+    the first version twice: equivalent rewrites (single quotes, a named constant) failed it, while
+    deleting the argument but leaving a comment mentioning it inside the parentheses passed — and on
+    macOS, where the behavioural test skips, that comment was the only thing standing between the corpus
+    and a crash.
+
+    `lesson_index.subprocess` is replaced rather than the shared module's `run`, so this cannot leak into
+    other tests (the same shared-module trap that emptied the corpus in this pull request's first CI run).
     """
-    source = (REPO_ROOT / "misakanet" / "lesson_index.py").read_text(encoding="utf-8")
-    call = source.split("subprocess.run(", 1)[1].split(")", 1)[0]
-    assert 'errors="surrogateescape"' in call, (
-        "the git reading no longer decodes with surrogateescape; a non-UTF-8 filename now raises "
-        f"UnicodeDecodeError (measured on ext4): {call.strip()[:160]}")
-    assert "text=True" in call, "without text mode the paths arrive as bytes"
+    contrib = tmp_path / "lessons" / "contrib"
+    contrib.mkdir(parents=True)
+    (contrib / "ok.md").write_text(LESSON, encoding="utf-8")
+    seen: dict[str, object] = {}
+
+    class _Completed:
+        returncode = 0
+        stdout = "contrib/ok.md\n"
+
+    def fake_run(*args, **kwargs):
+        seen["args"] = args
+        seen["kwargs"] = kwargs
+        return _Completed()
+
+    monkeypatch.setattr(lesson_index, "subprocess", types.SimpleNamespace(
+        run=fake_run, SubprocessError=subprocess.SubprocessError))
+
+    got = canonical_lessons(tmp_path / "lessons")
+
+    kwargs = seen.get("kwargs") or {}
+    assert kwargs.get("errors") == "surrogateescape", (
+        "the git reading no longer decodes with surrogateescape, so a non-UTF-8 filename raises "
+        f"UnicodeDecodeError (measured on ext4); the call was made with {kwargs!r}")
+    assert kwargs.get("text") is True, f"without text mode the paths arrive as bytes: {kwargs!r}"
+    assert [path.name for path in got] == ["ok.md"], "the fake's lesson did not come through"
