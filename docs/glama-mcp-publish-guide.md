@@ -129,6 +129,7 @@ PyPI package README must contain: `mcp-name: io.github.YourName/your-server`
 | pyproject.toml not found | `neither pyproject.toml nor setup.py` | Check COPY path in Dockerfile |
 | Docker Hub timeout | `context deadline exceeded` | Retry (transient) |
 | Build cancelled | `did not start within 2 hours` | Retry during off-peak |
+| Build fails in **milliseconds**, `logs: []`, `docker-modem` 502 via nginx | `(HTTP code 502) unexpected - <html>…502 Bad Gateway…` thrown in `buildDockerImage.js` | **Not your Dockerfile** — the runner could not reach its own Docker daemon, and no instruction ran. Retry; if it repeats, report the duration + empty logs + that stack frame. A real Dockerfile failure always has logs and a non-zero duration (full triage in `lessons/contrib/glama-mcp-server-deploy-lessons.md`) |
 | License conflict | `License classifiers have been superseded` | Remove license classifier, keep SPDX expression |
 | mcp-name casing | `ownership validation failed` | Match GitHub username casing exactly |
 | Description too long | `expected length <= 100` | Shorten server.json description |
