@@ -125,3 +125,83 @@ def test_the_skip_owner_set_still_names_the_owners():
     entries = {e.strip().strip('"').lower() for e in match.group(1).split(",") if e.strip()}
     for owner in ("ikalus1988", "sheldonisspark-lab", "misakanet-bot", "claude"):
         assert owner in entries, f"{owner} is no longer excluded from the wall: {sorted(entries)}"
+
+
+# ── the render path is an innerHTML sink fed by *public, unauthenticated* PR metadata ──────────────
+# Measured 2026-10-02 in a real browser against a stubbed `/api/github/.../pulls` response: a PR that was
+# merely **closed** (the filter is `p.closed_at && !p.draft`, so `merged_at` may be null — any GitHub user
+# can open a PR and close it) put script on the homepage. Three fields reached `innerHTML` unescaped:
+#
+#   pr.title        -> the display name       "<div class=\"contrib-name\">${node}"
+#   Supported-by:   -> data.agentModel        "<span class=\"contrib-model-badge\">…${data.agentModel}"
+#   a "- " body line-> the lesson label       "<a href=\"${l.url}\">📘 ${l.name…}"
+#
+# and the lesson id also landed inside the `href`, so the attribute could be broken out of as well.
+# The page already owns both primitives — `escapeHTML` (escapes & < > " ') and `safeHref` (http(s) only)
+# — and the search results and voice cards use them. This wall was the one path that did not.
+
+def _contributor_row_template() -> str:
+    """The template literal the wall's rows are built from, read out of the page."""
+    html = HTML.read_text(encoding="utf-8")
+    match = re.search(r'return `\s*\n\s*<div class="contrib-item">(.*?)`\s*;', html, re.DOTALL)
+    assert match, "the wall's row template moved — this test reads it to check what ships"
+    return match.group(1)
+
+
+#: Values the template may interpolate *raw* because the page computes them itself. Each is either a
+#: literal (`rank`, `level`, the class names) or a fragment assembled above from already-escaped input —
+#: `classBadge` also passes through a `switch` that returns '' for anything unknown.
+PAGE_COMPUTED = {"rank", "level", "levelClass", "classBadge", "modelBadge", "contribDetail", "xpBar",
+                 "details"}
+
+
+def test_every_interpolation_in_the_wall_is_escaped_or_page_computed():
+    """A gate, not three literals: it fails on the *next* field someone interpolates here."""
+    raw = []
+    for expr in re.findall(r"\$\{([^}]*)\}", _contributor_row_template()):
+        expr = expr.strip()
+        if expr in PAGE_COMPUTED:
+            continue
+        if expr.startswith(("escapeHTML(", "safeHref(")):
+            continue
+        raw.append(expr)
+    assert not raw, (
+        "these values reach the contributor wall's innerHTML without escaping, and the wall is built "
+        f"from other people's pull requests: {raw}"
+    )
+
+
+@pytest.mark.parametrize("sink", [
+    "escapeHTML(node)",
+    "escapeHTML(data.agentModel)",
+    "escapeHTML(l.name.substring(0, 40))",
+    "safeHref(l.url)",
+])
+def test_the_pull_request_fields_are_escaped_at_the_sink(sink):
+    """Named explicitly, so a refactor that moves the fragments around still has to keep them escaped."""
+    html = HTML.read_text(encoding="utf-8")
+    assert sink in html, f"{sink} is gone — that field comes from a PR title or body"
+
+
+def test_the_lesson_id_is_url_encoded_where_the_href_is_built():
+    """`id` is a `- ` line from a PR body, so it must not be able to close the href attribute."""
+    html = HTML.read_text(encoding="utf-8")
+    assert "lessons/${encodeURIComponent(id)}.md" in html, (
+        "the lesson id is interpolated into a URL unencoded; a `\"` in it closes the href attribute"
+    )
+
+def test_a_lesson_line_only_counts_when_it_names_a_lesson_in_the_corpus():
+    """The ranking is `count + lessons.length` and the wall shows the top 10.
+
+    Every `- ` line used to be pushed regardless of `exists`, so a body with ~30 filler lines took the
+    first row — which is also what put a stranger's payload above the fold. A line that names nothing in
+    `data/lessons.json` is not a contribution to the corpus and must not count.
+    """
+    html = HTML.read_text(encoding="utf-8")
+    block = re.search(r"lessonLines\.forEach\(line => \{(.*?)\n      \}\);", html, re.DOTALL)
+    assert block, "the lesson-line loop moved"
+    body = block.group(1)
+    assert re.search(r"if \(!exists\) return;", body), (
+        "a `- ` line now counts even when its id is not in the corpus, so a PR body can stuff the "
+        f"ranking: {body.strip()[:200]}"
+    )

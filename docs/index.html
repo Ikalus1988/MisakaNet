@@ -3303,7 +3303,11 @@ async function loadContributors() {
         const id = clean.split(/[—\-–]/)[0].trim();
         if (id && id.length > 2 && id.length < 60) {
           const exists = existingLessons.has(id);
-          const url = `https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/${id}.md`;
+          // A `- ` line that names nothing in the corpus is not a contribution to it. Counting those
+          // let a single PR body stuff the wall: the ranking is `count + lessons.length`, only the top
+          // 10 render, and we measured a body with ~30 filler lines taking the first row (2026-10-02).
+          if (!exists) return;
+          const url = `https://github.com/Ikalus1988/MisakaNet/blob/main/lessons/${encodeURIComponent(id)}.md`;
           contribMap[nodeName].lessons.push({ name: clean, id, url, exists });
         }
       });
@@ -3386,9 +3390,9 @@ async function loadContributors() {
 
       const lessonItems = data.lessons.slice(0, 3).map(l => {
         if (l.exists) {
-          return `<a href="${l.url}" target="_blank">📘 ${l.name.substring(0, 40)}</a>`;
+          return `<a href="${safeHref(l.url)}" target="_blank" rel="noopener">📘 ${escapeHTML(l.name.substring(0, 40))}</a>`;
         }
-        return `<span style="color:#475569;">📘 ${l.name.substring(0, 40)}</span>`;
+        return `<span style="color:#475569;">📘 ${escapeHTML(l.name.substring(0, 40))}</span>`;
       }).join('');
 
       const details = lessonItems ? `<div class="contrib-lessons">${lessonItems}</div>` : '';
@@ -3400,7 +3404,7 @@ async function loadContributors() {
         ? `<span class="contrib-class-badge ${getClassificationClass(data.agentClass)}">${getClassificationLabel(data.agentClass)}</span>`
         : '';
       const modelBadge = data.agentModel
-        ? `<span class="contrib-model-badge">${t('modelPrefix')} ${data.agentModel}</span>`
+        ? `<span class="contrib-model-badge">${t('modelPrefix')} ${escapeHTML(data.agentModel)}</span>`
         : '';
 
       return `
@@ -3408,7 +3412,7 @@ async function loadContributors() {
           <div class="contrib-rank">${rank}</div>
           <div class="contrib-badge ${levelClass}">${level}</div>
           <div class="contrib-info">
-            <div class="contrib-name">${node}${classBadge}${modelBadge}</div>
+            <div class="contrib-name">${escapeHTML(node)}${classBadge}${modelBadge}</div>
             <div class="contrib-detail">${contribDetail}</div>
             ${xpBar}
             ${details}
