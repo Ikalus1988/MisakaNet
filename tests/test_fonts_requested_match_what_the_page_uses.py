@@ -39,7 +39,11 @@ PAGE = (REPO / "docs" / "index.html").read_text(encoding="utf-8")
 #:     #   [...document.querySelectorAll('body *')].forEach(el => { ... getComputedStyle ... })
 #:     PY
 EXPECTED = {
-    "Orbitron": ["700", "800", "900"],
+    # 400 is here because of an element that *inherits* it: `.modal-title` declares Orbitron and no
+    # font-weight, so it renders at the body's 400. A review caught its removal with a pixel control —
+    # forcing `.modal-title{font-weight:700}` on the old version produced a screenshot identical to the
+    # new version's natural render, i.e. the title had silently moved to the 700 face.
+    "Orbitron": ["400", "700", "800", "900"],
     "Ma Shan Zheng": None,          # a single weight, no axis in the URL
     "Inter": ["400", "500", "600", "700"],
     "Noto Sans SC": ["400", "500", "700"],
@@ -66,6 +70,28 @@ def test_the_request_carries_exactly_the_weights_the_page_uses():
         f"  requested: {got}\n  expected:  {EXPECTED}\n"
         "Unused weights inflate a 460 KB stylesheet in the critical path; missing ones make the browser "
         "synthesise a weight. Re-measure with the snippet in this file's docstring before editing.")
+
+
+def _weights_the_page_declares() -> set[str]:
+    """Every `font-weight` value in the page's own CSS and inline styles."""
+    return set(re.findall(r"font-weight:\s*(\d{3})", PAGE))
+
+
+def test_no_declared_weight_is_missing_from_the_request():
+    """The direction that a URL-only rule misses, and the one this pull request got wrong first.
+
+    The review that found the Orbitron regression also showed the failure mode of the rule above: it
+    reads one URL string, so adding `font-weight:300` to the page's CSS (a weight nobody requests) leaves
+    it green. This compares the declared weights against the requested ones. It is a *union* check —
+    family-level correctness (which family needs which weight) is a browser question, and the review's
+    pixel control is the only thing that answered it the first time.
+    """
+    requested_weights = {w for weights in requested().values() if weights for w in weights}
+    declared = _weights_the_page_declares()
+    missing = sorted(declared - requested_weights)
+    assert not missing, (
+        f"the page declares font-weight {missing}, which no requested family carries — the browser will "
+        "synthesise it. Add the weight to the family that needs it (measure first), or stop declaring it.")
 
 
 def test_the_stylesheet_is_still_one_request_with_swap():
