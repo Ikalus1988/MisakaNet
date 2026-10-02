@@ -79,15 +79,21 @@ INVALID_GUARDS = (
 SNAPSHOT_CADENCE_SECONDS = 86400
 
 
-# Known limits of the rule below, stated rather than implied (the review checked all three):
+# Known limits of the rule below, each one **measured** by a review rather than assumed — and the first
+# version of this note had the direction backwards, which is worse than saying nothing:
 #
-#   * a job with **two** steps that carry a marker and only the first guarded passes — `_guarded` returns on
-#     the first match;
-#   * a model call moved into a reusable `on: workflow_call` workflow is invisible to both sides: the caller
-#     has no marker, the callee has no pull-request trigger (no such file exists today);
-#   * a marker inside a YAML comment counts as a marker, which reddens rather than misses.
+#   * a model call moved into a reusable `on: workflow_call` workflow is invisible to both sides — the caller
+#     carries no marker and the callee has no pull-request trigger — so it is a **miss**, not a false red
+#     (`grep -rln workflow_call .github/workflows/` is empty today: future risk, not a present defect);
+#   * a marker written only inside a YAML **comment** never reaches this rule, because `yaml.safe_load`
+#     drops comments before the marker search runs. Also a **miss** — the opposite of what this note first
+#     claimed (it said such a marker would redden);
+#   * a marker at job level (e.g. `env: OPENAI_KEY`) with the call in an unmarked step **fails closed**:
+#     nothing can be shown to be guarded, so the rule reddens.
 #
-# All three fail closed in the direction that matters here (a miss would mean paying for a review).
+# Every *marked* shape is covered: each marker-carrying step must carry the guard, or its job must. Both
+# remaining misses need a marker the parser cannot see, and both fail in the direction of paying for a
+# review — so they are written here rather than left to be discovered.
 
 
 def _workflow_files() -> list[Path]:
@@ -123,15 +129,18 @@ def _guarded(job: dict) -> bool:
     """
     if any(guard in str(job.get("if", "")) for guard in GUARDS):
         return True
-    for step in job.get("steps") or []:
-        if not isinstance(step, dict):
-            continue
-        blob = json.dumps(step)
-        if not any(marker in blob for marker in MODEL_MARKERS):
-            continue
-        if any(guard in str(step.get("if", "")) for guard in GUARDS):
-            return True
-    return False
+    marker_steps = [
+        step for step in (job.get("steps") or [])
+        if isinstance(step, dict) and any(marker in json.dumps(step) for marker in MODEL_MARKERS)
+    ]
+    if not marker_steps:
+        # A marker at job level (say `env: OPENAI_KEY`) with the call in an unmarked step: nothing here can
+        # be shown to be guarded, so this fails **closed**.
+        return False
+    # **Every** marker-carrying step has to carry it. Returning on the first guarded one let a second,
+    # unguarded model step through green — the review built exactly that inside `audit` and the suite
+    # stayed green, which is a miss that pays for a call.
+    return all(any(guard in str(step.get("if", "")) for guard in GUARDS) for step in marker_steps)
 
 
 def test_a_job_calling_a_model_skips_the_automation_branches():
