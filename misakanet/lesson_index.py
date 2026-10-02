@@ -17,6 +17,8 @@ visible on purpose: users hit them, trial-and-error, and submit corrections
 """
 from __future__ import annotations
 
+import subprocess
+
 from pathlib import Path
 
 # Directory names that never index (scaffolding / retired).
@@ -52,6 +54,37 @@ def discover_lesson_dirs(lessons_root: Path) -> list[Path]:
     return dirs
 
 
+def tracked_lesson_files(lessons_root: Path) -> list[Path] | None:
+    """The lesson files git tracks under ``lessons_root``, or ``None`` when git cannot answer.
+
+    The index used to be built from the filesystem (``rglob``), so anything a local tool left behind —
+    an editor scratch file, a draft, a stray ``.md`` — entered the search corpus here while CI and the
+    hosted worker never saw it. That is the audit's P7: the mechanism is real, and the reason a dirty
+    tree reported two more files than a clean one is that the walk cannot tell "in the repository"
+    from "on this disk".
+
+    Files are the index's subject, so git is the authority whenever it can answer. A checkout without
+    git (an installed package, an exported tarball, a test fixture that is not a repository) gets the
+    walk instead, which is exactly the old behaviour.
+
+    ``-c core.quotepath=false`` is load-bearing: without it git escapes non-ASCII paths as octal
+    inside quotes, and this repository has CJK lesson filenames. `scripts/push_preflight.py` records
+    the same lesson, learned the same way.
+    """
+    if not lessons_root.is_dir():
+        return None
+    try:
+        proc = subprocess.run(
+            ["git", "-c", "core.quotepath=false", "ls-files", "--", "."],
+            cwd=lessons_root, capture_output=True, text=True, check=False, timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):  # git missing, or not a repository
+        return None
+    if proc.returncode != 0:
+        return None
+    return [lessons_root / line for line in proc.stdout.splitlines() if line.endswith(".md")]
+
+
 def canonical_lessons(lessons_root: Path) -> list[Path]:
     """One lesson per stem across all discovered dirs (duplicate-free index).
 
@@ -70,8 +103,11 @@ def canonical_lessons(lessons_root: Path) -> list[Path]:
         discover_lesson_dirs(lessons_root),
         key=lambda d: (_DIR_PRIORITY.get(d.name, 2), d.name),
     )
+    tracked = tracked_lesson_files(lessons_root)
     for d in dirs:
-        for f in sorted(d.rglob("*.md")):
+        candidates = ([p for p in tracked if p.is_relative_to(d)] if tracked is not None
+                      else list(d.rglob("*.md")))
+        for f in sorted(candidates):
             if f.name.startswith(".") or f.name in EXCLUDED_LESSON_FILES:
                 continue
             seen.setdefault(f.stem, f)
