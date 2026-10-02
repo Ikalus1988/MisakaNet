@@ -130,8 +130,17 @@ def test_a_non_utf8_filename_does_not_crash_the_lookup(tmp_path: Path):
     contrib.mkdir(parents=True)
     (contrib / "ok.md").write_text(LESSON, encoding="utf-8")
     raw = os.fsencode(contrib) + b"/\xff\xfe-bad.md"
-    with open(raw, "wb") as handle:
-        handle.write(LESSON.encode("utf-8"))
+    try:
+        with open(raw, "wb") as handle:
+            handle.write(LESSON.encode("utf-8"))
+    except OSError as exc:
+        # APFS refuses the name outright: `OSError: [Errno 92] Illegal byte sequence`. The behaviour
+        # under test cannot be reproduced on a filesystem that cannot hold the input, so this leg is
+        # skipped there rather than deleted — it runs on ext4 in CI (measured 2026-10-02; the first
+        # version of this test broke the macOS legs, which are not required checks and let the pull
+        # request merge with them red). `test_the_git_reading_decodes_raw_bytes` pins the argument on
+        # every platform.
+        pytest.skip(f"this filesystem refuses non-UTF-8 filenames: {exc}")
     subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
     subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
 
@@ -144,3 +153,19 @@ def test_a_non_utf8_filename_does_not_crash_the_lookup(tmp_path: Path):
     # version of this test passed even if the lesson was silently dropped.
     assert any("\udcff" in name for name in names), (
         f"the non-UTF-8 lesson was dropped instead of indexed: {names!r}")
+
+
+def test_the_git_reading_decodes_raw_bytes():
+    """The argument that keeps a non-UTF-8 name from becoming an exception, pinned everywhere.
+
+    The behavioural test above needs a filesystem that can hold such a name, which APFS cannot, so this
+    checks the call itself: `text=True` without `errors=` decodes with the locale codec, and
+    `UnicodeDecodeError` is neither an `OSError` nor a `SubprocessError`, so it escapes the `except` that
+    exists for a missing git and takes `canonical_lessons` down with it.
+    """
+    source = (REPO_ROOT / "misakanet" / "lesson_index.py").read_text(encoding="utf-8")
+    call = source.split("subprocess.run(", 1)[1].split(")", 1)[0]
+    assert 'errors="surrogateescape"' in call, (
+        "the git reading no longer decodes with surrogateescape; a non-UTF-8 filename now raises "
+        f"UnicodeDecodeError (measured on ext4): {call.strip()[:160]}")
+    assert "text=True" in call, "without text mode the paths arrive as bytes"
