@@ -395,6 +395,13 @@ jobs:
       - name: Run Worker Test Suite (node)
         if: steps.scope.outputs.scope == 'full'
         id: node_tests
+        # This step deliberately does **not** carry `continue-on-error` (it did until 2026-10-02).
+        # A step that swallows its own failure hands the job a green conclusion: the verdict block
+        # below already read `steps.node_tests.outcome`, so a red worker suite produced an `::error`
+        # annotation — and nothing else. `audit` is the required check, so it stayed green and a PR
+        # with a failing worker suite could auto-merge. Failing the step outright is what makes
+        # `audit` red; the explicit `exit 1` in "Exit with failure if any hard gate fails" is the
+        # second lock, and the one that says *why* in the job log.
         run: |
           set +e
           node --test 'workers/**/*.test.mjs' 2>&1 | tee node_worker_report.txt
@@ -402,7 +409,6 @@ jobs:
           echo "exit=$NODE_EXIT" >> "$GITHUB_OUTPUT"
           echo "Worker suite exit: $NODE_EXIT"
           exit $NODE_EXIT
-        continue-on-error: true
 
       - name: Upload Coverage to Codecov
         if: steps.scope.outputs.scope == 'full'
@@ -643,7 +649,14 @@ jobs:
             REPORT+="### 🧪 Test Suite"
             REPORT+=$'\n\n'
             if [ "$OUTCOME" = "success" ]; then
-              REPORT+="✅ **PASS** — ${COVERAGE}% coverage"
+              # The rate comes from `Parse Coverage`, which runs *after* the worker suite: when that
+              # suite fails the job, every later step is skipped and `COVERAGE` is empty. "PASS —
+              # % coverage" would be the same kind of half-true line this report exists to
+              # eliminate, so print the rate only when we actually have it.
+              REPORT+="✅ **PASS**"
+              if [ -n "$COVERAGE" ]; then
+                REPORT+=" — ${COVERAGE}% coverage"
+              fi
             elif [ "$OUTCOME" = "skipped" ]; then
               # `skipped` is not `failed`. A step whose `if:` contains no status function inherits an
               # implicit `success()`, so one red gate earlier in this job (DCO, most often) skips every
@@ -817,6 +830,22 @@ jobs:
               1) echo "Audit failed: test suite has failing tests (exit 1)." ;;
               *) echo "Audit failed: test suite has issues (pytest exit ${PYTEST_EXIT:-unknown})." ;;
             esac
+            exit 1
+          fi
+          # The worker suite is a hard gate for the same reason the Python one is (see the comment
+          # above `Run Worker Test Suite (node)`): it is the only automated verification of
+          # `workers/register-proxy-sw.js` — the MCP endpoint, search and every public `/api/*` route.
+          # Without this guard a red node suite reached the report, set `VERDICT_PASS=false`, printed
+          # an `::error` and still exited 0, so the required `audit` check was green (measured
+          # 2026-10-02). Same shape and same `SCOPE` condition as the pytest guard above: the node
+          # step only runs for `full`, so `lessons-only` / `ci-only` / `js-deps-only` PRs — for which
+          # the outcome is empty or `skipped` by design — cannot be failed by this.
+          if [ "$SCOPE" = "full" ] && [ -n "$NODE_OUTCOME" ] && [ "$NODE_OUTCOME" != "success" ]; then
+            if [ "$NODE_OUTCOME" = "skipped" ]; then
+              echo "Audit failed: the worker test suite (node) did not run — an earlier gate failed before it could start."
+            else
+              echo "Audit failed: worker test suite (node) has failing tests (node --test 'workers/**/*.test.mjs')."
+            fi
             exit 1
           fi
           if [ "$DCO_RESULT" != "true" ]; then
