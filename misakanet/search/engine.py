@@ -19,8 +19,6 @@ LESSONS_CONTRIB = LESSONS / "contrib"
 REFERENCES = REPO / "reference"
 INDEX = LESSONS / "index.md"
 
-K1 = 1.5
-B = 0.75
 WEIGHT_DOMAIN_MATCH = 0.25
 WEIGHT_STATUS = {"published": 0.0, "active": 0.1, "draft": 0.0, "stale": -0.3, "superseded": -0.5}
 WEIGHT_TITLE_EXACT = 0.8
@@ -29,42 +27,11 @@ WEIGHT_HAS_REF = 0.12
 MAX_METADATA = 1.0
 
 # Feature #532: domain synonym query expansion.
-_SYNONYM_MAP: dict[str, list[str]] = {
-    "mcp": ["setup", "tools/list"],
-    "tool": ["setup", "mcp"],
-    "setup": ["mcp", "install"],
-    "gbk": ["unicode", "encoding"],
-    "unicode": ["gbk", "encoding"],
-    "encoding": ["gbk", "unicode"],
-    "dco": ["signoff", "signed-off-by"],
-    "signoff": ["dco", "signed-off-by"],
-    "signed-off-by": ["dco", "signoff"],
-    "pip": ["ssl", "proxy"],
-    "timeout": ["ssl", "proxy"],
-    "ssl": ["pip", "timeout"],
-    "proxy": ["pip", "ssl", "timeout"],
-    "git": ["credential", "push"],
-    "credential": ["git", "auth"],
-    "auth": ["credential", "token"],
-    "token": ["auth", "credential"],
-    "401": ["auth", "credential"],
-    "403": ["auth", "permission"],
-    "cron": ["scheduler", "systemd"],
-    "scheduler": ["cron", "systemd"],
-    "wsl": ["windows", "proxy"],
-    "windows": ["wsl", "proxy"],
-    "cloudflare": ["worker", "deploy"],
-    "worker": ["cloudflare", "deploy"],
-    "deploy": ["worker", "cloudflare"],
-    "npm": ["publish", "403"],
-    "publish": ["npm", "403"],
-    "json": ["schema", "parse"],
-    "schema": ["json", "validate"],
-    "validate": ["schema", "json"],
-    "stale": ["cache", "pyc"],
-    "cache": ["stale", "pyc"],
-    "pyc": ["cache", "stale"],
-}
+# The alias -> canonical table lives in `data/query-aliases.json` (SSOT, unified in #1780);
+# `_SYNONYM_MAP` is defined further down as a *view* of that file via `_synonym_view()`.
+# Feature #532's hard-coded 34-entry literal used to sit here; it was overwritten
+# unconditionally at import time and had no read path, so it was removed. Do not reintroduce
+# a second word list — edit the JSON.
 
 # Feature #228: boost core/verified/recent lessons, penalize drafts.
 # Multipliers added to the final composite score (not the BM25 term),
@@ -335,30 +302,47 @@ def _tokenize(text: str) -> list[str]:
     return result
 
 
+class BM25ScoringError(RuntimeError):
+    """The BM25 core could not score the document set.
+
+    Raised instead of degrading to an all-zero score vector: a scoring crash and a query
+    whose tokens match nothing are different outcomes, and returning zeros made them
+    indistinguishable to every caller (a search that silently ranked on metadata alone).
+    Callers either handle this explicitly or let it reach the request boundary, which
+    reports it as an error rather than as "no results".
+    """
+
+
 def _compute_bm25_scores(query: str, docs: list[CachedDoc]) -> list[float]:
-    """BM25 scoring delegated to misakanet-core."""
+    """BM25 scoring delegated to misakanet-core.
+
+    A zero score here means "the query's tokens matched this document's tokens zero times".
+    It never means "scoring failed" — that raises `BM25ScoringError` (fail-fast, CLAUDE.md).
+    """
     if not query or not query.strip():
         return [0.0] * len(docs)
-    
+
     query_tokens = _tokenize(query)
     if not query_tokens:
         return [0.0] * len(docs)
 
-    try:
-        # Build ScoredDocument list for core engine
-        scored_docs = [ScoredDocument(d.filename, _tokenize(d.content)) for d in docs]
-        if not scored_docs:
-            return [0.0] * len(docs)
+    # Build ScoredDocument list for core engine
+    scored_docs = [ScoredDocument(d.filename, _tokenize(d.content)) for d in docs]
+    if not scored_docs:
+        return [0.0] * len(docs)
 
+    try:
         engine = BM25(scored_docs)
         results = engine.search(query, top_k=len(docs))
-
-        # Map results back to original order
-        result_scores = {r.doc_id: r.score for r in results}
-        return [result_scores.get(d.filename, 0.0) for d in docs]
     except Exception as e:
-        print(f"  ⚠️ BM25 scoring failed: {e}", file=sys.stderr)
-        return [0.0] * len(docs)
+        raise BM25ScoringError(
+            f"BM25 core failed to score {len(scored_docs)} document(s) "
+            f"for query {query!r}: {type(e).__name__}: {e}"
+        ) from e
+
+    # Map results back to original order
+    result_scores = {r.doc_id: r.score for r in results}
+    return [result_scores.get(d.filename, 0.0) for d in docs]
 
 
 def _metadata_bonus(query: str, doc: CachedDoc) -> float:
@@ -1083,6 +1067,7 @@ _rank_docs = _search_cached
 _rank_docs_impl_export = _rank_docs_impl
 
 __all__ = [
+    "BM25ScoringError",
     "CachedDoc",
     "LESSONS",
     "REFERENCES",
