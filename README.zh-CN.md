@@ -166,7 +166,7 @@ MisakaNet 对不同用户的用途不同：
 
 ### 它能回答什么，不能回答什么
 
-![四格漫画：吉祥物承诺能避免所有 AI 错误；猫问起披萨和油桶，它就瘪了 —— 然后一只猫亮出 npm ERESOLVE，它立刻发光。MisakaNet 只认识已经收录的失败，不是通用知识。](promotional/misakanet-scope-comic.png)
+![四格漫画：吉祥物承诺能避免所有 AI 错误；猫问起披萨和油桶，它就瘪了 —— 然后一只猫亮出 npm ERESOLVE，它立刻发光。MisakaNet 只认识已经收录的失败，不是通用知识。](promotional/misakanet-scope-comic.webp)
 
 它只回答**已经收录过的失败**，不是通用知识。查不到时会返回 `no_match` 和一条可直接调用的 `intake`
 指引 —— 未命中正是一条缺口被记下来的方式，所以它同样是一个答案。
