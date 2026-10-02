@@ -246,6 +246,10 @@ def test_the_file_handed_to_wrangler_is_the_clean_sql(monkeypatch, extra):
     sql = captured["sql"]
     lines = [line for line in sql.splitlines() if line.strip()]
     assert lines[-1].rstrip().endswith(";"), f"the executed file ends with {lines[-1][:80]!r}"
+    # Mirror of the rule at the top of this file: a comment can end with `;` too, and then a file that
+    # ends in a dangling comment passes a "terminated statement" check (an independent review built
+    # exactly that: `-- sync done;` left the executed file ending in a comment with the suite green).
+    assert not lines[-1].lstrip().startswith("--"), "the executed file ends in a comment"
     assert not re.search(r"^-- \\d+ lessons parsed at ", sql, re.M), "a note is in the executed file"
     assert not re.search(r"^-- FTS index rebuilt for \\d+ lessons$", sql, re.M), (
         "the trailing note is in the executed file")
